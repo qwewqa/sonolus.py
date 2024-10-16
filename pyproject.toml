@@ -1,0 +1,24 @@
+[project]
+name = "sonolus.py"
+version = "0.1.0"
+description = "Sonolus scripting for Python"
+readme = "README.md"
+requires-python = ">=3.13"
+
+[tool.uv]
+dev-dependencies = [
+    "pre-commit>=4.0.1",
+    "ruff>=0.6.9",
+]
+
+[tool.ruff]
+line-length = 120
+target-version = "py312"
+
+[tool.ruff.lint]
+preview = true
+select = ["F", "E", "W", "I", "N", "D", "UP", "YTT", "B", "A", "COM", "C4", "DTZ", "PIE", "PT", "Q", "SLOT", "SIM", "PTH", "PL", "PERF", "FURB", "LOG", "RUF"]
+ignore = ["E402", "D1", "COM812", "PLW3201", "PLR6301", "PLC0415", "PLR2004", "PLR09"]
+
+[tool.ruff.lint.pydocstyle]
+convention = "google"
