@@ -1,4 +1,5 @@
 from __future__ import annotations
+
 from typing import Any, ClassVar, Self, TypeVar
 
 from sonolus.script.internal.value import Value
@@ -51,8 +52,8 @@ def format_type_arg(arg: Any) -> str:
 
 class GenericValue(Value):
     parameterized_: ClassVar[dict[tuple[Any, ...], type[Self]]] = {}
-    type_args_: tuple[Any, ...] | None = None
-    type_vars_to_args_: dict[TypeVar, Any] | None = None
+    type_args_: ClassVar[tuple[Any, ...] | None] = None
+    type_vars_to_args_: ClassVar[dict[TypeVar, Any] | None] = None
 
     def __init__(self):
         if self.type_args_ is None:
@@ -65,9 +66,7 @@ class GenericValue(Value):
         This may be called with PartialGeneric or TypeVar instances inside args.
         """
         if len(args) != len(cls.__type_params__):
-            raise TypeError(
-                f"Expected {len(cls.__type_params__)} type arguments, got {len(args)}"
-            )
+            raise TypeError(f"Expected {len(cls.__type_params__)} type arguments, got {len(args)}")
         return args
 
     @classmethod
@@ -96,7 +95,7 @@ class GenericValue(Value):
     def _get_parameterized(cls, args: tuple[Any, ...]) -> type[Self]:
         class Parameterized(cls):
             type_args_ = args
-            type_vars_to_args_ = {type_var: arg for type_var, arg in zip(cls.__type_params__, args, strict=True)}
+            type_vars_to_args_ = dict(zip(cls.__type_params__, args, strict=True))  # noqa: RUF012
 
         if args:
             Parameterized.__name__ = f"{cls.__name__}[{', '.join(format_type_arg(arg) for arg in args)}]"
@@ -150,7 +149,7 @@ def infer_and_validate_types(dst: Any, src: Any, results: dict[TypeVar, Any] | N
     return results
 
 
-def accept_and_infer_types(dst: Any, val: Any, results: dict[TypeVar, Any]) -> Any:
+def accept_and_infer_types(dst: Any, val: Any, results: dict[TypeVar, Any]) -> Value:
     from sonolus.script.internal.impl import validate_value
 
     val = validate_value(val)
@@ -159,11 +158,11 @@ def accept_and_infer_types(dst: Any, val: Any, results: dict[TypeVar, Any]) -> A
             infer_and_validate_types(dst, type(val), results)
             return val
         case PartialGeneric():
-            val = dst.base._accept_(val)
+            val = dst.base.accept_(val)
             infer_and_validate_types(dst, type(val), results)
             return val
         case type():
-            return dst._accept_(val)
+            return dst.accept_(val)
         case _:
             raise TypeError(f"Expected a type, got {format_type_arg(dst)}")
 

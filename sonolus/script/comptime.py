@@ -1,7 +1,7 @@
 from collections.abc import Iterable
 from typing import Any, Self, final
 
-from sonolus.backend.place import Place
+from sonolus.backend.place import BlockPlace
 from sonolus.script.internal.generic import GenericValue
 
 
@@ -28,7 +28,7 @@ class Comptime[T, V](GenericValue):
         return False
 
     @classmethod
-    def from_place_(cls, place: Place) -> Self:
+    def from_place_(cls, place: BlockPlace) -> Self:
         return cls._instance
 
     @classmethod
@@ -46,8 +46,7 @@ class Comptime[T, V](GenericValue):
             raise TypeError("Value does not match this Comptime instance")
         return cls._instance
 
-    @classmethod
-    def is_py_(cls) -> bool:
+    def is_py_(self) -> bool:
         return True
 
     def as_py_(self) -> Any:
@@ -70,6 +69,9 @@ class Comptime[T, V](GenericValue):
     def copy_from_(self, value: Self):
         if value is not self:
             raise TypeError("Comptime value cannot be changed")
+
+    def copy_(self) -> Self:
+        return self
 
     @classmethod
     def accept_unchecked(cls, value: Any) -> Self:

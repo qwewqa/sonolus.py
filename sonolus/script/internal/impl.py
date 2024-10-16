@@ -2,7 +2,7 @@ from __future__ import annotations
 
 from collections.abc import Callable
 from types import FunctionType, MethodType, NoneType, NotImplementedType
-from typing import Any, TypeVar, overload, TYPE_CHECKING
+from typing import TYPE_CHECKING, Any, TypeVar, overload
 
 if TYPE_CHECKING:
     from sonolus.script.comptime import Comptime
@@ -12,17 +12,17 @@ if TYPE_CHECKING:
 
 
 @overload
-def nocompile[T: Callable](fn: T) -> T: ...
+def self_impl[T: Callable](fn: T) -> T: ...
 
 
 @overload
-def nocompile[T: Callable]() -> Callable[[T], T]: ...
+def self_impl[T: Callable]() -> Callable[[T], T]: ...
 
 
-def nocompile(fn=None):
+def self_impl(fn=None):
     # noinspection PyShadowingNames
     def decorator(fn):
-        fn.nocompile = True
+        fn.self_impl = True
         return fn
 
     if fn is None:
@@ -39,7 +39,7 @@ def validate_value(value: Any) -> Value:
                 return Comptime.accept_unchecked(Num)
             return Comptime.accept_unchecked(value)
         case int() | float() | bool():
-            return Num._accept_(value)
+            return Num.accept_(value)
         case tuple():
             return Comptime.accept_unchecked(tuple(validate_value(v) for v in value))
         case PartialGeneric() | TypeVar() | FunctionType() | MethodType() | NotImplementedType() | str() | NoneType():

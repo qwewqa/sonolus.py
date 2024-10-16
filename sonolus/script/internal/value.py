@@ -2,7 +2,7 @@ from abc import abstractmethod
 from collections.abc import Iterable
 from typing import Any, Self
 
-from sonolus.backend.place import Place
+from sonolus.backend.place import BlockPlace
 
 
 class Value:
@@ -30,7 +30,7 @@ class Value:
 
     @classmethod
     @abstractmethod
-    def from_place_(cls, place: Place) -> Self:
+    def from_place_(cls, place: BlockPlace) -> Self:
         """Creates a value from a place."""
         raise NotImplementedError
 
@@ -46,9 +46,8 @@ class Value:
         """Accepts the given value."""
         raise NotImplementedError
 
-    @classmethod
     @abstractmethod
-    def is_py_(cls) -> bool:
+    def is_py_(self) -> bool:
         """Returns whether this value is a valid Python value.
 
         Essentially, this returns true if to_cells_ returns a list of integers (or an empty list).
@@ -116,6 +115,11 @@ class Value:
 
         This is only supported by mutable reference types.
         """
+        raise NotImplementedError
+
+    @abstractmethod
+    def copy_(self) -> Self:
+        """Returns a deep copy of this value."""
         raise NotImplementedError
 
     def __imatmul__(self, other):

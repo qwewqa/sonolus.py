@@ -1,4 +1,5 @@
 from collections.abc import Iterator
+from typing import Self
 
 from sonolus.backend.blocks import Block
 
@@ -38,18 +39,22 @@ class TempBlock:
 class BlockPlace:
     block: BlockValue
     index: IndexValue
+    offset: int = 0
 
-    def __init__(self, block: BlockValue, index: IndexValue = 0):
+    def __init__(self, block: BlockValue, index: IndexValue = 0, offset: int = 0):
         self.block = block
         self.index = index
+        self.offset = offset
 
     def __repr__(self):
-        return f"BlockPlace(block={self.block!r}, index={self.index!r})"
+        return f"BlockPlace(block={self.block!r}, index={self.index!r}, offset={self.offset!r})"
 
     def __str__(self):
-        if isinstance(self.block, TempBlock) and self.block.size == 1 and self.index == 0:
+        if isinstance(self.block, TempBlock) and self.block.size == 1 and self.index == 0 and self.offset == 0:
             return f"{self.block}"
-        return f"{self.block}[{self.index}]"
+        if isinstance(self.index, int):
+            return f"{self.block}[{self.index + self.offset}]"
+        return f"{self.block}[{self.index} + {self.offset}]"
 
     def __eq__(self, other):
         return isinstance(other, BlockPlace) and self.block == other.block and self.index == other.index
@@ -57,8 +62,8 @@ class BlockPlace:
     def __hash__(self):
         return hash((self.block, self.index))
 
-    def with_index(self, index: IndexValue) -> "BlockPlace":
-        return BlockPlace(self.block, index)
+    def add_offset(self, offset: int) -> Self:
+        return BlockPlace(self.block, self.index, self.offset + offset)
 
 
 class SSAPlace:
