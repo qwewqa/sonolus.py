@@ -1,12 +1,12 @@
 from collections.abc import Iterable
-from typing import Any, Self, final
+from typing import TYPE_CHECKING, Any, Self, final
 
 from sonolus.backend.place import BlockPlace
 from sonolus.script.internal.generic import GenericValue
 
 
 @final
-class Comptime[T, V](GenericValue):
+class _Comptime[T, V](GenericValue):
     _instance: Self | None = None
 
     def __init__(self):
@@ -80,5 +80,12 @@ class Comptime[T, V](GenericValue):
             cls.parameterized_[args] = cls._get_parameterized(args)
         return cls.parameterized_[args]._instance
 
+
+if not TYPE_CHECKING:
+    Comptime = _Comptime
+    Comptime.__name__ = "Comptime"
+    Comptime.__qualname__ = "Comptime"
+else:
+    type Comptime[T, V] = T | V
 
 from sonolus.script.internal.impl import validate_value

@@ -1,19 +1,21 @@
 # ruff: noqa: A005
 from __future__ import annotations
 
-from typing import final, Self, Iterable, Any
+from collections.abc import Iterable
+from typing import Any, Self, final
 
 from sonolus.backend.place import BlockPlace
 from sonolus.script.internal.context import ctx
 from sonolus.script.internal.error import InternalError
 from sonolus.script.internal.generic import GenericValue
-from sonolus.script.internal.impl import validate_value
+from sonolus.script.internal.impl import self_impl, validate_value
 from sonolus.script.internal.value import Value
+from sonolus.script.iterator import ArrayLike
 from sonolus.script.num import Num
 
 
 @final
-class Array[T, Size](GenericValue):
+class Array[T, Size](GenericValue, ArrayLike[T]):
     _value: list[T] | BlockPlace
 
     @classmethod
@@ -29,7 +31,7 @@ class Array[T, Size](GenericValue):
         raise TypeError("Array cannot be directly instantiated, use Array.of or alloc instead")
 
     @classmethod
-    def of[R](cls, *args: R) -> Array[R, len(values)]:
+    def of[R](cls, *args: R) -> Array[R, Size]:
         if cls.type_args_ is None:
             values = [validate_value(arg) for arg in args]
             types = {type(value) for value in values}
@@ -49,7 +51,7 @@ class Array[T, Size](GenericValue):
             result.copy_from_(parameterized_cls._with_value(values))
             return result
         else:
-            return cls._with_value([value.copy_() for value in values])
+            return parameterized_cls._with_value([value.copy_() for value in values])
 
     @classmethod
     def _with_value(cls, value) -> Self:
@@ -116,6 +118,7 @@ class Array[T, Size](GenericValue):
         else:
             return self._with_value([value.copy_() for value in self._value])
 
+    @self_impl
     def __getitem__(self, index: Num) -> T:
         index: Num = Num.accept_(index)
         if index.is_py_():
@@ -126,10 +129,63 @@ class Array[T, Size](GenericValue):
             if not 0 <= const_index < self.size():
                 raise IndexError("Array index out of range")
             if isinstance(self._value, list):
-                return self._value[const_index]
+                if ctx():
+                    return self._value[const_index].get_()
+                else:
+                    return self._value[const_index].get_().as_py_()
             else:
-                return self.element_type().from_place_(self._value.add_offset(const_index * self.element_type().size_()))
+                return (
+                    self.element_type()
+                    .from_place_(self._value.add_offset(const_index * self.element_type().size_()))
+                    .get_()
+                )
         else:
             if not ctx():
                 raise InternalError("Unexpected non-constant index")
-            # TODO
+            base = ctx().rom[tuple(self.to_list_())] if isinstance(self._value, list) else self._value
+            place = BlockPlace(
+                block=base.block,
+                index=(Num(base.index) + index * self.element_type().size_()).index(),
+                offset=base.offset,
+            )
+            return self.element_type().from_place_(place).get_()
+
+    @self_impl
+    def __setitem__(self, index: Num, value: T):
+        index: Num = Num.accept_(index)
+        value = self.element_type().accept_(value)
+        if ctx():
+            if isinstance(self._value, list):
+                raise ValueError("Cannot mutate a compile time constant array")
+            base = self._value
+            place = (
+                base.add_offset(int(index.as_py_()) * self.element_type().size_())
+                if index.is_py_()
+                else BlockPlace(
+                    block=base.block,
+                    index=(Num(base.index) + index * self.element_type().size_()).index(),
+                    offset=base.offset,
+                )
+            )
+            dst = self.element_type().from_place_(place)
+            if self.element_type().is_value_type_():
+                dst.set_(value)
+            else:
+                dst.copy_from_(value)
+        else:
+            if not isinstance(self._value, list):
+                raise InternalError("Unexpected mutation of non compile time constant array")
+            const_index = index.as_py_()
+            if isinstance(const_index, float) and not const_index.is_integer():
+                raise ValueError("Array index must be an integer")
+            const_index = int(const_index)
+            if not 0 <= const_index < self.size():
+                raise IndexError("Array index out of range")
+            dst = self._value[const_index]
+            if self.element_type().is_value_type_():
+                dst.set_(value)
+            else:
+                dst.copy_from_(value)
+
+    def __str__(self):
+        return f"{type(self).__name__}.of({", ".join(str(self[i]) for i in range(self.size()))})"

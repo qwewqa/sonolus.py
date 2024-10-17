@@ -1,0 +1,158 @@
+from __future__ import annotations
+
+from abc import abstractmethod
+from collections.abc import Collection, Iterator
+
+from sonolus.script.num import Num
+from sonolus.script.record import Record
+
+
+class SonolusIterator[T](Iterator[T]):
+    @abstractmethod
+    def has_next(self) -> bool:
+        raise NotImplementedError
+
+    @abstractmethod
+    def next(self) -> T:
+        raise NotImplementedError
+
+    def __next__(self) -> T:
+        if not self.has_next():
+            raise StopIteration
+        return self.next()
+
+
+class ArrayLike[T](Collection):
+    @abstractmethod
+    def size(self) -> int:
+        pass
+
+    @abstractmethod
+    def __getitem__(self, index: Num) -> T:
+        pass
+
+    @abstractmethod
+    def __setitem__(self, index: Num, value: T):
+        pass
+
+    def __len__(self) -> int:
+        return self.size()
+
+    def __iter__(self) -> SonolusIterator:
+        return ArrayIterator(0, self)
+
+    def __contains__(self, value: T) -> bool:
+        i = 0
+        while i < self.size():
+            if self[i] == value:
+                return True
+            i += 1
+        return False
+
+    def reversed(self) -> ArrayLike[T]:
+        return ArrayReverser(self)
+
+    def iterator(self) -> SonolusIterator[T]:
+        return self.__iter__()  # noqa: PLC2801
+
+    def enumerator(self, start: Num = 0) -> SonolusIterator[T]:
+        return ArrayEnumerator(0, start, self)
+
+    def index_of(self, value: T) -> Num:
+        i = 0
+        while i < self.size():
+            if self[i] == value:
+                return i
+            i += 1
+        return -1
+
+    def last_index_of(self, value: T) -> Num:
+        i = self.size() - 1
+        while i >= 0:
+            if self[i] == value:
+                return i
+            i -= 1
+        return -1
+
+    def index_of_max(self) -> Num:
+        if self.size() == 0:
+            return -1
+        max_index = 0
+        i = 1
+        while i < self.size():
+            if self[i] > self[max_index]:
+                max_index = i
+            i += 1
+        return max_index
+
+    def index_of_min(self) -> Num:
+        if self.size() == 0:
+            return -1
+        min_index = 0
+        i = 1
+        while i < self.size():
+            if self[i] < self[min_index]:
+                min_index = i
+            i += 1
+        return min_index
+
+    def max(self) -> T:
+        return self[self.index_of_max()]
+
+    def min(self) -> T:
+        return self[self.index_of_min()]
+
+
+class ArrayIterator[V: ArrayLike](Record, SonolusIterator):
+    i: Num
+    array: V
+
+    def has_next(self) -> bool:
+        return self.i < self.array.size()
+
+    def next(self) -> V:
+        value = self.array[self.i]
+        self.i += 1
+        return value
+
+
+class ArrayReverser[V: ArrayLike](Record, ArrayLike):
+    array: V
+
+    def size(self) -> int:
+        return self.array.size()
+
+    def __getitem__(self, index: Num) -> V:
+        return self.array[self.size() - 1 - index]
+
+    def __setitem__(self, index: Num, value: V):
+        self.array[self.size() - 1 - index] = value
+
+
+class Enumerator[V: SonolusIterator](Record, SonolusIterator):
+    i: Num
+    iterator: V
+
+    def has_next(self) -> bool:
+        return self.iterator.has_next()
+
+    def next(self):
+        value = self.iterator.next()
+        index = self.i
+        self.i += 1
+        return index, value
+
+
+class ArrayEnumerator[V: ArrayLike](Record, SonolusIterator):
+    i: Num
+    offset: Num
+    array: V
+
+    def has_next(self) -> bool:
+        return self.i < self.array.size()
+
+    def next(self):
+        value = self.array[self.i]
+        index = self.i + self.offset
+        self.i += 1
+        return index, value

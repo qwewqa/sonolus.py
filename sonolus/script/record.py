@@ -65,6 +65,7 @@ class Record(GenericValue):
                 raise TypeError("Default values are not supported for Record fields")
             type_ = validate_type_spec(hint)
             fields.append(RecordField(name, type_, index, len(fields)))
+            setattr(cls, name, fields[-1])
             index += 1
             params.append(
                 inspect.Parameter(

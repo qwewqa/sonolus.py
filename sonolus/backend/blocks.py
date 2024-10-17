@@ -1,7 +1,7 @@
 from enum import Enum
 
 
-class _Block(int):
+class BlockData(int):
     def __new__(cls, id_: int, readable: set[str], writable: set[str]):
         obj = int.__new__(cls, id_)
         obj.readable = readable
@@ -9,7 +9,7 @@ class _Block(int):
         return obj
 
 
-class TutorialBlock(_Block, Enum):
+class TutorialBlock(BlockData, Enum):
     RuntimeEnvironment = (1000, {"preprocess", "navigate", "update"}, {"preprocess"})
     RuntimeUpdate = (1001, {"preprocess", "navigate", "update"}, {})
     RuntimeSkinTransform = (1002, {"preprocess", "navigate", "update"}, {"preprocess", "navigate", "update"})
@@ -24,7 +24,7 @@ class TutorialBlock(_Block, Enum):
     TemporaryMemory = (10000, {"preprocess", "navigate", "update"}, {"preprocess", "navigate", "update"})
 
 
-class PlayBlock(_Block, Enum):
+class PlayBlock(BlockData, Enum):
     RuntimeEnvironment = (
         1000,
         {
@@ -427,7 +427,7 @@ class PlayBlock(_Block, Enum):
     )
 
 
-class PreviewBlock(_Block, Enum):
+class PreviewBlock(BlockData, Enum):
     RuntimeEnvironment = (1000, {"preprocess", "render"}, {"preprocess"})
     RuntimeCanvas = (1001, {"preprocess", "render"}, {"preprocess"})
     RuntimeSkinTransform = (1002, {"preprocess", "render"}, {"preprocess"})
@@ -445,7 +445,7 @@ class PreviewBlock(_Block, Enum):
     TemporaryMemory = (10000, {"preprocess", "render"}, {"preprocess", "render"})
 
 
-class WatchBlock(_Block, Enum):
+class WatchBlock(BlockData, Enum):
     RuntimeEnvironment = (
         1000,
         {

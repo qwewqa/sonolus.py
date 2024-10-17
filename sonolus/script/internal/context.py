@@ -3,6 +3,7 @@ from __future__ import annotations
 from contextlib import contextmanager
 from contextvars import ContextVar
 
+from sonolus.backend.blocks import BlockData
 from sonolus.backend.ir import IRConst, IRStmt
 from sonolus.backend.place import Block, BlockPlace, TempBlock
 from sonolus.script.internal.value import Value
@@ -24,9 +25,17 @@ class Context:
     callback: str
     used_names: dict[str, int]
     # scope: "Scope"
-    # rom: "ReadOnlyMemory"
+    rom: ReadOnlyMemory
     merged_variables: dict[str, Value]
     live: bool
+
+    def check_readable(self, place: BlockPlace):
+        if isinstance(place.block, BlockData) and self.callback not in place.block.readable:
+            raise RuntimeError(f"Block {place.block} is not readable in {self.callback}")
+
+    def check_writable(self, place: BlockPlace):
+        if isinstance(place.block, BlockData) and self.callback not in place.block.writable:
+            raise RuntimeError(f"Block {place.block} is not writable in {self.callback}")
 
     def add_statements(self, *statements: IRStmt):
         self.statements.extend(statements)
@@ -60,3 +69,23 @@ def with_ctx(value: Context | None):
         yield
     finally:
         context_var.reset(token)
+
+
+class ReadOnlyMemory:
+    block: Block
+    values: list[float]
+    indexes: dict[tuple[float, ...], int]
+
+    def __init__(self, block: Block):
+        self.block = block
+        self.values = []
+        self.indexes = {}
+
+    def __getitem__(self, item: tuple[float, ...]) -> BlockPlace:
+        if item not in self.indexes:
+            index = len(self.values)
+            self.indexes[item] = index
+            self.values.extend(item)
+        else:
+            index = self.indexes[item]
+        return BlockPlace(self.block, index)

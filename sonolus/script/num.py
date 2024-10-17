@@ -1,3 +1,4 @@
+# ruff: noqa: N801
 import operator
 from collections.abc import Callable, Iterable
 from typing import TYPE_CHECKING, Any, Self, final
@@ -18,6 +19,8 @@ class _Num(Value):
     def __init__(self, data: Place | float | int | bool):
         if isinstance(data, int):
             data = float(data)
+        if isinstance(data, _Num):
+            raise InternalError("Cannot create a Num from a Num")
         self.data = data
 
     def __str__(self) -> str:
@@ -52,6 +55,8 @@ class _Num(Value):
     def accept_(cls, value: Any) -> Self:
         if not cls.accepts_(value):
             raise ValueError(f"Cannot accept {value}")
+        if isinstance(value, Num):
+            return value
         return cls(value)
 
     def is_py_(self) -> bool:
@@ -75,6 +80,8 @@ class _Num(Value):
     def get_(self) -> Self:
         if ctx():
             place = ctx().alloc(size=1)
+            if isinstance(self.data, BlockPlace):
+                ctx().check_readable(self.data)
             ctx().add_statements(IRSet(place, self.ir()))
             return Num(place)
         else:
@@ -84,6 +91,7 @@ class _Num(Value):
         if ctx():
             if not isinstance(self.data, BlockPlace):
                 raise ValueError("Cannot set a compile time constant value")
+            ctx().check_writable(self.data)
             ctx().add_statements(IRSet(self.data, value.ir()))
         else:
             self.data = value.data
@@ -202,9 +210,12 @@ class _Num(Value):
 
 
 if TYPE_CHECKING:
-    # Some type checks complain if we use Num in the class definition then redefine it
-    # so we use _Num instead
-    Num = float | int | bool | _Num
+
+    class __Num(float, int, bool, _Num):  # type: ignore
+        pass
+
+    Num = __Num | float | int | bool
 else:
+    # Need to do this to satisfy type checkers (especially Pycharm)
     _Num.__name__ = "Num"
-    Num = _Num
+    globals()["Num"] = _Num
