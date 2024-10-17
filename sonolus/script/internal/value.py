@@ -103,6 +103,7 @@ class Value:
         """Implements assignment (=).
 
         This is only supported by value types.
+        This method must not change the active context like by branching.
 
         In some places, = might instead call assign_, such as when setting the value of a record field
         with a reference type.

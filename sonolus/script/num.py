@@ -214,7 +214,7 @@ if TYPE_CHECKING:
     class __Num(float, int, bool, _Num):  # type: ignore
         pass
 
-    Num = __Num | float | int | bool
+    Num: type[__Num | float | int | bool] | _Num
 else:
     # Need to do this to satisfy type checkers (especially Pycharm)
     _Num.__name__ = "Num"
