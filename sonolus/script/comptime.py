@@ -108,4 +108,4 @@ if not TYPE_CHECKING:
 else:
     type Comptime[T, V] = T | V
 
-from sonolus.script.internal.impl import validate_value, Dict
+from sonolus.script.internal.impl import Dict, validate_value

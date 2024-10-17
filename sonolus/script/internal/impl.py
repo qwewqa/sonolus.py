@@ -1,8 +1,8 @@
 from __future__ import annotations
 
-from collections.abc import Callable, Iterable
+from collections.abc import Callable, Iterable, Mapping
 from types import FunctionType, MethodType, NoneType, NotImplementedType
-from typing import TYPE_CHECKING, Any, TypeVar, overload, Mapping
+from typing import TYPE_CHECKING, Any, TypeVar, overload
 
 if TYPE_CHECKING:
     from sonolus.script.comptime import Comptime
@@ -63,14 +63,27 @@ def validate_value(value: Any) -> Value:
         case type():
             if value in {int, float, bool}:
                 return Comptime.accept_unchecked(Num)
+            if value is dict:
+                return Comptime.accept_unchecked(Dict)
             return Comptime.accept_unchecked(value)
         case int() | float() | bool():
             return Num.accept_(value)
         case tuple():
             return Comptime.accept_unchecked(tuple(validate_value(v) for v in value))
         case dict():
-            return Comptime.accept_unchecked(Dict((validate_value(k).as_py_(), validate_value(v)) for k, v in value.items()))
-        case PartialGeneric() | TypeVar() | FunctionType() | MethodType() | NotImplementedType() | str() | NoneType() | Dict():
+            return Comptime.accept_unchecked(
+                Dict((validate_value(k).as_py_(), validate_value(v)) for k, v in value.items())
+            )
+        case (
+            PartialGeneric()
+            | TypeVar()
+            | FunctionType()
+            | MethodType()
+            | NotImplementedType()
+            | str()
+            | NoneType()
+            | Dict()
+        ):
             return Comptime.accept_unchecked(value)
         case _:
             raise TypeError(f"Unsupported value: {value!r}")

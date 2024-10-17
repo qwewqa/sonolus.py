@@ -144,7 +144,11 @@ def infer_and_validate_types(dst: Any, src: Any, results: dict[TypeVar, Any] | N
             for d, s in zip(dst.args, src.type_args_, strict=True):
                 infer_and_validate_types(d, s, results)
         case _:
-            if src != dst:
+            if (
+                src != dst
+                and dst != Any
+                and not (isinstance(dst, type) and isinstance(src, type) and issubclass(src, dst))
+            ):
                 raise TypeError(f"Expected {format_type_arg(dst)}, got {format_type_arg(src)}")
     return results
 
