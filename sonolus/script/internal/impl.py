@@ -1,8 +1,8 @@
 from __future__ import annotations
 
-from collections.abc import Callable
+from collections.abc import Callable, Iterable
 from types import FunctionType, MethodType, NoneType, NotImplementedType
-from typing import TYPE_CHECKING, Any, TypeVar, overload
+from typing import TYPE_CHECKING, Any, TypeVar, overload, Mapping
 
 if TYPE_CHECKING:
     from sonolus.script.comptime import Comptime
@@ -30,6 +30,32 @@ def self_impl(fn=None):
     return decorator(fn)
 
 
+class Dict(Mapping):  # pseudo-dict since regular dict is not hashable
+    def __init__(self, entries: Iterable[tuple[Any, Any]]):
+        self.data = dict(entries)
+
+    def __getitem__(self, key, /):
+        return self.data[key]
+
+    def __len__(self):
+        return len(self.data)
+
+    def __iter__(self):
+        return iter(self.data)
+
+    def __eq__(self, other):
+        return self is other
+
+    def __hash__(self):
+        return id(self)
+
+    def __str__(self):
+        return f"{{{', '.join(f'{k}: {v}' for k, v in self.data.items())}}}"
+
+    def __repr__(self):
+        return f"{type(self).__name__}({self.data!r})"
+
+
 def validate_value(value: Any) -> Value:
     match value:
         case Value():
@@ -42,7 +68,9 @@ def validate_value(value: Any) -> Value:
             return Num.accept_(value)
         case tuple():
             return Comptime.accept_unchecked(tuple(validate_value(v) for v in value))
-        case PartialGeneric() | TypeVar() | FunctionType() | MethodType() | NotImplementedType() | str() | NoneType():
+        case dict():
+            return Comptime.accept_unchecked(Dict((validate_value(k).as_py_(), validate_value(v)) for k, v in value.items()))
+        case PartialGeneric() | TypeVar() | FunctionType() | MethodType() | NotImplementedType() | str() | NoneType() | Dict():
             return Comptime.accept_unchecked(value)
         case _:
             raise TypeError(f"Unsupported value: {value!r}")

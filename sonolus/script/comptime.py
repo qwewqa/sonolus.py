@@ -14,6 +14,10 @@ class _Comptime[T, V](GenericValue):
         raise TypeError("Comptime cannot be instantiated")
 
     @classmethod
+    def value(cls):
+        return cls.type_args_[1]
+
+    @classmethod
     def _get_parameterized(cls, args: tuple[Any, ...]) -> type[Self]:
         result = super()._get_parameterized(args)
         result._instance = object.__new__(result)
@@ -38,19 +42,19 @@ class _Comptime[T, V](GenericValue):
             return False
         if cls.type_args_ is None:
             return True
-        return value.as_py_() == cls.type_args_[1]
+        return value.as_py_() == cls.value()
 
     @classmethod
     def accept_(cls, value: Any) -> Self:
         if not cls.accepts_(value):
             raise TypeError("Value does not match this Comptime instance")
-        return cls._instance
+        return validate_value(value)
 
     def is_py_(self) -> bool:
         return True
 
     def as_py_(self) -> Any:
-        return self.type_args_[1]
+        return self.value()
 
     @classmethod
     def from_list_(cls, values: Iterable[float]) -> Self:
@@ -73,6 +77,22 @@ class _Comptime[T, V](GenericValue):
     def copy_(self) -> Self:
         return self
 
+    def __getitem__(self, item):
+        item = validate_value(item)
+        match self.value():
+            case tuple():
+                if not item.is_py_():
+                    raise TypeError("Tuple index must be a compile time constant")
+                index = item.as_py_()
+                if isinstance(index, float) and not index.is_integer():
+                    raise TypeError("Tuple index must be an integer")
+                index = int(index)
+                return self.value()[index]
+            case Dict():
+                if not item.is_py_():
+                    raise TypeError("Dict key must be a compile time constant")
+                return self.value()[item.as_py_()]
+
     @classmethod
     def accept_unchecked(cls, value: Any) -> Self:
         args = (type(value), value)
@@ -88,4 +108,4 @@ if not TYPE_CHECKING:
 else:
     type Comptime[T, V] = T | V
 
-from sonolus.script.internal.impl import validate_value
+from sonolus.script.internal.impl import validate_value, Dict
