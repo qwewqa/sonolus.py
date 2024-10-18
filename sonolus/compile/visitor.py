@@ -9,7 +9,6 @@ from typing import Any, Never, Mapping
 
 from sonolus.compile.excepthook import install_excepthook
 from sonolus.compile.utils import get_function
-from sonolus.script.comptime import Comptime
 from sonolus.script.internal.context import Context, Scope, ValueBinding, ctx, set_ctx
 from sonolus.script.internal.error import CompilationError
 from sonolus.script.internal.impl import validate_value
@@ -41,7 +40,7 @@ def generate_fn_impl(fn: Callable):
             if callable(fn):
                 return generate_fn_impl(fn.__call__)
             else:
-                raise TypeError(f"Unsupported callable {fn!r}")
+                raise TypeError(f"Not callable {fn!r}")
 
 
 def eval_fn(fn: Callable, /, *args, **kwargs):
@@ -373,8 +372,17 @@ class Visitor(ast.NodeVisitor):
                     raise ValueError("Starred keyword arguments (**kwargs) must be dictionaries")
         return self.handle_call(node, fn, *args, **kwargs)
 
+    def visit_FormattedValue(self, node):
+        raise NotImplementedError("F-strings are not supported")
+
+    def visit_JoinedStr(self, node):
+        raise NotImplementedError("F-strings are not supported")
+
     def visit_Constant(self, node):
         return validate_value(node.value)
+
+    def visit_Attribute(self, node):
+        return self.handle_getattr(node, self.visit(node.value), node.attr)
 
     def visit_Name(self, node):
         if node.id in self.globals:
@@ -457,14 +465,16 @@ class Visitor(ast.NodeVisitor):
 
     def handle_getattr(self, node: ast.stmt | ast.expr, target: Value, key: str) -> Value:
         with self.reporting_errors_at_node(node):
+            if target._is_py_():
+                target = target._as_py_()
             descriptor = getattr(type(target), key, None)
             match descriptor:
                 case property(fget=getter):
                     return self.handle_call(node, getter, target)
                 case RecordField() | FunctionType() | classmethod() | staticmethod() | None:
-                    return getattr(target, key)
+                    return validate_value(getattr(target, key))
                 case _:
-                    raise TypeError(f"Unsupported field descriptor {descriptor!r}")
+                    raise TypeError(f"Unsupported field or descriptor {key}")
 
     def handle_setattr(self, node: ast.stmt | ast.expr, target: Value, key: str, value: Value):
         with self.reporting_errors_at_node(node):
@@ -472,21 +482,21 @@ class Visitor(ast.NodeVisitor):
             match descriptor:
                 case property(fset=setter):
                     if setter is None:
-                        raise AttributeError(f"Cannot set attribute {key!r} because property has no setter")
+                        raise AttributeError(f"Cannot set attribute {key} because property has no setter")
                     self.handle_call(node, setter, target, value)
                 case RecordField():
                     setattr(target, key, value)
                 case _:
-                    raise TypeError(f"Unsupported field descriptor {descriptor!r}")
+                    raise TypeError(f"Unsupported field or descriptor {key}")
 
     def handle_call[**P, R](
         self, node: ast.stmt | ast.expr, fn: Callable[P, R], /, *args: P.args, **kwargs: P.kwargs
     ) -> R:
         """Handles a call to the given callable."""
         if isinstance(fn, Value) and fn._is_py_() and isinstance(fn._as_py_(), type):
-            return self.execute_at_node(node, fn._as_py_(), *args, **kwargs)
+            return validate_value(self.execute_at_node(node, fn._as_py_(), *args, **kwargs))
         else:
-            return self.execute_at_node(node, lambda: validate_value(compile_and_call(fn, *args, **kwargs)))
+            return validate_value(self.execute_at_node(node, lambda: validate_value(compile_and_call(fn, *args, **kwargs))))
 
     def handle_getitem(self, node: ast.stmt | ast.expr, target: Value, key: Value) -> Value:
         if hasattr(target, "__getitem__"):

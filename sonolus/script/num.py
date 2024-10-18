@@ -71,7 +71,7 @@ class _Num(Value):
 
     @classmethod
     def _from_list_(cls, values: Iterable[float]) -> Self:
-        (value,) = values
+        value = next(iter(values))
         return Num(value)
 
     def _to_list_(self) -> list[float]:

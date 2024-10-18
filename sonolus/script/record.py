@@ -172,7 +172,7 @@ class Record(GenericValue):
             field.__set__(self, field.__get__(value))
 
     def _copy_(self) -> Self:
-        return type(self)(**{field.name: self._value[field.name]._copy_()._get_() for field in self._fields})
+        return type(self)(**{field.name: self._value[field.name]._copy_() for field in self._fields})
 
     def __str__(self):
         return (
