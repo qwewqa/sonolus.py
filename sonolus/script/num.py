@@ -220,4 +220,5 @@ if TYPE_CHECKING:
 else:
     # Need to do this to satisfy type checkers (especially Pycharm)
     _Num.__name__ = "Num"
+    _Num.__qualname__ = "Num"
     globals()["Num"] = _Num

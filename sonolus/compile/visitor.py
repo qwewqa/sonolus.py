@@ -5,7 +5,7 @@ import inspect
 from collections.abc import Callable
 from contextlib import contextmanager
 from types import FunctionType, MethodType
-from typing import Any, Never
+from typing import Any, Never, Mapping
 
 from sonolus.compile.excepthook import install_excepthook
 from sonolus.compile.utils import get_function
@@ -23,12 +23,14 @@ _compiler_internal_ = True
 def compile_and_call[**P, R](fn: Callable[P, R], /, *args: P.args, **kwargs: P.kwargs) -> R:
     if not ctx():
         return fn(*args, **kwargs)
-    return generate_fn_impl(fn)(*args, **kwargs)
+    return validate_value(generate_fn_impl(fn)(*args, **kwargs))
 
 
 def generate_fn_impl(fn: Callable):
     install_excepthook()
     match fn:
+        case Value() as value if value._is_py_():
+            return generate_fn_impl(value._as_py_())
         case MethodType() as method:
             return functools.partial(generate_fn_impl(method.__func__), method.__self__)
         case FunctionType() as function:
@@ -114,6 +116,15 @@ comp_ops = {
     ast.GtE: "__ge__",
     ast.In: "__contains__",
     ast.NotIn: "__contains__",
+}
+
+rcomp_ops = {
+    ast.Eq: "__req__",
+    ast.NotEq: "__rne__",
+    ast.Lt: "__gt__",
+    ast.LtE: "__ge__",
+    ast.Gt: "__lt__",
+    ast.GtE: "__le__",
 }
 
 
@@ -306,10 +317,69 @@ class Visitor(ast.NodeVisitor):
     def visit_YieldFrom(self, node):
         raise NotImplementedError("Yield from expressions are not supported")
 
-    # TODO: Compare
+    def visit_Compare(self, node):
+        result_name = self.new_name("compare")
+        ctx().scope.set_value(result_name, Num._accept_(0))
+        l_val = self.visit(node.left)
+        false_ctxs = []
+        for op, rhs in zip(node.ops, node.comparators, strict=True):
+            r_val = self.visit(rhs)
+            inverted = isinstance(op, ast.NotEq)
+            op_name = comp_ops[type(op)]
+            result = None
+            if hasattr(l_val, op_name):
+                result = self.handle_call(node, getattr(l_val, op_name), r_val)
+            if (result is None or self.is_not_implemented(result)) and type(op) in rcomp_ops and hasattr(r_val, rcomp_ops[type(op)]):
+                result = self.handle_call(node, getattr(r_val, rcomp_ops[type(op)]), l_val)
+            if result is None or self.is_not_implemented(result):
+                raise NotImplementedError(f"Unsupported comparison operator {op}")
+            if not isinstance(result, Num):
+                raise ValueError("Comparison result must be of type Num")
+            if inverted:
+                result = result.not_()
+            curr_ctx = ctx()
+            curr_ctx.test = result.ir()
+            true_ctx = curr_ctx.branch(None)
+            false_ctx = curr_ctx.branch(0)
+            false_ctxs.append(false_ctx)
+            set_ctx(true_ctx)
+            l_val = r_val
+        last_ctx = ctx()  # This is the result of the last comparison returning true
+        last_ctx.scope.set_value(result_name, Num._accept_(1))
+        set_ctx(Context.meet([last_ctx, *false_ctxs]))
+        return ctx().scope.get_value(result_name)
+
+    def visit_Call(self, node):
+        fn = self.visit(node.func)
+        args = []
+        kwargs = {}
+        for arg in node.args:
+            if isinstance(arg, ast.Starred):
+                value = self.visit(arg.value)
+                if value._is_py_() and isinstance(value._as_py_(), tuple):
+                    args.extend(value._as_py_())
+                else:
+                    raise ValueError("Starred arguments (*args) must be tuples")
+            else:
+                args.append(self.visit(arg))
+        for keyword in node.keywords:
+            if keyword.arg:
+                kwargs[keyword.arg] = self.visit(keyword.value)
+            else:
+                value = self.visit(keyword.value)
+                if value._is_py_() and isinstance(value._as_py_(), Mapping):
+                    kwargs.update(value._as_py_())
+                else:
+                    raise ValueError("Starred keyword arguments (**kwargs) must be dictionaries")
+        return self.handle_call(node, fn, *args, **kwargs)
 
     def visit_Constant(self, node):
         return validate_value(node.value)
+
+    def visit_Name(self, node):
+        if node.id in self.globals:
+            return self.globals[node.id]
+        return ctx().scope.get_value(node.id)
 
     def handle_assign(self, target: ast.stmt | ast.expr, value: Value):
         match target:
@@ -413,10 +483,10 @@ class Visitor(ast.NodeVisitor):
         self, node: ast.stmt | ast.expr, fn: Callable[P, R], /, *args: P.args, **kwargs: P.kwargs
     ) -> R:
         """Handles a call to the given callable."""
-        if isinstance(fn, Comptime) and isinstance(fn.value(), type):
-            return self.execute_at_node(node, fn.value(), *args, **kwargs)
+        if isinstance(fn, Value) and fn._is_py_() and isinstance(fn._as_py_(), type):
+            return self.execute_at_node(node, fn._as_py_(), *args, **kwargs)
         else:
-            return self.execute_at_node(node, lambda: validate_value(ctx().call(fn, *args, **kwargs)))
+            return self.execute_at_node(node, lambda: validate_value(compile_and_call(fn, *args, **kwargs)))
 
     def handle_getitem(self, node: ast.stmt | ast.expr, target: Value, key: Value) -> Value:
         if hasattr(target, "__getitem__"):
@@ -458,7 +528,7 @@ class Visitor(ast.NodeVisitor):
             ),
         )
         expr = ast.fix_missing_locations(expr)
-        return exec(
+        return eval(
             compile(expr, filename=self.source_file, mode="eval"),
             {"fn": fn, "args": args, "kwargs": kwargs, "_filter_traceback_": True},
         )
