@@ -9,7 +9,7 @@ def get_function(fn: Callable) -> tuple[str, ast.FunctionDef]:
     # This preserves both line number and column number in the returned node
     source_file = inspect.getsourcefile(fn)
     _, start_line = inspect.getsourcelines(fn)
-    base_tree = ast.parse(Path(source_file).read_text())
+    base_tree = ast.parse(Path(source_file).read_text(encoding="utf-8"))
     return source_file, find_function(base_tree, start_line)
 
 

@@ -244,16 +244,15 @@ ops_to_inplace_ops = {
 
 def _add_inplace_ops(cls):
     for op, inplace_op in ops_to_inplace_ops.items():
-        if hasattr(cls, op):
-            if not hasattr(cls, inplace_op):
-                setattr(cls, inplace_op, _make_inplace_op(op))
+        if hasattr(cls, op) and not hasattr(cls, inplace_op):
+            setattr(cls, inplace_op, _make_inplace_op(op))
     return cls
 
 
 def _make_inplace_op(op: str):
     @self_impl
     def inplace_op(self, other):
-        _compiler_internal_ = True
+        _compiler_internal_ = True  # noqa: F841
         self._copy_from_(getattr(self, op)(other))
         return self
 

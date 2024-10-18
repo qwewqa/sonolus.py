@@ -145,7 +145,7 @@ def infer_and_validate_types(dst: Any, src: Any, results: dict[TypeVar, Any] | N
                 infer_and_validate_types(d, s, results)
         case _:
             if (
-                src != dst
+                src != dst  # noqa: PLR1714
                 and dst != Any
                 and not (isinstance(dst, type) and isinstance(src, type) and issubclass(src, dst))
             ):

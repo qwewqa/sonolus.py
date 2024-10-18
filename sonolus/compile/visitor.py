@@ -1,14 +1,16 @@
+# ruff: noqa: N802
 import ast
 import functools
 import inspect
+from collections.abc import Callable
 from contextlib import contextmanager
-from types import MethodType, FunctionType
-from typing import Callable, Any, Never
+from types import FunctionType, MethodType
+from typing import Any, Never
 
 from sonolus.compile.excepthook import install_excepthook
 from sonolus.compile.utils import get_function
 from sonolus.script.comptime import Comptime
-from sonolus.script.internal.context import set_ctx, ctx, Scope, Context, ValueBinding, ConflictBinding
+from sonolus.script.internal.context import Context, Scope, ValueBinding, ctx, set_ctx
 from sonolus.script.internal.error import CompilationError
 from sonolus.script.internal.impl import validate_value
 from sonolus.script.internal.value import Value
@@ -18,7 +20,7 @@ from sonolus.script.record import RecordField
 _compiler_internal_ = True
 
 
-def compile_and_call[** P, R](fn: Callable[P, R], /, *args: P.args, **kwargs: P.kwargs) -> R:
+def compile_and_call[**P, R](fn: Callable[P, R], /, *args: P.args, **kwargs: P.kwargs) -> R:
     if not ctx():
         return fn(*args, **kwargs)
     return generate_fn_impl(fn)(*args, **kwargs)
@@ -34,7 +36,7 @@ def generate_fn_impl(fn: Callable):
                 return function
             return functools.partial(eval_fn, function)
         case _:
-            if hasattr(fn, "__call__"):
+            if callable(fn):
                 return generate_fn_impl(fn.__call__)
             else:
                 raise TypeError(f"Unsupported callable {fn!r}")
@@ -220,12 +222,12 @@ class Visitor(ast.NodeVisitor):
             case _:
                 raise NotImplementedError(f"Unsupported bool operator {node.op}")
 
-        assert len(node.values) > 1
+        if not node.values:
+            raise ValueError("Bool operator requires at least one operand")
+        if len(node.values) == 1:
+            return self.visit(node.values[0])
         initial, *rest = node.values
-        acc = self.visit(initial)
-        for value in rest:
-            acc = handler(acc, value)
-        return acc
+        return handler(self.visit(initial), ast.copy_location(ast.BoolOp(op=node.op, values=rest), node))
 
     def visit_NamedExpr(self, node):
         value = self.visit(node.value)
@@ -306,6 +308,9 @@ class Visitor(ast.NodeVisitor):
 
     # TODO: Compare
 
+    def visit_Constant(self, node):
+        return validate_value(node.value)
+
     def handle_assign(self, target: ast.stmt | ast.expr, value: Value):
         match target:
             case ast.Name(id=name):
@@ -313,10 +318,10 @@ class Visitor(ast.NodeVisitor):
             case ast.Attribute(value=attr_value, attr=attr):
                 attr_value = self.visit(attr_value)
                 self.handle_setattr(target, attr_value, attr, value)
-            case ast.Subscript(value=sub_value, slice=slice):
+            case ast.Subscript(value=sub_value, slice=slice_expr):
                 sub_value = self.visit(sub_value)
-                slice = self.visit(slice)
-                self.handle_setitem(target, sub_value, slice, value)
+                slice_value = self.visit(slice_expr)
+                self.handle_setitem(target, sub_value, slice_value, value)
             case ast.Tuple(elts=elts) | ast.List(elts=elts):
                 if not value._is_py_():
                     raise NotImplementedError("Unpacking assignment is only supported for tuples")
@@ -325,8 +330,8 @@ class Visitor(ast.NodeVisitor):
                     raise NotImplementedError("Unpacking assignment is only supported for tuples")
                 if len(elts) != len(values):
                     raise ValueError("Unpacking assignment requires the same number of elements")
-                for elt, value in zip(elts, values):
-                    self.handle_assign(elt, validate_value(value))
+                for elt, v in zip(elts, values, strict=False):
+                    self.handle_assign(elt, validate_value(v))
             case ast.Starred():
                 raise NotImplementedError("Starred assignment is not supported")
             case _:
@@ -404,8 +409,9 @@ class Visitor(ast.NodeVisitor):
                 case _:
                     raise TypeError(f"Unsupported field descriptor {descriptor!r}")
 
-    def handle_call[** P, R](self, node: ast.stmt | ast.expr, fn: Callable[P, R], /, *args: P.args,
-                             **kwargs: P.kwargs) -> R:
+    def handle_call[**P, R](
+        self, node: ast.stmt | ast.expr, fn: Callable[P, R], /, *args: P.args, **kwargs: P.kwargs
+    ) -> R:
         """Handles a call to the given callable."""
         if isinstance(fn, Comptime) and isinstance(fn.value(), type):
             return self.execute_at_node(node, fn.value(), *args, **kwargs)
@@ -436,8 +442,9 @@ class Visitor(ast.NodeVisitor):
 
         self.execute_at_node(node, thrower)
 
-    def execute_at_node[** P, R](self, node: ast.stmt | ast.expr, fn: Callable[P, R], /, *args: P.args,
-                                 **kwargs: P.kwargs) -> R:
+    def execute_at_node[**P, R](
+        self, node: ast.stmt | ast.expr, fn: Callable[P, R], /, *args: P.args, **kwargs: P.kwargs
+    ) -> R:
         """Executes the given function at the given node for a better traceback."""
         expr = ast.Expression(
             body=ast.Call(

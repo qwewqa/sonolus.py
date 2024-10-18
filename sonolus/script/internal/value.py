@@ -1,6 +1,6 @@
 from abc import abstractmethod
 from collections.abc import Iterable
-from typing import Any, Self, ClassVar
+from typing import Any, Self
 
 from sonolus.backend.place import BlockPlace
 

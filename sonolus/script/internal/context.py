@@ -1,12 +1,12 @@
 from __future__ import annotations
 
-from collections.abc import Callable
 from contextlib import contextmanager
 from contextvars import ContextVar
 from dataclasses import dataclass
 from typing import Self
 
 from sonolus.backend.blocks import BlockData
+from sonolus.backend.flow import BasicBlock, FlowEdge
 from sonolus.backend.ir import IRConst, IRStmt
 from sonolus.backend.place import Block, BlockPlace, TempBlock
 from sonolus.script.internal.value import Value
@@ -28,13 +28,20 @@ class Context:
     loop_variables: dict[str, Value]
     live: bool
 
-    def __init__(self, blocks: type[Block], callback: str, used_names: dict[str, int] | None = None,
-                 scope: Scope | None = None, rom: ReadOnlyMemory | None = None, live: bool = True):
+    def __init__(
+            self,
+            blocks: type[Block],
+            callback: str,
+            used_names: dict[str, int] | None = None,
+            scope: Scope | None = None,
+            rom: ReadOnlyMemory | None = None,
+            live: bool = True,
+    ):
         self.statements = []
         self.outgoing = {}
         self.blocks = blocks
         self.callback = callback
-        self.used_names = used_names or {}
+        self.used_names = used_names if used_names is not None else {}
         self.scope = scope or Scope()
         self.rom = rom or ReadOnlyMemory(blocks.EngineRom)
         self.loop_variables = {}
@@ -195,7 +202,7 @@ Binding = ValueBinding | ConflictBinding | EmptyBinding
 class Scope:
     bindings: dict[str, Binding]
 
-    def __init__(self, bindings: dict[str, Binding] = None):
+    def __init__(self, bindings: dict[str, Binding] | None = None):
         self.bindings = bindings or {}
 
     def get_binding(self, name: str) -> Binding:
@@ -212,12 +219,14 @@ class Scope:
                 return value
             case ConflictBinding():
                 raise RuntimeError(
-                    f"Binding '{name}' has multiple conflicting definitions or may not be guaranteed to be defined")
+                    f"Binding '{name}' has multiple conflicting definitions or may not be guaranteed to be defined"
+                )
             case EmptyBinding():
                 raise RuntimeError(f"Binding '{name}' is not defined")
 
     def set_value(self, name: str, value: Value):
         from sonolus.script.internal.impl import validate_value
+
         self.bindings[name] = ValueBinding(validate_value(value))
 
     def delete_binding(self, name: str):
@@ -257,3 +266,27 @@ class Scope:
             else:
                 target.scope.set_binding(key, ConflictBinding())
                 continue
+
+
+def iter_contexts(context: Context):
+    seen = set()
+    queue = [context]
+    while queue:
+        current = queue.pop()
+        if current in seen:
+            continue
+        seen.add(current)
+        yield current
+        queue.extend(current.outgoing.values())
+
+
+def context_to_cfg(context: Context) -> BasicBlock:
+    blocks = {context: BasicBlock(statements=context.statements, test=context.test)}
+    for current in iter_contexts(context):
+        for condition, target in current.outgoing.items():
+            if target not in blocks:
+                blocks[target] = BasicBlock(statements=target.statements, test=target.test)
+            edge = FlowEdge(src=blocks[current], dst=blocks[target], cond=condition)
+            blocks[current].outgoing.add(edge)
+            blocks[target].incoming.add(edge)
+    return blocks[context]
