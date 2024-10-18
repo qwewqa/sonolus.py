@@ -32,52 +32,52 @@ class _Num(Value):
         return f"Num({self.data})"
 
     @classmethod
-    def is_concrete_(cls) -> bool:
+    def _is_concrete_(cls) -> bool:
         return True
 
     @classmethod
-    def size_(cls) -> int:
+    def _size_(cls) -> int:
         return 1
 
     @classmethod
-    def is_value_type_(cls) -> bool:
+    def _is_value_type_(cls) -> bool:
         return True
 
     @classmethod
-    def from_place_(cls, place: BlockPlace) -> Self:
+    def _from_place_(cls, place: BlockPlace) -> Self:
         return cls(place)
 
     @classmethod
-    def accepts_(cls, value: Value) -> bool:
+    def _accepts_(cls, value: Value) -> bool:
         return isinstance(value, Num | float | int | bool)
 
     @classmethod
-    def accept_(cls, value: Any) -> Self:
-        if not cls.accepts_(value):
+    def _accept_(cls, value: Any) -> Self:
+        if not cls._accepts_(value):
             raise ValueError(f"Cannot accept {value}")
         if isinstance(value, Num):
             return value
         return cls(value)
 
-    def is_py_(self) -> bool:
+    def _is_py_(self) -> bool:
         return not isinstance(self.data, BlockPlace)
 
-    def as_py_(self) -> Any:
-        if not self.is_py_():
+    def _as_py_(self) -> Any:
+        if not self._is_py_():
             raise ValueError("Not a python value")
         if self.data.is_integer():
             return int(self.data)
         return self.data
 
     @classmethod
-    def from_list_(cls, values: Iterable[float]) -> Self:
+    def _from_list_(cls, values: Iterable[float]) -> Self:
         (value,) = values
         return Num(value)
 
-    def to_list_(self) -> list[float]:
+    def _to_list_(self) -> list[float]:
         return [self.data]
 
-    def get_(self) -> Self:
+    def _get_(self) -> Self:
         if ctx():
             place = ctx().alloc(size=1)
             if isinstance(self.data, BlockPlace):
@@ -87,7 +87,7 @@ class _Num(Value):
         else:
             return self
 
-    def set_(self, value: Self):
+    def _set_(self, value: Self):
         if ctx():
             if not isinstance(self.data, BlockPlace):
                 raise ValueError("Cannot set a compile time constant value")
@@ -96,10 +96,10 @@ class _Num(Value):
         else:
             self.data = value.data
 
-    def copy_from_(self, value: Self):
+    def _copy_from_(self, value: Self):
         raise ValueError("Cannot assign to a number")
 
-    def copy_(self) -> Self:
+    def _copy_(self) -> Self:
         return self
 
     def ir(self):
@@ -112,11 +112,11 @@ class _Num(Value):
         return self.data
 
     def _bin_op(self, other: Self, py_fn: Callable[[float, float], float], ir_op: Op) -> Self:
-        if not Num.accepts_(other):
+        if not Num._accepts_(other):
             return NotImplemented
-        other = Num.accept_(other)
-        if self.is_py_() and other.is_py_():
-            return Num(py_fn(self.as_py_(), other.as_py_()))
+        other = Num._accept_(other)
+        if self._is_py_() and other._is_py_():
+            return Num(py_fn(self._as_py_(), other._as_py_()))
         elif ctx():
             result_place = ctx().alloc(size=1)
             ctx().add_statements(IRSet(result_place, IRPureInstr(ir_op, [self.ir(), other.ir()])))
@@ -125,8 +125,8 @@ class _Num(Value):
             raise InternalError("Unexpected call on non-comptime Num instance outside a compilation context")
 
     def _unary_op(self, py_fn: Callable[[float], float], ir_op: Op) -> Self:
-        if self.is_py_():
-            return Num(py_fn(self.as_py_()))
+        if self._is_py_():
+            return Num(py_fn(self._as_py_()))
         elif ctx():
             result_place = ctx().alloc(size=1)
             ctx().add_statements(IRSet(result_place, IRPureInstr(ir_op, [self.ir()])))

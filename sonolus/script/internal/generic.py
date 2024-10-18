@@ -11,15 +11,15 @@ def validate_type_arg(arg: Any) -> Any:
     from sonolus.script.internal.impl import validate_value
 
     arg = validate_value(arg)
-    if not arg.is_py_():
+    if not arg._is_py_():
         raise TypeError(f"Expected a compile-time constant type argument, got {arg}")
-    return arg.as_py_()
+    return arg._as_py_()
 
 
 def validate_type_spec(spec: Any) -> PartialGeneric | TypeVar | type[Value]:
     spec = validate_type_arg(spec)
     if isinstance(spec, PartialGeneric | TypeVar) or (
-        isinstance(spec, type) and issubclass(spec, Value) and spec.is_concrete_()
+        isinstance(spec, type) and issubclass(spec, Value) and spec._is_concrete_()
     ):
         return spec
     raise TypeError(f"Invalid type spec: {spec}")
@@ -27,7 +27,7 @@ def validate_type_spec(spec: Any) -> PartialGeneric | TypeVar | type[Value]:
 
 def validate_concrete_type(spec: Any) -> type[Value]:
     spec = validate_type_arg(spec)
-    if isinstance(spec, type) and issubclass(spec, Value) and spec.is_concrete_():
+    if isinstance(spec, type) and issubclass(spec, Value) and spec._is_concrete_():
         return spec
     raise TypeError(f"Expected a concrete type, got {spec}")
 
@@ -51,16 +51,16 @@ def format_type_arg(arg: Any) -> str:
 
 
 class GenericValue(Value):
-    parameterized_: ClassVar[dict[tuple[Any, ...], type[Self]]] = {}
-    type_args_: ClassVar[tuple[Any, ...] | None] = None
+    _parameterized_: ClassVar[dict[tuple[Any, ...], type[Self]]] = {}
+    _type_args_: ClassVar[tuple[Any, ...] | None] = None
     type_vars_to_args_: ClassVar[dict[TypeVar, Any] | None] = None
 
     def __init__(self):
-        if self.type_args_ is None:
+        if self._type_args_ is None:
             raise TypeError(f"Missing type arguments for {self.__class__.__name__}")
 
     @classmethod
-    def validate_type_args_(cls, args: tuple[Any, ...]) -> tuple[Any, ...]:
+    def _validate__type_args_(cls, args: tuple[Any, ...]) -> tuple[Any, ...]:
         """Validate the type arguments and return them as a tuple.
 
         This may be called with PartialGeneric or TypeVar instances inside args.
@@ -70,32 +70,32 @@ class GenericValue(Value):
         return args
 
     @classmethod
-    def is_concrete_(cls) -> bool:
-        return cls.type_args_ is not None
+    def _is_concrete_(cls) -> bool:
+        return cls._type_args_ is not None
 
     @classmethod
-    def get_type_arg_(cls, var: TypeVar) -> Any:
-        if var in cls.type_vars_to_args_:
-            return cls.type_vars_to_args_[var]
+    def _get_type_arg_(cls, var: TypeVar) -> Any:
+        if var in cls._type_vars_to_args_:
+            return cls._type_vars_to_args_[var]
         raise TypeError(f"Missing type argument for {var}")
 
     @classmethod
     def __class_getitem__(cls, args: Any) -> type[Self]:
-        if cls.type_args_ is not None:
+        if cls._type_args_ is not None:
             raise TypeError(f"Type {cls.__name__} is already parameterized")
         args = validate_type_args(args)
-        args = cls.validate_type_args_(args)
+        args = cls._validate__type_args_(args)
         if contains_incomplete_type(args):
             return PartialGeneric(cls, args)
-        if args not in cls.parameterized_:
-            cls.parameterized_[args] = cls._get_parameterized(args)
-        return cls.parameterized_[args]
+        if args not in cls._parameterized_:
+            cls._parameterized_[args] = cls._get_parameterized(args)
+        return cls._parameterized_[args]
 
     @classmethod
     def _get_parameterized(cls, args: tuple[Any, ...]) -> type[Self]:
         class Parameterized(cls):
-            type_args_ = args
-            type_vars_to_args_ = dict(zip(cls.__type_params__, args, strict=True))  # noqa: RUF012
+            _type_args_ = args
+            _type_vars_to_args_ = dict(zip(cls.__type_params__, args, strict=True))  # noqa: RUF012
 
         if args:
             Parameterized.__name__ = f"{cls.__name__}[{', '.join(format_type_arg(arg) for arg in args)}]"
@@ -141,7 +141,7 @@ def infer_and_validate_types(dst: Any, src: Any, results: dict[TypeVar, Any] | N
             if not isinstance(src, type) or not issubclass(src, dst.base):
                 raise TypeError(f"Expected type {dst.base.__name__}, got {format_type_arg(src)}")
             assert issubclass(src, GenericValue)
-            for d, s in zip(dst.args, src.type_args_, strict=True):
+            for d, s in zip(dst.args, src._type_args_, strict=True):
                 infer_and_validate_types(d, s, results)
         case _:
             if (
@@ -162,11 +162,11 @@ def accept_and_infer_types(dst: Any, val: Any, results: dict[TypeVar, Any]) -> V
             infer_and_validate_types(dst, type(val), results)
             return val
         case PartialGeneric():
-            val = dst.base.accept_(val)
+            val = dst.base._accept_(val)
             infer_and_validate_types(dst, type(val), results)
             return val
         case type():
-            return dst.accept_(val)
+            return dst._accept_(val)
         case _:
             raise TypeError(f"Expected a type, got {format_type_arg(dst)}")
 

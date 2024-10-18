@@ -104,10 +104,10 @@ class Context:
                 continue
             value = binding.value
             type_ = type(value)
-            if type_.is_value_type_():
-                target_value = type_.from_place_(header.alloc(size=type_.size_()))
+            if type_._is_value_type_():
+                target_value = type_._from_place_(header.alloc(size=type_._size_()))
                 with using_ctx(self):
-                    target_value.set_(value)
+                    target_value._set_(value)
                 header.scope.set_value(name, target_value)
                 header.loop_variables[name] = target_value
             else:
@@ -120,8 +120,8 @@ class Context:
         for name, target_value in header.loop_variables.items():
             with using_ctx(self):
                 value = header.scope.get_value(name)
-                value = type(target_value).accept_(value)
-                target_value.set_(value)
+                value = type(target_value)._accept_(value)
+                target_value._set_(value)
 
     @classmethod
     def meet(cls, contexts: list[Context]) -> Context:
@@ -208,7 +208,7 @@ class Scope:
         binding = self.get_binding(name)
         match binding:
             case ValueBinding(value):
-                # we don't need to call get_() here because set_() is never called where it could be a problem
+                # we don't need to call _get_() here because _set_() is never called where it could be a problem
                 return value
             case ConflictBinding():
                 raise RuntimeError(
@@ -247,11 +247,11 @@ class Scope:
                 target.scope.set_binding(key, ConflictBinding())
                 continue
             common_type: type[Value] = types.pop()
-            if common_type.is_value_type_():
-                target_value = common_type.from_place_(target.alloc(size=common_type.size_()))
+            if common_type._is_value_type_():
+                target_value = common_type._from_place_(target.alloc(size=common_type._size_()))
                 for inc in incoming:
                     with using_ctx(inc):
-                        target_value.set_(inc.scope.get_value(key))
+                        target_value._set_(inc.scope.get_value(key))
                 target.scope.set_value(key, target_value)
                 continue
             else:

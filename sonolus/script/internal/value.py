@@ -9,72 +9,69 @@ class Value:
     """Base class for values."""
 
     @classmethod
-    def is_concrete_(cls) -> bool:
+    def _is_concrete_(cls) -> bool:
         """Returns whether this type is concrete (i.e. can be instantiated)."""
         return False
 
     @classmethod
     @abstractmethod
-    def size_(cls) -> int:
+    def _size_(cls) -> int:
         """Returns the size of this value."""
         raise NotImplementedError
 
     @classmethod
     @abstractmethod
-    def is_value_type_(cls) -> bool:
+    def _is_value_type_(cls) -> bool:
         """Returns whether this is a value type.
 
-        If this is true, the value behaves immutably and set_ is supported.
+        If this is true, the value behaves immutably and _set_ is supported.
         """
         raise NotImplementedError
 
     @classmethod
     @abstractmethod
-    def from_place_(cls, place: BlockPlace) -> Self:
+    def _from_place_(cls, place: BlockPlace) -> Self:
         """Creates a value from a place."""
         raise NotImplementedError
 
     @classmethod
     @abstractmethod
-    def accepts_(cls, value: Any) -> bool:
+    def _accepts_(cls, value: Any) -> bool:
         """Returns whether this value can accept the given value."""
         raise NotImplementedError
 
     @classmethod
     @abstractmethod
-    def accept_(cls, value: Any) -> Self:
+    def _accept_(cls, value: Any) -> Self:
         """Accepts the given value."""
         raise NotImplementedError
 
     @abstractmethod
-    def is_py_(self) -> bool:
-        """Returns whether this value is a valid Python value.
-
-        Essentially, this returns true if to_cells_ returns a list of integers (or an empty list).
-        """
+    def _is_py_(self) -> bool:
+        """Returns whether this value is a valid Python value."""
         raise NotImplementedError
 
     @abstractmethod
-    def as_py_(self) -> Any:
+    def _as_py_(self) -> Any:
         """Returns the Python equivalent of this value.
 
-        Will fail if is_py_ returns false.
+        Will fail if _is_py_ returns false.
         """
         raise NotImplementedError
 
     @classmethod
     @abstractmethod
-    def from_list_(cls, values: Iterable[float]) -> Self:
+    def _from_list_(cls, values: Iterable[float]) -> Self:
         """Creates a value from a list of floats."""
         raise NotImplementedError
 
     @abstractmethod
-    def to_list_(self) -> list[float]:
+    def _to_list_(self) -> list[float]:
         """Converts this value to a list of floats."""
         raise NotImplementedError
 
     @abstractmethod
-    def get_(self) -> Self:
+    def _get_(self) -> Self:
         """Implements access to the value.
 
         This is used when accessing a value from a record or array (and when storing into a record).
@@ -99,7 +96,7 @@ class Value:
         raise NotImplementedError
 
     @abstractmethod
-    def set_(self, value: Self):
+    def _set_(self, value: Self):
         """Implements assignment (=).
 
         This is only supported by value types.
@@ -111,7 +108,7 @@ class Value:
         raise NotImplementedError
 
     @abstractmethod
-    def copy_from_(self, value: Self):
+    def _copy_from_(self, value: Self):
         """Implements copy assignment (@=).
 
         This is only supported by mutable reference types.
@@ -119,16 +116,9 @@ class Value:
         raise NotImplementedError
 
     @abstractmethod
-    def copy_(self) -> Self:
+    def _copy_(self) -> Self:
         """Returns a deep copy of this value."""
         raise NotImplementedError
 
     def __imatmul__(self, other):
-        return self.copy_from_(other)
-
-    # NOTE: Aug assign needs special treatment since normally something like
-    # a[x] += y or a.x += y would be equivalent to a[x] = a[x] + y or a.x = a.x + y
-    # But for reference types, we don't support set_
-    # Instead, we need to do r = (q := a[x]).__iadd__(y) or r = (q := a.x).__iadd__(y)
-    # Then check that r is q and error if not
-    # Naturally this also means that reference types don't automatically support in-place operations
+        return self._copy_from_(other)

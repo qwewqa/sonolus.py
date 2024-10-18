@@ -26,15 +26,15 @@ class Record(GenericValue):
     _constructor_signature: ClassVar[inspect.Signature]
 
     @classmethod
-    def validate_type_args_(cls, args: tuple[Any, ...]) -> tuple[Any, ...]:
+    def _validate__type_args_(cls, args: tuple[Any, ...]) -> tuple[Any, ...]:
         if cls._fields is None:
             raise TypeError("Base Record class cannot have type arguments")
-        return super().validate_type_args_(args)
+        return super()._validate__type_args_(args)
 
     def __init_subclass__(cls, **kwargs):
         super().__init_subclass__()
-        is_parameterizing = cls.type_args_ is not None and all(
-            getattr(parent, "type_args_", None) is None for parent in getmro(cls)[1:]
+        is_parameterizing = cls._type_args_ is not None and all(
+            getattr(parent, "_type_args_", None) is None for parent in getmro(cls)[1:]
         )
         if is_parameterizing:
             fields = []
@@ -45,7 +45,7 @@ class Record(GenericValue):
                 field = RecordField(generic_field.name, resolved_type, generic_field.index, offset)
                 fields.append(field)
                 setattr(cls, field.name, field)
-                offset += resolved_type.size_()
+                offset += resolved_type._size_()
             cls._fields = fields
             return
         is_inheriting_from_existing_record_class = cls._fields is not None
@@ -75,7 +75,7 @@ class Record(GenericValue):
                 )
             )
 
-        cls.parameterized_ = {}
+        cls._parameterized_ = {}
         cls._fields = fields
         cls._constructor_signature = inspect.Signature(params)
 
@@ -83,8 +83,8 @@ class Record(GenericValue):
 
         if len(getattr(cls, "__type_params__", ())) == 0:
             # Make the class behave as the parameterized version
-            cls.type_args_ = ()
-            cls.parameterized_[()] = cls
+            cls._type_args_ = ()
+            cls._parameterized_[()] = cls
 
     def __new__(cls, *args, **kwargs):
         # We override __new__ to allow changing to the parameterized version
@@ -97,15 +97,15 @@ class Record(GenericValue):
         for field in cls._fields:
             value = bound.arguments[field.name]
             value = accept_and_infer_types(field.type, value, type_vars)
-            values[field.name] = value.get_()
+            values[field.name] = value._get_()
         for type_param in cls.__type_params__:
             if type_param not in type_vars:
                 raise TypeError(f"Type parameter {type_param} is not used")
         type_args = tuple(type_vars[type_param] for type_param in cls.__type_params__)
-        if cls.type_args_ is not None:
-            if type_args != cls.type_args_:
+        if cls._type_args_ is not None:
+            if type_args != cls._type_args_:
                 raise TypeError(
-                    f"Invalid arguments for {cls.__name__}: expected type args {cls.type_args_}, got {type_args}"
+                    f"Invalid arguments for {cls.__name__}: expected type args {cls._type_args_}, got {type_args}"
                 )
             parameterized = cls
         else:
@@ -119,60 +119,60 @@ class Record(GenericValue):
         pass
 
     @classmethod
-    def size_(cls) -> int:
-        return sum(field.type.size_() for field in cls._fields)
+    def _size_(cls) -> int:
+        return sum(field.type._size_() for field in cls._fields)
 
     @classmethod
-    def is_value_type_(cls) -> bool:
+    def _is_value_type_(cls) -> bool:
         return False
 
     @classmethod
-    def from_place_(cls, place: BlockPlace) -> Self:
-        return cls(**{field.name: field.type.from_place_(place.add_offset(field.offset)) for field in cls._fields})
+    def _from_place_(cls, place: BlockPlace) -> Self:
+        return cls(**{field.name: field.type._from_place_(place.add_offset(field.offset)) for field in cls._fields})
 
     @classmethod
-    def accepts_(cls, value: Any) -> bool:
+    def _accepts_(cls, value: Any) -> bool:
         return issubclass(type(value), cls)
 
     @classmethod
-    def accept_(cls, value: Any) -> Self:
-        if not cls.accepts_(value):
+    def _accept_(cls, value: Any) -> Self:
+        if not cls._accepts_(value):
             raise TypeError(f"Cannot accept value {value} as {cls.__name__}")
         return value
 
-    def is_py_(self) -> bool:
-        return all(value.is_py_() for value in self._value.values())
+    def _is_py_(self) -> bool:
+        return all(value._is_py_() for value in self._value.values())
 
-    def as_py_(self) -> Self:
-        if not self.is_py_():
+    def _as_py_(self) -> Self:
+        if not self._is_py_():
             raise ValueError("Not a python value")
         return self
 
     @classmethod
-    def from_list_(cls, values: Iterable[float]) -> Self:
+    def _from_list_(cls, values: Iterable[float]) -> Self:
         iterator = iter(values)
-        return cls(**{field.name: field.type.from_list_(iterator) for field in cls._fields})
+        return cls(**{field.name: field.type._from_list_(iterator) for field in cls._fields})
 
-    def to_list_(self) -> list[float]:
+    def _to_list_(self) -> list[float]:
         result = []
         for field in self._fields:
-            result.extend(field.type.to_list_(self._value[field.name]))
+            result.extend(field.type._to_list_(self._value[field.name]))
         return result
 
-    def get_(self) -> Self:
+    def _get_(self) -> Self:
         return self
 
-    def set_(self, value: Self):
+    def _set_(self, value: Self):
         raise TypeError("Record does not support set_")
 
-    def copy_from_(self, value: Self):
+    def _copy_from_(self, value: Self):
         if not isinstance(value, type(self)):
             raise TypeError("Cannot copy from different type")
         for field in self._fields:
             field.__set__(self, field.__get__(value))
 
-    def copy_(self) -> Self:
-        return type(self)(**{field.name: self._value[field.name].copy_().get_() for field in self._fields})
+    def _copy_(self) -> Self:
+        return type(self)(**{field.name: self._value[field.name]._copy_()._get_() for field in self._fields})
 
     def __str__(self):
         return (
@@ -183,7 +183,7 @@ class Record(GenericValue):
     def __eq__(self, other):
         if not isinstance(other, type(self)):
             return False
-        result: Num = Num.accept_(True)
+        result: Num = Num._accept_(True)
         for field in self._fields:
             result = result.and_(field.__get__(self) == field.__get__(other))
         return result
@@ -192,7 +192,7 @@ class Record(GenericValue):
     def __ne__(self, other):
         if not isinstance(other, type(self)):
             return True
-        result: Num = Num.accept_(False)
+        result: Num = Num._accept_(False)
         for field in self._fields:
             result = result.or_(field.__get__(self) != field.__get__(other))
         return result
@@ -211,18 +211,18 @@ class RecordField:
     def __get__(self, instance: Record | None, owner=None):
         if instance is None:
             return self
-        result = instance._value[self.name].get_()
+        result = instance._value[self.name]._get_()
         if ctx():
             return result
         else:
-            return result.as_py_()
+            return result._as_py_()
 
     def __set__(self, instance: Record, value):
-        value = self.type.accept_(value)
-        if self.type.is_value_type_():
-            instance._value[self.name].set_(value)
+        value = self.type._accept_(value)
+        if self.type._is_value_type_():
+            instance._value[self.name]._set_(value)
         else:
-            instance._value[self.name].copy_from_(value)
+            instance._value[self.name]._copy_from_(value)
 
 
 ops_to_inplace_ops = {
@@ -254,7 +254,7 @@ def _make_inplace_op(op: str):
     @self_impl
     def inplace_op(self, other):
         _compiler_internal_ = True
-        self.copy_from_(getattr(self, op)(other))
+        self._copy_from_(getattr(self, op)(other))
         return self
 
     return inplace_op
