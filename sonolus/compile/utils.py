@@ -38,7 +38,7 @@ class ScanWrites(ast.NodeVisitor):
             self.writes.append(node.id)
 
 
-def scan_writes(node: ast.FunctionDef) -> list[str]:
+def scan_writes(node: ast.AST) -> set[str]:
     visitor = ScanWrites()
     visitor.visit(node)
-    return visitor.writes
+    return set(visitor.writes)

@@ -77,22 +77,6 @@ class _Comptime[T, V](GenericValue):
     def _copy_(self) -> Self:
         return self
 
-    def __getitem__(self, item):
-        item = validate_value(item)
-        match self.value():
-            case tuple():
-                if not item._is_py_():
-                    raise TypeError("Tuple index must be a compile time constant")
-                index = item._as_py_()
-                if isinstance(index, float) and not index.is_integer():
-                    raise TypeError("Tuple index must be an integer")
-                index = int(index)
-                return self.value()[index]
-            case Dict():
-                if not item._is_py_():
-                    raise TypeError("Dict key must be a compile time constant")
-                return self.value()[item._as_py_()]
-
     @classmethod
     def accept_unchecked(cls, value: Any) -> Self:
         args = (type(value), value)

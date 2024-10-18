@@ -40,7 +40,7 @@ class Record(GenericValue):
             fields = []
             offset = 0
             for generic_field in cls._fields:
-                resolved_type = validate_and_resolve_type(generic_field.type, cls.type_vars_to_args_)
+                resolved_type = validate_and_resolve_type(generic_field.type, cls._type_vars_to_args_)
                 resolved_type = validate_concrete_type(resolved_type)
                 field = RecordField(generic_field.name, resolved_type, generic_field.index, offset)
                 fields.append(field)
@@ -84,6 +84,7 @@ class Record(GenericValue):
         if len(getattr(cls, "__type_params__", ())) == 0:
             # Make the class behave as the parameterized version
             cls._type_args_ = ()
+            cls.type_vars_to_args_ = {}
             cls._parameterized_[()] = cls
 
     def __new__(cls, *args, **kwargs):

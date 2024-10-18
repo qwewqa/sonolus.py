@@ -55,7 +55,7 @@ def traverse_preorder(block: BasicBlock) -> Iterator[BasicBlock]:
 
 def cfg_to_mermaid(block: BasicBlock):
     def pre(s: str):
-        return '"<pre>' + s.replace("\n", "<br/>") + '</pre>"'
+        return '"<pre style=\'text-align: left;\'>' + s.replace("\n", "<br/>") + '</pre>"'
 
     def fmt(nodes):
         if nodes:

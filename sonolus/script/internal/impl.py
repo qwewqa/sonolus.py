@@ -56,6 +56,17 @@ class Dict(Mapping):  # pseudo-dict since regular dict is not hashable
         return f"{type(self).__name__}({self.data!r})"
 
 
+class Tuple(tuple):  # pseudo-tuple to allow identity comparison
+    def __eq__(self, other):
+        return self is other
+
+    def __hash__(self):
+        return id(self)
+
+    def __repr__(self):
+        return f"{type(self).__name__}({super().__repr__()})"
+
+
 def validate_value(value: Any) -> Value:
     match value:
         case Value():
@@ -69,7 +80,7 @@ def validate_value(value: Any) -> Value:
         case int() | float() | bool():
             return Num._accept_(value)
         case tuple():
-            return Comptime.accept_unchecked(tuple(validate_value(v) for v in value))
+            return Comptime.accept_unchecked(Tuple(validate_value(v) for v in value))
         case dict():
             return Comptime.accept_unchecked(
                 Dict((validate_value(k)._as_py_(), validate_value(v)) for k, v in value.items())

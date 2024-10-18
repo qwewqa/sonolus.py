@@ -52,10 +52,10 @@ class ArrayLike[T](Collection):
     def reversed(self) -> ArrayLike[T]:
         return ArrayReverser(self)
 
-    def iterator(self) -> SonolusIterator[T]:
+    def iter(self) -> SonolusIterator[T]:
         return self.__iter__()  # noqa: PLC2801
 
-    def enumerator(self, start: Num = 0) -> SonolusIterator[T]:
+    def enumerate(self, start: Num = 0) -> SonolusIterator[T]:
         return ArrayEnumerator(0, start, self)
 
     def index_of(self, value: T) -> Num:

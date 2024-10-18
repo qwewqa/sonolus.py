@@ -31,6 +31,7 @@ class Array[T: Value, Size](GenericValue, ArrayLike[T]):
         raise TypeError("Array cannot be directly instantiated, use Array.of or alloc instead")
 
     @classmethod
+    @self_impl
     def of[R](cls, *args: R) -> Array[R, Size]:
         if cls._type_args_ is None:
             values = [validate_value(arg) for arg in args]

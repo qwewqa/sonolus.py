@@ -8,11 +8,12 @@ from types import FunctionType, MethodType
 from typing import Any, Never, Mapping
 
 from sonolus.compile.excepthook import install_excepthook
-from sonolus.compile.utils import get_function
+from sonolus.compile.utils import get_function, scan_writes
 from sonolus.script.internal.context import Context, Scope, ValueBinding, ctx, set_ctx
 from sonolus.script.internal.error import CompilationError
-from sonolus.script.internal.impl import validate_value
+from sonolus.script.internal.impl import validate_value, Tuple, Dict
 from sonolus.script.internal.value import Value
+from sonolus.script.iterator import SonolusIterator
 from sonolus.script.num import Num
 from sonolus.script.record import RecordField
 
@@ -46,6 +47,7 @@ def generate_fn_impl(fn: Callable):
 def eval_fn(fn: Callable, /, *args, **kwargs):
     source_file, node = get_function(fn)
     bound_args = inspect.signature(fn).bind(*args, **kwargs)
+    bound_args.apply_defaults()
     closurevars = inspect.getclosurevars(fn)
     global_vars = {**closurevars.nonlocals, **closurevars.globals, **closurevars.builtins}
     return Visitor(source_file, bound_args, global_vars).run(node)
@@ -223,6 +225,132 @@ class Visitor(ast.NodeVisitor):
         value = self.visit(node.value)
         self.handle_assign(node.target, value)
 
+    def visit_For(self, node):
+        iterator = iter(self.visit(node.iter))
+        if not isinstance(iterator, SonolusIterator):
+            raise ValueError("Unsupported iterator")
+        writes = scan_writes(node)
+        header_ctx = ctx().prepare_loop_header(writes)
+        self.loop_head_ctxs.append(header_ctx)
+        self.break_ctxs.append([])
+        set_ctx(header_ctx)
+        has_next = iterator.has_next()
+        if not isinstance(has_next, Num):
+            raise ValueError("Iterator must return a boolean")
+        ctx().test = has_next.ir()
+        body_ctx = ctx().branch(None)
+        else_ctx = ctx().branch(0)
+
+        set_ctx(body_ctx)
+        self.handle_assign(node.target, self.handle_call(node, iterator.next))
+        for stmt in node.body:
+            self.visit(stmt)
+        ctx().branch_to_loop_header(header_ctx)
+
+        set_ctx(else_ctx)
+        for stmt in node.orelse:
+            self.visit(stmt)
+        else_end_ctx = ctx()
+
+        break_ctxs = self.break_ctxs.pop()
+        after_ctx = Context.meet([else_end_ctx, *break_ctxs])
+        set_ctx(after_ctx)
+
+    def visit_While(self, node):
+        writes = scan_writes(node)
+        header_ctx = ctx().prepare_loop_header(writes)
+        self.loop_head_ctxs.append(header_ctx)
+        self.break_ctxs.append([])
+        set_ctx(header_ctx)
+        test = self.visit(node.test)
+        if not isinstance(test, Num):
+            raise ValueError("Condition must be of type Num")
+        ctx().test = test.ir()
+        body_ctx = ctx().branch(None)
+        else_ctx = ctx().branch(0)
+
+        set_ctx(body_ctx)
+        for stmt in node.body:
+            self.visit(stmt)
+        ctx().branch_to_loop_header(header_ctx)
+
+        set_ctx(else_ctx)
+        for stmt in node.orelse:
+            self.visit(stmt)
+        else_end_ctx = ctx()
+
+        break_ctxs = self.break_ctxs.pop()
+        after_ctx = Context.meet([else_end_ctx, *break_ctxs])
+        set_ctx(after_ctx)
+
+    def visit_If(self, node):
+        test = self.visit(node.test)
+        if not isinstance(test, Num):
+            raise ValueError("Condition must be of type Num")
+        ctx_init = ctx()
+        ctx_init.test = test.ir()
+        true_ctx = ctx().branch(None)
+        false_ctx = ctx().branch(0)
+
+        set_ctx(true_ctx)
+        for stmt in node.body:
+            self.visit(stmt)
+        true_end_ctx = ctx()
+
+        set_ctx(false_ctx)
+        for stmt in node.orelse:
+            self.visit(stmt)
+        false_end_ctx = ctx()
+
+        set_ctx(Context.meet([true_end_ctx, false_end_ctx]))
+
+    def visit_With(self, node):
+        raise NotImplementedError("With statements are not supported")
+
+    def visit_AsyncWith(self, node):
+        raise NotImplementedError("Async with statements are not supported")
+
+    def visit_Match(self, node):
+        raise NotImplementedError("Match statements are not supported")
+
+    def visit_Raise(self, node):
+        raise NotImplementedError("Raise statements are not supported")
+
+    def visit_Try(self, node):
+        raise NotImplementedError("Try statements are not supported")
+
+    def visit_TryStar(self, node):
+        raise NotImplementedError("Try* statements are not supported")
+
+    def visit_Assert(self, node):
+        raise NotImplementedError("Assert statements are not supported")
+
+    def visit_Import(self, node):
+        raise NotImplementedError("Import statements are not supported")
+
+    def visit_ImportFrom(self, node):
+        raise NotImplementedError("Import statements are not supported")
+
+    def visit_Global(self, node):
+        raise NotImplementedError("Global statements are not supported")
+
+    def visit_Nonlocal(self, node):
+        raise NotImplementedError("Nonlocal statements are not supported")
+
+    def visit_Expr(self, node):
+        return self.visit(node.value)
+
+    def visit_Pass(self, node):
+        pass
+
+    def visit_Break(self, node):
+        self.break_ctxs[-1].append(ctx())
+        set_ctx(ctx().into_dead())
+
+    def visit_Continue(self, node):
+        ctx().branch_to_loop_header(self.loop_head_ctxs[-1])
+        set_ctx(ctx().into_dead())
+
     def visit_BoolOp(self, node) -> Value:
         match node.op:
             case ast.And():
@@ -322,6 +450,8 @@ class Visitor(ast.NodeVisitor):
         l_val = self.visit(node.left)
         false_ctxs = []
         for op, rhs in zip(node.ops, node.comparators, strict=True):
+            if isinstance(l_val, Tuple | Dict):
+                raise ValueError("Comparison is not supported for tuples or dictionaries")
             r_val = self.visit(rhs)
             inverted = isinstance(op, ast.NotEq)
             op_name = comp_ops[type(op)]
@@ -384,10 +514,27 @@ class Visitor(ast.NodeVisitor):
     def visit_Attribute(self, node):
         return self.handle_getattr(node, self.visit(node.value), node.attr)
 
+    def visit_Subscript(self, node):
+        value = self.visit(node.value)
+        slice_value = self.visit(node.slice)
+        return self.handle_getitem(node, value, slice_value)
+
+    def visit_Starred(self, node):
+        raise NotImplementedError("Starred expressions are not supported")
+
     def visit_Name(self, node):
         if node.id in self.globals:
             return self.globals[node.id]
         return ctx().scope.get_value(node.id)
+
+    def visit_List(self, node):
+        raise NotImplementedError("List literals are not supported")
+
+    def visit_Tuple(self, node):
+        return validate_value(tuple(self.visit(elt) for elt in node.elts))
+
+    def visit_Slice(self, node):
+        raise NotImplementedError("Slices are not supported")
 
     def handle_assign(self, target: ast.stmt | ast.expr, value: Value):
         match target:
@@ -499,16 +646,34 @@ class Visitor(ast.NodeVisitor):
             return validate_value(self.execute_at_node(node, lambda: validate_value(compile_and_call(fn, *args, **kwargs))))
 
     def handle_getitem(self, node: ast.stmt | ast.expr, target: Value, key: Value) -> Value:
-        if hasattr(target, "__getitem__"):
-            return self.handle_call(node, target.__getitem__, key)
-        else:
-            self.raise_exception_at_node(node, TypeError(f"Cannot get items on {type(target).__name__}"))
+        with self.reporting_errors_at_node(node):
+            if target._is_py_():
+                target = target._as_py_()
+                if key._is_py_():
+                    return validate_value(target[key._as_py_()])
+                if isinstance(target, type):
+                    return validate_value(getattr(target, key._as_py_()))
+                if isinstance(target, Value) and hasattr(target, "__getitem__"):
+                    return self.handle_call(node, target.__getitem__, key)
+                raise TypeError(f"Cannot get items on {type(target).__name__}")
+            else:
+                if isinstance(target, Value) and hasattr(target, "__getitem__"):
+                    return self.handle_call(node, target.__getitem__, key)
+                raise TypeError(f"Cannot get items on {type(target).__name__}")
 
     def handle_setitem(self, node: ast.stmt | ast.expr, target: Value, key: Value, value: Value):
-        if hasattr(target, "__setitem__"):
-            return self.handle_call(node, target.__setitem__, key, value)
-        else:
-            self.raise_exception_at_node(node, TypeError(f"Cannot set items on {type(target).__name__}"))
+        with self.reporting_errors_at_node(node):
+            if target._is_py_():
+                target = target._as_py_()
+                if key._is_py_():
+                    target[key._as_py_()] = value._as_py_()
+                if isinstance(target, Value) and hasattr(target, "__setitem__"):
+                    return self.handle_call(node, target.__setitem__, key, value)
+                raise TypeError(f"Cannot set items on {type(target).__name__}")
+            else:
+                if isinstance(target, Value) and hasattr(target, "__setitem__"):
+                    return self.handle_call(node, target.__setitem__, key, value)
+                raise TypeError(f"Cannot set items on {type(target).__name__}")
 
     def is_not_implemented(self, value):
         value = validate_value(value)

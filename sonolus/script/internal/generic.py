@@ -53,7 +53,7 @@ def format_type_arg(arg: Any) -> str:
 class GenericValue(Value):
     _parameterized_: ClassVar[dict[tuple[Any, ...], type[Self]]] = {}
     _type_args_: ClassVar[tuple[Any, ...] | None] = None
-    type_vars_to_args_: ClassVar[dict[TypeVar, Any] | None] = None
+    _type_vars_to_args_: ClassVar[dict[TypeVar, Any] | None] = None
 
     def __init__(self):
         if self._type_args_ is None:

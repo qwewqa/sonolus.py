@@ -64,7 +64,7 @@ class _Num(Value):
 
     def _as_py_(self) -> Any:
         if not self._is_py_():
-            raise ValueError("Not a python value")
+            raise ValueError("Not a compile time constant Num")
         if self.data.is_integer():
             return int(self.data)
         return self.data
@@ -139,7 +139,9 @@ class _Num(Value):
         return self._bin_op(other, operator.eq, Op.Equal)
 
     def __hash__(self):
-        raise TypeError("unhashable type: 'Num'")
+        if self._is_py_():
+            return hash(self._as_py_())
+        raise ValueError("Cannot hash non compile time constant Num")
 
     @self_impl
     def __ne__(self, other) -> Self:

@@ -63,7 +63,7 @@ class Context:
             return BlockPlace(TempBlock(name or "e", 0), 0)
         name = name or ("v" if size == 1 else "a")
         num = self._get_alloc_number(name)
-        return BlockPlace(TempBlock(f"{name}{num}", 1), 0)
+        return BlockPlace(TempBlock(f"{name}{num}", size), 0)
 
     def _get_alloc_number(self, name: str) -> int:
         if name not in self.used_names:
@@ -132,9 +132,11 @@ class Context:
 
     @classmethod
     def meet(cls, contexts: list[Context]) -> Context:
-        contexts = [context for context in contexts if context.live]
         if not contexts:
             raise RuntimeError("Cannot meet empty list of contexts")
+        if not any(context.live for context in contexts):
+            return contexts[0].into_dead()
+        contexts = [context for context in contexts if context.live]
         assert not any(context.outgoing for context in contexts)
         assert all(len(context.outgoing) == 0 for context in contexts)
         target = contexts[0].copy_with_scope(Scope())
