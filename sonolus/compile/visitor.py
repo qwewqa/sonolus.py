@@ -8,16 +8,19 @@ from typing import Callable, Any, Never
 from sonolus.compile.excepthook import install_excepthook
 from sonolus.compile.utils import get_function
 from sonolus.script.comptime import Comptime
-from sonolus.script.internal.context import set_ctx, ctx, Scope, Context
+from sonolus.script.internal.context import set_ctx, ctx, Scope, Context, ValueBinding, ConflictBinding
 from sonolus.script.internal.error import CompilationError
 from sonolus.script.internal.impl import validate_value
 from sonolus.script.internal.value import Value
+from sonolus.script.num import Num
 from sonolus.script.record import RecordField
 
 _compiler_internal_ = True
 
 
 def compile_and_call[** P, R](fn: Callable[P, R], /, *args: P.args, **kwargs: P.kwargs) -> R:
+    if not ctx():
+        return fn(*args, **kwargs)
     return generate_fn_impl(fn)(*args, **kwargs)
 
 
@@ -130,15 +133,27 @@ class Visitor(ast.NodeVisitor):
         self.loop_head_ctxs = []
         self.break_ctxs = []
 
-    def run(self, node: ast.FunctionDef):
+    def run(self, node):
         before_ctx = ctx()
         set_ctx(before_ctx.branch_with_scope(None, Scope()))
         for name, value in self.bound_args.arguments.items():
             ctx().scope.set_value(name, validate_value(value))
-        ctx().scope.set_value("$return", validate_value(None))
-        self.visit(node)
-        after_ctx = ctx()
+        match node:
+            case ast.FunctionDef(body=body):
+                ctx().scope.set_value("$return", validate_value(None))
+                for stmt in body:
+                    self.visit(stmt)
+            case ast.Lambda(body=body):
+                result = self.visit(body)
+                ctx().scope.set_value("$return", result)
+            case _:
+                raise NotImplementedError("Unsupported syntax")
+        after_ctx = Context.meet([*self.return_ctxs, ctx()])
+        result_binding = after_ctx.scope.get_binding("$return")
+        if not isinstance(result_binding, ValueBinding):
+            raise ValueError("Function has conflicting return values")
         set_ctx(after_ctx.branch_with_scope(None, before_ctx.scope.copy()))
+        return result_binding.value
 
     def visit_FunctionDef(self, node):
         raise NotImplementedError("Nested functions are not supported")
@@ -159,23 +174,213 @@ class Visitor(ast.NodeVisitor):
         raise NotImplementedError("Delete statements are not supported")
 
     def visit_Assign(self, node):
-        pass
+        value = self.visit(node.value)
+        for target in node.targets:
+            self.handle_assign(target, value)
 
-    def handle_Assign(self, target: ast.AST, value: Value):
+    def visit_TypeAlias(self, node):
+        raise NotImplementedError("Type aliases are not supported")
+
+    def visit_AugAssign(self, node):
+        lhs_value = self.visit(node.target)
+        rhs_value = self.visit(node.value)
+        inplace_fn_name = inplace_ops[type(node.op)]
+        regular_fn_name = bin_ops[type(node.op)]
+        right_fn_name = rbin_ops[type(node.op)]
+        if hasattr(lhs_value, inplace_fn_name):
+            result = self.handle_call(node, getattr(lhs_value, inplace_fn_name), rhs_value)
+            if not self.is_not_implemented(result):
+                if result is not lhs_value:
+                    raise ValueError("Inplace operation must return the same object")
+                # Skip the actual assignment because the inplace operation already did the job, as an optimization
+                # There could be side effects of assignment, but that's atypical
+                return
+        if hasattr(lhs_value, regular_fn_name):
+            result = self.handle_call(node, getattr(lhs_value, regular_fn_name), rhs_value)
+            if not self.is_not_implemented(result):
+                self.handle_assign(node.target, result)
+                return
+        if hasattr(rhs_value, right_fn_name):
+            result = self.handle_call(node, getattr(rhs_value, right_fn_name), lhs_value)
+            if not self.is_not_implemented(result):
+                self.handle_assign(node.target, result)
+                return
+        raise NotImplementedError("Unsupported augmented assignment")
+
+    def visit_AnnAssign(self, node):
+        value = self.visit(node.value)
+        self.handle_assign(node.target, value)
+
+    def visit_BoolOp(self, node) -> Value:
+        match node.op:
+            case ast.And():
+                handler = self.handle_and
+            case ast.Or():
+                handler = self.handle_or
+            case _:
+                raise NotImplementedError(f"Unsupported bool operator {node.op}")
+
+        assert len(node.values) > 1
+        initial, *rest = node.values
+        acc = self.visit(initial)
+        for value in rest:
+            acc = handler(acc, value)
+        return acc
+
+    def visit_NamedExpr(self, node):
+        value = self.visit(node.value)
+        self.handle_assign(node.target, value)
+        return value
+
+    def visit_BinOp(self, node):
+        lhs = self.visit(node.left)
+        rhs = self.visit(node.right)
+        op = bin_ops[type(node.op)]
+        if hasattr(lhs, op):
+            result = self.handle_call(node, getattr(lhs, op), rhs)
+            if not self.is_not_implemented(result):
+                return result
+        if hasattr(rhs, rbin_ops[type(node.op)]):
+            result = self.handle_call(node, getattr(rhs, rbin_ops[type(node.op)]), lhs)
+            if not self.is_not_implemented(result):
+                return result
+        raise NotImplementedError(f"Unsupported operand types for binary operator {node.op}")
+
+    def visit_UnaryOp(self, node):
+        operand = self.visit(node.operand)
+        op = unary_ops[type(node.op)]
+        if hasattr(operand, op):
+            return self.handle_call(node, getattr(operand, op))
+        raise NotImplementedError(f"Unsupported operand type for unary operator {node.op}")
+
+    def visit_Lambda(self, node):
+        raise NotImplementedError("Lambda functions are not supported")
+
+    def visit_IfExp(self, node):
+        test = self.visit(node.test)
+        if not isinstance(test, Num):
+            raise ValueError("Condition must be of type Num")
+        res_name = self.new_name("ifexp")
+        ctx_init = ctx()
+        ctx_init.test = test.ir()
+
+        set_ctx(ctx_init.branch(None))
+        true_value = self.visit(node.body)
+        ctx().scope.set_value(res_name, true_value)
+        ctx_true = ctx()
+
+        set_ctx(ctx_init.branch(0))
+        false_value = self.visit(node.orelse)
+        ctx().scope.set_value(res_name, false_value)
+        ctx_false = ctx()
+
+        set_ctx(Context.meet([ctx_true, ctx_false]))
+        return ctx().scope.get_value(res_name)
+
+    def visit_Dict(self, node):
+        return validate_value({self.visit(k): self.visit(v) for k, v in zip(node.keys, node.values, strict=True)})
+
+    def visit_Set(self, node):
+        raise NotImplementedError("Set literals are not supported")
+
+    def visit_ListComp(self, node):
+        raise NotImplementedError("List comprehensions are not supported")
+
+    def visit_SetComp(self, node):
+        raise NotImplementedError("Set comprehensions are not supported")
+
+    def visit_DictComp(self, node):
+        raise NotImplementedError("Dict comprehensions are not supported")
+
+    def visit_GeneratorExp(self, node):
+        raise NotImplementedError("Generator expressions are not supported")
+
+    def visit_Await(self, node):
+        raise NotImplementedError("Await expressions are not supported")
+
+    def visit_Yield(self, node):
+        raise NotImplementedError("Yield expressions are not supported")
+
+    def visit_YieldFrom(self, node):
+        raise NotImplementedError("Yield from expressions are not supported")
+
+    # TODO: Compare
+
+    def handle_assign(self, target: ast.stmt | ast.expr, value: Value):
         match target:
             case ast.Name(id=name):
                 ctx().scope.set_value(name, value)
             case ast.Attribute(value=attr_value, attr=attr):
                 attr_value = self.visit(attr_value)
-                attr_value.set_attr(attr, value)
-            case ast.Subscript(value=subs_value, slice=subs_slice):
-                subs_value = self.visit(subs_value)
-                subs_slice = self.visit(subs_slice)
-                subs_value.set_item(subs_slice, value)
+                self.handle_setattr(target, attr_value, attr, value)
+            case ast.Subscript(value=sub_value, slice=slice):
+                sub_value = self.visit(sub_value)
+                slice = self.visit(slice)
+                self.handle_setitem(target, sub_value, slice, value)
+            case ast.Tuple(elts=elts) | ast.List(elts=elts):
+                if not value._is_py_():
+                    raise NotImplementedError("Unpacking assignment is only supported for tuples")
+                values = value._as_py_()
+                if not isinstance(values, tuple):
+                    raise NotImplementedError("Unpacking assignment is only supported for tuples")
+                if len(elts) != len(values):
+                    raise ValueError("Unpacking assignment requires the same number of elements")
+                for elt, value in zip(elts, values):
+                    self.handle_assign(elt, validate_value(value))
+            case ast.Starred():
+                raise NotImplementedError("Starred assignment is not supported")
             case _:
-                raise NotImplementedError(f"Unsupported assignment target {target!r}")
+                raise NotImplementedError("Unsupported assignment target")
 
-    def handle_getattr(self, node: ast.stmt, target: Value, key: str) -> Value:
+    def handle_and(self, l_val: Value, r_expr: ast.expr) -> Value:
+        ctx_init = ctx()
+        if not isinstance(l_val, Num):
+            raise ValueError("Operands of 'and' must be of type Num")
+        ctx_init.test = l_val.ir()
+        res_name = self.new_name("and")
+
+        set_ctx(ctx_init.branch(None))
+        r_val = self.visit(r_expr)
+        if not isinstance(r_val, Num):
+            raise ValueError("Operands of 'and' must be of type Num")
+        ctx().scope.set_value(res_name, r_val)
+        ctx_true = ctx()
+
+        set_ctx(ctx_init.branch(0))
+        ctx().scope.set_value(res_name, Num._accept_(0))
+        ctx_false = ctx()
+
+        set_ctx(Context.meet([ctx_true, ctx_false]))
+        return ctx().scope.get_value(res_name)
+
+    def handle_or(self, l_val: Value, r_expr: ast.expr) -> Value:
+        ctx_init = ctx()
+        if not isinstance(l_val, Num):
+            raise ValueError("Operands of 'or' must be of type Num")
+        ctx_init.test = l_val.ir()
+        res_name = self.new_name("or")
+
+        set_ctx(ctx_init.branch(None))
+        ctx().scope.set_value(res_name, l_val)
+        ctx_true = ctx()
+
+        set_ctx(ctx_init.branch(0))
+        r_val = self.visit(r_expr)
+        if not isinstance(r_val, Num):
+            raise ValueError("Operands of 'or' must be of type Num")
+        ctx().scope.set_value(res_name, r_val)
+        ctx_false = ctx()
+
+        set_ctx(Context.meet([ctx_true, ctx_false]))
+        return ctx().scope.get_value(res_name)
+
+    def generic_visit(self, node):
+        if isinstance(node, ast.stmt | ast.expr):
+            with self.reporting_errors_at_node(node):
+                raise NotImplementedError(f"Unsupported syntax: {type(node).__name__}")
+        raise NotImplementedError(f"Unsupported syntax: {type(node).__name__}")
+
+    def handle_getattr(self, node: ast.stmt | ast.expr, target: Value, key: str) -> Value:
         with self.reporting_errors_at_node(node):
             descriptor = getattr(type(target), key, None)
             match descriptor:
@@ -186,7 +391,7 @@ class Visitor(ast.NodeVisitor):
                 case _:
                     raise TypeError(f"Unsupported field descriptor {descriptor!r}")
 
-    def handle_setattr(self, node: ast.stmt, target: Value, key: str, value: Value):
+    def handle_setattr(self, node: ast.stmt | ast.expr, target: Value, key: str, value: Value):
         with self.reporting_errors_at_node(node):
             descriptor = getattr(type(target), key, None)
             match descriptor:
@@ -199,20 +404,31 @@ class Visitor(ast.NodeVisitor):
                 case _:
                     raise TypeError(f"Unsupported field descriptor {descriptor!r}")
 
-    def handle_call[** P, R](self, node: ast.stmt, fn: Callable[P, R], /, *args: P.args, **kwargs: P.kwargs) -> R:
+    def handle_call[** P, R](self, node: ast.stmt | ast.expr, fn: Callable[P, R], /, *args: P.args,
+                             **kwargs: P.kwargs) -> R:
         """Handles a call to the given callable."""
         if isinstance(fn, Comptime) and isinstance(fn.value(), type):
             return self.execute_at_node(node, fn.value(), *args, **kwargs)
         else:
             return self.execute_at_node(node, lambda: validate_value(ctx().call(fn, *args, **kwargs)))
 
-    def handle_setitem(self, node: ast.stmt, target: Value, key: Value, value: Value):
+    def handle_getitem(self, node: ast.stmt | ast.expr, target: Value, key: Value) -> Value:
+        if hasattr(target, "__getitem__"):
+            return self.handle_call(node, target.__getitem__, key)
+        else:
+            self.raise_exception_at_node(node, TypeError(f"Cannot get items on {type(target).__name__}"))
+
+    def handle_setitem(self, node: ast.stmt | ast.expr, target: Value, key: Value, value: Value):
         if hasattr(target, "__setitem__"):
             return self.handle_call(node, target.__setitem__, key, value)
         else:
             self.raise_exception_at_node(node, TypeError(f"Cannot set items on {type(target).__name__}"))
 
-    def raise_exception_at_node(self, node: ast.stmt, cause: Exception) -> Never:
+    def is_not_implemented(self, value):
+        value = validate_value(value)
+        return value._is_py_() and value._as_py_() is NotImplemented
+
+    def raise_exception_at_node(self, node: ast.stmt | ast.expr, cause: Exception) -> Never:
         """Throws a compilation error at the given node."""
 
         def thrower() -> Never:
@@ -220,7 +436,8 @@ class Visitor(ast.NodeVisitor):
 
         self.execute_at_node(node, thrower)
 
-    def execute_at_node[** P, R](self, node: ast.stmt, fn: Callable[P, R], /, *args: P.args, **kwargs: P.kwargs) -> R:
+    def execute_at_node[** P, R](self, node: ast.stmt | ast.expr, fn: Callable[P, R], /, *args: P.args,
+                                 **kwargs: P.kwargs) -> R:
         """Executes the given function at the given node for a better traceback."""
         expr = ast.Expression(
             body=ast.Call(
@@ -240,7 +457,7 @@ class Visitor(ast.NodeVisitor):
         )
 
     @contextmanager
-    def reporting_errors_at_node(self, node: ast.AST):
+    def reporting_errors_at_node(self, node: ast.stmt | ast.expr):
         try:
             yield
         except CompilationError as e:

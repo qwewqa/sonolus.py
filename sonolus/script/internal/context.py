@@ -129,7 +129,7 @@ class Context:
         if not contexts:
             raise RuntimeError("Cannot meet empty list of contexts")
         assert not any(context.outgoing for context in contexts)
-        assert all(len(context.outgoing) == 1 for context in contexts)
+        assert all(len(context.outgoing) == 0 for context in contexts)
         target = contexts[0].copy_with_scope(Scope())
         Scope.apply_merge(target, contexts)
         for context in contexts:
@@ -230,7 +230,7 @@ class Scope:
     def apply_merge(cls, target: Context, incoming: list[Context]):
         if not incoming:
             return
-        assert all(len(inc.outgoing) == 1 for inc in incoming)
+        assert all(len(inc.outgoing) == 0 for inc in incoming)
         sources = [context.scope for context in incoming]
         keys = {key for source in sources for key in source.bindings}
         for key in keys:
