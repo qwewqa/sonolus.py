@@ -79,6 +79,8 @@ class Record(GenericValue):
         cls._fields = fields
         cls._constructor_signature = inspect.Signature(params)
 
+        _add_inplace_ops(cls)
+
         if len(getattr(cls, "__type_params__", ())) == 0:
             # Make the class behave as the parameterized version
             cls.type_args_ = ()
@@ -221,3 +223,38 @@ class RecordField:
             instance._value[self.name].set_(value)
         else:
             instance._value[self.name].copy_from_(value)
+
+
+ops_to_inplace_ops = {
+    "__add__": "__iadd__",
+    "__sub__": "__isub__",
+    "__mul__": "__imul__",
+    "__truediv__": "__itruediv__",
+    "__floordiv__": "__ifloordiv__",
+    "__mod__": "__imod__",
+    "__pow__": "__ipow__",
+    "__lshift__": "__ilshift__",
+    "__rshift__": "__irshift__",
+    "__or__": "__ior__",
+    "__xor__": "__ixor__",
+    "__and__": "__iand__",
+    "__matmul__": "__imatmul__",
+}
+
+
+def _add_inplace_ops(cls):
+    for op, inplace_op in ops_to_inplace_ops.items():
+        if hasattr(cls, op):
+            if not hasattr(cls, inplace_op):
+                setattr(cls, inplace_op, _make_inplace_op(op))
+    return cls
+
+
+def _make_inplace_op(op: str):
+    @self_impl
+    def inplace_op(self, other):
+        _compiler_internal_ = True
+        self.copy_from_(getattr(self, op)(other))
+        return self
+
+    return inplace_op

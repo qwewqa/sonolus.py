@@ -22,7 +22,7 @@ def self_impl[T: Callable]() -> Callable[[T], T]: ...
 def self_impl(fn=None):
     # noinspection PyShadowingNames
     def decorator(fn):
-        fn.self_impl = True
+        fn.self_impl_ = True
         return fn
 
     if fn is None:

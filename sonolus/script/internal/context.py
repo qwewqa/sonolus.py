@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+from collections.abc import Callable
 from contextlib import contextmanager
 from contextvars import ContextVar
 from dataclasses import dataclass
@@ -9,6 +10,8 @@ from sonolus.backend.blocks import BlockData
 from sonolus.backend.ir import IRConst, IRStmt
 from sonolus.backend.place import Block, BlockPlace, TempBlock
 from sonolus.script.internal.value import Value
+
+_compiler_internal_ = True
 
 context_var = ContextVar("context_var", default=None)
 
@@ -76,7 +79,13 @@ class Context:
         self.outgoing[condition] = result
         return result
 
-    def branch_dead(self):
+    def branch_with_scope(self, condition: float | None, scope: Scope):
+        assert condition not in self.outgoing
+        result = self.copy_with_scope(scope)
+        self.outgoing[condition] = result
+        return result
+
+    def into_dead(self):
         """Create a new context for code that is unreachable, like after a return statement."""
         result = self.copy_with_scope(self.scope.copy())
         result.live = False
@@ -114,7 +123,18 @@ class Context:
                 value = type(target_value).accept_(value)
                 target_value.set_(value)
 
-    # TODO: calls
+    @classmethod
+    def meet(cls, contexts: list[Context]) -> Context:
+        contexts = [context for context in contexts if context.live]
+        if not contexts:
+            raise RuntimeError("Cannot meet empty list of contexts")
+        assert not any(context.outgoing for context in contexts)
+        assert all(len(context.outgoing) == 1 for context in contexts)
+        target = contexts[0].copy_with_scope(Scope())
+        Scope.apply_merge(target, contexts)
+        for context in contexts:
+            context.outgoing[None] = target
+        return target
 
 
 def ctx() -> Context | None:

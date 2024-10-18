@@ -112,6 +112,8 @@ class _Num(Value):
         return self.data
 
     def _bin_op(self, other: Self, py_fn: Callable[[float, float], float], ir_op: Op) -> Self:
+        if not Num.accepts_(other):
+            return NotImplemented
         other = Num.accept_(other)
         if self.is_py_() and other.is_py_():
             return Num(py_fn(self.as_py_(), other.as_py_()))
@@ -214,7 +216,7 @@ if TYPE_CHECKING:
     class __Num(float, int, bool, _Num):  # type: ignore
         pass
 
-    Num: type[__Num | float | int | bool] | _Num
+    Num = __Num | _Num | float | int | bool
 else:
     # Need to do this to satisfy type checkers (especially Pycharm)
     _Num.__name__ = "Num"

@@ -6,3 +6,10 @@ class InternalError(RuntimeError):
 
     def __init__(self, message: str):
         super().__init__(message)
+
+
+class CompilationError(RuntimeError):
+    """Represents an error occurring during the compilation of a script."""
+
+    def __init__(self, message: str):
+        super().__init__(message)
