@@ -115,8 +115,6 @@ comp_ops = {
     ast.LtE: "__le__",
     ast.Gt: "__gt__",
     ast.GtE: "__ge__",
-    ast.In: "__contains__",
-    ast.NotIn: "__contains__",
 }
 
 rcomp_ops = {
@@ -126,6 +124,8 @@ rcomp_ops = {
     ast.LtE: "__ge__",
     ast.Gt: "__lt__",
     ast.GtE: "__le__",
+    ast.In: "__contains__",
+    ast.NotIn: "__contains__",
 }
 
 
@@ -157,9 +157,6 @@ class Visitor(ast.NodeVisitor):
                 ctx().scope.set_value("$return", validate_value(None))
                 for stmt in body:
                     self.visit(stmt)
-            case ast.Lambda(body=body):
-                result = self.visit(body)
-                ctx().scope.set_value("$return", result)
             case _:
                 raise NotImplementedError("Unsupported syntax")
         after_ctx = Context.meet([*self.return_ctxs, ctx()])
@@ -449,15 +446,14 @@ class Visitor(ast.NodeVisitor):
         ctx().scope.set_value(result_name, Num._accept_(0))
         l_val = self.visit(node.left)
         false_ctxs = []
-        for op, rhs in zip(node.ops, node.comparators, strict=True):
+        for i, (op, rhs) in enumerate(zip(node.ops, node.comparators, strict=True)):
             if isinstance(l_val, Tuple | Dict):
                 raise ValueError("Comparison is not supported for tuples or dictionaries")
             r_val = self.visit(rhs)
-            inverted = isinstance(op, ast.NotEq)
-            op_name = comp_ops[type(op)]
+            inverted = isinstance(op, ast.NotIn)
             result = None
-            if hasattr(l_val, op_name):
-                result = self.handle_call(node, getattr(l_val, op_name), r_val)
+            if type(op) in comp_ops and hasattr(l_val, comp_ops[type(op)]):
+                result = self.handle_call(node, getattr(l_val, comp_ops[type(op)]), r_val)
             if (result is None or self.is_not_implemented(result)) and type(op) in rcomp_ops and hasattr(r_val, rcomp_ops[type(op)]):
                 result = self.handle_call(node, getattr(r_val, rcomp_ops[type(op)]), l_val)
             if result is None or self.is_not_implemented(result):
@@ -467,14 +463,16 @@ class Visitor(ast.NodeVisitor):
             if inverted:
                 result = result.not_()
             curr_ctx = ctx()
-            curr_ctx.test = result.ir()
-            true_ctx = curr_ctx.branch(None)
-            false_ctx = curr_ctx.branch(0)
-            false_ctxs.append(false_ctx)
-            set_ctx(true_ctx)
-            l_val = r_val
+            if i == len(node.ops) - 1:
+                curr_ctx.scope.set_value(result_name, result)
+            else:
+                curr_ctx.test = result.ir()
+                true_ctx = curr_ctx.branch(None)
+                false_ctx = curr_ctx.branch(0)
+                false_ctxs.append(false_ctx)
+                set_ctx(true_ctx)
+                l_val = r_val
         last_ctx = ctx()  # This is the result of the last comparison returning true
-        last_ctx.scope.set_value(result_name, Num._accept_(1))
         set_ctx(Context.meet([last_ctx, *false_ctxs]))
         return ctx().scope.get_value(result_name)
 
@@ -614,7 +612,7 @@ class Visitor(ast.NodeVisitor):
         with self.reporting_errors_at_node(node):
             if target._is_py_():
                 target = target._as_py_()
-            descriptor = getattr(type(target), key, None)
+            descriptor = type(target).__dict__.get(key)
             match descriptor:
                 case property(fget=getter):
                     return self.handle_call(node, getter, target)

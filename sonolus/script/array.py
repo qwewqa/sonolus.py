@@ -19,10 +19,12 @@ class Array[T: Value, Size](GenericValue, ArrayLike[T]):
     _value: list[T] | BlockPlace
 
     @classmethod
+    @self_impl
     def element_type(cls) -> type[T] | type[Value]:
         return cls._get_type_arg_(T)
 
     @classmethod
+    @self_impl
     def size(cls) -> int:
         return cls._get_type_arg_(Size)
 
