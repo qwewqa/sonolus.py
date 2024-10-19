@@ -9,6 +9,7 @@ from typing import Any, Never, Mapping
 
 from sonolus.compile.excepthook import install_excepthook
 from sonolus.compile.utils import get_function, scan_writes
+from sonolus.script.debug import assert_true
 from sonolus.script.internal.context import Context, Scope, ValueBinding, ctx, set_ctx
 from sonolus.script.internal.error import CompilationError
 from sonolus.script.internal.impl import validate_value, Tuple, Dict
@@ -55,7 +56,6 @@ def eval_fn(fn: Callable, /, *args, **kwargs):
 
 unary_ops = {
     ast.Invert: "__invert__",
-    ast.Not: "__not__",
     ast.UAdd: "__pos__",
     ast.USub: "__neg__",
 }
@@ -320,7 +320,7 @@ class Visitor(ast.NodeVisitor):
         raise NotImplementedError("Try* statements are not supported")
 
     def visit_Assert(self, node):
-        raise NotImplementedError("Assert statements are not supported")
+        self.handle_call(node, assert_true, self.visit(node.test), self.visit(node.msg))
 
     def visit_Import(self, node):
         raise NotImplementedError("Import statements are not supported")
@@ -385,6 +385,10 @@ class Visitor(ast.NodeVisitor):
 
     def visit_UnaryOp(self, node):
         operand = self.visit(node.operand)
+        if isinstance(node.op, ast.Not):
+            if not isinstance(operand, Num):
+                raise ValueError("Operand of 'not' must be of type Num")
+            return operand.not_()
         op = unary_ops[type(node.op)]
         if hasattr(operand, op):
             return self.handle_call(node, getattr(operand, op))

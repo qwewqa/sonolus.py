@@ -3,7 +3,7 @@ from __future__ import annotations
 from contextlib import contextmanager
 from contextvars import ContextVar
 from dataclasses import dataclass
-from typing import Self
+from typing import Self, Any
 
 from sonolus.backend.blocks import BlockData
 from sonolus.backend.flow import BasicBlock, FlowEdge
@@ -25,6 +25,7 @@ class Context:
     used_names: dict[str, int]
     scope: Scope
     rom: ReadOnlyMemory
+    const_mappings: dict[Any, int]
     loop_variables: dict[str, Value]
     live: bool
 
@@ -35,6 +36,7 @@ class Context:
             used_names: dict[str, int] | None = None,
             scope: Scope | None = None,
             rom: ReadOnlyMemory | None = None,
+            const_mappings: dict[Any, int] | None = None,
             live: bool = True,
     ):
         self.statements = []
@@ -42,8 +44,9 @@ class Context:
         self.blocks = blocks
         self.callback = callback
         self.used_names = used_names if used_names is not None else {}
-        self.scope = scope or Scope()
-        self.rom = rom or ReadOnlyMemory(blocks.EngineRom)
+        self.scope = scope if scope is not None else Scope()
+        self.rom = rom if rom is not None else ReadOnlyMemory(blocks.EngineRom)
+        self.const_mappings = const_mappings if const_mappings is not None else {}
         self.loop_variables = {}
         self.live = live
 
@@ -129,6 +132,11 @@ class Context:
                 value = header.scope.get_value(name)
                 value = type(target_value)._accept_(value)
                 target_value._set_(value)
+
+    def map_constant(self, value: Any) -> int:
+        if value not in self.const_mappings:
+            self.const_mappings[value] = len(self.const_mappings) + 1
+        return self.const_mappings[value]
 
     @classmethod
     def meet(cls, contexts: list[Context]) -> Context:
