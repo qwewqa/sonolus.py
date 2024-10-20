@@ -1,4 +1,4 @@
-from scripts.out.ops import Op
+from sonolus.backend.ops import Op
 from sonolus.script.comptime import Comptime
 from sonolus.script.internal.context import ctx, set_ctx
 from sonolus.script.internal.impl import self_impl

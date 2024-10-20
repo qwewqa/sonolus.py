@@ -51,11 +51,11 @@ class Context:
         self.live = live
 
     def check_readable(self, place: BlockPlace):
-        if isinstance(place.block, BlockData) and self.callback not in place.block.readable:
+        if isinstance(place.block, BlockData) and self.callback not in self.blocks(place.block).readable:
             raise RuntimeError(f"Block {place.block} is not readable in {self.callback}")
 
     def check_writable(self, place: BlockPlace):
-        if isinstance(place.block, BlockData) and self.callback not in place.block.writable:
+        if isinstance(place.block, BlockData) and self.callback not in self.blocks(place.block).writable:
             raise RuntimeError(f"Block {place.block} is not writable in {self.callback}")
 
     def add_statements(self, *statements: IRStmt):

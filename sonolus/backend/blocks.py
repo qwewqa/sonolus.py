@@ -9,7 +9,12 @@ class BlockData(int):
         return obj
 
 
-class TutorialBlock(BlockData, Enum):
+class BlockEnum(BlockData, Enum):
+    def __str__(self):
+        return self.name
+
+
+class TutorialBlock(BlockEnum):
     RuntimeEnvironment = (1000, {"preprocess", "navigate", "update"}, {"preprocess"})
     RuntimeUpdate = (1001, {"preprocess", "navigate", "update"}, {})
     RuntimeSkinTransform = (1002, {"preprocess", "navigate", "update"}, {"preprocess", "navigate", "update"})
@@ -24,7 +29,7 @@ class TutorialBlock(BlockData, Enum):
     TemporaryMemory = (10000, {"preprocess", "navigate", "update"}, {"preprocess", "navigate", "update"})
 
 
-class PlayBlock(BlockData, Enum):
+class PlayBlock(BlockEnum):
     RuntimeEnvironment = (
         1000,
         {
@@ -427,7 +432,7 @@ class PlayBlock(BlockData, Enum):
     )
 
 
-class PreviewBlock(BlockData, Enum):
+class PreviewBlock(BlockEnum):
     RuntimeEnvironment = (1000, {"preprocess", "render"}, {"preprocess"})
     RuntimeCanvas = (1001, {"preprocess", "render"}, {"preprocess"})
     RuntimeSkinTransform = (1002, {"preprocess", "render"}, {"preprocess"})
@@ -445,7 +450,7 @@ class PreviewBlock(BlockData, Enum):
     TemporaryMemory = (10000, {"preprocess", "render"}, {"preprocess", "render"})
 
 
-class WatchBlock(BlockData, Enum):
+class WatchBlock(BlockEnum):
     RuntimeEnvironment = (
         1000,
         {

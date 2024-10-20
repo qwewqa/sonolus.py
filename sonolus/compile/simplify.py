@@ -1,8 +1,8 @@
 from sonolus.backend.flow import BasicBlock
-from sonolus.optimize.passes import OptimizationPass
+from sonolus.compile.passes import CompilerPass
 
 
-class CoalesceFlow(OptimizationPass):
+class CoalesceFlow(CompilerPass):
     def run(self, entry: BasicBlock) -> BasicBlock:
         queue = [entry]
         processed = set()

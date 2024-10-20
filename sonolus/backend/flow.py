@@ -40,7 +40,7 @@ class BasicBlock:
         other.incoming.add(edge)
 
 
-def traverse_preorder(block: BasicBlock) -> Iterator[BasicBlock]:
+def traverse_blocks_preorder(block: BasicBlock) -> Iterator[BasicBlock]:
     visited = set()
     queue = deque([block])
     while queue:
@@ -63,10 +63,10 @@ def cfg_to_mermaid(block: BasicBlock):
         else:
             return "{}"
 
-    block_indexes = {block: i for i, block in enumerate(traverse_preorder(block))}
+    block_indexes = {block: i for i, block in enumerate(traverse_blocks_preorder(block))}
 
     lines = ["Entry([Entry]) --> 0"]
-    for block in traverse_preorder(block):
+    for block in traverse_blocks_preorder(block):
         index = block_indexes[block]
         lines.append(f"{index}[{pre(fmt([f'#{index}'] + block.statements))}]")
 
