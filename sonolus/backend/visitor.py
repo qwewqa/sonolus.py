@@ -7,8 +7,8 @@ from contextlib import contextmanager
 from types import FunctionType, MethodType
 from typing import Any, Never
 
-from sonolus.compile.excepthook import install_excepthook
-from sonolus.compile.utils import get_function, scan_writes
+from sonolus.backend.excepthook import install_excepthook
+from sonolus.backend.utils import get_function, scan_writes
 from sonolus.script.debug import assert_true
 from sonolus.script.internal.context import Context, Scope, ValueBinding, ctx, set_ctx
 from sonolus.script.internal.error import CompilationError

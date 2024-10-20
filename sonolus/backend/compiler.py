@@ -1,7 +1,7 @@
 from collections.abc import Callable
 
 from sonolus.backend.mode import Mode, PlayMode
-from sonolus.compile.visitor import compile_and_call
+from sonolus.backend.visitor import compile_and_call
 from sonolus.script.internal.context import CallbackContextState, Context, GlobalContextState, context_to_cfg, using_ctx
 
 

@@ -83,7 +83,7 @@ class _Comptime[T, V](GenericValue):
     @classmethod
     def accept_unchecked(cls, value: Any) -> Self:
         if isinstance(value, dict | tuple):
-            args = (Identity(value), Identity(value))
+            args = (Any, Identity(value))
         else:
             args = (type(value), value)
         if args not in cls._parameterized_:

@@ -1,5 +1,5 @@
 from sonolus.backend.flow import BasicBlock
-from sonolus.compile.passes import CompilerPass
+from sonolus.backend.passes import CompilerPass
 
 
 class CoalesceFlow(CompilerPass):

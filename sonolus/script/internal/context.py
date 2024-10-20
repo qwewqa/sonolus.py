@@ -165,7 +165,7 @@ class Context:
         self.outgoing[None] = header
         for name, target_value in header.loop_variables.items():
             with using_ctx(self):
-                value = header.scope.get_value(name)
+                value = self.scope.get_value(name)
                 value = type(target_value)._accept_(value)
                 target_value._set_(value)
 
