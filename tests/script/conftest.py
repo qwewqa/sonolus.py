@@ -1,5 +1,5 @@
 import functools
-from typing import Callable
+from collections.abc import Callable
 
 
 def dual_run[T: Callable](fn: T) -> T:

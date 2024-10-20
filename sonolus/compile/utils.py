@@ -19,7 +19,9 @@ class FindFunction(ast.NodeVisitor):
         self.node: ast.FunctionDef | None = None
 
     def visit_FunctionDef(self, node: ast.FunctionDef):
-        if node.lineno == self.line or node.decorator_list and (node.decorator_list[-1].end_lineno <= self.line <= node.lineno):
+        if node.lineno == self.line or (
+            node.decorator_list and (node.decorator_list[-1].end_lineno <= self.line <= node.lineno)
+        ):
             self.node = node
         else:
             self.generic_visit(node)

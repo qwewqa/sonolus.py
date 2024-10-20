@@ -1,4 +1,9 @@
+from collections.abc import Callable
+from typing import Any
+
+from sonolus.backend.flow import cfg_to_mermaid
 from sonolus.backend.ops import Op
+from sonolus.compile.simplify import CoalesceFlow
 from sonolus.script.comptime import Comptime
 from sonolus.script.internal.context import ctx, set_ctx
 from sonolus.script.internal.impl import self_impl
@@ -42,3 +47,12 @@ def terminate():
         set_ctx(ctx().into_dead())
     else:
         raise RuntimeError("Terminated")
+
+
+def visualize_cfg(fn: Callable[[], Any]) -> str:
+    from sonolus.compile.compiler import Compiler
+
+    compiler = Compiler()
+    cfg = compiler.compile_callback(fn, "")
+    cfg = CoalesceFlow().run(cfg)
+    return cfg_to_mermaid(cfg)

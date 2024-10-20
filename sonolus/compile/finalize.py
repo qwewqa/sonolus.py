@@ -1,7 +1,6 @@
-
 from sonolus.backend.flow import BasicBlock, traverse_blocks_preorder
-from sonolus.backend.ir import IRStmt, IRConst, IRPureInstr, IRInstr, IRGet, IRSet
-from sonolus.backend.node import EngineNode, ConstantNode, FunctionNode
+from sonolus.backend.ir import IRConst, IRGet, IRInstr, IRPureInstr, IRSet
+from sonolus.backend.node import ConstantNode, EngineNode, FunctionNode
 from sonolus.backend.ops import Op
 from sonolus.backend.place import BlockPlace
 
@@ -9,7 +8,7 @@ from sonolus.backend.place import BlockPlace
 def cfg_to_engine_node(entry: BasicBlock):
     block_indexes = {block: i for i, block in enumerate(traverse_blocks_preorder(entry))}
     block_statements = []
-    for block, i in block_indexes.items():
+    for block in block_indexes:
         statements = []
         statements.extend(ir_to_engine_node(stmt) for stmt in block.statements)
         outgoing = {edge.cond: edge.dst for edge in block.outgoing}
@@ -26,7 +25,7 @@ def cfg_to_engine_node(entry: BasicBlock):
                             ir_to_engine_node(block.test),
                             ConstantNode(value=block_indexes[t_branch]),
                             ConstantNode(value=block_indexes[f_branch]),
-                        ]
+                        ],
                     )
                 )
             case dict() as tgt:
@@ -60,10 +59,11 @@ def ir_to_engine_node(stmt) -> EngineNode:
             elif place.index == 0:
                 index = ConstantNode(value=place.offset)
             else:
-                index = FunctionNode(func=Op.Add, args=[ir_to_engine_node(place.index), ConstantNode(value=place.offset)])
+                index = FunctionNode(
+                    func=Op.Add, args=[ir_to_engine_node(place.index), ConstantNode(value=place.offset)]
+                )
             return FunctionNode(func=Op.Get, args=[ir_to_engine_node(place.block), index])
         case IRSet(place=place, value=value):
             return FunctionNode(func=Op.Set, args=[*ir_to_engine_node(place).args, ir_to_engine_node(value)])
         case _:
-            raise TypeError(f'Unsupported IR statement: {stmt}')
-
+            raise TypeError(f"Unsupported IR statement: {stmt}")

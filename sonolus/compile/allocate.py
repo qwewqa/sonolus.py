@@ -1,7 +1,7 @@
 from sonolus.backend.blocks import PlayBlock
 from sonolus.backend.flow import BasicBlock, traverse_blocks_preorder
-from sonolus.backend.ir import IRStmt, IRConst, IRPureInstr, IRInstr, IRGet, IRSet
-from sonolus.backend.place import Place, BlockPlace, TempBlock
+from sonolus.backend.ir import IRConst, IRGet, IRInstr, IRPureInstr, IRSet
+from sonolus.backend.place import BlockPlace, TempBlock
 from sonolus.compile.passes import CompilerPass
 
 
@@ -36,7 +36,9 @@ class AllocateBasic(CompilerPass):
                         if place.block not in offsets:
                             offsets[place.block] = index
                             index += place.block.size
-                        return BlockPlace(PlayBlock.TemporaryMemory, process(place.index), place.offset + offsets[place.block])
+                        return BlockPlace(
+                            PlayBlock.TemporaryMemory, process(place.index), place.offset + offsets[place.block]
+                        )
                     return place
                 case _:
                     raise NotImplementedError

@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from collections.abc import Callable, Iterable, Mapping
+from collections.abc import Callable
 from types import FunctionType, MethodType, NoneType, NotImplementedType
 from typing import TYPE_CHECKING, Any, TypeVar, overload
 
@@ -30,41 +30,41 @@ def self_impl(fn=None):
     return decorator(fn)
 
 
-class Dict(Mapping):  # pseudo-dict since regular dict is not hashable
-    def __init__(self, entries: Iterable[tuple[Any, Any]]):
-        self.data = dict(entries)
-
-    def __getitem__(self, key, /):
-        return self.data[key]
-
-    def __len__(self):
-        return len(self.data)
-
-    def __iter__(self):
-        return iter(self.data)
-
-    def __eq__(self, other):
-        return self is other
-
-    def __hash__(self):
-        return id(self)
-
-    def __str__(self):
-        return f"{{{', '.join(f'{k}: {v}' for k, v in self.data.items())}}}"
-
-    def __repr__(self):
-        return f"{type(self).__name__}({self.data!r})"
-
-
-class Tuple(tuple):  # pseudo-tuple to allow identity comparison
-    def __eq__(self, other):
-        return self is other
-
-    def __hash__(self):
-        return id(self)
-
-    def __repr__(self):
-        return f"{type(self).__name__}({super().__repr__()})"
+# class Dict(Mapping):  # pseudo-dict since regular dict is not hashable
+#     def __init__(self, entries: Iterable[tuple[Any, Any]]):
+#         self.data = dict(entries)
+#
+#     def __getitem__(self, key, /):
+#         return self.data[key]
+#
+#     def __len__(self):
+#         return len(self.data)
+#
+#     def __iter__(self):
+#         return iter(self.data)
+#
+#     def __eq__(self, other):
+#         return self is other
+#
+#     def __hash__(self):
+#         return id(self)
+#
+#     def __str__(self):
+#         return f"{{{', '.join(f'{k}: {v}' for k, v in self.data.items())}}}"
+#
+#     def __repr__(self):
+#         return f"{type(self).__name__}({self.data!r})"
+#
+#
+# class Tuple(tuple):  # pseudo-tuple to allow identity comparison
+#     def __eq__(self, other):
+#         return self is other
+#
+#     def __hash__(self):
+#         return id(self)
+#
+#     def __repr__(self):
+#         return f"{type(self).__name__}({super().__repr__()})"
 
 
 def validate_value(value: Any) -> Value:
@@ -74,27 +74,14 @@ def validate_value(value: Any) -> Value:
         case type():
             if value in {int, float, bool}:
                 return Comptime.accept_unchecked(Num)
-            if value is dict:
-                return Comptime.accept_unchecked(Dict)
             return Comptime.accept_unchecked(value)
         case int() | float() | bool():
             return Num._accept_(value)
         case tuple():
-            return Comptime.accept_unchecked(Tuple(validate_value(v) for v in value))
+            return Comptime.accept_unchecked(tuple(validate_value(v) for v in value))
         case dict():
-            return Comptime.accept_unchecked(
-                Dict((validate_value(k)._as_py_(), validate_value(v)) for k, v in value.items())
-            )
-        case (
-            PartialGeneric()
-            | TypeVar()
-            | FunctionType()
-            | MethodType()
-            | NotImplementedType()
-            | str()
-            | NoneType()
-            | Dict()
-        ):
+            return Comptime.accept_unchecked({validate_value(k)._as_py_(): validate_value(v) for k, v in value.items()})
+        case PartialGeneric() | TypeVar() | FunctionType() | MethodType() | NotImplementedType() | str() | NoneType():
             return Comptime.accept_unchecked(value)
         case _:
             raise TypeError(f"Unsupported value: {value!r}")

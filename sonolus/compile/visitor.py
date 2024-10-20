@@ -2,17 +2,17 @@
 import ast
 import functools
 import inspect
-from collections.abc import Callable
+from collections.abc import Callable, Mapping
 from contextlib import contextmanager
 from types import FunctionType, MethodType
-from typing import Any, Never, Mapping
+from typing import Any, Never
 
 from sonolus.compile.excepthook import install_excepthook
 from sonolus.compile.utils import get_function, scan_writes
 from sonolus.script.debug import assert_true
 from sonolus.script.internal.context import Context, Scope, ValueBinding, ctx, set_ctx
 from sonolus.script.internal.error import CompilationError
-from sonolus.script.internal.impl import validate_value, Tuple, Dict
+from sonolus.script.internal.impl import validate_value
 from sonolus.script.internal.value import Value
 from sonolus.script.iterator import SonolusIterator
 from sonolus.script.num import Num
@@ -39,8 +39,10 @@ def generate_fn_impl(fn: Callable):
                 return function
             return functools.partial(eval_fn, function)
         case _:
-            if callable(fn):
+            if callable(fn) and isinstance(fn, Value):
                 return generate_fn_impl(fn.__call__)
+            elif callable(fn):
+                raise TypeError(f"Unsupported callable {fn!r}")
             else:
                 raise TypeError(f"Not callable {fn!r}")
 
@@ -176,7 +178,7 @@ class Visitor(ast.NodeVisitor):
         raise NotImplementedError("Classes within functions are not supported")
 
     def visit_Return(self, node):
-        value = self.visit(node.value)
+        value = self.visit(node.value) if node.value else validate_value(None)
         ctx().scope.set_value("$return", value)
         self.return_ctxs.append(ctx())
         set_ctx(ctx().into_dead())
@@ -451,14 +453,16 @@ class Visitor(ast.NodeVisitor):
         l_val = self.visit(node.left)
         false_ctxs = []
         for i, (op, rhs) in enumerate(zip(node.ops, node.comparators, strict=True)):
-            if isinstance(l_val, Tuple | Dict):
-                raise ValueError("Comparison is not supported for tuples or dictionaries")
             r_val = self.visit(rhs)
             inverted = isinstance(op, ast.NotIn)
             result = None
             if type(op) in comp_ops and hasattr(l_val, comp_ops[type(op)]):
                 result = self.handle_call(node, getattr(l_val, comp_ops[type(op)]), r_val)
-            if (result is None or self.is_not_implemented(result)) and type(op) in rcomp_ops and hasattr(r_val, rcomp_ops[type(op)]):
+            if (
+                (result is None or self.is_not_implemented(result))
+                and type(op) in rcomp_ops
+                and hasattr(r_val, rcomp_ops[type(op)])
+            ):
                 result = self.handle_call(node, getattr(r_val, rcomp_ops[type(op)]), l_val)
             if result is None or self.is_not_implemented(result):
                 raise NotImplementedError(f"Unsupported comparison operator {op}")
@@ -645,7 +649,9 @@ class Visitor(ast.NodeVisitor):
         if isinstance(fn, Value) and fn._is_py_() and isinstance(fn._as_py_(), type):
             return validate_value(self.execute_at_node(node, fn._as_py_(), *args, **kwargs))
         else:
-            return validate_value(self.execute_at_node(node, lambda: validate_value(compile_and_call(fn, *args, **kwargs))))
+            return validate_value(
+                self.execute_at_node(node, lambda: validate_value(compile_and_call(fn, *args, **kwargs)))
+            )
 
     def handle_getitem(self, node: ast.stmt | ast.expr, target: Value, key: Value) -> Value:
         with self.reporting_errors_at_node(node):

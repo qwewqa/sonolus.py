@@ -3,11 +3,12 @@ from __future__ import annotations
 from contextlib import contextmanager
 from contextvars import ContextVar
 from dataclasses import dataclass
-from typing import Self, Any
+from typing import Any, Self
 
 from sonolus.backend.blocks import BlockData
 from sonolus.backend.flow import BasicBlock, FlowEdge
 from sonolus.backend.ir import IRConst, IRStmt
+from sonolus.backend.mode import Mode
 from sonolus.backend.place import Block, BlockPlace, TempBlock
 from sonolus.script.internal.value import Value
 
@@ -16,45 +17,81 @@ _compiler_internal_ = True
 context_var = ContextVar("context_var", default=None)
 
 
-class Context:
-    statements: list[IRStmt]
-    test: IRStmt = IRConst(0)
-    outgoing: dict[float | None, Context]
-    blocks: type[Block]
-    callback: str
-    used_names: dict[str, int]
-    scope: Scope
+class GlobalContextState:
     rom: ReadOnlyMemory
     const_mappings: dict[Any, int]
+    mode: Mode
+
+    def __init__(self, mode: Mode):
+        self.rom = ReadOnlyMemory(mode.blocks.EngineRom)
+        self.const_mappings = {}
+        self.mode = mode
+
+
+class CallbackContextState:
+    callback: str
+    used_names: dict[str, int]
+
+    def __init__(self, callback: str):
+        self.callback = callback
+        self.used_names = {}
+
+
+class Context:
+    global_state: GlobalContextState
+    callback_state: CallbackContextState
+    statements: list[IRStmt]
+    test: IRStmt
+    outgoing: dict[float | None, Context]
+    scope: Scope
     loop_variables: dict[str, Value]
     live: bool
 
     def __init__(
-            self,
-            blocks: type[Block],
-            callback: str,
-            used_names: dict[str, int] | None = None,
-            scope: Scope | None = None,
-            rom: ReadOnlyMemory | None = None,
-            const_mappings: dict[Any, int] | None = None,
-            live: bool = True,
+        self,
+        global_state: GlobalContextState,
+        callback_state: CallbackContextState,
+        scope: Scope | None = None,
+        live: bool = True,
     ):
+        self.global_state = global_state
+        self.callback_state = callback_state
         self.statements = []
+        self.test = IRConst(0)
         self.outgoing = {}
-        self.blocks = blocks
-        self.callback = callback
-        self.used_names = used_names if used_names is not None else {}
         self.scope = scope if scope is not None else Scope()
-        self.rom = rom if rom is not None else ReadOnlyMemory(blocks.EngineRom)
-        self.const_mappings = const_mappings if const_mappings is not None else {}
         self.loop_variables = {}
         self.live = live
 
+    @property
+    def rom(self) -> ReadOnlyMemory:
+        return self.global_state.rom
+
+    @property
+    def blocks(self) -> type[Block]:
+        return self.global_state.mode.blocks
+
+    @property
+    def callback(self) -> str:
+        return self.callback_state.callback
+
+    @property
+    def used_names(self) -> dict[str, int]:
+        return self.callback_state.used_names
+
+    @property
+    def const_mappings(self) -> dict[Any, int]:
+        return self.global_state.const_mappings
+
     def check_readable(self, place: BlockPlace):
+        if not self.callback:
+            return
         if isinstance(place.block, BlockData) and self.callback not in self.blocks(place.block).readable:
             raise RuntimeError(f"Block {place.block} is not readable in {self.callback}")
 
     def check_writable(self, place: BlockPlace):
+        if not self.callback:
+            return
         if isinstance(place.block, BlockData) and self.callback not in self.blocks(place.block).writable:
             raise RuntimeError(f"Block {place.block} is not writable in {self.callback}")
 
@@ -76,11 +113,10 @@ class Context:
 
     def copy_with_scope(self, scope: Scope) -> Context:
         return Context(
-            blocks=self.blocks,
-            callback=self.callback,
-            used_names=self.used_names,
+            global_state=self.global_state,
+            callback_state=self.callback_state,
             scope=scope,
-            rom=self.rom,
+            live=self.live,
         )
 
     def branch(self, condition: float | None):

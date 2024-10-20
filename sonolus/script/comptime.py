@@ -15,7 +15,10 @@ class _Comptime[T, V](GenericValue):
 
     @classmethod
     def value(cls):
-        return cls._type_args_[1]
+        value = cls._type_args_[1]
+        if isinstance(value, Identity):
+            return value.value
+        return value
 
     @classmethod
     def _get_parameterized(cls, args: tuple[Any, ...]) -> type[Self]:
@@ -79,10 +82,32 @@ class _Comptime[T, V](GenericValue):
 
     @classmethod
     def accept_unchecked(cls, value: Any) -> Self:
-        args = (type(value), value)
+        if isinstance(value, dict | tuple):
+            args = (Identity(value), Identity(value))
+        else:
+            args = (type(value), value)
         if args not in cls._parameterized_:
             cls._parameterized_[args] = cls._get_parameterized(args)
         return cls._parameterized_[args]._instance
+
+
+class Identity[T]:  # This is to allow accepting potentially unhashable values by using identity comparison
+    value: T
+
+    def __init__(self, value: T):
+        self.value = value
+
+    def __eq__(self, other):
+        return self is other
+
+    def __hash__(self):
+        return id(self)
+
+    def __str__(self):
+        return f"{type(self).__name__}({self.value})"
+
+    def __repr__(self):
+        return f"{type(self).__name__}({self.value!r})"
 
 
 if not TYPE_CHECKING:
@@ -92,4 +117,4 @@ if not TYPE_CHECKING:
 else:
     type Comptime[T, V] = T | V
 
-from sonolus.script.internal.impl import Dict, validate_value
+from sonolus.script.internal.impl import validate_value

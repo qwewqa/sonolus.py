@@ -53,9 +53,9 @@ def traverse_blocks_preorder(block: BasicBlock) -> Iterator[BasicBlock]:
             queue.append(edge.dst)
 
 
-def cfg_to_mermaid(block: BasicBlock):
+def cfg_to_mermaid(entry: BasicBlock):
     def pre(s: str):
-        return '"<pre style=\'text-align: left;\'>' + s.replace("\n", "<br/>") + '</pre>"'
+        return "\"<pre style='text-align: left;'>" + s.replace("\n", "<br/>") + '</pre>"'
 
     def fmt(nodes):
         if nodes:
@@ -63,12 +63,12 @@ def cfg_to_mermaid(block: BasicBlock):
         else:
             return "{}"
 
-    block_indexes = {block: i for i, block in enumerate(traverse_blocks_preorder(block))}
+    block_indexes = {block: i for i, block in enumerate(traverse_blocks_preorder(entry))}
 
     lines = ["Entry([Entry]) --> 0"]
-    for block in traverse_blocks_preorder(block):
+    for block in traverse_blocks_preorder(entry):
         index = block_indexes[block]
-        lines.append(f"{index}[{pre(fmt([f'#{index}'] + block.statements))}]")
+        lines.append(f"{index}[{pre(fmt([f'#{index}', *block.statements]))}]")
 
         outgoing = {edge.cond: edge.dst for edge in block.outgoing}
         match outgoing:
@@ -85,9 +85,7 @@ def cfg_to_mermaid(block: BasicBlock):
                 lines.append(f"{index}_{{{{{pre(fmt([block.test]))}}}}}")
                 lines.append(f"{index} --> {index}_")
                 for cond, target in tgt.items():
-                    if cond is None:
-                        cond = "default"
-                    lines.append(f"{index}_ --> |{pre(fmt([cond]))}| {block_indexes[target]}")
+                    lines.append(f"{index}_ --> |{pre(fmt([cond or "default"]))}| {block_indexes[target]}")
     lines.append("Exit([Exit])")
 
     body = textwrap.indent("\n".join(lines), "    ")
