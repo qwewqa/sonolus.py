@@ -233,7 +233,7 @@ class Visitor(ast.NodeVisitor):
         self.loop_head_ctxs.append(header_ctx)
         self.break_ctxs.append([])
         set_ctx(header_ctx)
-        has_next = iterator.has_next()
+        has_next = self.handle_call(node, iterator.has_next)
         if not isinstance(has_next, Num):
             raise ValueError("Iterator must return a boolean")
         ctx().test = has_next.ir()
@@ -288,8 +288,8 @@ class Visitor(ast.NodeVisitor):
             raise ValueError("Condition must be of type Num")
         ctx_init = ctx()
         ctx_init.test = test.ir()
-        true_ctx = ctx().branch(None)
-        false_ctx = ctx().branch(0)
+        true_ctx = ctx_init.branch(None)
+        false_ctx = ctx_init.branch(0)
 
         set_ctx(true_ctx)
         for stmt in node.body:
