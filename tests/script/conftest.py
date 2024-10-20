@@ -9,6 +9,7 @@ from sonolus.backend.place import BlockPlace
 from sonolus.backend.simplify import CoalesceFlow
 from sonolus.backend.visitor import compile_and_call
 from sonolus.script.internal.impl import self_impl, validate_value
+from sonolus.script.num import Num
 
 
 def dual_run[**P, R](fn: Callable[P, R], *args: P.args, **kwargs: P.kwargs) -> R:
@@ -25,6 +26,7 @@ def dual_run[**P, R](fn: Callable[P, R], *args: P.args, **kwargs: P.kwargs) -> R
             target._set_(result)
         else:
             target._copy_from_(result)
+        return result
 
     compiler = Compiler()
     cfg = compiler.compile_callback(run_compiled, "")
@@ -32,7 +34,11 @@ def dual_run[**P, R](fn: Callable[P, R], *args: P.args, **kwargs: P.kwargs) -> R
     cfg = AllocateBasic().run(cfg)
     entry = cfg_to_engine_node(cfg)
     interpreter = Interpreter()
-    interpreter.run(entry)
+    num_result = interpreter.run(entry)
+    if result_type == Num:
+        assert num_result == regular_result
+    else:
+        assert num_result == 0
     compiled_result = result_type._from_list_(
         [interpreter.get(PlayBlock.LevelMemory, i) for i in range(result_type._size_())]
     )._as_py_()

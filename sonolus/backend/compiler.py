@@ -1,8 +1,18 @@
 from collections.abc import Callable
 
+from sonolus.backend.ir import IRInstr, IRConst
 from sonolus.backend.mode import Mode, PlayMode
+from sonolus.backend.ops import Op
 from sonolus.backend.visitor import compile_and_call
-from sonolus.script.internal.context import CallbackContextState, Context, GlobalContextState, context_to_cfg, using_ctx
+from sonolus.script.internal.context import (
+    CallbackContextState,
+    Context,
+    GlobalContextState,
+    context_to_cfg,
+    using_ctx,
+    ctx,
+)
+from sonolus.script.num import Num
 
 
 class Compiler:
@@ -15,5 +25,7 @@ class Compiler:
         callback_state = CallbackContextState(name)
         context = Context(self.global_state, callback_state)
         with using_ctx(context):
-            compile_and_call(callback)
+            result = compile_and_call(callback)
+            if isinstance(result, Num):
+                ctx().add_statements(IRInstr(Op.Break, [IRConst(1), result.ir()]))
         return context_to_cfg(context)

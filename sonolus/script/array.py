@@ -93,11 +93,11 @@ class Array[T: Value, Size](GenericValue, ArrayLike[T]):
         return self
 
     @classmethod
-    def _from_list_(cls, values: Iterable[float]) -> Self:
+    def _from_list_(cls, values: Iterable[float | BlockPlace]) -> Self:
         iterator = iter(values)
         return cls.of(*(cls.element_type()._from_list_(iterator) for _ in range(cls.size())))
 
-    def _to_list_(self) -> list[float]:
+    def _to_list_(self) -> list[float | BlockPlace]:
         return [entry for value in self._value for entry in value._to_list_()]
 
     def _get_(self) -> Self:

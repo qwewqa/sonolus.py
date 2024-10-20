@@ -1,4 +1,4 @@
-from sonolus.backend.flow import BasicBlock, traverse_blocks_preorder
+from sonolus.backend.flow import BasicBlock, traverse_cfg_preorder
 from sonolus.backend.ir import IRConst, IRGet, IRInstr, IRPureInstr, IRSet
 from sonolus.backend.node import ConstantNode, EngineNode, FunctionNode
 from sonolus.backend.ops import Op
@@ -6,7 +6,7 @@ from sonolus.backend.place import BlockPlace
 
 
 def cfg_to_engine_node(entry: BasicBlock):
-    block_indexes = {block: i for i, block in enumerate(traverse_blocks_preorder(entry))}
+    block_indexes = {block: i for i, block in enumerate(traverse_cfg_preorder(entry))}
     block_statements = []
     for block in block_indexes:
         statements = []
@@ -40,7 +40,7 @@ def cfg_to_engine_node(entry: BasicBlock):
                 statements.append(FunctionNode(Op.SwitchWithDefault, args))
         block_statements.append(FunctionNode(Op.Execute, statements))
     block_statements.append(ConstantNode(value=0))
-    return FunctionNode(Op.JumpLoop, block_statements)
+    return FunctionNode(Op.Block, [FunctionNode(Op.JumpLoop, block_statements)])
 
 
 def ir_to_engine_node(stmt) -> EngineNode:

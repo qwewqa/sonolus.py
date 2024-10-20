@@ -60,10 +60,10 @@ class _Comptime[T, V](GenericValue):
         return self.value()
 
     @classmethod
-    def _from_list_(cls, values: Iterable[float]) -> Self:
+    def _from_list_(cls, values: Iterable[float | BlockPlace]) -> Self:
         return cls._instance
 
-    def _to_list_(self) -> list[float]:
+    def _to_list_(self) -> list[float | BlockPlace]:
         return []
 
     def _get_(self) -> Self:

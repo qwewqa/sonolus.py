@@ -1,5 +1,5 @@
 from sonolus.backend.blocks import PlayBlock
-from sonolus.backend.flow import BasicBlock, traverse_blocks_preorder
+from sonolus.backend.flow import BasicBlock, traverse_cfg_preorder
 from sonolus.backend.ir import IRConst, IRGet, IRInstr, IRPureInstr, IRSet
 from sonolus.backend.passes import CompilerPass
 from sonolus.backend.place import BlockPlace, TempBlock
@@ -43,7 +43,7 @@ class AllocateBasic(CompilerPass):
                 case _:
                     raise NotImplementedError
 
-        for block in traverse_blocks_preorder(entry):
+        for block in traverse_cfg_preorder(entry):
             block.statements = [process(statement) for statement in block.statements]
             block.test = process(block.test)
 

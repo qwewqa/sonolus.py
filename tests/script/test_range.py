@@ -1,8 +1,7 @@
 from hypothesis import given, strategies as st
 
-from sonolus.script.debug import visualize_cfg
-from tests.script.conftest import dual_run
 from sonolus.script.range import Range
+from tests.script.conftest import dual_run
 
 
 @given(n=st.integers(min_value=0, max_value=100))

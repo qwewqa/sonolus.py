@@ -150,11 +150,11 @@ class Record(GenericValue):
         return self
 
     @classmethod
-    def _from_list_(cls, values: Iterable[float]) -> Self:
+    def _from_list_(cls, values: Iterable[float | BlockPlace]) -> Self:
         iterator = iter(values)
         return cls(**{field.name: field.type._from_list_(iterator) for field in cls._fields})
 
-    def _to_list_(self) -> list[float]:
+    def _to_list_(self) -> list[float | BlockPlace]:
         result = []
         for field in self._fields:
             result.extend(field.type._to_list_(self._value[field.name]))

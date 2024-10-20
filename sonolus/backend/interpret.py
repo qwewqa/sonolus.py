@@ -5,6 +5,15 @@ from sonolus.backend.node import ConstantNode, EngineNode
 from sonolus.backend.ops import Op
 
 
+class BreakException(Exception):
+    n: int
+    value: float
+
+    def __init__(self, n: int, value: float):
+        self.n = n
+        self.value = value
+
+
 class Interpreter:
     blocks: dict[int, list[int]]
     log: list[float]
@@ -97,6 +106,16 @@ class Interpreter:
                         return self.run(args[index])
                     index = int(self.run(args[index]))
                 return 0.0
+            case Op.Block:
+                try:
+                    return self.run(args[0])
+                except BreakException as e:
+                    if e.n > 1:
+                        e.n -= 1
+                        raise e from None
+                    return e.value
+            case Op.Break:
+                raise BreakException(self.ensure_int(self.run(args[0])), self.run(args[1]))
 
             case Op.Abs:
                 return abs(self.run(args[0]))
@@ -252,6 +271,7 @@ class Interpreter:
                     self.ensure_int(index),
                     self.ensure_int(stride),
                 )
+
                 return self.set(block, offset + index * stride, value)
             case Op.Sign:
                 return math.copysign(1, self.run(args[0]))

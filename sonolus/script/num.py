@@ -70,11 +70,11 @@ class _Num(Value):
         return self.data
 
     @classmethod
-    def _from_list_(cls, values: Iterable[float]) -> Self:
+    def _from_list_(cls, values: Iterable[float | BlockPlace]) -> Self:
         value = next(iter(values))
         return Num(value)
 
-    def _to_list_(self) -> list[float]:
+    def _to_list_(self) -> list[float | BlockPlace]:
         return [self.data]
 
     def _get_(self) -> Self:
