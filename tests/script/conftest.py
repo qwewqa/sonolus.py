@@ -12,6 +12,8 @@ from sonolus.script.internal.impl import self_impl, validate_value
 
 
 def dual_run[**P, R](fn: Callable[P, R], *args: P.args, **kwargs: P.kwargs) -> R:
+    """Runs a function as a regular function and as a compiled function, and checks that the results are the same."""
+
     regular_result = fn(*args, **kwargs)
     result_type = type(validate_value(regular_result))
 
