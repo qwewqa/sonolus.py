@@ -25,14 +25,14 @@ class Range(Record, ArrayLike[Num]):
     def size(self) -> int:
         if self.step > 0:
             diff = self.end - self.start
-            if diff < self.step:
+            if diff <= 0:
                 return 0
             return (diff + self.step - 1) // self.step
         else:
             diff = self.start - self.end
-            if diff < -self.step:
+            if diff <= 0:
                 return 0
-            return (diff - self.step + 1) // -self.step
+            return (diff - self.step - 1) // -self.step
 
     def __getitem__(self, index: Num) -> Num:
         return self.start + index * self.step

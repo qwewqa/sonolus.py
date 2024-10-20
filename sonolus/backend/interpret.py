@@ -237,13 +237,21 @@ class Interpreter:
             case Op.Round:
                 return round(self.run(args[0]))
             case Op.Set:
-                block, index, value = (self.ensure_int(self.run(arg)) for arg in args)
+                block, index, value = (self.run(arg) for arg in args)
+                block, index = self.ensure_int(block), self.ensure_int(index)
                 return self.set(block, index, value)
             case Op.SetPointed:
-                block, index, offset, value = (self.ensure_int(self.run(arg)) for arg in args)
+                block, index, offset, value = (self.run(arg) for arg in args)
+                block, index, offset = self.ensure_int(block), self.ensure_int(index), self.ensure_int(offset)
                 return self.set(self.get(block, index), self.get(block, index + 1) + offset, value)
             case Op.SetShifted:
-                block, offset, index, stride, value = (self.ensure_int(self.run(arg)) for arg in args)
+                block, offset, index, stride, value = (self.run(arg) for arg in args)
+                block, offset, index, stride = (
+                    self.ensure_int(block),
+                    self.ensure_int(offset),
+                    self.ensure_int(index),
+                    self.ensure_int(stride),
+                )
                 return self.set(block, offset + index * stride, value)
             case Op.Sign:
                 return math.copysign(1, self.run(args[0]))
