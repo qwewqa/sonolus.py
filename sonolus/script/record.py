@@ -3,7 +3,7 @@ from __future__ import annotations
 import inspect
 from collections.abc import Iterable
 from inspect import getmro
-from typing import Any, ClassVar, Self, dataclass_transform, get_origin, get_type_hints
+from typing import Any, ClassVar, Self, dataclass_transform, get_origin
 
 from sonolus.backend.place import BlockPlace
 from sonolus.script.internal.context import ctx
@@ -50,9 +50,13 @@ class Record(GenericValue):
             return
         is_inheriting_from_existing_record_class = cls._fields is not None
         if is_inheriting_from_existing_record_class and not is_parameterizing:
+            # The main reason this is disallowed is that subclasses wouldn't be substitutable for their parent classes
+            # Assignment of a subclass instance to a variable of the parent class would either be disallowed or would
+            # require object slicing. Either way, it could lead to confusion.
+            # Dealing with generic supertypes is also tricky, so it isn't really worth the effort to support this.
             raise TypeError("Subclassing of a Record is not supported")
 
-        hints = get_type_hints(cls)
+        hints = inspect.get_annotations(cls, eval_str=True)
         fields = []
         params = []
         index = 0

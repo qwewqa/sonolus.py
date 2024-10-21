@@ -8,7 +8,6 @@ if TYPE_CHECKING:
     from sonolus.script.comptime import Comptime
     from sonolus.script.internal.generic import PartialGeneric
     from sonolus.script.internal.value import Value
-    from sonolus.script.num import Num
 
 
 @overload
@@ -31,6 +30,8 @@ def self_impl(fn=None):
 
 
 def validate_value(value: Any) -> Value:
+    from sonolus.script.num import Num
+
     match value:
         case Value():
             return value
@@ -53,4 +54,3 @@ def validate_value(value: Any) -> Value:
 from sonolus.script.comptime import Comptime
 from sonolus.script.internal.generic import PartialGeneric
 from sonolus.script.internal.value import Value
-from sonolus.script.num import Num
