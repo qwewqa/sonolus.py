@@ -77,6 +77,10 @@ class _Num(Value):
     def _to_list_(self) -> list[float | BlockPlace]:
         return [self.data]
 
+    @classmethod
+    def _flat_keys_(cls, prefix: str) -> list[str]:
+        return [prefix]
+
     def _get_(self) -> Self:
         if ctx():
             place = ctx().alloc(size=1)

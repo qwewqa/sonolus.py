@@ -157,7 +157,14 @@ class Record(GenericValue):
     def _to_list_(self) -> list[float | BlockPlace]:
         result = []
         for field in self._fields:
-            result.extend(field.type._to_list_(self._value[field.name]))
+            result.extend(self._value[field.name]._to_list_())
+        return result
+
+    @classmethod
+    def _flat_keys_(cls, prefix: str) -> list[str]:
+        result = []
+        for field in cls._fields:
+            result.extend(field.type._flat_keys_(f"{prefix}.{field.name}"))
         return result
 
     def _get_(self) -> Self:

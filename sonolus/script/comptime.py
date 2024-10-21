@@ -66,6 +66,10 @@ class _Comptime[T, V](GenericValue):
     def _to_list_(self) -> list[float | BlockPlace]:
         return []
 
+    @classmethod
+    def _flat_keys_(cls, prefix: str) -> list[str]:
+        return []
+
     def _get_(self) -> Self:
         return self
 

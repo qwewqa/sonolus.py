@@ -70,6 +70,12 @@ class Value:
         """Converts this value to a list of floats."""
         raise NotImplementedError
 
+    @classmethod
+    @abstractmethod
+    def _flat_keys_(cls, prefix: str) -> list[str]:
+        """Returns the keys to a flat representation of this value."""
+        raise NotImplementedError
+
     @abstractmethod
     def _get_(self) -> Self:
         """Implements access to the value.
@@ -121,4 +127,8 @@ class Value:
         raise NotImplementedError
 
     def __imatmul__(self, other):
-        return self._copy_from_(other)
+        self._copy_from_(other)
+        return self
+
+
+Value.__imatmul__._self_impl_ = True

@@ -646,7 +646,12 @@ class Visitor(ast.NodeVisitor):
         self, node: ast.stmt | ast.expr, fn: Callable[P, R], /, *args: P.args, **kwargs: P.kwargs
     ) -> R:
         """Handles a call to the given callable."""
-        if isinstance(fn, Value) and fn._is_py_() and isinstance(fn._as_py_(), type):
+        if (
+            isinstance(fn, Value)
+            and fn._is_py_()
+            and isinstance(fn._as_py_(), type)
+            and issubclass(fn._as_py_(), Value)
+        ):
             return validate_value(self.execute_at_node(node, fn._as_py_(), *args, **kwargs))
         else:
             return validate_value(

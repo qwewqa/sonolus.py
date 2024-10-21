@@ -4,7 +4,7 @@ from typing import Self
 from sonolus.backend.blocks import Block
 
 type Place = BlockPlace | SSAPlace
-type BlockValue = Block | TempBlock | Place
+type BlockValue = Block | int | TempBlock | Place
 type IndexValue = int | Place
 
 

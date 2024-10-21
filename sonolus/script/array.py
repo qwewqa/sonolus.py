@@ -100,6 +100,10 @@ class Array[T: Value, Size](GenericValue, ArrayLike[T]):
     def _to_list_(self) -> list[float | BlockPlace]:
         return [entry for value in self._value for entry in value._to_list_()]
 
+    @classmethod
+    def _flat_keys_(cls, prefix: str) -> list[str]:
+        return [entry for i in range(cls.size()) for entry in cls.element_type()._flat_keys_(f"{prefix}[{i}]")]
+
     def _get_(self) -> Self:
         return self
 

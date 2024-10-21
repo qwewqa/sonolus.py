@@ -30,43 +30,6 @@ def self_impl(fn=None):
     return decorator(fn)
 
 
-# class Dict(Mapping):  # pseudo-dict since regular dict is not hashable
-#     def __init__(self, entries: Iterable[tuple[Any, Any]]):
-#         self.data = dict(entries)
-#
-#     def __getitem__(self, key, /):
-#         return self.data[key]
-#
-#     def __len__(self):
-#         return len(self.data)
-#
-#     def __iter__(self):
-#         return iter(self.data)
-#
-#     def __eq__(self, other):
-#         return self is other
-#
-#     def __hash__(self):
-#         return id(self)
-#
-#     def __str__(self):
-#         return f"{{{', '.join(f'{k}: {v}' for k, v in self.data.items())}}}"
-#
-#     def __repr__(self):
-#         return f"{type(self).__name__}({self.data!r})"
-#
-#
-# class Tuple(tuple):  # pseudo-tuple to allow identity comparison
-#     def __eq__(self, other):
-#         return self is other
-#
-#     def __hash__(self):
-#         return id(self)
-#
-#     def __repr__(self):
-#         return f"{type(self).__name__}({super().__repr__()})"
-
-
 def validate_value(value: Any) -> Value:
     match value:
         case Value():
