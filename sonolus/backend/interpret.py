@@ -1,11 +1,12 @@
 import math
+import operator
 import random
 
 from sonolus.backend.node import ConstantNode, EngineNode
 from sonolus.backend.ops import Op
 
 
-class BreakException(Exception):
+class BreakException(Exception):  # noqa: N818
     n: int
     value: float
 
@@ -120,7 +121,7 @@ class Interpreter:
             case Op.Abs:
                 return abs(self.run(args[0]))
             case Op.Add:
-                return self.reduce_args(args, lambda a, b: a + b)
+                return self.reduce_args(args, operator.add)
             case Op.Arccos:
                 return math.acos(self.run(args[0]))
             case Op.Arcsin:
@@ -154,7 +155,7 @@ class Interpreter:
             case Op.Degree:
                 return math.degrees(self.run(args[0]))
             case Op.Divide:
-                return self.reduce_args(args, lambda a, b: a / b)
+                return self.reduce_args(args, operator.truediv)
             case Op.Equal:
                 return 1.0 if self.run(args[0]) == self.run(args[1]) else 0.0
             case Op.Floor:
@@ -226,9 +227,9 @@ class Interpreter:
             case Op.Min:
                 return min(self.run(args[0]), self.run(args[1]))
             case Op.Mod:
-                return self.reduce_args(args, lambda a, b: a % b)
+                return self.reduce_args(args, operator.mod)
             case Op.Multiply:
-                return self.reduce_args(args, lambda a, b: a * b)
+                return self.reduce_args(args, operator.mul)
             case Op.Negate:
                 return -self.run(args[0])
             case Op.Not:
@@ -236,7 +237,7 @@ class Interpreter:
             case Op.NotEqual:
                 return 1.0 if self.run(args[0]) != self.run(args[1]) else 0.0
             case Op.Power:
-                return self.reduce_args(args, lambda a, b: a**b)
+                return self.reduce_args(args, operator.pow)
             case Op.Radian:
                 return math.radians(self.run(args[0]))
             case Op.Random:
@@ -246,7 +247,7 @@ class Interpreter:
                 lo, hi = (self.ensure_int(self.run(arg)) for arg in args)
                 return random.randint(lo, hi)
             case Op.Rem:
-                return self.reduce_args(args, lambda a, b: math.remainder(a, b))
+                return self.reduce_args(args, math.remainder)
             case Op.Remap:
                 from_min, from_max, to_min, to_max, value = (self.run(arg) for arg in args)
                 return to_min + (to_max - to_min) * (value - from_min) / (from_max - from_min)
@@ -280,7 +281,7 @@ class Interpreter:
             case Op.Sinh:
                 return math.sinh(self.run(args[0]))
             case Op.Subtract:
-                return self.reduce_args(args, lambda a, b: a - b)
+                return self.reduce_args(args, operator.sub)
             case Op.Tan:
                 return math.tan(self.run(args[0]))
             case Op.Tanh:

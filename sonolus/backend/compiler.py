@@ -1,6 +1,6 @@
 from collections.abc import Callable
 
-from sonolus.backend.ir import IRInstr, IRConst
+from sonolus.backend.ir import IRConst, IRInstr
 from sonolus.backend.mode import Mode, PlayMode
 from sonolus.backend.ops import Op
 from sonolus.backend.visitor import compile_and_call
@@ -9,8 +9,8 @@ from sonolus.script.internal.context import (
     Context,
     GlobalContextState,
     context_to_cfg,
-    using_ctx,
     ctx,
+    using_ctx,
 )
 from sonolus.script.num import Num
 

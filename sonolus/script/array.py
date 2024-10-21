@@ -207,6 +207,9 @@ class Array[T: Value, Size](GenericValue, ArrayLike[T]):
     def __ne__(self, other):
         return not self == other
 
+    def __hash__(self):
+        return hash(tuple(self[i] for i in range(self.size())))
+
     def __str__(self):
         return f"{type(self).__name__}.of({", ".join(str(self[i]) for i in range(self.size()))})"
 

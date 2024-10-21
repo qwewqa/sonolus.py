@@ -108,10 +108,6 @@ class Record(GenericValue):
                 raise TypeError(f"Type parameter {type_param} is not used")
         type_args = tuple(type_vars[type_param] for type_param in cls.__type_params__)
         if cls._type_args_ is not None:
-            if type_args != cls._type_args_:
-                raise TypeError(
-                    f"Invalid arguments for {cls.__name__}: expected type args {cls._type_args_}, got {type_args}"
-                )
             parameterized = cls
         else:
             parameterized = cls[type_args]

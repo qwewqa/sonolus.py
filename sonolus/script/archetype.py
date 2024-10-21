@@ -1,9 +1,10 @@
 from __future__ import annotations
 
 import inspect
+from collections.abc import Callable
 from dataclasses import dataclass
-from enum import Enum
-from typing import Annotated, Callable, ClassVar, get_origin
+from enum import StrEnum
+from typing import Annotated, ClassVar, get_origin
 
 from scripts.out.blocks import PlayBlock
 from sonolus.script.callbacks import PLAY_CALLBACKS, CallbackInfo
@@ -13,7 +14,7 @@ from sonolus.script.num import Num
 from sonolus.script.pointer import static_deref
 
 
-class StorageType(str, Enum):
+class StorageType(StrEnum):
     Imported = "imported"
     Exported = "exported"
     Memory = "memory"
@@ -101,7 +102,7 @@ class Archetype:
 
     def __init_subclass__(cls, **kwargs):
         if cls.__module__ == Archetype.__module__:
-            if getattr(cls, "_supported_callbacks_") is None:
+            if cls._supported_callbacks_ is None:
                 raise TypeError("Cannot directly subclass Archetype, use the Archetype subclass for your mode")
             cls._default_callbacks_ = {getattr(cls, cb_info.py_name) for cb_info in cls._supported_callbacks_.values()}
             return
@@ -126,7 +127,7 @@ class Archetype:
             field_info_list = [a for a in value.__metadata__ if isinstance(a, ArchetypeFieldInfo)]
             if len(field_info_list) != 1:
                 raise TypeError(
-                    "Archetype fields must be annotated using imported, exported, entity_memory, or shared_memory exactly once"
+                    "Archetype fields must be annotated using imported, exported, entity_memory, or shared_memory once"
                 )
             field_info = field_info_list[0]
             field_type = validate_concrete_type(value.__origin__)

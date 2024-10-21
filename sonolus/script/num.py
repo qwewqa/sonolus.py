@@ -54,7 +54,7 @@ class _Num(Value):
     @classmethod
     def _accept_(cls, value: Any) -> Self:
         if not cls._accepts_(value):
-            raise ValueError(f"Cannot accept {value}")
+            raise TypeError(f"Cannot accept {value}")
         if isinstance(value, Num):
             return value
         return cls(value)

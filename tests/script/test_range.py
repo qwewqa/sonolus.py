@@ -1,4 +1,5 @@
-from hypothesis import given, strategies as st
+from hypothesis import given
+from hypothesis import strategies as st
 
 from sonolus.script.range import Range
 from tests.script.conftest import validate_dual_run

@@ -1,4 +1,5 @@
-from hypothesis import given, strategies as st
+from hypothesis import given
+from hypothesis import strategies as st
 
 from sonolus.script.array import Array
 from tests.script.conftest import validate_dual_run
@@ -49,9 +50,9 @@ def test_num_binary(a, b):
         mul = a * b
         div = a / b if b != 0 else 0
         mod = a % b if b != 0 else 0
-        pow = a**b if (b < 10 and (a > 0 or b > 0)) else 0
+        power = a**b if (b < 10 and (a > 0 or b > 0)) else 0
         floordiv = a // b if b != 0 else 0
-        return Array.of(add, sub, mul, div, mod, pow, floordiv)
+        return Array.of(add, sub, mul, div, mod, power, floordiv)
 
     assert validate_dual_run(fn) == Array.of(
         a + b,
@@ -82,13 +83,13 @@ def test_num_augmented(a, b):
         mod = a
         if b != 0:
             mod %= b
-        pow = a
+        power = a
         if b < 10 and (a > 0 or b > 0):
-            pow **= b
+            power **= b
         floordiv = a
         if b != 0:
             floordiv //= b
-        return Array.of(add, sub, mul, div, mod, pow, floordiv)
+        return Array.of(add, sub, mul, div, mod, power, floordiv)
 
     assert validate_dual_run(fn) == Array.of(
         a + b,
@@ -126,8 +127,7 @@ def test_num_while_else(n):
         while i < n:
             result += i
             i += 1
-        else:
-            result += 100
+        result += 100
         return result
 
     assert validate_dual_run(fn) == sum(range(n)) + 100

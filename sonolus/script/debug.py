@@ -41,6 +41,13 @@ def assert_true(value: Num, message: str | None = None):
         terminate()
 
 
+def assert_false(value: Num, message: str | None = None):
+    message = with_default(message, "Assertion failed")
+    if value:
+        error(message)
+        terminate()
+
+
 @self_impl
 def terminate():
     if ctx():
