@@ -33,7 +33,6 @@ class ArchetypeField:
         self.offset = offset
         self.type = type_
 
-
     def __get__(self, instance: Archetype, owner):
         if instance is None:
             return self

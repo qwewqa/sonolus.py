@@ -120,7 +120,17 @@ class _Num(Value):
             return NotImplemented
         other = Num._accept_(other)
         if self._is_py_() and other._is_py_():
-            return Num(py_fn(self._as_py_(), other._as_py_()))
+            try:
+                return Num(py_fn(self._as_py_(), other._as_py_()))
+            except ZeroDivisionError as e:
+                if ctx():
+                    from sonolus.backend.visitor import compile_and_call
+                    from sonolus.script.debug import assert_true
+
+                    compile_and_call(assert_true, False, "Division by zero")
+                    return Num(0)
+                else:
+                    raise e from None
         elif ctx():
             result_place = ctx().alloc(size=1)
             ctx().add_statements(IRSet(result_place, IRPureInstr(ir_op, [self.ir(), other.ir()])))

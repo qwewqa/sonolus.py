@@ -1,7 +1,7 @@
 from hypothesis import given, strategies as st
 
 from sonolus.script.range import Range
-from tests.script.conftest import dual_run
+from tests.script.conftest import validate_dual_run
 
 
 @given(n=st.integers(min_value=0, max_value=100))
@@ -13,7 +13,7 @@ def test_basic_range_iteration(n):
         return total
 
     expected = sum(range(n))
-    result = dual_run(fn)
+    result = validate_dual_run(fn)
     assert result == expected
 
 
@@ -26,7 +26,7 @@ def test_range_iteration_with_start(start, stop):
         return total
 
     expected = sum(range(start, stop))
-    result = dual_run(fn)
+    result = validate_dual_run(fn)
     assert result == expected
 
 
@@ -43,7 +43,7 @@ def test_range_iteration_with_step(start, stop, step):
         return total
 
     expected = sum(range(start, stop, step))
-    result = dual_run(fn)
+    result = validate_dual_run(fn)
     assert result == expected
 
 
@@ -60,7 +60,7 @@ def test_range_iteration_with_negative_step(start, stop, step):
         return total
 
     expected = sum(range(start, stop, step))
-    result = dual_run(fn)
+    result = validate_dual_run(fn)
     assert result == expected
 
 
@@ -75,7 +75,7 @@ def test_range_contains(start, stop, step, value):
         return value in Range(start, stop, step)
 
     expected = value in range(start, stop, step)
-    result = dual_run(fn)
+    result = validate_dual_run(fn)
     assert result == expected
 
 
@@ -89,5 +89,5 @@ def test_range_size(start, stop, step):
         return Range(start, stop, step).size()
 
     expected = len(range(start, stop, step))
-    result = dual_run(fn)
+    result = validate_dual_run(fn)
     assert result == expected

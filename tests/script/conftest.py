@@ -12,7 +12,7 @@ from sonolus.script.internal.impl import self_impl, validate_value
 from sonolus.script.num import Num
 
 
-def dual_run[**P, R](fn: Callable[P, R], *args: P.args, **kwargs: P.kwargs) -> R:
+def validate_dual_run[**P, R](fn: Callable[P, R], *args: P.args, **kwargs: P.kwargs) -> R:
     """Runs a function as a regular function and as a compiled function, and checks that the results are the same."""
 
     regular_result = fn(*args, **kwargs)
@@ -46,3 +46,19 @@ def dual_run[**P, R](fn: Callable[P, R], *args: P.args, **kwargs: P.kwargs) -> R
     assert regular_result == compiled_result
 
     return regular_result
+
+
+def compiled_run[**P, R](fn: Callable[P, Num], *args: P.args, **kwargs: P.kwargs) -> Num:
+    """Runs a function as a compiled function and returns the result."""
+
+    @self_impl
+    def run_compiled():
+        return compile_and_call(fn, *args, **kwargs)
+
+    compiler = Compiler()
+    cfg = compiler.compile_callback(run_compiled, "")
+    cfg = CoalesceFlow().run(cfg)
+    cfg = AllocateBasic().run(cfg)
+    entry = cfg_to_engine_node(cfg)
+    interpreter = Interpreter()
+    return interpreter.run(entry)

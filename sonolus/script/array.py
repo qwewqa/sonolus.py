@@ -194,5 +194,21 @@ class Array[T: Value, Size](GenericValue, ArrayLike[T]):
             else:
                 dst._copy_from_(value)
 
+    def __eq__(self, other):
+        if self.size() != other.size():
+            return False
+        i = 0
+        while i < self.size():
+            if self[i] != other[i]:
+                return False
+            i += 1
+        return True
+
+    def __ne__(self, other):
+        return not self == other
+
     def __str__(self):
         return f"{type(self).__name__}.of({", ".join(str(self[i]) for i in range(self.size()))})"
+
+    def __repr__(self):
+        return f"{type(self).__name__}.of({", ".join(repr(self[i]) for i in range(self.size()))})"
