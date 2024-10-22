@@ -7,11 +7,18 @@ from enum import StrEnum
 from typing import Annotated, ClassVar, get_origin
 
 from scripts.out.blocks import PlayBlock
+from sonolus.backend.ir import IRConst, IRInstr
+from sonolus.backend.ops import Op
 from sonolus.script.callbacks import PLAY_CALLBACKS, CallbackInfo
+from sonolus.script.internal.context import ctx
 from sonolus.script.internal.generic import validate_concrete_type
 from sonolus.script.internal.value import Value
 from sonolus.script.num import Num
-from sonolus.script.pointer import static_deref
+from sonolus.script.pointer import deref
+
+ENTITY_MEMORY_SIZE = 64
+ENTITY_DATA_SIZE = 32
+ENTITY_SHARED_MEMORY_SIZE = 32
 
 
 class StorageType(StrEnum):
@@ -37,13 +44,100 @@ class ArchetypeField:
     def __get__(self, instance: Archetype, owner):
         if instance is None:
             return self
+        result = None
         match self.storage:
             case StorageType.Imported:
                 match instance._data_:
                     case ArchetypeSelfData():
-                        return static_deref(PlayBlock.EntityData, self.offset, self.type)
+                        result = deref(PlayBlock.EntityData, self.offset, self.type)
+                    case ArchetypeReferenceData(index=index):
+                        result = deref(PlayBlock.EntityDataArray, self.offset + index * ENTITY_DATA_SIZE, self.type)
+                    case ArchetypeLevelData(values=values):
+                        result = values[self.name]
+            case StorageType.Exported:
+                raise RuntimeError("Exported fields are write-only")
+            case StorageType.Memory:
+                match instance._data_:
+                    case ArchetypeSelfData():
+                        result = deref(PlayBlock.EntityMemory, self.offset, self.type)
                     case ArchetypeReferenceData():
-                        pass  # TODO
+                        raise RuntimeError("Entity memory of other entities is not accessible")
+                    case ArchetypeLevelData():
+                        raise RuntimeError("Entity memory is not available in level data")
+            case StorageType.Shared:
+                match instance._data_:
+                    case ArchetypeSelfData():
+                        result = deref(PlayBlock.EntitySharedMemory, self.offset, self.type)
+                    case ArchetypeReferenceData(index=index):
+                        result = deref(
+                            PlayBlock.EntitySharedMemoryArray,
+                            self.offset + index * ENTITY_SHARED_MEMORY_SIZE,
+                            self.type,
+                        )
+                    case ArchetypeLevelData():
+                        raise RuntimeError("Entity shared memory is not available in level data")
+        if result is None:
+            raise RuntimeError("Invalid storage type")
+        if ctx():
+            return result._get_()
+        else:
+            return result._as_py_()
+
+    def __set__(self, instance: Archetype, value):
+        if instance is None:
+            raise RuntimeError("Cannot set field on class")
+        if not self.type._accepts_(value):
+            raise TypeError(f"Expected {self.type}, got {type(value)}")
+        target = None
+        match self.storage:
+            case StorageType.Imported:
+                match instance._data_:
+                    case ArchetypeSelfData():
+                        target = deref(PlayBlock.EntityData, self.offset, self.type)
+                    case ArchetypeReferenceData(index=index):
+                        target = deref(PlayBlock.EntityDataArray, self.offset + index * ENTITY_DATA_SIZE, self.type)
+                    case ArchetypeLevelData(values=values):
+                        target = values[self.name]
+            case StorageType.Exported:
+                match instance._data_:
+                    case ArchetypeSelfData():
+                        if not isinstance(value, self.type):
+                            raise TypeError(f"Expected {self.type}, got {type(value)}")
+                        for k, v in value._to_flat_dict_(self.name).items():
+                            index = instance._exported_keys_[k]
+                            ctx().add_statements(IRInstr(Op.ExportValue, [IRConst(index), Num._accept_(v).ir()]))
+                        return
+                    case ArchetypeReferenceData():
+                        raise RuntimeError("Exported fields of other entities are not accessible")
+                    case ArchetypeLevelData():
+                        raise RuntimeError("Exported fields are not available in level data")
+            case StorageType.Memory:
+                match instance._data_:
+                    case ArchetypeSelfData():
+                        target = deref(PlayBlock.EntityMemory, self.offset, self.type)
+                    case ArchetypeReferenceData():
+                        raise RuntimeError("Entity memory of other entities is not accessible")
+                    case ArchetypeLevelData():
+                        raise RuntimeError("Entity memory is not available in level data")
+            case StorageType.Shared:
+                match instance._data_:
+                    case ArchetypeSelfData():
+                        target = deref(PlayBlock.EntitySharedMemory, self.offset, self.type)
+                    case ArchetypeReferenceData(index=index):
+                        target = deref(
+                            PlayBlock.EntitySharedMemoryArray,
+                            self.offset + index * ENTITY_SHARED_MEMORY_SIZE,
+                            self.type,
+                        )
+                    case ArchetypeLevelData():
+                        raise RuntimeError("Entity shared memory is not available in level data")
+        if target is None:
+            raise RuntimeError("Invalid storage type")
+        value = self.type._accept_(value)
+        if self.type._is_value_type_():
+            target._set_(value)
+        else:
+            target._copy_from_(value)
 
 
 def imported[T: type](t: T, *, name: str | None = None) -> T:

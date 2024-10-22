@@ -76,6 +76,10 @@ class Value:
         """Returns the keys to a flat representation of this value."""
         raise NotImplementedError
 
+    def _to_flat_dict_(self, prefix: str) -> dict[str, float | BlockPlace]:
+        """Converts this value to a flat dictionary."""
+        return dict(zip(self._flat_keys_(prefix), self._to_list_(), strict=False))
+
     @abstractmethod
     def _get_(self) -> Self:
         """Implements access to the value.
