@@ -4,7 +4,7 @@ from sonolus.script.internal.impl import self_impl, validate_value
 
 
 @self_impl
-def make[T](type_: type[T]) -> T:
+def zeros[T](type_: type[T]) -> T:
     """Returns a new instance of the given type initialized with zeros."""
     type_ = validate_concrete_type(type_)
     if ctx():

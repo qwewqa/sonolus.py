@@ -4,17 +4,20 @@ import inspect
 from collections.abc import Callable
 from dataclasses import dataclass
 from enum import StrEnum
-from typing import Annotated, ClassVar, get_origin
+from typing import Annotated, ClassVar, get_origin, Any, Self, TYPE_CHECKING
 
 from scripts.out.blocks import PlayBlock
 from sonolus.backend.ir import IRConst, IRInstr
 from sonolus.backend.ops import Op
 from sonolus.script.callbacks import PLAY_CALLBACKS, CallbackInfo
+from sonolus.script.comptime import Comptime
 from sonolus.script.internal.context import ctx
 from sonolus.script.internal.generic import validate_concrete_type
 from sonolus.script.internal.value import Value
 from sonolus.script.num import Num
 from sonolus.script.pointer import deref
+from sonolus.script.record import Record
+from sonolus.script.values import zeros
 
 ENTITY_MEMORY_SIZE = 64
 ENTITY_DATA_SIZE = 32
@@ -171,9 +174,15 @@ class ArchetypeSelfData:
 class ArchetypeReferenceData:
     index: Num
 
+    def __init__(self, index: Num):
+        self.index = index
+
 
 class ArchetypeLevelData:
     values: dict[str, Value]
+
+    def __init__(self, values: dict[str, Value]):
+        self.values = values
 
 
 type ArchetypeData = ArchetypeSelfData | ArchetypeReferenceData | ArchetypeLevelData
@@ -191,8 +200,43 @@ class Archetype:
     _imported_keys_: ClassVar[dict[str, int]]
     _exported_keys_: ClassVar[dict[str, int]]
     _callbacks_: ClassVar[list[Callable]]
+    _data_constructor_signature_: ClassVar[inspect.Signature]
 
     _data_: ArchetypeData
+
+    is_scored: ClassVar[bool] = False
+
+    def __init__(self, *args, **kwargs):
+        raise TypeError("Archetype instances cannot be created directly, use the at or data class methods instead")
+
+    @classmethod
+    def _new(cls):
+        return object.__new__(cls)
+
+    @classmethod
+    def _for_compilation(cls):
+        result = cls._new()
+        result._data_ = ArchetypeSelfData()
+        return result
+
+    @classmethod
+    def at(cls, index: Num) -> Self:
+        result = cls._new()
+        result._data_ = ArchetypeReferenceData(index=index)
+        return result
+
+    @classmethod
+    def data(cls, *args, **kwargs) -> Self:
+        if ctx():
+            raise RuntimeError("The Archetype constructor is only for level data")
+        bound = cls._data_constructor_signature_.bind_partial(*args, **kwargs)
+        bound.apply_defaults()
+        values = {
+            field.name: field.type._accept_(bound.arguments.get(field.name) or zeros(field.type)) for field in cls._imported_fields_.values()
+        }
+        result = cls._new()
+        result._data_ = ArchetypeLevelData(values=values)
+        return result
 
     def __init_subclass__(cls, **kwargs):
         if cls.__module__ == Archetype.__module__:
@@ -202,7 +246,6 @@ class Archetype:
             return
         if getattr(cls, "_callbacks_", None) is not None:
             raise TypeError("Cannot subclass Archetypes")
-        annotations = inspect.get_annotations(cls, eval_str=True)
         cls._imported_fields_ = {}
         cls._exported_fields_ = {}
         cls._memory_fields_ = {}
@@ -211,7 +254,7 @@ class Archetype:
         exported_offset = 0
         memory_offset = 0
         shared_memory_offset = 0
-        for name, value in annotations.items():
+        for name, value in inspect.get_annotations(cls, eval_str=True).items():
             if value is ClassVar or get_origin(value) is ClassVar:
                 continue
             if get_origin(value) is not Annotated:
@@ -252,6 +295,18 @@ class Archetype:
                 key for field in cls._exported_fields_.values() for key in field.type._flat_keys_(field.name)
             )
         }
+        cls._data_constructor_signature_ = inspect.Signature(
+            [
+                inspect.Parameter(name, inspect.Parameter.POSITIONAL_OR_KEYWORD)
+                for name in cls._imported_fields_
+            ]
+        )
+        cls._callbacks_ = []
+        for name in cls._supported_callbacks_:
+            cb = getattr(cls, name)
+            if cb in cls._default_callbacks_:
+                continue
+            cls._callbacks_.append(cb)
 
 
 class PlayArchetype(Archetype):
@@ -280,3 +335,8 @@ class PlayArchetype(Archetype):
 
     def terminate(self):
         pass
+
+
+class EntityRef[A: Archetype](Record):
+    index: Num
+    archetype: Comptime[type, A]
