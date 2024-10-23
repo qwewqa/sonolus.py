@@ -1,5 +1,6 @@
 from sonolus.script.internal.impl import self_impl, validate_value
 from sonolus.script.iterator import ArrayLike, Enumerator
+from sonolus.script.math import MATH_BUILTIN_IMPLS
 
 
 @self_impl
@@ -44,4 +45,5 @@ def _abs(value):
 
 BUILTIN_IMPLS = {
     id(isinstance): _isinstance,
+    **MATH_BUILTIN_IMPLS,
 }

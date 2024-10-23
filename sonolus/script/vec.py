@@ -1,5 +1,6 @@
 from typing import Self
 
+from sonolus.script.math import atan2
 from sonolus.script.num import Num
 from sonolus.script.record import Record
 
@@ -31,6 +32,9 @@ class Vec2(Record):
 
     def magnitude(self) -> Num:
         return (self.x**2 + self.y**2) ** 0.5
+
+    def angle(self) -> Num:
+        return atan2(self.y, self.x)
 
     def dot(self, other: Self) -> Num:
         return self.x * other.x + self.y * other.y

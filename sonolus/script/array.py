@@ -30,7 +30,7 @@ class Array[T: Value, Size](GenericValue, ArrayLike[T]):
 
     def __init__(self, *args, **kwargs):
         # We could use __new__ instead of Array.of, but making it a classmethod plays nicer with typing
-        raise TypeError("Array cannot be directly instantiated, use Array.of or alloc instead")
+        raise TypeError("Array cannot be directly instantiated, use Array.of instead")
 
     @classmethod
     @self_impl

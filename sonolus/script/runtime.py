@@ -5,12 +5,15 @@ from sonolus.script.array import Array
 from sonolus.script.collections import VarArray
 from sonolus.script.globals import (
     play_runtime_environment,
+    play_runtime_update,
     preview_runtime_environment,
+    runtime_touch_array,
     runtime_ui,
     runtime_ui_configuration,
-    singleton,
     tutorial_runtime_environment,
-    watch_runtime_environment, play_runtime_update, watch_runtime_update, tutorial_runtime_update, runtime_touch_array,
+    tutorial_runtime_update,
+    watch_runtime_environment,
+    watch_runtime_update,
 )
 from sonolus.script.internal.context import ctx
 from sonolus.script.internal.impl import self_impl
@@ -103,14 +106,14 @@ class UiLayout(Record):
     background: bool
 
     def update(
-            self,
-            anchor: Vec2 | None = None,
-            pivot: Vec2 | None= None,
-            dimensions: Vec2 | None = None,
-            rotation: float | None = None,
-            alpha: float | None = None,
-            horizontal_align: int | None = None,
-            background: bool | None = None,
+        self,
+        anchor: Vec2 | None = None,
+        pivot: Vec2 | None = None,
+        dimensions: Vec2 | None = None,
+        rotation: float | None = None,
+        alpha: float | None = None,
+        horizontal_align: int | None = None,
+        background: bool | None = None,
     ):
         if anchor is not None:
             self.anchor = anchor
@@ -154,14 +157,33 @@ class TouchInfo(Record):
     speed: float
     angle: float
 
+    @property
+    def total_time(self) -> float:
+        return self.time - self.start_time
+
+    @property
+    def total_delta(self) -> Vec2:
+        return self.position - self.start_position
+
+    @property
+    def total_velocity(self) -> Vec2:
+        return self.total_delta / self.total_time if self.total_time > 0 else Vec2(0, 0)
+
+    @property
+    def total_speed(self) -> float:
+        return self.total_velocity.magnitude()
+
+    @property
+    def total_angle(self) -> float:
+        return self.total_delta.angle()
+
 
 @runtime_touch_array
 class _TouchArray:
     touches: Array[TouchInfo, 999]
 
 
-@singleton
-class Runtime(Record):
+class _Runtime(Record):
     @property
     def is_debug(self) -> bool:
         if self.is_play:
@@ -253,10 +275,10 @@ class Runtime(Record):
         return 0
 
     @property
-    def touches(self):
+    def touches(self) -> VarArray[TouchInfo, 999]:
         if self.is_play:
             return VarArray(self._touch_count, _TouchArray.touches)
-        return VarArray(0, Array[TouchInfo, 0]())
+        return VarArray(0, Array[TouchInfo, 0].of())
 
     @property
     def is_skip(self) -> bool:
@@ -297,3 +319,6 @@ class Runtime(Record):
     @self_impl
     def is_tutorial(self) -> bool:
         return ctx().global_state.mode is Mode.Tutorial
+
+
+runtime = _Runtime()

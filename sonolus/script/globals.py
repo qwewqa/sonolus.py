@@ -47,16 +47,14 @@ class GlobalField:
 def create_global(cls: type, blocks: dict[Mode, Block], offset: int | None):
     if len(cls.__bases__) != 1:
         raise TypeError("GlobalProxy must not inherit from any class (other than object)")
-    index = 0
     field_offset = 0
-    for (
+    for i, (
         name,
         annotation,
-    ) in inspect.get_annotations(cls, eval_str=True).items():
+    ) in enumerate(inspect.get_annotations(cls, eval_str=True).items()):
         type_ = validate_concrete_type(annotation)
-        setattr(cls, name, GlobalField(name, type_, index, field_offset))
+        setattr(cls, name, GlobalField(name, type_, i, field_offset))
         field_offset += type_._size_()
-        index += 1
     cls._global_info_ = GlobalInfo(cls.__name__, field_offset, blocks, offset)
     return cls()
 
@@ -177,10 +175,6 @@ def level_score[T](cls: type[T]) -> T:
 
 def level_life[T](cls: type[T]) -> T:
     return create_global(cls, {Mode.Play: PlayBlock.LevelLife, Mode.Watch: WatchBlock.LevelLife}, None)
-
-
-def singleton[T](cls: type[T]) -> T:
-    return create_global(cls, {}, None)
 
 
 # engine_rom is handled by the compiler

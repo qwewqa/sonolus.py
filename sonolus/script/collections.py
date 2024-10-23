@@ -5,17 +5,17 @@ from sonolus.script.iterator import ArrayLike
 from sonolus.script.record import Record
 
 
-class VarArray[T: Value, Capacity](Record, ArrayLike):
+class VarArray[T: Value, Capacity](Record, ArrayLike[T]):
     _size: int
     _array: Array[T, Capacity]
 
     def size(self) -> int:
         return self._size
 
-    def __getitem__(self, item):
+    def __getitem__(self, item) -> T:
         return self._array[item]
 
-    def __setitem__(self, key, value):
+    def __setitem__(self, key: int, value: T):
         self._array[key] = value
 
     def push(self, value: T):

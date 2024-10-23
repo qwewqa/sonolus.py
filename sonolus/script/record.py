@@ -129,7 +129,9 @@ class Record(GenericValue):
 
     @classmethod
     def _from_place_(cls, place: BlockPlace) -> Self:
-        return cls(**{field.name: field.type._from_place_(place.add_offset(field.offset)) for field in cls._fields})
+        result = object.__new__(cls)
+        result._value = {field.name: field.type._from_place_(place.add_offset(field.offset)) for field in cls._fields}
+        return result
 
     @classmethod
     def _accepts_(cls, value: Any) -> bool:

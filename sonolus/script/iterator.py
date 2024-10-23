@@ -38,7 +38,7 @@ class ArrayLike[T](Collection):
     def __len__(self) -> int:
         return self.size()
 
-    def __iter__(self) -> SonolusIterator:
+    def __iter__(self) -> SonolusIterator[T]:
         return ArrayIterator(0, self)
 
     def __contains__(self, value: T) -> bool:
