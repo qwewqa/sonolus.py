@@ -14,8 +14,9 @@ from sonolus.script.iterator import ArrayLike
 from sonolus.script.num import Num
 
 
+# noinspection PyProtectedMember
 @final
-class Array[T: Value, Size](GenericValue, ArrayLike[T]):
+class Array[T, Size](GenericValue, ArrayLike[T]):
     _value: list[T] | BlockPlace
 
     @classmethod
@@ -28,25 +29,21 @@ class Array[T: Value, Size](GenericValue, ArrayLike[T]):
     def size(cls) -> int:
         return cls._get_type_arg_(Size)
 
-    def __init__(self, *args, **kwargs):
-        # We could use __new__ instead of Array.of, but making it a classmethod plays nicer with typing
-        raise TypeError("Array cannot be directly instantiated, use Array.of instead")
-
-    @classmethod
-    @self_impl
-    def of[R](cls, *args: R) -> Array[R, Size]:
+    def __new__(cls, *args: T) -> Array[T, Any]:
         if cls._type_args_ is None:
             values = [validate_value(arg) for arg in args]
             types = {type(value) for value in values}
             if len(types) == 0:
-                raise ValueError(f"{cls.__name__}.of() should be used with at least one value if type is not specified")
+                raise ValueError(
+                    f"{cls.__name__} constructor should be used with at least one value if type is not specified"
+                )
             if len(types) > 1:
-                raise TypeError(f"{cls.__name__}.of() should be used with values of the same type, got {types}")
+                raise TypeError(f"{cls.__name__} constructor should be used with values of the same type, got {types}")
             parameterized_cls = cls[types.pop(), len(args)]
         else:
             values = [cls.element_type()._accept_(arg) for arg in args]
             if len(args) != cls.size():
-                raise ValueError(f"{cls.__name__}.of() should be used with {cls.size()} values, got {len(args)}")
+                raise ValueError(f"{cls.__name__} constructor should be used with {cls.size()} values, got {len(args)}")
             parameterized_cls = cls
         if ctx():
             place = ctx().alloc(size=parameterized_cls.size())
@@ -55,6 +52,9 @@ class Array[T: Value, Size](GenericValue, ArrayLike[T]):
             return result
         else:
             return parameterized_cls._with_value([value._copy_() for value in values])
+
+    def __init__(self, *_args: T):
+        super().__init__()
 
     @classmethod
     def _with_value(cls, value) -> Self:
@@ -95,7 +95,7 @@ class Array[T: Value, Size](GenericValue, ArrayLike[T]):
     @classmethod
     def _from_list_(cls, values: Iterable[float | BlockPlace]) -> Self:
         iterator = iter(values)
-        return cls.of(*(cls.element_type()._from_list_(iterator) for _ in range(cls.size())))
+        return cls(*(cls.element_type()._from_list_(iterator) for _ in range(cls.size())))
 
     def _to_list_(self) -> list[float | BlockPlace]:
         return [entry for value in self._value for entry in value._to_list_()]

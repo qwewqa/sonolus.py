@@ -278,7 +278,7 @@ class _Runtime(Record):
     def touches(self) -> VarArray[TouchInfo, 999]:
         if self.is_play:
             return VarArray(self._touch_count, _TouchArray.touches)
-        return VarArray(0, Array[TouchInfo, 0].of())
+        return VarArray(0, Array[TouchInfo, 0]())
 
     @property
     def is_skip(self) -> bool:

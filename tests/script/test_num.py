@@ -17,9 +17,9 @@ def test_num_unary(n):
     def fn():
         plus = +n
         minus = -n
-        return Array.of(plus, minus)
+        return Array(plus, minus)
 
-    assert validate_dual_run(fn) == Array.of(+n, -n)
+    assert validate_dual_run(fn) == Array(+n, -n)
 
 
 @given(
@@ -34,9 +34,9 @@ def test_num_comparison(a, b):
         ne = a != b
         ge = a >= b
         gt = a > b
-        return Array.of(lt, le, eq, ne, ge, gt)
+        return Array(lt, le, eq, ne, ge, gt)
 
-    assert validate_dual_run(fn) == Array.of(a < b, a <= b, a == b, a != b, a >= b, a > b)
+    assert validate_dual_run(fn) == Array(a < b, a <= b, a == b, a != b, a >= b, a > b)
 
 
 @given(
@@ -52,9 +52,9 @@ def test_num_binary(a, b):
         mod = a % b if b != 0 else 0
         power = a**b if (b < 10 and (a > 0 or b > 0)) else 0
         floordiv = a // b if b != 0 else 0
-        return Array.of(add, sub, mul, div, mod, power, floordiv)
+        return Array(add, sub, mul, div, mod, power, floordiv)
 
-    assert validate_dual_run(fn) == Array.of(
+    assert validate_dual_run(fn) == Array(
         a + b,
         a - b,
         a * b,
@@ -89,9 +89,9 @@ def test_num_augmented(a, b):
         floordiv = a
         if b != 0:
             floordiv //= b
-        return Array.of(add, sub, mul, div, mod, power, floordiv)
+        return Array(add, sub, mul, div, mod, power, floordiv)
 
-    assert validate_dual_run(fn) == Array.of(
+    assert validate_dual_run(fn) == Array(
         a + b,
         a - b,
         a * b,

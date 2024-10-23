@@ -1,11 +1,10 @@
 from sonolus.script.array import Array
 from sonolus.script.debug import assert_true
-from sonolus.script.internal.value import Value
 from sonolus.script.iterator import ArrayLike
 from sonolus.script.record import Record
 
 
-class VarArray[T: Value, Capacity](Record, ArrayLike[T]):
+class VarArray[T, Capacity](Record, ArrayLike[T]):
     _size: int
     _array: Array[T, Capacity]
 
