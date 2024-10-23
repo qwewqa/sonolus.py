@@ -1,6 +1,8 @@
 from enum import IntEnum
 
 from sonolus.backend.mode import Mode
+from sonolus.script.array import Array
+from sonolus.script.collections import VarArray
 from sonolus.script.globals import (
     play_runtime_environment,
     preview_runtime_environment,
@@ -8,7 +10,7 @@ from sonolus.script.globals import (
     runtime_ui_configuration,
     singleton,
     tutorial_runtime_environment,
-    watch_runtime_environment, play_runtime_update, watch_runtime_update, tutorial_runtime_update,
+    watch_runtime_environment, play_runtime_update, watch_runtime_update, tutorial_runtime_update, runtime_touch_array,
 )
 from sonolus.script.internal.context import ctx
 from sonolus.script.internal.impl import self_impl
@@ -68,6 +70,94 @@ class _TutorialRuntimeUpdate:
     time: float
     delta_time: float
     navigation_direction: int
+
+
+class UiConfig(Record):
+    scale: float
+    alpha: float
+
+
+@runtime_ui_configuration
+class _UiConfigs:
+    menu: UiConfig
+    judgment: UiConfig
+    combo: UiConfig
+    primary_metric: UiConfig
+    secondary_metric: UiConfig
+    progress: UiConfig
+
+
+class HorizontalAlign(IntEnum):
+    Left = -1
+    Center = 0
+    Right = 1
+
+
+class UiLayout(Record):
+    anchor: Vec2
+    pivot: Vec2
+    dimensions: Vec2
+    rotation: float
+    alpha: float
+    horizontal_align: int
+    background: bool
+
+    def update(
+            self,
+            anchor: Vec2 | None = None,
+            pivot: Vec2 | None= None,
+            dimensions: Vec2 | None = None,
+            rotation: float | None = None,
+            alpha: float | None = None,
+            horizontal_align: int | None = None,
+            background: bool | None = None,
+    ):
+        if anchor is not None:
+            self.anchor = anchor
+        if pivot is not None:
+            self.pivot = pivot
+        if dimensions is not None:
+            self.dimensions = dimensions
+        if rotation is not None:
+            self.rotation = rotation
+        if alpha is not None:
+            self.alpha = alpha
+        if horizontal_align is not None:
+            self.horizontal_align = horizontal_align
+        if background is not None:
+            self.background = background
+
+
+@runtime_ui
+class _UiLayouts:
+    menu: UiLayout
+    judgment: UiLayout
+    combo_value: UiLayout
+    combo_text: UiLayout
+    primary_metric_bar: UiLayout
+    primary_metric_value: UiLayout
+    secondary_metric_bar: UiLayout
+    secondary_metric_value: UiLayout
+    progress: UiLayout
+
+
+class TouchInfo(Record):
+    id: int
+    started: bool
+    ended: bool
+    time: float
+    start_time: float
+    position: Vec2
+    start_position: Vec2
+    delta: Vec2
+    velocity: Vec2
+    speed: float
+    angle: float
+
+
+@runtime_touch_array
+class _TouchArray:
+    touches: Array[TouchInfo, 999]
 
 
 @singleton
@@ -136,7 +226,6 @@ class Runtime(Record):
             return _TutorialRuntimeUpdate.time
         return 0
 
-
     @property
     def delta_time(self) -> float:
         if self.is_play:
@@ -158,10 +247,16 @@ class Runtime(Record):
         return 0
 
     @property
-    def touch_count(self) -> int:
+    def _touch_count(self) -> int:
         if self.is_play:
             return _PlayRuntimeUpdate.touch_count
         return 0
+
+    @property
+    def touches(self):
+        if self.is_play:
+            return VarArray(self._touch_count, _TouchArray.touches)
+        return VarArray(0, Array[TouchInfo, 0]())
 
     @property
     def is_skip(self) -> bool:
@@ -174,6 +269,14 @@ class Runtime(Record):
         if self.is_tutorial:
             return _TutorialRuntimeUpdate.navigation_direction
         return 0
+
+    @property
+    def ui_config(self) -> _UiConfigs:
+        return _UiConfigs
+
+    @property
+    def ui(self) -> _UiLayouts:
+        return _UiLayouts
 
     @property
     @self_impl
@@ -194,47 +297,3 @@ class Runtime(Record):
     @self_impl
     def is_tutorial(self) -> bool:
         return ctx().global_state.mode is Mode.Tutorial
-
-
-class UiConfig(Record):
-    scale: float
-    alpha: float
-
-
-@runtime_ui_configuration
-class UiConfigs:
-    menu: UiConfig
-    judgment: UiConfig
-    combo: UiConfig
-    primary_metric: UiConfig
-    secondary_metric: UiConfig
-    progress: UiConfig
-
-
-class HorizontalAlign(IntEnum):
-    Left = -1
-    Center = 0
-    Right = 1
-
-
-class UiLayout(Record):
-    anchor: Vec2
-    pivot: Vec2
-    dimensions: Vec2
-    rotation: float
-    alpha: float
-    horizontal_align: int
-    background: bool
-
-
-@runtime_ui
-class UiLayouts:
-    menu: UiLayout
-    judgment: UiLayout
-    combo_value: UiLayout
-    combo_text: UiLayout
-    primary_metric_bar: UiLayout
-    primary_metric_value: UiLayout
-    secondary_metric_bar: UiLayout
-    secondary_metric_value: UiLayout
-    progress: UiLayout
