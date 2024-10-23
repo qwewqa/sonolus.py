@@ -8,7 +8,7 @@ from sonolus.script.globals import (
     runtime_ui_configuration,
     singleton,
     tutorial_runtime_environment,
-    watch_runtime_environment,
+    watch_runtime_environment, play_runtime_update, watch_runtime_update, tutorial_runtime_update,
 )
 from sonolus.script.internal.context import ctx
 from sonolus.script.internal.impl import self_impl
@@ -17,7 +17,7 @@ from sonolus.script.vec import Vec2
 
 
 @play_runtime_environment
-class PlayRuntimeEnvironment:
+class _PlayRuntimeEnvironment:
     is_debug: bool
     aspect_ratio: float
     audio_offset: float
@@ -26,7 +26,7 @@ class PlayRuntimeEnvironment:
 
 
 @watch_runtime_environment
-class WatchRuntimeEnvironment:
+class _WatchRuntimeEnvironment:
     is_debug: bool
     aspect_ratio: float
     audio_offset: float
@@ -35,92 +35,164 @@ class WatchRuntimeEnvironment:
 
 
 @preview_runtime_environment
-class PreviewRuntimeEnvironment:
+class _PreviewRuntimeEnvironment:
     is_debug: bool
     aspect_ratio: float
 
 
 @tutorial_runtime_environment
-class TutorialRuntimeEnvironment:
+class _TutorialRuntimeEnvironment:
     is_debug: bool
     aspect_ratio: float
     audio_offset: float
 
 
+@play_runtime_update
+class _PlayRuntimeUpdate:
+    time: float
+    delta_time: float
+    scaled_time: float
+    touch_count: int
+
+
+@watch_runtime_update
+class _WatchRuntimeUpdate:
+    time: float
+    delta_time: float
+    scaled_time: float
+    is_skip: bool
+
+
+@tutorial_runtime_update
+class _TutorialRuntimeUpdate:
+    time: float
+    delta_time: float
+    navigation_direction: int
+
+
 @singleton
 class Runtime(Record):
     @property
-    def is_debug(self):
+    def is_debug(self) -> bool:
         if self.is_play:
-            return PlayRuntimeEnvironment.is_debug
+            return _PlayRuntimeEnvironment.is_debug
         if self.is_watch:
-            return WatchRuntimeEnvironment.is_debug
+            return _WatchRuntimeEnvironment.is_debug
         if self.is_preview:
-            return PreviewRuntimeEnvironment.is_debug
+            return _PreviewRuntimeEnvironment.is_debug
         if self.is_tutorial:
-            return TutorialRuntimeEnvironment.is_debug
+            return _TutorialRuntimeEnvironment.is_debug
         return False
 
     @property
-    def aspect_ratio(self):
+    def aspect_ratio(self) -> float:
         if self.is_play:
-            return PlayRuntimeEnvironment.aspect_ratio
+            return _PlayRuntimeEnvironment.aspect_ratio
         if self.is_watch:
-            return WatchRuntimeEnvironment.aspect_ratio
+            return _WatchRuntimeEnvironment.aspect_ratio
         if self.is_preview:
-            return PreviewRuntimeEnvironment.aspect_ratio
+            return _PreviewRuntimeEnvironment.aspect_ratio
         if self.is_tutorial:
-            return TutorialRuntimeEnvironment.aspect_ratio
+            return _TutorialRuntimeEnvironment.aspect_ratio
         return 16 / 9
 
     @property
-    def audio_offset(self):
+    def audio_offset(self) -> float:
         if self.is_play:
-            return PlayRuntimeEnvironment.audio_offset
+            return _PlayRuntimeEnvironment.audio_offset
         if self.is_watch:
-            return WatchRuntimeEnvironment.audio_offset
+            return _WatchRuntimeEnvironment.audio_offset
         if self.is_tutorial:
-            return TutorialRuntimeEnvironment.audio_offset
+            return _TutorialRuntimeEnvironment.audio_offset
         return 0
 
     @property
-    def input_offset(self):
+    def input_offset(self) -> float:
         if self.is_play:
-            return PlayRuntimeEnvironment.input_offset
+            return _PlayRuntimeEnvironment.input_offset
         if self.is_watch:
-            return WatchRuntimeEnvironment.input_offset
+            return _WatchRuntimeEnvironment.input_offset
         return 0
 
     @property
-    def is_multiplayer(self):
+    def is_multiplayer(self) -> bool:
         if self.is_play:
-            return PlayRuntimeEnvironment.is_multiplayer
+            return _PlayRuntimeEnvironment.is_multiplayer
         return False
 
     @property
-    def is_replay(self):
+    def is_replay(self) -> bool:
         if self.is_watch:
-            return WatchRuntimeEnvironment.is_replay
+            return _WatchRuntimeEnvironment.is_replay
         return False
+
+    @property
+    def time(self) -> float:
+        if self.is_play:
+            return _PlayRuntimeUpdate.time
+        if self.is_watch:
+            return _WatchRuntimeUpdate.time
+        if self.is_tutorial:
+            return _TutorialRuntimeUpdate.time
+        return 0
+
+
+    @property
+    def delta_time(self) -> float:
+        if self.is_play:
+            return _PlayRuntimeUpdate.delta_time
+        if self.is_watch:
+            return _WatchRuntimeUpdate.delta_time
+        if self.is_tutorial:
+            return _TutorialRuntimeUpdate.delta_time
+        return 0
+
+    @property
+    def scaled_time(self) -> float:
+        if self.is_play:
+            return _PlayRuntimeUpdate.scaled_time
+        if self.is_watch:
+            return _WatchRuntimeUpdate.scaled_time
+        if self.is_tutorial:
+            return _TutorialRuntimeUpdate.time
+        return 0
+
+    @property
+    def touch_count(self) -> int:
+        if self.is_play:
+            return _PlayRuntimeUpdate.touch_count
+        return 0
+
+    @property
+    def is_skip(self) -> bool:
+        if self.is_watch:
+            return _WatchRuntimeUpdate.is_skip
+        return False
+
+    @property
+    def navigation_direction(self) -> int:
+        if self.is_tutorial:
+            return _TutorialRuntimeUpdate.navigation_direction
+        return 0
 
     @property
     @self_impl
-    def is_play(self):
+    def is_play(self) -> bool:
         return ctx().global_state.mode is Mode.Play
 
     @property
     @self_impl
-    def is_watch(self):
+    def is_watch(self) -> bool:
         return ctx().global_state.mode is Mode.Watch
 
     @property
     @self_impl
-    def is_preview(self):
+    def is_preview(self) -> bool:
         return ctx().global_state.mode is Mode.Preview
 
     @property
     @self_impl
-    def is_tutorial(self):
+    def is_tutorial(self) -> bool:
         return ctx().global_state.mode is Mode.Tutorial
 
 
