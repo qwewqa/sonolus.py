@@ -4,9 +4,8 @@ import inspect
 from collections.abc import Callable
 from dataclasses import dataclass
 from enum import StrEnum
-from typing import Annotated, ClassVar, get_origin, Any, Self, TYPE_CHECKING
+from typing import Annotated, ClassVar, Self, get_origin
 
-from scripts.out.blocks import PlayBlock
 from sonolus.backend.ir import IRConst, IRInstr
 from sonolus.backend.ops import Op
 from sonolus.script.callbacks import PLAY_CALLBACKS, CallbackInfo
@@ -52,9 +51,9 @@ class ArchetypeField:
             case StorageType.Imported:
                 match instance._data_:
                     case ArchetypeSelfData():
-                        result = deref(PlayBlock.EntityData, self.offset, self.type)
+                        result = deref(ctx().blocks.EntityData, self.offset, self.type)
                     case ArchetypeReferenceData(index=index):
-                        result = deref(PlayBlock.EntityDataArray, self.offset + index * ENTITY_DATA_SIZE, self.type)
+                        result = deref(ctx().blocks.EntityDataArray, self.offset + index * ENTITY_DATA_SIZE, self.type)
                     case ArchetypeLevelData(values=values):
                         result = values[self.name]
             case StorageType.Exported:
@@ -62,7 +61,7 @@ class ArchetypeField:
             case StorageType.Memory:
                 match instance._data_:
                     case ArchetypeSelfData():
-                        result = deref(PlayBlock.EntityMemory, self.offset, self.type)
+                        result = deref(ctx().blocks.EntityMemory, self.offset, self.type)
                     case ArchetypeReferenceData():
                         raise RuntimeError("Entity memory of other entities is not accessible")
                     case ArchetypeLevelData():
@@ -70,10 +69,10 @@ class ArchetypeField:
             case StorageType.Shared:
                 match instance._data_:
                     case ArchetypeSelfData():
-                        result = deref(PlayBlock.EntitySharedMemory, self.offset, self.type)
+                        result = deref(ctx().blocks.EntitySharedMemory, self.offset, self.type)
                     case ArchetypeReferenceData(index=index):
                         result = deref(
-                            PlayBlock.EntitySharedMemoryArray,
+                            ctx().blocks.EntitySharedMemoryArray,
                             self.offset + index * ENTITY_SHARED_MEMORY_SIZE,
                             self.type,
                         )
@@ -96,9 +95,9 @@ class ArchetypeField:
             case StorageType.Imported:
                 match instance._data_:
                     case ArchetypeSelfData():
-                        target = deref(PlayBlock.EntityData, self.offset, self.type)
+                        target = deref(ctx().blocks.EntityData, self.offset, self.type)
                     case ArchetypeReferenceData(index=index):
-                        target = deref(PlayBlock.EntityDataArray, self.offset + index * ENTITY_DATA_SIZE, self.type)
+                        target = deref(ctx().blocks.EntityDataArray, self.offset + index * ENTITY_DATA_SIZE, self.type)
                     case ArchetypeLevelData(values=values):
                         target = values[self.name]
             case StorageType.Exported:
@@ -117,7 +116,7 @@ class ArchetypeField:
             case StorageType.Memory:
                 match instance._data_:
                     case ArchetypeSelfData():
-                        target = deref(PlayBlock.EntityMemory, self.offset, self.type)
+                        target = deref(ctx().blocks.EntityMemory, self.offset, self.type)
                     case ArchetypeReferenceData():
                         raise RuntimeError("Entity memory of other entities is not accessible")
                     case ArchetypeLevelData():
@@ -125,10 +124,10 @@ class ArchetypeField:
             case StorageType.Shared:
                 match instance._data_:
                     case ArchetypeSelfData():
-                        target = deref(PlayBlock.EntitySharedMemory, self.offset, self.type)
+                        target = deref(ctx().blocks.EntitySharedMemory, self.offset, self.type)
                     case ArchetypeReferenceData(index=index):
                         target = deref(
-                            PlayBlock.EntitySharedMemoryArray,
+                            ctx().blocks.EntitySharedMemoryArray,
                             self.offset + index * ENTITY_SHARED_MEMORY_SIZE,
                             self.type,
                         )
@@ -232,7 +231,8 @@ class Archetype:
         bound = cls._data_constructor_signature_.bind_partial(*args, **kwargs)
         bound.apply_defaults()
         values = {
-            field.name: field.type._accept_(bound.arguments.get(field.name) or zeros(field.type)) for field in cls._imported_fields_.values()
+            field.name: field.type._accept_(bound.arguments.get(field.name) or zeros(field.type))
+            for field in cls._imported_fields_.values()
         }
         result = cls._new()
         result._data_ = ArchetypeLevelData(values=values)
@@ -296,10 +296,7 @@ class Archetype:
             )
         }
         cls._data_constructor_signature_ = inspect.Signature(
-            [
-                inspect.Parameter(name, inspect.Parameter.POSITIONAL_OR_KEYWORD)
-                for name in cls._imported_fields_
-            ]
+            [inspect.Parameter(name, inspect.Parameter.POSITIONAL_OR_KEYWORD) for name in cls._imported_fields_]
         )
         cls._callbacks_ = []
         for name in cls._supported_callbacks_:
@@ -315,7 +312,7 @@ class PlayArchetype(Archetype):
     def preprocess(self):
         pass
 
-    def spawn_order(self) -> int:
+    def spawn_order(self) -> float:
         pass
 
     def should_spawn(self) -> bool:
@@ -338,5 +335,5 @@ class PlayArchetype(Archetype):
 
 
 class EntityRef[A: Archetype](Record):
-    index: Num
+    index: int
     archetype: Comptime[type, A]

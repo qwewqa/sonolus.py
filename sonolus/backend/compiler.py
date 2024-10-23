@@ -1,7 +1,7 @@
 from collections.abc import Callable
 
 from sonolus.backend.ir import IRConst, IRInstr
-from sonolus.backend.mode import Mode, PlayMode
+from sonolus.backend.mode import Mode
 from sonolus.backend.ops import Op
 from sonolus.backend.visitor import compile_and_call
 from sonolus.script.internal.context import (
@@ -18,7 +18,7 @@ from sonolus.script.num import Num
 class Compiler:
     global_state: GlobalContextState
 
-    def __init__(self, mode: Mode = PlayMode):
+    def __init__(self, mode: Mode = Mode.Play):
         self.global_state = GlobalContextState(mode)
 
     def compile_callback(self, callback: Callable, name: str):

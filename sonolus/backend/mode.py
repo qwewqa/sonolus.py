@@ -1,13 +1,19 @@
-from dataclasses import dataclass
+from enum import Enum
 from functools import cached_property
 
-from sonolus.backend.blocks import Block, PlayBlock
+from sonolus.backend.blocks import Block, PlayBlock, PreviewBlock, TutorialBlock, WatchBlock
 
 
-@dataclass
-class Mode:
-    name: str
+class Mode(Enum):
     blocks: type[Block]
+
+    Play = (PlayBlock,)
+    Watch = (WatchBlock,)
+    Preview = (PreviewBlock,)
+    Tutorial = (TutorialBlock,)
+
+    def __init__(self, blocks: type[Block]):
+        self.blocks = blocks
 
     @cached_property
     def callbacks(self) -> frozenset[str]:
@@ -16,6 +22,3 @@ class Mode:
             cbs.update(block.readable)
             cbs.update(block.writable)
         return frozenset(cbs)
-
-
-PlayMode = Mode("Play", PlayBlock)

@@ -10,6 +10,7 @@ from sonolus.backend.flow import BasicBlock, FlowEdge
 from sonolus.backend.ir import IRConst, IRStmt
 from sonolus.backend.mode import Mode
 from sonolus.backend.place import Block, BlockPlace, TempBlock
+from sonolus.script.globals import GlobalInfo
 from sonolus.script.internal.value import Value
 
 _compiler_internal_ = True
@@ -20,11 +21,15 @@ context_var = ContextVar("context_var", default=None)
 class GlobalContextState:
     rom: ReadOnlyMemory
     const_mappings: dict[Any, int]
+    environment_mappings: dict[GlobalInfo, int]
+    environment_offsets: dict[Block, int]
     mode: Mode
 
     def __init__(self, mode: Mode):
         self.rom = ReadOnlyMemory(mode.blocks.EngineRom)
         self.const_mappings = {}
+        self.environment_mappings = {}
+        self.environment_offsets = {}
         self.mode = mode
 
 
@@ -173,6 +178,19 @@ class Context:
         if value not in self.const_mappings:
             self.const_mappings[value] = len(self.const_mappings) + 1
         return self.const_mappings[value]
+
+    def get_global_base(self, value: GlobalInfo) -> BlockPlace:
+        block = value.blocks.get(self.global_state.mode)
+        if block is None:
+            raise RuntimeError(f"Global {value.name} is not available in '{self.global_state.mode.name}' mode")
+        if value not in self.global_state.environment_mappings:
+            if value.offset is None:
+                offset = self.global_state.environment_offsets.get(block, 0)
+                self.global_state.environment_mappings[value] = offset
+                self.global_state.environment_offsets[block] = offset + value.size
+            else:
+                self.global_state.environment_mappings[value] = value.offset
+        return BlockPlace(block, self.global_state.environment_mappings[value])
 
     @classmethod
     def meet(cls, contexts: list[Context]) -> Context:

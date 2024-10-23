@@ -10,6 +10,8 @@ from typing import Any, Never
 from sonolus.backend.excepthook import install_excepthook
 from sonolus.backend.utils import get_function, scan_writes
 from sonolus.script.debug import assert_true
+from sonolus.script.globals import GlobalField
+from sonolus.script.internal.builtin_impls import BUILTIN_IMPLS
 from sonolus.script.internal.context import Context, Scope, ValueBinding, ctx, set_ctx
 from sonolus.script.internal.error import CompilationError
 from sonolus.script.internal.impl import validate_value
@@ -142,7 +144,7 @@ class Visitor(ast.NodeVisitor):
 
     def __init__(self, source_file: str, bound_args: inspect.BoundArguments, global_vars: dict[str, Any]):
         self.source_file = source_file
-        self.globals = {k: validate_value(v) for k, v in global_vars.items()}
+        self.globals = {k: validate_value(BUILTIN_IMPLS.get(id(v), v)) for k, v in global_vars.items()}
         self.bound_args = bound_args
         self.used_names = {}
         self.return_ctxs = []
@@ -286,6 +288,16 @@ class Visitor(ast.NodeVisitor):
         test = self.visit(node.test)
         if not isinstance(test, Num):
             raise ValueError("Condition must be of type Num")
+
+        if test._is_py_():
+            if test._as_py_():
+                for stmt in node.body:
+                    self.visit(stmt)
+            else:
+                for stmt in node.orelse:
+                    self.visit(stmt)
+            return
+
         ctx_init = ctx()
         ctx_init.test = test.ir()
         true_ctx = ctx_init.branch(None)
@@ -456,7 +468,14 @@ class Visitor(ast.NodeVisitor):
             r_val = self.visit(rhs)
             inverted = isinstance(op, ast.NotIn)
             result = None
-            if type(op) in comp_ops and hasattr(l_val, comp_ops[type(op)]):
+            if isinstance(op, ast.Is | ast.IsNot):
+                if not (r_val._is_py_() and r_val._as_py_() is None):
+                    raise TypeError("The right operand of 'is' must be None")
+                if isinstance(op, ast.Is):
+                    result = Num._accept_(l_val._is_py_() and l_val._as_py_() is None)
+                else:
+                    result = Num._accept_(not (l_val._is_py_() and l_val._as_py_() is None))
+            elif type(op) in comp_ops and hasattr(l_val, comp_ops[type(op)]):
                 result = self.handle_call(node, getattr(l_val, comp_ops[type(op)]), r_val)
             if (
                 (result is None or self.is_not_implemented(result))
@@ -587,6 +606,8 @@ class Visitor(ast.NodeVisitor):
         ctx_false = ctx()
 
         set_ctx(Context.meet([ctx_true, ctx_false]))
+        if l_val._is_py_() and r_val._is_py_():
+            return Num._accept_(l_val._as_py_() and r_val._as_py_())
         return ctx().scope.get_value(res_name)
 
     def handle_or(self, l_val: Value, r_expr: ast.expr) -> Value:
@@ -608,6 +629,8 @@ class Visitor(ast.NodeVisitor):
         ctx_false = ctx()
 
         set_ctx(Context.meet([ctx_true, ctx_false]))
+        if l_val._is_py_() and r_val._is_py_():
+            return Num._accept_(l_val._as_py_() or r_val._as_py_())
         return ctx().scope.get_value(res_name)
 
     def generic_visit(self, node):
@@ -624,7 +647,7 @@ class Visitor(ast.NodeVisitor):
             match descriptor:
                 case property(fget=getter):
                     return self.handle_call(node, getter, target)
-                case RecordField() | FunctionType() | classmethod() | staticmethod() | None:
+                case RecordField() | GlobalField() | FunctionType() | classmethod() | staticmethod() | None:
                     return validate_value(getattr(target, key))
                 case _:
                     raise TypeError(f"Unsupported field or descriptor {key}")
@@ -637,7 +660,7 @@ class Visitor(ast.NodeVisitor):
                     if setter is None:
                         raise AttributeError(f"Cannot set attribute {key} because property has no setter")
                     self.handle_call(node, setter, target, value)
-                case RecordField():
+                case RecordField() | GlobalField():
                     setattr(target, key, value)
                 case _:
                     raise TypeError(f"Unsupported field or descriptor {key}")

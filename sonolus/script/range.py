@@ -4,9 +4,9 @@ from sonolus.script.record import Record
 
 
 class Range(Record, ArrayLike[Num]):
-    start: Num
-    end: Num
-    step: Num
+    start: int
+    end: int
+    step: int
 
     def __new__(cls, start: Num, end: Num | None = None, step: Num = 1):
         if end is None:
@@ -42,9 +42,9 @@ class Range(Record, ArrayLike[Num]):
 
 
 class RangeIterator(Record, SonolusIterator):
-    value: Num
-    end: Num
-    step: Num
+    value: int
+    end: int
+    step: int
 
     def has_next(self) -> bool:
         if self.step > 0:

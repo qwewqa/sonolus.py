@@ -9,7 +9,7 @@ from tests.script.conftest import validate_dual_run
 
 
 class Simple(Record):
-    value: Num
+    value: float
 
 
 class Generic[T](Record):

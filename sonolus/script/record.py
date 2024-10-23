@@ -88,7 +88,7 @@ class Record(GenericValue):
         if len(getattr(cls, "__type_params__", ())) == 0:
             # Make the class behave as the parameterized version
             cls._type_args_ = ()
-            cls.type_vars_to_args_ = {}
+            cls._type_vars_to_args_ = {}
             cls._parameterized_[()] = cls
 
     def __new__(cls, *args, **kwargs):

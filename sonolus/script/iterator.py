@@ -104,7 +104,7 @@ class ArrayLike[T](Collection):
 
 
 class ArrayIterator[V: ArrayLike](Record, SonolusIterator):
-    i: Num
+    i: int
     array: V
 
     def has_next(self) -> bool:
@@ -130,7 +130,8 @@ class ArrayReverser[V: ArrayLike](Record, ArrayLike):
 
 
 class Enumerator[V: SonolusIterator](Record, SonolusIterator):
-    i: Num
+    i: int
+    offset: int
     iterator: V
 
     def has_next(self) -> bool:
@@ -138,14 +139,14 @@ class Enumerator[V: SonolusIterator](Record, SonolusIterator):
 
     def next(self):
         value = self.iterator.next()
-        index = self.i
+        index = self.i + self.offset
         self.i += 1
         return index, value
 
 
 class ArrayEnumerator[V: ArrayLike](Record, SonolusIterator):
-    i: Num
-    offset: Num
+    i: int
+    offset: int
     array: V
 
     def has_next(self) -> bool:
