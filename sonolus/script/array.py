@@ -14,7 +14,6 @@ from sonolus.script.iterator import ArrayLike
 from sonolus.script.num import Num
 
 
-# noinspection PyProtectedMember
 @final
 class Array[T, Size](GenericValue, ArrayLike[T]):
     _value: list[T] | BlockPlace

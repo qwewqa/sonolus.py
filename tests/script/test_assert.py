@@ -40,7 +40,7 @@ def test_assert_true_fails():
     assert compiled_run(fn) == 0
 
 
-def assert_false_succeeds():
+def test_assert_false_succeeds():
     def fn():
         assert_false(False)
         return 1
@@ -48,7 +48,7 @@ def assert_false_succeeds():
     assert compiled_run(fn) == 1
 
 
-def assert_false_fails():
+def test_assert_false_fails():
     def fn():
         assert_false(True)
         return 1
