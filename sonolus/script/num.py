@@ -115,23 +115,14 @@ class _Num(Value):
     def index(self) -> int | BlockPlace:
         return self.data
 
-    def _bin_op(self, other: Self, py_fn: Callable[[float, float], float], ir_op: Op) -> Self:
+    def _bin_op(self, other: Self, const_fn: Callable[[Self, Self], Self | None], ir_op: Op) -> Self:
         if not Num._accepts_(other):
             return NotImplemented
         other = Num._accept_(other)
-        if self._is_py_() and other._is_py_():
-            try:
-                return Num(py_fn(self._as_py_(), other._as_py_()))
-            except ZeroDivisionError as e:
-                if ctx():
-                    from sonolus.backend.visitor import compile_and_call
-                    from sonolus.script.debug import assert_true
-
-                    compile_and_call(assert_true, False, "Division by zero")
-                    return Num(0)
-                else:
-                    raise e from None
-        elif ctx():
+        const_value = const_fn(self, other)
+        if const_value is not None:
+            return const_value
+        if ctx():
             result_place = ctx().alloc(size=1)
             ctx().add_statements(IRSet(result_place, IRPureInstr(ir_op, [self.ir(), other.ir()])))
             return Num(result_place)
@@ -150,7 +141,14 @@ class _Num(Value):
 
     @self_impl
     def __eq__(self, other) -> Self:
-        return self._bin_op(other, operator.eq, Op.Equal)
+        def const_fn(a: Self, b: Self) -> Num | None:
+            if a._is_py_() and b._is_py_():
+                return Num(a.data == b.data)
+            if a.data == b.data:
+                return Num(True)
+            return None
+
+        return self._bin_op(other, const_fn, Op.Equal)
 
     def __hash__(self):
         if self._is_py_():
@@ -159,51 +157,160 @@ class _Num(Value):
 
     @self_impl
     def __ne__(self, other) -> Self:
-        return self._bin_op(other, operator.ne, Op.NotEqual)
+        def const_fn(a: Self, b: Self) -> Num | None:
+            if a._is_py_() and b._is_py_():
+                return Num(a.data != b.data)
+            if a.data == b.data:
+                return Num(False)
+            return None
+
+        return self._bin_op(other, const_fn, Op.NotEqual)
 
     @self_impl
     def __lt__(self, other) -> Self:
-        return self._bin_op(other, operator.lt, Op.Less)
+        def const_fn(a: Self, b: Self) -> Num | None:
+            if a._is_py_() and b._is_py_():
+                return Num(a.data < b.data)
+            if a.data == b.data:
+                return Num(False)
+            return None
+
+        return self._bin_op(other, const_fn, Op.Less)
 
     @self_impl
     def __le__(self, other) -> Self:
-        return self._bin_op(other, operator.le, Op.LessOr)
+        def const_fn(a: Self, b: Self) -> Num | None:
+            if a._is_py_() and b._is_py_():
+                return Num(a.data <= b.data)
+            return None
+
+        return self._bin_op(other, const_fn, Op.LessOr)
 
     @self_impl
     def __gt__(self, other) -> Self:
-        return self._bin_op(other, operator.gt, Op.Greater)
+        def const_fn(a: Self, b: Self) -> Num | None:
+            if a._is_py_() and b._is_py_():
+                return Num(a.data > b.data)
+            if a.data == b.data:
+                return Num(False)
+            return None
+
+        return self._bin_op(other, const_fn, Op.Greater)
 
     @self_impl
     def __ge__(self, other) -> Self:
-        return self._bin_op(other, operator.ge, Op.GreaterOr)
+        def const_fn(a: Self, b: Self) -> Num | None:
+            if a._is_py_() and b._is_py_():
+                return Num(a.data >= b.data)
+            return None
+
+        return self._bin_op(other, const_fn, Op.GreaterOr)
 
     @self_impl
     def __add__(self, other) -> Self:
-        return self._bin_op(other, operator.add, Op.Add)
+        def const_fn(a: Self, b: Self) -> Num | None:
+            if a._is_py_() and b._is_py_():
+                return Num(a.data + b.data)
+            if a._is_py_():
+                if a.data == 0:
+                    return b
+            if b._is_py_():
+                if b.data == 0:
+                    return a
+            return None
+
+        return self._bin_op(other, const_fn, Op.Add)
 
     @self_impl
     def __sub__(self, other) -> Self:
-        return self._bin_op(other, operator.sub, Op.Subtract)
+        def const_fn(a: Self, b: Self) -> Num | None:
+            if a._is_py_() and b._is_py_():
+                return Num(a.data - b.data)
+            if a._is_py_():
+                if a.data == 0:
+                    return -b
+            if b._is_py_():
+                if b.data == 0:
+                    return a
+            return None
+
+        return self._bin_op(other, const_fn, Op.Subtract)
 
     @self_impl
     def __mul__(self, other) -> Self:
-        return self._bin_op(other, operator.mul, Op.Multiply)
+        def const_fn(a: Self, b: Self) -> Num | None:
+            if a._is_py_() and b._is_py_():
+                return Num(a.data * b.data)
+            if a._is_py_():
+                if a.data == 0:
+                    return Num(0)
+                if a.data == 1:
+                    return b
+            if b._is_py_():
+                if b.data == 0:
+                    return Num(0)
+                if b.data == 1:
+                    return a
+            return None
+
+        return self._bin_op(other, const_fn, Op.Multiply)
 
     @self_impl
     def __truediv__(self, other) -> Self:
-        return self._bin_op(other, operator.truediv, Op.Divide)
+        def const_fn(a: Self, b: Self) -> Num | None:
+            if a._is_py_() and b._is_py_():
+                if b.data == 0:
+                    return None
+                return Num(a.data / b.data)
+            if b._is_py_():
+                if b.data == 1:
+                    return a
+                if b.data == -1:
+                    return -a
+            return None
+
+        return self._bin_op(other, const_fn, Op.Divide)
 
     @self_impl
     def __floordiv__(self, other) -> Self:
-        return self._bin_op(other, operator.floordiv, Op.Divide)._unary_op(lambda x: x, Op.Floor)
+        def const_fn(a: Self, b: Self) -> Num | None:
+            if a._is_py_() and b._is_py_():
+                if b.data == 0:
+                    return None
+                return Num(a.data // b.data)
+            if b._is_py_():
+                if b.data == 1:
+                    return a
+                if b.data == -1:
+                    return -a
+            return None
+
+        return self._bin_op(other, const_fn, Op.Divide)._unary_op(lambda x: x, Op.Floor)
 
     @self_impl
     def __mod__(self, other) -> Self:
-        return self._bin_op(other, operator.mod, Op.Mod)
+        def const_fn(a: Self, b: Self) -> Num | None:
+            if a._is_py_() and b._is_py_():
+                if b.data == 0:
+                    return None
+                return Num(a.data % b.data)
+            return None
+
+        return self._bin_op(other, const_fn, Op.Mod)
 
     @self_impl
     def __pow__(self, other) -> Self:
-        return self._bin_op(other, operator.pow, Op.Power)
+        def const_fn(a: Self, b: Self) -> Num | None:
+            if a._is_py_() and b._is_py_():
+                return Num(a.data**b.data)
+            if b._is_py_():
+                if b.data == 0:
+                    return Num(1)
+                if b.data == 1:
+                    return a
+            return None
+
+        return self._bin_op(other, const_fn, Op.Power)
 
     @self_impl
     def __neg__(self) -> Self:

@@ -1,6 +1,7 @@
 # fmt: off
 from typing import Self
 
+from sonolus.script.array import Array
 from sonolus.script.math import cos, sin
 from sonolus.script.record import Record
 from sonolus.script.vec import Vec2
@@ -72,13 +73,19 @@ class Transform2d(Record):
             0, 0,
         )
 
-    def rotate_about(self, angle: float, x: float, y: float):
-        return self.translate(-x, -y).rotate(angle).translate(x, y)
-
-    def shear(self, x: float, y: float):
+    def shear_x(self, m: float):
+        """Shear along the x-axis."""
         return self._compose(
-            1 + x * y, x, 0,
-            y, 1, 0,
+            1, m, 0,
+            0, 1, 0,
+            0, 0,
+        )
+
+    def shear_y(self, m: float):
+        """Shear along the y-axis."""
+        return self._compose(
+            1, 0, 0,
+            m, 1, 0,
             0, 0,
         )
 
@@ -101,3 +108,11 @@ class Transform2d(Record):
         y = self.a10 * v.x + self.a11 * v.y + self.a12
         w = self.a20 * v.x + self.a21 * v.y + 1
         return Vec2(x / w, y / w)
+
+    def as_4x4_array(self):
+        return Array(
+            Array(self.a00, self.a01, 0, self.a02),
+            Array(self.a10, self.a11, 0, self.a12),
+            Array(0, 0, 1, 0),
+            Array(self.a20, self.a21, 0, 1),
+        )
