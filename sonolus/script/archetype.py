@@ -336,4 +336,4 @@ class PlayArchetype(Archetype):
 
 class EntityRef[A: Archetype](Record):
     index: int
-    archetype: Comptime[type, A]
+    archetype: Comptime.of(A, Archetype)

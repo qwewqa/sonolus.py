@@ -415,6 +415,13 @@ class Visitor(ast.NodeVisitor):
         test = self.visit(node.test)
         if not isinstance(test, Num):
             raise ValueError("Condition must be of type Num")
+
+        if test._is_py_():
+            if test._as_py_():
+                return self.visit(node.body)
+            else:
+                return self.visit(node.orelse)
+
         res_name = self.new_name("ifexp")
         ctx_init = ctx()
         ctx_init.test = test.ir()

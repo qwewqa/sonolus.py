@@ -1,12 +1,12 @@
 from collections.abc import Iterable
-from typing import TYPE_CHECKING, Any, Self, final
+from typing import Any, Self, final, overload, TypeVar
 
 from sonolus.backend.place import BlockPlace
 from sonolus.script.internal.generic import GenericValue
 
 
 @final
-class _Comptime[T, V](GenericValue):
+class Comptime[V](GenericValue):
     _instance: Self | None = None
 
     def __init__(self):
@@ -15,7 +15,7 @@ class _Comptime[T, V](GenericValue):
 
     @classmethod
     def value(cls):
-        value = cls._type_args_[1]
+        (value,) = cls._type_args_
         if isinstance(value, Identity):
             return value.value
         return value
@@ -71,7 +71,8 @@ class _Comptime[T, V](GenericValue):
         return []
 
     def _get_(self) -> Self:
-        return self
+        # Converts numbers out of comptime
+        return validate_value(self.value())
 
     def _set_(self, value: Self):
         if value is not self:
@@ -87,12 +88,33 @@ class _Comptime[T, V](GenericValue):
     @classmethod
     def accept_unchecked(cls, value: Any) -> Self:
         if isinstance(value, dict | tuple):
-            args = (type(value), Identity(value))
+            args = (Identity(value),)
         else:
-            args = (type(value), value)
+            args = (value,)
         if args not in cls._parameterized_:
             cls._parameterized_[args] = cls._get_parameterized(args)
         return cls._parameterized_[args]._instance
+
+    @classmethod
+    @overload
+    def of(cls, value: TypeVar) -> type[Any]: ...
+
+    @classmethod
+    @overload
+    def of[R](cls, value: TypeVar, bound: type[R]) -> type[R]: ...
+
+    @classmethod
+    @overload
+    def of[R](cls, value: R) -> type[R]: ...
+
+    @classmethod
+    def of(cls, value, bound=None):
+        if bound is None:
+            return cls.accept_unchecked(value)
+        result = type(cls.accept_unchecked(value))
+        if not issubclass(result, cls):
+            raise TypeError("Value is not a valid Comptime value")
+        return result
 
 
 class Identity[T]:  # This is to allow accepting potentially unhashable values by using identity comparison
@@ -113,12 +135,5 @@ class Identity[T]:  # This is to allow accepting potentially unhashable values b
     def __repr__(self):
         return f"{type(self).__name__}({self.value!r})"
 
-
-if not TYPE_CHECKING:
-    Comptime = _Comptime
-    Comptime.__name__ = "Comptime"
-    Comptime.__qualname__ = "Comptime"
-else:
-    type Comptime[T, V] = T | V
 
 from sonolus.script.internal.impl import validate_value
