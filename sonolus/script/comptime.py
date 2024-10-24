@@ -1,5 +1,5 @@
 from collections.abc import Iterable
-from typing import Any, Self, final, overload, TypeVar
+from typing import Any, Self, TypeVar, final, overload
 
 from sonolus.backend.place import BlockPlace
 from sonolus.script.internal.generic import GenericValue

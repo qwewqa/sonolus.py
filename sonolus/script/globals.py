@@ -60,35 +60,35 @@ def create_global(cls: type, blocks: dict[Mode, Block], offset: int | None):
 
 
 def play_runtime_environment[T](cls: type[T]) -> T:
-    return create_global(cls, {Mode.Play: PlayBlock.RuntimeEnvironment}, None)
+    return create_global(cls, {Mode.Play: PlayBlock.RuntimeEnvironment}, 0)
 
 
 def watch_runtime_environment[T](cls: type[T]) -> T:
-    return create_global(cls, {Mode.Watch: WatchBlock.RuntimeEnvironment}, None)
+    return create_global(cls, {Mode.Watch: WatchBlock.RuntimeEnvironment}, 0)
 
 
 def tutorial_runtime_environment[T](cls: type[T]) -> T:
-    return create_global(cls, {Mode.Tutorial: TutorialBlock.RuntimeEnvironment}, None)
+    return create_global(cls, {Mode.Tutorial: TutorialBlock.RuntimeEnvironment}, 0)
 
 
 def preview_runtime_environment[T](cls: type[T]) -> T:
-    return create_global(cls, {Mode.Preview: PreviewBlock.RuntimeEnvironment}, None)
+    return create_global(cls, {Mode.Preview: PreviewBlock.RuntimeEnvironment}, 0)
 
 
 def play_runtime_update[T](cls: type[T]) -> T:
-    return create_global(cls, {Mode.Play: PlayBlock.RuntimeUpdate}, None)
+    return create_global(cls, {Mode.Play: PlayBlock.RuntimeUpdate}, 0)
 
 
 def watch_runtime_update[T](cls: type[T]) -> T:
-    return create_global(cls, {Mode.Watch: WatchBlock.RuntimeUpdate}, None)
+    return create_global(cls, {Mode.Watch: WatchBlock.RuntimeUpdate}, 0)
 
 
 def tutorial_runtime_update[T](cls: type[T]) -> T:
-    return create_global(cls, {Mode.Tutorial: TutorialBlock.RuntimeUpdate}, None)
+    return create_global(cls, {Mode.Tutorial: TutorialBlock.RuntimeUpdate}, 0)
 
 
 def runtime_touch_array[T](cls: type[T]) -> T:
-    return create_global(cls, {Mode.Play: PlayBlock.RuntimeTouchArray}, None)
+    return create_global(cls, {Mode.Play: PlayBlock.RuntimeTouchArray}, 0)
 
 
 def runtime_skin_transform[T](cls: type[T]) -> T:
@@ -99,7 +99,7 @@ def runtime_skin_transform[T](cls: type[T]) -> T:
             Mode.Watch: WatchBlock.RuntimeSkinTransform,
             Mode.Tutorial: TutorialBlock.RuntimeSkinTransform,
         },
-        None,
+        0,
     )
 
 
@@ -111,7 +111,7 @@ def runtime_particle_transform[T](cls: type[T]) -> T:
             Mode.Watch: WatchBlock.RuntimeParticleTransform,
             Mode.Tutorial: TutorialBlock.RuntimeParticleTransform,
         },
-        None,
+        0,
     )
 
 
@@ -123,7 +123,7 @@ def runtime_background[T](cls: type[T]) -> T:
             Mode.Watch: WatchBlock.RuntimeBackground,
             Mode.Tutorial: TutorialBlock.RuntimeBackground,
         },
-        None,
+        0,
     )
 
 
@@ -136,7 +136,7 @@ def runtime_ui[T](cls: type[T]) -> T:
             Mode.Tutorial: TutorialBlock.RuntimeUI,
             Mode.Preview: PreviewBlock.RuntimeUI,
         },
-        None,
+        0,
     )
 
 
@@ -149,8 +149,12 @@ def runtime_ui_configuration[T](cls: type[T]) -> T:
             Mode.Tutorial: TutorialBlock.RuntimeUIConfiguration,
             Mode.Preview: PreviewBlock.RuntimeUIConfiguration,
         },
-        None,
+        0,
     )
+
+
+def tutorial_instruction[T](cls: type[T]) -> T:
+    return create_global(cls, {Mode.Tutorial: TutorialBlock.TutorialInstruction}, 0)
 
 
 def level_memory[T](cls: type[T]) -> T:
@@ -162,19 +166,19 @@ def level_data[T](cls: type[T]) -> T:
 
 
 def level_option[T](cls: type[T]) -> T:
-    return create_global(cls, {Mode.Play: PlayBlock.LevelOption, Mode.Watch: WatchBlock.LevelOption}, None)
+    return create_global(cls, {Mode.Play: PlayBlock.LevelOption, Mode.Watch: WatchBlock.LevelOption}, 0)
 
 
 def level_bucket[T](cls: type[T]) -> T:
-    return create_global(cls, {Mode.Play: PlayBlock.LevelBucket, Mode.Watch: WatchBlock.LevelBucket}, None)
+    return create_global(cls, {Mode.Play: PlayBlock.LevelBucket, Mode.Watch: WatchBlock.LevelBucket}, 0)
 
 
 def level_score[T](cls: type[T]) -> T:
-    return create_global(cls, {Mode.Play: PlayBlock.LevelScore, Mode.Watch: WatchBlock.LevelScore}, None)
+    return create_global(cls, {Mode.Play: PlayBlock.LevelScore, Mode.Watch: WatchBlock.LevelScore}, 0)
 
 
 def level_life[T](cls: type[T]) -> T:
-    return create_global(cls, {Mode.Play: PlayBlock.LevelLife, Mode.Watch: WatchBlock.LevelLife}, None)
+    return create_global(cls, {Mode.Play: PlayBlock.LevelLife, Mode.Watch: WatchBlock.LevelLife}, 0)
 
 
 # engine_rom is handled by the compiler

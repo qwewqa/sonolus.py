@@ -211,12 +211,10 @@ class _Num(Value):
         def const_fn(a: Self, b: Self) -> Num | None:
             if a._is_py_() and b._is_py_():
                 return Num(a.data + b.data)
-            if a._is_py_():
-                if a.data == 0:
-                    return b
-            if b._is_py_():
-                if b.data == 0:
-                    return a
+            if a._is_py_() and a.data == 0:
+                return b
+            if b._is_py_() and b.data == 0:
+                return a
             return None
 
         return self._bin_op(other, const_fn, Op.Add)
@@ -226,12 +224,10 @@ class _Num(Value):
         def const_fn(a: Self, b: Self) -> Num | None:
             if a._is_py_() and b._is_py_():
                 return Num(a.data - b.data)
-            if a._is_py_():
-                if a.data == 0:
-                    return -b
-            if b._is_py_():
-                if b.data == 0:
-                    return a
+            if a._is_py_() and a.data == 0:
+                return -b
+            if b._is_py_() and b.data == 0:
+                return a
             return None
 
         return self._bin_op(other, const_fn, Op.Subtract)

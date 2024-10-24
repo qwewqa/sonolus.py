@@ -7,6 +7,9 @@ from sonolus.script.globals import (
     play_runtime_environment,
     play_runtime_update,
     preview_runtime_environment,
+    runtime_background,
+    runtime_particle_transform,
+    runtime_skin_transform,
     runtime_touch_array,
     runtime_ui,
     runtime_ui_configuration,
@@ -15,9 +18,11 @@ from sonolus.script.globals import (
     watch_runtime_environment,
     watch_runtime_update,
 )
+from sonolus.script.graphics import Quad
 from sonolus.script.internal.context import ctx
 from sonolus.script.internal.impl import self_impl
 from sonolus.script.record import Record
+from sonolus.script.transform import Transform2d
 from sonolus.script.vec import Vec2
 
 
@@ -183,142 +188,226 @@ class _TouchArray:
     touches: Array[TouchInfo, 999]
 
 
-class _Runtime(Record):
+@runtime_skin_transform
+class _SkinTransform:
+    value: Array[Array[float, 4], 4]
+
     @property
-    def is_debug(self) -> bool:
-        if self.is_play:
+    @self_impl
+    def transform(self) -> Transform2d:
+        values = self.value._to_list_()
+        return Transform2d(
+            a00=values[0 * 4 + 0],
+            a01=values[0 * 4 + 1],
+            a02=values[0 * 4 + 2],
+            a10=values[1 * 4 + 0],
+            a11=values[1 * 4 + 1],
+            a12=values[1 * 4 + 2],
+            a20=values[2 * 4 + 0],
+            a21=values[2 * 4 + 1],
+        )
+
+
+@runtime_particle_transform
+class _ParticleTransform:
+    value: Array[Array[float, 4], 4]
+
+    @property
+    @self_impl
+    def transform(self) -> Transform2d:
+        values = self.value._to_list_()
+        return Transform2d(
+            a00=values[0 * 4 + 0],
+            a01=values[0 * 4 + 1],
+            a02=values[0 * 4 + 2],
+            a10=values[1 * 4 + 0],
+            a11=values[1 * 4 + 1],
+            a12=values[1 * 4 + 2],
+            a20=values[2 * 4 + 0],
+            a21=values[2 * 4 + 1],
+        )
+
+
+@runtime_background
+class _Background:
+    value: Quad
+
+
+@self_impl
+def is_debug() -> bool:
+    if not ctx():
+        return False
+    match ctx().global_state.mode:
+        case Mode.Play:
             return _PlayRuntimeEnvironment.is_debug
-        if self.is_watch:
+        case Mode.Watch:
             return _WatchRuntimeEnvironment.is_debug
-        if self.is_preview:
+        case Mode.Preview:
             return _PreviewRuntimeEnvironment.is_debug
-        if self.is_tutorial:
+        case Mode.Tutorial:
             return _TutorialRuntimeEnvironment.is_debug
-        return False
+        case _:
+            return False
 
-    @property
-    def aspect_ratio(self) -> float:
-        if self.is_play:
-            return _PlayRuntimeEnvironment.aspect_ratio
-        if self.is_watch:
-            return _WatchRuntimeEnvironment.aspect_ratio
-        if self.is_preview:
-            return _PreviewRuntimeEnvironment.aspect_ratio
-        if self.is_tutorial:
-            return _TutorialRuntimeEnvironment.aspect_ratio
+
+@self_impl
+def aspect_ratio() -> float:
+    if not ctx():
         return 16 / 9
+    match ctx().global_state.mode:
+        case Mode.Play:
+            return _PlayRuntimeEnvironment.aspect_ratio
+        case Mode.Watch:
+            return _WatchRuntimeEnvironment.aspect_ratio
+        case Mode.Preview:
+            return _PreviewRuntimeEnvironment.aspect_ratio
+        case Mode.Tutorial:
+            return _TutorialRuntimeEnvironment.aspect_ratio
 
-    @property
-    def audio_offset(self) -> float:
-        if self.is_play:
+
+def audio_offset() -> float:
+    if not ctx():
+        return 0
+    match ctx().global_state.mode:
+        case Mode.Play:
             return _PlayRuntimeEnvironment.audio_offset
-        if self.is_watch:
+        case Mode.Watch:
             return _WatchRuntimeEnvironment.audio_offset
-        if self.is_tutorial:
+        case Mode.Tutorial:
             return _TutorialRuntimeEnvironment.audio_offset
-        return 0
+        case _:
+            return 0
 
-    @property
-    def input_offset(self) -> float:
-        if self.is_play:
+
+def input_offset() -> float:
+    if not ctx():
+        return 0
+    match ctx().global_state.mode:
+        case Mode.Play:
             return _PlayRuntimeEnvironment.input_offset
-        if self.is_watch:
+        case Mode.Watch:
             return _WatchRuntimeEnvironment.input_offset
-        return 0
+        case _:
+            return 0
 
-    @property
-    def is_multiplayer(self) -> bool:
-        if self.is_play:
+
+def is_multiplayer() -> bool:
+    if not ctx():
+        return False
+    match ctx().global_state.mode:
+        case Mode.Play:
             return _PlayRuntimeEnvironment.is_multiplayer
-        return False
+        case _:
+            return False
 
-    @property
-    def is_replay(self) -> bool:
-        if self.is_watch:
+
+def is_replay() -> bool:
+    if not ctx():
+        return False
+    match ctx().global_state.mode:
+        case Mode.Watch:
             return _WatchRuntimeEnvironment.is_replay
-        return False
+        case _:
+            return False
 
-    @property
-    def time(self) -> float:
-        if self.is_play:
+
+def time() -> float:
+    if not ctx():
+        return 0
+    match ctx().global_state.mode:
+        case Mode.Play:
             return _PlayRuntimeUpdate.time
-        if self.is_watch:
+        case Mode.Watch:
             return _WatchRuntimeUpdate.time
-        if self.is_tutorial:
+        case Mode.Tutorial:
             return _TutorialRuntimeUpdate.time
-        return 0
+        case _:
+            return 0
 
-    @property
-    def delta_time(self) -> float:
-        if self.is_play:
+
+def delta_time() -> float:
+    if not ctx():
+        return 0
+    match ctx().global_state.mode:
+        case Mode.Play:
             return _PlayRuntimeUpdate.delta_time
-        if self.is_watch:
+        case Mode.Watch:
             return _WatchRuntimeUpdate.delta_time
-        if self.is_tutorial:
+        case Mode.Tutorial:
             return _TutorialRuntimeUpdate.delta_time
-        return 0
+        case _:
+            return 0
 
-    @property
-    def scaled_time(self) -> float:
-        if self.is_play:
+
+def scaled_time() -> float:
+    if not ctx():
+        return 0
+    match ctx().global_state.mode:
+        case Mode.Play:
             return _PlayRuntimeUpdate.scaled_time
-        if self.is_watch:
+        case Mode.Watch:
             return _WatchRuntimeUpdate.scaled_time
-        if self.is_tutorial:
+        case Mode.Tutorial:
             return _TutorialRuntimeUpdate.time
-        return 0
+        case _:
+            return 0
 
-    @property
-    def _touch_count(self) -> int:
-        if self.is_play:
-            return _PlayRuntimeUpdate.touch_count
-        return 0
 
-    @property
-    def touches(self) -> VarArray[TouchInfo, 999]:
-        if self.is_play:
-            return VarArray(self._touch_count, _TouchArray.touches)
+def touches() -> VarArray[TouchInfo, 999]:
+    if not ctx():
         return VarArray(0, Array[TouchInfo, 0]())
+    match ctx().global_state.mode:
+        case Mode.Play:
+            return VarArray(_PlayRuntimeUpdate.touch_count, _TouchArray.touches)
+        case _:
+            return VarArray(0, Array[TouchInfo, 0]())
 
-    @property
-    def is_skip(self) -> bool:
-        if self.is_watch:
-            return _WatchRuntimeUpdate.is_skip
+
+def is_skip() -> bool:
+    if not ctx():
         return False
+    match ctx().global_state.mode:
+        case Mode.Watch:
+            return _WatchRuntimeUpdate.is_skip
+        case _:
+            return False
 
-    @property
-    def navigation_direction(self) -> int:
-        if self.is_tutorial:
-            return _TutorialRuntimeUpdate.navigation_direction
+
+def navigation_direction() -> int:
+    if not ctx():
         return 0
-
-    @property
-    def ui_config(self) -> _UiConfigs:
-        return _UiConfigs
-
-    @property
-    def ui(self) -> _UiLayouts:
-        return _UiLayouts
-
-    @property
-    @self_impl
-    def is_play(self) -> bool:
-        return ctx().global_state.mode is Mode.Play
-
-    @property
-    @self_impl
-    def is_watch(self) -> bool:
-        return ctx().global_state.mode is Mode.Watch
-
-    @property
-    @self_impl
-    def is_preview(self) -> bool:
-        return ctx().global_state.mode is Mode.Preview
-
-    @property
-    @self_impl
-    def is_tutorial(self) -> bool:
-        return ctx().global_state.mode is Mode.Tutorial
+    match ctx().global_state.mode:
+        case Mode.Tutorial:
+            return _TutorialRuntimeUpdate.navigation_direction
+        case _:
+            return 0
 
 
-runtime = _Runtime()
+def skin_transform() -> Transform2d:
+    return _SkinTransform.transform
+
+
+@self_impl
+def set_skin_transform(value: Transform2d):
+    _SkinTransform.transform._copy_from_(value)
+
+
+def particle_transform() -> Transform2d:
+    return _ParticleTransform.transform
+
+
+@self_impl
+def set_particle_transform(value: Transform2d):
+    _ParticleTransform.transform._copy_from_(value)
+
+
+def background() -> Quad:
+    return _Background.value
+
+
+def set_background(value: Quad):
+    _Background.value = value
+
+
+ui_layouts = _UiLayouts
+ui_configs = _UiConfigs
