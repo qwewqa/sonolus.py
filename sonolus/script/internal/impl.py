@@ -5,8 +5,6 @@ from types import FunctionType, MethodType, NoneType, NotImplementedType
 from typing import TYPE_CHECKING, Any, TypeVar, overload
 
 if TYPE_CHECKING:
-    from sonolus.script.comptime import Comptime
-    from sonolus.script.internal.generic import PartialGeneric
     from sonolus.script.internal.value import Value
 
 
@@ -30,6 +28,10 @@ def self_impl(fn=None):
 
 
 def validate_value(value: Any) -> Value:
+    from sonolus.script.archetype import Archetype
+    from sonolus.script.comptime import Comptime
+    from sonolus.script.internal.generic import PartialGeneric
+    from sonolus.script.internal.value import Value
     from sonolus.script.num import Num
 
     match value:
@@ -60,9 +62,3 @@ def validate_value(value: Any) -> Value:
             return Comptime.accept_unchecked(value)
         case _:
             raise TypeError(f"Unsupported value: {value!r}")
-
-
-from sonolus.script.archetype import Archetype
-from sonolus.script.comptime import Comptime
-from sonolus.script.internal.generic import PartialGeneric
-from sonolus.script.internal.value import Value
