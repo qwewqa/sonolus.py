@@ -1,6 +1,6 @@
 from sonolus.script.comptime import Comptime
 from sonolus.script.internal.context import ctx
-from sonolus.script.internal.impl import self_impl
+from sonolus.script.internal.impl import meta_fn
 from sonolus.script.record import Record
 
 
@@ -8,7 +8,7 @@ class Sprite[Name](Record):
     name: Comptime.of(Name, str)
 
     @property
-    @self_impl
+    @meta_fn
     def id(self) -> int:
         if ctx():
             return ctx().map_sprite(self.name)

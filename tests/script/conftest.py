@@ -8,7 +8,7 @@ from sonolus.backend.interpret import Interpreter
 from sonolus.backend.place import BlockPlace
 from sonolus.backend.simplify import CoalesceFlow
 from sonolus.backend.visitor import compile_and_call
-from sonolus.script.internal.impl import self_impl, validate_value
+from sonolus.script.internal.impl import meta_fn, validate_value
 from sonolus.script.num import Num
 
 
@@ -17,7 +17,7 @@ def validate_dual_run[**P, R](fn: Callable[P, R], *args: P.args, **kwargs: P.kwa
     regular_result = fn(*args, **kwargs)
     result_type = type(validate_value(regular_result))
 
-    @self_impl
+    @meta_fn
     def run_compiled():
         result = compile_and_call(fn, *args, **kwargs)
         target = result_type._from_place_(BlockPlace(PlayBlock.LevelMemory, 0))
@@ -50,7 +50,7 @@ def validate_dual_run[**P, R](fn: Callable[P, R], *args: P.args, **kwargs: P.kwa
 def compiled_run[**P](fn: Callable[P, Num], *args: P.args, **kwargs: P.kwargs) -> Num:
     """Runs a function as a compiled function and returns the result."""
 
-    @self_impl
+    @meta_fn
     def run_compiled():
         return compile_and_call(fn, *args, **kwargs)
 

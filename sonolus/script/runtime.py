@@ -20,7 +20,7 @@ from sonolus.script.globals import (
 )
 from sonolus.script.graphics import Quad, Rect
 from sonolus.script.internal.context import ctx
-from sonolus.script.internal.impl import self_impl
+from sonolus.script.internal.impl import meta_fn
 from sonolus.script.record import Record
 from sonolus.script.transform import Transform2d
 from sonolus.script.vec import Vec2
@@ -193,7 +193,7 @@ class _SkinTransform:
     value: Array[Array[float, 4], 4]
 
     @property
-    @self_impl
+    @meta_fn
     def transform(self) -> Transform2d:
         values = self.value._to_list_()
         return Transform2d(
@@ -213,7 +213,7 @@ class _ParticleTransform:
     value: Array[Array[float, 4], 4]
 
     @property
-    @self_impl
+    @meta_fn
     def transform(self) -> Transform2d:
         values = self.value._to_list_()
         return Transform2d(
@@ -233,7 +233,7 @@ class _Background:
     value: Quad
 
 
-@self_impl
+@meta_fn
 def is_debug() -> bool:
     if not ctx():
         return False
@@ -250,7 +250,7 @@ def is_debug() -> bool:
             return False
 
 
-@self_impl
+@meta_fn
 def aspect_ratio() -> float:
     if not ctx():
         return 16 / 9
@@ -387,7 +387,7 @@ def skin_transform() -> Transform2d:
     return _SkinTransform.transform
 
 
-@self_impl
+@meta_fn
 def set_skin_transform(value: Transform2d):
     _SkinTransform.transform._copy_from_(value)
 
@@ -396,7 +396,7 @@ def particle_transform() -> Transform2d:
     return _ParticleTransform.transform
 
 
-@self_impl
+@meta_fn
 def set_particle_transform(value: Transform2d):
     _ParticleTransform.transform._copy_from_(value)
 

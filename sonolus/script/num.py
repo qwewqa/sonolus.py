@@ -8,7 +8,7 @@ from sonolus.backend.ops import Op
 from sonolus.backend.place import BlockPlace, Place
 from sonolus.script.internal.context import ctx
 from sonolus.script.internal.error import InternalError
-from sonolus.script.internal.impl import self_impl
+from sonolus.script.internal.impl import meta_fn
 from sonolus.script.internal.value import Value
 
 
@@ -139,7 +139,7 @@ class _Num(Value):
         else:
             raise InternalError("Unexpected call on non-comptime Num instance outside a compilation context")
 
-    @self_impl
+    @meta_fn
     def __eq__(self, other) -> Self:
         def const_fn(a: Self, b: Self) -> Num | None:
             if a._is_py_() and b._is_py_():
@@ -155,7 +155,7 @@ class _Num(Value):
             return hash(self._as_py_())
         raise ValueError("Cannot hash non compile time constant Num")
 
-    @self_impl
+    @meta_fn
     def __ne__(self, other) -> Self:
         def const_fn(a: Self, b: Self) -> Num | None:
             if a._is_py_() and b._is_py_():
@@ -166,7 +166,7 @@ class _Num(Value):
 
         return self._bin_op(other, const_fn, Op.NotEqual)
 
-    @self_impl
+    @meta_fn
     def __lt__(self, other) -> Self:
         def const_fn(a: Self, b: Self) -> Num | None:
             if a._is_py_() and b._is_py_():
@@ -177,7 +177,7 @@ class _Num(Value):
 
         return self._bin_op(other, const_fn, Op.Less)
 
-    @self_impl
+    @meta_fn
     def __le__(self, other) -> Self:
         def const_fn(a: Self, b: Self) -> Num | None:
             if a._is_py_() and b._is_py_():
@@ -186,7 +186,7 @@ class _Num(Value):
 
         return self._bin_op(other, const_fn, Op.LessOr)
 
-    @self_impl
+    @meta_fn
     def __gt__(self, other) -> Self:
         def const_fn(a: Self, b: Self) -> Num | None:
             if a._is_py_() and b._is_py_():
@@ -197,7 +197,7 @@ class _Num(Value):
 
         return self._bin_op(other, const_fn, Op.Greater)
 
-    @self_impl
+    @meta_fn
     def __ge__(self, other) -> Self:
         def const_fn(a: Self, b: Self) -> Num | None:
             if a._is_py_() and b._is_py_():
@@ -206,7 +206,7 @@ class _Num(Value):
 
         return self._bin_op(other, const_fn, Op.GreaterOr)
 
-    @self_impl
+    @meta_fn
     def __add__(self, other) -> Self:
         def const_fn(a: Self, b: Self) -> Num | None:
             if a._is_py_() and b._is_py_():
@@ -219,7 +219,7 @@ class _Num(Value):
 
         return self._bin_op(other, const_fn, Op.Add)
 
-    @self_impl
+    @meta_fn
     def __sub__(self, other) -> Self:
         def const_fn(a: Self, b: Self) -> Num | None:
             if a._is_py_() and b._is_py_():
@@ -232,7 +232,7 @@ class _Num(Value):
 
         return self._bin_op(other, const_fn, Op.Subtract)
 
-    @self_impl
+    @meta_fn
     def __mul__(self, other) -> Self:
         def const_fn(a: Self, b: Self) -> Num | None:
             if a._is_py_() and b._is_py_():
@@ -251,7 +251,7 @@ class _Num(Value):
 
         return self._bin_op(other, const_fn, Op.Multiply)
 
-    @self_impl
+    @meta_fn
     def __truediv__(self, other) -> Self:
         def const_fn(a: Self, b: Self) -> Num | None:
             if a._is_py_() and b._is_py_():
@@ -267,7 +267,7 @@ class _Num(Value):
 
         return self._bin_op(other, const_fn, Op.Divide)
 
-    @self_impl
+    @meta_fn
     def __floordiv__(self, other) -> Self:
         def const_fn(a: Self, b: Self) -> Num | None:
             if a._is_py_() and b._is_py_():
@@ -283,7 +283,7 @@ class _Num(Value):
 
         return self._bin_op(other, const_fn, Op.Divide)._unary_op(lambda x: x, Op.Floor)
 
-    @self_impl
+    @meta_fn
     def __mod__(self, other) -> Self:
         def const_fn(a: Self, b: Self) -> Num | None:
             if a._is_py_() and b._is_py_():
@@ -294,7 +294,7 @@ class _Num(Value):
 
         return self._bin_op(other, const_fn, Op.Mod)
 
-    @self_impl
+    @meta_fn
     def __pow__(self, other) -> Self:
         def const_fn(a: Self, b: Self) -> Num | None:
             if a._is_py_() and b._is_py_():
@@ -308,15 +308,15 @@ class _Num(Value):
 
         return self._bin_op(other, const_fn, Op.Power)
 
-    @self_impl
+    @meta_fn
     def __neg__(self) -> Self:
         return self._unary_op(operator.neg, Op.Negate)
 
-    @self_impl
+    @meta_fn
     def __pos__(self) -> Self:
         return self
 
-    @self_impl
+    @meta_fn
     def __abs__(self) -> Self:
         return self._unary_op(abs, Op.Abs)
 

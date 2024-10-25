@@ -8,7 +8,7 @@ from sonolus.backend.place import BlockPlace
 from sonolus.script.internal.context import ctx
 from sonolus.script.internal.error import InternalError
 from sonolus.script.internal.generic import GenericValue
-from sonolus.script.internal.impl import self_impl, validate_value
+from sonolus.script.internal.impl import meta_fn, validate_value
 from sonolus.script.internal.value import Value
 from sonolus.script.iterator import ArrayLike
 from sonolus.script.num import Num
@@ -19,12 +19,12 @@ class Array[T, Size](GenericValue, ArrayLike[T]):
     _value: list[T] | BlockPlace
 
     @classmethod
-    @self_impl
+    @meta_fn
     def element_type(cls) -> type[T] | type[Value]:
         return cls._get_type_arg_(T)
 
     @classmethod
-    @self_impl
+    @meta_fn
     def size(cls) -> int:
         return cls._get_type_arg_(Size)
 
@@ -124,7 +124,7 @@ class Array[T, Size](GenericValue, ArrayLike[T]):
         else:
             return self._with_value([value._copy_() for value in self._value])
 
-    @self_impl
+    @meta_fn
     def __getitem__(self, index: Num) -> T:
         index: Num = Num._accept_(index)
         if index._is_py_():
@@ -156,7 +156,7 @@ class Array[T, Size](GenericValue, ArrayLike[T]):
             )
             return self.element_type()._from_place_(place)._get_()
 
-    @self_impl
+    @meta_fn
     def __setitem__(self, index: Num, value: T):
         index: Num = Num._accept_(index)
         value = self.element_type()._accept_(value)

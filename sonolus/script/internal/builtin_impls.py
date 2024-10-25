@@ -1,16 +1,16 @@
-from sonolus.script.internal.impl import self_impl, validate_value
+from sonolus.script.internal.impl import meta_fn, validate_value
 from sonolus.script.iterator import ArrayLike, Enumerator
 from sonolus.script.math import MATH_BUILTIN_IMPLS
 
 
-@self_impl
+@meta_fn
 def _isinstance(value, type_):
     value = validate_value(value)
     type_ = validate_value(type_)._as_py_()
     return validate_value(isinstance(value, type_))
 
 
-@self_impl
+@meta_fn
 def _len(value):
     from sonolus.backend.visitor import compile_and_call
 
@@ -20,7 +20,7 @@ def _len(value):
     return compile_and_call(value.__len__)
 
 
-@self_impl
+@meta_fn
 def _enumerate(iterable, start=0):
     from sonolus.backend.visitor import compile_and_call
 
@@ -33,7 +33,7 @@ def _enumerate(iterable, start=0):
         return Enumerator(0, start, compile_and_call(iterable.__iter__))
 
 
-@self_impl
+@meta_fn
 def _abs(value):
     from sonolus.backend.visitor import compile_and_call
 

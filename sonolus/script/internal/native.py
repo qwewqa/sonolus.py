@@ -5,7 +5,7 @@ from collections.abc import Callable
 from sonolus.backend.ir import IRInstr, IRPureInstr, IRSet
 from sonolus.backend.ops import Op
 from sonolus.script.internal.context import ctx
-from sonolus.script.internal.impl import self_impl, validate_value
+from sonolus.script.internal.impl import meta_fn, validate_value
 from sonolus.script.num import Num
 
 
@@ -25,7 +25,7 @@ def native_function[**P](op: Op) -> Callable[[Callable[P, Num | None]], Callable
         signature = inspect.signature(fn)
 
         @functools.wraps(fn)
-        @self_impl
+        @meta_fn
         def wrapper(*args: Num) -> Num:
             if len(args) != len(signature.parameters):
                 raise TypeError(f"Expected {len(signature.parameters)} arguments, got {len(args)}")

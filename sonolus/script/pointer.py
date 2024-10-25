@@ -1,10 +1,10 @@
 from sonolus.backend.place import BlockPlace
-from sonolus.script.internal.impl import self_impl, validate_value
+from sonolus.script.internal.impl import meta_fn, validate_value
 from sonolus.script.internal.value import Value
 from sonolus.script.num import Num
 
 
-@self_impl
+@meta_fn
 def deref[T: Value](block: Num, offset: Num, type_: type[T]) -> T:
     block = Num._accept_(block)
     offset = Num._accept_(offset)

@@ -14,7 +14,7 @@ from sonolus.script.internal.generic import (
     validate_concrete_type,
     validate_type_spec,
 )
-from sonolus.script.internal.impl import self_impl
+from sonolus.script.internal.impl import meta_fn
 from sonolus.script.internal.value import Value
 from sonolus.script.num import Num
 
@@ -189,7 +189,7 @@ class Record(GenericValue):
             f"{self.__class__.__name__}({", ".join(f"{field.name}={field.__get__(self)}" for field in self._fields)})"
         )
 
-    @self_impl
+    @meta_fn
     def __eq__(self, other):
         if not isinstance(other, type(self)):
             return False
@@ -198,7 +198,7 @@ class Record(GenericValue):
             result = result.and_(field.__get__(self) == field.__get__(other))
         return result
 
-    @self_impl
+    @meta_fn
     def __ne__(self, other):
         if not isinstance(other, type(self)):
             return True
@@ -260,7 +260,7 @@ def _add_inplace_ops(cls):
 
 
 def _make_inplace_op(op: str):
-    @self_impl
+    @meta_fn
     def inplace_op(self, other):
         _compiler_internal_ = True  # noqa: F841
         self._copy_from_(getattr(self, op)(other))

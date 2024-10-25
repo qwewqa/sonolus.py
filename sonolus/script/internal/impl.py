@@ -10,17 +10,17 @@ if TYPE_CHECKING:
 
 
 @overload
-def self_impl[T: Callable](fn: T) -> T: ...
+def meta_fn[T: Callable](fn: T) -> T: ...
 
 
 @overload
-def self_impl[T: Callable]() -> Callable[[T], T]: ...
+def meta_fn[T: Callable]() -> Callable[[T], T]: ...
 
 
-def self_impl(fn=None):
+def meta_fn(fn=None):
     # noinspection PyShadowingNames
     def decorator(fn):
-        fn._self_impl_ = True
+        fn._meta_fn_ = True
         return fn
 
     if fn is None:

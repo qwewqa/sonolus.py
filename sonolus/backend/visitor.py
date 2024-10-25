@@ -37,7 +37,7 @@ def generate_fn_impl(fn: Callable):
         case MethodType() as method:
             return functools.partial(generate_fn_impl(method.__func__), method.__self__)
         case FunctionType() as function:
-            if getattr(function, "_self_impl_", False):
+            if getattr(function, "_meta_fn_", False):
                 return function
             return functools.partial(eval_fn, function)
         case _:

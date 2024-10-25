@@ -6,13 +6,13 @@ from sonolus.backend.ops import Op
 from sonolus.backend.simplify import CoalesceFlow
 from sonolus.script.comptime import Comptime
 from sonolus.script.internal.context import ctx, set_ctx
-from sonolus.script.internal.impl import self_impl, validate_value
+from sonolus.script.internal.impl import meta_fn, validate_value
 from sonolus.script.internal.native import native_function
 from sonolus.script.num import Num
 from sonolus.script.values import with_default
 
 
-@self_impl
+@meta_fn
 def error(message: str) -> None:
     message = Comptime._accept_(message)._as_py_()
     if not isinstance(message, str):
@@ -48,13 +48,13 @@ def assert_false(value: Num, message: str | None = None):
         terminate()
 
 
-@self_impl
+@meta_fn
 def assert_unreachable(message: str | None = None) -> Never:
     message = validate_value(message)._as_py_() or "Unreachable code reached"
     raise RuntimeError(message)
 
 
-@self_impl
+@meta_fn
 def terminate():
     if ctx():
         set_ctx(ctx().into_dead())

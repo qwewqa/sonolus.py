@@ -135,4 +135,4 @@ class Value:
         return self
 
 
-Value.__imatmul__._self_impl_ = True
+Value.__imatmul__._meta_fn_ = True
