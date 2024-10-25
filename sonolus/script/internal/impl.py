@@ -4,8 +4,6 @@ from collections.abc import Callable
 from types import FunctionType, MethodType, NoneType, NotImplementedType
 from typing import TYPE_CHECKING, Any, TypeVar, overload
 
-from sonolus.script.archetype import Archetype
-
 if TYPE_CHECKING:
     from sonolus.script.comptime import Comptime
     from sonolus.script.internal.generic import PartialGeneric
@@ -47,7 +45,16 @@ def validate_value(value: Any) -> Value:
             return Comptime.accept_unchecked(tuple(validate_value(v) for v in value))
         case dict():
             return Comptime.accept_unchecked({validate_value(k)._as_py_(): validate_value(v) for k, v in value.items()})
-        case PartialGeneric() | TypeVar() | FunctionType() | MethodType() | NotImplementedType() | str() | NoneType() | Archetype():
+        case (
+            PartialGeneric()
+            | TypeVar()
+            | FunctionType()
+            | MethodType()
+            | NotImplementedType()
+            | str()
+            | NoneType()
+            | Archetype()
+        ):
             return Comptime.accept_unchecked(value)
         case global_value if getattr(global_value, "_global_info_", None):
             return Comptime.accept_unchecked(value)
@@ -55,6 +62,7 @@ def validate_value(value: Any) -> Value:
             raise TypeError(f"Unsupported value: {value!r}")
 
 
+from sonolus.script.archetype import Archetype
 from sonolus.script.comptime import Comptime
 from sonolus.script.internal.generic import PartialGeneric
 from sonolus.script.internal.value import Value

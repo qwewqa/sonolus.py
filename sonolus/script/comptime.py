@@ -40,6 +40,8 @@ class Comptime[V](GenericValue):
 
     @classmethod
     def _accepts_(cls, value: Any) -> bool:
+        from sonolus.script.internal.impl import validate_value
+
         value = validate_value(value)
         if not value._is_py_():
             return False
@@ -49,6 +51,8 @@ class Comptime[V](GenericValue):
 
     @classmethod
     def _accept_(cls, value: Any) -> Self:
+        from sonolus.script.internal.impl import validate_value
+
         if not cls._accepts_(value):
             raise TypeError("Value does not match this Comptime instance")
         # This might not actually return a Comptime instance, but it will be a compile-time constant
@@ -72,6 +76,8 @@ class Comptime[V](GenericValue):
         return []
 
     def _get_(self) -> Self:
+        from sonolus.script.internal.impl import validate_value
+
         # Converts numbers out of comptime, although _accept_ may end up returning a non-comptime instance anyway
         return validate_value(self.value())
 
@@ -135,6 +141,3 @@ class Identity[T]:  # This is to allow accepting potentially unhashable values b
 
     def __repr__(self):
         return f"{type(self).__name__}({self.value!r})"
-
-
-from sonolus.script.internal.impl import validate_value
