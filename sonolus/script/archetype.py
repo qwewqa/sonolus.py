@@ -333,6 +333,25 @@ class PlayArchetype(Archetype):
     def terminate(self):
         pass
 
+    @property
+    def despawn(self):
+        if not ctx():
+            raise RuntimeError("Calling despawn is only allowed within a callback")
+        return deref(ctx().blocks.EntityDespawn, 0, Num)
+
+    @despawn.setter
+    def despawn(self, value: bool):
+        if not ctx():
+            raise RuntimeError("Calling despawn is only allowed within a callback")
+        deref(ctx().blocks.EntityDespawn, 0, Num)._set_(value)
+
+
+class ArchetypeLife(Record):
+    perfect_life_increment: Num
+    great_life_increment: Num
+    good_life_increment: Num
+    miss_life_increment: Num
+
 
 class EntityRef[A: Archetype](Record):
     index: int

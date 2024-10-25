@@ -694,8 +694,6 @@ class Visitor(ast.NodeVisitor):
                 target = target._as_py_()
                 if key._is_py_():
                     return validate_value(target[key._as_py_()])
-                if isinstance(target, type):
-                    return validate_value(getattr(target, key._as_py_()))
                 if isinstance(target, Value) and hasattr(target, "__getitem__"):
                     return self.handle_call(node, target.__getitem__, key)
                 raise TypeError(f"Cannot get items on {type(target).__name__}")

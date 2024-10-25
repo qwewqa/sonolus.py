@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 from sonolus.script.record import Record
+from sonolus.script.runtime import aspect_ratio
 from sonolus.script.vec import Vec2
 
 
@@ -96,3 +97,7 @@ class Quad(Record):
     tl: Vec2
     tr: Vec2
     br: Vec2
+
+
+def screen() -> Rect:
+    return Rect(t=1, r=aspect_ratio(), b=-1, l=-aspect_ratio())

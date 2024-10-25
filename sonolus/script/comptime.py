@@ -51,6 +51,7 @@ class Comptime[V](GenericValue):
     def _accept_(cls, value: Any) -> Self:
         if not cls._accepts_(value):
             raise TypeError("Value does not match this Comptime instance")
+        # This might not actually return a Comptime instance, but it will be a compile-time constant
         return validate_value(value)
 
     def _is_py_(self) -> bool:
@@ -71,7 +72,7 @@ class Comptime[V](GenericValue):
         return []
 
     def _get_(self) -> Self:
-        # Converts numbers out of comptime
+        # Converts numbers out of comptime, although _accept_ may end up returning a non-comptime instance anyway
         return validate_value(self.value())
 
     def _set_(self, value: Self):
