@@ -23,6 +23,9 @@ class GlobalContextState:
     const_mappings: dict[Any, int]
     environment_mappings: dict[GlobalInfo, int]
     environment_offsets: dict[Block, int]
+    sprite_mappings: dict[str, int]
+    effect_mappings: dict[str, int]
+    particle_mappings: dict[str, int]
     mode: Mode
 
     def __init__(self, mode: Mode):
@@ -30,6 +33,9 @@ class GlobalContextState:
         self.const_mappings = {}
         self.environment_mappings = {}
         self.environment_offsets = {}
+        self.sprite_mappings = {}
+        self.effect_mappings = {}
+        self.particle_mappings = {}
         self.mode = mode
 
 
@@ -176,7 +182,7 @@ class Context:
 
     def map_constant(self, value: Any) -> int:
         if value not in self.const_mappings:
-            self.const_mappings[value] = len(self.const_mappings) + 1
+            self.const_mappings[value] = len(self.const_mappings)
         return self.const_mappings[value]
 
     def get_global_base(self, value: GlobalInfo) -> BlockPlace:
@@ -191,6 +197,21 @@ class Context:
             else:
                 self.global_state.environment_mappings[value] = value.offset
         return BlockPlace(block, self.global_state.environment_mappings[value])
+
+    def map_sprite(self, name: str) -> int:
+        if name not in self.global_state.sprite_mappings:
+            self.global_state.sprite_mappings[name] = len(self.global_state.sprite_mappings)
+        return self.global_state.sprite_mappings[name]
+
+    def map_effect(self, name: str) -> int:
+        if name not in self.global_state.effect_mappings:
+            self.global_state.effect_mappings[name] = len(self.global_state.effect_mappings)
+        return self.global_state.effect_mappings[name]
+
+    def map_particle(self, name: str) -> int:
+        if name not in self.global_state.particle_mappings:
+            self.global_state.particle_mappings[name] = len(self.global_state.particle_mappings)
+        return self.global_state.particle_mappings[name]
 
     @classmethod
     def meet(cls, contexts: list[Context]) -> Context:

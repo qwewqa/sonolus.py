@@ -26,7 +26,7 @@ def validate_type_spec(spec: Any) -> PartialGeneric | TypeVar | type[Value]:
 
 
 def validate_concrete_type(spec: Any) -> type[Value]:
-    spec = validate_type_arg(spec)
+    spec = validate_type_spec(spec)
     if isinstance(spec, type) and issubclass(spec, Value) and spec._is_concrete_():
         return spec
     raise TypeError(f"Expected a concrete type, got {spec}")

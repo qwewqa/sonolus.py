@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 from collections.abc import Callable
+from enum import Enum
 from types import FunctionType, MethodType, NoneType, NotImplementedType
 from typing import TYPE_CHECKING, Any, TypeVar, overload
 
@@ -28,6 +29,13 @@ def self_impl(fn=None):
 
 
 def validate_value(value: Any) -> Value:
+    result = try_validate_value(value)
+    if result is None:
+        raise TypeError(f"Unsupported value: {value!r}")
+    return result
+
+
+def try_validate_value(value: Any) -> Value | None:
     from sonolus.script.archetype import Archetype
     from sonolus.script.comptime import Comptime
     from sonolus.script.internal.generic import PartialGeneric
@@ -35,6 +43,8 @@ def validate_value(value: Any) -> Value:
     from sonolus.script.num import Num
 
     match value:
+        case Enum():
+            return validate_value(value.value)
         case Value():
             return value
         case type():
@@ -61,4 +71,4 @@ def validate_value(value: Any) -> Value:
         case global_value if getattr(global_value, "_global_info_", None):
             return Comptime.accept_unchecked(value)
         case _:
-            raise TypeError(f"Unsupported value: {value!r}")
+            return None

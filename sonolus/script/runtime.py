@@ -2,7 +2,7 @@ from enum import IntEnum
 
 from sonolus.backend.mode import Mode
 from sonolus.script.array import Array
-from sonolus.script.collections import VarArray
+from sonolus.script.containers import VarArray
 from sonolus.script.globals import (
     play_runtime_environment,
     play_runtime_update,
@@ -18,7 +18,7 @@ from sonolus.script.globals import (
     watch_runtime_environment,
     watch_runtime_update,
 )
-from sonolus.script.graphics import Quad
+from sonolus.script.graphics import Quad, Rect
 from sonolus.script.internal.context import ctx
 from sonolus.script.internal.impl import self_impl
 from sonolus.script.record import Record
@@ -411,3 +411,7 @@ def set_background(value: Quad):
 
 ui_layouts = _UiLayouts
 ui_configs = _UiConfigs
+
+
+def screen() -> Rect:
+    return Rect(t=1, r=aspect_ratio(), b=-1, l=-aspect_ratio())

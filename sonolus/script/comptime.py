@@ -3,6 +3,7 @@ from typing import Any, Self, TypeVar, final, overload
 
 from sonolus.backend.place import BlockPlace
 from sonolus.script.internal.generic import GenericValue
+from sonolus.script.internal.impl import validate_value
 
 
 @final
@@ -116,9 +117,9 @@ class Comptime[V](GenericValue):
 
     @classmethod
     def of(cls, value, bound=None):
-        if bound is None:
-            return cls.accept_unchecked(value)
-        result = type(cls.accept_unchecked(value))
+        if isinstance(value, TypeVar):
+            return cls[value]
+        result = type(validate_value(value))
         if not issubclass(result, cls):
             raise TypeError("Value is not a valid Comptime value")
         return result

@@ -14,7 +14,7 @@ from sonolus.script.globals import GlobalField
 from sonolus.script.internal.builtin_impls import BUILTIN_IMPLS
 from sonolus.script.internal.context import Context, Scope, ValueBinding, ctx, set_ctx
 from sonolus.script.internal.error import CompilationError
-from sonolus.script.internal.impl import validate_value
+from sonolus.script.internal.impl import try_validate_value, validate_value
 from sonolus.script.internal.value import Value
 from sonolus.script.iterator import SonolusIterator
 from sonolus.script.num import Num
@@ -144,7 +144,12 @@ class Visitor(ast.NodeVisitor):
 
     def __init__(self, source_file: str, bound_args: inspect.BoundArguments, global_vars: dict[str, Any]):
         self.source_file = source_file
-        self.globals = {k: validate_value(BUILTIN_IMPLS.get(id(v), v)) for k, v in global_vars.items()}
+        self.globals = {}
+        for k, v in global_vars.items():
+            # Unfortunately, inspect.closurevars also includes attributes
+            value = try_validate_value(BUILTIN_IMPLS.get(id(v), v))
+            if value is not None:
+                self.globals[k] = value
         self.bound_args = bound_args
         self.used_names = {}
         self.return_ctxs = []
