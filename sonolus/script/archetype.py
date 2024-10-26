@@ -7,6 +7,7 @@ from enum import StrEnum
 from typing import Annotated, ClassVar, Self, get_origin
 
 from sonolus.backend.ir import IRConst, IRInstr
+from sonolus.backend.mode import Mode
 from sonolus.backend.ops import Op
 from sonolus.script.callbacks import PLAY_CALLBACKS, CallbackInfo
 from sonolus.script.comptime import Comptime
@@ -43,7 +44,7 @@ class ArchetypeField:
         self.offset = offset
         self.type = type_
 
-    def __get__(self, instance: Archetype, owner):
+    def __get__(self, instance: BaseArchetype, owner):
         if instance is None:
             return self
         result = None
@@ -85,7 +86,7 @@ class ArchetypeField:
         else:
             return result._as_py_()
 
-    def __set__(self, instance: Archetype, value):
+    def __set__(self, instance: BaseArchetype, value):
         if instance is None:
             raise RuntimeError("Cannot set field on class")
         if not self.type._accepts_(value):
@@ -142,20 +143,28 @@ class ArchetypeField:
             target._copy_from_(value)
 
 
-def imported[T: type](t: T, *, name: str | None = None) -> T:
-    return Annotated[t, ArchetypeFieldInfo(name, StorageType.Imported)]
+def imported(*, name: str | None = None) -> ArchetypeFieldInfo:
+    return ArchetypeFieldInfo(name, StorageType.Imported)
 
 
-def exported[T: type](t: T, *, name: str | None = None) -> T:
-    return Annotated[t, ArchetypeFieldInfo(name, StorageType.Exported)]
+def exported(*, name: str | None = None) -> ArchetypeFieldInfo:
+    return ArchetypeFieldInfo(name, StorageType.Exported)
 
 
-def entity_memory[T: type](t: T) -> T:
-    return Annotated[t, ArchetypeFieldInfo(None, StorageType.Memory)]
+def entity_memory() -> ArchetypeFieldInfo:
+    return ArchetypeFieldInfo(None, StorageType.Memory)
 
 
-def shared_memory[T: type](t: T) -> T:
-    return Annotated[t, ArchetypeFieldInfo(None, StorageType.Shared)]
+def shared_memory() -> ArchetypeFieldInfo:
+    return ArchetypeFieldInfo(None, StorageType.Shared)
+
+
+class StandardImport:
+    Beat = Annotated[float, imported(name="#BEAT")]
+    Bpm = Annotated[float, imported(name="#BPM")]
+    Timescale = Annotated[float, imported(name="#TIMESCALE")]
+    Judgment = Annotated[int, imported(name="#JUDGMENT")]
+    Accuracy = Annotated[float, imported(name="#ACCURACY")]
 
 
 def callback[T: Callable](order: int) -> Callable[[T], T]:
@@ -187,7 +196,7 @@ class ArchetypeLevelData:
 type ArchetypeData = ArchetypeSelfData | ArchetypeReferenceData | ArchetypeLevelData
 
 
-class Archetype:
+class BaseArchetype:
     _is_comptime_value_ = True
 
     _supported_callbacks_: ClassVar[dict[str, CallbackInfo]]
@@ -241,7 +250,7 @@ class Archetype:
         return result
 
     def __init_subclass__(cls, **kwargs):
-        if cls.__module__ == Archetype.__module__:
+        if cls.__module__ == BaseArchetype.__module__:
             if cls._supported_callbacks_ is None:
                 raise TypeError("Cannot directly subclass Archetype, use the Archetype subclass for your mode")
             cls._default_callbacks_ = {getattr(cls, cb_info.py_name) for cb_info in cls._supported_callbacks_.values()}
@@ -308,7 +317,7 @@ class Archetype:
             cls._callbacks_.append(cb)
 
 
-class PlayArchetype(Archetype):
+class PlayArchetype(BaseArchetype):
     _supported_callbacks_ = PLAY_CALLBACKS
 
     def preprocess(self):
@@ -339,13 +348,80 @@ class PlayArchetype(Archetype):
     def despawn(self):
         if not ctx():
             raise RuntimeError("Calling despawn is only allowed within a callback")
-        return deref(ctx().blocks.EntityDespawn, 0, Num)
+        match self._data_:
+            case ArchetypeSelfData():
+                return deref(ctx().blocks.EntityDespawn, 0, Num)
+            case _:
+                raise RuntimeError("Despawn is only accessible from the entity itself")
 
     @despawn.setter
     def despawn(self, value: bool):
         if not ctx():
             raise RuntimeError("Calling despawn is only allowed within a callback")
-        deref(ctx().blocks.EntityDespawn, 0, Num)._set_(value)
+        match self._data_:
+            case ArchetypeSelfData():
+                deref(ctx().blocks.EntityDespawn, 0, Num)._set_(value)
+            case _:
+                raise RuntimeError("Despawn is only accessible from the entity itself")
+
+    @property
+    def _info(self):
+        if not ctx():
+            raise RuntimeError("Calling info is only allowed within a callback")
+        match self._data_:
+            case ArchetypeSelfData():
+                return deref(ctx().blocks.EntityInfo, 0, PlayEntityInfo)
+            case ArchetypeReferenceData(index=index):
+                return deref(ctx().blocks.EntityInfoArray, index * PlayEntityInfo._size_(), PlayEntityInfo)
+            case _:
+                raise RuntimeError("Info is only accessible from the entity itself")
+
+    @property
+    def index(self) -> int:
+        return self._info.index
+
+    @property
+    def is_waiting(self) -> bool:
+        return self._info.state == 0
+
+    @property
+    def is_active(self) -> bool:
+        return self._info.state == 1
+
+    @property
+    def is_despawned(self) -> bool:
+        return self._info.state == 2
+
+
+def entity_info_at(index: Num) -> PlayEntityInfo | WatchEntityInfo | PreviewEntityInfo:
+    if not ctx():
+        raise RuntimeError("Calling entity_info_at is only allowed within a callback")
+    match ctx().global_state.mode:
+        case Mode.Play:
+            return deref(ctx().blocks.EntityInfoArray, index * PlayEntityInfo._size_(), PlayEntityInfo)
+        case Mode.Watch:
+            return deref(ctx().blocks.EntityInfoArray, index * WatchEntityInfo._size_(), WatchEntityInfo)
+        case Mode.Preview:
+            return deref(ctx().blocks.EntityInfoArray, index * PreviewEntityInfo._size_(), PreviewEntityInfo)
+        case _:
+            raise RuntimeError(f"Entity info is not available in mode '{ctx().global_state.mode}'")
+
+
+class PlayEntityInfo(Record):
+    index: int
+    archetype_id: int
+    state: int
+
+
+class WatchEntityInfo(Record):
+    index: int
+    archetype_id: int
+    state: int
+
+
+class PreviewEntityInfo(Record):
+    index: int
+    archetype_id: int
 
 
 class ArchetypeLife(Record):
@@ -355,6 +431,6 @@ class ArchetypeLife(Record):
     miss_life_increment: Num
 
 
-class EntityRef[A: Archetype](Record):
+class EntityRef[A: BaseArchetype](Record):
     index: int
-    archetype: Comptime.of(A, Archetype)
+    archetype: Comptime.of(A, BaseArchetype)

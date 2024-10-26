@@ -9,6 +9,10 @@ class Vec2(Record):
     x: float
     y: float
 
+    @property
+    def tuple(self) -> tuple[float, float]:
+        return self.x, self.y
+
     def __add__(self, other: Self) -> Self:
         return Vec2(x=self.x + other.x, y=self.y + other.y)
 

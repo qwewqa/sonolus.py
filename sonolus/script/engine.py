@@ -1,6 +1,6 @@
 from typing import ClassVar
 
-from sonolus.script.archetype import Archetype
+from sonolus.script.archetype import BaseArchetype
 
 
 class EngineMode:
@@ -8,4 +8,4 @@ class EngineMode:
 
 
 class PlayMode(EngineMode):
-    archetypes: ClassVar[list[type[Archetype]]]
+    archetypes: ClassVar[list[type[BaseArchetype]]]
