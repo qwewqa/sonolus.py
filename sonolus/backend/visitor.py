@@ -521,11 +521,7 @@ class Visitor(ast.NodeVisitor):
         kwargs = {}
         for arg in node.args:
             if isinstance(arg, ast.Starred):
-                value = self.visit(arg.value)
-                if value._is_py_() and isinstance(value._as_py_(), tuple):
-                    args.extend(value._as_py_())
-                else:
-                    raise ValueError("Starred arguments (*args) must be tuples")
+                args.extend(self.handle_starred(self.visit(arg.value)))
             else:
                 args.append(self.visit(arg))
         for keyword in node.keywords:
@@ -568,7 +564,13 @@ class Visitor(ast.NodeVisitor):
         raise NotImplementedError("List literals are not supported")
 
     def visit_Tuple(self, node):
-        return validate_value(tuple(self.visit(elt) for elt in node.elts))
+        values = []
+        for elt in node.elts:
+            if isinstance(elt, ast.Starred):
+                values.extend(self.handle_starred(self.visit(elt.value)))
+            else:
+                values.append(self.visit(elt))
+        return validate_value(tuple(values))
 
     def visit_Slice(self, node):
         raise NotImplementedError("Slices are not supported")
@@ -585,11 +587,7 @@ class Visitor(ast.NodeVisitor):
                 slice_value = self.visit(slice_expr)
                 self.handle_setitem(target, sub_value, slice_value, value)
             case ast.Tuple(elts=elts) | ast.List(elts=elts):
-                if not value._is_py_():
-                    raise NotImplementedError("Unpacking assignment is only supported for tuples")
-                values = value._as_py_()
-                if not isinstance(values, tuple):
-                    raise NotImplementedError("Unpacking assignment is only supported for tuples")
+                values = self.handle_starred(value)
                 if len(elts) != len(values):
                     raise ValueError("Unpacking assignment requires the same number of elements")
                 for elt, v in zip(elts, values, strict=False):
@@ -720,6 +718,11 @@ class Visitor(ast.NodeVisitor):
                 if isinstance(target, Value) and hasattr(target, "__setitem__"):
                     return self.handle_call(node, target.__setitem__, key, value)
                 raise TypeError(f"Cannot set items on {type(target).__name__}")
+
+    def handle_starred(self, value: Value) -> tuple[Value, ...]:
+        if value._is_py_() and isinstance(value._as_py_(), tuple):
+            return value._as_py_()
+        raise ValueError("Unsupported starred expression")
 
     def is_not_implemented(self, value):
         value = validate_value(value)

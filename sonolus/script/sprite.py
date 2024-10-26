@@ -1,11 +1,34 @@
 import inspect
 from typing import Annotated, get_origin
 
+from sonolus.backend.ops import Op
+from sonolus.script.graphics import QuadLike, flatten_quad
+from sonolus.script.internal.native import native_function
 from sonolus.script.record import Record
 
 
 class Sprite(Record):
     id: int
+
+    def draw(self, quad: QuadLike, z: float = 0.0, a: float = 1.0):
+        _draw(self.id, *flatten_quad(quad), z, a)
+
+
+@native_function(Op.Draw)
+def _draw(
+    sprite: int,
+    x1: float,
+    y1: float,
+    x2: float,
+    y2: float,
+    x3: float,
+    y3: float,
+    x4: float,
+    y4: float,
+    z: float,
+    a: float,
+):
+    pass
 
 
 def skin[T](cls: type[T]) -> T:
@@ -23,6 +46,7 @@ def skin[T](cls: type[T]) -> T:
         names.append(sprite_name)
         setattr(instance, name, Sprite(i))
     instance._sprites_ = names
+    instance._is_comptime_value_ = True
     return instance
 
 

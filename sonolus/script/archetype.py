@@ -188,6 +188,8 @@ type ArchetypeData = ArchetypeSelfData | ArchetypeReferenceData | ArchetypeLevel
 
 
 class Archetype:
+    _is_comptime_value_ = True
+
     _supported_callbacks_: ClassVar[dict[str, CallbackInfo]]
     _default_callbacks_: ClassVar[set[Callable]]
 

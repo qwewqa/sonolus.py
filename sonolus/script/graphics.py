@@ -1,7 +1,16 @@
 from __future__ import annotations
 
+from typing import Protocol
+
 from sonolus.script.record import Record
 from sonolus.script.vec import Vec2
+
+
+class Quad(Record):
+    bl: Vec2
+    tl: Vec2
+    tr: Vec2
+    br: Vec2
 
 
 class Rect(Record):
@@ -91,8 +100,28 @@ class Rect(Record):
         )
 
 
-class Quad(Record):
-    bl: Vec2
-    tl: Vec2
-    tr: Vec2
-    br: Vec2
+class QuadLike(Protocol):
+    @property
+    def bl(self) -> Vec2: ...
+
+    @property
+    def tl(self) -> Vec2: ...
+
+    @property
+    def tr(self) -> Vec2: ...
+
+    @property
+    def br(self) -> Vec2: ...
+
+
+def flatten_quad(quad: QuadLike) -> tuple[float, float, float, float, float, float, float, float]:
+    return (
+        quad.bl.x,
+        quad.bl.y,
+        quad.tl.x,
+        quad.tl.y,
+        quad.tr.x,
+        quad.tr.y,
+        quad.br.x,
+        quad.br.y,
+    )
