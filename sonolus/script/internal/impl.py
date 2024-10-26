@@ -36,7 +36,6 @@ def validate_value(value: Any) -> Value:
 
 
 def try_validate_value(value: Any) -> Value | None:
-    from sonolus.script.archetype import Archetype
     from sonolus.script.comptime import Comptime
     from sonolus.script.internal.generic import PartialGeneric
     from sonolus.script.internal.value import Value
@@ -57,18 +56,9 @@ def try_validate_value(value: Any) -> Value | None:
             return Comptime.accept_unchecked(tuple(validate_value(v) for v in value))
         case dict():
             return Comptime.accept_unchecked({validate_value(k)._as_py_(): validate_value(v) for k, v in value.items()})
-        case (
-            PartialGeneric()
-            | TypeVar()
-            | FunctionType()
-            | MethodType()
-            | NotImplementedType()
-            | str()
-            | NoneType()
-            | Archetype()
-        ):
+        case PartialGeneric() | TypeVar() | FunctionType() | MethodType() | NotImplementedType() | str() | NoneType():
             return Comptime.accept_unchecked(value)
-        case global_value if getattr(global_value, "_global_info_", None):
-            return Comptime.accept_unchecked(value)
+        case comptime_value if getattr(comptime_value, "_is_comptime_value_", True):
+            return Comptime.accept_unchecked(comptime_value)
         case _:
             return None

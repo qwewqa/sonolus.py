@@ -46,7 +46,7 @@ class GlobalField:
 
 def create_global(cls: type, blocks: dict[Mode, Block], offset: int | None):
     if len(cls.__bases__) != 1:
-        raise TypeError("GlobalProxy must not inherit from any class (other than object)")
+        raise TypeError("Global must not inherit from any class (except object)")
     field_offset = 0
     for i, (
         name,
@@ -56,6 +56,7 @@ def create_global(cls: type, blocks: dict[Mode, Block], offset: int | None):
         setattr(cls, name, GlobalField(name, type_, i, field_offset))
         field_offset += type_._size_()
     cls._global_info_ = GlobalInfo(cls.__name__, field_offset, blocks, offset)
+    cls._is_comptime_value_ = True
     return cls()
 
 
