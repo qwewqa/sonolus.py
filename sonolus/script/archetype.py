@@ -159,6 +159,14 @@ def shared_memory() -> ArchetypeFieldInfo:
     return ArchetypeFieldInfo(None, StorageType.Shared)
 
 
+_annotation_defaults: dict[Callable, ArchetypeFieldInfo] = {
+    imported: imported(),
+    exported: exported(),
+    entity_memory: entity_memory(),
+    shared_memory: shared_memory(),
+}
+
+
 class StandardImport:
     Beat = Annotated[float, imported(name="#BEAT")]
     Bpm = Annotated[float, imported(name="#BPM")]
@@ -272,12 +280,17 @@ class BaseArchetype:
                 raise TypeError(
                     "Archetype fields must be annotated using imported, exported, entity_memory, or shared_memory"
                 )
-            field_info_list = [a for a in value.__metadata__ if isinstance(a, ArchetypeFieldInfo)]
-            if len(field_info_list) != 1:
+            if len(value.__metadata__) != 1:
                 raise TypeError(
                     "Archetype fields must be annotated using imported, exported, entity_memory, or shared_memory once"
                 )
-            field_info = field_info_list[0]
+            field_info = value.__metadata__[0]
+            if isinstance(field_info, Callable):
+                field_info = _annotation_defaults.get(field_info, field_info)
+            if not isinstance(field_info, ArchetypeFieldInfo):
+                raise TypeError(
+                    "Archetype fields must be annotated using imported, exported, entity_memory, or shared_memory"
+                )
             field_type = validate_concrete_type(value.__origin__)
             match field_info.storage:
                 case StorageType.Imported:
