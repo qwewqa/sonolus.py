@@ -227,7 +227,15 @@ class BaseArchetype:
     is_scored: ClassVar[bool] = False
 
     def __init__(self, *args, **kwargs):
-        raise TypeError("Archetype instances cannot be created directly, use the at or data class methods instead")
+        if ctx():
+            raise RuntimeError("The Archetype constructor is only for defining level data")
+        bound = self._data_constructor_signature_.bind_partial(*args, **kwargs)
+        bound.apply_defaults()
+        values = {
+            field.name: field.type._accept_(bound.arguments.get(field.name) or zeros(field.type))
+            for field in self._imported_fields_.values()
+        }
+        self._data_ = ArchetypeLevelData(values=values)
 
     @classmethod
     def _new(cls):
@@ -243,20 +251,6 @@ class BaseArchetype:
     def at(cls, index: Num) -> Self:
         result = cls._new()
         result._data_ = ArchetypeReferenceData(index=index)
-        return result
-
-    @classmethod
-    def data(cls, *args, **kwargs) -> Self:
-        if ctx():
-            raise RuntimeError("The Archetype constructor is only for level data")
-        bound = cls._data_constructor_signature_.bind_partial(*args, **kwargs)
-        bound.apply_defaults()
-        values = {
-            field.name: field.type._accept_(bound.arguments.get(field.name) or zeros(field.type))
-            for field in cls._imported_fields_.values()
-        }
-        result = cls._new()
-        result._data_ = ArchetypeLevelData(values=values)
         return result
 
     def __init_subclass__(cls, **kwargs):
