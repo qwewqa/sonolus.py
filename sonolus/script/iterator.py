@@ -58,8 +58,8 @@ class ArrayLike[T](Collection):
     def enumerate(self, start: Num = 0) -> SonolusIterator[T]:
         return ArrayEnumerator(0, start, self)
 
-    def index_of(self, value: T) -> Num:
-        i = 0
+    def index_of(self, value: T, start: Num = 0) -> Num:
+        i = start
         while i < self.size():
             if self[i] == value:
                 return i
@@ -101,6 +101,21 @@ class ArrayLike[T](Collection):
 
     def min(self) -> T:
         return self[self.index_of_min()]
+
+    def sort(self, *, reverse: bool = False):
+        _insertion_sort(self, 0, self.size(), reverse)
+
+
+def _insertion_sort[T](array: ArrayLike[T], start: Num, end: Num, reverse: bool):
+    i = start + 1
+    while i < end:
+        value = array[i]
+        j = i - 1
+        while j >= start and (array[j] > value) != reverse:
+            array[j + 1] = array[j]
+            j -= 1
+        array[j + 1] = value
+        i += 1
 
 
 class ArrayIterator[V: ArrayLike](Record, SonolusIterator):

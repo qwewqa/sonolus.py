@@ -52,9 +52,12 @@ class BlockPlace:
     def __str__(self):
         if isinstance(self.block, TempBlock) and self.block.size == 1 and self.index == 0 and self.offset == 0:
             return f"{self.block}"
-        if isinstance(self.index, int):
+        elif isinstance(self.index, int):
             return f"{self.block}[{self.index + self.offset}]"
-        return f"{self.block}[{self.index} + {self.offset}]"
+        elif self.offset == 0:
+            return f"{self.block}[{self.index}]"
+        else:
+            return f"{self.block}[{self.index} + {self.offset}]"
 
     def __eq__(self, other):
         return isinstance(other, BlockPlace) and self.block == other.block and self.index == other.index

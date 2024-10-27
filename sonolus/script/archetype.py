@@ -223,6 +223,7 @@ class BaseArchetype:
 
     _data_: ArchetypeData
 
+    name: ClassVar[str | None] = None
     is_scored: ClassVar[bool] = False
 
     def __init__(self, *args, **kwargs):
