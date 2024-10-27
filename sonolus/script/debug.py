@@ -20,6 +20,7 @@ def error(message: str) -> None:
     if ctx():
         debug_log(ctx().map_constant(message))
         debug_pause()
+        terminate()
     else:
         raise RuntimeError(message)
 
@@ -38,14 +39,12 @@ def assert_true(value: Num, message: str | None = None):
     message = with_default(message, "Assertion failed")
     if not value:
         error(message)
-        terminate()
 
 
 def assert_false(value: Num, message: str | None = None):
     message = with_default(message, "Assertion failed")
     if value:
         error(message)
-        terminate()
 
 
 @meta_fn
