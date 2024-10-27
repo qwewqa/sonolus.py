@@ -452,4 +452,4 @@ class ArchetypeLife(Record):
 
 class EntityRef[A: BaseArchetype](Record):
     index: int
-    archetype: Comptime.of(A, BaseArchetype)
+    archetype: Comptime[BaseArchetype, A]

@@ -1,13 +1,12 @@
 from collections.abc import Iterable
-from typing import Any, Self, TypeVar, final, overload
+from typing import TYPE_CHECKING, Any, Self, TypeVar, final
 
 from sonolus.backend.place import BlockPlace
 from sonolus.script.internal.generic import GenericValue
-from sonolus.script.internal.impl import validate_value
 
 
 @final
-class Comptime[V](GenericValue):
+class _Comptime[T, V](GenericValue):
     _instance: Self | None = None
 
     def __init__(self):
@@ -16,7 +15,7 @@ class Comptime[V](GenericValue):
 
     @classmethod
     def value(cls):
-        (value,) = cls._type_args_
+        _, value = cls._type_args_
         if isinstance(value, Identity):
             return value.value
         return value
@@ -94,35 +93,26 @@ class Comptime[V](GenericValue):
         return self
 
     @classmethod
+    def _validate__type_args_(cls, args: tuple[Any, ...]) -> tuple[Any, ...]:
+        if len(args) == 2:
+            _, value = args
+            # We want the type to be there for documentation,
+            # but not enforced since they might not match up, e.g. a Callable is really FunctionType
+            if isinstance(value, TypeVar):
+                args = Any, value
+            else:
+                args = type(value), value
+        return super()._validate__type_args_(args)
+
+    @classmethod
     def accept_unchecked(cls, value: Any) -> Self:
         if isinstance(value, dict | tuple):
-            args = (Identity(value),)
+            args = type(value), Identity(value)
         else:
-            args = (value,)
+            args = type(value), value
         if args not in cls._parameterized_:
             cls._parameterized_[args] = cls._get_parameterized(args)
         return cls._parameterized_[args]._instance
-
-    @classmethod
-    @overload
-    def of(cls, value: TypeVar) -> type[Any]: ...
-
-    @classmethod
-    @overload
-    def of[R](cls, value: TypeVar, bound: type[R]) -> type[R]: ...
-
-    @classmethod
-    @overload
-    def of[R](cls, value: R) -> type[R]: ...
-
-    @classmethod
-    def of(cls, value, bound=None):
-        if isinstance(value, TypeVar):
-            return cls[value]
-        result = type(validate_value(value))
-        if not issubclass(result, cls):
-            raise TypeError("Value is not a valid Comptime value")
-        return result
 
 
 class Identity[T]:  # This is to allow accepting potentially unhashable values by using identity comparison
@@ -142,3 +132,11 @@ class Identity[T]:  # This is to allow accepting potentially unhashable values b
 
     def __repr__(self):
         return f"{type(self).__name__}({self.value!r})"
+
+
+if TYPE_CHECKING:
+    type Comptime[T, V] = T | V
+else:
+    locals()["Comptime"] = _Comptime
+    _Comptime.__name__ = "Comptime"
+    _Comptime.__qualname__ = "Comptime"
