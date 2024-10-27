@@ -184,6 +184,13 @@ class Record(GenericValue):
     def _copy_(self) -> Self:
         return type(self)(**{field.name: self._value[field.name]._copy_() for field in self._fields})
 
+    @classmethod
+    def _alloc_(cls) -> Self:
+        # Compared to using the constructor, this avoids unnecessary _get_ calls
+        result = object.__new__(cls)
+        result._value = {field.name: field.type._alloc_() for field in cls._fields}
+        return result
+
     def __str__(self):
         return (
             f"{self.__class__.__name__}({", ".join(f"{field.name}={field.__get__(self)}" for field in self._fields)})"

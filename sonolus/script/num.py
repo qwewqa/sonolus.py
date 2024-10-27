@@ -106,6 +106,13 @@ class _Num(Value):
     def _copy_(self) -> Self:
         return self
 
+    @classmethod
+    def _alloc_(cls) -> Self:
+        if ctx():
+            return Num(ctx().alloc(size=1))
+        else:
+            return Num(-1)
+
     def ir(self):
         if isinstance(self.data, BlockPlace):
             return IRGet(self.data)

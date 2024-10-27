@@ -2,12 +2,18 @@ from sonolus.script.array import Array
 from sonolus.script.iterator import ArrayLike
 from sonolus.script.range import Range
 from sonolus.script.record import Record
-from sonolus.script.values import copy
+from sonolus.script.values import alloc, copy
 
 
 class VarArray[T, Capacity](Record, ArrayLike[T]):
     _size: int
     _array: Array[T, Capacity]
+
+    @classmethod
+    def new(cls):
+        element_type = cls._get_type_arg_(T)
+        capacity = cls._get_type_arg_(Capacity)
+        return cls(0, alloc(Array[element_type, capacity]))
 
     def size(self) -> int:
         return self._size
@@ -25,7 +31,10 @@ class VarArray[T, Capacity](Record, ArrayLike[T]):
         self._size += 1
 
     def pop(self, index: int) -> T:
-        """Removes and returns a copy of the value at the given index."""
+        """Removes and returns a copy of the value at the given index.
+
+        Preserves the relative order of the elements.
+        """
         assert 0 <= index < self._size
         value = copy(self._array[index])
         self._size -= 1
@@ -50,7 +59,11 @@ class VarArray[T, Capacity](Record, ArrayLike[T]):
         self._size = 0
 
     def set_add(self, value: T) -> bool:
-        """Adds a copy of the given value if it is not already present, returning whether the value was added."""
+        """Adds a copy of the given value if it is not already present, returning whether the value was added.
+
+        If the value is already present, the array is not modified.
+        If the array is full, the value is not added.
+        """
         if self._size >= self._array.size():
             return False
         if value in self:

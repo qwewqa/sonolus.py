@@ -130,6 +130,12 @@ class Value:
         """Returns a deep copy of this value."""
         raise NotImplementedError
 
+    @classmethod
+    @abstractmethod
+    def _alloc_(cls) -> Self:
+        """Allocates a new value which may be uninitialized."""
+        raise NotImplementedError
+
     def __imatmul__(self, other):
         self._copy_from_(other)
         return self

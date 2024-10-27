@@ -93,6 +93,10 @@ class _Comptime[T, V](GenericValue):
         return self
 
     @classmethod
+    def _alloc_(cls) -> Self:
+        return cls._instance
+
+    @classmethod
     def _validate__type_args_(cls, args: tuple[Any, ...]) -> tuple[Any, ...]:
         if len(args) == 2:
             _, value = args
@@ -137,6 +141,6 @@ class Identity[T]:  # This is to allow accepting potentially unhashable values b
 if TYPE_CHECKING:
     type Comptime[T, V] = T | V
 else:
-    locals()["Comptime"] = _Comptime
     _Comptime.__name__ = "Comptime"
     _Comptime.__qualname__ = "Comptime"
+    globals()["Comptime"] = _Comptime

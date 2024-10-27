@@ -2,6 +2,7 @@ from __future__ import annotations
 
 from typing import Any, ClassVar, Self, TypeVar
 
+from sonolus.script.internal.impl import meta_fn
 from sonolus.script.internal.value import Value
 
 type AnyType = type[Value] | PartialGeneric | TypeVar
@@ -74,7 +75,12 @@ class GenericValue(Value):
         return cls._type_args_ is not None
 
     @classmethod
+    @meta_fn
     def _get_type_arg_(cls, var: TypeVar) -> Any:
+        if isinstance(var, Value):
+            var = var._as_py_()
+        if cls._type_args_ is None:
+            raise TypeError(f"Type {cls.__name__} is not parameterized")
         if var in cls._type_vars_to_args_:
             return cls._type_vars_to_args_[var]
         raise TypeError(f"Missing type argument for {var}")

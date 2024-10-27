@@ -339,7 +339,9 @@ class Visitor(ast.NodeVisitor):
         raise NotImplementedError("Try* statements are not supported")
 
     def visit_Assert(self, node):
-        self.handle_call(node, assert_true, self.visit(node.test), self.visit(node.msg))
+        self.handle_call(
+            node, assert_true, self.visit(node.test), self.visit(node.msg) if node.msg else validate_value(None)
+        )
 
     def visit_Import(self, node):
         raise NotImplementedError("Import statements are not supported")

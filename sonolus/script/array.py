@@ -124,6 +124,14 @@ class Array[T, Size](GenericValue, ArrayLike[T]):
         else:
             return self._with_value([value._copy_() for value in self._value])
 
+    @classmethod
+    def _alloc_(cls) -> Self:
+        if ctx():
+            place = ctx().alloc(size=cls.size())
+            return cls._from_place_(place)
+        else:
+            return cls._with_value([cls.element_type()._alloc_() for _ in range(cls.size())])
+
     @meta_fn
     def __getitem__(self, index: Num) -> T:
         index: Num = Num._accept_(index)

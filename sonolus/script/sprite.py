@@ -1,5 +1,5 @@
 import inspect
-from typing import Annotated, get_origin
+from typing import Annotated, Any, NewType, get_origin
 
 from sonolus.backend.ops import Op
 from sonolus.script.graphics import QuadLike, flatten_quad
@@ -183,7 +183,10 @@ def _draw_curved_lr(
     pass
 
 
-def skin[T](cls: type[T]) -> T:
+Skin = NewType("Skin", Any)
+
+
+def skin[T](cls: type[T]) -> T | Skin:
     if len(cls.__bases__) != 1:
         raise ValueError("Skin class must not inherit from any class (except object)")
     instance = cls()

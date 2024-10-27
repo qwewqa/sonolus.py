@@ -4,11 +4,21 @@ from sonolus.script.internal.impl import meta_fn, validate_value
 
 
 @meta_fn
+def alloc[T](type_: type[T]) -> T:
+    """Returns an uninitialized instance of the given type."""
+    type_ = validate_concrete_type(type_)
+    if ctx():
+        return type_._alloc_()
+    else:
+        return type_._alloc_()._as_py_()
+
+
+@meta_fn
 def zeros[T](type_: type[T]) -> T:
     """Returns a new instance of the given type initialized with zeros."""
     type_ = validate_concrete_type(type_)
     if ctx():
-        return type_._from_list_([0] * type_._size_())._get_()
+        return copy(type_._from_list_([0] * type_._size_()))
     else:
         return type_._from_list_([0] * type_._size_())._as_py_()
 
