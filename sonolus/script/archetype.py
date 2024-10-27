@@ -232,7 +232,7 @@ class BaseArchetype:
         bound = self._data_constructor_signature_.bind_partial(*args, **kwargs)
         bound.apply_defaults()
         values = {
-            field.name: field.type._accept_(bound.arguments.get(field.name) or zeros(field.type))
+            field.name: field.type._accept_(bound.arguments.get(field.name) or zeros(field.type))._get_()
             for field in self._imported_fields_.values()
         }
         self._data_ = ArchetypeLevelData(values=values)
@@ -297,17 +297,21 @@ class BaseArchetype:
                 case StorageType.Imported:
                     cls._imported_fields_[name] = ArchetypeField(name, field_info.storage, imported_offset, field_type)
                     imported_offset += field_type._size_()
+                    setattr(cls, name, cls._imported_fields_[name])
                 case StorageType.Exported:
                     cls._exported_fields_[name] = ArchetypeField(name, field_info.storage, exported_offset, field_type)
                     exported_offset += field_type._size_()
+                    setattr(cls, name, cls._exported_fields_[name])
                 case StorageType.Memory:
                     cls._memory_fields_[name] = ArchetypeField(name, field_info.storage, memory_offset, field_type)
                     memory_offset += field_type._size_()
+                    setattr(cls, name, cls._memory_fields_[name])
                 case StorageType.Shared:
                     cls._shared_memory_fields_[name] = ArchetypeField(
                         name, field_info.storage, shared_memory_offset, field_type
                     )
                     shared_memory_offset += field_type._size_()
+                    setattr(cls, name, cls._shared_memory_fields_[name])
         cls._imported_keys_ = {
             name: i
             for i, name in enumerate(
