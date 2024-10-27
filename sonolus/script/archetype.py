@@ -4,6 +4,7 @@ import inspect
 from collections.abc import Callable
 from dataclasses import dataclass
 from enum import StrEnum
+from types import FunctionType
 from typing import Annotated, ClassVar, Self, get_origin
 
 from sonolus.backend.ir import IRConst, IRInstr
@@ -280,16 +281,21 @@ class BaseArchetype:
                 raise TypeError(
                     "Archetype fields must be annotated using imported, exported, entity_memory, or shared_memory"
                 )
-            if len(value.__metadata__) != 1:
+            field_info = None
+            for metadata in value.__metadata__:
+                if isinstance(metadata, FunctionType):
+                    metadata = _annotation_defaults.get(metadata, metadata)
+                if isinstance(metadata, ArchetypeFieldInfo):
+                    if field_info is not None:
+                        raise TypeError(
+                            f"Unexpected multiple field annotations for '{name}', "
+                            f"expected exactly one of imported, exported, entity_memory, or shared_memory"
+                        )
+                    field_info = metadata
+            if field_info is None:
                 raise TypeError(
-                    "Archetype fields must be annotated using imported, exported, entity_memory, or shared_memory once"
-                )
-            field_info = value.__metadata__[0]
-            if isinstance(field_info, Callable):
-                field_info = _annotation_defaults.get(field_info, field_info)
-            if not isinstance(field_info, ArchetypeFieldInfo):
-                raise TypeError(
-                    "Archetype fields must be annotated using imported, exported, entity_memory, or shared_memory"
+                    f"Missing field annotation for '{name}', "
+                    f"expected exactly one of imported, exported, entity_memory, or shared_memory"
                 )
             field_type = validate_concrete_type(value.__origin__)
             match field_info.storage:

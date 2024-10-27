@@ -206,7 +206,6 @@ def skin[T](cls: type[T]) -> T:
 
 
 class StandardSprite:
-    # Need to use Annotated[Sprite, str] instead of sprite(str) so type checkers work
     NoteHeadNeutral = Annotated[Sprite, "#NOTE_HEAD_NEUTRAL"]
     NoteHeadRed = Annotated[Sprite, "#NOTE_HEAD_RED"]
     NoteHeadGreen = Annotated[Sprite, "#NOTE_HEAD_GREEN"]
