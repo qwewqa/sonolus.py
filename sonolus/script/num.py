@@ -327,11 +327,40 @@ class _Num(Value):
     def __abs__(self) -> Self:
         return self._unary_op(abs, Op.Abs)
 
+    @meta_fn
+    def __bool__(self):
+        if ctx():
+            return self != 0
+        else:
+            if self._is_py_():
+                return bool(self._as_py_())
+            raise ValueError("Cannot convert non compile time constant Num to bool")
+
     def and_(self, other) -> Self:
-        return self._bin_op(other, lambda a, b: a and b, Op.And)
+        def const_fn(a: Self, b: Self) -> Num | None:
+            if a._is_py_() and b._is_py_():
+                return Num(a.data and b.data)
+            if a._is_py_():
+                if a.data == 0:
+                    return a
+                else:
+                    return b
+            return None
+
+        return self._bin_op(other, const_fn, Op.And)
 
     def or_(self, other) -> Self:
-        return self._bin_op(other, lambda a, b: a or b, Op.Or)
+        def const_fn(a: Self, b: Self) -> Num | None:
+            if a._is_py_() and b._is_py_():
+                return Num(a.data or b.data)
+            if a._is_py_():
+                if a.data == 0:
+                    return b
+                else:
+                    return a
+            return None
+
+        return self._bin_op(other, const_fn, Op.Or)
 
     def not_(self) -> Self:
         return self._unary_op(operator.not_, Op.Not)

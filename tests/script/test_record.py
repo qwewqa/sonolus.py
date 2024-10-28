@@ -23,6 +23,11 @@ class Generic[T](Record):
         return self
 
 
+class Pair[T, U](Record):
+    first: T
+    second: U
+
+
 @given(a=st.floats(allow_nan=False, allow_infinity=False))
 def test_simple_record(a):
     def fn():
@@ -144,6 +149,25 @@ def test_record_explicit_inplace_operator():
         r -= Generic(2)
         assert_true(r == Generic(123))
         assert_true(r_ref == Generic(123))
+        return 1
+
+    assert validate_dual_run(fn) == 1
+
+
+def test_record_equality():
+    def fn():
+        r1 = Pair(1, 2)
+        r2 = Pair(1, 2)
+        r3 = Pair(3, 4)
+        r4 = Pair(Simple(1), Simple(2))
+        r5 = Pair(Simple(1), Simple(2))
+        r6 = Pair(Simple(3), Simple(4))
+
+        assert_true(r1 == r2)
+        assert_true(r1 != r3)
+        assert_true(r4 == r5)
+        assert_true(r4 != r6)
+
         return 1
 
     assert validate_dual_run(fn) == 1
