@@ -80,19 +80,19 @@ class _TutorialRuntimeUpdate:
     navigation_direction: int
 
 
-class UiConfig(Record):
+class RuntimeUiConfig(Record):
     scale: float
     alpha: float
 
 
 @runtime_ui_configuration
-class _UiConfigs:
-    menu: UiConfig
-    judgment: UiConfig
-    combo: UiConfig
-    primary_metric: UiConfig
-    secondary_metric: UiConfig
-    progress: UiConfig
+class _RuntimeUiConfigs:
+    menu: RuntimeUiConfig
+    judgment: RuntimeUiConfig
+    combo: RuntimeUiConfig
+    primary_metric: RuntimeUiConfig
+    secondary_metric: RuntimeUiConfig
+    progress: RuntimeUiConfig
 
 
 class HorizontalAlign(IntEnum):
@@ -101,7 +101,7 @@ class HorizontalAlign(IntEnum):
     Right = 1
 
 
-class UiLayout(Record):
+class RuntimeUiLayout(Record):
     anchor: Vec2
     pivot: Vec2
     dimensions: Vec2
@@ -137,16 +137,16 @@ class UiLayout(Record):
 
 
 @runtime_ui
-class _UiLayouts:
-    menu: UiLayout
-    judgment: UiLayout
-    combo_value: UiLayout
-    combo_text: UiLayout
-    primary_metric_bar: UiLayout
-    primary_metric_value: UiLayout
-    secondary_metric_bar: UiLayout
-    secondary_metric_value: UiLayout
-    progress: UiLayout
+class _RuntimeUi:
+    menu: RuntimeUiLayout
+    judgment: RuntimeUiLayout
+    combo_value: RuntimeUiLayout
+    combo_text: RuntimeUiLayout
+    primary_metric_bar: RuntimeUiLayout
+    primary_metric_value: RuntimeUiLayout
+    secondary_metric_bar: RuntimeUiLayout
+    secondary_metric_value: RuntimeUiLayout
+    progress: RuntimeUiLayout
 
 
 class TouchInfo(Record):
@@ -409,8 +409,8 @@ def set_background(value: Quad):
     _Background.value = value
 
 
-ui_layouts = _UiLayouts
-ui_configs = _UiConfigs
+runtime_ui = _RuntimeUi
+runtime_ui_configs = _RuntimeUiConfigs
 
 
 def screen() -> Rect:
