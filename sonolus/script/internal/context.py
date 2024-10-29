@@ -10,7 +10,7 @@ from sonolus.backend.flow import BasicBlock, FlowEdge
 from sonolus.backend.ir import IRConst, IRStmt
 from sonolus.backend.mode import Mode
 from sonolus.backend.place import Block, BlockPlace, TempBlock
-from sonolus.script.globals import GlobalInfo
+from sonolus.script.globals import GlobalInfo, GlobalPlaceholder
 from sonolus.script.internal.value import Value
 
 _compiler_internal_ = True
@@ -179,7 +179,7 @@ class Context:
             self.const_mappings[value] = len(self.const_mappings)
         return self.const_mappings[value]
 
-    def get_global_base(self, value: GlobalInfo) -> BlockPlace:
+    def get_global_base(self, value: GlobalInfo | GlobalPlaceholder) -> BlockPlace:
         block = value.blocks.get(self.global_state.mode)
         if block is None:
             raise RuntimeError(f"Global {value.name} is not available in '{self.global_state.mode.name}' mode")

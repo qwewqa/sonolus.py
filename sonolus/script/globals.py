@@ -45,9 +45,28 @@ class GlobalField(SonolusDescriptor):
             target._copy_from_(value)
 
 
+class GlobalPlaceholder:
+    def __init__(self, type_: type[Value], blocks: dict[Mode, Block], offset: int | None):
+        self.type = type_
+        self.blocks = blocks
+        self.offset = offset
+        self.size = type_._size_()
+
+    def get(self):
+        from sonolus.script.internal.context import ctx
+
+        if not ctx():
+            raise RuntimeError("Global access outside of compilation")
+        base = ctx().get_global_base(self)
+        return self.type._from_place_(base)
+
+
 def create_global(cls: type, blocks: dict[Mode, Block], offset: int | None):
+    if issubclass(cls, Value):
+        cls = validate_concrete_type(cls)
+        return GlobalPlaceholder(cls, blocks, offset)
     if len(cls.__bases__) != 1:
-        raise TypeError("Global must not inherit from any class (except object)")
+        raise TypeError("Expected a class with no bases or a Value subclass")
     field_offset = 0
     for i, (
         name,
