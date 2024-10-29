@@ -210,11 +210,15 @@ def test_array_min():
     assert validate_dual_run(fn) == 1
 
 
-def test_array_sort():
+@given(args=st.lists(st.integers(min_value=-9999, max_value=9999), min_size=0, max_size=100))
+def test_array_sort(args):
+    tuple_args = tuple(args)
+    n = len(args)
+
     def fn():
-        array = Array(3, 2, 1, 5, 4)
+        array = Array[int, n](*tuple_args)
 
         array.sort()
         return array
 
-    assert list(validate_dual_run(fn)) == [1, 2, 3, 4, 5]
+    assert list(validate_dual_run(fn)) == sorted(args)

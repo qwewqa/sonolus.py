@@ -103,7 +103,10 @@ class ArrayLike[T](Collection):
         return self[self.index_of_min()]
 
     def sort(self, *, reverse: bool = False):
-        _insertion_sort(self, 0, self.size(), reverse)
+        if self.size() < 15:
+            _insertion_sort(self, 0, self.size(), reverse)
+        else:
+            _heap_sort(self, 0, self.size(), reverse)
 
 
 def _insertion_sort[T](array: ArrayLike[T], start: Num, end: Num, reverse: bool):
@@ -116,6 +119,34 @@ def _insertion_sort[T](array: ArrayLike[T], start: Num, end: Num, reverse: bool)
             j -= 1
         array[j + 1] = value
         i += 1
+
+
+def _heapify[T](array: ArrayLike[T], end: Num, index: Num, reverse: bool):
+    while True:
+        left = index * 2 + 1
+        right = left + 1
+        largest = index
+        if left < end and (array[left] > array[largest]) != reverse:
+            largest = left
+        if right < end and (array[right] > array[largest]) != reverse:
+            largest = right
+        if largest == index:
+            break
+        array[index], array[largest] = array[largest], array[index]
+        index = largest
+
+
+# Heap sort is simple to implement iteratively without dynamic memory allocation
+def _heap_sort[T](array: ArrayLike[T], start: Num, end: Num, reverse: bool):
+    i = end // 2 - 1
+    while i >= start:
+        _heapify(array, end, i, reverse)
+        i -= 1
+    i = end - 1
+    while i > start:
+        array[start], array[i] = array[i], array[start]
+        _heapify(array, i, start, reverse)
+        i -= 1
 
 
 class ArrayIterator[V: ArrayLike](Record, SonolusIterator):
