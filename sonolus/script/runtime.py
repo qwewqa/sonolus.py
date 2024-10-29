@@ -149,7 +149,7 @@ class _RuntimeUi:
     progress: RuntimeUiLayout
 
 
-class TouchInfo(Record):
+class Touch(Record):
     id: int
     started: bool
     ended: bool
@@ -185,7 +185,7 @@ class TouchInfo(Record):
 
 @runtime_touch_array
 class _TouchArray:
-    touches: Array[TouchInfo, 999]
+    touches: Array[Touch, 999]
 
 
 @runtime_skin_transform
@@ -353,14 +353,14 @@ def scaled_time() -> float:
             return 0
 
 
-def touches() -> VarArray[TouchInfo, 999]:
+def touches() -> VarArray[Touch, 999]:
     if not ctx():
-        return VarArray(0, Array[TouchInfo, 0]())
+        return VarArray(0, Array[Touch, 0]())
     match ctx().global_state.mode:
         case Mode.Play:
             return VarArray(_PlayRuntimeUpdate.touch_count, _TouchArray.touches)
         case _:
-            return VarArray(0, Array[TouchInfo, 0]())
+            return VarArray(0, Array[Touch, 0]())
 
 
 def is_skip() -> bool:
