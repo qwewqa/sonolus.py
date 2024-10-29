@@ -13,6 +13,7 @@ from sonolus.backend.ops import Op
 from sonolus.script.callbacks import PLAY_CALLBACKS, CallbackInfo
 from sonolus.script.comptime import Comptime
 from sonolus.script.internal.context import ctx
+from sonolus.script.internal.descriptor import SonolusDescriptor
 from sonolus.script.internal.generic import validate_concrete_type
 from sonolus.script.internal.value import Value
 from sonolus.script.num import Num
@@ -38,7 +39,7 @@ class ArchetypeFieldInfo:
     storage: StorageType
 
 
-class ArchetypeField:
+class ArchetypeField(SonolusDescriptor):
     def __init__(self, name: str | None, storage: StorageType, offset: int, type_: type[Value]):
         self.name = name
         self.storage = storage

@@ -10,15 +10,14 @@ from typing import Any, Never
 from sonolus.backend.excepthook import install_excepthook
 from sonolus.backend.utils import get_function, scan_writes
 from sonolus.script.debug import assert_true
-from sonolus.script.globals import GlobalField
 from sonolus.script.internal.builtin_impls import BUILTIN_IMPLS
 from sonolus.script.internal.context import Context, Scope, ValueBinding, ctx, set_ctx
+from sonolus.script.internal.descriptor import SonolusDescriptor
 from sonolus.script.internal.error import CompilationError
 from sonolus.script.internal.impl import try_validate_value, validate_value
 from sonolus.script.internal.value import Value
 from sonolus.script.iterator import SonolusIterator
 from sonolus.script.num import Num
-from sonolus.script.record import RecordField
 
 _compiler_internal_ = True
 
@@ -659,7 +658,7 @@ class Visitor(ast.NodeVisitor):
             match descriptor:
                 case property(fget=getter):
                     return self.handle_call(node, getter, target)
-                case RecordField() | GlobalField() | FunctionType() | classmethod() | staticmethod() | None:
+                case SonolusDescriptor() | FunctionType() | classmethod() | staticmethod() | None:
                     return validate_value(getattr(target, key))
                 case _:
                     raise TypeError(f"Unsupported field or descriptor {key}")
@@ -672,7 +671,7 @@ class Visitor(ast.NodeVisitor):
                     if setter is None:
                         raise AttributeError(f"Cannot set attribute {key} because property has no setter")
                     self.handle_call(node, setter, target, value)
-                case RecordField() | GlobalField():
+                case SonolusDescriptor():
                     setattr(target, key, value)
                 case _:
                     raise TypeError(f"Unsupported field or descriptor {key}")

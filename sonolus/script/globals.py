@@ -2,6 +2,7 @@ import inspect
 
 from sonolus.backend.blocks import Block, PlayBlock, PreviewBlock, TutorialBlock, WatchBlock
 from sonolus.backend.mode import Mode
+from sonolus.script.internal.descriptor import SonolusDescriptor
 from sonolus.script.internal.generic import validate_concrete_type
 from sonolus.script.internal.value import Value
 
@@ -14,7 +15,7 @@ class GlobalInfo:
         self.offset = offset
 
 
-class GlobalField:
+class GlobalField(SonolusDescriptor):
     def __init__(self, name: str, type_: type[Value], index: int, offset: int):
         self.name = name
         self.type = type_

@@ -7,6 +7,7 @@ from typing import Any, ClassVar, Self, dataclass_transform, get_origin
 
 from sonolus.backend.place import BlockPlace
 from sonolus.script.internal.context import ctx
+from sonolus.script.internal.descriptor import SonolusDescriptor
 from sonolus.script.internal.generic import (
     GenericValue,
     accept_and_infer_types,
@@ -218,7 +219,7 @@ class Record(GenericValue):
         raise TypeError("Record is not hashable")
 
 
-class RecordField:
+class RecordField(SonolusDescriptor):
     def __init__(self, name: str, type_: type[Value], index: int, offset: int):
         self.name = name
         self.type = type_
