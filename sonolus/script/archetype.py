@@ -5,7 +5,7 @@ from collections.abc import Callable
 from dataclasses import dataclass
 from enum import StrEnum
 from types import FunctionType
-from typing import Annotated, ClassVar, Self, get_origin
+from typing import Annotated, Any, ClassVar, Self, get_origin
 
 from sonolus.backend.ir import IRConst, IRInstr
 from sonolus.backend.mode import Mode
@@ -15,6 +15,7 @@ from sonolus.script.comptime import Comptime
 from sonolus.script.internal.context import ctx
 from sonolus.script.internal.descriptor import SonolusDescriptor
 from sonolus.script.internal.generic import validate_concrete_type
+from sonolus.script.internal.introspection import get_field_specifiers
 from sonolus.script.internal.value import Value
 from sonolus.script.num import Num
 from sonolus.script.pointer import deref
@@ -145,19 +146,19 @@ class ArchetypeField(SonolusDescriptor):
             target._copy_from_(value)
 
 
-def imported(*, name: str | None = None) -> ArchetypeFieldInfo:
+def imported(*, name: str | None = None) -> Any:
     return ArchetypeFieldInfo(name, StorageType.Imported)
 
 
-def exported(*, name: str | None = None) -> ArchetypeFieldInfo:
+def exported(*, name: str | None = None) -> Any:
     return ArchetypeFieldInfo(name, StorageType.Exported)
 
 
-def entity_memory() -> ArchetypeFieldInfo:
+def entity_memory() -> Any:
     return ArchetypeFieldInfo(None, StorageType.Memory)
 
 
-def shared_memory() -> ArchetypeFieldInfo:
+def shared_memory() -> Any:
     return ArchetypeFieldInfo(None, StorageType.Shared)
 
 
@@ -270,7 +271,7 @@ class BaseArchetype:
         exported_offset = 0
         memory_offset = 0
         shared_memory_offset = 0
-        for name, value in inspect.get_annotations(cls, eval_str=True).items():
+        for name, value in get_field_specifiers(cls).items():
             if value is ClassVar or get_origin(value) is ClassVar:
                 continue
             if get_origin(value) is not Annotated:
@@ -453,3 +454,6 @@ class ArchetypeLife(Record):
 class EntityRef[A: BaseArchetype](Record):
     index: int
     archetype: Comptime[BaseArchetype, A]
+
+    def get(self) -> A:
+        return self.archetype.at(Num(self.index))

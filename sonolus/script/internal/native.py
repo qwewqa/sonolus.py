@@ -20,7 +20,7 @@ def native_call(op: Op, *args: Num) -> Num:
     return Num._from_place_(result)
 
 
-def native_function[**P](op: Op) -> Callable[[Callable[P, Num | None]], Callable[P, Num | None]]:
+def native_function[**P, R](op: Op) -> Callable[[Callable[P, R]], Callable[P, R]]:
     def decorator(fn: Callable[P, Num]) -> Callable[P, Num]:
         signature = inspect.signature(fn)
 

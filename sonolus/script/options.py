@@ -1,5 +1,4 @@
 # ruff: noqa: A002
-import inspect
 from dataclasses import dataclass
 from typing import Annotated, Any, NewType, get_origin
 
@@ -9,6 +8,7 @@ from sonolus.script.debug import assert_unreachable
 from sonolus.script.internal.context import ctx
 from sonolus.script.internal.descriptor import SonolusDescriptor
 from sonolus.script.internal.generic import validate_concrete_type
+from sonolus.script.internal.introspection import get_field_specifiers
 from sonolus.script.num import Num
 
 
@@ -97,7 +97,7 @@ def slider_option(
     step: float,
     unit: str | None = None,
     scope: str | None = None,
-):
+) -> Any:
     return SliderOption(name, standard, advanced, scope, default, min, max, step, unit)
 
 
@@ -108,7 +108,7 @@ def toggle_option(
     advanced: bool = False,
     default: bool,
     scope: str | None = None,
-):
+) -> Any:
     return ToggleOption(name, standard, advanced, scope, default)
 
 
@@ -120,7 +120,7 @@ def select_option(
     default: str,
     values: list[str],
     scope: str | None = None,
-):
+) -> Any:
     return SelectOption(name, standard, advanced, scope, default, values)
 
 
@@ -164,7 +164,7 @@ def options[T](cls: type[T]) -> T | Options:
         raise ValueError("Options class must not inherit from any class (except object)")
     instance = cls()
     entries = []
-    for i, (name, annotation) in enumerate(inspect.get_annotations(cls, eval_str=True).items()):
+    for i, (name, annotation) in enumerate(get_field_specifiers(cls).items()):
         if get_origin(annotation) is not Annotated:
             raise TypeError(f"Invalid annotation for options: {annotation}")
         annotation_type = annotation.__args__[0]
