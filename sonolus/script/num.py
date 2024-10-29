@@ -89,7 +89,7 @@ class _Num(Value):
             ctx().add_statements(IRSet(place, self.ir()))
             return Num(place)
         else:
-            return self
+            return Num(self.data)
 
     def _set_(self, value: Self):
         if ctx():

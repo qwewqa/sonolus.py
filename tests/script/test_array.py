@@ -6,6 +6,7 @@ from script.test_record import Simple
 
 from sonolus.script.array import Array
 from sonolus.script.debug import assert_false, assert_true
+from sonolus.script.record import Record
 
 
 def test_array_constructor():
@@ -210,15 +211,60 @@ def test_array_min():
     assert validate_dual_run(fn) == 1
 
 
-@given(args=st.lists(st.integers(min_value=-9999, max_value=9999), min_size=0, max_size=100))
-def test_array_sort(args):
+@given(
+    args=st.lists(st.integers(min_value=-9999, max_value=9999), min_size=0, max_size=100),
+    reverse=st.booleans(),
+)
+def test_array_sort(args, reverse: bool):
     tuple_args = tuple(args)
     n = len(args)
 
     def fn():
         array = Array[int, n](*tuple_args)
 
-        array.sort()
+        array.sort(reverse=reverse)
         return array
 
-    assert list(validate_dual_run(fn)) == sorted(args)
+    assert list(validate_dual_run(fn)) == sorted(args, reverse=reverse)
+
+
+class Ele(Record):
+    value: int
+
+    def __eq__(self, other):
+        return self.value == other.value
+
+    def __ne__(self, other):
+        return self.value != other.value
+
+    def __hash__(self):
+        return hash(self.value)
+
+    def __lt__(self, other):
+        return self.value < other.value
+
+    def __le__(self, other):
+        return self.value <= other.value
+
+    def __gt__(self, other):
+        return self.value > other.value
+
+    def __ge__(self, other):
+        return self.value >= other.value
+
+
+@given(
+    args=st.lists(st.integers(min_value=-9999, max_value=9999), min_size=0, max_size=100),
+    reverse=st.booleans(),
+)
+def test_array_sort_records(args, reverse: bool):
+    tuple_args = tuple(Ele(value=v) for v in args)
+    n = len(args)
+
+    def fn():
+        array = Array[Ele, n](*tuple_args)
+
+        array.sort(reverse=reverse)
+        return array
+
+    assert list(validate_dual_run(fn)) == sorted(tuple_args, reverse=reverse)

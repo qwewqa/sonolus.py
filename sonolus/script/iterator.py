@@ -5,6 +5,7 @@ from collections.abc import Collection, Iterator
 
 from sonolus.script.num import Num
 from sonolus.script.record import Record
+from sonolus.script.values import copy
 
 
 class SonolusIterator[T](Iterator[T]):
@@ -102,6 +103,11 @@ class ArrayLike[T](Collection):
     def min(self) -> T:
         return self[self.index_of_min()]
 
+    def swap(self, i: Num, j: Num):
+        temp = copy(self[i])
+        self[i] = self[j]
+        self[j] = temp
+
     def sort(self, *, reverse: bool = False):
         if self.size() < 15:
             _insertion_sort(self, 0, self.size(), reverse)
@@ -112,7 +118,7 @@ class ArrayLike[T](Collection):
 def _insertion_sort[T](array: ArrayLike[T], start: Num, end: Num, reverse: bool):
     i = start + 1
     while i < end:
-        value = array[i]
+        value = copy(array[i])
         j = i - 1
         while j >= start and (array[j] > value) != reverse:
             array[j + 1] = array[j]
@@ -132,7 +138,7 @@ def _heapify[T](array: ArrayLike[T], end: Num, index: Num, reverse: bool):
             largest = right
         if largest == index:
             break
-        array[index], array[largest] = array[largest], array[index]
+        array.swap(index, largest)
         index = largest
 
 
@@ -144,7 +150,7 @@ def _heap_sort[T](array: ArrayLike[T], start: Num, end: Num, reverse: bool):
         i -= 1
     i = end - 1
     while i > start:
-        array[start], array[i] = array[i], array[start]
+        array.swap(start, i)
         _heapify(array, i, start, reverse)
         i -= 1
 

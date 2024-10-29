@@ -197,6 +197,11 @@ class Record(GenericValue):
             f"{self.__class__.__name__}({", ".join(f"{field.name}={field.__get__(self)}" for field in self._fields)})"
         )
 
+    def __repr__(self):
+        return (
+            f"{self.__class__.__name__}(**{", ".join(f"{field.name}={field.__get__(self)}" for field in self._fields)})"
+        )
+
     @meta_fn
     def __eq__(self, other):
         if not isinstance(other, type(self)):
