@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from typing import Any, ClassVar, Self, TypeVar
+from typing import Any, ClassVar, Literal, Self, TypeVar, get_origin
 
 from sonolus.script.internal.impl import meta_fn
 from sonolus.script.internal.value import Value
@@ -14,7 +14,10 @@ def validate_type_arg(arg: Any) -> Any:
     arg = validate_value(arg)
     if not arg._is_py_():
         raise TypeError(f"Expected a compile-time constant type argument, got {arg}")
-    return arg._as_py_()
+    result = arg._as_py_()
+    if hasattr(result, "__origin__") and get_origin(result) is Literal:
+        return result.__args__[0]
+    return result
 
 
 def validate_type_spec(spec: Any) -> PartialGeneric | TypeVar | type[Value]:
