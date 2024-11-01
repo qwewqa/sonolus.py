@@ -1,16 +1,21 @@
+from __future__ import annotations
+
 from dataclasses import dataclass
+from enum import IntEnum
 from typing import Annotated, Protocol, get_origin
 
 from sonolus.backend.mode import Mode
+from sonolus.backend.ops import Op
 from sonolus.script.internal.context import ctx
 from sonolus.script.internal.impl import meta_fn
 from sonolus.script.internal.introspection import get_field_specifiers
+from sonolus.script.internal.native import native_function
 from sonolus.script.pointer import deref
 from sonolus.script.record import Record
 from sonolus.script.sprite import Sprite
 
 
-class BucketWindow(Record):
+class JudgmentWindow(Record):
     perfect_min: float
     perfect_max: float
     great_min: float
@@ -34,20 +39,53 @@ class BucketWindow(Record):
         self.good_min = good_min
         self.good_max = good_max
 
+    def judge(self, actual: float, target: float) -> Judgment:
+        return _judge(
+            actual,
+            target,
+            self.perfect_min,
+            self.perfect_max,
+            self.great_min,
+            self.great_max,
+            self.good_min,
+            self.good_max,
+        )
+
+
+class Judgment(IntEnum):
+    Miss = 0
+    Perfect = 1
+    Great = 2
+    Good = 3
+
+
+@native_function(Op.Judge)
+def _judge(
+    actual: float,
+    target: float,
+    perfect_min: float,
+    perfect_max: float,
+    great_min: float,
+    great_max: float,
+    good_min: float,
+    good_max: float,
+) -> Judgment:
+    raise NotImplementedError("Native function not implemented")
+
 
 class Bucket(Record):
     id: int
 
     @property
     @meta_fn
-    def window(self) -> BucketWindow:
+    def window(self) -> JudgmentWindow:
         if not ctx():
             raise RuntimeError("Bucket window access outside of compilation")
         match ctx().global_state.mode:
             case Mode.Play:
-                return deref(ctx().blocks.LevelBucket, self.id * BucketWindow._size_(), BucketWindow)
+                return deref(ctx().blocks.LevelBucket, self.id * JudgmentWindow._size_(), JudgmentWindow)
             case Mode.Watch:
-                return deref(ctx().blocks.LevelBucket, self.id * BucketWindow._size_(), BucketWindow)
+                return deref(ctx().blocks.LevelBucket, self.id * JudgmentWindow._size_(), JudgmentWindow)
             case _:
                 raise RuntimeError("Invalid mode for bucket window access")
 
@@ -77,7 +115,7 @@ def bucket_sprite(
     y: int,
     w: int,
     h: int,
-    rotation: float,
+    rotation: float = 0,
 ) -> BucketSprite:
     return BucketSprite(sprite.id, fallback_sprite.id if fallback_sprite else None, x, y, w, h, rotation)
 

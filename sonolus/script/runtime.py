@@ -109,7 +109,7 @@ class RuntimeUiLayout(Record):
     dimensions: Vec2
     rotation: float
     alpha: float
-    horizontal_align: int
+    horizontal_align: HorizontalAlign
     background: bool
 
     def update(
@@ -119,7 +119,7 @@ class RuntimeUiLayout(Record):
         dimensions: Vec2 | None = None,
         rotation: float | None = None,
         alpha: float | None = None,
-        horizontal_align: int | None = None,
+        horizontal_align: HorizontalAlign | None = None,
         background: bool | None = None,
     ):
         if anchor is not None:
