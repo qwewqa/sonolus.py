@@ -15,6 +15,7 @@ from sonolus.script.comptime import Comptime
 from sonolus.script.internal.context import ctx
 from sonolus.script.internal.descriptor import SonolusDescriptor
 from sonolus.script.internal.generic import validate_concrete_type
+from sonolus.script.internal.impl import meta_fn
 from sonolus.script.internal.introspection import get_field_specifiers
 from sonolus.script.internal.value import Value
 from sonolus.script.num import Num
@@ -255,6 +256,16 @@ class BaseArchetype:
         result._data_ = ArchetypeReferenceData(index=index)
         return result
 
+    @classmethod
+    @meta_fn
+    def id(cls):
+        if not ctx():
+            raise RuntimeError("Archetype id is only available during compilation")
+        result = ctx().global_state.archetypes.get(cls)
+        if result is None:
+            raise RuntimeError("Archetype is not registered")
+        return result
+
     def __init_subclass__(cls, **kwargs):
         if cls.__module__ == BaseArchetype.__module__:
             if cls._supported_callbacks_ is None:
@@ -412,6 +423,16 @@ class PlayArchetype(BaseArchetype):
     def is_despawned(self) -> bool:
         return self._info.state == 2
 
+    @property
+    def life(self) -> ArchetypeLife:
+        if not ctx():
+            raise RuntimeError("Calling life is only allowed within a callback")
+        match ctx().global_state.mode:
+            case Mode.Play | Mode.Watch:
+                return deref(ctx().blocks.ArchetypeLife, self.id() * ArchetypeLife._size_(), ArchetypeLife)
+            case _:
+                raise RuntimeError(f"Life is not available in mode '{ctx().global_state.mode}'")
+
 
 def entity_info_at(index: Num) -> PlayEntityInfo | WatchEntityInfo | PreviewEntityInfo:
     if not ctx():
@@ -449,6 +470,19 @@ class ArchetypeLife(Record):
     great_life_increment: Num
     good_life_increment: Num
     miss_life_increment: Num
+
+    def update(
+        self,
+        perfect_life_increment: Num | None = None,
+        great_life_increment: Num | None = None,
+        good_life_increment: Num | None = None,
+    ):
+        if perfect_life_increment is not None:
+            self.perfect_life_increment._set_(perfect_life_increment)
+        if great_life_increment is not None:
+            self.great_life_increment._set_(great_life_increment)
+        if good_life_increment is not None:
+            self.good_life_increment._set_(good_life_increment)
 
 
 class EntityRef[A: BaseArchetype](Record):

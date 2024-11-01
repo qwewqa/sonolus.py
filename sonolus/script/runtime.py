@@ -4,6 +4,8 @@ from sonolus.backend.mode import Mode
 from sonolus.script.array import Array
 from sonolus.script.containers import VarArray
 from sonolus.script.globals import (
+    level_life,
+    level_score,
     play_runtime_environment,
     play_runtime_update,
     preview_runtime_environment,
@@ -233,6 +235,94 @@ class _Background:
     value: Quad
 
 
+@level_score
+class _LevelScore:
+    perfect_score_multiplier: float
+    great_score_multiplier: float
+    good_score_multiplier: float
+    consecutive_perfect_score_multiplier: float
+    consecutive_perfect_score_step: float
+    consecutive_perfect_score_cap: float
+    consecutive_great_score_multiplier: float
+    consecutive_great_score_step: float
+    consecutive_great_score_cap: float
+    consecutive_good_score_multiplier: float
+    consecutive_good_score_step: float
+    consecutive_good_score_cap: float
+
+    def update(
+        self,
+        perfect_score_multiplier: float | None = None,
+        great_score_multiplier: float | None = None,
+        good_score_multiplier: float | None = None,
+        consecutive_perfect_score_multiplier: float | None = None,
+        consecutive_perfect_score_step: float | None = None,
+        consecutive_perfect_score_cap: float | None = None,
+        consecutive_great_score_multiplier: float | None = None,
+        consecutive_great_score_step: float | None = None,
+        consecutive_great_score_cap: float | None = None,
+        consecutive_good_score_multiplier: float | None = None,
+        consecutive_good_score_step: float | None = None,
+        consecutive_good_score_cap: float | None = None,
+    ):
+        if perfect_score_multiplier is not None:
+            self.perfect_score_multiplier = perfect_score_multiplier
+        if great_score_multiplier is not None:
+            self.great_score_multiplier = great_score_multiplier
+        if good_score_multiplier is not None:
+            self.good_score_multiplier = good_score_multiplier
+        if consecutive_perfect_score_multiplier is not None:
+            self.consecutive_perfect_score_multiplier = consecutive_perfect_score_multiplier
+        if consecutive_perfect_score_step is not None:
+            self.consecutive_perfect_score_step = consecutive_perfect_score_step
+        if consecutive_perfect_score_cap is not None:
+            self.consecutive_perfect_score_cap = consecutive_perfect_score_cap
+        if consecutive_great_score_multiplier is not None:
+            self.consecutive_great_score_multiplier = consecutive_great_score_multiplier
+        if consecutive_great_score_step is not None:
+            self.consecutive_great_score_step = consecutive_great_score_step
+        if consecutive_great_score_cap is not None:
+            self.consecutive_great_score_cap = consecutive_great_score_cap
+        if consecutive_good_score_multiplier is not None:
+            self.consecutive_good_score_multiplier = consecutive_good_score_multiplier
+        if consecutive_good_score_step is not None:
+            self.consecutive_good_score_step = consecutive_good_score_step
+        if consecutive_good_score_cap is not None:
+            self.consecutive_good_score_cap = consecutive_good_score_cap
+
+
+@level_life
+class _LevelLife:
+    consecutive_perfect_life_increment: float
+    consecutive_perfect_life_step: float
+    consecutive_great_life_increment: float
+    consecutive_great_life_step: float
+    consecutive_good_life_increment: float
+    consecutive_good_life_step: float
+
+    def update(
+        self,
+        consecutive_perfect_life_increment: float | None = None,
+        consecutive_perfect_life_step: float | None = None,
+        consecutive_great_life_increment: float | None = None,
+        consecutive_great_life_step: float | None = None,
+        consecutive_good_life_increment: float | None = None,
+        consecutive_good_life_step: float | None = None,
+    ):
+        if consecutive_perfect_life_increment is not None:
+            self.consecutive_perfect_life_increment = consecutive_perfect_life_increment
+        if consecutive_perfect_life_step is not None:
+            self.consecutive_perfect_life_step = consecutive_perfect_life_step
+        if consecutive_great_life_increment is not None:
+            self.consecutive_great_life_increment = consecutive_great_life_increment
+        if consecutive_great_life_step is not None:
+            self.consecutive_great_life_step = consecutive_great_life_step
+        if consecutive_good_life_increment is not None:
+            self.consecutive_good_life_increment = consecutive_good_life_increment
+        if consecutive_good_life_step is not None:
+            self.consecutive_good_life_step = consecutive_good_life_step
+
+
 @meta_fn
 def is_debug() -> bool:
     if not ctx():
@@ -415,3 +505,11 @@ runtime_ui_configs = _RuntimeUiConfigs
 
 def screen() -> Rect:
     return Rect(t=1, r=aspect_ratio(), b=-1, l=-aspect_ratio())
+
+
+def level_score() -> _LevelScore:
+    return _LevelScore
+
+
+def level_life() -> _LevelLife:
+    return _LevelLife

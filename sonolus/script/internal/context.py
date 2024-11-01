@@ -5,7 +5,7 @@ from contextvars import ContextVar
 from dataclasses import dataclass
 from typing import Any, Self
 
-from sonolus.backend.blocks import BlockData
+from sonolus.backend.blocks import BlockData, PlayBlock
 from sonolus.backend.flow import BasicBlock, FlowEdge
 from sonolus.backend.ir import IRConst, IRStmt
 from sonolus.backend.mode import Mode
@@ -19,14 +19,16 @@ context_var = ContextVar("context_var", default=None)
 
 
 class GlobalContextState:
+    archetypes: dict[type, int]
     rom: ReadOnlyMemory
     const_mappings: dict[Any, int]
     environment_mappings: dict[GlobalInfo, int]
     environment_offsets: dict[Block, int]
     mode: Mode
 
-    def __init__(self, mode: Mode):
-        self.rom = ReadOnlyMemory(mode.blocks.EngineRom)
+    def __init__(self, mode: Mode, archetypes: dict[type, int] | None = None, rom: ReadOnlyMemory | None = None):
+        self.archetypes = archetypes or {}
+        self.rom = ReadOnlyMemory() if rom is None else rom
         self.const_mappings = {}
         self.environment_mappings = {}
         self.environment_offsets = {}
@@ -226,12 +228,10 @@ def using_ctx(value: Context | None):
 
 
 class ReadOnlyMemory:
-    block: Block
     values: list[float]
     indexes: dict[tuple[float, ...], int]
 
-    def __init__(self, block: Block):
-        self.block = block
+    def __init__(self):
         self.values = []
         self.indexes = {}
 
@@ -243,6 +243,13 @@ class ReadOnlyMemory:
         else:
             index = self.indexes[item]
         return BlockPlace(self.block, index)
+
+    @property
+    def block(self) -> Block:
+        if ctx():
+            return ctx().blocks.EngineRom
+        else:
+            return PlayBlock.EngineRom
 
 
 @dataclass
