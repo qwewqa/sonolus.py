@@ -1,5 +1,5 @@
 from dataclasses import dataclass
-from typing import Annotated, Any, NewType, get_origin
+from typing import Annotated, Any, Protocol, get_origin
 
 from sonolus.backend.ops import Op
 from sonolus.script.graphics import QuadLike, flatten_quad
@@ -40,7 +40,7 @@ class Sprite(Record):
 
 @native_function(Op.HasSkinSprite)
 def _has_skin_sprite(sprite_id: int) -> bool:
-    pass
+    raise NotImplementedError
 
 
 @native_function(Op.Draw)
@@ -57,7 +57,7 @@ def _draw(
     z: float,
     a: float,
 ):
-    pass
+    raise NotImplementedError
 
 
 @native_function(Op.DrawCurvedB)
@@ -77,7 +77,7 @@ def _draw_curved_b(
     p: float,
     q: float,
 ):
-    pass
+    raise NotImplementedError
 
 
 @native_function(Op.DrawCurvedT)
@@ -97,7 +97,7 @@ def _draw_curved_t(
     p: float,
     q: float,
 ):
-    pass
+    raise NotImplementedError
 
 
 @native_function(Op.DrawCurvedL)
@@ -117,7 +117,7 @@ def _draw_curved_l(
     p: float,
     q: float,
 ):
-    pass
+    raise NotImplementedError
 
 
 @native_function(Op.DrawCurvedR)
@@ -137,7 +137,7 @@ def _draw_curved_r(
     p: float,
     q: float,
 ):
-    pass
+    raise NotImplementedError
 
 
 @native_function(Op.DrawCurvedBT)
@@ -159,7 +159,7 @@ def _draw_curved_bt(
     p2: float,
     q2: float,
 ):
-    pass
+    raise NotImplementedError
 
 
 @native_function(Op.DrawCurvedLR)
@@ -181,7 +181,7 @@ def _draw_curved_lr(
     p2: float,
     q2: float,
 ):
-    pass
+    raise NotImplementedError
 
 
 @dataclass
@@ -193,7 +193,8 @@ def skin_sprite(name: str) -> Any:
     return SkinSprite(name)
 
 
-Skin = NewType("Skin", Any)
+class Skin(Protocol):
+    _sprites_: list[str]
 
 
 def skin[T](cls: type[T]) -> T | Skin:
@@ -323,3 +324,8 @@ class StandardSprite:
     GridYellow = Annotated[Sprite, skin_sprite("#GRID_YELLOW")]
     GridPurple = Annotated[Sprite, skin_sprite("#GRID_PURPLE")]
     GridCyan = Annotated[Sprite, skin_sprite("#GRID_CYAN")]
+
+
+@skin
+class EmptySkin:
+    pass

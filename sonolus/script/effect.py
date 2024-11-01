@@ -1,0 +1,128 @@
+from __future__ import annotations
+
+from dataclasses import dataclass
+from typing import Annotated, Any, Protocol, get_origin
+
+from sonolus.backend.ops import Op
+from sonolus.script.internal.introspection import get_field_specifiers
+from sonolus.script.internal.native import native_function
+from sonolus.script.record import Record
+
+
+class Effect(Record):
+    id: int
+
+    def is_available(self) -> bool:
+        return _has_effect_clip(self.id)
+
+    def play(self, distance: float) -> None:
+        _play(self.id, distance)
+
+    def play_looped(self) -> LoopedEffectHandle:
+        return LoopedEffectHandle(_play_looped(self.id))
+
+    def play_looped_scheduled(self, start_time: float) -> ScheduledLoopedEffectHandle:
+        return ScheduledLoopedEffectHandle(_play_looped_scheduled(self.id, start_time))
+
+
+class LoopedEffectHandle(Record):
+    id: int
+
+    def stop(self) -> None:
+        _stop_looped(self.id)
+
+
+class ScheduledLoopedEffectHandle(Record):
+    id: int
+
+    def stop(self, end_time: float) -> None:
+        _stop_looped_scheduled(self.id, end_time)
+
+
+@native_function(Op.HasEffectClip)
+def _has_effect_clip(effect_id: int) -> bool:
+    raise NotImplementedError
+
+
+@native_function(Op.Play)
+def _play(effect_id: int, distance: float) -> None:
+    raise NotImplementedError
+
+
+@native_function(Op.PlayLooped)
+def _play_looped(effect_id: int) -> int:
+    raise NotImplementedError
+
+
+@native_function(Op.PlayLoopedScheduled)
+def _play_looped_scheduled(effect_id: int, start_time: float) -> int:
+    raise NotImplementedError
+
+
+@native_function(Op.PlayScheduled)
+def _play_scheduled(effect_id: int, time: float, distance: float) -> None:
+    raise NotImplementedError
+
+
+@native_function(Op.StopLooped)
+def _stop_looped(handle: int) -> None:
+    raise NotImplementedError
+
+
+@native_function(Op.StopLoopedScheduled)
+def _stop_looped_scheduled(handle: int, end_time: float) -> None:
+    raise NotImplementedError
+
+
+@dataclass
+class EffectInfo:
+    name: str
+
+
+def effect(name: str) -> Any:
+    return EffectInfo(name)
+
+
+class Effects(Protocol):
+    _effects_: list[str]
+
+
+def effects[T](cls: type[T]) -> T | Effects:
+    if len(cls.__bases__) != 1:
+        raise ValueError("Effects class must not inherit from any class (except object)")
+    instance = cls()
+    names = []
+    for i, (name, annotation) in enumerate(get_field_specifiers(cls).items()):
+        if get_origin(annotation) is not Annotated:
+            raise TypeError(f"Invalid annotation for effects: {annotation}")
+        annotation_type = annotation.__args__[0]
+        annotation_values = annotation.__metadata__
+        if annotation_type is not Effect:
+            raise TypeError(f"Invalid annotation for effects: {annotation}, expected annotation of type Effect")
+        if len(annotation_values) != 1 or not isinstance(annotation_values[0], EffectInfo):
+            raise TypeError(f"Invalid annotation for effects: {annotation}, expected a single string annotation value")
+        effect_name = annotation_values[0].name
+        names.append(effect_name)
+        setattr(instance, name, Effect(i))
+    instance._effects_ = names
+    instance._is_comptime_value_ = True
+    return instance
+
+
+class StandardEffect:
+    Miss = Annotated[Effect, effect("#MISS")]
+    Perfect = Annotated[Effect, effect("#PERFECT")]
+    Great = Annotated[Effect, effect("#GREAT")]
+    Good = Annotated[Effect, effect("#GOOD")]
+    Hold = Annotated[Effect, effect("#HOLD")]
+    MissAlternative = Annotated[Effect, effect("#MISS_ALTERNATIVE")]
+    PerfectAlternative = Annotated[Effect, effect("#PERFECT_ALTERNATIVE")]
+    GreatAlternative = Annotated[Effect, effect("#GREAT_ALTERNATIVE")]
+    GoodAlternative = Annotated[Effect, effect("#GOOD_ALTERNATIVE")]
+    HoldAlternative = Annotated[Effect, effect("#HOLD_ALTERNATIVE")]
+    Stage = Annotated[Effect, effect("#STAGE")]
+
+
+@effects
+class EmptyEffects:
+    pass

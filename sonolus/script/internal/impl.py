@@ -59,7 +59,7 @@ def try_validate_value(value: Any) -> Value | None:
             return Comptime.accept_unchecked({validate_value(k)._as_py_(): validate_value(v) for k, v in value.items()})
         case PartialGeneric() | TypeVar() | FunctionType() | MethodType() | NotImplementedType() | str() | NoneType():
             return Comptime.accept_unchecked(value)
-        case literal if hasattr(value, "__origin__") and get_origin(value) is Literal:
+        case literal if get_origin(value) is Literal:
             return Comptime.accept_unchecked(literal)
         case GlobalPlaceholder():
             return value.get()

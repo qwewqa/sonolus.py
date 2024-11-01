@@ -305,7 +305,7 @@ class BaseArchetype:
                     f"Missing field annotation for '{name}', "
                     f"expected exactly one of imported, exported, entity_memory, or shared_memory"
                 )
-            field_type = validate_concrete_type(value.__origin__)
+            field_type = validate_concrete_type(get_origin(value))
             match field_info.storage:
                 case StorageType.Imported:
                     cls._imported_fields_[name] = ArchetypeField(name, field_info.storage, imported_offset, field_type)

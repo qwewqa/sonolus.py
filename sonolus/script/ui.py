@@ -91,7 +91,7 @@ class UiAnimationTween:
 
 
 @dataclass
-class EngineConfigurationAnimation:
+class UiAnimation:
     scale: UiAnimationTween = field(default_factory=lambda: UiAnimationTween(1, 1, 0, "none"))
     alpha: UiAnimationTween = field(default_factory=lambda: UiAnimationTween(1, 0, 0.2, "outCubic"))
 
@@ -127,9 +127,9 @@ class UiConfig:
     progress_visibility: UiVisibility = field(default_factory=UiVisibility)
     tutorial_navigation_visibility: UiVisibility = field(default_factory=UiVisibility)
     tutorial_instruction_visibility: UiVisibility = field(default_factory=UiVisibility)
-    judgment_animation: EngineConfigurationAnimation = field(default_factory=EngineConfigurationAnimation)
-    combo_animation: EngineConfigurationAnimation = field(
-        default_factory=lambda: EngineConfigurationAnimation(
+    judgment_animation: UiAnimation = field(default_factory=UiAnimation)
+    combo_animation: UiAnimation = field(
+        default_factory=lambda: UiAnimation(
             scale=UiAnimationTween(1.2, 1, 0.2, "inCubic"), alpha=UiAnimationTween(1, 1, 0, "none")
         )
     )

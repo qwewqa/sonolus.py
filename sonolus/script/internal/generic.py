@@ -15,7 +15,7 @@ def validate_type_arg(arg: Any) -> Any:
     if not arg._is_py_():
         raise TypeError(f"Expected a compile-time constant type argument, got {arg}")
     result = arg._as_py_()
-    if hasattr(result, "__origin__") and get_origin(result) is Literal:
+    if get_origin(result) is Literal:
         return result.__args__[0]
     return result
 

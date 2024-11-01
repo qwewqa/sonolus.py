@@ -1,6 +1,6 @@
 # ruff: noqa: A002
 from dataclasses import dataclass
-from typing import Annotated, Any, NewType, get_origin
+from typing import Annotated, Any, ClassVar, Protocol, get_origin
 
 from sonolus.backend.mode import Mode
 from sonolus.backend.place import BlockPlace
@@ -124,7 +124,9 @@ def select_option(
     return SelectOption(name, standard, advanced, scope, default, values)
 
 
-Options = NewType("Options", Any)
+class Options(Protocol):
+    _entries_: ClassVar[list[SliderOption | ToggleOption | SelectOption]]
+
 
 type OptionInfo = SliderOption | ToggleOption | SelectOption
 
@@ -184,3 +186,8 @@ def options[T](cls: type[T]) -> T | Options:
     instance._options_ = entries
     instance._is_comptime_value_ = True
     return instance
+
+
+@options
+class EmptyOptions:
+    pass
