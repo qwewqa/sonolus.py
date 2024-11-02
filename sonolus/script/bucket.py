@@ -43,6 +43,13 @@ class JudgmentWindow(Record):
             *self.good.tuple,
         )
 
+    def __mul__(self, other: float | int) -> JudgmentWindow:
+        return JudgmentWindow(
+            self.perfect * other,
+            self.great * other,
+            self.good * other,
+        )
+
 
 class Judgment(IntEnum):
     Miss = 0

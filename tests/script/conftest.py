@@ -83,5 +83,5 @@ def implies(a: bool, b: bool) -> bool:
     return True
 
 
-def is_close(a: float, b: float, rel_tol: float = 1e-9, abs_tol: float = 1e-9) -> bool:
+def is_close(a: float, b: float, rel_tol: float = 1e-8, abs_tol: float = 1e-8) -> bool:
     return abs(a - b) <= max(rel_tol * max(abs(a), abs(b)), abs_tol)

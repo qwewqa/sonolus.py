@@ -9,63 +9,63 @@ from sonolus.script.record import Record
 class Interval(Record):
     """A closed interval."""
 
-    left: float
-    right: float
+    start: float
+    end: float
 
     @property
     def length(self) -> float:
-        return self.right - self.left
+        return self.end - self.start
 
     @property
     def is_empty(self) -> bool:
-        return self.left > self.right
+        return self.start > self.end
 
     @property
     def mid(self) -> float:
-        return (self.left + self.right) / 2
+        return (self.start + self.end) / 2
 
     @property
     def tuple(self):
-        return self.left, self.right
+        return self.start, self.end
 
     def __contains__(self, item: Self | float | int) -> bool:
         match item:
-            case Interval(left, right):
-                return self.left <= left and right <= self.right
+            case Interval(start, end):
+                return self.start <= start and end <= self.end
             case float() | int() as value:
-                return self.left <= value <= self.right
+                return self.start <= value <= self.end
             case _:
                 error("Invalid type for interval check")
 
     def __add__(self, other: float | int) -> Self:
-        return Interval(self.left + other, self.right + other)
+        return Interval(self.start + other, self.end + other)
 
     def __sub__(self, other: float | int) -> Self:
-        return Interval(self.left - other, self.right - other)
+        return Interval(self.start - other, self.end - other)
 
     def __mul__(self, other: float | int) -> Self:
-        return Interval(self.left * other, self.right * other)
+        return Interval(self.start * other, self.end * other)
 
     def __truediv__(self, other: float | int) -> Self:
-        return Interval(self.left / other, self.right / other)
+        return Interval(self.start / other, self.end / other)
 
     def __floordiv__(self, other: float | int) -> Self:
-        return Interval(self.left // other, self.right // other)
+        return Interval(self.start // other, self.end // other)
 
     def __and__(self, other: Self) -> Self:
-        return Interval(max(self.left, other.left), min(self.right, other.right))
+        return Interval(max(self.start, other.start), min(self.end, other.end))
 
     def lerp(self, x: float, /) -> float:
-        return lerp(self.left, self.right, x)
+        return lerp(self.start, self.end, x)
 
     def lerp_clamped(self, x: float, /) -> float:
-        return lerp_clamped(self.left, self.right, x)
+        return lerp_clamped(self.start, self.end, x)
 
     def unlerp(self, x: float, /) -> float:
-        return unlerp(self.left, self.right, x)
+        return unlerp(self.start, self.end, x)
 
     def unlerp_clamped(self, x: float, /) -> float:
-        return unlerp_clamped(self.left, self.right, x)
+        return unlerp_clamped(self.start, self.end, x)
 
 
 @native_function(Op.Lerp)

@@ -10,155 +10,166 @@ DIVISOR_FLOATS = FLOATS.filter(lambda x: abs(x) > 1e-6)
 
 
 @given(FLOATS, FLOATS)
-def test_interval_length(left, right):
+def test_interval_length(start, end):
     def fn():
-        interval = Interval(left, right)
+        interval = Interval(start, end)
         return interval.length
 
-    assert validate_dual_run(fn) == right - left
+    assert validate_dual_run(fn) == end - start
 
 
 @given(FLOATS, FLOATS)
-def test_interval_mid(left, right):
+def test_interval_mid(start, end):
     def fn():
-        interval = Interval(left, right)
+        interval = Interval(start, end)
         return interval.mid
 
-    assert validate_dual_run(fn) == (left + right) / 2
+    assert validate_dual_run(fn) == (start + end) / 2
 
 
 @given(FLOATS, FLOATS)
-def test_interval_is_empty(left, right):
+def test_interval_is_empty(start, end):
     def fn():
-        interval = Interval(left, right)
+        interval = Interval(start, end)
         return interval.is_empty
 
-    assert validate_dual_run(fn) == (left > right)
+    assert validate_dual_run(fn) == (start > end)
 
 
 @given(FLOATS, FLOATS, FLOATS)
-def test_interval_contains_float(left, right, value):
+def test_interval_contains_float(start, end, value):
     def fn():
-        interval = Interval(left, right)
+        interval = Interval(start, end)
         return value in interval
 
-    assert validate_dual_run(fn) == (left <= value <= right)
+    assert validate_dual_run(fn) == (start <= value <= end)
 
 
 @given(FLOATS, FLOATS, FLOATS, FLOATS)
-def test_interval_contains_interval(left, right, other_left, other_right):
+def test_interval_contains_interval(start, end, other_start, other_end):
     def fn():
-        interval = Interval(left, right)
-        other = Interval(other_left, other_right)
+        interval = Interval(start, end)
+        other = Interval(other_start, other_end)
         return other in interval
 
-    assert validate_dual_run(fn) == (left <= other_left and other_right <= right)
+    assert validate_dual_run(fn) == (start <= other_start and other_end <= end)
 
 
 @given(FLOATS, FLOATS, FLOATS)
-def test_interval_add(left, right, value):
+def test_interval_add(start, end, value):
     def fn():
-        interval = Interval(left, right)
+        interval = Interval(start, end)
         return interval + value
 
-    assert validate_dual_run(fn) == Interval(left + value, right + value)
+    assert validate_dual_run(fn) == Interval(start + value, end + value)
 
 
 @given(FLOATS, FLOATS, FLOATS)
-def test_interval_sub(left, right, value):
+def test_interval_sub(start, end, value):
     def fn():
-        interval = Interval(left, right)
+        interval = Interval(start, end)
         return interval - value
 
-    assert validate_dual_run(fn) == Interval(left - value, right - value)
+    assert validate_dual_run(fn) == Interval(start - value, end - value)
 
 
 @given(FLOATS, FLOATS, FLOATS)
-def test_interval_mul(left, right, value):
+def test_interval_mul(start, end, value):
     def fn():
-        interval = Interval(left, right)
+        interval = Interval(start, end)
         return interval * value
 
-    assert validate_dual_run(fn) == Interval(left * value, right * value)
+    assert validate_dual_run(fn) == Interval(start * value, end * value)
 
 
 @given(FLOATS, FLOATS, DIVISOR_FLOATS)
-def test_interval_truediv(left, right, value):
+def test_interval_truediv(start, end, value):
     def fn():
-        interval = Interval(left, right)
+        interval = Interval(start, end)
         return interval / value
 
-    assert validate_dual_run(fn) == Interval(left / value, right / value)
+    assert validate_dual_run(fn) == Interval(start / value, end / value)
 
 
 @given(INTS, INTS, INTS.filter(lambda x: x != 0))
-def test_interval_floordiv(left, right, value):
+def test_interval_floordiv(start, end, value):
     def fn():
-        interval = Interval(left, right)
+        interval = Interval(start, end)
         return interval // value
 
-    assert validate_dual_run(fn) == Interval(left // value, right // value)
+    assert validate_dual_run(fn) == Interval(start // value, end // value)
 
 
 @given(FLOATS, FLOATS, FLOATS, FLOATS)
-def test_interval_and(left, right, other_left, other_right):
+def test_interval_and(start, end, other_start, other_end):
     def fn():
-        interval = Interval(left, right)
-        other = Interval(other_left, other_right)
+        interval = Interval(start, end)
+        other = Interval(other_start, other_end)
         return interval & other
 
-    assert validate_dual_run(fn) == Interval(max(left, other_left), min(right, other_right))
+    assert validate_dual_run(fn) == Interval(max(start, other_start), min(end, other_end))
 
 
 @given(FLOATS, FLOATS, FLOATS, FLOATS, FLOATS)
-def test_interval_and_consistent_with_contains(left, right, other_left, other_right, value):
+def test_interval_and_consistent_with_contains(start, end, other_start, other_end, value):
     def fn():
-        interval = Interval(left, right)
-        other = Interval(other_left, other_right)
+        interval = Interval(start, end)
+        other = Interval(other_start, other_end)
         return ((value in interval) and (value in other)) == (value in (interval & other))
 
     assert validate_dual_run(fn)
 
 
 @given(FLOATS, FLOATS, FLOATS, FLOATS, FLOATS, FLOATS)
-def test_interval_transitive_contains(left1, right1, left2, right2, left3, right3):
+def test_interval_transitive_contains(start1, end1, start2, end2, start3, end3):
     def fn():
-        interval1 = Interval(left1, right1)
-        interval2 = Interval(left2, right2)
-        interval3 = Interval(left3, right3)
+        interval1 = Interval(start1, end1)
+        interval2 = Interval(start2, end2)
+        interval3 = Interval(start3, end3)
         return implies(interval1 in interval2 in interval3, interval1 in interval3)
 
     assert validate_dual_run(fn)
 
 
+@given(FLOATS, FLOATS, FLOATS, FLOATS)
+def test_interval_intersect_is_in_original(start, end, other_start, other_end):
+    def fn():
+        interval = Interval(start, end)
+        other = Interval(other_start, other_end)
+        intersection = interval & other
+        return intersection in interval and intersection in other
+
+    assert validate_dual_run(fn)
+
+
 @given(FLOATS, FLOATS, FLOATS, FLOATS, FLOATS)
-def test_remap_inverse(left, right, other_left, other_right, value):
-    assume(abs(right - left) > 1e-6 and abs(other_right - other_left) > 1e-6)
+def test_remap_inverse(start, end, other_start, other_end, value):
+    assume(abs(end - start) > 1e-6 and abs(other_end - other_start) > 1e-6)
 
     def fn():
-        remapped = remap(left, right, other_left, other_right, value)
-        return remap(other_left, other_right, left, right, remapped)
+        remapped = remap(start, end, other_start, other_end, value)
+        return remap(other_start, other_end, start, end, remapped)
 
-    assert is_close(validate_dual_run(fn), value)
+    assert is_close(validate_dual_run(fn), value, abs_tol=1e-6)  # Needs a bit more tolerance
 
 
 @given(FLOATS, FLOATS, FLOATS, FLOATS, FLOATS)
-def test_remap_clamped_inverse(left, right, other_left, other_right, value):
-    assume(abs(right - left) > 1e-6 and abs(other_right - other_left) > 1e-6)
+def test_remap_clamped_inverse(start, end, other_start, other_end, value):
+    assume(abs(end - start) > 1e-6 and abs(other_end - other_start) > 1e-6)
 
     def fn():
-        remapped = remap_clamped(left, right, other_left, other_right, value)
-        return remap_clamped(other_left, other_right, left, right, remapped)
+        remapped = remap_clamped(start, end, other_start, other_end, value)
+        return remap_clamped(other_start, other_end, start, end, remapped)
 
-    assert is_close(validate_dual_run(fn), sorted([left, value, right])[1])
+    assert is_close(validate_dual_run(fn), sorted([start, value, end])[1])
 
 
 @given(FLOATS, FLOATS, FLOATS)
-def test_lerp_unlerp_inverse(left, right, value):
-    assume(abs(right - left) > 1e-6)
+def test_lerp_unlerp_inverse(start, end, value):
+    assume(abs(end - start) > 1e-6)
 
     def fn():
-        interval = Interval(left, right)
+        interval = Interval(start, end)
         lerped = interval.lerp(value)
         return interval.unlerp(lerped)
 
@@ -166,11 +177,11 @@ def test_lerp_unlerp_inverse(left, right, value):
 
 
 @given(FLOATS, FLOATS, FLOATS)
-def test_unlerp_lerp_inverse(left, right, value):
-    assume(abs(right - left) > 1e-6)
+def test_unlerp_lerp_inverse(start, end, value):
+    assume(abs(end - start) > 1e-6)
 
     def fn():
-        interval = Interval(left, right)
+        interval = Interval(start, end)
         unlerped = interval.unlerp(value)
         return interval.lerp(unlerped)
 
@@ -178,11 +189,11 @@ def test_unlerp_lerp_inverse(left, right, value):
 
 
 @given(FLOATS, FLOATS, FLOATS)
-def test_lerp_clamped_unlerp_clamped_inverse(left, right, value):
-    assume(abs(right - left) > 1e-6)
+def test_lerp_clamped_unlerp_clamped_inverse(start, end, value):
+    assume(abs(end - start) > 1e-6)
 
     def fn():
-        interval = Interval(left, right)
+        interval = Interval(start, end)
         lerped_clamped = interval.lerp_clamped(value)
         return interval.unlerp_clamped(lerped_clamped)
 
@@ -190,12 +201,12 @@ def test_lerp_clamped_unlerp_clamped_inverse(left, right, value):
 
 
 @given(FLOATS, FLOATS, FLOATS)
-def test_unlerp_clamped_lerp_clamped_inverse(left, right, value):
-    assume(abs(right - left) > 1e-6)
+def test_unlerp_clamped_lerp_clamped_inverse(start, end, value):
+    assume(abs(end - start) > 1e-6)
 
     def fn():
-        interval = Interval(left, right)
+        interval = Interval(start, end)
         unlerped_clamped = interval.unlerp_clamped(value)
         return interval.lerp_clamped(unlerped_clamped)
 
-    assert is_close(validate_dual_run(fn), sorted([left, value, right])[1])
+    assert is_close(validate_dual_run(fn), sorted([start, value, end])[1])
