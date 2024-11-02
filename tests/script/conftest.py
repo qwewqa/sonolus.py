@@ -75,3 +75,13 @@ def compiled_run[**P](fn: Callable[P, Num], *args: P.args, **kwargs: P.kwargs) -
     entry = cfg_to_engine_node(cfg)
     interpreter = Interpreter()
     return interpreter.run(entry)
+
+
+def implies(a: bool, b: bool) -> bool:
+    if a:
+        return b
+    return True
+
+
+def is_close(a: float, b: float, rel_tol: float = 1e-9, abs_tol: float = 1e-9) -> bool:
+    return abs(a - b) <= max(rel_tol * max(abs(a), abs(b)), abs_tol)

@@ -20,6 +20,7 @@ class Vec2(Record):
     def dot(self, other: Self) -> Num:
         return self.x * other.x + self.y * other.y
 
+    @property
     def tuple(self) -> tuple[float, float]:
         return self.x, self.y
 

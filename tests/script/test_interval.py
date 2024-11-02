@@ -1,8 +1,8 @@
-from hypothesis import given
+from hypothesis import assume, given
 from hypothesis import strategies as st
 
-from sonolus.script.interval import Interval
-from tests.script.conftest import validate_dual_run
+from sonolus.script.interval import Interval, remap, remap_clamped
+from tests.script.conftest import implies, is_close, validate_dual_run
 
 INTS = st.integers(min_value=-999999, max_value=999999)
 FLOATS = st.floats(min_value=-999999, max_value=999999, allow_infinity=False, allow_nan=False)
@@ -118,3 +118,84 @@ def test_interval_and_consistent_with_contains(left, right, other_left, other_ri
         return ((value in interval) and (value in other)) == (value in (interval & other))
 
     assert validate_dual_run(fn)
+
+
+@given(FLOATS, FLOATS, FLOATS, FLOATS, FLOATS, FLOATS)
+def test_interval_transitive_contains(left1, right1, left2, right2, left3, right3):
+    def fn():
+        interval1 = Interval(left1, right1)
+        interval2 = Interval(left2, right2)
+        interval3 = Interval(left3, right3)
+        return implies(interval1 in interval2 in interval3, interval1 in interval3)
+
+    assert validate_dual_run(fn)
+
+
+@given(FLOATS, FLOATS, FLOATS, FLOATS, FLOATS)
+def test_remap_inverse(left, right, other_left, other_right, value):
+    assume(abs(right - left) > 1e-6 and abs(other_right - other_left) > 1e-6)
+
+    def fn():
+        remapped = remap(left, right, other_left, other_right, value)
+        return remap(other_left, other_right, left, right, remapped)
+
+    assert is_close(validate_dual_run(fn), value)
+
+
+@given(FLOATS, FLOATS, FLOATS, FLOATS, FLOATS)
+def test_remap_clamped_inverse(left, right, other_left, other_right, value):
+    assume(abs(right - left) > 1e-6 and abs(other_right - other_left) > 1e-6)
+
+    def fn():
+        remapped = remap_clamped(left, right, other_left, other_right, value)
+        return remap_clamped(other_left, other_right, left, right, remapped)
+
+    assert is_close(validate_dual_run(fn), sorted([left, value, right])[1])
+
+
+@given(FLOATS, FLOATS, FLOATS)
+def test_lerp_unlerp_inverse(left, right, value):
+    assume(abs(right - left) > 1e-6)
+
+    def fn():
+        interval = Interval(left, right)
+        lerped = interval.lerp(value)
+        return interval.unlerp(lerped)
+
+    assert is_close(validate_dual_run(fn), value)
+
+
+@given(FLOATS, FLOATS, FLOATS)
+def test_unlerp_lerp_inverse(left, right, value):
+    assume(abs(right - left) > 1e-6)
+
+    def fn():
+        interval = Interval(left, right)
+        unlerped = interval.unlerp(value)
+        return interval.lerp(unlerped)
+
+    assert is_close(validate_dual_run(fn), value)
+
+
+@given(FLOATS, FLOATS, FLOATS)
+def test_lerp_clamped_unlerp_clamped_inverse(left, right, value):
+    assume(abs(right - left) > 1e-6)
+
+    def fn():
+        interval = Interval(left, right)
+        lerped_clamped = interval.lerp_clamped(value)
+        return interval.unlerp_clamped(lerped_clamped)
+
+    assert is_close(validate_dual_run(fn), sorted([0, value, 1])[1])
+
+
+@given(FLOATS, FLOATS, FLOATS)
+def test_unlerp_clamped_lerp_clamped_inverse(left, right, value):
+    assume(abs(right - left) > 1e-6)
+
+    def fn():
+        interval = Interval(left, right)
+        unlerped_clamped = interval.unlerp_clamped(value)
+        return interval.lerp_clamped(unlerped_clamped)
+
+    assert is_close(validate_dual_run(fn), sorted([left, value, right])[1])

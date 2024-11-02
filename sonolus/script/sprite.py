@@ -20,22 +20,22 @@ class Sprite(Record):
         _draw(self.id, *flatten_quad(quad), z, a)
 
     def draw_curved_b(self, quad: QuadLike, cp: Vec2, n: float, z: float = 0.0, a: float = 1.0):
-        _draw_curved_b(self.id, *flatten_quad(quad), z, a, n, *cp.tuple())
+        _draw_curved_b(self.id, *flatten_quad(quad), z, a, n, *cp.tuple)
 
     def draw_curved_t(self, quad: QuadLike, cp: Vec2, n: float, z: float = 0.0, a: float = 1.0):
-        _draw_curved_t(self.id, *flatten_quad(quad), z, a, n, *cp.tuple())
+        _draw_curved_t(self.id, *flatten_quad(quad), z, a, n, *cp.tuple)
 
     def draw_curved_l(self, quad: QuadLike, cp: Vec2, n: float, z: float = 0.0, a: float = 1.0):
-        _draw_curved_l(self.id, *flatten_quad(quad), z, a, n, *cp.tuple())
+        _draw_curved_l(self.id, *flatten_quad(quad), z, a, n, *cp.tuple)
 
     def draw_curved_r(self, quad: QuadLike, cp: Vec2, n: float, z: float = 0.0, a: float = 1.0):
-        _draw_curved_r(self.id, *flatten_quad(quad), z, a, n, *cp.tuple())
+        _draw_curved_r(self.id, *flatten_quad(quad), z, a, n, *cp.tuple)
 
     def draw_curved_bt(self, quad: QuadLike, cp1: Vec2, cp2: Vec2, n: float, z: float = 0.0, a: float = 1.0):
-        _draw_curved_bt(self.id, *flatten_quad(quad), z, a, n, *cp1.tuple(), *cp2.tuple())
+        _draw_curved_bt(self.id, *flatten_quad(quad), z, a, n, *cp1.tuple, *cp2.tuple)
 
     def draw_curved_lr(self, quad: QuadLike, cp1: Vec2, cp2: Vec2, n: float, z: float = 0.0, a: float = 1.0):
-        _draw_curved_lr(self.id, *flatten_quad(quad), z, a, n, *cp1.tuple(), *cp2.tuple())
+        _draw_curved_lr(self.id, *flatten_quad(quad), z, a, n, *cp1.tuple, *cp2.tuple)
 
 
 @native_function(Op.HasSkinSprite)
