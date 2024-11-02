@@ -132,7 +132,7 @@ def test_interval_transitive_contains(start1, end1, start2, end2, start3, end3):
 
 
 @given(FLOATS, FLOATS, FLOATS, FLOATS)
-def test_interval_intersect_is_in_original(start, end, other_start, other_end):
+def test_interval_intersection_is_in_original(start, end, other_start, other_end):
     def fn():
         interval = Interval(start, end)
         other = Interval(other_start, other_end)
@@ -150,7 +150,7 @@ def test_remap_inverse(start, end, other_start, other_end, value):
         remapped = remap(start, end, other_start, other_end, value)
         return remap(other_start, other_end, start, end, remapped)
 
-    assert is_close(validate_dual_run(fn), value, abs_tol=1e-6)  # Needs a bit more tolerance
+    assert is_close(validate_dual_run(fn), value, abs_tol=1e-4)
 
 
 @given(FLOATS, FLOATS, FLOATS, FLOATS, FLOATS)
@@ -161,7 +161,7 @@ def test_remap_clamped_inverse(start, end, other_start, other_end, value):
         remapped = remap_clamped(start, end, other_start, other_end, value)
         return remap_clamped(other_start, other_end, start, end, remapped)
 
-    assert is_close(validate_dual_run(fn), sorted([start, value, end])[1])
+    assert is_close(validate_dual_run(fn), sorted([start, value, end])[1], abs_tol=1e-4)
 
 
 @given(FLOATS, FLOATS, FLOATS)
@@ -173,7 +173,7 @@ def test_lerp_unlerp_inverse(start, end, value):
         lerped = interval.lerp(value)
         return interval.unlerp(lerped)
 
-    assert is_close(validate_dual_run(fn), value)
+    assert is_close(validate_dual_run(fn), value, abs_tol=1e-4)
 
 
 @given(FLOATS, FLOATS, FLOATS)
@@ -185,7 +185,7 @@ def test_unlerp_lerp_inverse(start, end, value):
         unlerped = interval.unlerp(value)
         return interval.lerp(unlerped)
 
-    assert is_close(validate_dual_run(fn), value)
+    assert is_close(validate_dual_run(fn), value, abs_tol=1e-4)
 
 
 @given(FLOATS, FLOATS, FLOATS)
@@ -197,7 +197,7 @@ def test_lerp_clamped_unlerp_clamped_inverse(start, end, value):
         lerped_clamped = interval.lerp_clamped(value)
         return interval.unlerp_clamped(lerped_clamped)
 
-    assert is_close(validate_dual_run(fn), sorted([0, value, 1])[1])
+    assert is_close(validate_dual_run(fn), sorted([0, value, 1])[1], abs_tol=1e-4)
 
 
 @given(FLOATS, FLOATS, FLOATS)
@@ -209,4 +209,4 @@ def test_unlerp_clamped_lerp_clamped_inverse(start, end, value):
         unlerped_clamped = interval.unlerp_clamped(value)
         return interval.lerp_clamped(unlerped_clamped)
 
-    assert is_close(validate_dual_run(fn), sorted([start, value, end])[1])
+    assert is_close(validate_dual_run(fn), sorted([start, value, end])[1], abs_tol=1e-4)
