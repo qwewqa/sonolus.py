@@ -38,9 +38,9 @@ class JudgmentWindow(Record):
         return _judge(
             actual,
             target,
-            *self.perfect.tuple(),
-            *self.great.tuple(),
-            *self.good.tuple(),
+            *self.perfect.tuple,
+            *self.great.tuple,
+            *self.good.tuple,
         )
 
 
@@ -62,7 +62,14 @@ def _judge(
     good_min: float,
     good_max: float,
 ) -> Judgment:
-    raise NotImplementedError("Native function not implemented")
+    diff = actual - target
+    if perfect_min <= diff <= perfect_max:
+        return Judgment.Perfect
+    if great_min <= diff <= great_max:
+        return Judgment.Great
+    if good_min <= diff <= good_max:
+        return Judgment.Good
+    return Judgment.Miss
 
 
 class Bucket(Record):
