@@ -239,9 +239,7 @@ class Visitor(ast.NodeVisitor):
         self.loop_head_ctxs.append(header_ctx)
         self.break_ctxs.append([])
         set_ctx(header_ctx)
-        has_next = self.handle_call(node, iterator.has_next)
-        if not isinstance(has_next, Num):
-            raise ValueError("Iterator must return a boolean")
+        has_next = self.ensure_boolean_num(self.handle_call(node, iterator.has_next))
         ctx().test = has_next.ir()
         body_ctx = ctx().branch(None)
         else_ctx = ctx().branch(0)
@@ -267,9 +265,7 @@ class Visitor(ast.NodeVisitor):
         self.loop_head_ctxs.append(header_ctx)
         self.break_ctxs.append([])
         set_ctx(header_ctx)
-        test = self.visit(node.test)
-        if not isinstance(test, Num):
-            raise ValueError("Condition must be of type Num")
+        test = self.ensure_boolean_num(self.visit(node.test))
         ctx().test = test.ir()
         body_ctx = ctx().branch(None)
         else_ctx = ctx().branch(0)
@@ -289,9 +285,7 @@ class Visitor(ast.NodeVisitor):
         set_ctx(after_ctx)
 
     def visit_If(self, node):
-        test = self.visit(node.test)
-        if not isinstance(test, Num):
-            raise ValueError("Condition must be of type Num")
+        test = self.ensure_boolean_num(self.visit(node.test))
 
         if test._is_py_():
             if test._as_py_():
@@ -326,7 +320,117 @@ class Visitor(ast.NodeVisitor):
         raise NotImplementedError("Async with statements are not supported")
 
     def visit_Match(self, node):
-        raise NotImplementedError("Match statements are not supported")
+        subject = self.visit(node.subject)
+        end_ctxs = []
+        for case in node.cases:
+            if not ctx().live:
+                break
+            true_ctx, false_ctx = self.handle_match_pattern(subject, case.pattern)
+            if not true_ctx.live:
+                set_ctx(false_ctx)
+                continue
+            set_ctx(true_ctx)
+            guard = self.ensure_boolean_num(self.visit(case.guard)) if case.guard else validate_value(True)
+            if guard._is_py_():
+                if guard._as_py_():
+                    for stmt in case.body:
+                        self.visit(stmt)
+                    end_ctxs.append(ctx())
+                else:
+                    end_ctxs.append(ctx())
+            else:
+                ctx().test = guard.ir()
+                true_ctx = ctx().branch(None)
+                false_ctx = ctx().branch(0)
+                set_ctx(true_ctx)
+                for stmt in case.body:
+                    self.visit(stmt)
+                end_ctxs.append(ctx())
+            set_ctx(false_ctx)
+        if end_ctxs:
+            set_ctx(Context.meet(end_ctxs))
+
+    def handle_match_pattern(self, subject: Value, pattern: ast.pattern) -> tuple[Context, Context]:
+        match pattern:
+            case ast.MatchValue(value=value):
+                value = self.visit(value)
+                test = self.ensure_boolean_num(subject == value)
+                ctx_init = ctx()
+                ctx_init.test = test.ir()
+                true_ctx = ctx_init.branch(None)
+                false_ctx = ctx_init.branch(0)
+                return true_ctx, false_ctx
+            case ast.MatchSingleton(value=value):
+                match value:
+                    case True:
+                        test = self.ensure_boolean_num(subject)
+                    case False:
+                        test = self.ensure_boolean_num(subject).not_()
+                    case None:
+                        test = Num._accept_(subject._is_py_() and subject._as_py_() is None)
+                    case _:
+                        raise NotImplementedError("Unsupported match singleton")
+                ctx_init = ctx()
+                ctx_init.test = test.ir()
+                true_ctx = ctx_init.branch(None)
+                false_ctx = ctx_init.branch(0)
+                return true_ctx, false_ctx
+            case ast.MatchSequence():
+                raise NotImplementedError("Match sequences are not supported")
+            case ast.MatchMapping():
+                raise NotImplementedError("Match mappings are not supported")
+            case ast.MatchClass(cls=cls, patterns=patterns, kwd_attrs=kwd_attrs, kwd_patterns=kwd_patterns):
+                from sonolus.script.comptime import Comptime
+                from sonolus.script.internal.generic import validate_type_spec
+
+                cls = validate_type_spec(self.visit(cls))
+                if not isinstance(cls, type):
+                    raise TypeError("Class is not a type")
+                if issubclass(cls, Comptime):
+                    raise TypeError("Comptime is not supported in match patterns")
+                if not isinstance(subject, cls):
+                    return ctx().into_dead(), ctx()
+                if patterns:
+                    if not hasattr(cls, "__match_args__"):
+                        raise TypeError("Class does not support match patterns")
+                    if len(cls.__match_args__) < len(patterns):
+                        raise ValueError("Too many match patterns")
+                    # kwd_attrs can't be mixed with patterns on the syntax level,
+                    # so we can just set it like this since it's empty
+                    kwd_attrs = cls.__match_args__[: len(patterns)]
+                    kwd_patterns = patterns
+                if kwd_attrs:
+                    true_ctx = ctx()
+                    false_ctxs = []
+                    for attr, subpattern in zip(kwd_attrs, kwd_patterns, strict=False):
+                        if not hasattr(subject, attr):
+                            raise AttributeError(f"Object has no attribute {attr}")
+                        value = self.handle_getattr(subpattern, subject, attr)
+                        true_ctx, false_ctx = self.handle_match_pattern(value, subpattern)
+                        false_ctxs.append(false_ctx)
+                        set_ctx(true_ctx)
+                    return true_ctx, Context.meet(false_ctxs)
+                return ctx(), ctx().into_dead()
+            case ast.MatchStar():
+                raise NotImplementedError("Match stars are not supported")
+            case ast.MatchAs(pattern=pattern, name=name):
+                if pattern:
+                    true_ctx, false_ctx = self.handle_match_pattern(subject, pattern)
+                    if name:
+                        true_ctx.scope.set_value(name, subject)
+                    return true_ctx, false_ctx
+                else:
+                    if name:
+                        ctx().scope.set_value(name, subject)
+                    return ctx(), ctx().into_dead()
+            case ast.MatchOr():
+                true_ctx = ctx()
+                false_ctxs = []
+                for subpattern in pattern.patterns:
+                    true_ctx, false_ctx = self.handle_match_pattern(subject, subpattern)
+                    false_ctxs.append(false_ctx)
+                    set_ctx(true_ctx)
+                return true_ctx, Context.meet(false_ctxs)
 
     def visit_Raise(self, node):
         raise NotImplementedError("Raise statements are not supported")
@@ -406,9 +510,7 @@ class Visitor(ast.NodeVisitor):
     def visit_UnaryOp(self, node):
         operand = self.visit(node.operand)
         if isinstance(node.op, ast.Not):
-            if not isinstance(operand, Num):
-                raise ValueError("Operand of 'not' must be of type Num")
-            return operand.not_()
+            return self.ensure_boolean_num(operand).not_()
         op = unary_ops[type(node.op)]
         if hasattr(operand, op):
             return self.handle_call(node, getattr(operand, op))
@@ -418,9 +520,7 @@ class Visitor(ast.NodeVisitor):
         raise NotImplementedError("Lambda functions are not supported")
 
     def visit_IfExp(self, node):
-        test = self.visit(node.test)
-        if not isinstance(test, Num):
-            raise ValueError("Condition must be of type Num")
+        test = self.ensure_boolean_num(self.visit(node.test))
 
         if test._is_py_():
             if test._as_py_():
@@ -498,8 +598,7 @@ class Visitor(ast.NodeVisitor):
                 result = self.handle_call(node, getattr(r_val, rcomp_ops[type(op)]), l_val)
             if result is None or self.is_not_implemented(result):
                 raise NotImplementedError(f"Unsupported comparison operator {op}")
-            if not isinstance(result, Num):
-                raise ValueError("Comparison result must be of type Num")
+            result = self.ensure_boolean_num(result)
             if inverted:
                 result = result.not_()
             curr_ctx = ctx()
@@ -600,15 +699,12 @@ class Visitor(ast.NodeVisitor):
 
     def handle_and(self, l_val: Value, r_expr: ast.expr) -> Value:
         ctx_init = ctx()
-        if not isinstance(l_val, Num):
-            raise ValueError("Operands of 'and' must be of type Num")
+        l_val = self.ensure_boolean_num(l_val)
         ctx_init.test = l_val.ir()
         res_name = self.new_name("and")
 
         set_ctx(ctx_init.branch(None))
-        r_val = self.visit(r_expr)
-        if not isinstance(r_val, Num):
-            raise ValueError("Operands of 'and' must be of type Num")
+        r_val = self.ensure_boolean_num(self.visit(r_expr))
         ctx().scope.set_value(res_name, r_val)
         ctx_true = ctx()
 
@@ -623,8 +719,7 @@ class Visitor(ast.NodeVisitor):
 
     def handle_or(self, l_val: Value, r_expr: ast.expr) -> Value:
         ctx_init = ctx()
-        if not isinstance(l_val, Num):
-            raise ValueError("Operands of 'or' must be of type Num")
+        l_val = self.ensure_boolean_num(l_val)
         ctx_init.test = l_val.ir()
         res_name = self.new_name("or")
 
@@ -633,9 +728,7 @@ class Visitor(ast.NodeVisitor):
         ctx_true = ctx()
 
         set_ctx(ctx_init.branch(0))
-        r_val = self.visit(r_expr)
-        if not isinstance(r_val, Num):
-            raise ValueError("Operands of 'or' must be of type Num")
+        r_val = self.ensure_boolean_num(self.visit(r_expr))
         ctx().scope.set_value(res_name, r_val)
         ctx_false = ctx()
 
@@ -728,6 +821,12 @@ class Visitor(ast.NodeVisitor):
     def is_not_implemented(self, value):
         value = validate_value(value)
         return value._is_py_() and value._as_py_() is NotImplemented
+
+    def ensure_boolean_num(self, value) -> Num:
+        # This just checks the type for now, although we could support custom __bool__ implementations in the future
+        if not isinstance(value, Num):
+            raise TypeError(f"Invalid type where a bool (Num) was expected: {type(value).__name__}")
+        return value
 
     def raise_exception_at_node(self, node: ast.stmt | ast.expr, cause: Exception) -> Never:
         """Throws a compilation error at the given node."""

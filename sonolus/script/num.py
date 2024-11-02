@@ -305,7 +305,10 @@ class _Num(Value):
     def __pow__(self, other) -> Self:
         def const_fn(a: Self, b: Self) -> Num | None:
             if a._is_py_() and b._is_py_():
-                return Num(a.data**b.data)
+                try:
+                    return Num(a.data**b.data)
+                except OverflowError:
+                    return None
             if b._is_py_():
                 if b.data == 0:
                     return Num(1)

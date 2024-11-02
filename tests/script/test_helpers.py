@@ -1,9 +1,9 @@
 import pytest
-from script.conftest import validate_dual_run
 
 from sonolus.script.debug import terminate
 from sonolus.script.internal.context import ctx
 from sonolus.script.internal.impl import meta_fn
+from tests.script.conftest import validate_dual_run
 
 
 def test_validate_dual_run_error_if_returned_results_differ():

@@ -1,12 +1,12 @@
 import pytest
 from hypothesis import given
 from hypothesis import strategies as st
-from script.conftest import validate_dual_run
-from script.test_record import Simple
 
 from sonolus.script.array import Array
 from sonolus.script.debug import assert_false, assert_true
 from sonolus.script.record import Record
+from tests.script.conftest import validate_dual_run
+from tests.script.test_record import Simple
 
 
 def test_array_constructor():

@@ -27,9 +27,7 @@ def validate_type_spec(spec: Any) -> PartialGeneric | TypeVar | type[Value]:
         # For values like IntEnum subclasses, this will call validate_type_spec(IntEnum),
         # which in turn will call it on int, so this works.
         spec = validate_type_spec(spec.__mro__[1])
-    if isinstance(spec, PartialGeneric | TypeVar) or (
-        isinstance(spec, type) and issubclass(spec, Value) and spec._is_concrete_()
-    ):
+    if isinstance(spec, PartialGeneric | TypeVar) or (isinstance(spec, type) and issubclass(spec, Value)):
         return spec
     raise TypeError(f"Invalid type spec: {spec}")
 

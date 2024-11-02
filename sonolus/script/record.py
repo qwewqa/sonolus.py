@@ -86,6 +86,8 @@ class Record(GenericValue):
 
         _add_inplace_ops(cls)
 
+        cls.__match_args__ = tuple(field.name for field in fields)
+
         if len(getattr(cls, "__type_params__", ())) == 0:
             # Make the class behave as the parameterized version
             cls._type_args_ = ()

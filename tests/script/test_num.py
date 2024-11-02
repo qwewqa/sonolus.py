@@ -4,6 +4,9 @@ from hypothesis import strategies as st
 from sonolus.script.array import Array
 from tests.script.conftest import validate_dual_run
 
+INTS = st.integers(min_value=-1000, max_value=1000)
+FLOATS = st.floats(min_value=-99999, max_value=99999, allow_nan=False, allow_infinity=False)
+
 
 def test_num_basic():
     def fn():
@@ -12,7 +15,7 @@ def test_num_basic():
     assert validate_dual_run(fn) == 1
 
 
-@given(n=st.integers(min_value=-100, max_value=100))
+@given(n=FLOATS)
 def test_num_unary(n):
     def fn():
         plus = +n
@@ -23,8 +26,8 @@ def test_num_unary(n):
 
 
 @given(
-    a=st.integers(min_value=-100, max_value=100),
-    b=st.integers(min_value=-100, max_value=100),
+    a=FLOATS,
+    b=FLOATS,
 )
 def test_num_comparison(a, b):
     def fn():
@@ -39,35 +42,65 @@ def test_num_comparison(a, b):
     assert validate_dual_run(fn) == Array(a < b, a <= b, a == b, a != b, a >= b, a > b)
 
 
+def are_valid_pow_operands(a, b):
+    if b > 10:
+        # Avoid huge numbers
+        return False
+    if a < 0 and b % 1 != 0:
+        # Avoid complex numbers
+        return False
+    if a == 0 and b <= 0:
+        # Avoid division by zero
+        return False
+    if abs(a) < 1e-6 and b <= 0:
+        # Avoid division by zero or by very small numbers
+        return False
+    if a < 1 and b < -10:  # noqa: SIM103
+        # Avoid division by very small numbers
+        return False
+    return True
+
+
 @given(
-    a=st.integers(min_value=-100, max_value=100),
-    b=st.integers(min_value=-100, max_value=100),
+    a=FLOATS,
+    b=FLOATS,
 )
 def test_num_binary(a, b):
     def fn():
         add = a + b
         sub = a - b
         mul = a * b
-        div = a / b if b != 0 else 0
-        mod = a % b if b != 0 else 0
-        power = a**b if (b < 10 and (a > 0 or b > 0)) else 0
-        floordiv = a // b if b != 0 else 0
-        return Array(add, sub, mul, div, mod, power, floordiv)
+        div = a / b if abs(b) > 1e-6 else 0
+        mod = a % b if abs(b) > 1e-6 else 0
+        power = a**b if are_valid_pow_operands(a, b) else 0
+        return Array(add, sub, mul, div, mod, power)
 
     assert validate_dual_run(fn) == Array(
         a + b,
         a - b,
         a * b,
-        a / b if b != 0 else 0,
-        a % b if b != 0 else 0,
-        a**b if (b < 10 and (a > 0 or b > 0)) else 0,
-        a // b if b != 0 else 0,
+        a / b if abs(b) > 1e-6 else 0,
+        a % b if abs(b) > 1e-6 else 0,
+        a**b if are_valid_pow_operands(a, b) else 0,
     )
 
 
 @given(
-    a=st.integers(min_value=-100, max_value=100),
-    b=st.integers(min_value=-100, max_value=100),
+    a=INTS,
+    b=INTS.filter(lambda x: x != 0),
+)
+def test_num_floordiv(a, b):
+    # floordiv can behave weirdly with float operands due to precision issues, so
+    # floor(a / b) may not equal a // b.
+    def fn():
+        return a // b
+
+    assert validate_dual_run(fn) == a // b
+
+
+@given(
+    a=FLOATS,
+    b=FLOATS,
 )
 def test_num_augmented(a, b):
     def fn():
@@ -84,7 +117,7 @@ def test_num_augmented(a, b):
         if b != 0:
             mod %= b
         power = a
-        if b < 10 and (a > 0 or b > 0):
+        if are_valid_pow_operands(a, b):
             power **= b
         floordiv = a
         if b != 0:
@@ -97,7 +130,7 @@ def test_num_augmented(a, b):
         a * b,
         a / b if b != 0 else a,
         a % b if b != 0 else a,
-        a**b if (b < 10 and (a > 0 or b > 0)) else a,
+        a**b if are_valid_pow_operands(a, b) else a,
         a // b if b != 0 else a,
     )
 
@@ -106,7 +139,7 @@ def test_num_augmented(a, b):
 # So validate_dual_run is more or less enough.
 
 
-@given(n=st.integers(min_value=-100, max_value=100))
+@given(n=INTS)
 def test_num_while_assignment(n):
     def fn():
         result = 0
@@ -119,7 +152,7 @@ def test_num_while_assignment(n):
     assert validate_dual_run(fn) == sum(range(n))
 
 
-@given(n=st.integers(min_value=-100, max_value=100))
+@given(n=INTS)
 def test_num_while_else(n):
     def fn():
         result = 0
@@ -134,8 +167,8 @@ def test_num_while_else(n):
 
 
 @given(
-    a=st.integers(min_value=-100, max_value=100),
-    b=st.integers(min_value=-100, max_value=100),
+    a=INTS,
+    b=INTS,
 )
 def test_num_while_break(a, b):
     def fn():
@@ -154,8 +187,8 @@ def test_num_while_break(a, b):
 
 
 @given(
-    a=st.integers(min_value=-100, max_value=100),
-    b=st.integers(min_value=-100, max_value=100),
+    a=INTS,
+    b=INTS,
 )
 def test_num_while_continue(a, b):
     def fn():
