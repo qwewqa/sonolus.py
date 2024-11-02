@@ -42,6 +42,8 @@ def generate_fn_impl(fn: Callable):
         case _:
             if callable(fn) and isinstance(fn, Value):
                 return generate_fn_impl(fn.__call__)
+            elif fn is type:
+                return fn
             elif callable(fn):
                 raise TypeError(f"Unsupported callable {fn!r}")
             else:
