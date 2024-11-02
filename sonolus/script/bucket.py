@@ -95,6 +95,13 @@ class Bucket(Record):
             case _:
                 raise RuntimeError("Invalid mode for bucket window access")
 
+    @window.setter
+    @meta_fn
+    def window(self, value: JudgmentWindow):
+        if not ctx():
+            raise RuntimeError("Bucket window access outside of compilation")
+        self.window.update(value.perfect, value.great, value.good)
+
 
 @dataclass
 class BucketSprite:

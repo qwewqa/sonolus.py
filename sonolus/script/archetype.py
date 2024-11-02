@@ -10,6 +10,7 @@ from typing import Annotated, Any, ClassVar, Self, get_origin
 from sonolus.backend.ir import IRConst, IRInstr
 from sonolus.backend.mode import Mode
 from sonolus.backend.ops import Op
+from sonolus.script.bucket import Bucket, Judgment
 from sonolus.script.callbacks import PLAY_CALLBACKS, CallbackInfo
 from sonolus.script.comptime import Comptime
 from sonolus.script.internal.context import ctx
@@ -427,11 +428,21 @@ class PlayArchetype(BaseArchetype):
     def life(self) -> ArchetypeLife:
         if not ctx():
             raise RuntimeError("Calling life is only allowed within a callback")
-        match ctx().global_state.mode:
-            case Mode.Play | Mode.Watch:
+        match self._data_:
+            case ArchetypeSelfData() | ArchetypeReferenceData():
                 return deref(ctx().blocks.ArchetypeLife, self.id() * ArchetypeLife._size_(), ArchetypeLife)
             case _:
-                raise RuntimeError(f"Life is not available in mode '{ctx().global_state.mode}'")
+                raise RuntimeError("Life is not available in level data")
+
+    @property
+    def result(self) -> PlayEntityInput:
+        if not ctx():
+            raise RuntimeError("Calling result is only allowed within a callback")
+        match self._data_:
+            case ArchetypeSelfData():
+                return deref(ctx().blocks.EntityInput, 0, PlayEntityInput)
+            case _:
+                raise RuntimeError("Result is only accessible from the entity itself")
 
 
 def entity_info_at(index: Num) -> PlayEntityInfo | WatchEntityInfo | PreviewEntityInfo:
@@ -483,6 +494,19 @@ class ArchetypeLife(Record):
             self.great_life_increment._set_(great_life_increment)
         if good_life_increment is not None:
             self.good_life_increment._set_(good_life_increment)
+
+
+class PlayEntityInput(Record):
+    judgement: Judgment
+    accuracy: float
+    bucket: Bucket
+    bucket_value: float
+
+
+class WatchEntityInput(Record):
+    target_time: float
+    bucket: Bucket
+    bucket_value: float
 
 
 class EntityRef[A: BaseArchetype](Record):
