@@ -459,7 +459,7 @@ def entity_info_at(index: Num) -> PlayEntityInfo | WatchEntityInfo | PreviewEnti
             raise RuntimeError(f"Entity info is not available in mode '{ctx().global_state.mode}'")
 
 
-def archetype_life_of(archetype: BaseArchetype) -> ArchetypeLife:
+def archetype_life_of(archetype: type[BaseArchetype] | BaseArchetype) -> ArchetypeLife:
     if not ctx():
         raise RuntimeError("Calling archetype_life_of is only allowed within a callback")
     match ctx().global_state.mode:
