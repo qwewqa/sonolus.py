@@ -2,7 +2,7 @@ from __future__ import annotations
 
 from dataclasses import dataclass
 from enum import IntEnum
-from typing import Annotated, Protocol, get_origin
+from typing import Annotated, Protocol, dataclass_transform, get_origin
 
 from sonolus.backend.mode import Mode
 from sonolus.backend.ops import Op
@@ -134,6 +134,7 @@ class Buckets(Protocol):
     _buckets_: list[BucketInfo]
 
 
+@dataclass_transform()
 def buckets[T](cls: type[T]) -> T | Buckets:
     if len(cls.__bases__) != 1:
         raise ValueError("Buckets class must not inherit from any class (except object)")

@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 from dataclasses import dataclass
-from typing import Annotated, Any, Protocol, get_origin
+from typing import Annotated, Any, Protocol, dataclass_transform, get_origin
 
 from sonolus.backend.ops import Op
 from sonolus.script.internal.introspection import get_field_specifiers
@@ -87,6 +87,7 @@ class Effects(Protocol):
     _effects_: list[str]
 
 
+@dataclass_transform()
 def effects[T](cls: type[T]) -> T | Effects:
     if len(cls.__bases__) != 1:
         raise ValueError("Effects class must not inherit from any class (except object)")

@@ -1,6 +1,6 @@
 # ruff: noqa: A002
 from dataclasses import dataclass
-from typing import Annotated, Any, ClassVar, Protocol, get_origin
+from typing import Annotated, Any, ClassVar, Protocol, dataclass_transform, get_origin
 
 from sonolus.backend.mode import Mode
 from sonolus.backend.place import BlockPlace
@@ -161,6 +161,7 @@ class OptionField(SonolusDescriptor):
         raise AttributeError("Options are read-only")
 
 
+@dataclass_transform()
 def options[T](cls: type[T]) -> T | Options:
     if len(cls.__bases__) != 1:
         raise ValueError("Options class must not inherit from any class (except object)")

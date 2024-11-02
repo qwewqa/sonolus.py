@@ -1,5 +1,5 @@
 from dataclasses import dataclass
-from typing import Annotated, Any, Protocol, get_origin
+from typing import Annotated, Any, Protocol, dataclass_transform, get_origin
 
 from sonolus.backend.ops import Op
 from sonolus.script.graphics import QuadLike, flatten_quad
@@ -197,6 +197,7 @@ class Skin(Protocol):
     _sprites_: list[str]
 
 
+@dataclass_transform()
 def skin[T](cls: type[T]) -> T | Skin:
     if len(cls.__bases__) != 1:
         raise ValueError("Skin class must not inherit from any class (except object)")
