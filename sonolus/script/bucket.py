@@ -2,7 +2,7 @@ from __future__ import annotations
 
 from dataclasses import dataclass
 from enum import IntEnum
-from typing import Annotated, Protocol, dataclass_transform, get_origin
+from typing import Annotated, Any, Protocol, dataclass_transform, get_origin
 
 from sonolus.backend.mode import Mode
 from sonolus.backend.ops import Op
@@ -133,7 +133,7 @@ def bucket_sprite(
     return BucketSprite(sprite.id, fallback_sprite.id if fallback_sprite else None, x, y, w, h, rotation)
 
 
-def bucket(*, sprites: list[BucketSprite], unit: str | None = None) -> BucketInfo:
+def bucket(*, sprites: list[BucketSprite], unit: str | None = None) -> Any:
     return BucketInfo(sprites, unit)
 
 

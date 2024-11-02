@@ -459,6 +459,16 @@ def entity_info_at(index: Num) -> PlayEntityInfo | WatchEntityInfo | PreviewEnti
             raise RuntimeError(f"Entity info is not available in mode '{ctx().global_state.mode}'")
 
 
+def archetype_life_of(archetype: BaseArchetype) -> ArchetypeLife:
+    if not ctx():
+        raise RuntimeError("Calling archetype_life_of is only allowed within a callback")
+    match ctx().global_state.mode:
+        case Mode.Play | Mode.Watch:
+            return deref(ctx().blocks.ArchetypeLife, archetype.id() * ArchetypeLife._size_(), ArchetypeLife)
+        case _:
+            raise RuntimeError(f"Archetype life is not available in mode '{ctx().global_state.mode}'")
+
+
 class PlayEntityInfo(Record):
     index: int
     archetype_id: int

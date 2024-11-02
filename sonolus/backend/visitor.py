@@ -426,13 +426,14 @@ class Visitor(ast.NodeVisitor):
                         ctx().scope.set_value(name, subject)
                     return ctx(), ctx().into_dead()
             case ast.MatchOr():
-                true_ctx = ctx()
-                false_ctxs = []
+                true_ctxs = []
+                false_ctx = ctx()
+                assert pattern.patterns
                 for subpattern in pattern.patterns:
                     true_ctx, false_ctx = self.handle_match_pattern(subject, subpattern)
-                    false_ctxs.append(false_ctx)
-                    set_ctx(true_ctx)
-                return true_ctx, Context.meet(false_ctxs)
+                    true_ctxs.append(true_ctx)
+                    set_ctx(false_ctx)
+                return Context.meet(true_ctxs), false_ctx
 
     def visit_Raise(self, node):
         raise NotImplementedError("Raise statements are not supported")

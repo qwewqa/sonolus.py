@@ -4,21 +4,21 @@ from sonolus.backend.mode import Mode
 from sonolus.script.array import Array
 from sonolus.script.containers import VarArray
 from sonolus.script.globals import (
-    level_life,
-    level_score,
-    play_runtime_environment,
-    play_runtime_update,
-    preview_runtime_environment,
-    runtime_background,
-    runtime_particle_transform,
-    runtime_skin_transform,
-    runtime_touch_array,
-    runtime_ui,
-    runtime_ui_configuration,
-    tutorial_runtime_environment,
-    tutorial_runtime_update,
-    watch_runtime_environment,
-    watch_runtime_update,
+    _level_life,
+    _level_score,
+    _play_runtime_environment,
+    _play_runtime_update,
+    _preview_runtime_environment,
+    _runtime_background,
+    _runtime_particle_transform,
+    _runtime_skin_transform,
+    _runtime_touch_array,
+    _runtime_ui,
+    _runtime_ui_configuration,
+    _tutorial_runtime_environment,
+    _tutorial_runtime_update,
+    _watch_runtime_environment,
+    _watch_runtime_update,
 )
 from sonolus.script.graphics import Quad, Rect
 from sonolus.script.internal.context import ctx
@@ -28,7 +28,7 @@ from sonolus.script.transform import Transform2d
 from sonolus.script.vec import Vec2
 
 
-@play_runtime_environment
+@_play_runtime_environment
 class _PlayRuntimeEnvironment:
     is_debug: bool
     aspect_ratio: float
@@ -37,7 +37,7 @@ class _PlayRuntimeEnvironment:
     is_multiplayer: bool
 
 
-@watch_runtime_environment
+@_watch_runtime_environment
 class _WatchRuntimeEnvironment:
     is_debug: bool
     aspect_ratio: float
@@ -46,20 +46,20 @@ class _WatchRuntimeEnvironment:
     is_replay: bool
 
 
-@preview_runtime_environment
+@_preview_runtime_environment
 class _PreviewRuntimeEnvironment:
     is_debug: bool
     aspect_ratio: float
 
 
-@tutorial_runtime_environment
+@_tutorial_runtime_environment
 class _TutorialRuntimeEnvironment:
     is_debug: bool
     aspect_ratio: float
     audio_offset: float
 
 
-@play_runtime_update
+@_play_runtime_update
 class _PlayRuntimeUpdate:
     time: float
     delta_time: float
@@ -67,7 +67,7 @@ class _PlayRuntimeUpdate:
     touch_count: int
 
 
-@watch_runtime_update
+@_watch_runtime_update
 class _WatchRuntimeUpdate:
     time: float
     delta_time: float
@@ -75,7 +75,7 @@ class _WatchRuntimeUpdate:
     is_skip: bool
 
 
-@tutorial_runtime_update
+@_tutorial_runtime_update
 class _TutorialRuntimeUpdate:
     time: float
     delta_time: float
@@ -87,7 +87,7 @@ class RuntimeUiConfig(Record):
     alpha: float
 
 
-@runtime_ui_configuration
+@_runtime_ui_configuration
 class _RuntimeUiConfigs:
     menu: RuntimeUiConfig
     judgment: RuntimeUiConfig
@@ -138,7 +138,7 @@ class RuntimeUiLayout(Record):
             self.background = background
 
 
-@runtime_ui
+@_runtime_ui
 class _RuntimeUi:
     menu: RuntimeUiLayout
     judgment: RuntimeUiLayout
@@ -185,12 +185,12 @@ class Touch(Record):
         return self.total_delta.angle
 
 
-@runtime_touch_array
+@_runtime_touch_array
 class _TouchArray:
     touches: Array[Touch, 999]
 
 
-@runtime_skin_transform
+@_runtime_skin_transform
 class _SkinTransform:
     value: Array[Array[float, 4], 4]
 
@@ -210,7 +210,7 @@ class _SkinTransform:
         )
 
 
-@runtime_particle_transform
+@_runtime_particle_transform
 class _ParticleTransform:
     value: Array[Array[float, 4], 4]
 
@@ -230,97 +230,97 @@ class _ParticleTransform:
         )
 
 
-@runtime_background
+@_runtime_background
 class _Background:
     value: Quad
 
 
-@level_score
+@_level_score
 class _LevelScore:
-    perfect_score_multiplier: float
-    great_score_multiplier: float
-    good_score_multiplier: float
-    consecutive_perfect_score_multiplier: float
-    consecutive_perfect_score_step: float
-    consecutive_perfect_score_cap: float
-    consecutive_great_score_multiplier: float
-    consecutive_great_score_step: float
-    consecutive_great_score_cap: float
-    consecutive_good_score_multiplier: float
-    consecutive_good_score_step: float
-    consecutive_good_score_cap: float
+    perfect_multiplier: float
+    great_multiplier: float
+    good_multiplier: float
+    consecutive_perfect_multiplier: float
+    consecutive_perfect_step: float
+    consecutive_perfect_cap: float
+    consecutive_great_multiplier: float
+    consecutive_great_step: float
+    consecutive_great_cap: float
+    consecutive_good_multiplier: float
+    consecutive_good_step: float
+    consecutive_good_cap: float
 
     def update(
         self,
-        perfect_score_multiplier: float | None = None,
-        great_score_multiplier: float | None = None,
-        good_score_multiplier: float | None = None,
-        consecutive_perfect_score_multiplier: float | None = None,
-        consecutive_perfect_score_step: float | None = None,
-        consecutive_perfect_score_cap: float | None = None,
-        consecutive_great_score_multiplier: float | None = None,
-        consecutive_great_score_step: float | None = None,
-        consecutive_great_score_cap: float | None = None,
-        consecutive_good_score_multiplier: float | None = None,
-        consecutive_good_score_step: float | None = None,
-        consecutive_good_score_cap: float | None = None,
+        perfect_multiplier: float | None = None,
+        great_multiplier: float | None = None,
+        good_multiplier: float | None = None,
+        consecutive_perfect_multiplier: float | None = None,
+        consecutive_perfect_step: float | None = None,
+        consecutive_perfect_cap: float | None = None,
+        consecutive_great_multiplier: float | None = None,
+        consecutive_great_step: float | None = None,
+        consecutive_great_cap: float | None = None,
+        consecutive_good_multiplier: float | None = None,
+        consecutive_good_step: float | None = None,
+        consecutive_good_cap: float | None = None,
     ):
-        if perfect_score_multiplier is not None:
-            self.perfect_score_multiplier = perfect_score_multiplier
-        if great_score_multiplier is not None:
-            self.great_score_multiplier = great_score_multiplier
-        if good_score_multiplier is not None:
-            self.good_score_multiplier = good_score_multiplier
-        if consecutive_perfect_score_multiplier is not None:
-            self.consecutive_perfect_score_multiplier = consecutive_perfect_score_multiplier
-        if consecutive_perfect_score_step is not None:
-            self.consecutive_perfect_score_step = consecutive_perfect_score_step
-        if consecutive_perfect_score_cap is not None:
-            self.consecutive_perfect_score_cap = consecutive_perfect_score_cap
-        if consecutive_great_score_multiplier is not None:
-            self.consecutive_great_score_multiplier = consecutive_great_score_multiplier
-        if consecutive_great_score_step is not None:
-            self.consecutive_great_score_step = consecutive_great_score_step
-        if consecutive_great_score_cap is not None:
-            self.consecutive_great_score_cap = consecutive_great_score_cap
-        if consecutive_good_score_multiplier is not None:
-            self.consecutive_good_score_multiplier = consecutive_good_score_multiplier
-        if consecutive_good_score_step is not None:
-            self.consecutive_good_score_step = consecutive_good_score_step
-        if consecutive_good_score_cap is not None:
-            self.consecutive_good_score_cap = consecutive_good_score_cap
+        if perfect_multiplier is not None:
+            self.perfect_multiplier = perfect_multiplier
+        if great_multiplier is not None:
+            self.great_multiplier = great_multiplier
+        if good_multiplier is not None:
+            self.good_multiplier = good_multiplier
+        if consecutive_perfect_multiplier is not None:
+            self.consecutive_perfect_multiplier = consecutive_perfect_multiplier
+        if consecutive_perfect_step is not None:
+            self.consecutive_perfect_step = consecutive_perfect_step
+        if consecutive_perfect_cap is not None:
+            self.consecutive_perfect_cap = consecutive_perfect_cap
+        if consecutive_great_multiplier is not None:
+            self.consecutive_great_multiplier = consecutive_great_multiplier
+        if consecutive_great_step is not None:
+            self.consecutive_great_step = consecutive_great_step
+        if consecutive_great_cap is not None:
+            self.consecutive_great_cap = consecutive_great_cap
+        if consecutive_good_multiplier is not None:
+            self.consecutive_good_multiplier = consecutive_good_multiplier
+        if consecutive_good_step is not None:
+            self.consecutive_good_step = consecutive_good_step
+        if consecutive_good_cap is not None:
+            self.consecutive_good_cap = consecutive_good_cap
 
 
-@level_life
+@_level_life
 class _LevelLife:
-    consecutive_perfect_life_increment: float
-    consecutive_perfect_life_step: float
-    consecutive_great_life_increment: float
-    consecutive_great_life_step: float
-    consecutive_good_life_increment: float
-    consecutive_good_life_step: float
+    consecutive_perfect_increment: float
+    consecutive_perfect_step: float
+    consecutive_great_increment: float
+    consecutive_great_step: float
+    consecutive_good_increment: float
+    consecutive_good_step: float
 
     def update(
         self,
-        consecutive_perfect_life_increment: float | None = None,
-        consecutive_perfect_life_step: float | None = None,
-        consecutive_great_life_increment: float | None = None,
-        consecutive_great_life_step: float | None = None,
-        consecutive_good_life_increment: float | None = None,
-        consecutive_good_life_step: float | None = None,
+        consecutive_perfect_increment: float | None = None,
+        consecutive_perfect_step: float | None = None,
+        consecutive_great_increment: float | None = None,
+        consecutive_great_step: float | None = None,
+        consecutive_good_increment: float | None = None,
+        consecutive_good_step: float | None = None,
     ):
-        if consecutive_perfect_life_increment is not None:
-            self.consecutive_perfect_life_increment = consecutive_perfect_life_increment
-        if consecutive_perfect_life_step is not None:
-            self.consecutive_perfect_life_step = consecutive_perfect_life_step
-        if consecutive_great_life_increment is not None:
-            self.consecutive_great_life_increment = consecutive_great_life_increment
-        if consecutive_great_life_step is not None:
-            self.consecutive_great_life_step = consecutive_great_life_step
-        if consecutive_good_life_increment is not None:
-            self.consecutive_good_life_increment = consecutive_good_life_increment
-        if consecutive_good_life_step is not None:
-            self.consecutive_good_life_step = consecutive_good_life_step
+        if consecutive_perfect_increment is not None:
+            self.consecutive_perfect_increment = consecutive_perfect_increment
+        if consecutive_perfect_step is not None:
+            self.consecutive_perfect_step = consecutive_perfect_step
+        if consecutive_great_increment is not None:
+            self.consecutive_great_increment = consecutive_great_increment
+        if consecutive_great_step is not None:
+            self.consecutive_great_step = consecutive_great_step
+        if consecutive_good_increment is not None:
+            self.consecutive_good_increment = consecutive_good_increment
+        if consecutive_good_step is not None:
+            self.consecutive_good_step = consecutive_good_step
 
 
 @meta_fn

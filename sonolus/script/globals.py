@@ -82,47 +82,47 @@ def create_global(cls: type, blocks: dict[Mode, Block], offset: int | None):
 
 
 @dataclass_transform()
-def play_runtime_environment[T](cls: type[T]) -> T:
+def _play_runtime_environment[T](cls: type[T]) -> T:
     return create_global(cls, {Mode.Play: PlayBlock.RuntimeEnvironment}, 0)
 
 
 @dataclass_transform()
-def watch_runtime_environment[T](cls: type[T]) -> T:
+def _watch_runtime_environment[T](cls: type[T]) -> T:
     return create_global(cls, {Mode.Watch: WatchBlock.RuntimeEnvironment}, 0)
 
 
 @dataclass_transform()
-def tutorial_runtime_environment[T](cls: type[T]) -> T:
+def _tutorial_runtime_environment[T](cls: type[T]) -> T:
     return create_global(cls, {Mode.Tutorial: TutorialBlock.RuntimeEnvironment}, 0)
 
 
 @dataclass_transform()
-def preview_runtime_environment[T](cls: type[T]) -> T:
+def _preview_runtime_environment[T](cls: type[T]) -> T:
     return create_global(cls, {Mode.Preview: PreviewBlock.RuntimeEnvironment}, 0)
 
 
 @dataclass_transform()
-def play_runtime_update[T](cls: type[T]) -> T:
+def _play_runtime_update[T](cls: type[T]) -> T:
     return create_global(cls, {Mode.Play: PlayBlock.RuntimeUpdate}, 0)
 
 
 @dataclass_transform()
-def watch_runtime_update[T](cls: type[T]) -> T:
+def _watch_runtime_update[T](cls: type[T]) -> T:
     return create_global(cls, {Mode.Watch: WatchBlock.RuntimeUpdate}, 0)
 
 
 @dataclass_transform()
-def tutorial_runtime_update[T](cls: type[T]) -> T:
+def _tutorial_runtime_update[T](cls: type[T]) -> T:
     return create_global(cls, {Mode.Tutorial: TutorialBlock.RuntimeUpdate}, 0)
 
 
 @dataclass_transform()
-def runtime_touch_array[T](cls: type[T]) -> T:
+def _runtime_touch_array[T](cls: type[T]) -> T:
     return create_global(cls, {Mode.Play: PlayBlock.RuntimeTouchArray}, 0)
 
 
 @dataclass_transform()
-def runtime_skin_transform[T](cls: type[T]) -> T:
+def _runtime_skin_transform[T](cls: type[T]) -> T:
     return create_global(
         cls,
         {
@@ -135,7 +135,7 @@ def runtime_skin_transform[T](cls: type[T]) -> T:
 
 
 @dataclass_transform()
-def runtime_particle_transform[T](cls: type[T]) -> T:
+def _runtime_particle_transform[T](cls: type[T]) -> T:
     return create_global(
         cls,
         {
@@ -148,7 +148,7 @@ def runtime_particle_transform[T](cls: type[T]) -> T:
 
 
 @dataclass_transform()
-def runtime_background[T](cls: type[T]) -> T:
+def _runtime_background[T](cls: type[T]) -> T:
     return create_global(
         cls,
         {
@@ -161,7 +161,7 @@ def runtime_background[T](cls: type[T]) -> T:
 
 
 @dataclass_transform()
-def runtime_ui[T](cls: type[T]) -> T:
+def _runtime_ui[T](cls: type[T]) -> T:
     return create_global(
         cls,
         {
@@ -175,7 +175,7 @@ def runtime_ui[T](cls: type[T]) -> T:
 
 
 @dataclass_transform()
-def runtime_ui_configuration[T](cls: type[T]) -> T:
+def _runtime_ui_configuration[T](cls: type[T]) -> T:
     return create_global(
         cls,
         {
@@ -189,7 +189,7 @@ def runtime_ui_configuration[T](cls: type[T]) -> T:
 
 
 @dataclass_transform()
-def tutorial_instruction[T](cls: type[T]) -> T:
+def _tutorial_instruction[T](cls: type[T]) -> T:
     return create_global(cls, {Mode.Tutorial: TutorialBlock.TutorialInstruction}, 0)
 
 
@@ -203,23 +203,17 @@ def level_data[T](cls: type[T]) -> T:
     return create_global(cls, {Mode.Play: PlayBlock.LevelData, Mode.Watch: WatchBlock.LevelData}, None)
 
 
-@dataclass_transform()
-def level_option[T](cls: type[T]) -> T:
-    return create_global(cls, {Mode.Play: PlayBlock.LevelOption, Mode.Watch: WatchBlock.LevelOption}, 0)
+# level_option is handled by the options decorator
+# level_bucket is handled by the bucket decorator
 
 
 @dataclass_transform()
-def level_bucket[T](cls: type[T]) -> T:
-    return create_global(cls, {Mode.Play: PlayBlock.LevelBucket, Mode.Watch: WatchBlock.LevelBucket}, 0)
-
-
-@dataclass_transform()
-def level_score[T](cls: type[T]) -> T:
+def _level_score[T](cls: type[T]) -> T:
     return create_global(cls, {Mode.Play: PlayBlock.LevelScore, Mode.Watch: WatchBlock.LevelScore}, 0)
 
 
 @dataclass_transform()
-def level_life[T](cls: type[T]) -> T:
+def _level_life[T](cls: type[T]) -> T:
     return create_global(cls, {Mode.Play: PlayBlock.LevelLife, Mode.Watch: WatchBlock.LevelLife}, 0)
 
 
