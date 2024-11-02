@@ -487,23 +487,26 @@ class PreviewEntityInfo(Record):
 
 
 class ArchetypeLife(Record):
-    perfect_life_increment: Num
-    great_life_increment: Num
-    good_life_increment: Num
-    miss_life_increment: Num
+    perfect_increment: Num
+    great_increment: Num
+    good_increment: Num
+    miss_increment: Num
 
     def update(
         self,
-        perfect_life_increment: Num | None = None,
-        great_life_increment: Num | None = None,
-        good_life_increment: Num | None = None,
+        perfect_increment: Num | None = None,
+        great_increment: Num | None = None,
+        good_increment: Num | None = None,
+        miss_increment: Num | None = None,
     ):
-        if perfect_life_increment is not None:
-            self.perfect_life_increment._set_(perfect_life_increment)
-        if great_life_increment is not None:
-            self.great_life_increment._set_(great_life_increment)
-        if good_life_increment is not None:
-            self.good_life_increment._set_(good_life_increment)
+        if perfect_increment is not None:
+            self.perfect_increment = perfect_increment
+        if great_increment is not None:
+            self.great_increment = great_increment
+        if good_increment is not None:
+            self.good_increment = good_increment
+        if miss_increment is not None:
+            self.miss_increment = miss_increment
 
 
 class PlayEntityInput(Record):
