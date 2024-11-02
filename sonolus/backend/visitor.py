@@ -781,9 +781,7 @@ class Visitor(ast.NodeVisitor):
         ):
             return validate_value(self.execute_at_node(node, fn._as_py_(), *args, **kwargs))
         else:
-            return validate_value(
-                self.execute_at_node(node, lambda: validate_value(compile_and_call(fn, *args, **kwargs)))
-            )
+            return self.execute_at_node(node, lambda: validate_value(compile_and_call(fn, *args, **kwargs)))
 
     def handle_getitem(self, node: ast.stmt | ast.expr, target: Value, key: Value) -> Value:
         with self.reporting_errors_at_node(node):
