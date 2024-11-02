@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 from enum import Enum
-from typing import Any, ClassVar, Literal, Self, TypeVar, get_origin
+from typing import Annotated, Any, ClassVar, Literal, Self, TypeVar, get_origin
 
 from sonolus.script.internal.impl import meta_fn
 from sonolus.script.internal.value import Value
@@ -16,6 +16,8 @@ def validate_type_arg(arg: Any) -> Any:
     if not arg._is_py_():
         raise TypeError(f"Expected a compile-time constant type argument, got {arg}")
     result = arg._as_py_()
+    if get_origin(result) is Annotated:
+        return result.__args__[0]
     if get_origin(result) is Literal:
         return result.__args__[0]
     return result
