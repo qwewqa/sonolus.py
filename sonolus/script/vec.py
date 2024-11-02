@@ -10,6 +10,16 @@ class Vec2(Record):
     y: float
 
     @property
+    def magnitude(self) -> Num:
+        return (self.x**2 + self.y**2) ** 0.5
+
+    @property
+    def angle(self) -> Num:
+        return atan2(self.y, self.x)
+
+    def dot(self, other: Self) -> Num:
+        return self.x * other.x + self.y * other.y
+
     def tuple(self) -> tuple[float, float]:
         return self.x, self.y
 
@@ -20,25 +30,18 @@ class Vec2(Record):
         return Vec2(x=self.x - other.x, y=self.y - other.y)
 
     def __mul__(self, other: Self | float) -> Self:
-        if isinstance(other, Vec2):
-            return Vec2(x=self.x * other.x, y=self.y * other.y)
-        else:
-            return Vec2(x=self.x * other, y=self.y * other)
+        match other:
+            case Vec2(x, y):
+                return Vec2(x=self.x * x, y=self.y * y)
+            case float() | int() as factor:
+                return Vec2(x=self.x * factor, y=self.y * factor)
 
     def __truediv__(self, other: Self | float) -> Self:
-        if isinstance(other, Vec2):
-            return Vec2(x=self.x / other.x, y=self.y / other.y)
-        else:
-            return Vec2(x=self.x / other, y=self.y / other)
+        match other:
+            case Vec2(x, y):
+                return Vec2(x=self.x / x, y=self.y / y)
+            case float() | int() as factor:
+                return Vec2(x=self.x / factor, y=self.y / factor)
 
     def __neg__(self) -> Self:
         return Vec2(x=-self.x, y=-self.y)
-
-    def magnitude(self) -> Num:
-        return (self.x**2 + self.y**2) ** 0.5
-
-    def angle(self) -> Num:
-        return atan2(self.y, self.x)
-
-    def dot(self, other: Self) -> Num:
-        return self.x * other.x + self.y * other.y

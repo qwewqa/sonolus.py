@@ -10,12 +10,30 @@ DIVISOR_FLOATS = FLOATS.filter(lambda x: abs(x) > 1e-6)
 
 
 @given(FLOATS, FLOATS)
-def test_interval_size(left, right):
+def test_interval_length(left, right):
     def fn():
         interval = Interval(left, right)
-        return interval.size()
+        return interval.length
 
-    assert validate_dual_run(fn) == max(0.0, right - left)
+    assert validate_dual_run(fn) == right - left
+
+
+@given(FLOATS, FLOATS)
+def test_interval_mid(left, right):
+    def fn():
+        interval = Interval(left, right)
+        return interval.mid
+
+    assert validate_dual_run(fn) == (left + right) / 2
+
+
+@given(FLOATS, FLOATS)
+def test_interval_is_empty(left, right):
+    def fn():
+        interval = Interval(left, right)
+        return interval.is_empty
+
+    assert validate_dual_run(fn) == (left > right)
 
 
 @given(FLOATS, FLOATS, FLOATS)

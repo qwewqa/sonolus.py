@@ -10,8 +10,20 @@ class Interval(Record):
     left: float
     right: float
 
-    def size(self) -> float:
-        return max(0.0, self.right - self.left)
+    @property
+    def length(self) -> float:
+        return self.right - self.left
+
+    @property
+    def is_empty(self) -> bool:
+        return self.left > self.right
+
+    @property
+    def mid(self) -> float:
+        return (self.left + self.right) / 2
+
+    def tuple(self):
+        return self.left, self.right
 
     def __contains__(self, item: Self | float | int) -> bool:
         match item:

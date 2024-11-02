@@ -178,11 +178,11 @@ class Touch(Record):
 
     @property
     def total_speed(self) -> float:
-        return self.total_velocity.magnitude()
+        return self.total_velocity.magnitude
 
     @property
     def total_angle(self) -> float:
-        return self.total_delta.angle()
+        return self.total_delta.angle
 
 
 @runtime_touch_array

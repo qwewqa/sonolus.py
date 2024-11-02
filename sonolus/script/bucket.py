@@ -10,45 +10,37 @@ from sonolus.script.internal.context import ctx
 from sonolus.script.internal.impl import meta_fn
 from sonolus.script.internal.introspection import get_field_specifiers
 from sonolus.script.internal.native import native_function
+from sonolus.script.interval import Interval
 from sonolus.script.pointer import deref
 from sonolus.script.record import Record
 from sonolus.script.sprite import Sprite
 
 
 class JudgmentWindow(Record):
-    perfect_min: float
-    perfect_max: float
-    great_min: float
-    great_max: float
-    good_min: float
-    good_max: float
+    perfect: Interval
+    great: Interval
+    good: Interval
 
     def update(
         self,
-        perfect_min: float,
-        perfect_max: float,
-        great_min: float,
-        great_max: float,
-        good_min: float,
-        good_max: float,
+        perfect: Interval | None = None,
+        great: Interval | None = None,
+        good: Interval | None = None,
     ):
-        self.perfect_min = perfect_min
-        self.perfect_max = perfect_max
-        self.great_min = great_min
-        self.great_max = great_max
-        self.good_min = good_min
-        self.good_max = good_max
+        if perfect is not None:
+            self.perfect = perfect
+        if great is not None:
+            self.great = great
+        if good is not None:
+            self.good = good
 
     def judge(self, actual: float, target: float) -> Judgment:
         return _judge(
             actual,
             target,
-            self.perfect_min,
-            self.perfect_max,
-            self.great_min,
-            self.great_max,
-            self.good_min,
-            self.good_max,
+            *self.perfect.tuple(),
+            *self.great.tuple(),
+            *self.good.tuple(),
         )
 
 
