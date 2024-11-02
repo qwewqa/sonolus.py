@@ -101,7 +101,7 @@ def test_interval_floordiv(start, end, value):
 
 
 @given(FLOATS, FLOATS, FLOATS, FLOATS)
-def test_interval_and(start, end, other_start, other_end):
+def test_interval_intersection(start, end, other_start, other_end):
     def fn():
         interval = Interval(start, end)
         other = Interval(other_start, other_end)
@@ -110,8 +110,19 @@ def test_interval_and(start, end, other_start, other_end):
     assert validate_dual_run(fn) == Interval(max(start, other_start), min(end, other_end))
 
 
+@given(FLOATS, FLOATS, FLOATS, FLOATS)
+def test_interval_intersection_is_no_longer_than_original(start, end, other_start, other_end):
+    def fn():
+        interval = Interval(start, end)
+        other = Interval(other_start, other_end)
+        intersection = interval & other
+        return intersection.length <= interval.length and intersection.length <= other.length
+
+    assert validate_dual_run(fn)
+
+
 @given(FLOATS, FLOATS, FLOATS, FLOATS, FLOATS)
-def test_interval_and_consistent_with_contains(start, end, other_start, other_end, value):
+def test_interval_intersection_consistent_with_contains(start, end, other_start, other_end, value):
     def fn():
         interval = Interval(start, end)
         other = Interval(other_start, other_end)
