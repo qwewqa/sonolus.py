@@ -11,7 +11,7 @@ from sonolus.backend.excepthook import install_excepthook
 from sonolus.backend.utils import get_function, scan_writes
 from sonolus.script.debug import assert_true
 from sonolus.script.internal.builtin_impls import BUILTIN_IMPLS
-from sonolus.script.internal.context import Context, Scope, ValueBinding, ctx, set_ctx
+from sonolus.script.internal.context import Context, EmptyBinding, Scope, ValueBinding, ctx, set_ctx
 from sonolus.script.internal.descriptor import SonolusDescriptor
 from sonolus.script.internal.error import CompilationError
 from sonolus.script.internal.impl import try_validate_value, validate_value
@@ -148,6 +148,8 @@ class Visitor(ast.NodeVisitor):
         self.globals = {}
         for k, v in global_vars.items():
             # Unfortunately, inspect.closurevars also includes attributes
+            if v is ctx:
+                raise ValueError("Unexpected use of ctx in non-meta function")
             value = try_validate_value(BUILTIN_IMPLS.get(id(v), v))
             if value is not None:
                 self.globals[k] = value
@@ -659,7 +661,9 @@ class Visitor(ast.NodeVisitor):
         raise NotImplementedError("Starred expressions are not supported")
 
     def visit_Name(self, node):
-        if node.id in self.globals:
+        if isinstance(ctx().scope.get_binding(node.id), EmptyBinding) and node.id in self.globals:
+            # globals can have false positives due to limitations of inspect.closurevars
+            # so we need to check that it's not defined as a local variable
             return self.globals[node.id]
         return ctx().scope.get_value(node.id)
 
@@ -756,11 +760,15 @@ class Visitor(ast.NodeVisitor):
                     return self.handle_call(node, getter, target)
                 case SonolusDescriptor() | FunctionType() | classmethod() | staticmethod() | None:
                     return validate_value(getattr(target, key))
+                case non_descriptor if not hasattr(non_descriptor, "__get__"):
+                    return validate_value(getattr(target, key))
                 case _:
                     raise TypeError(f"Unsupported field or descriptor {key}")
 
     def handle_setattr(self, node: ast.stmt | ast.expr, target: Value, key: str, value: Value):
         with self.reporting_errors_at_node(node):
+            if target._is_py_():
+                target = target._as_py_()
             descriptor = getattr(type(target), key, None)
             match descriptor:
                 case property(fset=setter):

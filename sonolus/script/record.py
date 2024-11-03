@@ -123,6 +123,12 @@ class Record(GenericValue):
         pass
 
     @classmethod
+    def _raw(cls, **kwargs) -> Self:
+        result = object.__new__(cls)
+        result._value = kwargs
+        return result
+
+    @classmethod
     def _size_(cls) -> int:
         return sum(field.type._size_() for field in cls._fields)
 
@@ -201,7 +207,7 @@ class Record(GenericValue):
 
     def __repr__(self):
         return (
-            f"{self.__class__.__name__}(**{", ".join(f"{field.name}={field.__get__(self)}" for field in self._fields)})"
+            f"{self.__class__.__name__}({", ".join(f"{field.name}={field.__get__(self)!r}" for field in self._fields)})"
         )
 
     @meta_fn

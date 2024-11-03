@@ -10,11 +10,17 @@ type EngineNode = ConstantNode | FunctionNode
 class ConstantNode:
     value: float
 
+    def __hash__(self):
+        return hash(self.value)
+
 
 @dataclass
 class FunctionNode:
     func: Op
     args: list[EngineNode]
+
+    def __hash__(self):
+        return hash((self.func, tuple(self.args)))
 
 
 def format_engine_node(node: EngineNode) -> str:

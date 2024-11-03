@@ -5,6 +5,7 @@ from collections.abc import Iterable
 from typing import Any, Self, final
 
 from sonolus.backend.place import BlockPlace
+from sonolus.script.debug import assert_unreachable
 from sonolus.script.internal.context import ctx
 from sonolus.script.internal.error import InternalError
 from sonolus.script.internal.generic import GenericValue
@@ -97,7 +98,19 @@ class Array[T, Size](GenericValue, ArrayLike[T]):
         return cls(*(cls.element_type()._from_list_(iterator) for _ in range(cls.size())))
 
     def _to_list_(self) -> list[float | BlockPlace]:
-        return [entry for value in self._value for entry in value._to_list_()]
+        match self._value:
+            case list():
+                return [entry for value in self._value for entry in value._to_list_()]
+            case BlockPlace():
+                return [
+                    entry
+                    for i in range(self.size())
+                    for entry in self.element_type()
+                    ._from_place_(self._value.add_offset(i * self.element_type()._size_()))
+                    ._to_list_()
+                ]
+            case _:
+                assert_unreachable()
 
     @classmethod
     def _flat_keys_(cls, prefix: str) -> list[str]:
@@ -218,7 +231,11 @@ class Array[T, Size](GenericValue, ArrayLike[T]):
         return hash(tuple(self[i] for i in range(self.size())))
 
     def __str__(self):
-        return f"{type(self).__name__}.of({", ".join(str(self[i]) for i in range(self.size()))})"
+        if isinstance(self._value, BlockPlace):
+            return f"{type(self).__name__}({self._value})"
+        return f"{type(self).__name__}({", ".join(str(self[i]) for i in range(self.size()))})"
 
     def __repr__(self):
-        return f"{type(self).__name__}.of({", ".join(repr(self[i]) for i in range(self.size()))})"
+        if isinstance(self._value, BlockPlace):
+            return f"{type(self).__name__}({self._value})"
+        return f"{type(self).__name__}({", ".join(repr(self[i]) for i in range(self.size()))})"

@@ -24,6 +24,9 @@ class GlobalField(SonolusDescriptor):
         self.offset = offset
 
     def __get__(self, instance, owner):
+        if instance is None:
+            return self
+
         from sonolus.script.internal.context import ctx
 
         info = owner._global_info_

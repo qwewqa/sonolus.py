@@ -23,6 +23,7 @@ from sonolus.script.globals import (
 from sonolus.script.graphics import Quad, Rect
 from sonolus.script.internal.context import ctx
 from sonolus.script.internal.impl import meta_fn
+from sonolus.script.num import Num
 from sonolus.script.record import Record
 from sonolus.script.transform import Transform2d
 from sonolus.script.vec import Vec2
@@ -198,15 +199,15 @@ class _SkinTransform:
     @meta_fn
     def transform(self) -> Transform2d:
         values = self.value._to_list_()
-        return Transform2d(
-            a00=values[0 * 4 + 0],
-            a01=values[0 * 4 + 1],
-            a02=values[0 * 4 + 2],
-            a10=values[1 * 4 + 0],
-            a11=values[1 * 4 + 1],
-            a12=values[1 * 4 + 2],
-            a20=values[2 * 4 + 0],
-            a21=values[2 * 4 + 1],
+        return Transform2d._raw(
+            a00=Num(values[0 * 4 + 0]),
+            a01=Num(values[0 * 4 + 1]),
+            a02=Num(values[0 * 4 + 2]),
+            a10=Num(values[1 * 4 + 0]),
+            a11=Num(values[1 * 4 + 1]),
+            a12=Num(values[1 * 4 + 2]),
+            a20=Num(values[2 * 4 + 0]),
+            a21=Num(values[2 * 4 + 1]),
         )
 
 
@@ -218,15 +219,15 @@ class _ParticleTransform:
     @meta_fn
     def transform(self) -> Transform2d:
         values = self.value._to_list_()
-        return Transform2d(
-            a00=values[0 * 4 + 0],
-            a01=values[0 * 4 + 1],
-            a02=values[0 * 4 + 2],
-            a10=values[1 * 4 + 0],
-            a11=values[1 * 4 + 1],
-            a12=values[1 * 4 + 2],
-            a20=values[2 * 4 + 0],
-            a21=values[2 * 4 + 1],
+        return Transform2d._raw(
+            a00=Num(values[0 * 4 + 0]),
+            a01=Num(values[0 * 4 + 1]),
+            a02=Num(values[0 * 4 + 2]),
+            a10=Num(values[1 * 4 + 0]),
+            a11=Num(values[1 * 4 + 1]),
+            a12=Num(values[1 * 4 + 2]),
+            a20=Num(values[2 * 4 + 0]),
+            a21=Num(values[2 * 4 + 1]),
         )
 
 
@@ -355,6 +356,7 @@ def aspect_ratio() -> float:
             return _TutorialRuntimeEnvironment.aspect_ratio
 
 
+@meta_fn
 def audio_offset() -> float:
     if not ctx():
         return 0
@@ -369,6 +371,7 @@ def audio_offset() -> float:
             return 0
 
 
+@meta_fn
 def input_offset() -> float:
     if not ctx():
         return 0
@@ -381,6 +384,7 @@ def input_offset() -> float:
             return 0
 
 
+@meta_fn
 def is_multiplayer() -> bool:
     if not ctx():
         return False
@@ -391,6 +395,7 @@ def is_multiplayer() -> bool:
             return False
 
 
+@meta_fn
 def is_replay() -> bool:
     if not ctx():
         return False
@@ -401,6 +406,7 @@ def is_replay() -> bool:
             return False
 
 
+@meta_fn
 def time() -> float:
     if not ctx():
         return 0
@@ -415,6 +421,7 @@ def time() -> float:
             return 0
 
 
+@meta_fn
 def delta_time() -> float:
     if not ctx():
         return 0
@@ -429,6 +436,7 @@ def delta_time() -> float:
             return 0
 
 
+@meta_fn
 def scaled_time() -> float:
     if not ctx():
         return 0
@@ -443,6 +451,7 @@ def scaled_time() -> float:
             return 0
 
 
+@meta_fn
 def touches() -> VarArray[Touch, 999]:
     if not ctx():
         return VarArray(0, Array[Touch, 0]())
@@ -453,6 +462,7 @@ def touches() -> VarArray[Touch, 999]:
             return VarArray(0, Array[Touch, 0]())
 
 
+@meta_fn
 def is_skip() -> bool:
     if not ctx():
         return False
@@ -463,6 +473,7 @@ def is_skip() -> bool:
             return False
 
 
+@meta_fn
 def navigation_direction() -> int:
     if not ctx():
         return 0

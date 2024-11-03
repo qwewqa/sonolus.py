@@ -1,14 +1,20 @@
 from collections.abc import Callable
 
-from sonolus.backend.allocate import AllocateBasic
-from sonolus.backend.compiler import Compiler
 from sonolus.backend.finalize import cfg_to_engine_node
 from sonolus.backend.interpret import Interpreter
+from sonolus.backend.mode import Mode
+from sonolus.backend.optimize import optimize_and_allocate
 from sonolus.backend.place import BlockPlace
-from sonolus.backend.simplify import CoalesceFlow
 from sonolus.backend.visitor import compile_and_call
+from sonolus.build.compile import callback_to_cfg
+from sonolus.script.internal.context import GlobalContextState
 from sonolus.script.internal.impl import meta_fn
 from sonolus.script.num import Num
+
+
+def compile_fn(callback: Callable):
+    global_state = GlobalContextState(Mode.Play)
+    return callback_to_cfg(global_state, callback, "")
 
 
 def validate_dual_run[**P, R](fn: Callable[P, R], *args: P.args, **kwargs: P.kwargs) -> R:
@@ -37,10 +43,8 @@ def validate_dual_run[**P, R](fn: Callable[P, R], *args: P.args, **kwargs: P.kwa
             target._copy_from_(result)
         return result
 
-    compiler = Compiler()
-    cfg = compiler.compile_callback(run_compiled, "")
-    cfg = CoalesceFlow().run(cfg)
-    cfg = AllocateBasic().run(cfg)
+    cfg = compile_fn(run_compiled)
+    cfg = optimize_and_allocate(cfg)
     entry = cfg_to_engine_node(cfg)
     interpreter = Interpreter()
     num_result = interpreter.run(entry)
@@ -68,10 +72,8 @@ def compiled_run[**P](fn: Callable[P, Num], *args: P.args, **kwargs: P.kwargs) -
     def run_compiled():
         return compile_and_call(fn, *args, **kwargs)
 
-    compiler = Compiler()
-    cfg = compiler.compile_callback(run_compiled, "")
-    cfg = CoalesceFlow().run(cfg)
-    cfg = AllocateBasic().run(cfg)
+    cfg = compile_fn(run_compiled)
+    cfg = optimize_and_allocate(cfg)
     entry = cfg_to_engine_node(cfg)
     interpreter = Interpreter()
     return interpreter.run(entry)

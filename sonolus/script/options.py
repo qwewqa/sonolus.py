@@ -125,7 +125,7 @@ def select_option(
 
 
 class Options(Protocol):
-    _entries_: ClassVar[list[SliderOption | ToggleOption | SelectOption]]
+    _options_: ClassVar[list[SliderOption | ToggleOption | SelectOption]]
 
 
 type OptionInfo = SliderOption | ToggleOption | SelectOption

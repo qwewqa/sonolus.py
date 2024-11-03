@@ -36,7 +36,11 @@ class AllocateBasic(CompilerPass):
                             offsets[place.block] = index
                             index += place.block.size
                         return BlockPlace(10000, process(place.index), place.offset + offsets[place.block])
-                    return place
+                    return BlockPlace(
+                        process(place.block) if isinstance(place.block, BlockPlace) else place.block,
+                        process(place.index),
+                        process(place.offset),
+                    )
                 case _:
                     raise NotImplementedError
 

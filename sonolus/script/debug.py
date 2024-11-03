@@ -2,10 +2,11 @@ from collections.abc import Callable
 from typing import Any, Never
 
 from sonolus.backend.flow import cfg_to_mermaid
+from sonolus.backend.mode import Mode
 from sonolus.backend.ops import Op
 from sonolus.backend.simplify import CoalesceFlow
 from sonolus.script.comptime import Comptime
-from sonolus.script.internal.context import ctx, set_ctx
+from sonolus.script.internal.context import GlobalContextState, ctx, set_ctx
 from sonolus.script.internal.impl import meta_fn, validate_value
 from sonolus.script.internal.native import native_function
 from sonolus.script.num import Num
@@ -62,9 +63,8 @@ def terminate():
 
 
 def visualize_cfg(fn: Callable[[], Any]) -> str:
-    from sonolus.backend.compiler import Compiler
+    from sonolus.build.compile import callback_to_cfg
 
-    compiler = Compiler()
-    cfg = compiler.compile_callback(fn, "")
+    cfg = callback_to_cfg(GlobalContextState(Mode.Play), fn, "")
     cfg = CoalesceFlow().run(cfg)
     return cfg_to_mermaid(cfg)

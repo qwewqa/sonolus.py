@@ -16,8 +16,9 @@ from sonolus.script.comptime import Comptime
 from sonolus.script.internal.context import ctx
 from sonolus.script.internal.descriptor import SonolusDescriptor
 from sonolus.script.internal.generic import validate_concrete_type
-from sonolus.script.internal.impl import meta_fn
+from sonolus.script.internal.impl import meta_fn, validate_value
 from sonolus.script.internal.introspection import get_field_specifiers
+from sonolus.script.internal.native import native_call
 from sonolus.script.internal.value import Value
 from sonolus.script.num import Num
 from sonolus.script.pointer import deref
@@ -224,6 +225,7 @@ class BaseArchetype:
     _exported_keys_: ClassVar[dict[str, int]]
     _callbacks_: ClassVar[list[Callable]]
     _data_constructor_signature_: ClassVar[inspect.Signature]
+    _spawn_signature_: ClassVar[inspect.Signature]
 
     _data_: ArchetypeData
 
@@ -252,6 +254,7 @@ class BaseArchetype:
         return result
 
     @classmethod
+    @meta_fn
     def at(cls, index: Num) -> Self:
         result = cls._new()
         result._data_ = ArchetypeReferenceData(index=index)
@@ -266,6 +269,19 @@ class BaseArchetype:
         if result is None:
             raise RuntimeError("Archetype is not registered")
         return result
+
+    @classmethod
+    @meta_fn
+    def spawn(cls, **kwargs):
+        if not ctx():
+            raise RuntimeError("Spawn is only allowed within a callback")
+        archetype_id = cls.id()
+        bound = cls._spawn_signature_.bind_partial(**kwargs)
+        bound.apply_defaults()
+        data = []
+        for field in cls._memory_fields_.values():
+            data.extend(field.type._accept_(bound.arguments[field.name] or zeros(field.type))._to_list_())
+        native_call(Op.Spawn, archetype_id, *(Num(x) for x in data))
 
     def __init_subclass__(cls, **kwargs):
         if cls.__module__ == BaseArchetype.__module__:
@@ -341,6 +357,9 @@ class BaseArchetype:
         cls._data_constructor_signature_ = inspect.Signature(
             [inspect.Parameter(name, inspect.Parameter.POSITIONAL_OR_KEYWORD) for name in cls._imported_fields_]
         )
+        cls._spawn_signature_ = inspect.Signature(
+            [inspect.Parameter(name, inspect.Parameter.POSITIONAL_OR_KEYWORD) for name in cls._memory_fields_]
+        )
         cls._callbacks_ = []
         for name in cls._supported_callbacks_:
             cb = getattr(cls, name)
@@ -377,6 +396,7 @@ class PlayArchetype(BaseArchetype):
         pass
 
     @property
+    @meta_fn
     def despawn(self):
         if not ctx():
             raise RuntimeError("Calling despawn is only allowed within a callback")
@@ -387,6 +407,7 @@ class PlayArchetype(BaseArchetype):
                 raise RuntimeError("Despawn is only accessible from the entity itself")
 
     @despawn.setter
+    @meta_fn
     def despawn(self, value: bool):
         if not ctx():
             raise RuntimeError("Calling despawn is only allowed within a callback")
@@ -397,6 +418,7 @@ class PlayArchetype(BaseArchetype):
                 raise RuntimeError("Despawn is only accessible from the entity itself")
 
     @property
+    @meta_fn
     def _info(self):
         if not ctx():
             raise RuntimeError("Calling info is only allowed within a callback")
@@ -445,6 +467,7 @@ class PlayArchetype(BaseArchetype):
                 raise RuntimeError("Result is only accessible from the entity itself")
 
 
+@meta_fn
 def entity_info_at(index: Num) -> PlayEntityInfo | WatchEntityInfo | PreviewEntityInfo:
     if not ctx():
         raise RuntimeError("Calling entity_info_at is only allowed within a callback")
@@ -459,7 +482,10 @@ def entity_info_at(index: Num) -> PlayEntityInfo | WatchEntityInfo | PreviewEnti
             raise RuntimeError(f"Entity info is not available in mode '{ctx().global_state.mode}'")
 
 
+@meta_fn
 def archetype_life_of(archetype: type[BaseArchetype] | BaseArchetype) -> ArchetypeLife:
+    archetype = validate_value(archetype)
+    archetype = archetype._as_py_()
     if not ctx():
         raise RuntimeError("Calling archetype_life_of is only allowed within a callback")
     match ctx().global_state.mode:

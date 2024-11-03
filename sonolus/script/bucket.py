@@ -113,11 +113,32 @@ class BucketSprite:
     h: int
     rotation: float
 
+    def to_dict(self):
+        results = {
+            "id": self.id,
+            "x": self.x,
+            "y": self.y,
+            "w": self.w,
+            "h": self.h,
+            "rotation": self.rotation,
+        }
+        if self.fallback_id is not None:
+            results["fallbackId"] = self.fallback_id
+        return results
+
 
 @dataclass
 class BucketInfo:
     sprites: list[BucketSprite]
     unit: str | None = None
+
+    def to_dict(self):
+        results = {
+            "sprites": [sprite.to_dict() for sprite in self.sprites],
+        }
+        if self.unit is not None:
+            results["unit"] = self.unit
+        return results
 
 
 def bucket_sprite(
