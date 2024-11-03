@@ -232,10 +232,10 @@ class Array[T, Size](GenericValue, ArrayLike[T]):
 
     def __str__(self):
         if isinstance(self._value, BlockPlace):
-            return f"{type(self).__name__}({self._value})"
+            return f"{type(self).__name__}({self._value}...)"
         return f"{type(self).__name__}({", ".join(str(self[i]) for i in range(self.size()))})"
 
     def __repr__(self):
         if isinstance(self._value, BlockPlace):
-            return f"{type(self).__name__}({self._value})"
+            return f"{type(self).__name__}({self._value}...)"
         return f"{type(self).__name__}({", ".join(repr(self[i]) for i in range(self.size()))})"
