@@ -510,7 +510,7 @@ class ArchetypeLife(Record):
 
 
 class PlayEntityInput(Record):
-    judgement: Judgment
+    judgment: Judgment
     accuracy: float
     bucket: Bucket
     bucket_value: float

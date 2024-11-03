@@ -99,6 +99,20 @@ class Rect(Record):
             br=self.br,
         )
 
+    def scale(self, x: float, y: float | None, /):
+        if y is None:
+            y = x
+        self.l *= x
+        self.r *= x
+        self.t *= y
+        self.b *= y
+
+    def translate(self, x: float, y: float, /):
+        self.l += x
+        self.r += x
+        self.t += y
+        self.b += y
+
 
 class QuadLike(Protocol):
     @property
