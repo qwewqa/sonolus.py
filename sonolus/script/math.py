@@ -54,6 +54,26 @@ def tanh(x: float) -> float:
     return math.tanh(x)
 
 
+@native_function(Op.Floor)
+def floor(x: float) -> float:
+    return math.floor(x)
+
+
+@native_function(Op.Ceil)
+def ceil(x: float) -> float:
+    return math.ceil(x)
+
+
+@native_function(Op.Trunc)
+def trunc(x: float) -> float:
+    return math.trunc(x)
+
+
+@native_function(Op.Round)
+def _round(x: float) -> float:
+    return round(x)
+
+
 MATH_BUILTIN_IMPLS = {
     id(math.sin): sin,
     id(math.cos): cos,
@@ -65,4 +85,8 @@ MATH_BUILTIN_IMPLS = {
     id(math.sinh): sinh,
     id(math.cosh): cosh,
     id(math.tanh): tanh,
+    id(math.floor): floor,
+    id(math.ceil): ceil,
+    id(math.trunc): trunc,
+    id(round): _round,
 }

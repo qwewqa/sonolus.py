@@ -65,7 +65,7 @@ class Rect(Record):
 
     @property
     def h(self) -> float:
-        return self.b - self.t
+        return self.t - self.b
 
     @h.setter
     def h(self, value: float):

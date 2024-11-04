@@ -6,6 +6,7 @@ from sonolus.script.internal.impl import meta_fn, validate_value
 from sonolus.script.iterator import ArrayLike, Enumerator, SonolusIterator
 from sonolus.script.math import MATH_BUILTIN_IMPLS
 from sonolus.script.num import Num
+from sonolus.script.range import Range
 
 
 @meta_fn
@@ -138,5 +139,6 @@ BUILTIN_IMPLS = {
     id(abs): _abs,
     id(max): _max,
     id(min): _min,
+    id(range): Range,
     **MATH_BUILTIN_IMPLS,
 }
