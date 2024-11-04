@@ -22,18 +22,18 @@ class Rect(Record):
     @classmethod
     def from_xywh(cls, x: float, y: float, w: float, h: float) -> Rect:
         return cls(
-            t=y,
+            t=y + h,
             r=x + w,
-            b=y + h,
+            b=y,
             l=x,
         )
 
     @classmethod
     def from_center(cls, x: float, y: float, w: float, h: float) -> Rect:
         return cls(
-            t=y - h / 2,
+            t=y + h / 2,
             r=x + w / 2,
-            b=y + h / 2,
+            b=y - h / 2,
             l=x - w / 2,
         )
 
@@ -69,7 +69,7 @@ class Rect(Record):
 
     @h.setter
     def h(self, value: float):
-        self.b = self.t + value
+        self.t = self.b + value
 
     @property
     def bl(self) -> Vec2:
