@@ -28,6 +28,11 @@ class Pair[T, U](Record):
     second: U
 
 
+class ConcreteCompound(Record):
+    a: Pair[Num, Num]
+    b: Pair[Num, Num]
+
+
 @given(a=st.floats(allow_nan=False, allow_infinity=False))
 def test_simple_record(a):
     def fn():
@@ -56,6 +61,15 @@ def test_generic_record_explicit(a):
         return 1
 
     assert validate_dual_run(fn) == 1
+
+
+def test_concrete_compound_record():
+    def fn():
+        r = ConcreteCompound(Pair(1, 2), Pair(3, 4))
+        r @= ConcreteCompound(Pair(5, 6), Pair(7, 8))
+        return r
+
+    assert validate_dual_run(fn) == ConcreteCompound(Pair(5, 6), Pair(7, 8))
 
 
 def test_record_rejects_wrong_type():

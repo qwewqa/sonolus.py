@@ -1,5 +1,6 @@
 from collections.abc import Callable
 
+from sonolus.backend.blocks import PlayBlock
 from sonolus.backend.finalize import cfg_to_engine_node
 from sonolus.backend.interpret import Interpreter
 from sonolus.backend.mode import Mode
@@ -14,7 +15,7 @@ from sonolus.script.num import Num
 
 def compile_fn(callback: Callable):
     global_state = GlobalContextState(Mode.Play)
-    return callback_to_cfg(global_state, callback, "")
+    return callback_to_cfg(global_state, callback, ""), global_state.rom.values
 
 
 def validate_dual_run[**P, R](fn: Callable[P, R], *args: P.args, **kwargs: P.kwargs) -> R:
@@ -43,10 +44,12 @@ def validate_dual_run[**P, R](fn: Callable[P, R], *args: P.args, **kwargs: P.kwa
             target._copy_from_(result)
         return result
 
-    cfg = compile_fn(run_compiled)
+    cfg, rom_values = compile_fn(run_compiled)
     cfg = optimize_and_allocate(cfg)
     entry = cfg_to_engine_node(cfg)
     interpreter = Interpreter()
+    interpreter.blocks[PlayBlock.EngineRom] = rom_values
+
     num_result = interpreter.run(entry)
     if exception is None:
         if result_type == Num:
@@ -72,10 +75,11 @@ def compiled_run[**P](fn: Callable[P, Num], *args: P.args, **kwargs: P.kwargs) -
     def run_compiled():
         return compile_and_call(fn, *args, **kwargs)
 
-    cfg = compile_fn(run_compiled)
+    cfg, rom_values = compile_fn(run_compiled)
     cfg = optimize_and_allocate(cfg)
     entry = cfg_to_engine_node(cfg)
     interpreter = Interpreter()
+    interpreter.blocks[PlayBlock.EngineRom] = rom_values
     return interpreter.run(entry)
 
 

@@ -30,11 +30,18 @@ class VarArray[T, Capacity](Record, ArrayLike[T]):
         self._array[self._size] = value
         self._size += 1
 
-    def pop(self, index: int) -> T:
+    def extend(self, values: ArrayLike[T]):
+        """Appends copies of the values in the given array to the end of the array."""
+        for value in values:
+            self.append(value)
+
+    def pop(self, index: int | None = None) -> T:
         """Removes and returns a copy of the value at the given index.
 
         Preserves the relative order of the elements.
         """
+        if index is None:
+            index = self._size - 1
         assert 0 <= index < self._size
         value = copy(self._array[index])
         self._size -= 1
@@ -42,6 +49,18 @@ class VarArray[T, Capacity](Record, ArrayLike[T]):
             for i in Range(index, self._size):
                 self._array[i] = self._array[i + 1]
         return value
+
+    def insert(self, index: int, value: T):
+        """Inserts a copy of the given value at the given index.
+
+        Preserves the relative order of the elements.
+        """
+        assert 0 <= index <= self._size
+        assert self._size < self._array.size()
+        self._size += 1
+        for i in Range(self._size - 1, index, -1):
+            self._array[i] = self._array[i - 1]
+        self._array[index] = value
 
     def remove(self, value: T) -> bool:
         """Removes the first occurrence of the given value, returning whether the value was removed.
@@ -83,3 +102,16 @@ class VarArray[T, Capacity](Record, ArrayLike[T]):
             self._array[index] = self._array[self._size - 1]
         self._size -= 1
         return True
+
+    def __eq__(self, other):
+        if self.size() != other.size():
+            return False
+        i = 0
+        while i < self.size():
+            if self[i] != other[i]:
+                return False
+            i += 1
+        return True
+
+    def __ne__(self, other):
+        return not self == other

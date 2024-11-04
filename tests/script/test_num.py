@@ -4,8 +4,8 @@ from hypothesis import strategies as st
 from sonolus.script.array import Array
 from tests.script.conftest import validate_dual_run
 
-INTS = st.integers(min_value=-1000, max_value=1000)
-FLOATS = st.floats(min_value=-99999, max_value=99999, allow_nan=False, allow_infinity=False)
+ints = st.integers(min_value=-1000, max_value=1000)
+floats = st.floats(min_value=-99999, max_value=99999, allow_nan=False, allow_infinity=False)
 
 
 def test_num_basic():
@@ -15,7 +15,7 @@ def test_num_basic():
     assert validate_dual_run(fn) == 1
 
 
-@given(n=FLOATS)
+@given(n=floats)
 def test_num_unary(n):
     def fn():
         plus = +n
@@ -26,8 +26,8 @@ def test_num_unary(n):
 
 
 @given(
-    a=FLOATS,
-    b=FLOATS,
+    a=floats,
+    b=floats,
 )
 def test_num_comparison(a, b):
     def fn():
@@ -62,8 +62,8 @@ def are_valid_pow_operands(a, b):
 
 
 @given(
-    a=FLOATS,
-    b=FLOATS,
+    a=floats,
+    b=floats,
 )
 def test_num_binary(a, b):
     def fn():
@@ -86,8 +86,8 @@ def test_num_binary(a, b):
 
 
 @given(
-    a=INTS,
-    b=INTS.filter(lambda x: x != 0),
+    a=ints,
+    b=ints.filter(lambda x: x != 0),
 )
 def test_num_floordiv(a, b):
     # floordiv can behave weirdly with float operands due to precision issues, so
@@ -99,8 +99,8 @@ def test_num_floordiv(a, b):
 
 
 @given(
-    a=FLOATS,
-    b=FLOATS,
+    a=floats,
+    b=floats,
 )
 def test_num_augmented(a, b):
     def fn():
@@ -139,7 +139,7 @@ def test_num_augmented(a, b):
 # So validate_dual_run is more or less enough.
 
 
-@given(n=INTS)
+@given(n=ints)
 def test_num_while_assignment(n):
     def fn():
         result = 0
@@ -152,7 +152,7 @@ def test_num_while_assignment(n):
     assert validate_dual_run(fn) == sum(range(n))
 
 
-@given(n=INTS)
+@given(n=ints)
 def test_num_while_else(n):
     def fn():
         result = 0
@@ -167,8 +167,8 @@ def test_num_while_else(n):
 
 
 @given(
-    a=INTS,
-    b=INTS,
+    a=ints,
+    b=ints,
 )
 def test_num_while_break(a, b):
     def fn():
@@ -187,8 +187,8 @@ def test_num_while_break(a, b):
 
 
 @given(
-    a=INTS,
-    b=INTS,
+    a=ints,
+    b=ints,
 )
 def test_num_while_continue(a, b):
     def fn():
