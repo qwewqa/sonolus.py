@@ -61,6 +61,7 @@ class Record(GenericValue):
         fields = []
         params = []
         index = 0
+        offset = 0
         for name, hint in hints.items():
             if name not in cls.__annotations__:
                 continue
@@ -69,7 +70,9 @@ class Record(GenericValue):
             if hasattr(cls, name):
                 raise TypeError("Default values are not supported for Record fields")
             type_ = validate_type_spec(hint)
-            fields.append(RecordField(name, type_, index, len(fields)))
+            fields.append(RecordField(name, type_, index, offset))
+            if isinstance(type_, type) and issubclass(type_, Value) and type_._is_concrete_():
+                offset += type_._size_()
             setattr(cls, name, fields[-1])
             index += 1
             params.append(

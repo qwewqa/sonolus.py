@@ -202,12 +202,12 @@ class _SkinTransform:
         return Transform2d._raw(
             a00=Num(values[0 * 4 + 0]),
             a01=Num(values[0 * 4 + 1]),
-            a02=Num(values[0 * 4 + 2]),
+            a02=Num(values[0 * 4 + 3]),
             a10=Num(values[1 * 4 + 0]),
             a11=Num(values[1 * 4 + 1]),
-            a12=Num(values[1 * 4 + 2]),
-            a20=Num(values[2 * 4 + 0]),
-            a21=Num(values[2 * 4 + 1]),
+            a12=Num(values[1 * 4 + 3]),
+            a20=Num(values[3 * 4 + 0]),
+            a21=Num(values[3 * 4 + 1]),
         )
 
 
@@ -222,12 +222,12 @@ class _ParticleTransform:
         return Transform2d._raw(
             a00=Num(values[0 * 4 + 0]),
             a01=Num(values[0 * 4 + 1]),
-            a02=Num(values[0 * 4 + 2]),
+            a02=Num(values[0 * 4 + 3]),
             a10=Num(values[1 * 4 + 0]),
             a11=Num(values[1 * 4 + 1]),
-            a12=Num(values[1 * 4 + 2]),
-            a20=Num(values[2 * 4 + 0]),
-            a21=Num(values[2 * 4 + 1]),
+            a12=Num(values[1 * 4 + 3]),
+            a20=Num(values[3 * 4 + 0]),
+            a21=Num(values[3 * 4 + 1]),
         )
 
 

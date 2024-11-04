@@ -44,8 +44,9 @@ class ArchetypeFieldInfo:
 
 
 class ArchetypeField(SonolusDescriptor):
-    def __init__(self, name: str | None, storage: StorageType, offset: int, type_: type[Value]):
+    def __init__(self, name: str, data_name: str, storage: StorageType, offset: int, type_: type[Value]):
         self.name = name
+        self.data_name = data_name  # name used in level data
         self.storage = storage
         self.offset = offset
         self.type = type_
@@ -112,7 +113,7 @@ class ArchetypeField(SonolusDescriptor):
                     case ArchetypeSelfData():
                         if not isinstance(value, self.type):
                             raise TypeError(f"Expected {self.type}, got {type(value)}")
-                        for k, v in value._to_flat_dict_(self.name).items():
+                        for k, v in value._to_flat_dict_(self.data_name).items():
                             index = instance._exported_keys_[k]
                             ctx().add_statements(IRInstr(Op.ExportValue, [IRConst(index), Num._accept_(v).ir()]))
                         return
@@ -283,6 +284,16 @@ class BaseArchetype:
             data.extend(field.type._accept_(bound.arguments[field.name] or zeros(field.type))._to_list_())
         native_call(Op.Spawn, archetype_id, *(Num(x) for x in data))
 
+    def _level_data_entries(self):
+        if not isinstance(self._data_, ArchetypeLevelData):
+            raise RuntimeError("Entity is not level data")
+        entries = []
+        for name, value in self._data_.values.items():
+            field_info = self._imported_fields_.get(name)
+            for k, v in value._to_flat_dict_(field_info.data_name).items():
+                entries.append({"name": k, "value": v})
+        return entries
+
     def __init_subclass__(cls, **kwargs):
         if cls.__module__ == BaseArchetype.__module__:
             if cls._supported_callbacks_ is None:
@@ -291,6 +302,8 @@ class BaseArchetype:
             return
         if getattr(cls, "_callbacks_", None) is not None:
             raise TypeError("Cannot subclass Archetypes")
+        if cls.name is None:
+            cls.name = cls.__name__
         cls._imported_fields_ = {}
         cls._exported_fields_ = {}
         cls._memory_fields_ = {}
@@ -325,33 +338,39 @@ class BaseArchetype:
             field_type = validate_concrete_type(value.__args__[0])
             match field_info.storage:
                 case StorageType.Imported:
-                    cls._imported_fields_[name] = ArchetypeField(name, field_info.storage, imported_offset, field_type)
+                    cls._imported_fields_[name] = ArchetypeField(
+                        name, field_info.name or name, field_info.storage, imported_offset, field_type
+                    )
                     imported_offset += field_type._size_()
                     setattr(cls, name, cls._imported_fields_[name])
                 case StorageType.Exported:
-                    cls._exported_fields_[name] = ArchetypeField(name, field_info.storage, exported_offset, field_type)
+                    cls._exported_fields_[name] = ArchetypeField(
+                        name, field_info.name or name, field_info.storage, exported_offset, field_type
+                    )
                     exported_offset += field_type._size_()
                     setattr(cls, name, cls._exported_fields_[name])
                 case StorageType.Memory:
-                    cls._memory_fields_[name] = ArchetypeField(name, field_info.storage, memory_offset, field_type)
+                    cls._memory_fields_[name] = ArchetypeField(
+                        name, field_info.name or name, field_info.storage, memory_offset, field_type
+                    )
                     memory_offset += field_type._size_()
                     setattr(cls, name, cls._memory_fields_[name])
                 case StorageType.Shared:
                     cls._shared_memory_fields_[name] = ArchetypeField(
-                        name, field_info.storage, shared_memory_offset, field_type
+                        name, field_info.name or name, field_info.storage, shared_memory_offset, field_type
                     )
                     shared_memory_offset += field_type._size_()
                     setattr(cls, name, cls._shared_memory_fields_[name])
         cls._imported_keys_ = {
             name: i
             for i, name in enumerate(
-                key for field in cls._imported_fields_.values() for key in field.type._flat_keys_(field.name)
+                key for field in cls._imported_fields_.values() for key in field.type._flat_keys_(field.data_name)
             )
         }
         cls._exported_keys_ = {
             name: i
             for i, name in enumerate(
-                key for field in cls._exported_fields_.values() for key in field.type._flat_keys_(field.name)
+                key for field in cls._exported_fields_.values() for key in field.type._flat_keys_(field.data_name)
             )
         }
         cls._data_constructor_signature_ = inspect.Signature(
@@ -550,7 +569,7 @@ class WatchEntityInput(Record):
 
 class EntityRef[A: BaseArchetype](Record):
     index: int
-    archetype: Comptime[BaseArchetype, A]
+    archetype: Comptime[type, A]
 
     def get(self) -> A:
         return self.archetype.at(Num(self.index))

@@ -10,14 +10,14 @@ class LevelData:
 
 
 class BpmChange(PlayArchetype):
-    name = "BPM_CHANGE"
+    name = "#BPM_CHANGE"
 
     beat: StandardImport.Beat
     bpm: StandardImport.Bpm
 
 
 class TimescaleChange(PlayArchetype):
-    name = "TIMESCALE_CHANGE"
+    name = "#TIMESCALE_CHANGE"
 
     beat: StandardImport.Beat
     timescale: StandardImport.Timescale

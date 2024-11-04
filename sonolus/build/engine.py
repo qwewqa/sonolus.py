@@ -35,7 +35,7 @@ class PackagedEngine:
             (path / "EngineRom").write_bytes(self.rom)
 
 
-def build_engine(engine: Engine):
+def package_engine(engine: Engine):
     rom = ReadOnlyMemory()
     configuration = build_engine_configuration(engine.options, engine.ui)
     play_data = build_play_mode(
@@ -74,8 +74,8 @@ def build_play_mode(
     return {
         **compile_mode(mode=Mode.Play, rom=rom, archetypes=archetypes, global_callbacks=None),
         "skin": build_skin(skin),
-        "effects": build_effects(effects),
-        "particles": build_particles(particles),
+        "effect": build_effects(effects),
+        "particle": build_particles(particles),
         "buckets": build_buckets(buckets),
     }
 
@@ -89,11 +89,11 @@ def build_effects(effects: Effects) -> JsonValue:
 
 
 def build_particles(particles: Particles) -> JsonValue:
-    return {"particles": [{"name": name, "id": i} for i, name in enumerate(particles._particles_)]}
+    return {"effects": [{"name": name, "id": i} for i, name in enumerate(particles._particles_)]}
 
 
 def build_buckets(buckets: Buckets) -> JsonValue:
-    return {"buckets": [bucket.to_dict() for bucket in buckets._buckets_]}
+    return [bucket.to_dict() for bucket in buckets._buckets_]
 
 
 def package_rom(rom: ReadOnlyMemory) -> bytes:
