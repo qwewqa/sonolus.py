@@ -168,6 +168,8 @@ class Context:
         return header
 
     def branch_to_loop_header(self, header: Self):
+        if not self.live:
+            return
         assert len(self.outgoing) == 0
         self.outgoing[None] = header
         for name, target_value in header.loop_variables.items():

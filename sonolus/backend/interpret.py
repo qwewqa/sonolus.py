@@ -313,7 +313,7 @@ class Interpreter:
         if block not in self.blocks:
             self.blocks[block] = []
         if len(self.blocks[block]) <= index:
-            self.blocks[block] += [0.0] * (index - len(self.blocks[block]) + 1)
+            self.blocks[block] += [-1.0] * (index - len(self.blocks[block]) + 1)
         return self.blocks[block][index]
 
     def set(self, block: float, index: float, value: float):
@@ -324,7 +324,7 @@ class Interpreter:
         if block not in self.blocks:
             self.blocks[block] = []
         if len(self.blocks[block]) <= index:
-            self.blocks[block] += [0.0] * (index - len(self.blocks[block]) + 1)
+            self.blocks[block] += [-1.0] * (index - len(self.blocks[block]) + 1)
         self.blocks[block][index] = value
         return value
 

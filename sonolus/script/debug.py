@@ -14,8 +14,8 @@ from sonolus.script.values import with_default
 
 
 @meta_fn
-def error(message: str) -> None:
-    message = Comptime._accept_(message)._as_py_()
+def error(message: str | None = None) -> None:
+    message = Comptime._accept_(message)._as_py_() if message is not None else "Error"
     if not isinstance(message, str):
         raise ValueError("Expected a string")
     if ctx():

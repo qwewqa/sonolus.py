@@ -140,7 +140,7 @@ class Array[T, Size](GenericValue, ArrayLike[T]):
     @classmethod
     def _alloc_(cls) -> Self:
         if ctx():
-            place = ctx().alloc(size=cls.size())
+            place = ctx().alloc(size=cls._size_())
             return cls._from_place_(place)
         else:
             return cls._with_value([cls.element_type()._alloc_() for _ in range(cls.size())])

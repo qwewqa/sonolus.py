@@ -1,8 +1,16 @@
+from __future__ import annotations
+
 from sonolus.script.array import Array
-from sonolus.script.iterator import ArrayLike
+from sonolus.script.debug import error
+from sonolus.script.iterator import ArrayLike, SonolusIterator
 from sonolus.script.range import Range
 from sonolus.script.record import Record
 from sonolus.script.values import alloc, copy
+
+
+class Pair[T, U](Record):
+    first: T
+    second: U
 
 
 class VarArray[T, Capacity](Record, ArrayLike[T]):
@@ -17,6 +25,13 @@ class VarArray[T, Capacity](Record, ArrayLike[T]):
 
     def size(self) -> int:
         return self._size
+
+    @classmethod
+    def capacity(cls) -> int:
+        return cls._get_type_arg_(Capacity)
+
+    def is_full(self) -> bool:
+        return self._size == self.capacity()
 
     def __getitem__(self, item) -> T:
         return self._array[item]
@@ -115,3 +130,118 @@ class VarArray[T, Capacity](Record, ArrayLike[T]):
 
     def __ne__(self, other):
         return not self == other
+
+    def __hash__(self):
+        raise TypeError("unhashable type: 'VarArray'")
+
+
+class ArrayMapEntry[K, V](Record):
+    key: K
+    value: V
+
+
+class ArrayMap[K, V, Capacity](Record):
+    _size: int
+    _array: Array[ArrayMapEntry[K, V], Capacity]
+
+    @classmethod
+    def new(cls):
+        key_type = cls._get_type_arg_(K)
+        value_type = cls._get_type_arg_(V)
+        capacity = cls._get_type_arg_(Capacity)
+        return cls(0, alloc(Array[ArrayMapEntry[key_type, value_type], capacity]))
+
+    def size(self) -> int:
+        return self._size
+
+    @classmethod
+    def capacity(cls) -> int:
+        return cls._get_type_arg_(Capacity)
+
+    def is_full(self) -> bool:
+        return self._size == self.capacity()
+
+    def keys(self) -> SonolusIterator[K]:
+        return _ArrayMapKeyIterator(self, 0)
+
+    def values(self) -> SonolusIterator[V]:
+        return ArrayMapValueIterator(self, 0)
+
+    def items(self) -> SonolusIterator[tuple[K, V]]:
+        return ArrayMapEntryIterator(self, 0)
+
+    def __getitem__(self, key: K) -> V:
+        for i in Range(self._size):
+            entry = self._array[i]
+            if entry.key == key:
+                return entry.value
+        error()
+
+    def __setitem__(self, key: K, value: V):
+        for i in Range(self._size):
+            entry = self._array[i]
+            if entry.key == key:
+                entry.value = value
+                return
+        # assert self._size < self.capacity()
+        self._array[self._size] = ArrayMapEntry(key, value)
+        self._size += 1
+
+    def __contains__(self, key: K) -> bool:
+        for i in Range(self._size):  # noqa: SIM110
+            if self._array[i].key == key:
+                return True
+        return False
+
+    def pop(self, key: K) -> V:
+        for i in Range(self._size):
+            entry = self._array[i]
+            if entry.key == key:
+                value = copy(entry.value)
+                self._size -= 1
+                if i < self._size:
+                    self._array[i] = self._array[self._size]
+                return value
+        error()
+
+    def clear(self):
+        self._size = 0
+
+
+class _ArrayMapKeyIterator[K, V, Capacity](Record, SonolusIterator):
+    _map: ArrayMap[K, V, Capacity]
+    _index: int
+
+    def has_next(self) -> bool:
+        return self._index < self._map.size()
+
+    def next(self) -> K:
+        key = self._map._array[self._index].key
+        self._index += 1
+        return key
+
+
+class ArrayMapValueIterator[K, V, Capacity](Record, SonolusIterator):
+    _map: ArrayMap[K, V, Capacity]
+    _index: int
+
+    def has_next(self) -> bool:
+        return self._index < self._map.size()
+
+    def next(self) -> V:
+        value = self._map._array[self._index].value
+        self._index += 1
+        return value
+
+
+class ArrayMapEntryIterator[K, V, Capacity](Record, SonolusIterator):
+    _map: ArrayMap[K, V, Capacity]
+    _index: int
+
+    def has_next(self) -> bool:
+        return self._index < self._map.size()
+
+    def next(self) -> tuple[K, V]:
+        entry = self._map._array[self._index]
+        self._index += 1
+        return entry.key, entry.value

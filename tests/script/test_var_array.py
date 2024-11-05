@@ -3,11 +3,10 @@ from datetime import timedelta
 from hypothesis import given, settings
 from hypothesis import strategies as st
 
-from tests.script.conftest import validate_dual_run
 from sonolus.script.array import Array
 from sonolus.script.containers import VarArray
 from sonolus.script.debug import assert_true
-
+from tests.script.conftest import validate_dual_run
 
 ints = st.integers(min_value=-999, max_value=999)
 lists = st.lists(ints, min_size=1, max_size=20)
@@ -158,11 +157,9 @@ def test_remove_present_value(args):
     assert list(validate_dual_run(fn)) == expected
 
 
-@given(list_and_index())
+@given(lists)
 @settings(deadline=timedelta(milliseconds=500))
-def test_remove_missing_value(args):
-    values_list, index = args
-
+def test_remove_missing_value(values_list):
     values = Array(*values_list)
     value_count = len(values_list)
     to_remove = max(values) + 1
@@ -218,7 +215,7 @@ def test_set_add_missing(args):
         return va
 
     # Use sorted to check that there are no duplicates
-    assert sorted(validate_dual_run(fn)) == sorted(list(values) + [missing])
+    assert sorted(validate_dual_run(fn)) == sorted([*list(values), missing])
 
 
 def test_set_add_full():
