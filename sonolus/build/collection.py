@@ -7,28 +7,37 @@ import zipfile
 from io import BytesIO
 from os import PathLike
 from pathlib import Path
-from typing import Any, ClassVar, Literal, TypedDict, cast
+from typing import Any, Literal, TypedDict, TypeGuard
 
-Category = Literal["post", "playlist", "level", "replay", "skin", "background", "effect", "particle", "engine"]
-
-Asset = bytes | PathLike | str
+type Category = Literal[
+    "posts",
+    "playlists",
+    "levels",
+    "replays",
+    "skins",
+    "backgrounds",
+    "effects",
+    "particles",
+    "engines",
+]
+type Asset = bytes | PathLike | str
+CATEGORY_NAMES = {"posts", "playlists", "levels", "replays", "skins", "backgrounds", "effects", "particles", "engines"}
+SINGULAR_CATEGORY_NAMES: dict[Category, str] = {
+    "posts": "post",
+    "playlists": "playlist",
+    "levels": "level",
+    "replays": "replay",
+    "skins": "skin",
+    "backgrounds": "background",
+    "effects": "effect",
+    "particles": "particle",
+    "engines": "engine",
+}
 
 
 class Collection:
     BASE_PATH = "/sonolus/"
     RESERVED_FILENAMES = frozenset(("info", "list"))
-
-    CATEGORY_PLURALS: ClassVar[dict[Category, str]] = {
-        "post": "posts",
-        "playlist": "playlists",
-        "level": "levels",
-        "replay": "replays",
-        "skin": "skins",
-        "background": "backgrounds",
-        "effect": "effects",
-        "particle": "particles",
-        "engine": "engines",
-    }
 
     def __init__(self) -> None:
         self.categories: dict[Category, dict[str, Any]] = {}
@@ -84,40 +93,57 @@ class Collection:
             if self._should_skip_zip_entry(zip_entry):
                 continue
 
-            dir_name = Path(zip_entry.filename).parts[0]
+            path_parts = Path(zip_entry.filename).parts
+            if path_parts[0] == "sonolus":
+                path_parts = path_parts[1:]
+
+            if not path_parts:
+                continue
+
+            dir_name = path_parts[0]
             files_by_dir.setdefault(dir_name, []).append(zip_entry)
 
         return files_by_dir
 
     def _should_skip_zip_entry(self, zip_entry: zipfile.ZipInfo) -> bool:
         path = Path(zip_entry.filename)
+        if path.parts[0] == "sonolus":
+            path = Path(*path.parts[1:])
         return zip_entry.filename.endswith("/") or len(path.parts) < 2 or path.name.lower() in self.RESERVED_FILENAMES
 
     def _process_zip_directories(self, zf: zipfile.ZipFile, files_by_dir: dict[str, list[zipfile.ZipInfo]]) -> None:
         for dir_name, zip_entries in files_by_dir.items():
-            if dir_name == "configuration":
-                continue
-            if self._is_valid_category(dir_name):
-                self.categories.setdefault(dir_name, {})  # type: ignore
+            if dir_name == "repository":
+                self._add_repository_items(zf, zip_entries)
+            elif self._is_valid_category(dir_name):
+                self.categories.setdefault(dir_name, {})
                 self._extract_category_items(zf, dir_name, zip_entries)
 
-    def _is_valid_category(self, category: str) -> bool:
-        return category in self.CATEGORY_PLURALS
+    def _add_repository_items(self, zf: zipfile.ZipFile, zip_entries: list[zipfile.ZipInfo]) -> None:
+        for zip_entry in zip_entries:
+            self.repository[Path(zip_entry.filename).name] = zf.read(zip_entry)
 
-    def _extract_category_items(self, zf: zipfile.ZipFile, dir_name: str, zip_entries: list[zipfile.ZipInfo]) -> None:
-        assert dir_name in self.CATEGORY_PLURALS
-        dir_name = cast(Category, dir_name)
+    def _is_valid_category(self, category: str) -> TypeGuard[Category]:
+        return category in CATEGORY_NAMES
+
+    def _extract_category_items(
+        self, zf: zipfile.ZipFile, dir_name: Category, zip_entries: list[zipfile.ZipInfo]
+    ) -> None:
         for zip_entry in zip_entries:
             try:
                 item_details = json.loads(zf.read(zip_entry))
             except json.JSONDecodeError:
                 continue
 
-            item_name = Path(zip_entry.filename).stem
-            if self._is_valid_category(dir_name):
-                self.categories[dir_name][item_name] = {"item": item_details}
+            path = Path(zip_entry.filename)
+            if path.parts[0] == "sonolus":
+                path = Path(*path.parts[1:])
+            item_name = path.stem
 
-    def save(self, path: Asset) -> None:
+            if self._is_valid_category(dir_name):
+                self.categories[dir_name][item_name] = item_details
+
+    def write(self, path: Asset) -> None:
         base_dir = self._create_base_directory(path)
         self._write_main_info(base_dir)
         self._write_category_items(base_dir)
@@ -130,8 +156,11 @@ class Collection:
 
     def _write_main_info(self, base_dir: Path) -> None:
         info = {
-            "title": "Sonolus.py Collection",
-            "buttons": [{"type": category} for category, values in self.categories.items() if values],
+            "title": "Sonolus.py Project",
+            "buttons": [
+                {"type": SINGULAR_CATEGORY_NAMES[category]} for category, values in self.categories.items() if values
+            ],
+            "configuration": {"options": []},
         }
         self._write_json(base_dir / "info", info)
 
@@ -140,22 +169,32 @@ class Collection:
             if not items:
                 continue
             category_dir = self._create_category_directory(base_dir, category)
-            self._write_category_structure(category_dir, items)
+            self._write_category_structure(category_dir, category, items)
 
     def _create_category_directory(self, base_dir: Path, category: Category) -> Path:
-        plural = self.CATEGORY_PLURALS[category]
-        category_dir = base_dir / plural
+        category_dir = base_dir / category
         category_dir.mkdir(exist_ok=True)
         return category_dir
 
-    def _write_category_structure(self, category_dir: Path, items: dict[str, Any]) -> None:
-        self._write_json(category_dir / "info", {"sections": []})
+    def _write_category_structure(self, category_dir: Path, category: Category, items: dict[str, Any]) -> None:
+        self._write_json(
+            category_dir / "info",
+            {
+                "sections": [
+                    {
+                        "itemType": SINGULAR_CATEGORY_NAMES[category],
+                        "title": "Items",
+                        "items": [item_details["item"] for item_details in items.values()],
+                    }
+                ]
+            },
+        )
 
         category_list = {"pageCount": 1, "items": [item_details["item"] for item_details in items.values()]}
         self._write_json(category_dir / "list", category_list)
 
         for item_name, item_details in items.items():
-            self._write_json(category_dir / item_name, item_details["item"])
+            self._write_json(category_dir / item_name, item_details)
 
     def _write_repository_items(self, base_dir: Path) -> None:
         repo_dir = base_dir / "repository"

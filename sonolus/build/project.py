@@ -23,6 +23,7 @@ def build_project_to_collection(project: Project):
     add_engine_to_collection(collection, project.engine)
     for level in project.levels:
         add_level_to_collection(collection, project, level)
+    return collection
 
 
 def add_engine_to_collection(collection: Collection, engine: Engine):
@@ -34,16 +35,16 @@ def add_engine_to_collection(collection: Collection, engine: Engine):
         "subtitle": engine.subtitle,
         "author": engine.author,
         "tags": [],
-        "skin": collection.get_item("skin", engine.skin) if engine.skin else collection.get_default_item("skin"),
-        "background": collection.get_item("background", engine.background)
+        "skin": collection.get_item("skins", engine.skin) if engine.skin else collection.get_default_item("skins"),
+        "background": collection.get_item("backgrounds", engine.background)
         if engine.background
-        else collection.get_default_item("background"),
-        "effect": collection.get_item("effect", engine.effect)
+        else collection.get_default_item("backgrounds"),
+        "effect": collection.get_item("effects", engine.effect)
         if engine.effect
-        else collection.get_default_item("effect"),
-        "particle": collection.get_item("particle", engine.particle)
+        else collection.get_default_item("effects"),
+        "particle": collection.get_item("particles", engine.particle)
         if engine.particle
-        else collection.get_default_item("particle"),
+        else collection.get_default_item("particles"),
         "thumbnail": engine.thumbnail,
         "playData": collection.add_asset(packaged_engine.play_data),
         "watchData": collection.add_asset(packaged_engine.watch_data),
@@ -51,7 +52,7 @@ def add_engine_to_collection(collection: Collection, engine: Engine):
         "tutorialData": collection.add_asset(packaged_engine.tutorial_data),
         "configuration": collection.add_asset(packaged_engine.configuration),
     }
-    collection.add_item("engine", engine.name, make_item_details(item))
+    collection.add_item("engines", engine.name, make_item_details(item))
 
 
 def add_level_to_collection(collection: Collection, project: Project, level: Level):
@@ -69,7 +70,7 @@ def add_level_to_collection(collection: Collection, project: Project, level: Lev
         "bgm": load_resource(collection, level.bgm, project.resources, BLANK_AUDIO),
         "data": collection.add_asset(packaged_level_data),
     }
-    collection.add_item("level", level.name, make_item_details(item))
+    collection.add_item("levels", level.name, make_item_details(item))
 
 
 def load_resource(collection: Collection, asset: Asset | None, base_path: Path, default: bytes) -> Srl:
@@ -92,10 +93,6 @@ def make_item_details(item: dict[str, Any]) -> dict[str, Any]:
 
 def load_scp_files_to_collection(base_path: Path) -> Collection:
     collection = Collection()
-    for path in scan_scp_files(base_path):
+    for path in base_path.rglob("*.scp"):
         collection.load_from_scp(path)
     return collection
-
-
-def scan_scp_files(base_path: Path):
-    return base_path.rglob("*.scp")
