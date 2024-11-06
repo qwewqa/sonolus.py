@@ -94,9 +94,7 @@ def get_local_ips():
     try:
         for info in socket.getaddrinfo(hostname, None):
             ip = info[4][0]
-            if not ip.startswith("127."):
-                if ":" in ip:
-                    ip = f"[{ip}]"
+            if not ip.startswith("127.") and ":" not in ip:
                 local_ips.append(ip)
     except socket.gaierror:
         pass
