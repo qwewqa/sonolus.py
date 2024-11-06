@@ -46,15 +46,15 @@ class Collection:
     def get_item(self, category: Category, name: str) -> Any:
         if name not in self.categories.get(category, {}):
             raise KeyError(f"Item '{name}' not found in category '{category}'")
-        return self.categories[category][name]
+        return self.categories[category][name]["item"]
 
     def get_default_item(self, category: Category) -> Any:
         if not self.categories.get(category):
             raise KeyError(f"No items found in category '{category}'")
-        return next(iter(self.categories[category].values()))
+        return next(iter(self.categories[category].values()))["item"]
 
-    def add_item(self, category: Category, name: str, item: Any) -> None:
-        self.categories.setdefault(category, {})[name] = item
+    def add_item_details(self, category: Category, name: str, item_details: Any) -> None:
+        self.categories.setdefault(category, {})[name] = item_details
 
     @staticmethod
     def _load_data(value: Asset) -> bytes:

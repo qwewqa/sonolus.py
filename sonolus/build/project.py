@@ -20,13 +20,13 @@ BLANK_AUDIO = (
 
 def build_project_to_collection(project: Project):
     collection = load_scp_files_to_collection(project.resources)
-    add_engine_to_collection(collection, project.engine)
+    add_engine_to_collection(collection, project, project.engine)
     for level in project.levels:
         add_level_to_collection(collection, project, level)
     return collection
 
 
-def add_engine_to_collection(collection: Collection, engine: Engine):
+def add_engine_to_collection(collection: Collection, project: Project, engine: Engine):
     packaged_engine = package_engine(engine.data)
     item = {
         "name": engine.name,
@@ -45,14 +45,15 @@ def add_engine_to_collection(collection: Collection, engine: Engine):
         "particle": collection.get_item("particles", engine.particle)
         if engine.particle
         else collection.get_default_item("particles"),
-        "thumbnail": engine.thumbnail,
+        "thumbnail": load_resource(collection, engine.thumbnail, project.resources, BLANK_PNG),
         "playData": collection.add_asset(packaged_engine.play_data),
         "watchData": collection.add_asset(packaged_engine.watch_data),
         "previewData": collection.add_asset(packaged_engine.preview_data),
         "tutorialData": collection.add_asset(packaged_engine.tutorial_data),
+        "rom": collection.add_asset(packaged_engine.rom),
         "configuration": collection.add_asset(packaged_engine.configuration),
     }
-    collection.add_item("engines", engine.name, make_item_details(item))
+    collection.add_item_details("engines", engine.name, make_item_details(item))
 
 
 def add_level_to_collection(collection: Collection, project: Project, level: Level):
@@ -70,7 +71,7 @@ def add_level_to_collection(collection: Collection, project: Project, level: Lev
         "bgm": load_resource(collection, level.bgm, project.resources, BLANK_AUDIO),
         "data": collection.add_asset(packaged_level_data),
     }
-    collection.add_item("levels", level.name, make_item_details(item))
+    collection.add_item_details("levels", level.name, make_item_details(item))
 
 
 def load_resource(collection: Collection, asset: Asset | None, base_path: Path, default: bytes) -> Srl:
