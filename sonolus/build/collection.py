@@ -54,7 +54,7 @@ class Collection:
         return next(iter(self.categories[category].values()))
 
     def add_item(self, category: Category, name: str, item: Any) -> None:
-        self.categories.setdefault(category, {})[name] = {"item": item}
+        self.categories.setdefault(category, {})[name] = item
 
     @staticmethod
     def _load_data(value: Asset) -> bytes:
