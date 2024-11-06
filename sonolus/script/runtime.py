@@ -99,9 +99,9 @@ class _RuntimeUiConfigs:
 
 
 class HorizontalAlign(IntEnum):
-    Left = -1
-    Center = 0
-    Right = 1
+    LEFT = -1
+    CENTER = 0
+    RIGHT = 1
 
 
 class RuntimeUiLayout(Record):

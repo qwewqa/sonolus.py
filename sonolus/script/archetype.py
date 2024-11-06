@@ -3,7 +3,7 @@ from __future__ import annotations
 import inspect
 from collections.abc import Callable
 from dataclasses import dataclass
-from enum import StrEnum
+from enum import Enum
 from types import FunctionType
 from typing import Annotated, Any, ClassVar, Self, get_origin
 
@@ -12,7 +12,6 @@ from sonolus.backend.mode import Mode
 from sonolus.backend.ops import Op
 from sonolus.script.bucket import Bucket, Judgment
 from sonolus.script.callbacks import PLAY_CALLBACKS, CallbackInfo
-from sonolus.script.comptime import Comptime
 from sonolus.script.internal.context import ctx
 from sonolus.script.internal.descriptor import SonolusDescriptor
 from sonolus.script.internal.generic import validate_concrete_type
@@ -30,11 +29,11 @@ ENTITY_DATA_SIZE = 32
 ENTITY_SHARED_MEMORY_SIZE = 32
 
 
-class StorageType(StrEnum):
-    Imported = "imported"
-    Exported = "exported"
-    Memory = "memory"
-    Shared = "shared_memory"
+class StorageType(Enum):
+    IMPORTED = "imported"
+    EXPORTED = "exported"
+    MEMORY = "memory"
+    SHARED = "shared_memory"
 
 
 @dataclass
@@ -56,7 +55,7 @@ class ArchetypeField(SonolusDescriptor):
             return self
         result = None
         match self.storage:
-            case StorageType.Imported:
+            case StorageType.IMPORTED:
                 match instance._data_:
                     case ArchetypeSelfData():
                         result = deref(ctx().blocks.EntityData, self.offset, self.type)
@@ -64,9 +63,9 @@ class ArchetypeField(SonolusDescriptor):
                         result = deref(ctx().blocks.EntityDataArray, self.offset + index * ENTITY_DATA_SIZE, self.type)
                     case ArchetypeLevelData(values=values):
                         result = values[self.name]
-            case StorageType.Exported:
+            case StorageType.EXPORTED:
                 raise RuntimeError("Exported fields are write-only")
-            case StorageType.Memory:
+            case StorageType.MEMORY:
                 match instance._data_:
                     case ArchetypeSelfData():
                         result = deref(ctx().blocks.EntityMemory, self.offset, self.type)
@@ -74,7 +73,7 @@ class ArchetypeField(SonolusDescriptor):
                         raise RuntimeError("Entity memory of other entities is not accessible")
                     case ArchetypeLevelData():
                         raise RuntimeError("Entity memory is not available in level data")
-            case StorageType.Shared:
+            case StorageType.SHARED:
                 match instance._data_:
                     case ArchetypeSelfData():
                         result = deref(ctx().blocks.EntitySharedMemory, self.offset, self.type)
@@ -100,7 +99,7 @@ class ArchetypeField(SonolusDescriptor):
             raise TypeError(f"Expected {self.type}, got {type(value)}")
         target = None
         match self.storage:
-            case StorageType.Imported:
+            case StorageType.IMPORTED:
                 match instance._data_:
                     case ArchetypeSelfData():
                         target = deref(ctx().blocks.EntityData, self.offset, self.type)
@@ -108,7 +107,7 @@ class ArchetypeField(SonolusDescriptor):
                         target = deref(ctx().blocks.EntityDataArray, self.offset + index * ENTITY_DATA_SIZE, self.type)
                     case ArchetypeLevelData(values=values):
                         target = values[self.name]
-            case StorageType.Exported:
+            case StorageType.EXPORTED:
                 match instance._data_:
                     case ArchetypeSelfData():
                         if not isinstance(value, self.type):
@@ -121,7 +120,7 @@ class ArchetypeField(SonolusDescriptor):
                         raise RuntimeError("Exported fields of other entities are not accessible")
                     case ArchetypeLevelData():
                         raise RuntimeError("Exported fields are not available in level data")
-            case StorageType.Memory:
+            case StorageType.MEMORY:
                 match instance._data_:
                     case ArchetypeSelfData():
                         target = deref(ctx().blocks.EntityMemory, self.offset, self.type)
@@ -129,7 +128,7 @@ class ArchetypeField(SonolusDescriptor):
                         raise RuntimeError("Entity memory of other entities is not accessible")
                     case ArchetypeLevelData():
                         raise RuntimeError("Entity memory is not available in level data")
-            case StorageType.Shared:
+            case StorageType.SHARED:
                 match instance._data_:
                     case ArchetypeSelfData():
                         target = deref(ctx().blocks.EntitySharedMemory, self.offset, self.type)
@@ -151,19 +150,19 @@ class ArchetypeField(SonolusDescriptor):
 
 
 def imported(*, name: str | None = None) -> Any:
-    return ArchetypeFieldInfo(name, StorageType.Imported)
+    return ArchetypeFieldInfo(name, StorageType.IMPORTED)
 
 
 def exported(*, name: str | None = None) -> Any:
-    return ArchetypeFieldInfo(name, StorageType.Exported)
+    return ArchetypeFieldInfo(name, StorageType.EXPORTED)
 
 
 def entity_memory() -> Any:
-    return ArchetypeFieldInfo(None, StorageType.Memory)
+    return ArchetypeFieldInfo(None, StorageType.MEMORY)
 
 
 def shared_memory() -> Any:
-    return ArchetypeFieldInfo(None, StorageType.Shared)
+    return ArchetypeFieldInfo(None, StorageType.SHARED)
 
 
 _annotation_defaults: dict[Callable, ArchetypeFieldInfo] = {
@@ -337,25 +336,25 @@ class BaseArchetype:
                 )
             field_type = validate_concrete_type(value.__args__[0])
             match field_info.storage:
-                case StorageType.Imported:
+                case StorageType.IMPORTED:
                     cls._imported_fields_[name] = ArchetypeField(
                         name, field_info.name or name, field_info.storage, imported_offset, field_type
                     )
                     imported_offset += field_type._size_()
                     setattr(cls, name, cls._imported_fields_[name])
-                case StorageType.Exported:
+                case StorageType.EXPORTED:
                     cls._exported_fields_[name] = ArchetypeField(
                         name, field_info.name or name, field_info.storage, exported_offset, field_type
                     )
                     exported_offset += field_type._size_()
                     setattr(cls, name, cls._exported_fields_[name])
-                case StorageType.Memory:
+                case StorageType.MEMORY:
                     cls._memory_fields_[name] = ArchetypeField(
                         name, field_info.name or name, field_info.storage, memory_offset, field_type
                     )
                     memory_offset += field_type._size_()
                     setattr(cls, name, cls._memory_fields_[name])
-                case StorageType.Shared:
+                case StorageType.SHARED:
                     cls._shared_memory_fields_[name] = ArchetypeField(
                         name, field_info.name or name, field_info.storage, shared_memory_offset, field_type
                     )
@@ -569,7 +568,10 @@ class WatchEntityInput(Record):
 
 class EntityRef[A: BaseArchetype](Record):
     index: int
-    archetype: Comptime[type, A]
+
+    @classmethod
+    def archetype(cls) -> type[A]:
+        return cls._get_type_arg_(A)
 
     def get(self) -> A:
-        return self.archetype.at(Num(self.index))
+        return self.archetype().at(Num(self.index))

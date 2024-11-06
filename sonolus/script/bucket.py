@@ -52,10 +52,10 @@ class JudgmentWindow(Record):
 
 
 class Judgment(IntEnum):
-    Miss = 0
-    Perfect = 1
-    Great = 2
-    Good = 3
+    MISS = 0
+    PERFECT = 1
+    GREAT = 2
+    GOOD = 3
 
 
 @native_function(Op.Judge)
@@ -71,12 +71,12 @@ def _judge(
 ) -> Judgment:
     diff = actual - target
     if perfect_min <= diff <= perfect_max:
-        return Judgment.Perfect
+        return Judgment.PERFECT
     if great_min <= diff <= great_max:
-        return Judgment.Great
+        return Judgment.GREAT
     if good_min <= diff <= good_max:
-        return Judgment.Good
-    return Judgment.Miss
+        return Judgment.GOOD
+    return Judgment.MISS
 
 
 class Bucket(Record):
