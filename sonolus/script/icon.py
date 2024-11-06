@@ -1,5 +1,6 @@
 from enum import StrEnum
 
+
 class StandardIcon(StrEnum):
     ADVANCED = "advanced"
     ANGLE_DOWN = "angleDown"

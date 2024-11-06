@@ -6,10 +6,11 @@ from pathlib import Path
 
 from sonolus.backend.mode import Mode
 from sonolus.build.compile import compile_mode
+from sonolus.build.defaults import EMPTY_ENGINE_PREVIEW_DATA, EMPTY_ENGINE_TUTORIAL_DATA, EMPTY_ENGINE_WATCH_DATA
 from sonolus.script.archetype import BaseArchetype
 from sonolus.script.bucket import Buckets
 from sonolus.script.effect import Effects
-from sonolus.script.engine import Engine
+from sonolus.script.engine import EngineData
 from sonolus.script.internal.context import ReadOnlyMemory
 from sonolus.script.options import Options
 from sonolus.script.particle import Particles
@@ -22,20 +23,23 @@ type JsonValue = None | bool | int | float | str | list[JsonValue] | dict[str, J
 @dataclass
 class PackagedEngine:
     configuration: bytes
-    play_data: bytes | None
-    rom: bytes | None
+    play_data: bytes
+    watch_data: bytes
+    preview_data: bytes
+    tutorial_data: bytes
+    rom: bytes
 
     def write(self, path: Path):
         path.mkdir(parents=True, exist_ok=True)
-        if self.configuration:
-            (path / "EngineConfiguration").write_bytes(self.configuration)
-        if self.play_data:
-            (path / "EnginePlayData").write_bytes(self.play_data)
-        if self.rom:
-            (path / "EngineRom").write_bytes(self.rom)
+        (path / "EngineConfiguration").write_bytes(self.configuration)
+        (path / "EnginePlayData").write_bytes(self.play_data)
+        (path / "EngineWatchData").write_bytes(self.watch_data)
+        (path / "EnginePreviewData").write_bytes(self.preview_data)
+        (path / "EngineTutorialData").write_bytes(self.tutorial_data)
+        (path / "EngineRom").write_bytes(self.rom)
 
 
-def package_engine(engine: Engine):
+def package_engine(engine: EngineData):
     rom = ReadOnlyMemory()
     configuration = build_engine_configuration(engine.options, engine.ui)
     play_data = build_play_mode(
@@ -49,6 +53,9 @@ def package_engine(engine: Engine):
     return PackagedEngine(
         configuration=package_output(configuration),
         play_data=package_output(play_data),
+        watch_data=package_output(EMPTY_ENGINE_WATCH_DATA),
+        preview_data=package_output(EMPTY_ENGINE_PREVIEW_DATA),
+        tutorial_data=package_output(EMPTY_ENGINE_TUTORIAL_DATA),
         rom=package_rom(rom),
     )
 
@@ -97,7 +104,7 @@ def build_buckets(buckets: Buckets) -> JsonValue:
 
 
 def package_rom(rom: ReadOnlyMemory) -> bytes:
-    values = rom.values
+    values = rom.values or [0]
     output = bytearray()
 
     for value in values:
