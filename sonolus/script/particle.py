@@ -1,0 +1,158 @@
+from __future__ import annotations
+
+from dataclasses import dataclass
+from typing import Annotated, Any, Protocol, dataclass_transform, get_origin
+
+from sonolus.backend.ops import Op
+from sonolus.script.graphics import QuadLike, flatten_quad
+from sonolus.script.internal.introspection import get_field_specifiers
+from sonolus.script.internal.native import native_function
+from sonolus.script.record import Record
+
+
+class Particle(Record):
+    id: int
+
+    def is_available(self) -> bool:
+        return _has_particle_effect(self.id)
+
+    def spawn(self, quad: QuadLike, duration: float, loop: bool = False) -> ParticleHandle:
+        return ParticleHandle(_spawn_particle_effect(self.id, *flatten_quad(quad), duration, loop))
+
+
+class ParticleHandle(Record):
+    id: int
+
+    def move(self, quad: QuadLike) -> None:
+        _move_particle_effect(self.id, *flatten_quad(quad))
+
+    def destroy(self) -> None:
+        _destroy_particle_effect(self.id)
+
+
+@native_function(Op.HasParticleEffect)
+def _has_particle_effect(particle_id: int) -> bool:
+    raise NotImplementedError
+
+
+@native_function(Op.SpawnParticleEffect)
+def _spawn_particle_effect(
+    particle_id: int,
+    x1: float,
+    y1: float,
+    x2: float,
+    y2: float,
+    x3: float,
+    y3: float,
+    x4: float,
+    y4: float,
+    duration: float,
+    loop: bool,
+) -> int:
+    raise NotImplementedError
+
+
+@native_function(Op.MoveParticleEffect)
+def _move_particle_effect(
+    handle: int, x1: float, y1: float, x2: float, y2: float, x3: float, y3: float, x4: float, y4: float
+) -> None:
+    raise NotImplementedError
+
+
+@native_function(Op.DestroyParticleEffect)
+def _destroy_particle_effect(handle: int) -> None:
+    raise NotImplementedError
+
+
+@dataclass
+class ParticleInfo:
+    name: str
+
+
+def particle(name: str) -> Any:
+    return ParticleInfo(name)
+
+
+class Particles(Protocol):
+    _particles_: list[str]
+
+
+@dataclass_transform()
+def particles[T](cls: type[T]) -> T | Particles:
+    if len(cls.__bases__) != 1:
+        raise ValueError("Particles class must not inherit from any class (except object)")
+    instance = cls()
+    names = []
+    for i, (name, annotation) in enumerate(get_field_specifiers(cls).items()):
+        if get_origin(annotation) is not Annotated:
+            raise TypeError(f"Invalid annotation for particles: {annotation}")
+        annotation_type = annotation.__args__[0]
+        annotation_values = annotation.__metadata__
+        if annotation_type is not Particle:
+            raise TypeError(f"Invalid annotation for particles: {annotation}, expected annotation of type Particle")
+        if len(annotation_values) != 1 or not isinstance(annotation_values[0], ParticleInfo):
+            raise TypeError(
+                f"Invalid annotation for particles: {annotation}, expected a single string annotation value"
+            )
+        particle_name = annotation_values[0].name
+        names.append(particle_name)
+        setattr(instance, name, Particle(i))
+    instance._particles_ = names
+    instance._is_comptime_value_ = True
+    return instance
+
+
+class StandardParticle:
+    NoteCircularTapNeutral = Annotated[Particle, particle("#NOTE_CIRCULAR_TAP_NEUTRAL")]
+    NoteCircularTapRed = Annotated[Particle, particle("#NOTE_CIRCULAR_TAP_RED")]
+    NoteCircularTapGreen = Annotated[Particle, particle("#NOTE_CIRCULAR_TAP_GREEN")]
+    NoteCircularTapBlue = Annotated[Particle, particle("#NOTE_CIRCULAR_TAP_BLUE")]
+    NoteCircularTapYellow = Annotated[Particle, particle("#NOTE_CIRCULAR_TAP_YELLOW")]
+    NoteCircularTapPurple = Annotated[Particle, particle("#NOTE_CIRCULAR_TAP_PURPLE")]
+    NoteCircularTapCyan = Annotated[Particle, particle("#NOTE_CIRCULAR_TAP_CYAN")]
+    NoteCircularAlternativeNeutral = Annotated[Particle, particle("#NOTE_CIRCULAR_ALTERNATIVE_NEUTRAL")]
+    NoteCircularAlternativeRed = Annotated[Particle, particle("#NOTE_CIRCULAR_ALTERNATIVE_RED")]
+    NoteCircularAlternativeGreen = Annotated[Particle, particle("#NOTE_CIRCULAR_ALTERNATIVE_GREEN")]
+    NoteCircularAlternativeBlue = Annotated[Particle, particle("#NOTE_CIRCULAR_ALTERNATIVE_BLUE")]
+    NoteCircularAlternativeYellow = Annotated[Particle, particle("#NOTE_CIRCULAR_ALTERNATIVE_YELLOW")]
+    NoteCircularAlternativePurple = Annotated[Particle, particle("#NOTE_CIRCULAR_ALTERNATIVE_PURPLE")]
+    NoteCircularAlternativeCyan = Annotated[Particle, particle("#NOTE_CIRCULAR_ALTERNATIVE_CYAN")]
+    NoteCircularHoldNeutral = Annotated[Particle, particle("#NOTE_CIRCULAR_HOLD_NEUTRAL")]
+    NoteCircularHoldRed = Annotated[Particle, particle("#NOTE_CIRCULAR_HOLD_RED")]
+    NoteCircularHoldGreen = Annotated[Particle, particle("#NOTE_CIRCULAR_HOLD_GREEN")]
+    NoteCircularHoldBlue = Annotated[Particle, particle("#NOTE_CIRCULAR_HOLD_BLUE")]
+    NoteCircularHoldYellow = Annotated[Particle, particle("#NOTE_CIRCULAR_HOLD_YELLOW")]
+    NoteCircularHoldPurple = Annotated[Particle, particle("#NOTE_CIRCULAR_HOLD_PURPLE")]
+    NoteCircularHoldCyan = Annotated[Particle, particle("#NOTE_CIRCULAR_HOLD_CYAN")]
+    NoteLinearTapNeutral = Annotated[Particle, particle("#NOTE_LINEAR_TAP_NEUTRAL")]
+    NoteLinearTapRed = Annotated[Particle, particle("#NOTE_LINEAR_TAP_RED")]
+    NoteLinearTapGreen = Annotated[Particle, particle("#NOTE_LINEAR_TAP_GREEN")]
+    NoteLinearTapBlue = Annotated[Particle, particle("#NOTE_LINEAR_TAP_BLUE")]
+    NoteLinearTapYellow = Annotated[Particle, particle("#NOTE_LINEAR_TAP_YELLOW")]
+    NoteLinearTapPurple = Annotated[Particle, particle("#NOTE_LINEAR_TAP_PURPLE")]
+    NoteLinearTapCyan = Annotated[Particle, particle("#NOTE_LINEAR_TAP_CYAN")]
+    NoteLinearAlternativeNeutral = Annotated[Particle, particle("#NOTE_LINEAR_ALTERNATIVE_NEUTRAL")]
+    NoteLinearAlternativeRed = Annotated[Particle, particle("#NOTE_LINEAR_ALTERNATIVE_RED")]
+    NoteLinearAlternativeGreen = Annotated[Particle, particle("#NOTE_LINEAR_ALTERNATIVE_GREEN")]
+    NoteLinearAlternativeBlue = Annotated[Particle, particle("#NOTE_LINEAR_ALTERNATIVE_BLUE")]
+    NoteLinearAlternativeYellow = Annotated[Particle, particle("#NOTE_LINEAR_ALTERNATIVE_YELLOW")]
+    NoteLinearAlternativePurple = Annotated[Particle, particle("#NOTE_LINEAR_ALTERNATIVE_PURPLE")]
+    NoteLinearAlternativeCyan = Annotated[Particle, particle("#NOTE_LINEAR_ALTERNATIVE_CYAN")]
+    NoteLinearHoldNeutral = Annotated[Particle, particle("#NOTE_LINEAR_HOLD_NEUTRAL")]
+    NoteLinearHoldRed = Annotated[Particle, particle("#NOTE_LINEAR_HOLD_RED")]
+    NoteLinearHoldGreen = Annotated[Particle, particle("#NOTE_LINEAR_HOLD_GREEN")]
+    NoteLinearHoldBlue = Annotated[Particle, particle("#NOTE_LINEAR_HOLD_BLUE")]
+    NoteLinearHoldYellow = Annotated[Particle, particle("#NOTE_LINEAR_HOLD_YELLOW")]
+    NoteLinearHoldPurple = Annotated[Particle, particle("#NOTE_LINEAR_HOLD_PURPLE")]
+    NoteLinearHoldCyan = Annotated[Particle, particle("#NOTE_LINEAR_HOLD_CYAN")]
+    LaneCircular = Annotated[Particle, particle("#LANE_CIRCULAR")]
+    LaneLinear = Annotated[Particle, particle("#LANE_LINEAR")]
+    SlotCircular = Annotated[Particle, particle("#SLOT_CIRCULAR")]
+    SlotLinear = Annotated[Particle, particle("#SLOT_LINEAR")]
+    JudgeLineCircular = Annotated[Particle, particle("#JUDGE_LINE_CIRCULAR")]
+    JudgeLineLinear = Annotated[Particle, particle("#JUDGE_LINE_LINEAR")]
+
+
+@particles
+class EmptyParticles:
+    pass
