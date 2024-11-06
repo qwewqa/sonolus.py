@@ -113,7 +113,6 @@ def run_server(base_dir: Path, port: int = 8000):
         local_ips = get_local_ips()
         print(f"Server started on port {port}")
         print("Available on:")
-        print(f"  http://localhost:{port}")
         for ip in local_ips:
             print(f"  http://{ip}:{port}")
         try:
