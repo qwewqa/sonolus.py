@@ -41,15 +41,18 @@ def import_project(module_path: str) -> Project | None:
         try:
             module = importlib.import_module(module_path)
             project = getattr(module, "project", None)
-        except ImportError:
-            pass
+        except ImportError as e:
+            if not str(e).endswith(f"'{module_path}'"):
+                # It's an error from the module itself
+                raise
 
         if project is None:
             try:
                 project_module = importlib.import_module(f"{module_path}.project")
                 project = getattr(project_module, "project", None)
-            except ImportError:
-                pass
+            except ImportError as e:
+                if not str(e).endswith(f"'{module_path}.project'"):
+                    raise
 
         if project is None:
             print(f"Error: No Project instance found in module {module_path} or {module_path}.project")

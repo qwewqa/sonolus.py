@@ -11,7 +11,7 @@ from sonolus.backend.ir import IRConst, IRInstr
 from sonolus.backend.mode import Mode
 from sonolus.backend.ops import Op
 from sonolus.script.bucket import Bucket, Judgment
-from sonolus.script.callbacks import PLAY_CALLBACKS, CallbackInfo
+from sonolus.script.callbacks import PLAY_CALLBACKS, WATCH_ARCHETYPE_CALLBACKS, CallbackInfo
 from sonolus.script.internal.context import ctx
 from sonolus.script.internal.descriptor import SonolusDescriptor
 from sonolus.script.internal.generic import validate_concrete_type
@@ -483,6 +483,80 @@ class PlayArchetype(BaseArchetype):
                 return deref(ctx().blocks.EntityInput, 0, PlayEntityInput)
             case _:
                 raise RuntimeError("Result is only accessible from the entity itself")
+
+
+class WatchArchetype(BaseArchetype):
+    _supported_callbacks_ = WATCH_ARCHETYPE_CALLBACKS
+
+    def preprocess(self):
+        pass
+
+    def spawn_time(self) -> float:
+        pass
+
+    def despawn_time(self) -> float:
+        pass
+
+    def initialize(self):
+        pass
+
+    def update_sequential(self):
+        pass
+
+    def update_parallel(self):
+        pass
+
+    def terminate(self):
+        pass
+
+    @property
+    @meta_fn
+    def _info(self):
+        if not ctx():
+            raise RuntimeError("Calling info is only allowed within a callback")
+        match self._data_:
+            case ArchetypeSelfData():
+                return deref(ctx().blocks.EntityInfo, 0, WatchEntityInfo)
+            case ArchetypeReferenceData(index=index):
+                return deref(ctx().blocks.EntityInfoArray, index * WatchEntityInfo._size_(), PlayEntityInfo)
+            case _:
+                raise RuntimeError("Info is only accessible from the entity itself")
+
+    @property
+    def index(self) -> int:
+        return self._info.index
+
+    @property
+    def is_active(self) -> bool:
+        return self._info.state == 1
+
+    @property
+    def life(self) -> ArchetypeLife:
+        if not ctx():
+            raise RuntimeError("Calling life is only allowed within a callback")
+        match self._data_:
+            case ArchetypeSelfData() | ArchetypeReferenceData():
+                return deref(ctx().blocks.ArchetypeLife, self.id() * ArchetypeLife._size_(), ArchetypeLife)
+            case _:
+                raise RuntimeError("Life is not available in level data")
+
+    @property
+    def result(self) -> WatchEntityInput:
+        if not ctx():
+            raise RuntimeError("Calling result is only allowed within a callback")
+        match self._data_:
+            case ArchetypeSelfData():
+                return deref(ctx().blocks.EntityInput, 0, WatchEntityInput)
+            case _:
+                raise RuntimeError("Result is only accessible from the entity itself")
+
+    @property
+    def target_time(self) -> float:
+        return self.result.target_time
+
+    @target_time.setter
+    def target_time(self, value: float):
+        self.result.target_time = value
 
 
 @meta_fn

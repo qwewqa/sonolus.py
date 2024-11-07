@@ -1,14 +1,16 @@
 import gzip
 import json
 import struct
+from collections.abc import Callable
 from dataclasses import dataclass
 from pathlib import Path
 
 from sonolus.backend.mode import Mode
 from sonolus.build.compile import compile_mode
-from sonolus.build.defaults import EMPTY_ENGINE_PREVIEW_DATA, EMPTY_ENGINE_TUTORIAL_DATA, EMPTY_ENGINE_WATCH_DATA
+from sonolus.build.defaults import EMPTY_ENGINE_PREVIEW_DATA, EMPTY_ENGINE_TUTORIAL_DATA
 from sonolus.script.archetype import BaseArchetype
 from sonolus.script.bucket import Buckets
+from sonolus.script.callbacks import update_spawn_callback
 from sonolus.script.effect import Effects
 from sonolus.script.engine import EngineData
 from sonolus.script.internal.context import ReadOnlyMemory
@@ -50,10 +52,19 @@ def package_engine(engine: EngineData):
         buckets=engine.play.buckets,
         rom=rom,
     )
+    watch_data = build_watch_mode(
+        archetypes=engine.watch.archetypes,
+        skin=engine.watch.skin,
+        effects=engine.watch.effects,
+        particles=engine.watch.particles,
+        buckets=engine.watch.buckets,
+        rom=rom,
+        update_spawn=engine.watch.update_spawn,
+    )
     return PackagedEngine(
         configuration=package_output(configuration),
         play_data=package_output(play_data),
-        watch_data=package_output(EMPTY_ENGINE_WATCH_DATA),
+        watch_data=package_output(watch_data),
         preview_data=package_output(EMPTY_ENGINE_PREVIEW_DATA),
         tutorial_data=package_output(EMPTY_ENGINE_TUTORIAL_DATA),
         rom=package_rom(rom),
@@ -80,6 +91,26 @@ def build_play_mode(
 ):
     return {
         **compile_mode(mode=Mode.Play, rom=rom, archetypes=archetypes, global_callbacks=None),
+        "skin": build_skin(skin),
+        "effect": build_effects(effects),
+        "particle": build_particles(particles),
+        "buckets": build_buckets(buckets),
+    }
+
+
+def build_watch_mode(
+    archetypes: list[type[BaseArchetype]],
+    skin: Skin,
+    effects: Effects,
+    particles: Particles,
+    buckets: Buckets,
+    rom: ReadOnlyMemory,
+    update_spawn: Callable[[], float],
+):
+    return {
+        **compile_mode(
+            mode=Mode.Watch, rom=rom, archetypes=archetypes, global_callbacks=[(update_spawn_callback, update_spawn)]
+        ),
         "skin": build_skin(skin),
         "effect": build_effects(effects),
         "particle": build_particles(particles),

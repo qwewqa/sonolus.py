@@ -57,17 +57,49 @@ terminate_callback = CallbackInfo(
     supports_order=False,
     returns_value=False,
 )
+spawn_time_callback = CallbackInfo(
+    name="spawnTime",
+    py_name="spawn_time",
+    supports_order=False,
+    returns_value=True,
+)
+despawn_time_callback = CallbackInfo(
+    name="despawnTime",
+    py_name="despawn_time",
+    supports_order=False,
+    returns_value=True,
+)
+update_spawn_callback = CallbackInfo(
+    name="updateSpawn",
+    py_name="update_spawn",
+    supports_order=False,
+    returns_value=True,
+)
 
-PLAY_CALLBACKS = {
-    cb.py_name: cb
-    for cb in [
-        preprocess_callback,
-        spawn_order_callback,
-        should_spawn_callback,
-        initialize_callback,
-        update_sequential_callback,
-        touch_callback,
-        update_parallel_callback,
-        terminate_callback,
-    ]
-}
+
+def _by_name(*callbacks: CallbackInfo) -> dict[str, CallbackInfo]:
+    return {cb.py_name: cb for cb in callbacks}
+
+
+PLAY_CALLBACKS = _by_name(
+    preprocess_callback,
+    spawn_order_callback,
+    should_spawn_callback,
+    initialize_callback,
+    update_sequential_callback,
+    touch_callback,
+    update_parallel_callback,
+    terminate_callback,
+)
+WATCH_ARCHETYPE_CALLBACKS = _by_name(
+    preprocess_callback,
+    spawn_time_callback,
+    despawn_time_callback,
+    initialize_callback,
+    update_sequential_callback,
+    update_parallel_callback,
+    terminate_callback,
+)
+WATCH_GLOBAL_CALLBACKS = _by_name(
+    update_spawn_callback,
+)

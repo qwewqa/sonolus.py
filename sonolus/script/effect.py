@@ -18,10 +18,13 @@ class Effect(Record):
     def play(self, distance: float) -> None:
         _play(self.id, distance)
 
-    def play_looped(self) -> LoopedEffectHandle:
+    def schedule(self, time: float, distance: float) -> None:
+        _play_scheduled(self.id, time, distance)
+
+    def loop(self) -> LoopedEffectHandle:
         return LoopedEffectHandle(_play_looped(self.id))
 
-    def play_looped_scheduled(self, start_time: float) -> ScheduledLoopedEffectHandle:
+    def schedule_loop(self, start_time: float) -> ScheduledLoopedEffectHandle:
         return ScheduledLoopedEffectHandle(_play_looped_scheduled(self.id, start_time))
 
 

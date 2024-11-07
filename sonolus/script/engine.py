@@ -1,7 +1,6 @@
 from __future__ import annotations
 
-from collections.abc import Sequence
-from typing import ClassVar
+from collections.abc import Callable
 
 from sonolus.build.collection import Asset
 from sonolus.script.archetype import BaseArchetype
@@ -42,26 +41,61 @@ class Engine:
         self.data = data
 
 
+def default_callback() -> float:
+    return 0.0
+
+
 class PlayMode:
-    archetypes: ClassVar[Sequence[type[BaseArchetype]]] = ()
-    skin: ClassVar[Skin] = EmptySkin
-    effects: ClassVar[Effects] = EmptyEffects
-    particles: ClassVar[Particles] = EmptyParticles
-    buckets: ClassVar[Buckets] = EmptyBuckets
+    def __init__(
+        self,
+        *,
+        archetypes: list[type[BaseArchetype]] | None = None,
+        skin: Skin = EmptySkin,
+        effects: Effects = EmptyEffects,
+        particles: Particles = EmptyParticles,
+        buckets: Buckets = EmptyBuckets,
+    ) -> None:
+        self.archetypes = archetypes or []
+        self.skin = skin
+        self.effects = effects
+        self.particles = particles
+        self.buckets = buckets
+
+
+class WatchMode:
+    def __init__(
+        self,
+        *,
+        archetypes: list[type[BaseArchetype]] | None = None,
+        skin: Skin = EmptySkin,
+        effects: Effects = EmptyEffects,
+        particles: Particles = EmptyParticles,
+        buckets: Buckets = EmptyBuckets,
+        update_spawn: Callable[[], float],
+    ) -> None:
+        self.archetypes = archetypes or []
+        self.skin = skin
+        self.effects = effects
+        self.particles = particles
+        self.buckets = buckets
+        self.update_spawn = update_spawn
 
 
 class EngineData:
     ui: UiConfig
     options: Options
-    play: type[PlayMode]
+    play: PlayMode
+    watch: WatchMode
 
     def __init__(
         self,
         *,
         ui: UiConfig | None = None,
         options: Options = EmptyOptions,
-        play: type[PlayMode] = PlayMode,
+        play: PlayMode | None = None,
+        watch: WatchMode | None = None,
     ) -> None:
         self.ui = ui or UiConfig()
         self.options = options
-        self.play = play
+        self.play = play or PlayMode()
+        self.watch = watch or WatchMode(update_spawn=default_callback)

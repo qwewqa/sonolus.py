@@ -15,8 +15,3 @@ class Project:
         self.engine = engine
         self.levels = levels or []
         self.resources = Path(resources or "resources")
-
-    def cli(self):
-        from sonolus.build.cli import run_cli
-
-        run_cli(self)
