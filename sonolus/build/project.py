@@ -1,5 +1,4 @@
 from pathlib import Path
-from typing import Any
 
 from sonolus.build.collection import Asset, Collection, Srl
 from sonolus.build.engine import package_engine
@@ -19,10 +18,11 @@ BLANK_AUDIO = (
 
 
 def build_project_to_collection(project: Project):
-    collection = load_scp_files_to_collection(project.resources)
+    collection = load_resources_files_to_collection(project.resources)
     add_engine_to_collection(collection, project, project.engine)
     for level in project.levels:
         add_level_to_collection(collection, project, level)
+    collection.name = f"{project.engine.name}"
     return collection
 
 
@@ -53,7 +53,7 @@ def add_engine_to_collection(collection: Collection, project: Project, engine: E
         "rom": collection.add_asset(packaged_engine.rom),
         "configuration": collection.add_asset(packaged_engine.configuration),
     }
-    collection.add_item_details("engines", engine.name, make_item_details(item))
+    collection.add_item("engines", engine.name, item)
 
 
 def add_level_to_collection(collection: Collection, project: Project, level: Level):
@@ -66,12 +66,16 @@ def add_level_to_collection(collection: Collection, project: Project, level: Lev
         "artists": level.artists,
         "author": level.author,
         "tags": [],
-        "engine": collection.get_item("engine", project.engine.name),
+        "engine": collection.get_item("engines", project.engine.name),
+        "useSkin": {"useDefault": True},
+        "useBackground": {"useDefault": True},
+        "useEffect": {"useDefault": True},
+        "useParticle": {"useDefault": True},
         "cover": load_resource(collection, level.cover, project.resources, BLANK_PNG),
         "bgm": load_resource(collection, level.bgm, project.resources, BLANK_AUDIO),
         "data": collection.add_asset(packaged_level_data),
     }
-    collection.add_item_details("levels", level.name, make_item_details(item))
+    collection.add_item("levels", level.name, item)
 
 
 def load_resource(collection: Collection, asset: Asset | None, base_path: Path, default: bytes) -> Srl:
@@ -82,18 +86,9 @@ def load_resource(collection: Collection, asset: Asset | None, base_path: Path, 
     return collection.add_asset(asset)
 
 
-def make_item_details(item: dict[str, Any]) -> dict[str, Any]:
-    return {
-        "item": item,
-        "actions": [],
-        "hasCommunity": False,
-        "leaderboards": [],
-        "sections": [],
-    }
-
-
-def load_scp_files_to_collection(base_path: Path) -> Collection:
+def load_resources_files_to_collection(base_path: Path) -> Collection:
     collection = Collection()
     for path in base_path.rglob("*.scp"):
         collection.load_from_scp(path)
+    collection.load_from_source(base_path)
     return collection

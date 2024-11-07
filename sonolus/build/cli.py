@@ -161,7 +161,7 @@ def main():
 
     if args.command == "build":
         build_project(project, build_dir)
-        print(f"Project built successfully to {build_dir}")
+        print(f"Project built successfully to '{build_dir.resolve()}'")
     elif args.command == "dev":
         build_collection(project, build_dir)
         run_server(build_dir / "site", port=args.port)

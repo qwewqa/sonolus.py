@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import gzip
 import hashlib
 import json
 import urllib.request
@@ -33,13 +34,25 @@ SINGULAR_CATEGORY_NAMES: dict[Category, str] = {
     "particles": "particle",
     "engines": "engine",
 }
+BASE_PATH = "/sonolus/"
+RESERVED_FILENAMES = {"info", "list"}
+LOCALIZED_KEYS = {"title", "subtitle", "author", "description"}
+CATEGORY_SORT_ORDER = {
+    "levels": 0,
+    "engines": 1,
+    "skins": 2,
+    "effects": 3,
+    "particles": 4,
+    "backgrounds": 5,
+    "posts": 6,
+    "playlists": 7,
+    "replays": 8,
+}
 
 
 class Collection:
-    BASE_PATH = "/sonolus/"
-    RESERVED_FILENAMES = frozenset(("info", "list"))
-
     def __init__(self) -> None:
+        self.name = "Unnamed"
         self.categories: dict[Category, dict[str, Any]] = {}
         self.repository: dict[str, bytes] = {}
 
@@ -53,8 +66,18 @@ class Collection:
             raise KeyError(f"No items found in category '{category}'")
         return next(iter(self.categories[category].values()))["item"]
 
-    def add_item_details(self, category: Category, name: str, item_details: Any) -> None:
-        self.categories.setdefault(category, {})[name] = item_details
+    def add_item(self, category: Category, name: str, item: Any) -> None:
+        self.categories.setdefault(category, {})[name] = self._make_item_details(item)
+
+    @staticmethod
+    def _make_item_details(item: dict[str, Any]) -> dict[str, Any]:
+        return {
+            "item": item,
+            "actions": [],
+            "hasCommunity": False,
+            "leaderboards": [],
+            "sections": [],
+        }
 
     @staticmethod
     def _load_data(value: Asset) -> bytes:
@@ -73,18 +96,71 @@ class Collection:
         data = self._load_data(value)
         key = hashlib.sha1(data).hexdigest()
         self.repository[key] = data
-        return Srl(hash=key, url=f"{self.BASE_PATH}repository/{key}")
-
-    @classmethod
-    def from_scp(cls, zip_data: Asset) -> Collection:
-        collection = cls()
-        collection.load_from_scp(zip_data)
-        return collection
+        return Srl(hash=key, url=f"{BASE_PATH}repository/{key}")
 
     def load_from_scp(self, zip_data: Asset) -> None:
         with zipfile.ZipFile(BytesIO(self._load_data(zip_data))) as zf:
             files_by_dir = self._group_zip_entries_by_directory(zf.filelist)
             self._process_zip_directories(zf, files_by_dir)
+
+    def load_from_source(self, path: PathLike | str) -> None:
+        root_path = Path(path)
+
+        for category_dir in root_path.iterdir():
+            if not category_dir.is_dir():
+                continue
+
+            category_name = category_dir.name
+            if not self._is_valid_category(category_name):
+                continue
+
+            for item_dir in category_dir.iterdir():
+                if not item_dir.is_dir():
+                    continue
+
+                item_json_path = item_dir / "item.json"
+                if not item_json_path.exists():
+                    continue
+
+                try:
+                    item_data = json.loads(item_json_path.read_text())
+                except json.JSONDecodeError:
+                    continue
+
+                item_data = self._localize_item(item_data)
+                item_data["name"] = item_dir.name
+
+                for resource_path in item_dir.iterdir():
+                    if resource_path.name == "item.json":
+                        continue
+
+                    try:
+                        resource_data = resource_path.read_bytes()
+
+                        if resource_path.suffix.lower() in {".json", ".bin"}:
+                            resource_data = gzip.compress(resource_data)
+
+                        srl = self.add_asset(resource_data)
+                        item_data[resource_path.stem] = srl
+
+                    except Exception as e:
+                        print(f"Error processing resource {resource_path}: {e}")
+                        continue
+
+                self.add_item(category_name, item_dir.name, item_data)
+
+    @staticmethod
+    def _localize_item(item: dict[str, Any]) -> dict[str, Any]:
+        localized_item = item.copy()
+        for key in LOCALIZED_KEYS:
+            match localized_item.get(key):
+                case {"en": localized_value}:
+                    localized_item[key] = localized_value
+                case {**other_languages} if other_languages:
+                    localized_item[key] = localized_item[key][min(other_languages)]
+                case _:
+                    localized_item[key] = ""
+        return localized_item
 
     def _group_zip_entries_by_directory(self, file_list: list[zipfile.ZipInfo]) -> dict[str, list[zipfile.ZipInfo]]:
         files_by_dir: dict[str, list[zipfile.ZipInfo]] = {}
@@ -109,7 +185,7 @@ class Collection:
         path = Path(zip_entry.filename)
         if path.parts[0] == "sonolus":
             path = Path(*path.parts[1:])
-        return zip_entry.filename.endswith("/") or len(path.parts) < 2 or path.name.lower() in self.RESERVED_FILENAMES
+        return zip_entry.filename.endswith("/") or len(path.parts) < 2 or path.name.lower() in RESERVED_FILENAMES
 
     def _process_zip_directories(self, zf: zipfile.ZipFile, files_by_dir: dict[str, list[zipfile.ZipInfo]]) -> None:
         for dir_name, zip_entries in files_by_dir.items():
@@ -150,16 +226,15 @@ class Collection:
         self._write_repository_items(base_dir)
 
     def _create_base_directory(self, path: Asset) -> Path:
-        base_dir = Path(path) / self.BASE_PATH.strip("/")
+        base_dir = Path(path) / BASE_PATH.strip("/")
         base_dir.mkdir(parents=True, exist_ok=True)
         return base_dir
 
     def _write_main_info(self, base_dir: Path) -> None:
+        sorted_categories = sorted(self.categories.keys(), key=lambda c: CATEGORY_SORT_ORDER.get(c, 100))
         info = {
-            "title": "Sonolus.py Project",
-            "buttons": [
-                {"type": SINGULAR_CATEGORY_NAMES[category]} for category, values in self.categories.items() if values
-            ],
+            "title": self.name,
+            "buttons": [{"type": SINGULAR_CATEGORY_NAMES[category]} for category in sorted_categories],
             "configuration": {"options": []},
         }
         self._write_json(base_dir / "info", info)
