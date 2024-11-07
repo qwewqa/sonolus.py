@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 from dataclasses import dataclass
-from typing import Annotated, Any, Protocol, dataclass_transform, get_origin
+from typing import Annotated, Any, NewType, dataclass_transform, get_origin
 
 from sonolus.backend.ops import Op
 from sonolus.script.internal.introspection import get_field_specifiers
@@ -86,8 +86,7 @@ def effect(name: str) -> Any:
     return EffectInfo(name)
 
 
-class Effects(Protocol):
-    _effects_: list[str]
+type Effects = NewType("Effects", Any)
 
 
 @dataclass_transform()

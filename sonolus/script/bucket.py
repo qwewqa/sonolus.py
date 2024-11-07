@@ -2,7 +2,7 @@ from __future__ import annotations
 
 from dataclasses import dataclass
 from enum import IntEnum
-from typing import Annotated, Any, Protocol, dataclass_transform, get_origin
+from typing import Annotated, Any, NewType, dataclass_transform, get_origin
 
 from sonolus.backend.mode import Mode
 from sonolus.backend.ops import Op
@@ -158,8 +158,7 @@ def bucket(*, sprites: list[BucketSprite], unit: str | None = None) -> Any:
     return BucketInfo(sprites, unit)
 
 
-class Buckets(Protocol):
-    _buckets_: list[BucketInfo]
+type Buckets = NewType("Buckets", Any)
 
 
 @dataclass_transform()

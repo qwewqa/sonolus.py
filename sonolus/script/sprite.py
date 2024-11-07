@@ -1,5 +1,5 @@
 from dataclasses import dataclass
-from typing import Annotated, Any, Protocol, dataclass_transform, get_origin
+from typing import Annotated, Any, NewType, dataclass_transform, get_origin
 
 from sonolus.backend.ops import Op
 from sonolus.script.graphics import QuadLike, flatten_quad
@@ -193,8 +193,7 @@ def skin_sprite(name: str) -> Any:
     return SkinSprite(name)
 
 
-class Skin(Protocol):
-    _sprites_: list[str]
+type Skin = NewType("Skin", Any)
 
 
 @dataclass_transform()
