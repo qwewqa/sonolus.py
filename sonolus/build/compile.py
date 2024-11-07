@@ -19,7 +19,7 @@ from sonolus.script.internal.context import (
     ctx,
     using_ctx,
 )
-from sonolus.script.num import Num
+from sonolus.script.num import is_num
 
 
 def compile_mode(
@@ -85,6 +85,6 @@ def callback_to_cfg(
             result = compile_and_call(callback, archetype._for_compilation())
         else:
             result = compile_and_call(callback)
-        if isinstance(result, Num):
+        if is_num(result):
             ctx().add_statements(IRInstr(Op.Break, [IRConst(1), result.ir()]))
     return context_to_cfg(context)

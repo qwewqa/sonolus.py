@@ -5,7 +5,7 @@ from sonolus.script.internal.context import ctx
 from sonolus.script.internal.impl import meta_fn, validate_value
 from sonolus.script.iterator import ArrayLike, Enumerator, SonolusIterator
 from sonolus.script.math import MATH_BUILTIN_IMPLS
-from sonolus.script.num import Num
+from sonolus.script.num import is_num
 from sonolus.script.range import Range
 
 
@@ -74,7 +74,7 @@ def _max(*args):
         else:
             raise TypeError(f"Unsupported type: {type(iterable)} for max")
     else:
-        if not all(isinstance(arg, Num) for arg in args):
+        if not all(is_num(arg) for arg in args):
             raise TypeError("Arguments to max must be numbers")
         if ctx():
             result = compile_and_call(_max2, args[0], args[1])
@@ -114,7 +114,7 @@ def _min(*args):
         else:
             raise TypeError(f"Unsupported type: {type(iterable)} for min")
     else:
-        if not all(isinstance(arg, Num) for arg in args):
+        if not all(is_num(arg) for arg in args):
             raise TypeError("Arguments to min must be numbers")
         if ctx():
             result = compile_and_call(_min2, args[0], args[1])

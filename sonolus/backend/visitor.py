@@ -17,7 +17,7 @@ from sonolus.script.internal.error import CompilationError
 from sonolus.script.internal.impl import try_validate_value, validate_value
 from sonolus.script.internal.value import Value
 from sonolus.script.iterator import SonolusIterator
-from sonolus.script.num import Num
+from sonolus.script.num import Num, is_num
 
 _compiler_internal_ = True
 
@@ -833,7 +833,7 @@ class Visitor(ast.NodeVisitor):
 
     def ensure_boolean_num(self, value) -> Num:
         # This just checks the type for now, although we could support custom __bool__ implementations in the future
-        if not isinstance(value, Num):
+        if not is_num(value):
             raise TypeError(f"Invalid type where a bool (Num) was expected: {type(value).__name__}")
         return value
 

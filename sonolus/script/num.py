@@ -1,7 +1,9 @@
 # ruff: noqa: N801
+from __future__ import annotations
+
 import operator
 from collections.abc import Callable, Iterable
-from typing import TYPE_CHECKING, Any, Self, final
+from typing import TYPE_CHECKING, Any, Self, TypeIs, final
 
 from sonolus.backend.ir import IRConst, IRGet, IRPureInstr, IRSet
 from sonolus.backend.ops import Op
@@ -12,14 +14,30 @@ from sonolus.script.internal.impl import meta_fn
 from sonolus.script.internal.value import Value
 
 
+class NumMeta(type):
+    def __instancecheck__(cls, instance):
+        return isinstance(instance, float | int | bool) or is_num(instance)
+
+
+def is_num(value: Any) -> TypeIs[Num]:
+    """Check if a value is a precisely Num instance."""
+    return type.__instancecheck__(Num, value)  # type: ignore # noqa: PLC2801
+
+
 @final
-class _Num(Value):
+class _Num(Value, metaclass=NumMeta):
+    # This works for ints, floats, and bools
+    # Since we don't support complex numbers, real is equal to the original number
+    __match_args__ = ("real",)
+
     data: BlockPlace | float | int | bool
 
     def __init__(self, data: Place | float | int | bool):
+        if isinstance(data, complex):
+            raise TypeError("Cannot create a Num from a complex number")
         if isinstance(data, int):
             data = float(data)
-        if isinstance(data, _Num):
+        if is_num(data):
             raise InternalError("Cannot create a Num from a Num")
         self.data = data
 
@@ -55,7 +73,7 @@ class _Num(Value):
     def _accept_(cls, value: Any) -> Self:
         if not cls._accepts_(value):
             raise TypeError(f"Cannot accept {value}")
-        if isinstance(value, Num):
+        if is_num(value):
             return value
         return cls(value)
 
@@ -367,6 +385,14 @@ class _Num(Value):
 
     def not_(self) -> Self:
         return self._unary_op(operator.not_, Op.Not)
+
+    @property
+    def real(self) -> Self:
+        return self
+
+    @property
+    def imag(self) -> Self:
+        return 0
 
 
 if TYPE_CHECKING:
