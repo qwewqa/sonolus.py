@@ -198,12 +198,29 @@ def _tutorial_instruction[T](cls: type[T]) -> T:
 
 @dataclass_transform()
 def level_memory[T](cls: type[T]) -> T:
-    return create_global(cls, {Mode.Play: PlayBlock.LevelMemory, Mode.Watch: WatchBlock.LevelMemory}, None)
+    return create_global(
+        cls,
+        {
+            Mode.Play: PlayBlock.LevelMemory,
+            Mode.Watch: WatchBlock.LevelMemory,
+            Mode.Tutorial: TutorialBlock.TutorialMemory,
+        },
+        None,
+    )
 
 
 @dataclass_transform()
 def level_data[T](cls: type[T]) -> T:
-    return create_global(cls, {Mode.Play: PlayBlock.LevelData, Mode.Watch: WatchBlock.LevelData}, None)
+    return create_global(
+        cls,
+        {
+            Mode.Play: PlayBlock.LevelData,
+            Mode.Watch: WatchBlock.LevelData,
+            Mode.Preview: PreviewBlock.PreviewData,
+            Mode.Tutorial: TutorialBlock.TutorialData,
+        },
+        None,
+    )
 
 
 # level_option is handled by the options decorator
