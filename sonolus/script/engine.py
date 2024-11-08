@@ -3,7 +3,7 @@ from __future__ import annotations
 from collections.abc import Callable
 
 from sonolus.build.collection import Asset
-from sonolus.script.archetype import BaseArchetype
+from sonolus.script.archetype import BaseArchetype, PlayArchetype, PreviewArchetype, WatchArchetype
 from sonolus.script.bucket import Buckets, EmptyBuckets
 from sonolus.script.effect import Effects, EmptyEffects
 from sonolus.script.options import EmptyOptions, Options
@@ -61,6 +61,10 @@ class PlayMode:
         self.particles = particles
         self.buckets = buckets
 
+        for archetype in self.archetypes:
+            if not issubclass(archetype, PlayArchetype):
+                raise ValueError(f"archetype {archetype} is not a PlayArchetype")
+
 
 class WatchMode:
     def __init__(
@@ -80,13 +84,27 @@ class WatchMode:
         self.buckets = buckets
         self.update_spawn = update_spawn
 
+        for archetype in self.archetypes:
+            if not issubclass(archetype, WatchArchetype):
+                raise ValueError(f"archetype {archetype} is not a PlayArchetype")
+
+
+class PreviewMode:
+    def __init__(
+        self,
+        *,
+        archetypes: list[type[BaseArchetype]] | None = None,
+        skin: Skin = EmptySkin,
+    ) -> None:
+        self.archetypes = archetypes or []
+        self.skin = skin
+
+        for archetype in self.archetypes:
+            if not issubclass(archetype, PreviewArchetype):
+                raise ValueError(f"archetype {archetype} is not a BaseArchetype")
+
 
 class EngineData:
-    ui: UiConfig
-    options: Options
-    play: PlayMode
-    watch: WatchMode
-
     def __init__(
         self,
         *,
@@ -94,8 +112,10 @@ class EngineData:
         options: Options = EmptyOptions,
         play: PlayMode | None = None,
         watch: WatchMode | None = None,
+        preview: PreviewMode | None = None,
     ) -> None:
         self.ui = ui or UiConfig()
         self.options = options
         self.play = play or PlayMode()
         self.watch = watch or WatchMode(update_spawn=default_callback)
+        self.preview = preview or PreviewMode()

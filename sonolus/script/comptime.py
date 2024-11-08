@@ -3,6 +3,7 @@ from typing import TYPE_CHECKING, Any, Self, TypeVar, final
 
 from sonolus.backend.place import BlockPlace
 from sonolus.script.internal.generic import GenericValue
+from sonolus.script.internal.impl import meta_fn, validate_value
 
 
 @final
@@ -91,6 +92,19 @@ class _Comptime[T, V](GenericValue):
 
     def _copy_(self) -> Self:
         return self
+
+    @meta_fn
+    def __eq__(self, other):
+        other = validate_value(other)
+        match self.value():
+            case str():
+                return other._is_py_() and other._as_py_() == self.value()
+            case _:
+                raise TypeError("Unsupported comparison with comptime value")
+
+    @meta_fn
+    def __hash__(self):
+        return hash(self.value())
 
     @classmethod
     def _alloc_(cls) -> Self:

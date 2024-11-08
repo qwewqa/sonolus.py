@@ -75,6 +75,12 @@ update_spawn_callback = CallbackInfo(
     supports_order=False,
     returns_value=True,
 )
+render_callback = CallbackInfo(
+    name="render",
+    py_name="render",
+    supports_order=False,
+    returns_value=False,
+)
 
 
 def _by_name(*callbacks: CallbackInfo) -> dict[str, CallbackInfo]:
@@ -102,4 +108,8 @@ WATCH_ARCHETYPE_CALLBACKS = _by_name(
 )
 WATCH_GLOBAL_CALLBACKS = _by_name(
     update_spawn_callback,
+)
+PREVIEW_CALLBACKS = _by_name(
+    preprocess_callback,
+    render_callback,
 )

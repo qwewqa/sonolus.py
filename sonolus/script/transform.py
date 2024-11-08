@@ -1,7 +1,7 @@
 # fmt: off
 from typing import Self
 
-from sonolus.script.graphics import Quad
+from sonolus.script.graphics import Quad, QuadLike
 from sonolus.script.math import cos, sin
 from sonolus.script.record import Record
 from sonolus.script.vec import Vec2
@@ -40,27 +40,23 @@ class Transform2d(Record):
         a20 = self.a00 * b20 + self.a10 * b21 + b20
         a21 = self.a01 * b20 + self.a11 * b21 + b21
         a22 = self.a02 * b20 + self.a12 * b21 + 1
-        self.a00 = a00 / a22
-        self.a01 = a01 / a22
-        self.a02 = a02 / a22
-        self.a10 = a10 / a22
-        self.a11 = a11 / a22
-        self.a12 = a12 / a22
-        self.a20 = a20 / a22
-        self.a21 = a21 / a22
-        return self
+        return Transform2d(
+            a00 / a22, a01 / a22, a02 / a22,
+            a10 / a22, a11 / a22, a12 / a22,
+            a20 / a22, a21 / a22,
+        )
 
-    def translate(self, x: float = 0, y: float = 0) -> Self:
+    def translate(self, translation: Vec2, /) -> Self:
         return self._compose(
-            1, 0, x,
-            0, 1, y,
+            1, 0, translation.x,
+            0, 1, translation.y,
             0, 0,
         )
 
-    def scale(self, x: float = 1, y: float = 1) -> Self:
+    def scale(self, factor: Vec2, /) -> Self:
         return self._compose(
-            x, 0, 0,
-            0, y, 0,
+            factor.x, 0, 0,
+            0, factor.y, 0,
             0, 0,
         )
 
@@ -109,7 +105,7 @@ class Transform2d(Record):
         w = self.a20 * v.x + self.a21 * v.y + 1
         return Vec2(x / w, y / w)
 
-    def transform_quad(self, quad: Quad) -> Quad:
+    def transform_quad(self, quad: QuadLike) -> Quad:
         return Quad(
             bl=self.transform_vec(quad.bl),
             br=self.transform_vec(quad.br),

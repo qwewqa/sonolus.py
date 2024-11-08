@@ -43,7 +43,7 @@ def compile_mode(
             archetype_data["imports"] = [
                 {"name": name, "index": index} for name, index in archetype._imported_keys_.items()
             ]
-            if mode == Mode.Play:
+            if mode == Mode.PLAY:
                 archetype_data["exports"] = [
                     {"name": name, "index": index} for name, index in archetype._exported_keys_.items()
                 ]

@@ -14,7 +14,7 @@ from sonolus.script.num import Num
 
 
 def compile_fn(callback: Callable):
-    global_state = GlobalContextState(Mode.Play)
+    global_state = GlobalContextState(Mode.PLAY)
     return callback_to_cfg(global_state, callback, ""), global_state.rom.values
 
 

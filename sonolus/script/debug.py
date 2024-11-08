@@ -65,6 +65,6 @@ def terminate():
 def visualize_cfg(fn: Callable[[], Any]) -> str:
     from sonolus.build.compile import callback_to_cfg
 
-    cfg = callback_to_cfg(GlobalContextState(Mode.Play), fn, "")
+    cfg = callback_to_cfg(GlobalContextState(Mode.PLAY), fn, "")
     cfg = CoalesceFlow().run(cfg)
     return cfg_to_mermaid(cfg)

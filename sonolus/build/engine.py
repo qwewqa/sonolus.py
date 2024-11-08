@@ -7,7 +7,7 @@ from pathlib import Path
 
 from sonolus.backend.mode import Mode
 from sonolus.build.compile import compile_mode
-from sonolus.build.defaults import EMPTY_ENGINE_PREVIEW_DATA, EMPTY_ENGINE_TUTORIAL_DATA
+from sonolus.build.defaults import EMPTY_ENGINE_TUTORIAL_DATA
 from sonolus.script.archetype import BaseArchetype
 from sonolus.script.bucket import Buckets
 from sonolus.script.callbacks import update_spawn_callback
@@ -61,11 +61,16 @@ def package_engine(engine: EngineData):
         rom=rom,
         update_spawn=engine.watch.update_spawn,
     )
+    preview_mode = build_preview_mode(
+        archetypes=engine.preview.archetypes,
+        skin=engine.preview.skin,
+        rom=rom,
+    )
     return PackagedEngine(
         configuration=package_output(configuration),
         play_data=package_output(play_data),
         watch_data=package_output(watch_data),
-        preview_data=package_output(EMPTY_ENGINE_PREVIEW_DATA),
+        preview_data=package_output(preview_mode),
         tutorial_data=package_output(EMPTY_ENGINE_TUTORIAL_DATA),
         rom=package_rom(rom),
     )
@@ -90,7 +95,7 @@ def build_play_mode(
     rom: ReadOnlyMemory,
 ):
     return {
-        **compile_mode(mode=Mode.Play, rom=rom, archetypes=archetypes, global_callbacks=None),
+        **compile_mode(mode=Mode.PLAY, rom=rom, archetypes=archetypes, global_callbacks=None),
         "skin": build_skin(skin),
         "effect": build_effects(effects),
         "particle": build_particles(particles),
@@ -109,12 +114,23 @@ def build_watch_mode(
 ):
     return {
         **compile_mode(
-            mode=Mode.Watch, rom=rom, archetypes=archetypes, global_callbacks=[(update_spawn_callback, update_spawn)]
+            mode=Mode.WATCH, rom=rom, archetypes=archetypes, global_callbacks=[(update_spawn_callback, update_spawn)]
         ),
         "skin": build_skin(skin),
         "effect": build_effects(effects),
         "particle": build_particles(particles),
         "buckets": build_buckets(buckets),
+    }
+
+
+def build_preview_mode(
+    archetypes: list[type[BaseArchetype]],
+    skin: Skin,
+    rom: ReadOnlyMemory,
+):
+    return {
+        **compile_mode(mode=Mode.PREVIEW, rom=rom, archetypes=archetypes, global_callbacks=None),
+        "skin": build_skin(skin),
     }
 
 

@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from typing import Protocol
+from typing import Protocol, Self
 
 from sonolus.script.record import Record
 from sonolus.script.vec import Vec2
@@ -20,21 +20,12 @@ class Rect(Record):
     l: float  # noqa: E741
 
     @classmethod
-    def from_xywh(cls, x: float, y: float, w: float, h: float) -> Rect:
+    def from_center(cls, center: Vec2, dimensions: Vec2) -> Rect:
         return cls(
-            t=y + h,
-            r=x + w,
-            b=y,
-            l=x,
-        )
-
-    @classmethod
-    def from_center(cls, x: float, y: float, w: float, h: float) -> Rect:
-        return cls(
-            t=y + h / 2,
-            r=x + w / 2,
-            b=y - h / 2,
-            l=x - w / 2,
+            t=center.y + dimensions.y / 2,
+            r=center.x + dimensions.x / 2,
+            b=center.y - dimensions.y / 2,
+            l=center.x - dimensions.x / 2,
         )
 
     @property
@@ -99,19 +90,37 @@ class Rect(Record):
             br=self.br,
         )
 
-    def scale(self, x: float, y: float | None, /):
-        if y is None:
-            y = x
-        self.l *= x
-        self.r *= x
-        self.t *= y
-        self.b *= y
+    def scale(self, factor: Vec2, /) -> Self:
+        return Rect(
+            t=self.t * factor.y,
+            r=self.r * factor.x,
+            b=self.b * factor.y,
+            l=self.l * factor.x,
+        )
 
-    def translate(self, x: float, y: float, /):
-        self.l += x
-        self.r += x
-        self.t += y
-        self.b += y
+    def expand(self, expansion: Vec2, /) -> Self:
+        return Rect(
+            t=self.t + expansion.y,
+            r=self.r + expansion.x,
+            b=self.b - expansion.y,
+            l=self.l - expansion.x,
+        )
+
+    def shrink(self, shrinkage: Vec2, /) -> Self:
+        return Rect(
+            t=self.t - shrinkage.y,
+            r=self.r - shrinkage.x,
+            b=self.b + shrinkage.y,
+            l=self.l + shrinkage.x,
+        )
+
+    def translate(self, translation: Vec2, /) -> Self:
+        return Rect(
+            t=self.t + translation.y,
+            r=self.r + translation.x,
+            b=self.b + translation.y,
+            l=self.l + translation.x,
+        )
 
 
 class QuadLike(Protocol):

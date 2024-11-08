@@ -3,7 +3,7 @@ from __future__ import annotations
 import inspect
 from collections.abc import Callable
 from dataclasses import dataclass
-from enum import Enum
+from enum import Enum, StrEnum
 from types import FunctionType
 from typing import Annotated, Any, ClassVar, Self, get_origin
 
@@ -11,7 +11,7 @@ from sonolus.backend.ir import IRConst, IRInstr
 from sonolus.backend.mode import Mode
 from sonolus.backend.ops import Op
 from sonolus.script.bucket import Bucket, Judgment
-from sonolus.script.callbacks import PLAY_CALLBACKS, WATCH_ARCHETYPE_CALLBACKS, CallbackInfo
+from sonolus.script.callbacks import PLAY_CALLBACKS, PREVIEW_CALLBACKS, WATCH_ARCHETYPE_CALLBACKS, CallbackInfo
 from sonolus.script.internal.context import ctx
 from sonolus.script.internal.descriptor import SonolusDescriptor
 from sonolus.script.internal.generic import validate_concrete_type
@@ -174,11 +174,11 @@ _annotation_defaults: dict[Callable, ArchetypeFieldInfo] = {
 
 
 class StandardImport:
-    Beat = Annotated[float, imported(name="#BEAT")]
-    Bpm = Annotated[float, imported(name="#BPM")]
-    Timescale = Annotated[float, imported(name="#TIMESCALE")]
-    Judgment = Annotated[int, imported(name="#JUDGMENT")]
-    Accuracy = Annotated[float, imported(name="#ACCURACY")]
+    BEAT = Annotated[float, imported(name="#BEAT")]
+    BPM = Annotated[float, imported(name="#BPM")]
+    TIMESCALE = Annotated[float, imported(name="#TIMESCALE")]
+    JUDGMENT = Annotated[int, imported(name="#JUDGMENT")]
+    ACCURACY = Annotated[float, imported(name="#ACCURACY")]
 
 
 def callback[T: Callable](order: int) -> Callable[[T], T]:
@@ -559,16 +559,42 @@ class WatchArchetype(BaseArchetype):
         self.result.target_time = value
 
 
+class PreviewArchetype(BaseArchetype):
+    _supported_callbacks_ = PREVIEW_CALLBACKS
+
+    def preprocess(self):
+        pass
+
+    def render(self):
+        pass
+
+    @property
+    def _info(self) -> PreviewEntityInfo:
+        if not ctx():
+            raise RuntimeError("Calling info is only allowed within a callback")
+        match self._data_:
+            case ArchetypeSelfData():
+                return deref(ctx().blocks.EntityInfo, 0, PreviewEntityInfo)
+            case ArchetypeReferenceData(index=index):
+                return deref(ctx().blocks.EntityInfoArray, index * PreviewEntityInfo._size_(), PreviewEntityInfo)
+            case _:
+                raise RuntimeError("Info is only accessible from the entity itself")
+
+    @property
+    def index(self) -> int:
+        return self._info.index
+
+
 @meta_fn
 def entity_info_at(index: Num) -> PlayEntityInfo | WatchEntityInfo | PreviewEntityInfo:
     if not ctx():
         raise RuntimeError("Calling entity_info_at is only allowed within a callback")
     match ctx().global_state.mode:
-        case Mode.Play:
+        case Mode.PLAY:
             return deref(ctx().blocks.EntityInfoArray, index * PlayEntityInfo._size_(), PlayEntityInfo)
-        case Mode.Watch:
+        case Mode.WATCH:
             return deref(ctx().blocks.EntityInfoArray, index * WatchEntityInfo._size_(), WatchEntityInfo)
-        case Mode.Preview:
+        case Mode.PREVIEW:
             return deref(ctx().blocks.EntityInfoArray, index * PreviewEntityInfo._size_(), PreviewEntityInfo)
         case _:
             raise RuntimeError(f"Entity info is not available in mode '{ctx().global_state.mode}'")
@@ -581,7 +607,7 @@ def archetype_life_of(archetype: type[BaseArchetype] | BaseArchetype) -> Archety
     if not ctx():
         raise RuntimeError("Calling archetype_life_of is only allowed within a callback")
     match ctx().global_state.mode:
-        case Mode.Play | Mode.Watch:
+        case Mode.PLAY | Mode.WATCH:
             return deref(ctx().blocks.ArchetypeLife, archetype.id() * ArchetypeLife._size_(), ArchetypeLife)
         case _:
             raise RuntimeError(f"Archetype life is not available in mode '{ctx().global_state.mode}'")
@@ -649,3 +675,8 @@ class EntityRef[A: BaseArchetype](Record):
 
     def get(self) -> A:
         return self.archetype().at(Num(self.index))
+
+
+class StandardArchetypeName(StrEnum):
+    BPM_CHANGE = "#BPM_CHANGE"
+    TIMESCALE_CHANGE = "#TIMESCALE_CHANGE"

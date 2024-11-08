@@ -55,6 +55,12 @@ class Interval(Record):
     def __and__(self, other: Self) -> Self:
         return Interval(max(self.start, other.start), min(self.end, other.end))
 
+    def shrink(self, value: float | int) -> Self:
+        return Interval(self.start + value, self.end - value)
+
+    def expand(self, value: float | int) -> Self:
+        return Interval(self.start - value, self.end + value)
+
     def lerp(self, x: float, /) -> float:
         return lerp(self.start, self.end, x)
 
@@ -66,6 +72,9 @@ class Interval(Record):
 
     def unlerp_clamped(self, x: float, /) -> float:
         return unlerp_clamped(self.start, self.end, x)
+
+    def clamp(self, x: float, /) -> float:
+        return clamp(x, self.start, self.end)
 
 
 @native_function(Op.Lerp)
@@ -96,3 +105,8 @@ def remap(a, b, c, d, x, /):
 @native_function(Op.RemapClamped)
 def remap_clamped(a, b, c, d, x, /):
     return c + (d - c) * max(0, min(1, (x - a) / (b - a)))
+
+
+@native_function(Op.Clamp)
+def clamp(x, a, b, /):
+    return max(a, min(b, x))

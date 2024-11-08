@@ -9,6 +9,30 @@ class Vec2(Record):
     x: float
     y: float
 
+    @classmethod
+    def zero(cls) -> Self:
+        return cls(x=0, y=0)
+
+    @classmethod
+    def one(cls) -> Self:
+        return cls(x=1, y=1)
+
+    @classmethod
+    def up(cls) -> Self:
+        return cls(x=0, y=1)
+
+    @classmethod
+    def down(cls) -> Self:
+        return cls(x=0, y=-1)
+
+    @classmethod
+    def left(cls) -> Self:
+        return cls(x=-1, y=0)
+
+    @classmethod
+    def right(cls) -> Self:
+        return cls(x=1, y=0)
+
     @property
     def magnitude(self) -> Num:
         return (self.x**2 + self.y**2) ** 0.5

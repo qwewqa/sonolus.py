@@ -88,9 +88,9 @@ class Bucket(Record):
         if not ctx():
             raise RuntimeError("Bucket window access outside of compilation")
         match ctx().global_state.mode:
-            case Mode.Play:
+            case Mode.PLAY:
                 return deref(ctx().blocks.LevelBucket, self.id * JudgmentWindow._size_(), JudgmentWindow)
-            case Mode.Watch:
+            case Mode.WATCH:
                 return deref(ctx().blocks.LevelBucket, self.id * JudgmentWindow._size_(), JudgmentWindow)
             case _:
                 raise RuntimeError("Invalid mode for bucket window access")

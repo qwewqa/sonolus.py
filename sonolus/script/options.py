@@ -139,13 +139,13 @@ class OptionField(SonolusDescriptor):
     def __get__(self, instance, owner):
         if ctx():
             match ctx().global_state.mode:
-                case Mode.Play:
+                case Mode.PLAY:
                     block = ctx().blocks.LevelOption
-                case Mode.Watch:
+                case Mode.WATCH:
                     block = ctx().blocks.LevelOption
-                case Mode.Preview:
+                case Mode.PREVIEW:
                     block = ctx().blocks.PreviewOption
-                case Mode.Tutorial:
+                case Mode.TUTORIAL:
                     block = None
                 case _:
                     assert_unreachable()

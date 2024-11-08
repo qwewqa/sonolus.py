@@ -113,17 +113,17 @@ def effects[T](cls: type[T]) -> T | Effects:
 
 
 class StandardEffect:
-    Miss = Annotated[Effect, effect("#MISS")]
-    Perfect = Annotated[Effect, effect("#PERFECT")]
-    Great = Annotated[Effect, effect("#GREAT")]
-    Good = Annotated[Effect, effect("#GOOD")]
-    Hold = Annotated[Effect, effect("#HOLD")]
-    MissAlternative = Annotated[Effect, effect("#MISS_ALTERNATIVE")]
-    PerfectAlternative = Annotated[Effect, effect("#PERFECT_ALTERNATIVE")]
-    GreatAlternative = Annotated[Effect, effect("#GREAT_ALTERNATIVE")]
-    GoodAlternative = Annotated[Effect, effect("#GOOD_ALTERNATIVE")]
-    HoldAlternative = Annotated[Effect, effect("#HOLD_ALTERNATIVE")]
-    Stage = Annotated[Effect, effect("#STAGE")]
+    MISS = Annotated[Effect, effect("#MISS")]
+    PERFECT = Annotated[Effect, effect("#PERFECT")]
+    GREAT = Annotated[Effect, effect("#GREAT")]
+    GOOD = Annotated[Effect, effect("#GOOD")]
+    HOLD = Annotated[Effect, effect("#HOLD")]
+    MISS_ALTERNATIVE = Annotated[Effect, effect("#MISS_ALTERNATIVE")]
+    PERFECT_ALTERNATIVE = Annotated[Effect, effect("#PERFECT_ALTERNATIVE")]
+    GREAT_ALTERNATIVE = Annotated[Effect, effect("#GREAT_ALTERNATIVE")]
+    GOOD_ALTERNATIVE = Annotated[Effect, effect("#GOOD_ALTERNATIVE")]
+    HOLD_ALTERNATIVE = Annotated[Effect, effect("#HOLD_ALTERNATIVE")]
+    STAGE = Annotated[Effect, effect("#STAGE")]
 
 
 @effects

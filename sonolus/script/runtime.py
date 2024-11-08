@@ -7,17 +7,24 @@ from sonolus.script.globals import (
     _level_life,
     _level_score,
     _play_runtime_environment,
+    _play_runtime_ui,
+    _play_runtime_ui_configuration,
     _play_runtime_update,
+    _preview_runtime_canvas,
     _preview_runtime_environment,
+    _preview_runtime_ui,
+    _preview_runtime_ui_configuration,
     _runtime_background,
     _runtime_particle_transform,
     _runtime_skin_transform,
     _runtime_touch_array,
-    _runtime_ui,
-    _runtime_ui_configuration,
     _tutorial_runtime_environment,
+    _tutorial_runtime_ui,
+    _tutorial_runtime_ui_configuration,
     _tutorial_runtime_update,
     _watch_runtime_environment,
+    _watch_runtime_ui,
+    _watch_runtime_ui_configuration,
     _watch_runtime_update,
 )
 from sonolus.script.graphics import Quad, Rect
@@ -83,19 +90,54 @@ class _TutorialRuntimeUpdate:
     navigation_direction: int
 
 
+class ScrollDirection(IntEnum):
+    LEFT_TO_RIGHT = 0
+    TOP_TO_BOTTOM = 1
+    RIGHT_TO_LEFT = 2
+    BOTTOM_TO_TOP = 3
+
+
+@_preview_runtime_canvas
+class _PreviewRuntimeCanvas:
+    scroll_direction: ScrollDirection
+    size: float
+
+
 class RuntimeUiConfig(Record):
     scale: float
     alpha: float
 
 
-@_runtime_ui_configuration
-class _RuntimeUiConfigs:
+@_play_runtime_ui_configuration
+class _PlayRuntimeUiConfigs:
+    menu: RuntimeUiConfig
+    judgment: RuntimeUiConfig
+    combo: RuntimeUiConfig
+    primary_metric: RuntimeUiConfig
+    secondary_metric: RuntimeUiConfig
+
+
+@_watch_runtime_ui_configuration
+class _WatchRuntimeUiConfigs:
     menu: RuntimeUiConfig
     judgment: RuntimeUiConfig
     combo: RuntimeUiConfig
     primary_metric: RuntimeUiConfig
     secondary_metric: RuntimeUiConfig
     progress: RuntimeUiConfig
+
+
+@_preview_runtime_ui_configuration
+class _PreviewRuntimeUiConfigs:
+    menu: RuntimeUiConfig
+    progress: RuntimeUiConfig
+
+
+@_tutorial_runtime_ui_configuration
+class _TutorialRuntimeUiConfigs:
+    menu: RuntimeUiConfig
+    navigation: RuntimeUiConfig
+    instruction: RuntimeUiConfig
 
 
 class HorizontalAlign(IntEnum):
@@ -139,8 +181,20 @@ class RuntimeUiLayout(Record):
             self.background = background
 
 
-@_runtime_ui
-class _RuntimeUi:
+@_play_runtime_ui
+class _PlayRuntimeUi:
+    menu: RuntimeUiLayout
+    judgment: RuntimeUiLayout
+    combo_value: RuntimeUiLayout
+    combo_text: RuntimeUiLayout
+    primary_metric_bar: RuntimeUiLayout
+    primary_metric_value: RuntimeUiLayout
+    secondary_metric_bar: RuntimeUiLayout
+    secondary_metric_value: RuntimeUiLayout
+
+
+@_watch_runtime_ui
+class _WatchRuntimeUi:
     menu: RuntimeUiLayout
     judgment: RuntimeUiLayout
     combo_value: RuntimeUiLayout
@@ -150,6 +204,20 @@ class _RuntimeUi:
     secondary_metric_bar: RuntimeUiLayout
     secondary_metric_value: RuntimeUiLayout
     progress: RuntimeUiLayout
+
+
+@_preview_runtime_ui
+class _PreviewRuntimeUi:
+    menu: RuntimeUiLayout
+    progress: RuntimeUiLayout
+
+
+@_tutorial_runtime_ui
+class _TutorialRuntimeUi:
+    menu: RuntimeUiLayout
+    previous: RuntimeUiLayout
+    next: RuntimeUiLayout
+    instruction: RuntimeUiLayout
 
 
 class Touch(Record):
@@ -329,13 +397,13 @@ def is_debug() -> bool:
     if not ctx():
         return False
     match ctx().global_state.mode:
-        case Mode.Play:
+        case Mode.PLAY:
             return _PlayRuntimeEnvironment.is_debug
-        case Mode.Watch:
+        case Mode.WATCH:
             return _WatchRuntimeEnvironment.is_debug
-        case Mode.Preview:
+        case Mode.PREVIEW:
             return _PreviewRuntimeEnvironment.is_debug
-        case Mode.Tutorial:
+        case Mode.TUTORIAL:
             return _TutorialRuntimeEnvironment.is_debug
         case _:
             return False
@@ -346,13 +414,13 @@ def aspect_ratio() -> float:
     if not ctx():
         return 16 / 9
     match ctx().global_state.mode:
-        case Mode.Play:
+        case Mode.PLAY:
             return _PlayRuntimeEnvironment.aspect_ratio
-        case Mode.Watch:
+        case Mode.WATCH:
             return _WatchRuntimeEnvironment.aspect_ratio
-        case Mode.Preview:
+        case Mode.PREVIEW:
             return _PreviewRuntimeEnvironment.aspect_ratio
-        case Mode.Tutorial:
+        case Mode.TUTORIAL:
             return _TutorialRuntimeEnvironment.aspect_ratio
 
 
@@ -361,11 +429,11 @@ def audio_offset() -> float:
     if not ctx():
         return 0
     match ctx().global_state.mode:
-        case Mode.Play:
+        case Mode.PLAY:
             return _PlayRuntimeEnvironment.audio_offset
-        case Mode.Watch:
+        case Mode.WATCH:
             return _WatchRuntimeEnvironment.audio_offset
-        case Mode.Tutorial:
+        case Mode.TUTORIAL:
             return _TutorialRuntimeEnvironment.audio_offset
         case _:
             return 0
@@ -376,9 +444,9 @@ def input_offset() -> float:
     if not ctx():
         return 0
     match ctx().global_state.mode:
-        case Mode.Play:
+        case Mode.PLAY:
             return _PlayRuntimeEnvironment.input_offset
-        case Mode.Watch:
+        case Mode.WATCH:
             return _WatchRuntimeEnvironment.input_offset
         case _:
             return 0
@@ -389,7 +457,7 @@ def is_multiplayer() -> bool:
     if not ctx():
         return False
     match ctx().global_state.mode:
-        case Mode.Play:
+        case Mode.PLAY:
             return _PlayRuntimeEnvironment.is_multiplayer
         case _:
             return False
@@ -400,7 +468,7 @@ def is_replay() -> bool:
     if not ctx():
         return False
     match ctx().global_state.mode:
-        case Mode.Watch:
+        case Mode.WATCH:
             return _WatchRuntimeEnvironment.is_replay
         case _:
             return False
@@ -411,11 +479,11 @@ def time() -> float:
     if not ctx():
         return 0
     match ctx().global_state.mode:
-        case Mode.Play:
+        case Mode.PLAY:
             return _PlayRuntimeUpdate.time
-        case Mode.Watch:
+        case Mode.WATCH:
             return _WatchRuntimeUpdate.time
-        case Mode.Tutorial:
+        case Mode.TUTORIAL:
             return _TutorialRuntimeUpdate.time
         case _:
             return 0
@@ -426,11 +494,11 @@ def delta_time() -> float:
     if not ctx():
         return 0
     match ctx().global_state.mode:
-        case Mode.Play:
+        case Mode.PLAY:
             return _PlayRuntimeUpdate.delta_time
-        case Mode.Watch:
+        case Mode.WATCH:
             return _WatchRuntimeUpdate.delta_time
-        case Mode.Tutorial:
+        case Mode.TUTORIAL:
             return _TutorialRuntimeUpdate.delta_time
         case _:
             return 0
@@ -441,11 +509,11 @@ def scaled_time() -> float:
     if not ctx():
         return 0
     match ctx().global_state.mode:
-        case Mode.Play:
+        case Mode.PLAY:
             return _PlayRuntimeUpdate.scaled_time
-        case Mode.Watch:
+        case Mode.WATCH:
             return _WatchRuntimeUpdate.scaled_time
-        case Mode.Tutorial:
+        case Mode.TUTORIAL:
             return _TutorialRuntimeUpdate.time
         case _:
             return 0
@@ -456,7 +524,7 @@ def touches() -> VarArray[Touch, 999]:
     if not ctx():
         return VarArray(0, Array[Touch, 0]())
     match ctx().global_state.mode:
-        case Mode.Play:
+        case Mode.PLAY:
             return VarArray(_PlayRuntimeUpdate.touch_count, _TouchArray.touches)
         case _:
             return VarArray(0, Array[Touch, 0]())
@@ -467,7 +535,7 @@ def is_skip() -> bool:
     if not ctx():
         return False
     match ctx().global_state.mode:
-        case Mode.Watch:
+        case Mode.WATCH:
             return _WatchRuntimeUpdate.is_skip
         case _:
             return False
@@ -478,7 +546,7 @@ def navigation_direction() -> int:
     if not ctx():
         return 0
     match ctx().global_state.mode:
-        case Mode.Tutorial:
+        case Mode.TUTORIAL:
             return _TutorialRuntimeUpdate.navigation_direction
         case _:
             return 0
@@ -510,8 +578,18 @@ def set_background(value: Quad):
     _Background.value = value
 
 
-runtime_ui = _RuntimeUi
-runtime_ui_configs = _RuntimeUiConfigs
+play_ui = _PlayRuntimeUi
+play_ui_configs = _PlayRuntimeUiConfigs
+watch_ui = _WatchRuntimeUi
+watch_ui_configs = _WatchRuntimeUiConfigs
+preview_ui = _PreviewRuntimeUi
+preview_ui_configs = _PreviewRuntimeUiConfigs
+tutorial_ui = _TutorialRuntimeUi
+tutorial_ui_configs = _TutorialRuntimeUiConfigs
+
+
+def canvas() -> _PreviewRuntimeCanvas:
+    return _PreviewRuntimeCanvas
 
 
 def screen() -> Rect:

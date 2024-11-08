@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 from sonolus.build.collection import Asset
-from sonolus.script.archetype import PlayArchetype, StandardImport
+from sonolus.script.archetype import PlayArchetype, StandardArchetypeName, StandardImport
 
 
 class Level:
@@ -39,14 +39,14 @@ class LevelData:
 
 
 class BpmChange(PlayArchetype):
-    name = "#BPM_CHANGE"
+    name = StandardArchetypeName.BPM_CHANGE
 
-    beat: StandardImport.Beat
-    bpm: StandardImport.Bpm
+    beat: StandardImport.BEAT
+    bpm: StandardImport.BPM
 
 
 class TimescaleChange(PlayArchetype):
-    name = "#TIMESCALE_CHANGE"
+    name = StandardArchetypeName.TIMESCALE_CHANGE
 
-    beat: StandardImport.Beat
-    timescale: StandardImport.Timescale
+    beat: StandardImport.BEAT
+    timescale: StandardImport.TIMESCALE

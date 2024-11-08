@@ -7,10 +7,10 @@ from sonolus.backend.blocks import Block, PlayBlock, PreviewBlock, TutorialBlock
 class Mode(Enum):
     blocks: type[Block]
 
-    Play = (PlayBlock,)
-    Watch = (WatchBlock,)
-    Preview = (PreviewBlock,)
-    Tutorial = (TutorialBlock,)
+    PLAY = (PlayBlock,)
+    WATCH = (WatchBlock,)
+    PREVIEW = (PreviewBlock,)
+    TUTORIAL = (TutorialBlock,)
 
     def __init__(self, blocks: type[Block]):
         self.blocks = blocks
