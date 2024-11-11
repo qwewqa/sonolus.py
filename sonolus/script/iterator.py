@@ -180,6 +180,9 @@ class ArrayReverser[V: ArrayLike](Record, ArrayLike):
     def __setitem__(self, index: Num, value: V):
         self.array[self.size() - 1 - index] = value
 
+    def reversed(self) -> ArrayLike[V]:
+        return self.array
+
 
 class Enumerator[V: SonolusIterator](Record, SonolusIterator):
     i: int

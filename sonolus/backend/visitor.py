@@ -622,6 +622,8 @@ class Visitor(ast.NodeVisitor):
 
     def visit_Call(self, node):
         fn = self.visit(node.func)
+        if fn is Num:
+            raise ValueError("Calling int/bool/float is not supported")
         args = []
         kwargs = {}
         for arg in node.args:

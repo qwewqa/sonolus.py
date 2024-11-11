@@ -7,12 +7,15 @@ from pathlib import Path
 
 from sonolus.backend.mode import Mode
 from sonolus.build.compile import compile_mode
-from sonolus.build.defaults import EMPTY_ENGINE_TUTORIAL_DATA
 from sonolus.script.archetype import BaseArchetype
 from sonolus.script.bucket import Buckets
-from sonolus.script.callbacks import update_spawn_callback
+from sonolus.script.callbacks import navigate_callback, preprocess_callback, update_callback, update_spawn_callback
 from sonolus.script.effect import Effects
 from sonolus.script.engine import EngineData
+from sonolus.script.instruction import (
+    TutorialInstructionIcons,
+    TutorialInstructions,
+)
 from sonolus.script.internal.context import ReadOnlyMemory
 from sonolus.script.options import Options
 from sonolus.script.particle import Particles
@@ -61,17 +64,28 @@ def package_engine(engine: EngineData):
         rom=rom,
         update_spawn=engine.watch.update_spawn,
     )
-    preview_mode = build_preview_mode(
+    preview_data = build_preview_mode(
         archetypes=engine.preview.archetypes,
         skin=engine.preview.skin,
+        rom=rom,
+    )
+    tutorial_data = build_tutorial_mode(
+        skin=engine.tutorial.skin,
+        effects=engine.tutorial.effects,
+        particles=engine.tutorial.particles,
+        instructions=engine.tutorial.instructions,
+        instruction_icons=engine.tutorial.instruction_icons,
+        preprocess=engine.tutorial.preprocess,
+        navigate=engine.tutorial.navigate,
+        update=engine.tutorial.update,
         rom=rom,
     )
     return PackagedEngine(
         configuration=package_output(configuration),
         play_data=package_output(play_data),
         watch_data=package_output(watch_data),
-        preview_data=package_output(preview_mode),
-        tutorial_data=package_output(EMPTY_ENGINE_TUTORIAL_DATA),
+        preview_data=package_output(preview_data),
+        tutorial_data=package_output(tutorial_data),
         rom=package_rom(rom),
     )
 
@@ -134,6 +148,35 @@ def build_preview_mode(
     }
 
 
+def build_tutorial_mode(
+    skin: Skin,
+    effects: Effects,
+    particles: Particles,
+    instructions: TutorialInstructions,
+    instruction_icons: TutorialInstructionIcons,
+    preprocess: Callable[[], None],
+    navigate: Callable[[int], None],
+    update: Callable[[], None],
+    rom: ReadOnlyMemory,
+):
+    return {
+        **compile_mode(
+            mode=Mode.TUTORIAL,
+            rom=rom,
+            archetypes=[],
+            global_callbacks=[
+                (preprocess_callback, preprocess),
+                (navigate_callback, navigate),
+                (update_callback, update),
+            ],
+        ),
+        "skin": build_skin(skin),
+        "effect": build_effects(effects),
+        "particle": build_particles(particles),
+        "instruction": build_instructions(instructions, instruction_icons),
+    }
+
+
 def build_skin(skin: Skin) -> JsonValue:
     return {"sprites": [{"name": name, "id": i} for i, name in enumerate(skin._sprites_)]}
 
@@ -148,6 +191,13 @@ def build_particles(particles: Particles) -> JsonValue:
 
 def build_buckets(buckets: Buckets) -> JsonValue:
     return [bucket.to_dict() for bucket in buckets._buckets_]
+
+
+def build_instructions(instructions: TutorialInstructions, instruction_icons: TutorialInstructionIcons) -> JsonValue:
+    return {
+        "texts": [{"name": name, "id": i} for i, name in enumerate(instructions._instructions_)],
+        "icons": [{"name": name, "id": i} for i, name in enumerate(instruction_icons._instruction_icons_)],
+    }
 
 
 def package_rom(rom: ReadOnlyMemory) -> bytes:

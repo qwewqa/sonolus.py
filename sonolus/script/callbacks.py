@@ -81,6 +81,18 @@ render_callback = CallbackInfo(
     supports_order=False,
     returns_value=False,
 )
+navigate_callback = CallbackInfo(
+    name="navigate",
+    py_name="navigate",
+    supports_order=False,
+    returns_value=False,
+)
+update_callback = CallbackInfo(
+    name="update",
+    py_name="update",
+    supports_order=False,
+    returns_value=False,
+)
 
 
 def _by_name(*callbacks: CallbackInfo) -> dict[str, CallbackInfo]:

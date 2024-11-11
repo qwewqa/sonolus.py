@@ -1,6 +1,6 @@
 from typing import Self
 
-from sonolus.script.math import atan2
+from sonolus.script.math import atan2, cos, sin
 from sonolus.script.num import Num
 from sonolus.script.record import Record
 
@@ -43,6 +43,12 @@ class Vec2(Record):
 
     def dot(self, other: Self) -> Num:
         return self.x * other.x + self.y * other.y
+
+    def rotate(self, angle: Num) -> Self:
+        return Vec2(
+            x=self.x * cos(angle) - self.y * sin(angle),
+            y=self.x * sin(angle) + self.y * cos(angle),
+        )
 
     @property
     def tuple(self) -> tuple[float, float]:

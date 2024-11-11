@@ -18,6 +18,7 @@ from sonolus.script.globals import (
     _runtime_particle_transform,
     _runtime_skin_transform,
     _runtime_touch_array,
+    _tutorial_instruction,
     _tutorial_runtime_environment,
     _tutorial_runtime_ui,
     _tutorial_runtime_ui_configuration,
@@ -181,6 +182,37 @@ class RuntimeUiLayout(Record):
             self.background = background
 
 
+class BasicRuntimeUiLayout(Record):
+    anchor: Vec2
+    pivot: Vec2
+    dimensions: Vec2
+    rotation: float
+    alpha: float
+    background: bool
+
+    def update(
+        self,
+        anchor: Vec2 | None = None,
+        pivot: Vec2 | None = None,
+        dimensions: Vec2 | None = None,
+        rotation: float | None = None,
+        alpha: float | None = None,
+        background: bool | None = None,
+    ):
+        if anchor is not None:
+            self.anchor = anchor
+        if pivot is not None:
+            self.pivot = pivot
+        if dimensions is not None:
+            self.dimensions = dimensions
+        if rotation is not None:
+            self.rotation = rotation
+        if alpha is not None:
+            self.alpha = alpha
+        if background is not None:
+            self.background = background
+
+
 @_play_runtime_ui
 class _PlayRuntimeUi:
     menu: RuntimeUiLayout
@@ -208,16 +240,16 @@ class _WatchRuntimeUi:
 
 @_preview_runtime_ui
 class _PreviewRuntimeUi:
-    menu: RuntimeUiLayout
-    progress: RuntimeUiLayout
+    menu: BasicRuntimeUiLayout
+    progress: BasicRuntimeUiLayout
 
 
 @_tutorial_runtime_ui
 class _TutorialRuntimeUi:
-    menu: RuntimeUiLayout
-    previous: RuntimeUiLayout
-    next: RuntimeUiLayout
-    instruction: RuntimeUiLayout
+    menu: BasicRuntimeUiLayout
+    previous: BasicRuntimeUiLayout
+    next: BasicRuntimeUiLayout
+    instruction: BasicRuntimeUiLayout
 
 
 class Touch(Record):
@@ -390,6 +422,11 @@ class _LevelLife:
             self.consecutive_good_increment = consecutive_good_increment
         if consecutive_good_step is not None:
             self.consecutive_good_step = consecutive_good_step
+
+
+@_tutorial_instruction
+class _TutorialInstruction:
+    text_id: int
 
 
 @meta_fn
