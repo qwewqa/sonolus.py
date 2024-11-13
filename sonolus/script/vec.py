@@ -50,6 +50,9 @@ class Vec2(Record):
             y=self.x * sin(angle) + self.y * cos(angle),
         )
 
+    def rotate_about(self, angle: Num, pivot: Self) -> Self:
+        return (self - pivot).rotate(angle) + pivot
+
     @property
     def tuple(self) -> tuple[float, float]:
         return self.x, self.y

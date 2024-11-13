@@ -12,6 +12,66 @@ class Quad(Record):
     tr: Vec2
     br: Vec2
 
+    @property
+    def center(self) -> Vec2:
+        return (self.bl + self.tr + self.tl + self.br) / 4
+
+    def translate(self, translation: Vec2, /) -> Self:
+        return Quad(
+            bl=self.bl + translation,
+            tl=self.tl + translation,
+            tr=self.tr + translation,
+            br=self.br + translation,
+        )
+
+    def scale(self, factor: Vec2, /) -> Self:
+        return Quad(
+            bl=self.bl * factor,
+            tl=self.tl * factor,
+            tr=self.tr * factor,
+            br=self.br * factor,
+        )
+
+    def scale_about(self, factor: Vec2, /, pivot: Vec2) -> Self:
+        return Quad(
+            bl=(self.bl - pivot) * factor + pivot,
+            tl=(self.tl - pivot) * factor + pivot,
+            tr=(self.tr - pivot) * factor + pivot,
+            br=(self.br - pivot) * factor + pivot,
+        )
+
+    def scale_centered(self, factor: Vec2, /) -> Self:
+        return Quad(
+            bl=self.bl * factor,
+            tl=self.tl * factor,
+            tr=self.tr * factor,
+            br=self.br * factor,
+        ).translate(self.center * (Vec2(1, 1) - factor))
+
+    def rotate(self, angle: float, /) -> Self:
+        return Quad(
+            bl=self.bl.rotate(angle),
+            tl=self.tl.rotate(angle),
+            tr=self.tr.rotate(angle),
+            br=self.br.rotate(angle),
+        )
+
+    def rotate_about(
+        self,
+        angle: float,
+        /,
+        pivot: Vec2,
+    ) -> Self:
+        return Quad(
+            bl=self.bl.rotate_about(angle, pivot),
+            tl=self.tl.rotate_about(angle, pivot),
+            tr=self.tr.rotate_about(angle, pivot),
+            br=self.br.rotate_about(angle, pivot),
+        )
+
+    def rotate_centered(self, angle: float, /) -> Self:
+        return self.rotate_about(angle, self.center)
+
 
 class Rect(Record):
     t: float
@@ -29,38 +89,12 @@ class Rect(Record):
         )
 
     @property
-    def x(self) -> float:
-        return self.l
-
-    @x.setter
-    def x(self, value: float):
-        self.r += value - self.l
-        self.l = value
-
-    @property
-    def y(self) -> float:
-        return self.t
-
-    @y.setter
-    def y(self, value: float):
-        self.b += value - self.t
-        self.t = value
-
-    @property
     def w(self) -> float:
         return self.r - self.l
-
-    @w.setter
-    def w(self, value: float):
-        self.r = self.l + value
 
     @property
     def h(self) -> float:
         return self.t - self.b
-
-    @h.setter
-    def h(self, value: float):
-        self.t = self.b + value
 
     @property
     def bl(self) -> Vec2:
@@ -90,6 +124,14 @@ class Rect(Record):
             br=self.br,
         )
 
+    def translate(self, translation: Vec2, /) -> Self:
+        return Rect(
+            t=self.t + translation.y,
+            r=self.r + translation.x,
+            b=self.b + translation.y,
+            l=self.l + translation.x,
+        )
+
     def scale(self, factor: Vec2, /) -> Self:
         return Rect(
             t=self.t * factor.y,
@@ -97,6 +139,22 @@ class Rect(Record):
             b=self.b * factor.y,
             l=self.l * factor.x,
         )
+
+    def scale_about(self, factor: Vec2, /, pivot: Vec2) -> Self:
+        return Rect(
+            t=(self.t - pivot.y) * factor.y + pivot.y,
+            r=(self.r - pivot.x) * factor.x + pivot.x,
+            b=(self.b - pivot.y) * factor.y + pivot.y,
+            l=(self.l - pivot.x) * factor.x + pivot.x,
+        )
+
+    def scale_centered(self, factor: Vec2, /) -> Self:
+        return Rect(
+            t=self.t * factor.y,
+            r=self.r * factor.x,
+            b=self.b * factor.y,
+            l=self.l * factor.x,
+        ).translate(self.center * (Vec2(1, 1) - factor))
 
     def expand(self, expansion: Vec2, /) -> Self:
         return Rect(
@@ -112,14 +170,6 @@ class Rect(Record):
             r=self.r - shrinkage.x,
             b=self.b + shrinkage.y,
             l=self.l + shrinkage.x,
-        )
-
-    def translate(self, translation: Vec2, /) -> Self:
-        return Rect(
-            t=self.t + translation.y,
-            r=self.r + translation.x,
-            b=self.b + translation.y,
-            l=self.l + translation.x,
         )
 
 

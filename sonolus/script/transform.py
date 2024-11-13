@@ -19,6 +19,7 @@ class Transform2d(Record):
 
     @classmethod
     def new(cls) -> Self:
+        """Create a new identity transform."""
         return cls(
             1, 0, 0,
             0, 1, 0,
@@ -47,6 +48,7 @@ class Transform2d(Record):
         )
 
     def translate(self, translation: Vec2, /) -> Self:
+        """Translate along the x and y axes."""
         return self._compose(
             1, 0, translation.x,
             0, 1, translation.y,
@@ -54,13 +56,19 @@ class Transform2d(Record):
         )
 
     def scale(self, factor: Vec2, /) -> Self:
+        """Scale around the origin."""
         return self._compose(
             factor.x, 0, 0,
             0, factor.y, 0,
             0, 0,
         )
 
-    def rotate(self, angle: float) -> Self:
+    def scale_about(self, factor: Vec2, /, pivot: Vec2) -> Self:
+        """Scale around the pivot."""
+        return self.translate(-pivot).scale(factor).translate(pivot)
+
+    def rotate(self, angle: float, /) -> Self:
+        """Rotate around the origin."""
         c = cos(angle)
         s = sin(angle)
         return self._compose(
@@ -69,7 +77,11 @@ class Transform2d(Record):
             0, 0,
         )
 
-    def shear_x(self, m: float) -> Self:
+    def rotate_about(self, angle: float, /, pivot: Vec2) -> Self:
+        """Rotate around the pivot."""
+        return self.translate(-pivot).rotate(angle).translate(pivot)
+
+    def shear_x(self, m: float, /) -> Self:
         """Shear along the x-axis."""
         return self._compose(
             1, m, 0,
@@ -77,7 +89,7 @@ class Transform2d(Record):
             0, 0,
         )
 
-    def shear_y(self, m: float) -> Self:
+    def shear_y(self, m: float, /) -> Self:
         """Shear along the y-axis."""
         return self._compose(
             1, 0, 0,
@@ -85,14 +97,31 @@ class Transform2d(Record):
             0, 0,
         )
 
-    def perspective_vanish_y(self, y: float) -> Self:
+    def perspective_vanish_y(self, y: float, /) -> Self:
+        """Apply perspective vanish along the y-axis with vanish point at the given y coordinate."""
         return self._compose(
             1, 0, 0,
             0, 1, 0,
             0, 1 / y,
         )
 
+    def perspective(self, foreground_y, vanishing_point: Vec2, /) -> Self:
+        """Apply a perspective transformation.
+
+        Values at the given foreground y will stay the same after this transformation.
+        As the original y coordinates approach infinity in the direction of the vanishing point,
+        the transformed x and y coordinates will approach the vanishing point.
+        """
+        return (
+            self
+            .translate(Vec2(0, -foreground_y))
+            .perspective_vanish_y(vanishing_point.y - foreground_y)
+            .shear_x(vanishing_point.x / (vanishing_point.y - foreground_y))
+            .translate(Vec2(0, foreground_y))
+        )
+
     def compose(self, other: Self) -> Self:
+        """Compose with another transform which is applied after this transform."""
         return self._compose(
             other.a00, other.a01, other.a02,
             other.a10, other.a11, other.a12,
