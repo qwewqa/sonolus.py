@@ -1,21 +1,31 @@
 from datetime import timedelta
+from math import cos, sin
 
 from hypothesis import assume, given, settings
 from hypothesis import strategies as st
-from script.conftest import is_close
+from hypothesis.stateful import RuleBasedStateMachine, invariant, precondition, rule
 
 from sonolus.script.transform import Transform2d
 from sonolus.script.vec import Vec2
-from tests.script.conftest import validate_dual_run
+from tests.script.conftest import is_close, validate_dual_run
 
-ints = st.integers(min_value=-999, max_value=999)
-floats = st.floats(min_value=-999, max_value=999, allow_nan=False, allow_infinity=False)
+# Use smaller limits to avoid precision issues.
+# In practice, it's rare to see large arguments anyway
+floats = st.floats(min_value=-99, max_value=99, allow_nan=False, allow_infinity=False)
+nonzero_floats = floats.filter(lambda x: abs(x) > 1e-2)
 
 
 @st.composite
 def vecs(draw):
     x = draw(floats)
     y = draw(floats)
+    return Vec2(x, y)
+
+
+@st.composite
+def vecs_nonzero(draw):
+    x = draw(nonzero_floats)
+    y = draw(nonzero_floats)
     return Vec2(x, y)
 
 
@@ -33,13 +43,101 @@ def test_translate(v, t):
 
 
 @given(
+    v=vecs(),
+    factor=vecs(),
+)
+@settings(deadline=timedelta(milliseconds=1000))
+def test_scale(v, factor):
+    def fn():
+        transform = Transform2d.new().scale(factor)
+        return transform.transform_vec(v)
+
+    assert validate_dual_run(fn) == v * factor
+
+
+@given(
+    v=vecs(),
+    factor=vecs(),
+    pivot=vecs(),
+)
+@settings(deadline=timedelta(milliseconds=1000))
+def test_scale_around(v, factor, pivot):
+    def fn():
+        transform = Transform2d.new().scale_about(factor, pivot)
+        return transform.transform_vec(v)
+
+    result = validate_dual_run(fn)
+    assert is_close(result.x, pivot.x + (v.x - pivot.x) * factor.x, rel_tol=1e-6, abs_tol=1e-6)
+    assert is_close(result.y, pivot.y + (v.y - pivot.y) * factor.y, rel_tol=1e-6, abs_tol=1e-6)
+
+
+@given(
+    v=vecs(),
+    angle=floats,
+)
+@settings(deadline=timedelta(milliseconds=1000))
+def test_rotate(v, angle):
+    def fn():
+        transform = Transform2d.new().rotate(angle)
+        return transform.transform_vec(v)
+
+    assert validate_dual_run(fn) == v.rotate(angle)
+
+
+@given(
+    v=vecs(),
+    angle=floats,
+    pivot=vecs(),
+)
+@settings(deadline=timedelta(milliseconds=1000))
+def test_rotate_around(v, angle, pivot):
+    def fn():
+        transform = Transform2d.new().rotate_about(angle, pivot)
+        return transform.transform_vec(v)
+
+    result = validate_dual_run(fn)
+    assert is_close(
+        result.x, pivot.x + (v.x - pivot.x) * cos(angle) - (v.y - pivot.y) * sin(angle), rel_tol=1e-6, abs_tol=1e-6
+    )
+    assert is_close(
+        result.y, pivot.y + (v.x - pivot.x) * sin(angle) + (v.y - pivot.y) * cos(angle), rel_tol=1e-6, abs_tol=1e-6
+    )
+
+
+@given(
+    v=vecs(),
+    m=floats,
+)
+@settings(deadline=timedelta(milliseconds=1000))
+def test_shear_x(v, m):
+    def fn():
+        transform = Transform2d.new().shear_x(m)
+        return transform.transform_vec(v)
+
+    assert validate_dual_run(fn) == Vec2(v.x + v.y * m, v.y)
+
+
+@given(
+    v=vecs(),
+    m=floats,
+)
+@settings(deadline=timedelta(milliseconds=1000))
+def test_shear_y(v, m):
+    def fn():
+        transform = Transform2d.new().shear_y(m)
+        return transform.transform_vec(v)
+
+    assert validate_dual_run(fn) == Vec2(v.x, v.x * m + v.y)
+
+
+@given(
     v_x=floats,
     foreground_y=floats,
     vanishing_point=vecs(),
 )
 @settings(deadline=timedelta(milliseconds=1000))
 def test_perspective_at_foreground(v_x, foreground_y, vanishing_point):
-    v = Vec2(v_x, foreground_y)
+    v = Vec2(v_x, 0)
     assume(abs(foreground_y - vanishing_point.y) > 1e-2)
 
     def fn():
@@ -68,3 +166,92 @@ def test_perspective_at_infinity(v_x, foreground_y, vanishing_point):
     result = validate_dual_run(fn)
     assert is_close(result.x, vanishing_point.x, rel_tol=1e-3, abs_tol=1e-3)
     assert is_close(result.y, vanishing_point.y, rel_tol=1e-3, abs_tol=1e-3)
+
+
+class TransformInverse(RuleBasedStateMachine):
+    SCALE_THRESHOLD = 1e9
+
+    def __init__(self):
+        super().__init__()
+        self.transform = Transform2d.new()
+        self.inverse = Transform2d.new()
+
+        # Some operations can lead to compounding precision error, so we limit the count
+        self.scale_count = 0
+        self.shear_count = 0
+        self.perspective_count = 0
+
+    @rule(translation=vecs())
+    def translate(self, translation):
+        self.transform = self.transform.translate(translation)
+        self.inverse = Transform2d.new().translate(-translation).compose(self.inverse)
+
+    @precondition(lambda self: self.scale_count < 2)
+    @rule(factor=vecs_nonzero())
+    def scale(self, factor):
+        self.transform = self.transform.scale(factor)
+        self.inverse = Transform2d.new().scale(Vec2.one() / factor).compose(self.inverse)
+        self.scale_count += 1
+
+    @precondition(lambda self: self.scale_count < 2)
+    @rule(factor=vecs_nonzero(), pivot=vecs())
+    def scale_about(self, factor, pivot):
+        self.transform = self.transform.scale_about(factor, pivot)
+        self.inverse = Transform2d.new().scale_about(Vec2.one() / factor, pivot).compose(self.inverse)
+        self.scale_count += 1
+
+    @rule(angle=floats)
+    def rotate(self, angle):
+        self.transform = self.transform.rotate(angle)
+        self.inverse = Transform2d.new().rotate(-angle).compose(self.inverse)
+
+    @rule(angle=floats, pivot=vecs())
+    def rotate_about(self, angle, pivot):
+        self.transform = self.transform.rotate_about(angle, pivot)
+        self.inverse = Transform2d.new().rotate_about(-angle, pivot).compose(self.inverse)
+
+    @precondition(lambda self: self.shear_count < 2)
+    @rule(m=floats)
+    def shear_x(self, m):
+        self.transform = self.transform.shear_x(m)
+        self.inverse = Transform2d.new().shear_x(-m).compose(self.inverse)
+        self.shear_count += 1
+
+    @precondition(lambda self: self.shear_count < 3)
+    @rule(m=floats)
+    def shear_y(self, m):
+        self.transform = self.transform.shear_y(m)
+        self.inverse = Transform2d.new().shear_y(-m).compose(self.inverse)
+        self.shear_count += 1
+
+    @precondition(lambda self: self.perspective_count < 2)
+    @rule(y=nonzero_floats)
+    def perspective_vanish_y(self, y):
+        self.transform = self.transform.perspective_vanish_y(y)
+        self.inverse = Transform2d.new().perspective_vanish_y(-y).compose(self.inverse)
+        self.perspective_count += 1
+
+    @precondition(lambda self: self.perspective_count < 2)
+    @rule(foreground_y=floats, vanishing_point=vecs())
+    def perspective(self, foreground_y, vanishing_point):
+        assume(abs(foreground_y - vanishing_point.y) > 1e-2)
+        self.transform = self.transform.perspective(foreground_y, vanishing_point)
+        self.inverse = Transform2d.new().inverse_perspective(foreground_y, vanishing_point).compose(self.inverse)
+        self.perspective_count += 1
+
+    @invariant()
+    def inverse_cancels(self):
+        combo = self.transform.compose(self.inverse).normalize()
+        abs_tol = 1e-2
+        assert is_close(combo.a00, 1, abs_tol=abs_tol)
+        assert is_close(combo.a01, 0, abs_tol=abs_tol)
+        assert is_close(combo.a02, 0, abs_tol=abs_tol)
+        assert is_close(combo.a10, 0, abs_tol=abs_tol)
+        assert is_close(combo.a11, 1, abs_tol=abs_tol)
+        assert is_close(combo.a12, 0, abs_tol=abs_tol)
+        assert is_close(combo.a20, 0, abs_tol=abs_tol)
+        assert is_close(combo.a21, 0, abs_tol=abs_tol)
+        assert is_close(combo.a22, 1, abs_tol=abs_tol)
+
+
+TestTransformInverse = TransformInverse.TestCase

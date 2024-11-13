@@ -308,6 +308,7 @@ class _SkinTransform:
             a12=Num(values[1 * 4 + 3]),
             a20=Num(values[3 * 4 + 0]),
             a21=Num(values[3 * 4 + 1]),
+            a22=Num(values[3 * 4 + 3]),
         )
 
 
@@ -328,6 +329,7 @@ class _ParticleTransform:
             a12=Num(values[1 * 4 + 3]),
             a20=Num(values[3 * 4 + 0]),
             a21=Num(values[3 * 4 + 1]),
+            a22=Num(values[3 * 4 + 3]),
         )
 
 
