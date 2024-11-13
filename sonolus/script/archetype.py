@@ -10,6 +10,7 @@ from typing import Annotated, Any, ClassVar, Self, get_origin
 from sonolus.backend.ir import IRConst, IRInstr
 from sonolus.backend.mode import Mode
 from sonolus.backend.ops import Op
+from sonolus.backend.place import BlockPlace
 from sonolus.script.bucket import Bucket, Judgment
 from sonolus.script.callbacks import PLAY_CALLBACKS, PREVIEW_CALLBACKS, WATCH_ARCHETYPE_CALLBACKS, CallbackInfo
 from sonolus.script.internal.context import ctx
@@ -80,7 +81,7 @@ class ArchetypeField(SonolusDescriptor):
                     case ArchetypeReferenceData(index=index):
                         result = deref(
                             ctx().blocks.EntitySharedMemoryArray,
-                            self.offset + index * ENTITY_SHARED_MEMORY_SIZE,
+                            Num._accept_(self.offset) + index * ENTITY_SHARED_MEMORY_SIZE,
                             self.type,
                         )
                     case ArchetypeLevelData():
@@ -135,7 +136,7 @@ class ArchetypeField(SonolusDescriptor):
                     case ArchetypeReferenceData(index=index):
                         target = deref(
                             ctx().blocks.EntitySharedMemoryArray,
-                            self.offset + index * ENTITY_SHARED_MEMORY_SIZE,
+                            Num._accept_(self.offset) + index * ENTITY_SHARED_MEMORY_SIZE,
                             self.type,
                         )
                     case ArchetypeLevelData():
@@ -257,7 +258,7 @@ class BaseArchetype:
     @meta_fn
     def at(cls, index: Num) -> Self:
         result = cls._new()
-        result._data_ = ArchetypeReferenceData(index=index)
+        result._data_ = ArchetypeReferenceData(index=Num._accept_(index))
         return result
 
     @classmethod
@@ -283,13 +284,13 @@ class BaseArchetype:
             data.extend(field.type._accept_(bound.arguments[field.name] or zeros(field.type))._to_list_())
         native_call(Op.Spawn, archetype_id, *(Num(x) for x in data))
 
-    def _level_data_entries(self):
+    def _level_data_entries(self, level_refs: dict[Any, int] | None = None):
         if not isinstance(self._data_, ArchetypeLevelData):
             raise RuntimeError("Entity is not level data")
         entries = []
         for name, value in self._data_.values.items():
             field_info = self._imported_fields_.get(name)
-            for k, v in value._to_flat_dict_(field_info.data_name).items():
+            for k, v in value._to_flat_dict_(field_info.data_name, level_refs).items():
                 entries.append({"name": k, "value": v})
         return entries
 
@@ -484,6 +485,13 @@ class PlayArchetype(BaseArchetype):
             case _:
                 raise RuntimeError("Result is only accessible from the entity itself")
 
+    def ref(self):
+        if not isinstance(self._data_, ArchetypeLevelData):
+            raise RuntimeError("Entity is not level data")
+        result = EntityRef[type(self)](index=-1)
+        result._ref_ = self
+        return result
+
 
 class WatchArchetype(BaseArchetype):
     _supported_callbacks_ = WATCH_ARCHETYPE_CALLBACKS
@@ -674,7 +682,16 @@ class EntityRef[A: BaseArchetype](Record):
         return cls._get_type_arg_(A)
 
     def get(self) -> A:
-        return self.archetype().at(Num(self.index))
+        return self.archetype().at(self.index)
+
+    def _to_list_(self, level_refs: dict[Any, int] | None = None) -> list[float | BlockPlace]:
+        ref = getattr(self, "_ref_", None)
+        if ref is None:
+            return [self.index]
+        else:
+            if ref not in level_refs:
+                raise KeyError("Reference to entity not in level data")
+            return [level_refs[ref]]
 
 
 class StandardArchetypeName(StrEnum):

@@ -111,7 +111,7 @@ class Record(GenericValue):
             values[field.name] = value._get_()
         for type_param in cls.__type_params__:
             if type_param not in type_vars:
-                raise TypeError(f"Type parameter {type_param} is not used")
+                raise TypeError(f"Type parameter {type_param} cannot be inferred and must be provided explicitly")
         type_args = tuple(type_vars[type_param] for type_param in cls.__type_params__)
         if cls._type_args_ is not None:
             parameterized = cls
@@ -168,10 +168,10 @@ class Record(GenericValue):
         iterator = iter(values)
         return cls(**{field.name: field.type._from_list_(iterator) for field in cls._fields})
 
-    def _to_list_(self) -> list[float | BlockPlace]:
+    def _to_list_(self, level_refs: dict[Any, int] | None = None) -> list[float | BlockPlace]:
         result = []
         for field in self._fields:
-            result.extend(self._value[field.name]._to_list_())
+            result.extend(self._value[field.name]._to_list_(level_refs))
         return result
 
     @classmethod

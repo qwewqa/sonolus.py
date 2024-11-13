@@ -69,7 +69,7 @@ class _Comptime[T, V](GenericValue):
     def _from_list_(cls, values: Iterable[float | BlockPlace]) -> Self:
         return cls._instance
 
-    def _to_list_(self) -> list[float | BlockPlace]:
+    def _to_list_(self, level_refs: dict[Any, int] | None = None) -> list[float | BlockPlace]:
         return []
 
     @classmethod

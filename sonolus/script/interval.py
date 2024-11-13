@@ -110,3 +110,11 @@ def remap_clamped(a, b, c, d, x, /):
 @native_function(Op.Clamp)
 def clamp(x, a, b, /):
     return max(a, min(b, x))
+
+
+def generic_lerp[T](a: T, b: T, x: float, /) -> T:
+    return a + (b - a) * x
+
+
+def generic_lerp_clamped[T](a: T, b: T, x: float, /) -> T:
+    return a + (b - a) * max(0, min(1, x))
