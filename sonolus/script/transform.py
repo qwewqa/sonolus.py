@@ -33,13 +33,13 @@ class Transform2d(Record):
         """Multiply the matrix with another matrix on the left."""
         a00 = self.a00 * b00 + self.a10 * b01 + self.a20 * b02
         a01 = self.a01 * b00 + self.a11 * b01 + self.a21 * b02
-        a02 = self.a02 * b00 + self.a12 * b01 + b02
+        a02 = self.a02 * b00 + self.a12 * b01 + 1 * b02
         a10 = self.a00 * b10 + self.a10 * b11 + self.a20 * b12
         a11 = self.a01 * b10 + self.a11 * b11 + self.a21 * b12
-        a12 = self.a02 * b10 + self.a12 * b11 + b12
-        a20 = self.a00 * b20 + self.a10 * b21 + b20
-        a21 = self.a01 * b20 + self.a11 * b21 + b21
-        a22 = self.a02 * b20 + self.a12 * b21 + 1
+        a12 = self.a02 * b10 + self.a12 * b11 + 1 * b12
+        a20 = self.a00 * b20 + self.a10 * b21 + self.a20 * 1
+        a21 = self.a01 * b20 + self.a11 * b21 + self.a21 * 1
+        a22 = self.a02 * b20 + self.a12 * b21 + 1 * 1
         return Transform2d(
             a00 / a22, a01 / a22, a02 / a22,
             a10 / a22, a11 / a22, a12 / a22,
