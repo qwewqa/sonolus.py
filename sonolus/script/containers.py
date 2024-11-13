@@ -12,6 +12,26 @@ class Pair[T, U](Record):
     first: T
     second: U
 
+    def __lt__(self, other):
+        if self.first == other.first:
+            return self.second < other.second
+        return self.first < other.first
+
+    def __le__(self, other):
+        if self.first == other.first:
+            return self.second <= other.second
+        return self.first <= other.first
+
+    def __gt__(self, other):
+        if self.first == other.first:
+            return self.second > other.second
+        return self.first > other.first
+
+    def __ge__(self, other):
+        if self.first == other.first:
+            return self.second >= other.second
+        return self.first >= other.first
+
 
 class VarArray[T, Capacity](Record, ArrayLike[T]):
     _size: int
@@ -169,6 +189,9 @@ class ArrayMap[K, V, Capacity](Record):
 
     def items(self) -> SonolusIterator[tuple[K, V]]:
         return ArrayMapEntryIterator(self, 0)
+
+    def __iter__(self):
+        return self.keys()
 
     def __getitem__(self, key: K) -> V:
         for i in Range(self._size):
