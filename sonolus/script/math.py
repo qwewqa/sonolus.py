@@ -70,8 +70,36 @@ def trunc(x: float) -> float:
 
 
 @native_function(Op.Round)
-def _round(x: float) -> float:
+def __round(x: float) -> float:
     return round(x)
+
+
+def _round(x: float, n: int = 0) -> float:
+    if n == 0:
+        return __round(x)
+    return __round(x * 10**n) / 10**n
+
+
+@native_function(Op.Frac)
+def frac(x: float) -> float:
+    _ipart, fpart = math.modf(x)
+    return fpart
+
+
+@native_function(Op.Log)
+def _ln(x: float) -> float:
+    return math.log(x)
+
+
+def log(x: float, base: float | None = None) -> float:
+    if base is None:
+        return _ln(x)
+    return _ln(x) / _ln(base)
+
+
+@native_function(Op.Rem)
+def remainder(x: float, y: float) -> float:
+    return math.remainder(x, y)
 
 
 MATH_BUILTIN_IMPLS = {
@@ -89,4 +117,6 @@ MATH_BUILTIN_IMPLS = {
     id(math.ceil): ceil,
     id(math.trunc): trunc,
     id(round): _round,
+    id(math.log): log,
+    id(math.remainder): remainder,
 }
