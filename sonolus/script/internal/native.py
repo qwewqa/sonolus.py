@@ -27,7 +27,7 @@ def native_function[**P, R](op: Op) -> Callable[[Callable[P, R]], Callable[P, R]
         @functools.wraps(fn)
         @meta_fn
         def wrapper(*args: Num) -> Num:
-            if len(args) != len(signature.parameters):
+            if len(args) < sum(1 for p in signature.parameters.values() if p.default == inspect.Parameter.empty):
                 raise TypeError(f"Expected {len(signature.parameters)} arguments, got {len(args)}")
             if ctx():
                 return native_call(op, *args)
