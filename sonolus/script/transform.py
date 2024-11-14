@@ -141,7 +141,7 @@ class Transform2d(Record):
             self.a20 / self.a22, self.a21 / self.a22, 1,
         )
 
-    def compose(self, other: Self) -> Self:
+    def compose(self, other: Self, /) -> Self:
         """Compose with another transform which is applied after this transform."""
         return self._compose(
             other.a00, other.a01, other.a02,
@@ -149,7 +149,7 @@ class Transform2d(Record):
             other.a20, other.a21, other.a22,
         )
 
-    def compose_before(self, other: Self) -> Self:
+    def compose_before(self, other: Self, /) -> Self:
         """Compose with another transform which is applied before this transform."""
         return other.compose(self)
 

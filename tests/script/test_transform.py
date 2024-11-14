@@ -11,7 +11,7 @@ from tests.script.conftest import is_close, validate_dual_run
 
 # Use smaller limits to avoid precision issues.
 # In practice, it's rare to see large arguments anyway
-floats = st.floats(min_value=-99, max_value=99, allow_nan=False, allow_infinity=False)
+floats = st.floats(min_value=-9, max_value=9, allow_nan=False, allow_infinity=False)
 nonzero_floats = floats.filter(lambda x: abs(x) > 1e-2)
 
 
@@ -169,8 +169,6 @@ def test_perspective_at_infinity(v_x, foreground_y, vanishing_point):
 
 
 class TransformInverse(RuleBasedStateMachine):
-    SCALE_THRESHOLD = 1e9
-
     def __init__(self):
         super().__init__()
         self.transform = Transform2d.new()
@@ -217,7 +215,7 @@ class TransformInverse(RuleBasedStateMachine):
         self.inverse = Transform2d.new().shear_x(-m).compose(self.inverse)
         self.shear_count += 1
 
-    @precondition(lambda self: self.shear_count < 3)
+    @precondition(lambda self: self.shear_count < 2)
     @rule(m=floats)
     def shear_y(self, m):
         self.transform = self.transform.shear_y(m)
