@@ -1,22 +1,25 @@
 import textwrap
 from collections import deque
 from collections.abc import Iterator
+from typing import Self
 
 from sonolus.backend.ir import IRConst, IRExpr, IRStmt
+from sonolus.backend.place import SSAPlace
 
 
 class FlowEdge:
     src: "BasicBlock"
     dst: "BasicBlock"
-    cond: IRExpr | None
+    cond: float | int | None
 
-    def __init__(self, src: "BasicBlock", dst: "BasicBlock", cond: IRExpr | None = None):
+    def __init__(self, src: "BasicBlock", dst: "BasicBlock", cond: float | None = None):
         self.src = src
         self.dst = dst
         self.cond = cond
 
 
 class BasicBlock:
+    phis: dict[SSAPlace, dict[Self, SSAPlace]]
     statements: list[IRStmt]
     test: IRExpr
     incoming: set[FlowEdge]
@@ -24,17 +27,20 @@ class BasicBlock:
 
     def __init__(
         self,
+        *,
+        phi: dict[SSAPlace, dict[Self, SSAPlace]] | None = None,
         statements: list[IRStmt] | None = None,
         test: IRExpr | None = None,
         incoming: set[FlowEdge] | None = None,
         outgoing: set[FlowEdge] | None = None,
     ):
+        self.phis = phi or {}
         self.statements = statements or []
-        self.test = test or IRConst(1)
+        self.test = test or IRConst(0)
         self.incoming = incoming or set()
         self.outgoing = outgoing or set()
 
-    def connect_to(self, other: "BasicBlock", cond: IRExpr | None = None):
+    def connect_to(self, other: "BasicBlock", cond: int | float | None = None):
         edge = FlowEdge(self, other, cond)
         self.outgoing.add(edge)
         other.incoming.add(edge)
@@ -68,7 +74,10 @@ def cfg_to_mermaid(entry: BasicBlock):
     lines = ["Entry([Entry]) --> 0"]
     for block in traverse_cfg_preorder(entry):
         index = block_indexes[block]
-        lines.append(f"{index}[{pre(fmt([f'#{index}', *block.statements]))}]")
+        lines.append(f"{index}[{pre(fmt([f'#{index}', *(
+            f"{dst} <- PHI({", ".join(f"{block_indexes.get(src_block, "<dead>")}: {src_place}"
+                                      for src_block, src_place in phis.items())})" for dst, phis in block.phis.items()
+        ), *block.statements]))}]")
 
         outgoing = {edge.cond: edge.dst for edge in block.outgoing}
         match outgoing:

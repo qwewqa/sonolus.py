@@ -3,6 +3,8 @@ from sonolus.backend.ir import IRConst, IRGet, IRInstr, IRPureInstr, IRSet
 from sonolus.backend.passes import CompilerPass
 from sonolus.backend.place import BlockPlace, TempBlock
 
+TEMP_SIZE = 4096
+
 
 class AllocateBasic(CompilerPass):
     def run(self, entry: BasicBlock):
@@ -35,6 +37,8 @@ class AllocateBasic(CompilerPass):
                         if place.block not in offsets:
                             offsets[place.block] = index
                             index += place.block.size
+                            if index >= TEMP_SIZE:
+                                raise ValueError("Temporary memory limit exceeded")
                         return BlockPlace(10000, process(place.index), place.offset + offsets[place.block])
                     return BlockPlace(
                         process(place.block) if isinstance(place.block, BlockPlace) else place.block,

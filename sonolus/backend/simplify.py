@@ -8,6 +8,8 @@ class CoalesceFlow(CompilerPass):
         processed = set()
         while queue:
             block = queue.pop()
+            if block.phis:
+                raise NotImplementedError("Phi nodes are not supported in CoalesceFlow")
             if block in processed:
                 continue
             processed.add(block)
