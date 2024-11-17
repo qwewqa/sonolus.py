@@ -13,6 +13,7 @@ class ToSSA(CompilerPass):
         defs = self.defs_to_blocks(entry)
         self.insert_phis(entry, defs)
         self.rename(entry, defs, {var: [] for var in defs}, {})
+        self.remove_placeholder_phis(entry)
         return entry
 
     def rename(
@@ -42,7 +43,7 @@ class ToSSA(CompilerPass):
         for var, length in original_ssa_place_lens.items():
             ssa_places[var] = ssa_places[var][:length]
 
-    def remove_original_phis(self, entry: BasicBlock):
+    def remove_placeholder_phis(self, entry: BasicBlock):
         for block in traverse_cfg_preorder(entry):
             block.phis = {var: args for var, args in block.phis.items() if isinstance(var, SSAPlace)}
 
