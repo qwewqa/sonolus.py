@@ -1,7 +1,7 @@
 from sonolus.backend.allocate import AllocateBasic
+from sonolus.backend.constant_evaluation import SparseConditionalConstantPropagation
 from sonolus.backend.dead_code import DeadCodeElimination, UnreachableCodeElimination
 from sonolus.backend.flow import BasicBlock
-from sonolus.backend.fold import FoldConstants
 from sonolus.backend.passes import run_passes
 from sonolus.backend.simplify import CoalesceFlow
 from sonolus.backend.ssa import FromSSA, ToSSA
@@ -17,7 +17,7 @@ STANDARD_PASSES = [
     UnreachableCodeElimination(),
     DeadCodeElimination(),
     ToSSA(),
-    FoldConstants(),
+    SparseConditionalConstantPropagation(),
     UnreachableCodeElimination(),
     DeadCodeElimination(),
     FromSSA(),

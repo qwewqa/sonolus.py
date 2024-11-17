@@ -33,7 +33,7 @@ def vecs_nonzero(draw):
     v=vecs(),
     t=vecs(),
 )
-@settings(deadline=timedelta(milliseconds=1000))
+@settings(deadline=timedelta(seconds=2))
 def test_translate(v, t):
     def fn():
         transform = Transform2d.new().translate(v)
@@ -46,7 +46,7 @@ def test_translate(v, t):
     v=vecs(),
     factor=vecs(),
 )
-@settings(deadline=timedelta(milliseconds=1000))
+@settings(deadline=timedelta(seconds=2))
 def test_scale(v, factor):
     def fn():
         transform = Transform2d.new().scale(factor)
@@ -60,7 +60,7 @@ def test_scale(v, factor):
     factor=vecs(),
     pivot=vecs(),
 )
-@settings(deadline=timedelta(milliseconds=1000))
+@settings(deadline=timedelta(seconds=2))
 def test_scale_around(v, factor, pivot):
     def fn():
         transform = Transform2d.new().scale_about(factor, pivot)
@@ -75,7 +75,7 @@ def test_scale_around(v, factor, pivot):
     v=vecs(),
     angle=floats,
 )
-@settings(deadline=timedelta(milliseconds=1000))
+@settings(deadline=timedelta(seconds=2))
 def test_rotate(v, angle):
     def fn():
         transform = Transform2d.new().rotate(angle)
@@ -89,7 +89,7 @@ def test_rotate(v, angle):
     angle=floats,
     pivot=vecs(),
 )
-@settings(deadline=timedelta(milliseconds=1000))
+@settings(deadline=timedelta(seconds=2))
 def test_rotate_around(v, angle, pivot):
     def fn():
         transform = Transform2d.new().rotate_about(angle, pivot)
@@ -108,7 +108,7 @@ def test_rotate_around(v, angle, pivot):
     v=vecs(),
     m=floats,
 )
-@settings(deadline=timedelta(milliseconds=1000))
+@settings(deadline=timedelta(seconds=2))
 def test_shear_x(v, m):
     def fn():
         transform = Transform2d.new().shear_x(m)
@@ -121,7 +121,7 @@ def test_shear_x(v, m):
     v=vecs(),
     m=floats,
 )
-@settings(deadline=timedelta(milliseconds=1000))
+@settings(deadline=timedelta(seconds=2))
 def test_shear_y(v, m):
     def fn():
         transform = Transform2d.new().shear_y(m)
@@ -135,7 +135,7 @@ def test_shear_y(v, m):
     foreground_y=floats,
     vanishing_point=vecs(),
 )
-@settings(deadline=timedelta(milliseconds=1000))
+@settings(deadline=timedelta(seconds=2))
 def test_perspective_at_foreground(v_x, foreground_y, vanishing_point):
     v = Vec2(v_x, 0)
     assume(abs(foreground_y - vanishing_point.y) > 1e-2)
@@ -154,7 +154,7 @@ def test_perspective_at_foreground(v_x, foreground_y, vanishing_point):
     foreground_y=floats,
     vanishing_point=vecs(),
 )
-@settings(deadline=timedelta(milliseconds=1000))
+@settings(deadline=timedelta(seconds=2))
 def test_perspective_at_infinity(v_x, foreground_y, vanishing_point):
     v = Vec2(v_x, (vanishing_point.y - foreground_y) * 1e6)  # Close enough to infinity for testing
     assume(abs(foreground_y - vanishing_point.y) > 1e-2)

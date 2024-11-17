@@ -19,7 +19,7 @@ class FlowEdge:
 
 
 class BasicBlock:
-    phis: dict[SSAPlace | TempBlock, dict[Self, SSAPlace | None]]
+    phis: dict[SSAPlace | TempBlock, dict[Self, SSAPlace]]
     statements: list[IRStmt]
     test: IRExpr
     incoming: set[FlowEdge]

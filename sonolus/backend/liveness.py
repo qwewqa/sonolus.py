@@ -20,6 +20,8 @@ class LivenessAnalysis(CompilerPass):
 
     def process(self, entry: BasicBlock):
         queue = deque(self.get_exits(entry))
+        if not queue:
+            raise ValueError("Infinite loop detected")
         while queue:
             block = queue.popleft()
             updated_blocks = self.process_block(block)

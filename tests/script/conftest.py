@@ -1,4 +1,7 @@
 from collections.abc import Callable
+from datetime import timedelta
+
+from hypothesis import settings
 
 from sonolus.backend.blocks import PlayBlock
 from sonolus.backend.finalize import cfg_to_engine_node
@@ -11,6 +14,12 @@ from sonolus.build.compile import callback_to_cfg
 from sonolus.script.internal.context import GlobalContextState
 from sonolus.script.internal.impl import meta_fn
 from sonolus.script.num import Num
+
+settings.register_profile(
+    "standard",
+    deadline=timedelta(milliseconds=500),
+)
+settings.load_profile("standard")
 
 
 def compile_fn(callback: Callable):
