@@ -70,9 +70,9 @@ class IRGet:
 
 class IRSet:
     place: Place
-    value: IRStmt
+    value: IRExpr | IRInstr
 
-    def __init__(self, place: Place, value: IRStmt):
+    def __init__(self, place: Place, value: IRExpr | IRInstr):
         self.place = place
         self.value = value
 

@@ -59,6 +59,24 @@ def traverse_cfg_preorder(block: BasicBlock) -> Iterator[BasicBlock]:
             queue.append(edge.dst)
 
 
+def traverse_cfg_postorder(block: BasicBlock) -> Iterator[BasicBlock]:
+    visited = set()
+
+    def dfs(current: BasicBlock):
+        if current in visited:
+            return
+        visited.add(current)
+        for edge in sorted(current.outgoing, key=lambda e: (e.cond is None, e.cond)):
+            yield from dfs(edge.dst)
+        yield current
+
+    yield from dfs(block)
+
+
+def traverse_cfg_reverse_postorder(block: BasicBlock) -> Iterator[BasicBlock]:
+    yield from reversed(list(traverse_cfg_postorder(block)))
+
+
 def cfg_to_mermaid(entry: BasicBlock):
     def pre(s: str):
         return "\"<pre style='text-align: left;'>" + s.replace("\n", "<br/>") + '</pre>"'

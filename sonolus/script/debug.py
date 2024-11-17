@@ -4,6 +4,7 @@ from typing import Any, Never
 from sonolus.backend.flow import cfg_to_mermaid
 from sonolus.backend.mode import Mode
 from sonolus.backend.ops import Op
+from sonolus.backend.passes import CompilerPass, run_passes
 from sonolus.backend.simplify import CoalesceFlow
 from sonolus.script.comptime import Comptime
 from sonolus.script.internal.context import GlobalContextState, ctx, set_ctx
@@ -62,9 +63,12 @@ def terminate():
         raise RuntimeError("Terminated")
 
 
-def visualize_cfg(fn: Callable[[], Any]) -> str:
+def visualize_cfg(fn: Callable[[], Any], passes: list[CompilerPass] | None = None) -> str:
     from sonolus.build.compile import callback_to_cfg
 
+    if passes is None:
+        passes = [CoalesceFlow()]
+
     cfg = callback_to_cfg(GlobalContextState(Mode.PLAY), fn, "")
-    cfg = CoalesceFlow().run(cfg)
+    cfg = run_passes(cfg, passes)
     return cfg_to_mermaid(cfg)

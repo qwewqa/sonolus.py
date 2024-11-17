@@ -58,7 +58,7 @@ class DeadCodeElimination(CompilerPass):
                             or (
                                 isinstance(place, BlockPlace)
                                 and isinstance(place.block, TempBlock)
-                                and ((place.block.size == 1 and place.block not in live) or place.block.size == 0)
+                                and place.block not in live
                             )
                         )
                         if is_live:

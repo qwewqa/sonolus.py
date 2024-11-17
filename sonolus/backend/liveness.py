@@ -9,25 +9,64 @@ type HasLiveness = SSAPlace | TempBlock
 
 
 class LivenessAnalysis(CompilerPass):
-    """Liveness analysis pass for SSA places and temporary blocks of size 1."""
-
     def destroys(self) -> set[CompilerPass]:
         return set()
 
     def run(self, entry: BasicBlock) -> BasicBlock:
         self.preprocess(entry)
+        self.process(entry)
+        self.process_arrays(entry)
+        return entry
+
+    def process(self, entry: BasicBlock):
         queue = deque(self.get_exits(entry))
         while queue:
             block = queue.popleft()
             updated_blocks = self.process_block(block)
             queue.extend(updated_blocks)
-        return entry
+
+    def process_arrays(self, entry: BasicBlock):
+        # With arrays, we can't assume that an assignment will render previous assignments dead.
+        # Before this function is run, arrays are treated as live at a statement as long as they are read from
+        # at some future point.
+        # This function will mark arrays as dead if they could not have been assigned to yet.
+        queue = deque([entry])
+        while queue:
+            block = queue.popleft()
+            if block.live_arrays_in is None:
+                block.live_arrays_in = set()
+            live_arrays_in = block.live_arrays_in.copy()
+            for statement in block.statements:
+                live_arrays_in.update(self.get_array_defs(statement))
+            updated_blocks = []
+            for edge in block.outgoing:
+                if edge.dst.live_arrays_in is None:
+                    prev_size = -1
+                    edge.dst.live_arrays_in = set()
+                else:
+                    prev_size = len(edge.dst.live_arrays_in)
+                edge.dst.live_arrays_in.update(live_arrays_in)
+                if len(edge.dst.live_arrays_in) != prev_size:
+                    updated_blocks.append(edge.dst)
+            queue.extend(updated_blocks)
+
+        for block in traverse_cfg_preorder(entry):
+            live_arrays_in = block.live_arrays_in
+            for statement in block.statements:
+                if not self.can_skip(statement, statement.live):
+                    live_arrays_in.update(self.get_array_defs(statement))
+                statement.live = {
+                    place
+                    for place in statement.live
+                    if not (isinstance(place, TempBlock) and place.size != 1 and place not in live_arrays_in)
+                }
 
     def preprocess(self, entry: BasicBlock):
         for block in traverse_cfg_preorder(entry):
             block.live_out = None
             block.live_in = None
             block.live_phi_targets = None
+            block.live_arrays_in = None
 
     def process_block(self, block: BasicBlock) -> list[BasicBlock]:
         if block.live_out is None:
@@ -81,12 +120,8 @@ class LivenessAnalysis(CompilerPass):
             case BlockPlace(block=block, index=index, offset=_):
                 uses.update(self.get_uses(block))
                 uses.update(self.get_uses(index))
-            case SSAPlace():
+            case SSAPlace() | TempBlock():
                 uses.add(stmt)
-            case TempBlock() if stmt.size == 1:
-                uses.add(stmt)
-            case TempBlock():
-                pass
             case _:
                 raise NotImplementedError
         return uses
@@ -101,10 +136,20 @@ class LivenessAnalysis(CompilerPass):
                         return {temp_block}
         return set()
 
+    def get_array_defs(self, stmt: IRStmt | BlockPlace | SSAPlace | TempBlock | int) -> set[HasLiveness]:
+        match stmt:
+            case IRSet(place=place, value=_):
+                match place:
+                    case BlockPlace(block=TempBlock() as temp_block, index=_, offset=_) if temp_block.size > 1:
+                        return {temp_block}
+        return set()
+
     def can_skip(self, stmt: IRStmt, live: set[HasLiveness]) -> bool:
         match stmt:
-            case IRSet(place=_, value=IRPureInstr()):
-                defs = self.get_defs(stmt)
+            case IRSet(place=_, value=value):
+                if isinstance(value, IRInstr) and value.op.side_effects:
+                    return False
+                defs = self.get_defs(stmt) | self.get_array_defs(stmt)
                 return defs and not (defs & live)
         return False
 
