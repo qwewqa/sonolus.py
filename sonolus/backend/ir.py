@@ -6,9 +6,11 @@ type IRStmt = IRExpr | IRInstr | IRSet
 
 
 class IRConst:
-    value: float
+    value: float | int
 
     def __init__(self, value: float):
+        if isinstance(value, bool):
+            value = int(value)
         self.value = value
 
     def __repr__(self):

@@ -63,7 +63,7 @@ def validate_dual_run[**P, R](fn: Callable[P, R], *args: P.args, **kwargs: P.kwa
         assert compiled_terminated, "Compiled function should terminate if regular function raises exception"
         raise exception
 
-    assert regular_result == compiled_result
+    assert compiled_result == regular_result
 
     return regular_result
 

@@ -123,7 +123,7 @@ class LivenessAnalysis(CompilerPass):
             case SSAPlace() | TempBlock():
                 uses.add(stmt)
             case _:
-                raise NotImplementedError
+                raise TypeError(f"Unexpected statement type: {type(stmt)}")
         return uses
 
     def get_defs(self, stmt: IRStmt | BlockPlace | SSAPlace | TempBlock | int) -> set[HasLiveness]:
