@@ -64,8 +64,10 @@ class ToSSA(CompilerPass):
                 return IRSet(place=place, value=value)
             case SSAPlace():
                 return stmt
-            case TempBlock():
+            case TempBlock() if stmt.size == 1:
                 return ssa_places[stmt][-1]
+            case TempBlock():
+                return stmt
             case int():
                 return stmt
             case BlockPlace(block=block, index=index, offset=offset):
@@ -77,7 +79,7 @@ class ToSSA(CompilerPass):
                     offset=self.rename_stmt(offset, ssa_places, used),
                 )
             case _:
-                raise NotImplementedError
+                raise TypeError(f"Unexpected statement: {stmt}")
 
     def insert_phis(self, entry: BasicBlock, defs: dict[TempBlock, set[BasicBlock]]):
         for var, blocks in defs.items():
@@ -124,4 +126,49 @@ class ToSSA(CompilerPass):
 
 class FromSSA(CompilerPass):
     def run(self, entry: BasicBlock) -> BasicBlock:
-        pass
+        for block in traverse_cfg_preorder(entry):
+            self.process_block(block)
+        return entry
+
+    def process_block(self, block: BasicBlock):
+        for var, args in block.phis.items():
+            for src, arg in args.items():
+                src.statements.append(
+                    IRSet(place=self.place_from_ssa_place(var), value=IRGet(place=self.place_from_ssa_place(arg)))
+                )
+        block.phis = {}
+        block.statements = [self.process_stmt(stmt) for stmt in block.statements]
+        block.test = self.process_stmt(block.test)
+
+    def process_stmt(self, stmt: IRStmt):
+        match stmt:
+            case IRConst():
+                return stmt
+            case IRPureInstr(op=op, args=args):
+                return IRPureInstr(op=op, args=[self.process_stmt(arg) for arg in args])
+            case IRInstr(op=op, args=args):
+                return IRInstr(op=op, args=[self.process_stmt(arg) for arg in args])
+            case IRGet(place=place):
+                return IRGet(place=self.process_stmt(place))
+            case IRSet(place=place, value=value):
+                return IRSet(place=self.process_stmt(place), value=self.process_stmt(value))
+            case SSAPlace():
+                return self.place_from_ssa_place(stmt)
+            case TempBlock():
+                return stmt
+            case int():
+                return stmt
+            case BlockPlace(block=block, index=index, offset=offset):
+                return BlockPlace(
+                    block=self.process_stmt(block),
+                    index=self.process_stmt(index),
+                    offset=self.process_stmt(offset),
+                )
+            case _:
+                raise TypeError(f"Unexpected statement: {stmt}")
+
+    def temp_block_from_ssa_place(self, ssa_place: SSAPlace) -> TempBlock:
+        return TempBlock(f"{ssa_place.name}.{ssa_place.num}")
+
+    def place_from_ssa_place(self, ssa_place: SSAPlace) -> BlockPlace:
+        return BlockPlace(block=self.temp_block_from_ssa_place(ssa_place), index=0, offset=0)

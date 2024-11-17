@@ -259,6 +259,7 @@ class Visitor(ast.NodeVisitor):
             self.visit(stmt)
         else_end_ctx = ctx()
 
+        self.loop_head_ctxs.pop()
         break_ctxs = self.break_ctxs.pop()
         after_ctx = Context.meet([else_end_ctx, *break_ctxs])
         set_ctx(after_ctx)
@@ -284,6 +285,7 @@ class Visitor(ast.NodeVisitor):
             self.visit(stmt)
         else_end_ctx = ctx()
 
+        self.loop_head_ctxs.pop()
         break_ctxs = self.break_ctxs.pop()
         after_ctx = Context.meet([else_end_ctx, *break_ctxs])
         set_ctx(after_ctx)

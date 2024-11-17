@@ -185,3 +185,33 @@ def test_record_equality():
         return 1
 
     assert validate_dual_run(fn) == 1
+
+
+@given(
+    a=st.integers(min_value=0, max_value=20),
+    b=st.integers(min_value=0, max_value=20),
+    c=st.integers(min_value=0, max_value=20),
+    d=st.integers(min_value=0, max_value=20),
+    e=st.integers(min_value=0, max_value=20),
+    f=st.integers(min_value=0, max_value=20),
+)
+def test_record_modification_in_loop(a, b, c, d, e, f):
+    # This serves as a test that optimizations don't break even for complex control flow
+    def fn():
+        r = Pair(a, b)
+        while r.first < c:
+            if r.first < d:
+                for i in range(r.first, r.second):
+                    if i == f:
+                        break
+                    r.second += i
+                r @= Pair(a + 1, b - 1)
+                break
+            if r.first == e:
+                r.first += 3
+                continue
+            r.first += 1
+            r.second += 5
+        return r
+
+    validate_dual_run(fn)

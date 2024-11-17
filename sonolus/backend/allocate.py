@@ -46,7 +46,7 @@ class AllocateBasic(CompilerPass):
                         process(place.offset),
                     )
                 case _:
-                    raise NotImplementedError
+                    raise TypeError(f"Unsupported statement: {stmt}")
 
         for block in traverse_cfg_preorder(entry):
             block.statements = [process(statement) for statement in block.statements]
