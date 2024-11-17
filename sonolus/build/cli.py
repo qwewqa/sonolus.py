@@ -7,6 +7,7 @@ import socket
 import socketserver
 import sys
 from pathlib import Path
+from time import perf_counter
 
 from sonolus.build.engine import package_engine
 from sonolus.build.level import package_level_data
@@ -163,8 +164,13 @@ def main():
     build_dir = Path(args.build_dir)
 
     if args.command == "build":
+        start_time = perf_counter()
         build_project(project, build_dir)
-        print(f"Project built successfully to '{build_dir.resolve()}'")
+        end_time = perf_counter()
+        print(f"Project built successfully to '{build_dir.resolve()}' in {end_time - start_time:.2f}s")
     elif args.command == "dev":
+        start_time = perf_counter()
         build_collection(project, build_dir)
+        end_time = perf_counter()
+        print(f"Build finished in {end_time - start_time:.2f}s")
         run_server(build_dir / "site", port=args.port)
