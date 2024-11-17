@@ -164,7 +164,8 @@ class Context:
                 header.scope.set_value(name, target_value)
                 header.loop_variables[name] = target_value
             else:
-                header.scope.set_binding(name, ConflictBinding())
+                header.scope.set_value(name, value)
+                header.loop_variables[name] = value
         return header
 
     def branch_to_loop_header(self, header: Self):
@@ -174,9 +175,16 @@ class Context:
         self.outgoing[None] = header
         for name, target_value in header.loop_variables.items():
             with using_ctx(self):
-                value = self.scope.get_value(name)
-                value = type(target_value)._accept_(value)
-                target_value._set_(value)
+                if type(target_value)._is_value_type_():
+                    value = self.scope.get_value(name)
+                    value = type(target_value)._accept_(value)
+                    target_value._set_(value)
+                else:
+                    value = self.scope.get_value(name)
+                    if target_value is not value:
+                        raise RuntimeError(
+                            f"Variable '{name}' may have conflicting definitions between loop iterations"
+                        )
 
     def map_constant(self, value: Any) -> int:
         if value not in self.const_mappings:

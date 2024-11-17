@@ -4,7 +4,7 @@ from collections.abc import Iterator
 from typing import Self
 
 from sonolus.backend.ir import IRConst, IRExpr, IRStmt
-from sonolus.backend.place import SSAPlace
+from sonolus.backend.place import SSAPlace, TempBlock
 
 
 class FlowEdge:
@@ -19,7 +19,7 @@ class FlowEdge:
 
 
 class BasicBlock:
-    phis: dict[SSAPlace, dict[Self, SSAPlace]]
+    phis: dict[SSAPlace | TempBlock, dict[Self, SSAPlace | None]]
     statements: list[IRStmt]
     test: IRExpr
     incoming: set[FlowEdge]
@@ -93,8 +93,10 @@ def cfg_to_mermaid(entry: BasicBlock):
     for block in traverse_cfg_preorder(entry):
         index = block_indexes[block]
         lines.append(f"{index}[{pre(fmt([f'#{index}', *(
-            f"{dst} <- PHI({", ".join(f"{block_indexes.get(src_block, "<dead>")}: {src_place}"
-                                      for src_block, src_place in phis.items())})" for dst, phis in block.phis.items()
+            f"{dst} := phi({", ".join(f"{block_indexes.get(src_block, "<dead>")}: {src_place}"
+                                      for src_block, src_place
+                                      in sorted(phis.items(), key=lambda x: block_indexes.get(x[0])))})"
+            for dst, phis in block.phis.items()
         ), *block.statements]))}]")
 
         outgoing = {edge.cond: edge.dst for edge in block.outgoing}

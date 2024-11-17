@@ -3,6 +3,7 @@ from sonolus.backend.dead_code import DeadCodeElimination, UnreachableCodeElimin
 from sonolus.backend.flow import BasicBlock
 from sonolus.backend.passes import run_passes
 from sonolus.backend.simplify import CoalesceFlow
+from sonolus.backend.ssa import ToSSA
 
 MINIMAL_PASSES = [
     CoalesceFlow(),
@@ -14,6 +15,8 @@ STANDARD_PASSES = [
     CoalesceFlow(),
     UnreachableCodeElimination(),
     DeadCodeElimination(),
+    # ToSSA(),
+    # DeadCodeElimination(),
     AllocateBasic(),
 ]
 
