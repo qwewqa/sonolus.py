@@ -1,4 +1,5 @@
 from collections.abc import Callable
+from contextvars import ContextVar
 from typing import Any, Never
 
 from sonolus.backend.flow import cfg_to_mermaid
@@ -12,6 +13,8 @@ from sonolus.script.internal.impl import meta_fn, validate_value
 from sonolus.script.internal.native import native_function
 from sonolus.script.num import Num
 from sonolus.script.values import with_default
+
+debug_log_callback = ContextVar[Callable[[Num], None]]("debug_log_callback")
 
 
 @meta_fn
@@ -27,9 +30,18 @@ def error(message: str | None = None) -> None:
         raise RuntimeError(message)
 
 
-@native_function(Op.DebugLog)
+@meta_fn
 def debug_log(value: Num):
+    if debug_log_callback.get(None):
+        return debug_log_callback.get()(value)
+    else:
+        return _debug_log(value)
+
+
+@native_function(Op.DebugLog)
+def _debug_log(value: Num):
     print(f"[DEBUG] {value}")
+    return 0
 
 
 @native_function(Op.DebugPause)

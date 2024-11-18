@@ -11,6 +11,7 @@ from sonolus.backend.optimize import optimize_and_allocate
 from sonolus.backend.place import BlockPlace
 from sonolus.backend.visitor import compile_and_call
 from sonolus.build.compile import callback_to_cfg
+from sonolus.script.debug import debug_log_callback
 from sonolus.script.internal.context import GlobalContextState
 from sonolus.script.internal.impl import meta_fn
 from sonolus.script.num import Num
@@ -31,10 +32,19 @@ def validate_dual_run[**P, R](fn: Callable[P, R], *args: P.args, **kwargs: P.kwa
     """Runs a function as a regular function and as a compiled function, and checks that the results are the same."""
     exception = None
     regular_result = None
+    log_entries = []
+
+    def log_cb(x):
+        log_entries.append(x)
+        return 0
+
+    debug_log_callback_token = debug_log_callback.set(log_cb)
     try:
         regular_result = fn(*args, **kwargs)
     except Exception as e:
         exception = e
+    finally:
+        debug_log_callback.reset(debug_log_callback_token)
 
     result_type = None
 
@@ -73,6 +83,7 @@ def validate_dual_run[**P, R](fn: Callable[P, R], *args: P.args, **kwargs: P.kwa
         raise exception
 
     assert compiled_result == regular_result
+    assert log_entries == interpreter.log
 
     return regular_result
 
