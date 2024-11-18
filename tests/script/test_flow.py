@@ -4,6 +4,7 @@ from script.conftest import validate_dual_run
 from script.test_record import Pair
 
 from sonolus.script.debug import debug_log
+from sonolus.script.random import random_float
 
 
 def test_loop_with_side_effects():
@@ -226,3 +227,14 @@ def test_pair_early_return_with_mutations():
         return p
 
     validate_dual_run(fn)
+
+
+def test_random():
+    # Random has no side effects, but is impure, so we need to test that optimizations don't break it
+    def fn():
+        x = random_float(1, 2)
+        y = x * 2 + x * x
+        return abs(x - (y - x - x) / x) < 1e-6
+
+    for _ in range(100):
+        validate_dual_run(fn)

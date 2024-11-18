@@ -30,7 +30,9 @@ def native_function[**P, R](op: Op) -> Callable[[Callable[P, R]], Callable[P, R]
             if len(args) < sum(1 for p in signature.parameters.values() if p.default == inspect.Parameter.empty):
                 raise TypeError(f"Expected {len(signature.parameters)} arguments, got {len(args)}")
             if ctx():
-                return native_call(op, *args)
+                bound_args = signature.bind(*args)
+                bound_args.apply_defaults()
+                return native_call(op, *bound_args.args)
             return fn(*args)
 
         return wrapper

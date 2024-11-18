@@ -28,7 +28,10 @@ class InlineVars(CompilerPass):
         for p, defn in definitions.items():
             while True:
                 if isinstance(defn, IRGet) and isinstance(defn.place, SSAPlace) and defn.place in definitions:
-                    defn = definitions[defn.place]
+                    inside_defn = definitions[defn.place]
+                    if not self.is_inlinable(inside_defn):
+                        break
+                    defn = inside_defn
                     continue
                 inlinable_uses = self.get_inlinable_uses(defn, set())
                 subs = {}
@@ -38,7 +41,9 @@ class InlineVars(CompilerPass):
                     inside_defn = definitions[inside_p]
                     if not self.is_inlinable(inside_defn):
                         continue
-                    if isinstance(inside_defn, IRGet) and isinstance(inside_defn.place, SSAPlace):
+                    if (isinstance(inside_defn, IRGet) and isinstance(inside_defn.place, SSAPlace)) or use_counts[
+                        inside_p
+                    ] == 1:
                         subs[inside_p] = inside_defn
                 if not subs:
                     break
@@ -136,7 +141,7 @@ class InlineVars(CompilerPass):
             case IRConst():
                 return True
             case IRInstr(op=op, args=args) | IRPureInstr(op=op, args=args):
-                return not op.side_effects and all(self.is_inlinable(arg) for arg in args)
+                return not op.side_effects and op.pure and all(self.is_inlinable(arg) for arg in args)
             case IRGet():
                 return isinstance(stmt.place, SSAPlace)
             case IRSet():

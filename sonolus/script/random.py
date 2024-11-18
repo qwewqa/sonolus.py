@@ -5,7 +5,7 @@ from sonolus.script.internal.native import native_function
 
 
 @native_function(Op.Random)
-def random(lo: float = 0.0, hi: float = 1.0, /) -> float:
+def random_float(lo: float = 0.0, hi: float = 1.0, /) -> float:
     return lo + (hi - lo) * _random.random()
 
 
