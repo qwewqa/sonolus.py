@@ -18,6 +18,14 @@ class CoalesceFlow(CompilerPass):
             next_block = next(iter(block.outgoing)).dst
             if len(next_block.incoming) != 1:
                 queue.append(next_block)
+                if not block.statements and not block.phis and not next_block.phis:
+                    for edge in block.incoming:
+                        edge.dst = next_block
+                        next_block.incoming.add(edge)
+                    for edge in block.outgoing:
+                        next_block.incoming.remove(edge)
+                    if block is entry:
+                        entry = next_block
                 continue
             for p, args in next_block.phis.items():
                 if block not in args:

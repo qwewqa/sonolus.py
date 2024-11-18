@@ -1,4 +1,5 @@
 from sonolus.backend.allocate import AllocateBasic
+from sonolus.backend.coalesce import CopyCoalesce
 from sonolus.backend.constant_evaluation import SparseConditionalConstantPropagation
 from sonolus.backend.dead_code import DeadCodeElimination, UnreachableCodeElimination
 from sonolus.backend.flow import BasicBlock
@@ -24,6 +25,7 @@ STANDARD_PASSES = [
     CoalesceFlow(),
     InlineSingleUseVars(),
     FromSSA(),
+    CopyCoalesce(),
     DeadCodeElimination(),
     CoalesceFlow(),
     AllocateBasic(),

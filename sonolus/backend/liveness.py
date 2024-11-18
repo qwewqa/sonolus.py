@@ -74,6 +74,7 @@ class LivenessAnalysis(CompilerPass):
         if block.live_out is None:
             block.live_out = set()
         live: set[HasLiveness] = block.live_out.copy()
+        block.test.live = live.copy()
         live.update(self.get_uses(block.test))
         for statement in reversed(block.statements):
             statement.live = live.copy()
@@ -81,7 +82,6 @@ class LivenessAnalysis(CompilerPass):
                 continue
             live.difference_update(self.get_defs(statement))
             live.update(self.get_uses(statement))
-            statement.live.update(live)
         live_phi_targets = set()
         for target, args in block.phis.items():
             if target not in live:
