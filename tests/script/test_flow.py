@@ -1,10 +1,9 @@
 """Test cases intended to cover more complex control flow."""
 
-from script.conftest import validate_dual_run
-from script.test_record import Pair
-
 from sonolus.script.debug import debug_log
 from sonolus.script.random import random_float
+from tests.script.conftest import validate_dual_run
+from tests.script.test_record import Pair
 
 
 def test_loop_with_side_effects():
@@ -230,11 +229,15 @@ def test_pair_early_return_with_mutations():
 
 
 def test_random():
-    # Random has no side effects, but is impure, so we need to test that optimizations don't break it
+    def add(a, b):  # noqa: FURB118
+        return a + b
+
+    # Random has no side effects, but is impure, so we need to test that optimizations don't break it.
     def fn():
-        x = random_float(1, 2)
-        y = x * 2 + x * x
-        return abs(x - (y - x - x) / x) < 1e-6
+        a = random_float(1, 10)
+        b = add(a, Pair(a, a).first)
+        c = add(b, -2 * a)
+        return c == 0
 
     for _ in range(100):
         validate_dual_run(fn)
