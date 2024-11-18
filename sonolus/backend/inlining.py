@@ -4,17 +4,46 @@ from sonolus.backend.passes import CompilerPass
 from sonolus.backend.place import BlockPlace, SSAPlace, TempBlock
 
 
-class InlineSingleUseVars(CompilerPass):
+class InlineVars(CompilerPass):
     def run(self, entry: BasicBlock) -> BasicBlock:
         use_counts: dict[SSAPlace, int] = {}
         definitions: dict[SSAPlace, IRStmt] = {}
 
         for block in traverse_cfg_preorder(entry):
             for stmt in block.statements:
-                self.count_uses(stmt, use_counts)
+                if (
+                    isinstance(stmt, IRSet)
+                    and isinstance(stmt.place, SSAPlace)
+                    and isinstance(stmt.value, IRGet)
+                    and isinstance(stmt.value.place, SSAPlace)
+                ):
+                    # This is effectively an alias
+                    pass
+                else:
+                    self.count_uses(stmt, use_counts)
                 if isinstance(stmt, IRSet) and isinstance(stmt.place, SSAPlace):
                     definitions[stmt.place] = stmt.value
             self.count_uses(block.test, use_counts)
+
+        for p, defn in definitions.items():
+            while True:
+                if isinstance(defn, IRGet) and isinstance(defn.place, SSAPlace) and defn.place in definitions:
+                    defn = definitions[defn.place]
+                    continue
+                inlinable_uses = self.get_inlinable_uses(defn, set())
+                subs = {}
+                for inside_p in inlinable_uses:
+                    if inside_p not in definitions:
+                        continue
+                    inside_defn = definitions[inside_p]
+                    if not self.is_inlinable(inside_defn):
+                        continue
+                    if isinstance(inside_defn, IRGet) and isinstance(inside_defn.place, SSAPlace):
+                        subs[inside_p] = inside_defn
+                if not subs:
+                    break
+                defn = self.substitute(defn, subs)
+            definitions[p] = defn
 
         valid = {
             p
@@ -25,9 +54,6 @@ class InlineSingleUseVars(CompilerPass):
         for block in traverse_cfg_preorder(entry):
             new_statements = []
             for stmt in [*block.statements, block.test]:
-                if isinstance(stmt, IRSet) and isinstance(stmt.place, SSAPlace) and stmt.place in valid:
-                    new_statements.append(stmt)
-                    continue
                 inlinable_uses = self.get_inlinable_uses(stmt, set())
                 subs = {}
                 for p in inlinable_uses:

@@ -1,5 +1,5 @@
 from sonolus.backend.dominance import DominanceFrontiers, get_df, get_dom_children
-from sonolus.backend.flow import BasicBlock, traverse_cfg_preorder
+from sonolus.backend.flow import BasicBlock, FlowEdge, traverse_cfg_preorder
 from sonolus.backend.ir import IRConst, IRGet, IRInstr, IRPureInstr, IRSet, IRStmt
 from sonolus.backend.passes import CompilerPass
 from sonolus.backend.place import BlockPlace, SSAPlace, TempBlock
@@ -11,7 +11,7 @@ class ToSSA(CompilerPass):
 
     def run(self, entry: BasicBlock) -> BasicBlock:
         defs = self.defs_to_blocks(entry)
-        self.insert_phis(entry, defs)
+        self.insert_phis(defs)
         self.rename(entry, defs, {var: [] for var in defs}, {})
         self.remove_placeholder_phis(entry)
         return entry
@@ -82,7 +82,7 @@ class ToSSA(CompilerPass):
             case _:
                 raise TypeError(f"Unexpected statement: {stmt}")
 
-    def insert_phis(self, entry: BasicBlock, defs: dict[TempBlock, set[BasicBlock]]):
+    def insert_phis(self, defs: dict[TempBlock, set[BasicBlock]]):
         for var, blocks in defs.items():
             df = self.get_iterated_df(blocks)
             for block in df:
@@ -127,11 +127,23 @@ class ToSSA(CompilerPass):
 
 class FromSSA(CompilerPass):
     def run(self, entry: BasicBlock) -> BasicBlock:
-        for block in traverse_cfg_preorder(entry):
+        for block in [*traverse_cfg_preorder(entry)]:
             self.process_block(block)
         return entry
 
     def process_block(self, block: BasicBlock):
+        incoming = [*block.incoming]
+        block.incoming.clear()
+        for edge in incoming:
+            between_block = BasicBlock()
+            edge.dst = between_block
+            between_block.incoming.add(edge)
+            next_edge = FlowEdge(between_block, block, None)
+            block.incoming.add(next_edge)
+            between_block.outgoing.add(next_edge)
+            for args in block.phis.values():
+                if edge.src in args:
+                    args[between_block] = args.pop(edge.src)
         for var, args in block.phis.items():
             for src, arg in args.items():
                 src.statements.append(

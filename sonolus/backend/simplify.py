@@ -22,7 +22,7 @@ class CoalesceFlow(CompilerPass):
                     for edge in block.incoming:
                         edge.dst = next_block
                         next_block.incoming.add(edge)
-                    for edge in block.outgoing:
+                    for edge in block.outgoing:  # There should be exactly one
                         next_block.incoming.remove(edge)
                     if block is entry:
                         entry = next_block
@@ -33,10 +33,9 @@ class CoalesceFlow(CompilerPass):
                 block.statements.append(IRSet(p, IRGet(args[block])))
             block.statements.extend(next_block.statements)
             block.test = next_block.test
-            for edge in next_block.outgoing:
-                edge.src = block
             block.outgoing = next_block.outgoing
             for edge in block.outgoing:
+                edge.src = block
                 dst = edge.dst
                 for args in dst.phis.values():
                     if next_block in args:

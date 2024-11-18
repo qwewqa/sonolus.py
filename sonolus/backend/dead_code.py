@@ -1,5 +1,3 @@
-from collections import deque
-
 from sonolus.backend.flow import BasicBlock, traverse_cfg_preorder
 from sonolus.backend.ir import IRConst, IRGet, IRInstr, IRSet
 from sonolus.backend.liveness import LivenessAnalysis, get_live, get_live_phi_targets
@@ -10,10 +8,10 @@ from sonolus.backend.place import BlockPlace, SSAPlace, TempBlock
 class UnreachableCodeElimination(CompilerPass):
     def run(self, entry: BasicBlock) -> BasicBlock:
         original_blocks = [*traverse_cfg_preorder(entry)]
-        queue = deque([entry])
+        worklist = {entry}
         visited = set()
-        while queue:
-            block = queue.popleft()
+        while worklist:
+            block = worklist.pop()
             if block in visited:
                 continue
             visited.add(block)
@@ -25,13 +23,16 @@ class UnreachableCodeElimination(CompilerPass):
                         None,
                     ) or next((edge for edge in block.outgoing if edge.cond is None), None)
                     assert not block.outgoing or taken_edge
-                    block.outgoing.clear()
+                    for edge in [*block.outgoing]:
+                        if edge is not taken_edge:
+                            edge.dst.incoming.remove(edge)
+                            block.outgoing.remove(edge)
                     if taken_edge:
+                        taken_edge.cond = None
                         block.outgoing.add(taken_edge)
-                        queue.append(taken_edge.dst)
+                        worklist.add(taken_edge.dst)
                 case _:
-                    for edge in block.outgoing:
-                        queue.append(edge.dst)
+                    worklist.update(edge.dst for edge in block.outgoing)
         for block in original_blocks:
             if block not in visited:
                 for edge in block.outgoing:
