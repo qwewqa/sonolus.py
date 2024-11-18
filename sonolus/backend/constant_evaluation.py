@@ -1,8 +1,10 @@
 # ruff: noqa: PLR1702
 import functools
+import math
 import operator
 from typing import ClassVar
 
+import sonolus.script.math as smath
 from sonolus.backend.flow import BasicBlock, FlowEdge, traverse_cfg_preorder
 from sonolus.backend.ir import IRConst, IRGet, IRInstr, IRPureInstr, IRSet, IRStmt
 from sonolus.backend.ops import Op
@@ -40,6 +42,24 @@ class SparseConditionalConstantPropagation(CompilerPass):
         Op.Subtract,
         Op.Multiply,
         Op.Divide,
+        Op.Power,
+        Op.Log,
+        Op.Ceil,
+        Op.Floor,
+        Op.Round,
+        Op.Frac,
+        Op.Mod,
+        Op.Rem,
+        Op.Sin,
+        Op.Cos,
+        Op.Tan,
+        Op.Sinh,
+        Op.Cosh,
+        Op.Tanh,
+        Op.Arcsin,
+        Op.Arccos,
+        Op.Arctan,
+        Op.Arctan2,
     }
 
     def run(self, entry: BasicBlock) -> BasicBlock:
@@ -286,6 +306,62 @@ class SparseConditionalConstantPropagation(CompilerPass):
                         if len(args) == 0:
                             return 1
                         return args[0] / functools.reduce(operator.mul, args[1:], 1)
+                    case Op.Power:
+                        if len(args) == 0:
+                            return 1
+                        return functools.reduce(operator.pow, args)
+                    case Op.Log:
+                        assert len(args) == 2
+                        return math.log(args[0], args[1])
+                    case Op.Ceil:
+                        assert len(args) == 1
+                        return math.ceil(args[0])
+                    case Op.Floor:
+                        assert len(args) == 1
+                        return math.floor(args[0])
+                    case Op.Round:
+                        assert len(args) == 1
+                        # This is round half to even in both Python and Sonolus
+                        return round(args[0])
+                    case Op.Frac:
+                        assert len(args) == 1
+                        return smath.frac(args[0])
+                    case Op.Mod:
+                        assert len(args) == 2
+                        return args[0] % args[1]
+                    case Op.Rem:
+                        assert len(args) == 2
+                        return smath.remainder(args[0], args[1])
+                    case Op.Sin:
+                        assert len(args) == 1
+                        return math.sin(args[0])
+                    case Op.Cos:
+                        assert len(args) == 1
+                        return math.cos(args[0])
+                    case Op.Tan:
+                        assert len(args) == 1
+                        return math.tan(args[0])
+                    case Op.Sinh:
+                        assert len(args) == 1
+                        return math.sinh(args[0])
+                    case Op.Cosh:
+                        assert len(args) == 1
+                        return math.cosh(args[0])
+                    case Op.Tanh:
+                        assert len(args) == 1
+                        return math.tanh(args[0])
+                    case Op.Arcsin:
+                        assert len(args) == 1
+                        return math.asin(args[0])
+                    case Op.Arccos:
+                        assert len(args) == 1
+                        return math.acos(args[0])
+                    case Op.Arctan:
+                        assert len(args) == 1
+                        return math.atan(args[0])
+                    case Op.Arctan2:
+                        assert len(args) == 2
+                        return math.atan2(args[0], args[1])
             case IRGet(place=SSAPlace() as place):
                 return values[place]
             case IRGet():
