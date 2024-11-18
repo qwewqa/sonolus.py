@@ -82,8 +82,7 @@ def _round(x: float, n: int = 0) -> float:
 
 @native_function(Op.Frac)
 def frac(x: float) -> float:
-    _ipart, fpart = math.modf(x)
-    return fpart
+    return x % 1
 
 
 @native_function(Op.Log)
@@ -99,7 +98,7 @@ def log(x: float, base: float | None = None) -> float:
 
 @native_function(Op.Rem)
 def remainder(x: float, y: float) -> float:
-    return math.remainder(x, y)
+    return math.copysign(abs(x) % abs(y), x)
 
 
 MATH_BUILTIN_IMPLS = {
