@@ -711,6 +711,10 @@ class Visitor(ast.NodeVisitor):
     def handle_and(self, l_val: Value, r_expr: ast.expr) -> Value:
         ctx_init = ctx()
         l_val = self.ensure_boolean_num(l_val)
+
+        if l_val._is_py_() and not l_val._as_py_():
+            return l_val
+
         ctx_init.test = l_val.ir()
         res_name = self.new_name("and")
 
@@ -731,6 +735,10 @@ class Visitor(ast.NodeVisitor):
     def handle_or(self, l_val: Value, r_expr: ast.expr) -> Value:
         ctx_init = ctx()
         l_val = self.ensure_boolean_num(l_val)
+
+        if l_val._is_py_() and l_val._as_py_():
+            return l_val
+
         ctx_init.test = l_val.ir()
         res_name = self.new_name("or")
 
