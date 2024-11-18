@@ -38,6 +38,7 @@ class SparseConditionalConstantPropagation(CompilerPass):
         Op.Not,
         Op.And,
         Op.Or,
+        Op.Negate,
         Op.Add,
         Op.Subtract,
         Op.Multiply,
@@ -292,6 +293,9 @@ class SparseConditionalConstantPropagation(CompilerPass):
                         return all(args)
                     case Op.Or:
                         return any(args)
+                    case Op.Negate:
+                        assert len(args) == 1
+                        return -args[0]
                     case Op.Add:
                         return sum(args)
                     case Op.Subtract:
