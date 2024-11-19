@@ -18,6 +18,11 @@ def meta_fn[T: Callable]() -> Callable[[T], T]: ...
 
 
 def meta_fn(fn=None):
+    """Marks a function as a meta function to be called directly without the AST visitor.
+
+    This can also improve performance in some cases by avoiding the overhead of the AST visitor.
+    """
+
     # noinspection PyShadowingNames
     def decorator(fn):
         fn._meta_fn_ = True

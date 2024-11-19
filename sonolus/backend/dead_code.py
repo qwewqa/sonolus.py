@@ -49,9 +49,6 @@ class DeadCodeElimination(CompilerPass):
     def requires(self) -> set[CompilerPass]:
         return {LivenessAnalysis()}
 
-    def preserves(self) -> set[CompilerPass] | None:
-        return {LivenessAnalysis()}
-
     def run(self, entry: BasicBlock) -> BasicBlock:
         for block in traverse_cfg_preorder(entry):
             live_stmts = []

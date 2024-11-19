@@ -188,13 +188,17 @@ class QuadLike(Protocol):
 
 
 def flatten_quad(quad: QuadLike) -> tuple[float, float, float, float, float, float, float, float]:
+    bl = quad.bl
+    tl = quad.tl
+    tr = quad.tr
+    br = quad.br
     return (
-        quad.bl.x,
-        quad.bl.y,
-        quad.tl.x,
-        quad.tl.y,
-        quad.tr.x,
-        quad.tr.y,
-        quad.br.x,
-        quad.br.y,
+        bl.x,
+        bl.y,
+        tl.x,
+        tl.y,
+        tr.x,
+        tr.y,
+        br.x,
+        br.y,
     )

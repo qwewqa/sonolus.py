@@ -178,6 +178,14 @@ class Visitor(ast.NodeVisitor):
         set_ctx(after_ctx.branch_with_scope(None, before_ctx.scope.copy()))
         return result_binding.value
 
+    def visit(self, node):
+        """Visit a node."""
+        # We want this here so this is filtered out of tracebacks
+        method = "visit_" + node.__class__.__name__
+        visitor = getattr(self, method, self.generic_visit)
+        with self.reporting_errors_at_node(node):
+            return visitor(node)
+
     def visit_FunctionDef(self, node):
         raise NotImplementedError("Nested functions are not supported")
 
@@ -878,15 +886,29 @@ class Visitor(ast.NodeVisitor):
             {"fn": fn, "args": args, "kwargs": kwargs, "_filter_traceback_": True},
         )
 
-    @contextmanager
     def reporting_errors_at_node(self, node: ast.stmt | ast.expr):
-        try:
-            yield
-        except CompilationError as e:
-            raise e from None
-        except Exception as e:
-            self.raise_exception_at_node(node, e)
+        return ReportingErrorsAtNode(self, node)
 
     def new_name(self, name: str):
         self.used_names[name] = self.used_names.get(name, 0) + 1
         return f"${name}_{self.used_names[name]}"
+
+
+# Not using @contextmanager so it doesn't end up in tracebacks
+class ReportingErrorsAtNode:
+    def __init__(self, compiler, node: ast.stmt | ast.expr):
+        self.compiler = compiler
+        self.node = node
+
+    def __enter__(self):
+        return self
+
+    def __exit__(self, exc_type, exc_value, traceback):
+        if exc_type is None:
+            return
+
+        if issubclass(exc_type, CompilationError):
+            raise exc_value from exc_value.__cause__
+
+        if exc_value is not None:
+            self.compiler.raise_exception_at_node(self.node, exc_value)
