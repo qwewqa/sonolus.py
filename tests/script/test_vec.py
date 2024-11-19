@@ -39,7 +39,9 @@ def test_rotate():
         v = Vec2(1, 1)
         return v.rotate(0.25 * pi)
 
-    assert validate_dual_run(fn) == Vec2(0, 2**0.5)
+    result = validate_dual_run(fn)
+    assert is_close(result.x, 0)
+    assert is_close(result.y, 2 ** 0.5)
 
 
 def test_rotate_about():
