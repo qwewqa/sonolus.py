@@ -114,7 +114,9 @@ def cfg_to_mermaid(entry: BasicBlock):
                 lines.append(f"{index}_{{{{{pre(fmt([block.test]))}}}}}")
                 lines.append(f"{index} --> {index}_")
                 for cond, target in tgt.items():
-                    lines.append(f"{index}_ --> |{pre(fmt([cond or "default"]))}| {block_indexes[target]}")
+                    lines.append(
+                        f"{index}_ --> |{pre(fmt([cond if cond is not None else "default"]))}| {block_indexes[target]}"
+                    )
     lines.append("Exit([Exit])")
 
     body = textwrap.indent("\n".join(lines), "    ")

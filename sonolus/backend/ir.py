@@ -41,6 +41,12 @@ class IRPureInstr:
     def __str__(self):
         return f"{self.op.name}({', '.join(map(str, self.args))})"
 
+    def __eq__(self, other):
+        return isinstance(other, IRPureInstr) and self.op == other.op and self.args == other.args
+
+    def __hash__(self):
+        return hash((self.op, tuple(self.args)))
+
 
 class IRInstr:
     op: Op
@@ -56,6 +62,12 @@ class IRInstr:
     def __str__(self):
         return f"{self.op.name}({', '.join(map(str, self.args))})"
 
+    def __eq__(self, other):
+        return isinstance(other, IRInstr) and self.op == other.op and self.args == other.args
+
+    def __hash__(self):
+        return hash((self.op, tuple(self.args)))
+
 
 class IRGet:
     place: Place
@@ -68,6 +80,12 @@ class IRGet:
 
     def __str__(self):
         return f"{self.place}"
+
+    def __eq__(self, other):
+        return isinstance(other, IRGet) and self.place == other.place
+
+    def __hash__(self):
+        return hash(self.place)
 
 
 class IRSet:
@@ -89,3 +107,9 @@ class IRSet:
                 return f"{self.place} := {self.value}"
             case _:
                 raise TypeError(f"Invalid place: {self.place}")
+
+    def __eq__(self, other):
+        return isinstance(other, IRSet) and self.place == other.place and self.value == other.value
+
+    def __hash__(self):
+        return hash((self.place, self.value))
