@@ -98,19 +98,42 @@ class Transform2d(Record):
             0, 0, 1,
         )
 
-    def perspective_vanish_y(self, y: float, /) -> Self:
-        """Apply perspective vanish along the y-axis with vanish point at the given y coordinate.
+    def simple_perspective_x(self, x: float, /) -> Self:
+        """Apply perspective along the x-axis with vanishing point at the given x coordinate.
 
-        Note: Conveniently, the inverse can be obtained simply by negating the argument.
+        Note: The inverse of this transformation can be obtained by negating the argument.
         """
+        return self._compose(
+            1, 0, 0,
+            0, 1, 0,
+            1 / x, 0, 1,
+        )
+
+    def simple_perspective_y(self, y: float, /) -> Self:
+        """Apply perspective along the y-axis with vanishing point at the given y coordinate."""
         return self._compose(
             1, 0, 0,
             0, 1, 0,
             0, 1 / y, 1,
         )
 
-    def perspective(self, foreground_y, vanishing_point: Vec2, /) -> Self:
-        """Apply a perspective transformation.
+    def perspective_x(self, foreground_x, vanishing_point: Vec2, /) -> Self:
+        """Apply a perspective transformation along the x-axis.
+
+        When the original x is 0, the transformed y coordinate will be unchanged and the x coordinates will
+        be equal to foreground_x.
+        As the original x coordinate approaches infinity in the direction of the vanishing point,
+        the transformed x and y coordinates will approach the vanishing point.
+        """
+        return (
+            self
+            .simple_perspective_x(vanishing_point.x - foreground_x)
+            .shear_y(vanishing_point.y / (vanishing_point.x - foreground_x))
+            .translate(Vec2(foreground_x, 0))
+        )
+
+    def perspective_y(self, foreground_y, vanishing_point: Vec2, /) -> Self:
+        """Apply a perspective transformation along the y-axis.
 
         When the original y is 0, the transformed x coordinate will be unchanged and the y coordinates will
         be equal to foreground_y.
@@ -119,18 +142,27 @@ class Transform2d(Record):
         """
         return (
             self
-            .perspective_vanish_y(vanishing_point.y - foreground_y)
+            .simple_perspective_y(vanishing_point.y - foreground_y)
             .shear_x(vanishing_point.x / (vanishing_point.y - foreground_y))
             .translate(Vec2(0, foreground_y))
         )
 
-    def inverse_perspective(self, foreground_y, vanishing_point: Vec2, /) -> Self:
-        """Apply the inverse of a perspective transformation."""
+    def inverse_perspective_x(self, foreground_x, vanishing_point: Vec2, /) -> Self:
+        """Apply the inverse of a perspective transformation along the x-axis."""
+        return (
+            self
+            .translate(Vec2(-foreground_x, 0))
+            .shear_y(-vanishing_point.y / (vanishing_point.x - foreground_x))
+            .simple_perspective_x(-vanishing_point.x + foreground_x)
+        )
+
+    def inverse_perspective_y(self, foreground_y, vanishing_point: Vec2, /) -> Self:
+        """Apply the inverse of a perspective transformation along the y-axis."""
         return (
             self
             .translate(Vec2(0, -foreground_y))
             .shear_x(-vanishing_point.x / (vanishing_point.y - foreground_y))
-            .perspective_vanish_y(-vanishing_point.y + foreground_y)
+            .simple_perspective_y(-vanishing_point.y + foreground_y)
         )
 
     def normalize(self):

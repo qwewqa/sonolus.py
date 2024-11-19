@@ -136,12 +136,12 @@ def test_shear_y(v, m):
     vanishing_point=vecs(),
 )
 @settings(deadline=timedelta(seconds=2))
-def test_perspective_at_foreground(v_x, foreground_y, vanishing_point):
+def test_perspective_y_at_foreground(v_x, foreground_y, vanishing_point):
     v = Vec2(v_x, 0)
     assume(abs(foreground_y - vanishing_point.y) > 1e-2)
 
     def fn():
-        transform = Transform2d.new().perspective(foreground_y, vanishing_point)
+        transform = Transform2d.new().perspective_y(foreground_y, vanishing_point)
         return transform.transform_vec(v)
 
     result = validate_dual_run(fn)
@@ -155,12 +155,50 @@ def test_perspective_at_foreground(v_x, foreground_y, vanishing_point):
     vanishing_point=vecs(),
 )
 @settings(deadline=timedelta(seconds=2))
-def test_perspective_at_infinity(v_x, foreground_y, vanishing_point):
+def test_perspective_y_at_infinity(v_x, foreground_y, vanishing_point):
     v = Vec2(v_x, (vanishing_point.y - foreground_y) * 1e6)  # Close enough to infinity for testing
     assume(abs(foreground_y - vanishing_point.y) > 1e-2)
 
     def fn():
-        transform = Transform2d.new().perspective(foreground_y, vanishing_point)
+        transform = Transform2d.new().perspective_y(foreground_y, vanishing_point)
+        return transform.transform_vec(v)
+
+    result = validate_dual_run(fn)
+    assert is_close(result.x, vanishing_point.x, rel_tol=1e-3, abs_tol=1e-3)
+    assert is_close(result.y, vanishing_point.y, rel_tol=1e-3, abs_tol=1e-3)
+
+
+@given(
+    v_y=floats,
+    foreground_x=floats,
+    vanishing_point=vecs(),
+)
+@settings(deadline=timedelta(seconds=2))
+def test_perspective_x_at_foreground(v_y, foreground_x, vanishing_point):
+    v = Vec2(0, v_y)
+    assume(abs(foreground_x - vanishing_point.x) > 1e-2)
+
+    def fn():
+        transform = Transform2d.new().perspective_x(foreground_x, vanishing_point)
+        return transform.transform_vec(v)
+
+    result = validate_dual_run(fn)
+    assert is_close(result.x, foreground_x, rel_tol=1e-4, abs_tol=1e-4)
+    assert is_close(result.y, v_y, rel_tol=1e-4, abs_tol=1e-4)
+
+
+@given(
+    v_y=floats,
+    foreground_x=floats,
+    vanishing_point=vecs(),
+)
+@settings(deadline=timedelta(seconds=2))
+def test_perspective_x_at_infinity(v_y, foreground_x, vanishing_point):
+    v = Vec2((vanishing_point.x - foreground_x) * 1e6, v_y)
+    assume(abs(foreground_x - vanishing_point.x) > 1e-2)
+
+    def fn():
+        transform = Transform2d.new().perspective_x(foreground_x, vanishing_point)
         return transform.transform_vec(v)
 
     result = validate_dual_run(fn)
@@ -225,16 +263,24 @@ class TransformInverse(RuleBasedStateMachine):
     @precondition(lambda self: self.perspective_count < 2)
     @rule(y=nonzero_floats)
     def perspective_vanish_y(self, y):
-        self.transform = self.transform.perspective_vanish_y(y)
-        self.inverse = Transform2d.new().perspective_vanish_y(-y).compose(self.inverse)
+        self.transform = self.transform.simple_perspective_y(y)
+        self.inverse = Transform2d.new().simple_perspective_y(-y).compose(self.inverse)
         self.perspective_count += 1
 
     @precondition(lambda self: self.perspective_count < 2)
     @rule(foreground_y=floats, vanishing_point=vecs())
-    def perspective(self, foreground_y, vanishing_point):
+    def perspective_y(self, foreground_y, vanishing_point):
         assume(abs(foreground_y - vanishing_point.y) > 1e-2)
-        self.transform = self.transform.perspective(foreground_y, vanishing_point)
-        self.inverse = Transform2d.new().inverse_perspective(foreground_y, vanishing_point).compose(self.inverse)
+        self.transform = self.transform.perspective_y(foreground_y, vanishing_point)
+        self.inverse = Transform2d.new().inverse_perspective_y(foreground_y, vanishing_point).compose(self.inverse)
+        self.perspective_count += 1
+
+    @precondition(lambda self: self.perspective_count < 2)
+    @rule(foreground_x=floats, vanishing_point=vecs())
+    def perspective_x(self, foreground_x, vanishing_point):
+        assume(abs(foreground_x - vanishing_point.x) > 1e-2)
+        self.transform = self.transform.perspective_x(foreground_x, vanishing_point)
+        self.inverse = Transform2d.new().inverse_perspective_x(foreground_x, vanishing_point).compose(self.inverse)
         self.perspective_count += 1
 
     @invariant()

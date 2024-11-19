@@ -41,7 +41,7 @@ def test_rotate():
 
     result = validate_dual_run(fn)
     assert is_close(result.x, 0)
-    assert is_close(result.y, 2 ** 0.5)
+    assert is_close(result.y, 2**0.5)
 
 
 def test_rotate_about():
