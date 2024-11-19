@@ -2,9 +2,11 @@
 import ast
 import inspect
 from collections.abc import Callable
+from functools import cache
 from pathlib import Path
 
 
+@cache
 def get_function(fn: Callable) -> tuple[str, ast.FunctionDef]:
     # This preserves both line number and column number in the returned node
     source_file = inspect.getsourcefile(fn)
