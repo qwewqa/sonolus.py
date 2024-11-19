@@ -360,6 +360,7 @@ class Visitor(ast.NodeVisitor):
                     self.visit(stmt)
                 end_ctxs.append(ctx())
             set_ctx(false_ctx)
+        end_ctxs.append(ctx())
         if end_ctxs:
             set_ctx(Context.meet(end_ctxs))
 
