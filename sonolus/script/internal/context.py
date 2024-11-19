@@ -6,9 +6,9 @@ from dataclasses import dataclass
 from typing import Any, Self
 
 from sonolus.backend.blocks import BlockData, PlayBlock
-from sonolus.backend.flow import BasicBlock, FlowEdge
 from sonolus.backend.ir import IRConst, IRStmt
 from sonolus.backend.mode import Mode
+from sonolus.backend.optimize.flow import BasicBlock, FlowEdge
 from sonolus.backend.place import Block, BlockPlace, TempBlock
 from sonolus.script.globals import GlobalInfo, GlobalPlaceholder
 from sonolus.script.internal.value import Value

@@ -5,10 +5,10 @@ import operator
 from typing import ClassVar
 
 import sonolus.script.math as smath
-from sonolus.backend.flow import BasicBlock, FlowEdge, traverse_cfg_preorder
 from sonolus.backend.ir import IRConst, IRGet, IRInstr, IRPureInstr, IRSet, IRStmt
 from sonolus.backend.ops import Op
-from sonolus.backend.passes import CompilerPass
+from sonolus.backend.optimize.flow import BasicBlock, FlowEdge, traverse_cfg_preorder
+from sonolus.backend.optimize.passes import CompilerPass
 from sonolus.backend.place import BlockPlace, SSAPlace, TempBlock
 
 

@@ -7,7 +7,7 @@ from sonolus.backend.blocks import PlayBlock
 from sonolus.backend.finalize import cfg_to_engine_node
 from sonolus.backend.interpret import Interpreter
 from sonolus.backend.mode import Mode
-from sonolus.backend.optimize import optimize_and_allocate
+from sonolus.backend.optimize.optimize import optimize_and_allocate
 from sonolus.backend.place import BlockPlace
 from sonolus.backend.visitor import compile_and_call
 from sonolus.build.compile import callback_to_cfg

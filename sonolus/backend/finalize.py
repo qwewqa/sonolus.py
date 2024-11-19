@@ -1,7 +1,7 @@
-from sonolus.backend.flow import BasicBlock, traverse_cfg_preorder
 from sonolus.backend.ir import IRConst, IRGet, IRInstr, IRPureInstr, IRSet
 from sonolus.backend.node import ConstantNode, EngineNode, FunctionNode
 from sonolus.backend.ops import Op
+from sonolus.backend.optimize.flow import BasicBlock, traverse_cfg_preorder
 from sonolus.backend.place import BlockPlace
 
 

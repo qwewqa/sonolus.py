@@ -1,11 +1,11 @@
 from collections.abc import Callable
 
 from sonolus.backend.finalize import cfg_to_engine_node
-from sonolus.backend.flow import BasicBlock
 from sonolus.backend.ir import IRConst, IRInstr
 from sonolus.backend.mode import Mode
 from sonolus.backend.ops import Op
-from sonolus.backend.optimize import optimize_and_allocate
+from sonolus.backend.optimize.flow import BasicBlock
+from sonolus.backend.optimize.optimize import optimize_and_allocate
 from sonolus.backend.visitor import compile_and_call
 from sonolus.build.node import OutputNodeGenerator
 from sonolus.script.archetype import BaseArchetype

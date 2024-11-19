@@ -1,8 +1,8 @@
-from sonolus.backend.flow import (
+from sonolus.backend.optimize.flow import (
     BasicBlock,
     traverse_cfg_reverse_postorder,
 )
-from sonolus.backend.passes import CompilerPass
+from sonolus.backend.optimize.passes import CompilerPass
 
 # traverse_cfg_preorder(entry: BasicBlock) -> Iterator[BasicBlock]
 # traverse_cfg_postorder(entry: BasicBlock) -> Iterator[BasicBlock]

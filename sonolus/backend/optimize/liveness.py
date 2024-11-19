@@ -1,8 +1,8 @@
 from collections import deque
 
-from sonolus.backend.flow import BasicBlock, traverse_cfg_preorder
 from sonolus.backend.ir import IRConst, IRGet, IRInstr, IRPureInstr, IRSet, IRStmt
-from sonolus.backend.passes import CompilerPass
+from sonolus.backend.optimize.flow import BasicBlock, traverse_cfg_preorder
+from sonolus.backend.optimize.passes import CompilerPass
 from sonolus.backend.place import BlockPlace, SSAPlace, TempBlock
 
 type HasLiveness = SSAPlace | TempBlock

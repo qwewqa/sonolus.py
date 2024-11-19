@@ -3,7 +3,7 @@ from __future__ import annotations
 from abc import ABC, abstractmethod
 from collections import deque
 
-from sonolus.backend.flow import BasicBlock
+from sonolus.backend.optimize.flow import BasicBlock
 
 
 class CompilerPass(ABC):

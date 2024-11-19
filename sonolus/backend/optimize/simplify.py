@@ -1,6 +1,6 @@
-from sonolus.backend.flow import BasicBlock
 from sonolus.backend.ir import IRGet, IRSet
-from sonolus.backend.passes import CompilerPass
+from sonolus.backend.optimize.flow import BasicBlock
+from sonolus.backend.optimize.passes import CompilerPass
 
 
 class CoalesceFlow(CompilerPass):
