@@ -86,6 +86,7 @@ class Allocate(CompilerPass):
                     if block.size == 0:
                         offset = -1
                     else:
+                        assert block in mapping, f"Missing mapping for {block}, dead variable not removed?"
                         offset = mapping[block] + offset
                     return BlockPlace(block=10000, index=self.update_stmt(index, mapping), offset=offset)
                 return BlockPlace(

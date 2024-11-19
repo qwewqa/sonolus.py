@@ -57,6 +57,7 @@ class RewriteToSwitch(CompilerPass):
     def run(self, entry: BasicBlock) -> BasicBlock:
         self.ifs_to_switch(entry)
         self.combine_blocks(entry)
+        self.remove_unreachable(entry)
         return entry
 
     def ifs_to_switch(self, entry: BasicBlock):
@@ -110,7 +111,8 @@ class RewriteToSwitch(CompilerPass):
             outgoing_by_cond.pop(None)
             for edge in next_block.outgoing:
                 if edge.cond in outgoing_by_cond:
-                    # In practice this edge should be unreachable
+                    # This edge is unreachable since an equivalent edge would have been taken
+                    edge.dst.incoming.remove(edge)
                     continue
                 outgoing_by_cond[edge.cond] = edge
                 edge.src = block
@@ -121,3 +123,9 @@ class RewriteToSwitch(CompilerPass):
             processed.add(next_block)
             queue.append(block)
             processed.remove(block)
+
+    def remove_unreachable(self, entry: BasicBlock):
+        reachable = {*traverse_cfg_preorder(entry)}
+        for block in traverse_cfg_preorder(entry):
+            block.incoming = {edge for edge in block.incoming if edge.src in reachable}
+            block.outgoing = {edge for edge in block.outgoing if edge.dst in reachable}
