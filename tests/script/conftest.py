@@ -13,6 +13,7 @@ from sonolus.backend.visitor import compile_and_call
 from sonolus.build.compile import callback_to_cfg
 from sonolus.script.debug import debug_log_callback
 from sonolus.script.internal.context import GlobalContextState
+from sonolus.script.internal.error import CompilationError
 from sonolus.script.internal.impl import meta_fn
 from sonolus.script.num import Num
 
@@ -63,7 +64,13 @@ def validate_dual_run[**P, R](fn: Callable[P, R], *args: P.args, **kwargs: P.kwa
             target._copy_from_(result)
         return result
 
-    cfg, rom_values = compile_fn(run_compiled)
+    try:
+        cfg, rom_values = compile_fn(run_compiled)
+    except CompilationError as e:
+        assert exception is not None
+        assert str(e) == str(exception)  # noqa: PT017
+        raise exception from None
+
     cfg = optimize_and_allocate(cfg)
     entry = cfg_to_engine_node(cfg)
     interpreter = Interpreter()

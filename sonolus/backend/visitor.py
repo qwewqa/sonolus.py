@@ -3,7 +3,6 @@ import ast
 import functools
 import inspect
 from collections.abc import Callable, Mapping
-from contextlib import contextmanager
 from types import FunctionType, MethodType
 from typing import Any, Never
 
