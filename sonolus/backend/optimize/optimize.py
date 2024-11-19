@@ -5,7 +5,7 @@ from sonolus.backend.optimize.dead_code import DeadCodeElimination, UnreachableC
 from sonolus.backend.optimize.flow import BasicBlock
 from sonolus.backend.optimize.inlining import InlineVars
 from sonolus.backend.optimize.passes import run_passes
-from sonolus.backend.optimize.simplify import CoalesceFlow, RewriteToSwitch
+from sonolus.backend.optimize.simplify import CoalesceFlow, NormalizeSwitch, RewriteToSwitch
 from sonolus.backend.optimize.ssa import FromSSA, ToSSA
 
 MINIMAL_PASSES = [
@@ -31,6 +31,7 @@ STANDARD_PASSES = [
     CopyCoalesce(),
     DeadCodeElimination(),
     CoalesceFlow(),
+    NormalizeSwitch(),
     Allocate(),
 ]
 

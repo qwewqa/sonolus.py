@@ -129,3 +129,38 @@ class RewriteToSwitch(CompilerPass):
         for block in traverse_cfg_preorder(entry):
             block.incoming = {edge for edge in block.incoming if edge.src in reachable}
             block.outgoing = {edge for edge in block.outgoing if edge.dst in reachable}
+
+
+class NormalizeSwitch(CompilerPass):
+    """Normalize branches like cond -> case a, case a + b, case a + 2b to ((cond - a) / b) -> case 0, case 1, case 2."""
+
+    def run(self, entry: BasicBlock) -> BasicBlock:
+        for block in traverse_cfg_preorder(entry):
+            cases = {edge.cond for edge in block.outgoing}
+            if len(cases) <= 2:
+                continue
+            assert None in cases, "Non-terminal blocks should always have a default edge"
+            cases.remove(None)
+            offset, stride = self.get_offset_stride(cases)
+            if offset is None or (offset == 0 and stride == 1):
+                continue
+            for edge in block.outgoing:
+                if edge.cond is None:
+                    continue
+                edge.cond = (edge.cond - offset) // stride
+            if offset != 0:
+                block.test = IRPureInstr(Op.Subtract, [block.test, IRConst(offset)])
+            if stride != 1:
+                block.test = IRPureInstr(Op.Divide, [block.test, IRConst(stride)])
+        return entry
+
+    def get_offset_stride(self, cases: set[int]) -> tuple[int | None, int | None]:
+        cases = sorted(cases)
+        offset = cases[0]
+        stride = cases[1] - offset
+        if int(offset) != offset or int(stride) != stride:
+            return None, None
+        for i, case in enumerate(cases[2:], 2):
+            if case != offset + i * stride:
+                return None, None
+        return offset, stride
