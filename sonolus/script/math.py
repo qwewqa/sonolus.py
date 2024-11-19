@@ -97,7 +97,8 @@ def log(x: float, base: float | None = None) -> float:
 
 
 @native_function(Op.Rem)
-def remainder(x: float, y: float) -> float:
+def _remainder(x: float, y: float) -> float:
+    # This is different from math.remainder in Python's math package, which could be confusing
     return math.copysign(abs(x) % abs(y), x)
 
 
@@ -117,5 +118,4 @@ MATH_BUILTIN_IMPLS = {
     id(math.trunc): trunc,
     id(round): _round,
     id(math.log): log,
-    id(math.remainder): remainder,
 }
