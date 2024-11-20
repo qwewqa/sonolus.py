@@ -82,24 +82,27 @@ class LivenessAnalysis(CompilerPass):
             if statement.is_array_init:
                 live.difference_update(statement.array_defs)
             live.update(statement.uses)
+        prev_sizes_by_block = {
+            edge.src: len(edge.src.live_out) if edge.src.live_out is not None else -1 for edge in block.incoming
+        }
         live_phi_targets = set()
         for target, args in block.phis.items():
             if target not in live:
                 continue
-            live.difference_update({target})
-            live.update(args.values())
+            live.remove(target)
+            for src_block, arg in args.items():
+                if src_block.live_out is None:
+                    src_block.live_out = set()
+                src_block.live_out.add(arg)
             live_phi_targets.add(target)
-        block.live_in.update(live)
+        block.live_in = live
         block.live_phi_targets = live_phi_targets
         updated_blocks = []
         for edge in block.incoming:
             if edge.src.live_out is None:
-                prev_size = -1
                 edge.src.live_out = set()
-            else:
-                prev_size = len(edge.src.live_out)
             edge.src.live_out.update(live)
-            if len(edge.src.live_out) != prev_size:
+            if len(edge.src.live_out) != prev_sizes_by_block[edge.src]:
                 updated_blocks.append(edge.src)
         return updated_blocks
 
