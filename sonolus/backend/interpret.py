@@ -62,8 +62,8 @@ class Interpreter:
                 return self.run(default)
             case Op.SwitchInteger:
                 test, *branches = args
-                test_result = int(self.run(test))
-                if 0 <= test_result < len(branches):
+                test_result = self.run(test)
+                if 0 <= test_result < len(branches) and int(test_result) == test_result:
                     return self.run(branches[test_result])
                 else:
                     return 0.0
