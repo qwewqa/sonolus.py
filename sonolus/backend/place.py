@@ -1,5 +1,5 @@
 from collections.abc import Iterator
-from typing import Self
+from typing import NamedTuple, Self
 
 from sonolus.backend.blocks import Block
 
@@ -8,13 +8,9 @@ type BlockValue = Block | int | TempBlock | Place
 type IndexValue = int | Place
 
 
-class TempBlock:
+class TempBlock(NamedTuple):
     name: str
-    size: int
-
-    def __init__(self, name: str, size: int = 1):
-        self.name = name
-        self.size = size
+    size: int = 1
 
     def __repr__(self):
         return f"TempBlock(name={self.name!r}, size={self.size!r})"
@@ -33,18 +29,13 @@ class TempBlock:
         return isinstance(other, TempBlock) and self.name == other.name and self.size == other.size
 
     def __hash__(self):
-        return hash((self.name, self.size))
+        return hash(self.name)  # Typically will be unique by name alone
 
 
-class BlockPlace:
+class BlockPlace(NamedTuple):
     block: BlockValue
-    index: IndexValue
+    index: IndexValue = 0
     offset: int = 0
-
-    def __init__(self, block: BlockValue, index: IndexValue = 0, offset: int = 0):
-        self.block = block
-        self.index = index
-        self.offset = offset
 
     def __repr__(self):
         return f"BlockPlace(block={self.block!r}, index={self.index!r}, offset={self.offset!r})"
@@ -59,23 +50,24 @@ class BlockPlace:
         else:
             return f"{self.block}[{self.index} + {self.offset}]"
 
-    def __eq__(self, other):
-        return isinstance(other, BlockPlace) and self.block == other.block and self.index == other.index
-
-    def __hash__(self):
-        return hash((self.block, self.index))
-
     def add_offset(self, offset: int) -> Self:
         return BlockPlace(self.block, self.index, self.offset + offset)
 
+    def __eq__(self, other):
+        return (
+            isinstance(other, BlockPlace)
+            and self.block == other.block
+            and self.index == other.index
+            and self.offset == other.offset
+        )
 
-class SSAPlace:
+    def __hash__(self):
+        return hash((self.block, self.index, self.offset))
+
+
+class SSAPlace(NamedTuple):
     name: str
     num: int
-
-    def __init__(self, name: str, num: int):
-        self.name = name
-        self.num = num
 
     def __repr__(self):
         return f"SSAPlace(name={self.name!r}, num={self.num!r})"

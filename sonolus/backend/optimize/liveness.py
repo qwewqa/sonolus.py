@@ -39,7 +39,7 @@ class LivenessAnalysis(CompilerPass):
                 block.live_arrays_in = set()
             live_arrays_in = block.live_arrays_in.copy()
             for statement in block.statements:
-                live_arrays_in.update(self.get_array_defs(statement))
+                live_arrays_in.update(statement.array_defs)
             updated_blocks = []
             for edge in block.outgoing:
                 if edge.dst.live_arrays_in is None:
@@ -56,7 +56,7 @@ class LivenessAnalysis(CompilerPass):
             live_arrays_in = block.live_arrays_in
             for statement in block.statements:
                 if not self.can_skip(statement, statement.live):
-                    live_arrays_in.update(self.get_array_defs(statement))
+                    live_arrays_in.update(statement.array_defs)
                 statement.live = {
                     place
                     for place in statement.live
@@ -66,22 +66,31 @@ class LivenessAnalysis(CompilerPass):
     def preprocess(self, entry: BasicBlock):
         for block in traverse_cfg_preorder(entry):
             block.live_out = None
-            block.live_in = None
-            block.live_phi_targets = None
-            block.live_arrays_in = None
+            block.live_in = set()
+            block.live_phi_targets = set()
+            block.live_arrays_in = set()
+            for statement in block.statements:
+                statement.live = set()
+                statement.visited = False
+                statement.uses = self.get_uses(statement)
+                statement.defs = self.get_defs(statement)
+                statement.array_defs = self.get_array_defs(statement)
+            block.test.live = set()
+            block.test.uses = self.get_uses(block.test)
+            block.test.defs = self.get_defs(block.test)
 
     def process_block(self, block: BasicBlock) -> list[BasicBlock]:
         if block.live_out is None:
             block.live_out = set()
         live: set[HasLiveness] = block.live_out.copy()
-        block.test.live = live.copy()
-        live.update(self.get_uses(block.test))
+        block.test.live.update(live)
+        live.update(block.test.uses)
         for statement in reversed(block.statements):
-            statement.live = live.copy()
+            statement.live.update(live)
             if self.can_skip(statement, live):
                 continue
-            live.difference_update(self.get_defs(statement))
-            live.update(self.get_uses(statement))
+            live.difference_update(statement.defs)
+            live.update(statement.uses)
         live_phi_targets = set()
         for target, args in block.phis.items():
             if target not in live:
@@ -89,7 +98,7 @@ class LivenessAnalysis(CompilerPass):
             live.difference_update({target})
             live.update(args.values())
             live_phi_targets.add(target)
-        block.live_in = live.copy()
+        block.live_in.update(live)
         block.live_phi_targets = live_phi_targets
         updated_blocks = []
         for edge in block.incoming:
@@ -151,7 +160,7 @@ class LivenessAnalysis(CompilerPass):
             case IRSet(place=_, value=value):
                 if isinstance(value, IRInstr) and value.op.side_effects:
                     return False
-                defs = self.get_defs(stmt) | self.get_array_defs(stmt)
+                defs = stmt.defs | stmt.array_defs
                 return defs and not (defs & live)
         return False
 
