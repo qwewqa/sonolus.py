@@ -5,7 +5,7 @@ from hypothesis import strategies as st
 
 from sonolus.script.array import Array
 from sonolus.script.containers import VarArray
-from sonolus.script.debug import assert_true
+from sonolus.script.debug import assert_true, debug_log
 from tests.script.conftest import validate_dual_run
 
 ints = st.integers(min_value=-999, max_value=999)
@@ -172,6 +172,31 @@ def test_remove_missing_value(values_list):
         return va
 
     assert list(validate_dual_run(fn)) == expected
+
+
+@given(list_and_index(), st.booleans())
+@settings(deadline=timedelta(seconds=1))
+def test_array_with_possible_uninitialized_access(args, run):
+    values_list, index = args
+    values = Array(*values_list)
+    run = Array(run)  # We use an array so the compiler doesn't know the value
+    value_count = len(values_list)
+
+    def fn():
+        va = VarArray[int, value_count].new()
+        if run[0]:
+            va.extend(values)
+        debug_log(0)
+        if run[0]:
+            return va[index]
+        else:
+            return -1
+
+    result = validate_dual_run(fn)
+    if run[0]:
+        assert result == values_list[index]
+    else:
+        assert result == -1
 
 
 def test_clear():

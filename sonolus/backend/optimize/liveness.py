@@ -15,8 +15,25 @@ class LivenessAnalysis(CompilerPass):
     def run(self, entry: BasicBlock) -> BasicBlock:
         self.preprocess(entry)
         self.process(entry)
-        self.process_arrays(entry)
         return entry
+
+    def preprocess(self, entry: BasicBlock):
+        for block in traverse_cfg_preorder(entry):
+            block.live_out = None
+            block.live_in = set()
+            block.live_phi_targets = set()
+            block.array_defs_in = set()
+            block.array_defs_out = None
+            for statement in block.statements:
+                statement.live = set()
+                statement.visited = False
+                statement.uses = self.get_uses(statement)
+                statement.defs = self.get_defs(statement)
+                statement.is_array_init = False  # True if this may be the first assignment to an array
+                statement.array_defs = self.get_array_defs(statement)
+            block.test.live = set()
+            block.test.uses = self.get_uses(block.test)
+        self.preprocess_arrays(entry)
 
     def process(self, entry: BasicBlock):
         queue = deque(self.get_exits(entry))
@@ -27,57 +44,25 @@ class LivenessAnalysis(CompilerPass):
             updated_blocks = self.process_block(block)
             queue.extend(updated_blocks)
 
-    def process_arrays(self, entry: BasicBlock):
-        # With arrays, we can't assume that an assignment will render previous assignments dead.
-        # Before this function is run, arrays are treated as live at a statement as long as they are read from
-        # at some future point.
-        # This function will mark arrays as dead if they could not have been assigned to yet.
-        queue = deque([entry])
+    def preprocess_arrays(self, entry: BasicBlock):
+        queue = {entry}
+        visited = set()
         while queue:
-            block = queue.popleft()
-            if block.live_arrays_in is None:
-                block.live_arrays_in = set()
-            live_arrays_in = block.live_arrays_in.copy()
+            block = queue.pop()
+            array_defs = block.array_defs_in.copy()
+            is_first_visit = block not in visited
+            visited.add(block)
             for statement in block.statements:
-                live_arrays_in.update(statement.array_defs)
-            updated_blocks = []
-            for edge in block.outgoing:
-                if edge.dst.live_arrays_in is None:
-                    prev_size = -1
-                    edge.dst.live_arrays_in = set()
+                if statement.array_defs - array_defs:
+                    statement.is_array_init = True
+                    array_defs.update(statement.array_defs)
                 else:
-                    prev_size = len(edge.dst.live_arrays_in)
-                edge.dst.live_arrays_in.update(live_arrays_in)
-                if len(edge.dst.live_arrays_in) != prev_size:
-                    updated_blocks.append(edge.dst)
-            queue.extend(updated_blocks)
-
-        for block in traverse_cfg_preorder(entry):
-            live_arrays_in = block.live_arrays_in
-            for statement in block.statements:
-                if not self.can_skip(statement, statement.live):
-                    live_arrays_in.update(statement.array_defs)
-                statement.live = {
-                    place
-                    for place in statement.live
-                    if not (isinstance(place, TempBlock) and place.size != 1 and place not in live_arrays_in)
-                }
-
-    def preprocess(self, entry: BasicBlock):
-        for block in traverse_cfg_preorder(entry):
-            block.live_out = None
-            block.live_in = set()
-            block.live_phi_targets = set()
-            block.live_arrays_in = set()
-            for statement in block.statements:
-                statement.live = set()
-                statement.visited = False
-                statement.uses = self.get_uses(statement)
-                statement.defs = self.get_defs(statement)
-                statement.array_defs = self.get_array_defs(statement)
-            block.test.live = set()
-            block.test.uses = self.get_uses(block.test)
-            block.test.defs = self.get_defs(block.test)
+                    statement.is_array_init = False
+            if is_first_visit or array_defs != block.array_defs_out:
+                block.array_defs_out = array_defs
+                for edge in block.outgoing:
+                    queue.add(edge.dst)
+                    edge.dst.array_defs_in.update(array_defs)
 
     def process_block(self, block: BasicBlock) -> list[BasicBlock]:
         if block.live_out is None:
@@ -90,6 +75,8 @@ class LivenessAnalysis(CompilerPass):
             if self.can_skip(statement, live):
                 continue
             live.difference_update(statement.defs)
+            if statement.is_array_init:
+                live.difference_update(statement.array_defs)
             live.update(statement.uses)
         live_phi_targets = set()
         for target, args in block.phis.items():
