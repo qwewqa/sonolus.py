@@ -1,9 +1,9 @@
 from hypothesis import given
 from hypothesis import strategies as st
-from script.test_record import Pair
 
 from sonolus.script.range import Range
 from tests.script.conftest import validate_dual_run
+from tests.script.test_record import Pair
 
 
 @given(n=st.integers(min_value=0, max_value=100))
