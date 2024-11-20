@@ -1,5 +1,6 @@
 from hypothesis import given
 from hypothesis import strategies as st
+from script.test_record import Pair
 
 from sonolus.script.range import Range
 from tests.script.conftest import validate_dual_run
@@ -90,5 +91,42 @@ def test_range_size(start, stop, step):
         return Range(start, stop, step).size()
 
     expected = len(range(start, stop, step))
+    result = validate_dual_run(fn)
+    assert result == expected
+
+
+@given(
+    start1=st.integers(-100, 100),
+    stop1=st.integers(-100, 100),
+    step1=st.integers(-10, 10).filter(lambda x: x != 0),
+    start2=st.integers(-100, 100),
+    stop2=st.integers(-100, 100),
+    step2=st.integers(-10, 10).filter(lambda x: x != 0),
+)
+def test_range_equality(start1, stop1, step1, start2, stop2, step2):
+    def fn():
+        a = Range(start1, stop1, step1)
+        b = Range(start2, stop2, step2)
+        return Pair(a == b, b == a)
+
+    range_a = range(start1, stop1, step1)
+    range_b = range(start2, stop2, step2)
+    expected = Pair(range_a == range_b, range_b == range_a)
+    result = validate_dual_run(fn)
+    assert result == expected
+
+
+@given(
+    start=st.integers(-100, 100),
+    stop=st.integers(-100, 100),
+    step=st.integers(-10, 10).filter(lambda x: x != 0),
+)
+def test_identical_range_equality(start, stop, step):
+    def fn():
+        a = Range(start, stop, step)
+        b = Range(start, stop, step)
+        return Pair(a == b, b == a)
+
+    expected = Pair(True, True)
     result = validate_dual_run(fn)
     assert result == expected

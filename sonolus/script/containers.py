@@ -3,7 +3,6 @@ from __future__ import annotations
 from sonolus.script.array import Array
 from sonolus.script.debug import error
 from sonolus.script.iterator import ArrayLike, SonolusIterator
-from sonolus.script.range import Range
 from sonolus.script.record import Record
 from sonolus.script.values import alloc, copy
 
@@ -81,7 +80,7 @@ class VarArray[T, Capacity](Record, ArrayLike[T]):
         value = copy(self._array[index])
         self._size -= 1
         if index < self._size:
-            for i in Range(index, self._size):
+            for i in range(index, self._size):
                 self._array[i] = self._array[i + 1]
         return value
 
@@ -93,7 +92,7 @@ class VarArray[T, Capacity](Record, ArrayLike[T]):
         assert 0 <= index <= self._size
         assert self._size < self._array.size()
         self._size += 1
-        for i in Range(self._size - 1, index, -1):
+        for i in range(self._size - 1, index, -1):
             self._array[i] = self._array[i - 1]
         self._array[index] = value
 
@@ -194,14 +193,14 @@ class ArrayMap[K, V, Capacity](Record):
         return self.keys()
 
     def __getitem__(self, key: K) -> V:
-        for i in Range(self._size):
+        for i in range(self._size):
             entry = self._array[i]
             if entry.key == key:
                 return entry.value
         error()
 
     def __setitem__(self, key: K, value: V):
-        for i in Range(self._size):
+        for i in range(self._size):
             entry = self._array[i]
             if entry.key == key:
                 entry.value = value
@@ -211,13 +210,13 @@ class ArrayMap[K, V, Capacity](Record):
         self._size += 1
 
     def __contains__(self, key: K) -> bool:
-        for i in Range(self._size):  # noqa: SIM110
+        for i in range(self._size):  # noqa: SIM110
             if self._array[i].key == key:
                 return True
         return False
 
     def pop(self, key: K) -> V:
-        for i in Range(self._size):
+        for i in range(self._size):
             entry = self._array[i]
             if entry.key == key:
                 value = copy(entry.value)
