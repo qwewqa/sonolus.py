@@ -119,6 +119,7 @@ class DeadCodeElimination(CompilerPass):
                 if isinstance(value, IRInstr) and value.op.side_effects:
                     self.update_uses(value, uses)
             else:
+                self.update_uses(place, uses)
                 self.update_uses(value, uses)
         else:
             self.update_uses(stmt, uses)
