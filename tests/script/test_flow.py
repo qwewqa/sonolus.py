@@ -241,3 +241,329 @@ def test_random():
 
     for _ in range(100):
         validate_dual_run(fn)
+
+
+def test_switch_with_integer_cases():
+    def fn():
+        for i in range(5):
+            debug_log(i)
+            match i:
+                case 0:
+                    debug_log(0)
+                case 1:
+                    debug_log(11)
+                case 2:
+                    debug_log(22)
+                case 3:
+                    debug_log(33)
+            debug_log(i)
+
+    validate_dual_run(fn)
+
+
+def test_switch_with_integer_cases_and_default():
+    def fn():
+        for i in range(5):
+            debug_log(i)
+            match i:
+                case 0:
+                    debug_log(0)
+                case 1:
+                    debug_log(11)
+                case 2:
+                    debug_log(22)
+                case 3:
+                    debug_log(33)
+                case _:
+                    debug_log(-1)
+            debug_log(i)
+
+    validate_dual_run(fn)
+
+
+def test_switch_with_offset_integer_cases():
+    def fn():
+        for i in range(10):
+            debug_log(i)
+            match i:
+                case 1:
+                    debug_log(0)
+                case 2:
+                    debug_log(11)
+                case 3:
+                    debug_log(22)
+                case 4:
+                    debug_log(33)
+            debug_log(i)
+
+    validate_dual_run(fn)
+
+
+def test_switch_with_offset_integer_cases_and_default():
+    def fn():
+        for i in range(10):
+            debug_log(i)
+            match i:
+                case 1:
+                    debug_log(0)
+                case 2:
+                    debug_log(11)
+                case 3:
+                    debug_log(22)
+                case 4:
+                    debug_log(33)
+                case _:
+                    debug_log(-1)
+            debug_log(i)
+
+    validate_dual_run(fn)
+
+
+def test_switch_with_integer_cases_and_stride():
+    def fn():
+        for i in range(10):
+            debug_log(i)
+            match i:
+                case 0:
+                    debug_log(0)
+                case 2:
+                    debug_log(11)
+                case 4:
+                    debug_log(22)
+            debug_log(i)
+
+    validate_dual_run(fn)
+
+
+def test_switch_with_integer_cases_and_stride_and_default():
+    def fn():
+        for i in range(10):
+            debug_log(i)
+            match i:
+                case 0:
+                    debug_log(0)
+                case 2:
+                    debug_log(11)
+                case 4:
+                    debug_log(22)
+                case _:
+                    debug_log(-1)
+            debug_log(i)
+
+    validate_dual_run(fn)
+
+
+def test_switch_with_integer_cases_and_stride_and_offset():
+    def fn():
+        for i in range(10):
+            debug_log(i)
+            match i:
+                case 1:
+                    debug_log(0)
+                case 3:
+                    debug_log(11)
+                case 5:
+                    debug_log(22)
+            debug_log(i)
+
+    validate_dual_run(fn)
+
+
+def test_switch_with_integer_cases_and_stride_and_offset_and_default():
+    def fn():
+        for i in range(10):
+            debug_log(i)
+            match i:
+                case 1:
+                    debug_log(0)
+                case 3:
+                    debug_log(11)
+                case 5:
+                    debug_log(22)
+                case _:
+                    debug_log(-1)
+            debug_log(i)
+
+    validate_dual_run(fn)
+
+
+def test_switch_with_integer_cases_and_variable_stride():
+    def fn():
+        for i in range(10):
+            debug_log(i)
+            match i:
+                case 0:
+                    debug_log(0)
+                case 2:
+                    debug_log(11)
+                case 5:
+                    debug_log(22)
+            debug_log(i)
+
+    validate_dual_run(fn)
+
+
+def test_switch_with_integer_cases_and_variable_stride_and_default():
+    def fn():
+        for i in range(10):
+            debug_log(i)
+            match i:
+                case 0:
+                    debug_log(0)
+                case 2:
+                    debug_log(11)
+                case 5:
+                    debug_log(22)
+                case _:
+                    debug_log(-1)
+            debug_log(i)
+
+    validate_dual_run(fn)
+
+
+def test_switch_with_integer_cases_and_variable_stride_and_offset():
+    def fn():
+        for i in range(10):
+            debug_log(i)
+            match i:
+                case 1:
+                    debug_log(0)
+                case 3:
+                    debug_log(11)
+                case 6:
+                    debug_log(22)
+            debug_log(i)
+
+    validate_dual_run(fn)
+
+
+def test_switch_with_integer_cases_and_variable_stride_and_offset_and_default():
+    def fn():
+        for i in range(10):
+            debug_log(i)
+            match i:
+                case 1:
+                    debug_log(0)
+                case 3:
+                    debug_log(11)
+                case 6:
+                    debug_log(22)
+                case _:
+                    debug_log(-1)
+            debug_log(i)
+
+    validate_dual_run(fn)
+
+
+def test_switch_with_float_cases():
+    def fn():
+        for i in range(10):
+            debug_log(i)
+            match i / 2:
+                case 0.0:
+                    debug_log(0)
+                case 0.5:
+                    debug_log(11)
+                case 1.0:
+                    debug_log(22)
+                case 3.0:
+                    debug_log(33)
+            debug_log(i)
+
+    validate_dual_run(fn)
+
+
+def test_switch_with_float_cases_and_default():
+    def fn():
+        for i in range(5):
+            debug_log(i)
+            match i / 2:
+                case 0.0:
+                    debug_log(0)
+                case 0.5:
+                    debug_log(11)
+                case 1.0:
+                    debug_log(22)
+                case 1.5:
+                    debug_log(33)
+                case _:
+                    debug_log(-1)
+            debug_log(i)
+
+    validate_dual_run(fn)
+
+
+def test_switch_with_out_of_order_integer_cases():
+    def fn():
+        for i in range(5):
+            debug_log(i)
+            match i:
+                case 2:
+                    debug_log(0)
+                case 0:
+                    debug_log(11)
+                case 3:
+                    debug_log(22)
+                case 1:
+                    debug_log(33)
+            debug_log(i)
+
+    validate_dual_run(fn)
+
+
+def test_switch_with_out_of_order_integer_cases_and_default():
+    def fn():
+        for i in range(5):
+            debug_log(i)
+            match i:
+                case 2:
+                    debug_log(0)
+                case 0:
+                    debug_log(11)
+                case 3:
+                    debug_log(22)
+                case 1:
+                    debug_log(33)
+                case _:
+                    debug_log(-1)
+            debug_log(i)
+
+    validate_dual_run(fn)
+
+
+def test_switch_with_out_of_order_float_cases():
+    def fn():
+        for i in range(5):
+            debug_log(i)
+            match i / 2:
+                case 1.0:
+                    debug_log(0)
+                case 0.0:
+                    debug_log(11)
+                case 1.5:
+                    debug_log(22)
+                case 0.5:
+                    debug_log(33)
+            debug_log(i)
+
+    validate_dual_run(fn)
+
+
+def test_switch_with_out_of_order_float_cases_and_default():
+    def fn():
+        for i in range(5):
+            debug_log(i)
+            match i / 2:
+                case 1.0:
+                    debug_log(0)
+                case 0.0:
+                    debug_log(11)
+                case 1.5:
+                    debug_log(22)
+                case 0.5:
+                    debug_log(33)
+                case _:
+                    debug_log(-1)
+            debug_log(i)
+
+    validate_dual_run(fn)

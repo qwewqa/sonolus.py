@@ -28,16 +28,24 @@ def cfg_to_engine_node(entry: BasicBlock):
                         ],
                     )
                 )
-            case dict() as tgt:
+            case dict() as targets:
                 args = [ir_to_engine_node(block.test)]
                 default = len(block_indexes)
-                for cond, target in tgt.items():
-                    if cond is None:
-                        default = block_indexes[target]
-                    args.append(ConstantNode(value=cond))
-                    args.append(ConstantNode(value=block_indexes[target]))
-                args.append(ConstantNode(value=default))
-                statements.append(FunctionNode(Op.SwitchWithDefault, args))
+                conds = [cond for cond in targets if cond is not None]
+                if min(conds) == 0 and max(conds) == len(conds) - 1 and all(int(cond) == cond for cond in conds):
+                    args.extend(ConstantNode(value=block_indexes[targets[cond]]) for cond in range(len(conds)))
+                    if None in targets:
+                        default = block_indexes[targets[None]]
+                    args.append(ConstantNode(value=default))
+                    statements.append(FunctionNode(Op.SwitchIntegerWithDefault, args))
+                else:
+                    for cond, target in targets.items():
+                        if cond is None:
+                            default = block_indexes[target]
+                        args.append(ConstantNode(value=cond))
+                        args.append(ConstantNode(value=block_indexes[target]))
+                    args.append(ConstantNode(value=default))
+                    statements.append(FunctionNode(Op.SwitchWithDefault, args))
         block_statements.append(FunctionNode(Op.Execute, statements))
     block_statements.append(ConstantNode(value=0))
     return FunctionNode(Op.Block, [FunctionNode(Op.JumpLoop, block_statements)])
