@@ -27,12 +27,12 @@ class LivenessAnalysis(CompilerPass):
             for statement in block.statements:
                 statement.live = set()
                 statement.visited = False
-                statement.uses = self.get_uses(statement)
+                statement.uses = self.get_uses(statement, set())
                 statement.defs = self.get_defs(statement)
                 statement.is_array_init = False  # True if this may be the first assignment to an array
                 statement.array_defs = self.get_array_defs(statement)
             block.test.live = set()
-            block.test.uses = self.get_uses(block.test)
+            block.test.uses = self.get_uses(block.test, set())
         self.preprocess_arrays(entry)
 
     def process(self, entry: BasicBlock):
@@ -106,25 +106,26 @@ class LivenessAnalysis(CompilerPass):
                 updated_blocks.append(edge.src)
         return updated_blocks
 
-    def get_uses(self, stmt: IRStmt | BlockPlace | SSAPlace | TempBlock | int) -> set[HasLiveness]:
-        uses = set()
+    def get_uses(
+        self, stmt: IRStmt | BlockPlace | SSAPlace | TempBlock | int, uses: set[HasLiveness]
+    ) -> set[HasLiveness]:
         match stmt:
             case IRPureInstr(op=_, args=args) | IRInstr(op=_, args=args):
                 for arg in args:
-                    uses.update(self.get_uses(arg))
+                    self.get_uses(arg, uses)
             case IRGet(place=place):
-                uses.update(self.get_uses(place))
+                self.get_uses(place, uses)
             case IRSet(place=place, value=value):
                 if isinstance(place, BlockPlace):
                     if not isinstance(place.block, TempBlock):
-                        uses.update(self.get_uses(place.block))
-                    uses.update(self.get_uses(place.index))
-                uses.update(self.get_uses(value))
+                        self.get_uses(place.block, uses)
+                    self.get_uses(place.index, uses)
+                self.get_uses(value, uses)
             case IRConst() | int():
                 pass
             case BlockPlace(block=block, index=index, offset=_):
-                uses.update(self.get_uses(block))
-                uses.update(self.get_uses(index))
+                self.get_uses(block, uses)
+                self.get_uses(index, uses)
             case SSAPlace() | TempBlock():
                 uses.add(stmt)
             case _:
