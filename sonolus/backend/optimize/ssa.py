@@ -23,13 +23,14 @@ class ToSSA(CompilerPass):
         ssa_places: dict[TempBlock, list[SSAPlace]],
         used: dict[str, int],
     ):
-        original_ssa_place_lens = {var: len(ssa_places[var]) for var in defs}
+        to_pop = []
         for var, args in [*block.phis.items()]:
             if isinstance(var, SSAPlace):
                 continue
             ssa_places[var].append(self.get_new_ssa_place(var.name, used))
+            to_pop.append(var)
             block.phis[ssa_places[var][-1]] = args
-        block.statements = [self.rename_stmt(stmt, ssa_places, used) for stmt in block.statements]
+        block.statements = [self.rename_stmt(stmt, ssa_places, used, to_pop) for stmt in block.statements]
         for edge in block.outgoing:
             dst = edge.dst
             for var, args in dst.phis.items():
@@ -37,31 +38,34 @@ class ToSSA(CompilerPass):
                     continue
                 if ssa_places[var]:
                     args[block] = ssa_places[var][-1]
-        block.test = self.rename_stmt(block.test, ssa_places, used)
+        block.test = self.rename_stmt(block.test, ssa_places, used, to_pop)
         for dom_child in get_dom_children(block):
             self.rename(dom_child, defs, ssa_places, used)
-        for var, length in original_ssa_place_lens.items():
-            ssa_places[var] = ssa_places[var][:length]
+        for var in to_pop:
+            ssa_places[var].pop()
 
     def remove_placeholder_phis(self, entry: BasicBlock):
         for block in traverse_cfg_preorder(entry):
             block.phis = {var: args for var, args in block.phis.items() if isinstance(var, SSAPlace)}
 
-    def rename_stmt(self, stmt: IRStmt, ssa_places: dict[TempBlock, list[SSAPlace]], used: dict[str, int]):
+    def rename_stmt(
+        self, stmt: IRStmt, ssa_places: dict[TempBlock, list[SSAPlace]], used: dict[str, int], to_pop: list[SSAPlace]
+    ):
         match stmt:
             case IRConst():
                 return stmt
             case IRPureInstr(op=op, args=args):
-                return IRPureInstr(op=op, args=[self.rename_stmt(arg, ssa_places, used) for arg in args])
+                return IRPureInstr(op=op, args=[self.rename_stmt(arg, ssa_places, used, to_pop) for arg in args])
             case IRInstr(op=op, args=args):
-                return IRInstr(op=op, args=[self.rename_stmt(arg, ssa_places, used) for arg in args])
+                return IRInstr(op=op, args=[self.rename_stmt(arg, ssa_places, used, to_pop) for arg in args])
             case IRGet(place=place):
-                return IRGet(place=self.rename_stmt(place, ssa_places, used))
+                return IRGet(place=self.rename_stmt(place, ssa_places, used, to_pop))
             case IRSet(place=place, value=value):
-                value = self.rename_stmt(value, ssa_places, used)
+                value = self.rename_stmt(value, ssa_places, used, to_pop)
                 if isinstance(place, BlockPlace) and isinstance(place.block, TempBlock) and place.block.size == 1:
                     ssa_places[place.block].append(self.get_new_ssa_place(place.block.name, used))
-                place = self.rename_stmt(place, ssa_places, used)
+                    to_pop.append(place.block)
+                place = self.rename_stmt(place, ssa_places, used, to_pop)
                 return IRSet(place=place, value=value)
             case SSAPlace():
                 return stmt
@@ -73,11 +77,11 @@ class ToSSA(CompilerPass):
                 return stmt
             case BlockPlace(block=block, index=index, offset=offset):
                 if isinstance(block, TempBlock) and block.size == 1:
-                    return self.rename_stmt(block, ssa_places, used)
+                    return self.rename_stmt(block, ssa_places, used, to_pop)
                 return BlockPlace(
-                    block=self.rename_stmt(block, ssa_places, used),
-                    index=self.rename_stmt(index, ssa_places, used),
-                    offset=self.rename_stmt(offset, ssa_places, used),
+                    block=self.rename_stmt(block, ssa_places, used, to_pop),
+                    index=self.rename_stmt(index, ssa_places, used, to_pop),
+                    offset=self.rename_stmt(offset, ssa_places, used, to_pop),
                 )
             case _:
                 raise TypeError(f"Unexpected statement: {stmt}")
