@@ -67,7 +67,11 @@ class LivenessAnalysis(CompilerPass):
     def process_block(self, block: BasicBlock) -> list[BasicBlock]:
         if block.live_out is None:
             block.live_out = set()
-        live: set[HasLiveness] = block.live_out.copy()
+        live: set[HasLiveness] = {
+            place
+            for place in block.live_out
+            if not (isinstance(place, TempBlock) and place.size > 1 and place not in block.array_defs_out)
+        }
         block.test.live.update(live)
         live.update(block.test.uses)
         for statement in reversed(block.statements):
