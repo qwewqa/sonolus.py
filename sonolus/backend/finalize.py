@@ -1,12 +1,12 @@
 from sonolus.backend.ir import IRConst, IRGet, IRInstr, IRPureInstr, IRSet
 from sonolus.backend.node import ConstantNode, EngineNode, FunctionNode
 from sonolus.backend.ops import Op
-from sonolus.backend.optimize.flow import BasicBlock, traverse_cfg_preorder
+from sonolus.backend.optimize.flow import BasicBlock, traverse_cfg_reverse_postorder
 from sonolus.backend.place import BlockPlace
 
 
 def cfg_to_engine_node(entry: BasicBlock):
-    block_indexes = {block: i for i, block in enumerate(traverse_cfg_preorder(entry))}
+    block_indexes = {block: i for i, block in enumerate(traverse_cfg_reverse_postorder(entry))}
     block_statements = []
     for block in block_indexes:
         statements = []

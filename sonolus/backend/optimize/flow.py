@@ -87,11 +87,10 @@ def cfg_to_mermaid(entry: BasicBlock):
         else:
             return "{}"
 
-    block_indexes = {block: i for i, block in enumerate(traverse_cfg_preorder(entry))}
+    block_indexes = {block: i for i, block in enumerate(traverse_cfg_reverse_postorder(entry))}
 
     lines = ["Entry([Entry]) --> 0"]
-    for block in traverse_cfg_preorder(entry):
-        index = block_indexes[block]
+    for block, index in block_indexes.items():
         lines.append(f"{index}[{pre(fmt([f'#{index}', *(
             f"{dst} := phi({", ".join(f"{block_indexes.get(src_block, "<dead>")}: {src_place}"
                                       for src_block, src_place
