@@ -106,7 +106,7 @@ def cfg_to_mermaid(entry: BasicBlock):
             case {None: target, **other} if not other:
                 lines.append(f"{index} --> {block_indexes[target]}")
             case {0: f_branch, None: t_branch, **other} if not other:
-                lines.append(f"{index}_{{{pre(fmt([block.test]))}}}")
+                lines.append(f"{index}_{{{{{pre(fmt([block.test]))}}}}}")
                 lines.append(f"{index} --> {index}_")
                 lines.append(f"{index}_ --> |true| {block_indexes[t_branch]}")
                 lines.append(f"{index}_ --> |false| {block_indexes[f_branch]}")

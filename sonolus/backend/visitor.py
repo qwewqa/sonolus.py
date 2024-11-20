@@ -512,6 +512,11 @@ class Visitor(ast.NodeVisitor):
         lhs = self.visit(node.left)
         rhs = self.visit(node.right)
         op = bin_ops[type(node.op)]
+        if lhs._is_py_() and rhs._is_py_():
+            lhs_py = lhs._as_py_()
+            rhs_py = rhs._as_py_()
+            if isinstance(lhs_py, type) and isinstance(rhs_py, type):
+                return validate_value(getattr(lhs_py, op)(rhs_py))
         if hasattr(lhs, op):
             result = self.handle_call(node, getattr(lhs, op), rhs)
             if not self.is_not_implemented(result):

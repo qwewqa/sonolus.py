@@ -2,7 +2,7 @@ from __future__ import annotations
 
 from collections.abc import Callable
 from enum import Enum
-from types import FunctionType, MethodType, NoneType, NotImplementedType
+from types import FunctionType, MethodType, NoneType, NotImplementedType, UnionType
 from typing import TYPE_CHECKING, Annotated, Any, Literal, TypeVar, get_origin, overload
 
 if TYPE_CHECKING:
@@ -64,7 +64,7 @@ def try_validate_value(value: Any) -> Value | None:
             return Comptime.accept_unchecked({validate_value(k)._as_py_(): validate_value(v) for k, v in value.items()})
         case PartialGeneric() | TypeVar() | FunctionType() | MethodType() | NotImplementedType() | str() | NoneType():
             return Comptime.accept_unchecked(value)
-        case other_type if get_origin(value) in {Literal, Annotated}:
+        case other_type if get_origin(value) in {Literal, Annotated, UnionType}:
             return Comptime.accept_unchecked(other_type)
         case GlobalPlaceholder():
             return value.get()
