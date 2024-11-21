@@ -13,6 +13,31 @@ class CoalesceFlow(CompilerPass):
             if block in processed:
                 continue
             processed.add(block)
+            for edge in block.outgoing:
+                while True:
+                    dst = edge.dst
+                    if dst.phis or dst.statements or len(dst.outgoing) != 1 or dst is block:
+                        break
+                    next_dst = next(iter(dst.outgoing)).dst
+                    if next_dst.phis:
+                        break
+                    dst.incoming.remove(edge)
+                    if not dst.incoming:
+                        for dst_edge in dst.outgoing:
+                            dst_edge.dst.incoming.remove(dst_edge)
+                        processed.add(dst)
+                    edge.dst = next_dst
+                    next_dst.incoming.add(edge)
+                    if dst is edge.dst:
+                        break
+            default_edge = next((edge for edge in block.outgoing if edge.cond is None), None)
+            if default_edge is not None:
+                for edge in [*block.outgoing]:
+                    if edge is default_edge:
+                        continue
+                    if edge.dst is default_edge.dst:
+                        block.outgoing.remove(edge)
+                        edge.dst.incoming.remove(edge)
             if len(block.outgoing) != 1:
                 queue.extend(edge.dst for edge in block.outgoing)
                 continue
