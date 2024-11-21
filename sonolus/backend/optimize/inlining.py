@@ -50,11 +50,7 @@ class InlineVars(CompilerPass):
                 defn = self.substitute(defn, subs)
             definitions[p] = defn
 
-        valid = {
-            p
-            for p, count in use_counts.items()
-            if (p in definitions and count == 1 and self.is_inlinable(definitions[p]))
-        }
+        valid = {p for p in definitions if self.is_inlinable(definitions[p]) and use_counts.get(p, 0) <= 1}
 
         for block in traverse_cfg_preorder(entry):
             new_statements = []

@@ -1,8 +1,8 @@
 from sonolus.backend.optimize.allocate import Allocate, AllocateBasic
-from sonolus.backend.optimize.coalesce import CopyCoalesce
 from sonolus.backend.optimize.constant_evaluation import SparseConditionalConstantPropagation
+from sonolus.backend.optimize.copy_coalesce import CopyCoalesce
 from sonolus.backend.optimize.dead_code import (
-    CircularDeadCodeElimination,
+    AdvancedDeadCodeElimination,
     DeadCodeElimination,
     UnreachableCodeElimination,
 )
@@ -33,7 +33,7 @@ STANDARD_PASSES = [
     FromSSA(),
     CoalesceFlow(),
     CopyCoalesce(),
-    CircularDeadCodeElimination(),
+    AdvancedDeadCodeElimination(),
     CoalesceFlow(),
     NormalizeSwitch(),
     Allocate(),

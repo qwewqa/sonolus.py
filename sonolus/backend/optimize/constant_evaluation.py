@@ -164,9 +164,9 @@ class SparseConditionalConstantPropagation(CompilerPass):
                             flow_worklist.update(p.outgoing)
                             reachable_blocks.update(e.dst for e in p.outgoing)
                         else:
-                            taken_edge = next(edge for edge in p.outgoing if edge.cond == new_test_value) or next(
-                                (edge for edge in p.outgoing if edge.cond is None), None
-                            )
+                            taken_edge = next(
+                                (edge for edge in p.outgoing if edge.cond == new_test_value), None
+                            ) or next((edge for edge in p.outgoing if edge.cond is None), None)
                             if taken_edge:
                                 flow_worklist.add(taken_edge)
                                 reachable_blocks.add(taken_edge.dst)

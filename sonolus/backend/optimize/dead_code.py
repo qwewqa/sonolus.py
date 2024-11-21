@@ -151,8 +151,8 @@ class DeadCodeElimination(CompilerPass):
         return uses
 
 
-class CircularDeadCodeElimination(CompilerPass):
-    """Slower than DeadCodeElimination but can handle circular dependencies."""
+class AdvancedDeadCodeElimination(CompilerPass):
+    """Slower than regular DeadCodeElimination but can handle cases like definitions after the last use and so on."""
 
     def requires(self) -> set[CompilerPass]:
         return {LivenessAnalysis()}
