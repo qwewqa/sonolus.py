@@ -90,7 +90,7 @@ def validate_dual_run[**P, R](fn: Callable[P, R], *args: P.args, **kwargs: P.kwa
         raise exception
 
     assert compiled_result == regular_result
-    assert log_entries == interpreter.log
+    assert interpreter.log == log_entries
 
     return regular_result
 

@@ -361,15 +361,17 @@ class Visitor(ast.NodeVisitor):
                         self.visit(stmt)
                     end_ctxs.append(ctx())
                 else:
-                    end_ctxs.append(ctx())
+                    # Merge failing before the guard and failing now at the guard (which we know is guaranteed to fail)
+                    false_ctx = Context.meet([ctx(), false_ctx])
             else:
                 ctx().test = guard.ir()
-                true_ctx = ctx().branch(None)
-                false_ctx = ctx().branch(0)
-                set_ctx(true_ctx)
+                guard_true_ctx = ctx().branch(None)
+                guard_false_ctx = ctx().branch(0)
+                set_ctx(guard_true_ctx)
                 for stmt in case.body:
                     self.visit(stmt)
                 end_ctxs.append(ctx())
+                false_ctx = Context.meet([false_ctx, guard_false_ctx])
             set_ctx(false_ctx)
         end_ctxs.append(ctx())
         if end_ctxs:
@@ -483,13 +485,14 @@ class Visitor(ast.NodeVisitor):
                     return ctx(), ctx().into_dead()
             case ast.MatchOr():
                 true_ctxs = []
-                false_ctx = ctx()
                 assert pattern.patterns
                 for subpattern in pattern.patterns:
+                    if not ctx().live:
+                        break
                     true_ctx, false_ctx = self.handle_match_pattern(subject, subpattern)
                     true_ctxs.append(true_ctx)
                     set_ctx(false_ctx)
-                return Context.meet(true_ctxs), false_ctx
+                return Context.meet(true_ctxs), ctx()
 
     def visit_Raise(self, node):
         raise NotImplementedError("Raise statements are not supported")

@@ -16,6 +16,11 @@ class Pair2[T, U](Record):
     second: U
 
 
+class Pair3[T, U](Record):
+    first: T
+    second: U
+
+
 class Color(IntEnum):
     RED = 1
     GREEN = 2
@@ -477,5 +482,50 @@ def test_match_nested_shapes_and_pair():
         m(p1)
         m(p2)
         m(p3)
+
+    validate_dual_run(fn)
+
+
+def test_match_partial_binding():
+    p1 = Pair(1, 2)
+    p2 = Pair2(3, 4)
+    p3 = Pair(5, 6)
+    p4 = Pair2(7, 8)
+    p5 = Pair(3, 2)
+    p6 = Pair2(1, 3)
+    p7 = Pair(Pair(1, 2), Pair(3, 4))
+    p8 = Pair2(Pair2(1, 2), Pair2(3, 4))
+    p9 = Pair3(1, 2)
+
+    def m(x):
+        match x:
+            case Pair(1, _) | Pair2(_, _) if isinstance(x, Pair3):
+                # This is unreachable, but it's a valid pattern we're testing
+                debug_log(123)
+            case Pair(1, b) | Pair2(2, b):
+                debug_log(b)
+            case Pair(a, 2) | Pair2(a, 3):
+                debug_log(a)
+            case Pair(a, b) | Pair2(a, b) if isinstance(a, Num):
+                debug_log(a + b)
+            case Pair(Pair() as a) | Pair2(7, a):
+                if isinstance(a, Pair):
+                    debug_log(a.first)
+                    debug_log(a.second)
+                else:
+                    debug_log(a)
+            case _:
+                debug_log(-1)
+
+    def fn():
+        m(p1)
+        m(p2)
+        m(p3)
+        m(p4)
+        m(p5)
+        m(p6)
+        m(p7)
+        m(p8)
+        m(p9)
 
     validate_dual_run(fn)
