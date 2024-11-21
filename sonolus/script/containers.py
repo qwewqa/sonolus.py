@@ -101,7 +101,7 @@ class VarArray[T, Capacity](Record, ArrayLike[T]):
 
         Preserves the relative order of the elements.
         """
-        index = self.index_of(value)
+        index = self.index(value)
         if index < 0:
             return False
         self.pop(index)
@@ -129,7 +129,7 @@ class VarArray[T, Capacity](Record, ArrayLike[T]):
 
         Does not preserve the relative order of the elements.
         """
-        index = self.index_of(value)
+        index = self.index(value)
         if index < 0:
             return False
         if index < self._size - 1:
@@ -138,6 +138,8 @@ class VarArray[T, Capacity](Record, ArrayLike[T]):
         return True
 
     def __eq__(self, other):
+        if not isinstance(other, ArrayLike):
+            return False
         if self.size() != other.size():
             return False
         i = 0

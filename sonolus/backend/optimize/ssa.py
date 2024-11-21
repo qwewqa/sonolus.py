@@ -70,6 +70,12 @@ class ToSSA(CompilerPass):
             case SSAPlace():
                 return stmt
             case TempBlock() if stmt.size == 1:
+                if stmt not in ssa_places or not ssa_places[stmt]:
+                    # This is an access to a definitely undefined variable
+                    # But it might not be reachable in reality, so we should allow it
+                    # Maybe there should be an error if this still happens after optimization,
+                    # but recovering the location of the error in the original code is hard
+                    return SSAPlace("err", 0)
                 return ssa_places[stmt][-1]
             case TempBlock():
                 return stmt

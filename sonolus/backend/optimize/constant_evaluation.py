@@ -68,7 +68,7 @@ class SparseConditionalConstantPropagation(CompilerPass):
         executable_edges: set[FlowEdge] = set()
 
         # BasicBlock key means the block's test
-        values: dict[SSAPlace | BasicBlock, Value] = {}
+        values: dict[SSAPlace | BasicBlock, Value] = {SSAPlace("err", 0): UNDEF}
         defs: dict[SSAPlace | BasicBlock, IRStmt | dict[FlowEdge, SSAPlace]] = {}
         places_to_blocks: dict[SSAPlace, BasicBlock] = {}
         reachable_blocks: set[BasicBlock] = set()

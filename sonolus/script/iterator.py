@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 from abc import abstractmethod
-from collections.abc import Collection, Iterator
+from collections.abc import Iterator, Sequence
 
 from sonolus.script.num import Num
 from sonolus.script.record import Record
@@ -22,8 +22,11 @@ class SonolusIterator[T](Iterator[T]):
             raise StopIteration
         return self.next()
 
+    def __iter__(self) -> SonolusIterator[T]:
+        return self
 
-class ArrayLike[T](Collection):
+
+class ArrayLike[T](Sequence):
     @abstractmethod
     def size(self) -> int:
         pass
@@ -50,6 +53,9 @@ class ArrayLike[T](Collection):
             i += 1
         return False
 
+    def __reversed__(self):
+        return self.reversed()
+
     def reversed(self) -> ArrayLike[T]:
         return ArrayReverser(self)
 
@@ -59,15 +65,26 @@ class ArrayLike[T](Collection):
     def enumerate(self, start: Num = 0) -> SonolusIterator[T]:
         return ArrayEnumerator(0, start, self)
 
-    def index_of(self, value: T, start: Num = 0) -> Num:
+    def index(self, value: T, start: Num = 0, stop: Num | None = None) -> Num:
+        if stop is None:
+            stop = self.size()
         i = start
-        while i < self.size():
+        while i < stop:
             if self[i] == value:
                 return i
             i += 1
         return -1
 
-    def last_index_of(self, value: T) -> Num:
+    def count(self, value: T) -> Num:
+        count = 0
+        i = 0
+        while i < self.size():
+            if self[i] == value:
+                count += 1
+            i += 1
+        return count
+
+    def last_index(self, value: T) -> Num:
         i = self.size() - 1
         while i >= 0:
             if self[i] == value:

@@ -100,7 +100,9 @@ class _Comptime[T, V](GenericValue):
             case str():
                 return other._is_py_() and other._as_py_() == self.value()
             case _:
-                raise TypeError("Unsupported comparison with comptime value")
+                if not isinstance(other, _Comptime) and type(other) is not type(validate_value(self.value())):
+                    return False
+                raise TypeError("Unsupported comparison")
 
     @meta_fn
     def __hash__(self):

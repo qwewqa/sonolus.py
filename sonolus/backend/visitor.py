@@ -9,13 +9,13 @@ from typing import Any, Never
 from sonolus.backend.excepthook import install_excepthook
 from sonolus.backend.utils import get_function, scan_writes
 from sonolus.script.debug import assert_true
-from sonolus.script.internal.builtin_impls import BUILTIN_IMPLS
+from sonolus.script.internal.builtin_impls import BUILTIN_IMPLS, _len
 from sonolus.script.internal.context import Context, EmptyBinding, Scope, ValueBinding, ctx, set_ctx
 from sonolus.script.internal.descriptor import SonolusDescriptor
 from sonolus.script.internal.error import CompilationError
 from sonolus.script.internal.impl import try_validate_value, validate_value
 from sonolus.script.internal.value import Value
-from sonolus.script.iterator import SonolusIterator
+from sonolus.script.iterator import ArrayLike, SonolusIterator
 from sonolus.script.num import Num, is_num
 
 _compiler_internal_ = True
@@ -242,7 +242,18 @@ class Visitor(ast.NodeVisitor):
         self.handle_assign(node.target, value)
 
     def visit_For(self, node):
-        iterator = iter(self.visit(node.iter))
+        from sonolus.script.comptime import Comptime
+
+        iterable = self.visit(node.iter)
+        if isinstance(iterable, Comptime) and isinstance(iterable._as_py_(), tuple):
+            # Unroll the loop
+            for value in iterable._as_py_():
+                set_ctx(ctx().branch(None))
+                self.handle_assign(node.target, validate_value(value))
+                for stmt in node.body:
+                    self.visit(stmt)
+            return
+        iterator = self.handle_call(node, iterable.__iter__)
         if not isinstance(iterator, SonolusIterator):
             raise ValueError("Unsupported iterator")
         writes = scan_writes(node)
@@ -365,10 +376,21 @@ class Visitor(ast.NodeVisitor):
             set_ctx(Context.meet(end_ctxs))
 
     def handle_match_pattern(self, subject: Value, pattern: ast.pattern) -> tuple[Context, Context]:
+        from sonolus.script.comptime import Comptime
+        from sonolus.script.internal.generic import validate_type_spec
+
+        if not ctx().live:
+            return ctx().into_dead(), ctx()
+
         match pattern:
             case ast.MatchValue(value=value):
                 value = self.visit(value)
-                test = self.ensure_boolean_num(subject == value)
+                test = self.ensure_boolean_num(validate_value(subject == value))
+                if test._is_py_():
+                    if test._as_py_():
+                        return ctx(), ctx().into_dead()
+                    else:
+                        return ctx().into_dead(), ctx()
                 ctx_init = ctx()
                 ctx_init.test = test.ir()
                 true_ctx = ctx_init.branch(None)
@@ -389,14 +411,36 @@ class Visitor(ast.NodeVisitor):
                 true_ctx = ctx_init.branch(None)
                 false_ctx = ctx_init.branch(0)
                 return true_ctx, false_ctx
-            case ast.MatchSequence():
-                raise NotImplementedError("Match sequences are not supported")
+            case ast.MatchSequence(patterns=patterns):
+                target_len = len(patterns)
+                if not (
+                    isinstance(subject, ArrayLike)
+                    or (isinstance(subject, Comptime) and isinstance(subject._as_py_(), tuple))
+                ):
+                    return ctx().into_dead(), ctx()
+                length_test = self.ensure_boolean_num(validate_value(_len(subject) == target_len))
+                ctx_init = ctx()
+                if not length_test._is_py_():
+                    ctx_init.test = length_test.ir()
+                    true_ctx = ctx_init.branch(None)
+                    false_ctxs = [ctx_init.branch(0)]
+                elif length_test._as_py_():
+                    true_ctx = ctx_init
+                    false_ctxs = []
+                else:
+                    return ctx().into_dead(), ctx()
+                set_ctx(true_ctx)
+                for i, subpattern in enumerate(patterns):
+                    if not ctx().live:
+                        break
+                    value = self.handle_getitem(subpattern, subject, validate_value(i))
+                    true_ctx, false_ctx = self.handle_match_pattern(value, subpattern)
+                    false_ctxs.append(false_ctx)
+                    set_ctx(true_ctx)
+                return true_ctx, Context.meet(false_ctxs)
             case ast.MatchMapping():
                 raise NotImplementedError("Match mappings are not supported")
             case ast.MatchClass(cls=cls, patterns=patterns, kwd_attrs=kwd_attrs, kwd_patterns=kwd_patterns):
-                from sonolus.script.comptime import Comptime
-                from sonolus.script.internal.generic import validate_type_spec
-
                 cls = validate_type_spec(self.visit(cls))
                 if not isinstance(cls, type):
                     raise TypeError("Class is not a type")
@@ -777,7 +821,9 @@ class Visitor(ast.NodeVisitor):
 
     def handle_getattr(self, node: ast.stmt | ast.expr, target: Value, key: str) -> Value:
         with self.reporting_errors_at_node(node):
-            if target._is_py_():
+            from sonolus.script.comptime import Comptime
+
+            if isinstance(target, Comptime) and target._is_py_():
                 target = target._as_py_()
             descriptor = type(target).__dict__.get(key)
             match descriptor:
@@ -825,6 +871,8 @@ class Visitor(ast.NodeVisitor):
                 target = target._as_py_()
                 if key._is_py_():
                     return validate_value(target[key._as_py_()])
+                if isinstance(target, dict):
+                    raise TypeError("Dictionary access requires a compile-time constant key")
                 if isinstance(target, Value) and hasattr(target, "__getitem__"):
                     return self.handle_call(node, target.__getitem__, key)
                 raise TypeError(f"Cannot get items on {type(target).__name__}")

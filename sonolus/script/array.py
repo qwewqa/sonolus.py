@@ -148,13 +148,11 @@ class Array[T, Size](GenericValue, ArrayLike[T]):
     @meta_fn
     def __getitem__(self, index: Num) -> T:
         index: Num = Num._accept_(index)
-        if index._is_py_():
+        if index._is_py_() and 0 <= index._as_py_() < self.size():
             const_index = index._as_py_()
             if isinstance(const_index, float) and not const_index.is_integer():
                 raise ValueError("Array index must be an integer")
             const_index = int(const_index)
-            if not 0 <= const_index < self.size():
-                raise IndexError("Array index out of range")
             if isinstance(self._value, list):
                 if ctx():
                     return self._value[const_index]._get_()
@@ -215,6 +213,8 @@ class Array[T, Size](GenericValue, ArrayLike[T]):
                 dst._copy_from_(value)
 
     def __eq__(self, other):
+        if not isinstance(other, ArrayLike):
+            return False
         if self.size() != other.size():
             return False
         i = 0

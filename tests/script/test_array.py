@@ -179,14 +179,14 @@ def test_array_enumerate():
     assert validate_dual_run(fn) == 1
 
 
-def test_array_index_of():
+def test_array_index():
     def fn():
         array = Array(1, 2, 3)
 
-        assert_true(array.index_of(1) == 0)
-        assert_true(array.index_of(2) == 1)
-        assert_true(array.index_of(3) == 2)
-        assert_true(array.index_of(4) == -1)
+        assert_true(array.index(1) == 0)
+        assert_true(array.index(2) == 1)
+        assert_true(array.index(3) == 2)
+        assert_true(array.index(4) == -1)
 
         return 1
 
@@ -209,6 +209,15 @@ def test_array_min():
         return array.min()
 
     assert validate_dual_run(fn) == 1
+
+
+def test_array_count():
+    def fn():
+        array = Array(1, 2, 3, 2, 1)
+
+        return array.count(1)
+
+    assert validate_dual_run(fn) == 2
 
 
 @given(

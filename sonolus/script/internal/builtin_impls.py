@@ -1,11 +1,12 @@
 from collections.abc import Iterable
 from typing import overload
 
+from sonolus.script.comptime import Comptime
 from sonolus.script.internal.context import ctx
 from sonolus.script.internal.impl import meta_fn, validate_value
 from sonolus.script.iterator import ArrayLike, Enumerator, SonolusIterator
 from sonolus.script.math import MATH_BUILTIN_IMPLS
-from sonolus.script.num import is_num
+from sonolus.script.num import Num, is_num
 from sonolus.script.range import Range
 
 
@@ -13,6 +14,11 @@ from sonolus.script.range import Range
 def _isinstance(value, type_):
     value = validate_value(value)
     type_ = validate_value(type_)._as_py_()
+    if isinstance(value, Comptime):
+        if type_ in {dict, tuple, Num, callable}:
+            return validate_value(isinstance(value._as_py_(), type_))
+        else:
+            raise TypeError(f"Unsupported type: {type_} for isinstance")
     return validate_value(isinstance(value, type_))
 
 
@@ -21,6 +27,8 @@ def _len(value):
     from sonolus.backend.visitor import compile_and_call
 
     value = validate_value(value)
+    if value._is_py_():
+        return validate_value(len(value._as_py_()))
     if not hasattr(value, "__len__"):
         raise TypeError(f"object of type '{type(value).__name__}' has no len()")
     return compile_and_call(value.__len__)

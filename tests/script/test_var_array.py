@@ -13,6 +13,42 @@ lists = st.lists(ints, min_size=1, max_size=20)
 sets = st.sets(ints, min_size=1, max_size=20)
 
 
+from hypothesis import strategies as st
+
+
+@st.composite
+def list_with_duplicates(draw):
+    size = draw(st.integers(min_value=1, max_value=20))
+    base_values = draw(st.lists(st.integers(min_value=-10, max_value=10), min_size=size // 2, max_size=size // 2))
+
+    duplicates = draw(
+        st.lists(
+            st.sampled_from(base_values) if base_values else st.integers(-10, 10),
+            min_size=size - len(base_values),
+            max_size=size - len(base_values),
+        )
+    )
+
+    values = base_values + duplicates
+    values = draw(st.permutations(values))
+
+    target = draw(st.sampled_from(values))
+    return values, target
+
+
+@st.composite
+def list_and_maybe_missing_value(draw):
+    size = draw(st.integers(min_value=1, max_value=20))
+    values = draw(st.lists(st.integers(min_value=-10, max_value=10), min_size=size, max_size=size))
+
+    if draw(st.booleans()):
+        target = draw(st.integers(min_value=-20, max_value=20))
+    else:
+        target = draw(st.sampled_from(values))
+
+    return values, target
+
+
 @st.composite
 def list_and_index(draw):
     values = draw(lists)
@@ -319,3 +355,57 @@ def test_set_remove_add_round_trip(args):
         return va
 
     assert sorted(validate_dual_run(fn)) == sorted(value_set)
+
+
+@given(list_with_duplicates())
+@settings(deadline=timedelta(seconds=1))
+def test_var_array_count(args):
+    values_list, target = args
+    values = Array(*values_list)
+    value_count = len(values_list)
+    expected_count = values_list.count(target)
+
+    def fn():
+        va = VarArray[int, value_count].new()
+        va.extend(values)
+        count_result = va.count(target)
+        assert_true(count_result == expected_count)
+        return count_result
+
+    assert validate_dual_run(fn) == expected_count
+
+
+@given(list_with_duplicates())
+@settings(deadline=timedelta(seconds=1))
+def test_var_array_count_present(args):
+    values_list, target = args
+    values = Array(*values_list)
+    value_count = len(values_list)
+    expected_count = values_list.count(target)
+
+    def fn():
+        va = VarArray[int, value_count].new()
+        va.extend(values)
+        count_result = va.count(target)
+        assert_true(count_result == expected_count)
+        return count_result
+
+    assert validate_dual_run(fn) == expected_count
+
+
+@given(list_and_maybe_missing_value())
+@settings(deadline=timedelta(seconds=1))
+def test_var_array_count_maybe_missing(args):
+    values_list, target = args
+    values = Array(*values_list)
+    value_count = len(values_list)
+    expected_count = values_list.count(target)
+
+    def fn():
+        va = VarArray[int, value_count].new()
+        va.extend(values)
+        count_result = va.count(target)
+        assert_true(count_result == expected_count)
+        return count_result
+
+    assert validate_dual_run(fn) == expected_count

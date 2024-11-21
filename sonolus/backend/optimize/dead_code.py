@@ -1,6 +1,6 @@
 from sonolus.backend.ir import IRConst, IRGet, IRInstr, IRPureInstr, IRSet, IRStmt
 from sonolus.backend.optimize.flow import BasicBlock, traverse_cfg_preorder
-from sonolus.backend.optimize.liveness import HasLiveness
+from sonolus.backend.optimize.liveness import HasLiveness, LivenessAnalysis, get_live, get_live_phi_targets
 from sonolus.backend.optimize.passes import CompilerPass
 from sonolus.backend.place import BlockPlace, SSAPlace, TempBlock
 
@@ -149,3 +149,37 @@ class DeadCodeElimination(CompilerPass):
             case _:
                 raise TypeError(f"Unexpected statement type: {type(stmt)}")
         return uses
+
+
+class CircularDeadCodeElimination(CompilerPass):
+    """Slower than DeadCodeElimination but can handle circular dependencies."""
+
+    def requires(self) -> set[CompilerPass]:
+        return {LivenessAnalysis()}
+
+    def run(self, entry: BasicBlock) -> BasicBlock:
+        for block in traverse_cfg_preorder(entry):
+            live_stmts = []
+            for statement in block.statements:
+                live = get_live(statement)
+                match statement:
+                    case IRSet(place=place, value=value):
+                        is_live = not (
+                            (isinstance(place, SSAPlace) and place not in live)
+                            or (
+                                isinstance(place, BlockPlace)
+                                and isinstance(place.block, TempBlock)
+                                and place.block not in live
+                            )
+                            or (isinstance(value, IRGet) and place == value.place)
+                        )
+                        if is_live:
+                            live_stmts.append(statement)
+                        elif isinstance(value, IRInstr) and value.op.side_effects:
+                            live_stmts.append(value)
+                            value.live = live
+                    case other:
+                        live_stmts.append(other)
+            block.statements = live_stmts
+            block.phis = {place: phi for place, phi in block.phis.items() if place in get_live_phi_targets(block)}
+        return entry
