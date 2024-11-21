@@ -506,8 +506,10 @@ def test_match_partial_binding():
                 debug_log(b)
             case Pair(a, 2) | Pair2(a, 3):
                 debug_log(a)
-            case Pair(a, b) | Pair2(a, b) if isinstance(a, Num):
+            case Pair(Num(a), b) | Pair2(a, Num(b)) if a > 3:
                 debug_log(a + b)
+            case Pair(a, b) | Pair2(a, b) if isinstance(a, Num) and a <= 3:
+                debug_log(a - b)
             case Pair(Pair() as a) | Pair2(7, a):
                 if isinstance(a, Pair):
                     debug_log(a.first)

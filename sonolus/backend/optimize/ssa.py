@@ -74,7 +74,10 @@ class ToSSA(CompilerPass):
                     # This is an access to a definitely undefined variable
                     # But it might not be reachable in reality, so we should allow it
                     # Maybe there should be an error if this still happens after optimization,
-                    # but recovering the location of the error in the original code is hard
+                    # but recovering the location of the error in the original code is hard.
+                    # This can happen in places like matching a VarArray[Num, 1] which was just created.
+                    # IR generation won't immediately fold a check that size > 0 to false, so here we
+                    # might see an access to uninitialized memory even though it's not reachable in reality.
                     return SSAPlace("err", 0)
                 return ssa_places[stmt][-1]
             case TempBlock():
