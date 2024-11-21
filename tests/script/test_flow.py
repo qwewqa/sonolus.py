@@ -567,3 +567,49 @@ def test_switch_with_out_of_order_float_cases_and_default():
             debug_log(i)
 
     validate_dual_run(fn)
+
+
+def test_while_else_taken():
+    def fn():
+        i = 0
+        while i < 5:
+            debug_log(i)
+            i += 1
+        debug_log(-1)
+
+    validate_dual_run(fn)
+
+
+def test_while_else_not_taken():
+    def fn():
+        i = 0
+        while i < 5:
+            debug_log(i)
+            i += 1
+            if i == 3:
+                break
+        else:
+            debug_log(-1)
+
+    validate_dual_run(fn)
+
+
+def test_for_else_taken():
+    def fn():
+        for i in range(5):
+            debug_log(i)
+        debug_log(-1)
+
+    validate_dual_run(fn)
+
+
+def test_for_else_not_taken():
+    def fn():
+        for i in range(5):
+            debug_log(i)
+            if i == 3:
+                break
+        else:
+            debug_log(-1)
+
+    validate_dual_run(fn)
