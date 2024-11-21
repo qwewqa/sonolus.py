@@ -2,7 +2,7 @@
 import ast
 import functools
 import inspect
-from collections.abc import Callable, Mapping
+from collections.abc import Callable, Mapping, Sequence
 from types import FunctionType, MethodType
 from typing import Any, Never
 
@@ -15,7 +15,7 @@ from sonolus.script.internal.descriptor import SonolusDescriptor
 from sonolus.script.internal.error import CompilationError
 from sonolus.script.internal.impl import try_validate_value, validate_value
 from sonolus.script.internal.value import Value
-from sonolus.script.iterator import ArrayLike, SonolusIterator
+from sonolus.script.iterator import SonolusIterator
 from sonolus.script.num import Num, is_num
 
 _compiler_internal_ = True
@@ -416,7 +416,7 @@ class Visitor(ast.NodeVisitor):
             case ast.MatchSequence(patterns=patterns):
                 target_len = len(patterns)
                 if not (
-                    isinstance(subject, ArrayLike)
+                    isinstance(subject, Sequence)
                     or (isinstance(subject, Comptime) and isinstance(subject._as_py_(), tuple))
                 ):
                     return ctx().into_dead(), ctx()
