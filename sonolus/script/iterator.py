@@ -2,6 +2,7 @@ from __future__ import annotations
 
 from abc import abstractmethod
 from collections.abc import Iterator, Sequence
+from typing import Any
 
 from sonolus.script.num import Num
 from sonolus.script.record import Record
@@ -45,7 +46,7 @@ class ArrayLike[T](Sequence):
     def __iter__(self) -> SonolusIterator[T]:
         return ArrayIterator(0, self)
 
-    def __contains__(self, value: T) -> bool:
+    def __contains__(self, value: Any) -> bool:
         i = 0
         while i < self.size():
             if self[i] == value:

@@ -55,14 +55,14 @@ def test_match_pair_and_num_checking():
 
     def m(x):
         match x:
-            case Pair(x, y):
-                debug_log(x)
-                debug_log(y)
+            case Pair(a, b):
+                debug_log(a)
+                debug_log(b)
             case Num(n):
                 debug_log(n)
-            case Pair2(x, y):
-                debug_log(x + y)
-                debug_log(x - y)
+            case Pair2(a, b):
+                debug_log(a + b)
+                debug_log(a - b)
             case _:
                 debug_log(-1)
         debug_log(123)
@@ -358,7 +358,7 @@ def test_match_nest_var_arrays():
         a2.append(a2_2)
         m(a2)
 
-        a3 = VarArray[Array[Array[Array[Num, 1], 1], 1], 1].new()
+        a3 = VarArray[Array[Array[Array[int, 1], 1], 1], 1].new()
         m(a3)
         a3_0 = Array(Array(Array(1)))
         a3.append(a3_0)
