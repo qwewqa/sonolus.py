@@ -11,16 +11,7 @@ class InlineVars(CompilerPass):
 
         for block in traverse_cfg_preorder(entry):
             for stmt in block.statements:
-                if (
-                    isinstance(stmt, IRSet)
-                    and isinstance(stmt.place, SSAPlace)
-                    and isinstance(stmt.value, IRGet)
-                    and isinstance(stmt.value.place, SSAPlace)
-                ):
-                    # This is effectively an alias
-                    pass
-                else:
-                    self.count_uses(stmt, use_counts)
+                self.count_uses(stmt, use_counts)
                 if isinstance(stmt, IRSet) and isinstance(stmt.place, SSAPlace):
                     definitions[stmt.place] = stmt.value
             self.count_uses(block.test, use_counts)
