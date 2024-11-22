@@ -56,7 +56,7 @@ def _draw(
     y4: float,
     z: float,
     a: float,
-):
+) -> None:
     raise NotImplementedError
 
 
@@ -76,7 +76,7 @@ def _draw_curved_b(
     n: int,
     p: float,
     q: float,
-):
+) -> None:
     raise NotImplementedError
 
 
@@ -96,7 +96,7 @@ def _draw_curved_t(
     n: int,
     p: float,
     q: float,
-):
+) -> None:
     raise NotImplementedError
 
 
@@ -116,7 +116,7 @@ def _draw_curved_l(
     n: int,
     p: float,
     q: float,
-):
+) -> None:
     raise NotImplementedError
 
 
@@ -136,7 +136,7 @@ def _draw_curved_r(
     n: int,
     p: float,
     q: float,
-):
+) -> None:
     raise NotImplementedError
 
 
@@ -158,7 +158,7 @@ def _draw_curved_bt(
     q1: float,
     p2: float,
     q2: float,
-):
+) -> None:
     raise NotImplementedError
 
 
@@ -180,7 +180,7 @@ def _draw_curved_lr(
     q1: float,
     p2: float,
     q2: float,
-):
+) -> None:
     raise NotImplementedError
 
 

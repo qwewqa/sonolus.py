@@ -139,7 +139,7 @@ def _paint(
     rotation: float,
     z: float,
     a: float,
-):
+) -> None:
     raise NotImplementedError()
 
 

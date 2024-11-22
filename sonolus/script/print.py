@@ -45,7 +45,7 @@ def _print(
     alpha: float,
     horizontal_align: HorizontalAlign,
     background: bool,
-):
+) -> None:
     raise NotImplementedError
 
 
