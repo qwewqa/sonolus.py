@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 from abc import abstractmethod
-from collections.abc import Iterator, Sequence
+from collections.abc import Callable, Iterator, Sequence
 from typing import Any
 
 from sonolus.script.internal.impl import meta_fn
@@ -120,10 +120,13 @@ class ArrayLike[T](Sequence):
         self[i] = self[j]
         self[j] = temp
 
-    def sort(self, *, reverse: bool = False):
-        if len(self) < 15:
-            _insertion_sort(self, 0, len(self), reverse)
+    def sort(self, *, key: Callable[T, Any] | None = None, reverse: bool = False):
+        if len(self) < 15 or key is not None:
+            if key is None:
+                key = _identity
+            _insertion_sort(self, 0, len(self), key, reverse)
         else:
+            # Heap sort is unstable, so if there's a key, we can't rely on it
             _heap_sort(self, 0, len(self), reverse)
 
     def reverse(self):
@@ -135,16 +138,26 @@ class ArrayLike[T](Sequence):
             j -= 1
 
 
-def _insertion_sort[T](array: ArrayLike[T], start: Num, end: Num, reverse: bool):
+def _identity[T](value: T) -> T:
+    return value
+
+
+def _insertion_sort[T](array: ArrayLike[T], start: Num, end: Num, key: Callable[T, Any], reverse: bool):
     i = start + 1
-    while i < end:
-        value = copy(array[i])
-        j = i - 1
-        while j >= start and (array[j] > value) != reverse:
-            array[j + 1] = array[j]
-            j -= 1
-        array[j + 1] = value
-        i += 1
+    if reverse:
+        while i < end:
+            j = i
+            while j > start and key(array[j - 1]) < key(array[j]):
+                array.swap(j - 1, j)
+                j -= 1
+            i += 1
+    else:
+        while i < end:
+            j = i
+            while j > start and key(array[j - 1]) > key(array[j]):
+                array.swap(j - 1, j)
+                j -= 1
+            i += 1
 
 
 def _heapify[T](array: ArrayLike[T], end: Num, index: Num, reverse: bool):

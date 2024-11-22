@@ -975,7 +975,7 @@ class Visitor(ast.NodeVisitor):
                 name=arg.arg,
                 kind=inspect.Parameter.POSITIONAL_ONLY,
                 default=default if default_idx >= 0 else inspect.Parameter.empty,
-                annotation=inspect.Parameter.empty,  # You might want to handle annotations separately
+                annotation=inspect.Parameter.empty,
             )
             parameters.append(param)
 

@@ -238,6 +238,26 @@ def test_array_sort(args, reverse: bool):
 
 
 @given(
+    args=st.lists(st.integers(min_value=-999, max_value=999), min_size=0, max_size=100),
+    reverse=st.booleans(),
+    a=st.integers(min_value=-9, max_value=9),
+    b=st.integers(min_value=-99, max_value=99),
+    c=st.integers(min_value=-999, max_value=999),
+)
+def test_array_sort_with_key(args, reverse: bool, a: int, b: int, c: int):
+    tuple_args = tuple(args)
+    n = len(args)
+
+    def fn():
+        array = Array[int, n](*tuple_args)
+
+        array.sort(key=lambda x: a * x * x + b * x + c, reverse=reverse)
+        return array
+
+    assert list(validate_dual_run(fn)) == sorted(args, key=lambda x: a * x * x + b * x + c, reverse=reverse)
+
+
+@given(
     args=st.lists(st.integers(min_value=-9999, max_value=9999), min_size=0, max_size=100),
 )
 def test_array_reverse(args):
