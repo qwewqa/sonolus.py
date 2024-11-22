@@ -197,8 +197,6 @@ class Visitor(ast.NodeVisitor):
             return visitor(node)
 
     def visit_FunctionDef(self, node):
-        if node.decorator_list:
-            raise NotImplementedError("Decorators in nested functions are not supported")
         name = node.name
         signature = self.arguments_to_signature(node.args)
 
@@ -214,6 +212,10 @@ class Visitor(ast.NodeVisitor):
 
         fn._meta_fn_ = True
         fn.__name__ = name
+        fn.__qualname__ = name
+
+        for decorator in reversed(node.decorator_list):
+            fn = self.handle_call(decorator, self.visit(decorator), fn)
 
         ctx().scope.set_value(name, validate_value(fn))
 
@@ -729,7 +731,7 @@ class Visitor(ast.NodeVisitor):
     def visit_Call(self, node):
         fn = self.visit(node.func)
         if fn is Num:
-            raise ValueError("Calling int/bool/float is not supported")
+            raise ValueError("Calling int/bool/float as a function is not supported")
         args = []
         kwargs = {}
         for arg in node.args:

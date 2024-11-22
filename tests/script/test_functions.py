@@ -715,3 +715,484 @@ def test_mixed_mutable_immutable_defaults():
         return Array(first, second, third)
 
     assert validate_dual_run(fn) == Array(7, 11, 17)
+
+
+def test_simple_decorator():
+    def multiply_result(f):
+        def wrapper():
+            return f() * 2
+
+        return wrapper
+
+    def fn():
+        @multiply_result
+        def compute():
+            return 5
+
+        return compute()
+
+    assert validate_dual_run(fn) == 10
+
+
+def test_decorator_with_arguments():
+    def multiply_by(factor):
+        def decorator(f):
+            def wrapper():
+                return f() * factor
+
+            return wrapper
+
+        return decorator
+
+    def fn():
+        @multiply_by(3)
+        def compute():
+            return 5
+
+        return compute()
+
+    assert validate_dual_run(fn) == 15
+
+
+def test_decorator_with_state():
+    def fn():
+        counter = Pair(0, 0)  # Using first for call count, second for sum
+
+        def track_calls(f):
+            def wrapper(*args):
+                counter.first += 1
+                result = f(*args)
+                counter.second += result
+                return result
+
+            return wrapper
+
+        @track_calls
+        def add(x, y):  # noqa: FURB118
+            return x + y
+
+        first = add(2, 3)  # counter becomes (1, 5)
+        second = add(4, 5)  # counter becomes (2, 14)
+
+        return Array(first, second, counter.first, counter.second)
+
+    assert validate_dual_run(fn) == Array(5, 9, 2, 14)
+
+
+def test_multiple_decorators():
+    def fn():
+        def double_result(f):
+            def wrapper():
+                return f() * 2
+
+            return wrapper
+
+        def add_five(f):
+            def wrapper():
+                return f() + 5
+
+            return wrapper
+
+        @double_result
+        @add_five
+        def compute():
+            return 3
+
+        return compute()  # (3 + 5) * 2 = 16
+
+    assert validate_dual_run(fn) == 16
+
+
+def test_decorator_with_closure():
+    def fn():
+        multiplier = 2
+
+        def multiply_by_closure(f):
+            def wrapper():
+                return f() * multiplier
+
+            return wrapper
+
+        @multiply_by_closure
+        def compute():
+            return 5
+
+        first = compute()  # 5 * 2 = 10
+        multiplier = 3
+        second = compute()  # 5 * 3 = 15
+
+        return Array(first, second)
+
+    assert validate_dual_run(fn) == Array(10, 15)
+
+
+def test_decorator_with_mutable_state():
+    def fn():
+        state = Pair(1, 2)
+
+        def modify_state(f):
+            def wrapper():
+                state.first += 1
+                result = f()
+                state.second += 2
+                return result
+
+            return wrapper
+
+        @modify_state
+        def get_sum():
+            return state.first + state.second
+
+        first = get_sum()  # state becomes (2, 2) then (2, 4), returns 4
+        second = get_sum()  # state becomes (3, 4) then (3, 6), returns 7
+
+        return Array(first, second)
+
+    assert validate_dual_run(fn) == Array(4, 7)
+
+
+def test_decorator_factory_with_defaults():
+    def fn():
+        def create_multiplier(factor=2, offset=Pair(0, 0)):  # noqa: B008
+            def decorator(f):
+                def wrapper():
+                    offset.first += 1
+                    result = f() * factor + offset.first
+                    return result
+
+                return wrapper
+
+            return decorator
+
+        @create_multiplier()
+        def compute1():
+            return 5
+
+        @create_multiplier(factor=3)
+        def compute2():
+            return 5
+
+        first = compute1()  # 5 * 2 + 1 = 11
+        second = compute1()  # 5 * 2 + 2 = 12
+        third = compute2()  # 5 * 3 + 3 = 18
+
+        return Array(first, second, third)
+
+    assert validate_dual_run(fn) == Array(11, 12, 18)
+
+
+def test_nested_decorator_with_shared_state():
+    def fn():
+        shared = Pair(1, 2)
+
+        def outer_decorator(f):
+            def outer_wrapper():
+                shared.first *= 2
+
+                @inner_decorator
+                def inner():
+                    return f() + shared.first
+
+                return inner()
+
+            return outer_wrapper
+
+        def inner_decorator(f):
+            def inner_wrapper():
+                shared.second *= 2
+                return f() + shared.second
+
+            return inner_wrapper
+
+        @outer_decorator
+        def compute():
+            return 1
+
+        first = compute()  # shared becomes (2, 4), returns 1 + 2 + 4 = 7
+        second = compute()  # shared becomes (4, 8), returns 1 + 4 + 8 = 13
+
+        return Array(first, second)
+
+    assert validate_dual_run(fn) == Array(7, 13)
+
+
+def test_decorator_with_conditional_behavior():
+    def fn():
+        state = Pair(0, 0)
+
+        def conditional_decorator(condition):
+            def decorator(f):
+                def wrapper():
+                    if condition:
+                        state.first += 1
+                        return f() * 2
+                    else:
+                        state.second += 1
+                        return f() * 3
+
+                return wrapper
+
+            return decorator
+
+        @conditional_decorator(True)
+        def compute1():
+            return 5
+
+        @conditional_decorator(False)
+        def compute2():
+            return 5
+
+        return Array(compute1(), compute2(), state.first, state.second)
+
+    assert validate_dual_run(fn) == Array(10, 15, 1, 1)
+
+
+def test_decorator_preserving_default_args():
+    def fn():
+        def preserve_defaults(f):
+            def wrapper(x=None, pair=None):
+                if x is None:
+                    x = 1
+                if pair is None:
+                    pair = Pair(1, 2)
+                pair.first += x
+                return f(x=x, pair=pair)
+
+            return wrapper
+
+        @preserve_defaults
+        def compute(x=1, pair=Pair(1, 2)):  # noqa: B008
+            return pair.first + x
+
+        first = compute()  # Uses defaults, pair becomes (2, 2), returns 3
+        second = compute(2)  # New pair (3, 2), returns 5
+        third = compute(pair=Pair(5, 5))  # Pair becomes (6, 5), returns 7
+
+        return Array(first, second, third)
+
+    assert validate_dual_run(fn) == Array(3, 5, 7)
+
+
+def multiply(func=None, factor=2):
+    if func is None:
+
+        def decorator(f):
+            def wrapper(*args, **kwargs):
+                return f(*args, **kwargs) * factor
+
+            return wrapper
+
+        return decorator
+
+    def wrapper(*args, **kwargs):
+        return func(*args, **kwargs) * factor
+
+    return wrapper
+
+
+def test_external_flexible_decorator():
+    def fn():
+        @multiply
+        def compute1():
+            return 5
+
+        @multiply(factor=3)
+        def compute2():
+            return 5
+
+        return Array(compute1(), compute2())  # [10, 15]
+
+    assert validate_dual_run(fn) == Array(10, 15)
+
+
+def test_internal_flexible_decorator():
+    def fn():
+        state = Pair(1, 0)  # first: multiplier, second: call count
+
+        def counter(func=None, factor=None):
+            if func is None:
+
+                def decorator(f):
+                    return counter(f, factor)
+
+                return decorator
+
+            def wrapper(*args, **kwargs):
+                actual_factor = state.first if factor is None else factor
+                state.second += 1
+                return func(*args, **kwargs) * actual_factor
+
+            return wrapper
+
+        @counter
+        def compute1():
+            return 5
+
+        @counter(factor=3)
+        def compute2():
+            return 5
+
+        r1 = compute1()  # 5 * 1 = 5
+        r2 = compute2()  # 5 * 3 = 15
+        calls1 = state.second  # 2 calls
+
+        # Modify state
+        state.first = 2
+
+        r3 = compute1()  # 5 * 2 = 10
+        r4 = compute2()  # 5 * 3 = 15
+        calls2 = state.second  # 4 calls
+
+        return Array(r1, r2, calls1, r3, r4, calls2)
+
+    assert validate_dual_run(fn) == Array(5, 15, 2, 10, 15, 4)
+
+
+def test_flexible_decorator_with_mutable_state():
+    def fn():
+        def accumulate(func=None, storage=None):
+            actual_storage = Pair(0, 0) if storage is None else storage
+
+            if func is None:
+
+                def decorator(f):
+                    def wrapper(*args, **kwargs):
+                        actual_storage.first += 1
+                        result = f(*args, **kwargs)
+                        actual_storage.second += result
+                        return result
+
+                    return wrapper
+
+                return decorator
+
+            def wrapper(*args, **kwargs):
+                actual_storage.first += 1
+                result = func(*args, **kwargs)
+                actual_storage.second += result
+                return result
+
+            return wrapper
+
+        shared_store = Pair(0, 0)  # first: call count, second: sum
+
+        @accumulate(storage=shared_store)
+        def compute1():
+            return 5
+
+        @accumulate()  # Uses its own Pair
+        def compute2():
+            return 3
+
+        r1 = compute1()  # 5, shared_store becomes (1, 5)
+        r2 = compute2()  # 3, different store becomes (1, 3)
+        r3 = compute1()  # 5, shared_store becomes (2, 10)
+        calls = shared_store.first  # 2 calls to compute1
+        total = shared_store.second  # Sum of 10 from compute1
+
+        return Array(r1, r2, r3, calls, total)
+
+    assert validate_dual_run(fn) == Array(5, 3, 5, 2, 10)
+
+
+def test_nested_flexible_decorators():
+    def fn():
+        def multiply(func=None, factor=2):
+            if func is None:
+
+                def decorator(f):
+                    def wrapper(*args, **kwargs):
+                        return f(*args, **kwargs) * factor
+
+                    return wrapper
+
+                return decorator
+
+            def wrapper(*args, **kwargs):
+                return func(*args, **kwargs) * factor
+
+            return wrapper
+
+        def add(func=None, value=1):
+            if func is None:
+
+                def decorator(f):
+                    def wrapper(*args, **kwargs):
+                        return f(*args, **kwargs) + value
+
+                    return wrapper
+
+                return decorator
+
+            def wrapper(*args, **kwargs):
+                return func(*args, **kwargs) + value
+
+            return wrapper
+
+        @multiply
+        @add(value=2)
+        def compute1():
+            return 5  # (5 + 2) * 2 = 14
+
+        @multiply(factor=3)
+        @add
+        def compute2():
+            return 5  # (5 + 1) * 3 = 18
+
+        @add
+        @multiply(factor=2)
+        def compute3():
+            return 5  # (5 * 2) + 1 = 11
+
+        return Array(compute1(), compute2(), compute3())
+
+    assert validate_dual_run(fn) == Array(14, 18, 11)
+
+
+def test_flexible_decorator_with_dynamic_state():
+    def fn():
+        state = Pair(1, 1)  # first: base value, second: current multiplier
+
+        def dynamic(func=None, capture_state=False):
+            if func is None:
+
+                def decorator(f):
+                    # Capture current state if requested
+                    base = state.first if capture_state else None
+
+                    def wrapper(*args, **kwargs):
+                        multiplier = state.second
+                        if base is not None:
+                            return f(*args, **kwargs) * multiplier + base
+                        return f(*args, **kwargs) * multiplier
+
+                    return wrapper
+
+                return decorator
+
+            def wrapper(*args, **kwargs):
+                return func(*args, **kwargs) * state.second
+
+            return wrapper
+
+        @dynamic
+        def compute1():
+            return 5
+
+        @dynamic(capture_state=True)
+        def compute2():
+            return 5
+
+        r1 = compute1()  # 5 * 1 = 5
+        r2 = compute2()  # 5 * 1 + 1 = 6
+
+        # Modify state
+        state.first = 2
+        state.second = 3
+
+        r3 = compute1()  # 5 * 3 = 15
+        r4 = compute2()  # 5 * 3 + 1 = 16 (uses captured base=1)
+
+        return Array(r1, r2, r3, r4)
+
+    assert validate_dual_run(fn) == Array(5, 6, 15, 16)

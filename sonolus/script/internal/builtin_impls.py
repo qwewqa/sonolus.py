@@ -172,11 +172,17 @@ def _min2(a, b, key=_identity):
         return b
 
 
+@meta_fn
+def _callable(value):
+    return callable(value)
+
+
 # classmethod, property, staticmethod are supported as decorators, but not within functions
 # int, bool, float are handled by Num
 
 BUILTIN_IMPLS = {
     id(abs): _abs,
+    id(callable): _callable,
     id(enumerate): _enumerate,
     id(isinstance): _isinstance,
     id(len): _len,
