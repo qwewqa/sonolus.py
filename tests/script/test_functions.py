@@ -1,8 +1,7 @@
-from script.test_record import Pair
-
 from sonolus.script.array import Array
 from sonolus.script.debug import debug_log
 from tests.script.conftest import validate_dual_run
+from tests.script.test_record import Pair
 
 
 def call_function(f, *args, **kwargs):
