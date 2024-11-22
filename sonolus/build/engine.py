@@ -7,14 +7,19 @@ from pathlib import Path
 
 from sonolus.backend.mode import Mode
 from sonolus.build.compile import compile_mode
-from sonolus.script.archetype import BaseArchetype
+from sonolus.script.archetype import _BaseArchetype
 from sonolus.script.bucket import Buckets
-from sonolus.script.callbacks import navigate_callback, preprocess_callback, update_callback, update_spawn_callback
 from sonolus.script.effect import Effects
 from sonolus.script.engine import EngineData
 from sonolus.script.instruction import (
     TutorialInstructionIcons,
     TutorialInstructions,
+)
+from sonolus.script.internal.callbacks import (
+    navigate_callback,
+    preprocess_callback,
+    update_callback,
+    update_spawn_callback,
 )
 from sonolus.script.internal.context import ReadOnlyMemory
 from sonolus.script.options import Options
@@ -101,7 +106,7 @@ def build_engine_configuration(
 
 
 def build_play_mode(
-    archetypes: list[type[BaseArchetype]],
+    archetypes: list[type[_BaseArchetype]],
     skin: Skin,
     effects: Effects,
     particles: Particles,
@@ -118,7 +123,7 @@ def build_play_mode(
 
 
 def build_watch_mode(
-    archetypes: list[type[BaseArchetype]],
+    archetypes: list[type[_BaseArchetype]],
     skin: Skin,
     effects: Effects,
     particles: Particles,
@@ -138,7 +143,7 @@ def build_watch_mode(
 
 
 def build_preview_mode(
-    archetypes: list[type[BaseArchetype]],
+    archetypes: list[type[_BaseArchetype]],
     skin: Skin,
     rom: ReadOnlyMemory,
 ):

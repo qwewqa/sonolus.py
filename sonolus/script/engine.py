@@ -4,7 +4,7 @@ from collections.abc import Callable
 from typing import Any
 
 from sonolus.build.collection import Asset
-from sonolus.script.archetype import BaseArchetype, PlayArchetype, PreviewArchetype, WatchArchetype
+from sonolus.script.archetype import PlayArchetype, PreviewArchetype, WatchArchetype, _BaseArchetype
 from sonolus.script.bucket import Buckets, EmptyBuckets
 from sonolus.script.effect import Effects, EmptyEffects
 from sonolus.script.instruction import (
@@ -56,7 +56,7 @@ class PlayMode:
     def __init__(
         self,
         *,
-        archetypes: list[type[BaseArchetype]] | None = None,
+        archetypes: list[type[_BaseArchetype]] | None = None,
         skin: Skin = EmptySkin,
         effects: Effects = EmptyEffects,
         particles: Particles = EmptyParticles,
@@ -77,7 +77,7 @@ class WatchMode:
     def __init__(
         self,
         *,
-        archetypes: list[type[BaseArchetype]] | None = None,
+        archetypes: list[type[_BaseArchetype]] | None = None,
         skin: Skin = EmptySkin,
         effects: Effects = EmptyEffects,
         particles: Particles = EmptyParticles,
@@ -100,7 +100,7 @@ class PreviewMode:
     def __init__(
         self,
         *,
-        archetypes: list[type[BaseArchetype]] | None = None,
+        archetypes: list[type[_BaseArchetype]] | None = None,
         skin: Skin = EmptySkin,
     ) -> None:
         self.archetypes = archetypes or []

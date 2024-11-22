@@ -25,21 +25,21 @@ class InstructionIcon(Record):
 
 
 @dataclass
-class InstructionTextInfo:
+class _InstructionTextInfo:
     name: str
 
 
 @dataclass
-class InstructionIconInfo:
+class _InstructionIconInfo:
     name: str
 
 
 def instruction(name: str) -> Any:
-    return InstructionTextInfo(name=name)
+    return _InstructionTextInfo(name=name)
 
 
 def instruction_icon(name: str) -> Any:
-    return InstructionIconInfo(name=name)
+    return _InstructionIconInfo(name=name)
 
 
 type TutorialInstructions = NewType("TutorialInstructions", Any)
@@ -61,7 +61,7 @@ def instructions[T](cls: type[T]) -> T | TutorialInstructions:
             raise TypeError(
                 f"Invalid annotation for instruction: {annotation}, expected annotation of type InstructionText"
             )
-        if len(annotation_values) != 1 or not isinstance(annotation_values[0], InstructionTextInfo):
+        if len(annotation_values) != 1 or not isinstance(annotation_values[0], _InstructionTextInfo):
             raise TypeError(f"Invalid annotation for instruction: {annotation}, expected a single annotation value")
         instruction_name = annotation_values[0].name
         names.append(instruction_name)
@@ -86,7 +86,7 @@ def instruction_icons[T](cls: type[T]) -> T | TutorialInstructionIcons:
             raise TypeError(
                 f"Invalid annotation for instruction icon: {annotation}, expected annotation of type InstructionIcon"
             )
-        if len(annotation_values) != 1 or not isinstance(annotation_values[0], InstructionIconInfo):
+        if len(annotation_values) != 1 or not isinstance(annotation_values[0], _InstructionIconInfo):
             raise TypeError(
                 f"Invalid annotation for instruction icon: {annotation}, expected a single annotation value"
             )

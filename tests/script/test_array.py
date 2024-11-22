@@ -149,7 +149,7 @@ def test_array_reversed():
     def fn():
         array = Array(1, 2, 3)
 
-        return array.reversed()
+        return reversed(array)
 
     assert list(validate_dual_run(fn)) == [3, 2, 1]
 
@@ -171,8 +171,8 @@ def test_array_enumerate():
     def fn():
         array = Array(1, 3, 5)
 
-        for i, v in array.enumerate():
-            assert_true(v == array[i])
+        for i, v in enumerate(array):
+            assert_true(v == array[i])  # noqa: PLR1736
 
         return 1
 
@@ -197,7 +197,7 @@ def test_array_max():
     def fn():
         array = Array(1, 2, 3)
 
-        return array.max()
+        return max(array)
 
     assert validate_dual_run(fn) == 3
 
@@ -206,7 +206,7 @@ def test_array_min():
     def fn():
         array = Array(1, 2, 3)
 
-        return array.min()
+        return min(array)
 
     assert validate_dual_run(fn) == 1
 
@@ -235,6 +235,22 @@ def test_array_sort(args, reverse: bool):
         return array
 
     assert list(validate_dual_run(fn)) == sorted(args, reverse=reverse)
+
+
+@given(
+    args=st.lists(st.integers(min_value=-9999, max_value=9999), min_size=0, max_size=100),
+)
+def test_array_reverse(args):
+    tuple_args = tuple(args)
+    n = len(args)
+
+    def fn():
+        array = Array[int, n](*tuple_args)
+
+        array.reverse()
+        return array
+
+    assert list(validate_dual_run(fn)) == list(reversed(args))
 
 
 class Ele(Record):

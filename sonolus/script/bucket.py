@@ -11,7 +11,7 @@ from sonolus.script.internal.impl import meta_fn
 from sonolus.script.internal.introspection import get_field_specifiers
 from sonolus.script.internal.native import native_function
 from sonolus.script.interval import Interval
-from sonolus.script.pointer import deref
+from sonolus.script.pointer import _deref
 from sonolus.script.record import Record
 from sonolus.script.sprite import Sprite
 
@@ -89,9 +89,9 @@ class Bucket(Record):
             raise RuntimeError("Bucket window access outside of compilation")
         match ctx().global_state.mode:
             case Mode.PLAY:
-                return deref(ctx().blocks.LevelBucket, self.id * JudgmentWindow._size_(), JudgmentWindow)
+                return _deref(ctx().blocks.LevelBucket, self.id * JudgmentWindow._size_(), JudgmentWindow)
             case Mode.WATCH:
-                return deref(ctx().blocks.LevelBucket, self.id * JudgmentWindow._size_(), JudgmentWindow)
+                return _deref(ctx().blocks.LevelBucket, self.id * JudgmentWindow._size_(), JudgmentWindow)
             case _:
                 raise RuntimeError("Invalid mode for bucket window access")
 
@@ -104,7 +104,7 @@ class Bucket(Record):
 
 
 @dataclass
-class BucketSprite:
+class _BucketSprite:
     id: int
     fallback_id: int | None
     x: int
@@ -128,8 +128,8 @@ class BucketSprite:
 
 
 @dataclass
-class BucketInfo:
-    sprites: list[BucketSprite]
+class _BucketInfo:
+    sprites: list[_BucketSprite]
     unit: str | None = None
 
     def to_dict(self):
@@ -150,12 +150,12 @@ def bucket_sprite(
     w: int,
     h: int,
     rotation: float = 0,
-) -> BucketSprite:
-    return BucketSprite(sprite.id, fallback_sprite.id if fallback_sprite else None, x, y, w, h, rotation)
+) -> _BucketSprite:
+    return _BucketSprite(sprite.id, fallback_sprite.id if fallback_sprite else None, x, y, w, h, rotation)
 
 
-def bucket(*, sprites: list[BucketSprite], unit: str | None = None) -> Any:
-    return BucketInfo(sprites, unit)
+def bucket(*, sprites: list[_BucketSprite], unit: str | None = None) -> Any:
+    return _BucketInfo(sprites, unit)
 
 
 type Buckets = NewType("Buckets", Any)
@@ -174,7 +174,7 @@ def buckets[T](cls: type[T]) -> T | Buckets:
         annotation_values = annotation.__metadata__
         if annotation_type is not Bucket:
             raise TypeError(f"Invalid annotation for buckets: {annotation}, expected annotation of type Bucket")
-        if len(annotation_values) != 1 or not isinstance(annotation_values[0], BucketInfo):
+        if len(annotation_values) != 1 or not isinstance(annotation_values[0], _BucketInfo):
             raise TypeError(
                 f"Invalid annotation for buckets: {annotation}, expected a single BucketInfo annotation value"
             )

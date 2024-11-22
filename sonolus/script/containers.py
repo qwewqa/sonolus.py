@@ -42,7 +42,7 @@ class VarArray[T, Capacity](Record, ArrayLike[T]):
         capacity = cls._get_type_arg_(Capacity)
         return cls(0, alloc(Array[element_type, capacity]))
 
-    def size(self) -> int:
+    def __len__(self) -> int:
         return self._size
 
     @classmethod
@@ -60,7 +60,7 @@ class VarArray[T, Capacity](Record, ArrayLike[T]):
 
     def append(self, value: T):
         """Appends a copy of the given value to the end of the array."""
-        assert self._size < self._array.size()
+        assert self._size < len(self._array)
         self._array[self._size] = value
         self._size += 1
 
@@ -90,7 +90,7 @@ class VarArray[T, Capacity](Record, ArrayLike[T]):
         Preserves the relative order of the elements.
         """
         assert 0 <= index <= self._size
-        assert self._size < self._array.size()
+        assert self._size < len(self._array)
         self._size += 1
         for i in range(self._size - 1, index, -1):
             self._array[i] = self._array[i - 1]
@@ -117,7 +117,7 @@ class VarArray[T, Capacity](Record, ArrayLike[T]):
         If the value is already present, the array is not modified.
         If the array is full, the value is not added.
         """
-        if self._size >= self._array.size():
+        if self._size >= len(self._array):
             return False
         if value in self:
             return False
@@ -140,10 +140,10 @@ class VarArray[T, Capacity](Record, ArrayLike[T]):
     def __eq__(self, other):
         if not isinstance(other, ArrayLike):
             return False
-        if self.size() != other.size():
+        if len(self) != len(other):
             return False
         i = 0
-        while i < self.size():
+        while i < len(self):
             if self[i] != other[i]:
                 return False
             i += 1
@@ -156,23 +156,23 @@ class VarArray[T, Capacity](Record, ArrayLike[T]):
         raise TypeError("unhashable type: 'VarArray'")
 
 
-class ArrayMapEntry[K, V](Record):
+class _ArrayMapEntry[K, V](Record):
     key: K
     value: V
 
 
 class ArrayMap[K, V, Capacity](Record):
     _size: int
-    _array: Array[ArrayMapEntry[K, V], Capacity]
+    _array: Array[_ArrayMapEntry[K, V], Capacity]
 
     @classmethod
     def new(cls):
         key_type = cls._get_type_arg_(K)
         value_type = cls._get_type_arg_(V)
         capacity = cls._get_type_arg_(Capacity)
-        return cls(0, alloc(Array[ArrayMapEntry[key_type, value_type], capacity]))
+        return cls(0, alloc(Array[_ArrayMapEntry[key_type, value_type], capacity]))
 
-    def size(self) -> int:
+    def __len__(self) -> int:
         return self._size
 
     @classmethod
@@ -186,10 +186,10 @@ class ArrayMap[K, V, Capacity](Record):
         return _ArrayMapKeyIterator(self, 0)
 
     def values(self) -> SonolusIterator[V]:
-        return ArrayMapValueIterator(self, 0)
+        return _ArrayMapValueIterator(self, 0)
 
     def items(self) -> SonolusIterator[tuple[K, V]]:
-        return ArrayMapEntryIterator(self, 0)
+        return _ArrayMapEntryIterator(self, 0)
 
     def __iter__(self):
         return self.keys()
@@ -208,7 +208,7 @@ class ArrayMap[K, V, Capacity](Record):
                 entry.value = value
                 return
         # assert self._size < self.capacity()
-        self._array[self._size] = ArrayMapEntry(key, value)
+        self._array[self._size] = _ArrayMapEntry(key, value)
         self._size += 1
 
     def __contains__(self, key: K) -> bool:
@@ -237,7 +237,7 @@ class _ArrayMapKeyIterator[K, V, Capacity](Record, SonolusIterator):
     _index: int
 
     def has_next(self) -> bool:
-        return self._index < self._map.size()
+        return self._index < len(self._map)
 
     def next(self) -> K:
         key = self._map._array[self._index].key
@@ -245,12 +245,12 @@ class _ArrayMapKeyIterator[K, V, Capacity](Record, SonolusIterator):
         return key
 
 
-class ArrayMapValueIterator[K, V, Capacity](Record, SonolusIterator):
+class _ArrayMapValueIterator[K, V, Capacity](Record, SonolusIterator):
     _map: ArrayMap[K, V, Capacity]
     _index: int
 
     def has_next(self) -> bool:
-        return self._index < self._map.size()
+        return self._index < len(self._map)
 
     def next(self) -> V:
         value = self._map._array[self._index].value
@@ -258,12 +258,12 @@ class ArrayMapValueIterator[K, V, Capacity](Record, SonolusIterator):
         return value
 
 
-class ArrayMapEntryIterator[K, V, Capacity](Record, SonolusIterator):
+class _ArrayMapEntryIterator[K, V, Capacity](Record, SonolusIterator):
     _map: ArrayMap[K, V, Capacity]
     _index: int
 
     def has_next(self) -> bool:
-        return self._index < self._map.size()
+        return self._index < len(self._map)
 
     def next(self) -> tuple[K, V]:
         entry = self._map._array[self._index]

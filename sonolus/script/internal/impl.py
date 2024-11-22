@@ -41,9 +41,9 @@ def validate_value(value: Any) -> Value:
 
 
 def try_validate_value(value: Any) -> Value | None:
-    from sonolus.script.comptime import Comptime
-    from sonolus.script.globals import GlobalPlaceholder
+    from sonolus.script.internal.comptime import Comptime
     from sonolus.script.internal.generic import PartialGeneric
+    from sonolus.script.internal.globals import GlobalPlaceholder
     from sonolus.script.internal.value import Value
     from sonolus.script.num import Num
 

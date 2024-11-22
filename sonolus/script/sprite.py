@@ -2,9 +2,9 @@ from dataclasses import dataclass
 from typing import Annotated, Any, NewType, dataclass_transform, get_origin
 
 from sonolus.backend.ops import Op
-from sonolus.script.graphics import QuadLike, flatten_quad
 from sonolus.script.internal.introspection import get_field_specifiers
 from sonolus.script.internal.native import native_function
+from sonolus.script.quad import QuadLike, flatten_quad
 from sonolus.script.record import Record
 from sonolus.script.vec import Vec2
 

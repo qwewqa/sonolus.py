@@ -174,19 +174,19 @@ def test_size(values):
         for i, pair in enumerate(pairs):
             assert_false(am.is_full())
             am[pair.first] = pair.second
-            assert_true(am.size() == i + 1)
+            assert_true(len(am) == i + 1)
         keys = VarArray[int, count].new()
         for key in am:
             keys.append(key)
-        assert_true(keys.size() == count)
+        assert_true(len(keys) == count)
         assert_true(am.is_full())
         for i, key in enumerate(keys):
             am.pop(key)
-            assert_true(am.size() == count - i - 1)
+            assert_true(len(am) == count - i - 1)
             assert_false(am.is_full())
         return am
 
-    assert validate_dual_run(fn).size() == 0
+    assert len(validate_dual_run(fn)) == 0
 
 
 @given(map_and_key())

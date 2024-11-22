@@ -16,7 +16,7 @@ from sonolus.script.internal.error import CompilationError
 from sonolus.script.internal.impl import try_validate_value, validate_value
 from sonolus.script.internal.value import Value
 from sonolus.script.iterator import SonolusIterator
-from sonolus.script.num import Num, is_num
+from sonolus.script.num import Num, _is_num
 
 _compiler_internal_ = True
 
@@ -242,7 +242,7 @@ class Visitor(ast.NodeVisitor):
         self.handle_assign(node.target, value)
 
     def visit_For(self, node):
-        from sonolus.script.comptime import Comptime
+        from sonolus.script.internal.comptime import Comptime
 
         iterable = self.visit(node.iter)
         if isinstance(iterable, Comptime) and isinstance(iterable._as_py_(), tuple):
@@ -378,7 +378,7 @@ class Visitor(ast.NodeVisitor):
             set_ctx(Context.meet(end_ctxs))
 
     def handle_match_pattern(self, subject: Value, pattern: ast.pattern) -> tuple[Context, Context]:
-        from sonolus.script.comptime import Comptime
+        from sonolus.script.internal.comptime import Comptime
         from sonolus.script.internal.generic import validate_type_spec
 
         if not ctx().live:
@@ -824,7 +824,7 @@ class Visitor(ast.NodeVisitor):
 
     def handle_getattr(self, node: ast.stmt | ast.expr, target: Value, key: str) -> Value:
         with self.reporting_errors_at_node(node):
-            from sonolus.script.comptime import Comptime
+            from sonolus.script.internal.comptime import Comptime
 
             if isinstance(target, Comptime) and target._is_py_():
                 target = target._as_py_()
@@ -909,7 +909,7 @@ class Visitor(ast.NodeVisitor):
 
     def ensure_boolean_num(self, value) -> Num:
         # This just checks the type for now, although we could support custom __bool__ implementations in the future
-        if not is_num(value):
+        if not _is_num(value):
             raise TypeError(f"Invalid type where a bool (Num) was expected: {type(value).__name__}")
         return value
 

@@ -1,11 +1,11 @@
 from sonolus.backend.place import BlockPlace
 from sonolus.script.internal.impl import meta_fn, validate_value
 from sonolus.script.internal.value import Value
-from sonolus.script.num import Num, is_num
+from sonolus.script.num import Num, _is_num
 
 
 @meta_fn
-def deref[T: Value](block: Num, offset: Num, type_: type[T]) -> T:
+def _deref[T: Value](block: Num, offset: Num, type_: type[T]) -> T:
     block = Num._accept_(block)
     offset = Num._accept_(offset)
     type_ = validate_value(type_)._as_py_()
@@ -14,7 +14,7 @@ def deref[T: Value](block: Num, offset: Num, type_: type[T]) -> T:
         if not isinstance(block, int):
             raise TypeError("block must be an integer")
     else:
-        if not is_num(block):
+        if not _is_num(block):
             raise TypeError("block must be a Num")
         block = block.index()
     if offset._is_py_():
@@ -22,7 +22,7 @@ def deref[T: Value](block: Num, offset: Num, type_: type[T]) -> T:
         if not isinstance(offset, int):
             raise TypeError("offset must be an integer")
     else:
-        if not is_num(offset):
+        if not _is_num(offset):
             raise TypeError("offset must be a Num")
         offset = offset.index()
     if not (isinstance(type_, type) and issubclass(type_, Value)):

@@ -1,8 +1,9 @@
-from typing import Self
+from typing import Self, overload
 
 from sonolus.backend.ops import Op
 from sonolus.script.debug import error
 from sonolus.script.internal.native import native_function
+from sonolus.script.num import Num
 from sonolus.script.record import Record
 
 
@@ -78,43 +79,75 @@ class Interval(Record):
 
 
 @native_function(Op.Lerp)
-def lerp(a, b, x, /):
+def _num_lerp(a, b, x, /):
     return a + (b - a) * x
 
 
 @native_function(Op.LerpClamped)
-def lerp_clamped(a, b, x, /):
+def _num_lerp_clamped(a, b, x, /):
     return a + (b - a) * max(0, min(1, x))
 
 
+def _generic_lerp[T](a: T, b: T, x: float, /) -> T:
+    return a + (b - a) * x
+
+
+def _generic_lerp_clamped[T](a: T, b: T, x: float, /) -> T:
+    return a + (b - a) * max(0, min(1, x))
+
+
+@overload
+def lerp(a: float, b: float, x: float, /) -> float: ...
+
+
+@overload
+def lerp[T](a: T, b: T, x: float, /) -> T: ...
+
+
+def lerp(a, b, x, /):
+    match a, b:
+        case (Num(a), Num(b)):
+            return _num_lerp(a, b, x)
+        case _:
+            return _generic_lerp(a, b, x)
+
+
+@overload
+def lerp_clamped(a: float, b: float, x: float, /) -> float: ...
+
+
+@overload
+def lerp_clamped[T](a: T, b: T, x: float, /) -> T: ...
+
+
+def lerp_clamped(a, b, x, /):
+    match a, b:
+        case (Num(a), Num(b)):
+            return _num_lerp_clamped(a, b, x)
+        case _:
+            return _generic_lerp_clamped(a, b, x)
+
+
 @native_function(Op.Unlerp)
-def unlerp(a, b, x, /):
+def unlerp(a: float, b: float, x: float, /):
     return (x - a) / (b - a)
 
 
 @native_function(Op.UnlerpClamped)
-def unlerp_clamped(a, b, x, /):
+def unlerp_clamped(a: float, b: float, x: float, /):
     return max(0, min(1, (x - a) / (b - a)))
 
 
 @native_function(Op.Remap)
-def remap(a, b, c, d, x, /):
+def remap(a: float, b: float, c: float, d: float, x: float, /):
     return c + (d - c) * (x - a) / (b - a)
 
 
 @native_function(Op.RemapClamped)
-def remap_clamped(a, b, c, d, x, /):
+def remap_clamped(a: float, b: float, c: float, d: float, x: float, /):
     return c + (d - c) * max(0, min(1, (x - a) / (b - a)))
 
 
 @native_function(Op.Clamp)
-def clamp(x, a, b, /):
+def clamp(x: float, a: float, b: float, /):
     return max(a, min(b, x))
-
-
-def generic_lerp[T](a: T, b: T, x: float, /) -> T:
-    return a + (b - a) * x
-
-
-def generic_lerp_clamped[T](a: T, b: T, x: float, /) -> T:
-    return a + (b - a) * max(0, min(1, x))

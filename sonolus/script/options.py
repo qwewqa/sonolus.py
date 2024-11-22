@@ -13,7 +13,7 @@ from sonolus.script.num import Num
 
 
 @dataclass
-class SliderOption:
+class _SliderOption:
     name: str | None
     standard: bool
     advanced: bool
@@ -43,7 +43,7 @@ class SliderOption:
 
 
 @dataclass
-class ToggleOption:
+class _ToggleOption:
     name: str | None
     standard: bool
     advanced: bool
@@ -64,7 +64,7 @@ class ToggleOption:
 
 
 @dataclass
-class SelectOption:
+class _SelectOption:
     name: str | None
     standard: bool
     advanced: bool
@@ -98,7 +98,7 @@ def slider_option(
     unit: str | None = None,
     scope: str | None = None,
 ) -> Any:
-    return SliderOption(name, standard, advanced, scope, default, min, max, step, unit)
+    return _SliderOption(name, standard, advanced, scope, default, min, max, step, unit)
 
 
 def toggle_option(
@@ -109,7 +109,7 @@ def toggle_option(
     default: bool,
     scope: str | None = None,
 ) -> Any:
-    return ToggleOption(name, standard, advanced, scope, default)
+    return _ToggleOption(name, standard, advanced, scope, default)
 
 
 def select_option(
@@ -121,18 +121,18 @@ def select_option(
     values: list[str],
     scope: str | None = None,
 ) -> Any:
-    return SelectOption(name, standard, advanced, scope, default, values)
+    return _SelectOption(name, standard, advanced, scope, default, values)
 
 
 type Options = NewType("Options", Any)
-type OptionInfo = SliderOption | ToggleOption | SelectOption
+type _OptionInfo = _SliderOption | _ToggleOption | _SelectOption
 
 
-class OptionField(SonolusDescriptor):
-    info: OptionInfo
+class _OptionField(SonolusDescriptor):
+    info: _OptionInfo
     index: int
 
-    def __init__(self, info: OptionInfo, index: int):
+    def __init__(self, info: _OptionInfo, index: int):
         self.info = info
         self.index = index
 
@@ -175,12 +175,12 @@ def options[T](cls: type[T]) -> T | Options:
         if annotation_type is not Num:
             raise TypeError(f"Invalid annotation type for options: {annotation_type}")
         annotation_value = annotation_values[0]
-        if not isinstance(annotation_value, SliderOption | ToggleOption | SelectOption):
+        if not isinstance(annotation_value, _SliderOption | _ToggleOption | _SelectOption):
             raise TypeError(f"Invalid annotation value for options: {annotation_value}")
         if annotation_value.name is None:
             annotation_value.name = name
         entries.append(annotation_value)
-        setattr(cls, name, OptionField(annotation_value, i))
+        setattr(cls, name, _OptionField(annotation_value, i))
     instance._options_ = entries
     instance._is_comptime_value_ = True
     return instance

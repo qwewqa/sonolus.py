@@ -31,13 +31,3 @@ def copy[T](value: T) -> T:
         return value._copy_()
     else:
         return value._copy_()._as_py_()
-
-
-@meta_fn
-def with_default[T](value: T, default: T) -> T:
-    """Returns the given value if it's not None, otherwise the default value."""
-    value = validate_value(value)
-    default = validate_value(default)
-    if value._is_py_() and value._as_py_() is None:
-        return default
-    return value

@@ -12,7 +12,7 @@ from sonolus.backend.mode import Mode
 from sonolus.backend.ops import Op
 from sonolus.backend.place import BlockPlace
 from sonolus.script.bucket import Bucket, Judgment
-from sonolus.script.callbacks import PLAY_CALLBACKS, PREVIEW_CALLBACKS, WATCH_ARCHETYPE_CALLBACKS, CallbackInfo
+from sonolus.script.internal.callbacks import PLAY_CALLBACKS, PREVIEW_CALLBACKS, WATCH_ARCHETYPE_CALLBACKS, CallbackInfo
 from sonolus.script.internal.context import ctx
 from sonolus.script.internal.descriptor import SonolusDescriptor
 from sonolus.script.internal.generic import validate_concrete_type
@@ -21,16 +21,16 @@ from sonolus.script.internal.introspection import get_field_specifiers
 from sonolus.script.internal.native import native_call
 from sonolus.script.internal.value import Value
 from sonolus.script.num import Num
-from sonolus.script.pointer import deref
+from sonolus.script.pointer import _deref
 from sonolus.script.record import Record
 from sonolus.script.values import zeros
 
-ENTITY_MEMORY_SIZE = 64
-ENTITY_DATA_SIZE = 32
-ENTITY_SHARED_MEMORY_SIZE = 32
+_ENTITY_MEMORY_SIZE = 64
+_ENTITY_DATA_SIZE = 32
+_ENTITY_SHARED_MEMORY_SIZE = 32
 
 
-class StorageType(Enum):
+class _StorageType(Enum):
     IMPORTED = "imported"
     EXPORTED = "exported"
     MEMORY = "memory"
@@ -38,53 +38,55 @@ class StorageType(Enum):
 
 
 @dataclass
-class ArchetypeFieldInfo:
+class _ArchetypeFieldInfo:
     name: str | None
-    storage: StorageType
+    storage: _StorageType
 
 
-class ArchetypeField(SonolusDescriptor):
-    def __init__(self, name: str, data_name: str, storage: StorageType, offset: int, type_: type[Value]):
+class _ArchetypeField(SonolusDescriptor):
+    def __init__(self, name: str, data_name: str, storage: _StorageType, offset: int, type_: type[Value]):
         self.name = name
         self.data_name = data_name  # name used in level data
         self.storage = storage
         self.offset = offset
         self.type = type_
 
-    def __get__(self, instance: BaseArchetype, owner):
+    def __get__(self, instance: _BaseArchetype, owner):
         if instance is None:
             return self
         result = None
         match self.storage:
-            case StorageType.IMPORTED:
+            case _StorageType.IMPORTED:
                 match instance._data_:
-                    case ArchetypeSelfData():
-                        result = deref(ctx().blocks.EntityData, self.offset, self.type)
-                    case ArchetypeReferenceData(index=index):
-                        result = deref(ctx().blocks.EntityDataArray, self.offset + index * ENTITY_DATA_SIZE, self.type)
-                    case ArchetypeLevelData(values=values):
+                    case _ArchetypeSelfData():
+                        result = _deref(ctx().blocks.EntityData, self.offset, self.type)
+                    case _ArchetypeReferenceData(index=index):
+                        result = _deref(
+                            ctx().blocks.EntityDataArray, self.offset + index * _ENTITY_DATA_SIZE, self.type
+                        )
+                    case _ArchetypeLevelData(values=values):
                         result = values[self.name]
-            case StorageType.EXPORTED:
+            case _StorageType.EXPORTED:
                 raise RuntimeError("Exported fields are write-only")
-            case StorageType.MEMORY:
+            case _StorageType.MEMORY:
                 match instance._data_:
-                    case ArchetypeSelfData():
-                        result = deref(ctx().blocks.EntityMemory, self.offset, self.type)
-                    case ArchetypeReferenceData():
+                    case _ArchetypeSelfData():
+                        result = _deref(ctx().blocks.EntityMemory, self.offset, self.type)
+                    case _ArchetypeReferenceData():
                         raise RuntimeError("Entity memory of other entities is not accessible")
-                    case ArchetypeLevelData():
+                    case _ArchetypeLevelData():
                         raise RuntimeError("Entity memory is not available in level data")
-            case StorageType.SHARED:
+            case _StorageType.SHARED:
                 match instance._data_:
-                    case ArchetypeSelfData():
-                        result = deref(ctx().blocks.EntitySharedMemory, self.offset, self.type)
-                    case ArchetypeReferenceData(index=index):
-                        result = deref(
+                    case _ArchetypeSelfData():
+                        result = _deref(ctx().blocks.EntitySharedMemory, self.offset, self.type)
+                    case _ArchetypeReferenceData(index=index):
+                        result = _deref(
                             ctx().blocks.EntitySharedMemoryArray,
-                            Num._accept_(self.offset) + index * ENTITY_SHARED_MEMORY_SIZE,
+                            Num._accept_(self.offset) + index * _ENTITY_SHARED_MEMORY_SIZE,
                             self.type,
                         )
-                    case ArchetypeLevelData():
+                    case _ArchetypeLevelData():
                         raise RuntimeError("Entity shared memory is not available in level data")
         if result is None:
             raise RuntimeError("Invalid storage type")
@@ -93,53 +95,55 @@ class ArchetypeField(SonolusDescriptor):
         else:
             return result._as_py_()
 
-    def __set__(self, instance: BaseArchetype, value):
+    def __set__(self, instance: _BaseArchetype, value):
         if instance is None:
             raise RuntimeError("Cannot set field on class")
         if not self.type._accepts_(value):
             raise TypeError(f"Expected {self.type}, got {type(value)}")
         target = None
         match self.storage:
-            case StorageType.IMPORTED:
+            case _StorageType.IMPORTED:
                 match instance._data_:
-                    case ArchetypeSelfData():
-                        target = deref(ctx().blocks.EntityData, self.offset, self.type)
-                    case ArchetypeReferenceData(index=index):
-                        target = deref(ctx().blocks.EntityDataArray, self.offset + index * ENTITY_DATA_SIZE, self.type)
-                    case ArchetypeLevelData(values=values):
+                    case _ArchetypeSelfData():
+                        target = _deref(ctx().blocks.EntityData, self.offset, self.type)
+                    case _ArchetypeReferenceData(index=index):
+                        target = _deref(
+                            ctx().blocks.EntityDataArray, self.offset + index * _ENTITY_DATA_SIZE, self.type
+                        )
+                    case _ArchetypeLevelData(values=values):
                         target = values[self.name]
-            case StorageType.EXPORTED:
+            case _StorageType.EXPORTED:
                 match instance._data_:
-                    case ArchetypeSelfData():
+                    case _ArchetypeSelfData():
                         if not isinstance(value, self.type):
                             raise TypeError(f"Expected {self.type}, got {type(value)}")
                         for k, v in value._to_flat_dict_(self.data_name).items():
                             index = instance._exported_keys_[k]
                             ctx().add_statements(IRInstr(Op.ExportValue, [IRConst(index), Num._accept_(v).ir()]))
                         return
-                    case ArchetypeReferenceData():
+                    case _ArchetypeReferenceData():
                         raise RuntimeError("Exported fields of other entities are not accessible")
-                    case ArchetypeLevelData():
+                    case _ArchetypeLevelData():
                         raise RuntimeError("Exported fields are not available in level data")
-            case StorageType.MEMORY:
+            case _StorageType.MEMORY:
                 match instance._data_:
-                    case ArchetypeSelfData():
-                        target = deref(ctx().blocks.EntityMemory, self.offset, self.type)
-                    case ArchetypeReferenceData():
+                    case _ArchetypeSelfData():
+                        target = _deref(ctx().blocks.EntityMemory, self.offset, self.type)
+                    case _ArchetypeReferenceData():
                         raise RuntimeError("Entity memory of other entities is not accessible")
-                    case ArchetypeLevelData():
+                    case _ArchetypeLevelData():
                         raise RuntimeError("Entity memory is not available in level data")
-            case StorageType.SHARED:
+            case _StorageType.SHARED:
                 match instance._data_:
-                    case ArchetypeSelfData():
-                        target = deref(ctx().blocks.EntitySharedMemory, self.offset, self.type)
-                    case ArchetypeReferenceData(index=index):
-                        target = deref(
+                    case _ArchetypeSelfData():
+                        target = _deref(ctx().blocks.EntitySharedMemory, self.offset, self.type)
+                    case _ArchetypeReferenceData(index=index):
+                        target = _deref(
                             ctx().blocks.EntitySharedMemoryArray,
-                            Num._accept_(self.offset) + index * ENTITY_SHARED_MEMORY_SIZE,
+                            Num._accept_(self.offset) + index * _ENTITY_SHARED_MEMORY_SIZE,
                             self.type,
                         )
-                    case ArchetypeLevelData():
+                    case _ArchetypeLevelData():
                         raise RuntimeError("Entity shared memory is not available in level data")
         if target is None:
             raise RuntimeError("Invalid storage type")
@@ -151,22 +155,22 @@ class ArchetypeField(SonolusDescriptor):
 
 
 def imported(*, name: str | None = None) -> Any:
-    return ArchetypeFieldInfo(name, StorageType.IMPORTED)
+    return _ArchetypeFieldInfo(name, _StorageType.IMPORTED)
 
 
 def exported(*, name: str | None = None) -> Any:
-    return ArchetypeFieldInfo(name, StorageType.EXPORTED)
+    return _ArchetypeFieldInfo(name, _StorageType.EXPORTED)
 
 
 def entity_memory() -> Any:
-    return ArchetypeFieldInfo(None, StorageType.MEMORY)
+    return _ArchetypeFieldInfo(None, _StorageType.MEMORY)
 
 
 def shared_memory() -> Any:
-    return ArchetypeFieldInfo(None, StorageType.SHARED)
+    return _ArchetypeFieldInfo(None, _StorageType.SHARED)
 
 
-_annotation_defaults: dict[Callable, ArchetypeFieldInfo] = {
+_annotation_defaults: dict[Callable, _ArchetypeFieldInfo] = {
     imported: imported(),
     exported: exported(),
     entity_memory: entity_memory(),
@@ -190,37 +194,37 @@ def callback[T: Callable](order: int) -> Callable[[T], T]:
     return decorator
 
 
-class ArchetypeSelfData:
+class _ArchetypeSelfData:
     pass
 
 
-class ArchetypeReferenceData:
+class _ArchetypeReferenceData:
     index: Num
 
     def __init__(self, index: Num):
         self.index = index
 
 
-class ArchetypeLevelData:
+class _ArchetypeLevelData:
     values: dict[str, Value]
 
     def __init__(self, values: dict[str, Value]):
         self.values = values
 
 
-type ArchetypeData = ArchetypeSelfData | ArchetypeReferenceData | ArchetypeLevelData
+type _ArchetypeData = _ArchetypeSelfData | _ArchetypeReferenceData | _ArchetypeLevelData
 
 
-class BaseArchetype:
+class _BaseArchetype:
     _is_comptime_value_ = True
 
     _supported_callbacks_: ClassVar[dict[str, CallbackInfo]]
     _default_callbacks_: ClassVar[set[Callable]]
 
-    _imported_fields_: ClassVar[dict[str, ArchetypeField]]
-    _exported_fields_: ClassVar[dict[str, ArchetypeField]]
-    _memory_fields_: ClassVar[dict[str, ArchetypeField]]
-    _shared_memory_fields_: ClassVar[dict[str, ArchetypeField]]
+    _imported_fields_: ClassVar[dict[str, _ArchetypeField]]
+    _exported_fields_: ClassVar[dict[str, _ArchetypeField]]
+    _memory_fields_: ClassVar[dict[str, _ArchetypeField]]
+    _shared_memory_fields_: ClassVar[dict[str, _ArchetypeField]]
 
     _imported_keys_: ClassVar[dict[str, int]]
     _exported_keys_: ClassVar[dict[str, int]]
@@ -228,7 +232,7 @@ class BaseArchetype:
     _data_constructor_signature_: ClassVar[inspect.Signature]
     _spawn_signature_: ClassVar[inspect.Signature]
 
-    _data_: ArchetypeData
+    _data_: _ArchetypeData
 
     name: ClassVar[str | None] = None
     is_scored: ClassVar[bool] = False
@@ -242,7 +246,7 @@ class BaseArchetype:
             field.name: field.type._accept_(bound.arguments.get(field.name) or zeros(field.type))._get_()
             for field in self._imported_fields_.values()
         }
-        self._data_ = ArchetypeLevelData(values=values)
+        self._data_ = _ArchetypeLevelData(values=values)
 
     @classmethod
     def _new(cls):
@@ -251,14 +255,14 @@ class BaseArchetype:
     @classmethod
     def _for_compilation(cls):
         result = cls._new()
-        result._data_ = ArchetypeSelfData()
+        result._data_ = _ArchetypeSelfData()
         return result
 
     @classmethod
     @meta_fn
     def at(cls, index: Num) -> Self:
         result = cls._new()
-        result._data_ = ArchetypeReferenceData(index=Num._accept_(index))
+        result._data_ = _ArchetypeReferenceData(index=Num._accept_(index))
         return result
 
     @classmethod
@@ -285,7 +289,7 @@ class BaseArchetype:
         native_call(Op.Spawn, archetype_id, *(Num(x) for x in data))
 
     def _level_data_entries(self, level_refs: dict[Any, int] | None = None):
-        if not isinstance(self._data_, ArchetypeLevelData):
+        if not isinstance(self._data_, _ArchetypeLevelData):
             raise RuntimeError("Entity is not level data")
         entries = []
         for name, value in self._data_.values.items():
@@ -295,7 +299,7 @@ class BaseArchetype:
         return entries
 
     def __init_subclass__(cls, **kwargs):
-        if cls.__module__ == BaseArchetype.__module__:
+        if cls.__module__ == _BaseArchetype.__module__:
             if cls._supported_callbacks_ is None:
                 raise TypeError("Cannot directly subclass Archetype, use the Archetype subclass for your mode")
             cls._default_callbacks_ = {getattr(cls, cb_info.py_name) for cb_info in cls._supported_callbacks_.values()}
@@ -323,7 +327,7 @@ class BaseArchetype:
             for metadata in value.__metadata__:
                 if isinstance(metadata, FunctionType):
                     metadata = _annotation_defaults.get(metadata, metadata)
-                if isinstance(metadata, ArchetypeFieldInfo):
+                if isinstance(metadata, _ArchetypeFieldInfo):
                     if field_info is not None:
                         raise TypeError(
                             f"Unexpected multiple field annotations for '{name}', "
@@ -337,26 +341,26 @@ class BaseArchetype:
                 )
             field_type = validate_concrete_type(value.__args__[0])
             match field_info.storage:
-                case StorageType.IMPORTED:
-                    cls._imported_fields_[name] = ArchetypeField(
+                case _StorageType.IMPORTED:
+                    cls._imported_fields_[name] = _ArchetypeField(
                         name, field_info.name or name, field_info.storage, imported_offset, field_type
                     )
                     imported_offset += field_type._size_()
                     setattr(cls, name, cls._imported_fields_[name])
-                case StorageType.EXPORTED:
-                    cls._exported_fields_[name] = ArchetypeField(
+                case _StorageType.EXPORTED:
+                    cls._exported_fields_[name] = _ArchetypeField(
                         name, field_info.name or name, field_info.storage, exported_offset, field_type
                     )
                     exported_offset += field_type._size_()
                     setattr(cls, name, cls._exported_fields_[name])
-                case StorageType.MEMORY:
-                    cls._memory_fields_[name] = ArchetypeField(
+                case _StorageType.MEMORY:
+                    cls._memory_fields_[name] = _ArchetypeField(
                         name, field_info.name or name, field_info.storage, memory_offset, field_type
                     )
                     memory_offset += field_type._size_()
                     setattr(cls, name, cls._memory_fields_[name])
-                case StorageType.SHARED:
-                    cls._shared_memory_fields_[name] = ArchetypeField(
+                case _StorageType.SHARED:
+                    cls._shared_memory_fields_[name] = _ArchetypeField(
                         name, field_info.name or name, field_info.storage, shared_memory_offset, field_type
                     )
                     shared_memory_offset += field_type._size_()
@@ -387,7 +391,7 @@ class BaseArchetype:
             cls._callbacks_.append(cb)
 
 
-class PlayArchetype(BaseArchetype):
+class PlayArchetype(_BaseArchetype):
     _supported_callbacks_ = PLAY_CALLBACKS
 
     def preprocess(self):
@@ -420,8 +424,8 @@ class PlayArchetype(BaseArchetype):
         if not ctx():
             raise RuntimeError("Calling despawn is only allowed within a callback")
         match self._data_:
-            case ArchetypeSelfData():
-                return deref(ctx().blocks.EntityDespawn, 0, Num)
+            case _ArchetypeSelfData():
+                return _deref(ctx().blocks.EntityDespawn, 0, Num)
             case _:
                 raise RuntimeError("Despawn is only accessible from the entity itself")
 
@@ -431,8 +435,8 @@ class PlayArchetype(BaseArchetype):
         if not ctx():
             raise RuntimeError("Calling despawn is only allowed within a callback")
         match self._data_:
-            case ArchetypeSelfData():
-                deref(ctx().blocks.EntityDespawn, 0, Num)._set_(value)
+            case _ArchetypeSelfData():
+                _deref(ctx().blocks.EntityDespawn, 0, Num)._set_(value)
             case _:
                 raise RuntimeError("Despawn is only accessible from the entity itself")
 
@@ -442,10 +446,10 @@ class PlayArchetype(BaseArchetype):
         if not ctx():
             raise RuntimeError("Calling info is only allowed within a callback")
         match self._data_:
-            case ArchetypeSelfData():
-                return deref(ctx().blocks.EntityInfo, 0, PlayEntityInfo)
-            case ArchetypeReferenceData(index=index):
-                return deref(ctx().blocks.EntityInfoArray, index * PlayEntityInfo._size_(), PlayEntityInfo)
+            case _ArchetypeSelfData():
+                return _deref(ctx().blocks.EntityInfo, 0, PlayEntityInfo)
+            case _ArchetypeReferenceData(index=index):
+                return _deref(ctx().blocks.EntityInfoArray, index * PlayEntityInfo._size_(), PlayEntityInfo)
             case _:
                 raise RuntimeError("Info is only accessible from the entity itself")
 
@@ -470,8 +474,8 @@ class PlayArchetype(BaseArchetype):
         if not ctx():
             raise RuntimeError("Calling life is only allowed within a callback")
         match self._data_:
-            case ArchetypeSelfData() | ArchetypeReferenceData():
-                return deref(ctx().blocks.ArchetypeLife, self.id() * ArchetypeLife._size_(), ArchetypeLife)
+            case _ArchetypeSelfData() | _ArchetypeReferenceData():
+                return _deref(ctx().blocks.ArchetypeLife, self.id() * ArchetypeLife._size_(), ArchetypeLife)
             case _:
                 raise RuntimeError("Life is not available in level data")
 
@@ -480,20 +484,20 @@ class PlayArchetype(BaseArchetype):
         if not ctx():
             raise RuntimeError("Calling result is only allowed within a callback")
         match self._data_:
-            case ArchetypeSelfData():
-                return deref(ctx().blocks.EntityInput, 0, PlayEntityInput)
+            case _ArchetypeSelfData():
+                return _deref(ctx().blocks.EntityInput, 0, PlayEntityInput)
             case _:
                 raise RuntimeError("Result is only accessible from the entity itself")
 
     def ref(self):
-        if not isinstance(self._data_, ArchetypeLevelData):
+        if not isinstance(self._data_, _ArchetypeLevelData):
             raise RuntimeError("Entity is not level data")
         result = EntityRef[type(self)](index=-1)
         result._ref_ = self
         return result
 
 
-class WatchArchetype(BaseArchetype):
+class WatchArchetype(_BaseArchetype):
     _supported_callbacks_ = WATCH_ARCHETYPE_CALLBACKS
 
     def preprocess(self):
@@ -523,10 +527,10 @@ class WatchArchetype(BaseArchetype):
         if not ctx():
             raise RuntimeError("Calling info is only allowed within a callback")
         match self._data_:
-            case ArchetypeSelfData():
-                return deref(ctx().blocks.EntityInfo, 0, WatchEntityInfo)
-            case ArchetypeReferenceData(index=index):
-                return deref(ctx().blocks.EntityInfoArray, index * WatchEntityInfo._size_(), PlayEntityInfo)
+            case _ArchetypeSelfData():
+                return _deref(ctx().blocks.EntityInfo, 0, WatchEntityInfo)
+            case _ArchetypeReferenceData(index=index):
+                return _deref(ctx().blocks.EntityInfoArray, index * WatchEntityInfo._size_(), PlayEntityInfo)
             case _:
                 raise RuntimeError("Info is only accessible from the entity itself")
 
@@ -543,8 +547,8 @@ class WatchArchetype(BaseArchetype):
         if not ctx():
             raise RuntimeError("Calling life is only allowed within a callback")
         match self._data_:
-            case ArchetypeSelfData() | ArchetypeReferenceData():
-                return deref(ctx().blocks.ArchetypeLife, self.id() * ArchetypeLife._size_(), ArchetypeLife)
+            case _ArchetypeSelfData() | _ArchetypeReferenceData():
+                return _deref(ctx().blocks.ArchetypeLife, self.id() * ArchetypeLife._size_(), ArchetypeLife)
             case _:
                 raise RuntimeError("Life is not available in level data")
 
@@ -553,8 +557,8 @@ class WatchArchetype(BaseArchetype):
         if not ctx():
             raise RuntimeError("Calling result is only allowed within a callback")
         match self._data_:
-            case ArchetypeSelfData():
-                return deref(ctx().blocks.EntityInput, 0, WatchEntityInput)
+            case _ArchetypeSelfData():
+                return _deref(ctx().blocks.EntityInput, 0, WatchEntityInput)
             case _:
                 raise RuntimeError("Result is only accessible from the entity itself")
 
@@ -567,7 +571,7 @@ class WatchArchetype(BaseArchetype):
         self.result.target_time = value
 
 
-class PreviewArchetype(BaseArchetype):
+class PreviewArchetype(_BaseArchetype):
     _supported_callbacks_ = PREVIEW_CALLBACKS
 
     def preprocess(self):
@@ -581,10 +585,10 @@ class PreviewArchetype(BaseArchetype):
         if not ctx():
             raise RuntimeError("Calling info is only allowed within a callback")
         match self._data_:
-            case ArchetypeSelfData():
-                return deref(ctx().blocks.EntityInfo, 0, PreviewEntityInfo)
-            case ArchetypeReferenceData(index=index):
-                return deref(ctx().blocks.EntityInfoArray, index * PreviewEntityInfo._size_(), PreviewEntityInfo)
+            case _ArchetypeSelfData():
+                return _deref(ctx().blocks.EntityInfo, 0, PreviewEntityInfo)
+            case _ArchetypeReferenceData(index=index):
+                return _deref(ctx().blocks.EntityInfoArray, index * PreviewEntityInfo._size_(), PreviewEntityInfo)
             case _:
                 raise RuntimeError("Info is only accessible from the entity itself")
 
@@ -599,24 +603,24 @@ def entity_info_at(index: Num) -> PlayEntityInfo | WatchEntityInfo | PreviewEnti
         raise RuntimeError("Calling entity_info_at is only allowed within a callback")
     match ctx().global_state.mode:
         case Mode.PLAY:
-            return deref(ctx().blocks.EntityInfoArray, index * PlayEntityInfo._size_(), PlayEntityInfo)
+            return _deref(ctx().blocks.EntityInfoArray, index * PlayEntityInfo._size_(), PlayEntityInfo)
         case Mode.WATCH:
-            return deref(ctx().blocks.EntityInfoArray, index * WatchEntityInfo._size_(), WatchEntityInfo)
+            return _deref(ctx().blocks.EntityInfoArray, index * WatchEntityInfo._size_(), WatchEntityInfo)
         case Mode.PREVIEW:
-            return deref(ctx().blocks.EntityInfoArray, index * PreviewEntityInfo._size_(), PreviewEntityInfo)
+            return _deref(ctx().blocks.EntityInfoArray, index * PreviewEntityInfo._size_(), PreviewEntityInfo)
         case _:
             raise RuntimeError(f"Entity info is not available in mode '{ctx().global_state.mode}'")
 
 
 @meta_fn
-def archetype_life_of(archetype: type[BaseArchetype] | BaseArchetype) -> ArchetypeLife:
+def archetype_life_of(archetype: type[_BaseArchetype] | _BaseArchetype) -> ArchetypeLife:
     archetype = validate_value(archetype)
     archetype = archetype._as_py_()
     if not ctx():
         raise RuntimeError("Calling archetype_life_of is only allowed within a callback")
     match ctx().global_state.mode:
         case Mode.PLAY | Mode.WATCH:
-            return deref(ctx().blocks.ArchetypeLife, archetype.id() * ArchetypeLife._size_(), ArchetypeLife)
+            return _deref(ctx().blocks.ArchetypeLife, archetype.id() * ArchetypeLife._size_(), ArchetypeLife)
         case _:
             raise RuntimeError(f"Archetype life is not available in mode '{ctx().global_state.mode}'")
 
@@ -674,7 +678,7 @@ class WatchEntityInput(Record):
     bucket_value: float
 
 
-class EntityRef[A: BaseArchetype](Record):
+class EntityRef[A: _BaseArchetype](Record):
     index: int
 
     @classmethod

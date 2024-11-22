@@ -1,13 +1,13 @@
 from collections.abc import Iterable
 from typing import overload
 
-from sonolus.script.comptime import Comptime
+from sonolus.script.internal.comptime import Comptime
 from sonolus.script.internal.context import ctx
 from sonolus.script.internal.impl import meta_fn, validate_value
-from sonolus.script.iterator import ArrayLike, Enumerator, SonolusIterator
-from sonolus.script.math import MATH_BUILTIN_IMPLS
-from sonolus.script.num import Num, is_num
-from sonolus.script.range import Range
+from sonolus.script.internal.math_impls import MATH_BUILTIN_IMPLS
+from sonolus.script.internal.range import Range
+from sonolus.script.iterator import ArrayLike, SonolusIterator, _Enumerator
+from sonolus.script.num import Num, _is_num
 
 
 @meta_fn
@@ -42,12 +42,22 @@ def _enumerate(iterable, start=0):
     if not hasattr(iterable, "__iter__"):
         raise TypeError(f"'{type(iterable).__name__}' object is not iterable")
     if isinstance(iterable, ArrayLike):
-        return compile_and_call(iterable.enumerate, start)
+        return compile_and_call(iterable._enumerate_, start)
     else:
         iterator = compile_and_call(iterable.__iter__)
         if not isinstance(iterator, SonolusIterator):
             raise TypeError("Only subclasses of SonolusIterator are supported as iterators")
-        return Enumerator(0, start, iterator)
+        return _Enumerator(0, start, iterator)
+
+
+@meta_fn
+def _reversed(iterable):
+    from sonolus.backend.visitor import compile_and_call
+
+    iterable = validate_value(iterable)
+    if not isinstance(iterable, ArrayLike):
+        raise TypeError(f"Unsupported type: {type(iterable)} for reversed")
+    return compile_and_call(iterable.__reversed__)
 
 
 @meta_fn
@@ -78,11 +88,11 @@ def _max(*args):
     elif len(args) == 1:
         (iterable,) = args
         if isinstance(iterable, ArrayLike):
-            return iterable.max()
+            return compile_and_call(iterable._max_)
         else:
             raise TypeError(f"Unsupported type: {type(iterable)} for max")
     else:
-        if not all(is_num(arg) for arg in args):
+        if not all(_is_num(arg) for arg in args):
             raise TypeError("Arguments to max must be numbers")
         if ctx():
             result = compile_and_call(_max2, args[0], args[1])
@@ -118,11 +128,11 @@ def _min(*args):
     elif len(args) == 1:
         (iterable,) = args
         if isinstance(iterable, ArrayLike):
-            return iterable.min()
+            return compile_and_call(iterable._min_)
         else:
             raise TypeError(f"Unsupported type: {type(iterable)} for min")
     else:
-        if not all(is_num(arg) for arg in args):
+        if not all(_is_num(arg) for arg in args):
             raise TypeError("Arguments to min must be numbers")
         if ctx():
             result = compile_and_call(_min2, args[0], args[1])
@@ -144,6 +154,7 @@ BUILTIN_IMPLS = {
     id(isinstance): _isinstance,
     id(len): _len,
     id(enumerate): _enumerate,
+    id(reversed): _reversed,
     id(abs): _abs,
     id(max): _max,
     id(min): _min,

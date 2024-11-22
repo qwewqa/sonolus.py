@@ -4,7 +4,7 @@ import math
 import operator
 from typing import ClassVar
 
-import sonolus.script.math as smath
+import sonolus.script.internal.math_impls as smath
 from sonolus.backend.ir import IRConst, IRGet, IRInstr, IRPureInstr, IRSet, IRStmt
 from sonolus.backend.ops import Op
 from sonolus.backend.optimize.flow import BasicBlock, FlowEdge, traverse_cfg_preorder

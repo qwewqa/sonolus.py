@@ -1,8 +1,8 @@
 # fmt: off
+from math import cos, sin
 from typing import Self
 
-from sonolus.script.graphics import Quad, QuadLike
-from sonolus.script.math import cos, sin
+from sonolus.script.quad import Quad, QuadLike
 from sonolus.script.record import Record
 from sonolus.script.vec import Vec2
 

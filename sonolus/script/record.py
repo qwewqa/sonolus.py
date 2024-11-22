@@ -23,7 +23,7 @@ from sonolus.script.num import Num
 @dataclass_transform(eq_default=True)
 class Record(GenericValue):
     _value: dict[str, Value]
-    _fields: ClassVar[list[RecordField] | None] = None
+    _fields: ClassVar[list[_RecordField] | None] = None
     _constructor_signature: ClassVar[inspect.Signature]
 
     @classmethod
@@ -43,7 +43,7 @@ class Record(GenericValue):
             for generic_field in cls._fields:
                 resolved_type = validate_and_resolve_type(generic_field.type, cls._type_vars_to_args_)
                 resolved_type = validate_concrete_type(resolved_type)
-                field = RecordField(generic_field.name, resolved_type, generic_field.index, offset)
+                field = _RecordField(generic_field.name, resolved_type, generic_field.index, offset)
                 fields.append(field)
                 setattr(cls, field.name, field)
                 offset += resolved_type._size_()
@@ -70,7 +70,7 @@ class Record(GenericValue):
             if hasattr(cls, name):
                 raise TypeError("Default values are not supported for Record fields")
             type_ = validate_type_spec(hint)
-            fields.append(RecordField(name, type_, index, offset))
+            fields.append(_RecordField(name, type_, index, offset))
             if isinstance(type_, type) and issubclass(type_, Value) and type_._is_concrete_():
                 offset += type_._size_()
             setattr(cls, name, fields[-1])
@@ -235,7 +235,7 @@ class Record(GenericValue):
         raise TypeError("Record is not hashable")
 
 
-class RecordField(SonolusDescriptor):
+class _RecordField(SonolusDescriptor):
     def __init__(self, name: str, type_: type[Value], index: int, offset: int):
         self.name = name
         self.type = type_
@@ -259,7 +259,7 @@ class RecordField(SonolusDescriptor):
             instance._value[self.name]._copy_from_(value)
 
 
-ops_to_inplace_ops = {
+_ops_to_inplace_ops = {
     "__add__": "__iadd__",
     "__sub__": "__isub__",
     "__mul__": "__imul__",
@@ -277,7 +277,7 @@ ops_to_inplace_ops = {
 
 
 def _add_inplace_ops(cls):
-    for op, inplace_op in ops_to_inplace_ops.items():
+    for op, inplace_op in _ops_to_inplace_ops.items():
         if hasattr(cls, op) and not hasattr(cls, inplace_op):
             setattr(cls, inplace_op, _make_inplace_op(op))
     return cls

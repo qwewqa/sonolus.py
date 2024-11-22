@@ -1,6 +1,6 @@
+from math import atan2, cos, sin
 from typing import Self
 
-from sonolus.script.math import atan2, cos, sin
 from sonolus.script.num import Num
 from sonolus.script.record import Record
 

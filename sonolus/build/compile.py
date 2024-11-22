@@ -8,8 +8,8 @@ from sonolus.backend.optimize.flow import BasicBlock
 from sonolus.backend.optimize.optimize import optimize_and_allocate
 from sonolus.backend.visitor import compile_and_call
 from sonolus.build.node import OutputNodeGenerator
-from sonolus.script.archetype import BaseArchetype
-from sonolus.script.callbacks import CallbackInfo
+from sonolus.script.archetype import _BaseArchetype
+from sonolus.script.internal.callbacks import CallbackInfo
 from sonolus.script.internal.context import (
     CallbackContextState,
     Context,
@@ -19,13 +19,13 @@ from sonolus.script.internal.context import (
     ctx,
     using_ctx,
 )
-from sonolus.script.num import is_num
+from sonolus.script.num import _is_num
 
 
 def compile_mode(
     mode: Mode,
     rom: ReadOnlyMemory,
-    archetypes: list[type[BaseArchetype]] | None,
+    archetypes: list[type[_BaseArchetype]] | None,
     global_callbacks: list[tuple[CallbackInfo, Callable]] | None,
 ) -> dict:
     global_state = GlobalContextState(
@@ -74,7 +74,7 @@ def compile_mode(
 
 
 def callback_to_cfg(
-    global_state: GlobalContextState, callback: Callable, name: str, archetype: type[BaseArchetype] | None = None
+    global_state: GlobalContextState, callback: Callable, name: str, archetype: type[_BaseArchetype] | None = None
 ) -> BasicBlock:
     callback_state = CallbackContextState(name)
     context = Context(global_state, callback_state)
@@ -83,6 +83,6 @@ def callback_to_cfg(
             result = compile_and_call(callback, archetype._for_compilation())
         else:
             result = compile_and_call(callback)
-        if is_num(result):
+        if _is_num(result):
             ctx().add_statements(IRInstr(Op.Break, [IRConst(1), result.ir()]))
     return context_to_cfg(context)

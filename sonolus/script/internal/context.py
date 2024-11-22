@@ -10,7 +10,7 @@ from sonolus.backend.ir import IRConst, IRStmt
 from sonolus.backend.mode import Mode
 from sonolus.backend.optimize.flow import BasicBlock, FlowEdge
 from sonolus.backend.place import Block, BlockPlace, TempBlock
-from sonolus.script.globals import GlobalInfo, GlobalPlaceholder
+from sonolus.script.internal.globals import GlobalInfo, GlobalPlaceholder
 from sonolus.script.internal.value import Value
 
 _compiler_internal_ = True

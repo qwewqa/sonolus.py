@@ -1,7 +1,6 @@
 from hypothesis import given
 from hypothesis import strategies as st
 
-from sonolus.script.range import Range
 from tests.script.conftest import validate_dual_run
 from tests.script.test_record import Pair
 
@@ -10,7 +9,7 @@ from tests.script.test_record import Pair
 def test_basic_range_iteration(n):
     def fn():
         total = 0
-        for i in Range(n):
+        for i in range(n):
             total += i
         return total
 
@@ -23,7 +22,7 @@ def test_basic_range_iteration(n):
 def test_range_iteration_with_start(start, stop):
     def fn():
         total = 0
-        for i in Range(start, stop):
+        for i in range(start, stop):
             total += i
         return total
 
@@ -40,7 +39,7 @@ def test_range_iteration_with_start(start, stop):
 def test_range_iteration_with_step(start, stop, step):
     def fn():
         total = 0
-        for i in Range(start, stop, step):
+        for i in range(start, stop, step):
             total += i
         return total
 
@@ -57,7 +56,7 @@ def test_range_iteration_with_step(start, stop, step):
 def test_range_iteration_with_negative_step(start, stop, step):
     def fn():
         total = 0
-        for i in Range(start, stop, step):
+        for i in range(start, stop, step):
             total += i
         return total
 
@@ -74,7 +73,7 @@ def test_range_iteration_with_negative_step(start, stop, step):
 )
 def test_range_contains(start, stop, step, value):
     def fn():
-        return value in Range(start, stop, step)
+        return value in range(start, stop, step)
 
     expected = value in range(start, stop, step)
     result = validate_dual_run(fn)
@@ -88,7 +87,7 @@ def test_range_contains(start, stop, step, value):
 )
 def test_range_size(start, stop, step):
     def fn():
-        return Range(start, stop, step).size()
+        return len(range(start, stop, step))
 
     expected = len(range(start, stop, step))
     result = validate_dual_run(fn)
@@ -105,8 +104,8 @@ def test_range_size(start, stop, step):
 )
 def test_range_equality(start1, stop1, step1, start2, stop2, step2):
     def fn():
-        a = Range(start1, stop1, step1)
-        b = Range(start2, stop2, step2)
+        a = range(start1, stop1, step1)
+        b = range(start2, stop2, step2)
         return Pair(a == b, b == a)
 
     range_a = range(start1, stop1, step1)
@@ -123,8 +122,8 @@ def test_range_equality(start1, stop1, step1, start2, stop2, step2):
 )
 def test_identical_range_equality(start, stop, step):
     def fn():
-        a = Range(start, stop, step)
-        b = Range(start, stop, step)
+        a = range(start, stop, step)
+        b = range(start, stop, step)
         return Pair(a == b, b == a)
 
     expected = Pair(True, True)

@@ -27,6 +27,10 @@ class Array[T, Size](GenericValue, ArrayLike[T]):
     @classmethod
     @meta_fn
     def size(cls) -> int:
+        """Returns the size of this array type.
+
+        For instances, use `len(array)` instead.
+        """
         return cls._get_type_arg_(Size)
 
     def __new__(cls, *args: T) -> Array[T, Any]:
@@ -144,6 +148,9 @@ class Array[T, Size](GenericValue, ArrayLike[T]):
             return cls._from_place_(place)
         else:
             return cls._with_value([cls.element_type()._alloc_() for _ in range(cls.size())])
+
+    def __len__(self):
+        return self.size()
 
     @meta_fn
     def __getitem__(self, index: Num) -> T:

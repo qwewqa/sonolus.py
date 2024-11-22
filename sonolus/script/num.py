@@ -14,18 +14,18 @@ from sonolus.script.internal.impl import meta_fn
 from sonolus.script.internal.value import Value
 
 
-class NumMeta(type):
+class _NumMeta(type):
     def __instancecheck__(cls, instance):
-        return isinstance(instance, float | int | bool) or is_num(instance)
+        return isinstance(instance, float | int | bool) or _is_num(instance)
 
 
-def is_num(value: Any) -> TypeIs[Num]:
+def _is_num(value: Any) -> TypeIs[Num]:
     """Check if a value is a precisely Num instance."""
     return type.__instancecheck__(Num, value)  # type: ignore # noqa: PLC2801
 
 
 @final
-class _Num(Value, metaclass=NumMeta):
+class _Num(Value, metaclass=_NumMeta):
     # This works for ints, floats, and bools
     # Since we don't support complex numbers, real is equal to the original number
     __match_args__ = ("real",)
@@ -37,7 +37,7 @@ class _Num(Value, metaclass=NumMeta):
             raise TypeError("Cannot create a Num from a complex number")
         if isinstance(data, int):
             data = float(data)
-        if is_num(data):
+        if _is_num(data):
             raise InternalError("Cannot create a Num from a Num")
         self.data = data
 
@@ -73,7 +73,7 @@ class _Num(Value, metaclass=NumMeta):
     def _accept_(cls, value: Any) -> Self:
         if not cls._accepts_(value):
             raise TypeError(f"Cannot accept {value}")
-        if is_num(value):
+        if _is_num(value):
             return value
         return cls(value)
 

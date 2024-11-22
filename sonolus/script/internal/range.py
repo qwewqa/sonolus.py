@@ -22,7 +22,7 @@ class Range(Record, ArrayLike[Num]):
         else:
             return self.stop < item <= self.start and (self.start - item) % -self.step == 0
 
-    def size(self) -> int:
+    def __len__(self) -> int:
         if self.step > 0:
             diff = self.stop - self.start
             if diff <= 0:
@@ -42,7 +42,7 @@ class Range(Record, ArrayLike[Num]):
 
     @property
     def last(self) -> Num:
-        return self[self.size() - 1]
+        return self[len(self) - 1]
 
     def __eq__(self, other):
         if not isinstance(other, Range):

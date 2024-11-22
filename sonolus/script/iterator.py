@@ -28,8 +28,10 @@ class SonolusIterator[T](Iterator[T]):
 
 
 class ArrayLike[T](Sequence):
+    # We can't use range() here since Range itself depends on ArrayLike
+
     @abstractmethod
-    def size(self) -> int:
+    def __len__(self) -> int:
         pass
 
     @abstractmethod
@@ -40,35 +42,26 @@ class ArrayLike[T](Sequence):
     def __setitem__(self, index: Num, value: T):
         pass
 
-    def __len__(self) -> int:
-        return self.size()
-
     def __iter__(self) -> SonolusIterator[T]:
-        return ArrayIterator(0, self)
+        return _ArrayIterator(0, self)
 
     def __contains__(self, value: Any) -> bool:
         i = 0
-        while i < self.size():
+        while i < len(self):
             if self[i] == value:
                 return True
             i += 1
         return False
 
     def __reversed__(self):
-        return self.reversed()
+        return _ArrayReverser(self)
 
-    def reversed(self) -> ArrayLike[T]:
-        return ArrayReverser(self)
-
-    def iter(self) -> SonolusIterator[T]:
-        return self.__iter__()  # noqa: PLC2801
-
-    def enumerate(self, start: Num = 0) -> SonolusIterator[T]:
-        return ArrayEnumerator(0, start, self)
+    def _enumerate_(self, start: Num = 0) -> SonolusIterator[T]:
+        return _ArrayEnumerator(0, start, self)
 
     def index(self, value: T, start: Num = 0, stop: Num | None = None) -> Num:
         if stop is None:
-            stop = self.size()
+            stop = len(self)
         i = start
         while i < stop:
             if self[i] == value:
@@ -79,14 +72,14 @@ class ArrayLike[T](Sequence):
     def count(self, value: T) -> Num:
         count = 0
         i = 0
-        while i < self.size():
+        while i < len(self):
             if self[i] == value:
                 count += 1
             i += 1
         return count
 
     def last_index(self, value: T) -> Num:
-        i = self.size() - 1
+        i = len(self) - 1
         while i >= 0:
             if self[i] == value:
                 return i
@@ -94,31 +87,31 @@ class ArrayLike[T](Sequence):
         return -1
 
     def index_of_max(self) -> Num:
-        if self.size() == 0:
+        if len(self) == 0:
             return -1
         max_index = 0
         i = 1
-        while i < self.size():
+        while i < len(self):
             if self[i] > self[max_index]:
                 max_index = i
             i += 1
         return max_index
 
     def index_of_min(self) -> Num:
-        if self.size() == 0:
+        if len(self) == 0:
             return -1
         min_index = 0
         i = 1
-        while i < self.size():
+        while i < len(self):
             if self[i] < self[min_index]:
                 min_index = i
             i += 1
         return min_index
 
-    def max(self) -> T:
+    def _max_(self) -> T:
         return self[self.index_of_max()]
 
-    def min(self) -> T:
+    def _min_(self) -> T:
         return self[self.index_of_min()]
 
     def swap(self, i: Num, j: Num):
@@ -127,10 +120,18 @@ class ArrayLike[T](Sequence):
         self[j] = temp
 
     def sort(self, *, reverse: bool = False):
-        if self.size() < 15:
-            _insertion_sort(self, 0, self.size(), reverse)
+        if len(self) < 15:
+            _insertion_sort(self, 0, len(self), reverse)
         else:
-            _heap_sort(self, 0, self.size(), reverse)
+            _heap_sort(self, 0, len(self), reverse)
+
+    def reverse(self):
+        i = 0
+        j = len(self) - 1
+        while i < j:
+            self.swap(i, j)
+            i += 1
+            j -= 1
 
 
 def _insertion_sort[T](array: ArrayLike[T], start: Num, end: Num, reverse: bool):
@@ -173,12 +174,12 @@ def _heap_sort[T](array: ArrayLike[T], start: Num, end: Num, reverse: bool):
         i -= 1
 
 
-class ArrayIterator[V: ArrayLike](Record, SonolusIterator):
+class _ArrayIterator[V: ArrayLike](Record, SonolusIterator):
     i: int
     array: V
 
     def has_next(self) -> bool:
-        return self.i < self.array.size()
+        return self.i < len(self.array)
 
     def next(self) -> V:
         value = self.array[self.i]
@@ -186,23 +187,23 @@ class ArrayIterator[V: ArrayLike](Record, SonolusIterator):
         return value
 
 
-class ArrayReverser[V: ArrayLike](Record, ArrayLike):
+class _ArrayReverser[V: ArrayLike](Record, ArrayLike):
     array: V
 
-    def size(self) -> int:
-        return self.array.size()
+    def __len__(self) -> int:
+        return len(self.array)
 
     def __getitem__(self, index: Num) -> V:
-        return self.array[self.size() - 1 - index]
+        return self.array[len(self) - 1 - index]
 
     def __setitem__(self, index: Num, value: V):
-        self.array[self.size() - 1 - index] = value
+        self.array[len(self) - 1 - index] = value
 
     def reversed(self) -> ArrayLike[V]:
         return self.array
 
 
-class Enumerator[V: SonolusIterator](Record, SonolusIterator):
+class _Enumerator[V: SonolusIterator](Record, SonolusIterator):
     i: int
     offset: int
     iterator: V
@@ -217,13 +218,13 @@ class Enumerator[V: SonolusIterator](Record, SonolusIterator):
         return index, value
 
 
-class ArrayEnumerator[V: ArrayLike](Record, SonolusIterator):
+class _ArrayEnumerator[V: ArrayLike](Record, SonolusIterator):
     i: int
     offset: int
     array: V
 
     def has_next(self) -> bool:
-        return self.i < self.array.size()
+        return self.i < len(self.array)
 
     def next(self):
         value = self.array[self.i]

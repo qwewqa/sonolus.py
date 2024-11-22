@@ -4,9 +4,9 @@ from dataclasses import dataclass
 from typing import Annotated, Any, NewType, dataclass_transform, get_origin
 
 from sonolus.backend.ops import Op
-from sonolus.script.graphics import QuadLike, flatten_quad
 from sonolus.script.internal.introspection import get_field_specifiers
 from sonolus.script.internal.native import native_function
+from sonolus.script.quad import QuadLike, flatten_quad
 from sonolus.script.record import Record
 
 
@@ -65,12 +65,12 @@ def _destroy_particle_effect(handle: int) -> None:
 
 
 @dataclass
-class ParticleInfo:
+class _ParticleInfo:
     name: str
 
 
 def particle(name: str) -> Any:
-    return ParticleInfo(name)
+    return _ParticleInfo(name)
 
 
 type Particles = NewType("Particles", Any)
@@ -89,7 +89,7 @@ def particles[T](cls: type[T]) -> T | Particles:
         annotation_values = annotation.__metadata__
         if annotation_type is not Particle:
             raise TypeError(f"Invalid annotation for particles: {annotation}, expected annotation of type Particle")
-        if len(annotation_values) != 1 or not isinstance(annotation_values[0], ParticleInfo):
+        if len(annotation_values) != 1 or not isinstance(annotation_values[0], _ParticleInfo):
             raise TypeError(
                 f"Invalid annotation for particles: {annotation}, expected a single string annotation value"
             )
