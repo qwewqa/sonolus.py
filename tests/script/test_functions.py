@@ -523,3 +523,195 @@ def test_nested_pair_default_modification():
         return Array(first, second)  # [28, 60]
 
     assert validate_dual_run(fn) == Array(28, 60)
+
+
+def test_changing_values_after_closure_creation():
+    def fn():
+        def make_func(x):
+            def f():
+                return x
+
+            x *= 2
+
+            return f
+
+        f1 = make_func(1)
+        f2 = make_func(3)
+
+        return Array(f1(), f2())
+
+    assert validate_dual_run(fn) == Array(2, 6)
+
+
+def test_nested_default_args_with_side_effects():
+    def fn():
+        counter = Pair(0, 0)
+
+        def increment_and_return():
+            counter.first += 1
+            return counter.first
+
+        def make_func(default_val=increment_and_return()):  # noqa: B008
+            def inner(x=default_val):
+                return x + increment_and_return()
+
+            return inner
+
+        f = make_func()
+        first = f()
+        second = f(10)
+        return Array(first, second)
+
+    assert validate_dual_run(fn) == Array(3, 13)
+
+
+def test_closure_sharing_between_functions():
+    def fn():
+        shared = Pair(1, 2)
+
+        def make_modifier():
+            def modify():
+                shared.first *= 2
+                shared.second += 3
+                return shared.first + shared.second
+
+            return modify
+
+        def make_observer():
+            def observe():
+                return shared.first * shared.second
+
+            return observe
+
+        modifier = make_modifier()  # shared becomes (2, 5)
+        observer = make_observer()  # shared is still (2, 5)
+
+        return Array(modifier(), observer())
+
+    assert validate_dual_run(fn) == Array(7, 10)
+
+
+def test_nested_function_redefinition():
+    def fn():
+        x = 1
+
+        def make_outer():
+            y = 2
+
+            def make_inner():
+                z = 3
+
+                def inner():
+                    return x + y + z
+
+                z = 4
+                return inner
+
+            y = 3
+            return make_inner()
+
+        func = make_outer()
+        first = func()  # 1 + 3 + 4 = 8
+        x = 5
+        second = func()  # 5 + 3 + 4 = 12
+
+        return Array(first, second)  # [8, 12]
+
+    assert validate_dual_run(fn) == Array(8, 12)
+
+
+def test_closure_with_conditional_modification():
+    def fn():
+        p = Pair(1, 2)
+
+        def make_modifier(condition):
+            if condition:
+                p.first += 5
+
+            def modify():
+                if condition:
+                    return p.first * 2
+                else:
+                    return p.second * 3
+
+            if condition:
+                p.second += 3
+            return modify
+
+        f1 = make_modifier(True)  # p becomes (6, 5)
+        f2 = make_modifier(False)  # p unchanged
+
+        return Array(f1(), f2())
+
+    assert validate_dual_run(fn) == Array(12, 15)
+
+
+def test_mutable_default_args():
+    def fn():
+        def make_adder(pair=Pair(1, 2)):  # noqa: B008
+            pair.first += 1
+            pair.second += 2
+
+            def add(new_pair=pair):  # Mutable default that gets modified
+                new_pair.first += 1
+                new_pair.second += 2
+                return new_pair.first + new_pair.second
+
+            return add
+
+        adder = make_adder()  # pair becomes (2, 4)
+        first = adder()  # pair becomes (3, 6), returns 9
+        second = adder()  # pair becomes (4, 8), returns 12
+
+        new_adder = make_adder()  # new pair becomes (5, 10)
+        third = new_adder()  # new pair becomes (6, 12), returns 18
+
+        return Array(first, second, third)
+
+    assert validate_dual_run(fn) == Array(9, 12, 18)
+
+
+def test_nested_mutable_defaults():
+    def fn():
+        def outer(p1=Pair(1, 2)):  # noqa: B008
+            p1.first += 1  # p1 becomes (2, 2)
+
+            def inner(p2=p1):  # p2 references the same pair as p1
+                def deepest(p3=p2):  # p3 references the same pair as p1 and p2
+                    p3.second += 1
+                    return p1.first * p2.second  # Same as p3.first * p3.second
+
+                return deepest
+
+            return inner()
+
+        f1 = outer()  # Creates pair (2, 2)
+        r1 = f1()  # Modifies to (2, 3), returns 6
+        r2 = f1()  # Modifies to (2, 4), returns 8
+
+        f2 = outer()  # Modifies to (3, 4)
+        r3 = f2()  # Modifies to (3, 5), returns 15
+
+        return Array(r1, r2, r3)
+
+    assert validate_dual_run(fn) == Array(6, 8, 15)
+
+
+def test_mixed_mutable_immutable_defaults():
+    def fn():
+        def make_processor(immutable=1, mutable=Pair(1, 2)):  # noqa: B008
+            def process(x=immutable, pair=mutable):
+                pair.first += x
+                pair.second += x
+                return pair.first + pair.second
+
+            return process
+
+        proc = make_processor(2)  # immutable=2, creates mutable Pair(1, 2)
+        first = proc()  # Pair becomes (3, 4), returns 7
+        second = proc()  # Pair becomes (5, 6), returns 11
+        third = proc(3)  # Pair becomes (8, 9), returns 17
+
+        return Array(first, second, third)
+
+    assert validate_dual_run(fn) == Array(7, 11, 17)
