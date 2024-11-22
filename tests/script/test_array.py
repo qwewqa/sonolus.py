@@ -258,6 +258,42 @@ def test_array_sort_with_key(args, reverse: bool, a: int, b: int, c: int):
 
 
 @given(
+    args=st.lists(st.integers(min_value=-999, max_value=999), min_size=1, max_size=100),
+    a=st.integers(min_value=-9, max_value=9),
+    b=st.integers(min_value=-99, max_value=99),
+    c=st.integers(min_value=-999, max_value=999),
+)
+def test_array_max_with_key(args, a: int, b: int, c: int):
+    tuple_args = tuple(args)
+    n = len(args)
+
+    def fn():
+        array = Array[int, n](*tuple_args)
+
+        return max(array, key=lambda x: a * x * x + b * x + c)
+
+    assert validate_dual_run(fn) == max(args, key=lambda x: a * x * x + b * x + c)
+
+
+@given(
+    args=st.lists(st.integers(min_value=-999, max_value=999), min_size=1, max_size=100),
+    a=st.integers(min_value=-9, max_value=9),
+    b=st.integers(min_value=-99, max_value=99),
+    c=st.integers(min_value=-999, max_value=999),
+)
+def test_array_min_with_key(args, a: int, b: int, c: int):
+    tuple_args = tuple(args)
+    n = len(args)
+
+    def fn():
+        array = Array[int, n](*tuple_args)
+
+        return min(array, key=lambda x: a * x * x + b * x + c)
+
+    assert validate_dual_run(fn) == min(args, key=lambda x: a * x * x + b * x + c)
+
+
+@given(
     args=st.lists(st.integers(min_value=-9999, max_value=9999), min_size=0, max_size=100),
 )
 def test_array_reverse(args):

@@ -87,33 +87,37 @@ class ArrayLike[T](Sequence):
             i -= 1
         return -1
 
-    def index_of_max(self) -> Num:
+    def index_of_max(self, *, key: Callable[T, Any] | None = None) -> Num:
         if len(self) == 0:
             return -1
+        if key is None:
+            key = _identity
         max_index = 0
         i = 1
         while i < len(self):
-            if self[i] > self[max_index]:
+            if key(self[i]) > key(self[max_index]):
                 max_index = i
             i += 1
         return max_index
 
-    def index_of_min(self) -> Num:
+    def index_of_min(self, *, key: Callable[T, Any] | None = None) -> Num:
         if len(self) == 0:
             return -1
+        if key is None:
+            key = _identity
         min_index = 0
         i = 1
         while i < len(self):
-            if self[i] < self[min_index]:
+            if key(self[i]) < key(self[min_index]):
                 min_index = i
             i += 1
         return min_index
 
-    def _max_(self) -> T:
-        return self[self.index_of_max()]
+    def _max_(self, key: Callable[T, Any] | None = None) -> T:
+        return self[self.index_of_max(key=key)]
 
-    def _min_(self) -> T:
-        return self[self.index_of_min()]
+    def _min_(self, key: Callable[T, Any] | None = None) -> T:
+        return self[self.index_of_min(key=key)]
 
     def swap(self, i: Num, j: Num):
         temp = copy(self[i])

@@ -88,16 +88,20 @@ def _abs(value):
     return compile_and_call(value.__abs__)
 
 
-@overload
-def _max[T](iterable: Iterable[T]) -> T: ...
+def _identity(value):
+    return value
 
 
 @overload
-def _max[T](a: T, b: T, *args: T) -> T: ...
+def _max[T](iterable: Iterable[T], *, key: callable = ...) -> T: ...
+
+
+@overload
+def _max[T](a: T, b: T, *args: T, key: callable = ...) -> T: ...
 
 
 @meta_fn
-def _max(*args):
+def _max(*args, key: callable = _identity):
     from sonolus.backend.visitor import compile_and_call
 
     args = tuple(validate_value(arg) for arg in args)
@@ -106,38 +110,38 @@ def _max(*args):
     elif len(args) == 1:
         (iterable,) = args
         if isinstance(iterable, ArrayLike):
-            return compile_and_call(iterable._max_)
+            return compile_and_call(iterable._max_, key=key)
         else:
             raise TypeError(f"Unsupported type: {type(iterable)} for max")
     else:
         if not all(_is_num(arg) for arg in args):
             raise TypeError("Arguments to max must be numbers")
         if ctx():
-            result = compile_and_call(_max2, args[0], args[1])
+            result = compile_and_call(_max2, args[0], args[1], key=key)
             for arg in args[2:]:
-                result = compile_and_call(_max2, result, arg)
+                result = compile_and_call(_max2, result, arg, key=key)
             return result
         else:
             return max(arg._as_py_() for arg in args)
 
 
-def _max2(a, b):
-    if a > b:
+def _max2(a, b, key=_identity):
+    if key(a) > key(b):
         return a
     else:
         return b
 
 
 @overload
-def _min[T](iterable: Iterable[T]) -> T: ...
+def _min[T](iterable: Iterable[T], *, key: callable = ...) -> T: ...
 
 
 @overload
-def _min[T](a: T, b: T, *args: T) -> T: ...
+def _min[T](a: T, b: T, *args: T, key: callable = ...) -> T: ...
 
 
 @meta_fn
-def _min(*args):
+def _min(*args, key: callable = _identity):
     from sonolus.backend.visitor import compile_and_call
 
     args = tuple(validate_value(arg) for arg in args)
@@ -146,23 +150,23 @@ def _min(*args):
     elif len(args) == 1:
         (iterable,) = args
         if isinstance(iterable, ArrayLike):
-            return compile_and_call(iterable._min_)
+            return compile_and_call(iterable._min_, key=key)
         else:
             raise TypeError(f"Unsupported type: {type(iterable)} for min")
     else:
         if not all(_is_num(arg) for arg in args):
             raise TypeError("Arguments to min must be numbers")
         if ctx():
-            result = compile_and_call(_min2, args[0], args[1])
+            result = compile_and_call(_min2, args[0], args[1], key=key)
             for arg in args[2:]:
-                result = compile_and_call(_min2, result, arg)
+                result = compile_and_call(_min2, result, arg, key=key)
             return result
         else:
             return min(arg._as_py_() for arg in args)
 
 
-def _min2(a, b):
-    if a < b:
+def _min2(a, b, key=_identity):
+    if key(a) < key(b):
         return a
     else:
         return b
