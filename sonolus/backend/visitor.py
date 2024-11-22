@@ -1,10 +1,11 @@
 # ruff: noqa: N802
 import ast
+import builtins
 import functools
 import inspect
 from collections.abc import Callable, Mapping, Sequence
 from types import FunctionType, MethodType
-from typing import Any, Never
+from typing import Any, Never, Self
 
 from sonolus.backend.excepthook import install_excepthook
 from sonolus.backend.utils import get_function, scan_writes
@@ -13,7 +14,7 @@ from sonolus.script.internal.builtin_impls import BUILTIN_IMPLS, _len
 from sonolus.script.internal.context import Context, EmptyBinding, Scope, ValueBinding, ctx, set_ctx
 from sonolus.script.internal.descriptor import SonolusDescriptor
 from sonolus.script.internal.error import CompilationError
-from sonolus.script.internal.impl import try_validate_value, validate_value
+from sonolus.script.internal.impl import validate_value
 from sonolus.script.internal.value import Value
 from sonolus.script.iterator import SonolusIterator
 from sonolus.script.num import Num, _is_num
@@ -53,8 +54,11 @@ def eval_fn(fn: Callable, /, *args, **kwargs):
     source_file, node = get_function(fn)
     bound_args = inspect.signature(fn).bind(*args, **kwargs)
     bound_args.apply_defaults()
-    closurevars = inspect.getclosurevars(fn)
-    global_vars = {**closurevars.nonlocals, **closurevars.globals, **closurevars.builtins}
+    global_vars = {
+        **builtins.__dict__,
+        **fn.__globals__,
+        **inspect.getclosurevars(fn).nonlocals,
+    }
     return Visitor(source_file, bound_args, global_vars).run(node)
 
 
@@ -141,22 +145,25 @@ class Visitor(ast.NodeVisitor):
     return_ctxs: list[Context]  # Contexts at return statements, which will branch to the exit
     loop_head_ctxs: list[Context]  # Contexts at loop heads, from outer to inner
     break_ctxs: list[list[Context]]  # Contexts at break statements, from outer to inner
+    active_ctx: Context | None  # The active context for use in nested functions=
+    parent: Self | None  # The parent visitor for use in nested functions
 
-    def __init__(self, source_file: str, bound_args: inspect.BoundArguments, global_vars: dict[str, Any]):
+    def __init__(
+        self,
+        source_file: str,
+        bound_args: inspect.BoundArguments,
+        global_vars: dict[str, Any],
+        parent: Self | None = None,
+    ):
         self.source_file = source_file
-        self.globals = {}
-        for k, v in global_vars.items():
-            # Unfortunately, inspect.closurevars also includes attributes
-            if v is ctx:
-                raise ValueError("Unexpected use of ctx in non-meta function")
-            value = try_validate_value(BUILTIN_IMPLS.get(id(v), v))
-            if value is not None:
-                self.globals[k] = value
+        self.globals = global_vars
         self.bound_args = bound_args
         self.used_names = {}
         self.return_ctxs = []
         self.loop_head_ctxs = []
         self.break_ctxs = []
+        self.active_ctx = None
+        self.parent = parent
 
     def run(self, node):
         before_ctx = ctx()
@@ -168,9 +175,13 @@ class Visitor(ast.NodeVisitor):
                 ctx().scope.set_value("$return", validate_value(None))
                 for stmt in body:
                     self.visit(stmt)
+            case ast.Lambda(body=body):
+                result = self.visit(body)
+                ctx().scope.set_value("$return", result)
             case _:
                 raise NotImplementedError("Unsupported syntax")
         after_ctx = Context.meet([*self.return_ctxs, ctx()])
+        self.active_ctx = after_ctx
         result_binding = after_ctx.scope.get_binding("$return")
         if not isinstance(result_binding, ValueBinding):
             raise ValueError("Function has conflicting return values")
@@ -186,7 +197,25 @@ class Visitor(ast.NodeVisitor):
             return visitor(node)
 
     def visit_FunctionDef(self, node):
-        raise NotImplementedError("Nested functions are not supported")
+        if node.decorator_list:
+            raise NotImplementedError("Decorators in nested functions are not supported")
+        name = node.name
+        signature = self.arguments_to_signature(node.args)
+
+        def fn(*args, **kwargs):
+            bound = signature.bind(*args, **kwargs)
+            bound.apply_defaults()
+            return Visitor(
+                self.source_file,
+                bound,
+                self.globals,
+                self,
+            ).run(node)
+
+        fn._meta_fn_ = True
+        fn.__name__ = name
+
+        ctx().scope.set_value(name, validate_value(fn))
 
     def visit_AsyncFunctionDef(self, node):
         raise NotImplementedError("Async functions are not supported")
@@ -584,7 +613,22 @@ class Visitor(ast.NodeVisitor):
         raise NotImplementedError(f"Unsupported operand type for unary operator {node.op}")
 
     def visit_Lambda(self, node):
-        raise NotImplementedError("Lambda functions are not supported")
+        signature = self.arguments_to_signature(node.args)
+
+        def fn(*args, **kwargs):
+            bound = signature.bind(*args, **kwargs)
+            bound.apply_defaults()
+            return Visitor(
+                self.source_file,
+                bound,
+                self.globals,
+                self,
+            ).run(node)
+
+        fn._meta_fn_ = True
+        fn.__name__ = "<lambda>"
+
+        return validate_value(fn)
 
     def visit_IfExp(self, node):
         test = self.ensure_boolean_num(self.visit(node.test))
@@ -725,11 +769,18 @@ class Visitor(ast.NodeVisitor):
         raise NotImplementedError("Starred expressions are not supported")
 
     def visit_Name(self, node):
-        if isinstance(ctx().scope.get_binding(node.id), EmptyBinding) and node.id in self.globals:
-            # globals can have false positives due to limitations of inspect.closurevars
-            # so we need to check that it's not defined as a local variable
-            return self.globals[node.id]
-        return ctx().scope.get_value(node.id)
+        self.active_ctx = ctx()
+        v = self
+        while v:
+            if not isinstance(v.active_ctx.scope.get_binding(node.id), EmptyBinding):
+                return v.active_ctx.scope.get_value(node.id)
+            v = v.parent
+        if node.id in self.globals:
+            value = self.globals[node.id]
+            if value is ctx:
+                raise ValueError("Unexpected use of ctx in non meta-function")
+            return validate_value(BUILTIN_IMPLS.get(id(value), value))
+        raise NameError(f"Name {node.id} is not defined")
 
     def visit_List(self, node):
         raise NotImplementedError("List literals are not supported")
@@ -858,6 +909,7 @@ class Visitor(ast.NodeVisitor):
         self, node: ast.stmt | ast.expr, fn: Callable[P, R], /, *args: P.args, **kwargs: P.kwargs
     ) -> R:
         """Handles a call to the given callable."""
+        self.active_ctx = ctx()
         if (
             isinstance(fn, Value)
             and fn._is_py_()
@@ -912,6 +964,62 @@ class Visitor(ast.NodeVisitor):
         if not _is_num(value):
             raise TypeError(f"Invalid type where a bool (Num) was expected: {type(value).__name__}")
         return value
+
+    def arguments_to_signature(self, arguments: ast.arguments) -> inspect.Signature:
+        parameters: list[inspect.Parameter] = []
+        pos_only_count = len(arguments.posonlyargs)
+        for i, arg in enumerate(arguments.posonlyargs):
+            default_idx = i - pos_only_count + len(arguments.defaults)
+            default = self.visit(arguments.defaults[default_idx]) if default_idx >= 0 else None
+            param = inspect.Parameter(
+                name=arg.arg,
+                kind=inspect.Parameter.POSITIONAL_ONLY,
+                default=default if default_idx >= 0 else inspect.Parameter.empty,
+                annotation=inspect.Parameter.empty,  # You might want to handle annotations separately
+            )
+            parameters.append(param)
+
+        pos_kw_count = len(arguments.args)
+        for i, arg in enumerate(arguments.args):
+            default_idx = i - pos_kw_count + len(arguments.defaults)
+            default = self.visit(arguments.defaults[default_idx]) if default_idx >= 0 else None
+            param = inspect.Parameter(
+                name=arg.arg,
+                kind=inspect.Parameter.POSITIONAL_OR_KEYWORD,
+                default=default if default_idx >= 0 else inspect.Parameter.empty,
+                annotation=inspect.Parameter.empty,
+            )
+            parameters.append(param)
+
+        if arguments.vararg:
+            param = inspect.Parameter(
+                name=arguments.vararg.arg,
+                kind=inspect.Parameter.VAR_POSITIONAL,
+                default=inspect.Parameter.empty,
+                annotation=inspect.Parameter.empty,
+            )
+            parameters.append(param)
+
+        for i, arg in enumerate(arguments.kwonlyargs):
+            default = self.visit(arguments.kw_defaults[i])
+            param = inspect.Parameter(
+                name=arg.arg,
+                kind=inspect.Parameter.KEYWORD_ONLY,
+                default=default if default is not None else inspect.Parameter.empty,
+                annotation=inspect.Parameter.empty,
+            )
+            parameters.append(param)
+
+        if arguments.kwarg:
+            param = inspect.Parameter(
+                name=arguments.kwarg.arg,
+                kind=inspect.Parameter.VAR_KEYWORD,
+                default=inspect.Parameter.empty,
+                annotation=inspect.Parameter.empty,
+            )
+            parameters.append(param)
+
+        return inspect.Signature(parameters)
 
     def raise_exception_at_node(self, node: ast.stmt | ast.expr, cause: Exception) -> Never:
         """Throws a compilation error at the given node."""

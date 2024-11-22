@@ -28,6 +28,14 @@ class FindFunction(ast.NodeVisitor):
         else:
             self.generic_visit(node)
 
+    def visit_Lambda(self, node: ast.Lambda):
+        if node.lineno == self.line:
+            if self.node is not None:
+                raise ValueError("Multiple functions defined on the same line are not supported")
+            self.node = node
+        else:
+            self.generic_visit(node)
+
 
 def find_function(tree: ast.Module, line: int):
     visitor = FindFunction(line)

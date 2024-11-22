@@ -207,7 +207,7 @@ class ArrayMap[K, V, Capacity](Record):
             if entry.key == key:
                 entry.value = value
                 return
-        # assert self._size < self.capacity()
+        assert self._size < self.capacity()
         self._array[self._size] = _ArrayMapEntry(key, value)
         self._size += 1
 
