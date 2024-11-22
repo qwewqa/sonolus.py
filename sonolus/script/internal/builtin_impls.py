@@ -1,12 +1,12 @@
 from collections.abc import Iterable
 from typing import overload
 
-from sonolus.script.internal.comptime import Comptime
+from sonolus.script.comptime import Comptime
 from sonolus.script.internal.context import ctx
 from sonolus.script.internal.impl import meta_fn, validate_value
 from sonolus.script.internal.math_impls import MATH_BUILTIN_IMPLS
 from sonolus.script.internal.range import Range
-from sonolus.script.iterator import ArrayLike, SonolusIterator, _Enumerator
+from sonolus.script.iterator import ArrayLike, SonolusIterator, _Enumerator, _Zipper
 from sonolus.script.num import Num, _is_num
 
 
@@ -58,6 +58,24 @@ def _reversed(iterable):
     if not isinstance(iterable, ArrayLike):
         raise TypeError(f"Unsupported type: {type(iterable)} for reversed")
     return compile_and_call(iterable.__reversed__)
+
+
+@meta_fn
+def _zip(*iterables):
+    from sonolus.backend.visitor import compile_and_call
+    from sonolus.script.containers import Pair
+
+    if not iterables:
+        raise TypeError("zip() must have at least one argument")
+
+    iterables = [validate_value(iterable) for iterable in iterables]
+    iterators = [compile_and_call(iterable.__iter__) for iterable in iterables]
+    if not all(isinstance(iterator, SonolusIterator) for iterator in iterators):
+        raise TypeError("Only subclasses of SonolusIterator are supported as iterators")
+    v = iterators.pop()
+    while iterators:
+        v = Pair(iterators.pop(), v)
+    return _Zipper(v)
 
 
 @meta_fn
@@ -150,14 +168,18 @@ def _min2(a, b):
         return b
 
 
+# classmethod, property, staticmethod are supported as decorators, but not within functions
+# int, bool, float are handled by Num
+
 BUILTIN_IMPLS = {
+    id(abs): _abs,
+    id(enumerate): _enumerate,
     id(isinstance): _isinstance,
     id(len): _len,
-    id(enumerate): _enumerate,
-    id(reversed): _reversed,
-    id(abs): _abs,
     id(max): _max,
     id(min): _min,
     id(range): Range,
-    **MATH_BUILTIN_IMPLS,
+    id(reversed): _reversed,
+    id(zip): _zip,
+    **MATH_BUILTIN_IMPLS,  # Includes round
 }

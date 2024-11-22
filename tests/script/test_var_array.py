@@ -1,3 +1,4 @@
+# ruff: noqa: B905
 from datetime import timedelta
 
 from hypothesis import given, settings
@@ -11,9 +12,6 @@ from tests.script.conftest import validate_dual_run
 ints = st.integers(min_value=-999, max_value=999)
 lists = st.lists(ints, min_size=1, max_size=20)
 sets = st.sets(ints, min_size=1, max_size=20)
-
-
-from hypothesis import strategies as st
 
 
 @st.composite
@@ -409,3 +407,83 @@ def test_var_array_count_maybe_missing(args):
         return count_result
 
     assert validate_dual_run(fn) == expected_count
+
+
+@given(
+    lists,
+)
+@settings(deadline=timedelta(seconds=1))
+def test_zip_single(values_list_1):
+    values_1 = Array(*values_list_1)
+    value_count_1 = len(values_list_1)
+    result_count = value_count_1
+
+    def fn():
+        va_1 = VarArray[int, value_count_1].new()
+        va_1.extend(values_1)
+        results = VarArray[int, result_count].new()
+        for v1 in va_1:
+            results.append(v1)
+        return results
+
+    assert list(validate_dual_run(fn)) == values_list_1
+
+
+@given(
+    lists,
+    lists,
+)
+@settings(deadline=timedelta(seconds=1))
+def test_zip_two(values_list_1, values_list_2):
+    values_1 = Array(*values_list_1)
+    values_2 = Array(*values_list_2)
+    value_count_1 = len(values_list_1)
+    value_count_2 = len(values_list_2)
+    result_count = min(value_count_1, value_count_2) * 2
+
+    def fn():
+        va_1 = VarArray[int, value_count_1].new()
+        va_1.extend(values_1)
+        va_2 = VarArray[int, value_count_2].new()
+        va_2.extend(values_2)
+        results = VarArray[int, result_count].new()
+        for v1, v2 in zip(va_1, va_2):
+            results.append(v1)
+            results.append(v2)
+        return results
+
+    assert list(validate_dual_run(fn)) == [e for pair in zip(values_list_1, values_list_2) for e in pair]
+
+
+@given(
+    lists,
+    lists,
+    lists,
+)
+@settings(deadline=timedelta(seconds=1))
+def test_zip_three(values_list_1, values_list_2, values_list_3):
+    values_1 = Array(*values_list_1)
+    values_2 = Array(*values_list_2)
+    values_3 = Array(*values_list_3)
+    value_count_1 = len(values_list_1)
+    value_count_2 = len(values_list_2)
+    value_count_3 = len(values_list_3)
+    result_count = min(value_count_1, value_count_2, value_count_3) * 3
+
+    def fn():
+        va_1 = VarArray[int, value_count_1].new()
+        va_1.extend(values_1)
+        va_2 = VarArray[int, value_count_2].new()
+        va_2.extend(values_2)
+        va_3 = VarArray[int, value_count_3].new()
+        va_3.extend(values_3)
+        results = VarArray[int, result_count].new()
+        for v1, v2, v3 in zip(va_1, va_2, va_3):
+            results.append(v1)
+            results.append(v2)
+            results.append(v3)
+        return results
+
+    assert list(validate_dual_run(fn)) == [
+        e for triple in zip(values_list_1, values_list_2, values_list_3) for e in triple
+    ]

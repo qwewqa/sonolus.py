@@ -232,7 +232,7 @@ class Record(GenericValue):
         return result
 
     def __hash__(self):
-        raise TypeError("Record is not hashable")
+        return hash(tuple(field.__get__(self) for field in self._fields))
 
 
 class _RecordField(SonolusDescriptor):

@@ -17,7 +17,7 @@ class _Comptime[T, V](GenericValue):
     @classmethod
     def value(cls):
         _, value = cls._type_args_
-        if isinstance(value, Identity):
+        if isinstance(value, _Identity):
             return value.value
         return value
 
@@ -127,7 +127,7 @@ class _Comptime[T, V](GenericValue):
     @classmethod
     def accept_unchecked(cls, value: Any) -> Self:
         if isinstance(value, dict | tuple):
-            args = type(value), Identity(value)
+            args = type(value), _Identity(value)
         else:
             args = type(value), value
         if args not in cls._parameterized_:
@@ -135,7 +135,7 @@ class _Comptime[T, V](GenericValue):
         return cls._parameterized_[args]._instance
 
 
-class Identity[T]:  # This is to allow accepting potentially unhashable values by using identity comparison
+class _Identity[T]:  # This is to allow accepting potentially unhashable values by using identity comparison
     value: T
 
     def __init__(self, value: T):

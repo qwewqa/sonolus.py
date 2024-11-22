@@ -4,6 +4,7 @@ from abc import abstractmethod
 from collections.abc import Iterator, Sequence
 from typing import Any
 
+from sonolus.script.internal.impl import meta_fn
 from sonolus.script.num import Num
 from sonolus.script.record import Record
 from sonolus.script.values import copy
@@ -231,3 +232,37 @@ class _ArrayEnumerator[V: ArrayLike](Record, SonolusIterator):
         index = self.i + self.offset
         self.i += 1
         return index, value
+
+
+class _Zipper[T](Record, SonolusIterator):
+    # Can be a, Pair[a, b], Pair[a, Pair[b, c]], etc.
+    iterators: T
+
+    @meta_fn
+    def has_next(self) -> bool:
+        from sonolus.backend.visitor import compile_and_call
+
+        return compile_and_call(self._has_next, self._get_iterators())
+
+    def _get_iterators(self) -> tuple[SonolusIterator, ...]:
+        from sonolus.script.containers import Pair
+
+        iterators = []
+        v = self.iterators
+        while isinstance(v, Pair):
+            iterators.append(v.first)
+            v = v.second
+        iterators.append(v)
+        return tuple(iterators)
+
+    def _has_next(self, iterators: tuple[SonolusIterator, ...]) -> bool:
+        for iterator in iterators:  # noqa: SIM110
+            if not iterator.has_next():
+                return False
+        return True
+
+    @meta_fn
+    def next(self) -> tuple[Any, ...]:
+        from sonolus.backend.visitor import compile_and_call
+
+        return tuple(compile_and_call(iterator.next) for iterator in self._get_iterators())
