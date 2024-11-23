@@ -3,14 +3,13 @@ from __future__ import annotations
 from enum import Enum
 from typing import Annotated, Any, ClassVar, Literal, Self, TypeVar, get_origin
 
-from sonolus.script.internal.impl import meta_fn
+from sonolus.script.internal.impl import meta_fn, validate_value
 from sonolus.script.internal.value import Value
 
 type AnyType = type[Value] | PartialGeneric | TypeVar
 
 
 def validate_type_arg(arg: Any) -> Any:
-    from sonolus.script.internal.impl import validate_value
 
     arg = validate_value(arg)
     if not arg._is_py_():
@@ -93,7 +92,6 @@ class GenericValue(Value):
             return cls._type_vars_to_args_[var]
         raise TypeError(f"Missing type argument for {var}")
 
-    @classmethod
     def __class_getitem__(cls, args: Any) -> type[Self]:
         if cls._type_args_ is not None:
             raise TypeError(f"Type {cls.__name__} is already parameterized")
@@ -168,7 +166,6 @@ def infer_and_validate_types(dst: Any, src: Any, results: dict[TypeVar, Any] | N
 
 
 def accept_and_infer_types(dst: Any, val: Any, results: dict[TypeVar, Any]) -> Value:
-    from sonolus.script.internal.impl import validate_value
 
     val = validate_value(val)
     match dst:

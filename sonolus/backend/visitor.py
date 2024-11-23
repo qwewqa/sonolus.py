@@ -410,7 +410,6 @@ class Visitor(ast.NodeVisitor):
             set_ctx(Context.meet(end_ctxs))
 
     def handle_match_pattern(self, subject: Value, pattern: ast.pattern) -> tuple[Context, Context]:
-        from sonolus.script.internal.comptime import Comptime
         from sonolus.script.internal.generic import validate_type_spec
         from sonolus.script.internal.tuple_impl import TupleImpl
 
@@ -476,8 +475,6 @@ class Visitor(ast.NodeVisitor):
                 cls = validate_type_spec(self.visit(cls))
                 if not isinstance(cls, type):
                     raise TypeError("Class is not a type")
-                if issubclass(cls, Comptime):
-                    raise TypeError("Comptime is not supported in match patterns")
                 if not isinstance(subject, cls):
                     return ctx().into_dead(), ctx()
                 if patterns:
@@ -880,9 +877,10 @@ class Visitor(ast.NodeVisitor):
 
     def handle_getattr(self, node: ast.stmt | ast.expr, target: Value, key: str) -> Value:
         with self.reporting_errors_at_node(node):
-            from sonolus.script.internal.comptime import Comptime
+            from sonolus.script.internal.type_impl import TypeImpl
 
-            if isinstance(target, Comptime) and target._is_py_():
+            if isinstance(target, TypeImpl):
+                # Unwrap so we can access fields of the type
                 target = target._as_py_()
             descriptor = type(target).__dict__.get(key)
             match descriptor:

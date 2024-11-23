@@ -7,7 +7,6 @@ from sonolus.backend.ops import Op
 from sonolus.backend.optimize.flow import cfg_to_mermaid
 from sonolus.backend.optimize.passes import CompilerPass, run_passes
 from sonolus.backend.optimize.simplify import CoalesceFlow
-from sonolus.script.internal.comptime import Comptime
 from sonolus.script.internal.context import GlobalContextState, ctx, set_ctx
 from sonolus.script.internal.impl import meta_fn, validate_value
 from sonolus.script.internal.native import native_function
@@ -18,7 +17,7 @@ debug_log_callback = ContextVar[Callable[[Num], None]]("debug_log_callback")
 
 @meta_fn
 def error(message: str | None = None) -> None:
-    message = Comptime._accept_(message)._as_py_() if message is not None else "Error"
+    message = message._as_py_() if message is not None else "Error"
     if not isinstance(message, str):
         raise ValueError("Expected a string")
     if ctx():

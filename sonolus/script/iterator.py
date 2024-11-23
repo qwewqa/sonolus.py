@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from abc import abstractmethod
+from abc import ABC, abstractmethod
 from collections.abc import Callable, Iterator, Sequence
 from typing import Any
 
@@ -37,7 +37,7 @@ class SonolusIterator[T](Iterator[T]):
         return self
 
 
-class ArrayLike[T](Sequence):
+class ArrayLike[T](Sequence, ABC):
     # We can't use range() here since Range itself depends on ArrayLike
 
     @abstractmethod

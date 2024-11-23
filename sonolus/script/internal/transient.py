@@ -8,11 +8,11 @@ from sonolus.script.internal.value import Value
 class TransientValue(Value):
     @classmethod
     def _is_concrete_(cls) -> bool:
-        return False
+        return True
 
     @classmethod
     def _size_(cls) -> int:
-        raise TypeError(f"{cls.__name__} is unsized")
+        return 0
 
     @classmethod
     def _is_value_type_(cls) -> bool:

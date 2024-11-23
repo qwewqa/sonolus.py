@@ -59,3 +59,7 @@ class DictImpl(TransientValue):
 
     def _as_py_(self) -> Any:
         return {k: v._as_py_() for k, v in self.value.items()}
+
+
+DictImpl.__name__ = "dict"
+DictImpl.__qualname__ = "dict"

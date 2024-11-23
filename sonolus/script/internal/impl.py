@@ -41,11 +41,12 @@ def validate_value(value: Any) -> Value:
 
 
 def try_validate_value(value: Any) -> Value | None:
-    from sonolus.script.internal.comptime import Comptime, _Identity
+    from sonolus.script.internal.constant import MiscConstantValue
     from sonolus.script.internal.dict_impl import DictImpl
     from sonolus.script.internal.generic import PartialGeneric
     from sonolus.script.internal.globals import GlobalPlaceholder
     from sonolus.script.internal.tuple_impl import TupleImpl
+    from sonolus.script.internal.type_impl import TypeImpl
     from sonolus.script.internal.value import Value
     from sonolus.script.num import Num
 
@@ -56,8 +57,8 @@ def try_validate_value(value: Any) -> Value | None:
             return value
         case type():
             if value in {int, float, bool}:
-                return Comptime.accept_unchecked(Num)
-            return Comptime.accept_unchecked(value)
+                return TypeImpl.of(Num)
+            return TypeImpl.of(value)
         case int() | float() | bool():
             return Num._accept_(value)
         case tuple():
@@ -65,14 +66,12 @@ def try_validate_value(value: Any) -> Value | None:
         case dict():
             return DictImpl._accept_(value)
         case PartialGeneric() | TypeVar() | FunctionType() | MethodType() | NotImplementedType() | str() | NoneType():
-            return Comptime.accept_unchecked(value)
-        case _Identity():
-            return Comptime.accept_unchecked(value.value)
+            return MiscConstantValue.of(value)
         case other_type if get_origin(value) in {Literal, Annotated, UnionType, tuple}:
-            return Comptime.accept_unchecked(other_type)
+            return MiscConstantValue.of(other_type)
         case GlobalPlaceholder():
             return value.get()
         case comptime_value if getattr(comptime_value, "_is_comptime_value_", False):
-            return Comptime.accept_unchecked(comptime_value)
+            return MiscConstantValue.of(comptime_value)
         case _:
             return None

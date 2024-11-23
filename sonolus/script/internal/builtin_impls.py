@@ -1,12 +1,14 @@
+from abc import ABC
 from collections.abc import Iterable
 from typing import overload
 
-from sonolus.script.internal.comptime import Comptime
 from sonolus.script.internal.context import ctx
+from sonolus.script.internal.dict_impl import DictImpl
 from sonolus.script.internal.impl import meta_fn, validate_value
 from sonolus.script.internal.math_impls import MATH_BUILTIN_IMPLS
 from sonolus.script.internal.range import Range
 from sonolus.script.internal.tuple_impl import TupleImpl
+from sonolus.script.internal.value import Value
 from sonolus.script.iterator import (
     ArrayLike,
     SonolusIterator,
@@ -16,20 +18,19 @@ from sonolus.script.iterator import (
     _MappingIterator,
     _Zipper,
 )
-from sonolus.script.num import Num, _is_num
+from sonolus.script.num import _is_num
 
 
 @meta_fn
 def _isinstance(value, type_):
     value = validate_value(value)
     type_ = validate_value(type_)._as_py_()
-    if isinstance(value, TupleImpl):
-        return type_ is tuple
-    if isinstance(value, Comptime):
-        if type_ in {dict, Num, callable}:
-            return validate_value(isinstance(value._as_py_(), type_))
-        else:
-            raise TypeError(f"Unsupported type: {type_} for isinstance")
+    if type_ is dict:
+        return isinstance(value, DictImpl)
+    if type_ is tuple:
+        return isinstance(value, TupleImpl)
+    if not issubclass(type_, Value | ABC):
+        raise TypeError(f"Unsupported type: {type_} for isinstance")
     return validate_value(isinstance(value, type_))
 
 
