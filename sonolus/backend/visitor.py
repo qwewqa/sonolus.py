@@ -3,7 +3,7 @@ import ast
 import builtins
 import functools
 import inspect
-from collections.abc import Callable, Mapping, Sequence
+from collections.abc import Callable, Sequence
 from types import FunctionType, MethodType
 from typing import Any, Never, Self
 
@@ -728,6 +728,8 @@ class Visitor(ast.NodeVisitor):
         return ctx().scope.get_value(result_name)
 
     def visit_Call(self, node):
+        from sonolus.script.internal.dict_impl import DictImpl
+
         fn = self.visit(node.func)
         if fn is Num:
             raise ValueError("Calling int/bool/float as a function is not supported")
@@ -743,8 +745,10 @@ class Visitor(ast.NodeVisitor):
                 kwargs[keyword.arg] = self.visit(keyword.value)
             else:
                 value = self.visit(keyword.value)
-                if value._is_py_() and isinstance(value._as_py_(), Mapping):
-                    kwargs.update(value._as_py_())
+                if isinstance(value, DictImpl):
+                    if not all(isinstance(k, str) for k in value.value):
+                        raise ValueError("Keyword arguments must be strings")
+                    kwargs.update(value.value)
                 else:
                     raise ValueError("Starred keyword arguments (**kwargs) must be dictionaries")
         return self.handle_call(node, fn, *args, **kwargs)
@@ -923,15 +927,8 @@ class Visitor(ast.NodeVisitor):
 
     def handle_getitem(self, node: ast.stmt | ast.expr, target: Value, key: Value) -> Value:
         with self.reporting_errors_at_node(node):
-            if target._is_py_():
-                target = target._as_py_()
-                if key._is_py_():
-                    return validate_value(target[key._as_py_()])
-                if isinstance(target, dict):
-                    raise TypeError("Dictionary access requires a compile-time constant key")
-                if isinstance(target, Value) and hasattr(target, "__getitem__"):
-                    return self.handle_call(node, target.__getitem__, key)
-                raise TypeError(f"Cannot get items on {type(target).__name__}")
+            if target._is_py_() and key._is_py_():
+                return validate_value(target._as_py_()[key._as_py_()])
             else:
                 if isinstance(target, Value) and hasattr(target, "__getitem__"):
                     return self.handle_call(node, target.__getitem__, key)

@@ -1,9 +1,9 @@
 from hypothesis import given
 from hypothesis import strategies as st
-from script.conftest import validate_dual_run
 
 from sonolus.script.array import Array
 from sonolus.script.containers import VarArray
+from tests.script.conftest import validate_dual_run
 
 ints = st.integers(min_value=-10, max_value=10)
 

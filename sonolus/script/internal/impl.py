@@ -42,6 +42,7 @@ def validate_value(value: Any) -> Value:
 
 def try_validate_value(value: Any) -> Value | None:
     from sonolus.script.internal.comptime import Comptime, _Identity
+    from sonolus.script.internal.dict_impl import DictImpl
     from sonolus.script.internal.generic import PartialGeneric
     from sonolus.script.internal.globals import GlobalPlaceholder
     from sonolus.script.internal.tuple_impl import TupleImpl
@@ -62,7 +63,7 @@ def try_validate_value(value: Any) -> Value | None:
         case tuple():
             return TupleImpl._accept_(value)
         case dict():
-            return Comptime.accept_unchecked({validate_value(k)._as_py_(): validate_value(v) for k, v in value.items()})
+            return DictImpl._accept_(value)
         case PartialGeneric() | TypeVar() | FunctionType() | MethodType() | NotImplementedType() | str() | NoneType():
             return Comptime.accept_unchecked(value)
         case _Identity():
