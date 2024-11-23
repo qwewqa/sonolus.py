@@ -11,6 +11,7 @@ from sonolus.backend.excepthook import install_excepthook
 from sonolus.backend.utils import get_function, scan_writes
 from sonolus.script.debug import assert_true
 from sonolus.script.internal.builtin_impls import BUILTIN_IMPLS, _len
+from sonolus.script.internal.constant import ConstantValue
 from sonolus.script.internal.context import Context, EmptyBinding, Scope, ValueBinding, ctx, set_ctx
 from sonolus.script.internal.descriptor import SonolusDescriptor
 from sonolus.script.internal.error import CompilationError
@@ -877,10 +878,8 @@ class Visitor(ast.NodeVisitor):
 
     def handle_getattr(self, node: ast.stmt | ast.expr, target: Value, key: str) -> Value:
         with self.reporting_errors_at_node(node):
-            from sonolus.script.internal.type_impl import TypeImpl
-
-            if isinstance(target, TypeImpl):
-                # Unwrap so we can access fields of the type
+            if isinstance(target, ConstantValue):
+                # Unwrap so we can access fields
                 target = target._as_py_()
             descriptor = type(target).__dict__.get(key)
             match descriptor:
