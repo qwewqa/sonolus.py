@@ -41,10 +41,10 @@ def validate_value(value: Any) -> Value:
 
 
 def try_validate_value(value: Any) -> Value | None:
+    from sonolus.script.globals import _GlobalPlaceholder
     from sonolus.script.internal.constant import MiscConstantValue
     from sonolus.script.internal.dict_impl import DictImpl
     from sonolus.script.internal.generic import PartialGeneric
-    from sonolus.script.internal.globals import GlobalPlaceholder
     from sonolus.script.internal.tuple_impl import TupleImpl
     from sonolus.script.internal.type_impl import TypeImpl
     from sonolus.script.internal.value import Value
@@ -69,7 +69,7 @@ def try_validate_value(value: Any) -> Value | None:
             return MiscConstantValue.of(value)
         case other_type if get_origin(value) in {Literal, Annotated, UnionType, tuple}:
             return MiscConstantValue.of(other_type)
-        case GlobalPlaceholder():
+        case _GlobalPlaceholder():
             return value.get()
         case comptime_value if getattr(comptime_value, "_is_comptime_value_", False):
             return MiscConstantValue.of(comptime_value)

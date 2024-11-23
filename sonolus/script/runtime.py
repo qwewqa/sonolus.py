@@ -3,8 +3,7 @@ from enum import IntEnum
 from sonolus.backend.mode import Mode
 from sonolus.script.array import Array
 from sonolus.script.containers import VarArray
-from sonolus.script.internal.context import ctx
-from sonolus.script.internal.globals import (
+from sonolus.script.globals import (
     _level_life,
     _level_score,
     _play_runtime_environment,
@@ -29,6 +28,7 @@ from sonolus.script.internal.globals import (
     _watch_runtime_ui_configuration,
     _watch_runtime_update,
 )
+from sonolus.script.internal.context import ctx
 from sonolus.script.internal.impl import meta_fn
 from sonolus.script.num import Num
 from sonolus.script.quad import Quad, Rect

@@ -8,7 +8,7 @@ from sonolus.script.internal.generic import validate_concrete_type
 from sonolus.script.internal.value import Value
 
 
-class GlobalInfo:
+class _GlobalInfo:
     def __init__(self, name: str, size: int, blocks: dict[Mode, Block], offset: int | None):
         self.name = name
         self.size = size
@@ -16,7 +16,7 @@ class GlobalInfo:
         self.offset = offset
 
 
-class GlobalField(SonolusDescriptor):
+class _GlobalField(SonolusDescriptor):
     def __init__(self, name: str, type_: type[Value], index: int, offset: int):
         self.name = name
         self.type = type_
@@ -49,7 +49,7 @@ class GlobalField(SonolusDescriptor):
             target._copy_from_(value)
 
 
-class GlobalPlaceholder:
+class _GlobalPlaceholder:
     def __init__(self, type_: type[Value], blocks: dict[Mode, Block], offset: int | None):
         self.type = type_
         self.blocks = blocks
@@ -65,10 +65,10 @@ class GlobalPlaceholder:
         return self.type._from_place_(base)
 
 
-def create_global(cls: type, blocks: dict[Mode, Block], offset: int | None):
+def _create_global(cls: type, blocks: dict[Mode, Block], offset: int | None):
     if issubclass(cls, Value):
         cls = validate_concrete_type(cls)
-        return GlobalPlaceholder(cls, blocks, offset)
+        return _GlobalPlaceholder(cls, blocks, offset)
     if len(cls.__bases__) != 1:
         raise TypeError("Expected a class with no bases or a Value subclass")
     field_offset = 0
@@ -77,61 +77,61 @@ def create_global(cls: type, blocks: dict[Mode, Block], offset: int | None):
         annotation,
     ) in enumerate(inspect.get_annotations(cls, eval_str=True).items()):
         type_ = validate_concrete_type(annotation)
-        setattr(cls, name, GlobalField(name, type_, i, field_offset))
+        setattr(cls, name, _GlobalField(name, type_, i, field_offset))
         field_offset += type_._size_()
-    cls._global_info_ = GlobalInfo(cls.__name__, field_offset, blocks, offset)
+    cls._global_info_ = _GlobalInfo(cls.__name__, field_offset, blocks, offset)
     cls._is_comptime_value_ = True
     return cls()
 
 
 @dataclass_transform()
 def _play_runtime_environment[T](cls: type[T]) -> T:
-    return create_global(cls, {Mode.PLAY: PlayBlock.RuntimeEnvironment}, 0)
+    return _create_global(cls, {Mode.PLAY: PlayBlock.RuntimeEnvironment}, 0)
 
 
 @dataclass_transform()
 def _watch_runtime_environment[T](cls: type[T]) -> T:
-    return create_global(cls, {Mode.WATCH: WatchBlock.RuntimeEnvironment}, 0)
+    return _create_global(cls, {Mode.WATCH: WatchBlock.RuntimeEnvironment}, 0)
 
 
 @dataclass_transform()
 def _tutorial_runtime_environment[T](cls: type[T]) -> T:
-    return create_global(cls, {Mode.TUTORIAL: TutorialBlock.RuntimeEnvironment}, 0)
+    return _create_global(cls, {Mode.TUTORIAL: TutorialBlock.RuntimeEnvironment}, 0)
 
 
 @dataclass_transform()
 def _preview_runtime_environment[T](cls: type[T]) -> T:
-    return create_global(cls, {Mode.PREVIEW: PreviewBlock.RuntimeEnvironment}, 0)
+    return _create_global(cls, {Mode.PREVIEW: PreviewBlock.RuntimeEnvironment}, 0)
 
 
 @dataclass_transform()
 def _play_runtime_update[T](cls: type[T]) -> T:
-    return create_global(cls, {Mode.PLAY: PlayBlock.RuntimeUpdate}, 0)
+    return _create_global(cls, {Mode.PLAY: PlayBlock.RuntimeUpdate}, 0)
 
 
 @dataclass_transform()
 def _watch_runtime_update[T](cls: type[T]) -> T:
-    return create_global(cls, {Mode.WATCH: WatchBlock.RuntimeUpdate}, 0)
+    return _create_global(cls, {Mode.WATCH: WatchBlock.RuntimeUpdate}, 0)
 
 
 @dataclass_transform()
 def _preview_runtime_canvas[T](cls: type[T]) -> T:
-    return create_global(cls, {Mode.PREVIEW: PreviewBlock.RuntimeCanvas}, 0)
+    return _create_global(cls, {Mode.PREVIEW: PreviewBlock.RuntimeCanvas}, 0)
 
 
 @dataclass_transform()
 def _tutorial_runtime_update[T](cls: type[T]) -> T:
-    return create_global(cls, {Mode.TUTORIAL: TutorialBlock.RuntimeUpdate}, 0)
+    return _create_global(cls, {Mode.TUTORIAL: TutorialBlock.RuntimeUpdate}, 0)
 
 
 @dataclass_transform()
 def _runtime_touch_array[T](cls: type[T]) -> T:
-    return create_global(cls, {Mode.PLAY: PlayBlock.RuntimeTouchArray}, 0)
+    return _create_global(cls, {Mode.PLAY: PlayBlock.RuntimeTouchArray}, 0)
 
 
 @dataclass_transform()
 def _runtime_skin_transform[T](cls: type[T]) -> T:
-    return create_global(
+    return _create_global(
         cls,
         {
             Mode.PLAY: PlayBlock.RuntimeSkinTransform,
@@ -145,7 +145,7 @@ def _runtime_skin_transform[T](cls: type[T]) -> T:
 
 @dataclass_transform()
 def _runtime_particle_transform[T](cls: type[T]) -> T:
-    return create_global(
+    return _create_global(
         cls,
         {
             Mode.PLAY: PlayBlock.RuntimeParticleTransform,
@@ -158,7 +158,7 @@ def _runtime_particle_transform[T](cls: type[T]) -> T:
 
 @dataclass_transform()
 def _runtime_background[T](cls: type[T]) -> T:
-    return create_global(
+    return _create_global(
         cls,
         {
             Mode.PLAY: PlayBlock.RuntimeBackground,
@@ -171,52 +171,52 @@ def _runtime_background[T](cls: type[T]) -> T:
 
 @dataclass_transform()
 def _play_runtime_ui[T](cls: type[T]) -> T:
-    return create_global(cls, {Mode.PLAY: PlayBlock.RuntimeUI}, 0)
+    return _create_global(cls, {Mode.PLAY: PlayBlock.RuntimeUI}, 0)
 
 
 @dataclass_transform()
 def _watch_runtime_ui[T](cls: type[T]) -> T:
-    return create_global(cls, {Mode.WATCH: WatchBlock.RuntimeUI}, 0)
+    return _create_global(cls, {Mode.WATCH: WatchBlock.RuntimeUI}, 0)
 
 
 @dataclass_transform()
 def _tutorial_runtime_ui[T](cls: type[T]) -> T:
-    return create_global(cls, {Mode.TUTORIAL: TutorialBlock.RuntimeUI}, 0)
+    return _create_global(cls, {Mode.TUTORIAL: TutorialBlock.RuntimeUI}, 0)
 
 
 @dataclass_transform()
 def _preview_runtime_ui[T](cls: type[T]) -> T:
-    return create_global(cls, {Mode.PREVIEW: PreviewBlock.RuntimeUI}, 0)
+    return _create_global(cls, {Mode.PREVIEW: PreviewBlock.RuntimeUI}, 0)
 
 
 @dataclass_transform()
 def _play_runtime_ui_configuration[T](cls: type[T]) -> T:
-    return create_global(cls, {Mode.PLAY: PlayBlock.RuntimeUIConfiguration}, 0)
+    return _create_global(cls, {Mode.PLAY: PlayBlock.RuntimeUIConfiguration}, 0)
 
 
 @dataclass_transform()
 def _watch_runtime_ui_configuration[T](cls: type[T]) -> T:
-    return create_global(cls, {Mode.WATCH: WatchBlock.RuntimeUIConfiguration}, 0)
+    return _create_global(cls, {Mode.WATCH: WatchBlock.RuntimeUIConfiguration}, 0)
 
 
 @dataclass_transform()
 def _tutorial_runtime_ui_configuration[T](cls: type[T]) -> T:
-    return create_global(cls, {Mode.TUTORIAL: TutorialBlock.RuntimeUIConfiguration}, 0)
+    return _create_global(cls, {Mode.TUTORIAL: TutorialBlock.RuntimeUIConfiguration}, 0)
 
 
 @dataclass_transform()
 def _preview_runtime_ui_configuration[T](cls: type[T]) -> T:
-    return create_global(cls, {Mode.PREVIEW: PreviewBlock.RuntimeUIConfiguration}, 0)
+    return _create_global(cls, {Mode.PREVIEW: PreviewBlock.RuntimeUIConfiguration}, 0)
 
 
 @dataclass_transform()
 def _tutorial_instruction[T](cls: type[T]) -> T:
-    return create_global(cls, {Mode.TUTORIAL: TutorialBlock.TutorialInstruction}, 0)
+    return _create_global(cls, {Mode.TUTORIAL: TutorialBlock.TutorialInstruction}, 0)
 
 
 @dataclass_transform()
 def level_memory[T](cls: type[T]) -> T:
-    return create_global(
+    return _create_global(
         cls,
         {
             Mode.PLAY: PlayBlock.LevelMemory,
@@ -229,7 +229,7 @@ def level_memory[T](cls: type[T]) -> T:
 
 @dataclass_transform()
 def level_data[T](cls: type[T]) -> T:
-    return create_global(
+    return _create_global(
         cls,
         {
             Mode.PLAY: PlayBlock.LevelData,
@@ -247,12 +247,12 @@ def level_data[T](cls: type[T]) -> T:
 
 @dataclass_transform()
 def _level_score[T](cls: type[T]) -> T:
-    return create_global(cls, {Mode.PLAY: PlayBlock.LevelScore, Mode.WATCH: WatchBlock.LevelScore}, 0)
+    return _create_global(cls, {Mode.PLAY: PlayBlock.LevelScore, Mode.WATCH: WatchBlock.LevelScore}, 0)
 
 
 @dataclass_transform()
 def _level_life[T](cls: type[T]) -> T:
-    return create_global(cls, {Mode.PLAY: PlayBlock.LevelLife, Mode.WATCH: WatchBlock.LevelLife}, 0)
+    return _create_global(cls, {Mode.PLAY: PlayBlock.LevelLife, Mode.WATCH: WatchBlock.LevelLife}, 0)
 
 
 # engine_rom is handled by the compiler

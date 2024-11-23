@@ -10,7 +10,6 @@ type AnyType = type[Value] | PartialGeneric | TypeVar
 
 
 def validate_type_arg(arg: Any) -> Any:
-
     arg = validate_value(arg)
     if not arg._is_py_():
         raise TypeError(f"Expected a compile-time constant type argument, got {arg}")
@@ -166,7 +165,6 @@ def infer_and_validate_types(dst: Any, src: Any, results: dict[TypeVar, Any] | N
 
 
 def accept_and_infer_types(dst: Any, val: Any, results: dict[TypeVar, Any]) -> Value:
-
     val = validate_value(val)
     match dst:
         case TypeVar():
