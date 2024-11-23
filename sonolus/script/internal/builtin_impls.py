@@ -1,12 +1,21 @@
 from collections.abc import Iterable
 from typing import overload
 
-from sonolus.script.comptime import Comptime
+from sonolus.script.internal.comptime import Comptime
 from sonolus.script.internal.context import ctx
 from sonolus.script.internal.impl import meta_fn, validate_value
 from sonolus.script.internal.math_impls import MATH_BUILTIN_IMPLS
 from sonolus.script.internal.range import Range
-from sonolus.script.iterator import ArrayLike, SonolusIterator, _Enumerator, _Zipper
+from sonolus.script.internal.tuple_impl import TupleImpl
+from sonolus.script.iterator import (
+    ArrayLike,
+    SonolusIterator,
+    _EmptyIterator,
+    _Enumerator,
+    _FilteringIterator,
+    _MappingIterator,
+    _Zipper,
+)
 from sonolus.script.num import Num, _is_num
 
 
@@ -14,8 +23,10 @@ from sonolus.script.num import Num, _is_num
 def _isinstance(value, type_):
     value = validate_value(value)
     type_ = validate_value(type_)._as_py_()
+    if isinstance(value, TupleImpl):
+        return type_ is tuple
     if isinstance(value, Comptime):
-        if type_ in {dict, tuple, Num, callable}:
+        if type_ in {dict, Num, callable}:
             return validate_value(isinstance(value._as_py_(), type_))
         else:
             raise TypeError(f"Unsupported type: {type_} for isinstance")
@@ -66,9 +77,13 @@ def _zip(*iterables):
     from sonolus.script.containers import Pair
 
     if not iterables:
-        raise TypeError("zip() must have at least one argument")
+        return _EmptyIterator()
 
     iterables = [validate_value(iterable) for iterable in iterables]
+    if any(isinstance(iterable, TupleImpl) for iterable in iterables):
+        if not all(isinstance(iterable, TupleImpl) for iterable in iterables):
+            raise TypeError("Cannot mix tuples with other types in zip")
+        return TupleImpl._accept_(tuple(zip(*(iterable._as_py_() for iterable in iterables), strict=False)))
     iterators = [compile_and_call(iterable.__iter__) for iterable in iterables]
     if not all(isinstance(iterator, SonolusIterator) for iterator in iterators):
         raise TypeError("Only subclasses of SonolusIterator are supported as iterators")
@@ -177,6 +192,14 @@ def _callable(value):
     return callable(value)
 
 
+def _map(fn, iterable, *iterables):
+    return _MappingIterator(lambda args: fn(*args), zip(iterable, *iterables))  # noqa: B905
+
+
+def _filter(fn, iterable):
+    return _FilteringIterator(fn, iterable.__iter__())  # noqa: PLC2801
+
+
 # classmethod, property, staticmethod are supported as decorators, but not within functions
 # int, bool, float are handled by Num
 
@@ -184,8 +207,10 @@ BUILTIN_IMPLS = {
     id(abs): _abs,
     id(callable): _callable,
     id(enumerate): _enumerate,
+    id(filter): _filter,
     id(isinstance): _isinstance,
     id(len): _len,
+    id(map): _map,
     id(max): _max,
     id(min): _min,
     id(range): Range,

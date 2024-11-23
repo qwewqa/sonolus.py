@@ -73,7 +73,8 @@ class RangeIterator(Record, SonolusIterator):
         else:
             return self.value > self.stop
 
-    def next(self) -> Num:
-        value = self.value
+    def get(self) -> int:
+        return self.value
+
+    def advance(self):
         self.value += self.step
-        return value

@@ -113,7 +113,7 @@ class _Comptime[T, V](GenericValue):
         return cls._instance
 
     @classmethod
-    def _validate__type_args_(cls, args: tuple[Any, ...]) -> tuple[Any, ...]:
+    def _validate_type_args_(cls, args: tuple[Any, ...]) -> tuple[Any, ...]:
         if len(args) == 2:
             _, value = args
             # We want the type to be there for documentation,
@@ -122,7 +122,7 @@ class _Comptime[T, V](GenericValue):
                 args = Any, value
             else:
                 args = type(value), value
-        return super()._validate__type_args_(args)
+        return super()._validate_type_args_(args)
 
     @classmethod
     def accept_unchecked(cls, value: Any) -> Self:

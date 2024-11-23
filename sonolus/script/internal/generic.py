@@ -69,7 +69,7 @@ class GenericValue(Value):
             raise TypeError(f"Missing type arguments for {self.__class__.__name__}")
 
     @classmethod
-    def _validate__type_args_(cls, args: tuple[Any, ...]) -> tuple[Any, ...]:
+    def _validate_type_args_(cls, args: tuple[Any, ...]) -> tuple[Any, ...]:
         """Validate the type arguments and return them as a tuple.
 
         This may be called with PartialGeneric or TypeVar instances inside args.
@@ -84,7 +84,7 @@ class GenericValue(Value):
 
     @classmethod
     @meta_fn
-    def _get_type_arg_(cls, var: TypeVar) -> Any:
+    def type_arg_value(cls, var: TypeVar) -> Any:
         if isinstance(var, Value):
             var = var._as_py_()
         if cls._type_args_ is None:
@@ -98,7 +98,7 @@ class GenericValue(Value):
         if cls._type_args_ is not None:
             raise TypeError(f"Type {cls.__name__} is already parameterized")
         args = validate_type_args(args)
-        args = cls._validate__type_args_(args)
+        args = cls._validate_type_args_(args)
         if contains_incomplete_type(args):
             return PartialGeneric(cls, args)
         if args not in cls._parameterized_:

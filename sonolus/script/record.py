@@ -27,10 +27,10 @@ class Record(GenericValue):
     _constructor_signature: ClassVar[inspect.Signature]
 
     @classmethod
-    def _validate__type_args_(cls, args: tuple[Any, ...]) -> tuple[Any, ...]:
+    def _validate_type_args_(cls, args: tuple[Any, ...]) -> tuple[Any, ...]:
         if cls._fields is None:
             raise TypeError("Base Record class cannot have type arguments")
-        return super()._validate__type_args_(args)
+        return super()._validate_type_args_(args)
 
     def __init_subclass__(cls, **kwargs):
         super().__init_subclass__()

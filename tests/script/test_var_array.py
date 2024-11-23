@@ -1,4 +1,4 @@
-# ruff: noqa: B905
+# ruff: noqa: B905, C417
 from datetime import timedelta
 
 from hypothesis import given, settings
@@ -409,6 +409,19 @@ def test_var_array_count_maybe_missing(args):
     assert validate_dual_run(fn) == expected_count
 
 
+def test_zip_empty():
+    def fn():
+        va_1 = VarArray[int, 0].new()
+        va_2 = VarArray[int, 0].new()
+        results = VarArray[int, 0].new()
+        for v1, v2 in zip(va_1, va_2):
+            results.append(v1)
+            results.append(v2)
+        return results
+
+    assert list(validate_dual_run(fn)) == []
+
+
 @given(
     lists,
 )
@@ -422,7 +435,7 @@ def test_zip_single(values_list_1):
         va_1 = VarArray[int, value_count_1].new()
         va_1.extend(values_1)
         results = VarArray[int, result_count].new()
-        for v1 in va_1:
+        for (v1,) in zip(va_1):
             results.append(v1)
         return results
 
@@ -487,3 +500,98 @@ def test_zip_three(values_list_1, values_list_2, values_list_3):
     assert list(validate_dual_run(fn)) == [
         e for triple in zip(values_list_1, values_list_2, values_list_3) for e in triple
     ]
+
+
+def test_map_single():
+    def fn():
+        va = VarArray[int, 4].new()
+        va.extend(Array(1, 2, 3, 4))
+        results = VarArray[int, 4].new()
+        for x in map(lambda x: x * 2, va):
+            results.append(x)
+        return results
+
+    assert list(validate_dual_run(fn)) == [2, 4, 6, 8]
+
+
+def test_map_two_args():
+    def fn():
+        va1 = VarArray[int, 4].new()
+        va2 = VarArray[int, 4].new()
+        va1.extend(Array(1, 2, 3, 4))
+        va2.extend(Array(10, 20, 30, 40))
+        results = VarArray[int, 4].new()
+        for x in map(lambda x, y: x + y, va1, va2):  # noqa: FURB118
+            results.append(x)
+        return results
+
+    assert list(validate_dual_run(fn)) == [11, 22, 33, 44]
+
+
+def test_map_three_args():
+    def fn():
+        va1 = VarArray[int, 3].new()
+        va2 = VarArray[int, 3].new()
+        va3 = VarArray[int, 3].new()
+        va1.extend(Array(1, 2, 3))
+        va2.extend(Array(10, 20, 30))
+        va3.extend(Array(100, 200, 300))
+        results = VarArray[int, 3].new()
+        for x in map(lambda x, y, z: x + y + z, va1, va2, va3):
+            results.append(x)
+        return results
+
+    assert list(validate_dual_run(fn)) == [111, 222, 333]
+
+
+def test_filter_basic():
+    def fn():
+        va = VarArray[int, 6].new()
+        va.extend(Array(1, 2, 3, 4, 5, 6))
+        results = VarArray[int, 6].new()
+        for x in filter(lambda x: x % 2 == 0, va):
+            results.append(x)
+        return results
+
+    assert list(validate_dual_run(fn)) == [2, 4, 6]
+
+
+@given(lists)
+@settings(deadline=timedelta(seconds=1))
+def test_filter_property(values_list):
+    values = Array(*values_list)
+    value_count = len(values_list)
+
+    def fn():
+        va = VarArray[int, value_count].new()
+        va.extend(values)
+        results = VarArray[int, value_count].new()
+        for x in filter(lambda x: x > 0, va):
+            results.append(x)
+        return results
+
+    assert list(validate_dual_run(fn)) == [x for x in values_list if x > 0]
+
+
+def test_map_filter_combination():
+    def fn():
+        va = VarArray[int, 6].new()
+        va.extend(Array(1, 2, 3, 4, 5, 6))
+        results = VarArray[int, 6].new()
+        for x in map(lambda x: x * 2, filter(lambda x: x % 2 == 0, va)):
+            results.append(x)
+        return results
+
+    assert list(validate_dual_run(fn)) == [4, 8, 12]
+
+
+def test_filter_map_combination():
+    def fn():
+        va = VarArray[int, 6].new()
+        va.extend(Array(1, 2, 3, 4, 5, 6))
+        results = VarArray[int, 6].new()
+        for x in filter(lambda x: x > 5, map(lambda x: x * 2, va)):
+            results.append(x)
+        return results
+
+    assert list(validate_dual_run(fn)) == [6, 8, 10, 12]

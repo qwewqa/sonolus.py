@@ -15,6 +15,7 @@ from sonolus.script.internal.context import Context, EmptyBinding, Scope, ValueB
 from sonolus.script.internal.descriptor import SonolusDescriptor
 from sonolus.script.internal.error import CompilationError
 from sonolus.script.internal.impl import validate_value
+from sonolus.script.internal.tuple_impl import TupleImpl
 from sonolus.script.internal.value import Value
 from sonolus.script.iterator import SonolusIterator
 from sonolus.script.num import Num, _is_num
@@ -273,12 +274,12 @@ class Visitor(ast.NodeVisitor):
         self.handle_assign(node.target, value)
 
     def visit_For(self, node):
-        from sonolus.script.comptime import Comptime
+        from sonolus.script.internal.tuple_impl import TupleImpl
 
         iterable = self.visit(node.iter)
-        if isinstance(iterable, Comptime) and isinstance(iterable._as_py_(), tuple):
+        if isinstance(iterable, TupleImpl):
             # Unroll the loop
-            for value in iterable._as_py_():
+            for value in iterable.value:
                 set_ctx(ctx().branch(None))
                 self.handle_assign(node.target, validate_value(value))
                 for stmt in node.body:
@@ -409,8 +410,9 @@ class Visitor(ast.NodeVisitor):
             set_ctx(Context.meet(end_ctxs))
 
     def handle_match_pattern(self, subject: Value, pattern: ast.pattern) -> tuple[Context, Context]:
-        from sonolus.script.comptime import Comptime
+        from sonolus.script.internal.comptime import Comptime
         from sonolus.script.internal.generic import validate_type_spec
+        from sonolus.script.internal.tuple_impl import TupleImpl
 
         if not ctx().live:
             return ctx().into_dead(), ctx()
@@ -446,10 +448,7 @@ class Visitor(ast.NodeVisitor):
                 return true_ctx, false_ctx
             case ast.MatchSequence(patterns=patterns):
                 target_len = len(patterns)
-                if not (
-                    isinstance(subject, Sequence)
-                    or (isinstance(subject, Comptime) and isinstance(subject._as_py_(), tuple))
-                ):
+                if not (isinstance(subject, Sequence | TupleImpl)):
                     return ctx().into_dead(), ctx()
                 length_test = self.ensure_boolean_num(validate_value(_len(subject) == target_len))
                 ctx_init = ctx()
@@ -877,7 +876,7 @@ class Visitor(ast.NodeVisitor):
 
     def handle_getattr(self, node: ast.stmt | ast.expr, target: Value, key: str) -> Value:
         with self.reporting_errors_at_node(node):
-            from sonolus.script.comptime import Comptime
+            from sonolus.script.internal.comptime import Comptime
 
             if isinstance(target, Comptime) and target._is_py_():
                 target = target._as_py_()
@@ -953,8 +952,8 @@ class Visitor(ast.NodeVisitor):
                 raise TypeError(f"Cannot set items on {type(target).__name__}")
 
     def handle_starred(self, value: Value) -> tuple[Value, ...]:
-        if value._is_py_() and isinstance(value._as_py_(), tuple):
-            return value._as_py_()
+        if isinstance(value, TupleImpl):
+            return value.value
         raise ValueError("Unsupported starred expression")
 
     def is_not_implemented(self, value):

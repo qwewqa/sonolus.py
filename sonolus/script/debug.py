@@ -7,7 +7,7 @@ from sonolus.backend.ops import Op
 from sonolus.backend.optimize.flow import cfg_to_mermaid
 from sonolus.backend.optimize.passes import CompilerPass, run_passes
 from sonolus.backend.optimize.simplify import CoalesceFlow
-from sonolus.script.comptime import Comptime
+from sonolus.script.internal.comptime import Comptime
 from sonolus.script.internal.context import GlobalContextState, ctx, set_ctx
 from sonolus.script.internal.impl import meta_fn, validate_value
 from sonolus.script.internal.native import native_function
