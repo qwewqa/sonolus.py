@@ -5,7 +5,7 @@ from typing import overload
 from sonolus.script.internal.context import ctx
 from sonolus.script.internal.dict_impl import DictImpl
 from sonolus.script.internal.impl import meta_fn, validate_value
-from sonolus.script.internal.math_impls import MATH_BUILTIN_IMPLS
+from sonolus.script.internal.math_impls import MATH_BUILTIN_IMPLS, trunc
 from sonolus.script.internal.range import Range
 from sonolus.script.internal.tuple_impl import TupleImpl
 from sonolus.script.internal.value import Value
@@ -205,17 +205,26 @@ def _filter(fn, iterable):
 
 @meta_fn
 def _int(value):
-    raise RuntimeError("Calling int() is not supported, use math.trunc() instead")
+    value = validate_value(value)
+    if not _is_num(value):
+        raise TypeError("Only numeric arguments to int() are supported")
+    return trunc(value)
 
 
 @meta_fn
 def _float(value):
-    raise RuntimeError("Calling float() is not supported")
+    value = validate_value(value)
+    if not _is_num(value):
+        raise TypeError("Only numeric arguments to float() are supported")
+    return value
 
 
 @meta_fn
 def _bool(value):
-    raise RuntimeError("Calling bool() is not supported, use comparison operators instead")
+    value = validate_value(value)
+    if not _is_num(value):
+        raise TypeError("Only numeric arguments to bool() are supported")
+    return value != 0
 
 
 _int._type_mapping_ = Num
