@@ -10,7 +10,7 @@ from typing import Any, Never, Self
 from sonolus.backend.excepthook import install_excepthook
 from sonolus.backend.utils import get_function, scan_writes
 from sonolus.script.debug import assert_true
-from sonolus.script.internal.builtin_impls import BUILTIN_IMPLS, _len
+from sonolus.script.internal.builtin_impls import BUILTIN_IMPLS, _bool, _float, _int, _len
 from sonolus.script.internal.constant import ConstantValue
 from sonolus.script.internal.context import Context, EmptyBinding, Scope, ValueBinding, ctx, set_ctx
 from sonolus.script.internal.descriptor import SonolusDescriptor
@@ -473,7 +473,10 @@ class Visitor(ast.NodeVisitor):
             case ast.MatchMapping():
                 raise NotImplementedError("Match mappings are not supported")
             case ast.MatchClass(cls=cls, patterns=patterns, kwd_attrs=kwd_attrs, kwd_patterns=kwd_patterns):
-                cls = validate_type_spec(self.visit(cls))
+                cls = self.visit(cls)
+                if cls._is_py_() and cls._as_py_() in {_int, _float, _bool}:
+                    raise TypeError("Instance check against int, float, or bool is not supported, use Num instead")
+                cls = validate_type_spec(cls)
                 if not isinstance(cls, type):
                     raise TypeError("Class is not a type")
                 if not isinstance(subject, cls):

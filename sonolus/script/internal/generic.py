@@ -14,6 +14,8 @@ def validate_type_arg(arg: Any) -> Any:
     if not arg._is_py_():
         raise TypeError(f"Expected a compile-time constant type argument, got {arg}")
     result = arg._as_py_()
+    if hasattr(result, "_type_mapping_"):
+        return result._type_mapping_
     if get_origin(result) is Annotated:
         return result.__args__[0]
     if get_origin(result) is Literal:

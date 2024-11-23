@@ -33,7 +33,7 @@ class Interval(Record):
         match item:
             case Interval(start, end):
                 return self.start <= start and end <= self.end
-            case float() | int() as value:
+            case Num(value):
                 return self.start <= value <= self.end
             case _:
                 error("Invalid type for interval check")

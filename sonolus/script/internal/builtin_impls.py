@@ -18,7 +18,7 @@ from sonolus.script.iterator import (
     _MappingIterator,
     _Zipper,
 )
-from sonolus.script.num import _is_num
+from sonolus.script.num import Num, _is_num
 
 
 @meta_fn
@@ -29,7 +29,9 @@ def _isinstance(value, type_):
         return isinstance(value, DictImpl)
     if type_ is tuple:
         return isinstance(value, TupleImpl)
-    if not issubclass(type_, Value | ABC):
+    if type_ in {_int, _float, _bool}:
+        raise TypeError("Instance check against int, float, or bool is not supported, use Num instead")
+    if not (isinstance(type_, type) and issubclass(type_, Value | ABC)):
         raise TypeError(f"Unsupported type: {type_} for isinstance")
     return validate_value(isinstance(value, type_))
 
@@ -201,14 +203,36 @@ def _filter(fn, iterable):
     return _FilteringIterator(fn, iterable.__iter__())  # noqa: PLC2801
 
 
+@meta_fn
+def _int(value):
+    raise RuntimeError("Calling int() is not supported, use math.trunc() instead")
+
+
+@meta_fn
+def _float(value):
+    raise RuntimeError("Calling float() is not supported")
+
+
+@meta_fn
+def _bool(value):
+    raise RuntimeError("Calling bool() is not supported, use comparison operators instead")
+
+
+_int._type_mapping_ = Num
+_float._type_mapping_ = Num
+_bool._type_mapping_ = Num
+
 # classmethod, property, staticmethod are supported as decorators, but not within functions
 # int, bool, float are handled by Num
 
 BUILTIN_IMPLS = {
     id(abs): _abs,
+    id(bool): _bool,
     id(callable): _callable,
     id(enumerate): _enumerate,
     id(filter): _filter,
+    id(float): _float,
+    id(int): _int,
     id(isinstance): _isinstance,
     id(len): _len,
     id(map): _map,

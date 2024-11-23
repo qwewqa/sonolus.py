@@ -67,14 +67,14 @@ class Vec2(Record):
         match other:
             case Vec2(x, y):
                 return Vec2(x=self.x * x, y=self.y * y)
-            case float() | int() as factor:
+            case Num(factor):
                 return Vec2(x=self.x * factor, y=self.y * factor)
 
     def __truediv__(self, other: Self | float) -> Self:
         match other:
             case Vec2(x, y):
                 return Vec2(x=self.x / x, y=self.y / y)
-            case float() | int() as factor:
+            case Num(factor):
                 return Vec2(x=self.x / factor, y=self.y / factor)
 
     def __neg__(self) -> Self:
