@@ -1,4 +1,5 @@
-from sonolus.script.iterator import ArrayLike, SonolusIterator
+from sonolus.script.array_like import ArrayLike
+from sonolus.script.iterator import SonolusIterator
 from sonolus.script.num import Num
 from sonolus.script.record import Record
 

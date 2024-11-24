@@ -5,13 +5,13 @@ from collections.abc import Iterable
 from typing import Any, Self, final
 
 from sonolus.backend.place import BlockPlace
+from sonolus.script.array_like import ArrayLike
 from sonolus.script.debug import assert_unreachable
 from sonolus.script.internal.context import ctx
 from sonolus.script.internal.error import InternalError
 from sonolus.script.internal.generic import GenericValue
 from sonolus.script.internal.impl import meta_fn, validate_value
 from sonolus.script.internal.value import Value
-from sonolus.script.iterator import ArrayLike
 from sonolus.script.num import Num
 
 

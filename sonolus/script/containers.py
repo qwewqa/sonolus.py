@@ -1,8 +1,9 @@
 from __future__ import annotations
 
 from sonolus.script.array import Array
+from sonolus.script.array_like import ArrayLike
 from sonolus.script.debug import error
-from sonolus.script.iterator import ArrayLike, SonolusIterator
+from sonolus.script.iterator import SonolusIterator
 from sonolus.script.record import Record
 from sonolus.script.values import alloc, copy
 

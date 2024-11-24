@@ -2,6 +2,7 @@ from abc import ABC
 from collections.abc import Iterable
 from typing import overload
 
+from sonolus.script.array_like import ArrayLike
 from sonolus.script.internal.context import ctx
 from sonolus.script.internal.dict_impl import DictImpl
 from sonolus.script.internal.impl import meta_fn, validate_value
@@ -10,7 +11,6 @@ from sonolus.script.internal.range import Range
 from sonolus.script.internal.tuple_impl import TupleImpl
 from sonolus.script.internal.value import Value
 from sonolus.script.iterator import (
-    ArrayLike,
     SonolusIterator,
     _EmptyIterator,
     _Enumerator,

@@ -43,6 +43,11 @@ plugins:
           options:
             show_source: false
             show_symbol_type_heading: true
+            filters:
+              - "!^_"
+              - "^__"
+              - "!_.+_"
+              - "__.+__"
 markdown_extensions:
   - abbr
   - admonition
@@ -63,3 +68,5 @@ nav:
   - Sonolus.py: index.md
   - Reference:
       - reference/types.md
+      - Standard Library:
+          - reference/standard_library/array_like.md
