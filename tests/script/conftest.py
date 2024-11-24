@@ -19,7 +19,7 @@ from sonolus.script.num import Num
 
 settings.register_profile(
     "standard",
-    deadline=timedelta(milliseconds=500),
+    deadline=timedelta(milliseconds=1000),
 )
 settings.load_profile("standard")
 
