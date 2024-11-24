@@ -222,7 +222,7 @@ class Array[T, Size](GenericValue, ArrayLike[T]):
     def __eq__(self, other):
         if not isinstance(other, ArrayLike):
             return False
-        if self.size() != other.size():
+        if len(self) != len(other):
             return False
         i = 0
         while i < self.size():

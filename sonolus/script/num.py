@@ -3,7 +3,7 @@ from __future__ import annotations
 
 import operator
 from collections.abc import Callable, Iterable
-from typing import TYPE_CHECKING, Any, Protocol, Self, TypeIs, final, runtime_checkable
+from typing import TYPE_CHECKING, Any, Self, TypeIs, final, runtime_checkable
 
 from sonolus.backend.ir import IRConst, IRGet, IRPureInstr, IRSet
 from sonolus.backend.ops import Op
@@ -78,13 +78,11 @@ class _Num(Value, metaclass=_NumMeta):
         return cls(value)
 
     def _is_py_(self) -> bool:
-        return not isinstance(self.data, BlockPlace) or ctx().evaluate_place(self.data) is not None
+        return not isinstance(self.data, BlockPlace)
 
     def _as_py_(self) -> Any:
         if not self._is_py_():
             raise ValueError("Not a compile time constant Num")
-        if isinstance(self.data, BlockPlace):
-            return ctx().evaluate_place(self.data)
         if self.data.is_integer():
             return int(self.data)
         return self.data
@@ -125,10 +123,7 @@ class _Num(Value, metaclass=_NumMeta):
 
     def _copy_(self) -> Self:
         if ctx():
-            if isinstance(self.data, BlockPlace) and ctx().place_is_uninitialized(self.data):
-                return Num(ctx().alloc(size=1))
-            else:
-                return self._get_()
+            return self._get_()
         else:
             return Num(self.data)
 
