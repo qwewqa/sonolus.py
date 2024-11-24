@@ -59,6 +59,9 @@ class VarArray[T, Capacity](Record, ArrayLike[T]):
     def __setitem__(self, key: int, value: T):
         self._array[key] = value
 
+    def __delitem__(self, key: int):
+        self.pop(key)
+
     def append(self, value: T):
         """Appends a copy of the given value to the end of the array."""
         assert self._size < len(self._array)
@@ -137,6 +140,10 @@ class VarArray[T, Capacity](Record, ArrayLike[T]):
             self._array[index] = self._array[self._size - 1]
         self._size -= 1
         return True
+
+    def __iadd__(self, other):
+        self.extend(other)
+        return self
 
     def __eq__(self, other):
         if not isinstance(other, ArrayLike):

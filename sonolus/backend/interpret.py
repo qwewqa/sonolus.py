@@ -242,10 +242,10 @@ class Interpreter:
                 return math.radians(self.run(args[0]))
             case Op.Random:
                 lo, hi = (self.run(arg) for arg in args)
-                return lo + (hi - lo) * random.random()
+                return random.uniform(lo, hi)
             case Op.RandomInteger:
                 lo, hi = (self.ensure_int(self.run(arg)) for arg in args)
-                return random.randint(lo, hi)
+                return random.randrange(lo, hi)
             case Op.Rem:
                 return self.reduce_args(args, math.remainder)
             case Op.Remap:

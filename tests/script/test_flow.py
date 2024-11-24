@@ -1,11 +1,12 @@
 # ruff: noqa
 """Test cases intended to cover more complex control flow."""
 
+import random
+
 import pytest
 from sonolus.script.array import Array
 from sonolus.script.debug import debug_log
 from sonolus.script.internal.error import CompilationError
-from sonolus.script.random import random_float, random_integer
 from tests.script.conftest import validate_dual_run, compiled_run
 from tests.script.test_record import Pair
 
@@ -232,13 +233,13 @@ def test_pair_early_return_with_mutations():
     validate_dual_run(fn)
 
 
-def test_random():
+def test_random_multi_use():
     def add(a, b):
         return a + b
 
     # Random has no side effects, but is impure, so we need to test that optimizations don't break it.
     def fn():
-        a = random_float(1, 10)
+        a = random.uniform(1, 10)
         b = add(a, Pair(a, a).first)
         c = add(b, -2 * a)
         return c == 0
@@ -622,7 +623,7 @@ def test_for_else_not_taken():
 def black_box():
     # This really always returns True, but the optimizer doesn't know that,
     # so we can use it as a black box to prevent branches from being optimized away.
-    return random_integer(0, 1) == 0
+    return random.randrange(0, 1) == 0
 
 
 def black_box_value(v: float | int) -> float | int:
@@ -741,44 +742,48 @@ def test_match_int_not_supported():
         compiled_run(fn)
 
 
-def test_and_with_constants():
+def test_and():
     def fn():
         a = 1 and 2
         b = 0 and 2
         c = 1 and 0
-        return Array(a, b, c)
+        d = 0 and 0
+        e = 1 and black_box_value(2)
+        f = 0 and black_box_value(2)
+        g = 1 and black_box_value(0)
+        h = 0 and black_box_value(0)
+        i = black_box_value(1) and 2
+        j = black_box_value(0) and 2
+        k = black_box_value(1) and 0
+        l = black_box_value(0) and 0
+        m = black_box_value(1) and black_box_value(2)
+        n = black_box_value(0) and black_box_value(2)
+        o = black_box_value(1) and black_box_value(0)
+        p = black_box_value(0) and black_box_value(0)
+        return Array(a, b, c, d, e, f, g, h, i, j, k, l, m, n, o, p)
 
-    assert validate_dual_run(fn) == Array(2, 0, 0)
+    assert validate_dual_run(fn) == Array(2, 0, 0, 0, 2, 0, 0, 0, 2, 0, 0, 0, 2, 0, 0, 0)
 
 
-def test_or_with_constants():
+def test_or():
     def fn():
         a = 1 or 2
         b = 0 or 2
         c = 1 or 0
-        return Array(a, b, c)
-
-    assert validate_dual_run(fn) == Array(1, 2, 1)
-
-
-def test_and_with_side_effects():
-    def fn():
-        a = black_box_log(1) and black_box_log(2)
-        b = black_box_log(0) and black_box_log(2)
-        c = black_box_log(1) and black_box_log(0)
-        return Array(a, b, c)
-
-    assert validate_dual_run(fn) == Array(2, 0, 0)
-
-
-def test_or_with_side_effects():
-    def fn():
-        a = black_box_log(1) or black_box_log(2)
-        b = black_box_log(0) or black_box_log(2)
-        c = black_box_log(1) or black_box_log(0)
-        return Array(a, b, c)
-
-    assert validate_dual_run(fn) == Array(1, 2, 1)
+        d = 0 or 0
+        e = 1 or black_box_value(2)
+        f = 0 or black_box_value(2)
+        g = 1 or black_box_value(0)
+        h = 0 or black_box_value(0)
+        i = black_box_value(1) or 2
+        j = black_box_value(0) or 2
+        k = black_box_value(1) or 0
+        l = black_box_value(0) or 0
+        m = black_box_value(1) or black_box_value(2)
+        n = black_box_value(0) or black_box_value(2)
+        o = black_box_value(1) or black_box_value(0)
+        p = black_box_value(0) or black_box_value(0)
+        return Array(a, b, c, d, e, f, g, h, i, j, k, l, m, n, o, p)
 
 
 def test_while_true():

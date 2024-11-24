@@ -234,7 +234,16 @@ class Visitor(ast.NodeVisitor):
         set_ctx(ctx().into_dead())
 
     def visit_Delete(self, node):
-        raise NotImplementedError("Delete statements are not supported")
+        for target in node.targets:
+            match target:
+                case ast.Name():
+                    raise NotImplementedError("Deleting variables is not supported")
+                case ast.Subscript(value=value, slice=slice):
+                    self.handle_delitem(target, self.visit(value), self.visit(slice))
+                case ast.Attribute():
+                    raise NotImplementedError("Deleting attributes is not supported")
+                case _:
+                    raise NotImplementedError("Unsupported delete target")
 
     def visit_Assign(self, node):
         value = self.visit(node.value)
@@ -966,6 +975,12 @@ class Visitor(ast.NodeVisitor):
             if isinstance(target, Value) and hasattr(target, "__setitem__"):
                 return self.handle_call(node, target.__setitem__, key, value)
             raise TypeError(f"Cannot set items on {type(target).__name__}")
+
+    def handle_delitem(self, node: ast.stmt | ast.expr, target: Value, key: Value):
+        with self.reporting_errors_at_node(node):
+            if isinstance(target, Value) and hasattr(target, "__delitem__"):
+                return self.handle_call(node, target.__delitem__, key)
+            raise TypeError(f"Cannot delete items on {type(target).__name__}")
 
     def handle_starred(self, value: Value) -> tuple[Value, ...]:
         if isinstance(value, TupleImpl):

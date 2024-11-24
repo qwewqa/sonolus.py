@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import random
 from abc import ABC, abstractmethod
 from collections.abc import Callable, Sequence
 from typing import Any
@@ -187,6 +188,9 @@ class ArrayLike[T](Sequence, ABC):
         else:
             # Heap sort is unstable, so if there's a key, we can't rely on it
             _heap_sort(self, 0, len(self), reverse)
+
+    def shuffle(self):
+        random.shuffle(self)  # type: ignore
 
     def reverse(self):
         """Reverses the values in the array in place."""

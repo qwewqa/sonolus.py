@@ -88,6 +88,36 @@ def test_var_array_insertion():
     assert list(validate_dual_run(fn)) == [2, 4, 6, 8]
 
 
+def test_var_array_setitem():
+    def fn():
+        va = VarArray[int, 4].new()
+        va.extend(Array(2, 4, 6, 8))
+        va[1] = 10
+        return va
+
+    assert list(validate_dual_run(fn)) == [2, 10, 6, 8]
+
+
+def test_var_array_del():
+    def fn():
+        va = VarArray[int, 4].new()
+        va.extend(Array(2, 4, 6, 8))
+        del va[1]
+        return va
+
+    assert list(validate_dual_run(fn)) == [2, 6, 8]
+
+
+def test_var_array_iadd():
+    def fn():
+        va = VarArray[int, 6].new()
+        va.extend(Array(2, 4, 6, 8))
+        va += Array(10, 12)
+        return va
+
+    assert list(validate_dual_run(fn)) == [2, 4, 6, 8, 10, 12]
+
+
 def test_var_array_pop():
     def fn():
         va = VarArray[int, 4].new()

@@ -2,7 +2,7 @@ from __future__ import annotations
 
 from collections.abc import Callable
 from enum import Enum
-from types import FunctionType, MethodType, NoneType, NotImplementedType, UnionType
+from types import FunctionType, MethodType, ModuleType, NoneType, NotImplementedType, UnionType
 from typing import TYPE_CHECKING, Annotated, Any, Literal, TypeVar, get_origin, overload
 
 if TYPE_CHECKING:
@@ -50,6 +50,15 @@ def try_validate_value(value: Any) -> Value | None:
     from sonolus.script.internal.value import Value
     from sonolus.script.num import Num
 
+    try:
+        # Unfortunately this is called during import, so this may fail
+        from sonolus.script.internal.builtin_impls import BUILTIN_IMPLS
+
+        if id(value) in BUILTIN_IMPLS:
+            return validate_value(BUILTIN_IMPLS[id(value)])
+    except ImportError:
+        pass
+
     match value:
         case Enum():
             return validate_value(value.value)
@@ -65,7 +74,16 @@ def try_validate_value(value: Any) -> Value | None:
             return TupleImpl._accept_(value)
         case dict():
             return DictImpl._accept_(value)
-        case PartialGeneric() | TypeVar() | FunctionType() | MethodType() | NotImplementedType() | str() | NoneType():
+        case (
+            PartialGeneric()
+            | TypeVar()
+            | FunctionType()
+            | MethodType()
+            | NotImplementedType()
+            | str()
+            | NoneType()
+            | ModuleType()
+        ):
             return MiscConstantValue.of(value)
         case other_type if get_origin(value) in {Literal, Annotated, UnionType, tuple}:
             return MiscConstantValue.of(other_type)
