@@ -92,7 +92,7 @@ class _Zipper[T](Record, SonolusIterator):
             compile_and_call(iterator.advance)
 
 
-class _EmptyIterator(SonolusIterator):
+class _EmptyIterator(Record, SonolusIterator):
     def has_next(self) -> bool:
         return False
 

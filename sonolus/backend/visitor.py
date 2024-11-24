@@ -297,6 +297,8 @@ class Visitor(ast.NodeVisitor):
         has_next = self.ensure_boolean_num(self.handle_call(node, iterator.has_next))
         if has_next._is_py_() and not has_next._as_py_():
             # The loop will never run, continue after evaluating the condition
+            for stmt in node.orelse:
+                self.visit(stmt)
             return
         ctx().test = has_next.ir()
         body_ctx = ctx().branch(None)
@@ -327,6 +329,8 @@ class Visitor(ast.NodeVisitor):
         test = self.ensure_boolean_num(self.visit(node.test))
         if test._is_py_() and not test._as_py_():
             # The loop will never run, continue after evaluating the condition
+            for stmt in node.orelse:
+                self.visit(stmt)
             return
         ctx().test = test.ir()
         body_ctx = ctx().branch(None)
@@ -440,11 +444,11 @@ class Visitor(ast.NodeVisitor):
             case ast.MatchSingleton(value=value):
                 match value:
                     case True:
-                        test = self.ensure_boolean_num(subject)
+                        raise NotImplementedError("Matching against True is not supported, use 1 instead")
                     case False:
-                        test = self.ensure_boolean_num(subject).not_()
+                        raise NotImplementedError("Matching against False is not supported, use 0 instead")
                     case None:
-                        test = Num._accept_(subject._is_py_() and subject._as_py_() is None)
+                        test = validate_value(subject._is_py_() and subject._as_py_() is None)
                     case _:
                         raise NotImplementedError("Unsupported match singleton")
                 ctx_init = ctx()

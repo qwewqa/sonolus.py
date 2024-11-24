@@ -1,8 +1,12 @@
+# ruff: noqa
 """Test cases intended to cover more complex control flow."""
 
+import pytest
+from sonolus.script.array import Array
 from sonolus.script.debug import debug_log
-from sonolus.script.random import random_float
-from tests.script.conftest import validate_dual_run
+from sonolus.script.internal.error import CompilationError
+from sonolus.script.random import random_float, random_integer
+from tests.script.conftest import validate_dual_run, compiled_run
 from tests.script.test_record import Pair
 
 
@@ -229,7 +233,7 @@ def test_pair_early_return_with_mutations():
 
 
 def test_random():
-    def add(a, b):  # noqa: FURB118
+    def add(a, b):
         return a + b
 
     # Random has no side effects, but is impure, so we need to test that optimizations don't break it.
@@ -611,5 +615,204 @@ def test_for_else_not_taken():
                 break
         else:
             debug_log(-1)
+
+    validate_dual_run(fn)
+
+
+def black_box():
+    # This really always returns True, but the optimizer doesn't know that,
+    # so we can use it as a black box to prevent branches from being optimized away.
+    return random_integer(0, 1) == 0
+
+
+def black_box_value(v: float | int) -> float | int:
+    if black_box():
+        return v
+    return 0
+
+
+def black_box_log(v: float | int) -> float | int:
+    debug_log(v)
+    return v
+
+
+def test_error_if_conflicting_definitions():
+    def fn():
+        x = Pair(1, 2)
+        if black_box():
+            x = Pair(3, 4)
+        debug_log(x.first)
+
+    with pytest.raises(CompilationError, match="conflicting definitions"):
+        compiled_run(fn)
+
+
+def test_error_while_conflicting_definitions():
+    def fn():
+        x = Pair(1, 2)
+        while black_box():
+            debug_log(x.first)
+            x = Pair(3, 4)
+        return 1
+
+    with pytest.raises(CompilationError, match="conflicting definitions"):
+        compiled_run(fn)
+
+
+def test_error_for_conflicting_definitions():
+    def fn():
+        x = Pair(1, 2)
+        for _ in range(5):
+            debug_log(x.first)
+            x = Pair(3, 4)
+        return 1
+
+    with pytest.raises(CompilationError, match="conflicting definitions"):
+        compiled_run(fn)
+
+
+def test_walrus_operator():
+    def fn():
+        x: int = 0
+        while (y := x) < 5:
+            debug_log(y)
+            x += 1
+
+    validate_dual_run(fn)
+
+
+def test_match_singletons():
+    def m(x):
+        match x:
+            case None:
+                return 0
+            case _:
+                return 1
+
+    def fn():
+        return Array(m(None), m(0))
+
+    assert validate_dual_run(fn) == Array(0, 1)
+
+
+def test_match_true_not_supported():
+    def m(x):
+        match x:
+            case True:
+                return 0
+            case _:
+                return 1
+
+    def fn():
+        m(True)
+        return 1
+
+    with pytest.raises(CompilationError, match="not supported"):
+        compiled_run(fn)
+
+
+def test_match_false_not_supported():
+    def m(x):
+        match x:
+            case False:
+                return 0
+            case _:
+                return 1
+
+    def fn():
+        m(False)
+        return 1
+
+    with pytest.raises(CompilationError, match="not supported"):
+        compiled_run(fn)
+
+
+def test_match_int_not_supported():
+    def m(x):
+        match x:
+            case int():
+                return 0
+
+    def fn():
+        m(1)
+        return 1
+
+    with pytest.raises(CompilationError, match="not supported"):
+        compiled_run(fn)
+
+
+def test_and_with_constants():
+    def fn():
+        a = 1 and 2
+        b = 0 and 2
+        c = 1 and 0
+        return Array(a, b, c)
+
+    assert validate_dual_run(fn) == Array(2, 0, 0)
+
+
+def test_or_with_constants():
+    def fn():
+        a = 1 or 2
+        b = 0 or 2
+        c = 1 or 0
+        return Array(a, b, c)
+
+    assert validate_dual_run(fn) == Array(1, 2, 1)
+
+
+def test_and_with_side_effects():
+    def fn():
+        a = black_box_log(1) and black_box_log(2)
+        b = black_box_log(0) and black_box_log(2)
+        c = black_box_log(1) and black_box_log(0)
+        return Array(a, b, c)
+
+    assert validate_dual_run(fn) == Array(2, 0, 0)
+
+
+def test_or_with_side_effects():
+    def fn():
+        a = black_box_log(1) or black_box_log(2)
+        b = black_box_log(0) or black_box_log(2)
+        c = black_box_log(1) or black_box_log(0)
+        return Array(a, b, c)
+
+    assert validate_dual_run(fn) == Array(1, 2, 1)
+
+
+def test_while_true():
+    def fn():
+        debug_log(1)
+        while True:
+            debug_log(2)
+            break
+        else:
+            debug_log(3)
+        debug_log(4)
+
+    validate_dual_run(fn)
+
+
+def test_while_false():
+    def fn():
+        debug_log(1)
+        while False:
+            debug_log(2)
+        else:
+            debug_log(3)
+        debug_log(4)
+
+    validate_dual_run(fn)
+
+
+def test_for_empty():
+    def fn():
+        debug_log(1)
+        for _ in zip():
+            debug_log(2)
+        else:
+            debug_log(3)
+        debug_log(4)
 
     validate_dual_run(fn)
