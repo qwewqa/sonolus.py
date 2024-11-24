@@ -683,7 +683,7 @@ class EntityRef[A: _BaseArchetype](Record):
 
     @classmethod
     def archetype(cls) -> type[A]:
-        return cls.type_arg_value(A)
+        return cls.type_var_value(A)
 
     def get(self) -> A:
         return self.archetype().at(self.index)

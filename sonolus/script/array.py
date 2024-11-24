@@ -22,7 +22,7 @@ class Array[T, Size](GenericValue, ArrayLike[T]):
     @classmethod
     @meta_fn
     def element_type(cls) -> type[T] | type[Value]:
-        return cls.type_arg_value(T)
+        return cls.type_var_value(T)
 
     @classmethod
     @meta_fn
@@ -31,7 +31,7 @@ class Array[T, Size](GenericValue, ArrayLike[T]):
 
         For instances, use `len(array)` instead.
         """
-        return cls.type_arg_value(Size)
+        return cls.type_var_value(Size)
 
     def __new__(cls, *args: T) -> Array[T, Any]:
         if cls._type_args_ is None:

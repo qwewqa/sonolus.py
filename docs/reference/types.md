@@ -131,7 +131,7 @@ assert a[0] == Pair(1, 2)  # The value in the array is independent of the origin
 
 ### Operations
 
-Copying the value from one array to another using the copy from operator (`@=`)[^1]:
+The value of an array can be copied from another array using the copy from operator (`@=`)[^1]:
 
 ```python
 source_array = Array(1, 2, 3)
@@ -141,14 +141,14 @@ destination_array @= source_array
 assert destination_array == Array(1, 2, 3)
 ```
 
-Comparing arrays for equality:
+Arrays can be compared for equality and inequality:
 
 ```python
 assert Array(1, 2, 3) == Array(1, 2, 3)
 assert Array(1, 2, 3) != Array(4, 5, 6)
 ```
 
-Accessing elements:
+Elements can be accessed by index:
 
 ```python
 a = Array(1, 2, 3)
@@ -157,7 +157,7 @@ assert a[1] == 2
 assert a[2] == 3
 ```
 
-Updating elements:
+Elements can be updated by index, copying the given value into the corresponding element of the array:
 
 ```python
 a = Array(1, 2, 3)
@@ -181,19 +181,19 @@ assert a == Array(4, 2, 3)
     ```
     
     For clarity, it's recommended to use the copy from operator (`@=`) when updating elements that are known to be
-    of some type other than `Num`.
+    an array or record (see the next section).
 
     ```python
     a[0] @= pair
     ```
 
-Getting the length of an array:
+The length of an array can be accessed using the `len()` function:
 
 ```python
 assert len(Array(1, 2, 3)) == 3
 ```
 
-Iterating over elements:
+Arrays can be iterated over using a for loop:
 
 ```python
 a = Array(1, 2, 3)
@@ -226,10 +226,321 @@ assert not isinstance(a, Array[Pair, 3])
 
 ## Record
 
+`Record` is the base class for user-defined types in Sonolus.py. It functions similarly to dataclasses.
+
+You can import `Record` from `sonolus.script.record`:
+
+```python
+from sonolus.script.record import Record
+```
+
+### Declaration
+
+A `Record` class can be defined by inheriting from `Record` and defining zero or more fields as class attributes:
+
+```python
+class MyPair(Record):
+    first: int
+    second: int
+```
+
+Fields must be annotated by `Num` (or equivalently `int`, `float`, or `bool`), a concrete `Array`, or a concrete `Record`.
+
+```python
+# Not ok:
+class MyRecord(Record):
+    array: Array  # Array is not concrete since it has unspecified type parameters
+```
+
+A `Record` subclass cannot be further subclassed.
+
+```python
+# Not ok:
+class MyPairSubclass(MyPair):
+    third: int
+```
+
+### Instantiation
+
+A constructor is automatically generated for the `Record` class:
+
+```python
+pair_1 = MyPair(1, 2)
+pair_2 = MyPair(first=1, second=2)
+```
+
+### Generics
+
+`Record` supports generics:
+
+```python
+class MyGenericPair[T, U](Record):
+    first: T
+    second: U
+
+class ContainsArray[T, Size](Record):
+    array: Array[T, Size]
+```
+
+Generic type parameters can be specified when instantiating a generic or inferred from the provided values:
+
+```python
+pair_1 = MyGenericPair[int, int](1, 2)
+pair_2 = MyGenericPair(1, 2)
+```
+
+The value of a type parameter can be accessed via the `type_var_value()` classmethod.
+    
+```python
+class MyGenericRecord[T](Record):
+    value: T
+    
+    def my_type(self) -> type:
+        return self.type_var_value(T)
+```
+
+### Operations
+
+The value of a record can be copied from another record using the copy from operator (`@=`)[^1]:
+
+```python
+source_record = MyPair(1, 2)
+destination_record = MyPair(0, 0)
+
+destination_record @= source_record
+assert destination_record == MyPair(1, 2)
+```
+
+Records can be compared for equality and inequality:
+
+```python
+assert MyPair(1, 2) == MyPair(1, 2)
+assert MyPair(1, 2) != MyPair(3, 4)
+```
+
+Dunder methods can be implemented to define custom behavior for records:
+
+```python
+class MyAddablePair(Record):
+    first: int
+    second: int
+    
+    def __add__(self, other: MyAddablePair) -> MyAddablePair:
+        return MyAddablePair(self.first + other.first, self.second + other.second)
+```
+
+If a dunder method has an in-place variant and the in-place method is not explicitly implemented
+(e.g. `__iadd__` is the in-place variant of `__add__`), `Record` will automatically generate one that 
+modifies the instance in place:
+
+```python
+pair = MyAddablePair(1, 2)
+reference = pair
+pair += MyAddablePair(3, 4)
+assert pair == reference == MyAddablePair(4, 6)  # The instance is modified in place
+```
+
+Regular methods, properties, classmethods, and staticmethods can also be defined in a `Record` subclass.
+
+```python
+class MyRecord(Record):
+    def my_method(self):
+        ...
+
+    @property
+    def my_property(self):
+        ...
+
+    @property.setter
+    def my_property(self, value):
+        ...
+
+    @classmethod
+    def my_classmethod(cls):
+        ...
+
+    @staticmethod
+    def my_staticmethod():
+        ...
+```
+
+Fields can be accessed and updated using the dot operator:
+
+```python
+pair = MyPair(1, 2)
+assert pair.first == 1
+assert pair.second == 2
+
+pair.first = 3
+assert pair == MyPair(3, 2)
+```
+
+!!! warning
+    If a value in a record is not a `Num`, updating it will copy the given value into the corresponding field
+    of the record. However, that field remains independent of the original value.
+
+    ```python
+    array = Array(1, 2, 3)
+    record = MyRecord(array)
+    
+    record.array = Array(4, 5, 6)  # or equivalently: record.array @= Array(4, 5, 6)
+    assert record.array == Array(4, 5, 6)
+
+    array[0] = 7
+    assert record.array == Array(4, 5, 6)  # The value in the record is independent of the original
+    ```
+    
+    For clarity, it's recommended to use the copy from operator (`@=`) when updating fields that are known to be
+    an array or record.
+
+    ```python
+    record.array @= array
+    ```
+
+### Instance Checks
+
+Any record is considered an instance of the generic `Record` type:
+
+```python
+pair = MyPair(1, 2)
+assert isinstance(pair, Record)
+```
+
+If a record is generic, any instance of it is considered an instance of the generic type:
+
+```python
+pair = MyGenericPair[int, int](1, 2)
+assert isinstance(pair, MyGenericPair)
+```
+
+Only an instance of a record with the exact field types is considered an instance of a concrete `Record` type:
+
+```python
+pair = MyPair(1, 2)
+assert isinstance(pair, MyPair[int, int])
+assert not isinstance(pair, MyPair[int, Array[int, 2]])
+```
+
 ## Transient Types
 In addition to the standard types, the following transient types are available.
 Compared to the standard types, these types come with the restriction that they cannot be used as type parameters
-or as a Record field's type.
+or as a Record field's type. Otherwise, they can be used like any other type, including passing instances of them as 
+arguments to functions.
+
+### tuple
+
+The built-in `tuple` type can be declared and destructured as usual:
+
+```python
+t = (1, (2, 3))
+a, (b, c) = t
+```
+
+Tuples may be indexed, but the given index must be a compile-time constant:
+
+```python
+t = (1, 2, 3)
+
+# Ok
+debug_log(t[0])
+
+# Not ok:
+dbmsg_log(t[random_integer(0, 2)])
+```
+
+They may also be created as an \*args argument to a function and unpacked as an argument to a function:
+
+```python
+def f1(a, b, c):
+    return a + b + c
+
+def f2(*args):
+    return f1(*args)
+```
+
+Iterating over a tuple is also supported, but they are expanded at compile time, so iterating over large tuples may
+significantly increase the size of the compiled engine and slow down compilation:
+
+```python
+t = (1, 2, 3)
+for x in t:
+    debug_log(x)
+```
+
+### dict
+
+Dicts can be created by the \*\*kwargs syntax and unpacked as arguments to a function:
+
+```python
+def f1(a, b):
+    return a + b
+    
+def f2(**kwargs):
+    return f1(**kwargs)
+```
+
+### Special Constants
+
+The built-in `None`, `Ellipsis`, and `NotImplemented` constants are supported.
+
+`None` is the only supported right-side operand for the `is` and `is not` operators.
+    
+```python
+a = None
+b = 1
+
+# Ok
+assert a is None
+assert b is not None
+
+# Not ok:
+assert b is b
+```
+
+### Other types
+
+Classes themselves are considered instances of `type`. They may be used as arguments to functions, but annotating
+a record field as `type` or declaring an array with element type `type` is not supported.
+
+Functions or methods may be used as arguments to functions, but annotating a record field or setting
+an array element type to `Callable` is not supported.
+
+### Storing Instances of Transient Types in Records
+
+!!! warning
+    The following is advanced usage and is unnecessary for most use cases.
+
+While transient types cannot be used as type parameters or as a Record field's type, it is possible to store them
+in a generic record in a field annotated by a type parameter. Type arguments must not be explicitly provided when
+doing so. If multiple fields are annotated by the same type parameter, all such fields may be required to hold the exact
+same value in some cases.
+
+For example, a version of the `filter` function can be implemented as follows (see [Iterables](iterables.md) for
+more information on iterators):
+
+```python
+class _FilteringIterator[T, Fn](Record, SonolusIterator):
+    fn: Fn
+    iterator: T
+
+    def has_next(self) -> bool:
+        while self.iterator.has_next():
+            if self.fn(self.iterator.get()):
+                return True
+            self.iterator.advance()
+        return False
+
+    def get(self) -> Any:
+        return self.iterator.get()
+
+    def advance(self):
+        self.iterator.advance()
+
+
+def my_filter[T, Fn](iterable: T, fn: Fn) -> T:
+    return _FilteringIterator(fn, iterable.__iter__())
+```
+
 
 [^1]:
     The copy from operator (`@=`) is officially the in-place matrix multiplication operator in Python,

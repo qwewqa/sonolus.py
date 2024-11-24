@@ -19,7 +19,7 @@ class ArrayLike[T](Sequence, ABC):
 
     Usage:
         ```python
-        class MyArrayLike(Record, ArrayLike[T]):
+        class MyArrayLike[T](Record, ArrayLike[T]):
             def __len__(self) -> int:
                 ...
 

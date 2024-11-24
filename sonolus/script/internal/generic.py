@@ -84,7 +84,7 @@ class GenericValue(Value):
 
     @classmethod
     @meta_fn
-    def type_arg_value(cls, var: TypeVar) -> Any:
+    def type_var_value(cls, var: TypeVar) -> Any:
         if isinstance(var, Value):
             var = var._as_py_()
         if cls._type_args_ is None:

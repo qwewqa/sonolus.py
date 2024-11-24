@@ -39,8 +39,8 @@ class VarArray[T, Capacity](Record, ArrayLike[T]):
 
     @classmethod
     def new(cls):
-        element_type = cls.type_arg_value(T)
-        capacity = cls.type_arg_value(Capacity)
+        element_type = cls.type_var_value(T)
+        capacity = cls.type_var_value(Capacity)
         return cls(0, alloc(Array[element_type, capacity]))
 
     def __len__(self) -> int:
@@ -48,7 +48,7 @@ class VarArray[T, Capacity](Record, ArrayLike[T]):
 
     @classmethod
     def capacity(cls) -> int:
-        return cls.type_arg_value(Capacity)
+        return cls.type_var_value(Capacity)
 
     def is_full(self) -> bool:
         return self._size == self.capacity()
@@ -168,9 +168,9 @@ class ArrayMap[K, V, Capacity](Record):
 
     @classmethod
     def new(cls):
-        key_type = cls.type_arg_value(K)
-        value_type = cls.type_arg_value(V)
-        capacity = cls.type_arg_value(Capacity)
+        key_type = cls.type_var_value(K)
+        value_type = cls.type_var_value(V)
+        capacity = cls.type_var_value(Capacity)
         return cls(0, alloc(Array[_ArrayMapEntry[key_type, value_type], capacity]))
 
     def __len__(self) -> int:
@@ -178,7 +178,7 @@ class ArrayMap[K, V, Capacity](Record):
 
     @classmethod
     def capacity(cls) -> int:
-        return cls.type_arg_value(Capacity)
+        return cls.type_var_value(Capacity)
 
     def is_full(self) -> bool:
         return self._size == self.capacity()
