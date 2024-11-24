@@ -6,7 +6,7 @@ from dataclasses import dataclass
 from typing import Any, Self
 
 from sonolus.backend.blocks import BlockData, PlayBlock
-from sonolus.backend.ir import IRConst, IRStmt
+from sonolus.backend.ir import IRConst, IRGet, IRSet, IRStmt
 from sonolus.backend.mode import Mode
 from sonolus.backend.optimize.flow import BasicBlock, FlowEdge
 from sonolus.backend.place import Block, BlockPlace, TempBlock
@@ -44,6 +44,10 @@ class CallbackContextState:
         self.used_names = {}
 
 
+UNDEF = Ellipsis
+NAC = None
+
+
 class Context:
     global_state: GlobalContextState
     callback_state: CallbackContextState
@@ -53,6 +57,7 @@ class Context:
     scope: Scope
     loop_variables: dict[str, Value]
     live: bool
+    foldable_constants: dict[TempBlock, list[float | None | Ellipsis]]  # Known values for temporary memory
 
     def __init__(
         self,
@@ -60,6 +65,7 @@ class Context:
         callback_state: CallbackContextState,
         scope: Scope | None = None,
         live: bool = True,
+        foldable_constants: dict[TempBlock, list[float | None]] | None = None,
     ):
         self.global_state = global_state
         self.callback_state = callback_state
@@ -69,6 +75,7 @@ class Context:
         self.scope = scope if scope is not None else Scope()
         self.loop_variables = {}
         self.live = live
+        self.foldable_constants = foldable_constants if foldable_constants is not None else {}
 
     @property
     def rom(self) -> ReadOnlyMemory:
@@ -102,8 +109,84 @@ class Context:
         if isinstance(place.block, BlockData) and self.callback not in self.blocks(place.block).writable:
             raise RuntimeError(f"Block {place.block} is not writable in {self.callback}")
 
+    def evaluate_place(self, place: BlockPlace) -> float | None:
+        if isinstance(place.block, TempBlock):
+            block = place.block
+            index = place.index
+            offset = place.offset
+            if block not in self.foldable_constants:
+                # Uninitialized memory, but we can't raise an error here because this might happen in a branch
+                # which is never taken or be a dead assignment which is never read before being overwritten.
+                return None
+            if isinstance(index, BlockPlace):
+                index = self.evaluate_place(index)
+            if not isinstance(index, int):
+                return None
+            index += offset
+            if index < 0 or index >= block.size:
+                raise RuntimeError("Reading from out-of-bounds memory")
+            result = self.foldable_constants[block][index]
+            if result is UNDEF:
+                # Also uninitialized memory
+                return None
+            return result
+        return None
+
+    def place_is_uninitialized(self, place: BlockPlace) -> bool:
+        if isinstance(place.block, TempBlock):
+            block = place.block
+            index = place.index
+            offset = place.offset
+            if block not in self.foldable_constants:
+                return True
+            if isinstance(index, BlockPlace):
+                index = self.evaluate_place(index)
+            if not isinstance(index, int):
+                return all(value is UNDEF for value in self.foldable_constants[block])
+            index += offset
+            if index < 0 or index >= block.size:
+                raise RuntimeError("Reading from out-of-bounds memory")
+            return self.foldable_constants[block][index] is UNDEF
+        return False
+
+    def add_statement(self, statement: IRStmt):
+        if not self.live:
+            return
+        self.statements.append(statement)
+        if isinstance(statement, IRSet):
+            place = statement.place
+            value = statement.value
+            block = place.block
+            index = place.index
+            offset = place.offset
+
+            if isinstance(value, IRConst):
+                value = value.value
+            elif isinstance(value, IRGet) and isinstance(value.place, BlockPlace):
+                value = self.evaluate_place(value.place)
+            else:
+                value = NAC
+
+            if isinstance(index, BlockPlace):
+                index = self.evaluate_place(index)
+
+            if isinstance(block, TempBlock):
+                if isinstance(index, int):
+                    index += offset
+                    if block not in self.foldable_constants:
+                        self.foldable_constants[block] = [UNDEF] * block.size
+                    self.foldable_constants[block][index] = value
+                else:
+                    # We don't know which value is being written to
+                    if block not in self.foldable_constants:
+                        self.foldable_constants[block] = [NAC] * block.size
+                    for i, existing in enumerate(self.foldable_constants[block]):
+                        if existing != value:
+                            self.foldable_constants[block][i] = NAC
+
     def add_statements(self, *statements: IRStmt):
-        self.statements.extend(statements)
+        for statement in statements:
+            self.add_statement(statement)
 
     def alloc(self, name: str | None = None, size: int = 1) -> BlockPlace:
         if size == 0:
@@ -124,6 +207,7 @@ class Context:
             callback_state=self.callback_state,
             scope=scope,
             live=self.live,
+            foldable_constants={**self.foldable_constants},  # We want this to persist even if the scope changes
         )
 
     def branch(self, condition: float | None):
@@ -166,6 +250,8 @@ class Context:
             else:
                 header.scope.set_value(name, value)
                 header.loop_variables[name] = value
+        # We have no clue what might be modified in the loop, so we need to invalidate everything
+        header.foldable_constants = {k: [NAC] * k.size for k in self.foldable_constants}
         return header
 
     def branch_to_loop_header(self, header: Self):
@@ -217,6 +303,20 @@ class Context:
         Scope.apply_merge(target, contexts)
         for context in contexts:
             context.outgoing[None] = target
+        foldable_constants = {}
+        for key in set().union(*(context.foldable_constants.keys() for context in contexts)):
+            values = [context.foldable_constants[key] for context in contexts if key in context.foldable_constants]
+            new_value = []
+            for i in range(key.size):
+                defined = {value[i] for value in values if value[i] is not UNDEF}
+                if not defined:
+                    new_value.append(UNDEF)
+                elif len(defined) == 1:
+                    new_value.append(defined.pop())
+                else:
+                    new_value.append(NAC)
+            foldable_constants[key] = new_value
+        target.foldable_constants = foldable_constants
         return target
 
 

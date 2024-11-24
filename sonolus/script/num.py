@@ -78,11 +78,13 @@ class _Num(Value, metaclass=_NumMeta):
         return cls(value)
 
     def _is_py_(self) -> bool:
-        return not isinstance(self.data, BlockPlace)
+        return not isinstance(self.data, BlockPlace) or ctx().evaluate_place(self.data) is not None
 
     def _as_py_(self) -> Any:
         if not self._is_py_():
             raise ValueError("Not a compile time constant Num")
+        if isinstance(self.data, BlockPlace):
+            return ctx().evaluate_place(self.data)
         if self.data.is_integer():
             return int(self.data)
         return self.data
@@ -122,7 +124,13 @@ class _Num(Value, metaclass=_NumMeta):
         raise ValueError("Cannot assign to a number")
 
     def _copy_(self) -> Self:
-        return self
+        if ctx():
+            if isinstance(self.data, BlockPlace) and ctx().place_is_uninitialized(self.data):
+                return Num(ctx().alloc(size=1))
+            else:
+                return self._get_()
+        else:
+            return Num(self.data)
 
     @classmethod
     def _alloc_(cls) -> Self:
@@ -168,7 +176,7 @@ class _Num(Value, metaclass=_NumMeta):
     def __eq__(self, other) -> Self:
         def const_fn(a: Self, b: Self) -> Num | None:
             if a._is_py_() and b._is_py_():
-                return Num(a.data == b.data)
+                return Num(a._as_py_() == b._as_py_())
             if a.data == b.data:
                 return Num(True)
             return None
@@ -184,7 +192,7 @@ class _Num(Value, metaclass=_NumMeta):
     def __ne__(self, other) -> Self:
         def const_fn(a: Self, b: Self) -> Num | None:
             if a._is_py_() and b._is_py_():
-                return Num(a.data != b.data)
+                return Num(a._as_py_() != b._as_py_())
             if a.data == b.data:
                 return Num(False)
             return None
@@ -195,7 +203,7 @@ class _Num(Value, metaclass=_NumMeta):
     def __lt__(self, other) -> Self:
         def const_fn(a: Self, b: Self) -> Num | None:
             if a._is_py_() and b._is_py_():
-                return Num(a.data < b.data)
+                return Num(a._as_py_() < b._as_py_())
             if a.data == b.data:
                 return Num(False)
             return None
@@ -206,7 +214,9 @@ class _Num(Value, metaclass=_NumMeta):
     def __le__(self, other) -> Self:
         def const_fn(a: Self, b: Self) -> Num | None:
             if a._is_py_() and b._is_py_():
-                return Num(a.data <= b.data)
+                return Num(a._as_py_() <= b._as_py_())
+            if a.data == b.data:
+                return Num(True)
             return None
 
         return self._bin_op(other, const_fn, Op.LessOr)
@@ -215,7 +225,7 @@ class _Num(Value, metaclass=_NumMeta):
     def __gt__(self, other) -> Self:
         def const_fn(a: Self, b: Self) -> Num | None:
             if a._is_py_() and b._is_py_():
-                return Num(a.data > b.data)
+                return Num(a._as_py_() > b._as_py_())
             if a.data == b.data:
                 return Num(False)
             return None
@@ -226,7 +236,9 @@ class _Num(Value, metaclass=_NumMeta):
     def __ge__(self, other) -> Self:
         def const_fn(a: Self, b: Self) -> Num | None:
             if a._is_py_() and b._is_py_():
-                return Num(a.data >= b.data)
+                return Num(a._as_py_() >= b._as_py_())
+            if a.data == b.data:
+                return Num(True)
             return None
 
         return self._bin_op(other, const_fn, Op.GreaterOr)
@@ -235,10 +247,10 @@ class _Num(Value, metaclass=_NumMeta):
     def __add__(self, other) -> Self:
         def const_fn(a: Self, b: Self) -> Num | None:
             if a._is_py_() and b._is_py_():
-                return Num(a.data + b.data)
-            if a._is_py_() and a.data == 0:
+                return Num(a._as_py_() + b._as_py_())
+            if a._is_py_() and a._as_py_() == 0:
                 return b
-            if b._is_py_() and b.data == 0:
+            if b._is_py_() and b._as_py_() == 0:
                 return a
             return None
 
@@ -248,10 +260,10 @@ class _Num(Value, metaclass=_NumMeta):
     def __sub__(self, other) -> Self:
         def const_fn(a: Self, b: Self) -> Num | None:
             if a._is_py_() and b._is_py_():
-                return Num(a.data - b.data)
-            if a._is_py_() and a.data == 0:
+                return Num(a._as_py_() - b._as_py_())
+            if a._is_py_() and a._as_py_() == 0:
                 return -b
-            if b._is_py_() and b.data == 0:
+            if b._is_py_() and b._as_py_() == 0:
                 return a
             return None
 
@@ -261,16 +273,16 @@ class _Num(Value, metaclass=_NumMeta):
     def __mul__(self, other) -> Self:
         def const_fn(a: Self, b: Self) -> Num | None:
             if a._is_py_() and b._is_py_():
-                return Num(a.data * b.data)
+                return Num(a._as_py_() * b._as_py_())
             if a._is_py_():
-                if a.data == 0:
+                if a._as_py_() == 0:
                     return Num(0)
-                if a.data == 1:
+                if a._as_py_() == 1:
                     return b
             if b._is_py_():
-                if b.data == 0:
+                if b._as_py_() == 0:
                     return Num(0)
-                if b.data == 1:
+                if b._as_py_() == 1:
                     return a
             return None
 
@@ -280,13 +292,13 @@ class _Num(Value, metaclass=_NumMeta):
     def __truediv__(self, other) -> Self:
         def const_fn(a: Self, b: Self) -> Num | None:
             if a._is_py_() and b._is_py_():
-                if b.data == 0:
+                if b._as_py_() == 0:
                     return None
-                return Num(a.data / b.data)
+                return Num(a._as_py_() / b._as_py_())
             if b._is_py_():
-                if b.data == 1:
+                if b._as_py_() == 1:
                     return a
-                if b.data == -1:
+                if b._as_py_() == -1:
                     return -a
             return None
 
@@ -296,13 +308,13 @@ class _Num(Value, metaclass=_NumMeta):
     def __floordiv__(self, other) -> Self:
         def const_fn(a: Self, b: Self) -> Num | None:
             if a._is_py_() and b._is_py_():
-                if b.data == 0:
+                if b._as_py_() == 0:
                     return None
-                return Num(a.data // b.data)
+                return Num(a._as_py_() // b._as_py_())
             if b._is_py_():
-                if b.data == 1:
+                if b._as_py_() == 1:
                     return a
-                if b.data == -1:
+                if b._as_py_() == -1:
                     return -a
             return None
 
@@ -312,9 +324,9 @@ class _Num(Value, metaclass=_NumMeta):
     def __mod__(self, other) -> Self:
         def const_fn(a: Self, b: Self) -> Num | None:
             if a._is_py_() and b._is_py_():
-                if b.data == 0:
+                if b._as_py_() == 0:
                     return None
-                return Num(a.data % b.data)
+                return Num(a._as_py_() % b._as_py_())
             return None
 
         return self._bin_op(other, const_fn, Op.Mod)
@@ -324,13 +336,13 @@ class _Num(Value, metaclass=_NumMeta):
         def const_fn(a: Self, b: Self) -> Num | None:
             if a._is_py_() and b._is_py_():
                 try:
-                    return Num(a.data**b.data)
+                    return Num(a._as_py_() ** b._as_py_())
                 except OverflowError:
                     return None
             if b._is_py_():
-                if b.data == 0:
+                if b._as_py_() == 0:
                     return Num(1)
-                if b.data == 1:
+                if b._as_py_() == 1:
                     return a
             return None
 
@@ -360,9 +372,9 @@ class _Num(Value, metaclass=_NumMeta):
     def and_(self, other) -> Self:
         def const_fn(a: Self, b: Self) -> Num | None:
             if a._is_py_() and b._is_py_():
-                return Num(a.data and b.data)
+                return Num(a._as_py_() and b._as_py_())
             if a._is_py_():
-                if a.data == 0:
+                if a._as_py_() == 0:
                     return a
                 else:
                     return b
@@ -373,9 +385,9 @@ class _Num(Value, metaclass=_NumMeta):
     def or_(self, other) -> Self:
         def const_fn(a: Self, b: Self) -> Num | None:
             if a._is_py_() and b._is_py_():
-                return Num(a.data or b.data)
+                return Num(a._as_py_() or b._as_py_())
             if a._is_py_():
-                if a.data == 0:
+                if a._as_py_() == 0:
                     return b
                 else:
                     return a

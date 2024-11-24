@@ -295,6 +295,9 @@ class Visitor(ast.NodeVisitor):
         self.break_ctxs.append([])
         set_ctx(header_ctx)
         has_next = self.ensure_boolean_num(self.handle_call(node, iterator.has_next))
+        if has_next._is_py_() and not has_next._as_py_():
+            # The loop will never run, continue after evaluating the condition
+            return
         ctx().test = has_next.ir()
         body_ctx = ctx().branch(None)
         else_ctx = ctx().branch(0)
@@ -322,6 +325,9 @@ class Visitor(ast.NodeVisitor):
         self.break_ctxs.append([])
         set_ctx(header_ctx)
         test = self.ensure_boolean_num(self.visit(node.test))
+        if test._is_py_() and not test._as_py_():
+            # The loop will never run, continue after evaluating the condition
+            return
         ctx().test = test.ir()
         body_ctx = ctx().branch(None)
         else_ctx = ctx().branch(0)
@@ -717,6 +723,13 @@ class Visitor(ast.NodeVisitor):
             curr_ctx = ctx()
             if i == len(node.ops) - 1:
                 curr_ctx.scope.set_value(result_name, result)
+            elif result._is_py_():
+                if result._as_py_():
+                    l_val = r_val
+                else:
+                    false_ctxs.append(curr_ctx)
+                    set_ctx(curr_ctx.into_dead())
+                    break
             else:
                 curr_ctx.test = result.ir()
                 true_ctx = curr_ctx.branch(None)
@@ -829,8 +842,12 @@ class Visitor(ast.NodeVisitor):
         ctx_init = ctx()
         l_val = self.ensure_boolean_num(l_val)
 
-        if l_val._is_py_() and not l_val._as_py_():
-            return l_val
+        if l_val._is_py_():
+            if l_val._as_py_():
+                # The rhs is definitely evaluated, so we can return it directly
+                return self.ensure_boolean_num(self.visit(r_expr))
+            else:
+                return l_val
 
         ctx_init.test = l_val.ir()
         res_name = self.new_name("and")
@@ -853,8 +870,12 @@ class Visitor(ast.NodeVisitor):
         ctx_init = ctx()
         l_val = self.ensure_boolean_num(l_val)
 
-        if l_val._is_py_() and l_val._as_py_():
-            return l_val
+        if l_val._is_py_():
+            if l_val._as_py_():
+                return l_val
+            else:
+                # The rhs is definitely evaluated, so we can return it directly
+                return self.ensure_boolean_num(self.visit(r_expr))
 
         ctx_init.test = l_val.ir()
         res_name = self.new_name("or")
@@ -927,7 +948,9 @@ class Visitor(ast.NodeVisitor):
 
     def handle_getitem(self, node: ast.stmt | ast.expr, target: Value, key: Value) -> Value:
         with self.reporting_errors_at_node(node):
-            if target._is_py_() and key._is_py_():
+            if target._is_py_() and isinstance(target._as_py_(), type):
+                if not key._is_py_():
+                    raise ValueError("Type parameters must be compile-time constants")
                 return validate_value(target._as_py_()[key._as_py_()])
             else:
                 if isinstance(target, Value) and hasattr(target, "__getitem__"):
@@ -936,17 +959,9 @@ class Visitor(ast.NodeVisitor):
 
     def handle_setitem(self, node: ast.stmt | ast.expr, target: Value, key: Value, value: Value):
         with self.reporting_errors_at_node(node):
-            if target._is_py_():
-                target = target._as_py_()
-                if key._is_py_():
-                    target[key._as_py_()] = value._as_py_()
-                if isinstance(target, Value) and hasattr(target, "__setitem__"):
-                    return self.handle_call(node, target.__setitem__, key, value)
-                raise TypeError(f"Cannot set items on {type(target).__name__}")
-            else:
-                if isinstance(target, Value) and hasattr(target, "__setitem__"):
-                    return self.handle_call(node, target.__setitem__, key, value)
-                raise TypeError(f"Cannot set items on {type(target).__name__}")
+            if isinstance(target, Value) and hasattr(target, "__setitem__"):
+                return self.handle_call(node, target.__setitem__, key, value)
+            raise TypeError(f"Cannot set items on {type(target).__name__}")
 
     def handle_starred(self, value: Value) -> tuple[Value, ...]:
         if isinstance(value, TupleImpl):

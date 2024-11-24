@@ -41,8 +41,6 @@ def _len(value):
     from sonolus.backend.visitor import compile_and_call
 
     value = validate_value(value)
-    if value._is_py_():
-        return validate_value(len(value._as_py_()))
     if not hasattr(value, "__len__"):
         raise TypeError(f"object of type '{type(value).__name__}' has no len()")
     return compile_and_call(value.__len__)

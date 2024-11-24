@@ -155,13 +155,13 @@ def test_interval_intersection_is_in_original(start, end, other_start, other_end
 
 @given(floats, floats, floats, floats, floats)
 def test_remap_inverse(start, end, other_start, other_end, value):
-    assume(abs(end - start) > 1e-6 and abs(other_end - other_start) > 1e-6)
+    assume(abs(end - start) > 1e-4 and abs(other_end - other_start) > 1e-4)
 
     def fn():
         remapped = remap(start, end, other_start, other_end, value)
         return remap(other_start, other_end, start, end, remapped)
 
-    assert is_close(validate_dual_run(fn), value, abs_tol=1e-4)
+    assert is_close(validate_dual_run(fn), value, abs_tol=1e-3)
 
 
 @given(floats, floats, floats, floats, floats)

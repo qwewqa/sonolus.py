@@ -134,7 +134,7 @@ class Array[T, Size](GenericValue, ArrayLike[T]):
 
     def _copy_(self) -> Self:
         if ctx():
-            place = ctx().alloc(size=self.size())
+            place = ctx().alloc(size=self._size_())
             result: Self = self._from_place_(place)
             result._copy_from_(self)
             return result
