@@ -4,7 +4,7 @@ import builtins
 import functools
 import inspect
 from collections.abc import Callable, Sequence
-from types import FunctionType, MethodType
+from types import FunctionType, MethodType, MethodWrapperType
 from typing import Any, Never, Self
 
 from sonolus.backend.excepthook import install_excepthook
@@ -128,14 +128,43 @@ comp_ops = {
 }
 
 rcomp_ops = {
-    ast.Eq: "__req__",
-    ast.NotEq: "__rne__",
+    ast.Eq: "__eq__",
+    ast.NotEq: "__ne__",
     ast.Lt: "__gt__",
     ast.LtE: "__ge__",
     ast.Gt: "__lt__",
     ast.GtE: "__le__",
-    ast.In: "__contains__",
+    ast.In: "__contains__",  # Only supported on the right side
     ast.NotIn: "__contains__",
+}
+
+op_to_symbol = {
+    ast.Add: "+",
+    ast.Sub: "-",
+    ast.Mult: "*",
+    ast.Div: "/",
+    ast.FloorDiv: "//",
+    ast.Mod: "%",
+    ast.Pow: "**",
+    ast.Eq: "==",
+    ast.NotEq: "!=",
+    ast.Lt: "<",
+    ast.LtE: "<=",
+    ast.Gt: ">",
+    ast.GtE: ">=",
+    ast.And: "and",
+    ast.Or: "or",
+    ast.BitAnd: "&",
+    ast.BitOr: "|",
+    ast.BitXor: "^",
+    ast.LShift: "<<",
+    ast.RShift: ">>",
+    ast.USub: "-",
+    ast.UAdd: "+",
+    ast.Invert: "~",
+    ast.Not: "not",
+    ast.In: "in",
+    ast.NotIn: "not in",
 }
 
 
@@ -272,7 +301,7 @@ class Visitor(ast.NodeVisitor):
             if not self.is_not_implemented(result):
                 self.handle_assign(node.target, result)
                 return
-        if hasattr(rhs_value, right_fn_name):
+        if hasattr(rhs_value, right_fn_name) and type(lhs_value) is not type(rhs_value):
             result = self.handle_call(node, getattr(rhs_value, right_fn_name), lhs_value)
             if not self.is_not_implemented(result):
                 self.handle_assign(node.target, result)
@@ -591,7 +620,7 @@ class Visitor(ast.NodeVisitor):
             case ast.Or():
                 handler = self.handle_or
             case _:
-                raise NotImplementedError(f"Unsupported bool operator {node.op}")
+                raise NotImplementedError(f"Unsupported bool operator {op_to_symbol[type(node.op)]}")
 
         if not node.values:
             raise ValueError("Bool operator requires at least one operand")
@@ -618,11 +647,11 @@ class Visitor(ast.NodeVisitor):
             result = self.handle_call(node, getattr(lhs, op), rhs)
             if not self.is_not_implemented(result):
                 return result
-        if hasattr(rhs, rbin_ops[type(node.op)]):
+        if hasattr(rhs, rbin_ops[type(node.op)]) and type(lhs) is not type(rhs):
             result = self.handle_call(node, getattr(rhs, rbin_ops[type(node.op)]), lhs)
             if not self.is_not_implemented(result):
                 return result
-        raise NotImplementedError(f"Unsupported operand types for binary operator {node.op}")
+        raise NotImplementedError(f"Unsupported operand type(s) for binary operator {op_to_symbol[type(node.op)]}")
 
     def visit_UnaryOp(self, node):
         operand = self.visit(node.operand)
@@ -631,7 +660,7 @@ class Visitor(ast.NodeVisitor):
         op = unary_ops[type(node.op)]
         if hasattr(operand, op):
             return self.handle_call(node, getattr(operand, op))
-        raise NotImplementedError(f"Unsupported operand type for unary operator {node.op}")
+        raise NotImplementedError(f"Unsupported operand type for unary operator {op_to_symbol[type(node.op)]}")
 
     def visit_Lambda(self, node):
         signature = self.arguments_to_signature(node.args)
@@ -704,6 +733,9 @@ class Visitor(ast.NodeVisitor):
     def visit_YieldFrom(self, node):
         raise NotImplementedError("Yield from expressions are not supported")
 
+    def _has_real_method(self, obj: Value, method_name: str) -> bool:
+        return hasattr(obj, method_name) and not isinstance(getattr(obj, method_name), MethodWrapperType)
+
     def visit_Compare(self, node):
         result_name = self.new_name("compare")
         ctx().scope.set_value(result_name, Num._accept_(0))
@@ -720,16 +752,24 @@ class Visitor(ast.NodeVisitor):
                     result = Num._accept_(l_val._is_py_() and l_val._as_py_() is None)
                 else:
                     result = Num._accept_(not (l_val._is_py_() and l_val._as_py_() is None))
-            elif type(op) in comp_ops and hasattr(l_val, comp_ops[type(op)]):
+            elif type(op) in comp_ops and self._has_real_method(l_val, comp_ops[type(op)]):
                 result = self.handle_call(node, getattr(l_val, comp_ops[type(op)]), r_val)
             if (
                 (result is None or self.is_not_implemented(result))
                 and type(op) in rcomp_ops
-                and hasattr(r_val, rcomp_ops[type(op)])
+                and self._has_real_method(r_val, rcomp_ops[type(op)])
             ):
                 result = self.handle_call(node, getattr(r_val, rcomp_ops[type(op)]), l_val)
             if result is None or self.is_not_implemented(result):
-                raise NotImplementedError(f"Unsupported comparison operator {op}")
+                if type(op) is ast.Eq:
+                    result = Num._accept_(l_val is r_val)
+                elif type(op) is ast.NotEq:
+                    result = Num._accept_(l_val is not r_val)
+                else:
+                    raise NotImplementedError(
+                        f"'{op_to_symbol[type(op)]}' not supported between instances of '{type(l_val).__name__}' and "
+                        f"'{type(r_val).__name__}'"
+                    )
             result = self.ensure_boolean_num(result)
             if inverted:
                 result = result.not_()

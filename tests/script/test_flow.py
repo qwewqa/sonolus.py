@@ -9,6 +9,16 @@ from sonolus.script.debug import debug_log
 from sonolus.script.internal.error import CompilationError
 from tests.script.conftest import validate_dual_run, compiled_run
 from tests.script.test_record import Pair
+from hypothesis import assume, given
+from hypothesis import strategies as st
+
+from sonolus.script.interval import Interval, remap, remap_clamped
+from tests.script.conftest import implies, is_close, validate_dual_run
+
+ints = st.integers(min_value=-999999, max_value=999999)
+small_ints = st.integers(min_value=-2, max_value=2)
+floats = st.floats(min_value=-999999, max_value=999999, allow_infinity=False, allow_nan=False)
+divisor_floats = floats.filter(lambda x: abs(x) > 1e-6)
 
 
 def test_loop_with_side_effects():
@@ -742,48 +752,84 @@ def test_match_int_not_supported():
         compiled_run(fn)
 
 
-def test_and():
+@given(small_ints, small_ints, small_ints)
+def test_and(x, y, z):
     def fn():
-        a = 1 and 2
-        b = 0 and 2
-        c = 1 and 0
-        d = 0 and 0
-        e = 1 and black_box_value(2)
-        f = 0 and black_box_value(2)
-        g = 1 and black_box_value(0)
-        h = 0 and black_box_value(0)
-        i = black_box_value(1) and 2
-        j = black_box_value(0) and 2
-        k = black_box_value(1) and 0
-        l = black_box_value(0) and 0
-        m = black_box_value(1) and black_box_value(2)
-        n = black_box_value(0) and black_box_value(2)
-        o = black_box_value(1) and black_box_value(0)
-        p = black_box_value(0) and black_box_value(0)
-        return Array(a, b, c, d, e, f, g, h, i, j, k, l, m, n, o, p)
+        a = x and y and z
+        b = black_box_log(x) and y and z
+        c = x and black_box_log(y) and z
+        d = x and y and black_box_log(z)
+        e = black_box_log(x) and black_box_log(y) and z
+        f = black_box_log(x) and y and black_box_log(z)
+        g = x and black_box_log(y) and black_box_log(z)
+        h = black_box_log(x) and black_box_log(y) and black_box_log(z)
+        return Array(a, b, c, d, e, f, g, h)
 
-    assert validate_dual_run(fn) == Array(2, 0, 0, 0, 2, 0, 0, 0, 2, 0, 0, 0, 2, 0, 0, 0)
+    assert validate_dual_run(fn) == Array(*(x and y and z for _ in range(8)))
 
 
-def test_or():
+@given(small_ints, small_ints, small_ints)
+def test_or(x, y, z):
     def fn():
-        a = 1 or 2
-        b = 0 or 2
-        c = 1 or 0
-        d = 0 or 0
-        e = 1 or black_box_value(2)
-        f = 0 or black_box_value(2)
-        g = 1 or black_box_value(0)
-        h = 0 or black_box_value(0)
-        i = black_box_value(1) or 2
-        j = black_box_value(0) or 2
-        k = black_box_value(1) or 0
-        l = black_box_value(0) or 0
-        m = black_box_value(1) or black_box_value(2)
-        n = black_box_value(0) or black_box_value(2)
-        o = black_box_value(1) or black_box_value(0)
-        p = black_box_value(0) or black_box_value(0)
-        return Array(a, b, c, d, e, f, g, h, i, j, k, l, m, n, o, p)
+        a = x or y or z
+        b = black_box_log(x) or y or z
+        c = x or black_box_log(y) or z
+        d = x or y or black_box_log(z)
+        e = black_box_log(x) or black_box_log(y) or z
+        f = black_box_log(x) or y or black_box_log(z)
+        g = x or black_box_log(y) or black_box_log(z)
+        h = black_box_log(x) or black_box_log(y) or black_box_log(z)
+        return Array(a, b, c, d, e, f, g, h)
+
+    assert validate_dual_run(fn) == Array(*(x or y or z for _ in range(8)))
+
+
+@given(small_ints, small_ints, small_ints)
+def test_and_or(x, y, z):
+    def fn():
+        a = x and y or z
+        b = black_box_log(x) and y or z
+        c = x and black_box_log(y) or z
+        d = x and y or black_box_log(z)
+        e = black_box_log(x) and black_box_log(y) or z
+        f = black_box_log(x) and y or black_box_log(z)
+        g = x and black_box_log(y) or black_box_log(z)
+        h = black_box_log(x) and black_box_log(y) or black_box_log(z)
+        return Array(a, b, c, d, e, f, g, h)
+
+    assert validate_dual_run(fn) == Array(*(x and y or z for _ in range(8)))
+
+
+@given(small_ints, small_ints, small_ints)
+def test_or_and(x, y, z):
+    def fn():
+        a = x or y and z
+        b = black_box_log(x) or y and z
+        c = x or black_box_log(y) and z
+        d = x or y and black_box_log(z)
+        e = black_box_log(x) or black_box_log(y) and z
+        f = black_box_log(x) or y and black_box_log(z)
+        g = x or black_box_log(y) and black_box_log(z)
+        h = black_box_log(x) or black_box_log(y) and black_box_log(z)
+        return Array(a, b, c, d, e, f, g, h)
+
+    assert validate_dual_run(fn) == Array(*(x or y and z for _ in range(8)))
+
+
+@given(small_ints, small_ints, small_ints)
+def test_chained_comparison(x, y, z):
+    def fn():
+        a = x < y < z
+        b = black_box_log(x) < y < z
+        c = x < black_box_log(y) < z
+        d = x < y < black_box_log(z)
+        e = black_box_log(x) < black_box_log(y) < z
+        f = black_box_log(x) < y < black_box_log(z)
+        g = x < black_box_log(y) < black_box_log(z)
+        h = black_box_log(x) < black_box_log(y) < black_box_log(z)
+        return Array(a, b, c, d, e, f, g, h)
+
+    assert validate_dual_run(fn) == Array(*(x < y < z for _ in range(8)))
 
 
 def test_while_true():
