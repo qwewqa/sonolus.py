@@ -4,16 +4,15 @@
 import random
 
 import pytest
+from hypothesis import given
+from hypothesis import strategies as st
+
 from sonolus.script.array import Array
 from sonolus.script.debug import debug_log
 from sonolus.script.internal.error import CompilationError
-from tests.script.conftest import validate_dual_run, compiled_run
+from tests.script.conftest import compiled_run
+from tests.script.conftest import validate_dual_run
 from tests.script.test_record import Pair
-from hypothesis import assume, given
-from hypothesis import strategies as st
-
-from sonolus.script.interval import Interval, remap, remap_clamped
-from tests.script.conftest import implies, is_close, validate_dual_run
 
 ints = st.integers(min_value=-999999, max_value=999999)
 small_ints = st.integers(min_value=-2, max_value=2)
@@ -644,7 +643,7 @@ def black_box_value(v: float | int) -> float | int:
 
 def black_box_log(v: float | int) -> float | int:
     debug_log(v)
-    return v
+    return black_box_value(v)
 
 
 def test_error_if_conflicting_definitions():
