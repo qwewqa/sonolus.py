@@ -4,21 +4,6 @@ from sonolus.backend.optimize.flow import (
 )
 from sonolus.backend.optimize.passes import CompilerPass
 
-# traverse_cfg_preorder(entry: BasicBlock) -> Iterator[BasicBlock]
-# traverse_cfg_postorder(entry: BasicBlock) -> Iterator[BasicBlock]
-# traverse_cfg_reverse_postorder(entry: BasicBlock) -> Iterator[BasicBlock]
-
-# class BasicBlock:
-#     phis: dict[SSAPlace, dict[Self, SSAPlace]]
-#     statements: list[IRStmt]
-#     test: IRExpr
-#     incoming: set[FlowEdge]
-#     outgoing: set[FlowEdge]
-
-# class FlowEdge:
-#     src: "BasicBlock"
-#     dst: "BasicBlock"
-
 
 class DominanceFrontiers(CompilerPass):
     def destroys(self) -> set[CompilerPass] | None:

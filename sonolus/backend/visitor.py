@@ -801,8 +801,6 @@ class Visitor(ast.NodeVisitor):
         from sonolus.script.internal.dict_impl import DictImpl
 
         fn = self.visit(node.func)
-        if fn is Num:
-            raise ValueError("Calling int/bool/float as a function is not supported")
         args = []
         kwargs = {}
         for arg in node.args:
