@@ -2,7 +2,7 @@ import pytest
 from hypothesis import given
 from hypothesis import strategies as st
 
-from sonolus.script.debug import assert_true
+from sonolus.script.debug import assert_true, debug_log
 from sonolus.script.num import Num
 from sonolus.script.record import Record
 from tests.script.conftest import validate_dual_run
@@ -20,6 +20,21 @@ class Generic[T](Record):
 
     def __isub__(self, other):
         self.value = 123
+        return self
+
+    @property
+    def prop(self):
+        debug_log(1)
+        return self.value
+
+    @prop.setter
+    def prop(self, value):
+        debug_log(2)
+        self.value = value
+
+    def __iadd__(self, other):
+        self.value += other.value
+        debug_log(3)
         return self
 
 
@@ -215,3 +230,38 @@ def test_record_modification_in_loop(a, b, c, d, e, f):
         return r
 
     validate_dual_run(fn)
+
+
+def test_record_property_getter():
+    def fn():
+        r = Generic(1)
+        return r.prop
+
+    assert validate_dual_run(fn) == 1
+
+
+def test_record_property_setter():
+    def fn():
+        r = Generic(1)
+        r.prop = 2
+        return r.value
+
+    assert validate_dual_run(fn) == 2
+
+
+def test_record_augmented_property_setter():
+    def fn():
+        r = Generic(1)
+        r.prop += 2
+        return r.value
+
+    assert validate_dual_run(fn) == 3
+
+
+def test_record_augmented_property_setter_with_explicit_implementation():
+    def fn():
+        r = Generic(Generic(1))
+        r.prop += Generic(2)
+        return r.value.value
+
+    assert validate_dual_run(fn) == 3
