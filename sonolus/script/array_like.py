@@ -190,6 +190,7 @@ class ArrayLike[T](Sequence, ABC):
             _heap_sort(self, 0, len(self), reverse)
 
     def shuffle(self):
+        """Shuffles the values in the array in place."""
         random.shuffle(self)  # type: ignore
 
     def reverse(self):

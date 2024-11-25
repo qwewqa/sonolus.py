@@ -33,7 +33,7 @@ def compile_and_call[**P, R](fn: Callable[P, R], /, *args: P.args, **kwargs: P.k
 def generate_fn_impl(fn: Callable):
     install_excepthook()
     match fn:
-        case Value() as value if value._is_py_():
+        case ConstantValue() as value if value._is_py_():
             return generate_fn_impl(value._as_py_())
         case MethodType() as method:
             return functools.partial(generate_fn_impl(method.__func__), method.__self__)
@@ -44,12 +44,10 @@ def generate_fn_impl(fn: Callable):
         case _:
             if callable(fn) and isinstance(fn, Value):
                 return generate_fn_impl(fn.__call__)
-            elif fn is type:
-                return fn
             elif callable(fn):
                 raise TypeError(f"Unsupported callable {fn!r}")
             else:
-                raise TypeError(f"Not callable {fn!r}")
+                raise TypeError(f"'{type(fn).__name__}' object is not callable")
 
 
 def eval_fn(fn: Callable, /, *args, **kwargs):
@@ -306,7 +304,10 @@ class Visitor(ast.NodeVisitor):
             if not self.is_not_implemented(result):
                 self.handle_assign(node.target, result)
                 return
-        raise NotImplementedError("Unsupported augmented assignment")
+        raise TypeError(
+            f"unsupported operand type(s) for {op_to_symbol[type(node.op)]}=: "
+            f"'{type(lhs_value).__name__}' and '{type(rhs_value).__name__}'"
+        )
 
     def visit_AnnAssign(self, node):
         value = self.visit(node.value)
@@ -651,7 +652,10 @@ class Visitor(ast.NodeVisitor):
             result = self.handle_call(node, getattr(rhs, rbin_ops[type(node.op)]), lhs)
             if not self.is_not_implemented(result):
                 return result
-        raise NotImplementedError(f"Unsupported operand type(s) for binary operator {op_to_symbol[type(node.op)]}")
+        raise TypeError(
+            f"unsupported operand type(s) for {op_to_symbol[type(node.op)]}: "
+            f"'{type(lhs).__name__}' and '{type(rhs).__name__}'"
+        )
 
     def visit_UnaryOp(self, node):
         operand = self.visit(node.operand)
@@ -660,7 +664,7 @@ class Visitor(ast.NodeVisitor):
         op = unary_ops[type(node.op)]
         if hasattr(operand, op):
             return self.handle_call(node, getattr(operand, op))
-        raise NotImplementedError(f"Unsupported operand type for unary operator {op_to_symbol[type(node.op)]}")
+        raise TypeError(f"bad operand type for unary {op_to_symbol[type(node.op)]}: '{type(operand).__name__}'")
 
     def visit_Lambda(self, node):
         signature = self.arguments_to_signature(node.args)
@@ -766,7 +770,7 @@ class Visitor(ast.NodeVisitor):
                 elif type(op) is ast.NotEq:
                     result = Num._accept_(l_val is not r_val)
                 else:
-                    raise NotImplementedError(
+                    raise TypeError(
                         f"'{op_to_symbol[type(op)]}' not supported between instances of '{type(l_val).__name__}' and "
                         f"'{type(r_val).__name__}'"
                     )

@@ -3,6 +3,7 @@ from hypothesis import given
 from hypothesis import strategies as st
 
 from sonolus.script.debug import debug_log
+from sonolus.script.internal.error import CompilationError
 from sonolus.script.record import Record
 from tests.script.conftest import validate_dual_run
 
@@ -143,6 +144,12 @@ class LtGtNotImplemented(Record):
         return NotImplemented
 
 
+class HasCall(Record):
+    def __call__(self):
+        debug_log(26)
+        return 123
+
+
 bin_values = [
     AllAddOps(),
     AllAddNotImplemented(),
@@ -182,7 +189,7 @@ def test_bin_op(left, right):
 
     try:
         validate_dual_run(fn)
-    except Exception as e:
+    except TypeError as e:
         assert "unsupported operand type(s)" in str(e)  # noqa: PT017
 
 
@@ -198,7 +205,7 @@ def test_iop(left, right):
 
     try:
         validate_dual_run(fn)
-    except Exception as e:
+    except TypeError as e:
         assert "unsupported operand type(s)" in str(e)
 
 
@@ -210,10 +217,7 @@ def test_eq_op(left, right):
     def fn():
         return left == right
 
-    try:
-        validate_dual_run(fn)
-    except Exception as e:
-        assert "unsupported operand type(s)" in str(e)
+    validate_dual_run(fn)
 
 
 @given(
@@ -226,5 +230,35 @@ def test_comp_op(left, right):
 
     try:
         validate_dual_run(fn)
-    except Exception as e:
+    except TypeError as e:
         assert "not supported between instances" in str(e)
+
+
+def test_call_op():
+    def fn():
+        x = HasCall()
+        return x()
+
+    validate_dual_run(fn)
+
+
+def test_unsupported_call():
+    def fn():
+        x = NothingImplemented()
+        return x()
+
+    try:
+        validate_dual_run(fn)
+    except TypeError as e:
+        assert "not callable" in str(e)
+
+
+def test_unsupported_unary():
+    def fn():
+        x = NothingImplemented()
+        return -x  # type: ignore
+
+    try:
+        validate_dual_run(fn)
+    except TypeError as e:
+        assert "bad operand type" in str(e)

@@ -68,7 +68,10 @@ def validate_dual_run[**P, R](fn: Callable[P, R], *args: P.args, **kwargs: P.kwa
         cfg, rom_values = compile_fn(run_compiled)
     except CompilationError as e:
         assert exception is not None
+        while isinstance(e, CompilationError) and e.__cause__ is not None:
+            e = e.__cause__
         assert str(e) == str(exception)  # noqa: PT017
+        assert type(e) is type(exception)  # noqa: PT017
         raise exception from None
 
     cfg = optimize_and_allocate(cfg)
