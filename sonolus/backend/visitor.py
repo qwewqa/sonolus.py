@@ -291,8 +291,7 @@ class Visitor(ast.NodeVisitor):
             if not self.is_not_implemented(result):
                 if result is not lhs_value:
                     raise ValueError("Inplace operation must return the same object")
-                # Skip the actual assignment because the inplace operation already did the job, as an optimization
-                # There could be side effects of assignment, but that's atypical
+                self.handle_assign(node.target, result)
                 return
         if hasattr(lhs_value, regular_fn_name):
             result = self.handle_call(node, getattr(lhs_value, regular_fn_name), rhs_value)
@@ -1077,7 +1076,7 @@ class Visitor(ast.NodeVisitor):
             parameters.append(param)
 
         for i, arg in enumerate(arguments.kwonlyargs):
-            default = self.visit(arguments.kw_defaults[i])
+            default = self.visit(arguments.kw_defaults[i]) if arguments.kw_defaults[i] is not None else None
             param = inspect.Parameter(
                 name=arg.arg,
                 kind=inspect.Parameter.KEYWORD_ONLY,

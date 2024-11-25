@@ -1196,3 +1196,13 @@ def test_flexible_decorator_with_dynamic_state():
         return Array(r1, r2, r3, r4)
 
     assert validate_dual_run(fn) == Array(5, 6, 15, 16)
+
+
+def test_nested_function_with_complex_signature():
+    def fn():
+        def nested(pos_only_1, pos_only_2, /, pos_or_kw_1, pos_or_kw_2, *args, kw_only_1, kw_only_2=3, **kwargs):
+            return pos_only_1 + pos_only_2 + pos_or_kw_1 + pos_or_kw_2 + kw_only_1 + kw_only_2
+
+        return nested(1, 2, 3, 4, 12345, kw_only_1=5, kw_only_2=6, extra=7)
+
+    assert validate_dual_run(fn) == 21
