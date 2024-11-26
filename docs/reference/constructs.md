@@ -1,5 +1,17 @@
 # Constructs
-Most standard Python constructs are supported in Sonolus.py
+Most standard Python constructs are supported in Sonolus.py.
+
+## Key Differences
+
+- Non-num variables must have a single live definition.
+- Conditional branches may be eliminated if they are be determined to be unreachable
+- Functions with non-num return types must return a single value
+  - Most functions returning a non-num value should have a single return at the end
+- Destructuring assignment does not support the `*` operator.
+- Sequence `match` patterns do not support the `*` operator.
+- Mapping `match` patterns are unsupported.
+- Imports may not be done within functions
+- The `global` and `local` keywords are unsupported.
 
 ## Summary
 
@@ -411,6 +423,8 @@ def k():
     if random() < 0.5:
         return Vec2(1, 2)
 ```
+
+Most functions returning a non-num value should have a single `return` statement at the end.
 
 ### Classes
 Classes are supported at the module level. User defined classes should subclass `Record` or have a supported
