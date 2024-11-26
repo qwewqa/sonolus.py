@@ -45,9 +45,7 @@ Most standard Python constructs are supported in Sonolus.py
     - Function Definition: `def <name>(<parameters>):`
     - Class Definition: `class <name>:` (only outside of functions)
 
-## Details
-
-### Compile Time Evaluation
+## Compile Time Evaluation
 Some expressions can be evaluated at compile time:
 - Numeric literals: `1`, `2.5`, `True`, `False`, ...
 - None: `None`
@@ -79,7 +77,7 @@ else:
     debug_log(-1)
 ```
 
-### Variables
+## Variables
 Variables can be assigned and used like in vanilla Python.
 
 ```python
@@ -135,9 +133,9 @@ while condition():
     v = Vec2(3, 4)  # (2) redefines 'v' for future iterations
 ```
 
-### Expressions
+## Expressions
 
-#### Literals
+### Literals
 `int`, `float`, `bool`, `str`, and `tuple` literals are supported:
 
 ```python
@@ -181,6 +179,8 @@ If the condition is a compile-time constant, then the ternary operator will be e
 e = Vec2(0, 0) if e is None else e  # Ok, evaluated at compile time
 ```
 
+## Statements
+
 ### Assignment
 Most assignment types are supported. Destructuring assignment is supported only for tuples, and the `*`
 operator is not supported.
@@ -196,17 +196,6 @@ d[0] = 4
 # Not ok
 h, *i = 1, 2, 3  # Not supported
 ```
-
-### assert
-Assertions are supported. Since error handling is not supported, assertion failures will terminate the current
-callback when running in the Sonolus app.
-
-```python
-assert a > 0, 'a must be positive'
-```
-
-### pass
-The `pass` statement is supported.
 
 ```python
 if a > 0:
@@ -452,3 +441,14 @@ class MyRecord(Record):
 
 ### Imports
 Imports are supported at the module level, but not within functions.
+
+### assert
+Assertions are supported. Since error handling is not supported, assertion failures will terminate the current
+callback when running in the Sonolus app.
+
+```python
+assert a > 0, 'a must be positive'
+```
+
+### pass
+The `pass` statement is supported.
