@@ -6,7 +6,7 @@ from sonolus.script.array_like import ArrayLike
 from sonolus.script.internal.context import ctx
 from sonolus.script.internal.dict_impl import DictImpl
 from sonolus.script.internal.impl import meta_fn, validate_value
-from sonolus.script.internal.math_impls import MATH_BUILTIN_IMPLS, trunc
+from sonolus.script.internal.math_impls import MATH_BUILTIN_IMPLS, _trunc
 from sonolus.script.internal.random import RANDOM_BUILTIN_IMPLS
 from sonolus.script.internal.range import Range
 from sonolus.script.internal.tuple_impl import TupleImpl
@@ -207,7 +207,7 @@ def _int(value):
     value = validate_value(value)
     if not _is_num(value):
         raise TypeError("Only numeric arguments to int() are supported")
-    return trunc(value)
+    return _trunc(value)
 
 
 @meta_fn

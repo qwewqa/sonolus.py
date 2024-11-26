@@ -11,9 +11,9 @@ Most standard Python constructs are supported in Sonolus.py.
 - Sequence `match` patterns do not support the `*` operator.
 - Mapping `match` patterns are unsupported.
 - Imports may not be done within functions
-- The `global` and `local` keywords are unsupported.
+- The `global` and `nonlocal` keywords are unsupported.
 
-## Summary
+## Overview
 
 - Expressions:
   - Literals:
@@ -59,6 +59,7 @@ Most standard Python constructs are supported in Sonolus.py.
 
 ## Compile Time Evaluation
 Some expressions can be evaluated at compile time:
+
 - Numeric literals: `1`, `2.5`, `True`, `False`, ...
 - None: `None`
 - Basic arithmetic: for compile time constant operands: `a + b`, `a - b`, `a * b`, `a / b`, ...
