@@ -199,11 +199,13 @@ def _map(fn, iterable, *iterables):
 
 
 def _filter(fn, iterable):
+    if fn is None:
+        fn = _identity
     return _FilteringIterator(fn, iterable.__iter__())  # noqa: PLC2801
 
 
 @meta_fn
-def _int(value):
+def _int(value=0):
     value = validate_value(value)
     if not _is_num(value):
         raise TypeError("Only numeric arguments to int() are supported")
@@ -211,7 +213,7 @@ def _int(value):
 
 
 @meta_fn
-def _float(value):
+def _float(value=0.0):
     value = validate_value(value)
     if not _is_num(value):
         raise TypeError("Only numeric arguments to float() are supported")
@@ -219,7 +221,7 @@ def _float(value):
 
 
 @meta_fn
-def _bool(value):
+def _bool(value=False):
     value = validate_value(value)
     if not _is_num(value):
         raise TypeError("Only numeric arguments to bool() are supported")

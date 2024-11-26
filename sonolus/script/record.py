@@ -3,7 +3,7 @@ from __future__ import annotations
 import inspect
 from collections.abc import Iterable
 from inspect import getmro
-from typing import Any, ClassVar, Self, dataclass_transform, get_origin
+from typing import Any, ClassVar, Self, dataclass_transform, get_origin, TypeVar
 
 from sonolus.backend.place import BlockPlace
 from sonolus.script.internal.context import ctx
@@ -22,6 +22,24 @@ from sonolus.script.num import Num
 
 @dataclass_transform(eq_default=True)
 class Record(GenericValue):
+    """The base class for user-defined data structures.
+
+    Usage:
+        A regular record:
+        ```python
+        class MyRecord(Record):
+            field1: int
+            field2: bool
+        ```
+
+        A generic record:
+        ```python
+        class MyGenericRecord[T, U](Record):
+            field1: T
+            field2: U
+        ```
+    """
+
     _value: dict[str, Value]
     _fields: ClassVar[list[_RecordField] | None] = None
     _constructor_signature: ClassVar[inspect.Signature]
@@ -214,7 +232,15 @@ class Record(GenericValue):
         )
 
     @meta_fn
-    def __eq__(self, other):
+    def __eq__(self, other: Any) -> bool:
+        """Return if this record is equal to another record.
+
+        Args:
+            other: The other record to compare to.
+
+        Returns:
+            A boolean value indicating if the two records are equal.
+        """
         if not isinstance(other, type(self)):
             return False
         result: Num = Num._accept_(True)
@@ -223,7 +249,15 @@ class Record(GenericValue):
         return result
 
     @meta_fn
-    def __ne__(self, other):
+    def __ne__(self, other: Any) -> bool:
+        """Return if this record is not equal to another record.
+
+        Args:
+            other: The other record to compare to.
+
+        Returns:
+            A boolean value indicating if the two records are not equal.
+        """
         if not isinstance(other, type(self)):
             return True
         result: Num = Num._accept_(False)
@@ -233,6 +267,19 @@ class Record(GenericValue):
 
     def __hash__(self):
         return hash(tuple(field.__get__(self) for field in self._fields))
+
+    @classmethod
+    @meta_fn
+    def type_var_value(cls, var: TypeVar, /) -> Any:
+        """Return the value of a type variable.
+
+        Args:
+            var: The type variable to get the value of.
+
+        Returns:
+            The value of the type variable.
+        """
+        return super().type_var_value(var)
 
 
 class _RecordField(SonolusDescriptor):

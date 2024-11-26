@@ -34,11 +34,11 @@ class ArrayLike[T](Sequence, ABC):
 
     @abstractmethod
     def __len__(self) -> int:
-        """Returns the length of the array."""
+        """Return the length of the array."""
 
     @abstractmethod
     def __getitem__(self, index: Num) -> T:
-        """Returns the item at the given index.
+        """Return the item at the given index.
 
         Args:
             index: The index of the item. Must be an integer between 0 and `len(self) - 1`.
@@ -46,7 +46,7 @@ class ArrayLike[T](Sequence, ABC):
 
     @abstractmethod
     def __setitem__(self, index: Num, value: T):
-        """Sets the value of the item at the given index.
+        """Set the value of the item at the given index.
 
         Args:
             index: The index of the item. Must be an integer between 0 and `len(self) - 1`.
@@ -54,11 +54,11 @@ class ArrayLike[T](Sequence, ABC):
         """
 
     def __iter__(self) -> SonolusIterator[T]:
-        """Returns an iterator over the array."""
+        """Return an iterator over the array."""
         return _ArrayIterator(0, self)
 
     def __contains__(self, value: Any) -> bool:
-        """Returns whether any element in the array is equal to the given value.
+        """Return whether any element in the array is equal to the given value.
 
         Args:
             value: The value to check for.
@@ -71,14 +71,14 @@ class ArrayLike[T](Sequence, ABC):
         return False
 
     def __reversed__(self):
-        """Returns a reversed view of the array."""
+        """Return a reversed view of the array."""
         return _ArrayReverser(self)
 
     def _enumerate_(self, start: Num = 0) -> SonolusIterator[T]:
         return _ArrayEnumerator(0, start, self)
 
     def index(self, value: T, start: Num = 0, stop: Num | None = None) -> Num:
-        """Returns the index of the value in the array equal to the given value.
+        """Return the index of the value in the array equal to the given value.
 
         Args:
             value: The value to search for.
@@ -95,7 +95,7 @@ class ArrayLike[T](Sequence, ABC):
         return -1
 
     def count(self, value: T) -> Num:
-        """Returns the number of elements in the array equal to the given value.
+        """Return the number of elements in the array equal to the given value.
 
         Args:
             value: The value to count.
@@ -109,7 +109,7 @@ class ArrayLike[T](Sequence, ABC):
         return count
 
     def last_index(self, value: T) -> Num:
-        """Returns the last index of the value in the array equal to the given value.
+        """Return the last index of the value in the array equal to the given value.
 
         Args:
             value: The value to search for.
@@ -122,7 +122,7 @@ class ArrayLike[T](Sequence, ABC):
         return -1
 
     def index_of_max(self, *, key: Callable[T, Any] | None = None) -> Num:
-        """Returns the index of the maximum value in the array.
+        """Return the index of the maximum value in the array.
 
         Args:
             key: A one-argument ordering function to use for comparison like the one used in `max()`.
@@ -140,7 +140,7 @@ class ArrayLike[T](Sequence, ABC):
         return max_index
 
     def index_of_min(self, *, key: Callable[T, Any] | None = None) -> Num:
-        """Returns the index of the minimum value in the array.
+        """Return the index of the minimum value in the array.
 
         Args:
             key: A one-argument ordering function to use for comparison like the one used in `min()`.
@@ -164,7 +164,7 @@ class ArrayLike[T](Sequence, ABC):
         return self[self.index_of_min(key=key)]
 
     def swap(self, i: Num, j: Num, /):
-        """Swaps the values at the given indices.
+        """Swap the values at the given indices.
 
         Args:
             i: The first index.
@@ -175,7 +175,7 @@ class ArrayLike[T](Sequence, ABC):
         self[j] = temp
 
     def sort(self, *, key: Callable[T, Any] | None = None, reverse: bool = False):
-        """Sorts the values in the array in place.
+        """Sort the values in the array in place.
 
         Args:
             key: A one-argument ordering function to use for comparison.
@@ -190,11 +190,11 @@ class ArrayLike[T](Sequence, ABC):
             _heap_sort(self, 0, len(self), reverse)
 
     def shuffle(self):
-        """Shuffles the values in the array in place."""
+        """Shuffle the values in the array in place."""
         random.shuffle(self)  # type: ignore
 
     def reverse(self):
-        """Reverses the values in the array in place."""
+        """Reverse the values in the array in place."""
         i = 0
         j = len(self) - 1
         while i < j:

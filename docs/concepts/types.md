@@ -1,7 +1,7 @@
 # Types
 Sonolus.py has 3 core types: `Num`, `Array`, and `Record`. representing numeric values, fixed-size arrays, 
 and custom data structures, respectively. Arrays and records can be nested within each other to create complex data
-structures. The [standard library](standard_library/index.md) provides additional types and functions for common tasks.
+structures.
 
 Additionally, Sonolus.py supports the built-in types `tuple`, `dict`, `str`, classes and functions, and
 the constants `None`, `Ellipsis`, and `NotImplemented`.
@@ -546,8 +546,8 @@ in a generic record in a field annotated by a type parameter. Type arguments mus
 doing so. If multiple fields are annotated by the same type parameter, all such fields may be required to hold the exact
 same value in some cases.
 
-For example, a version of the `filter` function can be implemented as follows (see [Iterables](standard_library/iterator) for
-more information on iterators):
+For example, a version of the `filter` function can be implemented as follows (see [Iterables][sonolus.script.iterator] 
+for more information on iterators):
 
 ```python
 class _FilteringIterator[T, Fn](Record, SonolusIterator):
