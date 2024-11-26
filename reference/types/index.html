@@ -14,7 +14,7 @@
         <link rel="prev" href="../..">
       
       
-        <link rel="next" href="../iterables/">
+        <link rel="next" href="../constructs/">
       
       
       <link rel="icon" href="../../assets/images/favicon.png">
@@ -343,6 +343,8 @@
       
         
       
+        
+      
     
     
       
@@ -611,6 +613,15 @@
 </li>
         
           <li class="md-nav__item">
+  <a href="#str" class="md-nav__link">
+    <span class="md-ellipsis">
+      str
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
   <a href="#special-constants" class="md-nav__link">
     <span class="md-ellipsis">
       Special Constants
@@ -646,6 +657,27 @@
   
 </nav>
       
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../constructs/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    Constructs
+  </span>
+  
+
+      </a>
     </li>
   
 
@@ -695,10 +727,10 @@
         
           
         
-        <input class="md-nav__toggle md-toggle md-toggle--indeterminate" type="checkbox" id="__nav_2_3" >
+        <input class="md-nav__toggle md-toggle md-toggle--indeterminate" type="checkbox" id="__nav_2_4" >
         
           
-          <label class="md-nav__link" for="__nav_2_3" id="__nav_2_3_label" tabindex="0">
+          <label class="md-nav__link" for="__nav_2_4" id="__nav_2_4_label" tabindex="0">
             
   
   <span class="md-ellipsis">
@@ -709,8 +741,8 @@
             <span class="md-nav__icon md-icon"></span>
           </label>
         
-        <nav class="md-nav" data-md-level="2" aria-labelledby="__nav_2_3_label" aria-expanded="false">
-          <label class="md-nav__title" for="__nav_2_3">
+        <nav class="md-nav" data-md-level="2" aria-labelledby="__nav_2_4_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_2_4">
             <span class="md-nav__icon md-icon"></span>
             Standard Library
           </label>
@@ -960,6 +992,15 @@
 </li>
         
           <li class="md-nav__item">
+  <a href="#str" class="md-nav__link">
+    <span class="md-ellipsis">
+      str
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
   <a href="#special-constants" class="md-nav__link">
     <span class="md-ellipsis">
       Special Constants
@@ -1021,20 +1062,20 @@ when running on Sonolus.</p>
 <div class="highlight"><pre><span></span><code><span class="kn">from</span> <span class="nn">sonolus.script.num</span> <span class="kn">import</span> <span class="n">Num</span>
 </code></pre></div>
 <h3 id="declaration">Declaration<a class="headerlink" href="#declaration" title="Permanent link">&para;</a></h3>
-<p>Instances of <code>Num</code> can be declared using standard Python syntax.</p>
+<p>Nums can be declared using standard Python syntax.</p>
 <div class="highlight"><pre><span></span><code><span class="n">a</span> <span class="o">=</span> <span class="mi">1</span>
 <span class="n">b</span> <span class="o">=</span> <span class="mf">2.5</span>
 <span class="n">c</span> <span class="o">=</span> <span class="kc">True</span>
 </code></pre></div>
 <h3 id="operations">Operations<a class="headerlink" href="#operations" title="Permanent link">&para;</a></h3>
-<p><code>Num</code> supports most of the standard Python operations:</p>
+<p>Nums support most of the standard Python operations:</p>
 <ul>
 <li>Comparison operators: <code>==</code>, <code>!=</code>, <code>&lt;</code>, <code>&gt;</code>, <code>&lt;=</code>, <code>&gt;=</code></li>
 <li>Arithmetic operators: <code>+</code>, <code>-</code>, <code>*</code>, <code>/</code>, <code>//</code>, <code>%</code>, <code>**</code></li>
 <li>Unary operators: <code>+</code>, <code>-</code></li>
 </ul>
-<p><code>Num</code> is also the only supported type for boolean operations and control flow conditions.
-Any nonzero value is considered <code>True</code>, and <code>0</code> is considered <code>False</code>.</p>
+<p>Nums are the only supported type for boolean operations and control flow conditions.
+As a condition, any nonzero value is considered true, and <code>0</code> is considered false.</p>
 <ul>
 <li>Logical operators: <code>and</code>, <code>or</code>, <code>not</code></li>
 <li>Ternary expressions: <code>... if &lt;condition&gt; else ...</code></li>
@@ -1090,7 +1131,12 @@ Any nonzero value is considered <code>True</code>, and <code>0</code> is conside
 <p>If at least one element is provided, the element type and size can be inferred:</p>
 <div class="highlight"><pre><span></span><code><span class="n">a3</span> <span class="o">=</span> <span class="n">Array</span><span class="p">(</span><span class="mi">1</span><span class="p">,</span> <span class="mi">2</span><span class="p">,</span> <span class="mi">3</span><span class="p">)</span>
 </code></pre></div>
-<p>The element type must be concrete (not generic) and the size must be a non-negative integer:</p>
+<p>Since <code>Array</code> takes type parameters, it is considered a generic type. A version of <code>Array</code> with type parameters provided
+is considered a concrete type.</p>
+<div class="highlight"><pre><span></span><code><span class="n">Array</span>  <span class="c1"># The Generic Array type</span>
+<span class="n">Array</span><span class="p">[</span><span class="nb">int</span><span class="p">,</span> <span class="mi">3</span><span class="p">]</span>  <span class="c1"># A concrete Array type</span>
+</code></pre></div>
+<p>The element type of an array must be concrete (not generic) and the size must be a non-negative integer:</p>
 <div class="highlight"><pre><span></span><code><span class="c1"># Ok</span>
 <span class="n">a4</span> <span class="o">=</span> <span class="n">Array</span><span class="p">[</span><span class="n">Array</span><span class="p">[</span><span class="nb">int</span><span class="p">,</span> <span class="mi">3</span><span class="p">],</span> <span class="mi">2</span><span class="p">](</span><span class="n">Array</span><span class="p">(</span><span class="mi">1</span><span class="p">,</span> <span class="mi">2</span><span class="p">,</span> <span class="mi">3</span><span class="p">),</span> <span class="n">Array</span><span class="p">(</span><span class="mi">4</span><span class="p">,</span> <span class="mi">5</span><span class="p">,</span> <span class="mi">6</span><span class="p">))</span>
 
@@ -1157,7 +1203,7 @@ an array or record (see the next section).</p>
     <span class="n">debug_log</span><span class="p">(</span><span class="n">element</span><span class="p">)</span>
 </code></pre></div>
 <p>Other functionality:</p>
-<p>Array inherits from <a class="autorefs autorefs-internal" href="../standard_library/array_like/#sonolus.script.array_like.ArrayLike">ArrayLike</a> and supports all of its methods.</p>
+<p><code>Array</code> inherits from <a class="autorefs autorefs-internal" href="../standard_library/array_like/#sonolus.script.array_like.ArrayLike">ArrayLike</a> and supports all of its methods.</p>
 <h3 id="instance-checks_1">Instance Checks<a class="headerlink" href="#instance-checks_1" title="Permanent link">&para;</a></h3>
 <p>Any array is considered an instance of the generic <code>Array</code> type.</p>
 <div class="highlight"><pre><span></span><code><span class="n">a</span> <span class="o">=</span> <span class="n">Array</span><span class="p">(</span><span class="mi">1</span><span class="p">,</span> <span class="mi">2</span><span class="p">,</span> <span class="mi">3</span><span class="p">)</span>
@@ -1175,12 +1221,13 @@ an array or record (see the next section).</p>
 <div class="highlight"><pre><span></span><code><span class="kn">from</span> <span class="nn">sonolus.script.record</span> <span class="kn">import</span> <span class="n">Record</span>
 </code></pre></div>
 <h3 id="declaration_2">Declaration<a class="headerlink" href="#declaration_2" title="Permanent link">&para;</a></h3>
-<p>A <code>Record</code> class can be defined by inheriting from <code>Record</code> and defining zero or more fields as class attributes:</p>
+<p>A record can be defined by inheriting from <code>Record</code> and defining zero or more fields as class attributes:</p>
 <div class="highlight"><pre><span></span><code><span class="k">class</span> <span class="nc">MyPair</span><span class="p">(</span><span class="n">Record</span><span class="p">):</span>
     <span class="n">first</span><span class="p">:</span> <span class="nb">int</span>
     <span class="n">second</span><span class="p">:</span> <span class="nb">int</span>
 </code></pre></div>
-<p>Fields must be annotated by <code>Num</code> (or equivalently <code>int</code>, <code>float</code>, or <code>bool</code>), a concrete <code>Array</code>, or a concrete <code>Record</code>.</p>
+<p>Fields must be annotated by <code>Num</code> (or equivalently <code>int</code>, <code>float</code>, or <code>bool</code>), 
+a concrete array type, or a concrete record type.</p>
 <div class="highlight"><pre><span></span><code><span class="c1"># Not ok:</span>
 <span class="k">class</span> <span class="nc">MyRecord</span><span class="p">(</span><span class="n">Record</span><span class="p">):</span>
     <span class="n">array</span><span class="p">:</span> <span class="n">Array</span>  <span class="c1"># Array is not concrete since it has unspecified type parameters</span>
@@ -1196,7 +1243,8 @@ an array or record (see the next section).</p>
 <span class="n">pair_2</span> <span class="o">=</span> <span class="n">MyPair</span><span class="p">(</span><span class="n">first</span><span class="o">=</span><span class="mi">1</span><span class="p">,</span> <span class="n">second</span><span class="o">=</span><span class="mi">2</span><span class="p">)</span>
 </code></pre></div>
 <h3 id="generics">Generics<a class="headerlink" href="#generics" title="Permanent link">&para;</a></h3>
-<p><code>Record</code> supports generics:</p>
+<p><code>Record</code> supports generics. If at least one type parameter is provided in the class definition, a generic 
+record type is created.</p>
 <div class="highlight"><pre><span></span><code><span class="k">class</span> <span class="nc">MyGenericPair</span><span class="p">[</span><span class="n">T</span><span class="p">,</span> <span class="n">U</span><span class="p">](</span><span class="n">Record</span><span class="p">):</span>
     <span class="n">first</span><span class="p">:</span> <span class="n">T</span>
     <span class="n">second</span><span class="p">:</span> <span class="n">U</span>
@@ -1204,7 +1252,7 @@ an array or record (see the next section).</p>
 <span class="k">class</span> <span class="nc">ContainsArray</span><span class="p">[</span><span class="n">T</span><span class="p">,</span> <span class="n">Size</span><span class="p">](</span><span class="n">Record</span><span class="p">):</span>
     <span class="n">array</span><span class="p">:</span> <span class="n">Array</span><span class="p">[</span><span class="n">T</span><span class="p">,</span> <span class="n">Size</span><span class="p">]</span>
 </code></pre></div>
-<p>Generic type parameters can be specified when instantiating a generic or inferred from the provided values:</p>
+<p>Generic type parameters can be specified explicitly when instantiating a generic or inferred from the provided values:</p>
 <div class="highlight"><pre><span></span><code><span class="n">pair_1</span> <span class="o">=</span> <span class="n">MyGenericPair</span><span class="p">[</span><span class="nb">int</span><span class="p">,</span> <span class="nb">int</span><span class="p">](</span><span class="mi">1</span><span class="p">,</span> <span class="mi">2</span><span class="p">)</span>
 <span class="n">pair_2</span> <span class="o">=</span> <span class="n">MyGenericPair</span><span class="p">(</span><span class="mi">1</span><span class="p">,</span> <span class="mi">2</span><span class="p">)</span>
 </code></pre></div>
@@ -1344,6 +1392,14 @@ significantly increase the size of the compiled engine and slow down compilation
 <span class="k">def</span> <span class="nf">f2</span><span class="p">(</span><span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
     <span class="k">return</span> <span class="n">f1</span><span class="p">(</span><span class="o">**</span><span class="n">kwargs</span><span class="p">)</span>
 </code></pre></div>
+<h3 id="str">str<a class="headerlink" href="#str" title="Permanent link">&para;</a></h3>
+<p>Strings can be created and compared for equality and inequality:</p>
+<div class="highlight"><pre><span></span><code><span class="n">s1</span> <span class="o">=</span> <span class="s1">&#39;abc&#39;</span>
+<span class="n">s2</span> <span class="o">=</span> <span class="s1">&#39;def&#39;</span>
+
+<span class="k">assert</span> <span class="n">s1</span> <span class="o">==</span> <span class="s1">&#39;abc&#39;</span>
+<span class="k">assert</span> <span class="n">s1</span> <span class="o">!=</span> <span class="n">s2</span>
+</code></pre></div>
 <h3 id="special-constants">Special Constants<a class="headerlink" href="#special-constants" title="Permanent link">&para;</a></h3>
 <p>The built-in <code>None</code>, <code>Ellipsis</code>, and <code>NotImplemented</code> constants are supported.</p>
 <p><code>None</code> is the only supported right-side operand for the <code>is</code> and <code>is not</code> operators.</p>
@@ -1351,11 +1407,11 @@ significantly increase the size of the compiled engine and slow down compilation
 <span class="n">b</span> <span class="o">=</span> <span class="mi">1</span>
 
 <span class="c1"># Ok</span>
-<span class="k">assert</span> <span class="n">a</span> <span class="ow">is</span> <span class="kc">None</span>
-<span class="k">assert</span> <span class="n">b</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span>
+<span class="n">a</span> <span class="ow">is</span> <span class="kc">None</span>
+<span class="n">b</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span>
 
 <span class="c1"># Not ok:</span>
-<span class="k">assert</span> <span class="n">b</span> <span class="ow">is</span> <span class="n">b</span>
+<span class="n">b</span> <span class="ow">is</span> <span class="n">b</span>
 </code></pre></div>
 <h3 id="other-types">Other types<a class="headerlink" href="#other-types" title="Permanent link">&para;</a></h3>
 <p>Classes themselves are considered instances of <code>type</code>. They may be used as arguments to functions, but annotating
