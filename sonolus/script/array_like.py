@@ -16,7 +16,7 @@ from sonolus.script.values import copy
 class ArrayLike[T](Sequence, ABC):
     """Mixin for array-like objects.
 
-    Inheritor must implement `__len__`, `__getitem__`, and `__setitem__`.
+    Inheritors must implement `__len__`, `__getitem__`, and `__setitem__`.
 
     Usage:
         ```python

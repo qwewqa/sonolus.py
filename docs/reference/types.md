@@ -18,7 +18,7 @@ from sonolus.script.num import Num
 ```
 
 ### Declaration
-Instances of `Num` can be declared using standard Python syntax.
+Nums can be declared using standard Python syntax.
 
 ```python
 a = 1
@@ -27,14 +27,14 @@ c = True
 ```
 
 ### Operations
-`Num` supports most of the standard Python operations:
+Nums support most of the standard Python operations:
 
 - Comparison operators: `==`, `!=`, `<`, `>`, `<=`, `>=`
 - Arithmetic operators: `+`, `-`, `*`, `/`, `//`, `%`, `**`
 - Unary operators: `+`, `-`
 
-`Num` is also the only supported type for boolean operations and control flow conditions.
-Any nonzero value is considered `True`, and `0` is considered `False`.
+Nums are the only supported type for boolean operations and control flow conditions.
+As a condition, any nonzero value is considered true, and `0` is considered false.
 
 - Logical operators: `and`, `or`, `not`
 - Ternary expressions: `... if <condition> else ...`
@@ -107,7 +107,15 @@ If at least one element is provided, the element type and size can be inferred:
 a3 = Array(1, 2, 3)
 ```
 
-The element type must be concrete (not generic) and the size must be a non-negative integer:
+Since `Array` takes type parameters, it is considered a generic type. A version of `Array` with type parameters provided
+is considered a concrete type.
+
+```python
+Array  # The Generic Array type
+Array[int, 3]  # A concrete Array type
+```
+
+The element type of an array must be concrete (not generic) and the size must be a non-negative integer:
 
 ```python
 # Ok
@@ -204,7 +212,7 @@ for element in a:
 
 Other functionality:
 
-Array inherits from [ArrayLike][sonolus.script.array_like.ArrayLike] and supports all of its methods.
+`Array` inherits from [ArrayLike][sonolus.script.array_like.ArrayLike] and supports all of its methods.
 
 ### Instance Checks
 
@@ -236,7 +244,7 @@ from sonolus.script.record import Record
 
 ### Declaration
 
-A `Record` class can be defined by inheriting from `Record` and defining zero or more fields as class attributes:
+A record can be defined by inheriting from `Record` and defining zero or more fields as class attributes:
 
 ```python
 class MyPair(Record):
@@ -244,7 +252,8 @@ class MyPair(Record):
     second: int
 ```
 
-Fields must be annotated by `Num` (or equivalently `int`, `float`, or `bool`), a concrete `Array`, or a concrete `Record`.
+Fields must be annotated by `Num` (or equivalently `int`, `float`, or `bool`), 
+a concrete array type, or a concrete record type.
 
 ```python
 # Not ok:
@@ -271,7 +280,8 @@ pair_2 = MyPair(first=1, second=2)
 
 ### Generics
 
-`Record` supports generics:
+`Record` supports generics. If at least one type parameter is provided in the class definition, a generic 
+record type is created.
 
 ```python
 class MyGenericPair[T, U](Record):
@@ -282,7 +292,7 @@ class ContainsArray[T, Size](Record):
     array: Array[T, Size]
 ```
 
-Generic type parameters can be specified when instantiating a generic or inferred from the provided values:
+Generic type parameters can be specified explicitly when instantiating a generic or inferred from the provided values:
 
 ```python
 pair_1 = MyGenericPair[int, int](1, 2)
