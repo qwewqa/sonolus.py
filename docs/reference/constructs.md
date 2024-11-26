@@ -1,12 +1,15 @@
 # Constructs
+
 Most standard Python constructs are supported in Sonolus.py.
 
 ## Key Differences
 
 - Non-num variables must have a single live definition.
-- Conditional branches may be eliminated if they are be determined to be unreachable
-- Functions with non-num return types must return a single value
-  - Most functions returning a non-num value should have a single return at the end
+    - If there are multiple definitions `var = ...` for a variable, the compiler must be able to determine that a single
+      one is active whenever the variable is used.
+- Conditional branches may be eliminated if they are determined to be unreachable
+- Functions with non-num return types may not return multiple distinct objects
+    - Most functions returning a non-num value should have a single return at the end
 - Destructuring assignment does not support the `*` operator.
 - Sequence `match` patterns do not support the `*` operator.
 - Mapping `match` patterns are unsupported.
@@ -16,48 +19,49 @@ Most standard Python constructs are supported in Sonolus.py.
 ## Overview
 
 - Expressions:
-  - Literals:
-    - Numbers (excluding complex numbers): `0`, `1`, `1.0`, `1e3`, `0x1`, `0b1`, `0o1`
-    - Booleans: `True`, `False`
-    - Strings: `'Hello, World!'`, `"Hello, World!"`
-    - Tuples: `(1, 2, 3)`
-  - Operators (if supported by the operands):
-    - Unary: `+`, `-`, `not`, `~`
-    - Binary: `+`, `-`, `*`, `/`, `//`, `%`, `**`, `&`, `|`, `^`, `<<`, `>>`
-    - Comparison: `==`, `!=`, `>`, `<`, `>=`, `<=`, `is`, `is not`, `in`, `not in`
-    - Logical: `and`, `or` (for `Num` arguments only)
-    - Ternary: `a if <condition> else b` (for `Num` conditions only)
-    - Attribute: `a.b`
-    - Indexing: `a[b]`
-    - Call: `f(a, b, c)`
-  - Variables: `a`, `b`, `c`
-  - Lambda: `lambda a, b: a + b`
-  - Assignment Expression: `(a := b)`
+    - Literals:
+        - Numbers (excluding complex numbers): `0`, `1`, `1.0`, `1e3`, `0x1`, `0b1`, `0o1`
+        - Booleans: `True`, `False`
+        - Strings: `'Hello, World!'`, `"Hello, World!"`
+        - Tuples: `(1, 2, 3)`
+    - Operators (if supported by the operands):
+        - Unary: `+`, `-`, `not`, `~`
+        - Binary: `+`, `-`, `*`, `/`, `//`, `%`, `**`, `&`, `|`, `^`, `<<`, `>>`
+        - Comparison: `==`, `!=`, `>`, `<`, `>=`, `<=`, `is`, `is not`, `in`, `not in`
+        - Logical: `and`, `or` (for `Num` arguments only)
+        - Ternary: `a if <condition> else b` (for `Num` conditions only)
+        - Attribute: `a.b`
+        - Indexing: `a[b]`
+        - Call: `f(a, b, c)`
+    - Variables: `a`, `b`, `c`
+    - Lambda: `lambda a, b: a + b`
+    - Assignment Expression: `(a := b)`
 - Statements:
-  - Simple Statements:
-    - Assignments:
-      - Simple assignment: `a = b`
-      - Augmented assignment: `a += b`
-      - Attribute assignment: `a.b = c`
-      - Index assignment: `a[b] = c`
-      - Destructuring assignment: `a, b = b, a`
-      - Multiple assignment: `a = b = c = 1`
-      - Annotated assignment: `a: int = 1`
-    - Assert: `assert <condition>, <message>`
-    - Pass: `pass`
-    - Break: `break`
-    - Continue: `continue`
-    - Return: `return <value>`
-    - Import: `import <module>`, `from <module> import <name>` (only outside of functions)
-  - Compound Statements:
-    - If: `if <condition>:`, `elif <condition>:`, `else:`
-    - While: `while <condition>:`, `else:`
-    - For: `for <target> in <iterable>:`, `else:`
-    - Match: `match <value>:`, `case <pattern>:`
-    - Function Definition: `def <name>(<parameters>):`
-    - Class Definition: `class <name>:` (only outside of functions)
+    - Simple Statements:
+        - Assignments:
+            - Simple assignment: `a = b`
+            - Augmented assignment: `a += b`
+            - Attribute assignment: `a.b = c`
+            - Index assignment: `a[b] = c`
+            - Destructuring assignment: `a, b = b, a`
+            - Multiple assignment: `a = b = c = 1`
+            - Annotated assignment: `a: int = 1`
+        - Assert: `assert <condition>, <message>`
+        - Pass: `pass`
+        - Break: `break`
+        - Continue: `continue`
+        - Return: `return <value>`
+        - Import: `import <module>`, `from <module> import <name>` (only outside of functions)
+    - Compound Statements:
+        - If: `if <condition>:`, `elif <condition>:`, `else:`
+        - While: `while <condition>:`, `else:`
+        - For: `for <target> in <iterable>:`, `else:`
+        - Match: `match <value>:`, `case <pattern>:`
+        - Function Definition: `def <name>(<parameters>):`
+        - Class Definition: `class <name>:` (only outside of functions)
 
 ## Compile Time Evaluation
+
 Some expressions can be evaluated at compile time:
 
 - Numeric literals: `1`, `2.5`, `True`, `False`, ...
@@ -66,13 +70,13 @@ Some expressions can be evaluated at compile time:
 - Is/Is Not None: for any left-hand operand, `a is None`, `a is not None`
 - Type checks: for any value, `isinstance(a, t)`, `issubclass(a, t)`
 - Boolean operations:
-  - Negation: `not a`
-  - And
-    - Both operands are compile time constants: `a and b`
-    - One operand is known to be False: `False and a`, `a and False`
-  - Or
-    - Both operands are compile time constants: `a or b`
-    - One operand is known to be True: `True or a`, `a or True`
+    - Negation: `not a`
+    - And
+        - Both operands are compile time constants: `a and b`
+        - One operand is known to be False: `False and a`, `a and False`
+    - Or
+        - Both operands are compile time constants: `a or b`
+        - One operand is known to be True: `True or a`, `a or True`
 - Comparison: for compile time constant operands: `a == b`, `a != b`, `a > b`, `a < b`, `a >= b`, `a <= b`, ...
 - Variables assigned to compile time constants: `a = 1`, `b = a + 1`, ...
 
@@ -91,6 +95,7 @@ else:
 ```
 
 ## Variables
+
 Variables can be assigned and used like in vanilla Python.
 
 ```python
@@ -149,6 +154,7 @@ while condition():
 ## Expressions
 
 ### Literals
+
 `int`, `float`, `bool`, `str`, and `tuple` literals are supported:
 
 ```python
@@ -160,6 +166,7 @@ e = (1, 2, 3)
 ```
 
 ### Operators
+
 All standard operators are supported for types implementing them. `@=` is reserved as the copy-from operator.
 
 ```python
@@ -174,8 +181,8 @@ h = g[0] + g[1] + g[2]
 (i := 1)
 ```
 
-The ternary operator is supported for, but the condition must be a `Num` and the restriction for variable definitions
-applies:
+The ternary operator is supported for, but the condition must be a `Num`. If the operands are not nums,
+the condition must be a compile-time constant or this will be considered an error:
 
 ```python
 # Ok
@@ -195,6 +202,7 @@ e = Vec2(0, 0) if e is None else e  # Ok, evaluated at compile time
 ## Statements
 
 ### Assignment
+
 Most assignment types are supported. Destructuring assignment is supported only for tuples, and the `*`
 operator is not supported.
 
@@ -216,9 +224,11 @@ if a > 0:
 ```
 
 ### Conditional Statements
+
 The standard conditional statements are supported.
 
 #### if / elif / else
+
 ```python
 if a > 0:
     ...
@@ -267,9 +277,9 @@ def f(a: Vec2 | int):
 
 #### match / case
 
-The `match` statement is supported for matching values against patterns. All patterns except mapping patterns and
-sequences with the `*` operator are supported. Records have a `__match_args__` attribute defined automatically,
-so they can be used with positional subpatterns.
+The `match` statement is supported for matching values against patterns. All patterns, including subpatterns,
+except mapping patterns and sequences with the `*` operator are supported. 
+Records have a `__match_args__` attribute defined automatically, so they can be used with positional subpatterns.
 
 ```python
 match x:
@@ -313,6 +323,7 @@ debug_log(v)
 ### Loops
 
 #### while / else
+
 While loops are fully supported, including the `else` clause and the `break` and `continue` statements.
 
 ```python
@@ -327,6 +338,7 @@ else:
 ```
 
 #### for / else
+
 For loops are supported, including the `else` clause and the `break` and `continue` statements.
 Custom iterators must subclass [SonolusIterator][sonolus.script.iterator.SonolusIterator].
 
@@ -360,11 +372,13 @@ debug_log(3)
 </div>
 
 ### Functions
+
 Functions and lambdas are supported, including within other functions:
 
 ```python
 def f(a, b):
     return a + b
+
 
 def g(a):
     return lambda b: f(a, b)
@@ -428,6 +442,7 @@ def k():
 Most functions returning a non-num value should have a single `return` statement at the end.
 
 ### Classes
+
 Classes are supported at the module level. User defined classes should subclass `Record` or have a supported
 Sonolus.py decorator such as `@level_memory`.
 
@@ -455,9 +470,11 @@ class MyRecord(Record):
 ```
 
 ### Imports
+
 Imports are supported at the module level, but not within functions.
 
 ### assert
+
 Assertions are supported. Since error handling is not supported, assertion failures will terminate the current
 callback when running in the Sonolus app.
 
@@ -466,4 +483,5 @@ assert a > 0, 'a must be positive'
 ```
 
 ### pass
+
 The `pass` statement is supported.

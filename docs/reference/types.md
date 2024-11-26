@@ -1,5 +1,10 @@
 # Types
-Sonolus.py compes with support for a number of Python built-in types and some custom types.
+Sonolus.py has 3 core types: `Num`, `Array`, and `Record`. representing numeric values, fixed-size arrays, 
+and custom data structures, respectively. Arrays and records can be nested within each other to create complex data
+structures. The [standard library](standard_library/index.md) provides additional types and functions for common tasks.
+
+Additionally, Sonolus.py supports the built-in types `tuple`, `dict`, `str`, classes and functions, and
+the constants `None`, `Ellipsis`, and `NotImplemented`.
 
 ## Num
 
@@ -175,7 +180,8 @@ assert a == Array(4, 2, 3)
 
 !!! warning
     If a value in an array is not a `Num`, updating it will copy the given value into the corresponding element
-    of the array. However, that element remains independent of the original value.
+    of the array. However, that element remains independent of the original value, which may lead to unexpected
+    results when updating either value.
 
     ```python
     pair = Pair(1, 2)
@@ -307,6 +313,9 @@ class MyGenericRecord[T](Record):
     
     def my_type(self) -> type:
         return self.type_var_value(T)
+
+    
+assert MyGenericRecord(1).my_type() == Num
 ```
 
 ### Operations
@@ -455,7 +464,7 @@ t = (1, 2, 3)
 debug_log(t[0])
 
 # Not ok:
-dbmsg_log(t[random_integer(0, 2)])
+debug_log(t[random_integer(0, 2)])
 ```
 
 They may also be created as an \*args argument to a function and unpacked as an argument to a function:
@@ -537,7 +546,7 @@ in a generic record in a field annotated by a type parameter. Type arguments mus
 doing so. If multiple fields are annotated by the same type parameter, all such fields may be required to hold the exact
 same value in some cases.
 
-For example, a version of the `filter` function can be implemented as follows (see [Iterables](iterables.md) for
+For example, a version of the `filter` function can be implemented as follows (see [Iterables](standard_library/iterator) for
 more information on iterators):
 
 ```python

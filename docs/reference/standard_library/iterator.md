@@ -1,4 +1,3 @@
-# Iterators
+# sonolus.script.iterator
 
-# SonolusIterator
 ::: sonolus.script.iterator.SonolusIterator
