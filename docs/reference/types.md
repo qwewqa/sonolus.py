@@ -489,6 +489,18 @@ def f2(**kwargs):
     return f1(**kwargs)
 ```
 
+### str
+
+Strings can be created and compared for equality and inequality:
+
+```python
+s1 = 'abc'
+s2 = 'def'
+
+assert s1 == 'abc'
+assert s1 != s2
+```
+
 ### Special Constants
 
 The built-in `None`, `Ellipsis`, and `NotImplemented` constants are supported.
@@ -500,11 +512,11 @@ a = None
 b = 1
 
 # Ok
-assert a is None
-assert b is not None
+a is None
+b is not None
 
 # Not ok:
-assert b is b
+b is b
 ```
 
 ### Other types

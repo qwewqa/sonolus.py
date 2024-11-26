@@ -9,8 +9,6 @@ Most standard Python constructs are supported in Sonolus.py
     - Booleans: `True`, `False`
     - Strings: `'Hello, World!'`, `"Hello, World!"`
     - Tuples: `(1, 2, 3)`
-    - Dictionaries: `{1: 'a', 2: 'b'}`
-  - Variables: `a`, `b`, `c`
   - Operators (if supported by the operands):
     - Unary: `+`, `-`, `not`, `~`
     - Binary: `+`, `-`, `*`, `/`, `//`, `%`, `**`, `&`, `|`, `^`, `<<`, `>>`
@@ -20,6 +18,7 @@ Most standard Python constructs are supported in Sonolus.py
     - Attribute: `a.b`
     - Indexing: `a[b]`
     - Call: `f(a, b, c)`
+  - Variables: `a`, `b`, `c`
   - Lambda: `lambda a, b: a + b`
   - Assignment Expression: `(a := b)`
 - Statements:
@@ -48,6 +47,38 @@ Most standard Python constructs are supported in Sonolus.py
 
 ## Details
 
+### Compile Time Evaluation
+Some expressions can be evaluated at compile time:
+- Numeric literals: `1`, `2.5`, `True`, `False`, ...
+- None: `None`
+- Basic arithmetic: for compile time constant operands: `a + b`, `a - b`, `a * b`, `a / b`, ...
+- Is/Is Not None: for any left-hand operand, `a is None`, `a is not None`
+- Type checks: for any value, `isinstance(a, t)`, `issubclass(a, t)`
+- Boolean operations:
+  - Negation: `not a`
+  - And
+    - Both operands are compile time constants: `a and b`
+    - One operand is known to be False: `False and a`, `a and False`
+  - Or
+    - Both operands are compile time constants: `a or b`
+    - One operand is known to be True: `True or a`, `a or True`
+- Comparison: for compile time constant operands: `a == b`, `a != b`, `a > b`, `a < b`, `a >= b`, `a <= b`, ...
+- Variables assigned to compile time constants: `a = 1`, `b = a + 1`, ...
+
+The compiler can make additional inferences when compile time constants are used in certain contexts like control flow:
+
+```python
+x = ...
+
+# This code works because the compiler knows which branch will be taken based on the type of 'x'
+if isinstance(x, Num):
+    debug_log(x)
+elif isinstance(x, Vec2):
+    debug_log(x.x + x.y)
+else:
+    debug_log(-1)
+```
+
 ### Variables
 Variables can be assigned and used like in vanilla Python.
 
@@ -57,34 +88,367 @@ b = 2
 c = a + b
 ```
 
-Unlike vanilla Python, non-num variables must have a single unambiguous definition when used:
+Unlike vanilla Python, non-num variables must have a single unambiguous definition when used.
+Nums have no such restriction.
+
+The following are allowed:
 
 ```python
-v = Vec2(1, 2)  # Definition 1
-v = Vec2(3, 4)  # Definition 2
-debug_log(v.x + v.y)  # 'v' is valid because only definition 2 is active
+v = Vec2(1, 2)  # (1)
+v = Vec2(3, 4)  # (2)
+debug_log(v.x + v.y)  # 'v' is valid because (2) is the only active definition
+```
+
+```python
+v = 1  # (1)
+v = Vec2(3, 4)  # (2)
+debug_log(v.x + v.y)  # 'v' is valid because (2) is the only active definition
+```
+
+```python
+v = Vec2(1, 2)  # (1)
+while condition():
+    v = Vec2(3, 4)  # (2)
+    debug_log(v.x + v.y)  # 'v' is valid because (2) is the only active definition
+```
+
+```python
+v = Vec2(1, 2)  # (1)
 if random() < 0.5:
-    v = Vec2(5, 6)  # Definition 3
-# Can't use 'v' here because both definitions 2 and 3 are active
-# Not ok: debug_log(v.x + v.y)
+    v @= Vec2(3, 4)  # Updates 'v' in-place without redefining it
+debug_log(v.x + v.y)  # 'v' is valid because (1) is the only active definition
 ```
 
-This is particularly important in loops, where previous iterations are considered:
+The following are not allowed:
 
 ```python
-v = Vec2(1, 2)  # Definition 1
+v = Vec2(1, 2)  # (1)
+if random() < 0.5:
+    v = Vec2(3, 4)  # (2)
+debug_log(v.x + v.y)  # 'v' is invalid because both (1) and (2) are active
+```
+
+```python
+v = Vec2(1, 2)  # (1)
 while condition():
-    # Can't use 'v' here because both definitions 1 and 2 are active
-    # Definition 2 is active because it may have been reached in a previous iteration of the loop
-    # Not ok: debug_log(v.x + v.y)
-    v = Vec2(3, 4)  # Definition 2
+    debug_log(v.x + v.y)  # 'v' is invalid because (1) and (2) are active
+    v = Vec2(3, 4)  # (2) redefines 'v' for future iterations
 ```
 
-The copy-from (`@=`) operator can be used to update non-num variables without creating a new definition:
+### Expressions
+
+#### Literals
+`int`, `float`, `bool`, `str`, and `tuple` literals are supported:
 
 ```python
+a = 1
+b = 1.0
+c = True
+d = 'Hello, World!'
+e = (1, 2, 3)
+```
+
+### Operators
+All standard operators are supported for types implementing them. `@=` is reserved as the copy-from operator.
+
+```python
+a = 1 + 2
+b = 3 - 4
+c = 5 * 6
+d = 7 / 8
+e = Vec2(1, 2)
+f = e.x + e.y
+g = Array(1, 2, 3)
+h = g[0] + g[1] + g[2]
+(i := 1)
+```
+
+The ternary operator is supported for, but the condition must be a `Num` and the restriction for variable definitions
+applies:
+
+```python
+# Ok
+a = 1 if random() < 0.5 else 2
+b = Vec2(1, 2) if b is None else b
+
+# Not ok
+c = Vec2(1, 2) if random() < 0.5 else Vec2(3, 4)  # Multiple definitions
+```
+
+If the condition is a compile-time constant, then the ternary operator will be evaluated at compile time:
+
+```python
+e = Vec2(0, 0) if e is None else e  # Ok, evaluated at compile time
+```
+
+### Assignment
+Most assignment types are supported. Destructuring assignment is supported only for tuples, and the `*`
+operator is not supported.
+
+```python
+# Ok
+a = 1
+b += 2
+c.x = 3
+d[0] = 4
+(e, f), g = (1, 2), 3
+
+# Not ok
+h, *i = 1, 2, 3  # Not supported
+```
+
+### assert
+Assertions are supported. Since error handling is not supported, assertion failures will terminate the current
+callback when running in the Sonolus app.
+
+```python
+assert a > 0, 'a must be positive'
+```
+
+### pass
+The `pass` statement is supported.
+
+```python
+if a > 0:
+    pass
+```
+
+### Conditional Statements
+The standard conditional statements are supported.
+
+#### if / elif / else
+```python
+if a > 0:
+    ...
+elif a < 0:
+    ...
+else:
+    ...
+```
+
+When the condition is a compile-time constant, the compiler will remove the unreachable branches:
+
+<div class="grid" markdown>
+
+```python title="Code"
+v = None
+if v is None:
+    v = Vec2(1, 2)
+debug_log(v.x + v.y)
+```
+
+```python title="Equivalent"
+v = None
+# The 'if' branch is always taken
 v = Vec2(1, 2)
-while condition():
-    debug_log(v.x, v.y)  # Ok
-    v @= Vec2(3, 4)  # Updates the value of 'v' without redefining it
+debug_log(v.x + v.y)
 ```
+
+</div>
+
+This is useful for handling optional arguments and supporting multiple argument types:
+
+```python
+def f(a: Vec2 | None = None):
+    if a is None:
+        a = Vec2(1, 2)
+    debug_log(a.x + a.y)
+```
+
+```python
+def f(a: Vec2 | int):
+    if isinstance(a, Vec2):
+        debug_log(a.x + a.y)
+    else:
+        debug_log(a)
+```
+
+#### match / case
+
+The `match` statement is supported for matching values against patterns. All patterns except mapping patterns and
+sequences with the `*` operator are supported. Records have a `__match_args__` attribute defined automatically,
+so they can be used with positional subpatterns.
+
+```python
+match x:
+    case 1:
+        ...
+    case 2 | 3:
+        ...
+    case Vec2() as v:
+        ...
+    case (a, b):
+        ...
+    case Num(a):
+        ...
+    case _:
+        ...
+```
+
+As with `if` statements, the compiler will remove unreachable branches when the value is a compile-time constant:
+
+<div class="grid" markdown>
+
+```python title="Code"
+v = 1
+match v:
+    case Vec2(a, b):
+        debug_log(a + b)
+    case Num():
+        debug_log(v)
+    case _:
+        debug_log(-1)
+```
+
+```python title="Equivalent"
+v = 1
+# 'case Num()' is always taken
+debug_log(v)
+```
+
+</div>
+
+### Loops
+
+#### while / else
+While loops are fully supported, including the `else` clause and the `break` and `continue` statements.
+
+```python
+while a > 0:
+    if ...:
+        break
+    if ...:
+        continue
+    ...
+else:
+    ...
+```
+
+#### for / else
+For loops are supported, including the `else` clause and the `break` and `continue` statements.
+Custom iterators must subclass [SonolusIterator][sonolus.script.iterator.SonolusIterator].
+
+```python
+for i in range(10):
+    if ...:
+        break
+    if ...:
+        continue
+    ...
+else:
+    ...
+```
+
+Tuples can be iterated over and result in an unrolled loop. This can be useful for iterating of objects of different,
+types, but care should be taken since it results in more code being generated compared to a normal loop:
+
+<div class="grid" markdown>
+
+```python title="Code"
+for i in (1, 2, 3):
+    debug_log(i)
+```
+
+```python title="Equivalent"
+debug_log(1)
+debug_log(2)
+debug_log(3)
+```
+
+</div>
+
+### Functions
+Functions and lambdas are supported, including within other functions:
+
+```python
+def f(a, b):
+    return a + b
+
+def g(a):
+    return lambda b: f(a, b)
+```
+
+Function returns follow the same rules as variable access. If a function returns a non-num value, it most only
+return that value. There is no restriction of a function only returns a num.
+
+The following are allowed:
+
+```python
+def f():
+    return Vec2(1, 2)
+```
+
+```python
+def g(x):
+    # Only one return is reachable since isinstance is evaluated at compile time
+    if isinstance(x, Vec2):
+        return Vec2(x.y, x.x)
+    else:
+        return x
+```
+
+```python
+def h(x):
+    # Both returns return the exact same value
+    x = Vec2(1, 2)
+    if random() < 0.5:
+        debug_log(123)
+        return x
+    else:
+        return x
+```
+
+```python
+def i(x):
+    # All return values are nums
+    if random() < 0.5:
+        return 1
+    return 2
+```
+
+The following are not allowed:
+
+```python
+def j():
+    # Either return is reachable and return different values
+    if random() < 0.5:
+        return Vec2(1, 2)
+    return Vec2(3, 4)
+```
+
+```python
+def k():
+    # Both the return and an implicit 'return None' are reachable
+    if random() < 0.5:
+        return Vec2(1, 2)
+```
+
+### Classes
+Classes are supported at the module level. User defined classes should subclass `Record` or have a supported
+Sonolus.py decorator such as `@level_memory`.
+
+Methods may have the `@staticmethod`, `@classmethod`, or `@property` decorators.
+
+```python
+class MyRecord(Record):
+    x: int
+    y: int
+
+    def regular_method(self):
+        ...
+
+    @staticmethod
+    def static_method():
+        ...
+
+    @classmethod
+    def class_method(cls):
+        ...
+
+    @property
+    def property(self):
+        ...
+```
+
+### Imports
+Imports are supported at the module level, but not within functions.
