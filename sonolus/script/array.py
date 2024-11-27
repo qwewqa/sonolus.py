@@ -17,19 +17,29 @@ from sonolus.script.num import Num
 
 @final
 class Array[T, Size](GenericValue, ArrayLike[T]):
+    """A fixed size array of values.
+
+    Usage:
+        ```python
+        array_1 = Array(1, 2, 3)
+        array_2 = Array[int, 0]()
+        ```
+    """
+
     _value: list[T] | BlockPlace
 
     @classmethod
     @meta_fn
     def element_type(cls) -> type[T] | type[Value]:
+        """Return the type of elements in this array type."""
         return cls.type_var_value(T)
 
     @classmethod
     @meta_fn
     def size(cls) -> int:
-        """Returns the size of this array type.
+        """Return the size of this array type.
 
-        For instances, use `len(array)` instead.
+        On instances, use `len(array)` instead.
         """
         return cls.type_var_value(Size)
 

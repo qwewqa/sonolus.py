@@ -17,9 +17,16 @@ from sonolus.script.sprite import Sprite
 
 
 class JudgmentWindow(Record):
+    """The window for judging the accuracy of a hit."""
+
     perfect: Interval
+    """Interval for a perfect hit."""
+
     great: Interval
+    """Interval for a great hit."""
+
     good: Interval
+    """Interval for a good hit."""
 
     def update(
         self,
@@ -27,6 +34,13 @@ class JudgmentWindow(Record):
         great: Interval | None = None,
         good: Interval | None = None,
     ):
+        """Update the window with the given intervals.
+
+        Args:
+            perfect: The interval for a perfect hit.
+            great: The interval for a great hit.
+            good: The interval for a good hit.
+        """
         if perfect is not None:
             self.perfect = perfect
         if great is not None:
@@ -35,6 +49,15 @@ class JudgmentWindow(Record):
             self.good = good
 
     def judge(self, actual: float, target: float) -> Judgment:
+        """Judge the accuracy of a hit.
+
+        Args:
+            actual: The actual time of the hit.
+            target: The target time of the hit.
+
+        Returns:
+            The judgment of the hit.
+        """
         return _judge(
             actual,
             target,
@@ -44,6 +67,7 @@ class JudgmentWindow(Record):
         )
 
     def __mul__(self, other: float | int) -> JudgmentWindow:
+        """Multiply the intervals by a scalar."""
         return JudgmentWindow(
             self.perfect * other,
             self.great * other,
@@ -52,6 +76,8 @@ class JudgmentWindow(Record):
 
 
 class Judgment(IntEnum):
+    """The judgment of a hit."""
+
     MISS = 0
     PERFECT = 1
     GREAT = 2
@@ -80,11 +106,13 @@ def _judge(
 
 
 class Bucket(Record):
+    """A bucket for entity judgment results."""
     id: int
 
     @property
     @meta_fn
     def window(self) -> JudgmentWindow:
+        """The judgment window of the bucket."""
         if not ctx():
             raise RuntimeError("Bucket window access outside of compilation")
         match ctx().global_state.mode:
@@ -151,10 +179,12 @@ def bucket_sprite(
     h: int,
     rotation: float = 0,
 ) -> _BucketSprite:
+    """Define a sprite for a bucket."""
     return _BucketSprite(sprite.id, fallback_sprite.id if fallback_sprite else None, x, y, w, h, rotation)
 
 
 def bucket(*, sprites: list[_BucketSprite], unit: str | None = None) -> Any:
+    """Define a bucket with the given sprites and unit."""
     return _BucketInfo(sprites, unit)
 
 
@@ -163,6 +193,26 @@ type Buckets = NewType("Buckets", Any)
 
 @dataclass_transform()
 def buckets[T](cls: type[T]) -> T | Buckets:
+    """Decorator to define a buckets class.
+
+    Usage:
+        ```python
+        @buckets
+        class Buckets:
+            note: Bucket = bucket(
+                sprites=[
+                    bucket_sprite(
+                        sprite=Skin.note,
+                        x=0,
+                        y=0,
+                        w=2,
+                        h=2,
+                    )
+                ],
+                unit=StandardText.MILLISECOND_UNIT,
+            )
+        ```
+    """
     if len(cls.__bases__) != 1:
         raise ValueError("Buckets class must not inherit from any class (except object)")
     instance = cls()

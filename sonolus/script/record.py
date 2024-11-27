@@ -22,7 +22,7 @@ from sonolus.script.num import Num
 
 @dataclass_transform(eq_default=True)
 class Record(GenericValue):
-    """The base class for user-defined data structures.
+    """Base class for user-defined data structures.
 
     Usage:
         A regular record:
