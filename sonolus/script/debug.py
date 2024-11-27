@@ -30,6 +30,7 @@ def error(message: str | None = None) -> None:
 
 @meta_fn
 def debug_log(value: Num):
+    """Log a value in debug mode."""
     if debug_log_callback.get(None):
         return debug_log_callback.get()(value)
     else:
@@ -44,6 +45,7 @@ def _debug_log(value: Num):
 
 @native_function(Op.DebugPause)
 def debug_pause():
+    """Pause the game if in debug mode."""
     input("[DEBUG] Paused")
 
 

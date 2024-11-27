@@ -11,22 +11,43 @@ from sonolus.script.record import Record
 
 
 class Particle(Record):
+    """A particle effect."""
+
     id: int
 
     def is_available(self) -> bool:
+        """Check if the particle effect is available."""
         return _has_particle_effect(self.id)
 
     def spawn(self, quad: QuadLike, duration: float, loop: bool = False) -> ParticleHandle:
+        """Spawn the particle effect.
+
+        Args:
+            quad: The quad to spawn the particle effect on.
+            duration: The duration of the particle effect.
+            loop: Whether to loop the particle effect.
+
+        Returns:
+            ParticleHandle: A handle to the spawned particle effect.
+        """
         return ParticleHandle(_spawn_particle_effect(self.id, *flatten_quad(quad), duration, loop))
 
 
 class ParticleHandle(Record):
+    """A handle to a looping particle effect."""
+
     id: int
 
     def move(self, quad: QuadLike) -> None:
+        """Move the particle effect to a new location.
+
+        Args:
+            quad: The new quad to move the particle effect to.
+        """
         _move_particle_effect(self.id, *flatten_quad(quad))
 
     def destroy(self) -> None:
+        """Destroy the particle effect."""
         _destroy_particle_effect(self.id)
 
 
@@ -78,6 +99,16 @@ type Particles = NewType("Particles", Any)
 
 @dataclass_transform()
 def particles[T](cls: type[T]) -> T | Particles:
+    """Decorator to define particles.
+
+    Usage:
+        ```python
+        @particles
+        class Particles:
+            tap: StandardParticle.NOTE_CIRCULAR_TAP_RED
+            other: Particle = particle("other")
+        ```
+    """
     if len(cls.__bases__) != 1:
         raise ValueError("Particles class must not inherit from any class (except object)")
     instance = cls()
@@ -102,6 +133,8 @@ def particles[T](cls: type[T]) -> T | Particles:
 
 
 class StandardParticle:
+    """Standard particles."""
+
     NOTE_CIRCULAR_TAP_NEUTRAL = Annotated[Particle, particle("#NOTE_CIRCULAR_TAP_NEUTRAL")]
     NOTE_CIRCULAR_TAP_RED = Annotated[Particle, particle("#NOTE_CIRCULAR_TAP_RED")]
     NOTE_CIRCULAR_TAP_GREEN = Annotated[Particle, particle("#NOTE_CIRCULAR_TAP_GREEN")]

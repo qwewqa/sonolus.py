@@ -433,6 +433,7 @@ class _TutorialInstruction:
 
 @meta_fn
 def is_debug() -> bool:
+    """Check if the game is running in debug mode."""
     if not ctx():
         return False
     match ctx().global_state.mode:
@@ -450,6 +451,7 @@ def is_debug() -> bool:
 
 @meta_fn
 def aspect_ratio() -> float:
+    """Get the aspect ratio of the game."""
     if not ctx():
         return 16 / 9
     match ctx().global_state.mode:
@@ -465,6 +467,10 @@ def aspect_ratio() -> float:
 
 @meta_fn
 def audio_offset() -> float:
+    """Get the audio offset of the game.
+
+    Returns 0 in preview mode.
+    """
     if not ctx():
         return 0
     match ctx().global_state.mode:
@@ -480,6 +486,10 @@ def audio_offset() -> float:
 
 @meta_fn
 def input_offset() -> float:
+    """Get the input offset of the game.
+
+    Returns 0 in preview mode and tutorial mode.
+    """
     if not ctx():
         return 0
     match ctx().global_state.mode:
@@ -493,6 +503,10 @@ def input_offset() -> float:
 
 @meta_fn
 def is_multiplayer() -> bool:
+    """Check if the game is running in multiplayer mode.
+
+    Returns False if not in play mode.
+    """
     if not ctx():
         return False
     match ctx().global_state.mode:
@@ -504,6 +518,10 @@ def is_multiplayer() -> bool:
 
 @meta_fn
 def is_replay() -> bool:
+    """Check if the game is running in replay mode.
+
+    Returns False if not in watch mode.
+    """
     if not ctx():
         return False
     match ctx().global_state.mode:
@@ -515,6 +533,10 @@ def is_replay() -> bool:
 
 @meta_fn
 def time() -> float:
+    """Get the current time of the game.
+
+    Returns 0 in preview mode.
+    """
     if not ctx():
         return 0
     match ctx().global_state.mode:
@@ -530,6 +552,10 @@ def time() -> float:
 
 @meta_fn
 def delta_time() -> float:
+    """Get the time elapsed since the last frame.
+
+    Returns 0 in preview mode.
+    """
     if not ctx():
         return 0
     match ctx().global_state.mode:
@@ -545,6 +571,10 @@ def delta_time() -> float:
 
 @meta_fn
 def scaled_time() -> float:
+    """Get the current time of the game affected by the time scale.
+
+    Returns the unscaled time in tutorial mode and 0 in preview mode.
+    """
     if not ctx():
         return 0
     match ctx().global_state.mode:
@@ -560,6 +590,7 @@ def scaled_time() -> float:
 
 @meta_fn
 def touches() -> VarArray[Touch, 999]:
+    """Get the current touches of the game."""
     if not ctx():
         return VarArray(0, Array[Touch, 0]())
     match ctx().global_state.mode:
@@ -571,6 +602,10 @@ def touches() -> VarArray[Touch, 999]:
 
 @meta_fn
 def is_skip() -> bool:
+    """Check if there was a time skip this frame.
+
+    Returns False if not in watch mode.
+    """
     if not ctx():
         return False
     match ctx().global_state.mode:
@@ -582,6 +617,10 @@ def is_skip() -> bool:
 
 @meta_fn
 def navigation_direction() -> int:
+    """Get the navigation direction of the tutorial.
+
+    Returns 0 if not in tutorial mode.
+    """
     if not ctx():
         return 0
     match ctx().global_state.mode:
@@ -592,28 +631,34 @@ def navigation_direction() -> int:
 
 
 def skin_transform() -> Transform2d:
+    """Get the global skin transform."""
     return _SkinTransform.transform
 
 
 @meta_fn
 def set_skin_transform(value: Transform2d):
+    """Set the global skin transform."""
     _SkinTransform.transform._copy_from_(value)
 
 
 def particle_transform() -> Transform2d:
+    """Get the global particle transform."""
     return _ParticleTransform.transform
 
 
 @meta_fn
 def set_particle_transform(value: Transform2d):
+    """Set the global particle transform."""
     _ParticleTransform.transform._copy_from_(value)
 
 
 def background() -> Quad:
+    """Get the background quad."""
     return _Background.value
 
 
 def set_background(value: Quad):
+    """Set the background quad."""
     _Background.value = value
 
 
@@ -628,16 +673,20 @@ tutorial_ui_configs = _TutorialRuntimeUiConfigs
 
 
 def canvas() -> _PreviewRuntimeCanvas:
+    """Get the preview canvas."""
     return _PreviewRuntimeCanvas
 
 
 def screen() -> Rect:
+    """Get the screen boundaries as a rectangle."""
     return Rect(t=1, r=aspect_ratio(), b=-1, l=-aspect_ratio())
 
 
 def level_score() -> _LevelScore:
+    """Get the level score configuration."""
     return _LevelScore
 
 
 def level_life() -> _LevelLife:
+    """Get the level life configuration."""
     return _LevelLife

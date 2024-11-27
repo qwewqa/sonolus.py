@@ -11,16 +11,42 @@ from sonolus.script.vec import Vec2
 
 
 class InstructionText(Record):
+    """Tutorial instruction text.
+
+    Usage:
+        ```python
+        InstructionText(id: int)
+        ```
+    """
+
     id: int
 
     def show(self):
+        """Show this instruction text."""
         show_instruction(self)
 
 
 class InstructionIcon(Record):
+    """Tutorial instruction icon.
+
+    Usage:
+        ```python
+        InstructionIcon(id: int)
+        ```
+    """
+
     id: int
 
     def paint(self, position: Vec2, size: float, rotation: float, z: float, a: float):
+        """Paint this instruction icon.
+
+        Args:
+            position: The position of the icon.
+            size: The size of the icon.
+            rotation: The rotation of the icon.
+            z: The z-index of the icon.
+            a: The alpha of the icon.
+        """
         _paint(self.id, position.x, position.y, size, rotation, z, a)
 
 
@@ -35,10 +61,12 @@ class _InstructionIconInfo:
 
 
 def instruction(name: str) -> Any:
+    """Define an instruction with the given name."""
     return _InstructionTextInfo(name=name)
 
 
 def instruction_icon(name: str) -> Any:
+    """Define an instruction icon with the given name."""
     return _InstructionIconInfo(name=name)
 
 
@@ -48,6 +76,16 @@ type TutorialInstructionIcons = NewType("TutorialInstructionIcons", Any)
 
 @dataclass_transform()
 def instructions[T](cls: type[T]) -> T | TutorialInstructions:
+    """Decorator to define tutorial instructions.
+
+    Usage:
+        ```python
+        @instructions
+        class Instructions:
+            tap: StandardInstruction.TAP
+            other_instruction: InstructionText = instruction("Other Instruction")
+        ```
+    """
     if len(cls.__bases__) != 1:
         raise ValueError("Instructions class must not inherit from any class (except object)")
     instance = cls()
@@ -73,6 +111,16 @@ def instructions[T](cls: type[T]) -> T | TutorialInstructions:
 
 @dataclass_transform()
 def instruction_icons[T](cls: type[T]) -> T | TutorialInstructionIcons:
+    """Decorator to define tutorial instruction icons.
+
+    Usage:
+        ```python
+        @instruction_icons
+        class InstructionIcons:
+            hand: StandardInstructionIcon.HAND
+            other_icon: InstructionIcon = instruction_icon("Other Icon")
+        ```
+    """
     if len(cls.__bases__) != 1:
         raise ValueError("Instruction icons class must not inherit from any class (except object)")
     instance = cls()
@@ -99,6 +147,8 @@ def instruction_icons[T](cls: type[T]) -> T | TutorialInstructionIcons:
 
 
 class StandardInstruction:
+    """Standard instructions."""
+
     TAP = Annotated[InstructionText, instruction(StandardText.TAP)]
     TAP_HOLD = Annotated[InstructionText, instruction(StandardText.TAP_HOLD)]
     TAP_RELEASE = Annotated[InstructionText, instruction(StandardText.TAP_RELEASE)]
@@ -116,6 +166,8 @@ class StandardInstruction:
 
 
 class StandardInstructionIcon:
+    """Standard instruction icons."""
+
     HAND = Annotated[InstructionIcon, instruction_icon("#HAND")]
     ARROW = Annotated[InstructionIcon, instruction_icon("#ARROW")]
 
@@ -144,8 +196,10 @@ def _paint(
 
 
 def show_instruction(inst: InstructionText, /):
+    """Show the given instruction text."""
     _TutorialInstruction.text_id = inst.id
 
 
 def clear_instruction():
+    """Clear the current instruction text."""
     _TutorialInstruction.text_id = -1

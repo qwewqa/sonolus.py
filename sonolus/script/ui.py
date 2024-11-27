@@ -1,81 +1,102 @@
 from dataclasses import dataclass, field
-from typing import Literal
+from enum import StrEnum
 
-UiMetric = Literal[
-    "arcade",
-    "arcadePercentage",
-    "accuracy",
-    "accuracyPercentage",
-    "life",
-    "perfect",
-    "perfectPercentage",
-    "greatGoodMiss",
-    "greatGoodMissPercentage",
-    "miss",
-    "missPercentage",
-    "errorHeatmap",
-]
 
-UiJudgmentErrorStyle = Literal[
-    "none",
-    "plus",
-    "minus",
-    "arrowUp",
-    "arrowDown",
-    "arrowLeft",
-    "arrowRight",
-    "triangleUp",
-    "triangleDown",
-    "triangleLeft",
-    "triangleRight",
-]
+class UiMetric(StrEnum):
+    """A metric to display on the UI."""
 
-UiJudgmentErrorPlacement = Literal["both", "left", "right"]
+    ARCADE = "arcade"
+    ARCADE_PERCENTAGE = "arcadePercentage"
+    ACCURACY = "accuracy"
+    ACCURACY_PERCENTAGE = "accuracyPercentage"
+    LIFE = "life"
+    PERFECT = "perfect"
+    PERFECT_PERCENTAGE = "perfectPercentage"
+    GREAT_GOOD_MISS = "greatGoodMiss"
+    GREAT_GOOD_MISS_PERCENTAGE = "greatGoodMissPercentage"
+    MISS = "miss"
+    MISS_PERCENTAGE = "missPercentage"
+    ERROR_HEATMAP = "errorHeatmap"
 
-EaseType = Literal[
-    "linear",
-    "none",
-    "inSine",
-    "inQuad",
-    "inCubic",
-    "inQuart",
-    "inQuint",
-    "inExpo",
-    "inCirc",
-    "inBack",
-    "inElastic",
-    "outSine",
-    "outQuad",
-    "outCubic",
-    "outQuart",
-    "outQuint",
-    "outExpo",
-    "outCirc",
-    "outBack",
-    "outElastic",
-    "inOutSine",
-    "inOutQuad",
-    "inOutCubic",
-    "inOutQuart",
-    "inOutQuint",
-    "inOutExpo",
-    "inOutCirc",
-    "inOutBack",
-    "inOutElastic",
-    "outInSine",
-    "outInQuad",
-    "outInCubic",
-    "outInQuart",
-    "outInQuint",
-    "outInExpo",
-    "outInCirc",
-    "outInBack",
-    "outInElastic",
-]
+
+class UiJudgmentErrorStyle(StrEnum):
+    """The style of the judgment error."""
+
+    NONE = "none"
+    PLUS = "plus"
+    MINUS = "minus"
+    ARROW_UP = "arrowUp"
+    ARROW_DOWN = "arrowDown"
+    ARROW_LEFT = "arrowLeft"
+    ARROW_RIGHT = "arrowRight"
+    TRIANGLE_UP = "triangleUp"
+    TRIANGLE_DOWN = "triangleDown"
+    TRIANGLE_LEFT = "triangleLeft"
+    TRIANGLE_RIGHT = "triangleRight"
+
+
+class UiJudgmentErrorPlacement(StrEnum):
+    """The placement of the judgment error."""
+
+    BOTH = "both"
+    LEFT = "left"
+    RIGHT = "right"
+
+
+class EaseType(StrEnum):
+    """The easing function to use."""
+
+    LINEAR = "linear"
+    NONE = "none"
+    IN_SINE = "inSine"
+    IN_QUAD = "inQuad"
+    IN_CUBIC = "inCubic"
+    IN_QUART = "inQuart"
+    IN_QUINT = "inQuint"
+    IN_EXPO = "inExpo"
+    IN_CIRC = "inCirc"
+    IN_BACK = "inBack"
+    IN_ELASTIC = "inElastic"
+    OUT_SINE = "outSine"
+    OUT_QUAD = "outQuad"
+    OUT_CUBIC = "outCubic"
+    OUT_QUART = "outQuart"
+    OUT_QUINT = "outQuint"
+    OUT_EXPO = "outExpo"
+    OUT_CIRC = "outCirc"
+    OUT_BACK = "outBack"
+    OUT_ELASTIC = "outElastic"
+    IN_OUT_SINE = "inOutSine"
+    IN_OUT_QUAD = "inOutQuad"
+    IN_OUT_CUBIC = "inOutCubic"
+    IN_OUT_QUART = "inOutQuart"
+    IN_OUT_QUINT = "inOutQuint"
+    IN_OUT_EXPO = "inOutExpo"
+    IN_OUT_CIRC = "inOutCirc"
+    IN_OUT_BACK = "inOutBack"
+    IN_OUT_ELASTIC = "inOutElastic"
+    OUT_IN_SINE = "outInSine"
+    OUT_IN_QUAD = "outInQuad"
+    OUT_IN_CUBIC = "outInCubic"
+    OUT_IN_QUART = "outInQuart"
+    OUT_IN_QUINT = "outInQuint"
+    OUT_IN_EXPO = "outInExpo"
+    OUT_IN_CIRC = "outInCirc"
+    OUT_IN_BACK = "outInBack"
+    OUT_IN_ELASTIC = "outInElastic"
 
 
 @dataclass
 class UiAnimationTween:
+    """Tween animation configuration for UI elements.
+
+    Args:
+        start: The initial value.
+        end: The final value.
+        duration: The duration of the animation.
+        ease: The easing function to use.
+    """
+
     start: float
     end: float
     duration: float
@@ -92,6 +113,13 @@ class UiAnimationTween:
 
 @dataclass
 class UiAnimation:
+    """Animation configuration for UI elements.
+
+    Args:
+        scale: The animation applied to scale.
+        alpha: The animation applied to alpha.
+    """
+
     scale: UiAnimationTween = field(default_factory=lambda: UiAnimationTween(1, 1, 0, "none"))
     alpha: UiAnimationTween = field(default_factory=lambda: UiAnimationTween(1, 0, 0.2, "outCubic"))
 
@@ -104,6 +132,13 @@ class UiAnimation:
 
 @dataclass
 class UiVisibility:
+    """Visibility configuration for UI elements.
+
+    Args:
+        scale: The scale of the element.
+        alpha: The alpha of the element.
+    """
+
     scale: float = 1.0
     alpha: float = 1.0
 
@@ -116,6 +151,27 @@ class UiVisibility:
 
 @dataclass
 class UiConfig:
+    """Configuration for UI elements.
+
+    Args:
+        scope: The scope of the configuration.
+        primary_metric: The primary metric to display.
+        secondary_metric: The secondary metric to display.
+        menu_visibility: The visibility configuration for the menu.
+        judgment_visibility: The visibility configuration for judgments.
+        combo_visibility: The visibility configuration for the combo.
+        primary_metric_visibility: The visibility configuration for the primary metric.
+        secondary_metric_visibility: The visibility configuration for the secondary metric.
+        progress_visibility: The visibility configuration for progress.
+        tutorial_navigation_visibility: The visibility configuration for tutorial navigation.
+        tutorial_instruction_visibility: The visibility configuration for tutorial instructions.
+        judgment_animation: The animation configuration for judgments.
+        combo_animation: The animation configuration for the combo.
+        judgment_error_style: The style of the judgment error.
+        judgment_error_placement: The placement of the judgment error.
+        judgment_error_min: The minimum judgment error.
+    """
+
     scope: str | None = None
     primary_metric: UiMetric = "arcade"
     secondary_metric: UiMetric = "life"

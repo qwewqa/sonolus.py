@@ -94,7 +94,7 @@ class VarArray[T, Capacity](Record, ArrayLike[T]):
         The returned value continues to be part of the array.
         Future modifications to the array will affect the returned value.
 
-        Warnings:
+        Note:
             Future modifications to the array may cause unexpected changes to the returned value.
             If the array may be modified in the future, it's recommended to make a copy of the value.
 
@@ -135,7 +135,6 @@ class VarArray[T, Capacity](Record, ArrayLike[T]):
         Args:
             values: The values to append.
         """
-
         for value in values:
             self.append(value)
 
@@ -282,6 +281,7 @@ class ArrayMap[K, V, Capacity](Record):
         assert map[3] == 4
         ```
     """
+
     _size: int
     _array: Array[_ArrayMapEntry[K, V], Capacity]
 
@@ -330,7 +330,7 @@ class ArrayMap[K, V, Capacity](Record):
         The returned value continues to be part of the map.
         Future modifications to the map will affect the returned value.
 
-        Warnings:
+        Notes:
             Future modifications to the map may cause unexpected changes to the returned value.
             If the map may be modified in the future, it's recommended to make a copy of the value.
 
@@ -343,6 +343,7 @@ class ArrayMap[K, V, Capacity](Record):
             p = map[3]
             map.pop(1)
             # The value of `p` may now be different
+            ```
         """
         for i in range(self._size):
             entry = self._array[i]

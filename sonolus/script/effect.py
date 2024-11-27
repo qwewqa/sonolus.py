@@ -10,35 +10,82 @@ from sonolus.script.record import Record
 
 
 class Effect(Record):
+    """Sound effect clip.
+
+    Usage:
+        ```python
+        Effect(id: int)
+        ```
+    """
+
     id: int
+    """Effect ID."""
 
     def is_available(self) -> bool:
+        """Return whether the effect clip is available."""
         return _has_effect_clip(self.id)
 
     def play(self, distance: float) -> None:
+        """Play the effect clip.
+
+        If the clip was already played within the specified distance, it will be skipped.
+
+        Arguments:
+            distance: Minimum time in seconds since the last play for the effect to play.
+        """
         _play(self.id, distance)
 
     def schedule(self, time: float, distance: float) -> None:
+        """Schedule the effect clip to play at a specific time.
+
+        This is not suitable for real-time effects such as responses to user input. Use `play` instead.
+
+        This may be called in preprocess to schedule effects upfront.
+
+        If the clip would play within the specified distance of another play, it will be skipped.
+
+        Arguments:
+            time: Time in seconds when the effect should play.
+            distance: Minimum time in seconds after a previous play for the effect to play.
+        """
         _play_scheduled(self.id, time, distance)
 
     def loop(self) -> LoopedEffectHandle:
+        """Play the effect clip in a loop until stopped.
+
+        Returns:
+            A handle to stop the loop.
+        """
         return LoopedEffectHandle(_play_looped(self.id))
 
     def schedule_loop(self, start_time: float) -> ScheduledLoopedEffectHandle:
+        """Schedule the effect clip to play in a loop until stopped.
+
+        This is not suitable for real-time effects such as responses to user input. Use `loop` instead.
+
+        Returns:
+            A handle to stop the loop.
+        """
         return ScheduledLoopedEffectHandle(_play_looped_scheduled(self.id, start_time))
 
 
 class LoopedEffectHandle(Record):
+    """Handle to stop a looped effect."""
+
     id: int
 
     def stop(self) -> None:
+        """Stop the looped effect."""
         _stop_looped(self.id)
 
 
 class ScheduledLoopedEffectHandle(Record):
+    """Handle to stop a scheduled looped effect."""
+
     id: int
 
     def stop(self, end_time: float) -> None:
+        """Stop the scheduled looped effect."""
         _stop_looped_scheduled(self.id, end_time)
 
 
@@ -83,6 +130,7 @@ class EffectInfo:
 
 
 def effect(name: str) -> Any:
+    """Define a sound effect clip with the given name."""
     return EffectInfo(name)
 
 
@@ -91,6 +139,16 @@ type Effects = NewType("Effects", Any)
 
 @dataclass_transform()
 def effects[T](cls: type[T]) -> T | Effects:
+    """Decorator to define effect clips.
+
+    Usage:
+        ```python
+        @effects
+        class Effects:
+            miss: StandardEffect.MISS
+            other: Effect = effect("other")
+        ```
+    """
     if len(cls.__bases__) != 1:
         raise ValueError("Effects class must not inherit from any class (except object)")
     instance = cls()
@@ -113,6 +171,8 @@ def effects[T](cls: type[T]) -> T | Effects:
 
 
 class StandardEffect:
+    """Standard sound effect clips."""
+
     MISS = Annotated[Effect, effect("#MISS")]
     PERFECT = Annotated[Effect, effect("#PERFECT")]
     GREAT = Annotated[Effect, effect("#GREAT")]

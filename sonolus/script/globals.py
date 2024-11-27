@@ -216,6 +216,23 @@ def _tutorial_instruction[T](cls: type[T]) -> T:
 
 @dataclass_transform()
 def level_memory[T](cls: type[T]) -> T:
+    """Define level memory.
+
+    Level memory may be modified during gameplay in sequential callbacks (`preprocess`, `update_sequential`, `touch`).
+
+    Usage:
+        ```python
+        @level_memory
+        class LevelMemory:
+            variable: int
+
+        variable = level_data(Array[int, 10])
+
+        def f():
+            LevelMemory.variable = 1
+            variable[0] = 2
+        ```
+    """
     return _create_global(
         cls,
         {
@@ -229,6 +246,23 @@ def level_memory[T](cls: type[T]) -> T:
 
 @dataclass_transform()
 def level_data[T](cls: type[T]) -> T:
+    """Define level data.
+
+    Level data may only be modified during preprocessing.
+
+    Usage:
+        ```python
+        @level_data
+        class LevelData:
+            variable: int
+
+        variable = level_data(Array[int, 10])
+
+        def f():
+            LevelData.variable = 1
+            variable[0] = 2
+        ```
+    """
     return _create_global(
         cls,
         {

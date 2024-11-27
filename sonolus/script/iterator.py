@@ -9,6 +9,27 @@ from sonolus.script.record import Record
 
 
 class SonolusIterator[T](Iterator[T]):
+    """Base class for Sonolus iterators.
+
+    This class is used to define custom iterators that can be used in Sonolus.py.
+
+    Inheritors must implement the `has_next`, `get`, and `advance` methods.
+    The `__next__` and `__iter__` methods are implemented by default.
+
+    Usage:
+        ```python
+        class MyIterator(Record, SonolusIterator):
+            def has_next(self) -> bool:
+                ...
+
+            def get(self) -> Any:
+                ...
+
+            def advance(self):
+                ...
+        ```
+    """
+
     def next(self) -> T:
         result = self.get()
         self.advance()
@@ -16,14 +37,25 @@ class SonolusIterator[T](Iterator[T]):
 
     @abstractmethod
     def has_next(self) -> bool:
+        """Return whether the iterator has more elements."""
         raise NotImplementedError
 
     @abstractmethod
     def get(self) -> T:
+        """Return the next element of the iterator.
+
+        May be called multiple times before calling `advance`.
+
+        Must not be called if `has_next` returns `False`.
+        """
         raise NotImplementedError
 
     @abstractmethod
     def advance(self):
+        """Advance the iterator to the next element.
+
+        Must not be called if `has_next` returns `False`.
+        """
         raise NotImplementedError
 
     def __next__(self) -> T:

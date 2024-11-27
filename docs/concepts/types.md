@@ -38,6 +38,10 @@ Nums support most of the standard Python operations:
 - Arithmetic operators: `+`, `-`, `*`, `/`, `//`, `%`, `**`
 - Unary operators: `+`, `-`
 
+!!! note
+    Floating point precision may be lower when running on Sonolus compared to Python.
+    Care should be taken when performing precision-sensitive operations.
+
 Nums are the only supported type for boolean operations and control flow conditions.
 As a condition, any nonzero value is considered true, and `0` is considered false.
 

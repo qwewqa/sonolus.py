@@ -98,6 +98,19 @@ def slider_option(
     unit: str | None = None,
     scope: str | None = None,
 ) -> Any:
+    """Define a slider option.
+
+    Args:
+        name: The name of the option.
+        standard: Whether the option is standard.
+        advanced: Whether the option is advanced.
+        default: The default value of the option.
+        min: The minimum value of the option.
+        max: The maximum value of the option.
+        step: The step value of the option.
+        unit: The unit of the option.
+        scope: The scope of the option.
+    """
     return _SliderOption(name, standard, advanced, scope, default, min, max, step, unit)
 
 
@@ -109,6 +122,15 @@ def toggle_option(
     default: bool,
     scope: str | None = None,
 ) -> Any:
+    """Define a toggle option.
+
+    Args:
+        name: The name of the option.
+        standard: Whether the option is standard.
+        advanced: Whether the option is advanced.
+        default: The default value of the option.
+        scope: The scope of the option.
+    """
     return _ToggleOption(name, standard, advanced, scope, default)
 
 
@@ -121,6 +143,16 @@ def select_option(
     values: list[str],
     scope: str | None = None,
 ) -> Any:
+    """Define a select option.
+
+    Args:
+        name: The name of the option.
+        standard: Whether the option is standard.
+        advanced: Whether the option is advanced.
+        default: The default value of the option.
+        values: The values of the option.
+        scope: The scope of the option.
+    """
     return _SelectOption(name, standard, advanced, scope, default, values)
 
 
@@ -160,6 +192,40 @@ class _OptionField(SonolusDescriptor):
 
 @dataclass_transform()
 def options[T](cls: type[T]) -> T | Options:
+    """Decorator to define options.
+
+    Usage:
+        ```python
+        @options
+        class Options:
+            slider_option: float = slider_option(
+                name='Slider Option',
+                standard=True,
+                advanced=False,
+                default=0.5,
+                min=0,
+                max=1,
+                step=0.1,
+                unit='unit',
+                scope='scope',
+            )
+            toggle_option: bool = toggle_option(
+                name='Toggle Option',
+                standard=True,
+                advanced=False,
+                default=True,
+                scope='scope',
+            )
+            select_option: int = select_option(
+                name='Select Option',
+                standard=True,
+                advanced=False,
+                default='value',
+                values=['value'],
+                scope='scope',
+            )
+        ```
+    """
     if len(cls.__bases__) != 1:
         raise ValueError("Options class must not inherit from any class (except object)")
     instance = cls()

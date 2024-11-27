@@ -5,6 +5,19 @@ from sonolus.script.archetype import PlayArchetype, StandardArchetypeName, Stand
 
 
 class Level:
+    """A Sonolus level.
+
+    Args:
+        name: The name of the level.
+        title: The title of the level.
+        rating: The rating of the level.
+        artists: The artists of the level.
+        author: The author of the level.
+        cover: The cover of the level.
+        bgm: The background music of the level.
+        data: The data of the level.
+    """
+
     version = 1
 
     def __init__(
@@ -30,6 +43,13 @@ class Level:
 
 
 class LevelData:
+    """The data of a Sonolus level.
+
+    Args:
+        bgm_offset: The background music audio offset.
+        entities: The entities of the level.
+    """
+
     bgm_offset: float
     entities: list[PlayArchetype]
 
@@ -39,6 +59,8 @@ class LevelData:
 
 
 class BpmChange(PlayArchetype):
+    """The standard bpm change archetype."""
+
     name = StandardArchetypeName.BPM_CHANGE
 
     beat: StandardImport.BEAT
@@ -46,6 +68,8 @@ class BpmChange(PlayArchetype):
 
 
 class TimescaleChange(PlayArchetype):
+    """The standard timescale change archetype."""
+
     name = StandardArchetypeName.TIMESCALE_CHANGE
 
     beat: StandardImport.BEAT

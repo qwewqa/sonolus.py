@@ -17,7 +17,13 @@ from sonolus.script.sprite import Sprite
 
 
 class JudgmentWindow(Record):
-    """The window for judging the accuracy of a hit."""
+    """The window for judging the accuracy of a hit.
+
+    Usage:
+        ```
+        JudgmentWindow(perfect: Interval, great: Interval, good: Interval)
+        ```
+    """
 
     perfect: Interval
     """Interval for a perfect hit."""
@@ -106,8 +112,14 @@ def _judge(
 
 
 class Bucket(Record):
-    """A bucket for entity judgment results."""
+    """A bucket for entity judgment results.
+
+    Usage:
+        ```Bucket(id: int)```
+    """
+
     id: int
+    """Bucket ID."""
 
     @property
     @meta_fn

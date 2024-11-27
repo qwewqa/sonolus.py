@@ -2,6 +2,8 @@ from enum import StrEnum
 
 
 class StandardText(StrEnum):
+    """Standard text constants."""
+
     POST = "#POST"
     PLAYLIST = "#PLAYLIST"
     LEVEL = "#LEVEL"

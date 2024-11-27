@@ -6,6 +6,14 @@ from sonolus.script.level import Level
 
 
 class Project:
+    """A Sonolus.py project.
+
+    Args:
+        engine: The engine of the project.
+        levels: The levels of the project.
+        resources: The path to the resources of the project.
+    """
+
     def __init__(
         self,
         engine: Engine,

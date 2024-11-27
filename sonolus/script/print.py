@@ -7,6 +7,8 @@ from sonolus.script.vec import Vec2
 
 
 class PrintFormat(IntEnum):
+    """Print format."""
+
     NUMBER = 0
     PERCENTAGE = 1
     TIME = 10
@@ -19,6 +21,8 @@ class PrintFormat(IntEnum):
 
 
 class PrintColor(IntEnum):
+    """Print color."""
+
     THEME = -1
     NEUTRAL = 0
     RED = 1
@@ -63,6 +67,21 @@ def print_number(
     horizontal_align: HorizontalAlign = HorizontalAlign.LEFT,
     background: bool = False,
 ):
+    """Print a number.
+
+    Args:
+        value: The value to print.
+        fmt: The print format.
+        decimal_places: The number of decimal places.
+        anchor: The anchor.
+        pivot: The pivot.
+        dimensions: The dimensions.
+        rotation: The rotation.
+        color: The color.
+        alpha: The alpha.
+        horizontal_align: The horizontal alignment.
+        background: Whether to show a background.
+    """
     _print(
         value,
         fmt,

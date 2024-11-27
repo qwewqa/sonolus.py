@@ -5,7 +5,10 @@ from sonolus.script.internal.impl import meta_fn, validate_value
 
 @meta_fn
 def alloc[T](type_: type[T]) -> T:
-    """Returns an uninitialized instance of the given type."""
+    """Return an uninitialized instance of the given type.
+
+    Use this carefully as reading from uninitialized memory can lead to unexpected behavior.
+    """
     type_ = validate_concrete_type(type_)
     if ctx():
         return type_._alloc_()
@@ -15,7 +18,7 @@ def alloc[T](type_: type[T]) -> T:
 
 @meta_fn
 def zeros[T](type_: type[T]) -> T:
-    """Returns a new instance of the given type initialized with zeros."""
+    """Make a new instance of the given type initialized with zeros."""
     type_ = validate_concrete_type(type_)
     if ctx():
         return copy(type_._from_list_([0] * type_._size_()))
@@ -25,7 +28,7 @@ def zeros[T](type_: type[T]) -> T:
 
 @meta_fn
 def copy[T](value: T) -> T:
-    """Returns a deep copy of the given value."""
+    """Make a deep copy of the given value."""
     value = validate_value(value)
     if ctx():
         return value._copy_()
