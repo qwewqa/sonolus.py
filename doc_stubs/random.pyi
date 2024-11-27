@@ -2,9 +2,9 @@
 from typing import (
     Any,
     Sequence,
-    overload, MutableSequence,
+    overload,
+    MutableSequence,
 )
-
 
 @overload
 def randrange(stop: int) -> int:
@@ -17,7 +17,6 @@ def randrange(stop: int) -> int:
         A randomly selected integer from the range.
     """
     ...
-
 
 @overload
 def randrange(start: int, stop: int, step: int = ...) -> int:
@@ -33,11 +32,7 @@ def randrange(start: int, stop: int, step: int = ...) -> int:
     """
     ...
 
-
-def randrange(*args: Any, **kwargs: Any) -> int:
-    ...
-
-
+def randrange(*args: Any, **kwargs: Any) -> int: ...
 def randint(a: int, b: int) -> int:
     """Return a random integer N such that a <= N <= b.
 
@@ -50,7 +45,6 @@ def randint(a: int, b: int) -> int:
     """
     ...
 
-
 def choice[T](seq: Sequence[T]) -> T:
     """Return a randomly selected element from a non-empty sequence.
 
@@ -62,7 +56,6 @@ def choice[T](seq: Sequence[T]) -> T:
     """
     ...
 
-
 def shuffle(seq: MutableSequence[Any]) -> None:
     """Shuffle the sequence in place.
 
@@ -71,7 +64,6 @@ def shuffle(seq: MutableSequence[Any]) -> None:
     """
     ...
 
-
 def random() -> float:
     """Return a random floating point number in the range [0.0, 1.0).
 
@@ -79,7 +71,6 @@ def random() -> float:
         A random float between 0.0 (inclusive) and 1.0 (exclusive).
     """
     ...
-
 
 def uniform(a: float, b: float) -> float:
     """Return a random floating point number N such that a <= N <= b.

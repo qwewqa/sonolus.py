@@ -10,7 +10,6 @@ def sin(x: float) -> float:
     """
     ...
 
-
 def cos(x: float) -> float:
     """Compute the cosine of x.
 
@@ -21,7 +20,6 @@ def cos(x: float) -> float:
         The cosine of x.
     """
     ...
-
 
 def tan(x: float) -> float:
     """Compute the tangent of x.
@@ -34,7 +32,6 @@ def tan(x: float) -> float:
     """
     ...
 
-
 def asin(x: float) -> float:
     """Compute the arcsine of x.
 
@@ -45,7 +42,6 @@ def asin(x: float) -> float:
         The arcsine of x in radians.
     """
     ...
-
 
 def acos(x: float) -> float:
     """Compute the arccosine of x.
@@ -58,7 +54,6 @@ def acos(x: float) -> float:
     """
     ...
 
-
 def atan(x: float) -> float:
     """Compute the arctangent of x.
 
@@ -69,7 +64,6 @@ def atan(x: float) -> float:
         The arctangent of x in radians.
     """
     ...
-
 
 def atan2(y: float, x: float) -> float:
     """Compute the arctangent of y / x considering the quadrant.
@@ -83,7 +77,6 @@ def atan2(y: float, x: float) -> float:
     """
     ...
 
-
 def sinh(x: float) -> float:
     """Compute the hyperbolic sine of x.
 
@@ -94,7 +87,6 @@ def sinh(x: float) -> float:
         The hyperbolic sine of x.
     """
     ...
-
 
 def cosh(x: float) -> float:
     """Compute the hyperbolic cosine of x.
@@ -107,7 +99,6 @@ def cosh(x: float) -> float:
     """
     ...
 
-
 def tanh(x: float) -> float:
     """Compute the hyperbolic tangent of x.
 
@@ -118,7 +109,6 @@ def tanh(x: float) -> float:
         The hyperbolic tangent of x.
     """
     ...
-
 
 def floor(x: float) -> int:
     """Return the largest integer less than or equal to x.
@@ -131,7 +121,6 @@ def floor(x: float) -> int:
     """
     ...
 
-
 def ceil(x: float) -> int:
     """Return the smallest integer greater than or equal to x.
 
@@ -143,7 +132,6 @@ def ceil(x: float) -> int:
     """
     ...
 
-
 def trunc(x: float) -> int:
     """Truncate x to the nearest integer towards zero.
 
@@ -154,7 +142,6 @@ def trunc(x: float) -> int:
         The truncated integer value of x.
     """
     ...
-
 
 def log(x: float, base: float = ...) -> float:
     """Compute the logarithm of x to the given base.

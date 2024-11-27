@@ -3,7 +3,7 @@ from __future__ import annotations
 import inspect
 from collections.abc import Iterable
 from inspect import getmro
-from typing import Any, ClassVar, Self, dataclass_transform, get_origin, TypeVar
+from typing import Any, ClassVar, Self, TypeVar, dataclass_transform, get_origin
 
 from sonolus.backend.place import BlockPlace
 from sonolus.script.internal.context import ctx
@@ -233,14 +233,6 @@ class Record(GenericValue):
 
     @meta_fn
     def __eq__(self, other: Any) -> bool:
-        """Return if this record is equal to another record.
-
-        Args:
-            other: The other record to compare to.
-
-        Returns:
-            A boolean value indicating if the two records are equal.
-        """
         if not isinstance(other, type(self)):
             return False
         result: Num = Num._accept_(True)
@@ -250,14 +242,6 @@ class Record(GenericValue):
 
     @meta_fn
     def __ne__(self, other: Any) -> bool:
-        """Return if this record is not equal to another record.
-
-        Args:
-            other: The other record to compare to.
-
-        Returns:
-            A boolean value indicating if the two records are not equal.
-        """
         if not isinstance(other, type(self)):
             return True
         result: Num = Num._accept_(False)

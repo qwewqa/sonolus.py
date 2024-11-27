@@ -10,7 +10,4 @@ For usage details, see the corresponding [concepts page](../concepts/types.md#re
         show_root_heading: true
         show_root_full_path: false
         members:
-        - __eq__
-        - __ne__
-        - __imatmul__
         - type_var_value

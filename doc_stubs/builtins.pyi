@@ -9,7 +9,6 @@ from typing import (
     overload,
 )
 
-
 def abs(x: builtins.int | builtins.float) -> builtins.int | builtins.float:
     """Return the absolute value of a number.
 
@@ -20,7 +19,6 @@ def abs(x: builtins.int | builtins.float) -> builtins.int | builtins.float:
         The absolute value of x.
     """
     ...
-
 
 def bool(x: builtins.int | builtins.float | builtins.bool) -> builtins.bool:
     """Convert a value to a Boolean.
@@ -33,7 +31,6 @@ def bool(x: builtins.int | builtins.float | builtins.bool) -> builtins.bool:
     """
     ...
 
-
 def callable(obj: object) -> bool:
     """Check if the object appears callable.
 
@@ -44,7 +41,6 @@ def callable(obj: object) -> bool:
         True if the object appears callable, False otherwise.
     """
     ...
-
 
 def enumerate[T](iterable: Iterable[T], start: int = 0) -> Iterator[tuple[int, T]]:
     """Return an enumerate object.
@@ -58,7 +54,6 @@ def enumerate[T](iterable: Iterable[T], start: int = 0) -> Iterator[tuple[int, T
     """
     ...
 
-
 def filter[T](function: Callable[[T], builtins.bool] | None, iterable: Iterable[T]) -> Iterator[T]:
     """Construct an iterator from those elements of iterable for which function returns true.
 
@@ -71,7 +66,6 @@ def filter[T](function: Callable[[T], builtins.bool] | None, iterable: Iterable[
     """
     ...
 
-
 def float(x: builtins.int | builtins.float) -> builtins.float:
     """Convert a number to a floating point number.
 
@@ -83,7 +77,6 @@ def float(x: builtins.int | builtins.float) -> builtins.float:
     """
     ...
 
-
 def int(x: builtins.int | builtins.float) -> builtins.int:
     """Convert a number to an integer.
 
@@ -94,7 +87,6 @@ def int(x: builtins.int | builtins.float) -> builtins.int:
         The integer representation of x.
     """
     ...
-
 
 def isinstance(obj: object, classinfo: type | tuple[type, ...]) -> builtins.bool:
     """Check if an object is an instance of a class or of a subclass thereof.
@@ -108,7 +100,6 @@ def isinstance(obj: object, classinfo: type | tuple[type, ...]) -> builtins.bool
     """
     ...
 
-
 def issubclass(cls: type, classinfo: type | tuple[type, ...]) -> builtins.bool:
     """Check if a class is a subclass of another class or a tuple of classes.
 
@@ -121,7 +112,6 @@ def issubclass(cls: type, classinfo: type | tuple[type, ...]) -> builtins.bool:
     """
     ...
 
-
 def len(s: object) -> builtins.int:
     """Return the number of items in a container.
 
@@ -132,7 +122,6 @@ def len(s: object) -> builtins.int:
         The number of items in s.
     """
     ...
-
 
 def map[T, S](function: Callable[[T], S], iterable: Iterable[T]) -> Iterator[S]:
     """Apply a function to every item of an iterable and return an iterator.
@@ -146,7 +135,6 @@ def map[T, S](function: Callable[[T], S], iterable: Iterable[T]) -> Iterator[S]:
     """
     ...
 
-
 @overload
 def max[T](iterable: Iterable[T], *, key: Callable[[T], Any] | None = ...) -> T:
     """Return the largest item in an iterable or the largest of two or more arguments.
@@ -159,7 +147,6 @@ def max[T](iterable: Iterable[T], *, key: Callable[[T], Any] | None = ...) -> T:
         The largest item.
     """
     ...
-
 
 @overload
 def max[T](arg1: T, arg2: T, *args: T, key: Callable[[T], Any] | None = ...) -> T:
@@ -176,7 +163,6 @@ def max[T](arg1: T, arg2: T, *args: T, key: Callable[[T], Any] | None = ...) -> 
     """
     ...
 
-
 @overload
 def min[T](iterable: Iterable[T], *, key: Callable[[T], Any] | None = ...) -> T:
     """Return the smallest item in an iterable or the smallest of two or more arguments.
@@ -189,7 +175,6 @@ def min[T](iterable: Iterable[T], *, key: Callable[[T], Any] | None = ...) -> T:
         The smallest item.
     """
     ...
-
 
 @overload
 def min[T](arg1: T, arg2: T, *args: T, key: Callable[[T], Any] | None = ...) -> T:
@@ -206,7 +191,6 @@ def min[T](arg1: T, arg2: T, *args: T, key: Callable[[T], Any] | None = ...) -> 
     """
     ...
 
-
 @overload
 def range(stop: builtins.int) -> builtins.range:
     """Return an immutable sequence of numbers from 0 to stop.
@@ -218,7 +202,6 @@ def range(stop: builtins.int) -> builtins.range:
         The range object.
     """
     ...
-
 
 @overload
 def range(start: builtins.int, stop: builtins.int, step: builtins.int = ...) -> builtins.range:
@@ -234,7 +217,6 @@ def range(start: builtins.int, stop: builtins.int, step: builtins.int = ...) -> 
     """
     ...
 
-
 def reversed[T](seq: Sequence[T]) -> Iterator[T]:
     """Return a reverse iterator.
 
@@ -245,7 +227,6 @@ def reversed[T](seq: Sequence[T]) -> Iterator[T]:
         An iterator over the reversed sequence.
     """
     ...
-
 
 def round(number: builtins.int | builtins.float, ndigits: builtins.int = ...) -> builtins.float:
     """Round a number to a given precision in decimal digits.
@@ -258,7 +239,6 @@ def round(number: builtins.int | builtins.float, ndigits: builtins.int = ...) ->
         The rounded number.
     """
     ...
-
 
 def zip[T](*iterables: Iterable[T]) -> Iterator[tuple[T, ...]]:
     """Return an iterator of tuples, where the i-th tuple contains the i-th element from each of the argument sequences.
