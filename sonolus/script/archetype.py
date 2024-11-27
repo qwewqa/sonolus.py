@@ -421,6 +421,7 @@ class _BaseArchetype:
             raise TypeError("Cannot subclass Archetypes")
         if cls.name is None:
             cls.name = cls.__name__
+        field_specifiers = get_field_specifiers(cls, skip={"name", "is_scored"}).items()
         cls._imported_fields_ = {}
         cls._exported_fields_ = {}
         cls._memory_fields_ = {}
@@ -429,7 +430,7 @@ class _BaseArchetype:
         exported_offset = 0
         memory_offset = 0
         shared_memory_offset = 0
-        for name, value in get_field_specifiers(cls).items():
+        for name, value in field_specifiers:
             if value is ClassVar or get_origin(value) is ClassVar:
                 continue
             if get_origin(value) is not Annotated:

@@ -69,6 +69,8 @@ def print_number(
 ):
     """Print a number.
 
+    Only supported in preview mode.
+
     Args:
         value: The value to print.
         fmt: The print format.

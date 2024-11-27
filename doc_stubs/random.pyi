@@ -32,7 +32,19 @@ def randrange(start: int, stop: int, step: int = ...) -> int:
     """
     ...
 
-def randrange(*args: Any, **kwargs: Any) -> int: ...
+def randrange(start: int, stop: int = ..., step: int = ...) -> int:
+    """Return a randomly selected element from range(start, stop, step).
+
+    Args:
+        start: The start of the range.
+        stop: The end of the range.
+        step: The step size.
+
+    Returns:
+        A randomly selected integer from the range.
+    """
+    ...
+
 def randint(a: int, b: int) -> int:
     """Return a random integer N such that a <= N <= b.
 

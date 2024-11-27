@@ -173,8 +173,8 @@ class UiConfig:
     """
 
     scope: str | None = None
-    primary_metric: UiMetric = "arcade"
-    secondary_metric: UiMetric = "life"
+    primary_metric: UiMetric = UiMetric.ARCADE
+    secondary_metric: UiMetric = UiMetric.LIFE
     menu_visibility: UiVisibility = field(default_factory=UiVisibility)
     judgment_visibility: UiVisibility = field(default_factory=UiVisibility)
     combo_visibility: UiVisibility = field(default_factory=UiVisibility)
@@ -186,11 +186,11 @@ class UiConfig:
     judgment_animation: UiAnimation = field(default_factory=UiAnimation)
     combo_animation: UiAnimation = field(
         default_factory=lambda: UiAnimation(
-            scale=UiAnimationTween(1.2, 1, 0.2, "inCubic"), alpha=UiAnimationTween(1, 1, 0, "none")
+            scale=UiAnimationTween(1.2, 1, 0.2, EaseType.IN_CUBIC), alpha=UiAnimationTween(1, 1, 0, EaseType.NONE)
         )
     )
-    judgment_error_style: UiJudgmentErrorStyle = "none"
-    judgment_error_placement: UiJudgmentErrorPlacement = "both"
+    judgment_error_style: UiJudgmentErrorStyle = UiJudgmentErrorStyle.NONE
+    judgment_error_placement: UiJudgmentErrorPlacement = UiJudgmentErrorPlacement.BOTH
     judgment_error_min: float = 0.0
 
     def to_dict(self):

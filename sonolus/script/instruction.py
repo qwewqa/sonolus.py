@@ -10,12 +10,12 @@ from sonolus.script.text import StandardText
 from sonolus.script.vec import Vec2
 
 
-class InstructionText(Record):
+class Instruction(Record):
     """Tutorial instruction text.
 
     Usage:
         ```python
-        InstructionText(id: int)
+        Instruction(id: int)
         ```
     """
 
@@ -95,7 +95,7 @@ def instructions[T](cls: type[T]) -> T | TutorialInstructions:
             raise TypeError(f"Invalid annotation for instruction: {annotation}")
         annotation_type = annotation.__args__[0]
         annotation_values = annotation.__metadata__
-        if annotation_type is not InstructionText:
+        if annotation_type is not Instruction:
             raise TypeError(
                 f"Invalid annotation for instruction: {annotation}, expected annotation of type InstructionText"
             )
@@ -103,7 +103,7 @@ def instructions[T](cls: type[T]) -> T | TutorialInstructions:
             raise TypeError(f"Invalid annotation for instruction: {annotation}, expected a single annotation value")
         instruction_name = annotation_values[0].name
         names.append(instruction_name)
-        setattr(instance, name, InstructionText(i))
+        setattr(instance, name, Instruction(i))
     instance._instructions_ = names
     instance._is_comptime_value_ = True
     return instance
@@ -149,20 +149,20 @@ def instruction_icons[T](cls: type[T]) -> T | TutorialInstructionIcons:
 class StandardInstruction:
     """Standard instructions."""
 
-    TAP = Annotated[InstructionText, instruction(StandardText.TAP)]
-    TAP_HOLD = Annotated[InstructionText, instruction(StandardText.TAP_HOLD)]
-    TAP_RELEASE = Annotated[InstructionText, instruction(StandardText.TAP_RELEASE)]
-    TAP_FLICK = Annotated[InstructionText, instruction(StandardText.TAP_FLICK)]
-    TAP_SLIDE = Annotated[InstructionText, instruction(StandardText.TAP_SLIDE)]
-    HOLD = Annotated[InstructionText, instruction(StandardText.HOLD)]
-    HOLD_SLIDE = Annotated[InstructionText, instruction(StandardText.HOLD_SLIDE)]
-    HOLD_FOLLOW = Annotated[InstructionText, instruction(StandardText.HOLD_FOLLOW)]
-    RELEASE = Annotated[InstructionText, instruction(StandardText.RELEASE)]
-    FLICK = Annotated[InstructionText, instruction(StandardText.FLICK)]
-    SLIDE = Annotated[InstructionText, instruction(StandardText.SLIDE)]
-    SLIDE_FLICK = Annotated[InstructionText, instruction(StandardText.SLIDE_FLICK)]
-    AVOID = Annotated[InstructionText, instruction(StandardText.AVOID)]
-    JIGGLE = Annotated[InstructionText, instruction(StandardText.JIGGLE)]
+    TAP = Annotated[Instruction, instruction(StandardText.TAP)]
+    TAP_HOLD = Annotated[Instruction, instruction(StandardText.TAP_HOLD)]
+    TAP_RELEASE = Annotated[Instruction, instruction(StandardText.TAP_RELEASE)]
+    TAP_FLICK = Annotated[Instruction, instruction(StandardText.TAP_FLICK)]
+    TAP_SLIDE = Annotated[Instruction, instruction(StandardText.TAP_SLIDE)]
+    HOLD = Annotated[Instruction, instruction(StandardText.HOLD)]
+    HOLD_SLIDE = Annotated[Instruction, instruction(StandardText.HOLD_SLIDE)]
+    HOLD_FOLLOW = Annotated[Instruction, instruction(StandardText.HOLD_FOLLOW)]
+    RELEASE = Annotated[Instruction, instruction(StandardText.RELEASE)]
+    FLICK = Annotated[Instruction, instruction(StandardText.FLICK)]
+    SLIDE = Annotated[Instruction, instruction(StandardText.SLIDE)]
+    SLIDE_FLICK = Annotated[Instruction, instruction(StandardText.SLIDE_FLICK)]
+    AVOID = Annotated[Instruction, instruction(StandardText.AVOID)]
+    JIGGLE = Annotated[Instruction, instruction(StandardText.JIGGLE)]
 
 
 class StandardInstructionIcon:
@@ -195,7 +195,7 @@ def _paint(
     raise NotImplementedError()
 
 
-def show_instruction(inst: InstructionText, /):
+def show_instruction(inst: Instruction, /):
     """Show the given instruction text."""
     _TutorialInstruction.text_id = inst.id
 
