@@ -21,6 +21,10 @@ def vecs(draw):
     return Vec2(x, y)
 
 
+def _area(points: list[Vec2]) -> float:
+    return 0.5 * abs(sum(p.x * q.y - p.y * q.x for p, q in zip(points, points[1:] + points[:1], strict=False)))
+
+
 @st.composite
 def quads(draw):
     points = [draw(vecs()) for _ in range(4)]
@@ -28,6 +32,7 @@ def quads(draw):
         assume((p1 - p2).magnitude > 1e-2)
     centroid = sum(points, Vec2(0, 0)) / 4
     points = sorted(points, key=lambda p: (p - centroid).angle)
+    assume(_area(points) > 1e-2)
     return Quad(*points)
 
 
