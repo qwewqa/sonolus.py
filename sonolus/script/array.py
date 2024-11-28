@@ -60,7 +60,7 @@ class Array[T, Size](GenericValue, ArrayLike[T]):
                 raise ValueError(f"{cls.__name__} constructor should be used with {cls.size()} values, got {len(args)}")
             parameterized_cls = cls
         if ctx():
-            place = ctx().alloc(size=parameterized_cls.size())
+            place = ctx().alloc(size=parameterized_cls._size_())
             result: parameterized_cls = parameterized_cls._from_place_(place)
             result._copy_from_(parameterized_cls._with_value(values))
             return result
