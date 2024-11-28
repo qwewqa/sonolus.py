@@ -3,7 +3,6 @@ from typing import Self
 
 from sonolus.script.array import Array
 from sonolus.script.array_like import ArrayLike
-from sonolus.script.debug import debug_log
 from sonolus.script.num import Num
 from sonolus.script.record import Record
 
@@ -217,8 +216,6 @@ def pnpoly(vertices: ArrayLike[Vec2] | tuple[Vec2, ...], test: Vec2) -> bool:
     j = len(vertices) - 1
     c = False
     while i < len(vertices):
-        debug_log(i)
-        debug_log(j)
         if (vertices[i].y > test.y) != (vertices[j].y > test.y) and test.x < (vertices[j].x - vertices[i].x) * (
             test.y - vertices[i].y
         ) / (vertices[j].y - vertices[i].y) + vertices[i].x:
