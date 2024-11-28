@@ -22,6 +22,8 @@ jobs:
           uv sync --all-extras --dev
       - name: Run tests
         run: |
+          uv venv
+          . .venv/bin/activate
           tox
       - name: Build
         run: |
