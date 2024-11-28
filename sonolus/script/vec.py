@@ -1,6 +1,9 @@
 from math import atan2, cos, sin
 from typing import Self
 
+from sonolus.script.array import Array
+from sonolus.script.array_like import ArrayLike
+from sonolus.script.debug import debug_log
 from sonolus.script.num import Num
 from sonolus.script.record import Record
 
@@ -194,3 +197,32 @@ class Vec2(Record):
             A new vector with inverted direction.
         """
         return Vec2(x=-self.x, y=-self.y)
+
+
+def pnpoly(vertices: ArrayLike[Vec2] | tuple[Vec2, ...], test: Vec2) -> bool:
+    """Check if a point is inside a polygon.
+
+    No guaranteed behavior for points on the edges or very close to the edges.
+
+    Args:
+        vertices: The vertices of the polygon.
+        test: The point to test.
+
+    Returns:
+        Whether the point is inside the polygon.
+    """
+    if isinstance(vertices, tuple):
+        vertices = Array(*vertices)
+    i = 0
+    j = len(vertices) - 1
+    c = False
+    while i < len(vertices):
+        debug_log(i)
+        debug_log(j)
+        if (vertices[i].y > test.y) != (vertices[j].y > test.y) and test.x < (vertices[j].x - vertices[i].x) * (
+            test.y - vertices[i].y
+        ) / (vertices[j].y - vertices[i].y) + vertices[i].x:
+            c = not c
+        j = i
+        i += 1
+    return c

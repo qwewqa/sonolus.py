@@ -866,3 +866,16 @@ def test_for_empty():
         debug_log(4)
 
     validate_dual_run(fn)
+
+
+def test_loop_with_aug_assign():
+    def fn():
+        a = 0
+        b = 0
+        while a < 5:
+            debug_log(a + b)
+            b = a
+            a += 1
+
+    for _ in range(100):
+        validate_dual_run(fn)

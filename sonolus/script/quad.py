@@ -3,7 +3,7 @@ from __future__ import annotations
 from typing import Protocol, Self
 
 from sonolus.script.record import Record
-from sonolus.script.vec import Vec2
+from sonolus.script.vec import Vec2, pnpoly
 
 
 class Quad(Record):
@@ -94,6 +94,17 @@ class Quad(Record):
     def rotate_centered(self, angle: float, /) -> Self:
         """Rotate the quad by the given angle about its center and return a new quad."""
         return self.rotate_about(angle, self.center)
+
+    def contains_point(self, point: Vec2, /) -> bool:
+        """Check if the quad contains the given point.
+
+        Args:
+            point: The point to check.
+
+        Returns:
+            True if the point is inside the quad, False otherwise.
+        """
+        return pnpoly((self.bl, self.tl, self.tr, self.br), point)
 
 
 class Rect(Record):
@@ -224,6 +235,17 @@ class Rect(Record):
             b=self.b + shrinkage.y,
             l=self.l + shrinkage.x,
         )
+
+    def contains_point(self, point: Vec2, /) -> bool:
+        """Check if the rectangle contains the given point.
+
+        Args:
+            point: The point to check.
+
+        Returns:
+            True if the point is inside the rectangle, False otherwise.
+        """
+        return self.l <= point.x <= self.r and self.b <= point.y <= self.t
 
 
 class QuadLike(Protocol):

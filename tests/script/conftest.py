@@ -16,6 +16,7 @@ from sonolus.script.internal.context import GlobalContextState
 from sonolus.script.internal.error import CompilationError
 from sonolus.script.internal.impl import meta_fn
 from sonolus.script.num import Num
+from sonolus.script.vec import Vec2
 
 settings.register_profile(
     "standard",
@@ -119,5 +120,7 @@ def implies(a: bool, b: bool) -> bool:
     return True
 
 
-def is_close(a: float, b: float, rel_tol: float = 1e-8, abs_tol: float = 1e-8) -> bool:
+def is_close(a: float | Vec2, b: float | Vec2, rel_tol: float = 1e-8, abs_tol: float = 1e-8) -> bool:
+    if isinstance(a, Vec2):
+        return is_close(a.x, b.x, rel_tol, abs_tol) and is_close(a.y, b.y, rel_tol, abs_tol)
     return abs(a - b) <= max(rel_tol * max(abs(a), abs(b)), abs_tol)
