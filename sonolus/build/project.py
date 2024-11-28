@@ -1,13 +1,11 @@
 from pathlib import Path
-from typing import TypedDict
 
 from sonolus.build.collection import Asset, Collection, Srl
 from sonolus.build.engine import package_engine
 from sonolus.build.level import package_level_data
-from sonolus.script.archetype import ArchetypeSchema
 from sonolus.script.engine import Engine
 from sonolus.script.level import Level
-from sonolus.script.project import Project
+from sonolus.script.project import Project, ProjectSchema
 
 BLANK_PNG = (
     b"\x89PNG\r\n\x1a\n\x00\x00\x00\rIHDR\x00\x00\x00\x01\x00\x00\x00\x01\x01\x00\x00\x00\x007n\xf9$"
@@ -94,10 +92,6 @@ def load_resources_files_to_collection(base_path: Path) -> Collection:
         collection.load_from_scp(path)
     collection.load_from_source(base_path)
     return collection
-
-
-class ProjectSchema(TypedDict):
-    archetypes: list[ArchetypeSchema]
 
 
 def get_project_schema(project: Project) -> ProjectSchema:
