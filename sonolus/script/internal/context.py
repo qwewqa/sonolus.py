@@ -182,10 +182,18 @@ class Context:
             return
         assert len(self.outgoing) == 0
         self.outgoing[None] = header
+        values = {}
+        # First do a pass through and copy every value
         for name, target_value in header.loop_variables.items():
             with using_ctx(self):
                 if type(target_value)._is_value_type_():
                     value = self.scope.get_value(name)
+                    values[name] = value._get_()  # _get_() will make a copy on value types
+        # Then actually set them
+        for name, target_value in header.loop_variables.items():
+            with using_ctx(self):
+                if type(target_value)._is_value_type_():
+                    value = values[name]
                     value = type(target_value)._accept_(value)
                     target_value._set_(value)
                 else:
