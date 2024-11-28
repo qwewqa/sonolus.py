@@ -16,13 +16,13 @@ jobs:
           version: 0.5.2
       - name: Install Python
         run: |
-          uv python install
+          uv python install 3.12 3.13
       - name: Install project
         run: |
           uv sync --all-extras --dev
       - name: Run tests
         run: |
-          uv run pytest tests -n auto
+          tox
       - name: Build
         run: |
           uv build
