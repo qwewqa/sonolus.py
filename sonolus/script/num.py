@@ -3,7 +3,7 @@ from __future__ import annotations
 
 import operator
 from collections.abc import Callable, Iterable
-from typing import TYPE_CHECKING, Any, Self, TypeIs, final, runtime_checkable
+from typing import TYPE_CHECKING, Any, Self, final, runtime_checkable, TypeGuard
 
 from sonolus.backend.ir import IRConst, IRGet, IRPureInstr, IRSet
 from sonolus.backend.ops import Op
@@ -19,7 +19,7 @@ class _NumMeta(type):
         return isinstance(instance, float | int | bool) or _is_num(instance)
 
 
-def _is_num(value: Any) -> TypeIs[Num]:
+def _is_num(value: Any) -> TypeGuard[Num]:
     """Check if a value is a precisely Num instance."""
     return type.__instancecheck__(Num, value)  # type: ignore # noqa: PLC2801
 

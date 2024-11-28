@@ -3,7 +3,7 @@ name = "sonolus.py"
 version = "0.1.7"
 description = "Sonolus engine development in Python"
 readme = "README.md"
-requires-python = ">=3.13"
+requires-python = ">=3.12"
 
 [project.scripts]
 sonolus-py = "sonolus.build.cli:main"
@@ -16,6 +16,8 @@ dev-dependencies = [
     "pytest>=8.3.3",
     "ruff>=0.6.9",
     "pytest-cov>=6.0.0",
+    "tox>=4.23.2",
+    "tox-uv>=1.16.0",
 ]
 
 [tool.ruff]
@@ -43,3 +45,16 @@ docs = [
 
 [tool.hatch.build.targets.wheel]
 packages = ["sonolus"]
+
+[tool.tox]
+requires = ["tox>=4.19"]
+env_list = ["py312", "py313"]
+
+[tool.tox.env_run_base]
+description = "Run tests"
+deps = [
+    "hypothesis>=6.115.3",
+    "pytest-xdist>=3.6.1",
+    "pytest>=8.3.3",
+]
+commands = [["pytest", "tests", "-n", "auto"]]
