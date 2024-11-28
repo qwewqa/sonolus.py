@@ -1,8 +1,10 @@
 from pathlib import Path
+from typing import TypedDict
 
 from sonolus.build.collection import Asset, Collection, Srl
 from sonolus.build.engine import package_engine
 from sonolus.build.level import package_level_data
+from sonolus.script.archetype import ArchetypeSchema
 from sonolus.script.engine import Engine
 from sonolus.script.level import Level
 from sonolus.script.project import Project
@@ -92,3 +94,36 @@ def load_resources_files_to_collection(base_path: Path) -> Collection:
         collection.load_from_scp(path)
     collection.load_from_source(base_path)
     return collection
+
+
+class ProjectSchema(TypedDict):
+    archetypes: list[ArchetypeSchema]
+
+
+def get_project_schema(project: Project) -> ProjectSchema:
+    by_archetype: dict[str, dict[str, bool]] = {}
+    for archetype in project.engine.data.play.archetypes:
+        fields = by_archetype.setdefault(archetype.name, {})
+        # If a field is exported, we should exclude it if it's imported in watch mode
+        for field in archetype._exported_keys_:
+            fields[field] = False
+        for field in archetype._imported_keys_:
+            fields[field] = True
+    for archetype in project.engine.data.watch.archetypes:
+        fields = by_archetype.setdefault(archetype.name, {})
+        for field in archetype._imported_keys_:
+            if field not in fields:
+                fields[field] = True
+    for archetype in project.engine.data.preview.archetypes:
+        fields = by_archetype.setdefault(archetype.name, {})
+        for field in archetype._imported_keys_:
+            fields[field] = True
+    return {
+        "archetypes": [
+            {
+                "name": name,
+                "fields": [*fields],
+            }
+            for name, fields in by_archetype.items()
+        ]
+    }

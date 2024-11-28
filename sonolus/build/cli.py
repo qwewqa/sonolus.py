@@ -2,6 +2,7 @@ import argparse
 import contextlib
 import http.server
 import importlib
+import json
 import shutil
 import socket
 import socketserver
@@ -11,7 +12,7 @@ from time import perf_counter
 
 from sonolus.build.engine import package_engine
 from sonolus.build.level import package_level_data
-from sonolus.build.project import build_project_to_collection
+from sonolus.build.project import build_project_to_collection, get_project_schema
 from sonolus.script.project import Project
 
 
@@ -147,6 +148,14 @@ def main():
     dev_parser.add_argument("--build-dir", type=str, default="./build")
     dev_parser.add_argument("--port", type=int, default=8000)
 
+    schema_parser = subparsers.add_parser("schema")
+    schema_parser.add_argument(
+        "module",
+        type=str,
+        nargs="?",
+        help="Module path (e.g., 'module.name'). If omitted, will auto-detect if only one module exists.",
+    )
+
     args = parser.parse_args()
 
     if not args.module:
@@ -161,16 +170,18 @@ def main():
     if project is None:
         sys.exit(1)
 
-    build_dir = Path(args.build_dir)
-
     if args.command == "build":
+        build_dir = Path(args.build_dir)
         start_time = perf_counter()
         build_project(project, build_dir)
         end_time = perf_counter()
         print(f"Project built successfully to '{build_dir.resolve()}' in {end_time - start_time:.2f}s")
     elif args.command == "dev":
+        build_dir = Path(args.build_dir)
         start_time = perf_counter()
         build_collection(project, build_dir)
         end_time = perf_counter()
         print(f"Build finished in {end_time - start_time:.2f}s")
         run_server(build_dir / "site", port=args.port)
+    elif args.command == "schema":
+        print(json.dumps(get_project_schema(project), indent=2))

@@ -14,3 +14,10 @@ To build the project, run the following command in the root directory of your pr
 ```bash
 sonolus-py build
 ```
+
+## Outputting the level schema
+To output the level schema of the project, run the following command in the root directory of your project:
+
+```bash
+sonolus-py schema
+```

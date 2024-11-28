@@ -5,7 +5,7 @@ from collections.abc import Callable
 from dataclasses import dataclass
 from enum import Enum, StrEnum
 from types import FunctionType
-from typing import Annotated, Any, ClassVar, Self, get_origin
+from typing import Annotated, Any, ClassVar, Self, TypedDict, get_origin
 
 from sonolus.backend.ir import IRConst, IRInstr
 from sonolus.backend.mode import Mode
@@ -307,6 +307,11 @@ class _ArchetypeLevelData:
 type _ArchetypeData = _ArchetypeSelfData | _ArchetypeReferenceData | _ArchetypeLevelData
 
 
+class ArchetypeSchema(TypedDict):
+    name: str
+    fields: list[str]
+
+
 class _BaseArchetype:
     _is_comptime_value_ = True
 
@@ -400,6 +405,10 @@ class _BaseArchetype:
         for field in cls._memory_fields_.values():
             data.extend(field.type._accept_(bound.arguments[field.name] or zeros(field.type))._to_list_())
         native_call(Op.Spawn, archetype_id, *(Num(x) for x in data))
+
+    @classmethod
+    def schema(cls) -> ArchetypeSchema:
+        return {"name": cls.name or "unnamed", "fields": list(cls._imported_fields_)}
 
     def _level_data_entries(self, level_refs: dict[Any, int] | None = None):
         if not isinstance(self._data_, _ArchetypeLevelData):
