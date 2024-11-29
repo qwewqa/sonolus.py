@@ -147,10 +147,10 @@ class Bucket(Record):
 class _BucketSprite:
     id: int
     fallback_id: int | None
-    x: int
-    y: int
-    w: int
-    h: int
+    x: float
+    y: float
+    w: float
+    h: float
     rotation: float
 
     def to_dict(self):
@@ -185,10 +185,10 @@ def bucket_sprite(
     *,
     sprite: Sprite,
     fallback_sprite: Sprite | None = None,
-    x: int,
-    y: int,
-    w: int,
-    h: int,
+    x: float,
+    y: float,
+    w: float,
+    h: float,
     rotation: float = 0,
 ) -> _BucketSprite:
     """Define a sprite for a bucket."""
