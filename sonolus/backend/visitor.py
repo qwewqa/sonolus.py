@@ -335,6 +335,8 @@ class Visitor(ast.NodeVisitor):
         has_next = self.ensure_boolean_num(self.handle_call(node, iterator.has_next))
         if has_next._is_py_() and not has_next._as_py_():
             # The loop will never run, continue after evaluating the condition
+            self.loop_head_ctxs.pop()
+            self.break_ctxs.pop()
             for stmt in node.orelse:
                 self.visit(stmt)
             return
@@ -348,13 +350,14 @@ class Visitor(ast.NodeVisitor):
             self.visit(stmt)
         ctx().branch_to_loop_header(header_ctx)
 
+        self.loop_head_ctxs.pop()
+        break_ctxs = self.break_ctxs.pop()
+
         set_ctx(else_ctx)
         for stmt in node.orelse:
             self.visit(stmt)
         else_end_ctx = ctx()
 
-        self.loop_head_ctxs.pop()
-        break_ctxs = self.break_ctxs.pop()
         after_ctx = Context.meet([else_end_ctx, *break_ctxs])
         set_ctx(after_ctx)
 

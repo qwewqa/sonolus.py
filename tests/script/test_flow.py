@@ -879,3 +879,19 @@ def test_loop_with_aug_assign():
 
     for _ in range(100):
         validate_dual_run(fn)
+
+
+def test_break_in_nested_for_else():
+    def fn():
+        for _ in range(2):
+            for _ in range(2):
+                debug_log(1)
+            else:
+                debug_log(2)
+                break
+            debug_log(3)
+        else:
+            debug_log(4)
+        debug_log(5)
+
+    validate_dual_run(fn)
