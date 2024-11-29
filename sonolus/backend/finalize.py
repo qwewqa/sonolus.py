@@ -42,6 +42,7 @@ def cfg_to_engine_node(entry: BasicBlock):
                     for cond, target in targets.items():
                         if cond is None:
                             default = block_indexes[target]
+                            continue
                         args.append(ConstantNode(value=cond))
                         args.append(ConstantNode(value=block_indexes[target]))
                     args.append(ConstantNode(value=default))
@@ -55,7 +56,7 @@ def ir_to_engine_node(stmt) -> EngineNode:
     match stmt:
         case int() | float():
             return ConstantNode(value=float(stmt))
-        case IRConst(value=value):
+        case IRConst(value=int(value) | float(value)):
             return ConstantNode(value=value)
         case IRPureInstr(op=op, args=args) | IRInstr(op=op, args=args):
             return FunctionNode(func=op, args=[ir_to_engine_node(arg) for arg in args])
