@@ -375,6 +375,13 @@ class _BaseArchetype:
 
     @classmethod
     @meta_fn
+    def is_at(cls, index: Num) -> bool:
+        if not ctx():
+            raise RuntimeError("is_at is only available during compilation")
+        return entity_info_at(index).archetype_id == cls.id()
+
+    @classmethod
+    @meta_fn
     def id(cls):
         if not ctx():
             raise RuntimeError("Archetype id is only available during compilation")
@@ -975,7 +982,7 @@ class EntityRef[A: _BaseArchetype](Record):
         return self.archetype().at(self.index)
 
     def is_valid(self) -> bool:
-        return self.index >= 0 and entity_info_at(self.index).archetype_id == self.archetype().id()
+        return self.index >= 0 and self.archetype().is_at(self.index)
 
     def _to_list_(self, level_refs: dict[Any, int] | None = None) -> list[float | BlockPlace]:
         ref = getattr(self, "_ref_", None)
