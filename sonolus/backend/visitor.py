@@ -365,11 +365,30 @@ class Visitor(ast.NodeVisitor):
         self.break_ctxs.append([])
         set_ctx(header_ctx)
         test = self.ensure_boolean_num(self.visit(node.test))
-        if test._is_py_() and not test._as_py_():
-            # The loop will never run, continue after evaluating the condition
-            for stmt in node.orelse:
-                self.visit(stmt)
-            return
+        if test._is_py_():
+            if test._as_py_():
+                # The loop will run until a break / return
+                body_ctx = ctx().branch(None)
+                set_ctx(body_ctx)
+                for stmt in node.body:
+                    self.visit(stmt)
+                ctx().branch_to_loop_header(header_ctx)
+
+                self.loop_head_ctxs.pop()
+                break_ctxs = self.break_ctxs.pop()
+
+                # Skip the else block
+
+                after_ctx = Context.meet(break_ctxs)
+                set_ctx(after_ctx)
+                return
+            else:
+                # The loop will never run, continue after evaluating the condition
+                self.loop_head_ctxs.pop()
+                self.break_ctxs.pop()
+                for stmt in node.orelse:
+                    self.visit(stmt)
+                return
         ctx().test = test.ir()
         body_ctx = ctx().branch(None)
         else_ctx = ctx().branch(0)
@@ -379,13 +398,14 @@ class Visitor(ast.NodeVisitor):
             self.visit(stmt)
         ctx().branch_to_loop_header(header_ctx)
 
+        self.loop_head_ctxs.pop()
+        break_ctxs = self.break_ctxs.pop()
+
         set_ctx(else_ctx)
         for stmt in node.orelse:
             self.visit(stmt)
         else_end_ctx = ctx()
 
-        self.loop_head_ctxs.pop()
-        break_ctxs = self.break_ctxs.pop()
         after_ctx = Context.meet([else_end_ctx, *break_ctxs])
         set_ctx(after_ctx)
 
