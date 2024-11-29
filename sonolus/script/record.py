@@ -186,7 +186,7 @@ class Record(GenericValue):
         iterator = iter(values)
         return cls(**{field.name: field.type._from_list_(iterator) for field in cls._fields})
 
-    def _to_list_(self, level_refs: dict[Any, int] | None = None) -> list[float | BlockPlace]:
+    def _to_list_(self, level_refs: dict[Any, str] | None = None) -> list[float | str | BlockPlace]:
         result = []
         for field in self._fields:
             result.extend(self._value[field.name]._to_list_(level_refs))

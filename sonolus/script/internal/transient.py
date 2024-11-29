@@ -26,7 +26,7 @@ class TransientValue(Value):
     def _from_list_(cls, values: Iterable[float | BlockPlace]) -> Self:
         raise TypeError(f"{cls.__name__} cannot be constructed from list")
 
-    def _to_list_(self, level_refs: dict[Any, int] | None = None) -> list[float | BlockPlace]:
+    def _to_list_(self, level_refs: dict[Any, str] | None = None) -> list[float | str | BlockPlace]:
         raise TypeError(f"{type(self).__name__} cannot be deconstructed to list")
 
     @classmethod

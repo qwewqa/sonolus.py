@@ -97,7 +97,7 @@ class ConstantValue(Value):
     def _from_list_(cls, values: Iterable[float | BlockPlace]) -> Self:
         return cls()
 
-    def _to_list_(self, level_refs: dict[Any, int] | None = None) -> list[float | BlockPlace]:
+    def _to_list_(self, level_refs: dict[Any, str] | None = None) -> list[float | str | BlockPlace]:
         return []
 
     @classmethod

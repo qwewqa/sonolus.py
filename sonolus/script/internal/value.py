@@ -66,7 +66,7 @@ class Value:
         raise NotImplementedError
 
     @abstractmethod
-    def _to_list_(self, level_refs: dict[Any, int] | None = None) -> list[float | BlockPlace]:
+    def _to_list_(self, level_refs: dict[Any, str] | None = None) -> list[float | str | BlockPlace]:
         """Converts this value to a list of floats."""
         raise NotImplementedError
 
@@ -76,7 +76,9 @@ class Value:
         """Returns the keys to a flat representation of this value."""
         raise NotImplementedError
 
-    def _to_flat_dict_(self, prefix: str, level_refs: dict[Any, int] | None = None) -> dict[str, float | BlockPlace]:
+    def _to_flat_dict_(
+        self, prefix: str, level_refs: dict[Any, str] | None = None
+    ) -> dict[str, float | str | BlockPlace]:
         """Converts this value to a flat dictionary."""
         return dict(zip(self._flat_keys_(prefix), self._to_list_(level_refs), strict=False))
 

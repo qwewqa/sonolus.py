@@ -421,14 +421,17 @@ class _BaseArchetype:
     def schema(cls) -> ArchetypeSchema:
         return {"name": cls.name or "unnamed", "fields": list(cls._imported_fields_)}
 
-    def _level_data_entries(self, level_refs: dict[Any, int] | None = None):
+    def _level_data_entries(self, level_refs: dict[Any, str] | None = None):
         if not isinstance(self._data_, _ArchetypeLevelData):
             raise RuntimeError("Entity is not level data")
         entries = []
         for name, value in self._data_.values.items():
             field_info = self._imported_fields_.get(name)
             for k, v in value._to_flat_dict_(field_info.data_name, level_refs).items():
-                entries.append({"name": k, "value": v})
+                if isinstance(v, str):
+                    entries.append({"name": k, "ref": v})
+                else:
+                    entries.append({"name": k, "value": v})
         return entries
 
     def __init_subclass__(cls, **kwargs):
@@ -984,7 +987,7 @@ class EntityRef[A: _BaseArchetype](Record):
     def is_valid(self) -> bool:
         return self.index >= 0 and self.archetype().is_at(self.index)
 
-    def _to_list_(self, level_refs: dict[Any, int] | None = None) -> list[float | BlockPlace]:
+    def _to_list_(self, level_refs: dict[Any, str] | None = None) -> list[float | str | BlockPlace]:
         ref = getattr(self, "_ref_", None)
         if ref is None:
             return [self.index]

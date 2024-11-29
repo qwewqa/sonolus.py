@@ -111,7 +111,7 @@ class Array[T, Size](GenericValue, ArrayLike[T]):
         iterator = iter(values)
         return cls(*(cls.element_type()._from_list_(iterator) for _ in range(cls.size())))
 
-    def _to_list_(self, level_refs: dict[Any, int] | None = None) -> list[float | BlockPlace]:
+    def _to_list_(self, level_refs: dict[Any, str] | None = None) -> list[float | str | BlockPlace]:
         match self._value:
             case list():
                 return [entry for value in self._value for entry in value._to_list_(level_refs)]

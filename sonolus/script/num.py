@@ -92,7 +92,7 @@ class _Num(Value, metaclass=_NumMeta):
         value = next(iter(values))
         return Num(value)
 
-    def _to_list_(self, level_refs: dict[Any, int] | None = None) -> list[float | BlockPlace]:
+    def _to_list_(self, level_refs: dict[Any, str] | None = None) -> list[float | str | BlockPlace]:
         return [self.data]
 
     @classmethod
