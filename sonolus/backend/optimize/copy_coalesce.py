@@ -39,20 +39,29 @@ class CopyCoalesce(CompilerPass):
         interference = self.get_interference(entry)
         copies = self.get_copies(entry)
 
-        mapping = {}
+        mapping: dict[TempBlock, set[TempBlock]] = {}
 
         for target, sources in copies.items():
             for source in sources:
-                if source in mapping:
-                    continue
                 if source in interference.get(target, set()):
                     continue
-                mapping[source] = mapping.get(target, target)
+                combined_mapping = mapping.get(target, {target}) | mapping.get(source, {source})
                 combined_interference = interference.get(target, set()) | interference.get(source, set())
-                interference[source] = combined_interference
-                interference[target] = combined_interference
+                for place in combined_mapping:
+                    mapping[place] = combined_mapping
+                    interference[place] = combined_interference
+                for place in combined_interference:
+                    interference[place].update(combined_mapping)
 
-        return mapping
+        canonical_mapping = {}
+        for place, group in mapping.items():
+            if place in canonical_mapping:
+                continue
+            canonical = min(group)
+            for member in group:
+                canonical_mapping[member] = canonical
+
+        return canonical_mapping
 
     def get_interference(self, entry: BasicBlock) -> dict[TempBlock, set[TempBlock]]:
         result = {}

@@ -3,7 +3,7 @@ from __future__ import annotations
 
 import operator
 from collections.abc import Callable, Iterable
-from typing import TYPE_CHECKING, Any, Self, final, runtime_checkable, TypeGuard
+from typing import TYPE_CHECKING, Any, Self, TypeGuard, final, runtime_checkable
 
 from sonolus.backend.ir import IRConst, IRGet, IRPureInstr, IRSet
 from sonolus.backend.ops import Op
