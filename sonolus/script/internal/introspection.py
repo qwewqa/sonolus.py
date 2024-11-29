@@ -12,6 +12,13 @@ def get_field_specifiers(cls, *, skip: set[str] = frozenset(), globals=None, loc
         if class_value is not _missing and key not in skip:
             results[key] = Annotated[value, class_value]
     for key, value in cls.__dict__.items():
-        if key not in results and key not in skip and not key.startswith("__") and not callable(value):
+        if (
+            key not in results
+            and key not in skip
+            and not key.startswith("__")
+            and not callable(value)
+            and not hasattr(value, "__func__")
+            and not isinstance(value, property)
+        ):
             raise ValueError(f"Missing annotation for {cls.__name__}.{key}")
     return results
