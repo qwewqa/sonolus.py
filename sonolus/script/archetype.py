@@ -62,7 +62,9 @@ class _ArchetypeField(SonolusDescriptor):
                         result = _deref(ctx().blocks.EntityData, self.offset, self.type)
                     case _ArchetypeReferenceData(index=index):
                         result = _deref(
-                            ctx().blocks.EntityDataArray, self.offset + index * _ENTITY_DATA_SIZE, self.type
+                            ctx().blocks.EntityDataArray,
+                            Num._accept_(self.offset) + index * _ENTITY_DATA_SIZE,
+                            self.type,
                         )
                     case _ArchetypeLevelData(values=values):
                         result = values[self.name]
@@ -108,7 +110,9 @@ class _ArchetypeField(SonolusDescriptor):
                         target = _deref(ctx().blocks.EntityData, self.offset, self.type)
                     case _ArchetypeReferenceData(index=index):
                         target = _deref(
-                            ctx().blocks.EntityDataArray, self.offset + index * _ENTITY_DATA_SIZE, self.type
+                            ctx().blocks.EntityDataArray,
+                            Num._accept_(self.offset) + index * _ENTITY_DATA_SIZE,
+                            self.type,
                         )
                     case _ArchetypeLevelData(values=values):
                         target = values[self.name]
