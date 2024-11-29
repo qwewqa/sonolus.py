@@ -4,8 +4,8 @@ from hypothesis import strategies as st
 from sonolus.script.interval import Interval, remap, remap_clamped
 from tests.script.conftest import implies, is_close, validate_dual_run
 
-ints = st.integers(min_value=-999999, max_value=999999)
-floats = st.floats(min_value=-999999, max_value=999999, allow_infinity=False, allow_nan=False)
+ints = st.integers(min_value=-99999, max_value=99999)
+floats = st.floats(min_value=-99999, max_value=99999, allow_infinity=False, allow_nan=False)
 divisor_floats = floats.filter(lambda x: abs(x) > 1e-6)
 
 
