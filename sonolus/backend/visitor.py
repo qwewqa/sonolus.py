@@ -382,7 +382,7 @@ class Visitor(ast.NodeVisitor):
 
                 # Skip the else block
 
-                after_ctx = Context.meet(break_ctxs)
+                after_ctx = Context.meet([ctx().into_dead(), *break_ctxs])
                 set_ctx(after_ctx)
                 return
             else:
