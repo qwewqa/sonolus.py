@@ -123,7 +123,7 @@ class _ArchetypeField(SonolusDescriptor):
                             raise TypeError(f"Expected {self.type}, got {type(value)}")
                         for k, v in value._to_flat_dict_(self.data_name).items():
                             index = instance._exported_keys_[k]
-                            ctx().add_statements(IRInstr(Op.ExportValue, [IRConst(index), Num._accept_(v).ir()]))
+                            ctx().add_statements(IRInstr(Op.ExportValue, [IRConst(index), Num(v).ir()]))
                         return
                     case _ArchetypeReferenceData():
                         raise RuntimeError("Exported fields of other entities are not accessible")

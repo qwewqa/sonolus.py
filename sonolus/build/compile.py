@@ -42,9 +42,7 @@ def compile_mode(
                 "imports": [{"name": name, "index": index} for name, index in archetype._imported_keys_.items()],
             }
             if mode == Mode.PLAY:
-                archetype_data["exports"] = [
-                    {"name": name, "index": index} for name, index in archetype._exported_keys_.items()
-                ]
+                archetype_data["exports"] = [*archetype._exported_keys_]
             for cb_name, cb_info in archetype._supported_callbacks_.items():
                 cb = getattr(archetype, cb_name)
                 if cb in archetype._default_callbacks_:
