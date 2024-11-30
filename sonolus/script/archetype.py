@@ -1022,7 +1022,10 @@ class EntityRef[A: _BaseArchetype](Record):
     def _accept_(cls, value: Any) -> Self:
         if not cls._accepts_(value):
             raise TypeError(f"Expected {cls}, got {type(value)}")
-        return value.with_archetype(cls.archetype())
+        result = value.with_archetype(cls.archetype())
+        if hasattr(value, "_ref_"):
+            result._ref_ = value._ref_
+        return result
 
 
 class StandardArchetypeName(StrEnum):
