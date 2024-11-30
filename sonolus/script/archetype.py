@@ -346,6 +346,7 @@ class _BaseArchetype:
     is_scored: ClassVar[bool] = False
 
     def __init__(self, *args, **kwargs):
+        self._init_fields()
         if ctx():
             raise RuntimeError("The Archetype constructor is only for defining level data")
         bound = self._data_constructor_signature_.bind_partial(*args, **kwargs)
@@ -358,10 +359,12 @@ class _BaseArchetype:
 
     @classmethod
     def _new(cls):
+        cls._init_fields()
         return object.__new__(cls)
 
     @classmethod
     def _for_compilation(cls):
+        cls._init_fields()
         result = cls._new()
         result._data_ = _ArchetypeSelfData()
         return result
@@ -407,6 +410,7 @@ class _BaseArchetype:
         Args:
             **kwargs: Entity memory values to inject by field name as defined in the Archetype.
         """
+        cls._init_fields()
         if not ctx():
             raise RuntimeError("Spawn is only allowed within a callback")
         archetype_id = cls.id()
@@ -419,9 +423,11 @@ class _BaseArchetype:
 
     @classmethod
     def schema(cls) -> ArchetypeSchema:
+        cls._init_fields()
         return {"name": cls.name or "unnamed", "fields": list(cls._imported_fields_)}
 
     def _level_data_entries(self, level_refs: dict[Any, str] | None = None):
+        self._init_fields()
         if not isinstance(self._data_, _ArchetypeLevelData):
             raise RuntimeError("Entity is not level data")
         entries = []
@@ -444,7 +450,22 @@ class _BaseArchetype:
             raise TypeError("Cannot subclass Archetypes")
         if cls.name is None:
             cls.name = cls.__name__
-        field_specifiers = get_field_specifiers(cls, skip={"name", "is_scored"}).items()
+        cls._callbacks_ = []
+        for name in cls._supported_callbacks_:
+            cb = getattr(cls, name)
+            if cb in cls._default_callbacks_:
+                continue
+            cls._callbacks_.append(cb)
+        cls._field_init_done = False
+
+    @classmethod
+    def _init_fields(cls):
+        if cls._field_init_done:
+            return
+        cls._field_init_done = True
+        field_specifiers = get_field_specifiers(
+            cls, skip={"name", "is_scored", "_callbacks_", "_field_init_done"}
+        ).items()
         cls._imported_fields_ = {}
         cls._exported_fields_ = {}
         cls._memory_fields_ = {}
@@ -520,12 +541,6 @@ class _BaseArchetype:
         cls._spawn_signature_ = inspect.Signature(
             [inspect.Parameter(name, inspect.Parameter.POSITIONAL_OR_KEYWORD) for name in cls._memory_fields_]
         )
-        cls._callbacks_ = []
-        for name in cls._supported_callbacks_:
-            cb = getattr(cls, name)
-            if cb in cls._default_callbacks_:
-                continue
-            cls._callbacks_.append(cb)
 
 
 class PlayArchetype(_BaseArchetype):
@@ -981,6 +996,9 @@ class EntityRef[A: _BaseArchetype](Record):
     def archetype(cls) -> type[A]:
         return cls.type_var_value(A)
 
+    def with_archetype(self, archetype: type[A]) -> EntityRef[A]:
+        return EntityRef[archetype](index=self.index)
+
     def get(self) -> A:
         return self.archetype().at(self.index)
 
@@ -995,6 +1013,16 @@ class EntityRef[A: _BaseArchetype](Record):
             if ref not in level_refs:
                 raise KeyError("Reference to entity not in level data")
             return [level_refs[ref]]
+
+    @classmethod
+    def _accepts_(cls, value: Any) -> bool:
+        return super()._accepts_(value) or (cls._type_args_ and cls.archetype() is Any and isinstance(value, EntityRef))
+
+    @classmethod
+    def _accept_(cls, value: Any) -> Self:
+        if not cls._accepts_(value):
+            raise TypeError(f"Expected {cls}, got {type(value)}")
+        return value.with_archetype(cls.archetype())
 
 
 class StandardArchetypeName(StrEnum):
