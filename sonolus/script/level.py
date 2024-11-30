@@ -42,6 +42,25 @@ class Level:
         self.data = data
 
 
+type EntityListArg = list[PlayArchetype | EntityListArg]
+
+
+def flatten_entities(entities: EntityListArg):
+    """Flatten a list of entities.
+
+    Args:
+        entities: The list of entities.
+
+    Returns:
+        The flattened list of entities.
+    """
+    if isinstance(entities, list):
+        for entity in entities:
+            yield from flatten_entities(entity)
+    else:
+        yield entities
+
+
 class LevelData:
     """The data of a Sonolus level.
 
@@ -55,7 +74,7 @@ class LevelData:
 
     def __init__(self, bgm_offset: float, entities: list[PlayArchetype]) -> None:
         self.bgm_offset = bgm_offset
-        self.entities = entities
+        self.entities = [*flatten_entities(entities)]
 
 
 class BpmChange(PlayArchetype):
