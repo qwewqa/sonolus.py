@@ -80,6 +80,24 @@ class JudgmentWindow(Record):
             self.good * other,
         )
 
+    def __add__(self, other: float | int) -> JudgmentWindow:
+        """Add a scalar to the intervals."""
+        return JudgmentWindow(
+            self.perfect + other,
+            self.great + other,
+            self.good + other,
+        )
+
+    @property
+    def start(self) -> float:
+        """The start time of the good interval."""
+        return self.good.start
+
+    @property
+    def end(self) -> float:
+        """The end time of the good interval."""
+        return self.good.end
+
 
 class Judgment(IntEnum):
     """The judgment of a hit."""
