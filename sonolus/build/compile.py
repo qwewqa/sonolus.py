@@ -36,6 +36,7 @@ def compile_mode(
     if archetypes is not None:
         archetype_entries = []
         for archetype in archetypes:
+            archetype._init_fields()
             archetype_data = {
                 "name": archetype.name,
                 "hasInput": archetype.is_scored,
