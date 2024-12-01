@@ -825,20 +825,6 @@ class WatchArchetype(_BaseArchetype):
             case _:
                 raise RuntimeError("Result is only accessible from the entity itself")
 
-    @property
-    def target_time(self) -> float:
-        """The target time of this entity.
-
-        Only meaningful for scored entities. Determines when combo and score are updated.
-
-        Alias of `result.target_time`.
-        """
-        return self.result.target_time
-
-    @target_time.setter
-    def target_time(self, value: float):
-        self.result.target_time = value
-
 
 class PreviewArchetype(_BaseArchetype):
     """Base class for preview mode archetypes.
