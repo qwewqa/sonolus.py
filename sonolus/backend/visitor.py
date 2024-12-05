@@ -982,7 +982,11 @@ class Visitor(ast.NodeVisitor):
             if isinstance(target, ConstantValue):
                 # Unwrap so we can access fields
                 target = target._as_py_()
-            descriptor = type(target).__dict__.get(key)
+            descriptor = None
+            for cls in type.mro(type(target)):
+                descriptor = cls.__dict__.get(key, None)
+                if descriptor is not None:
+                    break
             match descriptor:
                 case property(fget=getter):
                     return self.handle_call(node, getter, target)

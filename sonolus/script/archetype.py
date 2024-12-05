@@ -446,8 +446,6 @@ class _BaseArchetype:
                 raise TypeError("Cannot directly subclass Archetype, use the Archetype subclass for your mode")
             cls._default_callbacks_ = {getattr(cls, cb_info.py_name) for cb_info in cls._supported_callbacks_.values()}
             return
-        if getattr(cls, "_callbacks_", None) is not None:
-            raise TypeError("Cannot subclass Archetypes")
         if cls.name is None:
             cls.name = cls.__name__
         cls._callbacks_ = []
@@ -466,14 +464,18 @@ class _BaseArchetype:
         field_specifiers = get_field_specifiers(
             cls, skip={"name", "is_scored", "_callbacks_", "_field_init_done"}
         ).items()
-        cls._imported_fields_ = {}
-        cls._exported_fields_ = {}
-        cls._memory_fields_ = {}
-        cls._shared_memory_fields_ = {}
-        imported_offset = 0
-        exported_offset = 0
-        memory_offset = 0
-        shared_memory_offset = 0
+        if not hasattr(cls, "_imported_fields_"):
+            cls._imported_fields_ = {}
+        if not hasattr(cls, "_exported_fields_"):
+            cls._exported_fields_ = {}
+        if not hasattr(cls, "_memory_fields_"):
+            cls._memory_fields_ = {}
+        if not hasattr(cls, "_shared_memory_fields_"):
+            cls._shared_memory_fields_ = {}
+        imported_offset = sum(field.type._size_() for field in cls._imported_fields_.values())
+        exported_offset = sum(field.type._size_() for field in cls._exported_fields_.values())
+        memory_offset = sum(field.type._size_() for field in cls._memory_fields_.values())
+        shared_memory_offset = sum(field.type._size_() for field in cls._shared_memory_fields_.values())
         for name, value in field_specifiers:
             if value is ClassVar or get_origin(value) is ClassVar:
                 continue
@@ -682,6 +684,7 @@ class PlayArchetype(_BaseArchetype):
         return self._info.state == 2
 
     @property
+    @meta_fn
     def life(self) -> ArchetypeLife:
         """How this entity contributes to life."""
         if not ctx():
@@ -693,6 +696,7 @@ class PlayArchetype(_BaseArchetype):
                 raise RuntimeError("Life is not available in level data")
 
     @property
+    @meta_fn
     def result(self) -> PlayEntityInput:
         """The result of this entity.
 
@@ -801,6 +805,7 @@ class WatchArchetype(_BaseArchetype):
         return self._info.state == 1
 
     @property
+    @meta_fn
     def life(self) -> ArchetypeLife:
         """How this entity contributes to life."""
         if not ctx():
@@ -812,6 +817,7 @@ class WatchArchetype(_BaseArchetype):
                 raise RuntimeError("Life is not available in level data")
 
     @property
+    @meta_fn
     def result(self) -> WatchEntityInput:
         """The result of this entity.
 
@@ -857,6 +863,7 @@ class PreviewArchetype(_BaseArchetype):
         """
 
     @property
+    @meta_fn
     def _info(self) -> PreviewEntityInfo:
         if not ctx():
             raise RuntimeError("Calling info is only allowed within a callback")
@@ -974,21 +981,35 @@ class WatchEntityInput(Record):
 
 
 class EntityRef[A: _BaseArchetype](Record):
-    """Reference to another entity."""
+    """Reference to another entity.
+
+    May be used with `Any` to reference an unknown archetype.
+
+    Usage:
+        ```
+        class MyArchetype(PlayArchetype):
+            ref_1: EntityRef[OtherArchetype] = imported()
+            ref_2: EntityRef[Any] = imported()
+        ```
+    """
 
     index: int
 
     @classmethod
     def archetype(cls) -> type[A]:
+        """Get the archetype type."""
         return cls.type_var_value(A)
 
     def with_archetype(self, archetype: type[A]) -> EntityRef[A]:
+        """Return a new reference with the given archetype type."""
         return EntityRef[archetype](index=self.index)
 
     def get(self) -> A:
+        """Get the entity."""
         return self.archetype().at(self.index)
 
-    def is_valid(self) -> bool:
+    def archetype_matches(self) -> bool:
+        """Check if entity at the index is precisely of the archetype."""
         return self.index >= 0 and self.archetype().is_at(self.index)
 
     def _to_list_(self, level_refs: dict[Any, str] | None = None) -> list[float | str | BlockPlace]:
