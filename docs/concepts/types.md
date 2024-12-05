@@ -242,6 +242,20 @@ assert not isinstance(a, Array[int, 2])
 assert not isinstance(a, Array[Pair, 3])
 ```
 
+### Enums
+
+There is limited support for enums containing `Num` values. Methods on enums are not supported. 
+When used as a type, any enum class is treated as `Num` and no enforcement is done on the values.
+
+```python
+class MyEnum(IntEnum):
+    A = 1
+    B = 2
+    
+a = Array[MyEnum, 2](MyEnum.A, MyEnum.B)
+b = Array[MyEnum, 2](1, 2)
+```
+
 ## Record
 
 `Record` is the base class for user-defined types in Sonolus.py. It functions similarly to dataclasses.
