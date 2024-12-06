@@ -177,6 +177,23 @@ def imported(*, name: str | None = None) -> Any:
     return _ArchetypeFieldInfo(name, _StorageType.IMPORTED)
 
 
+def entity_data() -> Any:
+    """Declare a field as entity data.
+
+    Entity data is accessible from other entities, but may only be updated in the `preprocess` callback
+    and is read-only in other callbacks.
+
+    It functions like `imported`, except that it is not loaded from the level data.
+
+    Usage:
+        ```
+        class MyArchetype(PlayArchetype):
+            field: int = entity_data()
+        ```
+    """
+    return _ArchetypeFieldInfo(None, _StorageType.IMPORTED)
+
+
 def exported(*, name: str | None = None) -> Any:
     """Declare a field as exported.
 
@@ -446,7 +463,7 @@ class _BaseArchetype:
                 raise TypeError("Cannot directly subclass Archetype, use the Archetype subclass for your mode")
             cls._default_callbacks_ = {getattr(cls, cb_info.py_name) for cb_info in cls._supported_callbacks_.values()}
             return
-        if cls.name is None:
+        if cls.name is None or cls.name in {getattr(mro_entry, "name", None) for mro_entry in cls.mro()[1:]}:
             cls.name = cls.__name__
         cls._callbacks_ = []
         for name in cls._supported_callbacks_:
@@ -506,24 +523,32 @@ class _BaseArchetype:
                         name, field_info.name or name, field_info.storage, imported_offset, field_type
                     )
                     imported_offset += field_type._size_()
+                    if imported_offset > _ENTITY_DATA_SIZE:
+                        raise ValueError("Imported fields exceed entity data size")
                     setattr(cls, name, cls._imported_fields_[name])
                 case _StorageType.EXPORTED:
                     cls._exported_fields_[name] = _ArchetypeField(
                         name, field_info.name or name, field_info.storage, exported_offset, field_type
                     )
                     exported_offset += field_type._size_()
+                    if exported_offset > _ENTITY_DATA_SIZE:
+                        raise ValueError("Exported fields exceed entity data size")
                     setattr(cls, name, cls._exported_fields_[name])
                 case _StorageType.MEMORY:
                     cls._memory_fields_[name] = _ArchetypeField(
                         name, field_info.name or name, field_info.storage, memory_offset, field_type
                     )
                     memory_offset += field_type._size_()
+                    if memory_offset > _ENTITY_MEMORY_SIZE:
+                        raise ValueError("Memory fields exceed entity memory size")
                     setattr(cls, name, cls._memory_fields_[name])
                 case _StorageType.SHARED:
                     cls._shared_memory_fields_[name] = _ArchetypeField(
                         name, field_info.name or name, field_info.storage, shared_memory_offset, field_type
                     )
                     shared_memory_offset += field_type._size_()
+                    if shared_memory_offset > _ENTITY_SHARED_MEMORY_SIZE:
+                        raise ValueError("Shared memory fields exceed entity shared memory size")
                     setattr(cls, name, cls._shared_memory_fields_[name])
         cls._imported_keys_ = {
             name: i
@@ -1020,6 +1045,11 @@ class EntityRef[A: _BaseArchetype](Record):
             if ref not in level_refs:
                 raise KeyError("Reference to entity not in level data")
             return [level_refs[ref]]
+
+    def _copy_from_(self, value: Self):
+        super()._copy_from_(value)
+        if hasattr(value, "_ref_"):
+            self._ref_ = value._ref_
 
     @classmethod
     def _accepts_(cls, value: Any) -> bool:
