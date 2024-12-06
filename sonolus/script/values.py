@@ -34,3 +34,10 @@ def copy[T](value: T) -> T:
         return value._copy_()
     else:
         return value._copy_()._as_py_()
+
+
+def swap[T](a: T, b: T):
+    """Swap the values of the given variables."""
+    temp = copy(a)
+    a @= b
+    b @= temp
