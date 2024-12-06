@@ -128,6 +128,25 @@ class Vec2(Record):
         """
         return (self - pivot).rotate(angle) + pivot
 
+    def normalize(self) -> Self:
+        """Normalize the vector (set the magnitude to 1) and return a new vector.
+
+        Returns:
+            A new vector with magnitude 1.
+        """
+        magnitude = self.magnitude
+        return Vec2(x=self.x / magnitude, y=self.y / magnitude)
+
+    def orthogonal(self) -> Self:
+        """Return a vector orthogonal to this vector.
+
+        The orthogonal vector is rotated 90 degrees counter-clockwise from this vector.
+
+        Returns:
+            A new vector orthogonal to this vector.
+        """
+        return Vec2(x=-self.y, y=self.x)
+
     @property
     def tuple(self) -> tuple[float, float]:
         """Return the vector as a tuple (x, y).
