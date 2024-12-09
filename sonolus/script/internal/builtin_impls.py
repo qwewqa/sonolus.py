@@ -232,10 +232,27 @@ _int._type_mapping_ = Num
 _float._type_mapping_ = Num
 _bool._type_mapping_ = Num
 
+
+def _any(iterable):
+    for value in iterable:  # noqa: SIM110
+        if value:
+            return True
+    return False
+
+
+def _all(iterable):
+    for value in iterable:  # noqa: SIM110
+        if not value:
+            return False
+    return True
+
+
 # classmethod, property, staticmethod are supported as decorators, but not within functions
 
 BUILTIN_IMPLS = {
     id(abs): _abs,
+    id(all): _all,
+    id(any): _any,
     id(bool): _bool,
     id(callable): _callable,
     id(enumerate): _enumerate,

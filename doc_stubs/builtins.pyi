@@ -9,6 +9,28 @@ from typing import (
     overload,
 )
 
+def all(iterable: Iterable[builtins.bool]) -> builtins.bool:
+    """Return True if all elements of the iterable are true.
+
+    Args:
+        iterable: The iterable to evaluate.
+
+    Returns:
+        True if all elements are true, False otherwise.
+    """
+    ...
+
+def any(iterable: Iterable[builtins.bool]) -> builtins.bool:
+    """Return True if any element of the iterable is true.
+
+    Args:
+        iterable: The iterable to evaluate.
+
+    Returns:
+        True if any element is true, False otherwise.
+    """
+    ...
+
 def abs(x: builtins.int | builtins.float) -> builtins.int | builtins.float:
     """Return the absolute value of a number.
 

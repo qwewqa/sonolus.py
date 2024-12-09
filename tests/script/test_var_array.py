@@ -625,3 +625,55 @@ def test_filter_map_combination():
         return results
 
     assert list(validate_dual_run(fn)) == [6, 8, 10, 12]
+
+
+def test_any_true():
+    def fn():
+        va = VarArray[bool, 6].new()
+        va.extend(Array(True, False, True, False, True, False))
+        return any(va)
+
+    assert validate_dual_run(fn)
+
+
+def test_any_false():
+    def fn():
+        va = VarArray[bool, 6].new()
+        va.extend(Array(False, False, False, False, False, False))
+        return any(va)
+
+    assert not validate_dual_run(fn)
+
+
+def test_any_empty():
+    def fn():
+        va = VarArray[bool, 0].new()
+        return any(va)
+
+    assert not validate_dual_run(fn)
+
+
+def test_all_true():
+    def fn():
+        va = VarArray[bool, 6].new()
+        va.extend(Array(True, True, True, True, True, True))
+        return all(va)
+
+    assert validate_dual_run(fn)
+
+
+def test_all_false():
+    def fn():
+        va = VarArray[bool, 6].new()
+        va.extend(Array(True, False, True, False, True, False))
+        return all(va)
+
+    assert not validate_dual_run(fn)
+
+
+def test_all_empty():
+    def fn():
+        va = VarArray[bool, 0].new()
+        return all(va)
+
+    assert validate_dual_run(fn)
