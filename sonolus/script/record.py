@@ -206,8 +206,7 @@ class Record(GenericValue):
         raise TypeError("Record does not support set_")
 
     def _copy_from_(self, value: Self):
-        if not isinstance(value, type(self)):
-            raise TypeError("Cannot copy from different type")
+        value = self._accept_(value)
         for field in self._fields:
             field.__set__(self, field.__get__(value))
 
