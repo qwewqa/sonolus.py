@@ -435,7 +435,11 @@ class _BaseArchetype:
         bound.apply_defaults()
         data = []
         for field in cls._memory_fields_.values():
-            data.extend(field.type._accept_(bound.arguments[field.name] or zeros(field.type))._to_list_())
+            data.extend(
+                field.type._accept_(
+                    bound.arguments[field.name] if field.name in bound.arguments else zeros(field.type)
+                )._to_list_()
+            )
         native_call(Op.Spawn, archetype_id, *(Num(x) for x in data))
 
     @classmethod
@@ -478,17 +482,28 @@ class _BaseArchetype:
         if cls._field_init_done:
             return
         cls._field_init_done = True
+        for mro_entry in cls.mro()[1:]:
+            if hasattr(mro_entry, "_field_init_done"):
+                mro_entry._init_fields()
         field_specifiers = get_field_specifiers(
             cls, skip={"name", "is_scored", "_callbacks_", "_field_init_done"}
         ).items()
         if not hasattr(cls, "_imported_fields_"):
             cls._imported_fields_ = {}
+        else:
+            cls._imported_fields_ = {**cls._imported_fields_}
         if not hasattr(cls, "_exported_fields_"):
             cls._exported_fields_ = {}
+        else:
+            cls._exported_fields_ = {**cls._exported_fields_}
         if not hasattr(cls, "_memory_fields_"):
             cls._memory_fields_ = {}
+        else:
+            cls._memory_fields_ = {**cls._memory_fields_}
         if not hasattr(cls, "_shared_memory_fields_"):
             cls._shared_memory_fields_ = {}
+        else:
+            cls._shared_memory_fields_ = {**cls._shared_memory_fields_}
         imported_offset = sum(field.type._size_() for field in cls._imported_fields_.values())
         exported_offset = sum(field.type._size_() for field in cls._exported_fields_.values())
         memory_offset = sum(field.type._size_() for field in cls._memory_fields_.values())
@@ -1053,7 +1068,11 @@ class EntityRef[A: _BaseArchetype](Record):
 
     @classmethod
     def _accepts_(cls, value: Any) -> bool:
-        return super()._accepts_(value) or (cls._type_args_ and cls.archetype() is Any and isinstance(value, EntityRef))
+        return (
+            super()._accepts_(value)
+            or (cls._type_args_ and cls.archetype() is Any and isinstance(value, EntityRef))
+            or (issubclass(type(value), EntityRef) and issubclass(value.archetype(), cls.archetype()))
+        )
 
     @classmethod
     def _accept_(cls, value: Any) -> Self:
