@@ -63,7 +63,7 @@ def import_project(module_path: str) -> Project | None:
         return project
     except Exception as e:
         print(f"Error: Failed to import project: {e}")
-        return None
+        raise e from None
 
 
 def build_project(project: Project, build_dir: Path):
