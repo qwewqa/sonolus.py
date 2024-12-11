@@ -1,5 +1,7 @@
 from __future__ import annotations
 
+from collections.abc import Iterator
+
 from sonolus.build.collection import Asset
 from sonolus.script.archetype import PlayArchetype, StandardArchetypeName, StandardImport
 
@@ -45,14 +47,14 @@ class Level:
 type EntityListArg = list[PlayArchetype | EntityListArg]
 
 
-def flatten_entities(entities: EntityListArg):
+def flatten_entities(entities: EntityListArg) -> Iterator[PlayArchetype]:
     """Flatten a list of entities.
 
     Args:
         entities: The list of entities.
 
-    Returns:
-        The flattened list of entities.
+    Yields:
+        The flattened entities.
     """
     if isinstance(entities, list):
         for entity in entities:

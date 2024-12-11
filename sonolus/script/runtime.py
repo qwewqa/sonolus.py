@@ -253,40 +253,57 @@ class _TutorialRuntimeUi:
 
 
 class Touch(Record):
+    """Data of a touch event."""
+
     id: int
+    """The unique identifier of the touch."""
+
     started: bool
+    """Whether the touch has started this frame."""
+
     ended: bool
+    """Whether the touch has ended this frame."""
+
     time: float
+    """The time of the touch event.
+
+    May remain constant while there is no movement.
+    """
+
     start_time: float
+    """The time the touch started."""
+
     position: Vec2
+    """The current position of the touch."""
+
     start_position: Vec2
+    """The position the touch started."""
+
     delta: Vec2
+    """The change in position of the touch."""
+
     velocity: Vec2
+    """The velocity of the touch."""
+
     speed: float
+    """The speed of the touch's movement."""
+
     angle: float
+    """The angle of the touch's movement."""
 
     @property
     def prev_position(self) -> Vec2:
+        """The previous position of the touch."""
         return self.position - self.delta
 
     @property
-    def total_time(self) -> float:
-        return self.time - self.start_time
-
-    @property
     def total_delta(self) -> Vec2:
+        """The total change in position of the touch."""
         return self.position - self.start_position
 
     @property
-    def total_velocity(self) -> Vec2:
-        return self.total_delta / self.total_time if self.total_time > 0 else Vec2(0, 0)
-
-    @property
-    def total_speed(self) -> float:
-        return self.total_velocity.magnitude
-
-    @property
     def total_angle(self) -> float:
+        """The total angle of the touch's movement."""
         return self.total_delta.angle
 
 
