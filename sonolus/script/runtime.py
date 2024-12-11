@@ -266,6 +266,10 @@ class Touch(Record):
     angle: float
 
     @property
+    def prev_position(self) -> Vec2:
+        return self.position - self.delta
+
+    @property
     def total_time(self) -> float:
         return self.time - self.start_time
 
