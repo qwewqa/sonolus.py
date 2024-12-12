@@ -48,6 +48,14 @@ class PackagedEngine:
         (path / "EngineTutorialData").write_bytes(self.tutorial_data)
         (path / "EngineRom").write_bytes(self.rom)
 
+    def read(self, path: Path):
+        self.configuration = (path / "EngineConfiguration").read_bytes()
+        self.play_data = (path / "EnginePlayData").read_bytes()
+        self.watch_data = (path / "EngineWatchData").read_bytes()
+        self.preview_data = (path / "EnginePreviewData").read_bytes()
+        self.tutorial_data = (path / "EngineTutorialData").read_bytes()
+        self.rom = (path / "EngineRom").read_bytes()
+
 
 def package_engine(engine: EngineData):
     rom = ReadOnlyMemory()

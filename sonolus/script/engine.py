@@ -13,6 +13,7 @@ from sonolus.script.instruction import (
     TutorialInstructionIcons,
     TutorialInstructions,
 )
+from sonolus.script.metadata import AnyText, Tag, as_localization_text
 from sonolus.script.options import EmptyOptions, Options
 from sonolus.script.particle import EmptyParticles, Particles
 from sonolus.script.sprite import EmptySkin, Skin
@@ -33,6 +34,9 @@ class Engine:
         particle: The default particle for the engine.
         thumbnail: The thumbnail for the engine.
         data: The engine's modes and configurations.
+        tags: The tags of the engine.
+        description: The description of the engine.
+        meta: Additional metadata of the engine.
     """
 
     version = 12
@@ -41,26 +45,32 @@ class Engine:
         self,
         *,
         name: str,
-        title: str | None = None,
-        subtitle: str = "Sonolus.py Engine",
-        author: str = "Unknown",
+        title: AnyText | None = None,
+        subtitle: AnyText = "Sonolus.py Engine",
+        author: AnyText = "Unknown",
         skin: str | None = None,
         background: str | None = None,
         effect: str | None = None,
         particle: str | None = None,
         thumbnail: Asset | None = None,
         data: EngineData,
+        tags: list[Tag] | None = None,
+        description: AnyText | None = None,
+        meta: Any = None,
     ) -> None:
         self.name = name
-        self.title = title or name
-        self.subtitle = subtitle
-        self.author = author
+        self.title = as_localization_text(title or name)
+        self.subtitle = as_localization_text(subtitle)
+        self.author = as_localization_text(author)
         self.skin = skin
         self.background = background
         self.effect = effect
         self.particle = particle
         self.thumbnail = thumbnail
         self.data = data
+        self.tags = tags or []
+        self.description = as_localization_text(description) if description is not None else None
+        self.meta = meta
 
 
 def default_callback() -> Any:

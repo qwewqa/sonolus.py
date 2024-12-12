@@ -36,7 +36,7 @@ SINGULAR_CATEGORY_NAMES: dict[Category, str] = {
 }
 BASE_PATH = "/sonolus/"
 RESERVED_FILENAMES = {"info", "list"}
-LOCALIZED_KEYS = {"title", "subtitle", "author", "description"}
+LOCALIZED_KEYS = {"title", "subtitle", "author", "description", "artists"}
 CATEGORY_SORT_ORDER = {
     "levels": 0,
     "engines": 1,
@@ -69,10 +69,10 @@ class Collection:
     def add_item(self, category: Category, name: str, item: Any) -> None:
         self.categories.setdefault(category, {})[name] = self._make_item_details(item)
 
-    @staticmethod
-    def _make_item_details(item: dict[str, Any]) -> dict[str, Any]:
+    @classmethod
+    def _make_item_details(cls, item: dict[str, Any]) -> dict[str, Any]:
         return {
-            "item": item,
+            "item": cls._localize_item(item),
             "actions": [],
             "hasCommunity": False,
             "leaderboards": [],
@@ -149,18 +149,30 @@ class Collection:
 
                 self.add_item(category_name, item_dir.name, item_data)
 
-    @staticmethod
-    def _localize_item(item: dict[str, Any]) -> dict[str, Any]:
+    @classmethod
+    def _localize_item(cls, item: dict[str, Any]) -> dict[str, Any]:
         localized_item = item.copy()
         for key in LOCALIZED_KEYS:
-            match localized_item.get(key):
-                case {"en": localized_value}:
-                    localized_item[key] = localized_value
-                case {**other_languages} if other_languages:
-                    localized_item[key] = localized_item[key][min(other_languages)]
-                case _:
-                    localized_item[key] = ""
+            if key not in localized_item:
+                continue
+            localized_item[key] = cls._localize_text(localized_item[key])
+        if "tags" in localized_item:
+            localized_item["tags"] = [
+                {**tag, "name": cls._localize_text(tag["name"])} for tag in localized_item["tags"]
+            ]
         return localized_item
+
+    @staticmethod
+    def _localize_text(text: str | dict[str, str]) -> str:
+        match text:
+            case str():
+                return text
+            case {"en": localized_text}:
+                return localized_text
+            case {**other_languages} if other_languages:
+                return text[min(other_languages)]
+            case _:
+                return ""
 
     def _group_zip_entries_by_directory(self, file_list: list[zipfile.ZipInfo]) -> dict[str, list[zipfile.ZipInfo]]:
         files_by_dir: dict[str, list[zipfile.ZipInfo]] = {}

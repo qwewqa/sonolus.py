@@ -34,7 +34,7 @@ def add_engine_to_collection(collection: Collection, project: Project, engine: E
         "title": engine.title,
         "subtitle": engine.subtitle,
         "author": engine.author,
-        "tags": [],
+        "tags": [tag.as_dict() for tag in engine.tags],
         "skin": collection.get_item("skins", engine.skin) if engine.skin else collection.get_default_item("skins"),
         "background": collection.get_item("backgrounds", engine.background)
         if engine.background
@@ -53,6 +53,8 @@ def add_engine_to_collection(collection: Collection, project: Project, engine: E
         "rom": collection.add_asset(packaged_engine.rom),
         "configuration": collection.add_asset(packaged_engine.configuration),
     }
+    if engine.description is not None:
+        item["description"] = engine.description
     collection.add_item("engines", engine.name, item)
 
 
@@ -65,16 +67,26 @@ def add_level_to_collection(collection: Collection, project: Project, level: Lev
         "title": level.title,
         "artists": level.artists,
         "author": level.author,
-        "tags": [],
+        "tags": [tag.as_dict() for tag in level.tags],
         "engine": collection.get_item("engines", project.engine.name),
-        "useSkin": {"useDefault": True},
-        "useBackground": {"useDefault": True},
-        "useEffect": {"useDefault": True},
-        "useParticle": {"useDefault": True},
+        "useSkin": {"useDefault": True}
+        if level.use_skin is None
+        else {"useDefault": False, "item": collection.get_item("skins", level.use_skin)},
+        "useBackground": {"useDefault": True}
+        if level.use_background is None
+        else {"useDefault": False, "item": collection.get_item("backgrounds", level.use_background)},
+        "useEffect": {"useDefault": True}
+        if level.use_effect is None
+        else {"useDefault": False, "item": collection.get_item("effects", level.use_effect)},
+        "useParticle": {"useDefault": True}
+        if level.use_particle is None
+        else {"useDefault": False, "item": collection.get_item("particles", level.use_particle)},
         "cover": load_resource(collection, level.cover, project.resources, BLANK_PNG),
         "bgm": load_resource(collection, level.bgm, project.resources, BLANK_AUDIO),
         "data": collection.add_asset(packaged_level_data),
     }
+    if level.description is not None:
+        item["description"] = level.description
     collection.add_item("levels", level.name, item)
 
 
@@ -97,6 +109,7 @@ def load_resources_files_to_collection(base_path: Path) -> Collection:
 def get_project_schema(project: Project) -> ProjectSchema:
     by_archetype: dict[str, dict[str, bool]] = {}
     for archetype in project.engine.data.play.archetypes:
+        archetype._init_fields()
         fields = by_archetype.setdefault(archetype.name, {})
         # If a field is exported, we should exclude it if it's imported in watch mode
         for field in archetype._exported_keys_:
@@ -104,11 +117,15 @@ def get_project_schema(project: Project) -> ProjectSchema:
         for field in archetype._imported_keys_:
             fields[field] = True
     for archetype in project.engine.data.watch.archetypes:
+        archetype._init_fields()
         fields = by_archetype.setdefault(archetype.name, {})
         for field in archetype._imported_keys_:
+            if field in {"#ACCURACY", "#JUDGMENT"}:
+                continue
             if field not in fields:
                 fields[field] = True
     for archetype in project.engine.data.preview.archetypes:
+        archetype._init_fields()
         fields = by_archetype.setdefault(archetype.name, {})
         for field in archetype._imported_keys_:
             fields[field] = True

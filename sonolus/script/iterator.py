@@ -165,3 +165,20 @@ class _FilteringIterator[T, Fn](Record, SonolusIterator):
 
     def advance(self):
         self.iterator.advance()
+
+
+class _ChainingIterator[T](Record, SonolusIterator):
+    iterator: T
+
+    def has_next(self) -> bool:
+        return self.iterator.has_next()
+
+    def get(self) -> Any:
+        return self.iterator.get().get()
+
+    def advance(self):
+        self.iterator.get().advance()
+        while not self.iterator.get().has_next():
+            self.iterator.advance()
+            if not self.iterator.has_next():
+                break

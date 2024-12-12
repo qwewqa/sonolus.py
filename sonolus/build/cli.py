@@ -161,7 +161,8 @@ def main():
     if not args.module:
         default_module = find_default_module()
         if default_module:
-            print(f"Using auto-detected module: {default_module}")
+            if args.command != "schema":
+                print(f"Using auto-detected module: {default_module}")
             args.module = default_module
         else:
             parser.error("Module argument is required when multiple or no modules are found")
