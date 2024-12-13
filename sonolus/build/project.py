@@ -87,6 +87,8 @@ def add_level_to_collection(collection: Collection, project: Project, level: Lev
     }
     if level.description is not None:
         item["description"] = level.description
+    if level.preview is not None:
+        item["preview"] = load_resource(collection, level.preview, project.resources, BLANK_AUDIO)
     collection.add_item("levels", level.name, item)
 
 

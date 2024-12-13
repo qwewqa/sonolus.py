@@ -1,9 +1,12 @@
 from __future__ import annotations
 
+import json
 from collections.abc import Callable
+from os import PathLike
+from pathlib import Path
 from typing import Any
 
-from sonolus.build.collection import Asset
+from sonolus.build.collection import Asset, load_asset
 from sonolus.script.archetype import PlayArchetype, PreviewArchetype, WatchArchetype, _BaseArchetype
 from sonolus.script.bucket import Buckets, EmptyBuckets
 from sonolus.script.effect import Effects, EmptyEffects
@@ -18,6 +21,45 @@ from sonolus.script.options import EmptyOptions, Options
 from sonolus.script.particle import EmptyParticles, Particles
 from sonolus.script.sprite import EmptySkin, Skin
 from sonolus.script.ui import UiConfig
+
+
+class ExportedEngine:
+    """An exported Sonolus.py engine."""
+
+    def __init__(
+        self,
+        *,
+        item: dict,
+        thumbnail: bytes,
+        play_data: bytes,
+        watch_data: bytes,
+        preview_data: bytes,
+        tutorial_data: bytes,
+        rom: bytes | None = None,
+        configuration: bytes,
+    ) -> None:
+        self.item = item
+        self.thumbnail = thumbnail
+        self.play_data = play_data
+        self.watch_data = watch_data
+        self.preview_data = preview_data
+        self.tutorial_data = tutorial_data
+        self.rom = rom
+        self.configuration = configuration
+
+    def write_to_dir(self, path: PathLike):
+        """Write the exported engine to a directory."""
+        path = Path(path)
+        path.mkdir(parents=True, exist_ok=True)
+        (path / "item.json").write_text(json.dumps(self.item, ensure_ascii=False), encoding="utf-8")
+        (path / "thumbnail").write_bytes(self.thumbnail)
+        (path / "playData").write_bytes(self.play_data)
+        (path / "watchData").write_bytes(self.watch_data)
+        (path / "previewData").write_bytes(self.preview_data)
+        (path / "tutorialData").write_bytes(self.tutorial_data)
+        if self.rom is not None:
+            (path / "rom").write_bytes(self.rom)
+        (path / "configuration").write_bytes(self.configuration)
 
 
 class Engine:
@@ -71,6 +113,42 @@ class Engine:
         self.tags = tags or []
         self.description = as_localization_text(description) if description is not None else None
         self.meta = meta
+
+    def export(self) -> ExportedEngine:
+        """Export the engine in a sonolus-pack compatible format.
+
+        Returns:
+            An exported engine.
+        """
+        from sonolus.build.engine import package_engine
+        from sonolus.build.project import BLANK_PNG
+
+        item = {
+            "version": self.version,
+            "title": self.title,
+            "subtitle": self.subtitle,
+            "author": self.author,
+            "tags": [tag.as_dict() for tag in self.tags],
+            "skin": self.skin,
+            "background": self.background,
+            "effect": self.effect,
+            "particle": self.particle,
+        }
+        packaged = package_engine(self.data)
+        if self.description is not None:
+            item["description"] = self.description
+        if self.meta is not None:
+            item["meta"] = self.meta
+        return ExportedEngine(
+            item=item,
+            thumbnail=load_asset(self.thumbnail) if self.thumbnail is not None else BLANK_PNG,
+            play_data=packaged.play_data,
+            watch_data=packaged.watch_data,
+            preview_data=packaged.preview_data,
+            tutorial_data=packaged.tutorial_data,
+            rom=packaged.rom,
+            configuration=packaged.configuration,
+        )
 
 
 def default_callback() -> Any:

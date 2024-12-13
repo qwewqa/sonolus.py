@@ -81,16 +81,7 @@ class Collection:
 
     @staticmethod
     def _load_data(value: Asset) -> bytes:
-        match value:
-            case str() if value.startswith(("http://", "https://")):
-                with urllib.request.urlopen(value) as response:
-                    return response.read()
-            case PathLike():
-                return Path(value).read_bytes()
-            case bytes():
-                return value
-            case _:
-                raise TypeError("value must be a URL, a path, or bytes")
+        return load_asset(value)
 
     def add_asset(self, value: Asset, /) -> Srl:
         data = self._load_data(value)
@@ -123,7 +114,7 @@ class Collection:
                     continue
 
                 try:
-                    item_data = json.loads(item_json_path.read_text())
+                    item_data = json.loads(item_json_path.read_text(encoding="utf-8"))
                 except json.JSONDecodeError:
                     continue
 
@@ -158,8 +149,9 @@ class Collection:
             localized_item[key] = cls._localize_text(localized_item[key])
         if "tags" in localized_item:
             localized_item["tags"] = [
-                {**tag, "name": cls._localize_text(tag["name"])} for tag in localized_item["tags"]
+                {**tag, "title": cls._localize_text(tag["title"])} for tag in localized_item["tags"]
             ]
+        localized_item.pop("meta", None)
         return localized_item
 
     @staticmethod
@@ -219,7 +211,7 @@ class Collection:
     ) -> None:
         for zip_entry in zip_entries:
             try:
-                item_details = json.loads(zf.read(zip_entry))
+                item_details = json.loads(zf.read(zip_entry).decode("utf-8"))
             except json.JSONDecodeError:
                 continue
 
@@ -232,10 +224,27 @@ class Collection:
                 self.categories[dir_name][item_name] = item_details
 
     def write(self, path: Asset) -> None:
+        self.link()
         base_dir = self._create_base_directory(path)
         self._write_main_info(base_dir)
         self._write_category_items(base_dir)
         self._write_repository_items(base_dir)
+
+    def link(self):
+        for level_details in self.categories.get("levels", {}).values():
+            level = level_details["item"]
+            if isinstance(level["engine"], str):
+                level["engine"] = self.get_item("engines", level["engine"])
+            for key, category in (
+                ("useSkin", "skins"),
+                ("useBackground", "backgrounds"),
+                ("useEffect", "effects"),
+                ("useParticle", "particles"),
+            ):
+                use_item = level[key]
+                if "item" not in use_item:
+                    continue
+                use_item["item"] = self.get_item(category, use_item["item"])
 
     def _create_base_directory(self, path: Asset) -> Path:
         base_dir = Path(path) / BASE_PATH.strip("/")
@@ -292,7 +301,7 @@ class Collection:
 
     @staticmethod
     def _write_json(path: Path, content: Any) -> None:
-        path.write_text(json.dumps(content))
+        path.write_text(json.dumps(content), encoding="utf-8")
 
     def update(self, other: Collection) -> None:
         self.repository.update(other.repository)
@@ -303,3 +312,16 @@ class Collection:
 class Srl(TypedDict):
     hash: str
     url: str
+
+
+def load_asset(value: Asset) -> bytes:
+    match value:
+        case str() if value.startswith(("http://", "https://")):
+            with urllib.request.urlopen(value) as response:
+                return response.read()
+        case PathLike():
+            return Path(value).read_bytes()
+        case bytes():
+            return value
+        case _:
+            raise TypeError("value must be a URL, a path, or bytes")
