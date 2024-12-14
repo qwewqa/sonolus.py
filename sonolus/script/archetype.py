@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import inspect
+from abc import abstractmethod
 from collections.abc import Callable
 from dataclasses import dataclass
 from enum import Enum, StrEnum
@@ -584,6 +585,30 @@ class _BaseArchetype:
             [inspect.Parameter(name, inspect.Parameter.POSITIONAL_OR_KEYWORD) for name in cls._memory_fields_]
         )
 
+    @property
+    @abstractmethod
+    def index(self) -> int:
+        """The index of this entity."""
+        raise NotImplementedError
+
+    @meta_fn
+    def ref(self) -> EntityRef[Self]:
+        """Get a reference to this entity.
+
+        Valid both in level data and in callbacks.
+        """
+        match self._data_:
+            case _ArchetypeSelfData():
+                return EntityRef[type(self)](index=self.index)
+            case _ArchetypeReferenceData(index=index):
+                return EntityRef[type(self)](index=index)
+            case _ArchetypeLevelData():
+                result = EntityRef[type(self)](index=-1)
+                result._ref_ = self
+                return result
+            case _:
+                raise RuntimeError("Invalid entity data")
+
 
 class PlayArchetype(_BaseArchetype):
     """Base class for play mode archetypes.
@@ -749,17 +774,6 @@ class PlayArchetype(_BaseArchetype):
                 return _deref(ctx().blocks.EntityInput, 0, PlayEntityInput)
             case _:
                 raise RuntimeError("Result is only accessible from the entity itself")
-
-    def ref(self):
-        """Get a reference to this entity for creating level data.
-
-        Not valid elsewhere.
-        """
-        if not isinstance(self._data_, _ArchetypeLevelData):
-            raise RuntimeError("Entity is not level data")
-        result = EntityRef[type(self)](index=-1)
-        result._ref_ = self
-        return result
 
 
 class WatchArchetype(_BaseArchetype):

@@ -317,7 +317,15 @@ class Srl(TypedDict):
 def load_asset(value: Asset) -> bytes:
     match value:
         case str() if value.startswith(("http://", "https://")):
-            with urllib.request.urlopen(value) as response:
+            headers = {
+                "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) "
+                "AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36",
+                "Accept": "*/*",
+                "Accept-Language": "en-US,en;q=0.9",
+                "Connection": "keep-alive",
+            }
+            request = urllib.request.Request(value, headers=headers)
+            with urllib.request.urlopen(request) as response:
                 return response.read()
         case PathLike():
             return Path(value).read_bytes()
