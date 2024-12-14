@@ -4,11 +4,13 @@
 Skins are defined with the `@skin` decorator:
 
 ```python
-from sonolus.script.sprite import skin, StandardSprite, sprite, Sprite
+from sonolus.script.sprite import skin, StandardSprite, sprite, Sprite, RenderMode
 
 
 @skin
 class Skin:
+    render_mode: RenderMode = RenderMode.DEFAULT
+
     note: StandardSprite.NOTE_HEAD_RED
     other: Sprite = sprite("other")
 ```
@@ -16,6 +18,8 @@ class Skin:
 Standard sprites are defined by annotating the field with the corresponding value from `StandardSprite`.
 
 Custom sprites are defined by annotating the field with `Sprite` and calling `skin_sprite` with the sprite name.
+
+To set the render mode for the skin, set the `render_mode` field to the desired value from `RenderMode`.
 
 ## Sound Effects
 Sound effects are defined with the `@effects` decorator:
