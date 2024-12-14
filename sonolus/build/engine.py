@@ -191,7 +191,10 @@ def build_tutorial_mode(
 
 
 def build_skin(skin: Skin) -> JsonValue:
-    return {"sprites": [{"name": name, "id": i} for i, name in enumerate(skin._sprites_)]}
+    return {
+        "renderMode": skin.render_mode,
+        "sprites": [{"name": name, "id": i} for i, name in enumerate(skin._sprites_)],
+    }
 
 
 def build_effects(effects: Effects) -> JsonValue:

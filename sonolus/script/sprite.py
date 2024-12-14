@@ -1,4 +1,5 @@
 from dataclasses import dataclass
+from enum import StrEnum
 from typing import Annotated, Any, NewType, dataclass_transform, get_origin
 
 from sonolus.backend.ops import Op
@@ -269,6 +270,19 @@ def sprite(name: str) -> Any:
 type Skin = NewType("Skin", Any)
 
 
+class RenderMode(StrEnum):
+    """Render mode for sprites."""
+
+    DEFAULT = "default"
+    """Use the user's preferred render mode."""
+
+    STANDARD = "standard"
+    """Use the standard render mode with bilinear interpolation of textures."""
+
+    LIGHTWEIGHT = "lightweight"
+    """Use the lightweight render mode with projective interpolation of textures."""
+
+
 @dataclass_transform()
 def skin[T](cls: type[T]) -> T | Skin:
     """Decorator to define a skin.
@@ -277,6 +291,8 @@ def skin[T](cls: type[T]) -> T | Skin:
         ```python
         @skin
         class Skin:
+            render_mode: RenderMode
+
             note: StandardSprite.NOTE_HEAD_RED
             other: Sprite = skin_sprite("other")
         ```
@@ -285,7 +301,7 @@ def skin[T](cls: type[T]) -> T | Skin:
         raise ValueError("Skin class must not inherit from any class (except object)")
     instance = cls()
     names = []
-    for i, (name, annotation) in enumerate(get_field_specifiers(cls).items()):
+    for i, (name, annotation) in enumerate(get_field_specifiers(cls, skip={"render_mode"}).items()):
         if get_origin(annotation) is not Annotated:
             raise TypeError(f"Invalid annotation for skin: {annotation}")
         annotation_type = annotation.__args__[0]
@@ -298,6 +314,7 @@ def skin[T](cls: type[T]) -> T | Skin:
         names.append(sprite_name)
         setattr(instance, name, Sprite(i))
     instance._sprites_ = names
+    instance.render_mode = RenderMode(getattr(instance, "render_mode", RenderMode.DEFAULT))
     instance._is_comptime_value_ = True
     return instance
 
