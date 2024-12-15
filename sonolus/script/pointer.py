@@ -1,4 +1,5 @@
 from sonolus.backend.place import BlockPlace
+from sonolus.script.internal.context import ctx
 from sonolus.script.internal.impl import meta_fn, validate_value
 from sonolus.script.internal.value import Value
 from sonolus.script.num import Num, _is_num
@@ -13,6 +14,7 @@ def _deref[T: Value](block: Num, offset: Num, type_: type[T]) -> T:
         block = block._as_py_()
         if not isinstance(block, int):
             raise TypeError("block must be an integer")
+        block = ctx().blocks(block)
     else:
         if not _is_num(block):
             raise TypeError("block must be a Num")
