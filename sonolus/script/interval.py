@@ -19,6 +19,22 @@ class Interval(Record):
     start: float
     end: float
 
+    @classmethod
+    def zero(cls) -> Self:
+        """Get an empty interval."""
+        return cls(0, 0)
+
+    def then(self, length: float) -> Self:
+        """Get the interval after this one with a given length.
+
+        Args:
+            length: The length of the interval.
+
+        Returns:
+            An interval that has the end of this interval as the start and has the given length.
+        """
+        return Interval(self.end, self.end + length)
+
     @property
     def length(self) -> float:
         """The length of the interval.

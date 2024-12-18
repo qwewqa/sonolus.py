@@ -52,9 +52,11 @@ def _enumerate(iterable, start=0):
     from sonolus.backend.visitor import compile_and_call
 
     iterable = validate_value(iterable)
-    if not hasattr(iterable, "__iter__"):
+    if isinstance(iterable, TupleImpl):
+        return TupleImpl._accept_(tuple((start + i, value) for i, value in enumerate(iterable._as_py_(), start=start)))
+    elif not hasattr(iterable, "__iter__"):
         raise TypeError(f"'{type(iterable).__name__}' object is not iterable")
-    if isinstance(iterable, ArrayLike):
+    elif isinstance(iterable, ArrayLike):
         return compile_and_call(iterable._enumerate_, start)
     else:
         iterator = compile_and_call(iterable.__iter__)

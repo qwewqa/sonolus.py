@@ -103,6 +103,12 @@ class _PreviewRuntimeCanvas:
     scroll_direction: ScrollDirection
     size: float
 
+    def update(self, scroll_direction: ScrollDirection | None = None, size: float | None = None):
+        if scroll_direction is not None:
+            self.scroll_direction = scroll_direction
+        if size is not None:
+            self.size = size
+
 
 class RuntimeUiConfig(Record):
     scale: float
@@ -468,6 +474,30 @@ def is_debug() -> bool:
             return _TutorialRuntimeEnvironment.is_debug
         case _:
             return False
+
+
+@meta_fn
+def is_play() -> bool:
+    """Check if the game is running in play mode."""
+    return ctx() and ctx().global_state.mode == Mode.PLAY
+
+
+@meta_fn
+def is_preview() -> bool:
+    """Check if the game is running in preview mode."""
+    return ctx() and ctx().global_state.mode == Mode.PREVIEW
+
+
+@meta_fn
+def is_watch() -> bool:
+    """Check if the game is running in watch mode."""
+    return ctx() and ctx().global_state.mode == Mode.WATCH
+
+
+@meta_fn
+def is_tutorial() -> bool:
+    """Check if the game is running in tutorial mode."""
+    return ctx() and ctx().global_state.mode == Mode.TUTORIAL
 
 
 @meta_fn

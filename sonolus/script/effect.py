@@ -25,7 +25,7 @@ class Effect(Record):
         """Return whether the effect clip is available."""
         return _has_effect_clip(self.id)
 
-    def play(self, distance: float) -> None:
+    def play(self, distance: float = 0) -> None:
         """Play the effect clip.
 
         If the clip was already played within the specified distance, it will be skipped.
@@ -35,7 +35,7 @@ class Effect(Record):
         """
         _play(self.id, distance)
 
-    def schedule(self, time: float, distance: float) -> None:
+    def schedule(self, time: float, distance: float = 0) -> None:
         """Schedule the effect clip to play at a specific time.
 
         This is not suitable for real-time effects such as responses to user input. Use `play` instead.
