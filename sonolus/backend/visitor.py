@@ -172,7 +172,9 @@ class Visitor(ast.NodeVisitor):
     bound_args: inspect.BoundArguments
     used_names: dict[str, int]
     return_ctxs: list[Context]  # Contexts at return statements, which will branch to the exit
-    loop_head_ctxs: list[Context]  # Contexts at loop heads, from outer to inner
+    loop_head_ctxs: list[
+        Context | list[Context]
+    ]  # Contexts at loop heads, from outer to inner. Contains a list for unrolled (tuple) loops
     break_ctxs: list[list[Context]]  # Contexts at break statements, from outer to inner
     active_ctx: Context | None  # The active context for use in nested functions=
     parent: Self | None  # The parent visitor for use in nested functions
@@ -318,11 +320,19 @@ class Visitor(ast.NodeVisitor):
         iterable = self.visit(node.iter)
         if isinstance(iterable, TupleImpl):
             # Unroll the loop
+            break_ctxs = []
             for value in iterable.value:
                 set_ctx(ctx().branch(None))
+                self.loop_head_ctxs.append([])
+                self.break_ctxs.append([])
                 self.handle_assign(node.target, validate_value(value))
                 for stmt in node.body:
                     self.visit(stmt)
+                continue_ctxs = [*self.loop_head_ctxs.pop(), ctx()]
+                break_ctxs.extend(self.break_ctxs.pop())
+                set_ctx(Context.meet(continue_ctxs))
+            if break_ctxs:
+                set_ctx(Context.meet([*break_ctxs, ctx()]))
             return
         iterator = self.handle_call(node, iterable.__iter__)
         if not isinstance(iterator, SonolusIterator):
@@ -633,7 +643,11 @@ class Visitor(ast.NodeVisitor):
         set_ctx(ctx().into_dead())
 
     def visit_Continue(self, node):
-        ctx().branch_to_loop_header(self.loop_head_ctxs[-1])
+        loop_head = self.loop_head_ctxs[-1]
+        if isinstance(loop_head, list):
+            loop_head.append(ctx())
+        else:
+            ctx().branch_to_loop_header(loop_head)
         set_ctx(ctx().into_dead())
 
     def visit_BoolOp(self, node) -> Value:
