@@ -69,7 +69,7 @@ class _SelectOption:
     standard: bool
     advanced: bool
     scope: str | None
-    default: str
+    default: int
     values: list[str]
 
     def to_dict(self):
@@ -78,7 +78,7 @@ class _SelectOption:
             "name": self.name,
             "standard": self.standard,
             "advanced": self.advanced,
-            "def": self.values.index(self.default),
+            "def": self.default,
             "values": self.values,
         }
         if self.scope is not None:
@@ -139,7 +139,7 @@ def select_option(
     name: str | None = None,
     standard: bool = False,
     advanced: bool = False,
-    default: str,
+    default: str | int,
     values: list[str],
     scope: str | None = None,
 ) -> Any:
@@ -153,6 +153,8 @@ def select_option(
         values: The values of the option.
         scope: The scope of the option.
     """
+    if isinstance(default, str):
+        default = values.index(default)
     return _SelectOption(name, standard, advanced, scope, default, values)
 
 
