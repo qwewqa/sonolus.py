@@ -138,6 +138,12 @@ class Value:
         """Allocates a new value which may be uninitialized."""
         raise NotImplementedError
 
+    @classmethod
+    @abstractmethod
+    def _zero_(cls) -> Self:
+        """Returns a zero-initialized value of this type."""
+        raise NotImplementedError
+
     def __imatmul__(self, other):
         self._copy_from_(other)
         return self

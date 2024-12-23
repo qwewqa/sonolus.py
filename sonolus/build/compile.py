@@ -1,11 +1,12 @@
-from collections.abc import Callable
+from collections.abc import Callable, Sequence
 
 from sonolus.backend.finalize import cfg_to_engine_node
 from sonolus.backend.ir import IRConst, IRInstr
 from sonolus.backend.mode import Mode
 from sonolus.backend.ops import Op
 from sonolus.backend.optimize.flow import BasicBlock
-from sonolus.backend.optimize.optimize import optimize_and_allocate
+from sonolus.backend.optimize.optimize import STANDARD_PASSES
+from sonolus.backend.optimize.passes import CompilerPass, run_passes
 from sonolus.backend.visitor import compile_and_call
 from sonolus.build.node import OutputNodeGenerator
 from sonolus.script.archetype import _BaseArchetype
@@ -27,7 +28,10 @@ def compile_mode(
     rom: ReadOnlyMemory,
     archetypes: list[type[_BaseArchetype]] | None,
     global_callbacks: list[tuple[CallbackInfo, Callable]] | None,
+    passes: Sequence[CompilerPass] | None = None,
 ) -> dict:
+    if passes is None:
+        passes = STANDARD_PASSES
     global_state = GlobalContextState(
         mode, {a: i for i, a in enumerate(archetypes)} if archetypes is not None else None, rom
     )
@@ -52,7 +56,7 @@ def compile_mode(
                 if not cb_info.supports_order and cb_order != 0:
                     raise ValueError(f"Callback '{cb_name}' does not support a non-zero order")
                 cfg = callback_to_cfg(global_state, cb, cb_info.name, archetype)
-                cfg = optimize_and_allocate(cfg)
+                cfg = run_passes(cfg, passes)
                 node = cfg_to_engine_node(cfg)
                 node_index = nodes.add(node)
                 archetype_data[cb_info.name] = {
@@ -64,7 +68,7 @@ def compile_mode(
     if global_callbacks is not None:
         for cb_info, cb in global_callbacks:
             cfg = callback_to_cfg(global_state, cb, cb_info.name)
-            cfg = optimize_and_allocate(cfg)
+            cfg = run_passes(cfg, passes)
             node = cfg_to_engine_node(cfg)
             node_index = nodes.add(node)
             results[cb_info.name] = node_index

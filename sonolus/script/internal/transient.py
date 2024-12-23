@@ -49,3 +49,7 @@ class TransientValue(Value):
     @classmethod
     def _alloc_(cls) -> Self:
         raise TypeError(f"{cls.__name__} is not allocatable")
+
+    @classmethod
+    def _zero_(cls) -> Self:
+        raise TypeError(f"{cls.__name__} does not have a zero value")

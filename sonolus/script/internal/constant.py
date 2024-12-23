@@ -107,7 +107,7 @@ class ConstantValue(Value):
     def _get_(self) -> Self:
         return self
 
-    def _set_(self, value: Any) -> Self:
+    def _set_(self, value: Any):
         if value is not self:
             raise ValueError(f"{type(self).__name__} is immutable")
 
@@ -120,6 +120,10 @@ class ConstantValue(Value):
 
     @classmethod
     def _alloc_(cls) -> Self:
+        return cls()
+
+    @classmethod
+    def _zero_(cls) -> Self:
         return cls()
 
     @meta_fn

@@ -220,6 +220,12 @@ class Record(GenericValue):
         result._value = {field.name: field.type._alloc_() for field in cls._fields}
         return result
 
+    @classmethod
+    def _zero_(cls) -> Self:
+        result = object.__new__(cls)
+        result._value = {field.name: field.type._zero_() for field in cls._fields}
+        return result
+
     def __str__(self):
         return (
             f"{self.__class__.__name__}({", ".join(f"{field.name}={field.__get__(self)}" for field in self._fields)})"

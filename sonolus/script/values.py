@@ -19,11 +19,7 @@ def alloc[T](type_: type[T]) -> T:
 @meta_fn
 def zeros[T](type_: type[T]) -> T:
     """Make a new instance of the given type initialized with zeros."""
-    type_ = validate_concrete_type(type_)
-    if ctx():
-        return copy(type_._from_list_([0] * type_._size_()))
-    else:
-        return type_._from_list_([0] * type_._size_())._as_py_()
+    return validate_concrete_type(type_)._zero_()
 
 
 @meta_fn

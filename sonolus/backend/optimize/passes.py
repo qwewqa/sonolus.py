@@ -3,6 +3,8 @@ from __future__ import annotations
 from abc import ABC, abstractmethod
 from collections import deque
 
+from numpy.random.mtrand import Sequence
+
 from sonolus.backend.optimize.flow import BasicBlock
 
 
@@ -35,7 +37,7 @@ class CompilerPass(ABC):
         pass
 
 
-def run_passes(entry: BasicBlock, passes: list[CompilerPass]) -> BasicBlock:
+def run_passes(entry: BasicBlock, passes: Sequence[CompilerPass]) -> BasicBlock:
     active_passes = set()
     queue = deque(passes)
     while queue:

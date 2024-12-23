@@ -12,21 +12,21 @@ from sonolus.backend.optimize.passes import run_passes
 from sonolus.backend.optimize.simplify import CoalesceFlow, NormalizeSwitch, RewriteToSwitch
 from sonolus.backend.optimize.ssa import FromSSA, ToSSA
 
-MINIMAL_PASSES = [
+MINIMAL_PASSES = (
     CoalesceFlow(),
     UnreachableCodeElimination(),
     AllocateBasic(),
-]
+)
 
-BASIC_PASSES = [
+FAST_PASSES = (
     CoalesceFlow(),
     UnreachableCodeElimination(),
     AdvancedDeadCodeElimination(),
     CoalesceFlow(),
     Allocate(),
-]
+)
 
-STANDARD_PASSES = [
+STANDARD_PASSES = (
     CoalesceFlow(),
     UnreachableCodeElimination(),
     DeadCodeElimination(),
@@ -45,7 +45,7 @@ STANDARD_PASSES = [
     CoalesceFlow(),
     NormalizeSwitch(),
     Allocate(),
-]
+)
 
 
 def optimize_and_allocate(cfg: BasicBlock):

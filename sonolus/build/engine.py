@@ -10,7 +10,7 @@ from sonolus.build.compile import compile_mode
 from sonolus.script.archetype import _BaseArchetype
 from sonolus.script.bucket import Buckets
 from sonolus.script.effect import Effects
-from sonolus.script.engine import EngineData
+from sonolus.script.engine import EngineData, empty_play_mode, empty_preview_mode, empty_tutorial_mode, empty_watch_mode
 from sonolus.script.instruction import (
     TutorialInstructionIcons,
     TutorialInstructions,
@@ -24,6 +24,7 @@ from sonolus.script.internal.callbacks import (
 from sonolus.script.internal.context import ReadOnlyMemory
 from sonolus.script.options import Options
 from sonolus.script.particle import Particles
+from sonolus.script.project import BuildConfig
 from sonolus.script.sprite import Skin
 from sonolus.script.ui import UiConfig
 
@@ -57,41 +58,53 @@ class PackagedEngine:
         self.rom = (path / "EngineRom").read_bytes()
 
 
-def package_engine(engine: EngineData):
+def package_engine(
+    engine: EngineData,
+    config: BuildConfig | None = None,
+):
+    config = config or BuildConfig()
     rom = ReadOnlyMemory()
     configuration = build_engine_configuration(engine.options, engine.ui)
+    play_mode = engine.play if config.build_play else empty_play_mode()
+    watch_mode = engine.watch if config.build_watch else empty_watch_mode()
+    preview_mode = engine.preview if config.build_preview else empty_preview_mode()
+    tutorial_mode = engine.tutorial if config.build_tutorial else empty_tutorial_mode()
     play_data = build_play_mode(
-        archetypes=engine.play.archetypes,
-        skin=engine.play.skin,
-        effects=engine.play.effects,
-        particles=engine.play.particles,
-        buckets=engine.play.buckets,
+        archetypes=play_mode.archetypes,
+        skin=play_mode.skin,
+        effects=play_mode.effects,
+        particles=play_mode.particles,
+        buckets=play_mode.buckets,
         rom=rom,
+        config=config,
     )
     watch_data = build_watch_mode(
-        archetypes=engine.watch.archetypes,
-        skin=engine.watch.skin,
-        effects=engine.watch.effects,
-        particles=engine.watch.particles,
-        buckets=engine.watch.buckets,
+        archetypes=watch_mode.archetypes,
+        skin=watch_mode.skin,
+        effects=watch_mode.effects,
+        particles=watch_mode.particles,
+        buckets=watch_mode.buckets,
         rom=rom,
-        update_spawn=engine.watch.update_spawn,
+        update_spawn=watch_mode.update_spawn,
+        config=config,
     )
     preview_data = build_preview_mode(
-        archetypes=engine.preview.archetypes,
-        skin=engine.preview.skin,
+        archetypes=preview_mode.archetypes,
+        skin=preview_mode.skin,
         rom=rom,
+        config=config,
     )
     tutorial_data = build_tutorial_mode(
-        skin=engine.tutorial.skin,
-        effects=engine.tutorial.effects,
-        particles=engine.tutorial.particles,
-        instructions=engine.tutorial.instructions,
-        instruction_icons=engine.tutorial.instruction_icons,
-        preprocess=engine.tutorial.preprocess,
-        navigate=engine.tutorial.navigate,
-        update=engine.tutorial.update,
+        skin=tutorial_mode.skin,
+        effects=tutorial_mode.effects,
+        particles=tutorial_mode.particles,
+        instructions=tutorial_mode.instructions,
+        instruction_icons=tutorial_mode.instruction_icons,
+        preprocess=tutorial_mode.preprocess,
+        navigate=tutorial_mode.navigate,
+        update=tutorial_mode.update,
         rom=rom,
+        config=config,
     )
     return PackagedEngine(
         configuration=package_output(configuration),
@@ -120,9 +133,10 @@ def build_play_mode(
     particles: Particles,
     buckets: Buckets,
     rom: ReadOnlyMemory,
+    config: BuildConfig,
 ):
     return {
-        **compile_mode(mode=Mode.PLAY, rom=rom, archetypes=archetypes, global_callbacks=None),
+        **compile_mode(mode=Mode.PLAY, rom=rom, archetypes=archetypes, global_callbacks=None, passes=config.passes),
         "skin": build_skin(skin),
         "effect": build_effects(effects),
         "particle": build_particles(particles),
@@ -138,10 +152,15 @@ def build_watch_mode(
     buckets: Buckets,
     rom: ReadOnlyMemory,
     update_spawn: Callable[[], float],
+    config: BuildConfig,
 ):
     return {
         **compile_mode(
-            mode=Mode.WATCH, rom=rom, archetypes=archetypes, global_callbacks=[(update_spawn_callback, update_spawn)]
+            mode=Mode.WATCH,
+            rom=rom,
+            archetypes=archetypes,
+            global_callbacks=[(update_spawn_callback, update_spawn)],
+            passes=config.passes,
         ),
         "skin": build_skin(skin),
         "effect": build_effects(effects),
@@ -154,9 +173,10 @@ def build_preview_mode(
     archetypes: list[type[_BaseArchetype]],
     skin: Skin,
     rom: ReadOnlyMemory,
+    config: BuildConfig,
 ):
     return {
-        **compile_mode(mode=Mode.PREVIEW, rom=rom, archetypes=archetypes, global_callbacks=None),
+        **compile_mode(mode=Mode.PREVIEW, rom=rom, archetypes=archetypes, global_callbacks=None, passes=config.passes),
         "skin": build_skin(skin),
     }
 
@@ -171,6 +191,7 @@ def build_tutorial_mode(
     navigate: Callable[[int], None],
     update: Callable[[], None],
     rom: ReadOnlyMemory,
+    config: BuildConfig,
 ):
     return {
         **compile_mode(
@@ -182,6 +203,7 @@ def build_tutorial_mode(
                 (navigate_callback, navigate),
                 (update_callback, update),
             ],
+            passes=config.passes,
         ),
         "skin": build_skin(skin),
         "effect": build_effects(effects),

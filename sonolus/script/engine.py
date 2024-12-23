@@ -278,6 +278,30 @@ class TutorialMode:
         self.update = update
 
 
+def empty_play_mode() -> PlayMode:
+    """Create an empty play mode."""
+    return PlayMode()
+
+
+def empty_watch_mode() -> WatchMode:
+    """Create an empty watch mode."""
+    return WatchMode(update_spawn=default_callback)
+
+
+def empty_preview_mode() -> PreviewMode:
+    """Create an empty preview mode."""
+    return PreviewMode()
+
+
+def empty_tutorial_mode() -> TutorialMode:
+    """Create an empty tutorial mode."""
+    return TutorialMode(
+        preprocess=default_callback,
+        navigate=default_callback,
+        update=default_callback,
+    )
+
+
 class EngineData:
     """A Sonolus.py engine's modes and configurations.
 
@@ -302,11 +326,7 @@ class EngineData:
     ) -> None:
         self.ui = ui or UiConfig()
         self.options = options
-        self.play = play or PlayMode()
-        self.watch = watch or WatchMode(update_spawn=default_callback)
-        self.preview = preview or PreviewMode()
-        self.tutorial = tutorial or TutorialMode(
-            preprocess=default_callback,
-            navigate=default_callback,
-            update=default_callback,
-        )
+        self.play = play or empty_play_mode()
+        self.watch = watch or empty_watch_mode()
+        self.preview = preview or empty_preview_mode()
+        self.tutorial = tutorial or empty_tutorial_mode()

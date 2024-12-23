@@ -134,6 +134,15 @@ class _Num(Value, metaclass=_NumMeta):
         else:
             return Num(-1)
 
+    @classmethod
+    def _zero_(cls) -> Self:
+        if ctx():
+            result_place = ctx().alloc(size=1)
+            ctx().add_statements(IRSet(result_place, IRConst(0)))
+            return cls(result_place)
+        else:
+            return cls(0)
+
     def ir(self):
         if isinstance(self.data, BlockPlace):
             return IRGet(self.data)

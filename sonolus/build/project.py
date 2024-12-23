@@ -5,7 +5,7 @@ from sonolus.build.engine import package_engine
 from sonolus.build.level import package_level_data
 from sonolus.script.engine import Engine
 from sonolus.script.level import Level
-from sonolus.script.project import Project, ProjectSchema
+from sonolus.script.project import BuildConfig, Project, ProjectSchema
 
 BLANK_PNG = (
     b"\x89PNG\r\n\x1a\n\x00\x00\x00\rIHDR\x00\x00\x00\x01\x00\x00\x00\x01\x01\x00\x00\x00\x007n\xf9$"
@@ -17,17 +17,17 @@ BLANK_AUDIO = (
 )
 
 
-def build_project_to_collection(project: Project):
+def build_project_to_collection(project: Project, config: BuildConfig):
     collection = load_resources_files_to_collection(project.resources)
-    add_engine_to_collection(collection, project, project.engine)
+    add_engine_to_collection(collection, project, project.engine, config)
     for level in project.levels:
         add_level_to_collection(collection, project, level)
     collection.name = f"{project.engine.name}"
     return collection
 
 
-def add_engine_to_collection(collection: Collection, project: Project, engine: Engine):
-    packaged_engine = package_engine(engine.data)
+def add_engine_to_collection(collection: Collection, project: Project, engine: Engine, config: BuildConfig):
+    packaged_engine = package_engine(engine.data, config)
     item = {
         "name": engine.name,
         "version": engine.version,

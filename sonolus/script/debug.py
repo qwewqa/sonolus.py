@@ -1,4 +1,4 @@
-from collections.abc import Callable
+from collections.abc import Callable, Sequence
 from contextvars import ContextVar
 from typing import Any, Never
 
@@ -75,7 +75,7 @@ def terminate():
         raise RuntimeError("Terminated")
 
 
-def visualize_cfg(fn: Callable[[], Any], passes: list[CompilerPass] | None = None) -> str:
+def visualize_cfg(fn: Callable[[], Any], passes: Sequence[CompilerPass] | None = None) -> str:
     from sonolus.build.compile import callback_to_cfg
 
     if passes is None:

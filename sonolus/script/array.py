@@ -4,6 +4,7 @@ from __future__ import annotations
 from collections.abc import Iterable
 from typing import Any, Self, final
 
+from sonolus.backend.ir import IRConst, IRSet
 from sonolus.backend.place import BlockPlace
 from sonolus.script.array_like import ArrayLike
 from sonolus.script.debug import assert_unreachable
@@ -158,6 +159,16 @@ class Array[T, Size](GenericValue, ArrayLike[T]):
             return cls._from_place_(place)
         else:
             return cls._with_value([cls.element_type()._alloc_() for _ in range(cls.size())])
+
+    @classmethod
+    def _zero_(cls) -> Self:
+        if ctx():
+            place = ctx().alloc(size=cls._size_())
+            result: Self = cls._from_place_(place)
+            ctx().add_statements(*[IRSet(place.add_offset(i), IRConst(0)) for i in range(cls._size_())])
+            return result
+        else:
+            return cls._with_value([cls.element_type()._zero_() for _ in range(cls.size())])
 
     def __len__(self):
         return self.size()
