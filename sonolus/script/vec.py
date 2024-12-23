@@ -192,6 +192,15 @@ class Vec2(Record):
                 return Vec2(x=self.x * x, y=self.y * y)
             case Num(factor):
                 return Vec2(x=self.x * factor, y=self.y * factor)
+            case _:
+                return NotImplemented
+
+    def __rmul__(self, other):
+        match other:
+            case Num(factor):
+                return Vec2(x=self.x * factor, y=self.y * factor)
+            case _:
+                return NotImplemented
 
     def __truediv__(self, other: Self | float) -> Self:
         """Divide this vector by another vector or a scalar and return a new vector.
