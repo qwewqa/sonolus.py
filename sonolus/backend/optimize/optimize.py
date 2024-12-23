@@ -18,6 +18,14 @@ MINIMAL_PASSES = [
     AllocateBasic(),
 ]
 
+BASIC_PASSES = [
+    CoalesceFlow(),
+    UnreachableCodeElimination(),
+    AdvancedDeadCodeElimination(),
+    CoalesceFlow(),
+    Allocate(),
+]
+
 STANDARD_PASSES = [
     CoalesceFlow(),
     UnreachableCodeElimination(),

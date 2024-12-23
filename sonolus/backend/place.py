@@ -1,5 +1,5 @@
 from collections.abc import Iterator
-from typing import NamedTuple, Self
+from typing import Self
 
 from sonolus.backend.blocks import Block
 
@@ -8,9 +8,13 @@ type BlockValue = Block | int | TempBlock | Place
 type IndexValue = int | Place
 
 
-class TempBlock(NamedTuple):
-    name: str
-    size: int = 1
+class TempBlock:
+    __slots__ = ("__hash", "name", "size")
+
+    def __init__(self, name: str, size: int = 1):
+        self.name = name
+        self.size = size
+        self.__hash = hash(name)  # Precompute hash based on name alone
 
     def __repr__(self):
         return f"TempBlock(name={self.name!r}, size={self.size!r})"
@@ -28,14 +32,38 @@ class TempBlock(NamedTuple):
     def __eq__(self, other):
         return isinstance(other, TempBlock) and self.name == other.name and self.size == other.size
 
+    def __lt__(self, other):
+        if not isinstance(other, TempBlock):
+            return NotImplemented
+        return str(self) < str(other)
+
+    def __le__(self, other):
+        if not isinstance(other, TempBlock):
+            return NotImplemented
+        return str(self) <= str(other)
+
+    def __gt__(self, other):
+        if not isinstance(other, TempBlock):
+            return NotImplemented
+        return str(self) > str(other)
+
+    def __ge__(self, other):
+        if not isinstance(other, TempBlock):
+            return NotImplemented
+        return str(self) >= str(other)
+
     def __hash__(self):
-        return hash(self.name)  # Typically will be unique by name alone
+        return self.__hash
 
 
-class BlockPlace(NamedTuple):
-    block: BlockValue
-    index: IndexValue = 0
-    offset: int = 0
+class BlockPlace:
+    __slots__ = ("__hash", "block", "index", "offset")
+
+    def __init__(self, block: BlockValue, index: IndexValue = 0, offset: int = 0):
+        self.block = block
+        self.index = index
+        self.offset = offset
+        self.__hash = hash((block, index, offset))
 
     def __repr__(self):
         return f"BlockPlace(block={self.block!r}, index={self.index!r}, offset={self.offset!r})"
@@ -61,13 +89,42 @@ class BlockPlace(NamedTuple):
             and self.offset == other.offset
         )
 
+    def __lt__(self, other):
+        if not isinstance(other, BlockPlace):
+            return NotImplemented
+        return str(self) < str(other)
+
+    def __le__(self, other):
+        if not isinstance(other, BlockPlace):
+            return NotImplemented
+        return str(self) <= str(other)
+
+    def __gt__(self, other):
+        if not isinstance(other, BlockPlace):
+            return NotImplemented
+        return str(self) > str(other)
+
+    def __ge__(self, other):
+        if not isinstance(other, BlockPlace):
+            return NotImplemented
+        return str(self) >= str(other)
+
     def __hash__(self):
-        return hash((self.block, self.index, self.offset))
+        return self.__hash
+
+    def __iter__(self):
+        yield self.block
+        yield self.index
+        yield self.offset
 
 
-class SSAPlace(NamedTuple):
-    name: str
-    num: int
+class SSAPlace:
+    __slots__ = ("__hash", "name", "num")
+
+    def __init__(self, name: str, num: int):
+        self.name = name
+        self.num = num
+        self.__hash = hash((name, num))
 
     def __repr__(self):
         return f"SSAPlace(name={self.name!r}, num={self.num!r})"
@@ -78,5 +135,29 @@ class SSAPlace(NamedTuple):
     def __eq__(self, other):
         return isinstance(other, SSAPlace) and self.name == other.name and self.num == other.num
 
+    def __lt__(self, other):
+        if not isinstance(other, SSAPlace):
+            return NotImplemented
+        return str(self) < str(other)
+
+    def __le__(self, other):
+        if not isinstance(other, SSAPlace):
+            return NotImplemented
+        return str(self) <= str(other)
+
+    def __gt__(self, other):
+        if not isinstance(other, SSAPlace):
+            return NotImplemented
+        return str(self) > str(other)
+
+    def __ge__(self, other):
+        if not isinstance(other, SSAPlace):
+            return NotImplemented
+        return str(self) >= str(other)
+
     def __hash__(self):
-        return hash((self.name, self.num))
+        return self.__hash
+
+    def __iter__(self):
+        yield self.name
+        yield self.num
