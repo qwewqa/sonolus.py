@@ -43,16 +43,17 @@ class Project:
         """
         return Project(self.engine, levels, self.resources)
 
-    def dev(self, build_dir: PathLike, port: int = 8080):
+    def dev(self, build_dir: PathLike, port: int = 8080, config: BuildConfig | None = None):
         """Start a development server for the project.
 
         Args:
             build_dir: The path to the build directory.
             port: The port of the development server.
+            config: The build configuration.
         """
         from sonolus.build.cli import build_collection, run_server
 
-        build_collection(self, Path(build_dir))
+        build_collection(self, Path(build_dir), config)
         run_server(Path(build_dir) / "site", port=port)
 
     def build(self, build_dir: PathLike, config: BuildConfig | None = None):
@@ -60,7 +61,7 @@ class Project:
 
         Args:
             build_dir: The path to the build directory.
-            config: The build configuration
+            config: The build configuration.
         """
         from sonolus.build.cli import build_project
 
