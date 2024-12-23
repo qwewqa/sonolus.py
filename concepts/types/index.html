@@ -557,6 +557,15 @@
   
 </li>
         
+          <li class="md-nav__item">
+  <a href="#enums" class="md-nav__link">
+    <span class="md-ellipsis">
+      Enums
+    </span>
+  </a>
+  
+</li>
+        
       </ul>
     </nav>
   
@@ -823,6 +832,8 @@
       
         
           
+        
+      
         
       
         
@@ -1296,6 +1307,27 @@
   
   
     <li class="md-nav__item">
+      <a href="../../reference/sonolus.script.metadata/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    sonolus.script.metadata
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
       <a href="../../reference/sonolus.script.num/" class="md-nav__link">
         
   
@@ -1359,11 +1391,11 @@
   
   
     <li class="md-nav__item">
-      <a href="../../reference/sonolus.script.print/" class="md-nav__link">
+      <a href="../../reference/sonolus.script.printing/" class="md-nav__link">
         
   
   <span class="md-ellipsis">
-    sonolus.script.print
+    sonolus.script.printing
   </span>
   
 
@@ -1725,6 +1757,15 @@
   
 </li>
         
+          <li class="md-nav__item">
+  <a href="#enums" class="md-nav__link">
+    <span class="md-ellipsis">
+      Enums
+    </span>
+  </a>
+  
+</li>
+        
       </ul>
     </nav>
   
@@ -2051,6 +2092,16 @@ an array or record (see the next section).</p>
 <span class="k">assert</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">a</span><span class="p">,</span> <span class="n">Array</span><span class="p">[</span><span class="nb">int</span><span class="p">,</span> <span class="mi">3</span><span class="p">])</span>
 <span class="k">assert</span> <span class="ow">not</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">a</span><span class="p">,</span> <span class="n">Array</span><span class="p">[</span><span class="nb">int</span><span class="p">,</span> <span class="mi">2</span><span class="p">])</span>
 <span class="k">assert</span> <span class="ow">not</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">a</span><span class="p">,</span> <span class="n">Array</span><span class="p">[</span><span class="n">Pair</span><span class="p">,</span> <span class="mi">3</span><span class="p">])</span>
+</code></pre></div>
+<h3 id="enums">Enums<a class="headerlink" href="#enums" title="Permanent link">&para;</a></h3>
+<p>There is limited support for enums containing <code class="highlight"><span class="n">Num</span></code> values. Methods on enums are not supported. 
+When used as a type, any enum class is treated as <code class="highlight"><span class="n">Num</span></code> and no enforcement is done on the values.</p>
+<div class="highlight"><pre><span></span><code><span class="k">class</span> <span class="nc">MyEnum</span><span class="p">(</span><span class="n">IntEnum</span><span class="p">):</span>
+    <span class="n">A</span> <span class="o">=</span> <span class="mi">1</span>
+    <span class="n">B</span> <span class="o">=</span> <span class="mi">2</span>
+
+<span class="n">a</span> <span class="o">=</span> <span class="n">Array</span><span class="p">[</span><span class="n">MyEnum</span><span class="p">,</span> <span class="mi">2</span><span class="p">](</span><span class="n">MyEnum</span><span class="o">.</span><span class="n">A</span><span class="p">,</span> <span class="n">MyEnum</span><span class="o">.</span><span class="n">B</span><span class="p">)</span>
+<span class="n">b</span> <span class="o">=</span> <span class="n">Array</span><span class="p">[</span><span class="n">MyEnum</span><span class="p">,</span> <span class="mi">2</span><span class="p">](</span><span class="mi">1</span><span class="p">,</span> <span class="mi">2</span><span class="p">)</span>
 </code></pre></div>
 <h2 id="record">Record<a class="headerlink" href="#record" title="Permanent link">&para;</a></h2>
 <p><code class="highlight"><span class="n">Record</span></code> is the base class for user-defined types in Sonolus.py. It functions similarly to dataclasses.</p>

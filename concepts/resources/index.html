@@ -739,6 +739,8 @@
       
         
       
+        
+      
     
     
       
@@ -1146,6 +1148,27 @@
   
   
     <li class="md-nav__item">
+      <a href="../../reference/sonolus.script.metadata/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    sonolus.script.metadata
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
       <a href="../../reference/sonolus.script.num/" class="md-nav__link">
         
   
@@ -1209,11 +1232,11 @@
   
   
     <li class="md-nav__item">
-      <a href="../../reference/sonolus.script.print/" class="md-nav__link">
+      <a href="../../reference/sonolus.script.printing/" class="md-nav__link">
         
   
   <span class="md-ellipsis">
-    sonolus.script.print
+    sonolus.script.printing
   </span>
   
 
@@ -1580,16 +1603,19 @@
 <h1 id="resources">Resources<a class="headerlink" href="#resources" title="Permanent link">&para;</a></h1>
 <h2 id="skins">Skins<a class="headerlink" href="#skins" title="Permanent link">&para;</a></h2>
 <p>Skins are defined with the <code class="highlight"><span class="nd">@skin</span></code> decorator:</p>
-<div class="highlight"><pre><span></span><code><span class="kn">from</span> <span class="nn">sonolus.script.sprite</span> <span class="kn">import</span> <span class="n">skin</span><span class="p">,</span> <span class="n">StandardSprite</span><span class="p">,</span> <span class="n">sprite</span><span class="p">,</span> <span class="n">Sprite</span>
+<div class="highlight"><pre><span></span><code><span class="kn">from</span> <span class="nn">sonolus.script.sprite</span> <span class="kn">import</span> <span class="n">skin</span><span class="p">,</span> <span class="n">StandardSprite</span><span class="p">,</span> <span class="n">sprite</span><span class="p">,</span> <span class="n">Sprite</span><span class="p">,</span> <span class="n">RenderMode</span>
 
 
 <span class="nd">@skin</span>
 <span class="k">class</span> <span class="nc">Skin</span><span class="p">:</span>
+    <span class="n">render_mode</span><span class="p">:</span> <span class="n">RenderMode</span> <span class="o">=</span> <span class="n">RenderMode</span><span class="o">.</span><span class="n">DEFAULT</span>
+
     <span class="n">note</span><span class="p">:</span> <span class="n">StandardSprite</span><span class="o">.</span><span class="n">NOTE_HEAD_RED</span>
     <span class="n">other</span><span class="p">:</span> <span class="n">Sprite</span> <span class="o">=</span> <span class="n">sprite</span><span class="p">(</span><span class="s2">&quot;other&quot;</span><span class="p">)</span>
 </code></pre></div>
 <p>Standard sprites are defined by annotating the field with the corresponding value from <code class="highlight"><span class="n">StandardSprite</span></code>.</p>
 <p>Custom sprites are defined by annotating the field with <code class="highlight"><span class="n">Sprite</span></code> and calling <code class="highlight"><span class="n">skin_sprite</span></code> with the sprite name.</p>
+<p>To set the render mode for the skin, set the <code class="highlight"><span class="n">render_mode</span></code> field to the desired value from <code class="highlight"><span class="n">RenderMode</span></code>.</p>
 <h2 id="sound-effects">Sound Effects<a class="headerlink" href="#sound-effects" title="Permanent link">&para;</a></h2>
 <p>Sound effects are defined with the <code class="highlight"><span class="nd">@effects</span></code> decorator:</p>
 <div class="highlight"><pre><span></span><code><span class="kn">from</span> <span class="nn">sonolus.script.effect</span> <span class="kn">import</span> <span class="n">effects</span><span class="p">,</span> <span class="n">StandardEffect</span><span class="p">,</span> <span class="n">Effect</span><span class="p">,</span> <span class="n">effect</span>
