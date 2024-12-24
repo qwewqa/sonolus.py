@@ -2,8 +2,7 @@ from __future__ import annotations
 
 from abc import ABC, abstractmethod
 from collections import deque
-
-from numpy.random.mtrand import Sequence
+from collections.abc import Sequence
 
 from sonolus.backend.optimize.flow import BasicBlock
 
