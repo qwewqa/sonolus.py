@@ -93,7 +93,8 @@ def _ln(x: float) -> float:
 def _log(x: float, base: float | None = None) -> float:
     if base is None:
         return _ln(x)
-    return _ln(x) / _ln(base)
+    else:
+        return _ln(x) / _ln(base)
 
 
 @native_function(Op.Rem)

@@ -315,8 +315,8 @@ class SparseConditionalConstantPropagation(CompilerPass):
                             return 1
                         return functools.reduce(operator.pow, args)
                     case Op.Log:
-                        assert len(args) == 2
-                        return math.log(args[0], args[1])
+                        assert len(args) == 1
+                        return math.log(args[0])
                     case Op.Ceil:
                         assert len(args) == 1
                         return math.ceil(args[0])
