@@ -120,8 +120,8 @@ class UiAnimation:
         alpha: The animation applied to alpha.
     """
 
-    scale: UiAnimationTween = field(default_factory=lambda: UiAnimationTween(1, 1, 0, "none"))
-    alpha: UiAnimationTween = field(default_factory=lambda: UiAnimationTween(1, 0, 0.2, "outCubic"))
+    scale: UiAnimationTween
+    alpha: UiAnimationTween
 
     def to_dict(self):
         return {
@@ -183,7 +183,11 @@ class UiConfig:
     progress_visibility: UiVisibility = field(default_factory=UiVisibility)
     tutorial_navigation_visibility: UiVisibility = field(default_factory=UiVisibility)
     tutorial_instruction_visibility: UiVisibility = field(default_factory=UiVisibility)
-    judgment_animation: UiAnimation = field(default_factory=UiAnimation)
+    judgment_animation: UiAnimation = field(
+        default_factory=lambda: UiAnimation(
+            scale=UiAnimationTween(0, 1, 0.1, EaseType.OUT_CUBIC), alpha=UiAnimationTween(1, 0, 0.3, EaseType.NONE)
+        )
+    )
     combo_animation: UiAnimation = field(
         default_factory=lambda: UiAnimation(
             scale=UiAnimationTween(1.2, 1, 0.2, EaseType.IN_CUBIC), alpha=UiAnimationTween(1, 1, 0, EaseType.NONE)
