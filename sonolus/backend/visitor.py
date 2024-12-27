@@ -205,6 +205,8 @@ class Visitor(ast.NodeVisitor):
             case ast.FunctionDef(body=body):
                 ctx().scope.set_value("$return", validate_value(None))
                 for stmt in body:
+                    if not ctx().live:
+                        break
                     self.visit(stmt)
             case ast.Lambda(body=body):
                 result = self.visit(body)
@@ -327,6 +329,8 @@ class Visitor(ast.NodeVisitor):
                 self.break_ctxs.append([])
                 self.handle_assign(node.target, validate_value(value))
                 for stmt in node.body:
+                    if not ctx().live:
+                        break
                     self.visit(stmt)
                 continue_ctxs = [*self.loop_head_ctxs.pop(), ctx()]
                 break_ctxs.extend(self.break_ctxs.pop())
@@ -348,6 +352,8 @@ class Visitor(ast.NodeVisitor):
             self.loop_head_ctxs.pop()
             self.break_ctxs.pop()
             for stmt in node.orelse:
+                if not ctx().live:
+                    break
                 self.visit(stmt)
             return
         ctx().test = has_next.ir()
@@ -357,6 +363,8 @@ class Visitor(ast.NodeVisitor):
         set_ctx(body_ctx)
         self.handle_assign(node.target, self.handle_call(node, iterator.next))
         for stmt in node.body:
+            if not ctx().live:
+                break
             self.visit(stmt)
         ctx().branch_to_loop_header(header_ctx)
 
@@ -365,6 +373,8 @@ class Visitor(ast.NodeVisitor):
 
         set_ctx(else_ctx)
         for stmt in node.orelse:
+            if not ctx().live:
+                break
             self.visit(stmt)
         else_end_ctx = ctx()
 
@@ -384,6 +394,8 @@ class Visitor(ast.NodeVisitor):
                 body_ctx = ctx().branch(None)
                 set_ctx(body_ctx)
                 for stmt in node.body:
+                    if not ctx().live:
+                        break
                     self.visit(stmt)
                 ctx().branch_to_loop_header(header_ctx)
 
@@ -400,6 +412,8 @@ class Visitor(ast.NodeVisitor):
                 self.loop_head_ctxs.pop()
                 self.break_ctxs.pop()
                 for stmt in node.orelse:
+                    if not ctx().live:
+                        break
                     self.visit(stmt)
                 return
         ctx().test = test.ir()
@@ -408,6 +422,8 @@ class Visitor(ast.NodeVisitor):
 
         set_ctx(body_ctx)
         for stmt in node.body:
+            if not ctx().live:
+                break
             self.visit(stmt)
         ctx().branch_to_loop_header(header_ctx)
 
@@ -416,6 +432,8 @@ class Visitor(ast.NodeVisitor):
 
         set_ctx(else_ctx)
         for stmt in node.orelse:
+            if not ctx().live:
+                break
             self.visit(stmt)
         else_end_ctx = ctx()
 
@@ -428,9 +446,13 @@ class Visitor(ast.NodeVisitor):
         if test._is_py_():
             if test._as_py_():
                 for stmt in node.body:
+                    if not ctx().live:
+                        break
                     self.visit(stmt)
             else:
                 for stmt in node.orelse:
+                    if not ctx().live:
+                        break
                     self.visit(stmt)
             return
 
@@ -441,11 +463,15 @@ class Visitor(ast.NodeVisitor):
 
         set_ctx(true_ctx)
         for stmt in node.body:
+            if not ctx().live:
+                break
             self.visit(stmt)
         true_end_ctx = ctx()
 
         set_ctx(false_ctx)
         for stmt in node.orelse:
+            if not ctx().live:
+                break
             self.visit(stmt)
         false_end_ctx = ctx()
 
@@ -472,6 +498,8 @@ class Visitor(ast.NodeVisitor):
             if guard._is_py_():
                 if guard._as_py_():
                     for stmt in case.body:
+                        if not ctx().live:
+                            break
                         self.visit(stmt)
                     end_ctxs.append(ctx())
                 else:
@@ -483,6 +511,8 @@ class Visitor(ast.NodeVisitor):
                 guard_false_ctx = ctx().branch(0)
                 set_ctx(guard_true_ctx)
                 for stmt in case.body:
+                    if not ctx().live:
+                        break
                     self.visit(stmt)
                 end_ctxs.append(ctx())
                 false_ctx = Context.meet([false_ctx, guard_false_ctx])
