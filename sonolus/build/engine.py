@@ -1,8 +1,12 @@
 import gzip
 import json
 import struct
+import sys
 from collections.abc import Callable
+from concurrent.futures import Executor
+from concurrent.futures.thread import ThreadPoolExecutor
 from dataclasses import dataclass
+from os import process_cpu_count
 from pathlib import Path
 
 from sonolus.backend.mode import Mode
@@ -58,6 +62,10 @@ class PackagedEngine:
         self.rom = (path / "EngineRom").read_bytes()
 
 
+def no_gil() -> bool:
+    return sys.version_info >= (3, 13) and not sys._is_gil_enabled()
+
+
 def package_engine(
     engine: EngineData,
     config: BuildConfig | None = None,
@@ -65,47 +73,112 @@ def package_engine(
     config = config or BuildConfig()
     rom = ReadOnlyMemory()
     configuration = build_engine_configuration(engine.options, engine.ui)
+    if no_gil():
+        thread_pool = ThreadPoolExecutor(process_cpu_count() or 1)
+    else:
+        thread_pool = None
+
     play_mode = engine.play if config.build_play else empty_play_mode()
     watch_mode = engine.watch if config.build_watch else empty_watch_mode()
     preview_mode = engine.preview if config.build_preview else empty_preview_mode()
     tutorial_mode = engine.tutorial if config.build_tutorial else empty_tutorial_mode()
-    play_data = build_play_mode(
-        archetypes=play_mode.archetypes,
-        skin=play_mode.skin,
-        effects=play_mode.effects,
-        particles=play_mode.particles,
-        buckets=play_mode.buckets,
-        rom=rom,
-        config=config,
-    )
-    watch_data = build_watch_mode(
-        archetypes=watch_mode.archetypes,
-        skin=watch_mode.skin,
-        effects=watch_mode.effects,
-        particles=watch_mode.particles,
-        buckets=watch_mode.buckets,
-        rom=rom,
-        update_spawn=watch_mode.update_spawn,
-        config=config,
-    )
-    preview_data = build_preview_mode(
-        archetypes=preview_mode.archetypes,
-        skin=preview_mode.skin,
-        rom=rom,
-        config=config,
-    )
-    tutorial_data = build_tutorial_mode(
-        skin=tutorial_mode.skin,
-        effects=tutorial_mode.effects,
-        particles=tutorial_mode.particles,
-        instructions=tutorial_mode.instructions,
-        instruction_icons=tutorial_mode.instruction_icons,
-        preprocess=tutorial_mode.preprocess,
-        navigate=tutorial_mode.navigate,
-        update=tutorial_mode.update,
-        rom=rom,
-        config=config,
-    )
+
+    if thread_pool is not None:
+        futures = {
+            "play": thread_pool.submit(
+                build_play_mode,
+                archetypes=play_mode.archetypes,
+                skin=play_mode.skin,
+                effects=play_mode.effects,
+                particles=play_mode.particles,
+                buckets=play_mode.buckets,
+                rom=rom,
+                config=config,
+                thread_pool=thread_pool,
+            ),
+            "watch": thread_pool.submit(
+                build_watch_mode,
+                archetypes=watch_mode.archetypes,
+                skin=watch_mode.skin,
+                effects=watch_mode.effects,
+                particles=watch_mode.particles,
+                buckets=watch_mode.buckets,
+                rom=rom,
+                update_spawn=watch_mode.update_spawn,
+                config=config,
+                thread_pool=thread_pool,
+            ),
+            "preview": thread_pool.submit(
+                build_preview_mode,
+                archetypes=preview_mode.archetypes,
+                skin=preview_mode.skin,
+                rom=rom,
+                config=config,
+                thread_pool=thread_pool,
+            ),
+            "tutorial": thread_pool.submit(
+                build_tutorial_mode,
+                skin=tutorial_mode.skin,
+                effects=tutorial_mode.effects,
+                particles=tutorial_mode.particles,
+                instructions=tutorial_mode.instructions,
+                instruction_icons=tutorial_mode.instruction_icons,
+                preprocess=tutorial_mode.preprocess,
+                navigate=tutorial_mode.navigate,
+                update=tutorial_mode.update,
+                rom=rom,
+                config=config,
+                thread_pool=thread_pool,
+            ),
+        }
+
+        play_data = futures["play"].result()
+        watch_data = futures["watch"].result()
+        preview_data = futures["preview"].result()
+        tutorial_data = futures["tutorial"].result()
+    else:
+        play_data = build_play_mode(
+            archetypes=play_mode.archetypes,
+            skin=play_mode.skin,
+            effects=play_mode.effects,
+            particles=play_mode.particles,
+            buckets=play_mode.buckets,
+            rom=rom,
+            config=config,
+            thread_pool=None,
+        )
+        watch_data = build_watch_mode(
+            archetypes=watch_mode.archetypes,
+            skin=watch_mode.skin,
+            effects=watch_mode.effects,
+            particles=watch_mode.particles,
+            buckets=watch_mode.buckets,
+            rom=rom,
+            update_spawn=watch_mode.update_spawn,
+            config=config,
+            thread_pool=None,
+        )
+        preview_data = build_preview_mode(
+            archetypes=preview_mode.archetypes,
+            skin=preview_mode.skin,
+            rom=rom,
+            config=config,
+            thread_pool=None,
+        )
+        tutorial_data = build_tutorial_mode(
+            skin=tutorial_mode.skin,
+            effects=tutorial_mode.effects,
+            particles=tutorial_mode.particles,
+            instructions=tutorial_mode.instructions,
+            instruction_icons=tutorial_mode.instruction_icons,
+            preprocess=tutorial_mode.preprocess,
+            navigate=tutorial_mode.navigate,
+            update=tutorial_mode.update,
+            rom=rom,
+            config=config,
+            thread_pool=None,
+        )
+
     return PackagedEngine(
         configuration=package_output(configuration),
         play_data=package_output(play_data),
@@ -134,9 +207,17 @@ def build_play_mode(
     buckets: Buckets,
     rom: ReadOnlyMemory,
     config: BuildConfig,
+    thread_pool: Executor | None = None,
 ):
     return {
-        **compile_mode(mode=Mode.PLAY, rom=rom, archetypes=archetypes, global_callbacks=None, passes=config.passes),
+        **compile_mode(
+            mode=Mode.PLAY,
+            rom=rom,
+            archetypes=archetypes,
+            global_callbacks=None,
+            passes=config.passes,
+            thread_pool=thread_pool,
+        ),
         "skin": build_skin(skin),
         "effect": build_effects(effects),
         "particle": build_particles(particles),
@@ -153,6 +234,7 @@ def build_watch_mode(
     rom: ReadOnlyMemory,
     update_spawn: Callable[[], float],
     config: BuildConfig,
+    thread_pool: Executor | None = None,
 ):
     return {
         **compile_mode(
@@ -161,6 +243,7 @@ def build_watch_mode(
             archetypes=archetypes,
             global_callbacks=[(update_spawn_callback, update_spawn)],
             passes=config.passes,
+            thread_pool=thread_pool,
         ),
         "skin": build_skin(skin),
         "effect": build_effects(effects),
@@ -174,9 +257,17 @@ def build_preview_mode(
     skin: Skin,
     rom: ReadOnlyMemory,
     config: BuildConfig,
+    thread_pool: Executor | None = None,
 ):
     return {
-        **compile_mode(mode=Mode.PREVIEW, rom=rom, archetypes=archetypes, global_callbacks=None, passes=config.passes),
+        **compile_mode(
+            mode=Mode.PREVIEW,
+            rom=rom,
+            archetypes=archetypes,
+            global_callbacks=None,
+            passes=config.passes,
+            thread_pool=thread_pool,
+        ),
         "skin": build_skin(skin),
     }
 
@@ -188,10 +279,11 @@ def build_tutorial_mode(
     instructions: TutorialInstructions,
     instruction_icons: TutorialInstructionIcons,
     preprocess: Callable[[], None],
-    navigate: Callable[[int], None],
+    navigate: Callable[[], None],
     update: Callable[[], None],
     rom: ReadOnlyMemory,
     config: BuildConfig,
+    thread_pool: Executor | None = None,
 ):
     return {
         **compile_mode(
@@ -204,6 +296,7 @@ def build_tutorial_mode(
                 (update_callback, update),
             ],
             passes=config.passes,
+            thread_pool=thread_pool,
         ),
         "skin": build_skin(skin),
         "effect": build_effects(effects),

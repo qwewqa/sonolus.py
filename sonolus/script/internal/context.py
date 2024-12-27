@@ -3,6 +3,7 @@ from __future__ import annotations
 from contextlib import contextmanager
 from contextvars import ContextVar
 from dataclasses import dataclass
+from threading import Lock
 from typing import Any, Self
 
 from sonolus.backend.blocks import BlockData, PlayBlock
@@ -25,6 +26,7 @@ class GlobalContextState:
     environment_mappings: dict[_GlobalInfo, int]
     environment_offsets: dict[Block, int]
     mode: Mode
+    lock: Lock
 
     def __init__(self, mode: Mode, archetypes: dict[type, int] | None = None, rom: ReadOnlyMemory | None = None):
         self.archetypes = archetypes or {}
@@ -33,6 +35,7 @@ class GlobalContextState:
         self.environment_mappings = {}
         self.environment_offsets = {}
         self.mode = mode
+        self.lock = Lock()
 
 
 class CallbackContextState:
@@ -87,10 +90,6 @@ class Context:
     @property
     def used_names(self) -> dict[str, int]:
         return self.callback_state.used_names
-
-    @property
-    def const_mappings(self) -> dict[Any, int]:
-        return self.global_state.const_mappings
 
     def check_readable(self, place: BlockPlace):
         if not self.callback:
@@ -204,22 +203,25 @@ class Context:
                         )
 
     def map_constant(self, value: Any) -> int:
-        if value not in self.const_mappings:
-            self.const_mappings[value] = len(self.const_mappings)
-        return self.const_mappings[value]
+        with self.global_state.lock:
+            const_mappings = self.global_state.const_mappings
+            if value not in const_mappings:
+                const_mappings[value] = len(const_mappings)
+            return const_mappings[value]
 
     def get_global_base(self, value: _GlobalInfo | _GlobalPlaceholder) -> BlockPlace:
-        block = value.blocks.get(self.global_state.mode)
-        if block is None:
-            raise RuntimeError(f"Global {value.name} is not available in '{self.global_state.mode.name}' mode")
-        if value not in self.global_state.environment_mappings:
-            if value.offset is None:
-                offset = self.global_state.environment_offsets.get(block, 0)
-                self.global_state.environment_mappings[value] = offset
-                self.global_state.environment_offsets[block] = offset + value.size
-            else:
-                self.global_state.environment_mappings[value] = value.offset
-        return BlockPlace(block, self.global_state.environment_mappings[value])
+        with self.global_state.lock:
+            block = value.blocks.get(self.global_state.mode)
+            if block is None:
+                raise RuntimeError(f"Global {value.name} is not available in '{self.global_state.mode.name}' mode")
+            if value not in self.global_state.environment_mappings:
+                if value.offset is None:
+                    offset = self.global_state.environment_offsets.get(block, 0)
+                    self.global_state.environment_mappings[value] = offset
+                    self.global_state.environment_offsets[block] = offset + value.size
+                else:
+                    self.global_state.environment_mappings[value] = value.offset
+            return BlockPlace(block, self.global_state.environment_mappings[value])
 
     @classmethod
     def meet(cls, contexts: list[Context]) -> Context:
@@ -257,19 +259,22 @@ def using_ctx(value: Context | None):
 class ReadOnlyMemory:
     values: list[float]
     indexes: dict[tuple[float, ...], int]
+    _lock: Lock
 
     def __init__(self):
         self.values = []
         self.indexes = {}
+        self._lock = Lock()
 
     def __getitem__(self, item: tuple[float, ...]) -> BlockPlace:
-        if item not in self.indexes:
-            index = len(self.values)
-            self.indexes[item] = index
-            self.values.extend(item)
-        else:
-            index = self.indexes[item]
-        return BlockPlace(self.block, index)
+        with self._lock:
+            if item not in self.indexes:
+                index = len(self.values)
+                self.indexes[item] = index
+                self.values.extend(item)
+            else:
+                index = self.indexes[item]
+            return BlockPlace(self.block, index)
 
     @property
     def block(self) -> Block:
