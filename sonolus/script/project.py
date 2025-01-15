@@ -96,7 +96,7 @@ class BuildConfig:
     STANDARD_PASSES: ClassVar[Sequence[CompilerPass]] = optimize.STANDARD_PASSES
     """The standard list of compiler passes."""
 
-    passes: Sequence[CompilerPass] = optimize.FAST_PASSES
+    passes: Sequence[CompilerPass] = optimize.STANDARD_PASSES
     """The list of compiler passes to use."""
 
     build_play: bool = True
