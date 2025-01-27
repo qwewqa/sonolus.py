@@ -501,6 +501,15 @@ def is_tutorial() -> bool:
 
 
 @meta_fn
+def is_preprocessing() -> bool:
+    """Check if the game is in the preprocessing stage.
+
+    Returns True if the current callback is one of preprocess, spawn_order, spawn_time, or despawn_time.
+    """
+    return ctx() and ctx().callback in {"preprocess", "spawnOrder", "spawnTime", "despawnTime"}
+
+
+@meta_fn
 def aspect_ratio() -> float:
     """Get the aspect ratio of the game."""
     if not ctx():
