@@ -16,8 +16,8 @@ debug_log_callback = ContextVar[Callable[[Num], None]]("debug_log_callback")
 
 
 @meta_fn
-def error(message: str | None = None) -> None:
-    message = message._as_py_() if message is not None else "Error"
+def error(message: str | None = None) -> Never:
+    message = validate_value(message)._as_py_() if message is not None else "Error"
     if not isinstance(message, str):
         raise ValueError("Expected a string")
     if ctx():
@@ -26,6 +26,19 @@ def error(message: str | None = None) -> None:
         terminate()
     else:
         raise RuntimeError(message)
+
+
+@meta_fn
+def static_error(message: str | None = None) -> Never:
+    """Raise a static error.
+
+    This function is used to raise an error during compile-time if the compiler cannot guarantee that
+    this function will not be called during runtime.
+    """
+    message = validate_value(message)._as_py_() if message is not None else "Error"
+    if not isinstance(message, str):
+        raise ValueError("Expected a string")
+    raise RuntimeError(message)
 
 
 @meta_fn
