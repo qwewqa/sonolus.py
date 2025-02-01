@@ -1,7 +1,7 @@
 from typing import Self
 
 from sonolus.backend.ops import Op
-from sonolus.script.debug import error
+from sonolus.script.debug import static_error
 from sonolus.script.internal.native import native_function
 from sonolus.script.num import Num
 from sonolus.script.record import Record
@@ -23,17 +23,6 @@ class Interval(Record):
     def zero(cls) -> Self:
         """Get an empty interval."""
         return cls(0, 0)
-
-    def then(self, length: float) -> Self:
-        """Get the interval after this one with a given length.
-
-        Args:
-            length: The length of the interval.
-
-        Returns:
-            An interval that has the end of this interval as the start and has the given length.
-        """
-        return Interval(self.end, self.end + length)
 
     @property
     def length(self) -> float:
@@ -73,7 +62,7 @@ class Interval(Record):
             case Num(value):
                 return self.start <= value <= self.end
             case _:
-                error("Invalid type for interval check")
+                static_error("Invalid type for interval check")
 
     def __add__(self, other: float | int) -> Self:
         """Add a value to both ends of the interval.
