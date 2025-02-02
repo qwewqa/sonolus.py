@@ -1,6 +1,7 @@
 # ruff: noqa: E741
 import itertools
 from datetime import timedelta
+from math import pi
 
 from hypothesis import assume, given, settings
 from hypothesis import strategies as st
@@ -141,6 +142,26 @@ def test_quad_center(quad):
     result = validate_dual_run(fn)
     expected = (quad.bl + quad.tr + quad.tl + quad.br) / 4
     assert is_close(result, expected)
+
+
+def test_quad_permute():
+    for rotation in range(-5, 6):
+        quad = Quad(
+            Vec2(-1, -1),
+            Vec2(-1, 1),
+            Vec2(1, 1),
+            Vec2(1, -1),
+        )
+
+        def fn():
+            return quad.permute(rotation)  # noqa: B023
+
+        result = validate_dual_run(fn)
+        expected = quad.rotate(rotation * pi / 2)
+        assert is_close(result.bl, expected.bl)
+        assert is_close(result.tl, expected.tl)
+        assert is_close(result.tr, expected.tr)
+        assert is_close(result.br, expected.br)
 
 
 # Rect Tests

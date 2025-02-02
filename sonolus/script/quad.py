@@ -3,6 +3,7 @@ from __future__ import annotations
 from typing import Protocol, Self
 
 from sonolus.script.record import Record
+from sonolus.script.values import zeros
 from sonolus.script.vec import Vec2, pnpoly
 
 
@@ -26,6 +27,16 @@ class Quad(Record):
 
     br: Vec2
     """The bottom-right corner of the quad."""
+
+    @classmethod
+    def from_quad(cls, value: QuadLike, /) -> Quad:
+        """Create a quad from a quad-like value."""
+        return cls(
+            bl=value.bl,
+            tl=value.tl,
+            tr=value.tr,
+            br=value.br,
+        )
 
     @property
     def center(self) -> Vec2:
@@ -94,6 +105,44 @@ class Quad(Record):
     def rotate_centered(self, angle: float, /) -> Self:
         """Rotate the quad by the given angle about its center and return a new quad."""
         return self.rotate_about(angle, self.center)
+
+    def permute(self, count: int = 1, /) -> Self:
+        """Perform a cyclic permutation of the quad's vertices and return a new quad.
+
+        On a square, this operation is equivalent to rotating the square counterclockwise 90 degrees `count` times.
+
+        Negative values of `count` are allowed and will rotate the quad clockwise.
+
+        Args:
+            count: The number of vertices to shift. Defaults to 1.
+
+        Returns:
+            The permuted quad.
+        """
+        count = int(count % 4)
+        result = zeros(Quad)
+        match count:
+            case 0:
+                result.bl @= self.bl
+                result.tl @= self.tl
+                result.tr @= self.tr
+                result.br @= self.br
+            case 1:
+                result.bl @= self.br
+                result.tl @= self.bl
+                result.tr @= self.tl
+                result.br @= self.tr
+            case 2:
+                result.bl @= self.tr
+                result.tl @= self.br
+                result.tr @= self.bl
+                result.br @= self.tl
+            case 3:
+                result.bl @= self.tl
+                result.tl @= self.tr
+                result.tr @= self.br
+                result.br @= self.bl
+        return result
 
     def contains_point(self, point: Vec2, /) -> bool:
         """Check if the quad contains the given point.
