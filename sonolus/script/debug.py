@@ -17,6 +17,11 @@ debug_log_callback = ContextVar[Callable[[Num], None]]("debug_log_callback")
 
 @meta_fn
 def error(message: str | None = None) -> Never:
+    """Raise an error.
+
+    This function is used to raise an error during runtime.
+    When this happens, the game will pause in debug mode. The current callback will also immediately return 0.
+    """
     message = validate_value(message)._as_py_() if message is not None else "Error"
     if not isinstance(message, str):
         raise ValueError("Expected a string")

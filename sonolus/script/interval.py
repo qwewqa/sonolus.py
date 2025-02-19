@@ -34,7 +34,7 @@ class Interval(Record):
 
     @property
     def is_empty(self) -> bool:
-        """Whether the interval has length of zero or less."""
+        """Whether the has a start greater than its end."""
         return self.start > self.end
 
     @property
