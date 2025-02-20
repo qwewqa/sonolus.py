@@ -158,10 +158,14 @@ class ArrayLike[T](Sequence, ABC):
         return min_index
 
     def _max_(self, key: Callable[T, Any] | None = None) -> T:
-        return self[self.index_of_max(key=key)]
+        index = self.index_of_max(key=key)
+        assert index != -1
+        return self[index]
 
     def _min_(self, key: Callable[T, Any] | None = None) -> T:
-        return self[self.index_of_min(key=key)]
+        index = self.index_of_min(key=key)
+        assert index != -1
+        return self[index]
 
     def swap(self, i: Num, j: Num, /):
         """Swap the values at the given indices.

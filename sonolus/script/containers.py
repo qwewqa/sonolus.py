@@ -8,6 +8,32 @@ from sonolus.script.record import Record
 from sonolus.script.values import alloc, copy
 
 
+class Box[T](Record):
+    """A box that contains a value.
+
+    This can be helpful for generic code that can handle both Num and non-Num types.
+
+    Usage:
+        ```python
+        Box[T](value: T)
+        ```
+
+    Examples:
+        ```python
+        box = Box(1)
+        box = Box[int](2)
+
+        x: T = ...
+        y: T = ...
+        box = Box(x)
+        box.value = y  # Works regardless of whether x is a Num or not
+        ```
+    """
+
+    value: T
+    """The value contained in the box."""
+
+
 class Pair[T, U](Record):
     """A generic pair of values.
 
@@ -126,6 +152,17 @@ class VarArray[T, Capacity](Record, ArrayLike[T]):
             value: The value to append.
         """
         assert self._size < len(self._array)
+        self._array[self._size] = value
+        self._size += 1
+
+    def append_unchecked(self, value: T):
+        """Append the given value to the end of the array without checking the capacity.
+
+        Use with caution as this may cause hard to debug issues if the array is full.
+
+        Args:
+            value: The value to append.
+        """
         self._array[self._size] = value
         self._size += 1
 
@@ -256,6 +293,78 @@ class VarArray[T, Capacity](Record, ArrayLike[T]):
 
     def __hash__(self):
         raise TypeError("unhashable type: 'VarArray'")
+
+
+class ArraySet[T, Capacity](Record):
+    """A set implemented as an array with a fixed maximum capacity.
+
+    Usage:
+        ```python
+        ArraySet[T, Capacity].new()  # Create a new empty set
+        ```
+
+    Examples:
+        ```python
+        s = ArraySet[int, 10].new()
+        s.add(1)
+        s.add(2)
+        assert 1 in s
+        assert 3 not in s
+        s.remove(1)
+        assert 1 not in s
+        ```
+    """
+
+    _values: VarArray[T, Capacity]
+
+    @classmethod
+    def new(cls):
+        """Create a new empty set."""
+        element_type = cls.type_var_value(T)
+        capacity = cls.type_var_value(Capacity)
+        return cls(VarArray[element_type, capacity].new())
+
+    def __len__(self):
+        """Return the number of elements in the set."""
+        return len(self._values)
+
+    def __contains__(self, value):
+        """Return whether the given value is present in the set."""
+        return value in self._values
+
+    def __iter__(self):
+        """Return an iterator over the values in the set."""
+        return self._values.__iter__()
+
+    def add(self, value) -> bool:
+        """Add a copy of the given value to the set.
+
+        This has no effect and returns False if the value is already present or if the set is full.
+
+        Args:
+            value: The value to add.
+
+        Returns:
+            True if the value was added, False otherwise.
+        """
+        return self._values.set_add(value)
+
+    def remove(self, value) -> bool:
+        """Remove the given value from the set.
+
+        This has no effect and returns False if the value is not present.
+
+        Args:
+            value: The value to remove.
+
+        Returns:
+            True if the value was removed, False otherwise.
+        """
+        return self._values.set_remove(value)
+
+    def clear(self):
+        """Clear the set, removing all elements."""
+        self._values.clear()
 
 
 class _ArrayMapEntry[K, V](Record):

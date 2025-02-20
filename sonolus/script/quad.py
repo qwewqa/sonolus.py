@@ -297,7 +297,7 @@ class Rect(Record):
         return self.l <= point.x <= self.r and self.b <= point.y <= self.t
 
 
-class QuadLike(Protocol):
+class _QuadLike(Protocol):
     """A protocol for types that can be used as quads."""
 
     @property
@@ -315,6 +315,11 @@ class QuadLike(Protocol):
     @property
     def br(self) -> Vec2:
         """The bottom-right corner of the quad."""
+
+
+# PyCharm doesn't recognize attributes as satisfying the protocol.
+type QuadLike = _QuadLike | Quad
+"""A type that can be used as a quad."""
 
 
 def flatten_quad(quad: QuadLike) -> tuple[float, float, float, float, float, float, float, float]:
