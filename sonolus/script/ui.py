@@ -20,9 +20,14 @@ class UiMetric(StrEnum):
 
 
 class UiJudgmentErrorStyle(StrEnum):
-    """The style of the judgment error."""
+    """The style of the judgment error.
+
+    The name of each member refers to what's used for positive (late) judgment errors.
+    """
 
     NONE = "none"
+    LATE = "late"
+    EARLY = "early"  # Not really useful
     PLUS = "plus"
     MINUS = "minus"
     ARROW_UP = "arrowUp"
@@ -38,9 +43,13 @@ class UiJudgmentErrorStyle(StrEnum):
 class UiJudgmentErrorPlacement(StrEnum):
     """The placement of the judgment error."""
 
-    BOTH = "both"
     LEFT = "left"
     RIGHT = "right"
+    LEFT_RIGHT = "leftRight"
+    TOP = "top"
+    BOTTOM = "bottom"
+    TOP_BOTTOM = "topBottom"
+    CENTER = "center"
 
 
 class EaseType(StrEnum):
@@ -193,8 +202,8 @@ class UiConfig:
             scale=UiAnimationTween(1.2, 1, 0.2, EaseType.IN_CUBIC), alpha=UiAnimationTween(1, 1, 0, EaseType.NONE)
         )
     )
-    judgment_error_style: UiJudgmentErrorStyle = UiJudgmentErrorStyle.NONE
-    judgment_error_placement: UiJudgmentErrorPlacement = UiJudgmentErrorPlacement.BOTH
+    judgment_error_style: UiJudgmentErrorStyle = UiJudgmentErrorStyle.LATE
+    judgment_error_placement: UiJudgmentErrorPlacement = UiJudgmentErrorPlacement.TOP
     judgment_error_min: float = 0.0
 
     def to_dict(self):

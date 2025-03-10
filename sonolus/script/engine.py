@@ -4,7 +4,7 @@ import json
 from collections.abc import Callable
 from os import PathLike
 from pathlib import Path
-from typing import Any
+from typing import Any, Literal
 
 from sonolus.build.collection import Asset, load_asset
 from sonolus.script.archetype import PlayArchetype, PreviewArchetype, WatchArchetype, _BaseArchetype
@@ -81,7 +81,7 @@ class Engine:
         meta: Additional metadata of the engine.
     """
 
-    version = 12
+    version: Literal[13] = 13
 
     def __init__(
         self,

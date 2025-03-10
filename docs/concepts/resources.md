@@ -236,8 +236,8 @@ ui_config = UiConfig(
             ease=EaseType.NONE,
         ),
     ),
-    judgment_error_style=UiJudgmentErrorStyle.NONE,
-    judgment_error_placement=UiJudgmentErrorPlacement.BOTH,
+    judgment_error_style=UiJudgmentErrorStyle.LATE,
+    judgment_error_placement=UiJudgmentErrorPlacement.TOP,
     judgment_error_min=0.0,
 )
 ```
