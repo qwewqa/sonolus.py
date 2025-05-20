@@ -2,7 +2,7 @@ from collections.abc import Iterable
 from typing import Any, Self
 
 from sonolus.backend.place import BlockPlace
-from sonolus.script.internal.value import Value
+from sonolus.script.internal.value import DataValue, Value
 
 
 class TransientValue(Value):
@@ -23,10 +23,10 @@ class TransientValue(Value):
         raise TypeError(f"{cls.__name__} cannot be dereferenced")
 
     @classmethod
-    def _from_list_(cls, values: Iterable[float | BlockPlace]) -> Self:
+    def _from_list_(cls, values: Iterable[DataValue]) -> Self:
         raise TypeError(f"{cls.__name__} cannot be constructed from list")
 
-    def _to_list_(self, level_refs: dict[Any, str] | None = None) -> list[float | str | BlockPlace]:
+    def _to_list_(self, level_refs: dict[Any, str] | None = None) -> list[DataValue | str]:
         raise TypeError(f"{type(self).__name__} cannot be deconstructed to list")
 
     @classmethod

@@ -8,10 +8,9 @@ from enum import Enum, StrEnum
 from types import FunctionType
 from typing import Annotated, Any, ClassVar, Self, TypedDict, get_origin
 
-from sonolus.backend.ir import IRConst, IRInstr
+from sonolus.backend.ir import IRConst, IRExpr, IRInstr, IRStmt
 from sonolus.backend.mode import Mode
 from sonolus.backend.ops import Op
-from sonolus.backend.place import BlockPlace
 from sonolus.script.bucket import Bucket, Judgment
 from sonolus.script.internal.callbacks import PLAY_CALLBACKS, PREVIEW_CALLBACKS, WATCH_ARCHETYPE_CALLBACKS, CallbackInfo
 from sonolus.script.internal.context import ctx
@@ -20,9 +19,9 @@ from sonolus.script.internal.generic import validate_concrete_type
 from sonolus.script.internal.impl import meta_fn, validate_value
 from sonolus.script.internal.introspection import get_field_specifiers
 from sonolus.script.internal.native import native_call
-from sonolus.script.internal.value import Value
+from sonolus.script.internal.value import BackingValue, DataValue, Value
 from sonolus.script.num import Num
-from sonolus.script.pointer import _deref
+from sonolus.script.pointer import _backing_deref, _deref
 from sonolus.script.record import Record
 from sonolus.script.values import zeros
 
@@ -42,6 +41,17 @@ class _StorageType(Enum):
 class _ArchetypeFieldInfo:
     name: str | None
     storage: _StorageType
+
+
+class _ExportBackingValue(BackingValue):
+    def __init__(self, index: int):
+        self.index = index
+
+    def read(self) -> IRExpr:
+        raise NotImplementedError("Exported fields are write-only")
+
+    def write(self, value: IRExpr) -> IRStmt:
+        return IRInstr(Op.ExportValue, [IRConst(self.index), value])
 
 
 class _ArchetypeField(SonolusDescriptor):
@@ -70,7 +80,16 @@ class _ArchetypeField(SonolusDescriptor):
                     case _ArchetypeLevelData(values=values):
                         result = values[self.name]
             case _StorageType.EXPORTED:
-                raise RuntimeError("Exported fields are write-only")
+                match instance._data_:
+                    case _ArchetypeSelfData():
+                        result = _backing_deref(
+                            lambda i: _ExportBackingValue(i + self.offset),
+                            self.type,
+                        )
+                    case _ArchetypeReferenceData():
+                        raise RuntimeError("Exported fields of other entities are not accessible")
+                    case _ArchetypeLevelData():
+                        raise RuntimeError("Exported fields are not available in level data")
             case _StorageType.MEMORY:
                 match instance._data_:
                     case _ArchetypeSelfData():
@@ -584,6 +603,7 @@ class _BaseArchetype:
         cls._spawn_signature_ = inspect.Signature(
             [inspect.Parameter(name, inspect.Parameter.POSITIONAL_OR_KEYWORD) for name in cls._memory_fields_]
         )
+        cls._post_init_fields()
 
     @property
     @abstractmethod
@@ -608,6 +628,10 @@ class _BaseArchetype:
                 return result
             case _:
                 raise RuntimeError("Invalid entity data")
+
+    @classmethod
+    def _post_init_fields(cls):
+        pass
 
 
 class PlayArchetype(_BaseArchetype):
@@ -885,6 +909,11 @@ class WatchArchetype(_BaseArchetype):
             case _:
                 raise RuntimeError("Result is only accessible from the entity itself")
 
+    @classmethod
+    def _post_init_fields(cls):
+        if cls._exported_fields_:
+            raise RuntimeError("Watch archetypes cannot have exported fields")
+
 
 class PreviewArchetype(_BaseArchetype):
     """Base class for preview mode archetypes.
@@ -933,6 +962,11 @@ class PreviewArchetype(_BaseArchetype):
     def index(self) -> int:
         """The index of this entity."""
         return self._info.index
+
+    @classmethod
+    def _post_init_fields(cls):
+        if cls._exported_fields_:
+            raise RuntimeError("Preview archetypes cannot have exported fields")
 
 
 @meta_fn
@@ -1066,7 +1100,7 @@ class EntityRef[A: _BaseArchetype](Record):
         """Check if entity at the index is precisely of the archetype."""
         return self.index >= 0 and self.archetype().is_at(self.index)
 
-    def _to_list_(self, level_refs: dict[Any, str] | None = None) -> list[float | str | BlockPlace]:
+    def _to_list_(self, level_refs: dict[Any, str] | None = None) -> list[DataValue | str]:
         ref = getattr(self, "_ref_", None)
         if ref is None:
             return [self.index]

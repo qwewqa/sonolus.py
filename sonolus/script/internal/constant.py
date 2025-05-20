@@ -3,7 +3,7 @@ from typing import Any, ClassVar, Self
 
 from sonolus.backend.place import BlockPlace
 from sonolus.script.internal.impl import meta_fn
-from sonolus.script.internal.value import Value
+from sonolus.script.internal.value import DataValue, Value
 
 
 class _Missing:
@@ -94,10 +94,10 @@ class ConstantValue(Value):
         return self.value()
 
     @classmethod
-    def _from_list_(cls, values: Iterable[float | BlockPlace]) -> Self:
+    def _from_list_(cls, values: Iterable[DataValue]) -> Self:
         return cls()
 
-    def _to_list_(self, level_refs: dict[Any, str] | None = None) -> list[float | str | BlockPlace]:
+    def _to_list_(self, level_refs: dict[Any, str] | None = None) -> list[DataValue | str]:
         return []
 
     @classmethod

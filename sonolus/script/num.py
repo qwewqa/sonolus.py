@@ -7,11 +7,11 @@ from typing import TYPE_CHECKING, Any, Self, TypeGuard, final, runtime_checkable
 
 from sonolus.backend.ir import IRConst, IRGet, IRPureInstr, IRSet
 from sonolus.backend.ops import Op
-from sonolus.backend.place import BlockPlace, Place
+from sonolus.backend.place import BlockPlace
 from sonolus.script.internal.context import ctx
 from sonolus.script.internal.error import InternalError
 from sonolus.script.internal.impl import meta_fn
-from sonolus.script.internal.value import Value
+from sonolus.script.internal.value import BackingValue, DataValue, Value
 
 
 class _NumMeta(type):
@@ -30,15 +30,17 @@ class _Num(Value, metaclass=_NumMeta):
     # Since we don't support complex numbers, real is equal to the original number
     __match_args__ = ("real",)
 
-    data: BlockPlace | float | int | bool
+    data: DataValue
 
-    def __init__(self, data: Place | float | int | bool):
+    def __init__(self, data: DataValue):
         if isinstance(data, complex):
             raise TypeError("Cannot create a Num from a complex number")
         if isinstance(data, int):
             data = float(data)
         if _is_num(data):
             raise InternalError("Cannot create a Num from a Num")
+        if not isinstance(data, BlockPlace | BackingValue | float | int | bool):
+            raise TypeError(f"Cannot create a Num from {type(data)}")
         self.data = data
 
     def __str__(self) -> str:
@@ -78,7 +80,7 @@ class _Num(Value, metaclass=_NumMeta):
         return cls(value)
 
     def _is_py_(self) -> bool:
-        return not isinstance(self.data, BlockPlace)
+        return isinstance(self.data, float | int | bool)
 
     def _as_py_(self) -> Any:
         if not self._is_py_():
@@ -88,11 +90,11 @@ class _Num(Value, metaclass=_NumMeta):
         return self.data
 
     @classmethod
-    def _from_list_(cls, values: Iterable[float | BlockPlace]) -> Self:
+    def _from_list_(cls, values: Iterable[DataValue]) -> Self:
         value = next(iter(values))
         return Num(value)
 
-    def _to_list_(self, level_refs: dict[Any, str] | None = None) -> list[float | str | BlockPlace]:
+    def _to_list_(self, level_refs: dict[Any, str] | None = None) -> list[DataValue]:
         return [self.data]
 
     @classmethod
@@ -111,10 +113,14 @@ class _Num(Value, metaclass=_NumMeta):
 
     def _set_(self, value: Self):
         if ctx():
-            if not isinstance(self.data, BlockPlace):
-                raise ValueError("Cannot set a compile time constant value")
-            ctx().check_writable(self.data)
-            ctx().add_statements(IRSet(self.data, value.ir()))
+            match self.data:
+                case BackingValue():
+                    ctx().add_statements(self.data.write(value))
+                case BlockPlace():
+                    ctx().check_writable(self.data)
+                    ctx().add_statements(IRSet(self.data, value.ir()))
+                case _:
+                    raise ValueError("Cannot set a read-only value")
         else:
             self.data = value.data
 
@@ -144,10 +150,13 @@ class _Num(Value, metaclass=_NumMeta):
             return cls(0)
 
     def ir(self):
-        if isinstance(self.data, BlockPlace):
-            return IRGet(self.data)
-        else:
-            return IRConst(self.data)
+        match self.data:
+            case BlockPlace():
+                return IRGet(self.data)
+            case BackingValue():
+                return self.data.read()
+            case _:
+                return IRConst(self.data)
 
     def index(self) -> int | BlockPlace:
         return self.data

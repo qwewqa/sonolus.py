@@ -1,7 +1,8 @@
+
 from sonolus.backend.place import BlockPlace
 from sonolus.script.internal.context import ctx
 from sonolus.script.internal.impl import meta_fn, validate_value
-from sonolus.script.internal.value import Value
+from sonolus.script.internal.value import BackingSource, Value
 from sonolus.script.num import Num, _is_num
 
 
@@ -30,3 +31,11 @@ def _deref[T: Value](block: Num, offset: Num, type_: type[T]) -> T:
     if not (isinstance(type_, type) and issubclass(type_, Value)):
         raise TypeError("type_ must be a Value")
     return type_._from_place_(BlockPlace(block, offset))
+
+
+@meta_fn
+def _backing_deref[T: Value](source: BackingSource, type_: type[T]) -> T:
+    type_ = validate_value(type_)._as_py_()
+    if not isinstance(type_, type) or not issubclass(type_, Value):
+        raise TypeError("type_ must be a Value")
+    return type_._from_backing_source_(source)

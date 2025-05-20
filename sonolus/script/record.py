@@ -16,7 +16,7 @@ from sonolus.script.internal.generic import (
     validate_type_spec,
 )
 from sonolus.script.internal.impl import meta_fn
-from sonolus.script.internal.value import Value
+from sonolus.script.internal.value import DataValue, Value
 from sonolus.script.num import Num
 
 
@@ -182,11 +182,11 @@ class Record(GenericValue):
         return self
 
     @classmethod
-    def _from_list_(cls, values: Iterable[float | BlockPlace]) -> Self:
+    def _from_list_(cls, values: Iterable[DataValue]) -> Self:
         iterator = iter(values)
         return cls(**{field.name: field.type._from_list_(iterator) for field in cls._fields})
 
-    def _to_list_(self, level_refs: dict[Any, str] | None = None) -> list[float | str | BlockPlace]:
+    def _to_list_(self, level_refs: dict[Any, str] | None = None) -> list[DataValue | str]:
         result = []
         for field in self._fields:
             result.extend(self._value[field.name]._to_list_(level_refs))

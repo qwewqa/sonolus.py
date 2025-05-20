@@ -1,8 +1,21 @@
 from abc import abstractmethod
-from collections.abc import Iterable
+from collections.abc import Callable, Iterable
 from typing import Any, Self
 
+from sonolus.backend.ir import IRExpr, IRStmt
 from sonolus.backend.place import BlockPlace
+
+
+class BackingValue:
+    def read(self) -> IRExpr:
+        raise NotImplementedError()
+
+    def write(self, value: IRExpr) -> IRStmt:
+        raise NotImplementedError()
+
+
+type DataValue = BlockPlace | BackingValue | float | int | bool
+type BackingSource = Callable[[int], BackingValue]
 
 
 class Value:
@@ -60,14 +73,19 @@ class Value:
         raise NotImplementedError
 
     @classmethod
+    def _from_backing_source_(cls, source: BackingSource) -> Self:
+        """Creates a value from a backing source."""
+        return cls._from_list_(source(i) for i in range(cls._size_()))
+
+    @classmethod
     @abstractmethod
-    def _from_list_(cls, values: Iterable[float | BlockPlace]) -> Self:
-        """Creates a value from a list of floats."""
+    def _from_list_(cls, values: Iterable[DataValue]) -> Self:
+        """Creates a value from a list of data values."""
         raise NotImplementedError
 
     @abstractmethod
-    def _to_list_(self, level_refs: dict[Any, str] | None = None) -> list[float | str | BlockPlace]:
-        """Converts this value to a list of floats."""
+    def _to_list_(self, level_refs: dict[Any, str] | None = None) -> list[DataValue | str]:
+        """Converts this value to a list of data values."""
         raise NotImplementedError
 
     @classmethod
@@ -76,9 +94,7 @@ class Value:
         """Returns the keys to a flat representation of this value."""
         raise NotImplementedError
 
-    def _to_flat_dict_(
-        self, prefix: str, level_refs: dict[Any, str] | None = None
-    ) -> dict[str, float | str | BlockPlace]:
+    def _to_flat_dict_(self, prefix: str, level_refs: dict[Any, str] | None = None) -> dict[str, DataValue | str]:
         """Converts this value to a flat dictionary."""
         return dict(zip(self._flat_keys_(prefix), self._to_list_(level_refs), strict=False))
 
@@ -96,12 +112,12 @@ class Value:
             v: Num
 
         a = 1
-        b = X(a) # (1) _get() is called on a
-        c = b.v # (2) _get() is called on the value for v
+        b = X(a) # (1) _get_() is called on a
+        c = b.v # (2) _get_() is called on the value for v
 
         # (1) prevents this from changing the value of a
         # (2) prevents this from changing the value of c
-        # Thus, both calls to _get() are necessary to ensure values behave immutably.
+        # Thus, both calls to _get_() are necessary to ensure values behave immutably.
         b.v = 2
         ```
         """

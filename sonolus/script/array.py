@@ -12,7 +12,7 @@ from sonolus.script.internal.context import ctx
 from sonolus.script.internal.error import InternalError
 from sonolus.script.internal.generic import GenericValue
 from sonolus.script.internal.impl import meta_fn, validate_value
-from sonolus.script.internal.value import Value
+from sonolus.script.internal.value import DataValue, Value
 from sonolus.script.num import Num
 
 
@@ -108,11 +108,11 @@ class Array[T, Size](GenericValue, ArrayLike[T]):
         return self
 
     @classmethod
-    def _from_list_(cls, values: Iterable[float | BlockPlace]) -> Self:
+    def _from_list_(cls, values: Iterable[DataValue]) -> Self:
         iterator = iter(values)
         return cls(*(cls.element_type()._from_list_(iterator) for _ in range(cls.size())))
 
-    def _to_list_(self, level_refs: dict[Any, str] | None = None) -> list[float | str | BlockPlace]:
+    def _to_list_(self, level_refs: dict[Any, str] | None = None) -> list[DataValue | str]:
         match self._value:
             case list():
                 return [entry for value in self._value for entry in value._to_list_(level_refs)]
