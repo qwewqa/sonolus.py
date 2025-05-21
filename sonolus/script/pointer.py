@@ -1,4 +1,3 @@
-
 from sonolus.backend.place import BlockPlace
 from sonolus.script.internal.context import ctx
 from sonolus.script.internal.impl import meta_fn, validate_value

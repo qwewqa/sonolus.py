@@ -2,7 +2,7 @@ from abc import abstractmethod
 from collections.abc import Callable, Iterable
 from typing import Any, Self
 
-from sonolus.backend.ir import IRExpr, IRStmt
+from sonolus.backend.ir import IRConst, IRExpr, IRStmt
 from sonolus.backend.place import BlockPlace
 
 
@@ -15,7 +15,7 @@ class BackingValue:
 
 
 type DataValue = BlockPlace | BackingValue | float | int | bool
-type BackingSource = Callable[[int], BackingValue]
+type BackingSource = Callable[[IRExpr], BackingValue]
 
 
 class Value:
@@ -75,7 +75,7 @@ class Value:
     @classmethod
     def _from_backing_source_(cls, source: BackingSource) -> Self:
         """Creates a value from a backing source."""
-        return cls._from_list_(source(i) for i in range(cls._size_()))
+        return cls._from_list_(source(IRConst(i)) for i in range(cls._size_()))
 
     @classmethod
     @abstractmethod

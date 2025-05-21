@@ -8,7 +8,7 @@ from enum import Enum, StrEnum
 from types import FunctionType
 from typing import Annotated, Any, ClassVar, Self, TypedDict, get_origin
 
-from sonolus.backend.ir import IRConst, IRExpr, IRInstr, IRStmt
+from sonolus.backend.ir import IRConst, IRExpr, IRInstr, IRPureInstr, IRStmt
 from sonolus.backend.mode import Mode
 from sonolus.backend.ops import Op
 from sonolus.script.bucket import Bucket, Judgment
@@ -44,14 +44,14 @@ class _ArchetypeFieldInfo:
 
 
 class _ExportBackingValue(BackingValue):
-    def __init__(self, index: int):
+    def __init__(self, index: IRExpr):
         self.index = index
 
     def read(self) -> IRExpr:
         raise NotImplementedError("Exported fields are write-only")
 
     def write(self, value: IRExpr) -> IRStmt:
-        return IRInstr(Op.ExportValue, [IRConst(self.index), value])
+        return IRInstr(Op.ExportValue, [self.index, value])
 
 
 class _ArchetypeField(SonolusDescriptor):
@@ -82,8 +82,12 @@ class _ArchetypeField(SonolusDescriptor):
             case _StorageType.EXPORTED:
                 match instance._data_:
                     case _ArchetypeSelfData():
+
+                        def backing_source(i: IRExpr):
+                            return _ExportBackingValue(IRPureInstr(Op.Add, [i, IRConst(self.offset)]))
+
                         result = _backing_deref(
-                            lambda i: _ExportBackingValue(i + self.offset),
+                            backing_source,
                             self.type,
                         )
                     case _ArchetypeReferenceData():
