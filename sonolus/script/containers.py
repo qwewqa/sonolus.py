@@ -1,9 +1,14 @@
 from __future__ import annotations
 
+from sonolus.backend.visitor import compile_and_call
 from sonolus.script.array import Array
 from sonolus.script.array_like import ArrayLike
 from sonolus.script.debug import error
+from sonolus.script.internal.context import ctx
+from sonolus.script.internal.impl import meta_fn
 from sonolus.script.iterator import SonolusIterator
+from sonolus.script.num import Num
+from sonolus.script.pointer import _deref
 from sonolus.script.record import Record
 from sonolus.script.values import alloc, copy
 
@@ -293,6 +298,58 @@ class VarArray[T, Capacity](Record, ArrayLike[T]):
 
     def __hash__(self):
         raise TypeError("unhashable type: 'VarArray'")
+
+
+class ArrayPointer[T](Record, ArrayLike[T]):
+    """An array defined by a size and pointer to the first element.
+
+    This is primarily intended to be created internally and improper use may result in hard to debug issues.
+
+    Usage:
+        ```python
+        ArrayPointer[T](size: int, block: int, offset: int)
+        ```
+    """
+
+    size: int
+    block: int
+    offset: int
+
+    def __len__(self) -> int:
+        """Return the number of elements in the array."""
+        return self.size
+
+    @classmethod
+    def element_type(cls) -> type[T]:
+        """Return the type of the elements in the array."""
+        return cls.type_var_value(T)
+
+    def _check_index(self, index: int):
+        assert 0 <= index < self.size
+
+    @meta_fn
+    def _get_item(self, item: int) -> T:
+        if not ctx():
+            raise TypeError("ArrayPointer values cannot be accessed outside of a context")
+        return _deref(
+            self.block,
+            self.offset + Num._accept_(item) * Num._accept_(self.element_type()._size_()),
+            self.element_type(),
+        )
+
+    @meta_fn
+    def __getitem__(self, item: int) -> T:
+        compile_and_call(self._check_index, item)
+        return self._get_item(item)._get_()
+
+    @meta_fn
+    def __setitem__(self, key: int, value: T):
+        compile_and_call(self._check_index, key)
+        dst = self._get_item(key)
+        if self.element_type()._is_value_type_():
+            dst._set_(value)
+        else:
+            dst._copy_from__(value)
 
 
 class ArraySet[T, Capacity](Record):

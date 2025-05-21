@@ -159,6 +159,8 @@ class _Num(Value, metaclass=_NumMeta):
                 return IRConst(self.data)
 
     def index(self) -> int | BlockPlace:
+        if isinstance(self.data, BlockPlace):
+            return self._get_().data
         return self.data
 
     def _bin_op(self, other: Self, const_fn: Callable[[Self, Self], Self | None], ir_op: Op) -> Self:

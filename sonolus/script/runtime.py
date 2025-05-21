@@ -2,7 +2,8 @@ from enum import IntEnum
 
 from sonolus.backend.mode import Mode
 from sonolus.script.array import Array
-from sonolus.script.containers import VarArray
+from sonolus.script.array_like import ArrayLike
+from sonolus.script.containers import ArrayPointer
 from sonolus.script.globals import (
     _level_life,
     _level_score,
@@ -315,7 +316,8 @@ class Touch(Record):
 
 @_runtime_touch_array
 class _TouchArray:
-    touches: Array[Touch, 999]
+    # Handled specially, see touches()
+    pass
 
 
 @_runtime_skin_transform
@@ -649,15 +651,15 @@ def scaled_time() -> float:
 
 
 @meta_fn
-def touches() -> VarArray[Touch, 999]:
+def touches() -> ArrayLike[Touch]:
     """Get the current touches of the game."""
     if not ctx():
-        return VarArray(0, Array[Touch, 0]())
+        return Array[Touch, 0]()
     match ctx().global_state.mode:
         case Mode.PLAY:
-            return VarArray(_PlayRuntimeUpdate.touch_count, _TouchArray.touches)
+            return ArrayPointer[Touch](_PlayRuntimeUpdate.touch_count, ctx().blocks.RuntimeTouchArray, 0)
         case _:
-            return VarArray(0, Array[Touch, 0]())
+            return Array[Touch, 0]()
 
 
 @meta_fn
