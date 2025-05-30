@@ -153,6 +153,7 @@ class Options:
 ```
 
 There are three types of options available:
+
 1. `slider_option`: A slider control for numeric values
 2. `toggle_option`: A toggle switch for boolean values
 3. `select_option`: A dropdown menu for selecting from predefined values

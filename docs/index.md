@@ -14,7 +14,7 @@ Sonolus.py is available on PyPI and can be installed using a package manager lik
     ```
 
 ## Getting Started
-...
+Coming soon!
 
 ## Documentation
 See [Concepts](concepts/index.md) for an overview of usage details.

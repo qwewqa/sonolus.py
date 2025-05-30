@@ -303,7 +303,7 @@ class VarArray[T, Capacity](Record, ArrayLike[T]):
 class ArrayPointer[T](Record, ArrayLike[T]):
     """An array defined by a size and pointer to the first element.
 
-    This is primarily intended to be created internally and improper use may result in hard to debug issues.
+    This is intended to be created internally and improper use may result in hard to debug issues.
 
     Usage:
         ```python
@@ -393,7 +393,7 @@ class ArraySet[T, Capacity](Record):
         """Return an iterator over the values in the set."""
         return self._values.__iter__()
 
-    def add(self, value) -> bool:
+    def add(self, value: T) -> bool:
         """Add a copy of the given value to the set.
 
         This has no effect and returns False if the value is already present or if the set is full.
@@ -406,7 +406,7 @@ class ArraySet[T, Capacity](Record):
         """
         return self._values.set_add(value)
 
-    def remove(self, value) -> bool:
+    def remove(self, value: T) -> bool:
         """Remove the given value from the set.
 
         This has no effect and returns False if the value is not present.

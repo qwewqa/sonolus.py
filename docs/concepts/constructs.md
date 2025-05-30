@@ -18,6 +18,8 @@ Most standard Python constructs are supported in Sonolus.py.
 
 ## Overview
 
+The following constructs are supported in Sonolus.py:  
+
 - Expressions:
     - Literals:
         - Numbers (excluding complex numbers): `0`, `1`, `1.0`, `1e3`, `0x1`, `0b1`, `0o1`
@@ -80,18 +82,20 @@ Some expressions can be evaluated at compile time:
 - Comparison: for compile time constant operands: `a == b`, `a != b`, `a > b`, `a < b`, `a >= b`, `a <= b`, ...
 - Variables assigned to compile time constants: `a = 1`, `b = a + 1`, ...
 
-The compiler can make additional inferences when compile time constants are used in certain contexts like control flow:
+Some values like array sizes must be compile-time constants.
+
+The compiler will eliminate branches known to be unreachable at compile time:
 
 ```python
-x = ...
+def f(a):
+    if isinstance(a, Num):
+        debug_log(a)
+    else:
+        debug_log(a.x + a.y)
 
-# This code works because the compiler knows which branch will be taken based on the type of 'x'
-if isinstance(x, Num):
-    debug_log(x)
-elif isinstance(x, Vec2):
-    debug_log(x.x + x.y)
-else:
-    debug_log(-1)
+# This works because `isinstance` is evaluated at compile time and only the first (if) branch is reachable.
+# The second (else) branch is eliminated, so we don't get an error that a does not have 'x' and 'y' attributes.
+f(123)
 ```
 
 ## Variables
@@ -385,7 +389,8 @@ def g(a):
 ```
 
 Function returns follow the same rules as variable access. If a function returns a non-num value, it most only
-return that value. There is no restriction of a function only returns a num.
+return that value. If the function always returns a num, it may have any number of returns. Similarly, if a function
+always returns None (`return None` or just `return`), it may have any number of returns.
 
 The following are allowed:
 
@@ -439,7 +444,7 @@ def k():
         return Vec2(1, 2)
 ```
 
-Most functions returning a non-num value should have a single `return` statement at the end.
+Outside of functions returning `None` or a num, most functions should have a single `return` statement at the end.
 
 ### Classes
 
@@ -475,8 +480,8 @@ Imports are supported at the module level, but not within functions.
 
 ### assert
 
-Assertions are supported. Since error handling is not supported, assertion failures will terminate the current
-callback when running in the Sonolus app.
+Assertions are supported. Assertion failures cannot be handled and will terminate the current
+callback when running in the Sonolus app. In debug mode, the game will also pause to indicate the error.
 
 ```python
 assert a > 0, 'a must be positive'

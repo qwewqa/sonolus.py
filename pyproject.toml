@@ -9,16 +9,7 @@ requires-python = ">=3.12"
 sonolus-py = "sonolus.build.cli:main"
 
 [tool.uv]
-dev-dependencies = [
-    "hypothesis>=6.115.3",
-    "pre-commit>=4.0.1",
-    "pytest-xdist>=3.6.1",
-    "pytest>=8.3.3",
-    "ruff>=0.6.9",
-    "pytest-cov>=6.0.0",
-    "tox>=4.23.2",
-    "tox-uv>=1.16.0",
-]
+default-groups = ["dev", "docs"]
 
 [tool.ruff]
 line-length = 120
@@ -37,6 +28,16 @@ requires = ["hatchling"]
 build-backend = "hatchling.build"
 
 [dependency-groups]
+dev = [
+    "hypothesis>=6.115.3",
+    "pre-commit>=4.0.1",
+    "pytest-xdist>=3.6.1",
+    "pytest>=8.3.3",
+    "ruff>=0.6.9",
+    "pytest-cov>=6.0.0",
+    "tox>=4.23.2",
+    "tox-uv>=1.16.0",
+]
 docs = [
     "mkdocs-material>=9.5.45",
     "mkdocs>=1.6.1",

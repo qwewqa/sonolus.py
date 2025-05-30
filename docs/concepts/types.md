@@ -124,7 +124,8 @@ Array  # The Generic Array type
 Array[int, 3]  # A concrete Array type
 ```
 
-The element type of an array must be concrete (not generic) and the size must be a non-negative integer:
+The element type of an array must be concrete (not generic) and the size must be a non-negative compile-time 
+constant integer:
 
 ```python
 # Ok
