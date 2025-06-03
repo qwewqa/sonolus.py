@@ -18,6 +18,8 @@ _MISSING = _Missing()
 
 
 class ConstantValue(Value):
+    """Wraps a python constant value usable in Sonolus scripts."""
+
     _parameterized_: ClassVar[dict[Any, type[Self]]] = {}
     _value: ClassVar[Any] = _MISSING
     instance: ClassVar[Self | _Missing] = _MISSING
@@ -139,5 +141,5 @@ class ConstantValue(Value):
         return hash(self.value())
 
 
-class MiscConstantValue(ConstantValue):
+class BasicConstantValue(ConstantValue):
     """For constants without any special behavior."""

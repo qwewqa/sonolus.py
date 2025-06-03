@@ -1,3 +1,5 @@
+from sonolus.script.archetype import PlayArchetype
+
 # Types
 Sonolus.py has 3 core types: `Num`, `Array`, and `Record`. representing numeric values, fixed-size arrays, 
 and custom data structures, respectively. Arrays and records can be nested within each other to create complex data
@@ -92,6 +94,7 @@ Details:
 `Array[T, Size]` stores a fixed number of elements of the same type.
 
 It has two type parameters:
+
 - `T`: The type of the elements.
 - `Size`: The number of elements.
 
@@ -200,7 +203,7 @@ assert a == Array(4, 2, 3)
     ```
     
     For clarity, it's recommended to use the copy from operator (`@=`) when updating elements that are known to be
-    an array or record (see the next section).
+    an array or record.
 
     ```python
     a[0] @= pair
@@ -460,10 +463,24 @@ assert not isinstance(pair, MyPair[int, Array[int, 2]])
 ```
 
 ## Transient Types
-In addition to the standard types, the following transient types are available.
-Compared to the standard types, these types come with the restriction that they cannot be used as type parameters
-or as a Record field's type. Otherwise, they can be used like any other type, including passing instances of them as 
-arguments to functions.
+In addition to the core types, the following transient types are available.
+There are some restrictions on how they can be used:
+
+- They cannot be used as type arguments:
+    ```python
+    # Not ok:
+    Array[str, 3]
+    ```
+- They cannot be used as a field types:
+    ```python
+    # Not ok:
+    class MyRecord(Record):
+        field: str
+  
+    # Not ok:
+    class MyArchetype(PlayArchetype):
+        field: str = imported()
+    ```
 
 ### tuple
 

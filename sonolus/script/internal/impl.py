@@ -2,7 +2,7 @@ from __future__ import annotations
 
 from collections.abc import Callable
 from enum import Enum
-from types import FunctionType, MethodType, ModuleType, NoneType, NotImplementedType, UnionType
+from types import EllipsisType, FunctionType, MethodType, ModuleType, NoneType, NotImplementedType, UnionType
 from typing import TYPE_CHECKING, Annotated, Any, Literal, TypeVar, get_origin, overload
 
 if TYPE_CHECKING:
@@ -42,7 +42,7 @@ def validate_value(value: Any) -> Value:
 
 def try_validate_value(value: Any) -> Value | None:
     from sonolus.script.globals import _GlobalPlaceholder
-    from sonolus.script.internal.constant import MiscConstantValue
+    from sonolus.script.internal.constant import BasicConstantValue
     from sonolus.script.internal.dict_impl import DictImpl
     from sonolus.script.internal.generic import PartialGeneric
     from sonolus.script.internal.tuple_impl import TupleImpl
@@ -65,8 +65,8 @@ def try_validate_value(value: Any) -> Value | None:
             return value
         case type():
             if value in {int, float, bool}:
-                return MiscConstantValue.of(Num)
-            return MiscConstantValue.of(value)
+                return BasicConstantValue.of(Num)
+            return BasicConstantValue.of(value)
         case int() | float() | bool():
             return Num._accept_(value)
         case tuple():
@@ -78,17 +78,18 @@ def try_validate_value(value: Any) -> Value | None:
             | TypeVar()
             | FunctionType()
             | MethodType()
-            | NotImplementedType()
             | str()
-            | NoneType()
             | ModuleType()
+            | NoneType()
+            | NotImplementedType()
+            | EllipsisType()
         ):
-            return MiscConstantValue.of(value)
+            return BasicConstantValue.of(value)
         case other_type if get_origin(value) in {Literal, Annotated, UnionType, tuple}:
-            return MiscConstantValue.of(other_type)
+            return BasicConstantValue.of(other_type)
         case _GlobalPlaceholder():
             return value.get()
         case comptime_value if getattr(comptime_value, "_is_comptime_value_", False):
-            return MiscConstantValue.of(comptime_value)
+            return BasicConstantValue.of(comptime_value)
         case _:
             return None

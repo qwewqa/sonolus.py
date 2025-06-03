@@ -11,7 +11,8 @@ Sonolus.py comes with support for a number of built-in functions.
 - `isinstance(object, classinfo)`
 - `issubclass(class, classinfo)`
 - `len(s)`
-- `map(function, iterable)`
+- `map(function, iterable)` (note: may differ from standard Python behavior, see 
+  [`map`](../reference/builtins.md#doc_stubs.builtins.map))
 - `max(iterable, *, key=None)`, `max(arg1, arg2, *args, key=None)`
 - `min(iterable, *, key=None)`, `min(arg1, arg2, *args, key=None)`
 - `range(stop)`, `range(start, stop[, step])`
