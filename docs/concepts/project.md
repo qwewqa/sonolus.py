@@ -80,9 +80,16 @@ play_mode = PlayMode(
 
 ```
 
-Play mode archetypes subclass [`PlayArchetype`][sonolus.script.archetype.PlayArchetype] and should implement the [`should_spawn`][sonolus.script.archetype.PlayArchetype.should_spawn] callback. They may also implement 
-the [`preprocess`][sonolus.script.archetype.PlayArchetype.preprocess], [`spawn_order`][sonolus.script.archetype.PlayArchetype.spawn_order], [`initialize`][sonolus.script.archetype.PlayArchetype.initialize], [`update_sequential`][sonolus.script.archetype.PlayArchetype.update_sequential], [`update_parallel`][sonolus.script.archetype.PlayArchetype.update_parallel], [`touch`][sonolus.script.archetype.PlayArchetype.touch], and 
-[`terminate`][sonolus.script.archetype.PlayArchetype.terminate] callbacks.
+Play mode archetypes subclass [`PlayArchetype`][sonolus.script.archetype.PlayArchetype] and implement the following callbacks:
+
+- [`should_spawn`][sonolus.script.archetype.PlayArchetype.should_spawn] (required)
+- [`preprocess`][sonolus.script.archetype.PlayArchetype.preprocess]
+- [`spawn_order`][sonolus.script.archetype.PlayArchetype.spawn_order]
+- [`initialize`][sonolus.script.archetype.PlayArchetype.initialize]
+- [`update_sequential`][sonolus.script.archetype.PlayArchetype.update_sequential]
+- [`update_parallel`][sonolus.script.archetype.PlayArchetype.update_parallel]
+- [`touch`][sonolus.script.archetype.PlayArchetype.touch]
+- [`terminate`][sonolus.script.archetype.PlayArchetype.terminate]
 
 Archetypes for scored notes should have the [`is_scored`][sonolus.script.archetype.PlayArchetype.is_scored] class variable set to `True`.
 
@@ -110,9 +117,15 @@ watch_mode = WatchMode(
 )
 ```
 
-Watch mode archetypes subclass [`WatchArchetype`][sonolus.script.archetype.WatchArchetype] and should implement the [`spawn_time`][sonolus.script.archetype.WatchArchetype.spawn_time] and [`despawn_time`][sonolus.script.archetype.WatchArchetype.despawn_time] callbacks. 
-They may also implement the [`preprocess`][sonolus.script.archetype.WatchArchetype.preprocess], [`initialize`][sonolus.script.archetype.WatchArchetype.initialize], [`update_sequential`][sonolus.script.archetype.WatchArchetype.update_sequential], [`update_parallel`][sonolus.script.archetype.WatchArchetype.update_parallel], and 
-[`terminate`][sonolus.script.archetype.WatchArchetype.terminate] callbacks.
+Watch mode archetypes subclass [`WatchArchetype`][sonolus.script.archetype.WatchArchetype] and implement the following callbacks:
+
+- [`spawn_time`][sonolus.script.archetype.WatchArchetype.spawn_time] (required)
+- [`despawn_time`][sonolus.script.archetype.WatchArchetype.despawn_time] (required)
+- [`preprocess`][sonolus.script.archetype.WatchArchetype.preprocess]
+- [`initialize`][sonolus.script.archetype.WatchArchetype.initialize]
+- [`update_sequential`][sonolus.script.archetype.WatchArchetype.update_sequential]
+- [`update_parallel`][sonolus.script.archetype.WatchArchetype.update_parallel]
+- [`terminate`][sonolus.script.archetype.WatchArchetype.terminate]
 
 Watch mode also has the `update_spawn` global callback, which is invoked every frame and should return the reference
 time to compare against spawn and despawn times of archetypes. Typically, this can be either the current time or the
@@ -135,7 +148,10 @@ preview_mode = PreviewMode(
 )
 ```
 
-Preview mode archetypes subclass [`PreviewArchetype`][sonolus.script.archetype.PreviewArchetype] and may implement the [`preprocess`][sonolus.script.archetype.PreviewArchetype.preprocess] and [`render`][sonolus.script.archetype.PreviewArchetype.render] callbacks.
+Preview mode archetypes subclass [`PreviewArchetype`][sonolus.script.archetype.PreviewArchetype] and implement the following callbacks:
+
+- [`preprocess`][sonolus.script.archetype.PreviewArchetype.preprocess]
+- [`render`][sonolus.script.archetype.PreviewArchetype.render]
 
 ### Tutorial Mode
 
@@ -162,13 +178,11 @@ tutorial_mode = TutorialMode(
 )
 ```
 
-Tutorial mode does not have archetypes, but it has `preprocess`, `navigate`, and `update` global callbacks.
+Tutorial mode does not have archetypes, but has the following global callbacks:
 
-`preprocess` is invoked once before the tutorial starts.
-
-`navigate` is invoked when the player navigates forward or backward in the tutorial.
-
-`update` is invoked every frame and should handle most of the drawing logic.
+- `preprocess` - Invoked once before the tutorial starts
+- `navigate` - Invoked when the player navigates forward or backward in the tutorial  
+- `update` - Invoked every frame and should handle most of the drawing logic
 
 ## Levels
 Levels are defined using the [`Level`][sonolus.script.level.Level] class:

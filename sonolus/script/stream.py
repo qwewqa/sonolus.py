@@ -174,10 +174,10 @@ class _SparseStreamBacking(BackingValue):
         )
 
 
-class Stream[T](Record, BackingValue):
+class Stream[T](Record):
     """Represents a stream.
 
-    Most users should use `@stream` to declare streams and stream groups rather than using this class directly.
+    Most users should use [`@streams`][sonolus.script.stream.streams] to declare streams and stream groups rather than using this class directly.
 
     If used directly, it is important that streams do not overlap. No other streams should have an offset in
     `range(self.offset, self.offset + max(1, sizeof(self.element_type())))`, or they will overlap and interfere
@@ -396,7 +396,7 @@ class Stream[T](Record, BackingValue):
 class StreamGroup[T, Size](Record):
     """Represents a group of streams.
 
-    Most users should use `@stream` to declare stream groups rather than using this class directly.
+    Most users should use [`@streams`][sonolus.script.stream.streams] to declare stream groups rather than using this class directly.
 
     Usage:
         Declaring a stream group:

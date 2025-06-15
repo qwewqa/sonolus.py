@@ -1,5 +1,3 @@
-from sonolus.script.archetype import PlayArchetype
-
 # Types
 Sonolus.py has 3 core types: [`Num`](#num), [`Array`](#array), and [`Record`](#record). representing numeric values, fixed-size arrays, 
 and custom data structures, respectively. Arrays and records can be nested within each other to create complex data

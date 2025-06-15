@@ -185,7 +185,7 @@ class _ArchetypeField(SonolusDescriptor):
 def imported(*, name: str | None = None) -> Any:
     """Declare a field as imported.
 
-    Imported fields may be loaded from the level data.
+    Imported fields may be loaded from the level.
 
     In watch mode, data may also be loaded from a corresponding exported field in play mode.
 
@@ -207,7 +207,7 @@ def entity_data() -> Any:
     Entity data is accessible from other entities, but may only be updated in the `preprocess` callback
     and is read-only in other callbacks.
 
-    It functions like `imported`, except that it is not loaded from the level data.
+    It functions like `imported` and shares the same underlying storage, except that it is not loaded from a level.
 
     Usage:
         ```
@@ -238,7 +238,8 @@ def exported(*, name: str | None = None) -> Any:
 def entity_memory() -> Any:
     """Declare a field as entity memory.
 
-    Entity memory is private to the entity and is not accessible from other entities.
+    Entity memory is private to the entity and is not accessible from other entities. It may be read or updated in any
+    callback associated with the entity.
 
     Entity memory fields may also be set when an entity is spawned using the `spawn()` method.
 
@@ -257,7 +258,8 @@ def shared_memory() -> Any:
 
     Shared memory is accessible from other entities.
 
-    Shared memory may only be updated by sequential callbacks such as `preprocess`, `update_sequential`, and `touch`.
+    Shared memory may be read in any callback, but may only be updated by sequential callbacks
+    (`preprocess`, `update_sequential`, and `touch`).
 
     Usage:
         ```

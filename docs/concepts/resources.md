@@ -1,31 +1,132 @@
 # Resources & Declarations
 
-## Level Memory & Level Data
-Level memory and level data are defined with the [`@level_memory`][sonolus.script.globals.level_memory] and [`@level_data`][sonolus.script.globals.level_data] class decorators, respectively:
+## Global Variables
+
+### Level Memory
+Level memory is defined with the [`@level_memory`][sonolus.script.globals.level_memory] class decorator:
 
 ```python
-from sonolus.script.globals import level_memory, level_data
+from sonolus.script.globals import level_memory
 
 
 @level_memory
 class LevelMemory:
     value: int
-    
+```
+
+Alternatively, it may be called as a function as well by passing the type as an argument:
+
+```python
+from sonolus.script.globals import level_memory
+from sonolus.script.vec import Vec2
+
+
+level_memory_value = level_memory(Vec2)
+```
+
+Level memory may be modified in sequential callbacks:
+
+- `preprocess`
+- `update_sequential`
+- `touch`
+
+and may be read in any callback.
+
+### Level Data
+Level data is defined with the [`@level_data`][sonolus.script.globals.level_data] class decorator:
+
+```python
+from sonolus.script.globals import level_data
+
 
 @level_data
 class LevelData:
     value: int
 ```
 
-Alternatively, they may be called as functions as well by passing the type as an argument:
+Alternatively, it may be called as a function as well by passing the type as an argument:
+
 ```python
-from sonolus.script.globals import level_memory, level_data
+from sonolus.script.globals import level_data
 from sonolus.script.vec import Vec2
 
 
-level_memory_value = level_memory(Vec2)
 level_data_value = level_data(Vec2)
 ```
+
+Level data may only be modified in the `preprocess` callback and may be read in any callback.
+
+## Archetype Variables
+
+### Imported
+Imported fields are declared with [`imported()`][sonolus.script.archetype.imported]:
+
+```python
+from sonolus.script.archetype import PlayArchetype, imported
+
+class MyArchetype(PlayArchetype):
+    field: int = imported()
+    field_with_explicit_name: int = imported(name="field_name")
+```
+
+Imported fields may be loaded from the level data. In watch mode, data may also be loaded from a corresponding exported field in play mode.
+
+Imported fields may only be updated in the `preprocess` callback, and are read-only in other callbacks.
+
+### Exported
+Exported fields are declared with [`exported()`][sonolus.script.archetype.exported]:
+
+```python
+from sonolus.script.archetype import PlayArchetype, exported
+
+class MyArchetype(PlayArchetype):
+    field: int = exported()
+    field_with_explicit_name: int = exported(name="#FIELD")
+```
+
+This is only usable in play mode to export data to be loaded in watch mode. Exported fields are write-only.
+
+### Entity Data
+Entity data fields are declared with [`entity_data()`][sonolus.script.archetype.entity_data]:
+
+```python
+from sonolus.script.archetype import PlayArchetype, entity_data
+
+class MyArchetype(PlayArchetype):
+    field: int = entity_data()
+```
+
+Entity data is accessible from other entities, but may only be updated in the `preprocess` callback and is read-only in other callbacks.
+
+It functions like [`imported()`][sonolus.script.archetype.imported] and shares the same underlying storage, except that it is not loaded from a level.
+
+### Entity Memory
+Entity memory fields are declared with [`entity_memory()`][sonolus.script.archetype.entity_memory]:
+
+```python
+from sonolus.script.archetype import PlayArchetype, entity_memory
+
+class MyArchetype(PlayArchetype):
+    field: int = entity_memory()
+```
+
+Entity memory is private to the entity and is not accessible from other entities. It may be read or updated in any callback associated with the entity.
+
+Entity memory fields may also be set when an entity is spawned using the [`spawn()`][sonolus.script.archetype.PlayArchetype.spawn] method.
+
+### Shared Memory
+Shared memory fields are declared with [`shared_memory()`][sonolus.script.archetype.shared_memory]:
+
+```python
+from sonolus.script.archetype import PlayArchetype, shared_memory
+
+class MyArchetype(PlayArchetype):
+    field: int = shared_memory()
+```
+
+Shared memory is accessible from other entities.
+
+Shared memory may be read in any callback, but may only be updated by sequential callbacks (`preprocess`, `update_sequential`, and `touch`).
 
 ## Streams
 Streams are defined with the [`@streams`][sonolus.script.stream.streams] decorator:
