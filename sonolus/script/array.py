@@ -12,7 +12,7 @@ from sonolus.script.internal.context import ctx
 from sonolus.script.internal.error import InternalError
 from sonolus.script.internal.generic import GenericValue
 from sonolus.script.internal.impl import meta_fn, validate_value
-from sonolus.script.internal.value import DataValue, Value
+from sonolus.script.internal.value import BackingSource, DataValue, Value
 from sonolus.script.num import Num
 
 
@@ -27,16 +27,14 @@ class Array[T, Size](GenericValue, ArrayLike[T]):
         ```
     """
 
-    _value: list[T] | BlockPlace
+    _value: list[T] | BlockPlace | BackingSource
 
     @classmethod
-    @meta_fn
     def element_type(cls) -> type[T] | type[Value]:
         """Return the type of elements in this array type."""
         return cls.type_var_value(T)
 
     @classmethod
-    @meta_fn
     def size(cls) -> int:
         """Return the size of this array type.
 
@@ -86,6 +84,10 @@ class Array[T, Size](GenericValue, ArrayLike[T]):
         return False
 
     @classmethod
+    def _from_backing_source_(cls, source: BackingSource) -> Self:
+        return cls._with_value(source)
+
+    @classmethod
     def _from_place_(cls, place: BlockPlace) -> Self:
         return cls._with_value(place)
 
@@ -124,6 +126,8 @@ class Array[T, Size](GenericValue, ArrayLike[T]):
                     ._from_place_(self._value.add_offset(i * self.element_type()._size_()))
                     ._to_list_()
                 ]
+            case backing_source if callable(backing_source):
+                return [backing_source(IRConst(i)) for i in range(self.size() * self.element_type()._size_())]
             case _:
                 assert_unreachable()
 
@@ -135,7 +139,7 @@ class Array[T, Size](GenericValue, ArrayLike[T]):
         return self
 
     def _set_(self, value: Self):
-        raise TypeError("Array does not support set_")
+        raise TypeError("Array does not support _set_")
 
     def _copy_from_(self, value: Self):
         if not isinstance(value, type(self)):
@@ -150,6 +154,7 @@ class Array[T, Size](GenericValue, ArrayLike[T]):
             result._copy_from_(self)
             return result
         else:
+            assert isinstance(self._value, list)
             return self._with_value([value._copy_() for value in self._value])
 
     @classmethod
@@ -186,22 +191,36 @@ class Array[T, Size](GenericValue, ArrayLike[T]):
                     return self._value[const_index]._get_()
                 else:
                     return self._value[const_index]._get_()._as_py_()
-            else:
+            elif isinstance(self._value, BlockPlace):
                 return (
                     self.element_type()
                     ._from_place_(self._value.add_offset(const_index * self.element_type()._size_()))
                     ._get_()
                 )
+            elif callable(self._value):
+                return self.element_type()._from_backing_source_(
+                    lambda offset: self._value((Num(offset) + Num(const_index * self.element_type()._size_())).ir())
+                )
+            else:
+                raise InternalError("Unexpected array value")
         else:
             if not ctx():
                 raise InternalError("Unexpected non-constant index")
-            base = ctx().rom[tuple(self._to_list_())] if isinstance(self._value, list) else self._value
-            place = BlockPlace(
-                block=base.block,
-                index=(Num(base.index) + index * self.element_type()._size_()).index(),
-                offset=base.offset,
-            )
-            return self.element_type()._from_place_(place)._get_()
+            if isinstance(self._value, list | BlockPlace):
+                base = ctx().rom[tuple(self._to_list_())] if isinstance(self._value, list) else self._value
+                place = BlockPlace(
+                    block=base.block,
+                    index=(Num(base.index) + index * self.element_type()._size_()).index(),
+                    offset=base.offset,
+                )
+                return self.element_type()._from_place_(place)._get_()
+            elif callable(self._value):
+                base_offset = index * Num(self.element_type()._size_())
+                return self.element_type()._from_backing_source_(
+                    lambda offset: self._value((Num(offset) + base_offset).ir())
+                )
+            else:
+                raise InternalError("Unexpected array value")
 
     @meta_fn
     def __setitem__(self, index: Num, value: T):
@@ -210,17 +229,25 @@ class Array[T, Size](GenericValue, ArrayLike[T]):
         if ctx():
             if isinstance(self._value, list):
                 raise ValueError("Cannot mutate a compile time constant array")
-            base = self._value
-            place = (
-                base.add_offset(int(index._as_py_()) * self.element_type()._size_())
-                if index._is_py_()
-                else BlockPlace(
-                    block=base.block,
-                    index=(Num(base.index) + index * self.element_type()._size_()).index(),
-                    offset=base.offset,
+            elif isinstance(self._value, BlockPlace):
+                base = self._value
+                place = (
+                    base.add_offset(int(index._as_py_()) * self.element_type()._size_())
+                    if index._is_py_()
+                    else BlockPlace(
+                        block=base.block,
+                        index=(Num(base.index) + index * self.element_type()._size_()).index(),
+                        offset=base.offset,
+                    )
                 )
-            )
-            dst = self.element_type()._from_place_(place)
+                dst = self.element_type()._from_place_(place)
+            elif callable(self._value):
+                base_offset = index * Num(self.element_type()._size_())
+                dst = self.element_type()._from_backing_source_(
+                    lambda offset: self._value((Num(offset) + base_offset).ir())
+                )
+            else:
+                raise InternalError("Unexpected array value")
             if self.element_type()._is_value_type_():
                 dst._set_(value)
             else:
@@ -259,11 +286,13 @@ class Array[T, Size](GenericValue, ArrayLike[T]):
         return hash(tuple(self[i] for i in range(self.size())))
 
     def __str__(self):
-        if isinstance(self._value, BlockPlace):
+        if isinstance(self._value, BlockPlace) or callable(self._value):
             return f"{type(self).__name__}({self._value}...)"
-        return f"{type(self).__name__}({", ".join(str(self[i]) for i in range(self.size()))})"
+        else:
+            return f"{type(self).__name__}({", ".join(str(self[i]) for i in range(self.size()))})"
 
     def __repr__(self):
-        if isinstance(self._value, BlockPlace):
+        if isinstance(self._value, BlockPlace) or callable(self._value):
             return f"{type(self).__name__}({self._value}...)"
-        return f"{type(self).__name__}({", ".join(repr(self[i]) for i in range(self.size()))})"
+        else:
+            return f"{type(self).__name__}({", ".join(repr(self[i]) for i in range(self.size()))})"

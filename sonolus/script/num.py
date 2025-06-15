@@ -5,13 +5,13 @@ import operator
 from collections.abc import Callable, Iterable
 from typing import TYPE_CHECKING, Any, Self, TypeGuard, final, runtime_checkable
 
-from sonolus.backend.ir import IRConst, IRGet, IRPureInstr, IRSet
+from sonolus.backend.ir import IRConst, IRExpr, IRGet, IRPureInstr, IRSet
 from sonolus.backend.ops import Op
 from sonolus.backend.place import BlockPlace
 from sonolus.script.internal.context import ctx
 from sonolus.script.internal.error import InternalError
 from sonolus.script.internal.impl import meta_fn
-from sonolus.script.internal.value import BackingValue, DataValue, Value
+from sonolus.script.internal.value import BackingValue, DataValue, ExprBackingValue, Value
 
 
 class _NumMeta(type):
@@ -32,11 +32,13 @@ class _Num(Value, metaclass=_NumMeta):
 
     data: DataValue
 
-    def __init__(self, data: DataValue):
+    def __init__(self, data: DataValue | IRExpr):
         if isinstance(data, complex):
             raise TypeError("Cannot create a Num from a complex number")
         if isinstance(data, int):
             data = float(data)
+        if isinstance(data, IRConst | IRPureInstr | IRGet):
+            data = ExprBackingValue(data)
         if _is_num(data):
             raise InternalError("Cannot create a Num from a Num")
         if not isinstance(data, BlockPlace | BackingValue | float | int | bool):

@@ -188,6 +188,7 @@ class ArrayLike[T](Sequence, ABC):
         if len(self) < 15 or key is not None:
             if key is None:
                 key = _identity
+            # May be worth adding a block sort variant for better performance on large arrays in the future
             _insertion_sort(self, 0, len(self), key, reverse)
         else:
             # Heap sort is unstable, so if there's a key, we can't rely on it

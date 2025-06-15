@@ -14,6 +14,19 @@ class BackingValue:
         raise NotImplementedError()
 
 
+class ExprBackingValue(BackingValue):
+    """A backing value that is backed by an expression."""
+
+    def __init__(self, expr: IRExpr):
+        self._expr = expr
+
+    def read(self) -> IRExpr:
+        return self._expr
+
+    def write(self, value: IRExpr) -> IRStmt:
+        raise RuntimeError("Value is read-only, cannot write to it")
+
+
 type DataValue = BlockPlace | BackingValue | float | int | bool
 type BackingSource = Callable[[IRExpr], BackingValue]
 

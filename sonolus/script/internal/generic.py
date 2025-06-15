@@ -1,6 +1,8 @@
 from __future__ import annotations
 
+import typing
 from enum import Enum
+from types import UnionType
 from typing import Annotated, Any, ClassVar, Literal, Self, TypeVar, get_origin
 
 from sonolus.script.internal.impl import meta_fn, validate_value
@@ -31,6 +33,11 @@ def validate_type_spec(spec: Any) -> PartialGeneric | TypeVar | type[Value]:
         spec = validate_type_spec(spec.__mro__[1])
     if isinstance(spec, PartialGeneric | TypeVar) or (isinstance(spec, type) and issubclass(spec, Value)):
         return spec
+    if typing.get_origin(spec) is UnionType:
+        args = typing.get_args(spec)
+        validated_args = {validate_type_arg(arg) for arg in args}
+        if len(validated_args) == 1:
+            return validated_args.pop()
     raise TypeError(f"Invalid type spec: {spec}")
 
 

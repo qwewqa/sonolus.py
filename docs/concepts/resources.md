@@ -1,4 +1,64 @@
-# Resources
+# Resources & Declarations
+
+## Level Memory & Level Data
+Level memory and level data are defined with the `@level_memory` and `@level_data` class decorators, respectively:
+
+```python
+from sonolus.script.globals import level_memory, level_data
+
+
+@level_memory
+class LevelMemory:
+    value: int
+    
+
+@level_data
+class LevelData:
+    value: int
+```
+
+Alternatively, they may be called as functions as well by passing the type as an argument:
+```python
+from sonolus.script.globals import level_memory, level_data
+from sonolus.script.vec import Vec2
+
+
+level_memory_value = level_memory(Vec2)
+level_data_value = level_data(Vec2)
+```
+
+## Streams
+Streams are defined with the `@streams` decorator:
+
+```python
+from sonolus.script.stream import streams, Stream, StreamGroup
+from sonolus.script.num import Num
+from sonolus.script.vec import Vec2
+
+@streams
+class Streams:
+    stream_1: Stream[Num]  # A stream of Num values
+    stream_2: Stream[Vec2]  # A stream of Vec2 values
+    group_1: StreamGroup[Num, 10]  # A group of 10 Num streams
+    group_2: StreamGroup[Vec2, 5]  # A group of 5 Vec2 streams
+    
+    data_field_1: Num  # A data field of type Num
+    data_field_2: Vec2  # A data field of type Vec2
+```
+    
+Streams and stream groups are declared by annotating class attributes with `Stream` or `StreamGroup`.
+
+Other types are also supported in the form of data fields. They may be used to store additional data to export from
+Play to Watch mode.
+
+In either case, data is write-only in Play mode and read-only in Watch mode.
+
+This should only be used once in most projects, as multiple decorated classes will overlap with each other and
+interfere when both are used at the same time.
+
+For backwards compatibility, new streams and stream groups should be added to the end of existing ones, and
+lengths and element types of existing streams and stream groups should not be changed. Otherwise, old replays may
+not work on new versions of the engine.
 
 ## Skins
 Skins are defined with the `@skin` decorator:

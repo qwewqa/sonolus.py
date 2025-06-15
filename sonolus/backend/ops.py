@@ -180,6 +180,12 @@ class Op(StrEnum):
     StackSetPointer = ("StackSetPointer", True, False, False)
     StopLooped = ("StopLooped", True, False, False)
     StopLoopedScheduled = ("StopLoopedScheduled", True, False, False)
+    # Streams are immutable when they're readable, so we can treat read operations as pure.
+    StreamGetNextKey = ("StreamGetNextKey", False, True, False)
+    StreamGetPreviousKey = ("StreamGetPreviousKey", False, True, False)
+    StreamGetValue = ("StreamGetValue", False, True, False)
+    StreamHas = ("StreamHas", False, True, False)
+    StreamSet = ("StreamSet", True, False, False)
     Subtract = ("Subtract", False, True, False)
     Switch = ("Switch", False, True, True)
     SwitchInteger = ("SwitchInteger", False, True, True)

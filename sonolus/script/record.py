@@ -16,7 +16,7 @@ from sonolus.script.internal.generic import (
     validate_type_spec,
 )
 from sonolus.script.internal.impl import meta_fn
-from sonolus.script.internal.value import DataValue, Value
+from sonolus.script.internal.value import BackingSource, DataValue, Value
 from sonolus.script.num import Num
 
 
@@ -158,6 +158,17 @@ class Record(GenericValue):
         return False
 
     @classmethod
+    def _from_backing_source_(cls, source: BackingSource) -> Self:
+        result = object.__new__(cls)
+        result._value = {
+            field.name: field.type._from_backing_source_(
+                lambda offset, field_offset=field.offset: source((Num(offset) + Num(field_offset)).ir())
+            )
+            for field in cls._fields
+        }
+        return result
+
+    @classmethod
     def _from_place_(cls, place: BlockPlace) -> Self:
         result = object.__new__(cls)
         result._value = {field.name: field.type._from_place_(place.add_offset(field.offset)) for field in cls._fields}
@@ -203,7 +214,7 @@ class Record(GenericValue):
         return self
 
     def _set_(self, value: Self):
-        raise TypeError("Record does not support set_")
+        raise TypeError("Record does not support _set_")
 
     def _copy_from_(self, value: Self):
         value = self._accept_(value)
