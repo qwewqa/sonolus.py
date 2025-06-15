@@ -192,7 +192,7 @@ def imported(*, name: str | None = None) -> Any:
     Imported fields may only be updated in the `preprocess` callback, and are read-only in other callbacks.
 
     Usage:
-        ```
+        ```python
         class MyArchetype(PlayArchetype):
             field: int = imported()
             field_with_explicit_name: int = imported(name="field_name")
@@ -210,7 +210,7 @@ def entity_data() -> Any:
     It functions like `imported` and shares the same underlying storage, except that it is not loaded from a level.
 
     Usage:
-        ```
+        ```python
         class MyArchetype(PlayArchetype):
             field: int = entity_data()
         ```
@@ -226,7 +226,7 @@ def exported(*, name: str | None = None) -> Any:
     Exported fields are write-only.
 
     Usage:
-        ```
+        ```python
         class MyArchetype(PlayArchetype):
             field: int = exported()
             field_with_explicit_name: int = exported(name="#FIELD")
@@ -244,7 +244,7 @@ def entity_memory() -> Any:
     Entity memory fields may also be set when an entity is spawned using the `spawn()` method.
 
     Usage:
-        ```
+        ```python
         class MyArchetype(PlayArchetype):
             field: int = entity_memory()
 
@@ -262,7 +262,7 @@ def shared_memory() -> Any:
     (`preprocess`, `update_sequential`, and `touch`).
 
     Usage:
-        ```
+        ```python
         class MyArchetype(PlayArchetype):
             field: int = shared_memory()
         ```
@@ -282,7 +282,7 @@ class StandardImport:
     """Standard import annotations for Archetype fields.
 
     Usage:
-        ```
+        ```python
         class MyArchetype(WatchArchetype):
             judgment: StandardImport.JUDGMENT
         ```
@@ -315,7 +315,7 @@ def callback[T: Callable](*, order: int = 0) -> Callable[[T], T]:
     Callbacks are execute from lowest to highest order. By default, callbacks have an order of 0.
 
     Usage:
-        ```
+        ```python
         class MyArchetype(PlayArchetype):
             @callback(order=1)
             def update_sequential(self):
@@ -442,7 +442,7 @@ class _BaseArchetype:
         """Spawn an entity of this archetype, injecting the given values into entity memory.
 
         Usage:
-            ```
+            ```python
             class MyArchetype(PlayArchetype):
                 field: int = entity_memory()
 
@@ -644,7 +644,7 @@ class PlayArchetype(_BaseArchetype):
     """Base class for play mode archetypes.
 
     Usage:
-        ```
+        ```python
         class MyArchetype(PlayArchetype):
             # Set to True if the entity is a note and contributes to combo and score
             # Default is False
@@ -810,7 +810,7 @@ class WatchArchetype(_BaseArchetype):
     """Base class for watch mode archetypes.
 
     Usage:
-        ```
+        ```python
         class MyArchetype(WatchArchetype):
             imported_field: int = imported()
             entity_memory_field: int = entity_memory()
@@ -925,7 +925,7 @@ class PreviewArchetype(_BaseArchetype):
     """Base class for preview mode archetypes.
 
     Usage:
-        ```
+        ```python
         class MyArchetype(PreviewArchetype):
             imported_field: int = imported()
             entity_memory_field: int = entity_memory()
@@ -1080,7 +1080,7 @@ class EntityRef[A: _BaseArchetype](Record):
     May be used with `Any` to reference an unknown archetype.
 
     Usage:
-        ```
+        ```python
         class MyArchetype(PlayArchetype):
             ref_1: EntityRef[OtherArchetype] = imported()
             ref_2: EntityRef[Any] = imported()
