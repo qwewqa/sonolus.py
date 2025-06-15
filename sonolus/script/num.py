@@ -114,10 +114,11 @@ class _Num(Value, metaclass=_NumMeta):
             return Num(self.data)
 
     def _set_(self, value: Self):
+        value = Num._accept_(value)
         if ctx():
             match self.data:
                 case BackingValue():
-                    ctx().add_statements(self.data.write(value))
+                    self.data.write(value.ir())
                 case BlockPlace():
                     ctx().check_writable(self.data)
                     ctx().add_statements(IRSet(self.data, value.ir()))

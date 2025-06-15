@@ -2,7 +2,7 @@ from __future__ import annotations
 
 from typing import cast, dataclass_transform
 
-from sonolus.backend.ir import IRExpr, IRInstr, IRPureInstr
+from sonolus.backend.ir import IRExpr, IRInstr, IRPureInstr, IRConst
 from sonolus.backend.mode import Mode
 from sonolus.backend.ops import Op
 from sonolus.script.internal.context import ctx
@@ -42,7 +42,7 @@ class _StreamDataField(SonolusDescriptor):
         self.type_ = type_
 
     def _get(self):
-        return self.type_._from_backing_source_(lambda offset: _StreamBacking(self.offset, Num(offset)))
+        return self.type_._from_backing_source_(lambda offset: _SparseStreamBacking(self.offset, Num(offset)))
 
     def __get__(self, instance, owner):
         _check_can_read_or_write_stream()
@@ -148,6 +148,30 @@ class _StreamBacking(BackingValue):
         """Write the value to the stream."""
         _check_can_write_stream()
         ctx().add_statement(IRInstr(Op.StreamSet, [self.id.ir(), self.index.ir(), value]))
+
+
+class _SparseStreamBacking(BackingValue):
+    id: Num
+    index: Num
+
+    def __init__(self, stream_id: int, index: Num):
+        super().__init__()
+        self.id = Num._accept_(stream_id)
+        self.index = Num._accept_(index)
+
+    def read(self) -> IRExpr:
+        """Read the value from the stream."""
+        _check_can_read_stream()
+        return IRPureInstr(Op.StreamGetValue, [self.id.ir(), self.index.ir()])
+
+    def write(self, value: IRExpr) -> None:
+        """Write the value to the stream."""
+        _check_can_write_stream()
+        ctx().add_statements(
+            IRInstr(Op.StreamSet, [self.id.ir(), self.index.ir(), value]),
+            IRInstr(Op.StreamSet, [self.id.ir(), (self.index - 0.5).ir(), IRConst(0)]),
+            IRInstr(Op.StreamSet, [self.id.ir(), (self.index + 0.5).ir(), IRConst(0)]),
+        )
 
 
 class Stream[T](Record, BackingValue):
