@@ -1,7 +1,7 @@
 from sonolus.script.archetype import PlayArchetype
 
 # Types
-Sonolus.py has 3 core types: `Num`, `Array`, and `Record`. representing numeric values, fixed-size arrays, 
+Sonolus.py has 3 core types: [`Num`](#num), [`Array`](#array), and [`Record`](#record). representing numeric values, fixed-size arrays, 
 and custom data structures, respectively. Arrays and records can be nested within each other to create complex data
 structures.
 
@@ -91,14 +91,14 @@ Details:
 
 ## Array
 
-`Array[T, Size]` stores a fixed number of elements of the same type.
+[`Array[T, Size]`][sonolus.script.array.Array] stores a fixed number of elements of the same type.
 
 It has two type parameters:
 
 - `T`: The type of the elements.
 - `Size`: The number of elements.
 
-You can import `Array` from `sonolus.script.array`:
+You can import [`Array`][sonolus.script.array.Array] from `sonolus.script.array`:
 
 ```python
 from sonolus.script.array import Array
@@ -119,7 +119,7 @@ If at least one element is provided, the element type and size can be inferred:
 a3 = Array(1, 2, 3)
 ```
 
-Since `Array` takes type parameters, it is considered a generic type. A version of `Array` with type parameters provided
+Since [`Array`][sonolus.script.array.Array] takes type parameters, it is considered a generic type. A version of [`Array`][sonolus.script.array.Array] with type parameters provided
 is considered a concrete type.
 
 ```python
@@ -187,7 +187,7 @@ assert a == Array(4, 2, 3)
 ```
 
 !!! warning
-    If a value in an array is not a `Num`, updating it will copy the given value into the corresponding element
+    If a value in an array is not a [`Num`](#num), updating it will copy the given value into the corresponding element
     of the array. However, that element remains independent of the original value, which may lead to unexpected
     results when updating either value.
 
@@ -226,18 +226,18 @@ for element in a:
 
 Other functionality:
 
-`Array` inherits from [ArrayLike][sonolus.script.array_like.ArrayLike] and supports all of its methods.
+[`Array`][sonolus.script.array.Array] inherits from [`ArrayLike`][sonolus.script.array_like.ArrayLike] and supports all of its methods.
 
 ### Instance Checks
 
-Any array is considered an instance of the generic `Array` type.
+Any array is considered an instance of the generic [`Array`][sonolus.script.array.Array] type.
 
 ```python
 a = Array(1, 2, 3)
 assert isinstance(a, Array)
 ```
 
-Only an array with the exact element type and size is considered an instance of a concrete `Array[T, Size]` type.
+Only an array with the exact element type and size is considered an instance of a concrete [`Array[T, Size]`][sonolus.script.array.Array] type.
 
 ```python
 a = Array(1, 2, 3)
@@ -248,8 +248,8 @@ assert not isinstance(a, Array[Pair, 3])
 
 ### Enums
 
-There is limited support for enums containing `Num` values. Methods on enums are not supported. 
-When used as a type, any enum class is treated as `Num` and no enforcement is done on the values.
+There is limited support for enums containing [`Num`](#num) values. Methods on enums are not supported. 
+When used as a type, any enum class is treated as [`Num`](#num) and no enforcement is done on the values.
 
 ```python
 class MyEnum(IntEnum):
@@ -262,9 +262,9 @@ b = Array[MyEnum, 2](1, 2)
 
 ## Record
 
-`Record` is the base class for user-defined types in Sonolus.py. It functions similarly to dataclasses.
+[`Record`][sonolus.script.record.Record] is the base class for user-defined types in Sonolus.py. It functions similarly to dataclasses.
 
-You can import `Record` from `sonolus.script.record`:
+You can import [`Record`][sonolus.script.record.Record] from `sonolus.script.record`:
 
 ```python
 from sonolus.script.record import Record
@@ -272,7 +272,7 @@ from sonolus.script.record import Record
 
 ### Declaration
 
-A record can be defined by inheriting from `Record` and defining zero or more fields as class attributes:
+A record can be defined by inheriting from [`Record`][sonolus.script.record.Record] and defining zero or more fields as class attributes:
 
 ```python
 class MyPair(Record):
@@ -280,7 +280,7 @@ class MyPair(Record):
     second: int
 ```
 
-Fields must be annotated by `Num` (or equivalently `int`, `float`, or `bool`), 
+Fields must be annotated by [`Num`](#num) (or equivalently `int`, `float`, or `bool`), 
 a concrete array type, or a concrete record type.
 
 ```python
@@ -289,7 +289,7 @@ class MyRecord(Record):
     array: Array  # Array is not concrete since it has unspecified type parameters
 ```
 
-A `Record` subclass cannot be further subclassed.
+A [`Record`][sonolus.script.record.Record] subclass cannot be further subclassed.
 
 ```python
 # Not ok:
@@ -299,7 +299,7 @@ class MyPairSubclass(MyPair):
 
 ### Instantiation
 
-A constructor is automatically generated for the `Record` class:
+A constructor is automatically generated for the [`Record`][sonolus.script.record.Record] class:
 
 ```python
 pair_1 = MyPair(1, 2)
@@ -308,7 +308,7 @@ pair_2 = MyPair(first=1, second=2)
 
 ### Generics
 
-`Record` supports generics. If at least one type parameter is provided in the class definition, a generic 
+[`Record`][sonolus.script.record.Record] supports generics. If at least one type parameter is provided in the class definition, a generic 
 record type is created.
 
 ```python
@@ -327,7 +327,7 @@ pair_1 = MyGenericPair[int, int](1, 2)
 pair_2 = MyGenericPair(1, 2)
 ```
 
-The value of a type parameter can be accessed via the `type_var_value()` classmethod.
+The value of a type parameter can be accessed via the [`type_var_value()`][sonolus.script.record.Record.type_var_value] classmethod.
     
 ```python
 class MyGenericRecord[T](Record):
@@ -371,7 +371,7 @@ class MyAddablePair(Record):
 ```
 
 If a dunder method has an in-place variant and the in-place method is not explicitly implemented
-(e.g. `__iadd__` is the in-place variant of `__add__`), `Record` will automatically generate one that 
+(e.g. `__iadd__` is the in-place variant of `__add__`), [`Record`][sonolus.script.record.Record] will automatically generate one that 
 modifies the instance in place:
 
 ```python
@@ -381,7 +381,7 @@ pair += MyAddablePair(3, 4)
 assert pair == reference == MyAddablePair(4, 6)  # The instance is modified in place
 ```
 
-Regular methods, properties, classmethods, and staticmethods can also be defined in a `Record` subclass.
+Regular methods, properties, classmethods, and staticmethods can also be defined in a [`Record`][sonolus.script.record.Record] subclass.
 
 ```python
 class MyRecord(Record):
@@ -417,7 +417,7 @@ assert pair == MyPair(3, 2)
 ```
 
 !!! warning
-    If a value in a record is not a `Num`, updating it will copy the given value into the corresponding field
+    If a value in a record is not a [`Num`](#num), updating it will copy the given value into the corresponding field
     of the record. However, that field remains independent of the original value.
 
     ```python
@@ -440,7 +440,7 @@ assert pair == MyPair(3, 2)
 
 ### Instance Checks
 
-Any record is considered an instance of the generic `Record` type:
+Any record is considered an instance of the generic [`Record`][sonolus.script.record.Record] type:
 
 ```python
 pair = MyPair(1, 2)
@@ -454,7 +454,7 @@ pair = MyGenericPair[int, int](1, 2)
 assert isinstance(pair, MyGenericPair)
 ```
 
-Only an instance of a record with the exact field types is considered an instance of a concrete `Record` type:
+Only an instance of a record with the exact field types is considered an instance of a concrete [`Record`][sonolus.script.record.Record] type:
 
 ```python
 pair = MyPair(1, 2)

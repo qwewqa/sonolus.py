@@ -54,7 +54,7 @@ resources/
 ```
 
 ## Modes
-Modes are defined using the `PlayMode`, `WatchMode`, `PreviewMode`, and `TutorialMode` classes.
+Modes are defined using the [`PlayMode`][sonolus.script.engine.PlayMode], [`WatchMode`][sonolus.script.engine.WatchMode], [`PreviewMode`][sonolus.script.engine.PreviewMode], and [`TutorialMode`][sonolus.script.engine.TutorialMode] classes.
 
 ### Play Mode
 
@@ -80,11 +80,11 @@ play_mode = PlayMode(
 
 ```
 
-Play mode archetypes subclass `PlayArchetype` and should implement the `should_spawn` callback. They may also implement 
-the `preprocess`, `spawn_order`, `initialize`, `update_sequential`, `update_parallel`, `touch`, and 
-`terminate` callbacks.
+Play mode archetypes subclass [`PlayArchetype`][sonolus.script.archetype.PlayArchetype] and should implement the [`should_spawn`][sonolus.script.archetype.PlayArchetype.should_spawn] callback. They may also implement 
+the [`preprocess`][sonolus.script.archetype.PlayArchetype.preprocess], [`spawn_order`][sonolus.script.archetype.PlayArchetype.spawn_order], [`initialize`][sonolus.script.archetype.PlayArchetype.initialize], [`update_sequential`][sonolus.script.archetype.PlayArchetype.update_sequential], [`update_parallel`][sonolus.script.archetype.PlayArchetype.update_parallel], [`touch`][sonolus.script.archetype.PlayArchetype.touch], and 
+[`terminate`][sonolus.script.archetype.PlayArchetype.terminate] callbacks.
 
-Archetypes for scored notes should have the `is_scored` class variable set to `True`.
+Archetypes for scored notes should have the [`is_scored`][sonolus.script.archetype.PlayArchetype.is_scored] class variable set to `True`.
 
 ### Watch Mode
 
@@ -110,9 +110,9 @@ watch_mode = WatchMode(
 )
 ```
 
-Watch mode archetypes subclass `WatchArchetype` and should implement the `spawn_time` and `despawn_time` callbacks. 
-They may also implement the `preprocess`, `initialize`, `update_sequential`, `update_parallel`, and 
-`terminate` callbacks.
+Watch mode archetypes subclass [`WatchArchetype`][sonolus.script.archetype.WatchArchetype] and should implement the [`spawn_time`][sonolus.script.archetype.WatchArchetype.spawn_time] and [`despawn_time`][sonolus.script.archetype.WatchArchetype.despawn_time] callbacks. 
+They may also implement the [`preprocess`][sonolus.script.archetype.WatchArchetype.preprocess], [`initialize`][sonolus.script.archetype.WatchArchetype.initialize], [`update_sequential`][sonolus.script.archetype.WatchArchetype.update_sequential], [`update_parallel`][sonolus.script.archetype.WatchArchetype.update_parallel], and 
+[`terminate`][sonolus.script.archetype.WatchArchetype.terminate] callbacks.
 
 Watch mode also has the `update_spawn` global callback, which is invoked every frame and should return the reference
 time to compare against spawn and despawn times of archetypes. Typically, this can be either the current time or the
@@ -135,7 +135,7 @@ preview_mode = PreviewMode(
 )
 ```
 
-Preview mode archetypes subclass `PreviewArchetype` and may implement the `preprocess` and `render` callbacks.
+Preview mode archetypes subclass [`PreviewArchetype`][sonolus.script.archetype.PreviewArchetype] and may implement the [`preprocess`][sonolus.script.archetype.PreviewArchetype.preprocess] and [`render`][sonolus.script.archetype.PreviewArchetype.render] callbacks.
 
 ### Tutorial Mode
 
@@ -171,7 +171,7 @@ Tutorial mode does not have archetypes, but it has `preprocess`, `navigate`, and
 `update` is invoked every frame and should handle most of the drawing logic.
 
 ## Levels
-Levels are defined using the `Level` class:
+Levels are defined using the [`Level`][sonolus.script.level.Level] class:
 
 ```python
 from sonolus.script.level import LevelData, BpmChange, Level, TimescaleChange

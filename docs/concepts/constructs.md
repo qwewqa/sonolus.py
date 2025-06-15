@@ -30,8 +30,8 @@ The following constructs are supported in Sonolus.py:
         - Unary: `+`, `-`, `not`, `~`
         - Binary: `+`, `-`, `*`, `/`, `//`, `%`, `**`, `&`, `|`, `^`, `<<`, `>>`
         - Comparison: `==`, `!=`, `>`, `<`, `>=`, `<=`, `is`, `is not`, `in`, `not in`
-        - Logical: `and`, `or` (for `Num` arguments only)
-        - Ternary: `a if <condition> else b` (for `Num` conditions only)
+        - Logical: `and`, `or` (for [`Num`](types.md#num) arguments only)
+        - Ternary: `a if <condition> else b` (for [`Num`](types.md#num) conditions only)
         - Attribute: `a.b`
         - Indexing: `a[b]`
         - Call: `f(a, b, c)`
@@ -185,7 +185,7 @@ h = g[0] + g[1] + g[2]
 (i := 1)
 ```
 
-The ternary operator is supported for, but the condition must be a `Num`. If the operands are not nums,
+The ternary operator is supported for, but the condition must be a [`Num`](types.md#num). If the operands are not nums,
 the condition must be a compile-time constant or this will be considered an error:
 
 ```python
@@ -448,7 +448,7 @@ Outside of functions returning `None` or a num, most functions should have a sin
 
 ### Classes
 
-Classes are supported at the module level. User defined classes should subclass `Record` or have a supported
+Classes are supported at the module level. User defined classes should subclass [`Record`][sonolus.script.record.Record] or have a supported
 Sonolus.py decorator such as `@level_memory`.
 
 Methods may have the `@staticmethod`, `@classmethod`, or `@property` decorators.

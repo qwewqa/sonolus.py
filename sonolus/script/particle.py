@@ -91,6 +91,7 @@ class _ParticleInfo:
 
 
 def particle(name: str) -> Any:
+    """Define a particle with the given name."""
     return _ParticleInfo(name)
 
 

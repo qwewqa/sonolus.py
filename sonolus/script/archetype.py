@@ -679,7 +679,7 @@ class PlayArchetype(_BaseArchetype):
     def should_spawn(self) -> bool:
         """Return whether the entity should be spawned.
 
-        Runs when this entity is first in the spawn queue.
+        Runs each frame while the entity is the first entity in the spawn queue.
         """
 
     def initialize(self):

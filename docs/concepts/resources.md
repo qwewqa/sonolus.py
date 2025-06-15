@@ -1,7 +1,7 @@
 # Resources & Declarations
 
 ## Level Memory & Level Data
-Level memory and level data are defined with the `@level_memory` and `@level_data` class decorators, respectively:
+Level memory and level data are defined with the [`@level_memory`][sonolus.script.globals.level_memory] and [`@level_data`][sonolus.script.globals.level_data] class decorators, respectively:
 
 ```python
 from sonolus.script.globals import level_memory, level_data
@@ -28,7 +28,7 @@ level_data_value = level_data(Vec2)
 ```
 
 ## Streams
-Streams are defined with the `@streams` decorator:
+Streams are defined with the [`@streams`][sonolus.script.stream.streams] decorator:
 
 ```python
 from sonolus.script.stream import streams, Stream, StreamGroup
@@ -46,7 +46,7 @@ class Streams:
     data_field_2: Vec2  # A data field of type Vec2
 ```
     
-Streams and stream groups are declared by annotating class attributes with `Stream` or `StreamGroup`.
+Streams and stream groups are declared by annotating class attributes with [`Stream`][sonolus.script.stream.Stream] or [`StreamGroup`][sonolus.script.stream.StreamGroup].
 
 Other types are also supported in the form of data fields. They may be used to store additional data to export from
 Play to Watch mode.
@@ -61,7 +61,7 @@ lengths and element types of existing streams and stream groups should not be ch
 not work on new versions of the engine.
 
 ## Skins
-Skins are defined with the `@skin` decorator:
+Skins are defined with the [`@skin`][sonolus.script.sprite.skin] decorator:
 
 ```python
 from sonolus.script.sprite import skin, StandardSprite, sprite, Sprite, RenderMode
@@ -75,14 +75,14 @@ class Skin:
     other: Sprite = sprite("other")
 ```
 
-Standard sprites are defined by annotating the field with the corresponding value from `StandardSprite`.
+Standard sprites are defined by annotating the field with the corresponding value from [`StandardSprite`][sonolus.script.sprite.StandardSprite].
 
-Custom sprites are defined by annotating the field with `Sprite` and calling `skin_sprite` with the sprite name.
+Custom sprites are defined by annotating the field with [`Sprite`][sonolus.script.sprite.Sprite] and calling [`sprite`][sonolus.script.sprite.sprite] with the sprite name.
 
-To set the render mode for the skin, set the `render_mode` field to the desired value from `RenderMode`.
+To set the render mode for the skin, set the `render_mode` field to the desired value from [`RenderMode`][sonolus.script.sprite.RenderMode].
 
 ## Sound Effects
-Sound effects are defined with the `@effects` decorator:
+Sound effects are defined with the [`@effects`][sonolus.script.effect.effects] decorator:
 
 ```python
 from sonolus.script.effect import effects, StandardEffect, Effect, effect
@@ -94,12 +94,12 @@ class Effects:
     other: Effect = effect("other")
 ```
 
-Standard sound effects are defined by annotating the field with the corresponding value from `StandardEffect`.
+Standard sound effects are defined by annotating the field with the corresponding value from [`StandardEffect`][sonolus.script.effect.StandardEffect].
 
-Custom sound effects are defined by annotating the field with `Effect` and calling `effect` with the effect name.
+Custom sound effects are defined by annotating the field with [`Effect`][sonolus.script.effect.Effect] and calling [`effect`][sonolus.script.effect.effect] with the effect name.
 
 ## Particles
-Particles are defined with the `@particles` decorator:
+Particles are defined with the [`@particles`][sonolus.script.particle.particles] decorator:
 
 ```python
 from sonolus.script.particle import particles, StandardParticle, Particle, particle
@@ -111,12 +111,12 @@ class Particles:
     other: Particle = particle("other")
 ```
 
-Standard particles are defined by annotating the field with the corresponding value from `StandardParticle`.
+Standard particles are defined by annotating the field with the corresponding value from [`StandardParticle`][sonolus.script.particle.StandardParticle].
 
-Custom particles are defined by annotating the field with `Particle` and calling `particle` with the particle name.
+Custom particles are defined by annotating the field with [`Particle`][sonolus.script.particle.Particle] and calling [`particle`][sonolus.script.particle.particle] with the particle name.
 
 ## Buckets
-Buckets are defined with the `@buckets` decorator:
+Buckets are defined with the [`@buckets`][sonolus.script.bucket.buckets] decorator:
 
 ```python
 from sonolus.script.bucket import buckets, bucket_sprite, bucket, Bucket
@@ -139,10 +139,10 @@ class Buckets:
     )
 ```
 
-Buckets are defined by annotating the field with `Bucket` and calling `bucket` with the bucket name.
+Buckets are defined by annotating the field with [`Bucket`][sonolus.script.bucket.Bucket] and calling [`bucket`][sonolus.script.bucket.bucket] with the bucket name.
 
 ## Tutorial Instructions
-Tutorial instructions are defined with the `@instructions` decorator:
+Tutorial instructions are defined with the [`@instructions`][sonolus.script.instruction.instructions] decorator:
 
 ```python
 from sonolus.script.instruction import instructions, StandardInstruction, Instruction, instruction
@@ -154,12 +154,12 @@ class Instructions:
     other: Instruction = instruction("other")
 ```
 
-Standard instructions are defined by annotating the field with the corresponding value from `StandardInstruction`.
+Standard instructions are defined by annotating the field with the corresponding value from [`StandardInstruction`][sonolus.script.instruction.StandardInstruction].
 
-Custom instructions are defined by annotating the field with `Instruction` and calling `instruction` with the instruction name.
+Custom instructions are defined by annotating the field with [`Instruction`][sonolus.script.instruction.Instruction] and calling [`instruction`][sonolus.script.instruction.instruction] with the instruction name.
 
 ## Tutorial Instruction Icons
-Tutorial instruction icons are defined with the `@instruction_icons` decorator:
+Tutorial instruction icons are defined with the [`@instruction_icons`][sonolus.script.instruction.instruction_icons] decorator:
 
 ```python
 from sonolus.script.instruction import instruction_icons, StandardInstructionIcon, InstructionIcon, instruction_icon
@@ -171,12 +171,12 @@ class InstructionIcons:
     other: InstructionIcon = instruction_icon("other")
 ```
 
-Standard instruction icons are defined by annotating the field with the corresponding value from `StandardInstructionIcon`.
+Standard instruction icons are defined by annotating the field with the corresponding value from [`StandardInstructionIcon`][sonolus.script.instruction.StandardInstructionIcon].
 
-Custom instruction icons are defined by annotating the field with `InstructionIcon` and calling `instruction_icon` with the icon name.
+Custom instruction icons are defined by annotating the field with [`InstructionIcon`][sonolus.script.instruction.InstructionIcon] and calling [`instruction_icon`][sonolus.script.instruction.instruction_icon] with the icon name.
 
 ## Options
-Engine options are defined with the `@options` decorator:
+Engine options are defined with the [`@options`][sonolus.script.options.options] decorator:
 
 ```python
 from sonolus.script.options import options, select_option, slider_option, toggle_option
@@ -214,12 +214,12 @@ class Options:
 
 There are three types of options available:
 
-1. `slider_option`: A slider control for numeric values
-2. `toggle_option`: A toggle switch for boolean values
-3. `select_option`: A dropdown menu for selecting from predefined values
+1. [`slider_option`][sonolus.script.options.slider_option]: A slider control for numeric values
+2. [`toggle_option`][sonolus.script.options.toggle_option]: A toggle switch for boolean values
+3. [`select_option`][sonolus.script.options.select_option]: A dropdown menu for selecting from predefined values
 
 ## UI
-Ui configuration is defined with the `UiConfig` class:
+Ui configuration is defined with the [`UiConfig`][sonolus.script.ui.UiConfig] class:
 
 ```python
 from sonolus.script.ui import (
