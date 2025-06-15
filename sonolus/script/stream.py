@@ -232,6 +232,18 @@ class Stream[T](Record, BackingValue):
         _check_can_read_stream()
         return _stream_get_previous_key(self.offset, key)
 
+    def has_next_key(self, key: int | float) -> bool:
+        """Check if there is a next key after the given key in the stream."""
+        _check_can_read_stream()
+        next_key = self.next_key(key)
+        return next_key > key
+
+    def has_previous_key(self, key: int | float) -> bool:
+        """Check if there is a previous key before the given key in the stream."""
+        _check_can_read_stream()
+        previous_key = self.previous_key(key)
+        return previous_key < key
+
     def next_key_inclusive(self, key: int | float) -> int:
         """Like `next_key`, but returns the key itself if it is in the stream."""
         _check_can_read_stream()
@@ -392,12 +404,12 @@ class StreamGroup[T, Size](Record):
 
     def __contains__(self, item: int) -> bool:
         """Check if the group contains the stream with the given index."""
-        _check_can_read_stream()
+        _check_can_read_or_write_stream()
         return 0 <= item < self.size()
 
     def __getitem__(self, index: int) -> Stream[T]:
         """Get the stream at the given index."""
-        _check_can_read_stream()
+        _check_can_read_or_write_stream()
         assert index in self
         # Size 0 elements still need 1 stream to preserve the key.
         return Stream[self.type_var_value(T)](max(1, sizeof(self.element_type())) * index + self.offset)
