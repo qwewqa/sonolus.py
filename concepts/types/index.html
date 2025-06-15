@@ -762,7 +762,7 @@
         
   
   <span class="md-ellipsis">
-    Resources
+    Resources &amp; Declarations
   </span>
   
 
@@ -832,6 +832,8 @@
       
         
           
+        
+      
         
       
         
@@ -1517,6 +1519,27 @@
   
   
     <li class="md-nav__item">
+      <a href="../../reference/sonolus.script.stream/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    sonolus.script.stream
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
       <a href="../../reference/sonolus.script.text/" class="md-nav__link">
         
   
@@ -1918,8 +1941,9 @@
   
 
 
+<p>from sonolus.script.archetype import PlayArchetype</p>
 <h1 id="types">Types<a class="headerlink" href="#types" title="Permanent link">&para;</a></h1>
-<p>Sonolus.py has 3 core types: <code class="highlight"><span class="n">Num</span></code>, <code class="highlight"><span class="n">Array</span></code>, and <code class="highlight"><span class="n">Record</span></code>. representing numeric values, fixed-size arrays, 
+<p>Sonolus.py has 3 core types: <a href="#num"><code class="highlight"><span class="n">Num</span></code></a>, <a href="#array"><code class="highlight"><span class="n">Array</span></code></a>, and <a href="#record"><code class="highlight"><span class="n">Record</span></code></a>. representing numeric values, fixed-size arrays, 
 and custom data structures, respectively. Arrays and records can be nested within each other to create complex data
 structures.</p>
 <p>Additionally, Sonolus.py supports the built-in types <code class="highlight"><span class="nb">tuple</span></code>, <code class="highlight"><span class="nb">dict</span></code>, <code class="highlight"><span class="nb">str</span></code>, classes and functions, and
@@ -1993,11 +2017,13 @@ As a condition, any nonzero value is considered true, and <code class="highlight
 <li><code class="highlight"><span class="nb">bool</span></code>: Validates that the value is a <code class="highlight"><span class="n">Num</span></code> and returns <code class="highlight"><span class="mi">1</span></code> for <code class="highlight"><span class="kc">True</span></code> and <code class="highlight"><span class="mi">0</span></code> for <code class="highlight"><span class="kc">False</span></code>.</li>
 </ul>
 <h2 id="array">Array<a class="headerlink" href="#array" title="Permanent link">&para;</a></h2>
-<p><code class="highlight"><span class="n">Array</span><span class="p">[</span><span class="n">T</span><span class="p">,</span> <span class="n">Size</span><span class="p">]</span></code> stores a fixed number of elements of the same type.</p>
-<p>It has two type parameters:
-- <code class="highlight"><span class="n">T</span></code>: The type of the elements.
-- <code class="highlight"><span class="n">Size</span></code>: The number of elements.</p>
-<p>You can import <code class="highlight"><span class="n">Array</span></code> from <code class="highlight"><span class="n">sonolus</span><span class="o">.</span><span class="n">script</span><span class="o">.</span><span class="n">array</span></code>:</p>
+<p><a class="autorefs autorefs-internal" href="../../reference/sonolus.script.array/#sonolus.script.array.Array"><code class="highlight"><span class="n">Array</span><span class="p">[</span><span class="n">T</span><span class="p">,</span> <span class="n">Size</span><span class="p">]</span></code></a> stores a fixed number of elements of the same type.</p>
+<p>It has two type parameters:</p>
+<ul>
+<li><code class="highlight"><span class="n">T</span></code>: The type of the elements.</li>
+<li><code class="highlight"><span class="n">Size</span></code>: The number of elements.</li>
+</ul>
+<p>You can import <a class="autorefs autorefs-internal" href="../../reference/sonolus.script.array/#sonolus.script.array.Array"><code class="highlight"><span class="n">Array</span></code></a> from <code class="highlight"><span class="n">sonolus</span><span class="o">.</span><span class="n">script</span><span class="o">.</span><span class="n">array</span></code>:</p>
 <div class="highlight"><pre><span></span><code><span class="kn">from</span> <span class="nn">sonolus.script.array</span> <span class="kn">import</span> <span class="n">Array</span>
 </code></pre></div>
 <h3 id="declaration_1">Declaration<a class="headerlink" href="#declaration_1" title="Permanent link">&para;</a></h3>
@@ -2008,7 +2034,7 @@ As a condition, any nonzero value is considered true, and <code class="highlight
 <p>If at least one element is provided, the element type and size can be inferred:</p>
 <div class="highlight"><pre><span></span><code><span class="n">a3</span> <span class="o">=</span> <span class="n">Array</span><span class="p">(</span><span class="mi">1</span><span class="p">,</span> <span class="mi">2</span><span class="p">,</span> <span class="mi">3</span><span class="p">)</span>
 </code></pre></div>
-<p>Since <code class="highlight"><span class="n">Array</span></code> takes type parameters, it is considered a generic type. A version of <code class="highlight"><span class="n">Array</span></code> with type parameters provided
+<p>Since <a class="autorefs autorefs-internal" href="../../reference/sonolus.script.array/#sonolus.script.array.Array"><code class="highlight"><span class="n">Array</span></code></a> takes type parameters, it is considered a generic type. A version of <a class="autorefs autorefs-internal" href="../../reference/sonolus.script.array/#sonolus.script.array.Array"><code class="highlight"><span class="n">Array</span></code></a> with type parameters provided
 is considered a concrete type.</p>
 <div class="highlight"><pre><span></span><code><span class="n">Array</span>  <span class="c1"># The Generic Array type</span>
 <span class="n">Array</span><span class="p">[</span><span class="nb">int</span><span class="p">,</span> <span class="mi">3</span><span class="p">]</span>  <span class="c1"># A concrete Array type</span>
@@ -2055,7 +2081,7 @@ constant integer:</p>
 </code></pre></div>
 <div class="admonition warning">
 <p class="admonition-title">Warning</p>
-<p>If a value in an array is not a <code class="highlight"><span class="n">Num</span></code>, updating it will copy the given value into the corresponding element
+<p>If a value in an array is not a <a href="#num"><code class="highlight"><span class="n">Num</span></code></a>, updating it will copy the given value into the corresponding element
 of the array. However, that element remains independent of the original value, which may lead to unexpected
 results when updating either value.</p>
 <div class="highlight"><pre><span></span><code><span class="n">pair</span> <span class="o">=</span> <span class="n">Pair</span><span class="p">(</span><span class="mi">1</span><span class="p">,</span> <span class="mi">2</span><span class="p">)</span>
@@ -2068,7 +2094,7 @@ results when updating either value.</p>
 <span class="k">assert</span> <span class="n">a</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span> <span class="o">==</span> <span class="n">Pair</span><span class="p">(</span><span class="mi">1</span><span class="p">,</span> <span class="mi">2</span><span class="p">)</span>  <span class="c1"># The value in the array is independent of the original value</span>
 </code></pre></div>
 <p>For clarity, it's recommended to use the copy from operator (<code class="highlight"><span class="o">@=</span></code>) when updating elements that are known to be
-an array or record (see the next section).</p>
+an array or record.</p>
 <div class="highlight"><pre><span></span><code><span class="n">a</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span> <span class="o">@=</span> <span class="n">pair</span>
 </code></pre></div>
 </div>
@@ -2082,21 +2108,21 @@ an array or record (see the next section).</p>
     <span class="n">debug_log</span><span class="p">(</span><span class="n">element</span><span class="p">)</span>
 </code></pre></div>
 <p>Other functionality:</p>
-<p><code class="highlight"><span class="n">Array</span></code> inherits from <a class="autorefs autorefs-internal" href="../../reference/sonolus.script.array_like/#sonolus.script.array_like.ArrayLike">ArrayLike</a> and supports all of its methods.</p>
+<p><a class="autorefs autorefs-internal" href="../../reference/sonolus.script.array/#sonolus.script.array.Array"><code class="highlight"><span class="n">Array</span></code></a> inherits from <a class="autorefs autorefs-internal" href="../../reference/sonolus.script.array_like/#sonolus.script.array_like.ArrayLike"><code class="highlight"><span class="n">ArrayLike</span></code></a> and supports all of its methods.</p>
 <h3 id="instance-checks_1">Instance Checks<a class="headerlink" href="#instance-checks_1" title="Permanent link">&para;</a></h3>
-<p>Any array is considered an instance of the generic <code class="highlight"><span class="n">Array</span></code> type.</p>
+<p>Any array is considered an instance of the generic <a class="autorefs autorefs-internal" href="../../reference/sonolus.script.array/#sonolus.script.array.Array"><code class="highlight"><span class="n">Array</span></code></a> type.</p>
 <div class="highlight"><pre><span></span><code><span class="n">a</span> <span class="o">=</span> <span class="n">Array</span><span class="p">(</span><span class="mi">1</span><span class="p">,</span> <span class="mi">2</span><span class="p">,</span> <span class="mi">3</span><span class="p">)</span>
 <span class="k">assert</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">a</span><span class="p">,</span> <span class="n">Array</span><span class="p">)</span>
 </code></pre></div>
-<p>Only an array with the exact element type and size is considered an instance of a concrete <code class="highlight"><span class="n">Array</span><span class="p">[</span><span class="n">T</span><span class="p">,</span> <span class="n">Size</span><span class="p">]</span></code> type.</p>
+<p>Only an array with the exact element type and size is considered an instance of a concrete <a class="autorefs autorefs-internal" href="../../reference/sonolus.script.array/#sonolus.script.array.Array"><code class="highlight"><span class="n">Array</span><span class="p">[</span><span class="n">T</span><span class="p">,</span> <span class="n">Size</span><span class="p">]</span></code></a> type.</p>
 <div class="highlight"><pre><span></span><code><span class="n">a</span> <span class="o">=</span> <span class="n">Array</span><span class="p">(</span><span class="mi">1</span><span class="p">,</span> <span class="mi">2</span><span class="p">,</span> <span class="mi">3</span><span class="p">)</span>
 <span class="k">assert</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">a</span><span class="p">,</span> <span class="n">Array</span><span class="p">[</span><span class="nb">int</span><span class="p">,</span> <span class="mi">3</span><span class="p">])</span>
 <span class="k">assert</span> <span class="ow">not</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">a</span><span class="p">,</span> <span class="n">Array</span><span class="p">[</span><span class="nb">int</span><span class="p">,</span> <span class="mi">2</span><span class="p">])</span>
 <span class="k">assert</span> <span class="ow">not</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">a</span><span class="p">,</span> <span class="n">Array</span><span class="p">[</span><span class="n">Pair</span><span class="p">,</span> <span class="mi">3</span><span class="p">])</span>
 </code></pre></div>
 <h3 id="enums">Enums<a class="headerlink" href="#enums" title="Permanent link">&para;</a></h3>
-<p>There is limited support for enums containing <code class="highlight"><span class="n">Num</span></code> values. Methods on enums are not supported. 
-When used as a type, any enum class is treated as <code class="highlight"><span class="n">Num</span></code> and no enforcement is done on the values.</p>
+<p>There is limited support for enums containing <a href="#num"><code class="highlight"><span class="n">Num</span></code></a> values. Methods on enums are not supported. 
+When used as a type, any enum class is treated as <a href="#num"><code class="highlight"><span class="n">Num</span></code></a> and no enforcement is done on the values.</p>
 <div class="highlight"><pre><span></span><code><span class="k">class</span> <span class="nc">MyEnum</span><span class="p">(</span><span class="n">IntEnum</span><span class="p">):</span>
     <span class="n">A</span> <span class="o">=</span> <span class="mi">1</span>
     <span class="n">B</span> <span class="o">=</span> <span class="mi">2</span>
@@ -2105,34 +2131,34 @@ When used as a type, any enum class is treated as <code class="highlight"><span 
 <span class="n">b</span> <span class="o">=</span> <span class="n">Array</span><span class="p">[</span><span class="n">MyEnum</span><span class="p">,</span> <span class="mi">2</span><span class="p">](</span><span class="mi">1</span><span class="p">,</span> <span class="mi">2</span><span class="p">)</span>
 </code></pre></div>
 <h2 id="record">Record<a class="headerlink" href="#record" title="Permanent link">&para;</a></h2>
-<p><code class="highlight"><span class="n">Record</span></code> is the base class for user-defined types in Sonolus.py. It functions similarly to dataclasses.</p>
-<p>You can import <code class="highlight"><span class="n">Record</span></code> from <code class="highlight"><span class="n">sonolus</span><span class="o">.</span><span class="n">script</span><span class="o">.</span><span class="n">record</span></code>:</p>
+<p><a class="autorefs autorefs-internal" href="../../reference/sonolus.script.record/#sonolus.script.record.Record"><code class="highlight"><span class="n">Record</span></code></a> is the base class for user-defined types in Sonolus.py. It functions similarly to dataclasses.</p>
+<p>You can import <a class="autorefs autorefs-internal" href="../../reference/sonolus.script.record/#sonolus.script.record.Record"><code class="highlight"><span class="n">Record</span></code></a> from <code class="highlight"><span class="n">sonolus</span><span class="o">.</span><span class="n">script</span><span class="o">.</span><span class="n">record</span></code>:</p>
 <div class="highlight"><pre><span></span><code><span class="kn">from</span> <span class="nn">sonolus.script.record</span> <span class="kn">import</span> <span class="n">Record</span>
 </code></pre></div>
 <h3 id="declaration_2">Declaration<a class="headerlink" href="#declaration_2" title="Permanent link">&para;</a></h3>
-<p>A record can be defined by inheriting from <code class="highlight"><span class="n">Record</span></code> and defining zero or more fields as class attributes:</p>
+<p>A record can be defined by inheriting from <a class="autorefs autorefs-internal" href="../../reference/sonolus.script.record/#sonolus.script.record.Record"><code class="highlight"><span class="n">Record</span></code></a> and defining zero or more fields as class attributes:</p>
 <div class="highlight"><pre><span></span><code><span class="k">class</span> <span class="nc">MyPair</span><span class="p">(</span><span class="n">Record</span><span class="p">):</span>
     <span class="n">first</span><span class="p">:</span> <span class="nb">int</span>
     <span class="n">second</span><span class="p">:</span> <span class="nb">int</span>
 </code></pre></div>
-<p>Fields must be annotated by <code class="highlight"><span class="n">Num</span></code> (or equivalently <code class="highlight"><span class="nb">int</span></code>, <code class="highlight"><span class="nb">float</span></code>, or <code class="highlight"><span class="nb">bool</span></code>), 
+<p>Fields must be annotated by <a href="#num"><code class="highlight"><span class="n">Num</span></code></a> (or equivalently <code class="highlight"><span class="nb">int</span></code>, <code class="highlight"><span class="nb">float</span></code>, or <code class="highlight"><span class="nb">bool</span></code>), 
 a concrete array type, or a concrete record type.</p>
 <div class="highlight"><pre><span></span><code><span class="c1"># Not ok:</span>
 <span class="k">class</span> <span class="nc">MyRecord</span><span class="p">(</span><span class="n">Record</span><span class="p">):</span>
     <span class="n">array</span><span class="p">:</span> <span class="n">Array</span>  <span class="c1"># Array is not concrete since it has unspecified type parameters</span>
 </code></pre></div>
-<p>A <code class="highlight"><span class="n">Record</span></code> subclass cannot be further subclassed.</p>
+<p>A <a class="autorefs autorefs-internal" href="../../reference/sonolus.script.record/#sonolus.script.record.Record"><code class="highlight"><span class="n">Record</span></code></a> subclass cannot be further subclassed.</p>
 <div class="highlight"><pre><span></span><code><span class="c1"># Not ok:</span>
 <span class="k">class</span> <span class="nc">MyPairSubclass</span><span class="p">(</span><span class="n">MyPair</span><span class="p">):</span>
     <span class="n">third</span><span class="p">:</span> <span class="nb">int</span>
 </code></pre></div>
 <h3 id="instantiation">Instantiation<a class="headerlink" href="#instantiation" title="Permanent link">&para;</a></h3>
-<p>A constructor is automatically generated for the <code class="highlight"><span class="n">Record</span></code> class:</p>
+<p>A constructor is automatically generated for the <a class="autorefs autorefs-internal" href="../../reference/sonolus.script.record/#sonolus.script.record.Record"><code class="highlight"><span class="n">Record</span></code></a> class:</p>
 <div class="highlight"><pre><span></span><code><span class="n">pair_1</span> <span class="o">=</span> <span class="n">MyPair</span><span class="p">(</span><span class="mi">1</span><span class="p">,</span> <span class="mi">2</span><span class="p">)</span>
 <span class="n">pair_2</span> <span class="o">=</span> <span class="n">MyPair</span><span class="p">(</span><span class="n">first</span><span class="o">=</span><span class="mi">1</span><span class="p">,</span> <span class="n">second</span><span class="o">=</span><span class="mi">2</span><span class="p">)</span>
 </code></pre></div>
 <h3 id="generics">Generics<a class="headerlink" href="#generics" title="Permanent link">&para;</a></h3>
-<p><code class="highlight"><span class="n">Record</span></code> supports generics. If at least one type parameter is provided in the class definition, a generic 
+<p><a class="autorefs autorefs-internal" href="../../reference/sonolus.script.record/#sonolus.script.record.Record"><code class="highlight"><span class="n">Record</span></code></a> supports generics. If at least one type parameter is provided in the class definition, a generic 
 record type is created.</p>
 <div class="highlight"><pre><span></span><code><span class="k">class</span> <span class="nc">MyGenericPair</span><span class="p">[</span><span class="n">T</span><span class="p">,</span> <span class="n">U</span><span class="p">](</span><span class="n">Record</span><span class="p">):</span>
     <span class="n">first</span><span class="p">:</span> <span class="n">T</span>
@@ -2145,7 +2171,7 @@ record type is created.</p>
 <div class="highlight"><pre><span></span><code><span class="n">pair_1</span> <span class="o">=</span> <span class="n">MyGenericPair</span><span class="p">[</span><span class="nb">int</span><span class="p">,</span> <span class="nb">int</span><span class="p">](</span><span class="mi">1</span><span class="p">,</span> <span class="mi">2</span><span class="p">)</span>
 <span class="n">pair_2</span> <span class="o">=</span> <span class="n">MyGenericPair</span><span class="p">(</span><span class="mi">1</span><span class="p">,</span> <span class="mi">2</span><span class="p">)</span>
 </code></pre></div>
-<p>The value of a type parameter can be accessed via the <code class="highlight"><span class="n">type_var_value</span><span class="p">()</span></code> classmethod.</p>
+<p>The value of a type parameter can be accessed via the <a class="autorefs autorefs-internal" href="../../reference/sonolus.script.record/#sonolus.script.record.Record.type_var_value"><code class="highlight"><span class="n">type_var_value</span><span class="p">()</span></code></a> classmethod.</p>
 <div class="highlight"><pre><span></span><code><span class="k">class</span> <span class="nc">MyGenericRecord</span><span class="p">[</span><span class="n">T</span><span class="p">](</span><span class="n">Record</span><span class="p">):</span>
     <span class="n">value</span><span class="p">:</span> <span class="n">T</span>
 
@@ -2176,14 +2202,14 @@ record type is created.</p>
         <span class="k">return</span> <span class="n">MyAddablePair</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">first</span> <span class="o">+</span> <span class="n">other</span><span class="o">.</span><span class="n">first</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">second</span> <span class="o">+</span> <span class="n">other</span><span class="o">.</span><span class="n">second</span><span class="p">)</span>
 </code></pre></div>
 <p>If a dunder method has an in-place variant and the in-place method is not explicitly implemented
-(e.g. <code class="highlight"><span class="fm">__iadd__</span></code> is the in-place variant of <code class="highlight"><span class="fm">__add__</span></code>), <code class="highlight"><span class="n">Record</span></code> will automatically generate one that 
+(e.g. <code class="highlight"><span class="fm">__iadd__</span></code> is the in-place variant of <code class="highlight"><span class="fm">__add__</span></code>), <a class="autorefs autorefs-internal" href="../../reference/sonolus.script.record/#sonolus.script.record.Record"><code class="highlight"><span class="n">Record</span></code></a> will automatically generate one that 
 modifies the instance in place:</p>
 <div class="highlight"><pre><span></span><code><span class="n">pair</span> <span class="o">=</span> <span class="n">MyAddablePair</span><span class="p">(</span><span class="mi">1</span><span class="p">,</span> <span class="mi">2</span><span class="p">)</span>
 <span class="n">reference</span> <span class="o">=</span> <span class="n">pair</span>
 <span class="n">pair</span> <span class="o">+=</span> <span class="n">MyAddablePair</span><span class="p">(</span><span class="mi">3</span><span class="p">,</span> <span class="mi">4</span><span class="p">)</span>
 <span class="k">assert</span> <span class="n">pair</span> <span class="o">==</span> <span class="n">reference</span> <span class="o">==</span> <span class="n">MyAddablePair</span><span class="p">(</span><span class="mi">4</span><span class="p">,</span> <span class="mi">6</span><span class="p">)</span>  <span class="c1"># The instance is modified in place</span>
 </code></pre></div>
-<p>Regular methods, properties, classmethods, and staticmethods can also be defined in a <code class="highlight"><span class="n">Record</span></code> subclass.</p>
+<p>Regular methods, properties, classmethods, and staticmethods can also be defined in a <a class="autorefs autorefs-internal" href="../../reference/sonolus.script.record/#sonolus.script.record.Record"><code class="highlight"><span class="n">Record</span></code></a> subclass.</p>
 <div class="highlight"><pre><span></span><code><span class="k">class</span> <span class="nc">MyRecord</span><span class="p">(</span><span class="n">Record</span><span class="p">):</span>
     <span class="k">def</span> <span class="nf">my_method</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
         <span class="o">...</span>
@@ -2214,7 +2240,7 @@ modifies the instance in place:</p>
 </code></pre></div>
 <div class="admonition warning">
 <p class="admonition-title">Warning</p>
-<p>If a value in a record is not a <code class="highlight"><span class="n">Num</span></code>, updating it will copy the given value into the corresponding field
+<p>If a value in a record is not a <a href="#num"><code class="highlight"><span class="n">Num</span></code></a>, updating it will copy the given value into the corresponding field
 of the record. However, that field remains independent of the original value.</p>
 <div class="highlight"><pre><span></span><code><span class="n">array</span> <span class="o">=</span> <span class="n">Array</span><span class="p">(</span><span class="mi">1</span><span class="p">,</span> <span class="mi">2</span><span class="p">,</span> <span class="mi">3</span><span class="p">)</span>
 <span class="n">record</span> <span class="o">=</span> <span class="n">MyRecord</span><span class="p">(</span><span class="n">array</span><span class="p">)</span>
@@ -2231,7 +2257,7 @@ an array or record.</p>
 </code></pre></div>
 </div>
 <h3 id="instance-checks_2">Instance Checks<a class="headerlink" href="#instance-checks_2" title="Permanent link">&para;</a></h3>
-<p>Any record is considered an instance of the generic <code class="highlight"><span class="n">Record</span></code> type:</p>
+<p>Any record is considered an instance of the generic <a class="autorefs autorefs-internal" href="../../reference/sonolus.script.record/#sonolus.script.record.Record"><code class="highlight"><span class="n">Record</span></code></a> type:</p>
 <div class="highlight"><pre><span></span><code><span class="n">pair</span> <span class="o">=</span> <span class="n">MyPair</span><span class="p">(</span><span class="mi">1</span><span class="p">,</span> <span class="mi">2</span><span class="p">)</span>
 <span class="k">assert</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">pair</span><span class="p">,</span> <span class="n">Record</span><span class="p">)</span>
 </code></pre></div>
@@ -2239,16 +2265,29 @@ an array or record.</p>
 <div class="highlight"><pre><span></span><code><span class="n">pair</span> <span class="o">=</span> <span class="n">MyGenericPair</span><span class="p">[</span><span class="nb">int</span><span class="p">,</span> <span class="nb">int</span><span class="p">](</span><span class="mi">1</span><span class="p">,</span> <span class="mi">2</span><span class="p">)</span>
 <span class="k">assert</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">pair</span><span class="p">,</span> <span class="n">MyGenericPair</span><span class="p">)</span>
 </code></pre></div>
-<p>Only an instance of a record with the exact field types is considered an instance of a concrete <code class="highlight"><span class="n">Record</span></code> type:</p>
+<p>Only an instance of a record with the exact field types is considered an instance of a concrete <a class="autorefs autorefs-internal" href="../../reference/sonolus.script.record/#sonolus.script.record.Record"><code class="highlight"><span class="n">Record</span></code></a> type:</p>
 <div class="highlight"><pre><span></span><code><span class="n">pair</span> <span class="o">=</span> <span class="n">MyPair</span><span class="p">(</span><span class="mi">1</span><span class="p">,</span> <span class="mi">2</span><span class="p">)</span>
 <span class="k">assert</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">pair</span><span class="p">,</span> <span class="n">MyPair</span><span class="p">[</span><span class="nb">int</span><span class="p">,</span> <span class="nb">int</span><span class="p">])</span>
 <span class="k">assert</span> <span class="ow">not</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">pair</span><span class="p">,</span> <span class="n">MyPair</span><span class="p">[</span><span class="nb">int</span><span class="p">,</span> <span class="n">Array</span><span class="p">[</span><span class="nb">int</span><span class="p">,</span> <span class="mi">2</span><span class="p">]])</span>
 </code></pre></div>
 <h2 id="transient-types">Transient Types<a class="headerlink" href="#transient-types" title="Permanent link">&para;</a></h2>
-<p>In addition to the standard types, the following transient types are available.
-Compared to the standard types, these types come with the restriction that they cannot be used as type parameters
-or as a Record field's type. Otherwise, they can be used like any other type, including passing instances of them as 
-arguments to functions.</p>
+<p>In addition to the core types, the following transient types are available.
+There are some restrictions on how they can be used:</p>
+<ul>
+<li>They cannot be used as type arguments:
+    <div class="highlight"><pre><span></span><code><span class="c1"># Not ok:</span>
+<span class="n">Array</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="mi">3</span><span class="p">]</span>
+</code></pre></div></li>
+<li>They cannot be used as a field types:
+    <div class="highlight"><pre><span></span><code><span class="c1"># Not ok:</span>
+<span class="k">class</span> <span class="nc">MyRecord</span><span class="p">(</span><span class="n">Record</span><span class="p">):</span>
+    <span class="n">field</span><span class="p">:</span> <span class="nb">str</span>
+
+<span class="c1"># Not ok:</span>
+<span class="k">class</span> <span class="nc">MyArchetype</span><span class="p">(</span><span class="n">PlayArchetype</span><span class="p">):</span>
+    <span class="n">field</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="n">imported</span><span class="p">()</span>
+</code></pre></div></li>
+</ul>
 <h3 id="tuple">tuple<a class="headerlink" href="#tuple" title="Permanent link">&para;</a></h3>
 <p>The built-in <code class="highlight"><span class="nb">tuple</span></code> type can be declared and destructured as usual:</p>
 <div class="highlight"><pre><span></span><code><span class="n">t</span> <span class="o">=</span> <span class="p">(</span><span class="mi">1</span><span class="p">,</span> <span class="p">(</span><span class="mi">2</span><span class="p">,</span> <span class="mi">3</span><span class="p">))</span>
@@ -2381,6 +2420,46 @@ but it has been repurposed in Sonolus.py for copying Arrays and Records.&#160;<a
       
         <footer class="md-footer">
   
+    
+      
+      <nav class="md-footer__inner md-grid" aria-label="Footer" >
+        
+          
+          <a href="../" class="md-footer__link md-footer__link--prev" aria-label="Previous: Concepts">
+            <div class="md-footer__button md-icon">
+              
+              <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M20 11v2H8l5.5 5.5-1.42 1.42L4.16 12l7.92-7.92L13.5 5.5 8 11z"/></svg>
+            </div>
+            <div class="md-footer__title">
+              <span class="md-footer__direction">
+                Previous
+              </span>
+              <div class="md-ellipsis">
+                Concepts
+              </div>
+            </div>
+          </a>
+        
+        
+          
+          <a href="../constructs/" class="md-footer__link md-footer__link--next" aria-label="Next: Constructs">
+            <div class="md-footer__title">
+              <span class="md-footer__direction">
+                Next
+              </span>
+              <div class="md-ellipsis">
+                Constructs
+              </div>
+            </div>
+            <div class="md-footer__button md-icon">
+              
+              <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M4 11v2h12l-5.5 5.5 1.42 1.42L19.84 12l-7.92-7.92L10.5 5.5 16 11z"/></svg>
+            </div>
+          </a>
+        
+      </nav>
+    
+  
   <div class="md-footer-meta md-typeset">
     <div class="md-footer-meta__inner md-grid">
       <div class="md-copyright">
@@ -2403,7 +2482,7 @@ but it has been repurposed in Sonolus.py for copying Arrays and Records.&#160;<a
     </div>
     
     
-    <script id="__config" type="application/json">{"base": "../..", "features": ["navigation.instant", "navigation.tabs", "navigation.expand", "navigation.path", "navigation.indexes", "toc.follow", "navigation.top"], "search": "../../assets/javascripts/workers/search.6ce7567c.min.js", "translations": {"clipboard.copied": "Copied to clipboard", "clipboard.copy": "Copy to clipboard", "search.result.more.one": "1 more on this page", "search.result.more.other": "# more on this page", "search.result.none": "No matching documents", "search.result.one": "1 matching document", "search.result.other": "# matching documents", "search.result.placeholder": "Type to start searching", "search.result.term.missing": "Missing", "select.version": "Select version"}}</script>
+    <script id="__config" type="application/json">{"base": "../..", "features": ["navigation.instant", "navigation.tabs", "navigation.expand", "navigation.path", "navigation.indexes", "navigation.footer", "toc.follow", "navigation.top"], "search": "../../assets/javascripts/workers/search.6ce7567c.min.js", "translations": {"clipboard.copied": "Copied to clipboard", "clipboard.copy": "Copy to clipboard", "search.result.more.one": "1 more on this page", "search.result.more.other": "# more on this page", "search.result.none": "No matching documents", "search.result.one": "1 matching document", "search.result.other": "# matching documents", "search.result.placeholder": "Type to start searching", "search.result.term.missing": "Missing", "select.version": "Select version"}}</script>
     
     
       <script src="../../assets/javascripts/bundle.83f73b43.min.js"></script>
