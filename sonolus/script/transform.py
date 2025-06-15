@@ -10,7 +10,7 @@ class Transform2d(Record):
     """A transformation matrix for 2D points.
 
     Usage:
-        ```
+        ```python
         Transform2d.new()
         ```
     """
@@ -368,7 +368,7 @@ class Transform2d(Record):
         return other.compose(self)
 
     def transform_vec(self, v: Vec2) -> Vec2:
-        """Transform a Vec2 and return a new Vec2.
+        """Transform a [`Vec2`][sonolus.script.vec.Vec2] and return a new [`Vec2`][sonolus.script.vec.Vec2].
 
         Args:
             v: The vector to transform.
@@ -382,7 +382,7 @@ class Transform2d(Record):
         return Vec2(x / w, y / w)
 
     def transform_quad(self, quad: QuadLike) -> Quad:
-        """Transform a Quad and return a new Quad.
+        """Transform a [`Quad`][sonolus.script.quad.Quad] and return a new [`Quad`][sonolus.script.quad.Quad].
 
         Args:
             quad: The quad to transform.

@@ -20,7 +20,7 @@ class JudgmentWindow(Record):
     """The window for judging the accuracy of a hit.
 
     Usage:
-        ```
+        ```python
         JudgmentWindow(perfect: Interval, great: Interval, good: Interval)
         ```
     """
@@ -62,7 +62,7 @@ class JudgmentWindow(Record):
             target: The target time of the hit.
 
         Returns:
-            The judgment of the hit.
+            The [`Judgment`][sonolus.script.bucket.Judgment] of the hit.
         """
         return _judge(
             actual,
@@ -133,7 +133,9 @@ class Bucket(Record):
     """A bucket for entity judgment results.
 
     Usage:
-        ```Bucket(id: int)```
+        ```python
+        Bucket(id: int)
+        ```
     """
 
     id: int

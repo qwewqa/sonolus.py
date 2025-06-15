@@ -11,7 +11,7 @@ class Quad(Record):
     """A quad defined by its four corners.
 
     Usage:
-        ```
+        ```python
         Quad(bl: Vec2, tl: Vec2, tr: Vec2, br: Vec2)
         ```
     """
@@ -160,7 +160,7 @@ class Rect(Record):
     """A rectangle defined by its top, right, bottom, and left edges.
 
     Usage:
-        ```
+        ```python
         Rect(t: float, r: float, b: float, l: float)
         ```
     """
@@ -223,7 +223,7 @@ class Rect(Record):
         return Vec2((self.l + self.r) / 2, (self.t + self.b) / 2)
 
     def as_quad(self) -> Quad:
-        """Convert the rectangle to a quad."""
+        """Convert the rectangle to a [`Quad`][sonolus.script.quad.Quad]."""
         return Quad(
             bl=self.bl,
             tl=self.tl,
