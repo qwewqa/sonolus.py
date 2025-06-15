@@ -54,7 +54,9 @@ resources/
 ```
 
 ## Modes
-Modes are defined using the `PlayMode`, `WatchMode`, `PreviewMode`, and `TutorialMode` classes:
+Modes are defined using the `PlayMode`, `WatchMode`, `PreviewMode`, and `TutorialMode` classes.
+
+### Play Mode
 
 ```python
 from sonolus.script.engine import PlayMode
@@ -78,6 +80,14 @@ play_mode = PlayMode(
 
 ```
 
+Play mode archetypes subclass `PlayArchetype` and should implement the `should_spawn` callback. They may also implement 
+the `preprocess`, `spawn_order`, `initialize`, `update_sequential`, `update_parallel`, `touch`, and 
+`terminate` callbacks.
+
+Archetypes for scored notes should have the `is_scored` class variable set to `True`.
+
+### Watch Mode
+
 ```python
 from sonolus.script.engine import WatchMode
 
@@ -100,6 +110,16 @@ watch_mode = WatchMode(
 )
 ```
 
+Watch mode archetypes subclass `WatchArchetype` and should implement the `spawn_time` and `despawn_time` callbacks. 
+They may also implement the `preprocess`, `initialize`, `update_sequential`, `update_parallel`, and 
+`terminate` callbacks.
+
+Watch mode also has the `update_spawn` global callback, which is invoked every frame and should return the reference
+time to compare against spawn and despawn times of archetypes. Typically, this can be either the current time or the
+current scaled time.
+
+### Preview Mode
+
 ```python
 from sonolus.script.engine import PreviewMode
 
@@ -114,6 +134,10 @@ preview_mode = PreviewMode(
     skin=Skin,
 )
 ```
+
+Preview mode archetypes subclass `PreviewArchetype` and may implement the `preprocess` and `render` callbacks.
+
+### Tutorial Mode
 
 ```python
 from sonolus.script.engine import TutorialMode
@@ -137,6 +161,14 @@ tutorial_mode = TutorialMode(
     update=update,
 )
 ```
+
+Tutorial mode does not have archetypes, but it has `preprocess`, `navigate`, and `update` global callbacks.
+
+`preprocess` is invoked once before the tutorial starts.
+
+`navigate` is invoked when the player navigates forward or backward in the tutorial.
+
+`update` is invoked every frame and should handle most of the drawing logic.
 
 ## Levels
 Levels are defined using the `Level` class:
