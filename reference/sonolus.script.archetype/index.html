@@ -484,11 +484,11 @@
   
   
     <li class="md-nav__item">
-      <a href="../../concepts/resources/" class="md-nav__link">
+      <a href="../../concepts/project/" class="md-nav__link">
         
   
   <span class="md-ellipsis">
-    Resources &amp; Declarations
+    Project
   </span>
   
 
@@ -505,11 +505,11 @@
   
   
     <li class="md-nav__item">
-      <a href="../../concepts/project/" class="md-nav__link">
+      <a href="../../concepts/resources/" class="md-nav__link">
         
   
   <span class="md-ellipsis">
-    Project
+    Resources &amp; Declarations
   </span>
   
 
@@ -3145,9 +3145,9 @@
 
 <details class="usage" open>
   <summary>Usage</summary>
-  <div class="highlight"><pre><span></span><code>class MyArchetype(PlayArchetype):
-    ref_1: EntityRef[OtherArchetype] = imported()
-    ref_2: EntityRef[Any] = imported()
+  <div class="highlight"><pre><span></span><code><span class="k">class</span> <span class="nc">MyArchetype</span><span class="p">(</span><span class="n">PlayArchetype</span><span class="p">):</span>
+    <span class="n">ref_1</span><span class="p">:</span> <span class="n">EntityRef</span><span class="p">[</span><span class="n">OtherArchetype</span><span class="p">]</span> <span class="o">=</span> <span class="n">imported</span><span class="p">()</span>
+    <span class="n">ref_2</span><span class="p">:</span> <span class="n">EntityRef</span><span class="p">[</span><span class="n">Any</span><span class="p">]</span> <span class="o">=</span> <span class="n">imported</span><span class="p">()</span>
 </code></pre></div>
 </details>
 
@@ -3344,19 +3344,19 @@
 
 <details class="usage" open>
   <summary>Usage</summary>
-  <div class="highlight"><pre><span></span><code>class MyArchetype(PlayArchetype):
-    # Set to True if the entity is a note and contributes to combo and score
-    # Default is False
-    is_scored: bool = True
+  <div class="highlight"><pre><span></span><code><span class="k">class</span> <span class="nc">MyArchetype</span><span class="p">(</span><span class="n">PlayArchetype</span><span class="p">):</span>
+    <span class="c1"># Set to True if the entity is a note and contributes to combo and score</span>
+    <span class="c1"># Default is False</span>
+    <span class="n">is_scored</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">True</span>
 
-    imported_field: int = imported()
-    exported_field: int = exported()
-    entity_memory_field: int = entity_memory()
-    shared_memory_field: int = shared_memory()
+    <span class="n">imported_field</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="n">imported</span><span class="p">()</span>
+    <span class="n">exported_field</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="n">exported</span><span class="p">()</span>
+    <span class="n">entity_memory_field</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="n">entity_memory</span><span class="p">()</span>
+    <span class="n">shared_memory_field</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="n">shared_memory</span><span class="p">()</span>
 
-    @callback(order=1)
-    def preprocess(self):
-        ...
+    <span class="nd">@callback</span><span class="p">(</span><span class="n">order</span><span class="o">=</span><span class="mi">1</span><span class="p">)</span>
+    <span class="k">def</span> <span class="nf">preprocess</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="o">...</span>
 </code></pre></div>
 </details>
 
@@ -3663,11 +3663,11 @@
 
 <details class="usage" open>
   <summary>Usage</summary>
-  <div class="highlight"><pre><span></span><code>class MyArchetype(PlayArchetype):
-    field: int = entity_memory()
+  <div class="highlight"><pre><span></span><code><span class="k">class</span> <span class="nc">MyArchetype</span><span class="p">(</span><span class="n">PlayArchetype</span><span class="p">):</span>
+    <span class="n">field</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="n">entity_memory</span><span class="p">()</span>
 
-def f():
-    MyArchetype.spawn(field=123)
+<span class="k">def</span> <span class="nf">f</span><span class="p">():</span>
+    <span class="n">MyArchetype</span><span class="o">.</span><span class="n">spawn</span><span class="p">(</span><span class="n">field</span><span class="o">=</span><span class="mi">123</span><span class="p">)</span>
 </code></pre></div>
 </details>
 
@@ -3827,14 +3827,14 @@ Other logic should be placed in <code class="highlight"><span class="n">update_p
 
 <details class="usage" open>
   <summary>Usage</summary>
-  <div class="highlight"><pre><span></span><code>class MyArchetype(PreviewArchetype):
-    imported_field: int = imported()
-    entity_memory_field: int = entity_memory()
-    shared_memory_field: int = shared_memory()
+  <div class="highlight"><pre><span></span><code><span class="k">class</span> <span class="nc">MyArchetype</span><span class="p">(</span><span class="n">PreviewArchetype</span><span class="p">):</span>
+    <span class="n">imported_field</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="n">imported</span><span class="p">()</span>
+    <span class="n">entity_memory_field</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="n">entity_memory</span><span class="p">()</span>
+    <span class="n">shared_memory_field</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="n">shared_memory</span><span class="p">()</span>
 
-    @callback(order=1)
-    def preprocess(self):
-        ...
+    <span class="nd">@callback</span><span class="p">(</span><span class="n">order</span><span class="o">=</span><span class="mi">1</span><span class="p">)</span>
+    <span class="k">def</span> <span class="nf">preprocess</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="o">...</span>
 </code></pre></div>
 </details>
 
@@ -3973,11 +3973,11 @@ Other logic should be placed in <code class="highlight"><span class="n">update_p
 
 <details class="usage" open>
   <summary>Usage</summary>
-  <div class="highlight"><pre><span></span><code>class MyArchetype(PlayArchetype):
-    field: int = entity_memory()
+  <div class="highlight"><pre><span></span><code><span class="k">class</span> <span class="nc">MyArchetype</span><span class="p">(</span><span class="n">PlayArchetype</span><span class="p">):</span>
+    <span class="n">field</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="n">entity_memory</span><span class="p">()</span>
 
-def f():
-    MyArchetype.spawn(field=123)
+<span class="k">def</span> <span class="nf">f</span><span class="p">():</span>
+    <span class="n">MyArchetype</span><span class="o">.</span><span class="n">spawn</span><span class="p">(</span><span class="n">field</span><span class="o">=</span><span class="mi">123</span><span class="p">)</span>
 </code></pre></div>
 </details>
 
@@ -4130,8 +4130,8 @@ def f():
 
 <details class="usage" open>
   <summary>Usage</summary>
-  <div class="highlight"><pre><span></span><code>class MyArchetype(WatchArchetype):
-    judgment: StandardImport.JUDGMENT
+  <div class="highlight"><pre><span></span><code><span class="k">class</span> <span class="nc">MyArchetype</span><span class="p">(</span><span class="n">WatchArchetype</span><span class="p">):</span>
+    <span class="n">judgment</span><span class="p">:</span> <span class="n">StandardImport</span><span class="o">.</span><span class="n">JUDGMENT</span>
 </code></pre></div>
 </details>
 
@@ -4293,14 +4293,14 @@ def f():
 
 <details class="usage" open>
   <summary>Usage</summary>
-  <div class="highlight"><pre><span></span><code>class MyArchetype(WatchArchetype):
-    imported_field: int = imported()
-    entity_memory_field: int = entity_memory()
-    shared_memory_field: int = shared_memory()
+  <div class="highlight"><pre><span></span><code><span class="k">class</span> <span class="nc">MyArchetype</span><span class="p">(</span><span class="n">WatchArchetype</span><span class="p">):</span>
+    <span class="n">imported_field</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="n">imported</span><span class="p">()</span>
+    <span class="n">entity_memory_field</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="n">entity_memory</span><span class="p">()</span>
+    <span class="n">shared_memory_field</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="n">shared_memory</span><span class="p">()</span>
 
-    @callback(order=1)
-    def update_sequential(self):
-        ...
+    <span class="nd">@callback</span><span class="p">(</span><span class="n">order</span><span class="o">=</span><span class="mi">1</span><span class="p">)</span>
+    <span class="k">def</span> <span class="nf">update_sequential</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="o">...</span>
 </code></pre></div>
 </details>
 
@@ -4520,11 +4520,11 @@ def f():
 
 <details class="usage" open>
   <summary>Usage</summary>
-  <div class="highlight"><pre><span></span><code>class MyArchetype(PlayArchetype):
-    field: int = entity_memory()
+  <div class="highlight"><pre><span></span><code><span class="k">class</span> <span class="nc">MyArchetype</span><span class="p">(</span><span class="n">PlayArchetype</span><span class="p">):</span>
+    <span class="n">field</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="n">entity_memory</span><span class="p">()</span>
 
-def f():
-    MyArchetype.spawn(field=123)
+<span class="k">def</span> <span class="nf">f</span><span class="p">():</span>
+    <span class="n">MyArchetype</span><span class="o">.</span><span class="n">spawn</span><span class="p">(</span><span class="n">field</span><span class="o">=</span><span class="mi">123</span><span class="p">)</span>
 </code></pre></div>
 </details>
 
@@ -4680,10 +4680,10 @@ Other logic should be placed in <code class="highlight"><span class="n">update_p
 
 <details class="usage" open>
   <summary>Usage</summary>
-  <div class="highlight"><pre><span></span><code>class MyArchetype(PlayArchetype):
-    @callback(order=1)
-    def update_sequential(self):
-        pass
+  <div class="highlight"><pre><span></span><code><span class="k">class</span> <span class="nc">MyArchetype</span><span class="p">(</span><span class="n">PlayArchetype</span><span class="p">):</span>
+    <span class="nd">@callback</span><span class="p">(</span><span class="n">order</span><span class="o">=</span><span class="mi">1</span><span class="p">)</span>
+    <span class="k">def</span> <span class="nf">update_sequential</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="k">pass</span>
 </code></pre></div>
 </details>
 
@@ -4735,13 +4735,13 @@ Other logic should be placed in <code class="highlight"><span class="n">update_p
         <p>Declare a field as entity data.</p>
 <p>Entity data is accessible from other entities, but may only be updated in the <code class="highlight"><span class="n">preprocess</span></code> callback
 and is read-only in other callbacks.</p>
-<p>It functions like <code class="highlight"><span class="n">imported</span></code>, except that it is not loaded from the level data.</p>
+<p>It functions like <code class="highlight"><span class="n">imported</span></code> and shares the same underlying storage, except that it is not loaded from a level.</p>
 
 
 <details class="usage" open>
   <summary>Usage</summary>
-  <div class="highlight"><pre><span></span><code>class MyArchetype(PlayArchetype):
-    field: int = entity_data()
+  <div class="highlight"><pre><span></span><code><span class="k">class</span> <span class="nc">MyArchetype</span><span class="p">(</span><span class="n">PlayArchetype</span><span class="p">):</span>
+    <span class="n">field</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="n">entity_data</span><span class="p">()</span>
 </code></pre></div>
 </details>
     </div>
@@ -4778,14 +4778,15 @@ and is read-only in other callbacks.</p>
     <div class="doc doc-contents ">
 
         <p>Declare a field as entity memory.</p>
-<p>Entity memory is private to the entity and is not accessible from other entities.</p>
+<p>Entity memory is private to the entity and is not accessible from other entities. It may be read or updated in any
+callback associated with the entity.</p>
 <p>Entity memory fields may also be set when an entity is spawned using the <code class="highlight"><span class="n">spawn</span><span class="p">()</span></code> method.</p>
 
 
 <details class="usage" open>
   <summary>Usage</summary>
-  <div class="highlight"><pre><span></span><code>class MyArchetype(PlayArchetype):
-    field: int = entity_memory()
+  <div class="highlight"><pre><span></span><code><span class="k">class</span> <span class="nc">MyArchetype</span><span class="p">(</span><span class="n">PlayArchetype</span><span class="p">):</span>
+    <span class="n">field</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="n">entity_memory</span><span class="p">()</span>
 </code></pre></div>
 </details>
     </div>
@@ -4810,9 +4811,9 @@ and is read-only in other callbacks.</p>
 
 <details class="usage" open>
   <summary>Usage</summary>
-  <div class="highlight"><pre><span></span><code>class MyArchetype(PlayArchetype):
-    field: int = exported()
-    field_with_explicit_name: int = exported(name=&quot;#FIELD&quot;)
+  <div class="highlight"><pre><span></span><code><span class="k">class</span> <span class="nc">MyArchetype</span><span class="p">(</span><span class="n">PlayArchetype</span><span class="p">):</span>
+    <span class="n">field</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="n">exported</span><span class="p">()</span>
+    <span class="n">field_with_explicit_name</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="n">exported</span><span class="p">(</span><span class="n">name</span><span class="o">=</span><span class="s2">&quot;#FIELD&quot;</span><span class="p">)</span>
 </code></pre></div>
 </details>
     </div>
@@ -4831,16 +4832,16 @@ and is read-only in other callbacks.</p>
     <div class="doc doc-contents ">
 
         <p>Declare a field as imported.</p>
-<p>Imported fields may be loaded from the level data.</p>
+<p>Imported fields may be loaded from the level.</p>
 <p>In watch mode, data may also be loaded from a corresponding exported field in play mode.</p>
 <p>Imported fields may only be updated in the <code class="highlight"><span class="n">preprocess</span></code> callback, and are read-only in other callbacks.</p>
 
 
 <details class="usage" open>
   <summary>Usage</summary>
-  <div class="highlight"><pre><span></span><code>class MyArchetype(PlayArchetype):
-    field: int = imported()
-    field_with_explicit_name: int = imported(name=&quot;field_name&quot;)
+  <div class="highlight"><pre><span></span><code><span class="k">class</span> <span class="nc">MyArchetype</span><span class="p">(</span><span class="n">PlayArchetype</span><span class="p">):</span>
+    <span class="n">field</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="n">imported</span><span class="p">()</span>
+    <span class="n">field_with_explicit_name</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="n">imported</span><span class="p">(</span><span class="n">name</span><span class="o">=</span><span class="s2">&quot;field_name&quot;</span><span class="p">)</span>
 </code></pre></div>
 </details>
     </div>
@@ -4860,13 +4861,14 @@ and is read-only in other callbacks.</p>
 
         <p>Declare a field as shared memory.</p>
 <p>Shared memory is accessible from other entities.</p>
-<p>Shared memory may only be updated by sequential callbacks such as <code class="highlight"><span class="n">preprocess</span></code>, <code class="highlight"><span class="n">update_sequential</span></code>, and <code class="highlight"><span class="n">touch</span></code>.</p>
+<p>Shared memory may be read in any callback, but may only be updated by sequential callbacks
+(<code class="highlight"><span class="n">preprocess</span></code>, <code class="highlight"><span class="n">update_sequential</span></code>, and <code class="highlight"><span class="n">touch</span></code>).</p>
 
 
 <details class="usage" open>
   <summary>Usage</summary>
-  <div class="highlight"><pre><span></span><code>class MyArchetype(PlayArchetype):
-    field: int = shared_memory()
+  <div class="highlight"><pre><span></span><code><span class="k">class</span> <span class="nc">MyArchetype</span><span class="p">(</span><span class="n">PlayArchetype</span><span class="p">):</span>
+    <span class="n">field</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="n">shared_memory</span><span class="p">()</span>
 </code></pre></div>
 </details>
     </div>
