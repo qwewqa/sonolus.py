@@ -5,7 +5,7 @@ from hypothesis import strategies as st
 from sonolus.script.debug import debug_log
 from sonolus.script.internal.error import CompilationError
 from sonolus.script.record import Record
-from tests.script.conftest import validate_dual_run
+from tests.script.conftest import run_and_validate
 
 
 class NothingImplemented(Record):
@@ -188,7 +188,7 @@ def test_bin_op(left, right):
         return left + right
 
     try:
-        validate_dual_run(fn)
+        run_and_validate(fn)
     except TypeError as e:
         assert "unsupported operand type(s)" in str(e)  # noqa: PT017
 
@@ -204,7 +204,7 @@ def test_iop(left, right):
         x += y
 
     try:
-        validate_dual_run(fn)
+        run_and_validate(fn)
     except TypeError as e:
         assert "unsupported operand type(s)" in str(e)
 
@@ -217,7 +217,7 @@ def test_eq_op(left, right):
     def fn():
         return left == right
 
-    validate_dual_run(fn)
+    run_and_validate(fn)
 
 
 @given(
@@ -229,7 +229,7 @@ def test_comp_op(left, right):
         return left < right
 
     try:
-        validate_dual_run(fn)
+        run_and_validate(fn)
     except TypeError as e:
         assert "not supported between instances" in str(e)
 
@@ -239,7 +239,7 @@ def test_call_op():
         x = HasCall()
         return x()
 
-    validate_dual_run(fn)
+    run_and_validate(fn)
 
 
 def test_unsupported_call():
@@ -248,7 +248,7 @@ def test_unsupported_call():
         return x()
 
     try:
-        validate_dual_run(fn)
+        run_and_validate(fn)
     except TypeError as e:
         assert "not callable" in str(e)
 
@@ -259,6 +259,6 @@ def test_unsupported_unary():
         return -x  # type: ignore
 
     try:
-        validate_dual_run(fn)
+        run_and_validate(fn)
     except TypeError as e:
         assert "bad operand type" in str(e)

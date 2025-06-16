@@ -10,8 +10,8 @@ from hypothesis import strategies as st
 from sonolus.script.array import Array
 from sonolus.script.debug import debug_log
 from sonolus.script.internal.error import CompilationError
-from tests.script.conftest import compiled_run
-from tests.script.conftest import validate_dual_run
+from tests.script.conftest import run_compiled
+from tests.script.conftest import run_and_validate
 from tests.script.test_record import Pair
 
 ints = st.integers(min_value=-999999, max_value=999999)
@@ -31,7 +31,7 @@ def test_loop_with_side_effects():
                 y = debug_log(i)
                 debug_log(y)
 
-    validate_dual_run(fn)
+    run_and_validate(fn)
 
 
 def test_nested_loops_with_breaks():
@@ -45,7 +45,7 @@ def test_nested_loops_with_breaks():
                 debug_log(x * i)
             debug_log(-i)
 
-    validate_dual_run(fn)
+    run_and_validate(fn)
 
 
 def test_conditional_assignments():
@@ -65,7 +65,7 @@ def test_conditional_assignments():
                 y = debug_log(i * 4)
             debug_log(y)
 
-    validate_dual_run(fn)
+    run_and_validate(fn)
 
 
 def test_loop_with_continue():
@@ -79,7 +79,7 @@ def test_loop_with_continue():
                 y = debug_log(i * 2)
                 debug_log(y)
 
-    validate_dual_run(fn)
+    run_and_validate(fn)
 
 
 def test_nested_conditionals():
@@ -95,7 +95,7 @@ def test_nested_conditionals():
                 debug_log(x)
             debug_log(-i)
 
-    validate_dual_run(fn)
+    run_and_validate(fn)
 
 
 def test_variable_reassignment():
@@ -108,7 +108,7 @@ def test_variable_reassignment():
                 x = debug_log(x * 2)  # Reassign again
             debug_log(x)
 
-    validate_dual_run(fn)
+    run_and_validate(fn)
 
 
 def test_early_returns():
@@ -123,7 +123,7 @@ def test_early_returns():
                 y = debug_log(i * 2)
                 debug_log(y)
 
-    validate_dual_run(fn)
+    run_and_validate(fn)
 
 
 def test_loop_variable_dependencies():
@@ -138,7 +138,7 @@ def test_loop_variable_dependencies():
             prev = debug_log(temp)
             debug_log(i)
 
-    validate_dual_run(fn)
+    run_and_validate(fn)
 
 
 def test_pair_mutations_in_loop():
@@ -158,7 +158,7 @@ def test_pair_mutations_in_loop():
             debug_log(p.first + p.second)
         return p
 
-    validate_dual_run(fn)
+    run_and_validate(fn)
 
 
 def test_pair_copy_from_operator():
@@ -177,7 +177,7 @@ def test_pair_copy_from_operator():
                 debug_log(p.first)
         return p
 
-    validate_dual_run(fn)
+    run_and_validate(fn)
 
 
 def test_pair_conditional_mutations():
@@ -198,7 +198,7 @@ def test_pair_conditional_mutations():
             debug_log(p.second)
         return p
 
-    validate_dual_run(fn)
+    run_and_validate(fn)
 
 
 def test_pair_nested_mutations():
@@ -221,7 +221,7 @@ def test_pair_nested_mutations():
             debug_log(p1.first + p2.second)
         return p1
 
-    validate_dual_run(fn)
+    run_and_validate(fn)
 
 
 def test_pair_early_return_with_mutations():
@@ -239,7 +239,7 @@ def test_pair_early_return_with_mutations():
                 debug_log(p.first)
         return p
 
-    validate_dual_run(fn)
+    run_and_validate(fn)
 
 
 def test_random_multi_use():
@@ -254,7 +254,7 @@ def test_random_multi_use():
         return c == 0
 
     for _ in range(100):
-        validate_dual_run(fn)
+        run_and_validate(fn)
 
 
 def test_switch_with_integer_cases():
@@ -272,7 +272,7 @@ def test_switch_with_integer_cases():
                     debug_log(33)
             debug_log(i)
 
-    validate_dual_run(fn)
+    run_and_validate(fn)
 
 
 def test_switch_with_integer_cases_and_default():
@@ -292,7 +292,7 @@ def test_switch_with_integer_cases_and_default():
                     debug_log(-1)
             debug_log(i)
 
-    validate_dual_run(fn)
+    run_and_validate(fn)
 
 
 def test_switch_with_offset_integer_cases():
@@ -310,7 +310,7 @@ def test_switch_with_offset_integer_cases():
                     debug_log(33)
             debug_log(i)
 
-    validate_dual_run(fn)
+    run_and_validate(fn)
 
 
 def test_switch_with_offset_integer_cases_and_default():
@@ -330,7 +330,7 @@ def test_switch_with_offset_integer_cases_and_default():
                     debug_log(-1)
             debug_log(i)
 
-    validate_dual_run(fn)
+    run_and_validate(fn)
 
 
 def test_switch_with_integer_cases_and_stride():
@@ -346,7 +346,7 @@ def test_switch_with_integer_cases_and_stride():
                     debug_log(22)
             debug_log(i)
 
-    validate_dual_run(fn)
+    run_and_validate(fn)
 
 
 def test_switch_with_integer_cases_and_stride_and_default():
@@ -364,7 +364,7 @@ def test_switch_with_integer_cases_and_stride_and_default():
                     debug_log(-1)
             debug_log(i)
 
-    validate_dual_run(fn)
+    run_and_validate(fn)
 
 
 def test_switch_with_integer_cases_and_stride_and_offset():
@@ -380,7 +380,7 @@ def test_switch_with_integer_cases_and_stride_and_offset():
                     debug_log(22)
             debug_log(i)
 
-    validate_dual_run(fn)
+    run_and_validate(fn)
 
 
 def test_switch_with_integer_cases_and_stride_and_offset_and_default():
@@ -398,7 +398,7 @@ def test_switch_with_integer_cases_and_stride_and_offset_and_default():
                     debug_log(-1)
             debug_log(i)
 
-    validate_dual_run(fn)
+    run_and_validate(fn)
 
 
 def test_switch_with_integer_cases_and_variable_stride():
@@ -414,7 +414,7 @@ def test_switch_with_integer_cases_and_variable_stride():
                     debug_log(22)
             debug_log(i)
 
-    validate_dual_run(fn)
+    run_and_validate(fn)
 
 
 def test_switch_with_integer_cases_and_variable_stride_and_default():
@@ -432,7 +432,7 @@ def test_switch_with_integer_cases_and_variable_stride_and_default():
                     debug_log(-1)
             debug_log(i)
 
-    validate_dual_run(fn)
+    run_and_validate(fn)
 
 
 def test_switch_with_integer_cases_and_variable_stride_and_offset():
@@ -448,7 +448,7 @@ def test_switch_with_integer_cases_and_variable_stride_and_offset():
                     debug_log(22)
             debug_log(i)
 
-    validate_dual_run(fn)
+    run_and_validate(fn)
 
 
 def test_switch_with_integer_cases_and_variable_stride_and_offset_and_default():
@@ -466,7 +466,7 @@ def test_switch_with_integer_cases_and_variable_stride_and_offset_and_default():
                     debug_log(-1)
             debug_log(i)
 
-    validate_dual_run(fn)
+    run_and_validate(fn)
 
 
 def test_switch_with_float_cases():
@@ -484,7 +484,7 @@ def test_switch_with_float_cases():
                     debug_log(33)
             debug_log(i)
 
-    validate_dual_run(fn)
+    run_and_validate(fn)
 
 
 def test_switch_with_float_cases_and_default():
@@ -504,7 +504,7 @@ def test_switch_with_float_cases_and_default():
                     debug_log(-1)
             debug_log(i)
 
-    validate_dual_run(fn)
+    run_and_validate(fn)
 
 
 def test_switch_with_out_of_order_integer_cases():
@@ -522,7 +522,7 @@ def test_switch_with_out_of_order_integer_cases():
                     debug_log(33)
             debug_log(i)
 
-    validate_dual_run(fn)
+    run_and_validate(fn)
 
 
 def test_switch_with_out_of_order_integer_cases_and_default():
@@ -542,7 +542,7 @@ def test_switch_with_out_of_order_integer_cases_and_default():
                     debug_log(-1)
             debug_log(i)
 
-    validate_dual_run(fn)
+    run_and_validate(fn)
 
 
 def test_switch_with_out_of_order_float_cases():
@@ -560,7 +560,7 @@ def test_switch_with_out_of_order_float_cases():
                     debug_log(33)
             debug_log(i)
 
-    validate_dual_run(fn)
+    run_and_validate(fn)
 
 
 def test_switch_with_out_of_order_float_cases_and_default():
@@ -580,7 +580,7 @@ def test_switch_with_out_of_order_float_cases_and_default():
                     debug_log(-1)
             debug_log(i)
 
-    validate_dual_run(fn)
+    run_and_validate(fn)
 
 
 def test_while_else_taken():
@@ -591,7 +591,7 @@ def test_while_else_taken():
             i += 1
         debug_log(-1)
 
-    validate_dual_run(fn)
+    run_and_validate(fn)
 
 
 def test_while_else_not_taken():
@@ -605,7 +605,7 @@ def test_while_else_not_taken():
         else:
             debug_log(-1)
 
-    validate_dual_run(fn)
+    run_and_validate(fn)
 
 
 def test_for_else_taken():
@@ -614,7 +614,7 @@ def test_for_else_taken():
             debug_log(i)
         debug_log(-1)
 
-    validate_dual_run(fn)
+    run_and_validate(fn)
 
 
 def test_for_else_not_taken():
@@ -626,7 +626,7 @@ def test_for_else_not_taken():
         else:
             debug_log(-1)
 
-    validate_dual_run(fn)
+    run_and_validate(fn)
 
 
 def black_box():
@@ -654,7 +654,7 @@ def test_error_if_conflicting_definitions():
         debug_log(x.first)
 
     with pytest.raises(CompilationError, match="conflicting definitions"):
-        compiled_run(fn)
+        run_compiled(fn)
 
 
 def test_error_while_conflicting_definitions():
@@ -666,7 +666,7 @@ def test_error_while_conflicting_definitions():
         return 1
 
     with pytest.raises(CompilationError, match="conflicting definitions"):
-        compiled_run(fn)
+        run_compiled(fn)
 
 
 def test_error_for_conflicting_definitions():
@@ -678,7 +678,7 @@ def test_error_for_conflicting_definitions():
         return 1
 
     with pytest.raises(CompilationError, match="conflicting definitions"):
-        compiled_run(fn)
+        run_compiled(fn)
 
 
 def test_walrus_operator():
@@ -688,7 +688,7 @@ def test_walrus_operator():
             debug_log(y)
             x += 1
 
-    validate_dual_run(fn)
+    run_and_validate(fn)
 
 
 def test_match_singletons():
@@ -702,7 +702,7 @@ def test_match_singletons():
     def fn():
         return Array(m(None), m(0))
 
-    assert validate_dual_run(fn) == Array(0, 1)
+    assert run_and_validate(fn) == Array(0, 1)
 
 
 def test_match_true_not_supported():
@@ -718,7 +718,7 @@ def test_match_true_not_supported():
         return 1
 
     with pytest.raises(CompilationError, match="not supported"):
-        compiled_run(fn)
+        run_compiled(fn)
 
 
 def test_match_false_not_supported():
@@ -734,7 +734,7 @@ def test_match_false_not_supported():
         return 1
 
     with pytest.raises(CompilationError, match="not supported"):
-        compiled_run(fn)
+        run_compiled(fn)
 
 
 def test_match_int_not_supported():
@@ -748,7 +748,7 @@ def test_match_int_not_supported():
         return 1
 
     with pytest.raises(CompilationError, match="not supported"):
-        compiled_run(fn)
+        run_compiled(fn)
 
 
 @given(small_ints, small_ints, small_ints)
@@ -764,7 +764,7 @@ def test_and(x, y, z):
         h = black_box_log(x) and black_box_log(y) and black_box_log(z)
         return Array(a, b, c, d, e, f, g, h)
 
-    assert validate_dual_run(fn) == Array(*(x and y and z for _ in range(8)))
+    assert run_and_validate(fn) == Array(*(x and y and z for _ in range(8)))
 
 
 @given(small_ints, small_ints, small_ints)
@@ -780,7 +780,7 @@ def test_or(x, y, z):
         h = black_box_log(x) or black_box_log(y) or black_box_log(z)
         return Array(a, b, c, d, e, f, g, h)
 
-    assert validate_dual_run(fn) == Array(*(x or y or z for _ in range(8)))
+    assert run_and_validate(fn) == Array(*(x or y or z for _ in range(8)))
 
 
 @given(small_ints, small_ints, small_ints)
@@ -796,7 +796,7 @@ def test_and_or(x, y, z):
         h = black_box_log(x) and black_box_log(y) or black_box_log(z)
         return Array(a, b, c, d, e, f, g, h)
 
-    assert validate_dual_run(fn) == Array(*(x and y or z for _ in range(8)))
+    assert run_and_validate(fn) == Array(*(x and y or z for _ in range(8)))
 
 
 @given(small_ints, small_ints, small_ints)
@@ -812,7 +812,7 @@ def test_or_and(x, y, z):
         h = black_box_log(x) or black_box_log(y) and black_box_log(z)
         return Array(a, b, c, d, e, f, g, h)
 
-    assert validate_dual_run(fn) == Array(*(x or y and z for _ in range(8)))
+    assert run_and_validate(fn) == Array(*(x or y and z for _ in range(8)))
 
 
 @given(small_ints, small_ints, small_ints)
@@ -828,7 +828,7 @@ def test_chained_comparison(x, y, z):
         h = black_box_log(x) < black_box_log(y) < black_box_log(z)
         return Array(a, b, c, d, e, f, g, h)
 
-    assert validate_dual_run(fn) == Array(*(x < y < z for _ in range(8)))
+    assert run_and_validate(fn) == Array(*(x < y < z for _ in range(8)))
 
 
 def test_while_true():
@@ -841,7 +841,7 @@ def test_while_true():
             debug_log(3)
         debug_log(4)
 
-    validate_dual_run(fn)
+    run_and_validate(fn)
 
 
 def test_while_false():
@@ -853,7 +853,7 @@ def test_while_false():
             debug_log(3)
         debug_log(4)
 
-    validate_dual_run(fn)
+    run_and_validate(fn)
 
 
 def test_for_empty():
@@ -865,7 +865,7 @@ def test_for_empty():
             debug_log(3)
         debug_log(4)
 
-    validate_dual_run(fn)
+    run_and_validate(fn)
 
 
 def test_loop_with_aug_assign():
@@ -878,7 +878,7 @@ def test_loop_with_aug_assign():
             a += 1
 
     for _ in range(100):
-        validate_dual_run(fn)
+        run_and_validate(fn)
 
 
 def test_break_in_nested_for_else():
@@ -894,4 +894,4 @@ def test_break_in_nested_for_else():
             debug_log(4)
         debug_log(5)
 
-    validate_dual_run(fn)
+    run_and_validate(fn)

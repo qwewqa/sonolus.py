@@ -65,7 +65,8 @@ class Allocate(CompilerPass):
     def run(self, entry: BasicBlock):
         mapping = self.get_mapping(entry)
         for block in traverse_cfg_preorder(entry):
-            block.statements = [self.update_stmt(statement, mapping) for statement in block.statements]
+            updated_statements = [self.update_stmt(statement, mapping) for statement in block.statements]
+            block.statements = [stmt for stmt in updated_statements if stmt is not None]
             block.test = self.update_stmt(block.test, mapping)
         return entry
 
@@ -80,7 +81,19 @@ class Allocate(CompilerPass):
             case IRGet(place=place):
                 return IRGet(place=self.update_stmt(place, mapping))
             case IRSet(place=place, value=value):
-                return IRSet(place=self.update_stmt(place, mapping), value=self.update_stmt(value, mapping))
+                # Do some dead code elimination here which is pretty much free since we already have liveness analysis,
+                # and prevents an error from the dead block place being missing from the mapping.
+                live = get_live(stmt)
+                is_live = not (
+                    (isinstance(place, BlockPlace) and isinstance(place.block, TempBlock) and place.block not in live)
+                    or (isinstance(value, IRGet) and place == value.place)
+                )
+                if is_live:
+                    return IRSet(place=self.update_stmt(place, mapping), value=self.update_stmt(value, mapping))
+                elif isinstance(value, IRInstr) and value.op.side_effects:
+                    return value
+                else:
+                    return None
             case BlockPlace(block=block, index=index, offset=offset):
                 if isinstance(block, TempBlock):
                     if block.size == 0:

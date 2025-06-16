@@ -3,7 +3,7 @@ from hypothesis import strategies as st
 
 from sonolus.script.array import Array
 from sonolus.script.containers import VarArray
-from tests.script.conftest import validate_dual_run
+from tests.script.conftest import run_and_validate
 
 ints = st.integers(min_value=-10, max_value=10)
 
@@ -14,7 +14,7 @@ def test_tuple_destructure():
         (a, b), (c, d), e = t
         return Array(a, b, c, d, e)
 
-    assert validate_dual_run(fn) == Array(1, 2, 3, 4, 5)
+    assert run_and_validate(fn) == Array(1, 2, 3, 4, 5)
 
 
 def test_tuple_addition():
@@ -24,7 +24,7 @@ def test_tuple_addition():
         (a, b), (c, d) = t1, t2
         return Array(a, b, c, d)
 
-    assert validate_dual_run(fn) == Array(1, 2, 3, 4)
+    assert run_and_validate(fn) == Array(1, 2, 3, 4)
 
 
 @given(
@@ -38,7 +38,7 @@ def test_tuple_comparison(t1_list, t2_list):
     def fn():
         return Array(t1 == t2, t1 != t2, t1 < t2, t1 <= t2, t1 > t2, t1 >= t2)
 
-    assert validate_dual_run(fn) == Array(t1 == t2, t1 != t2, t1 < t2, t1 <= t2, t1 > t2, t1 >= t2)
+    assert run_and_validate(fn) == Array(t1 == t2, t1 != t2, t1 < t2, t1 <= t2, t1 > t2, t1 >= t2)
 
 
 @given(
@@ -53,7 +53,7 @@ def test_tuple_iteration(t_list):
             results.append(v)
         return results
 
-    assert list(validate_dual_run(fn)) == list(t)
+    assert list(run_and_validate(fn)) == list(t)
 
 
 def test_heterogeneous_tuple_iteration():
@@ -67,4 +67,4 @@ def test_heterogeneous_tuple_iteration():
                 results.append(v)
         return results
 
-    assert list(validate_dual_run(fn)) == [1, 2, 3, 4, 5]
+    assert list(run_and_validate(fn)) == [1, 2, 3, 4, 5]

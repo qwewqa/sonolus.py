@@ -7,7 +7,7 @@ from sonolus.script.containers import VarArray
 from sonolus.script.debug import debug_log
 from sonolus.script.num import Num
 from sonolus.script.record import Record
-from tests.script.conftest import validate_dual_run
+from tests.script.conftest import run_and_validate
 from tests.script.test_record import Pair
 
 
@@ -73,7 +73,7 @@ def test_match_pair_and_num_checking():
         m(c)
         m(d)
 
-    validate_dual_run(fn)
+    run_and_validate(fn)
 
 
 def test_match_shapes_and_collections_patterns():
@@ -120,7 +120,7 @@ def test_match_shapes_and_collections_patterns():
         m(tpl)
         m(text)
 
-    validate_dual_run(fn)
+    run_and_validate(fn)
 
 
 def test_match_nested_conditions():
@@ -157,7 +157,7 @@ def test_match_nested_conditions():
         m(n)
         m(s)
 
-    validate_dual_run(fn)
+    run_and_validate(fn)
 
 
 def test_match_nesting_tuples():
@@ -210,7 +210,7 @@ def test_match_nesting_tuples():
         m(t6)
         m(t7)
 
-    validate_dual_run(fn)
+    run_and_validate(fn)
 
 
 def test_match_nest_arrays():
@@ -281,7 +281,7 @@ def test_match_nest_arrays():
         m(a10)
         m(a11)
 
-    validate_dual_run(fn)
+    run_and_validate(fn)
 
 
 def test_match_nest_var_arrays():
@@ -366,7 +366,7 @@ def test_match_nest_var_arrays():
         a3.clear()
         m(a3)
 
-    validate_dual_run(fn)
+    run_and_validate(fn)
 
 
 def test_match_nested_shape_records():
@@ -410,7 +410,7 @@ def test_match_nested_shape_records():
         m(num)
         m("test")
 
-    validate_dual_run(fn)
+    run_and_validate(fn)
 
 
 def test_match_enum_patterns():
@@ -437,7 +437,7 @@ def test_match_enum_patterns():
         m(num)
         m(text)
 
-    validate_dual_run(fn)
+    run_and_validate(fn)
 
 
 def test_match_nested_shapes_and_pair():
@@ -483,7 +483,7 @@ def test_match_nested_shapes_and_pair():
         m(p2)
         m(p3)
 
-    validate_dual_run(fn)
+    run_and_validate(fn)
 
 
 def test_match_partial_binding():
@@ -530,4 +530,4 @@ def test_match_partial_binding():
         m(p8)
         m(p9)
 
-    validate_dual_run(fn)
+    run_and_validate(fn)

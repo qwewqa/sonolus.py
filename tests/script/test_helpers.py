@@ -3,10 +3,10 @@ import pytest
 from sonolus.script.debug import terminate
 from sonolus.script.internal.context import ctx
 from sonolus.script.internal.impl import meta_fn
-from tests.script.conftest import validate_dual_run
+from tests.script.conftest import run_and_validate
 
 
-def test_validate_dual_run_error_if_returned_results_differ():
+def test_run_and_validate_error_if_returned_results_differ():
     @meta_fn
     def fn():
         if ctx():
@@ -15,10 +15,10 @@ def test_validate_dual_run_error_if_returned_results_differ():
             return 2
 
     with pytest.raises(AssertionError):
-        validate_dual_run(fn)
+        run_and_validate(fn)
 
 
-def test_validate_dual_run_error_if_only_py_raises():
+def test_run_and_validate_error_if_only_py_raises():
     @meta_fn
     def fn():
         if ctx():
@@ -27,10 +27,10 @@ def test_validate_dual_run_error_if_only_py_raises():
             raise RuntimeError()
 
     with pytest.raises(AssertionError):
-        validate_dual_run(fn)
+        run_and_validate(fn)
 
 
-def test_validate_dual_run_error_if_only_compiled_raises():
+def test_run_and_validate_error_if_only_compiled_raises():
     def terminate_if_compiled():
         if ctx():
             terminate()
@@ -41,22 +41,22 @@ def test_validate_dual_run_error_if_only_compiled_raises():
         return 1
 
     with pytest.raises(AssertionError):
-        validate_dual_run(fn)
+        run_and_validate(fn)
 
 
-def test_validate_dual_run_raises_if_both_error():
+def test_run_and_validate_raises_if_both_error():
     @meta_fn
     def fn():
         terminate()
         return 1
 
     with pytest.raises(RuntimeError, match="Terminated"):
-        validate_dual_run(fn)
+        run_and_validate(fn)
 
 
-def test_validate_dual_run_success_if_both_return_same():
+def test_run_and_validate_success_if_both_return_same():
     @meta_fn
     def fn():
         return 1
 
-    validate_dual_run(fn)
+    run_and_validate(fn)

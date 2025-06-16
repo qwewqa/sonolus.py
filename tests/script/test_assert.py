@@ -4,7 +4,7 @@ PYTEST_DONT_REWRITE
 """
 
 from sonolus.script.debug import assert_false, assert_true
-from tests.script.conftest import compiled_run
+from tests.script.conftest import run_compiled
 
 
 def test_assertion_succeeds():
@@ -12,7 +12,7 @@ def test_assertion_succeeds():
         assert True, "Message"
         return 1
 
-    assert compiled_run(fn) == 1
+    assert run_compiled(fn) == 1
 
 
 def test_assertion_fails():
@@ -21,7 +21,7 @@ def test_assertion_fails():
         # noinspection PyUnreachableCode
         return 1
 
-    assert compiled_run(fn) == 0
+    assert run_compiled(fn) == 0
 
 
 def test_assert_true_succeeds():
@@ -29,7 +29,7 @@ def test_assert_true_succeeds():
         assert_true(True)
         return 1
 
-    assert compiled_run(fn) == 1
+    assert run_compiled(fn) == 1
 
 
 def test_assert_true_fails():
@@ -37,7 +37,7 @@ def test_assert_true_fails():
         assert_true(False)
         return 1
 
-    assert compiled_run(fn) == 0
+    assert run_compiled(fn) == 0
 
 
 def test_assert_false_succeeds():
@@ -45,7 +45,7 @@ def test_assert_false_succeeds():
         assert_false(False)
         return 1
 
-    assert compiled_run(fn) == 1
+    assert run_compiled(fn) == 1
 
 
 def test_assert_false_fails():
@@ -53,4 +53,4 @@ def test_assert_false_fails():
         assert_false(True)
         return 1
 
-    assert compiled_run(fn) == 0
+    assert run_compiled(fn) == 0

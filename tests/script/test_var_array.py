@@ -7,7 +7,7 @@ from hypothesis import strategies as st
 from sonolus.script.array import Array
 from sonolus.script.containers import VarArray
 from sonolus.script.debug import assert_true, debug_log
-from tests.script.conftest import validate_dual_run
+from tests.script.conftest import run_and_validate
 
 ints = st.integers(min_value=-999, max_value=999)
 lists = st.lists(ints, min_size=1, max_size=20)
@@ -85,7 +85,7 @@ def test_var_array_insertion():
             assert_true(len(va) == i + 1)
         return va
 
-    assert list(validate_dual_run(fn)) == [2, 4, 6, 8]
+    assert list(run_and_validate(fn)) == [2, 4, 6, 8]
 
 
 def test_var_array_setitem():
@@ -95,7 +95,7 @@ def test_var_array_setitem():
         va[1] = 10
         return va
 
-    assert list(validate_dual_run(fn)) == [2, 10, 6, 8]
+    assert list(run_and_validate(fn)) == [2, 10, 6, 8]
 
 
 def test_var_array_del():
@@ -105,7 +105,7 @@ def test_var_array_del():
         del va[1]
         return va
 
-    assert list(validate_dual_run(fn)) == [2, 6, 8]
+    assert list(run_and_validate(fn)) == [2, 6, 8]
 
 
 def test_var_array_iadd():
@@ -115,7 +115,7 @@ def test_var_array_iadd():
         va += Array(10, 12)
         return va
 
-    assert list(validate_dual_run(fn)) == [2, 4, 6, 8, 10, 12]
+    assert list(run_and_validate(fn)) == [2, 4, 6, 8, 10, 12]
 
 
 def test_var_array_pop():
@@ -131,7 +131,7 @@ def test_var_array_pop():
         assert_true(va.pop(1) == 4)
         return va
 
-    assert list(validate_dual_run(fn)) == [2, 6]
+    assert list(run_and_validate(fn)) == [2, 6]
 
 
 def test_var_array_insert():
@@ -143,7 +143,7 @@ def test_var_array_insert():
         va.insert(3, 8)
         return va
 
-    assert list(validate_dual_run(fn)) == [2, 4, 6, 8]
+    assert list(run_and_validate(fn)) == [2, 4, 6, 8]
 
 
 def test_var_array_extend():
@@ -152,7 +152,7 @@ def test_var_array_extend():
         va.extend(Array(2, 4, 6, 8))
         return va
 
-    assert list(validate_dual_run(fn)) == [2, 4, 6, 8]
+    assert list(run_and_validate(fn)) == [2, 4, 6, 8]
 
 
 @given(list_and_index())
@@ -174,7 +174,7 @@ def test_var_array_pop_insert_round_trip(args):
         assert_true(len(va) == value_count)
         return va
 
-    assert list(validate_dual_run(fn)) == values_list
+    assert list(run_and_validate(fn)) == values_list
 
 
 @given(list_and_insert_index())
@@ -198,7 +198,7 @@ def test_var_array_insert_pop_round_trip(args):
         assert_true(pop_result == insert_value)
         return va
 
-    assert list(validate_dual_run(fn)) == values_list
+    assert list(run_and_validate(fn)) == values_list
 
 
 @given(list_and_index())
@@ -218,7 +218,7 @@ def test_remove_present_value(args):
         assert_true(va.remove(to_remove))
         return va
 
-    assert list(validate_dual_run(fn)) == expected
+    assert list(run_and_validate(fn)) == expected
 
 
 @given(lists)
@@ -235,7 +235,7 @@ def test_remove_missing_value(values_list):
         assert_true(not va.remove(to_remove))
         return va
 
-    assert list(validate_dual_run(fn)) == expected
+    assert list(run_and_validate(fn)) == expected
 
 
 @given(list_and_index(), st.booleans())
@@ -256,7 +256,7 @@ def test_array_with_possible_uninitialized_access(args, run):
         else:
             return -1
 
-    result = validate_dual_run(fn)
+    result = run_and_validate(fn)
     if run[0]:
         assert result == values_list[index]
     else:
@@ -270,7 +270,7 @@ def test_clear():
         va.clear()
         return va
 
-    assert list(validate_dual_run(fn)) == []
+    assert list(run_and_validate(fn)) == []
 
 
 @given(set_and_present_value())
@@ -287,7 +287,7 @@ def test_set_add_present(args):
         return va
 
     # Use sorted to check that there are no duplicates
-    assert sorted(validate_dual_run(fn)) == sorted(values)
+    assert sorted(run_and_validate(fn)) == sorted(values)
 
 
 @given(set_and_missing_value())
@@ -304,7 +304,7 @@ def test_set_add_missing(args):
         return va
 
     # Use sorted to check that there are no duplicates
-    assert sorted(validate_dual_run(fn)) == sorted([*list(values), missing])
+    assert sorted(run_and_validate(fn)) == sorted([*list(values), missing])
 
 
 def test_set_add_full():
@@ -315,7 +315,7 @@ def test_set_add_full():
         assert_true(not va.set_add(10))
         return va
 
-    assert list(validate_dual_run(fn)) == [2, 4, 6, 8]
+    assert list(run_and_validate(fn)) == [2, 4, 6, 8]
 
 
 @given(set_and_present_value())
@@ -331,7 +331,7 @@ def test_set_remove_present(args):
         assert_true(va.remove(value))
         return va
 
-    assert sorted(validate_dual_run(fn)) == sorted(value_set - {value})
+    assert sorted(run_and_validate(fn)) == sorted(value_set - {value})
 
 
 @given(set_and_missing_value())
@@ -347,7 +347,7 @@ def test_set_remove_missing(args):
         assert_true(not va.remove(missing))
         return va
 
-    assert sorted(validate_dual_run(fn)) == sorted(value_set)
+    assert sorted(run_and_validate(fn)) == sorted(value_set)
 
 
 @given(set_and_missing_value())
@@ -364,7 +364,7 @@ def test_set_add_remove_round_trip(args):
         assert_true(va.remove(value))
         return va
 
-    assert sorted(validate_dual_run(fn)) == sorted(value_set)
+    assert sorted(run_and_validate(fn)) == sorted(value_set)
 
 
 @given(set_and_present_value())
@@ -382,7 +382,7 @@ def test_set_remove_add_round_trip(args):
         assert_true(va.set_add(value))
         return va
 
-    assert sorted(validate_dual_run(fn)) == sorted(value_set)
+    assert sorted(run_and_validate(fn)) == sorted(value_set)
 
 
 @given(list_with_duplicates())
@@ -400,7 +400,7 @@ def test_var_array_count(args):
         assert_true(count_result == expected_count)
         return count_result
 
-    assert validate_dual_run(fn) == expected_count
+    assert run_and_validate(fn) == expected_count
 
 
 @given(list_with_duplicates())
@@ -418,7 +418,7 @@ def test_var_array_count_present(args):
         assert_true(count_result == expected_count)
         return count_result
 
-    assert validate_dual_run(fn) == expected_count
+    assert run_and_validate(fn) == expected_count
 
 
 @given(list_and_maybe_missing_value())
@@ -436,7 +436,7 @@ def test_var_array_count_maybe_missing(args):
         assert_true(count_result == expected_count)
         return count_result
 
-    assert validate_dual_run(fn) == expected_count
+    assert run_and_validate(fn) == expected_count
 
 
 def test_zip_empty():
@@ -449,7 +449,7 @@ def test_zip_empty():
             results.append(v2)
         return results
 
-    assert list(validate_dual_run(fn)) == []
+    assert list(run_and_validate(fn)) == []
 
 
 @given(
@@ -469,7 +469,7 @@ def test_zip_single(values_list_1):
             results.append(v1)
         return results
 
-    assert list(validate_dual_run(fn)) == values_list_1
+    assert list(run_and_validate(fn)) == values_list_1
 
 
 @given(
@@ -495,7 +495,7 @@ def test_zip_two(values_list_1, values_list_2):
             results.append(v2)
         return results
 
-    assert list(validate_dual_run(fn)) == [e for pair in zip(values_list_1, values_list_2) for e in pair]
+    assert list(run_and_validate(fn)) == [e for pair in zip(values_list_1, values_list_2) for e in pair]
 
 
 @given(
@@ -527,7 +527,7 @@ def test_zip_three(values_list_1, values_list_2, values_list_3):
             results.append(v3)
         return results
 
-    assert list(validate_dual_run(fn)) == [
+    assert list(run_and_validate(fn)) == [
         e for triple in zip(values_list_1, values_list_2, values_list_3) for e in triple
     ]
 
@@ -541,7 +541,7 @@ def test_map_single():
             results.append(x)
         return results
 
-    assert list(validate_dual_run(fn)) == [2, 4, 6, 8]
+    assert list(run_and_validate(fn)) == [2, 4, 6, 8]
 
 
 def test_map_two_args():
@@ -555,7 +555,7 @@ def test_map_two_args():
             results.append(x)
         return results
 
-    assert list(validate_dual_run(fn)) == [11, 22, 33, 44]
+    assert list(run_and_validate(fn)) == [11, 22, 33, 44]
 
 
 def test_map_three_args():
@@ -571,7 +571,7 @@ def test_map_three_args():
             results.append(x)
         return results
 
-    assert list(validate_dual_run(fn)) == [111, 222, 333]
+    assert list(run_and_validate(fn)) == [111, 222, 333]
 
 
 def test_filter_basic():
@@ -583,7 +583,7 @@ def test_filter_basic():
             results.append(x)
         return results
 
-    assert list(validate_dual_run(fn)) == [2, 4, 6]
+    assert list(run_and_validate(fn)) == [2, 4, 6]
 
 
 @given(lists)
@@ -600,7 +600,7 @@ def test_filter_property(values_list):
             results.append(x)
         return results
 
-    assert list(validate_dual_run(fn)) == [x for x in values_list if x > 0]
+    assert list(run_and_validate(fn)) == [x for x in values_list if x > 0]
 
 
 def test_map_filter_combination():
@@ -612,7 +612,7 @@ def test_map_filter_combination():
             results.append(x)
         return results
 
-    assert list(validate_dual_run(fn)) == [4, 8, 12]
+    assert list(run_and_validate(fn)) == [4, 8, 12]
 
 
 def test_filter_map_combination():
@@ -624,7 +624,7 @@ def test_filter_map_combination():
             results.append(x)
         return results
 
-    assert list(validate_dual_run(fn)) == [6, 8, 10, 12]
+    assert list(run_and_validate(fn)) == [6, 8, 10, 12]
 
 
 def test_any_true():
@@ -633,7 +633,7 @@ def test_any_true():
         va.extend(Array(True, False, True, False, True, False))
         return any(va)
 
-    assert validate_dual_run(fn)
+    assert run_and_validate(fn)
 
 
 def test_any_false():
@@ -642,7 +642,7 @@ def test_any_false():
         va.extend(Array(False, False, False, False, False, False))
         return any(va)
 
-    assert not validate_dual_run(fn)
+    assert not run_and_validate(fn)
 
 
 def test_any_empty():
@@ -650,7 +650,7 @@ def test_any_empty():
         va = VarArray[bool, 0].new()
         return any(va)
 
-    assert not validate_dual_run(fn)
+    assert not run_and_validate(fn)
 
 
 def test_all_true():
@@ -659,7 +659,7 @@ def test_all_true():
         va.extend(Array(True, True, True, True, True, True))
         return all(va)
 
-    assert validate_dual_run(fn)
+    assert run_and_validate(fn)
 
 
 def test_all_false():
@@ -668,7 +668,7 @@ def test_all_false():
         va.extend(Array(True, False, True, False, True, False))
         return all(va)
 
-    assert not validate_dual_run(fn)
+    assert not run_and_validate(fn)
 
 
 def test_all_empty():
@@ -676,4 +676,4 @@ def test_all_empty():
         va = VarArray[bool, 0].new()
         return all(va)
 
-    assert validate_dual_run(fn)
+    assert run_and_validate(fn)

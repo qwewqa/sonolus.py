@@ -6,7 +6,7 @@ from hypothesis import strategies as st
 from sonolus.script.array import Array
 from sonolus.script.containers import ArraySet
 from sonolus.script.debug import assert_true
-from tests.script.conftest import validate_dual_run
+from tests.script.conftest import run_and_validate
 
 ints = st.integers(min_value=-999, max_value=999)
 sets = st.sets(ints, min_size=1, max_size=20)
@@ -36,7 +36,7 @@ def test_array_set_add_basic():
         assert_true(6 not in s)
         return s
 
-    assert sorted(validate_dual_run(fn)) == [2, 4]
+    assert sorted(run_and_validate(fn)) == [2, 4]
 
 
 def test_array_set_clear():
@@ -48,7 +48,7 @@ def test_array_set_clear():
         s.clear()
         return s._values
 
-    assert list(validate_dual_run(fn)) == []
+    assert list(run_and_validate(fn)) == []
 
 
 @given(set_and_present_value())
@@ -65,7 +65,7 @@ def test_array_set_add_present(args):
         assert_true(not s.add(value))
         return s
 
-    assert sorted(validate_dual_run(fn)) == sorted(values)
+    assert sorted(run_and_validate(fn)) == sorted(values)
 
 
 @given(set_and_missing_value())
@@ -82,7 +82,7 @@ def test_array_set_add_missing(args):
         assert_true(s.add(missing))
         return s
 
-    assert sorted(validate_dual_run(fn)) == sorted([*list(values), missing])
+    assert sorted(run_and_validate(fn)) == sorted([*list(values), missing])
 
 
 @given(set_and_present_value())
@@ -99,7 +99,7 @@ def test_array_set_remove_present(args):
         assert_true(s.remove(value))
         return s
 
-    assert sorted(validate_dual_run(fn)) == sorted(value_set - {value})
+    assert sorted(run_and_validate(fn)) == sorted(value_set - {value})
 
 
 @given(set_and_missing_value())
@@ -116,7 +116,7 @@ def test_array_set_remove_missing(args):
         assert_true(not s.remove(missing))
         return s
 
-    assert sorted(validate_dual_run(fn)) == sorted(value_set)
+    assert sorted(run_and_validate(fn)) == sorted(value_set)
 
 
 @given(set_and_missing_value())
@@ -134,7 +134,7 @@ def test_array_set_add_remove_round_trip(args):
         assert_true(s.remove(value))
         return s
 
-    assert sorted(validate_dual_run(fn)) == sorted(value_set)
+    assert sorted(run_and_validate(fn)) == sorted(value_set)
 
 
 def test_array_set_full():
@@ -147,4 +147,4 @@ def test_array_set_full():
         assert_true(not s.add(10))  # Set is full
         return s
 
-    assert list(validate_dual_run(fn)) == [2, 4, 6, 8]
+    assert list(run_and_validate(fn)) == [2, 4, 6, 8]

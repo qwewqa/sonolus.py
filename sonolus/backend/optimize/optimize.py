@@ -6,9 +6,7 @@ from sonolus.backend.optimize.dead_code import (
     DeadCodeElimination,
     UnreachableCodeElimination,
 )
-from sonolus.backend.optimize.flow import BasicBlock
 from sonolus.backend.optimize.inlining import InlineVars
-from sonolus.backend.optimize.passes import run_passes
 from sonolus.backend.optimize.simplify import CoalesceFlow, NormalizeSwitch, RewriteToSwitch
 from sonolus.backend.optimize.ssa import FromSSA, ToSSA
 
@@ -46,7 +44,3 @@ STANDARD_PASSES = (
     NormalizeSwitch(),
     Allocate(),
 )
-
-
-def optimize_and_allocate(cfg: BasicBlock):
-    return run_passes(cfg, STANDARD_PASSES)

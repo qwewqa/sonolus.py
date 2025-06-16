@@ -7,7 +7,7 @@ from hypothesis import strategies as st
 from sonolus.script.array import Array
 from sonolus.script.containers import ArrayMap, Pair, VarArray
 from sonolus.script.debug import assert_false, assert_true
-from tests.script.conftest import validate_dual_run
+from tests.script.conftest import run_and_validate
 
 ints = st.integers(min_value=-999, max_value=999)
 maps = st.dictionaries(ints, ints, min_size=1, max_size=20)
@@ -40,7 +40,7 @@ def test_insertion(args):
             am[pair.first] = pair.second
         return am[key]
 
-    assert validate_dual_run(fn) == values[key]
+    assert run_and_validate(fn) == values[key]
 
 
 @given(map_and_key(), ints)
@@ -57,7 +57,7 @@ def test_update(args, new_value):
         am[key] = new_value
         return am[key]
 
-    assert validate_dual_run(fn) == new_value
+    assert run_and_validate(fn) == new_value
 
 
 @given(maps)
@@ -72,7 +72,7 @@ def test_keys(values):
             am[pair.first] = pair.second
         return am.keys()
 
-    assert sorted(validate_dual_run(fn)) == sorted(values.keys())
+    assert sorted(run_and_validate(fn)) == sorted(values.keys())
 
 
 @given(maps)
@@ -87,7 +87,7 @@ def test_values(values):
             am[pair.first] = pair.second
         return am.values()
 
-    assert sorted(validate_dual_run(fn)) == sorted(values.values())
+    assert sorted(run_and_validate(fn)) == sorted(values.values())
 
 
 @given(maps)
@@ -102,7 +102,7 @@ def test_items(values):
             am[pair.first] = pair.second
         return am.items()
 
-    assert sorted(validate_dual_run(fn)) == sorted(values.items())
+    assert sorted(run_and_validate(fn)) == sorted(values.items())
 
 
 @given(map_and_key())
@@ -122,7 +122,7 @@ def test_pop(args):
         assert_false(key in am)
         return am
 
-    assert sorted(validate_dual_run(fn).items()) == sorted(target_values.items())
+    assert sorted(run_and_validate(fn).items()) == sorted(target_values.items())
 
 
 @given(map_and_missing_key(), ints)
@@ -141,7 +141,7 @@ def test_insert_pop_round_trip(args, new_value):
         assert_false(key in am)
         return am
 
-    assert sorted(validate_dual_run(fn).items()) == sorted(values.items())
+    assert sorted(run_and_validate(fn).items()) == sorted(values.items())
 
 
 @given(map_and_key())
@@ -160,7 +160,7 @@ def test_pop_insert_round_trip(args):
         am[key] = target_value
         return am
 
-    assert sorted(validate_dual_run(fn).items()) == sorted(values.items())
+    assert sorted(run_and_validate(fn).items()) == sorted(values.items())
 
 
 @given(maps)
@@ -186,7 +186,7 @@ def test_size(values):
             assert_false(am.is_full())
         return am
 
-    assert len(validate_dual_run(fn)) == 0
+    assert len(run_and_validate(fn)) == 0
 
 
 @given(map_and_key())
@@ -202,7 +202,7 @@ def test_contains_existing(args):
             am[pair.first] = pair.second
         return key in am
 
-    assert validate_dual_run(fn)
+    assert run_and_validate(fn)
 
 
 @given(map_and_missing_key())
@@ -218,7 +218,7 @@ def test_contains_missing(args):
             am[pair.first] = pair.second
         return key in am
 
-    assert not validate_dual_run(fn)
+    assert not run_and_validate(fn)
 
 
 @given(map_and_key())
@@ -234,7 +234,7 @@ def test_not_contains_existing(args):
             am[pair.first] = pair.second
         return key not in am
 
-    assert not validate_dual_run(fn)
+    assert not run_and_validate(fn)
 
 
 @given(map_and_missing_key())
@@ -250,4 +250,4 @@ def test_not_contains_missing(args):
             am[pair.first] = pair.second
         return key not in am
 
-    assert validate_dual_run(fn)
+    assert run_and_validate(fn)

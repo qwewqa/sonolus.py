@@ -2,7 +2,7 @@ from hypothesis import given
 from hypothesis import strategies as st
 
 from sonolus.script.array import Array
-from tests.script.conftest import validate_dual_run
+from tests.script.conftest import run_and_validate
 
 
 def test_dict_get_existing():
@@ -10,7 +10,7 @@ def test_dict_get_existing():
         d = {"a": 1, "b": 2}
         return Array(d["a"], d["b"])
 
-    assert validate_dual_run(fn) == Array(1, 2)
+    assert run_and_validate(fn) == Array(1, 2)
 
 
 def test_dict_in_operator():
@@ -27,7 +27,7 @@ def test_dict_in_operator():
             "d" not in d,  # True
         )
 
-    assert validate_dual_run(fn) == Array(True, True, False, False, False, False, True, True)
+    assert run_and_validate(fn) == Array(True, True, False, False, False, False, True, True)
 
 
 @given(
@@ -41,4 +41,4 @@ def test_dict_union(v1, v2):
         d3 = d1 | d2
         return Array(d3["a"], d3["b"])
 
-    assert validate_dual_run(fn) == Array(v1, v2)
+    assert run_and_validate(fn) == Array(v1, v2)

@@ -5,7 +5,7 @@ from hypothesis import strategies as st
 from sonolus.script.debug import assert_true, debug_log
 from sonolus.script.num import Num
 from sonolus.script.record import Record
-from tests.script.conftest import validate_dual_run
+from tests.script.conftest import run_and_validate
 
 
 class Simple(Record):
@@ -55,7 +55,7 @@ def test_simple_record(a):
         assert_true(r.value == a)
         return 1
 
-    assert validate_dual_run(fn) == 1
+    assert run_and_validate(fn) == 1
 
 
 @given(a=st.floats(allow_nan=False, allow_infinity=False))
@@ -65,7 +65,7 @@ def test_generic_record_inference(a):
         assert_true(r.value == a)
         return 1
 
-    assert validate_dual_run(fn) == 1
+    assert run_and_validate(fn) == 1
 
 
 @given(a=st.floats(allow_nan=False, allow_infinity=False))
@@ -75,7 +75,7 @@ def test_generic_record_explicit(a):
         assert_true(r.value == a)
         return 1
 
-    assert validate_dual_run(fn) == 1
+    assert run_and_validate(fn) == 1
 
 
 def test_concrete_compound_record():
@@ -84,7 +84,7 @@ def test_concrete_compound_record():
         r @= ConcreteCompound(Pair(5, 6), Pair(7, 8))
         return r
 
-    assert validate_dual_run(fn) == ConcreteCompound(Pair(5, 6), Pair(7, 8))
+    assert run_and_validate(fn) == ConcreteCompound(Pair(5, 6), Pair(7, 8))
 
 
 def test_record_rejects_wrong_type():
@@ -105,7 +105,7 @@ def test_nested_generic():
         assert_true(r2.value.value == 2)
         return 1
 
-    assert validate_dual_run(fn) == 1
+    assert run_and_validate(fn) == 1
 
 
 def test_value_record_members_are_independent():
@@ -118,7 +118,7 @@ def test_value_record_members_are_independent():
         assert_true(v == 1)
         return 1
 
-    assert validate_dual_run(fn) == 1
+    assert run_and_validate(fn) == 1
 
 
 def test_reference_record_members_are_shared():
@@ -132,7 +132,7 @@ def test_reference_record_members_are_shared():
         assert_true(inner.value == 3)
         return 1
 
-    assert validate_dual_run(fn) == 1
+    assert run_and_validate(fn) == 1
 
 
 def test_automatic_record_copy_assign():
@@ -145,7 +145,7 @@ def test_automatic_record_copy_assign():
         assert_true(inner.value == 2)
         return 1
 
-    assert validate_dual_run(fn) == 1
+    assert run_and_validate(fn) == 1
 
 
 def test_record_operator_overloading():
@@ -156,7 +156,7 @@ def test_record_operator_overloading():
         assert_true(r == Generic(3))
         return 1
 
-    assert validate_dual_run(fn) == 1
+    assert run_and_validate(fn) == 1
 
 
 def test_record_inplace_operator_generation():
@@ -168,7 +168,7 @@ def test_record_inplace_operator_generation():
         assert_true(r_ref == Generic(3))
         return 1
 
-    assert validate_dual_run(fn) == 1
+    assert run_and_validate(fn) == 1
 
 
 def test_record_explicit_inplace_operator():
@@ -180,7 +180,7 @@ def test_record_explicit_inplace_operator():
         assert_true(r_ref == Generic(123))
         return 1
 
-    assert validate_dual_run(fn) == 1
+    assert run_and_validate(fn) == 1
 
 
 def test_record_equality():
@@ -199,7 +199,7 @@ def test_record_equality():
 
         return 1
 
-    assert validate_dual_run(fn) == 1
+    assert run_and_validate(fn) == 1
 
 
 @given(
@@ -229,7 +229,7 @@ def test_record_modification_in_loop(a, b, c, d, e, f):
             r.second += 5
         return r
 
-    validate_dual_run(fn)
+    run_and_validate(fn)
 
 
 def test_record_property_getter():
@@ -237,7 +237,7 @@ def test_record_property_getter():
         r = Generic(1)
         return r.prop
 
-    assert validate_dual_run(fn) == 1
+    assert run_and_validate(fn) == 1
 
 
 def test_record_property_setter():
@@ -246,7 +246,7 @@ def test_record_property_setter():
         r.prop = 2
         return r.value
 
-    assert validate_dual_run(fn) == 2
+    assert run_and_validate(fn) == 2
 
 
 def test_record_augmented_property_setter():
@@ -255,7 +255,7 @@ def test_record_augmented_property_setter():
         r.prop += 2
         return r.value
 
-    assert validate_dual_run(fn) == 3
+    assert run_and_validate(fn) == 3
 
 
 def test_record_augmented_property_setter_with_explicit_implementation():
@@ -264,4 +264,4 @@ def test_record_augmented_property_setter_with_explicit_implementation():
         r.prop += Generic(2)
         return r.value.value
 
-    assert validate_dual_run(fn) == 3
+    assert run_and_validate(fn) == 3

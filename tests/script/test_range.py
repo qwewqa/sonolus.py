@@ -1,7 +1,7 @@
 from hypothesis import given
 from hypothesis import strategies as st
 
-from tests.script.conftest import validate_dual_run
+from tests.script.conftest import run_and_validate
 from tests.script.test_record import Pair
 
 
@@ -14,7 +14,7 @@ def test_basic_range_iteration(n):
         return total
 
     expected = sum(range(n))
-    result = validate_dual_run(fn)
+    result = run_and_validate(fn)
     assert result == expected
 
 
@@ -27,7 +27,7 @@ def test_range_iteration_with_start(start, stop):
         return total
 
     expected = sum(range(start, stop))
-    result = validate_dual_run(fn)
+    result = run_and_validate(fn)
     assert result == expected
 
 
@@ -44,7 +44,7 @@ def test_range_iteration_with_step(start, stop, step):
         return total
 
     expected = sum(range(start, stop, step))
-    result = validate_dual_run(fn)
+    result = run_and_validate(fn)
     assert result == expected
 
 
@@ -61,7 +61,7 @@ def test_range_iteration_with_negative_step(start, stop, step):
         return total
 
     expected = sum(range(start, stop, step))
-    result = validate_dual_run(fn)
+    result = run_and_validate(fn)
     assert result == expected
 
 
@@ -76,7 +76,7 @@ def test_range_contains(start, stop, step, value):
         return value in range(start, stop, step)
 
     expected = value in range(start, stop, step)
-    result = validate_dual_run(fn)
+    result = run_and_validate(fn)
     assert result == expected
 
 
@@ -90,7 +90,7 @@ def test_range_size(start, stop, step):
         return len(range(start, stop, step))
 
     expected = len(range(start, stop, step))
-    result = validate_dual_run(fn)
+    result = run_and_validate(fn)
     assert result == expected
 
 
@@ -111,7 +111,7 @@ def test_range_equality(start1, stop1, step1, start2, stop2, step2):
     range_a = range(start1, stop1, step1)
     range_b = range(start2, stop2, step2)
     expected = Pair(range_a == range_b, range_b == range_a)
-    result = validate_dual_run(fn)
+    result = run_and_validate(fn)
     assert result == expected
 
 
@@ -127,5 +127,5 @@ def test_identical_range_equality(start, stop, step):
         return Pair(a == b, b == a)
 
     expected = Pair(True, True)
-    result = validate_dual_run(fn)
+    result = run_and_validate(fn)
     assert result == expected

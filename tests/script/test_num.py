@@ -2,7 +2,7 @@ from hypothesis import given
 from hypothesis import strategies as st
 
 from sonolus.script.array import Array
-from tests.script.conftest import validate_dual_run
+from tests.script.conftest import run_and_validate
 
 ints = st.integers(min_value=-1000, max_value=1000)
 floats = st.floats(min_value=-99999, max_value=99999, allow_nan=False, allow_infinity=False)
@@ -12,7 +12,7 @@ def test_num_basic():
     def fn():
         return 1
 
-    assert validate_dual_run(fn) == 1
+    assert run_and_validate(fn) == 1
 
 
 @given(n=floats)
@@ -22,7 +22,7 @@ def test_num_unary(n):
         minus = -n
         return Array(plus, minus)
 
-    assert validate_dual_run(fn) == Array(+n, -n)
+    assert run_and_validate(fn) == Array(+n, -n)
 
 
 @given(
@@ -39,7 +39,7 @@ def test_num_comparison(a, b):
         gt = a > b
         return Array(lt, le, eq, ne, ge, gt)
 
-    assert validate_dual_run(fn) == Array(a < b, a <= b, a == b, a != b, a >= b, a > b)
+    assert run_and_validate(fn) == Array(a < b, a <= b, a == b, a != b, a >= b, a > b)
 
 
 def are_valid_pow_operands(a, b):
@@ -75,7 +75,7 @@ def test_num_binary(a, b):
         power = a**b if are_valid_pow_operands(a, b) else 0
         return Array(add, sub, mul, div, mod, power)
 
-    assert validate_dual_run(fn) == Array(
+    assert run_and_validate(fn) == Array(
         a + b,
         a - b,
         a * b,
@@ -95,7 +95,7 @@ def test_num_floordiv(a, b):
     def fn():
         return a // b
 
-    assert validate_dual_run(fn) == a // b
+    assert run_and_validate(fn) == a // b
 
 
 @given(
@@ -124,7 +124,7 @@ def test_num_augmented(a, b):
             floordiv //= b
         return Array(add, sub, mul, div, mod, power, floordiv)
 
-    assert validate_dual_run(fn) == Array(
+    assert run_and_validate(fn) == Array(
         a + b,
         a - b,
         a * b,
@@ -136,7 +136,7 @@ def test_num_augmented(a, b):
 
 
 # What we care about is that compiled behavior matches vanilla Python behavior
-# So validate_dual_run is more or less enough.
+# So run_and_validate is more or less enough.
 
 
 @given(n=ints)
@@ -149,7 +149,7 @@ def test_num_while_assignment(n):
             i += 1
         return result
 
-    assert validate_dual_run(fn) == sum(range(n))
+    assert run_and_validate(fn) == sum(range(n))
 
 
 @given(n=ints)
@@ -163,7 +163,7 @@ def test_num_while_else(n):
         result += 100
         return result
 
-    assert validate_dual_run(fn) == sum(range(n)) + 100
+    assert run_and_validate(fn) == sum(range(n)) + 100
 
 
 @given(
@@ -183,7 +183,7 @@ def test_num_while_break(a, b):
             result = -1
         return result
 
-    validate_dual_run(fn)
+    run_and_validate(fn)
 
 
 @given(
@@ -202,4 +202,4 @@ def test_num_while_continue(a, b):
             result += i - 1
         return result
 
-    validate_dual_run(fn)
+    run_and_validate(fn)

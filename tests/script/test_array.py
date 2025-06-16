@@ -5,7 +5,7 @@ from hypothesis import strategies as st
 from sonolus.script.array import Array
 from sonolus.script.debug import assert_false, assert_true
 from sonolus.script.record import Record
-from tests.script.conftest import validate_dual_run
+from tests.script.conftest import run_and_validate
 from tests.script.test_record import Simple
 
 
@@ -13,7 +13,7 @@ def test_array_constructor():
     def fn():
         return Array(1, 2, 3)
 
-    assert list(validate_dual_run(fn)) == [1, 2, 3]
+    assert list(run_and_validate(fn)) == [1, 2, 3]
 
 
 @given(args=st.lists(st.integers(min_value=-9999, max_value=9999), min_size=1, max_size=10))
@@ -23,14 +23,14 @@ def test_array_spread(args):
     def fn():
         return Array(*tuple_args)
 
-    assert list(validate_dual_run(fn)) == list(args)
+    assert list(run_and_validate(fn)) == list(args)
 
 
 def test_array_constructor_with_type():
     def fn():
         return Array[int, 3](1, 2, 3)
 
-    assert list(validate_dual_run(fn)) == [1, 2, 3]
+    assert list(run_and_validate(fn)) == [1, 2, 3]
 
 
 def test_array_constructor_with_type_mismatch_fails():
@@ -38,7 +38,7 @@ def test_array_constructor_with_type_mismatch_fails():
         return Array[Simple, 3](1, 2, 3)
 
     with pytest.raises(TypeError):
-        validate_dual_run(fn)
+        run_and_validate(fn)
 
 
 def test_array_constructor_with_size_mismatch_fails():
@@ -46,7 +46,7 @@ def test_array_constructor_with_size_mismatch_fails():
         return Array[int, 3](1, 2)
 
     with pytest.raises(ValueError, match="should be used with 3 values, got 2"):
-        validate_dual_run(fn)
+        run_and_validate(fn)
 
 
 def test_array_constructor_with_no_args_fails():
@@ -54,7 +54,7 @@ def test_array_constructor_with_no_args_fails():
         return Array()
 
     with pytest.raises(ValueError, match="constructor should be used with at least one value"):
-        validate_dual_run(fn)
+        run_and_validate(fn)
 
 
 def test_array_constructor_with_heterogeneous_args_fails():
@@ -62,7 +62,7 @@ def test_array_constructor_with_heterogeneous_args_fails():
         return Array(1, Simple(2), 3)
 
     with pytest.raises(TypeError):
-        validate_dual_run(fn)
+        run_and_validate(fn)
 
 
 def test_array_set():
@@ -71,7 +71,7 @@ def test_array_set():
         array[1] = 4
         return array
 
-    assert list(validate_dual_run(fn)) == [1, 4, 3]
+    assert list(run_and_validate(fn)) == [1, 4, 3]
 
 
 def test_array_equality():
@@ -94,7 +94,7 @@ def test_array_equality():
 
         return 1
 
-    assert validate_dual_run(fn) == 1
+    assert run_and_validate(fn) == 1
 
 
 def test_array_equality_of_different_lengths():
@@ -104,7 +104,7 @@ def test_array_equality_of_different_lengths():
 
         return a1 == a2
 
-    assert not validate_dual_run(fn)
+    assert not run_and_validate(fn)
 
 
 def test_array_record_item_operations():
@@ -128,7 +128,7 @@ def test_array_record_item_operations():
 
         return array
 
-    assert list(validate_dual_run(fn)) == [Simple(1), Simple(6), Simple(7)]
+    assert list(run_and_validate(fn)) == [Simple(1), Simple(6), Simple(7)]
 
 
 def test_array_contains():
@@ -142,7 +142,7 @@ def test_array_contains():
 
         return 1
 
-    assert validate_dual_run(fn) == 1
+    assert run_and_validate(fn) == 1
 
 
 def test_array_reversed():
@@ -151,7 +151,7 @@ def test_array_reversed():
 
         return reversed(array)
 
-    assert list(validate_dual_run(fn)) == [3, 2, 1]
+    assert list(run_and_validate(fn)) == [3, 2, 1]
 
 
 def test_array_iteration():
@@ -164,7 +164,7 @@ def test_array_iteration():
 
         return total
 
-    assert validate_dual_run(fn) == 6
+    assert run_and_validate(fn) == 6
 
 
 def test_array_enumerate():
@@ -176,7 +176,7 @@ def test_array_enumerate():
 
         return 1
 
-    assert validate_dual_run(fn) == 1
+    assert run_and_validate(fn) == 1
 
 
 def test_array_index():
@@ -190,7 +190,7 @@ def test_array_index():
 
         return 1
 
-    assert validate_dual_run(fn) == 1
+    assert run_and_validate(fn) == 1
 
 
 def test_array_max():
@@ -199,7 +199,7 @@ def test_array_max():
 
         return max(array)
 
-    assert validate_dual_run(fn) == 3
+    assert run_and_validate(fn) == 3
 
 
 def test_array_min():
@@ -208,7 +208,7 @@ def test_array_min():
 
         return min(array)
 
-    assert validate_dual_run(fn) == 1
+    assert run_and_validate(fn) == 1
 
 
 def test_array_count():
@@ -217,7 +217,7 @@ def test_array_count():
 
         return array.count(1)
 
-    assert validate_dual_run(fn) == 2
+    assert run_and_validate(fn) == 2
 
 
 @given(
@@ -234,7 +234,7 @@ def test_array_sort(args, reverse: bool):
         array.sort(reverse=reverse)
         return array
 
-    assert list(validate_dual_run(fn)) == sorted(args, reverse=reverse)
+    assert list(run_and_validate(fn)) == sorted(args, reverse=reverse)
 
 
 @given(
@@ -254,7 +254,7 @@ def test_array_sort_with_key(args, reverse: bool, a: int, b: int, c: int):
         array.sort(key=lambda x: a * x * x + b * x + c, reverse=reverse)
         return array
 
-    assert list(validate_dual_run(fn)) == sorted(args, key=lambda x: a * x * x + b * x + c, reverse=reverse)
+    assert list(run_and_validate(fn)) == sorted(args, key=lambda x: a * x * x + b * x + c, reverse=reverse)
 
 
 @given(
@@ -272,7 +272,7 @@ def test_array_max_with_key(args, a: int, b: int, c: int):
 
         return max(array, key=lambda x: a * x * x + b * x + c)
 
-    assert validate_dual_run(fn) == max(args, key=lambda x: a * x * x + b * x + c)
+    assert run_and_validate(fn) == max(args, key=lambda x: a * x * x + b * x + c)
 
 
 @given(
@@ -290,7 +290,7 @@ def test_array_min_with_key(args, a: int, b: int, c: int):
 
         return min(array, key=lambda x: a * x * x + b * x + c)
 
-    assert validate_dual_run(fn) == min(args, key=lambda x: a * x * x + b * x + c)
+    assert run_and_validate(fn) == min(args, key=lambda x: a * x * x + b * x + c)
 
 
 @given(
@@ -306,7 +306,7 @@ def test_array_reverse(args):
         array.reverse()
         return array
 
-    assert list(validate_dual_run(fn)) == list(reversed(args))
+    assert list(run_and_validate(fn)) == list(reversed(args))
 
 
 class Ele(Record):
@@ -348,4 +348,4 @@ def test_array_sort_records(args, reverse: bool):
         array.sort(reverse=reverse)
         return array
 
-    assert list(validate_dual_run(fn)) == sorted(tuple_args, reverse=reverse)
+    assert list(run_and_validate(fn)) == sorted(tuple_args, reverse=reverse)

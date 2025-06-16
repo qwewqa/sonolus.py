@@ -1,6 +1,6 @@
 from sonolus.script.array import Array
 from sonolus.script.debug import debug_log
-from tests.script.conftest import validate_dual_run
+from tests.script.conftest import run_and_validate
 from tests.script.test_record import Pair
 
 
@@ -15,14 +15,14 @@ def test_simple_function_call():
     def fn():
         return a()
 
-    assert validate_dual_run(fn) == 1
+    assert run_and_validate(fn) == 1
 
 
 def test_lambda_function_call():
     a = lambda: 1  # noqa: E731
     fn = lambda: a()  # noqa: PLW0108, E731
 
-    assert validate_dual_run(fn) == 1
+    assert run_and_validate(fn) == 1
 
 
 def test_call_nested_function():
@@ -32,7 +32,7 @@ def test_call_nested_function():
 
         return a()
 
-    assert validate_dual_run(fn) == 1
+    assert run_and_validate(fn) == 1
 
 
 def test_indirect_call_nested_function():
@@ -42,7 +42,7 @@ def test_indirect_call_nested_function():
 
         return call_function(a)
 
-    assert validate_dual_run(fn) == 1
+    assert run_and_validate(fn) == 1
 
 
 def test_call_closure():
@@ -62,7 +62,7 @@ def test_call_closure():
 
         return a()
 
-    assert validate_dual_run(fn) == 2
+    assert run_and_validate(fn) == 2
 
 
 def test_call_closure_with_default_args():
@@ -76,7 +76,7 @@ def test_call_closure_with_default_args():
         debug_log(result)
         return result
 
-    assert validate_dual_run(fn) == 11
+    assert run_and_validate(fn) == 11
 
 
 def test_nested_lambda_closure():
@@ -85,7 +85,7 @@ def test_nested_lambda_closure():
         f = lambda y: x + y  # noqa: E731
         return f(2)
 
-    assert validate_dual_run(fn) == 3
+    assert run_and_validate(fn) == 3
 
 
 def test_multiple_nested_functions():
@@ -101,7 +101,7 @@ def test_multiple_nested_functions():
 
         return outer(1)
 
-    assert validate_dual_run(fn) == 6
+    assert run_and_validate(fn) == 6
 
 
 def test_higher_order_function():
@@ -112,7 +112,7 @@ def test_higher_order_function():
         add_five = make_adder(5)
         return add_five(3)
 
-    assert validate_dual_run(fn) == 8
+    assert run_and_validate(fn) == 8
 
 
 def test_pair_in_closure():
@@ -124,7 +124,7 @@ def test_pair_in_closure():
 
         return get_sum()
 
-    assert validate_dual_run(fn) == 3
+    assert run_and_validate(fn) == 3
 
 
 def test_nested_pair_manipulation():
@@ -140,7 +140,7 @@ def test_nested_pair_manipulation():
         result_pair = add_to_initial(3)
         return result_pair.first + result_pair.second
 
-    assert validate_dual_run(fn) == 9
+    assert run_and_validate(fn) == 9
 
 
 def test_bool_returning_closure():
@@ -152,7 +152,7 @@ def test_bool_returning_closure():
 
         return is_above_threshold(15)
 
-    assert validate_dual_run(fn)
+    assert run_and_validate(fn)
 
 
 def test_arithmetic_in_closure():
@@ -164,7 +164,7 @@ def test_arithmetic_in_closure():
 
         return multiply(4.0)
 
-    assert validate_dual_run(fn) == 10.0
+    assert run_and_validate(fn) == 10.0
 
 
 def test_nested_closure_with_record():
@@ -181,7 +181,7 @@ def test_nested_closure_with_record():
         result = processor(15)
         return result.second
 
-    assert validate_dual_run(fn)
+    assert run_and_validate(fn)
 
 
 def test_modify_closure_before_call():
@@ -204,7 +204,7 @@ def test_modify_closure_before_call():
 
         return Array(first_result, second_result)  # [16, 21]
 
-    assert validate_dual_run(fn) == Array(16, 21)
+    assert run_and_validate(fn) == Array(16, 21)
 
 
 def test_return_closure_with_modified_values():
@@ -228,7 +228,7 @@ def test_return_closure_with_modified_values():
         second_result = getter()  # 2 + 7 + 12 = 21
         return Array(first_result, second_result)  # [16, 21]
 
-    assert validate_dual_run(fn) == Array(16, 21)
+    assert run_and_validate(fn) == Array(16, 21)
 
 
 def test_pass_closure_after_modification():
@@ -251,7 +251,7 @@ def test_pass_closure_after_modification():
         second_result = apply_twice(get_sum)  # (2+7+12) + (2+7+12) = 42
         return Array(first_result, second_result)  # [32, 42]
 
-    assert validate_dual_run(fn) == Array(32, 42)
+    assert run_and_validate(fn) == Array(32, 42)
 
 
 def test_nested_closure_pair_modification():
@@ -271,7 +271,7 @@ def test_nested_closure_pair_modification():
         second = modifier()  # p becomes (3,6), returns 9
         return Array(first, second)  # [6, 9]
 
-    assert validate_dual_run(fn) == Array(6, 9)
+    assert run_and_validate(fn) == Array(6, 9)
 
 
 def test_multiple_closures_sharing_state():
@@ -303,7 +303,7 @@ def test_multiple_closures_sharing_state():
 
         return Array(first, second, third)  # [3, 6, 9]
 
-    assert validate_dual_run(fn) == Array(3, 6, 9)
+    assert run_and_validate(fn) == Array(3, 6, 9)
 
 
 def test_higher_order_with_modified_closure():
@@ -332,7 +332,7 @@ def test_higher_order_with_modified_closure():
 
         return Array(first_result, second_result)  # [5, 11]
 
-    assert validate_dual_run(fn) == Array(5, 11)
+    assert run_and_validate(fn) == Array(5, 11)
 
 
 def test_closure_with_pair_default():
@@ -354,7 +354,7 @@ def test_closure_with_pair_default():
         second = adder()  # 3 + 4 = 7
         return Array(first, second)  # [3, 7]
 
-    assert validate_dual_run(fn) == Array(3, 7)
+    assert run_and_validate(fn) == Array(3, 7)
 
 
 def test_closure_with_function_default():
@@ -378,7 +378,7 @@ def test_closure_with_function_default():
 
         return Array(first, second)  # [3, 6]
 
-    assert validate_dual_run(fn) == Array(3, 6)
+    assert run_and_validate(fn) == Array(3, 6)
 
 
 def test_nested_default_args():
@@ -399,7 +399,7 @@ def test_nested_default_args():
 
         return Array(f1, f2)  # [25, 26]
 
-    assert validate_dual_run(fn) == Array(25, 26)
+    assert run_and_validate(fn) == Array(25, 26)
 
 
 def test_default_args_with_modification():
@@ -422,7 +422,7 @@ def test_default_args_with_modification():
         second = calculator()  # 5 + 2 + 3 + 6 = 16
         return Array(first, second)  # [10, 16]
 
-    assert validate_dual_run(fn) == Array(10, 16)
+    assert run_and_validate(fn) == Array(10, 16)
 
 
 def test_default_function_modification():
@@ -446,7 +446,7 @@ def test_default_function_modification():
 
         return Array(first, second)  # [2, 9]
 
-    assert validate_dual_run(fn) == Array(2, 9)
+    assert run_and_validate(fn) == Array(2, 9)
 
 
 def test_mixed_defaults_and_closure():
@@ -472,7 +472,7 @@ def test_mixed_defaults_and_closure():
         second = computer(multiplier=4)  # (3+2) * 4 = 20
         return Array(first, second)  # [6, 20]
 
-    assert validate_dual_run(fn) == Array(6, 20)
+    assert run_and_validate(fn) == Array(6, 20)
 
 
 def test_chain_of_defaults():
@@ -496,7 +496,7 @@ def test_chain_of_defaults():
 
         return Array(first, second)  # [6, 15]
 
-    assert validate_dual_run(fn) == Array(6, 15)
+    assert run_and_validate(fn) == Array(6, 15)
 
 
 def test_nested_pair_default_modification():
@@ -522,7 +522,7 @@ def test_nested_pair_default_modification():
         second = computer(3)  # (7+2+5+6) * 3 = 60
         return Array(first, second)  # [28, 60]
 
-    assert validate_dual_run(fn) == Array(28, 60)
+    assert run_and_validate(fn) == Array(28, 60)
 
 
 def test_changing_values_after_closure_creation():
@@ -540,7 +540,7 @@ def test_changing_values_after_closure_creation():
 
         return Array(f1(), f2())
 
-    assert validate_dual_run(fn) == Array(2, 6)
+    assert run_and_validate(fn) == Array(2, 6)
 
 
 def test_nested_default_args_with_side_effects():
@@ -562,7 +562,7 @@ def test_nested_default_args_with_side_effects():
         second = f(10)
         return Array(first, second)
 
-    assert validate_dual_run(fn) == Array(3, 13)
+    assert run_and_validate(fn) == Array(3, 13)
 
 
 def test_closure_sharing_between_functions():
@@ -588,7 +588,7 @@ def test_closure_sharing_between_functions():
 
         return Array(modifier(), observer())
 
-    assert validate_dual_run(fn) == Array(7, 10)
+    assert run_and_validate(fn) == Array(7, 10)
 
 
 def test_nested_function_redefinition():
@@ -617,7 +617,7 @@ def test_nested_function_redefinition():
 
         return Array(first, second)  # [8, 12]
 
-    assert validate_dual_run(fn) == Array(8, 12)
+    assert run_and_validate(fn) == Array(8, 12)
 
 
 def test_closure_with_conditional_modification():
@@ -643,7 +643,7 @@ def test_closure_with_conditional_modification():
 
         return Array(f1(), f2())
 
-    assert validate_dual_run(fn) == Array(12, 15)
+    assert run_and_validate(fn) == Array(12, 15)
 
 
 def test_mutable_default_args():
@@ -668,7 +668,7 @@ def test_mutable_default_args():
 
         return Array(first, second, third)
 
-    assert validate_dual_run(fn) == Array(9, 12, 18)
+    assert run_and_validate(fn) == Array(9, 12, 18)
 
 
 def test_nested_mutable_defaults():
@@ -694,7 +694,7 @@ def test_nested_mutable_defaults():
 
         return Array(r1, r2, r3)
 
-    assert validate_dual_run(fn) == Array(6, 8, 15)
+    assert run_and_validate(fn) == Array(6, 8, 15)
 
 
 def test_mixed_mutable_immutable_defaults():
@@ -714,7 +714,7 @@ def test_mixed_mutable_immutable_defaults():
 
         return Array(first, second, third)
 
-    assert validate_dual_run(fn) == Array(7, 11, 17)
+    assert run_and_validate(fn) == Array(7, 11, 17)
 
 
 def test_simple_decorator():
@@ -731,7 +731,7 @@ def test_simple_decorator():
 
         return compute()
 
-    assert validate_dual_run(fn) == 10
+    assert run_and_validate(fn) == 10
 
 
 def test_decorator_with_arguments():
@@ -751,7 +751,7 @@ def test_decorator_with_arguments():
 
         return compute()
 
-    assert validate_dual_run(fn) == 15
+    assert run_and_validate(fn) == 15
 
 
 def test_decorator_with_state():
@@ -776,7 +776,7 @@ def test_decorator_with_state():
 
         return Array(first, second, counter.first, counter.second)
 
-    assert validate_dual_run(fn) == Array(5, 9, 2, 14)
+    assert run_and_validate(fn) == Array(5, 9, 2, 14)
 
 
 def test_multiple_decorators():
@@ -800,7 +800,7 @@ def test_multiple_decorators():
 
         return compute()  # (3 + 5) * 2 = 16
 
-    assert validate_dual_run(fn) == 16
+    assert run_and_validate(fn) == 16
 
 
 def test_decorator_with_closure():
@@ -823,7 +823,7 @@ def test_decorator_with_closure():
 
         return Array(first, second)
 
-    assert validate_dual_run(fn) == Array(10, 15)
+    assert run_and_validate(fn) == Array(10, 15)
 
 
 def test_decorator_with_mutable_state():
@@ -848,7 +848,7 @@ def test_decorator_with_mutable_state():
 
         return Array(first, second)
 
-    assert validate_dual_run(fn) == Array(4, 7)
+    assert run_and_validate(fn) == Array(4, 7)
 
 
 def test_decorator_factory_with_defaults():
@@ -878,7 +878,7 @@ def test_decorator_factory_with_defaults():
 
         return Array(first, second, third)
 
-    assert validate_dual_run(fn) == Array(11, 12, 18)
+    assert run_and_validate(fn) == Array(11, 12, 18)
 
 
 def test_nested_decorator_with_shared_state():
@@ -913,7 +913,7 @@ def test_nested_decorator_with_shared_state():
 
         return Array(first, second)
 
-    assert validate_dual_run(fn) == Array(7, 13)
+    assert run_and_validate(fn) == Array(7, 13)
 
 
 def test_decorator_with_conditional_behavior():
@@ -944,7 +944,7 @@ def test_decorator_with_conditional_behavior():
 
         return Array(compute1(), compute2(), state.first, state.second)
 
-    assert validate_dual_run(fn) == Array(10, 15, 1, 1)
+    assert run_and_validate(fn) == Array(10, 15, 1, 1)
 
 
 def test_decorator_preserving_default_args():
@@ -970,7 +970,7 @@ def test_decorator_preserving_default_args():
 
         return Array(first, second, third)
 
-    assert validate_dual_run(fn) == Array(3, 5, 7)
+    assert run_and_validate(fn) == Array(3, 5, 7)
 
 
 def multiply(func=None, factor=2):
@@ -1002,7 +1002,7 @@ def test_external_flexible_decorator():
 
         return Array(compute1(), compute2())  # [10, 15]
 
-    assert validate_dual_run(fn) == Array(10, 15)
+    assert run_and_validate(fn) == Array(10, 15)
 
 
 def test_internal_flexible_decorator():
@@ -1045,7 +1045,7 @@ def test_internal_flexible_decorator():
 
         return Array(r1, r2, calls1, r3, r4, calls2)
 
-    assert validate_dual_run(fn) == Array(5, 15, 2, 10, 15, 4)
+    assert run_and_validate(fn) == Array(5, 15, 2, 10, 15, 4)
 
 
 def test_flexible_decorator_with_mutable_state():
@@ -1092,7 +1092,7 @@ def test_flexible_decorator_with_mutable_state():
 
         return Array(r1, r2, r3, calls, total)
 
-    assert validate_dual_run(fn) == Array(5, 3, 5, 2, 10)
+    assert run_and_validate(fn) == Array(5, 3, 5, 2, 10)
 
 
 def test_nested_flexible_decorators():
@@ -1146,7 +1146,7 @@ def test_nested_flexible_decorators():
 
         return Array(compute1(), compute2(), compute3())
 
-    assert validate_dual_run(fn) == Array(14, 18, 11)
+    assert run_and_validate(fn) == Array(14, 18, 11)
 
 
 def test_flexible_decorator_with_dynamic_state():
@@ -1195,7 +1195,7 @@ def test_flexible_decorator_with_dynamic_state():
 
         return Array(r1, r2, r3, r4)
 
-    assert validate_dual_run(fn) == Array(5, 6, 15, 16)
+    assert run_and_validate(fn) == Array(5, 6, 15, 16)
 
 
 def test_nested_function_with_complex_signature():
@@ -1205,4 +1205,4 @@ def test_nested_function_with_complex_signature():
 
         return nested(1, 2, 3, 4, 12345, kw_only_1=5, kw_only_2=6, extra=7)
 
-    assert validate_dual_run(fn) == 21
+    assert run_and_validate(fn) == 21

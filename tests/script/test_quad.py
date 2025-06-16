@@ -8,7 +8,7 @@ from hypothesis import strategies as st
 
 from sonolus.script.quad import Quad, Rect
 from sonolus.script.vec import Vec2
-from tests.script.conftest import is_close, validate_dual_run
+from tests.script.conftest import is_close, run_and_validate
 
 floats = st.floats(min_value=-9, max_value=9, allow_nan=False, allow_infinity=False)
 nonzero_floats = floats.filter(lambda x: abs(x) > 1e-2)
@@ -60,7 +60,7 @@ def test_quad_translate(quad, translation):
     def fn():
         return quad.translate(translation)
 
-    result = validate_dual_run(fn)
+    result = run_and_validate(fn)
     assert is_close(result.bl, quad.bl + translation)
     assert is_close(result.tl, quad.tl + translation)
     assert is_close(result.tr, quad.tr + translation)
@@ -76,7 +76,7 @@ def test_quad_scale(quad, factor):
     def fn():
         return quad.scale(factor)
 
-    result = validate_dual_run(fn)
+    result = run_and_validate(fn)
     assert is_close(result.bl, quad.bl * factor)
     assert is_close(result.tl, quad.tl * factor)
     assert is_close(result.tr, quad.tr * factor)
@@ -93,7 +93,7 @@ def test_quad_scale_about(quad, factor, pivot):
     def fn():
         return quad.scale_about(factor, pivot)
 
-    result = validate_dual_run(fn)
+    result = run_and_validate(fn)
     assert is_close(result.bl, (quad.bl - pivot) * factor + pivot)
     assert is_close(result.tl, (quad.tl - pivot) * factor + pivot)
     assert is_close(result.tr, (quad.tr - pivot) * factor + pivot)
@@ -109,7 +109,7 @@ def test_quad_rotate(quad, angle):
     def fn():
         return quad.rotate(angle)
 
-    result = validate_dual_run(fn)
+    result = run_and_validate(fn)
     assert is_close(result.bl, quad.bl.rotate(angle))
     assert is_close(result.tl, quad.tl.rotate(angle))
     assert is_close(result.tr, quad.tr.rotate(angle))
@@ -126,7 +126,7 @@ def test_quad_rotate_about(quad, angle, pivot):
     def fn():
         return quad.rotate_about(angle, pivot)
 
-    result = validate_dual_run(fn)
+    result = run_and_validate(fn)
     assert is_close(result.bl, quad.bl.rotate_about(angle, pivot))
     assert is_close(result.tl, quad.tl.rotate_about(angle, pivot))
     assert is_close(result.tr, quad.tr.rotate_about(angle, pivot))
@@ -139,7 +139,7 @@ def test_quad_center(quad):
     def fn():
         return quad.center
 
-    result = validate_dual_run(fn)
+    result = run_and_validate(fn)
     expected = (quad.bl + quad.tr + quad.tl + quad.br) / 4
     assert is_close(result, expected)
 
@@ -156,7 +156,7 @@ def test_quad_permute():
         def fn():
             return quad.permute(rotation)  # noqa: B023
 
-        result = validate_dual_run(fn)
+        result = run_and_validate(fn)
         expected = quad.rotate(rotation * pi / 2)
         assert is_close(result.bl, expected.bl)
         assert is_close(result.tl, expected.tl)
@@ -174,7 +174,7 @@ def test_rect_translate(rect, translation):
     def fn():
         return rect.translate(translation)
 
-    result = validate_dual_run(fn)
+    result = run_and_validate(fn)
     assert is_close(result.t, rect.t + translation.y)
     assert is_close(result.r, rect.r + translation.x)
     assert is_close(result.b, rect.b + translation.y)
@@ -190,7 +190,7 @@ def test_rect_scale(rect, factor):
     def fn():
         return rect.scale(factor)
 
-    result = validate_dual_run(fn)
+    result = run_and_validate(fn)
     assert is_close(result.t, rect.t * factor.y)
     assert is_close(result.r, rect.r * factor.x)
     assert is_close(result.b, rect.b * factor.y)
@@ -207,7 +207,7 @@ def test_rect_scale_about(rect, factor, pivot):
     def fn():
         return rect.scale_about(factor, pivot)
 
-    result = validate_dual_run(fn)
+    result = run_and_validate(fn)
     assert is_close(result.t, (rect.t - pivot.y) * factor.y + pivot.y)
     assert is_close(result.r, (rect.r - pivot.x) * factor.x + pivot.x)
     assert is_close(result.b, (rect.b - pivot.y) * factor.y + pivot.y)
@@ -223,7 +223,7 @@ def test_rect_expand(rect, expansion):
     def fn():
         return rect.expand(expansion)
 
-    result = validate_dual_run(fn)
+    result = run_and_validate(fn)
     assert is_close(result.t, rect.t + expansion.y)
     assert is_close(result.r, rect.r + expansion.x)
     assert is_close(result.b, rect.b - expansion.y)
@@ -239,7 +239,7 @@ def test_rect_contains_point(rect, point):
     def fn():
         return rect.contains_point(point)
 
-    result = validate_dual_run(fn)
+    result = run_and_validate(fn)
     expected = rect.l <= point.x <= rect.r and rect.b <= point.y <= rect.t
     assert is_close(result, expected)
 
@@ -253,7 +253,7 @@ def test_rect_from_center(center, dimensions):
     def fn():
         return Rect.from_center(center, dimensions)
 
-    result = validate_dual_run(fn)
+    result = run_and_validate(fn)
     assert is_close(result.center.x, center.x)
     assert is_close(result.center.y, center.y)
     assert is_close(result.w, dimensions.x)
@@ -266,7 +266,7 @@ def test_rect_as_quad(rect):
     def fn():
         return rect.as_quad()
 
-    result = validate_dual_run(fn)
+    result = run_and_validate(fn)
     assert is_close(result.bl, rect.bl)
     assert is_close(result.tl, rect.tl)
     assert is_close(result.tr, rect.tr)
@@ -296,4 +296,4 @@ def test_quad_contains_point(quad_point):
 
     # Don't have an easy way to validate the correct solution
     # But this still checks that the compiled and Python versions are consistent
-    validate_dual_run(fn)
+    run_and_validate(fn)

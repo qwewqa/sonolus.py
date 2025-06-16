@@ -7,7 +7,7 @@ from hypothesis.stateful import RuleBasedStateMachine, invariant, precondition, 
 
 from sonolus.script.transform import Transform2d
 from sonolus.script.vec import Vec2
-from tests.script.conftest import is_close, validate_dual_run
+from tests.script.conftest import is_close, run_and_validate
 
 # Use smaller limits to avoid precision issues.
 # In practice, it's rare to see large arguments anyway
@@ -39,7 +39,7 @@ def test_translate(v, t):
         transform = Transform2d.new().translate(v)
         return transform.transform_vec(t)
 
-    assert validate_dual_run(fn) == v + t
+    assert run_and_validate(fn) == v + t
 
 
 @given(
@@ -52,7 +52,7 @@ def test_scale(v, factor):
         transform = Transform2d.new().scale(factor)
         return transform.transform_vec(v)
 
-    assert validate_dual_run(fn) == v * factor
+    assert run_and_validate(fn) == v * factor
 
 
 @given(
@@ -66,7 +66,7 @@ def test_scale_around(v, factor, pivot):
         transform = Transform2d.new().scale_about(factor, pivot)
         return transform.transform_vec(v)
 
-    result = validate_dual_run(fn)
+    result = run_and_validate(fn)
     assert is_close(result.x, pivot.x + (v.x - pivot.x) * factor.x, rel_tol=1e-6, abs_tol=1e-6)
     assert is_close(result.y, pivot.y + (v.y - pivot.y) * factor.y, rel_tol=1e-6, abs_tol=1e-6)
 
@@ -81,7 +81,7 @@ def test_rotate(v, angle):
         transform = Transform2d.new().rotate(angle)
         return transform.transform_vec(v)
 
-    assert validate_dual_run(fn) == v.rotate(angle)
+    assert run_and_validate(fn) == v.rotate(angle)
 
 
 @given(
@@ -95,7 +95,7 @@ def test_rotate_around(v, angle, pivot):
         transform = Transform2d.new().rotate_about(angle, pivot)
         return transform.transform_vec(v)
 
-    result = validate_dual_run(fn)
+    result = run_and_validate(fn)
     assert is_close(
         result.x, pivot.x + (v.x - pivot.x) * cos(angle) - (v.y - pivot.y) * sin(angle), rel_tol=1e-6, abs_tol=1e-6
     )
@@ -114,7 +114,7 @@ def test_shear_x(v, m):
         transform = Transform2d.new().shear_x(m)
         return transform.transform_vec(v)
 
-    assert validate_dual_run(fn) == Vec2(v.x + v.y * m, v.y)
+    assert run_and_validate(fn) == Vec2(v.x + v.y * m, v.y)
 
 
 @given(
@@ -127,7 +127,7 @@ def test_shear_y(v, m):
         transform = Transform2d.new().shear_y(m)
         return transform.transform_vec(v)
 
-    assert validate_dual_run(fn) == Vec2(v.x, v.x * m + v.y)
+    assert run_and_validate(fn) == Vec2(v.x, v.x * m + v.y)
 
 
 @given(
@@ -144,7 +144,7 @@ def test_perspective_y_at_foreground(v_x, foreground_y, vanishing_point):
         transform = Transform2d.new().perspective_y(foreground_y, vanishing_point)
         return transform.transform_vec(v)
 
-    result = validate_dual_run(fn)
+    result = run_and_validate(fn)
     assert is_close(result.x, v_x, rel_tol=1e-4, abs_tol=1e-4)
     assert is_close(result.y, foreground_y, rel_tol=1e-4, abs_tol=1e-4)
 
@@ -163,7 +163,7 @@ def test_perspective_y_at_infinity(v_x, foreground_y, vanishing_point):
         transform = Transform2d.new().perspective_y(foreground_y, vanishing_point)
         return transform.transform_vec(v)
 
-    result = validate_dual_run(fn)
+    result = run_and_validate(fn)
     assert is_close(result.x, vanishing_point.x, rel_tol=1e-3, abs_tol=1e-3)
     assert is_close(result.y, vanishing_point.y, rel_tol=1e-3, abs_tol=1e-3)
 
@@ -182,7 +182,7 @@ def test_perspective_x_at_foreground(v_y, foreground_x, vanishing_point):
         transform = Transform2d.new().perspective_x(foreground_x, vanishing_point)
         return transform.transform_vec(v)
 
-    result = validate_dual_run(fn)
+    result = run_and_validate(fn)
     assert is_close(result.x, foreground_x, rel_tol=1e-4, abs_tol=1e-4)
     assert is_close(result.y, v_y, rel_tol=1e-4, abs_tol=1e-4)
 
@@ -201,7 +201,7 @@ def test_perspective_x_at_infinity(v_y, foreground_x, vanishing_point):
         transform = Transform2d.new().perspective_x(foreground_x, vanishing_point)
         return transform.transform_vec(v)
 
-    result = validate_dual_run(fn)
+    result = run_and_validate(fn)
     assert is_close(result.x, vanishing_point.x, rel_tol=1e-3, abs_tol=1e-3)
     assert is_close(result.y, vanishing_point.y, rel_tol=1e-3, abs_tol=1e-3)
 

@@ -11,7 +11,7 @@ import sonolus.script.internal.random as srandom
 from sonolus.script.array import Array
 from sonolus.script.debug import assert_true
 from sonolus.script.values import copy
-from tests.script.conftest import compiled_run
+from tests.script.conftest import run_compiled
 
 # Strategies
 ints = st.integers(min_value=-999, max_value=999)
@@ -27,7 +27,7 @@ def test_randrange_basic(_r):
         assert_true(0 <= value < 10)
         return value
 
-    result = compiled_run(fn)
+    result = run_compiled(fn)
     assert 0 <= result < 10
 
 
@@ -41,7 +41,7 @@ def test_randrange_with_start_stop(_r, start, width):
         assert_true(start <= value < stop)
         return value
 
-    result = compiled_run(fn)
+    result = run_compiled(fn)
     assert start <= result < stop
 
 
@@ -61,7 +61,7 @@ def test_randrange_with_step(_r, start, width, step):
         assert_true((value - start) % step == 0)
         return value
 
-    result = compiled_run(fn)
+    result = run_compiled(fn)
     assert start <= result < stop
     assert (result - start) % step == 0
 
@@ -76,7 +76,7 @@ def test_randint(_r, a, width):
         assert_true(a <= value <= b)
         return value
 
-    result = compiled_run(fn)
+    result = run_compiled(fn)
     assert a <= result <= b
 
 
@@ -89,7 +89,7 @@ def test_choice(_r, values_list):
         value = random.choice(values)
         return value
 
-    result = compiled_run(fn)
+    result = run_compiled(fn)
     assert result in values_list
 
 
@@ -106,7 +106,7 @@ def test_shuffle(_r, values_list):
         b.sort()
         return a == b
 
-    assert compiled_run(fn)
+    assert run_compiled(fn)
 
 
 @given(st.random_module())
@@ -117,7 +117,7 @@ def test_random(_r):
         assert_true(0.0 <= value < 1.0)
         return value
 
-    result = compiled_run(fn)
+    result = run_compiled(fn)
     assert 0.0 <= result < 1.0
 
 
@@ -131,7 +131,7 @@ def test_uniform(_r, a, width):
         assert_true(a <= value <= b)
         return value
 
-    result = compiled_run(fn)
+    result = run_compiled(fn)
     assert a <= result <= b
 
 
