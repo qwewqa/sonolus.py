@@ -34,7 +34,7 @@ def copy[T](value: T) -> T:
 
 
 def swap[T](a: T, b: T):
-    """Swap the values of the two given arguments."""
+    """Swap the values of the two provided mutable values."""
     temp = copy(a)
     a @= b
     b @= temp

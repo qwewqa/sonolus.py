@@ -2,7 +2,7 @@ from __future__ import annotations
 
 from typing import cast, dataclass_transform
 
-from sonolus.backend.ir import IRExpr, IRInstr, IRPureInstr, IRConst
+from sonolus.backend.ir import IRConst, IRExpr, IRInstr, IRPureInstr
 from sonolus.backend.mode import Mode
 from sonolus.backend.ops import Op
 from sonolus.script.internal.context import ctx
@@ -177,7 +177,8 @@ class _SparseStreamBacking(BackingValue):
 class Stream[T](Record):
     """Represents a stream.
 
-    Most users should use [`@streams`][sonolus.script.stream.streams] to declare streams and stream groups rather than using this class directly.
+    Most users should use [`@streams`][sonolus.script.stream.streams] to declare streams and stream groups rather than
+    using this class directly.
 
     If used directly, it is important that streams do not overlap. No other streams should have an offset in
     `range(self.offset, self.offset + max(1, sizeof(self.element_type())))`, or they will overlap and interfere
@@ -396,7 +397,8 @@ class Stream[T](Record):
 class StreamGroup[T, Size](Record):
     """Represents a group of streams.
 
-    Most users should use [`@streams`][sonolus.script.stream.streams] to declare stream groups rather than using this class directly.
+    Most users should use [`@streams`][sonolus.script.stream.streams] to declare stream groups rather than using this
+    class directly.
 
     Usage:
         Declaring a stream group:
