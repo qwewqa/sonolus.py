@@ -19,9 +19,8 @@ MINIMAL_PASSES = (
 FAST_PASSES = (
     CoalesceFlow(),
     UnreachableCodeElimination(),
-    AdvancedDeadCodeElimination(),
-    CoalesceFlow(),
     Allocate(),
+    CoalesceFlow(),
 )
 
 STANDARD_PASSES = (

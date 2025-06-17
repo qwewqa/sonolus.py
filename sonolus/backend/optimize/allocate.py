@@ -91,7 +91,7 @@ class Allocate(CompilerPass):
                 if is_live:
                     return IRSet(place=self.update_stmt(place, mapping), value=self.update_stmt(value, mapping))
                 elif isinstance(value, IRInstr) and value.op.side_effects:
-                    return value
+                    return self.update_stmt(value, mapping)
                 else:
                     return None
             case BlockPlace(block=block, index=index, offset=offset):
