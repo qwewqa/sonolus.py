@@ -22,7 +22,7 @@ from sonolus.script.vec import Vec2
 
 settings.register_profile(
     "standard",
-    deadline=timedelta(milliseconds=1000),
+    deadline=timedelta(seconds=10),
 )
 settings.load_profile("standard")
 

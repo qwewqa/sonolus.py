@@ -1,13 +1,22 @@
 from collections.abc import Callable, Sequence
 from contextvars import ContextVar
-from typing import Any, Never
+from typing import Any, Literal, Never
 
 from sonolus.backend.mode import Mode
 from sonolus.backend.ops import Op
+from sonolus.backend.optimize.constant_evaluation import SparseConditionalConstantPropagation
+from sonolus.backend.optimize.copy_coalesce import CopyCoalesce
+from sonolus.backend.optimize.dead_code import (
+    AdvancedDeadCodeElimination,
+    DeadCodeElimination,
+    UnreachableCodeElimination,
+)
 from sonolus.backend.optimize.flow import cfg_to_mermaid
+from sonolus.backend.optimize.inlining import InlineVars
 from sonolus.backend.optimize.passes import CompilerPass, run_passes
-from sonolus.backend.optimize.simplify import CoalesceFlow
-from sonolus.script.internal.context import GlobalContextState, ctx, set_ctx
+from sonolus.backend.optimize.simplify import CoalesceFlow, NormalizeSwitch, RewriteToSwitch
+from sonolus.backend.optimize.ssa import FromSSA, ToSSA
+from sonolus.script.internal.context import GlobalContextState, ReadOnlyMemory, ctx, set_ctx
 from sonolus.script.internal.impl import meta_fn, validate_value
 from sonolus.script.internal.native import native_function
 from sonolus.script.num import Num
@@ -93,12 +102,56 @@ def terminate():
         raise RuntimeError("Terminated")
 
 
-def visualize_cfg(fn: Callable[[], Any], passes: Sequence[CompilerPass] | None = None) -> str:
+def visualize_cfg(
+    fn: Callable[[], Any] | Callable[[type], Any],
+    /,
+    *,
+    mode: Mode = Mode.PLAY,
+    archetype: type | None = None,
+    archetypes: list[type] | None,
+    passes: Sequence[CompilerPass] | Literal["minimal", "basic", "standard"] = "basic",
+) -> str:
     from sonolus.build.compile import callback_to_cfg
 
-    if passes is None:
-        passes = [CoalesceFlow()]
+    match passes:
+        case "minimal":
+            passes = [
+                CoalesceFlow(),
+            ]
+        case "basic":
+            passes = [
+                CoalesceFlow(),
+                UnreachableCodeElimination(),
+                AdvancedDeadCodeElimination(),
+                CoalesceFlow(),
+            ]
+        case "standard":
+            passes = [
+                CoalesceFlow(),
+                UnreachableCodeElimination(),
+                DeadCodeElimination(),
+                ToSSA(),
+                SparseConditionalConstantPropagation(),
+                UnreachableCodeElimination(),
+                DeadCodeElimination(),
+                CoalesceFlow(),
+                InlineVars(),
+                DeadCodeElimination(),
+                RewriteToSwitch(),
+                FromSSA(),
+                CoalesceFlow(),
+                CopyCoalesce(),
+                AdvancedDeadCodeElimination(),
+                CoalesceFlow(),
+                NormalizeSwitch(),
+            ]
 
-    cfg = callback_to_cfg(GlobalContextState(Mode.PLAY), fn, "")
+    global_state = GlobalContextState(
+        mode,
+        {a: i for i, a in enumerate(archetypes)} if archetypes is not None else None,
+        ReadOnlyMemory(),
+    )
+
+    cfg = callback_to_cfg(global_state, fn, "", archetype=archetype)
     cfg = run_passes(cfg, passes)
     return cfg_to_mermaid(cfg)

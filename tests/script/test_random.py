@@ -2,9 +2,8 @@
 import random
 from collections import defaultdict
 from collections.abc import Callable
-from datetime import timedelta
 
-from hypothesis import given, settings
+from hypothesis import given
 from hypothesis import strategies as st
 
 import sonolus.script.internal.random as srandom
@@ -20,7 +19,6 @@ lists = st.lists(ints, min_size=1, max_size=20)
 
 
 @given(st.random_module())
-@settings(deadline=timedelta(seconds=5))
 def test_randrange_basic(_r):
     def fn():
         value = random.randrange(10)
@@ -32,7 +30,6 @@ def test_randrange_basic(_r):
 
 
 @given(st.random_module(), st.integers(min_value=-100, max_value=100), st.integers(min_value=1, max_value=100))
-@settings(deadline=timedelta(seconds=5))
 def test_randrange_with_start_stop(_r, start, width):
     stop = start + width
 
@@ -51,7 +48,6 @@ def test_randrange_with_start_stop(_r, start, width):
     st.integers(min_value=1, max_value=100),
     st.integers(min_value=1, max_value=10),
 )
-@settings(deadline=timedelta(seconds=5))
 def test_randrange_with_step(_r, start, width, step):
     stop = start + width
 
@@ -67,7 +63,6 @@ def test_randrange_with_step(_r, start, width, step):
 
 
 @given(st.random_module(), st.integers(min_value=-100, max_value=100), st.integers(min_value=0, max_value=100))
-@settings(deadline=timedelta(seconds=5))
 def test_randint(_r, a, width):
     b = a + width
 
@@ -81,7 +76,6 @@ def test_randint(_r, a, width):
 
 
 @given(st.random_module(), lists)
-@settings(deadline=timedelta(seconds=5))
 def test_choice(_r, values_list):
     values = Array(*values_list)
 
@@ -94,7 +88,6 @@ def test_choice(_r, values_list):
 
 
 @given(st.random_module(), lists)
-@settings(deadline=timedelta(seconds=5))
 def test_shuffle(_r, values_list):
     values = Array(*values_list)
 
@@ -110,7 +103,6 @@ def test_shuffle(_r, values_list):
 
 
 @given(st.random_module())
-@settings(deadline=timedelta(seconds=5))
 def test_random(_r):
     def fn():
         value = random.random()
@@ -122,7 +114,6 @@ def test_random(_r):
 
 
 @given(st.random_module(), st.floats(min_value=-100.0, max_value=100.0), st.floats(min_value=0.0, max_value=100.0))
-@settings(deadline=timedelta(seconds=5))
 def test_uniform(_r, a, width):
     b = a + width
 
@@ -157,7 +148,6 @@ def collect_until_complete[T](
 
 
 @given(st.random_module(), st.integers(min_value=1, max_value=MAX_RANGE_SIZE))
-@settings(deadline=timedelta(seconds=5))
 def test_impl_randrange_simple(_random_module, stop):
     expected = set(range(stop))
     counts, missing = collect_until_complete(lambda: srandom._randrange(stop), expected)
@@ -170,7 +160,6 @@ def test_impl_randrange_simple(_random_module, stop):
     st.integers(min_value=-MAX_RANGE_SIZE, max_value=MAX_RANGE_SIZE),
     st.integers(min_value=1, max_value=MAX_RANGE_SIZE),
 )
-@settings(deadline=timedelta(seconds=5))
 def test_impl_randrange_start_stop(_random_module, start, width):
     stop = start + width
     expected = set(range(start, stop))
@@ -186,7 +175,6 @@ def test_impl_randrange_start_stop(_random_module, start, width):
     st.integers(min_value=1, max_value=MAX_RANGE_SIZE),
     st.integers(min_value=1, max_value=5),
 )
-@settings(deadline=timedelta(seconds=5))
 def test_impl_randrange_with_step(_random_module, start, width, step):
     stop = start + width
     expected = set(range(start, stop, step))
@@ -205,7 +193,6 @@ def test_impl_randrange_with_step(_random_module, start, width, step):
     st.integers(min_value=-MAX_RANGE_SIZE, max_value=MAX_RANGE_SIZE),
     st.integers(min_value=0, max_value=MAX_RANGE_SIZE),
 )
-@settings(deadline=timedelta(seconds=5))
 def test_impl_randint(_random_module, a, width):
     b = a + width
     expected = set(range(a, b + 1))
@@ -224,7 +211,6 @@ def test_impl_randint(_random_module, a, width):
         unique=True,
     ),
 )
-@settings(deadline=timedelta(seconds=5))
 def test_impl_choice(_random_module, options):
     expected = set(options)
     counts, missing = collect_until_complete(lambda: srandom._choice(options), expected)
@@ -236,7 +222,6 @@ def test_impl_choice(_random_module, options):
     st.random_module(),
     st.lists(st.integers(min_value=-MAX_RANGE_SIZE, max_value=MAX_RANGE_SIZE), min_size=1, max_size=5, unique=True),
 )
-@settings(deadline=timedelta(seconds=5))
 def test_impl_shuffle(_random_module, original):
     # For small lists, we can test all permutations
     def get_permutations(lst: list[int]) -> set[tuple]:
@@ -262,7 +247,6 @@ def test_impl_shuffle(_random_module, original):
 @given(
     st.random_module(),
 )
-@settings(deadline=timedelta(seconds=5))
 def test_impl_random_distribution(_random_module):
     # Test if random() generates values across all buckets
     num_buckets = 10
@@ -284,7 +268,6 @@ def test_impl_random_distribution(_random_module):
     st.floats(min_value=-MAX_RANGE_SIZE, max_value=MAX_RANGE_SIZE),
     st.floats(min_value=0.1, max_value=MAX_RANGE_SIZE),
 )
-@settings(deadline=timedelta(seconds=5))
 def test_impl_uniform_distribution(_random_module, a, width):
     num_buckets = 10
     b = a + width

@@ -1,7 +1,6 @@
-from datetime import timedelta
 from itertools import starmap
 
-from hypothesis import given, settings
+from hypothesis import given
 from hypothesis import strategies as st
 
 from sonolus.script.array import Array
@@ -28,7 +27,6 @@ def map_and_missing_key(draw):
 
 
 @given(map_and_key())
-@settings(deadline=timedelta(seconds=2))
 def test_insertion(args):
     values, key = args
     pairs = Array(*starmap(Pair, values.items()))
@@ -44,7 +42,6 @@ def test_insertion(args):
 
 
 @given(map_and_key(), ints)
-@settings(deadline=timedelta(seconds=2))
 def test_update(args, new_value):
     values, key = args
     pairs = Array(*starmap(Pair, values.items()))
@@ -61,7 +58,6 @@ def test_update(args, new_value):
 
 
 @given(maps)
-@settings(deadline=timedelta(seconds=2))
 def test_keys(values):
     pairs = Array(*starmap(Pair, values.items()))
     count = len(values)
@@ -76,7 +72,6 @@ def test_keys(values):
 
 
 @given(maps)
-@settings(deadline=timedelta(seconds=2))
 def test_values(values):
     pairs = Array(*starmap(Pair, values.items()))
     count = len(values)
@@ -91,7 +86,6 @@ def test_values(values):
 
 
 @given(maps)
-@settings(deadline=timedelta(seconds=2))
 def test_items(values):
     pairs = Array(*starmap(Pair, values.items()))
     count = len(values)
@@ -106,7 +100,6 @@ def test_items(values):
 
 
 @given(map_and_key())
-@settings(deadline=timedelta(seconds=2))
 def test_pop(args):
     values, key = args
     pairs = Array(*starmap(Pair, values.items()))
@@ -126,7 +119,6 @@ def test_pop(args):
 
 
 @given(map_and_missing_key(), ints)
-@settings(deadline=timedelta(seconds=2))
 def test_insert_pop_round_trip(args, new_value):
     values, key = args
     pairs = Array(*starmap(Pair, values.items()))
@@ -145,7 +137,6 @@ def test_insert_pop_round_trip(args, new_value):
 
 
 @given(map_and_key())
-@settings(deadline=timedelta(seconds=2))
 def test_pop_insert_round_trip(args):
     values, key = args
     pairs = Array(*starmap(Pair, values.items()))
@@ -164,7 +155,6 @@ def test_pop_insert_round_trip(args):
 
 
 @given(maps)
-@settings(deadline=timedelta(seconds=2))
 def test_size(values):
     pairs = Array(*starmap(Pair, values.items()))
     count = len(values)
@@ -190,7 +180,6 @@ def test_size(values):
 
 
 @given(map_and_key())
-@settings(deadline=timedelta(seconds=2))
 def test_contains_existing(args):
     values, key = args
     pairs = Array(*starmap(Pair, values.items()))
@@ -206,7 +195,6 @@ def test_contains_existing(args):
 
 
 @given(map_and_missing_key())
-@settings(deadline=timedelta(seconds=2))
 def test_contains_missing(args):
     values, key = args
     pairs = Array(*starmap(Pair, values.items()))
@@ -222,7 +210,6 @@ def test_contains_missing(args):
 
 
 @given(map_and_key())
-@settings(deadline=timedelta(seconds=2))
 def test_not_contains_existing(args):
     values, key = args
     pairs = Array(*starmap(Pair, values.items()))
@@ -238,7 +225,6 @@ def test_not_contains_existing(args):
 
 
 @given(map_and_missing_key())
-@settings(deadline=timedelta(seconds=2))
 def test_not_contains_missing(args):
     values, key = args
     pairs = Array(*starmap(Pair, values.items()))

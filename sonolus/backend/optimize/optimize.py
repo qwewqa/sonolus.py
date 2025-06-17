@@ -19,7 +19,7 @@ MINIMAL_PASSES = (
 FAST_PASSES = (
     CoalesceFlow(),
     UnreachableCodeElimination(),
-    Allocate(),
+    Allocate(),  # Does dead code elimination too, so no need for a separate pass
     CoalesceFlow(),
 )
 

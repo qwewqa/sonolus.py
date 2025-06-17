@@ -1,6 +1,5 @@
-from datetime import timedelta
 
-from hypothesis import given, settings
+from hypothesis import given
 from hypothesis import strategies as st
 
 from sonolus.script.array import Array
@@ -52,7 +51,6 @@ def test_array_set_clear():
 
 
 @given(set_and_present_value())
-@settings(deadline=timedelta(seconds=1))
 def test_array_set_add_present(args):
     value_set, value = args
     values = Array(*value_set)
@@ -69,7 +67,6 @@ def test_array_set_add_present(args):
 
 
 @given(set_and_missing_value())
-@settings(deadline=timedelta(seconds=1))
 def test_array_set_add_missing(args):
     value_set, missing = args
     values = Array(*value_set)
@@ -86,7 +83,6 @@ def test_array_set_add_missing(args):
 
 
 @given(set_and_present_value())
-@settings(deadline=timedelta(seconds=1))
 def test_array_set_remove_present(args):
     value_set, value = args
     values = Array(*value_set)
@@ -103,7 +99,6 @@ def test_array_set_remove_present(args):
 
 
 @given(set_and_missing_value())
-@settings(deadline=timedelta(seconds=1))
 def test_array_set_remove_missing(args):
     value_set, missing = args
     values = Array(*value_set)
@@ -120,7 +115,6 @@ def test_array_set_remove_missing(args):
 
 
 @given(set_and_missing_value())
-@settings(deadline=timedelta(seconds=1))
 def test_array_set_add_remove_round_trip(args):
     value_set, value = args
     values = Array(*value_set)

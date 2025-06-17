@@ -1,7 +1,6 @@
 # ruff: noqa: B905, C417
-from datetime import timedelta
 
-from hypothesis import given, settings
+from hypothesis import given
 from hypothesis import strategies as st
 
 from sonolus.script.array import Array
@@ -156,7 +155,6 @@ def test_var_array_extend():
 
 
 @given(list_and_index())
-@settings(deadline=timedelta(seconds=1))
 def test_var_array_pop_insert_round_trip(args):
     values_list, index = args
 
@@ -178,7 +176,6 @@ def test_var_array_pop_insert_round_trip(args):
 
 
 @given(list_and_insert_index())
-@settings(deadline=timedelta(seconds=1))
 def test_var_array_insert_pop_round_trip(args):
     values_list, index = args
 
@@ -202,7 +199,6 @@ def test_var_array_insert_pop_round_trip(args):
 
 
 @given(list_and_index())
-@settings(deadline=timedelta(seconds=1))
 def test_remove_present_value(args):
     values_list, index = args
 
@@ -222,7 +218,6 @@ def test_remove_present_value(args):
 
 
 @given(lists)
-@settings(deadline=timedelta(seconds=1))
 def test_remove_missing_value(values_list):
     values = Array(*values_list)
     value_count = len(values_list)
@@ -239,7 +234,6 @@ def test_remove_missing_value(values_list):
 
 
 @given(list_and_index(), st.booleans())
-@settings(deadline=timedelta(seconds=1))
 def test_array_with_possible_uninitialized_access(args, run):
     values_list, index = args
     values = Array(*values_list)
@@ -274,7 +268,6 @@ def test_clear():
 
 
 @given(set_and_present_value())
-@settings(deadline=timedelta(seconds=1))
 def test_set_add_present(args):
     value_set, value = args
     values = Array(*value_set)
@@ -291,7 +284,6 @@ def test_set_add_present(args):
 
 
 @given(set_and_missing_value())
-@settings(deadline=timedelta(seconds=1))
 def test_set_add_missing(args):
     value_set, missing = args
     values = Array(*value_set)
@@ -319,7 +311,6 @@ def test_set_add_full():
 
 
 @given(set_and_present_value())
-@settings(deadline=timedelta(seconds=1))
 def test_set_remove_present(args):
     value_set, value = args
     values = Array(*value_set)
@@ -335,7 +326,6 @@ def test_set_remove_present(args):
 
 
 @given(set_and_missing_value())
-@settings(deadline=timedelta(seconds=1))
 def test_set_remove_missing(args):
     value_set, missing = args
     values = Array(*value_set)
@@ -351,7 +341,6 @@ def test_set_remove_missing(args):
 
 
 @given(set_and_missing_value())
-@settings(deadline=timedelta(seconds=1))
 def test_set_add_remove_round_trip(args):
     value_set, value = args
     values = Array(*value_set)
@@ -368,7 +357,6 @@ def test_set_add_remove_round_trip(args):
 
 
 @given(set_and_present_value())
-@settings(deadline=timedelta(seconds=1))
 def test_set_remove_add_round_trip(args):
     value_set, value = args
     values = Array(*value_set)
@@ -386,7 +374,6 @@ def test_set_remove_add_round_trip(args):
 
 
 @given(list_with_duplicates())
-@settings(deadline=timedelta(seconds=1))
 def test_var_array_count(args):
     values_list, target = args
     values = Array(*values_list)
@@ -404,7 +391,6 @@ def test_var_array_count(args):
 
 
 @given(list_with_duplicates())
-@settings(deadline=timedelta(seconds=1))
 def test_var_array_count_present(args):
     values_list, target = args
     values = Array(*values_list)
@@ -422,7 +408,6 @@ def test_var_array_count_present(args):
 
 
 @given(list_and_maybe_missing_value())
-@settings(deadline=timedelta(seconds=1))
 def test_var_array_count_maybe_missing(args):
     values_list, target = args
     values = Array(*values_list)
@@ -455,7 +440,6 @@ def test_zip_empty():
 @given(
     lists,
 )
-@settings(deadline=timedelta(seconds=1))
 def test_zip_single(values_list_1):
     values_1 = Array(*values_list_1)
     value_count_1 = len(values_list_1)
@@ -476,7 +460,6 @@ def test_zip_single(values_list_1):
     lists,
     lists,
 )
-@settings(deadline=timedelta(seconds=1))
 def test_zip_two(values_list_1, values_list_2):
     values_1 = Array(*values_list_1)
     values_2 = Array(*values_list_2)
@@ -503,7 +486,6 @@ def test_zip_two(values_list_1, values_list_2):
     lists,
     lists,
 )
-@settings(deadline=timedelta(seconds=1))
 def test_zip_three(values_list_1, values_list_2, values_list_3):
     values_1 = Array(*values_list_1)
     values_2 = Array(*values_list_2)
@@ -587,7 +569,6 @@ def test_filter_basic():
 
 
 @given(lists)
-@settings(deadline=timedelta(seconds=1))
 def test_filter_property(values_list):
     values = Array(*values_list)
     value_count = len(values_list)

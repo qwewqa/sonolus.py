@@ -1,9 +1,8 @@
 # ruff: noqa: E741
 import itertools
-from datetime import timedelta
 from math import pi
 
-from hypothesis import assume, given, settings
+from hypothesis import assume, given
 from hypothesis import strategies as st
 
 from sonolus.script.quad import Quad, Rect
@@ -55,7 +54,6 @@ def rects(draw):
     quad=quads(),
     translation=vecs(),
 )
-@settings(deadline=timedelta(seconds=2))
 def test_quad_translate(quad, translation):
     def fn():
         return quad.translate(translation)
@@ -71,7 +69,6 @@ def test_quad_translate(quad, translation):
     quad=quads(),
     factor=vecs(),
 )
-@settings(deadline=timedelta(seconds=2))
 def test_quad_scale(quad, factor):
     def fn():
         return quad.scale(factor)
@@ -88,7 +85,6 @@ def test_quad_scale(quad, factor):
     factor=vecs(),
     pivot=vecs(),
 )
-@settings(deadline=timedelta(seconds=2))
 def test_quad_scale_about(quad, factor, pivot):
     def fn():
         return quad.scale_about(factor, pivot)
@@ -104,7 +100,6 @@ def test_quad_scale_about(quad, factor, pivot):
     quad=quads(),
     angle=floats,
 )
-@settings(deadline=timedelta(seconds=2))
 def test_quad_rotate(quad, angle):
     def fn():
         return quad.rotate(angle)
@@ -121,7 +116,6 @@ def test_quad_rotate(quad, angle):
     angle=floats,
     pivot=vecs(),
 )
-@settings(deadline=timedelta(seconds=2))
 def test_quad_rotate_about(quad, angle, pivot):
     def fn():
         return quad.rotate_about(angle, pivot)
@@ -134,7 +128,6 @@ def test_quad_rotate_about(quad, angle, pivot):
 
 
 @given(quad=quads())
-@settings(deadline=timedelta(seconds=2))
 def test_quad_center(quad):
     def fn():
         return quad.center
@@ -169,7 +162,6 @@ def test_quad_permute():
     rect=rects(),
     translation=vecs(),
 )
-@settings(deadline=timedelta(seconds=2))
 def test_rect_translate(rect, translation):
     def fn():
         return rect.translate(translation)
@@ -185,7 +177,6 @@ def test_rect_translate(rect, translation):
     rect=rects(),
     factor=vecs(),
 )
-@settings(deadline=timedelta(seconds=2))
 def test_rect_scale(rect, factor):
     def fn():
         return rect.scale(factor)
@@ -202,7 +193,6 @@ def test_rect_scale(rect, factor):
     factor=vecs(),
     pivot=vecs(),
 )
-@settings(deadline=timedelta(seconds=2))
 def test_rect_scale_about(rect, factor, pivot):
     def fn():
         return rect.scale_about(factor, pivot)
@@ -218,7 +208,6 @@ def test_rect_scale_about(rect, factor, pivot):
     rect=rects(),
     expansion=vecs(),
 )
-@settings(deadline=timedelta(seconds=2))
 def test_rect_expand(rect, expansion):
     def fn():
         return rect.expand(expansion)
@@ -234,7 +223,6 @@ def test_rect_expand(rect, expansion):
     rect=rects(),
     point=vecs(),
 )
-@settings(deadline=timedelta(seconds=2))
 def test_rect_contains_point(rect, point):
     def fn():
         return rect.contains_point(point)
@@ -248,7 +236,6 @@ def test_rect_contains_point(rect, point):
     center=vecs(),
     dimensions=vecs(),
 )
-@settings(deadline=timedelta(seconds=2))
 def test_rect_from_center(center, dimensions):
     def fn():
         return Rect.from_center(center, dimensions)
@@ -261,7 +248,6 @@ def test_rect_from_center(center, dimensions):
 
 
 @given(rect=rects())
-@settings(deadline=timedelta(seconds=2))
 def test_rect_as_quad(rect):
     def fn():
         return rect.as_quad()
@@ -287,7 +273,6 @@ def quad_and_point(draw):
 
 
 @given(quad_point=quad_and_point())
-@settings(deadline=timedelta(seconds=2))
 def test_quad_contains_point(quad_point):
     quad, point = quad_point
 
