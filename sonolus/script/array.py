@@ -66,7 +66,7 @@ class Array[T, Size](GenericValue, ArrayLike[T]):
         else:
             return parameterized_cls._with_value([value._copy_() for value in values])
 
-    def __init__(self, *_args: T):
+    def __init__(self, *args: T):
         super().__init__()
 
     @classmethod

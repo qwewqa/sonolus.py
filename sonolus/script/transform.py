@@ -1,6 +1,7 @@
 from math import cos, sin
 from typing import Self
 
+from sonolus.script.interval import lerp, remap
 from sonolus.script.quad import Quad, QuadLike
 from sonolus.script.record import Record
 from sonolus.script.vec import Vec2
@@ -396,3 +397,291 @@ class Transform2d(Record):
             tl=self.transform_vec(quad.tl),
             tr=self.transform_vec(quad.tr),
         )
+
+
+class InvertibleTransform2d(Record):
+    """A transformation matrix for 2D points that can be inverted.
+
+    Usage:
+        ```python
+        InvertibleTransform2d.new()
+        ```
+    """
+
+    forward: Transform2d
+    inverse: Transform2d
+
+    @classmethod
+    def new(cls) -> Self:
+        """Create a new identity transform.
+
+        Returns:
+            A new identity transform.
+        """
+        return cls(
+            forward=Transform2d.new(),
+            inverse=Transform2d.new(),
+        )
+
+    def translate(self, translation: Vec2, /) -> Self:
+        """Translate along the x and y axes and return a new transform.
+
+        Args:
+            translation: The translation vector.
+
+        Returns:
+            A new invertible transform after translation.
+        """
+        return InvertibleTransform2d(
+            forward=self.forward.translate(translation),
+            inverse=Transform2d.new().translate(-translation).compose(self.inverse),
+        )
+
+    def scale(self, factor: Vec2, /) -> Self:
+        """Scale about the origin and return a new transform.
+
+        Args:
+            factor: The scale factor vector.
+
+        Returns:
+            A new invertible transform after scaling.
+        """
+        return InvertibleTransform2d(
+            forward=self.forward.scale(factor),
+            inverse=Transform2d.new().scale(Vec2.one() / factor).compose(self.inverse),
+        )
+
+    def scale_about(self, factor: Vec2, /, pivot: Vec2) -> Self:
+        """Scale about the pivot and return a new transform.
+
+        Args:
+            factor: The scale factor vector.
+            pivot: The pivot point for scaling.
+
+        Returns:
+            A new invertible transform after scaling.
+        """
+        return InvertibleTransform2d(
+            forward=self.forward.scale_about(factor, pivot),
+            inverse=Transform2d.new().scale_about(Vec2.one() / factor, pivot).compose(self.inverse),
+        )
+
+    def rotate(self, angle: float, /) -> Self:
+        """Rotate about the origin and return a new transform.
+
+        Args:
+            angle: The angle of rotation in radians.
+
+        Returns:
+            A new invertible transform after rotation.
+        """
+        return InvertibleTransform2d(
+            forward=self.forward.rotate(angle),
+            inverse=Transform2d.new().rotate(-angle).compose(self.inverse),
+        )
+
+    def rotate_about(self, angle: float, /, pivot: Vec2) -> Self:
+        """Rotate about the pivot and return a new transform.
+
+        Args:
+            angle: The angle of rotation in radians.
+            pivot: The pivot point for rotation.
+
+        Returns:
+            A new invertible transform after rotation.
+        """
+        return InvertibleTransform2d(
+            forward=self.forward.rotate_about(angle, pivot),
+            inverse=Transform2d.new().rotate_about(-angle, pivot).compose(self.inverse),
+        )
+
+    def shear_x(self, m: float, /) -> Self:
+        """Shear along the x-axis and return a new transform.
+
+        Args:
+            m: The shear factor along the x-axis.
+
+        Returns:
+            A new invertible transform after shearing.
+        """
+        return InvertibleTransform2d(
+            forward=self.forward.shear_x(m),
+            inverse=Transform2d.new().shear_x(-m).compose(self.inverse),
+        )
+
+    def shear_y(self, m: float, /) -> Self:
+        """Shear along the y-axis and return a new transform.
+
+        Args:
+            m: The shear factor along the y-axis.
+
+        Returns:
+            A new invertible transform after shearing.
+        """
+        return InvertibleTransform2d(
+            forward=self.forward.shear_y(m),
+            inverse=Transform2d.new().shear_y(-m).compose(self.inverse),
+        )
+
+    def simple_perspective_x(self, x: float, /) -> Self:
+        """Apply perspective along the x-axis with vanishing point at the given x coordinate and return a new transform.
+
+        Args:
+            x: The x coordinate of the vanishing point.
+
+        Returns:
+            A new invertible transform after applying perspective.
+        """
+        return InvertibleTransform2d(
+            forward=self.forward.simple_perspective_x(x),
+            inverse=Transform2d.new().simple_perspective_x(-x).compose(self.inverse),
+        )
+
+    def simple_perspective_y(self, y: float, /) -> Self:
+        """Apply perspective along the y-axis with vanishing point at the given y coordinate and return a new transform.
+
+        Args:
+            y: The y coordinate of the vanishing point.
+
+        Returns:
+            A new invertible transform after applying perspective.
+        """
+        return InvertibleTransform2d(
+            forward=self.forward.simple_perspective_y(y),
+            inverse=Transform2d.new().simple_perspective_y(-y).compose(self.inverse),
+        )
+
+    def perspective_x(self, foreground_x: float, vanishing_point: Vec2, /) -> Self:
+        """Apply a perspective transformation along the x-axis and return a new transform.
+
+        Args:
+            foreground_x: The foreground x-coordinate.
+            vanishing_point: The vanishing point vector.
+
+        Returns:
+            A new invertible transform after applying perspective.
+        """
+        return InvertibleTransform2d(
+            forward=self.forward.perspective_x(foreground_x, vanishing_point),
+            inverse=Transform2d.new().inverse_perspective_x(foreground_x, vanishing_point).compose(self.inverse),
+        )
+
+    def perspective_y(self, foreground_y: float, vanishing_point: Vec2, /) -> Self:
+        """Apply a perspective transformation along the y-axis and return a new transform.
+
+        Args:
+            foreground_y: The foreground y-coordinate.
+            vanishing_point: The vanishing point vector.
+
+        Returns:
+            A new invertible transform after applying perspective.
+        """
+        return InvertibleTransform2d(
+            forward=self.forward.perspective_y(foreground_y, vanishing_point),
+            inverse=Transform2d.new().inverse_perspective_y(foreground_y, vanishing_point).compose(self.inverse),
+        )
+
+    def normalize(self) -> Self:
+        """Normalize the transform to have a 1 in the bottom right corner and return a new transform.
+
+        This may fail in some special cases involving perspective transformations where the bottom right corner is 0.
+
+        Returns:
+            A new normalized invertible transform.
+        """
+        return InvertibleTransform2d(
+            forward=self.forward.normalize(),
+            inverse=self.inverse.normalize(),
+        )
+
+    def compose(self, other: Self, /) -> Self:
+        """Compose with another invertible transform which is applied after this transform and return a new transform.
+
+        Args:
+            other: The other invertible transform to compose with.
+
+        Returns:
+            A new invertible transform resulting from the composition.
+        """
+        return InvertibleTransform2d(
+            forward=self.forward.compose(other.forward),
+            inverse=other.inverse.compose(self.inverse),
+        )
+
+    def compose_before(self, other: Self, /) -> Self:
+        """Compose with another invertible transform which is applied before this transform and return a new transform.
+
+        Args:
+            other: The other invertible transform to compose with.
+
+        Returns:
+            A new invertible transform resulting from the composition.
+        """
+        return other.compose(self)
+
+    def transform_vec(self, v: Vec2) -> Vec2:
+        """Transform a [`Vec2`][sonolus.script.vec.Vec2] and return a new [`Vec2`][sonolus.script.vec.Vec2].
+
+        Args:
+            v: The vector to transform.
+
+        Returns:
+            A new transformed vector.
+        """
+        return self.forward.transform_vec(v)
+
+    def inverse_transform_vec(self, v: Vec2) -> Vec2:
+        """Inverse transform a [`Vec2`][sonolus.script.vec.Vec2] and return a new [`Vec2`][sonolus.script.vec.Vec2].
+
+        Args:
+            v: The vector to inverse transform.
+
+        Returns:
+            A new inverse transformed vector.
+        """
+        return self.inverse.transform_vec(v)
+
+    def transform_quad(self, quad: QuadLike) -> Quad:
+        """Transform a [`Quad`][sonolus.script.quad.Quad] and return a new [`Quad`][sonolus.script.quad.Quad].
+
+        Args:
+            quad: The quad to transform.
+
+        Returns:
+            A new transformed quad.
+        """
+        return self.forward.transform_quad(quad)
+
+    def inverse_transform_quad(self, quad: QuadLike) -> Quad:
+        """Inverse transform a [`Quad`][sonolus.script.quad.Quad] and return a new [`Quad`][sonolus.script.quad.Quad].
+
+        Args:
+            quad: The quad to inverse transform.
+
+        Returns:
+            A new inverse transformed quad.
+        """
+        return self.inverse.transform_quad(quad)
+
+
+def perspective_approach(
+    distance_ratio: float,
+    progress: float,
+) -> float:
+    """Calculate the perspective correct approach curve given the initial distance, target distance, and progress.
+
+    For typical engines with stage tilt, distance_ratio is the displayed width of a lane at the judge line divided
+    by the displayed width of a lane at note spawn. For flat stages, this will be 1.0, and this function would simply
+    return progress unchanged.
+
+    Args:
+        distance_ratio: The ratio of the distance at note spawn to the distance at the judge line.
+        progress: The progress value, where 0 corresponds to note spawn and 1 corresponds to the judge line.
+
+    Returns:
+        The perspective-corrected progress value.
+    """
+    d_0 = distance_ratio
+    d_1 = 1.0
+    d = max(lerp(d_0, d_1, progress), 1e-6)  # Avoid a zero or negative distance
+    return remap(1 / d_0, 1 / d_1, 0, 1, 1 / d)

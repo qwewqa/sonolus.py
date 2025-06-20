@@ -4,7 +4,9 @@ from hypothesis import assume, given
 from hypothesis import strategies as st
 from hypothesis.stateful import RuleBasedStateMachine, invariant, precondition, rule
 
-from sonolus.script.transform import Transform2d
+from sonolus.script.array import Array
+from sonolus.script.interval import remap
+from sonolus.script.transform import InvertibleTransform2d, Transform2d, perspective_approach
 from sonolus.script.vec import Vec2
 from tests.script.conftest import is_close, run_and_validate
 
@@ -287,3 +289,307 @@ class TransformInverse(RuleBasedStateMachine):
 
 
 TestTransformInverse = TransformInverse.TestCase
+
+
+@given(
+    v=vecs(),
+    t=vecs(),
+)
+def test_invertible_translate(v, t):
+    def fn():
+        transform = InvertibleTransform2d.new().translate(v)
+        return transform.transform_vec(t)
+
+    assert run_and_validate(fn) == v + t
+
+
+@given(
+    v=vecs(),
+    t=vecs(),
+)
+def test_invertible_translate_inverse(v, t):
+    def fn():
+        transform = InvertibleTransform2d.new().translate(v)
+        forward_result = transform.transform_vec(t)
+        return transform.inverse_transform_vec(forward_result)
+
+    result = run_and_validate(fn)
+    assert is_close(result.x, t.x, rel_tol=1e-6, abs_tol=1e-6)
+    assert is_close(result.y, t.y, rel_tol=1e-6, abs_tol=1e-6)
+
+
+@given(
+    v=vecs(),
+    factor=vecs_nonzero(),
+)
+def test_invertible_scale(v, factor):
+    def fn():
+        transform = InvertibleTransform2d.new().scale(factor)
+        return transform.transform_vec(v)
+
+    assert run_and_validate(fn) == v * factor
+
+
+@given(
+    v=vecs(),
+    factor=vecs_nonzero(),
+)
+def test_invertible_scale_inverse(v, factor):
+    def fn():
+        transform = InvertibleTransform2d.new().scale(factor)
+        forward_result = transform.transform_vec(v)
+        return transform.inverse_transform_vec(forward_result)
+
+    result = run_and_validate(fn)
+    assert is_close(result.x, v.x, rel_tol=1e-6, abs_tol=1e-6)
+    assert is_close(result.y, v.y, rel_tol=1e-6, abs_tol=1e-6)
+
+
+@given(
+    v=vecs(),
+    angle=floats,
+)
+def test_invertible_rotate(v, angle):
+    def fn():
+        transform = InvertibleTransform2d.new().rotate(angle)
+        return transform.transform_vec(v)
+
+    assert run_and_validate(fn) == v.rotate(angle)
+
+
+@given(
+    v=vecs(),
+    angle=floats,
+)
+def test_invertible_rotate_inverse(v, angle):
+    def fn():
+        transform = InvertibleTransform2d.new().rotate(angle)
+        forward_result = transform.transform_vec(v)
+        return transform.inverse_transform_vec(forward_result)
+
+    result = run_and_validate(fn)
+    assert is_close(result.x, v.x, rel_tol=1e-6, abs_tol=1e-6)
+    assert is_close(result.y, v.y, rel_tol=1e-6, abs_tol=1e-6)
+
+
+@given(
+    v=vecs(),
+    m=floats,
+)
+def test_invertible_shear_x(v, m):
+    def fn():
+        transform = InvertibleTransform2d.new().shear_x(m)
+        return transform.transform_vec(v)
+
+    assert run_and_validate(fn) == Vec2(v.x + v.y * m, v.y)
+
+
+@given(
+    v=vecs(),
+    m=floats,
+)
+def test_invertible_shear_x_inverse(v, m):
+    def fn():
+        transform = InvertibleTransform2d.new().shear_x(m)
+        forward_result = transform.transform_vec(v)
+        return transform.inverse_transform_vec(forward_result)
+
+    result = run_and_validate(fn)
+    assert is_close(result.x, v.x, rel_tol=1e-6, abs_tol=1e-6)
+    assert is_close(result.y, v.y, rel_tol=1e-6, abs_tol=1e-6)
+
+
+@given(
+    v=vecs(),
+    m=floats,
+)
+def test_invertible_shear_y(v, m):
+    def fn():
+        transform = InvertibleTransform2d.new().shear_y(m)
+        return transform.transform_vec(v)
+
+    assert run_and_validate(fn) == Vec2(v.x, v.x * m + v.y)
+
+
+@given(
+    v=vecs(),
+    m=floats,
+)
+def test_invertible_shear_y_inverse(v, m):
+    def fn():
+        transform = InvertibleTransform2d.new().shear_y(m)
+        forward_result = transform.transform_vec(v)
+        return transform.inverse_transform_vec(forward_result)
+
+    result = run_and_validate(fn)
+    assert is_close(result.x, v.x, rel_tol=1e-6, abs_tol=1e-6)
+    assert is_close(result.y, v.y, rel_tol=1e-6, abs_tol=1e-6)
+
+
+@given(
+    v=vecs(),
+    translation=vecs(),
+    factor=vecs_nonzero(),
+    angle=floats,
+)
+def test_invertible_multiple_inverse(v, translation, factor, angle):
+    def fn():
+        transform = InvertibleTransform2d.new().translate(translation).scale(factor).rotate(angle)
+        forward_result = transform.transform_vec(v)
+        return transform.inverse_transform_vec(forward_result)
+
+    result = run_and_validate(fn)
+    assert is_close(result.x, v.x, rel_tol=1e-4, abs_tol=1e-4)
+    assert is_close(result.y, v.y, rel_tol=1e-4, abs_tol=1e-4)
+
+
+@given(
+    v=vecs(),
+    translation=vecs(),
+    angle=floats,
+)
+def test_invertible_compose_matches_direct(v, translation, angle):
+    # noinspection PyShadowingNames
+    def fn():
+        transform1 = InvertibleTransform2d.new().translate(translation)
+        transform2 = InvertibleTransform2d.new().rotate(angle)
+        transform_composed = transform1.compose(transform2)
+        transform_direct = InvertibleTransform2d.new().translate(translation).rotate(angle)
+        forward_result = transform_composed.transform_vec(v)
+        forward_result_direct = transform_direct.transform_vec(v)
+        inverse_result = transform_composed.inverse_transform_vec(forward_result)
+        inverse_result_direct = transform_direct.inverse_transform_vec(forward_result_direct)
+        return Array(
+            forward_result,
+            forward_result_direct,
+            inverse_result,
+            inverse_result_direct,
+        )
+
+    result = run_and_validate(fn)
+    forward_result, forward_result_direct, inverse_result, inverse_result_direct = result
+    assert is_close(forward_result.x, forward_result_direct.x, rel_tol=1e-4, abs_tol=1e-4)
+    assert is_close(forward_result.y, forward_result_direct.y, rel_tol=1e-4, abs_tol=1e-4)
+    assert is_close(inverse_result.x, inverse_result_direct.x, rel_tol=1e-4, abs_tol=1e-4)
+    assert is_close(inverse_result.y, inverse_result_direct.y, rel_tol=1e-4, abs_tol=1e-4)
+
+
+class InvertibleTransformStateMachine(RuleBasedStateMachine):
+    def __init__(self):
+        super().__init__()
+        self.transform = InvertibleTransform2d.new()
+        self.scale_count = 0
+        self.shear_count = 0
+        self.perspective_count = 0
+
+    @rule(translation=vecs())
+    def translate(self, translation):
+        self.transform = self.transform.translate(translation)
+
+    @precondition(lambda self: self.scale_count < 2)
+    @rule(factor=vecs_nonzero())
+    def scale(self, factor):
+        self.transform = self.transform.scale(factor)
+        self.scale_count += 1
+
+    @precondition(lambda self: self.scale_count < 2)
+    @rule(factor=vecs_nonzero(), pivot=vecs())
+    def scale_about(self, factor, pivot):
+        self.transform = self.transform.scale_about(factor, pivot)
+        self.scale_count += 1
+
+    @rule(angle=floats)
+    def rotate(self, angle):
+        self.transform = self.transform.rotate(angle)
+
+    @rule(angle=floats, pivot=vecs())
+    def rotate_about(self, angle, pivot):
+        self.transform = self.transform.rotate_about(angle, pivot)
+
+    @precondition(lambda self: self.shear_count < 2)
+    @rule(m=floats)
+    def shear_x(self, m):
+        self.transform = self.transform.shear_x(m)
+        self.shear_count += 1
+
+    @precondition(lambda self: self.shear_count < 2)
+    @rule(m=floats)
+    def shear_y(self, m):
+        self.transform = self.transform.shear_y(m)
+        self.shear_count += 1
+
+    @precondition(lambda self: self.perspective_count < 2)
+    @rule(y=nonzero_floats)
+    def simple_perspective_y(self, y):
+        self.transform = self.transform.simple_perspective_y(y)
+        self.perspective_count += 1
+
+    @precondition(lambda self: self.perspective_count < 2)
+    @rule(foreground_y=floats, vanishing_point=vecs())
+    def perspective_y(self, foreground_y, vanishing_point):
+        assume(abs(foreground_y - vanishing_point.y) > 1e-2)
+        self.transform = self.transform.perspective_y(foreground_y, vanishing_point)
+        self.perspective_count += 1
+
+    @precondition(lambda self: self.perspective_count < 2)
+    @rule(foreground_x=floats, vanishing_point=vecs())
+    def perspective_x(self, foreground_x, vanishing_point):
+        assume(abs(foreground_x - vanishing_point.x) > 1e-2)
+        self.transform = self.transform.perspective_x(foreground_x, vanishing_point)
+        self.perspective_count += 1
+
+    @invariant()
+    def inverse_cancels(self):
+        v = Vec2(1.5, 2.3)  # Test point
+        forward_result = self.transform.transform_vec(v)
+        inverse_result = self.transform.inverse_transform_vec(forward_result)
+        assert is_close(inverse_result.x, v.x, rel_tol=1e-2, abs_tol=1e-2)
+        assert is_close(inverse_result.y, v.y, rel_tol=1e-2, abs_tol=1e-2)
+
+
+TestInvertibleTransform = InvertibleTransformStateMachine.TestCase
+
+
+def test_perspective_approach_at_0():
+    def fn():
+        return perspective_approach(2, 0)
+
+    assert run_and_validate(fn) == 0
+
+
+def test_perspective_approach_at_1():
+    def fn():
+        return perspective_approach(2, 1)
+
+    assert run_and_validate(fn) == 1
+
+
+def test_perspective_approach_at_halfway():
+    def fn():
+        return perspective_approach(2, 0.5)
+
+    assert run_and_validate(fn) < 0.5
+
+
+@given(
+    progress=st.floats(min_value=-0.1, max_value=0.1),
+)
+def test_perspective_approach_against_transform(progress):
+    def fn():
+        transform = InvertibleTransform2d.new().perspective_y(0, Vec2(0, 2))
+        y_0 = 10
+        y_1 = 0
+        w_0 = transform.transform_vec(Vec2(1, y_0)).x - transform.transform_vec(Vec2(0, y_0)).x
+        w_1 = transform.transform_vec(Vec2(1, y_1)).x - transform.transform_vec(Vec2(0, y_1)).x
+        d_0 = 1 / w_0
+        d_1 = 1 / w_1
+        y = remap(0, 1, y_0, y_1, progress)
+        ty_0 = transform.transform_vec(Vec2(0, y_0)).y
+        ty_1 = transform.transform_vec(Vec2(0, y_1)).y
+        return Array(
+            perspective_approach(d_0 / d_1, progress),
+            remap(ty_0, ty_1, 0, 1, transform.transform_vec(Vec2(0, y)).y),
+        )
+
+    result = run_and_validate(fn)
+    assert is_close(result[0], result[1], rel_tol=1e-4, abs_tol=1e-4)
