@@ -5,6 +5,7 @@ from sonolus.backend.blocks import Block, PlayBlock, PreviewBlock, TutorialBlock
 from sonolus.backend.mode import Mode
 from sonolus.script.internal.descriptor import SonolusDescriptor
 from sonolus.script.internal.generic import validate_concrete_type
+from sonolus.script.internal.simulation_context import sim_ctx
 from sonolus.script.internal.value import Value
 
 
@@ -27,6 +28,11 @@ class _GlobalField(SonolusDescriptor):
         if instance is None:
             return self
 
+        if sim_ctx():
+            from sonolus.script.values import zeros
+
+            return sim_ctx().get_or_put_value((instance, self), lambda: zeros(self.type))
+
         from sonolus.script.internal.context import ctx
 
         info = owner._global_info_
@@ -37,6 +43,12 @@ class _GlobalField(SonolusDescriptor):
 
     def __set__(self, instance, value):
         from sonolus.script.internal.context import ctx
+
+        if sim_ctx():
+            from sonolus.script.values import zeros
+
+            sim_ctx().set_or_put_value((instance, self), lambda: zeros(self.type), value)
+            return
 
         info = instance._global_info_
         if not ctx():
@@ -63,6 +75,11 @@ class _GlobalPlaceholder:
             raise RuntimeError("Global access outside of compilation")
         base = ctx().get_global_base(self)
         return self.type._from_place_(base)
+
+    def _get_sim_replacement_(self):
+        from sonolus.script.values import zeros
+
+        return sim_ctx().get_or_put_value(self, lambda: zeros(self.type))
 
 
 def _create_global(cls: type, blocks: dict[Mode, Block], offset: int | None):

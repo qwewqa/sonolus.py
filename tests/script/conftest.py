@@ -13,7 +13,7 @@ from sonolus.backend.optimize.passes import run_passes
 from sonolus.backend.place import BlockPlace
 from sonolus.backend.visitor import compile_and_call
 from sonolus.build.compile import callback_to_cfg
-from sonolus.script.debug import debug_log_callback
+from sonolus.script.debug import debug_log_callback, simulation_context
 from sonolus.script.internal.context import GlobalContextState
 from sonolus.script.internal.error import CompilationError
 from sonolus.script.internal.impl import meta_fn
@@ -50,7 +50,8 @@ def run_and_validate[**P, R](fn: Callable[P, R], *args: P.args, **kwargs: P.kwar
 
     debug_log_callback_token = debug_log_callback.set(log_cb)
     try:
-        regular_result = fn(*args, **kwargs)
+        with simulation_context():
+            regular_result = fn(*args, **kwargs)
     except Exception as e:
         exception = e
     finally:

@@ -9,7 +9,9 @@ from sonolus.script.internal.context import ctx
 from sonolus.script.internal.descriptor import SonolusDescriptor
 from sonolus.script.internal.generic import validate_concrete_type
 from sonolus.script.internal.introspection import get_field_specifiers
+from sonolus.script.internal.simulation_context import sim_ctx
 from sonolus.script.num import Num
+from sonolus.script.values import copy
 
 
 @dataclass
@@ -202,8 +204,13 @@ class _OptionField(SonolusDescriptor):
                 return Num._from_place_(BlockPlace(block, self.index))
             else:
                 return Num._accept_(self.info.default)
+        if sim_ctx():
+            return sim_ctx().get_or_put_value((instance, self), lambda: copy(self.info.default))
+        raise RuntimeError("Options can only be accessed in a context")
 
     def __set__(self, instance, value):
+        if sim_ctx():
+            return sim_ctx().set_or_put_value((instance, self), lambda: copy(self.info.default), value)
         raise AttributeError("Options are read-only")
 
 

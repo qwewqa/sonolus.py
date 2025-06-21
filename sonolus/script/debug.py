@@ -19,6 +19,7 @@ from sonolus.backend.optimize.ssa import FromSSA, ToSSA
 from sonolus.script.internal.context import GlobalContextState, ReadOnlyMemory, ctx, set_ctx
 from sonolus.script.internal.impl import meta_fn, validate_value
 from sonolus.script.internal.native import native_function
+from sonolus.script.internal.simulation_context import SimulationContext
 from sonolus.script.num import Num
 
 debug_log_callback = ContextVar[Callable[[Num], None]]("debug_log_callback")
@@ -155,3 +156,7 @@ def visualize_cfg(
     cfg = callback_to_cfg(global_state, fn, "", archetype=archetype)
     cfg = run_passes(cfg, passes)
     return cfg_to_mermaid(cfg)
+
+
+def simulation_context() -> SimulationContext:
+    return SimulationContext()
