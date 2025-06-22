@@ -19,6 +19,25 @@ _compiler_internal_ = True
 context_var = ContextVar("context_var", default=None)
 
 
+@dataclass(frozen=True)
+class DebugConfig:
+    unchecked_reads: bool
+    unchecked_writes: bool
+
+
+_full_debug_config = DebugConfig(
+    unchecked_reads=True,
+    unchecked_writes=True,
+)
+
+_disabled_debug_config = DebugConfig(
+    unchecked_reads=False,
+    unchecked_writes=False,
+)
+
+debug_var = ContextVar("debug_var", default=_disabled_debug_config)
+
+
 class GlobalContextState:
     archetypes: dict[type, int]
     rom: ReadOnlyMemory
@@ -92,12 +111,16 @@ class Context:
         return self.callback_state.used_names
 
     def check_readable(self, place: BlockPlace):
+        if debug_config().unchecked_reads:
+            return
         if not self.callback:
             return
         if isinstance(place.block, BlockData) and self.callback not in self.blocks(place.block).readable:
             raise RuntimeError(f"Block {place.block} is not readable in {self.callback}")
 
     def check_writable(self, place: BlockPlace):
+        if debug_config().unchecked_writes:
+            return
         if not self.callback:
             return
         if isinstance(place.block, BlockData) and self.callback not in self.blocks(place.block).writable:
@@ -282,6 +305,21 @@ class ReadOnlyMemory:
             return ctx().blocks.EngineRom
         else:
             return PlayBlock.EngineRom
+
+
+@contextmanager
+def enable_debug(config: DebugConfig | None = None):
+    if config is None:
+        config = _full_debug_config
+    token = debug_var.set(config)
+    try:
+        yield
+    finally:
+        debug_var.reset(token)
+
+
+def debug_config() -> DebugConfig:
+    return debug_var.get()
 
 
 @dataclass

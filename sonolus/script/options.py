@@ -5,7 +5,7 @@ from typing import Annotated, Any, NewType, dataclass_transform, get_origin
 from sonolus.backend.mode import Mode
 from sonolus.backend.place import BlockPlace
 from sonolus.script.debug import assert_unreachable
-from sonolus.script.internal.context import ctx
+from sonolus.script.internal.context import ctx, debug_config
 from sonolus.script.internal.descriptor import SonolusDescriptor
 from sonolus.script.internal.generic import validate_concrete_type
 from sonolus.script.internal.introspection import get_field_specifiers
@@ -188,6 +188,8 @@ class _OptionField(SonolusDescriptor):
         self.index = index
 
     def __get__(self, instance, owner):
+        if sim_ctx():
+            return sim_ctx().get_or_put_value((instance, self), lambda: copy(self.info.default))
         if ctx():
             match ctx().global_state.mode:
                 case Mode.PLAY:
@@ -204,13 +206,27 @@ class _OptionField(SonolusDescriptor):
                 return Num._from_place_(BlockPlace(block, self.index))
             else:
                 return Num._accept_(self.info.default)
-        if sim_ctx():
-            return sim_ctx().get_or_put_value((instance, self), lambda: copy(self.info.default))
         raise RuntimeError("Options can only be accessed in a context")
 
     def __set__(self, instance, value):
         if sim_ctx():
             return sim_ctx().set_or_put_value((instance, self), lambda: copy(self.info.default), value)
+        if ctx() and debug_config().unchecked_writes:
+            match ctx().global_state.mode:
+                case Mode.PLAY:
+                    block = ctx().blocks.LevelOption
+                case Mode.WATCH:
+                    block = ctx().blocks.LevelOption
+                case Mode.PREVIEW:
+                    block = ctx().blocks.PreviewOption
+                case Mode.TUTORIAL:
+                    block = None
+                case _:
+                    assert_unreachable()
+            if block is not None:
+                Num._from_place_(BlockPlace(block, self.index))._set_(Num._accept_(value))
+            else:
+                raise RuntimeError("Options in the current mode cannot be set and use the default value")
         raise AttributeError("Options are read-only")
 
 
