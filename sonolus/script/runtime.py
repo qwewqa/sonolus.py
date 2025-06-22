@@ -259,6 +259,382 @@ class _TutorialRuntimeUi:
     instruction: BasicRuntimeUiLayout
 
 
+class UiLayout[T](Record):
+    """The layout of a UI element."""
+
+    _underlying: T
+
+    def update(
+        self,
+        anchor: Vec2 | None = None,
+        pivot: Vec2 | None = None,
+        dimensions: Vec2 | None = None,
+        rotation: float | None = None,
+        alpha: float | None = None,
+        horizontal_align: HorizontalAlign | None = None,
+        background: bool | None = None,
+    ):
+        """Update the layout properties if it's available in the current mode and do nothing otherwise."""
+        match self._underlying:
+            case RuntimeUiLayout():
+                self._underlying.update(
+                    anchor=anchor,
+                    pivot=pivot,
+                    dimensions=dimensions,
+                    rotation=rotation,
+                    alpha=alpha,
+                    horizontal_align=horizontal_align,
+                    background=background,
+                )
+            case BasicRuntimeUiLayout():
+                self._underlying.update(
+                    anchor=anchor,
+                    pivot=pivot,
+                    dimensions=dimensions,
+                    rotation=rotation,
+                    alpha=alpha,
+                    background=background,
+                )
+            case _:
+                pass  # do nothing
+
+    @property
+    def is_available(self) -> bool:
+        """Check if the layout is available in the current mode."""
+        return self._underlying is not None
+
+
+class UiConfig[T](Record):
+    """The user configuration for a UI element."""
+
+    _underlying: T
+
+    @property
+    def scale(self) -> float:
+        """The scale of the UI element."""
+        match self._underlying:
+            case RuntimeUiConfig():
+                return self._underlying.scale
+            case _:
+                return 1.0  # Default scale if not available
+
+    @property
+    def alpha(self) -> float:
+        """The alpha (opacity) of the UI element."""
+        match self._underlying:
+            case RuntimeUiConfig():
+                return self._underlying.alpha
+            case _:
+                return 1.0  # Default alpha if not available
+
+    @property
+    def is_available(self) -> bool:
+        """Check if the config is available in the current mode."""
+        return self._underlying is not None
+
+
+class RuntimeUi(Record):
+    """Holds the layouts for different UI elements across all modes."""
+
+    @property
+    @meta_fn
+    def menu(self) -> UiLayout:
+        """The configuration for the menu UI element.
+
+        Available in play, watch, preview, and tutorial mode.
+        """
+        match ctx().global_state.mode:
+            case Mode.PLAY:
+                return UiLayout(_PlayRuntimeUi.menu)
+            case Mode.WATCH:
+                return UiLayout(_WatchRuntimeUi.menu)
+            case Mode.PREVIEW:
+                return UiLayout(_PreviewRuntimeUi.menu)
+            case Mode.TUTORIAL:
+                return UiLayout(_TutorialRuntimeUi.menu)
+            case _:
+                raise RuntimeError("Unsupported mode for menu UI layout")
+
+    @property
+    @meta_fn
+    def menu_config(self) -> UiConfig:
+        """The configuration for the menu UI element.
+
+        Available in play, watch, preview, and tutorial mode.
+        """
+        match ctx().global_state.mode:
+            case Mode.PLAY:
+                return UiConfig(_PlayRuntimeUiConfigs.menu)
+            case Mode.WATCH:
+                return UiConfig(_WatchRuntimeUiConfigs.menu)
+            case Mode.PREVIEW:
+                return UiConfig(_PreviewRuntimeUiConfigs.menu)
+            case Mode.TUTORIAL:
+                return UiConfig(_TutorialRuntimeUiConfigs.menu)
+            case _:
+                raise RuntimeError("Unsupported mode for menu UI configuration")
+
+    @property
+    @meta_fn
+    def judgment(self) -> UiLayout:
+        """The configuration for the judgment UI element.
+
+        Available in play and watch mode.
+        """
+        match ctx().global_state.mode:
+            case Mode.PLAY:
+                return UiLayout(_PlayRuntimeUi.judgment)
+            case Mode.WATCH:
+                return UiLayout(_WatchRuntimeUi.judgment)
+            case _:
+                return UiLayout(None)
+
+    @property
+    @meta_fn
+    def judgment_config(self) -> UiConfig:
+        """The configuration for the judgment UI element.
+
+        Available in play and watch mode.
+        """
+        match ctx().global_state.mode:
+            case Mode.PLAY:
+                return UiConfig(_PlayRuntimeUiConfigs.judgment)
+            case Mode.WATCH:
+                return UiConfig(_WatchRuntimeUiConfigs.judgment)
+            case _:
+                return UiConfig(None)
+
+    @property
+    @meta_fn
+    def combo_value(self) -> UiLayout:
+        """The configuration for the combo value UI element.
+
+        Available in play and watch mode.
+        """
+        match ctx().global_state.mode:
+            case Mode.PLAY:
+                return UiLayout(_PlayRuntimeUi.combo_value)
+            case Mode.WATCH:
+                return UiLayout(_WatchRuntimeUi.combo_value)
+            case _:
+                return UiLayout(None)
+
+    @property
+    @meta_fn
+    def combo_text(self) -> UiLayout:
+        """The configuration for the combo text UI element.
+
+        Available in play and watch mode.
+        """
+        match ctx().global_state.mode:
+            case Mode.PLAY:
+                return UiLayout(_PlayRuntimeUi.combo_text)
+            case Mode.WATCH:
+                return UiLayout(_WatchRuntimeUi.combo_text)
+            case _:
+                return UiLayout(None)
+
+    @property
+    @meta_fn
+    def combo_config(self) -> UiConfig:
+        """The configuration for the combo UI element.
+
+        Available in play and watch mode.
+        """
+        match ctx().global_state.mode:
+            case Mode.PLAY:
+                return UiConfig(_PlayRuntimeUiConfigs.combo)
+            case Mode.WATCH:
+                return UiConfig(_WatchRuntimeUiConfigs.combo)
+            case _:
+                return UiConfig(None)
+
+    @property
+    @meta_fn
+    def primary_metric_bar(self) -> UiLayout:
+        """The configuration for the primary metric bar UI element.
+
+        Available in play and watch mode.
+        """
+        match ctx().global_state.mode:
+            case Mode.PLAY:
+                return UiLayout(_PlayRuntimeUi.primary_metric_bar)
+            case Mode.WATCH:
+                return UiLayout(_WatchRuntimeUi.primary_metric_bar)
+            case _:
+                return UiLayout(None)
+
+    @property
+    @meta_fn
+    def primary_metric_value(self) -> UiLayout:
+        """The configuration for the primary metric value UI element.
+
+        Available in play and watch mode.
+        """
+        match ctx().global_state.mode:
+            case Mode.PLAY:
+                return UiLayout(_PlayRuntimeUi.primary_metric_value)
+            case Mode.WATCH:
+                return UiLayout(_WatchRuntimeUi.primary_metric_value)
+            case _:
+                return UiLayout(None)
+
+    @property
+    @meta_fn
+    def primary_metric_config(self) -> UiConfig:
+        """The configuration for the primary metric UI element.
+
+        Available in play and watch mode.
+        """
+        match ctx().global_state.mode:
+            case Mode.PLAY:
+                return UiConfig(_PlayRuntimeUiConfigs.primary_metric)
+            case Mode.WATCH:
+                return UiConfig(_WatchRuntimeUiConfigs.primary_metric)
+            case _:
+                return UiConfig(None)
+
+    @property
+    @meta_fn
+    def secondary_metric_bar(self) -> UiLayout:
+        """The configuration for the secondary metric bar UI element.
+
+        Available in play and watch mode.
+        """
+        match ctx().global_state.mode:
+            case Mode.PLAY:
+                return UiLayout(_PlayRuntimeUi.secondary_metric_bar)
+            case Mode.WATCH:
+                return UiLayout(_WatchRuntimeUi.secondary_metric_bar)
+            case _:
+                return UiLayout(None)
+
+    @property
+    @meta_fn
+    def secondary_metric_value(self) -> UiLayout:
+        """The configuration for the secondary metric value UI element.
+
+        Available in play and watch mode.
+        """
+        match ctx().global_state.mode:
+            case Mode.PLAY:
+                return UiLayout(_PlayRuntimeUi.secondary_metric_value)
+            case Mode.WATCH:
+                return UiLayout(_WatchRuntimeUi.secondary_metric_value)
+            case _:
+                return UiLayout(None)
+
+    @property
+    @meta_fn
+    def secondary_metric_config(self) -> UiConfig:
+        """The configuration for the secondary metric UI element.
+
+        Available in play and watch mode.
+        """
+        match ctx().global_state.mode:
+            case Mode.PLAY:
+                return UiConfig(_PlayRuntimeUiConfigs.secondary_metric)
+            case Mode.WATCH:
+                return UiConfig(_WatchRuntimeUiConfigs.secondary_metric)
+            case _:
+                return UiConfig(None)
+
+    @property
+    @meta_fn
+    def progress(self) -> UiLayout:
+        """The configuration for the progress UI element.
+
+        Available in watch and preview mode.
+        """
+        match ctx().global_state.mode:
+            case Mode.WATCH:
+                return UiLayout(_WatchRuntimeUi.progress)
+            case Mode.PREVIEW:
+                return UiLayout(_PreviewRuntimeUi.progress)
+            case _:
+                return UiLayout(None)
+
+    @property
+    @meta_fn
+    def progress_config(self) -> UiConfig:
+        """The configuration for the progress UI element.
+
+        Available in watch and preview mode.
+        """
+        match ctx().global_state.mode:
+            case Mode.WATCH:
+                return UiConfig(_WatchRuntimeUiConfigs.progress)
+            case Mode.PREVIEW:
+                return UiConfig(_PreviewRuntimeUiConfigs.progress)
+            case _:
+                return UiConfig(None)
+
+    @property
+    @meta_fn
+    def previous(self) -> UiLayout:
+        """The configuration for the previous navigation UI element.
+
+        Available in tutorial mode.
+        """
+        match ctx().global_state.mode:
+            case Mode.TUTORIAL:
+                return UiLayout(_TutorialRuntimeUi.previous)
+            case _:
+                return UiLayout(None)
+
+    @property
+    @meta_fn
+    def next(self) -> UiLayout:
+        """The configuration for the next navigation UI element.
+
+        Available in tutorial mode.
+        """
+        match ctx().global_state.mode:
+            case Mode.TUTORIAL:
+                return UiLayout(_TutorialRuntimeUi.next)
+            case _:
+                return UiLayout(None)
+
+    @property
+    @meta_fn
+    def navigation_config(self) -> UiConfig:
+        """The configuration for the navigation UI element.
+
+        Available in tutorial mode.
+        """
+        match ctx().global_state.mode:
+            case Mode.TUTORIAL:
+                return UiConfig(_TutorialRuntimeUiConfigs.navigation)
+            case _:
+                return UiConfig(None)
+
+    @property
+    @meta_fn
+    def instruction(self) -> UiLayout:
+        """The configuration for the instruction UI element.
+
+        Available in tutorial mode.
+        """
+        match ctx().global_state.mode:
+            case Mode.TUTORIAL:
+                return UiLayout(_TutorialRuntimeUi.instruction)
+            case _:
+                return UiLayout(None)
+
+    @property
+    @meta_fn
+    def instruction_config(self) -> UiConfig:
+        """The configuration for the instruction UI element.
+
+        Available in tutorial mode.
+        """
+        match ctx().global_state.mode:
+            case Mode.TUTORIAL:
+                return UiConfig(_TutorialRuntimeUiConfigs.instruction)
+            case _:
+                return UiConfig(None)
+
+
 class Touch(Record):
     """Data of a touch event."""
 
@@ -732,6 +1108,13 @@ preview_ui = _PreviewRuntimeUi
 preview_ui_configs = _PreviewRuntimeUiConfigs
 tutorial_ui = _TutorialRuntimeUi
 tutorial_ui_configs = _TutorialRuntimeUiConfigs
+
+_runtime_ui = RuntimeUi()
+
+
+def runtime_ui() -> RuntimeUi:
+    """Get the runtime UI configuration."""
+    return _runtime_ui
 
 
 def canvas() -> _PreviewRuntimeCanvas:

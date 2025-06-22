@@ -14,6 +14,7 @@ from sonolus.script.internal.value import BackingValue, Value
 from sonolus.script.iterator import SonolusIterator
 from sonolus.script.num import Num
 from sonolus.script.record import Record
+from sonolus.script.runtime import delta_time, time
 from sonolus.script.values import sizeof
 
 
@@ -318,6 +319,22 @@ class Stream[T](Record):
         _check_can_read_stream()
         return _StreamAscIterator(self, self.next_key_inclusive(start))
 
+    def iter_items_since_previous_frame(self) -> SonolusIterator[tuple[int | float, T]]:
+        """Iterate over the items in the stream since the last frame.
+
+        This is a convenience method that iterates over the items in the stream occurring after the time of the
+        previous frame and up to and including the current time.
+
+        Usage:
+        ```python
+        stream = ...
+        for key, value in stream.iter_items_since_previous_frame():
+            do_something(key, value)
+        ```
+        """
+        _check_can_read_stream()
+        return _StreamBoundedAscIterator(self, self.next_key(time() - delta_time()), time())
+
     def iter_items_from_desc(self, start: int | float, /) -> SonolusIterator[tuple[int | float, T]]:
         """Iterate over the items in the stream in descending order starting from the given key.
 
@@ -348,6 +365,22 @@ class Stream[T](Record):
         _check_can_read_stream()
         return _StreamAscKeyIterator(self, self.next_key_inclusive(start))
 
+    def iter_keys_since_previous_frame(self) -> SonolusIterator[int | float]:
+        """Iterate over the keys in the stream since the last frame.
+
+        This is a convenience method that iterates over the keys in the stream occurring after the time of the
+        previous frame and up to and including the current time.
+
+        Usage:
+        ```python
+        stream = ...
+        for key in stream.iter_keys_since_previous_frame():
+            do_something(key)
+        ```
+        """
+        _check_can_read_stream()
+        return _StreamBoundedAscKeyIterator(self, self.next_key(time() - delta_time()), time())
+
     def iter_keys_from_desc(self, start: int | float, /) -> SonolusIterator[int | float]:
         """Iterate over the keys in the stream in descending order starting from the given key.
 
@@ -377,6 +410,22 @@ class Stream[T](Record):
         """
         _check_can_read_stream()
         return _StreamAscValueIterator(self, self.next_key_inclusive(start))
+
+    def iter_values_since_previous_frame(self) -> SonolusIterator[T]:
+        """Iterate over the values in the stream since the last frame.
+
+        This is a convenience method that iterates over the values in the stream occurring after the time of the
+        previous frame and up to and including the current time.
+
+        Usage:
+        ```python
+        stream = ...
+        for value in stream.iter_values_since_previous_frame():
+            do_something(value)
+        ```
+        """
+        _check_can_read_stream()
+        return _StreamBoundedAscValueIterator(self, self.next_key(time() - delta_time()), time())
 
     def iter_values_from_desc(self, start: int | float, /) -> SonolusIterator[T]:
         """Iterate over the values in the stream in descending order starting from the given key.
@@ -455,6 +504,21 @@ class _StreamAscIterator[T](Record, SonolusIterator[tuple[int | float, T]]):
         self.current_key = self.stream.next_key(self.current_key)
 
 
+class _StreamBoundedAscIterator[T](Record, SonolusIterator[tuple[int | float, T]]):
+    stream: Stream[T]
+    current_key: int | float
+    end_key: int | float
+
+    def has_next(self) -> bool:
+        return self.stream.next_key(self.current_key) > self.current_key <= self.end_key
+
+    def get(self) -> tuple[int | float, T]:
+        return self.current_key, self.stream[self.current_key]
+
+    def advance(self):
+        self.current_key = self.stream.next_key(self.current_key)
+
+
 class _StreamDescIterator[T](Record, SonolusIterator[tuple[int | float, T]]):
     stream: Stream[T]
     current_key: int | float
@@ -483,6 +547,21 @@ class _StreamAscKeyIterator[T](Record, SonolusIterator[int | float]):
         self.current_key = self.stream.next_key(self.current_key)
 
 
+class _StreamBoundedAscKeyIterator[T](Record, SonolusIterator[int | float]):
+    stream: Stream[T]
+    current_key: int | float
+    end_key: int | float
+
+    def has_next(self) -> bool:
+        return self.stream.next_key(self.current_key) > self.current_key <= self.end_key
+
+    def get(self) -> int | float:
+        return self.current_key
+
+    def advance(self):
+        self.current_key = self.stream.next_key(self.current_key)
+
+
 class _StreamDescKeyIterator[T](Record, SonolusIterator[int | float]):
     stream: Stream[T]
     current_key: int | float
@@ -503,6 +582,21 @@ class _StreamAscValueIterator[T](Record, SonolusIterator[T]):
 
     def has_next(self) -> bool:
         return self.stream.next_key(self.current_key) > self.current_key
+
+    def get(self) -> T:
+        return self.stream[self.current_key]
+
+    def advance(self):
+        self.current_key = self.stream.next_key(self.current_key)
+
+
+class _StreamBoundedAscValueIterator[T](Record, SonolusIterator[T]):
+    stream: Stream[T]
+    current_key: int | float
+    end_key: int | float
+
+    def has_next(self) -> bool:
+        return self.stream.next_key(self.current_key) > self.current_key <= self.end_key
 
     def get(self) -> T:
         return self.stream[self.current_key]

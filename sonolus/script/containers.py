@@ -10,7 +10,7 @@ from sonolus.script.iterator import SonolusIterator
 from sonolus.script.num import Num
 from sonolus.script.pointer import _deref
 from sonolus.script.record import Record
-from sonolus.script.values import alloc, copy
+from sonolus.script.values import copy, zeros
 
 
 class Box[T](Record):
@@ -104,7 +104,7 @@ class VarArray[T, Capacity](Record, ArrayLike[T]):
         """Create a new empty array."""
         element_type = cls.type_var_value(T)
         capacity = cls.type_var_value(Capacity)
-        return cls(0, alloc(Array[element_type, capacity]))
+        return cls(0, zeros(Array[element_type, capacity]))
 
     def __len__(self) -> int:
         """Return the number of elements in the array."""
@@ -457,7 +457,7 @@ class ArrayMap[K, V, Capacity](Record):
         key_type = cls.type_var_value(K)
         value_type = cls.type_var_value(V)
         capacity = cls.type_var_value(Capacity)
-        return cls(0, alloc(Array[_ArrayMapEntry[key_type, value_type], capacity]))
+        return cls(0, zeros(Array[_ArrayMapEntry[key_type, value_type], capacity]))
 
     def __len__(self) -> int:
         """Return the number of key-value pairs in the map."""

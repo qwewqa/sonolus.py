@@ -362,6 +362,8 @@ class ArchetypeSchema(TypedDict):
 class _BaseArchetype:
     _is_comptime_value_ = True
 
+    _removable_prefix: ClassVar[str] = ""
+
     _supported_callbacks_: ClassVar[dict[str, CallbackInfo]]
     _default_callbacks_: ClassVar[set[Callable]]
 
@@ -494,7 +496,7 @@ class _BaseArchetype:
             cls._default_callbacks_ = {getattr(cls, cb_info.py_name) for cb_info in cls._supported_callbacks_.values()}
             return
         if cls.name is None or cls.name in {getattr(mro_entry, "name", None) for mro_entry in cls.mro()[1:]}:
-            cls.name = cls.__name__
+            cls.name = cls.__name__.removeprefix(cls._removable_prefix)
         cls._callbacks_ = []
         for name in cls._supported_callbacks_:
             cb = getattr(cls, name)
@@ -661,6 +663,8 @@ class PlayArchetype(_BaseArchetype):
         ```
     """
 
+    _removable_prefix: ClassVar[str] = "Play"
+
     _supported_callbacks_ = PLAY_CALLBACKS
 
     is_scored: ClassVar[bool] = False
@@ -822,6 +826,8 @@ class WatchArchetype(_BaseArchetype):
         ```
     """
 
+    _removable_prefix: ClassVar[str] = "Watch"
+
     _supported_callbacks_ = WATCH_ARCHETYPE_CALLBACKS
 
     def preprocess(self):
@@ -936,6 +942,8 @@ class PreviewArchetype(_BaseArchetype):
                 ...
         ```
     """
+
+    _removable_prefix: ClassVar[str] = "Preview"
 
     _supported_callbacks_ = PREVIEW_CALLBACKS
 
