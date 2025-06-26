@@ -147,6 +147,8 @@ class Quad(Record):
     def contains_point(self, point: Vec2, /) -> bool:
         """Check if the quad contains the given point.
 
+        It is not guaranteed whether points on the edges of the quad are considered inside or outside.
+
         Args:
             point: The point to check.
 

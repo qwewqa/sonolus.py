@@ -250,6 +250,12 @@ class Stream[T](Record):
         _check_can_read_stream()
         return _stream_get_next_key(self.offset, key)
 
+    def next_key_or_default(self, key: int | float, default: int | float) -> int:
+        """Get the next key, or the default value if there is no next key."""
+        _check_can_read_stream()
+        next_key = self.next_key(key)
+        return next_key if next_key > key else default
+
     def previous_key(self, key: int | float) -> int:
         """Get the previous key, or the key unchanged if it is the first key or the stream is empty.
 
@@ -257,6 +263,12 @@ class Stream[T](Record):
         """
         _check_can_read_stream()
         return _stream_get_previous_key(self.offset, key)
+
+    def previous_key_or_default(self, key: int | float, default: int | float) -> int:
+        """Get the previous key, or the default value if there is no previous key."""
+        _check_can_read_stream()
+        previous_key = self.previous_key(key)
+        return previous_key if previous_key < key else default
 
     def has_next_key(self, key: int | float) -> bool:
         """Check if there is a next key after the given key in the stream."""
@@ -495,13 +507,13 @@ class _StreamAscIterator[T](Record, SonolusIterator[tuple[int | float, T]]):
     current_key: int | float
 
     def has_next(self) -> bool:
-        return self.stream.next_key(self.current_key) > self.current_key
+        return self.current_key in self.stream
 
     def get(self) -> tuple[int | float, T]:
         return self.current_key, self.stream[self.current_key]
 
     def advance(self):
-        self.current_key = self.stream.next_key(self.current_key)
+        self.current_key = self.stream.next_key_or_default(self.current_key, self.current_key + 1)
 
 
 class _StreamBoundedAscIterator[T](Record, SonolusIterator[tuple[int | float, T]]):
@@ -510,13 +522,13 @@ class _StreamBoundedAscIterator[T](Record, SonolusIterator[tuple[int | float, T]
     end_key: int | float
 
     def has_next(self) -> bool:
-        return self.stream.next_key(self.current_key) > self.current_key <= self.end_key
+        return self.current_key in self.stream and self.current_key <= self.end_key
 
     def get(self) -> tuple[int | float, T]:
         return self.current_key, self.stream[self.current_key]
 
     def advance(self):
-        self.current_key = self.stream.next_key(self.current_key)
+        self.current_key = self.stream.next_key_or_default(self.current_key, self.current_key + 1)
 
 
 class _StreamDescIterator[T](Record, SonolusIterator[tuple[int | float, T]]):
@@ -524,13 +536,13 @@ class _StreamDescIterator[T](Record, SonolusIterator[tuple[int | float, T]]):
     current_key: int | float
 
     def has_next(self) -> bool:
-        return self.stream.previous_key(self.current_key) < self.current_key
+        return self.current_key in self.stream
 
     def get(self) -> tuple[int | float, T]:
         return self.current_key, self.stream[self.current_key]
 
     def advance(self):
-        self.current_key = self.stream.previous_key(self.current_key)
+        self.current_key = self.stream.previous_key_or_default(self.current_key, self.current_key - 1)
 
 
 class _StreamAscKeyIterator[T](Record, SonolusIterator[int | float]):
@@ -538,13 +550,13 @@ class _StreamAscKeyIterator[T](Record, SonolusIterator[int | float]):
     current_key: int | float
 
     def has_next(self) -> bool:
-        return self.stream.next_key(self.current_key) > self.current_key
+        return self.current_key in self.stream
 
     def get(self) -> int | float:
         return self.current_key
 
     def advance(self):
-        self.current_key = self.stream.next_key(self.current_key)
+        self.current_key = self.stream.next_key_or_default(self.current_key, self.current_key + 1)
 
 
 class _StreamBoundedAscKeyIterator[T](Record, SonolusIterator[int | float]):
@@ -553,13 +565,13 @@ class _StreamBoundedAscKeyIterator[T](Record, SonolusIterator[int | float]):
     end_key: int | float
 
     def has_next(self) -> bool:
-        return self.stream.next_key(self.current_key) > self.current_key <= self.end_key
+        return self.current_key in self.stream and self.current_key <= self.end_key
 
     def get(self) -> int | float:
         return self.current_key
 
     def advance(self):
-        self.current_key = self.stream.next_key(self.current_key)
+        self.current_key = self.stream.next_key_or_default(self.current_key, self.current_key + 1)
 
 
 class _StreamDescKeyIterator[T](Record, SonolusIterator[int | float]):
@@ -567,13 +579,13 @@ class _StreamDescKeyIterator[T](Record, SonolusIterator[int | float]):
     current_key: int | float
 
     def has_next(self) -> bool:
-        return self.stream.previous_key(self.current_key) < self.current_key
+        return self.current_key in self.stream
 
     def get(self) -> int | float:
         return self.current_key
 
     def advance(self):
-        self.current_key = self.stream.previous_key(self.current_key)
+        self.current_key = self.stream.previous_key_or_default(self.current_key, self.current_key - 1)
 
 
 class _StreamAscValueIterator[T](Record, SonolusIterator[T]):
@@ -581,13 +593,13 @@ class _StreamAscValueIterator[T](Record, SonolusIterator[T]):
     current_key: int | float
 
     def has_next(self) -> bool:
-        return self.stream.next_key(self.current_key) > self.current_key
+        return self.current_key in self.stream
 
     def get(self) -> T:
         return self.stream[self.current_key]
 
     def advance(self):
-        self.current_key = self.stream.next_key(self.current_key)
+        self.current_key = self.stream.next_key_or_default(self.current_key, self.current_key + 1)
 
 
 class _StreamBoundedAscValueIterator[T](Record, SonolusIterator[T]):
@@ -596,13 +608,13 @@ class _StreamBoundedAscValueIterator[T](Record, SonolusIterator[T]):
     end_key: int | float
 
     def has_next(self) -> bool:
-        return self.stream.next_key(self.current_key) > self.current_key <= self.end_key
+        return self.current_key in self.stream and self.current_key <= self.end_key
 
     def get(self) -> T:
         return self.stream[self.current_key]
 
     def advance(self):
-        self.current_key = self.stream.next_key(self.current_key)
+        self.current_key = self.stream.next_key_or_default(self.current_key, self.current_key + 1)
 
 
 class _StreamDescValueIterator[T](Record, SonolusIterator[T]):
@@ -610,13 +622,13 @@ class _StreamDescValueIterator[T](Record, SonolusIterator[T]):
     current_key: int | float
 
     def has_next(self) -> bool:
-        return self.stream.previous_key(self.current_key) < self.current_key
+        return self.current_key in self.stream
 
     def get(self) -> T:
         return self.stream[self.current_key]
 
     def advance(self):
-        self.current_key = self.stream.previous_key(self.current_key)
+        self.current_key = self.stream.previous_key_or_default(self.current_key, self.current_key - 1)
 
 
 @native_function(Op.StreamGetNextKey)
