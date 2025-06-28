@@ -29,6 +29,8 @@ class SonolusIterator[T]:
         ```
     """
 
+    _allow_instance_check_ = True
+
     def next(self) -> T:
         result = self.get()
         self.advance()
