@@ -1,4 +1,3 @@
-from abc import ABC
 from collections.abc import Iterable
 from typing import overload
 
@@ -32,7 +31,7 @@ def _isinstance(value, type_):
         return isinstance(value, TupleImpl)
     if type_ in {_int, _float, _bool}:
         raise TypeError("Instance check against int, float, or bool is not supported, use Num instead")
-    if not (isinstance(type_, type) and issubclass(type_, Value | ABC)):
+    if not (isinstance(type_, type) and (issubclass(type_, Value) or getattr(type_, "_allow_instance_check_", False))):
         raise TypeError(f"Unsupported type: {type_} for isinstance")
     return validate_value(isinstance(value, type_))
 

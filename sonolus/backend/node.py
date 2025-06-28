@@ -1,26 +1,34 @@
 import textwrap
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 
 from sonolus.backend.ops import Op
 
 type EngineNode = ConstantNode | FunctionNode
 
 
-@dataclass
+@dataclass(slots=True)
 class ConstantNode:
     value: float
+    _hash: int = field(init=False, repr=False)
+
+    def __post_init__(self):
+        self._hash = hash(self.value)
 
     def __hash__(self):
         return hash(self.value)
 
 
-@dataclass
+@dataclass(slots=True)
 class FunctionNode:
     func: Op
     args: list[EngineNode]
+    _hash: int = field(init=False, repr=False)
+
+    def __post_init__(self):
+        self._hash = hash((self.func, tuple(self.args)))
 
     def __hash__(self):
-        return hash((self.func, tuple(self.args)))
+        return self._hash
 
 
 def format_engine_node(node: EngineNode) -> str:

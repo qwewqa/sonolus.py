@@ -1,4 +1,4 @@
-from sonolus.backend.optimize.allocate import Allocate, AllocateBasic
+from sonolus.backend.optimize.allocate import Allocate, AllocateBasic, AllocateFast
 from sonolus.backend.optimize.constant_evaluation import SparseConditionalConstantPropagation
 from sonolus.backend.optimize.copy_coalesce import CopyCoalesce
 from sonolus.backend.optimize.dead_code import (
@@ -19,7 +19,7 @@ MINIMAL_PASSES = (
 FAST_PASSES = (
     CoalesceFlow(),
     UnreachableCodeElimination(),
-    Allocate(),  # Does dead code elimination too, so no need for a separate pass
+    AllocateFast(),  # Does dead code elimination too, so no need for a separate pass
     CoalesceFlow(),
 )
 

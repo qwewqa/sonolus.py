@@ -32,6 +32,8 @@ class ArrayLike[T]:
         ```
     """
 
+    _allow_instance_check_ = True
+
     @abstractmethod
     def __len__(self) -> int:
         """Return the length of the array."""

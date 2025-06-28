@@ -137,3 +137,34 @@ class Allocate(CompilerPass):
                 for place in live:
                     result.setdefault(place, set()).update(live - {place})
         return result
+
+
+class AllocateFast(Allocate):
+    """Faster than Allocate and less wasteful than AllocateBasic, but does not consider lifetimes."""
+
+    def get_mapping(self, entry: BasicBlock) -> dict[TempBlock, int]:
+        interference = self.get_interference(entry)
+        offsets: dict[TempBlock, int] = {}
+
+        for block, others in interference.items():
+            size = block.size
+            offset = max((offsets.get(other, 0) + other.size for other in others), default=0)
+            if offset + size > TEMP_SIZE:
+                raise ValueError("Temporary memory limit exceeded")
+            offsets[block] = offset
+
+        return offsets
+
+    def get_interference(self, entry: BasicBlock) -> dict[TempBlock, set[TempBlock]]:
+        result = {}
+        for block in traverse_cfg_preorder(entry):
+            for stmt in [*block.statements, block.test]:
+                live = {p for p in get_live(stmt) if isinstance(p, TempBlock) and p.size > 0}
+                for place in live:
+                    if place in result:
+                        result[place].update(live)
+                    else:
+                        result[place] = set(live)
+        for k, v in result.items():
+            v.discard(k)
+        return result
