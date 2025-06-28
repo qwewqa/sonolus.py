@@ -19,13 +19,21 @@ def alloc[T](type_: type[T]) -> T:
 
 @meta_fn
 def zeros[T](type_: type[T]) -> T:
-    """Make a new instance of the given type initialized with zeros."""
+    """Make a new instance of the given type initialized with zeros.
+
+    Generally works the same as the unary `+` operator on record and array types, but will work on other types
+    like Num (int, bool, float) as well.
+    """
     return validate_concrete_type(type_)._zero_()
 
 
 @meta_fn
 def copy[T](value: T) -> T:
-    """Make a deep copy of the given value."""
+    """Make a deep copy of the given value.
+
+    Generally works the same as the unary `+` operator on records and arrays, but will work on other types
+    like Num (int, bool, float) as well.
+    """
     value = validate_value(value)
     if ctx():
         return value._copy_()

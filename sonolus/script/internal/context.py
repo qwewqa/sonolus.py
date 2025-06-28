@@ -261,6 +261,12 @@ class Context:
             context.outgoing[None] = target
         return target
 
+    def register_archetype(self, type_: type) -> int:
+        with self.global_state.lock:
+            if type_ not in self.global_state.archetypes:
+                self.global_state.archetypes[type_] = len(self.global_state.archetypes)
+            return self.global_state.archetypes[type_]
+
 
 def ctx() -> Context | None:
     return context_var.get()

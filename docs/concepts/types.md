@@ -104,11 +104,12 @@ from sonolus.script.array import Array
 
 ### Declaration
 
-Arrays can be created using its constructor:
+Arrays can be created using its constructor or the unary `+` operator.
 
 ```python
 a1 = Array[int, 3](1, 2, 3)
 a2 = Array[int, 0]()
+a3 = +Array[int, 3]  # Create a zero-initialized array
 ```
 
 If at least one element is provided, the element type and size can be inferred:
@@ -149,6 +150,14 @@ assert a[0] == Pair(1, 2)  # The value in the array is independent of the origin
 ```
 
 ### Operations
+
+An array can be copied with the unary `+` operator, which creates a new array with the same elements:
+
+```python
+a = Array(1, 2, 3)
+b = +a
+assert b == Array(1, 2, 3)
+```
 
 The value of an array can be copied from another array using the copy from operator (`@=`)[^1]:
 
@@ -297,11 +306,13 @@ class MyPairSubclass(MyPair):
 
 ### Instantiation
 
-A constructor is automatically generated for the [`Record`][sonolus.script.record.Record] class:
+A constructor is automatically generated for the [`Record`][sonolus.script.record.Record] class and the unary `+` 
+operator can also be used to create a zero-initialized record.
 
 ```python
 pair_1 = MyPair(1, 2)
 pair_2 = MyPair(first=1, second=2)
+pair_3 = +MyPair  # Create a zero-initialized record
 ```
 
 ### Generics
@@ -339,6 +350,14 @@ assert MyGenericRecord(1).my_type() == Num
 ```
 
 ### Operations
+
+A record can be copied with the unary `+` operator, which creates a new record with the same field values:
+
+```python
+pair = MyPair(1, 2)
+copy_pair = +pair
+assert copy_pair == MyPair(1, 2)
+```
 
 The value of a record can be copied from another record using the copy from operator (`@=`)[^1]:
 

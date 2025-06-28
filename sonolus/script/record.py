@@ -20,8 +20,13 @@ from sonolus.script.internal.value import BackingSource, DataValue, Value
 from sonolus.script.num import Num
 
 
+class RecordMeta(type):
+    def __pos__[T](cls: type[T]) -> T:
+        return cls._zero_()
+
+
 @dataclass_transform(eq_default=True)
-class Record(GenericValue):
+class Record(GenericValue, metaclass=RecordMeta):
     """Base class for user-defined data structures.
 
     Usage:
@@ -37,6 +42,15 @@ class Record(GenericValue):
         class MyGenericRecord[T, U](Record):
             field1: T
             field2: U
+        ```
+
+        Creating an instance:
+        ```python
+        record = MyRecord(field1=42, field2=True)
+        record_2 = MyGenericRecord[int, int](field1=42, field2=100)
+        record_3 = MyGenericRecord(field1=42, field2=100)  # Type arguments can be inferred
+        record_4 = +MyRecord  # Create a zero-initialized record
+        record_5 = +MyGenericRecord[int, int]
         ```
     """
 
@@ -267,6 +281,10 @@ class Record(GenericValue):
 
     def __hash__(self):
         return hash(tuple(field.__get__(self) for field in self._fields))
+
+    def __pos__(self) -> Self:
+        """Return a copy of the record."""
+        return self._copy_()
 
     @classmethod
     @meta_fn

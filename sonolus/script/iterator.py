@@ -1,14 +1,13 @@
 from __future__ import annotations
 
 from abc import abstractmethod
-from collections.abc import Iterator
 from typing import Any
 
 from sonolus.script.internal.impl import meta_fn
 from sonolus.script.record import Record
 
 
-class SonolusIterator[T](Iterator[T]):
+class SonolusIterator[T]:
     """Base class for Sonolus iterators.
 
     This class is used to define custom iterators that can be used in Sonolus.py.

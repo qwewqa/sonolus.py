@@ -16,14 +16,20 @@ from sonolus.script.internal.value import BackingSource, DataValue, Value
 from sonolus.script.num import Num
 
 
+class ArrayMeta(type):
+    def __pos__[T](cls: type[T]) -> T:
+        return cls._zero_()
+
+
 @final
-class Array[T, Size](GenericValue, ArrayLike[T]):
+class Array[T, Size](GenericValue, ArrayLike[T], metaclass=ArrayMeta):
     """A fixed size array of values.
 
     Usage:
         ```python
         array_1 = Array(1, 2, 3)
         array_2 = Array[int, 0]()
+        array_3 = +Array[int, 3]  # Create a zero-initialized array
         ```
     """
 
@@ -296,3 +302,7 @@ class Array[T, Size](GenericValue, ArrayLike[T]):
             return f"{type(self).__name__}({self._value}...)"
         else:
             return f"{type(self).__name__}({", ".join(repr(self[i]) for i in range(self.size()))})"
+
+    def __pos__(self) -> Self:
+        """Return a copy of the array."""
+        return self._copy_()

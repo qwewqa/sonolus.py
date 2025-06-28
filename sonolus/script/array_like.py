@@ -1,8 +1,8 @@
 from __future__ import annotations
 
 import random
-from abc import ABC, abstractmethod
-from collections.abc import Callable, Sequence
+from abc import abstractmethod
+from collections.abc import Callable
 from typing import Any
 
 from sonolus.script.iterator import SonolusIterator
@@ -13,7 +13,7 @@ from sonolus.script.values import copy
 # Note: we don't use Range in this file because Range itself inherits from ArrayLike
 
 
-class ArrayLike[T](Sequence, ABC):
+class ArrayLike[T]:
     """Mixin for array-like objects.
 
     Inheritors must implement `__len__`, `__getitem__`, and `__setitem__`.
