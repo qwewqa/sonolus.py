@@ -540,11 +540,17 @@ class InvertibleTransformStateMachine(RuleBasedStateMachine):
 
     @invariant()
     def inverse_cancels(self):
-        v = Vec2(1.5, 2.3)  # Test point
-        forward_result = self.transform.transform_vec(v)
-        inverse_result = self.transform.inverse_transform_vec(forward_result)
-        assert is_close(inverse_result.x, v.x, rel_tol=1e-2, abs_tol=1e-2)
-        assert is_close(inverse_result.y, v.y, rel_tol=1e-2, abs_tol=1e-2)
+        combo = self.transform.forward.compose(self.transform.inverse).normalize()
+        abs_tol = 1e-2
+        assert is_close(combo.a00, 1, abs_tol=abs_tol)
+        assert is_close(combo.a01, 0, abs_tol=abs_tol)
+        assert is_close(combo.a02, 0, abs_tol=abs_tol)
+        assert is_close(combo.a10, 0, abs_tol=abs_tol)
+        assert is_close(combo.a11, 1, abs_tol=abs_tol)
+        assert is_close(combo.a12, 0, abs_tol=abs_tol)
+        assert is_close(combo.a20, 0, abs_tol=abs_tol)
+        assert is_close(combo.a21, 0, abs_tol=abs_tol)
+        assert is_close(combo.a22, 1, abs_tol=abs_tol)
 
 
 TestInvertibleTransform = InvertibleTransformStateMachine.TestCase

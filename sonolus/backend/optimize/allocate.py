@@ -132,39 +132,32 @@ class Allocate(CompilerPass):
     def get_interference(self, entry: BasicBlock) -> dict[TempBlock, set[TempBlock]]:
         result = {}
         for block in traverse_cfg_preorder(entry):
-            for stmt in [*block.statements, block.test]:
+            for stmt in block.statements:
+                if not isinstance(stmt, IRSet):
+                    continue
                 live = {p for p in get_live(stmt) if isinstance(p, TempBlock) and p.size > 0}
                 for place in live:
-                    result.setdefault(place, set()).update(live - {place})
+                    if place not in result:
+                        result[place] = set(live)
+                    else:
+                        result[place].update(live)
         return result
 
 
 class AllocateFast(Allocate):
-    """Faster than Allocate and less wasteful than AllocateBasic, but does not consider lifetimes."""
+    """A bit faster than Allocate but a bit less optimal."""
 
     def get_mapping(self, entry: BasicBlock) -> dict[TempBlock, int]:
         interference = self.get_interference(entry)
-        offsets: dict[TempBlock, int] = {}
+        offsets: dict[TempBlock, int] = dict.fromkeys(interference, 0)
+        end_offsets: dict[TempBlock, int] = dict.fromkeys(interference, 0)
 
         for block, others in interference.items():
             size = block.size
-            offset = max((offsets.get(other, 0) + other.size for other in others), default=0)
+            offset = max((end_offsets[other] for other in others), default=0)
             if offset + size > TEMP_SIZE:
                 raise ValueError("Temporary memory limit exceeded")
             offsets[block] = offset
+            end_offsets[block] = offset + size
 
         return offsets
-
-    def get_interference(self, entry: BasicBlock) -> dict[TempBlock, set[TempBlock]]:
-        result = {}
-        for block in traverse_cfg_preorder(entry):
-            for stmt in [*block.statements, block.test]:
-                live = {p for p in get_live(stmt) if isinstance(p, TempBlock) and p.size > 0}
-                for place in live:
-                    if place in result:
-                        result[place].update(live)
-                    else:
-                        result[place] = set(live)
-        for k, v in result.items():
-            v.discard(k)
-        return result
