@@ -11,7 +11,7 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v4
       - name: Setup Env
-        run: echo "HYPOTHESIS_PROFILE=ci" >> $GITHUB_ENV
+        run: echo "CI=true" >> $GITHUB_ENV
       - name: Install uv
         uses: astral-sh/setup-uv@v3
         with:

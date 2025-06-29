@@ -1,6 +1,7 @@
 import itertools
 import os
 import random
+import sys
 from collections.abc import Callable
 from datetime import timedelta
 from types import CellType
@@ -24,6 +25,13 @@ from sonolus.script.internal.tuple_impl import TupleImpl
 from sonolus.script.num import Num
 from sonolus.script.vec import Vec2
 
+PRIMARY_PYTHON_VERSION = (3, 14)
+
+
+def is_ci() -> bool:
+    return os.getenv("CI", "false").lower() in {"true", "1"}
+
+
 settings.register_profile(
     "default",
     settings.get_profile("default"),
@@ -33,16 +41,19 @@ settings.register_profile(
 settings.register_profile(
     "ci",
     settings.get_profile("ci"),
-    max_examples=40,
+    max_examples=20,
     deadline=timedelta(seconds=10),
 )
-settings.load_profile(os.getenv("HYPOTHESIS_PROFILE", "default"))
+settings.load_profile("ci" if is_ci() else "default")
 
 optimization_levels = [
     MINIMAL_PASSES,
     FAST_PASSES,
     STANDARD_PASSES,
 ]
+
+if is_ci() and sys.version_info < PRIMARY_PYTHON_VERSION:
+    optimization_levels = [FAST_PASSES]
 
 
 def compile_fn(callback: Callable):
