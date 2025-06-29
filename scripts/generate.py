@@ -51,11 +51,9 @@ def block(name: str, f: TextIO, out: TextIO):
         readable = block["readable"]
         writable = block["writable"]
         out.write(
-            f'    {name} = ({id_}, {{{
-            ", ".join(f'"{e}"' for e in readable)
-            }}}, {{{
-            ", ".join(f'"{e}"' for e in writable)
-            }}})\n'
+            f"    {name} = ({id_}, {{{', '.join(f'"{e}"' for e in readable)}}}, {{{
+                ', '.join(f'"{e}"' for e in writable)
+            }}})\n"
         )
 
 
@@ -78,7 +76,7 @@ def blocks():
                 (runtimes_dir / file).open("r", encoding="utf-8") as f,
             ):
                 block(name, f, out)
-        out.write(f"\n" f"\n" f"type Block = {" | ".join(f'{name}Block' for name in block_files)}\n")
+        out.write(f"\n\ntype Block = {' | '.join(f'{name}Block' for name in block_files)}\n")
 
 
 def main():

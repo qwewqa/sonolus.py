@@ -4,6 +4,7 @@ import builtins
 import functools
 import inspect
 from collections.abc import Callable, Sequence
+from inspect import ismethod
 from types import FunctionType, MethodType, MethodWrapperType
 from typing import Any, Never, Self
 
@@ -54,10 +55,22 @@ def eval_fn(fn: Callable, /, *args, **kwargs):
     source_file, node = get_function(fn)
     bound_args = inspect.signature(fn).bind(*args, **kwargs)
     bound_args.apply_defaults()
+    if ismethod(fn):
+        code = fn.__func__.__code__
+        closure = fn.__func__.__closure__
+    else:
+        code = fn.__code__
+        closure = fn.__closure__
+    if closure is None:
+        nonlocal_vars = {}
+    else:
+        nonlocal_vars = {
+            var: cell.cell_contents for var, cell in zip(code.co_freevars, closure, strict=True) if cell is not None
+        }
     global_vars = {
         **builtins.__dict__,
         **fn.__globals__,
-        **inspect.getclosurevars(fn).nonlocals,
+        **nonlocal_vars,
     }
     return Visitor(source_file, bound_args, global_vars).run(node)
 
@@ -728,6 +741,10 @@ class Visitor(ast.NodeVisitor):
         if isinstance(node.op, ast.Not):
             return self.ensure_boolean_num(operand).not_()
         op = unary_ops[type(node.op)]
+        if operand._is_py_():
+            operand_py = operand._as_py_()
+            if isinstance(operand_py, type) and hasattr(type(operand_py), op):
+                return self.handle_call(node, getattr(type(operand_py), op), operand_py)
         if hasattr(operand, op):
             return self.handle_call(node, getattr(operand, op))
         raise TypeError(f"bad operand type for unary {op_to_symbol[type(node.op)]}: '{type(operand).__name__}'")
@@ -1177,18 +1194,34 @@ class Visitor(ast.NodeVisitor):
         self, node: ast.stmt | ast.expr, fn: Callable[P, R], /, *args: P.args, **kwargs: P.kwargs
     ) -> R:
         """Executes the given function at the given node for a better traceback."""
+        location_args = {
+            "lineno": node.lineno,
+            "col_offset": node.col_offset,
+            "end_lineno": node.end_lineno,
+            "end_col_offset": node.end_col_offset,
+        }
+
         expr = ast.Expression(
             body=ast.Call(
-                func=ast.Name(id="fn", ctx=ast.Load()),
-                args=[ast.Starred(value=ast.Name(id="args", ctx=ast.Load()), ctx=ast.Load())],
-                keywords=[ast.keyword(value=ast.Name(id="kwargs", ctx=ast.Load()), arg=None)],
-                lineno=node.lineno,
-                col_offset=node.col_offset,
-                end_lineno=node.end_lineno,
-                end_col_offset=node.end_col_offset,
+                func=ast.Name(id="fn", ctx=ast.Load(), **location_args),
+                args=[
+                    ast.Starred(
+                        value=ast.Name(id="args", ctx=ast.Load(), **location_args),
+                        ctx=ast.Load(),
+                        **location_args,
+                    )
+                ],
+                keywords=[
+                    ast.keyword(
+                        value=ast.Name(id="kwargs", ctx=ast.Load(), **location_args),
+                        arg=None,
+                        **location_args,
+                    )
+                ],
+                **location_args,
             ),
+            **location_args,
         )
-        expr = ast.fix_missing_locations(expr)
         return eval(
             compile(expr, filename=self.source_file, mode="eval"),
             {"fn": fn, "args": args, "kwargs": kwargs, "_filter_traceback_": True},

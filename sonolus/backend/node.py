@@ -42,7 +42,7 @@ def format_engine_node(node: EngineNode) -> str:
                 return f"{node.func.name}({format_engine_node(node.args[0])})"
             case _:
                 return f"{node.func.name}(\n{
-                    textwrap.indent("\n".join(format_engine_node(arg) for arg in node.args), "  ")
+                    textwrap.indent('\n'.join(format_engine_node(arg) for arg in node.args), '  ')
                 }\n)"
     else:
         raise ValueError(f"Invalid engine node: {node}")

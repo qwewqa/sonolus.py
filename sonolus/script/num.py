@@ -1,4 +1,3 @@
-# ruff: noqa: N801
 from __future__ import annotations
 
 import operator

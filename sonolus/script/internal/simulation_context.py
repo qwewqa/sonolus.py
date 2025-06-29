@@ -47,11 +47,8 @@ class SimulationContext:
         try:
             if value in self.additional_replacements:
                 return self.additional_replacements[value]
-        except TypeError as e:
-            if str(e).startswith("unhashable"):
-                pass
-            else:
-                raise
+        except TypeError:
+            pass
         if hasattr(value, "_get_sim_replacement_") and isinstance(value._get_sim_replacement_, MethodType):
             return value._get_sim_replacement_()
         return _MISSING

@@ -32,7 +32,7 @@ from sonolus.script.project import BuildConfig
 from sonolus.script.sprite import Skin
 from sonolus.script.ui import UiConfig
 
-type JsonValue = None | bool | int | float | str | list[JsonValue] | dict[str, JsonValue]
+type JsonValue = bool | int | float | str | list[JsonValue] | dict[str, JsonValue] | None
 
 
 @dataclass

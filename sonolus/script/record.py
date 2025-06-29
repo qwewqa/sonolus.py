@@ -21,6 +21,7 @@ from sonolus.script.num import Num
 
 
 class RecordMeta(type):
+    @meta_fn
     def __pos__[T](cls: type[T]) -> T:
         return cls._zero_()
 
@@ -253,12 +254,12 @@ class Record(GenericValue, metaclass=RecordMeta):
 
     def __str__(self):
         return (
-            f"{self.__class__.__name__}({", ".join(f"{field.name}={field.__get__(self)}" for field in self._fields)})"
+            f"{self.__class__.__name__}({', '.join(f'{field.name}={field.__get__(self)}' for field in self._fields)})"
         )
 
     def __repr__(self):
         return (
-            f"{self.__class__.__name__}({", ".join(f"{field.name}={field.__get__(self)!r}" for field in self._fields)})"
+            f"{self.__class__.__name__}({', '.join(f'{field.name}={field.__get__(self)!r}' for field in self._fields)})"
         )
 
     @meta_fn

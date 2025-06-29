@@ -91,12 +91,29 @@ def cfg_to_mermaid(entry: BasicBlock):
 
     lines = ["Entry([Entry]) --> 0"]
     for block, index in block_indexes.items():
-        lines.append(f"{index}[{pre(fmt([f'#{index}', *(
-            f"{dst} := phi({", ".join(f"{block_indexes.get(src_block, "<dead>")}: {src_place}"
-                                      for src_block, src_place
-                                      in sorted(phis.items(), key=lambda x: block_indexes.get(x[0])))})"
-            for dst, phis in block.phis.items()
-        ), *block.statements]))}]")
+        lines.append(
+            f"{index}[{
+                pre(
+                    fmt(
+                        [
+                            f'#{index}',
+                            *(
+                                f'{dst} := phi({
+                                    ", ".join(
+                                        f"{block_indexes.get(src_block, '<dead>')}: {src_place}"
+                                        for src_block, src_place in sorted(
+                                            phis.items(), key=lambda x: block_indexes.get(x[0])
+                                        )
+                                    )
+                                })'
+                                for dst, phis in block.phis.items()
+                            ),
+                            *block.statements,
+                        ]
+                    )
+                )
+            }]"
+        )
 
         outgoing = {edge.cond: edge.dst for edge in block.outgoing}
         match outgoing:
@@ -114,7 +131,7 @@ def cfg_to_mermaid(entry: BasicBlock):
                 lines.append(f"{index} --> {index}_")
                 for cond, target in tgt.items():
                     lines.append(
-                        f"{index}_ --> |{pre(fmt([cond if cond is not None else "default"]))}| {block_indexes[target]}"
+                        f"{index}_ --> |{pre(fmt([cond if cond is not None else 'default']))}| {block_indexes[target]}"
                     )
     lines.append("Exit([Exit])")
 

@@ -1,4 +1,3 @@
-# ruff: noqa: A005
 from __future__ import annotations
 
 from collections.abc import Iterable
@@ -17,6 +16,7 @@ from sonolus.script.num import Num
 
 
 class ArrayMeta(type):
+    @meta_fn
     def __pos__[T](cls: type[T]) -> T:
         return cls._zero_()
 
@@ -295,13 +295,13 @@ class Array[T, Size](GenericValue, ArrayLike[T], metaclass=ArrayMeta):
         if isinstance(self._value, BlockPlace) or callable(self._value):
             return f"{type(self).__name__}({self._value}...)"
         else:
-            return f"{type(self).__name__}({", ".join(str(self[i]) for i in range(self.size()))})"
+            return f"{type(self).__name__}({', '.join(str(self[i]) for i in range(self.size()))})"
 
     def __repr__(self):
         if isinstance(self._value, BlockPlace) or callable(self._value):
             return f"{type(self).__name__}({self._value}...)"
         else:
-            return f"{type(self).__name__}({", ".join(repr(self[i]) for i in range(self.size()))})"
+            return f"{type(self).__name__}({', '.join(repr(self[i]) for i in range(self.size()))})"
 
     def __pos__(self) -> Self:
         """Return a copy of the array."""
