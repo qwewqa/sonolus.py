@@ -53,7 +53,7 @@ optimization_levels = [
 ]
 
 if is_ci() and sys.version_info < PRIMARY_PYTHON_VERSION:
-    optimization_levels = [FAST_PASSES]
+    optimization_levels = [STANDARD_PASSES]
 
 
 def compile_fn(callback: Callable):
