@@ -11,7 +11,7 @@ from pathlib import Path
 from time import perf_counter
 
 from sonolus.backend.optimize.optimize import FAST_PASSES, MINIMAL_PASSES, STANDARD_PASSES
-from sonolus.build.engine import package_engine
+from sonolus.build.engine import no_gil, package_engine
 from sonolus.build.level import package_level_data
 from sonolus.build.project import build_project_to_collection, get_project_schema
 from sonolus.script.project import BuildConfig, Project
@@ -214,6 +214,11 @@ def main():
             args.module = default_module
         else:
             parser.error("Module argument is required when multiple or no modules are found")
+
+    if no_gil():
+        print("Multithreading is enabled")
+    if hasattr(sys, "_jit") and sys._jit.is_enabled():
+        print("Python JIT is enabled")
 
     project = import_project(args.module)
     if project is None:
