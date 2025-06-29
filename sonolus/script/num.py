@@ -80,12 +80,22 @@ class _Num(Value, metaclass=_NumMeta):
             return value
         return cls(value)
 
+    def _is_rom_constant(self) -> bool:
+        return (
+            ctx()
+            and isinstance(self.data, BlockPlace)
+            and self.data.block == ctx().blocks.EngineRom
+            and isinstance(self.data.index, int)
+        )
+
     def _is_py_(self) -> bool:
-        return isinstance(self.data, float | int | bool)
+        return isinstance(self.data, float | int | bool) or self._is_rom_constant()
 
     def _as_py_(self) -> Any:
         if not self._is_py_():
             raise ValueError("Not a compile time constant Num")
+        if self._is_rom_constant():
+            return ctx().rom.get_value(self.data.index + self.data.offset)
         if self.data.is_integer():
             return int(self.data)
         return self.data

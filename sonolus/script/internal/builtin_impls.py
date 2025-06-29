@@ -86,7 +86,7 @@ def _zip(*iterables):
     if any(isinstance(iterable, TupleImpl) for iterable in iterables):
         if not all(isinstance(iterable, TupleImpl) for iterable in iterables):
             raise TypeError("Cannot mix tuples with other types in zip")
-        return TupleImpl._accept_(tuple(zip(*(iterable._as_py_() for iterable in iterables), strict=False)))
+        return TupleImpl._accept_(tuple(zip(*(iterable.value for iterable in iterables), strict=False)))
     iterators = [compile_and_call(iterable.__iter__) for iterable in iterables]
     if not all(isinstance(iterator, SonolusIterator) for iterator in iterators):
         raise TypeError("Only subclasses of SonolusIterator are supported as iterators")

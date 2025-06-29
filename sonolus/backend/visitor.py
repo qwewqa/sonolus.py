@@ -848,10 +848,11 @@ class Visitor(ast.NodeVisitor):
             ):
                 result = self.handle_call(node, getattr(r_val, rcomp_ops[type(op)]), l_val)
             if result is None or self.is_not_implemented(result):
-                if type(op) is ast.Eq:
-                    result = Num._accept_(l_val is r_val)
-                elif type(op) is ast.NotEq:
-                    result = Num._accept_(l_val is not r_val)
+                # Can't defer to the default object.__eq__ or similar since reference equality (is) is not reliable
+                if type(op) is ast.Eq and type(l_val) is not type(r_val):
+                    return Num._accept_(False)
+                elif type(op) is ast.NotEq and type(l_val) is not type(r_val):
+                    return Num._accept_(True)
                 else:
                     raise TypeError(
                         f"'{op_to_symbol[type(op)]}' not supported between instances of '{type(l_val).__name__}' and "

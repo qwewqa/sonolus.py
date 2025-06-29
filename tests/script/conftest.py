@@ -1,7 +1,9 @@
+import itertools
 import os
 import random
 from collections.abc import Callable
 from datetime import timedelta
+from types import CellType
 
 from hypothesis import settings
 
@@ -15,9 +17,10 @@ from sonolus.backend.place import BlockPlace
 from sonolus.backend.visitor import compile_and_call
 from sonolus.build.compile import callback_to_cfg
 from sonolus.script.debug import debug_log_callback, simulation_context
-from sonolus.script.internal.context import GlobalContextState
+from sonolus.script.internal.context import GlobalContextState, ctx
 from sonolus.script.internal.error import CompilationError
-from sonolus.script.internal.impl import meta_fn
+from sonolus.script.internal.impl import meta_fn, validate_value
+from sonolus.script.internal.tuple_impl import TupleImpl
 from sonolus.script.num import Num
 from sonolus.script.vec import Vec2
 
@@ -47,7 +50,9 @@ def compile_fn(callback: Callable):
     return callback_to_cfg(global_state, callback, ""), global_state.rom.values
 
 
-def run_and_validate[**P, R](fn: Callable[P, R], *args: P.args, **kwargs: P.kwargs) -> R:
+def run_and_validate[**P, R](
+    fn: Callable[P, R], *args: P.args, use_simulation_context: bool = False, **kwargs: P.kwargs
+) -> R:
     """Runs a function as a regular function and as a compiled function, and checks that the results are the same."""
     exception = None
     regular_result = None
@@ -59,7 +64,10 @@ def run_and_validate[**P, R](fn: Callable[P, R], *args: P.args, **kwargs: P.kwar
 
     debug_log_callback_token = debug_log_callback.set(log_cb)
     try:
-        with simulation_context():
+        if use_simulation_context:
+            with simulation_context():
+                regular_result = fn(*args, **kwargs)
+        else:
             regular_result = fn(*args, **kwargs)
     except Exception as e:
         exception = e
@@ -83,9 +91,43 @@ def run_and_validate[**P, R](fn: Callable[P, R], *args: P.args, **kwargs: P.kwar
             target._copy_from_(result)
         return result
 
-    for passes in optimization_levels:
+    @meta_fn
+    def run_compiled_with_closure_from_rom():
+        nonlocal result_type
+        closure: list[CellType] | None = getattr(fn, "__closure__", None)
+        if closure:
+            original_values = [cell.cell_contents for cell in closure]
+
+            def value_to_rom(v):
+                value = validate_value(v)
+                if isinstance(value, TupleImpl):
+                    return TupleImpl(tuple(value_to_rom(entry) for entry in value.value))
+                else:
+                    return type(value)._from_place_(ctx().rom[tuple(value._to_list_())])
+
+            try:
+                for cell, original_value in zip(closure, original_values, strict=True):
+                    cell.cell_contents = value_to_rom(original_value)
+                result = compile_and_call(fn, *args, **kwargs)
+            finally:
+                for cell, original_value in zip(closure, original_values, strict=True):
+                    cell.cell_contents = original_value
+        else:
+            result = compile_and_call(fn, *args, **kwargs)
+        # If terminated, this line won't run
+        # We can check whether this value is 1 to see if the compiled function finished without terminating
+        Num._from_place_(BlockPlace(-1, 0))._set_(Num(1))
+        result_type = type(result)
+        target = result_type._from_place_(BlockPlace(-2, 0))
+        if result_type._is_value_type_():
+            target._set_(result)
+        else:
+            target._copy_from_(result)
+        return result
+
+    for read_closure_from_rom, passes in itertools.product((False, True), optimization_levels):
         try:
-            cfg, rom_values = compile_fn(run_compiled)
+            cfg, rom_values = compile_fn(run_compiled_with_closure_from_rom if read_closure_from_rom else run_compiled)
         except CompilationError as e:
             assert exception is not None
             while isinstance(e, CompilationError) and e.__cause__ is not None:

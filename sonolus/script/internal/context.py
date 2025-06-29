@@ -312,6 +312,12 @@ class ReadOnlyMemory:
         else:
             return PlayBlock.EngineRom
 
+    def get_value(self, index: int) -> float:
+        with self._lock:
+            if index < 0 or index >= len(self.values):
+                raise IndexError(f"Index {index} out of bounds for ReadOnlyMemory")
+            return self.values[index]
+
 
 @contextmanager
 def enable_debug(config: DebugConfig | None = None):

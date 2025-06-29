@@ -1,6 +1,8 @@
-# ruff: noqa
-from hypothesis import given
+# ruff: noqa: PLW1641, PT017
+import pytest
+from hypothesis import assume, given
 from hypothesis import strategies as st
+from script.conftest import run_compiled
 
 from sonolus.script.debug import debug_log
 from sonolus.script.internal.error import CompilationError
@@ -8,7 +10,7 @@ from sonolus.script.record import Record
 from tests.script.conftest import run_and_validate
 
 
-class NothingImplemented(Record):
+class DefaultsOnly(Record):
     pass
 
 
@@ -99,54 +101,58 @@ class EqNotImplemented(Record):
         debug_log(17)
         return NotImplemented
 
+    def __ne__(self, other):
+        debug_log(18)
+        return NotImplemented
+
 
 class LtOnly(Record):
     def __lt__(self, other):
-        debug_log(18)
+        debug_log(19)
         return True
 
 
 class GtOnly(Record):
     def __gt__(self, other):
-        debug_log(19)
+        debug_log(20)
         return True
 
 
 class LtGt(Record):
     def __lt__(self, other):
-        debug_log(20)
+        debug_log(21)
         return True
 
     def __gt__(self, other):
-        debug_log(21)
+        debug_log(22)
         return True
 
 
 class LtNotImplemented(Record):
     def __lt__(self, other):
-        debug_log(22)
+        debug_log(23)
         return NotImplemented
 
 
 class GtNotImplemented(Record):
     def __gt__(self, other):
-        debug_log(23)
+        debug_log(24)
         return NotImplemented
 
 
 class LtGtNotImplemented(Record):
     def __lt__(self, other):
-        debug_log(24)
+        debug_log(25)
         return NotImplemented
 
     def __gt__(self, other):
-        debug_log(25)
+        debug_log(26)
         return NotImplemented
 
 
 class HasCall(Record):
     def __call__(self):
-        debug_log(26)
+        debug_log(27)
         return 123
 
 
@@ -159,13 +165,13 @@ bin_values = [
     AddAndRAdd(),
     AddAndIAdd(),
     RAddAndIAdd(),
-    NothingImplemented(),
+    DefaultsOnly(),
 ]
 
 eq_values = [
     EqOnly(),
     EqNotImplemented(),
-    NothingImplemented(),
+    DefaultsOnly(),
 ]
 
 comp_values = [
@@ -175,7 +181,7 @@ comp_values = [
     GtOnly(),
     LtNotImplemented(),
     GtNotImplemented(),
-    NothingImplemented(),
+    DefaultsOnly(),
 ]
 
 
@@ -190,7 +196,7 @@ def test_bin_op(left, right):
     try:
         run_and_validate(fn)
     except TypeError as e:
-        assert "unsupported operand type(s)" in str(e)  # noqa: PT017
+        assert "unsupported operand type(s)" in str(e)
 
 
 @given(
@@ -214,10 +220,34 @@ def test_iop(left, right):
     st.one_of(*[st.just(value) for value in eq_values]),
 )
 def test_eq_op(left, right):
+    assume(not (isinstance(left, EqNotImplemented) and isinstance(right, EqNotImplemented)))  # See the next test
+
     def fn():
         return left == right
 
     run_and_validate(fn)
+
+
+def test_eq_not_implemented():
+    def fn():
+        x = EqNotImplemented()
+        y = EqNotImplemented()
+        return x == y
+
+    assert not fn()
+    with pytest.raises(CompilationError, match="not supported between instances"):
+        run_compiled(fn)
+
+
+def test_not_eq_not_implemented():
+    def fn():
+        x = EqNotImplemented()
+        y = EqNotImplemented()
+        return x != y
+
+    assert fn()
+    with pytest.raises(CompilationError, match="not supported between instances"):
+        run_compiled(fn)
 
 
 @given(
@@ -244,7 +274,7 @@ def test_call_op():
 
 def test_unsupported_call():
     def fn():
-        x = NothingImplemented()
+        x = DefaultsOnly()
         return x()
 
     try:
@@ -255,7 +285,7 @@ def test_unsupported_call():
 
 def test_unsupported_unary():
     def fn():
-        x = NothingImplemented()
+        x = DefaultsOnly()
         return -x  # type: ignore
 
     try:

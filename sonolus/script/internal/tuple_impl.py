@@ -30,7 +30,7 @@ class TupleImpl(TransientValue):
         return len(self.value)
 
     def __eq__(self, other):
-        if not isinstance(other, tuple):
+        if not self._is_tuple_impl(other):
             return False
         if len(self) != len(other):
             return False
@@ -40,7 +40,7 @@ class TupleImpl(TransientValue):
         return True
 
     def __ne__(self, other):
-        if not isinstance(other, tuple):
+        if not self._is_tuple_impl(other):
             return True
         if len(self) != len(other):
             return True
@@ -50,33 +50,33 @@ class TupleImpl(TransientValue):
         return False
 
     def __lt__(self, other):
-        if not isinstance(other, tuple):
+        if not self._is_tuple_impl(other):
             return NotImplemented
-        for a, b in zip(self.value, other.value):
+        for a, b in zip(self, other):
             if a != b:
                 return a < b
         return len(self.value) < len(other.value)
 
     def __le__(self, other):
-        if not isinstance(other, tuple):
+        if not self._is_tuple_impl(other):
             return NotImplemented
-        for a, b in zip(self.value, other.value):
+        for a, b in zip(self, other):
             if a != b:
                 return a < b
         return len(self.value) <= len(other.value)
 
     def __gt__(self, other):
-        if not isinstance(other, tuple):
+        if not self._is_tuple_impl(other):
             return NotImplemented
-        for a, b in zip(self.value, other.value):
+        for a, b in zip(self, other):
             if a != b:
                 return a > b
         return len(self.value) > len(other.value)
 
     def __ge__(self, other):
-        if not isinstance(other, tuple):
+        if not self._is_tuple_impl(other):
             return NotImplemented
-        for a, b in zip(self.value, other.value):
+        for a, b in zip(self, other):
             if a != b:
                 return a > b
         return len(self.value) >= len(other.value)
@@ -88,6 +88,11 @@ class TupleImpl(TransientValue):
     def __add__(self, other) -> Self:
         other = TupleImpl._accept_(other)
         return TupleImpl._accept_(self.value + other.value)
+
+    @staticmethod
+    @meta_fn
+    def _is_tuple_impl(value: Any) -> bool:
+        return isinstance(value, TupleImpl)
 
     @classmethod
     def _accepts_(cls, value: Any) -> bool:
