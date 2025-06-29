@@ -2,12 +2,11 @@
 import pytest
 from hypothesis import assume, given
 from hypothesis import strategies as st
-from script.conftest import run_compiled
 
 from sonolus.script.debug import debug_log
 from sonolus.script.internal.error import CompilationError
 from sonolus.script.record import Record
-from tests.script.conftest import run_and_validate
+from tests.script.conftest import run_and_validate, run_compiled
 
 
 class DefaultsOnly(Record):

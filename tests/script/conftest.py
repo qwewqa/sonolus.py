@@ -41,7 +41,7 @@ settings.register_profile(
 settings.register_profile(
     "ci",
     settings.get_profile("ci"),
-    max_examples=20,
+    max_examples=40,
     deadline=timedelta(seconds=10),
 )
 settings.load_profile("ci" if is_ci() else "default")
