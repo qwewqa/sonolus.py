@@ -1,3 +1,4 @@
+import os
 import random
 from collections.abc import Callable
 from datetime import timedelta
@@ -21,10 +22,18 @@ from sonolus.script.num import Num
 from sonolus.script.vec import Vec2
 
 settings.register_profile(
-    "standard",
+    "default",
+    settings.get_profile("default"),
+    max_examples=100,
     deadline=timedelta(seconds=10),
 )
-settings.load_profile("standard")
+settings.register_profile(
+    "ci",
+    settings.get_profile("ci"),
+    max_examples=40,
+    deadline=timedelta(seconds=10),
+)
+settings.load_profile(os.getenv("HYPOTHESIS_PROFILE", "default"))
 
 optimization_levels = [
     MINIMAL_PASSES,

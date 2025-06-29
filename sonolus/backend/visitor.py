@@ -1219,8 +1219,7 @@ class Visitor(ast.NodeVisitor):
                     )
                 ],
                 **location_args,
-            ),
-            **location_args,
+            )
         )
         return eval(
             compile(expr, filename=self.source_file, mode="eval"),
