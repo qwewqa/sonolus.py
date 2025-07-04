@@ -38,6 +38,10 @@ Sonolus.py also comes with support for some standard library modules.
 - `ceil(x)`
 - `trunc(x)`
 - `log(x[, base])`
+- `pi`
+- `e`
+- `tau`
+- `inf`
 
 ### random
 - `randrange(stop)`, `random.randrange(start, stop[, step])`

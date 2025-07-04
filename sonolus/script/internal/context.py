@@ -291,7 +291,11 @@ class ReadOnlyMemory:
     _lock: Lock
 
     def __init__(self):
-        self.values = []
+        self.values = [
+            float("nan"),
+            float("inf"),
+            float("-inf"),
+        ]
         self.indexes = {}
         self._lock = Lock()
 

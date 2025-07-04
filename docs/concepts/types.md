@@ -14,7 +14,7 @@ Sonolus.py will treat any of these types as `Num`, but it's recommended to use w
 The Sonolus app uses 32-bit floating-point numbers for all numeric values, so precision may be lower compared to Python
 when running on Sonolus.
 
-Infinity, NaN, and values outside the range of 32-bit floating-point numbers are not supported.
+NaN and values outside the range of 32-bit floating-point numbers are not supported.
 
 You can import `Num` from `sonolus.script.num`:
 

@@ -1,3 +1,5 @@
+from math import isfinite, isinf, isnan
+
 from sonolus.backend.ir import IRConst, IRGet, IRInstr, IRPureInstr, IRSet
 from sonolus.backend.node import ConstantNode, EngineNode, FunctionNode
 from sonolus.backend.ops import Op
@@ -54,10 +56,20 @@ def cfg_to_engine_node(entry: BasicBlock):
 
 def ir_to_engine_node(stmt) -> EngineNode:
     match stmt:
-        case int() | float():
-            return ConstantNode(value=float(stmt))
-        case IRConst(value=int(value) | float(value)):
-            return ConstantNode(value=value)
+        case int(value) | float(value) | IRConst(value=int(value) | float(value)):
+            value = float(value)
+            if value.is_integer():
+                return ConstantNode(value=int(value))
+            elif isfinite(value):
+                return ConstantNode(value=value)
+            elif isinf(value):
+                # Read values from ROM
+                return FunctionNode(Op.Get, args=[ConstantNode(value=3000), ConstantNode(value=1 if value > 0 else 2)])
+            elif isnan(value):
+                # Read value from ROM
+                return FunctionNode(Op.Get, args=[ConstantNode(value=3000), ConstantNode(value=0)])
+            else:
+                raise ValueError(f"Invalid constant value: {value}")
         case IRPureInstr(op=op, args=args) | IRInstr(op=op, args=args):
             return FunctionNode(func=op, args=[ir_to_engine_node(arg) for arg in args])
         case IRGet(place=place):
