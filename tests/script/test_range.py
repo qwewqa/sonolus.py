@@ -1,6 +1,8 @@
 from hypothesis import given
 from hypothesis import strategies as st
 
+from sonolus.script.array import Array
+from sonolus.script.containers import VarArray
 from tests.script.conftest import run_and_validate
 from tests.script.test_record import Pair
 
@@ -129,3 +131,58 @@ def test_identical_range_equality(start, stop, step):
     expected = Pair(True, True)
     result = run_and_validate(fn)
     assert result == expected
+
+
+def test_range_negative_indexing():
+    def fn():
+        r = range(10, 50, 5)
+
+        return Array(
+            r[-1],
+            r[-2],
+            r[-3],
+            r[-4],
+            r[-5],
+            r[-6],
+            r[-7],
+            r[-8],
+        )
+
+    assert list(run_and_validate(fn)) == [45, 40, 35, 30, 25, 20, 15, 10]
+
+
+@given(
+    start=st.integers(-50, 50),
+    stop=st.integers(-50, 50),
+    step=st.integers(-10, 10).filter(lambda x: x != 0),
+)
+def test_range_negative_positive_indexing_equivalence(start, stop, step):
+    length = len(range(start, stop, step))
+
+    def fn():
+        r = range(start, stop, step)
+
+        if length == 0:
+            return Array(True)
+
+        results = VarArray[bool, length].new()
+        for i in range(1, length + 1):
+            if i <= length:
+                results.append(r[-i] == r[length - i])
+
+        return results
+
+    assert all(run_and_validate(fn))
+
+
+def test_range_indexing_with_arrays():
+    def fn():
+        r = range(5, 25, 3)
+        results = VarArray[int, 7].new()
+
+        for i in range(len(r)):
+            results.append(r[i])
+
+        return results
+
+    assert list(run_and_validate(fn)) == [5, 8, 11, 14, 17, 20, 23]

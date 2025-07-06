@@ -3,6 +3,7 @@ from hypothesis import given
 from hypothesis import strategies as st
 
 from sonolus.script.array import Array
+from sonolus.script.containers import VarArray
 from sonolus.script.debug import assert_false, assert_true
 from sonolus.script.record import Record
 from tests.script.conftest import run_and_validate
@@ -177,6 +178,45 @@ def test_array_enumerate():
         return 1
 
     assert run_and_validate(fn) == 1
+
+
+def test_array_negative_indexing():
+    def fn():
+        array = Array(10, 20, 30, 40, 50)
+
+        return Array(array[-1], array[-2], array[-3], array[-4], array[-5])
+
+    assert list(run_and_validate(fn)) == [50, 40, 30, 20, 10]
+
+
+def test_array_negative_indexing_set():
+    def fn():
+        array = Array(10, 20, 30, 40, 50)
+
+        array[-1] = 99
+        array[-2] = 88
+        array[-3] = 77
+
+        return array
+
+    assert list(run_and_validate(fn)) == [10, 20, 77, 88, 99]
+
+
+@given(args=st.lists(st.integers(min_value=-100, max_value=100), min_size=1, max_size=20))
+def test_array_negative_positive_indexing_equivalence(args):
+    tuple_args = tuple(args)
+    n = len(args)
+
+    def fn():
+        array = Array[int, n](*tuple_args)
+
+        results = VarArray[bool, n].new()
+        for i in range(n):
+            results.append(array[i] == array[i - n])
+
+        return results
+
+    assert all(run_and_validate(fn))
 
 
 def test_array_index():

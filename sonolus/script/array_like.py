@@ -5,6 +5,7 @@ from abc import abstractmethod
 from collections.abc import Callable
 from typing import Any
 
+from sonolus.script.internal.context import ctx
 from sonolus.script.internal.impl import meta_fn
 from sonolus.script.iterator import SonolusIterator
 from sonolus.script.num import Num
@@ -318,13 +319,11 @@ def get_positive_index(index: Num, length: Num) -> Num:
     Returns:
         The positive index.
     """
+    if not ctx():
+        return index if index >= 0 else index + length
     index = Num._accept_(index)
     length = Num._accept_(length)
     if index._is_py_() and length._is_py_():
         return Num._accept_(index._as_py_() + length._as_py_() if index._as_py_() < 0 else index._as_py_())
     else:
-        return _get_positive_index(index, length)
-
-
-def _get_positive_index(index: Num, length: Num) -> Num:
-    return index + (index < 0) * length
+        return index + (index < 0) * length

@@ -49,21 +49,21 @@ def list_and_maybe_missing_value(draw):
 @st.composite
 def list_and_index(draw):
     values = draw(lists)
-    index = draw(st.integers(min_value=0, max_value=len(values) - 1))
+    index = draw(st.integers(min_value=-len(values), max_value=len(values) - 1))
     return values, index
 
 
 @st.composite
 def list_and_insert_index(draw):
     values = draw(lists)
-    index = draw(st.integers(min_value=0, max_value=len(values)))
+    index = draw(st.integers(min_value=-len(values), max_value=len(values)))
     return values, index
 
 
 @st.composite
 def set_and_present_value(draw):
     values = draw(lists)
-    index = draw(st.integers(min_value=0, max_value=len(values) - 1))
+    index = draw(st.integers(min_value=-len(values), max_value=len(values) - 1))
     return set(values), values[index]
 
 
@@ -97,6 +97,62 @@ def test_var_array_setitem():
     assert list(run_and_validate(fn)) == [2, 10, 6, 8]
 
 
+def test_var_array_negative_indexing():
+    def fn():
+        va = VarArray[int, 5].new()
+        va.extend(Array(10, 20, 30, 40, 50))
+
+        return Array(
+            va[-1],
+            va[-2],
+            va[-3],
+            va[-4],
+            va[-5],
+        )
+
+    assert list(run_and_validate(fn)) == [50, 40, 30, 20, 10]
+
+
+def test_var_array_negative_setitem():
+    def fn():
+        va = VarArray[int, 5].new()
+        va.extend(Array(10, 20, 30, 40, 50))
+
+        va[-1] = 99
+        va[-2] = 88
+        va[-3] = 77
+
+        return va
+
+    assert list(run_and_validate(fn)) == [10, 20, 77, 88, 99]
+
+
+def test_var_array_negative_pop():
+    def fn():
+        va = VarArray[int, 5].new()
+        va.extend(Array(10, 20, 30, 40, 50))
+
+        pop1 = va.pop(-1)
+        pop2 = va.pop(-2)
+        length = len(va)
+
+        results = VarArray[int, 6].new()
+        results.append(pop1)
+        results.append(pop2)
+        results.append(length)
+
+        for item in va:
+            results.append(item)
+
+        return results
+
+    p1, p2, new_len, *rem = run_and_validate(fn)
+    assert p1 == 50
+    assert p2 == 30
+    assert new_len == 3
+    assert list(rem) == [10, 20, 40]
+
+
 def test_var_array_del():
     def fn():
         va = VarArray[int, 4].new()
@@ -105,6 +161,17 @@ def test_var_array_del():
         return va
 
     assert list(run_and_validate(fn)) == [2, 6, 8]
+
+
+def test_var_array_negative_del():
+    def fn():
+        va = VarArray[int, 4].new()
+        va.extend(Array(2, 4, 6, 8))
+        del va[-1]
+        del va[-2]
+        return va
+
+    assert list(run_and_validate(fn)) == [2, 6]
 
 
 def test_var_array_iadd():
@@ -165,10 +232,17 @@ def test_var_array_pop_insert_round_trip(args):
         va = VarArray[int, value_count].new()
         va.extend(values)
         assert_true(len(va) == value_count)
+        expected_pop_result = values[index]
         pop_result = va.pop(index)
+        assert_true(pop_result == expected_pop_result)
         assert_true(len(va) == value_count - 1)
-        assert_true(pop_result == values[index])
-        va.insert(index, pop_result)
+        if index >= 0:
+            insert_index = index
+        elif index == -1:
+            insert_index = value_count - 1
+        else:
+            insert_index = index + 1
+        va.insert(insert_index, pop_result)
         assert_true(len(va) == value_count)
         return va
 
@@ -189,8 +263,8 @@ def test_var_array_insert_pop_round_trip(args):
         insert_value = 100
         va.insert(index, insert_value)
         assert_true(len(va) == value_count + 1)
-        assert_true(va[index] == insert_value)
-        pop_result = va.pop(index)
+        assert_true(va[index if index >= 0 else index - 1] == insert_value)
+        pop_result = va.pop(index if index >= 0 else index - 1)
         assert_true(len(va) == value_count)
         assert_true(pop_result == insert_value)
         return va

@@ -85,13 +85,20 @@ class RangeIterator(Record, SonolusIterator):
 
 @meta_fn
 def range_or_tuple(start: Num, stop: Num | None = None, step: Num = 1) -> Range | tuple[Num, ...]:
-    if not ctx():
-        return range(start, stop, step)  # type: ignore
     if stop is None:
         start, stop = 0, start
+    if not ctx():
+        return range(start, stop, step)  # type: ignore
     start = Num._accept_(start)
     stop = Num._accept_(stop) if stop is not None else None
     step = Num._accept_(step)
     if start._is_py_() and stop._is_py_() and step._is_py_():
-        return validate_value(tuple(range(start._as_py_(), stop._as_py_(), step._as_py_())))  # type: ignore
+        start_int = start._as_py_()
+        stop_int = stop._as_py_() if stop is not None else None
+        if stop_int is None:
+            start_int, stop_int = 0, start_int
+        step_int = step._as_py_()
+        if start_int % 1 != 0 or stop_int % 1 != 0 or step_int % 1 != 0:
+            raise TypeError("Range arguments must be integers")
+        return validate_value(tuple(range(int(start_int), int(stop_int), int(step_int))))  # type: ignore
     return Range(start, stop, step)

@@ -186,7 +186,7 @@ class Array[T, Size](GenericValue, ArrayLike[T], metaclass=ArrayMeta):
 
     @meta_fn
     def __getitem__(self, index: Num) -> T:
-        index: Num = get_positive_index(index, self.size())
+        index: Num = Num._accept_(get_positive_index(index, self.size()))
         if index._is_py_() and 0 <= index._as_py_() < self.size():
             const_index = index._as_py_()
             if isinstance(const_index, float) and not const_index.is_integer():
@@ -230,7 +230,7 @@ class Array[T, Size](GenericValue, ArrayLike[T], metaclass=ArrayMeta):
 
     @meta_fn
     def __setitem__(self, index: Num, value: T):
-        index: Num = get_positive_index(index, self.size())
+        index: Num = Num._accept_(get_positive_index(index, self.size()))
         value = self.element_type()._accept_(value)
         if ctx():
             if isinstance(self._value, list):

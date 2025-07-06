@@ -6,6 +6,7 @@ from sonolus.script.array_like import ArrayLike, get_positive_index
 from sonolus.script.debug import error
 from sonolus.script.internal.context import ctx
 from sonolus.script.internal.impl import meta_fn
+from sonolus.script.interval import clamp
 from sonolus.script.iterator import SonolusIterator
 from sonolus.script.num import Num
 from sonolus.script.pointer import _deref
@@ -190,6 +191,7 @@ class VarArray[T, Capacity](Record, ArrayLike[T]):
         """
         if index is None:
             index = self._size - 1
+        index = get_positive_index(index, len(self))
         assert 0 <= index < self._size
         value = copy(self._array[index])
         self._size -= 1
@@ -207,7 +209,7 @@ class VarArray[T, Capacity](Record, ArrayLike[T]):
             index: The index at which to insert the value. Must be in the range [0, size].
             value: The value to insert.
         """
-        assert 0 <= index <= self._size
+        index = clamp(get_positive_index(index, len(self)), 0, self._size)
         assert self._size < len(self._array)
         self._size += 1
         for i in range(self._size - 1, index, -1):
