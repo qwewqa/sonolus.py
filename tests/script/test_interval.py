@@ -1,12 +1,42 @@
 from hypothesis import assume, given
 from hypothesis import strategies as st
 
-from sonolus.script.interval import Interval, remap, remap_clamped
+from sonolus.script.array import Array
+from sonolus.script.interval import Interval, interp, interp_clamped, lerp, remap, remap_clamped
 from tests.script.conftest import implies, is_close, run_and_validate
 
 ints = st.integers(min_value=-99999, max_value=99999)
 floats = st.floats(min_value=-99999, max_value=99999, allow_infinity=False, allow_nan=False)
+positive_deltas = st.floats(min_value=1e-4, max_value=999, allow_infinity=False, allow_nan=False)
+floats_0_1 = st.floats(min_value=0, max_value=1, allow_infinity=False, allow_nan=False)
 divisor_floats = floats.filter(lambda x: abs(x) > 1e-6)
+
+
+@st.composite
+def xp_fp_pairs(draw):
+    size = draw(st.integers(min_value=2, max_value=10))
+    xp_start = draw(floats)
+    deltas = draw(st.lists(positive_deltas, min_size=size - 1, max_size=size - 1))
+    fp_values = draw(st.lists(floats, min_size=size, max_size=size))
+
+    xp_tuple = (xp_start, *tuple(xp_start + sum(deltas[: i + 1]) for i in range(len(deltas))))
+    fp_tuple = tuple(fp_values)
+
+    return xp_tuple, fp_tuple
+
+
+@st.composite
+def xp_fp_pairs_monotonic(draw):
+    size = draw(st.integers(min_value=2, max_value=10))
+    xp_start = draw(floats)
+    fp_start = draw(floats)
+    xp_deltas = draw(st.lists(positive_deltas, min_size=size - 1, max_size=size - 1))
+    fp_deltas = draw(st.lists(positive_deltas, min_size=size - 1, max_size=size - 1))
+
+    xp_tuple = (xp_start, *tuple(xp_start + sum(xp_deltas[: i + 1]) for i in range(len(xp_deltas))))
+    fp_tuple = (fp_start, *tuple(fp_start + sum(fp_deltas[: i + 1]) for i in range(len(fp_deltas))))
+
+    return xp_tuple, fp_tuple
 
 
 @given(floats, floats)
@@ -221,3 +251,320 @@ def test_unlerp_clamped_lerp_clamped_inverse(start, end, value):
         return interval.lerp_clamped(unlerped_clamped)
 
     assert is_close(run_and_validate(fn), sorted([start, value, end])[1], abs_tol=1e-4)
+
+
+@given(xp_fp_pairs(), positive_deltas)
+def test_interp_bounds_arrays(xp_fp_pair, offset):
+    xp_tuple, fp_tuple = xp_fp_pair
+
+    def fn():
+        xp = Array(*xp_tuple)
+        fp = Array(*fp_tuple)
+
+        x_below = xp_tuple[0] - offset
+        result_below = interp(xp, fp, x_below)
+        expected_below = remap(xp_tuple[0], xp_tuple[1], fp_tuple[0], fp_tuple[1], x_below)
+
+        x_above = xp_tuple[-1] + offset
+        result_above = interp(xp, fp, x_above)
+        expected_above = remap(xp_tuple[-2], xp_tuple[-1], fp_tuple[-2], fp_tuple[-1], x_above)
+
+        return Array(result_below, expected_below, result_above, expected_above)
+
+    result_below, expected_below, result_above, expected_above = run_and_validate(fn)
+    assert is_close(result_below, expected_below, abs_tol=1e-4)
+    assert is_close(result_above, expected_above, abs_tol=1e-4)
+
+
+@given(xp_fp_pairs(), positive_deltas)
+def test_interp_bounds_tuples(xp_fp_pair, offset):
+    xp_tuple, fp_tuple = xp_fp_pair
+
+    def fn():
+        xp = xp_tuple
+        fp = fp_tuple
+
+        x_below = xp_tuple[0] - offset
+        result_below = interp(xp, fp, x_below)
+        expected_below = remap(xp_tuple[0], xp_tuple[1], fp_tuple[0], fp_tuple[1], x_below)
+
+        x_above = xp_tuple[-1] + offset
+        result_above = interp(xp, fp, x_above)
+        expected_above = remap(xp_tuple[-2], xp_tuple[-1], fp_tuple[-2], fp_tuple[-1], x_above)
+
+        return Array(result_below, expected_below, result_above, expected_above)
+
+    result_below, expected_below, result_above, expected_above = run_and_validate(fn)
+    assert is_close(result_below, expected_below, abs_tol=1e-4)
+    assert is_close(result_above, expected_above, abs_tol=1e-4)
+
+
+@given(xp_fp_pairs(), positive_deltas.filter(lambda x: abs(x) > 1e-6))
+def test_interp_clamped_bounds_arrays(xp_fp_pair, offset):
+    xp_tuple, fp_tuple = xp_fp_pair
+
+    def fn():
+        xp = Array(*xp_tuple)
+        fp = Array(*fp_tuple)
+
+        x_below = xp_tuple[0] - offset
+        result_below = interp_clamped(xp, fp, x_below)
+
+        x_above = xp_tuple[-1] + offset
+        result_above = interp_clamped(xp, fp, x_above)
+
+        return Array(result_below, fp_tuple[0], result_above, fp_tuple[-1])
+
+    result_below, expected_below, result_above, expected_above = run_and_validate(fn)
+    assert is_close(result_below, expected_below, abs_tol=1e-4)
+    assert is_close(result_above, expected_above, abs_tol=1e-4)
+
+
+@given(xp_fp_pairs(), positive_deltas)
+def test_interp_clamped_bounds_tuples(xp_fp_pair, offset):
+    xp_tuple, fp_tuple = xp_fp_pair
+
+    def fn():
+        xp = xp_tuple
+        fp = fp_tuple
+
+        x_below = xp_tuple[0] - offset
+        result_below = interp_clamped(xp, fp, x_below)
+
+        x_above = xp_tuple[-1] + offset
+        result_above = interp_clamped(xp, fp, x_above)
+
+        return Array(result_below, fp_tuple[0], result_above, fp_tuple[-1])
+
+    result_below, expected_below, result_above, expected_above = run_and_validate(fn)
+    assert is_close(result_below, expected_below, abs_tol=1e-4)
+    assert is_close(result_above, expected_above, abs_tol=1e-4)
+
+
+@given(xp_fp_pairs(), floats_0_1)
+def test_interp_within_bounds_arrays(xp_fp_pair, rel_x):
+    xp_tuple, fp_tuple = xp_fp_pair
+
+    x = lerp(xp_tuple[0], xp_tuple[-1], rel_x)
+
+    def fn():
+        xp = Array(*xp_tuple)
+        fp = Array(*fp_tuple)
+        result = interp(xp, fp, x)
+        return Array(result, min(fp_tuple), max(fp_tuple))
+
+    result, min_fp, max_fp = run_and_validate(fn)
+    assert (
+        min_fp <= result <= max_fp or is_close(result, min_fp, abs_tol=1e-4) or is_close(result, max_fp, abs_tol=1e-4)
+    )
+
+
+@given(xp_fp_pairs(), floats_0_1)
+def test_interp_within_bounds_tuples(xp_fp_pair, rel_x):
+    xp_tuple, fp_tuple = xp_fp_pair
+
+    x = lerp(xp_tuple[0], xp_tuple[-1], rel_x)
+
+    def fn():
+        xp = xp_tuple
+        fp = fp_tuple
+        result = interp(xp, fp, x)
+        return Array(result, min(fp_tuple), max(fp_tuple))
+
+    result, min_fp, max_fp = run_and_validate(fn)
+    assert min_fp <= result <= max_fp
+
+
+@given(xp_fp_pairs(), floats_0_1)
+def test_interp_clamped_within_bounds_arrays(xp_fp_pair, rel_x):
+    xp_tuple, fp_tuple = xp_fp_pair
+
+    x = lerp(xp_tuple[0], xp_tuple[-1], rel_x)
+
+    def fn():
+        xp = Array(*xp_tuple)
+        fp = Array(*fp_tuple)
+        result = interp_clamped(xp, fp, x)
+        return Array(result, min(fp_tuple), max(fp_tuple))
+
+    result, min_fp, max_fp = run_and_validate(fn)
+    assert min_fp <= result <= max_fp
+
+
+@given(xp_fp_pairs(), floats)
+def test_interp_clamped_within_bounds_tuples(xp_fp_pair, rel_x):
+    xp_tuple, fp_tuple = xp_fp_pair
+
+    # Ensure x is within bounds
+    x = xp_tuple[0] + (xp_tuple[-1] - xp_tuple[0]) * max(0, min(1, (rel_x + 1) / 2))
+
+    def fn():
+        xp = xp_tuple
+        fp = fp_tuple
+        result = interp_clamped(xp, fp, x)
+        return Array(result, min(fp_tuple), max(fp_tuple))
+
+    result, min_fp, max_fp = run_and_validate(fn)
+    assert (
+        min_fp <= result <= max_fp or is_close(result, min_fp, abs_tol=1e-4) or is_close(result, max_fp, abs_tol=1e-4)
+    )
+
+
+def test_interp_simple_cases():
+    def fn():
+        # Test middle point
+        xp = Array(0.0, 10.0)
+        fp = Array(5.0, 15.0)
+        middle = interp(xp, fp, 5.0)
+
+        # Test exact point match
+        exact = interp(xp, fp, 0.0)
+
+        # Test outside bounds
+        outside = interp(xp, fp, 20.0)
+
+        return Array(middle, exact, outside)
+
+    middle, exact, outside = run_and_validate(fn)
+    assert is_close(middle, 10.0, abs_tol=1e-4)  # Midpoint between 5 and 15
+    assert is_close(exact, 5.0, abs_tol=1e-4)  # Exact match at x=0
+    assert is_close(outside, 25.0, abs_tol=1e-4)  # Extrapolation: 15 + (15-5) * (20-10)/(10-0)
+
+
+def test_interp_clamped_simple_cases():
+    def fn():
+        # Test middle point
+        xp = Array(0.0, 10.0)
+        fp = Array(5.0, 15.0)
+        middle = interp_clamped(xp, fp, 5.0)
+
+        # Test exact point match
+        exact = interp_clamped(xp, fp, 0.0)
+
+        # Test outside bounds (should clamp)
+        outside_low = interp_clamped(xp, fp, -5.0)
+        outside_high = interp_clamped(xp, fp, 20.0)
+
+        return Array(middle, exact, outside_low, outside_high)
+
+    middle, exact, outside_low, outside_high = run_and_validate(fn)
+    assert is_close(middle, 10.0, abs_tol=1e-4)  # Midpoint between 5 and 15
+    assert is_close(exact, 5.0, abs_tol=1e-4)  # Exact match at x=0
+    assert is_close(outside_low, 5.0, abs_tol=1e-4)  # Clamped to first value
+    assert is_close(outside_high, 15.0, abs_tol=1e-4)  # Clamped to last value
+
+
+def test_interp_tuple_simple_cases():
+    def fn():
+        # Test middle point
+        xp = (0.0, 10.0)
+        fp = (5.0, 15.0)
+        middle = interp(xp, fp, 5.0)
+
+        # Test exact point match
+        exact = interp(xp, fp, 0.0)
+
+        # Test outside bounds
+        outside = interp(xp, fp, 20.0)
+
+        return Array(middle, exact, outside)
+
+    middle, exact, outside = run_and_validate(fn)
+    assert is_close(middle, 10.0, abs_tol=1e-4)  # Midpoint between 5 and 15
+    assert is_close(exact, 5.0, abs_tol=1e-4)  # Exact match at x=0
+    assert is_close(outside, 25.0, abs_tol=1e-4)  # Extrapolation: 15 + (15-5) * (20-10)/(10-0)
+
+
+def test_interp_clamped_tuple_simple_cases():
+    def fn():
+        # Test middle point
+        xp = (0.0, 10.0)
+        fp = (5.0, 15.0)
+        middle = interp_clamped(xp, fp, 5.0)
+
+        # Test exact point match
+        exact = interp_clamped(xp, fp, 0.0)
+
+        # Test outside bounds (should clamp)
+        outside_low = interp_clamped(xp, fp, -5.0)
+        outside_high = interp_clamped(xp, fp, 20.0)
+
+        return Array(middle, exact, outside_low, outside_high)
+
+    middle, exact, outside_low, outside_high = run_and_validate(fn)
+    assert is_close(middle, 10.0, abs_tol=1e-4)  # Midpoint between 5 and 15
+    assert is_close(exact, 5.0, abs_tol=1e-4)  # Exact match at x=0
+    assert is_close(outside_low, 5.0, abs_tol=1e-4)  # Clamped to first value
+    assert is_close(outside_high, 15.0, abs_tol=1e-4)  # Clamped to last value
+
+
+@given(xp_fp_pairs_monotonic(), floats)
+def test_interp_inverse_arrays(xp_fp_pair, x):
+    xp_tuple, fp_tuple = xp_fp_pair
+
+    def fn():
+        xp = Array(*xp_tuple)
+        fp = Array(*fp_tuple)
+
+        y = interp(xp, fp, x)
+        x_recovered = interp(fp, xp, y)
+
+        return Array(x, x_recovered)
+
+    original_x, recovered_x = run_and_validate(fn)
+    assert is_close(original_x, recovered_x, abs_tol=1e-3)
+
+
+@given(xp_fp_pairs_monotonic(), floats)
+def test_interp_inverse_tuples(xp_fp_pair, x):
+    xp_tuple, fp_tuple = xp_fp_pair
+
+    def fn():
+        xp = xp_tuple
+        fp = fp_tuple
+
+        y = interp(xp, fp, x)
+        x_recovered = interp(fp, xp, y)
+
+        return Array(x, x_recovered)
+
+    original_x, recovered_x = run_and_validate(fn)
+    assert is_close(original_x, recovered_x, abs_tol=1e-3)
+
+
+@given(xp_fp_pairs_monotonic(), floats_0_1)
+def test_interp_clamped_inverse_arrays(xp_fp_pair, rel_x):
+    xp_tuple, fp_tuple = xp_fp_pair
+
+    x = lerp(xp_tuple[0], xp_tuple[-1], rel_x)
+
+    def fn():
+        xp = Array(*xp_tuple)
+        fp = Array(*fp_tuple)
+
+        y = interp_clamped(xp, fp, x)
+        x_recovered = interp_clamped(fp, xp, y)
+
+        return Array(x, x_recovered)
+
+    original_x, recovered_x = run_and_validate(fn)
+    assert is_close(original_x, recovered_x, abs_tol=1e-3)
+
+
+@given(xp_fp_pairs_monotonic(), floats_0_1)
+def test_interp_clamped_inverse_tuples(xp_fp_pair, rel_x):
+    xp_tuple, fp_tuple = xp_fp_pair
+
+    x = lerp(xp_tuple[0], xp_tuple[-1], rel_x)
+
+    def fn():
+        xp = xp_tuple
+        fp = fp_tuple
+
+        y = interp_clamped(xp, fp, x)
+        x_recovered = interp_clamped(fp, xp, y)
+
+        return Array(x, x_recovered)
+
+    original_x, recovered_x = run_and_validate(fn)
+    assert is_close(original_x, recovered_x, abs_tol=1e-3)

@@ -21,8 +21,10 @@ class TupleImpl(TransientValue):
             raise TypeError(f"Cannot index tuple with {item}")
         if int(item) != item:
             raise TypeError(f"Cannot index tuple with non-integer {item}")
-        if not (0 <= item < len(self.value)):
+        if not (-len(self.value) <= item < len(self.value)):
             raise IndexError(f"Tuple index out of range: {item}")
+        if item < 0:
+            item += len(self.value)
         return self.value[int(item)]
 
     @meta_fn

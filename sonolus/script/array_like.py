@@ -5,6 +5,7 @@ from abc import abstractmethod
 from collections.abc import Callable
 from typing import Any
 
+from sonolus.script.internal.impl import meta_fn
 from sonolus.script.iterator import SonolusIterator
 from sonolus.script.num import Num
 from sonolus.script.record import Record
@@ -302,3 +303,28 @@ class _ArrayEnumerator[V: ArrayLike](Record, SonolusIterator):
 
     def advance(self):
         self.i += 1
+
+
+@meta_fn
+def get_positive_index(index: Num, length: Num) -> Num:
+    """Get the positive index for the given index in the array of the given length.
+
+    This is used to convert negative indixes relative to the end of the array to positive indices.
+
+    Args:
+        index: The index to convert.
+        length: The length of the array.
+
+    Returns:
+        The positive index.
+    """
+    index = Num._accept_(index)
+    length = Num._accept_(length)
+    if index._is_py_() and length._is_py_():
+        return Num._accept_(index._as_py_() + length._as_py_() if index._as_py_() < 0 else index._as_py_())
+    else:
+        return _get_positive_index(index, length)
+
+
+def _get_positive_index(index: Num, length: Num) -> Num:
+    return index + (index < 0) * length

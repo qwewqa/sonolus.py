@@ -1,8 +1,10 @@
 from typing import Self
 
 from sonolus.backend.ops import Op
+from sonolus.script.array_like import ArrayLike
 from sonolus.script.debug import static_error
 from sonolus.script.internal.native import native_function
+from sonolus.script.internal.range import range_or_tuple
 from sonolus.script.num import Num
 from sonolus.script.record import Record
 
@@ -296,7 +298,7 @@ def unlerp_clamped(a: float, b: float, x: float, /) -> float:
 
 @native_function(Op.Remap)
 def remap(a: float, b: float, c: float, d: float, x: float, /) -> float:
-    """Remap a value from one interval to another.
+    """Linearly remap a value from one interval to another.
 
     Args:
         a: The start of the input interval.
@@ -313,7 +315,7 @@ def remap(a: float, b: float, c: float, d: float, x: float, /) -> float:
 
 @native_function(Op.RemapClamped)
 def remap_clamped(a: float, b: float, c: float, d: float, x: float, /) -> float:
-    """Remap a value from one interval to another, clamped to the output interval.
+    """Linearly remap a value from one interval to another, clamped to the output interval.
 
     Args:
         a: The start of the input interval.
@@ -341,3 +343,59 @@ def clamp(x: float, a: float, b: float, /) -> float:
         The clamped value.
     """
     return max(a, min(b, x))
+
+
+def interp(
+    xp: ArrayLike[float] | tuple[float, ...],
+    fp: ArrayLike[float] | tuple[float, ...],
+    x: float,
+) -> float:
+    """Linearly interpolate a value within a sequence of points.
+
+    The sequence must have at least 2 elements and be sorted in increasing order of x-coordinates.
+    For values of x outside the range of xp, the slope of the first or last segment is used to extrapolate.
+
+    Args:
+        xp: The x-coordinates of the points in increasing order.
+        fp: The y-coordinates of the points.
+        x: The x-coordinate to interpolate.
+
+    Returns:
+        The interpolated value.
+    """
+    assert len(xp) == len(fp)
+    assert len(xp) >= 2
+    for i in range_or_tuple(1, len(xp) - 1):
+        # At i == 1, x may be less than x[0], but since we're extrapolating, we use the first segment regardless.
+        if x <= xp[i]:
+            return remap(xp[i - 1], xp[i], fp[i - 1], fp[i], x)
+    # x > xp[-2] so we can just use the last segment regardless of whether x is in it or to the right of it.
+    return remap(xp[-2], xp[-1], fp[-2], fp[-1], x)
+
+
+def interp_clamped(
+    xp: ArrayLike[float] | tuple[float, ...],
+    fp: ArrayLike[float] | tuple[float, ...],
+    x: float,
+):
+    """Linearly interpolate a value within a sequence of points.
+
+    The sequence must have at least 2 elements and be sorted in increasing order of x-coordinates.
+    For x-coordinates outside the range of the sequence, the respective endpoint of fp is returned.
+
+    Args:
+        xp: The x-coordinates of the points in increasing order.
+        fp: The y-coordinates of the points.
+        x: The x-coordinate to interpolate.
+
+    Returns:
+        The interpolated value.
+    """
+    assert len(xp) == len(fp)
+    assert len(xp) >= 2
+    if x <= xp[0]:
+        return fp[0]
+    for i in range_or_tuple(1, len(xp)):
+        if x <= xp[i]:
+            return remap(xp[i - 1], xp[i], fp[i - 1], fp[i], x)
+    return fp[-1]

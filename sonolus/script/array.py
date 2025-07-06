@@ -5,7 +5,7 @@ from typing import Any, Self, final
 
 from sonolus.backend.ir import IRConst, IRSet
 from sonolus.backend.place import BlockPlace
-from sonolus.script.array_like import ArrayLike
+from sonolus.script.array_like import ArrayLike, get_positive_index
 from sonolus.script.debug import assert_unreachable
 from sonolus.script.internal.context import ctx
 from sonolus.script.internal.error import InternalError
@@ -186,7 +186,7 @@ class Array[T, Size](GenericValue, ArrayLike[T], metaclass=ArrayMeta):
 
     @meta_fn
     def __getitem__(self, index: Num) -> T:
-        index: Num = Num._accept_(index)
+        index: Num = get_positive_index(index, self.size())
         if index._is_py_() and 0 <= index._as_py_() < self.size():
             const_index = index._as_py_()
             if isinstance(const_index, float) and not const_index.is_integer():
@@ -230,7 +230,7 @@ class Array[T, Size](GenericValue, ArrayLike[T], metaclass=ArrayMeta):
 
     @meta_fn
     def __setitem__(self, index: Num, value: T):
-        index: Num = Num._accept_(index)
+        index: Num = get_positive_index(index, self.size())
         value = self.element_type()._accept_(value)
         if ctx():
             if isinstance(self._value, list):

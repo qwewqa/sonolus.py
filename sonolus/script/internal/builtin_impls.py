@@ -1,6 +1,7 @@
 from collections.abc import Iterable
 from typing import overload
 
+from sonolus.script.array import Array
 from sonolus.script.array_like import ArrayLike
 from sonolus.script.internal.context import ctx
 from sonolus.script.internal.dict_impl import DictImpl
@@ -129,6 +130,8 @@ def _max(*args, key: callable = _identity):
         (iterable,) = args
         if isinstance(iterable, ArrayLike):
             return compile_and_call(iterable._max_, key=key)
+        elif isinstance(iterable, TupleImpl) and all(_is_num(v) for v in iterable.value):
+            return compile_and_call(Array(*iterable.value)._max_, key=key)
         else:
             raise TypeError(f"Unsupported type: {type(iterable)} for max")
     else:
@@ -169,6 +172,8 @@ def _min(*args, key: callable = _identity):
         (iterable,) = args
         if isinstance(iterable, ArrayLike):
             return compile_and_call(iterable._min_, key=key)
+        elif isinstance(iterable, TupleImpl) and all(_is_num(v) for v in iterable.value):
+            return compile_and_call(Array(*iterable.value)._min_, key=key)
         else:
             raise TypeError(f"Unsupported type: {type(iterable)} for min")
     else:

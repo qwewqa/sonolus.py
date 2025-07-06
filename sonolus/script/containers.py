@@ -2,7 +2,7 @@ from __future__ import annotations
 
 from sonolus.backend.visitor import compile_and_call
 from sonolus.script.array import Array
-from sonolus.script.array_like import ArrayLike
+from sonolus.script.array_like import ArrayLike, get_positive_index
 from sonolus.script.debug import error
 from sonolus.script.internal.context import ctx
 from sonolus.script.internal.impl import meta_fn
@@ -140,11 +140,11 @@ class VarArray[T, Capacity](Record, ArrayLike[T]):
             assert p == Pair(5, 6)  # The value of p has changed
             ```
         """
-        return self._array[item]
+        return self._array[get_positive_index(item, len(self))]
 
     def __setitem__(self, key: int, value: T):
         """Update the element at the given index."""
-        self._array[key] = value
+        self._array[get_positive_index(key, len(self))] = value
 
     def __delitem__(self, key: int):
         """Remove the element at the given index."""
@@ -329,6 +329,7 @@ class ArrayPointer[T](Record, ArrayLike[T]):
 
     @meta_fn
     def _get_item(self, item: int) -> T:
+        item = get_positive_index(item, self.size)
         if not ctx():
             raise TypeError("ArrayPointer values cannot be accessed outside of a context")
         return _deref(

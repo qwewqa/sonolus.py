@@ -1,4 +1,6 @@
-from sonolus.script.array_like import ArrayLike
+from sonolus.script.array_like import ArrayLike, get_positive_index
+from sonolus.script.internal.context import ctx
+from sonolus.script.internal.impl import meta_fn, validate_value
 from sonolus.script.iterator import SonolusIterator
 from sonolus.script.num import Num
 from sonolus.script.record import Record
@@ -36,7 +38,7 @@ class Range(Record, ArrayLike[Num]):
             return (diff - self.step - 1) // -self.step
 
     def __getitem__(self, index: Num) -> Num:
-        return self.start + index * self.step
+        return self.start + get_positive_index(index, len(self)) * self.step
 
     def __setitem__(self, index: Num, value: Num):
         raise TypeError("Range does not support item assignment")
@@ -79,3 +81,17 @@ class RangeIterator(Record, SonolusIterator):
 
     def advance(self):
         self.value += self.step
+
+
+@meta_fn
+def range_or_tuple(start: Num, stop: Num | None = None, step: Num = 1) -> Range | tuple[Num, ...]:
+    if not ctx():
+        return range(start, stop, step)  # type: ignore
+    if stop is None:
+        start, stop = 0, start
+    start = Num._accept_(start)
+    stop = Num._accept_(stop) if stop is not None else None
+    step = Num._accept_(step)
+    if start._is_py_() and stop._is_py_() and step._is_py_():
+        return validate_value(tuple(range(start._as_py_(), stop._as_py_(), step._as_py_())))  # type: ignore
+    return Range(start, stop, step)
