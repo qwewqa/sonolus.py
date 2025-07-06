@@ -106,7 +106,7 @@ class Vec2(Record):
         """Rotate the vector by a given angle in radians and return a new vector.
 
         Args:
-            angle: The angle to rotate the vector by, in radians.
+            angle: The angle to rotate the vector by, in radians. Positive angles rotate counterclockwise.
 
         Returns:
             A new vector rotated by the given angle.
@@ -120,7 +120,7 @@ class Vec2(Record):
         """Rotate the vector about a pivot by a given angle in radians and return a new vector.
 
         Args:
-            angle: The angle to rotate the vector by, in radians.
+            angle: The angle to rotate the vector by, in radians. Positive angles rotate counterclockwise.
             pivot: The pivot point to rotate about.
 
         Returns:

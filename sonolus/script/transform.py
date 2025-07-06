@@ -137,7 +137,7 @@ class Transform2d(Record):
         """Rotate about the origin and return a new transform.
 
         Args:
-            angle: The angle of rotation in radians.
+            angle: The angle of rotation in radians. Positive angles rotate counterclockwise.
 
         Returns:
             A new transform after rotation.
@@ -160,7 +160,7 @@ class Transform2d(Record):
         """Rotate about the pivot and return a new transform.
 
         Args:
-            angle: The angle of rotation in radians.
+            angle: The angle of rotation in radians. Positive angles rotate counterclockwise.
             pivot: The pivot point for rotation.
 
         Returns:
@@ -470,7 +470,7 @@ class InvertibleTransform2d(Record):
         """Rotate about the origin and return a new transform.
 
         Args:
-            angle: The angle of rotation in radians.
+            angle: The angle of rotation in radians. Positive angles rotate counterclockwise.
 
         Returns:
             A new invertible transform after rotation.
@@ -484,7 +484,7 @@ class InvertibleTransform2d(Record):
         """Rotate about the pivot and return a new transform.
 
         Args:
-            angle: The angle of rotation in radians.
+            angle: The angle of rotation in radians. Positive angles rotate counterclockwise.
             pivot: The pivot point for rotation.
 
         Returns:

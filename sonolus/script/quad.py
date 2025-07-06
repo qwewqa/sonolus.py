@@ -80,7 +80,14 @@ class Quad(Record):
         ).translate(self.center * (Vec2(1, 1) - factor))
 
     def rotate(self, angle: float, /) -> Self:
-        """Rotate the quad by the given angle about the origin and return a new quad."""
+        """Rotate the quad by the given angle about the origin and return a new quad.
+        
+        Args:
+            angle: The angle of rotation in radians. Positive angles rotate counterclockwise.
+            
+        Returns:
+            A new quad rotated by the given angle.
+        """
         return Quad(
             bl=self.bl.rotate(angle),
             tl=self.tl.rotate(angle),
@@ -94,7 +101,15 @@ class Quad(Record):
         /,
         pivot: Vec2,
     ) -> Self:
-        """Rotate the quad by the given angle about the given pivot and return a new quad."""
+        """Rotate the quad by the given angle about the given pivot and return a new quad.
+        
+        Args:
+            angle: The angle of rotation in radians. Positive angles rotate counterclockwise.
+            pivot: The pivot point for rotation.
+            
+        Returns:
+            A new quad rotated about the pivot by the given angle.
+        """
         return Quad(
             bl=self.bl.rotate_about(angle, pivot),
             tl=self.tl.rotate_about(angle, pivot),
@@ -103,7 +118,14 @@ class Quad(Record):
         )
 
     def rotate_centered(self, angle: float, /) -> Self:
-        """Rotate the quad by the given angle about its center and return a new quad."""
+        """Rotate the quad by the given angle about its center and return a new quad.
+        
+        Args:
+            angle: The angle of rotation in radians. Positive angles rotate counterclockwise.
+            
+        Returns:
+            A new quad rotated about its center by the given angle.
+        """
         return self.rotate_about(angle, self.center)
 
     def permute(self, count: int = 1, /) -> Self:
