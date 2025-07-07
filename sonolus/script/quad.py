@@ -81,10 +81,10 @@ class Quad(Record):
 
     def rotate(self, angle: float, /) -> Self:
         """Rotate the quad by the given angle about the origin and return a new quad.
-        
+
         Args:
             angle: The angle of rotation in radians. Positive angles rotate counterclockwise.
-            
+
         Returns:
             A new quad rotated by the given angle.
         """
@@ -102,11 +102,11 @@ class Quad(Record):
         pivot: Vec2,
     ) -> Self:
         """Rotate the quad by the given angle about the given pivot and return a new quad.
-        
+
         Args:
             angle: The angle of rotation in radians. Positive angles rotate counterclockwise.
             pivot: The pivot point for rotation.
-            
+
         Returns:
             A new quad rotated about the pivot by the given angle.
         """
@@ -119,10 +119,10 @@ class Quad(Record):
 
     def rotate_centered(self, angle: float, /) -> Self:
         """Rotate the quad by the given angle about its center and return a new quad.
-        
+
         Args:
             angle: The angle of rotation in radians. Positive angles rotate counterclockwise.
-            
+
         Returns:
             A new quad rotated about its center by the given angle.
         """

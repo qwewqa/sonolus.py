@@ -549,11 +549,19 @@ class _BaseArchetype:
                     metadata = _annotation_defaults.get(metadata, metadata)
                 if isinstance(metadata, _ArchetypeFieldInfo):
                     if field_info is not None:
-                        raise TypeError(
-                            f"Unexpected multiple field annotations for '{name}', "
-                            f"expected exactly one of imported, exported, entity_memory, or shared_memory"
-                        )
-                    field_info = metadata
+                        if field_info.storage == metadata.storage and field_info.name is None:
+                            field_info = metadata
+                        elif field_info.storage == metadata.storage and (
+                            metadata.name is None or field_info.name == metadata.name
+                        ):
+                            pass
+                        else:
+                            raise TypeError(
+                                f"Unexpected multiple field annotations for '{name}', "
+                                f"expected exactly one of imported, exported, entity_memory, or shared_memory"
+                            )
+                    else:
+                        field_info = metadata
             if field_info is None:
                 raise TypeError(
                     f"Missing field annotation for '{name}', "
@@ -1106,8 +1114,11 @@ class EntityRef[A: _BaseArchetype](Record):
         """Return a new reference with the given archetype type."""
         return EntityRef[archetype](index=self.index)
 
+    @meta_fn
     def get(self) -> A:
         """Get the entity."""
+        if ref := getattr(self, "_ref_", None):
+            return ref
         return self.archetype().at(self.index)
 
     def archetype_matches(self) -> bool:

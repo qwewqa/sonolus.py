@@ -23,6 +23,7 @@ from sonolus.script.num import Num
 class RecordMeta(type):
     @meta_fn
     def __pos__[T](cls: type[T]) -> T:
+        """Create a zero-initialized record instance."""
         return cls._zero_()
 
 

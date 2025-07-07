@@ -18,6 +18,7 @@ from sonolus.script.num import Num
 class ArrayMeta(type):
     @meta_fn
     def __pos__[T](cls: type[T]) -> T:
+        """Create a zero-initialized array instance."""
         return cls._zero_()
 
 
