@@ -304,6 +304,7 @@ class Array[T, Size](GenericValue, ArrayLike[T], metaclass=ArrayMeta):
         else:
             return f"{type(self).__name__}({', '.join(repr(self[i]) for i in range(self.size()))})"
 
+    @meta_fn
     def __pos__(self) -> Self:
         """Return a copy of the array."""
         return self._copy_()

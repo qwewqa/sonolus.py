@@ -1121,6 +1121,13 @@ class EntityRef[A: _BaseArchetype](Record):
             return ref
         return self.archetype().at(self.index)
 
+    @meta_fn
+    def get_as(self, archetype: type[_BaseArchetype]) -> _BaseArchetype:
+        """Get the entity as the given archetype type."""
+        if getattr(archetype, "_ref_", None):
+            raise TypeError("Using get_as in level data is not supported.")
+        return self.with_archetype(archetype).get()
+
     def archetype_matches(self) -> bool:
         """Check if entity at the index is precisely of the archetype."""
         return self.index >= 0 and self.archetype().is_at(self.index)

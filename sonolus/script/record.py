@@ -284,6 +284,7 @@ class Record(GenericValue, metaclass=RecordMeta):
     def __hash__(self):
         return hash(tuple(field.__get__(self) for field in self._fields))
 
+    @meta_fn
     def __pos__(self) -> Self:
         """Return a copy of the record."""
         return self._copy_()
