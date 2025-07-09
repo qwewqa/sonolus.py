@@ -29,6 +29,20 @@ class Quad(Record):
     """The bottom-right corner of the quad."""
 
     @classmethod
+    def zero(cls) -> Quad:
+        """Return a quad with all corners set to (0, 0).
+
+        Returns:
+            A new quad with all corners at the origin.
+        """
+        return cls(
+            bl=Vec2.zero(),
+            tl=Vec2.zero(),
+            tr=Vec2.zero(),
+            br=Vec2.zero(),
+        )
+
+    @classmethod
     def from_quad(cls, value: QuadLike, /) -> Quad:
         """Create a quad from a quad-like value."""
         return cls(

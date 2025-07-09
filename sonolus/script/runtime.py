@@ -989,6 +989,25 @@ def time() -> float:
 
 
 @meta_fn
+def offset_adjusted_time() -> float:
+    """Get the current time of the game adjusted by the input offset.
+
+    Returns 0 in preview mode and tutorial mode.
+    """
+    if not ctx():
+        return 0
+    match ctx().global_state.mode:
+        case Mode.PLAY:
+            return _PlayRuntimeUpdate.time - _PlayRuntimeEnvironment.input_offset
+        case Mode.WATCH:
+            return _WatchRuntimeUpdate.time - _WatchRuntimeEnvironment.input_offset
+        case Mode.TUTORIAL:
+            return _TutorialRuntimeUpdate.time
+        case _:
+            return 0
+
+
+@meta_fn
 def delta_time() -> float:
     """Get the time elapsed since the last frame.
 

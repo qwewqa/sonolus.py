@@ -539,6 +539,23 @@ class ArrayMap[K, V, Capacity](Record):
         self._array[self._size] = _ArrayMapEntry(key, value)
         self._size += 1
 
+    def __delitem__(self, key: K):
+        """Remove the key-value pair associated with the given key.
+
+        Must be called with a key that is present in the map.
+
+        Args:
+            key: The key to remove
+        """
+        for i in range(self._size):
+            entry = self._array[i]
+            if entry.key == key:
+                self._size -= 1
+                if i < self._size:
+                    self._array[i] = self._array[self._size]
+                return
+        error()
+
     def __contains__(self, key: K) -> bool:
         """Return whether the given key is present in the map.
 
