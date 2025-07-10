@@ -888,7 +888,7 @@ class WatchArchetype(_BaseArchetype):
             case _ArchetypeSelfData():
                 return _deref(ctx().blocks.EntityInfo, 0, WatchEntityInfo)
             case _ArchetypeReferenceData(index=index):
-                return _deref(ctx().blocks.EntityInfoArray, index * WatchEntityInfo._size_(), PlayEntityInfo)
+                return _deref(ctx().blocks.EntityInfoArray, index * WatchEntityInfo._size_(), WatchEntityInfo)
             case _:
                 raise RuntimeError("Info is only accessible from the entity itself")
 
