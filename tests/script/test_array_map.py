@@ -154,6 +154,60 @@ def test_pop_insert_round_trip(args):
     assert sorted(run_and_validate(fn).items()) == sorted(values.items())
 
 
+@given(map_and_key())
+def test_delitem(args):
+    values, key = args
+    pairs = Array(*starmap(Pair, values.items()))
+    count = len(values)
+    target_values = {k: v for k, v in values.items() if k != key}
+
+    def fn():
+        am = ArrayMap[int, int, count].new()
+        for pair in pairs:
+            am[pair.first] = pair.second
+        del am[key]
+        assert_false(key in am)
+        return am
+
+    assert sorted(run_and_validate(fn).items()) == sorted(target_values.items())
+
+
+@given(map_and_missing_key(), ints)
+def test_insert_delitem_round_trip(args, new_value):
+    values, key = args
+    pairs = Array(*starmap(Pair, values.items()))
+    count = len(values)
+
+    def fn():
+        am = ArrayMap[int, int, count + 1].new()
+        for pair in pairs:
+            am[pair.first] = pair.second
+        am[key] = new_value
+        del am[key]
+        assert_false(key in am)
+        return am
+
+    assert sorted(run_and_validate(fn).items()) == sorted(values.items())
+
+
+@given(map_and_key())
+def test_delitem_insert_round_trip(args):
+    values, key = args
+    pairs = Array(*starmap(Pair, values.items()))
+    count = len(values)
+    target_value = values[key]
+
+    def fn():
+        am = ArrayMap[int, int, count].new()
+        for pair in pairs:
+            am[pair.first] = pair.second
+        del am[key]
+        am[key] = target_value
+        return am
+
+    assert sorted(run_and_validate(fn).items()) == sorted(values.items())
+
+
 @given(maps)
 def test_size(values):
     pairs = Array(*starmap(Pair, values.items()))
@@ -172,6 +226,31 @@ def test_size(values):
         assert_true(am.is_full())
         for i, key in enumerate(keys):
             am.pop(key)
+            assert_true(len(am) == count - i - 1)
+            assert_false(am.is_full())
+        return am
+
+    assert len(run_and_validate(fn)) == 0
+
+
+@given(maps)
+def test_delitem_size(values):
+    pairs = Array(*starmap(Pair, values.items()))
+    count = len(values)
+
+    def fn():
+        am = ArrayMap[int, int, count].new()
+        for i, pair in enumerate(pairs):
+            assert_false(am.is_full())
+            am[pair.first] = pair.second
+            assert_true(len(am) == i + 1)
+        keys = VarArray[int, count].new()
+        for key in am:
+            keys.append(key)
+        assert_true(len(keys) == count)
+        assert_true(am.is_full())
+        for i, key in enumerate(keys):
+            del am[key]
             assert_true(len(am) == count - i - 1)
             assert_false(am.is_full())
         return am
