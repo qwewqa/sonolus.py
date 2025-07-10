@@ -317,6 +317,14 @@ class Stream[T](Record):
         _check_can_read_stream()
         return self[self.next_key_inclusive(key)]
 
+    def get_previous_inclusive(self, key: int | float) -> T:
+        """Get the value corresponding to the previous key, or the value at the given key if it is in the stream.
+
+        Equivalent to `self[self.previous_key_inclusive(key)]`.
+        """
+        _check_can_read_stream()
+        return self[self.previous_key_inclusive(key)]
+
     def iter_items_from(self, start: int | float, /) -> SonolusIterator[tuple[int | float, T]]:
         """Iterate over the items in the stream in ascending order starting from the given key.
 
