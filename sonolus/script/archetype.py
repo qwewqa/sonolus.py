@@ -1135,7 +1135,7 @@ class EntityRef[A: _BaseArchetype](Record):
     def _to_list_(self, level_refs: dict[Any, str] | None = None) -> list[DataValue | str]:
         ref = getattr(self, "_ref_", None)
         if ref is None:
-            return [self.index]
+            return Num._accept_(self.index)._to_list_()
         else:
             if ref not in level_refs:
                 raise KeyError("Reference to entity not in level data")
