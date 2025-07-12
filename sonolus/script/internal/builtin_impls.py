@@ -226,12 +226,12 @@ def _float(value=0.0):
     return value
 
 
-@meta_fn
 def _bool(value=False):
-    value = validate_value(value)
-    if not _is_num(value):
-        raise TypeError("Only numeric arguments to bool() are supported")
-    return value != 0
+    # Relies on the compiler to perform the conversion in a boolean context
+    if value:  # noqa: SIM103
+        return True
+    else:
+        return False
 
 
 _int._type_mapping_ = Num

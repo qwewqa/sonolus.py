@@ -155,6 +155,18 @@ class HasCall(Record):
         return 123
 
 
+class BoolTrue(Record):
+    def __bool__(self):
+        debug_log(28)
+        return True
+
+
+class BoolFalse(Record):
+    def __bool__(self):
+        debug_log(29)
+        return False
+
+
 bin_values = [
     AllAddOps(),
     AllAddNotImplemented(),
@@ -291,3 +303,95 @@ def test_unsupported_unary():
         run_and_validate(fn)
     except TypeError as e:
         assert "bad operand type" in str(e)
+
+
+def test_bool_true_truthiness():
+    def fn():
+        x = BoolTrue()
+        return 1 if x else 0
+
+    assert run_and_validate(fn) == 1
+
+
+def test_bool_false_truthiness():
+    def fn():
+        x = BoolFalse()
+        return 1 if x else 0
+
+    assert run_and_validate(fn) == 0
+
+
+def test_bool_true_match_case():
+    def fn():
+        x = BoolTrue()
+        match x:
+            case _ if x:
+                return 1
+            case _:
+                return 0
+
+    assert run_and_validate(fn) == 1
+
+
+def test_bool_false_match_case():
+    def fn():
+        x = BoolFalse()
+        match x:
+            case _ if x:
+                return 1
+            case _:
+                return 0
+
+    assert run_and_validate(fn) == 0
+
+
+def test_bool_true_while_condition():
+    def fn():
+        x = BoolTrue()
+        while x:
+            return 1
+        return 0
+
+    assert run_and_validate(fn) == 1
+
+
+def test_bool_false_while_condition():
+    def fn():
+        x = BoolFalse()
+        while x:
+            return 1
+        return 0
+
+    assert run_and_validate(fn) == 0
+
+
+def test_bool_true_not_operator():
+    def fn():
+        x = BoolTrue()
+        return 1 if not x else 0
+
+    assert run_and_validate(fn) == 0
+
+
+def test_bool_false_not_operator():
+    def fn():
+        x = BoolFalse()
+        return 1 if not x else 0
+
+    assert run_and_validate(fn) == 1
+
+
+def test_bool_call_true():
+    def fn():
+        x = BoolTrue()
+        return bool(x)
+
+    assert run_and_validate(fn)
+
+
+def test_bool_call_false():
+    def fn():
+        x = BoolFalse()
+        return bool(x)
+
+    assert not run_and_validate(fn)

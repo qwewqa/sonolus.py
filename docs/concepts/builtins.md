@@ -2,7 +2,7 @@
 Sonolus.py comes with support for a number of built-in functions.
 
 - `abs(x)`
-- `bool(object)` (for a num argument)
+- `bool(object)`
 - `callable(object)`
 - `enumerate(iterable, start=0)`
 - `filter(function, iterable)`

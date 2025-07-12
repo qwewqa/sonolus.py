@@ -141,3 +141,20 @@ def test_array_set_full():
         return s
 
     assert list(run_and_validate(fn)) == [2, 4, 6, 8]
+
+
+def test_array_set_truthiness_empty():
+    def fn():
+        x = ArraySet[int, 5].new()
+        return 1 if x else 0
+
+    assert run_and_validate(fn) == 0
+
+
+def test_array_set_truthiness_non_empty():
+    def fn():
+        x = ArraySet[int, 5].new()
+        x.add(42)
+        return 1 if x else 0
+
+    assert run_and_validate(fn) == 1

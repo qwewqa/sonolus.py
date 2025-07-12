@@ -359,7 +359,7 @@ class Visitor(ast.NodeVisitor):
         self.loop_head_ctxs.append(header_ctx)
         self.break_ctxs.append([])
         set_ctx(header_ctx)
-        has_next = self.ensure_boolean_num(self.handle_call(node, iterator.has_next))
+        has_next = self.convert_to_boolean_num(node, self.handle_call(node, iterator.has_next))
         if has_next._is_py_() and not has_next._as_py_():
             # The loop will never run, continue after evaluating the condition
             self.loop_head_ctxs.pop()
@@ -400,7 +400,7 @@ class Visitor(ast.NodeVisitor):
         self.loop_head_ctxs.append(header_ctx)
         self.break_ctxs.append([])
         set_ctx(header_ctx)
-        test = self.ensure_boolean_num(self.visit(node.test))
+        test = self.convert_to_boolean_num(node.test, self.visit(node.test))
         if test._is_py_():
             if test._as_py_():
                 # The loop will run until a break / return
@@ -454,7 +454,7 @@ class Visitor(ast.NodeVisitor):
         set_ctx(after_ctx)
 
     def visit_If(self, node):
-        test = self.ensure_boolean_num(self.visit(node.test))
+        test = self.convert_to_boolean_num(node.test, self.visit(node.test))
 
         if test._is_py_():
             if test._as_py_():
@@ -507,7 +507,9 @@ class Visitor(ast.NodeVisitor):
                 set_ctx(false_ctx)
                 continue
             set_ctx(true_ctx)
-            guard = self.ensure_boolean_num(self.visit(case.guard)) if case.guard else validate_value(True)
+            guard = (
+                self.convert_to_boolean_num(case.guard, self.visit(case.guard)) if case.guard else validate_value(True)
+            )
             if guard._is_py_():
                 if guard._as_py_():
                     for stmt in case.body:
@@ -544,7 +546,7 @@ class Visitor(ast.NodeVisitor):
         match pattern:
             case ast.MatchValue(value=value):
                 value = self.visit(value)
-                test = self.ensure_boolean_num(validate_value(subject == value))
+                test = self.convert_to_boolean_num(pattern, validate_value(subject == value))
                 if test._is_py_():
                     if test._as_py_():
                         return ctx(), ctx().into_dead()
@@ -574,7 +576,7 @@ class Visitor(ast.NodeVisitor):
                 target_len = len(patterns)
                 if not (isinstance(subject, Sequence | TupleImpl)):
                     return ctx().into_dead(), ctx()
-                length_test = self.ensure_boolean_num(validate_value(_len(subject) == target_len))
+                length_test = self.convert_to_boolean_num(pattern, validate_value(_len(subject) == target_len))
                 ctx_init = ctx()
                 if not length_test._is_py_():
                     ctx_init.test = length_test.ir()
@@ -739,7 +741,7 @@ class Visitor(ast.NodeVisitor):
     def visit_UnaryOp(self, node):
         operand = self.visit(node.operand)
         if isinstance(node.op, ast.Not):
-            return self.ensure_boolean_num(operand).not_()
+            return self.convert_to_boolean_num(node, operand).not_()
         op = unary_ops[type(node.op)]
         if operand._is_py_():
             operand_py = operand._as_py_()
@@ -768,7 +770,7 @@ class Visitor(ast.NodeVisitor):
         return validate_value(fn)
 
     def visit_IfExp(self, node):
-        test = self.ensure_boolean_num(self.visit(node.test))
+        test = self.convert_to_boolean_num(node.test, self.visit(node.test))
 
         if test._is_py_():
             if test._as_py_():
@@ -1076,7 +1078,7 @@ class Visitor(ast.NodeVisitor):
 
     def handle_call[**P, R](
         self, node: ast.stmt | ast.expr, fn: Callable[P, R], /, *args: P.args, **kwargs: P.kwargs
-    ) -> R:
+    ) -> R | Value:
         """Handles a call to the given callable."""
         self.active_ctx = ctx()
         if (
@@ -1126,6 +1128,20 @@ class Visitor(ast.NodeVisitor):
         if not _is_num(value):
             raise TypeError(f"Invalid type where a bool (Num) was expected: {type(value).__name__}")
         return value
+
+    def convert_to_boolean_num(self, node, value: Value) -> Num:
+        if _is_num(value):
+            return value
+        if hasattr(type(value), "__bool__"):
+            return self.ensure_boolean_num(self.handle_call(node, type(value).__bool__, validate_value(value)))
+        if hasattr(type(value), "__len__"):
+            length = self.handle_call(node, type(value).__len__, validate_value(value))
+            if not _is_num(length):
+                raise TypeError(f"Invalid type for __len__: {type(length).__name__}")
+            if length._is_py_():
+                return Num._accept_(length._as_py_() > 0)
+            return length > Num._accept_(0)
+        raise TypeError(f"Converting {type(value).__name__} to bool is not supported")
 
     def arguments_to_signature(self, arguments: ast.arguments) -> inspect.Signature:
         parameters: list[inspect.Parameter] = []

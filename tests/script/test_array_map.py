@@ -316,3 +316,20 @@ def test_not_contains_missing(args):
         return key not in am
 
     assert run_and_validate(fn)
+
+
+def test_array_map_truthiness_empty():
+    def fn():
+        x = ArrayMap[int, int, 5].new()
+        return 1 if x else 0
+
+    assert run_and_validate(fn) == 0
+
+
+def test_array_map_truthiness_non_empty():
+    def fn():
+        x = ArrayMap[int, int, 5].new()
+        x[1] = 100
+        return 1 if x else 0
+
+    assert run_and_validate(fn) == 1

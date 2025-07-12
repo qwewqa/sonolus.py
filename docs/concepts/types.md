@@ -42,8 +42,10 @@ Nums support most of the standard Python operations:
     Floating point precision may be lower when running on Sonolus compared to Python.
     Care should be taken when performing precision-sensitive operations.
 
-Nums are the only supported type for boolean operations and control flow conditions.
-As a condition, any nonzero value is considered true, and `0` is considered false.
+As in regular Python, `0` is considered `False`, while any non-zero value is considered `True`.
+
+Objects with an explicit `__bool__` method may also be used in `if`, `while`, `case ... if` expressions as well as with
+the `not` operator. However, the operands of the `and` and `or` operators must be of type `Num`.
 
 - Logical operators: `and`, `or`, `not`
 - Ternary expressions: `... if <condition> else ...`

@@ -186,3 +186,19 @@ def test_range_indexing_with_arrays():
         return results
 
     assert list(run_and_validate(fn)) == [5, 8, 11, 14, 17, 20, 23]
+
+
+def test_range_truthiness_empty():
+    def fn():
+        x = range(0)
+        return 1 if x else 0
+
+    assert run_and_validate(fn) == 0
+
+
+def test_range_truthiness_non_empty():
+    def fn():
+        x = range(5)
+        return 1 if x else 0
+
+    assert run_and_validate(fn) == 1

@@ -389,3 +389,19 @@ def test_array_sort_records(args, reverse: bool):
         return array
 
     assert list(run_and_validate(fn)) == sorted(tuple_args, reverse=reverse)
+
+
+def test_array_truthiness_empty():
+    def fn():
+        x = Array[int, 0]()
+        return 1 if x else 0
+
+    assert run_and_validate(fn) == 0
+
+
+def test_array_truthiness_non_empty():
+    def fn():
+        x = Array(1, 2, 3)
+        return 1 if x else 0
+
+    assert run_and_validate(fn) == 1

@@ -732,3 +732,20 @@ def test_all_empty():
         return all(va)
 
     assert run_and_validate(fn)
+
+
+def test_var_array_truthiness_empty():
+    def fn():
+        x = VarArray[int, 1].new()
+        return 1 if x else 0
+
+    assert run_and_validate(fn) == 0
+
+
+def test_var_array_truthiness_non_empty():
+    def fn():
+        x = VarArray[int, 3].new()
+        x.append(1)
+        return 1 if x else 0
+
+    assert run_and_validate(fn) == 1
