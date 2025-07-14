@@ -73,6 +73,18 @@ class Vec2(Record):
         """
         return cls(x=1, y=0)
 
+    @classmethod
+    def unit(cls, angle: Num) -> Self:
+        """Return a unit vector (magnitude 1) at a given angle in radians.
+
+        Args:
+            angle: The angle in radians.
+
+        Returns:
+            A new unit vector at the specified angle.
+        """
+        return Vec2(x=cos(angle), y=sin(angle))
+
     @property
     def magnitude(self) -> Num:
         """Calculate the magnitude (length) of the vector.
