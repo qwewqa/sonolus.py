@@ -15,7 +15,7 @@ from sonolus.script.internal.value import BackingValue, Value
 from sonolus.script.iterator import SonolusIterator
 from sonolus.script.num import Num
 from sonolus.script.record import Record
-from sonolus.script.runtime import delta_time, time
+from sonolus.script.runtime import prev_time, time
 from sonolus.script.values import sizeof
 
 
@@ -354,7 +354,7 @@ class Stream[T](Record):
         ```
         """
         _check_can_read_stream()
-        return _StreamBoundedAscIterator(self, self.next_key(time() - delta_time()), time())
+        return _StreamBoundedAscIterator(self, self.next_key(prev_time()), time())
 
     def iter_items_from_desc(self, start: int | float, /) -> SonolusIterator[tuple[int | float, T]]:
         """Iterate over the items in the stream in descending order starting from the given key.
@@ -400,7 +400,7 @@ class Stream[T](Record):
         ```
         """
         _check_can_read_stream()
-        return _StreamBoundedAscKeyIterator(self, self.next_key(time() - delta_time()), time())
+        return _StreamBoundedAscKeyIterator(self, self.next_key(prev_time()), time())
 
     def iter_keys_from_desc(self, start: int | float, /) -> SonolusIterator[int | float]:
         """Iterate over the keys in the stream in descending order starting from the given key.
@@ -446,7 +446,7 @@ class Stream[T](Record):
         ```
         """
         _check_can_read_stream()
-        return _StreamBoundedAscValueIterator(self, self.next_key(time() - delta_time()), time())
+        return _StreamBoundedAscValueIterator(self, self.next_key(prev_time()), time())
 
     def iter_values_from_desc(self, start: int | float, /) -> SonolusIterator[T]:
         """Iterate over the values in the stream in descending order starting from the given key.

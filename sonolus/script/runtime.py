@@ -1046,6 +1046,15 @@ def scaled_time() -> float:
 
 
 @meta_fn
+def prev_time() -> float:
+    """Get the time of the previous frame.
+
+    Returns 0 in preview mode.
+    """
+    return time() - delta_time()
+
+
+@meta_fn
 def touches() -> ArrayLike[Touch]:
     """Get the current touches of the game."""
     if not ctx():
