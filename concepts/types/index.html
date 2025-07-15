@@ -2050,7 +2050,7 @@ the constants <code class="highlight"><span class="kc">None</span></code>, <code
 Sonolus.py will treat any of these types as <code class="highlight"><span class="n">Num</span></code>, but it's recommended to use what's appropriate for clarity.</p>
 <p>The Sonolus app uses 32-bit floating-point numbers for all numeric values, so precision may be lower compared to Python
 when running on Sonolus.</p>
-<p>Infinity, NaN, and values outside the range of 32-bit floating-point numbers are not supported.</p>
+<p>NaN and values outside the range of 32-bit floating-point numbers are not supported.</p>
 <p>You can import <code class="highlight"><span class="n">Num</span></code> from <code class="highlight"><span class="n">sonolus</span><span class="o">.</span><span class="n">script</span><span class="o">.</span><span class="n">num</span></code>:</p>
 <div class="highlight"><pre><span></span><code><span class="kn">from</span><span class="w"> </span><span class="nn">sonolus.script.num</span><span class="w"> </span><span class="kn">import</span> <span class="n">Num</span>
 </code></pre></div>
@@ -2072,8 +2072,9 @@ when running on Sonolus.</p>
 <p>Floating point precision may be lower when running on Sonolus compared to Python.
 Care should be taken when performing precision-sensitive operations.</p>
 </div>
-<p>Nums are the only supported type for boolean operations and control flow conditions.
-As a condition, any nonzero value is considered true, and <code class="highlight"><span class="mi">0</span></code> is considered false.</p>
+<p>As in regular Python, <code class="highlight"><span class="mi">0</span></code> is considered <code class="highlight"><span class="kc">False</span></code>, while any non-zero value is considered <code class="highlight"><span class="kc">True</span></code>.</p>
+<p>Objects with an explicit <code class="highlight"><span class="fm">__bool__</span></code> method may also be used in <code class="highlight"><span class="k">if</span></code>, <code class="highlight"><span class="k">while</span></code>, <code class="highlight"><span class="k">case</span> <span class="o">...</span> <span class="k">if</span></code> expressions as well as with
+the <code class="highlight"><span class="ow">not</span></code> operator. However, the operands of the <code class="highlight"><span class="ow">and</span></code> and <code class="highlight"><span class="ow">or</span></code> operators must be of type <code class="highlight"><span class="n">Num</span></code>.</p>
 <ul>
 <li>Logical operators: <code class="highlight"><span class="ow">and</span></code>, <code class="highlight"><span class="ow">or</span></code>, <code class="highlight"><span class="ow">not</span></code></li>
 <li>Ternary expressions: <code class="highlight"><span class="o">...</span> <span class="k">if</span> <span class="o">&lt;</span><span class="n">condition</span><span class="o">&gt;</span> <span class="k">else</span> <span class="o">...</span></code></li>
