@@ -1,5 +1,6 @@
 from math import pi
 
+from hypothesis import given
 from hypothesis import strategies as st
 
 from sonolus.script.vec import Vec2
@@ -7,6 +8,7 @@ from tests.script.conftest import is_close, run_and_validate
 
 floats = st.floats(min_value=-999, max_value=999, allow_nan=False, allow_infinity=False)
 nonzero_floats = floats.filter(lambda x: abs(x) > 1e-2)
+angles = st.floats(min_value=-pi, max_value=pi, allow_nan=False, allow_infinity=False)
 
 
 def test_magnitude():
@@ -129,3 +131,21 @@ def test_not_equal():
         return v != u
 
     assert run_and_validate(fn)
+
+
+@given(angles)
+def test_unit_magnitude(angle):
+    def fn():
+        return Vec2.unit(angle).magnitude
+
+    result = run_and_validate(fn)
+    assert is_close(result, 1.0)
+
+
+@given(angles)
+def test_unit_angle(angle):
+    def fn():
+        return Vec2.unit(angle).angle
+
+    result = run_and_validate(fn)
+    assert is_close(result, angle)
