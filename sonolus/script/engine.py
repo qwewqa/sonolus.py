@@ -217,7 +217,7 @@ class WatchMode:
 
         for archetype in self.archetypes:
             if not issubclass(archetype, WatchArchetype):
-                raise ValueError(f"archetype {archetype} is not a PlayArchetype")
+                raise ValueError(f"archetype {archetype} is not a WatchArchetype")
 
 
 class PreviewMode:
@@ -239,7 +239,7 @@ class PreviewMode:
 
         for archetype in self.archetypes:
             if not issubclass(archetype, PreviewArchetype):
-                raise ValueError(f"archetype {archetype} is not a BaseArchetype")
+                raise ValueError(f"archetype {archetype} is not a PreviewArchetype")
 
 
 class TutorialMode:

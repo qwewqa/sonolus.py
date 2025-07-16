@@ -97,7 +97,7 @@ def instructions[T](cls: type[T]) -> T | TutorialInstructions:
         annotation_values = annotation.__metadata__
         if annotation_type is not Instruction:
             raise TypeError(
-                f"Invalid annotation for instruction: {annotation}, expected annotation of type InstructionText"
+                f"Invalid annotation for instruction: {annotation}, expected annotation of type Instruction"
             )
         if len(annotation_values) != 1 or not isinstance(annotation_values[0], _InstructionTextInfo):
             raise TypeError(f"Invalid annotation for instruction: {annotation}, expected a single annotation value")

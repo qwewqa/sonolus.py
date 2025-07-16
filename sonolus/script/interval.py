@@ -36,7 +36,7 @@ class Interval(Record):
 
     @property
     def is_empty(self) -> bool:
-        """Whether the has a start greater than its end."""
+        """Whether the interval has a start greater than its end."""
         return self.start > self.end
 
     @property
@@ -377,7 +377,7 @@ def interp_clamped(
     xp: ArrayLike[float] | tuple[float, ...],
     fp: ArrayLike[float] | tuple[float, ...],
     x: float,
-):
+) -> float:
     """Linearly interpolate a value within a sequence of points.
 
     The sequence must have at least 2 elements and be sorted in increasing order of x-coordinates.

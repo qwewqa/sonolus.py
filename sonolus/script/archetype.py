@@ -312,7 +312,7 @@ class StandardImport:
 def callback[T: Callable](*, order: int = 0) -> Callable[[T], T]:
     """Annotate a callback with its order.
 
-    Callbacks are execute from lowest to highest order. By default, callbacks have an order of 0.
+    Callbacks are executed from lowest to highest order. By default, callbacks have an order of 0.
 
     Usage:
         ```python
