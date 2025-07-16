@@ -26,10 +26,10 @@ class ArrayLike[T]:
             def __len__(self) -> int:
                 ...
 
-            def __getitem__(self, index: Num) -> T:
+            def __getitem__(self, index: int) -> T:
                 ...
 
-            def __setitem__(self, index: Num, value: T):
+            def __setitem__(self, index: int, value: T):
                 ...
         ```
     """
@@ -41,7 +41,7 @@ class ArrayLike[T]:
         """Return the length of the array."""
 
     @abstractmethod
-    def __getitem__(self, index: Num) -> T:
+    def __getitem__(self, index: int) -> T:
         """Return the item at the given index.
 
         Args:
@@ -49,7 +49,7 @@ class ArrayLike[T]:
         """
 
     @abstractmethod
-    def __setitem__(self, index: Num, value: T):
+    def __setitem__(self, index: int, value: T):
         """Set the value of the item at the given index.
 
         Args:
@@ -78,10 +78,10 @@ class ArrayLike[T]:
         """Return a reversed view of the array."""
         return _ArrayReverser(self)
 
-    def _enumerate_(self, start: Num = 0) -> SonolusIterator[T]:
+    def _enumerate_(self, start: int = 0) -> SonolusIterator[T]:
         return _ArrayEnumerator(0, start, self)
 
-    def index(self, value: T, start: Num = 0, stop: Num | None = None) -> Num:
+    def index(self, value: T, start: int = 0, stop: int | None = None) -> int:
         """Return the index of the value in the array equal to the given value.
 
         Args:
@@ -98,7 +98,7 @@ class ArrayLike[T]:
             i += 1
         return -1
 
-    def count(self, value: T) -> Num:
+    def count(self, value: T) -> int:
         """Return the number of elements in the array equal to the given value.
 
         Args:
@@ -112,7 +112,7 @@ class ArrayLike[T]:
             i += 1
         return count
 
-    def last_index(self, value: T) -> Num:
+    def last_index(self, value: T) -> int:
         """Return the last index of the value in the array equal to the given value.
 
         Args:
@@ -125,7 +125,7 @@ class ArrayLike[T]:
             i -= 1
         return -1
 
-    def index_of_max(self, *, key: Callable[T, Any] | None = None) -> Num:
+    def index_of_max(self, *, key: Callable[[T], Any] | None = None) -> int:
         """Return the index of the maximum value in the array.
 
         Args:
@@ -143,7 +143,7 @@ class ArrayLike[T]:
             i += 1
         return max_index
 
-    def index_of_min(self, *, key: Callable[T, Any] | None = None) -> Num:
+    def index_of_min(self, *, key: Callable[[T], Any] | None = None) -> int:
         """Return the index of the minimum value in the array.
 
         Args:
@@ -161,17 +161,17 @@ class ArrayLike[T]:
             i += 1
         return min_index
 
-    def _max_(self, key: Callable[T, Any] | None = None) -> T:
+    def _max_(self, key: Callable[[T], Any] | None = None) -> T:
         index = self.index_of_max(key=key)
         assert index != -1
         return self[index]
 
-    def _min_(self, key: Callable[T, Any] | None = None) -> T:
+    def _min_(self, key: Callable[[T], Any] | None = None) -> T:
         index = self.index_of_min(key=key)
         assert index != -1
         return self[index]
 
-    def swap(self, i: Num, j: Num, /):
+    def swap(self, i: int, j: int, /):
         """Swap the values at the given indices.
 
         Args:
@@ -182,7 +182,7 @@ class ArrayLike[T]:
         self[i] = self[j]
         self[j] = temp
 
-    def sort(self, *, key: Callable[T, Any] | None = None, reverse: bool = False):
+    def sort(self, *, key: Callable[[T], Any] | None = None, reverse: bool = False):
         """Sort the values in the array in place.
 
         Args:
@@ -216,7 +216,7 @@ def _identity[T](value: T) -> T:
     return value
 
 
-def _insertion_sort[T](array: ArrayLike[T], start: Num, end: Num, key: Callable[T, Any], reverse: bool):
+def _insertion_sort[T](array: ArrayLike[T], start: int, end: int, key: Callable[[T], Any], reverse: bool):
     i = start + 1
     if reverse:
         while i < end:
@@ -234,7 +234,7 @@ def _insertion_sort[T](array: ArrayLike[T], start: Num, end: Num, key: Callable[
             i += 1
 
 
-def _heapify[T](array: ArrayLike[T], end: Num, index: Num, reverse: bool):
+def _heapify[T](array: ArrayLike[T], end: int, index: int, reverse: bool):
     while True:
         left = index * 2 + 1
         right = left + 1
@@ -249,7 +249,7 @@ def _heapify[T](array: ArrayLike[T], end: Num, index: Num, reverse: bool):
         index = largest
 
 
-def _heap_sort[T](array: ArrayLike[T], start: Num, end: Num, reverse: bool):
+def _heap_sort[T](array: ArrayLike[T], start: int, end: int, reverse: bool):
     i = end // 2 - 1
     while i >= start:
         _heapify(array, end, i, reverse)
@@ -281,10 +281,10 @@ class _ArrayReverser[V: ArrayLike](Record, ArrayLike):
     def __len__(self) -> int:
         return len(self.array)
 
-    def __getitem__(self, index: Num) -> V:
+    def __getitem__(self, index: int) -> V:
         return self.array[len(self) - 1 - index]
 
-    def __setitem__(self, index: Num, value: V):
+    def __setitem__(self, index: int, value: V):
         self.array[len(self) - 1 - index] = value
 
     def reversed(self) -> ArrayLike[V]:
@@ -307,7 +307,7 @@ class _ArrayEnumerator[V: ArrayLike](Record, SonolusIterator):
 
 
 @meta_fn
-def get_positive_index(index: Num, length: Num) -> Num:
+def get_positive_index(index: int, length: int) -> int:
     """Get the positive index for the given index in the array of the given length.
 
     This is used to convert negative indixes relative to the end of the array to positive indices.

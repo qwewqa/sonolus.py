@@ -57,7 +57,7 @@ def static_error(message: str | None = None) -> Never:
 
 
 @meta_fn
-def debug_log(value: Num):
+def debug_log(value: int | float | bool):
     """Log a value in debug mode."""
     if debug_log_callback.get(None):
         return debug_log_callback.get()(value)
@@ -66,7 +66,7 @@ def debug_log(value: Num):
 
 
 @native_function(Op.DebugLog)
-def _debug_log(value: Num):
+def _debug_log(value: int | float | bool):
     print(f"[DEBUG] {value}")
     return 0
 
@@ -77,13 +77,13 @@ def debug_pause():
     input("[DEBUG] Paused")
 
 
-def assert_true(value: Num, message: str | None = None):
+def assert_true(value: int | float | bool, message: str | None = None):
     message = message if message is not None else "Assertion failed"
     if not value:
         error(message)
 
 
-def assert_false(value: Num, message: str | None = None):
+def assert_false(value: int | float | bool, message: str | None = None):
     message = message if message is not None else "Assertion failed"
     if value:
         error(message)

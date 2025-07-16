@@ -6,12 +6,12 @@ from sonolus.script.num import Num
 from sonolus.script.record import Record
 
 
-class Range(Record, ArrayLike[Num]):
+class Range(Record, ArrayLike[int]):
     start: int
     stop: int
     step: int
 
-    def __new__(cls, start: Num, stop: Num | None = None, step: Num = 1):
+    def __new__(cls, start: int, stop: int | None = None, step: int = 1):
         if stop is None:
             start, stop = 0, start
         return super().__new__(cls, start, stop, step)
@@ -37,14 +37,14 @@ class Range(Record, ArrayLike[Num]):
                 return 0
             return (diff - self.step - 1) // -self.step
 
-    def __getitem__(self, index: Num) -> Num:
+    def __getitem__(self, index: int) -> int:
         return self.start + get_positive_index(index, len(self)) * self.step
 
-    def __setitem__(self, index: Num, value: Num):
+    def __setitem__(self, index: int, value: int):
         raise TypeError("Range does not support item assignment")
 
     @property
-    def last(self) -> Num:
+    def last(self) -> int:
         return self[len(self) - 1]
 
     def __eq__(self, other):
@@ -84,7 +84,7 @@ class RangeIterator(Record, SonolusIterator):
 
 
 @meta_fn
-def range_or_tuple(start: Num, stop: Num | None = None, step: Num = 1) -> Range | tuple[Num, ...]:
+def range_or_tuple(start: int, stop: int | None = None, step: int = 1) -> Range | tuple[int, ...]:
     if stop is None:
         start, stop = 0, start
     if not ctx():

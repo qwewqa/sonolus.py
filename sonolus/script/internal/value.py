@@ -122,7 +122,7 @@ class Value:
         For instance:
         ```
         class X(Record):
-            v: Num
+            v: int
 
         a = 1
         b = X(a) # (1) _get_() is called on a

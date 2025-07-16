@@ -6,7 +6,7 @@ from sonolus.script.num import Num, _is_num
 
 
 @meta_fn
-def _deref[T: Value](block: Num, offset: Num, type_: type[T]) -> T:
+def _deref[T: Value](block: int, offset: int, type_: type[T]) -> T:
     block = Num._accept_(block)
     offset = Num._accept_(offset)
     type_ = validate_value(type_)._as_py_()

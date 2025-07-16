@@ -74,7 +74,7 @@ class Vec2(Record):
         return cls(x=1, y=0)
 
     @classmethod
-    def unit(cls, angle: Num) -> Self:
+    def unit(cls, angle: float) -> Self:
         """Return a unit vector (magnitude 1) at a given angle in radians.
 
         Args:
@@ -86,7 +86,7 @@ class Vec2(Record):
         return Vec2(x=cos(angle), y=sin(angle))
 
     @property
-    def magnitude(self) -> Num:
+    def magnitude(self) -> float:
         """Calculate the magnitude (length) of the vector.
 
         Returns:
@@ -95,7 +95,7 @@ class Vec2(Record):
         return (self.x**2 + self.y**2) ** 0.5
 
     @property
-    def angle(self) -> Num:
+    def angle(self) -> float:
         """Calculate the angle of the vector in radians from the positive x-axis.
 
         Returns:
@@ -103,7 +103,7 @@ class Vec2(Record):
         """
         return atan2(self.y, self.x)
 
-    def dot(self, other: Self) -> Num:
+    def dot(self, other: Self) -> float:
         """Calculate the dot product of this vector with another vector.
 
         Args:
@@ -114,7 +114,7 @@ class Vec2(Record):
         """
         return self.x * other.x + self.y * other.y
 
-    def rotate(self, angle: Num) -> Self:
+    def rotate(self, angle: float) -> Self:
         """Rotate the vector by a given angle in radians and return a new vector.
 
         Args:
@@ -128,7 +128,7 @@ class Vec2(Record):
             y=self.x * sin(angle) + self.y * cos(angle),
         )
 
-    def rotate_about(self, angle: Num, pivot: Self) -> Self:
+    def rotate_about(self, angle: float, pivot: Self) -> Self:
         """Rotate the vector about a pivot by a given angle in radians and return a new vector.
 
         Args:

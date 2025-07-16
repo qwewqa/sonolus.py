@@ -338,9 +338,9 @@ class _ArchetypeSelfData:
 
 
 class _ArchetypeReferenceData:
-    index: Num
+    index: int
 
-    def __init__(self, index: Num):
+    def __init__(self, index: int):
         self.index = index
 
 
@@ -416,21 +416,21 @@ class _BaseArchetype:
 
     @classmethod
     @meta_fn
-    def at(cls, index: Num) -> Self:
+    def at(cls, index: int) -> Self:
         result = cls._new()
         result._data_ = _ArchetypeReferenceData(index=Num._accept_(index))
         return result
 
     @classmethod
     @meta_fn
-    def is_at(cls, index: Num) -> bool:
+    def is_at(cls, index: int) -> bool:
         if not ctx():
             raise RuntimeError("is_at is only available during compilation")
         return entity_info_at(index).archetype_id == cls.id()
 
     @classmethod
     @meta_fn
-    def id(cls):
+    def id(cls) -> int:
         if not ctx():
             raise RuntimeError("Archetype id is only available during compilation")
         result = ctx().global_state.archetypes.get(cls)
@@ -992,7 +992,7 @@ class PreviewArchetype(_BaseArchetype):
 
 
 @meta_fn
-def entity_info_at(index: Num) -> PlayEntityInfo | WatchEntityInfo | PreviewEntityInfo:
+def entity_info_at(index: int) -> PlayEntityInfo | WatchEntityInfo | PreviewEntityInfo:
     """Retrieve entity info of the entity at the given index.
 
     Available in play, watch, and preview mode.
@@ -1047,24 +1047,24 @@ class PreviewEntityInfo(Record):
 class ArchetypeLife(Record):
     """How an entity contributes to life."""
 
-    perfect_increment: Num
+    perfect_increment: int
     """Life increment for a perfect judgment."""
 
-    great_increment: Num
+    great_increment: int
     """Life increment for a great judgment."""
 
-    good_increment: Num
+    good_increment: int
     """Life increment for a good judgment."""
 
-    miss_increment: Num
+    miss_increment: int
     """Life increment for a miss judgment."""
 
     def update(
         self,
-        perfect_increment: Num | None = None,
-        great_increment: Num | None = None,
-        good_increment: Num | None = None,
-        miss_increment: Num | None = None,
+        perfect_increment: int | None = None,
+        great_increment: int | None = None,
+        good_increment: int | None = None,
+        miss_increment: int | None = None,
     ):
         """Update the life increments."""
         if perfect_increment is not None:
