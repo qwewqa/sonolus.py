@@ -79,7 +79,7 @@ Sonolus.py supports `int`, `float`, and `bool` types and most of the standard op
 (`and`, `or`, `not`).
 
 #### Record
-[`Record`](#record) is the main way to define custom types in Sonolus.py. It functions similarly to a data class and
+[`Record`](reference/sonolus.script.record.md) is the main way to define custom types in Sonolus.py. It functions similarly to a data class and
 provides a way to define a type with named fields:
 
 ```python
@@ -104,7 +104,7 @@ my_generic_record_2 = MyGenericRecord(MyRecord(1, 3.5))  # Type arguments are in
 ```
 
 #### Array
-[`Array`](#array) is a type that represents a fixed-size array of elements of a specific type.
+[`Array`](reference/sonolus.script.array.md) is a type that represents a fixed-size array of elements of a specific type.
 
 ```python
 my_array = Array[int, 3](1, 2, 3)
