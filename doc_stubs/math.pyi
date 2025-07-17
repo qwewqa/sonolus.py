@@ -154,3 +154,36 @@ def log(x: float, base: float = ...) -> float:
         The logarithm of x to the specified base.
     """
     ...
+
+def sqrt(x: float) -> float:
+    """Compute the square root of x.
+
+    Args:
+        x: A non-negative numeric value.
+
+    Returns:
+        The square root of x.
+    """
+    ...
+
+def degrees(x: float) -> float:
+    """Convert radians to degrees.
+
+    Args:
+        x: An angle in radians.
+
+    Returns:
+        The angle in degrees.
+    """
+    ...
+
+def radians(x: float) -> float:
+    """Convert degrees to radians.
+
+    Args:
+        x: An angle in degrees.
+
+    Returns:
+        The angle in radians.
+    """
+    ...

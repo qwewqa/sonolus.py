@@ -38,6 +38,9 @@ Sonolus.py also comes with support for some standard library modules.
 - `ceil(x)`
 - `trunc(x)`
 - `log(x[, base])`
+- `sqrt(x)`
+- `degrees(x)`
+- `radians(x)`
 - `pi`
 - `e`
 - `tau`

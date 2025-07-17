@@ -97,6 +97,22 @@ def _log(x: float, base: float | None = None) -> float:
         return _ln(x) / _ln(base)
 
 
+def _sqrt(x: float) -> float:
+    return x**0.5
+
+
+@native_function(Op.Degree)
+def _degrees(x: float) -> float:
+    """Convert radians to degrees."""
+    return math.degrees(x)
+
+
+@native_function(Op.Radian)
+def _radians(x: float) -> float:
+    """Convert degrees to radians."""
+    return math.radians(x)
+
+
 @native_function(Op.Rem)
 def _remainder(x: float, y: float) -> float:
     # This is different from math.remainder in Python's math package, which could be confusing
@@ -119,4 +135,5 @@ MATH_BUILTIN_IMPLS = {
     id(math.trunc): _trunc,
     id(round): _round,
     id(math.log): _log,
+    id(math.sqrt): _sqrt,
 }
