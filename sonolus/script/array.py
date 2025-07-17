@@ -31,6 +31,7 @@ class Array[T, Size](GenericValue, ArrayLike[T], metaclass=ArrayMeta):
         array_1 = Array(1, 2, 3)
         array_2 = Array[int, 0]()
         array_3 = +Array[int, 3]  # Create a zero-initialized array
+        array_4 = +array_1  # Create a copy of array_1
         ```
     """
 

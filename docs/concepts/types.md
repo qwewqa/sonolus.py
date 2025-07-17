@@ -11,8 +11,12 @@ the constants `None`, `Ellipsis`, and `NotImplemented`.
 `Num` is the numeric and boolean type in Sonolus.py. It is interchangeable with `int`, `float`, and `bool`.
 Sonolus.py will treat any of these types as `Num`, but it's recommended to use what's appropriate for clarity.
 
+Typically, `Num` isn't directly used in code since `int`, `float`, and `bool` are more specific and easier to read.
+The main exception is for instance checking (`isinstance` or `match` patterns), where `Num` is the only supported
+way to check for numeric or boolean values.
+
 The Sonolus app uses 32-bit floating-point numbers for all numeric values, so precision may be lower compared to Python
-when running on Sonolus.
+when running within Sonolus.
 
 NaN and values outside the range of 32-bit floating-point numbers are not supported.
 

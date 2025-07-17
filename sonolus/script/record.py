@@ -54,6 +54,11 @@ class Record(GenericValue, metaclass=RecordMeta):
         record_4 = +MyRecord  # Create a zero-initialized record
         record_5 = +MyGenericRecord[int, int]
         ```
+
+        Copying a record:
+        ```python
+        record_copy = +record
+        ```
     """
 
     _value: dict[str, Value]

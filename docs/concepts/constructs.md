@@ -1,6 +1,8 @@
 # Constructs
 
-Most standard Python constructs are supported in Sonolus.py.
+Sonolus.py functions as a compiler from Python to Sonolus nodes. While most standard Python constructs are supported,
+there are some limitations compared to standard Python. The following sections outline what Sonolus.py supports and 
+how it differs from standard Python.
 
 ## Key Differences
 
