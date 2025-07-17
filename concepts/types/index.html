@@ -248,6 +248,25 @@
   
   
   
+  
+    <li class="md-tabs__item">
+      <a href="../../overview/" class="md-tabs__link">
+        
+  
+  
+    
+  
+  Overview
+
+      </a>
+    </li>
+  
+
+      
+        
+  
+  
+  
     
   
   
@@ -361,6 +380,28 @@
       
   
   
+  
+  
+    <li class="md-nav__item">
+      <a href="../../overview/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    Overview
+    
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
     
   
   
@@ -398,7 +439,7 @@
       
         
         
-        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_2" checked>
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_3" checked>
         
           
           <div class="md-nav__link md-nav__container">
@@ -415,14 +456,14 @@
             </a>
             
               
-              <label class="md-nav__link " for="__nav_2" id="__nav_2_label" tabindex="">
+              <label class="md-nav__link " for="__nav_3" id="__nav_3_label" tabindex="">
                 <span class="md-nav__icon md-icon"></span>
               </label>
             
           </div>
         
-        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_2_label" aria-expanded="true">
-          <label class="md-nav__title" for="__nav_2">
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_3_label" aria-expanded="true">
+          <label class="md-nav__title" for="__nav_3">
             <span class="md-nav__icon md-icon"></span>
             Concepts
           </label>
@@ -942,7 +983,7 @@
         
           
         
-        <input class="md-nav__toggle md-toggle md-toggle--indeterminate" type="checkbox" id="__nav_3" >
+        <input class="md-nav__toggle md-toggle md-toggle--indeterminate" type="checkbox" id="__nav_4" >
         
           
           <div class="md-nav__link md-nav__container">
@@ -959,14 +1000,14 @@
             </a>
             
               
-              <label class="md-nav__link " for="__nav_3" id="__nav_3_label" tabindex="0">
+              <label class="md-nav__link " for="__nav_4" id="__nav_4_label" tabindex="0">
                 <span class="md-nav__icon md-icon"></span>
               </label>
             
           </div>
         
-        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_3_label" aria-expanded="false">
-          <label class="md-nav__title" for="__nav_3">
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_4_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_4">
             <span class="md-nav__icon md-icon"></span>
             Reference
           </label>
@@ -2048,8 +2089,11 @@ the constants <code class="highlight"><span class="kc">None</span></code>, <code
 <h2 id="num">Num<a class="headerlink" href="#num" title="Permanent link">&para;</a></h2>
 <p><code class="highlight"><span class="n">Num</span></code> is the numeric and boolean type in Sonolus.py. It is interchangeable with <code class="highlight"><span class="nb">int</span></code>, <code class="highlight"><span class="nb">float</span></code>, and <code class="highlight"><span class="nb">bool</span></code>.
 Sonolus.py will treat any of these types as <code class="highlight"><span class="n">Num</span></code>, but it's recommended to use what's appropriate for clarity.</p>
+<p>Typically, <code class="highlight"><span class="n">Num</span></code> isn't directly used in code since <code class="highlight"><span class="nb">int</span></code>, <code class="highlight"><span class="nb">float</span></code>, and <code class="highlight"><span class="nb">bool</span></code> are more specific and easier to read.
+The main exception is for instance checking (<code class="highlight"><span class="nb">isinstance</span></code> or <code class="highlight"><span class="k">match</span></code> patterns), where <code class="highlight"><span class="n">Num</span></code> is the only supported
+way to check for numeric or boolean values.</p>
 <p>The Sonolus app uses 32-bit floating-point numbers for all numeric values, so precision may be lower compared to Python
-when running on Sonolus.</p>
+when running within Sonolus.</p>
 <p>NaN and values outside the range of 32-bit floating-point numbers are not supported.</p>
 <p>You can import <code class="highlight"><span class="n">Num</span></code> from <code class="highlight"><span class="n">sonolus</span><span class="o">.</span><span class="n">script</span><span class="o">.</span><span class="n">num</span></code>:</p>
 <div class="highlight"><pre><span></span><code><span class="kn">from</span><span class="w"> </span><span class="nn">sonolus.script.num</span><span class="w"> </span><span class="kn">import</span> <span class="n">Num</span>
