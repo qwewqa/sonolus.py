@@ -4,14 +4,14 @@ Sonolus.py is a Python library for creating Sonolus engines. This page provides 
 available in the library. For more detailed information, see the [Concepts](concepts/index.md) and 
 [Reference](reference/index.md) sections.
 
-## Features
+## Language
+
 Sonolus.py functions by compiling Python code into Sonolus nodes. As such, it supports a subset of Python including
 most syntax and a portion of the standard library. Additionally, Sonolus.py provides its own library of types and
 functions that are specifically designed for use in Sonolus engines.
 
-### Language
+### Syntax
 
-#### Syntax
 Most Python syntax is supported, but there are a few limitations:
 
 - Destructuring assignment with the `*` operator is unsupported.
@@ -21,7 +21,8 @@ Most Python syntax is supported, but there are a few limitations:
 - The `global` and `nonlocal` keywords are unsupported.
 - Exception related statements (`try`, `except`, `finally`, `raise`) are unsupported.
 
-#### Compile Time Evaluation
+### Compile Time Evaluation
+
 Sonolus.py will evaluate some expressions at compile time such as basic arithmetic operations on constants,
 boolean logical operations (`and`, `or`, `not`) on constants, and type checks (`isinstance`, `issubclass`).
 
@@ -38,7 +39,8 @@ else:
     debug_log(a)
 ```
 
-#### Variables
+### Variables
+
 Numeric (`int`, `float`, `bool`) variables are fully supported and can be freely assigned and modified.
 
 All other variables have the restriction that if the compiler finds multiple possible values for a variable, it may
@@ -53,7 +55,8 @@ else:
 debug_log(a.x)
 ```
 
-#### Function Returns
+### Function Returns
+
 Similar to variables, functions returning `int`, `float`, or `bool` can have any number of return statements. Functions
 returning `None` may also have any number of `return` or `return None` statements.
 
@@ -71,26 +74,25 @@ def fn(a: int | Vec2):
 fn(123)
 ```
 
-### Types
+## Types
 
-#### Numbers
+### Numbers
+
 Sonolus.py supports `int`, `float`, and `bool` types and most of the standard operations such as mathematical operations
 (`+`, `-`, `*`, `/`, `//`, `%`), comparisons (`<`, `<=`, `>`, `>=`, `==`, `!=`), and boolean operations 
 (`and`, `or`, `not`).
 
-#### Record
-[`Record`](reference/sonolus.script.record.md) is the main way to define custom types in Sonolus.py. It functions similarly to a data class and
-provides a way to define a type with named fields:
+### Record
+
+[`Record`](reference/sonolus.script.record.md) is the main way to define custom types in Sonolus.py. 
+It functions similarly to a data class and provides a way to define a type with named fields:
 
 ```python
 class MyRecord(Record):
     a: int
     b: float
 
-my_record = MyRecord(1, b=2.5)
-my_zero_record = +MyRecord  # Short for MyRecord(0, 0.0)
-my_record_copy = +my_record  # Create a copy of my_record with the same values
-my_record.a = 123  # Modify a field of the record
+record_1 = MyRecord(1, b=2.3)
 ```
 
 Records may also be generic:
@@ -99,26 +101,101 @@ Records may also be generic:
 class MyGenericRecord[T](Record):
     value: T
 
-my_generic_record = MyGenericRecord[int](42)
-my_generic_record_2 = MyGenericRecord(MyRecord(1, 3.5))  # Type arguments are inferred
+record_1 = MyGenericRecord[int](123)
+record_2 = MyGenericRecord(MyRecord(4, 5.6))  # Type arguments are inferred
 ```
 
-#### Array
-[`Array`](reference/sonolus.script.array.md) is a type that represents a fixed-size array of elements of a specific type.
+Record arguments are retained by reference, so modifying the original record will also modify the record in the array:
 
 ```python
-my_array = Array[int, 3](1, 2, 3)
-my_array_2 = Array(4, 5, 6)  # Type arguments are inferred
-my_zero_array = +Array[int, 3]  # Short for Array[int, 3](0, 0, 0)
-my_array_copy = +my_array  # Create a copy of my_array with the same values
-my_array[2] = 10  # Modify an element of the array
+record_1 = MyRecord(1, 2.3)
+record_2 = MyGenericRecord(record_1)
+record_2.value.a = 789  # This also affects `record_1` since they're the same object.
+assert record_1.a == record_2.value.a == 789
 ```
 
-#### Other Types
+### Array
+
+[`Array`](reference/sonolus.script.array.md) is a type that represents a fixed-size array of elements of a 
+specific type:
+
+```python
+array_1 = Array[int, 3](1, 2, 3)
+array_2 = Array(4, 5, 6)  # Type arguments are inferred
+```
+
+When given record or array values as arguments, the array constructor will copy them:
+
+```python
+record_1 = MyRecord(1, 2.5)
+array_1 = Array(record_1)
+array_1[0].a = 789  # This has no effect on `record_1` since it was copied.
+assert record_1.a == 1
+```
+
+### Operations
+
+This section is an overview of the operations available for records and arrays. For full details see the
+[Record documentation](reference/sonolus.script.record.md) and [Array documentation](reference/sonolus.script.array.md).
+
+Records and arrays come with the `==` and `!=` operators predefined to compare their values for equality:
+
+```python
+assert MyRecord(1, 2.3) == MyRecord(1, 2.3)
+assert Array(1, 2, 3) != Array(4, 5, 6)
+```
+
+The unary `+` operator makes a copy of a record or array, creating a new instance with the same values:
+
+```python
+record_2 = +record_1
+array_2 = +array_1
+```
+
+Similarly, a new zero initialized value can be created using the unary `+` operator on a record or array type:
+
+```python
+record_1 = +MyRecord
+record_2 = +Array[int, 3]
+```
+
+Records and arrays can be mutated in-place using the `@=` operator:
+
+```python
+record_1 @= MyRecord(1, 2.3) 
+array_1 @= Array(4, 5, 6)
+```
+
+Record fields and array elements of numeric types can be set using the `=` operator:
+
+```python
+record_1.a = 123
+array_1[1] = 456
+```
+
+Setting a record field that's a record or array using the `=` operator will modify the field in-place:
+
+```python
+record_1 = MyRecord(1, 2.3)
+record_2 = MyGenericRecord(record_1)
+record_2.value = MyRecord(4, 5.6)  # This modifies `record_1` in-place.
+assert record_1 == record_2.value == MyRecord(4, 5.6)
+```
+
+Setting an array element that's a record or array using the `=` operator will also modify the element in-place:
+
+```python
+array_1 = Array(MyRecord(1, 2.3))
+record_1 = array_1[0]
+array_1[0] = MyRecord(4, 5.6)  # This modifies `record_1` in-place.
+assert record_1 == array_1[0] == MyRecord(4, 5.6)
+```
+
+### Other Types
 Sonolus.py has limited support for other types of values such as strings, tuples, and functions. These have restrictions
 such as not being valid as Record field types or Array element types.
 
-### Modules
+## Modules
 Sonolus.py provides a number of built-in modules that can be used in Sonolus engines. These include:
 
 - Project
