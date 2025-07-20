@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+from collections.abc import Iterable
 from contextlib import contextmanager
 from contextvars import ContextVar
 from dataclasses import dataclass
@@ -182,7 +183,7 @@ class Context:
         # structure is self -> intermediate -> header -> body (continue -> header) | exit
         assert len(self.outgoing) == 0
         header = self.branch(None)
-        for name in to_merge:
+        for name in sorted(to_merge):
             binding = self.scope.get_binding(name)
             if not isinstance(binding, ValueBinding):
                 continue
@@ -398,7 +399,7 @@ class Scope:
             return
         assert all(len(inc.outgoing) == 0 for inc in incoming)
         sources = [context.scope for context in incoming]
-        keys = {key for source in sources for key in source.bindings}
+        keys = unique(key for source in sources for key in source.bindings)
         for key in keys:
             bindings = [source.get_binding(key) for source in sources]
             if not all(isinstance(binding, ValueBinding) for binding in bindings):
@@ -447,3 +448,13 @@ def context_to_cfg(context: Context) -> BasicBlock:
             blocks[current].outgoing.add(edge)
             blocks[target].incoming.add(edge)
     return blocks[context]
+
+
+def unique[T](iterable: Iterable[T]) -> list[T]:
+    result = []
+    seen = set()
+    for item in iterable:
+        if item not in seen:
+            seen.add(item)
+            result.append(item)
+    return result

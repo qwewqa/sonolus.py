@@ -114,7 +114,7 @@ class Allocate(CompilerPass):
         interference = self.get_interference(entry)
         offsets: dict[TempBlock, int] = {}
 
-        for block, others in sorted(interference.items(), key=lambda x: -x[0].size):
+        for block, others in sorted(interference.items(), key=lambda x: (-x[0].size, x[0].name)):
             size = block.size
             offset = 0
             for other in sorted(others, key=lambda x: offsets.get(x, 0) + x.size):
@@ -152,7 +152,7 @@ class AllocateFast(Allocate):
         offsets: dict[TempBlock, int] = dict.fromkeys(interference, 0)
         end_offsets: dict[TempBlock, int] = dict.fromkeys(interference, 0)
 
-        for block, others in interference.items():
+        for block, others in sorted(interference.items(), key=lambda x: (-x[0].size, x[0].name)):
             size = block.size
             offset = max((end_offsets[other] for other in others), default=0)
             if offset + size > TEMP_SIZE:

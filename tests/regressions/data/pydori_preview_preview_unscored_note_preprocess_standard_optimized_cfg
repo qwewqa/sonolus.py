@@ -1,0 +1,28 @@
+0:
+  goto 1 if PreviewOption[12] else 2
+1:
+  10000[0] <- EntityData[1]
+  EntityData[1] <- Negate(10000[0])
+  10000[0] <- EntityData[3]
+  EntityData[3] <- Negate(10000[0])
+  goto 2
+2:
+  10000[0] <- EntityData[2]
+  EntityData[4] <- BeatToTime(10000[0])
+  10000[1] <- PreviewData[1]
+  10000[0] <- EntityData[4]
+  goto 3 if Greater(10000[1], 10000[0]) else 4
+3:
+  10000[0] <- 10000[1]
+  goto 4
+4:
+  PreviewData[1] <- 10000[0]
+  10000[0] <- PreviewData[2]
+  10000[1] <- EntityData[2]
+  goto 5 if Greater(10000[0], 10000[1]) else 6
+5:
+  10000[1] <- 10000[0]
+  goto 6
+6:
+  PreviewData[2] <- 10000[1]
+  goto exit

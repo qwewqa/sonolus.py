@@ -137,3 +137,48 @@ def cfg_to_mermaid(entry: BasicBlock):
 
     body = textwrap.indent("\n".join(lines), "    ")
     return f"graph\n{body}"
+
+
+def cfg_to_text(entry: BasicBlock) -> str:
+    def indent(iterable, prefix="  "):
+        for line in iterable:
+            yield f"{prefix}{line}"
+
+    block_indexes = {block: i for i, block in enumerate(traverse_cfg_reverse_postorder(entry))}
+
+    def format_phis(phis):
+        for dst, phi_srcs in phis.items():
+            srcs = ", ".join(
+                f"{block_indexes.get(src_block, '<dead>')}: {src_place}"
+                for src_block, src_place in sorted(phi_srcs.items(), key=lambda x: block_indexes.get(x[0]))
+            )
+            yield f"{dst} := phi({srcs})\n"
+
+    def format_statements(statements):
+        for stmt in statements:
+            yield f"{stmt}\n"
+
+    def format_outgoing(outgoing_edges, test, indexes):
+        outgoing = {edge.cond: edge.dst for edge in outgoing_edges}
+        match outgoing:
+            case {**other} if not other:
+                yield "goto exit\n"
+            case {None: target, **other} if not other:
+                yield f"goto {indexes[target]}\n"
+            case {0: f_branch, None: t_branch, **other} if not other:
+                yield f"goto {indexes[t_branch]} if {test} else {indexes[f_branch]}\n"
+            case dict() as tgt:
+                yield f"goto when {test}\n"
+                yield from indent(
+                    f"{('default' if cond is None else str(cond))} -> {indexes[target]}\n"
+                    for cond, target in sorted(tgt.items(), key=lambda x: (x[0] is None, x[0]))
+                )
+
+    def format_blocks():
+        for block, index in block_indexes.items():
+            yield f"{index}:\n"
+            yield from indent(format_phis(block.phis))
+            yield from indent(format_statements(block.statements))
+            yield from indent(format_outgoing(block.outgoing, block.test, block_indexes))
+
+    return "".join(format_blocks())

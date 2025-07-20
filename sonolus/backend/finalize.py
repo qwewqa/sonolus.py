@@ -13,7 +13,9 @@ def cfg_to_engine_node(entry: BasicBlock):
     for block in block_indexes:
         statements = []
         statements.extend(ir_to_engine_node(stmt) for stmt in block.statements)
-        outgoing = {edge.cond: edge.dst for edge in block.outgoing}
+        outgoing = {
+            edge.cond: edge.dst for edge in sorted(block.outgoing, key=lambda edge: (edge.cond is None, edge.cond))
+        }
         match outgoing:
             case {**other} if not other:
                 statements.append(ConstantNode(value=len(block_indexes)))

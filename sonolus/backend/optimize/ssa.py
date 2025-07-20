@@ -156,7 +156,13 @@ class FromSSA(CompilerPass):
             between_block.outgoing.add(next_edge)
             for args in block.phis.values():
                 if edge.src in args:
-                    args[between_block] = args.pop(edge.src)
+                    args[between_block] = args[edge.src]
+        for edge in incoming:
+            # Multiple edges with different conditions can connect two of the same blocks,
+            # so we need to remove the old phi arguments in a pass at the end.
+            for args in block.phis.values():
+                if edge.src in args:
+                    del args[edge.src]
         for var, args in block.phis.items():
             for src, arg in args.items():
                 src.statements.append(

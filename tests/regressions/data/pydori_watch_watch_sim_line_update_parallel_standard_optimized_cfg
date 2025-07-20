@@ -1,0 +1,105 @@
+0:
+  10000[0] <- EntityData[0]
+  10000[0] <- Add(1.0, Multiply(10000[0], 32.0))
+  10000[27] <- EntityDataArray[10000[0]]
+  10000[28] <- EntityData[1]
+  10000[28] <- Add(1.0, Multiply(10000[28], 32.0))
+  10000[0] <- EntityDataArray[10000[28]]
+  10000[1] <- EntityData[0]
+  10000[2] <- RuntimeUpdate[2]
+  10000[3] <- Add(7.0, Multiply(10000[1], 32.0))
+  10000[3] <- EntityDataArray[10000[3]]
+  10000[4] <- Divide(6.0, LevelOption[1])
+  10000[5] <- LevelData[14]
+  10000[21] <- Remap(Subtract(10000[3], 10000[4]), 10000[3], 10000[5], 0.0, 10000[2])
+  10000[22] <- Not(LevelOption[8])
+  goto 15 if 10000[22] else 1
+1:
+  10000[22] <- LevelData[15]
+  10000[23] <- LevelData[15]
+  10000[23] <- Add(10000[23], 0.5)
+  10000[24] <- LevelData[14]
+  10000[24] <- Subtract(10000[24], 0.5)
+  10000[25] <- LevelData[14]
+  goto 2 if LessOr(10000[21], 10000[22]) else 3
+2:
+  10000[22] <- 0.0
+  goto 10
+3:
+  goto 4 if LessOr(10000[21], 10000[23]) else 5
+4:
+  10000[22] <- Remap(10000[22], 10000[23], 0.0, 1.0, 10000[21])
+  goto 10
+5:
+  goto 6 if LessOr(10000[21], 10000[24]) else 7
+6:
+  10000[22] <- Remap(10000[23], 10000[24], 1.0, 1.0, 10000[21])
+  goto 10
+7:
+  goto 8 if LessOr(10000[21], 10000[25]) else 9
+8:
+  10000[22] <- Remap(10000[24], 10000[25], 1.0, 0.0, 10000[21])
+  goto 10
+9:
+  10000[22] <- 0.0
+  goto 10
+10:
+  10000[22] <- Multiply(LevelOption[9], EaseOutQuad(10000[22]))
+  goto 15 if LessOr(10000[22], 0.0) else 11
+11:
+  10000[23] <- LevelData[12]
+  10000[24] <- LevelData[12]
+  10000[25] <- LevelData[11]
+  10000[26] <- LevelData[11]
+  10000[28] <- LevelData[2]
+  10000[29] <- LevelData[3]
+  10000[30] <- LevelData[4]
+  10000[31] <- LevelData[5]
+  10000[32] <- LevelData[6]
+  10000[33] <- LevelData[7]
+  10000[34] <- LevelData[8]
+  10000[35] <- LevelData[9]
+  10000[36] <- LevelData[10]
+  10000[34] <- Add(Add(Multiply(10000[34], Multiply(10000[27], 10000[23])), Multiply(10000[35], Subtract(10000[21], Divide(10000[25], 2.0)))), 10000[36])
+  10000[35] <- LevelData[2]
+  10000[36] <- LevelData[3]
+  10000[37] <- LevelData[4]
+  10000[1] <- LevelData[5]
+  10000[2] <- LevelData[6]
+  10000[3] <- LevelData[7]
+  10000[4] <- LevelData[8]
+  10000[5] <- LevelData[9]
+  10000[6] <- LevelData[10]
+  10000[4] <- Add(Add(Multiply(10000[4], Multiply(10000[0], 10000[24])), Multiply(10000[5], Subtract(10000[21], Divide(10000[25], 2.0)))), 10000[6])
+  10000[5] <- LevelData[2]
+  10000[6] <- LevelData[3]
+  10000[7] <- LevelData[4]
+  10000[8] <- LevelData[5]
+  10000[9] <- LevelData[6]
+  10000[10] <- LevelData[7]
+  10000[11] <- LevelData[8]
+  10000[12] <- LevelData[9]
+  10000[13] <- LevelData[10]
+  10000[11] <- Add(Add(Multiply(10000[11], Multiply(10000[27], 10000[23])), Multiply(10000[12], Add(10000[21], Divide(10000[26], 2.0)))), 10000[13])
+  10000[12] <- LevelData[2]
+  10000[13] <- LevelData[3]
+  10000[14] <- LevelData[4]
+  10000[15] <- LevelData[5]
+  10000[16] <- LevelData[6]
+  10000[17] <- LevelData[7]
+  10000[18] <- LevelData[8]
+  10000[19] <- LevelData[9]
+  10000[20] <- LevelData[10]
+  10000[18] <- Add(Add(Multiply(10000[18], Multiply(10000[0], 10000[24])), Multiply(10000[19], Add(10000[21], Divide(10000[26], 2.0)))), 10000[20])
+  goto 12 if Less(10000[27], 10000[0]) else 13
+12:
+  10000[19] <- 10000[27]
+  goto 14
+13:
+  10000[19] <- 10000[0]
+  goto 14
+14:
+  Draw(18.0, Divide(Add(Add(Multiply(10000[28], Multiply(10000[27], 10000[23])), Multiply(10000[29], Subtract(10000[21], Divide(10000[25], 2.0)))), 10000[30]), 10000[34]), Divide(Add(Add(Multiply(10000[31], Multiply(10000[27], 10000[23])), Multiply(10000[32], Subtract(10000[21], Divide(10000[25], 2.0)))), 10000[33]), 10000[34]), Divide(Add(Add(Multiply(10000[5], Multiply(10000[27], 10000[23])), Multiply(10000[6], Add(10000[21], Divide(10000[26], 2.0)))), 10000[7]), 10000[11]), Divide(Add(Add(Multiply(10000[8], Multiply(10000[27], 10000[23])), Multiply(10000[9], Add(10000[21], Divide(10000[26], 2.0)))), 10000[10]), 10000[11]), Divide(Add(Add(Multiply(10000[12], Multiply(10000[0], 10000[24])), Multiply(10000[13], Add(10000[21], Divide(10000[26], 2.0)))), 10000[14]), 10000[18]), Divide(Add(Add(Multiply(10000[15], Multiply(10000[0], 10000[24])), Multiply(10000[16], Add(10000[21], Divide(10000[26], 2.0)))), 10000[17]), 10000[18]), Divide(Add(Add(Multiply(10000[35], Multiply(10000[0], 10000[24])), Multiply(10000[36], Subtract(10000[21], Divide(10000[25], 2.0)))), 10000[37]), 10000[4]), Divide(Add(Add(Multiply(10000[1], Multiply(10000[0], 10000[24])), Multiply(10000[2], Subtract(10000[21], Divide(10000[25], 2.0)))), 10000[3]), 10000[4]), Add(Add(220000.0, Multiply(10000[19], 100.0)), 10000[21]), 10000[22])
+  goto 15
+15:
+  goto exit

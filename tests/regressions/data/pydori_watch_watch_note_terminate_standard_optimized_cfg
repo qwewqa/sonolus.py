@@ -1,0 +1,170 @@
+0:
+  10000[0] <- RuntimeUpdate[3]
+  goto 25 if 10000[0] else 1
+1:
+  10000[0] <- EntityData[13]
+  goto 2 if NotEqual(10000[0], 0.0) else 25
+2:
+  10000[5] <- EntityData[0]
+  10000[35] <- EntityData[1]
+  10000[37] <- EntityData[3]
+  goto when 10000[5]
+    6.0 -> 25
+    default -> 3
+3:
+  10000[38] <- Not(LevelOption[6])
+  goto 25 if 10000[38] else 4
+4:
+  10000[44] <- 0
+  goto when 10000[5]
+    1.0 -> 10
+    2.0 -> 9
+    3.0 -> 6
+    4.0 -> 5
+    5.0 -> 5
+    7.0 -> 5
+    default -> 11
+5:
+  10000[44] <- 3.0
+  goto 11
+6:
+  goto 7 if Greater(10000[37], 0.0) else 8
+7:
+  10000[44] <- 8.0
+  goto 11
+8:
+  10000[44] <- 10.0
+  goto 11
+9:
+  10000[44] <- 6.0
+  goto 11
+10:
+  10000[44] <- 1.0
+  goto 11
+11:
+  10000[0] <- LevelData[12]
+  10000[0] <- Multiply(10000[35], 10000[0])
+  10000[1] <- LevelData[11]
+  10000[2] <- LevelData[2]
+  10000[3] <- LevelData[4]
+  10000[4] <- LevelData[5]
+  10000[6] <- LevelData[7]
+  10000[7] <- LevelData[8]
+  10000[36] <- LevelData[10]
+  10000[36] <- Add(Add(Multiply(10000[7], Subtract(10000[0], Divide(10000[1], 2.0))), 0), 10000[36])
+  10000[38] <- LevelData[11]
+  10000[39] <- LevelData[2]
+  10000[40] <- LevelData[4]
+  10000[41] <- LevelData[5]
+  10000[42] <- LevelData[7]
+  10000[43] <- LevelData[8]
+  10000[45] <- LevelData[10]
+  10000[45] <- Add(Add(Multiply(10000[43], Add(10000[0], Divide(10000[38], 2.0))), 0), 10000[45])
+  SpawnParticleEffect(10000[44], Divide(Add(Add(Multiply(10000[2], Subtract(10000[0], Divide(10000[1], 2.0))), 0), 10000[3]), 10000[36]), Divide(Add(Add(Multiply(10000[4], Subtract(10000[0], Divide(10000[1], 2.0))), 0), 10000[6]), 10000[36]), Add(Divide(Add(Add(Multiply(10000[2], Subtract(10000[0], Divide(10000[1], 2.0))), 0), 10000[3]), 10000[36]), 0.0), Add(Divide(Add(Add(Multiply(10000[4], Subtract(10000[0], Divide(10000[1], 2.0))), 0), 10000[6]), 10000[36]), Power(Add(Power(Subtract(Divide(Add(Add(Multiply(10000[39], Add(10000[0], Divide(10000[38], 2.0))), 0), 10000[40]), 10000[45]), Divide(Add(Add(Multiply(10000[2], Subtract(10000[0], Divide(10000[1], 2.0))), 0), 10000[3]), 10000[36])), 2.0), Power(Subtract(Divide(Add(Add(Multiply(10000[41], Add(10000[0], Divide(10000[38], 2.0))), 0), 10000[42]), 10000[45]), Divide(Add(Add(Multiply(10000[4], Subtract(10000[0], Divide(10000[1], 2.0))), 0), 10000[6]), 10000[36])), 2.0)), 0.5)), Add(Divide(Add(Add(Multiply(10000[39], Add(10000[0], Divide(10000[38], 2.0))), 0), 10000[40]), 10000[45]), 0.0), Add(Divide(Add(Add(Multiply(10000[41], Add(10000[0], Divide(10000[38], 2.0))), 0), 10000[42]), 10000[45]), Power(Add(Power(Subtract(Divide(Add(Add(Multiply(10000[39], Add(10000[0], Divide(10000[38], 2.0))), 0), 10000[40]), 10000[45]), Divide(Add(Add(Multiply(10000[2], Subtract(10000[0], Divide(10000[1], 2.0))), 0), 10000[3]), 10000[36])), 2.0), Power(Subtract(Divide(Add(Add(Multiply(10000[41], Add(10000[0], Divide(10000[38], 2.0))), 0), 10000[42]), 10000[45]), Divide(Add(Add(Multiply(10000[4], Subtract(10000[0], Divide(10000[1], 2.0))), 0), 10000[6]), 10000[36])), 2.0)), 0.5)), Divide(Add(Add(Multiply(10000[39], Add(10000[0], Divide(10000[38], 2.0))), 0), 10000[40]), 10000[45]), Divide(Add(Add(Multiply(10000[41], Add(10000[0], Divide(10000[38], 2.0))), 0), 10000[42]), 10000[45]), 0.5, 0.0)
+  10000[0] <- 0
+  goto when 10000[5]
+    1.0 -> 17
+    2.0 -> 16
+    3.0 -> 13
+    4.0 -> 12
+    5.0 -> 12
+    7.0 -> 12
+    default -> 18
+12:
+  10000[0] <- 4.0
+  goto 18
+13:
+  goto 14 if Greater(10000[37], 0.0) else 15
+14:
+  10000[0] <- 9.0
+  goto 18
+15:
+  10000[0] <- 11.0
+  goto 18
+16:
+  10000[0] <- 7.0
+  goto 18
+17:
+  10000[0] <- 2.0
+  goto 18
+18:
+  10000[1] <- LevelData[12]
+  10000[2] <- LevelData[11]
+  10000[3] <- LevelData[11]
+  10000[4] <- LevelData[2]
+  10000[5] <- LevelData[3]
+  10000[6] <- LevelData[4]
+  10000[7] <- LevelData[5]
+  10000[8] <- LevelData[6]
+  10000[9] <- LevelData[7]
+  10000[10] <- LevelData[8]
+  10000[11] <- LevelData[9]
+  10000[12] <- LevelData[10]
+  10000[10] <- Add(Add(Multiply(10000[10], Subtract(Multiply(10000[35], 10000[1]), Divide(Multiply(10000[2], 1.8), 2.0))), Multiply(10000[11], Subtract(0.0, Divide(Multiply(10000[3], 1.8), 2.0)))), 10000[12])
+  10000[11] <- LevelData[2]
+  10000[12] <- LevelData[3]
+  10000[13] <- LevelData[4]
+  10000[14] <- LevelData[5]
+  10000[15] <- LevelData[6]
+  10000[16] <- LevelData[7]
+  10000[17] <- LevelData[8]
+  10000[18] <- LevelData[9]
+  10000[19] <- LevelData[10]
+  10000[17] <- Add(Add(Multiply(10000[17], Add(Multiply(10000[35], 10000[1]), Divide(Multiply(10000[2], 1.8), 2.0))), Multiply(10000[18], Subtract(0.0, Divide(Multiply(10000[3], 1.8), 2.0)))), 10000[19])
+  10000[18] <- LevelData[2]
+  10000[19] <- LevelData[3]
+  10000[20] <- LevelData[4]
+  10000[21] <- LevelData[5]
+  10000[22] <- LevelData[6]
+  10000[23] <- LevelData[7]
+  10000[24] <- LevelData[8]
+  10000[25] <- LevelData[9]
+  10000[26] <- LevelData[10]
+  10000[24] <- Add(Add(Multiply(10000[24], Subtract(Multiply(10000[35], 10000[1]), Divide(Multiply(10000[2], 1.8), 2.0))), Multiply(10000[25], Add(0.0, Divide(Multiply(10000[3], 1.8), 2.0)))), 10000[26])
+  10000[25] <- LevelData[2]
+  10000[26] <- LevelData[3]
+  10000[27] <- LevelData[4]
+  10000[28] <- LevelData[5]
+  10000[29] <- LevelData[6]
+  10000[30] <- LevelData[7]
+  10000[31] <- LevelData[8]
+  10000[32] <- LevelData[9]
+  10000[33] <- LevelData[10]
+  10000[31] <- Add(Add(Multiply(10000[31], Add(Multiply(10000[35], 10000[1]), Divide(Multiply(10000[2], 1.8), 2.0))), Multiply(10000[32], Add(0.0, Divide(Multiply(10000[3], 1.8), 2.0)))), 10000[33])
+  10000[32] <- Divide(Subtract(Add(Subtract(Divide(Add(Add(Multiply(10000[25], Add(Multiply(10000[35], 10000[1]), Divide(Multiply(10000[2], 1.8), 2.0))), Multiply(10000[26], Add(0.0, Divide(Multiply(10000[3], 1.8), 2.0)))), 10000[27]), 10000[31]), Divide(Add(Add(Multiply(10000[18], Subtract(Multiply(10000[35], 10000[1]), Divide(Multiply(10000[2], 1.8), 2.0))), Multiply(10000[19], Add(0.0, Divide(Multiply(10000[3], 1.8), 2.0)))), 10000[20]), 10000[24])), Divide(Add(Add(Multiply(10000[11], Add(Multiply(10000[35], 10000[1]), Divide(Multiply(10000[2], 1.8), 2.0))), Multiply(10000[12], Subtract(0.0, Divide(Multiply(10000[3], 1.8), 2.0)))), 10000[13]), 10000[17])), Divide(Add(Add(Multiply(10000[4], Subtract(Multiply(10000[35], 10000[1]), Divide(Multiply(10000[2], 1.8), 2.0))), Multiply(10000[5], Subtract(0.0, Divide(Multiply(10000[3], 1.8), 2.0)))), 10000[6]), 10000[10])), 2.0)
+  10000[33] <- Divide(Add(Divide(Add(Add(Multiply(10000[18], Subtract(Multiply(10000[35], 10000[1]), Divide(Multiply(10000[2], 1.8), 2.0))), Multiply(10000[19], Add(0.0, Divide(Multiply(10000[3], 1.8), 2.0)))), 10000[20]), 10000[24]), Divide(Add(Add(Multiply(10000[25], Add(Multiply(10000[35], 10000[1]), Divide(Multiply(10000[2], 1.8), 2.0))), Multiply(10000[26], Add(0.0, Divide(Multiply(10000[3], 1.8), 2.0)))), 10000[27]), 10000[31])), 2.0)
+  10000[34] <- Divide(Add(Divide(Add(Add(Multiply(10000[4], Subtract(Multiply(10000[35], 10000[1]), Divide(Multiply(10000[2], 1.8), 2.0))), Multiply(10000[5], Subtract(0.0, Divide(Multiply(10000[3], 1.8), 2.0)))), 10000[6]), 10000[10]), Divide(Add(Add(Multiply(10000[11], Add(Multiply(10000[35], 10000[1]), Divide(Multiply(10000[2], 1.8), 2.0))), Multiply(10000[12], Subtract(0.0, Divide(Multiply(10000[3], 1.8), 2.0)))), 10000[13]), 10000[17])), 2.0)
+  SpawnParticleEffect(10000[0], Subtract(10000[34], Divide(10000[32], 2.0)), Divide(Add(Add(Multiply(10000[7], Subtract(Multiply(10000[35], 10000[1]), Divide(Multiply(10000[2], 1.8), 2.0))), Multiply(10000[8], Subtract(0.0, Divide(Multiply(10000[3], 1.8), 2.0)))), 10000[9]), 10000[10]), Subtract(10000[33], Divide(10000[32], 2.0)), Divide(Add(Add(Multiply(10000[21], Subtract(Multiply(10000[35], 10000[1]), Divide(Multiply(10000[2], 1.8), 2.0))), Multiply(10000[22], Add(0.0, Divide(Multiply(10000[3], 1.8), 2.0)))), 10000[23]), 10000[24]), Add(10000[33], Divide(10000[32], 2.0)), Divide(Add(Add(Multiply(10000[28], Add(Multiply(10000[35], 10000[1]), Divide(Multiply(10000[2], 1.8), 2.0))), Multiply(10000[29], Add(0.0, Divide(Multiply(10000[3], 1.8), 2.0)))), 10000[30]), 10000[31]), Add(10000[34], Divide(10000[32], 2.0)), Divide(Add(Add(Multiply(10000[14], Add(Multiply(10000[35], 10000[1]), Divide(Multiply(10000[2], 1.8), 2.0))), Multiply(10000[15], Subtract(0.0, Divide(Multiply(10000[3], 1.8), 2.0)))), 10000[16]), 10000[17]), 0.5, 0.0)
+  10000[0] <- Not(LevelOption[7])
+  goto 25 if 10000[0] else 19
+19:
+  10000[0] <- LevelData[16]
+  10000[1] <- 0.0
+  goto 20
+20:
+  goto 21 if Less(10000[1], 10000[0]) else 24
+21:
+  10000[2] <- Add(10000[1], 1.0)
+  10000[3] <- Add(16.0, Multiply(Add(10000[1], Multiply(Less(10000[1], 0.0), 7.0)), 9.0))
+  10000[4] <- LevelData[10000[3] + 1]
+  goto 22 if Equal(10000[4], 10000[35]) else 23
+22:
+  10000[4] <- LevelData[10000[3] + 2]
+  10000[5] <- LevelData[10000[3] + 3]
+  10000[6] <- LevelData[10000[3] + 4]
+  10000[7] <- LevelData[10000[3] + 5]
+  10000[8] <- LevelData[10000[3] + 6]
+  10000[9] <- LevelData[10000[3] + 7]
+  10000[10] <- LevelData[10000[3] + 8]
+  10000[11] <- LevelData[10000[3] + 9]
+  SpawnParticleEffect(0.0, 10000[4], 10000[5], 10000[6], 10000[7], 10000[8], 10000[9], 10000[10], 10000[11], 0.2, 0.0)
+  goto 25
+23:
+  10000[1] <- 10000[2]
+  goto 20
+24:
+  DebugLog(0.0)
+  DebugPause()
+  goto exit
+25:
+  goto exit

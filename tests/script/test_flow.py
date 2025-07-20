@@ -8,6 +8,7 @@ from hypothesis import given
 from hypothesis import strategies as st
 
 from sonolus.script.array import Array
+from sonolus.script.containers import Box
 from sonolus.script.debug import debug_log
 from sonolus.script.internal.error import CompilationError
 from tests.script.conftest import run_compiled
@@ -579,6 +580,31 @@ def test_switch_with_out_of_order_float_cases_and_default():
                 case _:
                     debug_log(-1)
             debug_log(i)
+
+    run_and_validate(fn)
+
+
+def test_switch_multiple_blank_edges_box():
+    # Tests a bug where multiple blank edges cause conversion out of SSA to be wrong.
+    def fn():
+        for i in range(6):
+            debug_log(i)
+            x = Box(123)
+            match i:
+                case 0:
+                    x @= Box(0)
+                case 1:
+                    x @= Box(1)
+                case 2:
+                    x @= Box(2)
+                case 3:
+                    pass
+                case 4:
+                    x @= Box(4)
+            # In the bug, the default branch and case 3 both become edges directly to the end of the match,
+            # but the default assignment of Box(123) to x ends up only happening along one of those edges
+            # nondeterministically, so when the other branch is taken, an uninitialized x is used.
+            debug_log(x.value)
 
     run_and_validate(fn)
 

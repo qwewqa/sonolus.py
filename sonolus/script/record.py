@@ -259,14 +259,14 @@ class Record(GenericValue, metaclass=RecordMeta):
         return result
 
     def __str__(self):
-        return (
-            f"{self.__class__.__name__}({', '.join(f'{field.name}={field.__get__(self)}' for field in self._fields)})"
-        )
+        return f"{self.__class__.__name__}({
+            ', '.join(f'{field.name}={field.get_internal(self)}' for field in self._fields)
+        })"
 
     def __repr__(self):
-        return (
-            f"{self.__class__.__name__}({', '.join(f'{field.name}={field.__get__(self)!r}' for field in self._fields)})"
-        )
+        return f"{self.__class__.__name__}({
+            ', '.join(f'{field.name}={field.get_internal(self)!r}' for field in self._fields)
+        })"
 
     @meta_fn
     def __eq__(self, other: Any) -> bool:
@@ -314,6 +314,9 @@ class _RecordField(SonolusDescriptor):
         self.type = type_
         self.index = index
         self.offset = offset
+
+    def get_internal(self, instance: Record) -> Value:
+        return instance._value[self.name]
 
     def __get__(self, instance: Record | None, owner=None):
         if instance is None:
