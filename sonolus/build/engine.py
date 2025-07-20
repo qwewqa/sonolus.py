@@ -6,7 +6,6 @@ from collections.abc import Callable
 from concurrent.futures import Executor
 from concurrent.futures.thread import ThreadPoolExecutor
 from dataclasses import dataclass
-from os import process_cpu_count
 from pathlib import Path
 
 from sonolus.backend.mode import Mode
@@ -74,6 +73,9 @@ def package_engine(
     rom = ReadOnlyMemory()
     configuration = build_engine_configuration(engine.options, engine.ui)
     if no_gil():
+        # process_cpu_count is available in Python 3.13+
+        from os import process_cpu_count
+
         thread_pool = ThreadPoolExecutor(process_cpu_count() or 1)
     else:
         thread_pool = None
