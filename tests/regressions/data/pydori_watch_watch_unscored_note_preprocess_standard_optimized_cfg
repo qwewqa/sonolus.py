@@ -202,43 +202,41 @@
   goto 50 if StreamHas(Add(EntityInfoArray[10000[0]], 18.0), 10000[1]) else 68
 50:
   10000[5] <- 10000[1]
-  10000[6] <- 10000[1]
-  10000[7] <- Add(Add(EntityInfoArray[10000[0]], 18.0), 0)
-  10000[8] <- 10000[1]
-  10000[2] <- StreamGetNextKey(Add(EntityInfoArray[10000[0]], 18.0), 10000[8])
+  10000[6] <- Add(Add(EntityInfoArray[10000[0]], 18.0), 0)
+  10000[2] <- StreamGetNextKey(Add(EntityInfoArray[10000[0]], 18.0), 10000[1])
   goto 52 if Greater(10000[2], 10000[1]) else 51
 51:
   10000[2] <- inf
   goto 52
 52:
-  10000[8] <- EntityData[10]
-  10000[8] <- Add(6.0, Multiply(10000[8], 32.0))
-  10000[8] <- EntityDataArray[10000[8]]
-  goto 53 if Less(10000[1], 10000[8]) else 54
+  10000[7] <- EntityData[10]
+  10000[7] <- Add(6.0, Multiply(10000[7], 32.0))
+  10000[7] <- EntityDataArray[10000[7]]
+  goto 53 if Less(10000[1], 10000[7]) else 54
 53:
   10000[1] <- 10000[2]
   goto 49
 54:
-  10000[8] <- EntityData[11]
-  10000[8] <- Add(6.0, Multiply(10000[8], 32.0))
-  10000[8] <- EntityDataArray[10000[8]]
-  goto 68 if Greater(10000[1], 10000[8]) else 55
+  10000[7] <- EntityData[11]
+  10000[7] <- Add(6.0, Multiply(10000[7], 32.0))
+  10000[7] <- EntityDataArray[10000[7]]
+  goto 68 if Greater(10000[1], 10000[7]) else 55
 55:
-  goto 56 if StreamGetValue(10000[7], 10000[6]) else 57
+  goto 56 if StreamGetValue(10000[6], 10000[1]) else 57
 56:
-  10000[8] <- Not(10000[4])
+  10000[7] <- Not(10000[4])
   goto 58
 57:
-  10000[8] <- 0.0
+  10000[7] <- 0.0
   goto 58
 58:
-  goto 59 if 10000[8] else 60
+  goto 59 if 10000[7] else 60
 59:
   10000[4] <- 1.0
   10000[3] <- 10000[5]
   goto 60
 60:
-  goto 61 if Not(StreamGetValue(10000[7], 10000[1])) else 62
+  goto 61 if Not(StreamGetValue(10000[6], 10000[1])) else 62
 61:
   10000[6] <- 10000[4]
   goto 63

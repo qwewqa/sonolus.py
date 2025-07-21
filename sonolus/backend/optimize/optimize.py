@@ -35,6 +35,7 @@ STANDARD_PASSES = (
     InlineVars(),
     DeadCodeElimination(),
     RewriteToSwitch(),
+    InlineVars(),
     FromSSA(),
     CoalesceFlow(),
     CopyCoalesce(),

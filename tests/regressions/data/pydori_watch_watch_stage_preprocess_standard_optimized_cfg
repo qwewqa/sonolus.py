@@ -255,10 +255,9 @@
 1:
   goto 2 if Less(10000[7], 4.0) else 10
 2:
-  10000[9] <- 10000[7]
   10000[8] <- Add(10000[7], 1.0)
-  10000[10] <- LevelData[12]
-  10000[9] <- Multiply(10000[9], 10000[10])
+  10000[9] <- LevelData[12]
+  10000[9] <- Multiply(10000[7], 10000[9])
   10000[10] <- LevelData[12]
   10000[11] <- LevelData[12]
   10000[12] <- LevelData[15]
@@ -525,9 +524,7 @@
   goto 15 if StreamHas(1.0, 10000[0]) else 23
 15:
   10000[2] <- 10000[0]
-  10000[3] <- 10000[0]
-  10000[4] <- 10000[0]
-  10000[1] <- StreamGetNextKey(1.0, 10000[4])
+  10000[1] <- StreamGetNextKey(1.0, 10000[0])
   goto 17 if Greater(10000[1], 10000[0]) else 16
 16:
   10000[1] <- inf
@@ -538,15 +535,14 @@
   PlayScheduled(0.0, 10000[2], 0.02)
   goto 19
 19:
-  10000[4] <- 0.0
+  10000[3] <- 0.0
   goto 20
 20:
-  goto 21 if Less(10000[4], StreamGetValue(1.0, 10000[0])) else 22
+  goto 21 if Less(10000[3], StreamGetValue(1.0, 10000[0])) else 22
 21:
-  10000[5] <- 10000[4]
-  10000[5] <- Add(10000[5], Multiply(Less(10000[4], 0.0), StreamGetValue(1.0, 10000[0])))
-  10000[4] <- Add(10000[4], 1.0)
-  Spawn(1.0, 10000[2], StreamGetValue(Add(1.0, Add(Add(0, Add(10000[5], Multiply(Less(10000[5], 0.0), 16.0))), 1.0)), 10000[3]))
+  10000[4] <- Add(10000[3], Multiply(Less(10000[3], 0.0), StreamGetValue(1.0, 10000[0])))
+  10000[3] <- Add(10000[3], 1.0)
+  Spawn(1.0, 10000[2], StreamGetValue(Add(1.0, Add(Add(0, Add(10000[4], Multiply(Less(10000[4], 0.0), 16.0))), 1.0)), 10000[0]))
   goto 20
 22:
   10000[0] <- 10000[1]
