@@ -1,7 +1,7 @@
 from sonolus.backend.ir import IRConst, IRGet, IRInstr, IRPureInstr, IRSet, IRStmt
 from sonolus.backend.optimize.dominance import DominanceFrontiers, get_df, get_dom_children
 from sonolus.backend.optimize.flow import BasicBlock, FlowEdge, traverse_cfg_preorder
-from sonolus.backend.optimize.passes import CompilerPass
+from sonolus.backend.optimize.passes import CompilerPass, OptimizerConfig
 from sonolus.backend.place import BlockPlace, SSAPlace, TempBlock
 
 
@@ -9,7 +9,7 @@ class ToSSA(CompilerPass):
     def requires(self) -> set[CompilerPass]:
         return {DominanceFrontiers()}
 
-    def run(self, entry: BasicBlock) -> BasicBlock:
+    def run(self, entry: BasicBlock, config: OptimizerConfig) -> BasicBlock:
         defs = self.defs_to_blocks(entry)
         self.insert_phis(defs)
         self.rename(entry, defs, {var: [] for var in defs}, {})
@@ -139,7 +139,7 @@ class ToSSA(CompilerPass):
 
 
 class FromSSA(CompilerPass):
-    def run(self, entry: BasicBlock) -> BasicBlock:
+    def run(self, entry: BasicBlock, config: OptimizerConfig) -> BasicBlock:
         for block in [*traverse_cfg_preorder(entry)]:
             self.process_block(block)
         return entry

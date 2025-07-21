@@ -48,7 +48,7 @@ class ConstantValue(Value):
         class Parameterized(cls):
             _value = (parameter,)
 
-        Parameterized.__name__ = f"Const[{object.__repr__(parameter)}]"
+        Parameterized.__name__ = f"Const[{object.__repr__(parameter)}]"  # noqa: PLC2801
         Parameterized.__qualname__ = Parameterized.__name__
         Parameterized.__module__ = cls.__module__
         Parameterized.instance = object.__new__(Parameterized)

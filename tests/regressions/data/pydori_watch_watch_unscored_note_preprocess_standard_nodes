@@ -77,21 +77,10 @@ Block(JumpLoop(
     )
     Set(
       10000
-      1
+      0
       Get(
         4001
         7
-      )
-    )
-    Set(
-      10000
-      0
-      Divide(
-        6
-        Get(
-          2002
-          1
-        )
       )
     )
     Set(
@@ -100,11 +89,14 @@ Block(JumpLoop(
       Subtract(
         Get(
           10000
-          1
-        )
-        Get(
-          10000
           0
+        )
+        Divide(
+          6
+          Get(
+            2002
+            1
+          )
         )
       )
     )
@@ -231,18 +223,10 @@ Block(JumpLoop(
       )
     )
     Set(
-      10000
-      0
-      Get(
-        4003
-        0
-      )
-    )
-    Set(
       4001
       10
       Get(
-        10000
+        4003
         0
       )
     )
@@ -340,18 +324,10 @@ Block(JumpLoop(
   )
   Execute(
     Set(
-      10000
-      0
-      Get(
-        4003
-        0
-      )
-    )
-    Set(
       4001
       11
       Get(
-        10000
+        4003
         0
       )
     )
@@ -511,19 +487,11 @@ Block(JumpLoop(
         12
       )
     )
-    Set(
-      10000
-      3
+    If(
       Not(Get(
         2002
         10
       ))
-    )
-    If(
-      Get(
-        10000
-        3
-      )
       29
       18
     )
@@ -688,19 +656,11 @@ Block(JumpLoop(
         6
       )
     )
-    Set(
-      10000
-      2
+    If(
       Not(Get(
         2002
         10
       ))
-    )
-    If(
-      Get(
-        10000
-        2
-      )
       35
       31
     )
@@ -873,23 +833,15 @@ Block(JumpLoop(
         3
       )
     )
-    Set(
-      10000
-      0
-      Get(
-        4103
-        Get(
-          10000
-          0
-        )
-      )
-    )
     If(
       LessOr(
         0
         Get(
-          10000
-          0
+          4103
+          Get(
+            10000
+            0
+          )
         )
       )
       41
@@ -902,8 +854,11 @@ Block(JumpLoop(
       1
       Less(
         Get(
-          10000
-          0
+          4103
+          Get(
+            10000
+            0
+          )
         )
         99999
       )
@@ -935,8 +890,11 @@ Block(JumpLoop(
     StreamHas(
       Add(
         Get(
-          10000
-          0
+          4103
+          Get(
+            10000
+            0
+          )
         )
         18
       )
@@ -960,8 +918,11 @@ Block(JumpLoop(
       StreamGetNextKey(
         Add(
           Get(
-            10000
-            0
+            4103
+            Get(
+              10000
+              0
+            )
           )
           18
         )
@@ -987,8 +948,11 @@ Block(JumpLoop(
     StreamHas(
       Add(
         Get(
-          10000
-          0
+          4103
+          Get(
+            10000
+            0
+          )
         )
         18
       )
@@ -1023,8 +987,11 @@ Block(JumpLoop(
       Add(
         Add(
           Get(
-            10000
-            0
+            4103
+            Get(
+              10000
+              0
+            )
           )
           18
         )
@@ -1045,8 +1012,11 @@ Block(JumpLoop(
       StreamGetNextKey(
         Add(
           Get(
-            10000
-            0
+            4103
+            Get(
+              10000
+              0
+            )
           )
           18
         )
@@ -1289,24 +1259,14 @@ Block(JumpLoop(
     64
     67
   ))
-  Execute(
-    Set(
-      10000
-      6
-      Not(Get(
-        2002
-        10
-      ))
-    )
-    If(
-      Get(
-        10000
-        6
-      )
-      66
-      65
-    )
-  )
+  Execute(If(
+    Not(Get(
+      2002
+      10
+    ))
+    66
+    65
+  ))
   Execute(
     Set(
       10000
@@ -1392,19 +1352,11 @@ Block(JumpLoop(
         )
       )
     )
-    Set(
-      10000
-      5
+    If(
       Not(Get(
         2002
         10
       ))
-    )
-    If(
-      Get(
-        10000
-        5
-      )
       73
       70
     )
@@ -1500,19 +1452,11 @@ Block(JumpLoop(
         )
       )
     )
-    Set(
-      10000
-      2
+    If(
       Not(Get(
         2002
         10
       ))
-    )
-    If(
-      Get(
-        10000
-        2
-      )
       73
       72
     )

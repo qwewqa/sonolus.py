@@ -1,11 +1,11 @@
 from sonolus.backend.ir import IRConst, IRGet, IRPureInstr, IRSet
 from sonolus.backend.ops import Op
 from sonolus.backend.optimize.flow import BasicBlock, traverse_cfg_preorder
-from sonolus.backend.optimize.passes import CompilerPass
+from sonolus.backend.optimize.passes import CompilerPass, OptimizerConfig
 
 
 class CoalesceFlow(CompilerPass):
-    def run(self, entry: BasicBlock) -> BasicBlock:
+    def run(self, entry: BasicBlock, config: OptimizerConfig) -> BasicBlock:
         queue = [entry]
         processed = set()
         while queue:
@@ -79,7 +79,7 @@ class RewriteToSwitch(CompilerPass):
     Note that this needs inlining (and dead code elimination) to be run first to really do anything useful.
     """
 
-    def run(self, entry: BasicBlock) -> BasicBlock:
+    def run(self, entry: BasicBlock, config: OptimizerConfig) -> BasicBlock:
         self.ifs_to_switch(entry)
         self.combine_blocks(entry)
         self.remove_unreachable(entry)
@@ -159,7 +159,7 @@ class RewriteToSwitch(CompilerPass):
 class NormalizeSwitch(CompilerPass):
     """Normalize branches like cond -> case a, case a + b, case a + 2b to ((cond - a) / b) -> case 0, case 1, case 2."""
 
-    def run(self, entry: BasicBlock) -> BasicBlock:
+    def run(self, entry: BasicBlock, config: OptimizerConfig) -> BasicBlock:
         for block in traverse_cfg_preorder(entry):
             cases = {edge.cond for edge in block.outgoing}
             if len(cases) <= 2:

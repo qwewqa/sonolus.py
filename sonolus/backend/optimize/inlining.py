@@ -1,11 +1,12 @@
+from sonolus.backend.blocks import BlockData
 from sonolus.backend.ir import IRConst, IRGet, IRInstr, IRPureInstr, IRSet, IRStmt
 from sonolus.backend.optimize.flow import BasicBlock, traverse_cfg_preorder
-from sonolus.backend.optimize.passes import CompilerPass
+from sonolus.backend.optimize.passes import CompilerPass, OptimizerConfig
 from sonolus.backend.place import BlockPlace, SSAPlace, TempBlock
 
 
 class InlineVars(CompilerPass):
-    def run(self, entry: BasicBlock) -> BasicBlock:
+    def run(self, entry: BasicBlock, config: OptimizerConfig) -> BasicBlock:
         use_counts: dict[SSAPlace, int] = {}
         definitions: dict[SSAPlace, IRStmt] = {}
 
@@ -20,7 +21,7 @@ class InlineVars(CompilerPass):
             while True:
                 if isinstance(defn, IRGet) and isinstance(defn.place, SSAPlace) and defn.place in definitions:
                     inside_defn = definitions[defn.place]
-                    if not self.is_inlinable(inside_defn):
+                    if not self.is_inlinable(inside_defn, config.callback):
                         break
                     defn = inside_defn
                     continue
@@ -30,7 +31,7 @@ class InlineVars(CompilerPass):
                     if inside_p not in definitions:
                         continue
                     inside_defn = definitions[inside_p]
-                    if not self.is_inlinable(inside_defn):
+                    if not self.is_inlinable(inside_defn, config.callback):
                         continue
                     if (isinstance(inside_defn, IRGet) and isinstance(inside_defn.place, SSAPlace)) or use_counts[
                         inside_p
@@ -41,7 +42,9 @@ class InlineVars(CompilerPass):
                 defn = self.substitute(defn, subs)
             definitions[p] = defn
 
-        valid = {p for p in definitions if self.is_inlinable(definitions[p]) and use_counts.get(p, 0) <= 1}
+        valid = {
+            p for p in definitions if self.is_inlinable(definitions[p], config.callback) and use_counts.get(p, 0) <= 1
+        }
 
         for block in traverse_cfg_preorder(entry):
             new_statements = []
@@ -123,14 +126,18 @@ class InlineVars(CompilerPass):
                 raise TypeError(f"Unexpected statement: {stmt}")
         return uses
 
-    def is_inlinable(self, stmt):
+    def is_inlinable(self, stmt, callback: str):
         match stmt:
             case IRConst():
                 return True
             case IRInstr(op=op, args=args) | IRPureInstr(op=op, args=args):
-                return not op.side_effects and op.pure and all(self.is_inlinable(arg) for arg in args)
+                return not op.side_effects and op.pure and all(self.is_inlinable(arg, callback) for arg in args)
             case IRGet():
-                return isinstance(stmt.place, SSAPlace)
+                return isinstance(stmt.place, SSAPlace) or (
+                    isinstance(stmt.place, BlockPlace)
+                    and isinstance(stmt.place.block, BlockData)
+                    and callback not in stmt.place.block.writable
+                )
             case IRSet():
                 return False
             case _:

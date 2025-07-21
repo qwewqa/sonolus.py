@@ -2,7 +2,7 @@ from collections import deque
 
 from sonolus.backend.ir import IRConst, IRGet, IRInstr, IRPureInstr, IRSet, IRStmt
 from sonolus.backend.optimize.flow import BasicBlock, traverse_cfg_preorder
-from sonolus.backend.optimize.passes import CompilerPass
+from sonolus.backend.optimize.passes import CompilerPass, OptimizerConfig
 from sonolus.backend.place import BlockPlace, SSAPlace, TempBlock
 
 type HasLiveness = SSAPlace | TempBlock
@@ -12,7 +12,7 @@ class LivenessAnalysis(CompilerPass):
     def destroys(self) -> set[CompilerPass]:
         return set()
 
-    def run(self, entry: BasicBlock) -> BasicBlock:
+    def run(self, entry: BasicBlock, config: OptimizerConfig) -> BasicBlock:
         self.preprocess(entry)
         self.process(entry)
         return entry

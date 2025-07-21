@@ -136,6 +136,17 @@ class Value:
         """
         raise NotImplementedError
 
+    def _get_readonly_(self) -> Self:
+        """Implements access to the value without copying if the underlying value is immutable.
+
+        The returned value should not be intentionally modified, but it is not guaranteed to be immutable.
+
+        For example, a Num might be backed internally by rom, which is immutable. If we aren't going to modify
+        (e.g. by putting it into a record where it can be modified), we can just return the original value, which
+        avoids unnecessary copying.
+        """
+        return self._get_()
+
     @abstractmethod
     def _set_(self, value: Self):
         """Implements assignment (=).

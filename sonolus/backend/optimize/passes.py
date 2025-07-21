@@ -3,8 +3,16 @@ from __future__ import annotations
 from abc import ABC, abstractmethod
 from collections import deque
 from collections.abc import Sequence
+from dataclasses import dataclass
 
+from sonolus.backend.mode import Mode
 from sonolus.backend.optimize.flow import BasicBlock
+
+
+@dataclass
+class OptimizerConfig:
+    mode: Mode | None = None
+    callback: str | None = None
 
 
 class CompilerPass(ABC):
@@ -32,11 +40,11 @@ class CompilerPass(ABC):
         return passes | self.applies()
 
     @abstractmethod
-    def run(self, entry: BasicBlock) -> BasicBlock:
+    def run(self, entry: BasicBlock, config: OptimizerConfig) -> BasicBlock:
         pass
 
 
-def run_passes(entry: BasicBlock, passes: Sequence[CompilerPass]) -> BasicBlock:
+def run_passes(entry: BasicBlock, passes: Sequence[CompilerPass], config: OptimizerConfig) -> BasicBlock:
     active_passes = set()
     queue = deque(passes)
     while queue:
@@ -48,6 +56,6 @@ def run_passes(entry: BasicBlock, passes: Sequence[CompilerPass]) -> BasicBlock:
             queue.appendleft(current_pass)
             queue.extendleft(missing_requirements)
             continue
-        entry = current_pass.run(entry)
+        entry = current_pass.run(entry, config)
         active_passes = current_pass.exists_after(active_passes)
     return entry

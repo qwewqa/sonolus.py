@@ -7,7 +7,7 @@ from sonolus.backend.mode import Mode
 from sonolus.backend.ops import Op
 from sonolus.backend.optimize.flow import BasicBlock
 from sonolus.backend.optimize.optimize import STANDARD_PASSES
-from sonolus.backend.optimize.passes import CompilerPass, run_passes
+from sonolus.backend.optimize.passes import CompilerPass, OptimizerConfig, run_passes
 from sonolus.backend.visitor import compile_and_call
 from sonolus.build.node import OutputNodeGenerator
 from sonolus.script.archetype import _BaseArchetype
@@ -55,7 +55,7 @@ def compile_mode(
         - (cb_info.name, {"index": node_index, "order": cb_order}) for archetype callbacks.
         """
         cfg = callback_to_cfg(global_state, cb, cb_info.name, arch)
-        cfg = run_passes(cfg, passes)
+        cfg = run_passes(cfg, passes, OptimizerConfig(mode=mode, callback=cb_info.name))
         node = cfg_to_engine_node(cfg)
         node_index = nodes.add(node)
 

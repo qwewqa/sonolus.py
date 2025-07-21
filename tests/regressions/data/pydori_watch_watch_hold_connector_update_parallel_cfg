@@ -3,52 +3,44 @@
 1:
   goto 2
 2:
-  v1 <- EntityData[0]
   goto 3
 3:
   goto 4
 4:
-  v2 <- Multiply(v1, 32.0)
-  v3 <- Add(1.0, v2)
-  v4 <- v3
-  v5 <- EntityDataArray[v4]
+  v1 <- Multiply(EntityData[0], 32.0)
+  v2 <- Add(1.0, v1)
+  v3 <- v2
   goto 5
 5:
-  v6 <- EntityData[1]
   goto 6
 6:
   goto 7
 7:
-  v7 <- Multiply(v6, 32.0)
-  v8 <- Add(1.0, v7)
-  v9 <- v8
-  v10 <- EntityDataArray[v9]
+  v4 <- Multiply(EntityData[1], 32.0)
+  v5 <- Add(1.0, v4)
+  v6 <- v5
   goto 8
 8:
-  v11 <- EntityData[0]
   goto 9
 9:
   goto 10
 10:
   goto 11
 11:
-  v12 <- RuntimeUpdate[2]
-  v13 <- Multiply(v11, 32.0)
-  v14 <- Add(7.0, v13)
-  v15 <- v14
-  v16 <- EntityDataArray[v15]
+  v7 <- Multiply(EntityData[0], 32.0)
+  v8 <- Add(7.0, v7)
+  v9 <- v8
   goto 12
 12:
   goto 13
 13:
-  v17 <- Divide(6.0, LevelOption[1])
+  v10 <- Divide(6.0, LevelOption[1])
   goto 14
 14:
   goto 15
 15:
-  v18 <- Subtract(v16, v17)
-  v19 <- LevelData[14]
-  v20 <- Remap(v18, v16, v19, 0.0, v12)
+  v11 <- Subtract(EntityDataArray[v9], v10)
+  v12 <- Remap(v11, EntityDataArray[v9], LevelData[14], 0.0, RuntimeUpdate[2])
   goto 16
 16:
   goto 17
@@ -59,30 +51,26 @@
 19:
   goto 20
 20:
-  v21 <- EntityData[1]
   goto 21
 21:
   goto 22
 22:
   goto 23
 23:
-  v22 <- RuntimeUpdate[2]
-  v23 <- Multiply(v21, 32.0)
-  v24 <- Add(7.0, v23)
-  v25 <- v24
-  v26 <- EntityDataArray[v25]
+  v13 <- Multiply(EntityData[1], 32.0)
+  v14 <- Add(7.0, v13)
+  v15 <- v14
   goto 24
 24:
   goto 25
 25:
-  v27 <- Divide(6.0, LevelOption[1])
+  v16 <- Divide(6.0, LevelOption[1])
   goto 26
 26:
   goto 27
 27:
-  v28 <- Subtract(v26, v27)
-  v29 <- LevelData[14]
-  v30 <- Remap(v28, v26, v29, 0.0, v22)
+  v17 <- Subtract(EntityDataArray[v15], v16)
+  v18 <- Remap(v17, EntityDataArray[v15], LevelData[14], 0.0, RuntimeUpdate[2])
   goto 28
 28:
   goto 29
@@ -95,196 +83,152 @@
 32:
   goto 33
 33:
-  v31 <- LevelData[14]
-  v32 <- Clamp(v20, 0.0, v31)
-  v33 <- LevelData[14]
-  v34 <- Clamp(v30, 0.0, v33)
-  v35 <- Remap(v20, v30, v5, v10, v32)
-  v36 <- Remap(v20, v30, v5, v10, v34)
+  v19 <- Clamp(v12, 0.0, LevelData[14])
+  v20 <- Clamp(v18, 0.0, LevelData[14])
+  v21 <- Remap(v12, v18, EntityDataArray[v3], EntityDataArray[v6], v19)
+  v22 <- Remap(v12, v18, EntityDataArray[v3], EntityDataArray[v6], v20)
   goto 34
 34:
-  v37 <- LevelData[12]
-  v38 <- Multiply(v35, v37)
+  v23 <- Multiply(v21, LevelData[12])
   goto 35
 35:
   goto 36
 36:
   goto 37
 37:
-  v39 <- LevelData[12]
-  v40 <- Multiply(v36, v39)
+  v24 <- Multiply(v22, LevelData[12])
   goto 38
 38:
   goto 39
 39:
-  v41 <- LevelData[11]
-  v42 <- Divide(v41, 2.0)
-  v43 <- Subtract(v38, v42)
-  v44 <- v43
-  v45 <- v32
-  v46 <- LevelData[11]
-  v47 <- Divide(v46, 2.0)
-  v48 <- Add(v38, v47)
-  v49 <- v48
-  v50 <- v32
-  v51 <- LevelData[11]
-  v52 <- Divide(v51, 2.0)
-  v53 <- Subtract(v40, v52)
-  v54 <- v53
-  v55 <- v34
-  v56 <- LevelData[11]
-  v57 <- Divide(v56, 2.0)
-  v58 <- Add(v40, v57)
-  v59 <- v58
-  v60 <- v34
+  v25 <- Divide(LevelData[11], 2.0)
+  v26 <- Subtract(v23, v25)
+  v27 <- v26
+  v28 <- v19
+  v29 <- Divide(LevelData[11], 2.0)
+  v30 <- Add(v23, v29)
+  v31 <- v30
+  v32 <- v19
+  v33 <- Divide(LevelData[11], 2.0)
+  v34 <- Subtract(v24, v33)
+  v35 <- v34
+  v36 <- v20
+  v37 <- Divide(LevelData[11], 2.0)
+  v38 <- Add(v24, v37)
+  v39 <- v38
+  v40 <- v20
   goto 40
 40:
   goto 41
 41:
   goto 42
 42:
-  v61 <- LevelData[2]
-  v62 <- v44
-  v63 <- Multiply(v61, v62)
-  v64 <- LevelData[3]
-  v65 <- v45
-  v66 <- Multiply(v64, v65)
-  v67 <- Add(v63, v66)
-  v68 <- LevelData[4]
-  v69 <- Add(v67, v68)
-  v70 <- LevelData[5]
-  v71 <- v44
-  v72 <- Multiply(v70, v71)
-  v73 <- LevelData[6]
-  v74 <- v45
-  v75 <- Multiply(v73, v74)
-  v76 <- Add(v72, v75)
-  v77 <- LevelData[7]
-  v78 <- Add(v76, v77)
-  v79 <- LevelData[8]
-  v80 <- v44
-  v81 <- Multiply(v79, v80)
-  v82 <- LevelData[9]
-  v83 <- v45
-  v84 <- Multiply(v82, v83)
-  v85 <- Add(v81, v84)
-  v86 <- LevelData[10]
-  v87 <- Add(v85, v86)
-  v88 <- Divide(v69, v87)
-  v89 <- Divide(v78, v87)
-  v90 <- v88
-  v91 <- v89
+  v41 <- v27
+  v42 <- Multiply(LevelData[2], v41)
+  v43 <- v28
+  v44 <- Multiply(LevelData[3], v43)
+  v45 <- Add(v42, v44)
+  v46 <- Add(v45, LevelData[4])
+  v47 <- v27
+  v48 <- Multiply(LevelData[5], v47)
+  v49 <- v28
+  v50 <- Multiply(LevelData[6], v49)
+  v51 <- Add(v48, v50)
+  v52 <- Add(v51, LevelData[7])
+  v53 <- v27
+  v54 <- Multiply(LevelData[8], v53)
+  v55 <- v28
+  v56 <- Multiply(LevelData[9], v55)
+  v57 <- Add(v54, v56)
+  v58 <- Add(v57, LevelData[10])
+  v59 <- Divide(v46, v58)
+  v60 <- Divide(v52, v58)
+  v61 <- v59
+  v62 <- v60
   goto 43
 43:
   goto 44
 44:
   goto 45
 45:
-  v92 <- LevelData[2]
-  v93 <- v49
-  v94 <- Multiply(v92, v93)
-  v95 <- LevelData[3]
-  v96 <- v50
-  v97 <- Multiply(v95, v96)
-  v98 <- Add(v94, v97)
-  v99 <- LevelData[4]
-  v100 <- Add(v98, v99)
-  v101 <- LevelData[5]
-  v102 <- v49
-  v103 <- Multiply(v101, v102)
-  v104 <- LevelData[6]
-  v105 <- v50
-  v106 <- Multiply(v104, v105)
-  v107 <- Add(v103, v106)
-  v108 <- LevelData[7]
-  v109 <- Add(v107, v108)
-  v110 <- LevelData[8]
-  v111 <- v49
-  v112 <- Multiply(v110, v111)
-  v113 <- LevelData[9]
-  v114 <- v50
-  v115 <- Multiply(v113, v114)
-  v116 <- Add(v112, v115)
-  v117 <- LevelData[10]
-  v118 <- Add(v116, v117)
-  v119 <- Divide(v100, v118)
-  v120 <- Divide(v109, v118)
-  v121 <- v119
-  v122 <- v120
+  v63 <- v31
+  v64 <- Multiply(LevelData[2], v63)
+  v65 <- v32
+  v66 <- Multiply(LevelData[3], v65)
+  v67 <- Add(v64, v66)
+  v68 <- Add(v67, LevelData[4])
+  v69 <- v31
+  v70 <- Multiply(LevelData[5], v69)
+  v71 <- v32
+  v72 <- Multiply(LevelData[6], v71)
+  v73 <- Add(v70, v72)
+  v74 <- Add(v73, LevelData[7])
+  v75 <- v31
+  v76 <- Multiply(LevelData[8], v75)
+  v77 <- v32
+  v78 <- Multiply(LevelData[9], v77)
+  v79 <- Add(v76, v78)
+  v80 <- Add(v79, LevelData[10])
+  v81 <- Divide(v68, v80)
+  v82 <- Divide(v74, v80)
+  v83 <- v81
+  v84 <- v82
   goto 46
 46:
   goto 47
 47:
   goto 48
 48:
-  v123 <- LevelData[2]
-  v124 <- v54
-  v125 <- Multiply(v123, v124)
-  v126 <- LevelData[3]
-  v127 <- v55
-  v128 <- Multiply(v126, v127)
-  v129 <- Add(v125, v128)
-  v130 <- LevelData[4]
-  v131 <- Add(v129, v130)
-  v132 <- LevelData[5]
-  v133 <- v54
-  v134 <- Multiply(v132, v133)
-  v135 <- LevelData[6]
-  v136 <- v55
-  v137 <- Multiply(v135, v136)
-  v138 <- Add(v134, v137)
-  v139 <- LevelData[7]
-  v140 <- Add(v138, v139)
-  v141 <- LevelData[8]
-  v142 <- v54
-  v143 <- Multiply(v141, v142)
-  v144 <- LevelData[9]
-  v145 <- v55
-  v146 <- Multiply(v144, v145)
-  v147 <- Add(v143, v146)
-  v148 <- LevelData[10]
-  v149 <- Add(v147, v148)
-  v150 <- Divide(v131, v149)
-  v151 <- Divide(v140, v149)
-  v152 <- v150
-  v153 <- v151
+  v85 <- v35
+  v86 <- Multiply(LevelData[2], v85)
+  v87 <- v36
+  v88 <- Multiply(LevelData[3], v87)
+  v89 <- Add(v86, v88)
+  v90 <- Add(v89, LevelData[4])
+  v91 <- v35
+  v92 <- Multiply(LevelData[5], v91)
+  v93 <- v36
+  v94 <- Multiply(LevelData[6], v93)
+  v95 <- Add(v92, v94)
+  v96 <- Add(v95, LevelData[7])
+  v97 <- v35
+  v98 <- Multiply(LevelData[8], v97)
+  v99 <- v36
+  v100 <- Multiply(LevelData[9], v99)
+  v101 <- Add(v98, v100)
+  v102 <- Add(v101, LevelData[10])
+  v103 <- Divide(v90, v102)
+  v104 <- Divide(v96, v102)
+  v105 <- v103
+  v106 <- v104
   goto 49
 49:
   goto 50
 50:
   goto 51
 51:
-  v154 <- LevelData[2]
-  v155 <- v59
-  v156 <- Multiply(v154, v155)
-  v157 <- LevelData[3]
-  v158 <- v60
-  v159 <- Multiply(v157, v158)
-  v160 <- Add(v156, v159)
-  v161 <- LevelData[4]
-  v162 <- Add(v160, v161)
-  v163 <- LevelData[5]
-  v164 <- v59
-  v165 <- Multiply(v163, v164)
-  v166 <- LevelData[6]
-  v167 <- v60
-  v168 <- Multiply(v166, v167)
-  v169 <- Add(v165, v168)
-  v170 <- LevelData[7]
-  v171 <- Add(v169, v170)
-  v172 <- LevelData[8]
-  v173 <- v59
-  v174 <- Multiply(v172, v173)
-  v175 <- LevelData[9]
-  v176 <- v60
-  v177 <- Multiply(v175, v176)
-  v178 <- Add(v174, v177)
-  v179 <- LevelData[10]
-  v180 <- Add(v178, v179)
-  v181 <- Divide(v162, v180)
-  v182 <- Divide(v171, v180)
-  v183 <- v181
-  v184 <- v182
+  v107 <- v39
+  v108 <- Multiply(LevelData[2], v107)
+  v109 <- v40
+  v110 <- Multiply(LevelData[3], v109)
+  v111 <- Add(v108, v110)
+  v112 <- Add(v111, LevelData[4])
+  v113 <- v39
+  v114 <- Multiply(LevelData[5], v113)
+  v115 <- v40
+  v116 <- Multiply(LevelData[6], v115)
+  v117 <- Add(v114, v116)
+  v118 <- Add(v117, LevelData[7])
+  v119 <- v39
+  v120 <- Multiply(LevelData[8], v119)
+  v121 <- v40
+  v122 <- Multiply(LevelData[9], v121)
+  v123 <- Add(v120, v122)
+  v124 <- Add(v123, LevelData[10])
+  v125 <- Divide(v112, v124)
+  v126 <- Divide(v118, v124)
+  v127 <- v125
+  v128 <- v126
   goto 52
 52:
   goto 53
@@ -315,15 +259,15 @@
 65:
   goto 66
 66:
-  v185 <- Less(v5, v10)
+  v129 <- Less(EntityDataArray[v3], EntityDataArray[v6])
   goto 67
 67:
-  goto 68 if v185 else 69
+  goto 68 if v129 else 69
 68:
-  v186 <- v5
+  v130 <- EntityDataArray[v3]
   goto 70
 69:
-  v186 <- v10
+  v130 <- EntityDataArray[v6]
   goto 70
 70:
   goto 71
@@ -342,46 +286,46 @@
 77:
   goto 78
 78:
-  v187 <- Less(v20, v30)
+  v131 <- Less(v12, v18)
   goto 79
 79:
-  goto 80 if v187 else 81
+  goto 80 if v131 else 81
 80:
-  v188 <- v20
+  v132 <- v12
   goto 82
 81:
-  v188 <- v30
+  v132 <- v18
   goto 82
 82:
   goto 83
 83:
   goto 84
 84:
-  v189 <- Multiply(v186, 100.0)
-  v190 <- Add(100000.0, v189)
-  v191 <- Add(v190, v188)
+  v133 <- Multiply(v130, 100.0)
+  v134 <- Add(100000.0, v133)
+  v135 <- Add(v134, v132)
   goto 85
 85:
   goto 86
 86:
   goto 87
 87:
-  v192 <- 17.0
+  v136 <- 17.0
   goto 88
 88:
-  v193 <- v90
-  v194 <- v91
-  v195 <- v152
-  v196 <- v153
-  v197 <- v183
-  v198 <- v184
-  v199 <- v121
-  v200 <- v122
+  v137 <- v61
+  v138 <- v62
+  v139 <- v105
+  v140 <- v106
+  v141 <- v127
+  v142 <- v128
+  v143 <- v83
+  v144 <- v84
   goto 89
 89:
   goto 90
 90:
-  v201 <- Draw(v192, v193, v194, v195, v196, v197, v198, v199, v200, v191, LevelOption[5])
+  v145 <- Draw(v136, v137, v138, v139, v140, v141, v142, v143, v144, v135, LevelOption[5])
   goto 91
 91:
   goto 92

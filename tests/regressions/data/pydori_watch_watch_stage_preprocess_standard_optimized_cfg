@@ -245,13 +245,10 @@
   LevelData[8] <- 0.0
   LevelData[9] <- Add(Multiply(1.0, Divide(1.0, Subtract(10000[1], 10000[0]))), 0.0)
   LevelData[10] <- 1.0
-  10000[0] <- Multiply(0.35, LevelOption[2])
-  LevelData[11] <- 10000[0]
-  10000[0] <- Multiply(0.35, LevelOption[3])
-  LevelData[12] <- 10000[0]
+  LevelData[11] <- Multiply(0.35, LevelOption[2])
+  LevelData[12] <- Multiply(0.35, LevelOption[3])
   LevelData[13] <- 0.0875
-  10000[0] <- Multiply(LevelOption[4], 8.0)
-  LevelData[14] <- 10000[0]
+  LevelData[14] <- Multiply(LevelOption[4], 8.0)
   LevelData[15] <- -1.0
   10000[7] <- -3.0
   goto 1
@@ -536,8 +533,7 @@
   10000[1] <- inf
   goto 17
 17:
-  10000[4] <- Not(LevelOption[10])
-  goto 19 if 10000[4] else 18
+  goto 19 if Not(LevelOption[10]) else 18
 18:
   PlayScheduled(0.0, 10000[2], 0.02)
   goto 19

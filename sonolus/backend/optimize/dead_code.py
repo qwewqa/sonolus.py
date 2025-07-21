@@ -1,12 +1,12 @@
 from sonolus.backend.ir import IRConst, IRGet, IRInstr, IRPureInstr, IRSet, IRStmt
 from sonolus.backend.optimize.flow import BasicBlock, traverse_cfg_preorder
 from sonolus.backend.optimize.liveness import HasLiveness, LivenessAnalysis, get_live, get_live_phi_targets
-from sonolus.backend.optimize.passes import CompilerPass
+from sonolus.backend.optimize.passes import CompilerPass, OptimizerConfig
 from sonolus.backend.place import BlockPlace, SSAPlace, TempBlock
 
 
 class UnreachableCodeElimination(CompilerPass):
-    def run(self, entry: BasicBlock) -> BasicBlock:
+    def run(self, entry: BasicBlock, config: OptimizerConfig) -> BasicBlock:
         original_blocks = [*traverse_cfg_preorder(entry)]
         worklist = {entry}
         visited = set()
@@ -46,7 +46,7 @@ class UnreachableCodeElimination(CompilerPass):
 
 
 class DeadCodeElimination(CompilerPass):
-    def run(self, entry: BasicBlock) -> BasicBlock:
+    def run(self, entry: BasicBlock, config: OptimizerConfig) -> BasicBlock:
         uses = set()
         defs = {}
         for block in traverse_cfg_preorder(entry):
@@ -157,7 +157,7 @@ class AdvancedDeadCodeElimination(CompilerPass):
     def requires(self) -> set[CompilerPass]:
         return {LivenessAnalysis()}
 
-    def run(self, entry: BasicBlock) -> BasicBlock:
+    def run(self, entry: BasicBlock, config: OptimizerConfig) -> BasicBlock:
         for block in traverse_cfg_preorder(entry):
             live_stmts = []
             for statement in block.statements:

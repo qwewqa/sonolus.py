@@ -117,7 +117,7 @@ class _ArchetypeField(SonolusDescriptor):
         if result is None:
             raise RuntimeError("Invalid storage type")
         if ctx():
-            return result._get_()
+            return result._get_readonly_()
         else:
             return result._as_py_()
 

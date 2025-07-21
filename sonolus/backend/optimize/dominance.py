@@ -2,14 +2,14 @@ from sonolus.backend.optimize.flow import (
     BasicBlock,
     traverse_cfg_reverse_postorder,
 )
-from sonolus.backend.optimize.passes import CompilerPass
+from sonolus.backend.optimize.passes import CompilerPass, OptimizerConfig
 
 
 class DominanceFrontiers(CompilerPass):
     def destroys(self) -> set[CompilerPass] | None:
         return set()
 
-    def run(self, entry: BasicBlock) -> BasicBlock:
+    def run(self, entry: BasicBlock, config: OptimizerConfig) -> BasicBlock:
         blocks = list(traverse_cfg_reverse_postorder(entry))
 
         self.number_blocks(blocks)

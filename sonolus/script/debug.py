@@ -13,7 +13,7 @@ from sonolus.backend.optimize.dead_code import (
 )
 from sonolus.backend.optimize.flow import cfg_to_mermaid
 from sonolus.backend.optimize.inlining import InlineVars
-from sonolus.backend.optimize.passes import CompilerPass, run_passes
+from sonolus.backend.optimize.passes import CompilerPass, OptimizerConfig, run_passes
 from sonolus.backend.optimize.simplify import CoalesceFlow, NormalizeSwitch, RewriteToSwitch
 from sonolus.backend.optimize.ssa import FromSSA, ToSSA
 from sonolus.script.internal.context import GlobalContextState, ReadOnlyMemory, ctx, set_ctx
@@ -109,7 +109,7 @@ def visualize_cfg(
     *,
     mode: Mode = Mode.PLAY,
     archetype: type | None = None,
-    archetypes: list[type] | None,
+    archetypes: list[type] | None = None,
     passes: Sequence[CompilerPass] | Literal["minimal", "basic", "standard"] = "basic",
 ) -> str:
     from sonolus.build.compile import callback_to_cfg
@@ -154,7 +154,7 @@ def visualize_cfg(
     )
 
     cfg = callback_to_cfg(global_state, fn, "", archetype=archetype)
-    cfg = run_passes(cfg, passes)
+    cfg = run_passes(cfg, passes, OptimizerConfig(mode=mode))
     return cfg_to_mermaid(cfg)
 
 

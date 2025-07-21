@@ -1,41 +1,23 @@
 Block(JumpLoop(
-  Execute(
-    Set(
-      10000
-      0
+  Execute(If(
+    Greater(
       Get(
         4001
         5
       )
-    )
-    If(
-      Greater(
-        Get(
-          10000
-          0
-        )
-        0
-      )
-      1
-      2
-    )
-  )
-  Execute(
-    Set(
-      10000
       0
-      Get(
-        4001
-        4
-      )
     )
+    1
+    2
+  ))
+  Execute(
     Set(
       10000
       0
       Not(Greater(
         Get(
-          10000
-          0
+          4001
+          4
         )
         0
       ))
@@ -61,40 +43,24 @@ Block(JumpLoop(
   Execute(
     Set(
       10000
-      0
-      Get(
-        4001
-        17
-      )
-    )
-    Set(
-      10000
-      0
+      1
       Multiply(
         Get(
-          10000
-          0
+          4001
+          17
         )
         3
-      )
-    )
-    Set(
-      10000
-      0
-      Get(
-        4103
-        Get(
-          10000
-          0
-        )
       )
     )
     If(
       LessOr(
         0
         Get(
-          10000
-          0
+          4103
+          Get(
+            10000
+            1
+          )
         )
       )
       5
@@ -104,11 +70,14 @@ Block(JumpLoop(
   Execute(
     Set(
       10000
-      1
+      0
       Less(
         Get(
-          10000
-          0
+          4103
+          Get(
+            10000
+            1
+          )
         )
         99999
       )
@@ -118,7 +87,7 @@ Block(JumpLoop(
   Execute(
     Set(
       10000
-      1
+      0
       0
     )
     7
@@ -126,7 +95,7 @@ Block(JumpLoop(
   Execute(If(
     Not(Get(
       10000
-      1
+      0
     ))
     8
     9
@@ -140,39 +109,26 @@ Block(JumpLoop(
     StreamSet(
       Add(
         Get(
-          10000
-          0
+          4103
+          Get(
+            10000
+            1
+          )
         )
         18
       )
       -10
       0
     )
-    Set(
-      10000
-      0
+    Spawn(
+      3
       Get(
         4001
         17
       )
-    )
-    Set(
-      10000
-      1
       Get(
         4001
         18
-      )
-    )
-    Spawn(
-      3
-      Get(
-        10000
-        0
-      )
-      Get(
-        10000
-        1
       )
       0
       0

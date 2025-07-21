@@ -1,7 +1,7 @@
 from sonolus.backend.ir import IRConst, IRGet, IRInstr, IRPureInstr, IRSet
 from sonolus.backend.optimize.flow import BasicBlock, traverse_cfg_preorder
 from sonolus.backend.optimize.liveness import LivenessAnalysis, get_live
-from sonolus.backend.optimize.passes import CompilerPass
+from sonolus.backend.optimize.passes import CompilerPass, OptimizerConfig
 from sonolus.backend.place import BlockPlace, SSAPlace, TempBlock
 
 
@@ -9,7 +9,7 @@ class CopyCoalesce(CompilerPass):
     def requires(self) -> set[CompilerPass]:
         return {LivenessAnalysis()}
 
-    def run(self, entry: BasicBlock) -> BasicBlock:
+    def run(self, entry: BasicBlock, config: OptimizerConfig) -> BasicBlock:
         mapping = self.get_mapping(entry)
         for block in traverse_cfg_preorder(entry):
             block.statements = [self.apply_to_stmt(stmt, mapping) for stmt in block.statements]

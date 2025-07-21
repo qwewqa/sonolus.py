@@ -39,7 +39,7 @@ class _GlobalField(SonolusDescriptor):
         if not ctx():
             raise RuntimeError("Global field access outside of compilation")
         base = ctx().get_global_base(info)
-        return self.type._from_place_(base.add_offset(self.offset))._get_()
+        return self.type._from_place_(base.add_offset(self.offset))._get_readonly_()
 
     def __set__(self, instance, value):
         from sonolus.script.internal.context import ctx

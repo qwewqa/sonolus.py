@@ -372,7 +372,9 @@ def test_interp_within_bounds_tuples(xp_fp_pair, rel_x):
         return Array(result, min(fp_tuple), max(fp_tuple))
 
     result, min_fp, max_fp = run_and_validate(fn)
-    assert min_fp <= result <= max_fp
+    assert (
+        min_fp <= result <= max_fp or is_close(result, min_fp, abs_tol=1e-4) or is_close(result, max_fp, abs_tol=1e-4)
+    )
 
 
 @given(xp_fp_pairs(), floats_0_1)

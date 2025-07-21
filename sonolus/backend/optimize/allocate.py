@@ -1,7 +1,7 @@
 from sonolus.backend.ir import IRConst, IRGet, IRInstr, IRPureInstr, IRSet
 from sonolus.backend.optimize.flow import BasicBlock, traverse_cfg_preorder
 from sonolus.backend.optimize.liveness import LivenessAnalysis, get_live
-from sonolus.backend.optimize.passes import CompilerPass
+from sonolus.backend.optimize.passes import CompilerPass, OptimizerConfig
 from sonolus.backend.place import BlockPlace, TempBlock
 
 TEMP_SIZE = 4096
@@ -10,7 +10,7 @@ TEMP_SIZE = 4096
 class AllocateBasic(CompilerPass):
     """Allocate temporary memory for temporary variables without considering lifetimes."""
 
-    def run(self, entry: BasicBlock):
+    def run(self, entry: BasicBlock, config: OptimizerConfig) -> BasicBlock:
         offsets = {}
         index = 0
 
@@ -62,7 +62,7 @@ class Allocate(CompilerPass):
     def requires(self) -> set[CompilerPass]:
         return {LivenessAnalysis()}
 
-    def run(self, entry: BasicBlock):
+    def run(self, entry: BasicBlock, config: OptimizerConfig) -> BasicBlock:
         mapping = self.get_mapping(entry)
         for block in traverse_cfg_preorder(entry):
             updated_statements = [self.update_stmt(statement, mapping) for statement in block.statements]

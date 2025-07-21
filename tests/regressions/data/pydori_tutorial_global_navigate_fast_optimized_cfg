@@ -1,6 +1,5 @@
 0:
-  10000[0] <- RuntimeUpdate[2]
-  10000[0] <- Greater(10000[0], 0.0)
+  10000[0] <- Greater(RuntimeUpdate[2], 0.0)
   goto 1 if 10000[0] else 2
 1:
   10000[0] <- TutorialMemory[0]
@@ -9,8 +8,7 @@
   10000[0] <- TutorialMemory[0]
   10000[0] <- Mod(10000[0], 7.0)
   TutorialMemory[0] <- 10000[0]
-  10000[0] <- RuntimeUpdate[0]
-  TutorialMemory[1] <- 10000[0]
+  TutorialMemory[1] <- RuntimeUpdate[0]
   goto 3
 2:
   10000[0] <- TutorialMemory[0]
@@ -19,8 +17,7 @@
   10000[0] <- TutorialMemory[0]
   10000[0] <- Mod(10000[0], 7.0)
   TutorialMemory[0] <- 10000[0]
-  10000[0] <- RuntimeUpdate[0]
-  TutorialMemory[1] <- 10000[0]
+  TutorialMemory[1] <- RuntimeUpdate[0]
   goto 3
 3:
   goto exit

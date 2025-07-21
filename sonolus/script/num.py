@@ -4,6 +4,7 @@ import operator
 from collections.abc import Callable, Iterable
 from typing import TYPE_CHECKING, Any, Self, TypeGuard, final, runtime_checkable
 
+from sonolus.backend.blocks import BlockData
 from sonolus.backend.ir import IRConst, IRExpr, IRGet, IRPureInstr, IRSet
 from sonolus.backend.ops import Op
 from sonolus.backend.place import BlockPlace
@@ -114,9 +115,22 @@ class _Num(Value, metaclass=_NumMeta):
 
     def _get_(self) -> Self:
         if ctx():
-            place = ctx().alloc(size=1)
             if isinstance(self.data, BlockPlace):
                 ctx().check_readable(self.data)
+            place = ctx().alloc(size=1)
+            ctx().add_statements(IRSet(place, self.ir()))
+            return Num(place)
+        else:
+            return Num(self.data)
+
+    def _get_readonly_(self) -> Self:
+        if ctx():
+            if isinstance(self.data, BlockPlace):
+                ctx().check_readable(self.data)
+                if isinstance(self.data.block, BlockData) and not ctx().is_writable(self.data):
+                    # This block is immutable in the current callback, so no need to copy it in case it changes.
+                    return Num(self.data)
+            place = ctx().alloc(size=1)
             ctx().add_statements(IRSet(place, self.ir()))
             return Num(place)
         else:

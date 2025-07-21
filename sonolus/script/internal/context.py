@@ -116,7 +116,7 @@ class Context:
             return
         if not self.callback:
             return
-        if isinstance(place.block, BlockData) and self.callback not in self.blocks(place.block).readable:
+        if isinstance(place.block, BlockData) and not self.is_readable(place):
             raise RuntimeError(f"Block {place.block} is not readable in {self.callback}")
 
     def check_writable(self, place: BlockPlace):
@@ -124,8 +124,18 @@ class Context:
             return
         if not self.callback:
             return
-        if isinstance(place.block, BlockData) and self.callback not in self.blocks(place.block).writable:
+        if isinstance(place.block, BlockData) and not self.is_writable(place):
             raise RuntimeError(f"Block {place.block} is not writable in {self.callback}")
+
+    def is_readable(self, place: BlockPlace) -> bool:
+        if debug_config().unchecked_reads:
+            return True
+        return self.callback and self.callback in self.blocks(place.block).readable
+
+    def is_writable(self, place: BlockPlace) -> bool:
+        if debug_config().unchecked_writes:
+            return True
+        return self.callback and self.callback in self.blocks(place.block).writable
 
     def add_statement(self, statement: IRStmt):
         if not self.live:
@@ -206,12 +216,15 @@ class Context:
         assert len(self.outgoing) == 0
         self.outgoing[None] = header
         values = {}
-        # First do a pass through and copy every value
+        # First do a pass through and get every value
         for name, target_value in header.loop_variables.items():
             with using_ctx(self):
                 if type(target_value)._is_value_type_():
                     value = self.scope.get_value(name)
-                    values[name] = value._get_()  # _get_() will make a copy on value types
+                    # We make this call to _get_readonly_() to ensure that we're reading the value at this
+                    # point in time specifically, since _get_readonly_ will make a copy if the value is
+                    # e.g. a Num backed by a TempBlock which could be mutated.
+                    values[name] = value._get_readonly_()
         # Then actually set them
         for name, target_value in header.loop_variables.items():
             with using_ctx(self):

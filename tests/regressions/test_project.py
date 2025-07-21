@@ -7,7 +7,7 @@ from sonolus.backend.finalize import cfg_to_engine_node
 from sonolus.backend.mode import Mode
 from sonolus.backend.node import format_engine_node
 from sonolus.backend.optimize.flow import cfg_to_text
-from sonolus.backend.optimize.passes import run_passes
+from sonolus.backend.optimize.passes import OptimizerConfig, run_passes
 from sonolus.build.compile import callback_to_cfg
 from sonolus.build.engine import package_engine
 from sonolus.script.archetype import _BaseArchetype
@@ -117,7 +117,7 @@ def _build_mode_callbacks(
                 f"{project_name}_{mode.name.lower()}_{camel_to_snake(archetype.__name__)}_{cb_name}_cfg",
                 cfg_to_text(cfg),
             )
-            cfg = run_passes(cfg, PASSES[passes])
+            cfg = run_passes(cfg, PASSES[passes], OptimizerConfig(mode=mode, callback=cb_info.name))
             compare_with_reference(
                 f"{project_name}_{mode.name.lower()}_{camel_to_snake(archetype.__name__)}_{cb_name}_{passes}_optimized_cfg",
                 cfg_to_text(cfg),
@@ -139,7 +139,7 @@ def _build_mode_callbacks(
             f"{project_name}_{mode.name.lower()}_global_{camel_to_snake(cb_info.name)}_{passes}_cfg",
             cfg_to_text(cfg),
         )
-        cfg = run_passes(cfg, PASSES[passes])
+        cfg = run_passes(cfg, PASSES[passes], OptimizerConfig(mode=mode, callback=cb_info.name))
         compare_with_reference(
             f"{project_name}_{mode.name.lower()}_global_{camel_to_snake(cb_info.name)}_{passes}_optimized_cfg",
             cfg_to_text(cfg),

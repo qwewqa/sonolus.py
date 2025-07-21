@@ -3,48 +3,44 @@
 1:
   goto 2
 2:
-  v1 <- EntityData[5]
-  v2 <- Greater(v1, 0.0)
+  v1 <- Greater(EntityData[5], 0.0)
   goto 3
 3:
   goto 4
 4:
   goto 5
 5:
-  goto 6 if v2 else 11
+  goto 6 if v1 else 11
 6:
   goto 7
 7:
-  v3 <- EntityData[4]
-  v4 <- Greater(v3, 0.0)
+  v2 <- Greater(EntityData[4], 0.0)
   goto 8
 8:
   goto 9
 9:
   goto 10
 10:
-  v5 <- Not(v4)
-  v6 <- v5
+  v3 <- Not(v2)
+  v4 <- v3
   goto 12
 11:
-  v6 <- 0.0
+  v4 <- 0.0
   goto 12
 12:
-  goto 13 if v6 else 53
+  goto 13 if v4 else 53
 13:
-  v7 <- 18.0
+  v5 <- 18.0
   goto 14
 14:
-  v8 <- EntityData[17]
   goto 15
 15:
   goto 16
 16:
   goto 17
 17:
-  v9 <- Multiply(v8, 3.0)
-  v10 <- v9
-  v11 <- EntityInfoArray[v10]
+  v6 <- Multiply(EntityData[17], 3.0)
+  v7 <- v6
   goto 18
 18:
   goto 19
@@ -53,8 +49,8 @@
 20:
   goto 21
 21:
-  v12 <- LessOr(0.0, v11)
-  goto 22 if v12 else 26
+  v8 <- LessOr(0.0, EntityInfoArray[v7])
+  goto 22 if v8 else 26
 22:
   goto 23
 23:
@@ -62,11 +58,11 @@
 24:
   goto 25
 25:
-  v13 <- Less(v11, 99999.0)
-  v14 <- v13
+  v9 <- Less(EntityInfoArray[v7], 99999.0)
+  v10 <- v9
   goto 27
 26:
-  v14 <- 0.0
+  v10 <- 0.0
   goto 27
 27:
   goto 28
@@ -79,11 +75,11 @@
 31:
   goto 32
 32:
-  v15 <- Not(v14)
-  goto 33 if v15 else 34
+  v11 <- Not(v10)
+  goto 33 if v11 else 34
 33:
-  v16 <- DebugLog(0.0)
-  v17 <- DebugPause()
+  v12 <- DebugLog(0.0)
+  v13 <- DebugPause()
   goto exit
 34:
   goto 35
@@ -118,24 +114,22 @@
 49:
   goto 50
 50:
-  v18 <- v7
-  v19 <- Add(v11, v18)
-  v20 <- v19
+  v14 <- v5
+  v15 <- Add(EntityInfoArray[v7], v14)
+  v16 <- v15
   goto 51
 51:
   goto 52
 52:
-  v21 <- v20
-  v22 <- StreamSet(v21, -10.0, 0.0)
-  v23 <- EntityData[17]
-  v24 <- v23
-  v25 <- v24
-  v26 <- EntityData[18]
-  v27 <- v26
-  v28 <- v27
-  v29 <- 0
-  v30 <- 0
-  v31 <- Spawn(3.0, v25, v28, v29, v30)
+  v17 <- v16
+  v18 <- StreamSet(v17, -10.0, 0.0)
+  v19 <- EntityData[17]
+  v20 <- v19
+  v21 <- EntityData[18]
+  v22 <- v21
+  v23 <- 0
+  v24 <- 0
+  v25 <- Spawn(3.0, v20, v22, v23, v24)
   goto 54
 53:
   goto 54

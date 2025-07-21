@@ -18,8 +18,7 @@
   10000[0] <- EntityData[12]
   EntityData[13] <- TimeToScaledTime(10000[0])
   10000[0] <- EntityData[13]
-  10000[1] <- Divide(6.0, LevelOption[1])
-  EntityData[14] <- Subtract(10000[0], 10000[1])
+  EntityData[14] <- Subtract(10000[0], Divide(6.0, LevelOption[1]))
   10000[0] <- EntityData[12]
   10000[1] <- EntityData[10]
   10000[2] <- EntityData[11]
@@ -58,8 +57,7 @@
   EntityInput[2] <- 10000[1]
   EntityInput[1] <- 1.0
   EntityMemory[0] <- -100000000.0
-  10000[0] <- EntityInfo[0]
-  EntityData[17] <- 10000[0]
+  EntityData[17] <- EntityInfo[0]
   goto 10
 10:
   10000[0] <- EntityData[17]
@@ -73,8 +71,7 @@
   EntityData[17] <- 10000[0]
   goto 10
 12:
-  10000[0] <- EntityInfo[0]
-  EntityData[18] <- 10000[0]
+  EntityData[18] <- EntityInfo[0]
   goto 13
 13:
   10000[0] <- EntityData[18]
@@ -92,8 +89,7 @@
 16:
   10000[0] <- EntityData[0]
   10000[1] <- EntityData[12]
-  10000[2] <- Not(LevelOption[10])
-  goto 21 if 10000[2] else 17
+  goto 21 if Not(LevelOption[10]) else 17
 17:
   goto when 10000[0]
     2.0 -> 19

@@ -48,7 +48,7 @@ class _StreamDataField(SonolusDescriptor):
 
     def __get__(self, instance, owner):
         _check_can_read_or_write_stream()
-        return self._get()._get_()
+        return self._get()._get_readonly_()
 
     def __set__(self, instance, value):
         _check_can_write_stream()

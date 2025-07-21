@@ -13,7 +13,7 @@ from sonolus.backend.finalize import cfg_to_engine_node
 from sonolus.backend.interpret import Interpreter
 from sonolus.backend.mode import Mode
 from sonolus.backend.optimize.optimize import FAST_PASSES, MINIMAL_PASSES, STANDARD_PASSES
-from sonolus.backend.optimize.passes import run_passes
+from sonolus.backend.optimize.passes import OptimizerConfig, run_passes
 from sonolus.backend.place import BlockPlace
 from sonolus.backend.visitor import compile_and_call
 from sonolus.build.compile import callback_to_cfg
@@ -147,7 +147,7 @@ def run_and_validate[**P, R](
             assert type(e) is type(exception)  # noqa: PT017
             raise exception from None
 
-        cfg = run_passes(cfg, passes)
+        cfg = run_passes(cfg, passes, OptimizerConfig())
         entry = cfg_to_engine_node(cfg)
         interpreter = Interpreter()
         interpreter.blocks[PlayBlock.EngineRom] = rom_values
@@ -185,7 +185,7 @@ def run_compiled[**P](fn: Callable[P, Num], *args: P.args, **kwargs: P.kwargs) -
     for passes in optimization_levels:
         random.setstate(initial_random_state)
         cfg, rom_values = compile_fn(wrapper)
-        cfg = run_passes(cfg, passes)
+        cfg = run_passes(cfg, passes, OptimizerConfig())
         entry = cfg_to_engine_node(cfg)
         interpreter = Interpreter()
         interpreter.blocks[PlayBlock.EngineRom] = rom_values

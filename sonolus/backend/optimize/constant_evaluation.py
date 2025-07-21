@@ -8,7 +8,7 @@ import sonolus.script.internal.math_impls as smath
 from sonolus.backend.ir import IRConst, IRGet, IRInstr, IRPureInstr, IRSet, IRStmt
 from sonolus.backend.ops import Op
 from sonolus.backend.optimize.flow import BasicBlock, FlowEdge, traverse_cfg_preorder
-from sonolus.backend.optimize.passes import CompilerPass
+from sonolus.backend.optimize.passes import CompilerPass, OptimizerConfig
 from sonolus.backend.place import BlockPlace, SSAPlace, TempBlock
 
 
@@ -63,7 +63,7 @@ class SparseConditionalConstantPropagation(CompilerPass):
         Op.Arctan2,
     }
 
-    def run(self, entry: BasicBlock) -> BasicBlock:
+    def run(self, entry: BasicBlock, config: OptimizerConfig) -> BasicBlock:
         ssa_edges: dict[SSAPlace, set[SSAPlace | BasicBlock]] = {}
         executable_edges: set[FlowEdge] = set()
 

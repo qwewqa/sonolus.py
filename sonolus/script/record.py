@@ -321,7 +321,7 @@ class _RecordField(SonolusDescriptor):
     def __get__(self, instance: Record | None, owner=None):
         if instance is None:
             return self
-        result = instance._value[self.name]._get_()
+        result = instance._value[self.name]._get_readonly_()
         if ctx():
             return result
         else:

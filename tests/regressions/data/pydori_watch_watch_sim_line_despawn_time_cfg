@@ -3,56 +3,48 @@
 1:
   goto 2
 2:
-  v1 <- EntityData[0]
   goto 3
 3:
   goto 4
 4:
   goto 5
 5:
-  v2 <- RuntimeEnvironment[4]
-  goto 6 if v2 else 7
+  goto 6 if RuntimeEnvironment[4] else 7
 6:
-  v3 <- Multiply(v1, 32.0)
-  v4 <- Add(9.0, v3)
-  v5 <- v4
-  v6 <- EntityDataArray[v5]
-  v11 <- v6
+  v1 <- Multiply(EntityData[0], 32.0)
+  v2 <- Add(9.0, v1)
+  v3 <- v2
+  v7 <- EntityDataArray[v3]
   goto 8
 7:
-  v7 <- Multiply(v1, 32.0)
-  v8 <- Add(7.0, v7)
-  v9 <- v8
-  v10 <- EntityDataArray[v9]
-  v11 <- v10
+  v4 <- Multiply(EntityData[0], 32.0)
+  v5 <- Add(7.0, v4)
+  v6 <- v5
+  v7 <- EntityDataArray[v6]
   goto 8
 8:
   goto 9
 9:
   goto 10
 10:
-  v12 <- EntityData[1]
   goto 11
 11:
   goto 12
 12:
   goto 13
 13:
-  v13 <- RuntimeEnvironment[4]
-  goto 14 if v13 else 15
+  goto 14 if RuntimeEnvironment[4] else 15
 14:
-  v14 <- Multiply(v12, 32.0)
-  v15 <- Add(9.0, v14)
-  v16 <- v15
-  v17 <- EntityDataArray[v16]
-  v22 <- v17
+  v8 <- Multiply(EntityData[1], 32.0)
+  v9 <- Add(9.0, v8)
+  v10 <- v9
+  v14 <- EntityDataArray[v10]
   goto 16
 15:
-  v18 <- Multiply(v12, 32.0)
-  v19 <- Add(7.0, v18)
-  v20 <- v19
-  v21 <- EntityDataArray[v20]
-  v22 <- v21
+  v11 <- Multiply(EntityData[1], 32.0)
+  v12 <- Add(7.0, v11)
+  v13 <- v12
+  v14 <- EntityDataArray[v13]
   goto 16
 16:
   goto 17
@@ -71,15 +63,15 @@
 23:
   goto 24
 24:
-  v23 <- Less(v11, v22)
+  v15 <- Less(v7, v14)
   goto 25
 25:
-  goto 26 if v23 else 27
+  goto 26 if v15 else 27
 26:
-  v24 <- v11
+  v16 <- v7
   goto 28
 27:
-  v24 <- v22
+  v16 <- v14
   goto 28
 28:
   goto 29
@@ -88,5 +80,5 @@
 30:
   goto 31
 31:
-  Break(1, v24)
+  Break(1, v16)
   goto exit

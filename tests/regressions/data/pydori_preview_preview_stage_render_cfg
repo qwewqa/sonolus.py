@@ -3,18 +3,17 @@
 1:
   goto 2
 2:
-  v1 <- PreviewData[0]
-  v2 <- 0.0
-  v3 <- v1
-  v4 <- 1.0
+  v1 <- 0.0
+  v2 <- PreviewData[0]
+  v3 <- 1.0
   goto 3
 3:
+  v4 <- v1
   v5 <- v2
   v6 <- v3
   v7 <- v4
   v8 <- v5
   v9 <- v6
-  v10 <- v7
   goto 4
 4:
   goto 5
@@ -23,47 +22,47 @@
 6:
   goto 7
 7:
-  v11 <- v10
-  v12 <- Greater(v11, 0.0)
+  v10 <- v9
+  v11 <- Greater(v10, 0.0)
   goto 8
 8:
-  goto 9 if v12 else 11
+  goto 9 if v11 else 11
 9:
+  v12 <- v7
   v13 <- v8
-  v14 <- v9
-  v15 <- Less(v13, v14)
+  v14 <- Less(v12, v13)
   goto 10
 10:
-  v19 <- v15
+  v18 <- v14
   goto 13
 11:
+  v15 <- v7
   v16 <- v8
-  v17 <- v9
-  v18 <- Greater(v16, v17)
+  v17 <- Greater(v15, v16)
   goto 12
 12:
-  v19 <- v18
+  v18 <- v17
   goto 13
 13:
   goto 14
 14:
-  goto 15 if v19 else 115
+  goto 15 if v18 else 115
 15:
   goto 16
 16:
   goto 17
 17:
-  v20 <- v8
+  v19 <- v7
   goto 18
 18:
   goto 19
 19:
   goto 20
 20:
-  v21 <- v8
-  v22 <- v10
-  v23 <- Add(v21, v22)
-  v8 <- v23
+  v20 <- v7
+  v21 <- v9
+  v22 <- Add(v20, v21)
+  v7 <- v22
   goto 21
 21:
   goto 22
@@ -78,34 +77,31 @@
 26:
   goto 27
 27:
-  v24 <- Add(v20, 0.5)
-  v25 <- PreviewData[1]
-  v26 <- Multiply(v24, v25)
-  v27 <- Add(v26, -0.252)
+  v23 <- Add(v19, 0.5)
+  v24 <- Multiply(v23, PreviewData[1])
+  v25 <- Add(v24, -0.252)
   goto 28
 28:
+  v26 <- Negate(RuntimeEnvironment[1])
+  v27 <- 1.0
   v28 <- RuntimeEnvironment[1]
-  v29 <- RuntimeEnvironment[1]
-  v30 <- Negate(v29)
-  v31 <- 1.0
-  v32 <- v28
-  v33 <- -1.0
-  v34 <- v30
+  v29 <- -1.0
+  v30 <- v26
   goto 29
 29:
   goto 30
 30:
   goto 31
 31:
-  v35 <- v32
-  v36 <- v34
-  v37 <- Subtract(v35, v36)
+  v31 <- v28
+  v32 <- v30
+  v33 <- Subtract(v31, v32)
   goto 32
 32:
   goto 33
 33:
-  v38 <- Divide(v37, 2.0)
-  v39 <- Subtract(v27, v38)
+  v34 <- Divide(v33, 2.0)
+  v35 <- Subtract(v25, v34)
   goto 34
 34:
   goto 35
@@ -114,39 +110,36 @@
 36:
   goto 37
 37:
-  v40 <- Subtract(v39, 0.018)
+  v36 <- Subtract(v35, 0.018)
   goto 38
 38:
   goto 39
 39:
-  v41 <- Add(v20, 0.5)
-  v42 <- PreviewData[1]
-  v43 <- Multiply(v41, v42)
-  v44 <- Add(v43, -0.252)
+  v37 <- Add(v19, 0.5)
+  v38 <- Multiply(v37, PreviewData[1])
+  v39 <- Add(v38, -0.252)
   goto 40
 40:
-  v45 <- RuntimeEnvironment[1]
-  v46 <- RuntimeEnvironment[1]
-  v47 <- Negate(v46)
-  v48 <- 1.0
-  v49 <- v45
-  v50 <- -1.0
-  v51 <- v47
+  v40 <- Negate(RuntimeEnvironment[1])
+  v41 <- 1.0
+  v42 <- RuntimeEnvironment[1]
+  v43 <- -1.0
+  v44 <- v40
   goto 41
 41:
   goto 42
 42:
   goto 43
 43:
-  v52 <- v49
-  v53 <- v51
-  v54 <- Subtract(v52, v53)
+  v45 <- v42
+  v46 <- v44
+  v47 <- Subtract(v45, v46)
   goto 44
 44:
   goto 45
 45:
-  v55 <- Divide(v54, 2.0)
-  v56 <- Subtract(v44, v55)
+  v48 <- Divide(v47, 2.0)
+  v49 <- Subtract(v39, v48)
   goto 46
 46:
   goto 47
@@ -155,10 +148,10 @@
 48:
   goto 49
 49:
-  v57 <- 1.0
-  v58 <- v56
-  v59 <- -1.0
-  v60 <- v40
+  v50 <- 1.0
+  v51 <- v49
+  v52 <- -1.0
+  v53 <- v36
   goto 50
 50:
   goto 51
@@ -169,34 +162,31 @@
 53:
   goto 54
 54:
-  v61 <- Add(v20, 0.5)
-  v62 <- PreviewData[1]
-  v63 <- Multiply(v61, v62)
-  v64 <- Add(v63, 0.252)
+  v54 <- Add(v19, 0.5)
+  v55 <- Multiply(v54, PreviewData[1])
+  v56 <- Add(v55, 0.252)
   goto 55
 55:
-  v65 <- RuntimeEnvironment[1]
-  v66 <- RuntimeEnvironment[1]
-  v67 <- Negate(v66)
-  v68 <- 1.0
-  v69 <- v65
-  v70 <- -1.0
-  v71 <- v67
+  v57 <- Negate(RuntimeEnvironment[1])
+  v58 <- 1.0
+  v59 <- RuntimeEnvironment[1]
+  v60 <- -1.0
+  v61 <- v57
   goto 56
 56:
   goto 57
 57:
   goto 58
 58:
-  v72 <- v69
-  v73 <- v71
-  v74 <- Subtract(v72, v73)
+  v62 <- v59
+  v63 <- v61
+  v64 <- Subtract(v62, v63)
   goto 59
 59:
   goto 60
 60:
-  v75 <- Divide(v74, 2.0)
-  v76 <- Subtract(v64, v75)
+  v65 <- Divide(v64, 2.0)
+  v66 <- Subtract(v56, v65)
   goto 61
 61:
   goto 62
@@ -209,34 +199,31 @@
 65:
   goto 66
 66:
-  v77 <- Add(v20, 0.5)
-  v78 <- PreviewData[1]
-  v79 <- Multiply(v77, v78)
-  v80 <- Add(v79, 0.252)
+  v67 <- Add(v19, 0.5)
+  v68 <- Multiply(v67, PreviewData[1])
+  v69 <- Add(v68, 0.252)
   goto 67
 67:
-  v81 <- RuntimeEnvironment[1]
-  v82 <- RuntimeEnvironment[1]
-  v83 <- Negate(v82)
-  v84 <- 1.0
-  v85 <- v81
-  v86 <- -1.0
-  v87 <- v83
+  v70 <- Negate(RuntimeEnvironment[1])
+  v71 <- 1.0
+  v72 <- RuntimeEnvironment[1]
+  v73 <- -1.0
+  v74 <- v70
   goto 68
 68:
   goto 69
 69:
   goto 70
 70:
-  v88 <- v85
-  v89 <- v87
-  v90 <- Subtract(v88, v89)
+  v75 <- v72
+  v76 <- v74
+  v77 <- Subtract(v75, v76)
   goto 71
 71:
   goto 72
 72:
-  v91 <- Divide(v90, 2.0)
-  v92 <- Subtract(v80, v91)
+  v78 <- Divide(v77, 2.0)
+  v79 <- Subtract(v69, v78)
   goto 73
 73:
   goto 74
@@ -245,135 +232,135 @@
 75:
   goto 76
 76:
-  v93 <- Add(v92, 0.018)
-  v94 <- 1.0
-  v95 <- v93
-  v96 <- -1.0
-  v97 <- v76
+  v80 <- Add(v79, 0.018)
+  v81 <- 1.0
+  v82 <- v80
+  v83 <- -1.0
+  v84 <- v66
   goto 77
 77:
   goto 78
 78:
   goto 79
 79:
-  v98 <- 2.0
+  v85 <- 2.0
   goto 80
 80:
   goto 81
 81:
-  v99 <- v60
-  v100 <- v59
-  v101 <- v99
-  v102 <- v100
+  v86 <- v53
+  v87 <- v52
+  v88 <- v86
+  v89 <- v87
   goto 82
 82:
   goto 83
 83:
   goto 84
 84:
-  v103 <- v60
-  v104 <- v57
-  v105 <- v103
-  v106 <- v104
+  v90 <- v53
+  v91 <- v50
+  v92 <- v90
+  v93 <- v91
   goto 85
 85:
   goto 86
 86:
   goto 87
 87:
-  v107 <- v58
-  v108 <- v57
-  v109 <- v107
-  v110 <- v108
+  v94 <- v51
+  v95 <- v50
+  v96 <- v94
+  v97 <- v95
   goto 88
 88:
   goto 89
 89:
   goto 90
 90:
-  v111 <- v58
-  v112 <- v59
-  v113 <- v111
-  v114 <- v112
+  v98 <- v51
+  v99 <- v52
+  v100 <- v98
+  v101 <- v99
   goto 91
 91:
   goto 92
 92:
-  v115 <- v101
-  v116 <- v102
-  v117 <- v105
-  v118 <- v106
-  v119 <- v109
-  v120 <- v110
-  v121 <- v113
-  v122 <- v114
+  v102 <- v88
+  v103 <- v89
+  v104 <- v92
+  v105 <- v93
+  v106 <- v96
+  v107 <- v97
+  v108 <- v100
+  v109 <- v101
   goto 93
 93:
   goto 94
 94:
-  v123 <- Draw(v98, v115, v116, v117, v118, v119, v120, v121, v122, 0.0, 1.0)
+  v110 <- Draw(v85, v102, v103, v104, v105, v106, v107, v108, v109, 0.0, 1.0)
   goto 95
 95:
   goto 96
 96:
   goto 97
 97:
-  v124 <- 3.0
+  v111 <- 3.0
   goto 98
 98:
   goto 99
 99:
-  v125 <- v97
-  v126 <- v96
-  v127 <- v125
-  v128 <- v126
+  v112 <- v84
+  v113 <- v83
+  v114 <- v112
+  v115 <- v113
   goto 100
 100:
   goto 101
 101:
   goto 102
 102:
-  v129 <- v97
-  v130 <- v94
-  v131 <- v129
-  v132 <- v130
+  v116 <- v84
+  v117 <- v81
+  v118 <- v116
+  v119 <- v117
   goto 103
 103:
   goto 104
 104:
   goto 105
 105:
-  v133 <- v95
-  v134 <- v94
-  v135 <- v133
-  v136 <- v134
+  v120 <- v82
+  v121 <- v81
+  v122 <- v120
+  v123 <- v121
   goto 106
 106:
   goto 107
 107:
   goto 108
 108:
-  v137 <- v95
-  v138 <- v96
-  v139 <- v137
-  v140 <- v138
+  v124 <- v82
+  v125 <- v83
+  v126 <- v124
+  v127 <- v125
   goto 109
 109:
   goto 110
 110:
-  v141 <- v127
-  v142 <- v128
-  v143 <- v131
-  v144 <- v132
-  v145 <- v135
-  v146 <- v136
-  v147 <- v139
-  v148 <- v140
+  v128 <- v114
+  v129 <- v115
+  v130 <- v118
+  v131 <- v119
+  v132 <- v122
+  v133 <- v123
+  v134 <- v126
+  v135 <- v127
   goto 111
 111:
   goto 112
 112:
-  v149 <- Draw(v124, v141, v142, v143, v144, v145, v146, v147, v148, 0.0, 1.0)
+  v136 <- Draw(v111, v128, v129, v130, v131, v132, v133, v134, v135, 0.0, 1.0)
   goto 113
 113:
   goto 114
@@ -388,18 +375,17 @@
 118:
   goto 119
 119:
-  v150 <- PreviewData[0]
-  v151 <- 0.0
-  v152 <- v150
-  v153 <- 1.0
+  v137 <- 0.0
+  v138 <- PreviewData[0]
+  v139 <- 1.0
   goto 120
 120:
-  v154 <- v151
-  v155 <- v152
-  v156 <- v153
-  v157 <- v154
-  v158 <- v155
-  v159 <- v156
+  v140 <- v137
+  v141 <- v138
+  v142 <- v139
+  v143 <- v140
+  v144 <- v141
+  v145 <- v142
   goto 121
 121:
   goto 122
@@ -408,47 +394,47 @@
 123:
   goto 124
 124:
-  v160 <- v159
-  v161 <- Greater(v160, 0.0)
+  v146 <- v145
+  v147 <- Greater(v146, 0.0)
   goto 125
 125:
-  goto 126 if v161 else 128
+  goto 126 if v147 else 128
 126:
-  v162 <- v157
-  v163 <- v158
-  v164 <- Less(v162, v163)
+  v148 <- v143
+  v149 <- v144
+  v150 <- Less(v148, v149)
   goto 127
 127:
-  v168 <- v164
+  v154 <- v150
   goto 130
 128:
-  v165 <- v157
-  v166 <- v158
-  v167 <- Greater(v165, v166)
+  v151 <- v143
+  v152 <- v144
+  v153 <- Greater(v151, v152)
   goto 129
 129:
-  v168 <- v167
+  v154 <- v153
   goto 130
 130:
   goto 131
 131:
-  goto 132 if v168 else 211
+  goto 132 if v154 else 211
 132:
   goto 133
 133:
   goto 134
 134:
-  v169 <- v157
+  v155 <- v143
   goto 135
 135:
   goto 136
 136:
   goto 137
 137:
-  v170 <- v157
-  v171 <- v159
-  v172 <- Add(v170, v171)
-  v157 <- v172
+  v156 <- v143
+  v157 <- v145
+  v158 <- Add(v156, v157)
+  v143 <- v158
   goto 138
 138:
   goto 139
@@ -457,17 +443,17 @@
 140:
   goto 141
 141:
-  v173 <- -3.0
-  v174 <- 4.0
-  v175 <- 1.0
+  v159 <- -3.0
+  v160 <- 4.0
+  v161 <- 1.0
   goto 142
 142:
-  v176 <- v173
-  v177 <- v174
-  v178 <- v175
-  v179 <- v176
-  v180 <- v177
-  v181 <- v178
+  v162 <- v159
+  v163 <- v160
+  v164 <- v161
+  v165 <- v162
+  v166 <- v163
+  v167 <- v164
   goto 143
 143:
   goto 144
@@ -476,47 +462,47 @@
 145:
   goto 146
 146:
-  v182 <- v181
-  v183 <- Greater(v182, 0.0)
+  v168 <- v167
+  v169 <- Greater(v168, 0.0)
   goto 147
 147:
-  goto 148 if v183 else 150
+  goto 148 if v169 else 150
 148:
-  v184 <- v179
-  v185 <- v180
-  v186 <- Less(v184, v185)
+  v170 <- v165
+  v171 <- v166
+  v172 <- Less(v170, v171)
   goto 149
 149:
-  v190 <- v186
+  v176 <- v172
   goto 152
 150:
-  v187 <- v179
-  v188 <- v180
-  v189 <- Greater(v187, v188)
+  v173 <- v165
+  v174 <- v166
+  v175 <- Greater(v173, v174)
   goto 151
 151:
-  v190 <- v189
+  v176 <- v175
   goto 152
 152:
   goto 153
 153:
-  goto 154 if v190 else 209
+  goto 154 if v176 else 209
 154:
   goto 155
 155:
   goto 156
 156:
-  v191 <- v179
+  v177 <- v165
   goto 157
 157:
   goto 158
 158:
   goto 159
 159:
-  v192 <- v179
-  v193 <- v181
-  v194 <- Add(v192, v193)
-  v179 <- v194
+  v178 <- v165
+  v179 <- v167
+  v180 <- Add(v178, v179)
+  v165 <- v180
   goto 160
 160:
   goto 161
@@ -529,38 +515,35 @@
 164:
   goto 165
 165:
-  v195 <- Subtract(v191, 0.5)
+  v181 <- Subtract(v177, 0.5)
   goto 166
 166:
-  v196 <- Add(v169, 0.5)
-  v197 <- PreviewData[1]
-  v198 <- Multiply(v196, v197)
-  v199 <- Multiply(v195, 0.072)
-  v200 <- Add(v198, v199)
+  v182 <- Add(v155, 0.5)
+  v183 <- Multiply(v182, PreviewData[1])
+  v184 <- Multiply(v181, 0.072)
+  v185 <- Add(v183, v184)
   goto 167
 167:
-  v201 <- RuntimeEnvironment[1]
-  v202 <- RuntimeEnvironment[1]
-  v203 <- Negate(v202)
-  v204 <- 1.0
-  v205 <- v201
-  v206 <- -1.0
-  v207 <- v203
+  v186 <- Negate(RuntimeEnvironment[1])
+  v187 <- 1.0
+  v188 <- RuntimeEnvironment[1]
+  v189 <- -1.0
+  v190 <- v186
   goto 168
 168:
   goto 169
 169:
   goto 170
 170:
-  v208 <- v205
-  v209 <- v207
-  v210 <- Subtract(v208, v209)
+  v191 <- v188
+  v192 <- v190
+  v193 <- Subtract(v191, v192)
   goto 171
 171:
   goto 172
 172:
-  v211 <- Divide(v210, 2.0)
-  v212 <- Subtract(v200, v211)
+  v194 <- Divide(v193, 2.0)
+  v195 <- Subtract(v185, v194)
   goto 173
 173:
   goto 174
@@ -571,38 +554,35 @@
 176:
   goto 177
 177:
-  v213 <- Add(v191, 0.5)
+  v196 <- Add(v177, 0.5)
   goto 178
 178:
-  v214 <- Add(v169, 0.5)
-  v215 <- PreviewData[1]
-  v216 <- Multiply(v214, v215)
-  v217 <- Multiply(v213, 0.072)
-  v218 <- Add(v216, v217)
+  v197 <- Add(v155, 0.5)
+  v198 <- Multiply(v197, PreviewData[1])
+  v199 <- Multiply(v196, 0.072)
+  v200 <- Add(v198, v199)
   goto 179
 179:
-  v219 <- RuntimeEnvironment[1]
-  v220 <- RuntimeEnvironment[1]
-  v221 <- Negate(v220)
-  v222 <- 1.0
-  v223 <- v219
-  v224 <- -1.0
-  v225 <- v221
+  v201 <- Negate(RuntimeEnvironment[1])
+  v202 <- 1.0
+  v203 <- RuntimeEnvironment[1]
+  v204 <- -1.0
+  v205 <- v201
   goto 180
 180:
   goto 181
 181:
   goto 182
 182:
-  v226 <- v223
-  v227 <- v225
-  v228 <- Subtract(v226, v227)
+  v206 <- v203
+  v207 <- v205
+  v208 <- Subtract(v206, v207)
   goto 183
 183:
   goto 184
 184:
-  v229 <- Divide(v228, 2.0)
-  v230 <- Subtract(v218, v229)
+  v209 <- Divide(v208, 2.0)
+  v210 <- Subtract(v200, v209)
   goto 185
 185:
   goto 186
@@ -611,72 +591,72 @@
 187:
   goto 188
 188:
-  v231 <- 1.0
-  v232 <- v230
-  v233 <- -1.0
-  v234 <- v212
+  v211 <- 1.0
+  v212 <- v210
+  v213 <- -1.0
+  v214 <- v195
   goto 189
 189:
   goto 190
 190:
   goto 191
 191:
-  v235 <- 1.0
+  v215 <- 1.0
   goto 192
 192:
   goto 193
 193:
-  v236 <- v234
-  v237 <- v233
-  v238 <- v236
-  v239 <- v237
+  v216 <- v214
+  v217 <- v213
+  v218 <- v216
+  v219 <- v217
   goto 194
 194:
   goto 195
 195:
   goto 196
 196:
-  v240 <- v234
-  v241 <- v231
-  v242 <- v240
-  v243 <- v241
+  v220 <- v214
+  v221 <- v211
+  v222 <- v220
+  v223 <- v221
   goto 197
 197:
   goto 198
 198:
   goto 199
 199:
-  v244 <- v232
-  v245 <- v231
-  v246 <- v244
-  v247 <- v245
+  v224 <- v212
+  v225 <- v211
+  v226 <- v224
+  v227 <- v225
   goto 200
 200:
   goto 201
 201:
   goto 202
 202:
-  v248 <- v232
-  v249 <- v233
-  v250 <- v248
-  v251 <- v249
+  v228 <- v212
+  v229 <- v213
+  v230 <- v228
+  v231 <- v229
   goto 203
 203:
   goto 204
 204:
-  v252 <- v238
-  v253 <- v239
-  v254 <- v242
-  v255 <- v243
-  v256 <- v246
-  v257 <- v247
-  v258 <- v250
-  v259 <- v251
+  v232 <- v218
+  v233 <- v219
+  v234 <- v222
+  v235 <- v223
+  v236 <- v226
+  v237 <- v227
+  v238 <- v230
+  v239 <- v231
   goto 205
 205:
   goto 206
 206:
-  v260 <- Draw(v235, v252, v253, v254, v255, v256, v257, v258, v259, 1.0, 1.0)
+  v240 <- Draw(v215, v232, v233, v234, v235, v236, v237, v238, v239, 1.0, 1.0)
   goto 207
 207:
   goto 208
@@ -697,26 +677,22 @@
 215:
   goto 216
 216:
-  v261 <- RuntimeEnvironment[1]
-  v262 <- RuntimeEnvironment[1]
-  v263 <- Negate(v262)
-  v264 <- 1.0
-  v265 <- v261
-  v266 <- -1.0
-  v267 <- v263
+  v241 <- Negate(RuntimeEnvironment[1])
+  v242 <- 1.0
+  v243 <- RuntimeEnvironment[1]
+  v244 <- -1.0
+  v245 <- v241
   goto 217
 217:
   goto 218
 218:
-  v268 <- v267
-  v269 <- PreviewData[1]
-  v270 <- PreviewData[0]
-  v271 <- Multiply(v269, v270)
-  v272 <- Add(v271, 1.0)
-  v273 <- -0.9
-  v274 <- v272
-  v275 <- -1.0
-  v276 <- v268
+  v246 <- v245
+  v247 <- Multiply(PreviewData[1], PreviewData[0])
+  v248 <- Add(v247, 1.0)
+  v249 <- -0.9
+  v250 <- v248
+  v251 <- -1.0
+  v252 <- v246
   goto 219
 219:
   goto 220
@@ -725,70 +701,70 @@
 221:
   goto 222
 222:
-  v277 <- 0.0
+  v253 <- 0.0
   goto 223
 223:
   goto 224
 224:
-  v278 <- v276
-  v279 <- v275
-  v280 <- v278
-  v281 <- v279
+  v254 <- v252
+  v255 <- v251
+  v256 <- v254
+  v257 <- v255
   goto 225
 225:
   goto 226
 226:
   goto 227
 227:
-  v282 <- v276
-  v283 <- v273
-  v284 <- v282
-  v285 <- v283
+  v258 <- v252
+  v259 <- v249
+  v260 <- v258
+  v261 <- v259
   goto 228
 228:
   goto 229
 229:
   goto 230
 230:
-  v286 <- v274
-  v287 <- v273
-  v288 <- v286
-  v289 <- v287
+  v262 <- v250
+  v263 <- v249
+  v264 <- v262
+  v265 <- v263
   goto 231
 231:
   goto 232
 232:
   goto 233
 233:
-  v290 <- v274
-  v291 <- v275
-  v292 <- v290
-  v293 <- v291
+  v266 <- v250
+  v267 <- v251
+  v268 <- v266
+  v269 <- v267
   goto 234
 234:
   goto 235
 235:
-  v294 <- v280
-  v295 <- v281
-  v296 <- v284
-  v297 <- v285
-  v298 <- v288
-  v299 <- v289
-  v300 <- v292
-  v301 <- v293
+  v270 <- v256
+  v271 <- v257
+  v272 <- v260
+  v273 <- v261
+  v274 <- v264
+  v275 <- v265
+  v276 <- v268
+  v277 <- v269
   goto 236
 236:
   goto 237
 237:
-  v302 <- Draw(v277, v294, v295, v296, v297, v298, v299, v300, v301, 200000.0, 1.0)
+  v278 <- Draw(v253, v270, v271, v272, v273, v274, v275, v276, v277, 200000.0, 1.0)
   goto 238
 238:
   goto 239
 239:
-  v303 <- 1.0
-  v304 <- v272
-  v305 <- 0.9
-  v306 <- v268
+  v279 <- 1.0
+  v280 <- v248
+  v281 <- 0.9
+  v282 <- v246
   goto 240
 240:
   goto 241
@@ -797,62 +773,62 @@
 242:
   goto 243
 243:
-  v307 <- 0.0
+  v283 <- 0.0
   goto 244
 244:
   goto 245
 245:
-  v308 <- v306
-  v309 <- v305
-  v310 <- v308
-  v311 <- v309
+  v284 <- v282
+  v285 <- v281
+  v286 <- v284
+  v287 <- v285
   goto 246
 246:
   goto 247
 247:
   goto 248
 248:
-  v312 <- v306
-  v313 <- v303
-  v314 <- v312
-  v315 <- v313
+  v288 <- v282
+  v289 <- v279
+  v290 <- v288
+  v291 <- v289
   goto 249
 249:
   goto 250
 250:
   goto 251
 251:
-  v316 <- v304
-  v317 <- v303
-  v318 <- v316
-  v319 <- v317
+  v292 <- v280
+  v293 <- v279
+  v294 <- v292
+  v295 <- v293
   goto 252
 252:
   goto 253
 253:
   goto 254
 254:
-  v320 <- v304
-  v321 <- v305
-  v322 <- v320
-  v323 <- v321
+  v296 <- v280
+  v297 <- v281
+  v298 <- v296
+  v299 <- v297
   goto 255
 255:
   goto 256
 256:
-  v324 <- v310
-  v325 <- v311
-  v326 <- v314
-  v327 <- v315
-  v328 <- v318
-  v329 <- v319
-  v330 <- v322
-  v331 <- v323
+  v300 <- v286
+  v301 <- v287
+  v302 <- v290
+  v303 <- v291
+  v304 <- v294
+  v305 <- v295
+  v306 <- v298
+  v307 <- v299
   goto 257
 257:
   goto 258
 258:
-  v332 <- Draw(v307, v324, v325, v326, v327, v328, v329, v330, v331, 200000.0, 1.0)
+  v308 <- Draw(v283, v300, v301, v302, v303, v304, v305, v306, v307, 200000.0, 1.0)
   goto 259
 259:
   goto 260
@@ -863,20 +839,19 @@
 262:
   goto 263
 263:
-  v333 <- PreviewData[3]
-  v334 <- Floor(v333)
-  v335 <- Add(v334, 1.0)
-  v336 <- 0.0
-  v337 <- v335
-  v338 <- 1.0
+  v309 <- Floor(PreviewData[3])
+  v310 <- Add(v309, 1.0)
+  v311 <- 0.0
+  v312 <- v310
+  v313 <- 1.0
   goto 264
 264:
-  v339 <- v336
-  v340 <- v337
-  v341 <- v338
-  v342 <- v339
-  v343 <- v340
-  v344 <- v341
+  v314 <- v311
+  v315 <- v312
+  v316 <- v313
+  v317 <- v314
+  v318 <- v315
+  v319 <- v316
   goto 265
 265:
   goto 266
@@ -885,47 +860,47 @@
 267:
   goto 268
 268:
-  v345 <- v344
-  v346 <- Greater(v345, 0.0)
+  v320 <- v319
+  v321 <- Greater(v320, 0.0)
   goto 269
 269:
-  goto 270 if v346 else 272
+  goto 270 if v321 else 272
 270:
-  v347 <- v342
-  v348 <- v343
-  v349 <- Less(v347, v348)
+  v322 <- v317
+  v323 <- v318
+  v324 <- Less(v322, v323)
   goto 271
 271:
-  v353 <- v349
+  v328 <- v324
   goto 274
 272:
-  v350 <- v342
-  v351 <- v343
-  v352 <- Greater(v350, v351)
+  v325 <- v317
+  v326 <- v318
+  v327 <- Greater(v325, v326)
   goto 273
 273:
-  v353 <- v352
+  v328 <- v327
   goto 274
 274:
   goto 275
 275:
-  goto 276 if v353 else 363
+  goto 276 if v328 else 363
 276:
   goto 277
 277:
   goto 278
 278:
-  v354 <- v342
+  v329 <- v317
   goto 279
 279:
   goto 280
 280:
   goto 281
 281:
-  v355 <- v342
-  v356 <- v344
-  v357 <- Add(v355, v356)
-  v342 <- v357
+  v330 <- v317
+  v331 <- v319
+  v332 <- Add(v330, v331)
+  v317 <- v332
   goto 282
 282:
   goto 283
@@ -940,53 +915,50 @@
 287:
   goto 288
 288:
-  v358 <- Divide(v354, 2.0)
-  v359 <- Trunc(v358)
+  v333 <- Divide(v329, 2.0)
+  v334 <- Trunc(v333)
   goto 289
 289:
   goto 290
 290:
   goto 291
 291:
-  v360 <- Add(v359, 0.5)
-  v361 <- PreviewData[1]
-  v362 <- Multiply(v360, v361)
-  v363 <- Add(v362, -0.252)
+  v335 <- Add(v334, 0.5)
+  v336 <- Multiply(v335, PreviewData[1])
+  v337 <- Add(v336, -0.252)
   goto 292
 292:
-  v364 <- RuntimeEnvironment[1]
-  v365 <- RuntimeEnvironment[1]
-  v366 <- Negate(v365)
-  v367 <- 1.0
-  v368 <- v364
-  v369 <- -1.0
-  v370 <- v366
+  v338 <- Negate(RuntimeEnvironment[1])
+  v339 <- 1.0
+  v340 <- RuntimeEnvironment[1]
+  v341 <- -1.0
+  v342 <- v338
   goto 293
 293:
   goto 294
 294:
   goto 295
 295:
-  v371 <- v368
-  v372 <- v370
-  v373 <- Subtract(v371, v372)
+  v343 <- v340
+  v344 <- v342
+  v345 <- Subtract(v343, v344)
   goto 296
 296:
   goto 297
 297:
-  v374 <- Divide(v373, 2.0)
-  v375 <- Subtract(v363, v374)
+  v346 <- Divide(v345, 2.0)
+  v347 <- Subtract(v337, v346)
   goto 298
 298:
   goto 299
 299:
   goto 300
 300:
-  v376 <- Add(v375, -0.015)
+  v348 <- Add(v347, -0.015)
   goto 301
 301:
-  v377 <- Mod(v354, 2.0)
-  v378 <- Divide(v377, 2.0)
+  v349 <- Mod(v329, 2.0)
+  v350 <- Divide(v349, 2.0)
   goto 302
 302:
   goto 303
@@ -1001,7 +973,7 @@
 307:
   goto 308
 308:
-  v379 <- Lerp(-0.9, 0.9, v378)
+  v351 <- Lerp(-0.9, 0.9, v350)
   goto 309
 309:
   goto 310
@@ -1010,25 +982,25 @@
 311:
   goto 312
 312:
-  v380 <- v376
-  v381 <- v379
+  v352 <- v348
+  v353 <- v351
   goto 313
 313:
-  v382 <- 1.0
-  v383 <- 0.0
-  v384 <- 0.22
-  v385 <- 0.12
+  v354 <- 1.0
+  v355 <- 0.0
+  v356 <- 0.22
+  v357 <- 0.12
   goto 314
 314:
   goto 315
 315:
-  v386 <- v380
-  v387 <- v381
-  v388 <- v382
-  v389 <- v383
-  v390 <- v384
-  v391 <- v385
-  v392 <- Print(v354, 10.0, 0.0, v386, v387, v388, v389, v390, v391, 0.0, 6.0, 1.0, 1.0, 0.0)
+  v358 <- v352
+  v359 <- v353
+  v360 <- v354
+  v361 <- v355
+  v362 <- v356
+  v363 <- v357
+  v364 <- Print(v329, 10.0, 0.0, v358, v359, v360, v361, v362, v363, 0.0, 6.0, 1.0, 1.0, 0.0)
   goto 316
 316:
   goto 317
@@ -1041,87 +1013,81 @@
 320:
   goto 321
 321:
-  v393 <- Divide(v354, 2.0)
-  v394 <- Trunc(v393)
+  v365 <- Divide(v329, 2.0)
+  v366 <- Trunc(v365)
   goto 322
 322:
   goto 323
 323:
   goto 324
 324:
-  v395 <- Add(v394, 0.5)
-  v396 <- PreviewData[1]
-  v397 <- Multiply(v395, v396)
-  v398 <- Add(v397, -0.252)
+  v367 <- Add(v366, 0.5)
+  v368 <- Multiply(v367, PreviewData[1])
+  v369 <- Add(v368, -0.252)
   goto 325
 325:
-  v399 <- RuntimeEnvironment[1]
-  v400 <- RuntimeEnvironment[1]
-  v401 <- Negate(v400)
-  v402 <- 1.0
-  v403 <- v399
-  v404 <- -1.0
-  v405 <- v401
+  v370 <- Negate(RuntimeEnvironment[1])
+  v371 <- 1.0
+  v372 <- RuntimeEnvironment[1]
+  v373 <- -1.0
+  v374 <- v370
   goto 326
 326:
   goto 327
 327:
   goto 328
 328:
-  v406 <- v403
-  v407 <- v405
-  v408 <- Subtract(v406, v407)
+  v375 <- v372
+  v376 <- v374
+  v377 <- Subtract(v375, v376)
   goto 329
 329:
   goto 330
 330:
-  v409 <- Divide(v408, 2.0)
-  v410 <- Subtract(v398, v409)
+  v378 <- Divide(v377, 2.0)
+  v379 <- Subtract(v369, v378)
   goto 331
 331:
   goto 332
 332:
   goto 333
 333:
-  v411 <- Add(v394, 0.5)
-  v412 <- PreviewData[1]
-  v413 <- Multiply(v411, v412)
-  v414 <- Add(v413, 0.252)
+  v380 <- Add(v366, 0.5)
+  v381 <- Multiply(v380, PreviewData[1])
+  v382 <- Add(v381, 0.252)
   goto 334
 334:
-  v415 <- RuntimeEnvironment[1]
-  v416 <- RuntimeEnvironment[1]
-  v417 <- Negate(v416)
-  v418 <- 1.0
-  v419 <- v415
-  v420 <- -1.0
-  v421 <- v417
+  v383 <- Negate(RuntimeEnvironment[1])
+  v384 <- 1.0
+  v385 <- RuntimeEnvironment[1]
+  v386 <- -1.0
+  v387 <- v383
   goto 335
 335:
   goto 336
 336:
   goto 337
 337:
-  v422 <- v419
-  v423 <- v421
-  v424 <- Subtract(v422, v423)
+  v388 <- v385
+  v389 <- v387
+  v390 <- Subtract(v388, v389)
   goto 338
 338:
   goto 339
 339:
-  v425 <- Divide(v424, 2.0)
-  v426 <- Subtract(v414, v425)
+  v391 <- Divide(v390, 2.0)
+  v392 <- Subtract(v382, v391)
   goto 340
 340:
   goto 341
 341:
-  v427 <- Subtract(v410, 0.21599999999999997)
+  v393 <- Subtract(v379, 0.21599999999999997)
   goto 342
 342:
   goto 343
 343:
-  v428 <- Mod(v354, 2.0)
-  v429 <- Divide(v428, 2.0)
+  v394 <- Mod(v329, 2.0)
+  v395 <- Divide(v394, 2.0)
   goto 344
 344:
   goto 345
@@ -1136,7 +1102,7 @@
 349:
   goto 350
 350:
-  v430 <- Lerp(-0.9, 0.9, v429)
+  v396 <- Lerp(-0.9, 0.9, v395)
   goto 351
 351:
   goto 352
@@ -1145,40 +1111,40 @@
 353:
   goto 354
 354:
-  v431 <- Subtract(v430, 0.0018)
-  v432 <- v427
-  v433 <- v431
-  v434 <- Subtract(v430, 0.0018)
-  v435 <- v426
-  v436 <- v434
-  v437 <- Add(v430, 0.0018)
-  v438 <- v426
-  v439 <- v437
-  v440 <- Add(v430, 0.0018)
-  v441 <- v427
-  v442 <- v440
+  v397 <- Subtract(v396, 0.0018)
+  v398 <- v393
+  v399 <- v397
+  v400 <- Subtract(v396, 0.0018)
+  v401 <- v392
+  v402 <- v400
+  v403 <- Add(v396, 0.0018)
+  v404 <- v392
+  v405 <- v403
+  v406 <- Add(v396, 0.0018)
+  v407 <- v393
+  v408 <- v406
   goto 355
 355:
   goto 356
 356:
   goto 357
 357:
-  v443 <- 22.0
+  v409 <- 22.0
   goto 358
 358:
-  v444 <- v432
-  v445 <- v433
-  v446 <- v441
-  v447 <- v442
-  v448 <- v438
-  v449 <- v439
-  v450 <- v435
-  v451 <- v436
+  v410 <- v398
+  v411 <- v399
+  v412 <- v407
+  v413 <- v408
+  v414 <- v404
+  v415 <- v405
+  v416 <- v401
+  v417 <- v402
   goto 359
 359:
   goto 360
 360:
-  v452 <- Draw(v443, v444, v445, v446, v447, v448, v449, v450, v451, 23.0, 0.8)
+  v418 <- Draw(v409, v410, v411, v412, v413, v414, v415, v416, v417, 23.0, 0.8)
   goto 361
 361:
   goto 362
