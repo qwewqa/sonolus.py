@@ -148,9 +148,6 @@ def len(s: object) -> builtins.int:
 def map[T, S](function: Callable[[T], S], iterable: Iterable[T]) -> Iterator[S]:
     """Apply a function to every item of an iterable and return an iterator.
 
-    Unlike the standard Python map function, it is possible that the function may be called more than once on the
-    same item.
-
     Args:
         function: The function to apply.
         iterable: The iterable to process.

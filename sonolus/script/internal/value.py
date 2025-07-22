@@ -184,6 +184,32 @@ class Value:
         """Returns a zero-initialized value of this type."""
         raise NotImplementedError
 
+    @classmethod
+    def _get_merge_target_(cls, values: list[Self]) -> Self | NotImplemented:
+        """Return the target when merging values from multiple code paths.
+
+        E.g. for code like this:
+        ```
+        if cond:
+            x = 1
+        else:
+            x = 2
+        do_something(x)
+        ```
+        This is called to create a target value for x after the if-else block,
+        and at the end of each block, that target value is assigned to the respective value (1 or 2).
+        This lets us keep the value of x as a constant within if and else branches, and only have it
+        become a runtime value after the if-else block.
+
+        This is an overrideable method to allow for some other special behavior, namely the Maybe type.
+        """
+        if cls._is_value_type_():
+            from sonolus.script.internal.context import ctx
+
+            return cls._from_place_(ctx().alloc(size=cls._size_()))
+        else:
+            return NotImplemented
+
     def __imatmul__(self, other):
         self._copy_from_(other)
         return self

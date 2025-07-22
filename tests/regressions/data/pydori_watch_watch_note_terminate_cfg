@@ -3,14 +3,14 @@
 1:
   goto 2 if RuntimeUpdate[3] else 3
 2:
-  goto 194
+  goto 199
 3:
   goto 4
 4:
   v1 <- NotEqual(EntityData[13], 0.0)
   goto 5
 5:
-  goto 6 if v1 else 192
+  goto 6 if v1 else 197
 6:
   goto 7
 7:
@@ -19,14 +19,14 @@
 8:
   goto 9 if v2 else 10
 9:
-  goto 186
+  goto 191
 10:
   goto 11
 11:
   v3 <- Not(LevelOption[6])
   goto 12 if v3 else 13
 12:
-  goto 186
+  goto 191
 13:
   goto 14
 14:
@@ -609,7 +609,7 @@
   v310 <- Not(LevelOption[7])
   goto 145 if v310 else 146
 145:
-  goto 184
+  goto 189
 146:
   goto 147
 147:
@@ -647,102 +647,120 @@
   v324 <- Less(v322, v323)
   goto 157
 157:
-  v328 <- v324
-  goto 160
+  v325 <- v324
+  goto 159
 158:
-  v325 <- v317
-  v326 <- v318
-  v327 <- Greater(v325, v326)
+  v325 <- 0.0
   goto 159
 159:
-  v328 <- v327
-  goto 160
+  goto 160 if v325 else 161
 160:
-  goto 161
+  v332 <- v325
+  goto 167
 161:
-  goto 162 if v328 else 190
+  v326 <- v319
+  v327 <- LessOr(v326, 0.0)
+  goto 162
 162:
-  goto 163
+  goto 163 if v327 else 165
 163:
+  v328 <- v317
+  v329 <- v318
+  v330 <- Greater(v328, v329)
   goto 164
 164:
-  v329 <- v317
-  goto 165
+  v331 <- v330
+  goto 166
 165:
+  v331 <- 0.0
   goto 166
 166:
+  v332 <- v331
   goto 167
 167:
-  v330 <- v317
-  v331 <- v319
-  v332 <- Add(v330, v331)
-  v317 <- v332
-  goto 168
+  goto 168 if v332 else 172
 168:
+  v333 <- v317
+  v334 <- v317
+  v335 <- v319
+  v336 <- Add(v334, v335)
+  v317 <- v336
   goto 169
 169:
   goto 170
 170:
   goto 171
 171:
-  v333 <- Less(v329, 0.0)
-  v334 <- Multiply(v333, 7.0)
-  v335 <- Add(v329, v334)
-  v336 <- Multiply(v335, 9.0)
-  v337 <- Add(16.0, v336)
-  v338 <- v337
-  v339 <- Equal(LevelData[v338 + 1], EntityData[1])
-  goto 172
+  v337 <- 1.0
+  goto 174
 172:
-  goto 173 if v339 else 188
+  goto 173
 173:
+  v337 <- 0.0
   goto 174
 174:
   goto 175
 175:
-  goto 176
+  goto 176 if v337 else 195
 176:
+  v338 <- Less(v333, 0.0)
+  v339 <- Multiply(v338, 7.0)
+  v340 <- Add(v333, v339)
+  v341 <- Multiply(v340, 9.0)
+  v342 <- Add(16.0, v341)
+  v343 <- v342
+  v344 <- Equal(LevelData[v343 + 1], EntityData[1])
   goto 177
 177:
-  goto 178
+  goto 178 if v344 else 193
 178:
-  v342 <- 0.0
   goto 179
 179:
   goto 180
 180:
   goto 181
 181:
-  v343 <- SpawnParticleEffect(v342, LevelData[v338 + 2], LevelData[v338 + 3], LevelData[v338 + 4], LevelData[v338 + 5], LevelData[v338 + 6], LevelData[v338 + 7], LevelData[v338 + 8], LevelData[v338 + 9], 0.2, 0.0)
-  v344 <- v343
   goto 182
 182:
   goto 183
 183:
+  v347 <- 0.0
   goto 184
 184:
   goto 185
 185:
   goto 186
 186:
+  v348 <- SpawnParticleEffect(v347, LevelData[v343 + 2], LevelData[v343 + 3], LevelData[v343 + 4], LevelData[v343 + 5], LevelData[v343 + 6], LevelData[v343 + 7], LevelData[v343 + 8], LevelData[v343 + 9], 0.2, 0.0)
+  v349 <- v348
   goto 187
 187:
-  goto 193
+  goto 188
 188:
   goto 189
 189:
-  goto 153
+  goto 190
 190:
   goto 191
 191:
-  v340 <- DebugLog(0.0)
-  v341 <- DebugPause()
-  goto exit
+  goto 192
 192:
-  goto 193
+  goto 198
 193:
   goto 194
 194:
-  goto 195
+  goto 153
 195:
+  goto 196
+196:
+  v345 <- DebugLog(0.0)
+  v346 <- DebugPause()
+  goto exit
+197:
+  goto 198
+198:
+  goto 199
+199:
+  goto 200
+200:
   goto exit

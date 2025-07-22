@@ -2,6 +2,7 @@ from sonolus.script.array_like import ArrayLike, get_positive_index
 from sonolus.script.internal.context import ctx
 from sonolus.script.internal.impl import meta_fn, validate_value
 from sonolus.script.iterator import SonolusIterator
+from sonolus.script.maybe import Maybe, Nothing, Some
 from sonolus.script.num import Num
 from sonolus.script.record import Record
 
@@ -70,17 +71,13 @@ class RangeIterator(Record, SonolusIterator):
     stop: int
     step: int
 
-    def has_next(self) -> bool:
-        if self.step > 0:
-            return self.value < self.stop
-        else:
-            return self.value > self.stop
-
-    def get(self) -> int:
-        return self.value
-
-    def advance(self):
-        self.value += self.step
+    def next(self) -> Maybe[int]:
+        has_next = (self.step > 0 and self.value < self.stop) or (self.step <= 0 and self.value > self.stop)
+        if has_next:
+            current = self.value
+            self.value += self.step
+            return Some(current)
+        return Nothing
 
 
 @meta_fn

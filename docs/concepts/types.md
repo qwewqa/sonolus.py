@@ -613,18 +613,14 @@ class _FilteringIterator[T, Fn](Record, SonolusIterator):
     fn: Fn
     iterator: T
 
-    def has_next(self) -> bool:
-        while self.iterator.has_next():
-            if self.fn(self.iterator.get()):
-                return True
-            self.iterator.advance()
-        return False
-
-    def get(self) -> Any:
-        return self.iterator.get()
-
-    def advance(self):
-        self.iterator.advance()
+    def next(self) -> Maybe[T]:
+        while True:
+            value = self.iterator.next()
+            if value.is_nothing:
+                return Nothing
+            inside = value.get()
+            if self.fn(inside):
+                return Some(inside)
 
 
 def my_filter[T, Fn](iterable: T, fn: Fn) -> T:

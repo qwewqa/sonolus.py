@@ -427,8 +427,9 @@ class Scope:
                 target.scope.set_binding(key, ConflictBinding())
                 continue
             common_type: type[Value] = types.pop()
-            if common_type._is_value_type_():
-                target_value = common_type._from_place_(target.alloc(size=common_type._size_()))
+            with using_ctx(target):
+                target_value = common_type._get_merge_target_(values)
+            if target_value is not NotImplemented:
                 for inc in incoming:
                     with using_ctx(inc):
                         target_value._set_(inc.scope.get_value(key))

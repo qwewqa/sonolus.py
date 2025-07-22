@@ -20,6 +20,7 @@ from sonolus.script.internal.impl import validate_value
 from sonolus.script.internal.tuple_impl import TupleImpl
 from sonolus.script.internal.value import Value
 from sonolus.script.iterator import SonolusIterator
+from sonolus.script.maybe import Maybe
 from sonolus.script.num import Num, _is_num
 
 _compiler_internal_ = True
@@ -359,8 +360,10 @@ class Visitor(ast.NodeVisitor):
         self.loop_head_ctxs.append(header_ctx)
         self.break_ctxs.append([])
         set_ctx(header_ctx)
-        has_next = self.convert_to_boolean_num(node, self.handle_call(node, iterator.has_next))
-        if has_next._is_py_() and not has_next._as_py_():
+        next_value = self.handle_call(node, iterator.next)
+        if not isinstance(next_value, Maybe):
+            raise ValueError("Iterator next must return a Maybe")
+        if next_value._present._is_py_() and not next_value._present._as_py_():
             # The loop will never run, continue after evaluating the condition
             self.loop_head_ctxs.pop()
             self.break_ctxs.pop()
@@ -369,12 +372,12 @@ class Visitor(ast.NodeVisitor):
                     break
                 self.visit(stmt)
             return
-        ctx().test = has_next.ir()
+        ctx().test = next_value._present.ir()
         body_ctx = ctx().branch(None)
         else_ctx = ctx().branch(0)
 
         set_ctx(body_ctx)
-        self.handle_assign(node.target, self.handle_call(node, iterator.next))
+        self.handle_assign(node.target, next_value._value)
         for stmt in node.body:
             if not ctx().live:
                 break

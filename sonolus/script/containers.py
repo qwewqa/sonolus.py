@@ -8,6 +8,7 @@ from sonolus.script.internal.context import ctx
 from sonolus.script.internal.impl import meta_fn
 from sonolus.script.interval import clamp
 from sonolus.script.iterator import SonolusIterator
+from sonolus.script.maybe import Maybe, Nothing, Some
 from sonolus.script.num import Num
 from sonolus.script.pointer import _deref
 from sonolus.script.record import Record
@@ -600,40 +601,34 @@ class _ArrayMapKeyIterator[K, V, Capacity](Record, SonolusIterator):
     _map: ArrayMap[K, V, Capacity]
     _index: int
 
-    def has_next(self) -> bool:
-        return self._index < len(self._map)
-
-    def get(self) -> K:
-        return self._map._array[self._index].key
-
-    def advance(self):
-        self._index += 1
+    def next(self) -> Maybe[K]:
+        if self._index < len(self._map):
+            key = self._map._array[self._index].key
+            self._index += 1
+            return Some(key)
+        return Nothing
 
 
 class _ArrayMapValueIterator[K, V, Capacity](Record, SonolusIterator):
     _map: ArrayMap[K, V, Capacity]
     _index: int
 
-    def has_next(self) -> bool:
-        return self._index < len(self._map)
-
-    def get(self) -> V:
-        return self._map._array[self._index].value
-
-    def advance(self):
-        self._index += 1
+    def next(self) -> Maybe[V]:
+        if self._index < len(self._map):
+            value = self._map._array[self._index].value
+            self._index += 1
+            return Some(value)
+        return Nothing
 
 
 class _ArrayMapEntryIterator[K, V, Capacity](Record, SonolusIterator):
     _map: ArrayMap[K, V, Capacity]
     _index: int
 
-    def has_next(self) -> bool:
-        return self._index < len(self._map)
-
-    def get(self) -> tuple[K, V]:
-        entry = self._map._array[self._index]
-        return entry.key, entry.value
-
-    def advance(self):
-        self._index += 1
+    def next(self) -> Maybe[tuple[K, V]]:
+        if self._index < len(self._map):
+            entry = self._map._array[self._index]
+            result = (entry.key, entry.value)
+            self._index += 1
+            return Some(result)
+        return Nothing

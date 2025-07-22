@@ -201,6 +201,8 @@ def _callable(value):
 
 
 def _map(fn, iterable, *iterables):
+    if len(iterables) == 0:
+        return _MappingIterator(fn, iterable.__iter__())  # noqa: PLC2801
     return _MappingIterator(lambda args: fn(*args), zip(iterable, *iterables))  # noqa: B905
 
 

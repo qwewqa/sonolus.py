@@ -8,6 +8,7 @@ from typing import Any
 from sonolus.script.internal.context import ctx
 from sonolus.script.internal.impl import meta_fn
 from sonolus.script.iterator import SonolusIterator
+from sonolus.script.maybe import Maybe, Nothing, Some
 from sonolus.script.num import Num
 from sonolus.script.record import Record
 from sonolus.script.values import copy
@@ -265,14 +266,12 @@ class _ArrayIterator[V: ArrayLike](Record, SonolusIterator):
     i: int
     array: V
 
-    def has_next(self) -> bool:
-        return self.i < len(self.array)
-
-    def get(self) -> V:
-        return self.array[self.i]
-
-    def advance(self):
-        self.i += 1
+    def next(self) -> Maybe[V]:
+        if self.i < len(self.array):
+            value = self.array[self.i]
+            self.i += 1
+            return Some(value)
+        return Nothing
 
 
 class _ArrayReverser[V: ArrayLike](Record, ArrayLike):
@@ -296,14 +295,12 @@ class _ArrayEnumerator[V: ArrayLike](Record, SonolusIterator):
     offset: int
     array: V
 
-    def has_next(self) -> bool:
-        return self.i < len(self.array)
-
-    def get(self) -> tuple[int, Any]:
-        return self.i + self.offset, self.array[self.i]
-
-    def advance(self):
-        self.i += 1
+    def next(self) -> Maybe[tuple[int, Any]]:
+        if self.i < len(self.array):
+            result = (self.i + self.offset, self.array[self.i])
+            self.i += 1
+            return Some(result)
+        return Nothing
 
 
 @meta_fn

@@ -38,7 +38,7 @@
   v9 <- Not(v8)
   goto 15 if v9 else 16
 15:
-  goto 79
+  goto 76
 16:
   goto 17
 17:
@@ -92,51 +92,43 @@
   v23 <- Less(v21, v22)
   goto 35
 35:
-  goto 36
+  goto 36 if v23 else 53
 36:
+  v24 <- v20
   goto 37
 37:
-  goto 38 if v23 else 77
-38:
-  goto 39
-39:
-  goto 40
-40:
-  v24 <- v20
-  goto 41
-41:
   v25 <- LessOr(0.0, v24)
-  goto 42 if v25 else 43
-42:
+  goto 38 if v25 else 39
+38:
   v26 <- v17
   v27 <- Less(v24, v26)
   v28 <- v27
-  goto 44
-43:
+  goto 40
+39:
   v28 <- 0.0
-  goto 44
+  goto 40
+40:
+  goto 41
+41:
+  goto 42
+42:
+  v29 <- Not(v28)
+  goto 43 if v29 else 44
+43:
+  v30 <- DebugLog(0.0)
+  v31 <- DebugPause()
+  goto exit
 44:
   goto 45
 45:
   goto 46
 46:
-  v29 <- Not(v28)
-  goto 47 if v29 else 48
+  goto 47
 47:
-  v30 <- DebugLog(0.0)
-  v31 <- DebugPause()
-  goto exit
+  goto 48
 48:
   goto 49
 49:
-  goto 50
-50:
-  goto 51
-51:
-  goto 52
-52:
-  goto 53
-53:
   v32 <- v17
   v33 <- Less(v24, 0.0)
   v34 <- Multiply(v33, v32)
@@ -147,71 +139,75 @@
   v39 <- Add(v37, v38)
   v40 <- v36
   v41 <- v39
+  v42 <- v20
+  v43 <- Add(v42, 1.0)
+  v20 <- v43
+  goto 50
+50:
+  goto 51
+51:
+  goto 52
+52:
+  v44 <- 1.0
+  goto 55
+53:
   goto 54
 54:
+  v44 <- 0.0
   goto 55
 55:
   goto 56
 56:
-  v42 <- v20
-  v43 <- Add(v42, 1.0)
-  v20 <- v43
-  goto 57
+  goto 57 if v44 else 74
 57:
+  v45 <- v40[v41]
+  v46 <- NotEqual(v45, v16)
   goto 58
 58:
-  goto 59
+  goto 59 if v46 else 60
 59:
-  goto 60
+  goto 30
 60:
-  v44 <- v40[v41]
-  v45 <- NotEqual(v44, v16)
   goto 61
 61:
-  goto 62 if v45 else 63
+  v47 <- v40[v41 + 2]
+  goto 62 if v47 else 72
 62:
-  goto 30
+  goto 63
 63:
+  v48 <- EntityMemory[0]
   goto 64
 64:
-  v46 <- v40[v41 + 2]
-  goto 65 if v46 else 75
+  goto 65
 65:
   goto 66
 66:
-  v47 <- EntityMemory[0]
   goto 67
 67:
+  v49 <- Multiply(v48, 32.0)
+  v50 <- Add(17.0, v49)
+  v51 <- v50
   goto 68
 68:
   goto 69
 69:
+  v52 <- Multiply(EntityDataArray[v51], 32.0)
+  v53 <- v52
+  EntitySharedMemoryArray[v53] <- 0.0
   goto 70
 70:
-  v48 <- Multiply(v47, 32.0)
-  v49 <- Add(17.0, v48)
-  v50 <- v49
   goto 71
 71:
-  goto 72
+  goto 73
 72:
-  v51 <- Multiply(EntityDataArray[v50], 32.0)
-  v52 <- v51
-  EntitySharedMemoryArray[v52] <- 0.0
   goto 73
 73:
-  goto 74
+  goto 75
 74:
-  goto 76
+  goto 75
 75:
   goto 76
 76:
-  goto 78
+  goto 77
 77:
-  goto 78
-78:
-  goto 79
-79:
-  goto 80
-80:
   goto exit
