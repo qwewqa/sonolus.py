@@ -24,7 +24,7 @@ Block(JumpLoop(
     )
     Set(
       10000
-      3
+      0
       Multiply(
         Get(
           4101
@@ -38,12 +38,12 @@ Block(JumpLoop(
     )
     Set(
       10000
-      3
+      0
       Get(
         4102
         Get(
           10000
-          3
+          0
         )
       )
     )
@@ -51,11 +51,11 @@ Block(JumpLoop(
       Not(Greater(
         Get(
           10000
-          3
+          0
         )
         0
       ))
-      14
+      12
       1
     )
   )
@@ -126,7 +126,7 @@ Block(JumpLoop(
       )
     )
     3
-    9
+    12
   ))
   Execute(If(
     LessOr(
@@ -175,12 +175,23 @@ Block(JumpLoop(
   Execute(
     DebugLog(0)
     DebugPause()
-    15
+    13
   )
   Execute(
     Set(
       10000
       2
+      Add(
+        Get(
+          10000
+          1
+        )
+        1
+      )
+    )
+    Set(
+      10000
+      3
       Add(
         0
         Multiply(
@@ -209,47 +220,12 @@ Block(JumpLoop(
     )
     Set(
       10000
-      1
-      Add(
-        Get(
-          10000
-          1
-        )
-        1
-      )
-    )
-    Set(
-      10000
-      3
-      1
-    )
-    10
-  )
-  Execute(
-    Set(
-      10000
-      3
-      0
-    )
-    10
-  )
-  Execute(If(
-    Get(
-      10000
-      3
-    )
-    11
-    14
-  ))
-  Execute(
-    Set(
-      10000
-      3
+      4
       Get(
         1002
         Get(
           10000
-          2
+          3
         )
       )
     )
@@ -257,16 +233,27 @@ Block(JumpLoop(
       NotEqual(
         Get(
           10000
-          3
+          4
         )
         Get(
           10000
           0
         )
       )
-      2
-      12
+      9
+      10
     )
+  )
+  Execute(
+    Set(
+      10000
+      1
+      Get(
+        10000
+        2
+      )
+    )
+    2
   )
   Execute(
     Set(
@@ -277,7 +264,7 @@ Block(JumpLoop(
         Add(
           Get(
             10000
-            2
+            3
           )
           2
         )
@@ -288,8 +275,8 @@ Block(JumpLoop(
         10000
         0
       )
-      13
-      14
+      11
+      12
     )
   )
   Execute(
@@ -337,8 +324,8 @@ Block(JumpLoop(
       )
       0
     )
-    14
+    13
   )
-  Execute(15)
+  Execute(13)
   0
 ))

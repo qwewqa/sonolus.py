@@ -11,7 +11,7 @@ Block(JumpLoop(
   Execute(
     Set(
       10000
-      4
+      1
       0
     )
     SwitchWithDefault(
@@ -37,7 +37,7 @@ Block(JumpLoop(
   Execute(
     Set(
       10000
-      4
+      1
       15
     )
     10
@@ -45,7 +45,7 @@ Block(JumpLoop(
   Execute(
     Set(
       10000
-      4
+      1
       16
     )
     10
@@ -53,7 +53,7 @@ Block(JumpLoop(
   Execute(
     Set(
       10000
-      4
+      1
       14
     )
     10
@@ -72,7 +72,7 @@ Block(JumpLoop(
   Execute(
     Set(
       10000
-      4
+      1
       10
     )
     10
@@ -80,7 +80,7 @@ Block(JumpLoop(
   Execute(
     Set(
       10000
-      4
+      1
       12
     )
     10
@@ -88,7 +88,7 @@ Block(JumpLoop(
   Execute(
     Set(
       10000
-      4
+      1
       8
     )
     10
@@ -96,7 +96,7 @@ Block(JumpLoop(
   Execute(
     Set(
       10000
-      4
+      1
       7
     )
     10
@@ -104,7 +104,7 @@ Block(JumpLoop(
   Execute(
     Set(
       10000
-      3
+      0
       Trunc(Divide(
         Get(
           4000
@@ -115,7 +115,7 @@ Block(JumpLoop(
     )
     Set(
       10000
-      5
+      2
       Lerp(
         -0.9
         0.9
@@ -134,7 +134,7 @@ Block(JumpLoop(
     Draw(
       Get(
         10000
-        4
+        1
       )
       Subtract(
         Add(
@@ -142,7 +142,7 @@ Block(JumpLoop(
             Add(
               Get(
                 10000
-                3
+                0
               )
               0.5
             )
@@ -179,7 +179,7 @@ Block(JumpLoop(
       Subtract(
         Get(
           10000
-          5
+          2
         )
         0.036
       )
@@ -189,7 +189,7 @@ Block(JumpLoop(
             Add(
               Get(
                 10000
-                3
+                0
               )
               0.5
             )
@@ -226,7 +226,7 @@ Block(JumpLoop(
       Add(
         Get(
           10000
-          5
+          2
         )
         0.036
       )
@@ -236,7 +236,7 @@ Block(JumpLoop(
             Add(
               Get(
                 10000
-                3
+                0
               )
               0.5
             )
@@ -273,7 +273,7 @@ Block(JumpLoop(
       Add(
         Get(
           10000
-          5
+          2
         )
         0.036
       )
@@ -283,7 +283,7 @@ Block(JumpLoop(
             Add(
               Get(
                 10000
-                3
+                0
               )
               0.5
             )
@@ -320,7 +320,7 @@ Block(JumpLoop(
       Subtract(
         Get(
           10000
-          5
+          2
         )
         0.036
       )
@@ -347,7 +347,7 @@ Block(JumpLoop(
   Execute(
     Set(
       10000
-      7
+      6
       0
     )
     SwitchIntegerWithDefault(
@@ -377,7 +377,7 @@ Block(JumpLoop(
   Execute(
     Set(
       10000
-      7
+      6
       11
     )
     16
@@ -385,7 +385,7 @@ Block(JumpLoop(
   Execute(
     Set(
       10000
-      7
+      6
       13
     )
     16
@@ -393,7 +393,7 @@ Block(JumpLoop(
   Execute(
     Set(
       10000
-      7
+      6
       9
     )
     16
@@ -406,9 +406,9 @@ Block(JumpLoop(
       )
       2
     )
-    31
+    28
     17
-    32
+    27
   ))
   Execute(
     Set(
@@ -434,42 +434,32 @@ Block(JumpLoop(
       )
     )
     If(
-      Get(
-        10000
-        1
+      Less(
+        Get(
+          10000
+          0
+        )
+        Abs(Get(
+          4000
+          3
+        ))
       )
-      20
       19
+      27
     )
-  )
-  Execute(
-    Set(
-      10000
-      1
-      0
-    )
-    20
   )
   Execute(If(
     Get(
       10000
       1
     )
-    21
-    22
+    20
+    27
   ))
   Execute(
     Set(
       10000
-      2
-      Get(
-        10000
-        0
-      )
-    )
-    Set(
-      10000
-      0
+      1
       Add(
         Get(
           10000
@@ -478,60 +468,38 @@ Block(JumpLoop(
         1
       )
     )
-    Set(
-      10000
-      3
-      1
-    )
-    23
-  )
-  Execute(
-    Set(
-      10000
-      3
-      0
-    )
-    23
-  )
-  Execute(If(
-    Get(
-      10000
-      3
-    )
-    24
-    32
-  ))
-  Execute(If(
-    Greater(
-      Get(
-        4000
-        3
+    If(
+      Greater(
+        Get(
+          4000
+          3
+        )
+        0
       )
-      0
+      21
+      22
     )
-    25
-    26
-  ))
-  Execute(
-    Set(
-      10000
-      3
-      1
-    )
-    27
   )
   Execute(
     Set(
       10000
-      3
+      2
+      1
+    )
+    23
+  )
+  Execute(
+    Set(
+      10000
+      2
       -1
     )
-    27
+    23
   )
   Execute(
     Set(
       10000
-      3
+      2
       Add(
         Get(
           4000
@@ -541,20 +509,20 @@ Block(JumpLoop(
           Add(
             Get(
               10000
-              2
+              0
             )
             1
           )
           Get(
             10000
-            3
+            2
           )
         )
       )
     )
     Set(
       10000
-      4
+      3
       Trunc(Divide(
         Get(
           4000
@@ -565,7 +533,7 @@ Block(JumpLoop(
     )
     Set(
       10000
-      5
+      4
       Lerp(
         -0.9
         0.9
@@ -589,31 +557,31 @@ Block(JumpLoop(
         )
         0
       )
-      28
-      29
+      24
+      25
     )
   )
   Execute(
     Set(
       10000
-      6
+      5
       -1.5707963267948966
     )
-    30
+    26
   )
   Execute(
     Set(
       10000
-      6
+      5
       1.5707963267948966
     )
-    30
+    26
   )
   Execute(
     Draw(
       Get(
         10000
-        7
+        6
       )
       Add(
         Subtract(
@@ -625,7 +593,7 @@ Block(JumpLoop(
                     Add(
                       Get(
                         10000
-                        4
+                        3
                       )
                       0.5
                     )
@@ -638,7 +606,7 @@ Block(JumpLoop(
                     Subtract(
                       Get(
                         10000
-                        3
+                        2
                       )
                       0.5
                     )
@@ -669,7 +637,7 @@ Block(JumpLoop(
                             Add(
                               Get(
                                 10000
-                                4
+                                3
                               )
                               0.5
                             )
@@ -682,7 +650,7 @@ Block(JumpLoop(
                             Subtract(
                               Get(
                                 10000
-                                3
+                                2
                               )
                               0.5
                             )
@@ -709,7 +677,7 @@ Block(JumpLoop(
                             Add(
                               Get(
                                 10000
-                                4
+                                3
                               )
                               0.5
                             )
@@ -722,7 +690,7 @@ Block(JumpLoop(
                             Add(
                               Get(
                                 10000
-                                3
+                                2
                               )
                               0.5
                             )
@@ -750,7 +718,7 @@ Block(JumpLoop(
                           Add(
                             Get(
                               10000
-                              4
+                              3
                             )
                             0.5
                           )
@@ -763,7 +731,7 @@ Block(JumpLoop(
                           Subtract(
                             Get(
                               10000
-                              3
+                              2
                             )
                             0.5
                           )
@@ -791,7 +759,7 @@ Block(JumpLoop(
                         Add(
                           Get(
                             10000
-                            4
+                            3
                           )
                           0.5
                         )
@@ -804,7 +772,7 @@ Block(JumpLoop(
                         Add(
                           Get(
                             10000
-                            3
+                            2
                           )
                           0.5
                         )
@@ -831,7 +799,7 @@ Block(JumpLoop(
             )
             Cos(Get(
               10000
-              6
+              5
             ))
           )
           Multiply(
@@ -839,7 +807,7 @@ Block(JumpLoop(
               Subtract(
                 Get(
                   10000
-                  5
+                  4
                 )
                 0.036
               )
@@ -850,14 +818,14 @@ Block(JumpLoop(
                       Subtract(
                         Get(
                           10000
-                          5
+                          4
                         )
                         0.036
                       )
                       Add(
                         Get(
                           10000
-                          5
+                          4
                         )
                         0.036
                       )
@@ -865,7 +833,7 @@ Block(JumpLoop(
                     Add(
                       Get(
                         10000
-                        5
+                        4
                       )
                       0.036
                     )
@@ -873,7 +841,7 @@ Block(JumpLoop(
                   Subtract(
                     Get(
                       10000
-                      5
+                      4
                     )
                     0.036
                   )
@@ -883,7 +851,7 @@ Block(JumpLoop(
             )
             Sin(Get(
               10000
-              6
+              5
             ))
           )
         )
@@ -897,7 +865,7 @@ Block(JumpLoop(
                       Add(
                         Get(
                           10000
-                          4
+                          3
                         )
                         0.5
                       )
@@ -910,7 +878,7 @@ Block(JumpLoop(
                       Subtract(
                         Get(
                           10000
-                          3
+                          2
                         )
                         0.5
                       )
@@ -937,7 +905,7 @@ Block(JumpLoop(
                       Add(
                         Get(
                           10000
-                          4
+                          3
                         )
                         0.5
                       )
@@ -950,7 +918,7 @@ Block(JumpLoop(
                       Add(
                         Get(
                           10000
-                          3
+                          2
                         )
                         0.5
                       )
@@ -978,7 +946,7 @@ Block(JumpLoop(
                     Add(
                       Get(
                         10000
-                        4
+                        3
                       )
                       0.5
                     )
@@ -991,7 +959,7 @@ Block(JumpLoop(
                     Subtract(
                       Get(
                         10000
-                        3
+                        2
                       )
                       0.5
                     )
@@ -1019,7 +987,7 @@ Block(JumpLoop(
                   Add(
                     Get(
                       10000
-                      4
+                      3
                     )
                     0.5
                   )
@@ -1032,7 +1000,7 @@ Block(JumpLoop(
                   Add(
                     Get(
                       10000
-                      3
+                      2
                     )
                     0.5
                   )
@@ -1067,7 +1035,7 @@ Block(JumpLoop(
                     Add(
                       Get(
                         10000
-                        4
+                        3
                       )
                       0.5
                     )
@@ -1080,7 +1048,7 @@ Block(JumpLoop(
                     Subtract(
                       Get(
                         10000
-                        3
+                        2
                       )
                       0.5
                     )
@@ -1111,7 +1079,7 @@ Block(JumpLoop(
                             Add(
                               Get(
                                 10000
-                                4
+                                3
                               )
                               0.5
                             )
@@ -1124,7 +1092,7 @@ Block(JumpLoop(
                             Subtract(
                               Get(
                                 10000
-                                3
+                                2
                               )
                               0.5
                             )
@@ -1151,7 +1119,7 @@ Block(JumpLoop(
                             Add(
                               Get(
                                 10000
-                                4
+                                3
                               )
                               0.5
                             )
@@ -1164,7 +1132,7 @@ Block(JumpLoop(
                             Add(
                               Get(
                                 10000
-                                3
+                                2
                               )
                               0.5
                             )
@@ -1192,7 +1160,7 @@ Block(JumpLoop(
                           Add(
                             Get(
                               10000
-                              4
+                              3
                             )
                             0.5
                           )
@@ -1205,7 +1173,7 @@ Block(JumpLoop(
                           Subtract(
                             Get(
                               10000
-                              3
+                              2
                             )
                             0.5
                           )
@@ -1233,7 +1201,7 @@ Block(JumpLoop(
                         Add(
                           Get(
                             10000
-                            4
+                            3
                           )
                           0.5
                         )
@@ -1246,7 +1214,7 @@ Block(JumpLoop(
                         Add(
                           Get(
                             10000
-                            3
+                            2
                           )
                           0.5
                         )
@@ -1273,7 +1241,7 @@ Block(JumpLoop(
             )
             Sin(Get(
               10000
-              6
+              5
             ))
           )
           Multiply(
@@ -1281,7 +1249,7 @@ Block(JumpLoop(
               Subtract(
                 Get(
                   10000
-                  5
+                  4
                 )
                 0.036
               )
@@ -1292,14 +1260,14 @@ Block(JumpLoop(
                       Subtract(
                         Get(
                           10000
-                          5
+                          4
                         )
                         0.036
                       )
                       Add(
                         Get(
                           10000
-                          5
+                          4
                         )
                         0.036
                       )
@@ -1307,7 +1275,7 @@ Block(JumpLoop(
                     Add(
                       Get(
                         10000
-                        5
+                        4
                       )
                       0.036
                     )
@@ -1315,7 +1283,7 @@ Block(JumpLoop(
                   Subtract(
                     Get(
                       10000
-                      5
+                      4
                     )
                     0.036
                   )
@@ -1325,7 +1293,7 @@ Block(JumpLoop(
             )
             Cos(Get(
               10000
-              6
+              5
             ))
           )
         )
@@ -1336,14 +1304,14 @@ Block(JumpLoop(
                 Subtract(
                   Get(
                     10000
-                    5
+                    4
                   )
                   0.036
                 )
                 Add(
                   Get(
                     10000
-                    5
+                    4
                   )
                   0.036
                 )
@@ -1351,7 +1319,7 @@ Block(JumpLoop(
               Add(
                 Get(
                   10000
-                  5
+                  4
                 )
                 0.036
               )
@@ -1359,7 +1327,7 @@ Block(JumpLoop(
             Subtract(
               Get(
                 10000
-                5
+                4
               )
               0.036
             )
@@ -1377,7 +1345,7 @@ Block(JumpLoop(
                     Add(
                       Get(
                         10000
-                        4
+                        3
                       )
                       0.5
                     )
@@ -1390,7 +1358,7 @@ Block(JumpLoop(
                     Subtract(
                       Get(
                         10000
-                        3
+                        2
                       )
                       0.5
                     )
@@ -1421,7 +1389,7 @@ Block(JumpLoop(
                             Add(
                               Get(
                                 10000
-                                4
+                                3
                               )
                               0.5
                             )
@@ -1434,7 +1402,7 @@ Block(JumpLoop(
                             Subtract(
                               Get(
                                 10000
-                                3
+                                2
                               )
                               0.5
                             )
@@ -1461,7 +1429,7 @@ Block(JumpLoop(
                             Add(
                               Get(
                                 10000
-                                4
+                                3
                               )
                               0.5
                             )
@@ -1474,7 +1442,7 @@ Block(JumpLoop(
                             Add(
                               Get(
                                 10000
-                                3
+                                2
                               )
                               0.5
                             )
@@ -1502,7 +1470,7 @@ Block(JumpLoop(
                           Add(
                             Get(
                               10000
-                              4
+                              3
                             )
                             0.5
                           )
@@ -1515,7 +1483,7 @@ Block(JumpLoop(
                           Subtract(
                             Get(
                               10000
-                              3
+                              2
                             )
                             0.5
                           )
@@ -1543,7 +1511,7 @@ Block(JumpLoop(
                         Add(
                           Get(
                             10000
-                            4
+                            3
                           )
                           0.5
                         )
@@ -1556,7 +1524,7 @@ Block(JumpLoop(
                         Add(
                           Get(
                             10000
-                            3
+                            2
                           )
                           0.5
                         )
@@ -1583,7 +1551,7 @@ Block(JumpLoop(
             )
             Cos(Get(
               10000
-              6
+              5
             ))
           )
           Multiply(
@@ -1591,7 +1559,7 @@ Block(JumpLoop(
               Add(
                 Get(
                   10000
-                  5
+                  4
                 )
                 0.036
               )
@@ -1602,14 +1570,14 @@ Block(JumpLoop(
                       Subtract(
                         Get(
                           10000
-                          5
+                          4
                         )
                         0.036
                       )
                       Add(
                         Get(
                           10000
-                          5
+                          4
                         )
                         0.036
                       )
@@ -1617,7 +1585,7 @@ Block(JumpLoop(
                     Add(
                       Get(
                         10000
-                        5
+                        4
                       )
                       0.036
                     )
@@ -1625,7 +1593,7 @@ Block(JumpLoop(
                   Subtract(
                     Get(
                       10000
-                      5
+                      4
                     )
                     0.036
                   )
@@ -1635,7 +1603,7 @@ Block(JumpLoop(
             )
             Sin(Get(
               10000
-              6
+              5
             ))
           )
         )
@@ -1649,7 +1617,7 @@ Block(JumpLoop(
                       Add(
                         Get(
                           10000
-                          4
+                          3
                         )
                         0.5
                       )
@@ -1662,7 +1630,7 @@ Block(JumpLoop(
                       Subtract(
                         Get(
                           10000
-                          3
+                          2
                         )
                         0.5
                       )
@@ -1689,7 +1657,7 @@ Block(JumpLoop(
                       Add(
                         Get(
                           10000
-                          4
+                          3
                         )
                         0.5
                       )
@@ -1702,7 +1670,7 @@ Block(JumpLoop(
                       Add(
                         Get(
                           10000
-                          3
+                          2
                         )
                         0.5
                       )
@@ -1730,7 +1698,7 @@ Block(JumpLoop(
                     Add(
                       Get(
                         10000
-                        4
+                        3
                       )
                       0.5
                     )
@@ -1743,7 +1711,7 @@ Block(JumpLoop(
                     Subtract(
                       Get(
                         10000
-                        3
+                        2
                       )
                       0.5
                     )
@@ -1771,7 +1739,7 @@ Block(JumpLoop(
                   Add(
                     Get(
                       10000
-                      4
+                      3
                     )
                     0.5
                   )
@@ -1784,7 +1752,7 @@ Block(JumpLoop(
                   Add(
                     Get(
                       10000
-                      3
+                      2
                     )
                     0.5
                   )
@@ -1819,7 +1787,7 @@ Block(JumpLoop(
                     Add(
                       Get(
                         10000
-                        4
+                        3
                       )
                       0.5
                     )
@@ -1832,7 +1800,7 @@ Block(JumpLoop(
                     Subtract(
                       Get(
                         10000
-                        3
+                        2
                       )
                       0.5
                     )
@@ -1863,7 +1831,7 @@ Block(JumpLoop(
                             Add(
                               Get(
                                 10000
-                                4
+                                3
                               )
                               0.5
                             )
@@ -1876,7 +1844,7 @@ Block(JumpLoop(
                             Subtract(
                               Get(
                                 10000
-                                3
+                                2
                               )
                               0.5
                             )
@@ -1903,7 +1871,7 @@ Block(JumpLoop(
                             Add(
                               Get(
                                 10000
-                                4
+                                3
                               )
                               0.5
                             )
@@ -1916,7 +1884,7 @@ Block(JumpLoop(
                             Add(
                               Get(
                                 10000
-                                3
+                                2
                               )
                               0.5
                             )
@@ -1944,7 +1912,7 @@ Block(JumpLoop(
                           Add(
                             Get(
                               10000
-                              4
+                              3
                             )
                             0.5
                           )
@@ -1957,7 +1925,7 @@ Block(JumpLoop(
                           Subtract(
                             Get(
                               10000
-                              3
+                              2
                             )
                             0.5
                           )
@@ -1985,7 +1953,7 @@ Block(JumpLoop(
                         Add(
                           Get(
                             10000
-                            4
+                            3
                           )
                           0.5
                         )
@@ -1998,7 +1966,7 @@ Block(JumpLoop(
                         Add(
                           Get(
                             10000
-                            3
+                            2
                           )
                           0.5
                         )
@@ -2025,7 +1993,7 @@ Block(JumpLoop(
             )
             Sin(Get(
               10000
-              6
+              5
             ))
           )
           Multiply(
@@ -2033,7 +2001,7 @@ Block(JumpLoop(
               Add(
                 Get(
                   10000
-                  5
+                  4
                 )
                 0.036
               )
@@ -2044,14 +2012,14 @@ Block(JumpLoop(
                       Subtract(
                         Get(
                           10000
-                          5
+                          4
                         )
                         0.036
                       )
                       Add(
                         Get(
                           10000
-                          5
+                          4
                         )
                         0.036
                       )
@@ -2059,7 +2027,7 @@ Block(JumpLoop(
                     Add(
                       Get(
                         10000
-                        5
+                        4
                       )
                       0.036
                     )
@@ -2067,7 +2035,7 @@ Block(JumpLoop(
                   Subtract(
                     Get(
                       10000
-                      5
+                      4
                     )
                     0.036
                   )
@@ -2077,7 +2045,7 @@ Block(JumpLoop(
             )
             Cos(Get(
               10000
-              6
+              5
             ))
           )
         )
@@ -2088,14 +2056,14 @@ Block(JumpLoop(
                 Subtract(
                   Get(
                     10000
-                    5
+                    4
                   )
                   0.036
                 )
                 Add(
                   Get(
                     10000
-                    5
+                    4
                   )
                   0.036
                 )
@@ -2103,7 +2071,7 @@ Block(JumpLoop(
               Add(
                 Get(
                   10000
-                  5
+                  4
                 )
                 0.036
               )
@@ -2111,7 +2079,7 @@ Block(JumpLoop(
             Subtract(
               Get(
                 10000
-                5
+                4
               )
               0.036
             )
@@ -2129,7 +2097,7 @@ Block(JumpLoop(
                     Add(
                       Get(
                         10000
-                        4
+                        3
                       )
                       0.5
                     )
@@ -2142,7 +2110,7 @@ Block(JumpLoop(
                     Add(
                       Get(
                         10000
-                        3
+                        2
                       )
                       0.5
                     )
@@ -2173,7 +2141,7 @@ Block(JumpLoop(
                             Add(
                               Get(
                                 10000
-                                4
+                                3
                               )
                               0.5
                             )
@@ -2186,7 +2154,7 @@ Block(JumpLoop(
                             Subtract(
                               Get(
                                 10000
-                                3
+                                2
                               )
                               0.5
                             )
@@ -2213,7 +2181,7 @@ Block(JumpLoop(
                             Add(
                               Get(
                                 10000
-                                4
+                                3
                               )
                               0.5
                             )
@@ -2226,7 +2194,7 @@ Block(JumpLoop(
                             Add(
                               Get(
                                 10000
-                                3
+                                2
                               )
                               0.5
                             )
@@ -2254,7 +2222,7 @@ Block(JumpLoop(
                           Add(
                             Get(
                               10000
-                              4
+                              3
                             )
                             0.5
                           )
@@ -2267,7 +2235,7 @@ Block(JumpLoop(
                           Subtract(
                             Get(
                               10000
-                              3
+                              2
                             )
                             0.5
                           )
@@ -2295,7 +2263,7 @@ Block(JumpLoop(
                         Add(
                           Get(
                             10000
-                            4
+                            3
                           )
                           0.5
                         )
@@ -2308,7 +2276,7 @@ Block(JumpLoop(
                         Add(
                           Get(
                             10000
-                            3
+                            2
                           )
                           0.5
                         )
@@ -2335,7 +2303,7 @@ Block(JumpLoop(
             )
             Cos(Get(
               10000
-              6
+              5
             ))
           )
           Multiply(
@@ -2343,7 +2311,7 @@ Block(JumpLoop(
               Add(
                 Get(
                   10000
-                  5
+                  4
                 )
                 0.036
               )
@@ -2354,14 +2322,14 @@ Block(JumpLoop(
                       Subtract(
                         Get(
                           10000
-                          5
+                          4
                         )
                         0.036
                       )
                       Add(
                         Get(
                           10000
-                          5
+                          4
                         )
                         0.036
                       )
@@ -2369,7 +2337,7 @@ Block(JumpLoop(
                     Add(
                       Get(
                         10000
-                        5
+                        4
                       )
                       0.036
                     )
@@ -2377,7 +2345,7 @@ Block(JumpLoop(
                   Subtract(
                     Get(
                       10000
-                      5
+                      4
                     )
                     0.036
                   )
@@ -2387,7 +2355,7 @@ Block(JumpLoop(
             )
             Sin(Get(
               10000
-              6
+              5
             ))
           )
         )
@@ -2401,7 +2369,7 @@ Block(JumpLoop(
                       Add(
                         Get(
                           10000
-                          4
+                          3
                         )
                         0.5
                       )
@@ -2414,7 +2382,7 @@ Block(JumpLoop(
                       Subtract(
                         Get(
                           10000
-                          3
+                          2
                         )
                         0.5
                       )
@@ -2441,7 +2409,7 @@ Block(JumpLoop(
                       Add(
                         Get(
                           10000
-                          4
+                          3
                         )
                         0.5
                       )
@@ -2454,7 +2422,7 @@ Block(JumpLoop(
                       Add(
                         Get(
                           10000
-                          3
+                          2
                         )
                         0.5
                       )
@@ -2482,7 +2450,7 @@ Block(JumpLoop(
                     Add(
                       Get(
                         10000
-                        4
+                        3
                       )
                       0.5
                     )
@@ -2495,7 +2463,7 @@ Block(JumpLoop(
                     Subtract(
                       Get(
                         10000
-                        3
+                        2
                       )
                       0.5
                     )
@@ -2523,7 +2491,7 @@ Block(JumpLoop(
                   Add(
                     Get(
                       10000
-                      4
+                      3
                     )
                     0.5
                   )
@@ -2536,7 +2504,7 @@ Block(JumpLoop(
                   Add(
                     Get(
                       10000
-                      3
+                      2
                     )
                     0.5
                   )
@@ -2571,7 +2539,7 @@ Block(JumpLoop(
                     Add(
                       Get(
                         10000
-                        4
+                        3
                       )
                       0.5
                     )
@@ -2584,7 +2552,7 @@ Block(JumpLoop(
                     Add(
                       Get(
                         10000
-                        3
+                        2
                       )
                       0.5
                     )
@@ -2615,7 +2583,7 @@ Block(JumpLoop(
                             Add(
                               Get(
                                 10000
-                                4
+                                3
                               )
                               0.5
                             )
@@ -2628,7 +2596,7 @@ Block(JumpLoop(
                             Subtract(
                               Get(
                                 10000
-                                3
+                                2
                               )
                               0.5
                             )
@@ -2655,7 +2623,7 @@ Block(JumpLoop(
                             Add(
                               Get(
                                 10000
-                                4
+                                3
                               )
                               0.5
                             )
@@ -2668,7 +2636,7 @@ Block(JumpLoop(
                             Add(
                               Get(
                                 10000
-                                3
+                                2
                               )
                               0.5
                             )
@@ -2696,7 +2664,7 @@ Block(JumpLoop(
                           Add(
                             Get(
                               10000
-                              4
+                              3
                             )
                             0.5
                           )
@@ -2709,7 +2677,7 @@ Block(JumpLoop(
                           Subtract(
                             Get(
                               10000
-                              3
+                              2
                             )
                             0.5
                           )
@@ -2737,7 +2705,7 @@ Block(JumpLoop(
                         Add(
                           Get(
                             10000
-                            4
+                            3
                           )
                           0.5
                         )
@@ -2750,7 +2718,7 @@ Block(JumpLoop(
                         Add(
                           Get(
                             10000
-                            3
+                            2
                           )
                           0.5
                         )
@@ -2777,7 +2745,7 @@ Block(JumpLoop(
             )
             Sin(Get(
               10000
-              6
+              5
             ))
           )
           Multiply(
@@ -2785,7 +2753,7 @@ Block(JumpLoop(
               Add(
                 Get(
                   10000
-                  5
+                  4
                 )
                 0.036
               )
@@ -2796,14 +2764,14 @@ Block(JumpLoop(
                       Subtract(
                         Get(
                           10000
-                          5
+                          4
                         )
                         0.036
                       )
                       Add(
                         Get(
                           10000
-                          5
+                          4
                         )
                         0.036
                       )
@@ -2811,7 +2779,7 @@ Block(JumpLoop(
                     Add(
                       Get(
                         10000
-                        5
+                        4
                       )
                       0.036
                     )
@@ -2819,7 +2787,7 @@ Block(JumpLoop(
                   Subtract(
                     Get(
                       10000
-                      5
+                      4
                     )
                     0.036
                   )
@@ -2829,7 +2797,7 @@ Block(JumpLoop(
             )
             Cos(Get(
               10000
-              6
+              5
             ))
           )
         )
@@ -2840,14 +2808,14 @@ Block(JumpLoop(
                 Subtract(
                   Get(
                     10000
-                    5
+                    4
                   )
                   0.036
                 )
                 Add(
                   Get(
                     10000
-                    5
+                    4
                   )
                   0.036
                 )
@@ -2855,7 +2823,7 @@ Block(JumpLoop(
               Add(
                 Get(
                   10000
-                  5
+                  4
                 )
                 0.036
               )
@@ -2863,7 +2831,7 @@ Block(JumpLoop(
             Subtract(
               Get(
                 10000
-                5
+                4
               )
               0.036
             )
@@ -2881,7 +2849,7 @@ Block(JumpLoop(
                     Add(
                       Get(
                         10000
-                        4
+                        3
                       )
                       0.5
                     )
@@ -2894,7 +2862,7 @@ Block(JumpLoop(
                     Add(
                       Get(
                         10000
-                        3
+                        2
                       )
                       0.5
                     )
@@ -2925,7 +2893,7 @@ Block(JumpLoop(
                             Add(
                               Get(
                                 10000
-                                4
+                                3
                               )
                               0.5
                             )
@@ -2938,7 +2906,7 @@ Block(JumpLoop(
                             Subtract(
                               Get(
                                 10000
-                                3
+                                2
                               )
                               0.5
                             )
@@ -2965,7 +2933,7 @@ Block(JumpLoop(
                             Add(
                               Get(
                                 10000
-                                4
+                                3
                               )
                               0.5
                             )
@@ -2978,7 +2946,7 @@ Block(JumpLoop(
                             Add(
                               Get(
                                 10000
-                                3
+                                2
                               )
                               0.5
                             )
@@ -3006,7 +2974,7 @@ Block(JumpLoop(
                           Add(
                             Get(
                               10000
-                              4
+                              3
                             )
                             0.5
                           )
@@ -3019,7 +2987,7 @@ Block(JumpLoop(
                           Subtract(
                             Get(
                               10000
-                              3
+                              2
                             )
                             0.5
                           )
@@ -3047,7 +3015,7 @@ Block(JumpLoop(
                         Add(
                           Get(
                             10000
-                            4
+                            3
                           )
                           0.5
                         )
@@ -3060,7 +3028,7 @@ Block(JumpLoop(
                         Add(
                           Get(
                             10000
-                            3
+                            2
                           )
                           0.5
                         )
@@ -3087,7 +3055,7 @@ Block(JumpLoop(
             )
             Cos(Get(
               10000
-              6
+              5
             ))
           )
           Multiply(
@@ -3095,7 +3063,7 @@ Block(JumpLoop(
               Subtract(
                 Get(
                   10000
-                  5
+                  4
                 )
                 0.036
               )
@@ -3106,14 +3074,14 @@ Block(JumpLoop(
                       Subtract(
                         Get(
                           10000
-                          5
+                          4
                         )
                         0.036
                       )
                       Add(
                         Get(
                           10000
-                          5
+                          4
                         )
                         0.036
                       )
@@ -3121,7 +3089,7 @@ Block(JumpLoop(
                     Add(
                       Get(
                         10000
-                        5
+                        4
                       )
                       0.036
                     )
@@ -3129,7 +3097,7 @@ Block(JumpLoop(
                   Subtract(
                     Get(
                       10000
-                      5
+                      4
                     )
                     0.036
                   )
@@ -3139,7 +3107,7 @@ Block(JumpLoop(
             )
             Sin(Get(
               10000
-              6
+              5
             ))
           )
         )
@@ -3153,7 +3121,7 @@ Block(JumpLoop(
                       Add(
                         Get(
                           10000
-                          4
+                          3
                         )
                         0.5
                       )
@@ -3166,7 +3134,7 @@ Block(JumpLoop(
                       Subtract(
                         Get(
                           10000
-                          3
+                          2
                         )
                         0.5
                       )
@@ -3193,7 +3161,7 @@ Block(JumpLoop(
                       Add(
                         Get(
                           10000
-                          4
+                          3
                         )
                         0.5
                       )
@@ -3206,7 +3174,7 @@ Block(JumpLoop(
                       Add(
                         Get(
                           10000
-                          3
+                          2
                         )
                         0.5
                       )
@@ -3234,7 +3202,7 @@ Block(JumpLoop(
                     Add(
                       Get(
                         10000
-                        4
+                        3
                       )
                       0.5
                     )
@@ -3247,7 +3215,7 @@ Block(JumpLoop(
                     Subtract(
                       Get(
                         10000
-                        3
+                        2
                       )
                       0.5
                     )
@@ -3275,7 +3243,7 @@ Block(JumpLoop(
                   Add(
                     Get(
                       10000
-                      4
+                      3
                     )
                     0.5
                   )
@@ -3288,7 +3256,7 @@ Block(JumpLoop(
                   Add(
                     Get(
                       10000
-                      3
+                      2
                     )
                     0.5
                   )
@@ -3323,7 +3291,7 @@ Block(JumpLoop(
                     Add(
                       Get(
                         10000
-                        4
+                        3
                       )
                       0.5
                     )
@@ -3336,7 +3304,7 @@ Block(JumpLoop(
                     Add(
                       Get(
                         10000
-                        3
+                        2
                       )
                       0.5
                     )
@@ -3367,7 +3335,7 @@ Block(JumpLoop(
                             Add(
                               Get(
                                 10000
-                                4
+                                3
                               )
                               0.5
                             )
@@ -3380,7 +3348,7 @@ Block(JumpLoop(
                             Subtract(
                               Get(
                                 10000
-                                3
+                                2
                               )
                               0.5
                             )
@@ -3407,7 +3375,7 @@ Block(JumpLoop(
                             Add(
                               Get(
                                 10000
-                                4
+                                3
                               )
                               0.5
                             )
@@ -3420,7 +3388,7 @@ Block(JumpLoop(
                             Add(
                               Get(
                                 10000
-                                3
+                                2
                               )
                               0.5
                             )
@@ -3448,7 +3416,7 @@ Block(JumpLoop(
                           Add(
                             Get(
                               10000
-                              4
+                              3
                             )
                             0.5
                           )
@@ -3461,7 +3429,7 @@ Block(JumpLoop(
                           Subtract(
                             Get(
                               10000
-                              3
+                              2
                             )
                             0.5
                           )
@@ -3489,7 +3457,7 @@ Block(JumpLoop(
                         Add(
                           Get(
                             10000
-                            4
+                            3
                           )
                           0.5
                         )
@@ -3502,7 +3470,7 @@ Block(JumpLoop(
                         Add(
                           Get(
                             10000
-                            3
+                            2
                           )
                           0.5
                         )
@@ -3529,7 +3497,7 @@ Block(JumpLoop(
             )
             Sin(Get(
               10000
-              6
+              5
             ))
           )
           Multiply(
@@ -3537,7 +3505,7 @@ Block(JumpLoop(
               Subtract(
                 Get(
                   10000
-                  5
+                  4
                 )
                 0.036
               )
@@ -3548,14 +3516,14 @@ Block(JumpLoop(
                       Subtract(
                         Get(
                           10000
-                          5
+                          4
                         )
                         0.036
                       )
                       Add(
                         Get(
                           10000
-                          5
+                          4
                         )
                         0.036
                       )
@@ -3563,7 +3531,7 @@ Block(JumpLoop(
                     Add(
                       Get(
                         10000
-                        5
+                        4
                       )
                       0.036
                     )
@@ -3571,7 +3539,7 @@ Block(JumpLoop(
                   Subtract(
                     Get(
                       10000
-                      5
+                      4
                     )
                     0.036
                   )
@@ -3581,7 +3549,7 @@ Block(JumpLoop(
             )
             Cos(Get(
               10000
-              6
+              5
             ))
           )
         )
@@ -3592,14 +3560,14 @@ Block(JumpLoop(
                 Subtract(
                   Get(
                     10000
-                    5
+                    4
                   )
                   0.036
                 )
                 Add(
                   Get(
                     10000
-                    5
+                    4
                   )
                   0.036
                 )
@@ -3607,7 +3575,7 @@ Block(JumpLoop(
               Add(
                 Get(
                   10000
-                  5
+                  4
                 )
                 0.036
               )
@@ -3615,7 +3583,7 @@ Block(JumpLoop(
             Subtract(
               Get(
                 10000
-                5
+                4
               )
               0.036
             )
@@ -3629,7 +3597,7 @@ Block(JumpLoop(
           Multiply(
             Get(
               10000
-              3
+              2
             )
             100
           )
@@ -3641,12 +3609,21 @@ Block(JumpLoop(
       )
       1
     )
+    Set(
+      10000
+      0
+      Get(
+        10000
+        1
+      )
+    )
     18
   )
+  Execute(29)
   Execute(
     Set(
       10000
-      8
+      7
       Trunc(Divide(
         Get(
           4000
@@ -3679,7 +3656,7 @@ Block(JumpLoop(
     Draw(
       Get(
         10000
-        7
+        6
       )
       Subtract(
         Add(
@@ -3687,7 +3664,7 @@ Block(JumpLoop(
             Add(
               Get(
                 10000
-                8
+                7
               )
               0.5
             )
@@ -3734,7 +3711,7 @@ Block(JumpLoop(
             Add(
               Get(
                 10000
-                8
+                7
               )
               0.5
             )
@@ -3781,7 +3758,7 @@ Block(JumpLoop(
             Add(
               Get(
                 10000
-                8
+                7
               )
               0.5
             )
@@ -3828,7 +3805,7 @@ Block(JumpLoop(
             Add(
               Get(
                 10000
-                8
+                7
               )
               0.5
             )
@@ -3887,8 +3864,7 @@ Block(JumpLoop(
       )
       1
     )
-    32
+    29
   )
-  Execute(33)
   0
 ))

@@ -3,26 +3,24 @@
 1:
   10000[0] <- Add(9.0, Multiply(EntityData[0], 32.0))
   10000[1] <- EntityDataArray[10000[0]]
-  goto 3
+  goto 3 if RuntimeEnvironment[4] else 4
 2:
   10000[0] <- Add(7.0, Multiply(EntityData[0], 32.0))
   10000[1] <- EntityDataArray[10000[0]]
-  goto 3
+  goto 3 if RuntimeEnvironment[4] else 4
 3:
-  goto 4 if RuntimeEnvironment[4] else 5
-4:
   10000[0] <- Add(9.0, Multiply(EntityData[1], 32.0))
   10000[0] <- EntityDataArray[10000[0]]
-  goto 6
-5:
+  goto 5
+4:
   10000[0] <- Add(7.0, Multiply(EntityData[1], 32.0))
   10000[0] <- EntityDataArray[10000[0]]
-  goto 6
+  goto 5
+5:
+  goto 6 if Less(10000[1], 10000[0]) else 7
 6:
-  goto 7 if Less(10000[1], 10000[0]) else 8
-7:
   10000[0] <- 10000[1]
-  goto 8
-8:
+  goto 7
+7:
   Break(1, 10000[0])
   goto exit

@@ -63,7 +63,7 @@ Block(JumpLoop(
         4
       )
       4
-      13
+      16
     )
   )
   Execute(
@@ -146,7 +146,7 @@ Block(JumpLoop(
   Execute(
     DebugLog(0)
     DebugPause()
-    21
+    19
   )
   Execute(If(
     StreamHas(
@@ -202,48 +202,71 @@ Block(JumpLoop(
     )
     12
   )
-  Execute(
-    Set(
-      10000
-      0
-      StreamGetValue(
+  Execute(If(
+    StreamGetValue(
+      Add(
         Add(
-          Add(
+          Get(
+            4103
             Get(
-              4103
-              Get(
-                10000
-                0
-              )
+              10000
+              0
             )
-            18
           )
-          0
+          18
         )
-        Get(
-          10000
-          1
-        )
+        0
+      )
+      Get(
+        10000
+        1
       )
     )
-    14
+    16
+    13
+  ))
+  Execute(
+    Set(
+      10000
+      0
+      Get(
+        4000
+        2
+      )
+    )
+    If(
+      NotEqual(
+        Get(
+          10000
+          0
+        )
+        0
+      )
+      14
+      15
+    )
   )
   Execute(
     Set(
       10000
       0
-      1
+      Get(
+        4000
+        2
+      )
     )
-    14
-  )
-  Execute(If(
-    Get(
+    DestroyParticleEffect(Get(
       10000
       0
+    ))
+    Set(
+      4000
+      2
+      0
     )
-    15
-    18
-  ))
+    19
+  )
+  Execute(19)
   Execute(
     Set(
       10000
@@ -1826,8 +1849,8 @@ Block(JumpLoop(
         10000
         8
       )
-      16
       17
+      18
     )
   )
   Execute(
@@ -2153,7 +2176,7 @@ Block(JumpLoop(
         )
       )
     )
-    20
+    19
   )
   Execute(
     Set(
@@ -2481,49 +2504,7 @@ Block(JumpLoop(
         0
       )
     )
-    20
+    19
   )
-  Execute(
-    Set(
-      10000
-      0
-      Get(
-        4000
-        2
-      )
-    )
-    If(
-      NotEqual(
-        Get(
-          10000
-          0
-        )
-        0
-      )
-      19
-      20
-    )
-  )
-  Execute(
-    Set(
-      10000
-      0
-      Get(
-        4000
-        2
-      )
-    )
-    DestroyParticleEffect(Get(
-      10000
-      0
-    ))
-    Set(
-      4000
-      2
-      0
-    )
-    20
-  )
-  Execute(21)
   0
 ))

@@ -145,9 +145,9 @@ class FromSSA(CompilerPass):
         return entry
 
     def process_block(self, block: BasicBlock):
-        incoming = [*block.incoming]
+        orig_incoming = [*block.incoming]
         block.incoming.clear()
-        for edge in incoming:
+        for edge in orig_incoming:
             between_block = BasicBlock()
             edge.dst = between_block
             between_block.incoming.add(edge)
@@ -157,14 +157,18 @@ class FromSSA(CompilerPass):
             for args in block.phis.values():
                 if edge.src in args:
                     args[between_block] = args[edge.src]
-        for edge in incoming:
+        for edge in orig_incoming:
             # Multiple edges with different conditions can connect two of the same blocks,
             # so we need to remove the old phi arguments in a pass at the end.
             for args in block.phis.values():
                 if edge.src in args:
                     del args[edge.src]
+        incoming_blocks = {edge.src for edge in block.incoming}
         for var, args in block.phis.items():
             for src, arg in args.items():
+                if src not in incoming_blocks:
+                    # Edges may have been rewritten so a phi refers to a block that is no longer directly connected.
+                    continue
                 src.statements.append(
                     IRSet(place=self.place_from_ssa_place(var), value=IRGet(place=self.place_from_ssa_place(arg)))
                 )

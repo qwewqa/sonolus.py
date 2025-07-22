@@ -1,54 +1,45 @@
 0:
   10000[0] <- Add(6.0, Multiply(EntityData[0], 32.0))
-  goto 1 if LessOr(EntityDataArray[10000[0]], RuntimeUpdate[0]) else 2
+  goto 1 if LessOr(EntityDataArray[10000[0]], RuntimeUpdate[0]) else 15
 1:
   10000[0] <- Add(6.0, Multiply(EntityData[1], 32.0))
-  10000[0] <- Less(RuntimeUpdate[0], EntityDataArray[10000[0]])
-  goto 3
+  goto 2 if Less(RuntimeUpdate[0], EntityDataArray[10000[0]]) else 15
 2:
-  10000[0] <- 0.0
-  goto 3
-3:
-  goto 4 if 10000[0] else 15
-4:
   10000[0] <- Add(10.0, Multiply(EntityData[0], 32.0))
-  goto 5 if RuntimeEnvironment[4] else 14
-5:
+  goto 3 if RuntimeEnvironment[4] else 12
+3:
   10000[0] <- Add(10.0, Multiply(EntityDataArray[10000[0]], 32.0))
   10000[0] <- Multiply(EntityDataArray[10000[0]], 3.0)
-  goto 6 if LessOr(0.0, EntityInfoArray[10000[0]]) else 7
-6:
+  goto 4 if LessOr(0.0, EntityInfoArray[10000[0]]) else 5
+4:
   10000[1] <- Less(EntityInfoArray[10000[0]], 99999.0)
-  goto 8
-7:
+  goto 6
+5:
   10000[1] <- 0.0
-  goto 8
-8:
-  goto 9 if Not(10000[1]) else 10
-9:
+  goto 6
+6:
+  goto 7 if Not(10000[1]) else 8
+7:
   DebugLog(0.0)
   DebugPause()
   goto exit
-10:
-  goto 11 if StreamHas(Add(EntityInfoArray[10000[0]], 18.0), RuntimeUpdate[0]) else 12
-11:
+8:
+  goto 9 if StreamHas(Add(EntityInfoArray[10000[0]], 18.0), RuntimeUpdate[0]) else 10
+9:
   10000[1] <- RuntimeUpdate[0]
+  goto 11
+10:
+  10000[1] <- StreamGetPreviousKey(Add(EntityInfoArray[10000[0]], 18.0), RuntimeUpdate[0])
+  goto 11
+11:
+  10000[0] <- StreamGetValue(Add(Add(EntityInfoArray[10000[0]], 18.0), 0), 10000[1])
   goto 13
 12:
-  10000[1] <- StreamGetPreviousKey(Add(EntityInfoArray[10000[0]], 18.0), RuntimeUpdate[0])
+  10000[0] <- 1.0
   goto 13
 13:
-  10000[0] <- StreamGetValue(Add(Add(EntityInfoArray[10000[0]], 18.0), 0), 10000[1])
-  goto 16
+  goto 14 if 10000[0] else 15
 14:
-  10000[0] <- 1.0
-  goto 16
-15:
-  10000[0] <- 0.0
-  goto 16
-16:
-  goto 17 if 10000[0] else 18
-17:
   10000[0] <- Add(7.0, Multiply(EntityData[0], 32.0))
   10000[1] <- Add(7.0, Multiply(EntityData[1], 32.0))
   10000[2] <- Add(1.0, Multiply(EntityData[0], 32.0))
@@ -57,6 +48,6 @@
   10000[4] <- Add(10.0, Multiply(EntityDataArray[10000[4]], 32.0))
   10000[4] <- Multiply(EntityDataArray[10000[4]], 32.0)
   EntitySharedMemoryArray[10000[4]] <- Remap(Remap(Subtract(EntityDataArray[10000[0]], Divide(6.0, LevelOption[1])), EntityDataArray[10000[0]], LevelData[14], 0.0, RuntimeUpdate[2]), Remap(Subtract(EntityDataArray[10000[1]], Divide(6.0, LevelOption[1])), EntityDataArray[10000[1]], LevelData[14], 0.0, RuntimeUpdate[2]), EntityDataArray[10000[2]], EntityDataArray[10000[3]], 0.0)
-  goto 18
-18:
+  goto exit
+15:
   goto exit

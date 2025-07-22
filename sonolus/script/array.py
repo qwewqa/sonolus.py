@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+from abc import ABCMeta
 from collections.abc import Iterable
 from typing import Any, Self, final
 
@@ -15,7 +16,7 @@ from sonolus.script.internal.value import BackingSource, DataValue, Value
 from sonolus.script.num import Num
 
 
-class ArrayMeta(type):
+class ArrayMeta(ABCMeta):
     @meta_fn
     def __pos__[T](cls: type[T]) -> T:
         """Create a zero-initialized array instance."""

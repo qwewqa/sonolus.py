@@ -24,6 +24,17 @@ Block(JumpLoop(
   Execute(
     Set(
       10000
+      1
+      Add(
+        Get(
+          10000
+          0
+        )
+        1
+      )
+    )
+    Set(
+      10000
       2
       Multiply(
         Add(
@@ -45,41 +56,6 @@ Block(JumpLoop(
         9
       )
     )
-    Set(
-      10000
-      0
-      Add(
-        Get(
-          10000
-          0
-        )
-        1
-      )
-    )
-    Set(
-      10000
-      1
-      1
-    )
-    4
-  )
-  Execute(
-    Set(
-      10000
-      1
-      0
-    )
-    4
-  )
-  Execute(If(
-    Get(
-      10000
-      1
-    )
-    5
-    6
-  ))
-  Execute(
     Draw(
       1
       Get(
@@ -164,6 +140,14 @@ Block(JumpLoop(
       )
       1
       1
+    )
+    Set(
+      10000
+      0
+      Get(
+        10000
+        1
+      )
     )
     1
   )
@@ -279,7 +263,7 @@ Block(JumpLoop(
       2
       1
     )
-    7
+    4
   )
   0
 ))

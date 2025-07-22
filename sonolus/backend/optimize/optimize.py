@@ -7,7 +7,12 @@ from sonolus.backend.optimize.dead_code import (
     UnreachableCodeElimination,
 )
 from sonolus.backend.optimize.inlining import InlineVars
-from sonolus.backend.optimize.simplify import CoalesceFlow, NormalizeSwitch, RewriteToSwitch
+from sonolus.backend.optimize.simplify import (
+    CoalesceEmptyConditionalBlocks,
+    CoalesceFlow,
+    NormalizeSwitch,
+    RewriteToSwitch,
+)
 from sonolus.backend.optimize.ssa import FromSSA, ToSSA
 
 MINIMAL_PASSES = (
@@ -27,6 +32,7 @@ STANDARD_PASSES = (
     CoalesceFlow(),
     UnreachableCodeElimination(),
     DeadCodeElimination(),
+    CoalesceEmptyConditionalBlocks(),
     ToSSA(),
     SparseConditionalConstantPropagation(),
     UnreachableCodeElimination(),

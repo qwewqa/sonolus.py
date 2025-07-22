@@ -10,7 +10,7 @@
   goto 3
 3:
   10000[0] <- EntityMemory[0]
-  goto 4 if RuntimeEnvironment[4] else 13
+  goto 4 if RuntimeEnvironment[4] else 16
 4:
   10000[0] <- Add(10.0, Multiply(10000[0], 32.0))
   10000[0] <- Multiply(EntityDataArray[10000[0]], 3.0)
@@ -36,14 +36,18 @@
   10000[1] <- StreamGetPreviousKey(Add(EntityInfoArray[10000[0]], 18.0), RuntimeUpdate[0])
   goto 12
 12:
-  10000[0] <- StreamGetValue(Add(Add(EntityInfoArray[10000[0]], 18.0), 0), 10000[1])
-  goto 14
+  goto 16 if StreamGetValue(Add(Add(EntityInfoArray[10000[0]], 18.0), 0), 10000[1]) else 13
 13:
-  10000[0] <- 1.0
-  goto 14
+  10000[0] <- EntityMemory[2]
+  goto 14 if NotEqual(10000[0], 0.0) else 15
 14:
-  goto 15 if 10000[0] else 18
+  10000[0] <- EntityMemory[2]
+  DestroyParticleEffect(10000[0])
+  EntityMemory[2] <- 0.0
+  goto exit
 15:
+  goto exit
+16:
   10000[0] <- EntityMemory[0]
   10000[0] <- Add(10.0, Multiply(10000[0], 32.0))
   10000[3] <- Multiply(EntityDataArray[10000[0]], 32.0)
@@ -63,22 +67,12 @@
   10000[6] <- Divide(Add(Divide(Add(Add(Multiply(LevelData[2], Subtract(Multiply(EntitySharedMemoryArray[10000[0]], LevelData[12]), Divide(Multiply(LevelData[11], 1.8), 2.0))), Multiply(LevelData[3], Add(0.0, Divide(Multiply(LevelData[11], 1.8), 2.0)))), LevelData[4]), 10000[3]), Divide(Add(Add(Multiply(LevelData[2], Add(Multiply(EntitySharedMemoryArray[10000[0]], LevelData[12]), Divide(Multiply(LevelData[11], 1.8), 2.0))), Multiply(LevelData[3], Add(0.0, Divide(Multiply(LevelData[11], 1.8), 2.0)))), LevelData[4]), 10000[4])), 2.0)
   10000[7] <- Divide(Add(Divide(Add(Add(Multiply(LevelData[2], Subtract(Multiply(EntitySharedMemoryArray[10000[0]], LevelData[12]), Divide(Multiply(LevelData[11], 1.8), 2.0))), Multiply(LevelData[3], Subtract(0.0, Divide(Multiply(LevelData[11], 1.8), 2.0)))), LevelData[4]), 10000[1]), Divide(Add(Add(Multiply(LevelData[2], Add(Multiply(EntitySharedMemoryArray[10000[0]], LevelData[12]), Divide(Multiply(LevelData[11], 1.8), 2.0))), Multiply(LevelData[3], Subtract(0.0, Divide(Multiply(LevelData[11], 1.8), 2.0)))), LevelData[4]), 10000[2])), 2.0)
   10000[8] <- EntityMemory[2]
-  goto 16 if 10000[8] else 17
-16:
+  goto 17 if 10000[8] else 18
+17:
   10000[8] <- EntityMemory[2]
   MoveParticleEffect(10000[8], Subtract(10000[7], Divide(10000[5], 2.0)), Divide(Add(Add(Multiply(LevelData[5], Subtract(Multiply(EntitySharedMemoryArray[10000[0]], LevelData[12]), Divide(Multiply(LevelData[11], 1.8), 2.0))), Multiply(LevelData[6], Subtract(0.0, Divide(Multiply(LevelData[11], 1.8), 2.0)))), LevelData[7]), 10000[1]), Subtract(10000[6], Divide(10000[5], 2.0)), Divide(Add(Add(Multiply(LevelData[5], Subtract(Multiply(EntitySharedMemoryArray[10000[0]], LevelData[12]), Divide(Multiply(LevelData[11], 1.8), 2.0))), Multiply(LevelData[6], Add(0.0, Divide(Multiply(LevelData[11], 1.8), 2.0)))), LevelData[7]), 10000[3]), Add(10000[6], Divide(10000[5], 2.0)), Divide(Add(Add(Multiply(LevelData[5], Add(Multiply(EntitySharedMemoryArray[10000[0]], LevelData[12]), Divide(Multiply(LevelData[11], 1.8), 2.0))), Multiply(LevelData[6], Add(0.0, Divide(Multiply(LevelData[11], 1.8), 2.0)))), LevelData[7]), 10000[4]), Add(10000[7], Divide(10000[5], 2.0)), Divide(Add(Add(Multiply(LevelData[5], Add(Multiply(EntitySharedMemoryArray[10000[0]], LevelData[12]), Divide(Multiply(LevelData[11], 1.8), 2.0))), Multiply(LevelData[6], Subtract(0.0, Divide(Multiply(LevelData[11], 1.8), 2.0)))), LevelData[7]), 10000[2]))
-  goto 20
-17:
+  goto exit
+18:
   10000[0] <- SpawnParticleEffect(5.0, Subtract(10000[7], Divide(10000[5], 2.0)), Divide(Add(Add(Multiply(LevelData[5], Subtract(Multiply(EntitySharedMemoryArray[10000[0]], LevelData[12]), Divide(Multiply(LevelData[11], 1.8), 2.0))), Multiply(LevelData[6], Subtract(0.0, Divide(Multiply(LevelData[11], 1.8), 2.0)))), LevelData[7]), 10000[1]), Subtract(10000[6], Divide(10000[5], 2.0)), Divide(Add(Add(Multiply(LevelData[5], Subtract(Multiply(EntitySharedMemoryArray[10000[0]], LevelData[12]), Divide(Multiply(LevelData[11], 1.8), 2.0))), Multiply(LevelData[6], Add(0.0, Divide(Multiply(LevelData[11], 1.8), 2.0)))), LevelData[7]), 10000[3]), Add(10000[6], Divide(10000[5], 2.0)), Divide(Add(Add(Multiply(LevelData[5], Add(Multiply(EntitySharedMemoryArray[10000[0]], LevelData[12]), Divide(Multiply(LevelData[11], 1.8), 2.0))), Multiply(LevelData[6], Add(0.0, Divide(Multiply(LevelData[11], 1.8), 2.0)))), LevelData[7]), 10000[4]), Add(10000[7], Divide(10000[5], 2.0)), Divide(Add(Add(Multiply(LevelData[5], Add(Multiply(EntitySharedMemoryArray[10000[0]], LevelData[12]), Divide(Multiply(LevelData[11], 1.8), 2.0))), Multiply(LevelData[6], Subtract(0.0, Divide(Multiply(LevelData[11], 1.8), 2.0)))), LevelData[7]), 10000[2]), 1.5, 1.0)
   EntityMemory[2] <- 10000[0]
-  goto 20
-18:
-  10000[0] <- EntityMemory[2]
-  goto 19 if NotEqual(10000[0], 0.0) else 20
-19:
-  10000[0] <- EntityMemory[2]
-  DestroyParticleEffect(10000[0])
-  EntityMemory[2] <- 0.0
-  goto 20
-20:
   goto exit

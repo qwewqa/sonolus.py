@@ -20,7 +20,7 @@
   goto 5
 5:
   EntityDespawn[0] <- 1.0
-  goto 23
+  goto exit
 6:
   10000[0] <- EntityMemory[0]
   10000[0] <- Add(12.0, Multiply(10000[0], 32.0))
@@ -87,7 +87,7 @@
 18:
   10000[0] <- PlayLooped(7.0)
   EntityMemory[3] <- 10000[0]
-  goto 23
+  goto exit
 19:
   10000[0] <- EntityMemory[2]
   goto 20 if NotEqual(10000[0], 0.0) else 21
@@ -103,6 +103,6 @@
   10000[0] <- EntityMemory[3]
   StopLooped(10000[0])
   EntityMemory[3] <- 0.0
-  goto 23
+  goto exit
 23:
   goto exit

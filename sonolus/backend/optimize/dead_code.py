@@ -38,10 +38,12 @@ class UnreachableCodeElimination(CompilerPass):
                 for edge in block.outgoing:
                     edge.dst.incoming.remove(edge)
             else:
+                incoming_blocks = {edge.src for edge in block.incoming}
                 for args in block.phis.values():
                     for src_block in [*args]:
-                        if src_block not in visited:
+                        if src_block not in visited or src_block not in incoming_blocks:
                             args.pop(src_block)
+                block.phis = {tgt: args for tgt, args in block.phis.items() if args}
         return entry
 
 

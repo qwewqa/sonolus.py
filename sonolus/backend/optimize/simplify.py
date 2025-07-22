@@ -1,6 +1,6 @@
 from sonolus.backend.ir import IRConst, IRGet, IRPureInstr, IRSet
 from sonolus.backend.ops import Op
-from sonolus.backend.optimize.flow import BasicBlock, traverse_cfg_preorder
+from sonolus.backend.optimize.flow import BasicBlock, FlowEdge, traverse_cfg_preorder
 from sonolus.backend.optimize.passes import CompilerPass, OptimizerConfig
 
 
@@ -70,6 +70,35 @@ class CoalesceFlow(CompilerPass):
             queue.extend(edge.dst for edge in block.outgoing)
             processed.remove(block)
             queue.append(block)
+        return entry
+
+
+class CoalesceEmptyConditionalBlocks(CompilerPass):
+    def run(self, entry: BasicBlock, config: OptimizerConfig) -> BasicBlock:
+        queue = [entry]
+        processed = set()
+        while queue:
+            block = queue.pop()
+            if block in processed:
+                continue
+            processed.add(block)
+            while len(block.outgoing) == 1:
+                next_edge = next(iter(block.outgoing))
+                next_block = next_edge.dst
+                if not next_block.phis and not next_block.statements:
+                    next_block.incoming.remove(next_edge)
+                    block.test = next_block.test
+                    block.outgoing = {FlowEdge(src=block, dst=edge.dst, cond=edge.cond) for edge in next_block.outgoing}
+                    for edge in block.outgoing:
+                        edge.dst.incoming.add(edge)
+                else:
+                    break
+            queue.extend(edge.dst for edge in block.outgoing if edge.dst not in processed)
+
+        reachable_blocks = set(traverse_cfg_preorder(entry))
+        for block in traverse_cfg_preorder(entry):
+            block.incoming = {edge for edge in block.incoming if edge.src in reachable_blocks}
+            block.outgoing = {edge for edge in block.outgoing if edge.dst in reachable_blocks}
         return entry
 
 

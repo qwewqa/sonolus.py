@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import inspect
+from abc import ABCMeta
 from collections.abc import Iterable
 from inspect import getmro
 from typing import Any, ClassVar, Self, TypeVar, dataclass_transform, get_origin
@@ -20,7 +21,7 @@ from sonolus.script.internal.value import BackingSource, DataValue, Value
 from sonolus.script.num import Num
 
 
-class RecordMeta(type):
+class RecordMeta(ABCMeta):
     @meta_fn
     def __pos__[T](cls: type[T]) -> T:
         """Create a zero-initialized record instance."""
