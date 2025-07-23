@@ -3,7 +3,7 @@ import ast
 import builtins
 import functools
 import inspect
-from collections.abc import Callable, Sequence
+from collections.abc import Callable, Iterable, Sequence
 from inspect import ismethod
 from types import FunctionType, MethodType, MethodWrapperType
 from typing import Any, Never, Self
@@ -233,9 +233,12 @@ class Visitor(ast.NodeVisitor):
             case ast.Lambda(body=body):
                 result = self.visit(body)
                 ctx().scope.set_value("$return", result)
+            case ast.GeneratorExp(elt=elt, generators=generators):
+                self.construct_genexpr(generators, elt)
+                ctx().scope.set_value("$return", validate_value(None))
             case _:
                 raise NotImplementedError("Unsupported syntax")
-        if has_yield(node):
+        if has_yield(node) or isinstance(node, ast.GeneratorExp):
             return_ctx = Context.meet([*self.return_ctxs, ctx()])
             result_binding = return_ctx.scope.get_binding("$return")
             if not isinstance(result_binding, ValueBinding):
@@ -292,6 +295,59 @@ class Visitor(ast.NodeVisitor):
             raise ValueError("Function has conflicting return values")
         set_ctx(after_ctx.branch_with_scope(None, before_ctx.scope.copy()))
         return result_binding.value
+
+    def construct_genexpr(self, generators: Iterable[ast.comprehension], elt: ast.expr):
+        if not generators:
+            # Note that there may effectively be multiple yields in an expression since
+            # tuples are unrolled.
+            value = self.visit(elt)
+            ctx().scope.set_value("$yield", validate_value(value))
+            self.yield_ctxs.append(ctx())
+            resume_ctx = ctx().new_disconnected()
+            self.resume_ctxs.append(resume_ctx)
+            set_ctx(resume_ctx)
+            return
+        generator, *others = generators
+        iterable = self.visit(generator.iter)
+        if isinstance(iterable, TupleImpl):
+            for value in iterable.value:
+                set_ctx(ctx().branch(None))
+                self.handle_assign(generator.target, validate_value(value))
+                self.construct_genexpr(others, elt)
+        else:
+            iterator = self.handle_call(generator.iter, iterable.__iter__)
+            if not isinstance(iterator, SonolusIterator):
+                raise ValueError("Unsupported iterator")
+            header_ctx = ctx().branch(None)
+            set_ctx(header_ctx)
+            next_value = self.handle_call(generator.iter, iterator.next)
+            if not isinstance(next_value, Maybe):
+                raise ValueError("Iterator next must return a Maybe")
+            if next_value._present._is_py_() and not next_value._present._as_py_():
+                # This will never run
+                return
+            ctx().test = next_value._present.ir()
+            body_ctx = ctx().branch(None)
+            else_ctx = ctx().branch(0)
+            set_ctx(body_ctx)
+            self.handle_assign(generator.target, next_value._value)
+            for if_expr in generator.ifs:
+                test = self.convert_to_boolean_num(if_expr, self.visit(if_expr))
+                if test._is_py_():
+                    if test._as_py_():
+                        continue
+                    else:
+                        ctx().outgoing[None] = header_ctx
+                        set_ctx(ctx().into_dead())
+                else:
+                    if_then_ctx = ctx().branch(None)
+                    if_else_ctx = ctx().branch(0)
+                    ctx().test = test.ir()
+                    if_else_ctx.outgoing[None] = header_ctx
+                    set_ctx(if_then_ctx)
+            self.construct_genexpr(others, elt)
+            ctx().outgoing[None] = header_ctx
+            set_ctx(else_ctx)
 
     def visit(self, node):
         """Visit a node."""
@@ -872,7 +928,8 @@ class Visitor(ast.NodeVisitor):
         raise NotImplementedError("Dict comprehensions are not supported")
 
     def visit_GeneratorExp(self, node):
-        raise NotImplementedError("Generator expressions are not supported")
+        self.active_ctx = ctx()
+        return Visitor(self.source_file, inspect.Signature([]).bind(), self.globals, self).run(node)
 
     def visit_Await(self, node):
         raise NotImplementedError("Await expressions are not supported")
