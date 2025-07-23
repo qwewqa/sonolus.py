@@ -18,12 +18,14 @@ Block(JumpLoop(
     2
     26
   ))
-  Execute(SwitchWithDefault(
-    Get(
-      4001
-      0
+  Execute(If(
+    Equal(
+      Get(
+        4001
+        0
+      )
+      6
     )
-    6.0
     26
     3
   ))
@@ -1952,15 +1954,9 @@ Block(JumpLoop(
       )
     )
     If(
-      Less(
-        Get(
-          10000
-          0
-        )
-        Get(
-          2001
-          16
-        )
+      Get(
+        10000
+        1
       )
       21
       25

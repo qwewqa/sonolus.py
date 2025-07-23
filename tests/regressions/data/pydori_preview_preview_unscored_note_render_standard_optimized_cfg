@@ -50,24 +50,29 @@
   goto 13 if Greater(EntityData[3], 0.0) else 14
 13:
   10000[6] <- 11.0
-  goto 16
+  goto when EntityData[0]
+    2.0 -> 28
+    default -> 16
 14:
   10000[6] <- 13.0
-  goto 16
+  goto when EntityData[0]
+    2.0 -> 28
+    default -> 16
 15:
   10000[6] <- 9.0
-  goto 16
+  goto when EntityData[0]
+    2.0 -> 28
+    default -> 16
 16:
-  goto when Subtract(EntityData[0], 2.0)
-    0.0 -> 28
-    1.0 -> 17
+  goto when EntityData[0]
+    3.0 -> 17
     default -> 27
 17:
   10000[0] <- 0.0
   goto 18
 18:
   10000[1] <- Less(10000[0], Abs(EntityData[3]))
-  goto 19 if Less(10000[0], Abs(EntityData[3])) else 27
+  goto 19 if 10000[1] else 27
 19:
   goto 20 if 10000[1] else 27
 20:

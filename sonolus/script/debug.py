@@ -4,18 +4,9 @@ from typing import Any, Literal, Never
 
 from sonolus.backend.mode import Mode
 from sonolus.backend.ops import Op
-from sonolus.backend.optimize.constant_evaluation import SparseConditionalConstantPropagation
-from sonolus.backend.optimize.copy_coalesce import CopyCoalesce
-from sonolus.backend.optimize.dead_code import (
-    AdvancedDeadCodeElimination,
-    DeadCodeElimination,
-    UnreachableCodeElimination,
-)
 from sonolus.backend.optimize.flow import cfg_to_mermaid
-from sonolus.backend.optimize.inlining import InlineVars
 from sonolus.backend.optimize.passes import CompilerPass, OptimizerConfig, run_passes
-from sonolus.backend.optimize.simplify import CoalesceFlow, NormalizeSwitch, RewriteToSwitch
-from sonolus.backend.optimize.ssa import FromSSA, ToSSA
+from sonolus.backend.optimize.simplify import RenumberVars
 from sonolus.script.internal.context import GlobalContextState, ReadOnlyMemory, ctx, set_ctx
 from sonolus.script.internal.impl import meta_fn, validate_value
 from sonolus.script.internal.native import native_function
@@ -110,41 +101,26 @@ def visualize_cfg(
     mode: Mode = Mode.PLAY,
     archetype: type | None = None,
     archetypes: list[type] | None = None,
-    passes: Sequence[CompilerPass] | Literal["minimal", "basic", "standard"] = "basic",
+    passes: Sequence[CompilerPass] | Literal["minimal", "fast", "standard"] = "fast",
 ) -> str:
+    from sonolus.backend.optimize.optimize import FAST_PASSES, MINIMAL_PASSES, STANDARD_PASSES
     from sonolus.build.compile import callback_to_cfg
 
     match passes:
         case "minimal":
             passes = [
-                CoalesceFlow(),
+                *MINIMAL_PASSES[:-1],
+                RenumberVars(),
             ]
-        case "basic":
+        case "fast":
             passes = [
-                CoalesceFlow(),
-                UnreachableCodeElimination(),
-                AdvancedDeadCodeElimination(),
-                CoalesceFlow(),
+                *FAST_PASSES[:-1],
+                RenumberVars(),
             ]
         case "standard":
             passes = [
-                CoalesceFlow(),
-                UnreachableCodeElimination(),
-                DeadCodeElimination(),
-                ToSSA(),
-                SparseConditionalConstantPropagation(),
-                UnreachableCodeElimination(),
-                DeadCodeElimination(),
-                CoalesceFlow(),
-                InlineVars(),
-                DeadCodeElimination(),
-                RewriteToSwitch(),
-                FromSSA(),
-                CoalesceFlow(),
-                CopyCoalesce(),
-                AdvancedDeadCodeElimination(),
-                CoalesceFlow(),
-                NormalizeSwitch(),
+                *STANDARD_PASSES[:-1],
+                RenumberVars(),
             ]
 
     global_state = GlobalContextState(

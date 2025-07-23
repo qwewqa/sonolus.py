@@ -16,6 +16,9 @@ class InlineVars(CompilerPass):
                 if isinstance(stmt, IRSet) and isinstance(stmt.place, SSAPlace):
                     definitions[stmt.place] = stmt.value
             self.count_uses(block.test, use_counts)
+            for args in block.phis.values():
+                for arg in args.values():
+                    self.count_uses(arg, use_counts)
 
         for p, defn in definitions.items():
             while True:

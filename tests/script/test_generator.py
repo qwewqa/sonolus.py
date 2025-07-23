@@ -531,3 +531,59 @@ def test_generator_yielding_record():
             debug_log(record.value)
 
     run_and_validate(fn)
+
+
+def test_generator_yielding_record_mutation():
+    def fn():
+        box = Box(1)
+
+        def gen():
+            yield box
+            yield box
+            yield box
+
+        for record in gen():
+            debug_log(record.value)
+
+        for record in gen():
+            debug_log(record.value)
+            box.value = 2
+
+    run_and_validate(fn)
+
+
+def test_generator_yielding_array_record_element_with_mutation():
+    def fn():
+        arr = Array(Box(1), Box(2), Box(3))
+
+        def gen():
+            yield from arr
+
+        for record in gen():
+            debug_log(record.value)
+            record.value = 10
+
+        for record in gen():
+            arr[0].value = 20
+            debug_log(record.value)
+
+        for element in gen():
+            debug_log(element.value)
+
+    run_and_validate(fn)
+
+
+def test_nested_iteration_of_same_generator():
+    def fn():
+        arr = Array(Box(0), Box(1), Box(2))
+
+        def gen():
+            for i in range(3):
+                yield arr[i]
+
+        for record in gen():
+            for record_2 in gen():
+                record.value = 1
+                debug_log(record.value + record_2.value)
+
+    run_and_validate(fn)

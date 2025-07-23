@@ -18,18 +18,16 @@
   goto 3 if Less(EntityDataArray[10000[8]], EntityDataArray[10000[10]]) else 4
 3:
   10000[3] <- EntityDataArray[10000[8]]
-  goto 5
+  goto 5 if Less(10000[1], 10000[5]) else 6
 4:
   10000[3] <- EntityDataArray[10000[10]]
-  goto 5
+  goto 5 if Less(10000[1], 10000[5]) else 6
 5:
-  goto 6 if Less(10000[1], 10000[5]) else 7
-6:
   10000[4] <- 10000[1]
-  goto 8
-7:
+  goto 7
+6:
   10000[4] <- 10000[5]
-  goto 8
-8:
+  goto 7
+7:
   Draw(17.0, Divide(Add(Add(Multiply(LevelData[2], Subtract(10000[6], Divide(LevelData[11], 2.0))), Multiply(LevelData[3], Clamp(10000[1], 0.0, LevelData[14]))), LevelData[4]), 10000[9]), Divide(Add(Add(Multiply(LevelData[5], Subtract(10000[6], Divide(LevelData[11], 2.0))), Multiply(LevelData[6], Clamp(10000[1], 0.0, LevelData[14]))), LevelData[7]), 10000[9]), Divide(Add(Add(Multiply(LevelData[2], Subtract(10000[7], Divide(LevelData[11], 2.0))), Multiply(LevelData[3], Clamp(10000[5], 0.0, LevelData[14]))), LevelData[4]), 10000[0]), Divide(Add(Add(Multiply(LevelData[5], Subtract(10000[7], Divide(LevelData[11], 2.0))), Multiply(LevelData[6], Clamp(10000[5], 0.0, LevelData[14]))), LevelData[7]), 10000[0]), Divide(Add(Add(Multiply(LevelData[2], Add(10000[7], Divide(LevelData[11], 2.0))), Multiply(LevelData[3], Clamp(10000[5], 0.0, LevelData[14]))), LevelData[4]), 10000[2]), Divide(Add(Add(Multiply(LevelData[5], Add(10000[7], Divide(LevelData[11], 2.0))), Multiply(LevelData[6], Clamp(10000[5], 0.0, LevelData[14]))), LevelData[7]), 10000[2]), Divide(Add(Add(Multiply(LevelData[2], Add(10000[6], Divide(LevelData[11], 2.0))), Multiply(LevelData[3], Clamp(10000[1], 0.0, LevelData[14]))), LevelData[4]), 10000[11]), Divide(Add(Add(Multiply(LevelData[5], Add(10000[6], Divide(LevelData[11], 2.0))), Multiply(LevelData[6], Clamp(10000[1], 0.0, LevelData[14]))), LevelData[7]), 10000[11]), Add(Add(100000.0, Multiply(10000[3], 100.0)), 10000[4]), LevelOption[5])
   goto exit

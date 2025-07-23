@@ -11,16 +11,14 @@
 3:
   10000[0] <- Add(9.0, Multiply(EntityData[1], 32.0))
   10000[0] <- EntityDataArray[10000[0]]
-  goto 5
+  goto 5 if Less(10000[1], 10000[0]) else 6
 4:
   10000[0] <- Add(7.0, Multiply(EntityData[1], 32.0))
   10000[0] <- EntityDataArray[10000[0]]
-  goto 5
+  goto 5 if Less(10000[1], 10000[0]) else 6
 5:
-  goto 6 if Less(10000[1], 10000[0]) else 7
+  Break(1, 10000[1])
+  goto exit
 6:
-  10000[0] <- 10000[1]
-  goto 7
-7:
   Break(1, 10000[0])
   goto exit

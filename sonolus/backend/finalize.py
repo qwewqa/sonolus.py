@@ -32,6 +32,18 @@ def cfg_to_engine_node(entry: BasicBlock):
                         ],
                     )
                 )
+            case {None: default_branch, **other} if len(other) == 1:
+                cond, cond_branch = next(iter(other.items()))
+                statements.append(
+                    FunctionNode(
+                        func=Op.If,
+                        args=[
+                            ir_to_engine_node(IRPureInstr(Op.Equal, args=[block.test, IRConst(cond)])),
+                            ConstantNode(value=block_indexes[cond_branch]),
+                            ConstantNode(value=block_indexes[default_branch]),
+                        ],
+                    )
+                )
             case dict() as targets:
                 args = [ir_to_engine_node(block.test)]
                 default = len(block_indexes)

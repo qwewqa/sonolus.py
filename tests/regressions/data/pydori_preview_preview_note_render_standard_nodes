@@ -1,10 +1,12 @@
 Block(JumpLoop(
-  Execute(SwitchWithDefault(
-    Get(
-      4000
-      0
+  Execute(If(
+    Equal(
+      Get(
+        4000
+        0
+      )
+      6
     )
-    6.0
     11
     1
   ))
@@ -380,7 +382,17 @@ Block(JumpLoop(
       6
       11
     )
-    16
+    If(
+      Equal(
+        Get(
+          4000
+          0
+        )
+        2
+      )
+      28
+      16
+    )
   )
   Execute(
     Set(
@@ -388,7 +400,17 @@ Block(JumpLoop(
       6
       13
     )
-    16
+    If(
+      Equal(
+        Get(
+          4000
+          0
+        )
+        2
+      )
+      28
+      16
+    )
   )
   Execute(
     Set(
@@ -396,17 +418,26 @@ Block(JumpLoop(
       6
       9
     )
-    16
+    If(
+      Equal(
+        Get(
+          4000
+          0
+        )
+        2
+      )
+      28
+      16
+    )
   )
-  Execute(SwitchIntegerWithDefault(
-    Subtract(
+  Execute(If(
+    Equal(
       Get(
         4000
         0
       )
-      2
+      3
     )
-    28
     17
     27
   ))
@@ -434,15 +465,9 @@ Block(JumpLoop(
       )
     )
     If(
-      Less(
-        Get(
-          10000
-          0
-        )
-        Abs(Get(
-          4000
-          3
-        ))
+      Get(
+        10000
+        1
       )
       19
       27

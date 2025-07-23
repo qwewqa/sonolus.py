@@ -1,7 +1,8 @@
-from sonolus.backend.ir import IRConst, IRGet, IRPureInstr, IRSet
+from sonolus.backend.ir import IRConst, IRGet, IRInstr, IRPureInstr, IRSet
 from sonolus.backend.ops import Op
 from sonolus.backend.optimize.flow import BasicBlock, FlowEdge, traverse_cfg_preorder
 from sonolus.backend.optimize.passes import CompilerPass, OptimizerConfig
+from sonolus.backend.place import BlockPlace, SSAPlace, TempBlock
 
 
 class CoalesceFlow(CompilerPass):
@@ -57,7 +58,8 @@ class CoalesceFlow(CompilerPass):
                 continue
             for p, args in next_block.phis.items():
                 if block not in args:
-                    continue
+                    # This is the only predecessor to the block, so it must be a phi argument
+                    raise ValueError("Missing phi argument")
                 block.statements.append(IRSet(p, IRGet(args[block])))
             block.statements.extend(next_block.statements)
             block.test = next_block.test
@@ -75,32 +77,38 @@ class CoalesceFlow(CompilerPass):
         return entry
 
 
-class CoalesceEmptyConditionalBlocks(CompilerPass):
+class CoalesceSmallConditionalBlocks(CompilerPass):
     def run(self, entry: BasicBlock, config: OptimizerConfig) -> BasicBlock:
         queue = [entry]
         processed = set()
         while queue:
             block = queue.pop()
+            if block.phis:
+                raise RuntimeError("SSA form is not supported in this pass")
             if block in processed:
                 continue
             processed.add(block)
             while len(block.outgoing) == 1:
                 next_edge = next(iter(block.outgoing))
                 next_block = next_edge.dst
-                if not next_block.phis and not next_block.statements:
+                if len(next_block.statements) <= 1:
                     next_block.incoming.remove(next_edge)
                     block.test = next_block.test
                     block.outgoing = {FlowEdge(src=block, dst=edge.dst, cond=edge.cond) for edge in next_block.outgoing}
+                    block.statements.extend(next_block.statements)
                     for edge in block.outgoing:
                         edge.dst.incoming.add(edge)
                 else:
                     break
-            queue.extend(edge.dst for edge in block.outgoing if edge.dst not in processed)
+            queue.extend(
+                edge.dst
+                for edge in sorted(block.outgoing, key=lambda e: (e.cond is not None, e.cond))
+                if edge.dst not in processed
+            )
 
         reachable_blocks = set(traverse_cfg_preorder(entry))
         for block in traverse_cfg_preorder(entry):
             block.incoming = {edge for edge in block.incoming if edge.src in reachable_blocks}
-            block.outgoing = {edge for edge in block.outgoing if edge.dst in reachable_blocks}
         return entry
 
 
@@ -220,3 +228,51 @@ class NormalizeSwitch(CompilerPass):
             if case != offset + i * stride:
                 return None, None
         return offset, stride
+
+
+class RenumberVars(CompilerPass):
+    def run(self, entry: BasicBlock, config: OptimizerConfig) -> BasicBlock:
+        numbers = {}
+        for block in traverse_cfg_preorder(entry):
+            for stmt in block.statements:
+                if (
+                    isinstance(stmt, IRSet)
+                    and isinstance(stmt.place, BlockPlace)
+                    and isinstance(stmt.place.block, TempBlock)
+                    and stmt.place.block.size == 1
+                    and stmt.place.block not in numbers
+                ):
+                    numbers[stmt.place.block] = len(numbers) + 1
+        for block in traverse_cfg_preorder(entry):
+            block.statements = [self.update_statement(stmt, numbers) for stmt in block.statements]
+            block.test = self.update_statement(block.test, numbers)
+        return entry
+
+    def update_statement(self, stmt, numbers: dict[TempBlock, int]):
+        match stmt:
+            case IRConst():
+                return stmt
+            case IRPureInstr(op=op, args=args):
+                return IRPureInstr(op=op, args=[self.update_statement(arg, numbers) for arg in args])
+            case IRInstr(op=op, args=args):
+                return IRInstr(op=op, args=[self.update_statement(arg, numbers) for arg in args])
+            case IRGet(place=place):
+                return IRGet(place=self.update_statement(place, numbers))
+            case IRSet(place=SSAPlace() as place, value=value):
+                return IRSet(place=place, value=self.update_statement(value, numbers))
+            case IRSet(place=place, value=value):
+                return IRSet(place=self.update_statement(place, numbers), value=self.update_statement(value, numbers))
+            case BlockPlace(block=block, index=index, offset=offset):
+                return BlockPlace(
+                    block=self.update_statement(block, numbers),
+                    index=self.update_statement(index, numbers),
+                    offset=offset,
+                )
+            case SSAPlace():
+                return stmt
+            case TempBlock() as b if b in numbers:
+                return TempBlock(f"v{numbers[b]}", size=1)
+            case int() | float() | TempBlock():
+                return stmt
+            case _:
+                raise TypeError(f"Unexpected statement: {stmt}")

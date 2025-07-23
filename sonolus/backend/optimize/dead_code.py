@@ -29,7 +29,6 @@ class UnreachableCodeElimination(CompilerPass):
                             block.outgoing.remove(edge)
                     if taken_edge:
                         taken_edge.cond = None
-                        block.outgoing.add(taken_edge)
                         worklist.add(taken_edge.dst)
                 case _:
                     worklist.update(edge.dst for edge in block.outgoing)

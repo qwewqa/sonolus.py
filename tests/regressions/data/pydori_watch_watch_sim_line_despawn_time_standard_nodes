@@ -103,7 +103,20 @@ Block(JumpLoop(
         )
       )
     )
-    5
+    If(
+      Less(
+        Get(
+          10000
+          1
+        )
+        Get(
+          10000
+          0
+        )
+      )
+      5
+      6
+    )
   )
   Execute(
     Set(
@@ -131,26 +144,24 @@ Block(JumpLoop(
         )
       )
     )
-    5
-  )
-  Execute(If(
-    Less(
-      Get(
-        10000
-        1
+    If(
+      Less(
+        Get(
+          10000
+          1
+        )
+        Get(
+          10000
+          0
+        )
       )
-      Get(
-        10000
-        0
-      )
+      5
+      6
     )
-    6
-    7
-  ))
+  )
   Execute(
-    Set(
-      10000
-      0
+    Break(
+      1
       Get(
         10000
         1
@@ -166,7 +177,7 @@ Block(JumpLoop(
         0
       )
     )
-    8
+    7
   )
   0
 ))

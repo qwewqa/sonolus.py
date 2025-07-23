@@ -3,7 +3,7 @@
   10000[0] <- Add(17.0, Multiply(10000[0], 32.0))
   10000[0] <- Multiply(EntityDataArray[10000[0]], 32.0)
   10000[0] <- EntitySharedMemoryArray[10000[0]]
-  goto 12 if Not(Greater(10000[0], 0.0)) else 1
+  goto 10 if Not(Greater(10000[0], 0.0)) else 1
 1:
   10000[0] <- EntityMemory[0]
   10000[0] <- Add(17.0, Multiply(10000[0], 32.0))
@@ -12,37 +12,31 @@
   10000[1] <- 0.0
   goto 2
 2:
-  goto 3 if Less(10000[1], RuntimeUpdate[3]) else 12
+  goto 3 if Less(10000[1], RuntimeUpdate[3]) else 10
 3:
-  goto 4 if LessOr(0.0, 10000[1]) else 5
+  goto 4 if LessOr(0.0, 10000[1]) else 9
 4:
-  10000[2] <- Less(10000[1], RuntimeUpdate[3])
-  goto 6
+  goto 9 if Not(Less(10000[1], RuntimeUpdate[3])) else 5
 5:
-  10000[2] <- 0.0
-  goto 6
-6:
-  goto 7 if Not(10000[2]) else 8
-7:
-  DebugLog(0.0)
-  DebugPause()
-  goto exit
-8:
   10000[2] <- Add(10000[1], 1.0)
   10000[3] <- Add(0.0, Multiply(Add(10000[1], Multiply(Less(10000[1], 0.0), RuntimeUpdate[3])), 15.0))
   10000[4] <- 1002.0[10000[3]]
-  goto 9 if NotEqual(10000[4], 10000[0]) else 10
-9:
+  goto 6 if NotEqual(10000[4], 10000[0]) else 7
+6:
   10000[1] <- 10000[2]
   goto 2
-10:
+7:
   10000[0] <- 1002.0[10000[3] + 2]
-  goto 11 if 10000[0] else 12
-11:
+  goto 8 if 10000[0] else 10
+8:
   10000[0] <- EntityMemory[0]
   10000[0] <- Add(17.0, Multiply(10000[0], 32.0))
   10000[0] <- Multiply(EntityDataArray[10000[0]], 32.0)
   EntitySharedMemoryArray[10000[0]] <- 0.0
   goto exit
-12:
+9:
+  DebugLog(0.0)
+  DebugPause()
+  goto exit
+10:
   goto exit

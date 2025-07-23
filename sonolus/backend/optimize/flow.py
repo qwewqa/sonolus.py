@@ -129,7 +129,7 @@ def cfg_to_mermaid(entry: BasicBlock):
             case dict() as tgt:
                 lines.append(f"{index}_{{{{{pre(fmt([block.test]))}}}}}")
                 lines.append(f"{index} --> {index}_")
-                for cond, target in tgt.items():
+                for cond, target in sorted(tgt.items(), key=lambda x: (x[0] is None, x[0])):
                     lines.append(
                         f"{index}_ --> |{pre(fmt([cond if cond is not None else 'default']))}| {block_indexes[target]}"
                     )

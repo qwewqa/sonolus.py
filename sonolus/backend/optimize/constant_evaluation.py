@@ -24,7 +24,11 @@ UNDEF = Undefined()
 NAC = NotAConstant()
 
 
-type Value = float | Undefined | NotAConstant
+type Value = float | set[float] | Undefined | NotAConstant
+
+
+def is_constant(value: Value) -> bool:
+    return isinstance(value, (int, float))
 
 
 class SparseConditionalConstantPropagation(CompilerPass):
@@ -79,7 +83,7 @@ class SparseConditionalConstantPropagation(CompilerPass):
                 incoming_by_src.setdefault(edge.src, []).append(edge)
             for p, args in block.phis.items():
                 if not isinstance(p, SSAPlace):
-                    continue
+                    raise TypeError(f"Unexpected phi place: {p}")
                 defs[p] = {}
                 for b, v in args.items():
                     for incoming in incoming_by_src.get(b, []):
@@ -106,7 +110,19 @@ class SparseConditionalConstantPropagation(CompilerPass):
             if len(distinct_defined_arg_values) == 1:
                 new_value = distinct_defined_arg_values.pop()
             elif len(distinct_defined_arg_values) > 1:
-                new_value = NAC
+                if any(arg is NAC for arg in distinct_defined_arg_values):
+                    new_value = NAC
+                else:
+                    new_values = set()
+                    for arg in distinct_defined_arg_values:
+                        if isinstance(arg, frozenset):
+                            new_values.update(arg)
+                        else:
+                            new_values.add(arg)
+                    if len(new_values) == 1:
+                        new_value = next(iter(new_values))
+                    else:
+                        new_value = frozenset(new_values)
             else:
                 new_value = UNDEF
             if new_value != value:
@@ -142,11 +158,22 @@ class SparseConditionalConstantPropagation(CompilerPass):
                         if new_test_value is NAC:
                             flow_worklist.update(block.outgoing)
                             reachable_blocks.update(e.dst for e in block.outgoing)
-                        else:
-                            taken_edge = next(
-                                (edge for edge in block.outgoing if edge.cond == new_test_value), None
-                            ) or next((edge for edge in block.outgoing if edge.cond is None), None)
-                            if taken_edge:
+                        elif block.outgoing:
+                            outgoing_by_cond = {edge.cond: edge for edge in block.outgoing}
+                            if is_constant(new_test_value):
+                                taken_edge = outgoing_by_cond.get(new_test_value, outgoing_by_cond.get(None))
+                                if taken_edge is None:
+                                    raise ValueError("Unexpected missing edge")
+                                taken_edges = {taken_edge}
+                            else:
+                                taken_edges = set()
+                                for v in new_test_value:
+                                    taken_edge = outgoing_by_cond.get(v, outgoing_by_cond.get(None))
+                                    if taken_edge:
+                                        taken_edges.add(taken_edge)
+                                    else:
+                                        raise ValueError("Unexpected missing edge")
+                            for taken_edge in taken_edges:
                                 flow_worklist.add(taken_edge)
                                 reachable_blocks.add(taken_edge.dst)
                     elif len(block.outgoing) == 1 and next(iter(block.outgoing)).cond is None:
@@ -169,10 +196,21 @@ class SparseConditionalConstantPropagation(CompilerPass):
                             flow_worklist.update(p.outgoing)
                             reachable_blocks.update(e.dst for e in p.outgoing)
                         else:
-                            taken_edge = next(
-                                (edge for edge in p.outgoing if edge.cond == new_test_value), None
-                            ) or next((edge for edge in p.outgoing if edge.cond is None), None)
-                            if taken_edge:
+                            outgoing_by_cond = {edge.cond: edge for edge in p.outgoing}
+                            if is_constant(new_test_value):
+                                taken_edge = outgoing_by_cond.get(new_test_value, outgoing_by_cond.get(None))
+                                if taken_edge is None:
+                                    raise ValueError("Unexpected missing edge")
+                                taken_edges = {taken_edge}
+                            else:
+                                taken_edges = set()
+                                for v in new_test_value:
+                                    taken_edge = outgoing_by_cond.get(v, outgoing_by_cond.get(None))
+                                    if taken_edge:
+                                        taken_edges.add(taken_edge)
+                                    else:
+                                        raise ValueError("Unexpected missing edge")
+                            for taken_edge in taken_edges:
                                 flow_worklist.add(taken_edge)
                                 reachable_blocks.add(taken_edge.dst)
                 else:
@@ -188,6 +226,43 @@ class SparseConditionalConstantPropagation(CompilerPass):
         for block in traverse_cfg_preorder(entry):
             block.statements = [self.substitute_constants(stmt, values) for stmt in block.statements]
             block.test = self.substitute_constants(block.test, values)
+            if isinstance(block.test, IRGet) and block.test.place in values:
+                test_value = values[block.test.place]
+                if isinstance(test_value, frozenset):
+                    new_outgoing = set()
+                    outgoing_by_cond = {edge.cond: edge for edge in block.outgoing}
+                    for v in test_value:
+                        if v in outgoing_by_cond:
+                            new_outgoing.add(outgoing_by_cond[v])
+                        elif None in outgoing_by_cond:
+                            new_outgoing.add(outgoing_by_cond[None])
+                        else:
+                            raise ValueError("Unexpected missing edge")
+                    removed_edges = set(block.outgoing) - new_outgoing
+                    for edge in removed_edges:
+                        edge.dst.incoming.remove(edge)
+                    if not any(edge.cond is None for edge in new_outgoing):
+                        default_edge = max(new_outgoing, key=lambda e: e.cond)
+                        default_edge.cond = None
+                    block.outgoing = new_outgoing
+
+        reachable_blocks = set(traverse_cfg_preorder(entry))
+        for block in traverse_cfg_preorder(entry):
+            block.incoming = {edge for edge in block.incoming if edge.src in reachable_blocks}
+            incoming_blocks = {edge.src for edge in block.incoming}
+            for v in block.phis:
+                block.phis[v] = {k: v for k, v in block.phis[v].items() if k in incoming_blocks}
+
+        queue = set(traverse_cfg_preorder(entry))
+        while queue:
+            block = queue.pop()
+            dead_phis = {k for k, v in block.phis.items() if not v}
+            for edge in block.outgoing:
+                for v in edge.dst.phis.values():
+                    if block in v and v[block] in dead_phis:
+                        del v[block]
+                        queue.add(edge.dst)
+            block.phis = {k: v for k, v in block.phis.items() if v}
 
         return entry
 
@@ -268,7 +343,7 @@ class SparseConditionalConstantPropagation(CompilerPass):
                     case Op.Multiply:
                         if any(arg == 0 for arg in args):
                             return 0
-                if any(arg is NAC for arg in args):
+                if any(arg is NAC or isinstance(arg, frozenset) for arg in args):
                     return NAC
                 if any(arg is UNDEF for arg in args):
                     return UNDEF

@@ -8,8 +8,8 @@ from sonolus.backend.optimize.dead_code import (
 )
 from sonolus.backend.optimize.inlining import InlineVars
 from sonolus.backend.optimize.simplify import (
-    CoalesceEmptyConditionalBlocks,
     CoalesceFlow,
+    CoalesceSmallConditionalBlocks,
     NormalizeSwitch,
     RewriteToSwitch,
 )
@@ -32,7 +32,7 @@ STANDARD_PASSES = (
     CoalesceFlow(),
     UnreachableCodeElimination(),
     DeadCodeElimination(),
-    CoalesceEmptyConditionalBlocks(),
+    CoalesceSmallConditionalBlocks(),
     ToSSA(),
     SparseConditionalConstantPropagation(),
     UnreachableCodeElimination(),

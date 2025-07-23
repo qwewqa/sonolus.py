@@ -447,7 +447,20 @@ Block(JumpLoop(
         )
       )
     )
-    3
+    If(
+      Less(
+        Get(
+          10000
+          1
+        )
+        Get(
+          10000
+          5
+        )
+      )
+      3
+      4
+    )
   )
   Execute(
     Set(
@@ -461,32 +474,31 @@ Block(JumpLoop(
         )
       )
     )
-    3
+    If(
+      Less(
+        Get(
+          10000
+          1
+        )
+        Get(
+          10000
+          5
+        )
+      )
+      3
+      4
+    )
   )
-  Execute(If(
-    Less(
+  Execute(
+    Set(
+      10000
+      4
       Get(
         10000
         1
       )
-      Get(
-        10000
-        5
-      )
     )
-    4
     5
-  ))
-  Execute(
-    Set(
-      10000
-      4
-      Get(
-        10000
-        1
-      )
-    )
-    6
   )
   Execute(
     Set(
@@ -497,7 +509,7 @@ Block(JumpLoop(
         5
       )
     )
-    6
+    5
   )
   Execute(
     Draw(
@@ -923,7 +935,7 @@ Block(JumpLoop(
         5
       )
     )
-    7
+    6
   )
   0
 ))

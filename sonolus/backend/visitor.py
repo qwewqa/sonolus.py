@@ -23,6 +23,7 @@ from sonolus.script.internal.value import Value
 from sonolus.script.iterator import SonolusIterator
 from sonolus.script.maybe import Maybe
 from sonolus.script.num import Num, _is_num
+from sonolus.script.record import Record
 
 _compiler_internal_ = True
 
@@ -1295,6 +1296,9 @@ class Visitor(ast.NodeVisitor):
             if length._is_py_():
                 return Num._accept_(length._as_py_() > 0)
             return length > Num._accept_(0)
+        if isinstance(value, Record):
+            return Num._accept_(1)
+        # Not allowing other types to default to truthy for now in case there's any edge cases.
         raise TypeError(f"Converting {type(value).__name__} to bool is not supported")
 
     def arguments_to_signature(self, arguments: ast.arguments) -> inspect.Signature:
