@@ -61,3 +61,27 @@ def scan_writes(node: ast.AST) -> set[str]:
     visitor = ScanWrites()
     visitor.visit(node)
     return set(visitor.writes)
+
+
+class HasDirectYield(ast.NodeVisitor):
+    def __init__(self):
+        self.started = False
+        self.has_yield = False
+
+    def visit_Yield(self, node: ast.Yield):
+        self.has_yield = True
+
+    def visit_YieldFrom(self, node: ast.YieldFrom):
+        self.has_yield = True
+
+    def visit_FunctionDef(self, node: ast.FunctionDef):
+        if self.started:
+            return
+        self.started = True
+        self.generic_visit(node)
+
+
+def has_yield(node: ast.AST) -> bool:
+    visitor = HasDirectYield()
+    visitor.visit(node)
+    return visitor.has_yield

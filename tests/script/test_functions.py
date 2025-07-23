@@ -768,7 +768,7 @@ def test_decorator_with_state():
             return wrapper
 
         @track_calls
-        def add(x, y):  # noqa: FURB118
+        def add(x, y):
             return x + y
 
         first = add(2, 3)  # counter becomes (1, 5)

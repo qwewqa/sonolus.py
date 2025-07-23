@@ -12,8 +12,9 @@ Sonolus.py comes with support for a number of built-in functions.
 - `issubclass(class, classinfo)`
 - `len(s)`
 - `map(function, iterable)`
-- `max(iterable, *, key=None)`, `max(arg1, arg2, *args, key=None)`
-- `min(iterable, *, key=None)`, `min(arg1, arg2, *args, key=None)`
+- `max(iterable, *, default=..., key=None)`, `max(arg1, arg2, *args, key=None)`
+- `min(iterable, *, default=..., key=None)`, `min(arg1, arg2, *args, key=None)`
+- `sum(iterable, start=0)`
 - `range(stop)`, `range(start, stop[, step])`
 - `reversed(seq)`
 - `round(number[, ndigits])`

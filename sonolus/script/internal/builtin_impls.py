@@ -1,6 +1,3 @@
-from collections.abc import Iterable
-from typing import overload
-
 from sonolus.script.array import Array
 from sonolus.script.array_like import ArrayLike
 from sonolus.script.internal.context import ctx
@@ -20,6 +17,8 @@ from sonolus.script.iterator import (
     _Zipper,
 )
 from sonolus.script.num import Num, _is_num
+
+_empty = object()
 
 
 @meta_fn
@@ -111,17 +110,12 @@ def _identity(value):
     return value
 
 
-@overload
-def _max[T](iterable: Iterable[T], *, key: callable = ...) -> T: ...
-
-
-@overload
-def _max[T](a: T, b: T, *args: T, key: callable = ...) -> T: ...
-
-
 @meta_fn
-def _max(*args, key: callable = _identity):
+def _max(*args, default=_empty, key=None):
     from sonolus.backend.visitor import compile_and_call
+
+    if key is None:
+        key = _identity
 
     args = tuple(validate_value(arg) for arg in args)
     if len(args) == 0:
@@ -131,10 +125,25 @@ def _max(*args, key: callable = _identity):
         if isinstance(iterable, ArrayLike):
             return compile_and_call(iterable._max_, key=key)
         elif isinstance(iterable, TupleImpl) and all(_is_num(v) for v in iterable.value):
+            if len(iterable.value) == 0:
+                if default is not _empty:
+                    return default
+                raise ValueError("max() arg is an empty sequence")
             return compile_and_call(Array(*iterable.value)._max_, key=key)
+        elif isinstance(iterable, SonolusIterator):
+            if not (default is _empty or Num._accepts_(default)):
+                raise TypeError("default argument must be a number")
+            return compile_and_call(
+                _max_num_iterator,
+                iterable,
+                Num._accept_(default) if default is not _empty else None,
+                key=key if key is not _identity else None,
+            )
         else:
             raise TypeError(f"Unsupported type: {type(iterable)} for max")
     else:
+        if default is not _empty:
+            raise TypeError("default argument is not supported for max with multiple arguments")
         if not all(_is_num(arg) for arg in args):
             raise TypeError("Arguments to max must be numbers")
         if ctx():
@@ -153,17 +162,35 @@ def _max2(a, b, key=_identity):
         return b
 
 
-@overload
-def _min[T](iterable: Iterable[T], *, key: callable = ...) -> T: ...
-
-
-@overload
-def _min[T](a: T, b: T, *args: T, key: callable = ...) -> T: ...
+def _max_num_iterator(iterable, default, key):
+    iterator = iterable.__iter__()  # noqa: PLC2801
+    initial = iterator.next()
+    if initial.is_nothing:
+        assert default is not None
+        return default
+    if key is not None:
+        result = initial.get_unsafe()
+        best_key = key(result)
+        for value in iterator:
+            new_key = key(value)
+            if new_key > best_key:
+                result = value
+                best_key = new_key
+        return result
+    else:
+        result = initial.get_unsafe()
+        for value in iterator:
+            if value > result:  # noqa: PLR1730
+                result = value
+        return result
 
 
 @meta_fn
-def _min(*args, key: callable = _identity):
+def _min(*args, default=_empty, key=None):
     from sonolus.backend.visitor import compile_and_call
+
+    if key is None:
+        key = _identity
 
     args = tuple(validate_value(arg) for arg in args)
     if len(args) == 0:
@@ -173,10 +200,25 @@ def _min(*args, key: callable = _identity):
         if isinstance(iterable, ArrayLike):
             return compile_and_call(iterable._min_, key=key)
         elif isinstance(iterable, TupleImpl) and all(_is_num(v) for v in iterable.value):
+            if len(iterable.value) == 0:
+                if default is not _empty:
+                    return default
+                raise ValueError("min() arg is an empty sequence")
             return compile_and_call(Array(*iterable.value)._min_, key=key)
+        elif isinstance(iterable, SonolusIterator):
+            if not (default is _empty or Num._accepts_(default)):
+                raise TypeError("default argument must be a number")
+            return compile_and_call(
+                _min_num_iterator,
+                iterable,
+                Num._accept_(default) if default is not _empty else None,
+                key=key if key is not _identity else None,
+            )
         else:
             raise TypeError(f"Unsupported type: {type(iterable)} for min")
     else:
+        if default is not _empty:
+            raise TypeError("default argument is not supported for min with multiple arguments")
         if not all(_is_num(arg) for arg in args):
             raise TypeError("Arguments to min must be numbers")
         if ctx():
@@ -193,6 +235,29 @@ def _min2(a, b, key=_identity):
         return a
     else:
         return b
+
+
+def _min_num_iterator(iterable, default, key):
+    iterator = iterable.__iter__()  # noqa: PLC2801
+    initial = iterator.next()
+    if initial.is_nothing:
+        assert default is not None
+        return default
+    if key is not None:
+        result = initial.get_unsafe()
+        best_key = key(result)
+        for value in iterator:
+            new_key = key(value)
+            if new_key < best_key:
+                result = value
+                best_key = new_key
+        return result
+    else:
+        result = initial.get_unsafe()
+        for value in iterator:
+            if value < result:  # noqa: PLR1730
+                result = value
+        return result
 
 
 @meta_fn
@@ -255,12 +320,19 @@ def _all(iterable):
     return True
 
 
+def _sum(iterable, /, start=0):
+    for value in iterable:
+        start += value
+    return start
+
+
 # classmethod, property, staticmethod are supported as decorators, but not within functions
 
 BUILTIN_IMPLS = {
     id(abs): _abs,
     id(all): _all,
     id(any): _any,
+    id(sum): _sum,
     id(bool): _bool,
     id(callable): _callable,
     id(enumerate): _enumerate,

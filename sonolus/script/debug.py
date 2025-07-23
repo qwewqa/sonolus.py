@@ -32,7 +32,7 @@ def error(message: str | None = None) -> Never:
     This function is used to raise an error during runtime.
     When this happens, the game will pause in debug mode. The current callback will also immediately return 0.
     """
-    message = validate_value(message)._as_py_() if message is not None else "Error"
+    message = validate_value(message)._as_py_() or "Error"
     if not isinstance(message, str):
         raise ValueError("Expected a string")
     if ctx():
@@ -50,7 +50,7 @@ def static_error(message: str | None = None) -> Never:
     This function is used to raise an error during compile-time if the compiler cannot guarantee that
     this function will not be called during runtime.
     """
-    message = validate_value(message)._as_py_() if message is not None else "Error"
+    message = validate_value(message)._as_py_() or "Error"
     if not isinstance(message, str):
         raise ValueError("Expected a string")
     raise RuntimeError(message)

@@ -9,14 +9,15 @@ from types import FunctionType, MethodType, MethodWrapperType
 from typing import Any, Never, Self
 
 from sonolus.backend.excepthook import install_excepthook
-from sonolus.backend.utils import get_function, scan_writes
+from sonolus.backend.utils import get_function, has_yield, scan_writes
 from sonolus.script.debug import assert_true
 from sonolus.script.internal.builtin_impls import BUILTIN_IMPLS, _bool, _float, _int, _len
 from sonolus.script.internal.constant import ConstantValue
-from sonolus.script.internal.context import Context, EmptyBinding, Scope, ValueBinding, ctx, set_ctx
+from sonolus.script.internal.context import Context, EmptyBinding, Scope, ValueBinding, ctx, set_ctx, using_ctx
 from sonolus.script.internal.descriptor import SonolusDescriptor
 from sonolus.script.internal.error import CompilationError
-from sonolus.script.internal.impl import validate_value
+from sonolus.script.internal.impl import meta_fn, validate_value
+from sonolus.script.internal.transient import TransientValue
 from sonolus.script.internal.tuple_impl import TupleImpl
 from sonolus.script.internal.value import Value
 from sonolus.script.iterator import SonolusIterator
@@ -190,8 +191,11 @@ class Visitor(ast.NodeVisitor):
         Context | list[Context]
     ]  # Contexts at loop heads, from outer to inner. Contains a list for unrolled (tuple) loops
     break_ctxs: list[list[Context]]  # Contexts at break statements, from outer to inner
-    active_ctx: Context | None  # The active context for use in nested functions=
+    yield_ctxs: list[Context]  # Contexts at yield statements, which will branch to the exit
+    resume_ctxs: list[Context]  # Contexts after yield statements
+    active_ctx: Context | None  # The active context for use in nested functions
     parent: Self | None  # The parent visitor for use in nested functions
+    used_parent_binding_values: dict[str, Value]  # Values of parent bindings used in this function
 
     def __init__(
         self,
@@ -207,12 +211,16 @@ class Visitor(ast.NodeVisitor):
         self.return_ctxs = []
         self.loop_head_ctxs = []
         self.break_ctxs = []
+        self.yield_ctxs = []
+        self.resume_ctxs = []
         self.active_ctx = None
         self.parent = parent
+        self.used_parent_binding_values = {}
 
     def run(self, node):
         before_ctx = ctx()
-        set_ctx(before_ctx.branch_with_scope(None, Scope()))
+        start_ctx = before_ctx.branch_with_scope(None, Scope())
+        set_ctx(start_ctx)
         for name, value in self.bound_args.arguments.items():
             ctx().scope.set_value(name, validate_value(value))
         match node:
@@ -227,6 +235,56 @@ class Visitor(ast.NodeVisitor):
                 ctx().scope.set_value("$return", result)
             case _:
                 raise NotImplementedError("Unsupported syntax")
+        if has_yield(node):
+            return_ctx = Context.meet([*self.return_ctxs, ctx()])
+            result_binding = return_ctx.scope.get_binding("$return")
+            if not isinstance(result_binding, ValueBinding):
+                raise ValueError("Function has conflicting return values")
+            if not result_binding.value._is_py_() and result_binding.value._as_py_() is not None:
+                raise ValueError("Generator function return statements must return None")
+            with using_ctx(start_ctx):
+                state_var = Num._alloc_()
+                is_present_var = Num._alloc_()
+            with using_ctx(before_ctx):
+                state_var._set_(0)
+            with using_ctx(return_ctx):
+                state_var._set_(len(self.return_ctxs) + 1)
+                is_present_var._set_(0)
+            del before_ctx.outgoing[None]  # Unlink the state machine body from the call site
+            entry = before_ctx.new_empty_disconnected()
+            entry.test = state_var.ir()
+            for i, tgt in enumerate([start_ctx, *self.resume_ctxs]):
+                entry.outgoing[i] = tgt
+            entry.outgoing[None] = return_ctx
+            yield_between_ctxs = []
+            for i, out in enumerate(self.yield_ctxs, start=1):
+                between = out.branch(None)
+                with using_ctx(between):
+                    state_var._set_(i)
+                yield_between_ctxs.append(between)
+            if yield_between_ctxs:
+                yield_merge_ctx = Context.meet(yield_between_ctxs)
+            else:
+                yield_merge_ctx = before_ctx.new_empty_disconnected()
+                # Making it default to a number for convenience when used with stuff like min, etc.
+                yield_merge_ctx.scope.set_value("$yield", validate_value(0))
+            yield_binding = yield_merge_ctx.scope.get_binding("$yield")
+            if not isinstance(yield_binding, ValueBinding):
+                raise ValueError("Function has conflicting yield values")
+            with using_ctx(yield_merge_ctx):
+                is_present_var._set_(1)
+            next_result_ctx = Context.meet([yield_merge_ctx, return_ctx])
+            set_ctx(before_ctx)
+            return_test = Num._alloc_()
+            next_result_ctx.test = return_test.ir()
+            return Generator(
+                return_test,
+                entry,
+                next_result_ctx,
+                Maybe(present=is_present_var, value=yield_binding.value),
+                self.used_parent_binding_values,
+                self,
+            )
         after_ctx = Context.meet([*self.return_ctxs, ctx()])
         self.active_ctx = after_ctx
         result_binding = after_ctx.scope.get_binding("$return")
@@ -820,10 +878,41 @@ class Visitor(ast.NodeVisitor):
         raise NotImplementedError("Await expressions are not supported")
 
     def visit_Yield(self, node):
-        raise NotImplementedError("Yield expressions are not supported")
+        value = self.visit(node.value) if node.value else validate_value(None)
+        ctx().scope.set_value("$yield", value)
+        self.yield_ctxs.append(ctx())
+        resume_ctx = ctx().new_disconnected()
+        self.resume_ctxs.append(resume_ctx)
+        set_ctx(resume_ctx)
+        return validate_value(None)  # send() is unsupported, so yield returns None
 
     def visit_YieldFrom(self, node):
-        raise NotImplementedError("Yield from expressions are not supported")
+        value = self.visit(node.value)
+        if isinstance(value, TupleImpl):
+            for entry in value.value:
+                ctx().scope.set_value("$yield", validate_value(entry))
+                self.yield_ctxs.append(ctx())
+                resume_ctx = ctx().new_disconnected()
+                self.resume_ctxs.append(resume_ctx)
+                set_ctx(resume_ctx)
+            return validate_value(None)
+        iterator = self.handle_call(node, value.__iter__)
+        if not isinstance(iterator, SonolusIterator):
+            raise ValueError("Expected a SonolusIterator")
+        header = ctx().branch(None)
+        set_ctx(header)
+        result = self.handle_call(node, iterator.next)
+        nothing_branch = ctx().branch(0)
+        some_branch = ctx().branch(None)
+        ctx().test = result._present.ir()
+        set_ctx(some_branch)
+        ctx().scope.set_value("$yield", result._value)
+        self.yield_ctxs.append(ctx())
+        resume_ctx = ctx().new_disconnected()
+        self.resume_ctxs.append(resume_ctx)
+        resume_ctx.outgoing[None] = header
+        set_ctx(nothing_branch)
+        return validate_value(None)
 
     def _has_real_method(self, obj: Value, method_name: str) -> bool:
         return hasattr(obj, method_name) and not isinstance(getattr(obj, method_name), MethodWrapperType)
@@ -932,11 +1021,16 @@ class Visitor(ast.NodeVisitor):
         raise NotImplementedError("Starred expressions are not supported")
 
     def visit_Name(self, node):
+        if node.id in self.used_parent_binding_values:
+            return self.used_parent_binding_values[node.id]
         self.active_ctx = ctx()
         v = self
         while v:
             if not isinstance(v.active_ctx.scope.get_binding(node.id), EmptyBinding):
-                return v.active_ctx.scope.get_value(node.id)
+                result = v.active_ctx.scope.get_value(node.id)
+                if v is not self:
+                    self.used_parent_binding_values[node.id] = result
+                return result
             v = v.parent
         if node.id in self.globals:
             value = self.globals[node.id]
@@ -1272,3 +1366,62 @@ class ReportingErrorsAtNode:
 
         if exc_value is not None:
             self.compiler.raise_exception_at_node(self.node, exc_value)
+
+
+class Generator(TransientValue, SonolusIterator):
+    def __init__(
+        self,
+        return_test: Num,
+        entry: Context,
+        exit_: Context,
+        value: Maybe,
+        used_bindings: dict[str, Value],
+        parent: Visitor,
+    ):
+        self.i = 0
+        self.return_test = return_test
+        self.entry = entry
+        self.exit = exit_
+        self.value = value
+        self.used_bindings = used_bindings
+        self.parent = parent
+
+    @meta_fn
+    def next(self):
+        self._validate_bindings()
+        self.return_test._set_(self.i)
+        after_ctx = ctx().new_disconnected()
+        ctx().outgoing[None] = self.entry
+        self.exit.outgoing[self.i] = after_ctx
+        self.i += 1
+        set_ctx(after_ctx)
+        return self.value
+
+    def _validate_bindings(self):
+        for key, value in self.used_bindings.items():
+            v = self.parent
+            while v:
+                if not isinstance(v.active_ctx.scope.get_binding(key), EmptyBinding):
+                    result = v.active_ctx.scope.get_value(key)
+                    if result is not value:
+                        raise ValueError(f"Binding '{key}' has been modified since the generator was created")
+                v = v.parent
+
+    def __iter__(self):
+        return self
+
+    @classmethod
+    def _accepts_(cls, value: Any) -> bool:
+        return isinstance(value, cls)
+
+    @classmethod
+    def _accept_(cls, value: Any) -> Self:
+        if not cls._accepts_(value):
+            raise TypeError(f"Cannot accept value of type {type(value).__name__} as {cls.__name__}")
+        return value
+
+    def _is_py_(self) -> bool:
+        return False
+
+    def _as_py_(self) -> Any:
+        raise NotImplementedError

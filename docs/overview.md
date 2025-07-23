@@ -12,7 +12,7 @@ functions that are specifically designed for use in Sonolus engines.
 
 ### Syntax
 
-Most Python syntax is supported, but there are a few limitations:
+Most Python syntax is supported, but there are a few limitations. The primary restrictions are:
 
 - Destructuring assignment with the `*` operator is unsupported.
 - Sequence (list and array) `match` patterns with the `*` operator are unsupported.

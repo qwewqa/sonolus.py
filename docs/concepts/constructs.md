@@ -40,6 +40,7 @@ The following constructs are supported in Sonolus.py:
     - Variables: `a`, `b`, `c`
     - Lambda: `lambda a, b: a + b`
     - Assignment Expression: `(a := b)`
+    - Generator Expression: `(x for x in iterable if condition)`
 - Statements:
     - Simple Statements:
         - Assignments:
@@ -55,6 +56,7 @@ The following constructs are supported in Sonolus.py:
         - Break: `break`
         - Continue: `continue`
         - Return: `return <value>`
+        - Yield: `yield <value>`, `yield from <iterable>`
         - Import: `import <module>`, `from <module> import <name>` (only outside of functions)
     - Compound Statements:
         - If: `if <condition>:`, `elif <condition>:`, `else:`

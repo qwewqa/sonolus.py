@@ -607,7 +607,7 @@ def test_map_two_args():
         va1.extend(Array(1, 2, 3, 4))
         va2.extend(Array(10, 20, 30, 40))
         results = VarArray[int, 4].new()
-        for x in map(lambda x, y: x + y, va1, va2):  # noqa: FURB118
+        for x in map(lambda x, y: x + y, va1, va2):
             results.append(x)
         return results
 

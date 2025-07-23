@@ -180,6 +180,12 @@ class Context:
         self.outgoing[condition] = result
         return result
 
+    def new_disconnected(self):
+        return self.copy_with_scope(self.scope.copy())
+
+    def new_empty_disconnected(self):
+        return self.copy_with_scope(Scope())
+
     def into_dead(self):
         """Create a new context for code that is unreachable, like after a return statement."""
         result = self.copy_with_scope(self.scope.copy())

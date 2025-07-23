@@ -42,6 +42,8 @@ class CoalesceFlow(CompilerPass):
                 queue.extend(edge.dst for edge in block.outgoing)
                 continue
             next_block = next(iter(block.outgoing)).dst
+            if next_block is block:
+                continue
             if len(next_block.incoming) != 1:
                 queue.append(next_block)
                 if not block.statements and not block.phis and not next_block.phis:

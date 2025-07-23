@@ -31,6 +31,20 @@ def any(iterable: Iterable[builtins.bool]) -> builtins.bool:
     """
     ...
 
+def sum(
+    iterable: Iterable[builtins.int | builtins.float], /, start: builtins.int | builtins.float = 0
+) -> builtins.int | builtins.float:
+    """Return the sum of a 'start' value (default: 0) and an iterable of numbers.
+
+    Args:
+        iterable: The iterable of numbers to sum.
+        start: The starting value to add to the sum.
+
+    Returns:
+        The total sum.
+    """
+    ...
+
 def abs(x: builtins.int | builtins.float) -> builtins.int | builtins.float:
     """Return the absolute value of a number.
 
@@ -171,6 +185,24 @@ def max[T](iterable: Iterable[T], *, key: Callable[[T], Any] | None = ...) -> T:
     ...
 
 @overload
+def max(
+    iterable: Iterable[builtins.int | builtins.float],
+    *,
+    default: builtins.int | builtins.float = ...,
+    key: Callable[[builtins.int | builtins.float], Any] | None = ...,
+) -> builtins.int | builtins.float:
+    """Return the largest item in an iterable or the largest of two or more arguments.
+
+    Args:
+        iterable: The iterable to evaluate.
+        default: The default value to return if the iterable is empty.
+        key: A function of one argument that is used to extract a comparison key from each element.
+
+    Returns:
+        The largest item, or the default value if the iterable is empty.
+    """
+
+@overload
 def max[T](arg1: T, arg2: T, *args: T, key: Callable[[T], Any] | None = ...) -> T:
     """Return the largest item in an iterable or the largest of two or more arguments.
 
@@ -195,6 +227,25 @@ def min[T](iterable: Iterable[T], *, key: Callable[[T], Any] | None = ...) -> T:
 
     Returns:
         The smallest item.
+    """
+    ...
+
+@overload
+def min(
+    iterable: Iterable[builtins.int | builtins.float],
+    *,
+    default: builtins.int | builtins.float = ...,
+    key: Callable[[builtins.int | builtins.float], Any] | None = ...,
+) -> builtins.int | builtins.float:
+    """Return the smallest item in an iterable or the smallest of two or more arguments.
+
+    Args:
+        iterable: The iterable to evaluate.
+        default: The default value to return if the iterable is empty.
+        key: A function of one argument that is used to extract a comparison key from each element.
+
+    Returns:
+        The smallest item, or the default value if the iterable is empty.
     """
     ...
 
