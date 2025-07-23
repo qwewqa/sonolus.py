@@ -31,7 +31,7 @@ class SonolusIterator[T]:
     def __next__(self) -> T:
         result = self.next()
         if result.is_some:
-            return result.get()
+            return result.get_unsafe()
         else:
             raise StopIteration
 
@@ -48,7 +48,7 @@ class _Enumerator[V: SonolusIterator](Record, SonolusIterator):
         value = self.iterator.next()
         if value.is_nothing:
             return Nothing
-        result = (self.i + self.offset, value.get())
+        result = (self.i + self.offset, value.get_unsafe())
         self.i += 1
         return Some(result)
 
@@ -79,7 +79,7 @@ class _Zipper[T](Record, SonolusIterator):
     def _values_to_tuple(self, values: tuple[Any, ...]) -> tuple[Any, ...]:
         from sonolus.backend.visitor import compile_and_call
 
-        return tuple(compile_and_call(value.get) for value in values)
+        return tuple(compile_and_call(value.get_unsafe) for value in values)
 
     def next(self) -> Maybe[tuple[Any, ...]]:
         values = self._get_next_values()
@@ -111,6 +111,6 @@ class _FilteringIterator[T, Fn](Record, SonolusIterator):
             value = self.iterator.next()
             if value.is_nothing:
                 return Nothing
-            inside = value.get()
+            inside = value.get_unsafe()
             if self.fn(inside):
                 return Some(inside)

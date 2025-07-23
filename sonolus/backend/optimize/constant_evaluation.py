@@ -74,11 +74,16 @@ class SparseConditionalConstantPropagation(CompilerPass):
         reachable_blocks: set[BasicBlock] = set()
 
         for block in traverse_cfg_preorder(entry):
-            incoming_by_src = {edge.src: edge for edge in block.incoming}
+            incoming_by_src = {}
+            for edge in block.incoming:
+                incoming_by_src.setdefault(edge.src, []).append(edge)
             for p, args in block.phis.items():
                 if not isinstance(p, SSAPlace):
                     continue
-                defs[p] = {incoming_by_src[b]: v for b, v in args.items()}
+                defs[p] = {}
+                for b, v in args.items():
+                    for incoming in incoming_by_src.get(b, []):
+                        defs[p][incoming] = v
                 values[p] = UNDEF
                 for arg in args.values():
                     ssa_edges.setdefault(arg, set()).add(p)
@@ -95,7 +100,7 @@ class SparseConditionalConstantPropagation(CompilerPass):
                 ssa_edges.setdefault(dep, set()).add(block)
 
         def visit_phi(p):
-            arg_values = [values[v] if b in executable_edges else UNDEF for b, v in defs[p].items()]
+            arg_values = [values[v] if e in executable_edges else UNDEF for e, v in defs[p].items()]
             distinct_defined_arg_values = {arg for arg in arg_values if arg is not UNDEF}
             value = values[p]
             if len(distinct_defined_arg_values) == 1:

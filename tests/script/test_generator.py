@@ -1,6 +1,7 @@
 import pytest
 
 from sonolus.script.array import Array
+from sonolus.script.containers import Box
 from sonolus.script.debug import debug_log
 from sonolus.script.internal.error import CompilationError
 from tests.script.conftest import run_and_validate, run_compiled
@@ -423,5 +424,110 @@ def test_infinite_generator():
             debug_log(v)
             if i >= 5:
                 break
+
+    run_and_validate(fn)
+
+
+def test_generator_with_single_parameter():
+    def fn():
+        def gen(x):
+            yield x
+            yield x * 2
+            yield x * 3
+
+        for i in gen(5):
+            debug_log(i)
+
+    run_and_validate(fn)
+
+
+def test_generator_with_multiple_parameters():
+    def fn():
+        def gen(x, y):
+            yield x
+            yield y
+            yield x + y
+
+        for i in gen(10, 20):
+            debug_log(i)
+
+    run_and_validate(fn)
+
+
+def test_generator_with_parameter_and_loop():
+    def fn():
+        def gen(multiplier):
+            for i in range(3):
+                yield i * multiplier
+
+        for i in gen(4):
+            debug_log(i)
+
+    run_and_validate(fn)
+
+
+def test_generator_with_parameter_over_array():
+    def fn():
+        arr = Array(1, 2, 3)
+
+        def gen(factor):
+            for i in arr:
+                yield i * factor
+
+        for i in gen(3):
+            debug_log(i)
+
+    run_and_validate(fn)
+
+
+def test_generator_with_default_parameter():
+    def fn():
+        def gen(x=7):
+            yield x
+            yield x * 2
+
+        for i in gen():
+            debug_log(i)
+
+    run_and_validate(fn)
+
+
+def test_generator_with_mixed_parameters():
+    def fn():
+        def gen(x, y=10):
+            yield x
+            yield y
+            yield x * y
+
+        for i in gen(5):
+            debug_log(i)
+
+    run_and_validate(fn)
+
+
+def test_generator_with_parameter_in_nested_call():
+    def fn():
+        def inner_gen(value):
+            yield value
+            yield value + 1
+
+        def outer_gen(base):
+            yield from inner_gen(base)
+            yield from inner_gen(base * 2)
+
+        for i in outer_gen(3):
+            debug_log(i)
+
+    run_and_validate(fn)
+
+
+def test_generator_yielding_record():
+    def fn():
+        def gen():
+            for i in range(10):
+                yield Box(i)
+
+        for record in gen():
+            debug_log(record.value)
 
     run_and_validate(fn)

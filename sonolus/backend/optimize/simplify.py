@@ -16,7 +16,7 @@ class CoalesceFlow(CompilerPass):
             for edge in block.outgoing:
                 while True:
                     dst = edge.dst
-                    if dst.phis or dst.statements or len(dst.outgoing) != 1 or dst is block:
+                    if dst.phis or dst.statements or len(dst.outgoing) != 1 or dst is block or dst is entry:
                         break
                     next_dst = next(iter(dst.outgoing)).dst
                     if next_dst.phis:
@@ -42,7 +42,7 @@ class CoalesceFlow(CompilerPass):
                 queue.extend(edge.dst for edge in block.outgoing)
                 continue
             next_block = next(iter(block.outgoing)).dst
-            if next_block is block:
+            if next_block is block or next_block is entry:
                 continue
             if len(next_block.incoming) != 1:
                 queue.append(next_block)
