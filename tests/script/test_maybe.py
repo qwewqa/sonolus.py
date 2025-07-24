@@ -1,7 +1,6 @@
-from script.conftest import run_and_validate
-
 from sonolus.script.containers import VarArray
 from sonolus.script.maybe import Nothing, Some
+from tests.script.conftest import run_and_validate
 
 
 def test_simple_some():

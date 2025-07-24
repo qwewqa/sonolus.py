@@ -36,6 +36,24 @@ def test_generator_interspersed():
     run_and_validate(fn)
 
 
+def test_generator_laziness():
+    def fn():
+        def gen():
+            debug_log(1)
+            yield 1
+            debug_log(2)
+            yield 2
+            debug_log(3)
+            yield 3
+
+        iterator = gen()
+        debug_log(0)
+        for i in iterator:
+            debug_log(i)
+
+    run_and_validate(fn)
+
+
 def test_generator_over_array():
     def fn():
         arr = Array(1, 2, 3, 4, 5)
