@@ -99,6 +99,7 @@ def visualize_cfg(
     /,
     *,
     mode: Mode = Mode.PLAY,
+    callback: str = "",
     archetype: type | None = None,
     archetypes: list[type] | None = None,
     passes: Sequence[CompilerPass] | Literal["minimal", "fast", "standard"] = "fast",
@@ -129,7 +130,7 @@ def visualize_cfg(
         ReadOnlyMemory(),
     )
 
-    cfg = callback_to_cfg(global_state, fn, "", archetype=archetype)
+    cfg = callback_to_cfg(global_state, fn, callback, archetype=archetype)
     cfg = run_passes(cfg, passes, OptimizerConfig(mode=mode))
     return cfg_to_mermaid(cfg)
 

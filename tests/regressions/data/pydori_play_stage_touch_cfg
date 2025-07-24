@@ -32,26 +32,31 @@
 7:
   goto 8
 8:
+  v50 <- 0.0
   goto 9
 9:
-  v2 <- RuntimeUpdate[3]
-  v3 <- 1002.0
-  v4 <- 0.0
   goto 10
 10:
   goto 11
 11:
   goto 12
 12:
-  v5 <- 0.0
+  v52 <- 0.0
   goto 13
 13:
-  goto 14
+  goto when v50
+    0 -> 15
+    1 -> 14
+    default -> 86
 14:
-  goto 15
+  goto 83
 15:
+  v2 <- RuntimeUpdate[3]
+  v3 <- 1002.0
+  v4 <- 0.0
   goto 16
 16:
+  v5 <- 0.0
   goto 17
 17:
   goto 18
@@ -60,66 +65,54 @@
 19:
   goto 20
 20:
+  v6 <- v5
   goto 21
 21:
+  v7 <- v2
   goto 22
 22:
   goto 23
 23:
+  v8 <- Less(v6, v7)
   goto 24
 24:
-  goto 25
+  goto 25 if v8 else 42
 25:
+  v9 <- v5
   goto 26
 26:
-  v6 <- v5
-  goto 27
-27:
-  v7 <- v2
-  goto 28
-28:
-  goto 29
-29:
-  v8 <- Less(v6, v7)
-  goto 30
-30:
-  goto 31 if v8 else 48
-31:
-  v9 <- v5
-  goto 32
-32:
   v10 <- LessOr(0.0, v9)
-  goto 33 if v10 else 34
-33:
+  goto 27 if v10 else 28
+27:
   v11 <- v2
   v12 <- Less(v9, v11)
   v13 <- v12
-  goto 35
-34:
+  goto 29
+28:
   v13 <- 0.0
+  goto 29
+29:
+  goto 30
+30:
+  goto 31
+31:
+  v14 <- Not(v13)
+  goto 32 if v14 else 33
+32:
+  v15 <- DebugLog(0.0)
+  v16 <- DebugPause()
+  goto exit
+33:
+  goto 34
+34:
   goto 35
 35:
   goto 36
 36:
   goto 37
 37:
-  v14 <- Not(v13)
-  goto 38 if v14 else 39
+  goto 38
 38:
-  v15 <- DebugLog(0.0)
-  v16 <- DebugPause()
-  goto exit
-39:
-  goto 40
-40:
-  goto 41
-41:
-  goto 42
-42:
-  goto 43
-43:
-  goto 44
-44:
   v17 <- v2
   v18 <- Less(v9, 0.0)
   v19 <- Multiply(v18, v17)
@@ -133,131 +126,146 @@
   v27 <- v5
   v28 <- Add(v27, 1.0)
   v5 <- v28
+  goto 39
+39:
+  goto 40
+40:
+  goto 41
+41:
+  v29 <- 1.0
+  goto 44
+42:
+  goto 43
+43:
+  v29 <- 0.0
+  goto 44
+44:
   goto 45
 45:
-  goto 46
+  goto 46 if v29 else 84
 46:
-  goto 47
+  v30 <- v25[v26 + 1]
+  goto 47 if v30 else 77
 47:
-  v29 <- 1.0
-  goto 50
+  v31 <- v25[v26]
+  goto 48
 48:
   goto 49
 49:
-  v29 <- 0.0
   goto 50
 50:
+  v32 <- 0.0
   goto 51
 51:
   goto 52
 52:
-  v30 <- v29
-  v31 <- Not(v30)
+  v33 <- LevelMemory[0]
   goto 53
 53:
   goto 54
 54:
-  goto 55 if v31 else 56
+  v34 <- Less(v32, v33)
+  goto 55
 55:
-  v52 <- 0.0
-  goto 97
+  goto 56 if v34 else 67
 56:
   goto 57
 57:
   goto 58
 58:
-  v32 <- v25[v26 + 1]
-  goto 59 if v32 else 89
+  v35 <- LevelMemory[0]
+  goto 59
 59:
-  v33 <- v25[v26]
   goto 60
 60:
+  v36 <- Less(v32, 0.0)
+  v37 <- Multiply(v36, v35)
+  v38 <- Add(v32, v37)
+  v39 <- Less(v38, 0.0)
+  v40 <- Multiply(v39, 16.0)
+  v41 <- Add(v38, v40)
+  v42 <- v41
+  v43 <- LevelMemory[v42 + 1]
   goto 61
 61:
   goto 62
 62:
-  v34 <- 0.0
+  v44 <- Equal(v43, v31)
   goto 63
 63:
-  goto 64
+  goto 64 if v44 else 65
 64:
-  v35 <- LevelMemory[0]
-  goto 65
+  v47 <- 1.0
+  goto 69
 65:
   goto 66
 66:
-  v36 <- Less(v34, v35)
-  goto 67
+  v45 <- Add(v32, 1.0)
+  v46 <- v45
+  v32 <- v46
+  goto 51
 67:
-  goto 68 if v36 else 79
+  goto 68
 68:
+  v47 <- 0.0
   goto 69
 69:
   goto 70
 70:
-  v37 <- LevelMemory[0]
   goto 71
 71:
   goto 72
 72:
-  v38 <- Less(v34, 0.0)
-  v39 <- Multiply(v38, v37)
-  v40 <- Add(v34, v39)
-  v41 <- Less(v40, 0.0)
-  v42 <- Multiply(v41, 16.0)
-  v43 <- Add(v40, v42)
-  v44 <- v43
-  v45 <- LevelMemory[v44 + 1]
   goto 73
 73:
   goto 74
 74:
-  v46 <- Equal(v45, v33)
   goto 75
 75:
-  goto 76 if v46 else 77
+  goto 76
 76:
-  v49 <- 1.0
-  goto 81
+  v48 <- Not(v47)
+  v49 <- v48
+  goto 78
 77:
+  v49 <- 0.0
   goto 78
 78:
-  v47 <- Add(v34, 1.0)
-  v48 <- v47
-  v34 <- v48
-  goto 63
+  goto 79 if v49 else 82
 79:
   goto 80
 80:
-  v49 <- 0.0
+  v50 <- 1.0
   goto 81
 81:
-  goto 82
+  v51 <- 1.0
+  goto 87
 82:
   goto 83
 83:
-  goto 84
+  goto 19
 84:
   goto 85
 85:
   goto 86
 86:
+  v50 <- 1.0
+  v51 <- 0.0
   goto 87
 87:
-  goto 88
+  goto when v52
+    0 -> 88
 88:
-  v50 <- Not(v49)
-  v51 <- v50
-  goto 90
+  goto 89 if v51 else 267
 89:
-  v51 <- 0.0
   goto 90
 90:
+  v53 <- 0.0
   goto 91
 91:
   goto 92
 92:
-  goto 93 if v51 else 293
+  goto 93
 93:
   goto 94
 94:
@@ -265,42 +273,20 @@
 95:
   goto 96
 96:
-  v52 <- 1.0
   goto 97
 97:
+  v54 <- v53
   goto 98
 98:
-  goto 99 if v52 else 277
+  goto 99
 99:
   goto 100
 100:
-  v53 <- 0.0
+  v55 <- Less(v54, LevelData[0])
   goto 101
 101:
-  goto 102
+  goto 102 if v55 else 106
 102:
-  goto 103
-103:
-  goto 104
-104:
-  goto 105
-105:
-  goto 106
-106:
-  goto 107
-107:
-  v54 <- v53
-  goto 108
-108:
-  goto 109
-109:
-  goto 110
-110:
-  v55 <- Less(v54, LevelData[0])
-  goto 111
-111:
-  goto 112 if v55 else 116
-112:
   v56 <- v53
   v57 <- Less(v56, 0.0)
   v58 <- Multiply(v57, 7.0)
@@ -310,28 +296,28 @@
   v62 <- v53
   v63 <- Add(v62, 1.0)
   v53 <- v63
-  goto 113
-113:
-  goto 114
-114:
-  goto 115
-115:
+  goto 103
+103:
+  goto 104
+104:
+  goto 105
+105:
   v64 <- 1.0
-  goto 118
-116:
-  goto 117
-117:
+  goto 108
+106:
+  goto 107
+107:
   v64 <- 0.0
-  goto 118
-118:
-  goto 119
-119:
-  goto 120 if v64 else 275
-120:
-  goto 121
-121:
-  goto 122
-122:
+  goto 108
+108:
+  goto 109
+109:
+  goto 110 if v64 else 265
+110:
+  goto 111
+111:
+  goto 112
+112:
   a2[0] <- LevelData[v61 + 2]
   a2[1] <- LevelData[v61 + 3]
   a2[2] <- LevelData[v61 + 4]
@@ -340,40 +326,40 @@
   a2[5] <- LevelData[v61 + 7]
   a2[6] <- LevelData[v61 + 8]
   a2[7] <- LevelData[v61 + 9]
+  goto 113
+113:
+  goto 114
+114:
+  goto 115
+115:
+  goto 116
+116:
+  goto 117
+117:
+  goto 118
+118:
+  v65 <- 0.0
+  v66 <- 0.0
+  v67 <- 3.0
+  goto 119
+119:
+  goto 120
+120:
+  goto 121
+121:
+  goto 122
+122:
   goto 123
 123:
   goto 124
 124:
   goto 125
 125:
+  v68 <- Less(v66, 4.0)
   goto 126
 126:
-  goto 127
+  goto 127 if v68 else 138
 127:
-  goto 128
-128:
-  v65 <- 0.0
-  v66 <- 0.0
-  v67 <- 3.0
-  goto 129
-129:
-  goto 130
-130:
-  goto 131
-131:
-  goto 132
-132:
-  goto 133
-133:
-  goto 134
-134:
-  goto 135
-135:
-  v68 <- Less(v66, 4.0)
-  goto 136
-136:
-  goto 137 if v68 else 148
-137:
   v69 <- Less(v66, 0.0)
   v70 <- Multiply(v69, 4.0)
   v71 <- Add(v66, v70)
@@ -382,8 +368,8 @@
   v74 <- a2[v73 + 1]
   v75 <- v25[v26 + 6]
   v76 <- Greater(v74, v75)
-  goto 138
-138:
+  goto 128
+128:
   v77 <- Less(v67, 0.0)
   v78 <- Multiply(v77, 4.0)
   v79 <- Add(v67, v78)
@@ -392,13 +378,13 @@
   v82 <- a2[v81 + 1]
   v83 <- v25[v26 + 6]
   v84 <- Greater(v82, v83)
-  goto 139
-139:
+  goto 129
+129:
   v85 <- NotEqual(v76, v84)
-  goto 140
-140:
-  goto 141 if v85 else 143
-141:
+  goto 130
+130:
+  goto 131 if v85 else 133
+131:
   v86 <- v25[v26 + 5]
   v87 <- Less(v67, 0.0)
   v88 <- Multiply(v87, 4.0)
@@ -444,23 +430,23 @@
   v128 <- a2[v127]
   v129 <- Add(v122, v128)
   v130 <- Less(v86, v129)
-  goto 142
-142:
+  goto 132
+132:
   v131 <- v130
-  goto 144
-143:
+  goto 134
+133:
   v131 <- 0.0
-  goto 144
-144:
-  goto 145 if v131 else 146
-145:
+  goto 134
+134:
+  goto 135 if v131 else 136
+135:
   v132 <- Not(v65)
   v133 <- v132
-  goto 147
-146:
+  goto 137
+136:
   v133 <- v65
-  goto 147
-147:
+  goto 137
+137:
   v134 <- Add(v66, 1.0)
   v135 <- v133
   v136 <- v134
@@ -468,7 +454,28 @@
   v65 <- v135
   v66 <- v136
   v67 <- v137
-  goto 129
+  goto 119
+138:
+  goto 139
+139:
+  goto 140
+140:
+  goto 141
+141:
+  goto 142
+142:
+  goto 143
+143:
+  goto 144 if v65 else 263
+144:
+  goto 145
+145:
+  goto 146
+146:
+  v138 <- v1
+  goto 147
+147:
+  goto 148
 148:
   goto 149
 149:
@@ -478,63 +485,42 @@
 151:
   goto 152
 152:
+  v139 <- GreaterOr(v138, 16.0)
   goto 153
 153:
-  goto 154 if v65 else 273
+  goto 154 if v139 else 155
 154:
-  goto 155
+  v168 <- 0.0
+  goto 199
 155:
   goto 156
 156:
-  v138 <- v1
   goto 157
 157:
+  v140 <- 0.0
   goto 158
 158:
   goto 159
 159:
+  v141 <- v1
   goto 160
 160:
   goto 161
 161:
+  v142 <- Less(v140, v141)
   goto 162
 162:
-  v139 <- GreaterOr(v138, 16.0)
-  goto 163
+  goto 163 if v142 else 174
 163:
-  goto 164 if v139 else 165
+  goto 164
 164:
-  v168 <- 0.0
-  goto 209
+  goto 165
 165:
+  v143 <- v1
   goto 166
 166:
   goto 167
 167:
-  v140 <- 0.0
-  goto 168
-168:
-  goto 169
-169:
-  v141 <- v1
-  goto 170
-170:
-  goto 171
-171:
-  v142 <- Less(v140, v141)
-  goto 172
-172:
-  goto 173 if v142 else 184
-173:
-  goto 174
-174:
-  goto 175
-175:
-  v143 <- v1
-  goto 176
-176:
-  goto 177
-177:
   v144 <- Less(v140, 0.0)
   v145 <- Multiply(v144, v143)
   v146 <- Add(v140, v145)
@@ -543,45 +529,69 @@
   v149 <- Add(v146, v148)
   v150 <- v149
   v151 <- a1[v150]
-  goto 178
-178:
-  goto 179
-179:
+  goto 168
+168:
+  goto 169
+169:
   v152 <- Equal(v151, LevelData[v61 + 1])
-  goto 180
-180:
-  goto 181 if v152 else 182
-181:
+  goto 170
+170:
+  goto 171 if v152 else 172
+171:
   v155 <- 1.0
-  goto 186
-182:
-  goto 183
-183:
+  goto 176
+172:
+  goto 173
+173:
   v153 <- Add(v140, 1.0)
   v154 <- v153
   v140 <- v154
-  goto 168
+  goto 158
+174:
+  goto 175
+175:
+  v155 <- 0.0
+  goto 176
+176:
+  goto 177
+177:
+  goto 178
+178:
+  goto 179 if v155 else 180
+179:
+  v168 <- 0.0
+  goto 199
+180:
+  goto 181
+181:
+  goto 182
+182:
+  v156 <- v1
+  goto 183
+183:
+  goto 184
 184:
   goto 185
 185:
-  v155 <- 0.0
   goto 186
 186:
   goto 187
 187:
   goto 188
 188:
-  goto 189 if v155 else 190
+  v157 <- Less(v156, 16.0)
+  goto 189
 189:
-  v168 <- 0.0
-  goto 209
+  goto 190
 190:
   goto 191
 191:
-  goto 192
+  v158 <- Not(v157)
+  goto 192 if v158 else 193
 192:
-  v156 <- v1
-  goto 193
+  v159 <- DebugLog(0.0)
+  v160 <- DebugPause()
+  goto exit
 193:
   goto 194
 194:
@@ -589,30 +599,6 @@
 195:
   goto 196
 196:
-  goto 197
-197:
-  goto 198
-198:
-  v157 <- Less(v156, 16.0)
-  goto 199
-199:
-  goto 200
-200:
-  goto 201
-201:
-  v158 <- Not(v157)
-  goto 202 if v158 else 203
-202:
-  v159 <- DebugLog(0.0)
-  v160 <- DebugPause()
-  goto exit
-203:
-  goto 204
-204:
-  goto 205
-205:
-  goto 206
-206:
   v161 <- v1
   v162 <- Less(v161, 0.0)
   v163 <- Multiply(v162, 16.0)
@@ -622,13 +608,43 @@
   v166 <- v1
   v167 <- Add(v166, 1.0)
   v1 <- v167
+  goto 197
+197:
+  goto 198
+198:
+  v168 <- 1.0
+  goto 199
+199:
+  goto 200
+200:
+  goto 201
+201:
+  goto 202
+202:
+  goto 203
+203:
+  v169 <- Not(LevelOption[7])
+  goto 204 if v169 else 205
+204:
+  goto 248
+205:
+  goto 206
+206:
   goto 207
 207:
   goto 208
 208:
-  v168 <- 1.0
+  v170 <- 0.0
+  v171 <- LevelData[0]
+  v172 <- 1.0
   goto 209
 209:
+  v173 <- v170
+  v174 <- v171
+  v175 <- v172
+  v176 <- v173
+  v177 <- v174
+  v178 <- v175
   goto 210
 210:
   goto 211
@@ -637,112 +653,105 @@
 212:
   goto 213
 213:
-  v169 <- Not(LevelOption[7])
-  goto 214 if v169 else 215
-214:
-  goto 258
-215:
-  goto 216
-216:
-  goto 217
-217:
-  goto 218
-218:
-  v170 <- 0.0
-  v171 <- LevelData[0]
-  v172 <- 1.0
-  goto 219
-219:
-  v173 <- v170
-  v174 <- v171
-  v175 <- v172
-  v176 <- v173
-  v177 <- v174
-  v178 <- v175
-  goto 220
-220:
-  goto 221
-221:
-  goto 222
-222:
-  goto 223
-223:
   v179 <- v178
   v180 <- Greater(v179, 0.0)
-  goto 224
-224:
-  goto 225 if v180 else 227
-225:
+  goto 214
+214:
+  goto 215 if v180 else 217
+215:
   v181 <- v176
   v182 <- v177
   v183 <- Less(v181, v182)
-  goto 226
-226:
+  goto 216
+216:
   v184 <- v183
-  goto 228
-227:
+  goto 218
+217:
   v184 <- 0.0
-  goto 228
-228:
-  goto 229 if v184 else 230
-229:
+  goto 218
+218:
+  goto 219 if v184 else 220
+219:
   v191 <- v184
-  goto 236
-230:
+  goto 226
+220:
   v185 <- v178
   v186 <- LessOr(v185, 0.0)
-  goto 231
-231:
-  goto 232 if v186 else 234
-232:
+  goto 221
+221:
+  goto 222 if v186 else 224
+222:
   v187 <- v176
   v188 <- v177
   v189 <- Greater(v187, v188)
-  goto 233
-233:
+  goto 223
+223:
   v190 <- v189
-  goto 235
-234:
+  goto 225
+224:
   v190 <- 0.0
-  goto 235
-235:
+  goto 225
+225:
   v191 <- v190
-  goto 236
-236:
-  goto 237 if v191 else 241
-237:
+  goto 226
+226:
+  goto 227 if v191 else 231
+227:
   v192 <- v176
   v193 <- v176
   v194 <- v178
   v195 <- Add(v193, v194)
   v176 <- v195
-  goto 238
-238:
-  goto 239
-239:
-  goto 240
-240:
+  goto 228
+228:
+  goto 229
+229:
+  goto 230
+230:
   v196 <- 1.0
-  goto 243
-241:
-  goto 242
-242:
+  goto 233
+231:
+  goto 232
+232:
   v196 <- 0.0
-  goto 243
-243:
-  goto 244
-244:
-  goto 245 if v196 else 271
-245:
+  goto 233
+233:
+  goto 234
+234:
+  goto 235 if v196 else 261
+235:
   v197 <- Less(v192, 0.0)
   v198 <- Multiply(v197, 7.0)
   v199 <- Add(v192, v198)
   v200 <- Multiply(v199, 9.0)
   v201 <- v200
   v202 <- Equal(LevelData[v201 + 1], LevelData[v61 + 1])
+  goto 236
+236:
+  goto 237 if v202 else 259
+237:
+  goto 238
+238:
+  goto 239
+239:
+  goto 240
+240:
+  goto 241
+241:
+  goto 242
+242:
+  v205 <- 0.0
+  goto 243
+243:
+  goto 244
+244:
+  goto 245
+245:
+  v206 <- SpawnParticleEffect(v205, LevelData[v201 + 2], LevelData[v201 + 3], LevelData[v201 + 4], LevelData[v201 + 5], LevelData[v201 + 6], LevelData[v201 + 7], LevelData[v201 + 8], LevelData[v201 + 9], 0.2, 0.0)
+  v207 <- v206
   goto 246
 246:
-  goto 247 if v202 else 269
+  goto 247
 247:
   goto 248
 248:
@@ -750,88 +759,65 @@
 249:
   goto 250
 250:
-  goto 251
+  v208 <- Not(LevelOption[10])
+  goto 251 if v208 else 252
 251:
-  goto 252
+  goto 257
 252:
-  v205 <- 0.0
   goto 253
 253:
   goto 254
 254:
+  v209 <- 0.0
+  v210 <- Play(v209, 0.02)
   goto 255
 255:
-  v206 <- SpawnParticleEffect(v205, LevelData[v201 + 2], LevelData[v201 + 3], LevelData[v201 + 4], LevelData[v201 + 5], LevelData[v201 + 6], LevelData[v201 + 7], LevelData[v201 + 8], LevelData[v201 + 9], 0.2, 0.0)
-  v207 <- v206
   goto 256
 256:
   goto 257
 257:
   goto 258
 258:
-  goto 259
+  goto 264
 259:
   goto 260
 260:
-  v208 <- Not(LevelOption[10])
-  goto 261 if v208 else 262
+  goto 212
 261:
-  goto 267
+  goto 262
 262:
-  goto 263
-263:
-  goto 264
-264:
-  v209 <- 0.0
-  v210 <- Play(v209, 0.02)
-  goto 265
-265:
-  goto 266
-266:
-  goto 267
-267:
-  goto 268
-268:
-  goto 274
-269:
-  goto 270
-270:
-  goto 222
-271:
-  goto 272
-272:
   v203 <- DebugLog(1.0)
   v204 <- DebugPause()
   goto exit
+263:
+  goto 264
+264:
+  goto 96
+265:
+  goto 266
+266:
+  goto 12
+267:
+  goto 268
+268:
+  goto 269
+269:
+  goto 270
+270:
+  v211 <- v1
+  goto 271
+271:
+  goto 272
+272:
+  goto 273
 273:
   goto 274
 274:
-  goto 106
-275:
-  goto 276
-276:
-  goto 22
-277:
-  goto 278
-278:
-  goto 279
-279:
-  goto 280
-280:
-  v211 <- v1
-  goto 281
-281:
-  goto 282
-282:
-  goto 283
-283:
-  goto 284
-284:
   v212 <- Greater(v211, 0.0)
-  goto 285
-285:
-  goto 286 if v212 else 287
-286:
+  goto 275
+275:
+  goto 276 if v212 else 277
+276:
   v213 <- 1.0
   v214 <- v213
   v215 <- StreamSet(v214, RuntimeUpdate[0], v1)
@@ -883,20 +869,16 @@
   v261 <- v213
   v262 <- Add(v261, 16.0)
   v263 <- StreamSet(v262, RuntimeUpdate[0], a1[15])
-  goto 288
-287:
-  goto 288
-288:
-  goto 289
-289:
-  goto 290
-290:
-  goto 291
-291:
-  goto 292
-292:
+  goto 278
+277:
+  goto 278
+278:
+  goto 279
+279:
+  goto 280
+280:
+  goto 281
+281:
+  goto 282
+282:
   goto exit
-293:
-  goto 294
-294:
-  goto 24

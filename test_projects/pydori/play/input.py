@@ -24,8 +24,12 @@ def is_touch_claimed(touch_id: int) -> bool:
 
 
 def unclaimed_taps() -> Iterator[Touch]:
-    return filter(lambda touch: touch.started and not is_touch_claimed(touch.id), touches())
+    for touch in touches():
+        if touch.started and not is_touch_claimed(touch.id):
+            yield touch
 
 
 def unclaimed_touches() -> Iterator[Touch]:
-    return filter(lambda touch: not is_touch_claimed(touch.id), touches())
+    for touch in touches():
+        if not is_touch_claimed(touch.id):
+            yield touch
