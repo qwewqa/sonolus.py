@@ -232,6 +232,7 @@ Sonolus.py provides a number of built-in modules that can be used in Sonolus eng
     - [Easing](reference/sonolus.script.easing.md): Easing functions for animations.
     - [Interval](reference/sonolus.script.interval.md): Mathematical intervals.
     - [Iterator](reference/sonolus.script.iterator.md): Iterators over collections.
+    - [Maybe](reference/sonolus.script.maybe.md): Optional function return values.
     - [Printing](reference/sonolus.script.printing.md): Preview mode number printing.
     - [Quad](reference/sonolus.script.quad.md): Quadrilaterals.
     - [Transform](reference/sonolus.script.transform.md): Transformations like translation, rotation, and scaling.

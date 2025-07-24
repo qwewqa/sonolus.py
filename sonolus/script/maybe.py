@@ -8,10 +8,10 @@ from sonolus.script.num import Num
 
 
 class Maybe[T](TransientValue):
-    """A special type that can either hold a value or be empty.
+    """A type that either has a value or is empty.
 
-    Unlike most types other than numeric types, (`int`, `float`, `bool`) Maybe may be returned in multiple places
-    within a function provided that at most 1 return statement returns a Some value and all others return Nothing.
+    Maybe has special behavior when returned from a function: it may be returned from multiple places
+    in a function, provided that all but one return statement returns the literal `Nothing`.
 
     This type is not intended for other uses, such as being stored in a Record, Array, or Archetype.
 
@@ -22,6 +22,11 @@ class Maybe[T](TransientValue):
                 return Some(b)
             else:
                 return Nothing
+
+        result = fn(..., ...)
+        if result.is_some:
+            value = result.get()
+            ...
         ```
     """
 
@@ -113,9 +118,19 @@ class Maybe[T](TransientValue):
 
 
 def Some[T](value: T) -> Maybe[T]:  # noqa: N802
-    """Create a `Maybe` instance with a value."""
+    """Create a `Maybe` instance with a value.
+
+    Args:
+        value: The contained value.
+
+    Returns:
+        A `Maybe` instance that contains the provided value.
+    """
     return Maybe(present=True, value=value)
 
 
+Nothing: Maybe[Never] = Maybe(present=False, value=None)  # type: ignore
+
+# Note: has to come after the definition to hide the definition in the docs.
 Nothing: Maybe[Never]
-Nothing = Maybe(present=False, value=None)  # type: ignore
+"""The empty `Maybe` instance."""
