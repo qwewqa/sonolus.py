@@ -249,3 +249,16 @@ def test_genexpr_changing_closure_loop():
 
     with pytest.raises(CompilationError, match=r"Binding 'x' has been modified.*"):
         run_compiled(fn)
+
+
+def test_genexpr_of_gexpr():
+    def fn():
+        gen = ((i + j for j in range(4)) for i in range(5))
+        for sub_gen in gen:
+            for x in sub_gen:
+                debug_log(x)
+                break
+            for x in sub_gen:
+                debug_log(x + 100)
+
+    run_and_validate(fn)
