@@ -2,6 +2,7 @@
 import functools
 import math
 import operator
+from collections import defaultdict
 from typing import ClassVar
 
 import sonolus.script.internal.math_impls as smath
@@ -72,7 +73,7 @@ class SparseConditionalConstantPropagation(CompilerPass):
         executable_edges: set[FlowEdge] = set()
 
         # BasicBlock key means the block's test
-        values: dict[SSAPlace | BasicBlock, Value] = {SSAPlace("err", 0): UNDEF}
+        values: dict[SSAPlace | BasicBlock, Value] = defaultdict(lambda: UNDEF)
         defs: dict[SSAPlace | BasicBlock, IRStmt | dict[FlowEdge, SSAPlace]] = {}
         places_to_blocks: dict[SSAPlace, BasicBlock] = {}
         reachable_blocks: set[BasicBlock] = set()
@@ -263,6 +264,22 @@ class SparseConditionalConstantPropagation(CompilerPass):
                         del v[block]
                         queue.add(edge.dst)
             block.phis = {k: v for k, v in block.phis.items() if v}
+
+        for block in traverse_cfg_preorder(entry):
+            block.phis = {
+                k: {b: arg for b, arg in args.items() if values.get(arg, UNDEF) is not UNDEF}
+                for k, args in block.phis.items()
+            }
+            block.statements = [
+                stmt
+                for stmt in block.statements
+                # Note that if this is a set with a side effect, it will never be undef
+                if not (
+                    isinstance(stmt, IRSet)
+                    and isinstance(stmt.place, SSAPlace)
+                    and values.get(stmt.place, UNDEF) is UNDEF
+                )
+            ]
 
         return entry
 

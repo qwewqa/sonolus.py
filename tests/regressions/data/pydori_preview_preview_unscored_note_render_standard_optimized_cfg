@@ -51,57 +51,54 @@
 13:
   10000[6] <- 11.0
   goto when EntityData[0]
-    2.0 -> 28
+    2.0 -> 27
     default -> 16
 14:
   10000[6] <- 13.0
   goto when EntityData[0]
-    2.0 -> 28
+    2.0 -> 27
     default -> 16
 15:
   10000[6] <- 9.0
   goto when EntityData[0]
-    2.0 -> 28
+    2.0 -> 27
     default -> 16
 16:
   goto when EntityData[0]
     3.0 -> 17
-    default -> 27
+    default -> 26
 17:
   10000[0] <- 0.0
   goto 18
 18:
-  10000[1] <- Less(10000[0], Abs(EntityData[3]))
-  goto 19 if 10000[1] else 27
+  goto 19 if Less(10000[0], Abs(EntityData[3])) else 26
 19:
-  goto 20 if 10000[1] else 27
-20:
   10000[1] <- Add(10000[0], 1.0)
-  goto 21 if Greater(EntityData[3], 0.0) else 22
-21:
+  goto 20 if Greater(EntityData[3], 0.0) else 21
+20:
   10000[2] <- 1.0
-  goto 23
-22:
+  goto 22
+21:
   10000[2] <- -1.0
-  goto 23
-23:
+  goto 22
+22:
   10000[2] <- Add(EntityData[1], Multiply(Add(10000[0], 1.0), 10000[2]))
   10000[3] <- Trunc(Divide(EntityData[4], 2.0))
   10000[4] <- Lerp(-0.9, 0.9, Divide(Mod(EntityData[4], 2.0), 2.0))
-  goto 24 if Greater(EntityData[3], 0.0) else 25
-24:
+  goto 23 if Greater(EntityData[3], 0.0) else 24
+23:
   10000[5] <- -1.5707963267948966
-  goto 26
-25:
+  goto 25
+24:
   10000[5] <- 1.5707963267948966
-  goto 26
-26:
+  goto 25
+25:
   Draw(10000[6], Add(Subtract(Multiply(Subtract(Subtract(Add(Multiply(Add(10000[3], 0.5), PreviewData[1]), Multiply(Subtract(10000[2], 0.5), 0.072)), Divide(Subtract(RuntimeEnvironment[1], Negate(RuntimeEnvironment[1])), 2.0)), Divide(Add(Add(Add(Subtract(Add(Multiply(Add(10000[3], 0.5), PreviewData[1]), Multiply(Subtract(10000[2], 0.5), 0.072)), Divide(Subtract(RuntimeEnvironment[1], Negate(RuntimeEnvironment[1])), 2.0)), Subtract(Add(Multiply(Add(10000[3], 0.5), PreviewData[1]), Multiply(Add(10000[2], 0.5), 0.072)), Divide(Subtract(RuntimeEnvironment[1], Negate(RuntimeEnvironment[1])), 2.0))), Subtract(Add(Multiply(Add(10000[3], 0.5), PreviewData[1]), Multiply(Subtract(10000[2], 0.5), 0.072)), Divide(Subtract(RuntimeEnvironment[1], Negate(RuntimeEnvironment[1])), 2.0))), Subtract(Add(Multiply(Add(10000[3], 0.5), PreviewData[1]), Multiply(Add(10000[2], 0.5), 0.072)), Divide(Subtract(RuntimeEnvironment[1], Negate(RuntimeEnvironment[1])), 2.0))), 4.0)), Cos(10000[5])), Multiply(Subtract(Subtract(10000[4], 0.036), Divide(Add(Add(Add(Subtract(10000[4], 0.036), Add(10000[4], 0.036)), Add(10000[4], 0.036)), Subtract(10000[4], 0.036)), 4.0)), Sin(10000[5]))), Divide(Add(Add(Add(Subtract(Add(Multiply(Add(10000[3], 0.5), PreviewData[1]), Multiply(Subtract(10000[2], 0.5), 0.072)), Divide(Subtract(RuntimeEnvironment[1], Negate(RuntimeEnvironment[1])), 2.0)), Subtract(Add(Multiply(Add(10000[3], 0.5), PreviewData[1]), Multiply(Add(10000[2], 0.5), 0.072)), Divide(Subtract(RuntimeEnvironment[1], Negate(RuntimeEnvironment[1])), 2.0))), Subtract(Add(Multiply(Add(10000[3], 0.5), PreviewData[1]), Multiply(Subtract(10000[2], 0.5), 0.072)), Divide(Subtract(RuntimeEnvironment[1], Negate(RuntimeEnvironment[1])), 2.0))), Subtract(Add(Multiply(Add(10000[3], 0.5), PreviewData[1]), Multiply(Add(10000[2], 0.5), 0.072)), Divide(Subtract(RuntimeEnvironment[1], Negate(RuntimeEnvironment[1])), 2.0))), 4.0)), Add(Add(Multiply(Subtract(Subtract(Add(Multiply(Add(10000[3], 0.5), PreviewData[1]), Multiply(Subtract(10000[2], 0.5), 0.072)), Divide(Subtract(RuntimeEnvironment[1], Negate(RuntimeEnvironment[1])), 2.0)), Divide(Add(Add(Add(Subtract(Add(Multiply(Add(10000[3], 0.5), PreviewData[1]), Multiply(Subtract(10000[2], 0.5), 0.072)), Divide(Subtract(RuntimeEnvironment[1], Negate(RuntimeEnvironment[1])), 2.0)), Subtract(Add(Multiply(Add(10000[3], 0.5), PreviewData[1]), Multiply(Add(10000[2], 0.5), 0.072)), Divide(Subtract(RuntimeEnvironment[1], Negate(RuntimeEnvironment[1])), 2.0))), Subtract(Add(Multiply(Add(10000[3], 0.5), PreviewData[1]), Multiply(Subtract(10000[2], 0.5), 0.072)), Divide(Subtract(RuntimeEnvironment[1], Negate(RuntimeEnvironment[1])), 2.0))), Subtract(Add(Multiply(Add(10000[3], 0.5), PreviewData[1]), Multiply(Add(10000[2], 0.5), 0.072)), Divide(Subtract(RuntimeEnvironment[1], Negate(RuntimeEnvironment[1])), 2.0))), 4.0)), Sin(10000[5])), Multiply(Subtract(Subtract(10000[4], 0.036), Divide(Add(Add(Add(Subtract(10000[4], 0.036), Add(10000[4], 0.036)), Add(10000[4], 0.036)), Subtract(10000[4], 0.036)), 4.0)), Cos(10000[5]))), Divide(Add(Add(Add(Subtract(10000[4], 0.036), Add(10000[4], 0.036)), Add(10000[4], 0.036)), Subtract(10000[4], 0.036)), 4.0)), Add(Subtract(Multiply(Subtract(Subtract(Add(Multiply(Add(10000[3], 0.5), PreviewData[1]), Multiply(Subtract(10000[2], 0.5), 0.072)), Divide(Subtract(RuntimeEnvironment[1], Negate(RuntimeEnvironment[1])), 2.0)), Divide(Add(Add(Add(Subtract(Add(Multiply(Add(10000[3], 0.5), PreviewData[1]), Multiply(Subtract(10000[2], 0.5), 0.072)), Divide(Subtract(RuntimeEnvironment[1], Negate(RuntimeEnvironment[1])), 2.0)), Subtract(Add(Multiply(Add(10000[3], 0.5), PreviewData[1]), Multiply(Add(10000[2], 0.5), 0.072)), Divide(Subtract(RuntimeEnvironment[1], Negate(RuntimeEnvironment[1])), 2.0))), Subtract(Add(Multiply(Add(10000[3], 0.5), PreviewData[1]), Multiply(Subtract(10000[2], 0.5), 0.072)), Divide(Subtract(RuntimeEnvironment[1], Negate(RuntimeEnvironment[1])), 2.0))), Subtract(Add(Multiply(Add(10000[3], 0.5), PreviewData[1]), Multiply(Add(10000[2], 0.5), 0.072)), Divide(Subtract(RuntimeEnvironment[1], Negate(RuntimeEnvironment[1])), 2.0))), 4.0)), Cos(10000[5])), Multiply(Subtract(Add(10000[4], 0.036), Divide(Add(Add(Add(Subtract(10000[4], 0.036), Add(10000[4], 0.036)), Add(10000[4], 0.036)), Subtract(10000[4], 0.036)), 4.0)), Sin(10000[5]))), Divide(Add(Add(Add(Subtract(Add(Multiply(Add(10000[3], 0.5), PreviewData[1]), Multiply(Subtract(10000[2], 0.5), 0.072)), Divide(Subtract(RuntimeEnvironment[1], Negate(RuntimeEnvironment[1])), 2.0)), Subtract(Add(Multiply(Add(10000[3], 0.5), PreviewData[1]), Multiply(Add(10000[2], 0.5), 0.072)), Divide(Subtract(RuntimeEnvironment[1], Negate(RuntimeEnvironment[1])), 2.0))), Subtract(Add(Multiply(Add(10000[3], 0.5), PreviewData[1]), Multiply(Subtract(10000[2], 0.5), 0.072)), Divide(Subtract(RuntimeEnvironment[1], Negate(RuntimeEnvironment[1])), 2.0))), Subtract(Add(Multiply(Add(10000[3], 0.5), PreviewData[1]), Multiply(Add(10000[2], 0.5), 0.072)), Divide(Subtract(RuntimeEnvironment[1], Negate(RuntimeEnvironment[1])), 2.0))), 4.0)), Add(Add(Multiply(Subtract(Subtract(Add(Multiply(Add(10000[3], 0.5), PreviewData[1]), Multiply(Subtract(10000[2], 0.5), 0.072)), Divide(Subtract(RuntimeEnvironment[1], Negate(RuntimeEnvironment[1])), 2.0)), Divide(Add(Add(Add(Subtract(Add(Multiply(Add(10000[3], 0.5), PreviewData[1]), Multiply(Subtract(10000[2], 0.5), 0.072)), Divide(Subtract(RuntimeEnvironment[1], Negate(RuntimeEnvironment[1])), 2.0)), Subtract(Add(Multiply(Add(10000[3], 0.5), PreviewData[1]), Multiply(Add(10000[2], 0.5), 0.072)), Divide(Subtract(RuntimeEnvironment[1], Negate(RuntimeEnvironment[1])), 2.0))), Subtract(Add(Multiply(Add(10000[3], 0.5), PreviewData[1]), Multiply(Subtract(10000[2], 0.5), 0.072)), Divide(Subtract(RuntimeEnvironment[1], Negate(RuntimeEnvironment[1])), 2.0))), Subtract(Add(Multiply(Add(10000[3], 0.5), PreviewData[1]), Multiply(Add(10000[2], 0.5), 0.072)), Divide(Subtract(RuntimeEnvironment[1], Negate(RuntimeEnvironment[1])), 2.0))), 4.0)), Sin(10000[5])), Multiply(Subtract(Add(10000[4], 0.036), Divide(Add(Add(Add(Subtract(10000[4], 0.036), Add(10000[4], 0.036)), Add(10000[4], 0.036)), Subtract(10000[4], 0.036)), 4.0)), Cos(10000[5]))), Divide(Add(Add(Add(Subtract(10000[4], 0.036), Add(10000[4], 0.036)), Add(10000[4], 0.036)), Subtract(10000[4], 0.036)), 4.0)), Add(Subtract(Multiply(Subtract(Subtract(Add(Multiply(Add(10000[3], 0.5), PreviewData[1]), Multiply(Add(10000[2], 0.5), 0.072)), Divide(Subtract(RuntimeEnvironment[1], Negate(RuntimeEnvironment[1])), 2.0)), Divide(Add(Add(Add(Subtract(Add(Multiply(Add(10000[3], 0.5), PreviewData[1]), Multiply(Subtract(10000[2], 0.5), 0.072)), Divide(Subtract(RuntimeEnvironment[1], Negate(RuntimeEnvironment[1])), 2.0)), Subtract(Add(Multiply(Add(10000[3], 0.5), PreviewData[1]), Multiply(Add(10000[2], 0.5), 0.072)), Divide(Subtract(RuntimeEnvironment[1], Negate(RuntimeEnvironment[1])), 2.0))), Subtract(Add(Multiply(Add(10000[3], 0.5), PreviewData[1]), Multiply(Subtract(10000[2], 0.5), 0.072)), Divide(Subtract(RuntimeEnvironment[1], Negate(RuntimeEnvironment[1])), 2.0))), Subtract(Add(Multiply(Add(10000[3], 0.5), PreviewData[1]), Multiply(Add(10000[2], 0.5), 0.072)), Divide(Subtract(RuntimeEnvironment[1], Negate(RuntimeEnvironment[1])), 2.0))), 4.0)), Cos(10000[5])), Multiply(Subtract(Add(10000[4], 0.036), Divide(Add(Add(Add(Subtract(10000[4], 0.036), Add(10000[4], 0.036)), Add(10000[4], 0.036)), Subtract(10000[4], 0.036)), 4.0)), Sin(10000[5]))), Divide(Add(Add(Add(Subtract(Add(Multiply(Add(10000[3], 0.5), PreviewData[1]), Multiply(Subtract(10000[2], 0.5), 0.072)), Divide(Subtract(RuntimeEnvironment[1], Negate(RuntimeEnvironment[1])), 2.0)), Subtract(Add(Multiply(Add(10000[3], 0.5), PreviewData[1]), Multiply(Add(10000[2], 0.5), 0.072)), Divide(Subtract(RuntimeEnvironment[1], Negate(RuntimeEnvironment[1])), 2.0))), Subtract(Add(Multiply(Add(10000[3], 0.5), PreviewData[1]), Multiply(Subtract(10000[2], 0.5), 0.072)), Divide(Subtract(RuntimeEnvironment[1], Negate(RuntimeEnvironment[1])), 2.0))), Subtract(Add(Multiply(Add(10000[3], 0.5), PreviewData[1]), Multiply(Add(10000[2], 0.5), 0.072)), Divide(Subtract(RuntimeEnvironment[1], Negate(RuntimeEnvironment[1])), 2.0))), 4.0)), Add(Add(Multiply(Subtract(Subtract(Add(Multiply(Add(10000[3], 0.5), PreviewData[1]), Multiply(Add(10000[2], 0.5), 0.072)), Divide(Subtract(RuntimeEnvironment[1], Negate(RuntimeEnvironment[1])), 2.0)), Divide(Add(Add(Add(Subtract(Add(Multiply(Add(10000[3], 0.5), PreviewData[1]), Multiply(Subtract(10000[2], 0.5), 0.072)), Divide(Subtract(RuntimeEnvironment[1], Negate(RuntimeEnvironment[1])), 2.0)), Subtract(Add(Multiply(Add(10000[3], 0.5), PreviewData[1]), Multiply(Add(10000[2], 0.5), 0.072)), Divide(Subtract(RuntimeEnvironment[1], Negate(RuntimeEnvironment[1])), 2.0))), Subtract(Add(Multiply(Add(10000[3], 0.5), PreviewData[1]), Multiply(Subtract(10000[2], 0.5), 0.072)), Divide(Subtract(RuntimeEnvironment[1], Negate(RuntimeEnvironment[1])), 2.0))), Subtract(Add(Multiply(Add(10000[3], 0.5), PreviewData[1]), Multiply(Add(10000[2], 0.5), 0.072)), Divide(Subtract(RuntimeEnvironment[1], Negate(RuntimeEnvironment[1])), 2.0))), 4.0)), Sin(10000[5])), Multiply(Subtract(Add(10000[4], 0.036), Divide(Add(Add(Add(Subtract(10000[4], 0.036), Add(10000[4], 0.036)), Add(10000[4], 0.036)), Subtract(10000[4], 0.036)), 4.0)), Cos(10000[5]))), Divide(Add(Add(Add(Subtract(10000[4], 0.036), Add(10000[4], 0.036)), Add(10000[4], 0.036)), Subtract(10000[4], 0.036)), 4.0)), Add(Subtract(Multiply(Subtract(Subtract(Add(Multiply(Add(10000[3], 0.5), PreviewData[1]), Multiply(Add(10000[2], 0.5), 0.072)), Divide(Subtract(RuntimeEnvironment[1], Negate(RuntimeEnvironment[1])), 2.0)), Divide(Add(Add(Add(Subtract(Add(Multiply(Add(10000[3], 0.5), PreviewData[1]), Multiply(Subtract(10000[2], 0.5), 0.072)), Divide(Subtract(RuntimeEnvironment[1], Negate(RuntimeEnvironment[1])), 2.0)), Subtract(Add(Multiply(Add(10000[3], 0.5), PreviewData[1]), Multiply(Add(10000[2], 0.5), 0.072)), Divide(Subtract(RuntimeEnvironment[1], Negate(RuntimeEnvironment[1])), 2.0))), Subtract(Add(Multiply(Add(10000[3], 0.5), PreviewData[1]), Multiply(Subtract(10000[2], 0.5), 0.072)), Divide(Subtract(RuntimeEnvironment[1], Negate(RuntimeEnvironment[1])), 2.0))), Subtract(Add(Multiply(Add(10000[3], 0.5), PreviewData[1]), Multiply(Add(10000[2], 0.5), 0.072)), Divide(Subtract(RuntimeEnvironment[1], Negate(RuntimeEnvironment[1])), 2.0))), 4.0)), Cos(10000[5])), Multiply(Subtract(Subtract(10000[4], 0.036), Divide(Add(Add(Add(Subtract(10000[4], 0.036), Add(10000[4], 0.036)), Add(10000[4], 0.036)), Subtract(10000[4], 0.036)), 4.0)), Sin(10000[5]))), Divide(Add(Add(Add(Subtract(Add(Multiply(Add(10000[3], 0.5), PreviewData[1]), Multiply(Subtract(10000[2], 0.5), 0.072)), Divide(Subtract(RuntimeEnvironment[1], Negate(RuntimeEnvironment[1])), 2.0)), Subtract(Add(Multiply(Add(10000[3], 0.5), PreviewData[1]), Multiply(Add(10000[2], 0.5), 0.072)), Divide(Subtract(RuntimeEnvironment[1], Negate(RuntimeEnvironment[1])), 2.0))), Subtract(Add(Multiply(Add(10000[3], 0.5), PreviewData[1]), Multiply(Subtract(10000[2], 0.5), 0.072)), Divide(Subtract(RuntimeEnvironment[1], Negate(RuntimeEnvironment[1])), 2.0))), Subtract(Add(Multiply(Add(10000[3], 0.5), PreviewData[1]), Multiply(Add(10000[2], 0.5), 0.072)), Divide(Subtract(RuntimeEnvironment[1], Negate(RuntimeEnvironment[1])), 2.0))), 4.0)), Add(Add(Multiply(Subtract(Subtract(Add(Multiply(Add(10000[3], 0.5), PreviewData[1]), Multiply(Add(10000[2], 0.5), 0.072)), Divide(Subtract(RuntimeEnvironment[1], Negate(RuntimeEnvironment[1])), 2.0)), Divide(Add(Add(Add(Subtract(Add(Multiply(Add(10000[3], 0.5), PreviewData[1]), Multiply(Subtract(10000[2], 0.5), 0.072)), Divide(Subtract(RuntimeEnvironment[1], Negate(RuntimeEnvironment[1])), 2.0)), Subtract(Add(Multiply(Add(10000[3], 0.5), PreviewData[1]), Multiply(Add(10000[2], 0.5), 0.072)), Divide(Subtract(RuntimeEnvironment[1], Negate(RuntimeEnvironment[1])), 2.0))), Subtract(Add(Multiply(Add(10000[3], 0.5), PreviewData[1]), Multiply(Subtract(10000[2], 0.5), 0.072)), Divide(Subtract(RuntimeEnvironment[1], Negate(RuntimeEnvironment[1])), 2.0))), Subtract(Add(Multiply(Add(10000[3], 0.5), PreviewData[1]), Multiply(Add(10000[2], 0.5), 0.072)), Divide(Subtract(RuntimeEnvironment[1], Negate(RuntimeEnvironment[1])), 2.0))), 4.0)), Sin(10000[5])), Multiply(Subtract(Subtract(10000[4], 0.036), Divide(Add(Add(Add(Subtract(10000[4], 0.036), Add(10000[4], 0.036)), Add(10000[4], 0.036)), Subtract(10000[4], 0.036)), 4.0)), Cos(10000[5]))), Divide(Add(Add(Add(Subtract(10000[4], 0.036), Add(10000[4], 0.036)), Add(10000[4], 0.036)), Subtract(10000[4], 0.036)), 4.0)), Add(Add(320000.0, Multiply(10000[2], 100.0)), EntityData[4]), 1.0)
   10000[0] <- 10000[1]
   goto 18
-27:
+26:
   goto exit
-28:
+27:
   10000[7] <- Trunc(Divide(EntityData[4], 2.0))
   10000[0] <- Add(Lerp(-0.9, 0.9, Divide(Mod(EntityData[4], 2.0), 2.0)), 0.0648)
   Draw(10000[6], Subtract(Add(Multiply(Add(10000[7], 0.5), PreviewData[1]), Multiply(Subtract(EntityData[1], 0.5), 0.072)), Divide(Subtract(RuntimeEnvironment[1], Negate(RuntimeEnvironment[1])), 2.0)), Subtract(10000[0], 0.036), Subtract(Add(Multiply(Add(10000[7], 0.5), PreviewData[1]), Multiply(Subtract(EntityData[1], 0.5), 0.072)), Divide(Subtract(RuntimeEnvironment[1], Negate(RuntimeEnvironment[1])), 2.0)), Add(10000[0], 0.036), Subtract(Add(Multiply(Add(10000[7], 0.5), PreviewData[1]), Multiply(Add(EntityData[1], 0.5), 0.072)), Divide(Subtract(RuntimeEnvironment[1], Negate(RuntimeEnvironment[1])), 2.0)), Add(10000[0], 0.036), Subtract(Add(Multiply(Add(10000[7], 0.5), PreviewData[1]), Multiply(Add(EntityData[1], 0.5), 0.072)), Divide(Subtract(RuntimeEnvironment[1], Negate(RuntimeEnvironment[1])), 2.0)), Subtract(10000[0], 0.036), Add(Add(320000.0, Multiply(EntityData[1], 100.0)), EntityData[4]), 1.0)

@@ -16,9 +16,12 @@ class InlineVars(CompilerPass):
                 if isinstance(stmt, IRSet) and isinstance(stmt.place, SSAPlace):
                     definitions[stmt.place] = stmt.value
             self.count_uses(block.test, use_counts)
-            for args in block.phis.values():
+            for tgt, args in block.phis.items():
                 for arg in args.values():
                     self.count_uses(arg, use_counts)
+                if len(args) == 1:
+                    arg = next(iter(args.values()))
+                    definitions[tgt] = IRGet(place=arg)
 
         for p, defn in definitions.items():
             while True:
@@ -140,6 +143,7 @@ class InlineVars(CompilerPass):
                     isinstance(stmt.place, BlockPlace)
                     and isinstance(stmt.place.block, BlockData)
                     and callback not in stmt.place.block.writable
+                    and isinstance(stmt.place.index, int | SSAPlace)
                 )
             case IRSet():
                 return False

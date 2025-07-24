@@ -164,14 +164,38 @@ class FromSSA(CompilerPass):
                 if edge.src in args:
                     del args[edge.src]
         incoming_blocks = {edge.src for edge in block.incoming}
+        args_by_src = {}
+        for args in block.phis.values():
+            for src, arg in args.items():
+                if src not in args_by_src:
+                    args_by_src[src] = set()
+                args_by_src[src].add(arg)
         for var, args in block.phis.items():
             for src, arg in args.items():
                 if src not in incoming_blocks:
                     # Edges may have been rewritten so a phi refers to a block that is no longer directly connected.
                     continue
-                src.statements.append(
-                    IRSet(place=self.place_from_ssa_place(var), value=IRGet(place=self.place_from_ssa_place(arg)))
-                )
+                if var in args_by_src[src]:
+                    # Make an extra copy first of values that may be overwritten by another assignment.
+                    src.statements.append(
+                        IRSet(
+                            place=self.place_from_ssa_place(var, "*"), value=IRGet(place=self.place_from_ssa_place(arg))
+                        )
+                    )
+        for var, args in block.phis.items():
+            for src, arg in args.items():
+                if src not in incoming_blocks:
+                    continue
+                if var in args_by_src[src]:
+                    src.statements.append(
+                        IRSet(
+                            place=self.place_from_ssa_place(var), value=IRGet(place=self.place_from_ssa_place(var, "*"))
+                        )
+                    )
+                else:
+                    src.statements.append(
+                        IRSet(place=self.place_from_ssa_place(var), value=IRGet(place=self.place_from_ssa_place(arg)))
+                    )
         block.phis = {}
         block.statements = [self.process_stmt(stmt) for stmt in block.statements]
         block.test = self.process_stmt(block.test)
@@ -203,8 +227,8 @@ class FromSSA(CompilerPass):
             case _:
                 raise TypeError(f"Unexpected statement: {stmt}")
 
-    def temp_block_from_ssa_place(self, ssa_place: SSAPlace) -> TempBlock:
-        return TempBlock(f"{ssa_place.name}.{ssa_place.num}")
+    def temp_block_from_ssa_place(self, ssa_place: SSAPlace, suffix: str = "") -> TempBlock:
+        return TempBlock(f"{ssa_place.name}.{ssa_place.num}{suffix}")
 
-    def place_from_ssa_place(self, ssa_place: SSAPlace) -> BlockPlace:
-        return BlockPlace(block=self.temp_block_from_ssa_place(ssa_place), index=0, offset=0)
+    def place_from_ssa_place(self, ssa_place: SSAPlace, suffix: str = "") -> BlockPlace:
+        return BlockPlace(block=self.temp_block_from_ssa_place(ssa_place, suffix), index=0, offset=0)

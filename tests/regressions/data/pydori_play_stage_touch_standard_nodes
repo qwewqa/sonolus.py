@@ -994,15 +994,34 @@ Block(JumpLoop(
   Execute(
     Set(
       10000
-      30
+      25
       Not(Get(
         10000
         30
       ))
     )
-    18
+    19
   )
   Execute(
+    Set(
+      10000
+      25
+      Get(
+        10000
+        30
+      )
+    )
+    19
+  )
+  Execute(
+    Set(
+      10000
+      30
+      Get(
+        10000
+        25
+      )
+    )
     Set(
       10000
       39
@@ -1030,8 +1049,8 @@ Block(JumpLoop(
         )
         4
       )
-      19
       20
+      21
     )
   )
   Execute(
@@ -1048,9 +1067,9 @@ Block(JumpLoop(
   Execute(If(
     Get(
       10000
-      30
+      25
     )
-    21
+    22
     42
   ))
   Execute(If(
@@ -1061,16 +1080,16 @@ Block(JumpLoop(
       )
       16
     )
-    22
     23
+    24
   ))
   Execute(If(
     Not(Get(
       2002
       7
     ))
-    31
-    33
+    32
+    34
   ))
   Execute(
     Set(
@@ -1078,7 +1097,7 @@ Block(JumpLoop(
       25
       0
     )
-    24
+    25
   )
   Execute(If(
     Less(
@@ -1091,8 +1110,8 @@ Block(JumpLoop(
         24
       )
     )
-    25
-    28
+    26
+    29
   ))
   Execute(
     Set(
@@ -1166,8 +1185,8 @@ Block(JumpLoop(
           )
         )
       )
-      26
       27
+      28
     )
   )
   Execute(If(
@@ -1175,8 +1194,8 @@ Block(JumpLoop(
       2002
       7
     ))
-    31
-    33
+    32
+    34
   ))
   Execute(
     Set(
@@ -1190,7 +1209,7 @@ Block(JumpLoop(
         1
       )
     )
-    24
+    25
   )
   Execute(If(
     Not(Less(
@@ -1200,8 +1219,8 @@ Block(JumpLoop(
       )
       16
     ))
-    29
     30
+    31
   ))
   Execute(
     DebugLog(0)
@@ -1262,8 +1281,8 @@ Block(JumpLoop(
         2002
         7
       ))
-      31
-      33
+      32
+      34
     )
   )
   Execute(If(
@@ -1271,7 +1290,7 @@ Block(JumpLoop(
       2002
       10
     ))
-    32
+    33
     39
   ))
   Execute(
@@ -1291,36 +1310,18 @@ Block(JumpLoop(
       25
       0
     )
-    34
-  )
-  Execute(
-    Set(
-      10000
-      26
-      Less(
-        Get(
-          10000
-          25
-        )
-        Get(
-          2001
-          0
-        )
-      )
-    )
-    If(
-      Get(
-        10000
-        26
-      )
-      35
-      41
-    )
+    35
   )
   Execute(If(
-    Get(
-      10000
-      26
+    Less(
+      Get(
+        10000
+        25
+      )
+      Get(
+        2001
+        0
+      )
     )
     36
     41
@@ -1517,7 +1518,7 @@ Block(JumpLoop(
         26
       )
     )
-    34
+    35
   )
   Execute(
     DebugLog(1)

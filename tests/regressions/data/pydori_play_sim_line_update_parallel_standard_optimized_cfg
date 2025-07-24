@@ -1,12 +1,14 @@
 0:
   10000[0] <- Multiply(EntityData[0], 3.0)
-  goto 1 if Equal(EntityInfoArray[10000[0] + 2], 2.0) else 2
+  goto when EntityInfoArray[10000[0] + 2]
+    2.0 -> 2
+    default -> 1
 1:
+  10000[0] <- Multiply(EntityData[1], 3.0)
   goto when EntityInfoArray[10000[0] + 2]
     2.0 -> 19
     default -> 3
 2:
-  10000[0] <- Multiply(EntityData[1], 3.0)
   goto when EntityInfoArray[10000[0] + 2]
     2.0 -> 19
     default -> 3

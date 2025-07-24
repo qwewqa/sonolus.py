@@ -100,60 +100,61 @@
   10000[29] <- 10000[10000[29] + 16]
   goto 17 if Less(10000[41], Add(Divide(Multiply(Subtract(10000[42], 10000[43]), Subtract(10000[25], 10000[26])), Subtract(10000[27], 10000[28])), 10000[29])) else 18
 17:
-  10000[30] <- Not(10000[30])
-  goto 18
+  10000[25] <- Not(10000[30])
+  goto 19
 18:
+  10000[25] <- 10000[30]
+  goto 19
+19:
+  10000[30] <- 10000[25]
   10000[39] <- Add(10000[38], 1.0)
   10000[40] <- 10000[38]
-  goto 19 if Less(10000[39], 4.0) else 20
-19:
+  goto 20 if Less(10000[39], 4.0) else 21
+20:
   10000[38] <- 10000[39]
   goto 15
-20:
-  goto 21 if 10000[30] else 42
 21:
-  goto 22 if GreaterOr(10000[24], 16.0) else 23
+  goto 22 if 10000[25] else 42
 22:
-  goto 31 if Not(LevelOption[7]) else 33
+  goto 23 if GreaterOr(10000[24], 16.0) else 24
 23:
-  10000[25] <- 0.0
-  goto 24
+  goto 32 if Not(LevelOption[7]) else 34
 24:
-  goto 25 if Less(10000[25], 10000[24]) else 28
+  10000[25] <- 0.0
+  goto 25
 25:
+  goto 26 if Less(10000[25], 10000[24]) else 29
+26:
   10000[26] <- Add(10000[25], Multiply(Less(10000[25], 0.0), 10000[24]))
   10000[26] <- Add(10000[26], Multiply(Less(10000[26], 0.0), 16.0))
   10000[26] <- 10000[10000[26]]
-  goto 26 if Equal(10000[26], LevelData[10000[37] + 1]) else 27
-26:
-  goto 31 if Not(LevelOption[7]) else 33
+  goto 27 if Equal(10000[26], LevelData[10000[37] + 1]) else 28
 27:
-  10000[25] <- Add(10000[25], 1.0)
-  goto 24
+  goto 32 if Not(LevelOption[7]) else 34
 28:
-  goto 29 if Not(Less(10000[24], 16.0)) else 30
+  10000[25] <- Add(10000[25], 1.0)
+  goto 25
 29:
+  goto 30 if Not(Less(10000[24], 16.0)) else 31
+30:
   DebugLog(0.0)
   DebugPause()
   goto exit
-30:
+31:
   10000[25] <- Add(10000[24], Multiply(Less(10000[24], 0.0), 16.0))
   10000[10000[25]] <- LevelData[10000[37] + 1]
   10000[24] <- Add(10000[24], 1.0)
-  goto 31 if Not(LevelOption[7]) else 33
-31:
-  goto 32 if Not(LevelOption[10]) else 39
+  goto 32 if Not(LevelOption[7]) else 34
 32:
+  goto 33 if Not(LevelOption[10]) else 39
+33:
   10000[35] <- 10000[36]
   goto 13
-33:
-  10000[25] <- 0.0
-  goto 34
 34:
-  10000[26] <- Less(10000[25], LevelData[0])
-  goto 35 if 10000[26] else 41
+  10000[25] <- 0.0
+  goto 35
 35:
-  goto 36 if 10000[26] else 41
+  goto 36 if Less(10000[25], LevelData[0]) else 41
 36:
   10000[26] <- Add(10000[25], 1.0)
   10000[32] <- Multiply(Add(10000[25], Multiply(Less(10000[25], 0.0), 7.0)), 9.0)
@@ -170,7 +171,7 @@
   goto 13
 40:
   10000[25] <- 10000[26]
-  goto 34
+  goto 35
 41:
   DebugLog(1.0)
   DebugPause()
