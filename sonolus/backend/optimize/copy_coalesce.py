@@ -41,17 +41,20 @@ class CopyCoalesce(CompilerPass):
 
         mapping: dict[TempBlock, set[TempBlock]] = {}
 
+        copy_pairs = set()
         for target, sources in copies.items():
-            for source in sources:
-                if source in interference.get(target, set()):
-                    continue
-                combined_mapping = mapping.get(target, {target}) | mapping.get(source, {source})
-                combined_interference = interference.get(target, set()) | interference.get(source, set())
-                for place in combined_mapping:
-                    mapping[place] = combined_mapping
-                    interference[place] = combined_interference
-                for place in combined_interference:
-                    interference[place].update(combined_mapping)
+            copy_pairs.update((min(target, source), max(target, source)) for source in sources)
+
+        for target, source in sorted(copy_pairs):
+            if source in interference.get(target, set()):
+                continue
+            combined_mapping = mapping.get(target, {target}) | mapping.get(source, {source})
+            combined_interference = interference.get(target, set()) | interference.get(source, set())
+            for place in combined_mapping:
+                mapping[place] = combined_mapping
+                interference[place] = combined_interference
+            for place in combined_interference:
+                interference[place].update(combined_mapping)
 
         canonical_mapping = {}
         for place, group in mapping.items():
