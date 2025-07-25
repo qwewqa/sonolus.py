@@ -13,7 +13,7 @@
   v5 <- 0.0
   goto 4
 4:
-  goto 5 if v5 else 57
+  goto 5 if v5 else 50
 5:
   v6 <- EntityMemory[1]
   goto 6
@@ -21,7 +21,7 @@
   v7 <- Not(LevelOption[7])
   goto 7 if v7 else 8
 7:
-  goto 51
+  goto 44
 8:
   goto 9
 9:
@@ -59,74 +59,71 @@
   v21 <- Less(v19, v20)
   goto 19
 19:
-  v22 <- v21
-  goto 21
+  v25 <- v21
+  goto 22
 20:
-  v22 <- 0.0
+  v22 <- v14
+  v23 <- v15
+  v24 <- Greater(v22, v23)
   goto 21
 21:
-  goto 22 if v22 else 23
+  v25 <- v24
+  goto 22
 22:
-  v29 <- v22
-  goto 29
+  goto 23 if v25 else 27
 23:
-  v23 <- v16
-  v24 <- LessOr(v23, 0.0)
+  v26 <- v14
+  v27 <- v14
+  v28 <- v16
+  v29 <- Add(v27, v28)
+  v14 <- v29
   goto 24
 24:
-  goto 25 if v24 else 27
+  goto 25
 25:
-  v25 <- v14
-  v26 <- v15
-  v27 <- Greater(v25, v26)
   goto 26
 26:
-  v28 <- v27
-  goto 28
+  v30 <- 1.0
+  goto 29
 27:
-  v28 <- 0.0
   goto 28
 28:
-  v29 <- v28
+  v30 <- 0.0
   goto 29
 29:
-  goto 30 if v29 else 34
+  goto 30
 30:
-  v30 <- v14
-  v31 <- v14
-  v32 <- v16
-  v33 <- Add(v31, v32)
-  v14 <- v33
-  goto 31
+  goto 31 if v30 else 48
 31:
+  v31 <- Less(v26, 0.0)
+  v32 <- Multiply(v31, 7.0)
+  v33 <- Add(v26, v32)
+  v34 <- Multiply(v33, 9.0)
+  v35 <- v34
+  v36 <- Equal(LevelData[v35 + 1], v6)
   goto 32
 32:
-  goto 33
+  goto 33 if v36 else 46
 33:
-  v34 <- 1.0
-  goto 36
+  goto 34
 34:
   goto 35
 35:
-  v34 <- 0.0
   goto 36
 36:
   goto 37
 37:
-  goto 38 if v34 else 55
+  goto 38
 38:
-  v35 <- Less(v30, 0.0)
-  v36 <- Multiply(v35, 7.0)
-  v37 <- Add(v30, v36)
-  v38 <- Multiply(v37, 9.0)
-  v39 <- v38
-  v40 <- Equal(LevelData[v39 + 1], v6)
+  v39 <- 0.0
   goto 39
 39:
-  goto 40 if v40 else 53
+  goto 40
 40:
   goto 41
 41:
+  v40 <- SpawnParticleEffect(v39, LevelData[v35 + 2], LevelData[v35 + 3], LevelData[v35 + 4], LevelData[v35 + 5], LevelData[v35 + 6], LevelData[v35 + 7], LevelData[v35 + 8], LevelData[v35 + 9], 0.2, 0.0)
+  v41 <- v40
   goto 42
 42:
   goto 43
@@ -135,39 +132,22 @@
 44:
   goto 45
 45:
-  v43 <- 0.0
-  goto 46
+  goto 51
 46:
   goto 47
 47:
-  goto 48
+  goto 15
 48:
-  v44 <- SpawnParticleEffect(v43, LevelData[v39 + 2], LevelData[v39 + 3], LevelData[v39 + 4], LevelData[v39 + 5], LevelData[v39 + 6], LevelData[v39 + 7], LevelData[v39 + 8], LevelData[v39 + 9], 0.2, 0.0)
-  v45 <- v44
   goto 49
 49:
-  goto 50
+  v37 <- DebugLog(0.0)
+  v38 <- DebugPause()
+  goto exit
 50:
   goto 51
 51:
   goto 52
 52:
-  goto 58
+  goto 53
 53:
-  goto 54
-54:
-  goto 15
-55:
-  goto 56
-56:
-  v41 <- DebugLog(0.0)
-  v42 <- DebugPause()
-  goto exit
-57:
-  goto 58
-58:
-  goto 59
-59:
-  goto 60
-60:
   goto exit

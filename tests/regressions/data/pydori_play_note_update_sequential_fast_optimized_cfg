@@ -3,13 +3,13 @@
   goto 1 if 10000[0] else 2
 1:
   EntityDespawn[0] <- 1.0
-  goto 97
+  goto 91
 2:
   10000[0] <- Greater(RuntimeUpdate[0], EntityData[16])
   goto 3 if 10000[0] else 4
 3:
   EntityDespawn[0] <- 1.0
-  goto 97
+  goto 91
 4:
   10000[0] <- LessOr(EntityData[15], RuntimeUpdate[0])
   goto 5 if 10000[0] else 6
@@ -51,7 +51,7 @@
 11:
   10000[0] <- EntityMemory[0]
   10000[0] <- Greater(10000[0], -100000000.0)
-  goto 12 if 10000[0] else 85
+  goto 12 if 10000[0] else 79
 12:
   10000[0] <- EntityMemory[0]
   10000[0] <- Less(10000[0], EntityData[12])
@@ -69,7 +69,7 @@
   goto 15
 15:
   10000[0] <- Not(10000[0])
-  goto 16 if 10000[0] else 85
+  goto 16 if 10000[0] else 79
 16:
   10000[0] <- Subtract(EntityData[12], 0.03333333333333333)
   10000[1] <- EntityMemory[0]
@@ -98,7 +98,7 @@
   10000[92] <- Multiply(10000[92], 1000.0)
   EntityInput[3] <- 10000[92]
   10000[92] <- NotEqual(10000[91], 0.0)
-  goto 22 if 10000[92] else 84
+  goto 22 if 10000[92] else 78
 22:
   10000[92] <- Not(LevelOption[11])
   goto 23 if 10000[92] else 40
@@ -163,10 +163,10 @@
   goto 40
 40:
   10000[90] <- Equal(EntityData[0], 6.0)
-  goto 84 if 10000[90] else 41
+  goto 78 if 10000[90] else 41
 41:
   10000[90] <- Not(LevelOption[6])
-  goto 84 if 10000[90] else 42
+  goto 78 if 10000[90] else 42
 42:
   10000[90] <- 0
   10000[91] <- Equal(EntityData[0], 1.0)
@@ -531,7 +531,7 @@
   10000[88] <- 10000[71]
   SpawnParticleEffect(10000[80], 10000[81], 10000[82], 10000[83], 10000[84], 10000[85], 10000[86], 10000[87], 10000[88], 0.5, 0.0)
   10000[0] <- Not(LevelOption[7])
-  goto 84 if 10000[0] else 67
+  goto 78 if 10000[0] else 67
 67:
   10000[0] <- 0.0
   10000[1] <- LevelData[16]
@@ -554,45 +554,27 @@
   10000[9] <- 10000[9]
   goto 71
 70:
-  10000[9] <- 0.0
-  goto 71
-71:
-  goto 72 if 10000[9] else 73
-72:
-  10000[9] <- 10000[9]
-  goto 77
-73:
-  10000[9] <- 10000[8]
-  10000[9] <- LessOr(10000[9], 0.0)
-  goto 74 if 10000[9] else 75
-74:
   10000[9] <- 10000[6]
   10000[10] <- 10000[7]
   10000[9] <- Greater(10000[9], 10000[10])
   10000[9] <- 10000[9]
-  goto 76
-75:
-  10000[9] <- 0.0
-  goto 76
-76:
-  10000[9] <- 10000[9]
-  goto 77
-77:
-  goto 78 if 10000[9] else 79
-78:
+  goto 71
+71:
+  goto 72 if 10000[9] else 73
+72:
   10000[89] <- 10000[6]
   10000[90] <- 10000[6]
   10000[91] <- 10000[8]
   10000[90] <- Add(10000[90], 10000[91])
   10000[6] <- 10000[90]
   10000[90] <- 1.0
-  goto 80
-79:
+  goto 74
+73:
   10000[90] <- 0.0
-  goto 80
-80:
-  goto 81 if 10000[90] else 83
-81:
+  goto 74
+74:
+  goto 75 if 10000[90] else 77
+75:
   10000[90] <- Less(10000[89], 0.0)
   10000[90] <- Multiply(10000[90], 7.0)
   10000[90] <- Add(10000[89], 10000[90])
@@ -600,40 +582,40 @@
   10000[90] <- Add(16.0, 10000[90])
   10000[90] <- 10000[90]
   10000[91] <- Equal(LevelData[10000[90] + 1], EntityData[1])
-  goto 82 if 10000[91] else 68
-82:
+  goto 76 if 10000[91] else 68
+76:
   10000[91] <- 0.0
   SpawnParticleEffect(10000[91], LevelData[10000[90] + 2], LevelData[10000[90] + 3], LevelData[10000[90] + 4], LevelData[10000[90] + 5], LevelData[10000[90] + 6], LevelData[10000[90] + 7], LevelData[10000[90] + 8], LevelData[10000[90] + 9], 0.2, 0.0)
-  goto 84
-83:
+  goto 78
+77:
   DebugLog(1.0)
   DebugPause()
   goto exit
-84:
+78:
   EntityDespawn[0] <- 1.0
   EntitySharedMemory[2] <- 1.0
-  goto 85
-85:
+  goto 79
+79:
   10000[0] <- Multiply(EntityData[17], 32.0)
   10000[0] <- 10000[0]
   10000[0] <- EntitySharedMemoryArray[10000[0]]
   10000[0] <- Greater(10000[0], 0.0)
-  goto 86 if 10000[0] else 97
-86:
+  goto 80 if 10000[0] else 91
+80:
   10000[0] <- Multiply(EntityData[17], 32.0)
   10000[0] <- 10000[0]
   10000[0] <- EntitySharedMemoryArray[10000[0]]
   10000[1] <- LevelMemory[17]
   10000[1] <- GreaterOr(10000[1], 16.0)
-  goto 97 if 10000[1] else 87
-87:
+  goto 91 if 10000[1] else 81
+81:
   10000[1] <- 0.0
-  goto 88
-88:
+  goto 82
+82:
   10000[2] <- LevelMemory[17]
   10000[2] <- Less(10000[1], 10000[2])
-  goto 89 if 10000[2] else 92
-89:
+  goto 83 if 10000[2] else 86
+83:
   10000[2] <- LevelMemory[17]
   10000[3] <- Less(10000[1], 0.0)
   10000[2] <- Multiply(10000[3], 10000[2])
@@ -645,30 +627,30 @@
   10000[2] <- 10000[2]
   10000[2] <- LevelMemory[10000[2] + 1]
   10000[2] <- Equal(10000[2], 10000[0])
-  goto 90 if 10000[2] else 91
-90:
+  goto 84 if 10000[2] else 85
+84:
   10000[1] <- 1.0
-  goto 93
-91:
+  goto 87
+85:
   10000[1] <- Add(10000[1], 1.0)
   10000[1] <- 10000[1]
   10000[1] <- 10000[1]
-  goto 88
-92:
+  goto 82
+86:
   10000[1] <- 0.0
-  goto 93
-93:
-  goto 97 if 10000[1] else 94
-94:
+  goto 87
+87:
+  goto 91 if 10000[1] else 88
+88:
   10000[1] <- LevelMemory[17]
   10000[1] <- Less(10000[1], 16.0)
   10000[1] <- Not(10000[1])
-  goto 95 if 10000[1] else 96
-95:
+  goto 89 if 10000[1] else 90
+89:
   DebugLog(0.0)
   DebugPause()
   goto exit
-96:
+90:
   10000[1] <- LevelMemory[17]
   10000[2] <- Less(10000[1], 0.0)
   10000[2] <- Multiply(10000[2], 16.0)
@@ -679,6 +661,6 @@
   10000[0] <- LevelMemory[17]
   10000[0] <- Add(10000[0], 1.0)
   LevelMemory[17] <- 10000[0]
-  goto 97
-97:
+  goto 91
+91:
   goto exit

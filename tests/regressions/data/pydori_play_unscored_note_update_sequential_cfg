@@ -7,7 +7,7 @@
   goto 3 if v1 else 4
 3:
   EntityDespawn[0] <- 1.0
-  goto 386
+  goto 379
 4:
   goto 5
 5:
@@ -17,7 +17,7 @@
   goto 7 if v2 else 8
 7:
   EntityDespawn[0] <- 1.0
-  goto 386
+  goto 379
 8:
   goto 9
 9:
@@ -109,7 +109,7 @@
   v25 <- Greater(v24, -100000000.0)
   goto 40
 40:
-  goto 41 if v25 else 304
+  goto 41 if v25 else 297
 41:
   v26 <- EntityMemory[0]
   v27 <- Less(v26, EntityData[12])
@@ -131,7 +131,7 @@
   goto 46
 46:
   v34 <- Not(v33)
-  goto 47 if v34 else 302
+  goto 47 if v34 else 295
 47:
   v35 <- Subtract(EntityData[12], 0.03333333333333333)
   v36 <- EntityMemory[0]
@@ -190,7 +190,7 @@
   v46 <- NotEqual(v41, 0.0)
   goto 67
 67:
-  goto 68 if v46 else 298
+  goto 68 if v46 else 291
 68:
   v47 <- Not(LevelOption[11])
   goto 69 if v47 else 106
@@ -303,14 +303,14 @@
 109:
   goto 110 if v67 else 111
 110:
-  goto 292
+  goto 285
 111:
   goto 112
 112:
   v68 <- Not(LevelOption[6])
   goto 113 if v68 else 114
 113:
-  goto 292
+  goto 285
 114:
   goto 115
 115:
@@ -893,7 +893,7 @@
   v375 <- Not(LevelOption[7])
   goto 246 if v375 else 247
 246:
-  goto 290
+  goto 283
 247:
   goto 248
 248:
@@ -931,75 +931,72 @@
   v389 <- Less(v387, v388)
   goto 258
 258:
-  v390 <- v389
-  goto 260
+  v393 <- v389
+  goto 261
 259:
-  v390 <- 0.0
+  v390 <- v382
+  v391 <- v383
+  v392 <- Greater(v390, v391)
   goto 260
 260:
-  goto 261 if v390 else 262
+  v393 <- v392
+  goto 261
 261:
-  v397 <- v390
-  goto 268
+  goto 262 if v393 else 266
 262:
-  v391 <- v384
-  v392 <- LessOr(v391, 0.0)
+  v394 <- v382
+  v395 <- v382
+  v396 <- v384
+  v397 <- Add(v395, v396)
+  v382 <- v397
   goto 263
 263:
-  goto 264 if v392 else 266
+  goto 264
 264:
-  v393 <- v382
-  v394 <- v383
-  v395 <- Greater(v393, v394)
   goto 265
 265:
-  v396 <- v395
-  goto 267
+  v398 <- 1.0
+  goto 268
 266:
-  v396 <- 0.0
   goto 267
 267:
-  v397 <- v396
+  v398 <- 0.0
   goto 268
 268:
-  goto 269 if v397 else 273
+  goto 269
 269:
-  v398 <- v382
-  v399 <- v382
-  v400 <- v384
-  v401 <- Add(v399, v400)
-  v382 <- v401
-  goto 270
+  goto 270 if v398 else 289
 270:
+  v399 <- Less(v394, 0.0)
+  v400 <- Multiply(v399, 7.0)
+  v401 <- Add(v394, v400)
+  v402 <- Multiply(v401, 9.0)
+  v403 <- Add(16.0, v402)
+  v404 <- v403
+  v405 <- Equal(LevelData[v404 + 1], EntityData[1])
   goto 271
 271:
-  goto 272
+  goto 272 if v405 else 287
 272:
-  v402 <- 1.0
-  goto 275
+  goto 273
 273:
   goto 274
 274:
-  v402 <- 0.0
   goto 275
 275:
   goto 276
 276:
-  goto 277 if v402 else 296
+  goto 277
 277:
-  v403 <- Less(v398, 0.0)
-  v404 <- Multiply(v403, 7.0)
-  v405 <- Add(v398, v404)
-  v406 <- Multiply(v405, 9.0)
-  v407 <- Add(16.0, v406)
-  v408 <- v407
-  v409 <- Equal(LevelData[v408 + 1], EntityData[1])
+  v408 <- 0.0
   goto 278
 278:
-  goto 279 if v409 else 294
+  goto 279
 279:
   goto 280
 280:
+  v409 <- SpawnParticleEffect(v408, LevelData[v404 + 2], LevelData[v404 + 3], LevelData[v404 + 4], LevelData[v404 + 5], LevelData[v404 + 6], LevelData[v404 + 7], LevelData[v404 + 8], LevelData[v404 + 9], 0.2, 0.0)
+  v410 <- v409
   goto 281
 281:
   goto 282
@@ -1008,92 +1005,90 @@
 283:
   goto 284
 284:
-  v412 <- 0.0
   goto 285
 285:
   goto 286
 286:
-  goto 287
+  goto 292
 287:
-  v413 <- SpawnParticleEffect(v412, LevelData[v408 + 2], LevelData[v408 + 3], LevelData[v408 + 4], LevelData[v408 + 5], LevelData[v408 + 6], LevelData[v408 + 7], LevelData[v408 + 8], LevelData[v408 + 9], 0.2, 0.0)
-  v414 <- v413
   goto 288
 288:
-  goto 289
+  goto 254
 289:
   goto 290
 290:
-  goto 291
+  v406 <- DebugLog(1.0)
+  v407 <- DebugPause()
+  goto exit
 291:
   goto 292
 292:
+  EntityDespawn[0] <- 1.0
+  EntitySharedMemory[2] <- 1.0
   goto 293
 293:
-  goto 299
+  goto 294
 294:
-  goto 295
+  goto 296
 295:
-  goto 254
+  goto 296
 296:
-  goto 297
+  goto 298
 297:
-  v410 <- DebugLog(1.0)
-  v411 <- DebugPause()
-  goto exit
+  goto 298
 298:
   goto 299
 299:
-  EntityDespawn[0] <- 1.0
-  EntitySharedMemory[2] <- 1.0
   goto 300
 300:
   goto 301
 301:
-  goto 303
+  goto 302
 302:
   goto 303
 303:
-  goto 305
+  v411 <- Multiply(EntityData[17], 32.0)
+  v412 <- v411
+  v413 <- EntitySharedMemoryArray[v412]
+  goto 304
 304:
   goto 305
 305:
+  v414 <- Greater(v413, 0.0)
   goto 306
 306:
   goto 307
 307:
   goto 308
 308:
-  goto 309
+  goto 309 if v414 else 377
 309:
   goto 310
 310:
-  v415 <- Multiply(EntityData[17], 32.0)
-  v416 <- v415
-  v417 <- EntitySharedMemoryArray[v416]
   goto 311
 311:
   goto 312
 312:
-  v418 <- Greater(v417, 0.0)
   goto 313
 313:
+  v415 <- Multiply(EntityData[17], 32.0)
+  v416 <- v415
+  v417 <- EntitySharedMemoryArray[v416]
   goto 314
 314:
   goto 315
 315:
-  goto 316 if v418 else 384
+  goto 316
 316:
   goto 317
 317:
   goto 318
 318:
+  v418 <- LevelMemory[17]
   goto 319
 319:
   goto 320
 320:
-  v419 <- Multiply(EntityData[17], 32.0)
-  v420 <- v419
-  v421 <- EntitySharedMemoryArray[v420]
   goto 321
 321:
   goto 322
@@ -1102,129 +1097,139 @@
 323:
   goto 324
 324:
+  v419 <- GreaterOr(v418, 16.0)
   goto 325
 325:
-  v422 <- LevelMemory[17]
-  goto 326
+  goto 326 if v419 else 327
 326:
-  goto 327
+  v450 <- 0.0
+  goto 371
 327:
   goto 328
 328:
   goto 329
 329:
+  v420 <- 0.0
   goto 330
 330:
   goto 331
 331:
-  v423 <- GreaterOr(v422, 16.0)
+  v421 <- LevelMemory[17]
   goto 332
 332:
-  goto 333 if v423 else 334
+  goto 333
 333:
-  v454 <- 0.0
-  goto 378
+  v422 <- Less(v420, v421)
+  goto 334
 334:
-  goto 335
+  goto 335 if v422 else 346
 335:
   goto 336
 336:
-  v424 <- 0.0
   goto 337
 337:
+  v423 <- LevelMemory[17]
   goto 338
 338:
-  v425 <- LevelMemory[17]
   goto 339
 339:
+  v424 <- Less(v420, 0.0)
+  v425 <- Multiply(v424, v423)
+  v426 <- Add(v420, v425)
+  v427 <- Less(v426, 0.0)
+  v428 <- Multiply(v427, 16.0)
+  v429 <- Add(v426, v428)
+  v430 <- Add(17.0, v429)
+  v431 <- v430
+  v432 <- LevelMemory[v431 + 1]
   goto 340
 340:
-  v426 <- Less(v424, v425)
   goto 341
 341:
-  goto 342 if v426 else 353
+  v433 <- Equal(v432, v417)
+  goto 342
 342:
-  goto 343
+  goto 343 if v433 else 344
 343:
-  goto 344
+  v436 <- 1.0
+  goto 348
 344:
-  v427 <- LevelMemory[17]
   goto 345
 345:
-  goto 346
-346:
-  v428 <- Less(v424, 0.0)
-  v429 <- Multiply(v428, v427)
-  v430 <- Add(v424, v429)
-  v431 <- Less(v430, 0.0)
-  v432 <- Multiply(v431, 16.0)
-  v433 <- Add(v430, v432)
-  v434 <- Add(17.0, v433)
+  v434 <- Add(v420, 1.0)
   v435 <- v434
-  v436 <- LevelMemory[v435 + 1]
+  v420 <- v435
+  goto 330
+346:
   goto 347
 347:
+  v436 <- 0.0
   goto 348
 348:
-  v437 <- Equal(v436, v421)
   goto 349
 349:
-  goto 350 if v437 else 351
+  goto 350
 350:
-  v440 <- 1.0
-  goto 355
+  goto 351 if v436 else 352
 351:
-  goto 352
+  v450 <- 0.0
+  goto 371
 352:
-  v438 <- Add(v424, 1.0)
-  v439 <- v438
-  v424 <- v439
-  goto 337
+  goto 353
 353:
   goto 354
 354:
-  v440 <- 0.0
+  v437 <- LevelMemory[17]
   goto 355
 355:
   goto 356
 356:
   goto 357
 357:
-  goto 358 if v440 else 359
+  goto 358
 358:
-  v454 <- 0.0
-  goto 378
+  goto 359
 359:
   goto 360
 360:
+  v438 <- Less(v437, 16.0)
   goto 361
 361:
-  v441 <- LevelMemory[17]
   goto 362
 362:
   goto 363
 363:
-  goto 364
+  v439 <- Not(v438)
+  goto 364 if v439 else 365
 364:
-  goto 365
+  v440 <- DebugLog(0.0)
+  v441 <- DebugPause()
+  goto exit
 365:
   goto 366
 366:
   goto 367
 367:
-  v442 <- Less(v441, 16.0)
   goto 368
 368:
+  v442 <- LevelMemory[17]
+  v443 <- Less(v442, 0.0)
+  v444 <- Multiply(v443, 16.0)
+  v445 <- Add(v442, v444)
+  v446 <- Add(17.0, v445)
+  v447 <- v446
+  LevelMemory[v447 + 1] <- v417
+  v448 <- LevelMemory[17]
+  v449 <- Add(v448, 1.0)
+  LevelMemory[17] <- v449
   goto 369
 369:
   goto 370
 370:
-  v443 <- Not(v442)
-  goto 371 if v443 else 372
+  v450 <- 1.0
+  goto 371
 371:
-  v444 <- DebugLog(0.0)
-  v445 <- DebugPause()
-  goto exit
+  goto 372
 372:
   goto 373
 373:
@@ -1232,39 +1237,14 @@
 374:
   goto 375
 375:
-  v446 <- LevelMemory[17]
-  v447 <- Less(v446, 0.0)
-  v448 <- Multiply(v447, 16.0)
-  v449 <- Add(v446, v448)
-  v450 <- Add(17.0, v449)
-  v451 <- v450
-  LevelMemory[v451 + 1] <- v421
-  v452 <- LevelMemory[17]
-  v453 <- Add(v452, 1.0)
-  LevelMemory[17] <- v453
   goto 376
 376:
-  goto 377
+  goto 378
 377:
-  v454 <- 1.0
   goto 378
 378:
   goto 379
 379:
   goto 380
 380:
-  goto 381
-381:
-  goto 382
-382:
-  goto 383
-383:
-  goto 385
-384:
-  goto 385
-385:
-  goto 386
-386:
-  goto 387
-387:
   goto exit

@@ -72,7 +72,7 @@ class RangeIterator(Record, SonolusIterator):
     step: int
 
     def next(self) -> Maybe[int]:
-        has_next = (self.step > 0 and self.value < self.stop) or (self.step <= 0 and self.value > self.stop)
+        has_next = self.value < self.stop if self.step > 0 else self.value > self.stop
         if has_next:
             current = self.value
             self.value += self.step

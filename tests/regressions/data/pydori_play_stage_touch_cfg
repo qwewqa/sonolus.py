@@ -256,7 +256,7 @@
   goto when v52
     0 -> 88
 88:
-  goto 89 if v51 else 267
+  goto 89 if v51 else 260
 89:
   goto 90
 90:
@@ -312,7 +312,7 @@
 108:
   goto 109
 109:
-  goto 110 if v64 else 265
+  goto 110 if v64 else 258
 110:
   goto 111
 111:
@@ -466,7 +466,7 @@
 142:
   goto 143
 143:
-  goto 144 if v65 else 263
+  goto 144 if v65 else 256
 144:
   goto 145
 145:
@@ -626,7 +626,7 @@
   v169 <- Not(LevelOption[7])
   goto 204 if v169 else 205
 204:
-  goto 248
+  goto 241
 205:
   goto 206
 206:
@@ -664,74 +664,71 @@
   v183 <- Less(v181, v182)
   goto 216
 216:
-  v184 <- v183
-  goto 218
+  v187 <- v183
+  goto 219
 217:
-  v184 <- 0.0
+  v184 <- v176
+  v185 <- v177
+  v186 <- Greater(v184, v185)
   goto 218
 218:
-  goto 219 if v184 else 220
+  v187 <- v186
+  goto 219
 219:
-  v191 <- v184
-  goto 226
+  goto 220 if v187 else 224
 220:
-  v185 <- v178
-  v186 <- LessOr(v185, 0.0)
+  v188 <- v176
+  v189 <- v176
+  v190 <- v178
+  v191 <- Add(v189, v190)
+  v176 <- v191
   goto 221
 221:
-  goto 222 if v186 else 224
+  goto 222
 222:
-  v187 <- v176
-  v188 <- v177
-  v189 <- Greater(v187, v188)
   goto 223
 223:
-  v190 <- v189
-  goto 225
+  v192 <- 1.0
+  goto 226
 224:
-  v190 <- 0.0
   goto 225
 225:
-  v191 <- v190
+  v192 <- 0.0
   goto 226
 226:
-  goto 227 if v191 else 231
+  goto 227
 227:
-  v192 <- v176
-  v193 <- v176
-  v194 <- v178
-  v195 <- Add(v193, v194)
-  v176 <- v195
-  goto 228
+  goto 228 if v192 else 254
 228:
+  v193 <- Less(v188, 0.0)
+  v194 <- Multiply(v193, 7.0)
+  v195 <- Add(v188, v194)
+  v196 <- Multiply(v195, 9.0)
+  v197 <- v196
+  v198 <- Equal(LevelData[v197 + 1], LevelData[v61 + 1])
   goto 229
 229:
-  goto 230
+  goto 230 if v198 else 252
 230:
-  v196 <- 1.0
-  goto 233
+  goto 231
 231:
   goto 232
 232:
-  v196 <- 0.0
   goto 233
 233:
   goto 234
 234:
-  goto 235 if v196 else 261
+  goto 235
 235:
-  v197 <- Less(v192, 0.0)
-  v198 <- Multiply(v197, 7.0)
-  v199 <- Add(v192, v198)
-  v200 <- Multiply(v199, 9.0)
-  v201 <- v200
-  v202 <- Equal(LevelData[v201 + 1], LevelData[v61 + 1])
+  v201 <- 0.0
   goto 236
 236:
-  goto 237 if v202 else 259
+  goto 237
 237:
   goto 238
 238:
+  v202 <- SpawnParticleEffect(v201, LevelData[v197 + 2], LevelData[v197 + 3], LevelData[v197 + 4], LevelData[v197 + 5], LevelData[v197 + 6], LevelData[v197 + 7], LevelData[v197 + 8], LevelData[v197 + 9], 0.2, 0.0)
+  v203 <- v202
   goto 239
 239:
   goto 240
@@ -740,71 +737,120 @@
 241:
   goto 242
 242:
-  v205 <- 0.0
   goto 243
 243:
-  goto 244
+  v204 <- Not(LevelOption[10])
+  goto 244 if v204 else 245
 244:
-  goto 245
+  goto 250
 245:
-  v206 <- SpawnParticleEffect(v205, LevelData[v201 + 2], LevelData[v201 + 3], LevelData[v201 + 4], LevelData[v201 + 5], LevelData[v201 + 6], LevelData[v201 + 7], LevelData[v201 + 8], LevelData[v201 + 9], 0.2, 0.0)
-  v207 <- v206
   goto 246
 246:
   goto 247
 247:
+  v205 <- 0.0
+  v206 <- Play(v205, 0.02)
   goto 248
 248:
   goto 249
 249:
   goto 250
 250:
-  v208 <- Not(LevelOption[10])
-  goto 251 if v208 else 252
+  goto 251
 251:
   goto 257
 252:
   goto 253
 253:
-  goto 254
+  goto 212
 254:
-  v209 <- 0.0
-  v210 <- Play(v209, 0.02)
   goto 255
 255:
-  goto 256
+  v199 <- DebugLog(1.0)
+  v200 <- DebugPause()
+  goto exit
 256:
   goto 257
 257:
-  goto 258
+  goto 96
 258:
-  goto 264
+  goto 259
 259:
-  goto 260
+  goto 12
 260:
-  goto 212
+  goto 261
 261:
   goto 262
 262:
-  v203 <- DebugLog(1.0)
-  v204 <- DebugPause()
-  goto exit
+  goto 263
 263:
+  v207 <- v1
   goto 264
 264:
-  goto 96
+  goto 265
 265:
   goto 266
 266:
-  goto 12
+  goto 267
 267:
+  v208 <- Greater(v207, 0.0)
   goto 268
 268:
-  goto 269
+  goto 269 if v208 else 270
 269:
-  goto 270
+  v209 <- 1.0
+  v210 <- v209
+  v211 <- StreamSet(v210, RuntimeUpdate[0], v1)
+  v212 <- v209
+  v213 <- Add(v212, 1.0)
+  v214 <- StreamSet(v213, RuntimeUpdate[0], a1[0])
+  v215 <- v209
+  v216 <- Add(v215, 2.0)
+  v217 <- StreamSet(v216, RuntimeUpdate[0], a1[1])
+  v218 <- v209
+  v219 <- Add(v218, 3.0)
+  v220 <- StreamSet(v219, RuntimeUpdate[0], a1[2])
+  v221 <- v209
+  v222 <- Add(v221, 4.0)
+  v223 <- StreamSet(v222, RuntimeUpdate[0], a1[3])
+  v224 <- v209
+  v225 <- Add(v224, 5.0)
+  v226 <- StreamSet(v225, RuntimeUpdate[0], a1[4])
+  v227 <- v209
+  v228 <- Add(v227, 6.0)
+  v229 <- StreamSet(v228, RuntimeUpdate[0], a1[5])
+  v230 <- v209
+  v231 <- Add(v230, 7.0)
+  v232 <- StreamSet(v231, RuntimeUpdate[0], a1[6])
+  v233 <- v209
+  v234 <- Add(v233, 8.0)
+  v235 <- StreamSet(v234, RuntimeUpdate[0], a1[7])
+  v236 <- v209
+  v237 <- Add(v236, 9.0)
+  v238 <- StreamSet(v237, RuntimeUpdate[0], a1[8])
+  v239 <- v209
+  v240 <- Add(v239, 10.0)
+  v241 <- StreamSet(v240, RuntimeUpdate[0], a1[9])
+  v242 <- v209
+  v243 <- Add(v242, 11.0)
+  v244 <- StreamSet(v243, RuntimeUpdate[0], a1[10])
+  v245 <- v209
+  v246 <- Add(v245, 12.0)
+  v247 <- StreamSet(v246, RuntimeUpdate[0], a1[11])
+  v248 <- v209
+  v249 <- Add(v248, 13.0)
+  v250 <- StreamSet(v249, RuntimeUpdate[0], a1[12])
+  v251 <- v209
+  v252 <- Add(v251, 14.0)
+  v253 <- StreamSet(v252, RuntimeUpdate[0], a1[13])
+  v254 <- v209
+  v255 <- Add(v254, 15.0)
+  v256 <- StreamSet(v255, RuntimeUpdate[0], a1[14])
+  v257 <- v209
+  v258 <- Add(v257, 16.0)
+  v259 <- StreamSet(v258, RuntimeUpdate[0], a1[15])
+  goto 271
 270:
-  v211 <- v1
   goto 271
 271:
   goto 272
@@ -813,72 +859,6 @@
 273:
   goto 274
 274:
-  v212 <- Greater(v211, 0.0)
   goto 275
 275:
-  goto 276 if v212 else 277
-276:
-  v213 <- 1.0
-  v214 <- v213
-  v215 <- StreamSet(v214, RuntimeUpdate[0], v1)
-  v216 <- v213
-  v217 <- Add(v216, 1.0)
-  v218 <- StreamSet(v217, RuntimeUpdate[0], a1[0])
-  v219 <- v213
-  v220 <- Add(v219, 2.0)
-  v221 <- StreamSet(v220, RuntimeUpdate[0], a1[1])
-  v222 <- v213
-  v223 <- Add(v222, 3.0)
-  v224 <- StreamSet(v223, RuntimeUpdate[0], a1[2])
-  v225 <- v213
-  v226 <- Add(v225, 4.0)
-  v227 <- StreamSet(v226, RuntimeUpdate[0], a1[3])
-  v228 <- v213
-  v229 <- Add(v228, 5.0)
-  v230 <- StreamSet(v229, RuntimeUpdate[0], a1[4])
-  v231 <- v213
-  v232 <- Add(v231, 6.0)
-  v233 <- StreamSet(v232, RuntimeUpdate[0], a1[5])
-  v234 <- v213
-  v235 <- Add(v234, 7.0)
-  v236 <- StreamSet(v235, RuntimeUpdate[0], a1[6])
-  v237 <- v213
-  v238 <- Add(v237, 8.0)
-  v239 <- StreamSet(v238, RuntimeUpdate[0], a1[7])
-  v240 <- v213
-  v241 <- Add(v240, 9.0)
-  v242 <- StreamSet(v241, RuntimeUpdate[0], a1[8])
-  v243 <- v213
-  v244 <- Add(v243, 10.0)
-  v245 <- StreamSet(v244, RuntimeUpdate[0], a1[9])
-  v246 <- v213
-  v247 <- Add(v246, 11.0)
-  v248 <- StreamSet(v247, RuntimeUpdate[0], a1[10])
-  v249 <- v213
-  v250 <- Add(v249, 12.0)
-  v251 <- StreamSet(v250, RuntimeUpdate[0], a1[11])
-  v252 <- v213
-  v253 <- Add(v252, 13.0)
-  v254 <- StreamSet(v253, RuntimeUpdate[0], a1[12])
-  v255 <- v213
-  v256 <- Add(v255, 14.0)
-  v257 <- StreamSet(v256, RuntimeUpdate[0], a1[13])
-  v258 <- v213
-  v259 <- Add(v258, 15.0)
-  v260 <- StreamSet(v259, RuntimeUpdate[0], a1[14])
-  v261 <- v213
-  v262 <- Add(v261, 16.0)
-  v263 <- StreamSet(v262, RuntimeUpdate[0], a1[15])
-  goto 278
-277:
-  goto 278
-278:
-  goto 279
-279:
-  goto 280
-280:
-  goto 281
-281:
-  goto 282
-282:
   goto exit
