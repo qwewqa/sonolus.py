@@ -2,7 +2,7 @@ from __future__ import annotations
 
 from abc import ABCMeta
 from collections.abc import Iterable
-from typing import Any, Self, final
+from typing import Any, Literal, Self, final
 
 from sonolus.backend.ir import IRConst, IRSet
 from sonolus.backend.place import BlockPlace
@@ -14,6 +14,9 @@ from sonolus.script.internal.generic import GenericValue
 from sonolus.script.internal.impl import meta_fn, validate_value
 from sonolus.script.internal.value import BackingSource, DataValue, Value
 from sonolus.script.num import Num
+
+Dim = Literal
+"""Shorthand for `Literal` intended for use in array dimensions for type checker compatibility."""
 
 
 class ArrayMeta(ABCMeta):
@@ -32,7 +35,8 @@ class Array[T, Size](GenericValue, ArrayLike[T], metaclass=ArrayMeta):
         array_1 = Array(1, 2, 3)
         array_2 = Array[int, 0]()
         array_3 = +Array[int, 3]  # Create a zero-initialized array
-        array_4 = +array_1  # Create a copy of array_1
+        array_4 = +Array[int, Dim[3]]  # Alternative syntax for compliance with type checkers
+        array_5 = +array_1  # Create a copy of array_1
         ```
     """
 

@@ -143,3 +143,13 @@ class ConstantValue(Value):
 
 class BasicConstantValue(ConstantValue):
     """For constants without any special behavior."""
+
+
+class TypingSpecialFormConstant(ConstantValue):
+    """For constants that are typing special forms that have a [] operator."""
+
+    @meta_fn
+    def __getitem__(self, item: Any) -> Self:
+        if not item._is_py_():
+            raise TypeError(f"Invalid value for type parameter: {item}")
+        return self.value()[item._as_py_()]

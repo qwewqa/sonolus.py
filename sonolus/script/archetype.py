@@ -1110,7 +1110,7 @@ class EntityRef[A: _BaseArchetype](Record):
         """Get the archetype type."""
         return cls.type_var_value(A)
 
-    def with_archetype(self, archetype: type[A]) -> EntityRef[A]:
+    def with_archetype[T](self, archetype: type[T]) -> EntityRef[T]:
         """Return a new reference with the given archetype type."""
         return EntityRef[archetype](index=self.index)
 
