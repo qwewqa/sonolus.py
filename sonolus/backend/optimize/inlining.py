@@ -24,51 +24,66 @@ RUNTIME_CONSTANT_BLOCKS = {
 
 class InlineVars(CompilerPass):
     def run(self, entry: BasicBlock, config: OptimizerConfig) -> BasicBlock:
-        gross_use_counts: dict[SSAPlace, int] = {}
+        use_counts: dict[SSAPlace, int] = {}
         definitions: dict[SSAPlace, IRStmt] = {}
 
         for block in traverse_cfg_preorder(entry):
             for stmt in block.statements:
-                self.count_uses(stmt, gross_use_counts)
+                self.count_uses(stmt, use_counts)
                 if isinstance(stmt, IRSet) and isinstance(stmt.place, SSAPlace):
                     definitions[stmt.place] = stmt.value
-            self.count_uses(block.test, gross_use_counts)
+            self.count_uses(block.test, use_counts)
             for tgt, args in block.phis.items():
                 for arg in args.values():
-                    self.count_uses(arg, gross_use_counts)
+                    self.count_uses(arg, use_counts)
                 if len(args) == 1:
                     arg = next(iter(args.values()))
                     definitions[tgt] = IRGet(place=arg)
 
-        direct_use_counts = {**gross_use_counts}
         for defn in definitions.values():
             if isinstance(defn, IRGet) and isinstance(defn.place, SSAPlace):
-                direct_use_counts[defn.place] = direct_use_counts.get(defn.place, 0) - 1
+                use_counts[defn.place] -= 1
 
-        effective_use_counts = {}
-        for p, direct_uses in direct_use_counts.items():
-            while True:
-                effective_use_counts[p] = effective_use_counts.get(p, 0) + direct_uses
-                defn = definitions.get(p)
-                if defn and isinstance(defn, IRGet) and isinstance(defn.place, SSAPlace) and defn.place in definitions:
-                    p = defn.place
-                else:
-                    break
-
-        inlined_definitions = {**definitions}
+        canonical_definitions: dict[SSAPlace, IRStmt] = {}
         for p, defn in definitions.items():
+            canonical_definitions[p] = defn
+            # Update the definition if it's a Get from another SSAPlace until we reach a definition that is not a Get
+            while defn and isinstance(defn, IRGet) and isinstance(defn.place, SSAPlace):
+                canonical_definitions[p] = defn
+                defn = definitions.get(defn.place, None)  # Can be None if it's a phi
+            canonical_defn = canonical_definitions[p]
+            if (
+                use_counts.get(p, 0) > 0
+                and isinstance(canonical_defn, IRGet)
+                and isinstance(canonical_defn.place, SSAPlace)
+            ):
+                use_counts[canonical_defn.place] = use_counts.get(canonical_defn.place, 0) + 1
+
+        for p, defn in canonical_definitions.items():
+            if isinstance(defn, IRGet) and isinstance(defn.place, SSAPlace):
+                inner_p = defn.place
+                inner_defn = canonical_definitions.get(inner_p)
+                if (
+                    inner_defn
+                    and self.is_inlinable(inner_defn, config.callback)
+                    and (use_counts.get(inner_p, 0) <= 1 or self.is_free_to_inline(inner_defn, config.callback))
+                ):
+                    canonical_definitions[p] = inner_defn
+
+        inlined_definitions = {**canonical_definitions}
+        for p, defn in canonical_definitions.items():
             while True:
                 inlinable_uses = self.get_inlinable_uses(defn, set())
                 subs = {}
                 for inside_p in inlinable_uses:
-                    if inside_p not in definitions:
+                    if inside_p not in canonical_definitions:
                         continue
-                    inside_defn = definitions[inside_p]
+                    inside_defn = canonical_definitions[inside_p]
                     if not self.is_inlinable(inside_defn, config.callback):
                         continue
                     if (
                         (isinstance(inside_defn, IRGet) and isinstance(inside_defn.place, SSAPlace))
-                        or effective_use_counts[inside_p] == 1
+                        or use_counts[inside_p] == 1
                         or self.is_free_to_inline(inside_defn, config.callback)
                     ):
                         subs[inside_p] = inside_defn
@@ -81,23 +96,34 @@ class InlineVars(CompilerPass):
             p
             for p in inlined_definitions
             if self.is_inlinable(inlined_definitions[p], config.callback)
-            and (effective_use_counts.get(p, 0) <= 1 or self.is_free_to_inline(inlined_definitions[p], config.callback))
+            and (use_counts.get(p, 0) <= 1 or self.is_free_to_inline(inlined_definitions[p], config.callback))
         }
 
         for block in traverse_cfg_preorder(entry):
             new_statements = []
             for stmt in [*block.statements, block.test]:
-                inlinable_uses = self.get_inlinable_uses(stmt, set())
-                subs = {}
-                for p in inlinable_uses:
-                    if p not in valid:
-                        continue
-                    subs[p] = inlined_definitions[p]
-
-                if subs:
-                    new_statements.append(self.substitute(stmt, subs))
-                else:
+                if (
+                    isinstance(stmt, IRSet)
+                    and isinstance(stmt.place, SSAPlace)
+                    and isinstance(stmt.value, IRGet)
+                    and isinstance(stmt.value.place, SSAPlace)
+                ):
+                    # Don't bother inlining a direct alias since it can get optimized away later and
+                    # reordering can reduce optimality since we don't have many other code motion optimizations.
                     new_statements.append(stmt)
+                    continue
+                while True:
+                    inlinable_uses = self.get_inlinable_uses(stmt, set())
+                    subs = {}
+                    for p in inlinable_uses:
+                        if p in valid:
+                            subs[p] = inlined_definitions[p]
+
+                    if subs:
+                        stmt = self.substitute(stmt, subs)
+                    else:
+                        new_statements.append(stmt)
+                        break
 
             block.statements = new_statements[:-1]
             block.test = new_statements[-1]
