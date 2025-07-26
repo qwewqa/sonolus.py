@@ -46,7 +46,7 @@
   goto 19 if v7 else 20
 19:
   EntityDespawn[0] <- 1.0
-  goto 148
+  goto 136
 20:
   goto 21
 21:
@@ -103,7 +103,7 @@
   v20 <- Not(LevelOption[8])
   goto 41 if v20 else 42
 41:
-  goto 146
+  goto 134
 42:
   goto 43
 43:
@@ -204,7 +204,7 @@
 82:
   goto 83 if v33 else 84
 83:
-  goto 146
+  goto 134
 84:
   goto 85
 85:
@@ -400,70 +400,44 @@
 123:
   goto 124
 124:
+  v148 <- Min(EntityDataArray[v10], EntityDataArray[v13])
   goto 125
 125:
+  v149 <- Multiply(v148, 100.0)
+  v150 <- Add(220000.0, v149)
+  v151 <- Add(v150, v19)
   goto 126
 126:
   goto 127
 127:
   goto 128
 128:
+  v152 <- 18.0
   goto 129
 129:
+  v153 <- v68
+  v154 <- v69
+  v155 <- v120
+  v156 <- v121
+  v157 <- v146
+  v158 <- v147
+  v159 <- v94
+  v160 <- v95
   goto 130
 130:
   goto 131
 131:
-  v148 <- Less(EntityDataArray[v10], EntityDataArray[v13])
+  v161 <- Draw(v152, v153, v154, v155, v156, v157, v158, v159, v160, v151, v32)
   goto 132
 132:
-  goto 133 if v148 else 134
+  goto 133
 133:
-  v149 <- EntityDataArray[v10]
-  goto 135
+  goto 134
 134:
-  v149 <- EntityDataArray[v13]
   goto 135
 135:
   goto 136
 136:
   goto 137
 137:
-  v150 <- Multiply(v149, 100.0)
-  v151 <- Add(220000.0, v150)
-  v152 <- Add(v151, v19)
-  goto 138
-138:
-  goto 139
-139:
-  goto 140
-140:
-  v153 <- 18.0
-  goto 141
-141:
-  v154 <- v68
-  v155 <- v69
-  v156 <- v120
-  v157 <- v121
-  v158 <- v146
-  v159 <- v147
-  v160 <- v94
-  v161 <- v95
-  goto 142
-142:
-  goto 143
-143:
-  v162 <- Draw(v153, v154, v155, v156, v157, v158, v159, v160, v161, v152, v32)
-  goto 144
-144:
-  goto 145
-145:
-  goto 146
-146:
-  goto 147
-147:
-  goto 148
-148:
-  goto 149
-149:
   goto exit

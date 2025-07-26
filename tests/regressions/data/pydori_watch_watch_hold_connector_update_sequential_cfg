@@ -29,7 +29,7 @@
   v9 <- 0.0
   goto 10
 10:
-  goto 11 if v9 else 81
+  goto 11 if v9 else 71
 11:
   goto 12
 12:
@@ -54,7 +54,7 @@
 20:
   goto 21
 21:
-  goto 22 if RuntimeEnvironment[4] else 78
+  goto 22 if RuntimeEnvironment[4] else 68
 22:
   v13 <- 18.0
   goto 23
@@ -123,6 +123,11 @@
 48:
   goto 49
 49:
+  v25 <- Max(1.0, 1.0)
+  v26 <- Multiply(v25, EntityInfoArray[v18])
+  v27 <- v13
+  v28 <- Add(v26, v27)
+  v29 <- v28
   goto 50
 50:
   goto 51
@@ -133,78 +138,81 @@
 53:
   goto 54
 54:
+  v30 <- v29
+  v31 <- StreamHas(v30, RuntimeUpdate[0])
   goto 55
 55:
   goto 56
 56:
   goto 57
 57:
-  goto 58
+  goto 58 if v31 else 59
 58:
-  goto 59
+  v34 <- RuntimeUpdate[0]
+  goto 63
 59:
-  v25 <- v13
-  v26 <- Add(EntityInfoArray[v18], v25)
-  v27 <- v26
   goto 60
 60:
+  v32 <- v29
+  v33 <- StreamGetPreviousKey(v32, RuntimeUpdate[0])
   goto 61
 61:
   goto 62
 62:
+  v34 <- v33
   goto 63
 63:
   goto 64
 64:
-  v28 <- v27
-  v29 <- StreamHas(v28, RuntimeUpdate[0])
   goto 65
 65:
+  v35 <- v29
+  v36 <- Add(v35, 0)
   goto 66
 66:
   goto 67
 67:
-  goto 68 if v29 else 69
+  v37 <- StreamGetValue(v36, v34)
+  goto 69
 68:
-  v32 <- RuntimeUpdate[0]
-  goto 73
+  v37 <- 1.0
+  goto 69
 69:
   goto 70
 70:
-  v30 <- v27
-  v31 <- StreamGetPreviousKey(v30, RuntimeUpdate[0])
-  goto 71
+  v38 <- v37
+  goto 72
 71:
+  v38 <- 0.0
   goto 72
 72:
-  v32 <- v31
-  goto 73
+  goto 73 if v38 else 119
 73:
   goto 74
 74:
   goto 75
 75:
-  v33 <- v27
-  v34 <- Add(v33, 0)
   goto 76
 76:
   goto 77
 77:
-  v35 <- StreamGetValue(v34, v32)
-  goto 79
+  v39 <- Multiply(EntityData[0], 32.0)
+  v40 <- Add(7.0, v39)
+  v41 <- v40
+  goto 78
 78:
-  v35 <- 1.0
   goto 79
 79:
+  v42 <- Divide(6.0, LevelOption[1])
   goto 80
 80:
-  v36 <- v35
-  goto 82
+  goto 81
 81:
-  v36 <- 0.0
+  v43 <- Subtract(EntityDataArray[v41], v42)
+  v44 <- Remap(v43, EntityDataArray[v41], LevelData[14], 0.0, RuntimeUpdate[2])
   goto 82
 82:
-  goto 83 if v36 else 129
+  goto 83
 83:
   goto 84
 84:
@@ -214,24 +222,24 @@
 86:
   goto 87
 87:
-  v37 <- Multiply(EntityData[0], 32.0)
-  v38 <- Add(7.0, v37)
-  v39 <- v38
   goto 88
 88:
   goto 89
 89:
-  v40 <- Divide(6.0, LevelOption[1])
+  v45 <- Multiply(EntityData[1], 32.0)
+  v46 <- Add(7.0, v45)
+  v47 <- v46
   goto 90
 90:
   goto 91
 91:
-  v41 <- Subtract(EntityDataArray[v39], v40)
-  v42 <- Remap(v41, EntityDataArray[v39], LevelData[14], 0.0, RuntimeUpdate[2])
+  v48 <- Divide(6.0, LevelOption[1])
   goto 92
 92:
   goto 93
 93:
+  v49 <- Subtract(EntityDataArray[v47], v48)
+  v50 <- Remap(v49, EntityDataArray[v47], LevelData[14], 0.0, RuntimeUpdate[2])
   goto 94
 94:
   goto 95
@@ -244,20 +252,21 @@
 98:
   goto 99
 99:
-  v43 <- Multiply(EntityData[1], 32.0)
-  v44 <- Add(7.0, v43)
-  v45 <- v44
   goto 100
 100:
+  v51 <- Multiply(EntityData[0], 32.0)
+  v52 <- Add(1.0, v51)
+  v53 <- v52
   goto 101
 101:
-  v46 <- Divide(6.0, LevelOption[1])
   goto 102
 102:
   goto 103
 103:
-  v47 <- Subtract(EntityDataArray[v45], v46)
-  v48 <- Remap(v47, EntityDataArray[v45], LevelData[14], 0.0, RuntimeUpdate[2])
+  v54 <- Multiply(EntityData[1], 32.0)
+  v55 <- Add(1.0, v54)
+  v56 <- v55
+  v57 <- Remap(v44, v50, EntityDataArray[v53], EntityDataArray[v56], 0.0)
   goto 104
 104:
   goto 105
@@ -268,37 +277,36 @@
 107:
   goto 108
 108:
+  v58 <- Multiply(EntityData[0], 32.0)
+  v59 <- Add(10.0, v58)
+  v60 <- v59
   goto 109
 109:
   goto 110
 110:
-  v49 <- Multiply(EntityData[0], 32.0)
-  v50 <- Add(1.0, v49)
-  v51 <- v50
   goto 111
 111:
   goto 112
 112:
   goto 113
 113:
-  v52 <- Multiply(EntityData[1], 32.0)
-  v53 <- Add(1.0, v52)
-  v54 <- v53
-  v55 <- Remap(v42, v48, EntityDataArray[v51], EntityDataArray[v54], 0.0)
   goto 114
 114:
+  v61 <- Multiply(EntityDataArray[v60], 32.0)
+  v62 <- Add(10.0, v61)
+  v63 <- v62
   goto 115
 115:
   goto 116
 116:
+  v64 <- Multiply(EntityDataArray[v63], 32.0)
+  v65 <- v64
+  EntitySharedMemoryArray[v65] <- v57
   goto 117
 117:
   goto 118
 118:
-  v56 <- Multiply(EntityData[0], 32.0)
-  v57 <- Add(10.0, v56)
-  v58 <- v57
-  goto 119
+  goto 120
 119:
   goto 120
 120:
@@ -306,30 +314,4 @@
 121:
   goto 122
 122:
-  goto 123
-123:
-  goto 124
-124:
-  v59 <- Multiply(EntityDataArray[v58], 32.0)
-  v60 <- Add(10.0, v59)
-  v61 <- v60
-  goto 125
-125:
-  goto 126
-126:
-  v62 <- Multiply(EntityDataArray[v61], 32.0)
-  v63 <- v62
-  EntitySharedMemoryArray[v63] <- v55
-  goto 127
-127:
-  goto 128
-128:
-  goto 130
-129:
-  goto 130
-130:
-  goto 131
-131:
-  goto 132
-132:
   goto exit

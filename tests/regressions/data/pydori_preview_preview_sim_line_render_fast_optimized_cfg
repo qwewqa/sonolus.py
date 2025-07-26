@@ -1,5 +1,5 @@
 0:
-  goto 1 if PreviewOption[8] else 5
+  goto 1 if PreviewOption[8] else 2
 1:
   10000[0] <- Multiply(EntityData[0], 32.0)
   10000[0] <- Add(1.0, 10000[0])
@@ -57,15 +57,7 @@
   10000[17] <- Multiply(EntityData[1], 32.0)
   10000[17] <- Add(1.0, 10000[17])
   10000[17] <- 10000[17]
-  10000[18] <- Less(EntityDataArray[10000[16]], EntityDataArray[10000[17]])
-  goto 2 if 10000[18] else 3
-2:
-  10000[16] <- EntityDataArray[10000[16]]
-  goto 4
-3:
-  10000[16] <- EntityDataArray[10000[17]]
-  goto 4
-4:
+  10000[16] <- Min(EntityDataArray[10000[16]], EntityDataArray[10000[17]])
   10000[17] <- Multiply(EntityData[0], 32.0)
   10000[17] <- Add(4.0, 10000[17])
   10000[17] <- 10000[17]
@@ -82,6 +74,6 @@
   10000[24] <- 10000[8]
   10000[25] <- 10000[9]
   Draw(10000[17], 10000[18], 10000[19], 10000[20], 10000[21], 10000[22], 10000[23], 10000[24], 10000[25], 10000[16], PreviewOption[9])
-  goto 5
-5:
+  goto 2
+2:
   goto exit

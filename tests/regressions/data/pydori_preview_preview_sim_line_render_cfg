@@ -1,7 +1,7 @@
 0:
   goto 1
 1:
-  goto 2 if PreviewOption[8] else 78
+  goto 2 if PreviewOption[8] else 66
 2:
   goto 3
 3:
@@ -165,79 +165,53 @@
   v58 <- Multiply(EntityData[1], 32.0)
   v59 <- Add(1.0, v58)
   v60 <- v59
+  v61 <- Min(EntityDataArray[v57], EntityDataArray[v60])
   goto 54
 54:
   goto 55
 55:
   goto 56
 56:
+  v62 <- Multiply(EntityData[0], 32.0)
+  v63 <- Add(4.0, v62)
+  v64 <- v63
   goto 57
 57:
+  v65 <- Multiply(v61, 100.0)
+  v66 <- Add(220000.0, v65)
+  v67 <- Add(v66, EntityDataArray[v64])
   goto 58
 58:
   goto 59
 59:
   goto 60
 60:
-  v61 <- Less(EntityDataArray[v57], EntityDataArray[v60])
+  v68 <- 18.0
   goto 61
 61:
-  goto 62 if v61 else 63
+  v69 <- v44
+  v70 <- v45
+  v71 <- v53
+  v72 <- v54
+  v73 <- v50
+  v74 <- v51
+  v75 <- v47
+  v76 <- v48
+  goto 62
 62:
-  v62 <- EntityDataArray[v57]
-  goto 64
+  goto 63
 63:
-  v62 <- EntityDataArray[v60]
+  v77 <- Draw(v68, v69, v70, v71, v72, v73, v74, v75, v76, v67, PreviewOption[9])
   goto 64
 64:
   goto 65
 65:
-  goto 66
+  goto 67
 66:
   goto 67
 67:
   goto 68
 68:
-  v63 <- Multiply(EntityData[0], 32.0)
-  v64 <- Add(4.0, v63)
-  v65 <- v64
   goto 69
 69:
-  v66 <- Multiply(v62, 100.0)
-  v67 <- Add(220000.0, v66)
-  v68 <- Add(v67, EntityDataArray[v65])
-  goto 70
-70:
-  goto 71
-71:
-  goto 72
-72:
-  v69 <- 18.0
-  goto 73
-73:
-  v70 <- v44
-  v71 <- v45
-  v72 <- v53
-  v73 <- v54
-  v74 <- v50
-  v75 <- v51
-  v76 <- v47
-  v77 <- v48
-  goto 74
-74:
-  goto 75
-75:
-  v78 <- Draw(v69, v70, v71, v72, v73, v74, v75, v76, v77, v68, PreviewOption[9])
-  goto 76
-76:
-  goto 77
-77:
-  goto 79
-78:
-  goto 79
-79:
-  goto 80
-80:
-  goto 81
-81:
   goto exit

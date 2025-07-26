@@ -5,7 +5,7 @@ Block(JumpLoop(
       8
     )
     1
-    5
+    2
   ))
   Execute(
     Set(
@@ -113,56 +113,6 @@ Block(JumpLoop(
         )
       )
     )
-    If(
-      Less(
-        Get(
-          4100
-          Get(
-            10000
-            3
-          )
-        )
-        Get(
-          4100
-          Get(
-            10000
-            5
-          )
-        )
-      )
-      2
-      3
-    )
-  )
-  Execute(
-    Set(
-      10000
-      5
-      Get(
-        4100
-        Get(
-          10000
-          3
-        )
-      )
-    )
-    4
-  )
-  Execute(
-    Set(
-      10000
-      5
-      Get(
-        4100
-        Get(
-          10000
-          5
-        )
-      )
-    )
-    4
-  )
-  Execute(
     Set(
       10000
       6
@@ -371,9 +321,21 @@ Block(JumpLoop(
         Add(
           220000
           Multiply(
-            Get(
-              10000
-              5
+            Min(
+              Get(
+                4100
+                Get(
+                  10000
+                  3
+                )
+              )
+              Get(
+                4100
+                Get(
+                  10000
+                  5
+                )
+              )
             )
             100
           )
@@ -391,8 +353,8 @@ Block(JumpLoop(
         9
       )
     )
-    6
+    3
   )
-  Execute(6)
+  Execute(3)
   0
 ))

@@ -100,7 +100,7 @@
 31:
   goto 32
 32:
-  goto 33 if v34 else 160
+  goto 33 if v34 else 136
 33:
   goto 34
 34:
@@ -369,115 +369,63 @@
   v125 <- Multiply(EntityData[1], 32.0)
   v126 <- Add(1.0, v125)
   v127 <- v126
+  v128 <- Min(EntityDataArray[v124], EntityDataArray[v127])
   goto 121
 121:
   goto 122
 122:
   goto 123
 123:
+  v129 <- Multiply(EntityData[0], 32.0)
+  v130 <- Add(4.0, v129)
+  v131 <- v130
   goto 124
 124:
   goto 125
 125:
   goto 126
 126:
+  v132 <- Multiply(EntityData[1], 32.0)
+  v133 <- Add(4.0, v132)
+  v134 <- v133
+  v135 <- Min(EntityDataArray[v131], EntityDataArray[v134])
   goto 127
 127:
-  v128 <- Less(EntityDataArray[v124], EntityDataArray[v127])
+  v136 <- Multiply(v128, 100.0)
+  v137 <- Add(100000.0, v136)
+  v138 <- Add(v137, v135)
   goto 128
 128:
-  goto 129 if v128 else 130
+  goto 129
 129:
-  v129 <- EntityDataArray[v124]
-  goto 131
+  goto 130
 130:
-  v129 <- EntityDataArray[v127]
+  v139 <- 17.0
   goto 131
 131:
+  v140 <- v114
+  v141 <- v115
+  v142 <- v116
+  v143 <- v117
+  v144 <- v118
+  v145 <- v119
+  v146 <- v120
+  v147 <- v121
   goto 132
 132:
   goto 133
 133:
+  v148 <- Draw(v139, v140, v141, v142, v143, v144, v145, v146, v147, v138, PreviewOption[5])
   goto 134
 134:
   goto 135
 135:
-  v130 <- Multiply(EntityData[0], 32.0)
-  v131 <- Add(4.0, v130)
-  v132 <- v131
-  goto 136
+  goto 17
 136:
   goto 137
 137:
   goto 138
 138:
-  v133 <- Multiply(EntityData[1], 32.0)
-  v134 <- Add(4.0, v133)
-  v135 <- v134
   goto 139
 139:
-  goto 140
-140:
-  goto 141
-141:
-  goto 142
-142:
-  goto 143
-143:
-  goto 144
-144:
-  goto 145
-145:
-  v136 <- Less(EntityDataArray[v132], EntityDataArray[v135])
-  goto 146
-146:
-  goto 147 if v136 else 148
-147:
-  v137 <- EntityDataArray[v132]
-  goto 149
-148:
-  v137 <- EntityDataArray[v135]
-  goto 149
-149:
-  goto 150
-150:
-  goto 151
-151:
-  v138 <- Multiply(v129, 100.0)
-  v139 <- Add(100000.0, v138)
-  v140 <- Add(v139, v137)
-  goto 152
-152:
-  goto 153
-153:
-  goto 154
-154:
-  v141 <- 17.0
-  goto 155
-155:
-  v142 <- v114
-  v143 <- v115
-  v144 <- v116
-  v145 <- v117
-  v146 <- v118
-  v147 <- v119
-  v148 <- v120
-  v149 <- v121
-  goto 156
-156:
-  goto 157
-157:
-  v150 <- Draw(v141, v142, v143, v144, v145, v146, v147, v148, v149, v140, PreviewOption[5])
-  goto 158
-158:
-  goto 159
-159:
-  goto 17
-160:
-  goto 161
-161:
-  goto 162
-162:
-  goto 163
-163:
   goto exit

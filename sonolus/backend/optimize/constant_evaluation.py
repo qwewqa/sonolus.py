@@ -66,6 +66,8 @@ class SparseConditionalConstantPropagation(CompilerPass):
         Op.Arccos,
         Op.Arctan,
         Op.Arctan2,
+        Op.Max,
+        Op.Min,
     }
 
     def run(self, entry: BasicBlock, config: OptimizerConfig) -> BasicBlock:
@@ -463,6 +465,12 @@ class SparseConditionalConstantPropagation(CompilerPass):
                     case Op.Arctan2:
                         assert len(args) == 2
                         return math.atan2(args[0], args[1])
+                    case Op.Max:
+                        assert len(args) == 2
+                        return max(args)
+                    case Op.Min:
+                        assert len(args) == 2
+                        return min(args)
             case IRGet(place=SSAPlace() as place):
                 return values[place]
             case IRGet():

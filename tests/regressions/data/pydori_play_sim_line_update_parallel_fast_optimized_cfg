@@ -16,7 +16,7 @@
   goto 4 if 10000[0] else 5
 4:
   EntityDespawn[0] <- 1.0
-  goto 20
+  goto 17
 5:
   10000[0] <- Multiply(EntityData[0], 32.0)
   10000[0] <- Add(1.0, 10000[0])
@@ -31,7 +31,7 @@
   10000[16] <- Subtract(EntityDataArray[10000[15]], 10000[16])
   10000[23] <- Remap(10000[16], EntityDataArray[10000[15]], LevelData[14], 0.0, RuntimeUpdate[2])
   10000[24] <- Not(LevelOption[8])
-  goto 20 if 10000[24] else 6
+  goto 17 if 10000[24] else 6
 6:
   10000[24] <- Add(LevelData[15], 0.5)
   10000[25] <- Subtract(LevelData[14], 0.5)
@@ -68,7 +68,7 @@
   10000[24] <- EaseOutQuad(10000[24])
   10000[32] <- Multiply(LevelOption[9], 10000[24])
   10000[33] <- LessOr(10000[32], 0.0)
-  goto 20 if 10000[33] else 16
+  goto 17 if 10000[33] else 16
 16:
   10000[33] <- Multiply(EntityDataArray[10000[0]], LevelData[12])
   10000[34] <- Multiply(EntityDataArray[10000[14]], LevelData[12])
@@ -184,15 +184,7 @@
   10000[19] <- Divide(10000[16], 10000[17])
   10000[20] <- 10000[18]
   10000[21] <- 10000[19]
-  10000[22] <- Less(EntityDataArray[10000[0]], EntityDataArray[10000[14]])
-  goto 17 if 10000[22] else 18
-17:
-  10000[22] <- EntityDataArray[10000[0]]
-  goto 19
-18:
-  10000[22] <- EntityDataArray[10000[14]]
-  goto 19
-19:
+  10000[22] <- Min(EntityDataArray[10000[0]], EntityDataArray[10000[14]])
   10000[22] <- Multiply(10000[22], 100.0)
   10000[22] <- Add(220000.0, 10000[22])
   10000[22] <- Add(10000[22], 10000[23])
@@ -206,6 +198,6 @@
   10000[30] <- 10000[60]
   10000[31] <- 10000[61]
   Draw(10000[23], 10000[24], 10000[25], 10000[26], 10000[27], 10000[28], 10000[29], 10000[30], 10000[31], 10000[22], 10000[32])
-  goto 20
-20:
+  goto 17
+17:
   goto exit

@@ -1,9 +1,11 @@
+from sonolus.backend.ops import Op
 from sonolus.script.array import Array
 from sonolus.script.array_like import ArrayLike
 from sonolus.script.internal.context import ctx
 from sonolus.script.internal.dict_impl import DictImpl
 from sonolus.script.internal.impl import meta_fn, validate_value
 from sonolus.script.internal.math_impls import MATH_BUILTIN_IMPLS, _trunc
+from sonolus.script.internal.native import native_function
 from sonolus.script.internal.random import RANDOM_BUILTIN_IMPLS
 from sonolus.script.internal.range import Range
 from sonolus.script.internal.tuple_impl import TupleImpl
@@ -147,15 +149,33 @@ def _max(*args, default=_empty, key=None):
         if not all(_is_num(arg) for arg in args):
             raise TypeError("Arguments to max must be numbers")
         if ctx():
-            result = compile_and_call(_max2, args[0], args[1], key=key)
+            result = _max2(args[0], args[1], key=key)
             for arg in args[2:]:
-                result = compile_and_call(_max2, result, arg, key=key)
+                result = _max2(result, arg, key=key)
             return result
         else:
             return max(arg._as_py_() for arg in args)
 
 
 def _max2(a, b, key=_identity):
+    from sonolus.backend.visitor import compile_and_call
+
+    a = validate_value(a)
+    b = validate_value(b)
+    if _is_num(a) and _is_num(b) and key == _identity:
+        return compile_and_call(_max2_num, a, b)
+    return compile_and_call(_max2_generic, a, b, key=key)
+
+
+@native_function(Op.Max)
+def _max2_num(a, b):
+    if a > b:
+        return a
+    else:
+        return b
+
+
+def _max2_generic(a, b, key=_identity):
     if key(a) > key(b):
         return a
     else:
@@ -222,15 +242,33 @@ def _min(*args, default=_empty, key=None):
         if not all(_is_num(arg) for arg in args):
             raise TypeError("Arguments to min must be numbers")
         if ctx():
-            result = compile_and_call(_min2, args[0], args[1], key=key)
+            result = _min2(args[0], args[1], key=key)
             for arg in args[2:]:
-                result = compile_and_call(_min2, result, arg, key=key)
+                result = _min2(result, arg, key=key)
             return result
         else:
             return min(arg._as_py_() for arg in args)
 
 
 def _min2(a, b, key=_identity):
+    from sonolus.backend.visitor import compile_and_call
+
+    a = validate_value(a)
+    b = validate_value(b)
+    if _is_num(a) and _is_num(b) and key == _identity:
+        return compile_and_call(_min2_num, a, b)
+    return compile_and_call(_min2_generic, a, b, key=key)
+
+
+@native_function(Op.Min)
+def _min2_num(a, b):
+    if a < b:
+        return a
+    else:
+        return b
+
+
+def _min2_generic(a, b, key=_identity):
     if key(a) < key(b):
         return a
     else:
