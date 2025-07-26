@@ -220,9 +220,12 @@ def main():
     if hasattr(sys, "_jit") and sys._jit.is_enabled():
         print("Python JIT is enabled")
 
+    start_time = perf_counter()
     project = import_project(args.module)
+    end_time = perf_counter()
     if project is None:
         sys.exit(1)
+    print(f"Project imported in {end_time - start_time:.2f}s")
 
     if args.command == "build":
         build_dir = Path(args.build_dir)
