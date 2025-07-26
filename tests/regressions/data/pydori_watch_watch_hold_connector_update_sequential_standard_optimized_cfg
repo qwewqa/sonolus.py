@@ -14,15 +14,16 @@
 4:
   goto 9 if Not(Less(EntityInfoArray[10000[0]], 99999.0)) else 5
 5:
-  goto 6 if StreamHas(Add(Multiply(1.0, EntityInfoArray[10000[0]]), 18.0), RuntimeUpdate[0]) else 7
+  10000[0] <- Add(Multiply(1.0, EntityInfoArray[10000[0]]), 18.0)
+  goto 6 if StreamHas(10000[0], RuntimeUpdate[0]) else 7
 6:
   10000[1] <- RuntimeUpdate[0]
   goto 8
 7:
-  10000[1] <- StreamGetPreviousKey(Add(Multiply(1.0, EntityInfoArray[10000[0]]), 18.0), RuntimeUpdate[0])
+  10000[1] <- StreamGetPreviousKey(10000[0], RuntimeUpdate[0])
   goto 8
 8:
-  goto 10 if StreamGetValue(Add(Add(Multiply(1.0, EntityInfoArray[10000[0]]), 18.0), 0), 10000[1]) else 11
+  goto 10 if StreamGetValue(Add(10000[0], 0), 10000[1]) else 11
 9:
   DebugLog(0.0)
   DebugPause()

@@ -4,33 +4,60 @@ from sonolus.backend.optimize.flow import BasicBlock, traverse_cfg_preorder
 from sonolus.backend.optimize.passes import CompilerPass, OptimizerConfig
 from sonolus.backend.place import BlockPlace, SSAPlace, TempBlock
 
+RUNTIME_CONSTANT_BLOCKS = {
+    "RuntimeEnvironment",
+    "RuntimeUI",
+    "RuntimeUIConfiguration",
+    "LevelData",
+    "LevelOption",
+    "LevelBucket",
+    "LevelScore",
+    "LevelLife",
+    "EngineRom",
+    "ArchetypeLife",
+    "RuntimeCanvas",
+    "PreviewData",
+    "PreviewOption",
+    "TutorialData",
+}
+
 
 class InlineVars(CompilerPass):
     def run(self, entry: BasicBlock, config: OptimizerConfig) -> BasicBlock:
-        use_counts: dict[SSAPlace, int] = {}
+        gross_use_counts: dict[SSAPlace, int] = {}
         definitions: dict[SSAPlace, IRStmt] = {}
 
         for block in traverse_cfg_preorder(entry):
             for stmt in block.statements:
-                self.count_uses(stmt, use_counts)
+                self.count_uses(stmt, gross_use_counts)
                 if isinstance(stmt, IRSet) and isinstance(stmt.place, SSAPlace):
                     definitions[stmt.place] = stmt.value
-            self.count_uses(block.test, use_counts)
+            self.count_uses(block.test, gross_use_counts)
             for tgt, args in block.phis.items():
                 for arg in args.values():
-                    self.count_uses(arg, use_counts)
+                    self.count_uses(arg, gross_use_counts)
                 if len(args) == 1:
                     arg = next(iter(args.values()))
                     definitions[tgt] = IRGet(place=arg)
 
+        direct_use_counts = {**gross_use_counts}
+        for defn in definitions.values():
+            if isinstance(defn, IRGet) and isinstance(defn.place, SSAPlace):
+                direct_use_counts[defn.place] = direct_use_counts.get(defn.place, 0) - 1
+
+        effective_use_counts = {}
+        for p, direct_uses in direct_use_counts.items():
+            while True:
+                effective_use_counts[p] = effective_use_counts.get(p, 0) + direct_uses
+                defn = definitions.get(p)
+                if defn and isinstance(defn, IRGet) and isinstance(defn.place, SSAPlace) and defn.place in definitions:
+                    p = defn.place
+                else:
+                    break
+
+        inlined_definitions = {**definitions}
         for p, defn in definitions.items():
             while True:
-                if isinstance(defn, IRGet) and isinstance(defn.place, SSAPlace) and defn.place in definitions:
-                    inside_defn = definitions[defn.place]
-                    if not self.is_inlinable(inside_defn, config.callback):
-                        break
-                    defn = inside_defn
-                    continue
                 inlinable_uses = self.get_inlinable_uses(defn, set())
                 subs = {}
                 for inside_p in inlinable_uses:
@@ -39,17 +66,22 @@ class InlineVars(CompilerPass):
                     inside_defn = definitions[inside_p]
                     if not self.is_inlinable(inside_defn, config.callback):
                         continue
-                    if (isinstance(inside_defn, IRGet) and isinstance(inside_defn.place, SSAPlace)) or use_counts[
-                        inside_p
-                    ] == 1:
+                    if (
+                        (isinstance(inside_defn, IRGet) and isinstance(inside_defn.place, SSAPlace))
+                        or effective_use_counts[inside_p] == 1
+                        or self.is_free_to_inline(inside_defn, config.callback)
+                    ):
                         subs[inside_p] = inside_defn
                 if not subs:
                     break
                 defn = self.substitute(defn, subs)
-            definitions[p] = defn
+            inlined_definitions[p] = defn
 
         valid = {
-            p for p in definitions if self.is_inlinable(definitions[p], config.callback) and use_counts.get(p, 0) <= 1
+            p
+            for p in inlined_definitions
+            if self.is_inlinable(inlined_definitions[p], config.callback)
+            and (effective_use_counts.get(p, 0) <= 1 or self.is_free_to_inline(inlined_definitions[p], config.callback))
         }
 
         for block in traverse_cfg_preorder(entry):
@@ -60,8 +92,7 @@ class InlineVars(CompilerPass):
                 for p in inlinable_uses:
                     if p not in valid:
                         continue
-                    definition = definitions[p]
-                    subs[p] = definition
+                    subs[p] = inlined_definitions[p]
 
                 if subs:
                     new_statements.append(self.substitute(stmt, subs))
@@ -143,6 +174,42 @@ class InlineVars(CompilerPass):
                     isinstance(stmt.place, BlockPlace)
                     and isinstance(stmt.place.block, BlockData)
                     and callback not in stmt.place.block.writable
+                    and isinstance(stmt.place.index, int | SSAPlace)
+                )
+            case IRSet():
+                return False
+            case _:
+                raise TypeError(f"Unexpected statement: {stmt}")
+
+    def is_free_to_inline(self, stmt: IRStmt, callback: str) -> bool:
+        match stmt:
+            case IRConst():
+                return True
+            case IRInstr() | IRPureInstr():
+                return self.is_runtime_constant(stmt, callback)
+            case IRGet():
+                return isinstance(stmt.place, SSAPlace) or (
+                    isinstance(stmt.place, BlockPlace)
+                    and isinstance(stmt.place.block, float | int)
+                    and isinstance(stmt.place.index, float | int)
+                )
+            case IRSet():
+                return False
+            case _:
+                raise TypeError(f"Unexpected statement: {stmt}")
+
+    def is_runtime_constant(self, stmt: IRStmt, callback: str) -> bool:
+        match stmt:
+            case IRConst():
+                return True
+            case IRInstr(op=op, args=args) | IRPureInstr(op=op, args=args):
+                return not op.side_effects and op.pure and all(self.is_runtime_constant(arg, callback) for arg in args)
+            case IRGet():
+                return (
+                    isinstance(stmt.place, BlockPlace)
+                    and isinstance(stmt.place.block, BlockData)
+                    and callback not in stmt.place.block.writable
+                    and stmt.place.block.name in RUNTIME_CONSTANT_BLOCKS
                     and isinstance(stmt.place.index, int | SSAPlace)
                 )
             case IRSet():

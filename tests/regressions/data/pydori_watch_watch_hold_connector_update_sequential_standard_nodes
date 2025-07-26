@@ -150,8 +150,10 @@ Block(JumpLoop(
     9
     5
   ))
-  Execute(If(
-    StreamHas(
+  Execute(
+    Set(
+      10000
+      0
       Add(
         Multiply(
           1
@@ -165,14 +167,22 @@ Block(JumpLoop(
         )
         18
       )
-      Get(
-        1001
-        0
-      )
     )
-    6
-    7
-  ))
+    If(
+      StreamHas(
+        Get(
+          10000
+          0
+        )
+        Get(
+          1001
+          0
+        )
+      )
+      6
+      7
+    )
+  )
   Execute(
     Set(
       10000
@@ -189,18 +199,9 @@ Block(JumpLoop(
       10000
       1
       StreamGetPreviousKey(
-        Add(
-          Multiply(
-            1
-            Get(
-              4103
-              Get(
-                10000
-                0
-              )
-            )
-          )
-          18
+        Get(
+          10000
+          0
         )
         Get(
           1001
@@ -213,18 +214,9 @@ Block(JumpLoop(
   Execute(If(
     StreamGetValue(
       Add(
-        Add(
-          Multiply(
-            1
-            Get(
-              4103
-              Get(
-                10000
-                0
-              )
-            )
-          )
-          18
+        Get(
+          10000
+          0
         )
         0
       )
