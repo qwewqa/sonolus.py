@@ -1061,7 +1061,11 @@ def touches() -> ArrayLike[Touch]:
         return Array[Touch, 0]()  # type: ignore
     match ctx().global_state.mode:
         case Mode.PLAY:
-            return ArrayPointer[Touch](_PlayRuntimeUpdate.touch_count, ctx().blocks.RuntimeTouchArray, 0)
+            return ArrayPointer[Touch]._raw(
+                size=Num._accept_(_PlayRuntimeUpdate.touch_count),
+                block=Num._accept_(ctx().blocks.RuntimeTouchArray),
+                offset=Num._accept_(0),
+            )
         case _:
             return Array[Touch, 0]()  # type: ignore
 

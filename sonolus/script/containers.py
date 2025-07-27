@@ -336,7 +336,8 @@ class ArrayPointer[T](Record, ArrayLike[T]):
         if not ctx():
             raise TypeError("ArrayPointer values cannot be accessed outside of a context")
         return _deref(
-            self.block,
+            # Allows a compile time constant block so we can warn based on callback read/write access
+            (self._value["block"]._is_py_() and self._value["block"]._as_py_()) or self.block,
             self.offset + Num._accept_(item) * Num._accept_(self.element_type()._size_()),
             self.element_type(),
         )

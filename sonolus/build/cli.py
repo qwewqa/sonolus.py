@@ -10,10 +10,12 @@ import sys
 from pathlib import Path
 from time import perf_counter
 
+from sonolus.backend.excepthook import print_simple_traceback
 from sonolus.backend.optimize.optimize import FAST_PASSES, MINIMAL_PASSES, STANDARD_PASSES
 from sonolus.build.engine import no_gil, package_engine
 from sonolus.build.level import package_level_data
 from sonolus.build.project import build_project_to_collection, get_project_schema
+from sonolus.script.internal.error import CompilationError
 from sonolus.script.project import BuildConfig, Project
 
 
@@ -227,20 +229,24 @@ def main():
         sys.exit(1)
     print(f"Project imported in {end_time - start_time:.2f}s")
 
-    if args.command == "build":
-        build_dir = Path(args.build_dir)
-        start_time = perf_counter()
-        config = get_config(args)
-        build_project(project, build_dir, config)
-        end_time = perf_counter()
-        print(f"Project built successfully to '{build_dir.resolve()}' in {end_time - start_time:.2f}s")
-    elif args.command == "dev":
-        build_dir = Path(args.build_dir)
-        start_time = perf_counter()
-        config = get_config(args)
-        build_collection(project, build_dir, config)
-        end_time = perf_counter()
-        print(f"Build finished in {end_time - start_time:.2f}s")
-        run_server(build_dir / "site", port=args.port)
-    elif args.command == "schema":
-        print(json.dumps(get_project_schema(project), indent=2))
+    try:
+        if args.command == "build":
+            build_dir = Path(args.build_dir)
+            start_time = perf_counter()
+            config = get_config(args)
+            build_project(project, build_dir, config)
+            end_time = perf_counter()
+            print(f"Project built successfully to '{build_dir.resolve()}' in {end_time - start_time:.2f}s")
+        elif args.command == "dev":
+            build_dir = Path(args.build_dir)
+            start_time = perf_counter()
+            config = get_config(args)
+            build_collection(project, build_dir, config)
+            end_time = perf_counter()
+            print(f"Build finished in {end_time - start_time:.2f}s")
+            run_server(build_dir / "site", port=args.port)
+        elif args.command == "schema":
+            print(json.dumps(get_project_schema(project), indent=2))
+    except CompilationError:
+        exc_info = sys.exc_info()
+        print_simple_traceback(*exc_info)

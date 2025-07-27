@@ -36,6 +36,30 @@ def compile_and_call[**P, R](fn: Callable[P, R], /, *args: P.args, **kwargs: P.k
     return validate_value(generate_fn_impl(fn)(*args, **kwargs))
 
 
+def compile_and_call_at_definition[**P, R](fn: Callable[P, R], /, *args: P.args, **kwargs: P.kwargs) -> R:
+    if not ctx():
+        return fn(*args, **kwargs)
+    source_file, node = get_function(fn)
+    location_args = {
+        "lineno": node.lineno,
+        "col_offset": node.col_offset,
+        "end_lineno": node.lineno,
+        "end_col_offset": node.col_offset + 1,
+    }
+    expr = ast.Expression(
+        body=ast.Call(
+            func=ast.Name(id="fn", ctx=ast.Load(), **location_args),
+            args=[],
+            keywords=[],
+            **location_args,
+        )
+    )
+    return eval(
+        compile(expr, filename=source_file, mode="eval"),
+        {"fn": lambda: compile_and_call(fn, *args, **kwargs), "_filter_traceback_": True, "_traceback_root_": True},
+    )
+
+
 def generate_fn_impl(fn: Callable):
     install_excepthook()
     match fn:

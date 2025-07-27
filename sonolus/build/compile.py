@@ -8,7 +8,7 @@ from sonolus.backend.ops import Op
 from sonolus.backend.optimize.flow import BasicBlock
 from sonolus.backend.optimize.optimize import STANDARD_PASSES
 from sonolus.backend.optimize.passes import CompilerPass, OptimizerConfig, run_passes
-from sonolus.backend.visitor import compile_and_call
+from sonolus.backend.visitor import compile_and_call_at_definition
 from sonolus.build.node import OutputNodeGenerator
 from sonolus.script.archetype import _BaseArchetype
 from sonolus.script.internal.callbacks import CallbackInfo
@@ -137,9 +137,9 @@ def callback_to_cfg(
     context = Context(global_state, callback_state)
     with using_ctx(context):
         if archetype is not None:
-            result = compile_and_call(callback, archetype._for_compilation())
+            result = compile_and_call_at_definition(callback, archetype._for_compilation())
         else:
-            result = compile_and_call(callback)
+            result = compile_and_call_at_definition(callback)
         if _is_num(result):
             ctx().add_statements(IRInstr(Op.Break, [IRConst(1), result.ir()]))
     return context_to_cfg(context)
