@@ -191,22 +191,14 @@ Block(JumpLoop(
         1
       )
     )
-    Set(
-      10000
-      3
-      Get(
-        1002
-        Get(
-          10000
-          2
-        )
-      )
-    )
     If(
       NotEqual(
         Get(
-          10000
-          3
+          1002
+          Get(
+            10000
+            2
+          )
         )
         Get(
           10000
@@ -217,30 +209,20 @@ Block(JumpLoop(
       6
     )
   )
-  Execute(
-    Set(
-      10000
-      0
-      Get(
-        1002
-        Add(
-          Get(
-            10000
-            2
-          )
+  Execute(If(
+    Get(
+      1002
+      Add(
+        Get(
+          10000
           2
         )
+        2
       )
     )
-    If(
-      Get(
-        10000
-        0
-      )
-      7
-      9
-    )
-  )
+    7
+    9
+  ))
   Execute(
     Set(
       10000
