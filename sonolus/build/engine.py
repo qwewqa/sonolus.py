@@ -365,6 +365,7 @@ def build_tutorial_mode(
             ],
             passes=config.passes,
             thread_pool=thread_pool,
+            validate_only=validate_only,
         ),
         "skin": build_skin(skin),
         "effect": build_effects(effects),
