@@ -15,6 +15,13 @@ To build the project, run the following command in the root directory of your pr
 sonolus-py build
 ```
 
+## Checking for errors without building
+To check for errors, run the following command in the root directory of your project:
+
+```bash
+sonolus-py check
+```
+
 ## Outputting the level schema
 To output the level schema of the project, run the following command in the root directory of your project:
 

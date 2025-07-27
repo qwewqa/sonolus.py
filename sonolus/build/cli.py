@@ -12,7 +12,7 @@ from time import perf_counter
 
 from sonolus.backend.excepthook import print_simple_traceback
 from sonolus.backend.optimize.optimize import FAST_PASSES, MINIMAL_PASSES, STANDARD_PASSES
-from sonolus.build.engine import no_gil, package_engine
+from sonolus.build.engine import no_gil, package_engine, validate_engine
 from sonolus.build.level import package_level_data
 from sonolus.build.project import build_project_to_collection, get_project_schema
 from sonolus.script.internal.error import CompilationError
@@ -81,6 +81,10 @@ def build_project(project: Project, build_dir: Path, config: BuildConfig):
     for level in project.levels:
         level_path = levels_dir / level.name
         level_path.write_bytes(package_level_data(level.data))
+
+
+def validate_project(project: Project, config: BuildConfig):
+    validate_engine(project.engine.data, config)
 
 
 def build_collection(project: Project, build_dir: Path, config: BuildConfig | None):
@@ -206,6 +210,15 @@ def main():
         help="Module path (e.g., 'module.name'). If omitted, will auto-detect if only one module exists.",
     )
 
+    check_parser = subparsers.add_parser("check")
+    check_parser.add_argument(
+        "module",
+        type=str,
+        nargs="?",
+        help="Module path (e.g., 'module.name'). If omitted, will auto-detect if only one module exists.",
+    )
+    add_common_arguments(check_parser)
+
     args = parser.parse_args()
 
     if not args.module:
@@ -247,6 +260,12 @@ def main():
             run_server(build_dir / "site", port=args.port)
         elif args.command == "schema":
             print(json.dumps(get_project_schema(project), indent=2))
+        elif args.command == "check":
+            start_time = perf_counter()
+            config = get_config(args)
+            validate_project(project, config)
+            end_time = perf_counter()
+            print(f"Project validation completed successfully in {end_time - start_time:.2f}s")
     except CompilationError:
         exc_info = sys.exc_info()
         print_simple_traceback(*exc_info)

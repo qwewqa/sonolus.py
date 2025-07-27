@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from collections.abc import Sequence
+from collections.abc import Callable, Iterable, Sequence
 from dataclasses import dataclass
 from os import PathLike
 from pathlib import Path
@@ -25,11 +25,20 @@ class Project:
     def __init__(
         self,
         engine: Engine,
-        levels: list[Level] | None = None,
+        levels: Iterable[Level] | Callable[[], Iterable[Level]] | None = None,
         resources: PathLike | None = None,
     ):
         self.engine = engine
-        self.levels = levels or []
+        match levels:
+            case Callable():
+                self._level_source = lazy_loader(levels)
+            case Iterable():
+                self._level_source = levels
+            case None:
+                self._level_source = []
+            case _:
+                raise TypeError(f"Invalid type for levels: {type(levels)}. Expected Iterable or Callable.")
+        self._levels = None
         self.resources = Path(resources or "resources")
 
     def with_levels(self, levels: list[Level]) -> Project:
@@ -77,6 +86,16 @@ class Project:
         from sonolus.build.project import get_project_schema
 
         return get_project_schema(self)
+
+    @property
+    def levels(self) -> list[Level]:
+        if self._levels is None:
+            self._levels = list(self._level_source)
+        return self._levels
+
+
+def lazy_loader(fn):
+    yield from fn()
 
 
 class ProjectSchema(TypedDict):

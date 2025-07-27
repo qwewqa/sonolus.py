@@ -191,6 +191,65 @@ def package_engine(
     )
 
 
+def validate_engine(
+    engine: EngineData,
+    config: BuildConfig | None = None,
+):
+    config = config or BuildConfig()
+    rom = ReadOnlyMemory()
+
+    play_mode = engine.play if config.build_play else empty_play_mode()
+    watch_mode = engine.watch if config.build_watch else empty_watch_mode()
+    preview_mode = engine.preview if config.build_preview else empty_preview_mode()
+    tutorial_mode = engine.tutorial if config.build_tutorial else empty_tutorial_mode()
+
+    build_play_mode(
+        archetypes=play_mode.archetypes,
+        skin=play_mode.skin,
+        effects=play_mode.effects,
+        particles=play_mode.particles,
+        buckets=play_mode.buckets,
+        rom=rom,
+        config=config,
+        thread_pool=None,
+        validate_only=True,
+    )
+    build_watch_mode(
+        archetypes=watch_mode.archetypes,
+        skin=watch_mode.skin,
+        effects=watch_mode.effects,
+        particles=watch_mode.particles,
+        buckets=watch_mode.buckets,
+        rom=rom,
+        update_spawn=watch_mode.update_spawn,
+        config=config,
+        thread_pool=None,
+        validate_only=True,
+    )
+    build_preview_mode(
+        archetypes=preview_mode.archetypes,
+        skin=preview_mode.skin,
+        rom=rom,
+        config=config,
+        thread_pool=None,
+        validate_only=True,
+    )
+    build_tutorial_mode(
+        skin=tutorial_mode.skin,
+        effects=tutorial_mode.effects,
+        particles=tutorial_mode.particles,
+        instructions=tutorial_mode.instructions,
+        instruction_icons=tutorial_mode.instruction_icons,
+        preprocess=tutorial_mode.preprocess,
+        navigate=tutorial_mode.navigate,
+        update=tutorial_mode.update,
+        rom=rom,
+        config=config,
+        thread_pool=None,
+        validate_only=True,
+    )
+
+
 def build_engine_configuration(
     options: Options,
     ui: UiConfig,
@@ -210,6 +269,7 @@ def build_play_mode(
     rom: ReadOnlyMemory,
     config: BuildConfig,
     thread_pool: Executor | None = None,
+    validate_only: bool = False,
 ):
     return {
         **compile_mode(
@@ -219,6 +279,7 @@ def build_play_mode(
             global_callbacks=None,
             passes=config.passes,
             thread_pool=thread_pool,
+            validate_only=validate_only,
         ),
         "skin": build_skin(skin),
         "effect": build_effects(effects),
@@ -237,6 +298,7 @@ def build_watch_mode(
     update_spawn: Callable[[], float],
     config: BuildConfig,
     thread_pool: Executor | None = None,
+    validate_only: bool = False,
 ):
     return {
         **compile_mode(
@@ -246,6 +308,7 @@ def build_watch_mode(
             global_callbacks=[(update_spawn_callback, update_spawn)],
             passes=config.passes,
             thread_pool=thread_pool,
+            validate_only=validate_only,
         ),
         "skin": build_skin(skin),
         "effect": build_effects(effects),
@@ -260,6 +323,7 @@ def build_preview_mode(
     rom: ReadOnlyMemory,
     config: BuildConfig,
     thread_pool: Executor | None = None,
+    validate_only: bool = False,
 ):
     return {
         **compile_mode(
@@ -269,6 +333,7 @@ def build_preview_mode(
             global_callbacks=None,
             passes=config.passes,
             thread_pool=thread_pool,
+            validate_only=validate_only,
         ),
         "skin": build_skin(skin),
     }
@@ -286,6 +351,7 @@ def build_tutorial_mode(
     rom: ReadOnlyMemory,
     config: BuildConfig,
     thread_pool: Executor | None = None,
+    validate_only: bool = False,
 ):
     return {
         **compile_mode(

@@ -31,6 +31,7 @@ def compile_mode(
     global_callbacks: list[tuple[CallbackInfo, Callable]] | None,
     passes: Sequence[CompilerPass] | None = None,
     thread_pool: Executor | None = None,
+    validate_only: bool = False,
 ) -> dict:
     if passes is None:
         passes = STANDARD_PASSES
@@ -55,6 +56,12 @@ def compile_mode(
         - (cb_info.name, {"index": node_index, "order": cb_order}) for archetype callbacks.
         """
         cfg = callback_to_cfg(global_state, cb, cb_info.name, arch)
+        if validate_only:
+            if arch is not None:
+                cb_order = getattr(cb, "_callback_order_", 0)
+                return cb_info.name, {"index": 0, "order": cb_order}
+            else:
+                return cb_info.name, 0
         cfg = run_passes(cfg, passes, OptimizerConfig(mode=mode, callback=cb_info.name))
         node = cfg_to_engine_node(cfg)
         node_index = nodes.add(node)
