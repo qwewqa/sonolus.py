@@ -261,7 +261,19 @@ class Visitor(ast.NodeVisitor):
                 result = self.visit(body)
                 ctx().scope.set_value("$return", result)
             case ast.GeneratorExp(elt=elt, generators=generators):
-                self.construct_genexpr(generators, elt)
+                first_generator = generators[0]
+                iterable = self.visit(first_generator.iter)
+                if isinstance(iterable, TupleImpl):
+                    initial_iterator = iterable
+                else:
+                    initial_iterator = self.handle_call(first_generator.iter, iterable.__iter__)
+                    if not isinstance(initial_iterator, SonolusIterator):
+                        raise ValueError("Unsupported iterator")
+                # The initial iterator is evaluated eagerly in Python
+                before_ctx = ctx().branch_with_scope(None, before_ctx.scope.copy())
+                start_ctx = before_ctx.branch_with_scope(None, Scope())
+                set_ctx(start_ctx)
+                self.construct_genexpr(generators, elt, initial_iterator)
                 ctx().scope.set_value("$return", validate_value(None))
             case _:
                 raise NotImplementedError("Unsupported syntax")
@@ -323,7 +335,9 @@ class Visitor(ast.NodeVisitor):
         set_ctx(after_ctx.branch_with_scope(None, before_ctx.scope.copy()))
         return result_binding.value
 
-    def construct_genexpr(self, generators: Iterable[ast.comprehension], elt: ast.expr):
+    def construct_genexpr(
+        self, generators: Iterable[ast.comprehension], elt: ast.expr, initial_iterator: Value | None = None
+    ):
         if not generators:
             # Note that there may effectively be multiple yields in an expression since
             # tuples are unrolled.
@@ -335,14 +349,20 @@ class Visitor(ast.NodeVisitor):
             set_ctx(resume_ctx)
             return
         generator, *others = generators
-        iterable = self.visit(generator.iter)
+        if initial_iterator is not None:
+            iterable = initial_iterator
+        else:
+            iterable = self.visit(generator.iter)
         if isinstance(iterable, TupleImpl):
             for value in iterable.value:
                 set_ctx(ctx().branch(None))
                 self.handle_assign(generator.target, validate_value(value))
                 self.construct_genexpr(others, elt)
         else:
-            iterator = self.handle_call(generator.iter, iterable.__iter__)
+            if initial_iterator is not None:
+                iterator = initial_iterator
+            else:
+                iterator = self.handle_call(generator.iter, iterable.__iter__)
             if not isinstance(iterator, SonolusIterator):
                 raise ValueError("Unsupported iterator")
             header_ctx = ctx().branch(None)

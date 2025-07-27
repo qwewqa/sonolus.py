@@ -282,3 +282,43 @@ def test_genexpr_with_iter():
             debug_log(x)
 
     run_and_validate(fn)
+
+
+def test_genexpr_eagerly_evaluates_first_item():
+    def fn():
+        def first():
+            debug_log(1)
+            return Array(1, 2, 3)
+
+        def second():
+            debug_log(2)
+            return Array(4, 5, 6)
+
+        debug_log(3)
+        gen = (a + b for a in first() for b in second())
+        debug_log(4)
+        for x in gen:
+            debug_log(x)
+        debug_log(5)
+
+    run_and_validate(fn)
+
+
+def test_genexpr_eagerly_evaluates_first_item_tuples():
+    def fn():
+        def first():
+            debug_log(1)
+            return 1, 2, 3
+
+        def second():
+            debug_log(2)
+            return 4, 5, 6
+
+        debug_log(3)
+        gen = (a + b for a in first() for b in second())
+        debug_log(4)
+        for x in gen:
+            debug_log(x)
+        debug_log(5)
+
+    run_and_validate(fn)
