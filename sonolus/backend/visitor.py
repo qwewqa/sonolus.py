@@ -266,6 +266,8 @@ class Visitor(ast.NodeVisitor):
                 if isinstance(iterable, TupleImpl):
                     initial_iterator = iterable
                 else:
+                    if not hasattr(iterable, "__iter__"):
+                        raise TypeError(f"Object of type '{type(iterable).__name__}' is not iterable")
                     initial_iterator = self.handle_call(first_generator.iter, iterable.__iter__)
                     if not isinstance(initial_iterator, SonolusIterator):
                         raise ValueError("Unsupported iterator")
@@ -362,6 +364,8 @@ class Visitor(ast.NodeVisitor):
             if initial_iterator is not None:
                 iterator = initial_iterator
             else:
+                if not hasattr(iterable, "__iter__"):
+                    raise TypeError(f"Object of type '{type(iterable).__name__}' is not iterable")
                 iterator = self.handle_call(generator.iter, iterable.__iter__)
             if not isinstance(iterator, SonolusIterator):
                 raise ValueError("Unsupported iterator")
@@ -513,6 +517,8 @@ class Visitor(ast.NodeVisitor):
             if break_ctxs:
                 set_ctx(Context.meet([*break_ctxs, ctx()]))
             return
+        if not hasattr(iterable, "__iter__"):
+            raise TypeError(f"Object of type '{type(iterable).__name__}' is not iterable")
         iterator = self.handle_call(node, iterable.__iter__)
         if not isinstance(iterator, SonolusIterator):
             raise ValueError("Unsupported iterator")
@@ -1000,6 +1006,8 @@ class Visitor(ast.NodeVisitor):
                 self.resume_ctxs.append(resume_ctx)
                 set_ctx(resume_ctx)
             return validate_value(None)
+        if not hasattr(value, "__iter__"):
+            raise TypeError(f"Object of type '{type(value).__name__}' is not iterable")
         iterator = self.handle_call(node, value.__iter__)
         if not isinstance(iterator, SonolusIterator):
             raise ValueError("Expected a SonolusIterator")
