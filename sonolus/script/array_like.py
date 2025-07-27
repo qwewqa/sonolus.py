@@ -135,11 +135,11 @@ class ArrayLike[T](Sequence):
         if len(self) == 0:
             return -1
         if key is None:
-            key = _identity
+            key = _identity  # type: ignore
         max_index = 0
         i = 1
         while i < len(self):
-            if key(self[i]) > key(self[max_index]):
+            if key(self[i]) > key(self[max_index]):  # type: ignore
                 max_index = i
             i += 1
         return max_index
@@ -153,11 +153,11 @@ class ArrayLike[T](Sequence):
         if len(self) == 0:
             return -1
         if key is None:
-            key = _identity
+            key = _identity  # type: ignore
         min_index = 0
         i = 1
         while i < len(self):
-            if key(self[i]) < key(self[min_index]):
+            if key(self[i]) < key(self[min_index]):  # type: ignore
                 min_index = i
             i += 1
         return min_index
@@ -192,12 +192,12 @@ class ArrayLike[T](Sequence):
         """
         if len(self) < 15 or key is not None:
             if key is None:
-                key = _identity
+                key = _identity  # type: ignore
             # May be worth adding a block sort variant for better performance on large arrays in the future
-            _insertion_sort(self, 0, len(self), key, reverse)
+            _insertion_sort(self, 0, len(self), key, reverse)  # type: ignore
         else:
             # Heap sort is unstable, so if there's a key, we can't rely on it
-            _heap_sort(self, 0, len(self), reverse)
+            _heap_sort(self, 0, len(self), reverse)  # type: ignore
 
     def shuffle(self):
         """Shuffle the values in the array in place."""
@@ -222,14 +222,14 @@ def _insertion_sort[T](array: ArrayLike[T], start: int, end: int, key: Callable[
     if reverse:
         while i < end:
             j = i
-            while j > start and key(array[j - 1]) < key(array[j]):
+            while j > start and key(array[j - 1]) < key(array[j]):  # type: ignore
                 array.swap(j - 1, j)
                 j -= 1
             i += 1
     else:
         while i < end:
             j = i
-            while j > start and key(array[j - 1]) > key(array[j]):
+            while j > start and key(array[j - 1]) > key(array[j]):  # type: ignore
                 array.swap(j - 1, j)
                 j -= 1
             i += 1
@@ -240,9 +240,9 @@ def _heapify[T](array: ArrayLike[T], end: int, index: int, reverse: bool):
         left = index * 2 + 1
         right = left + 1
         largest = index
-        if left < end and (array[left] > array[largest]) != reverse:
+        if left < end and (array[left] > array[largest]) != reverse:  # type: ignore
             largest = left
-        if right < end and (array[right] > array[largest]) != reverse:
+        if right < end and (array[right] > array[largest]) != reverse:  # type: ignore
             largest = right
         if largest == index:
             break

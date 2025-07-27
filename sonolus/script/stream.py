@@ -137,7 +137,7 @@ class _StreamBacking(BackingValue):
     id: Num
     index: Num
 
-    def __init__(self, stream_id: int, index: Num):
+    def __init__(self, stream_id: int, index: Num | int | float):
         super().__init__()
         self.id = Num._accept_(stream_id)
         self.index = Num._accept_(index)
@@ -241,10 +241,10 @@ class Stream[T](Record):
             # We still need to store something to preserve the key, so this is a special case.
             _stream_set(self.offset, key, 0)
         else:
-            for i, v in enumerate(value._to_list_()):
+            for i, v in enumerate(cast(Value, value)._to_list_()):
                 _stream_set(self.offset + i, key, Num(v))
 
-    def next_key(self, key: int | float) -> int:
+    def next_key(self, key: int | float) -> int | float:
         """Get the next key, or the key unchanged if it is the last key or the stream is empty.
 
         If the key is in the stream and there is a next key, returns the next key.
@@ -252,13 +252,13 @@ class Stream[T](Record):
         _check_can_read_stream()
         return _stream_get_next_key(self.offset, key)
 
-    def next_key_or_default(self, key: int | float, default: int | float) -> int:
+    def next_key_or_default(self, key: int | float, default: int | float) -> int | float:
         """Get the next key, or the default value if there is no next key."""
         _check_can_read_stream()
         next_key = self.next_key(key)
         return next_key if next_key > key else default
 
-    def previous_key(self, key: int | float) -> int:
+    def previous_key(self, key: int | float) -> int | float:
         """Get the previous key, or the key unchanged if it is the first key or the stream is empty.
 
         If the key is in the stream and there is a previous key, returns the previous key.
@@ -266,7 +266,7 @@ class Stream[T](Record):
         _check_can_read_stream()
         return _stream_get_previous_key(self.offset, key)
 
-    def previous_key_or_default(self, key: int | float, default: int | float) -> int:
+    def previous_key_or_default(self, key: int | float, default: int | float) -> int | float:
         """Get the previous key, or the default value if there is no previous key."""
         _check_can_read_stream()
         previous_key = self.previous_key(key)
@@ -284,12 +284,12 @@ class Stream[T](Record):
         previous_key = self.previous_key(key)
         return previous_key < key
 
-    def next_key_inclusive(self, key: int | float) -> int:
+    def next_key_inclusive(self, key: int | float) -> int | float:
         """Like `next_key`, but returns the key itself if it is in the stream."""
         _check_can_read_stream()
         return key if key in self else self.next_key(key)
 
-    def previous_key_inclusive(self, key: int | float) -> int:
+    def previous_key_inclusive(self, key: int | float) -> int | float:
         """Like `previous_key`, but returns the key itself if it is in the stream."""
         _check_can_read_stream()
         return key if key in self else self.previous_key(key)
@@ -509,7 +509,8 @@ class StreamGroup[T, Size](Record):
         _check_can_read_or_write_stream()
         assert index in self
         # Size 0 elements still need 1 stream to preserve the key.
-        return Stream[self.type_var_value(T)](max(1, sizeof(self.element_type())) * index + self.offset)
+        t = self.type_var_value(T)
+        return Stream[t](max(1, sizeof(self.element_type())) * index + self.offset)
 
 
 class _StreamAscIterator[T](Record, SonolusIterator[tuple[int | float, T]]):

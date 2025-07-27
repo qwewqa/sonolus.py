@@ -1,4 +1,7 @@
-from typing import Any, Never, Self
+from __future__ import annotations
+
+from collections.abc import Callable
+from typing import Any
 
 from sonolus.script.internal.context import ctx
 from sonolus.script.internal.impl import meta_fn
@@ -60,7 +63,7 @@ class Maybe[T](TransientValue):
     def get_unsafe(self) -> T:
         return self._value
 
-    def map(self, fn: callable, /) -> Self:
+    def map[R](self, fn: Callable[[T], R], /) -> Maybe[R]:
         if self.is_some:
             return Some(fn(self.get_unsafe()))
         return Nothing
@@ -70,7 +73,7 @@ class Maybe[T](TransientValue):
         return isinstance(value, cls)
 
     @classmethod
-    def _accept_(cls, value: Any) -> Self:
+    def _accept_(cls, value: Any) -> Maybe[T]:
         if not cls._accepts_(value):
             raise TypeError(f"Cannot accept value of type {type(value).__name__} as {cls.__name__}.")
         return value
@@ -83,13 +86,13 @@ class Maybe[T](TransientValue):
             raise ValueError("Not a python value")
         return self
 
-    def _copy_from_(self, value: Self):
+    def _copy_from_(self, value: Any):
         raise TypeError("Maybe does not support mutation.")
 
-    def _copy_(self) -> Self:
+    def _copy_(self) -> Maybe[T]:
         raise TypeError("Maybe does not support copying.")
 
-    def _set_(self, value: Self):
+    def _set_(self, value: Any):
         if not self._accepts_(value):
             raise TypeError(f"Cannot set value of type {type(value).__name__} to {self.__class__.__name__}.")
         if value is not Nothing and self._value is not value._value:
@@ -97,7 +100,7 @@ class Maybe[T](TransientValue):
         self._present._set_(value._present)
 
     @classmethod
-    def _get_merge_target_(cls, values: list[Self]) -> Self | NotImplemented:
+    def _get_merge_target_(cls, values: list[Any]) -> Any:
         if not all(isinstance(v, cls) for v in values):
             return NotImplemented
         distinct = []
@@ -129,8 +132,8 @@ def Some[T](value: T) -> Maybe[T]:  # noqa: N802
     return Maybe(present=True, value=value)
 
 
-Nothing: Maybe[Never] = Maybe(present=False, value=None)  # type: ignore
+Nothing: Maybe[Any] = Maybe(present=False, value=None)  # type: ignore
 
 # Note: has to come after the definition to hide the definition in the docs.
-Nothing: Maybe[Never]
+Nothing: Maybe[Any]
 """The empty `Maybe` instance."""

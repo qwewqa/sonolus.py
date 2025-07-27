@@ -1,25 +1,26 @@
+from __future__ import annotations
+
 import textwrap
 from collections import deque
 from collections.abc import Iterator
-from typing import Self
 
 from sonolus.backend.ir import IRConst, IRExpr, IRStmt
 from sonolus.backend.place import SSAPlace, TempBlock
 
 
 class FlowEdge:
-    src: "BasicBlock"
-    dst: "BasicBlock"
+    src: BasicBlock
+    dst: BasicBlock
     cond: float | int | None
 
-    def __init__(self, src: "BasicBlock", dst: "BasicBlock", cond: float | None = None):
+    def __init__(self, src: BasicBlock, dst: BasicBlock, cond: float | None = None):
         self.src = src
         self.dst = dst
         self.cond = cond
 
 
 class BasicBlock:
-    phis: dict[SSAPlace | TempBlock, dict[Self, SSAPlace]]
+    phis: dict[SSAPlace | TempBlock, dict[BasicBlock, SSAPlace]]
     statements: list[IRStmt]
     test: IRExpr
     incoming: set[FlowEdge]
@@ -28,7 +29,7 @@ class BasicBlock:
     def __init__(
         self,
         *,
-        phi: dict[SSAPlace, dict[Self, SSAPlace]] | None = None,
+        phi: dict[SSAPlace, dict[BasicBlock, SSAPlace]] | None = None,
         statements: list[IRStmt] | None = None,
         test: IRExpr | None = None,
         incoming: set[FlowEdge] | None = None,
@@ -40,7 +41,7 @@ class BasicBlock:
         self.incoming = incoming or set()
         self.outgoing = outgoing or set()
 
-    def connect_to(self, other: "BasicBlock", cond: int | float | None = None):
+    def connect_to(self, other: BasicBlock, cond: int | float | None = None):
         edge = FlowEdge(self, other, cond)
         self.outgoing.add(edge)
         other.incoming.add(edge)

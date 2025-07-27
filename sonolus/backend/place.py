@@ -1,5 +1,6 @@
+from __future__ import annotations
+
 from collections.abc import Iterator
-from typing import Self
 
 from sonolus.backend.blocks import Block
 
@@ -22,10 +23,10 @@ class TempBlock:
     def __str__(self):
         return f"{self.name}"
 
-    def __getitem__(self, item) -> "BlockPlace":
+    def __getitem__(self, item) -> BlockPlace:
         return BlockPlace(self, item)
 
-    def __iter__(self) -> "Iterator[BlockPlace]":
+    def __iter__(self) -> Iterator[BlockPlace]:
         for i in range(self.size):
             yield self[i]
 
@@ -78,7 +79,7 @@ class BlockPlace:
         else:
             return f"{self.block}[{self.index} + {self.offset}]"
 
-    def add_offset(self, offset: int) -> Self:
+    def add_offset(self, offset: int) -> BlockPlace:
         return BlockPlace(self.block, self.index, self.offset + offset)
 
     def __eq__(self, other):

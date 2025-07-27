@@ -33,8 +33,8 @@ def native_function[**P, R](op: Op) -> Callable[[Callable[P, R]], Callable[P, R]
                 bound_args = signature.bind(*args)
                 bound_args.apply_defaults()
                 return native_call(op, *(Num._accept_(arg) for arg in bound_args.args))
-            return fn(*args)
+            return fn(*args)  # type: ignore
 
         return wrapper
 
-    return decorator
+    return decorator  # type: ignore

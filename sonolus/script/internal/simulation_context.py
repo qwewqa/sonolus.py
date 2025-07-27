@@ -126,6 +126,6 @@ class SimulationContext:
             SimulationContext._active_context = None
 
 
-def sim_ctx() -> SimulationContext | None:
+def sim_ctx() -> SimulationContext | Any:
     """Get the current simulation context, or None if not active."""
     return SimulationContext._active_context

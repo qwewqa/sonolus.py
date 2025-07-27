@@ -262,3 +262,23 @@ def test_genexpr_of_gexpr():
                 debug_log(x + 100)
 
     run_and_validate(fn)
+
+
+def test_genexpr_with_next():
+    def fn():
+        gen = (i * 2 for i in range(5))
+        debug_log(next(gen))
+        debug_log(next(gen))
+        debug_log(next(gen))
+
+    run_and_validate(fn)
+
+
+def test_genexpr_with_iter():
+    def fn():
+        gen = (i * 2 for i in range(5))
+        iterator = iter(gen)
+        for x in iterator:
+            debug_log(x)
+
+    run_and_validate(fn)

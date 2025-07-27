@@ -83,7 +83,7 @@ class Array[T, Size](GenericValue, ArrayLike[T], metaclass=ArrayMeta):
         super().__init__()
 
     @classmethod
-    def _with_value(cls, value) -> Self:
+    def _with_value(cls, value) -> Array[T, Size]:
         result = object.__new__(cls)
         result._value = value
         return result
@@ -97,11 +97,11 @@ class Array[T, Size](GenericValue, ArrayLike[T], metaclass=ArrayMeta):
         return False
 
     @classmethod
-    def _from_backing_source_(cls, source: BackingSource) -> Self:
+    def _from_backing_source_(cls, source: BackingSource) -> Array[T, Size]:
         return cls._with_value(source)
 
     @classmethod
-    def _from_place_(cls, place: BlockPlace) -> Self:
+    def _from_place_(cls, place: BlockPlace) -> Array[T, Size]:
         return cls._with_value(place)
 
     @classmethod
@@ -109,7 +109,7 @@ class Array[T, Size](GenericValue, ArrayLike[T], metaclass=ArrayMeta):
         return isinstance(value, cls)
 
     @classmethod
-    def _accept_(cls, value: Any) -> Self:
+    def _accept_(cls, value: Any) -> Array[T, Size]:
         if not cls._accepts_(value):
             raise TypeError(f"Cannot accept value {value} as {cls.__name__}")
         return value
@@ -123,7 +123,7 @@ class Array[T, Size](GenericValue, ArrayLike[T], metaclass=ArrayMeta):
         return self
 
     @classmethod
-    def _from_list_(cls, values: Iterable[DataValue]) -> Self:
+    def _from_list_(cls, values: Iterable[DataValue]) -> Array[T, Size]:
         iterator = iter(values)
         return cls(*(cls.element_type()._from_list_(iterator) for _ in range(cls.size())))
 
@@ -148,19 +148,19 @@ class Array[T, Size](GenericValue, ArrayLike[T], metaclass=ArrayMeta):
     def _flat_keys_(cls, prefix: str) -> list[str]:
         return [entry for i in range(cls.size()) for entry in cls.element_type()._flat_keys_(f"{prefix}[{i}]")]
 
-    def _get_(self) -> Self:
+    def _get_(self) -> Array[T, Size]:
         return self
 
-    def _set_(self, value: Self):
+    def _set_(self, value: Any):
         raise TypeError("Array does not support _set_")
 
-    def _copy_from_(self, value: Self):
+    def _copy_from_(self, value: Any):
         if not isinstance(value, type(self)):
             raise TypeError("Cannot copy from different type")
         for i in range(self.size()):
             self[i] = value[i]
 
-    def _copy_(self) -> Self:
+    def _copy_(self) -> Array[T, Size]:
         if ctx():
             place = ctx().alloc(size=self._size_())
             result: Self = self._from_place_(place)
@@ -171,7 +171,7 @@ class Array[T, Size](GenericValue, ArrayLike[T], metaclass=ArrayMeta):
             return self._with_value([value._copy_() for value in self._value])
 
     @classmethod
-    def _alloc_(cls) -> Self:
+    def _alloc_(cls) -> Array[T, Size]:
         if ctx():
             place = ctx().alloc(size=cls._size_())
             return cls._from_place_(place)
@@ -179,7 +179,7 @@ class Array[T, Size](GenericValue, ArrayLike[T], metaclass=ArrayMeta):
             return cls._with_value([cls.element_type()._alloc_() for _ in range(cls.size())])
 
     @classmethod
-    def _zero_(cls) -> Self:
+    def _zero_(cls) -> Array[T, Size]:
         if ctx():
             place = ctx().alloc(size=cls._size_())
             result: Self = cls._from_place_(place)
@@ -212,7 +212,7 @@ class Array[T, Size](GenericValue, ArrayLike[T], metaclass=ArrayMeta):
                 )
             elif callable(self._value):
                 return self.element_type()._from_backing_source_(
-                    lambda offset: self._value((Num(offset) + Num(const_index * self.element_type()._size_())).ir())
+                    lambda offset: self._value((Num(offset) + Num(const_index * self.element_type()._size_())).ir())  # type: ignore
                 )
             else:
                 raise InternalError("Unexpected array value")
@@ -230,7 +230,7 @@ class Array[T, Size](GenericValue, ArrayLike[T], metaclass=ArrayMeta):
             elif callable(self._value):
                 base_offset = index * Num(self.element_type()._size_())
                 return self.element_type()._from_backing_source_(
-                    lambda offset: self._value((Num(offset) + base_offset).ir())
+                    lambda offset: self._value((Num(offset) + base_offset).ir())  # type: ignore
                 )
             else:
                 raise InternalError("Unexpected array value")
@@ -257,7 +257,7 @@ class Array[T, Size](GenericValue, ArrayLike[T], metaclass=ArrayMeta):
             elif callable(self._value):
                 base_offset = index * Num(self.element_type()._size_())
                 dst = self.element_type()._from_backing_source_(
-                    lambda offset: self._value((Num(offset) + base_offset).ir())
+                    lambda offset: self._value((Num(offset) + base_offset).ir())  # type: ignore
                 )
             else:
                 raise InternalError("Unexpected array value")
@@ -311,6 +311,6 @@ class Array[T, Size](GenericValue, ArrayLike[T], metaclass=ArrayMeta):
             return f"{type(self).__name__}({', '.join(repr(self[i]) for i in range(self.size()))})"
 
     @meta_fn
-    def __pos__(self) -> Self:
+    def __pos__(self) -> Array[T, Size]:
         """Return a copy of the array."""
         return self._copy_()

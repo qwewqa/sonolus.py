@@ -95,7 +95,7 @@ def particle(name: str) -> Any:
     return _ParticleInfo(name)
 
 
-type Particles = NewType("Particles", Any)
+type Particles = NewType("Particles", Any)  # type: ignore
 
 
 @dataclass_transform()

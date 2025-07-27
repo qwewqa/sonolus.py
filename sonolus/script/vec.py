@@ -1,5 +1,6 @@
+from __future__ import annotations
+
 from math import atan2, cos, sin
-from typing import Self
 
 from sonolus.script.array import Array
 from sonolus.script.array_like import ArrayLike
@@ -20,7 +21,7 @@ class Vec2(Record):
     y: float
 
     @classmethod
-    def zero(cls) -> Self:
+    def zero(cls) -> Vec2:
         """Return a vector with x and y set to 0.
 
         Returns:
@@ -29,7 +30,7 @@ class Vec2(Record):
         return cls(x=0, y=0)
 
     @classmethod
-    def one(cls) -> Self:
+    def one(cls) -> Vec2:
         """Return a vector with x and y set to 1.
 
         Returns:
@@ -38,7 +39,7 @@ class Vec2(Record):
         return cls(x=1, y=1)
 
     @classmethod
-    def up(cls) -> Self:
+    def up(cls) -> Vec2:
         """Return a vector pointing upwards (x=0, y=1).
 
         Returns:
@@ -47,7 +48,7 @@ class Vec2(Record):
         return cls(x=0, y=1)
 
     @classmethod
-    def down(cls) -> Self:
+    def down(cls) -> Vec2:
         """Return a vector pointing downwards (x=0, y=-1).
 
         Returns:
@@ -56,7 +57,7 @@ class Vec2(Record):
         return cls(x=0, y=-1)
 
     @classmethod
-    def left(cls) -> Self:
+    def left(cls) -> Vec2:
         """Return a vector pointing to the left (x=-1, y=0).
 
         Returns:
@@ -65,7 +66,7 @@ class Vec2(Record):
         return cls(x=-1, y=0)
 
     @classmethod
-    def right(cls) -> Self:
+    def right(cls) -> Vec2:
         """Return a vector pointing to the right (x=1, y=0).
 
         Returns:
@@ -74,7 +75,7 @@ class Vec2(Record):
         return cls(x=1, y=0)
 
     @classmethod
-    def unit(cls, angle: float) -> Self:
+    def unit(cls, angle: float) -> Vec2:
         """Return a unit vector (magnitude 1) at a given angle in radians.
 
         Args:
@@ -103,7 +104,7 @@ class Vec2(Record):
         """
         return atan2(self.y, self.x)
 
-    def dot(self, other: Self) -> float:
+    def dot(self, other: Vec2) -> float:
         """Calculate the dot product of this vector with another vector.
 
         Args:
@@ -114,7 +115,7 @@ class Vec2(Record):
         """
         return self.x * other.x + self.y * other.y
 
-    def rotate(self, angle: float) -> Self:
+    def rotate(self, angle: float) -> Vec2:
         """Rotate the vector by a given angle in radians and return a new vector.
 
         Args:
@@ -128,7 +129,7 @@ class Vec2(Record):
             y=self.x * sin(angle) + self.y * cos(angle),
         )
 
-    def rotate_about(self, angle: float, pivot: Self) -> Self:
+    def rotate_about(self, angle: float, pivot: Vec2) -> Vec2:
         """Rotate the vector about a pivot by a given angle in radians and return a new vector.
 
         Args:
@@ -140,7 +141,7 @@ class Vec2(Record):
         """
         return (self - pivot).rotate(angle) + pivot
 
-    def normalize(self) -> Self:
+    def normalize(self) -> Vec2:
         """Normalize the vector (set the magnitude to 1) and return a new vector.
 
         Returns:
@@ -149,7 +150,7 @@ class Vec2(Record):
         magnitude = self.magnitude
         return Vec2(x=self.x / magnitude, y=self.y / magnitude)
 
-    def orthogonal(self) -> Self:
+    def orthogonal(self) -> Vec2:
         """Return a vector orthogonal to this vector.
 
         The orthogonal vector is rotated 90 degrees counter-clockwise from this vector.
@@ -168,7 +169,7 @@ class Vec2(Record):
         """
         return self.x, self.y
 
-    def __add__(self, other: Self) -> Self:
+    def __add__(self, other: Vec2) -> Vec2:
         """Add this vector to another vector and return a new vector.
 
         Args:
@@ -179,7 +180,7 @@ class Vec2(Record):
         """
         return Vec2(x=self.x + other.x, y=self.y + other.y)
 
-    def __sub__(self, other: Self) -> Self:
+    def __sub__(self, other: Vec2) -> Vec2:
         """Subtract another vector from this vector and return a new vector.
 
         Args:
@@ -190,7 +191,7 @@ class Vec2(Record):
         """
         return Vec2(x=self.x - other.x, y=self.y - other.y)
 
-    def __mul__(self, other: Self | float) -> Self:
+    def __mul__(self, other: Vec2 | float) -> Vec2:
         """Multiply this vector by another vector or a scalar and return a new vector.
 
         Args:
@@ -214,7 +215,7 @@ class Vec2(Record):
             case _:
                 return NotImplemented
 
-    def __truediv__(self, other: Self | float) -> Self:
+    def __truediv__(self, other: Vec2 | float) -> Vec2:
         """Divide this vector by another vector or a scalar and return a new vector.
 
         Args:
@@ -228,8 +229,10 @@ class Vec2(Record):
                 return Vec2(x=self.x / x, y=self.y / y)
             case Num(factor):
                 return Vec2(x=self.x / factor, y=self.y / factor)
+            case _:
+                return NotImplemented
 
-    def __neg__(self) -> Self:
+    def __neg__(self) -> Vec2:
         """Negate the vector (invert the direction) and return a new vector.
 
         Returns:

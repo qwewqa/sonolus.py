@@ -1,4 +1,4 @@
-from typing import Self
+from __future__ import annotations
 
 from sonolus.backend.ops import Op
 from sonolus.script.array_like import ArrayLike
@@ -22,7 +22,7 @@ class Interval(Record):
     end: float
 
     @classmethod
-    def zero(cls) -> Self:
+    def zero(cls) -> Interval:
         """Get an empty interval."""
         return cls(0, 0)
 
@@ -49,7 +49,7 @@ class Interval(Record):
         """The interval as a tuple."""
         return self.start, self.end
 
-    def __contains__(self, item: Self | float | int) -> bool:
+    def __contains__(self, item: Interval | float | int) -> bool:
         """Check if an item is within the interval.
 
         Args:
@@ -66,7 +66,7 @@ class Interval(Record):
             case _:
                 static_error("Invalid type for interval check")
 
-    def __add__(self, other: float | int) -> Self:
+    def __add__(self, other: float | int) -> Interval:
         """Add a value to both ends of the interval.
 
         Args:
@@ -77,7 +77,7 @@ class Interval(Record):
         """
         return Interval(self.start + other, self.end + other)
 
-    def __sub__(self, other: float | int) -> Self:
+    def __sub__(self, other: float | int) -> Interval:
         """Subtract a value from both ends of the interval.
 
         Args:
@@ -88,7 +88,7 @@ class Interval(Record):
         """
         return Interval(self.start - other, self.end - other)
 
-    def __mul__(self, other: float | int) -> Self:
+    def __mul__(self, other: float | int) -> Interval:
         """Multiply both ends of the interval by a value.
 
         Args:
@@ -99,7 +99,7 @@ class Interval(Record):
         """
         return Interval(self.start * other, self.end * other)
 
-    def __truediv__(self, other: float | int) -> Self:
+    def __truediv__(self, other: float | int) -> Interval:
         """Divide both ends of the interval by a value.
 
         Args:
@@ -110,7 +110,7 @@ class Interval(Record):
         """
         return Interval(self.start / other, self.end / other)
 
-    def __floordiv__(self, other: float | int) -> Self:
+    def __floordiv__(self, other: float | int) -> Interval:
         """Divide both ends of the interval by a value and floor the result.
 
         Args:
@@ -121,7 +121,7 @@ class Interval(Record):
         """
         return Interval(self.start // other, self.end // other)
 
-    def __and__(self, other: Self) -> Self:
+    def __and__(self, other: Interval) -> Interval:
         """Get the intersection of two intervals.
 
         The resulting interval will be empty and may have a negative length if the two intervals do not overlap.
@@ -134,7 +134,7 @@ class Interval(Record):
         """
         return Interval(max(self.start, other.start), min(self.end, other.end))
 
-    def shrink(self, value: float | int) -> Self:
+    def shrink(self, value: float | int) -> Interval:
         """Shrink the interval by a value on both ends.
 
         Args:
@@ -145,7 +145,7 @@ class Interval(Record):
         """
         return Interval(self.start + value, self.end - value)
 
-    def expand(self, value: float | int) -> Self:
+    def expand(self, value: float | int) -> Interval:
         """Expand the interval by a value on both ends.
 
         Args:
@@ -223,11 +223,11 @@ def _num_lerp_clamped(a, b, x, /):
 
 
 def _generic_lerp[T](a: T, b: T, x: float, /) -> T:
-    return a + (b - a) * x
+    return a + (b - a) * x  # type: ignore
 
 
 def _generic_lerp_clamped[T](a: T, b: T, x: float, /) -> T:
-    return a + (b - a) * max(0, min(1, x))
+    return a + (b - a) * max(0, min(1, x))  # type: ignore
 
 
 def lerp[T](a: T, b: T, x: float, /) -> T:

@@ -70,8 +70,8 @@ def instruction_icon(name: str) -> Any:
     return _InstructionIconInfo(name=name)
 
 
-type TutorialInstructions = NewType("TutorialInstructions", Any)
-type TutorialInstructionIcons = NewType("TutorialInstructionIcons", Any)
+type TutorialInstructions = NewType("TutorialInstructions", Any)  # type: ignore
+type TutorialInstructionIcons = NewType("TutorialInstructionIcons", Any)  # type: ignore
 
 
 @dataclass_transform()

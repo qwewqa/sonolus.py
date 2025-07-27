@@ -1,4 +1,6 @@
 # ruff: noqa: N802
+from __future__ import annotations
+
 import ast
 import builtins
 import functools
@@ -6,7 +8,7 @@ import inspect
 from collections.abc import Callable, Iterable, Sequence
 from inspect import ismethod
 from types import FunctionType, MethodType, MethodWrapperType
-from typing import Any, Never, Self
+from typing import Any, Never
 
 from sonolus.backend.excepthook import install_excepthook
 from sonolus.backend.utils import get_function, has_yield, scan_writes
@@ -195,7 +197,7 @@ class Visitor(ast.NodeVisitor):
     yield_ctxs: list[Context]  # Contexts at yield statements, which will branch to the exit
     resume_ctxs: list[Context]  # Contexts after yield statements
     active_ctx: Context | None  # The active context for use in nested functions
-    parent: Self | None  # The parent visitor for use in nested functions
+    parent: Visitor | None  # The parent visitor for use in nested functions
     used_parent_binding_values: dict[str, Value]  # Values of parent bindings used in this function
 
     def __init__(
@@ -203,7 +205,7 @@ class Visitor(ast.NodeVisitor):
         source_file: str,
         bound_args: inspect.BoundArguments,
         global_vars: dict[str, Any],
-        parent: Self | None = None,
+        parent: Visitor | None = None,
     ):
         self.source_file = source_file
         self.globals = global_vars
@@ -1476,7 +1478,7 @@ class Generator(TransientValue, SonolusIterator):
         return isinstance(value, cls)
 
     @classmethod
-    def _accept_(cls, value: Any) -> Self:
+    def _accept_(cls, value: Any) -> Generator:
         if not cls._accepts_(value):
             raise TypeError(f"Cannot accept value of type {type(value).__name__} as {cls.__name__}")
         return value

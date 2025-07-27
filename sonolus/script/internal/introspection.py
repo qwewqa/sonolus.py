@@ -4,7 +4,14 @@ from typing import Annotated
 _missing = object()
 
 
-def get_field_specifiers(cls, *, skip: set[str] = frozenset(), globals=None, locals=None, eval_str=True):  # noqa: A002
+def get_field_specifiers(
+    cls,
+    *,
+    skip: frozenset[str] | set[str] = frozenset(),
+    globals=None,  # noqa: A002
+    locals=None,  # noqa: A002
+    eval_str=True,
+):
     """Like inspect.get_annotations, but also turns class attributes into Annotated."""
     results = inspect.get_annotations(cls, globals=globals, locals=locals, eval_str=eval_str)
     for key, value in results.items():

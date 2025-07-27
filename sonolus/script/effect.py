@@ -134,7 +134,7 @@ def effect(name: str) -> Any:
     return EffectInfo(name)
 
 
-type Effects = NewType("Effects", Any)
+type Effects = NewType("Effects", Any)  # type: ignore
 
 
 @dataclass_transform()

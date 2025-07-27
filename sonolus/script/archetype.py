@@ -1,3 +1,4 @@
+# type: ignore
 from __future__ import annotations
 
 import inspect
@@ -327,7 +328,7 @@ def callback[T: Callable](*, order: int = 0) -> Callable[[T], T]:
     """
 
     def decorator(func: T) -> T:
-        func._callback_order_ = order
+        func._callback_order_ = order  # type: ignore
         return func
 
     return decorator
@@ -635,11 +636,11 @@ class _BaseArchetype:
         """
         match self._data_:
             case _ArchetypeSelfData():
-                return EntityRef[type(self)](index=self.index)
+                return EntityRef[type(self)](index=self.index)  # type: ignore
             case _ArchetypeReferenceData(index=index):
-                return EntityRef[type(self)](index=index)
+                return EntityRef[type(self)](index=index)  # type: ignore
             case _ArchetypeLevelData():
-                result = EntityRef[type(self)](index=-1)
+                result = EntityRef[type(self)](index=-1)  # type: ignore
                 result._ref_ = self
                 return result
             case _:
@@ -1016,8 +1017,8 @@ def archetype_life_of(archetype: type[_BaseArchetype] | _BaseArchetype) -> Arche
 
     Available in play and watch mode.
     """
-    archetype = validate_value(archetype)
-    archetype = archetype._as_py_()
+    archetype = validate_value(archetype)  # type: ignore
+    archetype = archetype._as_py_()  # type: ignore
     if not ctx():
         raise RuntimeError("Calling archetype_life_of is only allowed within a callback")
     match ctx().global_state.mode:
@@ -1110,7 +1111,7 @@ class EntityRef[A: _BaseArchetype](Record):
         """Get the archetype type."""
         return cls.type_var_value(A)
 
-    def with_archetype[T](self, archetype: type[T]) -> EntityRef[T]:
+    def with_archetype[T: _BaseArchetype](self, archetype: type[T]) -> EntityRef[T]:
         """Return a new reference with the given archetype type."""
         return EntityRef[archetype](index=self.index)
 
@@ -1137,11 +1138,13 @@ class EntityRef[A: _BaseArchetype](Record):
         if ref is None:
             return Num._accept_(self.index)._to_list_()
         else:
+            if level_refs is None:
+                raise RuntimeError("Unexpected missing level_refs")
             if ref not in level_refs:
                 raise KeyError("Reference to entity not in level data")
             return [level_refs[ref]]
 
-    def _copy_from_(self, value: Self):
+    def _copy_from_(self, value: Any):
         super()._copy_from_(value)
         if hasattr(value, "_ref_"):
             self._ref_ = value._ref_

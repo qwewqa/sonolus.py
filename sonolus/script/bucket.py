@@ -220,7 +220,7 @@ def bucket(*, sprites: list[_BucketSprite], unit: str | None = None) -> Any:
     return _BucketInfo(sprites, unit)
 
 
-type Buckets = NewType("Buckets", Any)
+type Buckets = NewType("Buckets", Any)  # type: ignore
 
 
 @dataclass_transform()

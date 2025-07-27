@@ -8,7 +8,7 @@ from threading import Lock
 from typing import Any, Self
 
 from sonolus.backend.blocks import BlockData, PlayBlock
-from sonolus.backend.ir import IRConst, IRStmt
+from sonolus.backend.ir import IRConst, IRExpr, IRStmt
 from sonolus.backend.mode import Mode
 from sonolus.backend.optimize.flow import BasicBlock, FlowEdge
 from sonolus.backend.place import Block, BlockPlace, TempBlock
@@ -17,7 +17,7 @@ from sonolus.script.internal.value import Value
 
 _compiler_internal_ = True
 
-context_var = ContextVar("context_var", default=None)
+context_var: ContextVar[Context | None] = ContextVar("context_var", default=None)  # type: ignore
 
 
 @dataclass(frozen=True)
@@ -71,7 +71,7 @@ class Context:
     global_state: GlobalContextState
     callback_state: CallbackContextState
     statements: list[IRStmt]
-    test: IRStmt
+    test: IRExpr
     outgoing: dict[float | None, Context]
     scope: Scope
     loop_variables: dict[str, Value]
@@ -192,7 +192,7 @@ class Context:
         result.live = False
         return result
 
-    def prepare_loop_header(self, to_merge: set[str]) -> Self:
+    def prepare_loop_header(self, to_merge: set[str]) -> Context:
         # to_merge is the set of bindings set anywhere in the loop
         # we need to invalidate them in the header if they're reference types
         # or merge them if they're value types
@@ -256,7 +256,7 @@ class Context:
         with self.global_state.lock:
             block = value.blocks.get(self.global_state.mode)
             if block is None:
-                raise RuntimeError(f"Global {value.name} is not available in '{self.global_state.mode.name}' mode")
+                raise RuntimeError(f"Global {value} is not available in '{self.global_state.mode.name}' mode")
             if value not in self.global_state.environment_mappings:
                 if value.offset is None:
                     offset = self.global_state.environment_offsets.get(block, 0)
@@ -288,7 +288,7 @@ class Context:
             return self.global_state.archetypes[type_]
 
 
-def ctx() -> Context | None:
+def ctx() -> Context | Any:  # Using Any to silence type checker warnings if it's None
     return context_var.get()
 
 
@@ -388,7 +388,7 @@ class Scope:
     def set_binding(self, name: str, binding: Binding):
         self.bindings[name] = binding
 
-    def get_value(self, name: str) -> Value:
+    def get_value(self, name: str) -> Value | Any:
         binding = self.get_binding(name)
         match binding:
             case ValueBinding(value):

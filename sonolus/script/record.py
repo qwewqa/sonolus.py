@@ -184,7 +184,7 @@ class Record(GenericValue, metaclass=RecordMeta):
         result = object.__new__(cls)
         result._value = {
             field.name: field.type._from_backing_source_(
-                lambda offset, field_offset=field.offset: source((Num(offset) + Num(field_offset)).ir())
+                lambda offset, field_offset=field.offset: source((Num(offset) + Num(field_offset)).ir())  # type: ignore
             )
             for field in cls._fields
         }
@@ -235,10 +235,10 @@ class Record(GenericValue, metaclass=RecordMeta):
     def _get_(self) -> Self:
         return self
 
-    def _set_(self, value: Self):
+    def _set_(self, value: Any):
         raise TypeError("Record does not support _set_")
 
-    def _copy_from_(self, value: Self):
+    def _copy_from_(self, value: Any):
         value = self._accept_(value)
         for field in self._fields:
             field.__set__(self, field.__get__(value))
@@ -310,7 +310,7 @@ class Record(GenericValue, metaclass=RecordMeta):
 
 
 class _RecordField(SonolusDescriptor):
-    def __init__(self, name: str, type_: type[Value], index: int, offset: int):
+    def __init__(self, name: str, type_: type[Value] | Any, index: int, offset: int):
         self.name = name
         self.type = type_
         self.index = index

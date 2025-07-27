@@ -1,16 +1,16 @@
-from sonolus.build.engine import package_output
+from sonolus.build.engine import JsonValue, package_output
 from sonolus.script.level import LevelData
 
 
 def package_level_data(
     level_data: LevelData,
-):
+) -> bytes:
     return package_output(build_level_data(level_data))
 
 
 def build_level_data(
     level_data: LevelData,
-):
+) -> JsonValue:
     level_refs = {entity: f"{i}_{entity.name}" for i, entity in enumerate(level_data.entities)}
     return {
         "bgmOffset": level_data.bgm_offset,

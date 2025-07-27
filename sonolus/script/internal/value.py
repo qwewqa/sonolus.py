@@ -1,5 +1,6 @@
 from abc import abstractmethod
 from collections.abc import Callable, Iterable
+from types import NotImplementedType
 from typing import Any, Self
 
 from sonolus.backend.ir import IRConst, IRExpr, IRStmt
@@ -148,7 +149,7 @@ class Value:
         return self._get_()
 
     @abstractmethod
-    def _set_(self, value: Self):
+    def _set_(self, value: Any):
         """Implements assignment (=).
 
         This is only supported by value types.
@@ -160,7 +161,7 @@ class Value:
         raise NotImplementedError
 
     @abstractmethod
-    def _copy_from_(self, value: Self):
+    def _copy_from_(self, value: Any):
         """Implements copy assignment (@=).
 
         This is only supported by mutable reference types.
@@ -185,7 +186,7 @@ class Value:
         raise NotImplementedError
 
     @classmethod
-    def _get_merge_target_(cls, values: list[Self]) -> Self | NotImplemented:
+    def _get_merge_target_(cls, values: list[Any]) -> Any | NotImplementedType:
         """Return the target when merging values from multiple code paths.
 
         E.g. for code like this:
@@ -215,4 +216,4 @@ class Value:
         return self
 
 
-Value.__imatmul__._meta_fn_ = True
+Value.__imatmul__._meta_fn_ = True  # type: ignore

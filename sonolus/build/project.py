@@ -17,7 +17,7 @@ BLANK_AUDIO = (
 )
 
 
-def build_project_to_collection(project: Project, config: BuildConfig):
+def build_project_to_collection(project: Project, config: BuildConfig | None):
     collection = load_resources_files_to_collection(project.resources)
     add_engine_to_collection(collection, project, project.engine, config)
     for level in project.levels:
@@ -26,7 +26,7 @@ def build_project_to_collection(project: Project, config: BuildConfig):
     return collection
 
 
-def add_engine_to_collection(collection: Collection, project: Project, engine: Engine, config: BuildConfig):
+def add_engine_to_collection(collection: Collection, project: Project, engine: Engine, config: BuildConfig | None):
     packaged_engine = package_engine(engine.data, config)
     item = {
         "name": engine.name,

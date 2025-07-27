@@ -33,7 +33,7 @@ def meta_fn(fn=None):
     return decorator(fn)
 
 
-def validate_value(value: Any) -> Value:
+def validate_value[T](value: T) -> Value | T:
     result = try_validate_value(value)
     if result is None:
         raise TypeError(f"Unsupported value: {value!r}")

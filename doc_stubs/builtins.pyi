@@ -148,6 +148,17 @@ def issubclass(cls: type, classinfo: type | tuple[type, ...]) -> builtins.bool:
     """
     ...
 
+def iter[T](iterable: Iterable[T]) -> Iterator[T]:
+    """Return an iterator for the given iterable.
+
+    Args:
+        iterable: The iterable to convert to an iterator.
+
+    Returns:
+        An iterator over the elements of the iterable.
+    """
+    ...
+
 def len(s: object) -> builtins.int:
     """Return the number of items in a container.
 
@@ -261,6 +272,19 @@ def min[T](arg1: T, arg2: T, *args: T, key: Callable[[T], Any] | None = ...) -> 
 
     Returns:
         The smallest item.
+    """
+    ...
+
+def next[T](iterator: Iterator[T]) -> T:
+    """Retrieve the next item from an iterator.
+
+    Errors if the iterator is exhausted.
+
+    Args:
+        iterator: The iterator to retrieve the next item from.
+
+    Returns:
+        The next item from the iterator.
     """
     ...
 

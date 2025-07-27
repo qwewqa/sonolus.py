@@ -81,7 +81,7 @@ def build_project(project: Project, build_dir: Path, config: BuildConfig):
         level_path.write_bytes(package_level_data(level.data))
 
 
-def build_collection(project: Project, build_dir: Path, config: BuildConfig):
+def build_collection(project: Project, build_dir: Path, config: BuildConfig | None):
     site_dir = build_dir / "site"
     shutil.rmtree(site_dir, ignore_errors=True)
     site_dir.mkdir(parents=True, exist_ok=True)

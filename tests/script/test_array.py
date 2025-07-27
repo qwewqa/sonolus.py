@@ -405,3 +405,28 @@ def test_array_truthiness_non_empty():
         return 1 if x else 0
 
     assert run_and_validate(fn) == 1
+
+
+def test_array_with_next():
+    def fn():
+        array = Array(1, 2, 3)
+        iterator = iter(array)
+
+        result = Array[int, 3](next(iterator), next(iterator), next(iterator))
+        return result
+
+    assert list(run_and_validate(fn)) == [1, 2, 3]
+
+
+def test_array_with_iter():
+    def fn():
+        array = Array(1, 2, 3)
+        iterator = iter(array)
+        total = 0
+
+        for x in iterator:
+            total += x
+
+        return total
+
+    assert run_and_validate(fn) == 6

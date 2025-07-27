@@ -17,13 +17,13 @@ debug_log_callback = ContextVar[Callable[[Num], None]]("debug_log_callback")
 
 
 @meta_fn
-def error(message: str | None = None) -> Never:
+def error(message: str | None = None) -> Never:  # type: ignore
     """Raise an error.
 
     This function is used to raise an error during runtime.
     When this happens, the game will pause in debug mode. The current callback will also immediately return 0.
     """
-    message = validate_value(message)._as_py_() or "Error"
+    message = validate_value(message)._as_py_() or "Error"  # type: ignore
     if not isinstance(message, str):
         raise ValueError("Expected a string")
     if ctx():
@@ -41,7 +41,7 @@ def static_error(message: str | None = None) -> Never:
     This function is used to raise an error during compile-time if the compiler cannot guarantee that
     this function will not be called during runtime.
     """
-    message = validate_value(message)._as_py_() or "Error"
+    message = validate_value(message)._as_py_() or "Error"  # type: ignore
     if not isinstance(message, str):
         raise ValueError("Expected a string")
     raise RuntimeError(message)
@@ -51,7 +51,7 @@ def static_error(message: str | None = None) -> Never:
 def debug_log(value: int | float | bool):
     """Log a value in debug mode."""
     if debug_log_callback.get(None):
-        return debug_log_callback.get()(value)
+        return debug_log_callback.get()(value)  # type: ignore
     else:
         return _debug_log(value)
 
@@ -82,7 +82,7 @@ def assert_false(value: int | float | bool, message: str | None = None):
 
 @meta_fn
 def assert_unreachable(message: str | None = None) -> Never:
-    message = validate_value(message)._as_py_() or "Unreachable code reached"
+    message = validate_value(message)._as_py_() or "Unreachable code reached"  # type: ignore
     raise RuntimeError(message)
 
 
@@ -130,7 +130,7 @@ def visualize_cfg(
         ReadOnlyMemory(),
     )
 
-    cfg = callback_to_cfg(global_state, fn, callback, archetype=archetype)
+    cfg = callback_to_cfg(global_state, fn, callback, archetype=archetype)  # type: ignore
     cfg = run_passes(cfg, passes, OptimizerConfig(mode=mode))
     return cfg_to_mermaid(cfg)
 

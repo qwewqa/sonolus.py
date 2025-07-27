@@ -1,5 +1,6 @@
 # Builtins
 Sonolus.py comes with support for a number of built-in functions.
+The supported functions and parameters are listed below.
 
 - `abs(x)`
 - `bool(object)`
@@ -10,10 +11,12 @@ Sonolus.py comes with support for a number of built-in functions.
 - `int(x)` (for a num argument)
 - `isinstance(object, classinfo)`
 - `issubclass(class, classinfo)`
+- `iter(iterable)`
 - `len(s)`
 - `map(function, iterable)`
 - `max(iterable, *, default=..., key=None)`, `max(arg1, arg2, *args, key=None)`
 - `min(iterable, *, default=..., key=None)`, `min(arg1, arg2, *args, key=None)`
+- `next(iterator)`
 - `sum(iterable, start=0)`
 - `range(stop)`, `range(start, stop[, step])`
 - `reversed(seq)`

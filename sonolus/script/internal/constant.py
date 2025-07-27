@@ -113,7 +113,7 @@ class ConstantValue(Value):
         if value is not self:
             raise ValueError(f"{type(self).__name__} is immutable")
 
-    def _copy_from_(self, value: Self):
+    def _copy_from_(self, value: Any):
         if value is not self:
             raise ValueError(f"{type(self).__name__} is immutable")
 

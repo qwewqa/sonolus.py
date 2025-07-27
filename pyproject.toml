@@ -38,6 +38,7 @@ dev = [
     "pytest-cov>=6.0.0",
     "tox>=4.23.2",
     "tox-uv>=1.16.0",
+    "ty"
 ]
 docs = [
     "mkdocs-material>=9.5.45",
@@ -62,3 +63,9 @@ deps = [
 ]
 uv_python_preference = "managed"
 commands = [["pytest", "tests", "-n", "auto"]]
+
+[tool.ty.environment]
+root = ["./sonolus"]
+
+[tool.ty.src]
+include = ["sonolus/script"]

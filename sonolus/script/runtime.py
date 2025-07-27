@@ -698,7 +698,7 @@ class _TouchArray:
 
 @_runtime_skin_transform
 class _SkinTransform:
-    value: Array[Array[float, 4], 4]
+    value: Array[Array[float, 4], 4]  # type: ignore
 
     @property
     @meta_fn
@@ -719,7 +719,7 @@ class _SkinTransform:
 
 @_runtime_particle_transform
 class _ParticleTransform:
-    value: Array[Array[float, 4], 4]
+    value: Array[Array[float, 4], 4]  # type: ignore
 
     @property
     @meta_fn
@@ -857,25 +857,25 @@ def is_debug() -> bool:
 @meta_fn
 def is_play() -> bool:
     """Check if the game is running in play mode."""
-    return ctx() and ctx().global_state.mode == Mode.PLAY
+    return bool(ctx() and ctx().global_state.mode == Mode.PLAY)
 
 
 @meta_fn
 def is_preview() -> bool:
     """Check if the game is running in preview mode."""
-    return ctx() and ctx().global_state.mode == Mode.PREVIEW
+    return bool(ctx() and ctx().global_state.mode == Mode.PREVIEW)
 
 
 @meta_fn
 def is_watch() -> bool:
     """Check if the game is running in watch mode."""
-    return ctx() and ctx().global_state.mode == Mode.WATCH
+    return bool(ctx() and ctx().global_state.mode == Mode.WATCH)
 
 
 @meta_fn
 def is_tutorial() -> bool:
     """Check if the game is running in tutorial mode."""
-    return ctx() and ctx().global_state.mode == Mode.TUTORIAL
+    return bool(ctx() and ctx().global_state.mode == Mode.TUTORIAL)
 
 
 @meta_fn
@@ -884,7 +884,7 @@ def is_preprocessing() -> bool:
 
     Returns True if the current callback is one of preprocess, spawn_order, spawn_time, or despawn_time.
     """
-    return ctx() and ctx().callback in {"preprocess", "spawnOrder", "spawnTime", "despawnTime"}
+    return bool(ctx() and ctx().callback in {"preprocess", "spawnOrder", "spawnTime", "despawnTime"})
 
 
 @meta_fn
@@ -1058,12 +1058,12 @@ def prev_time() -> float:
 def touches() -> ArrayLike[Touch]:
     """Get the current touches of the game."""
     if not ctx():
-        return Array[Touch, 0]()
+        return Array[Touch, 0]()  # type: ignore
     match ctx().global_state.mode:
         case Mode.PLAY:
             return ArrayPointer[Touch](_PlayRuntimeUpdate.touch_count, ctx().blocks.RuntimeTouchArray, 0)
         case _:
-            return Array[Touch, 0]()
+            return Array[Touch, 0]()  # type: ignore
 
 
 @meta_fn
@@ -1098,24 +1098,24 @@ def navigation_direction() -> int:
 
 def skin_transform() -> Transform2d:
     """Get the global skin transform."""
-    return _SkinTransform.transform
+    return _SkinTransform.transform  # type: ignore
 
 
 @meta_fn
 def set_skin_transform(value: Transform2d):
     """Set the global skin transform."""
-    _SkinTransform.transform._copy_from_(value)
+    _SkinTransform.transform._copy_from_(value)  # type: ignore
 
 
 def particle_transform() -> Transform2d:
     """Get the global particle transform."""
-    return _ParticleTransform.transform
+    return _ParticleTransform.transform  # type: ignore
 
 
 @meta_fn
 def set_particle_transform(value: Transform2d):
     """Set the global particle transform."""
-    _ParticleTransform.transform._copy_from_(value)
+    _ParticleTransform.transform._copy_from_(value)  # type: ignore
 
 
 def background() -> Quad:
@@ -1142,12 +1142,12 @@ _runtime_ui = RuntimeUi()
 
 def runtime_ui() -> RuntimeUi:
     """Get the runtime UI configuration."""
-    return _runtime_ui
+    return _runtime_ui  # type: ignore
 
 
 def canvas() -> _PreviewRuntimeCanvas:
     """Get the preview canvas."""
-    return _PreviewRuntimeCanvas
+    return _PreviewRuntimeCanvas  # type: ignore
 
 
 def screen() -> Rect:
@@ -1157,9 +1157,9 @@ def screen() -> Rect:
 
 def level_score() -> _LevelScore:
     """Get the level score configuration."""
-    return _LevelScore
+    return _LevelScore  # type: ignore
 
 
 def level_life() -> _LevelLife:
     """Get the level life configuration."""
-    return _LevelLife
+    return _LevelLife  # type: ignore

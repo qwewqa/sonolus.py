@@ -5,25 +5,25 @@ from sonolus.script.num import Num
 
 
 @meta_fn
-def alloc[T](type_: type[T]) -> T:
+def alloc[T](type_: type[T]) -> T:  # type: ignore
     """Return an uninitialized instance of the given type.
 
     Use this carefully as reading from uninitialized memory can lead to unexpected behavior.
     """
     type_ = validate_concrete_type(type_)
     if ctx():
-        return type_._alloc_()
+        return type_._alloc_()  # type: ignore
     else:
-        return type_._alloc_()._as_py_()
+        return type_._alloc_()._as_py_()  # type: ignore
 
 
 @meta_fn
-def zeros[T](type_: type[T]) -> T:
+def zeros[T](type_: type[T]) -> T:  # type: ignore
     """Make a new instance of the given type initialized with zeros.
 
     Generally works the same as the unary `+` operator on record and array types.
     """
-    return validate_concrete_type(type_)._zero_()
+    return validate_concrete_type(type_)._zero_()  # type: ignore
 
 
 @meta_fn
@@ -32,18 +32,18 @@ def copy[T](value: T) -> T:
 
     Generally works the same as the unary `+` operator on records and arrays.
     """
-    value = validate_value(value)
+    value = validate_value(value)  # type: ignore
     if ctx():
-        return value._copy_()
+        return value._copy_()  # type: ignore
     else:
-        return value._copy_()._as_py_()
+        return value._copy_()._as_py_()  # type: ignore
 
 
 def swap[T](a: T, b: T):
     """Swap the values of the two provided mutable values."""
     temp = copy(a)
-    a @= b
-    b @= temp
+    a @= b  # type: ignore
+    b @= temp  # type: ignore
 
 
 @meta_fn

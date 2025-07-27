@@ -175,7 +175,7 @@ def select_option(
     return _SelectOption(name, description, standard, advanced, scope, default, values)
 
 
-type Options = NewType("Options", Any)
+type Options = NewType("Options", Any)  # type: ignore
 type _OptionInfo = _SliderOption | _ToggleOption | _SelectOption
 
 

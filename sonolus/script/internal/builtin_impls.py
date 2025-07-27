@@ -1,6 +1,7 @@
 from sonolus.backend.ops import Op
 from sonolus.script.array import Array
 from sonolus.script.array_like import ArrayLike
+from sonolus.script.debug import error
 from sonolus.script.internal.context import ctx
 from sonolus.script.internal.dict_impl import DictImpl
 from sonolus.script.internal.impl import meta_fn, validate_value
@@ -45,7 +46,7 @@ def _len(value):
     value = validate_value(value)
     if not hasattr(value, "__len__"):
         raise TypeError(f"object of type '{type(value).__name__}' has no len()")
-    return compile_and_call(value.__len__)
+    return compile_and_call(value.__len__)  # type: ignore
 
 
 @meta_fn
@@ -60,7 +61,7 @@ def _enumerate(iterable, start=0):
     elif isinstance(iterable, ArrayLike):
         return compile_and_call(iterable._enumerate_, start)
     else:
-        iterator = compile_and_call(iterable.__iter__)
+        iterator = compile_and_call(iterable.__iter__)  # type: ignore
         if not isinstance(iterator, SonolusIterator):
             raise TypeError("Only subclasses of SonolusIterator are supported as iterators")
         return _Enumerator(0, start, iterator)
@@ -105,7 +106,7 @@ def _abs(value):
     value = validate_value(value)
     if not hasattr(value, "__abs__"):
         raise TypeError(f"bad operand type for abs(): '{type(value).__name__}'")
-    return compile_and_call(value.__abs__)
+    return compile_and_call(value.__abs__)  # type: ignore
 
 
 def _identity(value):
@@ -339,9 +340,9 @@ def _bool(value=False):
         return False
 
 
-_int._type_mapping_ = Num
-_float._type_mapping_ = Num
-_bool._type_mapping_ = Num
+_int._type_mapping_ = Num  # type: ignore
+_float._type_mapping_ = Num  # type: ignore
+_bool._type_mapping_ = Num  # type: ignore
 
 
 def _any(iterable):
@@ -364,6 +365,18 @@ def _sum(iterable, /, start=0):
     return start
 
 
+def _next(iterator):
+    assert isinstance(iterator, SonolusIterator)
+    value = iterator.next()
+    if value.is_some:
+        return value.get_unsafe()
+    error("Iterator has been exhausted")
+
+
+def _iter(iterable):
+    return iterable.__iter__()  # type: ignore # noqa: PLC2801
+
+
 # classmethod, property, staticmethod are supported as decorators, but not within functions
 
 BUILTIN_IMPLS = {
@@ -378,10 +391,12 @@ BUILTIN_IMPLS = {
     id(float): _float,
     id(int): _int,
     id(isinstance): _isinstance,
+    id(iter): _iter,
     id(len): _len,
     id(map): _map,
     id(max): _max,
     id(min): _min,
+    id(next): _next,
     id(range): Range,
     id(reversed): _reversed,
     id(zip): _zip,

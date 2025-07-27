@@ -1,3 +1,4 @@
+# type: ignore
 from __future__ import annotations
 
 import operator
@@ -136,7 +137,7 @@ class _Num(Value, metaclass=_NumMeta):
         else:
             return Num(self.data)
 
-    def _set_(self, value: Self):
+    def _set_(self, value: Any):
         value = Num._accept_(value)
         if ctx():
             match self.data:
@@ -150,7 +151,7 @@ class _Num(Value, metaclass=_NumMeta):
         else:
             self.data = value.data
 
-    def _copy_from_(self, value: Self):
+    def _copy_from_(self, value: Any):
         raise ValueError("Cannot assign to a number")
 
     def _copy_(self) -> Self:

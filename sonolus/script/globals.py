@@ -96,8 +96,8 @@ def _create_global(cls: type, blocks: dict[Mode, Block], offset: int | None):
         type_ = validate_concrete_type(annotation)
         setattr(cls, name, _GlobalField(name, type_, i, field_offset))
         field_offset += type_._size_()
-    cls._global_info_ = _GlobalInfo(cls.__name__, field_offset, blocks, offset)
-    cls._is_comptime_value_ = True
+    cls._global_info_ = _GlobalInfo(cls.__name__, field_offset, blocks, offset)  # type: ignore
+    cls._is_comptime_value_ = True  # type: ignore
     return cls()
 
 

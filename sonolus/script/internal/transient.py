@@ -36,11 +36,11 @@ class TransientValue(Value):
     def _get_(self) -> Self:
         return self
 
-    def _set_(self, value: Self) -> None:
+    def _set_(self, value: Any) -> None:
         if value is not self:
             raise TypeError(f"{type(self).__name__} is immutable")
 
-    def _copy_from_(self, value: Self):
+    def _copy_from_(self, value: Any):
         raise TypeError(f"{type(self).__name__} is immutable")
 
     def _copy_(self) -> Self:

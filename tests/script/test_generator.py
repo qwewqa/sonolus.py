@@ -605,3 +605,32 @@ def test_nested_iteration_of_same_generator():
                 debug_log(record.value + record_2.value)
 
     run_and_validate(fn)
+
+
+def test_generator_with_next():
+    def fn():
+        def gen():
+            yield 1
+            yield 2
+            yield 3
+
+        iterator = gen()
+        debug_log(next(iterator))
+        debug_log(next(iterator))
+        debug_log(next(iterator))
+
+    run_and_validate(fn)
+
+
+def test_generator_with_iter():
+    def fn():
+        def gen():
+            yield 1
+            yield 2
+            yield 3
+
+        iterator = iter(gen())
+        for i in iterator:
+            debug_log(i)
+
+    run_and_validate(fn)

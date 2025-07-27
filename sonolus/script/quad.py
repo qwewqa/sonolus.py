@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from typing import Protocol, Self
+from typing import Protocol
 
 from sonolus.script.record import Record
 from sonolus.script.values import zeros
@@ -57,7 +57,7 @@ class Quad(Record):
         """The center of the quad."""
         return (self.bl + self.tr + self.tl + self.br) / 4
 
-    def translate(self, translation: Vec2, /) -> Self:
+    def translate(self, translation: Vec2, /) -> Quad:
         """Translate the quad by the given translation and return a new quad."""
         return Quad(
             bl=self.bl + translation,
@@ -66,7 +66,7 @@ class Quad(Record):
             br=self.br + translation,
         )
 
-    def scale(self, factor: Vec2, /) -> Self:
+    def scale(self, factor: Vec2, /) -> Quad:
         """Scale the quad by the given factor about the origin and return a new quad."""
         return Quad(
             bl=self.bl * factor,
@@ -75,7 +75,7 @@ class Quad(Record):
             br=self.br * factor,
         )
 
-    def scale_about(self, factor: Vec2, /, pivot: Vec2) -> Self:
+    def scale_about(self, factor: Vec2, /, pivot: Vec2) -> Quad:
         """Scale the quad by the given factor about the given pivot and return a new quad."""
         return Quad(
             bl=(self.bl - pivot) * factor + pivot,
@@ -84,7 +84,7 @@ class Quad(Record):
             br=(self.br - pivot) * factor + pivot,
         )
 
-    def scale_centered(self, factor: Vec2, /) -> Self:
+    def scale_centered(self, factor: Vec2, /) -> Quad:
         """Scale the quad by the given factor about its center and return a new quad."""
         return Quad(
             bl=self.bl * factor,
@@ -93,7 +93,7 @@ class Quad(Record):
             br=self.br * factor,
         ).translate(self.center * (Vec2(1, 1) - factor))
 
-    def rotate(self, angle: float, /) -> Self:
+    def rotate(self, angle: float, /) -> Quad:
         """Rotate the quad by the given angle about the origin and return a new quad.
 
         Args:
@@ -114,7 +114,7 @@ class Quad(Record):
         angle: float,
         /,
         pivot: Vec2,
-    ) -> Self:
+    ) -> Quad:
         """Rotate the quad by the given angle about the given pivot and return a new quad.
 
         Args:
@@ -131,7 +131,7 @@ class Quad(Record):
             br=self.br.rotate_about(angle, pivot),
         )
 
-    def rotate_centered(self, angle: float, /) -> Self:
+    def rotate_centered(self, angle: float, /) -> Quad:
         """Rotate the quad by the given angle about its center and return a new quad.
 
         Args:
@@ -142,7 +142,7 @@ class Quad(Record):
         """
         return self.rotate_about(angle, self.center)
 
-    def permute(self, count: int = 1, /) -> Self:
+    def permute(self, count: int = 1, /) -> Quad:
         """Perform a cyclic permutation of the quad's vertices and return a new quad.
 
         On a square, this operation is equivalent to rotating the square counterclockwise 90 degrees `count` times.
@@ -269,7 +269,7 @@ class Rect(Record):
             br=self.br,
         )
 
-    def translate(self, translation: Vec2, /) -> Self:
+    def translate(self, translation: Vec2, /) -> Rect:
         """Translate the rectangle by the given translation and return a new rectangle."""
         return Rect(
             t=self.t + translation.y,
@@ -278,7 +278,7 @@ class Rect(Record):
             l=self.l + translation.x,
         )
 
-    def scale(self, factor: Vec2, /) -> Self:
+    def scale(self, factor: Vec2, /) -> Rect:
         """Scale the rectangle by the given factor about the origin and return a new rectangle."""
         return Rect(
             t=self.t * factor.y,
@@ -287,7 +287,7 @@ class Rect(Record):
             l=self.l * factor.x,
         )
 
-    def scale_about(self, factor: Vec2, /, pivot: Vec2) -> Self:
+    def scale_about(self, factor: Vec2, /, pivot: Vec2) -> Rect:
         """Scale the rectangle by the given factor about the given pivot and return a new rectangle."""
         return Rect(
             t=(self.t - pivot.y) * factor.y + pivot.y,
@@ -296,7 +296,7 @@ class Rect(Record):
             l=(self.l - pivot.x) * factor.x + pivot.x,
         )
 
-    def scale_centered(self, factor: Vec2, /) -> Self:
+    def scale_centered(self, factor: Vec2, /) -> Rect:
         """Scale the rectangle by the given factor about its center and return a new rectangle."""
         return Rect(
             t=self.t * factor.y,
@@ -305,7 +305,7 @@ class Rect(Record):
             l=self.l * factor.x,
         ).translate(self.center * (Vec2(1, 1) - factor))
 
-    def expand(self, expansion: Vec2, /) -> Self:
+    def expand(self, expansion: Vec2, /) -> Rect:
         """Expand the rectangle by the given amount and return a new rectangle."""
         return Rect(
             t=self.t + expansion.y,
@@ -314,7 +314,7 @@ class Rect(Record):
             l=self.l - expansion.x,
         )
 
-    def shrink(self, shrinkage: Vec2, /) -> Self:
+    def shrink(self, shrinkage: Vec2, /) -> Rect:
         """Shrink the rectangle by the given amount and return a new rectangle."""
         return Rect(
             t=self.t - shrinkage.y,

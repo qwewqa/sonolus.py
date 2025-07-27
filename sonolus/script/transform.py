@@ -1,5 +1,6 @@
+from __future__ import annotations
+
 from math import cos, sin
-from typing import Self
 
 from sonolus.script.interval import lerp, remap
 from sonolus.script.quad import Quad, QuadLike
@@ -27,7 +28,7 @@ class Transform2d(Record):
     a22: float
 
     @classmethod
-    def new(cls) -> Self:
+    def new(cls) -> Transform2d:
         """Create a new identity transform.
 
         Returns:
@@ -56,7 +57,7 @@ class Transform2d(Record):
         b20: float,
         b21: float,
         b22: float,
-    ) -> Self:
+    ) -> Transform2d:
         # Multiply by b on the left (b @ a)
         a00 = self.a00 * b00 + self.a10 * b01 + self.a20 * b02
         a01 = self.a01 * b00 + self.a11 * b01 + self.a21 * b02
@@ -79,7 +80,7 @@ class Transform2d(Record):
             a22,
         )
 
-    def translate(self, translation: Vec2, /) -> Self:
+    def translate(self, translation: Vec2, /) -> Transform2d:
         """Translate along the x and y axes and return a new transform.
 
         Args:
@@ -100,7 +101,7 @@ class Transform2d(Record):
             1,
         )
 
-    def scale(self, factor: Vec2, /) -> Self:
+    def scale(self, factor: Vec2, /) -> Transform2d:
         """Scale about the origin and return a new transform.
 
         Args:
@@ -121,7 +122,7 @@ class Transform2d(Record):
             1,
         )
 
-    def scale_about(self, factor: Vec2, /, pivot: Vec2) -> Self:
+    def scale_about(self, factor: Vec2, /, pivot: Vec2) -> Transform2d:
         """Scale about the pivot and return a new transform.
 
         Args:
@@ -133,7 +134,7 @@ class Transform2d(Record):
         """
         return self.translate(-pivot).scale(factor).translate(pivot)
 
-    def rotate(self, angle: float, /) -> Self:
+    def rotate(self, angle: float, /) -> Transform2d:
         """Rotate about the origin and return a new transform.
 
         Args:
@@ -156,7 +157,7 @@ class Transform2d(Record):
             1,
         )
 
-    def rotate_about(self, angle: float, /, pivot: Vec2) -> Self:
+    def rotate_about(self, angle: float, /, pivot: Vec2) -> Transform2d:
         """Rotate about the pivot and return a new transform.
 
         Args:
@@ -168,7 +169,7 @@ class Transform2d(Record):
         """
         return self.translate(-pivot).rotate(angle).translate(pivot)
 
-    def shear_x(self, m: float, /) -> Self:
+    def shear_x(self, m: float, /) -> Transform2d:
         """Shear along the x-axis and return a new transform.
 
         Args:
@@ -189,7 +190,7 @@ class Transform2d(Record):
             1,
         )
 
-    def shear_y(self, m: float, /) -> Self:
+    def shear_y(self, m: float, /) -> Transform2d:
         """Shear along the y-axis and return a new transform.
 
         Args:
@@ -210,7 +211,7 @@ class Transform2d(Record):
             1,
         )
 
-    def simple_perspective_x(self, x: float, /) -> Self:
+    def simple_perspective_x(self, x: float, /) -> Transform2d:
         """Apply perspective along the x-axis with vanishing point at the given x coordinate and return a new transform.
 
         Args:
@@ -231,7 +232,7 @@ class Transform2d(Record):
             1,
         )
 
-    def simple_perspective_y(self, y: float, /) -> Self:
+    def simple_perspective_y(self, y: float, /) -> Transform2d:
         """Apply perspective along the y-axis with vanishing point at the given y coordinate and return a new transform.
 
         Args:
@@ -252,7 +253,7 @@ class Transform2d(Record):
             1,
         )
 
-    def perspective_x(self, foreground_x: float, vanishing_point: Vec2, /) -> Self:
+    def perspective_x(self, foreground_x: float, vanishing_point: Vec2, /) -> Transform2d:
         """Apply a perspective transformation along the x-axis and return a new transform.
 
         Args:
@@ -268,7 +269,7 @@ class Transform2d(Record):
             .translate(Vec2(foreground_x, 0))
         )
 
-    def perspective_y(self, foreground_y: float, vanishing_point: Vec2, /) -> Self:
+    def perspective_y(self, foreground_y: float, vanishing_point: Vec2, /) -> Transform2d:
         """Apply a perspective transformation along the y-axis and return a new transform.
 
         Args:
@@ -284,7 +285,7 @@ class Transform2d(Record):
             .translate(Vec2(0, foreground_y))
         )
 
-    def inverse_perspective_x(self, foreground_x: float, vanishing_point: Vec2, /) -> Self:
+    def inverse_perspective_x(self, foreground_x: float, vanishing_point: Vec2, /) -> Transform2d:
         """Apply the inverse of a perspective transformation along the x-axis and return a new transform.
 
         Args:
@@ -300,7 +301,7 @@ class Transform2d(Record):
             .simple_perspective_x(-vanishing_point.x + foreground_x)
         )
 
-    def inverse_perspective_y(self, foreground_y: float, vanishing_point: Vec2, /) -> Self:
+    def inverse_perspective_y(self, foreground_y: float, vanishing_point: Vec2, /) -> Transform2d:
         """Apply the inverse of a perspective transformation along the y-axis and return a new transform.
 
         Args:
@@ -316,7 +317,7 @@ class Transform2d(Record):
             .simple_perspective_y(-vanishing_point.y + foreground_y)
         )
 
-    def normalize(self) -> Self:
+    def normalize(self) -> Transform2d:
         """Normalize the transform to have a 1 in the bottom right corner and return a new transform.
 
         This may fail in some special cases involving perspective transformations where the bottom right corner is 0.
@@ -336,7 +337,7 @@ class Transform2d(Record):
             1,
         )
 
-    def compose(self, other: Self, /) -> Self:
+    def compose(self, other: Transform2d, /) -> Transform2d:
         """Compose with another transform which is applied after this transform and return a new transform.
 
         Args:
@@ -357,7 +358,7 @@ class Transform2d(Record):
             other.a22,
         )
 
-    def compose_before(self, other: Self, /) -> Self:
+    def compose_before(self, other: Transform2d, /) -> Transform2d:
         """Compose with another transform which is applied before this transform and return a new transform.
 
         Args:
@@ -412,7 +413,7 @@ class InvertibleTransform2d(Record):
     inverse: Transform2d
 
     @classmethod
-    def new(cls) -> Self:
+    def new(cls) -> InvertibleTransform2d:
         """Create a new identity transform.
 
         Returns:
@@ -423,7 +424,7 @@ class InvertibleTransform2d(Record):
             inverse=Transform2d.new(),
         )
 
-    def translate(self, translation: Vec2, /) -> Self:
+    def translate(self, translation: Vec2, /) -> InvertibleTransform2d:
         """Translate along the x and y axes and return a new transform.
 
         Args:
@@ -437,7 +438,7 @@ class InvertibleTransform2d(Record):
             inverse=Transform2d.new().translate(-translation).compose(self.inverse),
         )
 
-    def scale(self, factor: Vec2, /) -> Self:
+    def scale(self, factor: Vec2, /) -> InvertibleTransform2d:
         """Scale about the origin and return a new transform.
 
         Args:
@@ -451,7 +452,7 @@ class InvertibleTransform2d(Record):
             inverse=Transform2d.new().scale(Vec2.one() / factor).compose(self.inverse),
         )
 
-    def scale_about(self, factor: Vec2, /, pivot: Vec2) -> Self:
+    def scale_about(self, factor: Vec2, /, pivot: Vec2) -> InvertibleTransform2d:
         """Scale about the pivot and return a new transform.
 
         Args:
@@ -466,7 +467,7 @@ class InvertibleTransform2d(Record):
             inverse=Transform2d.new().scale_about(Vec2.one() / factor, pivot).compose(self.inverse),
         )
 
-    def rotate(self, angle: float, /) -> Self:
+    def rotate(self, angle: float, /) -> InvertibleTransform2d:
         """Rotate about the origin and return a new transform.
 
         Args:
@@ -480,7 +481,7 @@ class InvertibleTransform2d(Record):
             inverse=Transform2d.new().rotate(-angle).compose(self.inverse),
         )
 
-    def rotate_about(self, angle: float, /, pivot: Vec2) -> Self:
+    def rotate_about(self, angle: float, /, pivot: Vec2) -> InvertibleTransform2d:
         """Rotate about the pivot and return a new transform.
 
         Args:
@@ -495,7 +496,7 @@ class InvertibleTransform2d(Record):
             inverse=Transform2d.new().rotate_about(-angle, pivot).compose(self.inverse),
         )
 
-    def shear_x(self, m: float, /) -> Self:
+    def shear_x(self, m: float, /) -> InvertibleTransform2d:
         """Shear along the x-axis and return a new transform.
 
         Args:
@@ -509,7 +510,7 @@ class InvertibleTransform2d(Record):
             inverse=Transform2d.new().shear_x(-m).compose(self.inverse),
         )
 
-    def shear_y(self, m: float, /) -> Self:
+    def shear_y(self, m: float, /) -> InvertibleTransform2d:
         """Shear along the y-axis and return a new transform.
 
         Args:
@@ -523,7 +524,7 @@ class InvertibleTransform2d(Record):
             inverse=Transform2d.new().shear_y(-m).compose(self.inverse),
         )
 
-    def simple_perspective_x(self, x: float, /) -> Self:
+    def simple_perspective_x(self, x: float, /) -> InvertibleTransform2d:
         """Apply perspective along the x-axis with vanishing point at the given x coordinate and return a new transform.
 
         Args:
@@ -537,7 +538,7 @@ class InvertibleTransform2d(Record):
             inverse=Transform2d.new().simple_perspective_x(-x).compose(self.inverse),
         )
 
-    def simple_perspective_y(self, y: float, /) -> Self:
+    def simple_perspective_y(self, y: float, /) -> InvertibleTransform2d:
         """Apply perspective along the y-axis with vanishing point at the given y coordinate and return a new transform.
 
         Args:
@@ -551,7 +552,7 @@ class InvertibleTransform2d(Record):
             inverse=Transform2d.new().simple_perspective_y(-y).compose(self.inverse),
         )
 
-    def perspective_x(self, foreground_x: float, vanishing_point: Vec2, /) -> Self:
+    def perspective_x(self, foreground_x: float, vanishing_point: Vec2, /) -> InvertibleTransform2d:
         """Apply a perspective transformation along the x-axis and return a new transform.
 
         Args:
@@ -566,7 +567,7 @@ class InvertibleTransform2d(Record):
             inverse=Transform2d.new().inverse_perspective_x(foreground_x, vanishing_point).compose(self.inverse),
         )
 
-    def perspective_y(self, foreground_y: float, vanishing_point: Vec2, /) -> Self:
+    def perspective_y(self, foreground_y: float, vanishing_point: Vec2, /) -> InvertibleTransform2d:
         """Apply a perspective transformation along the y-axis and return a new transform.
 
         Args:
@@ -581,7 +582,7 @@ class InvertibleTransform2d(Record):
             inverse=Transform2d.new().inverse_perspective_y(foreground_y, vanishing_point).compose(self.inverse),
         )
 
-    def normalize(self) -> Self:
+    def normalize(self) -> InvertibleTransform2d:
         """Normalize the transform to have a 1 in the bottom right corner and return a new transform.
 
         This may fail in some special cases involving perspective transformations where the bottom right corner is 0.
@@ -594,7 +595,7 @@ class InvertibleTransform2d(Record):
             inverse=self.inverse.normalize(),
         )
 
-    def compose(self, other: Self, /) -> Self:
+    def compose(self, other: InvertibleTransform2d, /) -> InvertibleTransform2d:
         """Compose with another invertible transform which is applied after this transform and return a new transform.
 
         Args:
@@ -608,7 +609,7 @@ class InvertibleTransform2d(Record):
             inverse=other.inverse.compose(self.inverse),
         )
 
-    def compose_before(self, other: Self, /) -> Self:
+    def compose_before(self, other: InvertibleTransform2d, /) -> InvertibleTransform2d:
         """Compose with another invertible transform which is applied before this transform and return a new transform.
 
         Args:

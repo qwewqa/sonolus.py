@@ -2,6 +2,10 @@ from enum import StrEnum
 
 
 class Op(StrEnum):
+    side_effects: bool
+    pure: bool
+    control_flow: bool
+
     def __new__(cls, name: str, side_effects: bool, pure: bool, control_flow: bool):
         obj = str.__new__(cls, name)
         obj._value_ = name

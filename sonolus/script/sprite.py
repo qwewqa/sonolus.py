@@ -267,7 +267,7 @@ def sprite(name: str) -> Any:
     return SkinSprite(name)
 
 
-type Skin = NewType("Skin", Any)
+type Skin = NewType("Skin", Any)  # type: ignore
 
 
 class RenderMode(StrEnum):

@@ -4,7 +4,7 @@ from collections.abc import Sequence
 from dataclasses import dataclass
 from os import PathLike
 from pathlib import Path
-from typing import ClassVar, Self, TypedDict
+from typing import ClassVar, TypedDict
 
 from sonolus.backend.optimize import optimize
 from sonolus.backend.optimize.passes import CompilerPass
@@ -32,7 +32,7 @@ class Project:
         self.levels = levels or []
         self.resources = Path(resources or "resources")
 
-    def with_levels(self, levels: list[Level]) -> Self:
+    def with_levels(self, levels: list[Level]) -> Project:
         """Create a new project with the specified levels.
 
         Args:
