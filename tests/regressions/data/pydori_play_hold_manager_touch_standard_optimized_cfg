@@ -18,7 +18,7 @@
 4:
   goto 8 if Not(Less(10000[1], RuntimeUpdate[3])) else 5
 5:
-  10000[2] <- Add(0.0, Multiply(Add(10000[1], Multiply(Less(10000[1], 0.0), RuntimeUpdate[3])), 15.0))
+  10000[2] <- Multiply(Add(10000[1], Multiply(Less(10000[1], 0.0), RuntimeUpdate[3])), 15.0)
   10000[1] <- Add(10000[1], 1.0)
   10000[3] <- 1002.0[10000[2]]
   goto 2 if NotEqual(10000[3], 10000[0]) else 6

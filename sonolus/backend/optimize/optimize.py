@@ -11,6 +11,7 @@ from sonolus.backend.optimize.simplify import (
     CoalesceFlow,
     CoalesceSmallConditionalBlocks,
     NormalizeSwitch,
+    RemoveRedundantArguments,
     RewriteToSwitch,
 )
 from sonolus.backend.optimize.ssa import FromSSA, ToSSA
@@ -43,6 +44,7 @@ STANDARD_PASSES = (
     InlineVars(),
     CoalesceFlow(),
     SparseConditionalConstantPropagation(),
+    RemoveRedundantArguments(),
     DeadCodeElimination(),
     CoalesceFlow(),
     RewriteToSwitch(),

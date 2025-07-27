@@ -230,6 +230,48 @@ class NormalizeSwitch(CompilerPass):
         return offset, stride
 
 
+class RemoveRedundantArguments(CompilerPass):
+    def run(self, entry: BasicBlock, config: OptimizerConfig) -> BasicBlock:
+        for block in traverse_cfg_preorder(entry):
+            block.statements = [self.update_statement(stmt) for stmt in block.statements]
+            block.test = self.update_statement(block.test)
+        return entry
+
+    def update_statement(self, stmt):
+        match stmt:
+            case IRPureInstr() | IRPureInstr():
+                op = stmt.op
+                args = stmt.args
+                match op:
+                    case Op.Add:
+                        args = [arg for arg in args if not (isinstance(arg, IRConst) and arg.value == 0)]
+                        if len(args) == 1:
+                            return args[0]
+                    case Op.Subtract:
+                        args = [
+                            args[0],
+                            *(arg for arg in args[1:] if not (isinstance(arg, IRConst) and arg.value == 0)),
+                        ]
+                        if len(args) == 1:
+                            return args[0]
+                    case Op.Multiply:
+                        args = [arg for arg in args if not (isinstance(arg, IRConst) and arg.value == 1)]
+                        if len(args) == 1:
+                            return args[0]
+                    case Op.Divide:
+                        args = [
+                            args[0],
+                            *(arg for arg in args[1:] if not (isinstance(arg, IRConst) and arg.value == 1)),
+                        ]
+                        if len(args) == 1:
+                            return args[0]
+                return type(stmt)(op=op, args=[self.update_statement(arg) for arg in args])
+            case IRSet(place=place, value=value):
+                return IRSet(place=place, value=self.update_statement(value))
+            case _:
+                return stmt
+
+
 class RenumberVars(CompilerPass):
     def run(self, entry: BasicBlock, config: OptimizerConfig) -> BasicBlock:
         numbers = {}
