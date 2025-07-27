@@ -696,6 +696,8 @@
       
         
       
+        
+      
     
     
     
@@ -1159,39 +1161,6 @@
     </span>
   </a>
   
-    <nav class="md-nav" aria-label=" SonolusIterator">
-      <ul class="md-nav__list">
-        
-          <li class="md-nav__item">
-  <a href="#sonolus.script.iterator.SonolusIterator.advance" class="md-nav__link">
-    <span class="md-ellipsis">
-      <code class="doc-symbol doc-symbol-toc doc-symbol-method"></code>&nbsp;advance
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#sonolus.script.iterator.SonolusIterator.get" class="md-nav__link">
-    <span class="md-ellipsis">
-      <code class="doc-symbol doc-symbol-toc doc-symbol-method"></code>&nbsp;get
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#sonolus.script.iterator.SonolusIterator.has_next" class="md-nav__link">
-    <span class="md-ellipsis">
-      <code class="doc-symbol doc-symbol-toc doc-symbol-method"></code>&nbsp;has_next
-    </span>
-  </a>
-  
-</li>
-        
-      </ul>
-    </nav>
-  
 </li>
       
     </ul>
@@ -1216,6 +1185,29 @@
   
   <span class="md-ellipsis">
     sonolus.script.level
+    
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../sonolus.script.maybe/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    sonolus.script.maybe
     
   </span>
   
@@ -1666,39 +1658,6 @@
     </span>
   </a>
   
-    <nav class="md-nav" aria-label=" SonolusIterator">
-      <ul class="md-nav__list">
-        
-          <li class="md-nav__item">
-  <a href="#sonolus.script.iterator.SonolusIterator.advance" class="md-nav__link">
-    <span class="md-ellipsis">
-      <code class="doc-symbol doc-symbol-toc doc-symbol-method"></code>&nbsp;advance
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#sonolus.script.iterator.SonolusIterator.get" class="md-nav__link">
-    <span class="md-ellipsis">
-      <code class="doc-symbol doc-symbol-toc doc-symbol-method"></code>&nbsp;get
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#sonolus.script.iterator.SonolusIterator.has_next" class="md-nav__link">
-    <span class="md-ellipsis">
-      <code class="doc-symbol doc-symbol-toc doc-symbol-method"></code>&nbsp;has_next
-    </span>
-  </a>
-  
-</li>
-        
-      </ul>
-    </nav>
-  
 </li>
       
     </ul>
@@ -1763,20 +1722,13 @@
 
         <p>Base class for Sonolus iterators.</p>
 <p>This class is used to define custom iterators that can be used in Sonolus.py.</p>
-<p>Inheritors must implement the <code class="highlight"><span class="n">has_next</span></code>, <code class="highlight"><span class="n">get</span></code>, and <code class="highlight"><span class="n">advance</span></code> methods.
-The <code class="highlight"><span class="fm">__next__</span></code> and <code class="highlight"><span class="fm">__iter__</span></code> methods are implemented by default.</p>
+<p>Inheritors must implement the <code class="highlight"><span class="nb">next</span></code> method, which should return a <code class="highlight"><span class="n">Maybe</span><span class="p">[</span><span class="n">T</span><span class="p">]</span></code>.</p>
 
 
 <details class="usage" open>
   <summary>Usage</summary>
   <div class="highlight"><pre><span></span><code><span class="k">class</span><span class="w"> </span><span class="nc">MyIterator</span><span class="p">(</span><span class="n">Record</span><span class="p">,</span> <span class="n">SonolusIterator</span><span class="p">):</span>
-    <span class="k">def</span><span class="w"> </span><span class="nf">has_next</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">bool</span><span class="p">:</span>
-        <span class="o">...</span>
-
-    <span class="k">def</span><span class="w"> </span><span class="nf">get</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Any</span><span class="p">:</span>
-        <span class="o">...</span>
-
-    <span class="k">def</span><span class="w"> </span><span class="nf">advance</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">next</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Maybe</span><span class="p">[</span><span class="n">T</span><span class="p">]:</span>
         <span class="o">...</span>
 </code></pre></div>
 </details>
@@ -1798,75 +1750,6 @@ The <code class="highlight"><span class="fm">__next__</span></code> and <code cl
 
 
 
-
-<div class="doc doc-object doc-function">
-
-
-<h3 id="sonolus.script.iterator.SonolusIterator.advance" class="doc doc-heading">
-<code class="doc-symbol doc-symbol-heading doc-symbol-method"></code>            <code class="highlight language-python"><span class="n">advance</span><span class="p">()</span></code>
-
-  <span class="doc doc-labels">
-      <small class="doc doc-label doc-label-abstractmethod"><code>abstractmethod</code></small>
-  </span>
-
-<a href="#sonolus.script.iterator.SonolusIterator.advance" class="headerlink" title="Permanent link">&para;</a></h3>
-
-
-    <div class="doc doc-contents ">
-
-        <p>Advance the iterator to the next element.</p>
-<p>Must not be called if <code class="highlight"><span class="n">has_next</span></code> returns <code class="highlight"><span class="kc">False</span></code>.</p>
-
-
-    </div>
-
-</div>
-
-<div class="doc doc-object doc-function">
-
-
-<h3 id="sonolus.script.iterator.SonolusIterator.get" class="doc doc-heading">
-<code class="doc-symbol doc-symbol-heading doc-symbol-method"></code>            <code class="highlight language-python"><span class="n">get</span><span class="p">()</span></code>
-
-  <span class="doc doc-labels">
-      <small class="doc doc-label doc-label-abstractmethod"><code>abstractmethod</code></small>
-  </span>
-
-<a href="#sonolus.script.iterator.SonolusIterator.get" class="headerlink" title="Permanent link">&para;</a></h3>
-
-
-    <div class="doc doc-contents ">
-
-        <p>Return the next element of the iterator.</p>
-<p>May be called multiple times before calling <code class="highlight"><span class="n">advance</span></code>.</p>
-<p>Must not be called if <code class="highlight"><span class="n">has_next</span></code> returns <code class="highlight"><span class="kc">False</span></code>.</p>
-
-
-    </div>
-
-</div>
-
-<div class="doc doc-object doc-function">
-
-
-<h3 id="sonolus.script.iterator.SonolusIterator.has_next" class="doc doc-heading">
-<code class="doc-symbol doc-symbol-heading doc-symbol-method"></code>            <code class="highlight language-python"><span class="n">has_next</span><span class="p">()</span></code>
-
-  <span class="doc doc-labels">
-      <small class="doc doc-label doc-label-abstractmethod"><code>abstractmethod</code></small>
-  </span>
-
-<a href="#sonolus.script.iterator.SonolusIterator.has_next" class="headerlink" title="Permanent link">&para;</a></h3>
-
-
-    <div class="doc doc-contents ">
-
-        <p>Return whether the iterator has more elements.</p>
-
-
-    </div>
-
-</div>
 
 
 

@@ -696,6 +696,8 @@
       
         
       
+        
+      
     
     
     
@@ -894,6 +896,15 @@
   <a href="#sonolus.script.array" class="md-nav__link">
     <span class="md-ellipsis">
       <code class="doc-symbol doc-symbol-toc doc-symbol-module"></code>&nbsp;array
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#sonolus.script.array.Dim" class="md-nav__link">
+    <span class="md-ellipsis">
+      <code class="doc-symbol doc-symbol-toc doc-symbol-attribute"></code>&nbsp;Dim
     </span>
   </a>
   
@@ -1365,6 +1376,29 @@
   
   
     <li class="md-nav__item">
+      <a href="../sonolus.script.maybe/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    sonolus.script.maybe
+    
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
       <a href="../sonolus.script.metadata/" class="md-nav__link">
         
   
@@ -1792,6 +1826,15 @@
 </li>
       
         <li class="md-nav__item">
+  <a href="#sonolus.script.array.Dim" class="md-nav__link">
+    <span class="md-ellipsis">
+      <code class="doc-symbol doc-symbol-toc doc-symbol-attribute"></code>&nbsp;Dim
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
   <a href="#sonolus.script.array.Array" class="md-nav__link">
     <span class="md-ellipsis">
       <code class="doc-symbol doc-symbol-toc doc-symbol-class"></code>&nbsp;Array
@@ -2011,6 +2054,28 @@
 
 
 
+<div class="doc doc-object doc-attribute">
+
+
+
+<h2 id="sonolus.script.array.Dim" class="doc doc-heading">
+<code class="doc-symbol doc-symbol-heading doc-symbol-attribute"></code>            <code class="highlight language-python"><span class="n">Dim</span> <span class="o">=</span> <span class="n">Literal</span></code>
+
+  <span class="doc doc-labels">
+      <small class="doc doc-label doc-label-module-attribute"><code>module-attribute</code></small>
+  </span>
+
+<a href="#sonolus.script.array.Dim" class="headerlink" title="Permanent link">&para;</a></h2>
+
+
+    <div class="doc doc-contents ">
+
+        <p>Shorthand for <code class="highlight"><span class="n">Literal</span></code> intended for use in array dimensions for type checker compatibility.</p>
+
+    </div>
+
+</div>
+
 
 <div class="doc doc-object doc-class">
 
@@ -2036,7 +2101,8 @@
   <div class="highlight"><pre><span></span><code><span class="n">array_1</span> <span class="o">=</span> <span class="n">Array</span><span class="p">(</span><span class="mi">1</span><span class="p">,</span> <span class="mi">2</span><span class="p">,</span> <span class="mi">3</span><span class="p">)</span>
 <span class="n">array_2</span> <span class="o">=</span> <span class="n">Array</span><span class="p">[</span><span class="nb">int</span><span class="p">,</span> <span class="mi">0</span><span class="p">]()</span>
 <span class="n">array_3</span> <span class="o">=</span> <span class="o">+</span><span class="n">Array</span><span class="p">[</span><span class="nb">int</span><span class="p">,</span> <span class="mi">3</span><span class="p">]</span>  <span class="c1"># Create a zero-initialized array</span>
-<span class="n">array_4</span> <span class="o">=</span> <span class="o">+</span><span class="n">array_1</span>  <span class="c1"># Create a copy of array_1</span>
+<span class="n">array_4</span> <span class="o">=</span> <span class="o">+</span><span class="n">Array</span><span class="p">[</span><span class="nb">int</span><span class="p">,</span> <span class="n">Dim</span><span class="p">[</span><span class="mi">3</span><span class="p">]]</span>  <span class="c1"># Alternative syntax for compliance with type checkers</span>
+<span class="n">array_5</span> <span class="o">=</span> <span class="o">+</span><span class="n">array_1</span>  <span class="c1"># Create a copy of array_1</span>
 </code></pre></div>
 </details>
 
@@ -2670,7 +2736,7 @@
 
     <div class="doc doc-contents ">
             <p class="doc doc-class-bases">
-              Bases: <code><span title="type">type</span></code></p>
+              Bases: <code><span title="abc.ABCMeta">ABCMeta</span></code></p>
 
 
 

@@ -433,16 +433,6 @@
     <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
       
         <li class="md-nav__item">
-  <a href="#features" class="md-nav__link">
-    <span class="md-ellipsis">
-      Features
-    </span>
-  </a>
-  
-    <nav class="md-nav" aria-label="Features">
-      <ul class="md-nav__list">
-        
-          <li class="md-nav__item">
   <a href="#language" class="md-nav__link">
     <span class="md-ellipsis">
       Language
@@ -492,8 +482,8 @@
     </nav>
   
 </li>
-        
-          <li class="md-nav__item">
+      
+        <li class="md-nav__item">
   <a href="#types" class="md-nav__link">
     <span class="md-ellipsis">
       Types
@@ -531,6 +521,15 @@
 </li>
         
           <li class="md-nav__item">
+  <a href="#operations" class="md-nav__link">
+    <span class="md-ellipsis">
+      Operations
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
   <a href="#other-types" class="md-nav__link">
     <span class="md-ellipsis">
       Other Types
@@ -543,18 +542,13 @@
     </nav>
   
 </li>
-        
-          <li class="md-nav__item">
+      
+        <li class="md-nav__item">
   <a href="#modules" class="md-nav__link">
     <span class="md-ellipsis">
       Modules
     </span>
   </a>
-  
-</li>
-        
-      </ul>
-    </nav>
   
 </li>
       
@@ -801,6 +795,8 @@
       
         
           
+        
+      
         
       
         
@@ -1314,6 +1310,29 @@
   
   
     <li class="md-nav__item">
+      <a href="../reference/sonolus.script.maybe/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    sonolus.script.maybe
+    
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
       <a href="../reference/sonolus.script.metadata/" class="md-nav__link">
         
   
@@ -1732,16 +1751,6 @@
     <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
       
         <li class="md-nav__item">
-  <a href="#features" class="md-nav__link">
-    <span class="md-ellipsis">
-      Features
-    </span>
-  </a>
-  
-    <nav class="md-nav" aria-label="Features">
-      <ul class="md-nav__list">
-        
-          <li class="md-nav__item">
   <a href="#language" class="md-nav__link">
     <span class="md-ellipsis">
       Language
@@ -1791,8 +1800,8 @@
     </nav>
   
 </li>
-        
-          <li class="md-nav__item">
+      
+        <li class="md-nav__item">
   <a href="#types" class="md-nav__link">
     <span class="md-ellipsis">
       Types
@@ -1830,6 +1839,15 @@
 </li>
         
           <li class="md-nav__item">
+  <a href="#operations" class="md-nav__link">
+    <span class="md-ellipsis">
+      Operations
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
   <a href="#other-types" class="md-nav__link">
     <span class="md-ellipsis">
       Other Types
@@ -1842,18 +1860,13 @@
     </nav>
   
 </li>
-        
-          <li class="md-nav__item">
+      
+        <li class="md-nav__item">
   <a href="#modules" class="md-nav__link">
     <span class="md-ellipsis">
       Modules
     </span>
   </a>
-  
-</li>
-        
-      </ul>
-    </nav>
   
 </li>
       
@@ -1889,13 +1902,12 @@
 <p>Sonolus.py is a Python library for creating Sonolus engines. This page provides an overview of the key functionality 
 available in the library. For more detailed information, see the <a href="../concepts/">Concepts</a> and 
 <a href="../reference/">Reference</a> sections.</p>
-<h2 id="features">Features<a class="headerlink" href="#features" title="Permanent link">&para;</a></h2>
+<h2 id="language">Language<a class="headerlink" href="#language" title="Permanent link">&para;</a></h2>
 <p>Sonolus.py functions by compiling Python code into Sonolus nodes. As such, it supports a subset of Python including
 most syntax and a portion of the standard library. Additionally, Sonolus.py provides its own library of types and
 functions that are specifically designed for use in Sonolus engines.</p>
-<h3 id="language">Language<a class="headerlink" href="#language" title="Permanent link">&para;</a></h3>
-<h4 id="syntax">Syntax<a class="headerlink" href="#syntax" title="Permanent link">&para;</a></h4>
-<p>Most Python syntax is supported, but there are a few limitations:</p>
+<h3 id="syntax">Syntax<a class="headerlink" href="#syntax" title="Permanent link">&para;</a></h3>
+<p>Most Python syntax is supported, but there are a few limitations. The primary restrictions are:</p>
 <ul>
 <li>Destructuring assignment with the <code class="highlight"><span class="o">*</span></code> operator is unsupported.</li>
 <li>Sequence (list and array) <code class="highlight"><span class="k">match</span></code> patterns with the <code class="highlight"><span class="o">*</span></code> operator are unsupported.</li>
@@ -1904,7 +1916,7 @@ functions that are specifically designed for use in Sonolus engines.</p>
 <li>The <code class="highlight"><span class="k">global</span></code> and <code class="highlight"><span class="k">nonlocal</span></code> keywords are unsupported.</li>
 <li>Exception related statements (<code class="highlight"><span class="k">try</span></code>, <code class="highlight"><span class="k">except</span></code>, <code class="highlight"><span class="k">finally</span></code>, <code class="highlight"><span class="k">raise</span></code>) are unsupported.</li>
 </ul>
-<h4 id="compile-time-evaluation">Compile Time Evaluation<a class="headerlink" href="#compile-time-evaluation" title="Permanent link">&para;</a></h4>
+<h3 id="compile-time-evaluation">Compile Time Evaluation<a class="headerlink" href="#compile-time-evaluation" title="Permanent link">&para;</a></h3>
 <p>Sonolus.py will evaluate some expressions at compile time such as basic arithmetic operations on constants,
 boolean logical operations (<code class="highlight"><span class="ow">and</span></code>, <code class="highlight"><span class="ow">or</span></code>, <code class="highlight"><span class="ow">not</span></code>) on constants, and type checks (<code class="highlight"><span class="nb">isinstance</span></code>, <code class="highlight"><span class="nb">issubclass</span></code>).</p>
 <p>In control flow constructs like <code class="highlight"><span class="k">if</span></code> and <code class="highlight"><span class="k">match</span></code>, Sonolus.py may determine some branches to be unreachable at compile 
@@ -1917,7 +1929,7 @@ and eliminate them without evaluating them. This allows code like the following 
 <span class="k">else</span><span class="p">:</span>
     <span class="n">debug_log</span><span class="p">(</span><span class="n">a</span><span class="p">)</span>
 </code></pre></div>
-<h4 id="variables">Variables<a class="headerlink" href="#variables" title="Permanent link">&para;</a></h4>
+<h3 id="variables">Variables<a class="headerlink" href="#variables" title="Permanent link">&para;</a></h3>
 <p>Numeric (<code class="highlight"><span class="nb">int</span></code>, <code class="highlight"><span class="nb">float</span></code>, <code class="highlight"><span class="nb">bool</span></code>) variables are fully supported and can be freely assigned and modified.</p>
 <p>All other variables have the restriction that if the compiler finds multiple possible values for a variable, it may
 not be accessed. For example, the following code will not compile:</p>
@@ -1928,7 +1940,7 @@ not be accessed. For example, the following code will not compile:</p>
 <span class="c1"># This will not compile because `a` could have been defined in either branch.</span>
 <span class="n">debug_log</span><span class="p">(</span><span class="n">a</span><span class="o">.</span><span class="n">x</span><span class="p">)</span>
 </code></pre></div>
-<h4 id="function-returns">Function Returns<a class="headerlink" href="#function-returns" title="Permanent link">&para;</a></h4>
+<h3 id="function-returns">Function Returns<a class="headerlink" href="#function-returns" title="Permanent link">&para;</a></h3>
 <p>Similar to variables, functions returning <code class="highlight"><span class="nb">int</span></code>, <code class="highlight"><span class="nb">float</span></code>, or <code class="highlight"><span class="nb">bool</span></code> can have any number of return statements. Functions
 returning <code class="highlight"><span class="kc">None</span></code> may also have any number of <code class="highlight"><span class="k">return</span></code> or <code class="highlight"><span class="k">return</span> <span class="kc">None</span></code> statements.</p>
 <p>Functions returning any other type must have exactly one <code class="highlight"><span class="k">return</span></code> statement, and it must be the only exit point of the 
@@ -1942,42 +1954,84 @@ For example, the following code will compile successfully:</p>
 
 <span class="n">fn</span><span class="p">(</span><span class="mi">123</span><span class="p">)</span>
 </code></pre></div>
-<h3 id="types">Types<a class="headerlink" href="#types" title="Permanent link">&para;</a></h3>
-<h4 id="numbers">Numbers<a class="headerlink" href="#numbers" title="Permanent link">&para;</a></h4>
+<h2 id="types">Types<a class="headerlink" href="#types" title="Permanent link">&para;</a></h2>
+<h3 id="numbers">Numbers<a class="headerlink" href="#numbers" title="Permanent link">&para;</a></h3>
 <p>Sonolus.py supports <code class="highlight"><span class="nb">int</span></code>, <code class="highlight"><span class="nb">float</span></code>, and <code class="highlight"><span class="nb">bool</span></code> types and most of the standard operations such as mathematical operations
 (<code class="highlight"><span class="o">+</span></code>, <code class="highlight"><span class="o">-</span></code>, <code class="highlight"><span class="o">*</span></code>, <code class="highlight"><span class="o">/</span></code>, <code class="highlight"><span class="o">//</span></code>, <code class="highlight"><span class="o">%</span></code>), comparisons (<code class="highlight"><span class="o">&lt;</span></code>, <code class="highlight"><span class="o">&lt;=</span></code>, <code class="highlight"><span class="o">&gt;</span></code>, <code class="highlight"><span class="o">&gt;=</span></code>, <code class="highlight"><span class="o">==</span></code>, <code class="highlight"><span class="o">!=</span></code>), and boolean operations 
 (<code class="highlight"><span class="ow">and</span></code>, <code class="highlight"><span class="ow">or</span></code>, <code class="highlight"><span class="ow">not</span></code>).</p>
-<h4 id="record">Record<a class="headerlink" href="#record" title="Permanent link">&para;</a></h4>
-<p><a href="../reference/sonolus.script.record/"><code class="highlight"><span class="n">Record</span></code></a> is the main way to define custom types in Sonolus.py. It functions similarly to a data class and
-provides a way to define a type with named fields:</p>
+<h3 id="record">Record<a class="headerlink" href="#record" title="Permanent link">&para;</a></h3>
+<p><a href="../reference/sonolus.script.record/"><code class="highlight"><span class="n">Record</span></code></a> is the main way to define custom types in Sonolus.py. 
+It functions similarly to a data class and provides a way to define a type with named fields:</p>
 <div class="highlight"><pre><span></span><code><span class="k">class</span><span class="w"> </span><span class="nc">MyRecord</span><span class="p">(</span><span class="n">Record</span><span class="p">):</span>
     <span class="n">a</span><span class="p">:</span> <span class="nb">int</span>
     <span class="n">b</span><span class="p">:</span> <span class="nb">float</span>
 
-<span class="n">my_record</span> <span class="o">=</span> <span class="n">MyRecord</span><span class="p">(</span><span class="mi">1</span><span class="p">,</span> <span class="n">b</span><span class="o">=</span><span class="mf">2.5</span><span class="p">)</span>
-<span class="n">my_zero_record</span> <span class="o">=</span> <span class="o">+</span><span class="n">MyRecord</span>  <span class="c1"># Short for MyRecord(0, 0.0)</span>
-<span class="n">my_record_copy</span> <span class="o">=</span> <span class="o">+</span><span class="n">my_record</span>  <span class="c1"># Create a copy of my_record with the same values</span>
-<span class="n">my_record</span><span class="o">.</span><span class="n">a</span> <span class="o">=</span> <span class="mi">123</span>  <span class="c1"># Modify a field of the record</span>
+<span class="n">record_1</span> <span class="o">=</span> <span class="n">MyRecord</span><span class="p">(</span><span class="mi">1</span><span class="p">,</span> <span class="n">b</span><span class="o">=</span><span class="mf">2.3</span><span class="p">)</span>
 </code></pre></div>
 <p>Records may also be generic:</p>
 <div class="highlight"><pre><span></span><code><span class="k">class</span><span class="w"> </span><span class="nc">MyGenericRecord</span><span class="p">[</span><span class="n">T</span><span class="p">](</span><span class="n">Record</span><span class="p">):</span>
     <span class="n">value</span><span class="p">:</span> <span class="n">T</span>
 
-<span class="n">my_generic_record</span> <span class="o">=</span> <span class="n">MyGenericRecord</span><span class="p">[</span><span class="nb">int</span><span class="p">](</span><span class="mi">42</span><span class="p">)</span>
-<span class="n">my_generic_record_2</span> <span class="o">=</span> <span class="n">MyGenericRecord</span><span class="p">(</span><span class="n">MyRecord</span><span class="p">(</span><span class="mi">1</span><span class="p">,</span> <span class="mf">3.5</span><span class="p">))</span>  <span class="c1"># Type arguments are inferred</span>
+<span class="n">record_1</span> <span class="o">=</span> <span class="n">MyGenericRecord</span><span class="p">[</span><span class="nb">int</span><span class="p">](</span><span class="mi">123</span><span class="p">)</span>
+<span class="n">record_2</span> <span class="o">=</span> <span class="n">MyGenericRecord</span><span class="p">(</span><span class="n">MyRecord</span><span class="p">(</span><span class="mi">4</span><span class="p">,</span> <span class="mf">5.6</span><span class="p">))</span>  <span class="c1"># Type arguments are inferred</span>
 </code></pre></div>
-<h4 id="array">Array<a class="headerlink" href="#array" title="Permanent link">&para;</a></h4>
-<p><a href="../reference/sonolus.script.array/"><code class="highlight"><span class="n">Array</span></code></a> is a type that represents a fixed-size array of elements of a specific type.</p>
-<div class="highlight"><pre><span></span><code><span class="n">my_array</span> <span class="o">=</span> <span class="n">Array</span><span class="p">[</span><span class="nb">int</span><span class="p">,</span> <span class="mi">3</span><span class="p">](</span><span class="mi">1</span><span class="p">,</span> <span class="mi">2</span><span class="p">,</span> <span class="mi">3</span><span class="p">)</span>
-<span class="n">my_array_2</span> <span class="o">=</span> <span class="n">Array</span><span class="p">(</span><span class="mi">4</span><span class="p">,</span> <span class="mi">5</span><span class="p">,</span> <span class="mi">6</span><span class="p">)</span>  <span class="c1"># Type arguments are inferred</span>
-<span class="n">my_zero_array</span> <span class="o">=</span> <span class="o">+</span><span class="n">Array</span><span class="p">[</span><span class="nb">int</span><span class="p">,</span> <span class="mi">3</span><span class="p">]</span>  <span class="c1"># Short for Array[int, 3](0, 0, 0)</span>
-<span class="n">my_array_copy</span> <span class="o">=</span> <span class="o">+</span><span class="n">my_array</span>  <span class="c1"># Create a copy of my_array with the same values</span>
-<span class="n">my_array</span><span class="p">[</span><span class="mi">2</span><span class="p">]</span> <span class="o">=</span> <span class="mi">10</span>  <span class="c1"># Modify an element of the array</span>
+<p>Record arguments are retained by reference, so modifying the original record will also modify the record in the array:</p>
+<div class="highlight"><pre><span></span><code><span class="n">record_1</span> <span class="o">=</span> <span class="n">MyRecord</span><span class="p">(</span><span class="mi">1</span><span class="p">,</span> <span class="mf">2.3</span><span class="p">)</span>
+<span class="n">record_2</span> <span class="o">=</span> <span class="n">MyGenericRecord</span><span class="p">(</span><span class="n">record_1</span><span class="p">)</span>
+<span class="n">record_2</span><span class="o">.</span><span class="n">value</span><span class="o">.</span><span class="n">a</span> <span class="o">=</span> <span class="mi">789</span>  <span class="c1"># This also affects `record_1` since they&#39;re the same object.</span>
+<span class="k">assert</span> <span class="n">record_1</span><span class="o">.</span><span class="n">a</span> <span class="o">==</span> <span class="n">record_2</span><span class="o">.</span><span class="n">value</span><span class="o">.</span><span class="n">a</span> <span class="o">==</span> <span class="mi">789</span>
 </code></pre></div>
-<h4 id="other-types">Other Types<a class="headerlink" href="#other-types" title="Permanent link">&para;</a></h4>
+<h3 id="array">Array<a class="headerlink" href="#array" title="Permanent link">&para;</a></h3>
+<p><a href="../reference/sonolus.script.array/"><code class="highlight"><span class="n">Array</span></code></a> is a type that represents a fixed-size array of elements of a 
+specific type:</p>
+<div class="highlight"><pre><span></span><code><span class="n">array_1</span> <span class="o">=</span> <span class="n">Array</span><span class="p">[</span><span class="nb">int</span><span class="p">,</span> <span class="mi">3</span><span class="p">](</span><span class="mi">1</span><span class="p">,</span> <span class="mi">2</span><span class="p">,</span> <span class="mi">3</span><span class="p">)</span>
+<span class="n">array_2</span> <span class="o">=</span> <span class="n">Array</span><span class="p">(</span><span class="mi">4</span><span class="p">,</span> <span class="mi">5</span><span class="p">,</span> <span class="mi">6</span><span class="p">)</span>  <span class="c1"># Type arguments are inferred</span>
+</code></pre></div>
+<p>When given record or array values as arguments, the array constructor will copy them:</p>
+<div class="highlight"><pre><span></span><code><span class="n">record_1</span> <span class="o">=</span> <span class="n">MyRecord</span><span class="p">(</span><span class="mi">1</span><span class="p">,</span> <span class="mf">2.5</span><span class="p">)</span>
+<span class="n">array_1</span> <span class="o">=</span> <span class="n">Array</span><span class="p">(</span><span class="n">record_1</span><span class="p">)</span>
+<span class="n">array_1</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">a</span> <span class="o">=</span> <span class="mi">789</span>  <span class="c1"># This has no effect on `record_1` since it was copied.</span>
+<span class="k">assert</span> <span class="n">record_1</span><span class="o">.</span><span class="n">a</span> <span class="o">==</span> <span class="mi">1</span>
+</code></pre></div>
+<h3 id="operations">Operations<a class="headerlink" href="#operations" title="Permanent link">&para;</a></h3>
+<p>This section is an overview of the operations available for records and arrays. For full details see the
+<a href="../reference/sonolus.script.record/">Record documentation</a> and <a href="../reference/sonolus.script.array/">Array documentation</a>.</p>
+<p>Records and arrays come with the <code class="highlight"><span class="o">==</span></code> and <code class="highlight"><span class="o">!=</span></code> operators predefined to compare their values for equality:</p>
+<div class="highlight"><pre><span></span><code><span class="k">assert</span> <span class="n">MyRecord</span><span class="p">(</span><span class="mi">1</span><span class="p">,</span> <span class="mf">2.3</span><span class="p">)</span> <span class="o">==</span> <span class="n">MyRecord</span><span class="p">(</span><span class="mi">1</span><span class="p">,</span> <span class="mf">2.3</span><span class="p">)</span>
+<span class="k">assert</span> <span class="n">Array</span><span class="p">(</span><span class="mi">1</span><span class="p">,</span> <span class="mi">2</span><span class="p">,</span> <span class="mi">3</span><span class="p">)</span> <span class="o">!=</span> <span class="n">Array</span><span class="p">(</span><span class="mi">4</span><span class="p">,</span> <span class="mi">5</span><span class="p">,</span> <span class="mi">6</span><span class="p">)</span>
+</code></pre></div>
+<p>The unary <code class="highlight"><span class="o">+</span></code> operator makes a copy of a record or array, creating a new instance with the same values:</p>
+<div class="highlight"><pre><span></span><code><span class="n">record_2</span> <span class="o">=</span> <span class="o">+</span><span class="n">record_1</span>
+<span class="n">array_2</span> <span class="o">=</span> <span class="o">+</span><span class="n">array_1</span>
+</code></pre></div>
+<p>Similarly, a new zero initialized value can be created using the unary <code class="highlight"><span class="o">+</span></code> operator on a record or array type:</p>
+<div class="highlight"><pre><span></span><code><span class="n">record_1</span> <span class="o">=</span> <span class="o">+</span><span class="n">MyRecord</span>
+<span class="n">record_2</span> <span class="o">=</span> <span class="o">+</span><span class="n">Array</span><span class="p">[</span><span class="nb">int</span><span class="p">,</span> <span class="mi">3</span><span class="p">]</span>
+</code></pre></div>
+<p>Records and arrays can be mutated in-place using the <code class="highlight"><span class="o">@=</span></code> operator:</p>
+<div class="highlight"><pre><span></span><code><span class="n">record_1</span> <span class="o">@=</span> <span class="n">MyRecord</span><span class="p">(</span><span class="mi">1</span><span class="p">,</span> <span class="mf">2.3</span><span class="p">)</span> 
+<span class="n">array_1</span> <span class="o">@=</span> <span class="n">Array</span><span class="p">(</span><span class="mi">4</span><span class="p">,</span> <span class="mi">5</span><span class="p">,</span> <span class="mi">6</span><span class="p">)</span>
+</code></pre></div>
+<p>Record fields and array elements of numeric types can be set using the <code class="highlight"><span class="o">=</span></code> operator:</p>
+<div class="highlight"><pre><span></span><code><span class="n">record_1</span><span class="o">.</span><span class="n">a</span> <span class="o">=</span> <span class="mi">123</span>
+<span class="n">array_1</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span> <span class="o">=</span> <span class="mi">456</span>
+</code></pre></div>
+<p>Setting a record field that's a record or array using the <code class="highlight"><span class="o">=</span></code> operator will modify the field in-place:</p>
+<div class="highlight"><pre><span></span><code><span class="n">record_1</span> <span class="o">=</span> <span class="n">MyRecord</span><span class="p">(</span><span class="mi">1</span><span class="p">,</span> <span class="mf">2.3</span><span class="p">)</span>
+<span class="n">record_2</span> <span class="o">=</span> <span class="n">MyGenericRecord</span><span class="p">(</span><span class="n">record_1</span><span class="p">)</span>
+<span class="n">record_2</span><span class="o">.</span><span class="n">value</span> <span class="o">=</span> <span class="n">MyRecord</span><span class="p">(</span><span class="mi">4</span><span class="p">,</span> <span class="mf">5.6</span><span class="p">)</span>  <span class="c1"># This modifies `record_1` in-place.</span>
+<span class="k">assert</span> <span class="n">record_1</span> <span class="o">==</span> <span class="n">record_2</span><span class="o">.</span><span class="n">value</span> <span class="o">==</span> <span class="n">MyRecord</span><span class="p">(</span><span class="mi">4</span><span class="p">,</span> <span class="mf">5.6</span><span class="p">)</span>
+</code></pre></div>
+<p>Setting an array element that's a record or array using the <code class="highlight"><span class="o">=</span></code> operator will also modify the element in-place:</p>
+<div class="highlight"><pre><span></span><code><span class="n">array_1</span> <span class="o">=</span> <span class="n">Array</span><span class="p">(</span><span class="n">MyRecord</span><span class="p">(</span><span class="mi">1</span><span class="p">,</span> <span class="mf">2.3</span><span class="p">))</span>
+<span class="n">record_1</span> <span class="o">=</span> <span class="n">array_1</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span>
+<span class="n">array_1</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span> <span class="o">=</span> <span class="n">MyRecord</span><span class="p">(</span><span class="mi">4</span><span class="p">,</span> <span class="mf">5.6</span><span class="p">)</span>  <span class="c1"># This modifies `record_1` in-place.</span>
+<span class="k">assert</span> <span class="n">record_1</span> <span class="o">==</span> <span class="n">array_1</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span> <span class="o">==</span> <span class="n">MyRecord</span><span class="p">(</span><span class="mi">4</span><span class="p">,</span> <span class="mf">5.6</span><span class="p">)</span>
+</code></pre></div>
+<h3 id="other-types">Other Types<a class="headerlink" href="#other-types" title="Permanent link">&para;</a></h3>
 <p>Sonolus.py has limited support for other types of values such as strings, tuples, and functions. These have restrictions
 such as not being valid as Record field types or Array element types.</p>
-<h3 id="modules">Modules<a class="headerlink" href="#modules" title="Permanent link">&para;</a></h3>
+<h2 id="modules">Modules<a class="headerlink" href="#modules" title="Permanent link">&para;</a></h2>
 <p>Sonolus.py provides a number of built-in modules that can be used in Sonolus engines. These include:</p>
 <ul>
 <li>Project<ul>
@@ -2024,6 +2078,7 @@ such as not being valid as Record field types or Array element types.</p>
 <li><a href="../reference/sonolus.script.easing/">Easing</a>: Easing functions for animations.</li>
 <li><a href="../reference/sonolus.script.interval/">Interval</a>: Mathematical intervals.</li>
 <li><a href="../reference/sonolus.script.iterator/">Iterator</a>: Iterators over collections.</li>
+<li><a href="../reference/sonolus.script.maybe/">Maybe</a>: Optional function return values.</li>
 <li><a href="../reference/sonolus.script.printing/">Printing</a>: Preview mode number printing.</li>
 <li><a href="../reference/sonolus.script.quad/">Quad</a>: Quadrilaterals.</li>
 <li><a href="../reference/sonolus.script.transform/">Transform</a>: Transformations like translation, rotation, and scaling.</li>
