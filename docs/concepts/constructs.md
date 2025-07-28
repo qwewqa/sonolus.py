@@ -33,12 +33,12 @@ The following constructs are supported in Sonolus.py:
         - Binary: `+`, `-`, `*`, `/`, `//`, `%`, `**`, `&`, `|`, `^`, `<<`, `>>`
         - Comparison: `==`, `!=`, `>`, `<`, `>=`, `<=`, `is`, `is not`, `in`, `not in`
         - Logical: `and`, `or` (for [`Num`](types.md#num) arguments only)
-        - Ternary: `a if <condition> else b` (for [`Num`](types.md#num) conditions only)
+        - Ternary: `a if <condition> else b`
         - Attribute: `a.b`
         - Indexing: `a[b]`
         - Call: `f(a, b, c)`
     - Variables: `a`, `b`, `c`
-    - Lambda: `lambda a, b: a + b`
+    - Lambda: `lambda a, b: a + b` (if not on the same line as another lambda or function definition)
     - Assignment Expression: `(a := b)`
     - Generator Expression: `(x for x in iterable if condition)`
 - Statements:

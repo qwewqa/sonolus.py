@@ -1,7 +1,9 @@
 from __future__ import annotations
 
+from collections.abc import Iterator
 from typing import Any
 
+from sonolus.script.internal.context import ctx
 from sonolus.script.internal.impl import meta_fn
 from sonolus.script.maybe import Maybe, Nothing, Some
 from sonolus.script.record import Record
@@ -114,3 +116,16 @@ class _FilteringIterator[T, Fn](Record, SonolusIterator):
             inside = value.get_unsafe()
             if self.fn(inside):
                 return Some(inside)
+
+
+@meta_fn
+def maybe_next[T](iterator: Iterator[T]) -> Maybe[T]:
+    """Get the next item from an iterator as a `Maybe` if it exists or `Nothing` otherwise."""
+    from sonolus.backend.visitor import compile_and_call
+
+    if not isinstance(iterator, SonolusIterator):
+        raise TypeError("Iterator must be an instance of SonolusIterator.")
+    if ctx():
+        return compile_and_call(iterator.next)
+    else:
+        return iterator.next()

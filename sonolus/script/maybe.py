@@ -4,10 +4,11 @@ from collections.abc import Callable
 from typing import Any
 
 from sonolus.script.internal.context import ctx
-from sonolus.script.internal.impl import meta_fn
+from sonolus.script.internal.impl import meta_fn, validate_value
 from sonolus.script.internal.transient import TransientValue
 from sonolus.script.internal.value import Value
 from sonolus.script.num import Num
+from sonolus.script.values import copy, zeros
 
 
 class Maybe[T](TransientValue):
@@ -38,13 +39,16 @@ class Maybe[T](TransientValue):
 
     def __init__(self, *, present: bool, value: T):
         self._present = Num._accept_(present)
-        self._value = value
+        self._value = validate_value(value)
 
     @property
     @meta_fn
     def is_some(self) -> bool:
         """Check if the value is present."""
         if ctx():
+            if self._present._is_py_():
+                # Makes this a compile time constant.
+                return self._present
             return self._present._get_readonly_()
         else:
             return self._present._as_py_()
@@ -61,12 +65,103 @@ class Maybe[T](TransientValue):
 
     @meta_fn
     def get_unsafe(self) -> T:
-        return self._value
+        if ctx():
+            return self._value
+        else:
+            return self._value._as_py_()
 
     def map[R](self, fn: Callable[[T], R], /) -> Maybe[R]:
+        """Map the contained value to a new value using the provided function.
+
+        If the value is not present, returns `Nothing`.
+
+        Args:
+            fn: A function that takes the contained value and returns a new value.
+
+        Returns:
+            A `Maybe` instance containing the result of the function if the value is present, otherwise `Nothing`.
+        """
         if self.is_some:
             return Some(fn(self.get_unsafe()))
         return Nothing
+
+    def flat_map[R](self, fn: Callable[[T], Maybe[R]], /) -> Maybe[R]:
+        """Flat map the contained value to a new `Maybe` using the provided function.
+
+        If the value is not present, returns `Nothing`.
+
+        Args:
+            fn: A function that takes the contained value and returns a new `Maybe`.
+
+        Returns:
+            A `Maybe` instance containing the result of the function if the value is present, otherwise `Nothing`.
+        """
+        if self.is_some:
+            return fn(self.get_unsafe())
+        return Nothing
+
+    def or_default(self, default: T) -> T:
+        """Return a copy of the contained value if present, otherwise return a copy of the given default value.
+
+        Args:
+            default: The default value to return if the contained value is not present.
+
+        Returns:
+            A copy of the contained value if present, otherwise a copy of the default value.
+        """
+        result = _box(copy(default))
+        if self.is_some:
+            result.value = self.get_unsafe()
+        return result.value
+
+    @meta_fn
+    def or_else(self, fn: Callable[[], T], /) -> T:
+        """Return a copy of the contained value if present, otherwise return a copy of the result of the given function.
+
+        Args:
+            fn: A function that returns a value to use if the contained value is not present.
+
+        Returns:
+            A copy of the contained value if present, otherwise a copy of the result of calling the function.
+        """
+        from sonolus.backend.visitor import compile_and_call
+
+        if ctx():
+            if self.is_some._is_py_():
+                if self.is_some._as_py_():
+                    return copy(self.get_unsafe())
+                else:
+                    return copy(compile_and_call(fn))
+            else:
+                return compile_and_call(self._or_else, fn)
+        elif self.is_some:
+            return copy(self.get_unsafe())
+        else:
+            return copy(fn())
+
+    def _or_else(self, fn: Callable[[], T], /) -> T:
+        result = _box(zeros(self.contained_type))
+        if self.is_some:
+            result.value = self.get_unsafe()
+        else:
+            result.value = fn()
+        return result.value
+
+    @property
+    def tuple(self) -> tuple[bool, T]:
+        """Return whether the value is present and a copy of the contained value if present as a tuple.
+
+        If the value is not present, the tuple will contain `False` and a zero initialized value of the contained type.
+        """
+        result_value = _box(zeros(self.contained_type))
+        if self.is_some:
+            result_value.value = self.get_unsafe()
+        return self.is_some, result_value.value
+
+    @property
+    @meta_fn
+    def contained_type(self):
+        return type(self._value)
 
     @classmethod
     def _accepts_(cls, value: Any) -> bool:
@@ -137,3 +232,10 @@ Nothing: Maybe[Any] = Maybe(present=False, value=None)  # type: ignore
 # Note: has to come after the definition to hide the definition in the docs.
 Nothing: Maybe[Any]
 """The empty `Maybe` instance."""
+
+
+@meta_fn
+def _box(value):
+    from sonolus.script.containers import Box
+
+    return Box(value)
