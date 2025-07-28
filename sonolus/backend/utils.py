@@ -24,14 +24,29 @@ class FindFunction(ast.NodeVisitor):
     def __init__(self, line):
         self.line = line
         self.results: list[ast.FunctionDef | ast.Lambda] = []
+        self.current_fn = None
 
     def visit_FunctionDef(self, node: ast.FunctionDef):
         self.results.append(node)
+        outer_fn = self.current_fn
+        self.current_fn = node
         self.generic_visit(node)
+        self.current_fn = outer_fn
 
     def visit_Lambda(self, node: ast.Lambda):
         self.results.append(node)
+        outer_fn = self.current_fn
+        self.current_fn = node
         self.generic_visit(node)
+        self.current_fn = outer_fn
+
+    # Visitors have high overhead, so we detect generators here rather than in a separate pass.
+
+    def visit_Yield(self, node):
+        self.current_fn.has_yield = True
+
+    def visit_YieldFrom(self, node):
+        self.current_fn.has_yield = True
 
 
 @cache
@@ -65,27 +80,3 @@ def scan_writes(node: ast.AST) -> set[str]:
     visitor = ScanWrites()
     visitor.visit(node)
     return set(visitor.writes)
-
-
-class HasDirectYield(ast.NodeVisitor):
-    def __init__(self):
-        self.started = False
-        self.has_yield = False
-
-    def visit_Yield(self, node: ast.Yield):
-        self.has_yield = True
-
-    def visit_YieldFrom(self, node: ast.YieldFrom):
-        self.has_yield = True
-
-    def visit_FunctionDef(self, node: ast.FunctionDef):
-        if self.started:
-            return
-        self.started = True
-        self.generic_visit(node)
-
-
-def has_yield(node: ast.AST) -> bool:
-    visitor = HasDirectYield()
-    visitor.visit(node)
-    return visitor.has_yield

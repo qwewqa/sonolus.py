@@ -11,7 +11,7 @@ from types import FunctionType, MethodType, MethodWrapperType
 from typing import Any, Never
 
 from sonolus.backend.excepthook import install_excepthook
-from sonolus.backend.utils import get_function, has_yield, scan_writes
+from sonolus.backend.utils import get_function, scan_writes
 from sonolus.script.debug import assert_true
 from sonolus.script.internal.builtin_impls import BUILTIN_IMPLS, _bool, _float, _int, _len
 from sonolus.script.internal.constant import ConstantValue
@@ -28,6 +28,7 @@ from sonolus.script.num import Num, _is_num
 from sonolus.script.record import Record
 
 _compiler_internal_ = True
+_no_eval = False
 
 
 def compile_and_call[**P, R](fn: Callable[P, R], /, *args: P.args, **kwargs: P.kwargs) -> R:
@@ -39,6 +40,8 @@ def compile_and_call[**P, R](fn: Callable[P, R], /, *args: P.args, **kwargs: P.k
 def compile_and_call_at_definition[**P, R](fn: Callable[P, R], /, *args: P.args, **kwargs: P.kwargs) -> R:
     if not ctx():
         return fn(*args, **kwargs)
+    if _no_eval:
+        return compile_and_call(fn, *args, **kwargs)
     source_file, node = get_function(fn)
     location_args = {
         "lineno": node.lineno,
@@ -279,7 +282,8 @@ class Visitor(ast.NodeVisitor):
                 ctx().scope.set_value("$return", validate_value(None))
             case _:
                 raise NotImplementedError("Unsupported syntax")
-        if has_yield(node) or isinstance(node, ast.GeneratorExp):
+        # has_yield is set by the find_function visitor
+        if getattr(node, "has_yield", False) or isinstance(node, ast.GeneratorExp):
             return_ctx = Context.meet([*self.return_ctxs, ctx()])
             result_binding = return_ctx.scope.get_binding("$return")
             if not isinstance(result_binding, ValueBinding):
@@ -1423,6 +1427,9 @@ class Visitor(ast.NodeVisitor):
         self, node: ast.stmt | ast.expr, fn: Callable[P, R], /, *args: P.args, **kwargs: P.kwargs
     ) -> R:
         """Executes the given function at the given node for a better traceback."""
+        if _no_eval:
+            return fn(*args, **kwargs)
+
         location_args = {
             "lineno": node.lineno,
             "col_offset": node.col_offset,
