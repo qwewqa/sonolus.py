@@ -21,6 +21,7 @@ from sonolus.script.internal.context import (
     ctx,
     using_ctx,
 )
+from sonolus.script.internal.error import CompilationError
 from sonolus.script.num import _is_num
 
 
@@ -140,7 +141,21 @@ def callback_to_cfg(
     name: str,
     archetype: type[_BaseArchetype] | None = None,
 ) -> BasicBlock:
-    callback_state = CallbackContextState(name)
+    try:
+        # Default to no_eval=True for performance unless there's an error.
+        return _callback_to_cfg(global_state, callback, name, archetype, no_eval=True)
+    except CompilationError:
+        return _callback_to_cfg(global_state, callback, name, archetype, no_eval=False)
+
+
+def _callback_to_cfg(
+    global_state: GlobalContextState,
+    callback: Callable,
+    name: str,
+    archetype: type[_BaseArchetype] | None,
+    no_eval: bool,
+) -> BasicBlock:
+    callback_state = CallbackContextState(name, no_eval=no_eval)
     context = Context(global_state, callback_state)
     with using_ctx(context):
         if archetype is not None:

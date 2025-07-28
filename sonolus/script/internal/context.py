@@ -61,10 +61,12 @@ class GlobalContextState:
 class CallbackContextState:
     callback: str
     used_names: dict[str, int]
+    no_eval: bool
 
-    def __init__(self, callback: str):
+    def __init__(self, callback: str, no_eval: bool = False):
         self.callback = callback
         self.used_names = {}
+        self.no_eval = no_eval
 
 
 class Context:
@@ -110,6 +112,10 @@ class Context:
     @property
     def used_names(self) -> dict[str, int]:
         return self.callback_state.used_names
+
+    @property
+    def no_eval(self) -> bool:
+        return self.callback_state.no_eval
 
     def check_readable(self, place: BlockPlace):
         if debug_config().unchecked_reads:

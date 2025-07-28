@@ -28,7 +28,6 @@ from sonolus.script.num import Num, _is_num
 from sonolus.script.record import Record
 
 _compiler_internal_ = True
-_no_eval = False
 
 
 def compile_and_call[**P, R](fn: Callable[P, R], /, *args: P.args, **kwargs: P.kwargs) -> R:
@@ -40,7 +39,7 @@ def compile_and_call[**P, R](fn: Callable[P, R], /, *args: P.args, **kwargs: P.k
 def compile_and_call_at_definition[**P, R](fn: Callable[P, R], /, *args: P.args, **kwargs: P.kwargs) -> R:
     if not ctx():
         return fn(*args, **kwargs)
-    if _no_eval:
+    if ctx().no_eval:
         return compile_and_call(fn, *args, **kwargs)
     source_file, node = get_function(fn)
     location_args = {
@@ -1427,7 +1426,7 @@ class Visitor(ast.NodeVisitor):
         self, node: ast.stmt | ast.expr, fn: Callable[P, R], /, *args: P.args, **kwargs: P.kwargs
     ) -> R:
         """Executes the given function at the given node for a better traceback."""
-        if _no_eval:
+        if ctx().no_eval:
             return fn(*args, **kwargs)
 
         location_args = {
