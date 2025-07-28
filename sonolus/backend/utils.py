@@ -23,29 +23,33 @@ def get_tree_from_file(file: str | Path) -> ast.Module:
 class FindFunction(ast.NodeVisitor):
     def __init__(self, line):
         self.line = line
-        self.node: ast.FunctionDef | None = None
+        self.results: list[ast.FunctionDef | ast.Lambda] = []
 
     def visit_FunctionDef(self, node: ast.FunctionDef):
-        if node.lineno == self.line or (
-            node.decorator_list and (node.decorator_list[-1].end_lineno <= self.line <= node.lineno)
-        ):
-            self.node = node
-        else:
-            self.generic_visit(node)
+        self.results.append(node)
+        self.generic_visit(node)
 
     def visit_Lambda(self, node: ast.Lambda):
-        if node.lineno == self.line:
-            if self.node is not None:
-                raise ValueError("Multiple functions defined on the same line are not supported")
-            self.node = node
-        else:
-            self.generic_visit(node)
+        self.results.append(node)
+        self.generic_visit(node)
+
+
+@cache
+def get_functions(tree: ast.Module) -> list[ast.FunctionDef | ast.Lambda]:
+    visitor = FindFunction(0)
+    visitor.visit(tree)
+    return visitor.results
 
 
 def find_function(tree: ast.Module, line: int):
-    visitor = FindFunction(line)
-    visitor.visit(tree)
-    return visitor.node
+    for node in get_functions(tree):
+        if node.lineno == line or (
+            isinstance(node, ast.FunctionDef)
+            and node.decorator_list
+            and (node.decorator_list[-1].end_lineno <= line <= node.lineno)
+        ):
+            return node
+    raise ValueError("Function not found")
 
 
 class ScanWrites(ast.NodeVisitor):

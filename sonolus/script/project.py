@@ -41,7 +41,7 @@ class Project:
         self._levels = None
         self.resources = Path(resources or "resources")
 
-    def with_levels(self, levels: list[Level]) -> Project:
+    def with_levels(self, levels: Iterable[Level] | Callable[[], Iterable[Level]] | None) -> Project:
         """Create a new project with the specified levels.
 
         Args:
