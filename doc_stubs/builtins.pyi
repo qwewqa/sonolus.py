@@ -183,95 +183,48 @@ def map[T, S](function: Callable[[T], S], iterable: Iterable[T]) -> Iterator[S]:
     ...
 
 @overload
-def max[T](iterable: Iterable[T], *, key: Callable[[T], Any] | None = ...) -> T:
-    """Return the largest item in an iterable or the largest of two or more arguments.
-
-    Args:
-        iterable: The iterable to evaluate.
-        key: A function of one argument that is used to extract a comparison key from each element.
-
-    Returns:
-        The largest item.
-    """
-    ...
-
+def max[T](iterable: Iterable[T], *, key: Callable[[T], Any] | None = ...) -> T: ...
 @overload
 def max(
     iterable: Iterable[builtins.int | builtins.float],
     *,
     default: builtins.int | builtins.float = ...,
     key: Callable[[builtins.int | builtins.float], Any] | None = ...,
-) -> builtins.int | builtins.float:
-    """Return the largest item in an iterable or the largest of two or more arguments.
-
-    Args:
-        iterable: The iterable to evaluate.
-        default: The default value to return if the iterable is empty.
-        key: A function of one argument that is used to extract a comparison key from each element.
-
-    Returns:
-        The largest item, or the default value if the iterable is empty.
-    """
-
+) -> builtins.int | builtins.float: ...
 @overload
-def max[T](arg1: T, arg2: T, *args: T, key: Callable[[T], Any] | None = ...) -> T:
-    """Return the largest item in an iterable or the largest of two or more arguments.
+def max[T](arg1: T, arg2: T, *args: T, key: Callable[[T], Any] | None = ...) -> T: ...
+def max(*args, **kwargs):
+    """Return the largest item in an iterable or the largest of multiple arguments.
 
-    Args:
-        arg1: First argument.
-        arg2: Second argument.
-        *args: Additional arguments.
-        key: A function of one argument that is used to extract a comparison key from each element.
+    When called with a single iterable, returns the largest item from that iterable.
+    When called with multiple arguments, returns the largest argument.
 
-    Returns:
-        The largest item.
+    Use the `key` parameter to specify a function that transforms each element
+    before comparison. Use the `default` parameter to specify a value to return
+    if the iterable is empty (supported only for numeric values).
     """
     ...
 
 @overload
-def min[T](iterable: Iterable[T], *, key: Callable[[T], Any] | None = ...) -> T:
-    """Return the smallest item in an iterable or the smallest of two or more arguments.
-
-    Args:
-        iterable: The iterable to evaluate.
-        key: A function of one argument that is used to extract a comparison key from each element.
-
-    Returns:
-        The smallest item.
-    """
-    ...
-
+def min[T](iterable: Iterable[T], *, key: Callable[[T], Any] | None = ...) -> T: ...
 @overload
 def min(
     iterable: Iterable[builtins.int | builtins.float],
     *,
     default: builtins.int | builtins.float = ...,
     key: Callable[[builtins.int | builtins.float], Any] | None = ...,
-) -> builtins.int | builtins.float:
-    """Return the smallest item in an iterable or the smallest of two or more arguments.
-
-    Args:
-        iterable: The iterable to evaluate.
-        default: The default value to return if the iterable is empty.
-        key: A function of one argument that is used to extract a comparison key from each element.
-
-    Returns:
-        The smallest item, or the default value if the iterable is empty.
-    """
-    ...
-
+) -> builtins.int | builtins.float: ...
 @overload
-def min[T](arg1: T, arg2: T, *args: T, key: Callable[[T], Any] | None = ...) -> T:
-    """Return the smallest item in an iterable or the smallest of two or more arguments.
+def min[T](arg1: T, arg2: T, *args: T, key: Callable[[T], Any] | None = ...) -> T: ...
+def min(*args, **kwargs):
+    """Return the smallest item in an iterable or the smallest of multiple arguments.
 
-    Args:
-        arg1: First argument.
-        arg2: Second argument.
-        *args: Additional arguments.
-        key: A function of one argument that is used to extract a comparison key from each element.
+    When called with a single iterable, returns the smallest item from that iterable.
+    When called with multiple arguments, returns the smallest argument.
 
-    Returns:
-        The smallest item.
+    Use the `key` parameter to specify a function that transforms each element
+    before comparison. Use the `default` parameter to specify a value to return
+    if the iterable is empty (supported only for numeric values).
     """
     ...
 
@@ -289,28 +242,15 @@ def next[T](iterator: Iterator[T]) -> T:
     ...
 
 @overload
-def range(stop: builtins.int) -> builtins.range:
-    """Return an immutable sequence of numbers from 0 to stop.
-
-    Args:
-        stop: Stop value.
-
-    Returns:
-        The range object.
-    """
-    ...
-
+def range(stop: builtins.int) -> builtins.range: ...
 @overload
-def range(start: builtins.int, stop: builtins.int, step: builtins.int = ...) -> builtins.range:
-    """Return an immutable sequence of numbers from start to stop by step.
+def range(start: builtins.int, stop: builtins.int, step: builtins.int = ...) -> builtins.range: ...
+def range(*args) -> builtins.range:
+    """Return an immutable sequence of numbers.
 
-    Args:
-        start: Start value.
-        stop: Stop value.
-        step: Step value.
-
-    Returns:
-        The range object.
+    When called with one argument, creates a sequence from 0 to that number (exclusive).
+    When called with two arguments, creates a sequence from the first to the second (exclusive).
+    When called with three arguments, the third argument specifies the step size.
     """
     ...
 

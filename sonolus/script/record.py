@@ -62,13 +62,13 @@ class Record(GenericValue, metaclass=RecordMeta):
         ```
     """
 
-    _value: dict[str, Value]
-    _fields: ClassVar[list[_RecordField] | None] = None
-    _constructor_signature: ClassVar[inspect.Signature]
+    _value_: dict[str, Value]
+    _fields_: ClassVar[list[_RecordField] | None] = None
+    _constructor_signature_: ClassVar[inspect.Signature]
 
     @classmethod
     def _validate_type_args_(cls, args: tuple[Any, ...]) -> tuple[Any, ...]:
-        if cls._fields is None:
+        if cls._fields_ is None:
             raise TypeError("Base Record class cannot have type arguments")
         return super()._validate_type_args_(args)
 
@@ -80,16 +80,16 @@ class Record(GenericValue, metaclass=RecordMeta):
         if is_parameterizing:
             fields = []
             offset = 0
-            for generic_field in cls._fields:
+            for generic_field in cls._fields_:
                 resolved_type = validate_and_resolve_type(generic_field.type, cls._type_vars_to_args_)
                 resolved_type = validate_concrete_type(resolved_type)
                 field = _RecordField(generic_field.name, resolved_type, generic_field.index, offset)
                 fields.append(field)
                 setattr(cls, field.name, field)
                 offset += resolved_type._size_()
-            cls._fields = fields
+            cls._fields_ = fields
             return
-        is_inheriting_from_existing_record_class = cls._fields is not None
+        is_inheriting_from_existing_record_class = cls._fields_ is not None
         if is_inheriting_from_existing_record_class and not is_parameterizing:
             # The main reason this is disallowed is that subclasses wouldn't be substitutable for their parent classes
             # Assignment of a subclass instance to a variable of the parent class would either be disallowed or would
@@ -124,8 +124,8 @@ class Record(GenericValue, metaclass=RecordMeta):
             )
 
         cls._parameterized_ = {}
-        cls._fields = fields
-        cls._constructor_signature = inspect.Signature(params)
+        cls._fields_ = fields
+        cls._constructor_signature_ = inspect.Signature(params)
 
         _add_inplace_ops(cls)
 
@@ -139,13 +139,13 @@ class Record(GenericValue, metaclass=RecordMeta):
 
     def __new__(cls, *args, **kwargs):
         # We override __new__ to allow changing to the parameterized version
-        if cls._constructor_signature is None:
+        if cls._constructor_signature_ is None:
             raise TypeError(f"Cannot instantiate {cls.__name__}")
-        bound = cls._constructor_signature.bind(*args, **kwargs)
+        bound = cls._constructor_signature_.bind(*args, **kwargs)
         bound.apply_defaults()
         values = {}
         type_vars = {}
-        for field in cls._fields:
+        for field in cls._fields_:
             value = bound.arguments[field.name]
             value = accept_and_infer_types(field.type, value, type_vars)
             values[field.name] = value._get_()
@@ -158,7 +158,7 @@ class Record(GenericValue, metaclass=RecordMeta):
         else:
             parameterized = cls[type_args]
         result: cls = object.__new__(parameterized)  # type: ignore
-        result._value = values
+        result._value_ = values
         return result
 
     def __init__(self, *args, **kwargs):
@@ -168,12 +168,12 @@ class Record(GenericValue, metaclass=RecordMeta):
     @classmethod
     def _raw(cls, **kwargs) -> Self:
         result = object.__new__(cls)
-        result._value = kwargs
+        result._value_ = kwargs
         return result
 
     @classmethod
     def _size_(cls) -> int:
-        return sum(field.type._size_() for field in cls._fields)
+        return sum(field.type._size_() for field in cls._fields_)
 
     @classmethod
     def _is_value_type_(cls) -> bool:
@@ -182,18 +182,18 @@ class Record(GenericValue, metaclass=RecordMeta):
     @classmethod
     def _from_backing_source_(cls, source: BackingSource) -> Self:
         result = object.__new__(cls)
-        result._value = {
+        result._value_ = {
             field.name: field.type._from_backing_source_(
                 lambda offset, field_offset=field.offset: source((Num(offset) + Num(field_offset)).ir())  # type: ignore
             )
-            for field in cls._fields
+            for field in cls._fields_
         }
         return result
 
     @classmethod
     def _from_place_(cls, place: BlockPlace) -> Self:
         result = object.__new__(cls)
-        result._value = {field.name: field.type._from_place_(place.add_offset(field.offset)) for field in cls._fields}
+        result._value_ = {field.name: field.type._from_place_(place.add_offset(field.offset)) for field in cls._fields_}
         return result
 
     @classmethod
@@ -207,7 +207,7 @@ class Record(GenericValue, metaclass=RecordMeta):
         return value
 
     def _is_py_(self) -> bool:
-        return all(value._is_py_() for value in self._value.values())
+        return all(value._is_py_() for value in self._value_.values())
 
     def _as_py_(self) -> Self:
         if not self._is_py_():
@@ -217,18 +217,18 @@ class Record(GenericValue, metaclass=RecordMeta):
     @classmethod
     def _from_list_(cls, values: Iterable[DataValue]) -> Self:
         iterator = iter(values)
-        return cls(**{field.name: field.type._from_list_(iterator) for field in cls._fields})
+        return cls(**{field.name: field.type._from_list_(iterator) for field in cls._fields_})
 
     def _to_list_(self, level_refs: dict[Any, str] | None = None) -> list[DataValue | str]:
         result = []
-        for field in self._fields:
-            result.extend(self._value[field.name]._to_list_(level_refs))
+        for field in self._fields_:
+            result.extend(self._value_[field.name]._to_list_(level_refs))
         return result
 
     @classmethod
     def _flat_keys_(cls, prefix: str) -> list[str]:
         result = []
-        for field in cls._fields:
+        for field in cls._fields_:
             result.extend(field.type._flat_keys_(f"{prefix}.{field.name}"))
         return result
 
@@ -240,33 +240,33 @@ class Record(GenericValue, metaclass=RecordMeta):
 
     def _copy_from_(self, value: Any):
         value = self._accept_(value)
-        for field in self._fields:
+        for field in self._fields_:
             field.__set__(self, field.__get__(value))
 
     def _copy_(self) -> Self:
-        return type(self)._raw(**{field.name: self._value[field.name]._copy_() for field in self._fields})
+        return type(self)._raw(**{field.name: self._value_[field.name]._copy_() for field in self._fields_})
 
     @classmethod
     def _alloc_(cls) -> Self:
         # Compared to using the constructor, this avoids unnecessary _get_ calls
         result = object.__new__(cls)
-        result._value = {field.name: field.type._alloc_() for field in cls._fields}
+        result._value_ = {field.name: field.type._alloc_() for field in cls._fields_}
         return result
 
     @classmethod
     def _zero_(cls) -> Self:
         result = object.__new__(cls)
-        result._value = {field.name: field.type._zero_() for field in cls._fields}
+        result._value_ = {field.name: field.type._zero_() for field in cls._fields_}
         return result
 
     def __str__(self):
         return f"{self.__class__.__name__}({
-            ', '.join(f'{field.name}={field.get_internal(self)}' for field in self._fields)
+            ', '.join(f'{field.name}={field.get_internal(self)}' for field in self._fields_)
         })"
 
     def __repr__(self):
         return f"{self.__class__.__name__}({
-            ', '.join(f'{field.name}={field.get_internal(self)!r}' for field in self._fields)
+            ', '.join(f'{field.name}={field.get_internal(self)!r}' for field in self._fields_)
         })"
 
     @meta_fn
@@ -274,7 +274,7 @@ class Record(GenericValue, metaclass=RecordMeta):
         if not isinstance(other, type(self)):
             return False
         result: Num = Num._accept_(True)
-        for field in self._fields:
+        for field in self._fields_:
             result = result.and_(field.__get__(self) == field.__get__(other))
         return result
 
@@ -283,12 +283,12 @@ class Record(GenericValue, metaclass=RecordMeta):
         if not isinstance(other, type(self)):
             return True
         result: Num = Num._accept_(False)
-        for field in self._fields:
+        for field in self._fields_:
             result = result.or_(field.__get__(self) != field.__get__(other))
         return result
 
     def __hash__(self):
-        return hash(tuple(field.__get__(self) for field in self._fields))
+        return hash(tuple(field.__get__(self) for field in self._fields_))
 
     @meta_fn
     def __pos__(self) -> Self:
@@ -317,12 +317,12 @@ class _RecordField(SonolusDescriptor):
         self.offset = offset
 
     def get_internal(self, instance: Record) -> Value:
-        return instance._value[self.name]
+        return instance._value_[self.name]
 
     def __get__(self, instance: Record | None, owner=None):
         if instance is None:
             return self
-        result = instance._value[self.name]._get_readonly_()
+        result = instance._value_[self.name]._get_readonly_()
         if ctx():
             return result
         else:
@@ -331,9 +331,9 @@ class _RecordField(SonolusDescriptor):
     def __set__(self, instance: Record, value):
         value = self.type._accept_(value)
         if self.type._is_value_type_():
-            instance._value[self.name]._set_(value)
+            instance._value_[self.name]._set_(value)
         else:
-            instance._value[self.name]._copy_from_(value)
+            instance._value_[self.name]._copy_from_(value)
 
 
 _ops_to_inplace_ops = {
