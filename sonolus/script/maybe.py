@@ -127,8 +127,8 @@ class Maybe[T](TransientValue):
         from sonolus.backend.visitor import compile_and_call
 
         if ctx():
-            if self.is_some._is_py_():
-                if self.is_some._as_py_():
+            if self.is_some._is_py_():  # type: ignore
+                if self.is_some._as_py_():  # type: ignore
                     return copy(self.get_unsafe())
                 else:
                     return copy(compile_and_call(fn))

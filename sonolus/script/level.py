@@ -145,7 +145,7 @@ class Level:
         )
 
 
-type EntityListArg = list[PlayArchetype | EntityListArg]
+type EntityListArg = list[list[PlayArchetype] | PlayArchetype] | PlayArchetype
 
 
 def flatten_entities(entities: EntityListArg) -> Iterator[PlayArchetype]:
@@ -175,7 +175,7 @@ class LevelData:
     bgm_offset: float
     entities: list[PlayArchetype]
 
-    def __init__(self, bgm_offset: float, entities: list[PlayArchetype]) -> None:
+    def __init__(self, bgm_offset: float, entities: EntityListArg) -> None:
         self.bgm_offset = bgm_offset
         self.entities = [*flatten_entities(entities)]
 
