@@ -166,13 +166,13 @@ def main():
     def add_common_arguments(parser):
         optimization_group = parser.add_mutually_exclusive_group()
         optimization_group.add_argument(
-            "-o0", "--optimize-minimal", action="store_true", help="Use minimal optimization passes"
+            "-O0", "--optimize-minimal", action="store_true", help="Use minimal optimization passes"
         )
         optimization_group.add_argument(
-            "-o1", "--optimize-fast", action="store_true", help="Use fast optimization passes"
+            "-O1", "--optimize-fast", action="store_true", help="Use fast optimization passes"
         )
         optimization_group.add_argument(
-            "-o2", "--optimize-standard", action="store_true", help="Use standard optimization passes"
+            "-O2", "--optimize-standard", action="store_true", help="Use standard optimization passes"
         )
 
         build_components = parser.add_argument_group("build components")
