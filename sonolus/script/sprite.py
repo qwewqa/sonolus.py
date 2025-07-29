@@ -291,7 +291,7 @@ def skin[T](cls: type[T]) -> T | Skin:
         ```python
         @skin
         class Skin:
-            render_mode: RenderMode
+            render_mode: RenderMode = RenderMode.LIGHTWEIGHT
 
             note: StandardSprite.NOTE_HEAD_RED
             other: Sprite = skin_sprite("other")

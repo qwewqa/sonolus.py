@@ -14,7 +14,8 @@ class SonolusIterator[T]:
 
     This class is used to define custom iterators that can be used in Sonolus.py.
 
-    Inheritors must implement the `next` method, which should return a `Maybe[T]`.
+    Inheritors must implement the [`next`][sonolus.script.iterator.SonolusIterator.next] method,
+    which should return a [`Maybe[T]`][sonolus.script.maybe.Maybe].
 
     Usage:
         ```python
@@ -28,6 +29,7 @@ class SonolusIterator[T]:
 
     @meta_fn
     def next(self) -> Maybe[T]:
+        """Return the next item from the iterator as a [`Maybe`][sonolus.script.maybe.Maybe]."""
         raise NotImplementedError
 
     def __next__(self) -> T:
@@ -120,7 +122,7 @@ class _FilteringIterator[T, Fn](Record, SonolusIterator):
 
 @meta_fn
 def maybe_next[T](iterator: Iterator[T]) -> Maybe[T]:
-    """Get the next item from an iterator as a `Maybe` if it exists or `Nothing` otherwise."""
+    """Get the next item from an iterator as a [`Maybe`][sonolus.script.maybe.Maybe]."""
     from sonolus.backend.visitor import compile_and_call
 
     if not isinstance(iterator, SonolusIterator):

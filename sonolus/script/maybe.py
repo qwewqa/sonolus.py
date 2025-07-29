@@ -14,10 +14,11 @@ from sonolus.script.values import copy, zeros
 class Maybe[T](TransientValue):
     """A type that either has a value or is empty.
 
-    Maybe has special behavior when returned from a function: it may be returned from multiple places
-    in a function, provided that all but one return statement returns the literal `Nothing`.
+    `Maybe` has special behavior when returned from a function: unlike records and arrays, it may be returned from
+    multiple places in a function, provided that all but one return statement returns the literal
+    [`Nothing`][sonolus.script.maybe.Nothing].
 
-    This type is not intended for other uses, such as being stored in a Record, Array, or Archetype.
+    Storing values of this type in a Record, Array, or Archetype is not supported.
 
     Usage:
         ```python
@@ -73,28 +74,30 @@ class Maybe[T](TransientValue):
     def map[R](self, fn: Callable[[T], R], /) -> Maybe[R]:
         """Map the contained value to a new value using the provided function.
 
-        If the value is not present, returns `Nothing`.
+        If the value is not present, returns [`Nothing`][sonolus.script.maybe.Nothing].
 
         Args:
             fn: A function that takes the contained value and returns a new value.
 
         Returns:
-            A `Maybe` instance containing the result of the function if the value is present, otherwise `Nothing`.
+            A [`Maybe`][sonolus.script.maybe.Maybe] instance containing the result of the function if the value
+            is present, otherwise [`Nothing`][sonolus.script.maybe.Nothing].
         """
         if self.is_some:
             return Some(fn(self.get_unsafe()))
         return Nothing
 
     def flat_map[R](self, fn: Callable[[T], Maybe[R]], /) -> Maybe[R]:
-        """Flat map the contained value to a new `Maybe` using the provided function.
+        """Flat map the contained value to a new [`Maybe`][sonolus.script.maybe.Maybe] using the provided function.
 
-        If the value is not present, returns `Nothing`.
+        If the value is not present, returns [`Nothing`][sonolus.script.maybe.Nothing].
 
         Args:
-            fn: A function that takes the contained value and returns a new `Maybe`.
+            fn: A function that takes the contained value and returns a new [`Maybe`][sonolus.script.maybe.Maybe].
 
         Returns:
-            A `Maybe` instance containing the result of the function if the value is present, otherwise `Nothing`.
+            A [`Maybe`][sonolus.script.maybe.Maybe] instance containing the result of the function if the value
+            is present, otherwise [`Nothing`][sonolus.script.maybe.Nothing].
         """
         if self.is_some:
             return fn(self.get_unsafe())
@@ -216,13 +219,13 @@ class Maybe[T](TransientValue):
 
 
 def Some[T](value: T) -> Maybe[T]:  # noqa: N802
-    """Create a `Maybe` instance with a value.
+    """Create a [`Maybe`][sonolus.script.maybe.Maybe] instance with a value.
 
     Args:
         value: The contained value.
 
     Returns:
-        A `Maybe` instance that contains the provided value.
+        A [`Maybe`][sonolus.script.maybe.Maybe] instance that contains the provided value.
     """
     return Maybe(present=True, value=value)
 
@@ -231,7 +234,7 @@ Nothing: Maybe[Any] = Maybe(present=False, value=None)  # type: ignore
 
 # Note: has to come after the definition to hide the definition in the docs.
 Nothing: Maybe[Any]
-"""The empty `Maybe` instance."""
+"""The empty [`Maybe`][sonolus.script.maybe.Maybe] instance."""
 
 
 @meta_fn

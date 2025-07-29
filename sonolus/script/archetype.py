@@ -190,7 +190,8 @@ def imported(*, name: str | None = None) -> Any:
 
     In watch mode, data may also be loaded from a corresponding exported field in play mode.
 
-    Imported fields may only be updated in the `preprocess` callback, and are read-only in other callbacks.
+    Imported fields may only be updated in the [`preprocess`][sonolus.script.archetype.PlayArchetype.preprocess]
+    callback, and are read-only in other callbacks.
 
     Usage:
         ```python
@@ -205,10 +206,12 @@ def imported(*, name: str | None = None) -> Any:
 def entity_data() -> Any:
     """Declare a field as entity data.
 
-    Entity data is accessible from other entities, but may only be updated in the `preprocess` callback
+    Entity data is accessible from other entities, but may only be updated in the
+    [`preprocess`][sonolus.script.archetype.PlayArchetype.preprocess] callback
     and is read-only in other callbacks.
 
-    It functions like `imported` and shares the same underlying storage, except that it is not loaded from a level.
+    It functions like [`imported`][sonolus.script.archetype.imported] and shares the same underlying storage,
+    except that it is not loaded from a level.
 
     Usage:
         ```python
@@ -242,7 +245,8 @@ def entity_memory() -> Any:
     Entity memory is private to the entity and is not accessible from other entities. It may be read or updated in any
     callback associated with the entity.
 
-    Entity memory fields may also be set when an entity is spawned using the `spawn()` method.
+    Entity memory fields may also be set when an entity is spawned using the
+    [`spawn()`][sonolus.script.archetype.PlayArchetype.spawn] method.
 
     Usage:
         ```python
@@ -260,7 +264,9 @@ def shared_memory() -> Any:
     Shared memory is accessible from other entities.
 
     Shared memory may be read in any callback, but may only be updated by sequential callbacks
-    (`preprocess`, `update_sequential`, and `touch`).
+    ([`preprocess`][sonolus.script.archetype.PlayArchetype.preprocess],
+    [`update_sequential`][sonolus.script.archetype.PlayArchetype.update_sequential],
+    and [`touch`][sonolus.script.archetype.PlayArchetype.touch]).
 
     Usage:
         ```python
@@ -688,7 +694,7 @@ class PlayArchetype(_BaseArchetype):
     def spawn_order(self) -> float:
         """Return the spawn order of the entity.
 
-        Runs when the level is loaded after `preprocess`.
+        Runs when the level is loaded after [`preprocess`][sonolus.script.archetype.PlayArchetype.preprocess].
         """
 
     def should_spawn(self) -> bool:
@@ -709,13 +715,15 @@ class PlayArchetype(_BaseArchetype):
         Runs first each frame.
 
         This is where logic affecting shared memory should be placed.
-        Other logic should be placed in `update_parallel` for better performance.
+        Other logic should typically be placed in
+        [`update_parallel`][sonolus.script.archetype.PlayArchetype.update_parallel]
+        for better performance.
         """
 
     def update_parallel(self):
         """Perform parallel actions for this frame.
 
-        Runs after `touch` each frame.
+        Runs after [`touch`][sonolus.script.archetype.PlayArchetype.touch] each frame.
 
         This is where most gameplay logic should be placed.
         """
@@ -723,7 +731,7 @@ class PlayArchetype(_BaseArchetype):
     def touch(self):
         """Handle user input.
 
-        Runs after `update_sequential` each frame.
+        Runs after [`update_sequential`][sonolus.script.archetype.PlayArchetype.update_sequential] each frame.
         """
 
     def terminate(self):
@@ -863,13 +871,14 @@ class WatchArchetype(_BaseArchetype):
         Runs first each frame.
 
         This is where logic affecting shared memory should be placed.
-        Other logic should be placed in `update_parallel` for better performance.
+        Other logic should typically be placed in
+        [`update_parallel`][sonolus.script.archetype.PlayArchetype.update_parallel] for better performance.
         """
 
     def update_parallel(self):
         """Parallel update callback.
 
-        Runs after `touch` each frame.
+        Runs after [`touch`][sonolus.script.archetype.PlayArchetype.touch] each frame.
 
         This is where most gameplay logic should be placed.
         """
@@ -1094,7 +1103,7 @@ class WatchEntityInput(Record):
 class EntityRef[A: _BaseArchetype](Record):
     """Reference to another entity.
 
-    May be used with `Any` to reference an unknown archetype.
+    May be used with `typing.Any` to reference an unknown archetype.
 
     Usage:
         ```python

@@ -1,4 +1,3 @@
-# ruff: noqa: E501
 import math
 
 from sonolus.backend.ops import Op

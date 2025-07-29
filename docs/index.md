@@ -13,12 +13,17 @@ Sonolus.py is available on PyPI and can be installed using a package manager lik
     uv add sonolus.py
     ```
 
+
 ## Getting Started
-Example Projects:
 
-- [pydori](https://github.com/qwewqa/pydori): A Bandori-like engine designed to be an example project for Sonolus.py.
+Before making a new Sonolus.py engine or even reading through the rest of this documentation, it may be helpful to look 
+at some examples to get a sense of how Sonolus.py is used.
 
-New Project Template: [sonolus.py-template-project](https://github.com/qwewqa/sonolus.py-template-project)
+The [pydori](https://github.com/qwewqa/pydori) engine is an example Sonolus.py engine that implements a Bandori-style
+(vertical scrolling rhythm game) engine.
+
+Once you're ready to start a new project, you may want to use the
+[new project template](https://github.com/qwewqa/sonolus.py-template-project).
 
 ## Documentation
 

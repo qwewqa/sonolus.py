@@ -63,7 +63,8 @@ class _StreamDataField(SonolusDescriptor):
 def streams[T](cls: type[T]) -> T:
     """Decorator to define streams and stream groups.
 
-    Streams and stream groups are declared by annotating class attributes with `Stream` or `StreamGroup`.
+    Streams and stream groups are declared by annotating class attributes with
+    [`Stream`][sonolus.script.stream.Stream] or [`StreamGroup`][sonolus.script.stream.StreamGroup].
 
     Other types are also supported in the form of data fields. They may be used to store additional data to export from
     Play to Watch mode.
@@ -180,8 +181,8 @@ class _SparseStreamBacking(BackingValue):
 class Stream[T](Record):
     """Represents a stream.
 
-    Most users should use [`@streams`][sonolus.script.stream.streams] to declare streams and stream groups rather than
-    using this class directly.
+    Most users should use [`@streams`][sonolus.script.stream.streams] to declare streams and stream groups, rather than
+    creating instances of this class directly.
 
     If used directly, it is important that streams do not overlap. No other streams should have an offset in
     `range(self.offset, self.offset + max(1, sizeof(self.element_type())))`, or they will overlap and interfere
@@ -285,12 +286,12 @@ class Stream[T](Record):
         return previous_key < key
 
     def next_key_inclusive(self, key: int | float) -> int | float:
-        """Like `next_key`, but returns the key itself if it is in the stream."""
+        """Like [`next_key`][sonolus.script.stream.Stream.next_key], but returns the key itself if it is in the stream."""
         _check_can_read_stream()
         return key if key in self else self.next_key(key)
 
     def previous_key_inclusive(self, key: int | float) -> int | float:
-        """Like `previous_key`, but returns the key itself if it is in the stream."""
+        """Like [`previous_key`][sonolus.script.stream.Stream.previous_key], but returns the key itself if it is in the stream."""
         _check_can_read_stream()
         return key if key in self else self.previous_key(key)
 

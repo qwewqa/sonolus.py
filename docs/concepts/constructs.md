@@ -394,7 +394,9 @@ def g(a):
 
 Function returns follow the same rules as variable access. If a function returns a non-num value, it most only
 return that value. If the function always returns a num, it may have any number of returns. Similarly, if a function
-always returns None (`return None` or just `return`), it may have any number of returns.
+always returns None (`return None` or just `return`), it may have any number of returns. 
+The [`Maybe`][sonolus.script.maybe.Maybe] is also an exception, see the 
+[Maybe documentation](../reference/sonolus.script.maybe.md) for details
 
 The following are allowed:
 

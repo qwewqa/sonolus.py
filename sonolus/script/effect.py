@@ -38,7 +38,8 @@ class Effect(Record):
     def schedule(self, time: float, distance: float = 0) -> None:
         """Schedule the effect clip to play at a specific time.
 
-        This is not suitable for real-time effects such as responses to user input. Use `play` instead.
+        This is not suitable for real-time effects such as responses to user input.
+        Use [`play`][sonolus.script.effect.Effect.play] instead.
 
         This may be called in preprocess to schedule effects upfront.
 
@@ -61,7 +62,8 @@ class Effect(Record):
     def schedule_loop(self, start_time: float) -> ScheduledLoopedEffectHandle:
         """Schedule the effect clip to play in a loop until stopped.
 
-        This is not suitable for real-time effects such as responses to user input. Use `loop` instead.
+        This is not suitable for real-time effects such as responses to user input.
+        Use [`loop`][sonolus.script.effect.Effect.loop] instead.
 
         Returns:
             A handle to stop the loop.

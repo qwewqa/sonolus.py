@@ -33,7 +33,7 @@ class Box[T](Record):
         x: T = ...
         y: T = ...
         box = Box(x)
-        box.value = y  # Works regardless of whether x is a Num or not
+        box.value = y  # Works regardless of whether x is a Num, array, or record
         ```
     """
 

@@ -16,7 +16,7 @@ from sonolus.script.internal.value import BackingSource, DataValue, Value
 from sonolus.script.num import Num
 
 Dim = Literal
-"""Shorthand for `Literal` intended for use in array dimensions for type checker compatibility."""
+"""Shorthand for `typing.Literal` intended for use in array dimensions for type checker compatibility."""
 
 
 class ArrayMeta(ABCMeta):

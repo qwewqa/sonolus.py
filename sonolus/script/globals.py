@@ -235,7 +235,10 @@ def _tutorial_instruction[T](cls: type[T]) -> T:
 def level_memory[T](cls: type[T]) -> T:
     """Define level memory.
 
-    Level memory may be modified during gameplay in sequential callbacks (`preprocess`, `update_sequential`, `touch`).
+    Level memory may be modified during gameplay in sequential callbacks
+    ([`preprocess`][sonolus.script.archetype.PlayArchetype.preprocess],
+    [`update_sequential`][sonolus.script.archetype.PlayArchetype.update_sequential],
+    [`touch`][sonolus.script.archetype.PlayArchetype.touch]).
 
     Usage:
         ```python
@@ -265,7 +268,7 @@ def level_memory[T](cls: type[T]) -> T:
 def level_data[T](cls: type[T]) -> T:
     """Define level data.
 
-    Level data may only be modified during preprocessing.
+    Level data may only be modified during [`preprocess`][sonolus.script.archetype.PlayArchetype.preprocess].
 
     Usage:
         ```python

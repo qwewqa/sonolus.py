@@ -118,13 +118,10 @@ a2 = Array[int, 0]()
 a3 = +Array[int, 3]  # Create a zero-initialized array
 ```
 
-For type checker compatibility, `Literal` or [`Dim`][sonolus.script.array.Dim] can also be used to specify the size of
-the array:
-
+For type checker compatibility, the Python builtin `typing.Literal` or [`Dim`][sonolus.script.array.Dim] may be used
+for an array's size:
 ```python
-from sonolus.script.array import Dim
-
-a1 = Array[int, Dim(3)](1, 2, 3)
+a1 = Array[int, Dim[3]](1, 2, 3)
 a2 = Array[int, Literal[3]](1, 2, 3)
 ```
 
