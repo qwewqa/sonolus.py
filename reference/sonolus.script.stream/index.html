@@ -2341,8 +2341,8 @@
 
 
         <p>Represents a stream.</p>
-<p>Most users should use <a class="autorefs autorefs-internal" title="            streams(cls)" href="#sonolus.script.stream.streams"><code class="highlight"><span class="nd">@streams</span></code></a> to declare streams and stream groups rather than
-using this class directly.</p>
+<p>Most users should use <a class="autorefs autorefs-internal" title="            streams(cls)" href="#sonolus.script.stream.streams"><code class="highlight"><span class="nd">@streams</span></code></a> to declare streams and stream groups, rather than
+creating instances of this class directly.</p>
 <p>If used directly, it is important that streams do not overlap. No other streams should have an offset in
 <code class="highlight"><span class="nb">range</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">offset</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">offset</span> <span class="o">+</span> <span class="nb">max</span><span class="p">(</span><span class="mi">1</span><span class="p">,</span> <span class="n">sizeof</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">element_type</span><span class="p">())))</span></code>, or they will overlap and interfere
 with each other.</p>
@@ -2840,7 +2840,7 @@ previous frame and up to and including the current time.</p>
 
     <div class="doc doc-contents ">
 
-        <p>Like <code class="highlight"><span class="n">next_key</span></code>, but returns the key itself if it is in the stream.</p>
+        <p>Like <a class="autorefs autorefs-internal" title="            next_key(key)" href="#sonolus.script.stream.Stream.next_key"><code class="highlight"><span class="n">next_key</span></code></a>, but returns the key itself if it is in the stream.</p>
 
 
     </div>
@@ -2895,7 +2895,7 @@ previous frame and up to and including the current time.</p>
 
     <div class="doc doc-contents ">
 
-        <p>Like <code class="highlight"><span class="n">previous_key</span></code>, but returns the key itself if it is in the stream.</p>
+        <p>Like <a class="autorefs autorefs-internal" title="            previous_key(key)" href="#sonolus.script.stream.Stream.previous_key"><code class="highlight"><span class="n">previous_key</span></code></a>, but returns the key itself if it is in the stream.</p>
 
 
     </div>
@@ -3100,7 +3100,8 @@ class directly.</p>
     <div class="doc doc-contents ">
 
         <p>Decorator to define streams and stream groups.</p>
-<p>Streams and stream groups are declared by annotating class attributes with <code class="highlight"><span class="n">Stream</span></code> or <code class="highlight"><span class="n">StreamGroup</span></code>.</p>
+<p>Streams and stream groups are declared by annotating class attributes with
+<a class="autorefs autorefs-internal" title="            Stream" href="#sonolus.script.stream.Stream"><code class="highlight"><span class="n">Stream</span></code></a> or <a class="autorefs autorefs-internal" title="            StreamGroup" href="#sonolus.script.stream.StreamGroup"><code class="highlight"><span class="n">StreamGroup</span></code></a>.</p>
 <p>Other types are also supported in the form of data fields. They may be used to store additional data to export from
 Play to Watch mode.</p>
 <p>In either case, data is write-only in Play mode and read-only in Watch mode.</p>

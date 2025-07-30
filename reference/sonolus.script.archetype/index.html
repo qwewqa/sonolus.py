@@ -3384,7 +3384,7 @@
 
 
         <p>Reference to another entity.</p>
-<p>May be used with <code class="highlight"><span class="n">Any</span></code> to reference an unknown archetype.</p>
+<p>May be used with <code class="highlight"><span class="n">typing</span><span class="o">.</span><span class="n">Any</span></code> to reference an unknown archetype.</p>
 
 
 <details class="usage" open>
@@ -4018,7 +4018,7 @@
     <div class="doc doc-contents ">
 
         <p>Return the spawn order of the entity.</p>
-<p>Runs when the level is loaded after <code class="highlight"><span class="n">preprocess</span></code>.</p>
+<p>Runs when the level is loaded after <a class="autorefs autorefs-internal" title="            preprocess()" href="#sonolus.script.archetype.PlayArchetype.preprocess"><code class="highlight"><span class="n">preprocess</span></code></a>.</p>
 
 
     </div>
@@ -4056,7 +4056,7 @@
     <div class="doc doc-contents ">
 
         <p>Handle user input.</p>
-<p>Runs after <code class="highlight"><span class="n">update_sequential</span></code> each frame.</p>
+<p>Runs after <a class="autorefs autorefs-internal" title="            update_sequential()" href="#sonolus.script.archetype.PlayArchetype.update_sequential"><code class="highlight"><span class="n">update_sequential</span></code></a> each frame.</p>
 
 
     </div>
@@ -4075,7 +4075,7 @@
     <div class="doc doc-contents ">
 
         <p>Perform parallel actions for this frame.</p>
-<p>Runs after <code class="highlight"><span class="n">touch</span></code> each frame.</p>
+<p>Runs after <a class="autorefs autorefs-internal" title="            touch()" href="#sonolus.script.archetype.PlayArchetype.touch"><code class="highlight"><span class="n">touch</span></code></a> each frame.</p>
 <p>This is where most gameplay logic should be placed.</p>
 
 
@@ -4097,7 +4097,9 @@
         <p>Perform non-parallel actions for this frame.</p>
 <p>Runs first each frame.</p>
 <p>This is where logic affecting shared memory should be placed.
-Other logic should be placed in <code class="highlight"><span class="n">update_parallel</span></code> for better performance.</p>
+Other logic should typically be placed in
+<a class="autorefs autorefs-internal" title="            update_parallel()" href="#sonolus.script.archetype.PlayArchetype.update_parallel"><code class="highlight"><span class="n">update_parallel</span></code></a>
+for better performance.</p>
 
 
     </div>
@@ -4944,7 +4946,7 @@ Other logic should be placed in <code class="highlight"><span class="n">update_p
     <div class="doc doc-contents ">
 
         <p>Parallel update callback.</p>
-<p>Runs after <code class="highlight"><span class="n">touch</span></code> each frame.</p>
+<p>Runs after <a class="autorefs autorefs-internal" title="            touch()" href="#sonolus.script.archetype.PlayArchetype.touch"><code class="highlight"><span class="n">touch</span></code></a> each frame.</p>
 <p>This is where most gameplay logic should be placed.</p>
 
 
@@ -4966,7 +4968,8 @@ Other logic should be placed in <code class="highlight"><span class="n">update_p
         <p>Perform non-parallel actions for this frame.</p>
 <p>Runs first each frame.</p>
 <p>This is where logic affecting shared memory should be placed.
-Other logic should be placed in <code class="highlight"><span class="n">update_parallel</span></code> for better performance.</p>
+Other logic should typically be placed in
+<a class="autorefs autorefs-internal" title="            update_parallel()" href="#sonolus.script.archetype.PlayArchetype.update_parallel"><code class="highlight"><span class="n">update_parallel</span></code></a> for better performance.</p>
 
 
     </div>
@@ -5072,9 +5075,11 @@ Other logic should be placed in <code class="highlight"><span class="n">update_p
     <div class="doc doc-contents ">
 
         <p>Declare a field as entity data.</p>
-<p>Entity data is accessible from other entities, but may only be updated in the <code class="highlight"><span class="n">preprocess</span></code> callback
+<p>Entity data is accessible from other entities, but may only be updated in the
+<a class="autorefs autorefs-internal" title="            preprocess()" href="#sonolus.script.archetype.PlayArchetype.preprocess"><code class="highlight"><span class="n">preprocess</span></code></a> callback
 and is read-only in other callbacks.</p>
-<p>It functions like <code class="highlight"><span class="n">imported</span></code> and shares the same underlying storage, except that it is not loaded from a level.</p>
+<p>It functions like <a class="autorefs autorefs-internal" title="            imported(*, name=None)" href="#sonolus.script.archetype.imported"><code class="highlight"><span class="n">imported</span></code></a> and shares the same underlying storage,
+except that it is not loaded from a level.</p>
 
 
 <details class="usage" open>
@@ -5121,7 +5126,12 @@ and is read-only in other callbacks.</p>
         <p>Declare a field as entity memory.</p>
 <p>Entity memory is private to the entity and is not accessible from other entities. It may be read or updated in any
 callback associated with the entity.</p>
-<p>Entity memory fields may also be set when an entity is spawned using the <code class="highlight"><span class="n">spawn</span><span class="p">()</span></code> method.</p>
+<p>Entity memory fields may also be set when an entity is spawned using the
+<a class="autorefs autorefs-internal" title="            spawn(**kwargs)
+
+  
+      classmethod
+  " href="#sonolus.script.archetype.PlayArchetype.spawn"><code class="highlight"><span class="n">spawn</span><span class="p">()</span></code></a> method.</p>
 
 
 <details class="usage" open>
@@ -5177,7 +5187,8 @@ callback associated with the entity.</p>
         <p>Declare a field as imported.</p>
 <p>Imported fields may be loaded from the level.</p>
 <p>In watch mode, data may also be loaded from a corresponding exported field in play mode.</p>
-<p>Imported fields may only be updated in the <code class="highlight"><span class="n">preprocess</span></code> callback, and are read-only in other callbacks.</p>
+<p>Imported fields may only be updated in the <a class="autorefs autorefs-internal" title="            preprocess()" href="#sonolus.script.archetype.PlayArchetype.preprocess"><code class="highlight"><span class="n">preprocess</span></code></a>
+callback, and are read-only in other callbacks.</p>
 
 
 <details class="usage" open>
@@ -5206,7 +5217,9 @@ callback associated with the entity.</p>
         <p>Declare a field as shared memory.</p>
 <p>Shared memory is accessible from other entities.</p>
 <p>Shared memory may be read in any callback, but may only be updated by sequential callbacks
-(<code class="highlight"><span class="n">preprocess</span></code>, <code class="highlight"><span class="n">update_sequential</span></code>, and <code class="highlight"><span class="n">touch</span></code>).</p>
+(<a class="autorefs autorefs-internal" title="            preprocess()" href="#sonolus.script.archetype.PlayArchetype.preprocess"><code class="highlight"><span class="n">preprocess</span></code></a>,
+<a class="autorefs autorefs-internal" title="            update_sequential()" href="#sonolus.script.archetype.PlayArchetype.update_sequential"><code class="highlight"><span class="n">update_sequential</span></code></a>,
+and <a class="autorefs autorefs-internal" title="            touch()" href="#sonolus.script.archetype.PlayArchetype.touch"><code class="highlight"><span class="n">touch</span></code></a>).</p>
 
 
 <details class="usage" open>

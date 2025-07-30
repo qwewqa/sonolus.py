@@ -2199,17 +2199,15 @@ the <code class="highlight"><span class="ow">not</span></code> operator. However
 <span class="n">a2</span> <span class="o">=</span> <span class="n">Array</span><span class="p">[</span><span class="nb">int</span><span class="p">,</span> <span class="mi">0</span><span class="p">]()</span>
 <span class="n">a3</span> <span class="o">=</span> <span class="o">+</span><span class="n">Array</span><span class="p">[</span><span class="nb">int</span><span class="p">,</span> <span class="mi">3</span><span class="p">]</span>  <span class="c1"># Create a zero-initialized array</span>
 </code></pre></div>
-<p>For type checker compatibility, <code class="highlight"><span class="n">Literal</span></code> or <a class="autorefs autorefs-internal" title="            Dim = Literal
+<p>For type checker compatibility, the Python builtin <code class="highlight"><span class="n">typing</span><span class="o">.</span><span class="n">Literal</span></code> or <a class="autorefs autorefs-internal" title="            Dim = Literal
 
   
       module-attribute
-  " href="../../reference/sonolus.script.array/#sonolus.script.array.Dim"><code class="highlight"><span class="n">Dim</span></code></a> can also be used to specify the size of
-the array:</p>
-<div class="highlight"><pre><span></span><code><span class="kn">from</span><span class="w"> </span><span class="nn">sonolus.script.array</span><span class="w"> </span><span class="kn">import</span> <span class="n">Dim</span>
-
-<span class="n">a1</span> <span class="o">=</span> <span class="n">Array</span><span class="p">[</span><span class="nb">int</span><span class="p">,</span> <span class="n">Dim</span><span class="p">(</span><span class="mi">3</span><span class="p">)](</span><span class="mi">1</span><span class="p">,</span> <span class="mi">2</span><span class="p">,</span> <span class="mi">3</span><span class="p">)</span>
+  " href="../../reference/sonolus.script.array/#sonolus.script.array.Dim"><code class="highlight"><span class="n">Dim</span></code></a> may be used
+for an array's size:
+<div class="highlight"><pre><span></span><code><span class="n">a1</span> <span class="o">=</span> <span class="n">Array</span><span class="p">[</span><span class="nb">int</span><span class="p">,</span> <span class="n">Dim</span><span class="p">[</span><span class="mi">3</span><span class="p">]](</span><span class="mi">1</span><span class="p">,</span> <span class="mi">2</span><span class="p">,</span> <span class="mi">3</span><span class="p">)</span>
 <span class="n">a2</span> <span class="o">=</span> <span class="n">Array</span><span class="p">[</span><span class="nb">int</span><span class="p">,</span> <span class="n">Literal</span><span class="p">[</span><span class="mi">3</span><span class="p">]](</span><span class="mi">1</span><span class="p">,</span> <span class="mi">2</span><span class="p">,</span> <span class="mi">3</span><span class="p">)</span>
-</code></pre></div>
+</code></pre></div></p>
 <p>If at least one element is provided, the element type and size can be inferred:</p>
 <div class="highlight"><pre><span></span><code><span class="n">a3</span> <span class="o">=</span> <span class="n">Array</span><span class="p">(</span><span class="mi">1</span><span class="p">,</span> <span class="mi">2</span><span class="p">,</span> <span class="mi">3</span><span class="p">)</span>
 </code></pre></div>

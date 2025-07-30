@@ -552,15 +552,6 @@
   
 </li>
       
-        <li class="md-nav__item">
-  <a href="#getting-started" class="md-nav__link">
-    <span class="md-ellipsis">
-      Getting Started
-    </span>
-  </a>
-  
-</li>
-      
     </ul>
   
 </nav>
@@ -1870,15 +1861,6 @@
   
 </li>
       
-        <li class="md-nav__item">
-  <a href="#getting-started" class="md-nav__link">
-    <span class="md-ellipsis">
-      Getting Started
-    </span>
-  </a>
-  
-</li>
-      
     </ul>
   
 </nav>
@@ -1899,13 +1881,13 @@
 
 
 <h1 id="overview">Overview<a class="headerlink" href="#overview" title="Permanent link">&para;</a></h1>
-<p>Sonolus.py is a Python library for creating Sonolus engines. This page provides an overview of the key functionality 
-available in the library. For more detailed information, see the <a href="../concepts/">Concepts</a> and 
+<p>Sonolus.py is a Python library for creating Sonolus engines. This page provides an overview of the key functionality
+available in the library. For detailed information, see the <a href="../concepts/">Concepts</a> and
 <a href="../reference/">Reference</a> sections.</p>
 <h2 id="language">Language<a class="headerlink" href="#language" title="Permanent link">&para;</a></h2>
-<p>Sonolus.py functions by compiling Python code into Sonolus nodes. As such, it supports a subset of Python including
+<p>Sonolus.py compiles Python code into Sonolus nodes. It supports a subset of Python including
 most syntax and a portion of the standard library. Additionally, Sonolus.py provides its own library of types and
-functions that are specifically designed for use in Sonolus engines.</p>
+functions that are designed for use in Sonolus engines.</p>
 <h3 id="syntax">Syntax<a class="headerlink" href="#syntax" title="Permanent link">&para;</a></h3>
 <p>Most Python syntax is supported, but there are a few limitations. The primary restrictions are:</p>
 <ul>
@@ -1919,7 +1901,7 @@ functions that are specifically designed for use in Sonolus engines.</p>
 <h3 id="compile-time-evaluation">Compile Time Evaluation<a class="headerlink" href="#compile-time-evaluation" title="Permanent link">&para;</a></h3>
 <p>Sonolus.py will evaluate some expressions at compile time such as basic arithmetic operations on constants,
 boolean logical operations (<code class="highlight"><span class="ow">and</span></code>, <code class="highlight"><span class="ow">or</span></code>, <code class="highlight"><span class="ow">not</span></code>) on constants, and type checks (<code class="highlight"><span class="nb">isinstance</span></code>, <code class="highlight"><span class="nb">issubclass</span></code>).</p>
-<p>In control flow constructs like <code class="highlight"><span class="k">if</span></code> and <code class="highlight"><span class="k">match</span></code>, Sonolus.py may determine some branches to be unreachable at compile 
+<p>In control flow constructs like <code class="highlight"><span class="k">if</span></code> and <code class="highlight"><span class="k">match</span></code>, Sonolus.py may determine some branches to be unreachable at compile
 and eliminate them without evaluating them. This allows code like the following to compile successfully:</p>
 <div class="highlight"><pre><span></span><code><span class="n">a</span> <span class="o">=</span> <span class="mi">1</span>
 <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">a</span><span class="p">,</span> <span class="n">Vec2</span><span class="p">):</span>
@@ -1943,24 +1925,24 @@ not be accessed. For example, the following code will not compile:</p>
 <h3 id="function-returns">Function Returns<a class="headerlink" href="#function-returns" title="Permanent link">&para;</a></h3>
 <p>Similar to variables, functions returning <code class="highlight"><span class="nb">int</span></code>, <code class="highlight"><span class="nb">float</span></code>, or <code class="highlight"><span class="nb">bool</span></code> can have any number of return statements. Functions
 returning <code class="highlight"><span class="kc">None</span></code> may also have any number of <code class="highlight"><span class="k">return</span></code> or <code class="highlight"><span class="k">return</span> <span class="kc">None</span></code> statements.</p>
-<p>Functions returning any other type must have exactly one <code class="highlight"><span class="k">return</span></code> statement, and it must be the only exit point of the 
-function. It is ok, however, for a function to have other <code class="highlight"><span class="k">return</span></code> statements that are eliminated at compile time. 
+<p>Functions returning any other type must have exactly one <code class="highlight"><span class="k">return</span></code> statement, and it must be the only exit point of the
+function <sup id="fnref:1"><a class="footnote-ref" href="#fn:1">1</a></sup>. It is ok, however, for a function to have other <code class="highlight"><span class="k">return</span></code> statements that are eliminated at compile time.
 For example, the following code will compile successfully:</p>
 <div class="highlight"><pre><span></span><code><span class="k">def</span><span class="w"> </span><span class="nf">fn</span><span class="p">(</span><span class="n">a</span><span class="p">:</span> <span class="nb">int</span> <span class="o">|</span> <span class="n">Vec2</span><span class="p">):</span>
     <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">a</span><span class="p">,</span> <span class="n">Vec2</span><span class="p">):</span>
-        <span class="k">return</span> <span class="n">a</span><span class="o">.</span><span class="n">x</span> <span class="o">+</span> <span class="n">a</span><span class="o">.</span><span class="n">y</span>
+        <span class="k">return</span> <span class="n">Vec2</span><span class="p">(</span><span class="n">a</span><span class="o">.</span><span class="n">x</span><span class="p">,</span> <span class="n">a</span><span class="o">.</span><span class="n">y</span><span class="p">)</span>
     <span class="k">else</span><span class="p">:</span>
-        <span class="k">return</span> <span class="n">a</span> <span class="o">*</span> <span class="mi">2</span>
+        <span class="k">return</span> <span class="n">Vec2</span><span class="p">(</span><span class="n">a</span><span class="p">,</span> <span class="n">a</span><span class="p">)</span>
 
 <span class="n">fn</span><span class="p">(</span><span class="mi">123</span><span class="p">)</span>
 </code></pre></div>
 <h2 id="types">Types<a class="headerlink" href="#types" title="Permanent link">&para;</a></h2>
 <h3 id="numbers">Numbers<a class="headerlink" href="#numbers" title="Permanent link">&para;</a></h3>
 <p>Sonolus.py supports <code class="highlight"><span class="nb">int</span></code>, <code class="highlight"><span class="nb">float</span></code>, and <code class="highlight"><span class="nb">bool</span></code> types and most of the standard operations such as mathematical operations
-(<code class="highlight"><span class="o">+</span></code>, <code class="highlight"><span class="o">-</span></code>, <code class="highlight"><span class="o">*</span></code>, <code class="highlight"><span class="o">/</span></code>, <code class="highlight"><span class="o">//</span></code>, <code class="highlight"><span class="o">%</span></code>), comparisons (<code class="highlight"><span class="o">&lt;</span></code>, <code class="highlight"><span class="o">&lt;=</span></code>, <code class="highlight"><span class="o">&gt;</span></code>, <code class="highlight"><span class="o">&gt;=</span></code>, <code class="highlight"><span class="o">==</span></code>, <code class="highlight"><span class="o">!=</span></code>), and boolean operations 
+(<code class="highlight"><span class="o">+</span></code>, <code class="highlight"><span class="o">-</span></code>, <code class="highlight"><span class="o">*</span></code>, <code class="highlight"><span class="o">/</span></code>, <code class="highlight"><span class="o">//</span></code>, <code class="highlight"><span class="o">%</span></code>), comparisons (<code class="highlight"><span class="o">&lt;</span></code>, <code class="highlight"><span class="o">&lt;=</span></code>, <code class="highlight"><span class="o">&gt;</span></code>, <code class="highlight"><span class="o">&gt;=</span></code>, <code class="highlight"><span class="o">==</span></code>, <code class="highlight"><span class="o">!=</span></code>), and boolean operations
 (<code class="highlight"><span class="ow">and</span></code>, <code class="highlight"><span class="ow">or</span></code>, <code class="highlight"><span class="ow">not</span></code>).</p>
 <h3 id="record">Record<a class="headerlink" href="#record" title="Permanent link">&para;</a></h3>
-<p><a href="../reference/sonolus.script.record/"><code class="highlight"><span class="n">Record</span></code></a> is the main way to define custom types in Sonolus.py. 
+<p><a href="../reference/sonolus.script.record/"><code class="highlight"><span class="n">Record</span></code></a> is the main way to define custom types in Sonolus.py.
 It functions similarly to a data class and provides a way to define a type with named fields:</p>
 <div class="highlight"><pre><span></span><code><span class="k">class</span><span class="w"> </span><span class="nc">MyRecord</span><span class="p">(</span><span class="n">Record</span><span class="p">):</span>
     <span class="n">a</span><span class="p">:</span> <span class="nb">int</span>
@@ -1982,7 +1964,7 @@ It functions similarly to a data class and provides a way to define a type with 
 <span class="k">assert</span> <span class="n">record_1</span><span class="o">.</span><span class="n">a</span> <span class="o">==</span> <span class="n">record_2</span><span class="o">.</span><span class="n">value</span><span class="o">.</span><span class="n">a</span> <span class="o">==</span> <span class="mi">789</span>
 </code></pre></div>
 <h3 id="array">Array<a class="headerlink" href="#array" title="Permanent link">&para;</a></h3>
-<p><a href="../reference/sonolus.script.array/"><code class="highlight"><span class="n">Array</span></code></a> is a type that represents a fixed-size array of elements of a 
+<p><a href="../reference/sonolus.script.array/"><code class="highlight"><span class="n">Array</span></code></a> is a type that represents a fixed-size array of elements of a
 specific type:</p>
 <div class="highlight"><pre><span></span><code><span class="n">array_1</span> <span class="o">=</span> <span class="n">Array</span><span class="p">[</span><span class="nb">int</span><span class="p">,</span> <span class="mi">3</span><span class="p">](</span><span class="mi">1</span><span class="p">,</span> <span class="mi">2</span><span class="p">,</span> <span class="mi">3</span><span class="p">)</span>
 <span class="n">array_2</span> <span class="o">=</span> <span class="n">Array</span><span class="p">(</span><span class="mi">4</span><span class="p">,</span> <span class="mi">5</span><span class="p">,</span> <span class="mi">6</span><span class="p">)</span>  <span class="c1"># Type arguments are inferred</span>
@@ -2009,7 +1991,7 @@ specific type:</p>
 <span class="n">record_2</span> <span class="o">=</span> <span class="o">+</span><span class="n">Array</span><span class="p">[</span><span class="nb">int</span><span class="p">,</span> <span class="mi">3</span><span class="p">]</span>
 </code></pre></div>
 <p>Records and arrays can be mutated in-place using the <code class="highlight"><span class="o">@=</span></code> operator:</p>
-<div class="highlight"><pre><span></span><code><span class="n">record_1</span> <span class="o">@=</span> <span class="n">MyRecord</span><span class="p">(</span><span class="mi">1</span><span class="p">,</span> <span class="mf">2.3</span><span class="p">)</span> 
+<div class="highlight"><pre><span></span><code><span class="n">record_1</span> <span class="o">@=</span> <span class="n">MyRecord</span><span class="p">(</span><span class="mi">1</span><span class="p">,</span> <span class="mf">2.3</span><span class="p">)</span>
 <span class="n">array_1</span> <span class="o">@=</span> <span class="n">Array</span><span class="p">(</span><span class="mi">4</span><span class="p">,</span> <span class="mi">5</span><span class="p">,</span> <span class="mi">6</span><span class="p">)</span>
 </code></pre></div>
 <p>Record fields and array elements of numeric types can be set using the <code class="highlight"><span class="o">=</span></code> operator:</p>
@@ -2073,7 +2055,7 @@ such as not being valid as Record field types or Array element types.</p>
 </li>
 <li>Utilities<ul>
 <li><a href="../reference/sonolus.script.array_like/">ArrayLike</a>: Mixin for array functionality.</li>
-<li><a href="../reference/sonolus.script.containers/">Containers</a>: Additional container types like <code class="highlight"><span class="n">VarArray</span></code> and <code class="highlight"><span class="n">ArrayMap</span></code>.</li>
+<li><a href="../reference/sonolus.script.containers/">Containers</a>: Additional container types like <a class="autorefs autorefs-internal" title="            VarArray" href="../reference/sonolus.script.containers/#sonolus.script.containers.VarArray"><code class="highlight"><span class="n">VarArray</span></code></a> and <a class="autorefs autorefs-internal" title="            ArrayMap" href="../reference/sonolus.script.containers/#sonolus.script.containers.ArrayMap"><code class="highlight"><span class="n">ArrayMap</span></code></a>.</li>
 <li><a href="../reference/sonolus.script.debug/">Debug</a>: Debugging utilities.</li>
 <li><a href="../reference/sonolus.script.easing/">Easing</a>: Easing functions for animations.</li>
 <li><a href="../reference/sonolus.script.interval/">Interval</a>: Mathematical intervals.</li>
@@ -2088,14 +2070,15 @@ such as not being valid as Record field types or Array element types.</p>
 </li>
 </ul>
 <p>For more details, see the <a href="../reference/">Reference</a> section.</p>
-<h2 id="getting-started">Getting Started<a class="headerlink" href="#getting-started" title="Permanent link">&para;</a></h2>
-<p>Before making a new Sonolus.py engine, it may be helpful to look at some existing projects to see how they use
-the library:</p>
-<ul>
-<li><a href="https://github.com/qwewqa/pydori">pydori</a>: A Bandori-like engine designed to be an example project for Sonolus.py.</li>
-</ul>
-<p>If you're starting a new project, you'll probably want to use the
-<a href="https://github.com/qwewqa/sonolus.py-template-project">new project template</a>.</p>
+<div class="footnote">
+<hr />
+<ol>
+<li id="fn:1">
+<p>The <a class="autorefs autorefs-internal" title="            Maybe" href="../reference/sonolus.script.maybe/#sonolus.script.maybe.Maybe"><code class="highlight"><span class="n">Maybe</span></code></a> type is an exception to this rule. 
+See the <a href="../reference/sonolus.script.maybe/"><code class="highlight"><span class="n">Maybe</span></code> documentation</a> for details.&#160;<a class="footnote-backref" href="#fnref:1" title="Jump back to footnote 1 in the text">&#8617;</a></p>
+</li>
+</ol>
+</div>
 
 
 
