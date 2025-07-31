@@ -103,9 +103,16 @@ class Judgment(IntEnum):
     """The judgment of a hit."""
 
     MISS = 0
+    """A miss. Breaks combo."""
+
     PERFECT = 1
+    """A perfect hit."""
+
     GREAT = 2
+    """A great hit."""
+
     GOOD = 3
+    """A good hit. Breaks combo."""
 
 
 @native_function(Op.Judge)
