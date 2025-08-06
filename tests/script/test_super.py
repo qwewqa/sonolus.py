@@ -1,6 +1,5 @@
-from script.conftest import run_and_validate
-
 from sonolus.script.debug import debug_log
+from tests.script.conftest import run_and_validate
 
 
 class A:
