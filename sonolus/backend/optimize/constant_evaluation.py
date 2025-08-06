@@ -124,6 +124,8 @@ class SparseConditionalConstantPropagation(CompilerPass):
                             new_values.add(arg)
                     if len(new_values) == 1:
                         new_value = next(iter(new_values))
+                    elif len(new_values) > 100:
+                        new_value = NAC  # Give up to save performance
                     else:
                         new_value = frozenset(new_values)
             else:
