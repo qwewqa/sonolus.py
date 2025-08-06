@@ -13,7 +13,7 @@ from typing import Any, Never
 from sonolus.backend.excepthook import install_excepthook
 from sonolus.backend.utils import get_function, scan_writes
 from sonolus.script.debug import assert_true
-from sonolus.script.internal.builtin_impls import BUILTIN_IMPLS, _bool, _float, _int, _len
+from sonolus.script.internal.builtin_impls import BUILTIN_IMPLS, _bool, _float, _int, _len, _super
 from sonolus.script.internal.constant import ConstantValue
 from sonolus.script.internal.context import Context, EmptyBinding, Scope, ValueBinding, ctx, set_ctx, using_ctx
 from sonolus.script.internal.descriptor import SonolusDescriptor
@@ -1113,6 +1113,21 @@ class Visitor(ast.NodeVisitor):
                     kwargs.update(value.value)
                 else:
                     raise ValueError("Starred keyword arguments (**kwargs) must be dictionaries")
+        if fn._is_py_() and fn._as_py_() is _super and not args and not kwargs and "__class__" in self.globals:
+            class_value = self.get_name("__class__")
+            first_param_name = next(
+                (
+                    name
+                    for name, param in self.bound_args.signature.parameters.items()
+                    if param.kind in {inspect.Parameter.POSITIONAL_ONLY, inspect.Parameter.POSITIONAL_OR_KEYWORD}
+                ),
+                None,
+            )
+            if first_param_name is not None:
+                first_param_value = self.get_name(first_param_name)
+                args = (validate_value(class_value), validate_value(first_param_value))
+            else:
+                args = (validate_value(class_value),)
         return self.handle_call(node, fn, *args, **kwargs)
 
     def visit_FormattedValue(self, node):
@@ -1136,23 +1151,26 @@ class Visitor(ast.NodeVisitor):
         raise NotImplementedError("Starred expressions are not supported")
 
     def visit_Name(self, node):
-        if node.id in self.used_parent_binding_values:
-            return self.used_parent_binding_values[node.id]
+        return self.get_name(node.id)
+
+    def get_name(self, name: str):
+        if name in self.used_parent_binding_values:
+            return self.used_parent_binding_values[name]
         self.active_ctx = ctx()
         v = self
         while v:
-            if not isinstance(v.active_ctx.scope.get_binding(node.id), EmptyBinding):
-                result = v.active_ctx.scope.get_value(node.id)
+            if not isinstance(v.active_ctx.scope.get_binding(name), EmptyBinding):
+                result = v.active_ctx.scope.get_value(name)
                 if v is not self:
-                    self.used_parent_binding_values[node.id] = result
+                    self.used_parent_binding_values[name] = result
                 return result
             v = v.parent
-        if node.id in self.globals:
-            value = self.globals[node.id]
+        if name in self.globals:
+            value = self.globals[name]
             if value is ctx:
                 raise ValueError("Unexpected use of ctx in non meta-function")
             return validate_value(BUILTIN_IMPLS.get(id(value), value))
-        raise NameError(f"Name {node.id} is not defined")
+        raise NameError(f"Name {name} is not defined")
 
     def visit_List(self, node):
         raise NotImplementedError("List literals are not supported")

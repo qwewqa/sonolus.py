@@ -287,3 +287,13 @@ def zip[T](*iterables: Iterable[T]) -> Iterator[tuple[T, ...]]:
         An iterator of aggregated tuples.
     """
     ...
+
+def super(cls: type = ..., instance: Any = ...) -> Any:
+    """Return a proxy object that delegates method calls to a parent or sibling class.
+
+    Args:
+        cls: The class to delegate
+        instance: The instance to delegate to.
+    Returns:
+        A proxy object that can be used to call methods from the parent or sibling class.
+    """

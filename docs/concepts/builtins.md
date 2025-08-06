@@ -21,6 +21,7 @@ The supported functions and parameters are listed below.
 - `range(stop)`, `range(start, stop[, step])`
 - `reversed(seq)`
 - `round(number[, ndigits])`
+- `super(type[, object-or-type])`
 - `zip(*iterables)`
 
 ## Standard library modules

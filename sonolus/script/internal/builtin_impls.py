@@ -377,6 +377,12 @@ def _iter(iterable):
     return iterable.__iter__()  # type: ignore # noqa: PLC2801
 
 
+@meta_fn
+def _super(*args):
+    """Get the super class of a class or instance."""
+    return super(*(arg._as_py_() if arg._is_py_() else arg for arg in args))
+
+
 # classmethod, property, staticmethod are supported as decorators, but not within functions
 
 BUILTIN_IMPLS = {
@@ -399,6 +405,7 @@ BUILTIN_IMPLS = {
     id(next): _next,
     id(range): Range,
     id(reversed): _reversed,
+    id(super): _super,
     id(zip): _zip,
     **MATH_BUILTIN_IMPLS,  # Includes round
     **RANDOM_BUILTIN_IMPLS,

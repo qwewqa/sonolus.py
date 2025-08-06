@@ -83,6 +83,7 @@ def try_validate_value(value: Any) -> Value | None:
             | NoneType()
             | NotImplementedType()
             | EllipsisType()
+            | super()
         ):
             return BasicConstantValue.of(value)
         case special_form if value in {
