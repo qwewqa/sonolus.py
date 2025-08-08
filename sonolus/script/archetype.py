@@ -459,7 +459,7 @@ class _BaseArchetype:
     still be the id of `A`.
     """
 
-    key: int | float | Any = -1
+    key: int | float = -1
     """An optional key for the archetype.
 
     May be useful to identify an archetype in an inheritance hierarchy without needing to check id.
@@ -751,8 +751,17 @@ class _BaseArchetype:
     def derive[T](cls: type[T], name: str, is_scored: bool, key: int | float | None = None) -> type[T]:
         """Derive a new archetype class from this archetype.
 
+        Roughly equivalent to returning:
+        ```python
+        class Derived(cls):
+            name = <name>
+            is_scored = <is_scored>
+            key = <key>  # Only set if key is not None
+        ```
+
         This is used to create a new archetype with the same fields and callbacks, but with a different name and
-        whether it is scored.
+        whether it is scored. Compared to manually subclassing, this method also enables faster compilation when
+        the same base archetype has multiple derived archetypes by compiling callbacks only once for the base archetype.
 
         Args:
             name: The name of the new archetype.
@@ -1301,3 +1310,7 @@ class StandardArchetypeName(StrEnum):
 
     TIMESCALE_CHANGE = "#TIMESCALE_CHANGE"
     """Timescale change marker"""
+
+
+type AnyArchetype = PlayArchetype | WatchArchetype | PreviewArchetype
+"""Union of all archetype types."""
