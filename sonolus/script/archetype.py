@@ -459,7 +459,7 @@ class _BaseArchetype:
     still be the id of `A`.
     """
 
-    key: int = -1
+    key: int | float | Any = -1
     """An optional key for the archetype.
 
     May be useful to identify an archetype in an inheritance hierarchy without needing to check id.
@@ -467,7 +467,7 @@ class _BaseArchetype:
     If accessed on an entity, always returns the runtime key of the entity, even if it doesn't match the type
     that was used to access it.
 
-    E.g. if an entity of archetype `A` is accessed via [`EntityRef[B]`][sonolus.script.archetype.EntityRef], the key 
+    E.g. if an entity of archetype `A` is accessed via [`EntityRef[B]`][sonolus.script.archetype.EntityRef], the key
     will still be the key of `A`.
     """
 
