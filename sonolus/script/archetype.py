@@ -455,7 +455,8 @@ class _BaseArchetype:
     If accessed on an entity, always returns the runtime archetype id of the entity, even if it doesn't match the type
     that was used to access it.
 
-    E.g. if an entity of archetype A is accessed via EntityRef[B], the id will still be the id of A.
+    E.g. if an entity of archetype `A` is accessed via [`EntityRef[B]`][sonolus.script.archetype.EntityRef], the id will
+    still be the id of `A`.
     """
 
     key: int = -1
@@ -466,7 +467,8 @@ class _BaseArchetype:
     If accessed on an entity, always returns the runtime key of the entity, even if it doesn't match the type
     that was used to access it.
 
-    E.g. if an entity of archetype A is accessed via EntityRef[B], the key will still be the key of A.
+    E.g. if an entity of archetype `A` is accessed via [`EntityRef[B]`][sonolus.script.archetype.EntityRef], the key 
+    will still be the key of `A`.
     """
 
     name: ClassVar[str | None] = None
