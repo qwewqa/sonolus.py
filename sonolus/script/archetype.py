@@ -711,7 +711,7 @@ class _BaseArchetype:
         pass
 
     @classmethod
-    def derive(cls, name: str, is_scored: bool) -> type[Self]:
+    def derive[T](cls: type[T], name: str, is_scored: bool) -> type[T]:
         """Derive a new archetype class from this archetype.
 
         This is used to create a new archetype with the same fields and callbacks, but with a different name and
