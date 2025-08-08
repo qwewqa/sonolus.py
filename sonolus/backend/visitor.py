@@ -1126,8 +1126,6 @@ class Visitor(ast.NodeVisitor):
             if first_param_name is not None:
                 first_param_value = self.get_name(first_param_name)
                 args = (validate_value(class_value), validate_value(first_param_value))
-            else:
-                args = (validate_value(class_value),)
         return self.handle_call(node, fn, *args, **kwargs)
 
     def visit_FormattedValue(self, node):

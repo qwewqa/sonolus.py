@@ -74,10 +74,12 @@ def compile_mode(
             return cb_info.name, node_index
 
     all_futures = {}
-    archetype_entries = []
+    base_archetype_entries = {}
 
     if archetypes is not None:
-        for archetype in archetypes:
+        base_archetypes = {getattr(a, "_derived_base_", a) for a in archetypes}
+
+        for archetype in base_archetypes:
             archetype._init_fields()
 
             archetype_data = {
@@ -109,7 +111,7 @@ def compile_mode(
                     cb_name, result_data = process_callback(cb_info, cb, archetype)
                     archetype_data[cb_name] = result_data
 
-            archetype_entries.append(archetype_data)
+            base_archetype_entries[archetype] = archetype_data
 
     if global_callbacks is not None and thread_pool is not None:
         for cb_info, cb in global_callbacks:
@@ -129,7 +131,10 @@ def compile_mode(
             results[cb_name] = node_index
 
     if archetypes is not None:
-        results["archetypes"] = archetype_entries
+        results["archetypes"] = [
+            {**base_archetype_entries[getattr(a, "_derived_base_", a)], "name": a.name, "hasInput": a.is_scored}
+            for a in archetypes
+        ]
 
     results["nodes"] = nodes.get()
     return results

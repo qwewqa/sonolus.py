@@ -183,6 +183,45 @@ class _ArchetypeField(SonolusDescriptor):
             target._copy_from_(value)
 
 
+class _NameDescriptor:
+    def __init__(self, name: str):
+        self.name = name
+
+    def __get__(self, instance, owner):
+        if instance is None:
+            return self.name
+        elif ctx():
+            raise RuntimeError("Cannot access archetype name in from self in a callback, use ArchetypeClass.name")
+        else:
+            return self.name
+
+
+class _IsScoredDescriptor:
+    def __init__(self, value: bool):
+        self.value = value
+
+    def __get__(self, instance, owner):
+        if instance is None:
+            return self.value
+        elif ctx():
+            raise RuntimeError("Cannot access is_scored from self in a callback, use ArchetypeClass.is_scored")
+        else:
+            return self.value
+
+
+class _IdDescriptor:
+    def __get__(self, instance, owner):
+        if not ctx():
+            raise RuntimeError("Archetype id is only available during compilation")
+        if instance is None:
+            result = ctx().global_state.archetypes.get(owner)
+            if result is None:
+                raise RuntimeError("Archetype is not registered")
+            return result
+        else:
+            return instance._info.archetype_id
+
+
 def imported(*, name: str | None = None) -> Any:
     """Declare a field as imported.
 
@@ -387,6 +426,9 @@ class _BaseArchetype:
 
     _data_: _ArchetypeData
 
+    id: int = 0
+    """The id of the archetype or entity."""
+
     name: ClassVar[str | None] = None
     """The name of the archetype.
 
@@ -433,17 +475,7 @@ class _BaseArchetype:
     def is_at(cls, index: int) -> bool:
         if not ctx():
             raise RuntimeError("is_at is only available during compilation")
-        return entity_info_at(index).archetype_id == cls.id()
-
-    @classmethod
-    @meta_fn
-    def id(cls) -> int:
-        if not ctx():
-            raise RuntimeError("Archetype id is only available during compilation")
-        result = ctx().global_state.archetypes.get(cls)
-        if result is None:
-            raise RuntimeError("Archetype is not registered")
-        return result
+        return entity_info_at(index).archetype_id == cls.id
 
     @classmethod
     @meta_fn
@@ -465,7 +497,7 @@ class _BaseArchetype:
         cls._init_fields()
         if not ctx():
             raise RuntimeError("Spawn is only allowed within a callback")
-        archetype_id = cls.id()
+        archetype_id = cls.id
         bound = cls._spawn_signature_.bind_partial(**kwargs)
         bound.apply_defaults()
         data = []
@@ -511,6 +543,9 @@ class _BaseArchetype:
                 continue
             cls._callbacks_.append(cb)
         cls._field_init_done = False
+        cls.id = _IdDescriptor()
+        cls.name = _NameDescriptor(cls.name)
+        cls.is_scored = _IsScoredDescriptor(cls.is_scored)
 
     @classmethod
     def _init_fields(cls):
@@ -521,7 +556,17 @@ class _BaseArchetype:
             if hasattr(mro_entry, "_field_init_done"):
                 mro_entry._init_fields()
         field_specifiers = get_field_specifiers(
-            cls, skip={"name", "is_scored", "_callbacks_", "_field_init_done"}
+            cls,
+            skip={
+                "id",
+                "name",
+                "is_scored",
+                "_derived_base_",
+                "_is_derived_",
+                "_default_callbacks_",
+                "_callbacks_",
+                "_field_init_done",
+            },
         ).items()
         if not hasattr(cls, "_imported_fields_"):
             cls._imported_fields_ = {}
@@ -655,6 +700,29 @@ class _BaseArchetype:
     @classmethod
     def _post_init_fields(cls):
         pass
+
+    @classmethod
+    def derive(cls, name: str, is_scored: bool) -> type[Self]:
+        """Derive a new archetype class from this archetype.
+
+        This is used to create a new archetype with the same fields and callbacks, but with a different name and
+        whether it is scored.
+
+        Args:
+            name: The name of the new archetype.
+            is_scored: Whether the new archetype is scored.
+
+        Returns:
+            A new archetype class with the same fields and callbacks as this archetype, but with the given name and
+            whether it is scored.
+        """
+        if getattr(cls, "_is_derived_", False):
+            raise RuntimeError("Cannot derive from a derived archetype")
+
+        new_cls = type(name, (cls,), {"name": name, "is_scored": is_scored})
+        new_cls._is_derived_ = True
+        new_cls._derived_base_ = cls
+        return new_cls
 
 
 class PlayArchetype(_BaseArchetype):
@@ -807,7 +875,7 @@ class PlayArchetype(_BaseArchetype):
             raise RuntimeError("Calling life is only allowed within a callback")
         match self._data_:
             case _ArchetypeSelfData() | _ArchetypeReferenceData():
-                return _deref(ctx().blocks.ArchetypeLife, self.id() * ArchetypeLife._size_(), ArchetypeLife)
+                return _deref(ctx().blocks.ArchetypeLife, self.id * ArchetypeLife._size_(), ArchetypeLife)
             case _:
                 raise RuntimeError("Life is not available in level data")
 
@@ -920,7 +988,7 @@ class WatchArchetype(_BaseArchetype):
             raise RuntimeError("Calling life is only allowed within a callback")
         match self._data_:
             case _ArchetypeSelfData() | _ArchetypeReferenceData():
-                return _deref(ctx().blocks.ArchetypeLife, self.id() * ArchetypeLife._size_(), ArchetypeLife)
+                return _deref(ctx().blocks.ArchetypeLife, self.id * ArchetypeLife._size_(), ArchetypeLife)
             case _:
                 raise RuntimeError("Life is not available in level data")
 
@@ -1032,7 +1100,7 @@ def archetype_life_of(archetype: type[_BaseArchetype] | _BaseArchetype) -> Arche
         raise RuntimeError("Calling archetype_life_of is only allowed within a callback")
     match ctx().global_state.mode:
         case Mode.PLAY | Mode.WATCH:
-            return _deref(ctx().blocks.ArchetypeLife, archetype.id() * ArchetypeLife._size_(), ArchetypeLife)
+            return _deref(ctx().blocks.ArchetypeLife, archetype.id * ArchetypeLife._size_(), ArchetypeLife)
         case _:
             raise RuntimeError(f"Archetype life is not available in mode '{ctx().global_state.mode}'")
 
