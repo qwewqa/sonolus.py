@@ -183,7 +183,7 @@ class _ArchetypeField(SonolusDescriptor):
             target._copy_from_(value)
 
 
-class _NameDescriptor:
+class _NameDescriptor(SonolusDescriptor):
     def __init__(self, name: str):
         self.name = name
 
@@ -195,8 +195,11 @@ class _NameDescriptor:
         else:
             return self.name
 
+    def __set__(self, instance, value):
+        raise AttributeError("Archetype name is read-only and cannot be set")
 
-class _IsScoredDescriptor:
+
+class _IsScoredDescriptor(SonolusDescriptor):
     def __init__(self, value: bool):
         self.value = value
 
@@ -208,8 +211,11 @@ class _IsScoredDescriptor:
         else:
             return self.value
 
+    def __set__(self, instance, value):
+        raise AttributeError("is_scored is read-only and cannot be set")
 
-class _IdDescriptor:
+
+class _IdDescriptor(SonolusDescriptor):
     def __get__(self, instance, owner):
         if not ctx():
             raise RuntimeError("Archetype id is only available during compilation")
@@ -220,6 +226,9 @@ class _IdDescriptor:
             return result
         else:
             return instance._info.archetype_id
+
+    def __set__(self, instance, value):
+        raise AttributeError("Archetype id is read-only and cannot be set")
 
 
 def imported(*, name: str | None = None) -> Any:
