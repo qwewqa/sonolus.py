@@ -28,4 +28,7 @@ def get_field_specifiers(
             and not isinstance(value, property)
         ):
             raise ValueError(f"Missing annotation for {cls.__name__}.{key}")
+    for skipped_key in skip:
+        if skipped_key in results:
+            del results[skipped_key]
     return results

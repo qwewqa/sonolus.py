@@ -1,11 +1,11 @@
 from __future__ import annotations
 
-from collections.abc import Iterable
+from collections.abc import Iterable, Sequence
 from contextlib import contextmanager
 from contextvars import ContextVar
 from dataclasses import dataclass
 from threading import Lock
-from typing import Any, Self
+from typing import Any, Literal, Self
 
 from sonolus.backend.blocks import BlockData, PlayBlock
 from sonolus.backend.ir import IRConst, IRExpr, IRStmt
@@ -41,6 +41,7 @@ debug_var = ContextVar("debug_var", default=_disabled_debug_config)
 
 class GlobalContextState:
     archetypes: dict[type, int]
+    keys: Sequence[int] | None
     rom: ReadOnlyMemory
     const_mappings: dict[Any, int]
     environment_mappings: dict[_GlobalInfo, int]
@@ -49,7 +50,14 @@ class GlobalContextState:
     lock: Lock
 
     def __init__(self, mode: Mode, archetypes: dict[type, int] | None = None, rom: ReadOnlyMemory | None = None):
+        from sonolus.script.array import Array
+
         self.archetypes = archetypes or {}
+        self.keys = (
+            Array(*((getattr(a, "_key_", -1)) for a in sorted(self.archetypes, key=lambda a: archetypes[a])))
+            if archetypes
+            else Array[int, Literal[0]]()
+        )
         self.rom = ReadOnlyMemory() if rom is None else rom
         self.const_mappings = {}
         self.environment_mappings = {}

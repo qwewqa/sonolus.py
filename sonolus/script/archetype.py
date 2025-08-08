@@ -231,6 +231,20 @@ class _IdDescriptor(SonolusDescriptor):
         raise AttributeError("Archetype id is read-only and cannot be set")
 
 
+class _KeyDescriptor(SonolusDescriptor):
+    def __init__(self, value: int | float):
+        self.value = value
+
+    def __get__(self, instance, owner):
+        if instance is not None and ctx():
+            return ctx().global_state.keys[instance.id]
+        else:
+            return self.value
+
+    def __set__(self, instance, value):
+        raise AttributeError("Archetype key is read-only and cannot be set")
+
+
 def imported(*, name: str | None = None) -> Any:
     """Declare a field as imported.
 
@@ -436,7 +450,24 @@ class _BaseArchetype:
     _data_: _ArchetypeData
 
     id: int = 0
-    """The id of the archetype or entity."""
+    """The id of the archetype or entity.
+
+    If accessed on an entity, always returns the runtime archetype id of the entity, even if it doesn't match the type
+    that was used to access it.
+
+    E.g. if an entity of archetype A is accessed via EntityRef[B], the id will still be the id of A.
+    """
+
+    key: int = -1
+    """An optional key for the archetype.
+
+    May be useful to identify an archetype in an inheritance hierarchy without needing to check id.
+
+    If accessed on an entity, always returns the runtime key of the entity, even if it doesn't match the type
+    that was used to access it.
+
+    E.g. if an entity of archetype A is accessed via EntityRef[B], the key will still be the key of A.
+    """
 
     name: ClassVar[str | None] = None
     """The name of the archetype.
@@ -538,7 +569,7 @@ class _BaseArchetype:
         return entries
 
     def __init_subclass__(cls, **kwargs):
-        if cls.__module__ == _BaseArchetype.__module__:
+        if cls.__module__ == _BaseArchetype.__module__ and not getattr(cls, "_is_derived_", False):
             if cls._supported_callbacks_ is None:
                 raise TypeError("Cannot directly subclass Archetype, use the Archetype subclass for your mode")
             cls._default_callbacks_ = {getattr(cls, cb_info.py_name) for cb_info in cls._supported_callbacks_.values()}
@@ -553,6 +584,8 @@ class _BaseArchetype:
             cls._callbacks_.append(cb)
         cls._field_init_done = False
         cls.id = _IdDescriptor()
+        cls._key_ = cls.key
+        cls.key = _KeyDescriptor(cls.key)
         cls.name = _NameDescriptor(cls.name)
         cls.is_scored = _IsScoredDescriptor(cls.is_scored)
 
@@ -568,8 +601,10 @@ class _BaseArchetype:
             cls,
             skip={
                 "id",
+                "key",
                 "name",
                 "is_scored",
+                "_key_",
                 "_derived_base_",
                 "_is_derived_",
                 "_default_callbacks_",
@@ -711,7 +746,7 @@ class _BaseArchetype:
         pass
 
     @classmethod
-    def derive[T](cls: type[T], name: str, is_scored: bool) -> type[T]:
+    def derive[T](cls: type[T], name: str, is_scored: bool, key: int | float | None = None) -> type[T]:
         """Derive a new archetype class from this archetype.
 
         This is used to create a new archetype with the same fields and callbacks, but with a different name and
@@ -720,6 +755,7 @@ class _BaseArchetype:
         Args:
             name: The name of the new archetype.
             is_scored: Whether the new archetype is scored.
+            key: A key that can be accessed via the `key` property of the new archetype.
 
         Returns:
             A new archetype class with the same fields and callbacks as this archetype, but with the given name and
@@ -727,10 +763,12 @@ class _BaseArchetype:
         """
         if getattr(cls, "_is_derived_", False):
             raise RuntimeError("Cannot derive from a derived archetype")
-
-        new_cls = type(name, (cls,), {"name": name, "is_scored": is_scored})
-        new_cls._is_derived_ = True
-        new_cls._derived_base_ = cls
+        cls_dict = {"name": name, "is_scored": is_scored, "_is_derived_": True, "_derived_base_": cls}
+        if key is not None:
+            if not isinstance(key, (int, float)):
+                raise TypeError(f"Key must be an int or float, got {type(key)}")
+            cls_dict["key"] = key
+        new_cls = type(name, (cls,), cls_dict)
         return new_cls
 
 
