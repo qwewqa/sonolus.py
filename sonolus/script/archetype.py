@@ -952,6 +952,26 @@ class PlayArchetype(_BaseArchetype):
             case _:
                 raise RuntimeError("Result is only accessible from the entity itself")
 
+    @classmethod
+    def update_life(
+        cls,
+        perfect_increment: int | None = None,
+        great_increment: int | None = None,
+        good_increment: int | None = None,
+        miss_increment: int | None = None,
+    ):
+        """Update the life of this archetype.
+
+        Values default to 0.
+
+        Args:
+            perfect_increment: The increment for perfect life.
+            great_increment: The increment for great life.
+            good_increment: The increment for good life.
+            miss_increment: The increment for miss life.
+        """
+        archetype_life_of(cls).update(perfect_increment, great_increment, good_increment, miss_increment)
+
 
 class WatchArchetype(_BaseArchetype):
     """Base class for watch mode archetypes.
@@ -1069,6 +1089,26 @@ class WatchArchetype(_BaseArchetype):
     def _post_init_fields(cls):
         if cls._exported_fields_:
             raise RuntimeError("Watch archetypes cannot have exported fields")
+
+    @classmethod
+    def update_life(
+        cls,
+        perfect_increment: int | None = None,
+        great_increment: int | None = None,
+        good_increment: int | None = None,
+        miss_increment: int | None = None,
+    ):
+        """Update the life of this archetype.
+
+        Values default to 0.
+
+        Args:
+            perfect_increment: The increment for perfect life.
+            great_increment: The increment for great life.
+            good_increment: The increment for good life.
+            miss_increment: The increment for miss life.
+        """
+        archetype_life_of(cls).update(perfect_increment, great_increment, good_increment, miss_increment)
 
 
 class PreviewArchetype(_BaseArchetype):
