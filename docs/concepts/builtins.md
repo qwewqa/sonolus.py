@@ -59,3 +59,6 @@ Sonolus.py also comes with support for some standard library modules.
 - `uniform(a, b)` (may include `b` where Python normally doesn't)
 
 Creating `Random` instances is not supported.
+
+### typing
+- `assert_never(arg, /)`

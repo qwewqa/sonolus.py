@@ -227,6 +227,7 @@ Sonolus.py provides a number of built-in modules that can be used in Sonolus eng
     - [builtins](reference/builtins.md): Supported Python builtins.
     - [math](reference/math.md): Supported math functions.
     - [random](reference/random.md): Supported random functions.
+    - [typing](reference/typing.md): Supported typing functions.
 - Utilities
     - [ArrayLike](reference/sonolus.script.array_like.md): Mixin for array functionality.
     - [Containers](reference/sonolus.script.containers.md): Additional container types like [`VarArray`][sonolus.script.containers.VarArray] and [`ArrayMap`][sonolus.script.containers.ArrayMap].

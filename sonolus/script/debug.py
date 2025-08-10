@@ -82,6 +82,9 @@ def assert_false(value: int | float | bool, message: str | None = None):
 
 @meta_fn
 def assert_unreachable(message: str | None = None) -> Never:
+    # This works a bit differently from assert_never from typing in that it throws an error if the Sonolus.py
+    # compiler cannot guarantee that this function will not be called, which is different from what type checkers
+    # may be able to infer.
     message = validate_value(message)._as_py_() or "Unreachable code reached"  # type: ignore
     raise RuntimeError(message)
 

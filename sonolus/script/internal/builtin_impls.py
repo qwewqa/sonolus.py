@@ -1,3 +1,5 @@
+from typing import Never, assert_never
+
 from sonolus.backend.ops import Op
 from sonolus.script.array import Array
 from sonolus.script.array_like import ArrayLike
@@ -383,6 +385,11 @@ def _super(*args):
     return super(*(arg._as_py_() if arg._is_py_() else arg for arg in args))
 
 
+@meta_fn
+def _assert_never(arg: Never, /):
+    error("Expected code to be unreachable")
+
+
 # classmethod, property, staticmethod are supported as decorators, but not within functions
 
 BUILTIN_IMPLS = {
@@ -407,6 +414,7 @@ BUILTIN_IMPLS = {
     id(reversed): _reversed,
     id(super): _super,
     id(zip): _zip,
+    id(assert_never): _assert_never,
     **MATH_BUILTIN_IMPLS,  # Includes round
     **RANDOM_BUILTIN_IMPLS,
 }
