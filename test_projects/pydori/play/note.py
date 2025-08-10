@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from typing import Self
+from typing import cast
 
 from pydori.lib.buckets import note_judgment_window
 from pydori.lib.layout import Hitbox, get_note_y, preempt_time
@@ -11,6 +11,7 @@ from pydori.lib.note import (
     draw_note_head,
     get_flick_speed_threshold,
     get_note_bucket,
+    init_note_life,
     play_note_particle,
     play_note_sfx,
     schedule_note_sfx,
@@ -32,6 +33,7 @@ from sonolus.script.archetype import (
     imported,
     shared_memory,
 )
+from sonolus.script.array import Dim
 from sonolus.script.bucket import Judgment, JudgmentWindow
 from sonolus.script.containers import VarArray
 from sonolus.script.effect import LoopedEffectHandle
@@ -49,10 +51,6 @@ DEFAULT_BEST_JUDGMENT_TIME = -1e8
 class Note(PlayArchetype):
     """Common archetype for notes."""
 
-    name = "Note"
-    is_scored = True
-
-    kind: NoteKind = imported()
     lane: float = imported()
     beat: StandardImport.BEAT = imported()
     direction: int = imported()
@@ -120,7 +118,7 @@ class Note(PlayArchetype):
             self.despawn = True
             return
         if time() in self.input_interval:
-            active_notes.append(self.ref())
+            NoteMemory.active_notes.append(self.ref())
         if self.best_judgment_time > DEFAULT_BEST_JUDGMENT_TIME:
             # For holds ticks and flicks, we wait until it's impossible to improve the judgment before judging.
             # E.g. the player might be within a hold tick's hitbox at the early good window, move their finger away,
@@ -157,7 +155,7 @@ class Note(PlayArchetype):
     def touch(self):
         if self.despawn:
             return
-        hitbox_quad = self.get_hitbox().layout()
+        hitbox_quad = self.calculate_hitbox().layout()
         match self.kind:
             case NoteKind.TAP | NoteKind.HOLD_HEAD:
                 self.handle_tap_input(hitbox_quad)
@@ -266,17 +264,27 @@ class Note(PlayArchetype):
         if new_error < prev_error:
             self.best_judgment_time = offset_adjusted_time()
 
-    def get_hitbox(self) -> Hitbox:
-        hitbox = self.base_hitbox
-        for other_ref in active_notes:
-            other = other_ref.get()
-            if other.is_judged:
-                continue
-            if abs(other.target_time - self.target_time) > 0.005:
-                continue
-            # Shrink the hitbox if it overlaps with another note's hitbox and they have about the same target time.
-            hitbox @= hitbox.shrink_overlap(other.base_hitbox)
-        return hitbox
+    def calculate_hitbox(self) -> Hitbox:
+        base_hitbox = self.base_hitbox
+        right_overlap = 0
+        left_overlap = 0
+        other_notes = (ref.get() for ref in NoteMemory.active_notes if ref.index != self.index)
+        simultaneous_notes = (
+            note
+            for note in other_notes
+            if not note.is_judged and abs(note.target_time - self.target_time) <= 0.005 and not note.has_active_touch
+        )
+        for sim_note in simultaneous_notes:
+            sim_hitbox = sim_note.base_hitbox
+            if sim_note.lane > self.lane:
+                # The overlap between the hitboxes is how much the right side of the base hitbox
+                # extends beyond the left side of the sim note's hitbox.
+                right_overlap = max(right_overlap, base_hitbox.right - sim_hitbox.left)
+            elif sim_note.lane < self.lane:
+                # The same logic the other way around for the left side.
+                left_overlap = max(left_overlap, sim_hitbox.right - base_hitbox.left)
+        # Shrink the base hitbox by half the overlap on each side.
+        return Hitbox(left=base_hitbox.left + left_overlap / 2, right=base_hitbox.right - right_overlap / 2)
 
     def terminate(self):
         self.end_time = time()
@@ -300,6 +308,14 @@ class Note(PlayArchetype):
         self.despawn = True
         self.is_judged = True
 
+    @classmethod
+    def global_preprocess(cls):
+        init_note_life(cls)
+
+    @property
+    def kind(self) -> NoteKind:
+        return cast(NoteKind, self.key)
+
     @property
     def y(self) -> float:
         return get_note_y(scaled_time(), self.target_scaled_time)
@@ -309,7 +325,7 @@ class Note(PlayArchetype):
         return self.prev_ref.index > 0
 
     @property
-    def prev(self) -> Self:
+    def prev(self) -> Note:
         return self.prev_ref.get()
 
     @property
@@ -317,15 +333,15 @@ class Note(PlayArchetype):
         return self.next_ref.index > 0
 
     @property
-    def next(self) -> Self:
+    def next(self) -> Note:
         return self.next_ref.get()
 
     @property
-    def head(self) -> Self:
+    def head(self) -> Note:
         return self.head_ref.get()
 
     @property
-    def end(self) -> Self:
+    def end(self) -> Note:
         return self.end_ref.get()
 
     @property
@@ -353,14 +369,23 @@ class Note(PlayArchetype):
         return Hitbox.for_note(self.lane, self.direction)
 
 
-class UnscoredNote(Note):
-    """A note that does not contribute to score or judgment.
+TapNote = Note.derive("Tap", is_scored=True, key=NoteKind.TAP)
+FlickNote = Note.derive("Flick", is_scored=True, key=NoteKind.FLICK)
+DirectionalFlickNote = Note.derive("DirectionalFlick", is_scored=True, key=NoteKind.DIRECTIONAL_FLICK)
+HoldHeadNote = Note.derive("HoldHead", is_scored=True, key=NoteKind.HOLD_HEAD)
+HoldTickNote = Note.derive("HoldTick", is_scored=True, key=NoteKind.HOLD_TICK)
+HoldAnchorNote = Note.derive("HoldAnchor", is_scored=False, key=NoteKind.HOLD_ANCHOR)
+HoldEndNote = Note.derive("HoldEnd", is_scored=True, key=NoteKind.HOLD_END)
 
-    Used for hold anchors.
-    """
-
-    name = "UnscoredNote"
-    is_scored = False
+ALL_NOTE_TYPES = (
+    TapNote,
+    FlickNote,
+    DirectionalFlickNote,
+    HoldHeadNote,
+    HoldTickNote,
+    HoldAnchorNote,
+    HoldEndNote,
+)
 
 
 class HoldManager(PlayArchetype):
@@ -412,5 +437,6 @@ class HoldManager(PlayArchetype):
         return self.end_ref.get()
 
 
-# Tracks notes with active judgment windows for hitbox calculations.
-active_notes = level_memory(VarArray[EntityRef[Note], 16])
+@level_memory
+class NoteMemory:
+    active_notes: VarArray[EntityRef[Note], Dim[16]]

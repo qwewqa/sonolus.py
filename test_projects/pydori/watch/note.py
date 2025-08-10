@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from typing import Self
+from typing import cast
 
 from pydori.lib.layout import get_note_y, preempt_time
 from pydori.lib.note import (
@@ -9,6 +9,7 @@ from pydori.lib.note import (
     draw_note,
     draw_note_head,
     get_note_bucket,
+    init_note_life,
     play_note_particle,
     schedule_hold_sfx,
     schedule_note_sfx,
@@ -34,10 +35,6 @@ from sonolus.script.timing import beat_to_time, time_to_scaled_time
 class WatchNote(WatchArchetype):
     """Common archetype for notes."""
 
-    name = "Note"
-    is_scored = True
-
-    kind: NoteKind = imported()
     lane: float = imported()
     beat: StandardImport.BEAT = imported()
     direction: int = imported()
@@ -139,6 +136,14 @@ class WatchNote(WatchArchetype):
         else:
             schedule_hold_sfx(self.head.target_time, self.end.target_time)
 
+    @classmethod
+    def global_preprocess(cls):
+        init_note_life(cls)
+
+    @property
+    def kind(self) -> NoteKind:
+        return cast(NoteKind, self.key)
+
     @property
     def y(self) -> float:
         return get_note_y(scaled_time(), self.target_scaled_time)
@@ -148,7 +153,7 @@ class WatchNote(WatchArchetype):
         return self.prev_ref.index > 0
 
     @property
-    def prev(self) -> Self:
+    def prev(self) -> WatchNote:
         return self.prev_ref.get()
 
     @property
@@ -156,15 +161,15 @@ class WatchNote(WatchArchetype):
         return self.next_ref.index > 0
 
     @property
-    def next(self) -> Self:
+    def next(self) -> WatchNote:
         return self.next_ref.get()
 
     @property
-    def head(self) -> Self:
+    def head(self) -> WatchNote:
         return self.head_ref.get()
 
     @property
-    def end(self) -> Self:
+    def end(self) -> WatchNote:
         return self.end_ref.get()
 
     @property
@@ -183,14 +188,23 @@ class WatchNote(WatchArchetype):
         self.head._hold_lane = value
 
 
-class WatchUnscoredNote(WatchNote):
-    """A note that does not contribute to score or judgment.
+WatchTapNote = WatchNote.derive("Tap", is_scored=True, key=NoteKind.TAP)
+WatchFlickNote = WatchNote.derive("Flick", is_scored=True, key=NoteKind.FLICK)
+WatchDirectionalFlickNote = WatchNote.derive("DirectionalFlick", is_scored=True, key=NoteKind.DIRECTIONAL_FLICK)
+WatchHoldHeadNote = WatchNote.derive("HoldHead", is_scored=True, key=NoteKind.HOLD_HEAD)
+WatchHoldTickNote = WatchNote.derive("HoldTick", is_scored=True, key=NoteKind.HOLD_TICK)
+WatchHoldAnchorNote = WatchNote.derive("HoldAnchor", is_scored=False, key=NoteKind.HOLD_ANCHOR)
+WatchHoldEndNote = WatchNote.derive("HoldEnd", is_scored=True, key=NoteKind.HOLD_END)
 
-    Used for hold anchors.
-    """
-
-    name = "UnscoredNote"
-    is_scored = False
+ALL_WATCH_NOTE_TYPES = (
+    WatchTapNote,
+    WatchFlickNote,
+    WatchDirectionalFlickNote,
+    WatchHoldHeadNote,
+    WatchHoldTickNote,
+    WatchHoldAnchorNote,
+    WatchHoldEndNote,
+)
 
 
 class WatchHoldManager(WatchArchetype):

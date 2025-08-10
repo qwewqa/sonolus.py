@@ -41,6 +41,7 @@ debug_var = ContextVar("debug_var", default=_disabled_debug_config)
 
 class GlobalContextState:
     archetypes: dict[type, int]
+    archetypes_by_name: dict[str, type]
     keys: Sequence[int] | None
     rom: ReadOnlyMemory
     const_mappings: dict[Any, int]
@@ -53,6 +54,7 @@ class GlobalContextState:
         from sonolus.script.array import Array
 
         self.archetypes = archetypes or {}
+        self.archetypes_by_name = {type_.name: type_ for type_, _ in self.archetypes.items()}  # type: ignore
         self.keys = (
             Array(*((getattr(a, "_key_", -1)) for a in sorted(self.archetypes, key=lambda a: archetypes[a])))
             if archetypes

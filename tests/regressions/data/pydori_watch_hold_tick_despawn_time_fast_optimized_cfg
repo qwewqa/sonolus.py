@@ -1,0 +1,11 @@
+0:
+  goto 1 if RuntimeEnvironment[4] else 2
+1:
+  10000[0] <- EntityData[8]
+  goto 3
+2:
+  10000[0] <- EntityData[6]
+  goto 3
+3:
+  Break(1, 10000[0])
+  goto exit

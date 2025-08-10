@@ -88,7 +88,7 @@ class PreviewStage(PreviewArchetype):
                 side="left",
             )
             Skin.time_line.draw(
-                layout_preview_bar_line(time, "left"),
+                layout_preview_bar_line(time, "left_only"),
                 z=LAYER_TIME_LINE,
                 a=PREVIEW_BAR_LINE_ALPHA,
             )

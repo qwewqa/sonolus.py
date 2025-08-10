@@ -1,0 +1,19 @@
+0:
+  goto 1 if Greater(EntityData[4], 0.0) else 6
+1:
+  goto 2 if Not(Greater(EntityData[3], 0.0)) else 6
+2:
+  10000[0] <- Multiply(EntityData[16], 3.0)
+  goto 3 if LessOr(0.0, EntityInfoArray[10000[0]]) else 5
+3:
+  goto 5 if Not(Less(EntityInfoArray[10000[0]], 99999.0)) else 4
+4:
+  StreamSet(Add(Multiply(1.0, EntityInfoArray[10000[0]]), 18.0), -10.0, 0.0)
+  Spawn(8.0, EntityData[16], EntityData[17], 0, 0)
+  goto exit
+5:
+  DebugLog(0.0)
+  DebugPause()
+  goto exit
+6:
+  goto exit

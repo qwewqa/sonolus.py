@@ -1,6 +1,5 @@
 from pydori.lib.buckets import init_buckets, init_score
 from pydori.lib.layout import init_layout
-from pydori.lib.note import init_note_life
 from pydori.lib.stage import (
     StageData,
     draw_stage,
@@ -11,8 +10,9 @@ from pydori.lib.stage import (
 from pydori.lib.streams import Streams
 from pydori.lib.ui import init_ui
 from pydori.play.input import refresh_input_state, unclaimed_taps
-from pydori.play.note import Note, active_notes
+from pydori.play.note import ALL_NOTE_TYPES, NoteMemory
 from sonolus.script.archetype import PlayArchetype, callback
+from sonolus.script.array import Dim
 from sonolus.script.containers import ArraySet
 from sonolus.script.runtime import time
 
@@ -28,7 +28,8 @@ class Stage(PlayArchetype):
         init_ui()
         init_layout()
         init_stage_data()
-        init_note_life(Note)
+        for note_type in ALL_NOTE_TYPES:
+            note_type.global_preprocess()
 
     def spawn_order(self) -> float:
         return -1e8
@@ -39,7 +40,7 @@ class Stage(PlayArchetype):
     @callback(order=-1)
     def update_sequential(self):
         refresh_input_state()
-        active_notes.clear()
+        NoteMemory.active_notes.clear()
 
     def update_parallel(self):
         draw_stage()
@@ -50,7 +51,7 @@ class Stage(PlayArchetype):
 
     @staticmethod
     def handle_empty_lane_taps():
-        effect_lanes = ArraySet[float, 16].new()
+        effect_lanes = ArraySet[float, Dim[16]].new()
         for tap in unclaimed_taps():
             for lane, quad in StageData.lane_layouts.items():
                 if quad.contains_point(tap.position):

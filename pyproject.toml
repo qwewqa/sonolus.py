@@ -29,21 +29,21 @@ build-backend = "hatchling.build"
 
 [dependency-groups]
 dev = [
-    "uv>=0.8.3",
-    "hypothesis>=6.115.3",
-    "pre-commit>=4.0.1",
-    "pytest-xdist>=3.6.1",
+    "uv>=0.8.8",
+    "hypothesis>=6.137.1",
+    "pre-commit>=4.3.0",
+    "pytest-xdist>=3.8.0",
     "pytest>=8.3.3",
-    "ruff>=0.6.9",
+    "ruff>=0.12.8",
     "pytest-cov>=6.0.0",
-    "tox>=4.23.2",
-    "tox-uv>=1.16.0",
+    "tox>=4.28.4",
+    "tox-uv>=1.27.0",
     "ty"
 ]
 docs = [
-    "mkdocs-material>=9.5.45",
+    "mkdocs-material>=9.6.16",
     "mkdocs>=1.6.1",
-    "mkdocstrings[python]>=0.27.0",
+    "mkdocstrings[python]>=0.30.0",
 ]
 
 [tool.hatch.build.targets.wheel]
@@ -57,8 +57,8 @@ env_list = ["py312", "py313", "py314"]
 description = "Run tests"
 passenv = ["CI"]
 deps = [
-    "hypothesis>=6.115.3",
-    "pytest-xdist>=3.6.1",
+    "hypothesis>=6.137.1",
+    "pytest-xdist>=3.8.0",
     "pytest>=8.3.3",
 ]
 uv_python_preference = "managed"

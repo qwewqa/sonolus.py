@@ -2,7 +2,7 @@ from pydori.lib.effect import SFX_DISTANCE, Effects
 from pydori.lib.layer import LAYER_JUDGE_LINE, LAYER_LANE
 from pydori.lib.layout import (
     END_LANE,
-    LANE_COUNT,
+    LANE_COUNT_DIM,
     START_LANE,
     layout_judge_line,
     layout_lane,
@@ -22,7 +22,7 @@ LANE_EFFECT_DURATION = 0.2
 
 @level_data
 class StageData:
-    lane_layouts: ArrayMap[float, Quad, LANE_COUNT]
+    lane_layouts: ArrayMap[float, Quad, LANE_COUNT_DIM]
     left_border_layout: Quad
     right_border_layout: Quad
     judge_line_layout: Quad

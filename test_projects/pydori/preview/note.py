@@ -1,5 +1,7 @@
 from __future__ import annotations
 
+from typing import cast
+
 from pydori.lib.layer import LAYER_ARROW, LAYER_NOTE, get_z
 from pydori.lib.note import NoteKind, get_note_arrow_sprite, get_note_body_sprite
 from pydori.lib.options import Options
@@ -16,10 +18,6 @@ from sonolus.script.timing import beat_to_time
 class PreviewNote(PreviewArchetype):
     """Common archetype for notes."""
 
-    name = "Note"
-    is_scored = True
-
-    kind: NoteKind = imported()
     lane: float = imported()
     beat: StandardImport.BEAT = imported()
     direction: int = imported()
@@ -64,12 +62,25 @@ class PreviewNote(PreviewArchetype):
             case _:
                 pass
 
+    @property
+    def kind(self) -> NoteKind:
+        return cast(NoteKind, self.key)
 
-class PreviewUnscoredNote(PreviewNote):
-    """A note that does not contribute to score or judgment.
 
-    Used for hold anchors.
-    """
+PreviewTapNote = PreviewNote.derive("Tap", is_scored=True, key=NoteKind.TAP)
+PreviewFlickNote = PreviewNote.derive("Flick", is_scored=True, key=NoteKind.FLICK)
+PreviewDirectionalFlickNote = PreviewNote.derive("DirectionalFlick", is_scored=True, key=NoteKind.DIRECTIONAL_FLICK)
+PreviewHoldHeadNote = PreviewNote.derive("HoldHead", is_scored=True, key=NoteKind.HOLD_HEAD)
+PreviewHoldTickNote = PreviewNote.derive("HoldTick", is_scored=True, key=NoteKind.HOLD_TICK)
+PreviewHoldAnchorNote = PreviewNote.derive("HoldAnchor", is_scored=False, key=NoteKind.HOLD_ANCHOR)
+PreviewHoldEndNote = PreviewNote.derive("HoldEnd", is_scored=True, key=NoteKind.HOLD_END)
 
-    name = "UnscoredNote"
-    is_scored = False
+ALL_PREVIEW_NOTE_TYPES = (
+    PreviewTapNote,
+    PreviewFlickNote,
+    PreviewDirectionalFlickNote,
+    PreviewHoldHeadNote,
+    PreviewHoldTickNote,
+    PreviewHoldAnchorNote,
+    PreviewHoldEndNote,
+)

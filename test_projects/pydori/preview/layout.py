@@ -223,7 +223,7 @@ def layout_preview_sim_line(
 
 def layout_preview_bar_line(
     time: float,
-    extend: Literal["left", "right", "both", "none"] = "none",
+    extend: Literal["left", "right", "both", "none", "left_only", "right_only"] = "none",
 ) -> Quad:
     col = time_to_preview_col(time)
     left_lane = START_LANE - 0.5
@@ -237,6 +237,12 @@ def layout_preview_bar_line(
             right_x += PREVIEW_BAR_EXTEND_WIDTH
         case "both":
             left_x -= PREVIEW_BAR_EXTEND_WIDTH
+            right_x += PREVIEW_BAR_EXTEND_WIDTH
+        case "left_only":
+            right_x = left_x
+            left_x -= PREVIEW_BAR_EXTEND_WIDTH
+        case "right_only":
+            left_x = right_x
             right_x += PREVIEW_BAR_EXTEND_WIDTH
         case _:
             pass

@@ -245,6 +245,21 @@ class _KeyDescriptor(SonolusDescriptor):
         raise AttributeError("Archetype key is read-only and cannot be set")
 
 
+class _ArchetypeLifeDescriptor(SonolusDescriptor):
+    def __get__(self, instance, owner):
+        if not ctx():
+            raise RuntimeError("Archetype life is only available during compilation")
+        if not ctx().global_state.mode in {Mode.PLAY, Mode.WATCH}:
+            raise RuntimeError(f"Archetype life is not available in mode '{ctx().global_state.mode.value}'")
+        if instance is not None:
+            return _deref(ctx().blocks.ArchetypeLife, instance.id * ArchetypeLife._size_(), ArchetypeLife)
+        else:
+            return _deref(ctx().blocks.ArchetypeLife, owner.id * ArchetypeLife._size_(), ArchetypeLife)
+
+    def __set__(self, instance, value):
+        raise AttributeError("Archetype life is read-only and cannot be set")
+
+
 def imported(*, name: str | None = None) -> Any:
     """Declare a field as imported.
 
@@ -590,6 +605,7 @@ class _BaseArchetype:
         cls.key = _KeyDescriptor(cls.key)
         cls.name = _NameDescriptor(cls.name)
         cls.is_scored = _IsScoredDescriptor(cls.is_scored)
+        cls.life = _ArchetypeLifeDescriptor()
 
     @classmethod
     def _init_fields(cls):
@@ -605,6 +621,7 @@ class _BaseArchetype:
                 "id",
                 "key",
                 "name",
+                "life",
                 "is_scored",
                 "_key_",
                 "_derived_base_",
@@ -809,7 +826,10 @@ class PlayArchetype(_BaseArchetype):
     _supported_callbacks_ = PLAY_CALLBACKS
 
     is_scored: ClassVar[bool] = False
-    """Whether the entity contributes to combo and score."""
+    """Whether entities of this archetype contribute to combo and score."""
+
+    life: ClassVar[ArchetypeLife]
+    """How this entities of this archetype contribute to life depending on judgment."""
 
     def preprocess(self):
         """Perform upfront processing.
@@ -927,18 +947,6 @@ class PlayArchetype(_BaseArchetype):
 
     @property
     @meta_fn
-    def life(self) -> ArchetypeLife:
-        """How this entity contributes to life."""
-        if not ctx():
-            raise RuntimeError("Calling life is only allowed within a callback")
-        match self._data_:
-            case _ArchetypeSelfData() | _ArchetypeReferenceData():
-                return _deref(ctx().blocks.ArchetypeLife, self.id * ArchetypeLife._size_(), ArchetypeLife)
-            case _:
-                raise RuntimeError("Life is not available in level data")
-
-    @property
-    @meta_fn
     def result(self) -> PlayEntityInput:
         """The result of this entity.
 
@@ -951,26 +959,6 @@ class PlayArchetype(_BaseArchetype):
                 return _deref(ctx().blocks.EntityInput, 0, PlayEntityInput)
             case _:
                 raise RuntimeError("Result is only accessible from the entity itself")
-
-    @classmethod
-    def update_life(
-        cls,
-        perfect_increment: int | None = None,
-        great_increment: int | None = None,
-        good_increment: int | None = None,
-        miss_increment: int | None = None,
-    ):
-        """Update the life of this archetype.
-
-        Values default to 0.
-
-        Args:
-            perfect_increment: The increment for perfect life.
-            great_increment: The increment for great life.
-            good_increment: The increment for good life.
-            miss_increment: The increment for miss life.
-        """
-        archetype_life_of(cls).update(perfect_increment, great_increment, good_increment, miss_increment)
 
 
 class WatchArchetype(_BaseArchetype):
@@ -992,6 +980,12 @@ class WatchArchetype(_BaseArchetype):
     _removable_prefix: ClassVar[str] = "Watch"
 
     _supported_callbacks_ = WATCH_ARCHETYPE_CALLBACKS
+
+    is_scored: ClassVar[bool] = False
+    """Whether entities of this archetype contribute to combo and score."""
+
+    life: ClassVar[ArchetypeLife]
+    """How this entities of this archetype contribute to life depending on judgment."""
 
     def preprocess(self):
         """Perform upfront processing.
@@ -1060,18 +1054,6 @@ class WatchArchetype(_BaseArchetype):
 
     @property
     @meta_fn
-    def life(self) -> ArchetypeLife:
-        """How this entity contributes to life."""
-        if not ctx():
-            raise RuntimeError("Calling life is only allowed within a callback")
-        match self._data_:
-            case _ArchetypeSelfData() | _ArchetypeReferenceData():
-                return _deref(ctx().blocks.ArchetypeLife, self.id * ArchetypeLife._size_(), ArchetypeLife)
-            case _:
-                raise RuntimeError("Life is not available in level data")
-
-    @property
-    @meta_fn
     def result(self) -> WatchEntityInput:
         """The result of this entity.
 
@@ -1089,26 +1071,6 @@ class WatchArchetype(_BaseArchetype):
     def _post_init_fields(cls):
         if cls._exported_fields_:
             raise RuntimeError("Watch archetypes cannot have exported fields")
-
-    @classmethod
-    def update_life(
-        cls,
-        perfect_increment: int | None = None,
-        great_increment: int | None = None,
-        good_increment: int | None = None,
-        miss_increment: int | None = None,
-    ):
-        """Update the life of this archetype.
-
-        Values default to 0.
-
-        Args:
-            perfect_increment: The increment for perfect life.
-            great_increment: The increment for great life.
-            good_increment: The increment for good life.
-            miss_increment: The increment for miss life.
-        """
-        archetype_life_of(cls).update(perfect_increment, great_increment, good_increment, miss_increment)
 
 
 class PreviewArchetype(_BaseArchetype):
@@ -1184,23 +1146,6 @@ def entity_info_at(index: int) -> PlayEntityInfo | WatchEntityInfo | PreviewEnti
             return _deref(ctx().blocks.EntityInfoArray, index * PreviewEntityInfo._size_(), PreviewEntityInfo)
         case _:
             raise RuntimeError(f"Entity info is not available in mode '{ctx().global_state.mode}'")
-
-
-@meta_fn
-def archetype_life_of(archetype: type[_BaseArchetype] | _BaseArchetype) -> ArchetypeLife:
-    """Retrieve the archetype life of the given archetype.
-
-    Available in play and watch mode.
-    """
-    archetype = validate_value(archetype)  # type: ignore
-    archetype = archetype._as_py_()  # type: ignore
-    if not ctx():
-        raise RuntimeError("Calling archetype_life_of is only allowed within a callback")
-    match ctx().global_state.mode:
-        case Mode.PLAY | Mode.WATCH:
-            return _deref(ctx().blocks.ArchetypeLife, archetype.id * ArchetypeLife._size_(), ArchetypeLife)
-        case _:
-            raise RuntimeError(f"Archetype life is not available in mode '{ctx().global_state.mode}'")
 
 
 class PlayEntityInfo(Record):

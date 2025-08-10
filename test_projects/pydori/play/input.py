@@ -1,5 +1,6 @@
 from collections.abc import Iterator
 
+from sonolus.script.array import Dim
 from sonolus.script.containers import ArraySet
 from sonolus.script.globals import level_memory
 from sonolus.script.runtime import Touch, touches
@@ -7,7 +8,7 @@ from sonolus.script.runtime import Touch, touches
 
 @level_memory
 class InputState:
-    claimed_touches: ArraySet[int, 16]
+    claimed_touches: ArraySet[int, Dim[16]]
 
 
 def refresh_input_state():

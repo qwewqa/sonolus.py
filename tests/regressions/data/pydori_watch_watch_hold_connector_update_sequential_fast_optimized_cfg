@@ -1,12 +1,12 @@
 0:
   10000[0] <- Multiply(EntityData[0], 32.0)
-  10000[0] <- Add(6.0, 10000[0])
+  10000[0] <- Add(5.0, 10000[0])
   10000[0] <- 10000[0]
   10000[0] <- LessOr(EntityDataArray[10000[0]], RuntimeUpdate[0])
   goto 1 if 10000[0] else 2
 1:
   10000[0] <- Multiply(EntityData[1], 32.0)
-  10000[0] <- Add(6.0, 10000[0])
+  10000[0] <- Add(5.0, 10000[0])
   10000[0] <- 10000[0]
   10000[0] <- Less(RuntimeUpdate[0], EntityDataArray[10000[0]])
   10000[0] <- 10000[0]
@@ -18,13 +18,13 @@
   goto 4 if 10000[0] else 16
 4:
   10000[0] <- Multiply(EntityData[0], 32.0)
-  10000[0] <- Add(10.0, 10000[0])
+  10000[0] <- Add(9.0, 10000[0])
   10000[0] <- 10000[0]
   goto 5 if RuntimeEnvironment[4] else 14
 5:
   10000[1] <- 18.0
   10000[2] <- Multiply(EntityDataArray[10000[0]], 32.0)
-  10000[2] <- Add(10.0, 10000[2])
+  10000[2] <- Add(9.0, 10000[2])
   10000[2] <- 10000[2]
   10000[2] <- Multiply(EntityDataArray[10000[2]], 3.0)
   10000[2] <- 10000[2]
@@ -79,29 +79,27 @@
   goto 18 if 10000[0] else 19
 18:
   10000[0] <- Multiply(EntityData[0], 32.0)
-  10000[0] <- Add(7.0, 10000[0])
+  10000[0] <- Add(6.0, 10000[0])
   10000[0] <- 10000[0]
   10000[1] <- Divide(6.0, LevelOption[1])
   10000[1] <- Subtract(EntityDataArray[10000[0]], 10000[1])
   10000[0] <- Remap(10000[1], EntityDataArray[10000[0]], LevelData[14], 0.0, RuntimeUpdate[2])
   10000[1] <- Multiply(EntityData[1], 32.0)
-  10000[1] <- Add(7.0, 10000[1])
+  10000[1] <- Add(6.0, 10000[1])
   10000[1] <- 10000[1]
   10000[2] <- Divide(6.0, LevelOption[1])
   10000[2] <- Subtract(EntityDataArray[10000[1]], 10000[2])
   10000[1] <- Remap(10000[2], EntityDataArray[10000[1]], LevelData[14], 0.0, RuntimeUpdate[2])
   10000[2] <- Multiply(EntityData[0], 32.0)
-  10000[2] <- Add(1.0, 10000[2])
   10000[2] <- 10000[2]
   10000[3] <- Multiply(EntityData[1], 32.0)
-  10000[3] <- Add(1.0, 10000[3])
   10000[3] <- 10000[3]
   10000[0] <- Remap(10000[0], 10000[1], EntityDataArray[10000[2]], EntityDataArray[10000[3]], 0.0)
   10000[1] <- Multiply(EntityData[0], 32.0)
-  10000[1] <- Add(10.0, 10000[1])
+  10000[1] <- Add(9.0, 10000[1])
   10000[1] <- 10000[1]
   10000[1] <- Multiply(EntityDataArray[10000[1]], 32.0)
-  10000[1] <- Add(10.0, 10000[1])
+  10000[1] <- Add(9.0, 10000[1])
   10000[1] <- 10000[1]
   10000[1] <- Multiply(EntityDataArray[10000[1]], 32.0)
   10000[1] <- 10000[1]

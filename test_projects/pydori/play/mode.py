@@ -4,15 +4,14 @@ from pydori.lib.particle import Particles
 from pydori.lib.skin import Skin
 from pydori.play.connector import HoldConnector, SimLine
 from pydori.play.event import BpmChange, TimescaleChange
-from pydori.play.note import HoldManager, Note, UnscoredNote
+from pydori.play.note import ALL_NOTE_TYPES, HoldManager
 from pydori.play.stage import Stage
 from sonolus.script.engine import PlayMode
 
 play_mode = PlayMode(
     archetypes=[
         Stage,
-        Note,
-        UnscoredNote,
+        *ALL_NOTE_TYPES,
         HoldManager,
         HoldConnector,
         SimLine,

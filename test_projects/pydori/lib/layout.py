@@ -2,6 +2,7 @@ from math import pi
 from typing import Self
 
 from pydori.lib.options import Options
+from sonolus.script.array import Dim
 from sonolus.script.easing import ease_out_quad
 from sonolus.script.globals import level_data
 from sonolus.script.interval import clamp, interp_clamped, lerp, remap
@@ -21,7 +22,8 @@ from sonolus.script.vec import Vec2
 # Range of lanes in the game.
 START_LANE = -3
 END_LANE = 3
-LANE_COUNT = END_LANE - START_LANE + 1
+LANE_COUNT = 7
+LANE_COUNT_DIM = Dim[7]
 
 # The y-coordinate of the judge line in screen coordinates.
 JUDGE_LINE_SCREEN_Y = -0.5
@@ -349,45 +351,6 @@ class Hitbox(Record):
             result.right += Layout.lane_width * direction
         if direction < 0:
             result.left += Layout.lane_width * direction
-        return result
-
-    def shrink_overlap(self, other: Self) -> Self:
-        """Shrink this hitbox if it overlaps with another hitbox.
-
-        If this hitbox overlaps with the other hitbox, it will shrink the overlapping side by half of the overlap
-        distance. If there is no overlap, it will return a copy of this hitbox unchanged.
-
-        Args:
-            other: The other hitbox to check for overlap with.
-
-        Returns:
-            A new hitbox that is shrunk if there was an overlap.
-        """
-        # When self overlaps with the left edge of other,
-        # applying this function to each:
-        #   new_self = self.shrink_if_overlaps(other)
-        #   new_other = other.shrink_if_overlaps(self)
-        # will remove the overlap.
-        #
-        # Before...
-        #
-        #      self
-        # ┌─────┴─────┐  other
-        # │       ┌───│───┴───────┐
-        # │       │   │           │
-        # ─────────────────────────
-        # │         │             │
-        # │         │             │
-        # └────┬────┴──────┬──────┘
-        #   new_self    new_other
-        #
-        # ...After
-
-        result = +self
-        if self.left < other.left < self.right:
-            result.right = (self.right + other.left) / 2
-        if self.left < other.right < self.right:
-            result.left = (self.left + other.right) / 2
         return result
 
     def layout(self) -> Quad:

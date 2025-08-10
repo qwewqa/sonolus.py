@@ -151,6 +151,7 @@ note_judgment_window = JudgmentWindow(
 
 
 def init_buckets():
+    # Multiply by 1000 so buckets are in milliseconds.
     Buckets.tap_note.window @= note_judgment_window * 1000
     Buckets.hold_head_note.window @= note_judgment_window * 1000
     Buckets.hold_end_note.window @= note_judgment_window * 1000

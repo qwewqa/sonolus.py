@@ -1,0 +1,123 @@
+0:
+  goto 1
+1:
+  goto 2
+2:
+  v1 <- Greater(EntityData[4], 0.0)
+  goto 3
+3:
+  goto 4
+4:
+  goto 5
+5:
+  goto 6 if v1 else 11
+6:
+  goto 7
+7:
+  v2 <- Greater(EntityData[3], 0.0)
+  goto 8
+8:
+  goto 9
+9:
+  goto 10
+10:
+  v3 <- Not(v2)
+  v4 <- v3
+  goto 12
+11:
+  v4 <- 0.0
+  goto 12
+12:
+  goto 13 if v4 else 43
+13:
+  v5 <- 18.0
+  goto 14
+14:
+  goto 15
+15:
+  goto 16
+16:
+  goto 17
+17:
+  v6 <- Multiply(EntityData[16], 3.0)
+  v7 <- v6
+  goto 18
+18:
+  goto 19
+19:
+  goto 20
+20:
+  goto 21
+21:
+  v8 <- LessOr(0.0, EntityInfoArray[v7])
+  goto 22 if v8 else 26
+22:
+  goto 23
+23:
+  goto 24
+24:
+  goto 25
+25:
+  v9 <- Less(EntityInfoArray[v7], 99999.0)
+  v10 <- v9
+  goto 27
+26:
+  v10 <- 0.0
+  goto 27
+27:
+  goto 28
+28:
+  goto 29
+29:
+  goto 30
+30:
+  goto 31
+31:
+  goto 32
+32:
+  v11 <- Not(v10)
+  goto 33 if v11 else 34
+33:
+  v12 <- DebugLog(0.0)
+  v13 <- DebugPause()
+  goto exit
+34:
+  goto 35
+35:
+  goto 36
+36:
+  goto 37
+37:
+  goto 38
+38:
+  goto 39
+39:
+  goto 40
+40:
+  v14 <- Max(1.0, 1.0)
+  v15 <- Multiply(v14, EntityInfoArray[v7])
+  v16 <- v5
+  v17 <- Add(v15, v16)
+  v18 <- v17
+  goto 41
+41:
+  goto 42
+42:
+  v19 <- v18
+  v20 <- StreamSet(v19, -10.0, 0.0)
+  v21 <- EntityData[16]
+  v22 <- v21
+  v23 <- EntityData[17]
+  v24 <- v23
+  v25 <- 0
+  v26 <- 0
+  v27 <- Spawn(8.0, v22, v24, v25, v26)
+  goto 44
+43:
+  goto 44
+44:
+  goto 45
+45:
+  goto 46
+46:
+  goto exit

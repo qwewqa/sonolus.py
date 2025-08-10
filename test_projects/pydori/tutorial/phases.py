@@ -263,7 +263,7 @@ def hold_tick_phase(t: PhaseTime):
             draw_hold_connector(tick_lanes[i - 1], tick_lanes[i], tick_y(i - 1), tick_y(i))
 
         # Draw ticks and play effects after hit.
-        for i, (lane, target_progress) in enumerate(zip(tick_lanes, target_progresses)):  # noqa: B905
+        for i, (lane, target_progress) in enumerate(zip(tick_lanes, target_progresses, strict=False)):
             hit_instant = t.instant(fall.start + target_progress * FALL_DURATION)
             if hit_instant.is_upcoming:
                 draw_note(

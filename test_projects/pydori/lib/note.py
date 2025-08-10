@@ -18,7 +18,7 @@ from pydori.lib.options import Options
 from pydori.lib.particle import Particles
 from pydori.lib.skin import Skin
 from pydori.lib.stage import play_lane_particle
-from sonolus.script.archetype import archetype_life_of
+from sonolus.script.archetype import PlayArchetype, WatchArchetype
 from sonolus.script.bucket import Bucket, Judgment
 from sonolus.script.easing import ease_out_quad
 from sonolus.script.effect import Effect, LoopedEffectHandle
@@ -357,11 +357,18 @@ def schedule_hold_sfx(start_time: float, end_time: float):
     Effects.hold.schedule_loop(start_time).stop(end_time)
 
 
-def init_note_life(note_archetype):
-    archetype_life_of(note_archetype).update(
-        perfect_increment=1,
-        miss_increment=-100,
-    )
+def init_note_life(archetype: type[PlayArchetype | WatchArchetype]):
+    match archetype.key:
+        case NoteKind.HOLD_TICK:
+            archetype.life.update(
+                perfect_increment=1,
+                miss_increment=-20,
+            )
+        case _:
+            archetype.life.update(
+                perfect_increment=1,
+                miss_increment=-100,
+            )
 
 
 def get_flick_speed_threshold(direction: int) -> float:
