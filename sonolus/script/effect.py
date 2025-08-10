@@ -139,7 +139,7 @@ def effect(name: str) -> Any:
 type Effects = NewType("Effects", Any)  # type: ignore
 
 
-@dataclass_transform()
+@dataclass_transform(kw_only_default=True)
 def effects[T](cls: type[T]) -> T | Effects:
     """Decorator to define effect clips.
 

@@ -230,7 +230,7 @@ def bucket(*, sprites: list[_BucketSprite], unit: str | None = None) -> Any:
 type Buckets = NewType("Buckets", Any)  # type: ignore
 
 
-@dataclass_transform()
+@dataclass_transform(kw_only_default=True)
 def buckets[T](cls: type[T]) -> T | Buckets:
     """Decorator to define a buckets class.
 

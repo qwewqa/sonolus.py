@@ -283,7 +283,7 @@ class RenderMode(StrEnum):
     """Use the lightweight render mode with projective interpolation of textures."""
 
 
-@dataclass_transform()
+@dataclass_transform(kw_only_default=True)
 def skin[T](cls: type[T]) -> T | Skin:
     """Decorator to define a skin.
 

@@ -59,7 +59,7 @@ class _StreamDataField(SonolusDescriptor):
             self._get()._copy_from_(value)
 
 
-@dataclass_transform()
+@dataclass_transform(kw_only_default=True)
 def streams[T](cls: type[T]) -> T:
     """Decorator to define streams and stream groups.
 

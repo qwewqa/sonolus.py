@@ -230,7 +230,7 @@ class _OptionField(SonolusDescriptor):
         raise AttributeError("Options are read-only")
 
 
-@dataclass_transform()
+@dataclass_transform(kw_only_default=True)
 def options[T](cls: type[T]) -> T | Options:
     """Decorator to define options.
 

@@ -74,7 +74,7 @@ type TutorialInstructions = NewType("TutorialInstructions", Any)  # type: ignore
 type TutorialInstructionIcons = NewType("TutorialInstructionIcons", Any)  # type: ignore
 
 
-@dataclass_transform()
+@dataclass_transform(kw_only_default=True)
 def instructions[T](cls: type[T]) -> T | TutorialInstructions:
     """Decorator to define tutorial instructions.
 
@@ -109,7 +109,7 @@ def instructions[T](cls: type[T]) -> T | TutorialInstructions:
     return instance
 
 
-@dataclass_transform()
+@dataclass_transform(kw_only_default=True)
 def instruction_icons[T](cls: type[T]) -> T | TutorialInstructionIcons:
     """Decorator to define tutorial instruction icons.
 

@@ -98,7 +98,7 @@ def particle(name: str) -> Any:
 type Particles = NewType("Particles", Any)  # type: ignore
 
 
-@dataclass_transform()
+@dataclass_transform(kw_only_default=True)
 def particles[T](cls: type[T]) -> T | Particles:
     """Decorator to define particles.
 
