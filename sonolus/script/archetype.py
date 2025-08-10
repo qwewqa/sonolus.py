@@ -249,7 +249,7 @@ class _ArchetypeLifeDescriptor(SonolusDescriptor):
     def __get__(self, instance, owner):
         if not ctx():
             raise RuntimeError("Archetype life is only available during compilation")
-        if not ctx().global_state.mode in {Mode.PLAY, Mode.WATCH}:
+        if ctx().global_state.mode not in {Mode.PLAY, Mode.WATCH}:
             raise RuntimeError(f"Archetype life is not available in mode '{ctx().global_state.mode.value}'")
         if instance is not None:
             return _deref(ctx().blocks.ArchetypeLife, instance.id * ArchetypeLife._size_(), ArchetypeLife)
@@ -1127,6 +1127,23 @@ class PreviewArchetype(_BaseArchetype):
     def _post_init_fields(cls):
         if cls._exported_fields_:
             raise RuntimeError("Preview archetypes cannot have exported fields")
+
+
+@meta_fn
+def get_archetype_by_name(name: str) -> AnyArchetype:
+    """Return the archetype with the given name in the current mode."""
+    if not ctx():
+        raise RuntimeError("Archetypes by name are only available during compilation.")
+    name = validate_value(name)
+    if not name._is_py_():
+        raise TypeError(f"Invalid name: '{name}'")
+    name = name._as_py_()
+    if not isinstance(name, str):
+        raise TypeError(f"Invalid name: '{name}'")
+    archetypes_by_name = ctx().global_state.archetypes_by_name
+    if name not in archetypes_by_name:
+        raise KeyError(f"Unknown archetype: '{name}'")
+    return archetypes_by_name[name]
 
 
 @meta_fn
