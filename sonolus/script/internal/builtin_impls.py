@@ -80,9 +80,12 @@ def _reversed(iterable):
 
 
 @meta_fn
-def _zip(*iterables):
+def _zip(*iterables, strict: bool = False):
     from sonolus.backend.visitor import compile_and_call
     from sonolus.script.containers import Pair
+
+    if validate_value(strict)._as_py_():
+        raise NotImplementedError("Strict zipping is not supported")
 
     if not iterables:
         return _EmptyIterator()
