@@ -244,7 +244,9 @@ class Collection:
                 use_item = level[key]
                 if "item" not in use_item:
                     continue
-                use_item["item"] = self.get_item(category, use_item["item"])
+                name = use_item["item"]["name"]
+                if name in self.categories.get(category, {}):
+                    use_item["item"] = self.get_item(category, name)
 
     def _create_base_directory(self, path: Asset) -> Path:
         base_dir = Path(path) / BASE_PATH.strip("/")

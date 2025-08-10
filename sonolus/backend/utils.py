@@ -1,4 +1,3 @@
-# ruff: noqa: N802
 import ast
 import inspect
 from collections.abc import Callable

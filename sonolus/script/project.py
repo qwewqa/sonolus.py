@@ -129,3 +129,6 @@ class BuildConfig:
 
     build_tutorial: bool = True
     """Whether to build the tutorial package."""
+
+    override_resource_level_engines: bool = True
+    """Whether to override any levels included in resources to use the engine of this project."""

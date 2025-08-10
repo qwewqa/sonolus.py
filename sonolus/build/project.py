@@ -19,6 +19,9 @@ BLANK_AUDIO = (
 
 def build_project_to_collection(project: Project, config: BuildConfig | None):
     collection = load_resources_files_to_collection(project.resources)
+    if config.override_resource_level_engines:
+        for level in collection.categories.get("levels", {}).values():
+            level["item"]["engine"] = project.engine.name
     add_engine_to_collection(collection, project, project.engine, config)
     for level in project.levels:
         add_level_to_collection(collection, project, level)
