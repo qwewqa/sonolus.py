@@ -92,7 +92,7 @@ def try_validate_value(value: Any) -> Value | None:
             Union,
         }:
             return TypingSpecialFormConstant.of(special_form)
-        case other_type if get_origin(value) in {Literal, Annotated, UnionType, tuple}:
+        case other_type if get_origin(value) in {Literal, Annotated, UnionType, tuple, type}:
             return BasicConstantValue.of(other_type)
         case _GlobalPlaceholder():
             return value.get()
