@@ -230,6 +230,8 @@ class Record(GenericValue, metaclass=RecordMeta):
         result = []
         for field in cls._fields_:
             result.extend(field.type._flat_keys_(f"{prefix}.{field.name}"))
+        if len(result) == 1:
+            return [prefix]
         return result
 
     def _get_(self) -> Self:
