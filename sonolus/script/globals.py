@@ -239,6 +239,7 @@ def level_memory[T](cls: type[T]) -> T:
     ([`preprocess`][sonolus.script.archetype.PlayArchetype.preprocess],
     [`update_sequential`][sonolus.script.archetype.PlayArchetype.update_sequential],
     [`touch`][sonolus.script.archetype.PlayArchetype.touch]).
+    Compared to level data, it allows modification during gameplay, but prevents some optimizations.
 
     Usage:
         ```python
@@ -246,7 +247,7 @@ def level_memory[T](cls: type[T]) -> T:
         class LevelMemory:
             variable: int
 
-        variable = level_data(Array[int, 10])
+        variable = level_memory(Array[int, 10])
 
         def f():
             LevelMemory.variable = 1
@@ -269,6 +270,8 @@ def level_data[T](cls: type[T]) -> T:
     """Define level data.
 
     Level data may only be modified during [`preprocess`][sonolus.script.archetype.PlayArchetype.preprocess].
+    Compared to level memory, it enables some optimizations during gameplay, so it's recommended to use it
+    if mutation is only needed during preprocessing.
 
     Usage:
         ```python
