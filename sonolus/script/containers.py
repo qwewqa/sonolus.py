@@ -1,5 +1,7 @@
 from __future__ import annotations
 
+from typing import Self
+
 from sonolus.backend.visitor import compile_and_call
 from sonolus.script.array import Array
 from sonolus.script.array_like import ArrayLike, get_positive_index
@@ -102,7 +104,7 @@ class VarArray[T, Capacity](Record, ArrayLike[T]):
     _array: Array[T, Capacity]
 
     @classmethod
-    def new(cls):
+    def new(cls) -> Self:
         """Create a new empty array."""
         element_type = cls.type_var_value(T)
         capacity = cls.type_var_value(Capacity)
@@ -380,7 +382,7 @@ class ArraySet[T, Capacity](Record):
     _values: VarArray[T, Capacity]
 
     @classmethod
-    def new(cls):
+    def new(cls) -> Self:
         """Create a new empty set."""
         element_type = cls.type_var_value(T)
         capacity = cls.type_var_value(Capacity)
@@ -457,7 +459,7 @@ class ArrayMap[K, V, Capacity](Record):
     _array: Array[_ArrayMapEntry[K, V], Capacity]
 
     @classmethod
-    def new(cls):
+    def new(cls) -> Self:
         """Create a new empty map."""
         key_type = cls.type_var_value(K)
         value_type = cls.type_var_value(V)
