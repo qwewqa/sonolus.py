@@ -190,7 +190,7 @@ class ArrayLike[T](Sequence):
             key: A one-argument ordering function to use for comparison.
             reverse: If `True`, sort in descending order, otherwise sort in ascending order.
         """
-        if len(self) < 15 or key is not None:
+        if key is not None or len(self) < 15:
             if key is None:
                 key = _identity  # type: ignore
             # May be worth adding a block sort variant for better performance on large arrays in the future
