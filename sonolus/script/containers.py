@@ -396,7 +396,7 @@ class ArraySet[T, Capacity](Record):
         """Return whether the given value is present in the set."""
         return value in self._values
 
-    def __iter__(self):
+    def __iter__(self) -> SonolusIterator[T]:
         """Return an iterator over the values in the set."""
         return self._values.__iter__()
 
@@ -491,7 +491,7 @@ class ArrayMap[K, V, Capacity](Record):
         """Return an iterator over the key-value pairs in the map."""
         return _ArrayMapEntryIterator(self, 0)
 
-    def __iter__(self):
+    def __iter__(self) -> SonolusIterator[K]:
         """Return an iterator over the keys in the map."""
         return self.keys()
 

@@ -16,7 +16,7 @@ from sonolus.script.values import copy
 # Note: we don't use Range in this file because Range itself inherits from ArrayLike
 
 
-class ArrayLike[T](Sequence):
+class ArrayLike[T](Sequence[T]):
     """Mixin for array-like objects.
 
     Inheritors must implement `__len__`, `__getitem__`, and `__setitem__`.
