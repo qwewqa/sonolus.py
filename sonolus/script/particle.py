@@ -15,6 +15,7 @@ class Particle(Record):
 
     id: int
 
+    @property
     def is_available(self) -> bool:
         """Check if the particle effect is available."""
         return _has_particle_effect(self.id)

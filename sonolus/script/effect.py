@@ -21,6 +21,7 @@ class Effect(Record):
     id: int
     """Effect ID."""
 
+    @property
     def is_available(self) -> bool:
         """Return whether the effect clip is available."""
         return _has_effect_clip(self.id)
