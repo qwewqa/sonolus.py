@@ -355,8 +355,8 @@ def smootherstep(x: float) -> float:
 
 
 def step_start(x: float) -> float:
-    """Step function returning 1.0 if x > 0, otherwise 0.0."""
-    return 1.0 if x > 0 else 0.0
+    """Step function returning 1.0 if x >= 0, otherwise 0.0."""
+    return 1.0 if x >= 0 else 0.0
 
 
 def step_end(x: float) -> float:
