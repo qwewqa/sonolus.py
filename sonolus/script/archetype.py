@@ -625,6 +625,7 @@ class _BaseArchetype:
                 "life",
                 "is_scored",
                 "_key_",
+                "_is_scored_",
                 "_derived_base_",
                 "_is_derived_",
                 "_default_callbacks_",
