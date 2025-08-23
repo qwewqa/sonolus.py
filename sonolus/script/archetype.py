@@ -207,7 +207,7 @@ class _IsScoredDescriptor(SonolusDescriptor):
         if instance is None:
             return self.value
         elif ctx():
-            raise RuntimeError("Cannot access is_scored from self in a callback, use ArchetypeClass.is_scored")
+            return ctx().global_state.is_scored_by_archetype_id[instance.id]
         else:
             return self.value
 
@@ -237,7 +237,7 @@ class _KeyDescriptor(SonolusDescriptor):
 
     def __get__(self, instance, owner):
         if instance is not None and ctx():
-            return ctx().global_state.keys[instance.id]
+            return ctx().global_state.keys_by_archetype_id[instance.id]
         else:
             return self.value
 
@@ -604,6 +604,7 @@ class _BaseArchetype:
         cls._key_ = cls.key
         cls.key = _KeyDescriptor(cls.key)
         cls.name = _NameDescriptor(cls.name)
+        cls._is_scored_ = cls.is_scored
         cls.is_scored = _IsScoredDescriptor(cls.is_scored)
         cls.life = _ArchetypeLifeDescriptor()
 

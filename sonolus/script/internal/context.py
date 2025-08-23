@@ -42,7 +42,8 @@ debug_var = ContextVar("debug_var", default=_disabled_debug_config)
 class GlobalContextState:
     archetypes: dict[type, int]
     archetypes_by_name: dict[str, type]
-    keys: Sequence[int] | None
+    keys_by_archetype_id: Sequence[int]
+    is_scored_by_archetype_id: Sequence[bool]
     rom: ReadOnlyMemory
     const_mappings: dict[Any, int]
     environment_mappings: dict[_GlobalInfo, int]
@@ -55,10 +56,14 @@ class GlobalContextState:
 
         self.archetypes = archetypes or {}
         self.archetypes_by_name = {type_.name: type_ for type_, _ in self.archetypes.items()}  # type: ignore
-        self.keys = (
-            Array(*((getattr(a, "_key_", -1)) for a in sorted(self.archetypes, key=lambda a: archetypes[a])))
+        ordered_archetypes = sorted(self.archetypes, key=lambda a: self.archetypes[a])
+        self.keys_by_archetype_id = (
+            Array(*((getattr(a, "_key_", -1)) for a in ordered_archetypes)) if archetypes else Array[int, Literal[0]]()
+        )
+        self.is_scored_by_archetype_id = (
+            Array(*((getattr(a, "_is_scored_", False)) for a in ordered_archetypes))
             if archetypes
-            else Array[int, Literal[0]]()
+            else Array[bool, Literal[0]]()
         )
         self.rom = ReadOnlyMemory() if rom is None else rom
         self.const_mappings = {}
