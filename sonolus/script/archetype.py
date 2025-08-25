@@ -1,4 +1,3 @@
-# type: ignore
 from __future__ import annotations
 
 import inspect
@@ -120,7 +119,7 @@ class _ArchetypeField(SonolusDescriptor):
         if ctx():
             return result._get_readonly_()
         else:
-            return result._as_py_()
+            return result._as_py_()  # type: ignore
 
     def __set__(self, instance: _BaseArchetype, value):
         if instance is None:
@@ -360,37 +359,6 @@ _annotation_defaults: dict[Callable, _ArchetypeFieldInfo] = {
     entity_memory: entity_memory(),
     shared_memory: shared_memory(),
 }
-
-
-class StandardImport:
-    """Standard import annotations for Archetype fields.
-
-    Usage:
-        ```python
-        class MyArchetype(WatchArchetype):
-            judgment: StandardImport.JUDGMENT
-        ```
-    """
-
-    BEAT = Annotated[float, imported(name="#BEAT")]
-    """The beat of the entity."""
-
-    BPM = Annotated[float, imported(name="#BPM")]
-    """The bpm, for bpm change markers."""
-
-    TIMESCALE = Annotated[float, imported(name="#TIMESCALE")]
-    """The timescale, for timescale change markers."""
-
-    JUDGMENT = Annotated[int, imported(name="#JUDGMENT")]
-    """The judgment of the entity.
-
-    Automatically supported in watch mode for archetypes with a corresponding scored play mode archetype.
-    """
-    ACCURACY = Annotated[float, imported(name="#ACCURACY")]
-    """The accuracy of the entity.
-
-    Automatically supported in watch mode for archetypes with a corresponding scored play mode archetype.
-    """
 
 
 def callback[T: Callable](*, order: int = 0) -> Callable[[T], T]:
@@ -844,12 +812,14 @@ class PlayArchetype(_BaseArchetype):
 
         Runs when the level is loaded after [`preprocess`][sonolus.script.archetype.PlayArchetype.preprocess].
         """
+        return 0.0
 
     def should_spawn(self) -> bool:
         """Return whether the entity should be spawned.
 
         Runs each frame while the entity is the first entity in the spawn queue.
         """
+        return True
 
     def initialize(self):
         """Initialize this entity.
@@ -997,9 +967,11 @@ class WatchArchetype(_BaseArchetype):
 
     def spawn_time(self) -> float:
         """Return the spawn time of the entity."""
+        return 0.0
 
     def despawn_time(self) -> float:
         """Return the despawn time of the entity."""
+        return 0.0
 
     def initialize(self):
         """Initialize this entity.
@@ -1136,16 +1108,16 @@ def get_archetype_by_name(name: str) -> AnyArchetype:
     """Return the archetype with the given name in the current mode."""
     if not ctx():
         raise RuntimeError("Archetypes by name are only available during compilation.")
-    name = validate_value(name)
-    if not name._is_py_():
+    name = validate_value(name)  # type: ignore
+    if not name._is_py_():  # type: ignore
         raise TypeError(f"Invalid name: '{name}'")
-    name = name._as_py_()
+    name = name._as_py_()  # type: ignore
     if not isinstance(name, str):
         raise TypeError(f"Invalid name: '{name}'")
     archetypes_by_name = ctx().global_state.archetypes_by_name
     if name not in archetypes_by_name:
         raise KeyError(f"Unknown archetype: '{name}'")
-    return archetypes_by_name[name]
+    return archetypes_by_name[name]  # type: ignore
 
 
 @meta_fn
@@ -1315,6 +1287,84 @@ class StandardArchetypeName(StrEnum):
     TIMESCALE_CHANGE = "#TIMESCALE_CHANGE"
     """Timescale change marker"""
 
+    TIMESCALE_GROUP = "#TIMESCALE_GROUP"
+    """Entity referenced by the timescale changes in a group"""
+
 
 type AnyArchetype = PlayArchetype | WatchArchetype | PreviewArchetype
 """Union of all archetype types."""
+
+
+class StandardImportName:
+    """Standard import names for Archetype fields.
+
+    Usage:
+        ```python
+        class MyArchetype(WatchArchetype):
+            judgment: int = imported(name=StandardImportName.JUDGMENT)
+        ```
+    """
+
+    BEAT = "#BEAT"
+    """The beat of the entity."""
+
+    BPM = "#BPM"
+    """The bpm, for bpm change markers."""
+
+    TIMESCALE = "#TIMESCALE"
+    """The timescale, for timescale change markers."""
+
+    TIMESCALE_SKIP = "#TIMESCALE_SKIP"
+    """The scaled time to skip, for timescale change markers."""
+
+    TIMESCALE_GROUP = "#TIMESCALE_GROUP"
+    """The timescale group, for timescale change markers."""
+
+    JUDGMENT = "#JUDGMENT"
+    """The judgment of the entity.
+
+    Automatically set in watch mode for archetypes with a corresponding scored play mode archetype.
+    """
+
+    ACCURACY = "#ACCURACY"
+    """The accuracy of the entity.
+
+    Automatically set in watch mode for archetypes with a corresponding scored play mode archetype.
+    """
+
+
+class StandardImport:
+    """Standard import annotations for Archetype fields.
+
+    Usage:
+        ```python
+        class MyArchetype(WatchArchetype):
+            judgment: StandardImport.JUDGMENT
+        ```
+    """
+
+    BEAT = Annotated[float, imported(name=StandardImportName.BEAT)]
+    """The beat of the entity."""
+
+    BPM = Annotated[float, imported(name=StandardImportName.BPM)]
+    """The bpm, for bpm change markers."""
+
+    TIMESCALE = Annotated[float, imported(name=StandardImportName.TIMESCALE)]
+    """The timescale, for timescale change markers."""
+
+    TIMESCALE_SKIP = Annotated[float, imported(name=StandardImportName.TIMESCALE_SKIP)]
+    """The scaled time to skip, for timescale change markers."""
+
+    TIMESCALE_GROUP = Annotated[EntityRef[Any], imported(name=StandardImportName.TIMESCALE_GROUP)]
+    """The timescale group, for timescale change markers."""
+
+    JUDGMENT = Annotated[int, imported(name=StandardImportName.JUDGMENT)]
+    """The judgment of the entity.
+
+    Automatically set in watch mode for archetypes with a corresponding scored play mode archetype.
+    """
+    ACCURACY = Annotated[float, imported(name=StandardImportName.ACCURACY)]
+    """The accuracy of the entity.
+
+    Automatically set in watch mode for archetypes with a corresponding scored play mode archetype.
+    """
