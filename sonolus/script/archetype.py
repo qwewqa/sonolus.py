@@ -23,6 +23,7 @@ from sonolus.script.internal.value import BackingValue, DataValue, Value
 from sonolus.script.num import Num
 from sonolus.script.pointer import _backing_deref, _deref
 from sonolus.script.record import Record
+from sonolus.script.timing import TimescaleEase
 from sonolus.script.values import zeros
 
 _ENTITY_MEMORY_SIZE = 64
@@ -1361,7 +1362,7 @@ class StandardImport:
     TIMESCALE_GROUP = Annotated[EntityRef[Any], imported(name=StandardImportName.TIMESCALE_GROUP)]
     """The timescale group, for timescale change markers."""
 
-    TIMESCALE_EASE = Annotated[float, imported(name=StandardImportName.TIMESCALE_EASE)]
+    TIMESCALE_EASE = Annotated[TimescaleEase, imported(name=StandardImportName.TIMESCALE_EASE)]
     """The timescale ease type, for timescale change markers."""
 
     JUDGMENT = Annotated[int, imported(name=StandardImportName.JUDGMENT)]
