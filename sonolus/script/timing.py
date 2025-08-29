@@ -1,5 +1,12 @@
+from enum import IntEnum
+
 from sonolus.backend.ops import Op
 from sonolus.script.internal.native import native_function
+
+
+class TimescaleEase(IntEnum):
+    NONE = 0
+    LINEAR = 1
 
 
 @native_function(Op.BeatToBPM)

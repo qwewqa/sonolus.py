@@ -1320,6 +1320,9 @@ class StandardImportName:
     TIMESCALE_GROUP = "#TIMESCALE_GROUP"
     """The timescale group, for timescale change markers."""
 
+    TIMESCALE_EASE = "#TIMESCALE_EASE"
+    """The timescale ease type, for timescale change markers."""
+
     JUDGMENT = "#JUDGMENT"
     """The judgment of the entity.
 
@@ -1357,6 +1360,9 @@ class StandardImport:
 
     TIMESCALE_GROUP = Annotated[EntityRef[Any], imported(name=StandardImportName.TIMESCALE_GROUP)]
     """The timescale group, for timescale change markers."""
+
+    TIMESCALE_EASE = Annotated[float, imported(name=StandardImportName.TIMESCALE_EASE)]
+    """The timescale ease type, for timescale change markers."""
 
     JUDGMENT = Annotated[int, imported(name=StandardImportName.JUDGMENT)]
     """The judgment of the entity.
