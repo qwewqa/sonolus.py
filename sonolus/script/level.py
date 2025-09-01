@@ -4,7 +4,7 @@ import json
 from collections.abc import Iterator
 from os import PathLike
 from pathlib import Path
-from typing import Any
+from typing import Any, NamedTuple, NotRequired, TypedDict
 
 from sonolus.build.collection import Asset, load_asset
 from sonolus.script.archetype import PlayArchetype, StandardArchetypeName, StandardImport
@@ -196,3 +196,51 @@ class TimescaleChange(PlayArchetype):
 
     beat: StandardImport.BEAT
     timescale: StandardImport.TIMESCALE
+
+
+class ExternalLevelDataDict(TypedDict):
+    bgmOffset: float
+    entities: list[ExternalEntityDataDict]
+
+
+class ExternalEntityDataDict(TypedDict):
+    name: NotRequired[str]
+    archetype: str
+    data: NotRequired[list[ExternalEntityDataValueDict]]
+
+
+class ExternalEntityDataValueDict(TypedDict):
+    name: str
+    value: NotRequired[int | float]
+    ref: NotRequired[str]
+
+
+class ExternalLevelData(NamedTuple):
+    """Level data parsed from an external source."""
+
+    bgm_offset: float
+    entities: list[ExternalEntityData]
+
+
+class ExternalEntityData(NamedTuple):
+    """Entity data parsed from an external source."""
+
+    archetype: str
+    data: dict[str, Any]
+
+
+def parse_external_level_data(raw_data: ExternalLevelDataDict) -> ExternalLevelData:
+    bgm_offset = raw_data["bgmOffset"]
+    raw_entities = raw_data["entities"]
+    entity_name_to_index = {e["name"]: i for i, e in enumerate(raw_entities) if "name" in e}
+    entities = []
+    for raw_entity in raw_entities:
+        archetype = raw_entity["archetype"]
+        data = {}
+        for entry in raw_entity.get("data", []):
+            if "value" in entry:
+                data[entry["name"]] = entry["value"]
+            elif "ref" in entry:
+                data[entry["name"]] = entity_name_to_index.get(entry["ref"], 0)
+        entities.append(ExternalEntityData(archetype=archetype, data=data))
+    return ExternalLevelData(bgm_offset=bgm_offset, entities=entities)

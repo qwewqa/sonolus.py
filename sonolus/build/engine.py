@@ -182,11 +182,11 @@ def package_engine(
         )
 
     return PackagedEngine(
-        configuration=package_output(configuration),
-        play_data=package_output(play_data),
-        watch_data=package_output(watch_data),
-        preview_data=package_output(preview_data),
-        tutorial_data=package_output(tutorial_data),
+        configuration=package_data(configuration),
+        play_data=package_data(play_data),
+        watch_data=package_data(watch_data),
+        preview_data=package_data(preview_data),
+        tutorial_data=package_data(tutorial_data),
         rom=package_rom(rom),
     )
 
@@ -410,6 +410,11 @@ def package_rom(rom: ReadOnlyMemory) -> bytes:
     return gzip.compress(bytes(output))
 
 
-def package_output(value: JsonValue) -> bytes:
+def package_data(value: JsonValue) -> bytes:
     json_data = json.dumps(value, separators=(",", ":")).encode("utf-8")
     return gzip.compress(json_data)
+
+
+def unpackage_data(data: bytes) -> JsonValue:
+    json_data = gzip.decompress(data)
+    return json.loads(json_data)

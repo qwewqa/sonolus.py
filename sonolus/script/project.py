@@ -10,7 +10,7 @@ from sonolus.backend.optimize import optimize
 from sonolus.backend.optimize.passes import CompilerPass
 from sonolus.script.archetype import ArchetypeSchema
 from sonolus.script.engine import Engine
-from sonolus.script.level import Level
+from sonolus.script.level import ExternalLevelData, Level, LevelData
 
 
 class Project:
@@ -20,6 +20,7 @@ class Project:
         engine: The engine of the project.
         levels: The levels of the project.
         resources: The path to the resources of the project.
+        converters: A dictionary mapping engine names to converter functions, for converting loaded levels.
     """
 
     def __init__(
@@ -27,6 +28,7 @@ class Project:
         engine: Engine,
         levels: Iterable[Level] | Callable[[], Iterable[Level]] | None = None,
         resources: PathLike | None = None,
+        converters: dict[str, Callable[[ExternalLevelData], LevelData]] | None = None,
     ):
         self.engine = engine
         match levels:
@@ -40,6 +42,7 @@ class Project:
                 raise TypeError(f"Invalid type for levels: {type(levels)}. Expected Iterable or Callable.")
         self._levels = None
         self.resources = Path(resources or "resources")
+        self.converters = converters or {}
 
     def with_levels(self, levels: Iterable[Level] | Callable[[], Iterable[Level]] | None) -> Project:
         """Create a new project with the specified levels.

@@ -1,11 +1,11 @@
-from sonolus.build.engine import JsonValue, package_output
+from sonolus.build.engine import JsonValue, package_data
 from sonolus.script.level import LevelData
 
 
 def package_level_data(
     level_data: LevelData,
 ) -> bytes:
-    return package_output(build_level_data(level_data))
+    return package_data(build_level_data(level_data))
 
 
 def build_level_data(

@@ -1,10 +1,12 @@
+from collections.abc import Callable
 from pathlib import Path
+from typing import cast
 
 from sonolus.build.collection import Asset, Collection, Srl
-from sonolus.build.engine import package_engine
+from sonolus.build.engine import package_engine, unpackage_data
 from sonolus.build.level import package_level_data
 from sonolus.script.engine import Engine
-from sonolus.script.level import Level
+from sonolus.script.level import ExternalLevelData, ExternalLevelDataDict, Level, LevelData, parse_external_level_data
 from sonolus.script.project import BuildConfig, Project, ProjectSchema
 
 BLANK_PNG = (
@@ -19,6 +21,8 @@ BLANK_AUDIO = (
 
 def build_project_to_collection(project: Project, config: BuildConfig | None):
     collection = load_resources_files_to_collection(project.resources)
+    for src_engine, converter in project.converters.items():
+        apply_converter_to_collection(collection, src_engine, converter)
     if config.override_resource_level_engines:
         for level in collection.categories.get("levels", {}).values():
             level["item"]["engine"] = project.engine.name
@@ -27,6 +31,29 @@ def build_project_to_collection(project: Project, config: BuildConfig | None):
         add_level_to_collection(collection, project, level)
     collection.name = f"{project.engine.name}"
     return collection
+
+
+def apply_converter_to_collection(
+    self, src_engine: str | None, converter: Callable[[ExternalLevelData], LevelData]
+) -> None:
+    for level_details in self.categories.get("levels", {}).values():
+        level = level_details["item"]
+        if (
+            src_engine is not None
+            and level["engine"] != src_engine
+            and not (isinstance(level["engine"], dict) and level["engine"].get("name") == src_engine)
+        ):
+            continue
+        packaged_data_srl = level.get("data")
+        packaged_data = self.repository.get(packaged_data_srl["hash"])
+        data = unpackage_data(packaged_data)
+        if not (isinstance(data, dict) and "bgmOffset" in data and "entities" in data):
+            raise ValueError(f"Level data for level '{level['name']}' is not valid")
+        parsed_data = parse_external_level_data(cast(ExternalLevelDataDict, data))
+        new_data = converter(parsed_data)
+        packaged_new_data = package_level_data(new_data)
+        new_data_srl = self.add_asset(packaged_new_data)
+        level["data"] = new_data_srl
 
 
 def add_engine_to_collection(collection: Collection, project: Project, engine: Engine, config: BuildConfig | None):
