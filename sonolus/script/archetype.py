@@ -1228,6 +1228,12 @@ class EntityRef[A: _BaseArchetype](Record):
         return EntityRef[archetype](index=self.index)
 
     @meta_fn
+    def __eq__(self, other: Any) -> bool:
+        if not ctx() and hasattr(self, "_ref_") and hasattr(other, "_ref_"):
+            return self._ref_ is other._ref_
+        return super().__eq__(other)
+
+    @meta_fn
     def get(self) -> A:
         """Get the entity."""
         if ref := getattr(self, "_ref_", None):
