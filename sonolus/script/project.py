@@ -28,7 +28,7 @@ class Project:
         engine: Engine,
         levels: Iterable[Level] | Callable[[], Iterable[Level]] | None = None,
         resources: PathLike | None = None,
-        converters: dict[str, Callable[[ExternalLevelData], LevelData]] | None = None,
+        converters: dict[str | None, Callable[[ExternalLevelData], LevelData]] | None = None,
     ):
         self.engine = engine
         match levels:

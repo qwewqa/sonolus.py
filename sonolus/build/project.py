@@ -22,7 +22,12 @@ BLANK_AUDIO = (
 def build_project_to_collection(project: Project, config: BuildConfig | None):
     collection = load_resources_files_to_collection(project.resources)
     for src_engine, converter in project.converters.items():
+        if src_engine is None:
+            continue
         apply_converter_to_collection(collection, src_engine, converter)
+    fallback_converter = project.converters.get(None)
+    if fallback_converter is not None:
+        apply_converter_to_collection(collection, None, fallback_converter)
     if config.override_resource_level_engines:
         for level in collection.categories.get("levels", {}).values():
             level["item"]["engine"] = project.engine.name
