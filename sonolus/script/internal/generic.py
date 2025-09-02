@@ -16,6 +16,9 @@ def validate_type_arg(arg: Any) -> Any:
     if not arg._is_py_():
         raise TypeError(f"Expected a compile-time constant type argument, got {arg}")
     result = arg._as_py_()
+    if isinstance(result, type) and issubclass(result, Enum):
+        # E.g. if this is an IntEnum subclass, we call it on IntEnum, and then int, which gets us the result we want
+        result = validate_type_arg(result.__mro__[1])
     if hasattr(result, "_type_mapping_"):
         return result._type_mapping_
     if get_origin(result) is Annotated:
@@ -27,10 +30,6 @@ def validate_type_arg(arg: Any) -> Any:
 
 def validate_type_spec(spec: Any) -> PartialGeneric | TypeVar | type[Value]:
     spec = validate_type_arg(spec)
-    if isinstance(spec, type) and issubclass(spec, Enum):
-        # For values like IntEnum subclasses, this will call validate_type_spec(IntEnum),
-        # which in turn will call it on int, so this works.
-        spec = validate_type_spec(spec.__mro__[1])
     if isinstance(spec, PartialGeneric | TypeVar) or (isinstance(spec, type) and issubclass(spec, Value)):
         return spec
     if typing.get_origin(spec) is UnionType:

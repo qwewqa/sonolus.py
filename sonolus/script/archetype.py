@@ -1371,7 +1371,7 @@ class StandardImport:
     TIMESCALE_EASE = Annotated[TimescaleEase, imported(name=StandardImportName.TIMESCALE_EASE)]
     """The timescale ease type, for timescale change markers."""
 
-    JUDGMENT = Annotated[int, imported(name=StandardImportName.JUDGMENT)]
+    JUDGMENT = Annotated[Judgment, imported(name=StandardImportName.JUDGMENT)]
     """The judgment of the entity.
 
     Automatically set in watch mode for archetypes with a corresponding scored play mode archetype.
