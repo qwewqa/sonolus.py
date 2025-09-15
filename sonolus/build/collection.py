@@ -129,7 +129,7 @@ class Collection:
                         resource_data = resource_path.read_bytes()
 
                         if resource_path.suffix.lower() in {".json", ".bin"}:
-                            resource_data = gzip.compress(resource_data)
+                            resource_data = gzip.compress(resource_data, mtime=0)
 
                         srl = self.add_asset(resource_data)
                         item_data[resource_path.stem] = srl

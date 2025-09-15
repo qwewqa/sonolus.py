@@ -407,12 +407,12 @@ def package_rom(rom: ReadOnlyMemory) -> bytes:
     for value in values:
         output.extend(struct.pack("<f", value))
 
-    return gzip.compress(bytes(output))
+    return gzip.compress(bytes(output), mtime=0)
 
 
 def package_data(value: JsonValue) -> bytes:
     json_data = json.dumps(value, separators=(",", ":")).encode("utf-8")
-    return gzip.compress(json_data)
+    return gzip.compress(json_data, mtime=0)
 
 
 def unpackage_data(data: bytes) -> JsonValue:
