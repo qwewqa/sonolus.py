@@ -1666,6 +1666,15 @@
   
 </li>
       
+        <li class="md-nav__item">
+  <a href="#sonolus.script.level.parse_external_level_data" class="md-nav__link">
+    <span class="md-ellipsis">
+      <code class="doc-symbol doc-symbol-toc doc-symbol-function"></code>&nbsp;parse_external_level_data
+    </span>
+  </a>
+  
+</li>
+      
     </ul>
   
 </nav>
@@ -2228,6 +2237,15 @@
   <a href="#sonolus.script.level.flatten_entities" class="md-nav__link">
     <span class="md-ellipsis">
       <code class="doc-symbol doc-symbol-toc doc-symbol-function"></code>&nbsp;flatten_entities
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#sonolus.script.level.parse_external_level_data" class="md-nav__link">
+    <span class="md-ellipsis">
+      <code class="doc-symbol doc-symbol-toc doc-symbol-function"></code>&nbsp;parse_external_level_data
     </span>
   </a>
   
@@ -3042,6 +3060,79 @@
             <td>
               <div class="doc-md-description">
                 <p>The flattened entities.</p>
+              </div>
+            </td>
+          </tr>
+      </tbody>
+    </table>
+
+
+    </div>
+
+</div>
+
+<div class="doc doc-object doc-function">
+
+
+<h2 id="sonolus.script.level.parse_external_level_data" class="doc doc-heading">
+<code class="doc-symbol doc-symbol-heading doc-symbol-function"></code>            <code class="highlight language-python"><span class="n">parse_external_level_data</span><span class="p">(</span><span class="n">raw_data</span><span class="p">:</span> <span class="n">ExternalLevelDataDict</span> <span class="o">|</span> <span class="nb">str</span> <span class="o">|</span> <span class="nb">bytes</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">ExternalLevelData</span></code>
+
+<a href="#sonolus.script.level.parse_external_level_data" class="headerlink" title="Permanent link">&para;</a></h2>
+
+
+    <div class="doc doc-contents ">
+
+        <p>Parse level data from an external source.</p>
+<p>If given a string, it is parsed as JSON. If given bytes, it is un-gzipped and then parsed as JSON.</p>
+
+
+<p><span class="doc-section-title">Parameters:</span></p>
+    <table>
+      <thead>
+        <tr>
+          <th>Name</th>
+          <th>Type</th>
+          <th>Description</th>
+          <th>Default</th>
+        </tr>
+      </thead>
+      <tbody>
+          <tr class="doc-section-item">
+            <td>
+                <code>raw_data</code>
+            </td>
+            <td>
+                  <code><span title="sonolus.script.level.ExternalLevelDataDict">ExternalLevelDataDict</span> | <a class="autorefs autorefs-internal" href="../../concepts/types/#str">str</a> | <span title="bytes">bytes</span></code>
+            </td>
+            <td>
+              <div class="doc-md-description">
+                <p>The raw level data to parse.</p>
+              </div>
+            </td>
+            <td>
+                <em>required</em>
+            </td>
+          </tr>
+      </tbody>
+    </table>
+
+
+    <p><span class="doc-section-title">Returns:</span></p>
+    <table>
+      <thead>
+        <tr>
+          <th>Type</th>
+          <th>Description</th>
+        </tr>
+      </thead>
+      <tbody>
+          <tr class="doc-section-item">
+            <td>
+                  <code><a class="autorefs autorefs-internal" title="            ExternalLevelData (sonolus.script.level.ExternalLevelData)" href="#sonolus.script.level.ExternalLevelData">ExternalLevelData</a></code>
+            </td>
+            <td>
+              <div class="doc-md-description">
+                <p>The parsed level data.</p>
               </div>
             </td>
           </tr>
