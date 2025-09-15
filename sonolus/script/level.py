@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import gzip
 import json
 from collections.abc import Iterator
 from os import PathLike
@@ -229,7 +230,21 @@ class ExternalEntityData(NamedTuple):
     data: dict[str, Any]
 
 
-def parse_external_level_data(raw_data: ExternalLevelDataDict) -> ExternalLevelData:
+def parse_external_level_data(raw_data: ExternalLevelDataDict | str | bytes, /) -> ExternalLevelData:
+    """Parse level data from an external source.
+
+    If given a string, it is parsed as JSON. If given bytes, it is un-gzipped and then parsed as JSON.
+
+    Args:
+        raw_data: The raw level data to parse.
+
+    Returns:
+        The parsed level data.
+    """
+    if isinstance(raw_data, bytes):
+        raw_data = gzip.decompress(raw_data).decode("utf-8")
+    if isinstance(raw_data, str):
+        raw_data = json.loads(raw_data)
     bgm_offset = raw_data["bgmOffset"]
     raw_entities = raw_data["entities"]
     entity_name_to_index = {e["name"]: i for i, e in enumerate(raw_entities) if "name" in e}
