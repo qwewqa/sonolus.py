@@ -39,7 +39,7 @@ def build_project_to_collection(project: Project, config: BuildConfig | None):
 
 
 def apply_converter_to_collection(
-    self, src_engine: str | None, converter: Callable[[ExternalLevelData], LevelData]
+    self, src_engine: str | None, converter: Callable[[ExternalLevelData], LevelData | None]
 ) -> None:
     for level_details in self.categories.get("levels", {}).values():
         level = level_details["item"]
@@ -56,6 +56,8 @@ def apply_converter_to_collection(
             raise ValueError(f"Level data for level '{level['name']}' is not valid")
         parsed_data = parse_external_level_data(cast(ExternalLevelDataDict, data))
         new_data = converter(parsed_data)
+        if new_data is None:
+            continue
         packaged_new_data = package_level_data(new_data)
         new_data_srl = self.add_asset(packaged_new_data)
         level["data"] = new_data_srl
