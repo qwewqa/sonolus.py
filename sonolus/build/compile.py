@@ -77,7 +77,13 @@ def compile_mode(
     base_archetype_entries = {}
 
     if archetypes is not None:
-        base_archetypes = {getattr(a, "_derived_base_", a) for a in archetypes}
+        base_archetypes = []
+        seen_base_archetypes = set()
+        for a in archetypes:
+            base = getattr(a, "_derived_base_", a)
+            if base not in seen_base_archetypes:
+                seen_base_archetypes.add(base)
+                base_archetypes.append(base)
 
         for archetype in base_archetypes:
             archetype._init_fields()
