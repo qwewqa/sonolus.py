@@ -14,7 +14,16 @@ from sonolus.backend.utils import get_function, scan_writes
 from sonolus.script.debug import assert_true
 from sonolus.script.internal.builtin_impls import BUILTIN_IMPLS, _bool, _float, _int, _len, _super
 from sonolus.script.internal.constant import ConstantValue
-from sonolus.script.internal.context import Context, EmptyBinding, Scope, ValueBinding, ctx, set_ctx, using_ctx
+from sonolus.script.internal.context import (
+    ConflictBinding,
+    Context,
+    EmptyBinding,
+    Scope,
+    ValueBinding,
+    ctx,
+    set_ctx,
+    using_ctx,
+)
 from sonolus.script.internal.descriptor import SonolusDescriptor
 from sonolus.script.internal.error import CompilationError
 from sonolus.script.internal.impl import meta_fn, validate_value
@@ -22,7 +31,7 @@ from sonolus.script.internal.transient import TransientValue
 from sonolus.script.internal.tuple_impl import TupleImpl
 from sonolus.script.internal.value import Value
 from sonolus.script.iterator import SonolusIterator
-from sonolus.script.maybe import Maybe
+from sonolus.script.maybe import Maybe, Nothing
 from sonolus.script.num import Num, _is_num
 from sonolus.script.record import Record
 
@@ -312,13 +321,16 @@ class Visitor(ast.NodeVisitor):
                 yield_merge_ctx = Context.meet(yield_between_ctxs)
             else:
                 yield_merge_ctx = before_ctx.new_empty_disconnected()
-                # Making it default to a number for convenience when used with stuff like min, etc.
-                yield_merge_ctx.scope.set_value("$yield", validate_value(0))
             yield_binding = yield_merge_ctx.scope.get_binding("$yield")
-            if not isinstance(yield_binding, ValueBinding):
-                raise ValueError("Function has conflicting yield values")
-            with using_ctx(yield_merge_ctx):
-                is_present_var._set_(1)
+            match yield_binding:
+                case ValueBinding():
+                    with using_ctx(yield_merge_ctx):
+                        is_present_var._set_(1)
+                    yield_value = Maybe(present=is_present_var, value=yield_binding.value)
+                case EmptyBinding():
+                    yield_value = Nothing
+                case ConflictBinding():
+                    raise ValueError("Function has conflicting yield values")
             next_result_ctx = Context.meet([yield_merge_ctx, return_ctx])
             set_ctx(before_ctx)
             return_test = Num._alloc_()
@@ -327,7 +339,7 @@ class Visitor(ast.NodeVisitor):
                 return_test,
                 entry,
                 next_result_ctx,
-                Maybe(present=is_present_var, value=yield_binding.value),
+                yield_value,
                 self.used_parent_binding_values,
                 self,
             )

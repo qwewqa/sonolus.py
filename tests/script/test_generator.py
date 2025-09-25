@@ -634,3 +634,16 @@ def test_generator_with_iter():
             debug_log(i)
 
     run_and_validate(fn)
+
+
+def test_comptime_empty_generator():
+    def fn():
+        def gen():
+            return
+            yield lambda: 1
+
+        for i in gen():
+            return i()
+        return 2
+
+    assert run_and_validate(fn) == 2
