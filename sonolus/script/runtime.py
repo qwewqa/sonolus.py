@@ -992,7 +992,7 @@ def time() -> float:
 def offset_adjusted_time() -> float:
     """Get the current time of the game adjusted by the input offset.
 
-    Returns 0 in preview mode and tutorial mode.
+    Returns 0 in preview mode and the current time without adjustment in tutorial mode.
     """
     if not ctx():
         return 0
