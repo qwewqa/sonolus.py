@@ -1,9 +1,12 @@
 from __future__ import annotations
 
+from collections.abc import Iterable
 from dataclasses import dataclass
 from typing import Annotated, Any, NewType, dataclass_transform, get_origin
 
 from sonolus.backend.ops import Op
+from sonolus.script.array_like import ArrayLike
+from sonolus.script.debug import static_error
 from sonolus.script.internal.introspection import get_field_specifiers
 from sonolus.script.internal.native import native_function
 from sonolus.script.quad import QuadLike, flatten_quad
@@ -52,6 +55,29 @@ class ParticleHandle(Record):
         _destroy_particle_effect(self.id)
 
 
+class ParticleGroup(Record, ArrayLike[Particle]):
+    """A group of particle effects.
+
+    Usage:
+        ```python
+        ParticleGroup(start_id: int, size: int)
+        ```
+    """
+
+    start_id: int
+    size: int
+
+    def __len__(self) -> int:
+        return self.size
+
+    def __getitem__(self, index: int) -> Particle:
+        assert 0 <= index < self.size
+        return Particle(self.start_id + index)
+
+    def __setitem__(self, index: int, value: Particle) -> None:
+        static_error("ParticleGroup is read-only")
+
+
 @native_function(Op.HasParticleEffect)
 def _has_particle_effect(particle_id: int) -> bool:
     raise NotImplementedError
@@ -91,9 +117,19 @@ class _ParticleInfo:
     name: str
 
 
+@dataclass
+class _ParticleGroupInfo:
+    names: list[str]
+
+
 def particle(name: str) -> Any:
     """Define a particle with the given name."""
     return _ParticleInfo(name)
+
+
+def particle_group(names: Iterable[str]) -> Any:
+    """Define a particle group with the given names."""
+    return _ParticleGroupInfo(list(names))
 
 
 type Particles = NewType("Particles", Any)  # type: ignore
@@ -109,26 +145,49 @@ def particles[T](cls: type[T]) -> T | Particles:
         class Particles:
             tap: StandardParticle.NOTE_CIRCULAR_TAP_RED
             other: Particle = particle("other")
+            group_1: ParticleGroup = particle_group(["one", "two", "three"])
+            group_2: ParticleGroup = particle_group(f"name_{i}" for i in range(10))
         ```
     """
     if len(cls.__bases__) != 1:
         raise ValueError("Particles class must not inherit from any class (except object)")
     instance = cls()
     names = []
-    for i, (name, annotation) in enumerate(get_field_specifiers(cls).items()):
+    i = 0
+    for name, annotation in get_field_specifiers(cls).items():
         if get_origin(annotation) is not Annotated:
-            raise TypeError(f"Invalid annotation for particles: {annotation}")
+            raise TypeError(f"Invalid annotation for particles: {annotation} on field {name}")
         annotation_type = annotation.__args__[0]
         annotation_values = annotation.__metadata__
-        if annotation_type is not Particle:
-            raise TypeError(f"Invalid annotation for particles: {annotation}, expected annotation of type Particle")
-        if len(annotation_values) != 1 or not isinstance(annotation_values[0], _ParticleInfo):
+        if len(annotation_values) != 1:
             raise TypeError(
-                f"Invalid annotation for particles: {annotation}, expected a single string annotation value"
+                f"Invalid annotation for particles: {annotation} on field {name}, too many annotation values"
             )
-        particle_name = annotation_values[0].name
-        names.append(particle_name)
-        setattr(instance, name, Particle(i))
+        particle_info = annotation_values[0]
+        match particle_info:
+            case _ParticleInfo(name=particle_name):
+                if annotation_type is not Particle:
+                    raise TypeError(
+                        f"Invalid annotation for particles: {annotation} on field {name}, expected Particle"
+                    )
+                names.append(particle_name)
+                setattr(instance, name, Particle(i))
+                i += 1
+            case _ParticleGroupInfo(names=particle_names):
+                if annotation_type is not ParticleGroup:
+                    raise TypeError(
+                        f"Invalid annotation for particles: {annotation} on field {name}, expected ParticleGroup"
+                    )
+                start_id = i
+                count = len(particle_names)
+                names.extend(particle_names)
+                setattr(instance, name, ParticleGroup(start_id, count))
+                i += count
+            case _:
+                raise TypeError(
+                    f"Invalid annotation for particles: {annotation} on field {name}, unknown particle info, "
+                    f"expected a particle() or particle_group() specifier"
+                )
     instance._particles_ = names
     instance._is_comptime_value_ = True
     return instance

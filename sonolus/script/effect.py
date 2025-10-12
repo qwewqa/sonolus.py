@@ -1,9 +1,12 @@
 from __future__ import annotations
 
+from collections.abc import Iterable
 from dataclasses import dataclass
 from typing import Annotated, Any, NewType, dataclass_transform, get_origin
 
 from sonolus.backend.ops import Op
+from sonolus.script.array_like import ArrayLike
+from sonolus.script.debug import static_error
 from sonolus.script.internal.introspection import get_field_specifiers
 from sonolus.script.internal.native import native_function
 from sonolus.script.record import Record
@@ -92,6 +95,29 @@ class ScheduledLoopedEffectHandle(Record):
         _stop_looped_scheduled(self.id, end_time)
 
 
+class EffectGroup(Record, ArrayLike[Effect]):
+    """A group of effect clips.
+
+    Usage:
+        ```python
+        EffectGroup(start_id: int, size: int)
+        ```
+    """
+
+    start_id: int
+    size: int
+
+    def __len__(self) -> int:
+        return self.size
+
+    def __getitem__(self, index: int) -> Effect:
+        assert 0 <= index < self.size
+        return Effect(self.start_id + index)
+
+    def __setitem__(self, index: int, value: Effect) -> None:
+        static_error("EffectGroup is read-only")
+
+
 @native_function(Op.HasEffectClip)
 def _has_effect_clip(effect_id: int) -> bool:
     raise NotImplementedError
@@ -132,9 +158,19 @@ class EffectInfo:
     name: str
 
 
+@dataclass
+class EffectGroupInfo:
+    names: list[str]
+
+
 def effect(name: str) -> Any:
     """Define a sound effect clip with the given name."""
     return EffectInfo(name)
+
+
+def effect_group(names: Iterable[str]) -> Any:
+    """Define an effect group with the given names."""
+    return EffectGroupInfo(list(names))
 
 
 type Effects = NewType("Effects", Any)  # type: ignore
@@ -150,24 +186,43 @@ def effects[T](cls: type[T]) -> T | Effects:
         class Effects:
             miss: StandardEffect.MISS
             other: Effect = effect("other")
+            group_1: EffectGroup = effect_group(["one", "two", "three"])
+            group_2: EffectGroup = effect_group(f"name_{i}" for i in range(10))
         ```
     """
     if len(cls.__bases__) != 1:
         raise ValueError("Effects class must not inherit from any class (except object)")
     instance = cls()
     names = []
-    for i, (name, annotation) in enumerate(get_field_specifiers(cls).items()):
+    i = 0
+    for name, annotation in get_field_specifiers(cls).items():
         if get_origin(annotation) is not Annotated:
-            raise TypeError(f"Invalid annotation for effects: {annotation}")
+            raise TypeError(f"Invalid annotation for effects: {annotation} on field {name}")
         annotation_type = annotation.__args__[0]
         annotation_values = annotation.__metadata__
-        if annotation_type is not Effect:
-            raise TypeError(f"Invalid annotation for effects: {annotation}, expected annotation of type Effect")
-        if len(annotation_values) != 1 or not isinstance(annotation_values[0], EffectInfo):
-            raise TypeError(f"Invalid annotation for effects: {annotation}, expected a single string annotation value")
-        effect_name = annotation_values[0].name
-        names.append(effect_name)
-        setattr(instance, name, Effect(i))
+        if len(annotation_values) != 1:
+            raise TypeError(f"Invalid annotation for effects: {annotation} on field {name}, too many annotation values")
+        effect_info = annotation_values[0]
+        match effect_info:
+            case EffectInfo(name=effect_name):
+                if annotation_type is not Effect:
+                    raise TypeError(f"Invalid annotation for effects: {annotation} on field {name}, expected Effect")
+                names.append(effect_name)
+                setattr(instance, name, Effect(i))
+                i += 1
+            case EffectGroupInfo(names=effect_names):
+                if annotation_type is not EffectGroup:
+                    raise TypeError(f"Invalid annotation for effects: {annotation} on field {name}, expected EffectGroup")
+                start_id = i
+                count = len(effect_names)
+                names.extend(effect_names)
+                setattr(instance, name, EffectGroup(start_id, count))
+                i += count
+            case _:
+                raise TypeError(
+                    f"Invalid annotation for effects: {annotation} on field {name}, unknown effect info, "
+                    f"expected an effect() or effect_group() specifier"
+                )
     instance._effects_ = names
     instance._is_comptime_value_ = True
     return instance
