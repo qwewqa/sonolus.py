@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from typing import Protocol
+from typing import Protocol, Self, assert_never, overload
 
 from sonolus.script.record import Record
 from sonolus.script.values import zeros
@@ -212,7 +212,7 @@ class Rect(Record):
     b: float
     """The bottom edge of the rectangle."""
 
-    l: float  # noqa: E741
+    l: float
     """The left edge of the rectangle."""
 
     @classmethod
@@ -224,6 +224,57 @@ class Rect(Record):
             b=center.y - dimensions.y / 2,
             l=center.x - dimensions.x / 2,
         )
+
+    @overload
+    @classmethod
+    def from_margin(cls, trbl: float, /) -> Rect: ...
+
+    @overload
+    @classmethod
+    def from_margin(cls, tb: float, lr: float, /) -> Rect: ...
+
+    @overload
+    @classmethod
+    def from_margin(cls, t: float, lr: float, b: float, /) -> Rect: ...
+
+    @overload
+    @classmethod
+    def from_margin(cls, t: float, r: float, b: float, l: float, /) -> Rect: ...
+
+    @classmethod
+    def from_margin(cls, a: float, b: float | None = None, c: float | None = None, d: float | None = None, /) -> Self:
+        """Create a rectangle based on margins (edge distances) from the origin.
+
+        Compared to the regular [`Rect`][sonolus.script.quad.Rect] constructor, this method negates the bottom and
+        left values, and supports shorthands when fewer than four arguments are provided.
+
+        The following signatures are supported:
+
+        - `from_margin(trbl)`: All margins set to `trbl`.
+        - `from_margin(tb, lr)`: Top and bottom margins set to `tb`, left and right margins set to `lr`.
+        - `from_margin(t, lr, b)`: Top margin set to `t`, left and right margins set to `lr`, bottom margin set to `b`.
+        - `from_margin(t, r, b, l)`: Top, right, bottom, and left margins set to `t`, `r`, `b`, and `l` respectively.
+
+        Usage:
+            ```python
+            Rect.from_margin(1)  # Rect(t=1, r=1, b=-1, l=-1)
+            Rect.from_margin(1, 2)  # Rect(t=1, r=2, b=-1, l=-2)
+            Rect.from_margin(1, 2, 3)  # Rect(t=1, r=2, b=-3, l=-2)
+            Rect.from_margin(1, 2, 3, 4)  # Rect(t=1, r=2, b=-3, l=-4)
+            ```
+        """
+        args = (a, b, c, d)
+        match args:
+            case (a, None, None, None):
+                return cls(t=a, r=a, b=-a, l=-a)
+            case (a, b, None, None):
+                return cls(t=a, r=b, b=-a, l=-b)
+            case (a, b, c, None):
+                return cls(t=a, r=b, b=-c, l=-b)
+            case (a, b, c, d):
+                return cls(t=a, r=b, b=-c, l=-d)
+            case _:
+                assert_never(args)
 
     @property
     def w(self) -> float:

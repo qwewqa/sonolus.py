@@ -1,4 +1,3 @@
-# ruff: noqa: E741
 import itertools
 from math import pi
 
@@ -282,3 +281,55 @@ def test_quad_contains_point(quad_point):
     # Don't have an easy way to validate the correct solution
     # But this still checks that the compiled and Python versions are consistent
     run_and_validate(fn)
+
+
+def test_rect_from_margin_one_arg():
+    def fn():
+        return Rect.from_margin(1)
+
+    result = run_and_validate(fn)
+    assert result.t == 1
+    assert result.r == 1
+    assert result.b == -1
+    assert result.l == -1
+    assert result.w == 2
+    assert result.h == 2
+
+
+def test_rect_from_margin_two_args():
+    def fn():
+        return Rect.from_margin(1, 2)
+
+    result = run_and_validate(fn)
+    assert result.t == 1
+    assert result.r == 2
+    assert result.b == -1
+    assert result.l == -2
+    assert result.w == 4
+    assert result.h == 2
+
+
+def test_rect_from_margin_three_args():
+    def fn():
+        return Rect.from_margin(1, 2, 3)
+
+    result = run_and_validate(fn)
+    assert result.t == 1
+    assert result.r == 2
+    assert result.b == -3
+    assert result.l == -2
+    assert result.w == 4
+    assert result.h == 4
+
+
+def test_rect_from_margin_four_args():
+    def fn():
+        return Rect.from_margin(1, 2, 3, 4)
+
+    result = run_and_validate(fn)
+    assert result.t == 1
+    assert result.r == 2
+    assert result.b == -3
+    assert result.l == -4
+    assert result.w == 6
+    assert result.h == 4

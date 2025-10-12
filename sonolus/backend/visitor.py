@@ -751,11 +751,17 @@ class Visitor(ast.NodeVisitor):
                         test = validate_value(subject._is_py_() and subject._as_py_() is None)
                     case _:
                         raise NotImplementedError("Unsupported match singleton")
-                ctx_init = ctx()
-                ctx_init.test = test.ir()
-                true_ctx = ctx_init.branch(None)
-                false_ctx = ctx_init.branch(0)
-                return true_ctx, false_ctx
+                if test._is_py_():
+                    if test._as_py_():
+                        return ctx(), ctx().into_dead()
+                    else:
+                        return ctx().into_dead(), ctx()
+                else:
+                    ctx_init = ctx()
+                    ctx_init.test = test.ir()
+                    true_ctx = ctx_init.branch(None)
+                    false_ctx = ctx_init.branch(0)
+                    return true_ctx, false_ctx
             case ast.MatchSequence(patterns=patterns):
                 target_len = len(patterns)
                 if not (isinstance(subject, Sequence | TupleImpl)):
