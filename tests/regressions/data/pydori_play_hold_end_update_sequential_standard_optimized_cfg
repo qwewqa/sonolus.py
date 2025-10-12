@@ -102,15 +102,15 @@
   goto 28
 28:
   10000[0] <- Add(3.0, Add(EntityInfo[1], Multiply(Less(EntityInfo[1], 0.0), 13.0)))
-  10000[10] <- EngineRom[10000[0]]
-  goto when 10000[10]
+  10000[8] <- EngineRom[10000[0]]
+  goto when 10000[8]
     6.0 -> 51
     default -> 29
 29:
   goto 51 if Not(LevelOption[6]) else 30
 30:
-  10000[11] <- 0
-  goto when 10000[10]
+  10000[9] <- 0
+  goto when 10000[8]
     1.0 -> 36
     2.0 -> 35
     3.0 -> 32
@@ -119,36 +119,36 @@
     7.0 -> 31
     default -> 37
 31:
-  10000[11] <- 3.0
+  10000[9] <- 3.0
   goto 37
 32:
   goto 33 if Greater(EntityData[2], 0.0) else 34
 33:
-  10000[11] <- 8.0
+  10000[9] <- 8.0
   goto 37
 34:
-  10000[11] <- 10.0
+  10000[9] <- 10.0
   goto 37
 35:
-  10000[11] <- 6.0
+  10000[9] <- 6.0
   goto 37
 36:
-  10000[11] <- 1.0
+  10000[9] <- 1.0
   goto 37
 37:
-  10000[0] <- Multiply(EntityData[0], LevelData[12])
-  10000[1] <- Subtract(10000[0], Divide(LevelData[11], 2.0))
-  10000[2] <- Add(Multiply(LevelData[8], 10000[1]), LevelData[10])
-  10000[3] <- Divide(Add(Multiply(LevelData[2], 10000[1]), LevelData[4]), 10000[2])
-  10000[4] <- Divide(Add(Multiply(LevelData[5], 10000[1]), LevelData[7]), 10000[2])
-  10000[5] <- Add(10000[0], Divide(LevelData[11], 2.0))
-  10000[6] <- Add(Multiply(LevelData[8], 10000[5]), LevelData[10])
-  10000[7] <- Divide(Add(Multiply(LevelData[2], 10000[5]), LevelData[4]), 10000[6])
-  10000[8] <- Divide(Add(Multiply(LevelData[5], 10000[5]), LevelData[7]), 10000[6])
-  10000[9] <- Power(Add(Power(Subtract(10000[7], 10000[3]), 2.0), Power(Subtract(10000[8], 10000[4]), 2.0)), 0.5)
-  SpawnParticleEffect(10000[11], 10000[3], 10000[4], Add(10000[3], 0.0), Add(10000[4], 10000[9]), Add(10000[7], 0.0), Add(10000[8], 10000[9]), 10000[7], 10000[8], 0.5, 0.0)
+  10000[10] <- Multiply(EntityData[0], LevelData[12])
+  10000[11] <- Subtract(10000[10], Divide(LevelData[11], 2.0))
+  10000[0] <- Add(Multiply(LevelData[8], 10000[11]), LevelData[10])
+  10000[1] <- Divide(Add(Multiply(LevelData[2], 10000[11]), LevelData[4]), 10000[0])
+  10000[2] <- Divide(Add(Multiply(LevelData[5], 10000[11]), LevelData[7]), 10000[0])
+  10000[3] <- Add(10000[10], Divide(LevelData[11], 2.0))
+  10000[4] <- Add(Multiply(LevelData[8], 10000[3]), LevelData[10])
+  10000[5] <- Divide(Add(Multiply(LevelData[2], 10000[3]), LevelData[4]), 10000[4])
+  10000[6] <- Divide(Add(Multiply(LevelData[5], 10000[3]), LevelData[7]), 10000[4])
+  10000[7] <- Power(Add(Power(Subtract(10000[5], 10000[1]), 2.0), Power(Subtract(10000[6], 10000[2]), 2.0)), 0.5)
+  SpawnParticleEffect(10000[9], 10000[1], 10000[2], Add(10000[1], 0.0), Add(10000[2], 10000[7]), Add(10000[5], 0.0), Add(10000[6], 10000[7]), 10000[5], 10000[6], 0.5, 0.0)
   10000[0] <- 0
-  goto when 10000[10]
+  goto when 10000[8]
     1.0 -> 43
     2.0 -> 42
     3.0 -> 39
