@@ -1,8 +1,11 @@
+from collections.abc import Iterable
 from dataclasses import dataclass
 from enum import StrEnum
 from typing import Annotated, Any, NewType, dataclass_transform, get_origin
 
 from sonolus.backend.ops import Op
+from sonolus.script.array_like import ArrayLike
+from sonolus.script.debug import static_error
 from sonolus.script.internal.introspection import get_field_specifiers
 from sonolus.script.internal.native import native_function
 from sonolus.script.quad import QuadLike, flatten_quad
@@ -109,6 +112,29 @@ class Sprite(Record):
             a: The alpha of the sprite.
         """
         _draw_curved_lr(self.id, *flatten_quad(quad), z, a, n, *cp1.tuple, *cp2.tuple)
+
+
+class SpriteGroup(Record, ArrayLike[Sprite]):
+    """A group of sprites.
+
+    Usage:
+        ```python
+        SpriteGroup(start_id: int, size: int)
+        ```
+    """
+
+    start_id: int
+    size: int
+
+    def __len__(self) -> int:
+        return self.size
+
+    def __getitem__(self, index: int) -> Sprite:
+        assert 0 <= index < self.size
+        return Sprite(self.start_id + index)
+
+    def __setitem__(self, index: int, value: Sprite) -> None:
+        static_error("SpriteGroup is read-only")
 
 
 @native_function(Op.HasSkinSprite)
@@ -262,9 +288,19 @@ class SkinSprite:
     name: str
 
 
+@dataclass
+class SkinSpriteGroup:
+    names: list[str]
+
+
 def sprite(name: str) -> Any:
     """Define a sprite with the given name."""
     return SkinSprite(name)
+
+
+def sprite_group(names: Iterable[str]) -> Any:
+    """Define a sprite group with the given names."""
+    return SkinSpriteGroup(list(names))
 
 
 type Skin = NewType("Skin", Any)  # type: ignore
@@ -294,25 +330,44 @@ def skin[T](cls: type[T]) -> T | Skin:
             render_mode: RenderMode = RenderMode.LIGHTWEIGHT
 
             note: StandardSprite.NOTE_HEAD_RED
-            other: Sprite = skin_sprite("other")
+            other: Sprite = sprite("other")
+            group_1: SpriteGroup = sprite_group(["one", "two", "three"])
+            group_2: SpriteGroup = sprite_group(f"name_{i}" for i in range(10))
         ```
     """
     if len(cls.__bases__) != 1:
         raise ValueError("Skin class must not inherit from any class (except object)")
     instance = cls()
     names = []
-    for i, (name, annotation) in enumerate(get_field_specifiers(cls, skip={"render_mode"}).items()):
+    i = 0
+    for name, annotation in get_field_specifiers(cls, skip={"render_mode"}).items():
         if get_origin(annotation) is not Annotated:
-            raise TypeError(f"Invalid annotation for skin: {annotation}")
+            raise TypeError(f"Invalid annotation for skin: {annotation} on field {name}")
         annotation_type = annotation.__args__[0]
         annotation_values = annotation.__metadata__
-        if annotation_type is not Sprite:
-            raise TypeError(f"Invalid annotation for skin: {annotation}, expected annotation of type Sprite")
-        if len(annotation_values) != 1 or not isinstance(annotation_values[0], SkinSprite):
-            raise TypeError(f"Invalid annotation for skin: {annotation}, expected a single string annotation value")
-        sprite_name = annotation_values[0].name
-        names.append(sprite_name)
-        setattr(instance, name, Sprite(i))
+        if len(annotation_values) != 1:
+            raise TypeError(f"Invalid annotation for skin: {annotation} on field {name}, too many annotation values")
+        sprite_info = annotation_values[0]
+        match sprite_info:
+            case SkinSprite(name=sprite_name):
+                if annotation_type is not Sprite:
+                    raise TypeError(f"Invalid annotation for skin: {annotation} on field {name}, expected Sprite")
+                names.append(sprite_name)
+                setattr(instance, name, Sprite(i))
+                i += 1
+            case SkinSpriteGroup(names=sprite_names):
+                if annotation_type is not SpriteGroup:
+                    raise TypeError(f"Invalid annotation for skin: {annotation} on field {name}, expected SpriteGroup")
+                start_id = i
+                count = len(sprite_names)
+                names.extend(sprite_names)
+                setattr(instance, name, SpriteGroup(start_id, count))
+                i += count
+            case _:
+                raise TypeError(
+                    f"Invalid annotation for skin: {annotation} on field {name}, unknown sprite info, "
+                    f"expected a skin() or sprite_group() specifier"
+                )
     instance._sprites_ = names
     instance.render_mode = RenderMode(getattr(instance, "render_mode", RenderMode.DEFAULT))
     instance._is_comptime_value_ = True
