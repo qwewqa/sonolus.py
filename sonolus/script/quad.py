@@ -57,6 +57,26 @@ class Quad(Record):
         """The center of the quad."""
         return (self.bl + self.tr + self.tl + self.br) / 4
 
+    @property
+    def mt(self) -> Vec2:
+        """The midpoint of the top edge of the quad."""
+        return (self.tl + self.tr) / 2
+
+    @property
+    def mr(self) -> Vec2:
+        """The midpoint of the right edge of the quad."""
+        return (self.tr + self.br) / 2
+
+    @property
+    def mb(self) -> Vec2:
+        """The midpoint of the bottom edge of the quad."""
+        return (self.bl + self.br) / 2
+
+    @property
+    def ml(self) -> Vec2:
+        """The midpoint of the left edge of the quad."""
+        return (self.bl + self.tl) / 2
+
     def translate(self, translation: Vec2, /) -> Quad:
         """Translate the quad by the given translation and return a new quad."""
         return Quad(
@@ -310,6 +330,26 @@ class Rect(Record):
     def center(self) -> Vec2:
         """The center of the rectangle."""
         return Vec2((self.l + self.r) / 2, (self.t + self.b) / 2)
+
+    @property
+    def mt(self) -> Vec2:
+        """The middle-top point of the rectangle."""
+        return Vec2((self.l + self.r) / 2, self.t)
+
+    @property
+    def mr(self) -> Vec2:
+        """The middle-right point of the rectangle."""
+        return Vec2(self.r, (self.t + self.b) / 2)
+
+    @property
+    def mb(self) -> Vec2:
+        """The middle-bottom point of the rectangle."""
+        return Vec2((self.l + self.r) / 2, self.b)
+
+    @property
+    def ml(self) -> Vec2:
+        """The middle-left point of the rectangle."""
+        return Vec2(self.l, (self.t + self.b) / 2)
 
     def as_quad(self) -> Quad:
         """Convert the rectangle to a [`Quad`][sonolus.script.quad.Quad]."""

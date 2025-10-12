@@ -333,3 +333,111 @@ def test_rect_from_margin_four_args():
     assert result.l == -4
     assert result.w == 6
     assert result.h == 4
+
+
+def test_quad_mt():
+    quad = Quad(
+        Vec2(0, 0),  # bl
+        Vec2(0, 2),  # tl
+        Vec2(2, 2),  # tr
+        Vec2(2, 0),  # br
+    )
+
+    def fn():
+        return quad.mt
+
+    result = run_and_validate(fn)
+    assert result.x == 1
+    assert result.y == 2
+
+
+def test_quad_mr():
+    quad = Quad(
+        Vec2(0, 0),  # bl
+        Vec2(0, 2),  # tl
+        Vec2(2, 2),  # tr
+        Vec2(2, 0),  # br
+    )
+
+    def fn():
+        return quad.mr
+
+    result = run_and_validate(fn)
+    assert result.x == 2
+    assert result.y == 1
+
+
+def test_quad_mb():
+    quad = Quad(
+        Vec2(0, 0),  # bl
+        Vec2(0, 2),  # tl
+        Vec2(2, 2),  # tr
+        Vec2(2, 0),  # br
+    )
+
+    def fn():
+        return quad.mb
+
+    result = run_and_validate(fn)
+    assert result.x == 1
+    assert result.y == 0
+
+
+def test_quad_ml():
+    quad = Quad(
+        Vec2(0, 0),  # bl
+        Vec2(0, 2),  # tl
+        Vec2(2, 2),  # tr
+        Vec2(2, 0),  # br
+    )
+
+    def fn():
+        return quad.ml
+
+    result = run_and_validate(fn)
+    assert result.x == 0
+    assert result.y == 1
+
+
+def test_rect_mt():
+    rect = Rect(t=3, r=4, b=1, l=2)
+
+    def fn():
+        return rect.mt
+
+    result = run_and_validate(fn)
+    assert result.x == 3
+    assert result.y == 3
+
+
+def test_rect_mr():
+    rect = Rect(t=3, r=4, b=1, l=2)
+
+    def fn():
+        return rect.mr
+
+    result = run_and_validate(fn)
+    assert result.x == 4
+    assert result.y == 2
+
+
+def test_rect_mb():
+    rect = Rect(t=3, r=4, b=1, l=2)
+
+    def fn():
+        return rect.mb
+
+    result = run_and_validate(fn)
+    assert result.x == 3
+    assert result.y == 1
+
+
+def test_rect_ml():
+    rect = Rect(t=3, r=4, b=1, l=2)
+
+    def fn():
+        return rect.ml
+
+    result = run_and_validate(fn)
+    assert result.x == 2
+    assert result.y == 2
