@@ -131,6 +131,8 @@ class _Num(Value, metaclass=_NumMeta):
                 if isinstance(self.data.block, BlockData) and not ctx().is_writable(self.data):
                     # This block is immutable in the current callback, so no need to copy it in case it changes.
                     return Num(self.data)
+            if isinstance(self.data, int | float | bool):
+                return Num(self.data)
             place = ctx().alloc(size=1)
             ctx().add_statements(IRSet(place, self.ir()))
             return Num(place)

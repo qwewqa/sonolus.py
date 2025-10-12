@@ -80,6 +80,20 @@ def assert_false(value: int | float | bool, message: str | None = None):
         error(message)
 
 
+def static_assert(value: int | float | bool, message: str | None = None):
+    message = message if message is not None else "Static assertion failed"
+    if not _is_static_true(value):
+        static_error(message)
+
+
+def try_static_assert(value: int | float | bool, message: str | None = None):
+    message = message if message is not None else "Static assertion failed"
+    if _is_static_false(value):
+        static_error(message)
+    if not value:
+        error(message)
+
+
 @meta_fn
 def assert_unreachable(message: str | None = None) -> Never:
     # This works a bit differently from assert_never from typing in that it throws an error if the Sonolus.py
@@ -140,3 +154,21 @@ def visualize_cfg(
 
 def simulation_context() -> SimulationContext:
     return SimulationContext()
+
+
+@meta_fn
+def _is_static_true(value: int | float | bool) -> bool:
+    if ctx() is None:
+        return bool(value)
+    else:
+        value = validate_value(value)
+        return value._is_py_() and value._as_py_()
+
+
+@meta_fn
+def _is_static_false(value: int | float | bool) -> bool:
+    if ctx() is None:
+        return not bool(value)
+    else:
+        value = validate_value(value)
+        return value._is_py_() and not value._as_py_()

@@ -212,7 +212,9 @@ def effects[T](cls: type[T]) -> T | Effects:
                 i += 1
             case EffectGroupInfo(names=effect_names):
                 if annotation_type is not EffectGroup:
-                    raise TypeError(f"Invalid annotation for effects: {annotation} on field {name}, expected EffectGroup")
+                    raise TypeError(
+                        f"Invalid annotation for effects: {annotation} on field {name}, expected EffectGroup"
+                    )
                 start_id = i
                 count = len(effect_names)
                 names.extend(effect_names)
