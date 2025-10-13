@@ -1,8 +1,7 @@
 # Overview
 
 Sonolus.py is a Python library for creating Sonolus engines. This page provides an overview of the key functionality
-available in the library. For detailed information, see the [Concepts](concepts/index.md) and
-[Reference](reference/index.md) sections.
+available in the library. For detailed information, see the [Reference](../reference/index.md) section.
 
 ## Language
 
@@ -84,7 +83,7 @@ Sonolus.py supports `int`, `float`, and `bool` types and most of the standard op
 
 ### Record
 
-[`Record`](reference/sonolus.script.record.md) is the main way to define custom types in Sonolus.py.
+[`Record`](../reference/sonolus.script.record.md) is the main way to define custom types in Sonolus.py.
 It functions similarly to a data class and provides a way to define a type with named fields:
 
 ```python
@@ -116,7 +115,7 @@ assert record_1.a == record_2.value.a == 789
 
 ### Array
 
-[`Array`](reference/sonolus.script.array.md) is a type that represents a fixed-size array of elements of a
+[`Array`](../reference/sonolus.script.array.md) is a type that represents a fixed-size array of elements of a
 specific type:
 
 ```python
@@ -136,7 +135,7 @@ assert record_1.a == 1
 ### Operations
 
 This section is an overview of the operations available for records and arrays. For full details see the
-[Record documentation](reference/sonolus.script.record.md) and [Array documentation](reference/sonolus.script.array.md).
+[Record documentation](../reference/sonolus.script.record.md) and [Array documentation](../reference/sonolus.script.array.md).
 
 Records and arrays come with the `==` and `!=` operators predefined to compare their values for equality:
 
@@ -201,49 +200,49 @@ such as not being valid as Record field types or Array element types.
 Sonolus.py provides a number of built-in modules that can be used in Sonolus engines. These include:
 
 - Project
-    - [Project](reference/sonolus.script.project.md): Configuration for a Sonolus.py project.
-    - [Engine](reference/sonolus.script.engine.md): Configuration for a Sonolus.py engine.
-    - [Level](reference/sonolus.script.level.md): Configuration for a Sonolus.py level.
-    - [Archetype](reference/sonolus.script.archetype.md): Engine archetypes and their configuration.
+    - [Project](../reference/sonolus.script.project.md): Configuration for a Sonolus.py project.
+    - [Engine](../reference/sonolus.script.engine.md): Configuration for a Sonolus.py engine.
+    - [Level](../reference/sonolus.script.level.md): Configuration for a Sonolus.py level.
+    - [Archetype](../reference/sonolus.script.archetype.md): Engine archetypes and their configuration.
 - Core Types
-    - [Array](reference/sonolus.script.array.md): Fixed-size arrays.
-    - [Num](reference/sonolus.script.num.md): Numeric values (int, float, bool).
-    - [Record](reference/sonolus.script.record.md): User-defined types with named fields.
+    - [Array](../reference/sonolus.script.array.md): Fixed-size arrays.
+    - [Num](../reference/sonolus.script.num.md): Numeric values (int, float, bool).
+    - [Record](../reference/sonolus.script.record.md): User-defined types with named fields.
 - Engine Resources
-    - [Bucket](reference/sonolus.script.bucket.md): Judgment buckets.
-    - [Effect](reference/sonolus.script.effect.md): Sound effects.
-    - [Instruction](reference/sonolus.script.instruction.md): Tutorial instructions.
-    - [Options](reference/sonolus.script.options.md): Engine options.
-    - [Particle](reference/sonolus.script.particle.md): Particle effects.
-    - [Sprite](reference/sonolus.script.sprite.md): Sprites and skins.
-    - [UI](reference/sonolus.script.ui.md): Engine ui configuration.
+    - [Bucket](../reference/sonolus.script.bucket.md): Judgment buckets.
+    - [Effect](../reference/sonolus.script.effect.md): Sound effects.
+    - [Instruction](../reference/sonolus.script.instruction.md): Tutorial instructions.
+    - [Options](../reference/sonolus.script.options.md): Engine options.
+    - [Particle](../reference/sonolus.script.particle.md): Particle effects.
+    - [Sprite](../reference/sonolus.script.sprite.md): Sprites and skins.
+    - [UI](../reference/sonolus.script.ui.md): Engine ui configuration.
 - Sonolus Runtime
-    - [Globals](reference/sonolus.script.globals.md): Level data and level memory definition.
-    - [Runtime](reference/sonolus.script.runtime.md): Runtime functions like time and ui configuration.
-    - [Stream](reference/sonolus.script.stream.md): Data streams recorded in play mode and used in watch mode.
-    - [Text](reference/sonolus.script.text.md): Standard Sonolus text constants.
-    - [Timing](reference/sonolus.script.timing.md): Beat and timescale related functions.
+    - [Globals](../reference/sonolus.script.globals.md): Level data and level memory definition.
+    - [Runtime](../reference/sonolus.script.runtime.md): Runtime functions like time and ui configuration.
+    - [Stream](../reference/sonolus.script.stream.md): Data streams recorded in play mode and used in watch mode.
+    - [Text](../reference/sonolus.script.text.md): Standard Sonolus text constants.
+    - [Timing](../reference/sonolus.script.timing.md): Beat and timescale related functions.
 - Python Builtins
-    - [builtins](reference/builtins.md): Supported Python builtins.
-    - [math](reference/math.md): Supported math functions.
-    - [random](reference/random.md): Supported random functions.
-    - [typing](reference/typing.md): Supported typing functions.
+    - [builtins](../reference/builtins.md): Supported Python builtins.
+    - [math](../reference/math.md): Supported math functions.
+    - [random](../reference/random.md): Supported random functions.
+    - [typing](../reference/typing.md): Supported typing functions.
 - Utilities
-    - [ArrayLike](reference/sonolus.script.array_like.md): Mixin for array functionality.
-    - [Containers](reference/sonolus.script.containers.md): Additional container types like [`VarArray`][sonolus.script.containers.VarArray] and [`ArrayMap`][sonolus.script.containers.ArrayMap].
-    - [Debug](reference/sonolus.script.debug.md): Debugging utilities.
-    - [Easing](reference/sonolus.script.easing.md): Easing functions for animations.
-    - [Interval](reference/sonolus.script.interval.md): Mathematical intervals.
-    - [Iterator](reference/sonolus.script.iterator.md): Iterators over collections.
-    - [Maybe](reference/sonolus.script.maybe.md): Optional function return values.
-    - [Printing](reference/sonolus.script.printing.md): Preview mode number printing.
-    - [Quad](reference/sonolus.script.quad.md): Quadrilaterals.
-    - [Transform](reference/sonolus.script.transform.md): Transformations like translation, rotation, and scaling.
-    - [Values](reference/sonolus.script.values.md): Generic utilities for working with values.
-    - [Vec](reference/sonolus.script.vec.md): The Vec2 type and related functions.
+    - [ArrayLike](../reference/sonolus.script.array_like.md): Mixin for array functionality.
+    - [Containers](../reference/sonolus.script.containers.md): Additional container types like [`VarArray`][sonolus.script.containers.VarArray] and [`ArrayMap`][sonolus.script.containers.ArrayMap].
+    - [Debug](../reference/sonolus.script.debug.md): Debugging utilities.
+    - [Easing](../reference/sonolus.script.easing.md): Easing functions for animations.
+    - [Interval](../reference/sonolus.script.interval.md): Mathematical intervals.
+    - [Iterator](../reference/sonolus.script.iterator.md): Iterators over collections.
+    - [Maybe](../reference/sonolus.script.maybe.md): Optional function return values.
+    - [Printing](../reference/sonolus.script.printing.md): Preview mode number printing.
+    - [Quad](../reference/sonolus.script.quad.md): Quadrilaterals.
+    - [Transform](../reference/sonolus.script.transform.md): Transformations like translation, rotation, and scaling.
+    - [Values](../reference/sonolus.script.values.md): Generic utilities for working with values.
+    - [Vec](../reference/sonolus.script.vec.md): The Vec2 type and related functions.
 
-For more details, see the [Reference](reference/index.md) section.
+For more details, see the [Reference](../reference/index.md) section.
 
 [^1]:
     The [`Maybe`][sonolus.script.maybe.Maybe] type is an exception to this rule. 
-    See the [`Maybe` documentation](reference/sonolus.script.maybe.md) for details.
+    See the [`Maybe` documentation](../reference/sonolus.script.maybe.md) for details.

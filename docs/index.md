@@ -28,6 +28,6 @@ When creating a new project, you may want to use the
 
 ## Documentation
 
-- [Overview](overview.md): High-level overview of Sonolus.py.
+- [Overview](concepts/overview.md): High-level overview of Sonolus.py.
 - [Concepts](concepts/index.md): Detailed information on concepts and usage.
 - [Reference](reference/index.md): Detailed information on included classes and functions.
