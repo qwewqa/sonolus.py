@@ -4,6 +4,7 @@ import gzip
 import hashlib
 import json
 import urllib.request
+import warnings
 import zipfile
 from io import BytesIO
 from os import PathLike
@@ -116,6 +117,7 @@ class Collection:
                 try:
                     item_data = json.loads(item_json_path.read_text(encoding="utf-8"))
                 except json.JSONDecodeError:
+                    warnings.warn(f"Invalid JSON in {item_json_path}, skipping item.")
                     continue
 
                 item_data = self._localize_item(item_data)
