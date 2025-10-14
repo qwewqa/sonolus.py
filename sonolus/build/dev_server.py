@@ -25,7 +25,7 @@ if TYPE_CHECKING:
 
 HELP_TEXT = """
 [r]ebuild
-[e]xit
+[q]uit
 """.strip()
 
 HELP_TEXT = textwrap.dedent(HELP_TEXT)
@@ -97,13 +97,13 @@ def parse_dev_command(command_line: str) -> Command | None:
     subparsers = parser.add_subparsers(dest="cmd")
 
     subparsers.add_parser("rebuild", aliases=["r"])
-    subparsers.add_parser("exit", aliases=["e"])
+    subparsers.add_parser("quit", aliases=["q"])
 
     try:
         args = parser.parse_args(shlex.split(command_line))
         if args.cmd in {"rebuild", "r"}:
             return RebuildCommand()
-        elif args.cmd in {"exit", "e"}:
+        elif args.cmd in {"quit", "q"}:
             return ExitCommand()
         return None
     except argparse.ArgumentError:
