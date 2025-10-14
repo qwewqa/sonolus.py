@@ -145,26 +145,11 @@ def hash_cfg(entry: BasicBlock) -> int:
     block_indexes = {block: i for i, block in enumerate(traverse_cfg_preorder(entry))}
 
     h = 0
-
     for block, index in block_indexes.items():
-        h = (h * 31 + index) & 0xFFFFFFFFFFFFFFFF
-
-        for dst, phi_srcs in block.phis.items():
-            h = (h * 31 + hash(str(dst))) & 0xFFFFFFFFFFFFFFFF
-            for src_block, src_place in sorted(phi_srcs.items(), key=lambda x: block_indexes.get(x[0])):
-                src_idx = block_indexes.get(src_block, -1)
-                h = (h * 31 + src_idx) & 0xFFFFFFFFFFFFFFFF
-                h = (h * 31 + hash(str(src_place))) & 0xFFFFFFFFFFFFFFFF
-
-        for stmt in block.statements:
-            h = (h * 31 + hash(str(stmt))) & 0xFFFFFFFFFFFFFFFF
-
-        h = (h * 31 + hash(str(block.test))) & 0xFFFFFFFFFFFFFFFF
-
         outgoing = [(edge.cond, block_indexes.get(edge.dst, -1)) for edge in block.outgoing]
-        for cond, target_idx in sorted(outgoing, key=lambda x: (x[0] is None, x[0])):
-            h = (h * 31 + hash(cond)) & 0xFFFFFFFFFFFFFFFF
-            h = (h * 31 + target_idx) & 0xFFFFFFFFFFFFFFFF
+        h = hash(
+            (h, index, tuple(block.statements), block.test, tuple(sorted(outgoing, key=lambda x: (x[0] is None, x[0]))))
+        )
 
     return h
 
