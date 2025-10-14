@@ -72,7 +72,13 @@ class Project:
         cache = CompileCache()
         build_collection(self, Path(build_dir), config, cache=cache)
         run_server(
-            Path(build_dir) / "site", port=port, project=self, build_dir=Path(build_dir), config=config, cache=cache
+            Path(build_dir) / "site",
+            port=port,
+            project_module_name=None,
+            core_module_names=None,
+            build_dir=Path(build_dir),
+            config=config,
+            cache=cache,
         )
 
     def build(self, build_dir: PathLike, config: BuildConfig | None = None):

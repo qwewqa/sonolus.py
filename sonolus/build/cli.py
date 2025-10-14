@@ -34,7 +34,7 @@ def find_default_module() -> str | None:
     return potential_modules[0] if len(potential_modules) == 1 else None
 
 
-def import_project(module_path: str) -> tuple[Project, ModuleType] | tuple[None, None]:
+def import_project(module_path: str) -> tuple[Project, ModuleType, set[str]] | tuple[None, None, None]:
     try:
         initial_modules = set(sys.modules)
 
@@ -62,13 +62,9 @@ def import_project(module_path: str) -> tuple[Project, ModuleType] | tuple[None,
 
         if project is None:
             print(f"Error: No Project instance found in module {module_path} or {module_path}.project")
-            return None, None
+            return None, None, None
 
-        newly_imported_modules = set(sys.modules) - initial_modules
-
-        project_module._module_names_ = newly_imported_modules
-
-        return project, project_module
+        return project, project_module, initial_modules
     except Exception as e:
         print(f"Error: Failed to import project: {e}")
         raise e from None
@@ -205,7 +201,7 @@ def main():
         print("Python JIT is enabled")
 
     start_time = perf_counter()
-    project, project_module = import_project(args.module)
+    project, project_module, core_module_names = import_project(args.module)
     end_time = perf_counter()
     if project is None:
         sys.exit(1)
@@ -227,7 +223,9 @@ def main():
             build_collection(project, build_dir, config, cache=cache)
             end_time = perf_counter()
             print(f"Build finished in {end_time - start_time:.2f}s")
-            run_server(build_dir / "site", args.port, project_module, build_dir, config, cache)
+            run_server(
+                build_dir / "site", args.port, project_module.__name__, core_module_names, build_dir, config, cache
+            )
         elif args.command == "schema":
             print(json.dumps(get_project_schema(project), indent=2))
         elif args.command == "check":

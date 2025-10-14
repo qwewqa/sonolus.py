@@ -13,7 +13,6 @@ import traceback
 from dataclasses import dataclass
 from pathlib import Path
 from time import perf_counter
-from types import ModuleType
 from typing import TYPE_CHECKING, Protocol
 
 from sonolus.backend.excepthook import print_simple_traceback
@@ -34,27 +33,37 @@ HELP_TEXT = textwrap.dedent(HELP_TEXT)
 
 class Command(Protocol):
     def execute(
-        self, project_module: ModuleType, build_dir: Path, config: BuildConfig, cache: CompileCache
+        self,
+        project_module_name: str,
+        core_module_names: set[str],
+        build_dir: Path,
+        config: BuildConfig,
+        cache: CompileCache,
     ) -> None: ...
 
 
 @dataclass
 class RebuildCommand:
-    def execute(self, project_module: ModuleType, build_dir: Path, config: BuildConfig, cache: CompileCache):
+    def execute(
+        self,
+        project_module_name: str,
+        core_module_names: set[str],
+        build_dir: Path,
+        config: BuildConfig,
+        cache: CompileCache,
+    ):
         from sonolus.build.cli import build_collection
 
-        module_names = project_module._module_names_
-        before_modules = set(sys.modules)
-        importlib.reload(sys.modules[project_module.__name__])
-        module_names.update(set(sys.modules) - before_modules)
         for module_name in tuple(sys.modules):
-            if module_name not in module_names:
-                continue
-            try:
-                importlib.reload(sys.modules[module_name])
-            except Exception:
-                print(traceback.format_exc())
-                return
+            if module_name not in core_module_names:
+                del sys.modules[module_name]
+
+        try:
+            project_module = importlib.import_module(project_module_name)
+        except Exception:
+            print(traceback.format_exc())
+            return
+
         get_function.cache_clear()
         get_tree_from_file.cache_clear()
         get_functions.cache_clear()
@@ -71,7 +80,14 @@ class RebuildCommand:
 
 @dataclass
 class ExitCommand:
-    def execute(self, project_module: ModuleType, build_dir: Path, config: BuildConfig, cache: CompileCache):
+    def execute(
+        self,
+        project_module_name: str,
+        core_module_names: set[str],
+        build_dir: Path,
+        config: BuildConfig,
+        cache: CompileCache,
+    ):
         print("Exiting...")
         sys.exit(0)
 
@@ -143,8 +159,16 @@ def get_local_ips():
 
 
 def run_server(
-    base_dir: Path, port: int, project_module: ModuleType, build_dir: Path, config: BuildConfig, cache: CompileCache
+    base_dir: Path,
+    port: int,
+    project_module_name: str | None,
+    core_module_names: set[str] | None,
+    build_dir: Path,
+    config: BuildConfig,
+    cache: CompileCache,
 ):
+    interactive = project_module_name is not None and core_module_names is not None
+
     class DirectoryHandler(http.server.SimpleHTTPRequestHandler):
         def __init__(self, *args, **kwargs):
             super().__init__(*args, directory=str(base_dir), **kwargs)
@@ -152,7 +176,8 @@ def run_server(
         def log_message(self, fmt, *args):
             sys.stdout.write("\r\033[K")  # Clear line
             sys.stdout.write(f"{self.address_string()} - - [{self.log_date_time_string()}] {fmt % args}\n")
-            sys.stdout.write("> ")
+            if interactive:
+                sys.stdout.write("> ")
             sys.stdout.flush()
 
     with socketserver.TCPServer(("", port), DirectoryHandler) as httpd:
@@ -162,31 +187,34 @@ def run_server(
         for ip in local_ips:
             print(f"  http://{ip}:{port}")
 
-        threading.Thread(target=httpd.serve_forever, daemon=True).start()
+        if interactive:
+            threading.Thread(target=httpd.serve_forever, daemon=True).start()
 
-        command_queue = queue.Queue()
-        stop_event = threading.Event()
-        prompt_event = threading.Event()
-        input_thread = threading.Thread(
-            target=command_input_thread, args=(command_queue, stop_event, prompt_event), daemon=True
-        )
-        input_thread.start()
+            command_queue = queue.Queue()
+            stop_event = threading.Event()
+            prompt_event = threading.Event()
+            input_thread = threading.Thread(
+                target=command_input_thread, args=(command_queue, stop_event, prompt_event), daemon=True
+            )
+            input_thread.start()
 
-        prompt_event.set()
-
-        try:
-            while True:
-                try:
-                    cmd = command_queue.get(timeout=0.5)
-                    cmd.execute(project_module, build_dir, config, cache)
-                    prompt_event.set()
-                except queue.Empty:
-                    continue
-        except KeyboardInterrupt:
-            print("\nStopping server...")
-            sys.exit(0)
-        finally:
-            httpd.shutdown()
-            stop_event.set()
             prompt_event.set()
-            input_thread.join()
+
+            try:
+                while True:
+                    try:
+                        cmd = command_queue.get(timeout=0.5)
+                        cmd.execute(project_module_name, core_module_names, build_dir, config, cache)
+                        prompt_event.set()
+                    except queue.Empty:
+                        continue
+            except KeyboardInterrupt:
+                print("\nStopping server...")
+                sys.exit(0)
+            finally:
+                httpd.shutdown()
+                stop_event.set()
+                prompt_event.set()
+                input_thread.join()
+        else:
+            httpd.serve_forever()
