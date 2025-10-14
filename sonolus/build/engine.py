@@ -80,7 +80,8 @@ def package_engine(
         # process_cpu_count is available in Python 3.13+
         from os import process_cpu_count
 
-        thread_pool = ThreadPoolExecutor(process_cpu_count() or 1)
+        # Need a worker for each mode (so +4) plus at least one to do work
+        thread_pool = ThreadPoolExecutor(4 + max(1, min(8, (process_cpu_count() or 1))))
     else:
         thread_pool = None
 
