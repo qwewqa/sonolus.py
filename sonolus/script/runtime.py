@@ -30,7 +30,7 @@ from sonolus.script.globals import (
     _watch_runtime_update,
 )
 from sonolus.script.internal.context import ctx
-from sonolus.script.internal.impl import meta_fn
+from sonolus.script.internal.impl import meta_fn, perf_meta_fn
 from sonolus.script.num import Num
 from sonolus.script.quad import Quad, Rect
 from sonolus.script.record import Record
@@ -1154,9 +1154,10 @@ def canvas() -> _PreviewRuntimeCanvas:
     return _PreviewRuntimeCanvas  # type: ignore
 
 
+@perf_meta_fn
 def screen() -> Rect:
     """Get the screen boundaries as a rectangle."""
-    return Rect(t=1, r=aspect_ratio(), b=-1, l=-aspect_ratio())
+    return Rect._quick_construct(t=1, r=aspect_ratio(), b=-1, l=-aspect_ratio())
 
 
 def level_score() -> _LevelScore:

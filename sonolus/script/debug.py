@@ -68,16 +68,31 @@ def debug_pause():
     input("[DEBUG] Paused")
 
 
+@meta_fn
 def assert_true(value: int | float | bool, message: str | None = None):
-    message = message if message is not None else "Assertion failed"
-    if not value:
-        error(message)
+    if not ctx():
+        if not value:
+            raise AssertionError(message if message is not None else "Assertion failed")
+        return
+    value = Num._accept_(validate_value(value))
+    message = validate_value(message)
+    message = message._as_py_() or "Assertion failed"
+    if value._is_py_():
+        if value._as_py_():
+            return
+        else:
+            error(message)
+    else:
+        ctx().test = value.ir()
+        t_branch = ctx().branch(None)
+        f_branch = ctx().branch(0)
+        set_ctx(f_branch)
+        error(message)  # type: ignore
+        set_ctx(t_branch)
 
 
 def assert_false(value: int | float | bool, message: str | None = None):
-    message = message if message is not None else "Assertion failed"
-    if value:
-        error(message)
+    assert_true(not value, message)
 
 
 def static_assert(value: int | float | bool, message: str | None = None):

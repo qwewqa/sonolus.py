@@ -2,6 +2,7 @@ from __future__ import annotations
 
 from typing import Protocol, Self, assert_never, overload
 
+from sonolus.script.internal.impl import perf_meta_fn
 from sonolus.script.record import Record
 from sonolus.script.values import zeros
 from sonolus.script.vec import Vec2, pnpoly
@@ -451,6 +452,7 @@ type QuadLike = _QuadLike | Quad
 """A type that can be used as a quad."""
 
 
+@perf_meta_fn
 def flatten_quad(quad: QuadLike) -> tuple[float, float, float, float, float, float, float, float]:
     bl = quad.bl
     tl = quad.tl

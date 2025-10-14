@@ -1,11 +1,15 @@
 from __future__ import annotations
 
-from math import atan2, cos, sin
-
 from sonolus.script.array import Array
 from sonolus.script.array_like import ArrayLike
+from sonolus.script.internal.impl import perf_meta_fn
+from sonolus.script.internal.math_impls import _atan2, _cos, _sin
 from sonolus.script.num import Num
 from sonolus.script.record import Record
+
+atan2 = _atan2
+sin = _sin
+cos = _cos
 
 
 class Vec2(Record):
@@ -87,6 +91,7 @@ class Vec2(Record):
         return Vec2(x=cos(angle), y=sin(angle))
 
     @property
+    @perf_meta_fn
     def magnitude(self) -> float:
         """Calculate the magnitude (length) of the vector.
 
@@ -96,6 +101,7 @@ class Vec2(Record):
         return (self.x**2 + self.y**2) ** 0.5
 
     @property
+    @perf_meta_fn
     def angle(self) -> float:
         """Calculate the angle of the vector in radians from the positive x-axis.
 
@@ -104,6 +110,7 @@ class Vec2(Record):
         """
         return atan2(self.y, self.x)
 
+    @perf_meta_fn
     def dot(self, other: Vec2) -> float:
         """Calculate the dot product of this vector with another vector.
 
@@ -115,6 +122,7 @@ class Vec2(Record):
         """
         return self.x * other.x + self.y * other.y
 
+    @perf_meta_fn
     def rotate(self, angle: float) -> Vec2:
         """Rotate the vector by a given angle in radians and return a new vector.
 
@@ -124,11 +132,12 @@ class Vec2(Record):
         Returns:
             A new vector rotated by the given angle.
         """
-        return Vec2(
+        return Vec2._quick_construct(
             x=self.x * cos(angle) - self.y * sin(angle),
             y=self.x * sin(angle) + self.y * cos(angle),
         )
 
+    @perf_meta_fn
     def rotate_about(self, angle: float, pivot: Vec2) -> Vec2:
         """Rotate the vector about a pivot by a given angle in radians and return a new vector.
 
@@ -141,15 +150,17 @@ class Vec2(Record):
         """
         return (self - pivot).rotate(angle) + pivot
 
+    @perf_meta_fn
     def normalize(self) -> Vec2:
         """Normalize the vector (set the magnitude to 1) and return a new vector.
 
         Returns:
             A new vector with magnitude 1.
         """
-        magnitude = self.magnitude
-        return Vec2(x=self.x / magnitude, y=self.y / magnitude)
+        magnitude = (self.x**2 + self.y**2) ** 0.5
+        return Vec2._quick_construct(x=self.x / magnitude, y=self.y / magnitude)
 
+    @perf_meta_fn
     def orthogonal(self) -> Vec2:
         """Return a vector orthogonal to this vector.
 
@@ -158,7 +169,7 @@ class Vec2(Record):
         Returns:
             A new vector orthogonal to this vector.
         """
-        return Vec2(x=-self.y, y=self.x)
+        return Vec2._quick_construct(x=-self.y, y=self.x)
 
     @property
     def tuple(self) -> tuple[float, float]:
@@ -169,6 +180,7 @@ class Vec2(Record):
         """
         return self.x, self.y
 
+    @perf_meta_fn
     def __add__(self, other: Vec2) -> Vec2:
         """Add this vector to another vector and return a new vector.
 
@@ -178,8 +190,9 @@ class Vec2(Record):
         Returns:
             A new vector resulting from the addition.
         """
-        return Vec2(x=self.x + other.x, y=self.y + other.y)
+        return Vec2._quick_construct(x=self.x + other.x, y=self.y + other.y)
 
+    @perf_meta_fn
     def __sub__(self, other: Vec2) -> Vec2:
         """Subtract another vector from this vector and return a new vector.
 
@@ -189,8 +202,9 @@ class Vec2(Record):
         Returns:
             A new vector resulting from the subtraction.
         """
-        return Vec2(x=self.x - other.x, y=self.y - other.y)
+        return Vec2._quick_construct(x=self.x - other.x, y=self.y - other.y)
 
+    @perf_meta_fn
     def __mul__(self, other: Vec2 | float) -> Vec2:
         """Multiply this vector by another vector or a scalar and return a new vector.
 
@@ -202,19 +216,21 @@ class Vec2(Record):
         """
         match other:
             case Vec2(x, y):
-                return Vec2(x=self.x * x, y=self.y * y)
+                return Vec2._quick_construct(x=self.x * x, y=self.y * y)
             case Num(factor):
-                return Vec2(x=self.x * factor, y=self.y * factor)
+                return Vec2._quick_construct(x=self.x * factor, y=self.y * factor)
             case _:
                 return NotImplemented
 
+    @perf_meta_fn
     def __rmul__(self, other):
         match other:
             case Num(factor):
-                return Vec2(x=self.x * factor, y=self.y * factor)
+                return Vec2._quick_construct(x=self.x * factor, y=self.y * factor)
             case _:
                 return NotImplemented
 
+    @perf_meta_fn
     def __truediv__(self, other: Vec2 | float) -> Vec2:
         """Divide this vector by another vector or a scalar and return a new vector.
 
@@ -226,19 +242,20 @@ class Vec2(Record):
         """
         match other:
             case Vec2(x, y):
-                return Vec2(x=self.x / x, y=self.y / y)
+                return Vec2._quick_construct(x=self.x / x, y=self.y / y)
             case Num(factor):
-                return Vec2(x=self.x / factor, y=self.y / factor)
+                return Vec2._quick_construct(x=self.x / factor, y=self.y / factor)
             case _:
                 return NotImplemented
 
+    @perf_meta_fn
     def __neg__(self) -> Vec2:
         """Negate the vector (invert the direction) and return a new vector.
 
         Returns:
             A new vector with inverted direction.
         """
-        return Vec2(x=-self.x, y=-self.y)
+        return Vec2._quick_construct(x=-self.x, y=-self.y)
 
 
 def pnpoly(vertices: ArrayLike[Vec2] | tuple[Vec2, ...], test: Vec2) -> bool:

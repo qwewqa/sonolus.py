@@ -172,6 +172,15 @@ class Record(GenericValue, metaclass=RecordMeta):
         return result
 
     @classmethod
+    def _quick_construct(cls, **kwargs) -> Self:
+        result = object.__new__(cls)
+        for k, v in kwargs.items():
+            if isinstance(v, int | float):
+                kwargs[k] = Num._accept_(v)
+        result._value_ = kwargs
+        return result
+
+    @classmethod
     def _size_(cls) -> int:
         return sum(field.type._size_() for field in cls._fields_)
 

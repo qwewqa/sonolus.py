@@ -3,6 +3,8 @@ from __future__ import annotations
 from sonolus.backend.ops import Op
 from sonolus.script.array_like import ArrayLike
 from sonolus.script.debug import static_error
+from sonolus.script.internal.builtin_impls import _max, _min
+from sonolus.script.internal.impl import perf_meta_fn
 from sonolus.script.internal.native import native_function
 from sonolus.script.internal.range import range_or_tuple
 from sonolus.script.num import Num
@@ -66,6 +68,7 @@ class Interval(Record):
             case _:
                 static_error("Invalid type for interval check")
 
+    @perf_meta_fn
     def __add__(self, other: float | int) -> Interval:
         """Add a value to both ends of the interval.
 
@@ -75,8 +78,9 @@ class Interval(Record):
         Returns:
             A new interval with the value added to both ends.
         """
-        return Interval(self.start + other, self.end + other)
+        return Interval._quick_construct(start=self.start + other, end=self.end + other)
 
+    @perf_meta_fn
     def __sub__(self, other: float | int) -> Interval:
         """Subtract a value from both ends of the interval.
 
@@ -86,8 +90,9 @@ class Interval(Record):
         Returns:
             A new interval with the value subtracted from both ends.
         """
-        return Interval(self.start - other, self.end - other)
+        return Interval._quick_construct(start=self.start - other, end=self.end - other)
 
+    @perf_meta_fn
     def __mul__(self, other: float | int) -> Interval:
         """Multiply both ends of the interval by a value.
 
@@ -97,8 +102,9 @@ class Interval(Record):
         Returns:
             A new interval with both ends multiplied by the value.
         """
-        return Interval(self.start * other, self.end * other)
+        return Interval._quick_construct(start=self.start * other, end=self.end * other)
 
+    @perf_meta_fn
     def __truediv__(self, other: float | int) -> Interval:
         """Divide both ends of the interval by a value.
 
@@ -108,8 +114,9 @@ class Interval(Record):
         Returns:
             A new interval with both ends divided by the value.
         """
-        return Interval(self.start / other, self.end / other)
+        return Interval._quick_construct(start=self.start / other, end=self.end / other)
 
+    @perf_meta_fn
     def __floordiv__(self, other: float | int) -> Interval:
         """Divide both ends of the interval by a value and floor the result.
 
@@ -119,7 +126,7 @@ class Interval(Record):
         Returns:
             A new interval with both ends divided by the value and floored.
         """
-        return Interval(self.start // other, self.end // other)
+        return Interval._quick_construct(start=self.start // other, end=self.end // other)
 
     def __and__(self, other: Interval) -> Interval:
         """Get the intersection of two intervals.
@@ -222,14 +229,17 @@ def _num_lerp_clamped(a, b, x, /):
     return a + (b - a) * max(0, min(1, x))
 
 
+@perf_meta_fn
 def _generic_lerp[T](a: T, b: T, x: float, /) -> T:
     return a + (b - a) * x  # type: ignore
 
 
+@perf_meta_fn
 def _generic_lerp_clamped[T](a: T, b: T, x: float, /) -> T:
-    return a + (b - a) * max(0, min(1, x))  # type: ignore
+    return a + (b - a) * _max(0, _min(1, x))  # type: ignore
 
 
+@perf_meta_fn
 def lerp[T](a: T, b: T, x: float, /) -> T:
     """Linearly interpolate between two values.
 
@@ -248,6 +258,7 @@ def lerp[T](a: T, b: T, x: float, /) -> T:
             return _generic_lerp(a, b, x)
 
 
+@perf_meta_fn
 def lerp_clamped[T](a: T, b: T, x: float, /) -> T:
     """Linearly interpolate between two values, clamped to the interval.
 

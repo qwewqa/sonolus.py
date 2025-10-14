@@ -33,6 +33,10 @@ def meta_fn(fn=None):
     return decorator(fn)
 
 
+# To indicate this was used for performance reasons rather than functionality
+perf_meta_fn = meta_fn
+
+
 def validate_value[T](value: T) -> Value | T:
     result = try_validate_value(value)
     if result is None:

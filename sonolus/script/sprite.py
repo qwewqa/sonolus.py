@@ -6,6 +6,7 @@ from typing import Annotated, Any, NewType, dataclass_transform, get_origin
 from sonolus.backend.ops import Op
 from sonolus.script.array_like import ArrayLike
 from sonolus.script.debug import static_error
+from sonolus.script.internal.impl import perf_meta_fn
 from sonolus.script.internal.introspection import get_field_specifiers
 from sonolus.script.internal.native import native_function
 from sonolus.script.quad import QuadLike, flatten_quad
@@ -29,6 +30,7 @@ class Sprite(Record):
         """Check if the sprite is available."""
         return _has_skin_sprite(self.id)
 
+    @perf_meta_fn
     def draw(self, quad: QuadLike, z: float = 0.0, a: float = 1.0):
         """Draw the sprite.
 
@@ -39,6 +41,7 @@ class Sprite(Record):
         """
         _draw(self.id, *flatten_quad(quad), z, a)
 
+    @perf_meta_fn
     def draw_curved_b(self, quad: QuadLike, cp: Vec2, n: float, z: float = 0.0, a: float = 1.0):
         """Draw the sprite with a curved bottom with a quadratic Bézier curve.
 
@@ -51,6 +54,7 @@ class Sprite(Record):
         """
         _draw_curved_b(self.id, *flatten_quad(quad), z, a, n, *cp.tuple)
 
+    @perf_meta_fn
     def draw_curved_t(self, quad: QuadLike, cp: Vec2, n: float, z: float = 0.0, a: float = 1.0):
         """Draw the sprite with a curved top with a quadratic Bézier curve.
 
@@ -63,6 +67,7 @@ class Sprite(Record):
         """
         _draw_curved_t(self.id, *flatten_quad(quad), z, a, n, *cp.tuple)
 
+    @perf_meta_fn
     def draw_curved_l(self, quad: QuadLike, cp: Vec2, n: float, z: float = 0.0, a: float = 1.0):
         """Draw the sprite with a curved left side with a quadratic Bézier curve.
 
@@ -75,6 +80,7 @@ class Sprite(Record):
         """
         _draw_curved_l(self.id, *flatten_quad(quad), z, a, n, *cp.tuple)
 
+    @perf_meta_fn
     def draw_curved_r(self, quad: QuadLike, cp: Vec2, n: float, z: float = 0.0, a: float = 1.0):
         """Draw the sprite with a curved right side with a quadratic Bézier curve.
 
@@ -87,6 +93,7 @@ class Sprite(Record):
         """
         _draw_curved_r(self.id, *flatten_quad(quad), z, a, n, *cp.tuple)
 
+    @perf_meta_fn
     def draw_curved_bt(self, quad: QuadLike, cp1: Vec2, cp2: Vec2, n: float, z: float = 0.0, a: float = 1.0):
         """Draw the sprite with a curved bottom and top with a cubic Bézier curve.
 
@@ -100,6 +107,7 @@ class Sprite(Record):
         """
         _draw_curved_bt(self.id, *flatten_quad(quad), z, a, n, *cp1.tuple, *cp2.tuple)
 
+    @perf_meta_fn
     def draw_curved_lr(self, quad: QuadLike, cp1: Vec2, cp2: Vec2, n: float, z: float = 0.0, a: float = 1.0):
         """Draw the sprite with a curved left and right side with a cubic Bézier curve.
 

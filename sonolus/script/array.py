@@ -11,7 +11,7 @@ from sonolus.script.debug import assert_unreachable
 from sonolus.script.internal.context import ctx
 from sonolus.script.internal.error import InternalError
 from sonolus.script.internal.generic import GenericValue
-from sonolus.script.internal.impl import meta_fn, validate_value
+from sonolus.script.internal.impl import meta_fn, perf_meta_fn, validate_value
 from sonolus.script.internal.value import BackingSource, DataValue, Value
 from sonolus.script.num import Num
 
@@ -188,6 +188,7 @@ class Array[T, Size](GenericValue, ArrayLike[T], metaclass=ArrayMeta):
         else:
             return cls._with_value([cls.element_type()._zero_() for _ in range(cls.size())])
 
+    @perf_meta_fn
     def __len__(self):
         return self.size()
 
