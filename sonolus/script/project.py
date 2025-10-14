@@ -8,6 +8,7 @@ from typing import ClassVar, TypedDict
 
 from sonolus.backend.optimize import optimize
 from sonolus.backend.optimize.passes import CompilerPass
+from sonolus.build.compile import CompileCache
 from sonolus.script.archetype import ArchetypeSchema
 from sonolus.script.engine import Engine
 from sonolus.script.level import ExternalLevelData, Level, LevelData
@@ -65,8 +66,14 @@ class Project:
         """
         from sonolus.build.cli import build_collection, run_server
 
-        build_collection(self, Path(build_dir), config)
-        run_server(Path(build_dir) / "site", port=port)
+        if config is None:
+            config = BuildConfig()
+
+        cache = CompileCache()
+        build_collection(self, Path(build_dir), config, cache=cache)
+        run_server(
+            Path(build_dir) / "site", port=port, project=self, build_dir=Path(build_dir), config=config, cache=cache
+        )
 
     def build(self, build_dir: PathLike, config: BuildConfig | None = None):
         """Build the project.

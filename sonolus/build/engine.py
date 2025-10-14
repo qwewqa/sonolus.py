@@ -9,7 +9,7 @@ from dataclasses import dataclass
 from pathlib import Path
 
 from sonolus.backend.mode import Mode
-from sonolus.build.compile import compile_mode
+from sonolus.build.compile import CompileCache, compile_mode
 from sonolus.script.archetype import _BaseArchetype
 from sonolus.script.bucket import Buckets
 from sonolus.script.effect import Effects
@@ -68,7 +68,11 @@ def no_gil() -> bool:
 def package_engine(
     engine: EngineData,
     config: BuildConfig | None = None,
+    cache: CompileCache | None = None,
 ):
+    if cache is None:
+        cache = CompileCache()
+
     config = config or BuildConfig()
     rom = ReadOnlyMemory()
     configuration = build_engine_configuration(engine.options, engine.ui)
@@ -97,6 +101,7 @@ def package_engine(
                 rom=rom,
                 config=config,
                 thread_pool=thread_pool,
+                cache=cache,
             ),
             "watch": thread_pool.submit(
                 build_watch_mode,
@@ -109,6 +114,7 @@ def package_engine(
                 update_spawn=watch_mode.update_spawn,
                 config=config,
                 thread_pool=thread_pool,
+                cache=cache,
             ),
             "preview": thread_pool.submit(
                 build_preview_mode,
@@ -117,6 +123,7 @@ def package_engine(
                 rom=rom,
                 config=config,
                 thread_pool=thread_pool,
+                cache=cache,
             ),
             "tutorial": thread_pool.submit(
                 build_tutorial_mode,
@@ -131,6 +138,7 @@ def package_engine(
                 rom=rom,
                 config=config,
                 thread_pool=thread_pool,
+                cache=cache,
             ),
         }
 
@@ -148,6 +156,7 @@ def package_engine(
             rom=rom,
             config=config,
             thread_pool=None,
+            cache=cache,
         )
         watch_data = build_watch_mode(
             archetypes=watch_mode.archetypes,
@@ -159,6 +168,7 @@ def package_engine(
             update_spawn=watch_mode.update_spawn,
             config=config,
             thread_pool=None,
+            cache=cache,
         )
         preview_data = build_preview_mode(
             archetypes=preview_mode.archetypes,
@@ -166,6 +176,7 @@ def package_engine(
             rom=rom,
             config=config,
             thread_pool=None,
+            cache=cache,
         )
         tutorial_data = build_tutorial_mode(
             skin=tutorial_mode.skin,
@@ -179,6 +190,7 @@ def package_engine(
             rom=rom,
             config=config,
             thread_pool=None,
+            cache=cache,
         )
 
     return PackagedEngine(
@@ -270,6 +282,7 @@ def build_play_mode(
     config: BuildConfig,
     thread_pool: Executor | None = None,
     validate_only: bool = False,
+    cache: CompileCache | None = None,
 ):
     return {
         **compile_mode(
@@ -280,6 +293,7 @@ def build_play_mode(
             passes=config.passes,
             thread_pool=thread_pool,
             validate_only=validate_only,
+            cache=cache,
         ),
         "skin": build_skin(skin),
         "effect": build_effects(effects),
@@ -299,6 +313,7 @@ def build_watch_mode(
     config: BuildConfig,
     thread_pool: Executor | None = None,
     validate_only: bool = False,
+    cache: CompileCache | None = None,
 ):
     return {
         **compile_mode(
@@ -309,6 +324,7 @@ def build_watch_mode(
             passes=config.passes,
             thread_pool=thread_pool,
             validate_only=validate_only,
+            cache=cache,
         ),
         "skin": build_skin(skin),
         "effect": build_effects(effects),
@@ -324,6 +340,7 @@ def build_preview_mode(
     config: BuildConfig,
     thread_pool: Executor | None = None,
     validate_only: bool = False,
+    cache: CompileCache | None = None,
 ):
     return {
         **compile_mode(
@@ -334,6 +351,7 @@ def build_preview_mode(
             passes=config.passes,
             thread_pool=thread_pool,
             validate_only=validate_only,
+            cache=cache,
         ),
         "skin": build_skin(skin),
     }
@@ -352,6 +370,7 @@ def build_tutorial_mode(
     config: BuildConfig,
     thread_pool: Executor | None = None,
     validate_only: bool = False,
+    cache: CompileCache | None = None,
 ):
     return {
         **compile_mode(
@@ -366,6 +385,7 @@ def build_tutorial_mode(
             passes=config.passes,
             thread_pool=thread_pool,
             validate_only=validate_only,
+            cache=cache,
         ),
         "skin": build_skin(skin),
         "effect": build_effects(effects),

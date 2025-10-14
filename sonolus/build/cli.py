@@ -1,17 +1,16 @@
 import argparse
-import contextlib
-import http.server
 import importlib
 import json
 import shutil
-import socket
-import socketserver
 import sys
 from pathlib import Path
 from time import perf_counter
+from types import ModuleType
 
 from sonolus.backend.excepthook import print_simple_traceback
 from sonolus.backend.optimize.optimize import FAST_PASSES, MINIMAL_PASSES, STANDARD_PASSES
+from sonolus.build.compile import CompileCache
+from sonolus.build.dev_server import run_server
 from sonolus.build.engine import no_gil, package_engine, validate_engine
 from sonolus.build.level import package_level_data
 from sonolus.build.project import build_project_to_collection, get_project_schema
@@ -35,8 +34,10 @@ def find_default_module() -> str | None:
     return potential_modules[0] if len(potential_modules) == 1 else None
 
 
-def import_project(module_path: str) -> Project | None:
+def import_project(module_path: str) -> tuple[Project, ModuleType] | tuple[None, None]:
     try:
+        initial_modules = set(sys.modules)
+
         current_dir = Path.cwd()
         if current_dir not in sys.path:
             sys.path.insert(0, str(current_dir))
@@ -44,8 +45,8 @@ def import_project(module_path: str) -> Project | None:
         project = None
 
         try:
-            module = importlib.import_module(module_path)
-            project = getattr(module, "project", None)
+            project_module = importlib.import_module(module_path)
+            project = getattr(project_module, "project", None)
         except ImportError as e:
             if not str(e).endswith(f"'{module_path}'"):
                 # It's an error from the module itself
@@ -61,9 +62,13 @@ def import_project(module_path: str) -> Project | None:
 
         if project is None:
             print(f"Error: No Project instance found in module {module_path} or {module_path}.project")
-            return None
+            return None, None
 
-        return project
+        newly_imported_modules = set(sys.modules) - initial_modules
+
+        project_module._module_names_ = newly_imported_modules
+
+        return project, project_module
     except Exception as e:
         print(f"Error: Failed to import project: {e}")
         raise e from None
@@ -87,49 +92,13 @@ def validate_project(project: Project, config: BuildConfig):
     validate_engine(project.engine.data, config)
 
 
-def build_collection(project: Project, build_dir: Path, config: BuildConfig | None):
+def build_collection(project: Project, build_dir: Path, config: BuildConfig | None, cache: CompileCache | None = None):
     site_dir = build_dir / "site"
     shutil.rmtree(site_dir, ignore_errors=True)
     site_dir.mkdir(parents=True, exist_ok=True)
 
-    collection = build_project_to_collection(project, config)
+    collection = build_project_to_collection(project, config, cache=cache)
     collection.write(site_dir)
-
-
-def get_local_ips():
-    hostname = socket.gethostname()
-    local_ips = []
-
-    with contextlib.suppress(socket.gaierror):
-        local_ips.append(socket.gethostbyname(socket.getfqdn()))
-
-    try:
-        for info in socket.getaddrinfo(hostname, None):
-            ip = info[4][0]
-            if not ip.startswith("127.") and ":" not in ip:
-                local_ips.append(ip)
-    except socket.gaierror:
-        pass
-
-    return sorted(set(local_ips))
-
-
-def run_server(base_dir: Path, port: int = 8000):
-    class DirectoryHandler(http.server.SimpleHTTPRequestHandler):
-        def __init__(self, *args, **kwargs):
-            super().__init__(*args, directory=str(base_dir), **kwargs)
-
-    with socketserver.TCPServer(("", port), DirectoryHandler) as httpd:
-        local_ips = get_local_ips()
-        print(f"Server started on port {port}")
-        print("Available on:")
-        for ip in local_ips:
-            print(f"  http://{ip}:{port}")
-        try:
-            httpd.serve_forever()
-        except KeyboardInterrupt:
-            print("\nStopping server...")
-            httpd.shutdown()
 
 
 def get_config(args: argparse.Namespace) -> BuildConfig:
@@ -236,7 +205,7 @@ def main():
         print("Python JIT is enabled")
 
     start_time = perf_counter()
-    project = import_project(args.module)
+    project, project_module = import_project(args.module)
     end_time = perf_counter()
     if project is None:
         sys.exit(1)
@@ -254,10 +223,11 @@ def main():
             build_dir = Path(args.build_dir)
             start_time = perf_counter()
             config = get_config(args)
-            build_collection(project, build_dir, config)
+            cache = CompileCache()
+            build_collection(project, build_dir, config, cache=cache)
             end_time = perf_counter()
             print(f"Build finished in {end_time - start_time:.2f}s")
-            run_server(build_dir / "site", port=args.port)
+            run_server(build_dir / "site", args.port, project_module, build_dir, config, cache)
         elif args.command == "schema":
             print(json.dumps(get_project_schema(project), indent=2))
         elif args.command == "check":

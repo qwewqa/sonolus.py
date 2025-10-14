@@ -3,6 +3,7 @@ from pathlib import Path
 from typing import cast
 
 from sonolus.build.collection import Asset, Collection, Srl
+from sonolus.build.compile import CompileCache
 from sonolus.build.engine import package_engine, unpackage_data
 from sonolus.build.level import package_level_data
 from sonolus.script.engine import Engine
@@ -19,7 +20,9 @@ BLANK_AUDIO = (
 )
 
 
-def build_project_to_collection(project: Project, config: BuildConfig | None):
+def build_project_to_collection(
+    project: Project, config: BuildConfig | None, cache: CompileCache | None = None
+) -> Collection:
     collection = load_resources_files_to_collection(project.resources)
     for src_engine, converter in project.converters.items():
         if src_engine is None:
@@ -31,7 +34,7 @@ def build_project_to_collection(project: Project, config: BuildConfig | None):
     if config.override_resource_level_engines:
         for level in collection.categories.get("levels", {}).values():
             level["item"]["engine"] = project.engine.name
-    add_engine_to_collection(collection, project, project.engine, config)
+    add_engine_to_collection(collection, project, project.engine, config, cache=cache)
     for level in project.levels:
         add_level_to_collection(collection, project, level)
     collection.name = f"{project.engine.name}"
@@ -63,8 +66,14 @@ def apply_converter_to_collection(
         level["data"] = new_data_srl
 
 
-def add_engine_to_collection(collection: Collection, project: Project, engine: Engine, config: BuildConfig | None):
-    packaged_engine = package_engine(engine.data, config)
+def add_engine_to_collection(
+    collection: Collection,
+    project: Project,
+    engine: Engine,
+    config: BuildConfig | None,
+    cache: CompileCache | None = None,
+):
+    packaged_engine = package_engine(engine.data, config, cache=cache)
     item = {
         "name": engine.name,
         "version": engine.version,

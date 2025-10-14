@@ -1,11 +1,13 @@
 from collections.abc import Callable, Sequence
 from concurrent.futures import Executor, Future
+from threading import Event, Lock
 
 from sonolus.backend.finalize import cfg_to_engine_node
 from sonolus.backend.ir import IRConst, IRInstr
 from sonolus.backend.mode import Mode
+from sonolus.backend.node import EngineNode
 from sonolus.backend.ops import Op
-from sonolus.backend.optimize.flow import BasicBlock
+from sonolus.backend.optimize.flow import BasicBlock, hash_cfg
 from sonolus.backend.optimize.optimize import STANDARD_PASSES
 from sonolus.backend.optimize.passes import CompilerPass, OptimizerConfig, run_passes
 from sonolus.backend.visitor import compile_and_call_at_definition
@@ -25,6 +27,31 @@ from sonolus.script.internal.error import CompilationError
 from sonolus.script.num import _is_num
 
 
+class CompileCache:
+    def __init__(self):
+        self._cache = {}
+        self._lock = Lock()
+        self._event = Event()
+
+    def get(self, entry_hash: int) -> EngineNode | None:
+        with self._lock:
+            if entry_hash not in self._cache:
+                self._cache[entry_hash] = None  # Mark as being compiled
+                return None
+        while True:
+            with self._lock:
+                node = self._cache[entry_hash]
+                if node is not None:
+                    return node
+            self._event.wait()
+
+    def set(self, entry_hash: int, node: EngineNode) -> None:
+        with self._lock:
+            self._cache[entry_hash] = node
+            self._event.set()
+            self._event.clear()
+
+
 def compile_mode(
     mode: Mode,
     rom: ReadOnlyMemory,
@@ -33,6 +60,7 @@ def compile_mode(
     passes: Sequence[CompilerPass] | None = None,
     thread_pool: Executor | None = None,
     validate_only: bool = False,
+    cache: CompileCache | None = None,
 ) -> dict:
     if passes is None:
         passes = STANDARD_PASSES
@@ -63,9 +91,19 @@ def compile_mode(
                 return cb_info.name, {"index": 0, "order": cb_order}
             else:
                 return cb_info.name, 0
-        cfg = run_passes(cfg, passes, OptimizerConfig(mode=mode, callback=cb_info.name))
-        node = cfg_to_engine_node(cfg)
-        node_index = nodes.add(node)
+
+        if cache is not None:
+            cfg_hash = hash_cfg(cfg)
+            node = cache.get(cfg_hash)
+            if node is None:
+                optimized_cfg = run_passes(cfg, passes, OptimizerConfig(mode=mode, callback=cb_info.name))
+                node = cfg_to_engine_node(optimized_cfg)
+                cache.set(cfg_hash, node)
+            node_index = nodes.add(node)
+        else:
+            optimized_cfg = run_passes(cfg, passes, OptimizerConfig(mode=mode, callback=cb_info.name))
+            node = cfg_to_engine_node(optimized_cfg)
+            node_index = nodes.add(node)
 
         if arch is not None:
             cb_order = getattr(cb, "_callback_order_", 0)
