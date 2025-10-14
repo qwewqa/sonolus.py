@@ -50,7 +50,7 @@ class InlineVars(CompilerPass):
             # Update the definition if it's a Get from another SSAPlace until we reach a definition that is not a Get
             while defn and isinstance(defn, IRGet) and isinstance(defn.place, SSAPlace):
                 canonical_definitions[p] = defn
-                defn = definitions.get(defn.place, None)  # Can be None if it's a phi
+                defn = definitions.get(defn.place)  # Can be None if it's a phi
             canonical_defn = canonical_definitions[p]
             if (
                 use_counts.get(p, 0) > 0

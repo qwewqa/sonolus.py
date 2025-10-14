@@ -59,16 +59,16 @@ def try_validate_value(value: Any) -> Value | None:
         pass
 
     match value:
-        case Enum():
-            return validate_value(value.value)
         case Value():
             return value
+        case int() | float() | bool():
+            return Num._accept_(value)
+        case Enum():
+            return validate_value(value.value)
         case type():
             if value in {int, float, bool}:
                 return BasicConstantValue.of(Num)
             return BasicConstantValue.of(value)
-        case int() | float() | bool():
-            return Num._accept_(value)
         case tuple():
             return TupleImpl._accept_(value)
         case dict():

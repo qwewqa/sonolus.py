@@ -25,25 +25,33 @@ def _is_num(value: Any) -> TypeGuard[Num]:
     return type.__instancecheck__(Num, value)  # type: ignore # noqa: PLC2801
 
 
+_num_cache = []
+_NUM_CACHE_MIN = -5
+_NUM_CACHE_MAX = 256
+
+
 @final
 class _Num(Value, metaclass=_NumMeta):
+    __slots__ = ("data",)
+
     # This works for ints, floats, and bools
     # Since we don't support complex numbers, real is equal to the original number
     __match_args__ = ("real",)
 
     data: DataValue
 
+    def __new__(cls, data: DataValue | IRExpr):
+        if isinstance(data, int) and _NUM_CACHE_MIN <= data <= _NUM_CACHE_MAX:
+            return _num_cache[data - _NUM_CACHE_MIN]
+        if isinstance(data, float) and data.is_integer() and _NUM_CACHE_MIN <= data <= _NUM_CACHE_MAX:
+            return _num_cache[int(data) - _NUM_CACHE_MIN]
+        return super().__new__(cls)
+
     def __init__(self, data: DataValue | IRExpr):
-        if isinstance(data, complex):
-            raise TypeError("Cannot create a Num from a complex number")
         if isinstance(data, int):
             data = float(data)
         if isinstance(data, IRConst | IRPureInstr | IRGet):
             data = ExprBackingValue(data)
-        if _is_num(data):
-            raise InternalError("Cannot create a Num from a Num")
-        if not isinstance(data, BlockPlace | BackingValue | float | int | bool):
-            raise TypeError(f"Cannot create a Num from {type(data)}")
         self.data = data
 
     def __str__(self) -> str:
@@ -449,6 +457,15 @@ class _Num(Value, metaclass=_NumMeta):
     @property
     def imag(self) -> Self:
         return 0
+
+
+def _create_num_raw(i: int) -> Num:
+    result = object.__new__(_Num)
+    result.data = float(i)
+    return result
+
+
+_num_cache = [_create_num_raw(i) for i in range(_NUM_CACHE_MIN, _NUM_CACHE_MAX + 1)]
 
 
 if TYPE_CHECKING:
