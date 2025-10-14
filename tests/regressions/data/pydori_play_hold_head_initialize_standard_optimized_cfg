@@ -6,7 +6,7 @@
   10000[0] <- Multiply(EntityData[16], 3.0)
   goto 3 if LessOr(0.0, EntityInfoArray[10000[0]]) else 5
 3:
-  goto 5 if Not(Less(EntityInfoArray[10000[0]], 99999.0)) else 4
+  goto 4 if Less(EntityInfoArray[10000[0]], 99999.0) else 5
 4:
   StreamSet(Add(Multiply(1.0, EntityInfoArray[10000[0]]), 18.0), -10.0, 0.0)
   Spawn(8.0, EntityData[16], EntityData[17], 0, 0)

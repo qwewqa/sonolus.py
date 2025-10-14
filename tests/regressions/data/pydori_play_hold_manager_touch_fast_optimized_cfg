@@ -35,13 +35,8 @@
   10000[3] <- 0.0
   goto 6
 6:
-  10000[3] <- Not(10000[3])
   goto 7 if 10000[3] else 8
 7:
-  DebugLog(0.0)
-  DebugPause()
-  goto exit
-8:
   10000[3] <- Less(10000[2], 0.0)
   10000[3] <- Multiply(10000[3], RuntimeUpdate[3])
   10000[2] <- Add(10000[2], 10000[3])
@@ -52,6 +47,10 @@
   10000[1] <- 10000[4]
   10000[4] <- 1.0
   goto 10
+8:
+  DebugLog(0.0)
+  DebugPause()
+  goto exit
 9:
   10000[4] <- 0.0
   goto 10

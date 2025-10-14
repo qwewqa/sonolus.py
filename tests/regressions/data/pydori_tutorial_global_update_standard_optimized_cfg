@@ -6,34 +6,34 @@
 1:
   goto 2 if Less(10000[0], TutorialData[0]) else 3
 2:
-  10000[44] <- Multiply(Add(10000[0], Multiply(Less(10000[0], 0.0), 7.0)), 9.0)
+  10000[41] <- Multiply(Add(10000[0], Multiply(Less(10000[0], 0.0), 7.0)), 9.0)
   10000[0] <- Add(10000[0], 1.0)
-  Draw(1.0, TutorialData[10000[44] + 2], TutorialData[10000[44] + 3], TutorialData[10000[44] + 4], TutorialData[10000[44] + 5], TutorialData[10000[44] + 6], TutorialData[10000[44] + 7], TutorialData[10000[44] + 8], TutorialData[10000[44] + 9], 1.0, 1.0)
+  Draw(1.0, TutorialData[10000[41] + 2], TutorialData[10000[41] + 3], TutorialData[10000[41] + 4], TutorialData[10000[41] + 5], TutorialData[10000[41] + 6], TutorialData[10000[41] + 7], TutorialData[10000[41] + 8], TutorialData[10000[41] + 9], 1.0, 1.0)
   goto 1
 3:
   Draw(2.0, TutorialData[64], TutorialData[65], TutorialData[66], TutorialData[67], TutorialData[68], TutorialData[69], TutorialData[70], TutorialData[71], 1.0, 1.0)
   Draw(3.0, TutorialData[72], TutorialData[73], TutorialData[74], TutorialData[75], TutorialData[76], TutorialData[77], TutorialData[78], TutorialData[79], 1.0, 1.0)
   Draw(5.0, TutorialData[80], TutorialData[81], TutorialData[82], TutorialData[83], TutorialData[84], TutorialData[85], TutorialData[86], TutorialData[87], 2.0, 1.0)
-  10000[44] <- TutorialMemory[5]
-  goto 4 if 10000[44] else 585
+  10000[41] <- TutorialMemory[5]
+  goto 4 if 10000[41] else 585
 4:
-  10000[44] <- TutorialMemory[5]
-  goto when 10000[44]
+  10000[41] <- TutorialMemory[5]
+  goto when 10000[41]
     1.0 -> 488
     default -> 5
 5:
-  10000[44] <- TutorialMemory[5]
-  goto when 10000[44]
+  10000[41] <- TutorialMemory[5]
+  goto when 10000[41]
     2.0 -> 278
     default -> 6
 6:
-  10000[44] <- TutorialMemory[5]
-  goto when 10000[44]
+  10000[41] <- TutorialMemory[5]
+  goto when 10000[41]
     3.0 -> 220
     default -> 7
 7:
-  10000[0] <- TutorialMemory[5]
-  goto when 10000[0]
+  10000[41] <- TutorialMemory[5]
+  goto when 10000[41]
     4.0 -> 159
     default -> 8
 8:
@@ -565,10 +565,10 @@
   TutorialMemory[0] <- RuntimeUpdate[0]
   goto 638
 159:
-  10000[0] <- TutorialMemory[0]
-  10000[14] <- Subtract(RuntimeUpdate[0], 10000[0])
-  10000[15] <- TutorialMemory[4]
-  10000[16] <- TutorialMemory[0]
+  10000[41] <- TutorialMemory[0]
+  10000[55] <- Subtract(RuntimeUpdate[0], 10000[41])
+  10000[56] <- TutorialMemory[4]
+  10000[57] <- TutorialMemory[0]
   10000[0] <- 0.0
   10000[1] <- 0.0
   10000[2] <- 2.0
@@ -583,305 +583,305 @@
   10000[11] <- 0.8
   10000[12] <- 1.0
   10000[13] <- 999.0
-  goto 160 if LessOr(0.0, 10000[14]) else 162
+  goto 160 if LessOr(0.0, 10000[55]) else 162
 160:
-  goto 161 if Less(10000[14], 1.5) else 162
+  goto 161 if Less(10000[55], 1.5) else 162
 161:
   Draw(16.0, Divide(Add(Add(Multiply(3.0, Divide(Add(Add(Multiply(TutorialData[90], Subtract(0.0, Divide(TutorialData[99], 2.0))), Multiply(TutorialData[91], Subtract(1.0, Divide(TutorialData[99], 2.0)))), TutorialData[92]), Add(Add(Multiply(TutorialData[96], Subtract(0.0, Divide(TutorialData[99], 2.0))), Multiply(TutorialData[97], Subtract(1.0, Divide(TutorialData[99], 2.0)))), TutorialData[98]))), 0), Multiply(Add(0.0, Multiply(1.0, Negate(Divide(Add(Add(0, Multiply(TutorialData[91], 1.0)), TutorialData[92]), Add(Add(0, Multiply(TutorialData[97], 1.0)), TutorialData[98]))))), 3.0)), 1.0), Divide(Add(Add(0, Multiply(3.0, Divide(Add(Add(Multiply(TutorialData[93], Subtract(0.0, Divide(TutorialData[99], 2.0))), Multiply(TutorialData[94], Subtract(1.0, Divide(TutorialData[99], 2.0)))), TutorialData[95]), Add(Add(Multiply(TutorialData[96], Subtract(0.0, Divide(TutorialData[99], 2.0))), Multiply(TutorialData[97], Subtract(1.0, Divide(TutorialData[99], 2.0)))), TutorialData[98])))), Multiply(Add(0.0, Multiply(1.0, Negate(Divide(Add(Add(0, Multiply(TutorialData[94], 1.0)), TutorialData[95]), Add(Add(0, Multiply(TutorialData[97], 1.0)), TutorialData[98]))))), 3.0)), 1.0), Divide(Add(Add(Multiply(3.0, Divide(Add(Add(Multiply(TutorialData[90], Subtract(0.0, Divide(TutorialData[99], 2.0))), Multiply(TutorialData[91], Add(1.0, Divide(TutorialData[99], 2.0)))), TutorialData[92]), Add(Add(Multiply(TutorialData[96], Subtract(0.0, Divide(TutorialData[99], 2.0))), Multiply(TutorialData[97], Add(1.0, Divide(TutorialData[99], 2.0)))), TutorialData[98]))), 0), Multiply(Add(0.0, Multiply(1.0, Negate(Divide(Add(Add(0, Multiply(TutorialData[91], 1.0)), TutorialData[92]), Add(Add(0, Multiply(TutorialData[97], 1.0)), TutorialData[98]))))), 3.0)), 1.0), Divide(Add(Add(0, Multiply(3.0, Divide(Add(Add(Multiply(TutorialData[93], Subtract(0.0, Divide(TutorialData[99], 2.0))), Multiply(TutorialData[94], Add(1.0, Divide(TutorialData[99], 2.0)))), TutorialData[95]), Add(Add(Multiply(TutorialData[96], Subtract(0.0, Divide(TutorialData[99], 2.0))), Multiply(TutorialData[97], Add(1.0, Divide(TutorialData[99], 2.0)))), TutorialData[98])))), Multiply(Add(0.0, Multiply(1.0, Negate(Divide(Add(Add(0, Multiply(TutorialData[94], 1.0)), TutorialData[95]), Add(Add(0, Multiply(TutorialData[97], 1.0)), TutorialData[98]))))), 3.0)), 1.0), Divide(Add(Add(Multiply(3.0, Divide(Add(Add(Multiply(TutorialData[90], Add(0.0, Divide(TutorialData[99], 2.0))), Multiply(TutorialData[91], Add(1.0, Divide(TutorialData[99], 2.0)))), TutorialData[92]), Add(Add(Multiply(TutorialData[96], Add(0.0, Divide(TutorialData[99], 2.0))), Multiply(TutorialData[97], Add(1.0, Divide(TutorialData[99], 2.0)))), TutorialData[98]))), 0), Multiply(Add(0.0, Multiply(1.0, Negate(Divide(Add(Add(0, Multiply(TutorialData[91], 1.0)), TutorialData[92]), Add(Add(0, Multiply(TutorialData[97], 1.0)), TutorialData[98]))))), 3.0)), 1.0), Divide(Add(Add(0, Multiply(3.0, Divide(Add(Add(Multiply(TutorialData[93], Add(0.0, Divide(TutorialData[99], 2.0))), Multiply(TutorialData[94], Add(1.0, Divide(TutorialData[99], 2.0)))), TutorialData[95]), Add(Add(Multiply(TutorialData[96], Add(0.0, Divide(TutorialData[99], 2.0))), Multiply(TutorialData[97], Add(1.0, Divide(TutorialData[99], 2.0)))), TutorialData[98])))), Multiply(Add(0.0, Multiply(1.0, Negate(Divide(Add(Add(0, Multiply(TutorialData[94], 1.0)), TutorialData[95]), Add(Add(0, Multiply(TutorialData[97], 1.0)), TutorialData[98]))))), 3.0)), 1.0), Divide(Add(Add(Multiply(3.0, Divide(Add(Add(Multiply(TutorialData[90], Add(0.0, Divide(TutorialData[99], 2.0))), Multiply(TutorialData[91], Subtract(1.0, Divide(TutorialData[99], 2.0)))), TutorialData[92]), Add(Add(Multiply(TutorialData[96], Add(0.0, Divide(TutorialData[99], 2.0))), Multiply(TutorialData[97], Subtract(1.0, Divide(TutorialData[99], 2.0)))), TutorialData[98]))), 0), Multiply(Add(0.0, Multiply(1.0, Negate(Divide(Add(Add(0, Multiply(TutorialData[91], 1.0)), TutorialData[92]), Add(Add(0, Multiply(TutorialData[97], 1.0)), TutorialData[98]))))), 3.0)), 1.0), Divide(Add(Add(0, Multiply(3.0, Divide(Add(Add(Multiply(TutorialData[93], Add(0.0, Divide(TutorialData[99], 2.0))), Multiply(TutorialData[94], Subtract(1.0, Divide(TutorialData[99], 2.0)))), TutorialData[95]), Add(Add(Multiply(TutorialData[96], Add(0.0, Divide(TutorialData[99], 2.0))), Multiply(TutorialData[97], Subtract(1.0, Divide(TutorialData[99], 2.0)))), TutorialData[98])))), Multiply(Add(0.0, Multiply(1.0, Negate(Divide(Add(Add(0, Multiply(TutorialData[94], 1.0)), TutorialData[95]), Add(Add(0, Multiply(TutorialData[97], 1.0)), TutorialData[98]))))), 3.0)), 1.0), 310000.0, 1.0)
   Draw(17.0, Divide(Add(Add(Multiply(3.0, Divide(Add(Add(Multiply(TutorialData[90], Subtract(Multiply(Remap(0.0, 2.0, 0.0, 0.0, Clamp(0.0, 0.0, TutorialData[102])), TutorialData[100]), Divide(TutorialData[99], 2.0))), Multiply(TutorialData[91], Clamp(0.0, 0.0, TutorialData[102]))), TutorialData[92]), Add(Add(Multiply(TutorialData[96], Subtract(Multiply(Remap(0.0, 2.0, 0.0, 0.0, Clamp(0.0, 0.0, TutorialData[102])), TutorialData[100]), Divide(TutorialData[99], 2.0))), Multiply(TutorialData[97], Clamp(0.0, 0.0, TutorialData[102]))), TutorialData[98]))), 0), Multiply(Add(0.0, Multiply(1.0, Negate(Divide(Add(Add(0, Multiply(TutorialData[91], 1.0)), TutorialData[92]), Add(Add(0, Multiply(TutorialData[97], 1.0)), TutorialData[98]))))), 3.0)), 1.0), Divide(Add(Add(0, Multiply(3.0, Divide(Add(Add(Multiply(TutorialData[93], Subtract(Multiply(Remap(0.0, 2.0, 0.0, 0.0, Clamp(0.0, 0.0, TutorialData[102])), TutorialData[100]), Divide(TutorialData[99], 2.0))), Multiply(TutorialData[94], Clamp(0.0, 0.0, TutorialData[102]))), TutorialData[95]), Add(Add(Multiply(TutorialData[96], Subtract(Multiply(Remap(0.0, 2.0, 0.0, 0.0, Clamp(0.0, 0.0, TutorialData[102])), TutorialData[100]), Divide(TutorialData[99], 2.0))), Multiply(TutorialData[97], Clamp(0.0, 0.0, TutorialData[102]))), TutorialData[98])))), Multiply(Add(0.0, Multiply(1.0, Negate(Divide(Add(Add(0, Multiply(TutorialData[94], 1.0)), TutorialData[95]), Add(Add(0, Multiply(TutorialData[97], 1.0)), TutorialData[98]))))), 3.0)), 1.0), Divide(Add(Add(Multiply(3.0, Divide(Add(Add(Multiply(TutorialData[90], Subtract(Multiply(Remap(0.0, 2.0, 0.0, 0.0, Clamp(2.0, 0.0, TutorialData[102])), TutorialData[100]), Divide(TutorialData[99], 2.0))), Multiply(TutorialData[91], Clamp(2.0, 0.0, TutorialData[102]))), TutorialData[92]), Add(Add(Multiply(TutorialData[96], Subtract(Multiply(Remap(0.0, 2.0, 0.0, 0.0, Clamp(2.0, 0.0, TutorialData[102])), TutorialData[100]), Divide(TutorialData[99], 2.0))), Multiply(TutorialData[97], Clamp(2.0, 0.0, TutorialData[102]))), TutorialData[98]))), 0), Multiply(Add(0.0, Multiply(1.0, Negate(Divide(Add(Add(0, Multiply(TutorialData[91], 1.0)), TutorialData[92]), Add(Add(0, Multiply(TutorialData[97], 1.0)), TutorialData[98]))))), 3.0)), 1.0), Divide(Add(Add(0, Multiply(3.0, Divide(Add(Add(Multiply(TutorialData[93], Subtract(Multiply(Remap(0.0, 2.0, 0.0, 0.0, Clamp(2.0, 0.0, TutorialData[102])), TutorialData[100]), Divide(TutorialData[99], 2.0))), Multiply(TutorialData[94], Clamp(2.0, 0.0, TutorialData[102]))), TutorialData[95]), Add(Add(Multiply(TutorialData[96], Subtract(Multiply(Remap(0.0, 2.0, 0.0, 0.0, Clamp(2.0, 0.0, TutorialData[102])), TutorialData[100]), Divide(TutorialData[99], 2.0))), Multiply(TutorialData[97], Clamp(2.0, 0.0, TutorialData[102]))), TutorialData[98])))), Multiply(Add(0.0, Multiply(1.0, Negate(Divide(Add(Add(0, Multiply(TutorialData[94], 1.0)), TutorialData[95]), Add(Add(0, Multiply(TutorialData[97], 1.0)), TutorialData[98]))))), 3.0)), 1.0), Divide(Add(Add(Multiply(3.0, Divide(Add(Add(Multiply(TutorialData[90], Add(Multiply(Remap(0.0, 2.0, 0.0, 0.0, Clamp(2.0, 0.0, TutorialData[102])), TutorialData[100]), Divide(TutorialData[99], 2.0))), Multiply(TutorialData[91], Clamp(2.0, 0.0, TutorialData[102]))), TutorialData[92]), Add(Add(Multiply(TutorialData[96], Add(Multiply(Remap(0.0, 2.0, 0.0, 0.0, Clamp(2.0, 0.0, TutorialData[102])), TutorialData[100]), Divide(TutorialData[99], 2.0))), Multiply(TutorialData[97], Clamp(2.0, 0.0, TutorialData[102]))), TutorialData[98]))), 0), Multiply(Add(0.0, Multiply(1.0, Negate(Divide(Add(Add(0, Multiply(TutorialData[91], 1.0)), TutorialData[92]), Add(Add(0, Multiply(TutorialData[97], 1.0)), TutorialData[98]))))), 3.0)), 1.0), Divide(Add(Add(0, Multiply(3.0, Divide(Add(Add(Multiply(TutorialData[93], Add(Multiply(Remap(0.0, 2.0, 0.0, 0.0, Clamp(2.0, 0.0, TutorialData[102])), TutorialData[100]), Divide(TutorialData[99], 2.0))), Multiply(TutorialData[94], Clamp(2.0, 0.0, TutorialData[102]))), TutorialData[95]), Add(Add(Multiply(TutorialData[96], Add(Multiply(Remap(0.0, 2.0, 0.0, 0.0, Clamp(2.0, 0.0, TutorialData[102])), TutorialData[100]), Divide(TutorialData[99], 2.0))), Multiply(TutorialData[97], Clamp(2.0, 0.0, TutorialData[102]))), TutorialData[98])))), Multiply(Add(0.0, Multiply(1.0, Negate(Divide(Add(Add(0, Multiply(TutorialData[94], 1.0)), TutorialData[95]), Add(Add(0, Multiply(TutorialData[97], 1.0)), TutorialData[98]))))), 3.0)), 1.0), Divide(Add(Add(Multiply(3.0, Divide(Add(Add(Multiply(TutorialData[90], Add(Multiply(Remap(0.0, 2.0, 0.0, 0.0, Clamp(0.0, 0.0, TutorialData[102])), TutorialData[100]), Divide(TutorialData[99], 2.0))), Multiply(TutorialData[91], Clamp(0.0, 0.0, TutorialData[102]))), TutorialData[92]), Add(Add(Multiply(TutorialData[96], Add(Multiply(Remap(0.0, 2.0, 0.0, 0.0, Clamp(0.0, 0.0, TutorialData[102])), TutorialData[100]), Divide(TutorialData[99], 2.0))), Multiply(TutorialData[97], Clamp(0.0, 0.0, TutorialData[102]))), TutorialData[98]))), 0), Multiply(Add(0.0, Multiply(1.0, Negate(Divide(Add(Add(0, Multiply(TutorialData[91], 1.0)), TutorialData[92]), Add(Add(0, Multiply(TutorialData[97], 1.0)), TutorialData[98]))))), 3.0)), 1.0), Divide(Add(Add(0, Multiply(3.0, Divide(Add(Add(Multiply(TutorialData[93], Add(Multiply(Remap(0.0, 2.0, 0.0, 0.0, Clamp(0.0, 0.0, TutorialData[102])), TutorialData[100]), Divide(TutorialData[99], 2.0))), Multiply(TutorialData[94], Clamp(0.0, 0.0, TutorialData[102]))), TutorialData[95]), Add(Add(Multiply(TutorialData[96], Add(Multiply(Remap(0.0, 2.0, 0.0, 0.0, Clamp(0.0, 0.0, TutorialData[102])), TutorialData[100]), Divide(TutorialData[99], 2.0))), Multiply(TutorialData[97], Clamp(0.0, 0.0, TutorialData[102]))), TutorialData[98])))), Multiply(Add(0.0, Multiply(1.0, Negate(Divide(Add(Add(0, Multiply(TutorialData[94], 1.0)), TutorialData[95]), Add(Add(0, Multiply(TutorialData[97], 1.0)), TutorialData[98]))))), 3.0)), 1.0), 100000.0, 1.0)
   goto 162
 162:
-  goto 163 if GreaterOr(10000[14], 1.5) else 215
+  goto 163 if GreaterOr(10000[55], 1.5) else 215
 163:
   TutorialMemory[3] <- 1.0
   TutorialMemory[3] <- 1.0
-  10000[17] <- 1.0
+  10000[14] <- 1.0
   goto 164
 164:
-  goto 165 if Less(10000[17], 7.0) else 170
+  goto 165 if Less(10000[14], 7.0) else 170
 165:
-  10000[18] <- Add(10000[17], 1.0)
+  10000[15] <- Add(10000[14], 1.0)
+  10000[16] <- Add(10000[14], Multiply(Less(10000[14], 0.0), 7.0))
+  10000[16] <- 10000[10000[16] + 7]
+  10000[17] <- Add(10000[14], Multiply(Less(10000[14], 0.0), 7.0))
+  10000[17] <- 10000[10000[17] + 7]
+  10000[16] <- Lerp(TutorialData[102], 0.0, Remap(Subtract(10000[16], 1.0), 10000[17], 0.0, 1.0, Max(0.0, Remap(5.5, 7.0, 0.0, 1.0, 10000[55]))))
+  10000[17] <- Subtract(10000[14], 1.0)
+  10000[18] <- Add(10000[17], Multiply(Less(10000[17], 0.0), 7.0))
+  10000[18] <- 10000[10000[18] + 7]
   10000[19] <- Add(10000[17], Multiply(Less(10000[17], 0.0), 7.0))
   10000[19] <- 10000[10000[19] + 7]
-  10000[20] <- Add(10000[17], Multiply(Less(10000[17], 0.0), 7.0))
-  10000[20] <- 10000[10000[20] + 7]
-  10000[19] <- Lerp(TutorialData[102], 0.0, Remap(Subtract(10000[19], 1.0), 10000[20], 0.0, 1.0, Max(0.0, Remap(5.5, 7.0, 0.0, 1.0, 10000[14]))))
-  10000[20] <- Subtract(10000[17], 1.0)
-  10000[21] <- Add(10000[20], Multiply(Less(10000[20], 0.0), 7.0))
-  10000[21] <- 10000[10000[21] + 7]
-  10000[22] <- Add(10000[20], Multiply(Less(10000[20], 0.0), 7.0))
-  10000[22] <- 10000[10000[22] + 7]
-  10000[20] <- Lerp(TutorialData[102], 0.0, Remap(Subtract(10000[21], 1.0), 10000[22], 0.0, 1.0, Max(0.0, Remap(5.5, 7.0, 0.0, 1.0, 10000[14]))))
-  goto 166 if Less(10000[19], 0.0) else 167
+  10000[17] <- Lerp(TutorialData[102], 0.0, Remap(Subtract(10000[18], 1.0), 10000[19], 0.0, 1.0, Max(0.0, Remap(5.5, 7.0, 0.0, 1.0, 10000[55]))))
+  goto 166 if Less(10000[16], 0.0) else 167
 166:
-  10000[17] <- 10000[18]
+  10000[14] <- 10000[15]
   goto 164
 167:
-  goto 168 if Less(10000[20], 0.0) else 169
+  goto 168 if Less(10000[17], 0.0) else 169
 168:
-  10000[21] <- Subtract(10000[17], 1.0)
-  10000[21] <- Add(10000[21], Multiply(Less(10000[21], 0.0), 7.0))
-  10000[21] <- 10000[10000[21]]
-  10000[22] <- Add(10000[17], Multiply(Less(10000[17], 0.0), 7.0))
-  10000[22] <- 10000[10000[22]]
-  10000[17] <- Remap(10000[20], 10000[19], 10000[21], 10000[22], 0.0)
+  10000[18] <- Subtract(10000[14], 1.0)
+  10000[18] <- Add(10000[18], Multiply(Less(10000[18], 0.0), 7.0))
+  10000[18] <- 10000[10000[18]]
+  10000[19] <- Add(10000[14], Multiply(Less(10000[14], 0.0), 7.0))
+  10000[19] <- 10000[10000[19]]
+  10000[14] <- Remap(10000[17], 10000[16], 10000[18], 10000[19], 0.0)
   goto 171
 169:
-  10000[17] <- 10000[18]
+  10000[14] <- 10000[15]
   goto 164
 170:
-  10000[17] <- 0.0
+  10000[14] <- 0.0
   goto 171
 171:
-  10000[18] <- Multiply(10000[17], TutorialData[100])
-  10000[19] <- Add(10000[18], Divide(Multiply(TutorialData[99], 1.8), 2.0))
-  10000[20] <- Subtract(10000[18], Divide(Multiply(TutorialData[99], 1.8), 2.0))
-  10000[21] <- Add(Add(Multiply(TutorialData[96], 10000[20]), Multiply(TutorialData[97], Subtract(0.0, Divide(Multiply(TutorialData[99], 1.8), 2.0)))), TutorialData[98])
-  10000[22] <- Divide(Add(Add(Multiply(TutorialData[90], 10000[20]), Multiply(TutorialData[91], Subtract(0.0, Divide(Multiply(TutorialData[99], 1.8), 2.0)))), TutorialData[92]), 10000[21])
-  10000[23] <- Divide(Add(Add(Multiply(TutorialData[93], 10000[20]), Multiply(TutorialData[94], Subtract(0.0, Divide(Multiply(TutorialData[99], 1.8), 2.0)))), TutorialData[95]), 10000[21])
-  10000[24] <- Add(Add(Multiply(TutorialData[96], 10000[19]), Multiply(TutorialData[97], Subtract(0.0, Divide(Multiply(TutorialData[99], 1.8), 2.0)))), TutorialData[98])
-  10000[25] <- Divide(Add(Add(Multiply(TutorialData[90], 10000[19]), Multiply(TutorialData[91], Subtract(0.0, Divide(Multiply(TutorialData[99], 1.8), 2.0)))), TutorialData[92]), 10000[24])
-  10000[26] <- Divide(Add(Add(Multiply(TutorialData[93], 10000[19]), Multiply(TutorialData[94], Subtract(0.0, Divide(Multiply(TutorialData[99], 1.8), 2.0)))), TutorialData[95]), 10000[24])
-  10000[27] <- Add(Add(Multiply(TutorialData[96], 10000[20]), Multiply(TutorialData[97], Divide(Multiply(TutorialData[99], 1.8), 2.0))), TutorialData[98])
-  10000[28] <- Divide(Add(Add(Multiply(TutorialData[90], 10000[20]), Multiply(TutorialData[91], Divide(Multiply(TutorialData[99], 1.8), 2.0))), TutorialData[92]), 10000[27])
-  10000[29] <- Divide(Add(Add(Multiply(TutorialData[93], 10000[20]), Multiply(TutorialData[94], Divide(Multiply(TutorialData[99], 1.8), 2.0))), TutorialData[95]), 10000[27])
-  10000[30] <- Add(Add(Multiply(TutorialData[96], 10000[19]), Multiply(TutorialData[97], Divide(Multiply(TutorialData[99], 1.8), 2.0))), TutorialData[98])
-  10000[31] <- Divide(Add(Add(Multiply(TutorialData[90], 10000[19]), Multiply(TutorialData[91], Divide(Multiply(TutorialData[99], 1.8), 2.0))), TutorialData[92]), 10000[30])
-  10000[32] <- Divide(Add(Add(Multiply(TutorialData[93], 10000[19]), Multiply(TutorialData[94], Divide(Multiply(TutorialData[99], 1.8), 2.0))), TutorialData[95]), 10000[30])
-  10000[33] <- Divide(Subtract(Add(Subtract(10000[31], 10000[28]), 10000[25]), 10000[22]), 2.0)
-  10000[34] <- Divide(Add(10000[28], 10000[31]), 2.0)
-  10000[35] <- Divide(Add(10000[22], 10000[25]), 2.0)
-  10000[36] <- Subtract(10000[35], Divide(10000[33], 2.0))
-  10000[37] <- Add(10000[35], Divide(10000[33], 2.0))
-  10000[38] <- Subtract(10000[34], Divide(10000[33], 2.0))
-  10000[39] <- Add(10000[34], Divide(10000[33], 2.0))
-  10000[40] <- TutorialMemory[1]
-  goto 172 if 10000[40] else 173
+  10000[15] <- Multiply(10000[14], TutorialData[100])
+  10000[16] <- Add(10000[15], Divide(Multiply(TutorialData[99], 1.8), 2.0))
+  10000[17] <- Subtract(10000[15], Divide(Multiply(TutorialData[99], 1.8), 2.0))
+  10000[18] <- Add(Add(Multiply(TutorialData[96], 10000[17]), Multiply(TutorialData[97], Subtract(0.0, Divide(Multiply(TutorialData[99], 1.8), 2.0)))), TutorialData[98])
+  10000[19] <- Divide(Add(Add(Multiply(TutorialData[90], 10000[17]), Multiply(TutorialData[91], Subtract(0.0, Divide(Multiply(TutorialData[99], 1.8), 2.0)))), TutorialData[92]), 10000[18])
+  10000[20] <- Divide(Add(Add(Multiply(TutorialData[93], 10000[17]), Multiply(TutorialData[94], Subtract(0.0, Divide(Multiply(TutorialData[99], 1.8), 2.0)))), TutorialData[95]), 10000[18])
+  10000[21] <- Add(Add(Multiply(TutorialData[96], 10000[16]), Multiply(TutorialData[97], Subtract(0.0, Divide(Multiply(TutorialData[99], 1.8), 2.0)))), TutorialData[98])
+  10000[22] <- Divide(Add(Add(Multiply(TutorialData[90], 10000[16]), Multiply(TutorialData[91], Subtract(0.0, Divide(Multiply(TutorialData[99], 1.8), 2.0)))), TutorialData[92]), 10000[21])
+  10000[23] <- Divide(Add(Add(Multiply(TutorialData[93], 10000[16]), Multiply(TutorialData[94], Subtract(0.0, Divide(Multiply(TutorialData[99], 1.8), 2.0)))), TutorialData[95]), 10000[21])
+  10000[24] <- Add(Add(Multiply(TutorialData[96], 10000[17]), Multiply(TutorialData[97], Divide(Multiply(TutorialData[99], 1.8), 2.0))), TutorialData[98])
+  10000[25] <- Divide(Add(Add(Multiply(TutorialData[90], 10000[17]), Multiply(TutorialData[91], Divide(Multiply(TutorialData[99], 1.8), 2.0))), TutorialData[92]), 10000[24])
+  10000[26] <- Divide(Add(Add(Multiply(TutorialData[93], 10000[17]), Multiply(TutorialData[94], Divide(Multiply(TutorialData[99], 1.8), 2.0))), TutorialData[95]), 10000[24])
+  10000[27] <- Add(Add(Multiply(TutorialData[96], 10000[16]), Multiply(TutorialData[97], Divide(Multiply(TutorialData[99], 1.8), 2.0))), TutorialData[98])
+  10000[28] <- Divide(Add(Add(Multiply(TutorialData[90], 10000[16]), Multiply(TutorialData[91], Divide(Multiply(TutorialData[99], 1.8), 2.0))), TutorialData[92]), 10000[27])
+  10000[29] <- Divide(Add(Add(Multiply(TutorialData[93], 10000[16]), Multiply(TutorialData[94], Divide(Multiply(TutorialData[99], 1.8), 2.0))), TutorialData[95]), 10000[27])
+  10000[30] <- Divide(Subtract(Add(Subtract(10000[28], 10000[25]), 10000[22]), 10000[19]), 2.0)
+  10000[31] <- Divide(Add(10000[25], 10000[28]), 2.0)
+  10000[32] <- Divide(Add(10000[19], 10000[22]), 2.0)
+  10000[33] <- Subtract(10000[32], Divide(10000[30], 2.0))
+  10000[34] <- Add(10000[32], Divide(10000[30], 2.0))
+  10000[35] <- Subtract(10000[31], Divide(10000[30], 2.0))
+  10000[36] <- Add(10000[31], Divide(10000[30], 2.0))
+  10000[37] <- TutorialMemory[1]
+  goto 172 if 10000[37] else 173
 172:
-  10000[40] <- TutorialMemory[1]
-  MoveParticleEffect(10000[40], 10000[36], 10000[23], 10000[38], 10000[29], 10000[39], 10000[32], 10000[37], 10000[26])
+  10000[37] <- TutorialMemory[1]
+  MoveParticleEffect(10000[37], 10000[33], 10000[20], 10000[35], 10000[26], 10000[36], 10000[29], 10000[34], 10000[23])
   goto 174
 173:
-  10000[18] <- SpawnParticleEffect(5.0, 10000[36], 10000[23], 10000[38], 10000[29], 10000[39], 10000[32], 10000[37], 10000[26], 1.5, 1.0)
-  TutorialMemory[1] <- 10000[18]
+  10000[15] <- SpawnParticleEffect(5.0, 10000[33], 10000[20], 10000[35], 10000[26], 10000[36], 10000[29], 10000[34], 10000[23], 1.5, 1.0)
+  TutorialMemory[1] <- 10000[15]
   goto 174
 174:
-  goto 175 if GreaterOr(10000[14], 5.5) else 177
+  goto 175 if GreaterOr(10000[55], 5.5) else 177
 175:
-  10000[18] <- TutorialMemory[2]
-  goto 177 if 10000[18] else 176
+  10000[15] <- TutorialMemory[2]
+  goto 177 if 10000[15] else 176
 176:
-  10000[18] <- PlayLooped(7.0)
-  TutorialMemory[2] <- 10000[18]
+  10000[15] <- PlayLooped(7.0)
+  TutorialMemory[2] <- 10000[15]
   goto 177
 177:
-  10000[18] <- Multiply(10000[17], TutorialData[100])
-  10000[19] <- Add(10000[18], Divide(TutorialData[99], 2.0))
-  10000[20] <- Subtract(10000[18], Divide(TutorialData[99], 2.0))
-  10000[21] <- Add(Add(Multiply(TutorialData[96], 10000[20]), Multiply(TutorialData[97], Subtract(0.0, Divide(TutorialData[99], 2.0)))), TutorialData[98])
-  10000[22] <- Add(Add(Multiply(TutorialData[96], 10000[19]), Multiply(TutorialData[97], Subtract(0.0, Divide(TutorialData[99], 2.0)))), TutorialData[98])
-  10000[23] <- Add(Add(Multiply(TutorialData[96], 10000[20]), Multiply(TutorialData[97], Divide(TutorialData[99], 2.0))), TutorialData[98])
-  10000[24] <- Add(Add(Multiply(TutorialData[96], 10000[19]), Multiply(TutorialData[97], Divide(TutorialData[99], 2.0))), TutorialData[98])
-  Draw(14.0, Divide(Add(Add(Multiply(TutorialData[90], 10000[20]), Multiply(TutorialData[91], Subtract(0.0, Divide(TutorialData[99], 2.0)))), TutorialData[92]), 10000[21]), Divide(Add(Add(Multiply(TutorialData[93], 10000[20]), Multiply(TutorialData[94], Subtract(0.0, Divide(TutorialData[99], 2.0)))), TutorialData[95]), 10000[21]), Divide(Add(Add(Multiply(TutorialData[90], 10000[20]), Multiply(TutorialData[91], Add(0.0, Divide(TutorialData[99], 2.0)))), TutorialData[92]), 10000[23]), Divide(Add(Add(Multiply(TutorialData[93], 10000[20]), Multiply(TutorialData[94], Add(0.0, Divide(TutorialData[99], 2.0)))), TutorialData[95]), 10000[23]), Divide(Add(Add(Multiply(TutorialData[90], 10000[19]), Multiply(TutorialData[91], Add(0.0, Divide(TutorialData[99], 2.0)))), TutorialData[92]), 10000[24]), Divide(Add(Add(Multiply(TutorialData[93], 10000[19]), Multiply(TutorialData[94], Add(0.0, Divide(TutorialData[99], 2.0)))), TutorialData[95]), 10000[24]), Divide(Add(Add(Multiply(TutorialData[90], 10000[19]), Multiply(TutorialData[91], Subtract(0.0, Divide(TutorialData[99], 2.0)))), TutorialData[92]), 10000[22]), Divide(Add(Add(Multiply(TutorialData[93], 10000[19]), Multiply(TutorialData[94], Subtract(0.0, Divide(TutorialData[99], 2.0)))), TutorialData[95]), 10000[22]), Add(300000.0, Multiply(10000[17], 100.0)), 1.0)
-  10000[17] <- Multiply(10000[17], TutorialData[100])
-  10000[18] <- Add(Multiply(TutorialData[96], 10000[17]), TutorialData[98])
-  Paint(0.0, Add(Multiply(Multiply(Subtract(0, Multiply(1.0, Sin(LerpClamped(0.5235987755982988, 1.0471975511965976, 1.0)))), 0.25), RuntimeUIConfiguration[4]), Add(Multiply(0.8660254037844386, Multiply(0.25, RuntimeUIConfiguration[4])), Divide(Add(Add(Multiply(TutorialData[90], 10000[17]), 0), TutorialData[92]), 10000[18]))), Add(Multiply(Multiply(Add(0, Multiply(1.0, Cos(LerpClamped(0.5235987755982988, 1.0471975511965976, 1.0)))), 0.25), RuntimeUIConfiguration[4]), Add(Multiply(-0.5000000000000001, Multiply(0.25, RuntimeUIConfiguration[4])), Divide(Add(Add(Multiply(TutorialData[93], 10000[17]), 0), TutorialData[95]), 10000[18]))), Multiply(0.25, RuntimeUIConfiguration[4]), Divide(Multiply(180.0, LerpClamped(0.5235987755982988, 1.0471975511965976, 1.0)), 3.141592653589793), 0.0, RuntimeUIConfiguration[5])
-  10000[17] <- 1.0
+  10000[15] <- Multiply(10000[14], TutorialData[100])
+  10000[16] <- Add(10000[15], Divide(TutorialData[99], 2.0))
+  10000[17] <- Subtract(10000[15], Divide(TutorialData[99], 2.0))
+  10000[18] <- Add(Add(Multiply(TutorialData[96], 10000[17]), Multiply(TutorialData[97], Subtract(0.0, Divide(TutorialData[99], 2.0)))), TutorialData[98])
+  10000[19] <- Add(Add(Multiply(TutorialData[96], 10000[16]), Multiply(TutorialData[97], Subtract(0.0, Divide(TutorialData[99], 2.0)))), TutorialData[98])
+  10000[20] <- Add(Add(Multiply(TutorialData[96], 10000[17]), Multiply(TutorialData[97], Divide(TutorialData[99], 2.0))), TutorialData[98])
+  10000[21] <- Add(Add(Multiply(TutorialData[96], 10000[16]), Multiply(TutorialData[97], Divide(TutorialData[99], 2.0))), TutorialData[98])
+  Draw(14.0, Divide(Add(Add(Multiply(TutorialData[90], 10000[17]), Multiply(TutorialData[91], Subtract(0.0, Divide(TutorialData[99], 2.0)))), TutorialData[92]), 10000[18]), Divide(Add(Add(Multiply(TutorialData[93], 10000[17]), Multiply(TutorialData[94], Subtract(0.0, Divide(TutorialData[99], 2.0)))), TutorialData[95]), 10000[18]), Divide(Add(Add(Multiply(TutorialData[90], 10000[17]), Multiply(TutorialData[91], Add(0.0, Divide(TutorialData[99], 2.0)))), TutorialData[92]), 10000[20]), Divide(Add(Add(Multiply(TutorialData[93], 10000[17]), Multiply(TutorialData[94], Add(0.0, Divide(TutorialData[99], 2.0)))), TutorialData[95]), 10000[20]), Divide(Add(Add(Multiply(TutorialData[90], 10000[16]), Multiply(TutorialData[91], Add(0.0, Divide(TutorialData[99], 2.0)))), TutorialData[92]), 10000[21]), Divide(Add(Add(Multiply(TutorialData[93], 10000[16]), Multiply(TutorialData[94], Add(0.0, Divide(TutorialData[99], 2.0)))), TutorialData[95]), 10000[21]), Divide(Add(Add(Multiply(TutorialData[90], 10000[16]), Multiply(TutorialData[91], Subtract(0.0, Divide(TutorialData[99], 2.0)))), TutorialData[92]), 10000[19]), Divide(Add(Add(Multiply(TutorialData[93], 10000[16]), Multiply(TutorialData[94], Subtract(0.0, Divide(TutorialData[99], 2.0)))), TutorialData[95]), 10000[19]), Add(300000.0, Multiply(10000[14], 100.0)), 1.0)
+  10000[14] <- Multiply(10000[14], TutorialData[100])
+  10000[15] <- Add(Multiply(TutorialData[96], 10000[14]), TutorialData[98])
+  Paint(0.0, Add(Multiply(Multiply(Subtract(0, Multiply(1.0, Sin(LerpClamped(0.5235987755982988, 1.0471975511965976, 1.0)))), 0.25), RuntimeUIConfiguration[4]), Add(Multiply(0.8660254037844386, Multiply(0.25, RuntimeUIConfiguration[4])), Divide(Add(Add(Multiply(TutorialData[90], 10000[14]), 0), TutorialData[92]), 10000[15]))), Add(Multiply(Multiply(Add(0, Multiply(1.0, Cos(LerpClamped(0.5235987755982988, 1.0471975511965976, 1.0)))), 0.25), RuntimeUIConfiguration[4]), Add(Multiply(-0.5000000000000001, Multiply(0.25, RuntimeUIConfiguration[4])), Divide(Add(Add(Multiply(TutorialData[93], 10000[14]), 0), TutorialData[95]), 10000[15]))), Multiply(0.25, RuntimeUIConfiguration[4]), Divide(Multiply(180.0, LerpClamped(0.5235987755982988, 1.0471975511965976, 1.0)), 3.141592653589793), 0.0, RuntimeUIConfiguration[5])
+  10000[14] <- 1.0
   goto 178
 178:
-  goto 179 if Less(10000[17], 7.0) else 180
+  goto 179 if Less(10000[14], 7.0) else 180
 179:
-  10000[18] <- Add(10000[17], 1.0)
-  10000[19] <- Subtract(10000[17], 1.0)
-  10000[19] <- Add(10000[19], Multiply(Less(10000[19], 0.0), 7.0))
-  10000[19] <- 10000[10000[19]]
-  10000[20] <- Add(10000[17], Multiply(Less(10000[17], 0.0), 7.0))
-  10000[20] <- 10000[10000[20]]
-  10000[21] <- Subtract(10000[17], 1.0)
-  10000[22] <- Add(10000[21], Multiply(Less(10000[21], 0.0), 7.0))
-  10000[22] <- 10000[10000[22] + 7]
-  10000[23] <- Add(10000[21], Multiply(Less(10000[21], 0.0), 7.0))
-  10000[23] <- 10000[10000[23] + 7]
-  10000[21] <- Lerp(TutorialData[102], 0.0, Remap(Subtract(10000[22], 1.0), 10000[23], 0.0, 1.0, Max(0.0, Remap(5.5, 7.0, 0.0, 1.0, 10000[14]))))
-  10000[22] <- Add(10000[17], Multiply(Less(10000[17], 0.0), 7.0))
-  10000[22] <- 10000[10000[22] + 7]
-  10000[23] <- Add(10000[17], Multiply(Less(10000[17], 0.0), 7.0))
-  10000[23] <- 10000[10000[23] + 7]
-  10000[22] <- Lerp(TutorialData[102], 0.0, Remap(Subtract(10000[22], 1.0), 10000[23], 0.0, 1.0, Max(0.0, Remap(5.5, 7.0, 0.0, 1.0, 10000[14]))))
-  10000[23] <- Clamp(10000[21], 0.0, TutorialData[102])
-  10000[24] <- Clamp(10000[22], 0.0, TutorialData[102])
-  10000[25] <- Multiply(Remap(10000[21], 10000[22], 10000[19], 10000[20], 10000[23]), TutorialData[100])
-  10000[26] <- Multiply(Remap(10000[21], 10000[22], 10000[19], 10000[20], 10000[24]), TutorialData[100])
-  10000[27] <- Subtract(10000[25], Divide(TutorialData[99], 2.0))
-  10000[28] <- Add(10000[25], Divide(TutorialData[99], 2.0))
-  10000[29] <- Subtract(10000[26], Divide(TutorialData[99], 2.0))
-  10000[30] <- Add(10000[26], Divide(TutorialData[99], 2.0))
-  10000[31] <- Add(Add(Multiply(TutorialData[96], 10000[27]), Multiply(TutorialData[97], 10000[23])), TutorialData[98])
-  10000[32] <- Add(Add(Multiply(TutorialData[96], 10000[28]), Multiply(TutorialData[97], 10000[23])), TutorialData[98])
-  10000[33] <- Add(Add(Multiply(TutorialData[96], 10000[29]), Multiply(TutorialData[97], 10000[24])), TutorialData[98])
-  10000[34] <- Add(Add(Multiply(TutorialData[96], 10000[30]), Multiply(TutorialData[97], 10000[24])), TutorialData[98])
-  Draw(17.0, Divide(Add(Add(Multiply(TutorialData[90], 10000[27]), Multiply(TutorialData[91], 10000[23])), TutorialData[92]), 10000[31]), Divide(Add(Add(Multiply(TutorialData[93], 10000[27]), Multiply(TutorialData[94], 10000[23])), TutorialData[95]), 10000[31]), Divide(Add(Add(Multiply(TutorialData[90], 10000[29]), Multiply(TutorialData[91], 10000[24])), TutorialData[92]), 10000[33]), Divide(Add(Add(Multiply(TutorialData[93], 10000[29]), Multiply(TutorialData[94], 10000[24])), TutorialData[95]), 10000[33]), Divide(Add(Add(Multiply(TutorialData[90], 10000[30]), Multiply(TutorialData[91], 10000[24])), TutorialData[92]), 10000[34]), Divide(Add(Add(Multiply(TutorialData[93], 10000[30]), Multiply(TutorialData[94], 10000[24])), TutorialData[95]), 10000[34]), Divide(Add(Add(Multiply(TutorialData[90], 10000[28]), Multiply(TutorialData[91], 10000[23])), TutorialData[92]), 10000[32]), Divide(Add(Add(Multiply(TutorialData[93], 10000[28]), Multiply(TutorialData[94], 10000[23])), TutorialData[95]), 10000[32]), Add(Add(100000.0, Multiply(Min(10000[19], 10000[20]), 100.0)), Min(10000[21], 10000[22])), 0.8)
-  10000[17] <- 10000[18]
+  10000[15] <- Add(10000[14], 1.0)
+  10000[16] <- Subtract(10000[14], 1.0)
+  10000[16] <- Add(10000[16], Multiply(Less(10000[16], 0.0), 7.0))
+  10000[16] <- 10000[10000[16]]
+  10000[17] <- Add(10000[14], Multiply(Less(10000[14], 0.0), 7.0))
+  10000[17] <- 10000[10000[17]]
+  10000[18] <- Subtract(10000[14], 1.0)
+  10000[19] <- Add(10000[18], Multiply(Less(10000[18], 0.0), 7.0))
+  10000[19] <- 10000[10000[19] + 7]
+  10000[20] <- Add(10000[18], Multiply(Less(10000[18], 0.0), 7.0))
+  10000[20] <- 10000[10000[20] + 7]
+  10000[18] <- Lerp(TutorialData[102], 0.0, Remap(Subtract(10000[19], 1.0), 10000[20], 0.0, 1.0, Max(0.0, Remap(5.5, 7.0, 0.0, 1.0, 10000[55]))))
+  10000[19] <- Add(10000[14], Multiply(Less(10000[14], 0.0), 7.0))
+  10000[19] <- 10000[10000[19] + 7]
+  10000[20] <- Add(10000[14], Multiply(Less(10000[14], 0.0), 7.0))
+  10000[20] <- 10000[10000[20] + 7]
+  10000[19] <- Lerp(TutorialData[102], 0.0, Remap(Subtract(10000[19], 1.0), 10000[20], 0.0, 1.0, Max(0.0, Remap(5.5, 7.0, 0.0, 1.0, 10000[55]))))
+  10000[20] <- Clamp(10000[18], 0.0, TutorialData[102])
+  10000[21] <- Clamp(10000[19], 0.0, TutorialData[102])
+  10000[22] <- Multiply(Remap(10000[18], 10000[19], 10000[16], 10000[17], 10000[20]), TutorialData[100])
+  10000[23] <- Multiply(Remap(10000[18], 10000[19], 10000[16], 10000[17], 10000[21]), TutorialData[100])
+  10000[24] <- Subtract(10000[22], Divide(TutorialData[99], 2.0))
+  10000[25] <- Add(10000[22], Divide(TutorialData[99], 2.0))
+  10000[26] <- Subtract(10000[23], Divide(TutorialData[99], 2.0))
+  10000[27] <- Add(10000[23], Divide(TutorialData[99], 2.0))
+  10000[28] <- Add(Add(Multiply(TutorialData[96], 10000[24]), Multiply(TutorialData[97], 10000[20])), TutorialData[98])
+  10000[29] <- Add(Add(Multiply(TutorialData[96], 10000[25]), Multiply(TutorialData[97], 10000[20])), TutorialData[98])
+  10000[30] <- Add(Add(Multiply(TutorialData[96], 10000[26]), Multiply(TutorialData[97], 10000[21])), TutorialData[98])
+  10000[31] <- Add(Add(Multiply(TutorialData[96], 10000[27]), Multiply(TutorialData[97], 10000[21])), TutorialData[98])
+  Draw(17.0, Divide(Add(Add(Multiply(TutorialData[90], 10000[24]), Multiply(TutorialData[91], 10000[20])), TutorialData[92]), 10000[28]), Divide(Add(Add(Multiply(TutorialData[93], 10000[24]), Multiply(TutorialData[94], 10000[20])), TutorialData[95]), 10000[28]), Divide(Add(Add(Multiply(TutorialData[90], 10000[26]), Multiply(TutorialData[91], 10000[21])), TutorialData[92]), 10000[30]), Divide(Add(Add(Multiply(TutorialData[93], 10000[26]), Multiply(TutorialData[94], 10000[21])), TutorialData[95]), 10000[30]), Divide(Add(Add(Multiply(TutorialData[90], 10000[27]), Multiply(TutorialData[91], 10000[21])), TutorialData[92]), 10000[31]), Divide(Add(Add(Multiply(TutorialData[93], 10000[27]), Multiply(TutorialData[94], 10000[21])), TutorialData[95]), 10000[31]), Divide(Add(Add(Multiply(TutorialData[90], 10000[25]), Multiply(TutorialData[91], 10000[20])), TutorialData[92]), 10000[29]), Divide(Add(Add(Multiply(TutorialData[93], 10000[25]), Multiply(TutorialData[94], 10000[20])), TutorialData[95]), 10000[29]), Add(Add(100000.0, Multiply(Min(10000[16], 10000[17]), 100.0)), Min(10000[18], 10000[19])), 0.8)
+  10000[14] <- 10000[15]
   goto 178
 180:
-  10000[17] <- 0.0
-  10000[18] <- 0.0
-  10000[19] <- 0.0
+  10000[14] <- 0.0
+  10000[15] <- 0.0
+  10000[16] <- 0.0
   goto 181
 181:
-  goto 182 if Less(10000[17], 7.0) else 183
+  goto 182 if Less(10000[14], 7.0) else 183
 182:
-  10000[20] <- Add(10000[17], Multiply(Less(10000[17], 0.0), 7.0))
-  10000[41] <- 10000[10000[20]]
-  10000[17] <- Add(10000[17], 1.0)
-  10000[42] <- 1.0
+  10000[17] <- Add(10000[14], Multiply(Less(10000[14], 0.0), 7.0))
+  10000[38] <- 10000[10000[17]]
+  10000[14] <- Add(10000[14], 1.0)
+  10000[39] <- 1.0
   goto 184
 183:
-  10000[42] <- 0.0
+  10000[39] <- 0.0
   goto 184
 184:
-  goto 185 if Less(10000[18], 7.0) else 186
+  goto 185 if Less(10000[15], 7.0) else 186
 185:
-  10000[43] <- Add(10000[18], Multiply(Less(10000[18], 0.0), 7.0))
-  10000[43] <- 10000[10000[43] + 7]
-  10000[18] <- Add(10000[18], 1.0)
-  10000[44] <- 1.0
+  10000[40] <- Add(10000[15], Multiply(Less(10000[15], 0.0), 7.0))
+  10000[40] <- 10000[10000[40] + 7]
+  10000[15] <- Add(10000[15], 1.0)
+  10000[41] <- 1.0
   goto 187
 186:
-  10000[44] <- 0.0
+  10000[41] <- 0.0
   goto 187
 187:
-  goto 188 if Not(10000[42]) else 189
+  goto 188 if Not(10000[39]) else 189
 188:
-  10000[44] <- 0.0
+  10000[41] <- 0.0
   goto 192
 189:
-  goto 190 if Not(10000[44]) else 191
+  goto 190 if Not(10000[41]) else 191
 190:
-  10000[44] <- 0.0
+  10000[41] <- 0.0
   goto 192
 191:
-  10000[44] <- 1.0
+  10000[41] <- 1.0
   goto 192
 192:
-  goto 215 if Not(10000[44]) else 193
+  goto 215 if Not(10000[41]) else 193
 193:
-  10000[20] <- Add(10000[19], 1.0)
-  10000[44] <- Add(5.5, Multiply(10000[43], 1.5))
-  goto 194 if Less(10000[14], 10000[44]) else 205
+  10000[17] <- Add(10000[16], 1.0)
+  10000[41] <- Add(5.5, Multiply(10000[40], 1.5))
+  goto 194 if Less(10000[55], 10000[41]) else 205
 194:
-  10000[45] <- Add(10000[19], Multiply(Less(10000[19], 0.0), 7.0))
-  10000[45] <- 10000[10000[45] + 7]
-  10000[46] <- Add(10000[19], Multiply(Less(10000[19], 0.0), 7.0))
-  10000[46] <- 10000[10000[46] + 7]
-  10000[45] <- Lerp(TutorialData[102], 0.0, Remap(Subtract(10000[45], 1.0), 10000[46], 0.0, 1.0, Max(0.0, Remap(5.5, 7.0, 0.0, 1.0, 10000[14]))))
-  goto 195 if LessOr(10000[45], TutorialData[103]) else 196
+  10000[42] <- Add(10000[16], Multiply(Less(10000[16], 0.0), 7.0))
+  10000[42] <- 10000[10000[42] + 7]
+  10000[43] <- Add(10000[16], Multiply(Less(10000[16], 0.0), 7.0))
+  10000[43] <- 10000[10000[43] + 7]
+  10000[42] <- Lerp(TutorialData[102], 0.0, Remap(Subtract(10000[42], 1.0), 10000[43], 0.0, 1.0, Max(0.0, Remap(5.5, 7.0, 0.0, 1.0, 10000[55]))))
+  goto 195 if LessOr(10000[42], TutorialData[103]) else 196
 195:
-  10000[46] <- 0.0
+  10000[43] <- 0.0
   goto 203
 196:
-  goto 197 if LessOr(10000[45], Add(TutorialData[103], 0.5)) else 198
+  goto 197 if LessOr(10000[42], Add(TutorialData[103], 0.5)) else 198
 197:
-  10000[46] <- Remap(TutorialData[103], Add(TutorialData[103], 0.5), 0.0, 1.0, 10000[45])
+  10000[43] <- Remap(TutorialData[103], Add(TutorialData[103], 0.5), 0.0, 1.0, 10000[42])
   goto 203
 198:
-  goto 199 if LessOr(10000[45], Subtract(TutorialData[102], 0.5)) else 200
+  goto 199 if LessOr(10000[42], Subtract(TutorialData[102], 0.5)) else 200
 199:
-  10000[46] <- Remap(Add(TutorialData[103], 0.5), Subtract(TutorialData[102], 0.5), 1.0, 1.0, 10000[45])
+  10000[43] <- Remap(Add(TutorialData[103], 0.5), Subtract(TutorialData[102], 0.5), 1.0, 1.0, 10000[42])
   goto 203
 200:
-  goto 201 if LessOr(10000[45], TutorialData[102]) else 202
+  goto 201 if LessOr(10000[42], TutorialData[102]) else 202
 201:
-  10000[46] <- Remap(Subtract(TutorialData[102], 0.5), TutorialData[102], 1.0, 0.0, 10000[45])
+  10000[43] <- Remap(Subtract(TutorialData[102], 0.5), TutorialData[102], 1.0, 0.0, 10000[42])
   goto 203
 202:
-  10000[46] <- 0.0
+  10000[43] <- 0.0
   goto 203
 203:
-  10000[46] <- EaseOutQuad(10000[46])
-  goto 205 if LessOr(10000[46], 0.0) else 204
+  10000[43] <- EaseOutQuad(10000[43])
+  goto 205 if LessOr(10000[43], 0.0) else 204
 204:
-  10000[47] <- Multiply(10000[41], TutorialData[100])
-  10000[48] <- Add(10000[45], Divide(TutorialData[99], 2.0))
-  10000[49] <- Add(10000[47], Divide(TutorialData[99], 2.0))
-  10000[50] <- Subtract(10000[45], Divide(TutorialData[99], 2.0))
-  10000[51] <- Subtract(10000[47], Divide(TutorialData[99], 2.0))
-  10000[52] <- Add(Add(Multiply(TutorialData[96], 10000[51]), Multiply(TutorialData[97], 10000[50])), TutorialData[98])
-  10000[53] <- Add(Add(Multiply(TutorialData[96], 10000[49]), Multiply(TutorialData[97], 10000[50])), TutorialData[98])
-  10000[54] <- Add(Add(Multiply(TutorialData[96], 10000[51]), Multiply(TutorialData[97], 10000[48])), TutorialData[98])
-  10000[55] <- Add(Add(Multiply(TutorialData[96], 10000[49]), Multiply(TutorialData[97], 10000[48])), TutorialData[98])
-  Draw(16.0, Divide(Add(Add(Multiply(TutorialData[90], 10000[51]), Multiply(TutorialData[91], 10000[50])), TutorialData[92]), 10000[52]), Divide(Add(Add(Multiply(TutorialData[93], 10000[51]), Multiply(TutorialData[94], 10000[50])), TutorialData[95]), 10000[52]), Divide(Add(Add(Multiply(TutorialData[90], 10000[51]), Multiply(TutorialData[91], 10000[48])), TutorialData[92]), 10000[54]), Divide(Add(Add(Multiply(TutorialData[93], 10000[51]), Multiply(TutorialData[94], 10000[48])), TutorialData[95]), 10000[54]), Divide(Add(Add(Multiply(TutorialData[90], 10000[49]), Multiply(TutorialData[91], 10000[48])), TutorialData[92]), 10000[55]), Divide(Add(Add(Multiply(TutorialData[93], 10000[49]), Multiply(TutorialData[94], 10000[48])), TutorialData[95]), 10000[55]), Divide(Add(Add(Multiply(TutorialData[90], 10000[49]), Multiply(TutorialData[91], 10000[50])), TutorialData[92]), 10000[53]), Divide(Add(Add(Multiply(TutorialData[93], 10000[49]), Multiply(TutorialData[94], 10000[50])), TutorialData[95]), 10000[53]), Add(Add(310000.0, Multiply(10000[41], 100.0)), 10000[45]), 10000[46])
+  10000[44] <- Multiply(10000[38], TutorialData[100])
+  10000[45] <- Add(10000[42], Divide(TutorialData[99], 2.0))
+  10000[46] <- Add(10000[44], Divide(TutorialData[99], 2.0))
+  10000[47] <- Subtract(10000[42], Divide(TutorialData[99], 2.0))
+  10000[48] <- Subtract(10000[44], Divide(TutorialData[99], 2.0))
+  10000[49] <- Add(Add(Multiply(TutorialData[96], 10000[48]), Multiply(TutorialData[97], 10000[47])), TutorialData[98])
+  10000[50] <- Add(Add(Multiply(TutorialData[96], 10000[46]), Multiply(TutorialData[97], 10000[47])), TutorialData[98])
+  10000[51] <- Add(Add(Multiply(TutorialData[96], 10000[48]), Multiply(TutorialData[97], 10000[45])), TutorialData[98])
+  10000[52] <- Add(Add(Multiply(TutorialData[96], 10000[46]), Multiply(TutorialData[97], 10000[45])), TutorialData[98])
+  Draw(16.0, Divide(Add(Add(Multiply(TutorialData[90], 10000[48]), Multiply(TutorialData[91], 10000[47])), TutorialData[92]), 10000[49]), Divide(Add(Add(Multiply(TutorialData[93], 10000[48]), Multiply(TutorialData[94], 10000[47])), TutorialData[95]), 10000[49]), Divide(Add(Add(Multiply(TutorialData[90], 10000[48]), Multiply(TutorialData[91], 10000[45])), TutorialData[92]), 10000[51]), Divide(Add(Add(Multiply(TutorialData[93], 10000[48]), Multiply(TutorialData[94], 10000[45])), TutorialData[95]), 10000[51]), Divide(Add(Add(Multiply(TutorialData[90], 10000[46]), Multiply(TutorialData[91], 10000[45])), TutorialData[92]), 10000[52]), Divide(Add(Add(Multiply(TutorialData[93], 10000[46]), Multiply(TutorialData[94], 10000[45])), TutorialData[95]), 10000[52]), Divide(Add(Add(Multiply(TutorialData[90], 10000[46]), Multiply(TutorialData[91], 10000[47])), TutorialData[92]), 10000[50]), Divide(Add(Add(Multiply(TutorialData[93], 10000[46]), Multiply(TutorialData[94], 10000[47])), TutorialData[95]), 10000[50]), Add(Add(310000.0, Multiply(10000[38], 100.0)), 10000[42]), 10000[43])
   goto 205
 205:
-  goto 206 if Less(Subtract(10000[15], 10000[16]), 10000[44]) else 214
+  goto 206 if Less(Subtract(10000[56], 10000[57]), 10000[41]) else 214
 206:
-  goto 207 if LessOr(10000[44], 10000[14]) else 213
+  goto 207 if LessOr(10000[41], 10000[55]) else 213
 207:
-  10000[44] <- Multiply(10000[41], TutorialData[100])
-  10000[45] <- Subtract(10000[44], Divide(TutorialData[99], 2.0))
-  10000[46] <- Add(Multiply(TutorialData[96], 10000[45]), TutorialData[98])
-  10000[47] <- Divide(Add(Multiply(TutorialData[90], 10000[45]), TutorialData[92]), 10000[46])
-  10000[48] <- Divide(Add(Multiply(TutorialData[93], 10000[45]), TutorialData[95]), 10000[46])
-  10000[49] <- Add(10000[44], Divide(TutorialData[99], 2.0))
-  10000[50] <- Add(Multiply(TutorialData[96], 10000[49]), TutorialData[98])
-  10000[51] <- Divide(Add(Multiply(TutorialData[90], 10000[49]), TutorialData[92]), 10000[50])
-  10000[52] <- Divide(Add(Multiply(TutorialData[93], 10000[49]), TutorialData[95]), 10000[50])
-  10000[53] <- Power(Add(Power(Subtract(10000[51], 10000[47]), 2.0), Power(Subtract(10000[52], 10000[48]), 2.0)), 0.5)
-  SpawnParticleEffect(3.0, 10000[47], 10000[48], Add(10000[47], 0.0), Add(10000[48], 10000[53]), Add(10000[51], 0.0), Add(10000[52], 10000[53]), 10000[51], 10000[52], 0.5, 0.0)
-  10000[44] <- Multiply(10000[41], TutorialData[100])
-  10000[45] <- Add(10000[44], Divide(Multiply(TutorialData[99], 1.8), 2.0))
-  10000[46] <- Subtract(10000[44], Divide(Multiply(TutorialData[99], 1.8), 2.0))
-  10000[47] <- Add(Add(Multiply(TutorialData[96], 10000[46]), Multiply(TutorialData[97], Subtract(0.0, Divide(Multiply(TutorialData[99], 1.8), 2.0)))), TutorialData[98])
-  10000[48] <- Divide(Add(Add(Multiply(TutorialData[90], 10000[46]), Multiply(TutorialData[91], Subtract(0.0, Divide(Multiply(TutorialData[99], 1.8), 2.0)))), TutorialData[92]), 10000[47])
-  10000[49] <- Add(Add(Multiply(TutorialData[96], 10000[45]), Multiply(TutorialData[97], Subtract(0.0, Divide(Multiply(TutorialData[99], 1.8), 2.0)))), TutorialData[98])
-  10000[50] <- Divide(Add(Add(Multiply(TutorialData[90], 10000[45]), Multiply(TutorialData[91], Subtract(0.0, Divide(Multiply(TutorialData[99], 1.8), 2.0)))), TutorialData[92]), 10000[49])
-  10000[51] <- Add(Add(Multiply(TutorialData[96], 10000[46]), Multiply(TutorialData[97], Divide(Multiply(TutorialData[99], 1.8), 2.0))), TutorialData[98])
-  10000[52] <- Divide(Add(Add(Multiply(TutorialData[90], 10000[46]), Multiply(TutorialData[91], Divide(Multiply(TutorialData[99], 1.8), 2.0))), TutorialData[92]), 10000[51])
-  10000[53] <- Add(Add(Multiply(TutorialData[96], 10000[45]), Multiply(TutorialData[97], Divide(Multiply(TutorialData[99], 1.8), 2.0))), TutorialData[98])
-  10000[54] <- Divide(Add(Add(Multiply(TutorialData[90], 10000[45]), Multiply(TutorialData[91], Divide(Multiply(TutorialData[99], 1.8), 2.0))), TutorialData[92]), 10000[53])
-  10000[55] <- Divide(Subtract(Add(Subtract(10000[54], 10000[52]), 10000[50]), 10000[48]), 2.0)
-  10000[56] <- Divide(Add(10000[52], 10000[54]), 2.0)
-  10000[57] <- Divide(Add(10000[48], 10000[50]), 2.0)
-  SpawnParticleEffect(4.0, Subtract(10000[57], Divide(10000[55], 2.0)), Divide(Add(Add(Multiply(TutorialData[93], 10000[46]), Multiply(TutorialData[94], Subtract(0.0, Divide(Multiply(TutorialData[99], 1.8), 2.0)))), TutorialData[95]), 10000[47]), Subtract(10000[56], Divide(10000[55], 2.0)), Divide(Add(Add(Multiply(TutorialData[93], 10000[46]), Multiply(TutorialData[94], Add(0.0, Divide(Multiply(TutorialData[99], 1.8), 2.0)))), TutorialData[95]), 10000[51]), Add(10000[56], Divide(10000[55], 2.0)), Divide(Add(Add(Multiply(TutorialData[93], 10000[45]), Multiply(TutorialData[94], Add(0.0, Divide(Multiply(TutorialData[99], 1.8), 2.0)))), TutorialData[95]), 10000[53]), Add(10000[57], Divide(10000[55], 2.0)), Divide(Add(Add(Multiply(TutorialData[93], 10000[45]), Multiply(TutorialData[94], Subtract(0.0, Divide(Multiply(TutorialData[99], 1.8), 2.0)))), TutorialData[95]), 10000[49]), 0.5, 0.0)
-  10000[44] <- 0.0
+  10000[41] <- Multiply(10000[38], TutorialData[100])
+  10000[42] <- Subtract(10000[41], Divide(TutorialData[99], 2.0))
+  10000[43] <- Add(Multiply(TutorialData[96], 10000[42]), TutorialData[98])
+  10000[44] <- Divide(Add(Multiply(TutorialData[90], 10000[42]), TutorialData[92]), 10000[43])
+  10000[45] <- Divide(Add(Multiply(TutorialData[93], 10000[42]), TutorialData[95]), 10000[43])
+  10000[46] <- Add(10000[41], Divide(TutorialData[99], 2.0))
+  10000[47] <- Add(Multiply(TutorialData[96], 10000[46]), TutorialData[98])
+  10000[48] <- Divide(Add(Multiply(TutorialData[90], 10000[46]), TutorialData[92]), 10000[47])
+  10000[49] <- Divide(Add(Multiply(TutorialData[93], 10000[46]), TutorialData[95]), 10000[47])
+  10000[50] <- Power(Add(Power(Subtract(10000[48], 10000[44]), 2.0), Power(Subtract(10000[49], 10000[45]), 2.0)), 0.5)
+  SpawnParticleEffect(3.0, 10000[44], 10000[45], Add(10000[44], 0.0), Add(10000[45], 10000[50]), Add(10000[48], 0.0), Add(10000[49], 10000[50]), 10000[48], 10000[49], 0.5, 0.0)
+  10000[41] <- Multiply(10000[38], TutorialData[100])
+  10000[42] <- Add(10000[41], Divide(Multiply(TutorialData[99], 1.8), 2.0))
+  10000[43] <- Subtract(10000[41], Divide(Multiply(TutorialData[99], 1.8), 2.0))
+  10000[44] <- Add(Add(Multiply(TutorialData[96], 10000[43]), Multiply(TutorialData[97], Subtract(0.0, Divide(Multiply(TutorialData[99], 1.8), 2.0)))), TutorialData[98])
+  10000[45] <- Divide(Add(Add(Multiply(TutorialData[90], 10000[43]), Multiply(TutorialData[91], Subtract(0.0, Divide(Multiply(TutorialData[99], 1.8), 2.0)))), TutorialData[92]), 10000[44])
+  10000[46] <- Add(Add(Multiply(TutorialData[96], 10000[42]), Multiply(TutorialData[97], Subtract(0.0, Divide(Multiply(TutorialData[99], 1.8), 2.0)))), TutorialData[98])
+  10000[47] <- Divide(Add(Add(Multiply(TutorialData[90], 10000[42]), Multiply(TutorialData[91], Subtract(0.0, Divide(Multiply(TutorialData[99], 1.8), 2.0)))), TutorialData[92]), 10000[46])
+  10000[48] <- Add(Add(Multiply(TutorialData[96], 10000[43]), Multiply(TutorialData[97], Divide(Multiply(TutorialData[99], 1.8), 2.0))), TutorialData[98])
+  10000[49] <- Divide(Add(Add(Multiply(TutorialData[90], 10000[43]), Multiply(TutorialData[91], Divide(Multiply(TutorialData[99], 1.8), 2.0))), TutorialData[92]), 10000[48])
+  10000[50] <- Add(Add(Multiply(TutorialData[96], 10000[42]), Multiply(TutorialData[97], Divide(Multiply(TutorialData[99], 1.8), 2.0))), TutorialData[98])
+  10000[51] <- Divide(Add(Add(Multiply(TutorialData[90], 10000[42]), Multiply(TutorialData[91], Divide(Multiply(TutorialData[99], 1.8), 2.0))), TutorialData[92]), 10000[50])
+  10000[52] <- Divide(Subtract(Add(Subtract(10000[51], 10000[49]), 10000[47]), 10000[45]), 2.0)
+  10000[53] <- Divide(Add(10000[49], 10000[51]), 2.0)
+  10000[54] <- Divide(Add(10000[45], 10000[47]), 2.0)
+  SpawnParticleEffect(4.0, Subtract(10000[54], Divide(10000[52], 2.0)), Divide(Add(Add(Multiply(TutorialData[93], 10000[43]), Multiply(TutorialData[94], Subtract(0.0, Divide(Multiply(TutorialData[99], 1.8), 2.0)))), TutorialData[95]), 10000[44]), Subtract(10000[53], Divide(10000[52], 2.0)), Divide(Add(Add(Multiply(TutorialData[93], 10000[43]), Multiply(TutorialData[94], Add(0.0, Divide(Multiply(TutorialData[99], 1.8), 2.0)))), TutorialData[95]), 10000[48]), Add(10000[53], Divide(10000[52], 2.0)), Divide(Add(Add(Multiply(TutorialData[93], 10000[42]), Multiply(TutorialData[94], Add(0.0, Divide(Multiply(TutorialData[99], 1.8), 2.0)))), TutorialData[95]), 10000[50]), Add(10000[54], Divide(10000[52], 2.0)), Divide(Add(Add(Multiply(TutorialData[93], 10000[42]), Multiply(TutorialData[94], Subtract(0.0, Divide(Multiply(TutorialData[99], 1.8), 2.0)))), TutorialData[95]), 10000[46]), 0.5, 0.0)
+  10000[41] <- 0.0
   goto 208
 208:
-  goto 209 if Less(10000[44], TutorialData[0]) else 212
+  goto 209 if Less(10000[41], TutorialData[0]) else 212
 209:
-  10000[45] <- Add(10000[44], 1.0)
-  10000[46] <- Multiply(Add(10000[44], Multiply(Less(10000[44], 0.0), 7.0)), 9.0)
-  goto 210 if Equal(TutorialData[10000[46] + 1], 10000[41]) else 211
+  10000[42] <- Add(10000[41], 1.0)
+  10000[43] <- Multiply(Add(10000[41], Multiply(Less(10000[41], 0.0), 7.0)), 9.0)
+  goto 210 if Equal(TutorialData[10000[43] + 1], 10000[38]) else 211
 210:
-  SpawnParticleEffect(0.0, TutorialData[10000[46] + 2], TutorialData[10000[46] + 3], TutorialData[10000[46] + 4], TutorialData[10000[46] + 5], TutorialData[10000[46] + 6], TutorialData[10000[46] + 7], TutorialData[10000[46] + 8], TutorialData[10000[46] + 9], 0.2, 0.0)
+  SpawnParticleEffect(0.0, TutorialData[10000[43] + 2], TutorialData[10000[43] + 3], TutorialData[10000[43] + 4], TutorialData[10000[43] + 5], TutorialData[10000[43] + 6], TutorialData[10000[43] + 7], TutorialData[10000[43] + 8], TutorialData[10000[43] + 9], 0.2, 0.0)
   Play(1.0, 0.0)
-  10000[19] <- 10000[20]
+  10000[16] <- 10000[17]
   goto 181
 211:
-  10000[44] <- 10000[45]
+  10000[41] <- 10000[42]
   goto 208
 212:
   DebugLog(0.0)
   DebugPause()
   goto exit
 213:
-  10000[19] <- 10000[20]
+  10000[16] <- 10000[17]
   goto 181
 214:
-  10000[19] <- 10000[20]
+  10000[16] <- 10000[17]
   goto 181
 215:
-  goto 216 if LessOr(1.5, 10000[14]) else 218
+  goto 216 if LessOr(1.5, 10000[55]) else 218
 216:
-  goto 217 if Less(10000[14], 5.5) else 218
+  goto 217 if Less(10000[55], 5.5) else 218
 217:
-  10000[15] <- 10000[0]
-  10000[15] <- Multiply(10000[15], TutorialData[100])
-  10000[16] <- Add(Multiply(TutorialData[96], 10000[15]), TutorialData[98])
-  Paint(0.0, Add(Multiply(Multiply(Subtract(0, Multiply(1.0, Sin(LerpClamped(0.5235987755982988, 1.0471975511965976, 1.0)))), 0.25), RuntimeUIConfiguration[4]), Add(Multiply(0.8660254037844386, Multiply(0.25, RuntimeUIConfiguration[4])), Divide(Add(Add(Multiply(TutorialData[90], 10000[15]), 0), TutorialData[92]), 10000[16]))), Add(Multiply(Multiply(Add(0, Multiply(1.0, Cos(LerpClamped(0.5235987755982988, 1.0471975511965976, 1.0)))), 0.25), RuntimeUIConfiguration[4]), Add(Multiply(-0.5000000000000001, Multiply(0.25, RuntimeUIConfiguration[4])), Divide(Add(Add(Multiply(TutorialData[93], 10000[15]), 0), TutorialData[95]), 10000[16]))), Multiply(0.25, RuntimeUIConfiguration[4]), Divide(Multiply(180.0, LerpClamped(0.5235987755982988, 1.0471975511965976, 1.0)), 3.141592653589793), 0.0, RuntimeUIConfiguration[5])
+  10000[0] <- 10000[0]
+  10000[0] <- Multiply(10000[0], TutorialData[100])
+  10000[1] <- Add(Multiply(TutorialData[96], 10000[0]), TutorialData[98])
+  Paint(0.0, Add(Multiply(Multiply(Subtract(0, Multiply(1.0, Sin(LerpClamped(0.5235987755982988, 1.0471975511965976, 1.0)))), 0.25), RuntimeUIConfiguration[4]), Add(Multiply(0.8660254037844386, Multiply(0.25, RuntimeUIConfiguration[4])), Divide(Add(Add(Multiply(TutorialData[90], 10000[0]), 0), TutorialData[92]), 10000[1]))), Add(Multiply(Multiply(Add(0, Multiply(1.0, Cos(LerpClamped(0.5235987755982988, 1.0471975511965976, 1.0)))), 0.25), RuntimeUIConfiguration[4]), Add(Multiply(-0.5000000000000001, Multiply(0.25, RuntimeUIConfiguration[4])), Divide(Add(Add(Multiply(TutorialData[93], 10000[0]), 0), TutorialData[95]), 10000[1]))), Multiply(0.25, RuntimeUIConfiguration[4]), Divide(Multiply(180.0, LerpClamped(0.5235987755982988, 1.0471975511965976, 1.0)), 3.141592653589793), 0.0, RuntimeUIConfiguration[5])
   TutorialInstruction[0] <- 3.0
   goto 218
 218:
-  goto 219 if GreaterOr(10000[14], 8.5) else 638
+  goto 219 if GreaterOr(10000[55], 8.5) else 638
 219:
   10000[0] <- TutorialMemory[5]
   TutorialMemory[5] <- Add(10000[0], 1.0)
@@ -891,156 +891,156 @@
   goto 638
 220:
   10000[0] <- TutorialMemory[0]
-  10000[5] <- Subtract(RuntimeUpdate[0], 10000[0])
-  10000[6] <- TutorialMemory[4]
-  10000[7] <- TutorialMemory[0]
-  goto 221 if LessOr(0.0, 10000[5]) else 223
+  10000[0] <- Subtract(RuntimeUpdate[0], 10000[0])
+  10000[1] <- TutorialMemory[4]
+  10000[2] <- TutorialMemory[0]
+  goto 221 if LessOr(0.0, 10000[0]) else 223
 221:
-  goto 222 if Less(10000[5], 1.5) else 223
+  goto 222 if Less(10000[0], 1.5) else 223
 222:
   Draw(14.0, Divide(Add(Add(Multiply(3.0, Divide(Add(Add(Multiply(TutorialData[90], Subtract(0.0, Divide(TutorialData[99], 2.0))), Multiply(TutorialData[91], Subtract(1.0, Divide(TutorialData[99], 2.0)))), TutorialData[92]), Add(Add(Multiply(TutorialData[96], Subtract(0.0, Divide(TutorialData[99], 2.0))), Multiply(TutorialData[97], Subtract(1.0, Divide(TutorialData[99], 2.0)))), TutorialData[98]))), 0), Multiply(Add(0.0, Multiply(1.0, Negate(Divide(Add(Add(0, Multiply(TutorialData[91], 1.0)), TutorialData[92]), Add(Add(0, Multiply(TutorialData[97], 1.0)), TutorialData[98]))))), 3.0)), 1.0), Divide(Add(Add(0, Multiply(3.0, Divide(Add(Add(Multiply(TutorialData[93], Subtract(0.0, Divide(TutorialData[99], 2.0))), Multiply(TutorialData[94], Subtract(1.0, Divide(TutorialData[99], 2.0)))), TutorialData[95]), Add(Add(Multiply(TutorialData[96], Subtract(0.0, Divide(TutorialData[99], 2.0))), Multiply(TutorialData[97], Subtract(1.0, Divide(TutorialData[99], 2.0)))), TutorialData[98])))), Multiply(Add(0.0, Multiply(1.0, Negate(Divide(Add(Add(0, Multiply(TutorialData[94], 1.0)), TutorialData[95]), Add(Add(0, Multiply(TutorialData[97], 1.0)), TutorialData[98]))))), 3.0)), 1.0), Divide(Add(Add(Multiply(3.0, Divide(Add(Add(Multiply(TutorialData[90], Subtract(0.0, Divide(TutorialData[99], 2.0))), Multiply(TutorialData[91], Add(1.0, Divide(TutorialData[99], 2.0)))), TutorialData[92]), Add(Add(Multiply(TutorialData[96], Subtract(0.0, Divide(TutorialData[99], 2.0))), Multiply(TutorialData[97], Add(1.0, Divide(TutorialData[99], 2.0)))), TutorialData[98]))), 0), Multiply(Add(0.0, Multiply(1.0, Negate(Divide(Add(Add(0, Multiply(TutorialData[91], 1.0)), TutorialData[92]), Add(Add(0, Multiply(TutorialData[97], 1.0)), TutorialData[98]))))), 3.0)), 1.0), Divide(Add(Add(0, Multiply(3.0, Divide(Add(Add(Multiply(TutorialData[93], Subtract(0.0, Divide(TutorialData[99], 2.0))), Multiply(TutorialData[94], Add(1.0, Divide(TutorialData[99], 2.0)))), TutorialData[95]), Add(Add(Multiply(TutorialData[96], Subtract(0.0, Divide(TutorialData[99], 2.0))), Multiply(TutorialData[97], Add(1.0, Divide(TutorialData[99], 2.0)))), TutorialData[98])))), Multiply(Add(0.0, Multiply(1.0, Negate(Divide(Add(Add(0, Multiply(TutorialData[94], 1.0)), TutorialData[95]), Add(Add(0, Multiply(TutorialData[97], 1.0)), TutorialData[98]))))), 3.0)), 1.0), Divide(Add(Add(Multiply(3.0, Divide(Add(Add(Multiply(TutorialData[90], Add(0.0, Divide(TutorialData[99], 2.0))), Multiply(TutorialData[91], Add(1.0, Divide(TutorialData[99], 2.0)))), TutorialData[92]), Add(Add(Multiply(TutorialData[96], Add(0.0, Divide(TutorialData[99], 2.0))), Multiply(TutorialData[97], Add(1.0, Divide(TutorialData[99], 2.0)))), TutorialData[98]))), 0), Multiply(Add(0.0, Multiply(1.0, Negate(Divide(Add(Add(0, Multiply(TutorialData[91], 1.0)), TutorialData[92]), Add(Add(0, Multiply(TutorialData[97], 1.0)), TutorialData[98]))))), 3.0)), 1.0), Divide(Add(Add(0, Multiply(3.0, Divide(Add(Add(Multiply(TutorialData[93], Add(0.0, Divide(TutorialData[99], 2.0))), Multiply(TutorialData[94], Add(1.0, Divide(TutorialData[99], 2.0)))), TutorialData[95]), Add(Add(Multiply(TutorialData[96], Add(0.0, Divide(TutorialData[99], 2.0))), Multiply(TutorialData[97], Add(1.0, Divide(TutorialData[99], 2.0)))), TutorialData[98])))), Multiply(Add(0.0, Multiply(1.0, Negate(Divide(Add(Add(0, Multiply(TutorialData[94], 1.0)), TutorialData[95]), Add(Add(0, Multiply(TutorialData[97], 1.0)), TutorialData[98]))))), 3.0)), 1.0), Divide(Add(Add(Multiply(3.0, Divide(Add(Add(Multiply(TutorialData[90], Add(0.0, Divide(TutorialData[99], 2.0))), Multiply(TutorialData[91], Subtract(1.0, Divide(TutorialData[99], 2.0)))), TutorialData[92]), Add(Add(Multiply(TutorialData[96], Add(0.0, Divide(TutorialData[99], 2.0))), Multiply(TutorialData[97], Subtract(1.0, Divide(TutorialData[99], 2.0)))), TutorialData[98]))), 0), Multiply(Add(0.0, Multiply(1.0, Negate(Divide(Add(Add(0, Multiply(TutorialData[91], 1.0)), TutorialData[92]), Add(Add(0, Multiply(TutorialData[97], 1.0)), TutorialData[98]))))), 3.0)), 1.0), Divide(Add(Add(0, Multiply(3.0, Divide(Add(Add(Multiply(TutorialData[93], Add(0.0, Divide(TutorialData[99], 2.0))), Multiply(TutorialData[94], Subtract(1.0, Divide(TutorialData[99], 2.0)))), TutorialData[95]), Add(Add(Multiply(TutorialData[96], Add(0.0, Divide(TutorialData[99], 2.0))), Multiply(TutorialData[97], Subtract(1.0, Divide(TutorialData[99], 2.0)))), TutorialData[98])))), Multiply(Add(0.0, Multiply(1.0, Negate(Divide(Add(Add(0, Multiply(TutorialData[94], 1.0)), TutorialData[95]), Add(Add(0, Multiply(TutorialData[97], 1.0)), TutorialData[98]))))), 3.0)), 1.0), 310000.0, 1.0)
   Draw(17.0, Divide(Add(Add(Multiply(3.0, Divide(Add(Add(Multiply(TutorialData[90], Subtract(Multiply(Remap(1.0, 2.0, 0.0, 0.0, Clamp(1.0, 0.0, TutorialData[102])), TutorialData[100]), Divide(TutorialData[99], 2.0))), Multiply(TutorialData[91], Clamp(1.0, 0.0, TutorialData[102]))), TutorialData[92]), Add(Add(Multiply(TutorialData[96], Subtract(Multiply(Remap(1.0, 2.0, 0.0, 0.0, Clamp(1.0, 0.0, TutorialData[102])), TutorialData[100]), Divide(TutorialData[99], 2.0))), Multiply(TutorialData[97], Clamp(1.0, 0.0, TutorialData[102]))), TutorialData[98]))), 0), Multiply(Add(0.0, Multiply(1.0, Negate(Divide(Add(Add(0, Multiply(TutorialData[91], 1.0)), TutorialData[92]), Add(Add(0, Multiply(TutorialData[97], 1.0)), TutorialData[98]))))), 3.0)), 1.0), Divide(Add(Add(0, Multiply(3.0, Divide(Add(Add(Multiply(TutorialData[93], Subtract(Multiply(Remap(1.0, 2.0, 0.0, 0.0, Clamp(1.0, 0.0, TutorialData[102])), TutorialData[100]), Divide(TutorialData[99], 2.0))), Multiply(TutorialData[94], Clamp(1.0, 0.0, TutorialData[102]))), TutorialData[95]), Add(Add(Multiply(TutorialData[96], Subtract(Multiply(Remap(1.0, 2.0, 0.0, 0.0, Clamp(1.0, 0.0, TutorialData[102])), TutorialData[100]), Divide(TutorialData[99], 2.0))), Multiply(TutorialData[97], Clamp(1.0, 0.0, TutorialData[102]))), TutorialData[98])))), Multiply(Add(0.0, Multiply(1.0, Negate(Divide(Add(Add(0, Multiply(TutorialData[94], 1.0)), TutorialData[95]), Add(Add(0, Multiply(TutorialData[97], 1.0)), TutorialData[98]))))), 3.0)), 1.0), Divide(Add(Add(Multiply(3.0, Divide(Add(Add(Multiply(TutorialData[90], Subtract(Multiply(Remap(1.0, 2.0, 0.0, 0.0, Clamp(2.0, 0.0, TutorialData[102])), TutorialData[100]), Divide(TutorialData[99], 2.0))), Multiply(TutorialData[91], Clamp(2.0, 0.0, TutorialData[102]))), TutorialData[92]), Add(Add(Multiply(TutorialData[96], Subtract(Multiply(Remap(1.0, 2.0, 0.0, 0.0, Clamp(2.0, 0.0, TutorialData[102])), TutorialData[100]), Divide(TutorialData[99], 2.0))), Multiply(TutorialData[97], Clamp(2.0, 0.0, TutorialData[102]))), TutorialData[98]))), 0), Multiply(Add(0.0, Multiply(1.0, Negate(Divide(Add(Add(0, Multiply(TutorialData[91], 1.0)), TutorialData[92]), Add(Add(0, Multiply(TutorialData[97], 1.0)), TutorialData[98]))))), 3.0)), 1.0), Divide(Add(Add(0, Multiply(3.0, Divide(Add(Add(Multiply(TutorialData[93], Subtract(Multiply(Remap(1.0, 2.0, 0.0, 0.0, Clamp(2.0, 0.0, TutorialData[102])), TutorialData[100]), Divide(TutorialData[99], 2.0))), Multiply(TutorialData[94], Clamp(2.0, 0.0, TutorialData[102]))), TutorialData[95]), Add(Add(Multiply(TutorialData[96], Subtract(Multiply(Remap(1.0, 2.0, 0.0, 0.0, Clamp(2.0, 0.0, TutorialData[102])), TutorialData[100]), Divide(TutorialData[99], 2.0))), Multiply(TutorialData[97], Clamp(2.0, 0.0, TutorialData[102]))), TutorialData[98])))), Multiply(Add(0.0, Multiply(1.0, Negate(Divide(Add(Add(0, Multiply(TutorialData[94], 1.0)), TutorialData[95]), Add(Add(0, Multiply(TutorialData[97], 1.0)), TutorialData[98]))))), 3.0)), 1.0), Divide(Add(Add(Multiply(3.0, Divide(Add(Add(Multiply(TutorialData[90], Add(Multiply(Remap(1.0, 2.0, 0.0, 0.0, Clamp(2.0, 0.0, TutorialData[102])), TutorialData[100]), Divide(TutorialData[99], 2.0))), Multiply(TutorialData[91], Clamp(2.0, 0.0, TutorialData[102]))), TutorialData[92]), Add(Add(Multiply(TutorialData[96], Add(Multiply(Remap(1.0, 2.0, 0.0, 0.0, Clamp(2.0, 0.0, TutorialData[102])), TutorialData[100]), Divide(TutorialData[99], 2.0))), Multiply(TutorialData[97], Clamp(2.0, 0.0, TutorialData[102]))), TutorialData[98]))), 0), Multiply(Add(0.0, Multiply(1.0, Negate(Divide(Add(Add(0, Multiply(TutorialData[91], 1.0)), TutorialData[92]), Add(Add(0, Multiply(TutorialData[97], 1.0)), TutorialData[98]))))), 3.0)), 1.0), Divide(Add(Add(0, Multiply(3.0, Divide(Add(Add(Multiply(TutorialData[93], Add(Multiply(Remap(1.0, 2.0, 0.0, 0.0, Clamp(2.0, 0.0, TutorialData[102])), TutorialData[100]), Divide(TutorialData[99], 2.0))), Multiply(TutorialData[94], Clamp(2.0, 0.0, TutorialData[102]))), TutorialData[95]), Add(Add(Multiply(TutorialData[96], Add(Multiply(Remap(1.0, 2.0, 0.0, 0.0, Clamp(2.0, 0.0, TutorialData[102])), TutorialData[100]), Divide(TutorialData[99], 2.0))), Multiply(TutorialData[97], Clamp(2.0, 0.0, TutorialData[102]))), TutorialData[98])))), Multiply(Add(0.0, Multiply(1.0, Negate(Divide(Add(Add(0, Multiply(TutorialData[94], 1.0)), TutorialData[95]), Add(Add(0, Multiply(TutorialData[97], 1.0)), TutorialData[98]))))), 3.0)), 1.0), Divide(Add(Add(Multiply(3.0, Divide(Add(Add(Multiply(TutorialData[90], Add(Multiply(Remap(1.0, 2.0, 0.0, 0.0, Clamp(1.0, 0.0, TutorialData[102])), TutorialData[100]), Divide(TutorialData[99], 2.0))), Multiply(TutorialData[91], Clamp(1.0, 0.0, TutorialData[102]))), TutorialData[92]), Add(Add(Multiply(TutorialData[96], Add(Multiply(Remap(1.0, 2.0, 0.0, 0.0, Clamp(1.0, 0.0, TutorialData[102])), TutorialData[100]), Divide(TutorialData[99], 2.0))), Multiply(TutorialData[97], Clamp(1.0, 0.0, TutorialData[102]))), TutorialData[98]))), 0), Multiply(Add(0.0, Multiply(1.0, Negate(Divide(Add(Add(0, Multiply(TutorialData[91], 1.0)), TutorialData[92]), Add(Add(0, Multiply(TutorialData[97], 1.0)), TutorialData[98]))))), 3.0)), 1.0), Divide(Add(Add(0, Multiply(3.0, Divide(Add(Add(Multiply(TutorialData[93], Add(Multiply(Remap(1.0, 2.0, 0.0, 0.0, Clamp(1.0, 0.0, TutorialData[102])), TutorialData[100]), Divide(TutorialData[99], 2.0))), Multiply(TutorialData[94], Clamp(1.0, 0.0, TutorialData[102]))), TutorialData[95]), Add(Add(Multiply(TutorialData[96], Add(Multiply(Remap(1.0, 2.0, 0.0, 0.0, Clamp(1.0, 0.0, TutorialData[102])), TutorialData[100]), Divide(TutorialData[99], 2.0))), Multiply(TutorialData[97], Clamp(1.0, 0.0, TutorialData[102]))), TutorialData[98])))), Multiply(Add(0.0, Multiply(1.0, Negate(Divide(Add(Add(0, Multiply(TutorialData[94], 1.0)), TutorialData[95]), Add(Add(0, Multiply(TutorialData[97], 1.0)), TutorialData[98]))))), 3.0)), 1.0), 100000.0, 1.0)
   goto 223
 223:
-  goto 224 if LessOr(1.5, 10000[5]) else 237
+  goto 224 if LessOr(1.5, 10000[0]) else 237
 224:
-  goto 225 if Less(10000[5], 3.0) else 237
+  goto 225 if Less(10000[0], 3.0) else 237
 225:
-  10000[8] <- Lerp(TutorialData[102], 0.0, Remap(1.5, 3.0, 0.0, 1.0, 10000[5]))
-  goto 226 if LessOr(10000[8], TutorialData[103]) else 227
+  10000[3] <- Lerp(TutorialData[102], 0.0, Remap(1.5, 3.0, 0.0, 1.0, 10000[0]))
+  goto 226 if LessOr(10000[3], TutorialData[103]) else 227
 226:
-  10000[9] <- 0.0
+  10000[4] <- 0.0
   goto 234
 227:
-  goto 228 if LessOr(10000[8], Add(TutorialData[103], 0.5)) else 229
+  goto 228 if LessOr(10000[3], Add(TutorialData[103], 0.5)) else 229
 228:
-  10000[9] <- Remap(TutorialData[103], Add(TutorialData[103], 0.5), 0.0, 1.0, 10000[8])
+  10000[4] <- Remap(TutorialData[103], Add(TutorialData[103], 0.5), 0.0, 1.0, 10000[3])
   goto 234
 229:
-  goto 230 if LessOr(10000[8], Subtract(TutorialData[102], 0.5)) else 231
+  goto 230 if LessOr(10000[3], Subtract(TutorialData[102], 0.5)) else 231
 230:
-  10000[9] <- Remap(Add(TutorialData[103], 0.5), Subtract(TutorialData[102], 0.5), 1.0, 1.0, 10000[8])
+  10000[4] <- Remap(Add(TutorialData[103], 0.5), Subtract(TutorialData[102], 0.5), 1.0, 1.0, 10000[3])
   goto 234
 231:
-  goto 232 if LessOr(10000[8], TutorialData[102]) else 233
+  goto 232 if LessOr(10000[3], TutorialData[102]) else 233
 232:
-  10000[9] <- Remap(Subtract(TutorialData[102], 0.5), TutorialData[102], 1.0, 0.0, 10000[8])
+  10000[4] <- Remap(Subtract(TutorialData[102], 0.5), TutorialData[102], 1.0, 0.0, 10000[3])
   goto 234
 233:
-  10000[9] <- 0.0
+  10000[4] <- 0.0
   goto 234
 234:
-  10000[9] <- EaseOutQuad(10000[9])
-  goto 236 if LessOr(10000[9], 0.0) else 235
+  10000[4] <- EaseOutQuad(10000[4])
+  goto 236 if LessOr(10000[4], 0.0) else 235
 235:
-  10000[10] <- Add(10000[8], Divide(TutorialData[99], 2.0))
-  10000[11] <- Subtract(10000[8], Divide(TutorialData[99], 2.0))
-  10000[12] <- Add(Add(Multiply(TutorialData[96], Subtract(0.0, Divide(TutorialData[99], 2.0))), Multiply(TutorialData[97], 10000[11])), TutorialData[98])
-  10000[13] <- Add(Add(Multiply(TutorialData[96], Divide(TutorialData[99], 2.0)), Multiply(TutorialData[97], 10000[11])), TutorialData[98])
-  10000[14] <- Add(Add(Multiply(TutorialData[96], Subtract(0.0, Divide(TutorialData[99], 2.0))), Multiply(TutorialData[97], 10000[10])), TutorialData[98])
-  10000[15] <- Add(Add(Multiply(TutorialData[96], Divide(TutorialData[99], 2.0)), Multiply(TutorialData[97], 10000[10])), TutorialData[98])
-  Draw(14.0, Divide(Add(Add(Multiply(TutorialData[90], Subtract(0.0, Divide(TutorialData[99], 2.0))), Multiply(TutorialData[91], 10000[11])), TutorialData[92]), 10000[12]), Divide(Add(Add(Multiply(TutorialData[93], Subtract(0.0, Divide(TutorialData[99], 2.0))), Multiply(TutorialData[94], 10000[11])), TutorialData[95]), 10000[12]), Divide(Add(Add(Multiply(TutorialData[90], Subtract(0.0, Divide(TutorialData[99], 2.0))), Multiply(TutorialData[91], 10000[10])), TutorialData[92]), 10000[14]), Divide(Add(Add(Multiply(TutorialData[93], Subtract(0.0, Divide(TutorialData[99], 2.0))), Multiply(TutorialData[94], 10000[10])), TutorialData[95]), 10000[14]), Divide(Add(Add(Multiply(TutorialData[90], Add(0.0, Divide(TutorialData[99], 2.0))), Multiply(TutorialData[91], 10000[10])), TutorialData[92]), 10000[15]), Divide(Add(Add(Multiply(TutorialData[93], Add(0.0, Divide(TutorialData[99], 2.0))), Multiply(TutorialData[94], 10000[10])), TutorialData[95]), 10000[15]), Divide(Add(Add(Multiply(TutorialData[90], Add(0.0, Divide(TutorialData[99], 2.0))), Multiply(TutorialData[91], 10000[11])), TutorialData[92]), 10000[13]), Divide(Add(Add(Multiply(TutorialData[93], Add(0.0, Divide(TutorialData[99], 2.0))), Multiply(TutorialData[94], 10000[11])), TutorialData[95]), 10000[13]), Add(310000.0, 10000[8]), 10000[9])
+  10000[5] <- Add(10000[3], Divide(TutorialData[99], 2.0))
+  10000[6] <- Subtract(10000[3], Divide(TutorialData[99], 2.0))
+  10000[7] <- Add(Add(Multiply(TutorialData[96], Subtract(0.0, Divide(TutorialData[99], 2.0))), Multiply(TutorialData[97], 10000[6])), TutorialData[98])
+  10000[8] <- Add(Add(Multiply(TutorialData[96], Divide(TutorialData[99], 2.0)), Multiply(TutorialData[97], 10000[6])), TutorialData[98])
+  10000[9] <- Add(Add(Multiply(TutorialData[96], Subtract(0.0, Divide(TutorialData[99], 2.0))), Multiply(TutorialData[97], 10000[5])), TutorialData[98])
+  10000[10] <- Add(Add(Multiply(TutorialData[96], Divide(TutorialData[99], 2.0)), Multiply(TutorialData[97], 10000[5])), TutorialData[98])
+  Draw(14.0, Divide(Add(Add(Multiply(TutorialData[90], Subtract(0.0, Divide(TutorialData[99], 2.0))), Multiply(TutorialData[91], 10000[6])), TutorialData[92]), 10000[7]), Divide(Add(Add(Multiply(TutorialData[93], Subtract(0.0, Divide(TutorialData[99], 2.0))), Multiply(TutorialData[94], 10000[6])), TutorialData[95]), 10000[7]), Divide(Add(Add(Multiply(TutorialData[90], Subtract(0.0, Divide(TutorialData[99], 2.0))), Multiply(TutorialData[91], 10000[5])), TutorialData[92]), 10000[9]), Divide(Add(Add(Multiply(TutorialData[93], Subtract(0.0, Divide(TutorialData[99], 2.0))), Multiply(TutorialData[94], 10000[5])), TutorialData[95]), 10000[9]), Divide(Add(Add(Multiply(TutorialData[90], Add(0.0, Divide(TutorialData[99], 2.0))), Multiply(TutorialData[91], 10000[5])), TutorialData[92]), 10000[10]), Divide(Add(Add(Multiply(TutorialData[93], Add(0.0, Divide(TutorialData[99], 2.0))), Multiply(TutorialData[94], 10000[5])), TutorialData[95]), 10000[10]), Divide(Add(Add(Multiply(TutorialData[90], Add(0.0, Divide(TutorialData[99], 2.0))), Multiply(TutorialData[91], 10000[6])), TutorialData[92]), 10000[8]), Divide(Add(Add(Multiply(TutorialData[93], Add(0.0, Divide(TutorialData[99], 2.0))), Multiply(TutorialData[94], 10000[6])), TutorialData[95]), 10000[8]), Add(310000.0, 10000[3]), 10000[4])
   goto 236
 236:
-  10000[8] <- Lerp(TutorialData[102], 0.0, Remap(1.5, 3.0, 0.0, 1.0, 10000[5]))
-  10000[9] <- Clamp(10000[8], 0.0, TutorialData[102])
-  10000[10] <- Multiply(Remap(10000[8], 99.0, 0.0, 0.0, 10000[9]), TutorialData[100])
-  10000[11] <- Multiply(Remap(10000[8], 99.0, 0.0, 0.0, Clamp(99.0, 0.0, TutorialData[102])), TutorialData[100])
-  10000[12] <- Subtract(10000[10], Divide(TutorialData[99], 2.0))
-  10000[13] <- Add(10000[10], Divide(TutorialData[99], 2.0))
-  10000[14] <- Subtract(10000[11], Divide(TutorialData[99], 2.0))
-  10000[15] <- Add(10000[11], Divide(TutorialData[99], 2.0))
-  10000[16] <- Add(Add(Multiply(TutorialData[96], 10000[12]), Multiply(TutorialData[97], 10000[9])), TutorialData[98])
-  10000[17] <- Add(Add(Multiply(TutorialData[96], 10000[13]), Multiply(TutorialData[97], 10000[9])), TutorialData[98])
-  10000[18] <- Add(Add(Multiply(TutorialData[96], 10000[14]), Multiply(TutorialData[97], Clamp(99.0, 0.0, TutorialData[102]))), TutorialData[98])
-  10000[19] <- Add(Add(Multiply(TutorialData[96], 10000[15]), Multiply(TutorialData[97], Clamp(99.0, 0.0, TutorialData[102]))), TutorialData[98])
-  Draw(17.0, Divide(Add(Add(Multiply(TutorialData[90], 10000[12]), Multiply(TutorialData[91], 10000[9])), TutorialData[92]), 10000[16]), Divide(Add(Add(Multiply(TutorialData[93], 10000[12]), Multiply(TutorialData[94], 10000[9])), TutorialData[95]), 10000[16]), Divide(Add(Add(Multiply(TutorialData[90], 10000[14]), Multiply(TutorialData[91], Clamp(99.0, 0.0, TutorialData[102]))), TutorialData[92]), 10000[18]), Divide(Add(Add(Multiply(TutorialData[93], 10000[14]), Multiply(TutorialData[94], Clamp(99.0, 0.0, TutorialData[102]))), TutorialData[95]), 10000[18]), Divide(Add(Add(Multiply(TutorialData[90], 10000[15]), Multiply(TutorialData[91], Clamp(99.0, 0.0, TutorialData[102]))), TutorialData[92]), 10000[19]), Divide(Add(Add(Multiply(TutorialData[93], 10000[15]), Multiply(TutorialData[94], Clamp(99.0, 0.0, TutorialData[102]))), TutorialData[95]), 10000[19]), Divide(Add(Add(Multiply(TutorialData[90], 10000[13]), Multiply(TutorialData[91], 10000[9])), TutorialData[92]), 10000[17]), Divide(Add(Add(Multiply(TutorialData[93], 10000[13]), Multiply(TutorialData[94], 10000[9])), TutorialData[95]), 10000[17]), Add(100000.0, Min(10000[8], 99.0)), 0.8)
+  10000[3] <- Lerp(TutorialData[102], 0.0, Remap(1.5, 3.0, 0.0, 1.0, 10000[0]))
+  10000[4] <- Clamp(10000[3], 0.0, TutorialData[102])
+  10000[5] <- Multiply(Remap(10000[3], 99.0, 0.0, 0.0, 10000[4]), TutorialData[100])
+  10000[6] <- Multiply(Remap(10000[3], 99.0, 0.0, 0.0, Clamp(99.0, 0.0, TutorialData[102])), TutorialData[100])
+  10000[7] <- Subtract(10000[5], Divide(TutorialData[99], 2.0))
+  10000[8] <- Add(10000[5], Divide(TutorialData[99], 2.0))
+  10000[9] <- Subtract(10000[6], Divide(TutorialData[99], 2.0))
+  10000[10] <- Add(10000[6], Divide(TutorialData[99], 2.0))
+  10000[11] <- Add(Add(Multiply(TutorialData[96], 10000[7]), Multiply(TutorialData[97], 10000[4])), TutorialData[98])
+  10000[12] <- Add(Add(Multiply(TutorialData[96], 10000[8]), Multiply(TutorialData[97], 10000[4])), TutorialData[98])
+  10000[13] <- Add(Add(Multiply(TutorialData[96], 10000[9]), Multiply(TutorialData[97], Clamp(99.0, 0.0, TutorialData[102]))), TutorialData[98])
+  10000[14] <- Add(Add(Multiply(TutorialData[96], 10000[10]), Multiply(TutorialData[97], Clamp(99.0, 0.0, TutorialData[102]))), TutorialData[98])
+  Draw(17.0, Divide(Add(Add(Multiply(TutorialData[90], 10000[7]), Multiply(TutorialData[91], 10000[4])), TutorialData[92]), 10000[11]), Divide(Add(Add(Multiply(TutorialData[93], 10000[7]), Multiply(TutorialData[94], 10000[4])), TutorialData[95]), 10000[11]), Divide(Add(Add(Multiply(TutorialData[90], 10000[9]), Multiply(TutorialData[91], Clamp(99.0, 0.0, TutorialData[102]))), TutorialData[92]), 10000[13]), Divide(Add(Add(Multiply(TutorialData[93], 10000[9]), Multiply(TutorialData[94], Clamp(99.0, 0.0, TutorialData[102]))), TutorialData[95]), 10000[13]), Divide(Add(Add(Multiply(TutorialData[90], 10000[10]), Multiply(TutorialData[91], Clamp(99.0, 0.0, TutorialData[102]))), TutorialData[92]), 10000[14]), Divide(Add(Add(Multiply(TutorialData[93], 10000[10]), Multiply(TutorialData[94], Clamp(99.0, 0.0, TutorialData[102]))), TutorialData[95]), 10000[14]), Divide(Add(Add(Multiply(TutorialData[90], 10000[8]), Multiply(TutorialData[91], 10000[4])), TutorialData[92]), 10000[12]), Divide(Add(Add(Multiply(TutorialData[93], 10000[8]), Multiply(TutorialData[94], 10000[4])), TutorialData[95]), 10000[12]), Add(100000.0, Min(10000[3], 99.0)), 0.8)
   goto 237
 237:
-  goto 238 if LessOr(3.0, 10000[5]) else 260
+  goto 238 if LessOr(3.0, 10000[0]) else 260
 238:
-  goto 239 if Less(10000[5], 7.0) else 260
+  goto 239 if Less(10000[0], 7.0) else 260
 239:
   goto 240 if LessOr(0.0, TutorialData[103]) else 241
 240:
-  10000[8] <- 0.0
+  10000[3] <- 0.0
   goto 248
 241:
   goto 242 if LessOr(0.0, Add(TutorialData[103], 0.5)) else 243
 242:
-  10000[8] <- Remap(TutorialData[103], Add(TutorialData[103], 0.5), 0.0, 1.0, 0.0)
+  10000[3] <- Remap(TutorialData[103], Add(TutorialData[103], 0.5), 0.0, 1.0, 0.0)
   goto 248
 243:
   goto 244 if LessOr(0.0, Subtract(TutorialData[102], 0.5)) else 245
 244:
-  10000[8] <- Remap(Add(TutorialData[103], 0.5), Subtract(TutorialData[102], 0.5), 1.0, 1.0, 0.0)
+  10000[3] <- Remap(Add(TutorialData[103], 0.5), Subtract(TutorialData[102], 0.5), 1.0, 1.0, 0.0)
   goto 248
 245:
   goto 246 if LessOr(0.0, TutorialData[102]) else 247
 246:
-  10000[8] <- Remap(Subtract(TutorialData[102], 0.5), TutorialData[102], 1.0, 0.0, 0.0)
+  10000[3] <- Remap(Subtract(TutorialData[102], 0.5), TutorialData[102], 1.0, 0.0, 0.0)
   goto 248
 247:
-  10000[8] <- 0.0
+  10000[3] <- 0.0
   goto 248
 248:
-  10000[8] <- EaseOutQuad(10000[8])
-  goto 250 if LessOr(10000[8], 0.0) else 249
+  10000[3] <- EaseOutQuad(10000[3])
+  goto 250 if LessOr(10000[3], 0.0) else 249
 249:
-  Draw(14.0, Divide(Add(Add(Multiply(TutorialData[90], Subtract(0.0, Divide(TutorialData[99], 2.0))), Multiply(TutorialData[91], Subtract(0.0, Divide(TutorialData[99], 2.0)))), TutorialData[92]), Add(Add(Multiply(TutorialData[96], Subtract(0.0, Divide(TutorialData[99], 2.0))), Multiply(TutorialData[97], Subtract(0.0, Divide(TutorialData[99], 2.0)))), TutorialData[98])), Divide(Add(Add(Multiply(TutorialData[93], Subtract(0.0, Divide(TutorialData[99], 2.0))), Multiply(TutorialData[94], Subtract(0.0, Divide(TutorialData[99], 2.0)))), TutorialData[95]), Add(Add(Multiply(TutorialData[96], Subtract(0.0, Divide(TutorialData[99], 2.0))), Multiply(TutorialData[97], Subtract(0.0, Divide(TutorialData[99], 2.0)))), TutorialData[98])), Divide(Add(Add(Multiply(TutorialData[90], Subtract(0.0, Divide(TutorialData[99], 2.0))), Multiply(TutorialData[91], Add(0.0, Divide(TutorialData[99], 2.0)))), TutorialData[92]), Add(Add(Multiply(TutorialData[96], Subtract(0.0, Divide(TutorialData[99], 2.0))), Multiply(TutorialData[97], Add(0.0, Divide(TutorialData[99], 2.0)))), TutorialData[98])), Divide(Add(Add(Multiply(TutorialData[93], Subtract(0.0, Divide(TutorialData[99], 2.0))), Multiply(TutorialData[94], Add(0.0, Divide(TutorialData[99], 2.0)))), TutorialData[95]), Add(Add(Multiply(TutorialData[96], Subtract(0.0, Divide(TutorialData[99], 2.0))), Multiply(TutorialData[97], Add(0.0, Divide(TutorialData[99], 2.0)))), TutorialData[98])), Divide(Add(Add(Multiply(TutorialData[90], Add(0.0, Divide(TutorialData[99], 2.0))), Multiply(TutorialData[91], Add(0.0, Divide(TutorialData[99], 2.0)))), TutorialData[92]), Add(Add(Multiply(TutorialData[96], Add(0.0, Divide(TutorialData[99], 2.0))), Multiply(TutorialData[97], Add(0.0, Divide(TutorialData[99], 2.0)))), TutorialData[98])), Divide(Add(Add(Multiply(TutorialData[93], Add(0.0, Divide(TutorialData[99], 2.0))), Multiply(TutorialData[94], Add(0.0, Divide(TutorialData[99], 2.0)))), TutorialData[95]), Add(Add(Multiply(TutorialData[96], Add(0.0, Divide(TutorialData[99], 2.0))), Multiply(TutorialData[97], Add(0.0, Divide(TutorialData[99], 2.0)))), TutorialData[98])), Divide(Add(Add(Multiply(TutorialData[90], Add(0.0, Divide(TutorialData[99], 2.0))), Multiply(TutorialData[91], Subtract(0.0, Divide(TutorialData[99], 2.0)))), TutorialData[92]), Add(Add(Multiply(TutorialData[96], Add(0.0, Divide(TutorialData[99], 2.0))), Multiply(TutorialData[97], Subtract(0.0, Divide(TutorialData[99], 2.0)))), TutorialData[98])), Divide(Add(Add(Multiply(TutorialData[93], Add(0.0, Divide(TutorialData[99], 2.0))), Multiply(TutorialData[94], Subtract(0.0, Divide(TutorialData[99], 2.0)))), TutorialData[95]), Add(Add(Multiply(TutorialData[96], Add(0.0, Divide(TutorialData[99], 2.0))), Multiply(TutorialData[97], Subtract(0.0, Divide(TutorialData[99], 2.0)))), TutorialData[98])), 310000.0, 10000[8])
+  Draw(14.0, Divide(Add(Add(Multiply(TutorialData[90], Subtract(0.0, Divide(TutorialData[99], 2.0))), Multiply(TutorialData[91], Subtract(0.0, Divide(TutorialData[99], 2.0)))), TutorialData[92]), Add(Add(Multiply(TutorialData[96], Subtract(0.0, Divide(TutorialData[99], 2.0))), Multiply(TutorialData[97], Subtract(0.0, Divide(TutorialData[99], 2.0)))), TutorialData[98])), Divide(Add(Add(Multiply(TutorialData[93], Subtract(0.0, Divide(TutorialData[99], 2.0))), Multiply(TutorialData[94], Subtract(0.0, Divide(TutorialData[99], 2.0)))), TutorialData[95]), Add(Add(Multiply(TutorialData[96], Subtract(0.0, Divide(TutorialData[99], 2.0))), Multiply(TutorialData[97], Subtract(0.0, Divide(TutorialData[99], 2.0)))), TutorialData[98])), Divide(Add(Add(Multiply(TutorialData[90], Subtract(0.0, Divide(TutorialData[99], 2.0))), Multiply(TutorialData[91], Add(0.0, Divide(TutorialData[99], 2.0)))), TutorialData[92]), Add(Add(Multiply(TutorialData[96], Subtract(0.0, Divide(TutorialData[99], 2.0))), Multiply(TutorialData[97], Add(0.0, Divide(TutorialData[99], 2.0)))), TutorialData[98])), Divide(Add(Add(Multiply(TutorialData[93], Subtract(0.0, Divide(TutorialData[99], 2.0))), Multiply(TutorialData[94], Add(0.0, Divide(TutorialData[99], 2.0)))), TutorialData[95]), Add(Add(Multiply(TutorialData[96], Subtract(0.0, Divide(TutorialData[99], 2.0))), Multiply(TutorialData[97], Add(0.0, Divide(TutorialData[99], 2.0)))), TutorialData[98])), Divide(Add(Add(Multiply(TutorialData[90], Add(0.0, Divide(TutorialData[99], 2.0))), Multiply(TutorialData[91], Add(0.0, Divide(TutorialData[99], 2.0)))), TutorialData[92]), Add(Add(Multiply(TutorialData[96], Add(0.0, Divide(TutorialData[99], 2.0))), Multiply(TutorialData[97], Add(0.0, Divide(TutorialData[99], 2.0)))), TutorialData[98])), Divide(Add(Add(Multiply(TutorialData[93], Add(0.0, Divide(TutorialData[99], 2.0))), Multiply(TutorialData[94], Add(0.0, Divide(TutorialData[99], 2.0)))), TutorialData[95]), Add(Add(Multiply(TutorialData[96], Add(0.0, Divide(TutorialData[99], 2.0))), Multiply(TutorialData[97], Add(0.0, Divide(TutorialData[99], 2.0)))), TutorialData[98])), Divide(Add(Add(Multiply(TutorialData[90], Add(0.0, Divide(TutorialData[99], 2.0))), Multiply(TutorialData[91], Subtract(0.0, Divide(TutorialData[99], 2.0)))), TutorialData[92]), Add(Add(Multiply(TutorialData[96], Add(0.0, Divide(TutorialData[99], 2.0))), Multiply(TutorialData[97], Subtract(0.0, Divide(TutorialData[99], 2.0)))), TutorialData[98])), Divide(Add(Add(Multiply(TutorialData[93], Add(0.0, Divide(TutorialData[99], 2.0))), Multiply(TutorialData[94], Subtract(0.0, Divide(TutorialData[99], 2.0)))), TutorialData[95]), Add(Add(Multiply(TutorialData[96], Add(0.0, Divide(TutorialData[99], 2.0))), Multiply(TutorialData[97], Subtract(0.0, Divide(TutorialData[99], 2.0)))), TutorialData[98])), 310000.0, 10000[3])
   goto 250
 250:
   Draw(17.0, Divide(Add(Add(Multiply(TutorialData[90], Subtract(Multiply(Remap(0.0, 99.0, 0.0, 0.0, Clamp(0.0, 0.0, TutorialData[102])), TutorialData[100]), Divide(TutorialData[99], 2.0))), Multiply(TutorialData[91], Clamp(0.0, 0.0, TutorialData[102]))), TutorialData[92]), Add(Add(Multiply(TutorialData[96], Subtract(Multiply(Remap(0.0, 99.0, 0.0, 0.0, Clamp(0.0, 0.0, TutorialData[102])), TutorialData[100]), Divide(TutorialData[99], 2.0))), Multiply(TutorialData[97], Clamp(0.0, 0.0, TutorialData[102]))), TutorialData[98])), Divide(Add(Add(Multiply(TutorialData[93], Subtract(Multiply(Remap(0.0, 99.0, 0.0, 0.0, Clamp(0.0, 0.0, TutorialData[102])), TutorialData[100]), Divide(TutorialData[99], 2.0))), Multiply(TutorialData[94], Clamp(0.0, 0.0, TutorialData[102]))), TutorialData[95]), Add(Add(Multiply(TutorialData[96], Subtract(Multiply(Remap(0.0, 99.0, 0.0, 0.0, Clamp(0.0, 0.0, TutorialData[102])), TutorialData[100]), Divide(TutorialData[99], 2.0))), Multiply(TutorialData[97], Clamp(0.0, 0.0, TutorialData[102]))), TutorialData[98])), Divide(Add(Add(Multiply(TutorialData[90], Subtract(Multiply(Remap(0.0, 99.0, 0.0, 0.0, Clamp(99.0, 0.0, TutorialData[102])), TutorialData[100]), Divide(TutorialData[99], 2.0))), Multiply(TutorialData[91], Clamp(99.0, 0.0, TutorialData[102]))), TutorialData[92]), Add(Add(Multiply(TutorialData[96], Subtract(Multiply(Remap(0.0, 99.0, 0.0, 0.0, Clamp(99.0, 0.0, TutorialData[102])), TutorialData[100]), Divide(TutorialData[99], 2.0))), Multiply(TutorialData[97], Clamp(99.0, 0.0, TutorialData[102]))), TutorialData[98])), Divide(Add(Add(Multiply(TutorialData[93], Subtract(Multiply(Remap(0.0, 99.0, 0.0, 0.0, Clamp(99.0, 0.0, TutorialData[102])), TutorialData[100]), Divide(TutorialData[99], 2.0))), Multiply(TutorialData[94], Clamp(99.0, 0.0, TutorialData[102]))), TutorialData[95]), Add(Add(Multiply(TutorialData[96], Subtract(Multiply(Remap(0.0, 99.0, 0.0, 0.0, Clamp(99.0, 0.0, TutorialData[102])), TutorialData[100]), Divide(TutorialData[99], 2.0))), Multiply(TutorialData[97], Clamp(99.0, 0.0, TutorialData[102]))), TutorialData[98])), Divide(Add(Add(Multiply(TutorialData[90], Add(Multiply(Remap(0.0, 99.0, 0.0, 0.0, Clamp(99.0, 0.0, TutorialData[102])), TutorialData[100]), Divide(TutorialData[99], 2.0))), Multiply(TutorialData[91], Clamp(99.0, 0.0, TutorialData[102]))), TutorialData[92]), Add(Add(Multiply(TutorialData[96], Add(Multiply(Remap(0.0, 99.0, 0.0, 0.0, Clamp(99.0, 0.0, TutorialData[102])), TutorialData[100]), Divide(TutorialData[99], 2.0))), Multiply(TutorialData[97], Clamp(99.0, 0.0, TutorialData[102]))), TutorialData[98])), Divide(Add(Add(Multiply(TutorialData[93], Add(Multiply(Remap(0.0, 99.0, 0.0, 0.0, Clamp(99.0, 0.0, TutorialData[102])), TutorialData[100]), Divide(TutorialData[99], 2.0))), Multiply(TutorialData[94], Clamp(99.0, 0.0, TutorialData[102]))), TutorialData[95]), Add(Add(Multiply(TutorialData[96], Add(Multiply(Remap(0.0, 99.0, 0.0, 0.0, Clamp(99.0, 0.0, TutorialData[102])), TutorialData[100]), Divide(TutorialData[99], 2.0))), Multiply(TutorialData[97], Clamp(99.0, 0.0, TutorialData[102]))), TutorialData[98])), Divide(Add(Add(Multiply(TutorialData[90], Add(Multiply(Remap(0.0, 99.0, 0.0, 0.0, Clamp(0.0, 0.0, TutorialData[102])), TutorialData[100]), Divide(TutorialData[99], 2.0))), Multiply(TutorialData[91], Clamp(0.0, 0.0, TutorialData[102]))), TutorialData[92]), Add(Add(Multiply(TutorialData[96], Add(Multiply(Remap(0.0, 99.0, 0.0, 0.0, Clamp(0.0, 0.0, TutorialData[102])), TutorialData[100]), Divide(TutorialData[99], 2.0))), Multiply(TutorialData[97], Clamp(0.0, 0.0, TutorialData[102]))), TutorialData[98])), Divide(Add(Add(Multiply(TutorialData[93], Add(Multiply(Remap(0.0, 99.0, 0.0, 0.0, Clamp(0.0, 0.0, TutorialData[102])), TutorialData[100]), Divide(TutorialData[99], 2.0))), Multiply(TutorialData[94], Clamp(0.0, 0.0, TutorialData[102]))), TutorialData[95]), Add(Add(Multiply(TutorialData[96], Add(Multiply(Remap(0.0, 99.0, 0.0, 0.0, Clamp(0.0, 0.0, TutorialData[102])), TutorialData[100]), Divide(TutorialData[99], 2.0))), Multiply(TutorialData[97], Clamp(0.0, 0.0, TutorialData[102]))), TutorialData[98])), 100000.0, 0.8)
-  10000[8] <- Mod(Multiply(RemapClamped(3.0, 7.0, 0.0, 1.0, 10000[5]), 4.0), 1.0)
-  10000[9] <- 10000[8]
-  goto 251 if LessOr(10000[8], 0.0) else 252
+  10000[3] <- Mod(Multiply(RemapClamped(3.0, 7.0, 0.0, 1.0, 10000[0]), 4.0), 1.0)
+  10000[4] <- 10000[3]
+  goto 251 if LessOr(10000[3], 0.0) else 252
 251:
-  10000[10] <- 0.0
-  goto 255 if LessOr(10000[8], 0.25) else 256
+  10000[5] <- 0.0
+  goto 255 if LessOr(10000[3], 0.25) else 256
 252:
-  goto 253 if LessOr(10000[8], 0.25) else 254
+  goto 253 if LessOr(10000[3], 0.25) else 254
 253:
-  10000[10] <- Remap(0.0, 0.25, 0.0, 1.0, 10000[8])
-  goto 255 if LessOr(10000[8], 0.25) else 256
+  10000[5] <- Remap(0.0, 0.25, 0.0, 1.0, 10000[3])
+  goto 255 if LessOr(10000[3], 0.25) else 256
 254:
-  10000[10] <- 1.0
-  goto 255 if LessOr(10000[8], 0.25) else 256
+  10000[5] <- 1.0
+  goto 255 if LessOr(10000[3], 0.25) else 256
 255:
-  10000[11] <- 0.0
+  10000[6] <- 0.0
   goto 259
 256:
-  goto 257 if LessOr(10000[9], 0.75) else 258
+  goto 257 if LessOr(10000[4], 0.75) else 258
 257:
-  10000[11] <- Remap(0.25, 0.75, 0.0, 1.0, 10000[9])
+  10000[6] <- Remap(0.25, 0.75, 0.0, 1.0, 10000[4])
   goto 259
 258:
-  10000[11] <- 1.0
+  10000[6] <- 1.0
   goto 259
 259:
-  10000[11] <- LerpClamped(0.5235987755982988, 1.0471975511965976, 10000[11])
-  Paint(0.0, Add(Multiply(Multiply(Subtract(0, Multiply(1.0, Sin(10000[11]))), 0.25), RuntimeUIConfiguration[4]), Add(Multiply(0.8660254037844386, Multiply(0.25, RuntimeUIConfiguration[4])), Divide(Add(0, TutorialData[92]), Add(0, TutorialData[98])))), Add(Multiply(Multiply(Add(0, Multiply(1.0, Cos(10000[11]))), 0.25), RuntimeUIConfiguration[4]), Add(Multiply(-0.5000000000000001, Multiply(0.25, RuntimeUIConfiguration[4])), Divide(Add(0, TutorialData[95]), Add(0, TutorialData[98])))), Multiply(0.25, RuntimeUIConfiguration[4]), Divide(Multiply(180.0, 10000[11]), 3.141592653589793), 0.0, Multiply(10000[10], RuntimeUIConfiguration[5]))
+  10000[6] <- LerpClamped(0.5235987755982988, 1.0471975511965976, 10000[6])
+  Paint(0.0, Add(Multiply(Multiply(Subtract(0, Multiply(1.0, Sin(10000[6]))), 0.25), RuntimeUIConfiguration[4]), Add(Multiply(0.8660254037844386, Multiply(0.25, RuntimeUIConfiguration[4])), Divide(Add(0, TutorialData[92]), Add(0, TutorialData[98])))), Add(Multiply(Multiply(Add(0, Multiply(1.0, Cos(10000[6]))), 0.25), RuntimeUIConfiguration[4]), Add(Multiply(-0.5000000000000001, Multiply(0.25, RuntimeUIConfiguration[4])), Divide(Add(0, TutorialData[95]), Add(0, TutorialData[98])))), Multiply(0.25, RuntimeUIConfiguration[4]), Divide(Multiply(180.0, 10000[6]), 3.141592653589793), 0.0, Multiply(10000[5], RuntimeUIConfiguration[5]))
   TutorialInstruction[0] <- 2.0
   goto 260
 260:
-  goto 261 if Less(Subtract(10000[6], 10000[7]), 7.0) else 268
+  goto 261 if Less(Subtract(10000[1], 10000[2]), 7.0) else 268
 261:
-  goto 262 if LessOr(7.0, 10000[5]) else 268
+  goto 262 if LessOr(7.0, 10000[0]) else 268
 262:
   SpawnParticleEffect(3.0, Divide(Add(Add(Multiply(TutorialData[90], Negate(Divide(TutorialData[99], 2.0))), 0), TutorialData[92]), Add(Add(Multiply(TutorialData[96], Negate(Divide(TutorialData[99], 2.0))), 0), TutorialData[98])), Divide(Add(Add(Multiply(TutorialData[93], Negate(Divide(TutorialData[99], 2.0))), 0), TutorialData[95]), Add(Add(Multiply(TutorialData[96], Negate(Divide(TutorialData[99], 2.0))), 0), TutorialData[98])), Add(Divide(Add(Add(Multiply(TutorialData[90], Negate(Divide(TutorialData[99], 2.0))), 0), TutorialData[92]), Add(Add(Multiply(TutorialData[96], Negate(Divide(TutorialData[99], 2.0))), 0), TutorialData[98])), 0.0), Add(Divide(Add(Add(Multiply(TutorialData[93], Negate(Divide(TutorialData[99], 2.0))), 0), TutorialData[95]), Add(Add(Multiply(TutorialData[96], Negate(Divide(TutorialData[99], 2.0))), 0), TutorialData[98])), Power(Add(Power(Subtract(Divide(Add(Multiply(TutorialData[90], Divide(TutorialData[99], 2.0)), TutorialData[92]), Add(Multiply(TutorialData[96], Divide(TutorialData[99], 2.0)), TutorialData[98])), Divide(Add(Multiply(TutorialData[90], Negate(Divide(TutorialData[99], 2.0))), TutorialData[92]), Add(Multiply(TutorialData[96], Negate(Divide(TutorialData[99], 2.0))), TutorialData[98]))), 2.0), Power(Subtract(Divide(Add(Multiply(TutorialData[93], Divide(TutorialData[99], 2.0)), TutorialData[95]), Add(Multiply(TutorialData[96], Divide(TutorialData[99], 2.0)), TutorialData[98])), Divide(Add(Multiply(TutorialData[93], Negate(Divide(TutorialData[99], 2.0))), TutorialData[95]), Add(Multiply(TutorialData[96], Negate(Divide(TutorialData[99], 2.0))), TutorialData[98]))), 2.0)), 0.5)), Add(Divide(Add(Add(Multiply(TutorialData[90], Divide(TutorialData[99], 2.0)), 0), TutorialData[92]), Add(Add(Multiply(TutorialData[96], Divide(TutorialData[99], 2.0)), 0), TutorialData[98])), 0.0), Add(Divide(Add(Add(Multiply(TutorialData[93], Divide(TutorialData[99], 2.0)), 0), TutorialData[95]), Add(Add(Multiply(TutorialData[96], Divide(TutorialData[99], 2.0)), 0), TutorialData[98])), Power(Add(Power(Subtract(Divide(Add(Multiply(TutorialData[90], Divide(TutorialData[99], 2.0)), TutorialData[92]), Add(Multiply(TutorialData[96], Divide(TutorialData[99], 2.0)), TutorialData[98])), Divide(Add(Multiply(TutorialData[90], Negate(Divide(TutorialData[99], 2.0))), TutorialData[92]), Add(Multiply(TutorialData[96], Negate(Divide(TutorialData[99], 2.0))), TutorialData[98]))), 2.0), Power(Subtract(Divide(Add(Multiply(TutorialData[93], Divide(TutorialData[99], 2.0)), TutorialData[95]), Add(Multiply(TutorialData[96], Divide(TutorialData[99], 2.0)), TutorialData[98])), Divide(Add(Multiply(TutorialData[93], Negate(Divide(TutorialData[99], 2.0))), TutorialData[95]), Add(Multiply(TutorialData[96], Negate(Divide(TutorialData[99], 2.0))), TutorialData[98]))), 2.0)), 0.5)), Divide(Add(Add(Multiply(TutorialData[90], Divide(TutorialData[99], 2.0)), 0), TutorialData[92]), Add(Add(Multiply(TutorialData[96], Divide(TutorialData[99], 2.0)), 0), TutorialData[98])), Divide(Add(Add(Multiply(TutorialData[93], Divide(TutorialData[99], 2.0)), 0), TutorialData[95]), Add(Add(Multiply(TutorialData[96], Divide(TutorialData[99], 2.0)), 0), TutorialData[98])), 0.5, 0.0)
   SpawnParticleEffect(4.0, Subtract(Divide(Add(Divide(Add(Add(Multiply(TutorialData[90], Subtract(0.0, Divide(Multiply(TutorialData[99], 1.8), 2.0))), Multiply(TutorialData[91], Subtract(0.0, Divide(Multiply(TutorialData[99], 1.8), 2.0)))), TutorialData[92]), Add(Add(Multiply(TutorialData[96], Subtract(0.0, Divide(Multiply(TutorialData[99], 1.8), 2.0))), Multiply(TutorialData[97], Subtract(0.0, Divide(Multiply(TutorialData[99], 1.8), 2.0)))), TutorialData[98])), Divide(Add(Add(Multiply(TutorialData[90], Divide(Multiply(TutorialData[99], 1.8), 2.0)), Multiply(TutorialData[91], Subtract(0.0, Divide(Multiply(TutorialData[99], 1.8), 2.0)))), TutorialData[92]), Add(Add(Multiply(TutorialData[96], Divide(Multiply(TutorialData[99], 1.8), 2.0)), Multiply(TutorialData[97], Subtract(0.0, Divide(Multiply(TutorialData[99], 1.8), 2.0)))), TutorialData[98]))), 2.0), Divide(Divide(Subtract(Add(Subtract(Divide(Add(Add(Multiply(TutorialData[90], Divide(Multiply(TutorialData[99], 1.8), 2.0)), Multiply(TutorialData[91], Divide(Multiply(TutorialData[99], 1.8), 2.0))), TutorialData[92]), Add(Add(Multiply(TutorialData[96], Divide(Multiply(TutorialData[99], 1.8), 2.0)), Multiply(TutorialData[97], Divide(Multiply(TutorialData[99], 1.8), 2.0))), TutorialData[98])), Divide(Add(Add(Multiply(TutorialData[90], Subtract(0.0, Divide(Multiply(TutorialData[99], 1.8), 2.0))), Multiply(TutorialData[91], Divide(Multiply(TutorialData[99], 1.8), 2.0))), TutorialData[92]), Add(Add(Multiply(TutorialData[96], Subtract(0.0, Divide(Multiply(TutorialData[99], 1.8), 2.0))), Multiply(TutorialData[97], Divide(Multiply(TutorialData[99], 1.8), 2.0))), TutorialData[98]))), Divide(Add(Add(Multiply(TutorialData[90], Divide(Multiply(TutorialData[99], 1.8), 2.0)), Multiply(TutorialData[91], Subtract(0.0, Divide(Multiply(TutorialData[99], 1.8), 2.0)))), TutorialData[92]), Add(Add(Multiply(TutorialData[96], Divide(Multiply(TutorialData[99], 1.8), 2.0)), Multiply(TutorialData[97], Subtract(0.0, Divide(Multiply(TutorialData[99], 1.8), 2.0)))), TutorialData[98]))), Divide(Add(Add(Multiply(TutorialData[90], Subtract(0.0, Divide(Multiply(TutorialData[99], 1.8), 2.0))), Multiply(TutorialData[91], Subtract(0.0, Divide(Multiply(TutorialData[99], 1.8), 2.0)))), TutorialData[92]), Add(Add(Multiply(TutorialData[96], Subtract(0.0, Divide(Multiply(TutorialData[99], 1.8), 2.0))), Multiply(TutorialData[97], Subtract(0.0, Divide(Multiply(TutorialData[99], 1.8), 2.0)))), TutorialData[98]))), 2.0), 2.0)), Divide(Add(Add(Multiply(TutorialData[93], Subtract(0.0, Divide(Multiply(TutorialData[99], 1.8), 2.0))), Multiply(TutorialData[94], Subtract(0.0, Divide(Multiply(TutorialData[99], 1.8), 2.0)))), TutorialData[95]), Add(Add(Multiply(TutorialData[96], Subtract(0.0, Divide(Multiply(TutorialData[99], 1.8), 2.0))), Multiply(TutorialData[97], Subtract(0.0, Divide(Multiply(TutorialData[99], 1.8), 2.0)))), TutorialData[98])), Subtract(Divide(Add(Divide(Add(Add(Multiply(TutorialData[90], Subtract(0.0, Divide(Multiply(TutorialData[99], 1.8), 2.0))), Multiply(TutorialData[91], Divide(Multiply(TutorialData[99], 1.8), 2.0))), TutorialData[92]), Add(Add(Multiply(TutorialData[96], Subtract(0.0, Divide(Multiply(TutorialData[99], 1.8), 2.0))), Multiply(TutorialData[97], Divide(Multiply(TutorialData[99], 1.8), 2.0))), TutorialData[98])), Divide(Add(Add(Multiply(TutorialData[90], Divide(Multiply(TutorialData[99], 1.8), 2.0)), Multiply(TutorialData[91], Divide(Multiply(TutorialData[99], 1.8), 2.0))), TutorialData[92]), Add(Add(Multiply(TutorialData[96], Divide(Multiply(TutorialData[99], 1.8), 2.0)), Multiply(TutorialData[97], Divide(Multiply(TutorialData[99], 1.8), 2.0))), TutorialData[98]))), 2.0), Divide(Divide(Subtract(Add(Subtract(Divide(Add(Add(Multiply(TutorialData[90], Divide(Multiply(TutorialData[99], 1.8), 2.0)), Multiply(TutorialData[91], Divide(Multiply(TutorialData[99], 1.8), 2.0))), TutorialData[92]), Add(Add(Multiply(TutorialData[96], Divide(Multiply(TutorialData[99], 1.8), 2.0)), Multiply(TutorialData[97], Divide(Multiply(TutorialData[99], 1.8), 2.0))), TutorialData[98])), Divide(Add(Add(Multiply(TutorialData[90], Subtract(0.0, Divide(Multiply(TutorialData[99], 1.8), 2.0))), Multiply(TutorialData[91], Divide(Multiply(TutorialData[99], 1.8), 2.0))), TutorialData[92]), Add(Add(Multiply(TutorialData[96], Subtract(0.0, Divide(Multiply(TutorialData[99], 1.8), 2.0))), Multiply(TutorialData[97], Divide(Multiply(TutorialData[99], 1.8), 2.0))), TutorialData[98]))), Divide(Add(Add(Multiply(TutorialData[90], Divide(Multiply(TutorialData[99], 1.8), 2.0)), Multiply(TutorialData[91], Subtract(0.0, Divide(Multiply(TutorialData[99], 1.8), 2.0)))), TutorialData[92]), Add(Add(Multiply(TutorialData[96], Divide(Multiply(TutorialData[99], 1.8), 2.0)), Multiply(TutorialData[97], Subtract(0.0, Divide(Multiply(TutorialData[99], 1.8), 2.0)))), TutorialData[98]))), Divide(Add(Add(Multiply(TutorialData[90], Subtract(0.0, Divide(Multiply(TutorialData[99], 1.8), 2.0))), Multiply(TutorialData[91], Subtract(0.0, Divide(Multiply(TutorialData[99], 1.8), 2.0)))), TutorialData[92]), Add(Add(Multiply(TutorialData[96], Subtract(0.0, Divide(Multiply(TutorialData[99], 1.8), 2.0))), Multiply(TutorialData[97], Subtract(0.0, Divide(Multiply(TutorialData[99], 1.8), 2.0)))), TutorialData[98]))), 2.0), 2.0)), Divide(Add(Add(Multiply(TutorialData[93], Subtract(0.0, Divide(Multiply(TutorialData[99], 1.8), 2.0))), Multiply(TutorialData[94], Add(0.0, Divide(Multiply(TutorialData[99], 1.8), 2.0)))), TutorialData[95]), Add(Add(Multiply(TutorialData[96], Subtract(0.0, Divide(Multiply(TutorialData[99], 1.8), 2.0))), Multiply(TutorialData[97], Add(0.0, Divide(Multiply(TutorialData[99], 1.8), 2.0)))), TutorialData[98])), Add(Divide(Add(Divide(Add(Add(Multiply(TutorialData[90], Subtract(0.0, Divide(Multiply(TutorialData[99], 1.8), 2.0))), Multiply(TutorialData[91], Divide(Multiply(TutorialData[99], 1.8), 2.0))), TutorialData[92]), Add(Add(Multiply(TutorialData[96], Subtract(0.0, Divide(Multiply(TutorialData[99], 1.8), 2.0))), Multiply(TutorialData[97], Divide(Multiply(TutorialData[99], 1.8), 2.0))), TutorialData[98])), Divide(Add(Add(Multiply(TutorialData[90], Divide(Multiply(TutorialData[99], 1.8), 2.0)), Multiply(TutorialData[91], Divide(Multiply(TutorialData[99], 1.8), 2.0))), TutorialData[92]), Add(Add(Multiply(TutorialData[96], Divide(Multiply(TutorialData[99], 1.8), 2.0)), Multiply(TutorialData[97], Divide(Multiply(TutorialData[99], 1.8), 2.0))), TutorialData[98]))), 2.0), Divide(Divide(Subtract(Add(Subtract(Divide(Add(Add(Multiply(TutorialData[90], Divide(Multiply(TutorialData[99], 1.8), 2.0)), Multiply(TutorialData[91], Divide(Multiply(TutorialData[99], 1.8), 2.0))), TutorialData[92]), Add(Add(Multiply(TutorialData[96], Divide(Multiply(TutorialData[99], 1.8), 2.0)), Multiply(TutorialData[97], Divide(Multiply(TutorialData[99], 1.8), 2.0))), TutorialData[98])), Divide(Add(Add(Multiply(TutorialData[90], Subtract(0.0, Divide(Multiply(TutorialData[99], 1.8), 2.0))), Multiply(TutorialData[91], Divide(Multiply(TutorialData[99], 1.8), 2.0))), TutorialData[92]), Add(Add(Multiply(TutorialData[96], Subtract(0.0, Divide(Multiply(TutorialData[99], 1.8), 2.0))), Multiply(TutorialData[97], Divide(Multiply(TutorialData[99], 1.8), 2.0))), TutorialData[98]))), Divide(Add(Add(Multiply(TutorialData[90], Divide(Multiply(TutorialData[99], 1.8), 2.0)), Multiply(TutorialData[91], Subtract(0.0, Divide(Multiply(TutorialData[99], 1.8), 2.0)))), TutorialData[92]), Add(Add(Multiply(TutorialData[96], Divide(Multiply(TutorialData[99], 1.8), 2.0)), Multiply(TutorialData[97], Subtract(0.0, Divide(Multiply(TutorialData[99], 1.8), 2.0)))), TutorialData[98]))), Divide(Add(Add(Multiply(TutorialData[90], Subtract(0.0, Divide(Multiply(TutorialData[99], 1.8), 2.0))), Multiply(TutorialData[91], Subtract(0.0, Divide(Multiply(TutorialData[99], 1.8), 2.0)))), TutorialData[92]), Add(Add(Multiply(TutorialData[96], Subtract(0.0, Divide(Multiply(TutorialData[99], 1.8), 2.0))), Multiply(TutorialData[97], Subtract(0.0, Divide(Multiply(TutorialData[99], 1.8), 2.0)))), TutorialData[98]))), 2.0), 2.0)), Divide(Add(Add(Multiply(TutorialData[93], Add(0.0, Divide(Multiply(TutorialData[99], 1.8), 2.0))), Multiply(TutorialData[94], Add(0.0, Divide(Multiply(TutorialData[99], 1.8), 2.0)))), TutorialData[95]), Add(Add(Multiply(TutorialData[96], Add(0.0, Divide(Multiply(TutorialData[99], 1.8), 2.0))), Multiply(TutorialData[97], Add(0.0, Divide(Multiply(TutorialData[99], 1.8), 2.0)))), TutorialData[98])), Add(Divide(Add(Divide(Add(Add(Multiply(TutorialData[90], Subtract(0.0, Divide(Multiply(TutorialData[99], 1.8), 2.0))), Multiply(TutorialData[91], Subtract(0.0, Divide(Multiply(TutorialData[99], 1.8), 2.0)))), TutorialData[92]), Add(Add(Multiply(TutorialData[96], Subtract(0.0, Divide(Multiply(TutorialData[99], 1.8), 2.0))), Multiply(TutorialData[97], Subtract(0.0, Divide(Multiply(TutorialData[99], 1.8), 2.0)))), TutorialData[98])), Divide(Add(Add(Multiply(TutorialData[90], Divide(Multiply(TutorialData[99], 1.8), 2.0)), Multiply(TutorialData[91], Subtract(0.0, Divide(Multiply(TutorialData[99], 1.8), 2.0)))), TutorialData[92]), Add(Add(Multiply(TutorialData[96], Divide(Multiply(TutorialData[99], 1.8), 2.0)), Multiply(TutorialData[97], Subtract(0.0, Divide(Multiply(TutorialData[99], 1.8), 2.0)))), TutorialData[98]))), 2.0), Divide(Divide(Subtract(Add(Subtract(Divide(Add(Add(Multiply(TutorialData[90], Divide(Multiply(TutorialData[99], 1.8), 2.0)), Multiply(TutorialData[91], Divide(Multiply(TutorialData[99], 1.8), 2.0))), TutorialData[92]), Add(Add(Multiply(TutorialData[96], Divide(Multiply(TutorialData[99], 1.8), 2.0)), Multiply(TutorialData[97], Divide(Multiply(TutorialData[99], 1.8), 2.0))), TutorialData[98])), Divide(Add(Add(Multiply(TutorialData[90], Subtract(0.0, Divide(Multiply(TutorialData[99], 1.8), 2.0))), Multiply(TutorialData[91], Divide(Multiply(TutorialData[99], 1.8), 2.0))), TutorialData[92]), Add(Add(Multiply(TutorialData[96], Subtract(0.0, Divide(Multiply(TutorialData[99], 1.8), 2.0))), Multiply(TutorialData[97], Divide(Multiply(TutorialData[99], 1.8), 2.0))), TutorialData[98]))), Divide(Add(Add(Multiply(TutorialData[90], Divide(Multiply(TutorialData[99], 1.8), 2.0)), Multiply(TutorialData[91], Subtract(0.0, Divide(Multiply(TutorialData[99], 1.8), 2.0)))), TutorialData[92]), Add(Add(Multiply(TutorialData[96], Divide(Multiply(TutorialData[99], 1.8), 2.0)), Multiply(TutorialData[97], Subtract(0.0, Divide(Multiply(TutorialData[99], 1.8), 2.0)))), TutorialData[98]))), Divide(Add(Add(Multiply(TutorialData[90], Subtract(0.0, Divide(Multiply(TutorialData[99], 1.8), 2.0))), Multiply(TutorialData[91], Subtract(0.0, Divide(Multiply(TutorialData[99], 1.8), 2.0)))), TutorialData[92]), Add(Add(Multiply(TutorialData[96], Subtract(0.0, Divide(Multiply(TutorialData[99], 1.8), 2.0))), Multiply(TutorialData[97], Subtract(0.0, Divide(Multiply(TutorialData[99], 1.8), 2.0)))), TutorialData[98]))), 2.0), 2.0)), Divide(Add(Add(Multiply(TutorialData[93], Add(0.0, Divide(Multiply(TutorialData[99], 1.8), 2.0))), Multiply(TutorialData[94], Subtract(0.0, Divide(Multiply(TutorialData[99], 1.8), 2.0)))), TutorialData[95]), Add(Add(Multiply(TutorialData[96], Add(0.0, Divide(Multiply(TutorialData[99], 1.8), 2.0))), Multiply(TutorialData[97], Subtract(0.0, Divide(Multiply(TutorialData[99], 1.8), 2.0)))), TutorialData[98])), 0.5, 0.0)
-  10000[6] <- 0.0
+  10000[1] <- 0.0
   goto 263
 263:
-  goto 264 if Less(10000[6], TutorialData[0]) else 267
+  goto 264 if Less(10000[1], TutorialData[0]) else 267
 264:
-  10000[7] <- Add(10000[6], 1.0)
-  10000[8] <- Multiply(Add(10000[6], Multiply(Less(10000[6], 0.0), 7.0)), 9.0)
-  goto 265 if TutorialData[10000[8] + 1] else 266
+  10000[2] <- Add(10000[1], 1.0)
+  10000[3] <- Multiply(Add(10000[1], Multiply(Less(10000[1], 0.0), 7.0)), 9.0)
+  goto 265 if TutorialData[10000[3] + 1] else 266
 265:
-  10000[6] <- 10000[7]
+  10000[1] <- 10000[2]
   goto 263
 266:
-  SpawnParticleEffect(0.0, TutorialData[10000[8] + 2], TutorialData[10000[8] + 3], TutorialData[10000[8] + 4], TutorialData[10000[8] + 5], TutorialData[10000[8] + 6], TutorialData[10000[8] + 7], TutorialData[10000[8] + 8], TutorialData[10000[8] + 9], 0.2, 0.0)
+  SpawnParticleEffect(0.0, TutorialData[10000[3] + 2], TutorialData[10000[3] + 3], TutorialData[10000[3] + 4], TutorialData[10000[3] + 5], TutorialData[10000[3] + 6], TutorialData[10000[3] + 7], TutorialData[10000[3] + 8], TutorialData[10000[3] + 9], 0.2, 0.0)
   Play(1.0, 0.0)
   goto 268
 267:
@@ -1048,32 +1048,32 @@
   DebugPause()
   goto exit
 268:
-  goto 269 if LessOr(7.0, 10000[5]) else 276
+  goto 269 if LessOr(7.0, 10000[0]) else 276
 269:
-  goto 270 if Less(10000[5], 8.5) else 276
+  goto 270 if Less(10000[0], 8.5) else 276
 270:
   TutorialMemory[3] <- 1.0
   TutorialMemory[3] <- 1.0
-  10000[0] <- Subtract(Divide(Add(Divide(Add(Add(Multiply(TutorialData[90], Subtract(0.0, Divide(Multiply(TutorialData[99], 1.8), 2.0))), Multiply(TutorialData[91], Subtract(0.0, Divide(Multiply(TutorialData[99], 1.8), 2.0)))), TutorialData[92]), Add(Add(Multiply(TutorialData[96], Subtract(0.0, Divide(Multiply(TutorialData[99], 1.8), 2.0))), Multiply(TutorialData[97], Subtract(0.0, Divide(Multiply(TutorialData[99], 1.8), 2.0)))), TutorialData[98])), Divide(Add(Add(Multiply(TutorialData[90], Divide(Multiply(TutorialData[99], 1.8), 2.0)), Multiply(TutorialData[91], Subtract(0.0, Divide(Multiply(TutorialData[99], 1.8), 2.0)))), TutorialData[92]), Add(Add(Multiply(TutorialData[96], Divide(Multiply(TutorialData[99], 1.8), 2.0)), Multiply(TutorialData[97], Subtract(0.0, Divide(Multiply(TutorialData[99], 1.8), 2.0)))), TutorialData[98]))), 2.0), Divide(Divide(Subtract(Add(Subtract(Divide(Add(Add(Multiply(TutorialData[90], Divide(Multiply(TutorialData[99], 1.8), 2.0)), Multiply(TutorialData[91], Divide(Multiply(TutorialData[99], 1.8), 2.0))), TutorialData[92]), Add(Add(Multiply(TutorialData[96], Divide(Multiply(TutorialData[99], 1.8), 2.0)), Multiply(TutorialData[97], Divide(Multiply(TutorialData[99], 1.8), 2.0))), TutorialData[98])), Divide(Add(Add(Multiply(TutorialData[90], Subtract(0.0, Divide(Multiply(TutorialData[99], 1.8), 2.0))), Multiply(TutorialData[91], Divide(Multiply(TutorialData[99], 1.8), 2.0))), TutorialData[92]), Add(Add(Multiply(TutorialData[96], Subtract(0.0, Divide(Multiply(TutorialData[99], 1.8), 2.0))), Multiply(TutorialData[97], Divide(Multiply(TutorialData[99], 1.8), 2.0))), TutorialData[98]))), Divide(Add(Add(Multiply(TutorialData[90], Divide(Multiply(TutorialData[99], 1.8), 2.0)), Multiply(TutorialData[91], Subtract(0.0, Divide(Multiply(TutorialData[99], 1.8), 2.0)))), TutorialData[92]), Add(Add(Multiply(TutorialData[96], Divide(Multiply(TutorialData[99], 1.8), 2.0)), Multiply(TutorialData[97], Subtract(0.0, Divide(Multiply(TutorialData[99], 1.8), 2.0)))), TutorialData[98]))), Divide(Add(Add(Multiply(TutorialData[90], Subtract(0.0, Divide(Multiply(TutorialData[99], 1.8), 2.0))), Multiply(TutorialData[91], Subtract(0.0, Divide(Multiply(TutorialData[99], 1.8), 2.0)))), TutorialData[92]), Add(Add(Multiply(TutorialData[96], Subtract(0.0, Divide(Multiply(TutorialData[99], 1.8), 2.0))), Multiply(TutorialData[97], Subtract(0.0, Divide(Multiply(TutorialData[99], 1.8), 2.0)))), TutorialData[98]))), 2.0), 2.0))
-  10000[1] <- Add(Divide(Add(Divide(Add(Add(Multiply(TutorialData[90], Subtract(0.0, Divide(Multiply(TutorialData[99], 1.8), 2.0))), Multiply(TutorialData[91], Subtract(0.0, Divide(Multiply(TutorialData[99], 1.8), 2.0)))), TutorialData[92]), Add(Add(Multiply(TutorialData[96], Subtract(0.0, Divide(Multiply(TutorialData[99], 1.8), 2.0))), Multiply(TutorialData[97], Subtract(0.0, Divide(Multiply(TutorialData[99], 1.8), 2.0)))), TutorialData[98])), Divide(Add(Add(Multiply(TutorialData[90], Divide(Multiply(TutorialData[99], 1.8), 2.0)), Multiply(TutorialData[91], Subtract(0.0, Divide(Multiply(TutorialData[99], 1.8), 2.0)))), TutorialData[92]), Add(Add(Multiply(TutorialData[96], Divide(Multiply(TutorialData[99], 1.8), 2.0)), Multiply(TutorialData[97], Subtract(0.0, Divide(Multiply(TutorialData[99], 1.8), 2.0)))), TutorialData[98]))), 2.0), Divide(Divide(Subtract(Add(Subtract(Divide(Add(Add(Multiply(TutorialData[90], Divide(Multiply(TutorialData[99], 1.8), 2.0)), Multiply(TutorialData[91], Divide(Multiply(TutorialData[99], 1.8), 2.0))), TutorialData[92]), Add(Add(Multiply(TutorialData[96], Divide(Multiply(TutorialData[99], 1.8), 2.0)), Multiply(TutorialData[97], Divide(Multiply(TutorialData[99], 1.8), 2.0))), TutorialData[98])), Divide(Add(Add(Multiply(TutorialData[90], Subtract(0.0, Divide(Multiply(TutorialData[99], 1.8), 2.0))), Multiply(TutorialData[91], Divide(Multiply(TutorialData[99], 1.8), 2.0))), TutorialData[92]), Add(Add(Multiply(TutorialData[96], Subtract(0.0, Divide(Multiply(TutorialData[99], 1.8), 2.0))), Multiply(TutorialData[97], Divide(Multiply(TutorialData[99], 1.8), 2.0))), TutorialData[98]))), Divide(Add(Add(Multiply(TutorialData[90], Divide(Multiply(TutorialData[99], 1.8), 2.0)), Multiply(TutorialData[91], Subtract(0.0, Divide(Multiply(TutorialData[99], 1.8), 2.0)))), TutorialData[92]), Add(Add(Multiply(TutorialData[96], Divide(Multiply(TutorialData[99], 1.8), 2.0)), Multiply(TutorialData[97], Subtract(0.0, Divide(Multiply(TutorialData[99], 1.8), 2.0)))), TutorialData[98]))), Divide(Add(Add(Multiply(TutorialData[90], Subtract(0.0, Divide(Multiply(TutorialData[99], 1.8), 2.0))), Multiply(TutorialData[91], Subtract(0.0, Divide(Multiply(TutorialData[99], 1.8), 2.0)))), TutorialData[92]), Add(Add(Multiply(TutorialData[96], Subtract(0.0, Divide(Multiply(TutorialData[99], 1.8), 2.0))), Multiply(TutorialData[97], Subtract(0.0, Divide(Multiply(TutorialData[99], 1.8), 2.0)))), TutorialData[98]))), 2.0), 2.0))
-  10000[2] <- Subtract(Divide(Add(Divide(Add(Add(Multiply(TutorialData[90], Subtract(0.0, Divide(Multiply(TutorialData[99], 1.8), 2.0))), Multiply(TutorialData[91], Divide(Multiply(TutorialData[99], 1.8), 2.0))), TutorialData[92]), Add(Add(Multiply(TutorialData[96], Subtract(0.0, Divide(Multiply(TutorialData[99], 1.8), 2.0))), Multiply(TutorialData[97], Divide(Multiply(TutorialData[99], 1.8), 2.0))), TutorialData[98])), Divide(Add(Add(Multiply(TutorialData[90], Divide(Multiply(TutorialData[99], 1.8), 2.0)), Multiply(TutorialData[91], Divide(Multiply(TutorialData[99], 1.8), 2.0))), TutorialData[92]), Add(Add(Multiply(TutorialData[96], Divide(Multiply(TutorialData[99], 1.8), 2.0)), Multiply(TutorialData[97], Divide(Multiply(TutorialData[99], 1.8), 2.0))), TutorialData[98]))), 2.0), Divide(Divide(Subtract(Add(Subtract(Divide(Add(Add(Multiply(TutorialData[90], Divide(Multiply(TutorialData[99], 1.8), 2.0)), Multiply(TutorialData[91], Divide(Multiply(TutorialData[99], 1.8), 2.0))), TutorialData[92]), Add(Add(Multiply(TutorialData[96], Divide(Multiply(TutorialData[99], 1.8), 2.0)), Multiply(TutorialData[97], Divide(Multiply(TutorialData[99], 1.8), 2.0))), TutorialData[98])), Divide(Add(Add(Multiply(TutorialData[90], Subtract(0.0, Divide(Multiply(TutorialData[99], 1.8), 2.0))), Multiply(TutorialData[91], Divide(Multiply(TutorialData[99], 1.8), 2.0))), TutorialData[92]), Add(Add(Multiply(TutorialData[96], Subtract(0.0, Divide(Multiply(TutorialData[99], 1.8), 2.0))), Multiply(TutorialData[97], Divide(Multiply(TutorialData[99], 1.8), 2.0))), TutorialData[98]))), Divide(Add(Add(Multiply(TutorialData[90], Divide(Multiply(TutorialData[99], 1.8), 2.0)), Multiply(TutorialData[91], Subtract(0.0, Divide(Multiply(TutorialData[99], 1.8), 2.0)))), TutorialData[92]), Add(Add(Multiply(TutorialData[96], Divide(Multiply(TutorialData[99], 1.8), 2.0)), Multiply(TutorialData[97], Subtract(0.0, Divide(Multiply(TutorialData[99], 1.8), 2.0)))), TutorialData[98]))), Divide(Add(Add(Multiply(TutorialData[90], Subtract(0.0, Divide(Multiply(TutorialData[99], 1.8), 2.0))), Multiply(TutorialData[91], Subtract(0.0, Divide(Multiply(TutorialData[99], 1.8), 2.0)))), TutorialData[92]), Add(Add(Multiply(TutorialData[96], Subtract(0.0, Divide(Multiply(TutorialData[99], 1.8), 2.0))), Multiply(TutorialData[97], Subtract(0.0, Divide(Multiply(TutorialData[99], 1.8), 2.0)))), TutorialData[98]))), 2.0), 2.0))
-  10000[3] <- Add(Divide(Add(Divide(Add(Add(Multiply(TutorialData[90], Subtract(0.0, Divide(Multiply(TutorialData[99], 1.8), 2.0))), Multiply(TutorialData[91], Divide(Multiply(TutorialData[99], 1.8), 2.0))), TutorialData[92]), Add(Add(Multiply(TutorialData[96], Subtract(0.0, Divide(Multiply(TutorialData[99], 1.8), 2.0))), Multiply(TutorialData[97], Divide(Multiply(TutorialData[99], 1.8), 2.0))), TutorialData[98])), Divide(Add(Add(Multiply(TutorialData[90], Divide(Multiply(TutorialData[99], 1.8), 2.0)), Multiply(TutorialData[91], Divide(Multiply(TutorialData[99], 1.8), 2.0))), TutorialData[92]), Add(Add(Multiply(TutorialData[96], Divide(Multiply(TutorialData[99], 1.8), 2.0)), Multiply(TutorialData[97], Divide(Multiply(TutorialData[99], 1.8), 2.0))), TutorialData[98]))), 2.0), Divide(Divide(Subtract(Add(Subtract(Divide(Add(Add(Multiply(TutorialData[90], Divide(Multiply(TutorialData[99], 1.8), 2.0)), Multiply(TutorialData[91], Divide(Multiply(TutorialData[99], 1.8), 2.0))), TutorialData[92]), Add(Add(Multiply(TutorialData[96], Divide(Multiply(TutorialData[99], 1.8), 2.0)), Multiply(TutorialData[97], Divide(Multiply(TutorialData[99], 1.8), 2.0))), TutorialData[98])), Divide(Add(Add(Multiply(TutorialData[90], Subtract(0.0, Divide(Multiply(TutorialData[99], 1.8), 2.0))), Multiply(TutorialData[91], Divide(Multiply(TutorialData[99], 1.8), 2.0))), TutorialData[92]), Add(Add(Multiply(TutorialData[96], Subtract(0.0, Divide(Multiply(TutorialData[99], 1.8), 2.0))), Multiply(TutorialData[97], Divide(Multiply(TutorialData[99], 1.8), 2.0))), TutorialData[98]))), Divide(Add(Add(Multiply(TutorialData[90], Divide(Multiply(TutorialData[99], 1.8), 2.0)), Multiply(TutorialData[91], Subtract(0.0, Divide(Multiply(TutorialData[99], 1.8), 2.0)))), TutorialData[92]), Add(Add(Multiply(TutorialData[96], Divide(Multiply(TutorialData[99], 1.8), 2.0)), Multiply(TutorialData[97], Subtract(0.0, Divide(Multiply(TutorialData[99], 1.8), 2.0)))), TutorialData[98]))), Divide(Add(Add(Multiply(TutorialData[90], Subtract(0.0, Divide(Multiply(TutorialData[99], 1.8), 2.0))), Multiply(TutorialData[91], Subtract(0.0, Divide(Multiply(TutorialData[99], 1.8), 2.0)))), TutorialData[92]), Add(Add(Multiply(TutorialData[96], Subtract(0.0, Divide(Multiply(TutorialData[99], 1.8), 2.0))), Multiply(TutorialData[97], Subtract(0.0, Divide(Multiply(TutorialData[99], 1.8), 2.0)))), TutorialData[98]))), 2.0), 2.0))
-  10000[4] <- TutorialMemory[1]
-  goto 271 if 10000[4] else 272
+  10000[1] <- Subtract(Divide(Add(Divide(Add(Add(Multiply(TutorialData[90], Subtract(0.0, Divide(Multiply(TutorialData[99], 1.8), 2.0))), Multiply(TutorialData[91], Subtract(0.0, Divide(Multiply(TutorialData[99], 1.8), 2.0)))), TutorialData[92]), Add(Add(Multiply(TutorialData[96], Subtract(0.0, Divide(Multiply(TutorialData[99], 1.8), 2.0))), Multiply(TutorialData[97], Subtract(0.0, Divide(Multiply(TutorialData[99], 1.8), 2.0)))), TutorialData[98])), Divide(Add(Add(Multiply(TutorialData[90], Divide(Multiply(TutorialData[99], 1.8), 2.0)), Multiply(TutorialData[91], Subtract(0.0, Divide(Multiply(TutorialData[99], 1.8), 2.0)))), TutorialData[92]), Add(Add(Multiply(TutorialData[96], Divide(Multiply(TutorialData[99], 1.8), 2.0)), Multiply(TutorialData[97], Subtract(0.0, Divide(Multiply(TutorialData[99], 1.8), 2.0)))), TutorialData[98]))), 2.0), Divide(Divide(Subtract(Add(Subtract(Divide(Add(Add(Multiply(TutorialData[90], Divide(Multiply(TutorialData[99], 1.8), 2.0)), Multiply(TutorialData[91], Divide(Multiply(TutorialData[99], 1.8), 2.0))), TutorialData[92]), Add(Add(Multiply(TutorialData[96], Divide(Multiply(TutorialData[99], 1.8), 2.0)), Multiply(TutorialData[97], Divide(Multiply(TutorialData[99], 1.8), 2.0))), TutorialData[98])), Divide(Add(Add(Multiply(TutorialData[90], Subtract(0.0, Divide(Multiply(TutorialData[99], 1.8), 2.0))), Multiply(TutorialData[91], Divide(Multiply(TutorialData[99], 1.8), 2.0))), TutorialData[92]), Add(Add(Multiply(TutorialData[96], Subtract(0.0, Divide(Multiply(TutorialData[99], 1.8), 2.0))), Multiply(TutorialData[97], Divide(Multiply(TutorialData[99], 1.8), 2.0))), TutorialData[98]))), Divide(Add(Add(Multiply(TutorialData[90], Divide(Multiply(TutorialData[99], 1.8), 2.0)), Multiply(TutorialData[91], Subtract(0.0, Divide(Multiply(TutorialData[99], 1.8), 2.0)))), TutorialData[92]), Add(Add(Multiply(TutorialData[96], Divide(Multiply(TutorialData[99], 1.8), 2.0)), Multiply(TutorialData[97], Subtract(0.0, Divide(Multiply(TutorialData[99], 1.8), 2.0)))), TutorialData[98]))), Divide(Add(Add(Multiply(TutorialData[90], Subtract(0.0, Divide(Multiply(TutorialData[99], 1.8), 2.0))), Multiply(TutorialData[91], Subtract(0.0, Divide(Multiply(TutorialData[99], 1.8), 2.0)))), TutorialData[92]), Add(Add(Multiply(TutorialData[96], Subtract(0.0, Divide(Multiply(TutorialData[99], 1.8), 2.0))), Multiply(TutorialData[97], Subtract(0.0, Divide(Multiply(TutorialData[99], 1.8), 2.0)))), TutorialData[98]))), 2.0), 2.0))
+  10000[2] <- Add(Divide(Add(Divide(Add(Add(Multiply(TutorialData[90], Subtract(0.0, Divide(Multiply(TutorialData[99], 1.8), 2.0))), Multiply(TutorialData[91], Subtract(0.0, Divide(Multiply(TutorialData[99], 1.8), 2.0)))), TutorialData[92]), Add(Add(Multiply(TutorialData[96], Subtract(0.0, Divide(Multiply(TutorialData[99], 1.8), 2.0))), Multiply(TutorialData[97], Subtract(0.0, Divide(Multiply(TutorialData[99], 1.8), 2.0)))), TutorialData[98])), Divide(Add(Add(Multiply(TutorialData[90], Divide(Multiply(TutorialData[99], 1.8), 2.0)), Multiply(TutorialData[91], Subtract(0.0, Divide(Multiply(TutorialData[99], 1.8), 2.0)))), TutorialData[92]), Add(Add(Multiply(TutorialData[96], Divide(Multiply(TutorialData[99], 1.8), 2.0)), Multiply(TutorialData[97], Subtract(0.0, Divide(Multiply(TutorialData[99], 1.8), 2.0)))), TutorialData[98]))), 2.0), Divide(Divide(Subtract(Add(Subtract(Divide(Add(Add(Multiply(TutorialData[90], Divide(Multiply(TutorialData[99], 1.8), 2.0)), Multiply(TutorialData[91], Divide(Multiply(TutorialData[99], 1.8), 2.0))), TutorialData[92]), Add(Add(Multiply(TutorialData[96], Divide(Multiply(TutorialData[99], 1.8), 2.0)), Multiply(TutorialData[97], Divide(Multiply(TutorialData[99], 1.8), 2.0))), TutorialData[98])), Divide(Add(Add(Multiply(TutorialData[90], Subtract(0.0, Divide(Multiply(TutorialData[99], 1.8), 2.0))), Multiply(TutorialData[91], Divide(Multiply(TutorialData[99], 1.8), 2.0))), TutorialData[92]), Add(Add(Multiply(TutorialData[96], Subtract(0.0, Divide(Multiply(TutorialData[99], 1.8), 2.0))), Multiply(TutorialData[97], Divide(Multiply(TutorialData[99], 1.8), 2.0))), TutorialData[98]))), Divide(Add(Add(Multiply(TutorialData[90], Divide(Multiply(TutorialData[99], 1.8), 2.0)), Multiply(TutorialData[91], Subtract(0.0, Divide(Multiply(TutorialData[99], 1.8), 2.0)))), TutorialData[92]), Add(Add(Multiply(TutorialData[96], Divide(Multiply(TutorialData[99], 1.8), 2.0)), Multiply(TutorialData[97], Subtract(0.0, Divide(Multiply(TutorialData[99], 1.8), 2.0)))), TutorialData[98]))), Divide(Add(Add(Multiply(TutorialData[90], Subtract(0.0, Divide(Multiply(TutorialData[99], 1.8), 2.0))), Multiply(TutorialData[91], Subtract(0.0, Divide(Multiply(TutorialData[99], 1.8), 2.0)))), TutorialData[92]), Add(Add(Multiply(TutorialData[96], Subtract(0.0, Divide(Multiply(TutorialData[99], 1.8), 2.0))), Multiply(TutorialData[97], Subtract(0.0, Divide(Multiply(TutorialData[99], 1.8), 2.0)))), TutorialData[98]))), 2.0), 2.0))
+  10000[3] <- Subtract(Divide(Add(Divide(Add(Add(Multiply(TutorialData[90], Subtract(0.0, Divide(Multiply(TutorialData[99], 1.8), 2.0))), Multiply(TutorialData[91], Divide(Multiply(TutorialData[99], 1.8), 2.0))), TutorialData[92]), Add(Add(Multiply(TutorialData[96], Subtract(0.0, Divide(Multiply(TutorialData[99], 1.8), 2.0))), Multiply(TutorialData[97], Divide(Multiply(TutorialData[99], 1.8), 2.0))), TutorialData[98])), Divide(Add(Add(Multiply(TutorialData[90], Divide(Multiply(TutorialData[99], 1.8), 2.0)), Multiply(TutorialData[91], Divide(Multiply(TutorialData[99], 1.8), 2.0))), TutorialData[92]), Add(Add(Multiply(TutorialData[96], Divide(Multiply(TutorialData[99], 1.8), 2.0)), Multiply(TutorialData[97], Divide(Multiply(TutorialData[99], 1.8), 2.0))), TutorialData[98]))), 2.0), Divide(Divide(Subtract(Add(Subtract(Divide(Add(Add(Multiply(TutorialData[90], Divide(Multiply(TutorialData[99], 1.8), 2.0)), Multiply(TutorialData[91], Divide(Multiply(TutorialData[99], 1.8), 2.0))), TutorialData[92]), Add(Add(Multiply(TutorialData[96], Divide(Multiply(TutorialData[99], 1.8), 2.0)), Multiply(TutorialData[97], Divide(Multiply(TutorialData[99], 1.8), 2.0))), TutorialData[98])), Divide(Add(Add(Multiply(TutorialData[90], Subtract(0.0, Divide(Multiply(TutorialData[99], 1.8), 2.0))), Multiply(TutorialData[91], Divide(Multiply(TutorialData[99], 1.8), 2.0))), TutorialData[92]), Add(Add(Multiply(TutorialData[96], Subtract(0.0, Divide(Multiply(TutorialData[99], 1.8), 2.0))), Multiply(TutorialData[97], Divide(Multiply(TutorialData[99], 1.8), 2.0))), TutorialData[98]))), Divide(Add(Add(Multiply(TutorialData[90], Divide(Multiply(TutorialData[99], 1.8), 2.0)), Multiply(TutorialData[91], Subtract(0.0, Divide(Multiply(TutorialData[99], 1.8), 2.0)))), TutorialData[92]), Add(Add(Multiply(TutorialData[96], Divide(Multiply(TutorialData[99], 1.8), 2.0)), Multiply(TutorialData[97], Subtract(0.0, Divide(Multiply(TutorialData[99], 1.8), 2.0)))), TutorialData[98]))), Divide(Add(Add(Multiply(TutorialData[90], Subtract(0.0, Divide(Multiply(TutorialData[99], 1.8), 2.0))), Multiply(TutorialData[91], Subtract(0.0, Divide(Multiply(TutorialData[99], 1.8), 2.0)))), TutorialData[92]), Add(Add(Multiply(TutorialData[96], Subtract(0.0, Divide(Multiply(TutorialData[99], 1.8), 2.0))), Multiply(TutorialData[97], Subtract(0.0, Divide(Multiply(TutorialData[99], 1.8), 2.0)))), TutorialData[98]))), 2.0), 2.0))
+  10000[4] <- Add(Divide(Add(Divide(Add(Add(Multiply(TutorialData[90], Subtract(0.0, Divide(Multiply(TutorialData[99], 1.8), 2.0))), Multiply(TutorialData[91], Divide(Multiply(TutorialData[99], 1.8), 2.0))), TutorialData[92]), Add(Add(Multiply(TutorialData[96], Subtract(0.0, Divide(Multiply(TutorialData[99], 1.8), 2.0))), Multiply(TutorialData[97], Divide(Multiply(TutorialData[99], 1.8), 2.0))), TutorialData[98])), Divide(Add(Add(Multiply(TutorialData[90], Divide(Multiply(TutorialData[99], 1.8), 2.0)), Multiply(TutorialData[91], Divide(Multiply(TutorialData[99], 1.8), 2.0))), TutorialData[92]), Add(Add(Multiply(TutorialData[96], Divide(Multiply(TutorialData[99], 1.8), 2.0)), Multiply(TutorialData[97], Divide(Multiply(TutorialData[99], 1.8), 2.0))), TutorialData[98]))), 2.0), Divide(Divide(Subtract(Add(Subtract(Divide(Add(Add(Multiply(TutorialData[90], Divide(Multiply(TutorialData[99], 1.8), 2.0)), Multiply(TutorialData[91], Divide(Multiply(TutorialData[99], 1.8), 2.0))), TutorialData[92]), Add(Add(Multiply(TutorialData[96], Divide(Multiply(TutorialData[99], 1.8), 2.0)), Multiply(TutorialData[97], Divide(Multiply(TutorialData[99], 1.8), 2.0))), TutorialData[98])), Divide(Add(Add(Multiply(TutorialData[90], Subtract(0.0, Divide(Multiply(TutorialData[99], 1.8), 2.0))), Multiply(TutorialData[91], Divide(Multiply(TutorialData[99], 1.8), 2.0))), TutorialData[92]), Add(Add(Multiply(TutorialData[96], Subtract(0.0, Divide(Multiply(TutorialData[99], 1.8), 2.0))), Multiply(TutorialData[97], Divide(Multiply(TutorialData[99], 1.8), 2.0))), TutorialData[98]))), Divide(Add(Add(Multiply(TutorialData[90], Divide(Multiply(TutorialData[99], 1.8), 2.0)), Multiply(TutorialData[91], Subtract(0.0, Divide(Multiply(TutorialData[99], 1.8), 2.0)))), TutorialData[92]), Add(Add(Multiply(TutorialData[96], Divide(Multiply(TutorialData[99], 1.8), 2.0)), Multiply(TutorialData[97], Subtract(0.0, Divide(Multiply(TutorialData[99], 1.8), 2.0)))), TutorialData[98]))), Divide(Add(Add(Multiply(TutorialData[90], Subtract(0.0, Divide(Multiply(TutorialData[99], 1.8), 2.0))), Multiply(TutorialData[91], Subtract(0.0, Divide(Multiply(TutorialData[99], 1.8), 2.0)))), TutorialData[92]), Add(Add(Multiply(TutorialData[96], Subtract(0.0, Divide(Multiply(TutorialData[99], 1.8), 2.0))), Multiply(TutorialData[97], Subtract(0.0, Divide(Multiply(TutorialData[99], 1.8), 2.0)))), TutorialData[98]))), 2.0), 2.0))
+  10000[5] <- TutorialMemory[1]
+  goto 271 if 10000[5] else 272
 271:
-  10000[4] <- TutorialMemory[1]
-  MoveParticleEffect(10000[4], 10000[0], Divide(Add(Add(Multiply(TutorialData[93], Subtract(0.0, Divide(Multiply(TutorialData[99], 1.8), 2.0))), Multiply(TutorialData[94], Subtract(0.0, Divide(Multiply(TutorialData[99], 1.8), 2.0)))), TutorialData[95]), Add(Add(Multiply(TutorialData[96], Subtract(0.0, Divide(Multiply(TutorialData[99], 1.8), 2.0))), Multiply(TutorialData[97], Subtract(0.0, Divide(Multiply(TutorialData[99], 1.8), 2.0)))), TutorialData[98])), 10000[2], Divide(Add(Add(Multiply(TutorialData[93], Subtract(0.0, Divide(Multiply(TutorialData[99], 1.8), 2.0))), Multiply(TutorialData[94], Divide(Multiply(TutorialData[99], 1.8), 2.0))), TutorialData[95]), Add(Add(Multiply(TutorialData[96], Subtract(0.0, Divide(Multiply(TutorialData[99], 1.8), 2.0))), Multiply(TutorialData[97], Divide(Multiply(TutorialData[99], 1.8), 2.0))), TutorialData[98])), 10000[3], Divide(Add(Add(Multiply(TutorialData[93], Divide(Multiply(TutorialData[99], 1.8), 2.0)), Multiply(TutorialData[94], Divide(Multiply(TutorialData[99], 1.8), 2.0))), TutorialData[95]), Add(Add(Multiply(TutorialData[96], Divide(Multiply(TutorialData[99], 1.8), 2.0)), Multiply(TutorialData[97], Divide(Multiply(TutorialData[99], 1.8), 2.0))), TutorialData[98])), 10000[1], Divide(Add(Add(Multiply(TutorialData[93], Divide(Multiply(TutorialData[99], 1.8), 2.0)), Multiply(TutorialData[94], Subtract(0.0, Divide(Multiply(TutorialData[99], 1.8), 2.0)))), TutorialData[95]), Add(Add(Multiply(TutorialData[96], Divide(Multiply(TutorialData[99], 1.8), 2.0)), Multiply(TutorialData[97], Subtract(0.0, Divide(Multiply(TutorialData[99], 1.8), 2.0)))), TutorialData[98])))
+  10000[5] <- TutorialMemory[1]
+  MoveParticleEffect(10000[5], 10000[1], Divide(Add(Add(Multiply(TutorialData[93], Subtract(0.0, Divide(Multiply(TutorialData[99], 1.8), 2.0))), Multiply(TutorialData[94], Subtract(0.0, Divide(Multiply(TutorialData[99], 1.8), 2.0)))), TutorialData[95]), Add(Add(Multiply(TutorialData[96], Subtract(0.0, Divide(Multiply(TutorialData[99], 1.8), 2.0))), Multiply(TutorialData[97], Subtract(0.0, Divide(Multiply(TutorialData[99], 1.8), 2.0)))), TutorialData[98])), 10000[3], Divide(Add(Add(Multiply(TutorialData[93], Subtract(0.0, Divide(Multiply(TutorialData[99], 1.8), 2.0))), Multiply(TutorialData[94], Divide(Multiply(TutorialData[99], 1.8), 2.0))), TutorialData[95]), Add(Add(Multiply(TutorialData[96], Subtract(0.0, Divide(Multiply(TutorialData[99], 1.8), 2.0))), Multiply(TutorialData[97], Divide(Multiply(TutorialData[99], 1.8), 2.0))), TutorialData[98])), 10000[4], Divide(Add(Add(Multiply(TutorialData[93], Divide(Multiply(TutorialData[99], 1.8), 2.0)), Multiply(TutorialData[94], Divide(Multiply(TutorialData[99], 1.8), 2.0))), TutorialData[95]), Add(Add(Multiply(TutorialData[96], Divide(Multiply(TutorialData[99], 1.8), 2.0)), Multiply(TutorialData[97], Divide(Multiply(TutorialData[99], 1.8), 2.0))), TutorialData[98])), 10000[2], Divide(Add(Add(Multiply(TutorialData[93], Divide(Multiply(TutorialData[99], 1.8), 2.0)), Multiply(TutorialData[94], Subtract(0.0, Divide(Multiply(TutorialData[99], 1.8), 2.0)))), TutorialData[95]), Add(Add(Multiply(TutorialData[96], Divide(Multiply(TutorialData[99], 1.8), 2.0)), Multiply(TutorialData[97], Subtract(0.0, Divide(Multiply(TutorialData[99], 1.8), 2.0)))), TutorialData[98])))
   goto 273
 272:
-  10000[0] <- SpawnParticleEffect(5.0, 10000[0], Divide(Add(Add(Multiply(TutorialData[93], Subtract(0.0, Divide(Multiply(TutorialData[99], 1.8), 2.0))), Multiply(TutorialData[94], Subtract(0.0, Divide(Multiply(TutorialData[99], 1.8), 2.0)))), TutorialData[95]), Add(Add(Multiply(TutorialData[96], Subtract(0.0, Divide(Multiply(TutorialData[99], 1.8), 2.0))), Multiply(TutorialData[97], Subtract(0.0, Divide(Multiply(TutorialData[99], 1.8), 2.0)))), TutorialData[98])), 10000[2], Divide(Add(Add(Multiply(TutorialData[93], Subtract(0.0, Divide(Multiply(TutorialData[99], 1.8), 2.0))), Multiply(TutorialData[94], Divide(Multiply(TutorialData[99], 1.8), 2.0))), TutorialData[95]), Add(Add(Multiply(TutorialData[96], Subtract(0.0, Divide(Multiply(TutorialData[99], 1.8), 2.0))), Multiply(TutorialData[97], Divide(Multiply(TutorialData[99], 1.8), 2.0))), TutorialData[98])), 10000[3], Divide(Add(Add(Multiply(TutorialData[93], Divide(Multiply(TutorialData[99], 1.8), 2.0)), Multiply(TutorialData[94], Divide(Multiply(TutorialData[99], 1.8), 2.0))), TutorialData[95]), Add(Add(Multiply(TutorialData[96], Divide(Multiply(TutorialData[99], 1.8), 2.0)), Multiply(TutorialData[97], Divide(Multiply(TutorialData[99], 1.8), 2.0))), TutorialData[98])), 10000[1], Divide(Add(Add(Multiply(TutorialData[93], Divide(Multiply(TutorialData[99], 1.8), 2.0)), Multiply(TutorialData[94], Subtract(0.0, Divide(Multiply(TutorialData[99], 1.8), 2.0)))), TutorialData[95]), Add(Add(Multiply(TutorialData[96], Divide(Multiply(TutorialData[99], 1.8), 2.0)), Multiply(TutorialData[97], Subtract(0.0, Divide(Multiply(TutorialData[99], 1.8), 2.0)))), TutorialData[98])), 1.5, 1.0)
-  TutorialMemory[1] <- 10000[0]
+  10000[1] <- SpawnParticleEffect(5.0, 10000[1], Divide(Add(Add(Multiply(TutorialData[93], Subtract(0.0, Divide(Multiply(TutorialData[99], 1.8), 2.0))), Multiply(TutorialData[94], Subtract(0.0, Divide(Multiply(TutorialData[99], 1.8), 2.0)))), TutorialData[95]), Add(Add(Multiply(TutorialData[96], Subtract(0.0, Divide(Multiply(TutorialData[99], 1.8), 2.0))), Multiply(TutorialData[97], Subtract(0.0, Divide(Multiply(TutorialData[99], 1.8), 2.0)))), TutorialData[98])), 10000[3], Divide(Add(Add(Multiply(TutorialData[93], Subtract(0.0, Divide(Multiply(TutorialData[99], 1.8), 2.0))), Multiply(TutorialData[94], Divide(Multiply(TutorialData[99], 1.8), 2.0))), TutorialData[95]), Add(Add(Multiply(TutorialData[96], Subtract(0.0, Divide(Multiply(TutorialData[99], 1.8), 2.0))), Multiply(TutorialData[97], Divide(Multiply(TutorialData[99], 1.8), 2.0))), TutorialData[98])), 10000[4], Divide(Add(Add(Multiply(TutorialData[93], Divide(Multiply(TutorialData[99], 1.8), 2.0)), Multiply(TutorialData[94], Divide(Multiply(TutorialData[99], 1.8), 2.0))), TutorialData[95]), Add(Add(Multiply(TutorialData[96], Divide(Multiply(TutorialData[99], 1.8), 2.0)), Multiply(TutorialData[97], Divide(Multiply(TutorialData[99], 1.8), 2.0))), TutorialData[98])), 10000[2], Divide(Add(Add(Multiply(TutorialData[93], Divide(Multiply(TutorialData[99], 1.8), 2.0)), Multiply(TutorialData[94], Subtract(0.0, Divide(Multiply(TutorialData[99], 1.8), 2.0)))), TutorialData[95]), Add(Add(Multiply(TutorialData[96], Divide(Multiply(TutorialData[99], 1.8), 2.0)), Multiply(TutorialData[97], Subtract(0.0, Divide(Multiply(TutorialData[99], 1.8), 2.0)))), TutorialData[98])), 1.5, 1.0)
+  TutorialMemory[1] <- 10000[1]
   goto 273
 273:
-  10000[0] <- TutorialMemory[2]
-  goto 275 if 10000[0] else 274
+  10000[1] <- TutorialMemory[2]
+  goto 275 if 10000[1] else 274
 274:
-  10000[0] <- PlayLooped(7.0)
-  TutorialMemory[2] <- 10000[0]
+  10000[1] <- PlayLooped(7.0)
+  TutorialMemory[2] <- 10000[1]
   goto 275
 275:
   Paint(0.0, Add(Multiply(Multiply(Subtract(0, Multiply(1.0, Sin(LerpClamped(0.5235987755982988, 1.0471975511965976, 1.0)))), 0.25), RuntimeUIConfiguration[4]), Add(Multiply(0.8660254037844386, Multiply(0.25, RuntimeUIConfiguration[4])), Divide(Add(0, TutorialData[92]), Add(0, TutorialData[98])))), Add(Multiply(Multiply(Add(0, Multiply(1.0, Cos(LerpClamped(0.5235987755982988, 1.0471975511965976, 1.0)))), 0.25), RuntimeUIConfiguration[4]), Add(Multiply(-0.5000000000000001, Multiply(0.25, RuntimeUIConfiguration[4])), Divide(Add(0, TutorialData[95]), Add(0, TutorialData[98])))), Multiply(0.25, RuntimeUIConfiguration[4]), Divide(Multiply(180.0, LerpClamped(0.5235987755982988, 1.0471975511965976, 1.0)), 3.141592653589793), 0.0, RuntimeUIConfiguration[5])
@@ -1082,7 +1082,7 @@
   TutorialInstruction[0] <- 2.0
   goto 276
 276:
-  goto 277 if GreaterOr(10000[5], 8.5) else 638
+  goto 277 if GreaterOr(10000[0], 8.5) else 638
 277:
   10000[0] <- TutorialMemory[5]
   TutorialMemory[5] <- Add(10000[0], 1.0)

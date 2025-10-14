@@ -135,17 +135,17 @@
   RuntimeUI[17] <- 10000[1]
   RuntimeUI[18] <- 0.0
   RuntimeUI[19] <- 0.0
-  10000[0] <- RuntimeEnvironment[1]
-  10000[1] <- RuntimeUIConfiguration[4]
-  10000[2] <- RuntimeUIConfiguration[5]
-  RuntimeUI[20] <- Multiply(10000[0], 0.7)
+  10000[1] <- RuntimeEnvironment[1]
+  10000[2] <- RuntimeUIConfiguration[4]
+  10000[0] <- RuntimeUIConfiguration[5]
+  RuntimeUI[20] <- Multiply(10000[1], 0.7)
   RuntimeUI[21] <- 0.0
   RuntimeUI[22] <- 0.5
   RuntimeUI[23] <- 0.0
   RuntimeUI[24] <- 0
-  RuntimeUI[25] <- Multiply(0.2, 10000[1])
+  RuntimeUI[25] <- Multiply(0.2, 10000[2])
   RuntimeUI[26] <- 0.0
-  RuntimeUI[27] <- 10000[2]
+  RuntimeUI[27] <- 10000[0]
   RuntimeUI[28] <- 0.0
   RuntimeUI[29] <- 0.0
   10000[0] <- RuntimeEnvironment[1]
@@ -339,12 +339,8 @@
   goto 3
 7:
   10000[43] <- LevelData[16]
-  goto 8 if Not(Less(10000[43], 7.0)) else 9
+  goto 8 if Less(10000[43], 7.0) else 9
 8:
-  DebugLog(0.0)
-  DebugPause()
-  goto exit
-9:
   10000[43] <- LevelData[16]
   10000[43] <- Add(16.0, Multiply(Add(10000[43], Multiply(Less(10000[43], 0.0), 7.0)), 9.0))
   LevelData[10000[43] + 1] <- 10000[0]
@@ -360,65 +356,15 @@
   LevelData[16] <- Add(10000[2], 1.0)
   10000[0] <- 10000[1]
   goto 1
+9:
+  DebugLog(0.0)
+  DebugPause()
+  goto exit
 10:
   10000[0] <- LevelData[12]
-  10000[25] <- Multiply(-3.5, 10000[0])
-  10000[26] <- LevelData[13]
-  10000[26] <- Subtract(10000[25], 10000[26])
-  10000[27] <- LevelData[15]
-  10000[28] <- LevelData[14]
-  10000[29] <- LevelData[2]
-  10000[30] <- LevelData[3]
-  10000[31] <- LevelData[4]
-  10000[32] <- LevelData[5]
-  10000[33] <- LevelData[6]
-  10000[0] <- LevelData[7]
-  10000[1] <- LevelData[8]
-  10000[2] <- LevelData[9]
-  10000[3] <- LevelData[10]
-  10000[1] <- Add(Add(Multiply(10000[1], 10000[26]), Multiply(10000[2], 10000[27])), 10000[3])
-  10000[2] <- LevelData[2]
-  10000[3] <- LevelData[3]
-  10000[4] <- LevelData[4]
-  10000[5] <- LevelData[5]
-  10000[6] <- LevelData[6]
-  10000[7] <- LevelData[7]
-  10000[8] <- LevelData[8]
-  10000[9] <- LevelData[9]
-  10000[10] <- LevelData[10]
-  10000[8] <- Add(Add(Multiply(10000[8], 10000[25]), Multiply(10000[9], 10000[27])), 10000[10])
-  10000[9] <- LevelData[2]
-  10000[10] <- LevelData[3]
-  10000[11] <- LevelData[4]
-  10000[12] <- LevelData[5]
-  10000[13] <- LevelData[6]
-  10000[14] <- LevelData[7]
-  10000[15] <- LevelData[8]
-  10000[16] <- LevelData[9]
-  10000[17] <- LevelData[10]
-  10000[15] <- Add(Add(Multiply(10000[15], 10000[26]), Multiply(10000[16], 10000[28])), 10000[17])
-  10000[16] <- LevelData[2]
-  10000[17] <- LevelData[3]
-  10000[18] <- LevelData[4]
-  10000[19] <- LevelData[5]
-  10000[20] <- LevelData[6]
-  10000[21] <- LevelData[7]
-  10000[22] <- LevelData[8]
-  10000[23] <- LevelData[9]
-  10000[24] <- LevelData[10]
-  10000[22] <- Add(Add(Multiply(10000[22], 10000[25]), Multiply(10000[23], 10000[28])), 10000[24])
-  LevelData[80] <- Divide(Add(Add(Multiply(10000[29], 10000[26]), Multiply(10000[30], 10000[27])), 10000[31]), 10000[1])
-  LevelData[81] <- Divide(Add(Add(Multiply(10000[32], 10000[26]), Multiply(10000[33], 10000[27])), 10000[0]), 10000[1])
-  LevelData[82] <- Divide(Add(Add(Multiply(10000[9], 10000[26]), Multiply(10000[10], 10000[28])), 10000[11]), 10000[15])
-  LevelData[83] <- Divide(Add(Add(Multiply(10000[12], 10000[26]), Multiply(10000[13], 10000[28])), 10000[14]), 10000[15])
-  LevelData[84] <- Divide(Add(Add(Multiply(10000[16], 10000[25]), Multiply(10000[17], 10000[28])), 10000[18]), 10000[22])
-  LevelData[85] <- Divide(Add(Add(Multiply(10000[19], 10000[25]), Multiply(10000[20], 10000[28])), 10000[21]), 10000[22])
-  LevelData[86] <- Divide(Add(Add(Multiply(10000[2], 10000[25]), Multiply(10000[3], 10000[27])), 10000[4]), 10000[8])
-  LevelData[87] <- Divide(Add(Add(Multiply(10000[5], 10000[25]), Multiply(10000[6], 10000[27])), 10000[7]), 10000[8])
-  10000[0] <- LevelData[12]
-  10000[0] <- Multiply(3.5, 10000[0])
+  10000[0] <- Multiply(-3.5, 10000[0])
   10000[1] <- LevelData[13]
-  10000[1] <- Add(10000[0], 10000[1])
+  10000[1] <- Subtract(10000[0], 10000[1])
   10000[2] <- LevelData[15]
   10000[3] <- LevelData[14]
   10000[4] <- LevelData[2]
@@ -430,7 +376,7 @@
   10000[10] <- LevelData[8]
   10000[11] <- LevelData[9]
   10000[12] <- LevelData[10]
-  10000[10] <- Add(Add(Multiply(10000[10], 10000[0]), Multiply(10000[11], 10000[2])), 10000[12])
+  10000[10] <- Add(Add(Multiply(10000[10], 10000[1]), Multiply(10000[11], 10000[2])), 10000[12])
   10000[11] <- LevelData[2]
   10000[12] <- LevelData[3]
   10000[13] <- LevelData[4]
@@ -440,7 +386,7 @@
   10000[17] <- LevelData[8]
   10000[18] <- LevelData[9]
   10000[19] <- LevelData[10]
-  10000[17] <- Add(Add(Multiply(10000[17], 10000[1]), Multiply(10000[18], 10000[2])), 10000[19])
+  10000[17] <- Add(Add(Multiply(10000[17], 10000[0]), Multiply(10000[18], 10000[2])), 10000[19])
   10000[18] <- LevelData[2]
   10000[19] <- LevelData[3]
   10000[20] <- LevelData[4]
@@ -450,7 +396,7 @@
   10000[24] <- LevelData[8]
   10000[25] <- LevelData[9]
   10000[26] <- LevelData[10]
-  10000[24] <- Add(Add(Multiply(10000[24], 10000[0]), Multiply(10000[25], 10000[3])), 10000[26])
+  10000[24] <- Add(Add(Multiply(10000[24], 10000[1]), Multiply(10000[25], 10000[3])), 10000[26])
   10000[25] <- LevelData[2]
   10000[26] <- LevelData[3]
   10000[27] <- LevelData[4]
@@ -460,15 +406,69 @@
   10000[31] <- LevelData[8]
   10000[32] <- LevelData[9]
   10000[33] <- LevelData[10]
-  10000[31] <- Add(Add(Multiply(10000[31], 10000[1]), Multiply(10000[32], 10000[3])), 10000[33])
-  LevelData[88] <- Divide(Add(Add(Multiply(10000[4], 10000[0]), Multiply(10000[5], 10000[2])), 10000[6]), 10000[10])
-  LevelData[89] <- Divide(Add(Add(Multiply(10000[7], 10000[0]), Multiply(10000[8], 10000[2])), 10000[9]), 10000[10])
-  LevelData[90] <- Divide(Add(Add(Multiply(10000[18], 10000[0]), Multiply(10000[19], 10000[3])), 10000[20]), 10000[24])
-  LevelData[91] <- Divide(Add(Add(Multiply(10000[21], 10000[0]), Multiply(10000[22], 10000[3])), 10000[23]), 10000[24])
-  LevelData[92] <- Divide(Add(Add(Multiply(10000[25], 10000[1]), Multiply(10000[26], 10000[3])), 10000[27]), 10000[31])
-  LevelData[93] <- Divide(Add(Add(Multiply(10000[28], 10000[1]), Multiply(10000[29], 10000[3])), 10000[30]), 10000[31])
-  LevelData[94] <- Divide(Add(Add(Multiply(10000[11], 10000[1]), Multiply(10000[12], 10000[2])), 10000[13]), 10000[17])
-  LevelData[95] <- Divide(Add(Add(Multiply(10000[14], 10000[1]), Multiply(10000[15], 10000[2])), 10000[16]), 10000[17])
+  10000[31] <- Add(Add(Multiply(10000[31], 10000[0]), Multiply(10000[32], 10000[3])), 10000[33])
+  LevelData[80] <- Divide(Add(Add(Multiply(10000[4], 10000[1]), Multiply(10000[5], 10000[2])), 10000[6]), 10000[10])
+  LevelData[81] <- Divide(Add(Add(Multiply(10000[7], 10000[1]), Multiply(10000[8], 10000[2])), 10000[9]), 10000[10])
+  LevelData[82] <- Divide(Add(Add(Multiply(10000[18], 10000[1]), Multiply(10000[19], 10000[3])), 10000[20]), 10000[24])
+  LevelData[83] <- Divide(Add(Add(Multiply(10000[21], 10000[1]), Multiply(10000[22], 10000[3])), 10000[23]), 10000[24])
+  LevelData[84] <- Divide(Add(Add(Multiply(10000[25], 10000[0]), Multiply(10000[26], 10000[3])), 10000[27]), 10000[31])
+  LevelData[85] <- Divide(Add(Add(Multiply(10000[28], 10000[0]), Multiply(10000[29], 10000[3])), 10000[30]), 10000[31])
+  LevelData[86] <- Divide(Add(Add(Multiply(10000[11], 10000[0]), Multiply(10000[12], 10000[2])), 10000[13]), 10000[17])
+  LevelData[87] <- Divide(Add(Add(Multiply(10000[14], 10000[0]), Multiply(10000[15], 10000[2])), 10000[16]), 10000[17])
+  10000[0] <- LevelData[12]
+  10000[23] <- Multiply(3.5, 10000[0])
+  10000[24] <- LevelData[13]
+  10000[24] <- Add(10000[23], 10000[24])
+  10000[25] <- LevelData[15]
+  10000[26] <- LevelData[14]
+  10000[27] <- LevelData[2]
+  10000[28] <- LevelData[3]
+  10000[29] <- LevelData[4]
+  10000[30] <- LevelData[5]
+  10000[31] <- LevelData[6]
+  10000[32] <- LevelData[7]
+  10000[33] <- LevelData[8]
+  10000[34] <- LevelData[9]
+  10000[35] <- LevelData[10]
+  10000[33] <- Add(Add(Multiply(10000[33], 10000[23]), Multiply(10000[34], 10000[25])), 10000[35])
+  10000[0] <- LevelData[2]
+  10000[1] <- LevelData[3]
+  10000[2] <- LevelData[4]
+  10000[3] <- LevelData[5]
+  10000[4] <- LevelData[6]
+  10000[5] <- LevelData[7]
+  10000[6] <- LevelData[8]
+  10000[7] <- LevelData[9]
+  10000[8] <- LevelData[10]
+  10000[6] <- Add(Add(Multiply(10000[6], 10000[24]), Multiply(10000[7], 10000[25])), 10000[8])
+  10000[7] <- LevelData[2]
+  10000[8] <- LevelData[3]
+  10000[9] <- LevelData[4]
+  10000[10] <- LevelData[5]
+  10000[11] <- LevelData[6]
+  10000[12] <- LevelData[7]
+  10000[13] <- LevelData[8]
+  10000[14] <- LevelData[9]
+  10000[15] <- LevelData[10]
+  10000[13] <- Add(Add(Multiply(10000[13], 10000[23]), Multiply(10000[14], 10000[26])), 10000[15])
+  10000[14] <- LevelData[2]
+  10000[15] <- LevelData[3]
+  10000[16] <- LevelData[4]
+  10000[17] <- LevelData[5]
+  10000[18] <- LevelData[6]
+  10000[19] <- LevelData[7]
+  10000[20] <- LevelData[8]
+  10000[21] <- LevelData[9]
+  10000[22] <- LevelData[10]
+  10000[20] <- Add(Add(Multiply(10000[20], 10000[24]), Multiply(10000[21], 10000[26])), 10000[22])
+  LevelData[88] <- Divide(Add(Add(Multiply(10000[27], 10000[23]), Multiply(10000[28], 10000[25])), 10000[29]), 10000[33])
+  LevelData[89] <- Divide(Add(Add(Multiply(10000[30], 10000[23]), Multiply(10000[31], 10000[25])), 10000[32]), 10000[33])
+  LevelData[90] <- Divide(Add(Add(Multiply(10000[7], 10000[23]), Multiply(10000[8], 10000[26])), 10000[9]), 10000[13])
+  LevelData[91] <- Divide(Add(Add(Multiply(10000[10], 10000[23]), Multiply(10000[11], 10000[26])), 10000[12]), 10000[13])
+  LevelData[92] <- Divide(Add(Add(Multiply(10000[14], 10000[24]), Multiply(10000[15], 10000[26])), 10000[16]), 10000[20])
+  LevelData[93] <- Divide(Add(Add(Multiply(10000[17], 10000[24]), Multiply(10000[18], 10000[26])), 10000[19]), 10000[20])
+  LevelData[94] <- Divide(Add(Add(Multiply(10000[0], 10000[24]), Multiply(10000[1], 10000[25])), 10000[2]), 10000[6])
+  LevelData[95] <- Divide(Add(Add(Multiply(10000[3], 10000[24]), Multiply(10000[4], 10000[25])), 10000[5]), 10000[6])
   10000[0] <- LevelData[12]
   10000[0] <- Multiply(-3.5, 10000[0])
   10000[1] <- LevelData[12]

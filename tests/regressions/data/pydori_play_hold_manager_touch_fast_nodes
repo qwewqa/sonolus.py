@@ -272,29 +272,14 @@ Block(JumpLoop(
     )
     6
   )
-  Execute(
-    Set(
+  Execute(If(
+    Get(
       10000
       3
-      Not(Get(
-        10000
-        3
-      ))
     )
-    If(
-      Get(
-        10000
-        3
-      )
-      7
-      8
-    )
-  )
-  Execute(
-    DebugLog(0)
-    DebugPause()
-    15
-  )
+    7
+    8
+  ))
   Execute(
     Set(
       10000
@@ -387,6 +372,11 @@ Block(JumpLoop(
       1
     )
     10
+  )
+  Execute(
+    DebugLog(0)
+    DebugPause()
+    15
   )
   Execute(
     Set(

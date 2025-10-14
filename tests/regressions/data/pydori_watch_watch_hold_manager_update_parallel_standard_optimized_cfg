@@ -17,7 +17,7 @@
   10000[0] <- Multiply(EntityDataArray[10000[0]], 3.0)
   goto 5 if LessOr(0.0, EntityInfoArray[10000[0]]) else 13
 5:
-  goto 13 if Not(Less(EntityInfoArray[10000[0]], 99999.0)) else 6
+  goto 6 if Less(EntityInfoArray[10000[0]], 99999.0) else 13
 6:
   10000[0] <- Add(EntityInfoArray[10000[0]], 18.0)
   goto 7 if StreamHas(10000[0], RuntimeUpdate[0]) else 8

@@ -14,18 +14,18 @@
   goto 5 if LessOr(RuntimeUpdate[0], EntityData[15]) else 8
 5:
   10000[0] <- LevelMemory[0]
-  goto 6 if Not(Less(10000[0], 16.0)) else 7
+  goto 6 if Less(10000[0], 16.0) else 7
 6:
-  DebugLog(0.0)
-  DebugPause()
-  goto exit
-7:
   10000[0] <- LevelMemory[0]
   10000[0] <- Add(10000[0], Multiply(Less(10000[0], 0.0), 16.0))
   LevelMemory[10000[0] + 1] <- EntityInfo[0]
   10000[0] <- LevelMemory[0]
   LevelMemory[0] <- Add(10000[0], 1.0)
   goto 8
+7:
+  DebugLog(0.0)
+  DebugPause()
+  goto exit
 8:
   10000[0] <- EntityMemory[0]
   goto 9 if Greater(10000[0], -100000000.0) else 52
@@ -243,17 +243,17 @@
   goto 56
 60:
   10000[1] <- LevelMemory[17]
-  goto 61 if Not(Less(10000[1], 16.0)) else 62
+  goto 61 if Less(10000[1], 16.0) else 62
 61:
-  DebugLog(0.0)
-  DebugPause()
-  goto exit
-62:
   10000[1] <- LevelMemory[17]
   10000[1] <- Add(17.0, Add(10000[1], Multiply(Less(10000[1], 0.0), 16.0)))
   LevelMemory[10000[1] + 1] <- 10000[0]
   10000[0] <- LevelMemory[17]
   LevelMemory[17] <- Add(10000[0], 1.0)
+  goto exit
+62:
+  DebugLog(0.0)
+  DebugPause()
   goto exit
 63:
   goto exit

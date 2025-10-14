@@ -34,7 +34,7 @@
   10000[1] <- Multiply(10000[1], 3.0)
   goto 8 if LessOr(0.0, EntityInfoArray[10000[1]]) else 20
 8:
-  goto 20 if Not(Less(EntityInfoArray[10000[1]], 99999.0)) else 9
+  goto 9 if Less(EntityInfoArray[10000[1]], 99999.0) else 20
 9:
   StreamSet(Add(Multiply(1.0, EntityInfoArray[10000[1]]), 18.0), RuntimeUpdate[0], Greater(EntitySharedMemoryArray[10000[0]], 0.0))
   10000[0] <- EntityMemory[0]
