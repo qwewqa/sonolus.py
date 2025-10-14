@@ -41,10 +41,11 @@ class _Num(Value, metaclass=_NumMeta):
     data: DataValue
 
     def __new__(cls, data: DataValue | IRExpr):
-        if isinstance(data, int) and _NUM_CACHE_MIN <= data <= _NUM_CACHE_MAX:
-            return _num_cache[data - _NUM_CACHE_MIN]
-        if isinstance(data, float) and data.is_integer() and _NUM_CACHE_MIN <= data <= _NUM_CACHE_MAX:
-            return _num_cache[int(data) - _NUM_CACHE_MIN]
+        if ctx():
+            if isinstance(data, int) and _NUM_CACHE_MIN <= data <= _NUM_CACHE_MAX:
+                return _num_cache[data - _NUM_CACHE_MIN]
+            if isinstance(data, float) and data.is_integer() and _NUM_CACHE_MIN <= data <= _NUM_CACHE_MAX:
+                return _num_cache[int(data) - _NUM_CACHE_MIN]
         return super().__new__(cls)
 
     def __init__(self, data: DataValue | IRExpr):
