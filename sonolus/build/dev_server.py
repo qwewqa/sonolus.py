@@ -185,3 +185,8 @@ def run_server(
         except KeyboardInterrupt:
             print("\nStopping server...")
             sys.exit(0)
+        finally:
+            httpd.shutdown()
+            stop_event.set()
+            prompt_event.set()
+            input_thread.join()
