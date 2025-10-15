@@ -38,7 +38,7 @@
   goto 15
 15:
   v9 <- Subtract(EntityDataArray[v7], v8)
-  v10 <- Remap(v9, EntityDataArray[v7], LevelData[14], 0.0, RuntimeUpdate[2])
+  v10 <- Remap(v9, EntityDataArray[v7], LevelData[14], 0, RuntimeUpdate[2])
   goto 16
 16:
   goto 17
@@ -71,7 +71,7 @@
 28:
   goto 29 if v14 else 30
 29:
-  v21 <- 0.0
+  v21 <- 0
   goto 50
 30:
   goto 31
@@ -83,7 +83,7 @@
 33:
   goto 34 if v15 else 35
 34:
-  v16 <- Remap(LevelData[15], v12, 0.0, 1.0, v10)
+  v16 <- Remap(LevelData[15], v12, 0, 1.0, v10)
   v21 <- v16
   goto 50
 35:
@@ -113,7 +113,7 @@
 45:
   goto 46 if v19 else 47
 46:
-  v20 <- Remap(v13, LevelData[14], 1.0, 0.0, v10)
+  v20 <- Remap(v13, LevelData[14], 1.0, 0, v10)
   v21 <- v20
   goto 50
 47:
@@ -121,7 +121,7 @@
 48:
   goto 49
 49:
-  v21 <- 0.0
+  v21 <- 0
   goto 50
 50:
   goto 51
@@ -132,7 +132,7 @@
   goto 53
 53:
   v23 <- Multiply(LevelOption[9], v22)
-  v24 <- LessOr(v23, 0.0)
+  v24 <- LessOr(v23, 0)
   goto 54
 54:
   goto 55 if v24 else 56

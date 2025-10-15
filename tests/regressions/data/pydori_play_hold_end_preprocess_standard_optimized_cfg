@@ -25,7 +25,7 @@
   10000[3] <- RuntimeEnvironment[3]
   EntityData[14] <- Add(Add(10000[1], 10000[0]), 10000[3])
   EntityData[15] <- Add(Add(10000[2], 10000[0]), 10000[3])
-  10000[0] <- Add(3.0, Add(EntityInfo[1], Multiply(Less(EntityInfo[1], 0.0), 13.0)))
+  10000[0] <- Add(3.0, Add(EntityInfo[1], Multiply(Less(EntityInfo[1], 0), 13.0)))
   10000[1] <- 0
   goto when EngineRom[10000[0]]
     1.0 -> 8
@@ -51,7 +51,7 @@
   10000[1] <- 4.0
   goto 9
 8:
-  10000[1] <- 0.0
+  10000[1] <- 0
   goto 9
 9:
   EntityInput[2] <- 10000[1]
@@ -63,7 +63,7 @@
   10000[0] <- EntityData[16]
   10000[0] <- Add(3.0, Multiply(10000[0], 32.0))
   10000[0] <- EntityDataArray[10000[0]]
-  goto 11 if Greater(10000[0], 0.0) else 12
+  goto 11 if Greater(10000[0], 0) else 12
 11:
   10000[0] <- EntityData[16]
   10000[0] <- Add(3.0, Multiply(10000[0], 32.0))
@@ -77,7 +77,7 @@
   10000[0] <- EntityData[17]
   10000[0] <- Add(4.0, Multiply(10000[0], 32.0))
   10000[0] <- EntityDataArray[10000[0]]
-  goto 14 if Greater(10000[0], 0.0) else 15
+  goto 14 if Greater(10000[0], 0) else 15
 14:
   10000[0] <- EntityData[17]
   10000[0] <- Add(4.0, Multiply(10000[0], 32.0))
@@ -87,7 +87,7 @@
 15:
   goto 16 if LevelOption[11] else 21
 16:
-  10000[0] <- Add(3.0, Add(EntityInfo[1], Multiply(Less(EntityInfo[1], 0.0), 13.0)))
+  10000[0] <- Add(3.0, Add(EntityInfo[1], Multiply(Less(EntityInfo[1], 0), 13.0)))
   10000[1] <- EntityData[11]
   goto 21 if Not(LevelOption[10]) else 17
 17:
@@ -103,7 +103,7 @@
   10000[2] <- 4.0
   goto 20
 20:
-  PlayScheduled(10000[2], 10000[1], 0.0)
+  PlayScheduled(10000[2], 10000[1], 0)
   goto exit
 21:
   goto exit

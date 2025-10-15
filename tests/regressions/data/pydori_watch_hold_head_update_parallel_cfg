@@ -3,7 +3,7 @@
 1:
   goto 2
 2:
-  v1 <- Less(EntityInfo[1], 0.0)
+  v1 <- Less(EntityInfo[1], 0)
   v2 <- Multiply(v1, 14.0)
   v3 <- Add(EntityInfo[1], v2)
   v4 <- Add(3.0, v3)
@@ -31,7 +31,7 @@
   goto 12
 12:
   v8 <- Subtract(EntityData[6], v7)
-  v9 <- Remap(v8, EntityData[6], LevelData[14], 0.0, RuntimeUpdate[2])
+  v9 <- Remap(v8, EntityData[6], LevelData[14], 0, RuntimeUpdate[2])
   goto 13
 13:
   goto 14
@@ -69,7 +69,7 @@
   v14 <- Equal(v6, 3.0)
   goto 27 if v14 else 32
 27:
-  v15 <- Greater(EntityData[2], 0.0)
+  v15 <- Greater(EntityData[2], 0)
   goto 28
 28:
   goto 29 if v15 else 30
@@ -123,7 +123,7 @@
   v22 <- Equal(v6, 3.0)
   goto 47 if v22 else 52
 47:
-  v23 <- Greater(EntityData[2], 0.0)
+  v23 <- Greater(EntityData[2], 0)
   goto 48
 48:
   goto 49 if v23 else 50
@@ -159,7 +159,7 @@
 61:
   goto 62 if v26 else 63
 62:
-  v33 <- 0.0
+  v33 <- 0
   goto 83
 63:
   goto 64
@@ -171,7 +171,7 @@
 66:
   goto 67 if v27 else 68
 67:
-  v28 <- Remap(LevelData[15], v24, 0.0, 1.0, v9)
+  v28 <- Remap(LevelData[15], v24, 0, 1.0, v9)
   v33 <- v28
   goto 83
 68:
@@ -201,7 +201,7 @@
 78:
   goto 79 if v31 else 80
 79:
-  v32 <- Remap(v25, LevelData[14], 1.0, 0.0, v9)
+  v32 <- Remap(v25, LevelData[14], 1.0, 0, v9)
   v33 <- v32
   goto 83
 80:
@@ -209,7 +209,7 @@
 81:
   goto 82
 82:
-  v33 <- 0.0
+  v33 <- 0
   goto 83
 83:
   goto 84
@@ -219,7 +219,7 @@
 85:
   goto 86
 86:
-  v35 <- LessOr(v34, 0.0)
+  v35 <- LessOr(v34, 0)
   goto 87
 87:
   goto 88 if v35 else 89
@@ -482,7 +482,7 @@
 142:
   goto 143 if v183 else 144
 143:
-  v190 <- 0.0
+  v190 <- 0
   goto 164
 144:
   goto 145
@@ -494,7 +494,7 @@
 147:
   goto 148 if v184 else 149
 148:
-  v185 <- Remap(LevelData[15], v181, 0.0, 1.0, v9)
+  v185 <- Remap(LevelData[15], v181, 0, 1.0, v9)
   v190 <- v185
   goto 164
 149:
@@ -524,7 +524,7 @@
 159:
   goto 160 if v188 else 161
 160:
-  v189 <- Remap(v182, LevelData[14], 1.0, 0.0, v9)
+  v189 <- Remap(v182, LevelData[14], 1.0, 0, v9)
   v190 <- v189
   goto 164
 161:
@@ -532,7 +532,7 @@
 162:
   goto 163
 163:
-  v190 <- 0.0
+  v190 <- 0
   goto 164
 164:
   goto 165
@@ -548,12 +548,12 @@
 169:
   goto 170
 170:
-  v192 <- LessOr(v179, 0.0)
+  v192 <- LessOr(v179, 0)
   goto 171
 171:
   goto 172 if v192 else 173
 172:
-  v199 <- 0.0
+  v199 <- 0
   goto 193
 173:
   goto 174
@@ -565,7 +565,7 @@
 176:
   goto 177 if v193 else 178
 177:
-  v194 <- Remap(0.0, 0.1, 0.0, 1.0, v179)
+  v194 <- Remap(0, 0.1, 0, 1.0, v179)
   v199 <- v194
   goto 193
 178:
@@ -595,7 +595,7 @@
 188:
   goto 189 if v197 else 190
 189:
-  v198 <- Remap(0.19999999999999998, 0.3, 1.0, 0.0, v179)
+  v198 <- Remap(0.19999999999999998, 0.3, 1.0, 0, v179)
   v199 <- v198
   goto 193
 190:
@@ -603,14 +603,14 @@
 191:
   goto 192
 192:
-  v199 <- 0.0
+  v199 <- 0
   goto 193
 193:
   goto 194
 194:
   v200 <- EaseOutQuad(v199)
   v201 <- Multiply(v191, v200)
-  v202 <- LessOr(v201, 0.0)
+  v202 <- LessOr(v201, 0)
   goto 195
 195:
   goto 196 if v202 else 197
@@ -813,7 +813,7 @@
 233:
   goto 234 if v324 else 235
 234:
-  v331 <- 0.0
+  v331 <- 0
   goto 255
 235:
   goto 236
@@ -825,7 +825,7 @@
 238:
   goto 239 if v325 else 240
 239:
-  v326 <- Remap(LevelData[15], v322, 0.0, 1.0, v9)
+  v326 <- Remap(LevelData[15], v322, 0, 1.0, v9)
   v331 <- v326
   goto 255
 240:
@@ -855,7 +855,7 @@
 250:
   goto 251 if v329 else 252
 251:
-  v330 <- Remap(v323, LevelData[14], 1.0, 0.0, v9)
+  v330 <- Remap(v323, LevelData[14], 1.0, 0, v9)
   v331 <- v330
   goto 255
 252:
@@ -863,7 +863,7 @@
 253:
   goto 254
 254:
-  v331 <- 0.0
+  v331 <- 0
   goto 255
 255:
   goto 256
@@ -874,7 +874,7 @@
   goto 258
 258:
   v333 <- Abs(EntityData[2])
-  v334 <- 0.0
+  v334 <- 0
   v335 <- v333
   v336 <- 1.0
   goto 259
@@ -894,7 +894,7 @@
   goto 263
 263:
   v343 <- v342
-  v344 <- Greater(v343, 0.0)
+  v344 <- Greater(v343, 0)
   goto 264
 264:
   goto 265 if v344 else 267
@@ -933,19 +933,19 @@
 274:
   goto 275
 275:
-  v356 <- 0.0
+  v356 <- 0
   goto 276
 276:
   goto 277
 277:
   goto 278 if v356 else 376
 278:
-  v357 <- Equal(v352, 0.0)
+  v357 <- Equal(v352, 0)
   goto 279
 279:
   goto 280 if v357 else 281
 280:
-  v358 <- 0.0
+  v358 <- 0
   goto 282
 281:
   v358 <- 1.0
@@ -958,7 +958,7 @@
 283:
   goto 284 if v361 else 285
 284:
-  v362 <- 0.0
+  v362 <- 0
   goto 286
 285:
   v362 <- 1.0
@@ -970,7 +970,7 @@
 288:
   goto 289
 289:
-  v363 <- LessOr(v320, 0.0)
+  v363 <- LessOr(v320, 0)
   goto 290
 290:
   goto 291 if v363 else 292
@@ -987,7 +987,7 @@
 295:
   goto 296 if v364 else 297
 296:
-  v365 <- Remap(0.0, 0.1, v358, 1.0, v320)
+  v365 <- Remap(0, 0.1, v358, 1.0, v320)
   v370 <- v365
   goto 312
 297:
@@ -1032,7 +1032,7 @@
 313:
   v371 <- EaseOutQuad(v370)
   v372 <- Multiply(v332, v371)
-  v373 <- LessOr(v372, 0.0)
+  v373 <- LessOr(v372, 0)
   goto 314
 314:
   goto 315 if v373 else 316
@@ -1043,7 +1043,7 @@
 317:
   goto 318
 318:
-  v374 <- Greater(EntityData[2], 0.0)
+  v374 <- Greater(EntityData[2], 0)
   goto 319
 319:
   goto 320 if v374 else 321

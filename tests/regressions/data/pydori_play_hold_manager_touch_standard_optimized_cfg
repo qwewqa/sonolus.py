@@ -3,22 +3,22 @@
   10000[0] <- Add(16.0, Multiply(10000[0], 32.0))
   10000[0] <- Multiply(EntityDataArray[10000[0]], 32.0)
   10000[0] <- EntitySharedMemoryArray[10000[0]]
-  goto 9 if Not(Greater(10000[0], 0.0)) else 1
+  goto 9 if Not(Greater(10000[0], 0)) else 1
 1:
   10000[0] <- EntityMemory[0]
   10000[0] <- Add(16.0, Multiply(10000[0], 32.0))
   10000[0] <- Multiply(EntityDataArray[10000[0]], 32.0)
   10000[0] <- EntitySharedMemoryArray[10000[0]]
-  10000[1] <- 0.0
+  10000[1] <- 0
   goto 2
 2:
   goto 3 if Less(10000[1], RuntimeUpdate[3]) else 9
 3:
-  goto 4 if LessOr(0.0, 10000[1]) else 8
+  goto 4 if LessOr(0, 10000[1]) else 8
 4:
   goto 5 if Less(10000[1], RuntimeUpdate[3]) else 8
 5:
-  10000[2] <- Multiply(Add(10000[1], Multiply(Less(10000[1], 0.0), RuntimeUpdate[3])), 15.0)
+  10000[2] <- Multiply(Add(10000[1], Multiply(Less(10000[1], 0), RuntimeUpdate[3])), 15.0)
   10000[1] <- Add(10000[1], 1.0)
   goto 2 if NotEqual(RuntimeTouchArray[10000[2]], 10000[0]) else 6
 6:
@@ -27,10 +27,10 @@
   10000[0] <- EntityMemory[0]
   10000[0] <- Add(16.0, Multiply(10000[0], 32.0))
   10000[0] <- Multiply(EntityDataArray[10000[0]], 32.0)
-  EntitySharedMemoryArray[10000[0]] <- 0.0
+  EntitySharedMemoryArray[10000[0]] <- 0
   goto exit
 8:
-  DebugLog(0.0)
+  DebugLog(0)
   DebugPause()
   goto exit
 9:

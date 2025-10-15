@@ -12,7 +12,7 @@
   10000[0] <- 10000[0]
   goto 3
 2:
-  10000[0] <- 0.0
+  10000[0] <- 0
   goto 3
 3:
   goto 4 if 10000[0] else 16
@@ -28,14 +28,14 @@
   10000[2] <- 10000[2]
   10000[2] <- Multiply(EntityDataArray[10000[2]], 3.0)
   10000[2] <- 10000[2]
-  10000[3] <- LessOr(0.0, EntityInfoArray[10000[2]])
+  10000[3] <- LessOr(0, EntityInfoArray[10000[2]])
   goto 6 if 10000[3] else 7
 6:
   10000[3] <- Less(EntityInfoArray[10000[2]], 99999.0)
   10000[3] <- 10000[3]
   goto 8
 7:
-  10000[3] <- 0.0
+  10000[3] <- 0
   goto 8
 8:
   goto 9 if 10000[3] else 13
@@ -62,7 +62,7 @@
   10000[0] <- StreamGetValue(10000[2], 10000[1])
   goto 15
 13:
-  DebugLog(0.0)
+  DebugLog(0)
   DebugPause()
   goto exit
 14:
@@ -72,7 +72,7 @@
   10000[0] <- 10000[0]
   goto 17
 16:
-  10000[0] <- 0.0
+  10000[0] <- 0
   goto 17
 17:
   goto 18 if 10000[0] else 19
@@ -82,18 +82,18 @@
   10000[0] <- 10000[0]
   10000[1] <- Divide(6.0, LevelOption[1])
   10000[1] <- Subtract(EntityDataArray[10000[0]], 10000[1])
-  10000[0] <- Remap(10000[1], EntityDataArray[10000[0]], LevelData[14], 0.0, RuntimeUpdate[2])
+  10000[0] <- Remap(10000[1], EntityDataArray[10000[0]], LevelData[14], 0, RuntimeUpdate[2])
   10000[1] <- Multiply(EntityData[1], 32.0)
   10000[1] <- Add(6.0, 10000[1])
   10000[1] <- 10000[1]
   10000[2] <- Divide(6.0, LevelOption[1])
   10000[2] <- Subtract(EntityDataArray[10000[1]], 10000[2])
-  10000[1] <- Remap(10000[2], EntityDataArray[10000[1]], LevelData[14], 0.0, RuntimeUpdate[2])
+  10000[1] <- Remap(10000[2], EntityDataArray[10000[1]], LevelData[14], 0, RuntimeUpdate[2])
   10000[2] <- Multiply(EntityData[0], 32.0)
   10000[2] <- 10000[2]
   10000[3] <- Multiply(EntityData[1], 32.0)
   10000[3] <- 10000[3]
-  10000[0] <- Remap(10000[0], 10000[1], EntityDataArray[10000[2]], EntityDataArray[10000[3]], 0.0)
+  10000[0] <- Remap(10000[0], 10000[1], EntityDataArray[10000[2]], EntityDataArray[10000[3]], 0)
   10000[1] <- Multiply(EntityData[0], 32.0)
   10000[1] <- Add(9.0, 10000[1])
   10000[1] <- 10000[1]

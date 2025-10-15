@@ -27,7 +27,7 @@
   10000[4] <- 10000[4]
   10000[5] <- Divide(6.0, LevelOption[1])
   10000[5] <- Subtract(EntityDataArray[10000[4]], 10000[5])
-  10000[21] <- Remap(10000[5], EntityDataArray[10000[4]], LevelData[14], 0.0, RuntimeUpdate[2])
+  10000[21] <- Remap(10000[5], EntityDataArray[10000[4]], LevelData[14], 0, RuntimeUpdate[2])
   10000[22] <- Not(LevelOption[8])
   goto 17 if 10000[22] else 6
 6:
@@ -36,13 +36,13 @@
   10000[24] <- LessOr(10000[21], LevelData[15])
   goto 7 if 10000[24] else 8
 7:
-  10000[22] <- 0.0
+  10000[22] <- 0
   goto 15
 8:
   10000[24] <- LessOr(10000[21], 10000[22])
   goto 9 if 10000[24] else 10
 9:
-  10000[22] <- Remap(LevelData[15], 10000[22], 0.0, 1.0, 10000[21])
+  10000[22] <- Remap(LevelData[15], 10000[22], 0, 1.0, 10000[21])
   10000[22] <- 10000[22]
   goto 15
 10:
@@ -56,16 +56,16 @@
   10000[24] <- LessOr(10000[21], LevelData[14])
   goto 13 if 10000[24] else 14
 13:
-  10000[22] <- Remap(10000[23], LevelData[14], 1.0, 0.0, 10000[21])
+  10000[22] <- Remap(10000[23], LevelData[14], 1.0, 0, 10000[21])
   10000[22] <- 10000[22]
   goto 15
 14:
-  10000[22] <- 0.0
+  10000[22] <- 0
   goto 15
 15:
   10000[22] <- EaseOutQuad(10000[22])
   10000[29] <- Multiply(LevelOption[9], 10000[22])
-  10000[30] <- LessOr(10000[29], 0.0)
+  10000[30] <- LessOr(10000[29], 0)
   goto 17 if 10000[30] else 16
 16:
   10000[30] <- Multiply(EntityDataArray[10000[56]], LevelData[12])

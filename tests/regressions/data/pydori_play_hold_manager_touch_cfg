@@ -28,7 +28,7 @@
 10:
   goto 11
 11:
-  v8 <- Greater(v7, 0.0)
+  v8 <- Greater(v7, 0)
   goto 12
 12:
   goto 13
@@ -69,7 +69,7 @@
 26:
   goto 27
 27:
-  v17 <- 0.0
+  v17 <- 0
   goto 28
 28:
   goto 29
@@ -93,14 +93,14 @@
   v20 <- v17
   goto 37
 37:
-  v21 <- LessOr(0.0, v20)
+  v21 <- LessOr(0, v20)
   goto 38 if v21 else 39
 38:
   v22 <- Less(v20, RuntimeUpdate[3])
   v23 <- v22
   goto 40
 39:
-  v23 <- 0.0
+  v23 <- 0
   goto 40
 40:
   goto 41 if v23 else 47
@@ -109,7 +109,7 @@
 42:
   goto 43
 43:
-  v26 <- Less(v20, 0.0)
+  v26 <- Less(v20, 0)
   v27 <- Multiply(v26, RuntimeUpdate[3])
   v28 <- Add(v20, v27)
   v29 <- Multiply(v28, 15.0)
@@ -126,13 +126,13 @@
   v33 <- 1.0
   goto 50
 47:
-  v24 <- DebugLog(0.0)
+  v24 <- DebugLog(0)
   v25 <- DebugPause()
   goto exit
 48:
   goto 49
 49:
-  v33 <- 0.0
+  v33 <- 0
   goto 50
 50:
   goto 51
@@ -170,7 +170,7 @@
 64:
   v39 <- Multiply(EntityDataArray[v38], 32.0)
   v40 <- v39
-  EntitySharedMemoryArray[v40] <- 0.0
+  EntitySharedMemoryArray[v40] <- 0
   goto 65
 65:
   goto 66

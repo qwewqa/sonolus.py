@@ -19,11 +19,11 @@ class IRConst:
             int_value = int(value)
             if _IR_CONST_CACHE_START <= int_value < _IR_CONST_CACHE_STOP:
                 return _IR_CONST_CACHE[int_value - _IR_CONST_CACHE_START]
+            else:
+                return _create_raw_const(int_value)
         return super().__new__(cls)
 
     def __init__(self, value: float):
-        if isinstance(value, bool):
-            value = int(value)
         self.value = value
 
     def __repr__(self):
@@ -45,7 +45,7 @@ def _create_raw_const(value: float | int) -> IRConst:
     return result
 
 
-_IR_CONST_CACHE = [_create_raw_const(i) for i in range(_IR_CONST_CACHE_START, _IR_CONST_CACHE_STOP)]
+_IR_CONST_CACHE = tuple(_create_raw_const(i) for i in range(_IR_CONST_CACHE_START, _IR_CONST_CACHE_STOP))
 
 
 class IRPureInstr:

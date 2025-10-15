@@ -2,12 +2,12 @@
   goto 1 if RuntimeUpdate[3] else 3
 1:
   10000[0] <- EntityMemory[2]
-  10000[0] <- NotEqual(10000[0], 0.0)
+  10000[0] <- NotEqual(10000[0], 0)
   goto 2 if 10000[0] else 3
 2:
   10000[0] <- EntityMemory[2]
   DestroyParticleEffect(10000[0])
-  EntityMemory[2] <- 0.0
+  EntityMemory[2] <- 0
   goto 3
 3:
   10000[0] <- EntityMemory[0]
@@ -19,14 +19,14 @@
   10000[3] <- 10000[3]
   10000[0] <- Multiply(EntityDataArray[10000[3]], 3.0)
   10000[0] <- 10000[0]
-  10000[1] <- LessOr(0.0, EntityInfoArray[10000[0]])
+  10000[1] <- LessOr(0, EntityInfoArray[10000[0]])
   goto 5 if 10000[1] else 6
 5:
   10000[1] <- Less(EntityInfoArray[10000[0]], 99999.0)
   10000[1] <- 10000[1]
   goto 7
 6:
-  10000[1] <- 0.0
+  10000[1] <- 0
   goto 7
 7:
   goto 8 if 10000[1] else 12
@@ -53,7 +53,7 @@
   10000[0] <- StreamGetValue(10000[2], 10000[1])
   goto 14
 12:
-  DebugLog(0.0)
+  DebugLog(0)
   DebugPause()
   goto exit
 13:
@@ -70,7 +70,7 @@
   10000[28] <- 10000[0]
   10000[29] <- Multiply(EntitySharedMemoryArray[10000[28]], LevelData[12])
   10000[29] <- 10000[29]
-  10000[30] <- 0.0
+  10000[30] <- 0
   10000[31] <- LevelData[11]
   10000[32] <- LevelData[11]
   10000[33] <- 10000[30]
@@ -216,7 +216,7 @@
   10000[0] <- 10000[0]
   10000[0] <- Multiply(EntitySharedMemoryArray[10000[0]], LevelData[12])
   10000[0] <- 10000[0]
-  10000[1] <- 0.0
+  10000[1] <- 0
   10000[2] <- LevelData[11]
   10000[3] <- LevelData[11]
   10000[4] <- 10000[2]
@@ -384,7 +384,7 @@
   10000[75] <- 10000[73]
   10000[76] <- 10000[74]
   10000[77] <- EntityMemory[2]
-  10000[77] <- Equal(10000[77], 0.0)
+  10000[77] <- Equal(10000[77], 0)
   goto 16 if 10000[77] else 17
 16:
   10000[77] <- 10000[63]
@@ -414,12 +414,12 @@
   goto 20
 18:
   10000[0] <- EntityMemory[2]
-  10000[0] <- NotEqual(10000[0], 0.0)
+  10000[0] <- NotEqual(10000[0], 0)
   goto 19 if 10000[0] else 20
 19:
   10000[0] <- EntityMemory[2]
   DestroyParticleEffect(10000[0])
-  EntityMemory[2] <- 0.0
+  EntityMemory[2] <- 0
   goto 20
 20:
   goto exit

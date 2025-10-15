@@ -1,9 +1,9 @@
 0:
   goto 79 if EntityDespawn[0] else 1
 1:
-  10000[0] <- Add(3.0, Add(EntityInfo[1], Multiply(Less(EntityInfo[1], 0.0), 13.0)))
+  10000[0] <- Add(3.0, Add(EntityInfo[1], Multiply(Less(EntityInfo[1], 0), 13.0)))
   10000[11] <- EngineRom[10000[0]]
-  10000[39] <- Remap(Subtract(EntityData[12], Divide(6.0, LevelOption[1])), EntityData[12], LevelData[14], 0.0, RuntimeUpdate[2])
+  10000[39] <- Remap(Subtract(EntityData[12], Divide(6.0, LevelOption[1])), EntityData[12], LevelData[14], 0, RuntimeUpdate[2])
   goto when 10000[11]
     6.0 -> 79
     default -> 2
@@ -27,7 +27,7 @@
   10000[1] <- 14.0
   goto 11
 6:
-  goto 7 if Greater(EntityData[2], 0.0) else 8
+  goto 7 if Greater(EntityData[2], 0) else 8
 7:
   10000[1] <- 10.0
   goto 11
@@ -47,7 +47,7 @@
     1.0 -> 12
     default -> 16
 12:
-  goto 13 if Greater(EntityData[2], 0.0) else 14
+  goto 13 if Greater(EntityData[2], 0) else 14
 13:
   10000[4] <- 11.0
   goto 16
@@ -60,12 +60,12 @@
 16:
   goto 17 if LessOr(10000[39], LevelData[15]) else 18
 17:
-  10000[5] <- 0.0
+  10000[5] <- 0
   goto 25
 18:
   goto 19 if LessOr(10000[39], Add(LevelData[15], 0.5)) else 20
 19:
-  10000[5] <- Remap(LevelData[15], Add(LevelData[15], 0.5), 0.0, 1.0, 10000[39])
+  10000[5] <- Remap(LevelData[15], Add(LevelData[15], 0.5), 0, 1.0, 10000[39])
   goto 25
 20:
   goto 21 if LessOr(10000[39], Subtract(LevelData[14], 0.5)) else 22
@@ -75,14 +75,14 @@
 22:
   goto 23 if LessOr(10000[39], LevelData[14]) else 24
 23:
-  10000[5] <- Remap(Subtract(LevelData[14], 0.5), LevelData[14], 1.0, 0.0, 10000[39])
+  10000[5] <- Remap(Subtract(LevelData[14], 0.5), LevelData[14], 1.0, 0, 10000[39])
   goto 25
 24:
-  10000[5] <- 0.0
+  10000[5] <- 0
   goto 25
 25:
   10000[5] <- EaseOutQuad(10000[5])
-  goto 26 if LessOr(10000[5], 0.0) else 27
+  goto 26 if LessOr(10000[5], 0) else 27
 26:
   goto when 10000[11]
     2.0 -> 59
@@ -109,12 +109,12 @@
   10000[5] <- Mod(RuntimeUpdate[0], 0.3)
   goto 30 if LessOr(10000[39], LevelData[15]) else 31
 30:
-  10000[6] <- 0.0
+  10000[6] <- 0
   goto 38
 31:
   goto 32 if LessOr(10000[39], Add(LevelData[15], 0.5)) else 33
 32:
-  10000[6] <- Remap(LevelData[15], Add(LevelData[15], 0.5), 0.0, 1.0, 10000[39])
+  10000[6] <- Remap(LevelData[15], Add(LevelData[15], 0.5), 0, 1.0, 10000[39])
   goto 38
 33:
   goto 34 if LessOr(10000[39], Subtract(LevelData[14], 0.5)) else 35
@@ -124,13 +124,13 @@
 35:
   goto 36 if LessOr(10000[39], LevelData[14]) else 37
 36:
-  10000[6] <- Remap(Subtract(LevelData[14], 0.5), LevelData[14], 1.0, 0.0, 10000[39])
+  10000[6] <- Remap(Subtract(LevelData[14], 0.5), LevelData[14], 1.0, 0, 10000[39])
   goto 38
 37:
-  10000[6] <- 0.0
+  10000[6] <- 0
   goto 38
 38:
-  10000[7] <- 0.0
+  10000[7] <- 0
   goto 39
 39:
   goto 40 if Less(10000[7], Abs(EntityData[2])) else 79
@@ -141,20 +141,20 @@
   10000[9] <- 1.0
   goto 43
 42:
-  10000[9] <- 0.0
+  10000[9] <- 0
   goto 43
 43:
   goto 44 if Equal(10000[7], Subtract(Abs(EntityData[2]), 1.0)) else 45
 44:
-  10000[10] <- 0.0
-  goto 53 if LessOr(10000[5], 0.0) else 46
+  10000[10] <- 0
+  goto 53 if LessOr(10000[5], 0) else 46
 45:
   10000[10] <- 1.0
-  goto 53 if LessOr(10000[5], 0.0) else 46
+  goto 53 if LessOr(10000[5], 0) else 46
 46:
   goto 47 if LessOr(10000[5], 0.1) else 48
 47:
-  10000[9] <- Remap(0.0, 0.1, 10000[9], 1.0, 10000[5])
+  10000[9] <- Remap(0, 0.1, 10000[9], 1.0, 10000[5])
   goto 53
 48:
   goto 49 if LessOr(10000[5], 0.19999999999999998) else 50
@@ -171,12 +171,12 @@
   goto 53
 53:
   10000[9] <- Multiply(EaseOutQuad(10000[6]), EaseOutQuad(10000[9]))
-  goto 54 if LessOr(10000[9], 0.0) else 55
+  goto 54 if LessOr(10000[9], 0) else 55
 54:
   10000[7] <- 10000[8]
   goto 39
 55:
-  goto 56 if Greater(EntityData[2], 0.0) else 57
+  goto 56 if Greater(EntityData[2], 0) else 57
 56:
   10000[10] <- 1.0
   goto 58
@@ -219,12 +219,12 @@
   10000[0] <- Mod(RuntimeUpdate[0], 0.3)
   goto 60 if LessOr(10000[39], LevelData[15]) else 61
 60:
-  10000[1] <- 0.0
+  10000[1] <- 0
   goto 68
 61:
   goto 62 if LessOr(10000[39], Add(LevelData[15], 0.5)) else 63
 62:
-  10000[1] <- Remap(LevelData[15], Add(LevelData[15], 0.5), 0.0, 1.0, 10000[39])
+  10000[1] <- Remap(LevelData[15], Add(LevelData[15], 0.5), 0, 1.0, 10000[39])
   goto 68
 63:
   goto 64 if LessOr(10000[39], Subtract(LevelData[14], 0.5)) else 65
@@ -234,20 +234,20 @@
 65:
   goto 66 if LessOr(10000[39], LevelData[14]) else 67
 66:
-  10000[1] <- Remap(Subtract(LevelData[14], 0.5), LevelData[14], 1.0, 0.0, 10000[39])
+  10000[1] <- Remap(Subtract(LevelData[14], 0.5), LevelData[14], 1.0, 0, 10000[39])
   goto 68
 67:
-  10000[1] <- 0.0
+  10000[1] <- 0
   goto 68
 68:
-  goto 69 if LessOr(10000[0], 0.0) else 70
+  goto 69 if LessOr(10000[0], 0) else 70
 69:
-  10000[2] <- 0.0
+  10000[2] <- 0
   goto 77
 70:
   goto 71 if LessOr(10000[0], 0.1) else 72
 71:
-  10000[2] <- Remap(0.0, 0.1, 0.0, 1.0, 10000[0])
+  10000[2] <- Remap(0, 0.1, 0, 1.0, 10000[0])
   goto 77
 72:
   goto 73 if LessOr(10000[0], 0.19999999999999998) else 74
@@ -257,14 +257,14 @@
 74:
   goto 75 if LessOr(10000[0], 0.3) else 76
 75:
-  10000[2] <- Remap(0.19999999999999998, 0.3, 1.0, 0.0, 10000[0])
+  10000[2] <- Remap(0.19999999999999998, 0.3, 1.0, 0, 10000[0])
   goto 77
 76:
-  10000[2] <- 0.0
+  10000[2] <- 0
   goto 77
 77:
   10000[5] <- Multiply(EaseOutQuad(10000[1]), EaseOutQuad(10000[2]))
-  goto 79 if LessOr(10000[5], 0.0) else 78
+  goto 79 if LessOr(10000[5], 0) else 78
 78:
   10000[6] <- Subtract(Multiply(EntityData[0], LevelData[12]), Divide(LevelData[11], 2.0))
   10000[7] <- Add(Add(Multiply(LevelData[8], 10000[6]), Multiply(LevelData[9], 10000[39])), LevelData[10])

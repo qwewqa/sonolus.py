@@ -7,22 +7,22 @@
   10000[3] <- EntityMemory[1]
   goto 9 if Not(LevelOption[7]) else 3
 3:
-  10000[0] <- 0.0
+  10000[0] <- 0
   goto 4
 4:
   goto 5 if Less(10000[0], LevelData[0]) else 8
 5:
   10000[1] <- Add(10000[0], 1.0)
-  10000[2] <- Multiply(Add(10000[0], Multiply(Less(10000[0], 0.0), 7.0)), 9.0)
+  10000[2] <- Multiply(Add(10000[0], Multiply(Less(10000[0], 0), 7.0)), 9.0)
   goto 6 if Equal(LevelData[10000[2] + 1], 10000[3]) else 7
 6:
-  SpawnParticleEffect(0.0, LevelData[10000[2] + 2], LevelData[10000[2] + 3], LevelData[10000[2] + 4], LevelData[10000[2] + 5], LevelData[10000[2] + 6], LevelData[10000[2] + 7], LevelData[10000[2] + 8], LevelData[10000[2] + 9], 0.2, 0.0)
+  SpawnParticleEffect(0, LevelData[10000[2] + 2], LevelData[10000[2] + 3], LevelData[10000[2] + 4], LevelData[10000[2] + 5], LevelData[10000[2] + 6], LevelData[10000[2] + 7], LevelData[10000[2] + 8], LevelData[10000[2] + 9], 0.2, 0)
   goto exit
 7:
   10000[0] <- 10000[1]
   goto 4
 8:
-  DebugLog(0.0)
+  DebugLog(0)
   DebugPause()
   goto exit
 9:
