@@ -246,9 +246,13 @@ class Collection:
                 use_item = level[key]
                 if "item" not in use_item:
                     continue
-                name = use_item["item"]["name"]
-                if name in self.categories.get(category, {}):
-                    use_item["item"] = self.get_item(category, name)
+                use_item_value = use_item["item"]
+                if isinstance(use_item_value, str) and use_item_value in self.categories.get(category, {}):
+                    use_item["item"] = self.get_item(category, use_item_value)
+                elif isinstance(use_item_value, dict) and "name" in use_item_value:
+                    name = use_item["item"]["name"]
+                    if name in self.categories.get(category, {}):
+                        use_item["item"] = self.get_item(category, name)
 
     def _create_base_directory(self, path: Asset) -> Path:
         base_dir = Path(path) / BASE_PATH.strip("/")
