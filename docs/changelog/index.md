@@ -1,3 +1,7 @@
+### 0.9.2
+
+- Fixed dev server sometimes not exiting without further input upon a keyboard interrupt
+
 ### 0.9.1
 
 - Added project urls
