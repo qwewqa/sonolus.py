@@ -1,3 +1,8 @@
+### 0.9.0
+
+- New dev server cli with faster rebuild times
+- Performance improvements
+
 ### 0.8.0
 
 - Changelog introduced
