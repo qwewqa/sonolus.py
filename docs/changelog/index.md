@@ -1,3 +1,7 @@
+### 0.9.3
+
+- Added support for string use item values in levels
+
 ### 0.9.2
 
 - Fixed dev server sometimes not exiting without further input upon a keyboard interrupt
