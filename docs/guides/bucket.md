@@ -1,4 +1,4 @@
-# Buckets & Judgement
+# Buckets & Judgment
 
 ## Declaring Buckets
 
@@ -36,16 +36,16 @@ most engines should be set to
 [`StandardText.MILLISECOND_UNIT`][sonolus.script.text.StandardText] to indicate that the bucket is
 measured in milliseconds.
 
-## Judgement Windows
+## Judgment Windows
 
 Sonolus notes are judged on a scale from best to worst of:
 
-- [`Judgement.PERFECT`][sonolus.script.bucket.Judgment.PERFECT]
-- [`Judgement.GREAT`][sonolus.script.bucket.Judgment.GREAT]
-- [`Judgement.GOOD`][sonolus.script.bucket.Judgment.GOOD]
-- [`Judgement.MISS`][sonolus.script.bucket.Judgment.MISS]
+- [`Judgment.PERFECT`][sonolus.script.bucket.Judgment.PERFECT]
+- [`Judgment.GREAT`][sonolus.script.bucket.Judgment.GREAT]
+- [`Judgment.GOOD`][sonolus.script.bucket.Judgment.GOOD]
+- [`Judgment.MISS`][sonolus.script.bucket.Judgment.MISS]
 
-The [`JudgmentWindow`][sonolus.script.bucket.JudgmentWindow] class is useful for defining the judgement windows of a
+The [`JudgmentWindow`][sonolus.script.bucket.JudgmentWindow] class is useful for defining the judgment windows of a
 note in seconds, and judging a note based on the actual and expected (target) hit times:
 
 ```python
