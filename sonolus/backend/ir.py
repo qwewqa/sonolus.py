@@ -5,8 +5,21 @@ type IRExpr = IRConst | IRPureInstr | IRGet
 type IRStmt = IRExpr | IRInstr | IRSet
 
 
+_IR_CONST_CACHE_START = -5
+_IR_CONST_CACHE_STOP = 257
+
+
 class IRConst:
+    __slots__ = ("value",)
+
     value: float | int
+
+    def __new__(cls, value):
+        if float(value).is_integer():
+            int_value = int(value)
+            if _IR_CONST_CACHE_START <= int_value < _IR_CONST_CACHE_STOP:
+                return _IR_CONST_CACHE[int_value - _IR_CONST_CACHE_START]
+        return super().__new__(cls)
 
     def __init__(self, value: float):
         if isinstance(value, bool):
@@ -26,7 +39,18 @@ class IRConst:
         return hash(self.value)
 
 
+def _create_raw_const(value: float | int) -> IRConst:
+    result = object.__new__(IRConst)
+    result.value = value
+    return result
+
+
+_IR_CONST_CACHE = [_create_raw_const(i) for i in range(_IR_CONST_CACHE_START, _IR_CONST_CACHE_STOP)]
+
+
 class IRPureInstr:
+    __slots__ = ("args", "array_defs", "defs", "is_array_init", "live", "op", "uses", "visited")
+
     op: Op
     args: list[IRExpr]
 
@@ -49,6 +73,8 @@ class IRPureInstr:
 
 
 class IRInstr:
+    __slots__ = ("args", "array_defs", "defs", "is_array_init", "live", "op", "uses", "visited")
+
     op: Op
     args: list[IRExpr]
 
@@ -70,6 +96,8 @@ class IRInstr:
 
 
 class IRGet:
+    __slots__ = ("array_defs", "defs", "is_array_init", "live", "place", "uses", "visited")
+
     place: Place
 
     def __init__(self, place: Place):
@@ -89,6 +117,8 @@ class IRGet:
 
 
 class IRSet:
+    __slots__ = ("array_defs", "defs", "is_array_init", "live", "place", "uses", "value", "visited")
+
     place: Place
     value: IRExpr | IRInstr
 

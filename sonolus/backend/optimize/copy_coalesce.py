@@ -69,8 +69,12 @@ class CopyCoalesce(CompilerPass):
     def get_interference(self, entry: BasicBlock) -> dict[TempBlock, set[TempBlock]]:
         result = {}
         for block in traverse_cfg_preorder(entry):
-            for stmt in [*block.statements, block.test]:
+            for stmt in block.statements:
                 live = {p for p in get_live(stmt) if isinstance(p, TempBlock) and p.size == 1}
+                for place in live:
+                    result.setdefault(place, set()).update(live - {place})
+            if not isinstance(block.test, IRConst):
+                live = {p for p in get_live(block.test) if isinstance(p, TempBlock) and p.size == 1}
                 for place in live:
                     result.setdefault(place, set()).update(live - {place})
         return result

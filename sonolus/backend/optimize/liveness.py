@@ -31,8 +31,9 @@ class LivenessAnalysis(CompilerPass):
                 statement.defs = self.get_defs(statement)
                 statement.is_array_init = False  # True if this may be the first assignment to an array
                 statement.array_defs = self.get_array_defs(statement)
-            block.test.live = set()
-            block.test.uses = self.get_uses(block.test, set())
+            if not isinstance(block.test, IRConst):
+                block.test.live = set()
+                block.test.uses = self.get_uses(block.test, set())
         self.preprocess_arrays(entry)
 
     def process(self, entry: BasicBlock):
@@ -72,8 +73,9 @@ class LivenessAnalysis(CompilerPass):
             for place in block.live_out
             if not (isinstance(place, TempBlock) and place.size > 1 and place not in block.array_defs_out)
         }
-        block.test.live.update(live)
-        live.update(block.test.uses)
+        if not isinstance(block.test, IRConst):
+            block.test.live.update(live)
+            live.update(block.test.uses)
         for statement in reversed(block.statements):
             statement.live.update(live)
             if self.can_skip(statement, live):
