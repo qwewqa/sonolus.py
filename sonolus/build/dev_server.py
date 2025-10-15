@@ -112,16 +112,13 @@ def parse_dev_command(command_line: str) -> Command | None:
         return None
 
 
-def command_input_thread(command_queue: queue.Queue, stop_event: threading.Event, prompt_event: threading.Event):
+def command_input_thread(command_queue: queue.Queue, prompt_event: threading.Event):
     print(f"\nAvailable commands:\n{HELP_TEXT}")
 
-    while not stop_event.is_set():
+    while True:
         try:
             prompt_event.wait()
             prompt_event.clear()
-
-            if stop_event.is_set():
-                break
 
             print("\n> ", end="", flush=True)
             command_line = input()
@@ -193,10 +190,9 @@ def run_server(
             threading.Thread(target=httpd.serve_forever, daemon=True).start()
 
             command_queue = queue.Queue()
-            stop_event = threading.Event()
             prompt_event = threading.Event()
             input_thread = threading.Thread(
-                target=command_input_thread, args=(command_queue, stop_event, prompt_event), daemon=True
+                target=command_input_thread, args=(command_queue, prompt_event), daemon=True
             )
             input_thread.start()
 
@@ -215,8 +211,5 @@ def run_server(
                 sys.exit(0)
             finally:
                 httpd.shutdown()
-                stop_event.set()
-                prompt_event.set()
-                input_thread.join()
         else:
             httpd.serve_forever()
