@@ -1,3 +1,7 @@
+### 0.9.1
+
+- Added project urls
+
 ### 0.9.0
 
 - New dev server cli with faster rebuild times
