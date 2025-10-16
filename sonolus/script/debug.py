@@ -27,7 +27,7 @@ def error(message: str | None = None) -> Never:  # type: ignore
     if not isinstance(message, str):
         raise ValueError("Expected a string")
     if ctx():
-        debug_log(ctx().map_constant(message))
+        debug_log(ctx().map_debug_message(message))
         debug_pause()
         terminate()
     else:

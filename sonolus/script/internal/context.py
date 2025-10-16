@@ -42,11 +42,18 @@ debug_var = ContextVar("debug_var", default=_disabled_debug_config)
 class ProjectContextState:
     rom: ReadOnlyMemory
     const_mappings: dict[Any, int]
+    debug_str_mappings: dict[str, int]
     lock: Lock
 
-    def __init__(self, rom: ReadOnlyMemory | None = None, const_mappings: dict[Any, int] | None = None):
+    def __init__(
+        self,
+        rom: ReadOnlyMemory | None = None,
+        const_mappings: dict[Any, int] | None = None,
+        debug_str_mappings: dict[str, int] | None = None,
+    ):
         self.rom = ReadOnlyMemory() if rom is None else rom
         self.const_mappings = {} if const_mappings is None else const_mappings
+        self.debug_str_mappings = {} if debug_str_mappings is None else debug_str_mappings
         self.lock = Lock()
 
 
@@ -83,11 +90,13 @@ class ModeContextState:
 class CallbackContextState:
     callback: str
     used_names: dict[str, int]
+    debug_stack: list[str]
     no_eval: bool
 
     def __init__(self, callback: str, no_eval: bool = False):
         self.callback = callback
         self.used_names = {}
+        self.debug_stack = []
         self.no_eval = no_eval
 
 
@@ -283,6 +292,14 @@ class Context:
             if value not in const_mappings:
                 const_mappings[value] = len(const_mappings)
             return const_mappings[value]
+
+    def map_debug_message(self, message: str) -> int:
+        with self.project_state.lock:
+            message_with_trace = "\n".join([*self.callback_state.debug_stack, message])
+            debug_str_mappings = self.project_state.debug_str_mappings
+            if message_with_trace not in debug_str_mappings:
+                debug_str_mappings[message_with_trace] = len(debug_str_mappings) + 1
+            return debug_str_mappings[message_with_trace]
 
     def get_global_base(self, value: _GlobalInfo | _GlobalPlaceholder) -> BlockPlace:
         with self.mode_state.lock:

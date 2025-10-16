@@ -47,9 +47,14 @@ def compile_and_call[**P, R](fn: Callable[P, R], /, *args: P.args, **kwargs: P.k
 def compile_and_call_at_definition[**P, R](fn: Callable[P, R], /, *args: P.args, **kwargs: P.kwargs) -> R:
     if not ctx():
         return fn(*args, **kwargs)
-    if ctx().no_eval:
-        return compile_and_call(fn, *args, **kwargs)
     source_file, node = get_function(fn)
+    if ctx().no_eval:
+        debug_stack = ctx().callback_state.debug_stack
+        try:
+            debug_stack.append(f'File "{source_file}", line {node.lineno}, in <callback>')
+            return compile_and_call(fn, *args, **kwargs)
+        finally:
+            debug_stack.pop()
     location_args = {
         "lineno": node.lineno,
         "col_offset": node.col_offset,
@@ -64,10 +69,16 @@ def compile_and_call_at_definition[**P, R](fn: Callable[P, R], /, *args: P.args,
             **location_args,
         )
     )
-    return eval(
-        compile(expr, filename=source_file, mode="eval"),
-        {"fn": lambda: compile_and_call(fn, *args, **kwargs), "_filter_traceback_": True, "_traceback_root_": True},
-    )
+
+    debug_stack = ctx().callback_state.debug_stack
+    try:
+        debug_stack.append(f'File "{source_file}", line {node.lineno}, in <callback>')
+        return eval(
+            compile(expr, filename=source_file, mode="eval"),
+            {"fn": lambda: compile_and_call(fn, *args, **kwargs), "_filter_traceback_": True, "_traceback_root_": True},
+        )
+    finally:
+        debug_stack.pop()
 
 
 def generate_fn_impl(fn: Callable):
@@ -111,7 +122,9 @@ def eval_fn(fn: Callable, /, *args, **kwargs):
         **fn.__globals__,
         **nonlocal_vars,
     }
-    return Visitor(source_file, bound_args, global_vars).run(node)
+    return Visitor(
+        source_file, bound_args, global_vars, parent=None, function_name=getattr(fn, "__name__", "<unnamed>")
+    ).run(node)
 
 
 unary_ops = {
@@ -232,14 +245,16 @@ class Visitor(ast.NodeVisitor):
     resume_ctxs: list[Context]  # Contexts after yield statements
     active_ctx: Context | None  # The active context for use in nested functions
     parent: Visitor | None  # The parent visitor for use in nested functions
-    used_parent_binding_values: dict[str, Value]  # Values of parent bindings used in this function
+    used_parent_binding_values: dict[str, Value]  # Values of parent bindings used in this
+    function_name: str
 
     def __init__(
         self,
         source_file: str,
         bound_args: inspect.BoundArguments,
         global_vars: dict[str, Any],
-        parent: Visitor | None = None,
+        parent: Visitor | None,
+        function_name: str,
     ):
         self.source_file = source_file
         self.globals = global_vars
@@ -253,6 +268,7 @@ class Visitor(ast.NodeVisitor):
         self.active_ctx = None
         self.parent = parent
         self.used_parent_binding_values = {}
+        self.function_name = function_name
 
     def run(self, node):
         before_ctx = ctx()
@@ -433,7 +449,8 @@ class Visitor(ast.NodeVisitor):
                 self.source_file,
                 bound,
                 self.globals,
-                self,
+                parent=self,
+                function_name=name,
             ).run(node)
 
         fn._meta_fn_ = True
@@ -951,7 +968,8 @@ class Visitor(ast.NodeVisitor):
                 self.source_file,
                 bound,
                 self.globals,
-                self,
+                parent=self,
+                function_name="<lambda>",
             ).run(node)
 
         fn._meta_fn_ = True
@@ -1002,7 +1020,9 @@ class Visitor(ast.NodeVisitor):
 
     def visit_GeneratorExp(self, node):
         self.active_ctx = ctx()
-        return Visitor(self.source_file, inspect.Signature([]).bind(), self.globals, self).run(node)
+        return Visitor(
+            self.source_file, inspect.Signature([]).bind(), self.globals, parent=self, function_name="<genexp>"
+        ).run(node)
 
     def visit_Await(self, node):
         raise NotImplementedError("Await expressions are not supported")
@@ -1326,15 +1346,20 @@ class Visitor(ast.NodeVisitor):
     ) -> R | Value:
         """Handles a call to the given callable."""
         self.active_ctx = ctx()
-        if (
-            isinstance(fn, Value)
-            and fn._is_py_()
-            and isinstance(fn._as_py_(), type)
-            and issubclass(fn._as_py_(), Value)
-        ):
-            return validate_value(self.execute_at_node(node, fn._as_py_(), *args, **kwargs))
-        else:
-            return self.execute_at_node(node, lambda: validate_value(compile_and_call(fn, *args, **kwargs)))
+        debug_stack = self.active_ctx.callback_state.debug_stack
+        try:
+            debug_stack.append(f'File "{self.source_file}", line {node.lineno}, in {self.function_name}')
+            if (
+                isinstance(fn, Value)
+                and fn._is_py_()
+                and isinstance(fn._as_py_(), type)
+                and issubclass(fn._as_py_(), Value)
+            ):
+                return validate_value(self.execute_at_node(node, fn._as_py_(), *args, **kwargs))
+            else:
+                return self.execute_at_node(node, lambda: validate_value(compile_and_call(fn, *args, **kwargs)))
+        finally:
+            debug_stack.pop()
 
     def handle_getitem(self, node: ast.stmt | ast.expr, target: Value, key: Value) -> Value:
         with self.reporting_errors_at_node(node):
