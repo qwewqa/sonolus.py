@@ -44,17 +44,20 @@ class ProjectContextState:
     const_mappings: dict[Any, int]
     debug_str_mappings: dict[str, int]
     lock: Lock
+    dev: bool
 
     def __init__(
         self,
         rom: ReadOnlyMemory | None = None,
         const_mappings: dict[Any, int] | None = None,
         debug_str_mappings: dict[str, int] | None = None,
+        dev: bool = False,
     ):
         self.rom = ReadOnlyMemory() if rom is None else rom
         self.const_mappings = {} if const_mappings is None else const_mappings
         self.debug_str_mappings = {} if debug_str_mappings is None else debug_str_mappings
         self.lock = Lock()
+        self.dev = dev
 
 
 class ModeContextState:

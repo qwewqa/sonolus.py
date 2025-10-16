@@ -3,7 +3,7 @@ from typing import Never, assert_never
 from sonolus.backend.ops import Op
 from sonolus.script.array import Array
 from sonolus.script.array_like import ArrayLike
-from sonolus.script.debug import error
+from sonolus.script.debug import error, require
 from sonolus.script.internal.context import ctx
 from sonolus.script.internal.dict_impl import DictImpl
 from sonolus.script.internal.impl import meta_fn, validate_value
@@ -192,7 +192,7 @@ def _max_num_iterator(iterable, default, key):
     iterator = iterable.__iter__()  # noqa: PLC2801
     initial = iterator.next()
     if initial.is_nothing:
-        assert default is not None
+        require(default is not None, "default must be provided if the iterator is empty")
         return default
     if key is not None:
         result = initial.get_unsafe()
@@ -285,7 +285,7 @@ def _min_num_iterator(iterable, default, key):
     iterator = iterable.__iter__()  # noqa: PLC2801
     initial = iterator.next()
     if initial.is_nothing:
-        assert default is not None
+        require(default is not None, "default must be provided if the iterator is empty")
         return default
     if key is not None:
         result = initial.get_unsafe()
@@ -371,7 +371,7 @@ def _sum(iterable, /, start=0):
 
 
 def _next(iterator):
-    assert isinstance(iterator, SonolusIterator)
+    require(isinstance(iterator, SonolusIterator), "Only subclasses of SonolusIterator are supported as iterators")
     value = iterator.next()
     if value.is_some:
         return value.get_unsafe()

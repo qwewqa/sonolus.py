@@ -382,12 +382,12 @@ def get_positive_index(
     if Num._accept_(check)._as_py_():
         include_end = Num._accept_(include_end)
         if not include_end._is_py_():
-            assert_true(Num.and_(index >= -length, index < (length + include_end)), "Index out of range")
+            is_in_bounds = Num.and_(index >= -length, index < (length + include_end))
         elif include_end._as_py_():
-            assert_true(Num.and_(index >= -length, index <= length), "Index out of range")
+            is_in_bounds = Num.and_(index >= -length, index <= length)
         else:
-            assert_true(Num.and_(index >= -length, index < length), "Index out of range")
-        assert_true(_trunc(index) == index, "Index must be an integer")
+            is_in_bounds = Num.and_(index >= -length, index < length)
+        assert_true(Num.and_(is_in_bounds, _trunc(index) == index), "Invalid index")
         # Skipping length check since typically these are managed by the library and unlikely to be wrong
     return index + (index < 0) * length
 
@@ -418,12 +418,12 @@ def check_positive_index(index: int, length: int, include_end: bool = False) -> 
     length = Num._accept_(length)
     include_end = Num._accept_(include_end)
     if not include_end._is_py_():
-        assert_true(Num.and_(index >= 0, index < (length + include_end)), "Index out of range")
+        is_in_bounds = Num.and_(index >= 0, index < (length + include_end))
     elif include_end._as_py_():
-        assert_true(Num.and_(index >= 0, index <= length), "Index out of range")
+        is_in_bounds = Num.and_(index >= 0, index <= length)
     else:
-        assert_true(Num.and_(index >= 0, index < length), "Index out of range")
-    assert_true(_trunc(index) == index, "Index must be an integer")
+        is_in_bounds = Num.and_(index >= 0, index < length)
+    assert_true(Num.and_(is_in_bounds, _trunc(index) == index), "Invalid index")
     # Skipping length check since typically these are managed by the library and unlikely to be wrong
     return index
 

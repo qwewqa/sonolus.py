@@ -486,8 +486,10 @@ Imports are supported at the module level, but not within functions.
 
 ### assert
 
-Assertions are supported. Assertion failures cannot be handled and will terminate the current
+Assertions are supported. Assertion failures cannot be handled and in dev builds will terminate the current
 callback when running in the Sonolus app. In debug mode, the game will also pause to indicate the error.
+
+In production builds, assertions are removed, so they must not be relied upon.
 
 ```python
 assert a > 0, 'a must be positive'

@@ -18,17 +18,23 @@ debug_log_callback = ContextVar[Callable[[Num], None]]("debug_log_callback")
 
 @meta_fn
 def error(message: str | None = None) -> Never:  # type: ignore
-    """Raise an error.
+    """Raise an error, and if in a dev build, log a message and pause the game.
 
     This function is used to raise an error during runtime.
     When this happens, the game will pause in debug mode. The current callback will also immediately return 0.
+
+    In non-dev builds, this function will terminate the current callback silently.
+
+    Args:
+        message: The message to log.
     """
     message = validate_value(message)._as_py_() or "Error"  # type: ignore
     if not isinstance(message, str):
         raise ValueError("Expected a string")
     if ctx():
-        debug_log(ctx().map_debug_message(message))
-        debug_pause()
+        if ctx().project_state.dev:
+            debug_log(ctx().map_debug_message(message))
+            debug_pause()
         terminate()
     else:
         raise RuntimeError(message)
@@ -40,6 +46,9 @@ def static_error(message: str | None = None) -> Never:
 
     This function is used to raise an error during compile-time if the compiler cannot guarantee that
     this function will not be called during runtime.
+
+    Args:
+        message: The message to log.
     """
     message = validate_value(message)._as_py_() or "Error"  # type: ignore
     if not isinstance(message, str):
@@ -70,19 +79,38 @@ def debug_pause():
 
 @meta_fn
 def notify(message: str):
-    """Log a code that can be decoded by the dev server and pause the game if in debug mode."""
+    """Log a code that can be decoded by the dev server and pause the game if in debug mode and in a dev build.
+
+    Does nothing if not a dev build.
+
+    Args:
+        message: The message to log.
+    """
     message = validate_value(message)._as_py_()  # type: ignore
     if not isinstance(message, str):
         raise ValueError("Expected a string")
     if ctx():
-        debug_log(ctx().map_debug_message(message))
-        debug_pause()
+        if ctx().project_state.dev:
+            debug_log(ctx().map_debug_message(message))
+            debug_pause()
     else:
         print(f"[NOTIFY] {message}")
 
 
 @meta_fn
-def assert_true(value: int | float | bool, message: str | None = None):
+def require(value: int | float | bool, message: str | None = None):
+    """Require a condition to be true, or raise an error.
+
+    Similar to assert, but does not get stripped in non-dev builds.
+
+    If in a dev build, this function will log a message and pause the game if the condition is false.
+
+    In non-dev builds, this function will terminate the current callback silently if the condition is false.
+
+    Args:
+        value: The condition to check.
+        message: The message to log if the condition is false.
+    """
     if not ctx():
         if not value:
             raise AssertionError(message if message is not None else "Assertion failed")
@@ -102,6 +130,13 @@ def assert_true(value: int | float | bool, message: str | None = None):
         set_ctx(f_branch)
         error(message)  # type: ignore
         set_ctx(t_branch)
+
+
+@meta_fn
+def assert_true(value: int | float | bool, message: str | None = None):
+    if ctx() and not ctx().project_state.dev:
+        return
+    require(value, message)
 
 
 def assert_false(value: int | float | bool, message: str | None = None):

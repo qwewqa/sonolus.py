@@ -117,7 +117,7 @@ class RebuildCommand:
         print("Rebuilding...")
         try:
             start_time = perf_counter()
-            server_state.project_state = ProjectContextState()
+            server_state.project_state = ProjectContextState(dev=True)
             server_state.project = project_module.project
             build_collection(
                 server_state.project,
@@ -260,7 +260,7 @@ def run_server(
     from sonolus.build.cli import build_collection
 
     cache = CompileCache()
-    project_state = ProjectContextState()
+    project_state = ProjectContextState(dev=True)
 
     start_time = perf_counter()
     build_collection(project, build_dir, config, cache=cache, project_state=project_state)

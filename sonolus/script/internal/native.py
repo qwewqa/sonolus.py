@@ -20,7 +20,7 @@ def native_call(op: Op, *args: int | float | bool) -> Num:
     return Num._from_place_(result)
 
 
-def native_function[**P, R](op: Op) -> Callable[[Callable[P, R]], Callable[P, R]]:
+def native_function[**P, R](op: Op, const_eval: bool = False) -> Callable[[Callable[P, R]], Callable[P, R]]:
     def decorator(fn: Callable[P, int | float | bool]) -> Callable[P, Num]:
         signature = inspect.signature(fn)
 
@@ -30,6 +30,12 @@ def native_function[**P, R](op: Op) -> Callable[[Callable[P, R]], Callable[P, R]
             if len(args) < sum(1 for p in signature.parameters.values() if p.default == inspect.Parameter.empty):
                 raise TypeError(f"Expected {len(signature.parameters)} arguments, got {len(args)}")
             if ctx():
+                if const_eval:
+                    args = tuple(validate_value(arg) for arg in args)
+                    if not all(_is_num(arg) for arg in args):
+                        raise RuntimeError("All arguments must be of type Num")
+                    if all(arg._is_py_() for arg in args):
+                        return Num._accept_(fn(*[arg._as_py_() for arg in args]))
                 bound_args = signature.bind(*args)
                 bound_args.apply_defaults()
                 return native_call(op, *bound_args.args)
