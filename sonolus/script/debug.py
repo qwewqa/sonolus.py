@@ -69,6 +69,19 @@ def debug_pause():
 
 
 @meta_fn
+def notify(message: str):
+    """Log a code that can be decoded by the dev server and pause the game if in debug mode."""
+    message = validate_value(message)._as_py_()  # type: ignore
+    if not isinstance(message, str):
+        raise ValueError("Expected a string")
+    if ctx():
+        debug_log(ctx().map_debug_message(message))
+        debug_pause()
+    else:
+        print(f"[NOTIFY] {message}")
+
+
+@meta_fn
 def assert_true(value: int | float | bool, message: str | None = None):
     if not ctx():
         if not value:

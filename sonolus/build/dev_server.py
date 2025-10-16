@@ -28,7 +28,7 @@ if TYPE_CHECKING:
 
 HELP_TEXT = """
 [r]ebuild
-[d]ecode <error_code>
+[d]ecode <message_code>
 [q]uit
 """.strip()
 
@@ -89,17 +89,17 @@ class RebuildCommand:
 
 @dataclass
 class DecodeCommand:
-    error_code: int
+    message_code: int
 
     def execute(self, server_state: ServerState):
         debug_str_mappings = server_state.project_state.debug_str_mappings
-        message = next((msg for msg, code in debug_str_mappings.items() if code == self.error_code), None)
+        message = next((msg for msg, code in debug_str_mappings.items() if code == self.message_code), None)
 
         if message is not None:
-            print(f"Error code {self.error_code}:")
+            print(f"Message code {self.message_code}:")
             print(message)
         else:
-            print(f"Unknown error code: {self.error_code}")
+            print(f"Unknown message code: {self.message_code}")
 
 
 @dataclass
@@ -115,7 +115,7 @@ def parse_dev_command(command_line: str) -> Command | None:
 
     subparsers.add_parser("rebuild", aliases=["r"])
     decode_parser = subparsers.add_parser("decode", aliases=["d"])
-    decode_parser.add_argument("error_code", type=int, help="Error code to decode")
+    decode_parser.add_argument("message_code", type=int, help="Message code to decode")
     subparsers.add_parser("quit", aliases=["q"])
 
     try:
@@ -123,7 +123,7 @@ def parse_dev_command(command_line: str) -> Command | None:
         if args.cmd in {"rebuild", "r"}:
             return RebuildCommand()
         elif args.cmd in {"decode", "d"}:
-            return DecodeCommand(error_code=args.error_code)
+            return DecodeCommand(message_code=args.message_code)
         elif args.cmd in {"quit", "q"}:
             return ExitCommand()
         return None
