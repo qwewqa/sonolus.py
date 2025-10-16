@@ -7,7 +7,7 @@ from sonolus.script.array import Array
 from sonolus.script.array_like import ArrayLike, get_positive_index
 from sonolus.script.debug import error
 from sonolus.script.internal.context import ctx
-from sonolus.script.internal.impl import meta_fn
+from sonolus.script.internal.impl import meta_fn, perf_meta_fn
 from sonolus.script.interval import clamp
 from sonolus.script.iterator import SonolusIterator
 from sonolus.script.maybe import Maybe, Nothing, Some
@@ -15,6 +15,32 @@ from sonolus.script.num import Num
 from sonolus.script.pointer import _deref
 from sonolus.script.record import Record
 from sonolus.script.values import copy, zeros
+
+
+class UncheckedArray[T, Capacity](Record, ArrayLike[T]):
+    """A wrapper around an array that disables bounds checking.
+
+    Note that some checks may still be performed at compile time, but checks may be skipped at runtime.
+
+    Usage:
+        ```python
+        UncheckedArray[T, Capacity](_array: Array[T, Capacity])
+        ```
+    """
+
+    _array: Array[T, Capacity]
+
+    @perf_meta_fn
+    def __len__(self) -> int:
+        return self._array.size()
+
+    @perf_meta_fn
+    def __getitem__(self, item) -> T:
+        return self._array.get_unchecked(item)
+
+    @perf_meta_fn
+    def __setitem__(self, key: int, value: T):
+        self._array.set_unchecked(key, value)
 
 
 class Box[T](Record):
@@ -101,14 +127,14 @@ class VarArray[T, Capacity](Record, ArrayLike[T]):
     """
 
     _size: int
-    _array: Array[T, Capacity]
+    _array: UncheckedArray[T, Capacity]
 
     @classmethod
     def new(cls) -> Self:
         """Create a new empty array."""
         element_type = cls.type_var_value(T)
         capacity = cls.type_var_value(Capacity)
-        return cls(0, zeros(Array[element_type, capacity]))
+        return cls(0, zeros(UncheckedArray[element_type, capacity]))
 
     def __len__(self) -> int:
         """Return the number of elements in the array."""
@@ -456,7 +482,7 @@ class ArrayMap[K, V, Capacity](Record):
     """
 
     _size: int
-    _array: Array[_ArrayMapEntry[K, V], Capacity]
+    _array: UncheckedArray[_ArrayMapEntry[K, V], Capacity]
 
     @classmethod
     def new(cls) -> Self:
@@ -464,7 +490,7 @@ class ArrayMap[K, V, Capacity](Record):
         key_type = cls.type_var_value(K)
         value_type = cls.type_var_value(V)
         capacity = cls.type_var_value(Capacity)
-        return cls(0, zeros(Array[_ArrayMapEntry[key_type, value_type], capacity]))
+        return cls(0, zeros(UncheckedArray[_ArrayMapEntry[key_type, value_type], capacity]))
 
     def __len__(self) -> int:
         """Return the number of key-value pairs in the map."""
