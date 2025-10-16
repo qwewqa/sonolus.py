@@ -1,3 +1,9 @@
+### 0.10.0
+
+- Added `[d]ecode` command to dev server for decoding debug message codes
+- Added `[h]elp` command to dev server
+- Added [`notify()`][sonolus.script.debug.notify] for logging debug messages
+
 ### 0.9.3
 
 - Added support for string use item values in levels
