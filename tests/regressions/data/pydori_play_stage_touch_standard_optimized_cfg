@@ -19,7 +19,7 @@
   10000[33] <- 0
   goto 1
 1:
-  goto 2 if Less(10000[33], RuntimeUpdate[3]) else 35
+  goto 2 if Less(10000[33], RuntimeUpdate[3]) else 34
 2:
   10000[39] <- Multiply(10000[33], 15.0)
   10000[33] <- Add(10000[33], 1.0)
@@ -129,7 +129,7 @@
   10000[25] <- 0
   goto 29
 29:
-  goto 30 if Less(10000[25], LevelData[0]) else 34
+  goto 30 if Less(10000[25], LevelData[0]) else 36
 30:
   10000[26] <- Add(10000[25], 1.0)
   10000[34] <- Multiply(10000[25], 9.0)
@@ -144,10 +144,8 @@
   10000[25] <- 10000[26]
   goto 29
 34:
-  goto exit
+  goto 35 if Greater(10000[24], 0) else 36
 35:
-  goto 36 if Greater(10000[24], 0) else 37
-36:
   StreamSet(1.0, RuntimeUpdate[0], 10000[24])
   StreamSet(2.0, RuntimeUpdate[0], 10000[0])
   StreamSet(3.0, RuntimeUpdate[0], 10000[1])
@@ -166,5 +164,5 @@
   StreamSet(16.0, RuntimeUpdate[0], 10000[14])
   StreamSet(17.0, RuntimeUpdate[0], 10000[15])
   goto exit
-37:
+36:
   goto exit

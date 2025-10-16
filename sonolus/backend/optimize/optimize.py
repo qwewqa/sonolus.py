@@ -10,6 +10,7 @@ from sonolus.backend.optimize.inlining import InlineVars
 from sonolus.backend.optimize.simplify import (
     CoalesceFlow,
     CoalesceSmallConditionalBlocks,
+    CombineExitBlocks,
     NormalizeSwitch,
     RemoveRedundantArguments,
     RewriteToSwitch,
@@ -55,5 +56,6 @@ STANDARD_PASSES = (
     AdvancedDeadCodeElimination(),
     CoalesceFlow(),
     NormalizeSwitch(),
+    CombineExitBlocks(),
     Allocate(),
 )

@@ -77,6 +77,21 @@ class CoalesceFlow(CompilerPass):
         return entry
 
 
+class CombineExitBlocks(CompilerPass):
+    def run(self, entry: BasicBlock, config: OptimizerConfig) -> BasicBlock:
+        first_exit_block = None
+        for block in traverse_cfg_preorder(entry):
+            if not block.outgoing and not block.phis and not block.statements:
+                if first_exit_block is None:
+                    first_exit_block = block
+                else:
+                    for edge in [*block.incoming]:
+                        edge.dst = first_exit_block
+                        first_exit_block.incoming.add(edge)
+                    block.incoming.clear()
+        return entry
+
+
 class CoalesceSmallConditionalBlocks(CompilerPass):
     def run(self, entry: BasicBlock, config: OptimizerConfig) -> BasicBlock:
         queue = [entry]
