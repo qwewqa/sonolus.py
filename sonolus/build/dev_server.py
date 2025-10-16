@@ -156,11 +156,11 @@ class HelpCommand:
         print("Available Commands:\n")
 
         for entry in DETAILED_HELP_TEXT:
-            print(f"  [{entry.alias}] {entry.command}")
+            print(f"[{entry.alias}] {entry.command}")
 
             for paragraph in entry.description:
-                initial_indent = "    "
-                subsequent_indent = "    "
+                initial_indent = "  "
+                subsequent_indent = "  "
                 wrapped = textwrap.fill(
                     paragraph,
                     width=max_width - len(initial_indent),
