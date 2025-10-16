@@ -28,6 +28,7 @@ if TYPE_CHECKING:
 
 HELP_TEXT = """
 [r]ebuild
+[d]ecode <error_code>
 [q]uit
 """.strip()
 
@@ -87,6 +88,21 @@ class RebuildCommand:
 
 
 @dataclass
+class DecodeCommand:
+    error_code: int
+
+    def execute(self, server_state: ServerState):
+        debug_str_mappings = server_state.project_state.debug_str_mappings
+        message = next((msg for msg, code in debug_str_mappings.items() if code == self.error_code), None)
+
+        if message is not None:
+            print(f"Error code {self.error_code}:")
+            print(message)
+        else:
+            print(f"Unknown error code: {self.error_code}")
+
+
+@dataclass
 class ExitCommand:
     def execute(self, server_state: ServerState):
         print("Exiting...")
@@ -98,12 +114,16 @@ def parse_dev_command(command_line: str) -> Command | None:
     subparsers = parser.add_subparsers(dest="cmd")
 
     subparsers.add_parser("rebuild", aliases=["r"])
+    decode_parser = subparsers.add_parser("decode", aliases=["d"])
+    decode_parser.add_argument("error_code", type=int, help="Error code to decode")
     subparsers.add_parser("quit", aliases=["q"])
 
     try:
         args = parser.parse_args(shlex.split(command_line))
         if args.cmd in {"rebuild", "r"}:
             return RebuildCommand()
+        elif args.cmd in {"decode", "d"}:
+            return DecodeCommand(error_code=args.error_code)
         elif args.cmd in {"quit", "q"}:
             return ExitCommand()
         return None
