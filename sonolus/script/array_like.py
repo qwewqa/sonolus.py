@@ -213,8 +213,8 @@ class ArrayLike[T](Sequence[T]):
             i: The first index.
             j: The second index.
         """
-        assert 0 <= i < len(self), "Index i out of bounds"
-        assert 0 <= j < len(self), "Index j out of bounds"
+        check_positive_index(i, len(self))
+        check_positive_index(j, len(self))
         temp = copy(self.get_unchecked(i))
         self.set_unchecked(i, self.get_unchecked(j))
         self.set_unchecked(j, temp)

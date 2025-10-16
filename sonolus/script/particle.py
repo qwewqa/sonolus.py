@@ -5,7 +5,7 @@ from dataclasses import dataclass
 from typing import Annotated, Any, NewType, dataclass_transform, get_origin
 
 from sonolus.backend.ops import Op
-from sonolus.script.array_like import ArrayLike
+from sonolus.script.array_like import ArrayLike, check_positive_index
 from sonolus.script.debug import static_error
 from sonolus.script.internal.introspection import get_field_specifiers
 from sonolus.script.internal.native import native_function
@@ -71,7 +71,7 @@ class ParticleGroup(Record, ArrayLike[Particle]):
         return self.size
 
     def __getitem__(self, index: int) -> Particle:
-        assert 0 <= index < self.size
+        check_positive_index(index, self.size)
         return Particle(self.start_id + index)
 
     def get_unchecked(self, index: int) -> Particle:

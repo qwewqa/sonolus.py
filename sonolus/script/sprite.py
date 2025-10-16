@@ -4,7 +4,7 @@ from enum import StrEnum
 from typing import Annotated, Any, NewType, dataclass_transform, get_origin
 
 from sonolus.backend.ops import Op
-from sonolus.script.array_like import ArrayLike
+from sonolus.script.array_like import ArrayLike, check_positive_index
 from sonolus.script.debug import static_error
 from sonolus.script.internal.impl import perf_meta_fn
 from sonolus.script.internal.introspection import get_field_specifiers
@@ -139,7 +139,7 @@ class SpriteGroup(Record, ArrayLike[Sprite]):
         return self.size
 
     def __getitem__(self, index: int) -> Sprite:
-        assert 0 <= index < self.size
+        check_positive_index(index, self.size)
         return Sprite(self.start_id + index)
 
     def get_unchecked(self, index: Num) -> Sprite:
