@@ -60,9 +60,37 @@ class ArrayLike[T](Sequence[T]):
             value: The value to set.
         """
 
+    @meta_fn
+    def get_unchecked(self, index: Num) -> T:
+        """Get the element at the given index possibly without bounds checking or conversion of negative indexes.
+
+        The compiler may still determine that the index is out of bounds and throw an error, but it may skip these
+        checks at runtime.
+
+        Args:
+            index: The index to get.
+
+        Returns:
+            The element at the given index.
+        """
+        return self[index]
+
+    @meta_fn
+    def set_unchecked(self, index: Num, value: T):
+        """Set the element at the given index possibly without bounds checking or conversion of negative indexes.
+
+        The compiler may still determine that the index is out of bounds and throw an error, but it may skip these
+        checks at runtime.
+
+        Args:
+            index: The index to set.
+            value: The value to set.
+        """
+        self[index] = value
+
     def __iter__(self) -> SonolusIterator[T]:
         """Return an iterator over the array."""
-        return _ArrayIterator(0, self)
+        return _ArrayIterator(0, self.unchecked())
 
     def __contains__(self, value: Any) -> bool:
         """Return whether any element in the array is equal to the given value.
@@ -72,7 +100,7 @@ class ArrayLike[T](Sequence[T]):
         """
         i = 0
         while i < len(self):
-            if self[i] == value:
+            if self.get_unchecked(i) == value:
                 return True
             i += 1
         return False
@@ -94,10 +122,13 @@ class ArrayLike[T](Sequence[T]):
         """
         if stop is None:
             stop = len(self)
+        else:
+            stop = get_positive_index(stop, len(self), check=False)
         stop = min(stop, len(self))
+        start = get_positive_index(start, len(self), check=False)
         i = max(start, 0)
         while i < stop:
-            if self[i] == value:
+            if self.get_unchecked(i) == value:
                 return i
             i += 1
         return -1
@@ -111,7 +142,7 @@ class ArrayLike[T](Sequence[T]):
         count = 0
         i = 0
         while i < len(self):
-            if self[i] == value:
+            if self.get_unchecked(i) == value:
                 count += 1
             i += 1
         return count
@@ -124,7 +155,7 @@ class ArrayLike[T](Sequence[T]):
         """
         i = len(self) - 1
         while i >= 0:
-            if self[i] == value:
+            if self.get_unchecked(i) == value:
                 return i
             i -= 1
         return -1
@@ -142,7 +173,7 @@ class ArrayLike[T](Sequence[T]):
         max_index = 0
         i = 1
         while i < len(self):
-            if key(self[i]) > key(self[max_index]):  # type: ignore
+            if key(self.get_unchecked(i)) > key(self.get_unchecked(max_index)):  # type: ignore
                 max_index = i
             i += 1
         return max_index
@@ -160,7 +191,7 @@ class ArrayLike[T](Sequence[T]):
         min_index = 0
         i = 1
         while i < len(self):
-            if key(self[i]) < key(self[min_index]):  # type: ignore
+            if key(self.get_unchecked(i)) < key(self.get_unchecked(min_index)):  # type: ignore
                 min_index = i
             i += 1
         return min_index
@@ -168,23 +199,25 @@ class ArrayLike[T](Sequence[T]):
     def _max_(self, key: Callable[[T], Any] | None = None) -> T:
         index = self.index_of_max(key=key)
         assert index != -1
-        return self[index]
+        return self.get_unchecked(index)
 
     def _min_(self, key: Callable[[T], Any] | None = None) -> T:
         index = self.index_of_min(key=key)
         assert index != -1
-        return self[index]
+        return self.get_unchecked(index)
 
     def swap(self, i: int, j: int, /):
-        """Swap the values at the given indices.
+        """Swap the values at the given positive indices.
 
         Args:
             i: The first index.
             j: The second index.
         """
-        temp = copy(self[i])
-        self[i] = self[j]
-        self[j] = temp
+        assert 0 <= i < len(self), "Index i out of bounds"
+        assert 0 <= j < len(self), "Index j out of bounds"
+        temp = copy(self.get_unchecked(i))
+        self.set_unchecked(i, self.get_unchecked(j))
+        self.set_unchecked(j, temp)
 
     def sort(self, *, key: Callable[[T], Any] | None = None, reverse: bool = False):
         """Sort the values in the array in place.
@@ -197,10 +230,10 @@ class ArrayLike[T](Sequence[T]):
             if key is None:
                 key = _identity  # type: ignore
             # May be worth adding a block sort variant for better performance on large arrays in the future
-            _insertion_sort(self, 0, len(self), key, reverse)  # type: ignore
+            _insertion_sort(self.unchecked(), 0, len(self), key, reverse)  # type: ignore
         else:
             # Heap sort is unstable, so if there's a key, we can't rely on it
-            _heap_sort(self, 0, len(self), reverse)  # type: ignore
+            _heap_sort(self.unchecked(), 0, len(self), reverse)  # type: ignore
 
     def shuffle(self):
         """Shuffle the values in the array in place."""
@@ -214,6 +247,10 @@ class ArrayLike[T](Sequence[T]):
             self.swap(i, j)
             i += 1
             j -= 1
+
+    def unchecked(self) -> ArrayLike[T]:
+        """Return a proxy object that may skip bounds checking and may not support negative indexes."""
+        return UncheckedArrayProxy(self)
 
 
 def _identity[T](value: T) -> T:
@@ -271,7 +308,7 @@ class _ArrayIterator[V: ArrayLike](Record, SonolusIterator):
 
     def next(self) -> Maybe[V]:
         if self.i < len(self.array):
-            value = self.array[self.i]
+            value = self.array.get_unchecked(self.i)
             self.i += 1
             return Some(value)
         return Nothing
@@ -289,6 +326,12 @@ class _ArrayReverser[V: ArrayLike](Record, ArrayLike):
     def __setitem__(self, index: int, value: V):
         self.array[len(self) - 1 - index] = value
 
+    def get_unchecked(self, index: Num) -> V:
+        return self.array.get_unchecked(len(self) - 1 - index)
+
+    def set_unchecked(self, index: Num, value: V):
+        self.array.set_unchecked(len(self) - 1 - index, value)
+
     def reversed(self) -> ArrayLike[V]:
         return self.array
 
@@ -300,14 +343,16 @@ class _ArrayEnumerator[V: ArrayLike](Record, SonolusIterator):
 
     def next(self) -> Maybe[tuple[int, Any]]:
         if self.i < len(self.array):
-            result = (self.i + self.offset, self.array[self.i])
+            result = (self.i + self.offset, self.array.get_unchecked(self.i))
             self.i += 1
             return Some(result)
         return Nothing
 
 
 @meta_fn
-def get_positive_index(index: int | float, length: int | float, include_end: bool = False) -> int:
+def get_positive_index(
+    index: int | float, length: int | float, *, include_end: bool = False, check: bool = True
+) -> int:
     """Get the positive index for the given index in the array of the given length, and also perform bounds checking.
 
     This is used to convert negative indices relative to the end of the array to positive indices.
@@ -316,31 +361,34 @@ def get_positive_index(index: int | float, length: int | float, include_end: boo
         index: The index to convert.
         length: The length of the array.
         include_end: Whether to allow the index to be equal to the length of the array (i.e., one past the end).
+        check: Whether to perform bounds checking. Must be a compile-time constant.
 
     Returns:
         The positive integer index.
     """
     if not ctx():
-        if (include_end and not -length <= index <= length) or (not include_end and not -length <= index < length):
-            raise IndexError("Index out of range")
-        if int(index) != index:
-            raise ValueError("Index must be an integer")
-        if int(length) != length:
-            raise ValueError("Length must be an integer")
-        if length < 0:
-            raise ValueError("Length must be non-negative")
+        if check:
+            if (include_end and not -length <= index <= length) or (not include_end and not -length <= index < length):
+                raise IndexError("Index out of range")
+            if int(index) != index:
+                raise ValueError("Index must be an integer")
+            if int(length) != length:
+                raise ValueError("Length must be an integer")
+            if length < 0:
+                raise ValueError("Length must be non-negative")
         return int(index + (index < 0) * length)
     index = Num._accept_(index)
     length = Num._accept_(length)
-    include_end = Num._accept_(include_end)
-    if not include_end._is_py_():
-        assert_true(Num.and_(index >= -length, index < (length + include_end)), "Index out of range")
-    elif include_end._as_py_():
-        assert_true(Num.and_(index >= -length, index <= length), "Index out of range")
-    else:
-        assert_true(Num.and_(index >= -length, index < length), "Index out of range")
-    assert_true(_trunc(index) == index, "Index must be an integer")
-    # Skipping length check since typically these are managed by the library and unlikely to be wrong
+    if Num._accept_(check)._as_py_():
+        include_end = Num._accept_(include_end)
+        if not include_end._is_py_():
+            assert_true(Num.and_(index >= -length, index < (length + include_end)), "Index out of range")
+        elif include_end._as_py_():
+            assert_true(Num.and_(index >= -length, index <= length), "Index out of range")
+        else:
+            assert_true(Num.and_(index >= -length, index < length), "Index out of range")
+        assert_true(_trunc(index) == index, "Index must be an integer")
+        # Skipping length check since typically these are managed by the library and unlikely to be wrong
     return index + (index < 0) * length
 
 
@@ -378,3 +426,16 @@ def check_positive_index(index: int, length: int, include_end: bool = False) -> 
     assert_true(_trunc(index) == index, "Index must be an integer")
     # Skipping length check since typically these are managed by the library and unlikely to be wrong
     return index
+
+
+class UncheckedArrayProxy[T](Record, ArrayLike):
+    array: T
+
+    def __len__(self) -> int:
+        return len(self.array)
+
+    def __getitem__(self, index: int) -> Any:
+        return self.array.get_unchecked(index)
+
+    def __setitem__(self, index: int, value: Any):
+        self.array.set_unchecked(index, value)

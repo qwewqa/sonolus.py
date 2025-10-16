@@ -374,8 +374,8 @@ def interp(
     Returns:
         The interpolated value.
     """
-    assert len(xp) == len(fp)
-    assert len(xp) >= 2
+    assert len(xp) == len(fp), "xp and fp must have the same length"
+    assert len(xp) >= 2, "xp and fp must have at least 2 elements"
     for i in range_or_tuple(1, len(xp) - 1):
         # At i == 1, x may be less than x[0], but since we're extrapolating, we use the first segment regardless.
         if x <= xp[i]:
@@ -402,8 +402,8 @@ def interp_clamped(
     Returns:
         The interpolated value.
     """
-    assert len(xp) == len(fp)
-    assert len(xp) >= 2
+    assert len(xp) == len(fp), "xp and fp must have the same length"
+    assert len(xp) >= 2, "xp and fp must have at least 2 elements"
     if x <= xp[0]:
         return fp[0]
     for i in range_or_tuple(1, len(xp)):

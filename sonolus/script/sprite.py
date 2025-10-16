@@ -9,6 +9,7 @@ from sonolus.script.debug import static_error
 from sonolus.script.internal.impl import perf_meta_fn
 from sonolus.script.internal.introspection import get_field_specifiers
 from sonolus.script.internal.native import native_function
+from sonolus.script.num import Num
 from sonolus.script.quad import QuadLike, flatten_quad
 from sonolus.script.record import Record
 from sonolus.script.vec import Vec2
@@ -139,6 +140,9 @@ class SpriteGroup(Record, ArrayLike[Sprite]):
 
     def __getitem__(self, index: int) -> Sprite:
         assert 0 <= index < self.size
+        return Sprite(self.start_id + index)
+
+    def get_unchecked(self, index: Num) -> Sprite:
         return Sprite(self.start_id + index)
 
     def __setitem__(self, index: int, value: Sprite) -> None:

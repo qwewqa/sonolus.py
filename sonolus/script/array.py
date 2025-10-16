@@ -317,7 +317,7 @@ class Array[T, Size](GenericValue, ArrayLike[T], metaclass=ArrayMeta):
             return False
         i = 0
         while i < self.size():
-            if self[i] != other[i]:
+            if self.get_unchecked(i) != other.get_unchecked(i):
                 return False
             i += 1
         return True

@@ -41,6 +41,9 @@ class Range(Record, ArrayLike[int]):
     def __getitem__(self, index: int) -> int:
         return self.start + get_positive_index(index, len(self)) * self.step
 
+    def get_unchecked(self, index: Num) -> int:
+        return self.start + index * self.step
+
     def __setitem__(self, index: int, value: int):
         raise TypeError("Range does not support item assignment")
 

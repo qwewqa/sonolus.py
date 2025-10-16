@@ -74,6 +74,9 @@ class ParticleGroup(Record, ArrayLike[Particle]):
         assert 0 <= index < self.size
         return Particle(self.start_id + index)
 
+    def get_unchecked(self, index: int) -> Particle:
+        return Particle(self.start_id + index)
+
     def __setitem__(self, index: int, value: Particle) -> None:
         static_error("ParticleGroup is read-only")
 

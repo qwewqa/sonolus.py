@@ -114,6 +114,9 @@ class EffectGroup(Record, ArrayLike[Effect]):
         assert 0 <= index < self.size
         return Effect(self.start_id + index)
 
+    def get_unchecked(self, index: int) -> Effect:
+        return Effect(self.start_id + index)
+
     def __setitem__(self, index: int, value: Effect) -> None:
         static_error("EffectGroup is read-only")
 

@@ -2,12 +2,11 @@ from __future__ import annotations
 
 from typing import Self
 
-from sonolus.backend.visitor import compile_and_call
 from sonolus.script.array import Array
 from sonolus.script.array_like import ArrayLike, get_positive_index
 from sonolus.script.debug import error
 from sonolus.script.internal.context import ctx
-from sonolus.script.internal.impl import meta_fn, perf_meta_fn
+from sonolus.script.internal.impl import meta_fn
 from sonolus.script.interval import clamp
 from sonolus.script.iterator import SonolusIterator
 from sonolus.script.maybe import Maybe, Nothing, Some
@@ -15,32 +14,6 @@ from sonolus.script.num import Num
 from sonolus.script.pointer import _deref
 from sonolus.script.record import Record
 from sonolus.script.values import copy, zeros
-
-
-class UncheckedArray[T, Capacity](Record, ArrayLike[T]):
-    """A wrapper around an array that disables bounds checking.
-
-    Note that some checks may still be performed at compile time, but checks may be skipped at runtime.
-
-    Usage:
-        ```python
-        UncheckedArray[T, Capacity](_array: Array[T, Capacity])
-        ```
-    """
-
-    _array: Array[T, Capacity]
-
-    @perf_meta_fn
-    def __len__(self) -> int:
-        return self._array.size()
-
-    @perf_meta_fn
-    def __getitem__(self, item) -> T:
-        return self._array.get_unchecked(item)
-
-    @perf_meta_fn
-    def __setitem__(self, key: int, value: T):
-        self._array.set_unchecked(key, value)
 
 
 class Box[T](Record):
@@ -127,14 +100,14 @@ class VarArray[T, Capacity](Record, ArrayLike[T]):
     """
 
     _size: int
-    _array: UncheckedArray[T, Capacity]
+    _array: Array[T, Capacity]
 
     @classmethod
     def new(cls) -> Self:
         """Create a new empty array."""
         element_type = cls.type_var_value(T)
         capacity = cls.type_var_value(Capacity)
-        return cls(0, zeros(UncheckedArray[element_type, capacity]))
+        return cls(0, zeros(Array[element_type, capacity]))
 
     def __len__(self) -> int:
         """Return the number of elements in the array."""
@@ -170,11 +143,11 @@ class VarArray[T, Capacity](Record, ArrayLike[T]):
             assert p == Pair(5, 6)  # The value of p has changed
             ```
         """
-        return self._array[get_positive_index(item, len(self))]
+        return self._array.get_unchecked(get_positive_index(item, self._size))
 
     def __setitem__(self, key: int, value: T):
         """Update the element at the given index."""
-        self._array[get_positive_index(key, len(self))] = value
+        self._array.set_unchecked(get_positive_index(key, self._size), value)
 
     def __delitem__(self, key: int):
         """Remove the element at the given index."""
@@ -187,7 +160,7 @@ class VarArray[T, Capacity](Record, ArrayLike[T]):
             value: The value to append.
         """
         assert self._size < len(self._array)
-        self._array[self._size] = value
+        self._array.set_unchecked(self._size, value)
         self._size += 1
 
     def append_unchecked(self, value: T):
@@ -198,7 +171,7 @@ class VarArray[T, Capacity](Record, ArrayLike[T]):
         Args:
             value: The value to append.
         """
-        self._array[self._size] = value
+        self._array.set_unchecked(self._size, value)
         self._size += 1
 
     def extend(self, values: ArrayLike[T]):
@@ -207,8 +180,12 @@ class VarArray[T, Capacity](Record, ArrayLike[T]):
         Args:
             values: The values to append.
         """
-        for value in values:
-            self.append(value)
+        assert self._size + len(values) <= len(self._array)
+        i = 0
+        while i < len(values):
+            self._array.set_unchecked(self._size + i, values[i])
+            i += 1
+        self._size += len(values)
 
     def pop(self, index: int | None = None) -> T:
         """Remove and return a copy of the value at the given index.
@@ -220,13 +197,12 @@ class VarArray[T, Capacity](Record, ArrayLike[T]):
         """
         if index is None:
             index = self._size - 1
-        index = get_positive_index(index, len(self))
-        assert 0 <= index < self._size
-        value = copy(self._array[index])
+        index = get_positive_index(index, self._size)
+        value = copy(self._array.get_unchecked(index))
         self._size -= 1
         if index < self._size:
             for i in range(index, self._size):
-                self._array[i] = self._array[i + 1]
+                self._array.set_unchecked(i, self._array.get_unchecked(i + 1))
         return value
 
     def insert(self, index: int, value: T):
@@ -238,12 +214,12 @@ class VarArray[T, Capacity](Record, ArrayLike[T]):
             index: The index at which to insert the value. Must be in the range [0, size].
             value: The value to insert.
         """
-        index = clamp(get_positive_index(index, len(self), include_end=True), 0, self._size)
+        index = clamp(get_positive_index(index, self._size, include_end=True), 0, self._size)
         assert self._size < len(self._array)
         self._size += 1
         for i in range(self._size - 1, index, -1):
-            self._array[i] = self._array[i - 1]
-        self._array[index] = value
+            self._array.set_unchecked(i, self._array.get_unchecked(i - 1))
+        self._array.set_unchecked(index, value)
 
     def remove(self, value: T) -> bool:
         """Remove the first occurrence of the given value, returning whether the value was removed.
@@ -303,7 +279,7 @@ class VarArray[T, Capacity](Record, ArrayLike[T]):
         if index < 0:
             return False
         if index < self._size - 1:
-            self._array[index] = self._array[self._size - 1]
+            self._array.set_unchecked(index, self._array.get_unchecked(self._size - 1))
         self._size -= 1
         return True
 
@@ -319,7 +295,7 @@ class VarArray[T, Capacity](Record, ArrayLike[T]):
             return False
         i = 0
         while i < len(self):
-            if self[i] != other[i]:
+            if self.get_unchecked(i) != other.get_unchecked(i):
                 return False
             i += 1
         return True
@@ -355,12 +331,8 @@ class ArrayPointer[T](Record, ArrayLike[T]):
         """Return the type of the elements in the array."""
         return cls.type_var_value(T)
 
-    def _check_index(self, index: int):
-        assert 0 <= index < self.size
-
     @meta_fn
     def _get_item(self, item: int) -> T:
-        item = get_positive_index(item, self.size)
         if not ctx():
             raise TypeError("ArrayPointer values cannot be accessed outside of a context")
         return _deref(
@@ -370,14 +342,18 @@ class ArrayPointer[T](Record, ArrayLike[T]):
             self.element_type(),
         )
 
+    def __getitem__(self, item) -> T:
+        return self.get_unchecked(get_positive_index(item, self.size))
+
+    def __setitem__(self, key: int, value: T):
+        self.set_unchecked(get_positive_index(key, self.size), value)
+
     @meta_fn
-    def __getitem__(self, item: int) -> T:
-        compile_and_call(self._check_index, item)
+    def get_unchecked(self, item: int) -> T:
         return self._get_item(item)._get_()
 
     @meta_fn
-    def __setitem__(self, key: int, value: T):
-        compile_and_call(self._check_index, key)
+    def set_unchecked(self, key: int, value: T):
         dst = self._get_item(key)
         if self.element_type()._is_value_type_():
             dst._set_(value)
@@ -482,7 +458,7 @@ class ArrayMap[K, V, Capacity](Record):
     """
 
     _size: int
-    _array: UncheckedArray[_ArrayMapEntry[K, V], Capacity]
+    _array: Array[_ArrayMapEntry[K, V], Capacity]
 
     @classmethod
     def new(cls) -> Self:
@@ -490,7 +466,7 @@ class ArrayMap[K, V, Capacity](Record):
         key_type = cls.type_var_value(K)
         value_type = cls.type_var_value(V)
         capacity = cls.type_var_value(Capacity)
-        return cls(0, zeros(UncheckedArray[_ArrayMapEntry[key_type, value_type], capacity]))
+        return cls(0, zeros(Array[_ArrayMapEntry[key_type, value_type], capacity]))
 
     def __len__(self) -> int:
         """Return the number of key-value pairs in the map."""
@@ -545,7 +521,7 @@ class ArrayMap[K, V, Capacity](Record):
             ```
         """
         for i in range(self._size):
-            entry = self._array[i]
+            entry = self._array.get_unchecked(i)
             if entry.key == key:
                 return entry.value
         error()
@@ -561,12 +537,12 @@ class ArrayMap[K, V, Capacity](Record):
             value: The value to associate with the key
         """
         for i in range(self._size):
-            entry = self._array[i]
+            entry = self._array.get_unchecked(i)
             if entry.key == key:
                 entry.value = value
                 return
         assert self._size < self.capacity()
-        self._array[self._size] = _ArrayMapEntry(key, value)
+        self._array.set_unchecked(self._size, _ArrayMapEntry(key, value))
         self._size += 1
 
     def __delitem__(self, key: K):
@@ -578,11 +554,11 @@ class ArrayMap[K, V, Capacity](Record):
             key: The key to remove
         """
         for i in range(self._size):
-            entry = self._array[i]
+            entry = self._array.get_unchecked(i)
             if entry.key == key:
                 self._size -= 1
                 if i < self._size:
-                    self._array[i] = self._array[self._size]
+                    self._array.set_unchecked(i, self._array.get_unchecked(self._size))
                 return
         error()
 
@@ -596,7 +572,7 @@ class ArrayMap[K, V, Capacity](Record):
             True if the key is present, False otherwise.
         """
         for i in range(self._size):  # noqa: SIM110
-            if self._array[i].key == key:
+            if self._array.get_unchecked(i).key == key:
                 return True
         return False
 
@@ -612,12 +588,12 @@ class ArrayMap[K, V, Capacity](Record):
             The value associated with the key
         """
         for i in range(self._size):
-            entry = self._array[i]
+            entry = self._array.get_unchecked(i)
             if entry.key == key:
                 value = copy(entry.value)
                 self._size -= 1
                 if i < self._size:
-                    self._array[i] = self._array[self._size]
+                    self._array.set_unchecked(i, self._array.get_unchecked(self._size))
                 return value
         error()
 
@@ -632,7 +608,7 @@ class _ArrayMapKeyIterator[K, V, Capacity](Record, SonolusIterator):
 
     def next(self) -> Maybe[K]:
         if self._index < len(self._map):
-            key = self._map._array[self._index].key
+            key = self._map._array.get_unchecked(self._index).key
             self._index += 1
             return Some(key)
         return Nothing
@@ -644,7 +620,7 @@ class _ArrayMapValueIterator[K, V, Capacity](Record, SonolusIterator):
 
     def next(self) -> Maybe[V]:
         if self._index < len(self._map):
-            value = self._map._array[self._index].value
+            value = self._map._array.get_unchecked(self._index).value
             self._index += 1
             return Some(value)
         return Nothing
@@ -656,7 +632,7 @@ class _ArrayMapEntryIterator[K, V, Capacity](Record, SonolusIterator):
 
     def next(self) -> Maybe[tuple[K, V]]:
         if self._index < len(self._map):
-            entry = self._map._array[self._index]
+            entry = self._map._array.get_unchecked(self._index)
             result = (entry.key, entry.value)
             self._index += 1
             return Some(result)
