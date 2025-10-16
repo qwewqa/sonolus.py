@@ -195,6 +195,21 @@ class Array[T, Size](GenericValue, ArrayLike[T], metaclass=ArrayMeta):
     @meta_fn
     def __getitem__(self, index: int) -> T:
         index: Num = Num._accept_(get_positive_index(index, self.size()))
+        return self.get_unchecked(index)
+
+    @meta_fn
+    def get_unchecked(self, index: Num) -> T:
+        """Get the element at the given index possibly without bounds checking.
+
+        The compiler may still determine that the index is out of bounds and throw an error, but it may skip these
+        checks at runtime.
+
+        Args:
+            index: The index to get.
+
+        Returns:
+            The element at the given index.
+        """
         if index._is_py_() and 0 <= index._as_py_() < self.size():
             const_index = index._as_py_()
             if isinstance(const_index, float) and not const_index.is_integer():
@@ -213,7 +228,8 @@ class Array[T, Size](GenericValue, ArrayLike[T], metaclass=ArrayMeta):
                 )
             elif callable(self._value):
                 return self.element_type()._from_backing_source_(
-                    lambda offset: self._value((Num(offset) + Num(const_index * self.element_type()._size_())).ir())  # type: ignore
+                    lambda offset: self._value((Num(offset) + Num(const_index * self.element_type()._size_())).ir())
+                    # type: ignore
                 )
             else:
                 raise InternalError("Unexpected array value")
@@ -239,6 +255,19 @@ class Array[T, Size](GenericValue, ArrayLike[T], metaclass=ArrayMeta):
     @meta_fn
     def __setitem__(self, index: int, value: T):
         index: Num = Num._accept_(get_positive_index(index, self.size()))
+        self.set_unchecked(index, value)
+
+    @meta_fn
+    def set_unchecked(self, index: Num, value: T):
+        """Set the element at the given index possibly without bounds checking.
+
+        The compiler may still determine that the index is out of bounds and throw an error, but it may skip these
+        checks at runtime.
+
+        Args:
+            index: The index to set.
+            value: The value to set.
+        """
         value = self.element_type()._accept_(value)
         if ctx():
             if isinstance(self._value, list):

@@ -212,7 +212,7 @@ class VarArray[T, Capacity](Record, ArrayLike[T]):
             index: The index at which to insert the value. Must be in the range [0, size].
             value: The value to insert.
         """
-        index = clamp(get_positive_index(index, len(self)), 0, self._size)
+        index = clamp(get_positive_index(index, len(self), include_end=True), 0, self._size)
         assert self._size < len(self._array)
         self._size += 1
         for i in range(self._size - 1, index, -1):

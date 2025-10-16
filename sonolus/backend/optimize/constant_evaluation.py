@@ -158,7 +158,8 @@ class SparseConditionalConstantPropagation(CompilerPass):
                     test_value = values[block]
                     new_test_value = self.evaluate_stmt(block.test, values)
                     if new_test_value != test_value:
-                        assert new_test_value is not UNDEF
+                        if new_test_value is UNDEF:
+                            continue
                         values[block] = new_test_value
                         if new_test_value is NAC:
                             flow_worklist.update(block.outgoing)
@@ -195,7 +196,8 @@ class SparseConditionalConstantPropagation(CompilerPass):
                     test_value = values[p]
                     new_test_value = self.evaluate_stmt(defn, values)
                     if new_test_value != test_value:
-                        assert new_test_value is not UNDEF
+                        if new_test_value is UNDEF:
+                            continue
                         values[p] = new_test_value
                         if new_test_value is NAC:
                             flow_worklist.update(p.outgoing)

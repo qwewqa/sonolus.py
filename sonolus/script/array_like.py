@@ -5,8 +5,10 @@ from abc import abstractmethod
 from collections.abc import Callable, Sequence
 from typing import Any
 
+from sonolus.script.debug import assert_true
 from sonolus.script.internal.context import ctx
 from sonolus.script.internal.impl import meta_fn
+from sonolus.script.internal.math_impls import _trunc
 from sonolus.script.iterator import SonolusIterator
 from sonolus.script.maybe import Maybe, Nothing, Some
 from sonolus.script.num import Num
@@ -92,7 +94,8 @@ class ArrayLike[T](Sequence[T]):
         """
         if stop is None:
             stop = len(self)
-        i = start
+        stop = min(stop, len(self))
+        i = max(start, 0)
         while i < stop:
             if self[i] == value:
                 return i
@@ -304,23 +307,74 @@ class _ArrayEnumerator[V: ArrayLike](Record, SonolusIterator):
 
 
 @meta_fn
-def get_positive_index(index: int, length: int) -> int:
-    """Get the positive index for the given index in the array of the given length.
+def get_positive_index(index: int | float, length: int | float, include_end: bool = False) -> int:
+    """Get the positive index for the given index in the array of the given length, and also perform bounds checking.
 
-    This is used to convert negative indixes relative to the end of the array to positive indices.
+    This is used to convert negative indices relative to the end of the array to positive indices.
 
     Args:
         index: The index to convert.
         length: The length of the array.
+        include_end: Whether to allow the index to be equal to the length of the array (i.e., one past the end).
 
     Returns:
-        The positive index.
+        The positive integer index.
     """
     if not ctx():
-        return index if index >= 0 else index + length
+        if (include_end and not -length <= index <= length) or (not include_end and not -length <= index < length):
+            raise IndexError("Index out of range")
+        if int(index) != index:
+            raise ValueError("Index must be an integer")
+        if int(length) != length:
+            raise ValueError("Length must be an integer")
+        if length < 0:
+            raise ValueError("Length must be non-negative")
+        return int(index + (index < 0) * length)
     index = Num._accept_(index)
     length = Num._accept_(length)
-    if index._is_py_() and length._is_py_():
-        return Num._accept_(index._as_py_() + length._as_py_() if index._as_py_() < 0 else index._as_py_())
+    include_end = Num._accept_(include_end)
+    if not include_end._is_py_():
+        assert_true(Num.and_(index >= -length, index < (length + include_end)), "Index out of range")
+    elif include_end._as_py_():
+        assert_true(Num.and_(index >= -length, index <= length), "Index out of range")
     else:
-        return index + (index < 0) * length
+        assert_true(Num.and_(index >= -length, index < length), "Index out of range")
+    assert_true(_trunc(index) == index, "Index must be an integer")
+    # Skipping length check since typically these are managed by the library and unlikely to be wrong
+    return index + (index < 0) * length
+
+
+@meta_fn
+def check_positive_index(index: int, length: int, include_end: bool = False) -> int | float:
+    """Check that the given index is a valid index for the array of the given length and convert it to an integer.
+
+    Args:
+        index: The index to check.
+        length: The length of the array.
+        include_end: Whether to allow the index to be equal to the length of the array (i.e., one past the end).
+
+    Returns:
+        The index as an integer.
+    """
+    if not ctx():
+        if (include_end and not 0 <= index <= length) or (not include_end and not 0 <= index < length):
+            raise IndexError("Index out of range")
+        if int(index) != index:
+            raise ValueError("Index must be an integer")
+        if int(length) != length:
+            raise ValueError("Length must be an integer")
+        if length < 0:
+            raise ValueError("Length must be non-negative")
+        return int(index)
+    index = Num._accept_(index)
+    length = Num._accept_(length)
+    include_end = Num._accept_(include_end)
+    if not include_end._is_py_():
+        assert_true(Num.and_(index >= 0, index < (length + include_end)), "Index out of range")
+    elif include_end._as_py_():
+        assert_true(Num.and_(index >= 0, index <= length), "Index out of range")
+    else:
+        assert_true(Num.and_(index >= 0, index < length), "Index out of range")
+    assert_true(_trunc(index) == index, "Index must be an integer")
+    # Skipping length check since typically these are managed by the library and unlikely to be wrong
+    return index
