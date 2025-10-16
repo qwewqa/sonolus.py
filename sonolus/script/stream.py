@@ -118,19 +118,19 @@ def streams[T](cls: type[T]) -> T:
 
 @meta_fn
 def _check_can_read_stream() -> None:
-    if not ctx() or ctx().global_state.mode != Mode.WATCH:
+    if not ctx() or ctx().mode_state.mode != Mode.WATCH:
         raise RuntimeError("Stream read operations are only allowed in watch mode.")
 
 
 @meta_fn
 def _check_can_write_stream() -> None:
-    if not ctx() or ctx().global_state.mode != Mode.PLAY:
+    if not ctx() or ctx().mode_state.mode != Mode.PLAY:
         raise RuntimeError("Stream write operations are only allowed in play mode.")
 
 
 @meta_fn
 def _check_can_read_or_write_stream() -> None:
-    if not ctx() or ctx().global_state.mode not in {Mode.PLAY, Mode.WATCH}:
+    if not ctx() or ctx().mode_state.mode not in {Mode.PLAY, Mode.WATCH}:
         raise RuntimeError("Stream operations are only allowed in play and watch modes.")
 
 

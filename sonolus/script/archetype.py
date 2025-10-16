@@ -207,7 +207,7 @@ class _IsScoredDescriptor(SonolusDescriptor):
         if instance is None:
             return self.value
         elif ctx():
-            return ctx().global_state.is_scored_by_archetype_id[instance.id]
+            return ctx().mode_state.is_scored_by_archetype_id[instance.id]
         else:
             return self.value
 
@@ -220,7 +220,7 @@ class _IdDescriptor(SonolusDescriptor):
         if not ctx():
             raise RuntimeError("Archetype id is only available during compilation")
         if instance is None:
-            result = ctx().global_state.archetypes.get(owner)
+            result = ctx().mode_state.archetypes.get(owner)
             if result is None:
                 raise RuntimeError("Archetype is not registered")
             return result
@@ -237,7 +237,7 @@ class _KeyDescriptor(SonolusDescriptor):
 
     def __get__(self, instance, owner):
         if instance is not None and ctx():
-            return ctx().global_state.keys_by_archetype_id[instance.id]
+            return ctx().mode_state.keys_by_archetype_id[instance.id]
         else:
             return self.value
 
@@ -249,8 +249,8 @@ class _ArchetypeLifeDescriptor(SonolusDescriptor):
     def __get__(self, instance, owner):
         if not ctx():
             raise RuntimeError("Archetype life is only available during compilation")
-        if ctx().global_state.mode not in {Mode.PLAY, Mode.WATCH}:
-            raise RuntimeError(f"Archetype life is not available in mode '{ctx().global_state.mode.value}'")
+        if ctx().mode_state.mode not in {Mode.PLAY, Mode.WATCH}:
+            raise RuntimeError(f"Archetype life is not available in mode '{ctx().mode_state.mode.value}'")
         if instance is not None:
             return _deref(ctx().blocks.ArchetypeLife, instance.id * ArchetypeLife._size_(), ArchetypeLife)
         else:
@@ -1115,7 +1115,7 @@ def get_archetype_by_name(name: str) -> AnyArchetype:
     name = name._as_py_()  # type: ignore
     if not isinstance(name, str):
         raise TypeError(f"Invalid name: '{name}'")
-    archetypes_by_name = ctx().global_state.archetypes_by_name
+    archetypes_by_name = ctx().mode_state.archetypes_by_name
     if name not in archetypes_by_name:
         raise KeyError(f"Unknown archetype: '{name}'")
     return archetypes_by_name[name]  # type: ignore
@@ -1129,7 +1129,7 @@ def entity_info_at(index: int) -> PlayEntityInfo | WatchEntityInfo | PreviewEnti
     """
     if not ctx():
         raise RuntimeError("Calling entity_info_at is only allowed within a callback")
-    match ctx().global_state.mode:
+    match ctx().mode_state.mode:
         case Mode.PLAY:
             return _deref(ctx().blocks.EntityInfoArray, index * PlayEntityInfo._size_(), PlayEntityInfo)
         case Mode.WATCH:
@@ -1137,7 +1137,7 @@ def entity_info_at(index: int) -> PlayEntityInfo | WatchEntityInfo | PreviewEnti
         case Mode.PREVIEW:
             return _deref(ctx().blocks.EntityInfoArray, index * PreviewEntityInfo._size_(), PreviewEntityInfo)
         case _:
-            raise RuntimeError(f"Entity info is not available in mode '{ctx().global_state.mode}'")
+            raise RuntimeError(f"Entity info is not available in mode '{ctx().mode_state.mode}'")
 
 
 class PlayEntityInfo(Record):

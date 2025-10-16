@@ -343,7 +343,7 @@ class RuntimeUi(Record):
 
         Available in play, watch, preview, and tutorial mode.
         """
-        match ctx().global_state.mode:
+        match ctx().mode_state.mode:
             case Mode.PLAY:
                 return UiLayout(_PlayRuntimeUi.menu)
             case Mode.WATCH:
@@ -362,7 +362,7 @@ class RuntimeUi(Record):
 
         Available in play, watch, preview, and tutorial mode.
         """
-        match ctx().global_state.mode:
+        match ctx().mode_state.mode:
             case Mode.PLAY:
                 return UiConfig(_PlayRuntimeUiConfigs.menu)
             case Mode.WATCH:
@@ -381,7 +381,7 @@ class RuntimeUi(Record):
 
         Available in play and watch mode.
         """
-        match ctx().global_state.mode:
+        match ctx().mode_state.mode:
             case Mode.PLAY:
                 return UiLayout(_PlayRuntimeUi.judgment)
             case Mode.WATCH:
@@ -396,7 +396,7 @@ class RuntimeUi(Record):
 
         Available in play and watch mode.
         """
-        match ctx().global_state.mode:
+        match ctx().mode_state.mode:
             case Mode.PLAY:
                 return UiConfig(_PlayRuntimeUiConfigs.judgment)
             case Mode.WATCH:
@@ -411,7 +411,7 @@ class RuntimeUi(Record):
 
         Available in play and watch mode.
         """
-        match ctx().global_state.mode:
+        match ctx().mode_state.mode:
             case Mode.PLAY:
                 return UiLayout(_PlayRuntimeUi.combo_value)
             case Mode.WATCH:
@@ -426,7 +426,7 @@ class RuntimeUi(Record):
 
         Available in play and watch mode.
         """
-        match ctx().global_state.mode:
+        match ctx().mode_state.mode:
             case Mode.PLAY:
                 return UiLayout(_PlayRuntimeUi.combo_text)
             case Mode.WATCH:
@@ -441,7 +441,7 @@ class RuntimeUi(Record):
 
         Available in play and watch mode.
         """
-        match ctx().global_state.mode:
+        match ctx().mode_state.mode:
             case Mode.PLAY:
                 return UiConfig(_PlayRuntimeUiConfigs.combo)
             case Mode.WATCH:
@@ -456,7 +456,7 @@ class RuntimeUi(Record):
 
         Available in play and watch mode.
         """
-        match ctx().global_state.mode:
+        match ctx().mode_state.mode:
             case Mode.PLAY:
                 return UiLayout(_PlayRuntimeUi.primary_metric_bar)
             case Mode.WATCH:
@@ -471,7 +471,7 @@ class RuntimeUi(Record):
 
         Available in play and watch mode.
         """
-        match ctx().global_state.mode:
+        match ctx().mode_state.mode:
             case Mode.PLAY:
                 return UiLayout(_PlayRuntimeUi.primary_metric_value)
             case Mode.WATCH:
@@ -486,7 +486,7 @@ class RuntimeUi(Record):
 
         Available in play and watch mode.
         """
-        match ctx().global_state.mode:
+        match ctx().mode_state.mode:
             case Mode.PLAY:
                 return UiConfig(_PlayRuntimeUiConfigs.primary_metric)
             case Mode.WATCH:
@@ -501,7 +501,7 @@ class RuntimeUi(Record):
 
         Available in play and watch mode.
         """
-        match ctx().global_state.mode:
+        match ctx().mode_state.mode:
             case Mode.PLAY:
                 return UiLayout(_PlayRuntimeUi.secondary_metric_bar)
             case Mode.WATCH:
@@ -516,7 +516,7 @@ class RuntimeUi(Record):
 
         Available in play and watch mode.
         """
-        match ctx().global_state.mode:
+        match ctx().mode_state.mode:
             case Mode.PLAY:
                 return UiLayout(_PlayRuntimeUi.secondary_metric_value)
             case Mode.WATCH:
@@ -531,7 +531,7 @@ class RuntimeUi(Record):
 
         Available in play and watch mode.
         """
-        match ctx().global_state.mode:
+        match ctx().mode_state.mode:
             case Mode.PLAY:
                 return UiConfig(_PlayRuntimeUiConfigs.secondary_metric)
             case Mode.WATCH:
@@ -546,7 +546,7 @@ class RuntimeUi(Record):
 
         Available in watch and preview mode.
         """
-        match ctx().global_state.mode:
+        match ctx().mode_state.mode:
             case Mode.WATCH:
                 return UiLayout(_WatchRuntimeUi.progress)
             case Mode.PREVIEW:
@@ -561,7 +561,7 @@ class RuntimeUi(Record):
 
         Available in watch and preview mode.
         """
-        match ctx().global_state.mode:
+        match ctx().mode_state.mode:
             case Mode.WATCH:
                 return UiConfig(_WatchRuntimeUiConfigs.progress)
             case Mode.PREVIEW:
@@ -576,7 +576,7 @@ class RuntimeUi(Record):
 
         Available in tutorial mode.
         """
-        match ctx().global_state.mode:
+        match ctx().mode_state.mode:
             case Mode.TUTORIAL:
                 return UiLayout(_TutorialRuntimeUi.previous)
             case _:
@@ -589,7 +589,7 @@ class RuntimeUi(Record):
 
         Available in tutorial mode.
         """
-        match ctx().global_state.mode:
+        match ctx().mode_state.mode:
             case Mode.TUTORIAL:
                 return UiLayout(_TutorialRuntimeUi.next)
             case _:
@@ -602,7 +602,7 @@ class RuntimeUi(Record):
 
         Available in tutorial mode.
         """
-        match ctx().global_state.mode:
+        match ctx().mode_state.mode:
             case Mode.TUTORIAL:
                 return UiConfig(_TutorialRuntimeUiConfigs.navigation)
             case _:
@@ -615,7 +615,7 @@ class RuntimeUi(Record):
 
         Available in tutorial mode.
         """
-        match ctx().global_state.mode:
+        match ctx().mode_state.mode:
             case Mode.TUTORIAL:
                 return UiLayout(_TutorialRuntimeUi.instruction)
             case _:
@@ -628,7 +628,7 @@ class RuntimeUi(Record):
 
         Available in tutorial mode.
         """
-        match ctx().global_state.mode:
+        match ctx().mode_state.mode:
             case Mode.TUTORIAL:
                 return UiConfig(_TutorialRuntimeUiConfigs.instruction)
             case _:
@@ -841,7 +841,7 @@ def is_debug() -> bool:
     """Check if the game is running in debug mode."""
     if not ctx():
         return False
-    match ctx().global_state.mode:
+    match ctx().mode_state.mode:
         case Mode.PLAY:
             return _PlayRuntimeEnvironment.is_debug
         case Mode.WATCH:
@@ -857,25 +857,25 @@ def is_debug() -> bool:
 @meta_fn
 def is_play() -> bool:
     """Check if the game is running in play mode."""
-    return bool(ctx() and ctx().global_state.mode == Mode.PLAY)
+    return bool(ctx() and ctx().mode_state.mode == Mode.PLAY)
 
 
 @meta_fn
 def is_preview() -> bool:
     """Check if the game is running in preview mode."""
-    return bool(ctx() and ctx().global_state.mode == Mode.PREVIEW)
+    return bool(ctx() and ctx().mode_state.mode == Mode.PREVIEW)
 
 
 @meta_fn
 def is_watch() -> bool:
     """Check if the game is running in watch mode."""
-    return bool(ctx() and ctx().global_state.mode == Mode.WATCH)
+    return bool(ctx() and ctx().mode_state.mode == Mode.WATCH)
 
 
 @meta_fn
 def is_tutorial() -> bool:
     """Check if the game is running in tutorial mode."""
-    return bool(ctx() and ctx().global_state.mode == Mode.TUTORIAL)
+    return bool(ctx() and ctx().mode_state.mode == Mode.TUTORIAL)
 
 
 @meta_fn
@@ -892,7 +892,7 @@ def aspect_ratio() -> float:
     """Get the aspect ratio of the game."""
     if not ctx():
         return 16 / 9
-    match ctx().global_state.mode:
+    match ctx().mode_state.mode:
         case Mode.PLAY:
             return _PlayRuntimeEnvironment.aspect_ratio
         case Mode.WATCH:
@@ -911,7 +911,7 @@ def audio_offset() -> float:
     """
     if not ctx():
         return 0
-    match ctx().global_state.mode:
+    match ctx().mode_state.mode:
         case Mode.PLAY:
             return _PlayRuntimeEnvironment.audio_offset
         case Mode.WATCH:
@@ -930,7 +930,7 @@ def input_offset() -> float:
     """
     if not ctx():
         return 0
-    match ctx().global_state.mode:
+    match ctx().mode_state.mode:
         case Mode.PLAY:
             return _PlayRuntimeEnvironment.input_offset
         case Mode.WATCH:
@@ -947,7 +947,7 @@ def is_multiplayer() -> bool:
     """
     if not ctx():
         return False
-    match ctx().global_state.mode:
+    match ctx().mode_state.mode:
         case Mode.PLAY:
             return _PlayRuntimeEnvironment.is_multiplayer
         case _:
@@ -962,7 +962,7 @@ def is_replay() -> bool:
     """
     if not ctx():
         return False
-    match ctx().global_state.mode:
+    match ctx().mode_state.mode:
         case Mode.WATCH:
             return _WatchRuntimeEnvironment.is_replay
         case _:
@@ -977,7 +977,7 @@ def time() -> float:
     """
     if not ctx():
         return 0
-    match ctx().global_state.mode:
+    match ctx().mode_state.mode:
         case Mode.PLAY:
             return _PlayRuntimeUpdate.time
         case Mode.WATCH:
@@ -996,7 +996,7 @@ def offset_adjusted_time() -> float:
     """
     if not ctx():
         return 0
-    match ctx().global_state.mode:
+    match ctx().mode_state.mode:
         case Mode.PLAY:
             return _PlayRuntimeUpdate.time - _PlayRuntimeEnvironment.input_offset
         case Mode.WATCH:
@@ -1015,7 +1015,7 @@ def delta_time() -> float:
     """
     if not ctx():
         return 0
-    match ctx().global_state.mode:
+    match ctx().mode_state.mode:
         case Mode.PLAY:
             return _PlayRuntimeUpdate.delta_time
         case Mode.WATCH:
@@ -1034,7 +1034,7 @@ def scaled_time() -> float:
     """
     if not ctx():
         return 0
-    match ctx().global_state.mode:
+    match ctx().mode_state.mode:
         case Mode.PLAY:
             return _PlayRuntimeUpdate.scaled_time
         case Mode.WATCH:
@@ -1059,7 +1059,7 @@ def touches() -> ArrayLike[Touch]:
     """Get the current touches of the game."""
     if not ctx():
         return Array[Touch, 0]()  # type: ignore
-    match ctx().global_state.mode:
+    match ctx().mode_state.mode:
         case Mode.PLAY:
             return ArrayPointer[Touch]._raw(
                 size=Num._accept_(_PlayRuntimeUpdate.touch_count),
@@ -1078,7 +1078,7 @@ def is_skip() -> bool:
     """
     if not ctx():
         return False
-    match ctx().global_state.mode:
+    match ctx().mode_state.mode:
         case Mode.WATCH:
             return _WatchRuntimeUpdate.is_skip
         case _:
@@ -1093,7 +1093,7 @@ def navigation_direction() -> int:
     """
     if not ctx():
         return 0
-    match ctx().global_state.mode:
+    match ctx().mode_state.mode:
         case Mode.TUTORIAL:
             return _TutorialRuntimeUpdate.navigation_direction
         case _:

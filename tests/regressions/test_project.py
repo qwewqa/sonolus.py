@@ -18,7 +18,7 @@ from sonolus.script.internal.callbacks import (
     update_callback,
     update_spawn_callback,
 )
-from sonolus.script.internal.context import GlobalContextState, ReadOnlyMemory
+from sonolus.script.internal.context import ModeContextState, ProjectContextState
 from sonolus.script.project import BuildConfig
 from tests.regressions import pydori_project
 from tests.regressions.conftest import compare_with_reference
@@ -107,12 +107,12 @@ def _build_mode_callbacks(
         ]
 
         for cb_name, cb_info, cb in callback_items:
-            global_state = GlobalContextState(
+            project_state = ProjectContextState()
+            mode_state = ModeContextState(
                 mode,
                 {a: i for i, a in enumerate(archetypes)} if archetypes is not None else None,
-                ReadOnlyMemory(),
             )
-            cfg = callback_to_cfg(global_state, cb, cb_info.name, archetype)
+            cfg = callback_to_cfg(project_state, mode_state, cb, cb_info.name, archetype)
             compare_with_reference(
                 f"{project_name}_{mode.name.lower()}_{camel_to_snake(archetype.__name__)}_{cb_name}_cfg",
                 cfg_to_text(cfg),
@@ -129,12 +129,12 @@ def _build_mode_callbacks(
             )
 
     for cb_info, cb in global_callbacks or []:
-        global_state = GlobalContextState(
+        project_state = ProjectContextState()
+        mode_state = ModeContextState(
             mode,
             {a: i for i, a in enumerate(archetypes)} if archetypes is not None else None,
-            ReadOnlyMemory(),
         )
-        cfg = callback_to_cfg(global_state, cb, cb_info.name, None)
+        cfg = callback_to_cfg(project_state, mode_state, cb, cb_info.name, None)
         compare_with_reference(
             f"{project_name}_{mode.name.lower()}_global_{camel_to_snake(cb_info.name)}_{passes}_cfg",
             cfg_to_text(cfg),

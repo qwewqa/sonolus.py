@@ -191,7 +191,7 @@ class _OptionField(SonolusDescriptor):
         if sim_ctx():
             return sim_ctx().get_or_put_value((instance, self), lambda: copy(self.info.default))
         if ctx():
-            match ctx().global_state.mode:
+            match ctx().mode_state.mode:
                 case Mode.PLAY:
                     block = ctx().blocks.LevelOption
                 case Mode.WATCH:
@@ -212,7 +212,7 @@ class _OptionField(SonolusDescriptor):
         if sim_ctx():
             return sim_ctx().set_or_put_value((instance, self), lambda: copy(self.info.default), value)
         if ctx() and debug_config().unchecked_writes:
-            match ctx().global_state.mode:
+            match ctx().mode_state.mode:
                 case Mode.PLAY:
                     block = ctx().blocks.LevelOption
                 case Mode.WATCH:

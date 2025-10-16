@@ -24,7 +24,7 @@ from sonolus.script.internal.callbacks import (
     update_callback,
     update_spawn_callback,
 )
-from sonolus.script.internal.context import ReadOnlyMemory
+from sonolus.script.internal.context import ProjectContextState, ReadOnlyMemory
 from sonolus.script.options import Options
 from sonolus.script.particle import Particles
 from sonolus.script.project import BuildConfig
@@ -74,7 +74,7 @@ def package_engine(
         cache = CompileCache()
 
     config = config or BuildConfig()
-    rom = ReadOnlyMemory()
+    project_state = ProjectContextState()
     configuration = build_engine_configuration(engine.options, engine.ui)
     if no_gil():
         # process_cpu_count is available in Python 3.13+
@@ -99,7 +99,7 @@ def package_engine(
                 effects=play_mode.effects,
                 particles=play_mode.particles,
                 buckets=play_mode.buckets,
-                rom=rom,
+                project_state=project_state,
                 config=config,
                 thread_pool=thread_pool,
                 cache=cache,
@@ -111,7 +111,7 @@ def package_engine(
                 effects=watch_mode.effects,
                 particles=watch_mode.particles,
                 buckets=watch_mode.buckets,
-                rom=rom,
+                project_state=project_state,
                 update_spawn=watch_mode.update_spawn,
                 config=config,
                 thread_pool=thread_pool,
@@ -121,7 +121,7 @@ def package_engine(
                 build_preview_mode,
                 archetypes=preview_mode.archetypes,
                 skin=preview_mode.skin,
-                rom=rom,
+                project_state=project_state,
                 config=config,
                 thread_pool=thread_pool,
                 cache=cache,
@@ -136,7 +136,7 @@ def package_engine(
                 preprocess=tutorial_mode.preprocess,
                 navigate=tutorial_mode.navigate,
                 update=tutorial_mode.update,
-                rom=rom,
+                project_state=project_state,
                 config=config,
                 thread_pool=thread_pool,
                 cache=cache,
@@ -154,7 +154,7 @@ def package_engine(
             effects=play_mode.effects,
             particles=play_mode.particles,
             buckets=play_mode.buckets,
-            rom=rom,
+            project_state=project_state,
             config=config,
             thread_pool=None,
             cache=cache,
@@ -165,7 +165,7 @@ def package_engine(
             effects=watch_mode.effects,
             particles=watch_mode.particles,
             buckets=watch_mode.buckets,
-            rom=rom,
+            project_state=project_state,
             update_spawn=watch_mode.update_spawn,
             config=config,
             thread_pool=None,
@@ -174,7 +174,7 @@ def package_engine(
         preview_data = build_preview_mode(
             archetypes=preview_mode.archetypes,
             skin=preview_mode.skin,
-            rom=rom,
+            project_state=project_state,
             config=config,
             thread_pool=None,
             cache=cache,
@@ -188,7 +188,7 @@ def package_engine(
             preprocess=tutorial_mode.preprocess,
             navigate=tutorial_mode.navigate,
             update=tutorial_mode.update,
-            rom=rom,
+            project_state=project_state,
             config=config,
             thread_pool=None,
             cache=cache,
@@ -200,7 +200,7 @@ def package_engine(
         watch_data=package_data(watch_data),
         preview_data=package_data(preview_data),
         tutorial_data=package_data(tutorial_data),
-        rom=package_rom(rom),
+        rom=package_rom(project_state.rom),
     )
 
 
@@ -209,7 +209,7 @@ def validate_engine(
     config: BuildConfig | None = None,
 ):
     config = config or BuildConfig()
-    rom = ReadOnlyMemory()
+    project_state = ProjectContextState()
 
     play_mode = engine.play if config.build_play else empty_play_mode()
     watch_mode = engine.watch if config.build_watch else empty_watch_mode()
@@ -222,7 +222,7 @@ def validate_engine(
         effects=play_mode.effects,
         particles=play_mode.particles,
         buckets=play_mode.buckets,
-        rom=rom,
+        project_state=project_state,
         config=config,
         thread_pool=None,
         validate_only=True,
@@ -233,7 +233,7 @@ def validate_engine(
         effects=watch_mode.effects,
         particles=watch_mode.particles,
         buckets=watch_mode.buckets,
-        rom=rom,
+        project_state=project_state,
         update_spawn=watch_mode.update_spawn,
         config=config,
         thread_pool=None,
@@ -242,7 +242,7 @@ def validate_engine(
     build_preview_mode(
         archetypes=preview_mode.archetypes,
         skin=preview_mode.skin,
-        rom=rom,
+        project_state=project_state,
         config=config,
         thread_pool=None,
         validate_only=True,
@@ -256,7 +256,7 @@ def validate_engine(
         preprocess=tutorial_mode.preprocess,
         navigate=tutorial_mode.navigate,
         update=tutorial_mode.update,
-        rom=rom,
+        project_state=project_state,
         config=config,
         thread_pool=None,
         validate_only=True,
@@ -279,7 +279,7 @@ def build_play_mode(
     effects: Effects,
     particles: Particles,
     buckets: Buckets,
-    rom: ReadOnlyMemory,
+    project_state: ProjectContextState,
     config: BuildConfig,
     thread_pool: Executor | None = None,
     validate_only: bool = False,
@@ -288,7 +288,7 @@ def build_play_mode(
     return {
         **compile_mode(
             mode=Mode.PLAY,
-            rom=rom,
+            project_state=project_state,
             archetypes=archetypes,
             global_callbacks=None,
             passes=config.passes,
@@ -309,7 +309,7 @@ def build_watch_mode(
     effects: Effects,
     particles: Particles,
     buckets: Buckets,
-    rom: ReadOnlyMemory,
+    project_state: ProjectContextState,
     update_spawn: Callable[[], float],
     config: BuildConfig,
     thread_pool: Executor | None = None,
@@ -319,7 +319,7 @@ def build_watch_mode(
     return {
         **compile_mode(
             mode=Mode.WATCH,
-            rom=rom,
+            project_state=project_state,
             archetypes=archetypes,
             global_callbacks=[(update_spawn_callback, update_spawn)],
             passes=config.passes,
@@ -337,7 +337,7 @@ def build_watch_mode(
 def build_preview_mode(
     archetypes: list[type[_BaseArchetype]],
     skin: Skin,
-    rom: ReadOnlyMemory,
+    project_state: ProjectContextState,
     config: BuildConfig,
     thread_pool: Executor | None = None,
     validate_only: bool = False,
@@ -346,7 +346,7 @@ def build_preview_mode(
     return {
         **compile_mode(
             mode=Mode.PREVIEW,
-            rom=rom,
+            project_state=project_state,
             archetypes=archetypes,
             global_callbacks=None,
             passes=config.passes,
@@ -367,7 +367,7 @@ def build_tutorial_mode(
     preprocess: Callable[[], None],
     navigate: Callable[[], None],
     update: Callable[[], None],
-    rom: ReadOnlyMemory,
+    project_state: ProjectContextState,
     config: BuildConfig,
     thread_pool: Executor | None = None,
     validate_only: bool = False,
@@ -376,7 +376,7 @@ def build_tutorial_mode(
     return {
         **compile_mode(
             mode=Mode.TUTORIAL,
-            rom=rom,
+            project_state=project_state,
             archetypes=[],
             global_callbacks=[
                 (preprocess_callback, preprocess),

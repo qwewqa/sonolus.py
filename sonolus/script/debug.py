@@ -7,7 +7,7 @@ from sonolus.backend.ops import Op
 from sonolus.backend.optimize.flow import cfg_to_mermaid
 from sonolus.backend.optimize.passes import CompilerPass, OptimizerConfig, run_passes
 from sonolus.backend.optimize.simplify import RenumberVars
-from sonolus.script.internal.context import GlobalContextState, ReadOnlyMemory, ctx, set_ctx
+from sonolus.script.internal.context import ModeContextState, ProjectContextState, ctx, set_ctx
 from sonolus.script.internal.impl import meta_fn, validate_value
 from sonolus.script.internal.native import native_function
 from sonolus.script.internal.simulation_context import SimulationContext
@@ -156,13 +156,13 @@ def visualize_cfg(
                 RenumberVars(),
             ]
 
-    global_state = GlobalContextState(
+    project_state = ProjectContextState()
+    mode_state = ModeContextState(
         mode,
         {a: i for i, a in enumerate(archetypes)} if archetypes is not None else None,
-        ReadOnlyMemory(),
     )
 
-    cfg = callback_to_cfg(global_state, fn, callback, archetype=archetype)  # type: ignore
+    cfg = callback_to_cfg(project_state, mode_state, fn, callback, archetype=archetype)  # type: ignore
     cfg = run_passes(cfg, passes, OptimizerConfig(mode=mode))
     return cfg_to_mermaid(cfg)
 

@@ -39,19 +39,28 @@ _disabled_debug_config = DebugConfig(
 debug_var = ContextVar("debug_var", default=_disabled_debug_config)
 
 
-class GlobalContextState:
+class ProjectContextState:
+    rom: ReadOnlyMemory
+    const_mappings: dict[Any, int]
+    lock: Lock
+
+    def __init__(self, rom: ReadOnlyMemory | None = None, const_mappings: dict[Any, int] | None = None):
+        self.rom = ReadOnlyMemory() if rom is None else rom
+        self.const_mappings = {} if const_mappings is None else const_mappings
+        self.lock = Lock()
+
+
+class ModeContextState:
     archetypes: dict[type, int]
     archetypes_by_name: dict[str, type]
     keys_by_archetype_id: Sequence[int]
     is_scored_by_archetype_id: Sequence[bool]
-    rom: ReadOnlyMemory
-    const_mappings: dict[Any, int]
     environment_mappings: dict[_GlobalInfo, int]
     environment_offsets: dict[Block, int]
     mode: Mode
     lock: Lock
 
-    def __init__(self, mode: Mode, archetypes: dict[type, int] | None = None, rom: ReadOnlyMemory | None = None):
+    def __init__(self, mode: Mode, archetypes: dict[type, int] | None = None):
         from sonolus.script.array import Array
 
         self.archetypes = archetypes or {}
@@ -65,8 +74,6 @@ class GlobalContextState:
             if archetypes
             else Array[bool, Literal[0]]()
         )
-        self.rom = ReadOnlyMemory() if rom is None else rom
-        self.const_mappings = {}
         self.environment_mappings = {}
         self.environment_offsets = {}
         self.mode = mode
@@ -85,7 +92,8 @@ class CallbackContextState:
 
 
 class Context:
-    global_state: GlobalContextState
+    project_state: ProjectContextState
+    mode_state: ModeContextState
     callback_state: CallbackContextState
     statements: list[IRStmt]
     test: IRExpr
@@ -96,13 +104,15 @@ class Context:
 
     def __init__(
         self,
-        global_state: GlobalContextState,
+        project_state: ProjectContextState,
+        mode_state: ModeContextState,
         callback_state: CallbackContextState,
         scope: Scope | None = None,
         live: bool = True,
         foldable_constants: dict[TempBlock, list[float | None]] | None = None,
     ):
-        self.global_state = global_state
+        self.project_state = project_state
+        self.mode_state = mode_state
         self.callback_state = callback_state
         self.statements = []
         self.test = IRConst(0)
@@ -114,11 +124,11 @@ class Context:
 
     @property
     def rom(self) -> ReadOnlyMemory:
-        return self.global_state.rom
+        return self.project_state.rom
 
     @property
     def blocks(self) -> type[Block]:
-        return self.global_state.mode.blocks
+        return self.mode_state.mode.blocks
 
     @property
     def callback(self) -> str:
@@ -182,7 +192,8 @@ class Context:
 
     def copy_with_scope(self, scope: Scope) -> Context:
         return Context(
-            global_state=self.global_state,
+            project_state=self.project_state,
+            mode_state=self.mode_state,
             callback_state=self.callback_state,
             scope=scope,
             live=self.live,
@@ -267,25 +278,25 @@ class Context:
                         )
 
     def map_constant(self, value: Any) -> int:
-        with self.global_state.lock:
-            const_mappings = self.global_state.const_mappings
+        with self.project_state.lock:
+            const_mappings = self.project_state.const_mappings
             if value not in const_mappings:
                 const_mappings[value] = len(const_mappings)
             return const_mappings[value]
 
     def get_global_base(self, value: _GlobalInfo | _GlobalPlaceholder) -> BlockPlace:
-        with self.global_state.lock:
-            block = value.blocks.get(self.global_state.mode)
+        with self.mode_state.lock:
+            block = value.blocks.get(self.mode_state.mode)
             if block is None:
-                raise RuntimeError(f"Global {value} is not available in '{self.global_state.mode.name}' mode")
-            if value not in self.global_state.environment_mappings:
+                raise RuntimeError(f"Global {value} is not available in '{self.mode_state.mode.name}' mode")
+            if value not in self.mode_state.environment_mappings:
                 if value.offset is None:
-                    offset = self.global_state.environment_offsets.get(block, 0)
-                    self.global_state.environment_mappings[value] = offset
-                    self.global_state.environment_offsets[block] = offset + value.size
+                    offset = self.mode_state.environment_offsets.get(block, 0)
+                    self.mode_state.environment_mappings[value] = offset
+                    self.mode_state.environment_offsets[block] = offset + value.size
                 else:
-                    self.global_state.environment_mappings[value] = value.offset
-            return BlockPlace(block, self.global_state.environment_mappings[value])
+                    self.mode_state.environment_mappings[value] = value.offset
+            return BlockPlace(block, self.mode_state.environment_mappings[value])
 
     @classmethod
     def meet(cls, contexts: list[Context]) -> Context:
@@ -303,10 +314,10 @@ class Context:
         return target
 
     def register_archetype(self, type_: type) -> int:
-        with self.global_state.lock:
-            if type_ not in self.global_state.archetypes:
-                self.global_state.archetypes[type_] = len(self.global_state.archetypes)
-            return self.global_state.archetypes[type_]
+        with self.mode_state.lock:
+            if type_ not in self.mode_state.archetypes:
+                self.mode_state.archetypes[type_] = len(self.mode_state.archetypes)
+            return self.mode_state.archetypes[type_]
 
 
 def ctx() -> Context | Any:  # Using Any to silence type checker warnings if it's None

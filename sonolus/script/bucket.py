@@ -156,7 +156,7 @@ class Bucket(Record):
         """The judgment window of the bucket."""
         if not ctx():
             raise RuntimeError("Bucket window access outside of compilation")
-        match ctx().global_state.mode:
+        match ctx().mode_state.mode:
             case Mode.PLAY:
                 return _deref(ctx().blocks.LevelBucket, self.id * JudgmentWindow._size_(), JudgmentWindow)
             case Mode.WATCH:

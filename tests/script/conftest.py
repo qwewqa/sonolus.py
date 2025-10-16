@@ -18,7 +18,7 @@ from sonolus.backend.place import BlockPlace
 from sonolus.backend.visitor import compile_and_call
 from sonolus.build.compile import callback_to_cfg
 from sonolus.script.debug import debug_log_callback, simulation_context
-from sonolus.script.internal.context import GlobalContextState, ctx
+from sonolus.script.internal.context import ModeContextState, ProjectContextState, ctx
 from sonolus.script.internal.error import CompilationError
 from sonolus.script.internal.impl import meta_fn, validate_value
 from sonolus.script.internal.tuple_impl import TupleImpl
@@ -57,8 +57,9 @@ if is_ci() and sys.version_info < PRIMARY_PYTHON_VERSION:
 
 
 def compile_fn(callback: Callable):
-    global_state = GlobalContextState(Mode.PLAY)
-    return callback_to_cfg(global_state, callback, ""), global_state.rom.values
+    project_state = ProjectContextState()
+    mode_state = ModeContextState(Mode.PLAY)
+    return callback_to_cfg(project_state, mode_state, callback, ""), project_state.rom.values
 
 
 def run_and_validate[**P, R](

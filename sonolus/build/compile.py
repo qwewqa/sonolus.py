@@ -17,8 +17,8 @@ from sonolus.script.internal.callbacks import CallbackInfo
 from sonolus.script.internal.context import (
     CallbackContextState,
     Context,
-    GlobalContextState,
-    ReadOnlyMemory,
+    ModeContextState,
+    ProjectContextState,
     context_to_cfg,
     ctx,
     using_ctx,
@@ -54,7 +54,7 @@ class CompileCache:
 
 def compile_mode(
     mode: Mode,
-    rom: ReadOnlyMemory,
+    project_state: ProjectContextState,
     archetypes: list[type[_BaseArchetype]] | None,
     global_callbacks: list[tuple[CallbackInfo, Callable]] | None,
     passes: Sequence[CompilerPass] | None = None,
@@ -65,10 +65,9 @@ def compile_mode(
     if passes is None:
         passes = STANDARD_PASSES
 
-    global_state = GlobalContextState(
+    mode_state = ModeContextState(
         mode,
         {a: i for i, a in enumerate(archetypes)} if archetypes is not None else None,
-        rom,
     )
     nodes = OutputNodeGenerator()
     results = {}
@@ -84,7 +83,7 @@ def compile_mode(
         - (cb_info.name, node_index) for global callbacks, or
         - (cb_info.name, {"index": node_index, "order": cb_order}) for archetype callbacks.
         """
-        cfg = callback_to_cfg(global_state, cb, cb_info.name, arch)
+        cfg = callback_to_cfg(project_state, mode_state, cb, cb_info.name, arch)
         if validate_only:
             if arch is not None:
                 cb_order = getattr(cb, "_callback_order_", 0)
@@ -185,27 +184,29 @@ def compile_mode(
 
 
 def callback_to_cfg(
-    global_state: GlobalContextState,
+    project_state: ProjectContextState,
+    mode_state: ModeContextState,
     callback: Callable,
     name: str,
     archetype: type[_BaseArchetype] | None = None,
 ) -> BasicBlock:
     try:
         # Default to no_eval=True for performance unless there's an error.
-        return _callback_to_cfg(global_state, callback, name, archetype, no_eval=True)
+        return _callback_to_cfg(project_state, mode_state, callback, name, archetype, no_eval=True)
     except CompilationError:
-        return _callback_to_cfg(global_state, callback, name, archetype, no_eval=False)
+        return _callback_to_cfg(project_state, mode_state, callback, name, archetype, no_eval=False)
 
 
 def _callback_to_cfg(
-    global_state: GlobalContextState,
+    project_state: ProjectContextState,
+    mode_state: ModeContextState,
     callback: Callable,
     name: str,
     archetype: type[_BaseArchetype] | None,
     no_eval: bool,
 ) -> BasicBlock:
     callback_state = CallbackContextState(name, no_eval=no_eval)
-    context = Context(global_state, callback_state)
+    context = Context(project_state, mode_state, callback_state)
     with using_ctx(context):
         if archetype is not None:
             result = compile_and_call_at_definition(callback, archetype._for_compilation())
