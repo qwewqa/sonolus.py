@@ -20,10 +20,11 @@ from typing import TYPE_CHECKING, Protocol
 from sonolus.backend.excepthook import print_simple_traceback
 from sonolus.backend.utils import get_function, get_functions, get_tree_from_file
 from sonolus.build.compile import CompileCache
+from sonolus.script.internal.context import ProjectContextState
 from sonolus.script.internal.error import CompilationError
 
 if TYPE_CHECKING:
-    from sonolus.script.project import BuildConfig
+    from sonolus.script.project import BuildConfig, Project
 
 HELP_TEXT = """
 [r]ebuild
@@ -33,35 +34,32 @@ HELP_TEXT = """
 HELP_TEXT = textwrap.dedent(HELP_TEXT)
 
 
+@dataclass
+class ServerState:
+    project: Project
+    project_module_name: str
+    core_module_names: set[str]
+    build_dir: Path
+    config: BuildConfig
+    cache: CompileCache
+    project_state: ProjectContextState
+
+
 class Command(Protocol):
-    def execute(
-        self,
-        project_module_name: str,
-        core_module_names: set[str],
-        build_dir: Path,
-        config: BuildConfig,
-        cache: CompileCache,
-    ) -> None: ...
+    def execute(self, server_state: ServerState) -> None: ...
 
 
 @dataclass
 class RebuildCommand:
-    def execute(
-        self,
-        project_module_name: str,
-        core_module_names: set[str],
-        build_dir: Path,
-        config: BuildConfig,
-        cache: CompileCache,
-    ):
+    def execute(self, server_state: ServerState):
         from sonolus.build.cli import build_collection
 
         for module_name in tuple(sys.modules):
-            if module_name not in core_module_names:
+            if module_name not in server_state.core_module_names:
                 del sys.modules[module_name]
 
         try:
-            project_module = importlib.import_module(project_module_name)
+            project_module = importlib.import_module(server_state.project_module_name)
         except Exception:
             print(traceback.format_exc())
             return
@@ -72,7 +70,15 @@ class RebuildCommand:
         print("Rebuilding...")
         try:
             start_time = perf_counter()
-            build_collection(project_module.project, build_dir, config, cache=cache)
+            server_state.project_state = ProjectContextState()
+            server_state.project = project_module.project
+            build_collection(
+                server_state.project,
+                server_state.build_dir,
+                server_state.config,
+                cache=server_state.cache,
+                project_state=server_state.project_state,
+            )
             end_time = perf_counter()
             print(f"Rebuild completed in {end_time - start_time:.2f} seconds")
         except CompilationError:
@@ -82,14 +88,7 @@ class RebuildCommand:
 
 @dataclass
 class ExitCommand:
-    def execute(
-        self,
-        project_module_name: str,
-        core_module_names: set[str],
-        build_dir: Path,
-        config: BuildConfig,
-        cache: CompileCache,
-    ):
+    def execute(self, server_state: ServerState):
         print("Exiting...")
         sys.exit(0)
 
@@ -164,8 +163,18 @@ def run_server(
     core_module_names: set[str] | None,
     build_dir: Path,
     config: BuildConfig,
-    cache: CompileCache,
+    project,
 ):
+    from sonolus.build.cli import build_collection
+
+    cache = CompileCache()
+    project_state = ProjectContextState()
+
+    start_time = perf_counter()
+    build_collection(project, build_dir, config, cache=cache, project_state=project_state)
+    end_time = perf_counter()
+    print(f"Build finished in {end_time - start_time:.2f}s")
+
     interactive = project_module_name is not None and core_module_names is not None
 
     class DirectoryHandler(http.server.SimpleHTTPRequestHandler):
@@ -187,6 +196,16 @@ def run_server(
             print(f"  http://{ip}:{port}")
 
         if interactive:
+            server_state = ServerState(
+                project=project,
+                project_module_name=project_module_name,
+                core_module_names=core_module_names,
+                build_dir=build_dir,
+                config=config,
+                cache=cache,
+                project_state=project_state,
+            )
+
             threading.Thread(target=httpd.serve_forever, daemon=True).start()
 
             command_queue = queue.Queue()
@@ -202,7 +221,7 @@ def run_server(
                 while True:
                     try:
                         cmd = command_queue.get(timeout=0.5)
-                        cmd.execute(project_module_name, core_module_names, build_dir, config, cache)
+                        cmd.execute(server_state)
                         prompt_event.set()
                     except queue.Empty:
                         continue

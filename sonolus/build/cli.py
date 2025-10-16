@@ -14,6 +14,7 @@ from sonolus.build.dev_server import run_server
 from sonolus.build.engine import no_gil, package_engine, validate_engine
 from sonolus.build.level import package_level_data
 from sonolus.build.project import build_project_to_collection, get_project_schema
+from sonolus.script.internal.context import ProjectContextState
 from sonolus.script.internal.error import CompilationError
 from sonolus.script.project import BuildConfig, Project
 
@@ -88,12 +89,18 @@ def validate_project(project: Project, config: BuildConfig):
     validate_engine(project.engine.data, config)
 
 
-def build_collection(project: Project, build_dir: Path, config: BuildConfig | None, cache: CompileCache | None = None):
+def build_collection(
+    project: Project,
+    build_dir: Path,
+    config: BuildConfig | None,
+    cache: CompileCache | None = None,
+    project_state: ProjectContextState | None = None,
+):
     site_dir = build_dir / "site"
     shutil.rmtree(site_dir, ignore_errors=True)
     site_dir.mkdir(parents=True, exist_ok=True)
 
-    collection = build_project_to_collection(project, config, cache=cache)
+    collection = build_project_to_collection(project, config, cache=cache, project_state=project_state)
     collection.write(site_dir)
 
 
@@ -217,14 +224,9 @@ def main():
             print(f"Project built successfully to '{build_dir.resolve()}' in {end_time - start_time:.2f}s")
         elif args.command == "dev":
             build_dir = Path(args.build_dir)
-            start_time = perf_counter()
             config = get_config(args)
-            cache = CompileCache()
-            build_collection(project, build_dir, config, cache=cache)
-            end_time = perf_counter()
-            print(f"Build finished in {end_time - start_time:.2f}s")
             run_server(
-                build_dir / "site", args.port, project_module.__name__, core_module_names, build_dir, config, cache
+                build_dir / "site", args.port, project_module.__name__, core_module_names, build_dir, config, project
             )
         elif args.command == "schema":
             print(json.dumps(get_project_schema(project), indent=2))

@@ -69,12 +69,14 @@ def package_engine(
     engine: EngineData,
     config: BuildConfig | None = None,
     cache: CompileCache | None = None,
+    project_state: ProjectContextState | None = None,
 ):
     if cache is None:
         cache = CompileCache()
 
     config = config or BuildConfig()
-    project_state = ProjectContextState()
+    if project_state is None:
+        project_state = ProjectContextState()
     configuration = build_engine_configuration(engine.options, engine.ui)
     if no_gil():
         # process_cpu_count is available in Python 3.13+

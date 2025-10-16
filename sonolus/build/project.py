@@ -7,6 +7,7 @@ from sonolus.build.compile import CompileCache
 from sonolus.build.engine import package_engine, unpackage_data
 from sonolus.build.level import package_level_data
 from sonolus.script.engine import Engine
+from sonolus.script.internal.context import ProjectContextState
 from sonolus.script.level import ExternalLevelData, ExternalLevelDataDict, Level, LevelData, parse_external_level_data
 from sonolus.script.project import BuildConfig, Project, ProjectSchema
 
@@ -21,7 +22,10 @@ BLANK_AUDIO = (
 
 
 def build_project_to_collection(
-    project: Project, config: BuildConfig | None, cache: CompileCache | None = None
+    project: Project,
+    config: BuildConfig | None,
+    cache: CompileCache | None = None,
+    project_state: ProjectContextState | None = None,
 ) -> Collection:
     collection = load_resources_files_to_collection(project.resources)
     for src_engine, converter in project.converters.items():
@@ -34,7 +38,7 @@ def build_project_to_collection(
     if config.override_resource_level_engines:
         for level in collection.categories.get("levels", {}).values():
             level["item"]["engine"] = project.engine.name
-    add_engine_to_collection(collection, project, project.engine, config, cache=cache)
+    add_engine_to_collection(collection, project, project.engine, config, cache=cache, project_state=project_state)
     for level in project.levels:
         add_level_to_collection(collection, project, level)
     collection.name = f"{project.engine.name}"
@@ -72,8 +76,9 @@ def add_engine_to_collection(
     engine: Engine,
     config: BuildConfig | None,
     cache: CompileCache | None = None,
+    project_state: ProjectContextState | None = None,
 ):
-    packaged_engine = package_engine(engine.data, config, cache=cache)
+    packaged_engine = package_engine(engine.data, config, cache=cache, project_state=project_state)
     item = {
         "name": engine.name,
         "version": engine.version,
