@@ -1,0 +1,19 @@
+0:
+  goto 1
+1:
+  goto 2
+2:
+  v1 <- EntityMemory[1]
+  goto 3
+3:
+  goto 4
+4:
+  v2 <- Multiply(v1, 32.0)
+  v3 <- Add(6.0, v2)
+  v4 <- v3
+  goto 5
+5:
+  goto 6
+6:
+  Break(1, EntityDataArray[v4])
+  goto exit

@@ -12,6 +12,7 @@ from sonolus.backend.blocks import PlayBlock
 from sonolus.backend.finalize import cfg_to_engine_node
 from sonolus.backend.interpret import Interpreter
 from sonolus.backend.mode import Mode
+from sonolus.backend.optimize.flow import BasicBlock
 from sonolus.backend.optimize.optimize import FAST_PASSES, MINIMAL_PASSES, STANDARD_PASSES
 from sonolus.backend.optimize.passes import OptimizerConfig, run_passes
 from sonolus.backend.place import BlockPlace
@@ -56,8 +57,8 @@ if is_ci() and sys.version_info < PRIMARY_PYTHON_VERSION:
     optimization_levels = [STANDARD_PASSES]
 
 
-def compile_fn(callback: Callable):
-    project_state = ProjectContextState()
+def compile_fn(callback: Callable, dev: bool = False) -> tuple[BasicBlock, list[float]]:
+    project_state = ProjectContextState(dev=dev)
     mode_state = ModeContextState(Mode.PLAY)
     return callback_to_cfg(project_state, mode_state, callback, ""), project_state.rom.values
 
@@ -174,7 +175,7 @@ def run_and_validate[**P, R](
     return regular_result
 
 
-def run_compiled[**P](fn: Callable[P, Num], *args: P.args, **kwargs: P.kwargs) -> Num:
+def run_compiled[**P](fn: Callable[P, Num], *args: P.args, dev: bool | None = None, **kwargs: P.kwargs) -> Num:
     """Runs a function as a compiled function and returns the result."""
 
     @meta_fn
@@ -184,14 +185,19 @@ def run_compiled[**P](fn: Callable[P, Num], *args: P.args, **kwargs: P.kwargs) -
     results = []
     initial_random_state = random.getstate()
     for passes in optimization_levels:
-        random.setstate(initial_random_state)
-        cfg, rom_values = compile_fn(wrapper)
-        cfg = run_passes(cfg, passes, OptimizerConfig())
-        entry = cfg_to_engine_node(cfg)
-        interpreter = Interpreter()
-        interpreter.blocks[PlayBlock.EngineRom] = rom_values
-        result = interpreter.run(entry)
-        results.append(result)
+        for enable_dev in {
+            True: (True,),
+            False: (False,),
+            None: (True, False),
+        }[dev]:
+            random.setstate(initial_random_state)
+            cfg, rom_values = compile_fn(wrapper, dev=enable_dev)
+            cfg = run_passes(cfg, passes, OptimizerConfig())
+            entry = cfg_to_engine_node(cfg)
+            interpreter = Interpreter()
+            interpreter.blocks[PlayBlock.EngineRom] = rom_values
+            result = interpreter.run(entry)
+            results.append(result)
 
     if len(set(results)) != 1:
         raise ValueError(f"Compiled results differ between optimization levels: {results}")

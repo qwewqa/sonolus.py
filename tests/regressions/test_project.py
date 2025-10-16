@@ -97,58 +97,63 @@ def _build_mode_callbacks(
     global_callbacks: list[tuple[CallbackInfo, Callable]] | None,
     passes: str,
 ):
-    for archetype in archetypes or []:
-        archetype._init_fields()
+    for dev in (True, False):
+        suffixes = [""]
+        if dev:
+            suffixes.append("dev")
+        suffix = "_".join(suffixes)
+        for archetype in archetypes or []:
+            archetype._init_fields()
 
-        callback_items = [
-            (cb_name, cb_info, getattr(archetype, cb_name))
-            for cb_name, cb_info in archetype._supported_callbacks_.items()
-            if getattr(archetype, cb_name) not in archetype._default_callbacks_
-        ]
+            callback_items = [
+                (cb_name, cb_info, getattr(archetype, cb_name))
+                for cb_name, cb_info in archetype._supported_callbacks_.items()
+                if getattr(archetype, cb_name) not in archetype._default_callbacks_
+            ]
 
-        for cb_name, cb_info, cb in callback_items:
+            for cb_name, cb_info, cb in callback_items:
+                project_state = ProjectContextState()
+                mode_state = ModeContextState(
+                    mode,
+                    {a: i for i, a in enumerate(archetypes)} if archetypes is not None else None,
+                )
+                cfg = callback_to_cfg(project_state, mode_state, cb, cb_info.name, archetype)
+                compare_with_reference(
+                    f"{project_name}_{mode.name.lower()}_{camel_to_snake(archetype.__name__)}_{cb_name}{suffix}_cfg",
+                    cfg_to_text(cfg),
+                )
+                cfg = run_passes(cfg, PASSES[passes], OptimizerConfig(mode=mode, callback=cb_info.name))
+                compare_with_reference(
+                    f"{project_name}_{mode.name.lower()}_{camel_to_snake(archetype.__name__)}_{cb_name}_{passes}{suffix}_optimized_cfg",
+                    cfg_to_text(cfg),
+                )
+                node = cfg_to_engine_node(cfg)
+                compare_with_reference(
+                    f"{project_name}_{mode.name.lower()}_{camel_to_snake(archetype.__name__)}_{cb_name}_{passes}{suffix}_nodes",
+                    format_engine_node(node),
+                )
+
+        for cb_info, cb in global_callbacks or []:
             project_state = ProjectContextState()
             mode_state = ModeContextState(
                 mode,
                 {a: i for i, a in enumerate(archetypes)} if archetypes is not None else None,
             )
-            cfg = callback_to_cfg(project_state, mode_state, cb, cb_info.name, archetype)
+            cfg = callback_to_cfg(project_state, mode_state, cb, cb_info.name, None)
             compare_with_reference(
-                f"{project_name}_{mode.name.lower()}_{camel_to_snake(archetype.__name__)}_{cb_name}_cfg",
+                f"{project_name}_{mode.name.lower()}_global_{camel_to_snake(cb_info.name)}_{passes}{suffix}_cfg",
                 cfg_to_text(cfg),
             )
             cfg = run_passes(cfg, PASSES[passes], OptimizerConfig(mode=mode, callback=cb_info.name))
             compare_with_reference(
-                f"{project_name}_{mode.name.lower()}_{camel_to_snake(archetype.__name__)}_{cb_name}_{passes}_optimized_cfg",
+                f"{project_name}_{mode.name.lower()}_global_{camel_to_snake(cb_info.name)}_{passes}{suffix}_optimized_cfg",
                 cfg_to_text(cfg),
             )
             node = cfg_to_engine_node(cfg)
             compare_with_reference(
-                f"{project_name}_{mode.name.lower()}_{camel_to_snake(archetype.__name__)}_{cb_name}_{passes}_nodes",
+                f"{project_name}_{mode.name.lower()}_global_{camel_to_snake(cb_info.name)}_{passes}{suffix}_nodes",
                 format_engine_node(node),
             )
-
-    for cb_info, cb in global_callbacks or []:
-        project_state = ProjectContextState()
-        mode_state = ModeContextState(
-            mode,
-            {a: i for i, a in enumerate(archetypes)} if archetypes is not None else None,
-        )
-        cfg = callback_to_cfg(project_state, mode_state, cb, cb_info.name, None)
-        compare_with_reference(
-            f"{project_name}_{mode.name.lower()}_global_{camel_to_snake(cb_info.name)}_{passes}_cfg",
-            cfg_to_text(cfg),
-        )
-        cfg = run_passes(cfg, PASSES[passes], OptimizerConfig(mode=mode, callback=cb_info.name))
-        compare_with_reference(
-            f"{project_name}_{mode.name.lower()}_global_{camel_to_snake(cb_info.name)}_{passes}_optimized_cfg",
-            cfg_to_text(cfg),
-        )
-        node = cfg_to_engine_node(cfg)
-        compare_with_reference(
-            f"{project_name}_{mode.name.lower()}_global_{camel_to_snake(cb_info.name)}_{passes}_nodes",
-            format_engine_node(node),
-        )
 
 
 def camel_to_snake(name: str) -> str:

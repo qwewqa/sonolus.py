@@ -1,0 +1,24 @@
+0:
+  10000[1] <- Trunc(Divide(EntityData[2], 2.0))
+  10000[0] <- Subtract(Add(Multiply(Add(10000[1], 0.5), PreviewData[1]), -0.252), Divide(Subtract(RuntimeEnvironment[1], Negate(RuntimeEnvironment[1])), 2.0))
+  10000[1] <- Add(Subtract(Add(Multiply(Add(10000[1], 0.5), PreviewData[1]), 0.252), Divide(Subtract(RuntimeEnvironment[1], Negate(RuntimeEnvironment[1])), 2.0)), 0.21599999999999997)
+  10000[2] <- Lerp(-0.9, 0.9, Divide(Mod(EntityData[2], 2.0), 2.0))
+  Draw(19.0, 10000[0], Subtract(10000[2], 0.0018), 10000[0], Add(10000[2], 0.0018), 10000[1], Add(10000[2], 0.0018), 10000[1], Subtract(10000[2], 0.0018), 240000.0, 0.8)
+  Print(EntityData[1], 20.0, -1.0, Add(Subtract(Add(Multiply(Add(Trunc(Divide(EntityData[2], 2.0)), 0.5), PreviewData[1]), 0.252), Divide(Subtract(RuntimeEnvironment[1], Negate(RuntimeEnvironment[1])), 2.0)), 0.015), Lerp(-0.9, 0.9, Divide(Mod(EntityData[2], 2.0), 2.0)), 0, 0, 0.22, 0.12, 0, 5.0, 1.0, -1.0, 0)
+  10000[0] <- Add(EntityData[0], 4.0)
+  goto 1
+1:
+  goto 2 if Equal(BeatToStartingBeat(10000[0]), EntityData[0]) else 4
+2:
+  goto 3 if LessOr(10000[0], PreviewData[4]) else 4
+3:
+  10000[1] <- BeatToTime(10000[0])
+  10000[2] <- Trunc(Divide(10000[1], 2.0))
+  10000[3] <- Subtract(Add(Multiply(Add(10000[2], 0.5), PreviewData[1]), -0.252), Divide(Subtract(RuntimeEnvironment[1], Negate(RuntimeEnvironment[1])), 2.0))
+  10000[4] <- Subtract(Add(Multiply(Add(10000[2], 0.5), PreviewData[1]), 0.252), Divide(Subtract(RuntimeEnvironment[1], Negate(RuntimeEnvironment[1])), 2.0))
+  10000[5] <- Lerp(-0.9, 0.9, Divide(Mod(10000[1], 2.0), 2.0))
+  Draw(21.0, 10000[3], Subtract(10000[5], 0.0018), 10000[3], Add(10000[5], 0.0018), 10000[4], Add(10000[5], 0.0018), 10000[4], Subtract(10000[5], 0.0018), Subtract(21.0, Divide(BeatToTime(10000[0]), 100.0)), 0.8)
+  10000[0] <- Add(10000[0], 4.0)
+  goto 1
+4:
+  goto exit

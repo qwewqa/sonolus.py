@@ -1,0 +1,58 @@
+0:
+  10000[0] <- Multiply(EntityData[1], 32.0)
+  10000[0] <- Add(11.0, 10000[0])
+  10000[0] <- 10000[0]
+  10000[0] <- GreaterOr(RuntimeUpdate[0], EntityDataArray[10000[0]])
+  goto 1 if 10000[0] else 2
+1:
+  EntityDespawn[0] <- 1.0
+  goto 7
+2:
+  10000[0] <- Multiply(EntityData[0], 32.0)
+  10000[0] <- Add(11.0, 10000[0])
+  10000[0] <- 10000[0]
+  10000[0] <- LessOr(EntityDataArray[10000[0]], RuntimeUpdate[0])
+  goto 3 if 10000[0] else 4
+3:
+  10000[0] <- Multiply(EntityData[1], 32.0)
+  10000[0] <- Add(11.0, 10000[0])
+  10000[0] <- 10000[0]
+  10000[0] <- Less(RuntimeUpdate[0], EntityDataArray[10000[0]])
+  10000[0] <- 10000[0]
+  goto 5
+4:
+  10000[0] <- 0
+  goto 5
+5:
+  goto 6 if 10000[0] else 7
+6:
+  10000[0] <- Multiply(EntityData[0], 32.0)
+  10000[0] <- Add(12.0, 10000[0])
+  10000[0] <- 10000[0]
+  10000[1] <- Divide(6.0, LevelOption[1])
+  10000[1] <- Subtract(EntityDataArray[10000[0]], 10000[1])
+  10000[0] <- Remap(10000[1], EntityDataArray[10000[0]], LevelData[14], 0, RuntimeUpdate[2])
+  10000[1] <- Multiply(EntityData[1], 32.0)
+  10000[1] <- Add(12.0, 10000[1])
+  10000[1] <- 10000[1]
+  10000[2] <- Divide(6.0, LevelOption[1])
+  10000[2] <- Subtract(EntityDataArray[10000[1]], 10000[2])
+  10000[1] <- Remap(10000[2], EntityDataArray[10000[1]], LevelData[14], 0, RuntimeUpdate[2])
+  10000[2] <- Multiply(EntityData[0], 32.0)
+  10000[2] <- 10000[2]
+  10000[3] <- Multiply(EntityData[1], 32.0)
+  10000[3] <- 10000[3]
+  10000[0] <- Remap(10000[0], 10000[1], EntityDataArray[10000[2]], EntityDataArray[10000[3]], 0)
+  10000[1] <- Multiply(EntityData[0], 32.0)
+  10000[1] <- Add(16.0, 10000[1])
+  10000[1] <- 10000[1]
+  10000[1] <- Multiply(EntityDataArray[10000[1]], 32.0)
+  10000[1] <- Add(16.0, 10000[1])
+  10000[1] <- 10000[1]
+  10000[1] <- Multiply(EntityDataArray[10000[1]], 32.0)
+  10000[1] <- Add(1.0, 10000[1])
+  10000[1] <- 10000[1]
+  EntitySharedMemoryArray[10000[1]] <- 10000[0]
+  goto 7
+7:
+  goto exit

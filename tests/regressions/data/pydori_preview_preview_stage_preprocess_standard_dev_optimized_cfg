@@ -1,0 +1,35 @@
+0:
+  10000[0] <- RuntimeEnvironment[1]
+  10000[1] <- RuntimeUIConfiguration[0]
+  10000[2] <- RuntimeUIConfiguration[1]
+  RuntimeUI[0] <- Add(10000[0], -0.05)
+  RuntimeUI[1] <- 0.95
+  RuntimeUI[2] <- 1.0
+  RuntimeUI[3] <- 1.0
+  RuntimeUI[4] <- Multiply(0.15, 10000[1])
+  RuntimeUI[5] <- Multiply(0.15, 10000[1])
+  RuntimeUI[6] <- 0
+  RuntimeUI[7] <- 10000[2]
+  RuntimeUI[8] <- 1.0
+  10000[0] <- RuntimeEnvironment[1]
+  10000[1] <- RuntimeEnvironment[1]
+  10000[2] <- RuntimeEnvironment[1]
+  10000[3] <- RuntimeUIConfiguration[2]
+  10000[4] <- RuntimeUIConfiguration[3]
+  RuntimeUI[9] <- Add(Negate(10000[0]), 0.05)
+  RuntimeUI[10] <- -0.95
+  RuntimeUI[11] <- 0
+  RuntimeUI[12] <- 0
+  RuntimeUI[13] <- Subtract(Subtract(10000[1], Negate(10000[2])), 0.1)
+  RuntimeUI[14] <- Multiply(0.15, 10000[3])
+  RuntimeUI[15] <- 0
+  RuntimeUI[16] <- 10000[4]
+  RuntimeUI[17] <- 1.0
+  10000[0] <- PreviewData[1]
+  PreviewData[3] <- Add(Floor(Divide(10000[0], 2.0)), 1.0)
+  PreviewData[4] <- 1.004
+  10000[0] <- PreviewData[4]
+  10000[1] <- PreviewData[3]
+  RuntimeCanvas[0] <- 0
+  RuntimeCanvas[1] <- Multiply(10000[0], 10000[1])
+  goto exit

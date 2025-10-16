@@ -1,0 +1,31 @@
+0:
+  goto 1
+1:
+  goto 2 if PreviewOption[12] else 3
+2:
+  v1 <- EntityData[0]
+  v2 <- Negate(v1)
+  EntityData[0] <- v2
+  v3 <- EntityData[2]
+  v4 <- Negate(v3)
+  EntityData[2] <- v4
+  goto 4
+3:
+  goto 4
+4:
+  v5 <- EntityData[1]
+  v6 <- BeatToTime(v5)
+  EntityData[3] <- v6
+  v7 <- PreviewData[1]
+  v8 <- EntityData[3]
+  v9 <- Max(v7, v8)
+  PreviewData[1] <- v9
+  v10 <- PreviewData[2]
+  v11 <- EntityData[1]
+  v12 <- Max(v10, v11)
+  PreviewData[2] <- v12
+  goto 5
+5:
+  goto 6
+6:
+  goto exit

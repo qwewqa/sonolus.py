@@ -1,0 +1,33 @@
+0:
+  goto 1
+1:
+  goto 2
+2:
+  v1 <- EntityMemory[2]
+  v2 <- NotEqual(v1, 0)
+  goto 3
+3:
+  goto 4 if v2 else 8
+4:
+  goto 5
+5:
+  v3 <- EntityMemory[2]
+  v4 <- DestroyParticleEffect(v3)
+  goto 6
+6:
+  goto 7
+7:
+  EntityMemory[2] <- 0
+  goto 9
+8:
+  goto 9
+9:
+  goto 10
+10:
+  goto 11
+11:
+  goto 12
+12:
+  goto 13
+13:
+  goto exit

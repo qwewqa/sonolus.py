@@ -1,0 +1,58 @@
+0:
+  goto 1
+1:
+  goto 2
+2:
+  goto 3
+3:
+  goto 4
+4:
+  goto 5
+5:
+  goto 6 if RuntimeEnvironment[4] else 7
+6:
+  v1 <- Multiply(EntityData[0], 32.0)
+  v2 <- Add(8.0, v1)
+  v3 <- v2
+  v7 <- EntityDataArray[v3]
+  goto 8
+7:
+  v4 <- Multiply(EntityData[0], 32.0)
+  v5 <- Add(6.0, v4)
+  v6 <- v5
+  v7 <- EntityDataArray[v6]
+  goto 8
+8:
+  goto 9
+9:
+  goto 10
+10:
+  goto 11
+11:
+  goto 12
+12:
+  goto 13
+13:
+  goto 14 if RuntimeEnvironment[4] else 15
+14:
+  v8 <- Multiply(EntityData[1], 32.0)
+  v9 <- Add(8.0, v8)
+  v10 <- v9
+  v14 <- EntityDataArray[v10]
+  goto 16
+15:
+  v11 <- Multiply(EntityData[1], 32.0)
+  v12 <- Add(6.0, v11)
+  v13 <- v12
+  v14 <- EntityDataArray[v13]
+  goto 16
+16:
+  goto 17
+17:
+  v15 <- Min(v7, v14)
+  goto 18
+18:
+  goto 19
+19:
+  Break(1, v15)
+  goto exit

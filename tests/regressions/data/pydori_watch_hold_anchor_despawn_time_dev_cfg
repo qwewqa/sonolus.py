@@ -1,0 +1,15 @@
+0:
+  goto 1
+1:
+  goto 2 if RuntimeEnvironment[4] else 3
+2:
+  v1 <- EntityData[8]
+  goto 4
+3:
+  v1 <- EntityData[6]
+  goto 4
+4:
+  goto 5
+5:
+  Break(1, v1)
+  goto exit

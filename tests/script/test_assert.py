@@ -21,7 +21,16 @@ def test_assertion_fails():
         # noinspection PyUnreachableCode
         return 1
 
-    assert run_compiled(fn) == 0
+    assert run_compiled(fn, dev=True) == 0
+
+
+def test_asserting_does_nothing_if_not_dev_mode():
+    def fn():
+        assert False, "Message"  # noqa: B011, PT015
+        assert True, "Message"
+        return 1
+
+    assert run_compiled(fn, dev=False) == 1
 
 
 def test_assert_true_succeeds():
@@ -37,7 +46,7 @@ def test_assert_true_fails():
         assert_true(False)
         return 1
 
-    assert run_compiled(fn) == 0
+    assert run_compiled(fn, dev=True) == 0
 
 
 def test_assert_false_succeeds():
@@ -53,4 +62,4 @@ def test_assert_false_fails():
         assert_false(True)
         return 1
 
-    assert run_compiled(fn) == 0
+    assert run_compiled(fn, dev=True) == 0

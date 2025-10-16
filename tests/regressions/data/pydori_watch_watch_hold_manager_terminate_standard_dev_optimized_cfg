@@ -1,0 +1,10 @@
+0:
+  10000[0] <- EntityMemory[2]
+  goto 1 if NotEqual(10000[0], 0) else 2
+1:
+  10000[0] <- EntityMemory[2]
+  DestroyParticleEffect(10000[0])
+  EntityMemory[2] <- 0
+  goto exit
+2:
+  goto exit

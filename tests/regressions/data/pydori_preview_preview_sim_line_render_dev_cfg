@@ -1,0 +1,160 @@
+0:
+  goto 1
+1:
+  goto 2 if PreviewOption[8] else 45
+2:
+  goto 3
+3:
+  goto 4
+4:
+  goto 5
+5:
+  v1 <- Multiply(EntityData[0], 32.0)
+  v2 <- v1
+  goto 6
+6:
+  goto 7
+7:
+  goto 8
+8:
+  v3 <- Multiply(EntityData[1], 32.0)
+  v4 <- v3
+  goto 9
+9:
+  goto 10
+10:
+  goto 11
+11:
+  v5 <- Multiply(EntityData[0], 32.0)
+  v6 <- Add(3.0, v5)
+  v7 <- v6
+  goto 12
+12:
+  goto 13
+13:
+  v8 <- Divide(EntityDataArray[v7], 2.0)
+  v9 <- Trunc(v8)
+  goto 14
+14:
+  goto 15
+15:
+  goto 16
+16:
+  v10 <- Add(v9, 0.5)
+  v11 <- Multiply(v10, PreviewData[1])
+  v12 <- Multiply(EntityDataArray[v2], 0.072)
+  v13 <- Add(v11, v12)
+  v14 <- Negate(RuntimeEnvironment[1])
+  goto 17
+17:
+  v15 <- v14
+  v16 <- Subtract(RuntimeEnvironment[1], v15)
+  goto 18
+18:
+  goto 19
+19:
+  v17 <- Divide(v16, 2.0)
+  v18 <- Subtract(v13, v17)
+  goto 20
+20:
+  goto 21
+21:
+  goto 22
+22:
+  v19 <- Add(v9, 0.5)
+  v20 <- Multiply(v19, PreviewData[1])
+  v21 <- Multiply(EntityDataArray[v4], 0.072)
+  v22 <- Add(v20, v21)
+  v23 <- Negate(RuntimeEnvironment[1])
+  goto 23
+23:
+  v24 <- v23
+  v25 <- Subtract(RuntimeEnvironment[1], v24)
+  goto 24
+24:
+  goto 25
+25:
+  v26 <- Divide(v25, 2.0)
+  v27 <- Subtract(v22, v26)
+  goto 26
+26:
+  goto 27
+27:
+  goto 28
+28:
+  v28 <- Mod(EntityDataArray[v7], 2.0)
+  v29 <- Divide(v28, 2.0)
+  v30 <- Lerp(-0.9, 0.9, v29)
+  goto 29
+29:
+  goto 30
+30:
+  v31 <- Subtract(v30, 0.009)
+  v32 <- v18
+  v33 <- v31
+  v34 <- Subtract(v30, 0.009)
+  v35 <- v27
+  v36 <- v34
+  v37 <- Add(v30, 0.009)
+  v38 <- v27
+  v39 <- v37
+  v40 <- Add(v30, 0.009)
+  v41 <- v18
+  v42 <- v40
+  goto 31
+31:
+  goto 32
+32:
+  goto 33
+33:
+  goto 34
+34:
+  goto 35
+35:
+  v43 <- Multiply(EntityData[0], 32.0)
+  v44 <- v43
+  goto 36
+36:
+  goto 37
+37:
+  goto 38
+38:
+  v45 <- Multiply(EntityData[1], 32.0)
+  v46 <- v45
+  v47 <- Min(EntityDataArray[v44], EntityDataArray[v46])
+  goto 39
+39:
+  goto 40
+40:
+  goto 41
+41:
+  v48 <- Multiply(EntityData[0], 32.0)
+  v49 <- Add(3.0, v48)
+  v50 <- v49
+  goto 42
+42:
+  v51 <- Multiply(v47, 100.0)
+  v52 <- Add(220000.0, v51)
+  v53 <- Add(v52, EntityDataArray[v50])
+  goto 43
+43:
+  goto 44
+44:
+  v54 <- v32
+  v55 <- v33
+  v56 <- v41
+  v57 <- v42
+  v58 <- v38
+  v59 <- v39
+  v60 <- v35
+  v61 <- v36
+  v62 <- Draw(18.0, v54, v55, v56, v57, v58, v59, v60, v61, v53, PreviewOption[9])
+  goto 46
+45:
+  goto 46
+46:
+  goto 47
+47:
+  goto 48
+48:
+  goto exit

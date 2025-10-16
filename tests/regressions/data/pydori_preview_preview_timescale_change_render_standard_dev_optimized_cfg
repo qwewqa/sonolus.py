@@ -1,0 +1,8 @@
+0:
+  10000[1] <- Trunc(Divide(EntityData[2], 2.0))
+  10000[0] <- Subtract(Add(Multiply(Add(10000[1], 0.5), PreviewData[1]), 0.252), Divide(Subtract(RuntimeEnvironment[1], Negate(RuntimeEnvironment[1])), 2.0))
+  10000[1] <- Subtract(Subtract(Add(Multiply(Add(10000[1], 0.5), PreviewData[1]), -0.252), Divide(Subtract(RuntimeEnvironment[1], Negate(RuntimeEnvironment[1])), 2.0)), 0.21599999999999997)
+  10000[2] <- Lerp(-0.9, 0.9, Divide(Mod(EntityData[2], 2.0), 2.0))
+  Draw(20.0, 10000[1], Subtract(10000[2], 0.0018), 10000[1], Add(10000[2], 0.0018), 10000[0], Add(10000[2], 0.0018), 10000[0], Subtract(10000[2], 0.0018), 250000.0, 0.8)
+  Print(EntityData[1], 21.0, -1.0, Add(Subtract(Add(Multiply(Add(Trunc(Divide(EntityData[2], 2.0)), 0.5), PreviewData[1]), -0.252), Divide(Subtract(RuntimeEnvironment[1], Negate(RuntimeEnvironment[1])), 2.0)), -0.015), Lerp(-0.9, 0.9, Divide(Mod(EntityData[2], 2.0), 2.0)), 1.0, 0, 0.22, 0.12, 0, 4.0, 1.0, 1.0, 0)
+  goto exit
