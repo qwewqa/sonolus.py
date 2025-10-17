@@ -1,381 +1,504 @@
 0:
-  goto 354 if EntityDespawn[0] else 1
+  goto 535 if EntityDespawn[0] else 1
 1:
   10000[0] <- Multiply(EntityData[0], LevelData[12])
-  10000[4] <- Subtract(10000[0], Divide(Multiply(LevelData[12], 2.5), 2.0))
-  10000[5] <- Add(10000[0], Divide(Multiply(LevelData[12], 2.5), 2.0))
-  10000[3] <- 10000[4]
-  10000[2] <- 10000[5]
+  10000[5] <- Subtract(10000[0], Divide(Multiply(LevelData[12], 2.5), 2.0))
+  10000[6] <- Add(10000[0], Divide(Multiply(LevelData[12], 2.5), 2.0))
+  10000[4] <- 10000[5]
+  10000[3] <- 10000[6]
   goto 2 if Greater(EntityData[2], 0) else 3
 2:
-  10000[2] <- Add(10000[5], Multiply(LevelData[12], EntityData[2]))
+  10000[3] <- Add(10000[6], Multiply(LevelData[12], EntityData[2]))
   goto 4 if Less(EntityData[2], 0) else 5
 3:
   goto 4 if Less(EntityData[2], 0) else 5
 4:
-  10000[3] <- Add(10000[4], Multiply(LevelData[12], EntityData[2]))
+  10000[4] <- Add(10000[5], Multiply(LevelData[12], EntityData[2]))
   goto 5
 5:
-  10000[4] <- 0
-  10000[7] <- 0
+  10000[5] <- 0
   10000[8] <- 0
+  10000[9] <- 0
   goto 6
 6:
-  10000[5] <- LevelMemory[0]
-  goto 7 if Less(10000[4], 10000[5]) else 20
+  10000[6] <- LevelMemory[0]
+  goto 7 if Less(10000[5], 10000[6]) else 22
 7:
-  10000[5] <- LevelMemory[0]
-  10000[5] <- Add(10000[4], Multiply(Less(10000[4], 0), 10000[5]))
-  10000[4] <- Add(10000[4], 1.0)
-  10000[6] <- LevelMemory[10000[5] + 1]
-  goto 8 if NotEqual(10000[6], EntityInfo[0]) else 6
+  10000[6] <- LevelMemory[0]
+  goto 8 if And(And(GreaterOr(10000[5], Negate(10000[6])), Less(10000[5], 10000[6])), Equal(Trunc(10000[5]), 10000[5])) else 21
 8:
-  10000[5] <- LevelMemory[10000[5] + 1]
-  10000[6] <- Add(2.0, Multiply(10000[5], 32.0))
-  10000[6] <- EntitySharedMemoryArray[10000[6]]
-  goto 9 if Not(10000[6]) else 6
+  10000[6] <- Add(10000[5], Multiply(Less(10000[5], 0), 10000[6]))
+  10000[5] <- Add(10000[5], 1.0)
+  10000[7] <- LevelMemory[10000[6] + 1]
+  goto 9 if NotEqual(10000[7], EntityInfo[0]) else 6
 9:
-  10000[6] <- Add(11.0, Multiply(10000[5], 32.0))
-  goto 10 if LessOr(Abs(Subtract(EntityDataArray[10000[6]], EntityData[11])), 0.005) else 6
+  10000[6] <- LevelMemory[10000[6] + 1]
+  10000[7] <- Add(2.0, Multiply(10000[6], 32.0))
+  10000[7] <- EntitySharedMemoryArray[10000[7]]
+  goto 10 if Not(10000[7]) else 6
 10:
-  10000[6] <- Add(16.0, Multiply(10000[5], 32.0))
-  10000[6] <- Multiply(EntityDataArray[10000[6]], 32.0)
-  10000[6] <- EntitySharedMemoryArray[10000[6]]
-  goto 11 if Not(Greater(10000[6], 0)) else 6
+  10000[7] <- Add(11.0, Multiply(10000[6], 32.0))
+  goto 11 if LessOr(Abs(Subtract(EntityDataArray[10000[7]], EntityData[11])), 0.005) else 6
 11:
-  10000[0] <- 10000[7]
-  10000[1] <- 10000[8]
-  10000[9] <- Multiply(10000[5], 32.0)
-  10000[10] <- Add(2.0, Multiply(10000[5], 32.0))
-  10000[11] <- Multiply(EntityDataArray[10000[9]], LevelData[12])
-  10000[12] <- Subtract(10000[11], Divide(Multiply(LevelData[12], 2.5), 2.0))
-  10000[13] <- Add(10000[11], Divide(Multiply(LevelData[12], 2.5), 2.0))
-  10000[14] <- 10000[12]
-  10000[15] <- 10000[13]
-  goto 12 if Greater(EntityDataArray[10000[10]], 0) else 13
+  10000[7] <- Add(16.0, Multiply(10000[6], 32.0))
+  10000[7] <- Multiply(EntityDataArray[10000[7]], 32.0)
+  10000[7] <- EntitySharedMemoryArray[10000[7]]
+  goto 12 if Not(Greater(10000[7], 0)) else 6
 12:
-  10000[15] <- Add(10000[13], Multiply(LevelData[12], EntityDataArray[10000[10]]))
-  goto 14 if Less(EntityDataArray[10000[10]], 0) else 15
+  10000[1] <- 10000[8]
+  10000[2] <- 10000[9]
+  10000[10] <- Multiply(10000[6], 32.0)
+  10000[11] <- Add(2.0, Multiply(10000[6], 32.0))
+  10000[12] <- Multiply(EntityDataArray[10000[10]], LevelData[12])
+  10000[13] <- Subtract(10000[12], Divide(Multiply(LevelData[12], 2.5), 2.0))
+  10000[14] <- Add(10000[12], Divide(Multiply(LevelData[12], 2.5), 2.0))
+  10000[15] <- 10000[13]
+  10000[16] <- 10000[14]
+  goto 13 if Greater(EntityDataArray[10000[11]], 0) else 14
 13:
-  goto 14 if Less(EntityDataArray[10000[10]], 0) else 15
+  10000[16] <- Add(10000[14], Multiply(LevelData[12], EntityDataArray[10000[11]]))
+  goto 15 if Less(EntityDataArray[10000[11]], 0) else 16
 14:
-  10000[14] <- Add(10000[12], Multiply(LevelData[12], EntityDataArray[10000[10]]))
-  goto 15
+  goto 15 if Less(EntityDataArray[10000[11]], 0) else 16
 15:
-  10000[16] <- Multiply(10000[5], 32.0)
-  goto 16 if Greater(EntityDataArray[10000[16]], EntityData[0]) else 17
+  10000[15] <- Add(10000[13], Multiply(LevelData[12], EntityDataArray[10000[11]]))
+  goto 16
 16:
-  10000[1] <- Max(10000[8], Subtract(10000[2], 10000[14]))
-  goto 19
+  10000[17] <- Multiply(10000[6], 32.0)
+  goto 17 if Greater(EntityDataArray[10000[17]], EntityData[0]) else 18
 17:
-  10000[16] <- Multiply(10000[5], 32.0)
-  goto 18 if Less(EntityDataArray[10000[16]], EntityData[0]) else 19
+  10000[2] <- Max(10000[9], Subtract(10000[3], 10000[15]))
+  goto 20
 18:
-  10000[0] <- Max(10000[7], Subtract(10000[15], 10000[3]))
-  goto 19
+  10000[0] <- Multiply(10000[6], 32.0)
+  goto 19 if Less(EntityDataArray[10000[0]], EntityData[0]) else 20
 19:
-  10000[7] <- 10000[0]
-  10000[8] <- 10000[1]
-  goto 6
+  10000[1] <- Max(10000[8], Subtract(10000[16], 10000[4]))
+  goto 20
 20:
-  10000[0] <- Add(10000[3], Divide(10000[7], 2.0))
-  10000[1] <- Subtract(10000[2], Divide(10000[8], 2.0))
+  10000[8] <- 10000[1]
+  10000[9] <- 10000[2]
+  goto 6
+21:
+  DebugLog(1.0)
+  DebugPause()
+  goto exit
+22:
+  10000[0] <- Add(10000[4], Divide(10000[8], 2.0))
+  10000[1] <- Subtract(10000[3], Divide(10000[9], 2.0))
   10000[2] <- Add(Add(Multiply(LevelData[8], 10000[0]), Multiply(LevelData[9], LevelData[15])), LevelData[10])
-  10000[10] <- Divide(Add(Add(Multiply(LevelData[2], 10000[0]), Multiply(LevelData[3], LevelData[15])), LevelData[4]), 10000[2])
-  10000[11] <- Divide(Add(Add(Multiply(LevelData[5], 10000[0]), Multiply(LevelData[6], LevelData[15])), LevelData[7]), 10000[2])
-  10000[12] <- Add(Add(Multiply(LevelData[8], 10000[1]), Multiply(LevelData[9], LevelData[15])), LevelData[10])
-  10000[23] <- Divide(Add(Add(Multiply(LevelData[2], 10000[1]), Multiply(LevelData[3], LevelData[15])), LevelData[4]), 10000[12])
-  10000[26] <- Divide(Add(Add(Multiply(LevelData[5], 10000[1]), Multiply(LevelData[6], LevelData[15])), LevelData[7]), 10000[12])
-  10000[27] <- Add(Add(Multiply(LevelData[8], 10000[0]), Multiply(LevelData[9], LevelData[14])), LevelData[10])
-  10000[30] <- Divide(Add(Add(Multiply(LevelData[2], 10000[0]), Multiply(LevelData[3], LevelData[14])), LevelData[4]), 10000[27])
-  10000[31] <- Divide(Add(Add(Multiply(LevelData[5], 10000[0]), Multiply(LevelData[6], LevelData[14])), LevelData[7]), 10000[27])
+  10000[14] <- Divide(Add(Add(Multiply(LevelData[2], 10000[0]), Multiply(LevelData[3], LevelData[15])), LevelData[4]), 10000[2])
+  10000[15] <- Divide(Add(Add(Multiply(LevelData[5], 10000[0]), Multiply(LevelData[6], LevelData[15])), LevelData[7]), 10000[2])
+  10000[16] <- Add(Add(Multiply(LevelData[8], 10000[1]), Multiply(LevelData[9], LevelData[15])), LevelData[10])
+  10000[23] <- Divide(Add(Add(Multiply(LevelData[2], 10000[1]), Multiply(LevelData[3], LevelData[15])), LevelData[4]), 10000[16])
+  10000[25] <- Divide(Add(Add(Multiply(LevelData[5], 10000[1]), Multiply(LevelData[6], LevelData[15])), LevelData[7]), 10000[16])
+  10000[26] <- Add(Add(Multiply(LevelData[8], 10000[0]), Multiply(LevelData[9], LevelData[14])), LevelData[10])
+  10000[30] <- Divide(Add(Add(Multiply(LevelData[2], 10000[0]), Multiply(LevelData[3], LevelData[14])), LevelData[4]), 10000[26])
+  10000[31] <- Divide(Add(Add(Multiply(LevelData[5], 10000[0]), Multiply(LevelData[6], LevelData[14])), LevelData[7]), 10000[26])
   10000[32] <- Add(Add(Multiply(LevelData[8], 10000[1]), Multiply(LevelData[9], LevelData[14])), LevelData[10])
   10000[33] <- Divide(Add(Add(Multiply(LevelData[2], 10000[1]), Multiply(LevelData[3], LevelData[14])), LevelData[4]), 10000[32])
   10000[34] <- Divide(Add(Add(Multiply(LevelData[5], 10000[1]), Multiply(LevelData[6], LevelData[14])), LevelData[7]), 10000[32])
+  goto 23 if And(And(GreaterOr(EntityInfo[1], -13.0), Less(EntityInfo[1], 13.0)), Equal(Trunc(EntityInfo[1]), EntityInfo[1])) else 536
+23:
   10000[35] <- Add(3.0, Add(EntityInfo[1], Multiply(Less(EntityInfo[1], 0), 13.0)))
   goto when EngineRom[10000[35]]
-    1.0 -> 292
-    2.0 -> 178
-    3.0 -> 178
-    4.0 -> 292
-    5.0 -> 99
-    7.0 -> 21
-    default -> 354
-21:
-  goto 22 if Greater(EntityData[3], 0) else 25
-22:
-  10000[12] <- Add(2.0, Multiply(EntityData[16], 32.0))
-  10000[12] <- EntitySharedMemoryArray[10000[12]]
-  goto 24 if 10000[12] else 23
-23:
-  10000[12] <- Multiply(EntityData[16], 3.0)
-  10000[12] <- Equal(EntityInfoArray[10000[12] + 2], 2.0)
-  goto 24
+    1.0 -> 446
+    2.0 -> 267
+    3.0 -> 267
+    4.0 -> 446
+    5.0 -> 145
+    7.0 -> 24
+    default -> 535
 24:
-  goto 354 if Not(10000[12]) else 25
+  goto 25 if Greater(EntityData[3], 0) else 28
 25:
-  goto 26 if LessOr(EntityData[14], RuntimeUpdate[0]) else 354
+  10000[16] <- Add(2.0, Multiply(EntityData[16], 32.0))
+  10000[16] <- EntitySharedMemoryArray[10000[16]]
+  goto 27 if 10000[16] else 26
 26:
-  goto 354 if Not(LessOr(RuntimeUpdate[0], EntityData[15])) else 27
+  10000[16] <- Multiply(EntityData[16], 3.0)
+  10000[16] <- Equal(EntityInfoArray[10000[16] + 2], 2.0)
+  goto 27
 27:
-  10000[12] <- Multiply(EntityData[16], 32.0)
-  10000[12] <- EntitySharedMemoryArray[10000[12]]
-  goto 28 if Not(Greater(10000[12], 0)) else 49
+  goto 535 if Not(10000[16]) else 28
 28:
-  10000[12] <- 0
-  goto 29
+  goto 29 if LessOr(EntityData[14], RuntimeUpdate[0]) else 535
 29:
-  goto 30 if Less(10000[12], RuntimeUpdate[3]) else 49
+  goto 535 if Not(LessOr(RuntimeUpdate[0], EntityData[15])) else 30
 30:
-  10000[13] <- Multiply(10000[12], 15.0)
-  10000[12] <- Add(10000[12], 1.0)
-  10000[14] <- 0
-  goto 31
+  10000[16] <- Multiply(EntityData[16], 32.0)
+  10000[16] <- EntitySharedMemoryArray[10000[16]]
+  goto 31 if Not(Greater(10000[16], 0)) else 74
 31:
-  10000[15] <- LevelMemory[17]
-  goto 32 if Less(10000[14], 10000[15]) else 34
+  10000[16] <- 0
+  goto 32
 32:
-  10000[15] <- LevelMemory[17]
-  10000[15] <- Add(17.0, Add(10000[14], Multiply(Less(10000[14], 0), 10000[15])))
-  10000[15] <- LevelMemory[10000[15] + 1]
-  goto 29 if Equal(10000[15], RuntimeTouchArray[10000[13]]) else 33
+  goto 33 if Less(10000[16], RuntimeUpdate[3]) else 74
 33:
-  10000[14] <- Add(10000[14], 1.0)
-  goto 31
+  10000[17] <- Multiply(10000[16], 15.0)
+  10000[16] <- Add(10000[16], 1.0)
+  10000[18] <- 0
+  goto 34
 34:
-  10000[0] <- 10000[10]
-  10000[1] <- 10000[11]
-  10000[2] <- 10000[30]
-  10000[3] <- 10000[31]
-  10000[4] <- 10000[33]
-  10000[5] <- 10000[34]
-  10000[6] <- 10000[23]
-  10000[7] <- 10000[26]
-  10000[14] <- 0
-  10000[15] <- 0
-  10000[16] <- 3.0
-  goto 35
+  10000[19] <- LevelMemory[17]
+  goto 35 if Less(10000[18], 10000[19]) else 39
 35:
-  10000[17] <- Multiply(Add(10000[15], Multiply(Less(10000[15], 0), 4.0)), 2.0)
-  10000[17] <- 10000[10000[17] + 1]
-  10000[18] <- Multiply(Add(10000[16], Multiply(Less(10000[16], 0), 4.0)), 2.0)
-  10000[18] <- 10000[10000[18] + 1]
-  goto 36 if NotEqual(Greater(10000[17], RuntimeTouchArray[10000[13] + 6]), Greater(10000[18], RuntimeTouchArray[10000[13] + 6])) else 38
+  10000[19] <- LevelMemory[17]
+  goto 36 if And(And(GreaterOr(10000[18], Negate(10000[19])), Less(10000[18], 10000[19])), Equal(Trunc(10000[18]), 10000[18])) else 38
 36:
-  10000[17] <- Multiply(Add(10000[16], Multiply(Less(10000[16], 0), 4.0)), 2.0)
-  10000[17] <- 10000[10000[17]]
-  10000[18] <- Multiply(Add(10000[15], Multiply(Less(10000[15], 0), 4.0)), 2.0)
-  10000[18] <- 10000[10000[18]]
-  10000[19] <- Multiply(Add(10000[15], Multiply(Less(10000[15], 0), 4.0)), 2.0)
-  10000[19] <- 10000[10000[19] + 1]
-  10000[20] <- Multiply(Add(10000[16], Multiply(Less(10000[16], 0), 4.0)), 2.0)
-  10000[20] <- 10000[10000[20] + 1]
-  10000[21] <- Multiply(Add(10000[15], Multiply(Less(10000[15], 0), 4.0)), 2.0)
-  10000[21] <- 10000[10000[21] + 1]
-  10000[22] <- Multiply(Add(10000[15], Multiply(Less(10000[15], 0), 4.0)), 2.0)
-  10000[22] <- 10000[10000[22]]
-  goto 37 if Less(RuntimeTouchArray[10000[13] + 5], Add(Divide(Multiply(Subtract(10000[17], 10000[18]), Subtract(RuntimeTouchArray[10000[13] + 6], 10000[19])), Subtract(10000[20], 10000[21])), 10000[22])) else 38
+  10000[19] <- Add(17.0, Add(10000[18], Multiply(Less(10000[18], 0), 10000[19])))
+  10000[19] <- LevelMemory[10000[19] + 1]
+  goto 32 if Equal(10000[19], RuntimeTouchArray[10000[17]]) else 37
 37:
-  10000[17] <- Not(10000[14])
-  goto 39
+  10000[18] <- Add(10000[18], 1.0)
+  goto 34
 38:
-  10000[17] <- 10000[14]
-  goto 39
+  DebugLog(24.0)
+  DebugPause()
+  goto exit
 39:
-  10000[24] <- Add(10000[15], 1.0)
-  10000[14] <- 10000[17]
-  10000[16] <- 10000[15]
-  10000[15] <- 10000[24]
-  goto 35 if Less(10000[15], 4.0) else 40
-40:
-  goto 29 if Not(10000[17]) else 41
-41:
-  goto 29 if RuntimeTouchArray[10000[13] + 2] else 42
-42:
-  10000[24] <- LevelMemory[17]
-  goto 48 if GreaterOr(10000[24], 16.0) else 43
-43:
-  10000[24] <- 0
-  goto 44
-44:
-  10000[25] <- LevelMemory[17]
-  goto 45 if Less(10000[24], 10000[25]) else 47
-45:
-  10000[27] <- LevelMemory[17]
-  10000[27] <- Add(17.0, Add(10000[24], Multiply(Less(10000[24], 0), 10000[27])))
-  10000[27] <- LevelMemory[10000[27] + 1]
-  goto 48 if Equal(10000[27], RuntimeTouchArray[10000[13]]) else 46
-46:
-  10000[24] <- Add(10000[24], 1.0)
-  goto 44
-47:
-  10000[27] <- LevelMemory[17]
-  10000[27] <- Add(17.0, 10000[27])
-  LevelMemory[10000[27] + 1] <- RuntimeTouchArray[10000[13]]
-  10000[27] <- LevelMemory[17]
-  LevelMemory[17] <- Add(10000[27], 1.0)
-  goto 48
-48:
-  10000[27] <- Multiply(EntityData[16], 32.0)
-  EntitySharedMemoryArray[10000[27]] <- RuntimeTouchArray[10000[13]]
-  goto 49
-49:
-  10000[27] <- Multiply(EntityData[16], 32.0)
-  10000[27] <- EntitySharedMemoryArray[10000[27]]
-  goto 50 if Greater(10000[27], 0) else 354
-50:
-  10000[27] <- 0
-  goto 51
-51:
-  goto 52 if Less(10000[27], RuntimeUpdate[3]) else 354
-52:
-  10000[28] <- Multiply(10000[27], 15.0)
-  10000[27] <- Add(10000[27], 1.0)
-  10000[29] <- Multiply(EntityData[16], 32.0)
-  10000[29] <- EntitySharedMemoryArray[10000[29]]
-  goto 51 if NotEqual(RuntimeTouchArray[10000[28]], 10000[29]) else 53
-53:
-  goto 54 if RuntimeTouchArray[10000[28] + 2] else 354
-54:
-  10000[0] <- 10000[10]
-  10000[1] <- 10000[11]
+  10000[0] <- 10000[14]
+  10000[1] <- 10000[15]
   10000[2] <- 10000[30]
   10000[3] <- 10000[31]
   10000[4] <- 10000[33]
   10000[5] <- 10000[34]
   10000[6] <- 10000[23]
-  10000[7] <- 10000[26]
-  10000[29] <- 0
-  10000[30] <- 0
-  10000[31] <- 3.0
-  goto 55
+  10000[7] <- 10000[25]
+  10000[18] <- 0
+  10000[19] <- 0
+  10000[20] <- 3.0
+  goto 40
+40:
+  goto 41 if And(And(GreaterOr(10000[19], -4.0), Less(10000[19], 4.0)), Equal(Trunc(10000[19]), 10000[19])) else 73
+41:
+  10000[21] <- Multiply(Add(10000[19], Multiply(Less(10000[19], 0), 4.0)), 2.0)
+  10000[21] <- 10000[10000[21] + 1]
+  goto 42 if And(And(GreaterOr(10000[20], -4.0), Less(10000[20], 4.0)), Equal(Trunc(10000[20]), 10000[20])) else 72
+42:
+  10000[22] <- Multiply(Add(10000[20], Multiply(Less(10000[20], 0), 4.0)), 2.0)
+  10000[22] <- 10000[10000[22] + 1]
+  goto 43 if NotEqual(Greater(10000[21], RuntimeTouchArray[10000[17] + 6]), Greater(10000[22], RuntimeTouchArray[10000[17] + 6])) else 57
+43:
+  goto 44 if And(And(GreaterOr(10000[20], -4.0), Less(10000[20], 4.0)), Equal(Trunc(10000[20]), 10000[20])) else 56
+44:
+  10000[21] <- Multiply(Add(10000[20], Multiply(Less(10000[20], 0), 4.0)), 2.0)
+  10000[21] <- 10000[10000[21]]
+  goto 45 if And(And(GreaterOr(10000[19], -4.0), Less(10000[19], 4.0)), Equal(Trunc(10000[19]), 10000[19])) else 55
+45:
+  10000[24] <- Multiply(Add(10000[19], Multiply(Less(10000[19], 0), 4.0)), 2.0)
+  10000[24] <- 10000[10000[24]]
+  goto 46 if And(And(GreaterOr(10000[19], -4.0), Less(10000[19], 4.0)), Equal(Trunc(10000[19]), 10000[19])) else 54
+46:
+  10000[26] <- Multiply(Add(10000[19], Multiply(Less(10000[19], 0), 4.0)), 2.0)
+  10000[26] <- 10000[10000[26] + 1]
+  goto 47 if And(And(GreaterOr(10000[20], -4.0), Less(10000[20], 4.0)), Equal(Trunc(10000[20]), 10000[20])) else 53
+47:
+  10000[27] <- Multiply(Add(10000[20], Multiply(Less(10000[20], 0), 4.0)), 2.0)
+  10000[27] <- 10000[10000[27] + 1]
+  goto 48 if And(And(GreaterOr(10000[19], -4.0), Less(10000[19], 4.0)), Equal(Trunc(10000[19]), 10000[19])) else 52
+48:
+  10000[28] <- Multiply(Add(10000[19], Multiply(Less(10000[19], 0), 4.0)), 2.0)
+  10000[28] <- 10000[10000[28] + 1]
+  goto 49 if And(And(GreaterOr(10000[19], -4.0), Less(10000[19], 4.0)), Equal(Trunc(10000[19]), 10000[19])) else 51
+49:
+  10000[29] <- Multiply(Add(10000[19], Multiply(Less(10000[19], 0), 4.0)), 2.0)
+  10000[29] <- 10000[10000[29]]
+  goto 50 if Less(RuntimeTouchArray[10000[17] + 5], Add(Divide(Multiply(Subtract(10000[21], 10000[24]), Subtract(RuntimeTouchArray[10000[17] + 6], 10000[26])), Subtract(10000[27], 10000[28])), 10000[29])) else 57
+50:
+  10000[26] <- Not(10000[18])
+  goto 58
+51:
+  DebugLog(27.0)
+  DebugPause()
+  goto exit
+52:
+  DebugLog(27.0)
+  DebugPause()
+  goto exit
+53:
+  DebugLog(27.0)
+  DebugPause()
+  goto exit
+54:
+  DebugLog(26.0)
+  DebugPause()
+  goto exit
 55:
+  DebugLog(25.0)
+  DebugPause()
+  goto exit
+56:
+  DebugLog(25.0)
+  DebugPause()
+  goto exit
+57:
+  10000[26] <- 10000[18]
+  goto 58
+58:
+  10000[27] <- Add(10000[19], 1.0)
+  10000[18] <- 10000[26]
+  10000[20] <- 10000[19]
+  10000[19] <- 10000[27]
+  goto 40 if Less(10000[19], 4.0) else 59
+59:
+  goto 32 if Not(10000[26]) else 60
+60:
+  goto 32 if RuntimeTouchArray[10000[17] + 2] else 61
+61:
+  10000[26] <- LevelMemory[17]
+  goto 70 if GreaterOr(10000[26], 16.0) else 62
+62:
+  10000[26] <- 0
+  goto 63
+63:
+  10000[27] <- LevelMemory[17]
+  goto 64 if Less(10000[26], 10000[27]) else 68
+64:
+  10000[27] <- LevelMemory[17]
+  goto 65 if And(And(GreaterOr(10000[26], Negate(10000[27])), Less(10000[26], 10000[27])), Equal(Trunc(10000[26]), 10000[26])) else 67
+65:
+  10000[27] <- Add(17.0, Add(10000[26], Multiply(Less(10000[26], 0), 10000[27])))
+  10000[27] <- LevelMemory[10000[27] + 1]
+  goto 70 if Equal(10000[27], RuntimeTouchArray[10000[17]]) else 66
+66:
+  10000[26] <- Add(10000[26], 1.0)
+  goto 63
+67:
+  DebugLog(28.0)
+  DebugPause()
+  goto exit
+68:
+  10000[26] <- LevelMemory[17]
+  goto 69 if Less(10000[26], 16.0) else 71
+69:
+  10000[26] <- LevelMemory[17]
+  10000[26] <- Add(17.0, 10000[26])
+  LevelMemory[10000[26] + 1] <- RuntimeTouchArray[10000[17]]
+  10000[26] <- LevelMemory[17]
+  LevelMemory[17] <- Add(10000[26], 1.0)
+  goto 70
+70:
+  10000[26] <- Multiply(EntityData[16], 32.0)
+  EntitySharedMemoryArray[10000[26]] <- RuntimeTouchArray[10000[17]]
+  goto 74
+71:
+  DebugLog(29.0)
+  DebugPause()
+  goto exit
+72:
+  DebugLog(25.0)
+  DebugPause()
+  goto exit
+73:
+  DebugLog(25.0)
+  DebugPause()
+  goto exit
+74:
+  10000[26] <- Multiply(EntityData[16], 32.0)
+  10000[26] <- EntitySharedMemoryArray[10000[26]]
+  goto 75 if Greater(10000[26], 0) else 535
+75:
+  10000[26] <- 0
+  goto 76
+76:
+  goto 77 if Less(10000[26], RuntimeUpdate[3]) else 535
+77:
+  10000[27] <- Multiply(10000[26], 15.0)
+  10000[26] <- Add(10000[26], 1.0)
+  10000[28] <- Multiply(EntityData[16], 32.0)
+  10000[28] <- EntitySharedMemoryArray[10000[28]]
+  goto 76 if NotEqual(RuntimeTouchArray[10000[27]], 10000[28]) else 78
+78:
+  goto 79 if RuntimeTouchArray[10000[27] + 2] else 535
+79:
+  10000[0] <- 10000[14]
+  10000[1] <- 10000[15]
+  10000[2] <- 10000[30]
+  10000[3] <- 10000[31]
+  10000[4] <- 10000[33]
+  10000[5] <- 10000[34]
+  10000[6] <- 10000[23]
+  10000[7] <- 10000[25]
+  10000[28] <- 0
+  10000[29] <- 0
+  10000[30] <- 3.0
+  goto 80
+80:
+  goto 81 if And(And(GreaterOr(10000[29], -4.0), Less(10000[29], 4.0)), Equal(Trunc(10000[29]), 10000[29])) else 144
+81:
+  10000[31] <- Multiply(Add(10000[29], Multiply(Less(10000[29], 0), 4.0)), 2.0)
+  10000[31] <- 10000[10000[31] + 1]
+  goto 82 if And(And(GreaterOr(10000[30], -4.0), Less(10000[30], 4.0)), Equal(Trunc(10000[30]), 10000[30])) else 143
+82:
   10000[32] <- Multiply(Add(10000[30], Multiply(Less(10000[30], 0), 4.0)), 2.0)
   10000[32] <- 10000[10000[32] + 1]
-  10000[33] <- Multiply(Add(10000[31], Multiply(Less(10000[31], 0), 4.0)), 2.0)
-  10000[33] <- 10000[10000[33] + 1]
-  goto 56 if NotEqual(Greater(10000[32], RuntimeTouchArray[10000[28] + 6]), Greater(10000[33], RuntimeTouchArray[10000[28] + 6])) else 58
-56:
-  10000[32] <- Multiply(Add(10000[31], Multiply(Less(10000[31], 0), 4.0)), 2.0)
+  goto 83 if NotEqual(Greater(10000[31], RuntimeTouchArray[10000[27] + 6]), Greater(10000[32], RuntimeTouchArray[10000[27] + 6])) else 97
+83:
+  goto 84 if And(And(GreaterOr(10000[30], -4.0), Less(10000[30], 4.0)), Equal(Trunc(10000[30]), 10000[30])) else 96
+84:
+  10000[31] <- Multiply(Add(10000[30], Multiply(Less(10000[30], 0), 4.0)), 2.0)
+  10000[31] <- 10000[10000[31]]
+  goto 85 if And(And(GreaterOr(10000[29], -4.0), Less(10000[29], 4.0)), Equal(Trunc(10000[29]), 10000[29])) else 95
+85:
+  10000[32] <- Multiply(Add(10000[29], Multiply(Less(10000[29], 0), 4.0)), 2.0)
   10000[32] <- 10000[10000[32]]
-  10000[33] <- Multiply(Add(10000[30], Multiply(Less(10000[30], 0), 4.0)), 2.0)
-  10000[33] <- 10000[10000[33]]
+  goto 86 if And(And(GreaterOr(10000[29], -4.0), Less(10000[29], 4.0)), Equal(Trunc(10000[29]), 10000[29])) else 94
+86:
+  10000[33] <- Multiply(Add(10000[29], Multiply(Less(10000[29], 0), 4.0)), 2.0)
+  10000[33] <- 10000[10000[33] + 1]
+  goto 87 if And(And(GreaterOr(10000[30], -4.0), Less(10000[30], 4.0)), Equal(Trunc(10000[30]), 10000[30])) else 93
+87:
   10000[34] <- Multiply(Add(10000[30], Multiply(Less(10000[30], 0), 4.0)), 2.0)
   10000[34] <- 10000[10000[34] + 1]
-  10000[35] <- Multiply(Add(10000[31], Multiply(Less(10000[31], 0), 4.0)), 2.0)
+  goto 88 if And(And(GreaterOr(10000[29], -4.0), Less(10000[29], 4.0)), Equal(Trunc(10000[29]), 10000[29])) else 92
+88:
+  10000[35] <- Multiply(Add(10000[29], Multiply(Less(10000[29], 0), 4.0)), 2.0)
   10000[35] <- 10000[10000[35] + 1]
-  10000[36] <- Multiply(Add(10000[30], Multiply(Less(10000[30], 0), 4.0)), 2.0)
-  10000[36] <- 10000[10000[36] + 1]
-  10000[37] <- Multiply(Add(10000[30], Multiply(Less(10000[30], 0), 4.0)), 2.0)
-  10000[37] <- 10000[10000[37]]
-  goto 57 if Less(RuntimeTouchArray[10000[28] + 5], Add(Divide(Multiply(Subtract(10000[32], 10000[33]), Subtract(RuntimeTouchArray[10000[28] + 6], 10000[34])), Subtract(10000[35], 10000[36])), 10000[37])) else 58
-57:
-  10000[32] <- Not(10000[29])
-  goto 59
-58:
-  10000[32] <- 10000[29]
-  goto 59
-59:
-  10000[33] <- Add(10000[30], 1.0)
+  goto 89 if And(And(GreaterOr(10000[29], -4.0), Less(10000[29], 4.0)), Equal(Trunc(10000[29]), 10000[29])) else 91
+89:
+  10000[36] <- Multiply(Add(10000[29], Multiply(Less(10000[29], 0), 4.0)), 2.0)
+  10000[36] <- 10000[10000[36]]
+  goto 90 if Less(RuntimeTouchArray[10000[27] + 5], Add(Divide(Multiply(Subtract(10000[31], 10000[32]), Subtract(RuntimeTouchArray[10000[27] + 6], 10000[33])), Subtract(10000[34], 10000[35])), 10000[36])) else 97
+90:
+  10000[31] <- Not(10000[28])
+  goto 98
+91:
+  DebugLog(32.0)
+  DebugPause()
+  goto exit
+92:
+  DebugLog(32.0)
+  DebugPause()
+  goto exit
+93:
+  DebugLog(32.0)
+  DebugPause()
+  goto exit
+94:
+  DebugLog(31.0)
+  DebugPause()
+  goto exit
+95:
+  DebugLog(30.0)
+  DebugPause()
+  goto exit
+96:
+  DebugLog(30.0)
+  DebugPause()
+  goto exit
+97:
+  10000[31] <- 10000[28]
+  goto 98
+98:
+  10000[32] <- Add(10000[29], 1.0)
+  10000[28] <- 10000[31]
+  10000[30] <- 10000[29]
   10000[29] <- 10000[32]
-  10000[31] <- 10000[30]
-  10000[30] <- 10000[33]
-  goto 55 if Less(10000[30], 4.0) else 60
-60:
-  goto 61 if 10000[32] else 98
-61:
+  goto 80 if Less(10000[29], 4.0) else 99
+99:
+  goto 100 if 10000[31] else 142
+100:
   10000[0] <- Subtract(RuntimeUpdate[0], RuntimeEnvironment[3])
   10000[1] <- Judge(10000[0], EntityData[11], EntityData[5], EntityData[6], EntityData[7], EntityData[8], EntityData[9], EntityData[10])
   EntityInput[0] <- 10000[1]
   EntityInput[1] <- Clamp(Subtract(10000[0], EntityData[11]), -1.0, 1.0)
   10000[2] <- EntityInput[1]
   EntityInput[3] <- Multiply(10000[2], 1000.0)
-  goto 62 if NotEqual(10000[1], 0) else 97
-62:
-  goto 63 if Not(LevelOption[11]) else 75
-63:
+  goto 101 if NotEqual(10000[1], 0) else 141
+101:
+  goto 102 if Not(LevelOption[11]) else 116
+102:
+  goto 103 if And(And(GreaterOr(EntityInfo[1], -13.0), Less(EntityInfo[1], 13.0)), Equal(Trunc(EntityInfo[1]), EntityInfo[1])) else 115
+103:
   10000[2] <- Add(3.0, Add(EntityInfo[1], Multiply(Less(EntityInfo[1], 0), 13.0)))
   10000[2] <- EngineRom[10000[2]]
-  goto 75 if Not(LevelOption[10]) else 64
-64:
+  goto 116 if Not(LevelOption[10]) else 104
+104:
   goto when 10000[2]
-    6.0 -> 75
-    default -> 65
-65:
+    6.0 -> 116
+    default -> 105
+105:
   10000[3] <- 0
   goto when Subtract(10000[2], 2.0)
-    0.0 -> 70
-    1.0 -> 70
-    default -> 66
-66:
+    0.0 -> 110
+    1.0 -> 110
+    default -> 106
+106:
   goto when Subtract(10000[1], 1.0)
-    0.0 -> 69
-    1.0 -> 68
-    2.0 -> 67
-    default -> 74
-67:
+    0.0 -> 109
+    1.0 -> 108
+    2.0 -> 107
+    default -> 114
+107:
   10000[3] <- 3.0
-  goto 74
-68:
+  goto 114
+108:
   10000[3] <- 2.0
-  goto 74
-69:
+  goto 114
+109:
   10000[3] <- 1.0
-  goto 74
-70:
+  goto 114
+110:
   goto when Subtract(10000[1], 1.0)
-    0.0 -> 73
-    1.0 -> 72
-    2.0 -> 71
-    default -> 74
-71:
+    0.0 -> 113
+    1.0 -> 112
+    2.0 -> 111
+    default -> 114
+111:
   10000[3] <- 6.0
-  goto 74
-72:
+  goto 114
+112:
   10000[3] <- 5.0
-  goto 74
-73:
+  goto 114
+113:
   10000[3] <- 4.0
-  goto 74
-74:
+  goto 114
+114:
   Play(10000[3], 0)
-  goto 75
-75:
+  goto 116
+115:
+  DebugLog(33.0)
+  DebugPause()
+  goto exit
+116:
+  goto 117 if And(And(GreaterOr(EntityInfo[1], -13.0), Less(EntityInfo[1], 13.0)), Equal(Trunc(EntityInfo[1]), EntityInfo[1])) else 140
+117:
   10000[0] <- Add(3.0, Add(EntityInfo[1], Multiply(Less(EntityInfo[1], 0), 13.0)))
   10000[0] <- EngineRom[10000[0]]
   goto when 10000[0]
-    6.0 -> 97
-    default -> 76
-76:
-  goto 97 if Not(LevelOption[6]) else 77
-77:
+    6.0 -> 141
+    default -> 118
+118:
+  goto 141 if Not(LevelOption[6]) else 119
+119:
   10000[1] <- 0
   goto when 10000[0]
-    1.0 -> 83
-    2.0 -> 82
-    3.0 -> 79
-    4.0 -> 78
-    5.0 -> 78
-    7.0 -> 78
-    default -> 84
-78:
+    1.0 -> 125
+    2.0 -> 124
+    3.0 -> 121
+    4.0 -> 120
+    5.0 -> 120
+    7.0 -> 120
+    default -> 126
+120:
   10000[1] <- 3.0
-  goto 84
-79:
-  goto 80 if Greater(EntityData[2], 0) else 81
-80:
+  goto 126
+121:
+  goto 122 if Greater(EntityData[2], 0) else 123
+122:
   10000[1] <- 8.0
-  goto 84
-81:
+  goto 126
+123:
   10000[1] <- 10.0
-  goto 84
-82:
+  goto 126
+124:
   10000[1] <- 6.0
-  goto 84
-83:
+  goto 126
+125:
   10000[1] <- 1.0
-  goto 84
-84:
+  goto 126
+126:
   10000[2] <- Multiply(EntityData[0], LevelData[12])
   10000[3] <- Subtract(10000[2], Divide(LevelData[11], 2.0))
   10000[4] <- Add(Multiply(LevelData[8], 10000[3]), LevelData[10])
@@ -389,31 +512,31 @@
   SpawnParticleEffect(10000[1], 10000[5], 10000[6], Add(10000[5], 0), Add(10000[6], 10000[11]), Add(10000[9], 0), Add(10000[10], 10000[11]), 10000[9], 10000[10], 0.5, 0)
   10000[1] <- 0
   goto when 10000[0]
-    1.0 -> 90
-    2.0 -> 89
-    3.0 -> 86
-    4.0 -> 85
-    5.0 -> 85
-    7.0 -> 85
-    default -> 91
-85:
+    1.0 -> 132
+    2.0 -> 131
+    3.0 -> 128
+    4.0 -> 127
+    5.0 -> 127
+    7.0 -> 127
+    default -> 133
+127:
   10000[1] <- 4.0
-  goto 91
-86:
-  goto 87 if Greater(EntityData[2], 0) else 88
-87:
+  goto 133
+128:
+  goto 129 if Greater(EntityData[2], 0) else 130
+129:
   10000[1] <- 9.0
-  goto 91
-88:
+  goto 133
+130:
   10000[1] <- 11.0
-  goto 91
-89:
+  goto 133
+131:
   10000[1] <- 7.0
-  goto 91
-90:
+  goto 133
+132:
   10000[1] <- 2.0
-  goto 91
-91:
+  goto 133
+133:
   10000[2] <- Multiply(EntityData[0], LevelData[12])
   10000[3] <- Add(10000[2], Divide(Multiply(LevelData[11], 1.8), 2.0))
   10000[4] <- Subtract(10000[2], Divide(Multiply(LevelData[11], 1.8), 2.0))
@@ -429,27 +552,35 @@
   10000[14] <- Divide(Add(10000[10], 10000[12]), 2.0)
   10000[15] <- Divide(Add(10000[6], 10000[8]), 2.0)
   SpawnParticleEffect(10000[1], Subtract(10000[15], Divide(10000[13], 2.0)), Divide(Add(Add(Multiply(LevelData[5], 10000[4]), Multiply(LevelData[6], Subtract(0, Divide(Multiply(LevelData[11], 1.8), 2.0)))), LevelData[7]), 10000[5]), Subtract(10000[14], Divide(10000[13], 2.0)), Divide(Add(Add(Multiply(LevelData[5], 10000[4]), Multiply(LevelData[6], Add(0, Divide(Multiply(LevelData[11], 1.8), 2.0)))), LevelData[7]), 10000[9]), Add(10000[14], Divide(10000[13], 2.0)), Divide(Add(Add(Multiply(LevelData[5], 10000[3]), Multiply(LevelData[6], Add(0, Divide(Multiply(LevelData[11], 1.8), 2.0)))), LevelData[7]), 10000[11]), Add(10000[15], Divide(10000[13], 2.0)), Divide(Add(Add(Multiply(LevelData[5], 10000[3]), Multiply(LevelData[6], Subtract(0, Divide(Multiply(LevelData[11], 1.8), 2.0)))), LevelData[7]), 10000[7]), 0.5, 0)
-  goto 97 if Not(LevelOption[7]) else 92
-92:
+  goto 141 if Not(LevelOption[7]) else 134
+134:
   10000[0] <- 0
-  goto 93
-93:
-  goto 94 if Less(10000[0], LevelData[16]) else 354
-94:
+  goto 135
+135:
+  goto 136 if Less(10000[0], LevelData[16]) else 139
+136:
   10000[1] <- Add(10000[0], 1.0)
   10000[2] <- Add(16.0, Multiply(10000[0], 9.0))
-  goto 95 if Equal(LevelData[10000[2] + 1], EntityData[0]) else 96
-95:
+  goto 137 if Equal(LevelData[10000[2] + 1], EntityData[0]) else 138
+137:
   SpawnParticleEffect(0, LevelData[10000[2] + 2], LevelData[10000[2] + 3], LevelData[10000[2] + 4], LevelData[10000[2] + 5], LevelData[10000[2] + 6], LevelData[10000[2] + 7], LevelData[10000[2] + 8], LevelData[10000[2] + 9], 0.2, 0)
-  goto 97
-96:
+  goto 141
+138:
   10000[0] <- 10000[1]
-  goto 93
-97:
+  goto 135
+139:
+  DebugLog(35.0)
+  DebugPause()
+  goto exit
+140:
+  DebugLog(34.0)
+  DebugPause()
+  goto exit
+141:
   EntityDespawn[0] <- 1.0
   EntitySharedMemory[2] <- 1.0
   goto exit
-98:
+142:
   EntityInput[0] <- 0
   EntityInput[1] <- 1.0
   10000[0] <- EntityInput[1]
@@ -457,288 +588,411 @@
   EntityDespawn[0] <- 1.0
   EntitySharedMemory[2] <- 1.0
   goto exit
-99:
-  goto 100 if Greater(EntityData[3], 0) else 103
-100:
+143:
+  DebugLog(30.0)
+  DebugPause()
+  goto exit
+144:
+  DebugLog(30.0)
+  DebugPause()
+  goto exit
+145:
+  goto 146 if Greater(EntityData[3], 0) else 149
+146:
   10000[35] <- Add(2.0, Multiply(EntityData[16], 32.0))
   10000[35] <- EntitySharedMemoryArray[10000[35]]
-  goto 102 if 10000[35] else 101
-101:
+  goto 148 if 10000[35] else 147
+147:
   10000[35] <- Multiply(EntityData[16], 3.0)
   10000[35] <- Equal(EntityInfoArray[10000[35] + 2], 2.0)
-  goto 102
-102:
-  goto 354 if Not(10000[35]) else 103
-103:
-  goto 104 if LessOr(EntityData[14], RuntimeUpdate[0]) else 354
-104:
-  goto 354 if Not(LessOr(RuntimeUpdate[0], EntityData[15])) else 105
-105:
+  goto 148
+148:
+  goto 535 if Not(10000[35]) else 149
+149:
+  goto 150 if LessOr(EntityData[14], RuntimeUpdate[0]) else 535
+150:
+  goto 535 if Not(LessOr(RuntimeUpdate[0], EntityData[15])) else 151
+151:
   10000[35] <- Multiply(EntityData[16], 32.0)
   10000[35] <- EntitySharedMemoryArray[10000[35]]
-  goto 106 if Not(Greater(10000[35], 0)) else 127
-106:
+  goto 152 if Not(Greater(10000[35], 0)) else 195
+152:
   10000[35] <- 0
-  goto 107
-107:
-  goto 108 if Less(10000[35], RuntimeUpdate[3]) else 127
-108:
+  goto 153
+153:
+  goto 154 if Less(10000[35], RuntimeUpdate[3]) else 195
+154:
   10000[36] <- Multiply(10000[35], 15.0)
   10000[35] <- Add(10000[35], 1.0)
   10000[37] <- 0
-  goto 109
-109:
+  goto 155
+155:
   10000[38] <- LevelMemory[17]
-  goto 110 if Less(10000[37], 10000[38]) else 112
-110:
+  goto 156 if Less(10000[37], 10000[38]) else 160
+156:
   10000[38] <- LevelMemory[17]
+  goto 157 if And(And(GreaterOr(10000[37], Negate(10000[38])), Less(10000[37], 10000[38])), Equal(Trunc(10000[37]), 10000[37])) else 159
+157:
   10000[38] <- Add(17.0, Add(10000[37], Multiply(Less(10000[37], 0), 10000[38])))
   10000[38] <- LevelMemory[10000[38] + 1]
-  goto 107 if Equal(10000[38], RuntimeTouchArray[10000[36]]) else 111
-111:
+  goto 153 if Equal(10000[38], RuntimeTouchArray[10000[36]]) else 158
+158:
   10000[37] <- Add(10000[37], 1.0)
-  goto 109
-112:
-  10000[0] <- 10000[10]
-  10000[1] <- 10000[11]
+  goto 155
+159:
+  DebugLog(12.0)
+  DebugPause()
+  goto exit
+160:
+  10000[0] <- 10000[14]
+  10000[1] <- 10000[15]
   10000[2] <- 10000[30]
   10000[3] <- 10000[31]
   10000[4] <- 10000[33]
   10000[5] <- 10000[34]
   10000[6] <- 10000[23]
-  10000[7] <- 10000[26]
-  10000[37] <- 0
-  10000[38] <- 0
-  10000[39] <- 3.0
-  goto 113
-113:
-  10000[40] <- Multiply(Add(10000[38], Multiply(Less(10000[38], 0), 4.0)), 2.0)
+  10000[7] <- 10000[25]
+  10000[10] <- 0
+  10000[13] <- 0
+  10000[37] <- 3.0
+  goto 161
+161:
+  goto 162 if And(And(GreaterOr(10000[13], -4.0), Less(10000[13], 4.0)), Equal(Trunc(10000[13]), 10000[13])) else 194
+162:
+  10000[38] <- Multiply(Add(10000[13], Multiply(Less(10000[13], 0), 4.0)), 2.0)
+  10000[38] <- 10000[10000[38] + 1]
+  goto 163 if And(And(GreaterOr(10000[37], -4.0), Less(10000[37], 4.0)), Equal(Trunc(10000[37]), 10000[37])) else 193
+163:
+  10000[39] <- Multiply(Add(10000[37], Multiply(Less(10000[37], 0), 4.0)), 2.0)
+  10000[39] <- 10000[10000[39] + 1]
+  goto 164 if NotEqual(Greater(10000[38], RuntimeTouchArray[10000[36] + 6]), Greater(10000[39], RuntimeTouchArray[10000[36] + 6])) else 178
+164:
+  goto 165 if And(And(GreaterOr(10000[37], -4.0), Less(10000[37], 4.0)), Equal(Trunc(10000[37]), 10000[37])) else 177
+165:
+  10000[38] <- Multiply(Add(10000[37], Multiply(Less(10000[37], 0), 4.0)), 2.0)
+  10000[38] <- 10000[10000[38]]
+  goto 166 if And(And(GreaterOr(10000[13], -4.0), Less(10000[13], 4.0)), Equal(Trunc(10000[13]), 10000[13])) else 176
+166:
+  10000[39] <- Multiply(Add(10000[13], Multiply(Less(10000[13], 0), 4.0)), 2.0)
+  10000[39] <- 10000[10000[39]]
+  goto 167 if And(And(GreaterOr(10000[13], -4.0), Less(10000[13], 4.0)), Equal(Trunc(10000[13]), 10000[13])) else 175
+167:
+  10000[40] <- Multiply(Add(10000[13], Multiply(Less(10000[13], 0), 4.0)), 2.0)
   10000[40] <- 10000[10000[40] + 1]
-  10000[41] <- Multiply(Add(10000[39], Multiply(Less(10000[39], 0), 4.0)), 2.0)
+  goto 168 if And(And(GreaterOr(10000[37], -4.0), Less(10000[37], 4.0)), Equal(Trunc(10000[37]), 10000[37])) else 174
+168:
+  10000[41] <- Multiply(Add(10000[37], Multiply(Less(10000[37], 0), 4.0)), 2.0)
   10000[41] <- 10000[10000[41] + 1]
-  goto 114 if NotEqual(Greater(10000[40], RuntimeTouchArray[10000[36] + 6]), Greater(10000[41], RuntimeTouchArray[10000[36] + 6])) else 116
-114:
-  10000[40] <- Multiply(Add(10000[39], Multiply(Less(10000[39], 0), 4.0)), 2.0)
-  10000[40] <- 10000[10000[40]]
-  10000[41] <- Multiply(Add(10000[38], Multiply(Less(10000[38], 0), 4.0)), 2.0)
-  10000[41] <- 10000[10000[41]]
-  10000[42] <- Multiply(Add(10000[38], Multiply(Less(10000[38], 0), 4.0)), 2.0)
-  10000[42] <- 10000[10000[42] + 1]
-  10000[43] <- Multiply(Add(10000[39], Multiply(Less(10000[39], 0), 4.0)), 2.0)
-  10000[43] <- 10000[10000[43] + 1]
-  10000[44] <- Multiply(Add(10000[38], Multiply(Less(10000[38], 0), 4.0)), 2.0)
-  10000[44] <- 10000[10000[44] + 1]
-  10000[45] <- Multiply(Add(10000[38], Multiply(Less(10000[38], 0), 4.0)), 2.0)
-  10000[45] <- 10000[10000[45]]
-  goto 115 if Less(RuntimeTouchArray[10000[36] + 5], Add(Divide(Multiply(Subtract(10000[40], 10000[41]), Subtract(RuntimeTouchArray[10000[36] + 6], 10000[42])), Subtract(10000[43], 10000[44])), 10000[45])) else 116
-115:
-  10000[40] <- Not(10000[37])
-  goto 117
-116:
-  10000[40] <- 10000[37]
-  goto 117
-117:
-  10000[41] <- Add(10000[38], 1.0)
-  10000[37] <- 10000[40]
-  10000[39] <- 10000[38]
-  10000[38] <- 10000[41]
-  goto 113 if Less(10000[38], 4.0) else 118
-118:
-  goto 107 if Not(10000[40]) else 119
-119:
-  goto 107 if RuntimeTouchArray[10000[36] + 2] else 120
-120:
-  10000[37] <- LevelMemory[17]
-  goto 126 if GreaterOr(10000[37], 16.0) else 121
-121:
-  10000[1] <- 0
-  goto 122
-122:
-  10000[37] <- LevelMemory[17]
-  goto 123 if Less(10000[1], 10000[37]) else 125
-123:
-  10000[37] <- LevelMemory[17]
-  10000[0] <- Add(17.0, Add(10000[1], Multiply(Less(10000[1], 0), 10000[37])))
-  10000[0] <- LevelMemory[10000[0] + 1]
-  goto 126 if Equal(10000[0], RuntimeTouchArray[10000[36]]) else 124
-124:
-  10000[1] <- Add(10000[1], 1.0)
-  goto 122
-125:
+  goto 169 if And(And(GreaterOr(10000[13], -4.0), Less(10000[13], 4.0)), Equal(Trunc(10000[13]), 10000[13])) else 173
+169:
+  10000[8] <- Multiply(Add(10000[13], Multiply(Less(10000[13], 0), 4.0)), 2.0)
+  10000[8] <- 10000[10000[8] + 1]
+  goto 170 if And(And(GreaterOr(10000[13], -4.0), Less(10000[13], 4.0)), Equal(Trunc(10000[13]), 10000[13])) else 172
+170:
+  10000[9] <- Multiply(Add(10000[13], Multiply(Less(10000[13], 0), 4.0)), 2.0)
+  10000[9] <- 10000[10000[9]]
+  goto 171 if Less(RuntimeTouchArray[10000[36] + 5], Add(Divide(Multiply(Subtract(10000[38], 10000[39]), Subtract(RuntimeTouchArray[10000[36] + 6], 10000[40])), Subtract(10000[41], 10000[8])), 10000[9])) else 178
+171:
+  10000[10] <- Not(10000[10])
+  goto 178
+172:
+  DebugLog(15.0)
+  DebugPause()
+  goto exit
+173:
+  DebugLog(15.0)
+  DebugPause()
+  goto exit
+174:
+  DebugLog(15.0)
+  DebugPause()
+  goto exit
+175:
+  DebugLog(14.0)
+  DebugPause()
+  goto exit
+176:
+  DebugLog(13.0)
+  DebugPause()
+  goto exit
+177:
+  DebugLog(13.0)
+  DebugPause()
+  goto exit
+178:
+  10000[11] <- Add(10000[13], 1.0)
+  10000[12] <- 10000[10]
+  10000[37] <- 10000[13]
+  goto 179 if Less(10000[11], 4.0) else 180
+179:
+  10000[10] <- 10000[12]
+  10000[13] <- 10000[11]
+  goto 161
+180:
+  goto 153 if Not(10000[10]) else 181
+181:
+  goto 153 if RuntimeTouchArray[10000[36] + 2] else 182
+182:
+  10000[0] <- LevelMemory[17]
+  goto 191 if GreaterOr(10000[0], 16.0) else 183
+183:
+  10000[0] <- 0
+  goto 184
+184:
+  10000[1] <- LevelMemory[17]
+  goto 185 if Less(10000[0], 10000[1]) else 189
+185:
+  10000[1] <- LevelMemory[17]
+  goto 186 if And(And(GreaterOr(10000[0], Negate(10000[1])), Less(10000[0], 10000[1])), Equal(Trunc(10000[0]), 10000[0])) else 188
+186:
+  10000[1] <- Add(17.0, Add(10000[0], Multiply(Less(10000[0], 0), 10000[1])))
+  10000[1] <- LevelMemory[10000[1] + 1]
+  goto 191 if Equal(10000[1], RuntimeTouchArray[10000[36]]) else 187
+187:
+  10000[0] <- Add(10000[0], 1.0)
+  goto 184
+188:
+  DebugLog(16.0)
+  DebugPause()
+  goto exit
+189:
+  10000[0] <- LevelMemory[17]
+  goto 190 if Less(10000[0], 16.0) else 192
+190:
   10000[0] <- LevelMemory[17]
   10000[0] <- Add(17.0, 10000[0])
   LevelMemory[10000[0] + 1] <- RuntimeTouchArray[10000[36]]
   10000[0] <- LevelMemory[17]
   LevelMemory[17] <- Add(10000[0], 1.0)
-  goto 126
-126:
+  goto 191
+191:
   10000[0] <- Multiply(EntityData[16], 32.0)
   EntitySharedMemoryArray[10000[0]] <- RuntimeTouchArray[10000[36]]
-  goto 127
-127:
+  goto 195
+192:
+  DebugLog(17.0)
+  DebugPause()
+  goto exit
+193:
+  DebugLog(13.0)
+  DebugPause()
+  goto exit
+194:
+  DebugLog(13.0)
+  DebugPause()
+  goto exit
+195:
   10000[0] <- Multiply(EntityData[16], 32.0)
   10000[0] <- EntitySharedMemoryArray[10000[0]]
-  goto 128 if Greater(10000[0], 0) else 354
-128:
+  goto 196 if Greater(10000[0], 0) else 535
+196:
   10000[0] <- 0
-  goto 129
-129:
-  goto 130 if Less(10000[0], RuntimeUpdate[3]) else 354
-130:
+  goto 197
+197:
+  goto 198 if Less(10000[0], RuntimeUpdate[3]) else 535
+198:
   10000[8] <- Multiply(10000[0], 15.0)
   10000[0] <- Add(10000[0], 1.0)
   10000[9] <- Multiply(EntityData[16], 32.0)
   10000[9] <- EntitySharedMemoryArray[10000[9]]
-  goto 129 if NotEqual(RuntimeTouchArray[10000[8]], 10000[9]) else 131
-131:
-  10000[0] <- 10000[10]
-  10000[1] <- 10000[11]
+  goto 197 if NotEqual(RuntimeTouchArray[10000[8]], 10000[9]) else 199
+199:
+  10000[0] <- 10000[14]
+  10000[1] <- 10000[15]
   10000[2] <- 10000[30]
   10000[3] <- 10000[31]
   10000[4] <- 10000[33]
   10000[5] <- 10000[34]
   10000[6] <- 10000[23]
-  10000[7] <- 10000[26]
+  10000[7] <- 10000[25]
   10000[9] <- 0
   10000[10] <- 0
   10000[11] <- 3.0
-  goto 132
-132:
+  goto 200
+200:
+  goto 201 if And(And(GreaterOr(10000[10], -4.0), Less(10000[10], 4.0)), Equal(Trunc(10000[10]), 10000[10])) else 266
+201:
   10000[12] <- Multiply(Add(10000[10], Multiply(Less(10000[10], 0), 4.0)), 2.0)
   10000[12] <- 10000[10000[12] + 1]
+  goto 202 if And(And(GreaterOr(10000[11], -4.0), Less(10000[11], 4.0)), Equal(Trunc(10000[11]), 10000[11])) else 265
+202:
   10000[13] <- Multiply(Add(10000[11], Multiply(Less(10000[11], 0), 4.0)), 2.0)
   10000[13] <- 10000[10000[13] + 1]
-  goto 133 if NotEqual(Greater(10000[12], RuntimeTouchArray[10000[8] + 6]), Greater(10000[13], RuntimeTouchArray[10000[8] + 6])) else 135
-133:
+  goto 203 if NotEqual(Greater(10000[12], RuntimeTouchArray[10000[8] + 6]), Greater(10000[13], RuntimeTouchArray[10000[8] + 6])) else 217
+203:
+  goto 204 if And(And(GreaterOr(10000[11], -4.0), Less(10000[11], 4.0)), Equal(Trunc(10000[11]), 10000[11])) else 216
+204:
   10000[12] <- Multiply(Add(10000[11], Multiply(Less(10000[11], 0), 4.0)), 2.0)
   10000[12] <- 10000[10000[12]]
+  goto 205 if And(And(GreaterOr(10000[10], -4.0), Less(10000[10], 4.0)), Equal(Trunc(10000[10]), 10000[10])) else 215
+205:
   10000[13] <- Multiply(Add(10000[10], Multiply(Less(10000[10], 0), 4.0)), 2.0)
   10000[13] <- 10000[10000[13]]
+  goto 206 if And(And(GreaterOr(10000[10], -4.0), Less(10000[10], 4.0)), Equal(Trunc(10000[10]), 10000[10])) else 214
+206:
   10000[14] <- Multiply(Add(10000[10], Multiply(Less(10000[10], 0), 4.0)), 2.0)
   10000[14] <- 10000[10000[14] + 1]
+  goto 207 if And(And(GreaterOr(10000[11], -4.0), Less(10000[11], 4.0)), Equal(Trunc(10000[11]), 10000[11])) else 213
+207:
   10000[15] <- Multiply(Add(10000[11], Multiply(Less(10000[11], 0), 4.0)), 2.0)
   10000[15] <- 10000[10000[15] + 1]
+  goto 208 if And(And(GreaterOr(10000[10], -4.0), Less(10000[10], 4.0)), Equal(Trunc(10000[10]), 10000[10])) else 212
+208:
   10000[16] <- Multiply(Add(10000[10], Multiply(Less(10000[10], 0), 4.0)), 2.0)
   10000[16] <- 10000[10000[16] + 1]
+  goto 209 if And(And(GreaterOr(10000[10], -4.0), Less(10000[10], 4.0)), Equal(Trunc(10000[10]), 10000[10])) else 211
+209:
   10000[17] <- Multiply(Add(10000[10], Multiply(Less(10000[10], 0), 4.0)), 2.0)
   10000[17] <- 10000[10000[17]]
-  goto 134 if Less(RuntimeTouchArray[10000[8] + 5], Add(Divide(Multiply(Subtract(10000[12], 10000[13]), Subtract(RuntimeTouchArray[10000[8] + 6], 10000[14])), Subtract(10000[15], 10000[16])), 10000[17])) else 135
-134:
+  goto 210 if Less(RuntimeTouchArray[10000[8] + 5], Add(Divide(Multiply(Subtract(10000[12], 10000[13]), Subtract(RuntimeTouchArray[10000[8] + 6], 10000[14])), Subtract(10000[15], 10000[16])), 10000[17])) else 217
+210:
   10000[12] <- Not(10000[9])
-  goto 136
-135:
+  goto 218
+211:
+  DebugLog(20.0)
+  DebugPause()
+  goto exit
+212:
+  DebugLog(20.0)
+  DebugPause()
+  goto exit
+213:
+  DebugLog(20.0)
+  DebugPause()
+  goto exit
+214:
+  DebugLog(19.0)
+  DebugPause()
+  goto exit
+215:
+  DebugLog(18.0)
+  DebugPause()
+  goto exit
+216:
+  DebugLog(18.0)
+  DebugPause()
+  goto exit
+217:
   10000[12] <- 10000[9]
-  goto 136
-136:
+  goto 218
+218:
   10000[13] <- Add(10000[10], 1.0)
   10000[9] <- 10000[12]
   10000[11] <- 10000[10]
   10000[10] <- 10000[13]
-  goto 132 if Less(10000[10], 4.0) else 137
-137:
-  goto 138 if 10000[12] else 140
-138:
+  goto 200 if Less(10000[10], 4.0) else 219
+219:
+  goto 220 if 10000[12] else 222
+220:
   10000[0] <- EntityMemory[0]
-  goto 139 if Less(Abs(Subtract(Subtract(RuntimeUpdate[0], RuntimeEnvironment[3]), EntityData[11])), Abs(Subtract(10000[0], EntityData[11]))) else 140
-139:
+  goto 221 if Less(Abs(Subtract(Subtract(RuntimeUpdate[0], RuntimeEnvironment[3]), EntityData[11])), Abs(Subtract(10000[0], EntityData[11]))) else 222
+221:
   EntityMemory[0] <- Subtract(RuntimeUpdate[0], RuntimeEnvironment[3])
-  goto 140
-140:
+  goto 222
+222:
   10000[0] <- EntityMemory[0]
-  goto 141 if GreaterOr(10000[0], EntityData[11]) else 354
-141:
+  goto 223 if GreaterOr(10000[0], EntityData[11]) else 535
+223:
   10000[0] <- EntityMemory[0]
   10000[1] <- Judge(10000[0], EntityData[11], EntityData[5], EntityData[6], EntityData[7], EntityData[8], EntityData[9], EntityData[10])
   EntityInput[0] <- 10000[1]
   EntityInput[1] <- Clamp(Subtract(10000[0], EntityData[11]), -1.0, 1.0)
   10000[2] <- EntityInput[1]
   EntityInput[3] <- Multiply(10000[2], 1000.0)
-  goto 142 if NotEqual(10000[1], 0) else 177
-142:
-  goto 143 if Not(LevelOption[11]) else 155
-143:
+  goto 224 if NotEqual(10000[1], 0) else 264
+224:
+  goto 225 if Not(LevelOption[11]) else 239
+225:
+  goto 226 if And(And(GreaterOr(EntityInfo[1], -13.0), Less(EntityInfo[1], 13.0)), Equal(Trunc(EntityInfo[1]), EntityInfo[1])) else 238
+226:
   10000[2] <- Add(3.0, Add(EntityInfo[1], Multiply(Less(EntityInfo[1], 0), 13.0)))
   10000[2] <- EngineRom[10000[2]]
-  goto 155 if Not(LevelOption[10]) else 144
-144:
+  goto 239 if Not(LevelOption[10]) else 227
+227:
   goto when 10000[2]
-    6.0 -> 155
-    default -> 145
-145:
+    6.0 -> 239
+    default -> 228
+228:
   10000[3] <- 0
   goto when Subtract(10000[2], 2.0)
-    0.0 -> 150
-    1.0 -> 150
-    default -> 146
-146:
+    0.0 -> 233
+    1.0 -> 233
+    default -> 229
+229:
   goto when Subtract(10000[1], 1.0)
-    0.0 -> 149
-    1.0 -> 148
-    2.0 -> 147
-    default -> 154
-147:
+    0.0 -> 232
+    1.0 -> 231
+    2.0 -> 230
+    default -> 237
+230:
   10000[3] <- 3.0
-  goto 154
-148:
+  goto 237
+231:
   10000[3] <- 2.0
-  goto 154
-149:
+  goto 237
+232:
   10000[3] <- 1.0
-  goto 154
-150:
+  goto 237
+233:
   goto when Subtract(10000[1], 1.0)
-    0.0 -> 153
-    1.0 -> 152
-    2.0 -> 151
-    default -> 154
-151:
+    0.0 -> 236
+    1.0 -> 235
+    2.0 -> 234
+    default -> 237
+234:
   10000[3] <- 6.0
-  goto 154
-152:
+  goto 237
+235:
   10000[3] <- 5.0
-  goto 154
-153:
+  goto 237
+236:
   10000[3] <- 4.0
-  goto 154
-154:
+  goto 237
+237:
   Play(10000[3], 0)
-  goto 155
-155:
+  goto 239
+238:
+  DebugLog(21.0)
+  DebugPause()
+  goto exit
+239:
+  goto 240 if And(And(GreaterOr(EntityInfo[1], -13.0), Less(EntityInfo[1], 13.0)), Equal(Trunc(EntityInfo[1]), EntityInfo[1])) else 263
+240:
   10000[0] <- Add(3.0, Add(EntityInfo[1], Multiply(Less(EntityInfo[1], 0), 13.0)))
   10000[0] <- EngineRom[10000[0]]
   goto when 10000[0]
-    6.0 -> 177
-    default -> 156
-156:
-  goto 177 if Not(LevelOption[6]) else 157
-157:
+    6.0 -> 264
+    default -> 241
+241:
+  goto 264 if Not(LevelOption[6]) else 242
+242:
   10000[1] <- 0
   goto when 10000[0]
-    1.0 -> 163
-    2.0 -> 162
-    3.0 -> 159
-    4.0 -> 158
-    5.0 -> 158
-    7.0 -> 158
-    default -> 164
-158:
+    1.0 -> 248
+    2.0 -> 247
+    3.0 -> 244
+    4.0 -> 243
+    5.0 -> 243
+    7.0 -> 243
+    default -> 249
+243:
   10000[1] <- 3.0
-  goto 164
-159:
-  goto 160 if Greater(EntityData[2], 0) else 161
-160:
+  goto 249
+244:
+  goto 245 if Greater(EntityData[2], 0) else 246
+245:
   10000[1] <- 8.0
-  goto 164
-161:
+  goto 249
+246:
   10000[1] <- 10.0
-  goto 164
-162:
+  goto 249
+247:
   10000[1] <- 6.0
-  goto 164
-163:
+  goto 249
+248:
   10000[1] <- 1.0
-  goto 164
-164:
+  goto 249
+249:
   10000[2] <- Multiply(EntityData[0], LevelData[12])
   10000[3] <- Subtract(10000[2], Divide(LevelData[11], 2.0))
   10000[4] <- Add(Multiply(LevelData[8], 10000[3]), LevelData[10])
@@ -752,31 +1006,31 @@
   SpawnParticleEffect(10000[1], 10000[5], 10000[6], Add(10000[5], 0), Add(10000[6], 10000[11]), Add(10000[9], 0), Add(10000[10], 10000[11]), 10000[9], 10000[10], 0.5, 0)
   10000[1] <- 0
   goto when 10000[0]
-    1.0 -> 170
-    2.0 -> 169
-    3.0 -> 166
-    4.0 -> 165
-    5.0 -> 165
-    7.0 -> 165
-    default -> 171
-165:
+    1.0 -> 255
+    2.0 -> 254
+    3.0 -> 251
+    4.0 -> 250
+    5.0 -> 250
+    7.0 -> 250
+    default -> 256
+250:
   10000[1] <- 4.0
-  goto 171
-166:
-  goto 167 if Greater(EntityData[2], 0) else 168
-167:
+  goto 256
+251:
+  goto 252 if Greater(EntityData[2], 0) else 253
+252:
   10000[1] <- 9.0
-  goto 171
-168:
+  goto 256
+253:
   10000[1] <- 11.0
-  goto 171
-169:
+  goto 256
+254:
   10000[1] <- 7.0
-  goto 171
-170:
+  goto 256
+255:
   10000[1] <- 2.0
-  goto 171
-171:
+  goto 256
+256:
   10000[2] <- Multiply(EntityData[0], LevelData[12])
   10000[3] <- Add(10000[2], Divide(Multiply(LevelData[11], 1.8), 2.0))
   10000[4] <- Subtract(10000[2], Divide(Multiply(LevelData[11], 1.8), 2.0))
@@ -792,442 +1046,640 @@
   10000[14] <- Divide(Add(10000[10], 10000[12]), 2.0)
   10000[15] <- Divide(Add(10000[6], 10000[8]), 2.0)
   SpawnParticleEffect(10000[1], Subtract(10000[15], Divide(10000[13], 2.0)), Divide(Add(Add(Multiply(LevelData[5], 10000[4]), Multiply(LevelData[6], Subtract(0, Divide(Multiply(LevelData[11], 1.8), 2.0)))), LevelData[7]), 10000[5]), Subtract(10000[14], Divide(10000[13], 2.0)), Divide(Add(Add(Multiply(LevelData[5], 10000[4]), Multiply(LevelData[6], Add(0, Divide(Multiply(LevelData[11], 1.8), 2.0)))), LevelData[7]), 10000[9]), Add(10000[14], Divide(10000[13], 2.0)), Divide(Add(Add(Multiply(LevelData[5], 10000[3]), Multiply(LevelData[6], Add(0, Divide(Multiply(LevelData[11], 1.8), 2.0)))), LevelData[7]), 10000[11]), Add(10000[15], Divide(10000[13], 2.0)), Divide(Add(Add(Multiply(LevelData[5], 10000[3]), Multiply(LevelData[6], Subtract(0, Divide(Multiply(LevelData[11], 1.8), 2.0)))), LevelData[7]), 10000[7]), 0.5, 0)
-  goto 177 if Not(LevelOption[7]) else 172
-172:
+  goto 264 if Not(LevelOption[7]) else 257
+257:
   10000[0] <- 0
-  goto 173
-173:
-  goto 174 if Less(10000[0], LevelData[16]) else 354
-174:
+  goto 258
+258:
+  goto 259 if Less(10000[0], LevelData[16]) else 262
+259:
   10000[1] <- Add(10000[0], 1.0)
   10000[2] <- Add(16.0, Multiply(10000[0], 9.0))
-  goto 175 if Equal(LevelData[10000[2] + 1], EntityData[0]) else 176
-175:
+  goto 260 if Equal(LevelData[10000[2] + 1], EntityData[0]) else 261
+260:
   SpawnParticleEffect(0, LevelData[10000[2] + 2], LevelData[10000[2] + 3], LevelData[10000[2] + 4], LevelData[10000[2] + 5], LevelData[10000[2] + 6], LevelData[10000[2] + 7], LevelData[10000[2] + 8], LevelData[10000[2] + 9], 0.2, 0)
-  goto 177
-176:
+  goto 264
+261:
   10000[0] <- 10000[1]
-  goto 173
-177:
+  goto 258
+262:
+  DebugLog(23.0)
+  DebugPause()
+  goto exit
+263:
+  DebugLog(22.0)
+  DebugPause()
+  goto exit
+264:
   EntityDespawn[0] <- 1.0
   EntitySharedMemory[2] <- 1.0
   goto exit
-178:
-  goto 179 if Greater(EntityData[3], 0) else 182
-179:
+265:
+  DebugLog(18.0)
+  DebugPause()
+  goto exit
+266:
+  DebugLog(18.0)
+  DebugPause()
+  goto exit
+267:
+  goto 268 if Greater(EntityData[3], 0) else 271
+268:
   10000[35] <- Add(2.0, Multiply(EntityData[16], 32.0))
   10000[35] <- EntitySharedMemoryArray[10000[35]]
-  goto 181 if 10000[35] else 180
-180:
+  goto 270 if 10000[35] else 269
+269:
   10000[35] <- Multiply(EntityData[16], 3.0)
   10000[35] <- Equal(EntityInfoArray[10000[35] + 2], 2.0)
-  goto 181
-181:
-  goto 354 if Not(10000[35]) else 182
-182:
-  goto 183 if LessOr(EntityData[14], RuntimeUpdate[0]) else 354
-183:
-  goto 354 if Not(LessOr(RuntimeUpdate[0], EntityData[15])) else 184
-184:
-  goto 185 if Greater(EntityData[3], 0) else 207
-185:
+  goto 270
+270:
+  goto 535 if Not(10000[35]) else 271
+271:
+  goto 272 if LessOr(EntityData[14], RuntimeUpdate[0]) else 535
+272:
+  goto 535 if Not(LessOr(RuntimeUpdate[0], EntityData[15])) else 273
+273:
+  goto 274 if Greater(EntityData[3], 0) else 318
+274:
   10000[35] <- Multiply(EntityData[16], 32.0)
   10000[35] <- EntitySharedMemoryArray[10000[35]]
-  goto 186 if Not(Greater(10000[35], 0)) else 232
-186:
+  goto 275 if Not(Greater(10000[35], 0)) else 365
+275:
   10000[35] <- 0
-  goto 187
-187:
-  goto 188 if Less(10000[35], RuntimeUpdate[3]) else 232
-188:
+  goto 276
+276:
+  goto 277 if Less(10000[35], RuntimeUpdate[3]) else 365
+277:
   10000[36] <- Multiply(10000[35], 15.0)
   10000[35] <- Add(10000[35], 1.0)
   10000[37] <- 0
-  goto 189
-189:
+  goto 278
+278:
   10000[38] <- LevelMemory[17]
-  goto 190 if Less(10000[37], 10000[38]) else 192
-190:
+  goto 279 if Less(10000[37], 10000[38]) else 283
+279:
   10000[38] <- LevelMemory[17]
+  goto 280 if And(And(GreaterOr(10000[37], Negate(10000[38])), Less(10000[37], 10000[38])), Equal(Trunc(10000[37]), 10000[37])) else 282
+280:
   10000[38] <- Add(17.0, Add(10000[37], Multiply(Less(10000[37], 0), 10000[38])))
   10000[38] <- LevelMemory[10000[38] + 1]
-  goto 187 if Equal(10000[38], RuntimeTouchArray[10000[36]]) else 191
-191:
+  goto 276 if Equal(10000[38], RuntimeTouchArray[10000[36]]) else 281
+281:
   10000[37] <- Add(10000[37], 1.0)
-  goto 189
-192:
-  10000[0] <- 10000[10]
-  10000[1] <- 10000[11]
+  goto 278
+282:
+  DebugLog(36.0)
+  DebugPause()
+  goto exit
+283:
+  10000[0] <- 10000[14]
+  10000[1] <- 10000[15]
   10000[2] <- 10000[30]
   10000[3] <- 10000[31]
   10000[4] <- 10000[33]
   10000[5] <- 10000[34]
   10000[6] <- 10000[23]
-  10000[7] <- 10000[26]
+  10000[7] <- 10000[25]
   10000[37] <- 0
   10000[38] <- 0
   10000[39] <- 3.0
-  goto 193
-193:
+  goto 284
+284:
+  goto 285 if And(And(GreaterOr(10000[38], -4.0), Less(10000[38], 4.0)), Equal(Trunc(10000[38]), 10000[38])) else 317
+285:
   10000[40] <- Multiply(Add(10000[38], Multiply(Less(10000[38], 0), 4.0)), 2.0)
   10000[40] <- 10000[10000[40] + 1]
+  goto 286 if And(And(GreaterOr(10000[39], -4.0), Less(10000[39], 4.0)), Equal(Trunc(10000[39]), 10000[39])) else 316
+286:
   10000[41] <- Multiply(Add(10000[39], Multiply(Less(10000[39], 0), 4.0)), 2.0)
   10000[41] <- 10000[10000[41] + 1]
-  goto 194 if NotEqual(Greater(10000[40], RuntimeTouchArray[10000[36] + 6]), Greater(10000[41], RuntimeTouchArray[10000[36] + 6])) else 196
-194:
+  goto 287 if NotEqual(Greater(10000[40], RuntimeTouchArray[10000[36] + 6]), Greater(10000[41], RuntimeTouchArray[10000[36] + 6])) else 301
+287:
+  goto 288 if And(And(GreaterOr(10000[39], -4.0), Less(10000[39], 4.0)), Equal(Trunc(10000[39]), 10000[39])) else 300
+288:
   10000[40] <- Multiply(Add(10000[39], Multiply(Less(10000[39], 0), 4.0)), 2.0)
   10000[40] <- 10000[10000[40]]
+  goto 289 if And(And(GreaterOr(10000[38], -4.0), Less(10000[38], 4.0)), Equal(Trunc(10000[38]), 10000[38])) else 299
+289:
   10000[41] <- Multiply(Add(10000[38], Multiply(Less(10000[38], 0), 4.0)), 2.0)
   10000[41] <- 10000[10000[41]]
+  goto 290 if And(And(GreaterOr(10000[38], -4.0), Less(10000[38], 4.0)), Equal(Trunc(10000[38]), 10000[38])) else 298
+290:
   10000[42] <- Multiply(Add(10000[38], Multiply(Less(10000[38], 0), 4.0)), 2.0)
   10000[42] <- 10000[10000[42] + 1]
+  goto 291 if And(And(GreaterOr(10000[39], -4.0), Less(10000[39], 4.0)), Equal(Trunc(10000[39]), 10000[39])) else 297
+291:
   10000[43] <- Multiply(Add(10000[39], Multiply(Less(10000[39], 0), 4.0)), 2.0)
   10000[43] <- 10000[10000[43] + 1]
+  goto 292 if And(And(GreaterOr(10000[38], -4.0), Less(10000[38], 4.0)), Equal(Trunc(10000[38]), 10000[38])) else 296
+292:
   10000[44] <- Multiply(Add(10000[38], Multiply(Less(10000[38], 0), 4.0)), 2.0)
   10000[44] <- 10000[10000[44] + 1]
+  goto 293 if And(And(GreaterOr(10000[38], -4.0), Less(10000[38], 4.0)), Equal(Trunc(10000[38]), 10000[38])) else 295
+293:
   10000[45] <- Multiply(Add(10000[38], Multiply(Less(10000[38], 0), 4.0)), 2.0)
   10000[45] <- 10000[10000[45]]
-  goto 195 if Less(RuntimeTouchArray[10000[36] + 5], Add(Divide(Multiply(Subtract(10000[40], 10000[41]), Subtract(RuntimeTouchArray[10000[36] + 6], 10000[42])), Subtract(10000[43], 10000[44])), 10000[45])) else 196
-195:
+  goto 294 if Less(RuntimeTouchArray[10000[36] + 5], Add(Divide(Multiply(Subtract(10000[40], 10000[41]), Subtract(RuntimeTouchArray[10000[36] + 6], 10000[42])), Subtract(10000[43], 10000[44])), 10000[45])) else 301
+294:
   10000[40] <- Not(10000[37])
-  goto 197
-196:
+  goto 302
+295:
+  DebugLog(39.0)
+  DebugPause()
+  goto exit
+296:
+  DebugLog(39.0)
+  DebugPause()
+  goto exit
+297:
+  DebugLog(39.0)
+  DebugPause()
+  goto exit
+298:
+  DebugLog(38.0)
+  DebugPause()
+  goto exit
+299:
+  DebugLog(37.0)
+  DebugPause()
+  goto exit
+300:
+  DebugLog(37.0)
+  DebugPause()
+  goto exit
+301:
   10000[40] <- 10000[37]
-  goto 197
-197:
+  goto 302
+302:
   10000[41] <- Add(10000[38], 1.0)
   10000[37] <- 10000[40]
   10000[39] <- 10000[38]
   10000[38] <- 10000[41]
-  goto 193 if Less(10000[38], 4.0) else 198
-198:
-  goto 187 if Not(10000[40]) else 199
-199:
-  goto 187 if RuntimeTouchArray[10000[36] + 2] else 200
-200:
+  goto 284 if Less(10000[38], 4.0) else 303
+303:
+  goto 276 if Not(10000[40]) else 304
+304:
+  goto 276 if RuntimeTouchArray[10000[36] + 2] else 305
+305:
   10000[37] <- LevelMemory[17]
-  goto 206 if GreaterOr(10000[37], 16.0) else 201
-201:
+  goto 314 if GreaterOr(10000[37], 16.0) else 306
+306:
   10000[37] <- 0
-  goto 202
-202:
+  goto 307
+307:
   10000[38] <- LevelMemory[17]
-  goto 203 if Less(10000[37], 10000[38]) else 205
-203:
+  goto 308 if Less(10000[37], 10000[38]) else 312
+308:
   10000[38] <- LevelMemory[17]
+  goto 309 if And(And(GreaterOr(10000[37], Negate(10000[38])), Less(10000[37], 10000[38])), Equal(Trunc(10000[37]), 10000[37])) else 311
+309:
   10000[38] <- Add(17.0, Add(10000[37], Multiply(Less(10000[37], 0), 10000[38])))
   10000[38] <- LevelMemory[10000[38] + 1]
-  goto 206 if Equal(10000[38], RuntimeTouchArray[10000[36]]) else 204
-204:
+  goto 314 if Equal(10000[38], RuntimeTouchArray[10000[36]]) else 310
+310:
   10000[37] <- Add(10000[37], 1.0)
-  goto 202
-205:
+  goto 307
+311:
+  DebugLog(40.0)
+  DebugPause()
+  goto exit
+312:
+  10000[37] <- LevelMemory[17]
+  goto 313 if Less(10000[37], 16.0) else 315
+313:
   10000[37] <- LevelMemory[17]
   10000[37] <- Add(17.0, 10000[37])
   LevelMemory[10000[37] + 1] <- RuntimeTouchArray[10000[36]]
   10000[37] <- LevelMemory[17]
   LevelMemory[17] <- Add(10000[37], 1.0)
-  goto 206
-206:
+  goto 314
+314:
   10000[37] <- Multiply(EntityData[16], 32.0)
   EntitySharedMemoryArray[10000[37]] <- RuntimeTouchArray[10000[36]]
-  goto 232
-207:
+  goto 365
+315:
+  DebugLog(41.0)
+  DebugPause()
+  goto exit
+316:
+  DebugLog(37.0)
+  DebugPause()
+  goto exit
+317:
+  DebugLog(37.0)
+  DebugPause()
+  goto exit
+318:
   10000[35] <- Multiply(EntityData[16], 32.0)
   10000[35] <- EntitySharedMemoryArray[10000[35]]
-  goto 208 if Not(Greater(10000[35], 0)) else 232
-208:
+  goto 319 if Not(Greater(10000[35], 0)) else 365
+319:
   10000[35] <- 0
-  goto 209
-209:
-  goto 210 if Less(10000[35], RuntimeUpdate[3]) else 232
-210:
+  goto 320
+320:
+  goto 321 if Less(10000[35], RuntimeUpdate[3]) else 365
+321:
   10000[36] <- Multiply(10000[35], 15.0)
   10000[35] <- Add(10000[35], 1.0)
-  goto 211 if RuntimeTouchArray[10000[36] + 1] else 209
-211:
+  goto 322 if RuntimeTouchArray[10000[36] + 1] else 320
+322:
   10000[37] <- 0
-  goto 212
-212:
+  goto 323
+323:
   10000[38] <- LevelMemory[17]
-  goto 213 if Less(10000[37], 10000[38]) else 216
-213:
+  goto 324 if Less(10000[37], 10000[38]) else 329
+324:
   10000[38] <- LevelMemory[17]
+  goto 325 if And(And(GreaterOr(10000[37], Negate(10000[38])), Less(10000[37], 10000[38])), Equal(Trunc(10000[37]), 10000[37])) else 328
+325:
   10000[38] <- Add(17.0, Add(10000[37], Multiply(Less(10000[37], 0), 10000[38])))
   10000[38] <- LevelMemory[10000[38] + 1]
-  goto 214 if Equal(10000[38], RuntimeTouchArray[10000[36]]) else 215
-214:
+  goto 326 if Equal(10000[38], RuntimeTouchArray[10000[36]]) else 327
+326:
   10000[37] <- 1.0
-  goto 217
-215:
+  goto 330
+327:
   10000[37] <- Add(10000[37], 1.0)
-  goto 212
-216:
+  goto 323
+328:
+  DebugLog(42.0)
+  DebugPause()
+  goto exit
+329:
   10000[37] <- 0
-  goto 217
-217:
-  goto 218 if Not(10000[37]) else 209
-218:
-  10000[0] <- 10000[10]
-  10000[1] <- 10000[11]
+  goto 330
+330:
+  goto 331 if Not(10000[37]) else 320
+331:
+  10000[0] <- 10000[14]
+  10000[1] <- 10000[15]
   10000[2] <- 10000[30]
   10000[3] <- 10000[31]
   10000[4] <- 10000[33]
   10000[5] <- 10000[34]
   10000[6] <- 10000[23]
-  10000[7] <- 10000[26]
+  10000[7] <- 10000[25]
   10000[37] <- 0
   10000[38] <- 0
   10000[39] <- 3.0
-  goto 219
-219:
+  goto 332
+332:
+  goto 333 if And(And(GreaterOr(10000[38], -4.0), Less(10000[38], 4.0)), Equal(Trunc(10000[38]), 10000[38])) else 364
+333:
   10000[40] <- Multiply(Add(10000[38], Multiply(Less(10000[38], 0), 4.0)), 2.0)
   10000[40] <- 10000[10000[40] + 1]
+  goto 334 if And(And(GreaterOr(10000[39], -4.0), Less(10000[39], 4.0)), Equal(Trunc(10000[39]), 10000[39])) else 363
+334:
   10000[41] <- Multiply(Add(10000[39], Multiply(Less(10000[39], 0), 4.0)), 2.0)
   10000[41] <- 10000[10000[41] + 1]
-  goto 220 if NotEqual(Greater(10000[40], RuntimeTouchArray[10000[36] + 6]), Greater(10000[41], RuntimeTouchArray[10000[36] + 6])) else 222
-220:
+  goto 335 if NotEqual(Greater(10000[40], RuntimeTouchArray[10000[36] + 6]), Greater(10000[41], RuntimeTouchArray[10000[36] + 6])) else 349
+335:
+  goto 336 if And(And(GreaterOr(10000[39], -4.0), Less(10000[39], 4.0)), Equal(Trunc(10000[39]), 10000[39])) else 348
+336:
   10000[40] <- Multiply(Add(10000[39], Multiply(Less(10000[39], 0), 4.0)), 2.0)
   10000[40] <- 10000[10000[40]]
+  goto 337 if And(And(GreaterOr(10000[38], -4.0), Less(10000[38], 4.0)), Equal(Trunc(10000[38]), 10000[38])) else 347
+337:
   10000[41] <- Multiply(Add(10000[38], Multiply(Less(10000[38], 0), 4.0)), 2.0)
   10000[41] <- 10000[10000[41]]
+  goto 338 if And(And(GreaterOr(10000[38], -4.0), Less(10000[38], 4.0)), Equal(Trunc(10000[38]), 10000[38])) else 346
+338:
   10000[42] <- Multiply(Add(10000[38], Multiply(Less(10000[38], 0), 4.0)), 2.0)
   10000[42] <- 10000[10000[42] + 1]
+  goto 339 if And(And(GreaterOr(10000[39], -4.0), Less(10000[39], 4.0)), Equal(Trunc(10000[39]), 10000[39])) else 345
+339:
   10000[43] <- Multiply(Add(10000[39], Multiply(Less(10000[39], 0), 4.0)), 2.0)
   10000[43] <- 10000[10000[43] + 1]
+  goto 340 if And(And(GreaterOr(10000[38], -4.0), Less(10000[38], 4.0)), Equal(Trunc(10000[38]), 10000[38])) else 344
+340:
   10000[44] <- Multiply(Add(10000[38], Multiply(Less(10000[38], 0), 4.0)), 2.0)
   10000[44] <- 10000[10000[44] + 1]
+  goto 341 if And(And(GreaterOr(10000[38], -4.0), Less(10000[38], 4.0)), Equal(Trunc(10000[38]), 10000[38])) else 343
+341:
   10000[45] <- Multiply(Add(10000[38], Multiply(Less(10000[38], 0), 4.0)), 2.0)
   10000[45] <- 10000[10000[45]]
-  goto 221 if Less(RuntimeTouchArray[10000[36] + 5], Add(Divide(Multiply(Subtract(10000[40], 10000[41]), Subtract(RuntimeTouchArray[10000[36] + 6], 10000[42])), Subtract(10000[43], 10000[44])), 10000[45])) else 222
-221:
+  goto 342 if Less(RuntimeTouchArray[10000[36] + 5], Add(Divide(Multiply(Subtract(10000[40], 10000[41]), Subtract(RuntimeTouchArray[10000[36] + 6], 10000[42])), Subtract(10000[43], 10000[44])), 10000[45])) else 349
+342:
   10000[40] <- Not(10000[37])
-  goto 223
-222:
+  goto 350
+343:
+  DebugLog(45.0)
+  DebugPause()
+  goto exit
+344:
+  DebugLog(45.0)
+  DebugPause()
+  goto exit
+345:
+  DebugLog(45.0)
+  DebugPause()
+  goto exit
+346:
+  DebugLog(44.0)
+  DebugPause()
+  goto exit
+347:
+  DebugLog(43.0)
+  DebugPause()
+  goto exit
+348:
+  DebugLog(43.0)
+  DebugPause()
+  goto exit
+349:
   10000[40] <- 10000[37]
-  goto 223
-223:
+  goto 350
+350:
   10000[41] <- Add(10000[38], 1.0)
   10000[37] <- 10000[40]
   10000[39] <- 10000[38]
   10000[38] <- 10000[41]
-  goto 219 if Less(10000[38], 4.0) else 224
-224:
-  goto 209 if Not(10000[40]) else 225
-225:
+  goto 332 if Less(10000[38], 4.0) else 351
+351:
+  goto 320 if Not(10000[40]) else 352
+352:
   10000[37] <- LevelMemory[17]
-  goto 231 if GreaterOr(10000[37], 16.0) else 226
-226:
+  goto 361 if GreaterOr(10000[37], 16.0) else 353
+353:
   10000[37] <- 0
-  goto 227
-227:
+  goto 354
+354:
   10000[38] <- LevelMemory[17]
-  goto 228 if Less(10000[37], 10000[38]) else 230
-228:
+  goto 355 if Less(10000[37], 10000[38]) else 359
+355:
   10000[38] <- LevelMemory[17]
+  goto 356 if And(And(GreaterOr(10000[37], Negate(10000[38])), Less(10000[37], 10000[38])), Equal(Trunc(10000[37]), 10000[37])) else 358
+356:
   10000[38] <- Add(17.0, Add(10000[37], Multiply(Less(10000[37], 0), 10000[38])))
   10000[38] <- LevelMemory[10000[38] + 1]
-  goto 231 if Equal(10000[38], RuntimeTouchArray[10000[36]]) else 229
-229:
+  goto 361 if Equal(10000[38], RuntimeTouchArray[10000[36]]) else 357
+357:
   10000[37] <- Add(10000[37], 1.0)
-  goto 227
-230:
+  goto 354
+358:
+  DebugLog(46.0)
+  DebugPause()
+  goto exit
+359:
+  10000[37] <- LevelMemory[17]
+  goto 360 if Less(10000[37], 16.0) else 362
+360:
   10000[37] <- LevelMemory[17]
   10000[37] <- Add(17.0, 10000[37])
   LevelMemory[10000[37] + 1] <- RuntimeTouchArray[10000[36]]
   10000[37] <- LevelMemory[17]
   LevelMemory[17] <- Add(10000[37], 1.0)
-  goto 231
-231:
+  goto 361
+361:
   10000[37] <- Multiply(EntityData[16], 32.0)
   EntitySharedMemoryArray[10000[37]] <- RuntimeTouchArray[10000[36]]
-  goto 232
-232:
+  goto 365
+362:
+  DebugLog(47.0)
+  DebugPause()
+  goto exit
+363:
+  DebugLog(43.0)
+  DebugPause()
+  goto exit
+364:
+  DebugLog(43.0)
+  DebugPause()
+  goto exit
+365:
   10000[35] <- Multiply(EntityData[16], 32.0)
   10000[35] <- EntitySharedMemoryArray[10000[35]]
-  goto 233 if Greater(10000[35], 0) else 354
-233:
+  goto 366 if Greater(10000[35], 0) else 535
+366:
   10000[35] <- 0
-  goto 234
-234:
-  goto 235 if Less(10000[35], RuntimeUpdate[3]) else 354
-235:
+  goto 367
+367:
+  goto 368 if Less(10000[35], RuntimeUpdate[3]) else 535
+368:
   10000[36] <- Multiply(10000[35], 15.0)
   10000[35] <- Add(10000[35], 1.0)
   10000[37] <- Multiply(EntityData[16], 32.0)
   10000[37] <- EntitySharedMemoryArray[10000[37]]
-  goto 234 if NotEqual(RuntimeTouchArray[10000[36]], 10000[37]) else 236
-236:
-  goto 237 if EntityData[2] else 238
-237:
+  goto 367 if NotEqual(RuntimeTouchArray[10000[36]], 10000[37]) else 369
+369:
+  goto 370 if EntityData[2] else 371
+370:
   10000[37] <- Multiply(Add(2.0, Multiply(2.0, Abs(EntityData[2]))), LevelData[12])
-  goto 239
-238:
+  goto 372
+371:
   10000[37] <- Multiply(6.0, LevelData[12])
-  goto 239
-239:
+  goto 372
+372:
   10000[38] <- Equal(EntityData[2], 0)
-  goto 241 if 10000[38] else 240
-240:
+  goto 374 if 10000[38] else 373
+373:
   10000[38] <- Greater(Multiply(RuntimeTouchArray[10000[36] + 11], EntityData[2]), 0)
-  goto 241
-241:
-  10000[0] <- 10000[10]
-  10000[1] <- 10000[11]
+  goto 374
+374:
+  10000[0] <- 10000[14]
+  10000[1] <- 10000[15]
   10000[2] <- 10000[30]
   10000[3] <- 10000[31]
   10000[4] <- 10000[33]
   10000[5] <- 10000[34]
   10000[6] <- 10000[23]
-  10000[7] <- 10000[26]
+  10000[7] <- 10000[25]
   10000[39] <- 0
   10000[40] <- 0
   10000[41] <- 3.0
-  goto 242
-242:
+  goto 375
+375:
+  goto 376 if And(And(GreaterOr(10000[40], -4.0), Less(10000[40], 4.0)), Equal(Trunc(10000[40]), 10000[40])) else 445
+376:
   10000[42] <- Multiply(Add(10000[40], Multiply(Less(10000[40], 0), 4.0)), 2.0)
   10000[42] <- 10000[10000[42] + 1]
+  goto 377 if And(And(GreaterOr(10000[41], -4.0), Less(10000[41], 4.0)), Equal(Trunc(10000[41]), 10000[41])) else 444
+377:
   10000[43] <- Multiply(Add(10000[41], Multiply(Less(10000[41], 0), 4.0)), 2.0)
   10000[43] <- 10000[10000[43] + 1]
-  goto 243 if NotEqual(Greater(10000[42], RuntimeTouchArray[10000[36] + 6]), Greater(10000[43], RuntimeTouchArray[10000[36] + 6])) else 245
-243:
+  goto 378 if NotEqual(Greater(10000[42], RuntimeTouchArray[10000[36] + 6]), Greater(10000[43], RuntimeTouchArray[10000[36] + 6])) else 392
+378:
+  goto 379 if And(And(GreaterOr(10000[41], -4.0), Less(10000[41], 4.0)), Equal(Trunc(10000[41]), 10000[41])) else 391
+379:
   10000[42] <- Multiply(Add(10000[41], Multiply(Less(10000[41], 0), 4.0)), 2.0)
   10000[42] <- 10000[10000[42]]
+  goto 380 if And(And(GreaterOr(10000[40], -4.0), Less(10000[40], 4.0)), Equal(Trunc(10000[40]), 10000[40])) else 390
+380:
   10000[43] <- Multiply(Add(10000[40], Multiply(Less(10000[40], 0), 4.0)), 2.0)
   10000[43] <- 10000[10000[43]]
+  goto 381 if And(And(GreaterOr(10000[40], -4.0), Less(10000[40], 4.0)), Equal(Trunc(10000[40]), 10000[40])) else 389
+381:
   10000[44] <- Multiply(Add(10000[40], Multiply(Less(10000[40], 0), 4.0)), 2.0)
   10000[44] <- 10000[10000[44] + 1]
+  goto 382 if And(And(GreaterOr(10000[41], -4.0), Less(10000[41], 4.0)), Equal(Trunc(10000[41]), 10000[41])) else 388
+382:
   10000[45] <- Multiply(Add(10000[41], Multiply(Less(10000[41], 0), 4.0)), 2.0)
   10000[45] <- 10000[10000[45] + 1]
+  goto 383 if And(And(GreaterOr(10000[40], -4.0), Less(10000[40], 4.0)), Equal(Trunc(10000[40]), 10000[40])) else 387
+383:
   10000[46] <- Multiply(Add(10000[40], Multiply(Less(10000[40], 0), 4.0)), 2.0)
   10000[46] <- 10000[10000[46] + 1]
+  goto 384 if And(And(GreaterOr(10000[40], -4.0), Less(10000[40], 4.0)), Equal(Trunc(10000[40]), 10000[40])) else 386
+384:
   10000[47] <- Multiply(Add(10000[40], Multiply(Less(10000[40], 0), 4.0)), 2.0)
   10000[47] <- 10000[10000[47]]
-  goto 244 if Less(RuntimeTouchArray[10000[36] + 5], Add(Divide(Multiply(Subtract(10000[42], 10000[43]), Subtract(RuntimeTouchArray[10000[36] + 6], 10000[44])), Subtract(10000[45], 10000[46])), 10000[47])) else 245
-244:
+  goto 385 if Less(RuntimeTouchArray[10000[36] + 5], Add(Divide(Multiply(Subtract(10000[42], 10000[43]), Subtract(RuntimeTouchArray[10000[36] + 6], 10000[44])), Subtract(10000[45], 10000[46])), 10000[47])) else 392
+385:
   10000[42] <- Not(10000[39])
-  goto 246
-245:
+  goto 393
+386:
+  DebugLog(50.0)
+  DebugPause()
+  goto exit
+387:
+  DebugLog(50.0)
+  DebugPause()
+  goto exit
+388:
+  DebugLog(50.0)
+  DebugPause()
+  goto exit
+389:
+  DebugLog(49.0)
+  DebugPause()
+  goto exit
+390:
+  DebugLog(48.0)
+  DebugPause()
+  goto exit
+391:
+  DebugLog(48.0)
+  DebugPause()
+  goto exit
+392:
   10000[42] <- 10000[39]
-  goto 246
-246:
+  goto 393
+393:
   10000[43] <- Add(10000[40], 1.0)
   10000[39] <- 10000[42]
   10000[41] <- 10000[40]
   10000[40] <- 10000[43]
-  goto 242 if Less(10000[40], 4.0) else 247
-247:
-  goto 248 if 10000[42] else 252
-248:
-  goto 249 if GreaterOr(RuntimeTouchArray[10000[36] + 13], 10000[37]) else 252
-249:
-  goto 250 if 10000[38] else 252
-250:
+  goto 375 if Less(10000[40], 4.0) else 394
+394:
+  goto 395 if 10000[42] else 399
+395:
+  goto 396 if GreaterOr(RuntimeTouchArray[10000[36] + 13], 10000[37]) else 399
+396:
+  goto 397 if 10000[38] else 399
+397:
   10000[37] <- EntityMemory[0]
-  goto 251 if Less(Abs(Subtract(Subtract(RuntimeUpdate[0], RuntimeEnvironment[3]), EntityData[11])), Abs(Subtract(10000[37], EntityData[11]))) else 252
-251:
+  goto 398 if Less(Abs(Subtract(Subtract(RuntimeUpdate[0], RuntimeEnvironment[3]), EntityData[11])), Abs(Subtract(10000[37], EntityData[11]))) else 399
+398:
   EntityMemory[0] <- Subtract(RuntimeUpdate[0], RuntimeEnvironment[3])
-  goto 253 if RuntimeTouchArray[10000[36] + 2] else 254
-252:
-  goto 253 if RuntimeTouchArray[10000[36] + 2] else 254
-253:
-  goto 255 if RuntimeTouchArray[10000[36] + 2] else 354
-254:
+  goto 400 if RuntimeTouchArray[10000[36] + 2] else 401
+399:
+  goto 400 if RuntimeTouchArray[10000[36] + 2] else 401
+400:
+  goto 402 if RuntimeTouchArray[10000[36] + 2] else 535
+401:
   10000[0] <- EntityMemory[0]
-  goto 255 if GreaterOr(10000[0], EntityData[11]) else 354
-255:
+  goto 402 if GreaterOr(10000[0], EntityData[11]) else 535
+402:
   10000[0] <- EntityMemory[0]
   10000[1] <- Judge(10000[0], EntityData[11], EntityData[5], EntityData[6], EntityData[7], EntityData[8], EntityData[9], EntityData[10])
   EntityInput[0] <- 10000[1]
   EntityInput[1] <- Clamp(Subtract(10000[0], EntityData[11]), -1.0, 1.0)
   10000[2] <- EntityInput[1]
   EntityInput[3] <- Multiply(10000[2], 1000.0)
-  goto 256 if NotEqual(10000[1], 0) else 291
-256:
-  goto 257 if Not(LevelOption[11]) else 269
-257:
+  goto 403 if NotEqual(10000[1], 0) else 443
+403:
+  goto 404 if Not(LevelOption[11]) else 418
+404:
+  goto 405 if And(And(GreaterOr(EntityInfo[1], -13.0), Less(EntityInfo[1], 13.0)), Equal(Trunc(EntityInfo[1]), EntityInfo[1])) else 417
+405:
   10000[2] <- Add(3.0, Add(EntityInfo[1], Multiply(Less(EntityInfo[1], 0), 13.0)))
   10000[2] <- EngineRom[10000[2]]
-  goto 269 if Not(LevelOption[10]) else 258
-258:
+  goto 418 if Not(LevelOption[10]) else 406
+406:
   goto when 10000[2]
-    6.0 -> 269
-    default -> 259
-259:
+    6.0 -> 418
+    default -> 407
+407:
   10000[3] <- 0
   goto when Subtract(10000[2], 2.0)
-    0.0 -> 264
-    1.0 -> 264
-    default -> 260
-260:
+    0.0 -> 412
+    1.0 -> 412
+    default -> 408
+408:
   goto when Subtract(10000[1], 1.0)
-    0.0 -> 263
-    1.0 -> 262
-    2.0 -> 261
-    default -> 268
-261:
+    0.0 -> 411
+    1.0 -> 410
+    2.0 -> 409
+    default -> 416
+409:
   10000[3] <- 3.0
-  goto 268
-262:
+  goto 416
+410:
   10000[3] <- 2.0
-  goto 268
-263:
+  goto 416
+411:
   10000[3] <- 1.0
-  goto 268
-264:
+  goto 416
+412:
   goto when Subtract(10000[1], 1.0)
-    0.0 -> 267
-    1.0 -> 266
-    2.0 -> 265
-    default -> 268
-265:
+    0.0 -> 415
+    1.0 -> 414
+    2.0 -> 413
+    default -> 416
+413:
   10000[3] <- 6.0
-  goto 268
-266:
+  goto 416
+414:
   10000[3] <- 5.0
-  goto 268
-267:
+  goto 416
+415:
   10000[3] <- 4.0
-  goto 268
-268:
+  goto 416
+416:
   Play(10000[3], 0)
-  goto 269
-269:
+  goto 418
+417:
+  DebugLog(51.0)
+  DebugPause()
+  goto exit
+418:
+  goto 419 if And(And(GreaterOr(EntityInfo[1], -13.0), Less(EntityInfo[1], 13.0)), Equal(Trunc(EntityInfo[1]), EntityInfo[1])) else 442
+419:
   10000[0] <- Add(3.0, Add(EntityInfo[1], Multiply(Less(EntityInfo[1], 0), 13.0)))
   10000[0] <- EngineRom[10000[0]]
   goto when 10000[0]
-    6.0 -> 291
-    default -> 270
-270:
-  goto 291 if Not(LevelOption[6]) else 271
-271:
+    6.0 -> 443
+    default -> 420
+420:
+  goto 443 if Not(LevelOption[6]) else 421
+421:
   10000[1] <- 0
   goto when 10000[0]
-    1.0 -> 277
-    2.0 -> 276
-    3.0 -> 273
-    4.0 -> 272
-    5.0 -> 272
-    7.0 -> 272
-    default -> 278
-272:
+    1.0 -> 427
+    2.0 -> 426
+    3.0 -> 423
+    4.0 -> 422
+    5.0 -> 422
+    7.0 -> 422
+    default -> 428
+422:
   10000[1] <- 3.0
-  goto 278
-273:
-  goto 274 if Greater(EntityData[2], 0) else 275
-274:
+  goto 428
+423:
+  goto 424 if Greater(EntityData[2], 0) else 425
+424:
   10000[1] <- 8.0
-  goto 278
-275:
+  goto 428
+425:
   10000[1] <- 10.0
-  goto 278
-276:
+  goto 428
+426:
   10000[1] <- 6.0
-  goto 278
-277:
+  goto 428
+427:
   10000[1] <- 1.0
-  goto 278
-278:
+  goto 428
+428:
   10000[2] <- Multiply(EntityData[0], LevelData[12])
   10000[3] <- Subtract(10000[2], Divide(LevelData[11], 2.0))
   10000[4] <- Add(Multiply(LevelData[8], 10000[3]), LevelData[10])
@@ -1241,31 +1693,31 @@
   SpawnParticleEffect(10000[1], 10000[5], 10000[6], Add(10000[5], 0), Add(10000[6], 10000[11]), Add(10000[9], 0), Add(10000[10], 10000[11]), 10000[9], 10000[10], 0.5, 0)
   10000[1] <- 0
   goto when 10000[0]
-    1.0 -> 284
-    2.0 -> 283
-    3.0 -> 280
-    4.0 -> 279
-    5.0 -> 279
-    7.0 -> 279
-    default -> 285
-279:
+    1.0 -> 434
+    2.0 -> 433
+    3.0 -> 430
+    4.0 -> 429
+    5.0 -> 429
+    7.0 -> 429
+    default -> 435
+429:
   10000[1] <- 4.0
-  goto 285
-280:
-  goto 281 if Greater(EntityData[2], 0) else 282
-281:
+  goto 435
+430:
+  goto 431 if Greater(EntityData[2], 0) else 432
+431:
   10000[1] <- 9.0
-  goto 285
-282:
+  goto 435
+432:
   10000[1] <- 11.0
-  goto 285
-283:
+  goto 435
+433:
   10000[1] <- 7.0
-  goto 285
-284:
+  goto 435
+434:
   10000[1] <- 2.0
-  goto 285
-285:
+  goto 435
+435:
   10000[2] <- Multiply(EntityData[0], LevelData[12])
   10000[3] <- Add(10000[2], Divide(Multiply(LevelData[11], 1.8), 2.0))
   10000[4] <- Subtract(10000[2], Divide(Multiply(LevelData[11], 1.8), 2.0))
@@ -1281,133 +1733,204 @@
   10000[14] <- Divide(Add(10000[10], 10000[12]), 2.0)
   10000[15] <- Divide(Add(10000[6], 10000[8]), 2.0)
   SpawnParticleEffect(10000[1], Subtract(10000[15], Divide(10000[13], 2.0)), Divide(Add(Add(Multiply(LevelData[5], 10000[4]), Multiply(LevelData[6], Subtract(0, Divide(Multiply(LevelData[11], 1.8), 2.0)))), LevelData[7]), 10000[5]), Subtract(10000[14], Divide(10000[13], 2.0)), Divide(Add(Add(Multiply(LevelData[5], 10000[4]), Multiply(LevelData[6], Add(0, Divide(Multiply(LevelData[11], 1.8), 2.0)))), LevelData[7]), 10000[9]), Add(10000[14], Divide(10000[13], 2.0)), Divide(Add(Add(Multiply(LevelData[5], 10000[3]), Multiply(LevelData[6], Add(0, Divide(Multiply(LevelData[11], 1.8), 2.0)))), LevelData[7]), 10000[11]), Add(10000[15], Divide(10000[13], 2.0)), Divide(Add(Add(Multiply(LevelData[5], 10000[3]), Multiply(LevelData[6], Subtract(0, Divide(Multiply(LevelData[11], 1.8), 2.0)))), LevelData[7]), 10000[7]), 0.5, 0)
-  goto 291 if Not(LevelOption[7]) else 286
-286:
+  goto 443 if Not(LevelOption[7]) else 436
+436:
   10000[0] <- 0
-  goto 287
-287:
-  goto 288 if Less(10000[0], LevelData[16]) else 354
-288:
+  goto 437
+437:
+  goto 438 if Less(10000[0], LevelData[16]) else 441
+438:
   10000[1] <- Add(10000[0], 1.0)
   10000[2] <- Add(16.0, Multiply(10000[0], 9.0))
-  goto 289 if Equal(LevelData[10000[2] + 1], EntityData[0]) else 290
-289:
+  goto 439 if Equal(LevelData[10000[2] + 1], EntityData[0]) else 440
+439:
   SpawnParticleEffect(0, LevelData[10000[2] + 2], LevelData[10000[2] + 3], LevelData[10000[2] + 4], LevelData[10000[2] + 5], LevelData[10000[2] + 6], LevelData[10000[2] + 7], LevelData[10000[2] + 8], LevelData[10000[2] + 9], 0.2, 0)
-  goto 291
-290:
+  goto 443
+440:
   10000[0] <- 10000[1]
-  goto 287
-291:
+  goto 437
+441:
+  DebugLog(53.0)
+  DebugPause()
+  goto exit
+442:
+  DebugLog(52.0)
+  DebugPause()
+  goto exit
+443:
   EntityDespawn[0] <- 1.0
   EntitySharedMemory[2] <- 1.0
   goto exit
-292:
-  goto 293 if LessOr(EntityData[14], RuntimeUpdate[0]) else 354
-293:
-  goto 354 if Not(LessOr(RuntimeUpdate[0], EntityData[15])) else 294
-294:
+444:
+  DebugLog(48.0)
+  DebugPause()
+  goto exit
+445:
+  DebugLog(48.0)
+  DebugPause()
+  goto exit
+446:
+  goto 447 if LessOr(EntityData[14], RuntimeUpdate[0]) else 535
+447:
+  goto 535 if Not(LessOr(RuntimeUpdate[0], EntityData[15])) else 448
+448:
   10000[35] <- 0
-  goto 295
-295:
-  goto 296 if Less(10000[35], RuntimeUpdate[3]) else 354
-296:
+  goto 449
+449:
+  goto 450 if Less(10000[35], RuntimeUpdate[3]) else 535
+450:
   10000[36] <- Multiply(10000[35], 15.0)
   10000[35] <- Add(10000[35], 1.0)
-  goto 297 if RuntimeTouchArray[10000[36] + 1] else 295
-297:
+  goto 451 if RuntimeTouchArray[10000[36] + 1] else 449
+451:
   10000[37] <- 0
-  goto 298
-298:
+  goto 452
+452:
   10000[38] <- LevelMemory[17]
-  goto 299 if Less(10000[37], 10000[38]) else 302
-299:
+  goto 453 if Less(10000[37], 10000[38]) else 458
+453:
   10000[38] <- LevelMemory[17]
+  goto 454 if And(And(GreaterOr(10000[37], Negate(10000[38])), Less(10000[37], 10000[38])), Equal(Trunc(10000[37]), 10000[37])) else 457
+454:
   10000[38] <- Add(17.0, Add(10000[37], Multiply(Less(10000[37], 0), 10000[38])))
   10000[38] <- LevelMemory[10000[38] + 1]
-  goto 300 if Equal(10000[38], RuntimeTouchArray[10000[36]]) else 301
-300:
+  goto 455 if Equal(10000[38], RuntimeTouchArray[10000[36]]) else 456
+455:
   10000[37] <- 1.0
-  goto 303
-301:
+  goto 459
+456:
   10000[37] <- Add(10000[37], 1.0)
-  goto 298
-302:
+  goto 452
+457:
+  DebugLog(3.0)
+  DebugPause()
+  goto exit
+458:
   10000[37] <- 0
-  goto 303
-303:
-  goto 304 if Not(10000[37]) else 295
-304:
-  10000[0] <- 10000[10]
-  10000[1] <- 10000[11]
+  goto 459
+459:
+  goto 460 if Not(10000[37]) else 449
+460:
+  10000[0] <- 10000[14]
+  10000[1] <- 10000[15]
   10000[2] <- 10000[30]
   10000[3] <- 10000[31]
   10000[4] <- 10000[33]
   10000[5] <- 10000[34]
   10000[6] <- 10000[23]
-  10000[7] <- 10000[26]
+  10000[7] <- 10000[25]
   10000[37] <- 0
   10000[38] <- 0
   10000[39] <- 3.0
-  goto 305
-305:
+  goto 461
+461:
+  goto 462 if And(And(GreaterOr(10000[38], -4.0), Less(10000[38], 4.0)), Equal(Trunc(10000[38]), 10000[38])) else 534
+462:
   10000[40] <- Multiply(Add(10000[38], Multiply(Less(10000[38], 0), 4.0)), 2.0)
   10000[40] <- 10000[10000[40] + 1]
+  goto 463 if And(And(GreaterOr(10000[39], -4.0), Less(10000[39], 4.0)), Equal(Trunc(10000[39]), 10000[39])) else 533
+463:
   10000[41] <- Multiply(Add(10000[39], Multiply(Less(10000[39], 0), 4.0)), 2.0)
   10000[41] <- 10000[10000[41] + 1]
-  goto 306 if NotEqual(Greater(10000[40], RuntimeTouchArray[10000[36] + 6]), Greater(10000[41], RuntimeTouchArray[10000[36] + 6])) else 308
-306:
+  goto 464 if NotEqual(Greater(10000[40], RuntimeTouchArray[10000[36] + 6]), Greater(10000[41], RuntimeTouchArray[10000[36] + 6])) else 478
+464:
+  goto 465 if And(And(GreaterOr(10000[39], -4.0), Less(10000[39], 4.0)), Equal(Trunc(10000[39]), 10000[39])) else 477
+465:
   10000[40] <- Multiply(Add(10000[39], Multiply(Less(10000[39], 0), 4.0)), 2.0)
   10000[40] <- 10000[10000[40]]
+  goto 466 if And(And(GreaterOr(10000[38], -4.0), Less(10000[38], 4.0)), Equal(Trunc(10000[38]), 10000[38])) else 476
+466:
   10000[41] <- Multiply(Add(10000[38], Multiply(Less(10000[38], 0), 4.0)), 2.0)
   10000[41] <- 10000[10000[41]]
+  goto 467 if And(And(GreaterOr(10000[38], -4.0), Less(10000[38], 4.0)), Equal(Trunc(10000[38]), 10000[38])) else 475
+467:
   10000[42] <- Multiply(Add(10000[38], Multiply(Less(10000[38], 0), 4.0)), 2.0)
   10000[42] <- 10000[10000[42] + 1]
+  goto 468 if And(And(GreaterOr(10000[39], -4.0), Less(10000[39], 4.0)), Equal(Trunc(10000[39]), 10000[39])) else 474
+468:
   10000[43] <- Multiply(Add(10000[39], Multiply(Less(10000[39], 0), 4.0)), 2.0)
   10000[43] <- 10000[10000[43] + 1]
+  goto 469 if And(And(GreaterOr(10000[38], -4.0), Less(10000[38], 4.0)), Equal(Trunc(10000[38]), 10000[38])) else 473
+469:
   10000[44] <- Multiply(Add(10000[38], Multiply(Less(10000[38], 0), 4.0)), 2.0)
   10000[44] <- 10000[10000[44] + 1]
+  goto 470 if And(And(GreaterOr(10000[38], -4.0), Less(10000[38], 4.0)), Equal(Trunc(10000[38]), 10000[38])) else 472
+470:
   10000[45] <- Multiply(Add(10000[38], Multiply(Less(10000[38], 0), 4.0)), 2.0)
   10000[45] <- 10000[10000[45]]
-  goto 307 if Less(RuntimeTouchArray[10000[36] + 5], Add(Divide(Multiply(Subtract(10000[40], 10000[41]), Subtract(RuntimeTouchArray[10000[36] + 6], 10000[42])), Subtract(10000[43], 10000[44])), 10000[45])) else 308
-307:
+  goto 471 if Less(RuntimeTouchArray[10000[36] + 5], Add(Divide(Multiply(Subtract(10000[40], 10000[41]), Subtract(RuntimeTouchArray[10000[36] + 6], 10000[42])), Subtract(10000[43], 10000[44])), 10000[45])) else 478
+471:
   10000[40] <- Not(10000[37])
-  goto 309
-308:
+  goto 479
+472:
+  DebugLog(6.0)
+  DebugPause()
+  goto exit
+473:
+  DebugLog(6.0)
+  DebugPause()
+  goto exit
+474:
+  DebugLog(6.0)
+  DebugPause()
+  goto exit
+475:
+  DebugLog(5.0)
+  DebugPause()
+  goto exit
+476:
+  DebugLog(4.0)
+  DebugPause()
+  goto exit
+477:
+  DebugLog(4.0)
+  DebugPause()
+  goto exit
+478:
   10000[40] <- 10000[37]
-  goto 309
-309:
+  goto 479
+479:
   10000[41] <- Add(10000[38], 1.0)
   10000[37] <- 10000[40]
   10000[39] <- 10000[38]
   10000[38] <- 10000[41]
-  goto 305 if Less(10000[38], 4.0) else 310
-310:
-  goto 295 if Not(10000[40]) else 311
-311:
+  goto 461 if Less(10000[38], 4.0) else 480
+480:
+  goto 449 if Not(10000[40]) else 481
+481:
   10000[37] <- LevelMemory[17]
-  goto 317 if GreaterOr(10000[37], 16.0) else 312
-312:
+  goto 490 if GreaterOr(10000[37], 16.0) else 482
+482:
   10000[37] <- 0
-  goto 313
-313:
+  goto 483
+483:
   10000[38] <- LevelMemory[17]
-  goto 314 if Less(10000[37], 10000[38]) else 316
-314:
+  goto 484 if Less(10000[37], 10000[38]) else 488
+484:
   10000[38] <- LevelMemory[17]
+  goto 485 if And(And(GreaterOr(10000[37], Negate(10000[38])), Less(10000[37], 10000[38])), Equal(Trunc(10000[37]), 10000[37])) else 487
+485:
   10000[38] <- Add(17.0, Add(10000[37], Multiply(Less(10000[37], 0), 10000[38])))
   10000[38] <- LevelMemory[10000[38] + 1]
-  goto 317 if Equal(10000[38], RuntimeTouchArray[10000[36]]) else 315
-315:
+  goto 490 if Equal(10000[38], RuntimeTouchArray[10000[36]]) else 486
+486:
   10000[37] <- Add(10000[37], 1.0)
-  goto 313
-316:
+  goto 483
+487:
+  DebugLog(7.0)
+  DebugPause()
+  goto exit
+488:
+  10000[37] <- LevelMemory[17]
+  goto 489 if Less(10000[37], 16.0) else 532
+489:
   10000[37] <- LevelMemory[17]
   10000[37] <- Add(17.0, 10000[37])
   LevelMemory[10000[37] + 1] <- RuntimeTouchArray[10000[36]]
   10000[37] <- LevelMemory[17]
   LevelMemory[17] <- Add(10000[37], 1.0)
-  goto 317
-317:
+  goto 490
+490:
   10000[37] <- Multiply(EntityData[16], 32.0)
   EntitySharedMemoryArray[10000[37]] <- RuntimeTouchArray[10000[36]]
   10000[37] <- Judge(RuntimeTouchArray[10000[36] + 4], EntityData[11], EntityData[5], EntityData[6], EntityData[7], EntityData[8], EntityData[9], EntityData[10])
@@ -1415,92 +1938,100 @@
   EntityInput[1] <- Clamp(Subtract(RuntimeTouchArray[10000[36] + 4], EntityData[11]), -1.0, 1.0)
   10000[38] <- EntityInput[1]
   EntityInput[3] <- Multiply(10000[38], 1000.0)
-  goto 318 if NotEqual(10000[37], 0) else 353
-318:
-  goto 319 if Not(LevelOption[11]) else 331
-319:
+  goto 491 if NotEqual(10000[37], 0) else 531
+491:
+  goto 492 if Not(LevelOption[11]) else 506
+492:
+  goto 493 if And(And(GreaterOr(EntityInfo[1], -13.0), Less(EntityInfo[1], 13.0)), Equal(Trunc(EntityInfo[1]), EntityInfo[1])) else 505
+493:
   10000[38] <- Add(3.0, Add(EntityInfo[1], Multiply(Less(EntityInfo[1], 0), 13.0)))
   10000[38] <- EngineRom[10000[38]]
-  goto 331 if Not(LevelOption[10]) else 320
-320:
+  goto 506 if Not(LevelOption[10]) else 494
+494:
   goto when 10000[38]
-    6.0 -> 331
-    default -> 321
-321:
+    6.0 -> 506
+    default -> 495
+495:
   10000[39] <- 0
   goto when Subtract(10000[38], 2.0)
-    0.0 -> 326
-    1.0 -> 326
-    default -> 322
-322:
+    0.0 -> 500
+    1.0 -> 500
+    default -> 496
+496:
   goto when Subtract(10000[37], 1.0)
-    0.0 -> 325
-    1.0 -> 324
-    2.0 -> 323
-    default -> 330
-323:
+    0.0 -> 499
+    1.0 -> 498
+    2.0 -> 497
+    default -> 504
+497:
   10000[39] <- 3.0
-  goto 330
-324:
+  goto 504
+498:
   10000[39] <- 2.0
-  goto 330
-325:
+  goto 504
+499:
   10000[39] <- 1.0
-  goto 330
-326:
+  goto 504
+500:
   goto when Subtract(10000[37], 1.0)
-    0.0 -> 329
-    1.0 -> 328
-    2.0 -> 327
-    default -> 330
-327:
+    0.0 -> 503
+    1.0 -> 502
+    2.0 -> 501
+    default -> 504
+501:
   10000[39] <- 6.0
-  goto 330
-328:
+  goto 504
+502:
   10000[39] <- 5.0
-  goto 330
-329:
+  goto 504
+503:
   10000[39] <- 4.0
-  goto 330
-330:
+  goto 504
+504:
   Play(10000[39], 0)
-  goto 331
-331:
+  goto 506
+505:
+  DebugLog(9.0)
+  DebugPause()
+  goto exit
+506:
+  goto 507 if And(And(GreaterOr(EntityInfo[1], -13.0), Less(EntityInfo[1], 13.0)), Equal(Trunc(EntityInfo[1]), EntityInfo[1])) else 530
+507:
   10000[0] <- Add(3.0, Add(EntityInfo[1], Multiply(Less(EntityInfo[1], 0), 13.0)))
   10000[0] <- EngineRom[10000[0]]
   goto when 10000[0]
-    6.0 -> 353
-    default -> 332
-332:
-  goto 353 if Not(LevelOption[6]) else 333
-333:
+    6.0 -> 531
+    default -> 508
+508:
+  goto 531 if Not(LevelOption[6]) else 509
+509:
   10000[1] <- 0
   goto when 10000[0]
-    1.0 -> 339
-    2.0 -> 338
-    3.0 -> 335
-    4.0 -> 334
-    5.0 -> 334
-    7.0 -> 334
-    default -> 340
-334:
+    1.0 -> 515
+    2.0 -> 514
+    3.0 -> 511
+    4.0 -> 510
+    5.0 -> 510
+    7.0 -> 510
+    default -> 516
+510:
   10000[1] <- 3.0
-  goto 340
-335:
-  goto 336 if Greater(EntityData[2], 0) else 337
-336:
+  goto 516
+511:
+  goto 512 if Greater(EntityData[2], 0) else 513
+512:
   10000[1] <- 8.0
-  goto 340
-337:
+  goto 516
+513:
   10000[1] <- 10.0
-  goto 340
-338:
+  goto 516
+514:
   10000[1] <- 6.0
-  goto 340
-339:
+  goto 516
+515:
   10000[1] <- 1.0
-  goto 340
-340:
+  goto 516
+516:
   10000[2] <- Multiply(EntityData[0], LevelData[12])
   10000[3] <- Subtract(10000[2], Divide(LevelData[11], 2.0))
   10000[4] <- Add(Multiply(LevelData[8], 10000[3]), LevelData[10])
@@ -1514,31 +2045,31 @@
   SpawnParticleEffect(10000[1], 10000[5], 10000[6], Add(10000[5], 0), Add(10000[6], 10000[11]), Add(10000[9], 0), Add(10000[10], 10000[11]), 10000[9], 10000[10], 0.5, 0)
   10000[1] <- 0
   goto when 10000[0]
-    1.0 -> 346
-    2.0 -> 345
-    3.0 -> 342
-    4.0 -> 341
-    5.0 -> 341
-    7.0 -> 341
-    default -> 347
-341:
+    1.0 -> 522
+    2.0 -> 521
+    3.0 -> 518
+    4.0 -> 517
+    5.0 -> 517
+    7.0 -> 517
+    default -> 523
+517:
   10000[1] <- 4.0
-  goto 347
-342:
-  goto 343 if Greater(EntityData[2], 0) else 344
-343:
+  goto 523
+518:
+  goto 519 if Greater(EntityData[2], 0) else 520
+519:
   10000[1] <- 9.0
-  goto 347
-344:
+  goto 523
+520:
   10000[1] <- 11.0
-  goto 347
-345:
+  goto 523
+521:
   10000[1] <- 7.0
-  goto 347
-346:
+  goto 523
+522:
   10000[1] <- 2.0
-  goto 347
-347:
+  goto 523
+523:
   10000[2] <- Multiply(EntityData[0], LevelData[12])
   10000[3] <- Add(10000[2], Divide(Multiply(LevelData[11], 1.8), 2.0))
   10000[4] <- Subtract(10000[2], Divide(Multiply(LevelData[11], 1.8), 2.0))
@@ -1554,25 +2085,49 @@
   10000[14] <- Divide(Add(10000[10], 10000[12]), 2.0)
   10000[15] <- Divide(Add(10000[6], 10000[8]), 2.0)
   SpawnParticleEffect(10000[1], Subtract(10000[15], Divide(10000[13], 2.0)), Divide(Add(Add(Multiply(LevelData[5], 10000[4]), Multiply(LevelData[6], Subtract(0, Divide(Multiply(LevelData[11], 1.8), 2.0)))), LevelData[7]), 10000[5]), Subtract(10000[14], Divide(10000[13], 2.0)), Divide(Add(Add(Multiply(LevelData[5], 10000[4]), Multiply(LevelData[6], Add(0, Divide(Multiply(LevelData[11], 1.8), 2.0)))), LevelData[7]), 10000[9]), Add(10000[14], Divide(10000[13], 2.0)), Divide(Add(Add(Multiply(LevelData[5], 10000[3]), Multiply(LevelData[6], Add(0, Divide(Multiply(LevelData[11], 1.8), 2.0)))), LevelData[7]), 10000[11]), Add(10000[15], Divide(10000[13], 2.0)), Divide(Add(Add(Multiply(LevelData[5], 10000[3]), Multiply(LevelData[6], Subtract(0, Divide(Multiply(LevelData[11], 1.8), 2.0)))), LevelData[7]), 10000[7]), 0.5, 0)
-  goto 353 if Not(LevelOption[7]) else 348
-348:
+  goto 531 if Not(LevelOption[7]) else 524
+524:
   10000[0] <- 0
-  goto 349
-349:
-  goto 350 if Less(10000[0], LevelData[16]) else 354
-350:
+  goto 525
+525:
+  goto 526 if Less(10000[0], LevelData[16]) else 529
+526:
   10000[1] <- Add(10000[0], 1.0)
   10000[2] <- Add(16.0, Multiply(10000[0], 9.0))
-  goto 351 if Equal(LevelData[10000[2] + 1], EntityData[0]) else 352
-351:
+  goto 527 if Equal(LevelData[10000[2] + 1], EntityData[0]) else 528
+527:
   SpawnParticleEffect(0, LevelData[10000[2] + 2], LevelData[10000[2] + 3], LevelData[10000[2] + 4], LevelData[10000[2] + 5], LevelData[10000[2] + 6], LevelData[10000[2] + 7], LevelData[10000[2] + 8], LevelData[10000[2] + 9], 0.2, 0)
-  goto 353
-352:
+  goto 531
+528:
   10000[0] <- 10000[1]
-  goto 349
-353:
+  goto 525
+529:
+  DebugLog(11.0)
+  DebugPause()
+  goto exit
+530:
+  DebugLog(10.0)
+  DebugPause()
+  goto exit
+531:
   EntityDespawn[0] <- 1.0
   EntitySharedMemory[2] <- 1.0
   goto exit
-354:
+532:
+  DebugLog(8.0)
+  DebugPause()
+  goto exit
+533:
+  DebugLog(4.0)
+  DebugPause()
+  goto exit
+534:
+  DebugLog(4.0)
+  DebugPause()
+  goto exit
+535:
+  goto exit
+536:
+  DebugLog(2.0)
+  DebugPause()
   goto exit

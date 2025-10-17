@@ -8,7 +8,7 @@ Block(JumpLoop(
       0
     )
     1
-    3
+    6
   ))
   Execute(If(
     Not(Greater(
@@ -19,7 +19,7 @@ Block(JumpLoop(
       0
     ))
     2
-    3
+    6
   ))
   Execute(
     Set(
@@ -33,6 +33,36 @@ Block(JumpLoop(
         3
       )
     )
+    If(
+      LessOr(
+        0
+        Get(
+          4103
+          Get(
+            10000
+            0
+          )
+        )
+      )
+      3
+      5
+    )
+  )
+  Execute(If(
+    Less(
+      Get(
+        4103
+        Get(
+          10000
+          0
+        )
+      )
+      99999
+    )
+    4
+    5
+  ))
+  Execute(
     StreamSet(
       Add(
         Multiply(
@@ -63,8 +93,13 @@ Block(JumpLoop(
       0
       0
     )
-    4
+    7
   )
-  Execute(4)
+  Execute(
+    DebugLog(1)
+    DebugPause()
+    7
+  )
+  Execute(7)
   0
 ))

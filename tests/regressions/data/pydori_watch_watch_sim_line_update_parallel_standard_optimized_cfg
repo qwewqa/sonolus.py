@@ -1,8 +1,8 @@
 0:
   10000[0] <- Multiply(EntityData[0], 32.0)
-  10000[8] <- Multiply(EntityData[1], 32.0)
-  10000[9] <- Add(6.0, Multiply(EntityData[0], 32.0))
-  10000[1] <- Remap(Subtract(EntityDataArray[10000[9]], Divide(6.0, LevelOption[1])), EntityDataArray[10000[9]], LevelData[14], 0, RuntimeUpdate[2])
+  10000[7] <- Multiply(EntityData[1], 32.0)
+  10000[8] <- Add(6.0, Multiply(EntityData[0], 32.0))
+  10000[1] <- Remap(Subtract(EntityDataArray[10000[8]], Divide(6.0, LevelOption[1])), EntityDataArray[10000[8]], LevelData[14], 0, RuntimeUpdate[2])
   goto 11 if Not(LevelOption[8]) else 1
 1:
   goto 2 if LessOr(10000[1], LevelData[15]) else 3
@@ -34,12 +34,12 @@
   goto exit
 12:
   10000[5] <- Multiply(EntityDataArray[10000[0]], LevelData[12])
-  10000[6] <- Multiply(EntityDataArray[10000[8]], LevelData[12])
-  10000[7] <- Subtract(10000[1], Divide(LevelData[11], 2.0))
+  10000[6] <- Multiply(EntityDataArray[10000[7]], LevelData[12])
+  10000[8] <- Subtract(10000[1], Divide(LevelData[11], 2.0))
   10000[9] <- Add(10000[1], Divide(LevelData[11], 2.0))
-  10000[10] <- Add(Add(Multiply(LevelData[8], 10000[5]), Multiply(LevelData[9], 10000[7])), LevelData[10])
-  10000[11] <- Add(Add(Multiply(LevelData[8], 10000[6]), Multiply(LevelData[9], 10000[7])), LevelData[10])
+  10000[10] <- Add(Add(Multiply(LevelData[8], 10000[5]), Multiply(LevelData[9], 10000[8])), LevelData[10])
+  10000[11] <- Add(Add(Multiply(LevelData[8], 10000[6]), Multiply(LevelData[9], 10000[8])), LevelData[10])
   10000[2] <- Add(Add(Multiply(LevelData[8], 10000[5]), Multiply(LevelData[9], 10000[9])), LevelData[10])
   10000[3] <- Add(Add(Multiply(LevelData[8], 10000[6]), Multiply(LevelData[9], 10000[9])), LevelData[10])
-  Draw(18.0, Divide(Add(Add(Multiply(LevelData[2], 10000[5]), Multiply(LevelData[3], 10000[7])), LevelData[4]), 10000[10]), Divide(Add(Add(Multiply(LevelData[5], 10000[5]), Multiply(LevelData[6], 10000[7])), LevelData[7]), 10000[10]), Divide(Add(Add(Multiply(LevelData[2], 10000[5]), Multiply(LevelData[3], 10000[9])), LevelData[4]), 10000[2]), Divide(Add(Add(Multiply(LevelData[5], 10000[5]), Multiply(LevelData[6], 10000[9])), LevelData[7]), 10000[2]), Divide(Add(Add(Multiply(LevelData[2], 10000[6]), Multiply(LevelData[3], 10000[9])), LevelData[4]), 10000[3]), Divide(Add(Add(Multiply(LevelData[5], 10000[6]), Multiply(LevelData[6], 10000[9])), LevelData[7]), 10000[3]), Divide(Add(Add(Multiply(LevelData[2], 10000[6]), Multiply(LevelData[3], 10000[7])), LevelData[4]), 10000[11]), Divide(Add(Add(Multiply(LevelData[5], 10000[6]), Multiply(LevelData[6], 10000[7])), LevelData[7]), 10000[11]), Add(Add(220000.0, Multiply(Min(EntityDataArray[10000[0]], EntityDataArray[10000[8]]), 100.0)), 10000[1]), 10000[4])
+  Draw(18.0, Divide(Add(Add(Multiply(LevelData[2], 10000[5]), Multiply(LevelData[3], 10000[8])), LevelData[4]), 10000[10]), Divide(Add(Add(Multiply(LevelData[5], 10000[5]), Multiply(LevelData[6], 10000[8])), LevelData[7]), 10000[10]), Divide(Add(Add(Multiply(LevelData[2], 10000[5]), Multiply(LevelData[3], 10000[9])), LevelData[4]), 10000[2]), Divide(Add(Add(Multiply(LevelData[5], 10000[5]), Multiply(LevelData[6], 10000[9])), LevelData[7]), 10000[2]), Divide(Add(Add(Multiply(LevelData[2], 10000[6]), Multiply(LevelData[3], 10000[9])), LevelData[4]), 10000[3]), Divide(Add(Add(Multiply(LevelData[5], 10000[6]), Multiply(LevelData[6], 10000[9])), LevelData[7]), 10000[3]), Divide(Add(Add(Multiply(LevelData[2], 10000[6]), Multiply(LevelData[3], 10000[8])), LevelData[4]), 10000[11]), Divide(Add(Add(Multiply(LevelData[5], 10000[6]), Multiply(LevelData[6], 10000[8])), LevelData[7]), 10000[11]), Add(Add(220000.0, Multiply(Min(EntityDataArray[10000[0]], EntityDataArray[10000[7]]), 100.0)), 10000[1]), 10000[4])
   goto exit

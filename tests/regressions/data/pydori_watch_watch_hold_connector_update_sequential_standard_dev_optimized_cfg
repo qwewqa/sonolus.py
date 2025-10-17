@@ -1,26 +1,34 @@
 0:
   10000[0] <- Add(5.0, Multiply(EntityData[0], 32.0))
-  goto 1 if LessOr(EntityDataArray[10000[0]], RuntimeUpdate[0]) else 8
+  goto 1 if LessOr(EntityDataArray[10000[0]], RuntimeUpdate[0]) else 11
 1:
   10000[0] <- Add(5.0, Multiply(EntityData[1], 32.0))
-  goto 2 if Less(RuntimeUpdate[0], EntityDataArray[10000[0]]) else 8
+  goto 2 if Less(RuntimeUpdate[0], EntityDataArray[10000[0]]) else 11
 2:
   10000[0] <- Add(9.0, Multiply(EntityData[0], 32.0))
-  goto 3 if RuntimeEnvironment[4] else 7
+  goto 3 if RuntimeEnvironment[4] else 10
 3:
   10000[0] <- Add(9.0, Multiply(EntityDataArray[10000[0]], 32.0))
   10000[0] <- Multiply(EntityDataArray[10000[0]], 3.0)
-  10000[0] <- Add(EntityInfoArray[10000[0]], 18.0)
-  goto 4 if StreamHas(10000[0], RuntimeUpdate[0]) else 5
+  goto 4 if LessOr(0, EntityInfoArray[10000[0]]) else 9
 4:
-  10000[1] <- RuntimeUpdate[0]
-  goto 6
+  goto 5 if Less(EntityInfoArray[10000[0]], 99999.0) else 9
 5:
-  10000[1] <- StreamGetPreviousKey(10000[0], RuntimeUpdate[0])
-  goto 6
+  10000[0] <- Add(EntityInfoArray[10000[0]], 18.0)
+  goto 6 if StreamHas(10000[0], RuntimeUpdate[0]) else 7
 6:
-  goto 7 if StreamGetValue(10000[0], 10000[1]) else 8
+  10000[1] <- RuntimeUpdate[0]
+  goto 8
 7:
+  10000[1] <- StreamGetPreviousKey(10000[0], RuntimeUpdate[0])
+  goto 8
+8:
+  goto 10 if StreamGetValue(10000[0], 10000[1]) else 11
+9:
+  DebugLog(1.0)
+  DebugPause()
+  goto exit
+10:
   10000[0] <- Add(6.0, Multiply(EntityData[0], 32.0))
   10000[1] <- Add(6.0, Multiply(EntityData[1], 32.0))
   10000[2] <- Multiply(EntityData[0], 32.0)
@@ -30,5 +38,5 @@
   10000[4] <- Multiply(EntityDataArray[10000[4]], 32.0)
   EntitySharedMemoryArray[10000[4]] <- Remap(Remap(Subtract(EntityDataArray[10000[0]], Divide(6.0, LevelOption[1])), EntityDataArray[10000[0]], LevelData[14], 0, RuntimeUpdate[2]), Remap(Subtract(EntityDataArray[10000[1]], Divide(6.0, LevelOption[1])), EntityDataArray[10000[1]], LevelData[14], 0, RuntimeUpdate[2]), EntityDataArray[10000[2]], EntityDataArray[10000[3]], 0)
   goto exit
-8:
+11:
   goto exit

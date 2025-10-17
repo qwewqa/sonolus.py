@@ -68,7 +68,7 @@
   10000[0] <- -3.0
   goto 1
 1:
-  goto 2 if Less(10000[0], 4.0) else 8
+  goto 2 if Less(10000[0], 4.0) else 10
 2:
   10000[1] <- Add(10000[0], 1.0)
   10000[2] <- TutorialData[12]
@@ -153,6 +153,9 @@
   goto 3
 7:
   10000[43] <- TutorialData[16]
+  goto 8 if Less(10000[43], 7.0) else 9
+8:
+  10000[43] <- TutorialData[16]
   10000[43] <- Add(16.0, Multiply(10000[43], 9.0))
   TutorialData[10000[43] + 1] <- 10000[0]
   TutorialData[10000[43] + 2] <- 10000[14]
@@ -167,7 +170,11 @@
   TutorialData[16] <- Add(10000[2], 1.0)
   10000[0] <- 10000[1]
   goto 1
-8:
+9:
+  DebugLog(1.0)
+  DebugPause()
+  goto exit
+10:
   10000[0] <- TutorialData[12]
   10000[0] <- Multiply(-3.5, 10000[0])
   10000[1] <- TutorialData[13]

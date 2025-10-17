@@ -64,7 +64,7 @@ Block(JumpLoop(
       0
     )
     4
-    5
+    10
   ))
   Execute(
     Set(
@@ -105,6 +105,57 @@ Block(JumpLoop(
         )
       )
     )
+    If(
+      Get(
+        10000
+        3
+      )
+      5
+      6
+    )
+  )
+  Execute(
+    Set(
+      10000
+      3
+      Less(
+        Get(
+          4103
+          Get(
+            10000
+            2
+          )
+        )
+        99999
+      )
+    )
+    Set(
+      10000
+      0
+      Get(
+        10000
+        3
+      )
+    )
+    7
+  )
+  Execute(
+    Set(
+      10000
+      0
+      0
+    )
+    7
+  )
+  Execute(If(
+    Get(
+      10000
+      0
+    )
+    8
+    9
+  ))
+  Execute(
     Set(
       10000
       0
@@ -237,8 +288,13 @@ Block(JumpLoop(
         3
       )
     )
-    5
+    10
   )
-  Execute(6)
+  Execute(
+    DebugLog(1)
+    DebugPause()
+    11
+  )
+  Execute(11)
   0
 ))

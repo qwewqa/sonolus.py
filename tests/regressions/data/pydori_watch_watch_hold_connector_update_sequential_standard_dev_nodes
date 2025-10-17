@@ -29,7 +29,7 @@ Block(JumpLoop(
         )
       )
       1
-      8
+      11
     )
   )
   Execute(
@@ -62,7 +62,7 @@ Block(JumpLoop(
         )
       )
       2
-      8
+      11
     )
   )
   Execute(
@@ -86,7 +86,7 @@ Block(JumpLoop(
         4
       )
       3
-      7
+      10
     )
   )
   Execute(
@@ -121,6 +121,36 @@ Block(JumpLoop(
         3
       )
     )
+    If(
+      LessOr(
+        0
+        Get(
+          4103
+          Get(
+            10000
+            0
+          )
+        )
+      )
+      4
+      9
+    )
+  )
+  Execute(If(
+    Less(
+      Get(
+        4103
+        Get(
+          10000
+          0
+        )
+      )
+      99999
+    )
+    5
+    9
+  ))
+  Execute(
     Set(
       10000
       0
@@ -146,8 +176,8 @@ Block(JumpLoop(
           0
         )
       )
-      4
-      5
+      6
+      7
     )
   )
   Execute(
@@ -159,7 +189,7 @@ Block(JumpLoop(
         0
       )
     )
-    6
+    8
   )
   Execute(
     Set(
@@ -176,7 +206,7 @@ Block(JumpLoop(
         )
       )
     )
-    6
+    8
   )
   Execute(If(
     StreamGetValue(
@@ -189,9 +219,14 @@ Block(JumpLoop(
         1
       )
     )
-    7
-    8
+    10
+    11
   ))
+  Execute(
+    DebugLog(1)
+    DebugPause()
+    12
+  )
   Execute(
     Set(
       10000
@@ -380,8 +415,8 @@ Block(JumpLoop(
         0
       )
     )
-    9
+    12
   )
-  Execute(9)
+  Execute(12)
   0
 ))

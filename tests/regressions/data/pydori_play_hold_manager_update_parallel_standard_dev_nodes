@@ -125,7 +125,7 @@ Block(JumpLoop(
       0
       1
     )
-    18
+    21
   )
   Execute(
     Set(
@@ -133,7 +133,7 @@ Block(JumpLoop(
       0
       1
     )
-    18
+    21
   )
   Execute(
     Set(
@@ -172,7 +172,7 @@ Block(JumpLoop(
           )
         )
       )
-      17
+      19
       7
     )
   )
@@ -232,6 +232,36 @@ Block(JumpLoop(
         3
       )
     )
+    If(
+      LessOr(
+        0
+        Get(
+          4103
+          Get(
+            10000
+            1
+          )
+        )
+      )
+      8
+      20
+    )
+  )
+  Execute(If(
+    Less(
+      Get(
+        4103
+        Get(
+          10000
+          1
+        )
+      )
+      99999
+    )
+    9
+    20
+  ))
+  Execute(
     StreamSet(
       Add(
         Multiply(
@@ -308,8 +338,8 @@ Block(JumpLoop(
         )
         0
       )
-      8
-      13
+      10
+      15
     )
   )
   Execute(
@@ -1648,8 +1678,8 @@ Block(JumpLoop(
         10000
         22
       )
-      9
-      10
+      11
+      12
     )
   )
   Execute(
@@ -1704,8 +1734,8 @@ Block(JumpLoop(
         2002
         10
       ))
-      17
-      11
+      19
+      13
     )
   )
   Execute(
@@ -1763,8 +1793,8 @@ Block(JumpLoop(
         2002
         10
       ))
-      17
-      11
+      19
+      13
     )
   )
   Execute(
@@ -1781,8 +1811,8 @@ Block(JumpLoop(
         10000
         0
       )
-      17
-      12
+      19
+      14
     )
   )
   Execute(
@@ -1799,7 +1829,7 @@ Block(JumpLoop(
         0
       )
     )
-    18
+    21
   )
   Execute(
     Set(
@@ -1808,47 +1838,6 @@ Block(JumpLoop(
       Get(
         4000
         2
-      )
-    )
-    If(
-      NotEqual(
-        Get(
-          10000
-          0
-        )
-        0
-      )
-      14
-      15
-    )
-  )
-  Execute(
-    Set(
-      10000
-      0
-      Get(
-        4000
-        2
-      )
-    )
-    DestroyParticleEffect(Get(
-      10000
-      0
-    ))
-    Set(
-      4000
-      2
-      0
-    )
-    15
-  )
-  Execute(
-    Set(
-      10000
-      0
-      Get(
-        4000
-        3
       )
     )
     If(
@@ -1869,6 +1858,47 @@ Block(JumpLoop(
       0
       Get(
         4000
+        2
+      )
+    )
+    DestroyParticleEffect(Get(
+      10000
+      0
+    ))
+    Set(
+      4000
+      2
+      0
+    )
+    17
+  )
+  Execute(
+    Set(
+      10000
+      0
+      Get(
+        4000
+        3
+      )
+    )
+    If(
+      NotEqual(
+        Get(
+          10000
+          0
+        )
+        0
+      )
+      18
+      19
+    )
+  )
+  Execute(
+    Set(
+      10000
+      0
+      Get(
+        4000
         3
       )
     )
@@ -1881,8 +1911,13 @@ Block(JumpLoop(
       3
       0
     )
-    18
+    21
   )
-  Execute(18)
+  Execute(21)
+  Execute(
+    DebugLog(1)
+    DebugPause()
+    21
+  )
   0
 ))

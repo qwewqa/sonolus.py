@@ -254,7 +254,7 @@
   10000[0] <- -3.0
   goto 1
 1:
-  goto 2 if Less(10000[0], 4.0) else 8
+  goto 2 if Less(10000[0], 4.0) else 10
 2:
   10000[1] <- Add(10000[0], 1.0)
   10000[2] <- LevelData[12]
@@ -339,6 +339,9 @@
   goto 3
 7:
   10000[43] <- LevelData[16]
+  goto 8 if Less(10000[43], 7.0) else 9
+8:
+  10000[43] <- LevelData[16]
   10000[43] <- Add(16.0, Multiply(10000[43], 9.0))
   LevelData[10000[43] + 1] <- 10000[0]
   LevelData[10000[43] + 2] <- 10000[14]
@@ -353,7 +356,11 @@
   LevelData[16] <- Add(10000[2], 1.0)
   10000[0] <- 10000[1]
   goto 1
-8:
+9:
+  DebugLog(1.0)
+  DebugPause()
+  goto exit
+10:
   10000[0] <- LevelData[12]
   10000[0] <- Multiply(-3.5, 10000[0])
   10000[1] <- LevelData[13]
@@ -533,41 +540,48 @@
   ArchetypeLife[32] <- 1.0
   ArchetypeLife[35] <- -100.0
   10000[0] <- RuntimeEnvironment[4]
-  goto 21 if Not(10000[0]) else 9
-9:
-  goto 10 if StreamHas(1.0, -10.0) else 11
-10:
-  10000[0] <- -10.0
-  goto 12
+  goto 25 if Not(10000[0]) else 11
 11:
-  10000[0] <- StreamGetNextKey(1.0, -10.0)
-  goto 12
+  goto 12 if StreamHas(1.0, -10.0) else 13
 12:
-  goto 13 if StreamHas(1.0, 10000[0]) else 21
+  10000[0] <- -10.0
+  goto 14
 13:
-  10000[1] <- StreamGetNextKey(1.0, 10000[0])
-  goto 15 if Greater(10000[1], 10000[0]) else 14
+  10000[0] <- StreamGetNextKey(1.0, -10.0)
+  goto 14
 14:
-  10000[1] <- inf
-  goto 15
+  goto 15 if StreamHas(1.0, 10000[0]) else 25
 15:
-  goto 16 if Not(LevelOption[10]) else 17
+  10000[1] <- StreamGetNextKey(1.0, 10000[0])
+  goto 17 if Greater(10000[1], 10000[0]) else 16
 16:
-  10000[2] <- 0
-  goto 18
+  10000[1] <- inf
+  goto 17
 17:
+  goto 18 if Not(LevelOption[10]) else 19
+18:
+  10000[2] <- 0
+  goto 20
+19:
   PlayScheduled(0, 10000[0], 0.02)
   10000[2] <- 0
-  goto 18
-18:
-  goto 19 if Less(10000[2], StreamGetValue(1.0, 10000[0])) else 20
-19:
-  10000[3] <- Add(10000[2], 1.0)
-  Spawn(1.0, 10000[0], StreamGetValue(Add(1.0, Add(Add(0, Add(10000[2], Multiply(Less(10000[2], 0), StreamGetValue(1.0, 10000[0])))), 1.0)), 10000[0]))
-  10000[2] <- 10000[3]
-  goto 18
+  goto 20
 20:
-  10000[0] <- 10000[1]
-  goto 12
+  goto 21 if Less(10000[2], StreamGetValue(1.0, 10000[0])) else 24
 21:
+  10000[4] <- StreamGetValue(1.0, 10000[0])
+  goto 22 if And(And(GreaterOr(10000[2], Negate(10000[4])), Less(10000[2], 10000[4])), Equal(Trunc(10000[2]), 10000[2])) else 23
+22:
+  10000[3] <- Add(10000[2], 1.0)
+  Spawn(1.0, 10000[0], StreamGetValue(Add(1.0, Add(Add(0, Add(10000[2], Multiply(Less(10000[2], 0), 10000[4]))), 1.0)), 10000[0]))
+  10000[2] <- 10000[3]
+  goto 20
+23:
+  DebugLog(2.0)
+  DebugPause()
+  goto exit
+24:
+  10000[0] <- 10000[1]
+  goto 14
+25:
   goto exit

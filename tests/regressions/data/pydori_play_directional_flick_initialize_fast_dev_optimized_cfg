@@ -10,12 +10,23 @@
   10000[0] <- 0
   goto 3
 3:
-  goto 4 if 10000[0] else 5
+  goto 4 if 10000[0] else 10
 4:
   10000[1] <- 18.0
   10000[2] <- Multiply(EntityData[16], 3.0)
   10000[2] <- 10000[2]
   10000[3] <- LessOr(0, EntityInfoArray[10000[2]])
+  goto 5 if 10000[3] else 6
+5:
+  10000[3] <- Less(EntityInfoArray[10000[2]], 99999.0)
+  10000[0] <- 10000[3]
+  goto 7
+6:
+  10000[0] <- 0
+  goto 7
+7:
+  goto 8 if 10000[0] else 9
+8:
   10000[0] <- Max(1.0, 1.0)
   10000[0] <- Multiply(10000[0], EntityInfoArray[10000[2]])
   10000[1] <- 10000[1]
@@ -30,6 +41,10 @@
   10000[2] <- 0
   10000[3] <- 0
   Spawn(8.0, 10000[0], 10000[1], 10000[2], 10000[3])
-  goto 5
-5:
+  goto 10
+9:
+  DebugLog(1.0)
+  DebugPause()
+  goto exit
+10:
   goto exit

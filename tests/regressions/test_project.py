@@ -112,7 +112,7 @@ def _build_mode_callbacks(
             ]
 
             for cb_name, cb_info, cb in callback_items:
-                project_state = ProjectContextState()
+                project_state = ProjectContextState(dev=dev)
                 mode_state = ModeContextState(
                     mode,
                     {a: i for i, a in enumerate(archetypes)} if archetypes is not None else None,
@@ -134,7 +134,7 @@ def _build_mode_callbacks(
                 )
 
         for cb_info, cb in global_callbacks or []:
-            project_state = ProjectContextState()
+            project_state = ProjectContextState(dev=dev)
             mode_state = ModeContextState(
                 mode,
                 {a: i for i, a in enumerate(archetypes)} if archetypes is not None else None,
