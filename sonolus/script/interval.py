@@ -377,6 +377,7 @@ def interp(
     assert len(xp) == len(fp), "xp and fp must have the same length"
     assert len(xp) >= 2, "xp and fp must have at least 2 elements"
     for i in range_or_tuple(1, len(xp) - 1):
+        assert xp[i] > xp[i - 1], "xp must be in increasing order"
         # At i == 1, x may be less than x[0], but since we're extrapolating, we use the first segment regardless.
         if x <= xp[i]:
             return remap(xp[i - 1], xp[i], fp[i - 1], fp[i], x)
@@ -407,6 +408,7 @@ def interp_clamped(
     if x <= xp[0]:
         return fp[0]
     for i in range_or_tuple(1, len(xp)):
+        assert xp[i] > xp[i - 1], "xp must be in increasing order"
         if x <= xp[i]:
             return remap(xp[i - 1], xp[i], fp[i - 1], fp[i], x)
     return fp[-1]

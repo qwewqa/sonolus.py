@@ -159,7 +159,7 @@ class VarArray[T, Capacity](Record, ArrayLike[T]):
         Args:
             value: The value to append.
         """
-        assert self._size < len(self._array)
+        assert self._size < len(self._array), "Array is full"
         self._array.set_unchecked(self._size, value)
         self._size += 1
 
@@ -180,7 +180,7 @@ class VarArray[T, Capacity](Record, ArrayLike[T]):
         Args:
             values: The values to append.
         """
-        assert self._size + len(values) <= len(self._array)
+        assert self._size + len(values) <= len(self._array), "Array is full"
         i = 0
         while i < len(values):
             self._array.set_unchecked(self._size + i, values[i])
@@ -215,7 +215,7 @@ class VarArray[T, Capacity](Record, ArrayLike[T]):
             value: The value to insert.
         """
         index = clamp(get_positive_index(index, self._size, include_end=True), 0, self._size)
-        assert self._size < len(self._array)
+        assert self._size < len(self._array), "Array is full"
         self._size += 1
         for i in range(self._size - 1, index, -1):
             self._array.set_unchecked(i, self._array.get_unchecked(i - 1))
@@ -541,7 +541,7 @@ class ArrayMap[K, V, Capacity](Record):
             if entry.key == key:
                 entry.value = value
                 return
-        assert self._size < self.capacity()
+        assert self._size < self.capacity(), "Map is full"
         self._array.set_unchecked(self._size, _ArrayMapEntry(key, value))
         self._size += 1
 

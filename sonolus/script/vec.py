@@ -158,6 +158,7 @@ class Vec2(Record):
             A new vector with magnitude 1.
         """
         magnitude = (self.x**2 + self.y**2) ** 0.5
+        assert magnitude != 0, "Cannot normalize a zero vector"
         return Vec2._quick_construct(x=self.x / magnitude, y=self.y / magnitude)
 
     @perf_meta_fn
