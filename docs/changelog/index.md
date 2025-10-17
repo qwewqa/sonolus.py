@@ -1,3 +1,7 @@
+### 0.10.5
+
+- Fixed the dev server becoming unresponsive after a blank command
+
 ### 0.10.4
 
 - Fixed the dev server becoming unresponsive after a command syntax error
