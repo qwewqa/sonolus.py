@@ -6,6 +6,7 @@ from typing import cast, dataclass_transform
 from sonolus.backend.ir import IRConst, IRExpr, IRInstr, IRPureInstr
 from sonolus.backend.mode import Mode
 from sonolus.backend.ops import Op
+from sonolus.script.array_like import check_positive_index
 from sonolus.script.internal.context import ctx
 from sonolus.script.internal.descriptor import SonolusDescriptor
 from sonolus.script.internal.impl import meta_fn
@@ -508,7 +509,7 @@ class StreamGroup[T, Size](Record):
     def __getitem__(self, index: int) -> Stream[T]:
         """Get the stream at the given index."""
         _check_can_read_or_write_stream()
-        assert index in self
+        check_positive_index(index, self.size())
         # Size 0 elements still need 1 stream to preserve the key.
         t = self.type_var_value(T)
         return Stream[t](max(1, sizeof(self.element_type())) * index + self.offset)
