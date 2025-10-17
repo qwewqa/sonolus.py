@@ -1,3 +1,7 @@
+### 0.10.4
+
+- Fixed the dev server becoming unresponsive after a command syntax error
+
 ### 0.10.3
 
 - Added `--runtime-checks {none,terminate,notify}` to the `dev` and `build` commands to override runtime check
