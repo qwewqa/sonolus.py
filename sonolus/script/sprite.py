@@ -126,6 +126,8 @@ class Sprite(Record):
 class SpriteGroup(Record, ArrayLike[Sprite]):
     """A group of sprites.
 
+    Does not support negative indexes.
+
     Usage:
         ```python
         SpriteGroup(start_id: int, size: int)

@@ -58,6 +58,8 @@ class ParticleHandle(Record):
 class ParticleGroup(Record, ArrayLike[Particle]):
     """A group of particle effects.
 
+    Does not support negative indexes.
+
     Usage:
         ```python
         ParticleGroup(start_id: int, size: int)

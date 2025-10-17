@@ -87,6 +87,8 @@ class Pair[T, U](Record):
 class VarArray[T, Capacity](Record, ArrayLike[T]):
     """An array with a variable size and fixed maximum capacity.
 
+    Supports negative indexes.
+
     Usage:
         ```python
         VarArray[T, Capacity].new()  # Create a new empty array
@@ -124,6 +126,8 @@ class VarArray[T, Capacity](Record, ArrayLike[T]):
 
     def __getitem__(self, item) -> T:
         """Return the element at the given index.
+
+        Supports negative indexes.
 
         The returned value continues to be part of the array.
         Future modifications to the array will affect the returned value.
@@ -309,6 +313,8 @@ class VarArray[T, Capacity](Record, ArrayLike[T]):
 
 class ArrayPointer[T](Record, ArrayLike[T]):
     """An array defined by a size and pointer to the first element.
+
+    Supports negative indexes.
 
     This is intended to be created internally and improper use may result in hard to debug issues.
 

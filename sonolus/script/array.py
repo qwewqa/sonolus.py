@@ -30,6 +30,8 @@ class ArrayMeta(ABCMeta):
 class Array[T, Size](GenericValue, ArrayLike[T], metaclass=ArrayMeta):
     """A fixed size array of values.
 
+    Supports negative indexes.
+
     Usage:
         ```python
         array_1 = Array(1, 2, 3)

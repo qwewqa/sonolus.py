@@ -470,6 +470,8 @@ class Stream[T](Record):
 class StreamGroup[T, Size](Record):
     """Represents a group of streams.
 
+    Does not support negative indexes.
+
     Most users should use [`@streams`][sonolus.script.stream.streams] to declare stream groups rather than using this
     class directly.
 
@@ -507,7 +509,10 @@ class StreamGroup[T, Size](Record):
         return 0 <= item < self.size()
 
     def __getitem__(self, index: int) -> Stream[T]:
-        """Get the stream at the given index."""
+        """Get the stream at the given index.
+
+        Does not support negative indexes.
+        """
         _check_can_read_or_write_stream()
         check_positive_index(index, self.size())
         # Size 0 elements still need 1 stream to preserve the key.

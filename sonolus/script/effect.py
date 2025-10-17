@@ -98,6 +98,8 @@ class ScheduledLoopedEffectHandle(Record):
 class EffectGroup(Record, ArrayLike[Effect]):
     """A group of effect clips.
 
+    Does not support negative indexes.
+
     Usage:
         ```python
         EffectGroup(start_id: int, size: int)
