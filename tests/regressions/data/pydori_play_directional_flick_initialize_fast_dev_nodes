@@ -64,17 +64,17 @@ Block(JumpLoop(
       0
     )
     4
-    10
+    7
   ))
   Execute(
     Set(
       10000
-      1
+      2
       18
     )
     Set(
       10000
-      2
+      3
       Multiply(
         Get(
           4001
@@ -85,45 +85,35 @@ Block(JumpLoop(
     )
     Set(
       10000
-      2
-      Get(
-        10000
-        2
-      )
-    )
-    Set(
-      10000
       3
-      LessOr(
-        0
-        Get(
-          4103
-          Get(
-            10000
-            2
-          )
-        )
-      )
-    )
-    If(
       Get(
         10000
         3
       )
-      5
-      6
     )
-  )
-  Execute(
     Set(
       10000
-      3
+      4
+      GreaterOr(
+        Get(
+          4103
+          Get(
+            10000
+            3
+          )
+        )
+        0
+      )
+    )
+    Set(
+      10000
+      5
       Less(
         Get(
           4103
           Get(
             10000
-            2
+            3
           )
         )
         99999
@@ -132,29 +122,68 @@ Block(JumpLoop(
     Set(
       10000
       0
-      Get(
-        10000
-        3
+      And(
+        Get(
+          10000
+          4
+        )
+        Get(
+          10000
+          5
+        )
       )
     )
-    7
-  )
-  Execute(
+    Set(
+      10000
+      1
+      Trunc(Get(
+        4103
+        Get(
+          10000
+          3
+        )
+      ))
+    )
+    Set(
+      10000
+      1
+      Equal(
+        Get(
+          10000
+          1
+        )
+        Get(
+          4103
+          Get(
+            10000
+            3
+          )
+        )
+      )
+    )
     Set(
       10000
       0
-      0
+      And(
+        Get(
+          10000
+          0
+        )
+        Get(
+          10000
+          1
+        )
+      )
     )
-    7
+    If(
+      Get(
+        10000
+        0
+      )
+      5
+      6
+    )
   )
-  Execute(If(
-    Get(
-      10000
-      0
-    )
-    8
-    9
-  ))
   Execute(
     Set(
       10000
@@ -176,7 +205,7 @@ Block(JumpLoop(
           4103
           Get(
             10000
-            2
+            3
           )
         )
       )
@@ -186,7 +215,7 @@ Block(JumpLoop(
       1
       Get(
         10000
-        1
+        2
       )
     )
     Set(
@@ -288,13 +317,13 @@ Block(JumpLoop(
         3
       )
     )
-    10
+    7
   )
   Execute(
     DebugLog(1)
     DebugPause()
-    11
+    8
   )
-  Execute(11)
+  Execute(8)
   0
 ))

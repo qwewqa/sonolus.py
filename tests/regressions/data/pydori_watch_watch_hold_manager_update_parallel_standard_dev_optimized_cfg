@@ -8,42 +8,40 @@
   DestroyParticleEffect(10000[0])
   EntityMemory[2] <- 0
   10000[0] <- EntityMemory[0]
-  goto 4 if RuntimeEnvironment[4] else 14
+  goto 4 if RuntimeEnvironment[4] else 13
 3:
   10000[0] <- EntityMemory[0]
-  goto 4 if RuntimeEnvironment[4] else 14
+  goto 4 if RuntimeEnvironment[4] else 13
 4:
   10000[0] <- Add(9.0, Multiply(10000[0], 32.0))
   10000[0] <- Multiply(EntityDataArray[10000[0]], 3.0)
-  goto 5 if LessOr(0, EntityInfoArray[10000[0]]) else 13
+  goto 5 if And(And(GreaterOr(EntityInfoArray[10000[0]], 0), Less(EntityInfoArray[10000[0]], 99999.0)), Equal(Trunc(EntityInfoArray[10000[0]]), EntityInfoArray[10000[0]])) else 12
 5:
-  goto 6 if Less(EntityInfoArray[10000[0]], 99999.0) else 13
-6:
   10000[0] <- Add(EntityInfoArray[10000[0]], 18.0)
-  goto 7 if StreamHas(10000[0], RuntimeUpdate[0]) else 8
-7:
+  goto 6 if StreamHas(10000[0], RuntimeUpdate[0]) else 7
+6:
   10000[1] <- RuntimeUpdate[0]
-  goto 9
-8:
+  goto 8
+7:
   10000[1] <- StreamGetPreviousKey(10000[0], RuntimeUpdate[0])
-  goto 9
+  goto 8
+8:
+  goto 13 if StreamGetValue(10000[0], 10000[1]) else 9
 9:
-  goto 14 if StreamGetValue(10000[0], 10000[1]) else 10
-10:
   10000[0] <- EntityMemory[2]
-  goto 11 if NotEqual(10000[0], 0) else 12
-11:
+  goto 10 if NotEqual(10000[0], 0) else 11
+10:
   10000[0] <- EntityMemory[2]
   DestroyParticleEffect(10000[0])
   EntityMemory[2] <- 0
   goto exit
-12:
+11:
   goto exit
-13:
+12:
   DebugLog(1.0)
   DebugPause()
   goto exit
-14:
+13:
   10000[0] <- EntityMemory[0]
   10000[0] <- Add(9.0, Multiply(10000[0], 32.0))
   10000[3] <- Multiply(EntityDataArray[10000[0]], 32.0)
@@ -81,12 +79,12 @@
   10000[20] <- Subtract(10000[16], Divide(10000[15], 2.0))
   10000[21] <- Add(10000[16], Divide(10000[15], 2.0))
   10000[22] <- EntityMemory[2]
-  goto 15 if 10000[22] else 16
-15:
+  goto 14 if 10000[22] else 15
+14:
   10000[22] <- EntityMemory[2]
   MoveParticleEffect(10000[22], 10000[18], 10000[5], 10000[20], 10000[11], 10000[21], 10000[14], 10000[19], 10000[8])
   goto exit
-16:
+15:
   10000[0] <- SpawnParticleEffect(5.0, 10000[18], 10000[5], 10000[20], 10000[11], 10000[21], 10000[14], 10000[19], 10000[8], 1.5, 1.0)
   EntityMemory[2] <- 10000[0]
   goto exit

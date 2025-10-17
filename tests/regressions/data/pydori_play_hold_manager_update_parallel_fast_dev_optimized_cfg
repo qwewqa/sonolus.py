@@ -25,14 +25,14 @@
   goto 5
 5:
   EntityDespawn[0] <- 1.0
-  goto 22
+  goto 19
 6:
   10000[0] <- EntityMemory[0]
   10000[0] <- Multiply(10000[0], 32.0)
   10000[0] <- Add(11.0, 10000[0])
   10000[0] <- 10000[0]
   10000[0] <- Less(RuntimeUpdate[0], EntityDataArray[10000[0]])
-  goto 22 if 10000[0] else 7
+  goto 19 if 10000[0] else 7
 7:
   10000[0] <- EntityMemory[0]
   10000[0] <- Multiply(10000[0], 32.0)
@@ -45,18 +45,14 @@
   10000[2] <- EntityMemory[0]
   10000[2] <- Multiply(10000[2], 3.0)
   10000[2] <- 10000[2]
-  10000[3] <- LessOr(0, EntityInfoArray[10000[2]])
-  goto 8 if 10000[3] else 9
+  10000[3] <- GreaterOr(EntityInfoArray[10000[2]], 0)
+  10000[4] <- Less(EntityInfoArray[10000[2]], 99999.0)
+  10000[3] <- And(10000[3], 10000[4])
+  10000[4] <- Trunc(EntityInfoArray[10000[2]])
+  10000[4] <- Equal(10000[4], EntityInfoArray[10000[2]])
+  10000[3] <- And(10000[3], 10000[4])
+  goto 8 if 10000[3] else 20
 8:
-  10000[3] <- Less(EntityInfoArray[10000[2]], 99999.0)
-  10000[3] <- 10000[3]
-  goto 10
-9:
-  10000[3] <- 0
-  goto 10
-10:
-  goto 11 if 10000[3] else 23
-11:
   10000[3] <- Max(1.0, 1.0)
   10000[2] <- Multiply(10000[3], EntityInfoArray[10000[2]])
   10000[3] <- 10000[1]
@@ -71,8 +67,8 @@
   10000[0] <- Multiply(EntityDataArray[10000[0]], 32.0)
   10000[0] <- 10000[0]
   10000[0] <- Greater(EntitySharedMemoryArray[10000[0]], 0)
-  goto 12 if 10000[0] else 18
-12:
+  goto 9 if 10000[0] else 15
+9:
   10000[0] <- EntityMemory[0]
   10000[0] <- Multiply(10000[0], 32.0)
   10000[0] <- Add(16.0, 10000[0])
@@ -121,11 +117,11 @@
   10000[57] <- Multiply(LevelData[6], 10000[57])
   10000[56] <- Add(10000[56], 10000[57])
   10000[56] <- Add(10000[56], LevelData[7])
-  10000[57] <- 10000[53]
-  10000[57] <- Multiply(LevelData[8], 10000[57])
-  10000[58] <- 10000[54]
-  10000[0] <- Multiply(LevelData[9], 10000[58])
-  10000[0] <- Add(10000[57], 10000[0])
+  10000[0] <- 10000[53]
+  10000[0] <- Multiply(LevelData[8], 10000[0])
+  10000[1] <- 10000[54]
+  10000[1] <- Multiply(LevelData[9], 10000[1])
+  10000[0] <- Add(10000[0], 10000[1])
   10000[0] <- Add(10000[0], LevelData[10])
   10000[1] <- Divide(10000[55], 10000[0])
   10000[2] <- Divide(10000[56], 10000[0])
@@ -398,8 +394,8 @@
   10000[76] <- 10000[74]
   10000[77] <- EntityMemory[2]
   10000[77] <- Equal(10000[77], 0)
-  goto 13 if 10000[77] else 14
-13:
+  goto 10 if 10000[77] else 11
+10:
   10000[77] <- 10000[63]
   10000[78] <- 10000[64]
   10000[79] <- 10000[71]
@@ -412,8 +408,8 @@
   10000[0] <- 10000[0]
   10000[0] <- 10000[0]
   EntityMemory[2] <- 10000[0]
-  goto 15
-14:
+  goto 12
+11:
   10000[77] <- EntityMemory[2]
   10000[78] <- 10000[63]
   10000[79] <- 10000[64]
@@ -424,41 +420,41 @@
   10000[84] <- 10000[67]
   10000[85] <- 10000[68]
   MoveParticleEffect(10000[77], 10000[78], 10000[79], 10000[80], 10000[81], 10000[82], 10000[83], 10000[84], 10000[85])
-  goto 15
-15:
+  goto 12
+12:
   10000[0] <- Not(LevelOption[10])
-  goto 22 if 10000[0] else 16
-16:
+  goto 19 if 10000[0] else 13
+13:
   10000[0] <- EntityMemory[3]
   10000[0] <- Equal(10000[0], 0)
-  goto 17 if 10000[0] else 22
-17:
+  goto 14 if 10000[0] else 19
+14:
   10000[0] <- PlayLooped(7.0)
   10000[0] <- 10000[0]
   10000[0] <- 10000[0]
   EntityMemory[3] <- 10000[0]
-  goto 22
-18:
+  goto 19
+15:
   10000[0] <- EntityMemory[2]
   10000[0] <- NotEqual(10000[0], 0)
-  goto 19 if 10000[0] else 20
-19:
+  goto 16 if 10000[0] else 17
+16:
   10000[0] <- EntityMemory[2]
   DestroyParticleEffect(10000[0])
   EntityMemory[2] <- 0
-  goto 20
-20:
+  goto 17
+17:
   10000[0] <- EntityMemory[3]
   10000[0] <- NotEqual(10000[0], 0)
-  goto 21 if 10000[0] else 22
-21:
+  goto 18 if 10000[0] else 19
+18:
   10000[0] <- EntityMemory[3]
   StopLooped(10000[0])
   EntityMemory[3] <- 0
-  goto 22
-22:
+  goto 19
+19:
   goto exit
-23:
+20:
   DebugLog(1.0)
   DebugPause()
   goto exit
