@@ -190,7 +190,13 @@ def parse_dev_command(command_line: str) -> Command | None:
     subparsers.add_parser("quit", aliases=["q"])
 
     try:
-        args = parser.parse_args(shlex.split(command_line))
+        split_args = shlex.split(command_line)
+    except ValueError as e:
+        print(f"Error parsing command: {e}\n")
+        return None
+
+    try:
+        args = parser.parse_args(split_args)
         if args.cmd in {"rebuild", "r"}:
             return RebuildCommand()
         elif args.cmd in {"decode", "d"}:
@@ -227,8 +233,7 @@ def command_input_thread(command_queue: queue.Queue, prompt_event: threading.Eve
         except EOFError:
             break
         except Exception as e:
-            print(f"Error reading command: {e}")
-            break
+            print(f"Error reading command: {e}\n")
 
 
 def get_local_ips():
@@ -312,12 +317,12 @@ def run_server(
 
             try:
                 while True:
+                    cmd = command_queue.get()
                     try:
-                        cmd = command_queue.get(timeout=0.5)
                         cmd.execute(server_state)
-                        prompt_event.set()
-                    except queue.Empty:
-                        continue
+                    except Exception:
+                        print(f"{traceback.format_exc()}\n")
+                    prompt_event.set()
             except KeyboardInterrupt:
                 print("Exiting...")
                 sys.exit(0)
