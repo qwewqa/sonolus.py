@@ -106,11 +106,10 @@ def notify(message: str):
 def require(value: int | float | bool, message: str | None = None):
     """Require a condition to be true, or raise an error.
 
-    Similar to assert, but does not get stripped in non-dev builds.
+    Similar to assert, but will terminate the current callback even if runtime checks are set to none.
 
-    If in a dev build, this function will log a message and pause the game if the condition is false.
-
-    In non-dev builds, this function will terminate the current callback silently if the condition is false.
+    If runtime checks are set to notify (default in dev), this function will log a message and pause the game
+    before terminating.
 
     Args:
         value: The condition to check.
