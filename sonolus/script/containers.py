@@ -183,7 +183,7 @@ class VarArray[T, Capacity](Record, ArrayLike[T]):
         assert self._size + len(values) <= len(self._array), "Array is full"
         i = 0
         while i < len(values):
-            self._array.set_unchecked(self._size + i, values[i])
+            self._array.set_unchecked(self._size + i, values.get_unchecked(i))
             i += 1
         self._size += len(values)
 
