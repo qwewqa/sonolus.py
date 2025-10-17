@@ -205,8 +205,16 @@ def parse_dev_command(command_line: str) -> Command | None:
             return HelpCommand()
         elif args.cmd in {"quit", "q"}:
             return ExitCommand()
+        else:
+            # Really, we should not reach here, since argparse would have errored out earlier
+            print("Unknown command.\n")
+            return None
+    except (argparse.ArgumentError, argparse.ArgumentTypeError) as e:
+        print(f"Error parsing command: {e}\n")
         return None
-    except argparse.ArgumentError:
+    except SystemExit:
+        # argparse throws this on some errors, and will print out help automatically
+        print()
         return None
 
 
@@ -227,7 +235,7 @@ def command_input_thread(command_queue: queue.Queue, prompt_event: threading.Eve
                     if isinstance(cmd, ExitCommand):
                         break
                 else:
-                    print(f"Unknown command. Available commands:\n{HELP_TEXT}")
+                    print(f"Available commands:\n{HELP_TEXT}")
                     # Show prompt again
                     prompt_event.set()
             else:
@@ -236,6 +244,7 @@ def command_input_thread(command_queue: queue.Queue, prompt_event: threading.Eve
             break
         except Exception as e:
             print(f"Error reading command: {e}\n")
+            prompt_event.set()
 
 
 def get_local_ips():
