@@ -18,7 +18,7 @@ from sonolus.script.internal.callbacks import (
     update_callback,
     update_spawn_callback,
 )
-from sonolus.script.internal.context import ModeContextState, ProjectContextState
+from sonolus.script.internal.context import ModeContextState, ProjectContextState, RuntimeChecks
 from sonolus.script.project import BuildConfig
 from tests.regressions import pydori_project
 from tests.regressions.conftest import compare_with_reference
@@ -112,7 +112,9 @@ def _build_mode_callbacks(
             ]
 
             for cb_name, cb_info, cb in callback_items:
-                project_state = ProjectContextState(dev=dev)
+                project_state = ProjectContextState(
+                    runtime_checks=RuntimeChecks.NOTIFY_AND_TERMINATE if dev else RuntimeChecks.NONE
+                )
                 mode_state = ModeContextState(
                     mode,
                     {a: i for i, a in enumerate(archetypes)} if archetypes is not None else None,
@@ -134,7 +136,9 @@ def _build_mode_callbacks(
                 )
 
         for cb_info, cb in global_callbacks or []:
-            project_state = ProjectContextState(dev=dev)
+            project_state = ProjectContextState(
+                runtime_checks=RuntimeChecks.NOTIFY_AND_TERMINATE if dev else RuntimeChecks.NONE
+            )
             mode_state = ModeContextState(
                 mode,
                 {a: i for i, a in enumerate(archetypes)} if archetypes is not None else None,

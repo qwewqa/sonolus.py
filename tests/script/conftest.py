@@ -19,7 +19,7 @@ from sonolus.backend.place import BlockPlace
 from sonolus.backend.visitor import compile_and_call
 from sonolus.build.compile import callback_to_cfg
 from sonolus.script.debug import debug_log_callback, simulation_context
-from sonolus.script.internal.context import ModeContextState, ProjectContextState, ctx
+from sonolus.script.internal.context import ModeContextState, ProjectContextState, RuntimeChecks, ctx
 from sonolus.script.internal.error import CompilationError
 from sonolus.script.internal.impl import meta_fn, validate_value
 from sonolus.script.internal.tuple_impl import TupleImpl
@@ -57,8 +57,10 @@ if is_ci() and sys.version_info < PRIMARY_PYTHON_VERSION:
     optimization_levels = [STANDARD_PASSES]
 
 
-def compile_fn(callback: Callable, dev: bool = False) -> tuple[BasicBlock, list[float]]:
-    project_state = ProjectContextState(dev=dev)
+def compile_fn(
+    callback: Callable, runtime_checks: RuntimeChecks = RuntimeChecks.NONE
+) -> tuple[BasicBlock, list[float]]:
+    project_state = ProjectContextState(runtime_checks=runtime_checks)
     mode_state = ModeContextState(Mode.PLAY)
     return callback_to_cfg(project_state, mode_state, callback, ""), project_state.rom.values
 
@@ -175,29 +177,49 @@ def run_and_validate[**P, R](
     return regular_result
 
 
-def run_compiled[**P](fn: Callable[P, Num], *args: P.args, dev: bool | None = None, **kwargs: P.kwargs) -> Num:
+def run_compiled[**P](
+    fn: Callable[P, Num],
+    *args: P.args,
+    runtime_checks: RuntimeChecks | None = None,
+    log_callback: Callable[[float], None] | None = None,
+    **kwargs: P.kwargs,
+) -> Num:
     """Runs a function as a compiled function and returns the result."""
+    if log_callback is None:
+        log_callback = lambda x: None  # noqa: E731
 
     @meta_fn
     def wrapper():
         return compile_and_call(fn, *args, **kwargs)
 
+    runtime_checks_values = {
+        RuntimeChecks.NONE: (RuntimeChecks.NONE,),
+        RuntimeChecks.TERMINATE: (RuntimeChecks.TERMINATE,),
+        RuntimeChecks.NOTIFY_AND_TERMINATE: (RuntimeChecks.NOTIFY_AND_TERMINATE,),
+        None: (RuntimeChecks.NONE, RuntimeChecks.TERMINATE, RuntimeChecks.NOTIFY_AND_TERMINATE),
+    }[runtime_checks]
+
     results = []
+    logs = []
     initial_random_state = random.getstate()
     for passes in optimization_levels:
-        for enable_dev in {
-            True: (True,),
-            False: (False,),
-            None: (True, False),
-        }[dev]:
+        for runtime_checks_value in runtime_checks_values:
             random.setstate(initial_random_state)
-            cfg, rom_values = compile_fn(wrapper, dev=enable_dev)
+            cfg, rom_values = compile_fn(wrapper, runtime_checks=runtime_checks_value)
             cfg = run_passes(cfg, passes, OptimizerConfig())
             entry = cfg_to_engine_node(cfg)
             interpreter = Interpreter()
             interpreter.blocks[PlayBlock.EngineRom] = rom_values
             result = interpreter.run(entry)
             results.append(result)
+            logs.append(interpreter.log.copy())
+
+    if logs and not all(log == logs[0] for log in logs):
+        raise ValueError(f"Logs differ between iterations: {logs}")
+
+    if logs:
+        for entry in logs[0]:
+            log_callback(entry)
 
     if len(set(results)) != 1:
         raise ValueError(f"Compiled results differ between optimization levels: {results}")

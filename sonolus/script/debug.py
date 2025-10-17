@@ -1,13 +1,13 @@
 from collections.abc import Callable, Sequence
 from contextvars import ContextVar
-from typing import Any, Literal, Never
+from typing import Any, Literal, Never, assert_never
 
 from sonolus.backend.mode import Mode
 from sonolus.backend.ops import Op
 from sonolus.backend.optimize.flow import cfg_to_mermaid
 from sonolus.backend.optimize.passes import CompilerPass, OptimizerConfig, run_passes
 from sonolus.backend.optimize.simplify import RenumberVars
-from sonolus.script.internal.context import ModeContextState, ProjectContextState, ctx, set_ctx
+from sonolus.script.internal.context import ModeContextState, ProjectContextState, RuntimeChecks, ctx, set_ctx
 from sonolus.script.internal.impl import meta_fn, validate_value
 from sonolus.script.internal.native import native_function
 from sonolus.script.internal.simulation_context import SimulationContext
@@ -18,12 +18,12 @@ debug_log_callback = ContextVar[Callable[[Num], None]]("debug_log_callback")
 
 @meta_fn
 def error(message: str | None = None) -> Never:  # type: ignore
-    """Raise an error, and if in a dev build, log a message and pause the game.
+    """Raise an error, and if runtime checks are set to notify, log a message and pause the game.
 
-    This function is used to raise an error during runtime.
-    When this happens, the game will pause in debug mode. The current callback will also immediately return 0.
+    This function is used to raise an error during runtime and terminate the current callback.
 
-    In non-dev builds, this function will terminate the current callback silently.
+    If runtime checks are set to notify (default in dev), this function will log a message and pause the game
+    before terminating.
 
     Args:
         message: The message to log.
@@ -32,9 +32,14 @@ def error(message: str | None = None) -> Never:  # type: ignore
     if not isinstance(message, str):
         raise ValueError("Expected a string")
     if ctx():
-        if ctx().project_state.dev:
-            debug_log(ctx().map_debug_message(message))
-            debug_pause()
+        match ctx().project_state.runtime_checks:
+            case RuntimeChecks.NOTIFY_AND_TERMINATE:
+                debug_log(ctx().map_debug_message(message))
+                debug_pause()
+            case RuntimeChecks.TERMINATE | RuntimeChecks.NONE:
+                pass
+            case _ as unreachable:
+                assert_never(unreachable)
         terminate()
     else:
         raise RuntimeError(message)
@@ -79,9 +84,9 @@ def debug_pause():
 
 @meta_fn
 def notify(message: str):
-    """Log a code that can be decoded by the dev server and pause the game if in debug mode and in a dev build.
+    """Log a code that can be decoded by the dev server and pause the game if runtime checks are set to notify.
 
-    Does nothing if not a dev build.
+    If runtime checks are not set to notify, this function will do nothing.
 
     Args:
         message: The message to log.
@@ -90,7 +95,7 @@ def notify(message: str):
     if not isinstance(message, str):
         raise ValueError("Expected a string")
     if ctx():
-        if ctx().project_state.dev:
+        if ctx().project_state.runtime_checks == RuntimeChecks.NOTIFY_AND_TERMINATE:
             debug_log(ctx().map_debug_message(message))
             debug_pause()
     else:
@@ -134,7 +139,7 @@ def require(value: int | float | bool, message: str | None = None):
 
 @meta_fn
 def assert_true(value: int | float | bool, message: str | None = None):
-    if ctx() and not ctx().project_state.dev:
+    if ctx() and ctx().project_state.runtime_checks == RuntimeChecks.NONE:
         return
     require(value, message)
 

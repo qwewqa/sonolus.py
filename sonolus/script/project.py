@@ -10,6 +10,7 @@ from sonolus.backend.optimize import optimize
 from sonolus.backend.optimize.passes import CompilerPass
 from sonolus.script.archetype import ArchetypeSchema
 from sonolus.script.engine import Engine
+from sonolus.script.internal.context import RuntimeChecks
 from sonolus.script.level import ExternalLevelData, Level, LevelData
 
 
@@ -66,7 +67,7 @@ class Project:
         from sonolus.build.cli import run_server
 
         if config is None:
-            config = BuildConfig()
+            config = BuildConfig(runtime_checks=RuntimeChecks.NOTIFY_AND_TERMINATE)
 
         run_server(
             Path(build_dir) / "site",
@@ -145,3 +146,6 @@ class BuildConfig:
 
     override_resource_level_engines: bool = True
     """Whether to override any levels included in resources to use the engine of this project."""
+
+    runtime_checks: RuntimeChecks = RuntimeChecks.NONE
+    """Runtime error checking mode."""

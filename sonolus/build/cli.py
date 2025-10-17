@@ -14,7 +14,7 @@ from sonolus.build.dev_server import run_server
 from sonolus.build.engine import no_gil, package_engine, validate_engine
 from sonolus.build.level import package_level_data
 from sonolus.build.project import build_project_to_collection, get_project_schema
-from sonolus.script.internal.context import ProjectContextState
+from sonolus.script.internal.context import ProjectContextState, RuntimeChecks
 from sonolus.script.internal.error import CompilationError
 from sonolus.script.project import BuildConfig, Project
 
@@ -128,7 +128,18 @@ def get_config(args: argparse.Namespace) -> BuildConfig:
         build_watch=build_watch,
         build_preview=build_preview,
         build_tutorial=build_tutorial,
+        runtime_checks=get_runtime_checks(args),
     )
+
+
+def get_runtime_checks(args: argparse.Namespace) -> RuntimeChecks:
+    if hasattr(args, "runtime_checks") and args.runtime_checks:
+        return {
+            "none": RuntimeChecks.NONE,
+            "terminate": RuntimeChecks.TERMINATE,
+            "notify": RuntimeChecks.NOTIFY_AND_TERMINATE,
+        }[args.runtime_checks]
+    return RuntimeChecks.NOTIFY_AND_TERMINATE if args.command == "dev" else RuntimeChecks.NONE
 
 
 def main():
@@ -145,6 +156,12 @@ def main():
         )
         optimization_group.add_argument(
             "-O2", "--optimize-standard", action="store_true", help="Use standard optimization passes"
+        )
+
+        parser.add_argument(
+            "--runtime-checks",
+            choices=["none", "terminate", "notify"],
+            help="Runtime error checking mode (default: none for build, notify for dev)",
         )
 
         build_components = parser.add_argument_group("build components")

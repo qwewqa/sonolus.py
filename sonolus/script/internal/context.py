@@ -4,8 +4,9 @@ from collections.abc import Iterable, Sequence
 from contextlib import contextmanager
 from contextvars import ContextVar
 from dataclasses import dataclass
+from enum import Enum
 from threading import Lock
-from typing import Any, Literal, Self
+from typing import TYPE_CHECKING, Any, Literal, Self
 
 from sonolus.backend.blocks import BlockData, PlayBlock
 from sonolus.backend.ir import IRConst, IRExpr, IRStmt
@@ -14,6 +15,9 @@ from sonolus.backend.optimize.flow import BasicBlock, FlowEdge
 from sonolus.backend.place import Block, BlockPlace, TempBlock
 from sonolus.script.globals import _GlobalInfo, _GlobalPlaceholder
 from sonolus.script.internal.value import Value
+
+if TYPE_CHECKING:
+    from sonolus.script.project import BuildConfig
 
 _compiler_internal_ = True
 
@@ -39,25 +43,53 @@ _disabled_debug_config = DebugConfig(
 debug_var = ContextVar("debug_var", default=_disabled_debug_config)
 
 
+class RuntimeChecks(Enum):
+    """Runtime error checking modes."""
+
+    NONE = "none"
+    """No runtime checks."""
+
+    TERMINATE = "terminate"
+    """Terminate on errors."""
+
+    NOTIFY_AND_TERMINATE = "notify_and_terminate"
+    """Log, debug pause, and terminate on errors."""
+
+
 class ProjectContextState:
     rom: ReadOnlyMemory
     const_mappings: dict[Any, int]
     debug_str_mappings: dict[str, int]
     lock: Lock
-    dev: bool
+    runtime_checks: RuntimeChecks
 
     def __init__(
         self,
         rom: ReadOnlyMemory | None = None,
         const_mappings: dict[Any, int] | None = None,
         debug_str_mappings: dict[str, int] | None = None,
-        dev: bool = False,
+        runtime_checks: RuntimeChecks = RuntimeChecks.NONE,
     ):
         self.rom = ReadOnlyMemory() if rom is None else rom
         self.const_mappings = {} if const_mappings is None else const_mappings
         self.debug_str_mappings = {} if debug_str_mappings is None else debug_str_mappings
         self.lock = Lock()
-        self.dev = dev
+        self.runtime_checks = runtime_checks
+
+    @classmethod
+    def from_build_config(
+        cls,
+        config: BuildConfig,
+        rom: ReadOnlyMemory | None = None,
+        const_mappings: dict[Any, int] | None = None,
+        debug_str_mappings: dict[str, int] | None = None,
+    ) -> Self:
+        return cls(
+            rom=rom,
+            const_mappings=const_mappings,
+            debug_str_mappings=debug_str_mappings,
+            runtime_checks=config.runtime_checks,
+        )
 
 
 class ModeContextState:

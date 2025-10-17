@@ -76,7 +76,7 @@ def package_engine(
 
     config = config or BuildConfig()
     if project_state is None:
-        project_state = ProjectContextState()
+        project_state = ProjectContextState.from_build_config(config)
     configuration = build_engine_configuration(engine.options, engine.ui)
     if no_gil():
         # process_cpu_count is available in Python 3.13+
@@ -209,9 +209,11 @@ def package_engine(
 def validate_engine(
     engine: EngineData,
     config: BuildConfig | None = None,
+    project_state: ProjectContextState | None = None,
 ):
     config = config or BuildConfig()
-    project_state = ProjectContextState()
+    if project_state is None:
+        project_state = ProjectContextState.from_build_config(config)
 
     play_mode = engine.play if config.build_play else empty_play_mode()
     watch_mode = engine.watch if config.build_watch else empty_watch_mode()
