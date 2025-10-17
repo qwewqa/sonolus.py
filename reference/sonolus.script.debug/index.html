@@ -2359,9 +2359,9 @@ before terminating.</p>
     <div class="doc doc-contents ">
 
         <p>Require a condition to be true, or raise an error.</p>
-<p>Similar to assert, but does not get stripped in non-dev builds.</p>
-<p>If in a dev build, this function will log a message and pause the game if the condition is false.</p>
-<p>In non-dev builds, this function will terminate the current callback silently if the condition is false.</p>
+<p>Similar to assert, but will terminate the current callback even if runtime checks are set to none.</p>
+<p>If runtime checks are set to notify (default in dev), this function will log a message and pause the game
+before terminating.</p>
 
 
 <p><span class="doc-section-title">Parameters:</span></p>
