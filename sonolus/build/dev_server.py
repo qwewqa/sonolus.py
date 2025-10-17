@@ -283,7 +283,7 @@ def run_server(
 
         def log_message(self, fmt, *args):
             sys.stdout.write("\r\033[K")  # Clear line
-            sys.stdout.write(f"{self.address_string()} - - [{self.log_date_time_string()}] {fmt % args}\n")
+            sys.stdout.write(f"{self.address_string()} [{self.log_date_time_string()}] {fmt % args}\n")
             if interactive:
                 sys.stdout.write("> ")
             sys.stdout.flush()
