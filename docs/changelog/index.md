@@ -1,3 +1,9 @@
+### 0.10.1
+
+- Assertions are now stripped in release (non-dev) builds
+- Added more assertion checks including bounds checks for arrays
+- Added [`require()`][sonolus.script.debug.require] for assertions not stripped in release builds
+
 ### 0.10.0
 
 - Added `[d]ecode` command to dev server for decoding debug message codes
