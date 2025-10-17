@@ -2866,8 +2866,9 @@ Sonolus.py decorator such as <code class="highlight"><span class="nd">@level_mem
 <h3 id="imports">Imports<a class="headerlink" href="#imports" title="Permanent link">&para;</a></h3>
 <p>Imports are supported at the module level, but not within functions.</p>
 <h3 id="assert">assert<a class="headerlink" href="#assert" title="Permanent link">&para;</a></h3>
-<p>Assertions are supported. Assertion failures cannot be handled and will terminate the current
+<p>Assertions are supported. Assertion failures cannot be handled and in dev builds will terminate the current
 callback when running in the Sonolus app. In debug mode, the game will also pause to indicate the error.</p>
+<p>In production builds, assertions are removed, so they must not be relied upon.</p>
 <div class="highlight"><pre><span></span><code><span class="k">assert</span> <span class="n">a</span> <span class="o">&gt;</span> <span class="mi">0</span><span class="p">,</span> <span class="s1">&#39;a must be positive&#39;</span>
 </code></pre></div>
 <h3 id="pass">pass<a class="headerlink" href="#pass" title="Permanent link">&para;</a></h3>

@@ -1388,6 +1388,15 @@
 </li>
         
           <li class="md-nav__item">
+  <a href="#sonolus.script.array_like.ArrayLike.get_unchecked" class="md-nav__link">
+    <span class="md-ellipsis">
+      <code class="doc-symbol doc-symbol-toc doc-symbol-method"></code>&nbsp;get_unchecked
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
   <a href="#sonolus.script.array_like.ArrayLike.index" class="md-nav__link">
     <span class="md-ellipsis">
       <code class="doc-symbol doc-symbol-toc doc-symbol-method"></code>&nbsp;index
@@ -1433,6 +1442,15 @@
 </li>
         
           <li class="md-nav__item">
+  <a href="#sonolus.script.array_like.ArrayLike.set_unchecked" class="md-nav__link">
+    <span class="md-ellipsis">
+      <code class="doc-symbol doc-symbol-toc doc-symbol-method"></code>&nbsp;set_unchecked
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
   <a href="#sonolus.script.array_like.ArrayLike.shuffle" class="md-nav__link">
     <span class="md-ellipsis">
       <code class="doc-symbol doc-symbol-toc doc-symbol-method"></code>&nbsp;shuffle
@@ -1459,8 +1477,26 @@
   
 </li>
         
+          <li class="md-nav__item">
+  <a href="#sonolus.script.array_like.ArrayLike.unchecked" class="md-nav__link">
+    <span class="md-ellipsis">
+      <code class="doc-symbol doc-symbol-toc doc-symbol-method"></code>&nbsp;unchecked
+    </span>
+  </a>
+  
+</li>
+        
       </ul>
     </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#sonolus.script.array_like.check_positive_index" class="md-nav__link">
+    <span class="md-ellipsis">
+      <code class="doc-symbol doc-symbol-toc doc-symbol-function"></code>&nbsp;check_positive_index
+    </span>
+  </a>
   
 </li>
       
@@ -2287,6 +2323,15 @@
 </li>
         
           <li class="md-nav__item">
+  <a href="#sonolus.script.array_like.ArrayLike.get_unchecked" class="md-nav__link">
+    <span class="md-ellipsis">
+      <code class="doc-symbol doc-symbol-toc doc-symbol-method"></code>&nbsp;get_unchecked
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
   <a href="#sonolus.script.array_like.ArrayLike.index" class="md-nav__link">
     <span class="md-ellipsis">
       <code class="doc-symbol doc-symbol-toc doc-symbol-method"></code>&nbsp;index
@@ -2332,6 +2377,15 @@
 </li>
         
           <li class="md-nav__item">
+  <a href="#sonolus.script.array_like.ArrayLike.set_unchecked" class="md-nav__link">
+    <span class="md-ellipsis">
+      <code class="doc-symbol doc-symbol-toc doc-symbol-method"></code>&nbsp;set_unchecked
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
   <a href="#sonolus.script.array_like.ArrayLike.shuffle" class="md-nav__link">
     <span class="md-ellipsis">
       <code class="doc-symbol doc-symbol-toc doc-symbol-method"></code>&nbsp;shuffle
@@ -2358,8 +2412,26 @@
   
 </li>
         
+          <li class="md-nav__item">
+  <a href="#sonolus.script.array_like.ArrayLike.unchecked" class="md-nav__link">
+    <span class="md-ellipsis">
+      <code class="doc-symbol doc-symbol-toc doc-symbol-method"></code>&nbsp;unchecked
+    </span>
+  </a>
+  
+</li>
+        
       </ul>
     </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#sonolus.script.array_like.check_positive_index" class="md-nav__link">
+    <span class="md-ellipsis">
+      <code class="doc-symbol doc-symbol-toc doc-symbol-function"></code>&nbsp;check_positive_index
+    </span>
+  </a>
   
 </li>
       
@@ -2751,6 +2823,80 @@
 <div class="doc doc-object doc-function">
 
 
+<h3 id="sonolus.script.array_like.ArrayLike.get_unchecked" class="doc doc-heading">
+<code class="doc-symbol doc-symbol-heading doc-symbol-method"></code>            <code class="highlight language-python"><span class="n">get_unchecked</span><span class="p">(</span><span class="n">index</span><span class="p">:</span> <span class="n">Num</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">T</span></code>
+
+<a href="#sonolus.script.array_like.ArrayLike.get_unchecked" class="headerlink" title="Permanent link">&para;</a></h3>
+
+
+    <div class="doc doc-contents ">
+
+        <p>Get the element at the given index possibly without bounds checking or conversion of negative indexes.</p>
+<p>The compiler may still determine that the index is out of bounds and throw an error, but it may skip these
+checks at runtime.</p>
+
+
+<p><span class="doc-section-title">Parameters:</span></p>
+    <table>
+      <thead>
+        <tr>
+          <th>Name</th>
+          <th>Type</th>
+          <th>Description</th>
+          <th>Default</th>
+        </tr>
+      </thead>
+      <tbody>
+          <tr class="doc-section-item">
+            <td>
+                <code>index</code>
+            </td>
+            <td>
+                  <code><span title="sonolus.script.num.Num">Num</span></code>
+            </td>
+            <td>
+              <div class="doc-md-description">
+                <p>The index to get.</p>
+              </div>
+            </td>
+            <td>
+                <em>required</em>
+            </td>
+          </tr>
+      </tbody>
+    </table>
+
+
+    <p><span class="doc-section-title">Returns:</span></p>
+    <table>
+      <thead>
+        <tr>
+          <th>Type</th>
+          <th>Description</th>
+        </tr>
+      </thead>
+      <tbody>
+          <tr class="doc-section-item">
+            <td>
+                  <code><span title="T">T</span></code>
+            </td>
+            <td>
+              <div class="doc-md-description">
+                <p>The element at the given index.</p>
+              </div>
+            </td>
+          </tr>
+      </tbody>
+    </table>
+
+
+    </div>
+
+</div>
+
+<div class="doc doc-object doc-function">
+
+
 <h3 id="sonolus.script.array_like.ArrayLike.index" class="doc doc-heading">
 <code class="doc-symbol doc-symbol-heading doc-symbol-method"></code>            <code class="highlight language-python"><span class="n">index</span><span class="p">(</span><span class="n">value</span><span class="p">:</span> <span class="n">T</span><span class="p">,</span> <span class="n">start</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">0</span><span class="p">,</span> <span class="n">stop</span><span class="p">:</span> <span class="nb">int</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">int</span></code>
 
@@ -2997,6 +3143,73 @@
 <div class="doc doc-object doc-function">
 
 
+<h3 id="sonolus.script.array_like.ArrayLike.set_unchecked" class="doc doc-heading">
+<code class="doc-symbol doc-symbol-heading doc-symbol-method"></code>            <code class="highlight language-python"><span class="n">set_unchecked</span><span class="p">(</span><span class="n">index</span><span class="p">:</span> <span class="n">Num</span><span class="p">,</span> <span class="n">value</span><span class="p">:</span> <span class="n">T</span><span class="p">)</span></code>
+
+<a href="#sonolus.script.array_like.ArrayLike.set_unchecked" class="headerlink" title="Permanent link">&para;</a></h3>
+
+
+    <div class="doc doc-contents ">
+
+        <p>Set the element at the given index possibly without bounds checking or conversion of negative indexes.</p>
+<p>The compiler may still determine that the index is out of bounds and throw an error, but it may skip these
+checks at runtime.</p>
+
+
+<p><span class="doc-section-title">Parameters:</span></p>
+    <table>
+      <thead>
+        <tr>
+          <th>Name</th>
+          <th>Type</th>
+          <th>Description</th>
+          <th>Default</th>
+        </tr>
+      </thead>
+      <tbody>
+          <tr class="doc-section-item">
+            <td>
+                <code>index</code>
+            </td>
+            <td>
+                  <code><span title="sonolus.script.num.Num">Num</span></code>
+            </td>
+            <td>
+              <div class="doc-md-description">
+                <p>The index to set.</p>
+              </div>
+            </td>
+            <td>
+                <em>required</em>
+            </td>
+          </tr>
+          <tr class="doc-section-item">
+            <td>
+                <code>value</code>
+            </td>
+            <td>
+                  <code><span title="T">T</span></code>
+            </td>
+            <td>
+              <div class="doc-md-description">
+                <p>The value to set.</p>
+              </div>
+            </td>
+            <td>
+                <em>required</em>
+            </td>
+          </tr>
+      </tbody>
+    </table>
+
+
+    </div>
+
+</div>
+
+<div class="doc doc-object doc-function">
+
+
 <h3 id="sonolus.script.array_like.ArrayLike.shuffle" class="doc doc-heading">
 <code class="doc-symbol doc-symbol-heading doc-symbol-method"></code>            <code class="highlight language-python"><span class="n">shuffle</span><span class="p">()</span></code>
 
@@ -3088,7 +3301,7 @@
 
     <div class="doc doc-contents ">
 
-        <p>Swap the values at the given indices.</p>
+        <p>Swap the values at the given positive indices.</p>
 
 
 <p><span class="doc-section-title">Parameters:</span></p>
@@ -3142,6 +3355,24 @@
 
 </div>
 
+<div class="doc doc-object doc-function">
+
+
+<h3 id="sonolus.script.array_like.ArrayLike.unchecked" class="doc doc-heading">
+<code class="doc-symbol doc-symbol-heading doc-symbol-method"></code>            <code class="highlight language-python"><span class="n">unchecked</span><span class="p">()</span> <span class="o">-&gt;</span> <span class="n">ArrayLike</span><span class="p">[</span><span class="n">T</span><span class="p">]</span></code>
+
+<a href="#sonolus.script.array_like.ArrayLike.unchecked" class="headerlink" title="Permanent link">&para;</a></h3>
+
+
+    <div class="doc doc-contents ">
+
+        <p>Return a proxy object that may skip bounds checking and may not support negative indexes.</p>
+
+
+    </div>
+
+</div>
+
 
 
   </div>
@@ -3154,16 +3385,15 @@
 <div class="doc doc-object doc-function">
 
 
-<h2 id="sonolus.script.array_like.get_positive_index" class="doc doc-heading">
-<code class="doc-symbol doc-symbol-heading doc-symbol-function"></code>            <code class="highlight language-python"><span class="n">get_positive_index</span><span class="p">(</span><span class="n">index</span><span class="p">:</span> <span class="nb">int</span><span class="p">,</span> <span class="n">length</span><span class="p">:</span> <span class="nb">int</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">int</span></code>
+<h2 id="sonolus.script.array_like.check_positive_index" class="doc doc-heading">
+<code class="doc-symbol doc-symbol-heading doc-symbol-function"></code>            <code class="highlight language-python"><span class="n">check_positive_index</span><span class="p">(</span><span class="n">index</span><span class="p">:</span> <span class="nb">int</span><span class="p">,</span> <span class="n">length</span><span class="p">:</span> <span class="nb">int</span><span class="p">,</span> <span class="n">include_end</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">False</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">int</span> <span class="o">|</span> <span class="nb">float</span></code>
 
-<a href="#sonolus.script.array_like.get_positive_index" class="headerlink" title="Permanent link">&para;</a></h2>
+<a href="#sonolus.script.array_like.check_positive_index" class="headerlink" title="Permanent link">&para;</a></h2>
 
 
     <div class="doc doc-contents ">
 
-        <p>Get the positive index for the given index in the array of the given length.</p>
-<p>This is used to convert negative indixes relative to the end of the array to positive indices.</p>
+        <p>Check that the given index is a valid index for the array of the given length and convert it to an integer.</p>
 
 
 <p><span class="doc-section-title">Parameters:</span></p>
@@ -3186,7 +3416,7 @@
             </td>
             <td>
               <div class="doc-md-description">
-                <p>The index to convert.</p>
+                <p>The index to check.</p>
               </div>
             </td>
             <td>
@@ -3209,6 +3439,143 @@
                 <em>required</em>
             </td>
           </tr>
+          <tr class="doc-section-item">
+            <td>
+                <code>include_end</code>
+            </td>
+            <td>
+                  <code><span title="bool">bool</span></code>
+            </td>
+            <td>
+              <div class="doc-md-description">
+                <p>Whether to allow the index to be equal to the length of the array (i.e., one past the end).</p>
+              </div>
+            </td>
+            <td>
+                  <code>False</code>
+            </td>
+          </tr>
+      </tbody>
+    </table>
+
+
+    <p><span class="doc-section-title">Returns:</span></p>
+    <table>
+      <thead>
+        <tr>
+          <th>Type</th>
+          <th>Description</th>
+        </tr>
+      </thead>
+      <tbody>
+          <tr class="doc-section-item">
+            <td>
+                  <code><span title="int">int</span> | <span title="float">float</span></code>
+            </td>
+            <td>
+              <div class="doc-md-description">
+                <p>The index as an integer.</p>
+              </div>
+            </td>
+          </tr>
+      </tbody>
+    </table>
+
+
+    </div>
+
+</div>
+
+<div class="doc doc-object doc-function">
+
+
+<h2 id="sonolus.script.array_like.get_positive_index" class="doc doc-heading">
+<code class="doc-symbol doc-symbol-heading doc-symbol-function"></code>            <code class="highlight language-python"><span class="n">get_positive_index</span><span class="p">(</span><span class="n">index</span><span class="p">:</span> <span class="nb">int</span> <span class="o">|</span> <span class="nb">float</span><span class="p">,</span> <span class="n">length</span><span class="p">:</span> <span class="nb">int</span> <span class="o">|</span> <span class="nb">float</span><span class="p">,</span> <span class="o">*</span><span class="p">,</span> <span class="n">include_end</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">False</span><span class="p">,</span> <span class="n">check</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">True</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">int</span></code>
+
+<a href="#sonolus.script.array_like.get_positive_index" class="headerlink" title="Permanent link">&para;</a></h2>
+
+
+    <div class="doc doc-contents ">
+
+        <p>Get the positive index for the given index in the array of the given length, and also perform bounds checking.</p>
+<p>This is used to convert negative indices relative to the end of the array to positive indices.</p>
+
+
+<p><span class="doc-section-title">Parameters:</span></p>
+    <table>
+      <thead>
+        <tr>
+          <th>Name</th>
+          <th>Type</th>
+          <th>Description</th>
+          <th>Default</th>
+        </tr>
+      </thead>
+      <tbody>
+          <tr class="doc-section-item">
+            <td>
+                <code>index</code>
+            </td>
+            <td>
+                  <code><span title="int">int</span> | <span title="float">float</span></code>
+            </td>
+            <td>
+              <div class="doc-md-description">
+                <p>The index to convert.</p>
+              </div>
+            </td>
+            <td>
+                <em>required</em>
+            </td>
+          </tr>
+          <tr class="doc-section-item">
+            <td>
+                <code>length</code>
+            </td>
+            <td>
+                  <code><span title="int">int</span> | <span title="float">float</span></code>
+            </td>
+            <td>
+              <div class="doc-md-description">
+                <p>The length of the array.</p>
+              </div>
+            </td>
+            <td>
+                <em>required</em>
+            </td>
+          </tr>
+          <tr class="doc-section-item">
+            <td>
+                <code>include_end</code>
+            </td>
+            <td>
+                  <code><span title="bool">bool</span></code>
+            </td>
+            <td>
+              <div class="doc-md-description">
+                <p>Whether to allow the index to be equal to the length of the array (i.e., one past the end).</p>
+              </div>
+            </td>
+            <td>
+                  <code>False</code>
+            </td>
+          </tr>
+          <tr class="doc-section-item">
+            <td>
+                <code>check</code>
+            </td>
+            <td>
+                  <code><span title="bool">bool</span></code>
+            </td>
+            <td>
+              <div class="doc-md-description">
+                <p>Whether to perform bounds checking. Must be a compile-time constant.</p>
+              </div>
+            </td>
+            <td>
+                  <code>True</code>
+            </td>
+          </tr>
       </tbody>
     </table>
 
@@ -3228,7 +3595,7 @@
             </td>
             <td>
               <div class="doc-md-description">
-                <p>The positive index.</p>
+                <p>The positive integer index.</p>
               </div>
             </td>
           </tr>
