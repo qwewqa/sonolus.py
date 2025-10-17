@@ -1,6 +1,6 @@
 ### 0.10.3
 
-- Add `--runtime-checks {none,terminate,notify}` to the `dev` and `build` commands to override runtime check
+- Added `--runtime-checks {none,terminate,notify}` to the `dev` and `build` commands to override runtime check
   (e.g. assertion) behavior
 
 ### 0.10.2
