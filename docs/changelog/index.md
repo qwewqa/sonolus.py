@@ -1,3 +1,7 @@
+### 0.10.2
+
+- Fixed error with [`Vec2.normalize()`][sonolus.script.vec.Vec2.normalize]
+
 ### 0.10.1
 
 - Assertions are now stripped in release (non-dev) builds
