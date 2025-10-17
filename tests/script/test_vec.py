@@ -1,8 +1,9 @@
 from math import pi
 
-from hypothesis import given
+from hypothesis import assume, given
 from hypothesis import strategies as st
 
+from sonolus.script.array import Array
 from sonolus.script.vec import Vec2
 from tests.script.conftest import is_close, run_and_validate
 
@@ -149,3 +150,15 @@ def test_unit_angle(angle):
 
     result = run_and_validate(fn)
     assert is_close(result, angle)
+
+
+@given(floats, floats)
+def test_vec2_normalize_maintains_angle(x, y):
+    assume(abs(x) > 1e-2 or abs(y) > 1e-2)
+
+    def fn():
+        v = Vec2(x, y)
+        return Array(v.angle, v.normalize().angle)
+
+    result = run_and_validate(fn)
+    assert is_close(result[0], result[1])
