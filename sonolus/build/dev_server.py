@@ -230,6 +230,8 @@ def command_input_thread(command_queue: queue.Queue, prompt_event: threading.Eve
                     print(f"Unknown command. Available commands:\n{HELP_TEXT}")
                     # Show prompt again
                     prompt_event.set()
+            else:
+                prompt_event.set()
         except EOFError:
             break
         except Exception as e:
