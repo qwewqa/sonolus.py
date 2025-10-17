@@ -2256,10 +2256,10 @@
 
     <div class="doc doc-contents ">
 
-        <p>Raise an error, and if in a dev build, log a message and pause the game.</p>
-<p>This function is used to raise an error during runtime.
-When this happens, the game will pause in debug mode. The current callback will also immediately return 0.</p>
-<p>In non-dev builds, this function will terminate the current callback silently.</p>
+        <p>Raise an error, and if runtime checks are set to notify, log a message and pause the game.</p>
+<p>This function is used to raise an error during runtime and terminate the current callback.</p>
+<p>If runtime checks are set to notify (default in dev), this function will log a message and pause the game
+before terminating.</p>
 
 
 <p><span class="doc-section-title">Parameters:</span></p>
@@ -2308,8 +2308,8 @@ When this happens, the game will pause in debug mode. The current callback will 
 
     <div class="doc doc-contents ">
 
-        <p>Log a code that can be decoded by the dev server and pause the game if in debug mode and in a dev build.</p>
-<p>Does nothing if not a dev build.</p>
+        <p>Log a code that can be decoded by the dev server and pause the game if runtime checks are set to notify.</p>
+<p>If runtime checks are not set to notify, this function will do nothing.</p>
 
 
 <p><span class="doc-section-title">Parameters:</span></p>
