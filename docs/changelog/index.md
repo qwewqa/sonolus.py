@@ -1,3 +1,7 @@
+### 0.10.6
+
+- Fixed the dev server becoming unresponsive after invalid command arguments
+
 ### 0.10.5
 
 - Fixed the dev server becoming unresponsive after a blank command
