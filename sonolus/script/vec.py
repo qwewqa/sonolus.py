@@ -1,5 +1,7 @@
 from __future__ import annotations
 
+from math import pi
+
 from sonolus.script.array import Array
 from sonolus.script.array_like import ArrayLike
 from sonolus.script.debug import assert_true
@@ -285,3 +287,22 @@ def pnpoly(vertices: ArrayLike[Vec2] | tuple[Vec2, ...], test: Vec2) -> bool:
         j = i
         i += 1
     return c
+
+
+def angle_diff(a: float, b: float, /) -> float:
+    """Return the smallest absolute difference between two angles in radians.
+
+    The result is in the range [0, π].
+    """
+    return abs((a - b + pi) % (2 * pi) - pi)
+
+
+def signed_angle_diff(a: float, b: float, /) -> float:
+    """Return the signed smallest difference between two angles in radians.
+
+    The result is in the range [-π, π). A positive result means a is counter-clockwise from b.
+    A negative result means a is clockwise from b.
+
+    If the two angles are exactly opposite, the result will be -π, but this should not be relied upon.
+    """
+    return (a - b + pi) % (2 * pi) - pi

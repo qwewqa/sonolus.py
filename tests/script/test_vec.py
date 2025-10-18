@@ -3,8 +3,7 @@ from math import pi
 from hypothesis import assume, given
 from hypothesis import strategies as st
 
-from sonolus.script.array import Array
-from sonolus.script.vec import Vec2
+from sonolus.script.vec import Vec2, angle_diff, signed_angle_diff
 from tests.script.conftest import is_close, run_and_validate
 
 floats = st.floats(min_value=-999, max_value=999, allow_nan=False, allow_infinity=False)
@@ -158,7 +157,78 @@ def test_vec2_normalize_maintains_angle(x, y):
 
     def fn():
         v = Vec2(x, y)
-        return Array(v.angle, v.normalize().angle)
+        return angle_diff(v.angle, v.normalize().angle)
 
-    result = run_and_validate(fn)
-    assert is_close(result[0], result[1])
+    diff = run_and_validate(fn)
+    assert is_close(diff, 0)
+
+
+def test_angle_diff_examples():
+    assert is_close(angle_diff(0, 0), 0)
+    assert is_close(angle_diff(0, pi), pi)
+    assert is_close(angle_diff(0, 2 * pi), 0)
+    assert is_close(angle_diff(0, pi / 4), pi / 4)
+    assert is_close(angle_diff(pi / 2, -pi / 2), pi)
+    assert is_close(angle_diff(0, 3 * pi / 2), pi / 2)
+    assert is_close(angle_diff(-pi / 4, pi / 4), pi / 2)
+
+
+@given(floats, floats)
+def test_angle_diff_in_range(a, b):
+    result = angle_diff(a, b)
+    assert 0 <= result <= pi
+
+
+@given(floats)
+def test_angle_diff_identity(angle):
+    result = angle_diff(angle, angle)
+    assert result == 0
+
+
+@given(floats, floats)
+def test_angle_diff_commutative(a, b):
+    result1 = angle_diff(a, b)
+    result2 = angle_diff(b, a)
+    assert is_close(result1, result2)
+
+
+@given(floats, st.floats(min_value=-pi, max_value=pi, allow_nan=False, allow_infinity=False))
+def test_angle_diff_delta(angle, delta):
+    result = angle_diff(angle, angle + delta)
+    assert is_close(result, abs(delta))
+
+
+def test_signed_angle_diff_examples():
+    assert is_close(signed_angle_diff(0, 0), 0)
+    assert is_close(signed_angle_diff(pi / 4, 0), pi / 4)
+    assert is_close(signed_angle_diff(0, pi / 4), -pi / 4)
+    assert is_close(signed_angle_diff(0, 2 * pi), 0)
+    assert is_close(signed_angle_diff(pi / 2, 0), pi / 2)
+    assert is_close(signed_angle_diff(0, 3 * pi / 4), -3 * pi / 4)
+    assert is_close(signed_angle_diff(3 * pi / 4, -3 * pi / 4), -pi / 2)
+    assert is_close(signed_angle_diff(pi, 0), -pi)
+
+
+@given(floats, floats)
+def test_signed_angle_diff_in_range(a, b):
+    result = signed_angle_diff(a, b)
+    assert -pi <= result <= pi
+
+
+@given(floats)
+def test_signed_angle_diff_identity(angle):
+    result = signed_angle_diff(angle, angle)
+    assert result == 0
+
+
+@given(floats, floats)
+def test_signed_angle_diff_anticommutative(a, b):
+    result1 = signed_angle_diff(a, b)
+    result2 = signed_angle_diff(b, a)
+    assert is_close(result1, -result2)
+
+
+@given(floats, st.floats(min_value=-pi, max_value=pi, exclude_max=True, allow_nan=False, allow_infinity=False))
+def test_signed_angle_diff_delta(angle, delta):
+    result = signed_angle_diff(angle + delta, angle)
+    assert is_close(result, delta)
