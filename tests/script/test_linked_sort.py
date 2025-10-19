@@ -69,4 +69,4 @@ def test_merge_sort_linked_list_nodes(elts: list[int]):
             idx += 1
         return results
 
-    assert sorted(run_and_validate(fn)) == sorted(elts)
+    assert list(run_and_validate(fn)) == sorted(elts)
