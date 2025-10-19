@@ -1837,6 +1837,15 @@
   
 </li>
       
+        <li class="md-nav__item">
+  <a href="#sonolus.script.containers.sort_linked_entities" class="md-nav__link">
+    <span class="md-ellipsis">
+      <code class="doc-symbol doc-symbol-toc doc-symbol-function"></code>&nbsp;sort_linked_entities
+    </span>
+  </a>
+  
+</li>
+      
     </ul>
   
 </nav>
@@ -3005,6 +3014,15 @@
         
       </ul>
     </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#sonolus.script.containers.sort_linked_entities" class="md-nav__link">
+    <span class="md-ellipsis">
+      <code class="doc-symbol doc-symbol-toc doc-symbol-function"></code>&nbsp;sort_linked_entities
+    </span>
+  </a>
   
 </li>
       
@@ -4895,6 +4913,142 @@ If the array is full, the value is not added.</p>
 
 </div>
 
+
+<div class="doc doc-object doc-function">
+
+
+<h2 id="sonolus.script.containers.sort_linked_entities" class="doc doc-heading">
+<code class="doc-symbol doc-symbol-heading doc-symbol-function"></code>            <code class="highlight language-python"><span class="n">sort_linked_entities</span><span class="p">(</span><span class="n">head_ref</span><span class="p">:</span> <span class="n">EntityRef</span><span class="p">[</span><span class="n">T</span><span class="p">],</span> <span class="o">/</span><span class="p">,</span> <span class="o">*</span><span class="p">,</span> <span class="n">get_value</span><span class="p">:</span> <span class="n">Callable</span><span class="p">[[</span><span class="n">T</span><span class="p">],</span> <span class="n">Any</span><span class="p">],</span> <span class="n">get_next_ref</span><span class="p">:</span> <span class="n">Callable</span><span class="p">[[</span><span class="n">T</span><span class="p">],</span> <span class="n">EntityRef</span><span class="p">[</span><span class="n">T</span><span class="p">]],</span> <span class="n">get_prev_ref</span><span class="p">:</span> <span class="n">Callable</span><span class="p">[[</span><span class="n">T</span><span class="p">],</span> <span class="n">EntityRef</span><span class="p">[</span><span class="n">T</span><span class="p">]]</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">EntityRef</span><span class="p">[</span><span class="n">T</span><span class="p">]</span></code>
+
+<a href="#sonolus.script.containers.sort_linked_entities" class="headerlink" title="Permanent link">&para;</a></h2>
+
+
+    <div class="doc doc-contents ">
+
+        <p>Sort a linked list of entities using merge sort.</p>
+<p>If get_prev_ref is provided, the backward links will be updated as well.</p>
+
+
+<details class="usage" open>
+  <summary>Usage</summary>
+  <div class="highlight"><pre><span></span><code><span class="k">class</span><span class="w"> </span><span class="nc">MyArchetype</span><span class="p">(</span><span class="n">PlayArchetype</span><span class="p">):</span>
+    <span class="n">sort_key</span><span class="p">:</span> <span class="nb">int</span>
+    <span class="nb">next</span><span class="p">:</span> <span class="n">EntityRef</span><span class="p">[</span><span class="n">MyArchetype</span><span class="p">]</span>
+
+<span class="k">def</span><span class="w"> </span><span class="nf">sort_my_archetype</span><span class="p">(</span><span class="n">head</span><span class="p">:</span> <span class="n">EntityRef</span><span class="p">[</span><span class="n">MyArchetype</span><span class="p">])</span> <span class="o">-&gt;</span> <span class="n">EntityRef</span><span class="p">[</span><span class="n">MyArchetype</span><span class="p">]:</span>
+    <span class="k">return</span> <span class="n">sort_linked_entities</span><span class="p">(</span>
+        <span class="n">head</span><span class="p">,</span>
+        <span class="n">get_value</span><span class="o">=</span><span class="k">lambda</span> <span class="n">e</span><span class="p">:</span> <span class="n">e</span><span class="o">.</span><span class="n">sort_key</span><span class="p">,</span>
+        <span class="n">get_next_ref</span><span class="o">=</span><span class="k">lambda</span> <span class="n">e</span><span class="p">:</span> <span class="n">e</span><span class="o">.</span><span class="n">next</span><span class="p">,</span>
+    <span class="p">)</span>
+</code></pre></div>
+</details>
+
+<p><span class="doc-section-title">Parameters:</span></p>
+    <table>
+      <thead>
+        <tr>
+          <th>Name</th>
+          <th>Type</th>
+          <th>Description</th>
+          <th>Default</th>
+        </tr>
+      </thead>
+      <tbody>
+          <tr class="doc-section-item">
+            <td>
+                <code>head_ref</code>
+            </td>
+            <td>
+                  <code><a class="autorefs autorefs-internal" title="            EntityRef (sonolus.script.archetype.EntityRef)" href="../sonolus.script.archetype/#sonolus.script.archetype.EntityRef">EntityRef</a>[<span title="T">T</span>]</code>
+            </td>
+            <td>
+              <div class="doc-md-description">
+                <p>A reference to the head of the linked list.</p>
+              </div>
+            </td>
+            <td>
+                <em>required</em>
+            </td>
+          </tr>
+          <tr class="doc-section-item">
+            <td>
+                <code>get_value</code>
+            </td>
+            <td>
+                  <code><span title="collections.abc.Callable">Callable</span>[[<span title="T">T</span>], <span title="typing.Any">Any</span>]</code>
+            </td>
+            <td>
+              <div class="doc-md-description">
+                <p>A function that takes an entity and returns the value to sort by.</p>
+              </div>
+            </td>
+            <td>
+                <em>required</em>
+            </td>
+          </tr>
+          <tr class="doc-section-item">
+            <td>
+                <code>get_next_ref</code>
+            </td>
+            <td>
+                  <code><span title="collections.abc.Callable">Callable</span>[[<span title="T">T</span>], <a class="autorefs autorefs-internal" title="            EntityRef (sonolus.script.archetype.EntityRef)" href="../sonolus.script.archetype/#sonolus.script.archetype.EntityRef">EntityRef</a>[<span title="T">T</span>]]</code>
+            </td>
+            <td>
+              <div class="doc-md-description">
+                <p>A function that takes an entity and returns a reference to the next entity.</p>
+              </div>
+            </td>
+            <td>
+                <em>required</em>
+            </td>
+          </tr>
+          <tr class="doc-section-item">
+            <td>
+                <code>get_prev_ref</code>
+            </td>
+            <td>
+                  <code><span title="collections.abc.Callable">Callable</span>[[<span title="T">T</span>], <a class="autorefs autorefs-internal" title="            EntityRef (sonolus.script.archetype.EntityRef)" href="../sonolus.script.archetype/#sonolus.script.archetype.EntityRef">EntityRef</a>[<span title="T">T</span>]] | None</code>
+            </td>
+            <td>
+              <div class="doc-md-description">
+                <p>An optional function that takes an entity and returns a reference to the previous entity.</p>
+              </div>
+            </td>
+            <td>
+                  <code>None</code>
+            </td>
+          </tr>
+      </tbody>
+    </table>
+
+
+    <p><span class="doc-section-title">Returns:</span></p>
+    <table>
+      <thead>
+        <tr>
+          <th>Type</th>
+          <th>Description</th>
+        </tr>
+      </thead>
+      <tbody>
+          <tr class="doc-section-item">
+            <td>
+                  <code><a class="autorefs autorefs-internal" title="            EntityRef (sonolus.script.archetype.EntityRef)" href="../sonolus.script.archetype/#sonolus.script.archetype.EntityRef">EntityRef</a>[<span title="T">T</span>]</code>
+            </td>
+            <td>
+              <div class="doc-md-description">
+                <p>A reference to the head of the sorted linked list.</p>
+              </div>
+            </td>
+          </tr>
+      </tbody>
+    </table>
+
+
+    </div>
+
+</div>
 
 
 
