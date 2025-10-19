@@ -277,6 +277,17 @@ def round(number: builtins.int | builtins.float, ndigits: builtins.int = ...) ->
     """
     ...
 
+def type(obj: object) -> builtins.type:
+    """Return the type of an object.
+
+    Args:
+        obj: The object to get the type of.
+
+    Returns:
+        The type of the object.
+    """
+    ...
+
 def zip[T](*iterables: Iterable[T]) -> Iterator[tuple[T, ...]]:
     """Return an iterator of tuples, where the i-th tuple contains the i-th element from each of the argument sequences.
 

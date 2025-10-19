@@ -389,6 +389,11 @@ def _super(*args):
 
 
 @meta_fn
+def _type(value):
+    return type(value)
+
+
+@meta_fn
 def _assert_never(arg: Never, /):
     error("Expected code to be unreachable")
 
