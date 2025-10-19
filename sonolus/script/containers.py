@@ -1,7 +1,9 @@
 from __future__ import annotations
 
-from typing import Self
+from collections.abc import Callable
+from typing import Any, Protocol, Self
 
+from sonolus.script.archetype import AnyArchetype, EntityRef
 from sonolus.script.array import Array
 from sonolus.script.array_like import ArrayLike, get_positive_index
 from sonolus.script.debug import error
@@ -643,3 +645,213 @@ class _ArrayMapEntryIterator[K, V, Capacity](Record, SonolusIterator):
             self._index += 1
             return Some(result)
         return Nothing
+
+
+class _LinkedListNodeRef[TKey, TValue](Protocol):
+    def get_value(self) -> TValue: ...
+
+    def get_next(self) -> Self: ...
+
+    def set_next(self, next_node: Self): ...
+
+    def set_prev(self, prev_node: Self):
+        # No-op for singly linked lists
+        return
+
+    def is_present(self) -> bool: ...
+
+    def set(self, other: Self): ...
+
+    def copy(self) -> Self: ...
+
+    def empty(self) -> Self: ...
+
+
+def _merge_linked_list_nodes[TNode: _LinkedListNodeRef](
+    a: TNode,
+    b: TNode,
+) -> TNode:
+    head = a.empty()
+    tail = a.empty()
+    left = a.copy()
+    right = b.copy()
+
+    while left.is_present() and right.is_present():
+        if left.get_value() <= right.get_value():
+            if not head.is_present():
+                head.set(left)
+                tail.set(left)
+            else:
+                tail.set_next(left)
+                tail.set(left)
+            left.set(left.get_next())
+        else:
+            if not head.is_present():
+                head.set(right)
+                tail.set(right)
+            else:
+                tail.set_next(right)
+                tail.set(right)
+            right.set(right.get_next())
+
+    while left.is_present():
+        if not head.is_present():
+            head.set(left)
+            tail.set(left)
+        else:
+            tail.set_next(left)
+            tail.set(left)
+        left.set(left.get_next())
+
+    while right.is_present():
+        if not head.is_present():
+            head.set(right)
+            tail.set(right)
+        else:
+            tail.set_next(right)
+            tail.set(right)
+        right.set(right.get_next())
+
+    if tail.is_present():
+        tail.set_next(a.empty())
+
+    return head
+
+
+def _merge_sort_linked_list_nodes[TNode: _LinkedListNodeRef](
+    head: TNode,
+) -> TNode:
+    # Calculate length
+    length = 0
+    node = head.copy()
+    while node.is_present():
+        length += 1
+        node.set(node.get_next())
+
+    # Trivial case
+    if length <= 1:
+        return head
+
+    # Bottom-up merge sort: start with sublists of size 1, then 2, 4, 8, etc.
+    size = 1
+    while size < length:
+        current = head.copy()
+        new_head = head.empty()
+        new_tail = head.empty()
+
+        # Process all pairs of sublists of the current size
+        while current.is_present():
+            # Extract the first sublist
+            left = current.copy()
+            prev = current.empty()
+            i = 0
+            while i < size and current.is_present():
+                prev.set(current)
+                current.set(current.get_next())
+                i += 1
+            if prev.is_present():
+                prev.set_next(prev.empty())
+
+            # We've made it to the end without a second sublist to merge, so just attach it to the end
+            if not current.is_present():
+                # Since size < length, we know a full iteration must have happened already, so new_tail is valid
+                new_tail.set_next(left)
+                break
+
+            # Extract the second sublist
+            right = current.copy()
+            prev = current.empty()
+            i = 0
+            while i < size and current.is_present():
+                prev.set(current)
+                current.set(current.get_next())
+                i += 1
+            if prev.is_present():
+                prev.set_next(prev.empty())
+
+            merged = _merge_linked_list_nodes(left, right)
+
+            # Append the merged result
+            if not new_head.is_present():
+                new_head.set(merged)
+                new_tail.set(merged)
+            else:
+                new_tail.set_next(merged)
+
+            # Move tail to the end of the merged section
+            while new_tail.get_next().is_present():
+                new_tail.set(new_tail.get_next())
+
+        # Update head for the next iteration
+        head.set(new_head)
+        size *= 2
+
+    return head
+
+
+@meta_fn
+def sort_linked_entities[T: AnyArchetype](
+    head_ref: EntityRef[T],
+    /,
+    *,
+    get_value: Callable[[T], Any],
+    get_next_ref: Callable[[T], EntityRef[T]],
+    get_prev_ref: Callable[[T], EntityRef[T]] | None = None,
+) -> EntityRef[T]:
+    """Sort a linked list of entities using merge sort.
+
+    If get_prev_ref is provided, the backward links will be updated as well.
+
+    Args:
+        head_ref: A reference to the head of the linked list.
+        get_value: A function that takes an entity and returns the value to sort by.
+        get_next_ref: A function that takes an entity and returns a reference to the next entity.
+        get_prev_ref: An optional function that takes an entity and returns a reference to the previous entity.
+
+    Returns:
+        A reference to the head of the sorted linked list.
+    """
+    archetype = head_ref.archetype()
+
+    class EntityNodeRef(Record, _LinkedListNodeRef[Any, T]):
+        index: int
+
+        def get_value(self) -> Any:
+            return get_value(archetype.at(self.index))
+
+        def get_next(self) -> EntityNodeRef:
+            next_ref = get_next_ref(archetype.at(self.index))
+            return EntityNodeRef(next_ref.index)
+
+        def set_next(self, next_node: EntityNodeRef):
+            entity = archetype.at(self.index)
+            next_ref = get_next_ref(entity)
+            next_ref.index = next_node.index
+
+        def is_present(self) -> bool:
+            return self.index > 0
+
+        def set(self, other: EntityNodeRef):
+            self.index = other.index
+
+        def copy(self) -> EntityNodeRef:
+            return EntityNodeRef(self.index)
+
+        def empty(self) -> EntityNodeRef:
+            return EntityNodeRef(0)
+
+    sorted_head_index = _merge_sort_linked_list_nodes(EntityNodeRef(head_ref.index)).index
+
+    if get_prev_ref is not None:
+        prev_ref = EntityRef[archetype](0)
+        current_ref = EntityRef[archetype](sorted_head_index)
+        while current_ref.index != 0:
+            entity = archetype.at(current_ref.index)
+            if prev_ref.index != 0:
+                get_prev_ref(entity).index = prev_ref.index
+            else:
+                get_prev_ref(entity).index = 0
+            prev_ref.index = current_ref.index
+            current_ref = get_next_ref(entity)
+
+    return EntityRef[archetype](sorted_head_index)
