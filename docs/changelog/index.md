@@ -1,3 +1,10 @@
+### 0.10.7
+
+- Added support for the `type()` built-in function
+- Added the [`angle_diff()`][sonolus.script.vec.angle_diff] and 
+  [`signed_angle_diff()`][sonolus.script.vec.signed_angle_diff] functions
+- Added the [`sort_linked_entities()`][sonolus.script.containers.sort_linked_entities] function
+
 ### 0.10.6
 
 - Fixed the dev server becoming unresponsive after invalid command arguments
@@ -52,7 +59,7 @@
 
 - Changelog introduced
 - Fixed some errors when iterating over iterators that are statically determined to be empty
-- Added [`Rect.from_margin(...)`][sonolus.script.quad.Rect.from_margin]
+- Added [`Rect.from_margin()`][sonolus.script.quad.Rect.from_margin]
 - Added [`SpriteGroup`][sonolus.script.sprite.SpriteGroup], [`EffectGroup`][sonolus.script.effect.EffectGroup], and
   [`ParticleGroup`][sonolus.script.particle.ParticleGroup] for array-like access to sprites, effects, and particles
 - Added mid-edge properties like [`Quad.mt`][sonolus.script.quad.Quad.mt] and [`Rect.mb`][sonolus.script.quad.Rect.mb]
