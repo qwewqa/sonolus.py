@@ -859,6 +859,20 @@ def sort_linked_entities[T: AnyArchetype](
 
     If get_prev_ref is provided, the backward links will be updated as well.
 
+    Usage:
+        ```python
+        class MyArchetype(PlayArchetype):
+            sort_key: int
+            next: EntityRef[MyArchetype]
+
+        def sort_my_archetype(head: EntityRef[MyArchetype]) -> EntityRef[MyArchetype]:
+            return sort_linked_entities(
+                head,
+                get_value=lambda e: e.sort_key,
+                get_next_ref=lambda e: e.next,
+            )
+        ```
+
     Args:
         head_ref: A reference to the head of the linked list.
         get_value: A function that takes an entity and returns the value to sort by.
