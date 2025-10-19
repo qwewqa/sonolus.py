@@ -421,6 +421,7 @@ BUILTIN_IMPLS = {
     id(range): Range,
     id(reversed): _reversed,
     id(super): _super,
+    id(type): _type,
     id(zip): _zip,
     id(assert_never): _assert_never,
     **MATH_BUILTIN_IMPLS,  # Includes round

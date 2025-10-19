@@ -265,3 +265,12 @@ def test_record_augmented_property_setter_with_explicit_implementation():
         return r.value.value
 
     assert run_and_validate(fn) == 3
+
+
+def test_type_of_generic_record():
+    def fn():
+        r = Generic(Pair(1, 2))
+        t = type(r)
+        return t(Pair(3, 4))
+
+    assert run_and_validate(fn) == Generic(Pair(3, 4))
