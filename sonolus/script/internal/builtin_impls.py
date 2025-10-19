@@ -22,6 +22,7 @@ from sonolus.script.iterator import (
     _Zipper,
 )
 from sonolus.script.num import Num, _is_num
+from sonolus.script.record import Record
 
 _empty = object()
 
@@ -388,9 +389,16 @@ def _super(*args):
     return super(*(arg._as_py_() if arg._is_py_() else arg for arg in args))
 
 
-@meta_fn
-def _type(value):
-    return type(value)
+class _Type(Record):
+    @meta_fn
+    def __call__(self, value, /):
+        return type(value)
+
+    def __getitem__(self, item):
+        return self
+
+
+_type = _Type()
 
 
 @meta_fn
