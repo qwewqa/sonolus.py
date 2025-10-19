@@ -789,22 +789,22 @@ def _merge_sort_linked_list_nodes[TNode: _LinkedListNodeRef](
     return head
 
 
-class EntityNodeRef[Archetype, GetValue, GetNextRef, GetPrevRef](Record):
+class _EntityNodeRef[Archetype, GetValue, GetNextRef, GetPrevRef](Record):
     index: int
 
     def get_value(self) -> Any:
         return self.get_value_fn(self.archetype.at(self.index))
 
-    def get_next(self) -> EntityNodeRef:
+    def get_next(self) -> _EntityNodeRef:
         next_ref = self.get_next_ref_fn(self.archetype.at(self.index))
         return self.with_index(next_ref.index)
 
-    def set_next(self, next_node: EntityNodeRef):
+    def set_next(self, next_node: _EntityNodeRef):
         entity = self.archetype.at(self.index)
         next_ref = self.get_next_ref_fn(entity)
         next_ref.index = next_node.index
 
-    def set_prev(self, prev_node: EntityNodeRef):
+    def set_prev(self, prev_node: _EntityNodeRef):
         if self.get_prev_ref_fn is not None:
             entity = self.archetype.at(self.index)
             prev_ref = self.get_prev_ref_fn(entity)
@@ -813,17 +813,17 @@ class EntityNodeRef[Archetype, GetValue, GetNextRef, GetPrevRef](Record):
     def is_present(self) -> bool:
         return self.index > 0
 
-    def set(self, other: EntityNodeRef):
+    def set(self, other: _EntityNodeRef):
         self.index = other.index
 
-    def copy(self) -> EntityNodeRef:
+    def copy(self) -> _EntityNodeRef:
         return self.with_index(self.index)
 
-    def empty(self) -> EntityNodeRef:
+    def empty(self) -> _EntityNodeRef:
         return self.with_index(0)
 
-    def with_index(self, index: int) -> EntityNodeRef:
-        return EntityNodeRef[
+    def with_index(self, index: int) -> _EntityNodeRef:
+        return _EntityNodeRef[
             self.archetype,
             self.get_value_fn,
             self.get_next_ref_fn,
@@ -871,11 +871,11 @@ def sort_linked_entities[T: AnyArchetype](
     archetype = head_ref.archetype()
 
     sorted_head_index = _merge_sort_linked_list_nodes(
-        EntityNodeRef[archetype, get_value, get_next_ref, get_prev_ref](head_ref.index)
+        _EntityNodeRef[archetype, get_value, get_next_ref, get_prev_ref](head_ref.index)
     ).index
 
     if get_prev_ref is not None:
-        current_ref = EntityNodeRef[archetype, get_value, get_next_ref, get_prev_ref](sorted_head_index)
+        current_ref = _EntityNodeRef[archetype, get_value, get_next_ref, get_prev_ref](sorted_head_index)
         prev_ref = current_ref.empty()
         while current_ref.is_present():
             current_ref.set_prev(prev_ref)
