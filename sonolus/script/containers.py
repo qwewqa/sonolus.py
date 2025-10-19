@@ -789,7 +789,64 @@ def _merge_sort_linked_list_nodes[TNode: _LinkedListNodeRef](
     return head
 
 
-@meta_fn
+class EntityNodeRef[Archetype, GetValue, GetNextRef, GetPrevRef](Record):
+    index: int
+
+    def get_value(self) -> Any:
+        return self.get_value_fn(self.archetype.at(self.index))
+
+    def get_next(self) -> EntityNodeRef:
+        next_ref = self.get_next_ref_fn(self.archetype.at(self.index))
+        return self.with_index(next_ref.index)
+
+    def set_next(self, next_node: EntityNodeRef):
+        entity = self.archetype.at(self.index)
+        next_ref = self.get_next_ref_fn(entity)
+        next_ref.index = next_node.index
+
+    def set_prev(self, prev_node: EntityNodeRef):
+        if self.get_prev_ref_fn is not None:
+            entity = self.archetype.at(self.index)
+            prev_ref = self.get_prev_ref_fn(entity)
+            prev_ref.index = prev_node.index
+
+    def is_present(self) -> bool:
+        return self.index > 0
+
+    def set(self, other: EntityNodeRef):
+        self.index = other.index
+
+    def copy(self) -> EntityNodeRef:
+        return self.with_index(self.index)
+
+    def empty(self) -> EntityNodeRef:
+        return self.with_index(0)
+
+    def with_index(self, index: int) -> EntityNodeRef:
+        return EntityNodeRef[
+            self.archetype,
+            self.get_value_fn,
+            self.get_next_ref_fn,
+            self.get_prev_ref_fn,
+        ](index)
+
+    @property
+    def archetype(self):
+        return self.type_var_value(Archetype)
+
+    @property
+    def get_value_fn(self):
+        return self.type_var_value(GetValue)
+
+    @property
+    def get_next_ref_fn(self):
+        return self.type_var_value(GetNextRef)
+
+    @property
+    def get_prev_ref_fn(self):
+        return self.type_var_value(GetPrevRef)
+
+
 def sort_linked_entities[T: AnyArchetype](
     head_ref: EntityRef[T],
     /,
@@ -813,45 +870,16 @@ def sort_linked_entities[T: AnyArchetype](
     """
     archetype = head_ref.archetype()
 
-    class EntityNodeRef(Record, _LinkedListNodeRef[Any, T]):
-        index: int
-
-        def get_value(self) -> Any:
-            return get_value(archetype.at(self.index))
-
-        def get_next(self) -> EntityNodeRef:
-            next_ref = get_next_ref(archetype.at(self.index))
-            return EntityNodeRef(next_ref.index)
-
-        def set_next(self, next_node: EntityNodeRef):
-            entity = archetype.at(self.index)
-            next_ref = get_next_ref(entity)
-            next_ref.index = next_node.index
-
-        def is_present(self) -> bool:
-            return self.index > 0
-
-        def set(self, other: EntityNodeRef):
-            self.index = other.index
-
-        def copy(self) -> EntityNodeRef:
-            return EntityNodeRef(self.index)
-
-        def empty(self) -> EntityNodeRef:
-            return EntityNodeRef(0)
-
-    sorted_head_index = _merge_sort_linked_list_nodes(EntityNodeRef(head_ref.index)).index
+    sorted_head_index = _merge_sort_linked_list_nodes(
+        EntityNodeRef[archetype, get_value, get_next_ref, get_prev_ref](head_ref.index)
+    ).index
 
     if get_prev_ref is not None:
-        prev_ref = EntityRef[archetype](0)
-        current_ref = EntityRef[archetype](sorted_head_index)
-        while current_ref.index != 0:
-            entity = archetype.at(current_ref.index)
-            if prev_ref.index != 0:
-                get_prev_ref(entity).index = prev_ref.index
-            else:
-                get_prev_ref(entity).index = 0
-            prev_ref.index = current_ref.index
-            current_ref = get_next_ref(entity)
+        current_ref = EntityNodeRef[archetype, get_value, get_next_ref, get_prev_ref](sorted_head_index)
+        prev_ref = current_ref.empty()
+        while current_ref.is_present():
+            current_ref.set_prev(prev_ref)
+            prev_ref.set(current_ref)
+            current_ref.set(current_ref.get_next())
 
     return EntityRef[archetype](sorted_head_index)
