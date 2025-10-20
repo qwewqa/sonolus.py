@@ -1,3 +1,7 @@
+### 0.10.8
+
+- Fixed issue when parameterizing the `type` built-in as a generic type
+
 ### 0.10.7
 
 - Added support for the `type()` built-in function
