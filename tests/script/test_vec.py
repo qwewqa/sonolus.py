@@ -163,6 +163,18 @@ def test_vec2_normalize_maintains_angle(x, y):
     assert is_close(diff, 0)
 
 
+@given(floats, floats)
+def test_vec2_normalize_or_zero_maintains_angle(x, y):
+    assume(abs(x) > 1e-2 or abs(y) > 1e-2)
+
+    def fn():
+        v = Vec2(x, y)
+        return angle_diff(v.angle, v.normalize_or_zero().angle)
+
+    diff = run_and_validate(fn)
+    assert is_close(diff, 0)
+
+
 def test_angle_diff_examples():
     assert is_close(angle_diff(0, 0), 0)
     assert is_close(angle_diff(0, pi), pi)

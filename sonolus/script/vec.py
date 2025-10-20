@@ -164,6 +164,22 @@ class Vec2(Record):
         assert_true(magnitude != 0, "Cannot normalize a zero vector")
         return Vec2._quick_construct(x=self.x / magnitude, y=self.y / magnitude)
 
+    def normalize_or_zero(self) -> Vec2:
+        """Normalize the vector (set the magnitude to 1) and return a new vector.
+
+        If the vector is a zero vector, return a zero vector.
+
+        Returns:
+            A new vector with magnitude 1, or a zero vector if the original vector is zero.
+        """
+        magnitude = (self.x**2 + self.y**2) ** 0.5
+        result = +Vec2
+        if magnitude == 0:
+            result @= Vec2.zero()
+        else:
+            result @= Vec2(x=self.x / magnitude, y=self.y / magnitude)
+        return result
+
     @perf_meta_fn
     def orthogonal(self) -> Vec2:
         """Return a vector orthogonal to this vector.
