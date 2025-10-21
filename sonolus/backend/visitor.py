@@ -319,7 +319,6 @@ class Visitor(ast.NodeVisitor):
             with using_ctx(before_ctx):
                 state_var._set_(0)
             with using_ctx(return_ctx):
-                state_var._set_(len(self.return_ctxs) + 1)
                 is_present_var._set_(0)
             del before_ctx.outgoing[None]  # Unlink the state machine body from the call site
             entry = before_ctx.new_empty_disconnected()
