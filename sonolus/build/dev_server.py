@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import argparse
 import contextlib
+import gc
 import http.server
 import importlib
 import queue
@@ -331,6 +332,7 @@ def run_server(
                     cmd = command_queue.get()
                     try:
                         cmd.execute(server_state)
+                        gc.collect()
                     except Exception:
                         print(f"{traceback.format_exc()}\n")
                     prompt_event.set()

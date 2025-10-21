@@ -1,4 +1,5 @@
 import argparse
+import gc
 import importlib
 import json
 import shutil
@@ -164,6 +165,12 @@ def main():
             help="Runtime error checking mode (default: none for build, notify for dev)",
         )
 
+        gc_group = parser.add_mutually_exclusive_group()
+        gc_group.add_argument(
+            "--no-gc", action="store_true", default=True, help="Disable garbage collection (default)"
+        )
+        gc_group.add_argument("--gc", action="store_true", help="Enable garbage collection")
+
         build_components = parser.add_argument_group("build components")
         build_components.add_argument("--play", action="store_true", help="Build play component")
         build_components.add_argument("--watch", action="store_true", help="Build watch component")
@@ -218,6 +225,12 @@ def main():
             args.module = default_module
         else:
             parser.error("Module argument is required when multiple or no modules are found")
+
+    if args.command in ["build", "check", "dev"]:
+        if hasattr(args, "gc") and args.gc:
+            gc.enable()
+        elif hasattr(args, "no_gc") and args.no_gc:
+            gc.disable()
 
     if no_gil():
         print("Multithreading is enabled")
