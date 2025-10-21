@@ -1,3 +1,8 @@
+### 0.10.9
+
+- Added [`Vec2.normalize_or_zero()`][sonolus.script.vec.Vec2.normalize_or_zero]
+- Added `--gc`/`--no-gc` to cli commands and made no-gc the default behavior to improve performance
+
 ### 0.10.8
 
 - Fixed issue when parameterizing the `type` built-in as a generic type
