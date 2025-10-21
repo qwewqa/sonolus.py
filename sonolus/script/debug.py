@@ -143,8 +143,9 @@ def assert_true(value: int | float | bool, message: str | None = None):
     require(value, message)
 
 
+@meta_fn
 def assert_false(value: int | float | bool, message: str | None = None):
-    assert_true(not value, message)
+    assert_true(value == 0, message)
 
 
 def static_assert(value: int | float | bool, message: str | None = None):

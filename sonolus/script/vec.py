@@ -4,7 +4,7 @@ from math import pi
 
 from sonolus.script.array import Array
 from sonolus.script.array_like import ArrayLike
-from sonolus.script.debug import assert_true
+from sonolus.script.debug import assert_false
 from sonolus.script.internal.impl import perf_meta_fn
 from sonolus.script.internal.math_impls import _atan2, _cos, _sin
 from sonolus.script.num import Num
@@ -162,7 +162,7 @@ class Vec2(Record):
         Returns:
             A new vector with magnitude 1.
         """
-        assert_true(self.x != 0 or self.y != 0, "Cannot normalize a zero vector")
+        assert_false((self.x == 0) * (self.y == 0), "Cannot normalize a zero vector")
         return self.normalize_or_zero()
 
     @perf_meta_fn
