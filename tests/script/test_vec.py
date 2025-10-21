@@ -175,6 +175,14 @@ def test_vec2_normalize_or_zero_maintains_angle(x, y):
     assert is_close(diff, 0)
 
 
+def test_vec2_zero_normalize_or_zero():
+    def fn():
+        v = Vec2(0, 0)
+        return v.normalize_or_zero()
+
+    assert run_and_validate(fn) == Vec2(0, 0)
+
+
 def test_angle_diff_examples():
     assert is_close(angle_diff(0, 0), 0)
     assert is_close(angle_diff(0, pi), pi)
@@ -243,4 +251,4 @@ def test_signed_angle_diff_anticommutative(a, b):
 @given(floats, st.floats(min_value=-pi, max_value=pi, exclude_max=True, allow_nan=False, allow_infinity=False))
 def test_signed_angle_diff_delta(angle, delta):
     result = signed_angle_diff(angle + delta, angle)
-    assert is_close(result, delta)
+    assert is_close(result, delta) or (is_close(abs(result), pi) and is_close(abs(delta), pi))

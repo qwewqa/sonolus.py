@@ -1157,7 +1157,7 @@ def canvas() -> _PreviewRuntimeCanvas:
 @perf_meta_fn
 def screen() -> Rect:
     """Get the screen boundaries as a rectangle."""
-    return Rect._quick_construct(t=1, r=aspect_ratio(), b=-1, l=-aspect_ratio())
+    return Rect._unchecked(t=1, r=aspect_ratio(), b=-1, l=-aspect_ratio())
 
 
 def level_score() -> _LevelScore:

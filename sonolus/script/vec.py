@@ -135,7 +135,7 @@ class Vec2(Record):
         Returns:
             A new vector rotated by the given angle.
         """
-        return Vec2._quick_construct(
+        return Vec2._unchecked(
             x=self.x * cos(angle) - self.y * sin(angle),
             y=self.x * sin(angle) + self.y * cos(angle),
         )
@@ -157,13 +157,15 @@ class Vec2(Record):
     def normalize(self) -> Vec2:
         """Normalize the vector (set the magnitude to 1) and return a new vector.
 
+        If the vector is a zero vector, an assertion error is raised if runtime checks are enabled.
+
         Returns:
             A new vector with magnitude 1.
         """
-        magnitude = (self.x**2 + self.y**2) ** 0.5
-        assert_true(magnitude != 0, "Cannot normalize a zero vector")
-        return Vec2._quick_construct(x=self.x / magnitude, y=self.y / magnitude)
+        assert_true(self.x != 0 or self.y != 0, "Cannot normalize a zero vector")
+        return self.normalize_or_zero()
 
+    @perf_meta_fn
     def normalize_or_zero(self) -> Vec2:
         """Normalize the vector (set the magnitude to 1) and return a new vector.
 
@@ -172,13 +174,8 @@ class Vec2(Record):
         Returns:
             A new vector with magnitude 1, or a zero vector if the original vector is zero.
         """
-        magnitude = (self.x**2 + self.y**2) ** 0.5
-        result = +Vec2
-        if magnitude == 0:
-            result @= Vec2.zero()
-        else:
-            result @= Vec2(x=self.x / magnitude, y=self.y / magnitude)
-        return result
+        magnitude = (self.x**2 + self.y**2) ** 0.5 + (self.x == 0) * (self.y == 0)  # prevent division by zero
+        return Vec2._unchecked(x=self.x / magnitude, y=self.y / magnitude)
 
     @perf_meta_fn
     def orthogonal(self) -> Vec2:
@@ -189,7 +186,7 @@ class Vec2(Record):
         Returns:
             A new vector orthogonal to this vector.
         """
-        return Vec2._quick_construct(x=-self.y, y=self.x)
+        return Vec2._unchecked(x=-self.y, y=self.x)
 
     @property
     def tuple(self) -> tuple[float, float]:
@@ -210,7 +207,7 @@ class Vec2(Record):
         Returns:
             A new vector resulting from the addition.
         """
-        return Vec2._quick_construct(x=self.x + other.x, y=self.y + other.y)
+        return Vec2._unchecked(x=self.x + other.x, y=self.y + other.y)
 
     @perf_meta_fn
     def __sub__(self, other: Vec2) -> Vec2:
@@ -222,7 +219,7 @@ class Vec2(Record):
         Returns:
             A new vector resulting from the subtraction.
         """
-        return Vec2._quick_construct(x=self.x - other.x, y=self.y - other.y)
+        return Vec2._unchecked(x=self.x - other.x, y=self.y - other.y)
 
     @perf_meta_fn
     def __mul__(self, other: Vec2 | float) -> Vec2:
@@ -236,9 +233,9 @@ class Vec2(Record):
         """
         match other:
             case Vec2(x, y):
-                return Vec2._quick_construct(x=self.x * x, y=self.y * y)
+                return Vec2._unchecked(x=self.x * x, y=self.y * y)
             case Num(factor):
-                return Vec2._quick_construct(x=self.x * factor, y=self.y * factor)
+                return Vec2._unchecked(x=self.x * factor, y=self.y * factor)
             case _:
                 return NotImplemented
 
@@ -246,7 +243,7 @@ class Vec2(Record):
     def __rmul__(self, other):
         match other:
             case Num(factor):
-                return Vec2._quick_construct(x=self.x * factor, y=self.y * factor)
+                return Vec2._unchecked(x=self.x * factor, y=self.y * factor)
             case _:
                 return NotImplemented
 
@@ -262,9 +259,9 @@ class Vec2(Record):
         """
         match other:
             case Vec2(x, y):
-                return Vec2._quick_construct(x=self.x / x, y=self.y / y)
+                return Vec2._unchecked(x=self.x / x, y=self.y / y)
             case Num(factor):
-                return Vec2._quick_construct(x=self.x / factor, y=self.y / factor)
+                return Vec2._unchecked(x=self.x / factor, y=self.y / factor)
             case _:
                 return NotImplemented
 
@@ -275,7 +272,7 @@ class Vec2(Record):
         Returns:
             A new vector with inverted direction.
         """
-        return Vec2._quick_construct(x=-self.x, y=-self.y)
+        return Vec2._unchecked(x=-self.x, y=-self.y)
 
 
 def pnpoly(vertices: ArrayLike[Vec2] | tuple[Vec2, ...], test: Vec2) -> bool:

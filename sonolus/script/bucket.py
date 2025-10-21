@@ -75,7 +75,7 @@ class JudgmentWindow(Record):
     @perf_meta_fn
     def __mul__(self, other: float | int) -> JudgmentWindow:
         """Multiply the intervals by a scalar."""
-        return JudgmentWindow._quick_construct(
+        return JudgmentWindow._unchecked(
             perfect=self.perfect * other,
             great=self.great * other,
             good=self.good * other,
@@ -84,7 +84,7 @@ class JudgmentWindow(Record):
     @perf_meta_fn
     def __add__(self, other: float | int) -> JudgmentWindow:
         """Add a scalar to the intervals."""
-        return JudgmentWindow._quick_construct(
+        return JudgmentWindow._unchecked(
             perfect=self.perfect + other,
             great=self.great + other,
             good=self.good + other,

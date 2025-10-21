@@ -172,7 +172,8 @@ class Record(GenericValue, metaclass=RecordMeta):
         return result
 
     @classmethod
-    def _quick_construct(cls, **kwargs) -> Self:
+    def _unchecked(cls, **kwargs) -> Self:
+        # Skips most validation, generally for internal use in frequently-called methods for performance reasons
         result = object.__new__(cls)
         for k, v in kwargs.items():
             if isinstance(v, int | float):

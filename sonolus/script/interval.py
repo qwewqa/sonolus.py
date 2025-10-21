@@ -78,7 +78,7 @@ class Interval(Record):
         Returns:
             A new interval with the value added to both ends.
         """
-        return Interval._quick_construct(start=self.start + other, end=self.end + other)
+        return Interval._unchecked(start=self.start + other, end=self.end + other)
 
     @perf_meta_fn
     def __sub__(self, other: float | int) -> Interval:
@@ -90,7 +90,7 @@ class Interval(Record):
         Returns:
             A new interval with the value subtracted from both ends.
         """
-        return Interval._quick_construct(start=self.start - other, end=self.end - other)
+        return Interval._unchecked(start=self.start - other, end=self.end - other)
 
     @perf_meta_fn
     def __mul__(self, other: float | int) -> Interval:
@@ -102,7 +102,7 @@ class Interval(Record):
         Returns:
             A new interval with both ends multiplied by the value.
         """
-        return Interval._quick_construct(start=self.start * other, end=self.end * other)
+        return Interval._unchecked(start=self.start * other, end=self.end * other)
 
     @perf_meta_fn
     def __truediv__(self, other: float | int) -> Interval:
@@ -114,7 +114,7 @@ class Interval(Record):
         Returns:
             A new interval with both ends divided by the value.
         """
-        return Interval._quick_construct(start=self.start / other, end=self.end / other)
+        return Interval._unchecked(start=self.start / other, end=self.end / other)
 
     @perf_meta_fn
     def __floordiv__(self, other: float | int) -> Interval:
@@ -126,7 +126,7 @@ class Interval(Record):
         Returns:
             A new interval with both ends divided by the value and floored.
         """
-        return Interval._quick_construct(start=self.start // other, end=self.end // other)
+        return Interval._unchecked(start=self.start // other, end=self.end // other)
 
     def __and__(self, other: Interval) -> Interval:
         """Get the intersection of two intervals.
