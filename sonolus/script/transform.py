@@ -326,15 +326,16 @@ class Transform2d(Record):
             A new normalized transform.
         """
         assert self.a22 != 0, "Cannot normalize transform with a22 == 0"
+        a22 = self.a22 + (self.a22 == 0)
         return Transform2d(
-            self.a00 / self.a22,
-            self.a01 / self.a22,
-            self.a02 / self.a22,
-            self.a10 / self.a22,
-            self.a11 / self.a22,
-            self.a12 / self.a22,
-            self.a20 / self.a22,
-            self.a21 / self.a22,
+            self.a00 / a22,
+            self.a01 / a22,
+            self.a02 / a22,
+            self.a10 / a22,
+            self.a11 / a22,
+            self.a12 / a22,
+            self.a20 / a22,
+            self.a21 / a22,
             1,
         )
 
