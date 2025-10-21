@@ -166,9 +166,7 @@ def main():
         )
 
         gc_group = parser.add_mutually_exclusive_group()
-        gc_group.add_argument(
-            "--no-gc", action="store_true", default=True, help="Disable garbage collection (default)"
-        )
+        gc_group.add_argument("--no-gc", action="store_true", default=True, help="Disable garbage collection (default)")
         gc_group.add_argument("--gc", action="store_true", help="Enable garbage collection")
 
         build_components = parser.add_argument_group("build components")
@@ -226,7 +224,7 @@ def main():
         else:
             parser.error("Module argument is required when multiple or no modules are found")
 
-    if args.command in ["build", "check", "dev"]:
+    if args.command in {"build", "check", "dev"}:
         if hasattr(args, "gc") and args.gc:
             gc.enable()
         elif hasattr(args, "no_gc") and args.no_gc:
