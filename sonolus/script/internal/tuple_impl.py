@@ -91,6 +91,12 @@ class TupleImpl(TransientValue):
         other = TupleImpl._accept_(other)
         return TupleImpl._accept_(self.value + other.value)
 
+    def __contains__(self, item):
+        for element in self.value:  # noqa: SIM110
+            if element == item:
+                return True
+        return False
+
     @staticmethod
     @meta_fn
     def _is_tuple_impl(value: Any) -> bool:

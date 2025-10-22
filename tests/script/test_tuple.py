@@ -138,3 +138,70 @@ def test_min_tuples(values_list):
         return min(values)
 
     assert run_and_validate(fn) == min(values)
+
+
+def test_tuple_contains_basic():
+    def fn():
+        t = (1, 2, 3, 4, 5)
+        return Array(
+            1 in t,
+            5 in t,
+            0 in t,
+            6 in t,
+            3 in t,
+        )
+
+    assert tuple(run_and_validate(fn)) == (True, True, False, False, True)
+
+
+def test_tuple_contains_empty():
+    def fn():
+        t = ()
+        return Array(
+            1 in t,
+            0 in t,
+        )
+
+    assert tuple(run_and_validate(fn)) == (False, False)
+
+
+def test_tuple_contains_single_element():
+    def fn():
+        t = (42,)
+        return Array(
+            42 in t,
+            0 in t,
+            1 in t,
+        )
+
+    assert tuple(run_and_validate(fn)) == (True, False, False)
+
+
+def test_tuple_contains_duplicates():
+    def fn():
+        t = (1, 2, 2, 3, 3, 3)
+        return Array(
+            1 in t,
+            2 in t,
+            3 in t,
+            4 in t,
+        )
+
+    assert tuple(run_and_validate(fn)) == (True, True, True, False)
+
+
+def test_tuple_contains_heterogeneous():
+    def fn():
+        t = ((1, 2), (3, 4), 5)
+        inner1 = (1, 2)
+        inner2 = (3, 4)
+        inner3 = (1, 3)
+        return Array(
+            5 in t,
+            0 in t,
+            inner1 == t[0],
+            inner2 == t[1],
+            inner3 == t[0],
+        )
+
+    assert tuple(run_and_validate(fn)) == (True, False, True, True, False)
