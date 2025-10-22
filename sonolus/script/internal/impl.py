@@ -90,11 +90,7 @@ def try_validate_value(value: Any) -> Value | None:
             | super()
         ):
             return BasicConstantValue.of(value)
-        case special_form if value in {
-            Literal,
-            Annotated,
-            Union,
-        }:
+        case special_form if value == Literal or value == Annotated or value == Union:  # noqa: PLR1714, SIM109
             return TypingSpecialFormConstant.of(special_form)
         case other_type if get_origin(value) in {Literal, Annotated, UnionType, tuple, type}:
             return BasicConstantValue.of(other_type)
