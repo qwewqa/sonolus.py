@@ -24,15 +24,18 @@ class LivenessAnalysis(CompilerPass):
             block.live_phi_targets = set()
             block.array_defs_in = set()
             block.array_defs_out = None
+            last_live_set = set()
             for statement in block.statements:
-                statement.live = set()
+                if isinstance(statement, IRSet):
+                    last_live_set = set()
+                statement.live = last_live_set
                 statement.visited = False
                 statement.uses = self.get_uses(statement, set())
                 statement.defs = self.get_defs(statement)
                 statement.is_array_init = False  # True if this may be the first assignment to an array
                 statement.array_defs = self.get_array_defs(statement)
             if not isinstance(block.test, IRConst):
-                block.test.live = set()
+                block.test.live = last_live_set
                 block.test.uses = self.get_uses(block.test, set())
         self.preprocess_arrays(entry)
 
