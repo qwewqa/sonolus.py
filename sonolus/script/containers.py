@@ -3,6 +3,7 @@ from __future__ import annotations
 from collections.abc import Callable
 from typing import Any, Protocol, Self
 
+from sonolus.backend.visitor import compile_and_call
 from sonolus.script.archetype import AnyArchetype, EntityRef
 from sonolus.script.array import Array
 from sonolus.script.array_like import ArrayLike, get_positive_index
@@ -439,6 +440,55 @@ class ArraySet[T, Capacity](Record):
     def clear(self):
         """Clear the set, removing all elements."""
         self._values.clear()
+
+
+class FrozenNumSet[Size](Record):
+    _values: Array[Num, Size]
+
+    @classmethod
+    @meta_fn
+    def of(cls, *values: Num) -> Self:
+        if ctx():
+            try:
+                num_values = [Num._accept_(v) for v in values]
+            except TypeError:
+                raise TypeError("Only sets of numeric values are supported") from None
+            if all(v._is_py_() for v in num_values):
+                const_values = [v._as_py_() for v in num_values]
+                arr = Array[Num, len(const_values)]._with_value([Num(v) for v in sorted(const_values)])
+                return cls(arr)
+            else:
+                arr = Array[Num, len(values)](*values)
+                compile_and_call(arr.sort)
+        else:
+            arr = Array[Num, len(values)](*sorted(values))
+        return cls(arr)
+
+    def __len__(self) -> int:
+        return len(self._values)
+
+    def __contains__(self, value: Num) -> bool:
+        if len(self) < 15:
+            for i in range(len(self)):  # noqa: SIM110
+                if self._values.get_unchecked(i) == value:
+                    return True
+            return False
+        else:
+            left = 0
+            right = len(self) - 1
+            while left <= right:
+                mid = (left + right) // 2
+                mid_value = self._values.get_unchecked(mid)
+                if mid_value == value:
+                    return True
+                elif mid_value < value:
+                    left = mid + 1
+                else:
+                    right = mid - 1
+            return False
+
+    def __iter__(self) -> SonolusIterator[Num]:
+        return self._values.__iter__()
 
 
 class _ArrayMapEntry[K, V](Record):

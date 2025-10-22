@@ -1006,7 +1006,9 @@ class Visitor(ast.NodeVisitor):
         return validate_value({self.visit(k): self.visit(v) for k, v in zip(node.keys, node.values, strict=True)})
 
     def visit_Set(self, node):
-        raise NotImplementedError("Set literals are not supported")
+        from sonolus.script.containers import FrozenNumSet
+
+        return self.handle_call(node, FrozenNumSet.of, *(self.visit(elt) for elt in node.elts))
 
     def visit_ListComp(self, node):
         raise NotImplementedError("List comprehensions are not supported")

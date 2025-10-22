@@ -77,6 +77,10 @@ def try_validate_value(value: Any) -> Value | None:
             return TupleImpl._accept_(value)
         case dict():
             return DictImpl._accept_(value)
+        case set() | frozenset():
+            from sonolus.script.containers import FrozenNumSet
+
+            return FrozenNumSet.of(*value)
         case (
             PartialGeneric()
             | TypeVar()

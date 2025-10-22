@@ -195,6 +195,9 @@ assert record_1 == array_1[0] == MyRecord(4, 5.6)
 Sonolus.py has limited support for other types of values such as strings, tuples, and functions. These have restrictions
 such as not being valid as Record field types or Array element types.
 
+Support for `dict` is limited, and they are immutable and can only be accessed via compile-time constant keys. `set`
+literals of numeric values are supported, and they are immutable after creation.
+
 ## Modules
 
 Sonolus.py provides a number of built-in modules that can be used in Sonolus engines. These include:
