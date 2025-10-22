@@ -1,3 +1,10 @@
+### 0.11.0
+
+- Added basic support for set literals of numbers, with support for membership checks (`in`, `not in`) and iteration
+- Added support for membership checks (`in`, `not in`) of tuples
+- Fixed some instances where error messages for archetype declarations were not shown correctly
+- Reduced memory usage slightly
+
 ### 0.10.9
 
 - Added [`Vec2.normalize_or_zero()`][sonolus.script.vec.Vec2.normalize_or_zero]
