@@ -581,7 +581,6 @@ class _BaseArchetype:
     def _init_fields(cls):
         if cls._field_init_done:
             return
-        cls._field_init_done = True
         for mro_entry in cls.mro()[1:]:
             if hasattr(mro_entry, "_field_init_done"):
                 mro_entry._init_fields()
@@ -706,6 +705,7 @@ class _BaseArchetype:
             [inspect.Parameter(name, inspect.Parameter.POSITIONAL_OR_KEYWORD) for name in cls._memory_fields_]
         )
         cls._post_init_fields()
+        cls._field_init_done = True
 
     @property
     @abstractmethod
