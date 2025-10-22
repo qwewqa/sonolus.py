@@ -199,9 +199,9 @@ def test_tuple_contains_heterogeneous():
         return Array(
             5 in t,
             0 in t,
-            inner1 == t[0],
-            inner2 == t[1],
-            inner3 == t[0],
+            inner1 in t,
+            inner2 in t,
+            inner3 in t,
         )
 
     assert tuple(run_and_validate(fn)) == (True, False, True, True, False)
