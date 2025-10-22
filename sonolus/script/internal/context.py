@@ -551,7 +551,11 @@ def context_to_cfg(context: Context) -> BasicBlock:
             edge = FlowEdge(src=blocks[current], dst=blocks[target], cond=condition)
             blocks[current].outgoing.add(edge)
             blocks[target].incoming.add(edge)
-    return blocks[context]
+    result = blocks[context]
+    for current in tuple(iter_contexts(context)):
+        # Break cycles so memory can be cleaned without gc
+        del current.outgoing
+    return result
 
 
 def unique[T](iterable: Iterable[T]) -> list[T]:

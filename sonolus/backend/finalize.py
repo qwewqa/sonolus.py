@@ -65,7 +65,15 @@ def cfg_to_engine_node(entry: BasicBlock):
                     statements.append(FunctionNode(Op.SwitchWithDefault, args))
         block_statements.append(FunctionNode(Op.Execute, statements))
     block_statements.append(ConstantNode(value=0))
-    return FunctionNode(Op.Block, [FunctionNode(Op.JumpLoop, block_statements)])
+    result = FunctionNode(Op.Block, [FunctionNode(Op.JumpLoop, block_statements)])
+    for block in block_indexes:
+        # Clean up without relying on gc
+        del block.incoming
+        del block.outgoing
+        del block.phis
+        del block.statements
+        del block.test
+    return result
 
 
 def ir_to_engine_node(stmt) -> EngineNode:
