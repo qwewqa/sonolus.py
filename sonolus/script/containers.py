@@ -468,11 +468,8 @@ class FrozenNumSet[Size](Record):
         return len(self._values)
 
     def __contains__(self, value: Num) -> bool:
-        if len(self) < 15:
-            for i in range(len(self)):  # noqa: SIM110
-                if self._values.get_unchecked(i) == value:
-                    return True
-            return False
+        if len(self) < 8:
+            return value in self._as_tuple()
         else:
             left = 0
             right = len(self) - 1
@@ -489,6 +486,10 @@ class FrozenNumSet[Size](Record):
 
     def __iter__(self) -> SonolusIterator[Num]:
         return self._values.__iter__()
+
+    @meta_fn
+    def _as_tuple(self) -> tuple[Num, ...]:
+        return tuple(self._values.get_unchecked(i) for i in range(Num._accept_(len(self))._as_py_()))
 
 
 class _ArrayMapEntry[K, V](Record):
