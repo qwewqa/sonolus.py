@@ -25,11 +25,11 @@ def cfg_to_engine_node(entry: BasicBlock):
                 statements.append(
                     FunctionNode(
                         func=Op.If,
-                        args=[
+                        args=(
                             ir_to_engine_node(block.test),
                             block_indexes[t_branch],
                             block_indexes[f_branch],
-                        ],
+                        ),
                     )
                 )
             case {None: default_branch, **other} if len(other) == 1:
@@ -37,11 +37,11 @@ def cfg_to_engine_node(entry: BasicBlock):
                 statements.append(
                     FunctionNode(
                         func=Op.If,
-                        args=[
+                        args=(
                             ir_to_engine_node(IRPureInstr(Op.Equal, args=[block.test, IRConst(cond)])),
                             block_indexes[cond_branch],
                             block_indexes[default_branch],
-                        ],
+                        ),
                     )
                 )
             case dict() as targets:
@@ -53,7 +53,7 @@ def cfg_to_engine_node(entry: BasicBlock):
                     if None in targets:
                         default = block_indexes[targets[None]]
                     args.append(default)
-                    statements.append(FunctionNode(Op.SwitchIntegerWithDefault, args))
+                    statements.append(FunctionNode(Op.SwitchIntegerWithDefault, tuple(args)))
                 else:
                     for cond, target in targets.items():
                         if cond is None:
@@ -62,10 +62,10 @@ def cfg_to_engine_node(entry: BasicBlock):
                         args.append(cond)
                         args.append(block_indexes[target])
                     args.append(default)
-                    statements.append(FunctionNode(Op.SwitchWithDefault, args))
-        block_statements.append(FunctionNode(Op.Execute, statements))
+                    statements.append(FunctionNode(Op.SwitchWithDefault, tuple(args)))
+        block_statements.append(FunctionNode(Op.Execute, tuple(statements)))
     block_statements.append(0)
-    result = FunctionNode(Op.Block, [FunctionNode(Op.JumpLoop, block_statements)])
+    result = FunctionNode(Op.Block, (FunctionNode(Op.JumpLoop, tuple(block_statements)),))
     for block in block_indexes:
         # Clean up without relying on gc
         del block.incoming
@@ -86,14 +86,14 @@ def ir_to_engine_node(stmt) -> EngineNode:
                 return value
             elif isinf(value):
                 # Read values from ROM
-                return FunctionNode(Op.Get, args=[3000, 1 if value > 0 else 2])
+                return FunctionNode(Op.Get, args=(3000, 1 if value > 0 else 2))
             elif isnan(value):
                 # Read value from ROM
-                return FunctionNode(Op.Get, args=[3000, 0])
+                return FunctionNode(Op.Get, args=(3000, 0))
             else:
                 raise ValueError(f"Invalid constant value: {value}")
         case IRPureInstr(op=op, args=args) | IRInstr(op=op, args=args):
-            return FunctionNode(func=op, args=[ir_to_engine_node(arg) for arg in args])
+            return FunctionNode(func=op, args=tuple(ir_to_engine_node(arg) for arg in args))
         case IRGet(place=place):
             return ir_to_engine_node(place)
         case BlockPlace() as place:
@@ -102,9 +102,9 @@ def ir_to_engine_node(stmt) -> EngineNode:
             elif place.index == 0:
                 index = place.offset
             else:
-                index = FunctionNode(func=Op.Add, args=[ir_to_engine_node(place.index), place.offset])
-            return FunctionNode(func=Op.Get, args=[ir_to_engine_node(place.block), index])
+                index = FunctionNode(func=Op.Add, args=(ir_to_engine_node(place.index), place.offset))
+            return FunctionNode(func=Op.Get, args=(ir_to_engine_node(place.block), index))
         case IRSet(place=place, value=value):
-            return FunctionNode(func=Op.Set, args=[*ir_to_engine_node(place).args, ir_to_engine_node(value)])
+            return FunctionNode(func=Op.Set, args=(*ir_to_engine_node(place).args, ir_to_engine_node(value)))
         case _:
             raise TypeError(f"Unsupported IR statement: {stmt}")

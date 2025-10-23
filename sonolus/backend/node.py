@@ -1,22 +1,14 @@
 import textwrap
-from dataclasses import dataclass, field
+from typing import NamedTuple
 
 from sonolus.backend.ops import Op
 
 type EngineNode = int | float | FunctionNode
 
 
-@dataclass(slots=True)
-class FunctionNode:
+class FunctionNode(NamedTuple):
     func: Op
-    args: list[EngineNode]
-    _hash: int = field(init=False, repr=False)
-
-    def __post_init__(self):
-        self._hash = hash((self.func, tuple(self.args)))
-
-    def __hash__(self):
-        return self._hash
+    args: tuple[EngineNode, ...]
 
 
 def format_engine_node(node: EngineNode) -> str:
