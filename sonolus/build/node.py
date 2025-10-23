@@ -1,7 +1,7 @@
 from threading import Lock
 from typing import TypedDict
 
-from sonolus.backend.node import ConstantNode, EngineNode, FunctionNode
+from sonolus.backend.node import EngineNode, FunctionNode
 
 
 class ValueOutputNode(TypedDict):
@@ -32,19 +32,17 @@ class OutputNodeGenerator:
             return self.indexes[node]
 
         match node:
-            case ConstantNode(value):
-                index = len(self.nodes)
-                self.nodes.append({"value": value})
-                self.indexes[node] = index
-                return index
             case FunctionNode(func, args):
                 arg_indexes = [self._add(arg) for arg in args]
                 index = len(self.nodes)
                 self.nodes.append({"func": func.value, "args": arg_indexes})
                 self.indexes[node] = index
                 return index
-            case _:
-                raise ValueError("Invalid node")
+            case constant:
+                index = len(self.nodes)
+                self.nodes.append({"value": constant})
+                self.indexes[node] = index
+                return index
 
     def get(self):
         return self.nodes

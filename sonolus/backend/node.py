@@ -3,19 +3,7 @@ from dataclasses import dataclass, field
 
 from sonolus.backend.ops import Op
 
-type EngineNode = ConstantNode | FunctionNode
-
-
-@dataclass(slots=True)
-class ConstantNode:
-    value: float
-    _hash: int = field(init=False, repr=False)
-
-    def __post_init__(self):
-        self._hash = hash(self.value)
-
-    def __hash__(self):
-        return hash(self.value)
+type EngineNode = int | float | FunctionNode
 
 
 @dataclass(slots=True)
@@ -32,9 +20,7 @@ class FunctionNode:
 
 
 def format_engine_node(node: EngineNode) -> str:
-    if isinstance(node, ConstantNode):
-        return str(node.value)
-    elif isinstance(node, FunctionNode):
+    if isinstance(node, FunctionNode):
         match len(node.args):
             case 0:
                 return f"{node.func.name}()"
@@ -45,4 +31,4 @@ def format_engine_node(node: EngineNode) -> str:
                     textwrap.indent('\n'.join(format_engine_node(arg) for arg in node.args), '  ')
                 }\n)"
     else:
-        raise ValueError(f"Invalid engine node: {node}")
+        return str(node)
