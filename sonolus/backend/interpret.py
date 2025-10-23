@@ -2,7 +2,7 @@ import math
 import operator
 import random
 
-from sonolus.backend.node import ConstantNode, EngineNode
+from sonolus.backend.node import EngineNode, FunctionNode
 from sonolus.backend.ops import Op
 
 
@@ -24,8 +24,8 @@ class Interpreter:
         self.log = []
 
     def run(self, node: EngineNode) -> float:
-        if isinstance(node, ConstantNode):
-            return node.value
+        if not isinstance(node, FunctionNode):
+            return node
         func = node.func
         args = node.args
         match func:
