@@ -12,6 +12,7 @@ from sonolus.backend.ir import IRConst, IRExpr, IRInstr, IRPureInstr, IRStmt
 from sonolus.backend.mode import Mode
 from sonolus.backend.ops import Op
 from sonolus.script.bucket import Bucket, Judgment
+from sonolus.script.debug import static_error
 from sonolus.script.internal.callbacks import PLAY_CALLBACKS, PREVIEW_CALLBACKS, WATCH_ARCHETYPE_CALLBACKS, CallbackInfo
 from sonolus.script.internal.context import ctx
 from sonolus.script.internal.descriptor import SonolusDescriptor
@@ -1210,6 +1211,8 @@ class EntityRef[A: _BaseArchetype](Record):
 
     Usage:
         ```python
+        ref = EntityRef[MyArchetype](index=123)
+
         class MyArchetype(PlayArchetype):
             ref_1: EntityRef[OtherArchetype] = imported()
             ref_2: EntityRef[Any] = imported()
@@ -1237,6 +1240,12 @@ class EntityRef[A: _BaseArchetype](Record):
         if not ctx() and hasattr(self, "_ref_"):
             return hash(id(self._ref_))
         return super().__hash__()
+
+    @meta_fn
+    def __bool__(self):
+        if ctx():
+            static_error("EntityRef cannot be used in a boolean context. Check index directly instead.")
+        return True
 
     @meta_fn
     def get(self) -> A:
