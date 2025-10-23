@@ -119,6 +119,7 @@ class RebuildCommand:
         print("Rebuilding...")
         try:
             start_time = perf_counter()
+            server_state.cache.reset_accessed()
             server_state.project_state = ProjectContextState.from_build_config(server_state.config)
             server_state.project = project_module.project
             build_collection(
@@ -128,6 +129,7 @@ class RebuildCommand:
                 cache=server_state.cache,
                 project_state=server_state.project_state,
             )
+            server_state.cache.prune_unaccessed()
             end_time = perf_counter()
             print(f"Rebuild completed in {end_time - start_time:.2f} seconds")
         except CompilationError:

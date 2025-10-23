@@ -32,9 +32,11 @@ class CompileCache:
         self._cache = {}
         self._lock = Lock()
         self._event = Event()
+        self._accessed_hashes = set()
 
     def get(self, entry_hash: int) -> EngineNode | None:
         with self._lock:
+            self._accessed_hashes.add(entry_hash)
             if entry_hash not in self._cache:
                 self._cache[entry_hash] = None  # Mark as being compiled
                 return None
@@ -47,9 +49,20 @@ class CompileCache:
 
     def set(self, entry_hash: int, node: EngineNode) -> None:
         with self._lock:
+            self._accessed_hashes.add(entry_hash)
             self._cache[entry_hash] = node
             self._event.set()
             self._event.clear()
+
+    def reset_accessed(self) -> None:
+        with self._lock:
+            self._accessed_hashes.clear()
+
+    def prune_unaccessed(self) -> None:
+        with self._lock:
+            unaccessed_hashes = set(self._cache.keys()) - self._accessed_hashes
+            for h in unaccessed_hashes:
+                del self._cache[h]
 
 
 def compile_mode(
