@@ -1,3 +1,8 @@
+### 0.11.1
+
+- Memory usage no longer increases indefinitely when rebuilding with changes in the dev server
+- [`EntityRef`][sonolus.script.archetype.EntityRef] now throws an error when converted to a boolean
+
 ### 0.11.0
 
 - Added basic support for set literals of numbers, with support for membership checks (`in`, `not in`) and iteration
