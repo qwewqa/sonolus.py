@@ -566,10 +566,12 @@ class _BaseArchetype:
             cls.name = cls.__name__.removeprefix(cls._removable_prefix)
         cls._callbacks_ = []
         for name in cls._supported_callbacks_:
-            cb = getattr(cls, name)
-            if cb in cls._default_callbacks_:
-                continue
-            cls._callbacks_.append(cb)
+            for mro_entry in cls.mro():
+                if name in mro_entry.__dict__:
+                    cb = mro_entry.__dict__[name]
+                    if cb not in cls._default_callbacks_:
+                        cls._callbacks_.append(cb)
+                    break
         cls._field_init_done = False
         cls.id = _IdDescriptor()
         cls._key_ = cls.key
@@ -772,6 +774,17 @@ class _BaseArchetype:
         new_cls = type(name, (cls,), cls_dict)
         return new_cls
 
+    @meta_fn
+    def _delegate(self, name: str, default: int | float | None = None):
+        if hasattr(super(), name):
+            fn = getattr(super(), name)
+            if ctx():
+                return compile_and_call(fn)
+            else:
+                return fn()
+        else:
+            return default
+
 
 class PlayArchetype(_BaseArchetype):
     """Base class for play mode archetypes.
@@ -809,26 +822,28 @@ class PlayArchetype(_BaseArchetype):
 
         Runs first when the level is loaded.
         """
+        self._delegate("preprocess")
 
     def spawn_order(self) -> float:
         """Return the spawn order of the entity.
 
         Runs when the level is loaded after [`preprocess`][sonolus.script.archetype.PlayArchetype.preprocess].
         """
-        return 0.0
+        return self._delegate("spawn_order", default=0.0)
 
     def should_spawn(self) -> bool:
         """Return whether the entity should be spawned.
 
         Runs each frame while the entity is the first entity in the spawn queue.
         """
-        return True
+        return self._delegate("should_spawn", default=True)
 
     def initialize(self):
         """Initialize this entity.
 
         Runs when this entity is spawned.
         """
+        self._delegate("initialize")
 
     def update_sequential(self):
         """Perform non-parallel actions for this frame.
@@ -840,6 +855,7 @@ class PlayArchetype(_BaseArchetype):
         [`update_parallel`][sonolus.script.archetype.PlayArchetype.update_parallel]
         for better performance.
         """
+        self._delegate("update_sequential")
 
     def update_parallel(self):
         """Perform parallel actions for this frame.
@@ -848,18 +864,21 @@ class PlayArchetype(_BaseArchetype):
 
         This is where most gameplay logic should be placed.
         """
+        self._delegate("update_parallel")
 
     def touch(self):
         """Handle user input.
 
         Runs after [`update_sequential`][sonolus.script.archetype.PlayArchetype.update_sequential] each frame.
         """
+        self._delegate("touch")
 
     def terminate(self):
         """Finalize before despawning.
 
         Runs when the entity is despawned.
         """
+        self._delegate("terminate")
 
     @property
     @meta_fn
@@ -967,20 +986,22 @@ class WatchArchetype(_BaseArchetype):
 
         Runs first when the level is loaded.
         """
+        self._delegate("preprocess")
 
     def spawn_time(self) -> float:
         """Return the spawn time of the entity."""
-        return 0.0
+        return self._delegate("spawn_time", default=0.0)
 
     def despawn_time(self) -> float:
         """Return the despawn time of the entity."""
-        return 0.0
+        return self._delegate("despawn_time", default=0.0)
 
     def initialize(self):
         """Initialize this entity.
 
         Runs when this entity is spawned.
         """
+        self._delegate("initialize")
 
     def update_sequential(self):
         """Perform non-parallel actions for this frame.
@@ -991,6 +1012,7 @@ class WatchArchetype(_BaseArchetype):
         Other logic should typically be placed in
         [`update_parallel`][sonolus.script.archetype.PlayArchetype.update_parallel] for better performance.
         """
+        self._delegate("update_sequential")
 
     def update_parallel(self):
         """Parallel update callback.
@@ -999,12 +1021,14 @@ class WatchArchetype(_BaseArchetype):
 
         This is where most gameplay logic should be placed.
         """
+        self._delegate("update_parallel")
 
     def terminate(self):
         """Finalize before despawning.
 
         Runs when the entity is despawned.
         """
+        self._delegate("terminate")
 
     @property
     @meta_fn
@@ -1075,12 +1099,14 @@ class PreviewArchetype(_BaseArchetype):
 
         Runs first when the level is loaded.
         """
+        self._delegate("preprocess")
 
     def render(self):
         """Render the entity.
 
         Runs after `preprocess`.
         """
+        self._delegate("render")
 
     @property
     @meta_fn
