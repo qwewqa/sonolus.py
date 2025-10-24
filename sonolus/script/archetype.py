@@ -11,6 +11,7 @@ from typing import Annotated, Any, ClassVar, Self, TypedDict, get_origin
 from sonolus.backend.ir import IRConst, IRExpr, IRInstr, IRPureInstr, IRStmt
 from sonolus.backend.mode import Mode
 from sonolus.backend.ops import Op
+from sonolus.backend.visitor import compile_and_call
 from sonolus.script.bucket import Bucket, Judgment
 from sonolus.script.debug import static_error
 from sonolus.script.internal.callbacks import PLAY_CALLBACKS, PREVIEW_CALLBACKS, WATCH_ARCHETYPE_CALLBACKS, CallbackInfo
@@ -1248,10 +1249,23 @@ class EntityRef[A: _BaseArchetype](Record):
         return True
 
     @meta_fn
-    def get(self) -> A:
-        """Get the entity."""
+    def get(self, *, allow_zero=False) -> A:
+        """Get the entity.
+
+        Will raise an error if the index is zero unless `allow_zero` is set to True.
+
+        Args:
+            allow_zero: Whether to allow index zero. Defaults to False.
+
+        Returns:
+            The entity at the given index.
+        """
         if ref := getattr(self, "_ref_", None):
             return ref
+        if ctx():
+            compile_and_call(self._check_index, allow_zero=allow_zero)
+        else:
+            self._check_index(allow_zero=allow_zero)
         return self.archetype().at(self.index)
 
     @meta_fn
@@ -1297,6 +1311,12 @@ class EntityRef[A: _BaseArchetype](Record):
         if hasattr(value, "_ref_"):
             result._ref_ = value._ref_
         return result
+
+    def _check_index(self, *, allow_zero=False):
+        if allow_zero:
+            assert self.index >= 0, "EntityRef index must be non-negative"
+        else:
+            assert self.index >= 1, "EntityRef index must be positive unless allow_zero=True is passed as an argument."
 
 
 class StandardArchetypeName(StrEnum):
