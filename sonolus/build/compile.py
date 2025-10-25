@@ -147,9 +147,10 @@ def compile_mode(
                 archetype_data["exports"] = [*archetype._exported_keys_]
 
             callback_items = [
-                (cb_name, cb_info, getattr(archetype, cb_name))
+                (cb_name, cb_info, archetype._callbacks_[cb_name])
                 for cb_name, cb_info in archetype._supported_callbacks_.items()
-                if getattr(archetype, cb_name) not in archetype._default_callbacks_
+                if cb_name in archetype._callbacks_
+                and archetype._callbacks_[cb_name] not in archetype._default_callbacks_
             ]
 
             if thread_pool is not None:

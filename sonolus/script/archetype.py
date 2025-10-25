@@ -429,7 +429,7 @@ class _BaseArchetype:
 
     _imported_keys_: ClassVar[dict[str, int]]
     _exported_keys_: ClassVar[dict[str, int]]
-    _callbacks_: ClassVar[list[Callable]]
+    _callbacks_: ClassVar[dict[str, Callable]]
     _data_constructor_signature_: ClassVar[inspect.Signature]
     _spawn_signature_: ClassVar[inspect.Signature]
 
@@ -564,14 +564,14 @@ class _BaseArchetype:
             return
         if cls.name is None or cls.name in {getattr(mro_entry, "name", None) for mro_entry in cls.mro()[1:]}:
             cls.name = cls.__name__.removeprefix(cls._removable_prefix)
-        cls._callbacks_ = []
+        cls._callbacks_ = {}
         for name in cls._supported_callbacks_:
             for mro_entry in cls.mro():
                 if name in mro_entry.__dict__:
                     cb = mro_entry.__dict__[name]
                     if cb not in cls._default_callbacks_:
-                        cls._callbacks_.append(cb)
-                    break
+                        cls._callbacks_[name] = cb
+                        break
         cls._field_init_done = False
         cls.id = _IdDescriptor()
         cls._key_ = cls.key
@@ -776,6 +776,7 @@ class _BaseArchetype:
 
     @meta_fn
     def _delegate(self, name: str, default: int | float | None = None):
+        name = validate_value(name)._as_py_()
         if hasattr(super(), name):
             fn = getattr(super(), name)
             if ctx():
