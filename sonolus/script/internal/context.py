@@ -136,21 +136,22 @@ class ModeContextState:
         from sonolus.script.array import Array
         from sonolus.script.num import Num
 
-        if self.archetype_mro_id_array_rom_indexes is not None:
-            return
-        archetype_mro_id_values = []
-        archetype_mro_id_offsets = []
-        for type_ in self.archetypes:
-            mro_ids = [self.archetypes[entry] for entry in type_.mro() if entry in self.archetypes]
-            archetype_mro_id_offsets.append(len(archetype_mro_id_values))
-            archetype_mro_id_values.append(len(mro_ids))
-            archetype_mro_id_values.extend(mro_ids)
-        archetype_mro_id_array_place = rom[tuple(archetype_mro_id_values)]
+        with self.lock:
+            if self.archetype_mro_id_array_rom_indexes is not None:
+                return
+            archetype_mro_id_values = []
+            archetype_mro_id_offsets = []
+            for type_ in self.archetypes:
+                mro_ids = [self.archetypes[entry] for entry in type_.mro() if entry in self.archetypes]
+                archetype_mro_id_offsets.append(len(archetype_mro_id_values))
+                archetype_mro_id_values.append(len(mro_ids))
+                archetype_mro_id_values.extend(mro_ids)
+            archetype_mro_id_array_place = rom[tuple(archetype_mro_id_values)]
 
-        archetype_mro_id_rom_indexes = Array[int, len(archetype_mro_id_offsets)]._with_value(
-            [Num._accept_(offset + archetype_mro_id_array_place.index) for offset in archetype_mro_id_offsets]
-        )
-        self.archetype_mro_id_array_rom_indexes = archetype_mro_id_rom_indexes
+            archetype_mro_id_rom_indexes = Array[int, len(archetype_mro_id_offsets)]._with_value(
+                [Num._accept_(offset + archetype_mro_id_array_place.index) for offset in archetype_mro_id_offsets]
+            )
+            self.archetype_mro_id_array_rom_indexes = archetype_mro_id_rom_indexes
 
 
 class CallbackContextState:
