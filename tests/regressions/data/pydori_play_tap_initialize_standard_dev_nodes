@@ -8,7 +8,7 @@ Block(JumpLoop(
       0
     )
     1
-    5
+    7
   ))
   Execute(If(
     Not(Greater(
@@ -19,7 +19,18 @@ Block(JumpLoop(
       0
     ))
     2
-    5
+    7
+  ))
+  Execute(If(
+    GreaterOr(
+      Get(
+        4001
+        16
+      )
+      1
+    )
+    3
+    6
   ))
   Execute(
     Set(
@@ -74,8 +85,8 @@ Block(JumpLoop(
           )
         )
       )
-      3
       4
+      5
     )
   )
   Execute(
@@ -109,13 +120,18 @@ Block(JumpLoop(
       0
       0
     )
-    6
+    8
+  )
+  Execute(
+    DebugLog(2)
+    DebugPause()
+    8
   )
   Execute(
     DebugLog(1)
     DebugPause()
-    6
+    8
   )
-  Execute(6)
+  Execute(8)
   0
 ))

@@ -1,4 +1,10 @@
 0:
+  goto 1 if GreaterOr(EntityData[1], 1) else 2
+1:
   10000[0] <- Add(6.0, Multiply(EntityData[1], 32.0))
   Break(1, EntityDataArray[10000[0]])
+  goto exit
+2:
+  DebugLog(1)
+  DebugPause()
   goto exit

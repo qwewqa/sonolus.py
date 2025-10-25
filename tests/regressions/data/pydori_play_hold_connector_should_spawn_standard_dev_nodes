@@ -1,4 +1,15 @@
 Block(JumpLoop(
+  Execute(If(
+    GreaterOr(
+      Get(
+        4001
+        0
+      )
+      1
+    )
+    1
+    2
+  ))
   Execute(
     Set(
       10000
@@ -30,7 +41,12 @@ Block(JumpLoop(
         )
       )
     )
-    1
+    3
+  )
+  Execute(
+    DebugLog(1)
+    DebugPause()
+    3
   )
   0
 ))

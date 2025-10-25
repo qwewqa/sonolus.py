@@ -3,6 +3,27 @@ Block(JumpLoop(
     Set(
       10000
       0
+      GreaterOr(
+        Get(
+          4001
+          0
+        )
+        1
+      )
+    )
+    If(
+      Get(
+        10000
+        0
+      )
+      1
+      2
+    )
+  )
+  Execute(
+    Set(
+      10000
+      0
       Multiply(
         Get(
           4001
@@ -54,7 +75,12 @@ Block(JumpLoop(
         0
       )
     )
-    1
+    3
+  )
+  Execute(
+    DebugLog(1)
+    DebugPause()
+    3
   )
   0
 ))

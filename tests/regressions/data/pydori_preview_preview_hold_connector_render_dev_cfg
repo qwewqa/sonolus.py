@@ -5,15 +5,11 @@
 2:
   goto 3
 3:
+  v1 <- GreaterOr(EntityData[0], 1.0)
   goto 4
 4:
-  v1 <- Multiply(EntityData[0], 32.0)
-  v2 <- Add(3.0, v1)
-  v3 <- v2
-  goto 5
+  goto 5 if v1 else 163
 5:
-  v4 <- Divide(EntityDataArray[v3], 2.0)
-  v5 <- Trunc(v4)
   goto 6
 6:
   goto 7
@@ -22,202 +18,178 @@
 8:
   goto 9
 9:
+  v4 <- Multiply(EntityData[0], 32.0)
+  v5 <- Add(3.0, v4)
+  v6 <- v5
   goto 10
 10:
-  v6 <- Multiply(EntityData[1], 32.0)
-  v7 <- Add(3.0, v6)
-  v8 <- v7
+  v7 <- Divide(EntityDataArray[v6], 2.0)
+  v8 <- Trunc(v7)
   goto 11
 11:
-  v9 <- Divide(EntityDataArray[v8], 2.0)
-  v10 <- Trunc(v9)
   goto 12
 12:
   goto 13
 13:
-  v11 <- Add(v10, 1.0)
-  v12 <- v5
-  v13 <- v11
-  v14 <- 1.0
   goto 14
 14:
-  v15 <- v12
-  v16 <- v13
-  v17 <- v14
-  v18 <- v15
-  v19 <- v16
-  v20 <- v17
+  v9 <- GreaterOr(EntityData[1], 1.0)
   goto 15
 15:
-  goto 16
+  goto 16 if v9 else 162
 16:
   goto 17
 17:
   goto 18
 18:
-  v21 <- v20
-  v22 <- Greater(v21, 0)
   goto 19
 19:
-  goto 20 if v22 else 22
+  goto 20
 20:
-  v23 <- v18
-  v24 <- v19
-  v25 <- Less(v23, v24)
+  v12 <- Multiply(EntityData[1], 32.0)
+  v13 <- Add(3.0, v12)
+  v14 <- v13
   goto 21
 21:
-  v29 <- v25
-  goto 24
+  v15 <- Divide(EntityDataArray[v14], 2.0)
+  v16 <- Trunc(v15)
+  goto 22
 22:
-  v26 <- v18
-  v27 <- v19
-  v28 <- Greater(v26, v27)
   goto 23
 23:
-  v29 <- v28
+  v17 <- Add(v16, 1.0)
+  v18 <- v8
+  v19 <- v17
+  v20 <- 1.0
   goto 24
 24:
-  goto 25 if v29 else 29
+  v21 <- v18
+  v22 <- v19
+  v23 <- v20
+  v24 <- v21
+  v25 <- v22
+  v26 <- v23
+  goto 25
 25:
-  v30 <- v18
-  v31 <- v18
-  v32 <- v20
-  v33 <- Add(v31, v32)
-  v18 <- v33
   goto 26
 26:
   goto 27
 27:
   goto 28
 28:
-  v34 <- 1.0
-  goto 31
+  v27 <- v26
+  v28 <- Greater(v27, 0)
+  goto 29
 29:
-  goto 30
+  goto 30 if v28 else 32
 30:
-  v34 <- 0
+  v29 <- v24
+  v30 <- v25
+  v31 <- Less(v29, v30)
   goto 31
 31:
-  goto 32
+  v35 <- v31
+  goto 34
 32:
-  goto 33 if v34 else 100
+  v32 <- v24
+  v33 <- v25
+  v34 <- Greater(v32, v33)
+  goto 33
 33:
+  v35 <- v34
   goto 34
 34:
-  goto 35
+  goto 35 if v35 else 39
 35:
+  v36 <- v24
+  v37 <- v24
+  v38 <- v26
+  v39 <- Add(v37, v38)
+  v24 <- v39
   goto 36
 36:
-  v35 <- Multiply(EntityData[0], 32.0)
-  v36 <- v35
   goto 37
 37:
   goto 38
 38:
-  goto 39
+  v40 <- 1.0
+  goto 41
 39:
-  v37 <- Multiply(EntityData[1], 32.0)
-  v38 <- v37
   goto 40
 40:
+  v40 <- 0
   goto 41
 41:
   goto 42
 42:
-  v39 <- Multiply(EntityData[0], 32.0)
-  v40 <- Add(3.0, v39)
-  v41 <- v40
-  goto 43
+  goto 43 if v40 else 158
 43:
   goto 44
 44:
   goto 45
 45:
-  v42 <- Multiply(EntityData[1], 32.0)
-  v43 <- Add(3.0, v42)
-  v44 <- v43
+  v41 <- GreaterOr(EntityData[0], 1.0)
   goto 46
 46:
-  v45 <- Multiply(v30, 2.0)
-  goto 47
+  goto 47 if v41 else 157
 47:
-  v46 <- Subtract(EntityDataArray[v36], 0.5)
   goto 48
 48:
-  v47 <- Add(v30, 0.5)
-  v48 <- Multiply(v47, PreviewData[1])
-  v49 <- Multiply(v46, 0.072)
-  v50 <- Add(v48, v49)
-  v51 <- Negate(RuntimeEnvironment[1])
   goto 49
 49:
-  v52 <- v51
-  v53 <- Subtract(RuntimeEnvironment[1], v52)
   goto 50
 50:
   goto 51
 51:
-  v54 <- Divide(v53, 2.0)
-  v55 <- Subtract(v50, v54)
+  v44 <- Multiply(EntityData[0], 32.0)
+  v45 <- v44
   goto 52
 52:
   goto 53
 53:
+  v46 <- GreaterOr(EntityData[1], 1.0)
   goto 54
 54:
-  goto 55
+  goto 55 if v46 else 156
 55:
   goto 56
 56:
-  v56 <- Add(EntityDataArray[v36], 0.5)
   goto 57
 57:
-  v57 <- Add(v30, 0.5)
-  v58 <- Multiply(v57, PreviewData[1])
-  v59 <- Multiply(v56, 0.072)
-  v60 <- Add(v58, v59)
-  v61 <- Negate(RuntimeEnvironment[1])
   goto 58
 58:
-  v62 <- v61
-  v63 <- Subtract(RuntimeEnvironment[1], v62)
   goto 59
 59:
+  v49 <- Multiply(EntityData[1], 32.0)
+  v50 <- v49
   goto 60
 60:
-  v64 <- Divide(v63, 2.0)
-  v65 <- Subtract(v60, v64)
   goto 61
 61:
+  v51 <- GreaterOr(EntityData[0], 1.0)
   goto 62
 62:
-  goto 63
+  goto 63 if v51 else 155
 63:
   goto 64
 64:
   goto 65
 65:
-  v66 <- Subtract(EntityDataArray[v38], 0.5)
   goto 66
 66:
-  v67 <- Add(v30, 0.5)
-  v68 <- Multiply(v67, PreviewData[1])
-  v69 <- Multiply(v66, 0.072)
-  v70 <- Add(v68, v69)
-  v71 <- Negate(RuntimeEnvironment[1])
   goto 67
 67:
-  v72 <- v71
-  v73 <- Subtract(RuntimeEnvironment[1], v72)
+  v54 <- Multiply(EntityData[0], 32.0)
+  v55 <- Add(3.0, v54)
+  v56 <- v55
   goto 68
 68:
   goto 69
 69:
-  v74 <- Divide(v73, 2.0)
-  v75 <- Subtract(v70, v74)
+  v57 <- GreaterOr(EntityData[1], 1.0)
   goto 70
 70:
-  goto 71
+  goto 71 if v57 else 154
 71:
   goto 72
 72:
@@ -225,46 +197,36 @@
 73:
   goto 74
 74:
-  v76 <- Add(EntityDataArray[v38], 0.5)
   goto 75
 75:
-  v77 <- Add(v30, 0.5)
-  v78 <- Multiply(v77, PreviewData[1])
-  v79 <- Multiply(v76, 0.072)
-  v80 <- Add(v78, v79)
-  v81 <- Negate(RuntimeEnvironment[1])
+  v60 <- Multiply(EntityData[1], 32.0)
+  v61 <- Add(3.0, v60)
+  v62 <- v61
   goto 76
 76:
-  v82 <- v81
-  v83 <- Subtract(RuntimeEnvironment[1], v82)
+  v63 <- Multiply(v36, 2.0)
   goto 77
 77:
+  v64 <- Subtract(EntityDataArray[v45], 0.5)
   goto 78
 78:
-  v84 <- Divide(v83, 2.0)
-  v85 <- Subtract(v80, v84)
+  v65 <- Add(v36, 0.5)
+  v66 <- Multiply(v65, PreviewData[1])
+  v67 <- Multiply(v64, 0.072)
+  v68 <- Add(v66, v67)
+  v69 <- Negate(RuntimeEnvironment[1])
   goto 79
 79:
+  v70 <- v69
+  v71 <- Subtract(RuntimeEnvironment[1], v70)
   goto 80
 80:
   goto 81
 81:
+  v72 <- Divide(v71, 2.0)
+  v73 <- Subtract(v68, v72)
   goto 82
 82:
-  v86 <- Subtract(EntityDataArray[v41], v45)
-  v87 <- Divide(v86, 2.0)
-  v88 <- Lerp(-0.9, 0.9, v87)
-  v89 <- Subtract(EntityDataArray[v44], v45)
-  v90 <- Divide(v89, 2.0)
-  v91 <- Lerp(-0.9, 0.9, v90)
-  v92 <- v55
-  v93 <- v88
-  v94 <- v75
-  v95 <- v91
-  v96 <- v85
-  v97 <- v91
-  v98 <- v65
-  v99 <- v88
   goto 83
 83:
   goto 84
@@ -273,57 +235,53 @@
 85:
   goto 86
 86:
+  v74 <- Add(EntityDataArray[v45], 0.5)
   goto 87
 87:
-  v100 <- Multiply(EntityData[0], 32.0)
-  v101 <- v100
+  v75 <- Add(v36, 0.5)
+  v76 <- Multiply(v75, PreviewData[1])
+  v77 <- Multiply(v74, 0.072)
+  v78 <- Add(v76, v77)
+  v79 <- Negate(RuntimeEnvironment[1])
   goto 88
 88:
+  v80 <- v79
+  v81 <- Subtract(RuntimeEnvironment[1], v80)
   goto 89
 89:
   goto 90
 90:
-  v102 <- Multiply(EntityData[1], 32.0)
-  v103 <- v102
-  v104 <- Min(EntityDataArray[v101], EntityDataArray[v103])
+  v82 <- Divide(v81, 2.0)
+  v83 <- Subtract(v78, v82)
   goto 91
 91:
   goto 92
 92:
   goto 93
 93:
-  v105 <- Multiply(EntityData[0], 32.0)
-  v106 <- Add(3.0, v105)
-  v107 <- v106
   goto 94
 94:
   goto 95
 95:
+  v84 <- Subtract(EntityDataArray[v50], 0.5)
   goto 96
 96:
-  v108 <- Multiply(EntityData[1], 32.0)
-  v109 <- Add(3.0, v108)
-  v110 <- v109
-  v111 <- Min(EntityDataArray[v107], EntityDataArray[v110])
+  v85 <- Add(v36, 0.5)
+  v86 <- Multiply(v85, PreviewData[1])
+  v87 <- Multiply(v84, 0.072)
+  v88 <- Add(v86, v87)
+  v89 <- Negate(RuntimeEnvironment[1])
   goto 97
 97:
-  v112 <- Multiply(v104, 100.0)
-  v113 <- Add(100000.0, v112)
-  v114 <- Add(v113, v111)
+  v90 <- v89
+  v91 <- Subtract(RuntimeEnvironment[1], v90)
   goto 98
 98:
   goto 99
 99:
-  v115 <- v92
-  v116 <- v93
-  v117 <- v94
-  v118 <- v95
-  v119 <- v96
-  v120 <- v97
-  v121 <- v98
-  v122 <- v99
-  v123 <- Draw(17.0, v115, v116, v117, v118, v119, v120, v121, v122, v114, PreviewOption[5])
-  goto 17
+  v92 <- Divide(v91, 2.0)
+  v93 <- Subtract(v88, v92)
+  goto 100
 100:
   goto 101
 101:
@@ -331,4 +289,196 @@
 102:
   goto 103
 103:
+  goto 104
+104:
+  v94 <- Add(EntityDataArray[v50], 0.5)
+  goto 105
+105:
+  v95 <- Add(v36, 0.5)
+  v96 <- Multiply(v95, PreviewData[1])
+  v97 <- Multiply(v94, 0.072)
+  v98 <- Add(v96, v97)
+  v99 <- Negate(RuntimeEnvironment[1])
+  goto 106
+106:
+  v100 <- v99
+  v101 <- Subtract(RuntimeEnvironment[1], v100)
+  goto 107
+107:
+  goto 108
+108:
+  v102 <- Divide(v101, 2.0)
+  v103 <- Subtract(v98, v102)
+  goto 109
+109:
+  goto 110
+110:
+  goto 111
+111:
+  goto 112
+112:
+  v104 <- Subtract(EntityDataArray[v56], v63)
+  v105 <- Divide(v104, 2.0)
+  v106 <- Lerp(-0.9, 0.9, v105)
+  v107 <- Subtract(EntityDataArray[v62], v63)
+  v108 <- Divide(v107, 2.0)
+  v109 <- Lerp(-0.9, 0.9, v108)
+  v110 <- v73
+  v111 <- v106
+  v112 <- v93
+  v113 <- v109
+  v114 <- v103
+  v115 <- v109
+  v116 <- v83
+  v117 <- v106
+  goto 113
+113:
+  goto 114
+114:
+  goto 115
+115:
+  goto 116
+116:
+  v118 <- GreaterOr(EntityData[0], 1.0)
+  goto 117
+117:
+  goto 118 if v118 else 153
+118:
+  goto 119
+119:
+  goto 120
+120:
+  goto 121
+121:
+  goto 122
+122:
+  v121 <- Multiply(EntityData[0], 32.0)
+  v122 <- v121
+  goto 123
+123:
+  goto 124
+124:
+  v123 <- GreaterOr(EntityData[1], 1.0)
+  goto 125
+125:
+  goto 126 if v123 else 152
+126:
+  goto 127
+127:
+  goto 128
+128:
+  goto 129
+129:
+  goto 130
+130:
+  v126 <- Multiply(EntityData[1], 32.0)
+  v127 <- v126
+  v128 <- Min(EntityDataArray[v122], EntityDataArray[v127])
+  goto 131
+131:
+  goto 132
+132:
+  v129 <- GreaterOr(EntityData[0], 1.0)
+  goto 133
+133:
+  goto 134 if v129 else 151
+134:
+  goto 135
+135:
+  goto 136
+136:
+  goto 137
+137:
+  goto 138
+138:
+  v132 <- Multiply(EntityData[0], 32.0)
+  v133 <- Add(3.0, v132)
+  v134 <- v133
+  goto 139
+139:
+  goto 140
+140:
+  v135 <- GreaterOr(EntityData[1], 1.0)
+  goto 141
+141:
+  goto 142 if v135 else 150
+142:
+  goto 143
+143:
+  goto 144
+144:
+  goto 145
+145:
+  goto 146
+146:
+  v138 <- Multiply(EntityData[1], 32.0)
+  v139 <- Add(3.0, v138)
+  v140 <- v139
+  v141 <- Min(EntityDataArray[v134], EntityDataArray[v140])
+  goto 147
+147:
+  v142 <- Multiply(v128, 100.0)
+  v143 <- Add(100000.0, v142)
+  v144 <- Add(v143, v141)
+  goto 148
+148:
+  goto 149
+149:
+  v145 <- v110
+  v146 <- v111
+  v147 <- v112
+  v148 <- v113
+  v149 <- v114
+  v150 <- v115
+  v151 <- v116
+  v152 <- v117
+  v153 <- Draw(17.0, v145, v146, v147, v148, v149, v150, v151, v152, v144, PreviewOption[5])
+  goto 27
+150:
+  v136 <- DebugLog(8.0)
+  v137 <- DebugPause()
+  goto exit
+151:
+  v130 <- DebugLog(7.0)
+  v131 <- DebugPause()
+  goto exit
+152:
+  v124 <- DebugLog(6.0)
+  v125 <- DebugPause()
+  goto exit
+153:
+  v119 <- DebugLog(5.0)
+  v120 <- DebugPause()
+  goto exit
+154:
+  v58 <- DebugLog(4.0)
+  v59 <- DebugPause()
+  goto exit
+155:
+  v52 <- DebugLog(3.0)
+  v53 <- DebugPause()
+  goto exit
+156:
+  v47 <- DebugLog(4.0)
+  v48 <- DebugPause()
+  goto exit
+157:
+  v42 <- DebugLog(3.0)
+  v43 <- DebugPause()
+  goto exit
+158:
+  goto 159
+159:
+  goto 160
+160:
+  goto 161
+161:
+  goto exit
+162:
+  v10 <- DebugLog(2.0)
+  v11 <- DebugPause()
+  goto exit
+163:
+  v2 <- DebugLog(1.0)
+  v3 <- DebugPause()
   goto exit

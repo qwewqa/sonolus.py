@@ -25,7 +25,7 @@
   10000[3] <- RuntimeEnvironment[3]
   EntityData[14] <- Add(Add(10000[1], 10000[0]), 10000[3])
   EntityData[15] <- Add(Add(10000[2], 10000[0]), 10000[3])
-  goto 3 if And(And(GreaterOr(EntityInfo[1], -13.0), Less(EntityInfo[1], 13.0)), Equal(Trunc(EntityInfo[1]), EntityInfo[1])) else 25
+  goto 3 if And(And(GreaterOr(EntityInfo[1], -13.0), Less(EntityInfo[1], 13.0)), Equal(Trunc(EntityInfo[1]), EntityInfo[1])) else 33
 3:
   10000[0] <- Add(3.0, Add(EntityInfo[1], Multiply(Less(EntityInfo[1], 0), 13.0)))
   10000[1] <- 0
@@ -63,59 +63,87 @@
   goto 11
 11:
   10000[0] <- EntityData[16]
+  goto 12 if GreaterOr(10000[0], 1.0) else 32
+12:
+  10000[0] <- EntityData[16]
   10000[0] <- Add(3.0, Multiply(10000[0], 32.0))
   10000[0] <- EntityDataArray[10000[0]]
-  goto 12 if Greater(10000[0], 0) else 13
-12:
+  goto 13 if Greater(10000[0], 0) else 16
+13:
+  10000[0] <- EntityData[16]
+  goto 14 if GreaterOr(10000[0], 1.0) else 15
+14:
   10000[0] <- EntityData[16]
   10000[0] <- Add(3.0, Multiply(10000[0], 32.0))
   10000[0] <- EntityDataArray[10000[0]]
   EntityData[16] <- 10000[0]
   goto 11
-13:
+15:
+  DebugLog(3.0)
+  DebugPause()
+  goto exit
+16:
   EntityData[17] <- EntityInfo[0]
-  goto 14
-14:
+  goto 17
+17:
+  10000[0] <- EntityData[17]
+  goto 18 if GreaterOr(10000[0], 1.0) else 31
+18:
   10000[0] <- EntityData[17]
   10000[0] <- Add(4.0, Multiply(10000[0], 32.0))
   10000[0] <- EntityDataArray[10000[0]]
-  goto 15 if Greater(10000[0], 0) else 16
-15:
+  goto 19 if Greater(10000[0], 0) else 22
+19:
+  10000[0] <- EntityData[17]
+  goto 20 if GreaterOr(10000[0], 1.0) else 21
+20:
   10000[0] <- EntityData[17]
   10000[0] <- Add(4.0, Multiply(10000[0], 32.0))
   10000[0] <- EntityDataArray[10000[0]]
   EntityData[17] <- 10000[0]
-  goto 14
-16:
-  goto 17 if LevelOption[11] else 24
-17:
-  goto 18 if And(And(GreaterOr(EntityInfo[1], -13.0), Less(EntityInfo[1], 13.0)), Equal(Trunc(EntityInfo[1]), EntityInfo[1])) else 23
-18:
+  goto 17
+21:
+  DebugLog(5.0)
+  DebugPause()
+  goto exit
+22:
+  goto 23 if LevelOption[11] else 30
+23:
+  goto 24 if And(And(GreaterOr(EntityInfo[1], -13.0), Less(EntityInfo[1], 13.0)), Equal(Trunc(EntityInfo[1]), EntityInfo[1])) else 29
+24:
   10000[0] <- Add(3.0, Add(EntityInfo[1], Multiply(Less(EntityInfo[1], 0), 13.0)))
   10000[1] <- EntityData[11]
-  goto 24 if Not(LevelOption[10]) else 19
-19:
+  goto 30 if Not(LevelOption[10]) else 25
+25:
   goto when EngineRom[10000[0]]
-    2.0 -> 21
-    3.0 -> 21
-    6.0 -> 24
-    default -> 20
-20:
+    2.0 -> 27
+    3.0 -> 27
+    6.0 -> 30
+    default -> 26
+26:
   10000[2] <- 1.0
-  goto 22
-21:
+  goto 28
+27:
   10000[2] <- 4.0
-  goto 22
-22:
+  goto 28
+28:
   PlayScheduled(10000[2], 10000[1], 0)
   goto exit
-23:
+29:
+  DebugLog(6.0)
+  DebugPause()
+  goto exit
+30:
+  goto exit
+31:
+  DebugLog(4.0)
+  DebugPause()
+  goto exit
+32:
   DebugLog(2.0)
   DebugPause()
   goto exit
-24:
-  goto exit
-25:
+33:
   DebugLog(1.0)
   DebugPause()
   goto exit

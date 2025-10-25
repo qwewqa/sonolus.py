@@ -138,187 +138,227 @@
 32:
   goto 33
 33:
-  v51 <- EntityData[16]
   goto 34
 34:
+  v51 <- EntityData[16]
+  v52 <- GreaterOr(v51, 1.0)
   goto 35
 35:
   goto 36
 36:
-  v52 <- Multiply(v51, 32.0)
-  v53 <- Add(3.0, v52)
-  v54 <- v53
-  v55 <- EntityDataArray[v54]
-  v56 <- Greater(v55, 0)
   goto 37
 37:
+  v53 <- EntityData[16]
   goto 38
 38:
   goto 39
 39:
-  goto 40 if v56 else 44
+  goto 40
 40:
+  v54 <- Multiply(v53, 32.0)
+  v55 <- Add(3.0, v54)
+  v56 <- v55
+  v57 <- EntityDataArray[v56]
+  v58 <- Greater(v57, 0)
   goto 41
 41:
-  v57 <- EntityData[16]
   goto 42
 42:
   goto 43
 43:
-  v58 <- Multiply(v57, 32.0)
-  v59 <- Add(3.0, v58)
-  v60 <- v59
-  v61 <- EntityDataArray[v60]
-  v62 <- v61
-  v63 <- v62
-  v64 <- v63
-  v65 <- v64
-  EntityData[16] <- v65
-  goto 32
+  goto 44 if v58 else 52
 44:
   goto 45
 45:
-  v66 <- EntityInfo[0]
-  v67 <- v66
-  v68 <- v67
-  v69 <- v68
-  v70 <- v69
-  v71 <- v70
-  EntityData[17] <- v71
   goto 46
 46:
+  v59 <- EntityData[16]
+  v60 <- GreaterOr(v59, 1.0)
   goto 47
 47:
-  v72 <- EntityData[17]
   goto 48
 48:
   goto 49
 49:
+  v61 <- EntityData[16]
   goto 50
 50:
-  v73 <- Multiply(v72, 32.0)
-  v74 <- Add(4.0, v73)
-  v75 <- v74
-  v76 <- EntityDataArray[v75]
-  v77 <- Greater(v76, 0)
   goto 51
 51:
-  goto 52
+  v62 <- Multiply(v61, 32.0)
+  v63 <- Add(3.0, v62)
+  v64 <- v63
+  v65 <- EntityDataArray[v64]
+  v66 <- v65
+  v67 <- v66
+  v68 <- v67
+  v69 <- v68
+  EntityData[16] <- v69
+  goto 32
 52:
   goto 53
 53:
-  goto 54 if v77 else 58
+  v70 <- EntityInfo[0]
+  v71 <- v70
+  v72 <- v71
+  v73 <- v72
+  v74 <- v73
+  v75 <- v74
+  EntityData[17] <- v75
+  goto 54
 54:
   goto 55
 55:
-  v78 <- EntityData[17]
   goto 56
 56:
+  v76 <- EntityData[17]
+  v77 <- GreaterOr(v76, 1.0)
   goto 57
 57:
+  goto 58
+58:
+  goto 59
+59:
+  v78 <- EntityData[17]
+  goto 60
+60:
+  goto 61
+61:
+  goto 62
+62:
   v79 <- Multiply(v78, 32.0)
   v80 <- Add(4.0, v79)
   v81 <- v80
   v82 <- EntityDataArray[v81]
-  v83 <- v82
-  v84 <- v83
-  v85 <- v84
-  v86 <- v85
-  EntityData[17] <- v86
-  goto 46
-58:
-  goto 59
-59:
-  goto 60 if LevelOption[11] else 91
-60:
-  goto 61
-61:
-  v87 <- GreaterOr(EntityInfo[1], -13.0)
-  v88 <- Less(EntityInfo[1], 13.0)
-  v89 <- And(v87, v88)
-  v90 <- Trunc(EntityInfo[1])
-  v91 <- Equal(v90, EntityInfo[1])
-  v92 <- And(v89, v91)
-  v93 <- Less(EntityInfo[1], 0)
-  v94 <- Multiply(v93, 13.0)
-  v95 <- Add(EntityInfo[1], v94)
-  v96 <- Add(3.0, v95)
-  v97 <- v96
-  v98 <- EngineRom[v97]
-  goto 62
-62:
+  v83 <- Greater(v82, 0)
   goto 63
 63:
   goto 64
 64:
   goto 65
 65:
-  goto 66
+  goto 66 if v83 else 74
 66:
-  v99 <- EntityData[11]
   goto 67
 67:
-  v100 <- Not(LevelOption[10])
-  goto 68 if v100 else 69
+  goto 68
 68:
-  goto 89
+  v84 <- EntityData[17]
+  v85 <- GreaterOr(v84, 1.0)
+  goto 69
 69:
   goto 70
 70:
-  v101 <- Equal(v98, 6.0)
   goto 71
 71:
-  goto 72 if v101 else 73
+  v86 <- EntityData[17]
+  goto 72
 72:
-  goto 89
+  goto 73
 73:
-  goto 74
+  v87 <- Multiply(v86, 32.0)
+  v88 <- Add(4.0, v87)
+  v89 <- v88
+  v90 <- EntityDataArray[v89]
+  v91 <- v90
+  v92 <- v91
+  v93 <- v92
+  v94 <- v93
+  EntityData[17] <- v94
+  goto 54
 74:
   goto 75
 75:
-  v102 <- 0
-  v103 <- Equal(v98, 2.0)
-  goto 76 if v103 else 77
+  goto 76 if LevelOption[11] else 107
 76:
-  goto 79
+  goto 77
 77:
-  v104 <- Equal(v98, 3.0)
-  goto 78 if v104 else 81
+  v95 <- GreaterOr(EntityInfo[1], -13.0)
+  v96 <- Less(EntityInfo[1], 13.0)
+  v97 <- And(v95, v96)
+  v98 <- Trunc(EntityInfo[1])
+  v99 <- Equal(v98, EntityInfo[1])
+  v100 <- And(v97, v99)
+  v101 <- Less(EntityInfo[1], 0)
+  v102 <- Multiply(v101, 13.0)
+  v103 <- Add(EntityInfo[1], v102)
+  v104 <- Add(3.0, v103)
+  v105 <- v104
+  v106 <- EngineRom[v105]
+  goto 78
 78:
   goto 79
 79:
-  v102 <- 4.0
   goto 80
 80:
-  goto 83
+  goto 81
 81:
-  v102 <- 1.0
   goto 82
 82:
+  v107 <- EntityData[11]
   goto 83
 83:
-  goto 84
+  v108 <- Not(LevelOption[10])
+  goto 84 if v108 else 85
 84:
-  goto 85
+  goto 105
 85:
   goto 86
 86:
-  v105 <- v102
-  v106 <- PlayScheduled(v105, v99, 0)
+  v109 <- Equal(v106, 6.0)
   goto 87
 87:
-  goto 88
+  goto 88 if v109 else 89
 88:
-  goto 89
+  goto 105
 89:
   goto 90
 90:
-  goto 92
+  goto 91
 91:
-  goto 92
+  v110 <- 0
+  v111 <- Equal(v106, 2.0)
+  goto 92 if v111 else 93
 92:
-  goto 93
+  goto 95
 93:
-  goto 94
+  v112 <- Equal(v106, 3.0)
+  goto 94 if v112 else 97
 94:
+  goto 95
+95:
+  v110 <- 4.0
+  goto 96
+96:
+  goto 99
+97:
+  v110 <- 1.0
+  goto 98
+98:
+  goto 99
+99:
+  goto 100
+100:
+  goto 101
+101:
+  goto 102
+102:
+  v113 <- v110
+  v114 <- PlayScheduled(v113, v107, 0)
+  goto 103
+103:
+  goto 104
+104:
+  goto 105
+105:
+  goto 106
+106:
+  goto 108
+107:
+  goto 108
+108:
+  goto 109
+109:
+  goto 110
+110:
   goto exit

@@ -1,32 +1,46 @@
 0:
-  goto 1 if RuntimeEnvironment[4] else 2
+  10000[0] <- GreaterOr(EntityData[0], 1)
+  goto 1 if 10000[0] else 10
 1:
+  goto 2 if RuntimeEnvironment[4] else 3
+2:
   10000[0] <- Multiply(EntityData[0], 32.0)
   10000[0] <- Add(8.0, 10000[0])
   10000[0] <- 10000[0]
-  10000[1] <- EntityDataArray[10000[0]]
-  goto 3
-2:
+  10000[0] <- EntityDataArray[10000[0]]
+  goto 4
+3:
   10000[0] <- Multiply(EntityData[0], 32.0)
   10000[0] <- Add(6.0, 10000[0])
   10000[0] <- 10000[0]
-  10000[1] <- EntityDataArray[10000[0]]
-  goto 3
-3:
-  goto 4 if RuntimeEnvironment[4] else 5
+  10000[0] <- EntityDataArray[10000[0]]
+  goto 4
 4:
-  10000[2] <- Multiply(EntityData[1], 32.0)
-  10000[2] <- Add(8.0, 10000[2])
-  10000[0] <- 10000[2]
-  10000[0] <- EntityDataArray[10000[0]]
-  goto 6
+  10000[1] <- GreaterOr(EntityData[1], 1)
+  goto 5 if 10000[1] else 9
 5:
-  10000[0] <- Multiply(EntityData[1], 32.0)
-  10000[0] <- Add(6.0, 10000[0])
-  10000[0] <- 10000[0]
-  10000[0] <- EntityDataArray[10000[0]]
-  goto 6
+  goto 6 if RuntimeEnvironment[4] else 7
 6:
-  10000[0] <- Min(10000[1], 10000[0])
+  10000[1] <- Multiply(EntityData[1], 32.0)
+  10000[1] <- Add(8.0, 10000[1])
+  10000[1] <- 10000[1]
+  10000[1] <- EntityDataArray[10000[1]]
+  goto 8
+7:
+  10000[1] <- Multiply(EntityData[1], 32.0)
+  10000[1] <- Add(6.0, 10000[1])
+  10000[1] <- 10000[1]
+  10000[1] <- EntityDataArray[10000[1]]
+  goto 8
+8:
+  10000[0] <- Min(10000[0], 10000[1])
   Break(1, 10000[0])
+  goto exit
+9:
+  DebugLog(2.0)
+  DebugPause()
+  goto exit
+10:
+  DebugLog(1)
+  DebugPause()
   goto exit

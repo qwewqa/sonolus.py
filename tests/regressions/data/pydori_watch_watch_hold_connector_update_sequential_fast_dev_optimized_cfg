@@ -1,31 +1,50 @@
 0:
+  10000[0] <- GreaterOr(EntityData[0], 1.0)
+  goto 1 if 10000[0] else 40
+1:
   10000[0] <- Multiply(EntityData[0], 32.0)
   10000[0] <- Add(5.0, 10000[0])
   10000[0] <- 10000[0]
   10000[0] <- LessOr(EntityDataArray[10000[0]], RuntimeUpdate[0])
-  goto 1 if 10000[0] else 2
-1:
+  goto 2 if 10000[0] else 5
+2:
+  10000[0] <- GreaterOr(EntityData[1], 1.0)
+  goto 3 if 10000[0] else 4
+3:
   10000[0] <- Multiply(EntityData[1], 32.0)
   10000[0] <- Add(5.0, 10000[0])
   10000[0] <- 10000[0]
   10000[0] <- Less(RuntimeUpdate[0], EntityDataArray[10000[0]])
   10000[0] <- 10000[0]
-  goto 3
-2:
-  10000[0] <- 0
-  goto 3
-3:
-  goto 4 if 10000[0] else 13
+  goto 6
 4:
+  DebugLog(2.0)
+  DebugPause()
+  goto exit
+5:
+  10000[0] <- 0
+  goto 6
+6:
+  goto 7 if 10000[0] else 22
+7:
+  10000[0] <- GreaterOr(EntityData[0], 1.0)
+  goto 8 if 10000[0] else 21
+8:
   10000[0] <- Multiply(EntityData[0], 32.0)
   10000[0] <- Add(9.0, 10000[0])
   10000[0] <- 10000[0]
-  goto 5 if RuntimeEnvironment[4] else 11
-5:
+  10000[1] <- GreaterOr(EntityDataArray[10000[0]], 1.0)
+  goto 9 if 10000[1] else 20
+9:
+  goto 10 if RuntimeEnvironment[4] else 18
+10:
   10000[1] <- 18.0
   10000[2] <- Multiply(EntityDataArray[10000[0]], 32.0)
   10000[2] <- Add(9.0, 10000[2])
   10000[2] <- 10000[2]
+  10000[3] <- GreaterOr(EntityDataArray[10000[2]], 1.0)
+  goto 11 if 10000[3] else 17
+11:
   10000[2] <- Multiply(EntityDataArray[10000[2]], 3.0)
   10000[2] <- 10000[2]
   10000[3] <- GreaterOr(EntityInfoArray[10000[2]], 0)
@@ -34,8 +53,8 @@
   10000[4] <- Trunc(EntityInfoArray[10000[2]])
   10000[4] <- Equal(10000[4], EntityInfoArray[10000[2]])
   10000[3] <- And(10000[3], 10000[4])
-  goto 6 if 10000[3] else 10
-6:
+  goto 12 if 10000[3] else 16
+12:
   10000[3] <- Max(1.0, 1.0)
   10000[2] <- Multiply(10000[3], EntityInfoArray[10000[2]])
   10000[3] <- 10000[1]
@@ -43,62 +62,127 @@
   10000[0] <- 10000[0]
   10000[1] <- 10000[0]
   10000[1] <- StreamHas(10000[1], RuntimeUpdate[0])
-  goto 7 if 10000[1] else 8
-7:
+  goto 13 if 10000[1] else 14
+13:
   10000[1] <- RuntimeUpdate[0]
-  goto 9
-8:
+  goto 15
+14:
   10000[1] <- 10000[0]
   10000[1] <- StreamGetPreviousKey(10000[1], RuntimeUpdate[0])
   10000[1] <- 10000[1]
-  goto 9
-9:
+  goto 15
+15:
   10000[2] <- 10000[0]
   10000[2] <- Add(10000[2], 0)
   10000[0] <- StreamGetValue(10000[2], 10000[1])
-  goto 12
-10:
-  DebugLog(1.0)
+  goto 19
+16:
+  DebugLog(6.0)
   DebugPause()
   goto exit
-11:
+17:
+  DebugLog(5.0)
+  DebugPause()
+  goto exit
+18:
   10000[0] <- 1.0
-  goto 12
-12:
+  goto 19
+19:
   10000[0] <- 10000[0]
-  goto 14
-13:
+  goto 23
+20:
+  DebugLog(4.0)
+  DebugPause()
+  goto exit
+21:
+  DebugLog(3.0)
+  DebugPause()
+  goto exit
+22:
   10000[0] <- 0
-  goto 14
-14:
-  goto 15 if 10000[0] else 16
-15:
+  goto 23
+23:
+  goto 24 if 10000[0] else 39
+24:
+  10000[0] <- GreaterOr(EntityData[0], 1.0)
+  goto 25 if 10000[0] else 38
+25:
   10000[0] <- Multiply(EntityData[0], 32.0)
   10000[0] <- Add(6.0, 10000[0])
   10000[0] <- 10000[0]
   10000[1] <- Divide(6.0, LevelOption[1])
   10000[1] <- Subtract(EntityDataArray[10000[0]], 10000[1])
   10000[0] <- Remap(10000[1], EntityDataArray[10000[0]], LevelData[14], 0, RuntimeUpdate[2])
+  10000[1] <- GreaterOr(EntityData[1], 1.0)
+  goto 26 if 10000[1] else 37
+26:
   10000[1] <- Multiply(EntityData[1], 32.0)
   10000[1] <- Add(6.0, 10000[1])
   10000[1] <- 10000[1]
   10000[2] <- Divide(6.0, LevelOption[1])
   10000[2] <- Subtract(EntityDataArray[10000[1]], 10000[2])
   10000[1] <- Remap(10000[2], EntityDataArray[10000[1]], LevelData[14], 0, RuntimeUpdate[2])
+  10000[2] <- GreaterOr(EntityData[0], 1.0)
+  goto 27 if 10000[2] else 36
+27:
   10000[2] <- Multiply(EntityData[0], 32.0)
   10000[2] <- 10000[2]
+  10000[3] <- GreaterOr(EntityData[1], 1.0)
+  goto 28 if 10000[3] else 35
+28:
   10000[3] <- Multiply(EntityData[1], 32.0)
   10000[3] <- 10000[3]
-  10000[0] <- Remap(10000[0], 10000[1], EntityDataArray[10000[2]], EntityDataArray[10000[3]], 0)
-  10000[1] <- Multiply(EntityData[0], 32.0)
-  10000[1] <- Add(9.0, 10000[1])
-  10000[1] <- 10000[1]
-  10000[1] <- Multiply(EntityDataArray[10000[1]], 32.0)
-  10000[1] <- Add(9.0, 10000[1])
-  10000[1] <- 10000[1]
-  10000[1] <- Multiply(EntityDataArray[10000[1]], 32.0)
-  10000[1] <- 10000[1]
-  EntitySharedMemoryArray[10000[1]] <- 10000[0]
-  goto 16
-16:
+  10000[1] <- Remap(10000[0], 10000[1], EntityDataArray[10000[2]], EntityDataArray[10000[3]], 0)
+  10000[2] <- GreaterOr(EntityData[0], 1.0)
+  goto 29 if 10000[2] else 34
+29:
+  10000[2] <- Multiply(EntityData[0], 32.0)
+  10000[2] <- Add(9.0, 10000[2])
+  10000[2] <- 10000[2]
+  10000[3] <- GreaterOr(EntityDataArray[10000[2]], 1.0)
+  goto 30 if 10000[3] else 33
+30:
+  10000[2] <- Multiply(EntityDataArray[10000[2]], 32.0)
+  10000[2] <- Add(9.0, 10000[2])
+  10000[2] <- 10000[2]
+  10000[3] <- GreaterOr(EntityDataArray[10000[2]], 1.0)
+  goto 31 if 10000[3] else 32
+31:
+  10000[0] <- Multiply(EntityDataArray[10000[2]], 32.0)
+  10000[0] <- 10000[0]
+  EntitySharedMemoryArray[10000[0]] <- 10000[1]
+  goto 39
+32:
+  DebugLog(11.0)
+  DebugPause()
+  goto exit
+33:
+  DebugLog(10.0)
+  DebugPause()
+  goto exit
+34:
+  DebugLog(9.0)
+  DebugPause()
+  goto exit
+35:
+  DebugLog(8.0)
+  DebugPause()
+  goto exit
+36:
+  DebugLog(7.0)
+  DebugPause()
+  goto exit
+37:
+  DebugLog(8.0)
+  DebugPause()
+  goto exit
+38:
+  DebugLog(7.0)
+  DebugPause()
+  goto exit
+39:
+  goto exit
+40:
+  DebugLog(1.0)
+  DebugPause()
   goto exit

@@ -1,25 +1,85 @@
 0:
-  10000[0] <- Add(3.0, Multiply(EntityData[0], 32.0))
-  10000[4] <- Trunc(Divide(EntityDataArray[10000[0]], 2.0))
-  10000[11] <- Add(3.0, Multiply(EntityData[1], 32.0))
-  goto 1
+  goto 1 if GreaterOr(EntityData[0], 1.0) else 23
 1:
-  goto 2 if Less(10000[4], Add(Trunc(Divide(EntityDataArray[10000[11]], 2.0)), 1.0)) else 3
+  10000[0] <- Add(3.0, Multiply(EntityData[0], 32.0))
+  10000[7] <- Trunc(Divide(EntityDataArray[10000[0]], 2.0))
+  goto 2 if GreaterOr(EntityData[1], 1.0) else 22
 2:
-  10000[5] <- Add(10000[4], 1.0)
-  10000[6] <- Multiply(EntityData[0], 32.0)
-  10000[7] <- Multiply(EntityData[1], 32.0)
-  10000[8] <- Add(3.0, Multiply(EntityData[0], 32.0))
-  10000[9] <- Add(3.0, Multiply(EntityData[1], 32.0))
-  10000[10] <- Multiply(10000[4], 2.0)
-  10000[12] <- Lerp(-0.9, 0.9, Divide(Subtract(EntityDataArray[10000[8]], 10000[10]), 2.0))
-  10000[13] <- Lerp(-0.9, 0.9, Divide(Subtract(EntityDataArray[10000[9]], 10000[10]), 2.0))
-  10000[0] <- Multiply(EntityData[0], 32.0)
-  10000[1] <- Multiply(EntityData[1], 32.0)
-  10000[2] <- Add(3.0, Multiply(EntityData[0], 32.0))
-  10000[3] <- Add(3.0, Multiply(EntityData[1], 32.0))
-  Draw(17.0, Subtract(Add(Multiply(Add(10000[4], 0.5), PreviewData[1]), Multiply(Subtract(EntityDataArray[10000[6]], 0.5), 0.072)), Divide(Subtract(RuntimeEnvironment[1], Negate(RuntimeEnvironment[1])), 2.0)), 10000[12], Subtract(Add(Multiply(Add(10000[4], 0.5), PreviewData[1]), Multiply(Subtract(EntityDataArray[10000[7]], 0.5), 0.072)), Divide(Subtract(RuntimeEnvironment[1], Negate(RuntimeEnvironment[1])), 2.0)), 10000[13], Subtract(Add(Multiply(Add(10000[4], 0.5), PreviewData[1]), Multiply(Add(EntityDataArray[10000[7]], 0.5), 0.072)), Divide(Subtract(RuntimeEnvironment[1], Negate(RuntimeEnvironment[1])), 2.0)), 10000[13], Subtract(Add(Multiply(Add(10000[4], 0.5), PreviewData[1]), Multiply(Add(EntityDataArray[10000[6]], 0.5), 0.072)), Divide(Subtract(RuntimeEnvironment[1], Negate(RuntimeEnvironment[1])), 2.0)), 10000[12], Add(Add(100000.0, Multiply(Min(EntityDataArray[10000[0]], EntityDataArray[10000[1]]), 100.0)), Min(EntityDataArray[10000[2]], EntityDataArray[10000[3]])), PreviewOption[5])
-  10000[4] <- 10000[5]
-  goto 1
+  10000[4] <- Add(3.0, Multiply(EntityData[1], 32.0))
+  goto 3
 3:
+  goto 4 if Less(10000[7], Add(Trunc(Divide(EntityDataArray[10000[4]], 2.0)), 1.0)) else 21
+4:
+  10000[8] <- Add(10000[7], 1.0)
+  goto 5 if GreaterOr(EntityData[0], 1.0) else 20
+5:
+  10000[9] <- Multiply(EntityData[0], 32.0)
+  goto 6 if GreaterOr(EntityData[1], 1.0) else 19
+6:
+  10000[10] <- Multiply(EntityData[1], 32.0)
+  goto 7 if GreaterOr(EntityData[0], 1.0) else 18
+7:
+  10000[11] <- Add(3.0, Multiply(EntityData[0], 32.0))
+  goto 8 if GreaterOr(EntityData[1], 1.0) else 17
+8:
+  10000[12] <- Add(3.0, Multiply(EntityData[1], 32.0))
+  10000[13] <- Multiply(10000[7], 2.0)
+  10000[0] <- Lerp(-0.9, 0.9, Divide(Subtract(EntityDataArray[10000[11]], 10000[13]), 2.0))
+  10000[1] <- Lerp(-0.9, 0.9, Divide(Subtract(EntityDataArray[10000[12]], 10000[13]), 2.0))
+  goto 9 if GreaterOr(EntityData[0], 1.0) else 16
+9:
+  10000[2] <- Multiply(EntityData[0], 32.0)
+  goto 10 if GreaterOr(EntityData[1], 1.0) else 15
+10:
+  10000[3] <- Multiply(EntityData[1], 32.0)
+  goto 11 if GreaterOr(EntityData[0], 1.0) else 14
+11:
+  10000[5] <- Add(3.0, Multiply(EntityData[0], 32.0))
+  goto 12 if GreaterOr(EntityData[1], 1.0) else 13
+12:
+  10000[6] <- Add(3.0, Multiply(EntityData[1], 32.0))
+  Draw(17.0, Subtract(Add(Multiply(Add(10000[7], 0.5), PreviewData[1]), Multiply(Subtract(EntityDataArray[10000[9]], 0.5), 0.072)), Divide(Subtract(RuntimeEnvironment[1], Negate(RuntimeEnvironment[1])), 2.0)), 10000[0], Subtract(Add(Multiply(Add(10000[7], 0.5), PreviewData[1]), Multiply(Subtract(EntityDataArray[10000[10]], 0.5), 0.072)), Divide(Subtract(RuntimeEnvironment[1], Negate(RuntimeEnvironment[1])), 2.0)), 10000[1], Subtract(Add(Multiply(Add(10000[7], 0.5), PreviewData[1]), Multiply(Add(EntityDataArray[10000[10]], 0.5), 0.072)), Divide(Subtract(RuntimeEnvironment[1], Negate(RuntimeEnvironment[1])), 2.0)), 10000[1], Subtract(Add(Multiply(Add(10000[7], 0.5), PreviewData[1]), Multiply(Add(EntityDataArray[10000[9]], 0.5), 0.072)), Divide(Subtract(RuntimeEnvironment[1], Negate(RuntimeEnvironment[1])), 2.0)), 10000[0], Add(Add(100000.0, Multiply(Min(EntityDataArray[10000[2]], EntityDataArray[10000[3]]), 100.0)), Min(EntityDataArray[10000[5]], EntityDataArray[10000[6]])), PreviewOption[5])
+  10000[7] <- 10000[8]
+  goto 3
+13:
+  DebugLog(8.0)
+  DebugPause()
+  goto exit
+14:
+  DebugLog(7.0)
+  DebugPause()
+  goto exit
+15:
+  DebugLog(6.0)
+  DebugPause()
+  goto exit
+16:
+  DebugLog(5.0)
+  DebugPause()
+  goto exit
+17:
+  DebugLog(4.0)
+  DebugPause()
+  goto exit
+18:
+  DebugLog(3.0)
+  DebugPause()
+  goto exit
+19:
+  DebugLog(4.0)
+  DebugPause()
+  goto exit
+20:
+  DebugLog(3.0)
+  DebugPause()
+  goto exit
+21:
+  goto exit
+22:
+  DebugLog(2.0)
+  DebugPause()
+  goto exit
+23:
+  DebugLog(1.0)
+  DebugPause()
   goto exit

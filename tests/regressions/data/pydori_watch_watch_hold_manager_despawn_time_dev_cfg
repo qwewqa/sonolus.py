@@ -3,17 +3,33 @@
 1:
   goto 2
 2:
-  v1 <- EntityMemory[1]
   goto 3
 3:
+  v1 <- EntityMemory[1]
+  v2 <- GreaterOr(v1, 1)
   goto 4
 4:
-  v2 <- Multiply(v1, 32.0)
-  v3 <- Add(6.0, v2)
-  v4 <- v3
-  goto 5
+  goto 5 if v2 else 12
 5:
   goto 6
 6:
-  Break(1, EntityDataArray[v4])
+  goto 7
+7:
+  v5 <- EntityMemory[1]
+  goto 8
+8:
+  goto 9
+9:
+  v6 <- Multiply(v5, 32.0)
+  v7 <- Add(6.0, v6)
+  v8 <- v7
+  goto 10
+10:
+  goto 11
+11:
+  Break(1, EntityDataArray[v8])
+  goto exit
+12:
+  v3 <- DebugLog(1)
+  v4 <- DebugPause()
   goto exit

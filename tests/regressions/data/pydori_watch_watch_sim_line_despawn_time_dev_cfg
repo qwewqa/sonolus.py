@@ -5,54 +5,84 @@
 2:
   goto 3
 3:
+  v1 <- GreaterOr(EntityData[0], 1)
   goto 4
 4:
-  goto 5
+  goto 5 if v1 else 31
 5:
-  goto 6 if RuntimeEnvironment[4] else 7
+  goto 6
 6:
-  v1 <- Multiply(EntityData[0], 32.0)
-  v2 <- Add(8.0, v1)
-  v3 <- v2
-  v7 <- EntityDataArray[v3]
-  goto 8
+  goto 7
 7:
-  v4 <- Multiply(EntityData[0], 32.0)
-  v5 <- Add(6.0, v4)
-  v6 <- v5
-  v7 <- EntityDataArray[v6]
   goto 8
 8:
   goto 9
 9:
   goto 10
 10:
-  goto 11
+  goto 11 if RuntimeEnvironment[4] else 12
 11:
-  goto 12
+  v4 <- Multiply(EntityData[0], 32.0)
+  v5 <- Add(8.0, v4)
+  v6 <- v5
+  v10 <- EntityDataArray[v6]
+  goto 13
 12:
+  v7 <- Multiply(EntityData[0], 32.0)
+  v8 <- Add(6.0, v7)
+  v9 <- v8
+  v10 <- EntityDataArray[v9]
   goto 13
 13:
-  goto 14 if RuntimeEnvironment[4] else 15
+  goto 14
 14:
-  v8 <- Multiply(EntityData[1], 32.0)
-  v9 <- Add(8.0, v8)
-  v10 <- v9
-  v14 <- EntityDataArray[v10]
-  goto 16
+  goto 15
 15:
-  v11 <- Multiply(EntityData[1], 32.0)
-  v12 <- Add(6.0, v11)
-  v13 <- v12
-  v14 <- EntityDataArray[v13]
   goto 16
 16:
+  v11 <- GreaterOr(EntityData[1], 1)
   goto 17
 17:
-  v15 <- Min(v7, v14)
-  goto 18
+  goto 18 if v11 else 30
 18:
   goto 19
 19:
-  Break(1, v15)
+  goto 20
+20:
+  goto 21
+21:
+  goto 22
+22:
+  goto 23
+23:
+  goto 24 if RuntimeEnvironment[4] else 25
+24:
+  v14 <- Multiply(EntityData[1], 32.0)
+  v15 <- Add(8.0, v14)
+  v16 <- v15
+  v20 <- EntityDataArray[v16]
+  goto 26
+25:
+  v17 <- Multiply(EntityData[1], 32.0)
+  v18 <- Add(6.0, v17)
+  v19 <- v18
+  v20 <- EntityDataArray[v19]
+  goto 26
+26:
+  goto 27
+27:
+  v21 <- Min(v10, v20)
+  goto 28
+28:
+  goto 29
+29:
+  Break(1, v21)
+  goto exit
+30:
+  v12 <- DebugLog(2.0)
+  v13 <- DebugPause()
+  goto exit
+31:
+  v2 <- DebugLog(1)
+  v3 <- DebugPause()
   goto exit

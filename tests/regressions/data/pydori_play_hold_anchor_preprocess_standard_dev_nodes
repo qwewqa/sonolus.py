@@ -256,7 +256,7 @@ Block(JumpLoop(
         )
       )
       3
-      25
+      33
     )
   )
   Execute(
@@ -397,6 +397,27 @@ Block(JumpLoop(
         16
       )
     )
+    If(
+      GreaterOr(
+        Get(
+          10000
+          0
+        )
+        1
+      )
+      12
+      32
+    )
+  )
+  Execute(
+    Set(
+      10000
+      0
+      Get(
+        4001
+        16
+      )
+    )
     Set(
       10000
       0
@@ -430,8 +451,29 @@ Block(JumpLoop(
         )
         0
       )
-      12
       13
+      16
+    )
+  )
+  Execute(
+    Set(
+      10000
+      0
+      Get(
+        4001
+        16
+      )
+    )
+    If(
+      GreaterOr(
+        Get(
+          10000
+          0
+        )
+        1
+      )
+      14
+      15
     )
   )
   Execute(
@@ -479,6 +521,11 @@ Block(JumpLoop(
     11
   )
   Execute(
+    DebugLog(3)
+    DebugPause()
+    34
+  )
+  Execute(
     Set(
       4001
       17
@@ -487,7 +534,28 @@ Block(JumpLoop(
         0
       )
     )
-    14
+    17
+  )
+  Execute(
+    Set(
+      10000
+      0
+      Get(
+        4001
+        17
+      )
+    )
+    If(
+      GreaterOr(
+        Get(
+          10000
+          0
+        )
+        1
+      )
+      18
+      31
+    )
   )
   Execute(
     Set(
@@ -531,8 +599,29 @@ Block(JumpLoop(
         )
         0
       )
-      15
-      16
+      19
+      22
+    )
+  )
+  Execute(
+    Set(
+      10000
+      0
+      Get(
+        4001
+        17
+      )
+    )
+    If(
+      GreaterOr(
+        Get(
+          10000
+          0
+        )
+        1
+      )
+      20
+      21
     )
   )
   Execute(
@@ -577,15 +666,20 @@ Block(JumpLoop(
         0
       )
     )
-    14
+    17
+  )
+  Execute(
+    DebugLog(5)
+    DebugPause()
+    34
   )
   Execute(If(
     Get(
       2002
       11
     )
-    17
-    24
+    23
+    30
   ))
   Execute(If(
     And(
@@ -616,8 +710,8 @@ Block(JumpLoop(
         )
       )
     )
-    18
-    23
+    24
+    29
   ))
   Execute(
     Set(
@@ -656,8 +750,8 @@ Block(JumpLoop(
         2002
         10
       ))
-      24
-      19
+      30
+      25
     )
   )
   Execute(SwitchWithDefault(
@@ -669,12 +763,12 @@ Block(JumpLoop(
       )
     )
     2.0
-    21
+    27
     3.0
-    21
+    27
     6.0
-    24
-    20
+    30
+    26
   ))
   Execute(
     Set(
@@ -682,7 +776,7 @@ Block(JumpLoop(
       2
       1
     )
-    22
+    28
   )
   Execute(
     Set(
@@ -690,7 +784,7 @@ Block(JumpLoop(
       2
       4
     )
-    22
+    28
   )
   Execute(
     PlayScheduled(
@@ -704,18 +798,28 @@ Block(JumpLoop(
       )
       0
     )
-    26
+    34
+  )
+  Execute(
+    DebugLog(6)
+    DebugPause()
+    34
+  )
+  Execute(34)
+  Execute(
+    DebugLog(4)
+    DebugPause()
+    34
   )
   Execute(
     DebugLog(2)
     DebugPause()
-    26
+    34
   )
-  Execute(26)
   Execute(
     DebugLog(1)
     DebugPause()
-    26
+    34
   )
   0
 ))

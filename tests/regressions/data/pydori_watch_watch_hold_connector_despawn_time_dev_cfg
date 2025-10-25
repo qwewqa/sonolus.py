@@ -5,14 +5,29 @@
 2:
   goto 3
 3:
+  v1 <- GreaterOr(EntityData[1], 1)
   goto 4
 4:
-  v1 <- Multiply(EntityData[1], 32.0)
-  v2 <- Add(6.0, v1)
-  v3 <- v2
-  goto 5
+  goto 5 if v1 else 12
 5:
   goto 6
 6:
-  Break(1, EntityDataArray[v3])
+  goto 7
+7:
+  goto 8
+8:
+  goto 9
+9:
+  v4 <- Multiply(EntityData[1], 32.0)
+  v5 <- Add(6.0, v4)
+  v6 <- v5
+  goto 10
+10:
+  goto 11
+11:
+  Break(1, EntityDataArray[v6])
+  goto exit
+12:
+  v2 <- DebugLog(1)
+  v3 <- DebugPause()
   goto exit

@@ -1,9 +1,9 @@
 0:
-  goto 1 if And(And(GreaterOr(EntityInfo[1], -13.0), Less(EntityInfo[1], 13.0)), Equal(Trunc(EntityInfo[1]), EntityInfo[1])) else 70
+  goto 1 if And(And(GreaterOr(EntityInfo[1], -13.0), Less(EntityInfo[1], 13.0)), Equal(Trunc(EntityInfo[1]), EntityInfo[1])) else 74
 1:
   10000[0] <- Add(3.0, Add(EntityInfo[1], Multiply(Less(EntityInfo[1], 0), 13.0)))
   goto when EngineRom[10000[0]]
-    6.0 -> 69
+    6.0 -> 73
     default -> 2
 2:
   goto 3 if Greater(RuntimeUpdate[0], EntityData[15]) else 4
@@ -225,56 +225,68 @@
 56:
   EntityDespawn[0] <- 1.0
   EntitySharedMemory[2] <- 1.0
-  goto 57
+  goto 58 if GreaterOr(EntityData[16], 1.0) else 72
 57:
-  10000[0] <- Multiply(EntityData[16], 32.0)
-  10000[0] <- EntitySharedMemoryArray[10000[0]]
-  goto 58 if Greater(10000[0], 0) else 68
+  goto 58 if GreaterOr(EntityData[16], 1.0) else 72
 58:
   10000[0] <- Multiply(EntityData[16], 32.0)
   10000[0] <- EntitySharedMemoryArray[10000[0]]
-  10000[1] <- LevelMemory[17]
-  goto 68 if GreaterOr(10000[1], 16.0) else 59
+  goto 59 if Greater(10000[0], 0) else 71
 59:
-  10000[1] <- 0
-  goto 60
+  goto 60 if GreaterOr(EntityData[16], 1.0) else 70
 60:
-  10000[2] <- LevelMemory[17]
-  goto 61 if Less(10000[1], 10000[2]) else 65
+  10000[0] <- Multiply(EntityData[16], 32.0)
+  10000[0] <- EntitySharedMemoryArray[10000[0]]
+  10000[1] <- LevelMemory[17]
+  goto 71 if GreaterOr(10000[1], 16.0) else 61
 61:
-  10000[2] <- LevelMemory[17]
-  goto 62 if And(And(GreaterOr(10000[1], Negate(10000[2])), Less(10000[1], 10000[2])), Equal(Trunc(10000[1]), 10000[1])) else 64
+  10000[1] <- 0
+  goto 62
 62:
+  10000[2] <- LevelMemory[17]
+  goto 63 if Less(10000[1], 10000[2]) else 67
+63:
+  10000[2] <- LevelMemory[17]
+  goto 64 if And(And(GreaterOr(10000[1], Negate(10000[2])), Less(10000[1], 10000[2])), Equal(Trunc(10000[1]), 10000[1])) else 66
+64:
   10000[2] <- Add(17.0, Add(10000[1], Multiply(Less(10000[1], 0), 10000[2])))
   10000[2] <- LevelMemory[10000[2] + 1]
-  goto 68 if Equal(10000[2], 10000[0]) else 63
-63:
+  goto 71 if Equal(10000[2], 10000[0]) else 65
+65:
   10000[1] <- Add(10000[1], 1.0)
-  goto 60
-64:
-  DebugLog(6.0)
+  goto 62
+66:
+  DebugLog(8.0)
   DebugPause()
   goto exit
-65:
+67:
   10000[1] <- LevelMemory[17]
-  goto 66 if Less(10000[1], 16.0) else 67
-66:
+  goto 68 if Less(10000[1], 16.0) else 69
+68:
   10000[1] <- LevelMemory[17]
   10000[1] <- Add(17.0, 10000[1])
   LevelMemory[10000[1] + 1] <- 10000[0]
   10000[0] <- LevelMemory[17]
   LevelMemory[17] <- Add(10000[0], 1.0)
   goto exit
-67:
+69:
+  DebugLog(9.0)
+  DebugPause()
+  goto exit
+70:
   DebugLog(7.0)
   DebugPause()
   goto exit
-68:
+71:
   goto exit
-69:
+72:
+  DebugLog(6.0)
+  DebugPause()
+  goto exit
+73:
   EntityDespawn[0] <- 1.0
   goto exit
-70:
+74:
   DebugLog(1.0)
   DebugPause()
   goto exit

@@ -31,7 +31,7 @@
   goto 9 if v13 else 10
 9:
   EntityDespawn[0] <- 1.0
-  goto 332
+  goto 340
 10:
   goto 11
 11:
@@ -41,7 +41,7 @@
   goto 13 if v14 else 14
 13:
   EntityDespawn[0] <- 1.0
-  goto 332
+  goto 340
 14:
   goto 15
 15:
@@ -1001,154 +1001,172 @@
 279:
   goto 280
 280:
+  v411 <- GreaterOr(EntityData[16], 1.0)
   goto 281
 281:
-  v411 <- Multiply(EntityData[16], 32.0)
-  v412 <- v411
-  v413 <- EntitySharedMemoryArray[v412]
   goto 282
 282:
   goto 283
 283:
-  v414 <- Greater(v413, 0)
   goto 284
 284:
   goto 285
 285:
+  v412 <- Multiply(EntityData[16], 32.0)
+  v413 <- v412
+  v414 <- EntitySharedMemoryArray[v413]
   goto 286
 286:
-  goto 287 if v414 else 330
+  goto 287
 287:
+  v415 <- Greater(v414, 0)
   goto 288
 288:
   goto 289
 289:
   goto 290
 290:
-  goto 291
+  goto 291 if v415 else 338
 291:
-  v415 <- Multiply(EntityData[16], 32.0)
-  v416 <- v415
-  v417 <- EntitySharedMemoryArray[v416]
   goto 292
 292:
   goto 293
 293:
   goto 294
 294:
+  v416 <- GreaterOr(EntityData[16], 1.0)
   goto 295
 295:
   goto 296
 296:
-  v418 <- LevelMemory[17]
-  v419 <- GreaterOr(v418, 16.0)
   goto 297
 297:
-  goto 298 if v419 else 299
+  goto 298
 298:
-  v448 <- 0
-  goto 324
+  goto 299
 299:
+  v417 <- Multiply(EntityData[16], 32.0)
+  v418 <- v417
+  v419 <- EntitySharedMemoryArray[v418]
   goto 300
 300:
   goto 301
 301:
-  v420 <- 0
   goto 302
 302:
   goto 303
 303:
-  v421 <- LevelMemory[17]
   goto 304
 304:
+  v420 <- LevelMemory[17]
+  v421 <- GreaterOr(v420, 16.0)
   goto 305
 305:
-  v422 <- Less(v420, v421)
-  goto 306
+  goto 306 if v421 else 307
 306:
-  goto 307 if v422 else 312
+  v450 <- 0
+  goto 332
 307:
-  v423 <- LevelMemory[17]
-  v424 <- Negate(v423)
-  v425 <- GreaterOr(v420, v424)
-  v426 <- Less(v420, v423)
-  v427 <- And(v425, v426)
-  v428 <- Trunc(v420)
-  v429 <- Equal(v428, v420)
-  v430 <- And(v427, v429)
-  v431 <- Less(v420, 0)
-  v432 <- Multiply(v431, v423)
-  v433 <- Add(v420, v432)
-  v434 <- Add(17.0, v433)
-  v435 <- v434
-  v436 <- LevelMemory[v435 + 1]
-  v437 <- Equal(v436, v417)
   goto 308
 308:
-  goto 309 if v437 else 310
+  goto 309
 309:
-  v440 <- 1.0
-  goto 314
+  v422 <- 0
+  goto 310
 310:
   goto 311
 311:
-  v438 <- Add(v420, 1.0)
-  v439 <- v438
-  v420 <- v439
-  goto 302
+  v423 <- LevelMemory[17]
+  goto 312
 312:
   goto 313
 313:
-  v440 <- 0
+  v424 <- Less(v422, v423)
   goto 314
 314:
-  goto 315
+  goto 315 if v424 else 320
 315:
+  v425 <- LevelMemory[17]
+  v426 <- Negate(v425)
+  v427 <- GreaterOr(v422, v426)
+  v428 <- Less(v422, v425)
+  v429 <- And(v427, v428)
+  v430 <- Trunc(v422)
+  v431 <- Equal(v430, v422)
+  v432 <- And(v429, v431)
+  v433 <- Less(v422, 0)
+  v434 <- Multiply(v433, v425)
+  v435 <- Add(v422, v434)
+  v436 <- Add(17.0, v435)
+  v437 <- v436
+  v438 <- LevelMemory[v437 + 1]
+  v439 <- Equal(v438, v419)
   goto 316
 316:
-  goto 317 if v440 else 318
+  goto 317 if v439 else 318
 317:
-  v448 <- 0
-  goto 324
+  v442 <- 1.0
+  goto 322
 318:
   goto 319
 319:
-  goto 320
+  v440 <- Add(v422, 1.0)
+  v441 <- v440
+  v422 <- v441
+  goto 310
 320:
-  v441 <- LevelMemory[17]
-  v442 <- Less(v441, 16.0)
   goto 321
 321:
-  v443 <- LevelMemory[17]
-  v444 <- Add(17.0, v443)
-  v445 <- v444
-  LevelMemory[v445 + 1] <- v417
-  v446 <- LevelMemory[17]
-  v447 <- Add(v446, 1.0)
-  LevelMemory[17] <- v447
+  v442 <- 0
   goto 322
 322:
   goto 323
 323:
-  v448 <- 1.0
   goto 324
 324:
-  goto 325
+  goto 325 if v442 else 326
 325:
-  goto 326
+  v450 <- 0
+  goto 332
 326:
   goto 327
 327:
   goto 328
 328:
+  v443 <- LevelMemory[17]
+  v444 <- Less(v443, 16.0)
   goto 329
 329:
-  goto 331
+  v445 <- LevelMemory[17]
+  v446 <- Add(17.0, v445)
+  v447 <- v446
+  LevelMemory[v447 + 1] <- v419
+  v448 <- LevelMemory[17]
+  v449 <- Add(v448, 1.0)
+  LevelMemory[17] <- v449
+  goto 330
 330:
   goto 331
 331:
+  v450 <- 1.0
   goto 332
 332:
   goto 333
 333:
+  goto 334
+334:
+  goto 335
+335:
+  goto 336
+336:
+  goto 337
+337:
+  goto 339
+338:
+  goto 339
+339:
+  goto 340
+340:
+  goto 341
+341:
   goto exit
