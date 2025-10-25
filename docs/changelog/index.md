@@ -1,3 +1,9 @@
+### 0.12.0
+
+- Improved support for mixin classes in archetypes, including support for callbacks and memory fields within mixins
+- Accessing archetypes at indexes such as with [`EntityRef`][sonolus.script.archetype.EntityRef] now checks that the
+  entity at the index is of the correct archetype in dev builds by default
+
 ### 0.11.1
 
 - Memory usage no longer increases indefinitely when rebuilding with changes in the dev server
