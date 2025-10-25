@@ -15,7 +15,7 @@
   EntityData[7] <- Subtract(10000[0], Divide(6.0, LevelOption[1]))
   10000[0] <- EntityData[11]
   EntityData[8] <- TimeToScaledTime(10000[0])
-  10000[0] <- Add(3.0, Add(EntityInfo[1], Multiply(Less(EntityInfo[1], 0), 14.0)))
+  10000[0] <- Add(3.0, EntityInfo[1])
   10000[1] <- 0
   goto when EngineRom[10000[0]]
     1.0 -> 8
@@ -81,7 +81,7 @@
   10000[0] <- EntityData[12]
   goto 17 if NotEqual(10000[0], 0) else 29
 17:
-  10000[0] <- Add(3.0, Add(EntityInfo[1], Multiply(Less(EntityInfo[1], 0), 14.0)))
+  10000[0] <- Add(3.0, EntityInfo[1])
   10000[0] <- EngineRom[10000[0]]
   10000[1] <- EntityData[12]
   10000[2] <- EntityData[11]
@@ -135,7 +135,7 @@
   goto 35
 30:
   EntityData[12] <- 1.0
-  10000[0] <- Add(3.0, Add(EntityInfo[1], Multiply(Less(EntityInfo[1], 0), 14.0)))
+  10000[0] <- Add(3.0, EntityInfo[1])
   10000[1] <- EntityData[5]
   goto 35 if Not(LevelOption[10]) else 31
 31:

@@ -5,38 +5,116 @@
 2:
   goto 3
 3:
-  v1 <- GreaterOr(EntityData[0], 1)
+  v1 <- GreaterOr(EntityData[0], 0)
   goto 4
 4:
-  goto 5 if v1 else 16
+  goto 5 if v1 else 36
 5:
-  goto 6
+  v4 <- Multiply(EntityData[0], 3.0)
+  v5 <- v4
+  v6 <- GreaterOr(EntityInfoArray[v5 + 1], -14.0)
+  v7 <- Less(EntityInfoArray[v5 + 1], 14.0)
+  v8 <- And(v6, v7)
+  v9 <- Trunc(EntityInfoArray[v5 + 1])
+  v10 <- Equal(v9, EntityInfoArray[v5 + 1])
+  v11 <- And(v8, v10)
+  goto 6 if v11 else 35
 6:
+  v14 <- Less(EntityInfoArray[v5 + 1], 0)
+  v15 <- Multiply(v14, 14.0)
+  v16 <- Add(EntityInfoArray[v5 + 1], v15)
+  v17 <- Add(38.0, v16)
+  v18 <- v17
+  v19 <- EngineRom[v18]
+  v20 <- v19
+  v21 <- Add(v19, 1)
+  v22 <- EngineRom[v20]
+  v23 <- 3000.0
+  v24 <- v21
   goto 7
 7:
+  v25 <- 0
   goto 8
 8:
   goto 9
 9:
+  v26 <- v22
   goto 10
 10:
-  v4 <- Multiply(EntityData[0], 32.0)
-  v5 <- Add(13.0, v4)
-  v6 <- v5
-  v7 <- GreaterOr(RuntimeUpdate[2], EntityDataArray[v6])
   goto 11
 11:
+  v27 <- Less(v25, v26)
   goto 12
 12:
-  goto 13
+  goto 13 if v27 else 18
 13:
+  v28 <- v23
+  v29 <- v24
+  v30 <- Add(v29, v25)
+  v31 <- v28
+  v32 <- v30
+  v33 <- v31[v32]
+  v34 <- Equal(v33, 13.0)
   goto 14
 14:
-  goto 15
+  goto 15 if v34 else 16
 15:
-  Break(1, v7)
-  goto exit
+  v37 <- 1
+  goto 20
 16:
+  goto 17
+17:
+  v35 <- Add(v25, 1)
+  v36 <- v35
+  v25 <- v36
+  goto 8
+18:
+  goto 19
+19:
+  v37 <- 0
+  goto 20
+20:
+  goto 21
+21:
+  goto 22
+22:
+  goto 23 if v37 else 34
+23:
+  goto 24
+24:
+  goto 25
+25:
+  goto 26
+26:
+  goto 27
+27:
+  goto 28
+28:
+  v40 <- Multiply(EntityData[0], 32.0)
+  v41 <- Add(13.0, v40)
+  v42 <- v41
+  v43 <- GreaterOr(RuntimeUpdate[2], EntityDataArray[v42])
+  goto 29
+29:
+  goto 30
+30:
+  goto 31
+31:
+  goto 32
+32:
+  goto 33
+33:
+  Break(1, v43)
+  goto exit
+34:
+  v38 <- DebugLog(3.0)
+  v39 <- DebugPause()
+  goto exit
+35:
+  v12 <- DebugLog(2.0)
+  v13 <- DebugPause()
+  goto exit
+36:
   v2 <- DebugLog(1)
   v3 <- DebugPause()
   goto exit

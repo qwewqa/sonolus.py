@@ -1,14 +1,14 @@
 0:
-  10000[4] <- EntityMemory[0]
-  10000[4] <- Multiply(10000[4], 32.0)
-  10000[4] <- Add(16.0, 10000[4])
+  10000[0] <- EntityMemory[0]
+  10000[0] <- Multiply(10000[0], 32.0)
+  10000[4] <- Add(16.0, 10000[0])
   10000[4] <- 10000[4]
   10000[4] <- Multiply(EntityDataArray[10000[4]], 32.0)
   10000[4] <- 10000[4]
-  10000[0] <- EntitySharedMemoryArray[10000[4]]
-  10000[0] <- Greater(10000[0], 0)
-  10000[0] <- Not(10000[0])
-  goto 9 if 10000[0] else 1
+  10000[4] <- EntitySharedMemoryArray[10000[4]]
+  10000[4] <- Greater(10000[4], 0)
+  10000[4] <- Not(10000[4])
+  goto 9 if 10000[4] else 1
 1:
   10000[0] <- EntityMemory[0]
   10000[0] <- Multiply(10000[0], 32.0)

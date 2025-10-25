@@ -5,7 +5,6 @@
 2:
   goto 3
 3:
-  v1 <- GreaterOr(EntityData[0], 1)
   goto 4
 4:
   goto 5
@@ -16,12 +15,12 @@
 7:
   goto 8
 8:
+  v1 <- Multiply(EntityData[0], 32.0)
+  v2 <- Add(13.0, v1)
+  v3 <- v2
+  v4 <- GreaterOr(RuntimeUpdate[2], EntityDataArray[v3])
   goto 9
 9:
-  v2 <- Multiply(EntityData[0], 32.0)
-  v3 <- Add(13.0, v2)
-  v4 <- v3
-  v5 <- GreaterOr(RuntimeUpdate[2], EntityDataArray[v4])
   goto 10
 10:
   goto 11
@@ -30,7 +29,5 @@
 12:
   goto 13
 13:
-  goto 14
-14:
-  Break(1, v5)
+  Break(1, v4)
   goto exit

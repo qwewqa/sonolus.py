@@ -25,7 +25,7 @@
   10000[3] <- RuntimeEnvironment[3]
   EntityData[14] <- Add(Add(10000[1], 10000[0]), 10000[3])
   EntityData[15] <- Add(Add(10000[2], 10000[0]), 10000[3])
-  10000[0] <- Add(3.0, Add(EntityInfo[1], Multiply(Less(EntityInfo[1], 0), 13.0)))
+  10000[0] <- Add(3.0, EntityInfo[1])
   10000[1] <- 0
   goto when EngineRom[10000[0]]
     1.0 -> 8
@@ -87,7 +87,7 @@
 15:
   goto 16 if LevelOption[11] else 21
 16:
-  10000[0] <- Add(3.0, Add(EntityInfo[1], Multiply(Less(EntityInfo[1], 0), 13.0)))
+  10000[0] <- Add(3.0, EntityInfo[1])
   10000[1] <- EntityData[11]
   goto 21 if Not(LevelOption[10]) else 17
 17:
