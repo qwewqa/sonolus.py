@@ -13,7 +13,7 @@ from sonolus.backend.mode import Mode
 from sonolus.backend.ops import Op
 from sonolus.backend.visitor import compile_and_call
 from sonolus.script.bucket import Bucket, Judgment
-from sonolus.script.debug import static_error
+from sonolus.script.debug import runtime_checks_enabled, static_error
 from sonolus.script.internal.callbacks import PLAY_CALLBACKS, PREVIEW_CALLBACKS, WATCH_ARCHETYPE_CALLBACKS, CallbackInfo
 from sonolus.script.internal.context import ctx
 from sonolus.script.internal.descriptor import SonolusDescriptor
@@ -541,7 +541,7 @@ class _BaseArchetype:
 
     @classmethod
     def _check_is_at(cls, index: int, check: bool):
-        if not check:
+        if not check or not runtime_checks_enabled():
             return
         assert index >= 0, "Entity index must be non-negative"
         assert cls._compile_time_id() in cls._get_mro_id_array(entity_info_at(index).archetype_id), (

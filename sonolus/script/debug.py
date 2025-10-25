@@ -103,6 +103,14 @@ def notify(message: str):
 
 
 @meta_fn
+def runtime_checks_enabled() -> bool:
+    if ctx():
+        return ctx().project_state.runtime_checks != RuntimeChecks.NONE
+    else:
+        return True
+
+
+@meta_fn
 def require(value: int | float | bool, message: str | None = None):
     """Require a condition to be true, or raise an error.
 
