@@ -2,7 +2,7 @@ from __future__ import annotations
 
 import inspect
 from abc import abstractmethod
-from collections.abc import Callable
+from collections.abc import Callable, Sequence
 from dataclasses import dataclass
 from enum import Enum, StrEnum
 from types import FunctionType
@@ -209,7 +209,7 @@ class _IsScoredDescriptor(SonolusDescriptor):
         if instance is None:
             return self.value
         elif ctx():
-            return ctx().mode_state.is_scored_by_archetype_id[instance.id]
+            return ctx().mode_state.is_scored_by_archetype_id.get_unchecked(instance.id)
         else:
             return self.value
 
@@ -223,7 +223,7 @@ class _IdDescriptor(SonolusDescriptor):
             raise RuntimeError("Archetype id is only available during compilation")
         if instance is None:
             result = ctx().mode_state.archetypes.get(owner)
-            if result is None:
+            if result is None or owner in ctx().mode_state.compile_time_only_archetypes:
                 raise RuntimeError("Archetype is not registered")
             return result
         else:
@@ -239,7 +239,7 @@ class _KeyDescriptor(SonolusDescriptor):
 
     def __get__(self, instance, owner):
         if instance is not None and ctx():
-            return ctx().mode_state.keys_by_archetype_id[instance.id]
+            return ctx().mode_state.keys_by_archetype_id.get_unchecked(instance.id)
         else:
             return self.value
 
@@ -493,17 +493,67 @@ class _BaseArchetype:
 
     @classmethod
     @meta_fn
-    def at(cls, index: int) -> Self:
+    def _compile_time_id(cls):
+        if not ctx():
+            raise RuntimeError("Archetype id is only available during compilation")
+        result = ctx().mode_state.archetypes.get(cls)
+        if result is None:
+            raise RuntimeError("Archetype is not registered")
+        return result
+
+    @classmethod
+    @meta_fn
+    def at(cls, index: int, check: bool = True) -> Self:
+        """Access the entity of this archetype at the given index.
+
+        Args:
+            index: The index of the entity to reference.
+            check: If true, raises an error if the entity at the index is not of this archetype or of a subclass of
+            this archetype. If false, no validation is performed.
+
+        Returns:
+            The entity at the given index.
+        """
+        if not ctx():
+            raise RuntimeError("Archetype.at is only available during compilation")
+        compile_and_call(cls._check_is_at, index, check=check)
         result = cls._new()
         result._data_ = _ArchetypeReferenceData(index=Num._accept_(index))
         return result
 
     @classmethod
+    def is_at(cls, index: int, strict: bool = False) -> bool:
+        """Return whether the entity at the given index is of this archetype.
+
+        Args:
+            index: The index of the entity to check.
+            strict: If true, only returns true if the entity is exactly of this archetype. If false, also returns true
+            if the entity is of a subclass of this archetype.
+
+        Returns:
+            Whether the entity at the given index is of this archetype.
+        """
+        if strict:
+            return index >= 0 and cls._compile_time_id() == entity_info_at(index).archetype_id
+        else:
+            mro_ids = cls._get_mro_id_array(entity_info_at(index).archetype_id)
+            return index >= 0 and cls._compile_time_id() in mro_ids
+
+    @classmethod
+    def _check_is_at(cls, index: int, check: bool):
+        if not check:
+            return
+        assert index >= 0, "Entity index must be non-negative"
+        assert cls._compile_time_id() in cls._get_mro_id_array(entity_info_at(index).archetype_id), (
+            "Entity at index is not of the expected archetype"
+        )
+
+    @staticmethod
     @meta_fn
-    def is_at(cls, index: int) -> bool:
+    def _get_mro_id_array(archetype_id: int) -> Sequence[int]:
         if not ctx():
-            raise RuntimeError("is_at is only available during compilation")
-        return entity_info_at(index).archetype_id == cls.id
+            raise RuntimeError("Archetype._get_mro_id_array is only available during compilation")
+        return ctx().get_archetype_mro_id_array(archetype_id)
 
     @classmethod
     @meta_fn
@@ -573,6 +623,7 @@ class _BaseArchetype:
                         cls._callbacks_[name] = cb
                         break
         cls._field_init_done = False
+        cls._is_concrete_archetype_ = True
         cls.id = _IdDescriptor()
         cls._key_ = cls.key
         cls.key = _KeyDescriptor(cls.key)
@@ -611,6 +662,7 @@ class _BaseArchetype:
                 "_default_callbacks_",
                 "_callbacks_",
                 "_field_init_done",
+                "_is_concrete_archetype_",
             },
             included_classes=mro_excluding_archetype_parents,
         ).items()
@@ -1292,24 +1344,19 @@ class EntityRef[A: _BaseArchetype](Record):
         return True
 
     @meta_fn
-    def get(self, *, allow_zero=False) -> A:
-        """Get the entity.
-
-        Will raise an error if the index is zero unless `allow_zero` is set to True.
+    def get(self, *, check: bool = True) -> A:
+        """Get the entity this reference points to.
 
         Args:
-            allow_zero: Whether to allow index zero. Defaults to False.
+            check: If true, raises an error if the referenced entity is not of this archetype or of a subclass of
+            this archetype. If false, no validation is performed.
 
         Returns:
-            The entity at the given index.
+            The entity this reference points to.
         """
         if ref := getattr(self, "_ref_", None):
             return ref
-        if ctx():
-            compile_and_call(self._check_index, allow_zero=allow_zero)
-        else:
-            self._check_index(allow_zero=allow_zero)
-        return self.archetype().at(self.index)
+        return self.archetype().at(self.index, check=check)
 
     @meta_fn
     def get_as(self, archetype: type[_BaseArchetype]) -> _BaseArchetype:
@@ -1318,9 +1365,17 @@ class EntityRef[A: _BaseArchetype](Record):
             raise TypeError("Using get_as in level data is not supported.")
         return self.with_archetype(archetype).get()
 
-    def archetype_matches(self) -> bool:
-        """Check if entity at the index is precisely of the archetype."""
-        return self.index >= 0 and self.archetype().is_at(self.index)
+    def archetype_matches(self, strict: bool = False) -> bool:
+        """Check if entity at the index is of this archetype.
+
+        Args:
+            strict: If true, only returns true if the entity is exactly of this archetype. If false, also returns true
+            if the entity is of a subclass of this archetype.
+
+        Returns:
+            Whether the entity at the given index is of this archetype.
+        """
+        return self.archetype().is_at(self.index, strict=strict)
 
     def _to_list_(self, level_refs: dict[Any, str] | None = None) -> list[DataValue | str]:
         ref = getattr(self, "_ref_", None)
@@ -1354,12 +1409,6 @@ class EntityRef[A: _BaseArchetype](Record):
         if hasattr(value, "_ref_"):
             result._ref_ = value._ref_
         return result
-
-    def _check_index(self, *, allow_zero=False):
-        if allow_zero:
-            assert self.index >= 0, "EntityRef index must be non-negative"
-        else:
-            assert self.index >= 1, "EntityRef index must be positive unless allow_zero=True is passed as an argument."
 
 
 class StandardArchetypeName(StrEnum):

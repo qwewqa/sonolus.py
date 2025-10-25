@@ -94,25 +94,36 @@ class ProjectContextState:
 
 class ModeContextState:
     archetypes: dict[type, int]
+    compile_time_only_archetypes: set[type]
     archetypes_by_name: dict[str, type]
     keys_by_archetype_id: Sequence[int]
     is_scored_by_archetype_id: Sequence[bool]
+    archetype_mro_id_array_rom_indexes: Sequence[int] | None = None
     environment_mappings: dict[_GlobalInfo, int]
     environment_offsets: dict[Block, int]
     mode: Mode
     lock: Lock
 
-    def __init__(self, mode: Mode, archetypes: dict[type, int] | None = None):
+    def __init__(self, mode: Mode, archetypes: list[type] | None = None):
         from sonolus.script.array import Array
 
-        self.archetypes = archetypes or {}
+        archetypes = [*archetypes] if archetypes is not None else []
+        seen_archetypes = {*archetypes}
+        compile_time_only_archetypes = set()
+        for type_ in [*archetypes]:
+            for entry in type_.mro():
+                if getattr(entry, "_is_concrete_archetype_", False) and entry not in seen_archetypes:
+                    archetypes.append(entry)
+                    seen_archetypes.add(entry)
+                    compile_time_only_archetypes.add(entry)
+        self.archetypes = {type_: idx for idx, type_ in enumerate(archetypes)}
+        self.compile_time_only_archetypes = compile_time_only_archetypes
         self.archetypes_by_name = {type_.name: type_ for type_, _ in self.archetypes.items()}  # type: ignore
-        ordered_archetypes = sorted(self.archetypes, key=lambda a: self.archetypes[a])
         self.keys_by_archetype_id = (
-            Array(*((getattr(a, "_key_", -1)) for a in ordered_archetypes)) if archetypes else Array[int, Literal[0]]()
+            Array(*((getattr(a, "_key_", -1)) for a in archetypes)) if archetypes else Array[int, Literal[0]]()
         )
         self.is_scored_by_archetype_id = (
-            Array(*((getattr(a, "_is_scored_", False)) for a in ordered_archetypes))
+            Array(*((getattr(a, "_is_scored_", False)) for a in archetypes))
             if archetypes
             else Array[bool, Literal[0]]()
         )
@@ -120,6 +131,26 @@ class ModeContextState:
         self.environment_offsets = {}
         self.mode = mode
         self.lock = Lock()
+
+    def _init_archetype_mro_info(self, rom: ReadOnlyMemory):
+        from sonolus.script.array import Array
+        from sonolus.script.num import Num
+
+        if self.archetype_mro_id_array_rom_indexes is not None:
+            return
+        archetype_mro_id_values = []
+        archetype_mro_id_offsets = []
+        for type_ in self.archetypes:
+            mro_ids = [self.archetypes[entry] for entry in type_.mro() if entry in self.archetypes]
+            archetype_mro_id_offsets.append(len(archetype_mro_id_values))
+            archetype_mro_id_values.append(len(mro_ids))
+            archetype_mro_id_values.extend(mro_ids)
+        archetype_mro_id_array_place = rom[tuple(archetype_mro_id_values)]
+
+        archetype_mro_id_rom_indexes = Array[int, len(archetype_mro_id_offsets)]._with_value(
+            [Num._accept_(offset + archetype_mro_id_array_place.index) for offset in archetype_mro_id_offsets]
+        )
+        self.archetype_mro_id_array_rom_indexes = archetype_mro_id_rom_indexes
 
 
 class CallbackContextState:
@@ -370,6 +401,15 @@ class Context:
             if type_ not in self.mode_state.archetypes:
                 self.mode_state.archetypes[type_] = len(self.mode_state.archetypes)
             return self.mode_state.archetypes[type_]
+
+    def get_archetype_mro_id_array(self, archetype_id: int) -> Sequence[int]:
+        from sonolus.script.containers import ArrayPointer
+        from sonolus.script.num import Num
+        from sonolus.script.pointer import _deref
+
+        self.mode_state._init_archetype_mro_info(self.rom)
+        rom_index = self.mode_state.archetype_mro_id_array_rom_indexes[archetype_id]
+        return ArrayPointer[int](_deref(self.blocks.EngineRom, rom_index, Num), self.blocks.EngineRom, rom_index + 1)
 
 
 def ctx() -> Context | Any:  # Using Any to silence type checker warnings if it's None

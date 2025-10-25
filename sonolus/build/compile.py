@@ -80,7 +80,7 @@ def compile_mode(
 
     mode_state = ModeContextState(
         mode,
-        {a: i for i, a in enumerate(archetypes)} if archetypes is not None else None,
+        archetypes,
     )
     nodes = OutputNodeGenerator()
     results = {}

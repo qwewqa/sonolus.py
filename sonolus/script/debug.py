@@ -212,7 +212,7 @@ def visualize_cfg(
     project_state = ProjectContextState()
     mode_state = ModeContextState(
         mode,
-        {a: i for i, a in enumerate(archetypes)} if archetypes is not None else None,
+        archetypes,
     )
 
     cfg = callback_to_cfg(project_state, mode_state, fn, callback, archetype=archetype)  # type: ignore
