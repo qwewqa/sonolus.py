@@ -1,4 +1,5 @@
 import inspect
+from collections.abc import Sequence
 from typing import Annotated
 
 _missing = object()
@@ -11,9 +12,15 @@ def get_field_specifiers(
     globals=None,  # noqa: A002
     locals=None,  # noqa: A002
     eval_str=True,
+    included_classes: Sequence[type] | None = None,
 ):
     """Like inspect.get_annotations, but also turns class attributes into Annotated."""
-    results = inspect.get_annotations(cls, globals=globals, locals=locals, eval_str=eval_str)
+    if included_classes is not None:
+        results = {}
+        for entry in reversed(included_classes):
+            results.update(inspect.get_annotations(entry, eval_str=eval_str))
+    else:
+        results = inspect.get_annotations(cls, globals=globals, locals=locals, eval_str=eval_str)
     for key, value in results.items():
         class_value = getattr(cls, key, _missing)
         if class_value is not _missing and key not in skip:

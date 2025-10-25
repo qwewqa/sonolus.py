@@ -588,6 +588,14 @@ class _BaseArchetype:
         for mro_entry in cls.mro()[1:]:
             if hasattr(mro_entry, "_field_init_done"):
                 mro_entry._init_fields()
+        if sum(issubclass(base, _BaseArchetype) for base in cls.__bases__) > 1:
+            raise TypeError("Multiple inheritance of Archetypes is not supported")
+        mro_from_archetype_parents = set(
+            type("Dummy", tuple(base for base in cls.__bases__ if issubclass(base, _BaseArchetype)), {}).mro()
+        )
+        # Archetype parents would have already initialized relevant fields, so only consider the current class
+        # and mixins that were not already included via an archetype parent
+        mro_excluding_archetype_parents = [entry for entry in cls.mro() if entry not in mro_from_archetype_parents]
         field_specifiers = get_field_specifiers(
             cls,
             skip={
@@ -604,6 +612,7 @@ class _BaseArchetype:
                 "_callbacks_",
                 "_field_init_done",
             },
+            included_classes=mro_excluding_archetype_parents,
         ).items()
         if not hasattr(cls, "_imported_fields_"):
             cls._imported_fields_ = {}
@@ -656,6 +665,13 @@ class _BaseArchetype:
                     f"Missing field annotation for '{name}', "
                     f"expected exactly one of imported, exported, entity_memory, or shared_memory"
                 )
+            if (
+                name in cls._imported_fields_
+                or name in cls._exported_fields_
+                or name in cls._memory_fields_
+                or name in cls._shared_memory_fields_
+            ):
+                raise ValueError(f"Field '{name}' is already defined in a superclass")
             field_type = validate_concrete_type(value.__args__[0])
             match field_info.storage:
                 case _StorageType.IMPORTED:
