@@ -1,10 +1,10 @@
 import pytest
-from script.conftest import run_and_validate, run_compiled
 
 from sonolus.script.array import Array
 from sonolus.script.debug import debug_log
 from sonolus.script.internal.error import CompilationError
 from sonolus.script.record import Record
+from tests.script.conftest import run_and_validate, run_compiled
 
 
 class UnsupportedDescriptor:
