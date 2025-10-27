@@ -734,6 +734,20 @@ def test_all_empty():
     assert run_and_validate(fn)
 
 
+@given(lists)
+def test_sum(values_list):
+    values = Array(*values_list)
+    value_count = len(values_list)
+    expected_sum = sum(values_list)
+
+    def fn():
+        va = VarArray[int, value_count].new()
+        va.extend(values)
+        return sum(va)
+
+    assert run_and_validate(fn) == expected_sum
+
+
 def test_var_array_truthiness_empty():
     def fn():
         x = VarArray[int, 1].new()

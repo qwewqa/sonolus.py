@@ -8,6 +8,8 @@ The supported functions and parameters are listed below.
 - `enumerate(iterable, start=0)`
 - `filter(function, iterable)`
 - `float(x)` (for a num argument)
+- `getattr(object, name[, default])`
+- `hasattr(object, name)`
 - `int(x)` (for a num argument)
 - `isinstance(object, classinfo)`
 - `issubclass(class, classinfo)`
@@ -17,10 +19,11 @@ The supported functions and parameters are listed below.
 - `max(iterable, *, default=..., key=None)`, `max(arg1, arg2, *args, key=None)`
 - `min(iterable, *, default=..., key=None)`, `min(arg1, arg2, *args, key=None)`
 - `next(iterator)`
-- `sum(iterable, start=0)`
 - `range(stop)`, `range(start, stop[, step])`
 - `reversed(seq)`
 - `round(number[, ndigits])`
+- `setattr(object, name, value)`
+- `sum(iterable, start=0)`
 - `super(type[, object-or-type])`
 - `zip(*iterables)`
 

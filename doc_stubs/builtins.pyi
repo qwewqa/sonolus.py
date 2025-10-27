@@ -113,6 +113,38 @@ def float(x: builtins.int | builtins.float) -> builtins.float:
     """
     ...
 
+@overload
+def getattr(obj: object, name: builtins.str) -> Any: ...
+@overload
+def getattr[T](obj: object, name: builtins.str, default: T) -> Any | T: ...
+def getattr(obj: object, name: builtins.str, default: Any = ...) -> Any:
+    """Get a named attribute from an object.
+
+    Args:
+        obj: The object to get the attribute from.
+        name: The name of the attribute.
+        default: The value to return if the attribute does not exist.
+
+    Returns:
+        The value of the attribute, or default if it does not exist.
+    """
+    ...
+
+def hasattr(obj: object, name: builtins.str) -> builtins.bool:
+    """Check if an object has a named attribute.
+
+    Can result in a compile-time error if an unsupported property is checked,
+    since later trying to access it would also fail.
+
+    Args:
+        obj: The object to check.
+        name: The name of the attribute.
+
+    Returns:
+        True if the object has the attribute, False otherwise.
+    """
+    ...
+
 def int(x: builtins.int | builtins.float) -> builtins.int:
     """Convert a number to an integer.
 
@@ -277,6 +309,30 @@ def round(number: builtins.int | builtins.float, ndigits: builtins.int = ...) ->
     """
     ...
 
+def setattr(obj: object, name: builtins.str, value: Any) -> None:
+    """Set a named attribute on an object.
+
+    Args:
+        obj: The object to set the attribute on.
+        name: The name of the attribute.
+        value: The value to set.
+
+    Returns:
+        None.
+    """
+    ...
+
+def super(cls: type = ..., instance: Any = ...) -> Any:
+    """Return a proxy object that delegates method calls to a parent or sibling class.
+
+    Args:
+        cls: The class to delegate.
+        instance: The instance to delegate to.
+    Returns:
+        A proxy object that can be used to call methods from the parent or sibling class.
+    """
+    ...
+
 def type(obj: object) -> builtins.type:
     """Return the type of an object.
 
@@ -298,13 +354,3 @@ def zip[T](*iterables: Iterable[T]) -> Iterator[tuple[T, ...]]:
         An iterator of aggregated tuples.
     """
     ...
-
-def super(cls: type = ..., instance: Any = ...) -> Any:
-    """Return a proxy object that delegates method calls to a parent or sibling class.
-
-    Args:
-        cls: The class to delegate
-        instance: The instance to delegate to.
-    Returns:
-        A proxy object that can be used to call methods from the parent or sibling class.
-    """

@@ -1,4 +1,5 @@
-from typing import Never, assert_never
+from types import FunctionType
+from typing import Any, Never, assert_never
 
 from sonolus.backend.ops import Op
 from sonolus.script.array import Array
@@ -389,6 +390,78 @@ def _super(*args):
     return super(*(arg._as_py_() if arg._is_py_() else arg for arg in args))
 
 
+@meta_fn
+def _hasattr(obj: Any, name: str) -> bool:
+    from sonolus.script.internal.constant import ConstantValue
+    from sonolus.script.internal.descriptor import SonolusDescriptor
+
+    name = validate_value(name)._as_py_()
+    if isinstance(obj, ConstantValue):
+        # Unwrap so we can access fields
+        obj = obj._as_py_()
+    descriptor = None
+    for cls in type.mro(type(obj)):
+        descriptor = cls.__dict__.get(name, None)
+        if descriptor is not None:
+            break
+    # We want to mirror what getattr supports and fail fast if a future getattr would fail.
+    match descriptor:
+        case None:
+            return hasattr(obj, name)
+        case property() | SonolusDescriptor() | FunctionType() | classmethod() | staticmethod():
+            return True
+        case non_descriptor if not hasattr(non_descriptor, "__get__"):
+            return True
+        case _:
+            raise TypeError(f"Unsupported field or descriptor {name}")
+
+
+@meta_fn
+def _getattr(obj: Any, name: str, default=_empty) -> Any:
+    from sonolus.backend.visitor import compile_and_call
+    from sonolus.script.internal.constant import ConstantValue
+    from sonolus.script.internal.descriptor import SonolusDescriptor
+
+    name = validate_value(name)._as_py_()
+    if isinstance(obj, ConstantValue):
+        # Unwrap so we can access fields
+        obj = obj._as_py_()
+    descriptor = None
+    for cls in type.mro(type(obj)):
+        descriptor = cls.__dict__.get(name, None)
+        if descriptor is not None:
+            break
+    match descriptor:
+        case property(fget=getter):
+            return compile_and_call(getter, obj)
+        case SonolusDescriptor() | FunctionType() | classmethod() | staticmethod() | None:
+            return validate_value(getattr(obj, name) if default is _empty else getattr(obj, name, default))
+        case non_descriptor if not hasattr(non_descriptor, "__get__"):
+            return validate_value(getattr(obj, name) if default is _empty else getattr(obj, name, default))
+        case _:
+            raise TypeError(f"Unsupported field or descriptor {name}")
+
+
+@meta_fn
+def _setattr(obj: Any, name: str, value: Any):
+    from sonolus.backend.visitor import compile_and_call
+    from sonolus.script.internal.descriptor import SonolusDescriptor
+
+    name = validate_value(name)._as_py_()
+    if obj._is_py_():
+        obj = obj._as_py_()
+    descriptor = getattr(type(obj), name, None)
+    match descriptor:
+        case property(fset=setter):
+            if setter is None:
+                raise AttributeError(f"Cannot set attribute {name} because property has no setter")
+            compile_and_call(setter, obj, value)
+        case SonolusDescriptor():
+            setattr(obj, name, value)
+        case _:
+            raise TypeError(f"Unsupported field or descriptor {name}")
+
+
 class _Type(Record):
     @meta_fn
     def __call__(self, value, /):
@@ -412,12 +485,13 @@ BUILTIN_IMPLS = {
     id(abs): _abs,
     id(all): _all,
     id(any): _any,
-    id(sum): _sum,
     id(bool): _bool,
     id(callable): _callable,
     id(enumerate): _enumerate,
     id(filter): _filter,
     id(float): _float,
+    id(getattr): _getattr,
+    id(hasattr): _hasattr,
     id(int): _int,
     id(isinstance): _isinstance,
     id(iter): _iter,
@@ -428,6 +502,8 @@ BUILTIN_IMPLS = {
     id(next): _next,
     id(range): Range,
     id(reversed): _reversed,
+    id(setattr): _setattr,
+    id(sum): _sum,
     id(super): _super,
     id(type): _type,
     id(zip): _zip,

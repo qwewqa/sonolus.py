@@ -1308,6 +1308,7 @@ class Visitor(ast.NodeVisitor):
         raise NotImplementedError(f"Unsupported syntax: {type(node).__name__}")
 
     def handle_getattr(self, node: ast.stmt | ast.expr, target: Value, key: str) -> Value:
+        # If this is changed, remember to update the getattr impl too
         with self.reporting_errors_at_node(node):
             if isinstance(target, ConstantValue):
                 # Unwrap so we can access fields
@@ -1328,6 +1329,7 @@ class Visitor(ast.NodeVisitor):
                     raise TypeError(f"Unsupported field or descriptor {key}")
 
     def handle_setattr(self, node: ast.stmt | ast.expr, target: Value, key: str, value: Value):
+        # If this is changed, remember to update the setattr impl too
         with self.reporting_errors_at_node(node):
             if target._is_py_():
                 target = target._as_py_()
