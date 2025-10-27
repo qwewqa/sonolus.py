@@ -509,7 +509,7 @@ class _BaseArchetype:
         Args:
             index: The index of the entity to reference.
             check: If true, raises an error if the entity at the index is not of this archetype or of a subclass of
-            this archetype. If false, no validation is performed.
+                   this archetype. If false, no validation is performed.
 
         Returns:
             The entity at the given index.
@@ -528,7 +528,7 @@ class _BaseArchetype:
         Args:
             index: The index of the entity to check.
             strict: If true, only returns true if the entity is exactly of this archetype. If false, also returns true
-            if the entity is of a subclass of this archetype.
+                    if the entity is of a subclass of this archetype.
 
         Returns:
             Whether the entity at the given index is of this archetype.
@@ -1349,7 +1349,7 @@ class EntityRef[A: _BaseArchetype](Record):
 
         Args:
             check: If true, raises an error if the referenced entity is not of this archetype or of a subclass of
-            this archetype. If false, no validation is performed.
+                   this archetype. If false, no validation is performed.
 
         Returns:
             The entity this reference points to.
@@ -1370,7 +1370,7 @@ class EntityRef[A: _BaseArchetype](Record):
 
         Args:
             strict: If true, only returns true if the entity is exactly of this archetype. If false, also returns true
-            if the entity is of a subclass of this archetype.
+                    if the entity is of a subclass of this archetype.
 
         Returns:
             Whether the entity at the given index is of this archetype.
