@@ -1,3 +1,7 @@
+### 0.12.1
+
+- Added support for the `getattr()`, `setattr()`, `hasattr()`, and `sum()` built-in functions
+
 ### 0.12.0
 
 - Improved support for mixin classes in archetypes, including support for callbacks and memory fields within mixins
