@@ -146,7 +146,15 @@ def require(value: int | float | bool, message: str | None = None):
 
 @meta_fn
 def assert_true(value: int | float | bool, message: str | None = None):
-    if ctx() and ctx().project_state.runtime_checks == RuntimeChecks.NONE:
+    value = validate_value(value)
+    if (
+        ctx()
+        and ctx().project_state.runtime_checks == RuntimeChecks.NONE
+        and not (validate_value(value)._is_py_() and validate_value(value)._as_py_() == 0)
+    ):
+        # Don't do anything if runtime checks are disabled, unless the value is statically known to be false.
+        # `assert False` is a somewhat common pattern to indicate unreachable code, and stripping that out can
+        # cause compilation errors, so we retain those checks.
         return
     require(value, message)
 
