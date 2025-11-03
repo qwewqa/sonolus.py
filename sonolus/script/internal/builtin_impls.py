@@ -465,7 +465,10 @@ def _setattr(obj: Any, name: str, value: Any):
 class _Type(Record):
     @meta_fn
     def __call__(self, value, /):
-        return type(value)
+        value = validate_value(value)
+        if value._is_py_():
+            value = value._as_py_()
+        return validate_value(type(value))
 
     def __getitem__(self, item):
         return self
