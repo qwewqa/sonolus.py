@@ -1,3 +1,11 @@
+### 0.12.2
+
+- Incorrectly declared resources such as Buckets missing an [`@buckets`][sonolus.script.bucket.buckets] decorator now 
+  result in a helpful error message
+- [`Record`][sonolus.script.record.Record] classes can now subclass `ABC` or `Protocol` from the Python standard
+  library
+- Archetypes can now subclass `ABC` or `Protocol` from the Python standard library
+
 ### 0.12.1
 
 - Added support for the `getattr()`, `setattr()`, `hasattr()`, and `sum()` built-in functions
