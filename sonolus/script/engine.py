@@ -155,6 +155,36 @@ def default_callback() -> Any:
     return 0.0
 
 
+def check_skin(skin: Any):
+    if not hasattr(skin, "_sprites_"):
+        raise ValueError(f"Invalid skin: {skin}. Missing an @skin decorator?")
+
+
+def check_effects(effects: Any):
+    if not hasattr(effects, "_effects_"):
+        raise ValueError(f"Invalid effects: {effects}. Missing an @effects decorator?")
+
+
+def check_particles(particles: Any):
+    if not hasattr(particles, "_particles_"):
+        raise ValueError(f"Invalid particles: {particles}. Missing an @particles decorator?")
+
+
+def check_buckets(buckets: Any):
+    if not hasattr(buckets, "_buckets_"):
+        raise ValueError(f"Invalid buckets: {buckets}. Missing an @buckets decorator?")
+
+
+def check_instructions(instructions: Any):
+    if not hasattr(instructions, "_instructions_"):
+        raise ValueError(f"Invalid instructions: {instructions}. Missing an @instructions decorator?")
+
+
+def check_instruction_icons(instruction_icons: Any):
+    if not hasattr(instruction_icons, "_instruction_icons_"):
+        raise ValueError(f"Invalid instruction icons: {instruction_icons}. Missing an @instruction_icons decorator?")
+
+
 class PlayMode:
     """A play mode definition.
 
@@ -184,6 +214,11 @@ class PlayMode:
         for archetype in self.archetypes:
             if not issubclass(archetype, PlayArchetype):
                 raise ValueError(f"archetype {archetype} is not a PlayArchetype")
+
+        check_skin(skin)
+        check_effects(effects)
+        check_particles(particles)
+        check_buckets(buckets)
 
 
 class WatchMode:
@@ -219,6 +254,11 @@ class WatchMode:
             if not issubclass(archetype, WatchArchetype):
                 raise ValueError(f"archetype {archetype} is not a WatchArchetype")
 
+        check_skin(skin)
+        check_effects(effects)
+        check_particles(particles)
+        check_buckets(buckets)
+
 
 class PreviewMode:
     """A preview mode definition.
@@ -240,6 +280,8 @@ class PreviewMode:
         for archetype in self.archetypes:
             if not issubclass(archetype, PreviewArchetype):
                 raise ValueError(f"archetype {archetype} is not a PreviewArchetype")
+
+        check_skin(skin)
 
 
 class TutorialMode:
@@ -276,6 +318,12 @@ class TutorialMode:
         self.preprocess = preprocess
         self.navigate = navigate
         self.update = update
+
+        check_skin(skin)
+        check_effects(effects)
+        check_particles(particles)
+        check_instructions(instructions)
+        check_instruction_icons(instruction_icons)
 
 
 def empty_play_mode() -> PlayMode:
