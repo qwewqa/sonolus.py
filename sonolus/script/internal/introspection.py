@@ -1,4 +1,5 @@
 import inspect
+from abc import ABC
 from collections.abc import Sequence
 from typing import Annotated
 
@@ -33,6 +34,7 @@ def get_field_specifiers(
             and not callable(value)
             and not hasattr(value, "__func__")
             and not isinstance(value, property)
+            and not (issubclass(cls, ABC) and (hasattr(ABC, key)))
         ):
             raise ValueError(f"Missing annotation for {cls.__name__}.{key}")
     for skipped_key in skip:
