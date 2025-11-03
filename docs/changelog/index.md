@@ -1,3 +1,9 @@
+### 0.12.3
+
+- `assert False` is no longer stripped in release (non-dev) builds to allow asserting to the compiler that code is
+  unreachable
+- Fixed the return value of `type()` on archetype instances being incorrect
+
 ### 0.12.2
 
 - Incorrectly declared resources such as Buckets missing an [`@buckets`][sonolus.script.bucket.buckets] decorator now 
