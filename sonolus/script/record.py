@@ -4,7 +4,7 @@ import inspect
 from abc import ABCMeta
 from collections.abc import Iterable
 from inspect import getmro
-from typing import Any, ClassVar, Self, TypeVar, dataclass_transform, get_origin
+from typing import Any, ClassVar, Protocol, Self, TypeVar, dataclass_transform, get_origin
 
 from sonolus.backend.place import BlockPlace
 from sonolus.script.internal.context import ctx
@@ -21,7 +21,8 @@ from sonolus.script.internal.value import BackingSource, DataValue, Value
 from sonolus.script.num import Num
 
 
-class RecordMeta(ABCMeta):
+# Protocol metaclass is a subclass of ABCMeta, but let's make ABCMeta explicit for clarity
+class RecordMeta(type(Protocol), ABCMeta):
     @meta_fn
     def __pos__[T](cls: type[T]) -> T:
         """Create a zero-initialized record instance."""
