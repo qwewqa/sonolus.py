@@ -134,7 +134,11 @@ class RebuildCommand:
             print(f"Rebuild completed in {end_time - start_time:.2f} seconds")
         except CompilationError:
             exc_info = sys.exc_info()
-            print_simple_traceback(*exc_info)
+            if server_state.config.verbose:
+                print(traceback.format_exc())
+            else:
+                print_simple_traceback(*exc_info)
+                print("\nFor more details, run with the --verbose (-v) flag.")
 
 
 @dataclass

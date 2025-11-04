@@ -130,6 +130,7 @@ def get_config(args: argparse.Namespace) -> BuildConfig:
         build_preview=build_preview,
         build_tutorial=build_tutorial,
         runtime_checks=get_runtime_checks(args),
+        verbose=hasattr(args, "verbose") and args.verbose,
     )
 
 
@@ -174,6 +175,8 @@ def main():
         build_components.add_argument("--watch", action="store_true", help="Build watch component")
         build_components.add_argument("--preview", action="store_true", help="Build preview component")
         build_components.add_argument("--tutorial", action="store_true", help="Build tutorial component")
+
+        parser.add_argument("-v", "--verbose", action="store_true", help="Enable verbose output")
 
     build_parser = subparsers.add_parser("build")
     build_parser.add_argument(
@@ -265,5 +268,9 @@ def main():
             end_time = perf_counter()
             print(f"Project validation completed successfully in {end_time - start_time:.2f}s")
     except CompilationError:
+        if args.verbose:
+            raise
         exc_info = sys.exc_info()
         print_simple_traceback(*exc_info)
+        print("\nFor more details, run with the --verbose (-v) flag.")
+        sys.exit(1)

@@ -149,3 +149,5 @@ class BuildConfig:
 
     runtime_checks: RuntimeChecks = RuntimeChecks.NONE
     """Runtime error checking mode."""
+
+    verbose: bool = False
