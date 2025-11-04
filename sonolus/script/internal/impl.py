@@ -62,6 +62,12 @@ def try_validate_value(value: Any) -> Value | None:
     except ImportError:
         pass
 
+    if hasattr(value, "_init_") and callable(value._init_):
+        try:
+            value._init_()
+        except Exception as e:
+            raise RuntimeError(f"Error initializing value {value}: {e}") from e
+
     match value:
         case Value():
             return value

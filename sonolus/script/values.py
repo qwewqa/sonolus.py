@@ -1,7 +1,6 @@
 from sonolus.script.internal.context import ctx
 from sonolus.script.internal.generic import validate_concrete_type
 from sonolus.script.internal.impl import meta_fn, validate_value
-from sonolus.script.num import Num
 
 
 @meta_fn
@@ -49,8 +48,4 @@ def swap[T](a: T, b: T):
 @meta_fn
 def sizeof(type_: type, /) -> int:
     """Return the size of the given type."""
-    type_ = validate_concrete_type(type_)
-    if ctx():
-        return Num(type_._size_())
-    else:
-        return type_._size_()
+    return validate_concrete_type(type_)._size_()

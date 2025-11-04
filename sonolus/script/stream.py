@@ -94,27 +94,34 @@ def streams[T](cls: type[T]) -> T:
     """
     if len(cls.__bases__) != 1:
         raise ValueError("Options class must not inherit from any class (except object)")
-    instance = cls()
-    entries = []
-    # Offset 0 is unused so we can tell when a stream object is uninitialized since it'll have offset 0.
-    offset = 1
-    for name, annotation in get_field_specifiers(cls).items():
-        if issubclass(annotation, Stream | StreamGroup):
-            annotation = cast(type[Stream | StreamGroup], annotation)
-            if annotation is Stream or annotation is StreamGroup:
-                raise TypeError(f"Invalid annotation for streams: {annotation}. Must have type arguments.")
-            setattr(cls, name, _StreamField(offset, annotation))
-            # Streams store their data across several backing streams
-            entries.append((name, offset, annotation))
-            offset += annotation.backing_size()
-        elif issubclass(annotation, Value) and annotation._is_concrete_():
-            setattr(cls, name, _StreamDataField(offset, annotation))
-            # Data fields store their data in a single backing stream at different offsets in the same stream
-            entries.append((name, offset, annotation))
-            offset += 1
-    instance._streams_ = entries
-    instance._is_comptime_value_ = True
-    return instance
+
+    @classmethod
+    def _init_(cls):
+        if getattr(cls, "_init_done_", False):
+            return
+        entries = []
+        # Offset 0 is unused so we can tell when a stream object is uninitialized since it'll have offset 0.
+        offset = 1
+        for name, annotation in get_field_specifiers(cls, skip={"_init_done_"}).items():
+            if issubclass(annotation, Stream | StreamGroup):
+                annotation = cast(type[Stream | StreamGroup], annotation)
+                if annotation is Stream or annotation is StreamGroup:
+                    raise TypeError(f"Invalid annotation for streams: {annotation}. Must have type arguments.")
+                setattr(cls, name, _StreamField(offset, annotation))
+                # Streams store their data across several backing streams
+                entries.append((name, offset, annotation))
+                offset += annotation.backing_size()
+            elif issubclass(annotation, Value) and annotation._is_concrete_():
+                setattr(cls, name, _StreamDataField(offset, annotation))
+                # Data fields store their data in a single backing stream at different offsets in the same stream
+                entries.append((name, offset, annotation))
+                offset += 1
+        cls._streams_ = entries
+        cls._is_comptime_value_ = True
+        cls._init_done_ = True
+
+    cls._init_ = _init_
+    return cls()
 
 
 @meta_fn
