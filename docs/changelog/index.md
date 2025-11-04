@@ -1,3 +1,8 @@
+### 0.12.4
+
+- Added a `-v`/`--verbose` flag to the cli that prints out full tracebacks on errors
+- Streams are now initialized lazily to allow circular imports as long as they're resolved before the stream is used
+
 ### 0.12.3
 
 - `assert False` is no longer stripped in release (non-dev) builds to allow asserting to the compiler that code is
