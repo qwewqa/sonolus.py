@@ -49,13 +49,16 @@ def validate_concrete_type(spec: Any) -> type[Value]:
     spec = validate_type_spec(spec)
     if isinstance(spec, type) and issubclass(spec, Value) and spec._is_concrete_():
         return spec
+    if (
+        isinstance(spec, type)
+        and issubclass(spec, Value)
+        and not spec._is_concrete_()
+        and issubclass(spec, GenericValue)
+    ):
+        raise TypeError(f"Expected a concrete type, got {spec}. Are there missing type arguments?")
+    if isinstance(spec, PartialGeneric):
+        raise TypeError(f"Expected a concrete type, got {spec}. Invalid use of a type parameter as a type argument?")
     raise TypeError(f"Expected a concrete type, got {spec}")
-
-
-def validate_type_args(args) -> tuple[Any, ...]:
-    if not isinstance(args, tuple):
-        args = (args,)
-    return tuple(validate_type_arg(arg) for arg in args)
 
 
 def contains_incomplete_type(args) -> bool:
@@ -107,7 +110,26 @@ class GenericValue(Value):
     def __class_getitem__(cls, args: Any) -> type[Self]:
         if cls._type_args_ is not None:
             raise TypeError(f"Type {cls.__name__} is already parameterized")
-        args = validate_type_args(args)
+        if not isinstance(args, tuple):
+            args = (args,)
+        validated_args = []
+        for i, arg in enumerate(args):
+            if i < len(cls.__type_params__):
+                type_param = cls.__type_params__[i]
+            else:
+                type_param = None
+            try:
+                validated_args.append(validate_type_arg(arg))
+            except TypeError as e:
+                if type_param is not None:
+                    type_param_body = ", ".join(str(tp) for tp in cls.__type_params__)
+                    raise TypeError(
+                        f"Invalid type argument for type parameter {type_param} of "
+                        f"class {cls.__name__}[{type_param_body}]: {e}"
+                    ) from e
+                else:
+                    raise TypeError(f"Invalid type argument at position {i} of class {cls.__name__}: {e}") from e
+        args = tuple(validated_args)
         args = cls._validate_type_args_(args)
         if contains_incomplete_type(args):
             return PartialGeneric(cls, args)

@@ -647,25 +647,28 @@ class _BaseArchetype:
         # Archetype parents would have already initialized relevant fields, so only consider the current class
         # and mixins that were not already included via an archetype parent
         mro_excluding_archetype_parents = [entry for entry in cls.mro() if entry not in mro_from_archetype_parents]
-        field_specifiers = get_field_specifiers(
-            cls,
-            skip={
-                "id",
-                "key",
-                "name",
-                "life",
-                "is_scored",
-                "_key_",
-                "_is_scored_",
-                "_derived_base_",
-                "_is_derived_",
-                "_default_callbacks_",
-                "_callbacks_",
-                "_field_init_done",
-                "_is_concrete_archetype_",
-            },
-            included_classes=mro_excluding_archetype_parents,
-        ).items()
+        try:
+            field_specifiers = get_field_specifiers(
+                cls,
+                skip={
+                    "id",
+                    "key",
+                    "name",
+                    "life",
+                    "is_scored",
+                    "_key_",
+                    "_is_scored_",
+                    "_derived_base_",
+                    "_is_derived_",
+                    "_default_callbacks_",
+                    "_callbacks_",
+                    "_field_init_done",
+                    "_is_concrete_archetype_",
+                },
+                included_classes=mro_excluding_archetype_parents,
+            ).items()
+        except Exception as e:
+            raise TypeError(f"Error while processing fields of {cls.__name__}: {e}") from e
         if not hasattr(cls, "_imported_fields_"):
             cls._imported_fields_ = {}
         else:
@@ -1357,6 +1360,9 @@ class EntityRef[A: _BaseArchetype](Record):
         Returns:
             The entity this reference points to.
         """
+        assert self.archetype() != Any, (
+            "Cannot get entity of unknown (Any) archetype. Use with_archetype() first or use get_as()."
+        )
         if ref := getattr(self, "_ref_", None):
             return ref
         return self.archetype().at(self.index, check=check)
@@ -1378,6 +1384,9 @@ class EntityRef[A: _BaseArchetype](Record):
         Returns:
             Whether the entity at the given index is of this archetype.
         """
+        assert self.archetype() != Any, (
+            "Cannot use archetype_matches with unknown (Any) archetype. Use with_archetype() first."
+        )
         return self.archetype().is_at(self.index, strict=strict)
 
     def _to_list_(self, level_refs: dict[Any, str] | None = None) -> list[DataValue | str]:
@@ -1412,6 +1421,11 @@ class EntityRef[A: _BaseArchetype](Record):
         if hasattr(value, "_ref_"):
             result._ref_ = value._ref_
         return result
+
+    @classmethod
+    def _validate_parameterized_(cls):
+        if not issubclass(cls.archetype(), _BaseArchetype) and cls.archetype() is not Any:
+            raise TypeError("EntityRef type parameter must be an Archetype or Any")
 
 
 class StandardArchetypeName(StrEnum):

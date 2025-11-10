@@ -324,6 +324,16 @@ class Record(GenericValue, metaclass=RecordMeta):
         """
         return super().type_var_value(var)
 
+    @classmethod
+    def _validate_parameterized_(cls):
+        pass
+
+    @classmethod
+    def _get_parameterized(cls, args: tuple[Any, ...]) -> type[Self]:
+        result = super()._get_parameterized(args)
+        result._validate_parameterized_()
+        return result
+
 
 class _RecordField(SonolusDescriptor):
     def __init__(self, name: str, type_: type[Value] | Any, index: int, offset: int):
