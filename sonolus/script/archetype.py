@@ -707,14 +707,14 @@ class _BaseArchetype:
                             pass
                         else:
                             raise TypeError(
-                                f"Unexpected multiple field annotations for '{name}', "
+                                f"Unexpected multiple annotations for field '{name}' of {cls.__name__}, "
                                 f"expected exactly one of imported, exported, entity_memory, or shared_memory"
                             )
                     else:
                         field_info = metadata
             if field_info is None:
                 raise TypeError(
-                    f"Missing field annotation for '{name}', "
+                    f"Missing annotation for '{name}' of {cls.__name__}, "
                     f"expected exactly one of imported, exported, entity_memory, or shared_memory"
                 )
             if (
@@ -724,7 +724,10 @@ class _BaseArchetype:
                 or name in cls._shared_memory_fields_
             ):
                 raise ValueError(f"Field '{name}' is already defined in a superclass")
-            field_type = validate_concrete_type(value.__args__[0])
+            try:
+                field_type = validate_concrete_type(value.__args__[0])
+            except Exception as e:
+                raise TypeError(f"Error in field '{name}' of {cls.__name__}: {e}") from e
             match field_info.storage:
                 case _StorageType.IMPORTED:
                     cls._imported_fields_[name] = _ArchetypeField(

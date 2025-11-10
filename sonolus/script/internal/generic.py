@@ -37,6 +37,11 @@ def validate_type_spec(spec: Any) -> PartialGeneric | TypeVar | type[Value]:
         validated_args = {validate_type_arg(arg) for arg in args}
         if len(validated_args) == 1:
             return validated_args.pop()
+
+    from sonolus.script.archetype import _BaseArchetype
+
+    if isinstance(spec, type) and issubclass(spec, _BaseArchetype):
+        raise TypeError(f"Expected a concrete type, got {spec}. Did you mean to write EntityRef[{spec.__name__}]?")
     raise TypeError(f"Invalid type spec: {spec}")
 
 

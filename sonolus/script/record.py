@@ -104,25 +104,28 @@ class Record(GenericValue, metaclass=RecordMeta):
         index = 0
         offset = 0
         for name, hint in hints.items():
-            if name not in cls.__annotations__:
-                continue
-            if hint is ClassVar or get_origin(hint) is ClassVar:
-                continue
-            if hasattr(cls, name):
-                raise TypeError("Default values are not supported for Record fields")
-            type_ = validate_type_spec(hint)
-            fields.append(_RecordField(name, type_, index, offset))
-            if isinstance(type_, type) and issubclass(type_, Value) and type_._is_concrete_():
-                offset += type_._size_()
-            setattr(cls, name, fields[-1])
-            index += 1
-            params.append(
-                inspect.Parameter(
-                    name,
-                    inspect.Parameter.POSITIONAL_OR_KEYWORD,
-                    annotation=type_,
+            try:
+                if name not in cls.__annotations__:
+                    continue
+                if hint is ClassVar or get_origin(hint) is ClassVar:
+                    continue
+                if hasattr(cls, name):
+                    raise TypeError("Default values are not supported for Record fields")
+                type_ = validate_type_spec(hint)
+                fields.append(_RecordField(name, type_, index, offset))
+                if isinstance(type_, type) and issubclass(type_, Value) and type_._is_concrete_():
+                    offset += type_._size_()
+                setattr(cls, name, fields[-1])
+                index += 1
+                params.append(
+                    inspect.Parameter(
+                        name,
+                        inspect.Parameter.POSITIONAL_OR_KEYWORD,
+                        annotation=type_,
+                    )
                 )
-            )
+            except Exception as e:
+                raise TypeError(f"Error processing field '{name}' of Record {cls.__name__}: {e}") from e
 
         cls._parameterized_ = {}
         cls._fields_ = fields
