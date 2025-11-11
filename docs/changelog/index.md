@@ -1,3 +1,7 @@
+### 0.12.5
+
+- Improve some error messages, particularly around type annotations
+
 ### 0.12.4
 
 - Added a `-v`/`--verbose` flag to the cli that prints out full tracebacks on errors
