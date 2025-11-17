@@ -1208,7 +1208,7 @@ class PreviewArchetype(_BaseArchetype):
 
 
 @meta_fn
-def get_archetype_by_name(name: str) -> AnyArchetype:
+def get_archetype_by_name(name: str) -> type[AnyArchetype]:
     """Return the archetype with the given name in the current mode."""
     if not ctx():
         raise RuntimeError("Archetypes by name are only available during compilation.")
