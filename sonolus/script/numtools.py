@@ -36,7 +36,7 @@ class _UInt36(Record):
     def of(cls, value: int):
         lo = value % cls.MOD_BASE
         mid = (value // cls.MOD_BASE) % cls.MOD_BASE
-        hi = (value // cls.MOD_BASE // cls.MOD_BASE) % cls.MOD_BASE
+        hi = (value // (cls.MOD_BASE * cls.MOD_BASE)) % cls.MOD_BASE
         return _UInt36._(hi, mid, lo)
 
     @classmethod
@@ -82,7 +82,7 @@ class _UInt36(Record):
         mid_mid = self.mid * other.mid
 
         result_lo = lo_lo % self.MOD_BASE
-        carry = lo_lo // self.MOD_BASE
+        carry = lo_lo >= self.MOD_BASE
 
         result_mid, carry = self._add3(lo_mid, mid_lo, carry)
 
@@ -117,7 +117,7 @@ class _UInt36(Record):
     def _add2(cls, a: int, b: int) -> tuple[int, int]:
         ab_raw = a + b
         ab = ab_raw % cls.MOD_BASE
-        carry = ab_raw // cls.MOD_BASE
+        carry = ab_raw >= cls.MOD_BASE
         return ab, carry
 
     @classmethod
