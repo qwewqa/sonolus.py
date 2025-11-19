@@ -181,7 +181,7 @@ def _floats_to_uint36(*numbers: tuple[float, PrecisionRange]) -> UInt36:
 
 
 def _uint36_to_comparable_float(value: UInt36) -> float:
-    value = +value
+    value = UInt36(value.hi, value.mid, value.lo)
     if value < _HALF_MAX_TOTAL_STEPS_UINT36:
         sign = -1
         value @= _HALF_MAX_TOTAL_STEPS_UINT36 - value - UInt36.one()
