@@ -5,7 +5,7 @@ from hypothesis import example, given
 from hypothesis import strategies as st
 
 from sonolus.script.num import _is_num  # noqa: PLC2701
-from sonolus.script.numtools import UInt36, _uint36_to_comparable_float  # noqa: PLC2701
+from sonolus.script.numtools import _UInt36, _uint36_to_comparable_float  # noqa: PLC2701
 from tests.script.conftest import run_and_validate
 
 
@@ -51,18 +51,18 @@ def patch_float32_records(*classes):
 
 
 def patch():
-    return patch_float32_records(UInt36)
+    return patch_float32_records(_UInt36)
 
 
-def uint36_to_int(u: UInt36) -> int:
+def uint36_to_int(u: _UInt36) -> int:
     return int(u.hi) << 24 | int(u.mid) << 12 | int(u.lo)
 
 
-def int_to_uint36(value: int) -> UInt36:
+def int_to_uint36(value: int) -> _UInt36:
     hi = (value >> 24) & 0xFFF
     mid = (value >> 12) & 0xFFF
     lo = value & 0xFFF
-    return UInt36(hi, mid, lo)
+    return _UInt36(hi, mid, lo)
 
 
 @given(x=st.integers(min_value=0, max_value=2**31 - 2))
