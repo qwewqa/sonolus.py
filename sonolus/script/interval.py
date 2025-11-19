@@ -341,7 +341,7 @@ def remap_clamped(a: float, b: float, c: float, d: float, x: float, /) -> float:
     return c + (d - c) * max(0, min(1, (x - a) / (b - a)))
 
 
-@native_function(Op.Clamp)
+@native_function(Op.Clamp, const_eval=True)
 def clamp(x: float, a: float, b: float, /) -> float:
     """Clamp a value to an interval.
 

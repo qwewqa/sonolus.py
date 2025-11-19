@@ -177,7 +177,7 @@ def _max2(a, b, key=_identity):
     return compile_and_call(_max2_generic, a, b, key=key)
 
 
-@native_function(Op.Max)
+@native_function(Op.Max, const_eval=True)
 def _max2_num(a, b):
     if a > b:
         return a
@@ -270,7 +270,7 @@ def _min2(a, b, key=_identity):
     return compile_and_call(_min2_generic, a, b, key=key)
 
 
-@native_function(Op.Min)
+@native_function(Op.Min, const_eval=True)
 def _min2_num(a, b):
     if a < b:
         return a
