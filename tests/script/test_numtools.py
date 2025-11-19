@@ -3,10 +3,10 @@ from contextlib import contextmanager
 import numpy as np
 from hypothesis import example, given
 from hypothesis import strategies as st
-from script.conftest import run_and_validate
 
 from sonolus.script.num import _is_num  # noqa: PLC2701
-from sonolus.script.numtools import PrecisionRange, UInt36, _uint36_to_comparable_float  # noqa: PLC2701
+from sonolus.script.numtools import UInt36, _uint36_to_comparable_float  # noqa: PLC2701
+from tests.script.conftest import run_and_validate
 
 
 class PlainField:
@@ -51,7 +51,7 @@ def patch_float32_records(*classes):
 
 
 def patch():
-    return patch_float32_records(PrecisionRange, UInt36)
+    return patch_float32_records(UInt36)
 
 
 def uint36_to_int(u: UInt36) -> int:
