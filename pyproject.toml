@@ -4,6 +4,9 @@ version = "0.12.5"
 description = "Sonolus engine development in Python"
 readme = "README.md"
 requires-python = ">=3.12.5"
+dependencies = [
+    "pytest>=9.0.0",
+]
 
 [project.scripts]
 sonolus-py = "sonolus.build.cli:main"
@@ -44,7 +47,8 @@ dev = [
     "pytest-cov>=7.0.0",
     "tox>=4.32.0",
     "tox-uv>=1.29.0",
-    "ty"
+    "ty",
+    "numpy>=2.3.5"
 ]
 docs = [
     "mkdocs-material>=9.6.23",
