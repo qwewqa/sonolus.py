@@ -146,6 +146,8 @@ class PrecisionRange(Record):
         return PrecisionRange(start, end, steps)
 
 
+# Technically we could do a bit more and still fit in the number of, distinct finite 32-bit floats,
+# but for simplicity, we limit ourselves to 31 bits.
 _MAX_TOTAL_STEPS_UINT36 = UInt36(2**7, 0, 0)
 _HALF_MAX_TOTAL_STEPS_UINT36 = UInt36(2**6, 0, 0)
 
@@ -184,7 +186,7 @@ def _uint36_to_comparable_float(value: UInt36) -> float:
     value = UInt36(value.hi, value.mid, value.lo)
     if value < _HALF_MAX_TOTAL_STEPS_UINT36:
         sign = -1
-        value @= _HALF_MAX_TOTAL_STEPS_UINT36 - value - UInt36.one()
+        value @= _HALF_MAX_TOTAL_STEPS_UINT36 - value
     else:
         sign = 1
         value @= value - _HALF_MAX_TOTAL_STEPS_UINT36
