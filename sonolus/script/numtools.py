@@ -153,7 +153,7 @@ def quantize_to_step(value: float, start: float, stop: float, step: float) -> tu
         A tuple containing the quantized step number and the total number of steps in the range.
     """
     total_steps = max(1, ceil((stop - start) / step))
-    result_steps = clamp((value - start) / step, 0, total_steps - 1)
+    result_steps = clamp(round((value - start) / step), 0, total_steps - 1)
     return result_steps, total_steps
 
 
