@@ -6,6 +6,7 @@ import numpy as np
 from hypothesis import example, given
 from hypothesis import strategies as st
 
+from sonolus.script import numtools
 from sonolus.script.containers import Pair
 from sonolus.script.num import _is_num  # noqa: PLC2701
 from sonolus.script.numtools import (
@@ -17,6 +18,8 @@ from sonolus.script.numtools import (
     quantize_to_step,
 )
 from tests.script.conftest import run_and_validate
+
+numtools.enable_np = True
 
 
 class PlainField:

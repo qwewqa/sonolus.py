@@ -1,12 +1,6 @@
 from __future__ import annotations
 
 from collections.abc import Iterable
-
-try:
-    import numpy as np
-except ImportError:
-    np = None
-
 from math import ceil
 
 from sonolus.script.internal.impl import meta_fn, validate_value
@@ -14,11 +8,18 @@ from sonolus.script.interval import clamp
 from sonolus.script.num import _is_num
 from sonolus.script.record import Record
 
+enable_np = False
+
 
 @meta_fn
 def _validate_num(value: float):
-    if np is not None and isinstance(value, np.float32):
-        return value
+    if enable_np:
+        try:
+            import numpy as np
+        except ImportError:
+            np = None
+        if np is not None and isinstance(value, np.float32):
+            return value
     value = validate_value(value)
     if not _is_num(value):
         raise TypeError("Only numeric arguments to float() are supported")
@@ -82,7 +83,7 @@ class _UInt36(Record):
         mid_mid = self.mid * other.mid
 
         result_lo = lo_lo % self.MOD_BASE
-        carry = lo_lo >= self.MOD_BASE
+        carry = lo_lo // self.MOD_BASE
 
         result_mid, carry = self._add3(lo_mid, mid_lo, carry)
 
@@ -193,12 +194,11 @@ def product(values: Iterable[float]) -> float:
 
 def _ints_to_uint36(*values: tuple[int, int]) -> _UInt36:
     result = _UInt36.zero()
-    multiplier = _UInt36.one()
-    for value, steps in reversed(values):
-        step_uint36 = _UInt36.of(value)
-        # We can use = instead of @= here since we're iterating over a tuple.
-        result = result + (step_uint36 * multiplier)  # noqa: PLR6104
-        multiplier = multiplier * _UInt36.of(steps)  # noqa: PLR6104
+    for i, (value, steps) in enumerate(values):
+        if i == 0:
+            result = _UInt36.of(value)
+        else:
+            result = result * _UInt36.of(steps) + _UInt36.of(value)
     return result
 
 
