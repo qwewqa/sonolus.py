@@ -76,6 +76,8 @@ def _reversed(iterable):
     from sonolus.backend.visitor import compile_and_call
 
     iterable = validate_value(iterable)
+    if isinstance(iterable, TupleImpl):
+        return TupleImpl(tuple(reversed(iterable.value)))
     if not isinstance(iterable, ArrayLike):
         raise TypeError(f"Unsupported type: {type(iterable)} for reversed")
     return compile_and_call(iterable.__reversed__)

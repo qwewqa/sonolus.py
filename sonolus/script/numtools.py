@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from typing import Iterable
+from collections.abc import Iterable
 
 try:
     import numpy as np
@@ -127,12 +127,6 @@ class _UInt36(Record):
         carry = carry1 + carry2
         return abc, carry
 
-    def __str__(self):
-        return str(self._int())
-
-    def _int(self):
-        return self.hi * self.MOD_BASE * self.MOD_BASE + self.mid * self.MOD_BASE + self.lo
-
     __hash__ = None
 
 
@@ -142,26 +136,27 @@ _MAX_TOTAL_STEPS_UINT36 = _UInt36._(2**7, 0, 0)
 _HALF_MAX_TOTAL_STEPS_UINT36 = _UInt36._(2**6, 0, 0)
 
 
-def quantize_to_step(value: float, start: float, stop: float, step: float) -> tuple[float, float]:
+def quantize_to_step(value: float, start: float, stop: float, step: float) -> tuple[int, int]:
     """Quantize a float value by step size within a range and return the step number and total steps in the range.
 
     Args:
         value: The float value to quantize.
         start: The start of the range. The range is inclusive of this value.
-        stop: The end of the range. The range is exclusive of this value.
-        step: The step size.
+        stop: The end of the range. The range is exclusive of this value. Must be strictly greater than start.
+        step: The step size. Must be positive.
 
     Returns:
         A tuple containing the quantized step number and the total number of steps in the range.
     """
+    assert stop > start, "stop must be strictly greater than start"
+    assert step > 0, "step must be positive"
     total_steps = max(1, ceil((stop - start) / step))
     result_steps = clamp(round((value - start) / step), 0, total_steps - 1)
     return result_steps, total_steps
 
 
 def make_comparable_float(*values: tuple[int, int]) -> float:
-    """Convert a series of non-negative integer values paired with their exclusive maximum values into a single float
-    that compares the same way as the original series.
+    """Convert a series of non-negative integer values into a float that compares the same way as the original series.
 
     This is useful for z-indexes, since Sonolus only supports a single float for z-index.
 
@@ -204,8 +199,6 @@ def _ints_to_uint36(*values: tuple[int, int]) -> _UInt36:
         # We can use = instead of @= here since we're iterating over a tuple.
         result = result + (step_uint36 * multiplier)  # noqa: PLR6104
         multiplier = multiplier * _UInt36.of(steps)  # noqa: PLR6104
-    # These don't catch everything if multiplier overflows all 36 bits, but they'll catch most
-    # reasonable mistakes.
     return result
 
 

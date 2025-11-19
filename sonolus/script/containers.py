@@ -86,6 +86,11 @@ class Pair[T, U](Record):
             return self.second >= other.second
         return self.first >= other.first
 
+    @property
+    def tuple(self) -> tuple[T, U]:
+        """Return the pair as a tuple."""
+        return self.first, self.second
+
 
 class VarArray[T, Capacity](Record, ArrayLike[T]):
     """An array with a variable size and fixed maximum capacity.
