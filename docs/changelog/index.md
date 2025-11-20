@@ -1,3 +1,8 @@
+### 0.12.6
+
+- Added [`make_comparable_float`](sonolus.script.numtools.make_comparable_float) for generating floats that adhere
+  strictly to layers when calculating z-indexes.
+
 ### 0.12.5
 
 - Improve some error messages, particularly around type annotations
