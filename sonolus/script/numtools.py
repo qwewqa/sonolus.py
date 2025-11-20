@@ -192,11 +192,26 @@ def make_comparable_float(*values: tuple[int, int]) -> float:
     Returns:
         A single float that can be used for comparison.
     """
-    assert 0 < product(max_steps for _, max_steps in values) < 2**31, (
-        "Product of all maximum values must be in the range [1, 2^31)"
-    )
+    _check_max_total_steps(values)
     result = _ints_to_uint32(*values)
     return _uint32_to_comparable_float(result)
+
+
+@meta_fn
+def _check_max_total_steps(values: Iterable[tuple[int, int]]):
+    values = validate_value(values).value
+    total = 1
+    for entry in values:
+        _, max_value = validate_value(entry).value
+        max_value = validate_value(max_value)
+        if not max_value._is_py_():
+            return
+        total *= max_value._as_py_()
+        if total >= 2**31:
+            raise ValueError(
+                "The product of all maximum values must be less than 2^31. "
+                "If using quantize_to_step, increase step sizes or reduce ranges."
+            )
 
 
 def product(values: Iterable[float]) -> float:
