@@ -1136,11 +1136,15 @@ class Visitor(ast.NodeVisitor):
         args = []
         kwargs = {}
         for arg in node.args:
+            if not ctx().live:
+                return validate_value(None)
             if isinstance(arg, ast.Starred):
                 args.extend(self.handle_starred(self.visit(arg.value)))
             else:
                 args.append(self.visit(arg))
         for keyword in node.keywords:
+            if not ctx().live:
+                return validate_value(None)
             if keyword.arg:
                 kwargs[keyword.arg] = self.visit(keyword.value)
             else:
@@ -1151,6 +1155,8 @@ class Visitor(ast.NodeVisitor):
                     kwargs.update(value.value)
                 else:
                     raise ValueError("Starred keyword arguments (**kwargs) must be dictionaries")
+        if not ctx().live:
+            return validate_value(None)
         if fn._is_py_() and fn._as_py_() is _super and not args and not kwargs and "__class__" in self.globals:
             class_value = self.get_name("__class__")
             first_param_name = next(
