@@ -155,6 +155,9 @@ _HALF_MAX_TOTAL_STEPS_UINT32 = _UInt32._(2**14, 0)
 def quantize_to_step(value: float, start: float, stop: float, step: float) -> tuple[int, int]:
     """Quantize a float value by step size within a range and return the step number and total steps in the range.
 
+    If value is between start and stop, start + step_number * step will be approximately equal to value,
+    where step_number is the first element of the returned tuple.
+
     Args:
         value: The float value to quantize.
         start: The start of the range. The range is inclusive of this value.
