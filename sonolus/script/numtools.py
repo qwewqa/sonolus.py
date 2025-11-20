@@ -3,7 +3,7 @@ from __future__ import annotations
 from collections.abc import Iterable
 from math import ceil
 
-from sonolus.script.internal.impl import meta_fn, validate_value
+from sonolus.script.internal.impl import meta_fn, perf_meta_fn, validate_value
 from sonolus.script.interval import clamp
 from sonolus.script.num import _is_num
 from sonolus.script.record import Record
@@ -26,115 +26,130 @@ def _validate_num(value: float):
     return value
 
 
-class _UInt36(Record):
+class _UInt32(Record):
     hi: int
-    mid: int
     lo: int
 
-    MOD_BASE = 2**12
-
     @classmethod
+    @perf_meta_fn
     def of(cls, value: int):
-        lo = value % cls.MOD_BASE
-        mid = (value // cls.MOD_BASE) % cls.MOD_BASE
-        hi = (value // (cls.MOD_BASE * cls.MOD_BASE)) % cls.MOD_BASE
-        return _UInt36._(hi, mid, lo)
+        lo = value % (2**16)
+        hi = (value // (2**16)) % (2**16)
+        return _UInt32._(hi, lo)
 
     @classmethod
     @meta_fn
-    def _(cls, hi: int, mid: int, lo: int) -> _UInt36:
+    def _(cls, hi: int, lo: int) -> _UInt32:
         # This creates read-only instances, which helps with constant folding in the frontend and build times.
-        return _UInt36._raw(hi=_validate_num(hi), mid=_validate_num(mid), lo=_validate_num(lo))
+        return _UInt32._raw(hi=_validate_num(hi), lo=_validate_num(lo))
 
     @classmethod
-    def zero(cls) -> _UInt36:
-        return _UInt36._(0, 0, 0)
+    @perf_meta_fn
+    def zero(cls) -> _UInt32:
+        return _UInt32._(0, 0)
 
     @classmethod
-    def one(cls) -> _UInt36:
-        return _UInt36._(0, 0, 1)
-
-    def __add__(self, other: _UInt36) -> _UInt36:
-        lo, carry = self._add2(self.lo, other.lo)
-        mid, carry = self._add3(self.mid, other.mid, carry)
-        hi, _ = self._add3(self.hi, other.hi, carry)
-        return _UInt36._(hi, mid, lo)
-
-    def __sub__(self, other: _UInt36) -> _UInt36:
-        lo_raw = self.lo - other.lo
-        lo = lo_raw % self.MOD_BASE
-        borrow = lo_raw < 0
-
-        mid_raw = self.mid - other.mid - borrow
-        mid = mid_raw % self.MOD_BASE
-        borrow = mid_raw < 0
-
-        hi = (self.hi - other.hi - borrow) % self.MOD_BASE
-        return _UInt36._(hi, mid, lo)
-
-    def __mul__(self, other: _UInt36) -> _UInt36:
-        lo_lo = self.lo * other.lo
-
-        lo_mid = self.lo * other.mid
-        mid_lo = self.mid * other.lo
-
-        lo_hi = self.lo * other.hi
-        hi_lo = self.hi * other.lo
-        mid_mid = self.mid * other.mid
-
-        result_lo = lo_lo % self.MOD_BASE
-        carry = lo_lo // self.MOD_BASE
-
-        result_mid, carry = self._add3(lo_mid, mid_lo, carry)
-
-        temp, carry2 = self._add3(lo_hi, hi_lo, mid_mid)
-        result_hi, _ = self._add2(temp, carry + carry2)
-
-        return _UInt36._(result_hi, result_mid, result_lo)
-
-    def __eq__(self, other: _UInt36) -> bool:
-        return (self.hi, self.mid, self.lo) == (other.hi, other.mid, other.lo)
-
-    def __ne__(self, other: _UInt36) -> bool:
-        return (self.hi, self.mid, self.lo) != (other.hi, other.mid, other.lo)
-
-    def __lt__(self, other: _UInt36) -> bool:
-        return (self.hi, self.mid, self.lo) < (other.hi, other.mid, other.lo)
-
-    def __le__(self, other: _UInt36) -> bool:
-        return (self.hi, self.mid, self.lo) <= (other.hi, other.mid, other.lo)
-
-    def __gt__(self, other: _UInt36) -> bool:
-        return (self.hi, self.mid, self.lo) > (other.hi, other.mid, other.lo)
-
-    def __ge__(self, other: _UInt36) -> bool:
-        return (self.hi, self.mid, self.lo) >= (other.hi, other.mid, other.lo)
-
-    @property
-    def midlo(self) -> int:
-        return self.mid * self.MOD_BASE + self.lo
+    @perf_meta_fn
+    def one(cls) -> _UInt32:
+        return _UInt32._(0, 1)
 
     @classmethod
-    def _add2(cls, a: int, b: int) -> tuple[int, int]:
+    @perf_meta_fn
+    def _carry_add(cls, a: int, b: int) -> tuple[int, int]:
         ab_raw = a + b
-        ab = ab_raw % cls.MOD_BASE
-        carry = ab_raw >= cls.MOD_BASE
+        ab = ab_raw % (2**16)
+        carry = ab_raw >= (2**16)
         return ab, carry
 
     @classmethod
-    def _add3(cls, a: int, b: int, c: int) -> tuple[int, int]:
-        ab, carry1 = cls._add2(a, b)
-        abc, carry2 = cls._add2(ab, c)
-        carry = carry1 + carry2
-        return abc, carry
+    @perf_meta_fn
+    def _borrow_sub(cls, a: int, b: int) -> tuple[int, int]:
+        ab_raw = a - b
+        ab = ab_raw % (2**16)
+        borrow = ab_raw < 0
+        return ab, borrow
+
+    @classmethod
+    @perf_meta_fn
+    def _carry_mul(cls, a: int, b: int) -> tuple[int, int]:
+        # Have to be careful since 32-bit floats only have 24 bits of precision
+        blo = b % (2**8)
+        bhi = b // (2**8)
+        ablo_raw = a * blo
+        abhi_raw = a * bhi * (2**8)
+
+        ablo_lo = ablo_raw % (2**16)
+        ablo_hi = ablo_raw // (2**16)
+        abhi_lo = abhi_raw % (2**16)
+        abhi_hi = abhi_raw // (2**16)
+        lo_raw = ablo_lo + abhi_lo
+        lo = lo_raw % (2**16)
+        carry = ablo_hi + abhi_hi + (lo_raw >= (2**16))
+        return lo, carry
+
+    @classmethod
+    @perf_meta_fn
+    def _wrap_mul(cls, a: int, b: int) -> int:
+        # We have this for the same reason as _carry_mul
+        blo = b % (2**8)
+        bhi = b // (2**8)
+        ablo_raw = a * blo
+        abhi_raw = a * bhi * (2**8)
+
+        ablo_lo = ablo_raw % (2**16)
+        abhi_lo = abhi_raw % (2**16)
+        lo_raw = ablo_lo + abhi_lo
+        lo = lo_raw % (2**16)
+        return lo
+
+    @perf_meta_fn
+    def __add__(self, other: _UInt32) -> _UInt32:
+        lo, carry = self._carry_add(self.lo, other.lo)
+        hi = (self.hi + other.hi + carry) % (2**16)
+        return _UInt32._(hi, lo)
+
+    @perf_meta_fn
+    def __sub__(self, other: _UInt32) -> _UInt32:
+        lo, borrow = self._borrow_sub(self.lo, other.lo)
+        hi = (self.hi - other.hi - borrow) % (2**16)
+        return _UInt32._(hi, lo)
+
+    @perf_meta_fn
+    def __mul__(self, other: _UInt32) -> _UInt32:
+        lo_lo, carry_lo_lo = self._carry_mul(self.lo, other.lo)
+        hi_lo = self._wrap_mul(self.hi, other.lo)
+        lo_hi = self._wrap_mul(self.lo, other.hi)
+        # hi_hi is ignored since it would overflow entirely
+
+        lo = lo_lo
+        hi = (hi_lo + lo_hi + carry_lo_lo) % (2**16)
+        return _UInt32._(hi, lo)
+
+    def __eq__(self, other):
+        return (self.hi, self.lo) == (other.hi, other.lo)
+
+    def __ne__(self, other):
+        return (self.hi, self.lo) != (other.hi, other.lo)
+
+    def __lt__(self, other):
+        return (self.hi, self.lo) < (other.hi, other.lo)
+
+    def __le__(self, other):
+        return (self.hi, self.lo) <= (other.hi, other.lo)
+
+    def __gt__(self, other):
+        return (self.hi, self.lo) > (other.hi, other.lo)
+
+    def __ge__(self, other):
+        return (self.hi, self.lo) >= (other.hi, other.lo)
 
     __hash__ = None
 
 
 # Technically we could do a bit more and still fit in the number of, distinct finite 32-bit floats,
 # but for simplicity, we limit ourselves to 31 bits.
-_MAX_TOTAL_STEPS_UINT36 = _UInt36._(2**7, 0, 0)
-_HALF_MAX_TOTAL_STEPS_UINT36 = _UInt36._(2**6, 0, 0)
+_MAX_TOTAL_STEPS_UINT32 = _UInt32._(2**15, 0)
+_HALF_MAX_TOTAL_STEPS_UINT32 = _UInt32._(2**14, 0)
 
 
 def quantize_to_step(value: float, start: float, stop: float, step: float) -> tuple[int, int]:
@@ -180,8 +195,8 @@ def make_comparable_float(*values: tuple[int, int]) -> float:
     assert 0 < product(max_steps for _, max_steps in values) < 2**31, (
         "Product of all maximum values must be in the range [1, 2^31)"
     )
-    result = _ints_to_uint36(*values)
-    return _uint36_to_comparable_float(result)
+    result = _ints_to_uint32(*values)
+    return _uint32_to_comparable_float(result)
 
 
 def product(values: Iterable[float]) -> float:
@@ -192,28 +207,28 @@ def product(values: Iterable[float]) -> float:
     return result
 
 
-def _ints_to_uint36(*values: tuple[int, int]) -> _UInt36:
-    result = _UInt36.zero()
+def _ints_to_uint32(*values: tuple[int, int]) -> _UInt32:
+    result = _UInt32.zero()
     for i, (value, steps) in enumerate(values):
         if i == 0:
-            result = _UInt36.of(value)
+            result = _UInt32.of(value)
         else:
-            result = result * _UInt36.of(steps) + _UInt36.of(value)
+            result = result * _UInt32.of(steps) + _UInt32.of(value)
     return result
 
 
-def _uint36_to_comparable_float(value: _UInt36) -> float:
-    value = _UInt36._(value.hi, value.mid, value.lo)
-    if value < _HALF_MAX_TOTAL_STEPS_UINT36:
+def _uint32_to_comparable_float(value: _UInt32) -> float:
+    value = _UInt32._(value.hi, value.lo)
+    if value < _HALF_MAX_TOTAL_STEPS_UINT32:
         sign = -1
-        value = _HALF_MAX_TOTAL_STEPS_UINT36 - value - _UInt36.one()
+        value = _HALF_MAX_TOTAL_STEPS_UINT32 - value - _UInt32.one()
         hi = value.hi
-        midlo = value.midlo
+        lo = value.lo
     else:
         sign = 1
-        value = value - _HALF_MAX_TOTAL_STEPS_UINT36  # noqa: PLR6104
+        value = value - _HALF_MAX_TOTAL_STEPS_UINT32  # noqa: PLR6104
         hi = value.hi
-        midlo = value.midlo
-    exponent = hi * 2 + (midlo >= 2**23)
-    mantissa = midlo % (2**23)
+        lo = value.lo
+    exponent = hi // (2**7)
+    mantissa = (hi % (2**7)) * (2**16) + lo
     return sign * (1 + mantissa / 2**23) * (2**exponent)

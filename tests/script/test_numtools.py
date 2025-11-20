@@ -10,9 +10,9 @@ from sonolus.script import numtools
 from sonolus.script.containers import Pair
 from sonolus.script.num import _is_num  # noqa: PLC2701
 from sonolus.script.numtools import (
-    _ints_to_uint36,  # noqa: PLC2701
-    _UInt36,  # noqa: PLC2701
-    _uint36_to_comparable_float,  # noqa: PLC2701
+    _ints_to_uint32,  # noqa: PLC2701
+    _UInt32,  # noqa: PLC2701
+    _uint32_to_comparable_float,  # noqa: PLC2701
     make_comparable_float,
     product,
     quantize_to_step,
@@ -64,18 +64,17 @@ def patch_float32_records(*classes):
 
 
 def patch():
-    return patch_float32_records(_UInt36)
+    return patch_float32_records(_UInt32)
 
 
-def uint36_to_int(u: _UInt36) -> int:
-    return int(u.hi) << 24 | int(u.mid) << 12 | int(u.lo)
+def uint32_to_int(u: _UInt32) -> int:
+    return int(u.hi) << 16 | int(u.lo)
 
 
-def int_to_uint36(value: int) -> _UInt36:
-    hi = (value >> 24) & 0xFFF
-    mid = (value >> 12) & 0xFFF
-    lo = value & 0xFFF
-    return _UInt36(hi, mid, lo)
+def int_to_uint32(value: int) -> _UInt32:
+    hi = (value >> 16) & 0xFFFF
+    lo = value & 0xFFFF
+    return _UInt32(hi=hi, lo=lo)
 
 
 @given(x=st.integers(min_value=0, max_value=2**31 - 2))
@@ -84,12 +83,12 @@ def int_to_uint36(value: int) -> _UInt36:
 @example(x=2**30)
 @example(x=2**30 + 1)
 @example(x=2**31 - 2)
-def test_uint36_to_comparable_float_with_float32(x: int):
+def test_uint32_to_comparable_float_with_float32(x: int):
     with patch():
-        ux = int_to_uint36(x)
-        uy = int_to_uint36(x + 1)
-        fx = _uint36_to_comparable_float(ux)
-        fy = _uint36_to_comparable_float(uy)
+        ux = int_to_uint32(x)
+        uy = int_to_uint32(x + 1)
+        fx = _uint32_to_comparable_float(ux)
+        fy = _uint32_to_comparable_float(uy)
         assert fx < fy
 
 
@@ -99,63 +98,63 @@ def test_uint36_to_comparable_float_with_float32(x: int):
 @example(x=2**30)
 @example(x=2**30 + 1)
 @example(x=2**31 - 2)
-def test_uint36_to_comparable_float(x: int):
-    ux = int_to_uint36(x)
-    uy = int_to_uint36(x + 1)
+def test_uint32_to_comparable_float(x: int):
+    ux = int_to_uint32(x)
+    uy = int_to_uint32(x + 1)
 
     def fn():
-        fx = _uint36_to_comparable_float(ux)
-        fy = _uint36_to_comparable_float(uy)
+        fx = _uint32_to_comparable_float(ux)
+        fy = _uint32_to_comparable_float(uy)
         return fx < fy
 
     assert run_and_validate(fn)
 
 
 @st.composite
-def make_ints_to_uint36_arg(draw, max_max_value) -> tuple[int, int]:
+def make_ints_to_uint32_arg(draw, max_max_value) -> tuple[int, int]:
     max_value = draw(st.integers(min_value=1, max_value=max_max_value))
     value = draw(st.integers(min_value=0, max_value=max_value - 1))
     return value, max_value
 
 
 @st.composite
-def make_ints_to_uint36_args(draw, min_args: int = 0, max_args: int = 5) -> tuple[tuple[int, int], ...]:
+def make_ints_to_uint32_args(draw, min_args: int = 0, max_args: int = 5) -> tuple[tuple[int, int], ...]:
     headroom = (1 << 31) - 1
     args = []
     count = draw(st.integers(min_value=min_args, max_value=max_args))
     for _ in range(count):
-        value, max_value = draw(make_ints_to_uint36_arg(max_max_value=headroom))
+        value, max_value = draw(make_ints_to_uint32_arg(max_max_value=headroom))
         args.append((value, max_value))
         headroom //= max_value
     return tuple(args)
 
 
 @st.composite
-def make_paired_ints_to_uint36_args(
+def make_paired_ints_to_uint32_args(
     draw, min_args: int = 1, max_args: int = 5
 ) -> tuple[tuple[tuple[int, int], ...], tuple[tuple[int, int], ...]]:
     num_args = draw(st.integers(min_value=min_args, max_value=max_args))
     return (
-        draw(make_ints_to_uint36_args(min_args=num_args, max_args=num_args)),
-        draw(make_ints_to_uint36_args(min_args=num_args, max_args=num_args)),
+        draw(make_ints_to_uint32_args(min_args=num_args, max_args=num_args)),
+        draw(make_ints_to_uint32_args(min_args=num_args, max_args=num_args)),
     )
 
 
-@given(args=make_ints_to_uint36_args())
-def test_ints_to_uint36(args):
+@given(args=make_ints_to_uint32_args())
+def test_ints_to_uint32(args):
     def fn():
-        return _ints_to_uint36(*args)
+        return _ints_to_uint32(*args)
 
     expected = 0
     multiplier = 1
     for value, max_value in reversed(args):
         expected += value * multiplier
         multiplier *= max_value
-    assert uint36_to_int(run_and_validate(fn)) == expected
+    assert uint32_to_int(run_and_validate(fn)) == expected
 
 
-@given(args=make_ints_to_uint36_args())
-def test_ints_to_uint36_with_float32(args):
+@given(args=make_ints_to_uint32_args())
+def test_ints_to_uint32_with_float32(args):
     with patch():
         expected = 0
         multiplier = 1
@@ -163,19 +162,19 @@ def test_ints_to_uint36_with_float32(args):
             expected += value * multiplier
             multiplier *= max_value
 
-        assert uint36_to_int(_ints_to_uint36(*args)) == expected
+        assert uint32_to_int(_ints_to_uint32(*args)) == expected
 
 
-@given(args=make_paired_ints_to_uint36_args())
-def test_ints_to_uint36_comparison(args: tuple[tuple[tuple[int, int], ...], tuple[tuple[int, int], ...]]):
+@given(args=make_paired_ints_to_uint32_args())
+def test_ints_to_uint32_comparison(args: tuple[tuple[tuple[int, int], ...], tuple[tuple[int, int], ...]]):
     args1, args2 = args
 
     def fn():
-        return Pair(_ints_to_uint36(*args1), _ints_to_uint36(*args2))
+        return Pair(_ints_to_uint32(*args1), _ints_to_uint32(*args2))
 
     u1, u2 = run_and_validate(fn).tuple
-    r1 = uint36_to_int(u1)
-    r2 = uint36_to_int(u2)
+    r1 = uint32_to_int(u1)
+    r2 = uint32_to_int(u2)
     assert (r1 < r2) == (u1 < u2)
     assert (r1 <= r2) == (u1 <= u2)
     assert (r1 > r2) == (u1 > u2)
@@ -184,14 +183,14 @@ def test_ints_to_uint36_comparison(args: tuple[tuple[tuple[int, int], ...], tupl
     assert (r1 != r2) == (u1 != u2)
 
 
-@given(args=make_paired_ints_to_uint36_args())
-def test_ints_to_uint36_comparison_with_float32(args: tuple[tuple[tuple[int, int], ...], tuple[tuple[int, int], ...]]):
+@given(args=make_paired_ints_to_uint32_args())
+def test_ints_to_uint32_comparison_with_float32(args: tuple[tuple[tuple[int, int], ...], tuple[tuple[int, int], ...]]):
     args1, args2 = args
     with patch():
-        u1 = _ints_to_uint36(*args1)
-        u2 = _ints_to_uint36(*args2)
-        r1 = uint36_to_int(u1)
-        r2 = uint36_to_int(u2)
+        u1 = _ints_to_uint32(*args1)
+        u2 = _ints_to_uint32(*args2)
+        r1 = uint32_to_int(u1)
+        r2 = uint32_to_int(u2)
         assert (r1 < r2) == (u1 < u2)
         assert (r1 <= r2) == (u1 <= u2)
         assert (r1 > r2) == (u1 > u2)
@@ -200,7 +199,7 @@ def test_ints_to_uint36_comparison_with_float32(args: tuple[tuple[tuple[int, int
         assert (r1 != r2) == (u1 != u2)
 
 
-@given(args=make_paired_ints_to_uint36_args())
+@given(args=make_paired_ints_to_uint32_args())
 def test_make_comparable_float_comparison(args: tuple[tuple[tuple[int, int], ...], tuple[tuple[int, int], ...]]):
     args1, args2 = args
 
@@ -208,8 +207,8 @@ def test_make_comparable_float_comparison(args: tuple[tuple[tuple[int, int], ...
         return Pair(make_comparable_float(*args1), make_comparable_float(*args2))
 
     f1, f2 = run_and_validate(fn).tuple
-    u1 = _ints_to_uint36(*args1)
-    u2 = _ints_to_uint36(*args2)
+    u1 = _ints_to_uint32(*args1)
+    u2 = _ints_to_uint32(*args2)
     assert (f1 < f2) == (u1 < u2)
     assert (f1 <= f2) == (u1 <= u2)
     assert (f1 > f2) == (u1 > u2)
@@ -218,7 +217,7 @@ def test_make_comparable_float_comparison(args: tuple[tuple[tuple[int, int], ...
     assert (f1 != f2) == (u1 != u2)
 
 
-@given(args=make_paired_ints_to_uint36_args())
+@given(args=make_paired_ints_to_uint32_args())
 def test_make_comparable_float_comparison_with_float32(
     args: tuple[tuple[tuple[int, int], ...], tuple[tuple[int, int], ...]],
 ):
@@ -226,8 +225,8 @@ def test_make_comparable_float_comparison_with_float32(
     with patch():
         f1 = make_comparable_float(*args1)
         f2 = make_comparable_float(*args2)
-        u1 = _ints_to_uint36(*args1)
-        u2 = _ints_to_uint36(*args2)
+        u1 = _ints_to_uint32(*args1)
+        u2 = _ints_to_uint32(*args2)
         assert (f1 < f2) == (u1 < u2)
         assert (f1 <= f2) == (u1 <= u2)
         assert (f1 > f2) == (u1 > u2)
