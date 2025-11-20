@@ -60,16 +60,16 @@
   10000[0] <- Multiply(EntityDataArray[10000[0]], 3.0)
   goto 17 if And(And(GreaterOr(EntityInfoArray[10000[0]], 0), Less(EntityInfoArray[10000[0]], 99999.0)), Equal(Trunc(EntityInfoArray[10000[0]]), EntityInfoArray[10000[0]])) else 24
 17:
-  10000[0] <- Add(EntityInfoArray[10000[0]], 18.0)
-  goto 18 if StreamHas(10000[0], RuntimeUpdate[0]) else 19
+  10000[1] <- Add(EntityInfoArray[10000[0]], 18.0)
+  goto 18 if StreamHas(10000[1], RuntimeUpdate[0]) else 19
 18:
-  10000[1] <- RuntimeUpdate[0]
+  10000[0] <- RuntimeUpdate[0]
   goto 20
 19:
-  10000[1] <- StreamGetPreviousKey(10000[0], RuntimeUpdate[0])
+  10000[0] <- StreamGetPreviousKey(10000[1], RuntimeUpdate[0])
   goto 20
 20:
-  goto 28 if StreamGetValue(10000[0], 10000[1]) else 21
+  goto 28 if StreamGetValue(10000[1], 10000[0]) else 21
 21:
   10000[0] <- EntityMemory[2]
   goto 22 if NotEqual(10000[0], 0) else 23

@@ -515,11 +515,9 @@
 179:
   goto 180
 180:
-  v128 <- Max(1.0, 1.0)
-  v129 <- Multiply(v128, EntityInfoArray[v121])
-  v130 <- v118
-  v131 <- Add(v129, v130)
-  v132 <- v131
+  v128 <- v118
+  v129 <- Add(EntityInfoArray[v121], v128)
+  v130 <- v129
   goto 181
 181:
   goto 182
@@ -530,35 +528,35 @@
 184:
   goto 185
 185:
-  v133 <- v132
-  v134 <- StreamHas(v133, -10.0)
+  v131 <- v130
+  v132 <- StreamHas(v131, -10.0)
   goto 186
 186:
   goto 187
 187:
   goto 188
 188:
-  goto 189 if v134 else 190
+  goto 189 if v132 else 190
 189:
-  v137 <- -10.0
+  v135 <- -10.0
   goto 194
 190:
   goto 191
 191:
-  v135 <- v132
-  v136 <- StreamGetNextKey(v135, -10.0)
+  v133 <- v130
+  v134 <- StreamGetNextKey(v133, -10.0)
   goto 192
 192:
   goto 193
 193:
-  v137 <- v136
+  v135 <- v134
   goto 194
 194:
   goto 195
 195:
   goto 196
 196:
-  v138 <- v137
+  v136 <- v135
   goto 197
 197:
   goto 198
@@ -569,77 +567,77 @@
 200:
   goto 201
 201:
-  v139 <- 0
-  v140 <- 0
+  v137 <- 0
+  v138 <- 0
   goto 202
 202:
   goto 203
 203:
-  v141 <- v138
+  v139 <- v136
   goto 204
 204:
-  v142 <- v132
-  v143 <- StreamHas(v142, v141)
+  v140 <- v130
+  v141 <- StreamHas(v140, v139)
   goto 205
 205:
   goto 206
 206:
   goto 207
 207:
-  goto 208 if v143 else 222
+  goto 208 if v141 else 222
 208:
-  v144 <- v138
-  v145 <- v138
-  v146 <- v132
-  v147 <- Add(v146, 0)
-  v148 <- v138
+  v142 <- v136
+  v143 <- v136
+  v144 <- v130
+  v145 <- Add(v144, 0)
+  v146 <- v136
   goto 209
 209:
   goto 210
 210:
-  v149 <- v132
-  v150 <- StreamGetNextKey(v149, v148)
+  v147 <- v130
+  v148 <- StreamGetNextKey(v147, v146)
   goto 211
 211:
   goto 212
 212:
-  v151 <- Greater(v150, v148)
+  v149 <- Greater(v148, v146)
   goto 213
 213:
-  goto 214 if v151 else 215
+  goto 214 if v149 else 215
 214:
-  v152 <- v150
+  v150 <- v148
   goto 216
 215:
-  v152 <- inf
+  v150 <- inf
   goto 216
 216:
   goto 217
 217:
   goto 218
 218:
-  v138 <- v152
+  v136 <- v150
   goto 219
 219:
   goto 220
 220:
   goto 221
 221:
-  v153 <- 1.0
+  v151 <- 1.0
   goto 224
 222:
   goto 223
 223:
-  v153 <- 0
+  v151 <- 0
   goto 224
 224:
   goto 225
 225:
-  goto 226 if v153 else 271
+  goto 226 if v151 else 271
 226:
   goto 227
 227:
-  v154 <- EntityData[9]
+  v152 <- EntityData[9]
   goto 228
 228:
   goto 229
@@ -650,26 +648,26 @@
 231:
   goto 232
 232:
-  v155 <- Multiply(v154, 32.0)
-  v156 <- Add(5.0, v155)
-  v157 <- v156
-  v158 <- EntityDataArray[v157]
-  v159 <- Less(v144, v158)
+  v153 <- Multiply(v152, 32.0)
+  v154 <- Add(5.0, v153)
+  v155 <- v154
+  v156 <- EntityDataArray[v155]
+  v157 <- Less(v142, v156)
   goto 233
 233:
-  goto 234 if v159 else 235
+  goto 234 if v157 else 235
 234:
-  v160 <- v139
-  v161 <- v140
-  v139 <- v160
-  v140 <- v161
+  v158 <- v137
+  v159 <- v138
+  v137 <- v158
+  v138 <- v159
   goto 202
 235:
   goto 236
 236:
   goto 237
 237:
-  v162 <- EntityData[10]
+  v160 <- EntityData[10]
   goto 238
 238:
   goto 239
@@ -680,53 +678,53 @@
 241:
   goto 242
 242:
-  v163 <- Multiply(v162, 32.0)
-  v164 <- Add(5.0, v163)
-  v165 <- v164
-  v166 <- EntityDataArray[v165]
-  v167 <- Greater(v144, v166)
+  v161 <- Multiply(v160, 32.0)
+  v162 <- Add(5.0, v161)
+  v163 <- v162
+  v164 <- EntityDataArray[v163]
+  v165 <- Greater(v142, v164)
   goto 243
 243:
-  goto 244 if v167 else 245
+  goto 244 if v165 else 245
 244:
   goto 272
 245:
   goto 246
 246:
-  goto 247 if StreamGetValue(v147, v145) else 248
+  goto 247 if StreamGetValue(v145, v143) else 248
 247:
-  v168 <- Not(v140)
-  v169 <- v168
+  v166 <- Not(v138)
+  v167 <- v166
   goto 249
 248:
-  v169 <- 0
+  v167 <- 0
   goto 249
 249:
-  goto 250 if v169 else 251
+  goto 250 if v167 else 251
 250:
-  v170 <- 1.0
-  v171 <- v144
+  v168 <- 1.0
+  v169 <- v142
   goto 252
 251:
-  v170 <- v140
-  v171 <- v139
+  v168 <- v138
+  v169 <- v137
   goto 252
 252:
-  v172 <- Not(StreamGetValue(v147, v145))
-  goto 253 if v172 else 254
+  v170 <- Not(StreamGetValue(v145, v143))
+  goto 253 if v170 else 254
 253:
-  v173 <- v170
+  v171 <- v168
   goto 255
 254:
-  v173 <- 0
+  v171 <- 0
   goto 255
 255:
-  goto 256 if v173 else 269
+  goto 256 if v171 else 269
 256:
   goto 257
 257:
-  v174 <- Not(LevelOption[10])
-  goto 258 if v174 else 259
+  v172 <- Not(LevelOption[10])
+  goto 258 if v172 else 259
 258:
   goto 267
 259:
@@ -734,16 +732,16 @@
 260:
   goto 261
 261:
-  v175 <- PlayLoopedScheduled(7.0, v171)
-  v176 <- v175
+  v173 <- PlayLoopedScheduled(7.0, v169)
+  v174 <- v173
   goto 262
 262:
   goto 263
 263:
   goto 264
 264:
-  v177 <- v176
-  v178 <- StopLoopedScheduled(v177, v144)
+  v175 <- v174
+  v176 <- StopLoopedScheduled(v175, v142)
   goto 265
 265:
   goto 266
@@ -752,25 +750,25 @@
 267:
   goto 268
 268:
-  v179 <- 0
+  v177 <- 0
   goto 270
 269:
-  v179 <- v170
+  v177 <- v168
   goto 270
 270:
-  v180 <- v171
-  v181 <- v179
-  v139 <- v180
-  v140 <- v181
+  v178 <- v169
+  v179 <- v177
+  v137 <- v178
+  v138 <- v179
   goto 202
 271:
   goto 272
 272:
-  goto 273 if v140 else 292
+  goto 273 if v138 else 292
 273:
   goto 274
 274:
-  v182 <- EntityData[10]
+  v180 <- EntityData[10]
   goto 275
 275:
   goto 276
@@ -781,14 +779,14 @@
 278:
   goto 279
 279:
-  v183 <- Multiply(v182, 32.0)
-  v184 <- Add(5.0, v183)
-  v185 <- v184
-  v186 <- EntityDataArray[v185]
+  v181 <- Multiply(v180, 32.0)
+  v182 <- Add(5.0, v181)
+  v183 <- v182
+  v184 <- EntityDataArray[v183]
   goto 280
 280:
-  v187 <- Not(LevelOption[10])
-  goto 281 if v187 else 282
+  v185 <- Not(LevelOption[10])
+  goto 281 if v185 else 282
 281:
   goto 290
 282:
@@ -796,16 +794,16 @@
 283:
   goto 284
 284:
-  v188 <- PlayLoopedScheduled(7.0, v139)
-  v189 <- v188
+  v186 <- PlayLoopedScheduled(7.0, v137)
+  v187 <- v186
   goto 285
 285:
   goto 286
 286:
   goto 287
 287:
-  v190 <- v189
-  v191 <- StopLoopedScheduled(v190, v186)
+  v188 <- v187
+  v189 <- StopLoopedScheduled(v188, v184)
   goto 288
 288:
   goto 289
@@ -822,7 +820,7 @@
 294:
   goto 295
 295:
-  v192 <- EntityData[9]
+  v190 <- EntityData[9]
   goto 296
 296:
   goto 297
@@ -833,13 +831,13 @@
 299:
   goto 300
 300:
-  v193 <- Multiply(v192, 32.0)
-  v194 <- Add(5.0, v193)
-  v195 <- v194
-  v196 <- EntityDataArray[v195]
+  v191 <- Multiply(v190, 32.0)
+  v192 <- Add(5.0, v191)
+  v193 <- v192
+  v194 <- EntityDataArray[v193]
   goto 301
 301:
-  v197 <- EntityData[10]
+  v195 <- EntityData[10]
   goto 302
 302:
   goto 303
@@ -850,14 +848,14 @@
 305:
   goto 306
 306:
-  v198 <- Multiply(v197, 32.0)
-  v199 <- Add(5.0, v198)
-  v200 <- v199
-  v201 <- EntityDataArray[v200]
+  v196 <- Multiply(v195, 32.0)
+  v197 <- Add(5.0, v196)
+  v198 <- v197
+  v199 <- EntityDataArray[v198]
   goto 307
 307:
-  v202 <- Not(LevelOption[10])
-  goto 308 if v202 else 309
+  v200 <- Not(LevelOption[10])
+  goto 308 if v200 else 309
 308:
   goto 317
 309:
@@ -865,16 +863,16 @@
 310:
   goto 311
 311:
-  v203 <- PlayLoopedScheduled(7.0, v196)
-  v204 <- v203
+  v201 <- PlayLoopedScheduled(7.0, v194)
+  v202 <- v201
   goto 312
 312:
   goto 313
 313:
   goto 314
 314:
-  v205 <- v204
-  v206 <- StopLoopedScheduled(v205, v201)
+  v203 <- v202
+  v204 <- StopLoopedScheduled(v203, v199)
   goto 315
 315:
   goto 316

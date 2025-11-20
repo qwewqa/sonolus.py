@@ -28,7 +28,7 @@
   10000[0] <- Multiply(EntityData[16], 3.0)
   goto 9 if And(And(GreaterOr(EntityInfoArray[10000[0]], 0), Less(EntityInfoArray[10000[0]], 99999.0)), Equal(Trunc(EntityInfoArray[10000[0]]), EntityInfoArray[10000[0]])) else 10
 9:
-  StreamSet(Add(Multiply(1.0, EntityInfoArray[10000[0]]), 18.0), -10.0, 0)
+  StreamSet(Add(EntityInfoArray[10000[0]], 18.0), -10.0, 0)
   Spawn(8.0, EntityData[16], EntityData[17], 0, 0)
   goto exit
 10:
