@@ -1,3 +1,7 @@
+### 0.12.8
+
+- Fix optimizer bug with the min/max functions.
+
 ### 0.12.7
 
 - Improved the performance of [`make_comparable_float`][sonolus.script.numtools.make_comparable_float]
