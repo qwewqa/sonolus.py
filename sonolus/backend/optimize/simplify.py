@@ -246,7 +246,7 @@ class NormalizeSwitch(CompilerPass):
 
 
 class FlattenAssociativeOps(CompilerPass):
-    FLATTENABLE_OPS = frozenset({Op.Add, Op.Multiply, Op.Mod, Op.Rem, Op.Min, Op.Max})
+    FLATTENABLE_OPS = frozenset({Op.Add, Op.Multiply, Op.Mod, Op.Rem})
 
     def run(self, entry: BasicBlock, config: OptimizerConfig) -> BasicBlock:
         for block in traverse_cfg_preorder(entry):
