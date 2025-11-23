@@ -33,6 +33,8 @@ class PlainField:
         return result
 
     def __set__(self, instance, value):
+        if _is_num(value):
+            value = np.float32(value._as_py_())
         instance._value_[self.name] = value
 
 
@@ -52,7 +54,13 @@ def patch_float32_records(*classes):
             result._value_ = {name: np.float32(value) for name, value in bound.arguments.items()}
             return result
 
+        def _copy_(self):
+            new_instance = object.__new__(self.__class__)
+            new_instance._value_ = self._value_
+            return new_instance
+
         cls.__new__ = __new__
+        cls._copy_ = _copy_
     try:
         yield
     finally:
@@ -61,6 +69,7 @@ def patch_float32_records(*classes):
             for field in cls._fields_:
                 setattr(cls, field.name, field)
             del cls.__new__
+            del cls._copy_
 
 
 def patch():

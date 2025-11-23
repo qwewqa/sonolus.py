@@ -15,10 +15,10 @@
 7:
   goto 8
 8:
-  v1 <- Multiply(EntityData[0], 32.0)
-  v2 <- Add(13.0, v1)
+  v1 <- EntityData[0] * 32.0
+  v2 <- 13.0 + v1
   v3 <- v2
-  v4 <- GreaterOr(RuntimeUpdate[2], EntityDataArray[v3])
+  v4 <- RuntimeUpdate[2] >= EntityDataArray[v3]
   goto 9
 9:
   goto 10

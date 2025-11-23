@@ -1,7 +1,7 @@
 0:
   goto 1
 1:
-  v1 <- Greater(RuntimeUpdate[2], 0)
+  v1 <- RuntimeUpdate[2] > 0
   goto 2
 2:
   goto 3 if v1 else 10
@@ -9,10 +9,10 @@
   goto 4
 4:
   v2 <- TutorialMemory[0]
-  v3 <- Add(v2, 1.0)
+  v3 <- v2 + 1.0
   TutorialMemory[0] <- v3
   v4 <- TutorialMemory[0]
-  v5 <- Mod(v4, 7.0)
+  v5 <- v4 % 7.0
   TutorialMemory[0] <- v5
   goto 5
 5:
@@ -30,10 +30,10 @@
   goto 11
 11:
   v6 <- TutorialMemory[0]
-  v7 <- Subtract(v6, 1.0)
+  v7 <- v6 - 1.0
   TutorialMemory[0] <- v7
   v8 <- TutorialMemory[0]
-  v9 <- Mod(v8, 7.0)
+  v9 <- v8 % 7.0
   TutorialMemory[0] <- v9
   goto 12
 12:

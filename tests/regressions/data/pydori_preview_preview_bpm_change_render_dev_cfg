@@ -7,7 +7,7 @@
 3:
   goto 4
 4:
-  v1 <- Divide(EntityData[2], 2.0)
+  v1 <- EntityData[2] / 2.0
   v2 <- Trunc(v1)
   goto 5
 5:
@@ -15,66 +15,66 @@
 6:
   goto 7
 7:
-  v3 <- Add(v2, 0.5)
-  v4 <- Multiply(v3, PreviewData[1])
-  v5 <- Add(v4, -0.252)
-  v6 <- Negate(RuntimeEnvironment[1])
+  v3 <- v2 + 0.5
+  v4 <- v3 * PreviewData[1]
+  v5 <- v4 + -0.252
+  v6 <- -RuntimeEnvironment[1]
   goto 8
 8:
   v7 <- v6
-  v8 <- Subtract(RuntimeEnvironment[1], v7)
+  v8 <- RuntimeEnvironment[1] - v7
   goto 9
 9:
   goto 10
 10:
-  v9 <- Divide(v8, 2.0)
-  v10 <- Subtract(v5, v9)
+  v9 <- v8 / 2.0
+  v10 <- v5 - v9
   goto 11
 11:
   goto 12
 12:
   goto 13
 13:
-  v11 <- Add(v2, 0.5)
-  v12 <- Multiply(v11, PreviewData[1])
-  v13 <- Add(v12, 0.252)
-  v14 <- Negate(RuntimeEnvironment[1])
+  v11 <- v2 + 0.5
+  v12 <- v11 * PreviewData[1]
+  v13 <- v12 + 0.252
+  v14 <- -RuntimeEnvironment[1]
   goto 14
 14:
   v15 <- v14
-  v16 <- Subtract(RuntimeEnvironment[1], v15)
+  v16 <- RuntimeEnvironment[1] - v15
   goto 15
 15:
   goto 16
 16:
-  v17 <- Divide(v16, 2.0)
-  v18 <- Subtract(v13, v17)
+  v17 <- v16 / 2.0
+  v18 <- v13 - v17
   goto 17
 17:
   goto 18
 18:
-  v19 <- Add(v18, 0.21599999999999997)
+  v19 <- v18 + 0.21599999999999997
   goto 19
 19:
   goto 20
 20:
-  v20 <- Mod(EntityData[2], 2.0)
-  v21 <- Divide(v20, 2.0)
+  v20 <- EntityData[2] % 2.0
+  v21 <- v20 / 2.0
   v22 <- Lerp(-0.9, 0.9, v21)
   goto 21
 21:
   goto 22
 22:
-  v23 <- Subtract(v22, 0.0018)
+  v23 <- v22 - 0.0018
   v24 <- v10
   v25 <- v23
-  v26 <- Subtract(v22, 0.0018)
+  v26 <- v22 - 0.0018
   v27 <- v19
   v28 <- v26
-  v29 <- Add(v22, 0.0018)
+  v29 <- v22 + 0.0018
   v30 <- v19
   v31 <- v29
-  v32 <- Add(v22, 0.0018)
+  v32 <- v22 + 0.0018
   v33 <- v10
   v34 <- v32
   goto 23
@@ -102,7 +102,7 @@
 29:
   goto 30
 30:
-  v44 <- Divide(EntityData[2], 2.0)
+  v44 <- EntityData[2] / 2.0
   v45 <- Trunc(v44)
   goto 31
 31:
@@ -110,31 +110,31 @@
 32:
   goto 33
 33:
-  v46 <- Add(v45, 0.5)
-  v47 <- Multiply(v46, PreviewData[1])
-  v48 <- Add(v47, 0.252)
-  v49 <- Negate(RuntimeEnvironment[1])
+  v46 <- v45 + 0.5
+  v47 <- v46 * PreviewData[1]
+  v48 <- v47 + 0.252
+  v49 <- -RuntimeEnvironment[1]
   goto 34
 34:
   v50 <- v49
-  v51 <- Subtract(RuntimeEnvironment[1], v50)
+  v51 <- RuntimeEnvironment[1] - v50
   goto 35
 35:
   goto 36
 36:
-  v52 <- Divide(v51, 2.0)
-  v53 <- Subtract(v48, v52)
+  v52 <- v51 / 2.0
+  v53 <- v48 - v52
   goto 37
 37:
   goto 38
 38:
   goto 39
 39:
-  v54 <- Add(v53, 0.015)
+  v54 <- v53 + 0.015
   goto 40
 40:
-  v55 <- Mod(EntityData[2], 2.0)
-  v56 <- Divide(v55, 2.0)
+  v55 <- EntityData[2] % 2.0
+  v56 <- v55 / 2.0
   v57 <- Lerp(-0.9, 0.9, v56)
   goto 41
 41:
@@ -173,17 +173,17 @@
 51:
   goto 52
 52:
-  v71 <- Add(EntityData[0], 4.0)
+  v71 <- EntityData[0] + 4.0
   v72 <- v71
   goto 53
 53:
   v73 <- BeatToStartingBeat(v72)
-  v74 <- Equal(v73, EntityData[0])
+  v74 <- v73 == EntityData[0]
   goto 54
 54:
   goto 55 if v74 else 57
 55:
-  v75 <- LessOr(v72, PreviewData[4])
+  v75 <- v72 <= PreviewData[4]
   goto 56
 56:
   v76 <- v75
@@ -199,7 +199,7 @@
 60:
   goto 61
 61:
-  v78 <- Divide(v77, 2.0)
+  v78 <- v77 / 2.0
   v79 <- Trunc(v78)
   goto 62
 62:
@@ -207,40 +207,40 @@
 63:
   goto 64
 64:
-  v80 <- Add(v79, 0.5)
-  v81 <- Multiply(v80, PreviewData[1])
-  v82 <- Add(v81, -0.252)
-  v83 <- Negate(RuntimeEnvironment[1])
+  v80 <- v79 + 0.5
+  v81 <- v80 * PreviewData[1]
+  v82 <- v81 + -0.252
+  v83 <- -RuntimeEnvironment[1]
   goto 65
 65:
   v84 <- v83
-  v85 <- Subtract(RuntimeEnvironment[1], v84)
+  v85 <- RuntimeEnvironment[1] - v84
   goto 66
 66:
   goto 67
 67:
-  v86 <- Divide(v85, 2.0)
-  v87 <- Subtract(v82, v86)
+  v86 <- v85 / 2.0
+  v87 <- v82 - v86
   goto 68
 68:
   goto 69
 69:
   goto 70
 70:
-  v88 <- Add(v79, 0.5)
-  v89 <- Multiply(v88, PreviewData[1])
-  v90 <- Add(v89, 0.252)
-  v91 <- Negate(RuntimeEnvironment[1])
+  v88 <- v79 + 0.5
+  v89 <- v88 * PreviewData[1]
+  v90 <- v89 + 0.252
+  v91 <- -RuntimeEnvironment[1]
   goto 71
 71:
   v92 <- v91
-  v93 <- Subtract(RuntimeEnvironment[1], v92)
+  v93 <- RuntimeEnvironment[1] - v92
   goto 72
 72:
   goto 73
 73:
-  v94 <- Divide(v93, 2.0)
-  v95 <- Subtract(v90, v94)
+  v94 <- v93 / 2.0
+  v95 <- v90 - v94
   goto 74
 74:
   goto 75
@@ -249,23 +249,23 @@
 76:
   goto 77
 77:
-  v96 <- Mod(v77, 2.0)
-  v97 <- Divide(v96, 2.0)
+  v96 <- v77 % 2.0
+  v97 <- v96 / 2.0
   v98 <- Lerp(-0.9, 0.9, v97)
   goto 78
 78:
   goto 79
 79:
-  v99 <- Subtract(v98, 0.0018)
+  v99 <- v98 - 0.0018
   v100 <- v87
   v101 <- v99
-  v102 <- Subtract(v98, 0.0018)
+  v102 <- v98 - 0.0018
   v103 <- v95
   v104 <- v102
-  v105 <- Add(v98, 0.0018)
+  v105 <- v98 + 0.0018
   v106 <- v95
   v107 <- v105
-  v108 <- Add(v98, 0.0018)
+  v108 <- v98 + 0.0018
   v109 <- v87
   v110 <- v108
   goto 80
@@ -273,8 +273,8 @@
   goto 81
 81:
   v111 <- BeatToTime(v72)
-  v112 <- Divide(v111, 100.0)
-  v113 <- Subtract(21.0, v112)
+  v112 <- v111 / 100.0
+  v113 <- 21.0 - v112
   v114 <- v100
   v115 <- v101
   v116 <- v109
@@ -284,7 +284,7 @@
   v120 <- v103
   v121 <- v104
   v122 <- Draw(21.0, v114, v115, v116, v117, v118, v119, v120, v121, v113, 0.8)
-  v123 <- Add(v72, 4.0)
+  v123 <- v72 + 4.0
   v124 <- v123
   v72 <- v124
   goto 53

@@ -3,9 +3,12 @@ from __future__ import annotations
 from collections.abc import Iterable
 from math import ceil
 
+from sonolus.script.debug import is_static_true
+from sonolus.script.internal.context import ctx
 from sonolus.script.internal.impl import meta_fn, perf_meta_fn, validate_value
+from sonolus.script.internal.tuple_impl import TupleImpl
 from sonolus.script.interval import clamp
-from sonolus.script.num import _is_num
+from sonolus.script.num import Num, _is_num
 from sonolus.script.record import Record
 
 enable_np = False
@@ -56,6 +59,11 @@ class _UInt32(Record):
     @classmethod
     @perf_meta_fn
     def _carry_add(cls, a: int, b: int) -> tuple[int, int]:
+        if is_static_true(a == 0):
+            return b, 0
+        if is_static_true(b == 0):
+            return a, 0
+
         ab_raw = a + b
         ab = ab_raw % (2**16)
         carry = ab_raw >= (2**16)
@@ -64,6 +72,11 @@ class _UInt32(Record):
     @classmethod
     @perf_meta_fn
     def _borrow_sub(cls, a: int, b: int) -> tuple[int, int]:
+        if is_static_true(a == b):
+            return 0, 0
+        if is_static_true(b == 0):
+            return a, 0
+
         ab_raw = a - b
         ab = ab_raw % (2**16)
         borrow = ab_raw < 0
@@ -73,6 +86,14 @@ class _UInt32(Record):
     @perf_meta_fn
     def _carry_mul(cls, a: int, b: int) -> tuple[int, int]:
         # Have to be careful since 32-bit floats only have 24 bits of precision
+
+        if is_static_true(a == 0) or is_static_true(b == 0):
+            return 0, 0
+        if is_static_true(a == 1):
+            return b, 0
+        if is_static_true(b == 1):
+            return a, 0
+
         blo = b % (2**8)
         bhi = b // (2**8)
         ablo_raw = a * blo
@@ -91,6 +112,14 @@ class _UInt32(Record):
     @perf_meta_fn
     def _wrap_mul(cls, a: int, b: int) -> int:
         # We have this for the same reason as _carry_mul
+
+        if is_static_true(a == 0) or is_static_true(b == 0):
+            return 0
+        if is_static_true(a == 1):
+            return b
+        if is_static_true(b == 1):
+            return a
+
         blo = b % (2**8)
         bhi = b // (2**8)
         ablo_raw = a * blo
@@ -104,18 +133,28 @@ class _UInt32(Record):
 
     @perf_meta_fn
     def __add__(self, other: _UInt32) -> _UInt32:
+        if is_static_true(self == _UInt32.zero()):
+            return +other
+        if is_static_true(other == _UInt32.zero()):
+            return +self
         lo, carry = self._carry_add(self.lo, other.lo)
         hi = (self.hi + other.hi + carry) % (2**16)
         return _UInt32._(hi, lo)
 
     @perf_meta_fn
     def __sub__(self, other: _UInt32) -> _UInt32:
+        if is_static_true(other == _UInt32.zero()):
+            return +self
         lo, borrow = self._borrow_sub(self.lo, other.lo)
         hi = (self.hi - other.hi - borrow) % (2**16)
         return _UInt32._(hi, lo)
 
     @perf_meta_fn
     def __mul__(self, other: _UInt32) -> _UInt32:
+        if is_static_true(self == _UInt32.one()):
+            return +other
+        if is_static_true(other == _UInt32.one()):
+            return +self
         lo_lo, carry_lo_lo = self._carry_mul(self.lo, other.lo)
         hi_lo = self._wrap_mul(self.hi, other.lo)
         lo_hi = self._wrap_mul(self.lo, other.hi)
@@ -125,22 +164,52 @@ class _UInt32(Record):
         hi = (hi_lo + lo_hi + carry_lo_lo) % (2**16)
         return _UInt32._(hi, lo)
 
+    @meta_fn
     def __eq__(self, other):
+        if ctx():
+            return Num.and_(self.hi == other.hi, self.lo == other.lo)
         return (self.hi, self.lo) == (other.hi, other.lo)
 
+    @meta_fn
     def __ne__(self, other):
+        if ctx():
+            return Num.or_(self.hi != other.hi, self.lo != other.lo)
         return (self.hi, self.lo) != (other.hi, other.lo)
 
+    @meta_fn
     def __lt__(self, other):
+        if ctx():
+            hi_lt = self.hi < other.hi
+            hi_eq = self.hi == other.hi
+            lo_lt = self.lo < other.lo
+            return Num.or_(hi_lt, Num.and_(hi_eq, lo_lt))
         return (self.hi, self.lo) < (other.hi, other.lo)
 
+    @meta_fn
     def __le__(self, other):
+        if ctx():
+            hi_lt = self.hi < other.hi
+            hi_eq = self.hi == other.hi
+            lo_le = self.lo <= other.lo
+            return Num.or_(hi_lt, Num.and_(hi_eq, lo_le))
         return (self.hi, self.lo) <= (other.hi, other.lo)
 
+    @meta_fn
     def __gt__(self, other):
+        if ctx():
+            hi_gt = self.hi > other.hi
+            hi_eq = self.hi == other.hi
+            lo_gt = self.lo > other.lo
+            return Num.or_(hi_gt, Num.and_(hi_eq, lo_gt))
         return (self.hi, self.lo) > (other.hi, other.lo)
 
+    @meta_fn
     def __ge__(self, other):
+        if ctx():
+            hi_gt = self.hi > other.hi
+            hi_eq = self.hi == other.hi
+            lo_ge = self.lo >= other.lo
+            return Num.or_(hi_gt, Num.and_(hi_eq, lo_ge))
         return (self.hi, self.lo) >= (other.hi, other.lo)
 
     __hash__ = None
@@ -150,6 +219,7 @@ class _UInt32(Record):
 # but for simplicity, we limit ourselves to 31 bits.
 _MAX_TOTAL_STEPS_UINT32 = _UInt32._(2**15, 0)
 _HALF_MAX_TOTAL_STEPS_UINT32 = _UInt32._(2**14, 0)
+_HALF_MAX_TOTAL_STEPS_UINT32_MINUS_ONE = _UInt32._(2**14 - 1, 2**16 - 1)
 
 
 def quantize_to_step(value: float, start: float, stop: float, step: float) -> tuple[int, int]:
@@ -225,9 +295,39 @@ def product(values: Iterable[float]) -> float:
     return result
 
 
+@meta_fn
 def _ints_to_uint32(*values: tuple[int, int]) -> _UInt32:
+    values = validate_value(values)
+    if not isinstance(values, TupleImpl):
+        raise TypeError("Expected a tuple of (value, max_value) pairs")
+    values = values.value
+    if len(values) == 0:
+        return _UInt32.zero()
+    collapsed_values = []
+    running_value = validate_value(0)
+    running_max_value = 1
+    for value, max_value in values:
+        value = validate_value(value)
+        max_value = validate_value(max_value)
+        if not max_value._is_py_():
+            if running_max_value > 1:
+                collapsed_values.append((running_value, running_max_value))
+            collapsed_values.append((value, max_value))
+            running_value = validate_value(0)
+            running_max_value = 1
+        elif running_max_value * max_value._as_py_() >= 2**24:
+            if running_max_value > 1:
+                collapsed_values.append((running_value, running_max_value))
+            running_value = validate_value(value)
+            running_max_value = max_value._as_py_()
+        else:
+            running_value = running_value * max_value._as_py_() + validate_value(value)
+            running_max_value *= max_value._as_py_()
+    if running_max_value > 1:
+        collapsed_values.append((running_value, running_max_value))
+
     result = _UInt32.zero()
-    for i, (value, steps) in enumerate(values):
+    for i, (value, steps) in enumerate(collapsed_values):
         if i == 0:
             result = _UInt32.of(value)
         else:
@@ -239,7 +339,7 @@ def _uint32_to_comparable_float(value: _UInt32) -> float:
     value = _UInt32._(value.hi, value.lo)
     if value < _HALF_MAX_TOTAL_STEPS_UINT32:
         sign = -1
-        value = _HALF_MAX_TOTAL_STEPS_UINT32 - value - _UInt32.one()
+        value = _HALF_MAX_TOTAL_STEPS_UINT32_MINUS_ONE - value
         hi = value.hi
         lo = value.lo
     else:

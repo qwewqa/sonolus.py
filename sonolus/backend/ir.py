@@ -48,6 +48,48 @@ def _create_raw_const(value: float | int) -> IRConst:
 _IR_CONST_CACHE = tuple(_create_raw_const(i) for i in range(_IR_CONST_CACHE_START, _IR_CONST_CACHE_STOP))
 
 
+def format_ir(instr, parenthesize: bool = True) -> str:
+    if not isinstance(instr, IRPureInstr | IRInstr):
+        return str(instr)
+
+    def apply_parentheses(s: str) -> str:
+        return f"({s})" if parenthesize else s
+
+    match instr.op:
+        case Op.Add:
+            return apply_parentheses(" + ".join(format_ir(arg, True) for arg in instr.args))
+        case Op.Subtract:
+            return apply_parentheses(" - ".join(format_ir(arg, True) for arg in instr.args))
+        case Op.Multiply:
+            return apply_parentheses(" * ".join(format_ir(arg, True) for arg in instr.args))
+        case Op.Divide:
+            return apply_parentheses(" / ".join(format_ir(arg, True) for arg in instr.args))
+        case Op.Negate:
+            return f"-{format_ir(instr.args[0], True)}"
+        case Op.Mod:
+            return apply_parentheses(" % ".join(format_ir(arg, True) for arg in instr.args))
+        case Op.And:
+            return apply_parentheses(" && ".join(format_ir(arg, True) for arg in instr.args))
+        case Op.Or:
+            return apply_parentheses(" || ".join(format_ir(arg, True) for arg in instr.args))
+        case Op.Not:
+            return f"!{format_ir(instr.args[0], True)}"
+        case Op.Equal:
+            return apply_parentheses(" == ".join(format_ir(arg, True) for arg in instr.args))
+        case Op.NotEqual:
+            return apply_parentheses(" != ".join(format_ir(arg, True) for arg in instr.args))
+        case Op.Less:
+            return apply_parentheses(" < ".join(format_ir(arg, True) for arg in instr.args))
+        case Op.LessOr:
+            return apply_parentheses(" <= ".join(format_ir(arg, True) for arg in instr.args))
+        case Op.Greater:
+            return apply_parentheses(" > ".join(format_ir(arg, True) for arg in instr.args))
+        case Op.GreaterOr:
+            return apply_parentheses(" >= ".join(format_ir(arg, True) for arg in instr.args))
+        case _:
+            return f"{instr.op.name}(" + ", ".join(format_ir(arg, False) for arg in instr.args) + ")"
+
+
 class IRPureInstr:
     __slots__ = ("args", "array_defs", "defs", "is_array_init", "live", "op", "uses", "visited")
 
@@ -63,7 +105,7 @@ class IRPureInstr:
         return f"IRPureInstr({self.op!r}, {self.args!r})"
 
     def __str__(self):
-        return f"{self.op.name}({', '.join(map(str, self.args))})"
+        return format_ir(self)
 
     def __eq__(self, other):
         return isinstance(other, IRPureInstr) and self.op == other.op and self.args == other.args
@@ -86,7 +128,7 @@ class IRInstr:
         return f"IRInstr({self.op!r}, {self.args!r})"
 
     def __str__(self):
-        return f"{self.op.name}({', '.join(map(str, self.args))})"
+        return format_ir(self)
 
     def __eq__(self, other):
         return isinstance(other, IRInstr) and self.op == other.op and self.args == other.args
@@ -132,9 +174,9 @@ class IRSet:
     def __str__(self):
         match self.place:
             case BlockPlace():
-                return f"{self.place} <- {self.value}"
+                return f"{self.place} <- {format_ir(self.value, False)}"
             case SSAPlace():
-                return f"{self.place} := {self.value}"
+                return f"{self.place} := {format_ir(self.value, False)}"
             case _:
                 raise TypeError(f"Invalid place: {self.place}")
 

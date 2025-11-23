@@ -166,13 +166,13 @@ def assert_false(value: int | float | bool, message: str | None = None):
 
 def static_assert(value: int | float | bool, message: str | None = None):
     message = message if message is not None else "Static assertion failed"
-    if not _is_static_true(value):
+    if not is_static_true(value):
         static_error(message)
 
 
 def try_static_assert(value: int | float | bool, message: str | None = None):
     message = message if message is not None else "Static assertion failed"
-    if _is_static_false(value):
+    if is_static_false(value):
         static_error(message)
     if not value:
         error(message)
@@ -241,7 +241,7 @@ def simulation_context() -> SimulationContext:
 
 
 @meta_fn
-def _is_static_true(value: int | float | bool) -> bool:
+def is_static_true(value: int | float | bool) -> bool:
     if ctx() is None:
         return bool(value)
     else:
@@ -250,7 +250,7 @@ def _is_static_true(value: int | float | bool) -> bool:
 
 
 @meta_fn
-def _is_static_false(value: int | float | bool) -> bool:
+def is_static_false(value: int | float | bool) -> bool:
     if ctx() is None:
         return not bool(value)
     else:

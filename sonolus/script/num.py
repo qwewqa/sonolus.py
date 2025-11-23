@@ -389,6 +389,48 @@ class _Num(Value, metaclass=_NumMeta):
         return self._bin_op(other, const_fn, Op.Power)
 
     @meta_fn
+    def __radd__(self, other) -> Self:
+        if not Num._accepts_(other):
+            return NotImplemented
+        return Num._accept_(other).__add__(self)
+
+    @meta_fn
+    def __rsub__(self, other) -> Self:
+        if not Num._accepts_(other):
+            return NotImplemented
+        return Num._accept_(other).__sub__(self)
+
+    @meta_fn
+    def __rmul__(self, other) -> Self:
+        if not Num._accepts_(other):
+            return NotImplemented
+        return Num._accept_(other).__mul__(self)
+
+    @meta_fn
+    def __rtruediv__(self, other) -> Self:
+        if not Num._accepts_(other):
+            return NotImplemented
+        return Num._accept_(other).__truediv__(self)
+
+    @meta_fn
+    def __rfloordiv__(self, other) -> Self:
+        if not Num._accepts_(other):
+            return NotImplemented
+        return Num._accept_(other).__floordiv__(self)
+
+    @meta_fn
+    def __rmod__(self, other) -> Self:
+        if not Num._accepts_(other):
+            return NotImplemented
+        return Num._accept_(other).__mod__(self)
+
+    @meta_fn
+    def __rpow__(self, other) -> Self:
+        if not Num._accepts_(other):
+            return NotImplemented
+        return Num._accept_(other).__pow__(self)
+
+    @meta_fn
     def __neg__(self) -> Self:
         return self._unary_op(operator.neg, Op.Negate)
 

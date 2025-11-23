@@ -1,3 +1,5 @@
+"""PYTEST_DONT_REWRITE"""  # noqa: D415
+
 import itertools
 import os
 import random
@@ -144,7 +146,8 @@ def run_and_validate[**P, R](
         try:
             cfg, rom_values = compile_fn(run_compiled_with_closure_from_rom if read_closure_from_rom else run_compiled)
         except CompilationError as e:
-            assert exception is not None
+            if exception is None:
+                raise
             while isinstance(e, CompilationError) and e.__cause__ is not None:
                 e = e.__cause__
             assert str(e) == str(exception)  # noqa: PT017

@@ -245,6 +245,32 @@ class NormalizeSwitch(CompilerPass):
         return offset, stride
 
 
+class FlattenAssociativeOps(CompilerPass):
+    FLATTENABLE_OPS = frozenset({Op.Add, Op.Multiply, Op.Mod, Op.Rem, Op.Min, Op.Max})
+
+    def run(self, entry: BasicBlock, config: OptimizerConfig) -> BasicBlock:
+        for block in traverse_cfg_preorder(entry):
+            block.statements = [self.flatten_statement(stmt) for stmt in block.statements]
+            block.test = self.flatten_statement(block.test)
+        return entry
+
+    def flatten_statement(self, stmt):
+        match stmt:
+            case IRPureInstr(op=op, args=args) if op in self.FLATTENABLE_OPS:
+                args = [self.flatten_statement(arg) for arg in args]
+                if args and isinstance(args[0], IRPureInstr) and args[0].op == op:
+                    args = [*args[0].args, *args[1:]]
+                return IRPureInstr(op=op, args=args)
+            case IRPureInstr(op=op, args=args):
+                return IRPureInstr(op=op, args=[self.flatten_statement(arg) for arg in args])
+            case IRInstr(op=op, args=args):
+                return IRInstr(op=op, args=[self.flatten_statement(arg) for arg in args])
+            case IRSet(place=place, value=value):
+                return IRSet(place=place, value=self.flatten_statement(value))
+            case _:
+                return stmt
+
+
 class RemoveRedundantArguments(CompilerPass):
     def run(self, entry: BasicBlock, config: OptimizerConfig) -> BasicBlock:
         for block in traverse_cfg_preorder(entry):

@@ -81,16 +81,16 @@
 28:
   goto 29
 29:
-  v4 <- Less(v3, RuntimeUpdate[3])
+  v4 <- v3 < RuntimeUpdate[3]
   goto 30
 30:
   goto 31 if v4 else 35
 31:
   v5 <- v2
-  v6 <- Multiply(v5, 15.0)
+  v6 <- v5 * 15.0
   v7 <- v6
   v8 <- v2
-  v9 <- Add(v8, 1.0)
+  v9 <- v8 + 1.0
   v2 <- v9
   goto 32
 32:
@@ -128,25 +128,25 @@
 46:
   goto 47
 47:
-  v13 <- Less(v11, v12)
+  v13 <- v11 < v12
   goto 48
 48:
   goto 49 if v13 else 54
 49:
   v14 <- LevelMemory[0]
-  v15 <- Negate(v14)
-  v16 <- GreaterOr(v11, v15)
-  v17 <- Less(v11, v14)
-  v18 <- And(v16, v17)
+  v15 <- -v14
+  v16 <- v11 >= v15
+  v17 <- v11 < v14
+  v18 <- v16 && v17
   v19 <- Trunc(v11)
-  v20 <- Equal(v19, v11)
-  v21 <- And(v18, v20)
-  v22 <- Less(v11, 0)
-  v23 <- Multiply(v22, v14)
-  v24 <- Add(v11, v23)
+  v20 <- v19 == v11
+  v21 <- v18 && v20
+  v22 <- v11 < 0
+  v23 <- v22 * v14
+  v24 <- v11 + v23
   v25 <- v24
   v26 <- LevelMemory[v25 + 1]
-  v27 <- Equal(v26, RuntimeTouchArray[v7])
+  v27 <- v26 == RuntimeTouchArray[v7]
   goto 50
 50:
   goto 51 if v27 else 52
@@ -156,7 +156,7 @@
 52:
   goto 53
 53:
-  v28 <- Add(v11, 1.0)
+  v28 <- v11 + 1.0
   v29 <- v28
   v11 <- v29
   goto 44
@@ -180,7 +180,7 @@
 62:
   goto 63
 63:
-  v31 <- Not(v30)
+  v31 <- !v30
   v32 <- v31
   goto 65
 64:
@@ -237,16 +237,16 @@
 86:
   goto 87
 87:
-  v38 <- Less(v37, LevelData[0])
+  v38 <- v37 < LevelData[0]
   goto 88
 88:
   goto 89 if v38 else 93
 89:
   v39 <- v36
-  v40 <- Multiply(v39, 9.0)
+  v40 <- v39 * 9.0
   v41 <- v40
   v42 <- v36
-  v43 <- Add(v42, 1.0)
+  v43 <- v42 + 1.0
   v36 <- v43
   goto 90
 90:
@@ -283,125 +283,125 @@
   v47 <- 3.0
   goto 100
 100:
-  v48 <- Less(v46, 4.0)
+  v48 <- v46 < 4.0
   goto 101
 101:
   goto 102 if v48 else 113
 102:
-  v49 <- GreaterOr(v46, -4.0)
-  v50 <- Less(v46, 4.0)
-  v51 <- And(v49, v50)
+  v49 <- v46 >= -4.0
+  v50 <- v46 < 4.0
+  v51 <- v49 && v50
   v52 <- Trunc(v46)
-  v53 <- Equal(v52, v46)
-  v54 <- And(v51, v53)
-  v55 <- Less(v46, 0)
-  v56 <- Multiply(v55, 4.0)
-  v57 <- Add(v46, v56)
-  v58 <- Multiply(v57, 2.0)
+  v53 <- v52 == v46
+  v54 <- v51 && v53
+  v55 <- v46 < 0
+  v56 <- v55 * 4.0
+  v57 <- v46 + v56
+  v58 <- v57 * 2.0
   v59 <- v58
   v60 <- a2[v59 + 1]
-  v61 <- Greater(v60, RuntimeTouchArray[v7 + 6])
+  v61 <- v60 > RuntimeTouchArray[v7 + 6]
   goto 103
 103:
-  v62 <- GreaterOr(v47, -4.0)
-  v63 <- Less(v47, 4.0)
-  v64 <- And(v62, v63)
+  v62 <- v47 >= -4.0
+  v63 <- v47 < 4.0
+  v64 <- v62 && v63
   v65 <- Trunc(v47)
-  v66 <- Equal(v65, v47)
-  v67 <- And(v64, v66)
-  v68 <- Less(v47, 0)
-  v69 <- Multiply(v68, 4.0)
-  v70 <- Add(v47, v69)
-  v71 <- Multiply(v70, 2.0)
+  v66 <- v65 == v47
+  v67 <- v64 && v66
+  v68 <- v47 < 0
+  v69 <- v68 * 4.0
+  v70 <- v47 + v69
+  v71 <- v70 * 2.0
   v72 <- v71
   v73 <- a2[v72 + 1]
-  v74 <- Greater(v73, RuntimeTouchArray[v7 + 6])
+  v74 <- v73 > RuntimeTouchArray[v7 + 6]
   goto 104
 104:
-  v75 <- NotEqual(v61, v74)
+  v75 <- v61 != v74
   goto 105
 105:
   goto 106 if v75 else 108
 106:
-  v76 <- GreaterOr(v47, -4.0)
-  v77 <- Less(v47, 4.0)
-  v78 <- And(v76, v77)
+  v76 <- v47 >= -4.0
+  v77 <- v47 < 4.0
+  v78 <- v76 && v77
   v79 <- Trunc(v47)
-  v80 <- Equal(v79, v47)
-  v81 <- And(v78, v80)
-  v82 <- Less(v47, 0)
-  v83 <- Multiply(v82, 4.0)
-  v84 <- Add(v47, v83)
-  v85 <- Multiply(v84, 2.0)
+  v80 <- v79 == v47
+  v81 <- v78 && v80
+  v82 <- v47 < 0
+  v83 <- v82 * 4.0
+  v84 <- v47 + v83
+  v85 <- v84 * 2.0
   v86 <- v85
   v87 <- a2[v86]
-  v88 <- GreaterOr(v46, -4.0)
-  v89 <- Less(v46, 4.0)
-  v90 <- And(v88, v89)
+  v88 <- v46 >= -4.0
+  v89 <- v46 < 4.0
+  v90 <- v88 && v89
   v91 <- Trunc(v46)
-  v92 <- Equal(v91, v46)
-  v93 <- And(v90, v92)
-  v94 <- Less(v46, 0)
-  v95 <- Multiply(v94, 4.0)
-  v96 <- Add(v46, v95)
-  v97 <- Multiply(v96, 2.0)
+  v92 <- v91 == v46
+  v93 <- v90 && v92
+  v94 <- v46 < 0
+  v95 <- v94 * 4.0
+  v96 <- v46 + v95
+  v97 <- v96 * 2.0
   v98 <- v97
   v99 <- a2[v98]
-  v100 <- Subtract(v87, v99)
-  v101 <- GreaterOr(v46, -4.0)
-  v102 <- Less(v46, 4.0)
-  v103 <- And(v101, v102)
+  v100 <- v87 - v99
+  v101 <- v46 >= -4.0
+  v102 <- v46 < 4.0
+  v103 <- v101 && v102
   v104 <- Trunc(v46)
-  v105 <- Equal(v104, v46)
-  v106 <- And(v103, v105)
-  v107 <- Less(v46, 0)
-  v108 <- Multiply(v107, 4.0)
-  v109 <- Add(v46, v108)
-  v110 <- Multiply(v109, 2.0)
+  v105 <- v104 == v46
+  v106 <- v103 && v105
+  v107 <- v46 < 0
+  v108 <- v107 * 4.0
+  v109 <- v46 + v108
+  v110 <- v109 * 2.0
   v111 <- v110
   v112 <- a2[v111 + 1]
-  v113 <- Subtract(RuntimeTouchArray[v7 + 6], v112)
-  v114 <- Multiply(v100, v113)
-  v115 <- GreaterOr(v47, -4.0)
-  v116 <- Less(v47, 4.0)
-  v117 <- And(v115, v116)
+  v113 <- RuntimeTouchArray[v7 + 6] - v112
+  v114 <- v100 * v113
+  v115 <- v47 >= -4.0
+  v116 <- v47 < 4.0
+  v117 <- v115 && v116
   v118 <- Trunc(v47)
-  v119 <- Equal(v118, v47)
-  v120 <- And(v117, v119)
-  v121 <- Less(v47, 0)
-  v122 <- Multiply(v121, 4.0)
-  v123 <- Add(v47, v122)
-  v124 <- Multiply(v123, 2.0)
+  v119 <- v118 == v47
+  v120 <- v117 && v119
+  v121 <- v47 < 0
+  v122 <- v121 * 4.0
+  v123 <- v47 + v122
+  v124 <- v123 * 2.0
   v125 <- v124
   v126 <- a2[v125 + 1]
-  v127 <- GreaterOr(v46, -4.0)
-  v128 <- Less(v46, 4.0)
-  v129 <- And(v127, v128)
+  v127 <- v46 >= -4.0
+  v128 <- v46 < 4.0
+  v129 <- v127 && v128
   v130 <- Trunc(v46)
-  v131 <- Equal(v130, v46)
-  v132 <- And(v129, v131)
-  v133 <- Less(v46, 0)
-  v134 <- Multiply(v133, 4.0)
-  v135 <- Add(v46, v134)
-  v136 <- Multiply(v135, 2.0)
+  v131 <- v130 == v46
+  v132 <- v129 && v131
+  v133 <- v46 < 0
+  v134 <- v133 * 4.0
+  v135 <- v46 + v134
+  v136 <- v135 * 2.0
   v137 <- v136
   v138 <- a2[v137 + 1]
-  v139 <- Subtract(v126, v138)
-  v140 <- Divide(v114, v139)
-  v141 <- GreaterOr(v46, -4.0)
-  v142 <- Less(v46, 4.0)
-  v143 <- And(v141, v142)
+  v139 <- v126 - v138
+  v140 <- v114 / v139
+  v141 <- v46 >= -4.0
+  v142 <- v46 < 4.0
+  v143 <- v141 && v142
   v144 <- Trunc(v46)
-  v145 <- Equal(v144, v46)
-  v146 <- And(v143, v145)
-  v147 <- Less(v46, 0)
-  v148 <- Multiply(v147, 4.0)
-  v149 <- Add(v46, v148)
-  v150 <- Multiply(v149, 2.0)
+  v145 <- v144 == v46
+  v146 <- v143 && v145
+  v147 <- v46 < 0
+  v148 <- v147 * 4.0
+  v149 <- v46 + v148
+  v150 <- v149 * 2.0
   v151 <- v150
   v152 <- a2[v151]
-  v153 <- Add(v140, v152)
-  v154 <- Less(RuntimeTouchArray[v7 + 5], v153)
+  v153 <- v140 + v152
+  v154 <- RuntimeTouchArray[v7 + 5] < v153
   goto 107
 107:
   v155 <- v154
@@ -412,14 +412,14 @@
 109:
   goto 110 if v155 else 111
 110:
-  v156 <- Not(v45)
+  v156 <- !v45
   v157 <- v156
   goto 112
 111:
   v157 <- v45
   goto 112
 112:
-  v158 <- Add(v46, 1.0)
+  v158 <- v46 + 1.0
   v159 <- v157
   v160 <- v158
   v161 <- v46
@@ -445,7 +445,7 @@
   goto 121
 121:
   v162 <- v1
-  v163 <- GreaterOr(v162, 16.0)
+  v163 <- v162 >= 16.0
   goto 122
 122:
   goto 123 if v163 else 124
@@ -467,25 +467,25 @@
 129:
   goto 130
 130:
-  v166 <- Less(v164, v165)
+  v166 <- v164 < v165
   goto 131
 131:
   goto 132 if v166 else 137
 132:
   v167 <- v1
-  v168 <- Negate(v167)
-  v169 <- GreaterOr(v164, v168)
-  v170 <- Less(v164, v167)
-  v171 <- And(v169, v170)
+  v168 <- -v167
+  v169 <- v164 >= v168
+  v170 <- v164 < v167
+  v171 <- v169 && v170
   v172 <- Trunc(v164)
-  v173 <- Equal(v172, v164)
-  v174 <- And(v171, v173)
-  v175 <- Less(v164, 0)
-  v176 <- Multiply(v175, v167)
-  v177 <- Add(v164, v176)
+  v173 <- v172 == v164
+  v174 <- v171 && v173
+  v175 <- v164 < 0
+  v176 <- v175 * v167
+  v177 <- v164 + v176
   v178 <- v177
   v179 <- a1[v178]
-  v180 <- Equal(v179, LevelData[v41 + 1])
+  v180 <- v179 == LevelData[v41 + 1]
   goto 133
 133:
   goto 134 if v180 else 135
@@ -495,7 +495,7 @@
 135:
   goto 136
 136:
-  v181 <- Add(v164, 1.0)
+  v181 <- v164 + 1.0
   v182 <- v181
   v164 <- v182
   goto 127
@@ -519,14 +519,14 @@
   goto 145
 145:
   v184 <- v1
-  v185 <- Less(v184, 16.0)
+  v185 <- v184 < 16.0
   goto 146
 146:
   v186 <- v1
   v187 <- v186
   a1[v187] <- LevelData[v41 + 1]
   v188 <- v1
-  v189 <- Add(v188, 1.0)
+  v189 <- v188 + 1.0
   v1 <- v189
   goto 147
 147:
@@ -543,7 +543,7 @@
 152:
   goto 153
 153:
-  v191 <- Not(LevelOption[7])
+  v191 <- !LevelOption[7]
   goto 154 if v191 else 155
 154:
   goto 188
@@ -574,14 +574,14 @@
   goto 163
 163:
   v201 <- v200
-  v202 <- Greater(v201, 0)
+  v202 <- v201 > 0
   goto 164
 164:
   goto 165 if v202 else 167
 165:
   v203 <- v198
   v204 <- v199
-  v205 <- Less(v203, v204)
+  v205 <- v203 < v204
   goto 166
 166:
   v209 <- v205
@@ -589,7 +589,7 @@
 167:
   v206 <- v198
   v207 <- v199
-  v208 <- Greater(v206, v207)
+  v208 <- v206 > v207
   goto 168
 168:
   v209 <- v208
@@ -600,7 +600,7 @@
   v210 <- v198
   v211 <- v198
   v212 <- v200
-  v213 <- Add(v211, v212)
+  v213 <- v211 + v212
   v198 <- v213
   goto 171
 171:
@@ -620,9 +620,9 @@
 177:
   goto 178 if v214 else 201
 178:
-  v215 <- Multiply(v210, 9.0)
+  v215 <- v210 * 9.0
   v216 <- v215
-  v217 <- Equal(LevelData[v216 + 1], LevelData[v41 + 1])
+  v217 <- LevelData[v216 + 1] == LevelData[v41 + 1]
   goto 179
 179:
   goto 180 if v217 else 199
@@ -649,7 +649,7 @@
 189:
   goto 190
 190:
-  v220 <- Not(LevelOption[10])
+  v220 <- !LevelOption[10]
   goto 191 if v220 else 192
 191:
   goto 197
@@ -700,7 +700,7 @@
 213:
   goto 214
 214:
-  v223 <- Greater(v222, 0)
+  v223 <- v222 > 0
   goto 215
 215:
   goto 216 if v223 else 217
@@ -709,52 +709,52 @@
   v225 <- v224
   v226 <- StreamSet(v225, RuntimeUpdate[0], v1)
   v227 <- v224
-  v228 <- Add(v227, 1.0)
+  v228 <- v227 + 1.0
   v229 <- StreamSet(v228, RuntimeUpdate[0], a1[0])
   v230 <- v224
-  v231 <- Add(v230, 2.0)
+  v231 <- v230 + 2.0
   v232 <- StreamSet(v231, RuntimeUpdate[0], a1[1])
   v233 <- v224
-  v234 <- Add(v233, 3.0)
+  v234 <- v233 + 3.0
   v235 <- StreamSet(v234, RuntimeUpdate[0], a1[2])
   v236 <- v224
-  v237 <- Add(v236, 4.0)
+  v237 <- v236 + 4.0
   v238 <- StreamSet(v237, RuntimeUpdate[0], a1[3])
   v239 <- v224
-  v240 <- Add(v239, 5.0)
+  v240 <- v239 + 5.0
   v241 <- StreamSet(v240, RuntimeUpdate[0], a1[4])
   v242 <- v224
-  v243 <- Add(v242, 6.0)
+  v243 <- v242 + 6.0
   v244 <- StreamSet(v243, RuntimeUpdate[0], a1[5])
   v245 <- v224
-  v246 <- Add(v245, 7.0)
+  v246 <- v245 + 7.0
   v247 <- StreamSet(v246, RuntimeUpdate[0], a1[6])
   v248 <- v224
-  v249 <- Add(v248, 8.0)
+  v249 <- v248 + 8.0
   v250 <- StreamSet(v249, RuntimeUpdate[0], a1[7])
   v251 <- v224
-  v252 <- Add(v251, 9.0)
+  v252 <- v251 + 9.0
   v253 <- StreamSet(v252, RuntimeUpdate[0], a1[8])
   v254 <- v224
-  v255 <- Add(v254, 10.0)
+  v255 <- v254 + 10.0
   v256 <- StreamSet(v255, RuntimeUpdate[0], a1[9])
   v257 <- v224
-  v258 <- Add(v257, 11.0)
+  v258 <- v257 + 11.0
   v259 <- StreamSet(v258, RuntimeUpdate[0], a1[10])
   v260 <- v224
-  v261 <- Add(v260, 12.0)
+  v261 <- v260 + 12.0
   v262 <- StreamSet(v261, RuntimeUpdate[0], a1[11])
   v263 <- v224
-  v264 <- Add(v263, 13.0)
+  v264 <- v263 + 13.0
   v265 <- StreamSet(v264, RuntimeUpdate[0], a1[12])
   v266 <- v224
-  v267 <- Add(v266, 14.0)
+  v267 <- v266 + 14.0
   v268 <- StreamSet(v267, RuntimeUpdate[0], a1[13])
   v269 <- v224
-  v270 <- Add(v269, 15.0)
+  v270 <- v269 + 15.0
   v271 <- StreamSet(v270, RuntimeUpdate[0], a1[14])
   v272 <- v224
-  v273 <- Add(v272, 16.0)
+  v273 <- v272 + 16.0
   v274 <- StreamSet(v273, RuntimeUpdate[0], a1[15])
   goto 218
 217:

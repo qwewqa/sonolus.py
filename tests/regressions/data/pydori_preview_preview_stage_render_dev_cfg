@@ -23,14 +23,14 @@
   goto 7
 7:
   v10 <- v9
-  v11 <- Greater(v10, 0)
+  v11 <- v10 > 0
   goto 8
 8:
   goto 9 if v11 else 11
 9:
   v12 <- v7
   v13 <- v8
-  v14 <- Less(v12, v13)
+  v14 <- v12 < v13
   goto 10
 10:
   v18 <- v14
@@ -38,7 +38,7 @@
 11:
   v15 <- v7
   v16 <- v8
-  v17 <- Greater(v15, v16)
+  v17 <- v15 > v16
   goto 12
 12:
   v18 <- v17
@@ -49,7 +49,7 @@
   v19 <- v7
   v20 <- v7
   v21 <- v9
-  v22 <- Add(v20, v21)
+  v22 <- v20 + v21
   v7 <- v22
   goto 15
 15:
@@ -75,20 +75,20 @@
 24:
   goto 25
 25:
-  v24 <- Add(v19, 0.5)
-  v25 <- Multiply(v24, PreviewData[1])
-  v26 <- Add(v25, -0.252)
-  v27 <- Negate(RuntimeEnvironment[1])
+  v24 <- v19 + 0.5
+  v25 <- v24 * PreviewData[1]
+  v26 <- v25 + -0.252
+  v27 <- -RuntimeEnvironment[1]
   goto 26
 26:
   v28 <- v27
-  v29 <- Subtract(RuntimeEnvironment[1], v28)
+  v29 <- RuntimeEnvironment[1] - v28
   goto 27
 27:
   goto 28
 28:
-  v30 <- Divide(v29, 2.0)
-  v31 <- Subtract(v26, v30)
+  v30 <- v29 / 2.0
+  v31 <- v26 - v30
   goto 29
 29:
   goto 30
@@ -97,25 +97,25 @@
 31:
   goto 32
 32:
-  v32 <- Subtract(v31, 0.018)
+  v32 <- v31 - 0.018
   goto 33
 33:
   goto 34
 34:
-  v33 <- Add(v19, 0.5)
-  v34 <- Multiply(v33, PreviewData[1])
-  v35 <- Add(v34, -0.252)
-  v36 <- Negate(RuntimeEnvironment[1])
+  v33 <- v19 + 0.5
+  v34 <- v33 * PreviewData[1]
+  v35 <- v34 + -0.252
+  v36 <- -RuntimeEnvironment[1]
   goto 35
 35:
   v37 <- v36
-  v38 <- Subtract(RuntimeEnvironment[1], v37)
+  v38 <- RuntimeEnvironment[1] - v37
   goto 36
 36:
   goto 37
 37:
-  v39 <- Divide(v38, 2.0)
-  v40 <- Subtract(v35, v39)
+  v39 <- v38 / 2.0
+  v40 <- v35 - v39
   goto 38
 38:
   goto 39
@@ -138,20 +138,20 @@
 45:
   goto 46
 46:
-  v45 <- Add(v19, 0.5)
-  v46 <- Multiply(v45, PreviewData[1])
-  v47 <- Add(v46, 0.252)
-  v48 <- Negate(RuntimeEnvironment[1])
+  v45 <- v19 + 0.5
+  v46 <- v45 * PreviewData[1]
+  v47 <- v46 + 0.252
+  v48 <- -RuntimeEnvironment[1]
   goto 47
 47:
   v49 <- v48
-  v50 <- Subtract(RuntimeEnvironment[1], v49)
+  v50 <- RuntimeEnvironment[1] - v49
   goto 48
 48:
   goto 49
 49:
-  v51 <- Divide(v50, 2.0)
-  v52 <- Subtract(v47, v51)
+  v51 <- v50 / 2.0
+  v52 <- v47 - v51
   goto 50
 50:
   goto 51
@@ -164,20 +164,20 @@
 54:
   goto 55
 55:
-  v53 <- Add(v19, 0.5)
-  v54 <- Multiply(v53, PreviewData[1])
-  v55 <- Add(v54, 0.252)
-  v56 <- Negate(RuntimeEnvironment[1])
+  v53 <- v19 + 0.5
+  v54 <- v53 * PreviewData[1]
+  v55 <- v54 + 0.252
+  v56 <- -RuntimeEnvironment[1]
   goto 56
 56:
   v57 <- v56
-  v58 <- Subtract(RuntimeEnvironment[1], v57)
+  v58 <- RuntimeEnvironment[1] - v57
   goto 57
 57:
   goto 58
 58:
-  v59 <- Divide(v58, 2.0)
-  v60 <- Subtract(v55, v59)
+  v59 <- v58 / 2.0
+  v60 <- v55 - v59
   goto 59
 59:
   goto 60
@@ -186,7 +186,7 @@
 61:
   goto 62
 62:
-  v61 <- Add(v60, 0.018)
+  v61 <- v60 + 0.018
   v62 <- 1.0
   v63 <- v61
   v64 <- -1.0
@@ -275,14 +275,14 @@
   goto 74
 74:
   v125 <- v124
-  v126 <- Greater(v125, 0)
+  v126 <- v125 > 0
   goto 75
 75:
   goto 76 if v126 else 78
 76:
   v127 <- v122
   v128 <- v123
-  v129 <- Less(v127, v128)
+  v129 <- v127 < v128
   goto 77
 77:
   v133 <- v129
@@ -290,7 +290,7 @@
 78:
   v130 <- v122
   v131 <- v123
-  v132 <- Greater(v130, v131)
+  v132 <- v130 > v131
   goto 79
 79:
   v133 <- v132
@@ -301,7 +301,7 @@
   v134 <- v122
   v135 <- v122
   v136 <- v124
-  v137 <- Add(v135, v136)
+  v137 <- v135 + v136
   v122 <- v137
   goto 82
 82:
@@ -341,14 +341,14 @@
   goto 94
 94:
   v148 <- v147
-  v149 <- Greater(v148, 0)
+  v149 <- v148 > 0
   goto 95
 95:
   goto 96 if v149 else 98
 96:
   v150 <- v145
   v151 <- v146
-  v152 <- Less(v150, v151)
+  v152 <- v150 < v151
   goto 97
 97:
   v156 <- v152
@@ -356,7 +356,7 @@
 98:
   v153 <- v145
   v154 <- v146
-  v155 <- Greater(v153, v154)
+  v155 <- v153 > v154
   goto 99
 99:
   v156 <- v155
@@ -367,7 +367,7 @@
   v157 <- v145
   v158 <- v145
   v159 <- v147
-  v160 <- Add(v158, v159)
+  v160 <- v158 + v159
   v145 <- v160
   goto 102
 102:
@@ -391,24 +391,24 @@
 110:
   goto 111
 111:
-  v162 <- Subtract(v157, 0.5)
+  v162 <- v157 - 0.5
   goto 112
 112:
-  v163 <- Add(v134, 0.5)
-  v164 <- Multiply(v163, PreviewData[1])
-  v165 <- Multiply(v162, 0.072)
-  v166 <- Add(v164, v165)
-  v167 <- Negate(RuntimeEnvironment[1])
+  v163 <- v134 + 0.5
+  v164 <- v163 * PreviewData[1]
+  v165 <- v162 * 0.072
+  v166 <- v164 + v165
+  v167 <- -RuntimeEnvironment[1]
   goto 113
 113:
   v168 <- v167
-  v169 <- Subtract(RuntimeEnvironment[1], v168)
+  v169 <- RuntimeEnvironment[1] - v168
   goto 114
 114:
   goto 115
 115:
-  v170 <- Divide(v169, 2.0)
-  v171 <- Subtract(v166, v170)
+  v170 <- v169 / 2.0
+  v171 <- v166 - v170
   goto 116
 116:
   goto 117
@@ -419,24 +419,24 @@
 119:
   goto 120
 120:
-  v172 <- Add(v157, 0.5)
+  v172 <- v157 + 0.5
   goto 121
 121:
-  v173 <- Add(v134, 0.5)
-  v174 <- Multiply(v173, PreviewData[1])
-  v175 <- Multiply(v172, 0.072)
-  v176 <- Add(v174, v175)
-  v177 <- Negate(RuntimeEnvironment[1])
+  v173 <- v134 + 0.5
+  v174 <- v173 * PreviewData[1]
+  v175 <- v172 * 0.072
+  v176 <- v174 + v175
+  v177 <- -RuntimeEnvironment[1]
   goto 122
 122:
   v178 <- v177
-  v179 <- Subtract(RuntimeEnvironment[1], v178)
+  v179 <- RuntimeEnvironment[1] - v178
   goto 123
 123:
   goto 124
 124:
-  v180 <- Divide(v179, 2.0)
-  v181 <- Subtract(v176, v180)
+  v180 <- v179 / 2.0
+  v181 <- v176 - v180
   goto 125
 125:
   goto 126
@@ -492,10 +492,10 @@
 136:
   goto 137
 137:
-  v211 <- Negate(RuntimeEnvironment[1])
+  v211 <- -RuntimeEnvironment[1]
   v212 <- v211
-  v213 <- Multiply(PreviewData[1], PreviewData[0])
-  v214 <- Add(v213, 1.0)
+  v213 <- PreviewData[1] * PreviewData[0]
+  v214 <- v213 + 1.0
   v215 <- -0.9
   v216 <- v214
   v217 <- -1.0
@@ -573,7 +573,7 @@
   goto 146
 146:
   v273 <- Floor(PreviewData[3])
-  v274 <- Add(v273, 1.0)
+  v274 <- v273 + 1.0
   v275 <- 0
   v276 <- v274
   v277 <- 1.0
@@ -594,14 +594,14 @@
   goto 151
 151:
   v284 <- v283
-  v285 <- Greater(v284, 0)
+  v285 <- v284 > 0
   goto 152
 152:
   goto 153 if v285 else 155
 153:
   v286 <- v281
   v287 <- v282
-  v288 <- Less(v286, v287)
+  v288 <- v286 < v287
   goto 154
 154:
   v292 <- v288
@@ -609,7 +609,7 @@
 155:
   v289 <- v281
   v290 <- v282
-  v291 <- Greater(v289, v290)
+  v291 <- v289 > v290
   goto 156
 156:
   v292 <- v291
@@ -620,7 +620,7 @@
   v293 <- v281
   v294 <- v281
   v295 <- v283
-  v296 <- Add(v294, v295)
+  v296 <- v294 + v295
   v281 <- v296
   goto 159
 159:
@@ -646,7 +646,7 @@
 168:
   goto 169
 169:
-  v298 <- Divide(v293, 2.0)
+  v298 <- v293 / 2.0
   v299 <- Trunc(v298)
   goto 170
 170:
@@ -654,31 +654,31 @@
 171:
   goto 172
 172:
-  v300 <- Add(v299, 0.5)
-  v301 <- Multiply(v300, PreviewData[1])
-  v302 <- Add(v301, -0.252)
-  v303 <- Negate(RuntimeEnvironment[1])
+  v300 <- v299 + 0.5
+  v301 <- v300 * PreviewData[1]
+  v302 <- v301 + -0.252
+  v303 <- -RuntimeEnvironment[1]
   goto 173
 173:
   v304 <- v303
-  v305 <- Subtract(RuntimeEnvironment[1], v304)
+  v305 <- RuntimeEnvironment[1] - v304
   goto 174
 174:
   goto 175
 175:
-  v306 <- Divide(v305, 2.0)
-  v307 <- Subtract(v302, v306)
+  v306 <- v305 / 2.0
+  v307 <- v302 - v306
   goto 176
 176:
   goto 177
 177:
   goto 178
 178:
-  v308 <- Add(v307, -0.015)
+  v308 <- v307 + -0.015
   goto 179
 179:
-  v309 <- Mod(v293, 2.0)
-  v310 <- Divide(v309, 2.0)
+  v309 <- v293 % 2.0
+  v310 <- v309 / 2.0
   v311 <- Lerp(-0.9, 0.9, v310)
   goto 180
 180:
@@ -715,7 +715,7 @@
 189:
   goto 190
 190:
-  v325 <- Divide(v293, 2.0)
+  v325 <- v293 / 2.0
   v326 <- Trunc(v325)
   goto 191
 191:
@@ -723,66 +723,66 @@
 192:
   goto 193
 193:
-  v327 <- Add(v326, 0.5)
-  v328 <- Multiply(v327, PreviewData[1])
-  v329 <- Add(v328, -0.252)
-  v330 <- Negate(RuntimeEnvironment[1])
+  v327 <- v326 + 0.5
+  v328 <- v327 * PreviewData[1]
+  v329 <- v328 + -0.252
+  v330 <- -RuntimeEnvironment[1]
   goto 194
 194:
   v331 <- v330
-  v332 <- Subtract(RuntimeEnvironment[1], v331)
+  v332 <- RuntimeEnvironment[1] - v331
   goto 195
 195:
   goto 196
 196:
-  v333 <- Divide(v332, 2.0)
-  v334 <- Subtract(v329, v333)
+  v333 <- v332 / 2.0
+  v334 <- v329 - v333
   goto 197
 197:
   goto 198
 198:
   goto 199
 199:
-  v335 <- Add(v326, 0.5)
-  v336 <- Multiply(v335, PreviewData[1])
-  v337 <- Add(v336, 0.252)
-  v338 <- Negate(RuntimeEnvironment[1])
+  v335 <- v326 + 0.5
+  v336 <- v335 * PreviewData[1]
+  v337 <- v336 + 0.252
+  v338 <- -RuntimeEnvironment[1]
   goto 200
 200:
   v339 <- v338
-  v340 <- Subtract(RuntimeEnvironment[1], v339)
+  v340 <- RuntimeEnvironment[1] - v339
   goto 201
 201:
   goto 202
 202:
-  v341 <- Divide(v340, 2.0)
-  v342 <- Subtract(v337, v341)
+  v341 <- v340 / 2.0
+  v342 <- v337 - v341
   goto 203
 203:
   goto 204
 204:
-  v343 <- Subtract(v334, 0.21599999999999997)
+  v343 <- v334 - 0.21599999999999997
   goto 205
 205:
   goto 206
 206:
-  v344 <- Mod(v293, 2.0)
-  v345 <- Divide(v344, 2.0)
+  v344 <- v293 % 2.0
+  v345 <- v344 / 2.0
   v346 <- Lerp(-0.9, 0.9, v345)
   goto 207
 207:
   goto 208
 208:
-  v347 <- Subtract(v346, 0.0018)
+  v347 <- v346 - 0.0018
   v348 <- v343
   v349 <- v347
-  v350 <- Subtract(v346, 0.0018)
+  v350 <- v346 - 0.0018
   v351 <- v334
   v352 <- v350
-  v353 <- Add(v346, 0.0018)
+  v353 <- v346 + 0.0018
   v354 <- v334
   v355 <- v353
-  v356 <- Add(v346, 0.0018)
+  v356 <- v346 + 0.0018
   v357 <- v343
   v358 <- v356
   goto 209

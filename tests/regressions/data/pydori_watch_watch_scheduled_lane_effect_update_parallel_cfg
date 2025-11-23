@@ -1,12 +1,12 @@
 0:
   goto 1
 1:
-  v1 <- Subtract(RuntimeUpdate[0], RuntimeUpdate[1])
+  v1 <- RuntimeUpdate[0] - RuntimeUpdate[1]
   v2 <- EntityMemory[0]
-  v3 <- Less(v1, v2)
+  v3 <- v1 < v2
   goto 2 if v3 else 3
 2:
-  v4 <- LessOr(v2, RuntimeUpdate[0])
+  v4 <- v2 <= RuntimeUpdate[0]
   v5 <- v4
   goto 4
 3:
@@ -18,7 +18,7 @@
   v6 <- EntityMemory[1]
   goto 6
 6:
-  v7 <- Not(LevelOption[7])
+  v7 <- !LevelOption[7]
   goto 7 if v7 else 8
 7:
   goto 41
@@ -49,14 +49,14 @@
   goto 16
 16:
   v17 <- v16
-  v18 <- Greater(v17, 0)
+  v18 <- v17 > 0
   goto 17
 17:
   goto 18 if v18 else 20
 18:
   v19 <- v14
   v20 <- v15
-  v21 <- Less(v19, v20)
+  v21 <- v19 < v20
   goto 19
 19:
   v25 <- v21
@@ -64,7 +64,7 @@
 20:
   v22 <- v14
   v23 <- v15
-  v24 <- Greater(v22, v23)
+  v24 <- v22 > v23
   goto 21
 21:
   v25 <- v24
@@ -75,7 +75,7 @@
   v26 <- v14
   v27 <- v14
   v28 <- v16
-  v29 <- Add(v27, v28)
+  v29 <- v27 + v28
   v14 <- v29
   goto 24
 24:
@@ -95,9 +95,9 @@
 30:
   goto 31 if v30 else 45
 31:
-  v31 <- Multiply(v26, 9.0)
+  v31 <- v26 * 9.0
   v32 <- v31
-  v33 <- Equal(LevelData[v32 + 1], v6)
+  v33 <- LevelData[v32 + 1] == v6
   goto 32
 32:
   goto 33 if v33 else 43

@@ -5,29 +5,29 @@
 2:
   goto 3
 3:
-  v1 <- GreaterOr(EntityData[0], 0)
+  v1 <- EntityData[0] >= 0
   goto 4
 4:
   goto 5 if v1 else 363
 5:
-  v4 <- Multiply(EntityData[0], 2.0)
+  v4 <- EntityData[0] * 2.0
   v5 <- v4
-  v6 <- GreaterOr(EntityInfoArray[v5 + 1], -13.0)
-  v7 <- Less(EntityInfoArray[v5 + 1], 13.0)
-  v8 <- And(v6, v7)
+  v6 <- EntityInfoArray[v5 + 1] >= -13.0
+  v7 <- EntityInfoArray[v5 + 1] < 13.0
+  v8 <- v6 && v7
   v9 <- Trunc(EntityInfoArray[v5 + 1])
-  v10 <- Equal(v9, EntityInfoArray[v5 + 1])
-  v11 <- And(v8, v10)
+  v10 <- v9 == EntityInfoArray[v5 + 1]
+  v11 <- v8 && v10
   goto 6 if v11 else 362
 6:
-  v14 <- Less(EntityInfoArray[v5 + 1], 0)
-  v15 <- Multiply(v14, 13.0)
-  v16 <- Add(EntityInfoArray[v5 + 1], v15)
-  v17 <- Add(36.0, v16)
+  v14 <- EntityInfoArray[v5 + 1] < 0
+  v15 <- v14 * 13.0
+  v16 <- EntityInfoArray[v5 + 1] + v15
+  v17 <- 36.0 + v16
   v18 <- v17
   v19 <- EngineRom[v18]
   v20 <- v19
-  v21 <- Add(v19, 1.0)
+  v21 <- v19 + 1.0
   v22 <- EngineRom[v20]
   v23 <- 3000.0
   v24 <- v21
@@ -43,18 +43,18 @@
 10:
   goto 11
 11:
-  v27 <- Less(v25, v26)
+  v27 <- v25 < v26
   goto 12
 12:
   goto 13 if v27 else 18
 13:
   v28 <- v23
   v29 <- v24
-  v30 <- Add(v29, v25)
+  v30 <- v29 + v25
   v31 <- v28
   v32 <- v30
   v33 <- v31[v32]
-  v34 <- Equal(v33, 12.0)
+  v34 <- v33 == 12.0
   goto 14
 14:
   goto 15 if v34 else 16
@@ -64,7 +64,7 @@
 16:
   goto 17
 17:
-  v35 <- Add(v25, 1.0)
+  v35 <- v25 + 1.0
   v36 <- v35
   v25 <- v36
   goto 8
@@ -88,12 +88,12 @@
 26:
   goto 27
 27:
-  v40 <- Multiply(EntityData[0], 32.0)
-  v41 <- Add(3.0, v40)
+  v40 <- EntityData[0] * 32.0
+  v41 <- 3.0 + v40
   v42 <- v41
   goto 28
 28:
-  v43 <- Divide(EntityDataArray[v42], 2.0)
+  v43 <- EntityDataArray[v42] / 2.0
   v44 <- Trunc(v43)
   goto 29
 29:
@@ -103,29 +103,29 @@
 31:
   goto 32
 32:
-  v45 <- GreaterOr(EntityData[1], 0)
+  v45 <- EntityData[1] >= 0
   goto 33
 33:
   goto 34 if v45 else 360
 34:
-  v48 <- Multiply(EntityData[1], 2.0)
+  v48 <- EntityData[1] * 2.0
   v49 <- v48
-  v50 <- GreaterOr(EntityInfoArray[v49 + 1], -13.0)
-  v51 <- Less(EntityInfoArray[v49 + 1], 13.0)
-  v52 <- And(v50, v51)
+  v50 <- EntityInfoArray[v49 + 1] >= -13.0
+  v51 <- EntityInfoArray[v49 + 1] < 13.0
+  v52 <- v50 && v51
   v53 <- Trunc(EntityInfoArray[v49 + 1])
-  v54 <- Equal(v53, EntityInfoArray[v49 + 1])
-  v55 <- And(v52, v54)
+  v54 <- v53 == EntityInfoArray[v49 + 1]
+  v55 <- v52 && v54
   goto 35 if v55 else 359
 35:
-  v58 <- Less(EntityInfoArray[v49 + 1], 0)
-  v59 <- Multiply(v58, 13.0)
-  v60 <- Add(EntityInfoArray[v49 + 1], v59)
-  v61 <- Add(36.0, v60)
+  v58 <- EntityInfoArray[v49 + 1] < 0
+  v59 <- v58 * 13.0
+  v60 <- EntityInfoArray[v49 + 1] + v59
+  v61 <- 36.0 + v60
   v62 <- v61
   v63 <- EngineRom[v62]
   v64 <- v63
-  v65 <- Add(v63, 1.0)
+  v65 <- v63 + 1.0
   v66 <- EngineRom[v64]
   v67 <- 3000.0
   v68 <- v65
@@ -141,18 +141,18 @@
 39:
   goto 40
 40:
-  v71 <- Less(v69, v70)
+  v71 <- v69 < v70
   goto 41
 41:
   goto 42 if v71 else 47
 42:
   v72 <- v67
   v73 <- v68
-  v74 <- Add(v73, v69)
+  v74 <- v73 + v69
   v75 <- v72
   v76 <- v74
   v77 <- v75[v76]
-  v78 <- Equal(v77, 12.0)
+  v78 <- v77 == 12.0
   goto 43
 43:
   goto 44 if v78 else 45
@@ -162,7 +162,7 @@
 45:
   goto 46
 46:
-  v79 <- Add(v69, 1.0)
+  v79 <- v69 + 1.0
   v80 <- v79
   v69 <- v80
   goto 37
@@ -186,18 +186,18 @@
 55:
   goto 56
 56:
-  v84 <- Multiply(EntityData[1], 32.0)
-  v85 <- Add(3.0, v84)
+  v84 <- EntityData[1] * 32.0
+  v85 <- 3.0 + v84
   v86 <- v85
   goto 57
 57:
-  v87 <- Divide(EntityDataArray[v86], 2.0)
+  v87 <- EntityDataArray[v86] / 2.0
   v88 <- Trunc(v87)
   goto 58
 58:
   goto 59
 59:
-  v89 <- Add(v88, 1.0)
+  v89 <- v88 + 1.0
   v90 <- v44
   v91 <- v89
   v92 <- 1.0
@@ -218,14 +218,14 @@
   goto 64
 64:
   v99 <- v98
-  v100 <- Greater(v99, 0)
+  v100 <- v99 > 0
   goto 65
 65:
   goto 66 if v100 else 68
 66:
   v101 <- v96
   v102 <- v97
-  v103 <- Less(v101, v102)
+  v103 <- v101 < v102
   goto 67
 67:
   v107 <- v103
@@ -233,7 +233,7 @@
 68:
   v104 <- v96
   v105 <- v97
-  v106 <- Greater(v104, v105)
+  v106 <- v104 > v105
   goto 69
 69:
   v107 <- v106
@@ -244,7 +244,7 @@
   v108 <- v96
   v109 <- v96
   v110 <- v98
-  v111 <- Add(v109, v110)
+  v111 <- v109 + v110
   v96 <- v111
   goto 72
 72:
@@ -268,29 +268,29 @@
 80:
   goto 81
 81:
-  v113 <- GreaterOr(EntityData[0], 0)
+  v113 <- EntityData[0] >= 0
   goto 82
 82:
   goto 83 if v113 else 353
 83:
-  v116 <- Multiply(EntityData[0], 2.0)
+  v116 <- EntityData[0] * 2.0
   v117 <- v116
-  v118 <- GreaterOr(EntityInfoArray[v117 + 1], -13.0)
-  v119 <- Less(EntityInfoArray[v117 + 1], 13.0)
-  v120 <- And(v118, v119)
+  v118 <- EntityInfoArray[v117 + 1] >= -13.0
+  v119 <- EntityInfoArray[v117 + 1] < 13.0
+  v120 <- v118 && v119
   v121 <- Trunc(EntityInfoArray[v117 + 1])
-  v122 <- Equal(v121, EntityInfoArray[v117 + 1])
-  v123 <- And(v120, v122)
+  v122 <- v121 == EntityInfoArray[v117 + 1]
+  v123 <- v120 && v122
   goto 84 if v123 else 352
 84:
-  v126 <- Less(EntityInfoArray[v117 + 1], 0)
-  v127 <- Multiply(v126, 13.0)
-  v128 <- Add(EntityInfoArray[v117 + 1], v127)
-  v129 <- Add(36.0, v128)
+  v126 <- EntityInfoArray[v117 + 1] < 0
+  v127 <- v126 * 13.0
+  v128 <- EntityInfoArray[v117 + 1] + v127
+  v129 <- 36.0 + v128
   v130 <- v129
   v131 <- EngineRom[v130]
   v132 <- v131
-  v133 <- Add(v131, 1.0)
+  v133 <- v131 + 1.0
   v134 <- EngineRom[v132]
   v135 <- 3000.0
   v136 <- v133
@@ -306,18 +306,18 @@
 88:
   goto 89
 89:
-  v139 <- Less(v137, v138)
+  v139 <- v137 < v138
   goto 90
 90:
   goto 91 if v139 else 96
 91:
   v140 <- v135
   v141 <- v136
-  v142 <- Add(v141, v137)
+  v142 <- v141 + v137
   v143 <- v140
   v144 <- v142
   v145 <- v143[v144]
-  v146 <- Equal(v145, 12.0)
+  v146 <- v145 == 12.0
   goto 92
 92:
   goto 93 if v146 else 94
@@ -327,7 +327,7 @@
 94:
   goto 95
 95:
-  v147 <- Add(v137, 1.0)
+  v147 <- v137 + 1.0
   v148 <- v147
   v137 <- v148
   goto 86
@@ -351,35 +351,35 @@
 104:
   goto 105
 105:
-  v152 <- Multiply(EntityData[0], 32.0)
+  v152 <- EntityData[0] * 32.0
   v153 <- v152
   goto 106
 106:
   goto 107
 107:
-  v154 <- GreaterOr(EntityData[1], 0)
+  v154 <- EntityData[1] >= 0
   goto 108
 108:
   goto 109 if v154 else 350
 109:
-  v157 <- Multiply(EntityData[1], 2.0)
+  v157 <- EntityData[1] * 2.0
   v158 <- v157
-  v159 <- GreaterOr(EntityInfoArray[v158 + 1], -13.0)
-  v160 <- Less(EntityInfoArray[v158 + 1], 13.0)
-  v161 <- And(v159, v160)
+  v159 <- EntityInfoArray[v158 + 1] >= -13.0
+  v160 <- EntityInfoArray[v158 + 1] < 13.0
+  v161 <- v159 && v160
   v162 <- Trunc(EntityInfoArray[v158 + 1])
-  v163 <- Equal(v162, EntityInfoArray[v158 + 1])
-  v164 <- And(v161, v163)
+  v163 <- v162 == EntityInfoArray[v158 + 1]
+  v164 <- v161 && v163
   goto 110 if v164 else 349
 110:
-  v167 <- Less(EntityInfoArray[v158 + 1], 0)
-  v168 <- Multiply(v167, 13.0)
-  v169 <- Add(EntityInfoArray[v158 + 1], v168)
-  v170 <- Add(36.0, v169)
+  v167 <- EntityInfoArray[v158 + 1] < 0
+  v168 <- v167 * 13.0
+  v169 <- EntityInfoArray[v158 + 1] + v168
+  v170 <- 36.0 + v169
   v171 <- v170
   v172 <- EngineRom[v171]
   v173 <- v172
-  v174 <- Add(v172, 1.0)
+  v174 <- v172 + 1.0
   v175 <- EngineRom[v173]
   v176 <- 3000.0
   v177 <- v174
@@ -395,18 +395,18 @@
 114:
   goto 115
 115:
-  v180 <- Less(v178, v179)
+  v180 <- v178 < v179
   goto 116
 116:
   goto 117 if v180 else 122
 117:
   v181 <- v176
   v182 <- v177
-  v183 <- Add(v182, v178)
+  v183 <- v182 + v178
   v184 <- v181
   v185 <- v183
   v186 <- v184[v185]
-  v187 <- Equal(v186, 12.0)
+  v187 <- v186 == 12.0
   goto 118
 118:
   goto 119 if v187 else 120
@@ -416,7 +416,7 @@
 120:
   goto 121
 121:
-  v188 <- Add(v178, 1.0)
+  v188 <- v178 + 1.0
   v189 <- v188
   v178 <- v189
   goto 112
@@ -440,35 +440,35 @@
 130:
   goto 131
 131:
-  v193 <- Multiply(EntityData[1], 32.0)
+  v193 <- EntityData[1] * 32.0
   v194 <- v193
   goto 132
 132:
   goto 133
 133:
-  v195 <- GreaterOr(EntityData[0], 0)
+  v195 <- EntityData[0] >= 0
   goto 134
 134:
   goto 135 if v195 else 347
 135:
-  v198 <- Multiply(EntityData[0], 2.0)
+  v198 <- EntityData[0] * 2.0
   v199 <- v198
-  v200 <- GreaterOr(EntityInfoArray[v199 + 1], -13.0)
-  v201 <- Less(EntityInfoArray[v199 + 1], 13.0)
-  v202 <- And(v200, v201)
+  v200 <- EntityInfoArray[v199 + 1] >= -13.0
+  v201 <- EntityInfoArray[v199 + 1] < 13.0
+  v202 <- v200 && v201
   v203 <- Trunc(EntityInfoArray[v199 + 1])
-  v204 <- Equal(v203, EntityInfoArray[v199 + 1])
-  v205 <- And(v202, v204)
+  v204 <- v203 == EntityInfoArray[v199 + 1]
+  v205 <- v202 && v204
   goto 136 if v205 else 346
 136:
-  v208 <- Less(EntityInfoArray[v199 + 1], 0)
-  v209 <- Multiply(v208, 13.0)
-  v210 <- Add(EntityInfoArray[v199 + 1], v209)
-  v211 <- Add(36.0, v210)
+  v208 <- EntityInfoArray[v199 + 1] < 0
+  v209 <- v208 * 13.0
+  v210 <- EntityInfoArray[v199 + 1] + v209
+  v211 <- 36.0 + v210
   v212 <- v211
   v213 <- EngineRom[v212]
   v214 <- v213
-  v215 <- Add(v213, 1.0)
+  v215 <- v213 + 1.0
   v216 <- EngineRom[v214]
   v217 <- 3000.0
   v218 <- v215
@@ -484,18 +484,18 @@
 140:
   goto 141
 141:
-  v221 <- Less(v219, v220)
+  v221 <- v219 < v220
   goto 142
 142:
   goto 143 if v221 else 148
 143:
   v222 <- v217
   v223 <- v218
-  v224 <- Add(v223, v219)
+  v224 <- v223 + v219
   v225 <- v222
   v226 <- v224
   v227 <- v225[v226]
-  v228 <- Equal(v227, 12.0)
+  v228 <- v227 == 12.0
   goto 144
 144:
   goto 145 if v228 else 146
@@ -505,7 +505,7 @@
 146:
   goto 147
 147:
-  v229 <- Add(v219, 1.0)
+  v229 <- v219 + 1.0
   v230 <- v229
   v219 <- v230
   goto 138
@@ -529,36 +529,36 @@
 156:
   goto 157
 157:
-  v234 <- Multiply(EntityData[0], 32.0)
-  v235 <- Add(3.0, v234)
+  v234 <- EntityData[0] * 32.0
+  v235 <- 3.0 + v234
   v236 <- v235
   goto 158
 158:
   goto 159
 159:
-  v237 <- GreaterOr(EntityData[1], 0)
+  v237 <- EntityData[1] >= 0
   goto 160
 160:
   goto 161 if v237 else 344
 161:
-  v240 <- Multiply(EntityData[1], 2.0)
+  v240 <- EntityData[1] * 2.0
   v241 <- v240
-  v242 <- GreaterOr(EntityInfoArray[v241 + 1], -13.0)
-  v243 <- Less(EntityInfoArray[v241 + 1], 13.0)
-  v244 <- And(v242, v243)
+  v242 <- EntityInfoArray[v241 + 1] >= -13.0
+  v243 <- EntityInfoArray[v241 + 1] < 13.0
+  v244 <- v242 && v243
   v245 <- Trunc(EntityInfoArray[v241 + 1])
-  v246 <- Equal(v245, EntityInfoArray[v241 + 1])
-  v247 <- And(v244, v246)
+  v246 <- v245 == EntityInfoArray[v241 + 1]
+  v247 <- v244 && v246
   goto 162 if v247 else 343
 162:
-  v250 <- Less(EntityInfoArray[v241 + 1], 0)
-  v251 <- Multiply(v250, 13.0)
-  v252 <- Add(EntityInfoArray[v241 + 1], v251)
-  v253 <- Add(36.0, v252)
+  v250 <- EntityInfoArray[v241 + 1] < 0
+  v251 <- v250 * 13.0
+  v252 <- EntityInfoArray[v241 + 1] + v251
+  v253 <- 36.0 + v252
   v254 <- v253
   v255 <- EngineRom[v254]
   v256 <- v255
-  v257 <- Add(v255, 1.0)
+  v257 <- v255 + 1.0
   v258 <- EngineRom[v256]
   v259 <- 3000.0
   v260 <- v257
@@ -574,18 +574,18 @@
 166:
   goto 167
 167:
-  v263 <- Less(v261, v262)
+  v263 <- v261 < v262
   goto 168
 168:
   goto 169 if v263 else 174
 169:
   v264 <- v259
   v265 <- v260
-  v266 <- Add(v265, v261)
+  v266 <- v265 + v261
   v267 <- v264
   v268 <- v266
   v269 <- v267[v268]
-  v270 <- Equal(v269, 12.0)
+  v270 <- v269 == 12.0
   goto 170
 170:
   goto 171 if v270 else 172
@@ -595,7 +595,7 @@
 172:
   goto 173
 173:
-  v271 <- Add(v261, 1.0)
+  v271 <- v261 + 1.0
   v272 <- v271
   v261 <- v272
   goto 164
@@ -619,32 +619,32 @@
 182:
   goto 183
 183:
-  v276 <- Multiply(EntityData[1], 32.0)
-  v277 <- Add(3.0, v276)
+  v276 <- EntityData[1] * 32.0
+  v277 <- 3.0 + v276
   v278 <- v277
   goto 184
 184:
-  v279 <- Multiply(v108, 2.0)
+  v279 <- v108 * 2.0
   goto 185
 185:
-  v280 <- Subtract(EntityDataArray[v153], 0.5)
+  v280 <- EntityDataArray[v153] - 0.5
   goto 186
 186:
-  v281 <- Add(v108, 0.5)
-  v282 <- Multiply(v281, PreviewData[1])
-  v283 <- Multiply(v280, 0.072)
-  v284 <- Add(v282, v283)
-  v285 <- Negate(RuntimeEnvironment[1])
+  v281 <- v108 + 0.5
+  v282 <- v281 * PreviewData[1]
+  v283 <- v280 * 0.072
+  v284 <- v282 + v283
+  v285 <- -RuntimeEnvironment[1]
   goto 187
 187:
   v286 <- v285
-  v287 <- Subtract(RuntimeEnvironment[1], v286)
+  v287 <- RuntimeEnvironment[1] - v286
   goto 188
 188:
   goto 189
 189:
-  v288 <- Divide(v287, 2.0)
-  v289 <- Subtract(v284, v288)
+  v288 <- v287 / 2.0
+  v289 <- v284 - v288
   goto 190
 190:
   goto 191
@@ -655,24 +655,24 @@
 193:
   goto 194
 194:
-  v290 <- Add(EntityDataArray[v153], 0.5)
+  v290 <- EntityDataArray[v153] + 0.5
   goto 195
 195:
-  v291 <- Add(v108, 0.5)
-  v292 <- Multiply(v291, PreviewData[1])
-  v293 <- Multiply(v290, 0.072)
-  v294 <- Add(v292, v293)
-  v295 <- Negate(RuntimeEnvironment[1])
+  v291 <- v108 + 0.5
+  v292 <- v291 * PreviewData[1]
+  v293 <- v290 * 0.072
+  v294 <- v292 + v293
+  v295 <- -RuntimeEnvironment[1]
   goto 196
 196:
   v296 <- v295
-  v297 <- Subtract(RuntimeEnvironment[1], v296)
+  v297 <- RuntimeEnvironment[1] - v296
   goto 197
 197:
   goto 198
 198:
-  v298 <- Divide(v297, 2.0)
-  v299 <- Subtract(v294, v298)
+  v298 <- v297 / 2.0
+  v299 <- v294 - v298
   goto 199
 199:
   goto 200
@@ -683,24 +683,24 @@
 202:
   goto 203
 203:
-  v300 <- Subtract(EntityDataArray[v194], 0.5)
+  v300 <- EntityDataArray[v194] - 0.5
   goto 204
 204:
-  v301 <- Add(v108, 0.5)
-  v302 <- Multiply(v301, PreviewData[1])
-  v303 <- Multiply(v300, 0.072)
-  v304 <- Add(v302, v303)
-  v305 <- Negate(RuntimeEnvironment[1])
+  v301 <- v108 + 0.5
+  v302 <- v301 * PreviewData[1]
+  v303 <- v300 * 0.072
+  v304 <- v302 + v303
+  v305 <- -RuntimeEnvironment[1]
   goto 205
 205:
   v306 <- v305
-  v307 <- Subtract(RuntimeEnvironment[1], v306)
+  v307 <- RuntimeEnvironment[1] - v306
   goto 206
 206:
   goto 207
 207:
-  v308 <- Divide(v307, 2.0)
-  v309 <- Subtract(v304, v308)
+  v308 <- v307 / 2.0
+  v309 <- v304 - v308
   goto 208
 208:
   goto 209
@@ -711,24 +711,24 @@
 211:
   goto 212
 212:
-  v310 <- Add(EntityDataArray[v194], 0.5)
+  v310 <- EntityDataArray[v194] + 0.5
   goto 213
 213:
-  v311 <- Add(v108, 0.5)
-  v312 <- Multiply(v311, PreviewData[1])
-  v313 <- Multiply(v310, 0.072)
-  v314 <- Add(v312, v313)
-  v315 <- Negate(RuntimeEnvironment[1])
+  v311 <- v108 + 0.5
+  v312 <- v311 * PreviewData[1]
+  v313 <- v310 * 0.072
+  v314 <- v312 + v313
+  v315 <- -RuntimeEnvironment[1]
   goto 214
 214:
   v316 <- v315
-  v317 <- Subtract(RuntimeEnvironment[1], v316)
+  v317 <- RuntimeEnvironment[1] - v316
   goto 215
 215:
   goto 216
 216:
-  v318 <- Divide(v317, 2.0)
-  v319 <- Subtract(v314, v318)
+  v318 <- v317 / 2.0
+  v319 <- v314 - v318
   goto 217
 217:
   goto 218
@@ -737,11 +737,11 @@
 219:
   goto 220
 220:
-  v320 <- Subtract(EntityDataArray[v236], v279)
-  v321 <- Divide(v320, 2.0)
+  v320 <- EntityDataArray[v236] - v279
+  v321 <- v320 / 2.0
   v322 <- Lerp(-0.9, 0.9, v321)
-  v323 <- Subtract(EntityDataArray[v278], v279)
-  v324 <- Divide(v323, 2.0)
+  v323 <- EntityDataArray[v278] - v279
+  v324 <- v323 / 2.0
   v325 <- Lerp(-0.9, 0.9, v324)
   v326 <- v289
   v327 <- v322
@@ -759,29 +759,29 @@
 223:
   goto 224
 224:
-  v334 <- GreaterOr(EntityData[0], 0)
+  v334 <- EntityData[0] >= 0
   goto 225
 225:
   goto 226 if v334 else 341
 226:
-  v337 <- Multiply(EntityData[0], 2.0)
+  v337 <- EntityData[0] * 2.0
   v338 <- v337
-  v339 <- GreaterOr(EntityInfoArray[v338 + 1], -13.0)
-  v340 <- Less(EntityInfoArray[v338 + 1], 13.0)
-  v341 <- And(v339, v340)
+  v339 <- EntityInfoArray[v338 + 1] >= -13.0
+  v340 <- EntityInfoArray[v338 + 1] < 13.0
+  v341 <- v339 && v340
   v342 <- Trunc(EntityInfoArray[v338 + 1])
-  v343 <- Equal(v342, EntityInfoArray[v338 + 1])
-  v344 <- And(v341, v343)
+  v343 <- v342 == EntityInfoArray[v338 + 1]
+  v344 <- v341 && v343
   goto 227 if v344 else 340
 227:
-  v347 <- Less(EntityInfoArray[v338 + 1], 0)
-  v348 <- Multiply(v347, 13.0)
-  v349 <- Add(EntityInfoArray[v338 + 1], v348)
-  v350 <- Add(36.0, v349)
+  v347 <- EntityInfoArray[v338 + 1] < 0
+  v348 <- v347 * 13.0
+  v349 <- EntityInfoArray[v338 + 1] + v348
+  v350 <- 36.0 + v349
   v351 <- v350
   v352 <- EngineRom[v351]
   v353 <- v352
-  v354 <- Add(v352, 1.0)
+  v354 <- v352 + 1.0
   v355 <- EngineRom[v353]
   v356 <- 3000.0
   v357 <- v354
@@ -797,18 +797,18 @@
 231:
   goto 232
 232:
-  v360 <- Less(v358, v359)
+  v360 <- v358 < v359
   goto 233
 233:
   goto 234 if v360 else 239
 234:
   v361 <- v356
   v362 <- v357
-  v363 <- Add(v362, v358)
+  v363 <- v362 + v358
   v364 <- v361
   v365 <- v363
   v366 <- v364[v365]
-  v367 <- Equal(v366, 12.0)
+  v367 <- v366 == 12.0
   goto 235
 235:
   goto 236 if v367 else 237
@@ -818,7 +818,7 @@
 237:
   goto 238
 238:
-  v368 <- Add(v358, 1.0)
+  v368 <- v358 + 1.0
   v369 <- v368
   v358 <- v369
   goto 229
@@ -842,35 +842,35 @@
 247:
   goto 248
 248:
-  v373 <- Multiply(EntityData[0], 32.0)
+  v373 <- EntityData[0] * 32.0
   v374 <- v373
   goto 249
 249:
   goto 250
 250:
-  v375 <- GreaterOr(EntityData[1], 0)
+  v375 <- EntityData[1] >= 0
   goto 251
 251:
   goto 252 if v375 else 338
 252:
-  v378 <- Multiply(EntityData[1], 2.0)
+  v378 <- EntityData[1] * 2.0
   v379 <- v378
-  v380 <- GreaterOr(EntityInfoArray[v379 + 1], -13.0)
-  v381 <- Less(EntityInfoArray[v379 + 1], 13.0)
-  v382 <- And(v380, v381)
+  v380 <- EntityInfoArray[v379 + 1] >= -13.0
+  v381 <- EntityInfoArray[v379 + 1] < 13.0
+  v382 <- v380 && v381
   v383 <- Trunc(EntityInfoArray[v379 + 1])
-  v384 <- Equal(v383, EntityInfoArray[v379 + 1])
-  v385 <- And(v382, v384)
+  v384 <- v383 == EntityInfoArray[v379 + 1]
+  v385 <- v382 && v384
   goto 253 if v385 else 337
 253:
-  v388 <- Less(EntityInfoArray[v379 + 1], 0)
-  v389 <- Multiply(v388, 13.0)
-  v390 <- Add(EntityInfoArray[v379 + 1], v389)
-  v391 <- Add(36.0, v390)
+  v388 <- EntityInfoArray[v379 + 1] < 0
+  v389 <- v388 * 13.0
+  v390 <- EntityInfoArray[v379 + 1] + v389
+  v391 <- 36.0 + v390
   v392 <- v391
   v393 <- EngineRom[v392]
   v394 <- v393
-  v395 <- Add(v393, 1.0)
+  v395 <- v393 + 1.0
   v396 <- EngineRom[v394]
   v397 <- 3000.0
   v398 <- v395
@@ -886,18 +886,18 @@
 257:
   goto 258
 258:
-  v401 <- Less(v399, v400)
+  v401 <- v399 < v400
   goto 259
 259:
   goto 260 if v401 else 265
 260:
   v402 <- v397
   v403 <- v398
-  v404 <- Add(v403, v399)
+  v404 <- v403 + v399
   v405 <- v402
   v406 <- v404
   v407 <- v405[v406]
-  v408 <- Equal(v407, 12.0)
+  v408 <- v407 == 12.0
   goto 261
 261:
   goto 262 if v408 else 263
@@ -907,7 +907,7 @@
 263:
   goto 264
 264:
-  v409 <- Add(v399, 1.0)
+  v409 <- v399 + 1.0
   v410 <- v409
   v399 <- v410
   goto 255
@@ -931,36 +931,36 @@
 273:
   goto 274
 274:
-  v414 <- Multiply(EntityData[1], 32.0)
+  v414 <- EntityData[1] * 32.0
   v415 <- v414
   v416 <- Min(EntityDataArray[v374], EntityDataArray[v415])
   goto 275
 275:
   goto 276
 276:
-  v417 <- GreaterOr(EntityData[0], 0)
+  v417 <- EntityData[0] >= 0
   goto 277
 277:
   goto 278 if v417 else 335
 278:
-  v420 <- Multiply(EntityData[0], 2.0)
+  v420 <- EntityData[0] * 2.0
   v421 <- v420
-  v422 <- GreaterOr(EntityInfoArray[v421 + 1], -13.0)
-  v423 <- Less(EntityInfoArray[v421 + 1], 13.0)
-  v424 <- And(v422, v423)
+  v422 <- EntityInfoArray[v421 + 1] >= -13.0
+  v423 <- EntityInfoArray[v421 + 1] < 13.0
+  v424 <- v422 && v423
   v425 <- Trunc(EntityInfoArray[v421 + 1])
-  v426 <- Equal(v425, EntityInfoArray[v421 + 1])
-  v427 <- And(v424, v426)
+  v426 <- v425 == EntityInfoArray[v421 + 1]
+  v427 <- v424 && v426
   goto 279 if v427 else 334
 279:
-  v430 <- Less(EntityInfoArray[v421 + 1], 0)
-  v431 <- Multiply(v430, 13.0)
-  v432 <- Add(EntityInfoArray[v421 + 1], v431)
-  v433 <- Add(36.0, v432)
+  v430 <- EntityInfoArray[v421 + 1] < 0
+  v431 <- v430 * 13.0
+  v432 <- EntityInfoArray[v421 + 1] + v431
+  v433 <- 36.0 + v432
   v434 <- v433
   v435 <- EngineRom[v434]
   v436 <- v435
-  v437 <- Add(v435, 1.0)
+  v437 <- v435 + 1.0
   v438 <- EngineRom[v436]
   v439 <- 3000.0
   v440 <- v437
@@ -976,18 +976,18 @@
 283:
   goto 284
 284:
-  v443 <- Less(v441, v442)
+  v443 <- v441 < v442
   goto 285
 285:
   goto 286 if v443 else 291
 286:
   v444 <- v439
   v445 <- v440
-  v446 <- Add(v445, v441)
+  v446 <- v445 + v441
   v447 <- v444
   v448 <- v446
   v449 <- v447[v448]
-  v450 <- Equal(v449, 12.0)
+  v450 <- v449 == 12.0
   goto 287
 287:
   goto 288 if v450 else 289
@@ -997,7 +997,7 @@
 289:
   goto 290
 290:
-  v451 <- Add(v441, 1.0)
+  v451 <- v441 + 1.0
   v452 <- v451
   v441 <- v452
   goto 281
@@ -1021,36 +1021,36 @@
 299:
   goto 300
 300:
-  v456 <- Multiply(EntityData[0], 32.0)
-  v457 <- Add(3.0, v456)
+  v456 <- EntityData[0] * 32.0
+  v457 <- 3.0 + v456
   v458 <- v457
   goto 301
 301:
   goto 302
 302:
-  v459 <- GreaterOr(EntityData[1], 0)
+  v459 <- EntityData[1] >= 0
   goto 303
 303:
   goto 304 if v459 else 332
 304:
-  v462 <- Multiply(EntityData[1], 2.0)
+  v462 <- EntityData[1] * 2.0
   v463 <- v462
-  v464 <- GreaterOr(EntityInfoArray[v463 + 1], -13.0)
-  v465 <- Less(EntityInfoArray[v463 + 1], 13.0)
-  v466 <- And(v464, v465)
+  v464 <- EntityInfoArray[v463 + 1] >= -13.0
+  v465 <- EntityInfoArray[v463 + 1] < 13.0
+  v466 <- v464 && v465
   v467 <- Trunc(EntityInfoArray[v463 + 1])
-  v468 <- Equal(v467, EntityInfoArray[v463 + 1])
-  v469 <- And(v466, v468)
+  v468 <- v467 == EntityInfoArray[v463 + 1]
+  v469 <- v466 && v468
   goto 305 if v469 else 331
 305:
-  v472 <- Less(EntityInfoArray[v463 + 1], 0)
-  v473 <- Multiply(v472, 13.0)
-  v474 <- Add(EntityInfoArray[v463 + 1], v473)
-  v475 <- Add(36.0, v474)
+  v472 <- EntityInfoArray[v463 + 1] < 0
+  v473 <- v472 * 13.0
+  v474 <- EntityInfoArray[v463 + 1] + v473
+  v475 <- 36.0 + v474
   v476 <- v475
   v477 <- EngineRom[v476]
   v478 <- v477
-  v479 <- Add(v477, 1.0)
+  v479 <- v477 + 1.0
   v480 <- EngineRom[v478]
   v481 <- 3000.0
   v482 <- v479
@@ -1066,18 +1066,18 @@
 309:
   goto 310
 310:
-  v485 <- Less(v483, v484)
+  v485 <- v483 < v484
   goto 311
 311:
   goto 312 if v485 else 317
 312:
   v486 <- v481
   v487 <- v482
-  v488 <- Add(v487, v483)
+  v488 <- v487 + v483
   v489 <- v486
   v490 <- v488
   v491 <- v489[v490]
-  v492 <- Equal(v491, 12.0)
+  v492 <- v491 == 12.0
   goto 313
 313:
   goto 314 if v492 else 315
@@ -1087,7 +1087,7 @@
 315:
   goto 316
 316:
-  v493 <- Add(v483, 1.0)
+  v493 <- v483 + 1.0
   v494 <- v493
   v483 <- v494
   goto 307
@@ -1111,15 +1111,15 @@
 325:
   goto 326
 326:
-  v498 <- Multiply(EntityData[1], 32.0)
-  v499 <- Add(3.0, v498)
+  v498 <- EntityData[1] * 32.0
+  v499 <- 3.0 + v498
   v500 <- v499
   v501 <- Min(EntityDataArray[v458], EntityDataArray[v500])
   goto 327
 327:
-  v502 <- Multiply(v416, 100.0)
-  v503 <- Add(100000.0, v502)
-  v504 <- Add(v503, v501)
+  v502 <- v416 * 100.0
+  v503 <- 100000.0 + v502
+  v504 <- v503 + v501
   goto 328
 328:
   goto 329

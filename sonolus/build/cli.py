@@ -145,6 +145,8 @@ def get_runtime_checks(args: argparse.Namespace) -> RuntimeChecks:
 
 
 def main():
+    sys.setrecursionlimit(10_000)
+
     parser = argparse.ArgumentParser(description="Sonolus project build and development tools")
     subparsers = parser.add_subparsers(dest="command", required=True)
 

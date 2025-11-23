@@ -1,10 +1,10 @@
 0:
-  10000[0] <- Add(3.0, EntityInfo[1])
+  10000[0] <- 3.0 + EntityInfo[1]
   goto when EngineRom[10000[0]]
     6.0 -> 11
     default -> 1
 1:
-  10000[0] <- Add(3.0, EntityInfo[1])
+  10000[0] <- 3.0 + EntityInfo[1]
   10000[6] <- 0
   goto when EngineRom[10000[0]]
     1.0 -> 9
@@ -24,7 +24,7 @@
   10000[6] <- 14.0
   goto 10
 5:
-  goto 6 if Greater(EntityData[2], 0) else 7
+  goto 6 if (EntityData[2] > 0) else 7
 6:
   10000[6] <- 10.0
   goto 10
@@ -38,23 +38,23 @@
   10000[6] <- 7.0
   goto 10
 10:
-  10000[0] <- Trunc(Divide(EntityData[3], 2.0))
-  10000[1] <- Lerp(-0.9, 0.9, Divide(Mod(EntityData[3], 2.0), 2.0))
-  10000[2] <- Subtract(Add(Multiply(Add(10000[0], 0.5), PreviewData[1]), Multiply(Subtract(EntityData[0], 0.5), 0.072)), Divide(Subtract(RuntimeEnvironment[1], Negate(RuntimeEnvironment[1])), 2.0))
-  10000[3] <- Subtract(Add(Multiply(Add(10000[0], 0.5), PreviewData[1]), Multiply(Add(EntityData[0], 0.5), 0.072)), Divide(Subtract(RuntimeEnvironment[1], Negate(RuntimeEnvironment[1])), 2.0))
-  10000[4] <- Add(10000[1], 0.036)
-  10000[5] <- Subtract(10000[1], 0.036)
-  Draw(10000[6], 10000[2], 10000[5], 10000[2], 10000[4], 10000[3], 10000[4], 10000[3], 10000[5], Add(Add(310000.0, Multiply(EntityData[0], 100.0)), EntityData[3]), 1.0)
+  10000[0] <- Trunc(EntityData[3] / 2.0)
+  10000[1] <- Lerp(-0.9, 0.9, (EntityData[3] % 2.0) / 2.0)
+  10000[2] <- (((10000[0] + 0.5) * PreviewData[1]) + ((EntityData[0] - 0.5) * 0.072)) - ((RuntimeEnvironment[1] - -RuntimeEnvironment[1]) / 2.0)
+  10000[3] <- (((10000[0] + 0.5) * PreviewData[1]) + ((EntityData[0] + 0.5) * 0.072)) - ((RuntimeEnvironment[1] - -RuntimeEnvironment[1]) / 2.0)
+  10000[4] <- 10000[1] + 0.036
+  10000[5] <- 10000[1] - 0.036
+  Draw(10000[6], 10000[2], 10000[5], 10000[2], 10000[4], 10000[3], 10000[4], 10000[3], 10000[5], 310000.0 + (EntityData[0] * 100.0) + EntityData[3], 1.0)
   goto 11
 11:
-  10000[0] <- Add(3.0, EntityInfo[1])
+  10000[0] <- 3.0 + EntityInfo[1]
   10000[20] <- 0
-  goto when Subtract(EngineRom[10000[0]], 2.0)
+  goto when (EngineRom[10000[0]] - 2.0)
     0.0 -> 15
     1.0 -> 12
     default -> 16
 12:
-  goto 13 if Greater(EntityData[2], 0) else 14
+  goto 13 if (EntityData[2] > 0) else 14
 13:
   10000[20] <- 11.0
   goto 16
@@ -65,8 +65,8 @@
   10000[20] <- 9.0
   goto 16
 16:
-  10000[21] <- Add(3.0, EntityInfo[1])
-  goto when Subtract(EngineRom[10000[21]], 2.0)
+  10000[21] <- 3.0 + EntityInfo[1]
+  goto when (EngineRom[10000[21]] - 2.0)
     0.0 -> 27
     1.0 -> 17
     default -> 26
@@ -74,10 +74,10 @@
   10000[0] <- 0
   goto 18
 18:
-  goto 19 if Less(10000[0], Abs(EntityData[2])) else 26
+  goto 19 if (10000[0] < Abs(EntityData[2])) else 26
 19:
-  10000[1] <- Add(10000[0], 1.0)
-  goto 20 if Greater(EntityData[2], 0) else 21
+  10000[1] <- 10000[0] + 1.0
+  goto 20 if (EntityData[2] > 0) else 21
 20:
   10000[2] <- 1.0
   goto 22
@@ -85,14 +85,14 @@
   10000[2] <- -1.0
   goto 22
 22:
-  10000[2] <- Add(EntityData[0], Multiply(Add(10000[0], 1.0), 10000[2]))
-  10000[3] <- Trunc(Divide(EntityData[3], 2.0))
-  10000[4] <- Subtract(Add(Multiply(Add(10000[3], 0.5), PreviewData[1]), Multiply(Subtract(10000[2], 0.5), 0.072)), Divide(Subtract(RuntimeEnvironment[1], Negate(RuntimeEnvironment[1])), 2.0))
-  10000[5] <- Subtract(Add(Multiply(Add(10000[3], 0.5), PreviewData[1]), Multiply(Add(10000[2], 0.5), 0.072)), Divide(Subtract(RuntimeEnvironment[1], Negate(RuntimeEnvironment[1])), 2.0))
-  10000[6] <- Lerp(-0.9, 0.9, Divide(Mod(EntityData[3], 2.0), 2.0))
-  10000[7] <- Add(10000[6], 0.036)
-  10000[8] <- Subtract(10000[6], 0.036)
-  goto 23 if Greater(EntityData[2], 0) else 24
+  10000[2] <- EntityData[0] + ((10000[0] + 1.0) * 10000[2])
+  10000[3] <- Trunc(EntityData[3] / 2.0)
+  10000[4] <- (((10000[3] + 0.5) * PreviewData[1]) + ((10000[2] - 0.5) * 0.072)) - ((RuntimeEnvironment[1] - -RuntimeEnvironment[1]) / 2.0)
+  10000[5] <- (((10000[3] + 0.5) * PreviewData[1]) + ((10000[2] + 0.5) * 0.072)) - ((RuntimeEnvironment[1] - -RuntimeEnvironment[1]) / 2.0)
+  10000[6] <- Lerp(-0.9, 0.9, (EntityData[3] % 2.0) / 2.0)
+  10000[7] <- 10000[6] + 0.036
+  10000[8] <- 10000[6] - 0.036
+  goto 23 if (EntityData[2] > 0) else 24
 23:
   10000[9] <- -1.5707963267948966
   goto 25
@@ -100,25 +100,25 @@
   10000[9] <- 1.5707963267948966
   goto 25
 25:
-  10000[10] <- Divide(Add(Add(Add(10000[4], 10000[5]), 10000[4]), 10000[5]), 4.0)
-  10000[11] <- Divide(Add(Add(Add(10000[8], 10000[7]), 10000[7]), 10000[8]), 4.0)
-  10000[12] <- Subtract(10000[4], 10000[10])
-  10000[13] <- Subtract(10000[8], 10000[11])
-  10000[14] <- Subtract(10000[4], 10000[10])
-  10000[15] <- Subtract(10000[7], 10000[11])
-  10000[16] <- Subtract(10000[5], 10000[10])
-  10000[17] <- Subtract(10000[7], 10000[11])
-  10000[18] <- Subtract(10000[5], 10000[10])
-  10000[19] <- Subtract(10000[8], 10000[11])
-  Draw(10000[20], Add(Subtract(Multiply(10000[12], Cos(10000[9])), Multiply(10000[13], Sin(10000[9]))), 10000[10]), Add(Add(Multiply(10000[12], Sin(10000[9])), Multiply(10000[13], Cos(10000[9]))), 10000[11]), Add(Subtract(Multiply(10000[14], Cos(10000[9])), Multiply(10000[15], Sin(10000[9]))), 10000[10]), Add(Add(Multiply(10000[14], Sin(10000[9])), Multiply(10000[15], Cos(10000[9]))), 10000[11]), Add(Subtract(Multiply(10000[16], Cos(10000[9])), Multiply(10000[17], Sin(10000[9]))), 10000[10]), Add(Add(Multiply(10000[16], Sin(10000[9])), Multiply(10000[17], Cos(10000[9]))), 10000[11]), Add(Subtract(Multiply(10000[18], Cos(10000[9])), Multiply(10000[19], Sin(10000[9]))), 10000[10]), Add(Add(Multiply(10000[18], Sin(10000[9])), Multiply(10000[19], Cos(10000[9]))), 10000[11]), Add(Add(320000.0, Multiply(10000[2], 100.0)), EntityData[3]), 1.0)
+  10000[10] <- (10000[4] + 10000[5] + 10000[4] + 10000[5]) / 4.0
+  10000[11] <- (10000[8] + 10000[7] + 10000[7] + 10000[8]) / 4.0
+  10000[12] <- 10000[4] - 10000[10]
+  10000[13] <- 10000[8] - 10000[11]
+  10000[14] <- 10000[4] - 10000[10]
+  10000[15] <- 10000[7] - 10000[11]
+  10000[16] <- 10000[5] - 10000[10]
+  10000[17] <- 10000[7] - 10000[11]
+  10000[18] <- 10000[5] - 10000[10]
+  10000[19] <- 10000[8] - 10000[11]
+  Draw(10000[20], ((10000[12] * Cos(10000[9])) - (10000[13] * Sin(10000[9]))) + 10000[10], (10000[12] * Sin(10000[9])) + (10000[13] * Cos(10000[9])) + 10000[11], ((10000[14] * Cos(10000[9])) - (10000[15] * Sin(10000[9]))) + 10000[10], (10000[14] * Sin(10000[9])) + (10000[15] * Cos(10000[9])) + 10000[11], ((10000[16] * Cos(10000[9])) - (10000[17] * Sin(10000[9]))) + 10000[10], (10000[16] * Sin(10000[9])) + (10000[17] * Cos(10000[9])) + 10000[11], ((10000[18] * Cos(10000[9])) - (10000[19] * Sin(10000[9]))) + 10000[10], (10000[18] * Sin(10000[9])) + (10000[19] * Cos(10000[9])) + 10000[11], 320000.0 + (10000[2] * 100.0) + EntityData[3], 1.0)
   10000[0] <- 10000[1]
   goto 18
 26:
   goto exit
 27:
-  10000[21] <- Trunc(Divide(EntityData[3], 2.0))
-  10000[22] <- Subtract(Add(Multiply(Add(10000[21], 0.5), PreviewData[1]), Multiply(Subtract(EntityData[0], 0.5), 0.072)), Divide(Subtract(RuntimeEnvironment[1], Negate(RuntimeEnvironment[1])), 2.0))
-  10000[0] <- Subtract(Add(Multiply(Add(10000[21], 0.5), PreviewData[1]), Multiply(Add(EntityData[0], 0.5), 0.072)), Divide(Subtract(RuntimeEnvironment[1], Negate(RuntimeEnvironment[1])), 2.0))
-  10000[1] <- Add(Lerp(-0.9, 0.9, Divide(Mod(EntityData[3], 2.0), 2.0)), 0.0648)
-  Draw(10000[20], 10000[22], Subtract(10000[1], 0.036), 10000[22], Add(10000[1], 0.036), 10000[0], Add(10000[1], 0.036), 10000[0], Subtract(10000[1], 0.036), Add(Add(320000.0, Multiply(EntityData[0], 100.0)), EntityData[3]), 1.0)
+  10000[21] <- Trunc(EntityData[3] / 2.0)
+  10000[22] <- (((10000[21] + 0.5) * PreviewData[1]) + ((EntityData[0] - 0.5) * 0.072)) - ((RuntimeEnvironment[1] - -RuntimeEnvironment[1]) / 2.0)
+  10000[0] <- (((10000[21] + 0.5) * PreviewData[1]) + ((EntityData[0] + 0.5) * 0.072)) - ((RuntimeEnvironment[1] - -RuntimeEnvironment[1]) / 2.0)
+  10000[1] <- Lerp(-0.9, 0.9, (EntityData[3] % 2.0) / 2.0) + 0.0648
+  Draw(10000[20], 10000[22], 10000[1] - 0.036, 10000[22], 10000[1] + 0.036, 10000[0], 10000[1] + 0.036, 10000[0], 10000[1] - 0.036, 320000.0 + (EntityData[0] * 100.0) + EntityData[3], 1.0)
   goto exit
