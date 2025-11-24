@@ -7,6 +7,7 @@ from typing import Annotated, Any, NewType, dataclass_transform, get_origin
 from sonolus.backend.ops import Op
 from sonolus.script.array_like import ArrayLike, check_positive_index
 from sonolus.script.debug import static_error
+from sonolus.script.internal.impl import perf_meta_fn
 from sonolus.script.internal.introspection import get_field_specifiers
 from sonolus.script.internal.native import native_function
 from sonolus.script.quad import QuadLike, flatten_quad
@@ -19,10 +20,12 @@ class Particle(Record):
     id: int
 
     @property
+    @perf_meta_fn
     def is_available(self) -> bool:
         """Check if the particle effect is available."""
         return _has_particle_effect(self.id)
 
+    @perf_meta_fn
     def spawn(self, quad: QuadLike, duration: float, loop: bool = False) -> ParticleHandle:
         """Spawn the particle effect.
 

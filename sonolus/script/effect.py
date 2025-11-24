@@ -7,6 +7,7 @@ from typing import Annotated, Any, NewType, dataclass_transform, get_origin
 from sonolus.backend.ops import Op
 from sonolus.script.array_like import ArrayLike, check_positive_index
 from sonolus.script.debug import static_error
+from sonolus.script.internal.impl import perf_meta_fn
 from sonolus.script.internal.introspection import get_field_specifiers
 from sonolus.script.internal.native import native_function
 from sonolus.script.record import Record
@@ -25,10 +26,12 @@ class Effect(Record):
     """Effect ID."""
 
     @property
+    @perf_meta_fn
     def is_available(self) -> bool:
         """Return whether the effect clip is available."""
         return _has_effect_clip(self.id)
 
+    @perf_meta_fn
     def play(self, distance: float = 0) -> None:
         """Play the effect clip.
 
@@ -39,6 +42,7 @@ class Effect(Record):
         """
         _play(self.id, distance)
 
+    @perf_meta_fn
     def schedule(self, time: float, distance: float = 0) -> None:
         """Schedule the effect clip to play at a specific time.
 
@@ -55,6 +59,7 @@ class Effect(Record):
         """
         _play_scheduled(self.id, time, distance)
 
+    @perf_meta_fn
     def loop(self) -> LoopedEffectHandle:
         """Play the effect clip in a loop until stopped.
 
@@ -63,6 +68,7 @@ class Effect(Record):
         """
         return LoopedEffectHandle(_play_looped(self.id))
 
+    @perf_meta_fn
     def schedule_loop(self, start_time: float) -> ScheduledLoopedEffectHandle:
         """Schedule the effect clip to play in a loop until stopped.
 

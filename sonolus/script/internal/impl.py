@@ -3,7 +3,7 @@ from __future__ import annotations
 from collections.abc import Callable
 from enum import Enum
 from types import EllipsisType, FunctionType, MethodType, ModuleType, NoneType, NotImplementedType, UnionType
-from typing import TYPE_CHECKING, Annotated, Any, Literal, TypeVar, Union, get_origin, overload
+from typing import TYPE_CHECKING, Annotated, Any, Final, Literal, TypeVar, Union, get_origin, overload
 
 if TYPE_CHECKING:
     from sonolus.script.internal.value import Value
@@ -102,7 +102,7 @@ def try_validate_value(value: Any) -> Value | None:
             return BasicConstantValue.of(value)
         case special_form if value == Literal or value == Annotated or value == Union:  # noqa: PLR1714, SIM109
             return TypingSpecialFormConstant.of(special_form)
-        case other_type if get_origin(value) in {Literal, Annotated, UnionType, tuple, type}:
+        case other_type if get_origin(value) in {Literal, Annotated, UnionType, Final, tuple, type}:
             return BasicConstantValue.of(other_type)
         case _GlobalPlaceholder():
             return value.get()

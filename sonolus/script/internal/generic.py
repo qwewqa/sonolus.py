@@ -3,7 +3,7 @@ from __future__ import annotations
 import typing
 from enum import Enum
 from types import UnionType
-from typing import Annotated, Any, ClassVar, Literal, Self, TypeVar, get_origin
+from typing import Annotated, Any, ClassVar, Final, Literal, Self, TypeVar, get_origin
 
 from sonolus.script.internal.impl import meta_fn, validate_value
 from sonolus.script.internal.value import Value
@@ -32,11 +32,46 @@ def validate_type_spec(spec: Any) -> PartialGeneric | TypeVar | type[Value]:
     spec = validate_type_arg(spec)
     if isinstance(spec, PartialGeneric | TypeVar) or (isinstance(spec, type) and issubclass(spec, Value)):
         return spec
-    if typing.get_origin(spec) is UnionType:
+    origin = typing.get_origin(spec)
+    if origin is UnionType:
         args = typing.get_args(spec)
         validated_args = {validate_type_arg(arg) for arg in args}
         if len(validated_args) == 1:
             return validated_args.pop()
+    elif origin is Final:
+        args = typing.get_args(spec)
+        if len(args) != 1:
+            raise TypeError(f"Final[] takes exactly one type argument, got {len(args)}")
+        return validate_type_arg(args[0])
+
+    from sonolus.script.archetype import _BaseArchetype
+
+    if isinstance(spec, type) and issubclass(spec, _BaseArchetype):
+        raise TypeError(f"Expected a concrete type, got {spec}. Did you mean to write EntityRef[{spec.__name__}]?")
+    raise TypeError(f"Invalid type spec: {spec}")
+
+
+class TypeInfo(typing.NamedTuple):
+    value: PartialGeneric | TypeVar | type[Value]
+    final: bool
+
+
+def validate_type_spec_with_extras(spec: Any) -> TypeInfo:
+    spec = validate_type_arg(spec)
+    if isinstance(spec, PartialGeneric | TypeVar) or (isinstance(spec, type) and issubclass(spec, Value)):
+        return TypeInfo(spec, final=False)
+    origin = typing.get_origin(spec)
+    if origin is UnionType:
+        args = typing.get_args(spec)
+        validated_args = {validate_type_spec_with_extras(arg) for arg in args}
+        if len(validated_args) == 1:
+            return validated_args.pop()
+    elif origin is Final:
+        args = typing.get_args(spec)
+        if len(args) != 1:
+            raise TypeError(f"Final[] takes exactly one type argument, got {len(args)}")
+        inner_type_info = validate_type_spec_with_extras(args[0])
+        return TypeInfo(inner_type_info.value, final=True)
 
     from sonolus.script.archetype import _BaseArchetype
 

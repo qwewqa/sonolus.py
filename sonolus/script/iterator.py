@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 from collections.abc import Iterator
-from typing import Any
+from typing import Any, Final
 
 from sonolus.script.internal.context import ctx
 from sonolus.script.internal.impl import meta_fn
@@ -45,7 +45,7 @@ class SonolusIterator[T]:
 
 class _Enumerator[V: SonolusIterator](Record, SonolusIterator):
     i: int
-    offset: int
+    offset: Final[int]
     iterator: V
 
     def next(self) -> Maybe[tuple[int, Any]]:

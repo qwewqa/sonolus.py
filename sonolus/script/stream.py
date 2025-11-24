@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 from math import inf
-from typing import cast, dataclass_transform
+from typing import Final, cast, dataclass_transform
 
 from sonolus.backend.ir import IRConst, IRExpr, IRInstr, IRPureInstr
 from sonolus.backend.mode import Mode
@@ -542,7 +542,7 @@ class _StreamAscIterator[T](Record, SonolusIterator[tuple[int | float, T]]):
 class _StreamBoundedAscIterator[T](Record, SonolusIterator[tuple[int | float, T]]):
     stream: Stream[T]
     current_key: int | float
-    end_key: int | float
+    end_key: Final[int | float]
 
     def next(self) -> Maybe[tuple[int | float, T]]:
         if self.current_key in self.stream and self.current_key <= self.end_key:
@@ -579,7 +579,7 @@ class _StreamAscKeyIterator[T](Record, SonolusIterator[int | float]):
 class _StreamBoundedAscKeyIterator[T](Record, SonolusIterator[int | float]):
     stream: Stream[T]
     current_key: int | float
-    end_key: int | float
+    end_key: Final[int | float]
 
     def next(self) -> Maybe[int | float]:
         if self.current_key in self.stream and self.current_key <= self.end_key:
@@ -616,7 +616,7 @@ class _StreamAscValueIterator[T](Record, SonolusIterator[T]):
 class _StreamBoundedAscValueIterator[T](Record, SonolusIterator[T]):
     stream: Stream[T]
     current_key: int | float
-    end_key: int | float
+    end_key: Final[int | float]
 
     def next(self) -> Maybe[T]:
         if self.current_key in self.stream and self.current_key <= self.end_key:

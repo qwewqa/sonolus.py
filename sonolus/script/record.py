@@ -2,7 +2,7 @@ from __future__ import annotations
 
 import inspect
 from abc import ABCMeta
-from collections.abc import Iterable
+from collections.abc import Callable, Iterable
 from inspect import getmro
 from typing import Any, ClassVar, Protocol, Self, TypeVar, dataclass_transform, get_origin
 
@@ -14,7 +14,7 @@ from sonolus.script.internal.generic import (
     accept_and_infer_types,
     validate_and_resolve_type,
     validate_concrete_type,
-    validate_type_spec,
+    validate_type_spec_with_extras,
 )
 from sonolus.script.internal.impl import meta_fn
 from sonolus.script.internal.value import BackingSource, DataValue, Value
@@ -66,6 +66,46 @@ class Record(GenericValue, metaclass=RecordMeta):
     _value_: dict[str, Value]
     _fields_: ClassVar[list[_RecordField] | None] = None
     _constructor_signature_: ClassVar[inspect.Signature]
+    _is_frozen_: bool = False
+
+    @classmethod
+    @meta_fn
+    def frozen[**P](cls: Callable[P, Self], /, *args: P.args, **kwargs: P.kwargs) -> Self:
+        """Create a frozen record instance.
+
+        Numeric fields in the record will not be writable. However, nested values such as other records may remain
+        mutable.
+
+        Args:
+            *args: Positional arguments for the record constructor.
+            **kwargs: Keyword arguments for the record constructor.
+
+        Returns:
+            A frozen record instance.
+        """
+        # We override __new__ to allow changing to the parameterized version
+        if cls._constructor_signature_ is None:
+            raise TypeError(f"Cannot instantiate {cls.__name__}")
+        bound = cls._constructor_signature_.bind(*args, **kwargs)
+        bound.apply_defaults()
+        values = {}
+        type_vars = {}
+        for field in cls._fields_:
+            value = bound.arguments[field.name]
+            value = accept_and_infer_types(field.type, value, type_vars)
+            values[field.name] = value._get_readonly_()
+        for type_param in cls.__type_params__:
+            if type_param not in type_vars:
+                raise TypeError(f"Type parameter {type_param} cannot be inferred and must be provided explicitly")
+        type_args = tuple(type_vars[type_param] for type_param in cls.__type_params__)
+        if cls._type_args_ is not None:
+            parameterized = cls
+        else:
+            parameterized = cls[type_args]
+        result: cls = object.__new__(parameterized)  # type: ignore
+        result._value_ = values
+        result._is_frozen_ = True
+        return result
 
     @classmethod
     def _validate_type_args_(cls, args: tuple[Any, ...]) -> tuple[Any, ...]:
@@ -84,7 +124,9 @@ class Record(GenericValue, metaclass=RecordMeta):
             for generic_field in cls._fields_:
                 resolved_type = validate_and_resolve_type(generic_field.type, cls._type_vars_to_args_)
                 resolved_type = validate_concrete_type(resolved_type)
-                field = _RecordField(generic_field.name, resolved_type, generic_field.index, offset)
+                field = _RecordField(
+                    generic_field.name, resolved_type, generic_field.index, offset, generic_field.final
+                )
                 fields.append(field)
                 setattr(cls, field.name, field)
                 offset += resolved_type._size_()
@@ -111,8 +153,9 @@ class Record(GenericValue, metaclass=RecordMeta):
                     continue
                 if hasattr(cls, name):
                     raise TypeError("Default values are not supported for Record fields")
-                type_ = validate_type_spec(hint)
-                fields.append(_RecordField(name, type_, index, offset))
+                type_info = validate_type_spec_with_extras(hint)
+                type_ = type_info.value
+                fields.append(_RecordField(name, type_, index, offset, type_info.final))
                 if isinstance(type_, type) and issubclass(type_, Value) and type_._is_concrete_():
                     offset += type_._size_()
                 setattr(cls, name, fields[-1])
@@ -152,7 +195,10 @@ class Record(GenericValue, metaclass=RecordMeta):
         for field in cls._fields_:
             value = bound.arguments[field.name]
             value = accept_and_infer_types(field.type, value, type_vars)
-            values[field.name] = value._get_()
+            if field.final:
+                values[field.name] = value._get_readonly_()
+            else:
+                values[field.name] = value._get_()
         for type_param in cls.__type_params__:
             if type_param not in type_vars:
                 raise TypeError(f"Type parameter {type_param} cannot be inferred and must be provided explicitly")
@@ -336,11 +382,12 @@ class Record(GenericValue, metaclass=RecordMeta):
 
 
 class _RecordField(SonolusDescriptor):
-    def __init__(self, name: str, type_: type[Value] | Any, index: int, offset: int):
+    def __init__(self, name: str, type_: type[Value] | Any, index: int, offset: int, final: bool):
         self.name = name
         self.type = type_
         self.index = index
         self.offset = offset
+        self.final = final
 
     def get_internal(self, instance: Record) -> Value:
         return instance._value_[self.name]
@@ -348,13 +395,20 @@ class _RecordField(SonolusDescriptor):
     def __get__(self, instance: Record | None, owner=None):
         if instance is None:
             return self
-        result = instance._value_[self.name]._get_readonly_()
+        if instance._is_frozen_ or self.final:
+            result = instance._value_[self.name]
+        else:
+            result = instance._value_[self.name]._get_readonly_()
         if ctx():
             return result
         else:
             return result._as_py_()
 
     def __set__(self, instance: Record, value):
+        if instance._is_frozen_:
+            raise TypeError("Cannot set fields of a frozen Record")
+        if self.final:
+            raise TypeError("Cannot set a final field")
         value = self.type._accept_(value)
         if self.type._is_value_type_():
             instance._value_[self.name]._set_(value)

@@ -505,7 +505,7 @@ BUILTIN_IMPLS = {
     id(max): _max,
     id(min): _min,
     id(next): _next,
-    id(range): Range,
+    id(range): Range.frozen,
     id(reversed): _reversed,
     id(setattr): _setattr,
     id(sum): _sum,

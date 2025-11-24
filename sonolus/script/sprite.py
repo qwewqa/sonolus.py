@@ -27,6 +27,7 @@ class Sprite(Record):
     id: int
 
     @property
+    @perf_meta_fn
     def is_available(self) -> bool:
         """Check if the sprite is available."""
         return _has_skin_sprite(self.id)
