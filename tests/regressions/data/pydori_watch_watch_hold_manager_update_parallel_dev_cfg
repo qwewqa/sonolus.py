@@ -40,7 +40,7 @@
   v6 <- v5 >= 0
   goto 17
 17:
-  goto 18 if v6 else 341
+  goto 18 if v6 else 338
 18:
   v9 <- v5 * 3.0
   v10 <- v9
@@ -50,7 +50,7 @@
   v14 <- Trunc(EntityInfoArray[v10 + 1])
   v15 <- v14 == EntityInfoArray[v10 + 1]
   v16 <- v13 && v15
-  goto 19 if v16 else 340
+  goto 19 if v16 else 337
 19:
   v19 <- EntityInfoArray[v10 + 1] < 0
   v20 <- v19 * 15.0
@@ -110,7 +110,7 @@
 34:
   goto 35
 35:
-  goto 36 if v42 else 339
+  goto 36 if v42 else 336
 36:
   goto 37
 37:
@@ -316,7 +316,7 @@
 103:
   goto 104
 104:
-  goto 105 if v108 else 325
+  goto 105 if v108 else 322
 105:
   goto 106
 106:
@@ -326,7 +326,7 @@
   v110 <- v109 >= 0
   goto 108
 108:
-  goto 109 if v110 else 324
+  goto 109 if v110 else 321
 109:
   v113 <- v109 * 3.0
   v114 <- v113
@@ -336,7 +336,7 @@
   v118 <- Trunc(EntityInfoArray[v114 + 1])
   v119 <- v118 == EntityInfoArray[v114 + 1]
   v120 <- v117 && v119
-  goto 110 if v120 else 323
+  goto 110 if v120 else 320
 110:
   v123 <- EntityInfoArray[v114 + 1] < 0
   v124 <- v123 * 15.0
@@ -396,7 +396,7 @@
 125:
   goto 126
 126:
-  goto 127 if v146 else 322
+  goto 127 if v146 else 319
 127:
   goto 128
 128:
@@ -418,7 +418,7 @@
   v152 <- EntityDataArray[v151] >= 0
   goto 135
 135:
-  goto 136 if v152 else 321
+  goto 136 if v152 else 318
 136:
   v155 <- EntityDataArray[v151] * 3.0
   v156 <- v155
@@ -428,7 +428,7 @@
   v160 <- Trunc(EntityInfoArray[v156 + 1])
   v161 <- v160 == EntityInfoArray[v156 + 1]
   v162 <- v159 && v161
-  goto 137 if v162 else 320
+  goto 137 if v162 else 317
 137:
   v165 <- EntityInfoArray[v156 + 1] < 0
   v166 <- v165 * 15.0
@@ -488,7 +488,7 @@
 152:
   goto 153
 153:
-  goto 154 if v188 else 319
+  goto 154 if v188 else 316
 154:
   goto 155
 155:
@@ -742,7 +742,7 @@
   v334 <- v333 >= 0
   goto 208
 208:
-  goto 209 if v334 else 318
+  goto 209 if v334 else 315
 209:
   v337 <- v333 * 3.0
   v338 <- v337
@@ -752,7 +752,7 @@
   v342 <- Trunc(EntityInfoArray[v338 + 1])
   v343 <- v342 == EntityInfoArray[v338 + 1]
   v344 <- v341 && v343
-  goto 210 if v344 else 317
+  goto 210 if v344 else 314
 210:
   v347 <- EntityInfoArray[v338 + 1] < 0
   v348 <- v347 * 15.0
@@ -812,7 +812,7 @@
 225:
   goto 226
 226:
-  goto 227 if v370 else 316
+  goto 227 if v370 else 313
 227:
   goto 228
 228:
@@ -834,7 +834,7 @@
   v376 <- EntityDataArray[v375] >= 0
   goto 235
 235:
-  goto 236 if v376 else 315
+  goto 236 if v376 else 312
 236:
   v379 <- EntityDataArray[v375] * 3.0
   v380 <- v379
@@ -844,7 +844,7 @@
   v384 <- Trunc(EntityInfoArray[v380 + 1])
   v385 <- v384 == EntityInfoArray[v380 + 1]
   v386 <- v383 && v385
-  goto 237 if v386 else 314
+  goto 237 if v386 else 311
 237:
   v389 <- EntityInfoArray[v380 + 1] < 0
   v390 <- v389 * 15.0
@@ -904,7 +904,7 @@
 252:
   goto 253
 253:
-  goto 254 if v412 else 313
+  goto 254 if v412 else 310
 254:
   goto 255
 255:
@@ -1173,10 +1173,8 @@
   v587 <- v586 == 0
   goto 301
 301:
-  goto 302 if v587 else 306
+  goto 302 if v587 else 303
 302:
-  goto 303
-303:
   v588 <- v569
   v589 <- v570
   v590 <- v579
@@ -1187,16 +1185,12 @@
   v595 <- v575
   v596 <- SpawnParticleEffect(5.0, v588, v589, v590, v591, v592, v593, v594, v595, 1.5, 1.0)
   v597 <- v596
-  goto 304
-304:
-  goto 305
-305:
   v598 <- v597
   EntityMemory[2] <- v598
-  goto 310
-306:
   goto 307
-307:
+303:
+  goto 304
+304:
   v599 <- EntityMemory[2]
   v600 <- v569
   v601 <- v570
@@ -1207,84 +1201,90 @@
   v606 <- v574
   v607 <- v575
   v608 <- MoveParticleEffect(v599, v600, v601, v602, v603, v604, v605, v606, v607)
+  goto 305
+305:
+  goto 306
+306:
+  goto 307
+307:
   goto 308
 308:
   goto 309
 309:
-  goto 310
+  goto 333
 310:
-  goto 311
-311:
-  goto 312
-312:
-  goto 336
-313:
   v413 <- DebugLog(19.0)
   v414 <- DebugPause()
   goto exit
-314:
+311:
   v387 <- DebugLog(18.0)
   v388 <- DebugPause()
   goto exit
-315:
+312:
   v377 <- DebugLog(17.0)
   v378 <- DebugPause()
   goto exit
-316:
+313:
   v371 <- DebugLog(16.0)
   v372 <- DebugPause()
   goto exit
-317:
+314:
   v345 <- DebugLog(15.0)
   v346 <- DebugPause()
   goto exit
-318:
+315:
   v335 <- DebugLog(14.0)
   v336 <- DebugPause()
   goto exit
-319:
+316:
   v189 <- DebugLog(13.0)
   v190 <- DebugPause()
   goto exit
-320:
+317:
   v163 <- DebugLog(12.0)
   v164 <- DebugPause()
   goto exit
-321:
+318:
   v153 <- DebugLog(11.0)
   v154 <- DebugPause()
   goto exit
-322:
+319:
   v147 <- DebugLog(10.0)
   v148 <- DebugPause()
   goto exit
-323:
+320:
   v121 <- DebugLog(9.0)
   v122 <- DebugPause()
   goto exit
-324:
+321:
   v111 <- DebugLog(8.0)
   v112 <- DebugPause()
   goto exit
+322:
+  goto 323
+323:
+  v609 <- EntityMemory[2]
+  v610 <- v609 != 0
+  goto 324
+324:
+  goto 325 if v610 else 329
 325:
   goto 326
 326:
-  v609 <- EntityMemory[2]
-  v610 <- v609 != 0
-  goto 327
-327:
-  goto 328 if v610 else 332
-328:
-  goto 329
-329:
   v611 <- EntityMemory[2]
   v612 <- DestroyParticleEffect(v611)
+  goto 327
+327:
+  goto 328
+328:
+  EntityMemory[2] <- 0
+  goto 330
+329:
   goto 330
 330:
   goto 331
 331:
-  EntityMemory[2] <- 0
-  goto 333
+  goto 332
 332:
   goto 333
 333:
@@ -1292,22 +1292,16 @@
 334:
   goto 335
 335:
-  goto 336
-336:
-  goto 337
-337:
-  goto 338
-338:
   goto exit
-339:
+336:
   v43 <- DebugLog(3.0)
   v44 <- DebugPause()
   goto exit
-340:
+337:
   v17 <- DebugLog(2.0)
   v18 <- DebugPause()
   goto exit
-341:
+338:
   v7 <- DebugLog(1.0)
   v8 <- DebugPause()
   goto exit

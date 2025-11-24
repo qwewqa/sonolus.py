@@ -8,4 +8,5 @@ def compare_with_reference(name: str, data: str):
     if existing_path.exists():
         assert data == existing_path.read_bytes().decode("utf-8")
     else:
+        existing_path.parent.mkdir(parents=True, exist_ok=True)
         existing_path.write_bytes(data.encode("utf-8"))

@@ -3,14 +3,14 @@
 1:
   goto 2 if RuntimeUpdate[3] else 3
 2:
-  goto 171
+  goto 158
 3:
   goto 4
 4:
   v1 <- EntityData[12] != 0
   goto 5
 5:
-  goto 6 if v1 else 169
+  goto 6 if v1 else 156
 6:
   goto 7
 7:
@@ -34,14 +34,14 @@
 14:
   goto 15 if v5 else 16
 15:
-  goto 163
+  goto 150
 16:
   goto 17
 17:
   v6 <- !LevelOption[6]
   goto 18 if v6 else 19
 18:
-  goto 163
+  goto 150
 19:
   goto 20
 20:
@@ -217,8 +217,6 @@
 58:
   goto 59
 59:
-  goto 60
-60:
   v96 <- v7
   v97 <- v40
   v98 <- v41
@@ -230,74 +228,70 @@
   v104 <- v67
   v105 <- SpawnParticleEffect(v96, v97, v98, v99, v100, v101, v102, v103, v104, 0.5, 0)
   v106 <- v105
-  goto 61
-61:
-  goto 62
-62:
-  goto 63
-63:
+  goto 60
+60:
   v107 <- 0
   v108 <- v4 == 1.0
-  goto 64 if v108 else 65
-64:
+  goto 61 if v108 else 62
+61:
   v107 <- 2.0
-  goto 81
-65:
+  goto 78
+62:
   v109 <- v4 == 2.0
-  goto 66 if v109 else 67
-66:
+  goto 63 if v109 else 64
+63:
   v107 <- 7.0
-  goto 81
-67:
+  goto 78
+64:
   v110 <- v4 == 3.0
-  goto 68 if v110 else 73
-68:
+  goto 65 if v110 else 70
+65:
   v111 <- EntityData[2] > 0
+  goto 66
+66:
+  goto 67 if v111 else 68
+67:
+  v107 <- 9.0
+  goto 69
+68:
+  v107 <- 11.0
   goto 69
 69:
-  goto 70 if v111 else 71
+  goto 78
 70:
-  v107 <- 9.0
-  goto 72
-71:
-  v107 <- 11.0
-  goto 72
-72:
-  goto 81
-73:
   v112 <- v4 == 4.0
-  goto 74 if v112 else 75
-74:
-  goto 79
-75:
+  goto 71 if v112 else 72
+71:
+  goto 76
+72:
   v113 <- v4 == 5.0
-  goto 76 if v113 else 77
-76:
-  goto 79
-77:
+  goto 73 if v113 else 74
+73:
+  goto 76
+74:
   v114 <- v4 == 7.0
-  goto 78 if v114 else 80
+  goto 75 if v114 else 77
+75:
+  goto 76
+76:
+  v107 <- 4.0
+  goto 78
+77:
+  goto 78
 78:
   goto 79
 79:
-  v107 <- 4.0
-  goto 81
+  goto 80
 80:
   goto 81
 81:
   goto 82
 82:
+  v115 <- EntityData[0] * LevelData[12]
   goto 83
 83:
   goto 84
 84:
-  goto 85
-85:
-  v115 <- EntityData[0] * LevelData[12]
-  goto 86
-86:
-  goto 87
-87:
   v116 <- v115
   v117 <- 0
   v118 <- LevelData[11]
@@ -306,8 +300,8 @@
   v121 <- v120 * 1.8
   v122 <- v119
   v123 <- v122 * 1.8
-  goto 88
-88:
+  goto 85
+85:
   v124 <- v117
   v125 <- v123
   v126 <- v125 / 2.0
@@ -328,26 +322,26 @@
   v141 <- v131
   v142 <- v135
   v143 <- v139
+  goto 86
+86:
+  goto 87
+87:
+  goto 88
+88:
   goto 89
 89:
   goto 90
 90:
+  v144 <- v143
+  v145 <- v142
+  v146 <- v144
+  v147 <- v145
   goto 91
 91:
   goto 92
 92:
   goto 93
 93:
-  v144 <- v143
-  v145 <- v142
-  v146 <- v144
-  v147 <- v145
-  goto 94
-94:
-  goto 95
-95:
-  goto 96
-96:
   v148 <- v146
   v149 <- LevelData[2] * v148
   v150 <- v147
@@ -370,22 +364,22 @@
   v167 <- v159 / v165
   v168 <- v166
   v169 <- v167
+  goto 94
+94:
+  goto 95
+95:
+  goto 96
+96:
+  v170 <- v141
+  v171 <- v142
+  v172 <- v170
+  v173 <- v171
   goto 97
 97:
   goto 98
 98:
   goto 99
 99:
-  v170 <- v141
-  v171 <- v142
-  v172 <- v170
-  v173 <- v171
-  goto 100
-100:
-  goto 101
-101:
-  goto 102
-102:
   v174 <- v172
   v175 <- LevelData[2] * v174
   v176 <- v173
@@ -408,22 +402,22 @@
   v193 <- v185 / v191
   v194 <- v192
   v195 <- v193
+  goto 100
+100:
+  goto 101
+101:
+  goto 102
+102:
+  v196 <- v143
+  v197 <- v140
+  v198 <- v196
+  v199 <- v197
   goto 103
 103:
   goto 104
 104:
   goto 105
 105:
-  v196 <- v143
-  v197 <- v140
-  v198 <- v196
-  v199 <- v197
-  goto 106
-106:
-  goto 107
-107:
-  goto 108
-108:
   v200 <- v198
   v201 <- LevelData[2] * v200
   v202 <- v199
@@ -446,22 +440,22 @@
   v219 <- v211 / v217
   v220 <- v218
   v221 <- v219
+  goto 106
+106:
+  goto 107
+107:
+  goto 108
+108:
+  v222 <- v141
+  v223 <- v140
+  v224 <- v222
+  v225 <- v223
   goto 109
 109:
   goto 110
 110:
   goto 111
 111:
-  v222 <- v141
-  v223 <- v140
-  v224 <- v222
-  v225 <- v223
-  goto 112
-112:
-  goto 113
-113:
-  goto 114
-114:
   v226 <- v224
   v227 <- LevelData[2] * v226
   v228 <- v225
@@ -484,18 +478,18 @@
   v245 <- v237 / v243
   v246 <- v244
   v247 <- v245
+  goto 112
+112:
+  goto 113
+113:
+  goto 114
+114:
   goto 115
 115:
   goto 116
 116:
   goto 117
 117:
-  goto 118
-118:
-  goto 119
-119:
-  goto 120
-120:
   v248 <- v246
   v249 <- v220
   v250 <- v248 - v249
@@ -532,12 +526,10 @@
   v281 <- v247
   v282 <- v280
   v283 <- v281
-  goto 121
-121:
-  goto 122
-122:
-  goto 123
-123:
+  goto 118
+118:
+  goto 119
+119:
   v284 <- v107
   v285 <- v267
   v286 <- v268
@@ -549,16 +541,25 @@
   v292 <- v273
   v293 <- SpawnParticleEffect(v284, v285, v286, v287, v288, v289, v290, v291, v292, 0.5, 0)
   v294 <- v293
+  goto 120
+120:
+  v295 <- !LevelOption[7]
+  goto 121 if v295 else 122
+121:
+  goto 148
+122:
+  goto 123
+123:
   goto 124
 124:
   goto 125
 125:
   goto 126
 126:
-  v295 <- !LevelOption[7]
-  goto 127 if v295 else 128
+  v296 <- 0
+  goto 127
 127:
-  goto 161
+  goto 128
 128:
   goto 129
 129:
@@ -566,118 +567,74 @@
 130:
   goto 131
 131:
-  v296 <- 0
-  v297 <- LevelData[16]
-  v298 <- 1.0
+  v297 <- v296
+  v298 <- v297 < LevelData[16]
   goto 132
 132:
-  v299 <- v296
-  v300 <- v297
-  v301 <- v298
-  v302 <- v299
-  v303 <- v300
-  v304 <- v301
-  goto 133
+  goto 133 if v298 else 137
 133:
+  v299 <- v296
+  v300 <- v296
+  v301 <- v300 + 1.0
+  v296 <- v301
   goto 134
 134:
   goto 135
 135:
   goto 136
 136:
-  v305 <- v304
-  v306 <- v305 > 0
-  goto 137
+  v302 <- 1.0
+  goto 139
 137:
-  goto 138 if v306 else 140
+  goto 138
 138:
-  v307 <- v302
-  v308 <- v303
-  v309 <- v307 < v308
+  v302 <- 0
   goto 139
 139:
-  v313 <- v309
-  goto 142
+  goto 140
 140:
-  v310 <- v302
-  v311 <- v303
-  v312 <- v310 > v311
-  goto 141
+  goto 141 if v302 else 154
 141:
-  v313 <- v312
+  v303 <- v299 * 9.0
+  v304 <- 16.0 + v303
+  v305 <- v304
+  v306 <- LevelData[v305 + 1] == EntityData[0]
   goto 142
 142:
-  goto 143 if v313 else 147
+  goto 143 if v306 else 152
 143:
-  v314 <- v302
-  v315 <- v302
-  v316 <- v304
-  v317 <- v315 + v316
-  v302 <- v317
   goto 144
 144:
   goto 145
 145:
   goto 146
 146:
-  v318 <- 1.0
-  goto 149
+  goto 147
 147:
+  v307 <- SpawnParticleEffect(0, LevelData[v305 + 2], LevelData[v305 + 3], LevelData[v305 + 4], LevelData[v305 + 5], LevelData[v305 + 6], LevelData[v305 + 7], LevelData[v305 + 8], LevelData[v305 + 9], 0.2, 0)
+  v308 <- v307
   goto 148
 148:
-  v318 <- 0
   goto 149
 149:
   goto 150
 150:
-  goto 151 if v318 else 167
+  goto 151
 151:
-  v319 <- v314 * 9.0
-  v320 <- 16.0 + v319
-  v321 <- v320
-  v322 <- LevelData[v321 + 1] == EntityData[0]
-  goto 152
+  goto 157
 152:
-  goto 153 if v322 else 165
+  goto 153
 153:
-  goto 154
+  goto 129
 154:
   goto 155
 155:
-  goto 156
+  goto exit
 156:
   goto 157
 157:
   goto 158
 158:
-  v323 <- SpawnParticleEffect(0, LevelData[v321 + 2], LevelData[v321 + 3], LevelData[v321 + 4], LevelData[v321 + 5], LevelData[v321 + 6], LevelData[v321 + 7], LevelData[v321 + 8], LevelData[v321 + 9], 0.2, 0)
-  v324 <- v323
   goto 159
 159:
-  goto 160
-160:
-  goto 161
-161:
-  goto 162
-162:
-  goto 163
-163:
-  goto 164
-164:
-  goto 170
-165:
-  goto 166
-166:
-  goto 135
-167:
-  goto 168
-168:
-  goto exit
-169:
-  goto 170
-170:
-  goto 171
-171:
-  goto 172
-172:
   goto exit

@@ -1299,17 +1299,9 @@
 291:
   goto 292
 292:
-  v546 <- -3.0
-  v547 <- 4.0
-  v548 <- 1.0
   goto 293
 293:
-  v549 <- v546
-  v550 <- v547
-  v551 <- v548
-  v552 <- v549
-  v553 <- v550
-  v554 <- v551
+  v546 <- -3.0
   goto 294
 294:
   goto 295
@@ -1318,263 +1310,254 @@
 296:
   goto 297
 297:
-  v555 <- v554
-  v556 <- v555 > 0
   goto 298
 298:
-  goto 299 if v556 else 301
+  v547 <- v546
+  v548 <- v547 < 4.0
+  goto 299
 299:
-  v557 <- v552
-  v558 <- v553
-  v559 <- v557 < v558
-  goto 300
+  goto 300 if v548 else 304
 300:
-  v563 <- v559
-  goto 303
+  v549 <- v546
+  v550 <- v546
+  v551 <- v550 + 1.0
+  v546 <- v551
+  goto 301
 301:
-  v560 <- v552
-  v561 <- v553
-  v562 <- v560 > v561
   goto 302
 302:
-  v563 <- v562
   goto 303
 303:
-  goto 304 if v563 else 308
+  v552 <- 1.0
+  goto 306
 304:
-  v564 <- v552
-  v565 <- v552
-  v566 <- v554
-  v567 <- v565 + v566
-  v552 <- v567
   goto 305
 305:
+  v552 <- 0
   goto 306
 306:
   goto 307
 307:
-  v568 <- 1.0
-  goto 310
+  goto 308 if v552 else 376
 308:
   goto 309
 309:
-  v568 <- 0
   goto 310
 310:
+  v553 <- LevelData[12]
+  v554 <- v549 * v553
   goto 311
 311:
-  goto 312 if v568 else 384
+  goto 312
 312:
+  v555 <- LevelData[12]
+  v556 <- v555 / 2.0
+  v557 <- v554 - v556
+  v558 <- LevelData[12]
+  v559 <- v558 / 2.0
+  v560 <- v554 + v559
+  v561 <- LevelData[15]
+  v562 <- LevelData[14]
+  v563 <- v562
+  v564 <- v560
+  v565 <- v561
+  v566 <- v557
   goto 313
 313:
   goto 314
 314:
-  v569 <- LevelData[12]
-  v570 <- v564 * v569
   goto 315
 315:
+  v567 <- v566
+  v568 <- v565
+  v569 <- v567
+  v570 <- v568
   goto 316
 316:
-  v571 <- LevelData[12]
-  v572 <- v571 / 2.0
-  v573 <- v570 - v572
-  v574 <- LevelData[12]
-  v575 <- v574 / 2.0
-  v576 <- v570 + v575
-  v577 <- LevelData[15]
-  v578 <- LevelData[14]
-  v579 <- v578
-  v580 <- v576
-  v581 <- v577
-  v582 <- v573
   goto 317
 317:
   goto 318
 318:
+  v571 <- LevelData[2]
+  v572 <- v569
+  v573 <- v571 * v572
+  v574 <- LevelData[3]
+  v575 <- v570
+  v576 <- v574 * v575
+  v577 <- v573 + v576
+  v578 <- LevelData[4]
+  v579 <- v577 + v578
+  v580 <- LevelData[5]
+  v581 <- v569
+  v582 <- v580 * v581
+  v583 <- LevelData[6]
+  v584 <- v570
+  v585 <- v583 * v584
+  v586 <- v582 + v585
+  v587 <- LevelData[7]
+  v588 <- v586 + v587
+  v589 <- LevelData[8]
+  v590 <- v569
+  v591 <- v589 * v590
+  v592 <- LevelData[9]
+  v593 <- v570
+  v594 <- v592 * v593
+  v595 <- v591 + v594
+  v596 <- LevelData[10]
+  v597 <- v595 + v596
+  v598 <- v579 / v597
+  v599 <- v588 / v597
+  v600 <- v598
+  v601 <- v599
   goto 319
 319:
-  v583 <- v582
-  v584 <- v581
-  v585 <- v583
-  v586 <- v584
   goto 320
 320:
   goto 321
 321:
+  v602 <- v564
+  v603 <- v565
+  v604 <- v602
+  v605 <- v603
   goto 322
 322:
-  v587 <- LevelData[2]
-  v588 <- v585
-  v589 <- v587 * v588
-  v590 <- LevelData[3]
-  v591 <- v586
-  v592 <- v590 * v591
-  v593 <- v589 + v592
-  v594 <- LevelData[4]
-  v595 <- v593 + v594
-  v596 <- LevelData[5]
-  v597 <- v585
-  v598 <- v596 * v597
-  v599 <- LevelData[6]
-  v600 <- v586
-  v601 <- v599 * v600
-  v602 <- v598 + v601
-  v603 <- LevelData[7]
-  v604 <- v602 + v603
-  v605 <- LevelData[8]
-  v606 <- v585
-  v607 <- v605 * v606
-  v608 <- LevelData[9]
-  v609 <- v586
-  v610 <- v608 * v609
-  v611 <- v607 + v610
-  v612 <- LevelData[10]
-  v613 <- v611 + v612
-  v614 <- v595 / v613
-  v615 <- v604 / v613
-  v616 <- v614
-  v617 <- v615
   goto 323
 323:
   goto 324
 324:
+  v606 <- LevelData[2]
+  v607 <- v604
+  v608 <- v606 * v607
+  v609 <- LevelData[3]
+  v610 <- v605
+  v611 <- v609 * v610
+  v612 <- v608 + v611
+  v613 <- LevelData[4]
+  v614 <- v612 + v613
+  v615 <- LevelData[5]
+  v616 <- v604
+  v617 <- v615 * v616
+  v618 <- LevelData[6]
+  v619 <- v605
+  v620 <- v618 * v619
+  v621 <- v617 + v620
+  v622 <- LevelData[7]
+  v623 <- v621 + v622
+  v624 <- LevelData[8]
+  v625 <- v604
+  v626 <- v624 * v625
+  v627 <- LevelData[9]
+  v628 <- v605
+  v629 <- v627 * v628
+  v630 <- v626 + v629
+  v631 <- LevelData[10]
+  v632 <- v630 + v631
+  v633 <- v614 / v632
+  v634 <- v623 / v632
+  v635 <- v633
+  v636 <- v634
   goto 325
 325:
-  v618 <- v580
-  v619 <- v581
-  v620 <- v618
-  v621 <- v619
   goto 326
 326:
   goto 327
 327:
+  v637 <- v566
+  v638 <- v563
+  v639 <- v637
+  v640 <- v638
   goto 328
 328:
-  v622 <- LevelData[2]
-  v623 <- v620
-  v624 <- v622 * v623
-  v625 <- LevelData[3]
-  v626 <- v621
-  v627 <- v625 * v626
-  v628 <- v624 + v627
-  v629 <- LevelData[4]
-  v630 <- v628 + v629
-  v631 <- LevelData[5]
-  v632 <- v620
-  v633 <- v631 * v632
-  v634 <- LevelData[6]
-  v635 <- v621
-  v636 <- v634 * v635
-  v637 <- v633 + v636
-  v638 <- LevelData[7]
-  v639 <- v637 + v638
-  v640 <- LevelData[8]
-  v641 <- v620
-  v642 <- v640 * v641
-  v643 <- LevelData[9]
-  v644 <- v621
-  v645 <- v643 * v644
-  v646 <- v642 + v645
-  v647 <- LevelData[10]
-  v648 <- v646 + v647
-  v649 <- v630 / v648
-  v650 <- v639 / v648
-  v651 <- v649
-  v652 <- v650
   goto 329
 329:
   goto 330
 330:
+  v641 <- LevelData[2]
+  v642 <- v639
+  v643 <- v641 * v642
+  v644 <- LevelData[3]
+  v645 <- v640
+  v646 <- v644 * v645
+  v647 <- v643 + v646
+  v648 <- LevelData[4]
+  v649 <- v647 + v648
+  v650 <- LevelData[5]
+  v651 <- v639
+  v652 <- v650 * v651
+  v653 <- LevelData[6]
+  v654 <- v640
+  v655 <- v653 * v654
+  v656 <- v652 + v655
+  v657 <- LevelData[7]
+  v658 <- v656 + v657
+  v659 <- LevelData[8]
+  v660 <- v639
+  v661 <- v659 * v660
+  v662 <- LevelData[9]
+  v663 <- v640
+  v664 <- v662 * v663
+  v665 <- v661 + v664
+  v666 <- LevelData[10]
+  v667 <- v665 + v666
+  v668 <- v649 / v667
+  v669 <- v658 / v667
+  v670 <- v668
+  v671 <- v669
   goto 331
 331:
-  v653 <- v582
-  v654 <- v579
-  v655 <- v653
-  v656 <- v654
   goto 332
 332:
   goto 333
 333:
+  v672 <- v564
+  v673 <- v563
+  v674 <- v672
+  v675 <- v673
   goto 334
 334:
-  v657 <- LevelData[2]
-  v658 <- v655
-  v659 <- v657 * v658
-  v660 <- LevelData[3]
-  v661 <- v656
-  v662 <- v660 * v661
-  v663 <- v659 + v662
-  v664 <- LevelData[4]
-  v665 <- v663 + v664
-  v666 <- LevelData[5]
-  v667 <- v655
-  v668 <- v666 * v667
-  v669 <- LevelData[6]
-  v670 <- v656
-  v671 <- v669 * v670
-  v672 <- v668 + v671
-  v673 <- LevelData[7]
-  v674 <- v672 + v673
-  v675 <- LevelData[8]
-  v676 <- v655
-  v677 <- v675 * v676
-  v678 <- LevelData[9]
-  v679 <- v656
-  v680 <- v678 * v679
-  v681 <- v677 + v680
-  v682 <- LevelData[10]
-  v683 <- v681 + v682
-  v684 <- v665 / v683
-  v685 <- v674 / v683
-  v686 <- v684
-  v687 <- v685
   goto 335
 335:
   goto 336
 336:
+  v676 <- LevelData[2]
+  v677 <- v674
+  v678 <- v676 * v677
+  v679 <- LevelData[3]
+  v680 <- v675
+  v681 <- v679 * v680
+  v682 <- v678 + v681
+  v683 <- LevelData[4]
+  v684 <- v682 + v683
+  v685 <- LevelData[5]
+  v686 <- v674
+  v687 <- v685 * v686
+  v688 <- LevelData[6]
+  v689 <- v675
+  v690 <- v688 * v689
+  v691 <- v687 + v690
+  v692 <- LevelData[7]
+  v693 <- v691 + v692
+  v694 <- LevelData[8]
+  v695 <- v674
+  v696 <- v694 * v695
+  v697 <- LevelData[9]
+  v698 <- v675
+  v699 <- v697 * v698
+  v700 <- v696 + v699
+  v701 <- LevelData[10]
+  v702 <- v700 + v701
+  v703 <- v684 / v702
+  v704 <- v693 / v702
+  v705 <- v703
+  v706 <- v704
   goto 337
 337:
-  v688 <- v580
-  v689 <- v579
-  v690 <- v688
-  v691 <- v689
   goto 338
 338:
   goto 339
 339:
   goto 340
 340:
-  v692 <- LevelData[2]
-  v693 <- v690
-  v694 <- v692 * v693
-  v695 <- LevelData[3]
-  v696 <- v691
-  v697 <- v695 * v696
-  v698 <- v694 + v697
-  v699 <- LevelData[4]
-  v700 <- v698 + v699
-  v701 <- LevelData[5]
-  v702 <- v690
-  v703 <- v701 * v702
-  v704 <- LevelData[6]
-  v705 <- v691
-  v706 <- v704 * v705
-  v707 <- v703 + v706
-  v708 <- LevelData[7]
-  v709 <- v707 + v708
-  v710 <- LevelData[8]
-  v711 <- v690
-  v712 <- v710 * v711
-  v713 <- LevelData[9]
-  v714 <- v691
-  v715 <- v713 * v714
-  v716 <- v712 + v715
-  v717 <- LevelData[10]
-  v718 <- v716 + v717
-  v719 <- v700 / v718
-  v720 <- v709 / v718
-  v721 <- v719
-  v722 <- v720
   goto 341
 341:
   goto 342
@@ -1585,831 +1568,832 @@
 344:
   goto 345
 345:
+  v707 <- LevelData[16]
+  v708 <- v707
   goto 346
 346:
+  v709 <- 0
+  v710 <- v708
   goto 347
 347:
   goto 348
 348:
   goto 349
 349:
-  v723 <- LevelData[16]
-  v724 <- 0
-  v725 <- v723
-  v726 <- 1.0
   goto 350
 350:
-  v727 <- v724
-  v728 <- v725
-  v729 <- v726
-  v730 <- v727
-  v731 <- v728
-  v732 <- v729
   goto 351
 351:
+  v711 <- v709
+  v712 <- v711 < v710
   goto 352
 352:
-  goto 353
+  goto 353 if v712 else 357
 353:
+  v713 <- v709
+  v714 <- v709
+  v715 <- v714 + 1.0
+  v709 <- v715
   goto 354
 354:
-  v733 <- v732
-  v734 <- v733 > 0
   goto 355
 355:
-  goto 356 if v734 else 358
+  goto 356
 356:
-  v735 <- v730
-  v736 <- v731
-  v737 <- v735 < v736
-  goto 357
+  v716 <- 1.0
+  goto 359
 357:
-  v741 <- v737
-  goto 360
+  goto 358
 358:
-  v738 <- v730
-  v739 <- v731
-  v740 <- v738 > v739
+  v716 <- 0
   goto 359
 359:
-  v741 <- v740
   goto 360
 360:
-  goto 361 if v741 else 365
+  goto 361 if v716 else 366
 361:
-  v742 <- v730
-  v743 <- v730
-  v744 <- v732
-  v745 <- v743 + v744
-  v730 <- v745
+  v717 <- v713 * 9.0
+  v718 <- 16.0 + v717
+  v719 <- v718
+  v720 <- LevelData[v719 + 1]
+  v721 <- v720 == v549
   goto 362
 362:
-  goto 363
+  goto 363 if v721 else 364
 363:
-  goto 364
+  v722 <- v600
+  LevelData[v719 + 2] <- v722
+  v723 <- v601
+  LevelData[v719 + 3] <- v723
+  v724 <- v670
+  LevelData[v719 + 4] <- v724
+  v725 <- v671
+  LevelData[v719 + 5] <- v725
+  v726 <- v705
+  LevelData[v719 + 6] <- v726
+  v727 <- v706
+  LevelData[v719 + 7] <- v727
+  v728 <- v635
+  LevelData[v719 + 8] <- v728
+  v729 <- v636
+  LevelData[v719 + 9] <- v729
+  goto 373
 364:
-  v746 <- 1.0
-  goto 367
+  goto 365
 365:
-  goto 366
+  goto 349
 366:
-  v746 <- 0
   goto 367
 367:
+  v730 <- LevelData[16]
   goto 368
 368:
-  goto 369 if v746 else 374
+  goto 369
 369:
-  v747 <- v742 * 9.0
-  v748 <- 16.0 + v747
-  v749 <- v748
-  v750 <- LevelData[v749 + 1]
-  v751 <- v750 == v564
   goto 370
 370:
-  goto 371 if v751 else 372
+  v731 <- v730 < 7.0
+  goto 371
 371:
-  v752 <- v616
-  LevelData[v749 + 2] <- v752
-  v753 <- v617
-  LevelData[v749 + 3] <- v753
-  v754 <- v686
-  LevelData[v749 + 4] <- v754
-  v755 <- v687
-  LevelData[v749 + 5] <- v755
-  v756 <- v721
-  LevelData[v749 + 6] <- v756
-  v757 <- v722
-  LevelData[v749 + 7] <- v757
-  v758 <- v651
-  LevelData[v749 + 8] <- v758
-  v759 <- v652
-  LevelData[v749 + 9] <- v759
-  goto 381
+  goto 372 if v731 else 375
 372:
+  v734 <- LevelData[16]
+  v735 <- v549
+  v736 <- v734 * 9.0
+  v737 <- 16.0 + v736
+  v738 <- v737
+  v739 <- v735
+  LevelData[v738 + 1] <- v739
+  v740 <- v600
+  LevelData[v738 + 2] <- v740
+  v741 <- v601
+  LevelData[v738 + 3] <- v741
+  v742 <- v670
+  LevelData[v738 + 4] <- v742
+  v743 <- v671
+  LevelData[v738 + 5] <- v743
+  v744 <- v705
+  LevelData[v738 + 6] <- v744
+  v745 <- v706
+  LevelData[v738 + 7] <- v745
+  v746 <- v635
+  LevelData[v738 + 8] <- v746
+  v747 <- v636
+  LevelData[v738 + 9] <- v747
+  v748 <- LevelData[16]
+  v749 <- v748 + 1.0
+  LevelData[16] <- v749
   goto 373
 373:
-  goto 353
+  goto 374
 374:
-  goto 375
+  goto 296
 375:
-  v760 <- LevelData[16]
-  goto 376
+  v732 <- DebugLog(1.0)
+  v733 <- DebugPause()
+  goto exit
 376:
   goto 377
 377:
   goto 378
 378:
-  v761 <- v760 < 7.0
+  v750 <- LevelData[12]
+  v751 <- -3.5 * v750
+  v752 <- LevelData[13]
+  v753 <- v751 - v752
+  v754 <- LevelData[15]
+  v755 <- LevelData[14]
+  v756 <- v755
+  v757 <- v751
+  v758 <- v754
+  v759 <- v753
   goto 379
 379:
-  goto 380 if v761 else 383
+  goto 380
 380:
-  v764 <- LevelData[16]
-  v765 <- v564
-  v766 <- v764 * 9.0
-  v767 <- 16.0 + v766
-  v768 <- v767
-  v769 <- v765
-  LevelData[v768 + 1] <- v769
-  v770 <- v616
-  LevelData[v768 + 2] <- v770
-  v771 <- v617
-  LevelData[v768 + 3] <- v771
-  v772 <- v686
-  LevelData[v768 + 4] <- v772
-  v773 <- v687
-  LevelData[v768 + 5] <- v773
-  v774 <- v721
-  LevelData[v768 + 6] <- v774
-  v775 <- v722
-  LevelData[v768 + 7] <- v775
-  v776 <- v651
-  LevelData[v768 + 8] <- v776
-  v777 <- v652
-  LevelData[v768 + 9] <- v777
-  v778 <- LevelData[16]
-  v779 <- v778 + 1.0
-  LevelData[16] <- v779
   goto 381
 381:
+  v760 <- v759
+  v761 <- v758
+  v762 <- v760
+  v763 <- v761
   goto 382
 382:
-  goto 296
+  goto 383
 383:
-  v762 <- DebugLog(1.0)
-  v763 <- DebugPause()
-  goto exit
+  goto 384
 384:
+  v764 <- LevelData[2]
+  v765 <- v762
+  v766 <- v764 * v765
+  v767 <- LevelData[3]
+  v768 <- v763
+  v769 <- v767 * v768
+  v770 <- v766 + v769
+  v771 <- LevelData[4]
+  v772 <- v770 + v771
+  v773 <- LevelData[5]
+  v774 <- v762
+  v775 <- v773 * v774
+  v776 <- LevelData[6]
+  v777 <- v763
+  v778 <- v776 * v777
+  v779 <- v775 + v778
+  v780 <- LevelData[7]
+  v781 <- v779 + v780
+  v782 <- LevelData[8]
+  v783 <- v762
+  v784 <- v782 * v783
+  v785 <- LevelData[9]
+  v786 <- v763
+  v787 <- v785 * v786
+  v788 <- v784 + v787
+  v789 <- LevelData[10]
+  v790 <- v788 + v789
+  v791 <- v772 / v790
+  v792 <- v781 / v790
+  v793 <- v791
+  v794 <- v792
   goto 385
 385:
   goto 386
 386:
-  v780 <- LevelData[12]
-  v781 <- -3.5 * v780
-  v782 <- LevelData[13]
-  v783 <- v781 - v782
-  v784 <- LevelData[15]
-  v785 <- LevelData[14]
-  v786 <- v785
-  v787 <- v781
-  v788 <- v784
-  v789 <- v783
   goto 387
 387:
+  v795 <- v757
+  v796 <- v758
+  v797 <- v795
+  v798 <- v796
   goto 388
 388:
   goto 389
 389:
-  v790 <- v789
-  v791 <- v788
-  v792 <- v790
-  v793 <- v791
   goto 390
 390:
+  v799 <- LevelData[2]
+  v800 <- v797
+  v801 <- v799 * v800
+  v802 <- LevelData[3]
+  v803 <- v798
+  v804 <- v802 * v803
+  v805 <- v801 + v804
+  v806 <- LevelData[4]
+  v807 <- v805 + v806
+  v808 <- LevelData[5]
+  v809 <- v797
+  v810 <- v808 * v809
+  v811 <- LevelData[6]
+  v812 <- v798
+  v813 <- v811 * v812
+  v814 <- v810 + v813
+  v815 <- LevelData[7]
+  v816 <- v814 + v815
+  v817 <- LevelData[8]
+  v818 <- v797
+  v819 <- v817 * v818
+  v820 <- LevelData[9]
+  v821 <- v798
+  v822 <- v820 * v821
+  v823 <- v819 + v822
+  v824 <- LevelData[10]
+  v825 <- v823 + v824
+  v826 <- v807 / v825
+  v827 <- v816 / v825
+  v828 <- v826
+  v829 <- v827
   goto 391
 391:
   goto 392
 392:
-  v794 <- LevelData[2]
-  v795 <- v792
-  v796 <- v794 * v795
-  v797 <- LevelData[3]
-  v798 <- v793
-  v799 <- v797 * v798
-  v800 <- v796 + v799
-  v801 <- LevelData[4]
-  v802 <- v800 + v801
-  v803 <- LevelData[5]
-  v804 <- v792
-  v805 <- v803 * v804
-  v806 <- LevelData[6]
-  v807 <- v793
-  v808 <- v806 * v807
-  v809 <- v805 + v808
-  v810 <- LevelData[7]
-  v811 <- v809 + v810
-  v812 <- LevelData[8]
-  v813 <- v792
-  v814 <- v812 * v813
-  v815 <- LevelData[9]
-  v816 <- v793
-  v817 <- v815 * v816
-  v818 <- v814 + v817
-  v819 <- LevelData[10]
-  v820 <- v818 + v819
-  v821 <- v802 / v820
-  v822 <- v811 / v820
-  v823 <- v821
-  v824 <- v822
   goto 393
 393:
+  v830 <- v759
+  v831 <- v756
+  v832 <- v830
+  v833 <- v831
   goto 394
 394:
   goto 395
 395:
-  v825 <- v787
-  v826 <- v788
-  v827 <- v825
-  v828 <- v826
   goto 396
 396:
+  v834 <- LevelData[2]
+  v835 <- v832
+  v836 <- v834 * v835
+  v837 <- LevelData[3]
+  v838 <- v833
+  v839 <- v837 * v838
+  v840 <- v836 + v839
+  v841 <- LevelData[4]
+  v842 <- v840 + v841
+  v843 <- LevelData[5]
+  v844 <- v832
+  v845 <- v843 * v844
+  v846 <- LevelData[6]
+  v847 <- v833
+  v848 <- v846 * v847
+  v849 <- v845 + v848
+  v850 <- LevelData[7]
+  v851 <- v849 + v850
+  v852 <- LevelData[8]
+  v853 <- v832
+  v854 <- v852 * v853
+  v855 <- LevelData[9]
+  v856 <- v833
+  v857 <- v855 * v856
+  v858 <- v854 + v857
+  v859 <- LevelData[10]
+  v860 <- v858 + v859
+  v861 <- v842 / v860
+  v862 <- v851 / v860
+  v863 <- v861
+  v864 <- v862
   goto 397
 397:
   goto 398
 398:
-  v829 <- LevelData[2]
-  v830 <- v827
-  v831 <- v829 * v830
-  v832 <- LevelData[3]
-  v833 <- v828
-  v834 <- v832 * v833
-  v835 <- v831 + v834
-  v836 <- LevelData[4]
-  v837 <- v835 + v836
-  v838 <- LevelData[5]
-  v839 <- v827
-  v840 <- v838 * v839
-  v841 <- LevelData[6]
-  v842 <- v828
-  v843 <- v841 * v842
-  v844 <- v840 + v843
-  v845 <- LevelData[7]
-  v846 <- v844 + v845
-  v847 <- LevelData[8]
-  v848 <- v827
-  v849 <- v847 * v848
-  v850 <- LevelData[9]
-  v851 <- v828
-  v852 <- v850 * v851
-  v853 <- v849 + v852
-  v854 <- LevelData[10]
-  v855 <- v853 + v854
-  v856 <- v837 / v855
-  v857 <- v846 / v855
-  v858 <- v856
-  v859 <- v857
   goto 399
 399:
+  v865 <- v757
+  v866 <- v756
+  v867 <- v865
+  v868 <- v866
   goto 400
 400:
   goto 401
 401:
-  v860 <- v789
-  v861 <- v786
-  v862 <- v860
-  v863 <- v861
   goto 402
 402:
+  v869 <- LevelData[2]
+  v870 <- v867
+  v871 <- v869 * v870
+  v872 <- LevelData[3]
+  v873 <- v868
+  v874 <- v872 * v873
+  v875 <- v871 + v874
+  v876 <- LevelData[4]
+  v877 <- v875 + v876
+  v878 <- LevelData[5]
+  v879 <- v867
+  v880 <- v878 * v879
+  v881 <- LevelData[6]
+  v882 <- v868
+  v883 <- v881 * v882
+  v884 <- v880 + v883
+  v885 <- LevelData[7]
+  v886 <- v884 + v885
+  v887 <- LevelData[8]
+  v888 <- v867
+  v889 <- v887 * v888
+  v890 <- LevelData[9]
+  v891 <- v868
+  v892 <- v890 * v891
+  v893 <- v889 + v892
+  v894 <- LevelData[10]
+  v895 <- v893 + v894
+  v896 <- v877 / v895
+  v897 <- v886 / v895
+  v898 <- v896
+  v899 <- v897
   goto 403
 403:
   goto 404
 404:
-  v864 <- LevelData[2]
-  v865 <- v862
-  v866 <- v864 * v865
-  v867 <- LevelData[3]
-  v868 <- v863
-  v869 <- v867 * v868
-  v870 <- v866 + v869
-  v871 <- LevelData[4]
-  v872 <- v870 + v871
-  v873 <- LevelData[5]
-  v874 <- v862
-  v875 <- v873 * v874
-  v876 <- LevelData[6]
-  v877 <- v863
-  v878 <- v876 * v877
-  v879 <- v875 + v878
-  v880 <- LevelData[7]
-  v881 <- v879 + v880
-  v882 <- LevelData[8]
-  v883 <- v862
-  v884 <- v882 * v883
-  v885 <- LevelData[9]
-  v886 <- v863
-  v887 <- v885 * v886
-  v888 <- v884 + v887
-  v889 <- LevelData[10]
-  v890 <- v888 + v889
-  v891 <- v872 / v890
-  v892 <- v881 / v890
-  v893 <- v891
-  v894 <- v892
   goto 405
 405:
   goto 406
 406:
   goto 407
 407:
-  v895 <- v787
-  v896 <- v786
-  v897 <- v895
-  v898 <- v896
   goto 408
 408:
   goto 409
 409:
   goto 410
 410:
-  v899 <- LevelData[2]
-  v900 <- v897
-  v901 <- v899 * v900
-  v902 <- LevelData[3]
-  v903 <- v898
-  v904 <- v902 * v903
-  v905 <- v901 + v904
-  v906 <- LevelData[4]
-  v907 <- v905 + v906
-  v908 <- LevelData[5]
-  v909 <- v897
-  v910 <- v908 * v909
-  v911 <- LevelData[6]
-  v912 <- v898
-  v913 <- v911 * v912
-  v914 <- v910 + v913
-  v915 <- LevelData[7]
-  v916 <- v914 + v915
-  v917 <- LevelData[8]
-  v918 <- v897
-  v919 <- v917 * v918
-  v920 <- LevelData[9]
-  v921 <- v898
-  v922 <- v920 * v921
-  v923 <- v919 + v922
-  v924 <- LevelData[10]
-  v925 <- v923 + v924
-  v926 <- v907 / v925
-  v927 <- v916 / v925
-  v928 <- v926
-  v929 <- v927
+  v900 <- v793
+  LevelData[80] <- v900
+  v901 <- v794
+  LevelData[81] <- v901
+  v902 <- v863
+  LevelData[82] <- v902
+  v903 <- v864
+  LevelData[83] <- v903
+  v904 <- v898
+  LevelData[84] <- v904
+  v905 <- v899
+  LevelData[85] <- v905
+  v906 <- v828
+  LevelData[86] <- v906
+  v907 <- v829
+  LevelData[87] <- v907
   goto 411
 411:
+  v908 <- LevelData[12]
+  v909 <- 3.5 * v908
+  v910 <- LevelData[13]
+  v911 <- v909 + v910
+  v912 <- LevelData[15]
+  v913 <- LevelData[14]
+  v914 <- v913
+  v915 <- v911
+  v916 <- v912
+  v917 <- v909
   goto 412
 412:
   goto 413
 413:
   goto 414
 414:
+  v918 <- v917
+  v919 <- v916
+  v920 <- v918
+  v921 <- v919
   goto 415
 415:
   goto 416
 416:
   goto 417
 417:
+  v922 <- LevelData[2]
+  v923 <- v920
+  v924 <- v922 * v923
+  v925 <- LevelData[3]
+  v926 <- v921
+  v927 <- v925 * v926
+  v928 <- v924 + v927
+  v929 <- LevelData[4]
+  v930 <- v928 + v929
+  v931 <- LevelData[5]
+  v932 <- v920
+  v933 <- v931 * v932
+  v934 <- LevelData[6]
+  v935 <- v921
+  v936 <- v934 * v935
+  v937 <- v933 + v936
+  v938 <- LevelData[7]
+  v939 <- v937 + v938
+  v940 <- LevelData[8]
+  v941 <- v920
+  v942 <- v940 * v941
+  v943 <- LevelData[9]
+  v944 <- v921
+  v945 <- v943 * v944
+  v946 <- v942 + v945
+  v947 <- LevelData[10]
+  v948 <- v946 + v947
+  v949 <- v930 / v948
+  v950 <- v939 / v948
+  v951 <- v949
+  v952 <- v950
   goto 418
 418:
-  v930 <- v823
-  LevelData[80] <- v930
-  v931 <- v824
-  LevelData[81] <- v931
-  v932 <- v893
-  LevelData[82] <- v932
-  v933 <- v894
-  LevelData[83] <- v933
-  v934 <- v928
-  LevelData[84] <- v934
-  v935 <- v929
-  LevelData[85] <- v935
-  v936 <- v858
-  LevelData[86] <- v936
-  v937 <- v859
-  LevelData[87] <- v937
   goto 419
 419:
-  v938 <- LevelData[12]
-  v939 <- 3.5 * v938
-  v940 <- LevelData[13]
-  v941 <- v939 + v940
-  v942 <- LevelData[15]
-  v943 <- LevelData[14]
-  v944 <- v943
-  v945 <- v941
-  v946 <- v942
-  v947 <- v939
   goto 420
 420:
+  v953 <- v915
+  v954 <- v916
+  v955 <- v953
+  v956 <- v954
   goto 421
 421:
   goto 422
 422:
-  v948 <- v947
-  v949 <- v946
-  v950 <- v948
-  v951 <- v949
   goto 423
 423:
+  v957 <- LevelData[2]
+  v958 <- v955
+  v959 <- v957 * v958
+  v960 <- LevelData[3]
+  v961 <- v956
+  v962 <- v960 * v961
+  v963 <- v959 + v962
+  v964 <- LevelData[4]
+  v965 <- v963 + v964
+  v966 <- LevelData[5]
+  v967 <- v955
+  v968 <- v966 * v967
+  v969 <- LevelData[6]
+  v970 <- v956
+  v971 <- v969 * v970
+  v972 <- v968 + v971
+  v973 <- LevelData[7]
+  v974 <- v972 + v973
+  v975 <- LevelData[8]
+  v976 <- v955
+  v977 <- v975 * v976
+  v978 <- LevelData[9]
+  v979 <- v956
+  v980 <- v978 * v979
+  v981 <- v977 + v980
+  v982 <- LevelData[10]
+  v983 <- v981 + v982
+  v984 <- v965 / v983
+  v985 <- v974 / v983
+  v986 <- v984
+  v987 <- v985
   goto 424
 424:
   goto 425
 425:
-  v952 <- LevelData[2]
-  v953 <- v950
-  v954 <- v952 * v953
-  v955 <- LevelData[3]
-  v956 <- v951
-  v957 <- v955 * v956
-  v958 <- v954 + v957
-  v959 <- LevelData[4]
-  v960 <- v958 + v959
-  v961 <- LevelData[5]
-  v962 <- v950
-  v963 <- v961 * v962
-  v964 <- LevelData[6]
-  v965 <- v951
-  v966 <- v964 * v965
-  v967 <- v963 + v966
-  v968 <- LevelData[7]
-  v969 <- v967 + v968
-  v970 <- LevelData[8]
-  v971 <- v950
-  v972 <- v970 * v971
-  v973 <- LevelData[9]
-  v974 <- v951
-  v975 <- v973 * v974
-  v976 <- v972 + v975
-  v977 <- LevelData[10]
-  v978 <- v976 + v977
-  v979 <- v960 / v978
-  v980 <- v969 / v978
-  v981 <- v979
-  v982 <- v980
   goto 426
 426:
+  v988 <- v917
+  v989 <- v914
+  v990 <- v988
+  v991 <- v989
   goto 427
 427:
   goto 428
 428:
-  v983 <- v945
-  v984 <- v946
-  v985 <- v983
-  v986 <- v984
   goto 429
 429:
+  v992 <- LevelData[2]
+  v993 <- v990
+  v994 <- v992 * v993
+  v995 <- LevelData[3]
+  v996 <- v991
+  v997 <- v995 * v996
+  v998 <- v994 + v997
+  v999 <- LevelData[4]
+  v1000 <- v998 + v999
+  v1001 <- LevelData[5]
+  v1002 <- v990
+  v1003 <- v1001 * v1002
+  v1004 <- LevelData[6]
+  v1005 <- v991
+  v1006 <- v1004 * v1005
+  v1007 <- v1003 + v1006
+  v1008 <- LevelData[7]
+  v1009 <- v1007 + v1008
+  v1010 <- LevelData[8]
+  v1011 <- v990
+  v1012 <- v1010 * v1011
+  v1013 <- LevelData[9]
+  v1014 <- v991
+  v1015 <- v1013 * v1014
+  v1016 <- v1012 + v1015
+  v1017 <- LevelData[10]
+  v1018 <- v1016 + v1017
+  v1019 <- v1000 / v1018
+  v1020 <- v1009 / v1018
+  v1021 <- v1019
+  v1022 <- v1020
   goto 430
 430:
   goto 431
 431:
-  v987 <- LevelData[2]
-  v988 <- v985
-  v989 <- v987 * v988
-  v990 <- LevelData[3]
-  v991 <- v986
-  v992 <- v990 * v991
-  v993 <- v989 + v992
-  v994 <- LevelData[4]
-  v995 <- v993 + v994
-  v996 <- LevelData[5]
-  v997 <- v985
-  v998 <- v996 * v997
-  v999 <- LevelData[6]
-  v1000 <- v986
-  v1001 <- v999 * v1000
-  v1002 <- v998 + v1001
-  v1003 <- LevelData[7]
-  v1004 <- v1002 + v1003
-  v1005 <- LevelData[8]
-  v1006 <- v985
-  v1007 <- v1005 * v1006
-  v1008 <- LevelData[9]
-  v1009 <- v986
-  v1010 <- v1008 * v1009
-  v1011 <- v1007 + v1010
-  v1012 <- LevelData[10]
-  v1013 <- v1011 + v1012
-  v1014 <- v995 / v1013
-  v1015 <- v1004 / v1013
-  v1016 <- v1014
-  v1017 <- v1015
   goto 432
 432:
+  v1023 <- v915
+  v1024 <- v914
+  v1025 <- v1023
+  v1026 <- v1024
   goto 433
 433:
   goto 434
 434:
-  v1018 <- v947
-  v1019 <- v944
-  v1020 <- v1018
-  v1021 <- v1019
   goto 435
 435:
+  v1027 <- LevelData[2]
+  v1028 <- v1025
+  v1029 <- v1027 * v1028
+  v1030 <- LevelData[3]
+  v1031 <- v1026
+  v1032 <- v1030 * v1031
+  v1033 <- v1029 + v1032
+  v1034 <- LevelData[4]
+  v1035 <- v1033 + v1034
+  v1036 <- LevelData[5]
+  v1037 <- v1025
+  v1038 <- v1036 * v1037
+  v1039 <- LevelData[6]
+  v1040 <- v1026
+  v1041 <- v1039 * v1040
+  v1042 <- v1038 + v1041
+  v1043 <- LevelData[7]
+  v1044 <- v1042 + v1043
+  v1045 <- LevelData[8]
+  v1046 <- v1025
+  v1047 <- v1045 * v1046
+  v1048 <- LevelData[9]
+  v1049 <- v1026
+  v1050 <- v1048 * v1049
+  v1051 <- v1047 + v1050
+  v1052 <- LevelData[10]
+  v1053 <- v1051 + v1052
+  v1054 <- v1035 / v1053
+  v1055 <- v1044 / v1053
+  v1056 <- v1054
+  v1057 <- v1055
   goto 436
 436:
   goto 437
 437:
-  v1022 <- LevelData[2]
-  v1023 <- v1020
-  v1024 <- v1022 * v1023
-  v1025 <- LevelData[3]
-  v1026 <- v1021
-  v1027 <- v1025 * v1026
-  v1028 <- v1024 + v1027
-  v1029 <- LevelData[4]
-  v1030 <- v1028 + v1029
-  v1031 <- LevelData[5]
-  v1032 <- v1020
-  v1033 <- v1031 * v1032
-  v1034 <- LevelData[6]
-  v1035 <- v1021
-  v1036 <- v1034 * v1035
-  v1037 <- v1033 + v1036
-  v1038 <- LevelData[7]
-  v1039 <- v1037 + v1038
-  v1040 <- LevelData[8]
-  v1041 <- v1020
-  v1042 <- v1040 * v1041
-  v1043 <- LevelData[9]
-  v1044 <- v1021
-  v1045 <- v1043 * v1044
-  v1046 <- v1042 + v1045
-  v1047 <- LevelData[10]
-  v1048 <- v1046 + v1047
-  v1049 <- v1030 / v1048
-  v1050 <- v1039 / v1048
-  v1051 <- v1049
-  v1052 <- v1050
   goto 438
 438:
   goto 439
 439:
   goto 440
 440:
-  v1053 <- v945
-  v1054 <- v944
-  v1055 <- v1053
-  v1056 <- v1054
   goto 441
 441:
   goto 442
 442:
   goto 443
 443:
-  v1057 <- LevelData[2]
-  v1058 <- v1055
-  v1059 <- v1057 * v1058
-  v1060 <- LevelData[3]
-  v1061 <- v1056
-  v1062 <- v1060 * v1061
-  v1063 <- v1059 + v1062
-  v1064 <- LevelData[4]
-  v1065 <- v1063 + v1064
-  v1066 <- LevelData[5]
-  v1067 <- v1055
-  v1068 <- v1066 * v1067
-  v1069 <- LevelData[6]
-  v1070 <- v1056
-  v1071 <- v1069 * v1070
-  v1072 <- v1068 + v1071
-  v1073 <- LevelData[7]
-  v1074 <- v1072 + v1073
-  v1075 <- LevelData[8]
-  v1076 <- v1055
-  v1077 <- v1075 * v1076
-  v1078 <- LevelData[9]
-  v1079 <- v1056
-  v1080 <- v1078 * v1079
-  v1081 <- v1077 + v1080
-  v1082 <- LevelData[10]
-  v1083 <- v1081 + v1082
-  v1084 <- v1065 / v1083
-  v1085 <- v1074 / v1083
-  v1086 <- v1084
-  v1087 <- v1085
+  v1058 <- v951
+  LevelData[88] <- v1058
+  v1059 <- v952
+  LevelData[89] <- v1059
+  v1060 <- v1021
+  LevelData[90] <- v1060
+  v1061 <- v1022
+  LevelData[91] <- v1061
+  v1062 <- v1056
+  LevelData[92] <- v1062
+  v1063 <- v1057
+  LevelData[93] <- v1063
+  v1064 <- v986
+  LevelData[94] <- v1064
+  v1065 <- v987
+  LevelData[95] <- v1065
   goto 444
 444:
+  v1066 <- LevelData[12]
+  v1067 <- -3.5 * v1066
+  v1068 <- LevelData[12]
+  v1069 <- 3.5 * v1068
+  v1070 <- LevelData[11]
+  v1071 <- -v1070
+  v1072 <- v1071 / 2.0
+  v1073 <- LevelData[11]
+  v1074 <- v1073 / 2.0
+  v1075 <- v1074
+  v1076 <- v1069
+  v1077 <- v1072
+  v1078 <- v1067
   goto 445
 445:
   goto 446
 446:
   goto 447
 447:
+  v1079 <- v1078
+  v1080 <- v1077
+  v1081 <- v1079
+  v1082 <- v1080
   goto 448
 448:
   goto 449
 449:
   goto 450
 450:
+  v1083 <- LevelData[2]
+  v1084 <- v1081
+  v1085 <- v1083 * v1084
+  v1086 <- LevelData[3]
+  v1087 <- v1082
+  v1088 <- v1086 * v1087
+  v1089 <- v1085 + v1088
+  v1090 <- LevelData[4]
+  v1091 <- v1089 + v1090
+  v1092 <- LevelData[5]
+  v1093 <- v1081
+  v1094 <- v1092 * v1093
+  v1095 <- LevelData[6]
+  v1096 <- v1082
+  v1097 <- v1095 * v1096
+  v1098 <- v1094 + v1097
+  v1099 <- LevelData[7]
+  v1100 <- v1098 + v1099
+  v1101 <- LevelData[8]
+  v1102 <- v1081
+  v1103 <- v1101 * v1102
+  v1104 <- LevelData[9]
+  v1105 <- v1082
+  v1106 <- v1104 * v1105
+  v1107 <- v1103 + v1106
+  v1108 <- LevelData[10]
+  v1109 <- v1107 + v1108
+  v1110 <- v1091 / v1109
+  v1111 <- v1100 / v1109
+  v1112 <- v1110
+  v1113 <- v1111
   goto 451
 451:
-  v1088 <- v981
-  LevelData[88] <- v1088
-  v1089 <- v982
-  LevelData[89] <- v1089
-  v1090 <- v1051
-  LevelData[90] <- v1090
-  v1091 <- v1052
-  LevelData[91] <- v1091
-  v1092 <- v1086
-  LevelData[92] <- v1092
-  v1093 <- v1087
-  LevelData[93] <- v1093
-  v1094 <- v1016
-  LevelData[94] <- v1094
-  v1095 <- v1017
-  LevelData[95] <- v1095
   goto 452
 452:
-  v1096 <- LevelData[12]
-  v1097 <- -3.5 * v1096
-  v1098 <- LevelData[12]
-  v1099 <- 3.5 * v1098
-  v1100 <- LevelData[11]
-  v1101 <- -v1100
-  v1102 <- v1101 / 2.0
-  v1103 <- LevelData[11]
-  v1104 <- v1103 / 2.0
-  v1105 <- v1104
-  v1106 <- v1099
-  v1107 <- v1102
-  v1108 <- v1097
   goto 453
 453:
+  v1114 <- v1076
+  v1115 <- v1077
+  v1116 <- v1114
+  v1117 <- v1115
   goto 454
 454:
   goto 455
 455:
-  v1109 <- v1108
-  v1110 <- v1107
-  v1111 <- v1109
-  v1112 <- v1110
   goto 456
 456:
+  v1118 <- LevelData[2]
+  v1119 <- v1116
+  v1120 <- v1118 * v1119
+  v1121 <- LevelData[3]
+  v1122 <- v1117
+  v1123 <- v1121 * v1122
+  v1124 <- v1120 + v1123
+  v1125 <- LevelData[4]
+  v1126 <- v1124 + v1125
+  v1127 <- LevelData[5]
+  v1128 <- v1116
+  v1129 <- v1127 * v1128
+  v1130 <- LevelData[6]
+  v1131 <- v1117
+  v1132 <- v1130 * v1131
+  v1133 <- v1129 + v1132
+  v1134 <- LevelData[7]
+  v1135 <- v1133 + v1134
+  v1136 <- LevelData[8]
+  v1137 <- v1116
+  v1138 <- v1136 * v1137
+  v1139 <- LevelData[9]
+  v1140 <- v1117
+  v1141 <- v1139 * v1140
+  v1142 <- v1138 + v1141
+  v1143 <- LevelData[10]
+  v1144 <- v1142 + v1143
+  v1145 <- v1126 / v1144
+  v1146 <- v1135 / v1144
+  v1147 <- v1145
+  v1148 <- v1146
   goto 457
 457:
   goto 458
 458:
-  v1113 <- LevelData[2]
-  v1114 <- v1111
-  v1115 <- v1113 * v1114
-  v1116 <- LevelData[3]
-  v1117 <- v1112
-  v1118 <- v1116 * v1117
-  v1119 <- v1115 + v1118
-  v1120 <- LevelData[4]
-  v1121 <- v1119 + v1120
-  v1122 <- LevelData[5]
-  v1123 <- v1111
-  v1124 <- v1122 * v1123
-  v1125 <- LevelData[6]
-  v1126 <- v1112
-  v1127 <- v1125 * v1126
-  v1128 <- v1124 + v1127
-  v1129 <- LevelData[7]
-  v1130 <- v1128 + v1129
-  v1131 <- LevelData[8]
-  v1132 <- v1111
-  v1133 <- v1131 * v1132
-  v1134 <- LevelData[9]
-  v1135 <- v1112
-  v1136 <- v1134 * v1135
-  v1137 <- v1133 + v1136
-  v1138 <- LevelData[10]
-  v1139 <- v1137 + v1138
-  v1140 <- v1121 / v1139
-  v1141 <- v1130 / v1139
-  v1142 <- v1140
-  v1143 <- v1141
   goto 459
 459:
+  v1149 <- v1078
+  v1150 <- v1075
+  v1151 <- v1149
+  v1152 <- v1150
   goto 460
 460:
   goto 461
 461:
-  v1144 <- v1106
-  v1145 <- v1107
-  v1146 <- v1144
-  v1147 <- v1145
   goto 462
 462:
+  v1153 <- LevelData[2]
+  v1154 <- v1151
+  v1155 <- v1153 * v1154
+  v1156 <- LevelData[3]
+  v1157 <- v1152
+  v1158 <- v1156 * v1157
+  v1159 <- v1155 + v1158
+  v1160 <- LevelData[4]
+  v1161 <- v1159 + v1160
+  v1162 <- LevelData[5]
+  v1163 <- v1151
+  v1164 <- v1162 * v1163
+  v1165 <- LevelData[6]
+  v1166 <- v1152
+  v1167 <- v1165 * v1166
+  v1168 <- v1164 + v1167
+  v1169 <- LevelData[7]
+  v1170 <- v1168 + v1169
+  v1171 <- LevelData[8]
+  v1172 <- v1151
+  v1173 <- v1171 * v1172
+  v1174 <- LevelData[9]
+  v1175 <- v1152
+  v1176 <- v1174 * v1175
+  v1177 <- v1173 + v1176
+  v1178 <- LevelData[10]
+  v1179 <- v1177 + v1178
+  v1180 <- v1161 / v1179
+  v1181 <- v1170 / v1179
+  v1182 <- v1180
+  v1183 <- v1181
   goto 463
 463:
   goto 464
 464:
-  v1148 <- LevelData[2]
-  v1149 <- v1146
-  v1150 <- v1148 * v1149
-  v1151 <- LevelData[3]
-  v1152 <- v1147
-  v1153 <- v1151 * v1152
-  v1154 <- v1150 + v1153
-  v1155 <- LevelData[4]
-  v1156 <- v1154 + v1155
-  v1157 <- LevelData[5]
-  v1158 <- v1146
-  v1159 <- v1157 * v1158
-  v1160 <- LevelData[6]
-  v1161 <- v1147
-  v1162 <- v1160 * v1161
-  v1163 <- v1159 + v1162
-  v1164 <- LevelData[7]
-  v1165 <- v1163 + v1164
-  v1166 <- LevelData[8]
-  v1167 <- v1146
-  v1168 <- v1166 * v1167
-  v1169 <- LevelData[9]
-  v1170 <- v1147
-  v1171 <- v1169 * v1170
-  v1172 <- v1168 + v1171
-  v1173 <- LevelData[10]
-  v1174 <- v1172 + v1173
-  v1175 <- v1156 / v1174
-  v1176 <- v1165 / v1174
-  v1177 <- v1175
-  v1178 <- v1176
   goto 465
 465:
+  v1184 <- v1076
+  v1185 <- v1075
+  v1186 <- v1184
+  v1187 <- v1185
   goto 466
 466:
   goto 467
 467:
-  v1179 <- v1108
-  v1180 <- v1105
-  v1181 <- v1179
-  v1182 <- v1180
   goto 468
 468:
+  v1188 <- LevelData[2]
+  v1189 <- v1186
+  v1190 <- v1188 * v1189
+  v1191 <- LevelData[3]
+  v1192 <- v1187
+  v1193 <- v1191 * v1192
+  v1194 <- v1190 + v1193
+  v1195 <- LevelData[4]
+  v1196 <- v1194 + v1195
+  v1197 <- LevelData[5]
+  v1198 <- v1186
+  v1199 <- v1197 * v1198
+  v1200 <- LevelData[6]
+  v1201 <- v1187
+  v1202 <- v1200 * v1201
+  v1203 <- v1199 + v1202
+  v1204 <- LevelData[7]
+  v1205 <- v1203 + v1204
+  v1206 <- LevelData[8]
+  v1207 <- v1186
+  v1208 <- v1206 * v1207
+  v1209 <- LevelData[9]
+  v1210 <- v1187
+  v1211 <- v1209 * v1210
+  v1212 <- v1208 + v1211
+  v1213 <- LevelData[10]
+  v1214 <- v1212 + v1213
+  v1215 <- v1196 / v1214
+  v1216 <- v1205 / v1214
+  v1217 <- v1215
+  v1218 <- v1216
   goto 469
 469:
   goto 470
 470:
-  v1183 <- LevelData[2]
-  v1184 <- v1181
-  v1185 <- v1183 * v1184
-  v1186 <- LevelData[3]
-  v1187 <- v1182
-  v1188 <- v1186 * v1187
-  v1189 <- v1185 + v1188
-  v1190 <- LevelData[4]
-  v1191 <- v1189 + v1190
-  v1192 <- LevelData[5]
-  v1193 <- v1181
-  v1194 <- v1192 * v1193
-  v1195 <- LevelData[6]
-  v1196 <- v1182
-  v1197 <- v1195 * v1196
-  v1198 <- v1194 + v1197
-  v1199 <- LevelData[7]
-  v1200 <- v1198 + v1199
-  v1201 <- LevelData[8]
-  v1202 <- v1181
-  v1203 <- v1201 * v1202
-  v1204 <- LevelData[9]
-  v1205 <- v1182
-  v1206 <- v1204 * v1205
-  v1207 <- v1203 + v1206
-  v1208 <- LevelData[10]
-  v1209 <- v1207 + v1208
-  v1210 <- v1191 / v1209
-  v1211 <- v1200 / v1209
-  v1212 <- v1210
-  v1213 <- v1211
   goto 471
 471:
   goto 472
 472:
   goto 473
 473:
-  v1214 <- v1106
-  v1215 <- v1105
-  v1216 <- v1214
-  v1217 <- v1215
   goto 474
 474:
   goto 475
 475:
   goto 476
 476:
-  v1218 <- LevelData[2]
-  v1219 <- v1216
-  v1220 <- v1218 * v1219
-  v1221 <- LevelData[3]
-  v1222 <- v1217
-  v1223 <- v1221 * v1222
-  v1224 <- v1220 + v1223
-  v1225 <- LevelData[4]
-  v1226 <- v1224 + v1225
-  v1227 <- LevelData[5]
-  v1228 <- v1216
-  v1229 <- v1227 * v1228
-  v1230 <- LevelData[6]
-  v1231 <- v1217
-  v1232 <- v1230 * v1231
-  v1233 <- v1229 + v1232
-  v1234 <- LevelData[7]
-  v1235 <- v1233 + v1234
-  v1236 <- LevelData[8]
-  v1237 <- v1216
-  v1238 <- v1236 * v1237
-  v1239 <- LevelData[9]
-  v1240 <- v1217
-  v1241 <- v1239 * v1240
-  v1242 <- v1238 + v1241
-  v1243 <- LevelData[10]
-  v1244 <- v1242 + v1243
-  v1245 <- v1226 / v1244
-  v1246 <- v1235 / v1244
-  v1247 <- v1245
-  v1248 <- v1246
+  v1219 <- v1112
+  LevelData[96] <- v1219
+  v1220 <- v1113
+  LevelData[97] <- v1220
+  v1221 <- v1182
+  LevelData[98] <- v1221
+  v1222 <- v1183
+  LevelData[99] <- v1222
+  v1223 <- v1217
+  LevelData[100] <- v1223
+  v1224 <- v1218
+  LevelData[101] <- v1224
+  v1225 <- v1147
+  LevelData[102] <- v1225
+  v1226 <- v1148
+  LevelData[103] <- v1226
   goto 477
 477:
   goto 478
@@ -2424,28 +2408,14 @@
 482:
   goto 483
 483:
+  ArchetypeLife[4] <- 1.0
   goto 484
 484:
-  v1249 <- v1142
-  LevelData[96] <- v1249
-  v1250 <- v1143
-  LevelData[97] <- v1250
-  v1251 <- v1212
-  LevelData[98] <- v1251
-  v1252 <- v1213
-  LevelData[99] <- v1252
-  v1253 <- v1247
-  LevelData[100] <- v1253
-  v1254 <- v1248
-  LevelData[101] <- v1254
-  v1255 <- v1177
-  LevelData[102] <- v1255
-  v1256 <- v1178
-  LevelData[103] <- v1256
   goto 485
 485:
   goto 486
 486:
+  ArchetypeLife[7] <- -100.0
   goto 487
 487:
   goto 488
@@ -2456,14 +2426,12 @@
 490:
   goto 491
 491:
-  ArchetypeLife[4] <- 1.0
   goto 492
 492:
   goto 493
 493:
   goto 494
 494:
-  ArchetypeLife[7] <- -100.0
   goto 495
 495:
   goto 496
@@ -2474,12 +2442,14 @@
 498:
   goto 499
 499:
+  ArchetypeLife[8] <- 1.0
   goto 500
 500:
   goto 501
 501:
   goto 502
 502:
+  ArchetypeLife[11] <- -100.0
   goto 503
 503:
   goto 504
@@ -2490,14 +2460,12 @@
 506:
   goto 507
 507:
-  ArchetypeLife[8] <- 1.0
   goto 508
 508:
   goto 509
 509:
   goto 510
 510:
-  ArchetypeLife[11] <- -100.0
   goto 511
 511:
   goto 512
@@ -2508,12 +2476,14 @@
 514:
   goto 515
 515:
+  ArchetypeLife[12] <- 1.0
   goto 516
 516:
   goto 517
 517:
   goto 518
 518:
+  ArchetypeLife[15] <- -100.0
   goto 519
 519:
   goto 520
@@ -2524,14 +2494,12 @@
 522:
   goto 523
 523:
-  ArchetypeLife[12] <- 1.0
   goto 524
 524:
   goto 525
 525:
   goto 526
 526:
-  ArchetypeLife[15] <- -100.0
   goto 527
 527:
   goto 528
@@ -2542,12 +2510,14 @@
 530:
   goto 531
 531:
+  ArchetypeLife[16] <- 1.0
   goto 532
 532:
   goto 533
 533:
   goto 534
 534:
+  ArchetypeLife[19] <- -100.0
   goto 535
 535:
   goto 536
@@ -2558,14 +2528,12 @@
 538:
   goto 539
 539:
-  ArchetypeLife[16] <- 1.0
   goto 540
 540:
   goto 541
 541:
   goto 542
 542:
-  ArchetypeLife[19] <- -100.0
   goto 543
 543:
   goto 544
@@ -2576,12 +2544,14 @@
 546:
   goto 547
 547:
+  ArchetypeLife[20] <- 1.0
   goto 548
 548:
   goto 549
 549:
   goto 550
 550:
+  ArchetypeLife[23] <- -20.0
   goto 551
 551:
   goto 552
@@ -2592,14 +2562,12 @@
 554:
   goto 555
 555:
-  ArchetypeLife[20] <- 1.0
   goto 556
 556:
   goto 557
 557:
   goto 558
 558:
-  ArchetypeLife[23] <- -20.0
   goto 559
 559:
   goto 560
@@ -2610,12 +2578,14 @@
 562:
   goto 563
 563:
+  ArchetypeLife[24] <- 1.0
   goto 564
 564:
   goto 565
 565:
   goto 566
 566:
+  ArchetypeLife[27] <- -100.0
   goto 567
 567:
   goto 568
@@ -2626,14 +2596,12 @@
 570:
   goto 571
 571:
-  ArchetypeLife[24] <- 1.0
   goto 572
 572:
   goto 573
 573:
   goto 574
 574:
-  ArchetypeLife[27] <- -100.0
   goto 575
 575:
   goto 576
@@ -2644,12 +2612,14 @@
 578:
   goto 579
 579:
+  ArchetypeLife[28] <- 1.0
   goto 580
 580:
   goto 581
 581:
   goto 582
 582:
+  ArchetypeLife[31] <- -100.0
   goto 583
 583:
   goto 584
@@ -2660,32 +2630,14 @@
 586:
   goto 587
 587:
-  ArchetypeLife[28] <- 1.0
   goto 588
 588:
   goto 589
 589:
   goto 590
 590:
-  ArchetypeLife[31] <- -100.0
   goto 591
 591:
   goto 592
 592:
-  goto 593
-593:
-  goto 594
-594:
-  goto 595
-595:
-  goto 596
-596:
-  goto 597
-597:
-  goto 598
-598:
-  goto 599
-599:
-  goto 600
-600:
   goto exit

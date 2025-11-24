@@ -148,7 +148,7 @@
 58:
   goto 59
 59:
-  goto 60 if v28 else 188
+  goto 60 if v28 else 185
 60:
   goto 61
 61:
@@ -705,10 +705,8 @@
   v351 <- v350 == 0
   goto 176
 176:
-  goto 177 if v351 else 181
+  goto 177 if v351 else 178
 177:
-  goto 178
-178:
   v352 <- v333
   v353 <- v334
   v354 <- v343
@@ -719,16 +717,12 @@
   v359 <- v339
   v360 <- SpawnParticleEffect(5.0, v352, v353, v354, v355, v356, v357, v358, v359, 1.5, 1.0)
   v361 <- v360
-  goto 179
-179:
-  goto 180
-180:
   v362 <- v361
   EntityMemory[2] <- v362
-  goto 185
-181:
   goto 182
-182:
+178:
+  goto 179
+179:
   v363 <- EntityMemory[2]
   v364 <- v333
   v365 <- v334
@@ -739,36 +733,42 @@
   v370 <- v338
   v371 <- v339
   v372 <- MoveParticleEffect(v363, v364, v365, v366, v367, v368, v369, v370, v371)
+  goto 180
+180:
+  goto 181
+181:
+  goto 182
+182:
   goto 183
 183:
   goto 184
 184:
-  goto 185
+  goto 196
 185:
   goto 186
 186:
+  v373 <- EntityMemory[2]
+  v374 <- v373 != 0
   goto 187
 187:
-  goto 199
+  goto 188 if v374 else 192
 188:
   goto 189
 189:
-  v373 <- EntityMemory[2]
-  v374 <- v373 != 0
-  goto 190
-190:
-  goto 191 if v374 else 195
-191:
-  goto 192
-192:
   v375 <- EntityMemory[2]
   v376 <- DestroyParticleEffect(v375)
+  goto 190
+190:
+  goto 191
+191:
+  EntityMemory[2] <- 0
+  goto 193
+192:
   goto 193
 193:
   goto 194
 194:
-  EntityMemory[2] <- 0
-  goto 196
+  goto 195
 195:
   goto 196
 196:
@@ -776,10 +776,4 @@
 197:
   goto 198
 198:
-  goto 199
-199:
-  goto 200
-200:
-  goto 201
-201:
   goto exit
