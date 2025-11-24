@@ -1,11 +1,12 @@
 from __future__ import annotations
 
 from collections.abc import Iterable
-from math import ceil
 
-from sonolus.script.debug import is_static_true
+from sonolus.script.debug import assert_true, is_static_true
+from sonolus.script.internal.builtin_impls import _max
 from sonolus.script.internal.context import ctx
 from sonolus.script.internal.impl import meta_fn, perf_meta_fn, validate_value
+from sonolus.script.internal.math_impls import _ceil, _round
 from sonolus.script.internal.tuple_impl import TupleImpl
 from sonolus.script.interval import clamp
 from sonolus.script.num import Num, _is_num
@@ -222,6 +223,7 @@ _HALF_MAX_TOTAL_STEPS_UINT32 = _UInt32._(2**14, 0)
 _HALF_MAX_TOTAL_STEPS_UINT32_MINUS_ONE = _UInt32._(2**14 - 1, 2**16 - 1)
 
 
+@perf_meta_fn
 def quantize_to_step(value: float, start: float, stop: float, step: float) -> tuple[int, int]:
     """Quantize a float value by step size within a range and return the step number and total steps in the range.
 
@@ -237,10 +239,10 @@ def quantize_to_step(value: float, start: float, stop: float, step: float) -> tu
     Returns:
         A tuple containing the quantized step number and the total number of steps in the range.
     """
-    assert stop > start, "stop must be strictly greater than start"
-    assert step > 0, "step must be positive"
-    total_steps = max(1, ceil((stop - start) / step))
-    result_steps = clamp(round((value - start) / step), 0, total_steps - 1)
+    assert_true(stop > start, "stop must be strictly greater than start")
+    assert_true(step > 0, "step must be positive")
+    total_steps = _max(1, _ceil((stop - start) / step))
+    result_steps = clamp(_round((value - start) / step), 0, total_steps - 1)
     return result_steps, total_steps
 
 
@@ -272,19 +274,14 @@ def make_comparable_float(*values: tuple[int, int]) -> float:
 
 @meta_fn
 def _check_max_total_steps(values: Iterable[tuple[int, int]]):
-    values = validate_value(values).value
-    total = 1
-    for entry in values:
-        _, max_value = validate_value(entry).value
-        max_value = validate_value(max_value)
-        if not max_value._is_py_():
-            return
-        total *= max_value._as_py_()
-        if total >= 2**31:
-            raise ValueError(
-                "The product of all maximum values must be less than 2^31. "
-                "If using quantize_to_step, increase step sizes or reduce ranges."
-            )
+    result = 1
+    for _, max_value in values:
+        result *= max_value
+    if is_static_true(result >= 2**31):
+        raise ValueError(
+            "The product of all maximum values must be less than 2^31. "
+            "If using quantize_to_step, increase step sizes or reduce ranges."
+        )
 
 
 def product(values: Iterable[float]) -> float:
