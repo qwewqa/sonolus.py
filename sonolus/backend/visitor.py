@@ -6,6 +6,7 @@ import functools
 import inspect
 from collections.abc import Callable, Iterable, Sequence
 from inspect import ismethod
+from time import perf_counter_ns
 from types import FunctionType, MethodType, MethodWrapperType
 from typing import Any, Never
 
@@ -18,6 +19,7 @@ from sonolus.script.internal.context import (
     ConflictBinding,
     Context,
     EmptyBinding,
+    FunctionVisitStatistics,
     Scope,
     ValueBinding,
     ctx,
@@ -122,8 +124,14 @@ def eval_fn(fn: Callable, /, *args, **kwargs):
         **fn.__globals__,
         **nonlocal_vars,
     }
+    function_name = getattr(fn, "__name__", "<unnamed>")
+    module = getattr(fn, "__module__", None)
+    if module is not None:
+        qualified_name = f"{module}.{getattr(fn, '__qualname__', function_name)}"
+    else:
+        qualified_name = f"<unknown>.{getattr(fn, '__qualname__', function_name)}"
     return Visitor(
-        source_file, bound_args, global_vars, parent=None, function_name=getattr(fn, "__name__", "<unnamed>")
+        source_file, bound_args, global_vars, parent=None, function_name=function_name, qualified_name=qualified_name
     ).run(node)
 
 
@@ -231,6 +239,32 @@ op_to_symbol = {
 }
 
 
+def record_visit_time(function_name: str, total_time: int, own_time: int) -> None:
+    visit_stats = ctx().project_state.visit_stats
+    if function_name not in visit_stats:
+        visit_stats[function_name] = stats = FunctionVisitStatistics()
+    else:
+        stats = visit_stats[function_name]
+    # Not accurate if multithreaded, but it's preferable to collect performance statistics single-threaded anyway
+    stats.total_time += total_time
+    stats.own_time += own_time
+    stats.call_count += 1
+    ctx().callback_state.visitor_own_time += own_time
+
+
+def mark_start(function_name: str) -> Callable[[], None]:
+    start_time = perf_counter_ns()
+    start_own_time = ctx().callback_state.visitor_own_time
+
+    def mark_end():
+        total_time = perf_counter_ns() - start_time
+        record_visit_time(
+            function_name, total_time, total_time - (ctx().callback_state.visitor_own_time - start_own_time)
+        )
+
+    return mark_end
+
+
 class Visitor(ast.NodeVisitor):
     source_file: str
     globals: dict[str, Any]
@@ -247,6 +281,7 @@ class Visitor(ast.NodeVisitor):
     parent: Visitor | None  # The parent visitor for use in nested functions
     used_parent_binding_values: dict[str, Value]  # Values of parent bindings used in this
     function_name: str
+    qualified_name: str
 
     def __init__(
         self,
@@ -255,6 +290,7 @@ class Visitor(ast.NodeVisitor):
         global_vars: dict[str, Any],
         parent: Visitor | None,
         function_name: str,
+        qualified_name: str | None = None,
     ):
         self.source_file = source_file
         self.globals = global_vars
@@ -269,8 +305,16 @@ class Visitor(ast.NodeVisitor):
         self.parent = parent
         self.used_parent_binding_values = {}
         self.function_name = function_name
+        if qualified_name is None:
+            if parent is None:
+                self.qualified_name = function_name
+            else:
+                self.qualified_name = f"{parent.qualified_name}.{function_name}"
+        else:
+            self.qualified_name = qualified_name
 
     def run(self, node):
+        completion_timer = mark_start(self.qualified_name)
         before_ctx = ctx()
         start_ctx = before_ctx.branch_with_scope(None, Scope())
         set_ctx(start_ctx)
@@ -350,6 +394,7 @@ class Visitor(ast.NodeVisitor):
             set_ctx(before_ctx)
             return_test = Num._alloc_()
             next_result_ctx.test = return_test.ir()
+            completion_timer()
             return Generator(
                 return_test,
                 entry,
@@ -364,6 +409,7 @@ class Visitor(ast.NodeVisitor):
         if not isinstance(result_binding, ValueBinding):
             raise ValueError("Function has conflicting return values")
         set_ctx(after_ctx.branch_with_scope(None, before_ctx.scope.copy()))
+        completion_timer()
         return result_binding.value
 
     def construct_genexpr(

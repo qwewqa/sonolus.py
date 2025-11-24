@@ -56,12 +56,20 @@ class RuntimeChecks(Enum):
     """Log, debug pause, and terminate on errors."""
 
 
+@dataclass
+class FunctionVisitStatistics:
+    total_time: int = 0
+    own_time: int = 0
+    call_count: int = 0
+
+
 class ProjectContextState:
     rom: ReadOnlyMemory
     const_mappings: dict[Any, int]
     debug_str_mappings: dict[str, int]
     lock: Lock
     runtime_checks: RuntimeChecks
+    visit_stats: dict[str, FunctionVisitStatistics]
 
     def __init__(
         self,
@@ -75,6 +83,7 @@ class ProjectContextState:
         self.debug_str_mappings = {} if debug_str_mappings is None else debug_str_mappings
         self.lock = Lock()
         self.runtime_checks = runtime_checks
+        self.visit_stats = {}
 
     @classmethod
     def from_build_config(
@@ -159,12 +168,14 @@ class CallbackContextState:
     used_names: dict[str, int]
     debug_stack: list[str]
     no_eval: bool
+    visitor_own_time: int
 
     def __init__(self, callback: str, no_eval: bool = False):
         self.callback = callback
         self.used_names = {}
         self.debug_stack = []
         self.no_eval = no_eval
+        self.visitor_own_time = 0
 
 
 class Context:

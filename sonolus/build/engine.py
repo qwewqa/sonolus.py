@@ -443,3 +443,20 @@ def package_data(value: JsonValue) -> bytes:
 def unpackage_data(data: bytes) -> JsonValue:
     json_data = gzip.decompress(data)
     return json.loads(json_data)
+
+
+def print_table(rows: list[list[str]]) -> None:
+    if not rows:
+        return
+    widths = [max(len(row[i]) for row in rows) for i in range(len(rows[0]))]
+    for row in rows:
+        print("  ".join(cell.ljust(widths[i]) for i, cell in enumerate(row)))
+
+
+def print_visit_stats(stats):
+    ordered = sorted(stats.items(), key=lambda item: item[1].own_time, reverse=True)
+    rows = [
+        [f"{name}:", f"{stat.own_time // 1_000_000}ms", f"{stat.total_time // 1_000_000}ms", f"{stat.call_count} calls"]
+        for name, stat in ordered
+    ]
+    print_table(rows)
