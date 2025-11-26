@@ -11,7 +11,10 @@ def get_function(fn: Callable) -> tuple[str, ast.FunctionDef]:
     source_file = inspect.getsourcefile(fn)
     _, start_line = inspect.getsourcelines(fn)
     base_tree = get_tree_from_file(source_file)
-    return source_file, find_function(base_tree, start_line)
+    try:
+        return source_file, find_function(base_tree, start_line)
+    except ValueError:
+        raise ValueError(f"Function {fn} not found in source file {source_file}") from None
 
 
 @cache
@@ -60,7 +63,7 @@ def find_function(tree: ast.Module, line: int):
         if node.lineno == line or (
             isinstance(node, ast.FunctionDef)
             and node.decorator_list
-            and (node.decorator_list[-1].end_lineno <= line <= node.lineno)
+            and (node.decorator_list[0].end_lineno <= line <= node.lineno)
         ):
             return node
     raise ValueError("Function not found")

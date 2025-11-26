@@ -16,7 +16,7 @@ from sonolus.script.num import Num
 debug_log_callback = ContextVar[Callable[[Num], None]]("debug_log_callback")
 
 
-@meta_fn
+@meta_fn(show_in_stack=False)
 def error(message: str | None = None) -> Never:  # type: ignore
     """Raise an error, and if runtime checks are set to notify, log a message and pause the game.
 
@@ -82,7 +82,7 @@ def debug_pause():
     input("[DEBUG] Paused")
 
 
-@meta_fn
+@meta_fn(show_in_stack=False)
 def notify(message: str):
     """Log a code that can be decoded by the dev server and pause the game if runtime checks are set to notify.
 
@@ -110,7 +110,7 @@ def runtime_checks_enabled() -> bool:
         return True
 
 
-@meta_fn
+@meta_fn(show_in_stack=False)
 def require(value: int | float | bool, message: str | None = None):
     """Require a condition to be true, or raise an error.
 
@@ -144,7 +144,7 @@ def require(value: int | float | bool, message: str | None = None):
         set_ctx(t_branch)
 
 
-@meta_fn
+@meta_fn(show_in_stack=False)
 def assert_true(value: int | float | bool, message: str | None = None):
     value = validate_value(value)
     if (
@@ -159,7 +159,7 @@ def assert_true(value: int | float | bool, message: str | None = None):
     require(value, message)
 
 
-@meta_fn
+@meta_fn(show_in_stack=False)
 def assert_false(value: int | float | bool, message: str | None = None):
     assert_true(value == 0, message)
 
@@ -178,7 +178,7 @@ def try_static_assert(value: int | float | bool, message: str | None = None):
         error(message)
 
 
-@meta_fn
+@meta_fn(show_in_stack=False)
 def assert_unreachable(message: str | None = None) -> Never:
     # This works a bit differently from assert_never from typing in that it throws an error if the Sonolus.py
     # compiler cannot guarantee that this function will not be called, which is different from what type checkers
@@ -187,7 +187,7 @@ def assert_unreachable(message: str | None = None) -> Never:
     raise RuntimeError(message)
 
 
-@meta_fn
+@meta_fn(show_in_stack=False)
 def terminate():
     if ctx():
         set_ctx(ctx().into_dead())

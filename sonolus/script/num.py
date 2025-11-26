@@ -98,6 +98,11 @@ class _Num(Value, metaclass=_NumMeta):
             return int(self.data)
         return self.data
 
+    def _as_py_or_none(self) -> int | bool | float | None:
+        if not self._is_py_():
+            return None
+        return self._as_py_()
+
     @classmethod
     def _from_list_(cls, values: Iterable[DataValue]) -> Self:
         value = next(iter(values))
@@ -286,11 +291,13 @@ class _Num(Value, metaclass=_NumMeta):
     @meta_fn
     def __add__(self, other) -> Self:
         def const_fn(a: Self, b: Self) -> Num | None:
-            if a._is_py_() and b._is_py_():
-                return Num(a._as_py_() + b._as_py_())
-            if a._is_py_() and a._as_py_() == 0:
+            a_py = a._as_py_or_none()
+            b_py = b._as_py_or_none()
+            if a_py is not None and b_py is not None:
+                return Num(a_py + b_py)
+            if a_py == 0:
                 return b
-            if b._is_py_() and b._as_py_() == 0:
+            if b_py == 0:
                 return a
             return None
 
@@ -299,11 +306,13 @@ class _Num(Value, metaclass=_NumMeta):
     @meta_fn
     def __sub__(self, other) -> Self:
         def const_fn(a: Self, b: Self) -> Num | None:
-            if a._is_py_() and b._is_py_():
-                return Num(a._as_py_() - b._as_py_())
-            if a._is_py_() and a._as_py_() == 0:
+            a_py = a._as_py_or_none()
+            b_py = b._as_py_or_none()
+            if a_py is not None and b_py is not None:
+                return Num(a_py - b_py)
+            if a_py == 0:
                 return -b
-            if b._is_py_() and b._as_py_() == 0:
+            if b_py == 0:
                 return a
             return None
 
@@ -312,18 +321,16 @@ class _Num(Value, metaclass=_NumMeta):
     @meta_fn
     def __mul__(self, other) -> Self:
         def const_fn(a: Self, b: Self) -> Num | None:
-            if a._is_py_() and b._is_py_():
-                return Num(a._as_py_() * b._as_py_())
-            if a._is_py_():
-                if a._as_py_() == 0:
-                    return Num(0)
-                if a._as_py_() == 1:
-                    return b
-            if b._is_py_():
-                if b._as_py_() == 0:
-                    return Num(0)
-                if b._as_py_() == 1:
-                    return a
+            a_py = a._as_py_or_none()
+            b_py = b._as_py_or_none()
+            if a_py is not None and b_py is not None:
+                return Num(a_py * b_py)
+            if a_py == 0 or b_py == 0:
+                return Num(0)
+            if a_py == 1:
+                return b
+            if b_py == 1:
+                return a
             return None
 
         return self._bin_op(other, const_fn, Op.Multiply)
@@ -331,15 +338,16 @@ class _Num(Value, metaclass=_NumMeta):
     @meta_fn
     def __truediv__(self, other) -> Self:
         def const_fn(a: Self, b: Self) -> Num | None:
-            if a._is_py_() and b._is_py_():
-                if b._as_py_() == 0:
+            a_py = a._as_py_or_none()
+            b_py = b._as_py_or_none()
+            if a_py is not None and b_py is not None:
+                if b_py == 0:
                     return None
-                return Num(a._as_py_() / b._as_py_())
-            if b._is_py_():
-                if b._as_py_() == 1:
-                    return a
-                if b._as_py_() == -1:
-                    return -a
+                return Num(a_py / b_py)
+            if b_py == 1:
+                return a
+            if b_py == -1:
+                return -a
             return None
 
         return self._bin_op(other, const_fn, Op.Divide)
@@ -347,15 +355,16 @@ class _Num(Value, metaclass=_NumMeta):
     @meta_fn
     def __floordiv__(self, other) -> Self:
         def const_fn(a: Self, b: Self) -> Num | None:
-            if a._is_py_() and b._is_py_():
-                if b._as_py_() == 0:
+            a_py = a._as_py_or_none()
+            b_py = b._as_py_or_none()
+            if a_py is not None and b_py is not None:
+                if b_py == 0:
                     return None
-                return Num(a._as_py_() // b._as_py_())
-            if b._is_py_():
-                if b._as_py_() == 1:
-                    return a
-                if b._as_py_() == -1:
-                    return -a
+                return Num(a_py // b_py)
+            if b_py == 1:
+                return a
+            if b_py == -1:
+                return -a
             return None
 
         return self._bin_op(other, const_fn, Op.Divide)._unary_op(lambda x: x, Op.Floor)
@@ -363,10 +372,12 @@ class _Num(Value, metaclass=_NumMeta):
     @meta_fn
     def __mod__(self, other) -> Self:
         def const_fn(a: Self, b: Self) -> Num | None:
-            if a._is_py_() and b._is_py_():
-                if b._as_py_() == 0:
+            a_py = a._as_py_or_none()
+            b_py = b._as_py_or_none()
+            if a_py is not None and b_py is not None:
+                if b_py == 0:
                     return None
-                return Num(a._as_py_() % b._as_py_())
+                return Num(a_py % b_py)
             return None
 
         return self._bin_op(other, const_fn, Op.Mod)
@@ -374,16 +385,17 @@ class _Num(Value, metaclass=_NumMeta):
     @meta_fn
     def __pow__(self, other) -> Self:
         def const_fn(a: Self, b: Self) -> Num | None:
-            if a._is_py_() and b._is_py_():
+            a_py = a._as_py_or_none()
+            b_py = b._as_py_or_none()
+            if a_py is not None and b_py is not None:
                 try:
-                    return Num(a._as_py_() ** b._as_py_())
+                    return Num(a_py**b_py)
                 except OverflowError:
                     return None
-            if b._is_py_():
-                if b._as_py_() == 0:
-                    return Num(1)
-                if b._as_py_() == 1:
-                    return a
+            if b_py == 0:
+                return Num(1)
+            if b_py == 1:
+                return a
             return None
 
         return self._bin_op(other, const_fn, Op.Power)

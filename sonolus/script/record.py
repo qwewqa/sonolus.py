@@ -3,6 +3,7 @@ from __future__ import annotations
 import inspect
 from abc import ABCMeta
 from collections.abc import Callable, Iterable
+from functools import wraps
 from inspect import getmro
 from typing import Any, ClassVar, Protocol, Self, TypeVar, dataclass_transform, get_origin
 
@@ -435,13 +436,15 @@ _ops_to_inplace_ops = {
 
 def _add_inplace_ops(cls):
     for op, inplace_op in _ops_to_inplace_ops.items():
-        if hasattr(cls, op) and not hasattr(cls, inplace_op):
-            setattr(cls, inplace_op, _make_inplace_op(op))
+        # Note that hasattr doesn't work, since it'll return True for metaclass methods
+        if op in cls.__dict__ and not hasattr(cls, inplace_op):
+            setattr(cls, inplace_op, _make_inplace_op(op, getattr(cls, op)))
     return cls
 
 
-def _make_inplace_op(op: str):
+def _make_inplace_op(op: str, orig_fn):
     @meta_fn
+    @wraps(orig_fn)
     def inplace_op(self, other):
         _compiler_internal_ = True  # noqa: F841
         self._copy_from_(getattr(self, op)(other))

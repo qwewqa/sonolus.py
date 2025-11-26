@@ -24,8 +24,8 @@ def native_function[**P, R](op: Op, const_eval: bool = False) -> Callable[[Calla
     def decorator(fn: Callable[P, int | float | bool]) -> Callable[P, Num]:
         signature = inspect.signature(fn)
 
-        @functools.wraps(fn)
         @meta_fn
+        @functools.wraps(fn)
         def wrapper(*args: int | float | bool) -> Num:
             if len(args) < sum(1 for p in signature.parameters.values() if p.default == inspect.Parameter.empty):
                 raise TypeError(f"Expected {len(signature.parameters)} arguments, got {len(args)}")

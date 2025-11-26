@@ -41,13 +41,13 @@ _compiler_internal_ = True
 
 
 def compile_and_call[**P, R](fn: Callable[P, R], /, *args: P.args, **kwargs: P.kwargs) -> R:
-    if not ctx():
+    if not ctx() or getattr(fn, "_meta_fn_", False):
         return fn(*args, **kwargs)
     return validate_value(generate_fn_impl(fn)(*args, **kwargs))
 
 
 def compile_and_call_at_definition[**P, R](fn: Callable[P, R], /, *args: P.args, **kwargs: P.kwargs) -> R:
-    if not ctx():
+    if not ctx() or getattr(fn, "_meta_fn_", False):
         return fn(*args, **kwargs)
     source_file, node = get_function(fn)
     if ctx().no_eval:
