@@ -1,3 +1,9 @@
+### 0.12.10
+
+- More functions are now shown in the dev server's debug stack traces.
+- Improved compiler performance slightly.
+- Removed erroneous pytest dependency.
+
 ### 0.12.9
 
 - Added support for `typing.Final` annotations in [`Record`][sonolus.script.record.Record] classes.
