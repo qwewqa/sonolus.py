@@ -75,6 +75,9 @@ def run_and_validate[**P, R](
     regular_result = None
     log_entries = []
 
+    if getattr(fn, "_meta_fn_", False) and hasattr(fn, "__wrapped__"):
+        fn = fn.__wrapped__
+
     def log_cb(x):
         log_entries.append(x)
         return 0

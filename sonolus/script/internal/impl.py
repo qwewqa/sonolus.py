@@ -31,6 +31,7 @@ def meta_fn(fn=None, *, show_in_stack: bool = True):
         base_fn = fn
         while hasattr(base_fn, "__wrapped__"):
             base_fn = base_fn.__wrapped__
+        base_fn._meta_fn_ = True
 
         function_name = getattr(base_fn, "__name__", "<unnamed>")
         module = getattr(base_fn, "__module__", None)
