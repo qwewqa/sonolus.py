@@ -318,6 +318,12 @@ class VarArray[T, Capacity](Record, ArrayLike[T]):
     def __hash__(self):
         raise TypeError("unhashable type: 'VarArray'")
 
+    def get_unchecked(self, index: Num) -> T:
+        return self._array.get_unchecked(index)
+
+    def set_unchecked(self, index: Num, value: T):
+        self._array.set_unchecked(index, value)
+
 
 class ArrayPointer[T](Record, ArrayLike[T]):
     """An array defined by a size and pointer to the first element.
