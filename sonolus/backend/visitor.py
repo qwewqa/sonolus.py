@@ -80,7 +80,7 @@ def compile_and_call_at_definition[**P, R](fn: Callable[P, R], /, *args: P.args,
     try:
         debug_stack.append(f'File "{source_file}", line {node.lineno}, in <callback>')
         return eval(
-            compile(expr, filename=source_file, mode="eval"),
+            compile(expr, filename=source_file, mode="eval").replace(co_name="<callback>"),
             {"fn": lambda: compile_and_call(fn, *args, **kwargs), "_filter_traceback_": True, "_traceback_root_": True},
         )
     finally:
@@ -1574,7 +1574,7 @@ class Visitor(ast.NodeVisitor):
             )
         )
         return eval(
-            compile(expr, filename=self.source_file, mode="eval"),
+            compile(expr, filename=self.source_file, mode="eval").replace(co_name=self.function_name),
             {"fn": fn, "args": args, "kwargs": kwargs, "_filter_traceback_": True},
         )
 
