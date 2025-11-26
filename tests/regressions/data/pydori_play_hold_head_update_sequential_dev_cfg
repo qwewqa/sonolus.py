@@ -22,7 +22,7 @@
   goto 9 if v4 else 10
 9:
   EntityDespawn[0] <- 1.0
-  goto 371
+  goto 372
 10:
   goto 11
 11:
@@ -32,7 +32,7 @@
   goto 13 if v5 else 14
 13:
   EntityDespawn[0] <- 1.0
-  goto 371
+  goto 372
 14:
   goto 15
 15:
@@ -936,7 +936,7 @@
   v372 <- EntityData[16] >= 0
   goto 267
 267:
-  goto 268 if v372 else 375
+  goto 268 if v372 else 376
 268:
   v375 <- EntityData[16] * 3.0
   v376 <- v375
@@ -946,7 +946,7 @@
   v380 <- Trunc(EntityInfoArray[v376 + 1])
   v381 <- v380 == EntityInfoArray[v376 + 1]
   v382 <- v379 && v381
-  goto 269 if v382 else 374
+  goto 269 if v382 else 375
 269:
   v385 <- EntityInfoArray[v376 + 1] < 0
   v386 <- v385 * 14.0
@@ -1006,7 +1006,7 @@
 284:
   goto 285
 285:
-  goto 286 if v408 else 373
+  goto 286 if v408 else 374
 286:
   goto 287
 287:
@@ -1030,7 +1030,7 @@
 294:
   goto 295
 295:
-  goto 296 if v414 else 369
+  goto 296 if v414 else 370
 296:
   goto 297
 297:
@@ -1041,7 +1041,7 @@
   v415 <- EntityData[16] >= 0
   goto 300
 300:
-  goto 301 if v415 else 368
+  goto 301 if v415 else 369
 301:
   v418 <- EntityData[16] * 3.0
   v419 <- v418
@@ -1051,7 +1051,7 @@
   v423 <- Trunc(EntityInfoArray[v419 + 1])
   v424 <- v423 == EntityInfoArray[v419 + 1]
   v425 <- v422 && v424
-  goto 302 if v425 else 367
+  goto 302 if v425 else 368
 302:
   v428 <- EntityInfoArray[v419 + 1] < 0
   v429 <- v428 * 14.0
@@ -1111,7 +1111,7 @@
 317:
   goto 318
 318:
-  goto 319 if v451 else 366
+  goto 319 if v451 else 367
 319:
   goto 320
 320:
@@ -1140,8 +1140,8 @@
 329:
   goto 330 if v458 else 331
 330:
-  v491 <- 0
-  goto 359
+  v478 <- 0
+  goto 360
 331:
   goto 332
 332:
@@ -1160,81 +1160,68 @@
   v461 <- v459 < v460
   goto 338
 338:
-  goto 339 if v461 else 346
+  goto 339 if v461 else 347
 339:
-  v462 <- LevelMemory[17]
-  v463 <- -v462
-  v464 <- v459 >= v463
-  v465 <- v459 < v462
-  v466 <- v464 && v465
-  v467 <- Trunc(v459)
-  v468 <- v467 == v459
-  v469 <- v466 && v468
-  goto 340 if v469 else 345
+  goto 340
 340:
-  v472 <- v459 < 0
-  v473 <- v472 * v462
-  v474 <- v459 + v473
-  v475 <- 17.0 + v474
-  v476 <- v475
-  v477 <- LevelMemory[v476 + 1]
-  v478 <- v477 == v456
+  v462 <- 17.0 + v459
+  v463 <- v462
+  v464 <- LevelMemory[v463 + 1]
   goto 341
 341:
-  goto 342 if v478 else 343
+  goto 342
 342:
-  v481 <- 1.0
-  goto 348
+  v465 <- v464 == v456
+  goto 343
 343:
-  goto 344
+  goto 344 if v465 else 345
 344:
-  v479 <- v459 + 1.0
-  v480 <- v479
-  v459 <- v480
-  goto 334
+  v468 <- 1.0
+  goto 349
 345:
-  v470 <- DebugLog(9.0)
-  v471 <- DebugPause()
-  goto exit
+  goto 346
 346:
-  goto 347
+  v466 <- v459 + 1.0
+  v467 <- v466
+  v459 <- v467
+  goto 334
 347:
-  v481 <- 0
   goto 348
 348:
+  v468 <- 0
   goto 349
 349:
   goto 350
 350:
-  goto 351 if v481 else 352
+  goto 351
 351:
-  v491 <- 0
-  goto 359
+  goto 352 if v468 else 353
 352:
-  goto 353
+  v478 <- 0
+  goto 360
 353:
   goto 354
 354:
-  v482 <- LevelMemory[17]
-  v483 <- v482 < 16.0
   goto 355
 355:
-  goto 356 if v483 else 365
+  v469 <- LevelMemory[17]
+  v470 <- v469 < 16.0
+  goto 356
 356:
-  v486 <- LevelMemory[17]
-  v487 <- 17.0 + v486
-  v488 <- v487
-  LevelMemory[v488 + 1] <- v456
-  v489 <- LevelMemory[17]
-  v490 <- v489 + 1.0
-  LevelMemory[17] <- v490
-  goto 357
+  goto 357 if v470 else 366
 357:
+  v473 <- LevelMemory[17]
+  v474 <- 17.0 + v473
+  v475 <- v474
+  LevelMemory[v475 + 1] <- v456
+  v476 <- LevelMemory[17]
+  v477 <- v476 + 1.0
+  LevelMemory[17] <- v477
   goto 358
 358:
-  v491 <- 1.0
   goto 359
 359:
+  v478 <- 1.0
   goto 360
 360:
   goto 361
@@ -1245,40 +1232,42 @@
 363:
   goto 364
 364:
-  goto 370
+  goto 365
 365:
-  v484 <- DebugLog(10.0)
-  v485 <- DebugPause()
-  goto exit
+  goto 371
 366:
+  v471 <- DebugLog(9.0)
+  v472 <- DebugPause()
+  goto exit
+367:
   v452 <- DebugLog(8.0)
   v453 <- DebugPause()
   goto exit
-367:
+368:
   v426 <- DebugLog(7.0)
   v427 <- DebugPause()
   goto exit
-368:
+369:
   v416 <- DebugLog(6.0)
   v417 <- DebugPause()
   goto exit
-369:
-  goto 370
 370:
   goto 371
 371:
   goto 372
 372:
-  goto exit
+  goto 373
 373:
+  goto exit
+374:
   v409 <- DebugLog(5.0)
   v410 <- DebugPause()
   goto exit
-374:
+375:
   v383 <- DebugLog(4.0)
   v384 <- DebugPause()
   goto exit
-375:
+376:
   v373 <- DebugLog(3.0)
   v374 <- DebugPause()
   goto exit

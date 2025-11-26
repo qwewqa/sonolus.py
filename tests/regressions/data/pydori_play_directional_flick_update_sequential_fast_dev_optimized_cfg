@@ -6,13 +6,13 @@
   goto 1 if 10000[88] else 2
 1:
   EntityDespawn[0] <- 1.0
-  goto 111
+  goto 109
 2:
   10000[88] <- RuntimeUpdate[0] > EntityData[15]
   goto 3 if 10000[88] else 4
 3:
   EntityDespawn[0] <- 1.0
-  goto 111
+  goto 109
 4:
   10000[88] <- EntityData[14] <= RuntimeUpdate[0]
   goto 5 if 10000[88] else 6
@@ -551,7 +551,7 @@
   goto 76
 76:
   10000[0] <- EntityData[16] >= 0
-  goto 77 if 10000[0] else 114
+  goto 77 if 10000[0] else 112
 77:
   10000[0] <- EntityData[16] * 3.0
   10000[0] <- 10000[0]
@@ -561,7 +561,7 @@
   10000[2] <- Trunc(EntityInfoArray[10000[0] + 1])
   10000[2] <- 10000[2] == EntityInfoArray[10000[0] + 1]
   10000[1] <- 10000[1] && 10000[2]
-  goto 78 if 10000[1] else 113
+  goto 78 if 10000[1] else 111
 78:
   10000[1] <- EntityInfoArray[10000[0] + 1] < 0
   10000[1] <- 10000[1] * 14.0
@@ -601,16 +601,16 @@
   10000[0] <- 0
   goto 84
 84:
-  goto 85 if 10000[0] else 112
+  goto 85 if 10000[0] else 110
 85:
   10000[0] <- EntityData[16] * 32.0
   10000[0] <- 10000[0]
   10000[0] <- EntitySharedMemoryArray[10000[0]]
   10000[0] <- 10000[0] > 0
-  goto 86 if 10000[0] else 111
+  goto 86 if 10000[0] else 109
 86:
   10000[0] <- EntityData[16] >= 0
-  goto 87 if 10000[0] else 110
+  goto 87 if 10000[0] else 108
 87:
   10000[0] <- EntityData[16] * 3.0
   10000[0] <- 10000[0]
@@ -620,7 +620,7 @@
   10000[2] <- Trunc(EntityInfoArray[10000[0] + 1])
   10000[2] <- 10000[2] == EntityInfoArray[10000[0] + 1]
   10000[1] <- 10000[1] && 10000[2]
-  goto 88 if 10000[1] else 109
+  goto 88 if 10000[1] else 107
 88:
   10000[1] <- EntityInfoArray[10000[0] + 1] < 0
   10000[1] <- 10000[1] * 14.0
@@ -660,62 +660,45 @@
   10000[0] <- 0
   goto 94
 94:
-  goto 95 if 10000[0] else 108
+  goto 95 if 10000[0] else 106
 95:
   10000[0] <- EntityData[16] * 32.0
   10000[0] <- 10000[0]
   10000[0] <- EntitySharedMemoryArray[10000[0]]
   10000[1] <- LevelMemory[17]
   10000[1] <- 10000[1] >= 16.0
-  goto 111 if 10000[1] else 96
+  goto 109 if 10000[1] else 96
 96:
   10000[1] <- 0
   goto 97
 97:
   10000[2] <- LevelMemory[17]
   10000[2] <- 10000[1] < 10000[2]
-  goto 98 if 10000[2] else 103
+  goto 98 if 10000[2] else 101
 98:
-  10000[2] <- LevelMemory[17]
-  10000[3] <- -10000[2]
-  10000[3] <- 10000[1] >= 10000[3]
-  10000[4] <- 10000[1] < 10000[2]
-  10000[3] <- 10000[3] && 10000[4]
-  10000[4] <- Trunc(10000[1])
-  10000[4] <- 10000[4] == 10000[1]
-  10000[3] <- 10000[3] && 10000[4]
-  goto 99 if 10000[3] else 102
-99:
-  10000[3] <- 10000[1] < 0
-  10000[2] <- 10000[3] * 10000[2]
-  10000[2] <- 10000[1] + 10000[2]
-  10000[2] <- 17.0 + 10000[2]
+  10000[2] <- 17.0 + 10000[1]
   10000[2] <- 10000[2]
   10000[2] <- LevelMemory[10000[2] + 1]
   10000[2] <- 10000[2] == 10000[0]
-  goto 100 if 10000[2] else 101
-100:
+  goto 99 if 10000[2] else 100
+99:
   10000[1] <- 1.0
-  goto 104
-101:
+  goto 102
+100:
   10000[1] <- 10000[1] + 1.0
   10000[1] <- 10000[1]
   10000[1] <- 10000[1]
   goto 97
-102:
-  DebugLog(9.0)
-  DebugPause()
-  goto exit
-103:
+101:
   10000[1] <- 0
-  goto 104
-104:
-  goto 111 if 10000[1] else 105
-105:
+  goto 102
+102:
+  goto 109 if 10000[1] else 103
+103:
   10000[1] <- LevelMemory[17]
   10000[1] <- 10000[1] < 16.0
-  goto 106 if 10000[1] else 107
-106:
+  goto 104 if 10000[1] else 105
+104:
   10000[1] <- LevelMemory[17]
   10000[1] <- 17.0 + 10000[1]
   10000[1] <- 10000[1]
@@ -723,34 +706,34 @@
   10000[0] <- LevelMemory[17]
   10000[0] <- 10000[0] + 1.0
   LevelMemory[17] <- 10000[0]
-  goto 111
-107:
-  DebugLog(10.0)
+  goto 109
+105:
+  DebugLog(9.0)
   DebugPause()
   goto exit
-108:
+106:
   DebugLog(8.0)
   DebugPause()
   goto exit
-109:
+107:
   DebugLog(7.0)
   DebugPause()
   goto exit
-110:
+108:
   DebugLog(6.0)
   DebugPause()
   goto exit
-111:
+109:
   goto exit
-112:
+110:
   DebugLog(5.0)
   DebugPause()
   goto exit
-113:
+111:
   DebugLog(4.0)
   DebugPause()
   goto exit
-114:
+112:
   DebugLog(3.0)
   DebugPause()
   goto exit

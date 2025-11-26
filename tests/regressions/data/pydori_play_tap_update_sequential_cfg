@@ -22,7 +22,7 @@
   goto 9 if v4 else 10
 9:
   EntityDespawn[0] <- 1.0
-  goto 322
+  goto 325
 10:
   goto 11
 11:
@@ -32,7 +32,7 @@
   goto 13 if v5 else 14
 13:
   EntityDespawn[0] <- 1.0
-  goto 322
+  goto 325
 14:
   goto 15
 15:
@@ -947,7 +947,7 @@
 272:
   goto 273
 273:
-  goto 274 if v371 else 320
+  goto 274 if v371 else 323
 274:
   goto 275
 275:
@@ -982,8 +982,8 @@
 287:
   goto 288 if v376 else 289
 288:
-  v405 <- 0
-  goto 314
+  v394 <- 0
+  goto 317
 289:
   goto 290
 290:
@@ -1002,89 +1002,84 @@
   v379 <- v377 < v378
   goto 296
 296:
-  goto 297 if v379 else 302
+  goto 297 if v379 else 305
 297:
-  v380 <- LevelMemory[17]
-  v381 <- -v380
-  v382 <- v377 >= v381
-  v383 <- v377 < v380
-  v384 <- v382 && v383
-  v385 <- Trunc(v377)
-  v386 <- v385 == v377
-  v387 <- v384 && v386
-  v388 <- v377 < 0
-  v389 <- v388 * v380
-  v390 <- v377 + v389
-  v391 <- 17.0 + v390
-  v392 <- v391
-  v393 <- LevelMemory[v392 + 1]
-  v394 <- v393 == v374
   goto 298
 298:
-  goto 299 if v394 else 300
+  v380 <- 17.0 + v377
+  v381 <- v380
+  v382 <- LevelMemory[v381 + 1]
+  goto 299
 299:
-  v397 <- 1.0
-  goto 304
+  goto 300
 300:
+  v383 <- v382 == v374
   goto 301
 301:
-  v395 <- v377 + 1.0
-  v396 <- v395
-  v377 <- v396
-  goto 292
+  goto 302 if v383 else 303
 302:
-  goto 303
+  v386 <- 1.0
+  goto 307
 303:
-  v397 <- 0
   goto 304
 304:
-  goto 305
+  v384 <- v377 + 1.0
+  v385 <- v384
+  v377 <- v385
+  goto 292
 305:
   goto 306
 306:
-  goto 307 if v397 else 308
+  v386 <- 0
+  goto 307
 307:
-  v405 <- 0
-  goto 314
+  goto 308
 308:
   goto 309
 309:
-  goto 310
+  goto 310 if v386 else 311
 310:
-  v398 <- LevelMemory[17]
-  v399 <- v398 < 16.0
-  goto 311
+  v394 <- 0
+  goto 317
 311:
-  v400 <- LevelMemory[17]
-  v401 <- 17.0 + v400
-  v402 <- v401
-  LevelMemory[v402 + 1] <- v374
-  v403 <- LevelMemory[17]
-  v404 <- v403 + 1.0
-  LevelMemory[17] <- v404
   goto 312
 312:
   goto 313
 313:
-  v405 <- 1.0
+  v387 <- LevelMemory[17]
+  v388 <- v387 < 16.0
   goto 314
 314:
+  v389 <- LevelMemory[17]
+  v390 <- 17.0 + v389
+  v391 <- v390
+  LevelMemory[v391 + 1] <- v374
+  v392 <- LevelMemory[17]
+  v393 <- v392 + 1.0
+  LevelMemory[17] <- v393
   goto 315
 315:
   goto 316
 316:
+  v394 <- 1.0
   goto 317
 317:
   goto 318
 318:
   goto 319
 319:
-  goto 321
+  goto 320
 320:
   goto 321
 321:
   goto 322
 322:
-  goto 323
+  goto 324
 323:
+  goto 324
+324:
+  goto 325
+325:
+  goto 326
+326:
   goto exit

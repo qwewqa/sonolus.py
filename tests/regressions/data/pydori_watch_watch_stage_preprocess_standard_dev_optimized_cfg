@@ -540,7 +540,7 @@
   ArchetypeLife[32] <- 1.0
   ArchetypeLife[35] <- -100.0
   10000[0] <- RuntimeEnvironment[4]
-  goto 25 if !10000[0] else 11
+  goto 23 if !10000[0] else 11
 11:
   goto 12 if StreamHas(1.0, -10.0) else 13
 12:
@@ -550,7 +550,7 @@
   10000[0] <- StreamGetNextKey(1.0, -10.0)
   goto 14
 14:
-  goto 15 if StreamHas(1.0, 10000[0]) else 25
+  goto 15 if StreamHas(1.0, 10000[0]) else 23
 15:
   10000[1] <- StreamGetNextKey(1.0, 10000[0])
   goto 17 if (10000[1] > 10000[0]) else 16
@@ -567,21 +567,14 @@
   10000[2] <- 0
   goto 20
 20:
-  goto 21 if (10000[2] < StreamGetValue(1.0, 10000[0])) else 24
+  goto 21 if (10000[2] < StreamGetValue(1.0, 10000[0])) else 22
 21:
-  10000[4] <- StreamGetValue(1.0, 10000[0])
-  goto 22 if (((10000[2] >= -10000[4]) && (10000[2] < 10000[4])) && (Trunc(10000[2]) == 10000[2])) else 23
-22:
   10000[3] <- 10000[2] + 1.0
-  Spawn(1.0, 10000[0], StreamGetValue(1.0 + (0 + (10000[2] + ((10000[2] < 0) * 10000[4])) + 1.0), 10000[0]))
+  Spawn(1.0, 10000[0], StreamGetValue(1.0 + (0 + 10000[2] + 1.0), 10000[0]))
   10000[2] <- 10000[3]
   goto 20
-23:
-  DebugLog(2.0)
-  DebugPause()
-  goto exit
-24:
+22:
   10000[0] <- 10000[1]
   goto 14
-25:
+23:
   goto exit
