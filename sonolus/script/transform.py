@@ -2,6 +2,7 @@ from __future__ import annotations
 
 from math import cos, sin
 
+from sonolus.script.internal.impl import perf_meta_fn
 from sonolus.script.interval import lerp, remap
 from sonolus.script.quad import Quad, QuadLike
 from sonolus.script.record import Record
@@ -46,6 +47,7 @@ class Transform2d(Record):
             1,
         )
 
+    @perf_meta_fn
     def _compose(
         self,
         b00: float,

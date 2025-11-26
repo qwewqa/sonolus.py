@@ -3,7 +3,7 @@ from __future__ import annotations
 import random
 from abc import abstractmethod
 from collections.abc import Callable, Sequence
-from typing import Any
+from typing import Any, Final
 
 from sonolus.script.debug import assert_true
 from sonolus.script.internal.context import ctx
@@ -215,6 +215,15 @@ class ArrayLike[T](Sequence[T]):
         """
         check_positive_index(i, len(self))
         check_positive_index(j, len(self))
+        self.swap_unchecked(i, j)
+
+    def swap_unchecked(self, i: Num, j: Num):
+        """Swap the values at the given indices possibly without bounds checking.
+
+        Args:
+            i: The first index.
+            j: The second index.
+        """
         temp = copy(self.get_unchecked(i))
         self.set_unchecked(i, self.get_unchecked(j))
         self.set_unchecked(j, temp)
@@ -244,7 +253,7 @@ class ArrayLike[T](Sequence[T]):
         i = 0
         j = len(self) - 1
         while i < j:
-            self.swap(i, j)
+            self.swap_unchecked(i, j)
             i += 1
             j -= 1
 
@@ -263,14 +272,14 @@ def _insertion_sort[T](array: ArrayLike[T], start: int, end: int, key: Callable[
         while i < end:
             j = i
             while j > start and key(array[j - 1]) < key(array[j]):  # type: ignore
-                array.swap(j - 1, j)
+                array.swap_unchecked(j - 1, j)
                 j -= 1
             i += 1
     else:
         while i < end:
             j = i
             while j > start and key(array[j - 1]) > key(array[j]):  # type: ignore
-                array.swap(j - 1, j)
+                array.swap_unchecked(j - 1, j)
                 j -= 1
             i += 1
 
@@ -286,7 +295,7 @@ def _heapify[T](array: ArrayLike[T], end: int, index: int, reverse: bool):
             largest = right
         if largest == index:
             break
-        array.swap(index, largest)
+        array.swap_unchecked(index, largest)
         index = largest
 
 
@@ -297,7 +306,7 @@ def _heap_sort[T](array: ArrayLike[T], start: int, end: int, reverse: bool):
         i -= 1
     i = end - 1
     while i > start:
-        array.swap(start, i)
+        array.swap_unchecked(start, i)
         _heapify(array, i, start, reverse)
         i -= 1
 
@@ -338,7 +347,7 @@ class _ArrayReverser[V: ArrayLike](Record, ArrayLike):
 
 class _ArrayEnumerator[V: ArrayLike](Record, SonolusIterator):
     i: int
-    offset: int
+    offset: Final[int]
     array: V
 
     def next(self) -> Maybe[tuple[int, Any]]:
