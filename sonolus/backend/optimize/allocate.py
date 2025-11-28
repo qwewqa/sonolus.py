@@ -1,7 +1,7 @@
 from sonolus.backend.ir import IRConst, IRGet, IRInstr, IRPureInstr, IRSet
 from sonolus.backend.optimize.flow import BasicBlock, traverse_cfg_preorder
 from sonolus.backend.optimize.liveness import LivenessAnalysis, get_live
-from sonolus.backend.optimize.passes import CompilerPass, OptimizerConfig
+from sonolus.backend.optimize.passes import CompilerPass, OptimizerConfig, run_passes
 from sonolus.backend.place import BlockPlace, TempBlock
 
 TEMP_SIZE = 4096
@@ -161,3 +161,81 @@ class AllocateFast(Allocate):
             end_offsets[block] = offset + size
 
         return offsets
+
+
+class TryAllocateBasic(CompilerPass):
+    """Try AllocateBasic, but use AllocateFast if it fails."""
+
+    def run(self, entry: BasicBlock, config: OptimizerConfig) -> BasicBlock:
+        offsets = {}
+        index = 0
+
+        def scan_stmt(stmt):
+            nonlocal index
+            match stmt:
+                case int() | IRConst():
+                    return False
+                case IRPureInstr(args=args) | IRInstr(args=args):
+                    return any(scan_stmt(arg) for arg in args)
+                case IRGet(place=place):
+                    return scan_stmt(place)
+                case IRSet(place=place, value=value):
+                    return scan_stmt(place) or scan_stmt(value)
+                case BlockPlace() as place:
+                    if isinstance(place.block, TempBlock) and place.block not in offsets:
+                        offsets[place.block] = index
+                        index += place.block.size
+                        if index >= TEMP_SIZE:
+                            return True
+                    result = False
+                    if isinstance(place.block, BlockPlace):
+                        result |= scan_stmt(place.block)
+                    result |= scan_stmt(place.index)
+                    result |= scan_stmt(place.offset)
+                    return result
+                case _:
+                    return False
+
+        for block in traverse_cfg_preorder(entry):
+            for statement in block.statements:
+                if scan_stmt(statement):
+                    return run_passes(entry, [AllocateFast()], config)
+            if scan_stmt(block.test):
+                return run_passes(entry, [AllocateFast()], config)
+
+        def process(stmt):
+            match stmt:
+                case int():
+                    return stmt
+                case IRConst():
+                    return stmt
+                case IRPureInstr(op=op, args=args):
+                    return IRPureInstr(
+                        op=op,
+                        args=[process(arg) for arg in args],
+                    )
+                case IRInstr(op=op, args=args):
+                    return IRInstr(
+                        op=op,
+                        args=[process(arg) for arg in args],
+                    )
+                case IRGet(place=place):
+                    return IRGet(place=process(place))
+                case IRSet(place=place, value=value):
+                    return IRSet(place=process(place), value=process(value))
+                case BlockPlace() as place:
+                    if isinstance(place.block, TempBlock):
+                        return BlockPlace(10000, process(place.index), place.offset + offsets[place.block])
+                    return BlockPlace(
+                        process(place.block) if isinstance(place.block, BlockPlace) else place.block,
+                        process(place.index),
+                        process(place.offset),
+                    )
+                case _:
+                    raise TypeError(f"Unsupported statement: {stmt}")
+
+        for block in traverse_cfg_preorder(entry):
+            block.statements = [process(statement) for statement in block.statements]
+            block.test = process(block.test)
+
+        return entry
