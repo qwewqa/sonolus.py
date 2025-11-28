@@ -141,7 +141,7 @@ class RebuildCommand:
                 cache=server_state.cache,
                 project_state=server_state.project_state,
             )
-            write_collection(server_state.collection, server_state.build_dir)
+            write_collection(server_state.collection, server_state.build_dir, clear=False)
             server_state.cache.prune_unaccessed()
             server_state.last_build_time = time()
             end_time = perf_counter()

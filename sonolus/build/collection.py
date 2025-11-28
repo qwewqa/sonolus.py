@@ -305,7 +305,11 @@ class Collection:
         repo_dir.mkdir(exist_ok=True)
 
         for key, data in self.repository.items():
-            (repo_dir / key).write_bytes(data)
+            target_path = repo_dir / key
+            if target_path.exists():
+                # Since the content is identified by its hash, a matching file can be skipped
+                continue
+            target_path.write_bytes(data)
 
     @staticmethod
     def _write_json(path: Path, content: Any) -> None:

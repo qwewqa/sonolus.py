@@ -105,9 +105,10 @@ def build_collection(
     return collection
 
 
-def write_collection(collection: Collection, build_dir: Path):
+def write_collection(collection: Collection, build_dir: Path, *, clear: bool = True):
     site_dir = build_dir / "site"
-    shutil.rmtree(site_dir, ignore_errors=True)
+    if clear:
+        shutil.rmtree(site_dir, ignore_errors=True)
     site_dir.mkdir(parents=True, exist_ok=True)
 
     collection.write(site_dir)
