@@ -325,33 +325,71 @@ def _filter(fn, iterable):
     return _FilteringIterator(fn, iterable.__iter__())  # noqa: PLC2801
 
 
-@meta_fn
-def _int(value=0):
-    value = validate_value(value)
-    if not _is_num(value):
-        raise TypeError("Only numeric arguments to int() are supported")
-    return _trunc(value)
+class _Int:
+    _is_comptime_value_ = True
+    _type_mapping_ = Num
+
+    @meta_fn
+    def __call__(self, value=0):
+        value = validate_value(value)
+        if not _is_num(value):
+            raise TypeError("Only numeric arguments to int() are supported")
+        return _trunc(value)
+
+    def __or__(self, other):
+        other = validate_value(other)
+        if other._is_py_():
+            other = other._as_py_()
+        other = getattr(other, "_type_mapping_", other)
+        return Num | other
 
 
-@meta_fn
-def _float(value=0.0):
-    value = validate_value(value)
-    if not _is_num(value):
-        raise TypeError("Only numeric arguments to float() are supported")
-    return value
+_int = _Int()
 
 
-def _bool(value=False):
-    # Relies on the compiler to perform the conversion in a boolean context
-    if value:  # noqa: SIM103
-        return True
-    else:
-        return False
+class _Float:
+    _is_comptime_value_ = True
+    _type_mapping_ = Num
+
+    @meta_fn
+    def __call__(self, value=0.0):
+        value = validate_value(value)
+        if not _is_num(value):
+            raise TypeError("Only numeric arguments to float() are supported")
+        return value
+
+    def __or__(self, other):
+        other = validate_value(other)
+        if other._is_py_():
+            other = other._as_py_()
+        other = getattr(other, "_type_mapping_", other)
+        return Num | other
 
 
-_int._type_mapping_ = Num  # type: ignore
-_float._type_mapping_ = Num  # type: ignore
-_bool._type_mapping_ = Num  # type: ignore
+_float = _Float()
+
+
+class _Bool:
+    _is_comptime_value_ = True
+    _type_mapping_ = Num
+
+    @meta_fn
+    def __call__(self, value=False):
+        # Relies on the compiler to perform the conversion in a boolean context
+        if validate_value(value):  # noqa: SIM103
+            return True
+        else:
+            return False
+
+    def __or__(self, other):
+        other = validate_value(other)
+        if other._is_py_():
+            other = other._as_py_()
+        other = getattr(other, "_type_mapping_", other)
+        return Num | other
+
+
+_bool = _Bool()
 
 
 def _any(iterable):

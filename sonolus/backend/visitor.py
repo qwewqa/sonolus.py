@@ -99,7 +99,7 @@ def generate_fn_impl(fn: Callable):
                 return function
             return functools.partial(eval_fn, function)
         case _:
-            if callable(fn) and isinstance(fn, Value):
+            if callable(fn) and (isinstance(fn, Value) or getattr(fn, "_is_comptime_value_", False)):
                 return generate_fn_impl(fn.__call__)
             elif callable(fn):
                 raise TypeError(f"Unsupported callable {fn!r}")
@@ -979,7 +979,11 @@ class Visitor(ast.NodeVisitor):
         if lhs._is_py_() and rhs._is_py_():
             lhs_py = lhs._as_py_()
             rhs_py = rhs._as_py_()
-            if isinstance(lhs_py, type) and isinstance(rhs_py, type):
+            if (
+                (isinstance(lhs_py, type) or getattr(lhs_py, "_is_comptime_value_", False))
+                and (isinstance(rhs_py, type) or getattr(rhs_py, "_is_comptime_value_", False))
+                and hasattr(type(lhs_py), op)
+            ):
                 return validate_value(getattr(lhs_py, op)(rhs_py))
         if hasattr(lhs, op):
             result = self.handle_call(node, getattr(lhs, op), rhs)
