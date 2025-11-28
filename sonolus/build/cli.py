@@ -10,6 +10,7 @@ from types import ModuleType
 
 from sonolus.backend.excepthook import print_simple_traceback
 from sonolus.backend.optimize.optimize import FAST_PASSES, MINIMAL_PASSES, STANDARD_PASSES
+from sonolus.build.collection import Collection
 from sonolus.build.compile import CompileCache
 from sonolus.build.dev_server import run_server
 from sonolus.build.engine import no_gil, package_engine, validate_engine
@@ -96,12 +97,19 @@ def build_collection(
     config: BuildConfig | None,
     cache: CompileCache | None = None,
     project_state: ProjectContextState | None = None,
-):
+) -> Collection:
+    collection = build_project_to_collection(project, config, cache=cache, project_state=project_state)
+
+    write_collection(collection, build_dir)
+
+    return collection
+
+
+def write_collection(collection: Collection, build_dir: Path):
     site_dir = build_dir / "site"
     shutil.rmtree(site_dir, ignore_errors=True)
     site_dir.mkdir(parents=True, exist_ok=True)
 
-    collection = build_project_to_collection(project, config, cache=cache, project_state=project_state)
     collection.write(site_dir)
 
 

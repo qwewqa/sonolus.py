@@ -1,4 +1,5 @@
 from collections.abc import Callable
+from datetime import datetime
 from pathlib import Path
 from typing import cast
 
@@ -28,6 +29,17 @@ def build_project_to_collection(
     project_state: ProjectContextState | None = None,
 ) -> Collection:
     collection = load_resources_files_to_collection(project.resources)
+    build_project_to_existing_collection(project, collection, config, cache=cache, project_state=project_state)
+    return collection
+
+
+def build_project_to_existing_collection(
+    project: Project,
+    collection: Collection,
+    config: BuildConfig | None,
+    cache: CompileCache | None = None,
+    project_state: ProjectContextState | None = None,
+) -> None:
     for src_engine, converter in project.converters.items():
         if src_engine is None:
             continue
@@ -42,7 +54,23 @@ def build_project_to_collection(
     for level in project.levels:
         add_level_to_collection(collection, project, level)
     collection.name = f"{project.engine.name}"
-    return collection
+
+
+def path_was_modified_after(path: Path, modified_time: datetime | int | float) -> bool:
+    if isinstance(modified_time, datetime):
+        target_timestamp = modified_time.timestamp()
+    else:
+        target_timestamp = float(modified_time)
+
+    if path.stat().st_mtime > target_timestamp:
+        return True
+
+    if path.is_dir():
+        for child in path.rglob("*"):
+            if child.stat().st_mtime > target_timestamp:
+                return True
+
+    return False
 
 
 def apply_converter_to_collection(
