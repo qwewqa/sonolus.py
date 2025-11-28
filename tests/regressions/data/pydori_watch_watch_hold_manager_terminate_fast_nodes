@@ -10,7 +10,7 @@ Block(JumpLoop(
     )
     Set(
       10000
-      0
+      1
       NotEqual(
         Get(
           10000
@@ -22,7 +22,7 @@ Block(JumpLoop(
     If(
       Get(
         10000
-        0
+        1
       )
       1
       2
@@ -31,16 +31,20 @@ Block(JumpLoop(
   Execute(
     Set(
       10000
-      0
+      2
       Get(
         4000
         2
       )
     )
-    DestroyParticleEffect(Get(
+    Set(
       10000
-      0
-    ))
+      3
+      DestroyParticleEffect(Get(
+        10000
+        2
+      ))
+    )
     Set(
       4000
       2

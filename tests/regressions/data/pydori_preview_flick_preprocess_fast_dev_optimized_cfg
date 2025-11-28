@@ -1,23 +1,23 @@
 0:
   goto 1 if PreviewOption[12] else 2
 1:
-  10000[0] <- EntityData[0]
-  10000[0] <- -10000[0]
-  EntityData[0] <- 10000[0]
-  10000[0] <- EntityData[2]
-  10000[0] <- -10000[0]
-  EntityData[2] <- 10000[0]
+  10000[8] <- EntityData[0]
+  10000[9] <- -10000[8]
+  EntityData[0] <- 10000[9]
+  10000[10] <- EntityData[2]
+  10000[11] <- -10000[10]
+  EntityData[2] <- 10000[11]
   goto 2
 2:
   10000[0] <- EntityData[1]
-  10000[0] <- BeatToTime(10000[0])
-  EntityData[3] <- 10000[0]
-  10000[0] <- PreviewData[1]
-  10000[1] <- EntityData[3]
-  10000[0] <- Max(10000[0], 10000[1])
-  PreviewData[1] <- 10000[0]
-  10000[0] <- PreviewData[2]
-  10000[1] <- EntityData[1]
-  10000[0] <- Max(10000[0], 10000[1])
-  PreviewData[2] <- 10000[0]
+  10000[1] <- BeatToTime(10000[0])
+  EntityData[3] <- 10000[1]
+  10000[2] <- PreviewData[1]
+  10000[3] <- EntityData[3]
+  10000[4] <- Max(10000[2], 10000[3])
+  PreviewData[1] <- 10000[4]
+  10000[5] <- PreviewData[2]
+  10000[6] <- EntityData[1]
+  10000[7] <- Max(10000[5], 10000[6])
+  PreviewData[2] <- 10000[7]
   goto exit
