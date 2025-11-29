@@ -51,10 +51,10 @@
   goto 10
 10:
   10000[0] <- EntityData[9]
-  goto 11 if (10000[0] >= 0) else 157
+  goto 11 if (10000[0] >= 0) else 158
 11:
   10000[1] <- 10000[0] * 3.0
-  goto 12 if (((EntityInfoArray[10000[1] + 1] >= -15.0) && (EntityInfoArray[10000[1] + 1] < 15.0)) && (Trunc(EntityInfoArray[10000[1] + 1]) == EntityInfoArray[10000[1] + 1])) else 156
+  goto 12 if (((EntityInfoArray[10000[1] + 1] >= -15.0) && (EntityInfoArray[10000[1] + 1] < 15.0)) && (Trunc(EntityInfoArray[10000[1] + 1]) == EntityInfoArray[10000[1] + 1])) else 157
 12:
   10000[1] <- 55.0 + (EntityInfoArray[10000[1] + 1] + ((EntityInfoArray[10000[1] + 1] < 0) * 15.0))
   10000[1] <- EngineRom[10000[1]]
@@ -62,7 +62,7 @@
   10000[3] <- 0
   goto 13
 13:
-  goto 14 if (10000[3] < EngineRom[10000[2]]) else 155
+  goto 14 if (10000[3] < EngineRom[10000[2]]) else 156
 14:
   10000[4] <- 10000[1] + 1.0 + 10000[3]
   10000[4] <- 3000.0[10000[4]]
@@ -77,30 +77,30 @@
   10000[0] <- EntityDataArray[10000[0]]
   goto 17 if (10000[0] > 0) else 27
 17:
-  10000[2] <- EntityData[9]
-  goto 18 if (10000[2] >= 0) else 26
+  10000[0] <- EntityData[9]
+  goto 18 if (10000[0] >= 0) else 26
 18:
-  10000[3] <- 10000[2] * 3.0
-  goto 19 if (((EntityInfoArray[10000[3] + 1] >= -15.0) && (EntityInfoArray[10000[3] + 1] < 15.0)) && (Trunc(EntityInfoArray[10000[3] + 1]) == EntityInfoArray[10000[3] + 1])) else 25
+  10000[1] <- 10000[0] * 3.0
+  goto 19 if (((EntityInfoArray[10000[1] + 1] >= -15.0) && (EntityInfoArray[10000[1] + 1] < 15.0)) && (Trunc(EntityInfoArray[10000[1] + 1]) == EntityInfoArray[10000[1] + 1])) else 25
 19:
-  10000[3] <- 55.0 + (EntityInfoArray[10000[3] + 1] + ((EntityInfoArray[10000[3] + 1] < 0) * 15.0))
-  10000[3] <- EngineRom[10000[3]]
-  10000[4] <- 10000[3]
-  10000[0] <- 0
+  10000[1] <- 55.0 + (EntityInfoArray[10000[1] + 1] + ((EntityInfoArray[10000[1] + 1] < 0) * 15.0))
+  10000[1] <- EngineRom[10000[1]]
+  10000[2] <- 10000[1]
+  10000[3] <- 0
   goto 20
 20:
-  goto 21 if (10000[0] < EngineRom[10000[4]]) else 24
+  goto 21 if (10000[3] < EngineRom[10000[2]]) else 24
 21:
-  10000[1] <- 10000[3] + 1.0 + 10000[0]
-  10000[1] <- 3000.0[10000[1]]
-  goto when 10000[1]
+  10000[4] <- 10000[1] + 1.0 + 10000[3]
+  10000[4] <- 3000.0[10000[4]]
+  goto when 10000[4]
     14.0 -> 23
     default -> 22
 22:
-  10000[0] <- 10000[0] + 1.0
+  10000[3] <- 10000[3] + 1.0
   goto 20
 23:
-  10000[0] <- 3.0 + (10000[2] * 32.0)
+  10000[0] <- 3.0 + (10000[0] * 32.0)
   10000[0] <- EntityDataArray[10000[0]]
   EntityData[9] <- 10000[0]
   goto 10
@@ -121,10 +121,10 @@
   goto 28
 28:
   10000[0] <- EntityData[10]
-  goto 29 if (10000[0] >= 0) else 154
+  goto 29 if (10000[0] >= 0) else 155
 29:
   10000[1] <- 10000[0] * 3.0
-  goto 30 if (((EntityInfoArray[10000[1] + 1] >= -15.0) && (EntityInfoArray[10000[1] + 1] < 15.0)) && (Trunc(EntityInfoArray[10000[1] + 1]) == EntityInfoArray[10000[1] + 1])) else 153
+  goto 30 if (((EntityInfoArray[10000[1] + 1] >= -15.0) && (EntityInfoArray[10000[1] + 1] < 15.0)) && (Trunc(EntityInfoArray[10000[1] + 1]) == EntityInfoArray[10000[1] + 1])) else 154
 30:
   10000[1] <- 55.0 + (EntityInfoArray[10000[1] + 1] + ((EntityInfoArray[10000[1] + 1] < 0) * 15.0))
   10000[1] <- EngineRom[10000[1]]
@@ -132,7 +132,7 @@
   10000[3] <- 0
   goto 31
 31:
-  goto 32 if (10000[3] < EngineRom[10000[2]]) else 152
+  goto 32 if (10000[3] < EngineRom[10000[2]]) else 153
 32:
   10000[4] <- 10000[1] + 1.0 + 10000[3]
   10000[4] <- 3000.0[10000[4]]
@@ -267,42 +267,42 @@
   goto 65
 65:
   10000[0] <- EntityData[3]
-  goto 66 if (10000[0] > 0) else 151
+  goto 66 if (10000[0] > 0) else 152
 66:
   10000[0] <- EntityData[4]
-  goto 67 if !(10000[0] > 0) else 151
+  goto 67 if !(10000[0] > 0) else 152
 67:
   10000[0] <- EntityData[9]
   10000[1] <- EntityData[10]
   Spawn(9.0, 10000[0], 10000[1], 0)
   10000[0] <- RuntimeEnvironment[4]
-  goto 68 if 10000[0] else 131
+  goto 68 if 10000[0] else 132
 68:
-  10000[0] <- EntityData[9]
-  goto 69 if (10000[0] >= 0) else 130
+  10000[4] <- EntityData[9]
+  goto 69 if (10000[4] >= 0) else 131
 69:
-  10000[1] <- 10000[0] * 3.0
-  goto 70 if (((EntityInfoArray[10000[1] + 1] >= -15.0) && (EntityInfoArray[10000[1] + 1] < 15.0)) && (Trunc(EntityInfoArray[10000[1] + 1]) == EntityInfoArray[10000[1] + 1])) else 129
+  10000[0] <- 10000[4] * 3.0
+  goto 70 if (((EntityInfoArray[10000[0] + 1] >= -15.0) && (EntityInfoArray[10000[0] + 1] < 15.0)) && (Trunc(EntityInfoArray[10000[0] + 1]) == EntityInfoArray[10000[0] + 1])) else 130
 70:
-  10000[1] <- 55.0 + (EntityInfoArray[10000[1] + 1] + ((EntityInfoArray[10000[1] + 1] < 0) * 15.0))
-  10000[1] <- EngineRom[10000[1]]
-  10000[2] <- 10000[1]
-  10000[3] <- 0
+  10000[0] <- 55.0 + (EntityInfoArray[10000[0] + 1] + ((EntityInfoArray[10000[0] + 1] < 0) * 15.0))
+  10000[0] <- EngineRom[10000[0]]
+  10000[1] <- 10000[0]
+  10000[2] <- 0
   goto 71
 71:
-  goto 72 if (10000[3] < EngineRom[10000[2]]) else 128
+  goto 72 if (10000[2] < EngineRom[10000[1]]) else 129
 72:
-  10000[4] <- 10000[1] + 1.0 + 10000[3]
-  10000[4] <- 3000.0[10000[4]]
-  goto when 10000[4]
+  10000[3] <- 10000[0] + 1.0 + 10000[2]
+  10000[3] <- 3000.0[10000[3]]
+  goto when 10000[3]
     14.0 -> 74
     default -> 73
 73:
-  10000[3] <- 10000[3] + 1.0
+  10000[2] <- 10000[2] + 1.0
   goto 71
 74:
-  10000[0] <- 10000[0] * 3.0
-  goto 75 if (((EntityInfoArray[10000[0]] >= 0) && (EntityInfoArray[10000[0]] < 99999.0)) && (Trunc(EntityInfoArray[10000[0]]) == EntityInfoArray[10000[0]])) else 127
+  10000[0] <- 10000[4] * 3.0
+  goto 75 if (((EntityInfoArray[10000[0]] >= 0) && (EntityInfoArray[10000[0]] < 99999.0)) && (Trunc(EntityInfoArray[10000[0]]) == EntityInfoArray[10000[0]])) else 128
 75:
   10000[0] <- EntityInfoArray[10000[0]] + 18.0
   goto 76 if StreamHas(10000[0], -10.0) else 77
@@ -317,7 +317,7 @@
   10000[4] <- 0
   goto 79
 79:
-  goto 80 if StreamHas(10000[0], 10000[1]) else 115
+  goto 80 if StreamHas(10000[0], 10000[1]) else 116
 80:
   10000[5] <- 10000[1]
   10000[2] <- StreamGetNextKey(10000[0], 10000[1])
@@ -327,10 +327,10 @@
   goto 82
 82:
   10000[6] <- EntityData[9]
-  goto 83 if (10000[6] >= 0) else 114
+  goto 83 if (10000[6] >= 0) else 115
 83:
   10000[7] <- 10000[6] * 3.0
-  goto 84 if (((EntityInfoArray[10000[7] + 1] >= -15.0) && (EntityInfoArray[10000[7] + 1] < 15.0)) && (Trunc(EntityInfoArray[10000[7] + 1]) == EntityInfoArray[10000[7] + 1])) else 113
+  goto 84 if (((EntityInfoArray[10000[7] + 1] >= -15.0) && (EntityInfoArray[10000[7] + 1] < 15.0)) && (Trunc(EntityInfoArray[10000[7] + 1]) == EntityInfoArray[10000[7] + 1])) else 114
 84:
   10000[7] <- 55.0 + (EntityInfoArray[10000[7] + 1] + ((EntityInfoArray[10000[7] + 1] < 0) * 15.0))
   10000[7] <- EngineRom[10000[7]]
@@ -338,7 +338,7 @@
   10000[9] <- 0
   goto 85
 85:
-  goto 86 if (10000[9] < EngineRom[10000[8]]) else 112
+  goto 86 if (10000[9] < EngineRom[10000[8]]) else 113
 86:
   10000[10] <- 10000[7] + 1.0 + 10000[9]
   10000[10] <- 3000.0[10000[10]]
@@ -357,10 +357,10 @@
   goto 79
 90:
   10000[6] <- EntityData[10]
-  goto 91 if (10000[6] >= 0) else 111
+  goto 91 if (10000[6] >= 0) else 112
 91:
   10000[7] <- 10000[6] * 3.0
-  goto 92 if (((EntityInfoArray[10000[7] + 1] >= -15.0) && (EntityInfoArray[10000[7] + 1] < 15.0)) && (Trunc(EntityInfoArray[10000[7] + 1]) == EntityInfoArray[10000[7] + 1])) else 110
+  goto 92 if (((EntityInfoArray[10000[7] + 1] >= -15.0) && (EntityInfoArray[10000[7] + 1] < 15.0)) && (Trunc(EntityInfoArray[10000[7] + 1]) == EntityInfoArray[10000[7] + 1])) else 111
 92:
   10000[7] <- 55.0 + (EntityInfoArray[10000[7] + 1] + ((EntityInfoArray[10000[7] + 1] < 0) * 15.0))
   10000[7] <- EngineRom[10000[7]]
@@ -368,7 +368,7 @@
   10000[9] <- 0
   goto 93
 93:
-  goto 94 if (10000[9] < EngineRom[10000[8]]) else 109
+  goto 94 if (10000[9] < EngineRom[10000[8]]) else 110
 94:
   10000[10] <- 10000[7] + 1.0 + 10000[9]
   10000[10] <- 3000.0[10000[10]]
@@ -381,229 +381,232 @@
 96:
   10000[6] <- 5.0 + (10000[6] * 32.0)
   10000[6] <- EntityDataArray[10000[6]]
-  goto 115 if (10000[1] > 10000[6]) else 97
+  goto 116 if (10000[1] > 10000[6]) else 97
 97:
   goto 98 if StreamGetValue(10000[0], 10000[1]) else 100
 98:
   goto 99 if !10000[4] else 100
 99:
   10000[4] <- 1.0
-  goto 102 if !StreamGetValue(10000[0], 10000[1]) else 107
+  goto 102 if !StreamGetValue(10000[0], 10000[1]) else 108
 100:
-  goto 101 if !StreamGetValue(10000[0], 10000[1]) else 106
+  goto 101 if !StreamGetValue(10000[0], 10000[1]) else 107
 101:
   10000[5] <- 10000[3]
   goto 102
 102:
-  goto 103 if 10000[4] else 107
+  goto 103 if 10000[4] else 106
 103:
   10000[3] <- 10000[5]
   goto 104 if !LevelOption[10] else 105
 104:
   10000[4] <- 0
-  goto 108
+  goto 109
 105:
   10000[4] <- PlayLoopedScheduled(7.0, 10000[5])
   StopLoopedScheduled(10000[4], 10000[1])
   10000[4] <- 0
-  goto 108
+  goto 109
 106:
-  10000[5] <- 10000[3]
-  goto 107
-107:
   10000[3] <- 10000[5]
+  goto 109
+107:
+  10000[5] <- 10000[3]
   goto 108
 108:
+  10000[3] <- 10000[5]
+  goto 109
+109:
   10000[1] <- 10000[2]
   goto 79
-109:
+110:
   DebugLog(22.0)
   DebugPause()
   goto exit
-110:
+111:
   DebugLog(21.0)
   DebugPause()
   goto exit
-111:
+112:
   DebugLog(20.0)
   DebugPause()
   goto exit
-112:
+113:
   DebugLog(19.0)
   DebugPause()
   goto exit
-113:
+114:
   DebugLog(18.0)
   DebugPause()
   goto exit
-114:
+115:
   DebugLog(17.0)
   DebugPause()
   goto exit
-115:
-  goto 116 if 10000[4] else 151
 116:
-  10000[4] <- EntityData[10]
-  goto 117 if (10000[4] >= 0) else 126
+  goto 117 if 10000[4] else 152
 117:
-  10000[5] <- 10000[4] * 3.0
-  goto 118 if (((EntityInfoArray[10000[5] + 1] >= -15.0) && (EntityInfoArray[10000[5] + 1] < 15.0)) && (Trunc(EntityInfoArray[10000[5] + 1]) == EntityInfoArray[10000[5] + 1])) else 125
+  10000[4] <- EntityData[10]
+  goto 118 if (10000[4] >= 0) else 127
 118:
+  10000[5] <- 10000[4] * 3.0
+  goto 119 if (((EntityInfoArray[10000[5] + 1] >= -15.0) && (EntityInfoArray[10000[5] + 1] < 15.0)) && (Trunc(EntityInfoArray[10000[5] + 1]) == EntityInfoArray[10000[5] + 1])) else 126
+119:
   10000[5] <- 55.0 + (EntityInfoArray[10000[5] + 1] + ((EntityInfoArray[10000[5] + 1] < 0) * 15.0))
   10000[5] <- EngineRom[10000[5]]
   10000[6] <- 10000[5]
   10000[7] <- 0
-  goto 119
-119:
-  goto 120 if (10000[7] < EngineRom[10000[6]]) else 124
+  goto 120
 120:
+  goto 121 if (10000[7] < EngineRom[10000[6]]) else 125
+121:
   10000[8] <- 10000[5] + 1.0 + 10000[7]
   10000[8] <- 3000.0[10000[8]]
   goto when 10000[8]
-    14.0 -> 122
-    default -> 121
-121:
-  10000[7] <- 10000[7] + 1.0
-  goto 119
+    14.0 -> 123
+    default -> 122
 122:
+  10000[7] <- 10000[7] + 1.0
+  goto 120
+123:
   10000[4] <- 5.0 + (10000[4] * 32.0)
   10000[4] <- EntityDataArray[10000[4]]
-  goto 151 if !LevelOption[10] else 123
-123:
+  goto 152 if !LevelOption[10] else 124
+124:
   10000[5] <- PlayLoopedScheduled(7.0, 10000[3])
   StopLoopedScheduled(10000[5], 10000[4])
   goto exit
-124:
+125:
   DebugLog(25.0)
   DebugPause()
   goto exit
-125:
+126:
   DebugLog(24.0)
   DebugPause()
   goto exit
-126:
+127:
   DebugLog(23.0)
   DebugPause()
   goto exit
-127:
+128:
   DebugLog(16.0)
   DebugPause()
   goto exit
-128:
+129:
   DebugLog(15.0)
   DebugPause()
   goto exit
-129:
+130:
   DebugLog(14.0)
   DebugPause()
   goto exit
-130:
+131:
   DebugLog(13.0)
   DebugPause()
   goto exit
-131:
-  10000[0] <- EntityData[9]
-  goto 132 if (10000[0] >= 0) else 150
 132:
-  10000[1] <- 10000[0] * 3.0
-  goto 133 if (((EntityInfoArray[10000[1] + 1] >= -15.0) && (EntityInfoArray[10000[1] + 1] < 15.0)) && (Trunc(EntityInfoArray[10000[1] + 1]) == EntityInfoArray[10000[1] + 1])) else 149
+  10000[0] <- EntityData[9]
+  goto 133 if (10000[0] >= 0) else 151
 133:
+  10000[1] <- 10000[0] * 3.0
+  goto 134 if (((EntityInfoArray[10000[1] + 1] >= -15.0) && (EntityInfoArray[10000[1] + 1] < 15.0)) && (Trunc(EntityInfoArray[10000[1] + 1]) == EntityInfoArray[10000[1] + 1])) else 150
+134:
   10000[1] <- 55.0 + (EntityInfoArray[10000[1] + 1] + ((EntityInfoArray[10000[1] + 1] < 0) * 15.0))
   10000[1] <- EngineRom[10000[1]]
   10000[2] <- 10000[1]
   10000[3] <- 0
-  goto 134
-134:
-  goto 135 if (10000[3] < EngineRom[10000[2]]) else 148
+  goto 135
 135:
+  goto 136 if (10000[3] < EngineRom[10000[2]]) else 149
+136:
   10000[4] <- 10000[1] + 1.0 + 10000[3]
   10000[4] <- 3000.0[10000[4]]
   goto when 10000[4]
-    14.0 -> 137
-    default -> 136
-136:
-  10000[3] <- 10000[3] + 1.0
-  goto 134
+    14.0 -> 138
+    default -> 137
 137:
+  10000[3] <- 10000[3] + 1.0
+  goto 135
+138:
   10000[0] <- 5.0 + (10000[0] * 32.0)
   10000[0] <- EntityDataArray[10000[0]]
   10000[1] <- EntityData[10]
-  goto 138 if (10000[1] >= 0) else 147
-138:
-  10000[2] <- 10000[1] * 3.0
-  goto 139 if (((EntityInfoArray[10000[2] + 1] >= -15.0) && (EntityInfoArray[10000[2] + 1] < 15.0)) && (Trunc(EntityInfoArray[10000[2] + 1]) == EntityInfoArray[10000[2] + 1])) else 146
+  goto 139 if (10000[1] >= 0) else 148
 139:
+  10000[2] <- 10000[1] * 3.0
+  goto 140 if (((EntityInfoArray[10000[2] + 1] >= -15.0) && (EntityInfoArray[10000[2] + 1] < 15.0)) && (Trunc(EntityInfoArray[10000[2] + 1]) == EntityInfoArray[10000[2] + 1])) else 147
+140:
   10000[2] <- 55.0 + (EntityInfoArray[10000[2] + 1] + ((EntityInfoArray[10000[2] + 1] < 0) * 15.0))
   10000[2] <- EngineRom[10000[2]]
   10000[3] <- 10000[2]
   10000[4] <- 0
-  goto 140
-140:
-  goto 141 if (10000[4] < EngineRom[10000[3]]) else 145
+  goto 141
 141:
+  goto 142 if (10000[4] < EngineRom[10000[3]]) else 146
+142:
   10000[5] <- 10000[2] + 1.0 + 10000[4]
   10000[5] <- 3000.0[10000[5]]
   goto when 10000[5]
-    14.0 -> 143
-    default -> 142
-142:
-  10000[4] <- 10000[4] + 1.0
-  goto 140
+    14.0 -> 144
+    default -> 143
 143:
+  10000[4] <- 10000[4] + 1.0
+  goto 141
+144:
   10000[1] <- 5.0 + (10000[1] * 32.0)
   10000[1] <- EntityDataArray[10000[1]]
-  goto 151 if !LevelOption[10] else 144
-144:
+  goto 152 if !LevelOption[10] else 145
+145:
   10000[2] <- PlayLoopedScheduled(7.0, 10000[0])
   StopLoopedScheduled(10000[2], 10000[1])
   goto exit
-145:
+146:
   DebugLog(31.0)
   DebugPause()
   goto exit
-146:
+147:
   DebugLog(30.0)
   DebugPause()
   goto exit
-147:
+148:
   DebugLog(29.0)
   DebugPause()
   goto exit
-148:
+149:
   DebugLog(28.0)
   DebugPause()
   goto exit
-149:
+150:
   DebugLog(27.0)
   DebugPause()
   goto exit
-150:
+151:
   DebugLog(26.0)
   DebugPause()
   goto exit
-151:
-  goto exit
 152:
+  goto exit
+153:
   DebugLog(9.0)
   DebugPause()
   goto exit
-153:
+154:
   DebugLog(8.0)
   DebugPause()
   goto exit
-154:
+155:
   DebugLog(7.0)
   DebugPause()
   goto exit
-155:
+156:
   DebugLog(3.0)
   DebugPause()
   goto exit
-156:
+157:
   DebugLog(2.0)
   DebugPause()
   goto exit
-157:
+158:
   DebugLog(1.0)
   DebugPause()
   goto exit

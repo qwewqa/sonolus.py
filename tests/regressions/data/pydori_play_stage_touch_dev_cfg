@@ -493,7 +493,7 @@
 141:
   goto 142 if v168 else 143
 142:
-  v186 <- 0
+  v178 <- 0
   goto 172
 143:
   goto 144
@@ -549,7 +549,7 @@
 163:
   goto 164 if v177 else 165
 164:
-  v186 <- 0
+  v178 <- 0
   goto 172
 165:
   goto 166
@@ -572,7 +572,7 @@
 170:
   goto 171
 171:
-  v186 <- 1.0
+  v178 <- 1.0
   goto 172
 172:
   goto 173
@@ -583,8 +583,8 @@
 175:
   goto 176
 176:
-  v187 <- !LevelOption[7]
-  goto 177 if v187 else 178
+  v179 <- !LevelOption[7]
+  goto 177 if v179 else 178
 177:
   goto 204
 178:
@@ -596,7 +596,7 @@
 181:
   goto 182
 182:
-  v188 <- 0
+  v180 <- 0
   goto 183
 183:
   goto 184
@@ -607,40 +607,40 @@
 186:
   goto 187
 187:
-  v189 <- v188
-  v190 <- v189 < LevelData[0]
+  v181 <- v180
+  v182 <- v181 < LevelData[0]
   goto 188
 188:
-  goto 189 if v190 else 193
+  goto 189 if v182 else 193
 189:
-  v191 <- v188
-  v192 <- v188
-  v193 <- v192 + 1.0
-  v188 <- v193
+  v183 <- v180
+  v184 <- v180
+  v185 <- v184 + 1.0
+  v180 <- v185
   goto 190
 190:
   goto 191
 191:
   goto 192
 192:
-  v194 <- 1.0
+  v186 <- 1.0
   goto 195
 193:
   goto 194
 194:
-  v194 <- 0
+  v186 <- 0
   goto 195
 195:
   goto 196
 196:
-  goto 197 if v194 else 214
+  goto 197 if v186 else 214
 197:
-  v195 <- v191 * 9.0
-  v196 <- v195
-  v197 <- LevelData[v196 + 1] == LevelData[v30 + 1]
+  v187 <- v183 * 9.0
+  v188 <- v187
+  v189 <- LevelData[v188 + 1] == LevelData[v30 + 1]
   goto 198
 198:
-  goto 199 if v197 else 212
+  goto 199 if v189 else 212
 199:
   goto 200
 200:
@@ -650,22 +650,22 @@
 202:
   goto 203
 203:
-  v200 <- SpawnParticleEffect(0, LevelData[v196 + 2], LevelData[v196 + 3], LevelData[v196 + 4], LevelData[v196 + 5], LevelData[v196 + 6], LevelData[v196 + 7], LevelData[v196 + 8], LevelData[v196 + 9], 0.2, 0)
-  v201 <- v200
+  v192 <- SpawnParticleEffect(0, LevelData[v188 + 2], LevelData[v188 + 3], LevelData[v188 + 4], LevelData[v188 + 5], LevelData[v188 + 6], LevelData[v188 + 7], LevelData[v188 + 8], LevelData[v188 + 9], 0.2, 0)
+  v193 <- v192
   goto 204
 204:
   goto 205
 205:
   goto 206
 206:
-  v202 <- !LevelOption[10]
-  goto 207 if v202 else 208
+  v179 <- !LevelOption[10]
+  goto 207 if v179 else 208
 207:
   goto 210
 208:
   goto 209
 209:
-  v203 <- Play(0, 0.02)
+  v180 <- Play(0, 0.02)
   goto 210
 210:
   goto 211
@@ -678,8 +678,8 @@
 214:
   goto 215
 215:
-  v198 <- DebugLog(5.0)
-  v199 <- DebugPause()
+  v190 <- DebugLog(5.0)
+  v191 <- DebugPause()
   goto exit
 216:
   v180 <- DebugLog(4.0)
@@ -700,7 +700,7 @@
 223:
   goto 224
 224:
-  v204 <- v1
+  v179 <- v1
   goto 225
 225:
   goto 226
@@ -709,62 +709,62 @@
 227:
   goto 228
 228:
-  v205 <- v204 > 0
+  v180 <- v179 > 0
   goto 229
 229:
-  goto 230 if v205 else 231
+  goto 230 if v180 else 231
 230:
-  v206 <- 1.0
-  v207 <- v206
-  v208 <- StreamSet(v207, RuntimeUpdate[0], v1)
-  v209 <- v206
-  v210 <- v209 + 1.0
-  v211 <- StreamSet(v210, RuntimeUpdate[0], a1[0])
-  v212 <- v206
-  v213 <- v212 + 2.0
-  v214 <- StreamSet(v213, RuntimeUpdate[0], a1[1])
-  v215 <- v206
-  v216 <- v215 + 3.0
-  v217 <- StreamSet(v216, RuntimeUpdate[0], a1[2])
-  v218 <- v206
-  v219 <- v218 + 4.0
-  v220 <- StreamSet(v219, RuntimeUpdate[0], a1[3])
-  v221 <- v206
-  v222 <- v221 + 5.0
-  v223 <- StreamSet(v222, RuntimeUpdate[0], a1[4])
-  v224 <- v206
-  v225 <- v224 + 6.0
-  v226 <- StreamSet(v225, RuntimeUpdate[0], a1[5])
-  v227 <- v206
-  v228 <- v227 + 7.0
-  v229 <- StreamSet(v228, RuntimeUpdate[0], a1[6])
-  v230 <- v206
-  v231 <- v230 + 8.0
-  v232 <- StreamSet(v231, RuntimeUpdate[0], a1[7])
-  v233 <- v206
-  v234 <- v233 + 9.0
-  v235 <- StreamSet(v234, RuntimeUpdate[0], a1[8])
-  v236 <- v206
-  v237 <- v236 + 10.0
-  v238 <- StreamSet(v237, RuntimeUpdate[0], a1[9])
-  v239 <- v206
-  v240 <- v239 + 11.0
-  v241 <- StreamSet(v240, RuntimeUpdate[0], a1[10])
-  v242 <- v206
-  v243 <- v242 + 12.0
-  v244 <- StreamSet(v243, RuntimeUpdate[0], a1[11])
-  v245 <- v206
-  v246 <- v245 + 13.0
-  v247 <- StreamSet(v246, RuntimeUpdate[0], a1[12])
-  v248 <- v206
-  v249 <- v248 + 14.0
-  v250 <- StreamSet(v249, RuntimeUpdate[0], a1[13])
-  v251 <- v206
-  v252 <- v251 + 15.0
-  v253 <- StreamSet(v252, RuntimeUpdate[0], a1[14])
-  v254 <- v206
-  v255 <- v254 + 16.0
-  v256 <- StreamSet(v255, RuntimeUpdate[0], a1[15])
+  v181 <- 1.0
+  v182 <- v181
+  v183 <- StreamSet(v182, RuntimeUpdate[0], v1)
+  v184 <- v181
+  v185 <- v184 + 1.0
+  v186 <- StreamSet(v185, RuntimeUpdate[0], a1[0])
+  v187 <- v181
+  v188 <- v187 + 2.0
+  v189 <- StreamSet(v188, RuntimeUpdate[0], a1[1])
+  v190 <- v181
+  v191 <- v190 + 3.0
+  v192 <- StreamSet(v191, RuntimeUpdate[0], a1[2])
+  v193 <- v181
+  v194 <- v193 + 4.0
+  v195 <- StreamSet(v194, RuntimeUpdate[0], a1[3])
+  v196 <- v181
+  v197 <- v196 + 5.0
+  v198 <- StreamSet(v197, RuntimeUpdate[0], a1[4])
+  v199 <- v181
+  v200 <- v199 + 6.0
+  v201 <- StreamSet(v200, RuntimeUpdate[0], a1[5])
+  v202 <- v181
+  v203 <- v202 + 7.0
+  v204 <- StreamSet(v203, RuntimeUpdate[0], a1[6])
+  v205 <- v181
+  v206 <- v205 + 8.0
+  v207 <- StreamSet(v206, RuntimeUpdate[0], a1[7])
+  v208 <- v181
+  v209 <- v208 + 9.0
+  v210 <- StreamSet(v209, RuntimeUpdate[0], a1[8])
+  v211 <- v181
+  v212 <- v211 + 10.0
+  v213 <- StreamSet(v212, RuntimeUpdate[0], a1[9])
+  v214 <- v181
+  v215 <- v214 + 11.0
+  v216 <- StreamSet(v215, RuntimeUpdate[0], a1[10])
+  v217 <- v181
+  v218 <- v217 + 12.0
+  v219 <- StreamSet(v218, RuntimeUpdate[0], a1[11])
+  v220 <- v181
+  v221 <- v220 + 13.0
+  v222 <- StreamSet(v221, RuntimeUpdate[0], a1[12])
+  v223 <- v181
+  v224 <- v223 + 14.0
+  v225 <- StreamSet(v224, RuntimeUpdate[0], a1[13])
+  v226 <- v181
+  v227 <- v226 + 15.0
+  v228 <- StreamSet(v227, RuntimeUpdate[0], a1[14])
+  v229 <- v181
+  v230 <- v229 + 16.0
+  v231 <- StreamSet(v230, RuntimeUpdate[0], a1[15])
   goto 232
 231:
   goto 232

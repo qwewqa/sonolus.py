@@ -87,30 +87,30 @@
   10000[0] <- EntityDataArray[10000[0]]
   goto 17 if (10000[0] > 0) else 27
 17:
-  10000[4] <- EntityData[16]
-  goto 18 if (10000[4] >= 0) else 26
+  10000[0] <- EntityData[16]
+  goto 18 if (10000[0] >= 0) else 26
 18:
-  10000[5] <- 10000[4] * 3.0
-  goto 19 if (((EntityInfoArray[10000[5] + 1] >= -14.0) && (EntityInfoArray[10000[5] + 1] < 14.0)) && (Trunc(EntityInfoArray[10000[5] + 1]) == EntityInfoArray[10000[5] + 1])) else 25
+  10000[1] <- 10000[0] * 3.0
+  goto 19 if (((EntityInfoArray[10000[1] + 1] >= -14.0) && (EntityInfoArray[10000[1] + 1] < 14.0)) && (Trunc(EntityInfoArray[10000[1] + 1]) == EntityInfoArray[10000[1] + 1])) else 25
 19:
-  10000[0] <- 52.0 + (EntityInfoArray[10000[5] + 1] + ((EntityInfoArray[10000[5] + 1] < 0) * 14.0))
-  10000[0] <- EngineRom[10000[0]]
-  10000[1] <- 10000[0]
-  10000[2] <- 0
+  10000[1] <- 52.0 + (EntityInfoArray[10000[1] + 1] + ((EntityInfoArray[10000[1] + 1] < 0) * 14.0))
+  10000[1] <- EngineRom[10000[1]]
+  10000[2] <- 10000[1]
+  10000[3] <- 0
   goto 20
 20:
-  goto 21 if (10000[2] < EngineRom[10000[1]]) else 24
+  goto 21 if (10000[3] < EngineRom[10000[2]]) else 24
 21:
-  10000[3] <- 10000[0] + 1.0 + 10000[2]
-  10000[3] <- 3000.0[10000[3]]
-  goto when 10000[3]
+  10000[4] <- 10000[1] + 1.0 + 10000[3]
+  10000[4] <- 3000.0[10000[4]]
+  goto when 10000[4]
     13.0 -> 23
     default -> 22
 22:
-  10000[2] <- 10000[2] + 1.0
+  10000[3] <- 10000[3] + 1.0
   goto 20
 23:
-  10000[0] <- 3.0 + (10000[4] * 32.0)
+  10000[0] <- 3.0 + (10000[0] * 32.0)
   10000[0] <- EntityDataArray[10000[0]]
   EntityData[16] <- 10000[0]
   goto 10
@@ -157,30 +157,30 @@
   10000[0] <- EntityDataArray[10000[0]]
   goto 35 if (10000[0] > 0) else 45
 35:
-  10000[0] <- EntityData[17]
-  goto 36 if (10000[0] >= 0) else 44
+  10000[2] <- EntityData[17]
+  goto 36 if (10000[2] >= 0) else 44
 36:
-  10000[1] <- 10000[0] * 3.0
-  goto 37 if (((EntityInfoArray[10000[1] + 1] >= -14.0) && (EntityInfoArray[10000[1] + 1] < 14.0)) && (Trunc(EntityInfoArray[10000[1] + 1]) == EntityInfoArray[10000[1] + 1])) else 43
+  10000[3] <- 10000[2] * 3.0
+  goto 37 if (((EntityInfoArray[10000[3] + 1] >= -14.0) && (EntityInfoArray[10000[3] + 1] < 14.0)) && (Trunc(EntityInfoArray[10000[3] + 1]) == EntityInfoArray[10000[3] + 1])) else 43
 37:
-  10000[1] <- 52.0 + (EntityInfoArray[10000[1] + 1] + ((EntityInfoArray[10000[1] + 1] < 0) * 14.0))
-  10000[1] <- EngineRom[10000[1]]
-  10000[2] <- 10000[1]
-  10000[3] <- 0
+  10000[3] <- 52.0 + (EntityInfoArray[10000[3] + 1] + ((EntityInfoArray[10000[3] + 1] < 0) * 14.0))
+  10000[3] <- EngineRom[10000[3]]
+  10000[4] <- 10000[3]
+  10000[1] <- 0
   goto 38
 38:
-  goto 39 if (10000[3] < EngineRom[10000[2]]) else 42
+  goto 39 if (10000[1] < EngineRom[10000[4]]) else 42
 39:
-  10000[4] <- 10000[1] + 1.0 + 10000[3]
-  10000[4] <- 3000.0[10000[4]]
-  goto when 10000[4]
+  10000[0] <- 10000[3] + 1.0 + 10000[1]
+  10000[0] <- 3000.0[10000[0]]
+  goto when 10000[0]
     13.0 -> 41
     default -> 40
 40:
-  10000[3] <- 10000[3] + 1.0
+  10000[1] <- 10000[1] + 1.0
   goto 38
 41:
-  10000[0] <- 4.0 + (10000[0] * 32.0)
+  10000[0] <- 4.0 + (10000[2] * 32.0)
   10000[0] <- EntityDataArray[10000[0]]
   EntityData[17] <- 10000[0]
   goto 28

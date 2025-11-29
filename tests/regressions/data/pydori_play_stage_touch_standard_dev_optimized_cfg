@@ -167,22 +167,22 @@
 42:
   goto 11 if !LevelOption[10] else 47
 43:
-  10000[25] <- 0
+  10000[26] <- 0
   goto 44
 44:
-  goto 45 if (10000[25] < LevelData[0]) else 49
+  goto 45 if (10000[26] < LevelData[0]) else 49
 45:
-  10000[26] <- 10000[25] + 1.0
-  10000[27] <- 10000[25] * 9.0
-  goto 46 if (LevelData[10000[27] + 1] == LevelData[10000[35] + 1]) else 48
+  10000[25] <- 10000[26] + 1.0
+  10000[26] <- 10000[26] * 9.0
+  goto 46 if (LevelData[10000[26] + 1] == LevelData[10000[35] + 1]) else 48
 46:
-  SpawnParticleEffect(0, LevelData[10000[27] + 2], LevelData[10000[27] + 3], LevelData[10000[27] + 4], LevelData[10000[27] + 5], LevelData[10000[27] + 6], LevelData[10000[27] + 7], LevelData[10000[27] + 8], LevelData[10000[27] + 9], 0.2, 0)
+  SpawnParticleEffect(0, LevelData[10000[26] + 2], LevelData[10000[26] + 3], LevelData[10000[26] + 4], LevelData[10000[26] + 5], LevelData[10000[26] + 6], LevelData[10000[26] + 7], LevelData[10000[26] + 8], LevelData[10000[26] + 9], 0.2, 0)
   goto 11 if !LevelOption[10] else 47
 47:
   Play(0, 0.02)
   goto 11
 48:
-  10000[25] <- 10000[26]
+  10000[26] <- 10000[25]
   goto 44
 49:
   DebugLog(5.0)

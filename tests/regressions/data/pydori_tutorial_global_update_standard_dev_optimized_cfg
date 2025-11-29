@@ -6,34 +6,34 @@
 1:
   goto 2 if (10000[0] < TutorialData[0]) else 3
 2:
-  10000[41] <- 10000[0] * 9.0
+  10000[1] <- 10000[0] * 9.0
   10000[0] <- 10000[0] + 1.0
-  Draw(1.0, TutorialData[10000[41] + 2], TutorialData[10000[41] + 3], TutorialData[10000[41] + 4], TutorialData[10000[41] + 5], TutorialData[10000[41] + 6], TutorialData[10000[41] + 7], TutorialData[10000[41] + 8], TutorialData[10000[41] + 9], 1.0, 1.0)
+  Draw(1.0, TutorialData[10000[1] + 2], TutorialData[10000[1] + 3], TutorialData[10000[1] + 4], TutorialData[10000[1] + 5], TutorialData[10000[1] + 6], TutorialData[10000[1] + 7], TutorialData[10000[1] + 8], TutorialData[10000[1] + 9], 1.0, 1.0)
   goto 1
 3:
   Draw(2.0, TutorialData[64], TutorialData[65], TutorialData[66], TutorialData[67], TutorialData[68], TutorialData[69], TutorialData[70], TutorialData[71], 1.0, 1.0)
   Draw(3.0, TutorialData[72], TutorialData[73], TutorialData[74], TutorialData[75], TutorialData[76], TutorialData[77], TutorialData[78], TutorialData[79], 1.0, 1.0)
   Draw(5.0, TutorialData[80], TutorialData[81], TutorialData[82], TutorialData[83], TutorialData[84], TutorialData[85], TutorialData[86], TutorialData[87], 2.0, 1.0)
-  10000[41] <- TutorialMemory[5]
-  goto 4 if 10000[41] else 739
+  10000[0] <- TutorialMemory[5]
+  goto 4 if 10000[0] else 739
 4:
-  10000[41] <- TutorialMemory[5]
-  goto when 10000[41]
+  10000[0] <- TutorialMemory[5]
+  goto when 10000[0]
     1.0 -> 618
     default -> 5
 5:
-  10000[41] <- TutorialMemory[5]
-  goto when 10000[41]
+  10000[0] <- TutorialMemory[5]
+  goto when 10000[0]
     2.0 -> 360
     default -> 6
 6:
-  10000[41] <- TutorialMemory[5]
-  goto when 10000[41]
+  10000[0] <- TutorialMemory[5]
+  goto when 10000[0]
     3.0 -> 290
     default -> 7
 7:
-  10000[41] <- TutorialMemory[5]
-  goto when 10000[41]
+  10000[0] <- TutorialMemory[5]
+  goto when 10000[0]
     4.0 -> 195
     default -> 8
 8:
@@ -673,10 +673,10 @@
   TutorialMemory[0] <- RuntimeUpdate[0]
   goto 804
 195:
-  10000[41] <- TutorialMemory[0]
-  10000[55] <- RuntimeUpdate[0] - 10000[41]
-  10000[56] <- TutorialMemory[4]
-  10000[57] <- TutorialMemory[0]
+  10000[0] <- TutorialMemory[0]
+  10000[28] <- RuntimeUpdate[0] - 10000[0]
+  10000[29] <- TutorialMemory[4]
+  10000[30] <- TutorialMemory[0]
   10000[0] <- 0
   10000[1] <- 0
   10000[2] <- 2.0
@@ -691,60 +691,60 @@
   10000[11] <- 0.8
   10000[12] <- 1.0
   10000[13] <- 999.0
-  goto 196 if (0 <= 10000[55]) else 198
+  goto 196 if (0 <= 10000[28]) else 198
 196:
-  goto 197 if (10000[55] < 1.5) else 198
+  goto 197 if (10000[28] < 1.5) else 198
 197:
   Draw(16.0, ((3.0 * (((TutorialData[90] * (0 - (TutorialData[99] / 2.0))) + (TutorialData[91] * (1.0 - (TutorialData[99] / 2.0))) + TutorialData[92]) / ((TutorialData[96] * (0 - (TutorialData[99] / 2.0))) + (TutorialData[97] * (1.0 - (TutorialData[99] / 2.0))) + TutorialData[98]))) + 0 + ((0 + (1.0 * -((0 + (TutorialData[91] * 1.0) + TutorialData[92]) / (0 + (TutorialData[97] * 1.0) + TutorialData[98])))) * 3.0)) / 1.0, (0 + (3.0 * (((TutorialData[93] * (0 - (TutorialData[99] / 2.0))) + (TutorialData[94] * (1.0 - (TutorialData[99] / 2.0))) + TutorialData[95]) / ((TutorialData[96] * (0 - (TutorialData[99] / 2.0))) + (TutorialData[97] * (1.0 - (TutorialData[99] / 2.0))) + TutorialData[98]))) + ((0 + (1.0 * -((0 + (TutorialData[94] * 1.0) + TutorialData[95]) / (0 + (TutorialData[97] * 1.0) + TutorialData[98])))) * 3.0)) / 1.0, ((3.0 * (((TutorialData[90] * (0 - (TutorialData[99] / 2.0))) + (TutorialData[91] * (1.0 + (TutorialData[99] / 2.0))) + TutorialData[92]) / ((TutorialData[96] * (0 - (TutorialData[99] / 2.0))) + (TutorialData[97] * (1.0 + (TutorialData[99] / 2.0))) + TutorialData[98]))) + 0 + ((0 + (1.0 * -((0 + (TutorialData[91] * 1.0) + TutorialData[92]) / (0 + (TutorialData[97] * 1.0) + TutorialData[98])))) * 3.0)) / 1.0, (0 + (3.0 * (((TutorialData[93] * (0 - (TutorialData[99] / 2.0))) + (TutorialData[94] * (1.0 + (TutorialData[99] / 2.0))) + TutorialData[95]) / ((TutorialData[96] * (0 - (TutorialData[99] / 2.0))) + (TutorialData[97] * (1.0 + (TutorialData[99] / 2.0))) + TutorialData[98]))) + ((0 + (1.0 * -((0 + (TutorialData[94] * 1.0) + TutorialData[95]) / (0 + (TutorialData[97] * 1.0) + TutorialData[98])))) * 3.0)) / 1.0, ((3.0 * (((TutorialData[90] * (0 + (TutorialData[99] / 2.0))) + (TutorialData[91] * (1.0 + (TutorialData[99] / 2.0))) + TutorialData[92]) / ((TutorialData[96] * (0 + (TutorialData[99] / 2.0))) + (TutorialData[97] * (1.0 + (TutorialData[99] / 2.0))) + TutorialData[98]))) + 0 + ((0 + (1.0 * -((0 + (TutorialData[91] * 1.0) + TutorialData[92]) / (0 + (TutorialData[97] * 1.0) + TutorialData[98])))) * 3.0)) / 1.0, (0 + (3.0 * (((TutorialData[93] * (0 + (TutorialData[99] / 2.0))) + (TutorialData[94] * (1.0 + (TutorialData[99] / 2.0))) + TutorialData[95]) / ((TutorialData[96] * (0 + (TutorialData[99] / 2.0))) + (TutorialData[97] * (1.0 + (TutorialData[99] / 2.0))) + TutorialData[98]))) + ((0 + (1.0 * -((0 + (TutorialData[94] * 1.0) + TutorialData[95]) / (0 + (TutorialData[97] * 1.0) + TutorialData[98])))) * 3.0)) / 1.0, ((3.0 * (((TutorialData[90] * (0 + (TutorialData[99] / 2.0))) + (TutorialData[91] * (1.0 - (TutorialData[99] / 2.0))) + TutorialData[92]) / ((TutorialData[96] * (0 + (TutorialData[99] / 2.0))) + (TutorialData[97] * (1.0 - (TutorialData[99] / 2.0))) + TutorialData[98]))) + 0 + ((0 + (1.0 * -((0 + (TutorialData[91] * 1.0) + TutorialData[92]) / (0 + (TutorialData[97] * 1.0) + TutorialData[98])))) * 3.0)) / 1.0, (0 + (3.0 * (((TutorialData[93] * (0 + (TutorialData[99] / 2.0))) + (TutorialData[94] * (1.0 - (TutorialData[99] / 2.0))) + TutorialData[95]) / ((TutorialData[96] * (0 + (TutorialData[99] / 2.0))) + (TutorialData[97] * (1.0 - (TutorialData[99] / 2.0))) + TutorialData[98]))) + ((0 + (1.0 * -((0 + (TutorialData[94] * 1.0) + TutorialData[95]) / (0 + (TutorialData[97] * 1.0) + TutorialData[98])))) * 3.0)) / 1.0, 310000.0, 1.0)
   Draw(17.0, ((3.0 * (((TutorialData[90] * ((Remap(0, 2.0, 0, 0, Clamp(0, 0, TutorialData[102])) * TutorialData[100]) - (TutorialData[99] / 2.0))) + (TutorialData[91] * Clamp(0, 0, TutorialData[102])) + TutorialData[92]) / ((TutorialData[96] * ((Remap(0, 2.0, 0, 0, Clamp(0, 0, TutorialData[102])) * TutorialData[100]) - (TutorialData[99] / 2.0))) + (TutorialData[97] * Clamp(0, 0, TutorialData[102])) + TutorialData[98]))) + 0 + ((0 + (1.0 * -((0 + (TutorialData[91] * 1.0) + TutorialData[92]) / (0 + (TutorialData[97] * 1.0) + TutorialData[98])))) * 3.0)) / 1.0, (0 + (3.0 * (((TutorialData[93] * ((Remap(0, 2.0, 0, 0, Clamp(0, 0, TutorialData[102])) * TutorialData[100]) - (TutorialData[99] / 2.0))) + (TutorialData[94] * Clamp(0, 0, TutorialData[102])) + TutorialData[95]) / ((TutorialData[96] * ((Remap(0, 2.0, 0, 0, Clamp(0, 0, TutorialData[102])) * TutorialData[100]) - (TutorialData[99] / 2.0))) + (TutorialData[97] * Clamp(0, 0, TutorialData[102])) + TutorialData[98]))) + ((0 + (1.0 * -((0 + (TutorialData[94] * 1.0) + TutorialData[95]) / (0 + (TutorialData[97] * 1.0) + TutorialData[98])))) * 3.0)) / 1.0, ((3.0 * (((TutorialData[90] * ((Remap(0, 2.0, 0, 0, Clamp(2.0, 0, TutorialData[102])) * TutorialData[100]) - (TutorialData[99] / 2.0))) + (TutorialData[91] * Clamp(2.0, 0, TutorialData[102])) + TutorialData[92]) / ((TutorialData[96] * ((Remap(0, 2.0, 0, 0, Clamp(2.0, 0, TutorialData[102])) * TutorialData[100]) - (TutorialData[99] / 2.0))) + (TutorialData[97] * Clamp(2.0, 0, TutorialData[102])) + TutorialData[98]))) + 0 + ((0 + (1.0 * -((0 + (TutorialData[91] * 1.0) + TutorialData[92]) / (0 + (TutorialData[97] * 1.0) + TutorialData[98])))) * 3.0)) / 1.0, (0 + (3.0 * (((TutorialData[93] * ((Remap(0, 2.0, 0, 0, Clamp(2.0, 0, TutorialData[102])) * TutorialData[100]) - (TutorialData[99] / 2.0))) + (TutorialData[94] * Clamp(2.0, 0, TutorialData[102])) + TutorialData[95]) / ((TutorialData[96] * ((Remap(0, 2.0, 0, 0, Clamp(2.0, 0, TutorialData[102])) * TutorialData[100]) - (TutorialData[99] / 2.0))) + (TutorialData[97] * Clamp(2.0, 0, TutorialData[102])) + TutorialData[98]))) + ((0 + (1.0 * -((0 + (TutorialData[94] * 1.0) + TutorialData[95]) / (0 + (TutorialData[97] * 1.0) + TutorialData[98])))) * 3.0)) / 1.0, ((3.0 * (((TutorialData[90] * ((Remap(0, 2.0, 0, 0, Clamp(2.0, 0, TutorialData[102])) * TutorialData[100]) + (TutorialData[99] / 2.0))) + (TutorialData[91] * Clamp(2.0, 0, TutorialData[102])) + TutorialData[92]) / ((TutorialData[96] * ((Remap(0, 2.0, 0, 0, Clamp(2.0, 0, TutorialData[102])) * TutorialData[100]) + (TutorialData[99] / 2.0))) + (TutorialData[97] * Clamp(2.0, 0, TutorialData[102])) + TutorialData[98]))) + 0 + ((0 + (1.0 * -((0 + (TutorialData[91] * 1.0) + TutorialData[92]) / (0 + (TutorialData[97] * 1.0) + TutorialData[98])))) * 3.0)) / 1.0, (0 + (3.0 * (((TutorialData[93] * ((Remap(0, 2.0, 0, 0, Clamp(2.0, 0, TutorialData[102])) * TutorialData[100]) + (TutorialData[99] / 2.0))) + (TutorialData[94] * Clamp(2.0, 0, TutorialData[102])) + TutorialData[95]) / ((TutorialData[96] * ((Remap(0, 2.0, 0, 0, Clamp(2.0, 0, TutorialData[102])) * TutorialData[100]) + (TutorialData[99] / 2.0))) + (TutorialData[97] * Clamp(2.0, 0, TutorialData[102])) + TutorialData[98]))) + ((0 + (1.0 * -((0 + (TutorialData[94] * 1.0) + TutorialData[95]) / (0 + (TutorialData[97] * 1.0) + TutorialData[98])))) * 3.0)) / 1.0, ((3.0 * (((TutorialData[90] * ((Remap(0, 2.0, 0, 0, Clamp(0, 0, TutorialData[102])) * TutorialData[100]) + (TutorialData[99] / 2.0))) + (TutorialData[91] * Clamp(0, 0, TutorialData[102])) + TutorialData[92]) / ((TutorialData[96] * ((Remap(0, 2.0, 0, 0, Clamp(0, 0, TutorialData[102])) * TutorialData[100]) + (TutorialData[99] / 2.0))) + (TutorialData[97] * Clamp(0, 0, TutorialData[102])) + TutorialData[98]))) + 0 + ((0 + (1.0 * -((0 + (TutorialData[91] * 1.0) + TutorialData[92]) / (0 + (TutorialData[97] * 1.0) + TutorialData[98])))) * 3.0)) / 1.0, (0 + (3.0 * (((TutorialData[93] * ((Remap(0, 2.0, 0, 0, Clamp(0, 0, TutorialData[102])) * TutorialData[100]) + (TutorialData[99] / 2.0))) + (TutorialData[94] * Clamp(0, 0, TutorialData[102])) + TutorialData[95]) / ((TutorialData[96] * ((Remap(0, 2.0, 0, 0, Clamp(0, 0, TutorialData[102])) * TutorialData[100]) + (TutorialData[99] / 2.0))) + (TutorialData[97] * Clamp(0, 0, TutorialData[102])) + TutorialData[98]))) + ((0 + (1.0 * -((0 + (TutorialData[94] * 1.0) + TutorialData[95]) / (0 + (TutorialData[97] * 1.0) + TutorialData[98])))) * 3.0)) / 1.0, 100000.0, 1.0)
   goto 198
 198:
-  goto 199 if (10000[55] >= 1.5) else 285
+  goto 199 if (10000[28] >= 1.5) else 285
 199:
   TutorialMemory[3] <- 1.0
   TutorialMemory[3] <- 1.0
-  10000[14] <- 1.0
+  10000[31] <- 1.0
   goto 200
 200:
-  goto 201 if (10000[14] < 7.0) else 218
+  goto 201 if (10000[31] < 7.0) else 218
 201:
-  10000[15] <- 10000[14] + 1.0
-  goto 202 if (((10000[14] >= -7.0) && (10000[14] < 7.0)) && (Trunc(10000[14]) == 10000[14])) else 217
+  10000[32] <- 10000[31] + 1.0
+  goto 202 if (((10000[31] >= -7.0) && (10000[31] < 7.0)) && (Trunc(10000[31]) == 10000[31])) else 217
 202:
-  10000[16] <- 10000[14] + ((10000[14] < 0) * 7.0)
-  10000[16] <- 10000[10000[16] + 7]
-  goto 203 if (((10000[14] >= -7.0) && (10000[14] < 7.0)) && (Trunc(10000[14]) == 10000[14])) else 216
+  10000[33] <- 10000[31] + ((10000[31] < 0) * 7.0)
+  10000[33] <- 10000[10000[33] + 7]
+  goto 203 if (((10000[31] >= -7.0) && (10000[31] < 7.0)) && (Trunc(10000[31]) == 10000[31])) else 216
 203:
-  10000[17] <- 10000[14] + ((10000[14] < 0) * 7.0)
-  10000[17] <- 10000[10000[17] + 7]
-  10000[16] <- Lerp(TutorialData[102], 0, Remap(10000[16] - 1.0, 10000[17], 0, 1.0, Max(0, Remap(5.5, 7.0, 0, 1.0, 10000[55]))))
-  10000[17] <- 10000[14] - 1.0
-  goto 204 if (((10000[17] >= -7.0) && (10000[17] < 7.0)) && (Trunc(10000[17]) == 10000[17])) else 215
+  10000[34] <- 10000[31] + ((10000[31] < 0) * 7.0)
+  10000[34] <- 10000[10000[34] + 7]
+  10000[33] <- Lerp(TutorialData[102], 0, Remap(10000[33] - 1.0, 10000[34], 0, 1.0, Max(0, Remap(5.5, 7.0, 0, 1.0, 10000[28]))))
+  10000[34] <- 10000[31] - 1.0
+  goto 204 if (((10000[34] >= -7.0) && (10000[34] < 7.0)) && (Trunc(10000[34]) == 10000[34])) else 215
 204:
-  10000[18] <- 10000[17] + ((10000[17] < 0) * 7.0)
-  10000[18] <- 10000[10000[18] + 7]
-  goto 205 if (((10000[17] >= -7.0) && (10000[17] < 7.0)) && (Trunc(10000[17]) == 10000[17])) else 214
+  10000[35] <- 10000[34] + ((10000[34] < 0) * 7.0)
+  10000[35] <- 10000[10000[35] + 7]
+  goto 205 if (((10000[34] >= -7.0) && (10000[34] < 7.0)) && (Trunc(10000[34]) == 10000[34])) else 214
 205:
-  10000[19] <- 10000[17] + ((10000[17] < 0) * 7.0)
-  10000[19] <- 10000[10000[19] + 7]
-  10000[17] <- Lerp(TutorialData[102], 0, Remap(10000[18] - 1.0, 10000[19], 0, 1.0, Max(0, Remap(5.5, 7.0, 0, 1.0, 10000[55]))))
-  goto 206 if (10000[16] < 0) else 207
+  10000[36] <- 10000[34] + ((10000[34] < 0) * 7.0)
+  10000[36] <- 10000[10000[36] + 7]
+  10000[34] <- Lerp(TutorialData[102], 0, Remap(10000[35] - 1.0, 10000[36], 0, 1.0, Max(0, Remap(5.5, 7.0, 0, 1.0, 10000[28]))))
+  goto 206 if (10000[33] < 0) else 207
 206:
-  10000[14] <- 10000[15]
+  10000[31] <- 10000[32]
   goto 200
 207:
-  goto 208 if (10000[17] < 0) else 213
+  goto 208 if (10000[34] < 0) else 213
 208:
-  10000[18] <- 10000[14] - 1.0
-  goto 209 if (((10000[18] >= -7.0) && (10000[18] < 7.0)) && (Trunc(10000[18]) == 10000[18])) else 212
+  10000[35] <- 10000[31] - 1.0
+  goto 209 if (((10000[35] >= -7.0) && (10000[35] < 7.0)) && (Trunc(10000[35]) == 10000[35])) else 212
 209:
-  10000[18] <- 10000[18] + ((10000[18] < 0) * 7.0)
-  10000[18] <- 10000[10000[18]]
-  goto 210 if (((10000[14] >= -7.0) && (10000[14] < 7.0)) && (Trunc(10000[14]) == 10000[14])) else 211
+  10000[35] <- 10000[35] + ((10000[35] < 0) * 7.0)
+  10000[35] <- 10000[10000[35]]
+  goto 210 if (((10000[31] >= -7.0) && (10000[31] < 7.0)) && (Trunc(10000[31]) == 10000[31])) else 211
 210:
-  10000[19] <- 10000[14] + ((10000[14] < 0) * 7.0)
-  10000[19] <- 10000[10000[19]]
-  10000[14] <- Remap(10000[17], 10000[16], 10000[18], 10000[19], 0)
+  10000[36] <- 10000[31] + ((10000[31] < 0) * 7.0)
+  10000[36] <- 10000[10000[36]]
+  10000[31] <- Remap(10000[34], 10000[33], 10000[35], 10000[36], 0)
   goto 219
 211:
   DebugLog(24.0)
@@ -755,7 +755,7 @@
   DebugPause()
   goto exit
 213:
-  10000[14] <- 10000[15]
+  10000[31] <- 10000[32]
   goto 200
 214:
   DebugLog(23.0)
@@ -774,110 +774,112 @@
   DebugPause()
   goto exit
 218:
-  10000[14] <- 0
+  10000[31] <- 0
   goto 219
 219:
-  10000[15] <- 10000[14] * TutorialData[100]
-  10000[16] <- 10000[15] + ((TutorialData[99] * 1.8) / 2.0)
-  10000[17] <- 10000[15] - ((TutorialData[99] * 1.8) / 2.0)
-  10000[18] <- (TutorialData[96] * 10000[17]) + (TutorialData[97] * (0 - ((TutorialData[99] * 1.8) / 2.0))) + TutorialData[98]
-  10000[19] <- ((TutorialData[90] * 10000[17]) + (TutorialData[91] * (0 - ((TutorialData[99] * 1.8) / 2.0))) + TutorialData[92]) / 10000[18]
-  10000[20] <- ((TutorialData[93] * 10000[17]) + (TutorialData[94] * (0 - ((TutorialData[99] * 1.8) / 2.0))) + TutorialData[95]) / 10000[18]
-  10000[21] <- (TutorialData[96] * 10000[16]) + (TutorialData[97] * (0 - ((TutorialData[99] * 1.8) / 2.0))) + TutorialData[98]
-  10000[22] <- ((TutorialData[90] * 10000[16]) + (TutorialData[91] * (0 - ((TutorialData[99] * 1.8) / 2.0))) + TutorialData[92]) / 10000[21]
-  10000[23] <- ((TutorialData[93] * 10000[16]) + (TutorialData[94] * (0 - ((TutorialData[99] * 1.8) / 2.0))) + TutorialData[95]) / 10000[21]
-  10000[24] <- (TutorialData[96] * 10000[17]) + (TutorialData[97] * ((TutorialData[99] * 1.8) / 2.0)) + TutorialData[98]
-  10000[25] <- ((TutorialData[90] * 10000[17]) + (TutorialData[91] * ((TutorialData[99] * 1.8) / 2.0)) + TutorialData[92]) / 10000[24]
-  10000[26] <- ((TutorialData[93] * 10000[17]) + (TutorialData[94] * ((TutorialData[99] * 1.8) / 2.0)) + TutorialData[95]) / 10000[24]
-  10000[27] <- (TutorialData[96] * 10000[16]) + (TutorialData[97] * ((TutorialData[99] * 1.8) / 2.0)) + TutorialData[98]
-  10000[28] <- ((TutorialData[90] * 10000[16]) + (TutorialData[91] * ((TutorialData[99] * 1.8) / 2.0)) + TutorialData[92]) / 10000[27]
-  10000[29] <- ((TutorialData[93] * 10000[16]) + (TutorialData[94] * ((TutorialData[99] * 1.8) / 2.0)) + TutorialData[95]) / 10000[27]
-  10000[30] <- (((10000[28] - 10000[25]) + 10000[22]) - 10000[19]) / 2.0
-  10000[31] <- (10000[25] + 10000[28]) / 2.0
-  10000[32] <- (10000[19] + 10000[22]) / 2.0
-  10000[33] <- 10000[32] - (10000[30] / 2.0)
-  10000[34] <- 10000[32] + (10000[30] / 2.0)
-  10000[35] <- 10000[31] - (10000[30] / 2.0)
-  10000[36] <- 10000[31] + (10000[30] / 2.0)
-  10000[37] <- TutorialMemory[1]
-  goto 220 if 10000[37] else 221
+  10000[32] <- 10000[31] * TutorialData[100]
+  10000[33] <- 10000[32] + ((TutorialData[99] * 1.8) / 2.0)
+  10000[34] <- 10000[32] - ((TutorialData[99] * 1.8) / 2.0)
+  10000[35] <- (TutorialData[96] * 10000[34]) + (TutorialData[97] * (0 - ((TutorialData[99] * 1.8) / 2.0))) + TutorialData[98]
+  10000[36] <- ((TutorialData[90] * 10000[34]) + (TutorialData[91] * (0 - ((TutorialData[99] * 1.8) / 2.0))) + TutorialData[92]) / 10000[35]
+  10000[37] <- ((TutorialData[93] * 10000[34]) + (TutorialData[94] * (0 - ((TutorialData[99] * 1.8) / 2.0))) + TutorialData[95]) / 10000[35]
+  10000[38] <- (TutorialData[96] * 10000[33]) + (TutorialData[97] * (0 - ((TutorialData[99] * 1.8) / 2.0))) + TutorialData[98]
+  10000[39] <- ((TutorialData[90] * 10000[33]) + (TutorialData[91] * (0 - ((TutorialData[99] * 1.8) / 2.0))) + TutorialData[92]) / 10000[38]
+  10000[40] <- ((TutorialData[93] * 10000[33]) + (TutorialData[94] * (0 - ((TutorialData[99] * 1.8) / 2.0))) + TutorialData[95]) / 10000[38]
+  10000[41] <- 10000[40]
+  10000[42] <- (TutorialData[96] * 10000[34]) + (TutorialData[97] * ((TutorialData[99] * 1.8) / 2.0)) + TutorialData[98]
+  10000[43] <- ((TutorialData[90] * 10000[34]) + (TutorialData[91] * ((TutorialData[99] * 1.8) / 2.0)) + TutorialData[92]) / 10000[42]
+  10000[44] <- ((TutorialData[93] * 10000[34]) + (TutorialData[94] * ((TutorialData[99] * 1.8) / 2.0)) + TutorialData[95]) / 10000[42]
+  10000[45] <- (TutorialData[96] * 10000[33]) + (TutorialData[97] * ((TutorialData[99] * 1.8) / 2.0)) + TutorialData[98]
+  10000[46] <- ((TutorialData[90] * 10000[33]) + (TutorialData[91] * ((TutorialData[99] * 1.8) / 2.0)) + TutorialData[92]) / 10000[45]
+  10000[47] <- ((TutorialData[93] * 10000[33]) + (TutorialData[94] * ((TutorialData[99] * 1.8) / 2.0)) + TutorialData[95]) / 10000[45]
+  10000[48] <- 10000[47]
+  10000[49] <- (((10000[46] - 10000[43]) + 10000[39]) - 10000[36]) / 2.0
+  10000[50] <- (10000[43] + 10000[46]) / 2.0
+  10000[51] <- (10000[36] + 10000[39]) / 2.0
+  10000[52] <- 10000[51] - (10000[49] / 2.0)
+  10000[53] <- 10000[51] + (10000[49] / 2.0)
+  10000[54] <- 10000[50] - (10000[49] / 2.0)
+  10000[55] <- 10000[50] + (10000[49] / 2.0)
+  10000[56] <- TutorialMemory[1]
+  goto 220 if 10000[56] else 221
 220:
-  10000[37] <- TutorialMemory[1]
-  MoveParticleEffect(10000[37], 10000[33], 10000[20], 10000[35], 10000[26], 10000[36], 10000[29], 10000[34], 10000[23])
+  10000[56] <- TutorialMemory[1]
+  MoveParticleEffect(10000[56], 10000[52], 10000[37], 10000[54], 10000[44], 10000[55], 10000[47], 10000[53], 10000[40])
   goto 222
 221:
-  10000[15] <- SpawnParticleEffect(5.0, 10000[33], 10000[20], 10000[35], 10000[26], 10000[36], 10000[29], 10000[34], 10000[23], 1.5, 1.0)
-  TutorialMemory[1] <- 10000[15]
+  10000[49] <- SpawnParticleEffect(5.0, 10000[52], 10000[37], 10000[54], 10000[44], 10000[55], 10000[47], 10000[53], 10000[40], 1.5, 1.0)
+  TutorialMemory[1] <- 10000[49]
   goto 222
 222:
-  goto 223 if (10000[55] >= 5.5) else 225
+  goto 223 if (10000[28] >= 5.5) else 225
 223:
-  10000[15] <- TutorialMemory[2]
-  goto 225 if 10000[15] else 224
+  10000[32] <- TutorialMemory[2]
+  goto 225 if 10000[32] else 224
 224:
-  10000[15] <- PlayLooped(7.0)
-  TutorialMemory[2] <- 10000[15]
+  10000[32] <- PlayLooped(7.0)
+  TutorialMemory[2] <- 10000[32]
   goto 225
 225:
-  10000[15] <- 10000[14] * TutorialData[100]
-  10000[16] <- 10000[15] + (TutorialData[99] / 2.0)
-  10000[17] <- 10000[15] - (TutorialData[99] / 2.0)
-  10000[18] <- (TutorialData[96] * 10000[17]) + (TutorialData[97] * (0 - (TutorialData[99] / 2.0))) + TutorialData[98]
-  10000[19] <- (TutorialData[96] * 10000[16]) + (TutorialData[97] * (0 - (TutorialData[99] / 2.0))) + TutorialData[98]
-  10000[20] <- (TutorialData[96] * 10000[17]) + (TutorialData[97] * (TutorialData[99] / 2.0)) + TutorialData[98]
-  10000[21] <- (TutorialData[96] * 10000[16]) + (TutorialData[97] * (TutorialData[99] / 2.0)) + TutorialData[98]
-  Draw(14.0, ((TutorialData[90] * 10000[17]) + (TutorialData[91] * (0 - (TutorialData[99] / 2.0))) + TutorialData[92]) / 10000[18], ((TutorialData[93] * 10000[17]) + (TutorialData[94] * (0 - (TutorialData[99] / 2.0))) + TutorialData[95]) / 10000[18], ((TutorialData[90] * 10000[17]) + (TutorialData[91] * (0 + (TutorialData[99] / 2.0))) + TutorialData[92]) / 10000[20], ((TutorialData[93] * 10000[17]) + (TutorialData[94] * (0 + (TutorialData[99] / 2.0))) + TutorialData[95]) / 10000[20], ((TutorialData[90] * 10000[16]) + (TutorialData[91] * (0 + (TutorialData[99] / 2.0))) + TutorialData[92]) / 10000[21], ((TutorialData[93] * 10000[16]) + (TutorialData[94] * (0 + (TutorialData[99] / 2.0))) + TutorialData[95]) / 10000[21], ((TutorialData[90] * 10000[16]) + (TutorialData[91] * (0 - (TutorialData[99] / 2.0))) + TutorialData[92]) / 10000[19], ((TutorialData[93] * 10000[16]) + (TutorialData[94] * (0 - (TutorialData[99] / 2.0))) + TutorialData[95]) / 10000[19], 300000.0 + (10000[14] * 100.0), 1.0)
-  10000[14] <- 10000[14] * TutorialData[100]
-  10000[15] <- (TutorialData[96] * 10000[14]) + TutorialData[98]
-  Paint(0, ((0 - (1.0 * Sin(LerpClamped(0.5235987755982988, 1.0471975511965976, 1.0)))) * 0.25 * RuntimeUIConfiguration[4]) + ((0.8660254037844386 * (0.25 * RuntimeUIConfiguration[4])) + (((TutorialData[90] * 10000[14]) + 0 + TutorialData[92]) / 10000[15])), ((0 + (1.0 * Cos(LerpClamped(0.5235987755982988, 1.0471975511965976, 1.0)))) * 0.25 * RuntimeUIConfiguration[4]) + ((-0.5000000000000001 * (0.25 * RuntimeUIConfiguration[4])) + (((TutorialData[93] * 10000[14]) + 0 + TutorialData[95]) / 10000[15])), 0.25 * RuntimeUIConfiguration[4], (180.0 * LerpClamped(0.5235987755982988, 1.0471975511965976, 1.0)) / 3.141592653589793, 0, RuntimeUIConfiguration[5])
-  10000[14] <- 1.0
+  10000[32] <- 10000[31] * TutorialData[100]
+  10000[33] <- 10000[32] + (TutorialData[99] / 2.0)
+  10000[34] <- 10000[32] - (TutorialData[99] / 2.0)
+  10000[35] <- (TutorialData[96] * 10000[34]) + (TutorialData[97] * (0 - (TutorialData[99] / 2.0))) + TutorialData[98]
+  10000[36] <- (TutorialData[96] * 10000[33]) + (TutorialData[97] * (0 - (TutorialData[99] / 2.0))) + TutorialData[98]
+  10000[42] <- (TutorialData[96] * 10000[34]) + (TutorialData[97] * (TutorialData[99] / 2.0)) + TutorialData[98]
+  10000[43] <- (TutorialData[96] * 10000[33]) + (TutorialData[97] * (TutorialData[99] / 2.0)) + TutorialData[98]
+  Draw(14.0, ((TutorialData[90] * 10000[34]) + (TutorialData[91] * (0 - (TutorialData[99] / 2.0))) + TutorialData[92]) / 10000[35], ((TutorialData[93] * 10000[34]) + (TutorialData[94] * (0 - (TutorialData[99] / 2.0))) + TutorialData[95]) / 10000[35], ((TutorialData[90] * 10000[34]) + (TutorialData[91] * (0 + (TutorialData[99] / 2.0))) + TutorialData[92]) / 10000[42], ((TutorialData[93] * 10000[34]) + (TutorialData[94] * (0 + (TutorialData[99] / 2.0))) + TutorialData[95]) / 10000[42], ((TutorialData[90] * 10000[33]) + (TutorialData[91] * (0 + (TutorialData[99] / 2.0))) + TutorialData[92]) / 10000[43], ((TutorialData[93] * 10000[33]) + (TutorialData[94] * (0 + (TutorialData[99] / 2.0))) + TutorialData[95]) / 10000[43], ((TutorialData[90] * 10000[33]) + (TutorialData[91] * (0 - (TutorialData[99] / 2.0))) + TutorialData[92]) / 10000[36], ((TutorialData[93] * 10000[33]) + (TutorialData[94] * (0 - (TutorialData[99] / 2.0))) + TutorialData[95]) / 10000[36], 300000.0 + (10000[31] * 100.0), 1.0)
+  10000[31] <- 10000[31] * TutorialData[100]
+  10000[32] <- (TutorialData[96] * 10000[31]) + TutorialData[98]
+  Paint(0, ((0 - (1.0 * Sin(LerpClamped(0.5235987755982988, 1.0471975511965976, 1.0)))) * 0.25 * RuntimeUIConfiguration[4]) + ((0.8660254037844386 * (0.25 * RuntimeUIConfiguration[4])) + (((TutorialData[90] * 10000[31]) + 0 + TutorialData[92]) / 10000[32])), ((0 + (1.0 * Cos(LerpClamped(0.5235987755982988, 1.0471975511965976, 1.0)))) * 0.25 * RuntimeUIConfiguration[4]) + ((-0.5000000000000001 * (0.25 * RuntimeUIConfiguration[4])) + (((TutorialData[93] * 10000[31]) + 0 + TutorialData[95]) / 10000[32])), 0.25 * RuntimeUIConfiguration[4], (180.0 * LerpClamped(0.5235987755982988, 1.0471975511965976, 1.0)) / 3.141592653589793, 0, RuntimeUIConfiguration[5])
+  10000[31] <- 1.0
   goto 226
 226:
-  goto 227 if (10000[14] < 7.0) else 240
+  goto 227 if (10000[31] < 7.0) else 240
 227:
-  10000[15] <- 10000[14] + 1.0
-  10000[16] <- 10000[14] - 1.0
-  goto 228 if (((10000[16] >= -7.0) && (10000[16] < 7.0)) && (Trunc(10000[16]) == 10000[16])) else 239
+  10000[32] <- 10000[31] + 1.0
+  10000[33] <- 10000[31] - 1.0
+  goto 228 if (((10000[33] >= -7.0) && (10000[33] < 7.0)) && (Trunc(10000[33]) == 10000[33])) else 239
 228:
-  10000[16] <- 10000[16] + ((10000[16] < 0) * 7.0)
-  10000[16] <- 10000[10000[16]]
-  goto 229 if (((10000[14] >= -7.0) && (10000[14] < 7.0)) && (Trunc(10000[14]) == 10000[14])) else 238
+  10000[33] <- 10000[33] + ((10000[33] < 0) * 7.0)
+  10000[33] <- 10000[10000[33]]
+  goto 229 if (((10000[31] >= -7.0) && (10000[31] < 7.0)) && (Trunc(10000[31]) == 10000[31])) else 238
 229:
-  10000[17] <- 10000[14] + ((10000[14] < 0) * 7.0)
-  10000[17] <- 10000[10000[17]]
-  10000[18] <- 10000[14] - 1.0
-  goto 230 if (((10000[18] >= -7.0) && (10000[18] < 7.0)) && (Trunc(10000[18]) == 10000[18])) else 237
+  10000[34] <- 10000[31] + ((10000[31] < 0) * 7.0)
+  10000[34] <- 10000[10000[34]]
+  10000[35] <- 10000[31] - 1.0
+  goto 230 if (((10000[35] >= -7.0) && (10000[35] < 7.0)) && (Trunc(10000[35]) == 10000[35])) else 237
 230:
-  10000[19] <- 10000[18] + ((10000[18] < 0) * 7.0)
-  10000[19] <- 10000[10000[19] + 7]
-  goto 231 if (((10000[18] >= -7.0) && (10000[18] < 7.0)) && (Trunc(10000[18]) == 10000[18])) else 236
+  10000[36] <- 10000[35] + ((10000[35] < 0) * 7.0)
+  10000[36] <- 10000[10000[36] + 7]
+  goto 231 if (((10000[35] >= -7.0) && (10000[35] < 7.0)) && (Trunc(10000[35]) == 10000[35])) else 236
 231:
-  10000[20] <- 10000[18] + ((10000[18] < 0) * 7.0)
-  10000[20] <- 10000[10000[20] + 7]
-  10000[18] <- Lerp(TutorialData[102], 0, Remap(10000[19] - 1.0, 10000[20], 0, 1.0, Max(0, Remap(5.5, 7.0, 0, 1.0, 10000[55]))))
-  goto 232 if (((10000[14] >= -7.0) && (10000[14] < 7.0)) && (Trunc(10000[14]) == 10000[14])) else 235
+  10000[37] <- 10000[35] + ((10000[35] < 0) * 7.0)
+  10000[37] <- 10000[10000[37] + 7]
+  10000[42] <- Lerp(TutorialData[102], 0, Remap(10000[36] - 1.0, 10000[37], 0, 1.0, Max(0, Remap(5.5, 7.0, 0, 1.0, 10000[28]))))
+  goto 232 if (((10000[31] >= -7.0) && (10000[31] < 7.0)) && (Trunc(10000[31]) == 10000[31])) else 235
 232:
-  10000[19] <- 10000[14] + ((10000[14] < 0) * 7.0)
-  10000[19] <- 10000[10000[19] + 7]
-  goto 233 if (((10000[14] >= -7.0) && (10000[14] < 7.0)) && (Trunc(10000[14]) == 10000[14])) else 234
+  10000[43] <- 10000[31] + ((10000[31] < 0) * 7.0)
+  10000[43] <- 10000[10000[43] + 7]
+  goto 233 if (((10000[31] >= -7.0) && (10000[31] < 7.0)) && (Trunc(10000[31]) == 10000[31])) else 234
 233:
-  10000[20] <- 10000[14] + ((10000[14] < 0) * 7.0)
-  10000[20] <- 10000[10000[20] + 7]
-  10000[19] <- Lerp(TutorialData[102], 0, Remap(10000[19] - 1.0, 10000[20], 0, 1.0, Max(0, Remap(5.5, 7.0, 0, 1.0, 10000[55]))))
-  10000[20] <- Clamp(10000[18], 0, TutorialData[102])
-  10000[21] <- Clamp(10000[19], 0, TutorialData[102])
-  10000[22] <- Remap(10000[18], 10000[19], 10000[16], 10000[17], 10000[20]) * TutorialData[100]
-  10000[23] <- Remap(10000[18], 10000[19], 10000[16], 10000[17], 10000[21]) * TutorialData[100]
-  10000[24] <- 10000[22] - (TutorialData[99] / 2.0)
-  10000[25] <- 10000[22] + (TutorialData[99] / 2.0)
-  10000[26] <- 10000[23] - (TutorialData[99] / 2.0)
-  10000[27] <- 10000[23] + (TutorialData[99] / 2.0)
-  10000[28] <- (TutorialData[96] * 10000[24]) + (TutorialData[97] * 10000[20]) + TutorialData[98]
-  10000[29] <- (TutorialData[96] * 10000[25]) + (TutorialData[97] * 10000[20]) + TutorialData[98]
-  10000[30] <- (TutorialData[96] * 10000[26]) + (TutorialData[97] * 10000[21]) + TutorialData[98]
-  10000[31] <- (TutorialData[96] * 10000[27]) + (TutorialData[97] * 10000[21]) + TutorialData[98]
-  Draw(17.0, ((TutorialData[90] * 10000[24]) + (TutorialData[91] * 10000[20]) + TutorialData[92]) / 10000[28], ((TutorialData[93] * 10000[24]) + (TutorialData[94] * 10000[20]) + TutorialData[95]) / 10000[28], ((TutorialData[90] * 10000[26]) + (TutorialData[91] * 10000[21]) + TutorialData[92]) / 10000[30], ((TutorialData[93] * 10000[26]) + (TutorialData[94] * 10000[21]) + TutorialData[95]) / 10000[30], ((TutorialData[90] * 10000[27]) + (TutorialData[91] * 10000[21]) + TutorialData[92]) / 10000[31], ((TutorialData[93] * 10000[27]) + (TutorialData[94] * 10000[21]) + TutorialData[95]) / 10000[31], ((TutorialData[90] * 10000[25]) + (TutorialData[91] * 10000[20]) + TutorialData[92]) / 10000[29], ((TutorialData[93] * 10000[25]) + (TutorialData[94] * 10000[20]) + TutorialData[95]) / 10000[29], 100000.0 + (Min(10000[16], 10000[17]) * 100.0) + Min(10000[18], 10000[19]), 0.8)
-  10000[14] <- 10000[15]
+  10000[44] <- 10000[31] + ((10000[31] < 0) * 7.0)
+  10000[44] <- 10000[10000[44] + 7]
+  10000[49] <- Lerp(TutorialData[102], 0, Remap(10000[43] - 1.0, 10000[44], 0, 1.0, Max(0, Remap(5.5, 7.0, 0, 1.0, 10000[28]))))
+  10000[50] <- Clamp(10000[42], 0, TutorialData[102])
+  10000[51] <- Clamp(10000[49], 0, TutorialData[102])
+  10000[52] <- Remap(10000[42], 10000[49], 10000[33], 10000[34], 10000[50]) * TutorialData[100]
+  10000[53] <- Remap(10000[42], 10000[49], 10000[33], 10000[34], 10000[51]) * TutorialData[100]
+  10000[41] <- 10000[52] - (TutorialData[99] / 2.0)
+  10000[54] <- 10000[52] + (TutorialData[99] / 2.0)
+  10000[48] <- 10000[53] - (TutorialData[99] / 2.0)
+  10000[55] <- 10000[53] + (TutorialData[99] / 2.0)
+  10000[56] <- (TutorialData[96] * 10000[41]) + (TutorialData[97] * 10000[50]) + TutorialData[98]
+  10000[57] <- (TutorialData[96] * 10000[54]) + (TutorialData[97] * 10000[50]) + TutorialData[98]
+  10000[58] <- (TutorialData[96] * 10000[48]) + (TutorialData[97] * 10000[51]) + TutorialData[98]
+  10000[14] <- (TutorialData[96] * 10000[55]) + (TutorialData[97] * 10000[51]) + TutorialData[98]
+  Draw(17.0, ((TutorialData[90] * 10000[41]) + (TutorialData[91] * 10000[50]) + TutorialData[92]) / 10000[56], ((TutorialData[93] * 10000[41]) + (TutorialData[94] * 10000[50]) + TutorialData[95]) / 10000[56], ((TutorialData[90] * 10000[48]) + (TutorialData[91] * 10000[51]) + TutorialData[92]) / 10000[58], ((TutorialData[93] * 10000[48]) + (TutorialData[94] * 10000[51]) + TutorialData[95]) / 10000[58], ((TutorialData[90] * 10000[55]) + (TutorialData[91] * 10000[51]) + TutorialData[92]) / 10000[14], ((TutorialData[93] * 10000[55]) + (TutorialData[94] * 10000[51]) + TutorialData[95]) / 10000[14], ((TutorialData[90] * 10000[54]) + (TutorialData[91] * 10000[50]) + TutorialData[92]) / 10000[57], ((TutorialData[93] * 10000[54]) + (TutorialData[94] * 10000[50]) + TutorialData[95]) / 10000[57], 100000.0 + (Min(10000[33], 10000[34]) * 100.0) + Min(10000[42], 10000[49]), 0.8)
+  10000[31] <- 10000[32]
   goto 226
 234:
   DebugLog(26.0)
@@ -904,103 +906,103 @@
   DebugPause()
   goto exit
 240:
-  10000[14] <- 0
-  10000[15] <- 0
-  10000[16] <- 0
+  10000[49] <- 0
+  10000[50] <- 0
+  10000[52] <- 0
   goto 241
 241:
-  goto 242 if (10000[14] < 7.0) else 243
+  goto 242 if (10000[49] < 7.0) else 243
 242:
-  10000[17] <- 10000[14]
-  10000[38] <- 10000[10000[17]]
-  10000[14] <- 10000[14] + 1.0
-  10000[39] <- 1.0
+  10000[53] <- 10000[49]
+  10000[41] <- 10000[10000[53]]
+  10000[49] <- 10000[49] + 1.0
+  10000[53] <- 1.0
   goto 244
 243:
-  10000[39] <- 0
+  10000[53] <- 0
   goto 244
 244:
-  goto 245 if (10000[15] < 7.0) else 246
+  goto 245 if (10000[50] < 7.0) else 246
 245:
-  10000[40] <- 10000[15]
-  10000[40] <- 10000[10000[40] + 7]
-  10000[15] <- 10000[15] + 1.0
-  10000[41] <- 1.0
+  10000[54] <- 10000[50]
+  10000[48] <- 10000[10000[54] + 7]
+  10000[50] <- 10000[50] + 1.0
+  10000[54] <- 1.0
   goto 247
 246:
-  10000[41] <- 0
+  10000[54] <- 0
   goto 247
 247:
-  goto 248 if !10000[39] else 249
+  goto 248 if !10000[53] else 249
 248:
-  10000[41] <- 0
+  10000[53] <- 0
   goto 252
 249:
-  goto 250 if !10000[41] else 251
+  goto 250 if !10000[54] else 251
 250:
-  10000[41] <- 0
+  10000[53] <- 0
   goto 252
 251:
-  10000[41] <- 1.0
+  10000[53] <- 1.0
   goto 252
 252:
-  goto 285 if !10000[41] else 253
+  goto 285 if !10000[53] else 253
 253:
-  10000[17] <- 10000[16] + 1.0
-  10000[41] <- 5.5 + (10000[40] * 1.5)
-  goto 254 if (10000[55] < 10000[41]) else 275
+  10000[51] <- 10000[52] + 1.0
+  10000[53] <- 5.5 + (10000[48] * 1.5)
+  goto 254 if (10000[28] < 10000[53]) else 275
 254:
-  goto 255 if (((10000[16] >= -7.0) && (10000[16] < 7.0)) && (Trunc(10000[16]) == 10000[16])) else 274
+  goto 255 if (((10000[52] >= -7.0) && (10000[52] < 7.0)) && (Trunc(10000[52]) == 10000[52])) else 274
 255:
-  10000[42] <- 10000[16] + ((10000[16] < 0) * 7.0)
-  10000[42] <- 10000[10000[42] + 7]
-  goto 256 if (((10000[16] >= -7.0) && (10000[16] < 7.0)) && (Trunc(10000[16]) == 10000[16])) else 273
+  10000[54] <- 10000[52] + ((10000[52] < 0) * 7.0)
+  10000[54] <- 10000[10000[54] + 7]
+  goto 256 if (((10000[52] >= -7.0) && (10000[52] < 7.0)) && (Trunc(10000[52]) == 10000[52])) else 273
 256:
-  10000[43] <- 10000[16] + ((10000[16] < 0) * 7.0)
-  10000[43] <- 10000[10000[43] + 7]
-  10000[42] <- Lerp(TutorialData[102], 0, Remap(10000[42] - 1.0, 10000[43], 0, 1.0, Max(0, Remap(5.5, 7.0, 0, 1.0, 10000[55]))))
-  goto 257 if (10000[42] <= TutorialData[103]) else 258
+  10000[55] <- 10000[52] + ((10000[52] < 0) * 7.0)
+  10000[55] <- 10000[10000[55] + 7]
+  10000[54] <- Lerp(TutorialData[102], 0, Remap(10000[54] - 1.0, 10000[55], 0, 1.0, Max(0, Remap(5.5, 7.0, 0, 1.0, 10000[28]))))
+  goto 257 if (10000[54] <= TutorialData[103]) else 258
 257:
-  10000[43] <- 0
+  10000[14] <- 0
   goto 268
 258:
   goto 259 if ((TutorialData[103] + 0.5) > TutorialData[103]) else 272
 259:
-  goto 260 if (10000[42] <= (TutorialData[103] + 0.5)) else 261
+  goto 260 if (10000[54] <= (TutorialData[103] + 0.5)) else 261
 260:
-  10000[43] <- Remap(TutorialData[103], TutorialData[103] + 0.5, 0, 1.0, 10000[42])
+  10000[14] <- Remap(TutorialData[103], TutorialData[103] + 0.5, 0, 1.0, 10000[54])
   goto 268
 261:
   goto 262 if ((TutorialData[102] - 0.5) > (TutorialData[103] + 0.5)) else 271
 262:
-  goto 263 if (10000[42] <= (TutorialData[102] - 0.5)) else 264
+  goto 263 if (10000[54] <= (TutorialData[102] - 0.5)) else 264
 263:
-  10000[43] <- Remap(TutorialData[103] + 0.5, TutorialData[102] - 0.5, 1.0, 1.0, 10000[42])
+  10000[14] <- Remap(TutorialData[103] + 0.5, TutorialData[102] - 0.5, 1.0, 1.0, 10000[54])
   goto 268
 264:
   goto 265 if (TutorialData[102] > (TutorialData[102] - 0.5)) else 270
 265:
-  goto 266 if (10000[42] <= TutorialData[102]) else 267
+  goto 266 if (10000[54] <= TutorialData[102]) else 267
 266:
-  10000[43] <- Remap(TutorialData[102] - 0.5, TutorialData[102], 1.0, 0, 10000[42])
+  10000[14] <- Remap(TutorialData[102] - 0.5, TutorialData[102], 1.0, 0, 10000[54])
   goto 268
 267:
-  10000[43] <- 0
+  10000[14] <- 0
   goto 268
 268:
-  10000[43] <- EaseOutQuad(10000[43])
-  goto 275 if (10000[43] <= 0) else 269
+  10000[14] <- EaseOutQuad(10000[14])
+  goto 275 if (10000[14] <= 0) else 269
 269:
-  10000[44] <- 10000[38] * TutorialData[100]
-  10000[45] <- 10000[42] + (TutorialData[99] / 2.0)
-  10000[46] <- 10000[44] + (TutorialData[99] / 2.0)
-  10000[47] <- 10000[42] - (TutorialData[99] / 2.0)
-  10000[48] <- 10000[44] - (TutorialData[99] / 2.0)
-  10000[49] <- (TutorialData[96] * 10000[48]) + (TutorialData[97] * 10000[47]) + TutorialData[98]
-  10000[50] <- (TutorialData[96] * 10000[46]) + (TutorialData[97] * 10000[47]) + TutorialData[98]
-  10000[51] <- (TutorialData[96] * 10000[48]) + (TutorialData[97] * 10000[45]) + TutorialData[98]
-  10000[52] <- (TutorialData[96] * 10000[46]) + (TutorialData[97] * 10000[45]) + TutorialData[98]
-  Draw(16.0, ((TutorialData[90] * 10000[48]) + (TutorialData[91] * 10000[47]) + TutorialData[92]) / 10000[49], ((TutorialData[93] * 10000[48]) + (TutorialData[94] * 10000[47]) + TutorialData[95]) / 10000[49], ((TutorialData[90] * 10000[48]) + (TutorialData[91] * 10000[45]) + TutorialData[92]) / 10000[51], ((TutorialData[93] * 10000[48]) + (TutorialData[94] * 10000[45]) + TutorialData[95]) / 10000[51], ((TutorialData[90] * 10000[46]) + (TutorialData[91] * 10000[45]) + TutorialData[92]) / 10000[52], ((TutorialData[93] * 10000[46]) + (TutorialData[94] * 10000[45]) + TutorialData[95]) / 10000[52], ((TutorialData[90] * 10000[46]) + (TutorialData[91] * 10000[47]) + TutorialData[92]) / 10000[50], ((TutorialData[93] * 10000[46]) + (TutorialData[94] * 10000[47]) + TutorialData[95]) / 10000[50], 310000.0 + (10000[38] * 100.0) + 10000[42], 10000[43])
+  10000[15] <- 10000[41] * TutorialData[100]
+  10000[16] <- 10000[54] + (TutorialData[99] / 2.0)
+  10000[17] <- 10000[15] + (TutorialData[99] / 2.0)
+  10000[18] <- 10000[54] - (TutorialData[99] / 2.0)
+  10000[19] <- 10000[15] - (TutorialData[99] / 2.0)
+  10000[20] <- (TutorialData[96] * 10000[19]) + (TutorialData[97] * 10000[18]) + TutorialData[98]
+  10000[21] <- (TutorialData[96] * 10000[17]) + (TutorialData[97] * 10000[18]) + TutorialData[98]
+  10000[22] <- (TutorialData[96] * 10000[19]) + (TutorialData[97] * 10000[16]) + TutorialData[98]
+  10000[23] <- (TutorialData[96] * 10000[17]) + (TutorialData[97] * 10000[16]) + TutorialData[98]
+  Draw(16.0, ((TutorialData[90] * 10000[19]) + (TutorialData[91] * 10000[18]) + TutorialData[92]) / 10000[20], ((TutorialData[93] * 10000[19]) + (TutorialData[94] * 10000[18]) + TutorialData[95]) / 10000[20], ((TutorialData[90] * 10000[19]) + (TutorialData[91] * 10000[16]) + TutorialData[92]) / 10000[22], ((TutorialData[93] * 10000[19]) + (TutorialData[94] * 10000[16]) + TutorialData[95]) / 10000[22], ((TutorialData[90] * 10000[17]) + (TutorialData[91] * 10000[16]) + TutorialData[92]) / 10000[23], ((TutorialData[93] * 10000[17]) + (TutorialData[94] * 10000[16]) + TutorialData[95]) / 10000[23], ((TutorialData[90] * 10000[17]) + (TutorialData[91] * 10000[18]) + TutorialData[92]) / 10000[21], ((TutorialData[93] * 10000[17]) + (TutorialData[94] * 10000[18]) + TutorialData[95]) / 10000[21], 310000.0 + (10000[41] * 100.0) + 10000[54], 10000[14])
   goto 275
 270:
   DebugLog(28.0)
@@ -1023,66 +1025,66 @@
   DebugPause()
   goto exit
 275:
-  goto 276 if ((10000[56] - 10000[57]) < 10000[41]) else 284
+  goto 276 if ((10000[29] - 10000[30]) < 10000[53]) else 284
 276:
-  goto 277 if (10000[41] <= 10000[55]) else 283
+  goto 277 if (10000[53] <= 10000[28]) else 283
 277:
-  10000[41] <- 10000[38] * TutorialData[100]
-  10000[42] <- 10000[41] - (TutorialData[99] / 2.0)
-  10000[43] <- (TutorialData[96] * 10000[42]) + TutorialData[98]
-  10000[44] <- ((TutorialData[90] * 10000[42]) + TutorialData[92]) / 10000[43]
-  10000[45] <- ((TutorialData[93] * 10000[42]) + TutorialData[95]) / 10000[43]
-  10000[46] <- 10000[41] + (TutorialData[99] / 2.0)
-  10000[47] <- (TutorialData[96] * 10000[46]) + TutorialData[98]
-  10000[48] <- ((TutorialData[90] * 10000[46]) + TutorialData[92]) / 10000[47]
-  10000[49] <- ((TutorialData[93] * 10000[46]) + TutorialData[95]) / 10000[47]
-  10000[50] <- Power(Power(10000[48] - 10000[44], 2.0) + Power(10000[49] - 10000[45], 2.0), 0.5)
-  SpawnParticleEffect(3.0, 10000[44], 10000[45], 10000[44] + 0, 10000[45] + 10000[50], 10000[48] + 0, 10000[49] + 10000[50], 10000[48], 10000[49], 0.5, 0)
-  10000[41] <- 10000[38] * TutorialData[100]
-  10000[42] <- 10000[41] + ((TutorialData[99] * 1.8) / 2.0)
-  10000[43] <- 10000[41] - ((TutorialData[99] * 1.8) / 2.0)
-  10000[44] <- (TutorialData[96] * 10000[43]) + (TutorialData[97] * (0 - ((TutorialData[99] * 1.8) / 2.0))) + TutorialData[98]
-  10000[45] <- ((TutorialData[90] * 10000[43]) + (TutorialData[91] * (0 - ((TutorialData[99] * 1.8) / 2.0))) + TutorialData[92]) / 10000[44]
-  10000[46] <- (TutorialData[96] * 10000[42]) + (TutorialData[97] * (0 - ((TutorialData[99] * 1.8) / 2.0))) + TutorialData[98]
-  10000[47] <- ((TutorialData[90] * 10000[42]) + (TutorialData[91] * (0 - ((TutorialData[99] * 1.8) / 2.0))) + TutorialData[92]) / 10000[46]
-  10000[48] <- (TutorialData[96] * 10000[43]) + (TutorialData[97] * ((TutorialData[99] * 1.8) / 2.0)) + TutorialData[98]
-  10000[49] <- ((TutorialData[90] * 10000[43]) + (TutorialData[91] * ((TutorialData[99] * 1.8) / 2.0)) + TutorialData[92]) / 10000[48]
-  10000[50] <- (TutorialData[96] * 10000[42]) + (TutorialData[97] * ((TutorialData[99] * 1.8) / 2.0)) + TutorialData[98]
-  10000[51] <- ((TutorialData[90] * 10000[42]) + (TutorialData[91] * ((TutorialData[99] * 1.8) / 2.0)) + TutorialData[92]) / 10000[50]
-  10000[52] <- (((10000[51] - 10000[49]) + 10000[47]) - 10000[45]) / 2.0
-  10000[53] <- (10000[49] + 10000[51]) / 2.0
-  10000[54] <- (10000[45] + 10000[47]) / 2.0
-  SpawnParticleEffect(4.0, 10000[54] - (10000[52] / 2.0), ((TutorialData[93] * 10000[43]) + (TutorialData[94] * (0 - ((TutorialData[99] * 1.8) / 2.0))) + TutorialData[95]) / 10000[44], 10000[53] - (10000[52] / 2.0), ((TutorialData[93] * 10000[43]) + (TutorialData[94] * (0 + ((TutorialData[99] * 1.8) / 2.0))) + TutorialData[95]) / 10000[48], 10000[53] + (10000[52] / 2.0), ((TutorialData[93] * 10000[42]) + (TutorialData[94] * (0 + ((TutorialData[99] * 1.8) / 2.0))) + TutorialData[95]) / 10000[50], 10000[54] + (10000[52] / 2.0), ((TutorialData[93] * 10000[42]) + (TutorialData[94] * (0 - ((TutorialData[99] * 1.8) / 2.0))) + TutorialData[95]) / 10000[46], 0.5, 0)
-  10000[41] <- 0
+  10000[52] <- 10000[41] * TutorialData[100]
+  10000[53] <- 10000[52] - (TutorialData[99] / 2.0)
+  10000[14] <- (TutorialData[96] * 10000[53]) + TutorialData[98]
+  10000[15] <- ((TutorialData[90] * 10000[53]) + TutorialData[92]) / 10000[14]
+  10000[16] <- ((TutorialData[93] * 10000[53]) + TutorialData[95]) / 10000[14]
+  10000[17] <- 10000[52] + (TutorialData[99] / 2.0)
+  10000[18] <- (TutorialData[96] * 10000[17]) + TutorialData[98]
+  10000[19] <- ((TutorialData[90] * 10000[17]) + TutorialData[92]) / 10000[18]
+  10000[20] <- ((TutorialData[93] * 10000[17]) + TutorialData[95]) / 10000[18]
+  10000[21] <- Power(Power(10000[19] - 10000[15], 2.0) + Power(10000[20] - 10000[16], 2.0), 0.5)
+  SpawnParticleEffect(3.0, 10000[15], 10000[16], 10000[15] + 0, 10000[16] + 10000[21], 10000[19] + 0, 10000[20] + 10000[21], 10000[19], 10000[20], 0.5, 0)
+  10000[14] <- 10000[41] * TutorialData[100]
+  10000[15] <- 10000[14] + ((TutorialData[99] * 1.8) / 2.0)
+  10000[16] <- 10000[14] - ((TutorialData[99] * 1.8) / 2.0)
+  10000[17] <- (TutorialData[96] * 10000[16]) + (TutorialData[97] * (0 - ((TutorialData[99] * 1.8) / 2.0))) + TutorialData[98]
+  10000[18] <- ((TutorialData[90] * 10000[16]) + (TutorialData[91] * (0 - ((TutorialData[99] * 1.8) / 2.0))) + TutorialData[92]) / 10000[17]
+  10000[19] <- (TutorialData[96] * 10000[15]) + (TutorialData[97] * (0 - ((TutorialData[99] * 1.8) / 2.0))) + TutorialData[98]
+  10000[20] <- ((TutorialData[90] * 10000[15]) + (TutorialData[91] * (0 - ((TutorialData[99] * 1.8) / 2.0))) + TutorialData[92]) / 10000[19]
+  10000[21] <- (TutorialData[96] * 10000[16]) + (TutorialData[97] * ((TutorialData[99] * 1.8) / 2.0)) + TutorialData[98]
+  10000[22] <- ((TutorialData[90] * 10000[16]) + (TutorialData[91] * ((TutorialData[99] * 1.8) / 2.0)) + TutorialData[92]) / 10000[21]
+  10000[23] <- (TutorialData[96] * 10000[15]) + (TutorialData[97] * ((TutorialData[99] * 1.8) / 2.0)) + TutorialData[98]
+  10000[24] <- ((TutorialData[90] * 10000[15]) + (TutorialData[91] * ((TutorialData[99] * 1.8) / 2.0)) + TutorialData[92]) / 10000[23]
+  10000[25] <- (((10000[24] - 10000[22]) + 10000[20]) - 10000[18]) / 2.0
+  10000[26] <- (10000[22] + 10000[24]) / 2.0
+  10000[27] <- (10000[18] + 10000[20]) / 2.0
+  SpawnParticleEffect(4.0, 10000[27] - (10000[25] / 2.0), ((TutorialData[93] * 10000[16]) + (TutorialData[94] * (0 - ((TutorialData[99] * 1.8) / 2.0))) + TutorialData[95]) / 10000[17], 10000[26] - (10000[25] / 2.0), ((TutorialData[93] * 10000[16]) + (TutorialData[94] * (0 + ((TutorialData[99] * 1.8) / 2.0))) + TutorialData[95]) / 10000[21], 10000[26] + (10000[25] / 2.0), ((TutorialData[93] * 10000[15]) + (TutorialData[94] * (0 + ((TutorialData[99] * 1.8) / 2.0))) + TutorialData[95]) / 10000[23], 10000[27] + (10000[25] / 2.0), ((TutorialData[93] * 10000[15]) + (TutorialData[94] * (0 - ((TutorialData[99] * 1.8) / 2.0))) + TutorialData[95]) / 10000[19], 0.5, 0)
+  10000[14] <- 0
   goto 278
 278:
-  goto 279 if (10000[41] < TutorialData[0]) else 282
+  goto 279 if (10000[14] < TutorialData[0]) else 282
 279:
-  10000[42] <- 10000[41] + 1.0
-  10000[43] <- 10000[41] * 9.0
-  goto 280 if (TutorialData[10000[43] + 1] == 10000[38]) else 281
+  10000[15] <- 10000[14] + 1.0
+  10000[16] <- 10000[14] * 9.0
+  goto 280 if (TutorialData[10000[16] + 1] == 10000[41]) else 281
 280:
-  SpawnParticleEffect(0, TutorialData[10000[43] + 2], TutorialData[10000[43] + 3], TutorialData[10000[43] + 4], TutorialData[10000[43] + 5], TutorialData[10000[43] + 6], TutorialData[10000[43] + 7], TutorialData[10000[43] + 8], TutorialData[10000[43] + 9], 0.2, 0)
+  SpawnParticleEffect(0, TutorialData[10000[16] + 2], TutorialData[10000[16] + 3], TutorialData[10000[16] + 4], TutorialData[10000[16] + 5], TutorialData[10000[16] + 6], TutorialData[10000[16] + 7], TutorialData[10000[16] + 8], TutorialData[10000[16] + 9], 0.2, 0)
   Play(1.0, 0)
-  10000[16] <- 10000[17]
+  10000[52] <- 10000[51]
   goto 241
 281:
-  10000[41] <- 10000[42]
+  10000[14] <- 10000[15]
   goto 278
 282:
   DebugLog(29.0)
   DebugPause()
   goto exit
 283:
-  10000[16] <- 10000[17]
+  10000[52] <- 10000[51]
   goto 241
 284:
-  10000[16] <- 10000[17]
+  10000[52] <- 10000[51]
   goto 241
 285:
-  goto 286 if (1.5 <= 10000[55]) else 288
+  goto 286 if (1.5 <= 10000[28]) else 288
 286:
-  goto 287 if (10000[55] < 5.5) else 288
+  goto 287 if (10000[28] < 5.5) else 288
 287:
   10000[0] <- 10000[0]
   10000[0] <- 10000[0] * TutorialData[100]
@@ -1091,7 +1093,7 @@
   TutorialInstruction[0] <- 3.0
   goto 288
 288:
-  goto 289 if (10000[55] >= 8.5) else 804
+  goto 289 if (10000[28] >= 8.5) else 804
 289:
   10000[0] <- TutorialMemory[5]
   TutorialMemory[5] <- 10000[0] + 1.0
@@ -2198,21 +2200,21 @@
   SpawnParticleEffect(0, TutorialData[10000[3] + 2], TutorialData[10000[3] + 3], TutorialData[10000[3] + 4], TutorialData[10000[3] + 5], TutorialData[10000[3] + 6], TutorialData[10000[3] + 7], TutorialData[10000[3] + 8], TutorialData[10000[3] + 9], 0.2, 0)
   SpawnParticleEffect(8.0, ((TutorialData[90] * (TutorialData[100] - (TutorialData[99] / 2.0))) + 0 + TutorialData[92]) / ((TutorialData[96] * (TutorialData[100] - (TutorialData[99] / 2.0))) + 0 + TutorialData[98]), ((TutorialData[93] * (TutorialData[100] - (TutorialData[99] / 2.0))) + 0 + TutorialData[95]) / ((TutorialData[96] * (TutorialData[100] - (TutorialData[99] / 2.0))) + 0 + TutorialData[98]), (((TutorialData[90] * (TutorialData[100] - (TutorialData[99] / 2.0))) + 0 + TutorialData[92]) / ((TutorialData[96] * (TutorialData[100] - (TutorialData[99] / 2.0))) + 0 + TutorialData[98])) + 0, (((TutorialData[93] * (TutorialData[100] - (TutorialData[99] / 2.0))) + 0 + TutorialData[95]) / ((TutorialData[96] * (TutorialData[100] - (TutorialData[99] / 2.0))) + 0 + TutorialData[98])) + Power(Power((((TutorialData[90] * (TutorialData[100] + (TutorialData[99] / 2.0))) + TutorialData[92]) / ((TutorialData[96] * (TutorialData[100] + (TutorialData[99] / 2.0))) + TutorialData[98])) - (((TutorialData[90] * (TutorialData[100] - (TutorialData[99] / 2.0))) + TutorialData[92]) / ((TutorialData[96] * (TutorialData[100] - (TutorialData[99] / 2.0))) + TutorialData[98])), 2.0) + Power((((TutorialData[93] * (TutorialData[100] + (TutorialData[99] / 2.0))) + TutorialData[95]) / ((TutorialData[96] * (TutorialData[100] + (TutorialData[99] / 2.0))) + TutorialData[98])) - (((TutorialData[93] * (TutorialData[100] - (TutorialData[99] / 2.0))) + TutorialData[95]) / ((TutorialData[96] * (TutorialData[100] - (TutorialData[99] / 2.0))) + TutorialData[98])), 2.0), 0.5), (((TutorialData[90] * (TutorialData[100] + (TutorialData[99] / 2.0))) + 0 + TutorialData[92]) / ((TutorialData[96] * (TutorialData[100] + (TutorialData[99] / 2.0))) + 0 + TutorialData[98])) + 0, (((TutorialData[93] * (TutorialData[100] + (TutorialData[99] / 2.0))) + 0 + TutorialData[95]) / ((TutorialData[96] * (TutorialData[100] + (TutorialData[99] / 2.0))) + 0 + TutorialData[98])) + Power(Power((((TutorialData[90] * (TutorialData[100] + (TutorialData[99] / 2.0))) + TutorialData[92]) / ((TutorialData[96] * (TutorialData[100] + (TutorialData[99] / 2.0))) + TutorialData[98])) - (((TutorialData[90] * (TutorialData[100] - (TutorialData[99] / 2.0))) + TutorialData[92]) / ((TutorialData[96] * (TutorialData[100] - (TutorialData[99] / 2.0))) + TutorialData[98])), 2.0) + Power((((TutorialData[93] * (TutorialData[100] + (TutorialData[99] / 2.0))) + TutorialData[95]) / ((TutorialData[96] * (TutorialData[100] + (TutorialData[99] / 2.0))) + TutorialData[98])) - (((TutorialData[93] * (TutorialData[100] - (TutorialData[99] / 2.0))) + TutorialData[95]) / ((TutorialData[96] * (TutorialData[100] - (TutorialData[99] / 2.0))) + TutorialData[98])), 2.0), 0.5), ((TutorialData[90] * (TutorialData[100] + (TutorialData[99] / 2.0))) + 0 + TutorialData[92]) / ((TutorialData[96] * (TutorialData[100] + (TutorialData[99] / 2.0))) + 0 + TutorialData[98]), ((TutorialData[93] * (TutorialData[100] + (TutorialData[99] / 2.0))) + 0 + TutorialData[95]) / ((TutorialData[96] * (TutorialData[100] + (TutorialData[99] / 2.0))) + 0 + TutorialData[98]), 0.5, 0)
   SpawnParticleEffect(9.0, (((((TutorialData[90] * (TutorialData[100] - ((TutorialData[99] * 1.8) / 2.0))) + (TutorialData[91] * (0 - ((TutorialData[99] * 1.8) / 2.0))) + TutorialData[92]) / ((TutorialData[96] * (TutorialData[100] - ((TutorialData[99] * 1.8) / 2.0))) + (TutorialData[97] * (0 - ((TutorialData[99] * 1.8) / 2.0))) + TutorialData[98])) + (((TutorialData[90] * (TutorialData[100] + ((TutorialData[99] * 1.8) / 2.0))) + (TutorialData[91] * (0 - ((TutorialData[99] * 1.8) / 2.0))) + TutorialData[92]) / ((TutorialData[96] * (TutorialData[100] + ((TutorialData[99] * 1.8) / 2.0))) + (TutorialData[97] * (0 - ((TutorialData[99] * 1.8) / 2.0))) + TutorialData[98]))) / 2.0) - ((((((((TutorialData[90] * (TutorialData[100] + ((TutorialData[99] * 1.8) / 2.0))) + (TutorialData[91] * ((TutorialData[99] * 1.8) / 2.0)) + TutorialData[92]) / ((TutorialData[96] * (TutorialData[100] + ((TutorialData[99] * 1.8) / 2.0))) + (TutorialData[97] * ((TutorialData[99] * 1.8) / 2.0)) + TutorialData[98])) - (((TutorialData[90] * (TutorialData[100] - ((TutorialData[99] * 1.8) / 2.0))) + (TutorialData[91] * ((TutorialData[99] * 1.8) / 2.0)) + TutorialData[92]) / ((TutorialData[96] * (TutorialData[100] - ((TutorialData[99] * 1.8) / 2.0))) + (TutorialData[97] * ((TutorialData[99] * 1.8) / 2.0)) + TutorialData[98]))) + (((TutorialData[90] * (TutorialData[100] + ((TutorialData[99] * 1.8) / 2.0))) + (TutorialData[91] * (0 - ((TutorialData[99] * 1.8) / 2.0))) + TutorialData[92]) / ((TutorialData[96] * (TutorialData[100] + ((TutorialData[99] * 1.8) / 2.0))) + (TutorialData[97] * (0 - ((TutorialData[99] * 1.8) / 2.0))) + TutorialData[98]))) - (((TutorialData[90] * (TutorialData[100] - ((TutorialData[99] * 1.8) / 2.0))) + (TutorialData[91] * (0 - ((TutorialData[99] * 1.8) / 2.0))) + TutorialData[92]) / ((TutorialData[96] * (TutorialData[100] - ((TutorialData[99] * 1.8) / 2.0))) + (TutorialData[97] * (0 - ((TutorialData[99] * 1.8) / 2.0))) + TutorialData[98]))) / 2.0) / 2.0), ((TutorialData[93] * (TutorialData[100] - ((TutorialData[99] * 1.8) / 2.0))) + (TutorialData[94] * (0 - ((TutorialData[99] * 1.8) / 2.0))) + TutorialData[95]) / ((TutorialData[96] * (TutorialData[100] - ((TutorialData[99] * 1.8) / 2.0))) + (TutorialData[97] * (0 - ((TutorialData[99] * 1.8) / 2.0))) + TutorialData[98]), (((((TutorialData[90] * (TutorialData[100] - ((TutorialData[99] * 1.8) / 2.0))) + (TutorialData[91] * ((TutorialData[99] * 1.8) / 2.0)) + TutorialData[92]) / ((TutorialData[96] * (TutorialData[100] - ((TutorialData[99] * 1.8) / 2.0))) + (TutorialData[97] * ((TutorialData[99] * 1.8) / 2.0)) + TutorialData[98])) + (((TutorialData[90] * (TutorialData[100] + ((TutorialData[99] * 1.8) / 2.0))) + (TutorialData[91] * ((TutorialData[99] * 1.8) / 2.0)) + TutorialData[92]) / ((TutorialData[96] * (TutorialData[100] + ((TutorialData[99] * 1.8) / 2.0))) + (TutorialData[97] * ((TutorialData[99] * 1.8) / 2.0)) + TutorialData[98]))) / 2.0) - ((((((((TutorialData[90] * (TutorialData[100] + ((TutorialData[99] * 1.8) / 2.0))) + (TutorialData[91] * ((TutorialData[99] * 1.8) / 2.0)) + TutorialData[92]) / ((TutorialData[96] * (TutorialData[100] + ((TutorialData[99] * 1.8) / 2.0))) + (TutorialData[97] * ((TutorialData[99] * 1.8) / 2.0)) + TutorialData[98])) - (((TutorialData[90] * (TutorialData[100] - ((TutorialData[99] * 1.8) / 2.0))) + (TutorialData[91] * ((TutorialData[99] * 1.8) / 2.0)) + TutorialData[92]) / ((TutorialData[96] * (TutorialData[100] - ((TutorialData[99] * 1.8) / 2.0))) + (TutorialData[97] * ((TutorialData[99] * 1.8) / 2.0)) + TutorialData[98]))) + (((TutorialData[90] * (TutorialData[100] + ((TutorialData[99] * 1.8) / 2.0))) + (TutorialData[91] * (0 - ((TutorialData[99] * 1.8) / 2.0))) + TutorialData[92]) / ((TutorialData[96] * (TutorialData[100] + ((TutorialData[99] * 1.8) / 2.0))) + (TutorialData[97] * (0 - ((TutorialData[99] * 1.8) / 2.0))) + TutorialData[98]))) - (((TutorialData[90] * (TutorialData[100] - ((TutorialData[99] * 1.8) / 2.0))) + (TutorialData[91] * (0 - ((TutorialData[99] * 1.8) / 2.0))) + TutorialData[92]) / ((TutorialData[96] * (TutorialData[100] - ((TutorialData[99] * 1.8) / 2.0))) + (TutorialData[97] * (0 - ((TutorialData[99] * 1.8) / 2.0))) + TutorialData[98]))) / 2.0) / 2.0), ((TutorialData[93] * (TutorialData[100] - ((TutorialData[99] * 1.8) / 2.0))) + (TutorialData[94] * (0 + ((TutorialData[99] * 1.8) / 2.0))) + TutorialData[95]) / ((TutorialData[96] * (TutorialData[100] - ((TutorialData[99] * 1.8) / 2.0))) + (TutorialData[97] * (0 + ((TutorialData[99] * 1.8) / 2.0))) + TutorialData[98]), (((((TutorialData[90] * (TutorialData[100] - ((TutorialData[99] * 1.8) / 2.0))) + (TutorialData[91] * ((TutorialData[99] * 1.8) / 2.0)) + TutorialData[92]) / ((TutorialData[96] * (TutorialData[100] - ((TutorialData[99] * 1.8) / 2.0))) + (TutorialData[97] * ((TutorialData[99] * 1.8) / 2.0)) + TutorialData[98])) + (((TutorialData[90] * (TutorialData[100] + ((TutorialData[99] * 1.8) / 2.0))) + (TutorialData[91] * ((TutorialData[99] * 1.8) / 2.0)) + TutorialData[92]) / ((TutorialData[96] * (TutorialData[100] + ((TutorialData[99] * 1.8) / 2.0))) + (TutorialData[97] * ((TutorialData[99] * 1.8) / 2.0)) + TutorialData[98]))) / 2.0) + ((((((((TutorialData[90] * (TutorialData[100] + ((TutorialData[99] * 1.8) / 2.0))) + (TutorialData[91] * ((TutorialData[99] * 1.8) / 2.0)) + TutorialData[92]) / ((TutorialData[96] * (TutorialData[100] + ((TutorialData[99] * 1.8) / 2.0))) + (TutorialData[97] * ((TutorialData[99] * 1.8) / 2.0)) + TutorialData[98])) - (((TutorialData[90] * (TutorialData[100] - ((TutorialData[99] * 1.8) / 2.0))) + (TutorialData[91] * ((TutorialData[99] * 1.8) / 2.0)) + TutorialData[92]) / ((TutorialData[96] * (TutorialData[100] - ((TutorialData[99] * 1.8) / 2.0))) + (TutorialData[97] * ((TutorialData[99] * 1.8) / 2.0)) + TutorialData[98]))) + (((TutorialData[90] * (TutorialData[100] + ((TutorialData[99] * 1.8) / 2.0))) + (TutorialData[91] * (0 - ((TutorialData[99] * 1.8) / 2.0))) + TutorialData[92]) / ((TutorialData[96] * (TutorialData[100] + ((TutorialData[99] * 1.8) / 2.0))) + (TutorialData[97] * (0 - ((TutorialData[99] * 1.8) / 2.0))) + TutorialData[98]))) - (((TutorialData[90] * (TutorialData[100] - ((TutorialData[99] * 1.8) / 2.0))) + (TutorialData[91] * (0 - ((TutorialData[99] * 1.8) / 2.0))) + TutorialData[92]) / ((TutorialData[96] * (TutorialData[100] - ((TutorialData[99] * 1.8) / 2.0))) + (TutorialData[97] * (0 - ((TutorialData[99] * 1.8) / 2.0))) + TutorialData[98]))) / 2.0) / 2.0), ((TutorialData[93] * (TutorialData[100] + ((TutorialData[99] * 1.8) / 2.0))) + (TutorialData[94] * (0 + ((TutorialData[99] * 1.8) / 2.0))) + TutorialData[95]) / ((TutorialData[96] * (TutorialData[100] + ((TutorialData[99] * 1.8) / 2.0))) + (TutorialData[97] * (0 + ((TutorialData[99] * 1.8) / 2.0))) + TutorialData[98]), (((((TutorialData[90] * (TutorialData[100] - ((TutorialData[99] * 1.8) / 2.0))) + (TutorialData[91] * (0 - ((TutorialData[99] * 1.8) / 2.0))) + TutorialData[92]) / ((TutorialData[96] * (TutorialData[100] - ((TutorialData[99] * 1.8) / 2.0))) + (TutorialData[97] * (0 - ((TutorialData[99] * 1.8) / 2.0))) + TutorialData[98])) + (((TutorialData[90] * (TutorialData[100] + ((TutorialData[99] * 1.8) / 2.0))) + (TutorialData[91] * (0 - ((TutorialData[99] * 1.8) / 2.0))) + TutorialData[92]) / ((TutorialData[96] * (TutorialData[100] + ((TutorialData[99] * 1.8) / 2.0))) + (TutorialData[97] * (0 - ((TutorialData[99] * 1.8) / 2.0))) + TutorialData[98]))) / 2.0) + ((((((((TutorialData[90] * (TutorialData[100] + ((TutorialData[99] * 1.8) / 2.0))) + (TutorialData[91] * ((TutorialData[99] * 1.8) / 2.0)) + TutorialData[92]) / ((TutorialData[96] * (TutorialData[100] + ((TutorialData[99] * 1.8) / 2.0))) + (TutorialData[97] * ((TutorialData[99] * 1.8) / 2.0)) + TutorialData[98])) - (((TutorialData[90] * (TutorialData[100] - ((TutorialData[99] * 1.8) / 2.0))) + (TutorialData[91] * ((TutorialData[99] * 1.8) / 2.0)) + TutorialData[92]) / ((TutorialData[96] * (TutorialData[100] - ((TutorialData[99] * 1.8) / 2.0))) + (TutorialData[97] * ((TutorialData[99] * 1.8) / 2.0)) + TutorialData[98]))) + (((TutorialData[90] * (TutorialData[100] + ((TutorialData[99] * 1.8) / 2.0))) + (TutorialData[91] * (0 - ((TutorialData[99] * 1.8) / 2.0))) + TutorialData[92]) / ((TutorialData[96] * (TutorialData[100] + ((TutorialData[99] * 1.8) / 2.0))) + (TutorialData[97] * (0 - ((TutorialData[99] * 1.8) / 2.0))) + TutorialData[98]))) - (((TutorialData[90] * (TutorialData[100] - ((TutorialData[99] * 1.8) / 2.0))) + (TutorialData[91] * (0 - ((TutorialData[99] * 1.8) / 2.0))) + TutorialData[92]) / ((TutorialData[96] * (TutorialData[100] - ((TutorialData[99] * 1.8) / 2.0))) + (TutorialData[97] * (0 - ((TutorialData[99] * 1.8) / 2.0))) + TutorialData[98]))) / 2.0) / 2.0), ((TutorialData[93] * (TutorialData[100] + ((TutorialData[99] * 1.8) / 2.0))) + (TutorialData[94] * (0 - ((TutorialData[99] * 1.8) / 2.0))) + TutorialData[95]) / ((TutorialData[96] * (TutorialData[100] + ((TutorialData[99] * 1.8) / 2.0))) + (TutorialData[97] * (0 - ((TutorialData[99] * 1.8) / 2.0))) + TutorialData[98]), 0.5, 0)
-  10000[1] <- 0
+  10000[2] <- 0
   goto 610
 610:
-  goto 611 if (10000[1] < TutorialData[0]) else 614
+  goto 611 if (10000[2] < TutorialData[0]) else 614
 611:
-  10000[2] <- 10000[1] + 1.0
-  10000[3] <- 10000[1] * 9.0
-  goto when TutorialData[10000[3] + 1]
+  10000[1] <- 10000[2] + 1.0
+  10000[2] <- 10000[2] * 9.0
+  goto when TutorialData[10000[2] + 1]
     1.0 -> 613
     default -> 612
 612:
-  10000[1] <- 10000[2]
+  10000[2] <- 10000[1]
   goto 610
 613:
-  SpawnParticleEffect(0, TutorialData[10000[3] + 2], TutorialData[10000[3] + 3], TutorialData[10000[3] + 4], TutorialData[10000[3] + 5], TutorialData[10000[3] + 6], TutorialData[10000[3] + 7], TutorialData[10000[3] + 8], TutorialData[10000[3] + 9], 0.2, 0)
+  SpawnParticleEffect(0, TutorialData[10000[2] + 2], TutorialData[10000[2] + 3], TutorialData[10000[2] + 4], TutorialData[10000[2] + 5], TutorialData[10000[2] + 6], TutorialData[10000[2] + 7], TutorialData[10000[2] + 8], TutorialData[10000[2] + 9], 0.2, 0)
   Play(4.0, 0)
   goto 616
 614:
@@ -2616,60 +2618,60 @@
   goto 804
 739:
   10000[0] <- TutorialMemory[0]
-  10000[3] <- RuntimeUpdate[0] - 10000[0]
-  10000[4] <- TutorialMemory[4]
-  10000[5] <- TutorialMemory[0]
-  goto 740 if (0 <= 10000[3]) else 742
+  10000[4] <- RuntimeUpdate[0] - 10000[0]
+  10000[5] <- TutorialMemory[4]
+  10000[7] <- TutorialMemory[0]
+  goto 740 if (0 <= 10000[4]) else 742
 740:
-  goto 741 if (10000[3] < 1.5) else 742
+  goto 741 if (10000[4] < 1.5) else 742
 741:
   Draw(7.0, ((3.0 * (((TutorialData[90] * (0 - (TutorialData[99] / 2.0))) + (TutorialData[91] * (1.0 - (TutorialData[99] / 2.0))) + TutorialData[92]) / ((TutorialData[96] * (0 - (TutorialData[99] / 2.0))) + (TutorialData[97] * (1.0 - (TutorialData[99] / 2.0))) + TutorialData[98]))) + 0 + ((0 + (1.0 * -((0 + (TutorialData[91] * 1.0) + TutorialData[92]) / (0 + (TutorialData[97] * 1.0) + TutorialData[98])))) * 3.0)) / 1.0, (0 + (3.0 * (((TutorialData[93] * (0 - (TutorialData[99] / 2.0))) + (TutorialData[94] * (1.0 - (TutorialData[99] / 2.0))) + TutorialData[95]) / ((TutorialData[96] * (0 - (TutorialData[99] / 2.0))) + (TutorialData[97] * (1.0 - (TutorialData[99] / 2.0))) + TutorialData[98]))) + ((0 + (1.0 * -((0 + (TutorialData[94] * 1.0) + TutorialData[95]) / (0 + (TutorialData[97] * 1.0) + TutorialData[98])))) * 3.0)) / 1.0, ((3.0 * (((TutorialData[90] * (0 - (TutorialData[99] / 2.0))) + (TutorialData[91] * (1.0 + (TutorialData[99] / 2.0))) + TutorialData[92]) / ((TutorialData[96] * (0 - (TutorialData[99] / 2.0))) + (TutorialData[97] * (1.0 + (TutorialData[99] / 2.0))) + TutorialData[98]))) + 0 + ((0 + (1.0 * -((0 + (TutorialData[91] * 1.0) + TutorialData[92]) / (0 + (TutorialData[97] * 1.0) + TutorialData[98])))) * 3.0)) / 1.0, (0 + (3.0 * (((TutorialData[93] * (0 - (TutorialData[99] / 2.0))) + (TutorialData[94] * (1.0 + (TutorialData[99] / 2.0))) + TutorialData[95]) / ((TutorialData[96] * (0 - (TutorialData[99] / 2.0))) + (TutorialData[97] * (1.0 + (TutorialData[99] / 2.0))) + TutorialData[98]))) + ((0 + (1.0 * -((0 + (TutorialData[94] * 1.0) + TutorialData[95]) / (0 + (TutorialData[97] * 1.0) + TutorialData[98])))) * 3.0)) / 1.0, ((3.0 * (((TutorialData[90] * (0 + (TutorialData[99] / 2.0))) + (TutorialData[91] * (1.0 + (TutorialData[99] / 2.0))) + TutorialData[92]) / ((TutorialData[96] * (0 + (TutorialData[99] / 2.0))) + (TutorialData[97] * (1.0 + (TutorialData[99] / 2.0))) + TutorialData[98]))) + 0 + ((0 + (1.0 * -((0 + (TutorialData[91] * 1.0) + TutorialData[92]) / (0 + (TutorialData[97] * 1.0) + TutorialData[98])))) * 3.0)) / 1.0, (0 + (3.0 * (((TutorialData[93] * (0 + (TutorialData[99] / 2.0))) + (TutorialData[94] * (1.0 + (TutorialData[99] / 2.0))) + TutorialData[95]) / ((TutorialData[96] * (0 + (TutorialData[99] / 2.0))) + (TutorialData[97] * (1.0 + (TutorialData[99] / 2.0))) + TutorialData[98]))) + ((0 + (1.0 * -((0 + (TutorialData[94] * 1.0) + TutorialData[95]) / (0 + (TutorialData[97] * 1.0) + TutorialData[98])))) * 3.0)) / 1.0, ((3.0 * (((TutorialData[90] * (0 + (TutorialData[99] / 2.0))) + (TutorialData[91] * (1.0 - (TutorialData[99] / 2.0))) + TutorialData[92]) / ((TutorialData[96] * (0 + (TutorialData[99] / 2.0))) + (TutorialData[97] * (1.0 - (TutorialData[99] / 2.0))) + TutorialData[98]))) + 0 + ((0 + (1.0 * -((0 + (TutorialData[91] * 1.0) + TutorialData[92]) / (0 + (TutorialData[97] * 1.0) + TutorialData[98])))) * 3.0)) / 1.0, (0 + (3.0 * (((TutorialData[93] * (0 + (TutorialData[99] / 2.0))) + (TutorialData[94] * (1.0 - (TutorialData[99] / 2.0))) + TutorialData[95]) / ((TutorialData[96] * (0 + (TutorialData[99] / 2.0))) + (TutorialData[97] * (1.0 - (TutorialData[99] / 2.0))) + TutorialData[98]))) + ((0 + (1.0 * -((0 + (TutorialData[94] * 1.0) + TutorialData[95]) / (0 + (TutorialData[97] * 1.0) + TutorialData[98])))) * 3.0)) / 1.0, 310000.0, 1.0)
   goto 742
 742:
-  goto 743 if (1.5 <= 10000[3]) else 761
+  goto 743 if (1.5 <= 10000[4]) else 761
 743:
-  goto 744 if (10000[3] < 3.0) else 761
+  goto 744 if (10000[4] < 3.0) else 761
 744:
-  10000[6] <- Lerp(TutorialData[102], 0, Remap(1.5, 3.0, 0, 1.0, 10000[3]))
+  10000[6] <- Lerp(TutorialData[102], 0, Remap(1.5, 3.0, 0, 1.0, 10000[4]))
   goto 745 if (10000[6] <= TutorialData[103]) else 746
 745:
-  10000[7] <- 0
+  10000[8] <- 0
   goto 756
 746:
   goto 747 if ((TutorialData[103] + 0.5) > TutorialData[103]) else 760
 747:
   goto 748 if (10000[6] <= (TutorialData[103] + 0.5)) else 749
 748:
-  10000[7] <- Remap(TutorialData[103], TutorialData[103] + 0.5, 0, 1.0, 10000[6])
+  10000[8] <- Remap(TutorialData[103], TutorialData[103] + 0.5, 0, 1.0, 10000[6])
   goto 756
 749:
   goto 750 if ((TutorialData[102] - 0.5) > (TutorialData[103] + 0.5)) else 759
 750:
   goto 751 if (10000[6] <= (TutorialData[102] - 0.5)) else 752
 751:
-  10000[7] <- Remap(TutorialData[103] + 0.5, TutorialData[102] - 0.5, 1.0, 1.0, 10000[6])
+  10000[8] <- Remap(TutorialData[103] + 0.5, TutorialData[102] - 0.5, 1.0, 1.0, 10000[6])
   goto 756
 752:
   goto 753 if (TutorialData[102] > (TutorialData[102] - 0.5)) else 758
 753:
   goto 754 if (10000[6] <= TutorialData[102]) else 755
 754:
-  10000[7] <- Remap(TutorialData[102] - 0.5, TutorialData[102], 1.0, 0, 10000[6])
+  10000[8] <- Remap(TutorialData[102] - 0.5, TutorialData[102], 1.0, 0, 10000[6])
   goto 756
 755:
-  10000[7] <- 0
+  10000[8] <- 0
   goto 756
 756:
-  10000[7] <- EaseOutQuad(10000[7])
-  goto 761 if (10000[7] <= 0) else 757
+  10000[8] <- EaseOutQuad(10000[8])
+  goto 761 if (10000[8] <= 0) else 757
 757:
-  10000[8] <- 10000[6] + (TutorialData[99] / 2.0)
-  10000[9] <- 10000[6] - (TutorialData[99] / 2.0)
-  10000[10] <- (TutorialData[96] * (0 - (TutorialData[99] / 2.0))) + (TutorialData[97] * 10000[9]) + TutorialData[98]
-  10000[11] <- (TutorialData[96] * (TutorialData[99] / 2.0)) + (TutorialData[97] * 10000[9]) + TutorialData[98]
-  10000[12] <- (TutorialData[96] * (0 - (TutorialData[99] / 2.0))) + (TutorialData[97] * 10000[8]) + TutorialData[98]
-  10000[13] <- (TutorialData[96] * (TutorialData[99] / 2.0)) + (TutorialData[97] * 10000[8]) + TutorialData[98]
-  Draw(7.0, ((TutorialData[90] * (0 - (TutorialData[99] / 2.0))) + (TutorialData[91] * 10000[9]) + TutorialData[92]) / 10000[10], ((TutorialData[93] * (0 - (TutorialData[99] / 2.0))) + (TutorialData[94] * 10000[9]) + TutorialData[95]) / 10000[10], ((TutorialData[90] * (0 - (TutorialData[99] / 2.0))) + (TutorialData[91] * 10000[8]) + TutorialData[92]) / 10000[12], ((TutorialData[93] * (0 - (TutorialData[99] / 2.0))) + (TutorialData[94] * 10000[8]) + TutorialData[95]) / 10000[12], ((TutorialData[90] * (0 + (TutorialData[99] / 2.0))) + (TutorialData[91] * 10000[8]) + TutorialData[92]) / 10000[13], ((TutorialData[93] * (0 + (TutorialData[99] / 2.0))) + (TutorialData[94] * 10000[8]) + TutorialData[95]) / 10000[13], ((TutorialData[90] * (0 + (TutorialData[99] / 2.0))) + (TutorialData[91] * 10000[9]) + TutorialData[92]) / 10000[11], ((TutorialData[93] * (0 + (TutorialData[99] / 2.0))) + (TutorialData[94] * 10000[9]) + TutorialData[95]) / 10000[11], 310000.0 + 10000[6], 10000[7])
+  10000[9] <- 10000[6] + (TutorialData[99] / 2.0)
+  10000[10] <- 10000[6] - (TutorialData[99] / 2.0)
+  10000[0] <- (TutorialData[96] * (0 - (TutorialData[99] / 2.0))) + (TutorialData[97] * 10000[10]) + TutorialData[98]
+  10000[1] <- (TutorialData[96] * (TutorialData[99] / 2.0)) + (TutorialData[97] * 10000[10]) + TutorialData[98]
+  10000[2] <- (TutorialData[96] * (0 - (TutorialData[99] / 2.0))) + (TutorialData[97] * 10000[9]) + TutorialData[98]
+  10000[3] <- (TutorialData[96] * (TutorialData[99] / 2.0)) + (TutorialData[97] * 10000[9]) + TutorialData[98]
+  Draw(7.0, ((TutorialData[90] * (0 - (TutorialData[99] / 2.0))) + (TutorialData[91] * 10000[10]) + TutorialData[92]) / 10000[0], ((TutorialData[93] * (0 - (TutorialData[99] / 2.0))) + (TutorialData[94] * 10000[10]) + TutorialData[95]) / 10000[0], ((TutorialData[90] * (0 - (TutorialData[99] / 2.0))) + (TutorialData[91] * 10000[9]) + TutorialData[92]) / 10000[2], ((TutorialData[93] * (0 - (TutorialData[99] / 2.0))) + (TutorialData[94] * 10000[9]) + TutorialData[95]) / 10000[2], ((TutorialData[90] * (0 + (TutorialData[99] / 2.0))) + (TutorialData[91] * 10000[9]) + TutorialData[92]) / 10000[3], ((TutorialData[93] * (0 + (TutorialData[99] / 2.0))) + (TutorialData[94] * 10000[9]) + TutorialData[95]) / 10000[3], ((TutorialData[90] * (0 + (TutorialData[99] / 2.0))) + (TutorialData[91] * 10000[10]) + TutorialData[92]) / 10000[1], ((TutorialData[93] * (0 + (TutorialData[99] / 2.0))) + (TutorialData[94] * 10000[10]) + TutorialData[95]) / 10000[1], 310000.0 + 10000[6], 10000[8])
   goto 761
 758:
   DebugLog(1.0)
@@ -2684,83 +2686,83 @@
   DebugPause()
   goto exit
 761:
-  goto 762 if (3.0 <= 10000[3]) else 794
+  goto 762 if (3.0 <= 10000[4]) else 794
 762:
-  goto 763 if (10000[3] < 7.0) else 794
+  goto 763 if (10000[4] < 7.0) else 794
 763:
   goto 764 if (0 <= TutorialData[103]) else 765
 764:
-  10000[6] <- 0
+  10000[8] <- 0
   goto 775
 765:
   goto 766 if ((TutorialData[103] + 0.5) > TutorialData[103]) else 793
 766:
   goto 767 if (0 <= (TutorialData[103] + 0.5)) else 768
 767:
-  10000[6] <- Remap(TutorialData[103], TutorialData[103] + 0.5, 0, 1.0, 0)
+  10000[8] <- Remap(TutorialData[103], TutorialData[103] + 0.5, 0, 1.0, 0)
   goto 775
 768:
   goto 769 if ((TutorialData[102] - 0.5) > (TutorialData[103] + 0.5)) else 792
 769:
   goto 770 if (0 <= (TutorialData[102] - 0.5)) else 771
 770:
-  10000[6] <- Remap(TutorialData[103] + 0.5, TutorialData[102] - 0.5, 1.0, 1.0, 0)
+  10000[8] <- Remap(TutorialData[103] + 0.5, TutorialData[102] - 0.5, 1.0, 1.0, 0)
   goto 775
 771:
   goto 772 if (TutorialData[102] > (TutorialData[102] - 0.5)) else 791
 772:
   goto 773 if (0 <= TutorialData[102]) else 774
 773:
-  10000[6] <- Remap(TutorialData[102] - 0.5, TutorialData[102], 1.0, 0, 0)
+  10000[8] <- Remap(TutorialData[102] - 0.5, TutorialData[102], 1.0, 0, 0)
   goto 775
 774:
-  10000[6] <- 0
+  10000[8] <- 0
   goto 775
 775:
-  10000[6] <- EaseOutQuad(10000[6])
-  goto 777 if (10000[6] <= 0) else 776
+  10000[8] <- EaseOutQuad(10000[8])
+  goto 777 if (10000[8] <= 0) else 776
 776:
-  Draw(7.0, ((TutorialData[90] * (0 - (TutorialData[99] / 2.0))) + (TutorialData[91] * (0 - (TutorialData[99] / 2.0))) + TutorialData[92]) / ((TutorialData[96] * (0 - (TutorialData[99] / 2.0))) + (TutorialData[97] * (0 - (TutorialData[99] / 2.0))) + TutorialData[98]), ((TutorialData[93] * (0 - (TutorialData[99] / 2.0))) + (TutorialData[94] * (0 - (TutorialData[99] / 2.0))) + TutorialData[95]) / ((TutorialData[96] * (0 - (TutorialData[99] / 2.0))) + (TutorialData[97] * (0 - (TutorialData[99] / 2.0))) + TutorialData[98]), ((TutorialData[90] * (0 - (TutorialData[99] / 2.0))) + (TutorialData[91] * (0 + (TutorialData[99] / 2.0))) + TutorialData[92]) / ((TutorialData[96] * (0 - (TutorialData[99] / 2.0))) + (TutorialData[97] * (0 + (TutorialData[99] / 2.0))) + TutorialData[98]), ((TutorialData[93] * (0 - (TutorialData[99] / 2.0))) + (TutorialData[94] * (0 + (TutorialData[99] / 2.0))) + TutorialData[95]) / ((TutorialData[96] * (0 - (TutorialData[99] / 2.0))) + (TutorialData[97] * (0 + (TutorialData[99] / 2.0))) + TutorialData[98]), ((TutorialData[90] * (0 + (TutorialData[99] / 2.0))) + (TutorialData[91] * (0 + (TutorialData[99] / 2.0))) + TutorialData[92]) / ((TutorialData[96] * (0 + (TutorialData[99] / 2.0))) + (TutorialData[97] * (0 + (TutorialData[99] / 2.0))) + TutorialData[98]), ((TutorialData[93] * (0 + (TutorialData[99] / 2.0))) + (TutorialData[94] * (0 + (TutorialData[99] / 2.0))) + TutorialData[95]) / ((TutorialData[96] * (0 + (TutorialData[99] / 2.0))) + (TutorialData[97] * (0 + (TutorialData[99] / 2.0))) + TutorialData[98]), ((TutorialData[90] * (0 + (TutorialData[99] / 2.0))) + (TutorialData[91] * (0 - (TutorialData[99] / 2.0))) + TutorialData[92]) / ((TutorialData[96] * (0 + (TutorialData[99] / 2.0))) + (TutorialData[97] * (0 - (TutorialData[99] / 2.0))) + TutorialData[98]), ((TutorialData[93] * (0 + (TutorialData[99] / 2.0))) + (TutorialData[94] * (0 - (TutorialData[99] / 2.0))) + TutorialData[95]) / ((TutorialData[96] * (0 + (TutorialData[99] / 2.0))) + (TutorialData[97] * (0 - (TutorialData[99] / 2.0))) + TutorialData[98]), 310000.0, 10000[6])
+  Draw(7.0, ((TutorialData[90] * (0 - (TutorialData[99] / 2.0))) + (TutorialData[91] * (0 - (TutorialData[99] / 2.0))) + TutorialData[92]) / ((TutorialData[96] * (0 - (TutorialData[99] / 2.0))) + (TutorialData[97] * (0 - (TutorialData[99] / 2.0))) + TutorialData[98]), ((TutorialData[93] * (0 - (TutorialData[99] / 2.0))) + (TutorialData[94] * (0 - (TutorialData[99] / 2.0))) + TutorialData[95]) / ((TutorialData[96] * (0 - (TutorialData[99] / 2.0))) + (TutorialData[97] * (0 - (TutorialData[99] / 2.0))) + TutorialData[98]), ((TutorialData[90] * (0 - (TutorialData[99] / 2.0))) + (TutorialData[91] * (0 + (TutorialData[99] / 2.0))) + TutorialData[92]) / ((TutorialData[96] * (0 - (TutorialData[99] / 2.0))) + (TutorialData[97] * (0 + (TutorialData[99] / 2.0))) + TutorialData[98]), ((TutorialData[93] * (0 - (TutorialData[99] / 2.0))) + (TutorialData[94] * (0 + (TutorialData[99] / 2.0))) + TutorialData[95]) / ((TutorialData[96] * (0 - (TutorialData[99] / 2.0))) + (TutorialData[97] * (0 + (TutorialData[99] / 2.0))) + TutorialData[98]), ((TutorialData[90] * (0 + (TutorialData[99] / 2.0))) + (TutorialData[91] * (0 + (TutorialData[99] / 2.0))) + TutorialData[92]) / ((TutorialData[96] * (0 + (TutorialData[99] / 2.0))) + (TutorialData[97] * (0 + (TutorialData[99] / 2.0))) + TutorialData[98]), ((TutorialData[93] * (0 + (TutorialData[99] / 2.0))) + (TutorialData[94] * (0 + (TutorialData[99] / 2.0))) + TutorialData[95]) / ((TutorialData[96] * (0 + (TutorialData[99] / 2.0))) + (TutorialData[97] * (0 + (TutorialData[99] / 2.0))) + TutorialData[98]), ((TutorialData[90] * (0 + (TutorialData[99] / 2.0))) + (TutorialData[91] * (0 - (TutorialData[99] / 2.0))) + TutorialData[92]) / ((TutorialData[96] * (0 + (TutorialData[99] / 2.0))) + (TutorialData[97] * (0 - (TutorialData[99] / 2.0))) + TutorialData[98]), ((TutorialData[93] * (0 + (TutorialData[99] / 2.0))) + (TutorialData[94] * (0 - (TutorialData[99] / 2.0))) + TutorialData[95]) / ((TutorialData[96] * (0 + (TutorialData[99] / 2.0))) + (TutorialData[97] * (0 - (TutorialData[99] / 2.0))) + TutorialData[98]), 310000.0, 10000[8])
   goto 777
 777:
-  10000[6] <- (RemapClamped(3.0, 7.0, 0, 1.0, 10000[3]) * 4.0) % 1.0
-  10000[7] <- 10000[6]
-  goto 778 if (10000[6] <= 0) else 779
+  10000[0] <- (RemapClamped(3.0, 7.0, 0, 1.0, 10000[4]) * 4.0) % 1.0
+  10000[1] <- 10000[0]
+  goto 778 if (10000[0] <= 0) else 779
 778:
-  10000[8] <- 0
-  goto 786 if (10000[6] <= 0.25) else 787
+  10000[2] <- 0
+  goto 786 if (10000[0] <= 0.25) else 787
 779:
-  goto 780 if (10000[6] <= 0.05) else 781
+  goto 780 if (10000[0] <= 0.05) else 781
 780:
-  10000[8] <- Remap(0, 0.05, 0, 1.0, 10000[6])
-  goto 786 if (10000[6] <= 0.25) else 787
+  10000[2] <- Remap(0, 0.05, 0, 1.0, 10000[0])
+  goto 786 if (10000[0] <= 0.25) else 787
 781:
-  goto 782 if (10000[6] <= 0.75) else 783
+  goto 782 if (10000[0] <= 0.75) else 783
 782:
-  10000[8] <- Remap(0.05, 0.75, 1.0, 1.0, 10000[6])
-  goto 786 if (10000[6] <= 0.25) else 787
+  10000[2] <- Remap(0.05, 0.75, 1.0, 1.0, 10000[0])
+  goto 786 if (10000[0] <= 0.25) else 787
 783:
-  goto 784 if (10000[6] <= 0.95) else 785
+  goto 784 if (10000[0] <= 0.95) else 785
 784:
-  10000[8] <- Remap(0.75, 0.95, 1.0, 0, 10000[6])
-  goto 786 if (10000[6] <= 0.25) else 787
+  10000[2] <- Remap(0.75, 0.95, 1.0, 0, 10000[0])
+  goto 786 if (10000[0] <= 0.25) else 787
 785:
-  10000[8] <- 0
-  goto 786 if (10000[6] <= 0.25) else 787
+  10000[2] <- 0
+  goto 786 if (10000[0] <= 0.25) else 787
 786:
-  10000[9] <- 0
+  10000[3] <- 0
   goto 790
 787:
-  goto 788 if (10000[7] <= 0.75) else 789
+  goto 788 if (10000[1] <= 0.75) else 789
 788:
-  10000[9] <- Remap(0.25, 0.75, 0, 1.0, 10000[7])
+  10000[3] <- Remap(0.25, 0.75, 0, 1.0, 10000[1])
   goto 790
 789:
-  10000[9] <- 1.0
+  10000[3] <- 1.0
   goto 790
 790:
-  10000[9] <- LerpClamped(0.5235987755982988, 1.0471975511965976, 10000[9])
-  Paint(0, ((0 - (1.0 * Sin(10000[9]))) * 0.25 * RuntimeUIConfiguration[4]) + ((0.8660254037844386 * (0.25 * RuntimeUIConfiguration[4])) + ((0 + TutorialData[92]) / (0 + TutorialData[98]))), ((0 + (1.0 * Cos(10000[9]))) * 0.25 * RuntimeUIConfiguration[4]) + ((-0.5000000000000001 * (0.25 * RuntimeUIConfiguration[4])) + ((0 + TutorialData[95]) / (0 + TutorialData[98]))), 0.25 * RuntimeUIConfiguration[4], (180.0 * 10000[9]) / 3.141592653589793, 0, 10000[8] * RuntimeUIConfiguration[5])
+  10000[3] <- LerpClamped(0.5235987755982988, 1.0471975511965976, 10000[3])
+  Paint(0, ((0 - (1.0 * Sin(10000[3]))) * 0.25 * RuntimeUIConfiguration[4]) + ((0.8660254037844386 * (0.25 * RuntimeUIConfiguration[4])) + ((0 + TutorialData[92]) / (0 + TutorialData[98]))), ((0 + (1.0 * Cos(10000[3]))) * 0.25 * RuntimeUIConfiguration[4]) + ((-0.5000000000000001 * (0.25 * RuntimeUIConfiguration[4])) + ((0 + TutorialData[95]) / (0 + TutorialData[98]))), 0.25 * RuntimeUIConfiguration[4], (180.0 * 10000[3]) / 3.141592653589793, 0, 10000[2] * RuntimeUIConfiguration[5])
   TutorialInstruction[0] <- 0
   goto 794
 791:
@@ -2776,9 +2778,9 @@
   DebugPause()
   goto exit
 794:
-  goto 795 if ((10000[4] - 10000[5]) < 7.0) else 802
+  goto 795 if ((10000[5] - 10000[7]) < 7.0) else 802
 795:
-  goto 796 if (7.0 <= 10000[3]) else 802
+  goto 796 if (7.0 <= 10000[4]) else 802
 796:
   SpawnParticleEffect(1.0, ((TutorialData[90] * -(TutorialData[99] / 2.0)) + 0 + TutorialData[92]) / ((TutorialData[96] * -(TutorialData[99] / 2.0)) + 0 + TutorialData[98]), ((TutorialData[93] * -(TutorialData[99] / 2.0)) + 0 + TutorialData[95]) / ((TutorialData[96] * -(TutorialData[99] / 2.0)) + 0 + TutorialData[98]), (((TutorialData[90] * -(TutorialData[99] / 2.0)) + 0 + TutorialData[92]) / ((TutorialData[96] * -(TutorialData[99] / 2.0)) + 0 + TutorialData[98])) + 0, (((TutorialData[93] * -(TutorialData[99] / 2.0)) + 0 + TutorialData[95]) / ((TutorialData[96] * -(TutorialData[99] / 2.0)) + 0 + TutorialData[98])) + Power(Power((((TutorialData[90] * (TutorialData[99] / 2.0)) + TutorialData[92]) / ((TutorialData[96] * (TutorialData[99] / 2.0)) + TutorialData[98])) - (((TutorialData[90] * -(TutorialData[99] / 2.0)) + TutorialData[92]) / ((TutorialData[96] * -(TutorialData[99] / 2.0)) + TutorialData[98])), 2.0) + Power((((TutorialData[93] * (TutorialData[99] / 2.0)) + TutorialData[95]) / ((TutorialData[96] * (TutorialData[99] / 2.0)) + TutorialData[98])) - (((TutorialData[93] * -(TutorialData[99] / 2.0)) + TutorialData[95]) / ((TutorialData[96] * -(TutorialData[99] / 2.0)) + TutorialData[98])), 2.0), 0.5), (((TutorialData[90] * (TutorialData[99] / 2.0)) + 0 + TutorialData[92]) / ((TutorialData[96] * (TutorialData[99] / 2.0)) + 0 + TutorialData[98])) + 0, (((TutorialData[93] * (TutorialData[99] / 2.0)) + 0 + TutorialData[95]) / ((TutorialData[96] * (TutorialData[99] / 2.0)) + 0 + TutorialData[98])) + Power(Power((((TutorialData[90] * (TutorialData[99] / 2.0)) + TutorialData[92]) / ((TutorialData[96] * (TutorialData[99] / 2.0)) + TutorialData[98])) - (((TutorialData[90] * -(TutorialData[99] / 2.0)) + TutorialData[92]) / ((TutorialData[96] * -(TutorialData[99] / 2.0)) + TutorialData[98])), 2.0) + Power((((TutorialData[93] * (TutorialData[99] / 2.0)) + TutorialData[95]) / ((TutorialData[96] * (TutorialData[99] / 2.0)) + TutorialData[98])) - (((TutorialData[93] * -(TutorialData[99] / 2.0)) + TutorialData[95]) / ((TutorialData[96] * -(TutorialData[99] / 2.0)) + TutorialData[98])), 2.0), 0.5), ((TutorialData[90] * (TutorialData[99] / 2.0)) + 0 + TutorialData[92]) / ((TutorialData[96] * (TutorialData[99] / 2.0)) + 0 + TutorialData[98]), ((TutorialData[93] * (TutorialData[99] / 2.0)) + 0 + TutorialData[95]) / ((TutorialData[96] * (TutorialData[99] / 2.0)) + 0 + TutorialData[98]), 0.5, 0)
   SpawnParticleEffect(2.0, (((((TutorialData[90] * (0 - ((TutorialData[99] * 1.8) / 2.0))) + (TutorialData[91] * (0 - ((TutorialData[99] * 1.8) / 2.0))) + TutorialData[92]) / ((TutorialData[96] * (0 - ((TutorialData[99] * 1.8) / 2.0))) + (TutorialData[97] * (0 - ((TutorialData[99] * 1.8) / 2.0))) + TutorialData[98])) + (((TutorialData[90] * ((TutorialData[99] * 1.8) / 2.0)) + (TutorialData[91] * (0 - ((TutorialData[99] * 1.8) / 2.0))) + TutorialData[92]) / ((TutorialData[96] * ((TutorialData[99] * 1.8) / 2.0)) + (TutorialData[97] * (0 - ((TutorialData[99] * 1.8) / 2.0))) + TutorialData[98]))) / 2.0) - ((((((((TutorialData[90] * ((TutorialData[99] * 1.8) / 2.0)) + (TutorialData[91] * ((TutorialData[99] * 1.8) / 2.0)) + TutorialData[92]) / ((TutorialData[96] * ((TutorialData[99] * 1.8) / 2.0)) + (TutorialData[97] * ((TutorialData[99] * 1.8) / 2.0)) + TutorialData[98])) - (((TutorialData[90] * (0 - ((TutorialData[99] * 1.8) / 2.0))) + (TutorialData[91] * ((TutorialData[99] * 1.8) / 2.0)) + TutorialData[92]) / ((TutorialData[96] * (0 - ((TutorialData[99] * 1.8) / 2.0))) + (TutorialData[97] * ((TutorialData[99] * 1.8) / 2.0)) + TutorialData[98]))) + (((TutorialData[90] * ((TutorialData[99] * 1.8) / 2.0)) + (TutorialData[91] * (0 - ((TutorialData[99] * 1.8) / 2.0))) + TutorialData[92]) / ((TutorialData[96] * ((TutorialData[99] * 1.8) / 2.0)) + (TutorialData[97] * (0 - ((TutorialData[99] * 1.8) / 2.0))) + TutorialData[98]))) - (((TutorialData[90] * (0 - ((TutorialData[99] * 1.8) / 2.0))) + (TutorialData[91] * (0 - ((TutorialData[99] * 1.8) / 2.0))) + TutorialData[92]) / ((TutorialData[96] * (0 - ((TutorialData[99] * 1.8) / 2.0))) + (TutorialData[97] * (0 - ((TutorialData[99] * 1.8) / 2.0))) + TutorialData[98]))) / 2.0) / 2.0), ((TutorialData[93] * (0 - ((TutorialData[99] * 1.8) / 2.0))) + (TutorialData[94] * (0 - ((TutorialData[99] * 1.8) / 2.0))) + TutorialData[95]) / ((TutorialData[96] * (0 - ((TutorialData[99] * 1.8) / 2.0))) + (TutorialData[97] * (0 - ((TutorialData[99] * 1.8) / 2.0))) + TutorialData[98]), (((((TutorialData[90] * (0 - ((TutorialData[99] * 1.8) / 2.0))) + (TutorialData[91] * ((TutorialData[99] * 1.8) / 2.0)) + TutorialData[92]) / ((TutorialData[96] * (0 - ((TutorialData[99] * 1.8) / 2.0))) + (TutorialData[97] * ((TutorialData[99] * 1.8) / 2.0)) + TutorialData[98])) + (((TutorialData[90] * ((TutorialData[99] * 1.8) / 2.0)) + (TutorialData[91] * ((TutorialData[99] * 1.8) / 2.0)) + TutorialData[92]) / ((TutorialData[96] * ((TutorialData[99] * 1.8) / 2.0)) + (TutorialData[97] * ((TutorialData[99] * 1.8) / 2.0)) + TutorialData[98]))) / 2.0) - ((((((((TutorialData[90] * ((TutorialData[99] * 1.8) / 2.0)) + (TutorialData[91] * ((TutorialData[99] * 1.8) / 2.0)) + TutorialData[92]) / ((TutorialData[96] * ((TutorialData[99] * 1.8) / 2.0)) + (TutorialData[97] * ((TutorialData[99] * 1.8) / 2.0)) + TutorialData[98])) - (((TutorialData[90] * (0 - ((TutorialData[99] * 1.8) / 2.0))) + (TutorialData[91] * ((TutorialData[99] * 1.8) / 2.0)) + TutorialData[92]) / ((TutorialData[96] * (0 - ((TutorialData[99] * 1.8) / 2.0))) + (TutorialData[97] * ((TutorialData[99] * 1.8) / 2.0)) + TutorialData[98]))) + (((TutorialData[90] * ((TutorialData[99] * 1.8) / 2.0)) + (TutorialData[91] * (0 - ((TutorialData[99] * 1.8) / 2.0))) + TutorialData[92]) / ((TutorialData[96] * ((TutorialData[99] * 1.8) / 2.0)) + (TutorialData[97] * (0 - ((TutorialData[99] * 1.8) / 2.0))) + TutorialData[98]))) - (((TutorialData[90] * (0 - ((TutorialData[99] * 1.8) / 2.0))) + (TutorialData[91] * (0 - ((TutorialData[99] * 1.8) / 2.0))) + TutorialData[92]) / ((TutorialData[96] * (0 - ((TutorialData[99] * 1.8) / 2.0))) + (TutorialData[97] * (0 - ((TutorialData[99] * 1.8) / 2.0))) + TutorialData[98]))) / 2.0) / 2.0), ((TutorialData[93] * (0 - ((TutorialData[99] * 1.8) / 2.0))) + (TutorialData[94] * (0 + ((TutorialData[99] * 1.8) / 2.0))) + TutorialData[95]) / ((TutorialData[96] * (0 - ((TutorialData[99] * 1.8) / 2.0))) + (TutorialData[97] * (0 + ((TutorialData[99] * 1.8) / 2.0))) + TutorialData[98]), (((((TutorialData[90] * (0 - ((TutorialData[99] * 1.8) / 2.0))) + (TutorialData[91] * ((TutorialData[99] * 1.8) / 2.0)) + TutorialData[92]) / ((TutorialData[96] * (0 - ((TutorialData[99] * 1.8) / 2.0))) + (TutorialData[97] * ((TutorialData[99] * 1.8) / 2.0)) + TutorialData[98])) + (((TutorialData[90] * ((TutorialData[99] * 1.8) / 2.0)) + (TutorialData[91] * ((TutorialData[99] * 1.8) / 2.0)) + TutorialData[92]) / ((TutorialData[96] * ((TutorialData[99] * 1.8) / 2.0)) + (TutorialData[97] * ((TutorialData[99] * 1.8) / 2.0)) + TutorialData[98]))) / 2.0) + ((((((((TutorialData[90] * ((TutorialData[99] * 1.8) / 2.0)) + (TutorialData[91] * ((TutorialData[99] * 1.8) / 2.0)) + TutorialData[92]) / ((TutorialData[96] * ((TutorialData[99] * 1.8) / 2.0)) + (TutorialData[97] * ((TutorialData[99] * 1.8) / 2.0)) + TutorialData[98])) - (((TutorialData[90] * (0 - ((TutorialData[99] * 1.8) / 2.0))) + (TutorialData[91] * ((TutorialData[99] * 1.8) / 2.0)) + TutorialData[92]) / ((TutorialData[96] * (0 - ((TutorialData[99] * 1.8) / 2.0))) + (TutorialData[97] * ((TutorialData[99] * 1.8) / 2.0)) + TutorialData[98]))) + (((TutorialData[90] * ((TutorialData[99] * 1.8) / 2.0)) + (TutorialData[91] * (0 - ((TutorialData[99] * 1.8) / 2.0))) + TutorialData[92]) / ((TutorialData[96] * ((TutorialData[99] * 1.8) / 2.0)) + (TutorialData[97] * (0 - ((TutorialData[99] * 1.8) / 2.0))) + TutorialData[98]))) - (((TutorialData[90] * (0 - ((TutorialData[99] * 1.8) / 2.0))) + (TutorialData[91] * (0 - ((TutorialData[99] * 1.8) / 2.0))) + TutorialData[92]) / ((TutorialData[96] * (0 - ((TutorialData[99] * 1.8) / 2.0))) + (TutorialData[97] * (0 - ((TutorialData[99] * 1.8) / 2.0))) + TutorialData[98]))) / 2.0) / 2.0), ((TutorialData[93] * (0 + ((TutorialData[99] * 1.8) / 2.0))) + (TutorialData[94] * (0 + ((TutorialData[99] * 1.8) / 2.0))) + TutorialData[95]) / ((TutorialData[96] * (0 + ((TutorialData[99] * 1.8) / 2.0))) + (TutorialData[97] * (0 + ((TutorialData[99] * 1.8) / 2.0))) + TutorialData[98]), (((((TutorialData[90] * (0 - ((TutorialData[99] * 1.8) / 2.0))) + (TutorialData[91] * (0 - ((TutorialData[99] * 1.8) / 2.0))) + TutorialData[92]) / ((TutorialData[96] * (0 - ((TutorialData[99] * 1.8) / 2.0))) + (TutorialData[97] * (0 - ((TutorialData[99] * 1.8) / 2.0))) + TutorialData[98])) + (((TutorialData[90] * ((TutorialData[99] * 1.8) / 2.0)) + (TutorialData[91] * (0 - ((TutorialData[99] * 1.8) / 2.0))) + TutorialData[92]) / ((TutorialData[96] * ((TutorialData[99] * 1.8) / 2.0)) + (TutorialData[97] * (0 - ((TutorialData[99] * 1.8) / 2.0))) + TutorialData[98]))) / 2.0) + ((((((((TutorialData[90] * ((TutorialData[99] * 1.8) / 2.0)) + (TutorialData[91] * ((TutorialData[99] * 1.8) / 2.0)) + TutorialData[92]) / ((TutorialData[96] * ((TutorialData[99] * 1.8) / 2.0)) + (TutorialData[97] * ((TutorialData[99] * 1.8) / 2.0)) + TutorialData[98])) - (((TutorialData[90] * (0 - ((TutorialData[99] * 1.8) / 2.0))) + (TutorialData[91] * ((TutorialData[99] * 1.8) / 2.0)) + TutorialData[92]) / ((TutorialData[96] * (0 - ((TutorialData[99] * 1.8) / 2.0))) + (TutorialData[97] * ((TutorialData[99] * 1.8) / 2.0)) + TutorialData[98]))) + (((TutorialData[90] * ((TutorialData[99] * 1.8) / 2.0)) + (TutorialData[91] * (0 - ((TutorialData[99] * 1.8) / 2.0))) + TutorialData[92]) / ((TutorialData[96] * ((TutorialData[99] * 1.8) / 2.0)) + (TutorialData[97] * (0 - ((TutorialData[99] * 1.8) / 2.0))) + TutorialData[98]))) - (((TutorialData[90] * (0 - ((TutorialData[99] * 1.8) / 2.0))) + (TutorialData[91] * (0 - ((TutorialData[99] * 1.8) / 2.0))) + TutorialData[92]) / ((TutorialData[96] * (0 - ((TutorialData[99] * 1.8) / 2.0))) + (TutorialData[97] * (0 - ((TutorialData[99] * 1.8) / 2.0))) + TutorialData[98]))) / 2.0) / 2.0), ((TutorialData[93] * (0 + ((TutorialData[99] * 1.8) / 2.0))) + (TutorialData[94] * (0 - ((TutorialData[99] * 1.8) / 2.0))) + TutorialData[95]) / ((TutorialData[96] * (0 + ((TutorialData[99] * 1.8) / 2.0))) + (TutorialData[97] * (0 - ((TutorialData[99] * 1.8) / 2.0))) + TutorialData[98]), 0.5, 0)
@@ -2802,7 +2804,7 @@
   DebugPause()
   goto exit
 802:
-  goto 803 if (10000[3] >= 8.5) else 804
+  goto 803 if (10000[4] >= 8.5) else 804
 803:
   10000[0] <- TutorialMemory[5]
   TutorialMemory[5] <- 10000[0] + 1.0

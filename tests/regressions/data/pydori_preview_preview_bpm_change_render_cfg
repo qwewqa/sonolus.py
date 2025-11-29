@@ -173,74 +173,74 @@
 51:
   goto 52
 52:
-  v71 <- EntityData[0] + 4.0
-  v72 <- v71
+  v1 <- EntityData[0] + 4.0
+  v2 <- v1
   goto 53
 53:
-  v73 <- BeatToStartingBeat(v72)
-  v74 <- v73 == EntityData[0]
+  v3 <- BeatToStartingBeat(v2)
+  v4 <- v3 == EntityData[0]
   goto 54
 54:
-  goto 55 if v74 else 57
+  goto 55 if v4 else 57
 55:
-  v75 <- v72 <= PreviewData[4]
+  v5 <- v2 <= PreviewData[4]
   goto 56
 56:
-  v76 <- v75
+  v6 <- v5
   goto 58
 57:
-  v76 <- 0
+  v6 <- 0
   goto 58
 58:
-  goto 59 if v76 else 82
+  goto 59 if v6 else 82
 59:
-  v77 <- BeatToTime(v72)
+  v7 <- BeatToTime(v2)
   goto 60
 60:
   goto 61
 61:
-  v78 <- v77 / 2.0
-  v79 <- Trunc(v78)
+  v8 <- v7 / 2.0
+  v9 <- Trunc(v8)
   goto 62
 62:
   goto 63
 63:
   goto 64
 64:
-  v80 <- v79 + 0.5
-  v81 <- v80 * PreviewData[1]
-  v82 <- v81 + -0.252
-  v83 <- -RuntimeEnvironment[1]
+  v10 <- v9 + 0.5
+  v11 <- v10 * PreviewData[1]
+  v12 <- v11 + -0.252
+  v13 <- -RuntimeEnvironment[1]
   goto 65
 65:
-  v84 <- v83
-  v85 <- RuntimeEnvironment[1] - v84
+  v14 <- v13
+  v15 <- RuntimeEnvironment[1] - v14
   goto 66
 66:
   goto 67
 67:
-  v86 <- v85 / 2.0
-  v87 <- v82 - v86
+  v16 <- v15 / 2.0
+  v17 <- v12 - v16
   goto 68
 68:
   goto 69
 69:
   goto 70
 70:
-  v88 <- v79 + 0.5
-  v89 <- v88 * PreviewData[1]
-  v90 <- v89 + 0.252
-  v91 <- -RuntimeEnvironment[1]
+  v18 <- v9 + 0.5
+  v19 <- v18 * PreviewData[1]
+  v20 <- v19 + 0.252
+  v21 <- -RuntimeEnvironment[1]
   goto 71
 71:
-  v92 <- v91
-  v93 <- RuntimeEnvironment[1] - v92
+  v22 <- v21
+  v23 <- RuntimeEnvironment[1] - v22
   goto 72
 72:
   goto 73
 73:
-  v94 <- v93 / 2.0
-  v95 <- v90 - v94
+  v24 <- v23 / 2.0
+  v25 <- v20 - v24
   goto 74
 74:
   goto 75
@@ -249,44 +249,44 @@
 76:
   goto 77
 77:
-  v96 <- v77 % 2.0
-  v97 <- v96 / 2.0
-  v98 <- Lerp(-0.9, 0.9, v97)
+  v26 <- v7 % 2.0
+  v27 <- v26 / 2.0
+  v28 <- Lerp(-0.9, 0.9, v27)
   goto 78
 78:
   goto 79
 79:
-  v99 <- v98 - 0.0018
-  v100 <- v87
-  v101 <- v99
-  v102 <- v98 - 0.0018
-  v103 <- v95
-  v104 <- v102
-  v105 <- v98 + 0.0018
-  v106 <- v95
-  v107 <- v105
-  v108 <- v98 + 0.0018
-  v109 <- v87
-  v110 <- v108
+  v29 <- v28 - 0.0018
+  v30 <- v17
+  v31 <- v29
+  v32 <- v28 - 0.0018
+  v33 <- v25
+  v34 <- v32
+  v35 <- v28 + 0.0018
+  v36 <- v25
+  v37 <- v35
+  v38 <- v28 + 0.0018
+  v39 <- v17
+  v40 <- v38
   goto 80
 80:
   goto 81
 81:
-  v111 <- BeatToTime(v72)
-  v112 <- v111 / 100.0
-  v113 <- 21.0 - v112
-  v114 <- v100
-  v115 <- v101
-  v116 <- v109
-  v117 <- v110
-  v118 <- v106
-  v119 <- v107
-  v120 <- v103
-  v121 <- v104
-  v122 <- Draw(21.0, v114, v115, v116, v117, v118, v119, v120, v121, v113, 0.8)
-  v123 <- v72 + 4.0
-  v124 <- v123
-  v72 <- v124
+  v41 <- BeatToTime(v2)
+  v42 <- v41 / 100.0
+  v43 <- 21.0 - v42
+  v44 <- v30
+  v45 <- v31
+  v46 <- v39
+  v47 <- v40
+  v48 <- v36
+  v49 <- v37
+  v50 <- v33
+  v51 <- v34
+  v52 <- Draw(21.0, v44, v45, v46, v47, v48, v49, v50, v51, v43, 0.8)
+  v53 <- v2 + 4.0
+  v54 <- v53
+  v2 <- v54
   goto 53
 82:
   goto 83

@@ -24,44 +24,44 @@
   goto 7 if RuntimeEnvironment[4] else 8
 7:
   10000[0] <- 8.0 + (EntityData[0] * 32.0)
-  10000[0] <- EntityDataArray[10000[0]]
+  10000[4] <- EntityDataArray[10000[0]]
   goto 9 if (EntityData[1] >= 0) else 20
 8:
   10000[0] <- 6.0 + (EntityData[0] * 32.0)
-  10000[0] <- EntityDataArray[10000[0]]
+  10000[4] <- EntityDataArray[10000[0]]
   goto 9 if (EntityData[1] >= 0) else 20
 9:
-  10000[1] <- EntityData[1] * 3.0
-  goto 10 if (((EntityInfoArray[10000[1] + 1] >= -15.0) && (EntityInfoArray[10000[1] + 1] < 15.0)) && (Trunc(EntityInfoArray[10000[1] + 1]) == EntityInfoArray[10000[1] + 1])) else 19
+  10000[0] <- EntityData[1] * 3.0
+  goto 10 if (((EntityInfoArray[10000[0] + 1] >= -15.0) && (EntityInfoArray[10000[0] + 1] < 15.0)) && (Trunc(EntityInfoArray[10000[0] + 1]) == EntityInfoArray[10000[0] + 1])) else 19
 10:
-  10000[1] <- 40.0 + (EntityInfoArray[10000[1] + 1] + ((EntityInfoArray[10000[1] + 1] < 0) * 15.0))
-  10000[1] <- EngineRom[10000[1]]
-  10000[2] <- 10000[1]
-  10000[3] <- 0
+  10000[0] <- 40.0 + (EntityInfoArray[10000[0] + 1] + ((EntityInfoArray[10000[0] + 1] < 0) * 15.0))
+  10000[0] <- EngineRom[10000[0]]
+  10000[1] <- 10000[0]
+  10000[2] <- 0
   goto 11
 11:
-  goto 12 if (10000[3] < EngineRom[10000[2]]) else 18
+  goto 12 if (10000[2] < EngineRom[10000[1]]) else 18
 12:
-  10000[4] <- 10000[1] + 1 + 10000[3]
-  10000[4] <- 3000.0[10000[4]]
-  goto when 10000[4]
+  10000[3] <- 10000[0] + 1 + 10000[2]
+  10000[3] <- 3000.0[10000[3]]
+  goto when 10000[3]
     14.0 -> 14
     default -> 13
 13:
-  10000[3] <- 10000[3] + 1
+  10000[2] <- 10000[2] + 1
   goto 11
 14:
   goto 15 if RuntimeEnvironment[4] else 16
 15:
-  10000[1] <- 8.0 + (EntityData[1] * 32.0)
-  10000[1] <- EntityDataArray[10000[1]]
+  10000[0] <- 8.0 + (EntityData[1] * 32.0)
+  10000[0] <- EntityDataArray[10000[0]]
   goto 17
 16:
-  10000[1] <- 6.0 + (EntityData[1] * 32.0)
-  10000[1] <- EntityDataArray[10000[1]]
+  10000[0] <- 6.0 + (EntityData[1] * 32.0)
+  10000[0] <- EntityDataArray[10000[0]]
   goto 17
 17:
-  Break(1, Min(10000[0], 10000[1]))
+  Break(1, Min(10000[4], 10000[0]))
   goto exit
 18:
   DebugLog(6.0)

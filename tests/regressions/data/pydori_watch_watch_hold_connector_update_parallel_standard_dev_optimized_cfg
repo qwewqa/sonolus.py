@@ -21,91 +21,91 @@
   10000[2] <- 10000[2] + 1.0
   goto 3
 6:
-  10000[14] <- EntityData[0] * 32.0
+  10000[0] <- EntityData[0] * 32.0
   goto 7 if (EntityData[1] >= 0) else 33
 7:
-  10000[15] <- EntityData[1] * 3.0
-  goto 8 if (((EntityInfoArray[10000[15] + 1] >= -15.0) && (EntityInfoArray[10000[15] + 1] < 15.0)) && (Trunc(EntityInfoArray[10000[15] + 1]) == EntityInfoArray[10000[15] + 1])) else 32
-8:
-  10000[15] <- 40.0 + (EntityInfoArray[10000[15] + 1] + ((EntityInfoArray[10000[15] + 1] < 0) * 15.0))
-  10000[15] <- EngineRom[10000[15]]
-  10000[16] <- 10000[15]
-  10000[17] <- 0
-  goto 9
-9:
-  goto 10 if (10000[17] < EngineRom[10000[16]]) else 31
-10:
-  10000[18] <- 10000[15] + 1.0 + 10000[17]
-  10000[18] <- 3000.0[10000[18]]
-  goto when 10000[18]
-    14.0 -> 12
-    default -> 11
-11:
-  10000[17] <- 10000[17] + 1.0
-  goto 9
-12:
-  10000[15] <- EntityData[1] * 32.0
-  goto 13 if (EntityData[0] >= 0) else 30
-13:
-  10000[16] <- EntityData[0] * 3.0
-  goto 14 if (((EntityInfoArray[10000[16] + 1] >= -15.0) && (EntityInfoArray[10000[16] + 1] < 15.0)) && (Trunc(EntityInfoArray[10000[16] + 1]) == EntityInfoArray[10000[16] + 1])) else 29
-14:
-  10000[0] <- 40.0 + (EntityInfoArray[10000[16] + 1] + ((EntityInfoArray[10000[16] + 1] < 0) * 15.0))
-  10000[0] <- EngineRom[10000[0]]
-  10000[1] <- 10000[0]
-  10000[2] <- 0
-  goto 15
-15:
-  goto 16 if (10000[2] < EngineRom[10000[1]]) else 28
-16:
-  10000[3] <- 10000[0] + 1.0 + 10000[2]
-  10000[3] <- 3000.0[10000[3]]
-  goto when 10000[3]
-    14.0 -> 18
-    default -> 17
-17:
-  10000[2] <- 10000[2] + 1.0
-  goto 15
-18:
-  10000[0] <- 6.0 + (EntityData[0] * 32.0)
-  10000[0] <- Remap(EntityDataArray[10000[0]] - (6.0 / LevelOption[1]), EntityDataArray[10000[0]], LevelData[14], 0, RuntimeUpdate[2])
-  goto 19 if (EntityData[1] >= 0) else 27
-19:
   10000[1] <- EntityData[1] * 3.0
-  goto 20 if (((EntityInfoArray[10000[1] + 1] >= -15.0) && (EntityInfoArray[10000[1] + 1] < 15.0)) && (Trunc(EntityInfoArray[10000[1] + 1]) == EntityInfoArray[10000[1] + 1])) else 26
-20:
+  goto 8 if (((EntityInfoArray[10000[1] + 1] >= -15.0) && (EntityInfoArray[10000[1] + 1] < 15.0)) && (Trunc(EntityInfoArray[10000[1] + 1]) == EntityInfoArray[10000[1] + 1])) else 32
+8:
   10000[1] <- 40.0 + (EntityInfoArray[10000[1] + 1] + ((EntityInfoArray[10000[1] + 1] < 0) * 15.0))
   10000[1] <- EngineRom[10000[1]]
   10000[2] <- 10000[1]
   10000[3] <- 0
-  goto 21
-21:
-  goto 22 if (10000[3] < EngineRom[10000[2]]) else 25
-22:
+  goto 9
+9:
+  goto 10 if (10000[3] < EngineRom[10000[2]]) else 31
+10:
   10000[4] <- 10000[1] + 1.0 + 10000[3]
   10000[4] <- 3000.0[10000[4]]
   goto when 10000[4]
+    14.0 -> 12
+    default -> 11
+11:
+  10000[3] <- 10000[3] + 1.0
+  goto 9
+12:
+  10000[11] <- EntityData[1] * 32.0
+  goto 13 if (EntityData[0] >= 0) else 30
+13:
+  10000[12] <- EntityData[0] * 3.0
+  goto 14 if (((EntityInfoArray[10000[12] + 1] >= -15.0) && (EntityInfoArray[10000[12] + 1] < 15.0)) && (Trunc(EntityInfoArray[10000[12] + 1]) == EntityInfoArray[10000[12] + 1])) else 29
+14:
+  10000[1] <- 40.0 + (EntityInfoArray[10000[12] + 1] + ((EntityInfoArray[10000[12] + 1] < 0) * 15.0))
+  10000[1] <- EngineRom[10000[1]]
+  10000[2] <- 10000[1]
+  10000[3] <- 0
+  goto 15
+15:
+  goto 16 if (10000[3] < EngineRom[10000[2]]) else 28
+16:
+  10000[12] <- 10000[1] + 1.0 + 10000[3]
+  10000[12] <- 3000.0[10000[12]]
+  goto when 10000[12]
+    14.0 -> 18
+    default -> 17
+17:
+  10000[3] <- 10000[3] + 1.0
+  goto 15
+18:
+  10000[12] <- 6.0 + (EntityData[0] * 32.0)
+  10000[1] <- Remap(EntityDataArray[10000[12]] - (6.0 / LevelOption[1]), EntityDataArray[10000[12]], LevelData[14], 0, RuntimeUpdate[2])
+  goto 19 if (EntityData[1] >= 0) else 27
+19:
+  10000[2] <- EntityData[1] * 3.0
+  goto 20 if (((EntityInfoArray[10000[2] + 1] >= -15.0) && (EntityInfoArray[10000[2] + 1] < 15.0)) && (Trunc(EntityInfoArray[10000[2] + 1]) == EntityInfoArray[10000[2] + 1])) else 26
+20:
+  10000[2] <- 40.0 + (EntityInfoArray[10000[2] + 1] + ((EntityInfoArray[10000[2] + 1] < 0) * 15.0))
+  10000[2] <- EngineRom[10000[2]]
+  10000[12] <- 10000[2]
+  10000[13] <- 0
+  goto 21
+21:
+  goto 22 if (10000[13] < EngineRom[10000[12]]) else 25
+22:
+  10000[14] <- 10000[2] + 1.0 + 10000[13]
+  10000[14] <- 3000.0[10000[14]]
+  goto when 10000[14]
     14.0 -> 24
     default -> 23
 23:
-  10000[3] <- 10000[3] + 1.0
+  10000[13] <- 10000[13] + 1.0
   goto 21
 24:
-  10000[1] <- 6.0 + (EntityData[1] * 32.0)
-  10000[1] <- Remap(EntityDataArray[10000[1]] - (6.0 / LevelOption[1]), EntityDataArray[10000[1]], LevelData[14], 0, RuntimeUpdate[2])
-  10000[2] <- Clamp(10000[0], 0, LevelData[14])
-  10000[3] <- Clamp(10000[1], 0, LevelData[14])
-  10000[4] <- Remap(10000[0], 10000[1], EntityDataArray[10000[14]], EntityDataArray[10000[15]], 10000[2]) * LevelData[12]
-  10000[5] <- Remap(10000[0], 10000[1], EntityDataArray[10000[14]], EntityDataArray[10000[15]], 10000[3]) * LevelData[12]
-  10000[6] <- 10000[4] - (LevelData[11] / 2.0)
-  10000[7] <- 10000[4] + (LevelData[11] / 2.0)
-  10000[8] <- 10000[5] - (LevelData[11] / 2.0)
-  10000[9] <- 10000[5] + (LevelData[11] / 2.0)
-  10000[10] <- (LevelData[8] * 10000[6]) + (LevelData[9] * 10000[2]) + LevelData[10]
-  10000[11] <- (LevelData[8] * 10000[7]) + (LevelData[9] * 10000[2]) + LevelData[10]
-  10000[12] <- (LevelData[8] * 10000[8]) + (LevelData[9] * 10000[3]) + LevelData[10]
-  10000[13] <- (LevelData[8] * 10000[9]) + (LevelData[9] * 10000[3]) + LevelData[10]
-  Draw(17.0, ((LevelData[2] * 10000[6]) + (LevelData[3] * 10000[2]) + LevelData[4]) / 10000[10], ((LevelData[5] * 10000[6]) + (LevelData[6] * 10000[2]) + LevelData[7]) / 10000[10], ((LevelData[2] * 10000[8]) + (LevelData[3] * 10000[3]) + LevelData[4]) / 10000[12], ((LevelData[5] * 10000[8]) + (LevelData[6] * 10000[3]) + LevelData[7]) / 10000[12], ((LevelData[2] * 10000[9]) + (LevelData[3] * 10000[3]) + LevelData[4]) / 10000[13], ((LevelData[5] * 10000[9]) + (LevelData[6] * 10000[3]) + LevelData[7]) / 10000[13], ((LevelData[2] * 10000[7]) + (LevelData[3] * 10000[2]) + LevelData[4]) / 10000[11], ((LevelData[5] * 10000[7]) + (LevelData[6] * 10000[2]) + LevelData[7]) / 10000[11], 100000.0 + (Min(EntityDataArray[10000[14]], EntityDataArray[10000[15]]) * 100.0) + Min(10000[0], 10000[1]), LevelOption[5])
+  10000[2] <- 6.0 + (EntityData[1] * 32.0)
+  10000[4] <- Remap(EntityDataArray[10000[2]] - (6.0 / LevelOption[1]), EntityDataArray[10000[2]], LevelData[14], 0, RuntimeUpdate[2])
+  10000[5] <- Clamp(10000[1], 0, LevelData[14])
+  10000[6] <- Clamp(10000[4], 0, LevelData[14])
+  10000[7] <- Remap(10000[1], 10000[4], EntityDataArray[10000[0]], EntityDataArray[10000[11]], 10000[5]) * LevelData[12]
+  10000[8] <- Remap(10000[1], 10000[4], EntityDataArray[10000[0]], EntityDataArray[10000[11]], 10000[6]) * LevelData[12]
+  10000[9] <- 10000[7] - (LevelData[11] / 2.0)
+  10000[10] <- 10000[7] + (LevelData[11] / 2.0)
+  10000[12] <- 10000[8] - (LevelData[11] / 2.0)
+  10000[13] <- 10000[8] + (LevelData[11] / 2.0)
+  10000[14] <- (LevelData[8] * 10000[9]) + (LevelData[9] * 10000[5]) + LevelData[10]
+  10000[15] <- (LevelData[8] * 10000[10]) + (LevelData[9] * 10000[5]) + LevelData[10]
+  10000[2] <- (LevelData[8] * 10000[12]) + (LevelData[9] * 10000[6]) + LevelData[10]
+  10000[3] <- (LevelData[8] * 10000[13]) + (LevelData[9] * 10000[6]) + LevelData[10]
+  Draw(17.0, ((LevelData[2] * 10000[9]) + (LevelData[3] * 10000[5]) + LevelData[4]) / 10000[14], ((LevelData[5] * 10000[9]) + (LevelData[6] * 10000[5]) + LevelData[7]) / 10000[14], ((LevelData[2] * 10000[12]) + (LevelData[3] * 10000[6]) + LevelData[4]) / 10000[2], ((LevelData[5] * 10000[12]) + (LevelData[6] * 10000[6]) + LevelData[7]) / 10000[2], ((LevelData[2] * 10000[13]) + (LevelData[3] * 10000[6]) + LevelData[4]) / 10000[3], ((LevelData[5] * 10000[13]) + (LevelData[6] * 10000[6]) + LevelData[7]) / 10000[3], ((LevelData[2] * 10000[10]) + (LevelData[3] * 10000[5]) + LevelData[4]) / 10000[15], ((LevelData[5] * 10000[10]) + (LevelData[6] * 10000[5]) + LevelData[7]) / 10000[15], 100000.0 + (Min(EntityDataArray[10000[0]], EntityDataArray[10000[11]]) * 100.0) + Min(10000[1], 10000[4]), LevelOption[5])
   goto exit
 25:
   DebugLog(12.0)

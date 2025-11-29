@@ -9,67 +9,67 @@
   EntityMemory[2] <- 0
   goto 3
 3:
-  10000[4] <- EntityMemory[0]
-  goto 4 if (10000[4] >= 0) else 69
+  10000[0] <- EntityMemory[0]
+  goto 4 if (10000[0] >= 0) else 69
 4:
-  10000[0] <- 10000[4] * 3.0
-  goto 5 if (((EntityInfoArray[10000[0] + 1] >= -15.0) && (EntityInfoArray[10000[0] + 1] < 15.0)) && (Trunc(EntityInfoArray[10000[0] + 1]) == EntityInfoArray[10000[0] + 1])) else 68
+  10000[1] <- 10000[0] * 3.0
+  goto 5 if (((EntityInfoArray[10000[1] + 1] >= -15.0) && (EntityInfoArray[10000[1] + 1] < 15.0)) && (Trunc(EntityInfoArray[10000[1] + 1]) == EntityInfoArray[10000[1] + 1])) else 68
 5:
-  10000[0] <- 40.0 + (EntityInfoArray[10000[0] + 1] + ((EntityInfoArray[10000[0] + 1] < 0) * 15.0))
-  10000[0] <- EngineRom[10000[0]]
-  10000[1] <- 10000[0]
-  10000[2] <- 0
-  goto 6
-6:
-  goto 7 if (10000[2] < EngineRom[10000[1]]) else 67
-7:
-  10000[3] <- 10000[0] + 1.0 + 10000[2]
-  10000[3] <- 3000.0[10000[3]]
-  goto when 10000[3]
-    14.0 -> 9
-    default -> 8
-8:
-  10000[2] <- 10000[2] + 1.0
-  goto 6
-9:
-  goto 10 if RuntimeEnvironment[4] else 28
-10:
-  10000[0] <- 9.0 + (10000[4] * 32.0)
-  goto 11 if (EntityDataArray[10000[0]] >= 0) else 27
-11:
-  10000[1] <- EntityDataArray[10000[0]] * 3.0
-  goto 12 if (((EntityInfoArray[10000[1] + 1] >= -15.0) && (EntityInfoArray[10000[1] + 1] < 15.0)) && (Trunc(EntityInfoArray[10000[1] + 1]) == EntityInfoArray[10000[1] + 1])) else 26
-12:
   10000[1] <- 40.0 + (EntityInfoArray[10000[1] + 1] + ((EntityInfoArray[10000[1] + 1] < 0) * 15.0))
   10000[1] <- EngineRom[10000[1]]
   10000[2] <- 10000[1]
   10000[3] <- 0
-  goto 13
-13:
-  goto 14 if (10000[3] < EngineRom[10000[2]]) else 25
-14:
+  goto 6
+6:
+  goto 7 if (10000[3] < EngineRom[10000[2]]) else 67
+7:
   10000[4] <- 10000[1] + 1.0 + 10000[3]
   10000[4] <- 3000.0[10000[4]]
   goto when 10000[4]
+    14.0 -> 9
+    default -> 8
+8:
+  10000[3] <- 10000[3] + 1.0
+  goto 6
+9:
+  goto 10 if RuntimeEnvironment[4] else 28
+10:
+  10000[4] <- 9.0 + (10000[0] * 32.0)
+  goto 11 if (EntityDataArray[10000[4]] >= 0) else 27
+11:
+  10000[0] <- EntityDataArray[10000[4]] * 3.0
+  goto 12 if (((EntityInfoArray[10000[0] + 1] >= -15.0) && (EntityInfoArray[10000[0] + 1] < 15.0)) && (Trunc(EntityInfoArray[10000[0] + 1]) == EntityInfoArray[10000[0] + 1])) else 26
+12:
+  10000[0] <- 40.0 + (EntityInfoArray[10000[0] + 1] + ((EntityInfoArray[10000[0] + 1] < 0) * 15.0))
+  10000[0] <- EngineRom[10000[0]]
+  10000[1] <- 10000[0]
+  10000[2] <- 0
+  goto 13
+13:
+  goto 14 if (10000[2] < EngineRom[10000[1]]) else 25
+14:
+  10000[3] <- 10000[0] + 1.0 + 10000[2]
+  10000[3] <- 3000.0[10000[3]]
+  goto when 10000[3]
     14.0 -> 16
     default -> 15
 15:
-  10000[3] <- 10000[3] + 1.0
+  10000[2] <- 10000[2] + 1.0
   goto 13
 16:
-  10000[0] <- EntityDataArray[10000[0]] * 3.0
+  10000[0] <- EntityDataArray[10000[4]] * 3.0
   goto 17 if (((EntityInfoArray[10000[0]] >= 0) && (EntityInfoArray[10000[0]] < 99999.0)) && (Trunc(EntityInfoArray[10000[0]]) == EntityInfoArray[10000[0]])) else 24
 17:
-  10000[1] <- EntityInfoArray[10000[0]] + 18.0
-  goto 18 if StreamHas(10000[1], RuntimeUpdate[0]) else 19
+  10000[0] <- EntityInfoArray[10000[0]] + 18.0
+  goto 18 if StreamHas(10000[0], RuntimeUpdate[0]) else 19
 18:
-  10000[0] <- RuntimeUpdate[0]
+  10000[1] <- RuntimeUpdate[0]
   goto 20
 19:
-  10000[0] <- StreamGetPreviousKey(10000[1], RuntimeUpdate[0])
+  10000[1] <- StreamGetPreviousKey(10000[0], RuntimeUpdate[0])
   goto 20
 20:
-  goto 28 if StreamGetValue(10000[1], 10000[0]) else 21
+  goto 28 if StreamGetValue(10000[0], 10000[1]) else 21
 21:
   10000[0] <- EntityMemory[2]
   goto 22 if (10000[0] != 0) else 23
@@ -143,15 +143,15 @@
   10000[3] <- 10000[3] + 1.0
   goto 37
 40:
-  10000[0] <- EntityDataArray[10000[0]] * 32.0
-  10000[1] <- EntitySharedMemoryArray[10000[0]] * LevelData[12]
-  10000[2] <- 10000[1] + (LevelData[11] / 2.0)
-  10000[3] <- 10000[1] - (LevelData[11] / 2.0)
-  10000[4] <- (LevelData[8] * 10000[3]) + (LevelData[9] * (0 - (LevelData[11] / 2.0))) + LevelData[10]
-  10000[5] <- (LevelData[8] * 10000[2]) + (LevelData[9] * (0 - (LevelData[11] / 2.0))) + LevelData[10]
-  10000[6] <- (LevelData[8] * 10000[3]) + (LevelData[9] * (LevelData[11] / 2.0)) + LevelData[10]
-  10000[7] <- (LevelData[8] * 10000[2]) + (LevelData[9] * (LevelData[11] / 2.0)) + LevelData[10]
-  Draw(14.0, ((LevelData[2] * 10000[3]) + (LevelData[3] * (0 - (LevelData[11] / 2.0))) + LevelData[4]) / 10000[4], ((LevelData[5] * 10000[3]) + (LevelData[6] * (0 - (LevelData[11] / 2.0))) + LevelData[7]) / 10000[4], ((LevelData[2] * 10000[3]) + (LevelData[3] * (0 + (LevelData[11] / 2.0))) + LevelData[4]) / 10000[6], ((LevelData[5] * 10000[3]) + (LevelData[6] * (0 + (LevelData[11] / 2.0))) + LevelData[7]) / 10000[6], ((LevelData[2] * 10000[2]) + (LevelData[3] * (0 + (LevelData[11] / 2.0))) + LevelData[4]) / 10000[7], ((LevelData[5] * 10000[2]) + (LevelData[6] * (0 + (LevelData[11] / 2.0))) + LevelData[7]) / 10000[7], ((LevelData[2] * 10000[2]) + (LevelData[3] * (0 - (LevelData[11] / 2.0))) + LevelData[4]) / 10000[5], ((LevelData[5] * 10000[2]) + (LevelData[6] * (0 - (LevelData[11] / 2.0))) + LevelData[7]) / 10000[5], 300000.0 + (EntitySharedMemoryArray[10000[0]] * 100.0), 1.0)
+  10000[3] <- EntityDataArray[10000[0]] * 32.0
+  10000[4] <- EntitySharedMemoryArray[10000[3]] * LevelData[12]
+  10000[5] <- 10000[4] + (LevelData[11] / 2.0)
+  10000[6] <- 10000[4] - (LevelData[11] / 2.0)
+  10000[7] <- (LevelData[8] * 10000[6]) + (LevelData[9] * (0 - (LevelData[11] / 2.0))) + LevelData[10]
+  10000[0] <- (LevelData[8] * 10000[5]) + (LevelData[9] * (0 - (LevelData[11] / 2.0))) + LevelData[10]
+  10000[1] <- (LevelData[8] * 10000[6]) + (LevelData[9] * (LevelData[11] / 2.0)) + LevelData[10]
+  10000[2] <- (LevelData[8] * 10000[5]) + (LevelData[9] * (LevelData[11] / 2.0)) + LevelData[10]
+  Draw(14.0, ((LevelData[2] * 10000[6]) + (LevelData[3] * (0 - (LevelData[11] / 2.0))) + LevelData[4]) / 10000[7], ((LevelData[5] * 10000[6]) + (LevelData[6] * (0 - (LevelData[11] / 2.0))) + LevelData[7]) / 10000[7], ((LevelData[2] * 10000[6]) + (LevelData[3] * (0 + (LevelData[11] / 2.0))) + LevelData[4]) / 10000[1], ((LevelData[5] * 10000[6]) + (LevelData[6] * (0 + (LevelData[11] / 2.0))) + LevelData[7]) / 10000[1], ((LevelData[2] * 10000[5]) + (LevelData[3] * (0 + (LevelData[11] / 2.0))) + LevelData[4]) / 10000[2], ((LevelData[5] * 10000[5]) + (LevelData[6] * (0 + (LevelData[11] / 2.0))) + LevelData[7]) / 10000[2], ((LevelData[2] * 10000[5]) + (LevelData[3] * (0 - (LevelData[11] / 2.0))) + LevelData[4]) / 10000[0], ((LevelData[5] * 10000[5]) + (LevelData[6] * (0 - (LevelData[11] / 2.0))) + LevelData[7]) / 10000[0], 300000.0 + (EntitySharedMemoryArray[10000[3]] * 100.0), 1.0)
   10000[0] <- EntityMemory[0]
   goto 41 if (10000[0] >= 0) else 60
 41:
@@ -200,35 +200,35 @@
 52:
   10000[0] <- EntityDataArray[10000[0]] * 32.0
   10000[0] <- EntitySharedMemoryArray[10000[0]] * LevelData[12]
-  10000[1] <- 10000[0] + ((LevelData[11] * 1.8) / 2.0)
-  10000[2] <- 10000[0] - ((LevelData[11] * 1.8) / 2.0)
-  10000[3] <- (LevelData[8] * 10000[2]) + (LevelData[9] * (0 - ((LevelData[11] * 1.8) / 2.0))) + LevelData[10]
-  10000[4] <- ((LevelData[2] * 10000[2]) + (LevelData[3] * (0 - ((LevelData[11] * 1.8) / 2.0))) + LevelData[4]) / 10000[3]
-  10000[5] <- ((LevelData[5] * 10000[2]) + (LevelData[6] * (0 - ((LevelData[11] * 1.8) / 2.0))) + LevelData[7]) / 10000[3]
-  10000[6] <- (LevelData[8] * 10000[1]) + (LevelData[9] * (0 - ((LevelData[11] * 1.8) / 2.0))) + LevelData[10]
-  10000[7] <- ((LevelData[2] * 10000[1]) + (LevelData[3] * (0 - ((LevelData[11] * 1.8) / 2.0))) + LevelData[4]) / 10000[6]
-  10000[8] <- ((LevelData[5] * 10000[1]) + (LevelData[6] * (0 - ((LevelData[11] * 1.8) / 2.0))) + LevelData[7]) / 10000[6]
-  10000[9] <- (LevelData[8] * 10000[2]) + (LevelData[9] * ((LevelData[11] * 1.8) / 2.0)) + LevelData[10]
-  10000[10] <- ((LevelData[2] * 10000[2]) + (LevelData[3] * ((LevelData[11] * 1.8) / 2.0)) + LevelData[4]) / 10000[9]
-  10000[11] <- ((LevelData[5] * 10000[2]) + (LevelData[6] * ((LevelData[11] * 1.8) / 2.0)) + LevelData[7]) / 10000[9]
-  10000[12] <- (LevelData[8] * 10000[1]) + (LevelData[9] * ((LevelData[11] * 1.8) / 2.0)) + LevelData[10]
-  10000[13] <- ((LevelData[2] * 10000[1]) + (LevelData[3] * ((LevelData[11] * 1.8) / 2.0)) + LevelData[4]) / 10000[12]
-  10000[14] <- ((LevelData[5] * 10000[1]) + (LevelData[6] * ((LevelData[11] * 1.8) / 2.0)) + LevelData[7]) / 10000[12]
-  10000[15] <- (((10000[13] - 10000[10]) + 10000[7]) - 10000[4]) / 2.0
-  10000[16] <- (10000[10] + 10000[13]) / 2.0
-  10000[17] <- (10000[4] + 10000[7]) / 2.0
-  10000[18] <- 10000[17] - (10000[15] / 2.0)
-  10000[19] <- 10000[17] + (10000[15] / 2.0)
-  10000[20] <- 10000[16] - (10000[15] / 2.0)
-  10000[21] <- 10000[16] + (10000[15] / 2.0)
-  10000[22] <- EntityMemory[2]
-  goto 53 if 10000[22] else 54
+  10000[8] <- 10000[0] + ((LevelData[11] * 1.8) / 2.0)
+  10000[9] <- 10000[0] - ((LevelData[11] * 1.8) / 2.0)
+  10000[10] <- (LevelData[8] * 10000[9]) + (LevelData[9] * (0 - ((LevelData[11] * 1.8) / 2.0))) + LevelData[10]
+  10000[11] <- ((LevelData[2] * 10000[9]) + (LevelData[3] * (0 - ((LevelData[11] * 1.8) / 2.0))) + LevelData[4]) / 10000[10]
+  10000[17] <- ((LevelData[5] * 10000[9]) + (LevelData[6] * (0 - ((LevelData[11] * 1.8) / 2.0))) + LevelData[7]) / 10000[10]
+  10000[0] <- (LevelData[8] * 10000[8]) + (LevelData[9] * (0 - ((LevelData[11] * 1.8) / 2.0))) + LevelData[10]
+  10000[1] <- ((LevelData[2] * 10000[8]) + (LevelData[3] * (0 - ((LevelData[11] * 1.8) / 2.0))) + LevelData[4]) / 10000[0]
+  10000[2] <- ((LevelData[5] * 10000[8]) + (LevelData[6] * (0 - ((LevelData[11] * 1.8) / 2.0))) + LevelData[7]) / 10000[0]
+  10000[3] <- (LevelData[8] * 10000[9]) + (LevelData[9] * ((LevelData[11] * 1.8) / 2.0)) + LevelData[10]
+  10000[4] <- ((LevelData[2] * 10000[9]) + (LevelData[3] * ((LevelData[11] * 1.8) / 2.0)) + LevelData[4]) / 10000[3]
+  10000[5] <- ((LevelData[5] * 10000[9]) + (LevelData[6] * ((LevelData[11] * 1.8) / 2.0)) + LevelData[7]) / 10000[3]
+  10000[6] <- (LevelData[8] * 10000[8]) + (LevelData[9] * ((LevelData[11] * 1.8) / 2.0)) + LevelData[10]
+  10000[7] <- ((LevelData[2] * 10000[8]) + (LevelData[3] * ((LevelData[11] * 1.8) / 2.0)) + LevelData[4]) / 10000[6]
+  10000[8] <- ((LevelData[5] * 10000[8]) + (LevelData[6] * ((LevelData[11] * 1.8) / 2.0)) + LevelData[7]) / 10000[6]
+  10000[9] <- (((10000[7] - 10000[4]) + 10000[1]) - 10000[11]) / 2.0
+  10000[10] <- (10000[4] + 10000[7]) / 2.0
+  10000[11] <- (10000[11] + 10000[1]) / 2.0
+  10000[12] <- 10000[11] - (10000[9] / 2.0)
+  10000[13] <- 10000[11] + (10000[9] / 2.0)
+  10000[14] <- 10000[10] - (10000[9] / 2.0)
+  10000[15] <- 10000[10] + (10000[9] / 2.0)
+  10000[16] <- EntityMemory[2]
+  goto 53 if 10000[16] else 54
 53:
-  10000[22] <- EntityMemory[2]
-  MoveParticleEffect(10000[22], 10000[18], 10000[5], 10000[20], 10000[11], 10000[21], 10000[14], 10000[19], 10000[8])
+  10000[16] <- EntityMemory[2]
+  MoveParticleEffect(10000[16], 10000[12], 10000[17], 10000[14], 10000[5], 10000[15], 10000[8], 10000[13], 10000[2])
   goto exit
 54:
-  10000[0] <- SpawnParticleEffect(5.0, 10000[18], 10000[5], 10000[20], 10000[11], 10000[21], 10000[14], 10000[19], 10000[8], 1.5, 1.0)
+  10000[0] <- SpawnParticleEffect(5.0, 10000[12], 10000[17], 10000[14], 10000[5], 10000[15], 10000[8], 10000[13], 10000[2], 1.5, 1.0)
   EntityMemory[2] <- 10000[0]
   goto exit
 55:
