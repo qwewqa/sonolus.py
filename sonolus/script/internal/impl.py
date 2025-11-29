@@ -4,7 +4,7 @@ from collections.abc import Callable
 from enum import Enum
 from functools import wraps
 from types import EllipsisType, FunctionType, MethodType, ModuleType, NoneType, NotImplementedType, UnionType
-from typing import TYPE_CHECKING, Annotated, Any, Final, Literal, TypeVar, Union, get_origin, overload
+from typing import TYPE_CHECKING, Annotated, Final, Literal, TypeVar, Union, get_origin, overload
 
 if TYPE_CHECKING:
     from sonolus.script.internal.value import Value
@@ -71,19 +71,16 @@ perf_meta_fn = meta_fn
 
 
 def validate_value[T](value: T) -> Value | T:
-    result = try_validate_value(value)
-    if result is None:
-        raise TypeError(f"Unsupported value: {value!r}")
-    return result
+    from sonolus.script.internal.value import Value
 
+    if isinstance(value, Value):
+        return value
 
-def try_validate_value(value: Any) -> Value | None:
     from sonolus.script.globals import _GlobalPlaceholder
     from sonolus.script.internal.constant import BasicConstantValue, TypingSpecialFormConstant
     from sonolus.script.internal.dict_impl import DictImpl
     from sonolus.script.internal.generic import PartialGeneric
     from sonolus.script.internal.tuple_impl import TupleImpl
-    from sonolus.script.internal.value import Value
     from sonolus.script.num import Num
 
     try:
@@ -102,8 +99,6 @@ def try_validate_value(value: Any) -> Value | None:
             raise RuntimeError(f"Error initializing value {value}: {e}") from e
 
     match value:
-        case Value():
-            return value
         case int() | float() | bool():
             return Num._accept_(value)
         case Enum():
@@ -142,4 +137,4 @@ def try_validate_value(value: Any) -> Value | None:
         case comptime_value if getattr(comptime_value, "_is_comptime_value_", False):
             return BasicConstantValue.of(comptime_value)
         case _:
-            return None
+            raise TypeError(f"Unsupported value: {value!r}")
