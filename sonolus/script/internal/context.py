@@ -12,7 +12,13 @@ from sonolus.backend.blocks import BlockData, PlayBlock
 from sonolus.backend.ir import IRConst, IRExpr, IRStmt
 from sonolus.backend.mode import Mode
 from sonolus.backend.optimize.flow import BasicBlock, FlowEdge
-from sonolus.backend.place import Block, BlockPlace, TempBlock
+from sonolus.backend.place import (
+    PREALLOCATED_TEMP_PLACE_COUNT,
+    Block,
+    BlockPlace,
+    TempBlock,
+    preallocated_temp_block_places,
+)
 from sonolus.script.globals import _GlobalInfo, _GlobalPlaceholder
 from sonolus.script.internal.value import Value
 
@@ -269,6 +275,8 @@ class Context:
             return BlockPlace(TempBlock(name or "e", 0), 0)
         name = name or ("v" if size == 1 else "a")
         num = self._get_alloc_number(name)
+        if name == "v" and num < PREALLOCATED_TEMP_PLACE_COUNT:
+            return preallocated_temp_block_places[num]
         return BlockPlace(TempBlock(f"{name}{num}", size), 0)
 
     def _get_alloc_number(self, name: str) -> int:

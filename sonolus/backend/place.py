@@ -162,3 +162,9 @@ class SSAPlace:
     def __iter__(self):
         yield self.name
         yield self.num
+
+
+PREALLOCATED_TEMP_PLACE_COUNT = 16384
+preallocated_temp_block_places: list[BlockPlace] = [
+    BlockPlace(TempBlock(f"v{i}", 1), 0) for i in range(PREALLOCATED_TEMP_PLACE_COUNT)
+]
