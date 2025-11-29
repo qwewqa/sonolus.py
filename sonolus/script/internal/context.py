@@ -285,6 +285,12 @@ class Context:
         self.used_names[name] += 1
         return self.used_names[name]
 
+    def save_alloc_state(self) -> dict[str, int]:
+        return self.used_names.copy()
+
+    def restore_alloc_state(self, state: dict[str, int]):
+        self.callback_state.used_names = state.copy()
+
     def copy_with_scope(self, scope: Scope) -> Context:
         return Context(
             project_state=self.project_state,

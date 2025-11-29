@@ -320,6 +320,7 @@ class Visitor(ast.NodeVisitor):
     def run(self, node):
         completion_timer = mark_start(self.qualified_name)
         before_ctx = ctx()
+        before_alloc_state = ctx().save_alloc_state()
         start_ctx = before_ctx.branch_with_scope(None, Scope())
         set_ctx(start_ctx)
         for name, value in self.bound_args.arguments.items():
@@ -413,6 +414,10 @@ class Visitor(ast.NodeVisitor):
         if not isinstance(result_binding, ValueBinding):
             raise ValueError("Function has conflicting return values")
         set_ctx(after_ctx.branch_with_scope(None, before_ctx.scope.copy()))
+        # Noting could have escaped, so allow reuse, which can allow naive allocation to succeed in the optimizer for
+        # better compile times.
+        if result_binding.value is validate_value(None):
+            ctx().restore_alloc_state(before_alloc_state)
         completion_timer()
         return result_binding.value
 
