@@ -1,3 +1,7 @@
+### 0.13.1
+
+- Improved dev server build times.
+
 ### 0.13.0
 
 - Compile time exception stack traces now show function names.
