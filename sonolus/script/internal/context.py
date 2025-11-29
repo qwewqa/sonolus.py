@@ -2,7 +2,6 @@ from __future__ import annotations
 
 from collections.abc import Iterable, Sequence
 from contextlib import contextmanager
-from contextvars import ContextVar
 from dataclasses import dataclass
 from enum import Enum
 from threading import Lock
@@ -27,7 +26,7 @@ if TYPE_CHECKING:
 
 _compiler_internal_ = True
 
-context_var: ContextVar[Context | None] = ContextVar("context_var", default=None)  # type: ignore
+_context: Context | None = None
 
 
 @dataclass(frozen=True)
@@ -46,7 +45,7 @@ _disabled_debug_config = DebugConfig(
     unchecked_writes=False,
 )
 
-debug_var = ContextVar("debug_var", default=_disabled_debug_config)
+_debug_config: DebugConfig = _disabled_debug_config
 
 
 class RuntimeChecks(Enum):
@@ -439,20 +438,25 @@ class Context:
 
 
 def ctx() -> Context | Any:  # Using Any to silence type checker warnings if it's None
-    return context_var.get()
+    return _context
 
 
 def set_ctx(value: Context | None):
-    return context_var.set(value)
+    global _context
+    old_value = _context
+    _context = value
+    return old_value
 
 
 @contextmanager
 def using_ctx(value: Context | None):
-    token = context_var.set(value)
+    global _context
+    old_value = _context
+    _context = value
     try:
         yield
     finally:
-        context_var.reset(token)
+        _context = old_value
 
 
 class ReadOnlyMemory:
@@ -495,17 +499,19 @@ class ReadOnlyMemory:
 
 @contextmanager
 def enable_debug(config: DebugConfig | None = None):
+    global _debug_config
     if config is None:
         config = _full_debug_config
-    token = debug_var.set(config)
+    old_config = _debug_config
+    _debug_config = config
     try:
         yield
     finally:
-        debug_var.reset(token)
+        _debug_config = old_config
 
 
 def debug_config() -> DebugConfig:
-    return debug_var.get()
+    return _debug_config
 
 
 @dataclass
