@@ -1,5 +1,6 @@
 from math import isfinite, isinf, isnan
 
+from sonolus.backend.blocks import PlayBlock, PreviewBlock, TutorialBlock, WatchBlock
 from sonolus.backend.ir import IRConst, IRGet, IRInstr, IRPureInstr, IRSet
 from sonolus.backend.node import EngineNode, FunctionNode
 from sonolus.backend.ops import Op
@@ -76,35 +77,63 @@ def cfg_to_engine_node(entry: BasicBlock):
     return result
 
 
+def _numeric_to_engine_node(value: float | int) -> EngineNode:
+    value = float(value)
+    if value.is_integer():
+        return int(value)
+    elif isfinite(value):
+        return value
+    elif isinf(value):
+        # Read values from ROM
+        return FunctionNode(Op.Get, args=(3000, 1 if value > 0 else 2))
+    elif isnan(value):
+        # Read value from ROM
+        return FunctionNode(Op.Get, args=(3000, 0))
+    else:
+        raise ValueError(f"Invalid constant value: {value}")
+
+
+def _ir_const_to_engine_node(stmt: IRConst) -> EngineNode:
+    return _numeric_to_engine_node(stmt.value)
+
+
+def _ir_instr_to_engine_node(stmt: IRInstr | IRPureInstr) -> EngineNode:
+    return FunctionNode(func=stmt.op, args=tuple(ir_to_engine_node(arg) for arg in stmt.args))
+
+
+def _ir_get_to_engine_node(stmt: IRGet) -> EngineNode:
+    return ir_to_engine_node(stmt.place)
+
+
+def _block_place_to_engine_node(stmt: BlockPlace) -> EngineNode:
+    if stmt.offset == 0:
+        index = ir_to_engine_node(stmt.index)
+    elif stmt.index == 0:
+        index = stmt.offset
+    else:
+        index = FunctionNode(func=Op.Add, args=(ir_to_engine_node(stmt.index), stmt.offset))
+    return FunctionNode(func=Op.Get, args=(ir_to_engine_node(stmt.block), index))
+
+
+def _ir_set_to_engine_node(stmt: IRSet) -> EngineNode:
+    return FunctionNode(func=Op.Set, args=(*ir_to_engine_node(stmt.place).args, ir_to_engine_node(stmt.value)))
+
+
+_ir_to_engine_node_actions = {
+    int: _numeric_to_engine_node,
+    PlayBlock: _numeric_to_engine_node,
+    WatchBlock: _numeric_to_engine_node,
+    PreviewBlock: _numeric_to_engine_node,
+    TutorialBlock: _numeric_to_engine_node,
+    float: _numeric_to_engine_node,
+    IRConst: _ir_const_to_engine_node,
+    IRPureInstr: _ir_instr_to_engine_node,
+    IRInstr: _ir_instr_to_engine_node,
+    IRGet: _ir_get_to_engine_node,
+    BlockPlace: _block_place_to_engine_node,
+    IRSet: _ir_set_to_engine_node,
+}
+
+
 def ir_to_engine_node(stmt) -> EngineNode:
-    match stmt:
-        case int(value) | float(value) | IRConst(value=int(value) | float(value)):
-            value = float(value)
-            if value.is_integer():
-                return int(value)
-            elif isfinite(value):
-                return value
-            elif isinf(value):
-                # Read values from ROM
-                return FunctionNode(Op.Get, args=(3000, 1 if value > 0 else 2))
-            elif isnan(value):
-                # Read value from ROM
-                return FunctionNode(Op.Get, args=(3000, 0))
-            else:
-                raise ValueError(f"Invalid constant value: {value}")
-        case IRPureInstr(op=op, args=args) | IRInstr(op=op, args=args):
-            return FunctionNode(func=op, args=tuple(ir_to_engine_node(arg) for arg in args))
-        case IRGet(place=place):
-            return ir_to_engine_node(place)
-        case BlockPlace() as place:
-            if place.offset == 0:
-                index = ir_to_engine_node(place.index)
-            elif place.index == 0:
-                index = place.offset
-            else:
-                index = FunctionNode(func=Op.Add, args=(ir_to_engine_node(place.index), place.offset))
-            return FunctionNode(func=Op.Get, args=(ir_to_engine_node(place.block), index))
-        case IRSet(place=place, value=value):
-            return FunctionNode(func=Op.Set, args=(*ir_to_engine_node(place).args, ir_to_engine_node(value)))
-        case _:
-            raise TypeError(f"Unsupported IR statement: {stmt}")
+    return _ir_to_engine_node_actions.get(type(stmt), _block_place_to_engine_node)(stmt)
