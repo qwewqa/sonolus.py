@@ -4,7 +4,8 @@ from collections.abc import Callable
 from typing import Any
 
 from sonolus.script.internal.context import ctx
-from sonolus.script.internal.impl import meta_fn, validate_value
+from sonolus.script.internal.impl import validate_value
+from sonolus.script.internal.meta_fn import meta_fn
 from sonolus.script.internal.transient import TransientValue
 from sonolus.script.internal.value import Value
 from sonolus.script.num import Num

@@ -2,7 +2,8 @@ from typing import Final, Self
 
 from sonolus.script.array_like import ArrayLike, get_positive_index
 from sonolus.script.internal.context import ctx
-from sonolus.script.internal.impl import meta_fn, validate_value
+from sonolus.script.internal.impl import validate_value
+from sonolus.script.internal.meta_fn import meta_fn
 from sonolus.script.iterator import SonolusIterator
 from sonolus.script.maybe import Maybe, Nothing, Some
 from sonolus.script.num import Num

@@ -17,7 +17,7 @@ from sonolus.script.internal.generic import (
     validate_concrete_type,
     validate_type_spec_with_extras,
 )
-from sonolus.script.internal.impl import meta_fn
+from sonolus.script.internal.meta_fn import meta_fn
 from sonolus.script.internal.value import BackingSource, DataValue, Value
 from sonolus.script.num import Num
 

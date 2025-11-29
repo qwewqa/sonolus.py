@@ -30,7 +30,7 @@ from sonolus.script.globals import (
     _watch_runtime_update,
 )
 from sonolus.script.internal.context import ctx
-from sonolus.script.internal.impl import meta_fn, perf_meta_fn
+from sonolus.script.internal.meta_fn import meta_fn, perf_meta_fn
 from sonolus.script.num import Num
 from sonolus.script.quad import Quad, Rect
 from sonolus.script.record import Record

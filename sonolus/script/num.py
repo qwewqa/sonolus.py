@@ -11,7 +11,7 @@ from sonolus.backend.ops import Op
 from sonolus.backend.place import BlockPlace
 from sonolus.script.internal.context import ctx
 from sonolus.script.internal.error import InternalError
-from sonolus.script.internal.impl import meta_fn
+from sonolus.script.internal.simple_meta_fn import simple_meta_fn
 from sonolus.script.internal.value import BackingValue, DataValue, ExprBackingValue, Value
 
 
@@ -38,7 +38,7 @@ class _Num(Value, metaclass=_NumMeta):
     def __init__(self, data: DataValue | IRExpr):
         if isinstance(data, int):
             data = float(data)
-        if isinstance(data, IRConst | IRPureInstr | IRGet):
+        elif isinstance(data, IRConst | IRPureInstr | IRGet):
             data = ExprBackingValue(data)
         self.data = data
 
@@ -87,7 +87,7 @@ class _Num(Value, metaclass=_NumMeta):
         )
 
     def _is_py_(self) -> bool:
-        return isinstance(self.data, float | int | bool) or self._is_rom_constant()
+        return isinstance(self.data, float | int) or self._is_rom_constant()
 
     def _as_py_(self) -> Any:
         if not self._is_py_():
@@ -217,7 +217,7 @@ class _Num(Value, metaclass=_NumMeta):
         else:
             raise InternalError("Unexpected call on non-comptime Num instance outside a compilation context")
 
-    @meta_fn
+    @simple_meta_fn
     def __eq__(self, other) -> Self:
         def const_fn(a: Self, b: Self) -> Num | None:
             if a._is_py_() and b._is_py_():
@@ -233,7 +233,7 @@ class _Num(Value, metaclass=_NumMeta):
             return hash(self._as_py_())
         raise ValueError("Cannot hash non compile time constant Num")
 
-    @meta_fn
+    @simple_meta_fn
     def __ne__(self, other) -> Self:
         def const_fn(a: Self, b: Self) -> Num | None:
             if a._is_py_() and b._is_py_():
@@ -244,7 +244,7 @@ class _Num(Value, metaclass=_NumMeta):
 
         return self._bin_op(other, const_fn, Op.NotEqual)
 
-    @meta_fn
+    @simple_meta_fn
     def __lt__(self, other) -> Self:
         def const_fn(a: Self, b: Self) -> Num | None:
             if a._is_py_() and b._is_py_():
@@ -255,7 +255,7 @@ class _Num(Value, metaclass=_NumMeta):
 
         return self._bin_op(other, const_fn, Op.Less)
 
-    @meta_fn
+    @simple_meta_fn
     def __le__(self, other) -> Self:
         def const_fn(a: Self, b: Self) -> Num | None:
             if a._is_py_() and b._is_py_():
@@ -266,7 +266,7 @@ class _Num(Value, metaclass=_NumMeta):
 
         return self._bin_op(other, const_fn, Op.LessOr)
 
-    @meta_fn
+    @simple_meta_fn
     def __gt__(self, other) -> Self:
         def const_fn(a: Self, b: Self) -> Num | None:
             if a._is_py_() and b._is_py_():
@@ -277,7 +277,7 @@ class _Num(Value, metaclass=_NumMeta):
 
         return self._bin_op(other, const_fn, Op.Greater)
 
-    @meta_fn
+    @simple_meta_fn
     def __ge__(self, other) -> Self:
         def const_fn(a: Self, b: Self) -> Num | None:
             if a._is_py_() and b._is_py_():
@@ -288,7 +288,7 @@ class _Num(Value, metaclass=_NumMeta):
 
         return self._bin_op(other, const_fn, Op.GreaterOr)
 
-    @meta_fn
+    @simple_meta_fn
     def __add__(self, other) -> Self:
         def const_fn(a: Self, b: Self) -> Num | None:
             a_py = a._as_py_or_none()
@@ -303,7 +303,7 @@ class _Num(Value, metaclass=_NumMeta):
 
         return self._bin_op(other, const_fn, Op.Add)
 
-    @meta_fn
+    @simple_meta_fn
     def __sub__(self, other) -> Self:
         def const_fn(a: Self, b: Self) -> Num | None:
             a_py = a._as_py_or_none()
@@ -318,7 +318,7 @@ class _Num(Value, metaclass=_NumMeta):
 
         return self._bin_op(other, const_fn, Op.Subtract)
 
-    @meta_fn
+    @simple_meta_fn
     def __mul__(self, other) -> Self:
         def const_fn(a: Self, b: Self) -> Num | None:
             a_py = a._as_py_or_none()
@@ -335,7 +335,7 @@ class _Num(Value, metaclass=_NumMeta):
 
         return self._bin_op(other, const_fn, Op.Multiply)
 
-    @meta_fn
+    @simple_meta_fn
     def __truediv__(self, other) -> Self:
         def const_fn(a: Self, b: Self) -> Num | None:
             a_py = a._as_py_or_none()
@@ -352,7 +352,7 @@ class _Num(Value, metaclass=_NumMeta):
 
         return self._bin_op(other, const_fn, Op.Divide)
 
-    @meta_fn
+    @simple_meta_fn
     def __floordiv__(self, other) -> Self:
         def const_fn(a: Self, b: Self) -> Num | None:
             a_py = a._as_py_or_none()
@@ -369,7 +369,7 @@ class _Num(Value, metaclass=_NumMeta):
 
         return self._bin_op(other, const_fn, Op.Divide)._unary_op(lambda x: x, Op.Floor)
 
-    @meta_fn
+    @simple_meta_fn
     def __mod__(self, other) -> Self:
         def const_fn(a: Self, b: Self) -> Num | None:
             a_py = a._as_py_or_none()
@@ -382,7 +382,7 @@ class _Num(Value, metaclass=_NumMeta):
 
         return self._bin_op(other, const_fn, Op.Mod)
 
-    @meta_fn
+    @simple_meta_fn
     def __pow__(self, other) -> Self:
         def const_fn(a: Self, b: Self) -> Num | None:
             a_py = a._as_py_or_none()
@@ -400,61 +400,61 @@ class _Num(Value, metaclass=_NumMeta):
 
         return self._bin_op(other, const_fn, Op.Power)
 
-    @meta_fn
+    @simple_meta_fn
     def __radd__(self, other) -> Self:
         if not Num._accepts_(other):
             return NotImplemented
         return Num._accept_(other).__add__(self)
 
-    @meta_fn
+    @simple_meta_fn
     def __rsub__(self, other) -> Self:
         if not Num._accepts_(other):
             return NotImplemented
         return Num._accept_(other).__sub__(self)
 
-    @meta_fn
+    @simple_meta_fn
     def __rmul__(self, other) -> Self:
         if not Num._accepts_(other):
             return NotImplemented
         return Num._accept_(other).__mul__(self)
 
-    @meta_fn
+    @simple_meta_fn
     def __rtruediv__(self, other) -> Self:
         if not Num._accepts_(other):
             return NotImplemented
         return Num._accept_(other).__truediv__(self)
 
-    @meta_fn
+    @simple_meta_fn
     def __rfloordiv__(self, other) -> Self:
         if not Num._accepts_(other):
             return NotImplemented
         return Num._accept_(other).__floordiv__(self)
 
-    @meta_fn
+    @simple_meta_fn
     def __rmod__(self, other) -> Self:
         if not Num._accepts_(other):
             return NotImplemented
         return Num._accept_(other).__mod__(self)
 
-    @meta_fn
+    @simple_meta_fn
     def __rpow__(self, other) -> Self:
         if not Num._accepts_(other):
             return NotImplemented
         return Num._accept_(other).__pow__(self)
 
-    @meta_fn
+    @simple_meta_fn
     def __neg__(self) -> Self:
         return self._unary_op(operator.neg, Op.Negate)
 
-    @meta_fn
+    @simple_meta_fn
     def __pos__(self) -> Self:
         return self
 
-    @meta_fn
+    @simple_meta_fn
     def __abs__(self) -> Self:
         return self._unary_op(abs, Op.Abs)
 
-    @meta_fn
+    @simple_meta_fn
     def __bool__(self):
         if ctx():
             return self != 0

@@ -7,8 +7,8 @@ from typing import Annotated, Any, NewType, dataclass_transform, get_origin
 from sonolus.backend.ops import Op
 from sonolus.script.array_like import ArrayLike, check_positive_index
 from sonolus.script.debug import static_error
-from sonolus.script.internal.impl import perf_meta_fn
 from sonolus.script.internal.introspection import get_field_specifiers
+from sonolus.script.internal.meta_fn import perf_meta_fn
 from sonolus.script.internal.native import native_function
 from sonolus.script.quad import QuadLike, flatten_quad
 from sonolus.script.record import Record

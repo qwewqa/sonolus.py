@@ -9,8 +9,8 @@ from sonolus.backend.ops import Op
 from sonolus.script.array_like import check_positive_index
 from sonolus.script.internal.context import ctx
 from sonolus.script.internal.descriptor import SonolusDescriptor
-from sonolus.script.internal.impl import meta_fn
 from sonolus.script.internal.introspection import get_field_specifiers
+from sonolus.script.internal.meta_fn import meta_fn
 from sonolus.script.internal.native import native_function
 from sonolus.script.internal.value import BackingValue, Value
 from sonolus.script.iterator import SonolusIterator

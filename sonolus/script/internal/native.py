@@ -5,7 +5,7 @@ from collections.abc import Callable
 from sonolus.backend.ir import IRInstr, IRPureInstr, IRSet
 from sonolus.backend.ops import Op
 from sonolus.script.internal.context import ctx
-from sonolus.script.internal.impl import meta_fn, validate_value
+from sonolus.script.internal.impl import validate_value
 from sonolus.script.num import Num, _is_num
 
 
@@ -24,7 +24,6 @@ def native_function[**P, R](op: Op, const_eval: bool = False) -> Callable[[Calla
     def decorator(fn: Callable[P, int | float | bool]) -> Callable[P, Num]:
         signature = inspect.signature(fn)
 
-        @meta_fn
         @functools.wraps(fn)
         def wrapper(*args: int | float | bool) -> Num:
             if len(args) < sum(1 for p in signature.parameters.values() if p.default == inspect.Parameter.empty):
@@ -41,6 +40,7 @@ def native_function[**P, R](op: Op, const_eval: bool = False) -> Callable[[Calla
                 return native_call(op, *bound_args.args)
             return fn(*args)  # type: ignore
 
+        wrapper._meta_fn_ = True
         return wrapper
 
     return decorator  # type: ignore

@@ -7,8 +7,8 @@ from typing import Annotated, Any, NewType, dataclass_transform, get_origin
 from sonolus.backend.mode import Mode
 from sonolus.backend.ops import Op
 from sonolus.script.internal.context import ctx
-from sonolus.script.internal.impl import meta_fn, perf_meta_fn
 from sonolus.script.internal.introspection import get_field_specifiers
+from sonolus.script.internal.meta_fn import meta_fn, perf_meta_fn
 from sonolus.script.internal.native import native_function
 from sonolus.script.interval import Interval
 from sonolus.script.pointer import _deref

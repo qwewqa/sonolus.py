@@ -2,7 +2,7 @@ from __future__ import annotations
 
 from typing import Protocol, Self, assert_never, overload
 
-from sonolus.script.internal.impl import perf_meta_fn
+from sonolus.script.internal.meta_fn import perf_meta_fn
 from sonolus.script.record import Record
 from sonolus.script.values import zeros
 from sonolus.script.vec import Vec2, pnpoly

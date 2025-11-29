@@ -28,7 +28,8 @@ from sonolus.script.internal.context import (
 )
 from sonolus.script.internal.descriptor import SonolusDescriptor
 from sonolus.script.internal.error import CompilationError
-from sonolus.script.internal.impl import meta_fn, validate_value
+from sonolus.script.internal.impl import validate_value
+from sonolus.script.internal.meta_fn import meta_fn
 from sonolus.script.internal.transient import TransientValue
 from sonolus.script.internal.tuple_impl import TupleImpl
 from sonolus.script.internal.value import Value
@@ -489,8 +490,14 @@ class Visitor(ast.NodeVisitor):
         # We want this here so this is filtered out of tracebacks
         method = "visit_" + node.__class__.__name__
         visitor = getattr(self, method, self.generic_visit)
-        with self.reporting_errors_at_node(node):
+        # with self.reporting_errors_at_node(node):
+        #     return visitor(node)
+        try:
             return visitor(node)
+        except Exception as e:
+            if isinstance(e, CompilationError):
+                raise
+            self.raise_exception_at_node(node, e)
 
     def visit_FunctionDef(self, node):
         name = node.name

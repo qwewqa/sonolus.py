@@ -61,14 +61,18 @@ def traverse_cfg_preorder(block: BasicBlock) -> Iterator[BasicBlock]:
 
 
 def traverse_cfg_postorder(block: BasicBlock) -> Iterator[BasicBlock]:
-    visited = set()
+    visited = {block}
 
     def dfs(current: BasicBlock):
-        if current in visited:
-            return
-        visited.add(current)
         for edge in sorted(current.outgoing, key=lambda e: (e.cond is None, e.cond)):
-            yield from dfs(edge.dst)
+            dst = edge.dst
+            if dst in visited:
+                continue
+            visited.add(dst)
+            if dst.outgoing:
+                yield from dfs(dst)
+            else:
+                yield dst
         yield current
 
     yield from dfs(block)

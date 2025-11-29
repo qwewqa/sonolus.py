@@ -23,7 +23,8 @@ from sonolus.build.compile import callback_to_cfg
 from sonolus.script.debug import debug_log_callback, simulation_context
 from sonolus.script.internal.context import ModeContextState, ProjectContextState, RuntimeChecks, ctx
 from sonolus.script.internal.error import CompilationError
-from sonolus.script.internal.impl import meta_fn, validate_value
+from sonolus.script.internal.impl import validate_value
+from sonolus.script.internal.meta_fn import meta_fn
 from sonolus.script.internal.tuple_impl import TupleImpl
 from sonolus.script.num import Num
 from sonolus.script.vec import Vec2

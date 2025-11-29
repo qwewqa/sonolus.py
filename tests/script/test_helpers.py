@@ -2,7 +2,7 @@ import pytest
 
 from sonolus.script.debug import terminate
 from sonolus.script.internal.context import ctx
-from sonolus.script.internal.impl import meta_fn
+from sonolus.script.internal.meta_fn import meta_fn
 from tests.script.conftest import run_and_validate
 
 

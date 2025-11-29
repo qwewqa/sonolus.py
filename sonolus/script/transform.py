@@ -2,7 +2,7 @@ from __future__ import annotations
 
 from math import cos, sin
 
-from sonolus.script.internal.impl import perf_meta_fn
+from sonolus.script.internal.meta_fn import perf_meta_fn
 from sonolus.script.interval import lerp, remap
 from sonolus.script.quad import Quad, QuadLike
 from sonolus.script.record import Record

@@ -7,8 +7,8 @@ from typing import Any, Final
 
 from sonolus.script.debug import assert_true
 from sonolus.script.internal.context import ctx
-from sonolus.script.internal.impl import meta_fn
 from sonolus.script.internal.math_impls import _trunc
+from sonolus.script.internal.meta_fn import meta_fn
 from sonolus.script.iterator import SonolusIterator
 from sonolus.script.maybe import Maybe, Nothing, Some
 from sonolus.script.num import Num

@@ -1,7 +1,8 @@
 # ruff: noqa: B905
 from typing import Any, Self
 
-from sonolus.script.internal.impl import meta_fn, validate_value
+from sonolus.script.internal.impl import validate_value
+from sonolus.script.internal.simple_meta_fn import simple_meta_fn
 from sonolus.script.internal.transient import TransientValue
 
 
@@ -11,7 +12,7 @@ class TupleImpl(TransientValue):
     def __init__(self, value: tuple):
         self.value = value
 
-    @meta_fn
+    @simple_meta_fn
     def __getitem__(self, item):
         item = validate_value(item)
         if not item._is_py_():
@@ -27,7 +28,7 @@ class TupleImpl(TransientValue):
             item += len(self.value)
         return self.value[int(item)]
 
-    @meta_fn
+    @simple_meta_fn
     def __len__(self):
         return len(self.value)
 
@@ -86,7 +87,7 @@ class TupleImpl(TransientValue):
     def __hash__(self):
         return hash(self.value)
 
-    @meta_fn
+    @simple_meta_fn
     def __add__(self, other) -> Self:
         other = TupleImpl._accept_(other)
         return TupleImpl._accept_(self.value + other.value)
@@ -98,7 +99,7 @@ class TupleImpl(TransientValue):
         return False
 
     @staticmethod
-    @meta_fn
+    @simple_meta_fn
     def _is_tuple_impl(value: Any) -> bool:
         return isinstance(value, TupleImpl)
 

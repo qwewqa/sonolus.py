@@ -5,8 +5,9 @@ from collections.abc import Iterable
 from sonolus.script.debug import assert_true, is_static_true
 from sonolus.script.internal.builtin_impls import _max
 from sonolus.script.internal.context import ctx
-from sonolus.script.internal.impl import meta_fn, perf_meta_fn, validate_value
+from sonolus.script.internal.impl import validate_value
 from sonolus.script.internal.math_impls import _ceil, _round
+from sonolus.script.internal.meta_fn import meta_fn, perf_meta_fn
 from sonolus.script.internal.tuple_impl import TupleImpl
 from sonolus.script.interval import clamp
 from sonolus.script.num import Num, _is_num

@@ -4,7 +4,7 @@ from collections.abc import Iterator
 from typing import Any, Final
 
 from sonolus.script.internal.context import ctx
-from sonolus.script.internal.impl import meta_fn
+from sonolus.script.internal.meta_fn import meta_fn
 from sonolus.script.maybe import Maybe, Nothing, Some
 from sonolus.script.record import Record
 

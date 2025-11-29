@@ -18,8 +18,9 @@ from sonolus.script.internal.callbacks import PLAY_CALLBACKS, PREVIEW_CALLBACKS,
 from sonolus.script.internal.context import ctx
 from sonolus.script.internal.descriptor import SonolusDescriptor
 from sonolus.script.internal.generic import validate_concrete_type
-from sonolus.script.internal.impl import meta_fn, validate_value
+from sonolus.script.internal.impl import validate_value
 from sonolus.script.internal.introspection import get_field_specifiers
+from sonolus.script.internal.meta_fn import meta_fn
 from sonolus.script.internal.native import native_call
 from sonolus.script.internal.value import BackingValue, DataValue, Value
 from sonolus.script.num import Num

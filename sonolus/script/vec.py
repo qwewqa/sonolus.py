@@ -5,8 +5,8 @@ from math import pi
 from sonolus.script.array import Array
 from sonolus.script.array_like import ArrayLike
 from sonolus.script.debug import assert_false
-from sonolus.script.internal.impl import perf_meta_fn
 from sonolus.script.internal.math_impls import _atan2, _cos, _sin
+from sonolus.script.internal.meta_fn import perf_meta_fn
 from sonolus.script.num import Num
 from sonolus.script.record import Record
 

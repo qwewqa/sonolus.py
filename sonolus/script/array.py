@@ -11,7 +11,8 @@ from sonolus.script.debug import assert_unreachable
 from sonolus.script.internal.context import ctx
 from sonolus.script.internal.error import InternalError
 from sonolus.script.internal.generic import GenericValue
-from sonolus.script.internal.impl import meta_fn, perf_meta_fn, validate_value
+from sonolus.script.internal.impl import validate_value
+from sonolus.script.internal.meta_fn import meta_fn, perf_meta_fn
 from sonolus.script.internal.value import BackingSource, DataValue, Value
 from sonolus.script.num import Num
 

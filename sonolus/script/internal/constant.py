@@ -2,7 +2,7 @@ from collections.abc import Iterable
 from typing import Any, ClassVar, Self
 
 from sonolus.backend.place import BlockPlace
-from sonolus.script.internal.impl import meta_fn
+from sonolus.script.internal.simple_meta_fn import simple_meta_fn
 from sonolus.script.internal.value import DataValue, Value
 
 
@@ -128,15 +128,15 @@ class ConstantValue(Value):
     def _zero_(cls) -> Self:
         return cls()
 
-    @meta_fn
+    @simple_meta_fn
     def __eq__(self, other):
         return self is other
 
-    @meta_fn
+    @simple_meta_fn
     def __ne__(self, other):
         return self is not other
 
-    @meta_fn
+    @simple_meta_fn
     def __hash__(self):
         return hash(self.value())
 
@@ -148,7 +148,7 @@ class BasicConstantValue(ConstantValue):
 class TypingSpecialFormConstant(ConstantValue):
     """For constants that are typing special forms that have a [] operator."""
 
-    @meta_fn
+    @simple_meta_fn
     def __getitem__(self, item: Any) -> Self:
         if not item._is_py_():
             raise TypeError(f"Invalid value for type parameter: {item}")

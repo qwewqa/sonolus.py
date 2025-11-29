@@ -1,96 +1,26 @@
 from __future__ import annotations
 
-from collections.abc import Callable
 from enum import Enum
-from functools import wraps
 from types import EllipsisType, FunctionType, MethodType, ModuleType, NoneType, NotImplementedType, UnionType
-from typing import TYPE_CHECKING, Annotated, Final, Literal, TypeVar, Union, get_origin, overload
+from typing import TYPE_CHECKING, Annotated, Final, Literal, TypeVar, Union, get_origin
 
 if TYPE_CHECKING:
     from sonolus.script.internal.value import Value
 
 
-@overload
-def meta_fn[T: Callable](fn: T) -> T: ...
-
-
-@overload
-def meta_fn[T: Callable](show_in_stack: bool) -> Callable[[T], T]: ...
-
-
-def meta_fn(fn=None, *, show_in_stack: bool = True):
-    """Marks a function as a meta function to be called directly without the AST visitor.
-
-    This can also improve performance in some cases by avoiding the overhead of the AST visitor.
-    """
-
-    # noinspection PyShadowingNames
-    def decorator(fn):
-        from sonolus.backend.utils import get_function
-
-        base_fn = fn
-        while hasattr(base_fn, "__wrapped__"):
-            base_fn = base_fn.__wrapped__
-
-        function_name = getattr(base_fn, "__name__", "<unnamed>")
-        module = getattr(base_fn, "__module__", None)
-        if module is not None:
-            qualified_name = f"{module}.{getattr(base_fn, '__qualname__', function_name)}"
-        else:
-            qualified_name = f"<unknown>.{getattr(base_fn, '__qualname__', function_name)}"
-        source_file, node = get_function(base_fn)
-
-        @wraps(fn)
-        def wrapper(*args, **kwargs):
-            from sonolus.backend.visitor import mark_start
-            from sonolus.script.internal.context import ctx
-
-            if ctx():
-                completion_timer = mark_start(qualified_name)
-                debug_stack = ctx().callback_state.debug_stack
-                try:
-                    if show_in_stack:
-                        debug_stack.append(f'File "{source_file}", line {node.lineno}, in {function_name}')
-                    return fn(*args, **kwargs)
-                finally:
-                    if show_in_stack:
-                        debug_stack.pop()
-                    completion_timer()
-            return fn(*args, **kwargs)
-
-        wrapper._meta_fn_ = True
-        return wrapper
-
-    if fn is None:
-        return decorator
-    return decorator(fn)
-
-
-# To indicate this was used for performance reasons rather than functionality
-perf_meta_fn = meta_fn
-
-
 def validate_value[T](value: T) -> Value | T:
-    from sonolus.script.internal.value import Value
-
     if isinstance(value, Value):
         return value
-
-    from sonolus.script.globals import _GlobalPlaceholder
-    from sonolus.script.internal.constant import BasicConstantValue, TypingSpecialFormConstant
-    from sonolus.script.internal.dict_impl import DictImpl
-    from sonolus.script.internal.generic import PartialGeneric
-    from sonolus.script.internal.tuple_impl import TupleImpl
-    from sonolus.script.num import Num
-
-    try:
-        # Unfortunately this is called during import, so this may fail
-        from sonolus.script.internal.builtin_impls import BUILTIN_IMPLS
-
-        if id(value) in BUILTIN_IMPLS:
-            return validate_value(BUILTIN_IMPLS[id(value)])
-    except ImportError:
-        pass
+    if isinstance(value, int | float):
+        return Num._accept_(value)
+    if isinstance(value, Enum):
+        return validate_value(value.value)
+    if id(value) in BUILTIN_IMPLS:
+        return validate_value(BUILTIN_IMPLS[id(value)])
+    if isinstance(value, type):
+        if value in {int, float, bool}:
+            return constant.BasicConstantValue.of(Num)
+        return constant.BasicConstantValue.of(value)
 
     if hasattr(value, "_init_") and callable(value._init_):
         try:
@@ -98,43 +28,42 @@ def validate_value[T](value: T) -> Value | T:
         except Exception as e:
             raise RuntimeError(f"Error initializing value {value}: {e}") from e
 
-    match value:
-        case int() | float() | bool():
-            return Num._accept_(value)
-        case Enum():
-            return validate_value(value.value)
-        case type():
-            if value in {int, float, bool}:
-                return BasicConstantValue.of(Num)
-            return BasicConstantValue.of(value)
-        case tuple():
-            return TupleImpl._accept_(value)
-        case dict():
-            return DictImpl._accept_(value)
-        case set() | frozenset():
-            from sonolus.script.containers import FrozenNumSet
+    value_type = type(value)
+    if value_type in {
+        generic.PartialGeneric,
+        TypeVar,
+        FunctionType,
+        MethodType,
+        str,
+        ModuleType,
+        NoneType,
+        NotImplementedType,
+        EllipsisType,
+        super,
+    }:
+        return constant.BasicConstantValue.of(value)
+    if value_type is tuple:
+        return tuple_impl.TupleImpl._accept_(value)
+    if value_type is dict:
+        return dict_impl.DictImpl._accept_(value)
+    if value_type in {set, frozenset}:
+        from sonolus.script.containers import FrozenNumSet
 
-            return FrozenNumSet.of(*value)
-        case (
-            PartialGeneric()
-            | TypeVar()
-            | FunctionType()
-            | MethodType()
-            | str()
-            | ModuleType()
-            | NoneType()
-            | NotImplementedType()
-            | EllipsisType()
-            | super()
-        ):
-            return BasicConstantValue.of(value)
-        case special_form if value == Literal or value == Annotated or value == Union:  # noqa: PLR1714, SIM109
-            return TypingSpecialFormConstant.of(special_form)
-        case other_type if get_origin(value) in {Literal, Annotated, UnionType, Final, tuple, type}:
-            return BasicConstantValue.of(other_type)
-        case _GlobalPlaceholder():
-            return value.get()
-        case comptime_value if getattr(comptime_value, "_is_comptime_value_", False):
-            return BasicConstantValue.of(comptime_value)
-        case _:
-            raise TypeError(f"Unsupported value: {value!r}")
+        return FrozenNumSet.of(*value)
+    if get_origin(value) in {Literal, Annotated, UnionType, Final, tuple, type}:
+        return constant.BasicConstantValue.of(value)
+    if value in {Literal, Annotated, Union}:
+        return constant.TypingSpecialFormConstant.of(value)
+    if value_type is sonolus_globals._GlobalPlaceholder:
+        return value.get()
+    if getattr(value, "_is_comptime_value_", False):
+        return constant.BasicConstantValue.of(value)
+    raise TypeError(f"Unsupported value: {value!r}")
+
+
+from sonolus.script import globals as sonolus_globals
+from sonolus.script.internal import constant, dict_impl, generic, tuple_impl
+from sonolus.script.internal.value import Value
+from sonolus.script.num import Num
+
+BUILTIN_IMPLS = {}

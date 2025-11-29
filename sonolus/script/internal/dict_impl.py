@@ -1,6 +1,7 @@
 from typing import Any, Self
 
-from sonolus.script.internal.impl import meta_fn, validate_value
+from sonolus.script.internal.impl import validate_value
+from sonolus.script.internal.simple_meta_fn import simple_meta_fn
 from sonolus.script.internal.transient import TransientValue
 
 
@@ -8,7 +9,7 @@ class DictImpl(TransientValue):
     def __init__(self, value: dict):
         self.value = value
 
-    @meta_fn
+    @simple_meta_fn
     def __getitem__(self, item):
         item = validate_value(item)
         if not item._is_py_():
@@ -18,7 +19,7 @@ class DictImpl(TransientValue):
             raise KeyError(item)
         return self.value[item]
 
-    @meta_fn
+    @simple_meta_fn
     def __contains__(self, item):
         item = validate_value(item)
         if not item._is_py_():
@@ -26,7 +27,7 @@ class DictImpl(TransientValue):
         item = item._as_py_()
         return item in self.value
 
-    @meta_fn
+    @simple_meta_fn
     def __len__(self):
         return len(self.value)
 
@@ -35,7 +36,7 @@ class DictImpl(TransientValue):
 
     __hash__ = None
 
-    @meta_fn
+    @simple_meta_fn
     def __or__(self, other):
         if not isinstance(other, DictImpl):
             raise TypeError("Only dicts can be merged")

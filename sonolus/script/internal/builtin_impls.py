@@ -5,10 +5,12 @@ from sonolus.backend.ops import Op
 from sonolus.script.array import Array
 from sonolus.script.array_like import ArrayLike
 from sonolus.script.debug import error, require
+from sonolus.script.internal import impl
 from sonolus.script.internal.context import ctx
 from sonolus.script.internal.dict_impl import DictImpl
-from sonolus.script.internal.impl import meta_fn, validate_value
+from sonolus.script.internal.impl import validate_value
 from sonolus.script.internal.math_impls import MATH_BUILTIN_IMPLS, _trunc
+from sonolus.script.internal.meta_fn import meta_fn
 from sonolus.script.internal.native import native_function
 from sonolus.script.internal.random import RANDOM_BUILTIN_IMPLS
 from sonolus.script.internal.range import Range
@@ -554,3 +556,6 @@ BUILTIN_IMPLS = {
     **MATH_BUILTIN_IMPLS,  # Includes round
     **RANDOM_BUILTIN_IMPLS,
 }
+
+# Hack to get around circular import issues
+impl.BUILTIN_IMPLS = BUILTIN_IMPLS

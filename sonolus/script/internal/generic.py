@@ -5,7 +5,8 @@ from enum import Enum
 from types import UnionType
 from typing import Annotated, Any, ClassVar, Final, Literal, Self, TypeVar, get_origin
 
-from sonolus.script.internal.impl import meta_fn, validate_value
+from sonolus.script.internal.impl import validate_value
+from sonolus.script.internal.simple_meta_fn import simple_meta_fn
 from sonolus.script.internal.value import Value
 
 type AnyType = type[Value] | PartialGeneric | TypeVar
@@ -132,7 +133,7 @@ class GenericValue(Value):
         return cls._type_args_ is not None
 
     @classmethod
-    @meta_fn
+    @simple_meta_fn
     def type_var_value(cls, var: TypeVar) -> Any:
         if isinstance(var, Value):
             var = var._as_py_()

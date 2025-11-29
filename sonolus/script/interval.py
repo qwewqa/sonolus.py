@@ -4,7 +4,7 @@ from sonolus.backend.ops import Op
 from sonolus.script.array_like import ArrayLike
 from sonolus.script.debug import static_error
 from sonolus.script.internal.builtin_impls import _max, _min
-from sonolus.script.internal.impl import perf_meta_fn
+from sonolus.script.internal.meta_fn import perf_meta_fn
 from sonolus.script.internal.native import native_function
 from sonolus.script.internal.range import range_or_tuple
 from sonolus.script.num import Num

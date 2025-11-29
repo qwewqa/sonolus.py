@@ -1,6 +1,7 @@
 from sonolus.script.internal.context import ctx
 from sonolus.script.internal.generic import validate_concrete_type
-from sonolus.script.internal.impl import meta_fn, validate_value
+from sonolus.script.internal.impl import validate_value
+from sonolus.script.internal.meta_fn import meta_fn
 
 
 @meta_fn

@@ -1,6 +1,7 @@
 from sonolus.backend.place import BlockPlace
 from sonolus.script.internal.context import ctx
-from sonolus.script.internal.impl import meta_fn, validate_value
+from sonolus.script.internal.impl import validate_value
+from sonolus.script.internal.meta_fn import meta_fn
 from sonolus.script.internal.value import BackingSource, Value
 from sonolus.script.num import Num, _is_num
 

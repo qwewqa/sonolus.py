@@ -18,10 +18,10 @@ from sonolus.backend.place import (
     TempBlock,
     preallocated_temp_block_places,
 )
-from sonolus.script.globals import _GlobalInfo, _GlobalPlaceholder
 from sonolus.script.internal.value import Value
 
 if TYPE_CHECKING:
+    from sonolus.script.globals import _GlobalInfo, _GlobalPlaceholder
     from sonolus.script.project import BuildConfig
 
 _compiler_internal_ = True
@@ -442,7 +442,7 @@ def ctx() -> Context | Any:  # Using Any to silence type checker warnings if it'
 
 
 def set_ctx(value: Context | None):
-    global _context
+    global _context  # noqa: PLW0603
     old_value = _context
     _context = value
     return old_value
@@ -450,7 +450,7 @@ def set_ctx(value: Context | None):
 
 @contextmanager
 def using_ctx(value: Context | None):
-    global _context
+    global _context  # noqa: PLW0603
     old_value = _context
     _context = value
     try:
@@ -499,7 +499,7 @@ class ReadOnlyMemory:
 
 @contextmanager
 def enable_debug(config: DebugConfig | None = None):
-    global _debug_config
+    global _debug_config  # noqa: PLW0603
     if config is None:
         config = _full_debug_config
     old_config = _debug_config
@@ -531,6 +531,8 @@ class EmptyBinding:
 
 Binding = ValueBinding | ConflictBinding | EmptyBinding
 
+_EMPTY_BINDING = EmptyBinding()
+
 
 class Scope:
     bindings: dict[str, Binding]
@@ -539,7 +541,7 @@ class Scope:
         self.bindings = bindings or {}
 
     def get_binding(self, name: str) -> Binding:
-        return self.bindings.get(name, EmptyBinding())
+        return self.bindings.get(name, _EMPTY_BINDING)
 
     def set_binding(self, name: str, binding: Binding):
         self.bindings[name] = binding
