@@ -822,6 +822,8 @@ class _LevelLife:
     consecutive_great_step: float
     consecutive_good_increment: float
     consecutive_good_step: float
+    initial: int
+    maximum: int
 
     def update(
         self,
@@ -831,6 +833,8 @@ class _LevelLife:
         consecutive_great_step: float | None = None,
         consecutive_good_increment: float | None = None,
         consecutive_good_step: float | None = None,
+        initial: int | None = None,
+        maximum: int | None = None,
     ):
         if consecutive_perfect_increment is not None:
             self.consecutive_perfect_increment = consecutive_perfect_increment
@@ -844,6 +848,10 @@ class _LevelLife:
             self.consecutive_good_increment = consecutive_good_increment
         if consecutive_good_step is not None:
             self.consecutive_good_step = consecutive_good_step
+        if initial is not None:
+            self.initial = initial
+        if maximum is not None:
+            self.maximum = maximum
 
 
 @_tutorial_instruction
