@@ -4,7 +4,7 @@ import inspect
 from abc import abstractmethod
 from collections.abc import Callable, Sequence
 from dataclasses import dataclass
-from enum import Enum, StrEnum
+from enum import Enum, IntEnum, StrEnum
 from types import FunctionType
 from typing import Annotated, Any, ClassVar, Self, TypedDict, get_origin
 
@@ -1294,11 +1294,31 @@ class ArchetypeLife(Record):
             self.miss_increment = miss_increment
 
 
+class HapticType(IntEnum):
+    """The type of haptic feedback for a judgment."""
+
+    NONE = 0
+    """No haptic feedback."""
+
+    LIGHT = 1
+    """Light haptic feedback."""
+
+    MEDIUM = 2
+    """Medium haptic feedback."""
+
+    HEAVY = 3
+    """Heavy haptic feedback."""
+
+    LONG = 4
+    """Long haptic feedback."""
+
+
 class PlayEntityInput(Record):
     judgment: Judgment
     accuracy: float
     bucket: Bucket
     bucket_value: float
+    haptic: HapticType
 
 
 class WatchEntityInput(Record):
