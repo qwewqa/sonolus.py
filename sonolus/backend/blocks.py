@@ -351,6 +351,34 @@ class PlayBlock(BlockEnum):
             "terminate",
         },
     )
+    EntityScore = (
+        4006,
+        {
+            "preprocess",
+            "spawnOrder",
+            "shouldSpawn",
+            "initialize",
+            "updateSequential",
+            "touch",
+            "updateParallel",
+            "terminate",
+        },
+        {"preprocess"},
+    )
+    EntityLife = (
+        4007,
+        {
+            "preprocess",
+            "spawnOrder",
+            "shouldSpawn",
+            "initialize",
+            "updateSequential",
+            "touch",
+            "updateParallel",
+            "terminate",
+        },
+        {"preprocess"},
+    )
     EntityDataArray = (
         4101,
         {
@@ -393,8 +421,50 @@ class PlayBlock(BlockEnum):
         },
         {},
     )
+    EntityScoreArray = (
+        4106,
+        {
+            "preprocess",
+            "spawnOrder",
+            "shouldSpawn",
+            "initialize",
+            "updateSequential",
+            "touch",
+            "updateParallel",
+            "terminate",
+        },
+        {"preprocess"},
+    )
+    EntityLifeArray = (
+        4107,
+        {
+            "preprocess",
+            "spawnOrder",
+            "shouldSpawn",
+            "initialize",
+            "updateSequential",
+            "touch",
+            "updateParallel",
+            "terminate",
+        },
+        {"preprocess"},
+    )
     ArchetypeLife = (
         5000,
+        {
+            "preprocess",
+            "spawnOrder",
+            "shouldSpawn",
+            "initialize",
+            "updateSequential",
+            "touch",
+            "updateParallel",
+            "terminate",
+        },
+        {"preprocess"},
+    )
+    ArchetypeScore = (
+        5001,
         {
             "preprocess",
             "spawnOrder",
@@ -672,6 +742,34 @@ class WatchBlock(BlockEnum):
         {"preprocess", "spawnTime", "despawnTime", "initialize", "updateSequential", "updateParallel", "terminate"},
         {"preprocess"},
     )
+    EntityScore = (
+        4005,
+        {
+            "preprocess",
+            "spawnTime",
+            "despawnTime",
+            "initialize",
+            "updateSequential",
+            "updateParallel",
+            "terminate",
+            "updateSpawn",
+        },
+        {"preprocess"},
+    )
+    EntityLife = (
+        4006,
+        {
+            "preprocess",
+            "spawnTime",
+            "despawnTime",
+            "initialize",
+            "updateSequential",
+            "updateParallel",
+            "terminate",
+            "updateSpawn",
+        },
+        {"preprocess"},
+    )
     EntityDataArray = (
         4101,
         {
@@ -714,8 +812,50 @@ class WatchBlock(BlockEnum):
         },
         {},
     )
+    EntityScoreArray = (
+        4105,
+        {
+            "preprocess",
+            "spawnTime",
+            "despawnTime",
+            "initialize",
+            "updateSequential",
+            "updateParallel",
+            "terminate",
+            "updateSpawn",
+        },
+        {"preprocess"},
+    )
+    EntityLifeArray = (
+        4106,
+        {
+            "preprocess",
+            "spawnTime",
+            "despawnTime",
+            "initialize",
+            "updateSequential",
+            "updateParallel",
+            "terminate",
+            "updateSpawn",
+        },
+        {"preprocess"},
+    )
     ArchetypeLife = (
         5000,
+        {
+            "preprocess",
+            "spawnTime",
+            "despawnTime",
+            "initialize",
+            "updateSequential",
+            "updateParallel",
+            "terminate",
+            "updateSpawn",
+        },
+        {"preprocess"},
+    )
+    ArchetypeScore = (
+        5001,
         {
             "preprocess",
             "spawnTime",

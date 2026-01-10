@@ -255,12 +255,125 @@ class _ArchetypeLifeDescriptor(SonolusDescriptor):
         if ctx().mode_state.mode not in {Mode.PLAY, Mode.WATCH}:
             raise RuntimeError(f"Archetype life is not available in mode '{ctx().mode_state.mode.value}'")
         if instance is not None:
-            return _deref(ctx().blocks.ArchetypeLife, instance.id * ArchetypeLife._size_(), ArchetypeLife)
+            return _deref(ctx().blocks.ArchetypeLife, instance.id * LifeInfo._size_(), LifeInfo)
         else:
-            return _deref(ctx().blocks.ArchetypeLife, owner.id * ArchetypeLife._size_(), ArchetypeLife)
+            return _deref(ctx().blocks.ArchetypeLife, owner.id * LifeInfo._size_(), LifeInfo)
 
     def __set__(self, instance, value):
         raise AttributeError("Archetype life is read-only and cannot be set")
+
+
+class _EntityLifeDescriptor(SonolusDescriptor):
+    def __get__(self, instance, owner):
+        if not ctx():
+            raise RuntimeError("Entity life is only available during compilation")
+        if ctx().mode_state.mode not in {Mode.PLAY, Mode.WATCH}:
+            raise RuntimeError(f"Entity life is not available in mode '{ctx().mode_state.mode.value}'")
+        if instance is None:
+            raise RuntimeError("Entity life can only be accessed from an instance")
+        match instance._data_:
+            case _ArchetypeSelfData():
+                return _deref(ctx().blocks.EntityLife, 0, LifeInfo)
+            case _ArchetypeReferenceData(index=index):
+                return _deref(ctx().blocks.EntityLifeArray, index * LifeInfo._size_(), LifeInfo)
+            case _:
+                raise RuntimeError("Entity life is not available in level data")
+
+    def __set__(self, instance, value):
+        raise AttributeError("Entity life is read-only and cannot be set")
+
+
+class _ArchetypeScoreMultiplierMetaDescriptor(SonolusDescriptor):
+    def __get__(self, instance, owner):
+        # instance is the class (e.g., MyArchetype)
+        # owner is the metaclass (_BaseArchetypeMeta)
+        if instance is None:
+            return self
+        if not ctx():
+            raise RuntimeError("Archetype score multiplier is only available during compilation")
+        if ctx().mode_state.mode not in {Mode.PLAY, Mode.WATCH}:
+            raise RuntimeError(f"Archetype score multiplier is not available in mode '{ctx().mode_state.mode.value}'")
+        return _deref(ctx().blocks.ArchetypeScore, instance.id, Num)
+
+    def __set__(self, instance, value):
+        # instance is the class
+        if not ctx():
+            raise RuntimeError("Archetype score multiplier is only available during compilation")
+        if ctx().mode_state.mode not in {Mode.PLAY, Mode.WATCH}:
+            raise RuntimeError(f"Archetype score multiplier is not available in mode '{ctx().mode_state.mode.value}'")
+        target = _deref(ctx().blocks.ArchetypeScore, instance.id, Num)
+        target._set_(Num._accept_(value))
+
+
+class _ArchetypeScoreMultiplierDescriptor(SonolusDescriptor):
+    def __get__(self, instance, owner):
+        if not ctx():
+            raise RuntimeError("Archetype score multiplier is only available during compilation")
+        if ctx().mode_state.mode not in {Mode.PLAY, Mode.WATCH}:
+            raise RuntimeError(f"Archetype score multiplier is not available in mode '{ctx().mode_state.mode.value}'")
+        if instance is not None:
+            return _deref(ctx().blocks.ArchetypeScore, instance.id, Num)
+        else:
+            return _deref(ctx().blocks.ArchetypeScore, owner.id, Num)
+
+    def __set__(self, instance, value):
+        # Handle instance writes
+        if instance is None:
+            raise RuntimeError("Cannot set archetype score multiplier on None instance")
+        if not ctx():
+            raise RuntimeError("Archetype score multiplier is only available during compilation")
+        if ctx().mode_state.mode not in {Mode.PLAY, Mode.WATCH}:
+            raise RuntimeError(f"Archetype score multiplier is not available in mode '{ctx().mode_state.mode.value}'")
+        target = _deref(ctx().blocks.ArchetypeScore, instance.id, Num)
+        target._set_(Num._accept_(value))
+
+
+class _EntityScoreMultiplierMetaDescriptor(SonolusDescriptor):
+    def __get__(self, instance, owner):
+        # instance is the class (e.g., MyArchetype)
+        # owner is the metaclass (_BaseArchetypeMeta)
+        if instance is None:
+            return self
+        raise RuntimeError("Entity score multiplier can only be accessed from an instance")
+
+    def __set__(self, instance, value):
+        # instance is the class
+        raise RuntimeError("Entity score multiplier can only be set on an instance, not on the class")
+
+
+class _EntityScoreMultiplierDescriptor(SonolusDescriptor):
+    def __get__(self, instance, owner):
+        if not ctx():
+            raise RuntimeError("Entity score multiplier is only available during compilation")
+        if ctx().mode_state.mode not in {Mode.PLAY, Mode.WATCH}:
+            raise RuntimeError(f"Entity score multiplier is not available in mode '{ctx().mode_state.mode.value}'")
+        if instance is None:
+            raise RuntimeError("Entity score multiplier can only be accessed from an instance")
+        match instance._data_:
+            case _ArchetypeSelfData():
+                return _deref(ctx().blocks.EntityScore, 0, Num)
+            case _ArchetypeReferenceData(index=index):
+                return _deref(ctx().blocks.EntityScoreArray, index, Num)
+            case _:
+                raise RuntimeError("Entity score multiplier is not available in level data")
+
+    def __set__(self, instance, value):
+        # Handle instance writes
+        if instance is None:
+            raise RuntimeError("Entity score multiplier can only be set on an instance")
+        if not ctx():
+            raise RuntimeError("Entity score multiplier is only available during compilation")
+        if ctx().mode_state.mode not in {Mode.PLAY, Mode.WATCH}:
+            raise RuntimeError(f"Entity score multiplier is not available in mode '{ctx().mode_state.mode.value}'")
+        target = None
+        match instance._data_:
+            case _ArchetypeSelfData():
+                target = _deref(ctx().blocks.EntityScore, 0, Num)
+            case _ArchetypeReferenceData(index=index):
+                target = _deref(ctx().blocks.EntityScoreArray, index, Num)
+            case _:
+                raise RuntimeError("Entity score multiplier is not available in level data")
+        target._set_(Num._accept_(value))
 
 
 def imported(*, name: str | None = None) -> Any:
@@ -415,7 +528,12 @@ class ArchetypeSchema(TypedDict):
     fields: list[str]
 
 
-class _BaseArchetype:
+class _BaseArchetypeMeta(type):
+    archetype_score_multiplier = _ArchetypeScoreMultiplierMetaDescriptor()
+    entity_score_multiplier = _EntityScoreMultiplierMetaDescriptor()
+
+
+class _BaseArchetype(metaclass=_BaseArchetypeMeta):
     _is_comptime_value_ = True
 
     _removable_prefix: ClassVar[str] = ""
@@ -435,6 +553,9 @@ class _BaseArchetype:
     _spawn_signature_: ClassVar[inspect.Signature]
 
     _data_: _ArchetypeData
+
+    archetype_score_multiplier = _ArchetypeScoreMultiplierDescriptor()
+    entity_score_multiplier = _EntityScoreMultiplierDescriptor()
 
     id: int = 0
     """The id of the archetype or entity.
@@ -632,6 +753,8 @@ class _BaseArchetype:
         cls._is_scored_ = cls.is_scored
         cls.is_scored = _IsScoredDescriptor(cls.is_scored)
         cls.life = _ArchetypeLifeDescriptor()
+        cls.archetype_life = _ArchetypeLifeDescriptor()
+        cls.entity_life = _EntityLifeDescriptor()
 
     @classmethod
     def _init_fields(cls):
@@ -656,6 +779,10 @@ class _BaseArchetype:
                     "key",
                     "name",
                     "life",
+                    "archetype_life",
+                    "entity_life",
+                    "archetype_score_multiplier",
+                    "entity_score_multiplier",
                     "is_scored",
                     "_key_",
                     "_is_scored_",
@@ -890,8 +1017,32 @@ class PlayArchetype(_BaseArchetype):
     is_scored: ClassVar[bool] = False
     """Whether entities of this archetype contribute to combo and score."""
 
-    life: ClassVar[ArchetypeLife]
-    """How this entities of this archetype contribute to life depending on judgment."""
+    life: ClassVar[LifeInfo]
+    """How entities of this archetype contribute to life depending on judgment.
+
+    Alias for archetype_life, provided for backwards compatibility.
+    """
+
+    archetype_life: ClassVar[LifeInfo]
+    """How entities of this archetype contribute to life depending on judgment."""
+
+    entity_life: LifeInfo
+    """How this specific entity contributes to life depending on judgment.
+
+    This is additive with archetype_life - the total life increment is the sum of both.
+    """
+
+    archetype_score_multiplier: ClassVar[float]
+    """Score multiplier for entities of this archetype.
+
+    This is additive with other multipliers (except judgment base multipliers).
+    """
+
+    entity_score_multiplier: float
+    """Score multiplier for this specific entity.
+
+    This is additive with other multipliers (except judgment base multipliers).
+    """
 
     def preprocess(self):
         """Perform upfront processing.
@@ -1054,8 +1205,32 @@ class WatchArchetype(_BaseArchetype):
     is_scored: ClassVar[bool] = False
     """Whether entities of this archetype contribute to combo and score."""
 
-    life: ClassVar[ArchetypeLife]
-    """How this entities of this archetype contribute to life depending on judgment."""
+    life: ClassVar[LifeInfo]
+    """How entities of this archetype contribute to life depending on judgment.
+
+    Alias for archetype_life, provided for backwards compatibility.
+    """
+
+    archetype_life: ClassVar[LifeInfo]
+    """How entities of this archetype contribute to life depending on judgment."""
+
+    entity_life: LifeInfo
+    """How this specific entity contributes to life depending on judgment.
+
+    This is additive with archetype_life - the total life increment is the sum of both.
+    """
+
+    archetype_score_multiplier: ClassVar[float]
+    """Score multiplier for entities of this archetype.
+
+    This is additive with other multipliers (except judgment base multipliers).
+    """
+
+    entity_score_multiplier: float
+    """Score multiplier for this specific entity.
+
+    This is additive with other multipliers (except judgment base multipliers).
+    """
 
     def preprocess(self):
         """Perform upfront processing.
@@ -1261,7 +1436,7 @@ class PreviewEntityInfo(Record):
     archetype_id: int
 
 
-class ArchetypeLife(Record):
+class LifeInfo(Record):
     """How an entity contributes to life."""
 
     perfect_increment: int
@@ -1292,6 +1467,10 @@ class ArchetypeLife(Record):
             self.good_increment = good_increment
         if miss_increment is not None:
             self.miss_increment = miss_increment
+
+
+ArchetypeLife = LifeInfo
+"""Alias for LifeInfo, kept for backwards compatibility."""
 
 
 class HapticType(IntEnum):
