@@ -270,7 +270,7 @@ def options[T](cls: type[T]) -> T | Options:
         raise ValueError("Options class must not inherit from any class (except object)")
     instance = cls()
     entries = []
-    for i, (name, annotation) in enumerate(get_field_specifiers(cls).items()):
+    for i, (name, annotation) in enumerate(get_field_specifiers(cls, skip={"replay_fallback_option_names"}).items()):
         if get_origin(annotation) is not Annotated:
             raise TypeError(f"Invalid annotation for options: {annotation}")
         annotation_type = annotation.__args__[0]

@@ -271,10 +271,13 @@ def build_engine_configuration(
     options: Options,
     ui: UiConfig,
 ) -> JsonValue:
-    return {
+    result = {
         "options": [option.to_dict() for option in options._options_],
         "ui": ui.to_dict(),
     }
+    if replay_fallback_option_names := getattr(options, "replay_fallback_option_names", None):
+        result["replayFallbackOptionNames"] = list(replay_fallback_option_names)
+    return result
 
 
 def build_play_mode(
