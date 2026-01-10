@@ -133,6 +133,7 @@ class _WatchRuntimeUiConfigs:
     primary_metric: RuntimeUiConfig
     secondary_metric: RuntimeUiConfig
     progress: RuntimeUiConfig
+    progress_graph: RuntimeUiConfig
 
 
 @_preview_runtime_ui_configuration
@@ -243,6 +244,7 @@ class _WatchRuntimeUi:
     secondary_metric_bar: RuntimeUiLayout
     secondary_metric_value: RuntimeUiLayout
     progress: RuntimeUiLayout
+    progress_graph: RuntimeUiLayout
 
 
 @_preview_runtime_ui
@@ -551,6 +553,19 @@ class RuntimeUi(Record):
                 return UiLayout(_WatchRuntimeUi.progress)
             case Mode.PREVIEW:
                 return UiLayout(_PreviewRuntimeUi.progress)
+            case _:
+                return UiLayout(None)
+
+    @property
+    @meta_fn
+    def progress_graph(self) -> UiLayout:
+        """The configuration for the progress graph UI element.
+
+        Available in watch mode.
+        """
+        match ctx().mode_state.mode:
+            case Mode.WATCH:
+                return UiLayout(_WatchRuntimeUi.progress_graph)
             case _:
                 return UiLayout(None)
 
