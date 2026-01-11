@@ -29,8 +29,27 @@ def validate_type_arg(arg: Any) -> Any:
     return result
 
 
+def preprocess_type_spec(arg: Any) -> Any:
+    arg = validate_value(arg)
+    if not arg._is_py_():
+        raise TypeError(f"Expected a compile-time constant type, got {arg}")
+    result = arg._as_py_()
+    if isinstance(result, type) and issubclass(result, Enum):
+        # E.g. if this is an IntEnum subclass, we call it on IntEnum, and then int, which gets us the result we want
+        result = validate_type_arg(result.__mro__[1])
+    if hasattr(result, "_type_mapping_"):
+        return result._type_mapping_
+    if get_origin(result) is Annotated:
+        return result.__args__[0]
+    if get_origin(result) is Literal:
+        if len({type(v) for v in result.__args__}) != 1:
+            raise TypeError(f"Literal[] type arguments must all be of the same type, got {result.__args__}")
+        return validate_type_arg(type(result.__args__[0]))
+    return result
+
+
 def validate_type_spec(spec: Any) -> PartialGeneric | TypeVar | type[Value]:
-    spec = validate_type_arg(spec)
+    spec = preprocess_type_spec(spec)
     if isinstance(spec, PartialGeneric | TypeVar) or (isinstance(spec, type) and issubclass(spec, Value)):
         return spec
     origin = typing.get_origin(spec)
