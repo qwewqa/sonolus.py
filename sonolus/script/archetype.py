@@ -6,7 +6,7 @@ from collections.abc import Callable, Sequence
 from dataclasses import dataclass
 from enum import Enum, IntEnum, StrEnum
 from types import FunctionType
-from typing import Annotated, Any, ClassVar, Self, TypedDict, get_origin
+from typing import Annotated, Any, ClassVar, NamedTuple, Self, TypedDict, get_origin
 
 from sonolus.backend.ir import IRConst, IRExpr, IRInstr, IRPureInstr, IRStmt
 from sonolus.backend.mode import Mode
@@ -45,6 +45,7 @@ class _StorageType(Enum):
 class _ArchetypeFieldInfo:
     name: str | None
     storage: _StorageType
+    default: Value | None = None
 
 
 class _ExportBackingValue(BackingValue):
@@ -59,12 +60,21 @@ class _ExportBackingValue(BackingValue):
 
 
 class _ArchetypeField(SonolusDescriptor):
-    def __init__(self, name: str, data_name: str, storage: _StorageType, offset: int, type_: type[Value]):
+    def __init__(
+        self,
+        name: str,
+        data_name: str,
+        storage: _StorageType,
+        offset: int,
+        type_: type[Value],
+        default: Value | None = None,
+    ):
         self.name = name
         self.data_name = data_name  # name used in level data
         self.storage = storage
         self.offset = offset
         self.type = type_
+        self.default = default
 
     def __get__(self, instance: _BaseArchetype, owner):
         if instance is None:
@@ -376,7 +386,7 @@ class _EntityScoreMultiplierDescriptor(SonolusDescriptor):
         target._set_(Num._accept_(value))
 
 
-def imported(*, name: str | None = None) -> Any:
+def imported(*, name: str | None = None, default: int | float | None = None) -> Any:
     """Declare a field as imported.
 
     Imported fields may be loaded from the level.
@@ -391,9 +401,13 @@ def imported(*, name: str | None = None) -> Any:
         class MyArchetype(PlayArchetype):
             field: int = imported()
             field_with_explicit_name: int = imported(name="field_name")
+            field_with_default: int = imported(default=0)
         ```
     """
-    return _ArchetypeFieldInfo(name, _StorageType.IMPORTED)
+    validated_default = None
+    if default is not None:
+        validated_default = validate_value(default)
+    return _ArchetypeFieldInfo(name, _StorageType.IMPORTED, validated_default)
 
 
 def entity_data() -> Any:
@@ -528,6 +542,11 @@ class ArchetypeSchema(TypedDict):
     fields: list[str]
 
 
+class ImportInfo(NamedTuple):
+    index: int
+    default: int | float | None
+
+
 class _BaseArchetypeMeta(type):
     archetype_score_multiplier = _ArchetypeScoreMultiplierMetaDescriptor()
     entity_score_multiplier = _EntityScoreMultiplierMetaDescriptor()
@@ -546,7 +565,7 @@ class _BaseArchetype(metaclass=_BaseArchetypeMeta):
     _memory_fields_: ClassVar[dict[str, _ArchetypeField]]
     _shared_memory_fields_: ClassVar[dict[str, _ArchetypeField]]
 
-    _imported_keys_: ClassVar[dict[str, int]]
+    _imported_keys_: ClassVar[dict[str, ImportInfo]]
     _exported_keys_: ClassVar[dict[str, int]]
     _callbacks_: ClassVar[dict[str, Callable]]
     _data_constructor_signature_: ClassVar[inspect.Signature]
@@ -862,7 +881,12 @@ class _BaseArchetype(metaclass=_BaseArchetypeMeta):
             match field_info.storage:
                 case _StorageType.IMPORTED:
                     cls._imported_fields_[name] = _ArchetypeField(
-                        name, field_info.name or name, field_info.storage, imported_offset, field_type
+                        name,
+                        field_info.name or name,
+                        field_info.storage,
+                        imported_offset,
+                        field_type,
+                        field_info.default,
                     )
                     imported_offset += field_type._size_()
                     if imported_offset > _ENTITY_DATA_SIZE:
@@ -892,12 +916,20 @@ class _BaseArchetype(metaclass=_BaseArchetypeMeta):
                     if shared_memory_offset > _ENTITY_SHARED_MEMORY_SIZE:
                         raise ValueError("Shared memory fields exceed entity shared memory size")
                     setattr(cls, name, cls._shared_memory_fields_[name])
-        cls._imported_keys_ = {
-            name: i
-            for i, name in enumerate(
-                key for field in cls._imported_fields_.values() for key in field.type._flat_keys_(field.data_name)
-            )
-        }
+        imported_keys = {}
+        index = 0
+        for field in cls._imported_fields_.values():
+            keys = list(field.type._flat_keys_(field.data_name))
+            if field.default is not None:
+                defaults = field.default._to_list_()
+                for key, default_value in zip(keys, defaults, strict=True):
+                    imported_keys[key] = ImportInfo(index=index, default=default_value)
+                    index += 1
+            else:
+                for key in keys:
+                    imported_keys[key] = ImportInfo(index=index, default=None)
+                    index += 1
+        cls._imported_keys_ = imported_keys
         cls._exported_keys_ = {
             name: i
             for i, name in enumerate(

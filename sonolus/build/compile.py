@@ -138,10 +138,17 @@ def compile_mode(
         for archetype in base_archetypes:
             archetype._init_fields()
 
+            imports = []
+            for name, import_info in archetype._imported_keys_.items():
+                import_entry = {"name": name, "index": import_info.index}
+                if import_info.default is not None:
+                    import_entry["def"] = import_info.default
+                imports.append(import_entry)
+
             archetype_data = {
                 "name": archetype.name,
                 "hasInput": archetype.is_scored,
-                "imports": [{"name": name, "index": index} for name, index in archetype._imported_keys_.items()],
+                "imports": imports,
             }
             if mode == Mode.PLAY:
                 archetype_data["exports"] = [*archetype._exported_keys_]
