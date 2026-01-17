@@ -547,9 +547,49 @@ class ImportInfo(NamedTuple):
     default: int | float | None
 
 
+RESERVED_ARCHETYPE_FIELD_NAMES = {
+    "id",
+    "key",
+    "name",
+    "life",
+    "archetype_life",
+    "entity_life",
+    "archetype_score_multiplier",
+    "entity_score_multiplier",
+    "is_scored",
+    "_key_",
+    "_is_scored_",
+    "_derived_base_",
+    "_is_derived_",
+    "_default_callbacks_",
+    "_callbacks_",
+    "_field_init_done",
+    "_is_concrete_archetype_",
+}
+
+ALLOWED_RESERVED_ARCHETYPE_FIELD_NAME_OVERRIDES = {
+    "key",
+    "name",
+    "is_scored",
+}
+
+
 class _BaseArchetypeMeta(type):
     archetype_score_multiplier = _ArchetypeScoreMultiplierMetaDescriptor()
     entity_score_multiplier = _EntityScoreMultiplierMetaDescriptor()
+
+    def __new__(mcs, name, bases, namespace, **kwargs):
+        module = namespace.get("__module__", "")
+        is_derived = namespace.get("_is_derived_", False)
+        if module != "sonolus.script.archetype" and not is_derived:
+            for field_name in namespace:
+                if (
+                    field_name in RESERVED_ARCHETYPE_FIELD_NAMES
+                    and field_name not in ALLOWED_RESERVED_ARCHETYPE_FIELD_NAME_OVERRIDES
+                ):
+                    raise TypeError(f"Field '{field_name}' in {name} overrides a reserved archetype field name.")
+
+        return super().__new__(mcs, name, bases, namespace, **kwargs)
 
 
 class _BaseArchetype(metaclass=_BaseArchetypeMeta):
@@ -793,25 +833,7 @@ class _BaseArchetype(metaclass=_BaseArchetypeMeta):
         try:
             field_specifiers = get_field_specifiers(
                 cls,
-                skip={
-                    "id",
-                    "key",
-                    "name",
-                    "life",
-                    "archetype_life",
-                    "entity_life",
-                    "archetype_score_multiplier",
-                    "entity_score_multiplier",
-                    "is_scored",
-                    "_key_",
-                    "_is_scored_",
-                    "_derived_base_",
-                    "_is_derived_",
-                    "_default_callbacks_",
-                    "_callbacks_",
-                    "_field_init_done",
-                    "_is_concrete_archetype_",
-                },
+                skip=RESERVED_ARCHETYPE_FIELD_NAMES,
                 included_classes=mro_excluding_archetype_parents,
             ).items()
         except Exception as e:
@@ -1000,7 +1022,13 @@ class _BaseArchetype(metaclass=_BaseArchetypeMeta):
         """
         if getattr(cls, "_is_derived_", False):
             raise RuntimeError("Cannot derive from a derived archetype")
-        cls_dict = {"name": name, "is_scored": is_scored, "_is_derived_": True, "_derived_base_": cls}
+        cls_dict = {
+            "name": name,
+            "is_scored": is_scored,
+            "_is_derived_": True,
+            "_derived_base_": cls,
+            "__module__": cls.__module__,
+        }
         if key is not None:
             if not isinstance(key, (int, float)):
                 raise TypeError(f"Key must be an int or float, got {type(key)}")

@@ -23,6 +23,8 @@ def get_field_specifiers(
     else:
         results = inspect.get_annotations(cls, globals=globals, locals=locals, eval_str=eval_str)
     for key, value in results.items():
+        if key in skip:
+            continue
         class_value = getattr(cls, key, _missing)
         if class_value is not _missing and key not in skip:
             results[key] = Annotated[value, class_value]
