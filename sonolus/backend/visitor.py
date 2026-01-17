@@ -1405,7 +1405,11 @@ class Visitor(ast.NodeVisitor):
         with self.reporting_errors_at_node(node):
             if target._is_py_():
                 target = target._as_py_()
-            descriptor = getattr(type(target), key, None)
+            descriptor = None
+            for cls in type.mro(type(target)):
+                descriptor = cls.__dict__.get(key, None)
+                if descriptor is not None:
+                    break
             match descriptor:
                 case property(fset=setter):
                     if setter is None:
