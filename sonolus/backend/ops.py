@@ -16,6 +16,7 @@ class Op(StrEnum):
 
     Abs = ("Abs", False, True, False)
     Add = ("Add", False, True, False)
+    AddLifeScheduled = ("AddLifeScheduled", True, False, False)
     And = ("And", False, True, True)
     Arccos = ("Arccos", False, True, False)
     Arcsin = ("Arcsin", False, True, False)

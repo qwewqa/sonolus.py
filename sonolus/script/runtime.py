@@ -1,6 +1,7 @@
 from enum import IntEnum
 
 from sonolus.backend.mode import Mode
+from sonolus.backend.ops import Op
 from sonolus.script.array import Array
 from sonolus.script.array_like import ArrayLike
 from sonolus.script.containers import ArrayPointer
@@ -31,6 +32,7 @@ from sonolus.script.globals import (
 )
 from sonolus.script.internal.context import ctx
 from sonolus.script.internal.meta_fn import meta_fn, perf_meta_fn
+from sonolus.script.internal.native import native_function
 from sonolus.script.num import Num
 from sonolus.script.quad import Quad, Rect
 from sonolus.script.record import Record
@@ -1191,3 +1193,19 @@ def level_score() -> _LevelScore:
 def level_life() -> _LevelLife:
     """Get the level life configuration."""
     return _LevelLife  # type: ignore
+
+
+def add_life_scheduled(value: int, time: float):
+    """Schedule adding life at a specific time.
+
+    Args:
+        value: The amount of life to add.
+        time: The time to add the life at.
+    """
+    assert is_play() or is_watch(), "add_life can only be called in play or watch mode"
+    _add_life_scheduled(value, time)
+
+
+@native_function(Op.AddLifeScheduled)
+def _add_life_scheduled(value: int, time: float):
+    raise NotImplementedError
