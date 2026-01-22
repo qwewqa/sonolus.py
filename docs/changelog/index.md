@@ -1,3 +1,18 @@
+### 0.14.0
+
+- Sonolus 1.1.0 support.
+- Added haptic feedback support via [`HapticType`][sonolus.script.archetype.HapticType] enum in entity input.
+- Added `progress_graph` UI layout support in watch mode.
+- Added support for `replay_fallback_option_names` in engine configuration.
+- Added [`add_life_scheduled`][sonolus.script.runtime.add_life_scheduled] for scheduling life additions at specific times.
+- Added `initial` and `maximum` properties to level life configuration.
+- Added the `archetype_score_multiplier` and `entity_score_multiplier` properties to archetypes.
+- Added the `archetype_life` (replacing the now deprecated `life` property) and `entity_life` property to archetypes.
+- Added import defaults via optional `default` parameter in [`imported()`][sonolus.script.archetype.imported].
+- Expanded [`StandardText`][sonolus.script.text.StandardText] constants.
+- Added validation for overriding reserved archetype field names.
+- Improved support for `Literal` type specifications and `Enum` subclass handling in some edge cases.
+
 ### 0.13.2
 
 - Improved dev server build times.
