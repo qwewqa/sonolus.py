@@ -2912,7 +2912,7 @@
 <p>Level data may only be modified in the <code class="highlight"><span class="n">preprocess</span></code> callback and may be read in any callback.</p>
 <h2 id="archetype-variables">Archetype Variables<a class="headerlink" href="#archetype-variables" title="Permanent link">&para;</a></h2>
 <h3 id="imported">Imported<a class="headerlink" href="#imported" title="Permanent link">&para;</a></h3>
-<p>Imported fields are declared with <a class="autorefs autorefs-internal" title="            imported(*, name: str | None = None) -> Any" href="../../reference/sonolus.script.archetype/#sonolus.script.archetype.imported"><code class="highlight"><span class="n">imported</span><span class="p">()</span></code></a>:</p>
+<p>Imported fields are declared with <a class="autorefs autorefs-internal" title="            imported(*, name: str | None = None, default: int | float | None = None) -> Any" href="../../reference/sonolus.script.archetype/#sonolus.script.archetype.imported"><code class="highlight"><span class="n">imported</span><span class="p">()</span></code></a>:</p>
 <div class="highlight"><pre><span></span><code><span class="kn">from</span><span class="w"> </span><span class="nn">sonolus.script.archetype</span><span class="w"> </span><span class="kn">import</span> <span class="n">PlayArchetype</span><span class="p">,</span> <span class="n">imported</span>
 
 <span class="k">class</span><span class="w"> </span><span class="nc">MyArchetype</span><span class="p">(</span><span class="n">PlayArchetype</span><span class="p">):</span>
@@ -2938,7 +2938,7 @@
     <span class="n">field</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="n">entity_data</span><span class="p">()</span>
 </code></pre></div>
 <p>Entity data is accessible from other entities, but may only be updated in the <code class="highlight"><span class="n">preprocess</span></code> callback and is read-only in other callbacks.</p>
-<p>It functions like <a class="autorefs autorefs-internal" title="            imported(*, name: str | None = None) -> Any" href="../../reference/sonolus.script.archetype/#sonolus.script.archetype.imported"><code class="highlight"><span class="n">imported</span><span class="p">()</span></code></a> and shares the same underlying storage, except that it is not loaded from a level.</p>
+<p>It functions like <a class="autorefs autorefs-internal" title="            imported(*, name: str | None = None, default: int | float | None = None) -> Any" href="../../reference/sonolus.script.archetype/#sonolus.script.archetype.imported"><code class="highlight"><span class="n">imported</span><span class="p">()</span></code></a> and shares the same underlying storage, except that it is not loaded from a level.</p>
 <h3 id="entity-memory">Entity Memory<a class="headerlink" href="#entity-memory" title="Permanent link">&para;</a></h3>
 <p>Entity memory fields are declared with <a class="autorefs autorefs-internal" title="            entity_memory() -> Any" href="../../reference/sonolus.script.archetype/#sonolus.script.archetype.entity_memory"><code class="highlight"><span class="n">entity_memory</span><span class="p">()</span></code></a>:</p>
 <div class="highlight"><pre><span></span><code><span class="kn">from</span><span class="w"> </span><span class="nn">sonolus.script.archetype</span><span class="w"> </span><span class="kn">import</span> <span class="n">PlayArchetype</span><span class="p">,</span> <span class="n">entity_memory</span>
