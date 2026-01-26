@@ -68,7 +68,7 @@ def validate_type_spec(spec: Any) -> PartialGeneric | TypeVar | type[Value]:
 
     if isinstance(spec, type) and issubclass(spec, _BaseArchetype):
         raise TypeError(f"Expected a concrete type, got {spec}. Did you mean to write EntityRef[{spec.__name__}]?")
-    raise TypeError(f"Invalid type spec: {spec}")
+    raise TypeError(f"Unsupported type spec: {spec}")
 
 
 class TypeInfo(typing.NamedTuple):

@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 import inspect
-from abc import abstractmethod
+from abc import abstractmethod, ABCMeta
 from collections.abc import Callable, Sequence
 from dataclasses import dataclass
 from enum import Enum, IntEnum, StrEnum
@@ -565,6 +565,7 @@ RESERVED_ARCHETYPE_FIELD_NAMES = {
     "_callbacks_",
     "_field_init_done",
     "_is_concrete_archetype_",
+    "_abc_impl",
 }
 
 ALLOWED_RESERVED_ARCHETYPE_FIELD_NAME_OVERRIDES = {
@@ -574,7 +575,7 @@ ALLOWED_RESERVED_ARCHETYPE_FIELD_NAME_OVERRIDES = {
 }
 
 
-class _BaseArchetypeMeta(type):
+class _BaseArchetypeMeta(ABCMeta):
     archetype_score_multiplier = _ArchetypeScoreMultiplierMetaDescriptor()
     entity_score_multiplier = _EntityScoreMultiplierMetaDescriptor()
 
