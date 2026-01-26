@@ -1,3 +1,7 @@
+### 0.14.1
+
+- Fixed support for Archetypes to inherit from an `ABC`.
+
 ### 0.14.0
 
 - Sonolus 1.1.0 support.
