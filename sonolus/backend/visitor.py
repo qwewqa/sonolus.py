@@ -326,6 +326,9 @@ class Visitor(ast.NodeVisitor):
         set_ctx(start_ctx)
         for name, value in self.bound_args.arguments.items():
             ctx().scope.set_value(name, validate_value(value))
+        was_in_generator = ctx().callback_state.is_in_generator
+        is_generator_fn = getattr(node, "has_yield", False)
+        ctx().callback_state.is_in_generator = ctx().callback_state.is_in_generator or is_generator_fn
         match node:
             case ast.FunctionDef(body=body):
                 ctx().scope.set_value("$return", validate_value(None))
@@ -337,6 +340,7 @@ class Visitor(ast.NodeVisitor):
                 result = self.visit(body)
                 ctx().scope.set_value("$return", result)
             case ast.GeneratorExp(elt=elt, generators=generators):
+                ctx().callback_state.is_in_generator = True
                 first_generator = generators[0]
                 iterable = self.visit(first_generator.iter)
                 if isinstance(iterable, TupleImpl):
@@ -356,7 +360,7 @@ class Visitor(ast.NodeVisitor):
             case _:
                 raise NotImplementedError("Unsupported syntax")
         # has_yield is set by the find_function visitor
-        if getattr(node, "has_yield", False) or isinstance(node, ast.GeneratorExp):
+        if is_generator_fn or isinstance(node, ast.GeneratorExp):
             return_ctx = Context.meet([*self.return_ctxs, ctx()])
             result_binding = return_ctx.scope.get_binding("$return")
             if not isinstance(result_binding, ValueBinding):
@@ -400,6 +404,7 @@ class Visitor(ast.NodeVisitor):
             set_ctx(before_ctx)
             return_test = Num._alloc_()
             next_result_ctx.test = return_test.ir()
+            ctx().callback_state.is_in_generator = was_in_generator
             completion_timer()
             return Generator(
                 return_test,
@@ -417,8 +422,9 @@ class Visitor(ast.NodeVisitor):
         set_ctx(after_ctx.branch_with_scope(None, before_ctx.scope.copy()))
         # Noting could have escaped, so allow reuse, which can allow naive allocation to succeed in the optimizer for
         # better compile times.
-        if result_binding.value is validate_value(None):
+        if result_binding.value is validate_value(None) and not ctx().callback_state.is_in_generator:
             ctx().restore_alloc_state(before_alloc_state)
+        ctx().callback_state.is_in_generator = was_in_generator
         completion_timer()
         return result_binding.value
 

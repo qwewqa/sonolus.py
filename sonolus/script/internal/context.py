@@ -174,6 +174,7 @@ class CallbackContextState:
     debug_stack: list[str]
     no_eval: bool
     visitor_own_time: int
+    is_in_generator: bool
 
     def __init__(self, callback: str, no_eval: bool = False):
         self.callback = callback
@@ -181,6 +182,7 @@ class CallbackContextState:
         self.debug_stack = []
         self.no_eval = no_eval
         self.visitor_own_time = 0
+        self.is_in_generator = False
 
 
 class Context:
