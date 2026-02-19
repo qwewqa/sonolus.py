@@ -1,3 +1,7 @@
+### 0.14.2
+
+- Fixed a bug causing memory corruption when using generators.
+
 ### 0.14.1
 
 - Fixed support for Archetypes to inherit from an `ABC`.
