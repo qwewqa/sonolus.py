@@ -140,6 +140,7 @@ class DictImpl[Keys, OrderedKeys, Values](Record):
 
         if lo == mid:
             res._set_(-1)
+            set_ctx(Context.meet([after_eq_ctx, ctx()]))
             return res
 
         neq_ctx.test = compile_and_call(mid_value.__lt__, item).ir()
