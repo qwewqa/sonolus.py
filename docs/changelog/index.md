@@ -1,3 +1,9 @@
+### 0.14.3
+
+- Access to a `dict` with a non-compile-time-constant key is now supported when all values are compile time constants of
+a single supported type (numeric, array, or record).
+- Usage of set literals containing non-numeric types is now supported.
+
 ### 0.14.2
 
 - Fixed a bug causing memory corruption when using generators.
