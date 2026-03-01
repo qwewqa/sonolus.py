@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 import inspect
-from abc import abstractmethod, ABCMeta
+from abc import ABCMeta, abstractmethod
 from collections.abc import Callable, Sequence
 from dataclasses import dataclass
 from enum import Enum, IntEnum, StrEnum

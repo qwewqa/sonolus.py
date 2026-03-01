@@ -193,9 +193,11 @@ class _Num(Value, metaclass=_NumMeta):
             return self._get_().data
         return self.data
 
-    def _bin_op(self, other: Self, const_fn: Callable[[Self, Self], Self | None], ir_op: Op) -> Self:
+    def _bin_op(
+        self, other: Self, const_fn: Callable[[Self, Self], Self | None], ir_op: Op, fallback=NotImplemented
+    ) -> Self:
         if not Num._accepts_(other):
-            return NotImplemented
+            return fallback
         other = Num._accept_(other)
         const_value = const_fn(self, other)
         if const_value is not None:
@@ -226,7 +228,7 @@ class _Num(Value, metaclass=_NumMeta):
                 return Num(True)
             return None
 
-        return self._bin_op(other, const_fn, Op.Equal)
+        return self._bin_op(other, const_fn, Op.Equal, fallback=0)
 
     def __hash__(self):
         if self._is_py_():
@@ -242,7 +244,7 @@ class _Num(Value, metaclass=_NumMeta):
                 return Num(False)
             return None
 
-        return self._bin_op(other, const_fn, Op.NotEqual)
+        return self._bin_op(other, const_fn, Op.NotEqual, fallback=1)
 
     @simple_meta_fn
     def __lt__(self, other) -> Self:

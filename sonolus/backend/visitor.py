@@ -1222,9 +1222,10 @@ class Visitor(ast.NodeVisitor):
             else:
                 value = self.visit(keyword.value)
                 if isinstance(value, DictImpl):
-                    if not all(isinstance(k, str) for k in value.value):
+                    value_dict = value._as_dict_with_py_keys()
+                    if not all(isinstance(k, str) for k in value_dict):
                         raise ValueError("Keyword arguments must be strings")
-                    kwargs.update(value.value)
+                    kwargs.update(value_dict)
                 else:
                     raise ValueError("Starred keyword arguments (**kwargs) must be dictionaries")
         if not ctx().live:

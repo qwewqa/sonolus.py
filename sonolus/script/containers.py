@@ -479,7 +479,7 @@ class FrozenNumSet[Size](Record):
         return len(self._values)
 
     def __contains__(self, value: Num) -> bool:
-        if len(self) < 8:
+        if len(self) < 16:
             return value in self._as_tuple()
         else:
             left = 0

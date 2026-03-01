@@ -45,7 +45,9 @@ def validate_value[T](value: T) -> Value | T:
     if value_type is tuple:
         return tuple_impl.TupleImpl._accept_(value)
     if value_type is dict:
-        return dict_impl.DictImpl._accept_(value)
+        from sonolus.script.internal import dict_impl
+
+        return dict_impl.DictImpl.from_dict(value)
     if value_type in {set, frozenset}:
         from sonolus.script.containers import FrozenNumSet
 
@@ -62,7 +64,7 @@ def validate_value[T](value: T) -> Value | T:
 
 
 from sonolus.script import globals as sonolus_globals
-from sonolus.script.internal import constant, dict_impl, generic, tuple_impl
+from sonolus.script.internal import constant, generic, tuple_impl
 from sonolus.script.internal.value import Value
 from sonolus.script.num import Num
 
