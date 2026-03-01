@@ -1090,8 +1090,14 @@ class Visitor(ast.NodeVisitor):
 
     def visit_Set(self, node):
         from sonolus.script.containers import FrozenNumSet
+        from sonolus.script.internal.dict_impl import DictImpl
 
-        return self.handle_call(node, FrozenNumSet.of, *(self.visit(elt) for elt in node.elts))
+        values = [validate_value(self.visit(elt)) for elt in node.elts]
+        value_types = {type(v) for v in values}
+        if (len(value_types) == 1 and next(iter(value_types)) is Num) or len(values) == 0:
+            return FrozenNumSet.of(*values)
+        else:
+            return DictImpl.from_dict(dict.fromkeys(values))
 
     def visit_ListComp(self, node):
         raise NotImplementedError("List comprehensions are not supported")

@@ -1776,3 +1776,128 @@ def test_dict_items_contains_absent_large_size_numeric_key():
         return Array((1, 20) in d.items(), (26, 260) in d.items(), (13, 150) in d.items())
 
     assert run_and_validate(fn) == Array(False, False, False)
+
+
+# Dicts are actually used as sets in these cases, so these are here.
+# These are less comprehensive since the implementation is already tested above.
+
+
+def test_dict_set_contains_present_small_size_string_key():
+    def fn():
+        d = {"a", "b"}
+        return Array(
+            "a" in d,
+            "b" in d,
+        )
+
+    assert run_and_validate(fn) == Array(True, True)
+
+
+def test_dict_set_contains_present_large_size_string_key():
+    def fn():
+        d = {
+            "a",
+            "z",
+            "b",
+            "y",
+            "c",
+            "x",
+            "d",
+            "w",
+            "e",
+            "v",
+            "f",
+            "u",
+            "g",
+            "t",
+            "h",
+            "s",
+            "i",
+            "r",
+            "j",
+            "q",
+            "k",
+            "p",
+            "l",
+            "o",
+            "m",
+            "n",
+        }
+        return Array(
+            "a" in d,
+            "m" in d,
+            "z" in d,
+        )
+
+    assert run_and_validate(fn) == Array(True, True, True)
+
+
+def test_dict_set_contains_present_small_size_tuple_key():
+    def fn():
+        d = {(1, 1), (2, 2), (3, 3)}
+        return Array(
+            (1, 1) in d,
+            (2, 2) in d,
+            (3, 3) in d,
+        )
+
+    assert run_and_validate(fn) == Array(True, True, True)
+
+
+def test_dict_set_contains_present_large_size_tuple_key():
+    d = {(k, k) for k in [20, 3, 15, 7, 25, 1, 18, 9, 22, 5, 12, 16, 8, 24, 2, 19, 11, 14, 6, 23, 4, 17, 13, 21, 10]}
+
+    def fn():
+        return Array(
+            (1, 1) in d,
+            (13, 13) in d,
+            (25, 25) in d,
+        )
+
+    assert run_and_validate(fn) == Array(True, True, True)
+
+
+def test_dict_set_contains_present_small_size_mixed_key():
+    def fn():
+        d = {"a", 2, (3, 3)}
+        return Array(
+            "a" in d,
+            2 in d,
+            (3, 3) in d,
+        )
+
+    assert run_and_validate(fn) == Array(True, True, True)
+
+
+def test_dict_set_contains_present_large_size_mixed_key():
+    def fn():
+        d = {
+            "a",
+            "b",
+            "c",
+            "d",
+            "e",
+            "f",
+            "g",
+            1,
+            2,
+            3,
+            4,
+            5,
+            6,
+            7,
+            (1, 1),
+            (2, 2),
+            (3, 3),
+            (4, 4),
+            (5, 5),
+            (6, 6),
+            (7, 7),
+        }
+        return Array(
+            "a" in d,
+            4 in d,
+            (4, 4) in d,
+        )
+
+    assert run_and_validate(fn) == Array(True, True, True)
