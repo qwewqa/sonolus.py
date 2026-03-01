@@ -161,3 +161,32 @@ class DictImpl[Keys, OrderedKeys, Values](Record):
             if k == item:
                 return i
         return -1
+
+    @meta_fn
+    def keys(self):
+        return validate_value(tuple(self._keys[i] for i in range(self._size)))
+
+    @meta_fn
+    def values(self):
+        return validate_value(
+            tuple(
+                self._values._value[i]
+                if isinstance(self._values, Array) and isinstance(self._values._value, list)
+                else self._values[i]
+                for i in range(self._size)
+            )
+        )
+
+    @meta_fn
+    def items(self):
+        return validate_value(
+            tuple(
+                (
+                    self._keys[i],
+                    self._values._value[i]
+                    if isinstance(self._values, Array) and isinstance(self._values._value, list)
+                    else self._values[i],
+                )
+                for i in range(self._size)
+            )
+        )

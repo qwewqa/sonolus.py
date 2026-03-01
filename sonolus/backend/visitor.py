@@ -319,6 +319,8 @@ class Visitor(ast.NodeVisitor):
             self.qualified_name = qualified_name
 
     def run(self, node):
+        from sonolus.script.internal.dict_impl import DictImpl
+
         completion_timer = mark_start(self.qualified_name)
         before_ctx = ctx()
         before_alloc_state = ctx().save_alloc_state()
@@ -343,6 +345,8 @@ class Visitor(ast.NodeVisitor):
                 ctx().callback_state.is_in_generator = True
                 first_generator = generators[0]
                 iterable = self.visit(first_generator.iter)
+                if isinstance(iterable, DictImpl):
+                    iterable = validate_value(iterable._keys)
                 if isinstance(iterable, TupleImpl):
                     initial_iterator = iterable
                 else:
@@ -431,6 +435,8 @@ class Visitor(ast.NodeVisitor):
     def construct_genexpr(
         self, generators: Iterable[ast.comprehension], elt: ast.expr, initial_iterator: Value | None = None
     ):
+        from sonolus.script.internal.dict_impl import DictImpl
+
         if not generators:
             # Note that there may effectively be multiple yields in an expression since
             # tuples are unrolled.
@@ -446,6 +452,8 @@ class Visitor(ast.NodeVisitor):
             iterable = initial_iterator
         else:
             iterable = self.visit(generator.iter)
+        if isinstance(iterable, DictImpl):
+            iterable = validate_value(iterable._keys)
         if isinstance(iterable, TupleImpl):
             for value in iterable.value:
                 set_ctx(ctx().branch(None))
@@ -594,9 +602,12 @@ class Visitor(ast.NodeVisitor):
         self.handle_assign(node.target, value)
 
     def visit_For(self, node):
+        from sonolus.script.internal.dict_impl import DictImpl
         from sonolus.script.internal.tuple_impl import TupleImpl
 
         iterable = self.visit(node.iter)
+        if isinstance(iterable, DictImpl):
+            iterable = validate_value(iterable._keys)
         if isinstance(iterable, TupleImpl):
             # Unroll the loop
             break_ctxs = []
