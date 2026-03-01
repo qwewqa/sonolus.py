@@ -1,16 +1,39 @@
-# ruff: noqa: SIM113, PLC0206, PLR1733
+# ruff: noqa: SIM113, PLC2701
+
 import pytest
 
 from sonolus.script.array import Array
 from sonolus.script.containers import Box
+from sonolus.script.internal.context import ctx
+from sonolus.script.internal.impl import validate_value
+from sonolus.script.internal.math_impls import _floor
+from sonolus.script.internal.meta_fn import meta_fn
+from sonolus.script.internal.random import _random
+from sonolus.script.internal.tuple_impl import TupleImpl
+from sonolus.script.num import _is_num
 from tests.script.conftest import run_and_validate
+
+
+@meta_fn
+def bb(*x):
+    if len(x) == 1:
+        x = x[0]
+    if not ctx():
+        return x
+    x = validate_value(x)
+    if _is_num(x):
+        return x + _floor(_random())
+    elif isinstance(x, TupleImpl):
+        return TupleImpl(tuple(bb(e) for e in x.value))
+    else:
+        return x
 
 
 def test_dict_get_present_small_size_string_key():
     d = {"a": 10, "b": 20}
 
     def fn():
-        return Array(d["a"], d["b"])
+        return Array(d[bb("a")], d[bb("b")])
 
     assert run_and_validate(fn) == Array(10, 20)
 
@@ -19,7 +42,7 @@ def test_dict_get_present_small_size_numeric_key():
     d = {1: 10, 2: 20}
 
     def fn():
-        return Array(d[1], d[2])
+        return Array(d[bb(1)], d[bb(2)])
 
     assert run_and_validate(fn) == Array(10, 20)
 
@@ -28,7 +51,7 @@ def test_dict_get_present_small_size_tuple_key():
     d = {(1, 1): 10, (3, 3): 30, (2, 2): 20}
 
     def fn():
-        return Array(d[1, 1], d[2, 2], d[3, 3])
+        return Array(d[bb(1, 1)], d[bb(2, 2)], d[bb(3, 3)])
 
     assert run_and_validate(fn) == Array(10, 20, 30)
 
@@ -44,7 +67,7 @@ def test_dict_get_present_small_size_mixed_key():
     }
 
     def fn():
-        return Array(d["a"], d[2], d[3, 3])
+        return Array(d[bb("a")], d[bb(2)], d[bb(3, 3)])
 
     assert run_and_validate(fn) == Array(10, 20, 30)
 
@@ -53,7 +76,7 @@ def test_dict_get_present_large_size_string_key():
     d = {k: i * 10 for i, k in enumerate("azbycxdwevfugthsirjqkplomn", start=1)}
 
     def fn():
-        return Array(d["a"], d["m"], d["z"])
+        return Array(d[bb("a")], d[bb("m")], d[bb("z")])
 
     assert run_and_validate(fn) == Array(10, 250, 20)
 
@@ -62,7 +85,7 @@ def test_dict_get_present_large_size_numeric_key():
     d = {k: k * 10 for k in [20, 3, 15, 7, 25, 1, 18, 9, 22, 5, 12, 16, 8, 24, 2, 19, 11, 14, 6, 23, 4, 17, 13, 21, 10]}
 
     def fn():
-        return Array(d[1], d[13], d[25])
+        return Array(d[bb(1)], d[bb(13)], d[bb(25)])
 
     assert run_and_validate(fn) == Array(10, 130, 250)
 
@@ -74,7 +97,7 @@ def test_dict_get_present_large_size_tuple_key():
     }
 
     def fn():
-        return Array(d[1, 1], d[13, 13], d[25, 25])
+        return Array(d[bb(1, 1)], d[bb(13, 13)], d[bb(25, 25)])
 
     assert run_and_validate(fn) == Array(10, 130, 250)
 
@@ -105,7 +128,7 @@ def test_dict_get_present_large_size_mixed_key():
     }
 
     def fn():
-        return Array(d["a"], d[4], d[4, 4])
+        return Array(d[bb("a")], d[bb(4)], d[bb(4, 4)])
 
     assert run_and_validate(fn) == Array(10, 110, 180)
 
@@ -114,7 +137,7 @@ def test_dict_get_absent_small_size_string_key():
     d = {"a": 10, "b": 20}
 
     def fn():
-        return d["A"]
+        return d[bb("A")]
 
     with pytest.raises(KeyError):
         run_and_validate(fn)
@@ -124,7 +147,7 @@ def test_dict_get_absent_small_size_numeric_key():
     d = {1: 10, 2: 20}
 
     def fn():
-        return d[3]
+        return d[bb(3)]
 
     with pytest.raises(KeyError):
         run_and_validate(fn)
@@ -134,7 +157,7 @@ def test_dict_get_absent_small_size_tuple_key():
     d = {(1, 1): 10, (2, 2): 20}
 
     def fn():
-        return d[3, 3]
+        return d[bb(3, 3)]
 
     with pytest.raises(KeyError):
         run_and_validate(fn)
@@ -144,7 +167,7 @@ def test_dict_get_absent_small_size_mixed_key():
     d = {"a": 10, 2: 20, (3, 3): 30}
 
     def fn():
-        return d["b"]
+        return d[bb("b")]
 
     with pytest.raises(KeyError):
         run_and_validate(fn)
@@ -155,7 +178,7 @@ def test_dict_get_absent_large_size_string_key(key):
     d = {k: i * 10 for i, k in enumerate("azbycxdwevfugthsirjqkplomn", start=1)}
 
     def fn():
-        return d[key]
+        return d[bb(key)]
 
     with pytest.raises(KeyError):
         run_and_validate(fn)
@@ -166,7 +189,7 @@ def test_dict_get_absent_large_size_numeric_key(key):
     d = {k: k * 10 for k in [20, 3, 15, 7, 25, 1, 18, 9, 22, 5, 12, 16, 8, 24, 2, 19, 11, 14, 6, 23, 4, 17, 13, 21, 10]}
 
     def fn():
-        return d[key]
+        return d[bb(key)]
 
     with pytest.raises(KeyError):
         run_and_validate(fn)
@@ -180,7 +203,7 @@ def test_dict_get_absent_large_size_tuple_key(key):
     }
 
     def fn():
-        return d[key]
+        return d[bb(key)]
 
     with pytest.raises(KeyError):
         run_and_validate(fn)
@@ -213,7 +236,7 @@ def test_dict_get_absent_large_size_mixed_key(key):
     }
 
     def fn():
-        return d[key]
+        return d[bb(key)]
 
     with pytest.raises(KeyError):
         run_and_validate(fn)
@@ -1291,7 +1314,7 @@ def test_dict_iter_small_size_string_key():
         results = +Array[int, 2]
         i = 0
         for k in d:
-            results[i] = d[k]
+            results[i] = d[bb(k)]
             i += 1
         return results
 
@@ -1319,7 +1342,7 @@ def test_dict_iter_small_size_mixed_key():
         results = +Array[int, 3]
         i = 0
         for k in d:
-            results[i] = d[k]
+            results[i] = d[bb(k)]
             i += 1
         return results
 
@@ -1333,7 +1356,7 @@ def test_dict_keys_iter_small_size_string_key():
         results = +Array[int, 2]
         i = 0
         for k in d:
-            results[i] = d[k]
+            results[i] = d[bb(k)]
             i += 1
         return results
 
@@ -1461,7 +1484,7 @@ def test_dict_items_iter_small_size_string_key():
         results = +Array[int, 4]
         i = 0
         for k, v in d.items():
-            results[i] = d[k]
+            results[i] = d[bb(k)]
             results[i + 1] = v
             i += 2
         return results
@@ -1527,7 +1550,7 @@ def test_dict_iter_large_size_string_key():
         results = +Array[int, 26]
         i = 0
         for k in d:
-            results[i] = d[k]
+            results[i] = d[bb(k)]
             i += 1
         return results
 
@@ -1577,7 +1600,7 @@ def test_dict_iter_large_size_mixed_key():
         results = +Array[int, 21]
         i = 0
         for k in d:
-            results[i] = d[k]
+            results[i] = d[bb(k)]
             i += 1
         return results
 
@@ -1591,7 +1614,7 @@ def test_dict_keys_iter_large_size_string_key():
         results = +Array[int, 26]
         i = 0
         for k in d:
-            results[i] = d[k]
+            results[i] = d[bb(k)]
             i += 1
         return results
 
@@ -1719,7 +1742,7 @@ def test_dict_items_iter_large_size_string_key():
         results = +Array[int, 52]
         i = 0
         for k, v in d.items():
-            results[i] = d[k]
+            results[i] = d[bb(k)]
             results[i + 1] = v
             i += 2
         return results

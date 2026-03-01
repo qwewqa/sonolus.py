@@ -109,7 +109,7 @@ class _Num(Value, metaclass=_NumMeta):
         return Num(value)
 
     def _to_list_(self, level_refs: dict[Any, str] | None = None) -> list[DataValue]:
-        return [self.data]
+        return [self._as_py_() if self._is_py_() else self.data]
 
     @classmethod
     def _flat_keys_(cls, prefix: str) -> list[str]:

@@ -1,7 +1,7 @@
 from typing import Any
 
 from sonolus.script.array import Array
-from sonolus.script.debug import error
+from sonolus.script.debug import error, require
 from sonolus.script.internal.context import Context, ctx, set_ctx
 from sonolus.script.internal.impl import validate_value
 from sonolus.script.internal.meta_fn import meta_fn
@@ -11,7 +11,7 @@ from sonolus.script.record import Record
 
 class DictImpl[Keys, OrderedKeys, Values](Record):
     _keys: Keys  # tuple[K, ...]
-    _ordered_keys: OrderedKeys  # tuple[K, ...] | None
+    _ordered_keys: OrderedKeys  # tuple[tuple[K, int], ...] | None
     _values: Values  # tuple[V, ...] | Array[V, ...]
 
     @property
@@ -45,7 +45,7 @@ class DictImpl[Keys, OrderedKeys, Values](Record):
     def __getitem__(self, item):
         constsearch_res = self._try_constsearch(item)
         if constsearch_res is not None:
-            assert constsearch_res >= 0, "Key not found"
+            require(constsearch_res >= 0, "Key not found")
             return self._values[constsearch_res]
         if not self._has_array_values:
             error(
@@ -56,8 +56,11 @@ class DictImpl[Keys, OrderedKeys, Values](Record):
             index = self._binsearch(item)
         else:
             index = self._linsearch(item)
-        assert index >= 0, "Key not found"
-        return self._values[index]
+        require(index >= 0, "Key not found")
+        if isinstance(self._values, Array):
+            return self._values.get_unchecked(index)
+        else:
+            return self._values[index]
 
     def __eq__(self, other: Any):
         raise TypeError("Dict equality comparison is not supported")
@@ -85,7 +88,7 @@ class DictImpl[Keys, OrderedKeys, Values](Record):
                 and type(keys[0]).__lt__ is not object.__lt__
             )
             if is_comparable:
-                ordered_keys = tuple(validate_value(k) for k in sorted(py_keys))
+                ordered_keys = tuple((k, i) for i, k in sorted(enumerate(py_keys), key=lambda x: x[1]))
             else:
                 ordered_keys = None
         else:
@@ -126,14 +129,15 @@ class DictImpl[Keys, OrderedKeys, Values](Record):
             res._set_(-1)
             return res
         mid = (lo + hi) // 2
-        mid_value = self._keys[mid]
+        mid_value, orig_index = self._ordered_keys[mid]
+        eq_test = compile_and_call(item.__eq__, mid_value).ir()
         ctx_init = ctx()
-        ctx_init.test = compile_and_call(mid_value.__eq__, item).ir()
+        ctx_init.test = eq_test
         eq_ctx = ctx_init.branch(None)
         neq_ctx = ctx_init.branch(0)
 
         set_ctx(eq_ctx)
-        res._set_(mid)
+        res._set_(orig_index)
         after_eq_ctx = ctx()
 
         set_ctx(neq_ctx)
@@ -143,7 +147,9 @@ class DictImpl[Keys, OrderedKeys, Values](Record):
             set_ctx(Context.meet([after_eq_ctx, ctx()]))
             return res
 
-        neq_ctx.test = compile_and_call(mid_value.__lt__, item).ir()
+        neq_test = compile_and_call(item.__lt__, mid_value).ir()
+        neq_ctx = ctx()
+        neq_ctx.test = neq_test
         lt_ctx = neq_ctx.branch(None)
         gt_ctx = neq_ctx.branch(0)
 
