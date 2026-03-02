@@ -227,7 +227,7 @@ def visualize_cfg(
                 RenumberVars(),
             ]
 
-    project_state = ProjectContextState()
+    project_state = ProjectContextState(runtime_checks=RuntimeChecks.NOTIFY_AND_TERMINATE)
     mode_state = ModeContextState(
         mode,
         archetypes,

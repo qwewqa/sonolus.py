@@ -139,6 +139,26 @@ class DictImpl[Keys, OrderedKeys, Values](Record):
         if lo >= hi:
             res._set_(-1)
             return res
+
+        if hi - lo <= 3:
+            # Linear search
+            lo_value, orig_index = self._ordered_keys[lo]
+            eq_test = compile_and_call(item.__eq__, lo_value).ir()
+            ctx_init = ctx()
+            ctx_init.test = eq_test
+            eq_ctx = ctx_init.branch(None)
+            neq_ctx = ctx_init.branch(0)
+
+            set_ctx(eq_ctx)
+            res._set_(orig_index)
+            after_eq_ctx = ctx()
+
+            set_ctx(neq_ctx)
+            self._binsearch_internal(item, lo + 1, hi, res)
+
+            set_ctx(Context.meet([after_eq_ctx, ctx()]))
+            return res
+
         mid = (lo + hi) // 2
         mid_value, orig_index = self._ordered_keys[mid]
         eq_test = compile_and_call(item.__eq__, mid_value).ir()
