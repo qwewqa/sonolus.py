@@ -28,6 +28,19 @@ class ExprBackingValue(BackingValue):
         raise RuntimeError("Value is read-only, cannot write to it")
 
 
+class ReadOnlyBackingValueWrapper(BackingValue):
+    """A wrapper around another backing value that blocks reads."""
+
+    def __init__(self, value: BackingValue):
+        self._value = value
+
+    def read(self) -> IRExpr:
+        return self._value.read()
+
+    def write(self, value: IRExpr) -> IRStmt:
+        raise RuntimeError("Value is read-only, cannot write to it")
+
+
 type DataValue = BlockPlace | BackingValue | float | int | bool
 type BackingSource = Callable[[IRExpr], BackingValue]
 

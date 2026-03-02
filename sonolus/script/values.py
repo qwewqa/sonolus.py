@@ -1,7 +1,10 @@
+from sonolus.backend.ir import IRGet
+from sonolus.backend.place import BlockPlace
 from sonolus.script.internal.context import ctx
 from sonolus.script.internal.generic import validate_concrete_type
 from sonolus.script.internal.impl import validate_value
 from sonolus.script.internal.meta_fn import meta_fn
+from sonolus.script.internal.value import BackingValue, ExprBackingValue, ReadOnlyBackingValueWrapper
 
 
 @meta_fn
@@ -50,3 +53,30 @@ def swap[T](a: T, b: T):
 def sizeof(type_: type, /) -> int:
     """Return the size of the given type."""
     return validate_concrete_type(type_)._size_()
+
+
+@meta_fn
+def freeze[T](value: T) -> T:
+    """Return a read-only version of the given value.
+
+    If the original value is modified, no guarantees are made about behavior and changes may or may not be reflected
+    in the frozen version. Use freeze(copy(value)) to guarantee independence.
+    """
+    value = validate_value(value)
+    result = type(value)._from_list_(_map_data_value_to_frozen(v) for v in value._to_list_())
+    if ctx():
+        return result
+    else:
+        return result._as_py_()
+
+
+def _map_data_value_to_frozen(v):
+    match v:
+        case int() | float() | bool() | ExprBackingValue() | ReadOnlyBackingValueWrapper():
+            return v
+        case BackingValue():
+            return ReadOnlyBackingValueWrapper(v)
+        case BlockPlace():
+            return ExprBackingValue(IRGet(v))
+        case _:
+            raise TypeError("Unsupported value for freezing")

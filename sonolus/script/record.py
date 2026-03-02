@@ -278,7 +278,7 @@ class Record(GenericValue, metaclass=RecordMeta):
     @classmethod
     def _from_list_(cls, values: Iterable[DataValue]) -> Self:
         iterator = iter(values)
-        return cls(**{field.name: field.type._from_list_(iterator) for field in cls._fields_})
+        return cls._raw(**{field.name: field.type._from_list_(iterator) for field in cls._fields_})
 
     def _to_list_(self, level_refs: dict[Any, str] | None = None) -> list[DataValue | str]:
         result = []
