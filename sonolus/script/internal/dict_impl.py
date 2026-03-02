@@ -1,10 +1,11 @@
 from typing import Any
 
 from sonolus.script.array import Array
-from sonolus.script.debug import error, require
+from sonolus.script.debug import error
 from sonolus.script.internal.context import Context, ctx, set_ctx
 from sonolus.script.internal.impl import validate_value
 from sonolus.script.internal.meta_fn import meta_fn
+from sonolus.script.maybe import Nothing, Some
 from sonolus.script.num import Num
 from sonolus.script.record import Record
 
@@ -43,10 +44,19 @@ class DictImpl[Keys, OrderedKeys, Values](Record):
         return self._linsearch(item) >= 0
 
     def __getitem__(self, item):
+        result = self._maybe_getitem(item)
+        return result.get(error_message="KeyError")
+
+    def get(self, item, default, /):
+        return self._maybe_getitem(item).or_default(default)
+
+    def _maybe_getitem(self, item):
         constsearch_res = self._try_constsearch(item)
         if constsearch_res is not None:
-            require(constsearch_res >= 0, "Key not found")
-            return self._values[constsearch_res]
+            if constsearch_res < 0:
+                return Nothing
+            else:
+                return Some(self._values[constsearch_res])
         if not self._has_array_values:
             error(
                 "Dict must be accessed via a compile time constant unless "
@@ -56,11 +66,12 @@ class DictImpl[Keys, OrderedKeys, Values](Record):
             index = self._binsearch(item)
         else:
             index = self._linsearch(item)
-        require(index >= 0, "Key not found")
-        if isinstance(self._values, Array):
-            return self._values.get_unchecked(index)
+        if index < 0:
+            return Nothing
+        elif isinstance(self._values, Array):
+            return Some(self._values.get_unchecked(index))
         else:
-            return self._values[index]
+            return Some(self._values[index])
 
     def __eq__(self, other: Any):
         raise TypeError("Dict equality comparison is not supported")

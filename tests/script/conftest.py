@@ -152,9 +152,29 @@ def run_and_validate[**P, R](
             target._copy_from_(result)
         return result
 
+    # Check that it compiles with runtime checks set to None. Exception behavior can differ though, so we don't
+    # bother actually running with runtime checks fully disabled.
+    for read_closure_from_rom in (False, True):
+        try:
+            compile_fn(
+                run_compiled_with_closure_from_rom if read_closure_from_rom else run_compiled,
+                runtime_checks=RuntimeChecks.NONE,
+            )
+        except CompilationError as e:
+            if exception is None:
+                raise
+            while isinstance(e, CompilationError) and e.__cause__ is not None:
+                e = e.__cause__
+            assert str(e) == str(exception)  # noqa: PT017
+            assert type(e) is type(exception)  # noqa: PT017
+            raise exception from None
+
     for read_closure_from_rom, passes in itertools.product((False, True), optimization_levels):
         try:
-            cfg, rom_values = compile_fn(run_compiled_with_closure_from_rom if read_closure_from_rom else run_compiled)
+            cfg, rom_values = compile_fn(
+                run_compiled_with_closure_from_rom if read_closure_from_rom else run_compiled,
+                runtime_checks=RuntimeChecks.TERMINATE,
+            )
         except CompilationError as e:
             if exception is None:
                 raise

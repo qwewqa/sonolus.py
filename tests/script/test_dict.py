@@ -450,6 +450,217 @@ def test_dict_get_present_and_modify_large_size_tuple_key():
     assert run_and_validate(fn) == Array(10, 20)
 
 
+def test_dict_get_method_present_small_size_string_key():
+    d = {"a": 10, "b": 20}
+
+    def fn():
+        return Array(d.get(bb("a"), 0), d.get(bb("b"), 0))
+
+    assert run_and_validate(fn) == Array(10, 20)
+
+
+def test_dict_get_method_present_small_size_numeric_key():
+    d = {1: 10, 2: 20}
+
+    def fn():
+        return Array(d.get(bb(1), 0), d.get(bb(2), 0))
+
+    assert run_and_validate(fn) == Array(10, 20)
+
+
+def test_dict_get_method_present_small_size_tuple_key():
+    d = {(1, 1): 10, (3, 3): 30, (2, 2): 20}
+
+    def fn():
+        return Array(d.get(bb(1, 1), 0), d.get(bb(2, 2), 0), d.get(bb(3, 3), 0))
+
+    assert run_and_validate(fn) == Array(10, 20, 30)
+
+
+def test_dict_get_method_present_small_size_mixed_key():
+    d = {
+        "a": 10,
+        (3, 3): 30,
+        2: 20,
+    }
+
+    def fn():
+        return Array(d.get(bb("a"), 0), d.get(bb(2), 0), d.get(bb(3, 3), 0))
+
+    assert run_and_validate(fn) == Array(10, 20, 30)
+
+
+def test_dict_get_method_present_large_size_string_key():
+    d = {k: i * 10 for i, k in enumerate("azbycxdwevfugthsirjqkplomn", start=1)}
+
+    def fn():
+        return Array(d.get(bb("a"), 0), d.get(bb("m"), 0), d.get(bb("z"), 0))
+
+    assert run_and_validate(fn) == Array(10, 250, 20)
+
+
+def test_dict_get_method_present_large_size_numeric_key():
+    d = {k: k * 10 for k in [20, 3, 15, 7, 25, 1, 18, 9, 22, 5, 12, 16, 8, 24, 2, 19, 11, 14, 6, 23, 4, 17, 13, 21, 10]}
+
+    def fn():
+        return Array(d.get(bb(1), 0), d.get(bb(13), 0), d.get(bb(25), 0))
+
+    assert run_and_validate(fn) == Array(10, 130, 250)
+
+
+def test_dict_get_method_present_large_size_tuple_key():
+    d = {
+        (k, k): k * 10
+        for k in [20, 3, 15, 7, 25, 1, 18, 9, 22, 5, 12, 16, 8, 24, 2, 19, 11, 14, 6, 23, 4, 17, 13, 21, 10]
+    }
+
+    def fn():
+        return Array(d.get(bb(1, 1), 0), d.get(bb(13, 13), 0), d.get(bb(25, 25), 0))
+
+    assert run_and_validate(fn) == Array(10, 130, 250)
+
+
+def test_dict_get_method_present_large_size_mixed_key():
+    d = {
+        "a": 10,
+        "b": 20,
+        "c": 30,
+        "d": 40,
+        "e": 50,
+        "f": 60,
+        "g": 70,
+        1: 80,
+        2: 90,
+        3: 100,
+        4: 110,
+        5: 120,
+        6: 130,
+        7: 140,
+        (1, 1): 150,
+        (2, 2): 160,
+        (3, 3): 170,
+        (4, 4): 180,
+        (5, 5): 190,
+        (6, 6): 200,
+        (7, 7): 210,
+    }
+
+    def fn():
+        return Array(d.get(bb("a"), 0), d.get(bb(4), 0), d.get(bb(4, 4), 0))
+
+    assert run_and_validate(fn) == Array(10, 110, 180)
+
+
+def test_dict_get_method_absent_empty():
+    d = {}
+
+    def fn():
+        return d.get(bb("a"), 0)
+
+    assert run_and_validate(fn) == 0
+
+
+def test_dict_get_method_absent_small_size_string_key():
+    d = {"a": 10, "b": 20}
+
+    def fn():
+        return d.get(bb("A"), 0)
+
+    assert run_and_validate(fn) == 0
+
+
+def test_dict_get_method_absent_small_size_numeric_key():
+    d = {1: 10, 2: 20}
+
+    def fn():
+        return d.get(bb(3), 0)
+
+    assert run_and_validate(fn) == 0
+
+
+def test_dict_get_method_absent_small_size_tuple_key():
+    d = {(1, 1): 10, (2, 2): 20}
+
+    def fn():
+        return d.get(bb(3, 3), 0)
+
+    assert run_and_validate(fn) == 0
+
+
+def test_dict_get_method_absent_small_size_mixed_key():
+    d = {"a": 10, 2: 20, (3, 3): 30}
+
+    def fn():
+        return d.get(bb("b"), 0)
+
+    assert run_and_validate(fn) == 0
+
+
+@pytest.mark.parametrize("key", ["A", "Z", "aa", "1"])
+def test_dict_get_method_absent_large_size_string_key(key):
+    d = {k: i * 10 for i, k in enumerate("azbycxdwevfugthsirjqkplomn", start=1)}
+
+    def fn():
+        return d.get(bb(key), 0)
+
+    assert run_and_validate(fn) == 0
+
+
+@pytest.mark.parametrize("key", [0, 26, 100, -1, 1.5])
+def test_dict_get_method_absent_large_size_numeric_key(key):
+    d = {k: k * 10 for k in [20, 3, 15, 7, 25, 1, 18, 9, 22, 5, 12, 16, 8, 24, 2, 19, 11, 14, 6, 23, 4, 17, 13, 21, 10]}
+
+    def fn():
+        return d.get(bb(key), 0)
+
+    assert run_and_validate(fn) == 0
+
+
+@pytest.mark.parametrize("key", [(0, 0), (26, 26), (1, 2), (100, 100)])
+def test_dict_get_method_absent_large_size_tuple_key(key):
+    d = {
+        (k, k): k * 10
+        for k in [20, 3, 15, 7, 25, 1, 18, 9, 22, 5, 12, 16, 8, 24, 2, 19, 11, 14, 6, 23, 4, 17, 13, 21, 10]
+    }
+
+    def fn():
+        return d.get(bb(key), 0)
+
+    assert run_and_validate(fn) == 0
+
+
+@pytest.mark.parametrize("key", ["h", 8, (8, 8)])
+def test_dict_get_method_absent_large_size_mixed_key(key):
+    d = {
+        "a": 1,
+        "b": 1,
+        "c": 1,
+        "d": 1,
+        "e": 1,
+        "f": 1,
+        "g": 1,
+        1: 2,
+        2: 2,
+        3: 2,
+        4: 2,
+        5: 2,
+        6: 2,
+        7: 2,
+        (1, 1): 3,
+        (2, 2): 3,
+        (3, 3): 3,
+        (4, 4): 3,
+        (5, 5): 3,
+        (6, 6): 3,
+        (7, 7): 3,
+    }
+
+    def fn():
+        return d.get(bb(key), 0)
+
+    assert run_and_validate(fn) == 0
+
+
 def test_dict_contains_present_small_size_string_key():
     def fn():
         d = {"a": 1, "b": 2}

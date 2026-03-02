@@ -31,11 +31,11 @@ def test_run_and_validate_error_if_only_py_raises():
 
 
 def test_run_and_validate_error_if_only_compiled_raises():
+    @meta_fn
     def terminate_if_compiled():
         if ctx():
             terminate()
 
-    @meta_fn
     def fn():
         terminate_if_compiled()
         return 1

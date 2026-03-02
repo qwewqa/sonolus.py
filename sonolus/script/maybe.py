@@ -60,9 +60,9 @@ class Maybe[T](TransientValue):
         """Check if the value is empty."""
         return not self.is_some
 
-    def get(self) -> T:
+    def get(self, *, error_message: str = "Tried to get the value of an empty Maybe instance") -> T:
         """Get the value if present, otherwise raise an error."""
-        assert self.is_some
+        assert self.is_some, error_message
         return self.get_unsafe()
 
     @meta_fn
