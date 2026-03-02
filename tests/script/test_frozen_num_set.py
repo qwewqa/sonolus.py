@@ -1,10 +1,10 @@
-# ruff: noqa: FURB171
 import random
 
 from hypothesis import given
 from hypothesis import strategies as st
 
 from sonolus.script.array import Array
+from sonolus.script.containers import FrozenNumSet
 from sonolus.script.debug import assert_true
 from tests.script.conftest import run_and_validate
 
@@ -22,7 +22,7 @@ def set_and_present_value(draw, fixed_size: int | None = None):
         )
     )
     value = draw(st.sampled_from(list(values)))
-    return values, value
+    return FrozenNumSet.of(*values), value
 
 
 @st.composite
@@ -33,15 +33,15 @@ def set_and_missing_value(draw, fixed_size: int | None = None):
         )
     )
     missing = draw(nums.filter(lambda x: x not in values))
-    return values, missing
+    return FrozenNumSet.of(*values), missing
 
 
 def test_contains_basic():
     def fn():
-        assert_true(2 in {1, 2, 3, 4, 5})
-        assert_true(5 in {1, 2, 3, 4, 5})
-        assert_true(6 not in {1, 2, 3, 4, 5})
-        assert_true(0 not in {1, 2, 3, 4, 5})
+        assert_true(2 in FrozenNumSet.of(1, 2, 3, 4, 5))
+        assert_true(5 in FrozenNumSet.of(1, 2, 3, 4, 5))
+        assert_true(6 not in FrozenNumSet.of(1, 2, 3, 4, 5))
+        assert_true(0 not in FrozenNumSet.of(1, 2, 3, 4, 5))
         return 1
 
     assert run_and_validate(fn) == 1
@@ -49,10 +49,10 @@ def test_contains_basic():
 
 def test_contains_out_of_order():
     def fn():
-        assert_true(3 in {5, 1, 4, 2, 3})
-        assert_true(1 in {5, 1, 4, 2, 3})
-        assert_true(6 not in {5, 1, 4, 2, 3})
-        assert_true(0 not in {5, 1, 4, 2, 3})
+        assert_true(3 in FrozenNumSet.of(5, 1, 4, 2, 3))
+        assert_true(1 in FrozenNumSet.of(5, 1, 4, 2, 3))
+        assert_true(6 not in FrozenNumSet.of(5, 1, 4, 2, 3))
+        assert_true(0 not in FrozenNumSet.of(5, 1, 4, 2, 3))
         return 1
 
     assert run_and_validate(fn) == 1
@@ -65,7 +65,7 @@ def test_contains_non_literal_contents():
         c = 3 * (random.random() != -1)
         d = 2 * (random.random() != -1)
         e = 1 * (random.random() != -1)
-        test_set = {a, b, c, d, e}
+        test_set = FrozenNumSet.of(a, b, c, d, e)
         assert_true(2 in test_set)
         assert_true(5 in test_set)
         assert_true(6 not in test_set)
@@ -76,7 +76,7 @@ def test_contains_non_literal_contents():
 
 
 def test_defined_outside():
-    test_set = {10, 20, 30, 40, 50}
+    test_set = FrozenNumSet.of(10, 20, 30, 40, 50)
 
     def fn():
         assert_true(10 in test_set)
@@ -90,7 +90,7 @@ def test_defined_outside():
 
 
 def test_defined_outside_frozenset():
-    test_set = frozenset({10, 20, 30, 40, 50})
+    test_set = FrozenNumSet.of(10, 20, 30, 40, 50)
 
     def fn():
         assert_true(10 in test_set)
@@ -104,7 +104,7 @@ def test_defined_outside_frozenset():
 
 
 def test_empty():
-    empty_set = set()
+    empty_set = FrozenNumSet.of()
 
     def fn():
         assert_true(0 not in empty_set)
@@ -117,10 +117,10 @@ def test_empty():
 
 def test_single_element_set():
     def fn():
-        assert_true(42 in {42})
-        assert_true(0 not in {42})
-        assert_true(41 not in {42})
-        assert_true(43 not in {42})
+        assert_true(42 in FrozenNumSet.of(42))
+        assert_true(0 not in FrozenNumSet.of(42))
+        assert_true(41 not in FrozenNumSet.of(42))
+        assert_true(43 not in FrozenNumSet.of(42))
         return 1
 
     assert run_and_validate(fn) == 1
@@ -128,11 +128,11 @@ def test_single_element_set():
 
 def test_negative_numbers():
     def fn():
-        assert_true(-5 in {-10, -5, 0, 5, 10})
-        assert_true(-10 in {-10, -5, 0, 5, 10})
-        assert_true(0 in {-10, -5, 0, 5, 10})
-        assert_true(-3 not in {-10, -5, 0, 5, 10})
-        assert_true(-15 not in {-10, -5, 0, 5, 10})
+        assert_true(-5 in FrozenNumSet.of(-10, -5, 0, 5, 10))
+        assert_true(-10 in FrozenNumSet.of(-10, -5, 0, 5, 10))
+        assert_true(0 in FrozenNumSet.of(-10, -5, 0, 5, 10))
+        assert_true(-3 not in FrozenNumSet.of(-10, -5, 0, 5, 10))
+        assert_true(-15 not in FrozenNumSet.of(-10, -5, 0, 5, 10))
         return 1
 
     assert run_and_validate(fn) == 1
@@ -166,7 +166,7 @@ def test_dyn_set_contains_present(args):
         values = +Array[float, 20]
         for i, v in enumerate(value_set):
             values[i] = v * (random.random() != -1)
-        return value in {
+        return value in FrozenNumSet.of(
             values[0],
             values[1],
             values[2],
@@ -187,7 +187,7 @@ def test_dyn_set_contains_present(args):
             values[17],
             values[18],
             values[19],
-        }
+        )
 
     assert run_and_validate(fn)
 
@@ -200,7 +200,7 @@ def test_dyn_set_contains_missing(args):
         values = +Array[float, 20]
         for i, v in enumerate(value_set):
             values[i] = v * (random.random() != -1)
-        return missing in {
+        return missing in FrozenNumSet.of(
             values[0],
             values[1],
             values[2],
@@ -221,6 +221,6 @@ def test_dyn_set_contains_missing(args):
             values[17],
             values[18],
             values[19],
-        }
+        )
 
     assert not run_and_validate(fn)

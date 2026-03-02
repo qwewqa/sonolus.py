@@ -133,6 +133,16 @@ def test_dict_get_present_large_size_mixed_key():
     assert run_and_validate(fn) == Array(10, 110, 180)
 
 
+def test_dict_get_absent_empty():
+    d = {}
+
+    def fn():
+        return d[bb("a")]
+
+    with pytest.raises(KeyError):
+        run_and_validate(fn)
+
+
 def test_dict_get_absent_small_size_string_key():
     d = {"a": 10, "b": 20}
 
@@ -534,6 +544,14 @@ def test_dict_contains_present_large_size_mixed_key():
         return Array("a" in d, 4 in d, (4, 4) in d)
 
     assert run_and_validate(fn) == Array(True, True, True)
+
+
+def test_dict_contains_absent_empty():
+    def fn():
+        d = {}
+        return "a" in d
+
+    assert not run_and_validate(fn)
 
 
 def test_dict_contains_absent_small_size_string_key():
@@ -1855,6 +1873,31 @@ def test_dict_set_contains_present_large_size_string_key():
     assert run_and_validate(fn) == Array(True, True, True)
 
 
+def test_dict_set_contains_present_small_size_numeric_key():
+    def fn():
+        d = {1, 2, 3}
+        return Array(
+            1 in d,
+            2 in d,
+            3 in d,
+        )
+
+    assert run_and_validate(fn) == Array(True, True, True)
+
+
+def test_dict_set_contains_present_large_size_numeric_key():
+    d = {20, 3, 15, 7, 25, 1, 18, 9, 22, 5, 12, 16, 8, 24, 2, 19, 11, 14, 6, 23, 4, 17, 13, 21, 10}
+
+    def fn():
+        return Array(
+            1 in d,
+            13 in d,
+            25 in d,
+        )
+
+    assert run_and_validate(fn) == Array(True, True, True)
+
+
 def test_dict_set_contains_present_small_size_tuple_key():
     def fn():
         d = {(1, 1), (2, 2), (3, 3)}
@@ -1924,3 +1967,12 @@ def test_dict_set_contains_present_large_size_mixed_key():
         )
 
     assert run_and_validate(fn) == Array(True, True, True)
+
+
+def test_dict_set_contains_absent_empty():
+    d = set()
+
+    def fn():
+        return "a" in d
+
+    assert not run_and_validate(fn)

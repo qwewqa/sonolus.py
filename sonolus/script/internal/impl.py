@@ -49,15 +49,10 @@ def validate_value[T](value: T) -> Value | T:
 
         return dict_impl.DictImpl.from_dict(value)
     if value_type in {set, frozenset}:
-        from sonolus.script.containers import FrozenNumSet
         from sonolus.script.internal import dict_impl
 
         values = [validate_value(v) for v in value]
-        value_types = {type(v) for v in values}
-        if (len(value_types) == 1 and next(iter(value_types)) is Num) or len(values) == 0:
-            return FrozenNumSet.of(*value)
-        else:
-            return dict_impl.DictImpl.from_dict(dict.fromkeys(values))
+        return dict_impl.DictImpl.from_dict(dict.fromkeys(values))
     if get_origin(value) in {Literal, Annotated, UnionType, Final, tuple, type}:
         return constant.BasicConstantValue.of(value)
     if value in {Literal, Annotated, Union}:
