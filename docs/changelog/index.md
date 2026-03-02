@@ -1,3 +1,9 @@
+### 0.14.4
+
+- Sets and dicts are now always distinct types and support `isinstance` checks.
+- Improved the performance of some dict and set operations.
+- Added support for `dict.get(item, default)` method with the limitation that the returned value is a copy.
+
 ### 0.14.3
 
 - Access to a `dict` with a non-compile-time-constant key is now supported when all values are compile time constants of
