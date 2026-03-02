@@ -49,10 +49,9 @@ def validate_value[T](value: T) -> Value | T:
 
         return dict_impl.DictImpl.from_dict(value)
     if value_type in {set, frozenset}:
-        from sonolus.script.internal import dict_impl
+        from sonolus.script.internal import set_impl
 
-        values = [validate_value(v) for v in value]
-        return dict_impl.DictImpl.from_dict(dict.fromkeys(values))
+        return set_impl.SetImpl.from_set(value)
     if get_origin(value) in {Literal, Annotated, UnionType, Final, tuple, type}:
         return constant.BasicConstantValue.of(value)
     if value in {Literal, Annotated, Union}:

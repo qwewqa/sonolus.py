@@ -29,7 +29,10 @@ def bb(*x):
         return x
 
 
-def test_dict_get_present_small_size_string_key():
+# __getitem__
+
+
+def test_get_present_small_size_string_key():
     d = {"a": 10, "b": 20}
 
     def fn():
@@ -38,7 +41,7 @@ def test_dict_get_present_small_size_string_key():
     assert run_and_validate(fn) == Array(10, 20)
 
 
-def test_dict_get_present_small_size_numeric_key():
+def test_get_present_small_size_numeric_key():
     d = {1: 10, 2: 20}
 
     def fn():
@@ -47,7 +50,7 @@ def test_dict_get_present_small_size_numeric_key():
     assert run_and_validate(fn) == Array(10, 20)
 
 
-def test_dict_get_present_small_size_tuple_key():
+def test_get_present_small_size_tuple_key():
     d = {(1, 1): 10, (3, 3): 30, (2, 2): 20}
 
     def fn():
@@ -56,7 +59,7 @@ def test_dict_get_present_small_size_tuple_key():
     assert run_and_validate(fn) == Array(10, 20, 30)
 
 
-def test_dict_get_present_small_size_mixed_key():
+def test_get_present_small_size_mixed_key():
     d = {
         "a": 10,
         (
@@ -72,7 +75,7 @@ def test_dict_get_present_small_size_mixed_key():
     assert run_and_validate(fn) == Array(10, 20, 30)
 
 
-def test_dict_get_present_large_size_string_key():
+def test_get_present_large_size_string_key():
     d = {k: i * 10 for i, k in enumerate("azbycxdwevfugthsirjqkplomn", start=1)}
 
     def fn():
@@ -81,7 +84,7 @@ def test_dict_get_present_large_size_string_key():
     assert run_and_validate(fn) == Array(10, 250, 20)
 
 
-def test_dict_get_present_large_size_numeric_key():
+def test_get_present_large_size_numeric_key():
     d = {k: k * 10 for k in [20, 3, 15, 7, 25, 1, 18, 9, 22, 5, 12, 16, 8, 24, 2, 19, 11, 14, 6, 23, 4, 17, 13, 21, 10]}
 
     def fn():
@@ -90,7 +93,7 @@ def test_dict_get_present_large_size_numeric_key():
     assert run_and_validate(fn) == Array(10, 130, 250)
 
 
-def test_dict_get_present_large_size_tuple_key():
+def test_get_present_large_size_tuple_key():
     d = {
         (k, k): k * 10
         for k in [20, 3, 15, 7, 25, 1, 18, 9, 22, 5, 12, 16, 8, 24, 2, 19, 11, 14, 6, 23, 4, 17, 13, 21, 10]
@@ -102,7 +105,7 @@ def test_dict_get_present_large_size_tuple_key():
     assert run_and_validate(fn) == Array(10, 130, 250)
 
 
-def test_dict_get_present_large_size_mixed_key():
+def test_get_present_large_size_mixed_key():
     d = {
         "a": 10,
         "b": 20,
@@ -133,7 +136,7 @@ def test_dict_get_present_large_size_mixed_key():
     assert run_and_validate(fn) == Array(10, 110, 180)
 
 
-def test_dict_get_absent_empty():
+def test_get_absent_empty():
     d = {}
 
     def fn():
@@ -143,7 +146,7 @@ def test_dict_get_absent_empty():
         run_and_validate(fn)
 
 
-def test_dict_get_absent_small_size_string_key():
+def test_get_absent_small_size_string_key():
     d = {"a": 10, "b": 20}
 
     def fn():
@@ -153,7 +156,7 @@ def test_dict_get_absent_small_size_string_key():
         run_and_validate(fn)
 
 
-def test_dict_get_absent_small_size_numeric_key():
+def test_get_absent_small_size_numeric_key():
     d = {1: 10, 2: 20}
 
     def fn():
@@ -163,7 +166,7 @@ def test_dict_get_absent_small_size_numeric_key():
         run_and_validate(fn)
 
 
-def test_dict_get_absent_small_size_tuple_key():
+def test_get_absent_small_size_tuple_key():
     d = {(1, 1): 10, (2, 2): 20}
 
     def fn():
@@ -173,7 +176,7 @@ def test_dict_get_absent_small_size_tuple_key():
         run_and_validate(fn)
 
 
-def test_dict_get_absent_small_size_mixed_key():
+def test_get_absent_small_size_mixed_key():
     d = {"a": 10, 2: 20, (3, 3): 30}
 
     def fn():
@@ -184,7 +187,7 @@ def test_dict_get_absent_small_size_mixed_key():
 
 
 @pytest.mark.parametrize("key", ["A", "Z", "aa", "1"])
-def test_dict_get_absent_large_size_string_key(key):
+def test_get_absent_large_size_string_key(key):
     d = {k: i * 10 for i, k in enumerate("azbycxdwevfugthsirjqkplomn", start=1)}
 
     def fn():
@@ -195,7 +198,7 @@ def test_dict_get_absent_large_size_string_key(key):
 
 
 @pytest.mark.parametrize("key", [0, 26, 100, -1, 1.5])
-def test_dict_get_absent_large_size_numeric_key(key):
+def test_get_absent_large_size_numeric_key(key):
     d = {k: k * 10 for k in [20, 3, 15, 7, 25, 1, 18, 9, 22, 5, 12, 16, 8, 24, 2, 19, 11, 14, 6, 23, 4, 17, 13, 21, 10]}
 
     def fn():
@@ -206,7 +209,7 @@ def test_dict_get_absent_large_size_numeric_key(key):
 
 
 @pytest.mark.parametrize("key", [(0, 0), (26, 26), (1, 2), (100, 100)])
-def test_dict_get_absent_large_size_tuple_key(key):
+def test_get_absent_large_size_tuple_key(key):
     d = {
         (k, k): k * 10
         for k in [20, 3, 15, 7, 25, 1, 18, 9, 22, 5, 12, 16, 8, 24, 2, 19, 11, 14, 6, 23, 4, 17, 13, 21, 10]
@@ -220,7 +223,7 @@ def test_dict_get_absent_large_size_tuple_key(key):
 
 
 @pytest.mark.parametrize("key", ["h", 8, (8, 8)])
-def test_dict_get_absent_large_size_mixed_key(key):
+def test_get_absent_large_size_mixed_key(key):
     d = {
         "a": 1,
         "b": 1,
@@ -252,7 +255,7 @@ def test_dict_get_absent_large_size_mixed_key(key):
         run_and_validate(fn)
 
 
-def test_dict_get_present_and_modify_small_size_string_key():
+def test_get_present_and_modify_small_size_string_key():
     def fn():
         v1 = Box(1)
         v2 = Box(2)
@@ -264,7 +267,7 @@ def test_dict_get_present_and_modify_small_size_string_key():
     assert run_and_validate(fn) == Array(10, 20)
 
 
-def test_dict_get_present_and_modify_small_size_numeric_key():
+def test_get_present_and_modify_small_size_numeric_key():
     def fn():
         v1 = Box(1)
         v2 = Box(2)
@@ -276,7 +279,7 @@ def test_dict_get_present_and_modify_small_size_numeric_key():
     assert run_and_validate(fn) == Array(10, 20)
 
 
-def test_dict_get_present_and_modify_small_size_tuple_key():
+def test_get_present_and_modify_small_size_tuple_key():
     def fn():
         v1 = Box(1)
         v2 = Box(2)
@@ -288,7 +291,7 @@ def test_dict_get_present_and_modify_small_size_tuple_key():
     assert run_and_validate(fn) == Array(10, 20)
 
 
-def test_dict_get_present_and_modify_small_size_mixed_key():
+def test_get_present_and_modify_small_size_mixed_key():
     def fn():
         v1 = Box(1)
         v2 = Box(2)
@@ -302,7 +305,7 @@ def test_dict_get_present_and_modify_small_size_mixed_key():
     assert run_and_validate(fn) == Array(10, 20, 30)
 
 
-def test_dict_get_present_and_modify_large_size_mixed_key():
+def test_get_present_and_modify_large_size_mixed_key():
     def fn():
         v1 = Box(1)
         v2 = Box(2)
@@ -335,7 +338,7 @@ def test_dict_get_present_and_modify_large_size_mixed_key():
     assert run_and_validate(fn) == Array(10, 20, 30)
 
 
-def test_dict_get_present_and_modify_large_size_string_key():
+def test_get_present_and_modify_large_size_string_key():
     def fn():
         v1 = Box(1)
         v2 = Box(2)
@@ -374,7 +377,7 @@ def test_dict_get_present_and_modify_large_size_string_key():
     assert run_and_validate(fn) == Array(10, 20)
 
 
-def test_dict_get_present_and_modify_large_size_numeric_key():
+def test_get_present_and_modify_large_size_numeric_key():
     def fn():
         v1 = Box(1)
         v2 = Box(2)
@@ -412,7 +415,7 @@ def test_dict_get_present_and_modify_large_size_numeric_key():
     assert run_and_validate(fn) == Array(10, 20)
 
 
-def test_dict_get_present_and_modify_large_size_tuple_key():
+def test_get_present_and_modify_large_size_tuple_key():
     def fn():
         v1 = Box(1)
         v2 = Box(2)
@@ -450,7 +453,10 @@ def test_dict_get_present_and_modify_large_size_tuple_key():
     assert run_and_validate(fn) == Array(10, 20)
 
 
-def test_dict_get_method_present_small_size_string_key():
+# .get()
+
+
+def test_get_method_present_small_size_string_key():
     d = {"a": 10, "b": 20}
 
     def fn():
@@ -459,7 +465,7 @@ def test_dict_get_method_present_small_size_string_key():
     assert run_and_validate(fn) == Array(10, 20)
 
 
-def test_dict_get_method_present_small_size_numeric_key():
+def test_get_method_present_small_size_numeric_key():
     d = {1: 10, 2: 20}
 
     def fn():
@@ -468,7 +474,7 @@ def test_dict_get_method_present_small_size_numeric_key():
     assert run_and_validate(fn) == Array(10, 20)
 
 
-def test_dict_get_method_present_small_size_tuple_key():
+def test_get_method_present_small_size_tuple_key():
     d = {(1, 1): 10, (3, 3): 30, (2, 2): 20}
 
     def fn():
@@ -477,7 +483,7 @@ def test_dict_get_method_present_small_size_tuple_key():
     assert run_and_validate(fn) == Array(10, 20, 30)
 
 
-def test_dict_get_method_present_small_size_mixed_key():
+def test_get_method_present_small_size_mixed_key():
     d = {
         "a": 10,
         (3, 3): 30,
@@ -490,7 +496,7 @@ def test_dict_get_method_present_small_size_mixed_key():
     assert run_and_validate(fn) == Array(10, 20, 30)
 
 
-def test_dict_get_method_present_large_size_string_key():
+def test_get_method_present_large_size_string_key():
     d = {k: i * 10 for i, k in enumerate("azbycxdwevfugthsirjqkplomn", start=1)}
 
     def fn():
@@ -499,7 +505,7 @@ def test_dict_get_method_present_large_size_string_key():
     assert run_and_validate(fn) == Array(10, 250, 20)
 
 
-def test_dict_get_method_present_large_size_numeric_key():
+def test_get_method_present_large_size_numeric_key():
     d = {k: k * 10 for k in [20, 3, 15, 7, 25, 1, 18, 9, 22, 5, 12, 16, 8, 24, 2, 19, 11, 14, 6, 23, 4, 17, 13, 21, 10]}
 
     def fn():
@@ -508,7 +514,7 @@ def test_dict_get_method_present_large_size_numeric_key():
     assert run_and_validate(fn) == Array(10, 130, 250)
 
 
-def test_dict_get_method_present_large_size_tuple_key():
+def test_get_method_present_large_size_tuple_key():
     d = {
         (k, k): k * 10
         for k in [20, 3, 15, 7, 25, 1, 18, 9, 22, 5, 12, 16, 8, 24, 2, 19, 11, 14, 6, 23, 4, 17, 13, 21, 10]
@@ -520,7 +526,7 @@ def test_dict_get_method_present_large_size_tuple_key():
     assert run_and_validate(fn) == Array(10, 130, 250)
 
 
-def test_dict_get_method_present_large_size_mixed_key():
+def test_get_method_present_large_size_mixed_key():
     d = {
         "a": 10,
         "b": 20,
@@ -551,7 +557,7 @@ def test_dict_get_method_present_large_size_mixed_key():
     assert run_and_validate(fn) == Array(10, 110, 180)
 
 
-def test_dict_get_method_absent_empty():
+def test_get_method_absent_empty():
     d = {}
 
     def fn():
@@ -560,7 +566,7 @@ def test_dict_get_method_absent_empty():
     assert run_and_validate(fn) == 0
 
 
-def test_dict_get_method_absent_small_size_string_key():
+def test_get_method_absent_small_size_string_key():
     d = {"a": 10, "b": 20}
 
     def fn():
@@ -569,7 +575,7 @@ def test_dict_get_method_absent_small_size_string_key():
     assert run_and_validate(fn) == 0
 
 
-def test_dict_get_method_absent_small_size_numeric_key():
+def test_get_method_absent_small_size_numeric_key():
     d = {1: 10, 2: 20}
 
     def fn():
@@ -578,7 +584,7 @@ def test_dict_get_method_absent_small_size_numeric_key():
     assert run_and_validate(fn) == 0
 
 
-def test_dict_get_method_absent_small_size_tuple_key():
+def test_get_method_absent_small_size_tuple_key():
     d = {(1, 1): 10, (2, 2): 20}
 
     def fn():
@@ -587,7 +593,7 @@ def test_dict_get_method_absent_small_size_tuple_key():
     assert run_and_validate(fn) == 0
 
 
-def test_dict_get_method_absent_small_size_mixed_key():
+def test_get_method_absent_small_size_mixed_key():
     d = {"a": 10, 2: 20, (3, 3): 30}
 
     def fn():
@@ -597,7 +603,7 @@ def test_dict_get_method_absent_small_size_mixed_key():
 
 
 @pytest.mark.parametrize("key", ["A", "Z", "aa", "1"])
-def test_dict_get_method_absent_large_size_string_key(key):
+def test_get_method_absent_large_size_string_key(key):
     d = {k: i * 10 for i, k in enumerate("azbycxdwevfugthsirjqkplomn", start=1)}
 
     def fn():
@@ -607,7 +613,7 @@ def test_dict_get_method_absent_large_size_string_key(key):
 
 
 @pytest.mark.parametrize("key", [0, 26, 100, -1, 1.5])
-def test_dict_get_method_absent_large_size_numeric_key(key):
+def test_get_method_absent_large_size_numeric_key(key):
     d = {k: k * 10 for k in [20, 3, 15, 7, 25, 1, 18, 9, 22, 5, 12, 16, 8, 24, 2, 19, 11, 14, 6, 23, 4, 17, 13, 21, 10]}
 
     def fn():
@@ -617,7 +623,7 @@ def test_dict_get_method_absent_large_size_numeric_key(key):
 
 
 @pytest.mark.parametrize("key", [(0, 0), (26, 26), (1, 2), (100, 100)])
-def test_dict_get_method_absent_large_size_tuple_key(key):
+def test_get_method_absent_large_size_tuple_key(key):
     d = {
         (k, k): k * 10
         for k in [20, 3, 15, 7, 25, 1, 18, 9, 22, 5, 12, 16, 8, 24, 2, 19, 11, 14, 6, 23, 4, 17, 13, 21, 10]
@@ -630,7 +636,7 @@ def test_dict_get_method_absent_large_size_tuple_key(key):
 
 
 @pytest.mark.parametrize("key", ["h", 8, (8, 8)])
-def test_dict_get_method_absent_large_size_mixed_key(key):
+def test_get_method_absent_large_size_mixed_key(key):
     d = {
         "a": 1,
         "b": 1,
@@ -661,7 +667,10 @@ def test_dict_get_method_absent_large_size_mixed_key(key):
     assert run_and_validate(fn) == 0
 
 
-def test_dict_contains_present_small_size_string_key():
+# __contains__
+
+
+def test_contains_present_small_size_string_key():
     def fn():
         d = {"a": 1, "b": 2}
         return Array(
@@ -672,7 +681,7 @@ def test_dict_contains_present_small_size_string_key():
     assert run_and_validate(fn) == Array(True, True)
 
 
-def test_dict_contains_present_small_size_numeric_key():
+def test_contains_present_small_size_numeric_key():
     def fn():
         d = {1: 10, 2: 20}
         return Array(1 in d, 2 in d)
@@ -680,7 +689,7 @@ def test_dict_contains_present_small_size_numeric_key():
     assert run_and_validate(fn) == Array(True, True)
 
 
-def test_dict_contains_present_small_size_tuple_key():
+def test_contains_present_small_size_tuple_key():
     def fn():
         d = {(1, 1): 10, (2, 2): 20}
         return Array((1, 1) in d, (2, 2) in d)
@@ -688,7 +697,7 @@ def test_dict_contains_present_small_size_tuple_key():
     assert run_and_validate(fn) == Array(True, True)
 
 
-def test_dict_contains_present_small_size_mixed_key():
+def test_contains_present_small_size_mixed_key():
     def fn():
         d = {"a": 10, 2: 20, (3, 3): 30}
         return Array("a" in d, 2 in d, (3, 3) in d)
@@ -696,7 +705,7 @@ def test_dict_contains_present_small_size_mixed_key():
     assert run_and_validate(fn) == Array(True, True, True)
 
 
-def test_dict_contains_present_large_size_string_key():
+def test_contains_present_large_size_string_key():
     d = {k: i * 10 for i, k in enumerate("azbycxdwevfugthsirjqkplomn", start=1)}
 
     def fn():
@@ -705,7 +714,7 @@ def test_dict_contains_present_large_size_string_key():
     assert run_and_validate(fn) == Array(True, True, True)
 
 
-def test_dict_contains_present_large_size_numeric_key():
+def test_contains_present_large_size_numeric_key():
     d = {k: k * 10 for k in [20, 3, 15, 7, 25, 1, 18, 9, 22, 5, 12, 16, 8, 24, 2, 19, 11, 14, 6, 23, 4, 17, 13, 21, 10]}
 
     def fn():
@@ -714,7 +723,7 @@ def test_dict_contains_present_large_size_numeric_key():
     assert run_and_validate(fn) == Array(True, True, True)
 
 
-def test_dict_contains_present_large_size_tuple_key():
+def test_contains_present_large_size_tuple_key():
     d = {
         (k, k): k * 10
         for k in [20, 3, 15, 7, 25, 1, 18, 9, 22, 5, 12, 16, 8, 24, 2, 19, 11, 14, 6, 23, 4, 17, 13, 21, 10]
@@ -726,7 +735,7 @@ def test_dict_contains_present_large_size_tuple_key():
     assert run_and_validate(fn) == Array(True, True, True)
 
 
-def test_dict_contains_present_large_size_mixed_key():
+def test_contains_present_large_size_mixed_key():
     d = {
         "a": 1,
         "b": 1,
@@ -757,7 +766,7 @@ def test_dict_contains_present_large_size_mixed_key():
     assert run_and_validate(fn) == Array(True, True, True)
 
 
-def test_dict_contains_absent_empty():
+def test_contains_absent_empty():
     def fn():
         d = {}
         return "a" in d
@@ -765,7 +774,7 @@ def test_dict_contains_absent_empty():
     assert not run_and_validate(fn)
 
 
-def test_dict_contains_absent_small_size_string_key():
+def test_contains_absent_small_size_string_key():
     def fn():
         d = {"a": 1, "b": 2}
         return Array("c" in d, "d" in d)
@@ -773,7 +782,7 @@ def test_dict_contains_absent_small_size_string_key():
     assert run_and_validate(fn) == Array(False, False)
 
 
-def test_dict_contains_absent_small_size_numeric_key():
+def test_contains_absent_small_size_numeric_key():
     def fn():
         d = {1: 10, 2: 20}
         return Array(3 in d, 4 in d)
@@ -781,7 +790,7 @@ def test_dict_contains_absent_small_size_numeric_key():
     assert run_and_validate(fn) == Array(False, False)
 
 
-def test_dict_contains_absent_small_size_tuple_key():
+def test_contains_absent_small_size_tuple_key():
     def fn():
         d = {(1, 1): 10, (2, 2): 20}
         return Array((3, 3) in d, (4, 4) in d)
@@ -789,7 +798,7 @@ def test_dict_contains_absent_small_size_tuple_key():
     assert run_and_validate(fn) == Array(False, False)
 
 
-def test_dict_contains_absent_small_size_mixed_key():
+def test_contains_absent_small_size_mixed_key():
     def fn():
         d = {"a": 10, 2: 20, (3, 3): 30}
         return Array("b" in d, 3 in d, (4, 4) in d)
@@ -797,7 +806,7 @@ def test_dict_contains_absent_small_size_mixed_key():
     assert run_and_validate(fn) == Array(False, False, False)
 
 
-def test_dict_contains_absent_large_size_string_key():
+def test_contains_absent_large_size_string_key():
     d = {k: i * 10 for i, k in enumerate("azbycxdwevfugthsirjqkplomn", start=1)}
 
     def fn():
@@ -806,7 +815,7 @@ def test_dict_contains_absent_large_size_string_key():
     assert run_and_validate(fn) == Array(False, False, False)
 
 
-def test_dict_contains_absent_large_size_numeric_key():
+def test_contains_absent_large_size_numeric_key():
     d = {k: k * 10 for k in [20, 3, 15, 7, 25, 1, 18, 9, 22, 5, 12, 16, 8, 24, 2, 19, 11, 14, 6, 23, 4, 17, 13, 21, 10]}
 
     def fn():
@@ -815,7 +824,7 @@ def test_dict_contains_absent_large_size_numeric_key():
     assert run_and_validate(fn) == Array(False, False, False)
 
 
-def test_dict_contains_absent_large_size_tuple_key():
+def test_contains_absent_large_size_tuple_key():
     d = {
         (k, k): k * 10
         for k in [20, 3, 15, 7, 25, 1, 18, 9, 22, 5, 12, 16, 8, 24, 2, 19, 11, 14, 6, 23, 4, 17, 13, 21, 10]
@@ -827,7 +836,7 @@ def test_dict_contains_absent_large_size_tuple_key():
     assert run_and_validate(fn) == Array(False, False, False)
 
 
-def test_dict_contains_absent_large_size_mixed_key():
+def test_contains_absent_large_size_mixed_key():
     d = {
         "a": 1,
         "b": 1,
@@ -858,7 +867,10 @@ def test_dict_contains_absent_large_size_mixed_key():
     assert run_and_validate(fn) == Array(False, False, False)
 
 
-def test_dict_union_disjoint_small_size_string_key():
+# __or__
+
+
+def test_union_disjoint_small_size_string_key():
     def fn():
         d1 = {"a": 1}
         d2 = {"b": 2}
@@ -868,7 +880,7 @@ def test_dict_union_disjoint_small_size_string_key():
     assert run_and_validate(fn) == Array(1, 2)
 
 
-def test_dict_union_disjoint_small_size_numeric_key():
+def test_union_disjoint_small_size_numeric_key():
     def fn():
         d1 = {1: 10}
         d2 = {2: 20}
@@ -878,7 +890,7 @@ def test_dict_union_disjoint_small_size_numeric_key():
     assert run_and_validate(fn) == Array(10, 20)
 
 
-def test_dict_union_disjoint_small_size_tuple_key():
+def test_union_disjoint_small_size_tuple_key():
     def fn():
         d1 = {(1, 1): 10}
         d2 = {(2, 2): 20}
@@ -888,7 +900,7 @@ def test_dict_union_disjoint_small_size_tuple_key():
     assert run_and_validate(fn) == Array(10, 20)
 
 
-def test_dict_union_disjoint_small_size_mixed_key():
+def test_union_disjoint_small_size_mixed_key():
     def fn():
         d1 = {"a": 10, 2: 20}
         d2 = {(3, 3): 30}
@@ -898,7 +910,7 @@ def test_dict_union_disjoint_small_size_mixed_key():
     assert run_and_validate(fn) == Array(10, 20, 30)
 
 
-def test_dict_union_disjoint_large_size_string_key():
+def test_union_disjoint_large_size_string_key():
     d1 = {k: i * 10 for i, k in enumerate("azbycxdwevfugthsirjqkplomn", start=1)}
     d2 = {k: i * 10 for i, k in enumerate("AZBYCXDWEVFUGTHSIRJQKPLOMN", start=1)}
 
@@ -909,7 +921,7 @@ def test_dict_union_disjoint_large_size_string_key():
     assert run_and_validate(fn) == Array(10, 20, 10, 20)
 
 
-def test_dict_union_disjoint_large_size_numeric_key():
+def test_union_disjoint_large_size_numeric_key():
     d1 = {k: k for k in [20, 3, 15, 7, 25, 1, 18, 9, 22, 5, 12, 16, 8, 24, 2, 19, 11, 14, 6, 23, 4, 17, 13, 21, 10]}
     d2 = {
         k: k
@@ -923,7 +935,7 @@ def test_dict_union_disjoint_large_size_numeric_key():
     assert run_and_validate(fn) == Array(1, 25, 26, 50)
 
 
-def test_dict_union_disjoint_large_size_tuple_key():
+def test_union_disjoint_large_size_tuple_key():
     d1 = {
         (k, k): k for k in [20, 3, 15, 7, 25, 1, 18, 9, 22, 5, 12, 16, 8, 24, 2, 19, 11, 14, 6, 23, 4, 17, 13, 21, 10]
     }
@@ -939,7 +951,7 @@ def test_dict_union_disjoint_large_size_tuple_key():
     assert run_and_validate(fn) == Array(1, 25, 26, 50)
 
 
-def test_dict_union_disjoint_large_size_mixed_key():
+def test_union_disjoint_large_size_mixed_key():
     d1 = {
         "a": 1,
         "b": 2,
@@ -994,7 +1006,7 @@ def test_dict_union_disjoint_large_size_mixed_key():
     assert run_and_validate(fn) == Array(1, 11, 18, 28, 35, 42)
 
 
-def test_dict_union_overlapping_small_size_string_key():
+def test_union_overlapping_small_size_string_key():
     def fn():
         d1 = {"a": 1, "b": 2}
         d2 = {"b": 3, "c": 4}
@@ -1004,7 +1016,7 @@ def test_dict_union_overlapping_small_size_string_key():
     assert run_and_validate(fn) == Array(1, 3, 4)
 
 
-def test_dict_union_overlapping_small_size_numeric_key():
+def test_union_overlapping_small_size_numeric_key():
     def fn():
         d1 = {1: 10, 2: 20}
         d2 = {2: 30, 3: 40}
@@ -1014,7 +1026,7 @@ def test_dict_union_overlapping_small_size_numeric_key():
     assert run_and_validate(fn) == Array(10, 30, 40)
 
 
-def test_dict_union_overlapping_small_size_tuple_key():
+def test_union_overlapping_small_size_tuple_key():
     def fn():
         d1 = {(1, 1): 10, (2, 2): 20}
         d2 = {(2, 2): 30, (3, 3): 40}
@@ -1024,7 +1036,7 @@ def test_dict_union_overlapping_small_size_tuple_key():
     assert run_and_validate(fn) == Array(10, 30, 40)
 
 
-def test_dict_union_overlapping_small_size_mixed_key():
+def test_union_overlapping_small_size_mixed_key():
     def fn():
         d1 = {"a": 10, 2: 20, (3, 3): 30}
         d2 = {"a": 40, 5: 50, (3, 3): 60}
@@ -1034,7 +1046,7 @@ def test_dict_union_overlapping_small_size_mixed_key():
     assert run_and_validate(fn) == Array(40, 20, 60, 50)
 
 
-def test_dict_union_overlapping_large_size_string_key():
+def test_union_overlapping_large_size_string_key():
     d1 = {k: i * 10 for i, k in enumerate("azbycxdwevfugthsirjqkplomn", start=1)}
     d2 = {
         "a": 100,
@@ -1072,7 +1084,7 @@ def test_dict_union_overlapping_large_size_string_key():
     assert run_and_validate(fn) == Array(100, 200, 110, 250, 1000, 1190)
 
 
-def test_dict_union_overlapping_large_size_numeric_key():
+def test_union_overlapping_large_size_numeric_key():
     d1 = {k: k for k in [20, 3, 15, 7, 25, 1, 18, 9, 22, 5, 12, 16, 8, 24, 2, 19, 11, 14, 6, 23, 4, 17, 13, 21, 10]}
     d2 = {
         k: k * 100
@@ -1086,7 +1098,7 @@ def test_dict_union_overlapping_large_size_numeric_key():
     assert run_and_validate(fn) == Array(1, 10, 1100, 2500, 2600, 3500)
 
 
-def test_dict_union_overlapping_large_size_tuple_key():
+def test_union_overlapping_large_size_tuple_key():
     d1 = {
         (k, k): k for k in [20, 3, 15, 7, 25, 1, 18, 9, 22, 5, 12, 16, 8, 24, 2, 19, 11, 14, 6, 23, 4, 17, 13, 21, 10]
     }
@@ -1102,7 +1114,7 @@ def test_dict_union_overlapping_large_size_tuple_key():
     assert run_and_validate(fn) == Array(1, 10, 1100, 2500, 2600, 3500)
 
 
-def test_dict_union_overlapping_large_size_mixed_key():
+def test_union_overlapping_large_size_mixed_key():
     d1 = {
         "a": 1,
         "b": 2,
@@ -1157,7 +1169,7 @@ def test_dict_union_overlapping_large_size_mixed_key():
     assert run_and_validate(fn) == Array(100, 11, 18, 700, 1400, 2100)
 
 
-def test_dict_union_disjoint_iter_small_size_string_key():
+def test_union_disjoint_iter_small_size_string_key():
     def fn():
         d1 = {"a": 1}
         d2 = {"b": 2}
@@ -1172,7 +1184,7 @@ def test_dict_union_disjoint_iter_small_size_string_key():
     assert run_and_validate(fn) == Array(1, 2)
 
 
-def test_dict_union_disjoint_iter_small_size_numeric_key():
+def test_union_disjoint_iter_small_size_numeric_key():
     def fn():
         d1 = {1: 10}
         d2 = {2: 20}
@@ -1187,7 +1199,7 @@ def test_dict_union_disjoint_iter_small_size_numeric_key():
     assert run_and_validate(fn) == Array(1, 2)
 
 
-def test_dict_union_disjoint_iter_small_size_tuple_key():
+def test_union_disjoint_iter_small_size_tuple_key():
     def fn():
         d1 = {(1, 1): 10}
         d2 = {(2, 2): 20}
@@ -1202,7 +1214,7 @@ def test_dict_union_disjoint_iter_small_size_tuple_key():
     assert run_and_validate(fn) == Array(10, 20)
 
 
-def test_dict_union_disjoint_iter_small_size_mixed_key():
+def test_union_disjoint_iter_small_size_mixed_key():
     def fn():
         d1 = {"a": 10, 2: 20}
         d2 = {(3, 3): 30}
@@ -1217,7 +1229,7 @@ def test_dict_union_disjoint_iter_small_size_mixed_key():
     assert run_and_validate(fn) == Array(10, 20, 30)
 
 
-def test_dict_union_disjoint_iter_large_size_string_key():
+def test_union_disjoint_iter_large_size_string_key():
     d1 = {k: i * 10 for i, k in enumerate("azbycxdwevfugthsirjqkplomn", start=1)}
     d2 = {k: i * 10 for i, k in enumerate("AZBYCXDWEVFUGTHSIRJQKPLOMN", start=1)}
 
@@ -1233,7 +1245,7 @@ def test_dict_union_disjoint_iter_large_size_string_key():
     assert run_and_validate(fn) == Array(*(d1 | d2).values())
 
 
-def test_dict_union_disjoint_iter_large_size_numeric_key():
+def test_union_disjoint_iter_large_size_numeric_key():
     d1 = {k: k for k in [20, 3, 15, 7, 25, 1, 18, 9, 22, 5, 12, 16, 8, 24, 2, 19, 11, 14, 6, 23, 4, 17, 13, 21, 10]}
     d2 = {
         k: k
@@ -1252,7 +1264,7 @@ def test_dict_union_disjoint_iter_large_size_numeric_key():
     assert run_and_validate(fn) == Array(*(d1 | d2).keys())
 
 
-def test_dict_union_disjoint_iter_large_size_tuple_key():
+def test_union_disjoint_iter_large_size_tuple_key():
     d1 = {
         (k, k): k for k in [20, 3, 15, 7, 25, 1, 18, 9, 22, 5, 12, 16, 8, 24, 2, 19, 11, 14, 6, 23, 4, 17, 13, 21, 10]
     }
@@ -1273,7 +1285,7 @@ def test_dict_union_disjoint_iter_large_size_tuple_key():
     assert run_and_validate(fn) == Array(*(d1 | d2).values())
 
 
-def test_dict_union_disjoint_iter_large_size_mixed_key():
+def test_union_disjoint_iter_large_size_mixed_key():
     d1 = {
         "a": 1,
         "b": 2,
@@ -1333,7 +1345,7 @@ def test_dict_union_disjoint_iter_large_size_mixed_key():
     assert run_and_validate(fn) == Array(*(d1 | d2).values())
 
 
-def test_dict_union_overlapping_iter_small_size_string_key():
+def test_union_overlapping_iter_small_size_string_key():
     def fn():
         d1 = {"a": 1, "b": 2}
         d2 = {"b": 3, "c": 4}
@@ -1348,7 +1360,7 @@ def test_dict_union_overlapping_iter_small_size_string_key():
     assert run_and_validate(fn) == Array(1, 3, 4)
 
 
-def test_dict_union_overlapping_iter_small_size_numeric_key():
+def test_union_overlapping_iter_small_size_numeric_key():
     def fn():
         d1 = {1: 10, 2: 20}
         d2 = {2: 30, 3: 40}
@@ -1363,7 +1375,7 @@ def test_dict_union_overlapping_iter_small_size_numeric_key():
     assert run_and_validate(fn) == Array(1, 2, 3)
 
 
-def test_dict_union_overlapping_iter_small_size_tuple_key():
+def test_union_overlapping_iter_small_size_tuple_key():
     def fn():
         d1 = {(1, 1): 10, (2, 2): 20}
         d2 = {(2, 2): 30, (3, 3): 40}
@@ -1378,7 +1390,7 @@ def test_dict_union_overlapping_iter_small_size_tuple_key():
     assert run_and_validate(fn) == Array(10, 30, 40)
 
 
-def test_dict_union_overlapping_iter_small_size_mixed_key():
+def test_union_overlapping_iter_small_size_mixed_key():
     def fn():
         d1 = {"a": 10, 2: 20, (3, 3): 30}
         d2 = {"a": 40, 5: 50, (3, 3): 60}
@@ -1393,7 +1405,7 @@ def test_dict_union_overlapping_iter_small_size_mixed_key():
     assert run_and_validate(fn) == Array(40, 20, 60, 50)
 
 
-def test_dict_union_overlapping_iter_large_size_string_key():
+def test_union_overlapping_iter_large_size_string_key():
     d1 = {k: i * 10 for i, k in enumerate("azbycxdwevfugthsirjqkplomn", start=1)}
     d2 = {
         "a": 100,
@@ -1436,7 +1448,7 @@ def test_dict_union_overlapping_iter_large_size_string_key():
     assert run_and_validate(fn) == Array(*(d1 | d2).values())
 
 
-def test_dict_union_overlapping_iter_large_size_numeric_key():
+def test_union_overlapping_iter_large_size_numeric_key():
     d1 = {k: k for k in [20, 3, 15, 7, 25, 1, 18, 9, 22, 5, 12, 16, 8, 24, 2, 19, 11, 14, 6, 23, 4, 17, 13, 21, 10]}
     d2 = {
         k: k * 100
@@ -1455,7 +1467,7 @@ def test_dict_union_overlapping_iter_large_size_numeric_key():
     assert run_and_validate(fn) == Array(*(d1 | d2).values())
 
 
-def test_dict_union_overlapping_iter_large_size_tuple_key():
+def test_union_overlapping_iter_large_size_tuple_key():
     d1 = {
         (k, k): k for k in [20, 3, 15, 7, 25, 1, 18, 9, 22, 5, 12, 16, 8, 24, 2, 19, 11, 14, 6, 23, 4, 17, 13, 21, 10]
     }
@@ -1476,7 +1488,7 @@ def test_dict_union_overlapping_iter_large_size_tuple_key():
     assert run_and_validate(fn) == Array(*(d1 | d2).values())
 
 
-def test_dict_union_overlapping_iter_large_size_mixed_key():
+def test_union_overlapping_iter_large_size_mixed_key():
     d1 = {
         "a": 1,
         "b": 2,
@@ -1536,7 +1548,10 @@ def test_dict_union_overlapping_iter_large_size_mixed_key():
     assert run_and_validate(fn) == Array(*(d1 | d2).values())
 
 
-def test_dict_iter_small_size_string_key():
+# __iter__
+
+
+def test_iter_small_size_string_key():
     d = {"a": 10, "b": 20}
 
     def fn():
@@ -1550,7 +1565,7 @@ def test_dict_iter_small_size_string_key():
     assert run_and_validate(fn) == Array(10, 20)
 
 
-def test_dict_iter_small_size_numeric_key():
+def test_iter_small_size_numeric_key():
     d = {1: 10, 2: 20}
 
     def fn():
@@ -1564,7 +1579,7 @@ def test_dict_iter_small_size_numeric_key():
     assert run_and_validate(fn) == Array(1, 2)
 
 
-def test_dict_iter_small_size_mixed_key():
+def test_iter_small_size_mixed_key():
     d = {"a": 10, 2: 20, (3, 3): 30}
 
     def fn():
@@ -1578,7 +1593,10 @@ def test_dict_iter_small_size_mixed_key():
     assert run_and_validate(fn) == Array(10, 20, 30)
 
 
-def test_dict_keys_iter_small_size_string_key():
+# .keys()
+
+
+def test_keys_iter_small_size_string_key():
     d = {"a": 10, "b": 20}
 
     def fn():
@@ -1592,7 +1610,7 @@ def test_dict_keys_iter_small_size_string_key():
     assert run_and_validate(fn) == Array(10, 20)
 
 
-def test_dict_keys_iter_small_size_numeric_key():
+def test_keys_iter_small_size_numeric_key():
     d = {1: 10, 2: 20}
 
     def fn():
@@ -1606,7 +1624,7 @@ def test_dict_keys_iter_small_size_numeric_key():
     assert run_and_validate(fn) == Array(1, 2)
 
 
-def test_dict_keys_contains_present_small_size_string_key():
+def test_keys_contains_present_small_size_string_key():
     d = {"a": 10, "b": 20}
 
     def fn():
@@ -1615,7 +1633,7 @@ def test_dict_keys_contains_present_small_size_string_key():
     assert run_and_validate(fn) == Array(True, True)
 
 
-def test_dict_keys_contains_absent_small_size_string_key():
+def test_keys_contains_absent_small_size_string_key():
     d = {"a": 10, "b": 20}
 
     def fn():
@@ -1624,7 +1642,7 @@ def test_dict_keys_contains_absent_small_size_string_key():
     assert run_and_validate(fn) == Array(False, False)
 
 
-def test_dict_keys_contains_present_small_size_numeric_key():
+def test_keys_contains_present_small_size_numeric_key():
     d = {1: 10, 2: 20}
 
     def fn():
@@ -1633,7 +1651,7 @@ def test_dict_keys_contains_present_small_size_numeric_key():
     assert run_and_validate(fn) == Array(True, True)
 
 
-def test_dict_keys_contains_absent_small_size_numeric_key():
+def test_keys_contains_absent_small_size_numeric_key():
     d = {1: 10, 2: 20}
 
     def fn():
@@ -1642,7 +1660,10 @@ def test_dict_keys_contains_absent_small_size_numeric_key():
     assert run_and_validate(fn) == Array(False, False)
 
 
-def test_dict_values_iter_small_size_string_key():
+# .values()
+
+
+def test_values_iter_small_size_string_key():
     d = {"a": 10, "b": 20}
 
     def fn():
@@ -1656,7 +1677,7 @@ def test_dict_values_iter_small_size_string_key():
     assert run_and_validate(fn) == Array(10, 20)
 
 
-def test_dict_values_iter_small_size_numeric_key():
+def test_values_iter_small_size_numeric_key():
     d = {1: 10, 2: 20}
 
     def fn():
@@ -1670,7 +1691,7 @@ def test_dict_values_iter_small_size_numeric_key():
     assert run_and_validate(fn) == Array(10, 20)
 
 
-def test_dict_values_contains_present_small_size_string_key():
+def test_values_contains_present_small_size_string_key():
     d = {"a": 10, "b": 20}
 
     def fn():
@@ -1679,7 +1700,7 @@ def test_dict_values_contains_present_small_size_string_key():
     assert run_and_validate(fn) == Array(True, True)
 
 
-def test_dict_values_contains_absent_small_size_string_key():
+def test_values_contains_absent_small_size_string_key():
     d = {"a": 10, "b": 20}
 
     def fn():
@@ -1688,7 +1709,7 @@ def test_dict_values_contains_absent_small_size_string_key():
     assert run_and_validate(fn) == Array(False, False)
 
 
-def test_dict_values_contains_present_small_size_numeric_key():
+def test_values_contains_present_small_size_numeric_key():
     d = {1: 10, 2: 20}
 
     def fn():
@@ -1697,7 +1718,7 @@ def test_dict_values_contains_present_small_size_numeric_key():
     assert run_and_validate(fn) == Array(True, True)
 
 
-def test_dict_values_contains_absent_small_size_numeric_key():
+def test_values_contains_absent_small_size_numeric_key():
     d = {1: 10, 2: 20}
 
     def fn():
@@ -1706,7 +1727,10 @@ def test_dict_values_contains_absent_small_size_numeric_key():
     assert run_and_validate(fn) == Array(False, False)
 
 
-def test_dict_items_iter_small_size_string_key():
+# .items()
+
+
+def test_items_iter_small_size_string_key():
     d = {"a": 10, "b": 20}
 
     def fn():
@@ -1721,7 +1745,7 @@ def test_dict_items_iter_small_size_string_key():
     assert run_and_validate(fn) == Array(10, 10, 20, 20)
 
 
-def test_dict_items_iter_small_size_numeric_key():
+def test_items_iter_small_size_numeric_key():
     d = {1: 10, 2: 20}
 
     def fn():
@@ -1736,7 +1760,7 @@ def test_dict_items_iter_small_size_numeric_key():
     assert run_and_validate(fn) == Array(1, 10, 2, 20)
 
 
-def test_dict_items_contains_present_small_size_string_key():
+def test_items_contains_present_small_size_string_key():
     d = {"a": 10, "b": 20}
 
     def fn():
@@ -1745,7 +1769,7 @@ def test_dict_items_contains_present_small_size_string_key():
     assert run_and_validate(fn) == Array(True, True)
 
 
-def test_dict_items_contains_absent_small_size_string_key():
+def test_items_contains_absent_small_size_string_key():
     d = {"a": 10, "b": 20}
 
     def fn():
@@ -1754,7 +1778,7 @@ def test_dict_items_contains_absent_small_size_string_key():
     assert run_and_validate(fn) == Array(False, False)
 
 
-def test_dict_items_contains_present_small_size_numeric_key():
+def test_items_contains_present_small_size_numeric_key():
     d = {1: 10, 2: 20}
 
     def fn():
@@ -1763,7 +1787,7 @@ def test_dict_items_contains_present_small_size_numeric_key():
     assert run_and_validate(fn) == Array(True, True)
 
 
-def test_dict_items_contains_absent_small_size_numeric_key():
+def test_items_contains_absent_small_size_numeric_key():
     d = {1: 10, 2: 20}
 
     def fn():
@@ -1772,7 +1796,7 @@ def test_dict_items_contains_absent_small_size_numeric_key():
     assert run_and_validate(fn) == Array(False, False)
 
 
-def test_dict_iter_large_size_string_key():
+def test_iter_large_size_string_key():
     d = {k: i * 10 for i, k in enumerate("azbycxdwevfugthsirjqkplomn", start=1)}
 
     def fn():
@@ -1786,7 +1810,7 @@ def test_dict_iter_large_size_string_key():
     assert run_and_validate(fn) == Array(*d.values())
 
 
-def test_dict_iter_large_size_numeric_key():
+def test_iter_large_size_numeric_key():
     d = {k: k * 10 for k in [20, 3, 15, 7, 25, 1, 18, 9, 22, 5, 12, 16, 8, 24, 2, 19, 11, 14, 6, 23, 4, 17, 13, 21, 10]}
 
     def fn():
@@ -1800,7 +1824,7 @@ def test_dict_iter_large_size_numeric_key():
     assert run_and_validate(fn) == Array(*d.keys())
 
 
-def test_dict_iter_large_size_mixed_key():
+def test_iter_large_size_mixed_key():
     d = {
         "a": 1,
         "b": 2,
@@ -1836,7 +1860,7 @@ def test_dict_iter_large_size_mixed_key():
     assert run_and_validate(fn) == Array(*d.values())
 
 
-def test_dict_keys_iter_large_size_string_key():
+def test_keys_iter_large_size_string_key():
     d = {k: i * 10 for i, k in enumerate("azbycxdwevfugthsirjqkplomn", start=1)}
 
     def fn():
@@ -1850,7 +1874,7 @@ def test_dict_keys_iter_large_size_string_key():
     assert run_and_validate(fn) == Array(*d.values())
 
 
-def test_dict_keys_iter_large_size_numeric_key():
+def test_keys_iter_large_size_numeric_key():
     d = {k: k * 10 for k in [20, 3, 15, 7, 25, 1, 18, 9, 22, 5, 12, 16, 8, 24, 2, 19, 11, 14, 6, 23, 4, 17, 13, 21, 10]}
 
     def fn():
@@ -1864,7 +1888,7 @@ def test_dict_keys_iter_large_size_numeric_key():
     assert run_and_validate(fn) == Array(*d.keys())
 
 
-def test_dict_keys_contains_present_large_size_string_key():
+def test_keys_contains_present_large_size_string_key():
     d = {k: i * 10 for i, k in enumerate("azbycxdwevfugthsirjqkplomn", start=1)}
 
     def fn():
@@ -1873,7 +1897,7 @@ def test_dict_keys_contains_present_large_size_string_key():
     assert run_and_validate(fn) == Array(True, True, True)
 
 
-def test_dict_keys_contains_absent_large_size_string_key():
+def test_keys_contains_absent_large_size_string_key():
     d = {k: i * 10 for i, k in enumerate("azbycxdwevfugthsirjqkplomn", start=1)}
 
     def fn():
@@ -1882,7 +1906,7 @@ def test_dict_keys_contains_absent_large_size_string_key():
     assert run_and_validate(fn) == Array(False, False, False)
 
 
-def test_dict_keys_contains_present_large_size_numeric_key():
+def test_keys_contains_present_large_size_numeric_key():
     d = {k: k * 10 for k in [20, 3, 15, 7, 25, 1, 18, 9, 22, 5, 12, 16, 8, 24, 2, 19, 11, 14, 6, 23, 4, 17, 13, 21, 10]}
 
     def fn():
@@ -1891,7 +1915,7 @@ def test_dict_keys_contains_present_large_size_numeric_key():
     assert run_and_validate(fn) == Array(True, True, True)
 
 
-def test_dict_keys_contains_absent_large_size_numeric_key():
+def test_keys_contains_absent_large_size_numeric_key():
     d = {k: k * 10 for k in [20, 3, 15, 7, 25, 1, 18, 9, 22, 5, 12, 16, 8, 24, 2, 19, 11, 14, 6, 23, 4, 17, 13, 21, 10]}
 
     def fn():
@@ -1900,7 +1924,7 @@ def test_dict_keys_contains_absent_large_size_numeric_key():
     assert run_and_validate(fn) == Array(False, False, False)
 
 
-def test_dict_values_iter_large_size_string_key():
+def test_values_iter_large_size_string_key():
     d = {k: i * 10 for i, k in enumerate("azbycxdwevfugthsirjqkplomn", start=1)}
 
     def fn():
@@ -1914,7 +1938,7 @@ def test_dict_values_iter_large_size_string_key():
     assert run_and_validate(fn) == Array(*d.values())
 
 
-def test_dict_values_iter_large_size_numeric_key():
+def test_values_iter_large_size_numeric_key():
     d = {k: k * 10 for k in [20, 3, 15, 7, 25, 1, 18, 9, 22, 5, 12, 16, 8, 24, 2, 19, 11, 14, 6, 23, 4, 17, 13, 21, 10]}
 
     def fn():
@@ -1928,7 +1952,7 @@ def test_dict_values_iter_large_size_numeric_key():
     assert run_and_validate(fn) == Array(*d.values())
 
 
-def test_dict_values_contains_present_large_size_string_key():
+def test_values_contains_present_large_size_string_key():
     d = {k: i * 10 for i, k in enumerate("azbycxdwevfugthsirjqkplomn", start=1)}
 
     def fn():
@@ -1937,7 +1961,7 @@ def test_dict_values_contains_present_large_size_string_key():
     assert run_and_validate(fn) == Array(True, True, True)
 
 
-def test_dict_values_contains_absent_large_size_string_key():
+def test_values_contains_absent_large_size_string_key():
     d = {k: i * 10 for i, k in enumerate("azbycxdwevfugthsirjqkplomn", start=1)}
 
     def fn():
@@ -1946,7 +1970,7 @@ def test_dict_values_contains_absent_large_size_string_key():
     assert run_and_validate(fn) == Array(False, False, False)
 
 
-def test_dict_values_contains_present_large_size_numeric_key():
+def test_values_contains_present_large_size_numeric_key():
     d = {k: k * 10 for k in [20, 3, 15, 7, 25, 1, 18, 9, 22, 5, 12, 16, 8, 24, 2, 19, 11, 14, 6, 23, 4, 17, 13, 21, 10]}
 
     def fn():
@@ -1955,7 +1979,7 @@ def test_dict_values_contains_present_large_size_numeric_key():
     assert run_and_validate(fn) == Array(True, True, True)
 
 
-def test_dict_values_contains_absent_large_size_numeric_key():
+def test_values_contains_absent_large_size_numeric_key():
     d = {k: k * 10 for k in [20, 3, 15, 7, 25, 1, 18, 9, 22, 5, 12, 16, 8, 24, 2, 19, 11, 14, 6, 23, 4, 17, 13, 21, 10]}
 
     def fn():
@@ -1964,7 +1988,7 @@ def test_dict_values_contains_absent_large_size_numeric_key():
     assert run_and_validate(fn) == Array(False, False, False)
 
 
-def test_dict_items_iter_large_size_string_key():
+def test_items_iter_large_size_string_key():
     d = {k: i * 10 for i, k in enumerate("azbycxdwevfugthsirjqkplomn", start=1)}
 
     def fn():
@@ -1979,7 +2003,7 @@ def test_dict_items_iter_large_size_string_key():
     assert run_and_validate(fn) == Array(*[x for v in d.values() for x in (v, v)])
 
 
-def test_dict_items_iter_large_size_numeric_key():
+def test_items_iter_large_size_numeric_key():
     d = {k: k * 10 for k in [20, 3, 15, 7, 25, 1, 18, 9, 22, 5, 12, 16, 8, 24, 2, 19, 11, 14, 6, 23, 4, 17, 13, 21, 10]}
 
     def fn():
@@ -1994,7 +2018,7 @@ def test_dict_items_iter_large_size_numeric_key():
     assert run_and_validate(fn) == Array(*[x for k, v in d.items() for x in (k, v)])
 
 
-def test_dict_items_contains_present_large_size_string_key():
+def test_items_contains_present_large_size_string_key():
     d = {k: i * 10 for i, k in enumerate("azbycxdwevfugthsirjqkplomn", start=1)}
 
     def fn():
@@ -2003,7 +2027,7 @@ def test_dict_items_contains_present_large_size_string_key():
     assert run_and_validate(fn) == Array(True, True, True)
 
 
-def test_dict_items_contains_absent_large_size_string_key():
+def test_items_contains_absent_large_size_string_key():
     d = {k: i * 10 for i, k in enumerate("azbycxdwevfugthsirjqkplomn", start=1)}
 
     def fn():
@@ -2012,7 +2036,7 @@ def test_dict_items_contains_absent_large_size_string_key():
     assert run_and_validate(fn) == Array(False, False, False)
 
 
-def test_dict_items_contains_present_large_size_numeric_key():
+def test_items_contains_present_large_size_numeric_key():
     d = {k: k * 10 for k in [20, 3, 15, 7, 25, 1, 18, 9, 22, 5, 12, 16, 8, 24, 2, 19, 11, 14, 6, 23, 4, 17, 13, 21, 10]}
 
     def fn():
@@ -2021,7 +2045,7 @@ def test_dict_items_contains_present_large_size_numeric_key():
     assert run_and_validate(fn) == Array(True, True, True)
 
 
-def test_dict_items_contains_absent_large_size_numeric_key():
+def test_items_contains_absent_large_size_numeric_key():
     d = {k: k * 10 for k in [20, 3, 15, 7, 25, 1, 18, 9, 22, 5, 12, 16, 8, 24, 2, 19, 11, 14, 6, 23, 4, 17, 13, 21, 10]}
 
     def fn():
@@ -2030,160 +2054,22 @@ def test_dict_items_contains_absent_large_size_numeric_key():
     assert run_and_validate(fn) == Array(False, False, False)
 
 
-# Dicts are actually used as sets in these cases, so these are here.
-# These are less comprehensive since the implementation is already tested above.
+# isinstance
 
 
-def test_dict_set_contains_present_small_size_string_key():
-    def fn():
-        d = {"a", "b"}
-        return Array(
-            "a" in d,
-            "b" in d,
-        )
-
-    assert run_and_validate(fn) == Array(True, True)
-
-
-def test_dict_set_contains_present_large_size_string_key():
-    def fn():
-        d = {
-            "a",
-            "z",
-            "b",
-            "y",
-            "c",
-            "x",
-            "d",
-            "w",
-            "e",
-            "v",
-            "f",
-            "u",
-            "g",
-            "t",
-            "h",
-            "s",
-            "i",
-            "r",
-            "j",
-            "q",
-            "k",
-            "p",
-            "l",
-            "o",
-            "m",
-            "n",
-        }
-        return Array(
-            "a" in d,
-            "m" in d,
-            "z" in d,
-        )
-
-    assert run_and_validate(fn) == Array(True, True, True)
-
-
-def test_dict_set_contains_present_small_size_numeric_key():
-    def fn():
-        d = {1, 2, 3}
-        return Array(
-            1 in d,
-            2 in d,
-            3 in d,
-        )
-
-    assert run_and_validate(fn) == Array(True, True, True)
-
-
-def test_dict_set_contains_present_large_size_numeric_key():
-    d = {20, 3, 15, 7, 25, 1, 18, 9, 22, 5, 12, 16, 8, 24, 2, 19, 11, 14, 6, 23, 4, 17, 13, 21, 10}
+def test_isinstance_dict():
+    d = {"a": 1}
 
     def fn():
-        return Array(
-            1 in d,
-            13 in d,
-            25 in d,
-        )
+        return isinstance(d, dict)
 
-    assert run_and_validate(fn) == Array(True, True, True)
+    assert run_and_validate(fn)
 
 
-def test_dict_set_contains_present_small_size_tuple_key():
-    def fn():
-        d = {(1, 1), (2, 2), (3, 3)}
-        return Array(
-            (1, 1) in d,
-            (2, 2) in d,
-            (3, 3) in d,
-        )
-
-    assert run_and_validate(fn) == Array(True, True, True)
-
-
-def test_dict_set_contains_present_large_size_tuple_key():
-    d = {(k, k) for k in [20, 3, 15, 7, 25, 1, 18, 9, 22, 5, 12, 16, 8, 24, 2, 19, 11, 14, 6, 23, 4, 17, 13, 21, 10]}
+def test_isinstance_dict_not_set():
+    s = {"a", "b"}
 
     def fn():
-        return Array(
-            (1, 1) in d,
-            (13, 13) in d,
-            (25, 25) in d,
-        )
-
-    assert run_and_validate(fn) == Array(True, True, True)
-
-
-def test_dict_set_contains_present_small_size_mixed_key():
-    def fn():
-        d = {"a", 2, (3, 3)}
-        return Array(
-            "a" in d,
-            2 in d,
-            (3, 3) in d,
-        )
-
-    assert run_and_validate(fn) == Array(True, True, True)
-
-
-def test_dict_set_contains_present_large_size_mixed_key():
-    def fn():
-        d = {
-            "a",
-            "b",
-            "c",
-            "d",
-            "e",
-            "f",
-            "g",
-            1,
-            2,
-            3,
-            4,
-            5,
-            6,
-            7,
-            (1, 1),
-            (2, 2),
-            (3, 3),
-            (4, 4),
-            (5, 5),
-            (6, 6),
-            (7, 7),
-        }
-        return Array(
-            "a" in d,
-            4 in d,
-            (4, 4) in d,
-        )
-
-    assert run_and_validate(fn) == Array(True, True, True)
-
-
-def test_dict_set_contains_absent_empty():
-    d = set()
-
-    def fn():
-        return "a" in d
+        return isinstance(s, dict)
 
     assert not run_and_validate(fn)

@@ -14,6 +14,7 @@ from sonolus.script.internal.meta_fn import meta_fn
 from sonolus.script.internal.native import native_function
 from sonolus.script.internal.random import RANDOM_BUILTIN_IMPLS
 from sonolus.script.internal.range import Range
+from sonolus.script.internal.set_impl import SetImpl
 from sonolus.script.internal.tuple_impl import TupleImpl
 from sonolus.script.internal.value import Value
 from sonolus.script.iterator import (
@@ -36,6 +37,8 @@ def _isinstance(value, type_):
     type_ = validate_value(type_)._as_py_()
     if type_ is dict:
         return isinstance(value, DictImpl)
+    if type_ in {set, frozenset}:
+        return isinstance(value, SetImpl)
     if type_ is tuple:
         return isinstance(value, TupleImpl)
     if type_ in {_int, _float, _bool}:

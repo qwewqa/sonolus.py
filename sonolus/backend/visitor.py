@@ -320,6 +320,7 @@ class Visitor(ast.NodeVisitor):
 
     def run(self, node):
         from sonolus.script.internal.dict_impl import DictImpl
+        from sonolus.script.internal.set_impl import SetImpl
 
         completion_timer = mark_start(self.qualified_name)
         before_ctx = ctx()
@@ -345,6 +346,8 @@ class Visitor(ast.NodeVisitor):
                 ctx().callback_state.is_in_generator = True
                 first_generator = generators[0]
                 iterable = self.visit(first_generator.iter)
+                if isinstance(iterable, SetImpl):
+                    iterable = validate_value(iterable._dict._keys)
                 if isinstance(iterable, DictImpl):
                     iterable = validate_value(iterable._keys)
                 if isinstance(iterable, TupleImpl):
@@ -436,6 +439,7 @@ class Visitor(ast.NodeVisitor):
         self, generators: Iterable[ast.comprehension], elt: ast.expr, initial_iterator: Value | None = None
     ):
         from sonolus.script.internal.dict_impl import DictImpl
+        from sonolus.script.internal.set_impl import SetImpl
 
         if not generators:
             # Note that there may effectively be multiple yields in an expression since
@@ -452,6 +456,8 @@ class Visitor(ast.NodeVisitor):
             iterable = initial_iterator
         else:
             iterable = self.visit(generator.iter)
+        if isinstance(iterable, SetImpl):
+            iterable = validate_value(iterable._dict._keys)
         if isinstance(iterable, DictImpl):
             iterable = validate_value(iterable._keys)
         if isinstance(iterable, TupleImpl):
@@ -603,9 +609,12 @@ class Visitor(ast.NodeVisitor):
 
     def visit_For(self, node):
         from sonolus.script.internal.dict_impl import DictImpl
+        from sonolus.script.internal.set_impl import SetImpl
         from sonolus.script.internal.tuple_impl import TupleImpl
 
         iterable = self.visit(node.iter)
+        if isinstance(iterable, SetImpl):
+            iterable = validate_value(iterable._dict._keys)
         if isinstance(iterable, DictImpl):
             iterable = validate_value(iterable._keys)
         if isinstance(iterable, TupleImpl):
@@ -1089,10 +1098,10 @@ class Visitor(ast.NodeVisitor):
         return validate_value({self.visit(k): self.visit(v) for k, v in zip(node.keys, node.values, strict=True)})
 
     def visit_Set(self, node):
-        from sonolus.script.internal.dict_impl import DictImpl
+        from sonolus.script.internal.set_impl import SetImpl
 
         values = [validate_value(self.visit(elt)) for elt in node.elts]
-        return DictImpl.from_dict(dict.fromkeys(values))
+        return SetImpl.from_set(values)
 
     def visit_ListComp(self, node):
         raise NotImplementedError("List comprehensions are not supported")

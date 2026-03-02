@@ -26,6 +26,7 @@ from sonolus.script.internal.dict_impl import DictImpl
 from sonolus.script.internal.error import CompilationError
 from sonolus.script.internal.impl import validate_value
 from sonolus.script.internal.meta_fn import meta_fn
+from sonolus.script.internal.set_impl import SetImpl
 from sonolus.script.internal.tuple_impl import TupleImpl
 from sonolus.script.num import Num
 from sonolus.script.vec import Vec2
@@ -125,6 +126,10 @@ def run_and_validate[**P, R](
                 value = validate_value(v)
                 if isinstance(value, TupleImpl):
                     return TupleImpl(tuple(value_to_rom(entry) for entry in value.value))
+                elif isinstance(value, SetImpl):
+                    return SetImpl(
+                        DictImpl.from_dict({value_to_rom(k): None for k in value._dict._as_dict_with_py_keys()})
+                    )
                 elif isinstance(value, DictImpl):
                     return DictImpl.from_dict(
                         {value_to_rom(k): value_to_rom(v) for k, v in value._as_dict_with_py_keys().items()}
