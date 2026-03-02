@@ -6,7 +6,7 @@ from sonolus.script.internal.context import Context, ctx, set_ctx
 from sonolus.script.internal.impl import validate_value
 from sonolus.script.internal.meta_fn import meta_fn
 from sonolus.script.maybe import Nothing, Some
-from sonolus.script.num import Num
+from sonolus.script.num import Num, _is_num
 from sonolus.script.record import Record
 
 
@@ -39,6 +39,9 @@ class DictImpl[Keys, OrderedKeys, Values](Record):
         constsearch_res = self._try_constsearch(item)
         if constsearch_res is not None:
             return constsearch_res >= 0
+        numsearch_res = self._try_numsearch(item)
+        if numsearch_res is not None:
+            return numsearch_res >= 0
         if self._has_ordered_keys:
             return self._binsearch(item) >= 0
         return self._linsearch(item) >= 0
@@ -51,12 +54,22 @@ class DictImpl[Keys, OrderedKeys, Values](Record):
         return self._maybe_getitem(item).or_default(default)
 
     def _maybe_getitem(self, item):
-        constsearch_res = self._try_constsearch(item)
-        if constsearch_res is not None:
-            if constsearch_res < 0:
+        index = self._try_constsearch(item)
+        if index is not None:
+            if index < 0:
                 return Nothing
+            elif isinstance(self._values, Array):
+                return Some(self._values.get_unchecked(index))
             else:
-                return Some(self._values[constsearch_res])
+                return Some(self._values[index])
+        index = self._try_numsearch(item)
+        if index is not None:
+            if index < 0:
+                return Nothing
+            elif isinstance(self._values, Array):
+                return Some(self._values.get_unchecked(index))
+            else:
+                return Some(self._values[index])
         if not self._has_array_values:
             error(
                 "Dict must be accessed via a compile time constant unless "
@@ -120,13 +133,46 @@ class DictImpl[Keys, OrderedKeys, Values](Record):
     def _try_constsearch(self, item):
         from sonolus.backend.visitor import compile_and_call
 
+        orig_ctx = ctx()
+        begin_ctx = orig_ctx.branch(None)
+        set_ctx(begin_ctx)
+
         for i, k in enumerate(self._keys):
             eq = validate_value(compile_and_call(k.__eq__, item))
             if not eq._is_py_():
+                # A bit of a hack to allow resetting to the original state
+                del orig_ctx.outgoing[None]
+                set_ctx(orig_ctx)
                 return None
             if eq._as_py_():
                 return i
         return -1
+
+    @meta_fn
+    def _try_numsearch(self, item):
+        item = validate_value(item)
+        if not _is_num(item):
+            return None
+        res = Num._alloc_()
+        orig_ctx = ctx()
+        begin_ctx = orig_ctx.branch(None)
+        set_ctx(begin_ctx)
+        begin_ctx.test = item.ir()
+        end_ctxs = []
+        for i, k in enumerate(self._keys):
+            if not _is_num(k):
+                # A bit of a hack to allow resetting to the original state
+                del orig_ctx.outgoing[None]
+                set_ctx(orig_ctx)
+                return None
+            set_ctx(begin_ctx.branch(k._as_py_()))
+            res._set_(i)
+            end_ctxs.append(ctx())
+        set_ctx(begin_ctx.branch(None))
+        res._set_(-1)
+        end_ctxs.append(ctx())
+        set_ctx(Context.meet(end_ctxs))
+        return res
 
     @meta_fn
     def _binsearch(self, item):
@@ -172,11 +218,6 @@ class DictImpl[Keys, OrderedKeys, Values](Record):
         after_eq_ctx = ctx()
 
         set_ctx(neq_ctx)
-
-        if lo == mid:
-            res._set_(-1)
-            set_ctx(Context.meet([after_eq_ctx, ctx()]))
-            return res
 
         neq_test = compile_and_call(item.__lt__, mid_value).ir()
         neq_ctx = ctx()
