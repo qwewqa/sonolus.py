@@ -1095,7 +1095,14 @@ class Visitor(ast.NodeVisitor):
         return ctx().scope.get_value(res_name)
 
     def visit_Dict(self, node):
-        return validate_value({self.visit(k): self.visit(v) for k, v in zip(node.keys, node.values, strict=True)})
+        results = {}
+        for k, v in zip(node.keys, node.values, strict=True):
+            k_visited = self.visit(k)
+            v_visited = self.visit(v)
+            if not k_visited._is_py_():
+                raise ValueError("Dict keys must be compile time constants")
+            results[k_visited._as_py_()] = v_visited
+        return validate_value(results)
 
     def visit_Set(self, node):
         from sonolus.script.internal.set_impl import SetImpl
