@@ -459,7 +459,11 @@ class _Num(Value, metaclass=_NumMeta):
     @simple_meta_fn
     def __bool__(self):
         if ctx():
-            return self != 0
+            result = self != 0
+            if result._is_py_():
+                return bool(result._as_py_())
+            else:
+                return result
         else:
             if self._is_py_():
                 return bool(self._as_py_())
