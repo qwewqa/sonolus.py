@@ -8,7 +8,7 @@ from sonolus.script.internal.context import ctx
 from sonolus.script.internal.impl import validate_value
 from sonolus.script.internal.math_impls import _ceil, _round
 from sonolus.script.internal.meta_fn import meta_fn, perf_meta_fn
-from sonolus.script.internal.tuple_impl import TupleImpl
+from sonolus.script.internal.tuple_impl import has_tuple_iter, tuple_iter
 from sonolus.script.interval import clamp
 from sonolus.script.num import Num, _is_num
 from sonolus.script.record import Record
@@ -296,9 +296,9 @@ def product(values: Iterable[float]) -> float:
 @meta_fn
 def _ints_to_uint32(*values: tuple[int, int]) -> _UInt32:
     values = validate_value(values)
-    if not isinstance(values, TupleImpl):
+    if not has_tuple_iter(values):
         raise TypeError("Expected a tuple of (value, max_value) pairs")
-    values = values.value
+    values = tuple_iter(values)
     if len(values) == 0:
         return _UInt32.zero()
     collapsed_values = []

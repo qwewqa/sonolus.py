@@ -178,7 +178,10 @@ class Maybe[T](TransientValue):
         return value
 
     def _is_py_(self) -> bool:
-        return not self._present or not isinstance(self._value, Value) or self._value._is_py_()
+        present_is_py = self._present._is_py_()
+        if present_is_py and self._present._as_py_() == 0:
+            return True
+        return present_is_py and (not isinstance(self._value, Value) or self._value._is_py_())
 
     def _as_py_(self) -> Any:
         if not self._is_py_():

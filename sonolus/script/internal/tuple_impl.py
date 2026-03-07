@@ -1,4 +1,5 @@
 # ruff: noqa: B905
+from enum import Enum
 from typing import Any, Self
 
 from sonolus.script.internal.impl import validate_value
@@ -122,6 +123,33 @@ class TupleImpl(TransientValue):
     def _as_py_(self) -> tuple:
         return tuple(item._as_py_() for item in self.value)
 
+    def _tuple_iter_(self) -> tuple:
+        return self.value
+
 
 TupleImpl.__name__ = "tuple"
 TupleImpl.__qualname__ = "tuple"
+
+
+def has_tuple_iter(v) -> bool:
+    v = validate_value(v)
+    if hasattr(v, "_tuple_iter_"):
+        return True
+    if v._is_py_():
+        v_py = v._as_py_()
+        if isinstance(v_py, type):
+            return issubclass(v_py, Enum)
+    return False
+
+
+def tuple_iter(v) -> tuple:
+    v = validate_value(v)
+    if hasattr(v, "_tuple_iter_"):
+        return v._tuple_iter_()
+    if v._is_py_():
+        v_py = v._as_py_()
+        if isinstance(v_py, type):
+            if issubclass(v_py, Enum):
+                return tuple(v_py)
+            raise TypeError(f"Cannot iterate over non-Enum class {v_py}")
+    raise TypeError(f"Cannot iterate over {v}")

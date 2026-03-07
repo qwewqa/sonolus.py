@@ -15,7 +15,7 @@ from sonolus.script.internal.native import native_function
 from sonolus.script.internal.random import RANDOM_BUILTIN_IMPLS
 from sonolus.script.internal.range import Range
 from sonolus.script.internal.set_impl import SetImpl
-from sonolus.script.internal.tuple_impl import TupleImpl
+from sonolus.script.internal.tuple_impl import TupleImpl, has_tuple_iter, tuple_iter
 from sonolus.script.internal.value import Value
 from sonolus.script.iterator import (
     SonolusIterator,
@@ -63,8 +63,8 @@ def _enumerate(iterable, start=0):
     from sonolus.backend.visitor import compile_and_call
 
     iterable = validate_value(iterable)
-    if isinstance(iterable, TupleImpl):
-        return TupleImpl._accept_(tuple((start + i, value) for i, value in enumerate(iterable.value, start=start)))
+    if has_tuple_iter(iterable):
+        return TupleImpl._accept_(tuple((start + i, value) for i, value in enumerate(tuple_iter(iterable), start=start)))
     elif not hasattr(iterable, "__iter__"):
         raise TypeError(f"'{type(iterable).__name__}' object is not iterable")
     elif isinstance(iterable, ArrayLike):
@@ -81,8 +81,8 @@ def _reversed(iterable):
     from sonolus.backend.visitor import compile_and_call
 
     iterable = validate_value(iterable)
-    if isinstance(iterable, TupleImpl):
-        return TupleImpl(tuple(reversed(iterable.value)))
+    if has_tuple_iter(iterable):
+        return TupleImpl(tuple(reversed(tuple_iter(iterable))))
     if not isinstance(iterable, ArrayLike):
         raise TypeError(f"Unsupported type: {type(iterable)} for reversed")
     return compile_and_call(iterable.__reversed__)
@@ -100,10 +100,10 @@ def _zip(*iterables, strict: bool = False):
         return _EmptyIterator()
 
     iterables = [validate_value(iterable) for iterable in iterables]
-    if any(isinstance(iterable, TupleImpl) for iterable in iterables):
-        if not all(isinstance(iterable, TupleImpl) for iterable in iterables):
+    if any(has_tuple_iter(iterable) for iterable in iterables):
+        if not all(has_tuple_iter(iterable) for iterable in iterables):
             raise TypeError("Cannot mix tuples with other types in zip")
-        return TupleImpl._accept_(tuple(zip(*(iterable.value for iterable in iterables), strict=False)))
+        return TupleImpl._accept_(tuple(zip(*(tuple_iter(iterable) for iterable in iterables), strict=False)))
     iterators = [compile_and_call(iterable.__iter__) for iterable in iterables]
     if not all(isinstance(iterator, SonolusIterator) for iterator in iterators):
         raise TypeError("Only subclasses of SonolusIterator are supported as iterators")
@@ -141,12 +141,13 @@ def _max(*args, default=_empty, key=None):
         (iterable,) = args
         if isinstance(iterable, ArrayLike):
             return compile_and_call(iterable._max_, key=key)
-        elif isinstance(iterable, TupleImpl) and all(_is_num(v) for v in iterable.value):
-            if len(iterable.value) == 0:
+        elif has_tuple_iter(iterable) and all(_is_num(v) for v in tuple_iter(iterable)):
+            t = tuple_iter(iterable)
+            if len(t) == 0:
                 if default is not _empty:
                     return default
                 raise ValueError("max() arg is an empty sequence")
-            return compile_and_call(Array(*iterable.value)._max_, key=key)
+            return compile_and_call(Array(*t)._max_, key=key)
         elif isinstance(iterable, SonolusIterator):
             if not (default is _empty or Num._accepts_(default)):
                 raise TypeError("default argument must be a number")
@@ -234,12 +235,13 @@ def _min(*args, default=_empty, key=None):
         (iterable,) = args
         if isinstance(iterable, ArrayLike):
             return compile_and_call(iterable._min_, key=key)
-        elif isinstance(iterable, TupleImpl) and all(_is_num(v) for v in iterable.value):
-            if len(iterable.value) == 0:
+        elif has_tuple_iter(iterable) and all(_is_num(v) for v in tuple_iter(iterable)):
+            t = tuple_iter(iterable)
+            if len(t) == 0:
                 if default is not _empty:
                     return default
                 raise ValueError("min() arg is an empty sequence")
-            return compile_and_call(Array(*iterable.value)._min_, key=key)
+            return compile_and_call(Array(*t)._min_, key=key)
         elif isinstance(iterable, SonolusIterator):
             if not (default is _empty or Num._accepts_(default)):
                 raise TypeError("default argument must be a number")

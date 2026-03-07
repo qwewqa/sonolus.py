@@ -31,7 +31,7 @@ from sonolus.script.internal.error import CompilationError
 from sonolus.script.internal.impl import validate_value
 from sonolus.script.internal.meta_fn import meta_fn
 from sonolus.script.internal.transient import TransientValue
-from sonolus.script.internal.tuple_impl import TupleImpl
+from sonolus.script.internal.tuple_impl import has_tuple_iter, tuple_iter
 from sonolus.script.internal.value import Value
 from sonolus.script.iterator import SonolusIterator
 from sonolus.script.maybe import Maybe, Nothing
@@ -319,7 +319,6 @@ class Visitor(ast.NodeVisitor):
             self.qualified_name = qualified_name
 
     def run(self, node):
-        from sonolus.script.internal.dict_impl import DictImpl
         from sonolus.script.internal.set_impl import SetImpl
 
         completion_timer = mark_start(self.qualified_name)
@@ -347,10 +346,8 @@ class Visitor(ast.NodeVisitor):
                 first_generator = generators[0]
                 iterable = self.visit(first_generator.iter)
                 if isinstance(iterable, SetImpl):
-                    iterable = validate_value(iterable._dict._keys)
-                if isinstance(iterable, DictImpl):
-                    iterable = validate_value(iterable._keys)
-                if isinstance(iterable, TupleImpl):
+                    iterable = iterable._dict
+                if has_tuple_iter(iterable):
                     initial_iterator = iterable
                 else:
                     if not hasattr(iterable, "__iter__"):
@@ -438,7 +435,6 @@ class Visitor(ast.NodeVisitor):
     def construct_genexpr(
         self, generators: Iterable[ast.comprehension], elt: ast.expr, initial_iterator: Value | None = None
     ):
-        from sonolus.script.internal.dict_impl import DictImpl
         from sonolus.script.internal.set_impl import SetImpl
 
         if not generators:
@@ -457,11 +453,9 @@ class Visitor(ast.NodeVisitor):
         else:
             iterable = self.visit(generator.iter)
         if isinstance(iterable, SetImpl):
-            iterable = validate_value(iterable._dict._keys)
-        if isinstance(iterable, DictImpl):
-            iterable = validate_value(iterable._keys)
-        if isinstance(iterable, TupleImpl):
-            for value in iterable.value:
+            iterable = iterable._dict
+        if has_tuple_iter(iterable):
+            for value in tuple_iter(iterable):
                 set_ctx(ctx().branch(None))
                 self.handle_assign(generator.target, validate_value(value))
                 self.construct_genexpr(others, elt)
@@ -608,19 +602,15 @@ class Visitor(ast.NodeVisitor):
         self.handle_assign(node.target, value)
 
     def visit_For(self, node):
-        from sonolus.script.internal.dict_impl import DictImpl
         from sonolus.script.internal.set_impl import SetImpl
-        from sonolus.script.internal.tuple_impl import TupleImpl
 
         iterable = self.visit(node.iter)
         if isinstance(iterable, SetImpl):
-            iterable = validate_value(iterable._dict._keys)
-        if isinstance(iterable, DictImpl):
-            iterable = validate_value(iterable._keys)
-        if isinstance(iterable, TupleImpl):
+            iterable = iterable._dict
+        if has_tuple_iter(iterable):
             # Unroll the loop
             break_ctxs = []
-            for value in iterable.value:
+            for value in tuple_iter(iterable):
                 set_ctx(ctx().branch(None))
                 self.loop_head_ctxs.append([])
                 self.break_ctxs.append([])
@@ -826,7 +816,6 @@ class Visitor(ast.NodeVisitor):
 
     def handle_match_pattern(self, subject: Value, pattern: ast.pattern) -> tuple[Context, Context]:
         from sonolus.script.internal.generic import validate_type_spec
-        from sonolus.script.internal.tuple_impl import TupleImpl
 
         if not ctx().live:
             return ctx().into_dead(), ctx()
@@ -868,7 +857,7 @@ class Visitor(ast.NodeVisitor):
                     return true_ctx, false_ctx
             case ast.MatchSequence(patterns=patterns):
                 target_len = len(patterns)
-                if not (isinstance(subject, Sequence | TupleImpl)):
+                if not (isinstance(subject, Sequence) or has_tuple_iter(subject)):
                     return ctx().into_dead(), ctx()
                 length_test = self.convert_to_boolean_num(pattern, validate_value(_len(subject) == target_len))
                 ctx_init = ctx()
@@ -1139,8 +1128,8 @@ class Visitor(ast.NodeVisitor):
 
     def visit_YieldFrom(self, node):
         value = self.visit(node.value)
-        if isinstance(value, TupleImpl):
-            for entry in value.value:
+        if has_tuple_iter(value):
+            for entry in tuple_iter(value):
                 ctx().scope.set_value("$yield", validate_value(entry))
                 self.yield_ctxs.append(ctx())
                 resume_ctx = ctx().new_disconnected()
@@ -1499,8 +1488,8 @@ class Visitor(ast.NodeVisitor):
             raise TypeError(f"Cannot delete items on {type(target).__name__}")
 
     def handle_starred(self, value: Value) -> tuple[Value, ...]:
-        if isinstance(value, TupleImpl):
-            return value.value
+        if has_tuple_iter(value):
+            return tuple_iter(value)
         raise ValueError("Unsupported starred expression")
 
     def is_not_implemented(self, value):

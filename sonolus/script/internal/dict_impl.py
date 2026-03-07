@@ -241,6 +241,11 @@ class DictImpl[Keys, OrderedKeys, Values](Record):
                 return i
         return -1
 
+    def _tuple_iter_(self) -> tuple:
+        from sonolus.script.internal.tuple_impl import tuple_iter
+
+        return tuple_iter(self._keys)
+
     @meta_fn
     def keys(self):
         return validate_value(tuple(self._keys[i] for i in range(self._size)))
