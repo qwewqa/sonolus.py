@@ -1,3 +1,7 @@
+### 0.14.5
+
+- Support iterating through Enum classes to get members
+
 ### 0.14.4
 
 - Sets and dicts are now always distinct types and support `isinstance` checks.
