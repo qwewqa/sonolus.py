@@ -64,7 +64,9 @@ def _enumerate(iterable, start=0):
 
     iterable = validate_value(iterable)
     if has_tuple_iter(iterable):
-        return TupleImpl._accept_(tuple((start + i, value) for i, value in enumerate(tuple_iter(iterable), start=start)))
+        return TupleImpl._accept_(
+            tuple((start + i, value) for i, value in enumerate(tuple_iter(iterable), start=start))
+        )
     elif not hasattr(iterable, "__iter__"):
         raise TypeError(f"'{type(iterable).__name__}' object is not iterable")
     elif isinstance(iterable, ArrayLike):

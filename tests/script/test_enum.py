@@ -1,6 +1,5 @@
 from enum import IntEnum
 
-from sonolus.script.array import Array
 from sonolus.script.containers import VarArray
 from tests.script.conftest import run_and_validate
 
