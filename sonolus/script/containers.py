@@ -3,7 +3,7 @@ from __future__ import annotations
 from collections.abc import Callable
 from typing import Any, Protocol, Self
 
-from sonolus.backend.visitor import compile_and_call
+from sonolus.script.internal.visitor import compile_and_call
 from sonolus.script.archetype import AnyArchetype, EntityRef
 from sonolus.script.array import Array
 from sonolus.script.array_like import ArrayLike, get_positive_index

@@ -75,13 +75,13 @@ class _Zipper[T](Record, SonolusIterator):
 
     @meta_fn
     def _get_next_values(self) -> tuple[Any, ...]:
-        from sonolus.backend.visitor import compile_and_call
+        from sonolus.script.internal.visitor import compile_and_call
 
         return tuple(compile_and_call(iterator.next) for iterator in self._get_iterators())
 
     @meta_fn
     def _values_to_tuple(self, values: tuple[Any, ...]) -> tuple[Any, ...]:
-        from sonolus.backend.visitor import compile_and_call
+        from sonolus.script.internal.visitor import compile_and_call
 
         return tuple(compile_and_call(value.get_unsafe) for value in values)
 
@@ -123,7 +123,7 @@ class _FilteringIterator[T, Fn](Record, SonolusIterator):
 @meta_fn
 def maybe_next[T](iterator: Iterator[T]) -> Maybe[T]:
     """Get the next item from an iterator as a [`Maybe`][sonolus.script.maybe.Maybe]."""
-    from sonolus.backend.visitor import compile_and_call
+    from sonolus.script.internal.visitor import compile_and_call
 
     if not isinstance(iterator, SonolusIterator):
         raise TypeError("Iterator must be an instance of SonolusIterator.")

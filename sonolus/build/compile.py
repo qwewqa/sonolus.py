@@ -10,7 +10,7 @@ from sonolus.backend.ops import Op
 from sonolus.backend.optimize.flow import BasicBlock, hash_cfg
 from sonolus.backend.optimize.optimize import STANDARD_PASSES
 from sonolus.backend.optimize.passes import CompilerPass, OptimizerConfig, run_passes
-from sonolus.backend.visitor import compile_and_call_at_definition
+from sonolus.script.internal.visitor import compile_and_call_at_definition
 from sonolus.build.node import OutputNodeGenerator
 from sonolus.script.archetype import _BaseArchetype
 from sonolus.script.internal.callbacks import CallbackInfo

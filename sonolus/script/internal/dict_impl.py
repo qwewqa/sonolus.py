@@ -131,7 +131,7 @@ class DictImpl[Keys, OrderedKeys, Values](Record):
 
     @meta_fn
     def _try_constsearch(self, item):
-        from sonolus.backend.visitor import compile_and_call
+        from sonolus.script.internal.visitor import compile_and_call
 
         orig_ctx = ctx()
         begin_ctx = orig_ctx.branch(None)
@@ -180,7 +180,7 @@ class DictImpl[Keys, OrderedKeys, Values](Record):
 
     @meta_fn
     def _binsearch_internal(self, item, lo, hi, res):
-        from sonolus.backend.visitor import compile_and_call
+        from sonolus.script.internal.visitor import compile_and_call
 
         if lo >= hi:
             res._set_(-1)

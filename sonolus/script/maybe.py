@@ -128,7 +128,7 @@ class Maybe[T](TransientValue):
         Returns:
             A copy of the contained value if present, otherwise a copy of the result of calling the function.
         """
-        from sonolus.backend.visitor import compile_and_call
+        from sonolus.script.internal.visitor import compile_and_call
 
         if ctx():
             if self.is_some._is_py_():  # type: ignore

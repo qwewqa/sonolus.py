@@ -50,7 +50,7 @@ def _isinstance(value, type_):
 
 @meta_fn
 def _len(value):
-    from sonolus.backend.visitor import compile_and_call
+    from sonolus.script.internal.visitor import compile_and_call
 
     value = validate_value(value)
     if not hasattr(value, "__len__"):
@@ -60,7 +60,7 @@ def _len(value):
 
 @meta_fn
 def _enumerate(iterable, start=0):
-    from sonolus.backend.visitor import compile_and_call
+    from sonolus.script.internal.visitor import compile_and_call
 
     iterable = validate_value(iterable)
     if has_tuple_iter(iterable):
@@ -80,7 +80,7 @@ def _enumerate(iterable, start=0):
 
 @meta_fn
 def _reversed(iterable):
-    from sonolus.backend.visitor import compile_and_call
+    from sonolus.script.internal.visitor import compile_and_call
 
     iterable = validate_value(iterable)
     if has_tuple_iter(iterable):
@@ -92,7 +92,7 @@ def _reversed(iterable):
 
 @meta_fn
 def _zip(*iterables, strict: bool = False):
-    from sonolus.backend.visitor import compile_and_call
+    from sonolus.script.internal.visitor import compile_and_call
     from sonolus.script.containers import Pair
 
     if validate_value(strict)._as_py_():  # type: ignore
@@ -117,7 +117,7 @@ def _zip(*iterables, strict: bool = False):
 
 @meta_fn
 def _abs(value):
-    from sonolus.backend.visitor import compile_and_call
+    from sonolus.script.internal.visitor import compile_and_call
 
     value = validate_value(value)
     if not hasattr(value, "__abs__"):
@@ -131,7 +131,7 @@ def _identity(value):
 
 @meta_fn
 def _max(*args, default=_empty, key=None):
-    from sonolus.backend.visitor import compile_and_call
+    from sonolus.script.internal.visitor import compile_and_call
 
     if key is None:
         key = _identity
@@ -176,7 +176,7 @@ def _max(*args, default=_empty, key=None):
 
 
 def _max2(a, b, key=_identity):
-    from sonolus.backend.visitor import compile_and_call
+    from sonolus.script.internal.visitor import compile_and_call
 
     a = validate_value(a)
     b = validate_value(b)
@@ -225,7 +225,7 @@ def _max_num_iterator(iterable, default, key):
 
 @meta_fn
 def _min(*args, default=_empty, key=None):
-    from sonolus.backend.visitor import compile_and_call
+    from sonolus.script.internal.visitor import compile_and_call
 
     if key is None:
         key = _identity
@@ -270,7 +270,7 @@ def _min(*args, default=_empty, key=None):
 
 
 def _min2(a, b, key=_identity):
-    from sonolus.backend.visitor import compile_and_call
+    from sonolus.script.internal.visitor import compile_and_call
 
     a = validate_value(a)
     b = validate_value(b)
@@ -467,7 +467,7 @@ def _hasattr(obj: Any, name: str) -> bool:
 
 @meta_fn
 def _getattr(obj: Any, name: str, default=_empty) -> Any:
-    from sonolus.backend.visitor import compile_and_call
+    from sonolus.script.internal.visitor import compile_and_call
     from sonolus.script.internal.constant import ConstantValue
     from sonolus.script.internal.descriptor import SonolusDescriptor
 
@@ -493,7 +493,7 @@ def _getattr(obj: Any, name: str, default=_empty) -> Any:
 
 @meta_fn
 def _setattr(obj: Any, name: str, value: Any):
-    from sonolus.backend.visitor import compile_and_call
+    from sonolus.script.internal.visitor import compile_and_call
     from sonolus.script.internal.descriptor import SonolusDescriptor
 
     name = validate_value(name)._as_py_()

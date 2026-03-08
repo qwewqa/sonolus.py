@@ -18,7 +18,7 @@ from sonolus.backend.optimize.flow import BasicBlock
 from sonolus.backend.optimize.optimize import FAST_PASSES, MINIMAL_PASSES, STANDARD_PASSES
 from sonolus.backend.optimize.passes import OptimizerConfig, run_passes
 from sonolus.backend.place import BlockPlace
-from sonolus.backend.visitor import compile_and_call
+from sonolus.script.internal.visitor import compile_and_call
 from sonolus.build.compile import callback_to_cfg
 from sonolus.script.debug import debug_log_callback, simulation_context
 from sonolus.script.internal.context import ModeContextState, ProjectContextState, RuntimeChecks, ctx

@@ -11,7 +11,7 @@ from typing import Annotated, Any, ClassVar, NamedTuple, Self, TypedDict, get_or
 from sonolus.backend.ir import IRConst, IRExpr, IRInstr, IRPureInstr, IRStmt
 from sonolus.backend.mode import Mode
 from sonolus.backend.ops import Op
-from sonolus.backend.visitor import compile_and_call
+from sonolus.script.internal.visitor import compile_and_call
 from sonolus.script.bucket import Bucket, Judgment
 from sonolus.script.debug import runtime_checks_enabled, static_error
 from sonolus.script.internal.callbacks import PLAY_CALLBACKS, PREVIEW_CALLBACKS, WATCH_ARCHETYPE_CALLBACKS, CallbackInfo
