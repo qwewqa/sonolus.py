@@ -240,7 +240,10 @@ class Array[T, Size](GenericValue, ArrayLike[T], metaclass=ArrayMeta):
             if not ctx():
                 raise InternalError("Unexpected non-constant index")
             if isinstance(self._value, list | BlockPlace):
-                base = ctx().rom[tuple(self._to_list_())] if isinstance(self._value, list) else self._value
+                try:
+                    base = ctx().rom[tuple(self._to_list_())] if isinstance(self._value, list) else self._value
+                except TypeError as e:
+                    raise TypeError("Array contains unsupported types for non-constant index lookup") from e
                 place = BlockPlace(
                     block=base.block,
                     index=(Num(base.index) + index * self.element_type()._size_()).index(),
