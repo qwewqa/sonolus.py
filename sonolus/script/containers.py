@@ -3,13 +3,13 @@ from __future__ import annotations
 from collections.abc import Callable
 from typing import Any, Protocol, Self
 
-from sonolus.script.internal.visitor import compile_and_call
 from sonolus.script.archetype import AnyArchetype, EntityRef
 from sonolus.script.array import Array
 from sonolus.script.array_like import ArrayLike, get_positive_index
 from sonolus.script.debug import error
 from sonolus.script.internal.context import ctx
 from sonolus.script.internal.meta_fn import meta_fn
+from sonolus.script.internal.visitor import compile_and_call
 from sonolus.script.interval import clamp
 from sonolus.script.iterator import SonolusIterator
 from sonolus.script.maybe import Maybe, Nothing, Some

@@ -35,9 +35,9 @@ _empty = object()
 def _isinstance(value, type_):
     value = validate_value(value)
     type_ = validate_value(type_)._as_py_()
-    if type_ is dict:
+    if type_ in {dict, _dict}:
         return isinstance(value, DictImpl)
-    if type_ in {set, frozenset}:
+    if type_ in {set, frozenset, _set}:
         return isinstance(value, SetImpl)
     if type_ is tuple:
         return isinstance(value, TupleImpl)
@@ -92,8 +92,8 @@ def _reversed(iterable):
 
 @meta_fn
 def _zip(*iterables, strict: bool = False):
-    from sonolus.script.internal.visitor import compile_and_call
     from sonolus.script.containers import Pair
+    from sonolus.script.internal.visitor import compile_and_call
 
     if validate_value(strict)._as_py_():  # type: ignore
         raise NotImplementedError("Strict zipping is not supported")
@@ -401,6 +401,84 @@ class _Bool:
 _bool = _Bool()
 
 
+class _Set:
+    _is_comptime_value_ = True
+    _type_mapping_ = SetImpl
+
+    @meta_fn
+    def __call__(self, iterable=_empty):
+        if iterable is _empty:
+            return SetImpl.from_set(set())
+        iterable = validate_value(iterable)
+        if isinstance(iterable, SetImpl):
+            return SetImpl.from_set(tuple_iter(iterable._dict))
+        if has_tuple_iter(iterable):
+            return SetImpl.from_set(tuple_iter(iterable))
+        raise TypeError(f"'{type(iterable).__name__}' object is not iterable")
+
+    @meta_fn
+    def __getitem__(self, item):
+        return self
+
+    def __or__(self, other):
+        other = validate_value(other)
+        if other._is_py_():
+            other = other._as_py_()
+        other = getattr(other, "_type_mapping_", other)
+        return SetImpl | other
+
+
+_set = _Set()
+
+
+class _Dict:
+    _is_comptime_value_ = True
+    _type_mapping_ = DictImpl
+
+    @meta_fn
+    def __call__(self, mapping_or_iterable=_empty, **kwargs):
+        if mapping_or_iterable is _empty:
+            if not kwargs:
+                return DictImpl.from_dict({})
+            return DictImpl.from_dict(kwargs)
+        arg = validate_value(mapping_or_iterable)
+        if isinstance(arg, DictImpl):
+            d = arg._as_dict_with_py_keys()
+            if kwargs:
+                d.update(kwargs)
+            return DictImpl.from_dict(d)
+        if has_tuple_iter(arg):
+            items = tuple_iter(arg)
+            d = {}
+            for item in items:
+                item = validate_value(item)
+                if not has_tuple_iter(item):
+                    raise TypeError(f"cannot convert '{type(item).__name__}' object to dict items")
+                kv = tuple_iter(item)
+                if len(kv) != 2:
+                    raise ValueError(f"dictionary update sequence element has length {len(kv)}; 2 is required")
+                k, v = kv
+                d[k] = v
+            if kwargs:
+                d.update(kwargs)
+            return DictImpl.from_dict(d)
+        raise TypeError(f"'{type(arg).__name__}' object is not a mapping")
+
+    @meta_fn
+    def __getitem__(self, item):
+        return self
+
+    def __or__(self, other):
+        other = validate_value(other)
+        if other._is_py_():
+            other = other._as_py_()
+        other = getattr(other, "_type_mapping_", other)
+        return DictImpl | other
+
+
+_dict = _Dict()
+
+
 def _any(iterable):
     for value in iterable:  # noqa: SIM110
         if value:
@@ -467,9 +545,9 @@ def _hasattr(obj: Any, name: str) -> bool:
 
 @meta_fn
 def _getattr(obj: Any, name: str, default=_empty) -> Any:
-    from sonolus.script.internal.visitor import compile_and_call
     from sonolus.script.internal.constant import ConstantValue
     from sonolus.script.internal.descriptor import SonolusDescriptor
+    from sonolus.script.internal.visitor import compile_and_call
 
     name = validate_value(name)._as_py_()
     if isinstance(obj, ConstantValue):
@@ -493,8 +571,8 @@ def _getattr(obj: Any, name: str, default=_empty) -> Any:
 
 @meta_fn
 def _setattr(obj: Any, name: str, value: Any):
-    from sonolus.script.internal.visitor import compile_and_call
     from sonolus.script.internal.descriptor import SonolusDescriptor
+    from sonolus.script.internal.visitor import compile_and_call
 
     name = validate_value(name)._as_py_()
     if obj._is_py_():
@@ -539,6 +617,7 @@ BUILTIN_IMPLS = {
     id(any): _any,
     id(bool): _bool,
     id(callable): _callable,
+    id(dict): _dict,
     id(enumerate): _enumerate,
     id(filter): _filter,
     id(float): _float,
@@ -554,6 +633,7 @@ BUILTIN_IMPLS = {
     id(next): _next,
     id(range): Range.frozen,
     id(reversed): _reversed,
+    id(set): _set,
     id(setattr): _setattr,
     id(sum): _sum,
     id(super): _super,

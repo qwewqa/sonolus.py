@@ -1,4 +1,4 @@
-# ruff: noqa: SIM113, PLC2701
+# ruff: noqa: SIM113, PLC2701, C408
 
 import pytest
 
@@ -2054,7 +2054,56 @@ def test_items_contains_absent_large_size_numeric_key():
     assert run_and_validate(fn) == Array(False, False, False)
 
 
-# isinstance
+def test_dict_empty():
+    def fn():
+        d = dict()
+        return len(d)
+
+    assert run_and_validate(fn) == 0
+
+
+def test_dict_from_mapping():
+    def fn():
+        d1 = {"a": 1, "b": 2}
+        d2 = dict(d1)
+        return Array(d2["a"], d2["b"])
+
+    assert run_and_validate(fn) == Array(1, 2)
+
+
+def test_dict_from_pairs():
+    def fn():
+        pairs = (("a", 10), ("b", 20))
+        d = dict(pairs)
+        return Array(d["a"], d["b"])
+
+    assert run_and_validate(fn) == Array(10, 20)
+
+
+def test_dict_with_type_params():
+    def fn():
+        d1 = {"a": 1, "b": 2}
+        d2 = dict[str, int](d1)
+        return Array(d2["a"], d2["b"])
+
+    assert run_and_validate(fn) == Array(1, 2)
+
+
+def test_dict_kwargs():
+    def fn():
+        d = dict(x=1, y=2)
+        return Array(d["x"], d["y"])
+
+    assert run_and_validate(fn) == Array(1, 2)
+
+
+def test_dict_mapping_with_kwargs():
+    def fn():
+        base = {"a": 1}
+        d = dict(base, b=2)
+        return Array(d["a"], d["b"])
+
+    assert run_and_validate(fn) == Array(1, 2)
 
 
 def test_isinstance_dict():

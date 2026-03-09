@@ -11,7 +11,6 @@ from typing import Annotated, Any, ClassVar, NamedTuple, Self, TypedDict, get_or
 from sonolus.backend.ir import IRConst, IRExpr, IRInstr, IRPureInstr, IRStmt
 from sonolus.backend.mode import Mode
 from sonolus.backend.ops import Op
-from sonolus.script.internal.visitor import compile_and_call
 from sonolus.script.bucket import Bucket, Judgment
 from sonolus.script.debug import runtime_checks_enabled, static_error
 from sonolus.script.internal.callbacks import PLAY_CALLBACKS, PREVIEW_CALLBACKS, WATCH_ARCHETYPE_CALLBACKS, CallbackInfo
@@ -23,6 +22,7 @@ from sonolus.script.internal.introspection import get_field_specifiers
 from sonolus.script.internal.meta_fn import meta_fn
 from sonolus.script.internal.native import native_call
 from sonolus.script.internal.value import BackingValue, DataValue, Value
+from sonolus.script.internal.visitor import compile_and_call
 from sonolus.script.num import Num
 from sonolus.script.pointer import _backing_deref, _deref
 from sonolus.script.record import Record

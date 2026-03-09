@@ -1470,6 +1470,12 @@ class Visitor(ast.NodeVisitor):
                 if not key._is_py_():
                     raise ValueError("Type parameters must be compile-time constants")
                 return validate_value(target._as_py_()[key._as_py_()])
+            elif (
+                target._is_py_()
+                and getattr(target._as_py_(), "_is_comptime_value_", False)
+                and hasattr(target._as_py_(), "__getitem__")
+            ):
+                return self.handle_call(node, target._as_py_().__getitem__, key)
             else:
                 if isinstance(target, Value) and hasattr(target, "__getitem__"):
                     return self.handle_call(node, target.__getitem__, key)

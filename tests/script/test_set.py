@@ -1,4 +1,4 @@
-# ruff: noqa: SIM113, PLC2701
+# ruff: noqa: SIM113, PLC2701, C405
 
 import pytest
 
@@ -344,7 +344,45 @@ def test_eq_raises():
         run_and_validate(fn)
 
 
-# isinstance
+def test_set_empty():
+    def fn():
+        s = set()
+        return len(s)
+
+    assert run_and_validate(fn) == 0
+
+
+def test_set_from_tuple():
+    def fn():
+        s = set((1, 2, 3))
+        return Array(1 in s, 2 in s, 4 in s)
+
+    assert run_and_validate(fn) == Array(True, True, False)
+
+
+def test_set_from_string_tuple():
+    def fn():
+        s = set(("a", "b", "c"))
+        return Array("a" in s, "b" in s, "d" in s)
+
+    assert run_and_validate(fn) == Array(True, True, False)
+
+
+def test_set_with_type_params():
+    def fn():
+        s = set[int]((1, 2, 3))
+        return Array(1 in s, 2 in s, 4 in s)
+
+    assert run_and_validate(fn) == Array(True, True, False)
+
+
+def test_set_copy():
+    def fn():
+        s1 = {1, 2, 3}
+        s2 = set(s1)
+        return Array(1 in s2, 2 in s2, 4 in s2)
+
+    assert run_and_validate(fn) == Array(True, True, False)
 
 
 def test_isinstance_set():

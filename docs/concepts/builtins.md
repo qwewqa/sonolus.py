@@ -5,6 +5,7 @@ The supported functions and parameters are listed below.
 - `abs(x)`
 - `bool(object)`
 - `callable(object)`
+- `dict()`, `dict(mapping, **kwargs)`, `dict(iterable, **kwargs)`, `dict(**kwargs)` (keys must be compile-time constants)
 - `enumerate(iterable, start=0)`
 - `filter(function, iterable)`
 - `float(x)` (for a num argument)
@@ -22,6 +23,7 @@ The supported functions and parameters are listed below.
 - `range(stop)`, `range(start, stop[, step])`
 - `reversed(seq)`
 - `round(number[, ndigits])`
+- `set()`, `set(iterable)` (members must be compile-time constants)
 - `setattr(object, name, value)`
 - `sum(iterable, start=0)`
 - `super(type[, object-or-type])`

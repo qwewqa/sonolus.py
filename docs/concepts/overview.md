@@ -195,8 +195,11 @@ assert record_1 == array_1[0] == MyRecord(4, 5.6)
 Sonolus.py has limited support for other types of values such as strings, tuples, and functions. These have restrictions
 such as not being valid as Record field types or Array element types.
 
-Support for `dict` is limited, and they are immutable and can only be accessed via compile-time constant keys. `set`
-literals of numeric values are supported, and they are immutable after creation.
+`dict` and `set` are immutable after creation. All dict keys and set members must be compile-time constants. Dicts can
+be created from literals, the `dict()` constructor (from another dict, an iterable of key-value pairs, or keyword
+arguments), or by merging with `|`. Sets can be created from literals or the `set()` constructor (from another set or
+an iterable). Accessing a dict value with a compile-time constant key is always supported; dynamic access using a
+runtime key is only supported when the values are numeric, `Array`, or `Record` types.
 
 ## Modules
 

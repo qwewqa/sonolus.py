@@ -21,8 +21,8 @@ def meta_fn(fn=None, *, show_in_stack: bool = True):
 
     # noinspection PyShadowingNames
     def decorator(fn):
-        from sonolus.script.internal import visitor
         from sonolus.backend.utils import get_function
+        from sonolus.script.internal import visitor
 
         base_fn = fn
         while hasattr(base_fn, "__wrapped__"):

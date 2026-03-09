@@ -78,6 +78,30 @@ def callable(obj: object) -> bool:
     """
     ...
 
+@overload
+def dict() -> builtins.dict: ...
+@overload
+def dict[K, V](mapping: builtins.dict[K, V], **kwargs: V) -> builtins.dict[K, V]: ...
+@overload
+def dict[K, V](iterable: Iterable[tuple[K, V]], **kwargs: V) -> builtins.dict[K, V]: ...
+@overload
+def dict[V](**kwargs: V) -> builtins.dict[builtins.str, V]: ...
+def dict(*args, **kwargs) -> builtins.dict:
+    """Construct a dict from a mapping, an iterable of key-value pairs, or keyword arguments.
+
+    All dict keys must be compile-time constants. Dynamic access using a key that is not
+    a compile-time constant is only supported for numeric, Array, and Record values.
+
+    Args:
+        mapping_or_iterable: An optional dict to copy from, or an iterable of
+            ``(key, value)`` pairs.
+        **kwargs: Optional keyword arguments to include in the dict.
+
+    Returns:
+        A new dict.
+    """
+    ...
+
 def enumerate[T](iterable: Iterable[T], start: int = 0) -> Iterator[tuple[int, T]]:
     """Return an enumerate object.
 
@@ -306,6 +330,23 @@ def round(number: builtins.int | builtins.float, ndigits: builtins.int = ...) ->
 
     Returns:
         The rounded number.
+    """
+    ...
+
+@overload
+def set() -> builtins.set: ...
+@overload
+def set[T](iterable: Iterable[T]) -> builtins.set[T]: ...
+def set(*args) -> builtins.set:
+    """Construct a set from an iterable.
+
+    All set members must be compile-time constants.
+
+    Args:
+        iterable: An optional iterable of compile-time constant values.
+
+    Returns:
+        A new set.
     """
     ...
 
