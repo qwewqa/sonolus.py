@@ -1,3 +1,7 @@
+### 0.14.6
+
+- Added support for the `dict()` and `set()` functions.
+
 ### 0.14.5
 
 - Support iterating through Enum classes to get members
