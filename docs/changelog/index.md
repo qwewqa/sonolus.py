@@ -1,3 +1,7 @@
+### 0.14.7
+
+- Added support for calling `len()` on Enum classes.
+
 ### 0.14.6
 
 - Added support for the `dict()` and `set()` functions.
