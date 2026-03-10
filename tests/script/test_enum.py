@@ -10,6 +10,13 @@ class Color(IntEnum):
     BLUE = 3
 
 
+def test_len_int_enum():
+    def fn():
+        return len(Color)
+
+    assert run_and_validate(fn) == len(Color)
+
+
 def test_iterate_int_enum():
     n = len(Color)
 

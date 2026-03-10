@@ -53,6 +53,8 @@ def _len(value):
     from sonolus.script.internal.visitor import compile_and_call
 
     value = validate_value(value)
+    if has_tuple_iter(value):
+        return len(tuple_iter(value))
     if not hasattr(value, "__len__"):
         raise TypeError(f"object of type '{type(value).__name__}' has no len()")
     return compile_and_call(value.__len__)  # type: ignore
