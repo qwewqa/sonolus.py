@@ -1,3 +1,7 @@
+### 0.15.0
+
+- Added support for the [`safe_area()`][sonolus.script.runtime.safe_area] function.
+
 ### 0.14.7
 
 - Added support for calling `len()` on Enum classes.
@@ -17,6 +21,7 @@
 - Added support for `dict.get(item, default)` method with the limitation that the returned value is a copy.
 
 ### 0.14.3
+
 
 - Access to a `dict` with a non-compile-time-constant key is now supported when all values are compile time constants of
 a single supported type (numeric, array, or record).
