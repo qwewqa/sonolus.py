@@ -47,6 +47,10 @@ class _PlayRuntimeEnvironment:
     audio_offset: float
     input_offset: float
     is_multiplayer: bool
+    safe_area_x_min: float
+    safe_area_x_max: float
+    safe_area_y_min: float
+    safe_area_y_max: float
 
 
 @_watch_runtime_environment
@@ -56,12 +60,20 @@ class _WatchRuntimeEnvironment:
     audio_offset: float
     input_offset: float
     is_replay: bool
+    safe_area_x_min: float
+    safe_area_x_max: float
+    safe_area_y_min: float
+    safe_area_y_max: float
 
 
 @_preview_runtime_environment
 class _PreviewRuntimeEnvironment:
     is_debug: bool
     aspect_ratio: float
+    safe_area_x_min: float
+    safe_area_x_max: float
+    safe_area_y_min: float
+    safe_area_y_max: float
 
 
 @_tutorial_runtime_environment
@@ -69,6 +81,10 @@ class _TutorialRuntimeEnvironment:
     is_debug: bool
     aspect_ratio: float
     audio_offset: float
+    safe_area_x_min: float
+    safe_area_x_max: float
+    safe_area_y_min: float
+    safe_area_y_max: float
 
 
 @_play_runtime_update
@@ -1183,6 +1199,42 @@ def canvas() -> _PreviewRuntimeCanvas:
 def screen() -> Rect:
     """Get the screen boundaries as a rectangle."""
     return Rect._unchecked(t=1, r=aspect_ratio(), b=-1, l=-aspect_ratio())
+
+
+@meta_fn
+def safe_area() -> Rect:
+    """Get the safe area boundaries as a rectangle."""
+    if not ctx():
+        return screen()
+    match ctx().mode_state.mode:
+        case Mode.PLAY:
+            return Rect._unchecked(
+                t=_PlayRuntimeEnvironment.safe_area_y_max,
+                r=_PlayRuntimeEnvironment.safe_area_x_max,
+                b=_PlayRuntimeEnvironment.safe_area_y_min,
+                l=_PlayRuntimeEnvironment.safe_area_x_min,
+            )
+        case Mode.WATCH:
+            return Rect._unchecked(
+                t=_WatchRuntimeEnvironment.safe_area_y_max,
+                r=_WatchRuntimeEnvironment.safe_area_x_max,
+                b=_WatchRuntimeEnvironment.safe_area_y_min,
+                l=_WatchRuntimeEnvironment.safe_area_x_min,
+            )
+        case Mode.PREVIEW:
+            return Rect._unchecked(
+                t=_PreviewRuntimeEnvironment.safe_area_y_max,
+                r=_PreviewRuntimeEnvironment.safe_area_x_max,
+                b=_PreviewRuntimeEnvironment.safe_area_y_min,
+                l=_PreviewRuntimeEnvironment.safe_area_x_min,
+            )
+        case Mode.TUTORIAL:
+            return Rect._unchecked(
+                t=_TutorialRuntimeEnvironment.safe_area_y_max,
+                r=_TutorialRuntimeEnvironment.safe_area_x_max,
+                b=_TutorialRuntimeEnvironment.safe_area_y_min,
+                l=_TutorialRuntimeEnvironment.safe_area_x_min,
+            )
 
 
 def level_score() -> _LevelScore:
