@@ -11,6 +11,7 @@ from sonolus.script.array import Array
 from sonolus.script.containers import Box
 from sonolus.script.debug import debug_log
 from sonolus.script.internal.error import CompilationError
+from sonolus.script.vec import Vec2
 from tests.script.conftest import run_compiled
 from tests.script.conftest import run_and_validate
 from tests.script.test_record import Pair
@@ -921,3 +922,25 @@ def test_break_in_nested_for_else():
         debug_log(5)
 
     run_and_validate(fn)
+
+
+def test_loop_redefinition_of_reference_type():
+    def fn():
+        x = Vec2(1, 2)
+        for i in range(10):
+            x = Vec2(3, 4)
+            debug_log(x.x + x.y)
+
+    run_and_validate(fn)
+
+
+def test_loop_redefinition_of_reference_type_with_invalid_read():
+    def fn():
+        x = Vec2(1, 2)
+        for i in range(10):
+            debug_log(x.x + x.y)
+            x = Vec2(3, 4)
+            debug_log(x.x + x.y)
+
+    with pytest.raises(CompilationError, match="conflicting definitions"):
+        run_compiled(fn)

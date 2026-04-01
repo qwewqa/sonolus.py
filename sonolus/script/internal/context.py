@@ -193,7 +193,7 @@ class Context:
     test: IRExpr
     outgoing: dict[float | None, Context]
     scope: Scope
-    loop_variables: dict[str, Value]
+    loop_variables: dict[str, ValueBinding]
     live: bool
 
     def __init__(
@@ -343,11 +343,13 @@ class Context:
                 target_value = type_._from_place_(header.alloc(size=type_._size_()))
                 with using_ctx(self):
                     target_value._set_(value)
-                header.scope.set_value(name, target_value)
-                header.loop_variables[name] = target_value
+                loop_binding = ValueBinding(target_value)
+                header.scope.set_binding(name, loop_binding)
+                header.loop_variables[name] = loop_binding
             else:
-                header.scope.set_value(name, value)
-                header.loop_variables[name] = value
+                loop_binding = ValueBinding(value)
+                header.scope.set_binding(name, loop_binding)
+                header.loop_variables[name] = loop_binding
         return header
 
     def branch_to_loop_header(self, header: Self):
@@ -357,7 +359,8 @@ class Context:
         self.outgoing[None] = header
         values = {}
         # First do a pass through and get every value
-        for name, target_value in header.loop_variables.items():
+        for name, binding in header.loop_variables.items():
+            target_value = binding.value
             with using_ctx(self):
                 if type(target_value)._is_value_type_():
                     value = self.scope.get_value(name)
@@ -366,7 +369,8 @@ class Context:
                     # e.g. a Num backed by a TempBlock which could be mutated.
                     values[name] = value._get_readonly_()
         # Then actually set them
-        for name, target_value in header.loop_variables.items():
+        for name, binding in header.loop_variables.items():
+            target_value = binding.value
             with using_ctx(self):
                 if type(target_value)._is_value_type_():
                     value = values[name]
@@ -374,7 +378,7 @@ class Context:
                     target_value._set_(value)
                 else:
                     value = self.scope.get_value(name)
-                    if target_value is not value:
+                    if target_value is not value and binding.read_count > 0:
                         raise RuntimeError(
                             f"Variable '{name}' may have conflicting definitions between loop iterations"
                         )
@@ -519,6 +523,7 @@ def debug_config() -> DebugConfig:
 @dataclass
 class ValueBinding:
     value: Value
+    read_count: int = 0
 
 
 @dataclass
@@ -551,9 +556,10 @@ class Scope:
     def get_value(self, name: str) -> Value | Any:
         binding = self.get_binding(name)
         match binding:
-            case ValueBinding(value):
+            case ValueBinding() as b:
                 # we don't need to call _get_() here because _set_() is never called where it could be a problem
-                return value
+                b.read_count += 1
+                return b.value
             case ConflictBinding():
                 raise RuntimeError(
                     f"Binding '{name}' has multiple conflicting definitions or may not be guaranteed to be defined"
