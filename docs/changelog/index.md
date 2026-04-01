@@ -1,3 +1,7 @@
+### 0.15.1
+
+- Fixed non-numeric variables defined outside a loop causing an error when redefined within the loop
+
 ### 0.15.0
 
 - Added support for the [`safe_area()`][sonolus.script.runtime.safe_area] function.
