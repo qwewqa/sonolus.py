@@ -1,316 +1,318 @@
 0:
   10000[0] <- EntityData[0] >= 0
-  goto 1 if 10000[0] else 92
+  goto 1 if 10000[0] else 93
 1:
-  10000[11] <- EntityData[0] * 2.0
-  10000[10] <- ((EntityInfoArray[10000[11] + 1] >= -13.0) && (EntityInfoArray[10000[11] + 1] < 13.0)) && (EntityInfoArray[10000[11] + 1] == Trunc(EntityInfoArray[10000[11] + 1]))
-  goto 2 if 10000[10] else 91
+  10000[10] <- EntityData[0] * 2.0
+  10000[9] <- ((EntityInfoArray[10000[10] + 1] >= -13.0) && (EntityInfoArray[10000[10] + 1] < 13.0)) && (EntityInfoArray[10000[10] + 1] == Trunc(EntityInfoArray[10000[10] + 1]))
+  goto 2 if 10000[9] else 92
 2:
-  10000[1] <- 36.0 + (EntityInfoArray[10000[11] + 1] + ((EntityInfoArray[10000[11] + 1] < 0) * 13.0))
-  10000[11] <- 0
+  10000[1] <- 36.0 + (EntityInfoArray[10000[10] + 1] + ((EntityInfoArray[10000[10] + 1] < 0) * 13.0))
+  10000[10] <- 0
   goto 3
 3:
-  goto 4 if (10000[11] < EngineRom[EngineRom[10000[1]]]) else 90
+  goto 4 if (10000[10] < EngineRom[EngineRom[10000[1]]]) else 91
 4:
-  10000[12] <- 3000.0[((EngineRom[10000[1]] + 1.0) + 10000[11])]
-  goto when 10000[12]
+  10000[11] <- 3000.0[((EngineRom[10000[1]] + 1.0) + 10000[10])]
+  goto when 10000[11]
     12.0 -> 6
     default -> 5
 5:
-  10000[11] <- 10000[11] + 1.0
+  10000[10] <- 10000[10] + 1.0
   goto 3
 6:
   10000[2] <- EntityData[0] * 32.0
   10000[3] <- 3.0 + 10000[2]
-  10000[13] <- Trunc(EntityDataArray[10000[3]] / 2.0)
+  10000[12] <- Trunc(EntityDataArray[10000[3]] / 2.0)
   10000[4] <- EntityData[1] >= 0
-  goto 7 if 10000[4] else 89
+  goto 7 if 10000[4] else 90
 7:
-  10000[14] <- EntityData[1] * 2.0
-  10000[5] <- ((EntityInfoArray[10000[14] + 1] >= -13.0) && (EntityInfoArray[10000[14] + 1] < 13.0)) && (EntityInfoArray[10000[14] + 1] == Trunc(EntityInfoArray[10000[14] + 1]))
-  goto 8 if 10000[5] else 88
+  10000[13] <- EntityData[1] * 2.0
+  10000[5] <- ((EntityInfoArray[10000[13] + 1] >= -13.0) && (EntityInfoArray[10000[13] + 1] < 13.0)) && (EntityInfoArray[10000[13] + 1] == Trunc(EntityInfoArray[10000[13] + 1]))
+  goto 8 if 10000[5] else 89
 8:
-  10000[6] <- 36.0 + (EntityInfoArray[10000[14] + 1] + ((EntityInfoArray[10000[14] + 1] < 0) * 13.0))
-  10000[14] <- 0
+  10000[6] <- 36.0 + (EntityInfoArray[10000[13] + 1] + ((EntityInfoArray[10000[13] + 1] < 0) * 13.0))
+  10000[13] <- 0
   goto 9
 9:
-  goto 10 if (10000[14] < EngineRom[EngineRom[10000[6]]]) else 87
+  goto 10 if (10000[13] < EngineRom[EngineRom[10000[6]]]) else 88
 10:
-  10000[15] <- 3000.0[((EngineRom[10000[6]] + 1.0) + 10000[14])]
-  goto when 10000[15]
+  10000[14] <- 3000.0[((EngineRom[10000[6]] + 1.0) + 10000[13])]
+  goto when 10000[14]
     12.0 -> 12
     default -> 11
 11:
-  10000[14] <- 10000[14] + 1.0
+  10000[13] <- 10000[13] + 1.0
   goto 9
 12:
   10000[7] <- EntityData[1] * 32.0
   10000[8] <- 3.0 + 10000[7]
-  goto 13 if (10000[13] < (Trunc(EntityDataArray[10000[8]] / 2.0) + 1.0)) else 86
+  goto 13
 13:
-  10000[15] <- 10000[13] + 1.0
-  goto 14 if 10000[0] else 85
+  goto 14 if (10000[12] < (Trunc(EntityDataArray[10000[8]] / 2.0) + 1.0)) else 87
 14:
-  goto 15 if 10000[10] else 84
+  10000[14] <- 10000[12] + 1.0
+  goto 15 if 10000[0] else 86
 15:
-  10000[16] <- 0
-  goto 16
+  goto 16 if 10000[9] else 85
 16:
-  goto 17 if (10000[16] < EngineRom[EngineRom[10000[1]]]) else 83
+  10000[15] <- 0
+  goto 17
 17:
-  10000[17] <- 3000.0[((EngineRom[10000[1]] + 1.0) + 10000[16])]
-  goto when 10000[17]
-    12.0 -> 19
-    default -> 18
+  goto 18 if (10000[15] < EngineRom[EngineRom[10000[1]]]) else 84
 18:
-  10000[16] <- 10000[16] + 1.0
-  goto 16
+  10000[16] <- 3000.0[((EngineRom[10000[1]] + 1.0) + 10000[15])]
+  goto when 10000[16]
+    12.0 -> 20
+    default -> 19
 19:
-  goto 20 if 10000[4] else 82
+  10000[15] <- 10000[15] + 1.0
+  goto 17
 20:
-  goto 21 if 10000[5] else 81
+  goto 21 if 10000[4] else 83
 21:
-  10000[16] <- 0
-  goto 22
+  goto 22 if 10000[5] else 82
 22:
-  goto 23 if (10000[16] < EngineRom[EngineRom[10000[6]]]) else 80
+  10000[15] <- 0
+  goto 23
 23:
-  10000[17] <- 3000.0[((EngineRom[10000[6]] + 1.0) + 10000[16])]
-  goto when 10000[17]
-    12.0 -> 25
-    default -> 24
+  goto 24 if (10000[15] < EngineRom[EngineRom[10000[6]]]) else 81
 24:
-  10000[16] <- 10000[16] + 1.0
-  goto 22
+  10000[16] <- 3000.0[((EngineRom[10000[6]] + 1.0) + 10000[15])]
+  goto when 10000[16]
+    12.0 -> 26
+    default -> 25
 25:
-  goto 26 if 10000[0] else 79
+  10000[15] <- 10000[15] + 1.0
+  goto 23
 26:
-  goto 27 if 10000[10] else 78
+  goto 27 if 10000[0] else 80
 27:
-  10000[16] <- 0
-  goto 28
+  goto 28 if 10000[9] else 79
 28:
-  goto 29 if (10000[16] < EngineRom[EngineRom[10000[1]]]) else 77
+  10000[15] <- 0
+  goto 29
 29:
-  10000[17] <- 3000.0[((EngineRom[10000[1]] + 1.0) + 10000[16])]
-  goto when 10000[17]
-    12.0 -> 31
-    default -> 30
+  goto 30 if (10000[15] < EngineRom[EngineRom[10000[1]]]) else 78
 30:
-  10000[16] <- 10000[16] + 1.0
-  goto 28
+  10000[16] <- 3000.0[((EngineRom[10000[1]] + 1.0) + 10000[15])]
+  goto when 10000[16]
+    12.0 -> 32
+    default -> 31
 31:
-  goto 32 if 10000[4] else 76
+  10000[15] <- 10000[15] + 1.0
+  goto 29
 32:
-  goto 33 if 10000[5] else 75
+  goto 33 if 10000[4] else 77
 33:
-  10000[16] <- 0
-  goto 34
+  goto 34 if 10000[5] else 76
 34:
-  goto 35 if (10000[16] < EngineRom[EngineRom[10000[6]]]) else 74
+  10000[15] <- 0
+  goto 35
 35:
-  10000[17] <- 3000.0[((EngineRom[10000[6]] + 1.0) + 10000[16])]
-  goto when 10000[17]
-    12.0 -> 37
-    default -> 36
+  goto 36 if (10000[15] < EngineRom[EngineRom[10000[6]]]) else 75
 36:
-  10000[16] <- 10000[16] + 1.0
-  goto 34
+  10000[16] <- 3000.0[((EngineRom[10000[6]] + 1.0) + 10000[15])]
+  goto when 10000[16]
+    12.0 -> 38
+    default -> 37
 37:
-  10000[16] <- 10000[13] * 2.0
-  10000[17] <- Lerp(-0.9, 0.9, (EntityDataArray[10000[3]] - 10000[16]) / 2.0)
-  10000[18] <- Lerp(-0.9, 0.9, (EntityDataArray[10000[8]] - 10000[16]) / 2.0)
-  goto 38 if 10000[0] else 73
+  10000[15] <- 10000[15] + 1.0
+  goto 35
 38:
-  goto 39 if 10000[10] else 72
+  10000[15] <- 10000[12] * 2.0
+  10000[16] <- Lerp(-0.9, 0.9, (EntityDataArray[10000[3]] - 10000[15]) / 2.0)
+  10000[17] <- Lerp(-0.9, 0.9, (EntityDataArray[10000[8]] - 10000[15]) / 2.0)
+  goto 39 if 10000[0] else 74
 39:
-  10000[11] <- 0
-  goto 40
+  goto 40 if 10000[9] else 73
 40:
-  goto 41 if (10000[11] < EngineRom[EngineRom[10000[1]]]) else 71
+  10000[10] <- 0
+  goto 41
 41:
-  10000[12] <- 3000.0[((EngineRom[10000[1]] + 1.0) + 10000[11])]
-  goto when 10000[12]
-    12.0 -> 43
-    default -> 42
+  goto 42 if (10000[10] < EngineRom[EngineRom[10000[1]]]) else 72
 42:
-  10000[11] <- 10000[11] + 1.0
-  goto 40
+  10000[11] <- 3000.0[((EngineRom[10000[1]] + 1.0) + 10000[10])]
+  goto when 10000[11]
+    12.0 -> 44
+    default -> 43
 43:
-  goto 44 if 10000[4] else 70
+  10000[10] <- 10000[10] + 1.0
+  goto 41
 44:
-  goto 45 if 10000[5] else 69
+  goto 45 if 10000[4] else 71
 45:
-  10000[11] <- 0
-  goto 46
+  goto 46 if 10000[5] else 70
 46:
-  goto 47 if (10000[11] < EngineRom[EngineRom[10000[6]]]) else 68
+  10000[10] <- 0
+  goto 47
 47:
-  10000[14] <- 3000.0[((EngineRom[10000[6]] + 1.0) + 10000[11])]
-  goto when 10000[14]
-    12.0 -> 49
-    default -> 48
+  goto 48 if (10000[10] < EngineRom[EngineRom[10000[6]]]) else 69
 48:
-  10000[11] <- 10000[11] + 1.0
-  goto 46
+  10000[13] <- 3000.0[((EngineRom[10000[6]] + 1.0) + 10000[10])]
+  goto when 10000[13]
+    12.0 -> 50
+    default -> 49
 49:
-  goto 50 if 10000[0] else 67
+  10000[10] <- 10000[10] + 1.0
+  goto 47
 50:
-  goto 51 if 10000[10] else 66
+  goto 51 if 10000[0] else 68
 51:
-  10000[11] <- 0
-  goto 52
+  goto 52 if 10000[9] else 67
 52:
-  goto 53 if (10000[11] < EngineRom[EngineRom[10000[1]]]) else 65
+  10000[10] <- 0
+  goto 53
 53:
-  10000[14] <- 3000.0[((EngineRom[10000[1]] + 1.0) + 10000[11])]
-  goto when 10000[14]
-    12.0 -> 55
-    default -> 54
+  goto 54 if (10000[10] < EngineRom[EngineRom[10000[1]]]) else 66
 54:
-  10000[11] <- 10000[11] + 1.0
-  goto 52
+  10000[13] <- 3000.0[((EngineRom[10000[1]] + 1.0) + 10000[10])]
+  goto when 10000[13]
+    12.0 -> 56
+    default -> 55
 55:
-  goto 56 if 10000[4] else 64
+  10000[10] <- 10000[10] + 1.0
+  goto 53
 56:
-  goto 57 if 10000[5] else 63
+  goto 57 if 10000[4] else 65
 57:
-  10000[11] <- 0
-  goto 58
+  goto 58 if 10000[5] else 64
 58:
-  goto 59 if (10000[11] < EngineRom[EngineRom[10000[6]]]) else 62
+  10000[10] <- 0
+  goto 59
 59:
-  10000[14] <- 3000.0[((EngineRom[10000[6]] + 1.0) + 10000[11])]
-  goto when 10000[14]
-    12.0 -> 61
-    default -> 60
+  goto 60 if (10000[10] < EngineRom[EngineRom[10000[6]]]) else 63
 60:
-  10000[11] <- 10000[11] + 1.0
-  goto 58
+  10000[13] <- 3000.0[((EngineRom[10000[6]] + 1.0) + 10000[10])]
+  goto when 10000[13]
+    12.0 -> 62
+    default -> 61
 61:
-  10000[9] <- (10000[13] + 0.5) * PreviewData[1]
-  Draw(17.0, (10000[9] + ((EntityDataArray[10000[2]] - 0.5) * 0.072)) - ((RuntimeEnvironment[1] - -RuntimeEnvironment[1]) / 2.0), 10000[17], (10000[9] + ((EntityDataArray[10000[7]] - 0.5) * 0.072)) - ((RuntimeEnvironment[1] - -RuntimeEnvironment[1]) / 2.0), 10000[18], (10000[9] + ((EntityDataArray[10000[7]] + 0.5) * 0.072)) - ((RuntimeEnvironment[1] - -RuntimeEnvironment[1]) / 2.0), 10000[18], (10000[9] + ((EntityDataArray[10000[2]] + 0.5) * 0.072)) - ((RuntimeEnvironment[1] - -RuntimeEnvironment[1]) / 2.0), 10000[17], 100000.0 + (Min(EntityDataArray[10000[2]], EntityDataArray[10000[7]]) * 100.0) + Min(EntityDataArray[10000[3]], EntityDataArray[10000[8]]), PreviewOption[5])
-  10000[13] <- 10000[15]
-  goto 12
+  10000[10] <- 10000[10] + 1.0
+  goto 59
 62:
+  10000[10] <- (10000[12] + 0.5) * PreviewData[1]
+  Draw(17.0, (10000[10] + ((EntityDataArray[10000[2]] - 0.5) * 0.072)) - ((RuntimeEnvironment[1] - -RuntimeEnvironment[1]) / 2.0), 10000[16], (10000[10] + ((EntityDataArray[10000[7]] - 0.5) * 0.072)) - ((RuntimeEnvironment[1] - -RuntimeEnvironment[1]) / 2.0), 10000[17], (10000[10] + ((EntityDataArray[10000[7]] + 0.5) * 0.072)) - ((RuntimeEnvironment[1] - -RuntimeEnvironment[1]) / 2.0), 10000[17], (10000[10] + ((EntityDataArray[10000[2]] + 0.5) * 0.072)) - ((RuntimeEnvironment[1] - -RuntimeEnvironment[1]) / 2.0), 10000[16], 100000.0 + (Min(EntityDataArray[10000[2]], EntityDataArray[10000[7]]) * 100.0) + Min(EntityDataArray[10000[3]], EntityDataArray[10000[8]]), PreviewOption[5])
+  10000[12] <- 10000[14]
+  goto 13
+63:
   DebugLog(24.0)
   DebugPause()
   goto exit
-63:
+64:
   DebugLog(23.0)
   DebugPause()
   goto exit
-64:
+65:
   DebugLog(22.0)
   DebugPause()
   goto exit
-65:
+66:
   DebugLog(21.0)
   DebugPause()
   goto exit
-66:
+67:
   DebugLog(20.0)
   DebugPause()
   goto exit
-67:
+68:
   DebugLog(19.0)
   DebugPause()
   goto exit
-68:
+69:
   DebugLog(18.0)
   DebugPause()
   goto exit
-69:
+70:
   DebugLog(17.0)
   DebugPause()
   goto exit
-70:
+71:
   DebugLog(16.0)
   DebugPause()
   goto exit
-71:
+72:
   DebugLog(15.0)
   DebugPause()
   goto exit
-72:
+73:
   DebugLog(14.0)
   DebugPause()
   goto exit
-73:
+74:
   DebugLog(13.0)
   DebugPause()
   goto exit
-74:
-  DebugLog(12.0)
-  DebugPause()
-  goto exit
 75:
-  DebugLog(11.0)
+  DebugLog(12.0)
   DebugPause()
   goto exit
 76:
-  DebugLog(10.0)
-  DebugPause()
-  goto exit
-77:
-  DebugLog(9.0)
-  DebugPause()
-  goto exit
-78:
-  DebugLog(8.0)
-  DebugPause()
-  goto exit
-79:
-  DebugLog(7.0)
-  DebugPause()
-  goto exit
-80:
-  DebugLog(12.0)
-  DebugPause()
-  goto exit
-81:
   DebugLog(11.0)
   DebugPause()
   goto exit
-82:
+77:
   DebugLog(10.0)
   DebugPause()
   goto exit
-83:
+78:
   DebugLog(9.0)
   DebugPause()
   goto exit
-84:
+79:
   DebugLog(8.0)
   DebugPause()
   goto exit
-85:
+80:
   DebugLog(7.0)
   DebugPause()
   goto exit
+81:
+  DebugLog(12.0)
+  DebugPause()
+  goto exit
+82:
+  DebugLog(11.0)
+  DebugPause()
+  goto exit
+83:
+  DebugLog(10.0)
+  DebugPause()
+  goto exit
+84:
+  DebugLog(9.0)
+  DebugPause()
+  goto exit
+85:
+  DebugLog(8.0)
+  DebugPause()
+  goto exit
 86:
+  DebugLog(7.0)
+  DebugPause()
   goto exit
 87:
+  goto exit
+88:
   DebugLog(6.0)
   DebugPause()
   goto exit
-88:
+89:
   DebugLog(5.0)
   DebugPause()
   goto exit
-89:
+90:
   DebugLog(4.0)
   DebugPause()
   goto exit
-90:
+91:
   DebugLog(3.0)
   DebugPause()
   goto exit
-91:
+92:
   DebugLog(2.0)
   DebugPause()
   goto exit
-92:
+93:
   DebugLog(1.0)
   DebugPause()
   goto exit

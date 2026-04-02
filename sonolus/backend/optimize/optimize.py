@@ -8,6 +8,7 @@ from sonolus.backend.optimize.dead_code import (
     UnreachableCodeElimination,
 )
 from sonolus.backend.optimize.inlining import InlineVars
+from sonolus.backend.optimize.licm import LoopInvariantCodeMotion
 from sonolus.backend.optimize.simplify import (
     CoalesceFlow,
     CoalesceSmallConditionalBlocks,
@@ -54,6 +55,7 @@ STANDARD_PASSES = (
     RewriteToSwitch(),
     InlineVars(aggressive=True),
     FlattenAssociativeOps(),
+    LoopInvariantCodeMotion(),
     CommonSubexpressionElimination(),
     InlineVars(),
     DeadCodeElimination(),

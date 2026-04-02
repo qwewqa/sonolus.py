@@ -36,9 +36,6 @@ Block(JumpLoop(
         2
       ))
     )
-    1
-  )
-  Execute(
     Set(
       10000
       3
@@ -61,30 +58,31 @@ Block(JumpLoop(
         )
       )
     )
-    If(
-      Less(
-        Get(
-          10000
-          5
-        )
-        Add(
-          Trunc(Divide(
-            Get(
-              4100
-              Get(
-                10000
-                4
-              )
-            )
-            2
-          ))
-          1
-        )
-      )
-      2
-      3
-    )
+    1
   )
+  Execute(If(
+    Less(
+      Get(
+        10000
+        5
+      )
+      Add(
+        Trunc(Divide(
+          Get(
+            4100
+            Get(
+              10000
+              4
+            )
+          )
+          2
+        ))
+        1
+      )
+    )
+    2
+    3
+  ))
   Execute(
     Set(
       10000
