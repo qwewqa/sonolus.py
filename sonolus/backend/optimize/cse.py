@@ -35,8 +35,8 @@ def _cost(expr) -> int:
             return 1
         case IRGet(place=SSAPlace()):
             return 3
-        case IRGet(place=BlockPlace(index=index)):
-            return 2 + _cost(index)
+        case IRGet(place=BlockPlace(block=block, index=index)):
+            return 1 + _cost(block) + _cost(index)
         case IRPureInstr(args=args):
             return 1 + sum(_cost(arg) for arg in args)
         case int():
@@ -44,7 +44,7 @@ def _cost(expr) -> int:
         case SSAPlace():
             return 3
         case _:
-            return 0
+            return 1
 
 
 class CommonSubexpressionElimination(CompilerPass):
@@ -84,10 +84,9 @@ class CommonSubexpressionElimination(CompilerPass):
                 return True
             case IRGet(place=BlockPlace(block=block, index=index)):
                 return (
-                    isinstance(block, BlockData)
-                    and callback not in block.writable
-                    and (isinstance(index, int | SSAPlace) or self._is_cse_candidate(index, callback))
-                )
+                    (isinstance(block, BlockData) and callback not in block.writable)
+                    or self._is_cse_candidate(block, callback)
+                ) and (isinstance(index, int | SSAPlace) or self._is_cse_candidate(index, callback))
             case IRPureInstr(op=op, args=args):
                 return op.pure and not op.side_effects and all(self._is_cse_candidate(arg, callback) for arg in args)
             case _:
@@ -102,6 +101,16 @@ class CommonSubexpressionElimination(CompilerPass):
                 if op in COMMUTATIVE_OPS:
                     args = sorted(args, key=_sort_key)
                 return IRPureInstr(op=op, args=args)
+            case IRGet(place=BlockPlace(block=block, index=index, offset=offset)):
+                new_block = (
+                    self._canonicalize(block, callback) if isinstance(block, IRConst | IRPureInstr | IRGet) else block
+                )
+                new_index = (
+                    self._canonicalize(index, callback) if isinstance(index, IRConst | IRPureInstr | IRGet) else index
+                )
+                if new_block is not block or new_index is not index:
+                    return IRGet(BlockPlace(new_block, new_index, offset))
+                return expr
             case _:
                 return expr
 
@@ -111,8 +120,17 @@ class CommonSubexpressionElimination(CompilerPass):
                 return self._canonicalize(stmt, callback)
             case IRInstr(op=op, args=args):
                 return IRInstr(op=op, args=[self._canonicalize_stmt(arg, callback) for arg in args])
+            case IRGet():
+                return self._canonicalize(stmt, callback)
             case IRSet(place=place, value=value):
-                return IRSet(place=place, value=self._canonicalize_stmt(value, callback))
+                new_place = self._canonicalize_stmt(place, callback)
+                return IRSet(place=new_place, value=self._canonicalize_stmt(value, callback))
+            case BlockPlace(block=block, index=index, offset=offset):
+                new_block = self._canonicalize_stmt(block, callback)
+                new_index = self._canonicalize_stmt(index, callback)
+                if new_block is not block or new_index is not index:
+                    return BlockPlace(new_block, new_index, offset)
+                return stmt
             case _:
                 return stmt
 
@@ -159,8 +177,9 @@ class CommonSubexpressionElimination(CompilerPass):
                 added.append(new_value)
                 return IRSet(place, new_value)
             case IRSet(place=place, value=value):
+                new_place = self._process_expr(place, available, callback, pre_stmts, next_id, added)
                 new_value = self._process_expr(value, available, callback, pre_stmts, next_id, added)
-                return IRSet(place, new_value)
+                return IRSet(new_place, new_value)
             case _:
                 return self._process_expr(stmt, available, callback, pre_stmts, next_id, added)
 
@@ -182,5 +201,16 @@ class CommonSubexpressionElimination(CompilerPass):
             case IRPureInstr(op=op, args=args) | IRInstr(op=op, args=args):
                 new_args = [self._process_expr(arg, available, callback, pre_stmts, next_id, added) for arg in args]
                 return type(expr)(op=op, args=new_args)
+            case IRGet(place=place):
+                new_place = self._process_expr(place, available, callback, pre_stmts, next_id, added)
+                if new_place is not place:
+                    return IRGet(new_place)
+                return expr
+            case BlockPlace(block=block, index=index, offset=offset):
+                new_block = self._process_expr(block, available, callback, pre_stmts, next_id, added)
+                new_index = self._process_expr(index, available, callback, pre_stmts, next_id, added)
+                if new_block is not block or new_index is not index:
+                    return BlockPlace(new_block, new_index, offset)
+                return expr
             case _:
                 return expr

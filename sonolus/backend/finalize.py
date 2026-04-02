@@ -108,7 +108,7 @@ def _ir_get_to_engine_node(stmt: IRGet) -> EngineNode:
 def _block_place_to_engine_node(stmt: BlockPlace) -> EngineNode:
     if stmt.offset == 0:
         index = ir_to_engine_node(stmt.index)
-    elif stmt.index == 0:
+    elif stmt.index == 0 or stmt.index == IRConst(0):
         index = stmt.offset
     else:
         index = FunctionNode(func=Op.Add, args=(ir_to_engine_node(stmt.index), stmt.offset))
