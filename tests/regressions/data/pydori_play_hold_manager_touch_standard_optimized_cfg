@@ -1,14 +1,10 @@
 0:
   10000[0] <- EntityMemory[0]
-  10000[0] <- 16.0 + (10000[0] * 32.0)
-  10000[0] <- EntityDataArray[10000[0]] * 32.0
-  10000[0] <- EntitySharedMemoryArray[10000[0]]
+  10000[0] <- EntitySharedMemoryArray[(EntityDataArray[(16.0 + (10000[0] * 32.0))] * 32.0)]
   goto 6 if !(10000[0] > 0) else 1
 1:
   10000[0] <- EntityMemory[0]
-  10000[0] <- 16.0 + (10000[0] * 32.0)
-  10000[0] <- EntityDataArray[10000[0]] * 32.0
-  10000[0] <- EntitySharedMemoryArray[10000[0]]
+  10000[0] <- EntitySharedMemoryArray[(EntityDataArray[(16.0 + (10000[0] * 32.0))] * 32.0)]
   10000[1] <- 0
   goto 2
 2:
@@ -21,8 +17,7 @@
   goto 5 if RuntimeTouchArray[10000[2] + 2] else 6
 5:
   10000[0] <- EntityMemory[0]
-  10000[0] <- 16.0 + (10000[0] * 32.0)
-  10000[0] <- EntityDataArray[10000[0]] * 32.0
+  10000[0] <- EntityDataArray[(16.0 + (10000[0] * 32.0))] * 32.0
   EntitySharedMemoryArray[10000[0]] <- 0
   goto exit
 6:

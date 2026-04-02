@@ -1,12 +1,16 @@
 from __future__ import annotations
 
 from collections.abc import Iterator
+from typing import TYPE_CHECKING
 
 from sonolus.backend.blocks import Block
 
+if TYPE_CHECKING:
+    from sonolus.backend.ir import IRExpr
+
 type Place = BlockPlace | SSAPlace
-type BlockValue = Block | int | TempBlock | Place
-type IndexValue = int | Place
+type BlockValue = Block | int | TempBlock | Place | IRExpr
+type IndexValue = int | Place | IRExpr
 
 
 class TempBlock:

@@ -1,19 +1,14 @@
 0:
   goto 1 if PreviewOption[8] else 2
 1:
-  10000[2] <- EntityData[0] * 32.0
-  10000[3] <- 10000[2]
-  10000[5] <- EntityData[1] * 32.0
-  10000[6] <- 10000[5]
-  10000[7] <- 3.0 + 10000[2]
-  10000[8] <- 10000[7]
-  10000[0] <- (Trunc(EntityDataArray[10000[8]] / 2.0) + 0.5) * PreviewData[1]
-  10000[3] <- (10000[0] + (EntityDataArray[10000[3]] * 0.072)) - ((RuntimeEnvironment[1] - -RuntimeEnvironment[1]) / 2.0)
-  10000[4] <- (10000[0] + (EntityDataArray[10000[6]] * 0.072)) - ((RuntimeEnvironment[1] - -RuntimeEnvironment[1]) / 2.0)
-  10000[6] <- Lerp(-0.9, 0.9, (EntityDataArray[10000[8]] % 2.0) / 2.0)
-  10000[0] <- 10000[6] - 0.009
-  10000[1] <- 10000[6] + 0.009
-  Draw(18.0, 10000[3], 10000[0], 10000[3], 10000[1], 10000[4], 10000[1], 10000[4], 10000[0], 220000.0 + (Min(EntityDataArray[10000[2]], EntityDataArray[10000[5]]) * 100.0) + EntityDataArray[10000[7]], PreviewOption[9])
+  10000[4] <- 3.0 + (EntityData[0] * 32.0)
+  10000[0] <- (Trunc(EntityDataArray[10000[4]] / 2.0) + 0.5) * PreviewData[1]
+  10000[2] <- (10000[0] + (EntityDataArray[(EntityData[0] * 32.0)] * 0.072)) - ((RuntimeEnvironment[1] - -RuntimeEnvironment[1]) / 2.0)
+  10000[3] <- (10000[0] + (EntityDataArray[(EntityData[1] * 32.0)] * 0.072)) - ((RuntimeEnvironment[1] - -RuntimeEnvironment[1]) / 2.0)
+  10000[4] <- Lerp(-0.9, 0.9, (EntityDataArray[10000[4]] % 2.0) / 2.0)
+  10000[0] <- 10000[4] - 0.009
+  10000[1] <- 10000[4] + 0.009
+  Draw(18.0, 10000[2], 10000[0], 10000[2], 10000[1], 10000[3], 10000[1], 10000[3], 10000[0], 220000.0 + (Min(EntityDataArray[(EntityData[0] * 32.0)], EntityDataArray[(EntityData[1] * 32.0)]) * 100.0) + EntityDataArray[(3.0 + (EntityData[0] * 32.0))], PreviewOption[9])
   goto exit
 2:
   goto exit

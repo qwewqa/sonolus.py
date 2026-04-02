@@ -1,155 +1,88 @@
 Block(JumpLoop(
+  Execute(If(
+    LessOr(
+      Get(
+        4101
+        Add(
+          5
+          Multiply(
+            Get(
+              4001
+              0
+            )
+            32
+          )
+        )
+      )
+      Get(
+        1001
+        0
+      )
+    )
+    1
+    8
+  ))
+  Execute(If(
+    Less(
+      Get(
+        1001
+        0
+      )
+      Get(
+        4101
+        Add(
+          5
+          Multiply(
+            Get(
+              4001
+              1
+            )
+            32
+          )
+        )
+      )
+    )
+    2
+    8
+  ))
+  Execute(If(
+    Get(
+      1000
+      4
+    )
+    3
+    7
+  ))
   Execute(
     Set(
       10000
       0
-      Multiply(
-        Get(
-          4001
-          0
-        )
-        32
-      )
-    )
-    Set(
-      10000
-      1
-      Add(
-        5
-        Get(
-          10000
-          0
-        )
-      )
-    )
-    If(
-      LessOr(
-        Get(
-          4101
-          Get(
-            10000
-            1
-          )
-        )
-        Get(
-          1001
-          0
-        )
-      )
-      1
-      8
-    )
-  )
-  Execute(
-    Set(
-      10000
-      1
-      Multiply(
-        Get(
-          4001
-          1
-        )
-        32
-      )
-    )
-    Set(
-      10000
-      2
-      Add(
-        5
-        Get(
-          10000
-          1
-        )
-      )
-    )
-    If(
-      Less(
-        Get(
-          1001
-          0
-        )
-        Get(
-          4101
-          Get(
-            10000
-            2
-          )
-        )
-      )
-      2
-      8
-    )
-  )
-  Execute(
-    Set(
-      10000
-      2
-      Add(
-        9
-        Get(
-          10000
-          0
-        )
-      )
-    )
-    Set(
-      10000
-      3
-      Get(
-        10000
-        2
-      )
-    )
-    If(
-      Get(
-        1000
-        4
-      )
-      3
-      7
-    )
-  )
-  Execute(
-    Set(
-      10000
-      3
-      Add(
-        9
-        Multiply(
-          Get(
-            4101
-            Get(
-              10000
-              3
-            )
-          )
-          32
-        )
-      )
-    )
-    Set(
-      10000
-      3
-      Multiply(
-        Get(
-          4101
-          Get(
-            10000
-            3
-          )
-        )
-        3
-      )
-    )
-    Set(
-      10000
-      3
       Add(
         Get(
           4103
-          Get(
-            10000
+          Multiply(
+            Get(
+              4101
+              Add(
+                9
+                Multiply(
+                  Get(
+                    4101
+                    Add(
+                      9
+                      Multiply(
+                        Get(
+                          4001
+                          0
+                        )
+                        32
+                      )
+                    )
+                  )
+                  32
+                )
+              )
+            )
             3
           )
         )
@@ -160,7 +93,7 @@ Block(JumpLoop(
       StreamHas(
         Get(
           10000
-          3
+          0
         )
         Get(
           1001
@@ -174,7 +107,7 @@ Block(JumpLoop(
   Execute(
     Set(
       10000
-      4
+      1
       Get(
         1001
         0
@@ -185,11 +118,11 @@ Block(JumpLoop(
   Execute(
     Set(
       10000
-      4
+      1
       StreamGetPreviousKey(
         Get(
           10000
-          3
+          0
         )
         Get(
           1001
@@ -203,11 +136,11 @@ Block(JumpLoop(
     StreamGetValue(
       Get(
         10000
-        3
+        0
       )
       Get(
         10000
-        4
+        1
       )
     )
     7
@@ -216,38 +149,13 @@ Block(JumpLoop(
   Execute(
     Set(
       10000
-      3
+      0
       Add(
         6
-        Get(
-          10000
-          0
-        )
-      )
-    )
-    Set(
-      10000
-      4
-      Add(
-        6
-        Get(
-          10000
-          1
-        )
-      )
-    )
-    Set(
-      10000
-      5
-      Add(
-        9
         Multiply(
           Get(
-            4101
-            Get(
-              10000
-              2
-            )
+            4001
+            0
           )
           32
         )
@@ -255,13 +163,42 @@ Block(JumpLoop(
     )
     Set(
       10000
-      5
+      1
+      Add(
+        6
+        Multiply(
+          Get(
+            4001
+            1
+          )
+          32
+        )
+      )
+    )
+    Set(
+      10000
+      2
       Multiply(
         Get(
           4101
-          Get(
-            10000
-            5
+          Add(
+            9
+            Multiply(
+              Get(
+                4101
+                Add(
+                  9
+                  Multiply(
+                    Get(
+                      4001
+                      0
+                    )
+                    32
+                  )
+                )
+              )
+              32
+            )
           )
         )
         32
@@ -271,7 +208,7 @@ Block(JumpLoop(
       4102
       Get(
         10000
-        5
+        2
       )
       Remap(
         Remap(
@@ -280,7 +217,7 @@ Block(JumpLoop(
               4101
               Get(
                 10000
-                3
+                0
               )
             )
             Divide(
@@ -295,7 +232,7 @@ Block(JumpLoop(
             4101
             Get(
               10000
-              3
+              0
             )
           )
           Get(
@@ -314,7 +251,7 @@ Block(JumpLoop(
               4101
               Get(
                 10000
-                4
+                1
               )
             )
             Divide(
@@ -329,7 +266,7 @@ Block(JumpLoop(
             4101
             Get(
               10000
-              4
+              1
             )
           )
           Get(
@@ -344,16 +281,22 @@ Block(JumpLoop(
         )
         Get(
           4101
-          Get(
-            10000
-            0
+          Multiply(
+            Get(
+              4001
+              0
+            )
+            32
           )
         )
         Get(
           4101
-          Get(
-            10000
-            1
+          Multiply(
+            Get(
+              4001
+              1
+            )
+            32
           )
         )
         0

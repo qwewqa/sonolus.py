@@ -44,7 +44,7 @@ class AllocateBasic(CompilerPass):
                                 raise ValueError("Temporary memory limit exceeded")
                         return BlockPlace(10000, process(place.index), place.offset + offsets[place.block])
                     return BlockPlace(
-                        process(place.block) if isinstance(place.block, BlockPlace) else place.block,
+                        process(place.block),
                         process(place.index),
                         process(place.offset),
                     )
@@ -187,12 +187,7 @@ class TryAllocateBasic(CompilerPass):
                         index += place.block.size
                         if index >= TEMP_SIZE:
                             return True
-                    result = False
-                    if isinstance(place.block, BlockPlace):
-                        result |= scan_stmt(place.block)
-                    result |= scan_stmt(place.index)
-                    result |= scan_stmt(place.offset)
-                    return result
+                    return scan_stmt(place.block) or scan_stmt(place.index) or scan_stmt(place.offset)
                 case _:
                     return False
 
@@ -227,7 +222,7 @@ class TryAllocateBasic(CompilerPass):
                     if isinstance(place.block, TempBlock):
                         return BlockPlace(10000, process(place.index), place.offset + offsets[place.block])
                     return BlockPlace(
-                        process(place.block) if isinstance(place.block, BlockPlace) else place.block,
+                        process(place.block),
                         process(place.index),
                         process(place.offset),
                     )

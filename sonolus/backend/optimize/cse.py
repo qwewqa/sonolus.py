@@ -17,7 +17,11 @@ def _sort_key(expr):
         case IRGet(place=SSAPlace(name=name, num=num)):
             return (1, 0, name, num)
         case IRGet(place=BlockPlace(block=block, index=index, offset=offset)):
-            index_key = (index.name, index.num) if isinstance(index, SSAPlace) else (index,)
+            index_key = (
+                _sort_key(index)
+                if isinstance(index, IRConst | IRPureInstr | IRGet)
+                else ((index.name, index.num) if isinstance(index, SSAPlace) else (index,))
+            )
             return (1, 1, int(block) if isinstance(block, int) else 0, index_key, offset)
         case IRPureInstr(op=op, args=args):
             return (2, op.value, tuple(_sort_key(arg) for arg in args))
@@ -82,7 +86,7 @@ class CommonSubexpressionElimination(CompilerPass):
                 return (
                     isinstance(block, BlockData)
                     and callback not in block.writable
-                    and isinstance(index, int | SSAPlace)
+                    and (isinstance(index, int | SSAPlace) or self._is_cse_candidate(index, callback))
                 )
             case IRPureInstr(op=op, args=args):
                 return op.pure and not op.side_effects and all(self._is_cse_candidate(arg, callback) for arg in args)

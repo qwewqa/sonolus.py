@@ -1,8 +1,7 @@
 0:
   goto 97 if EntityDespawn[0] else 1
 1:
-  10000[0] <- 3.0 + EntityInfo[1]
-  10000[20] <- EngineRom[10000[0]]
+  10000[20] <- EngineRom[(3.0 + EntityInfo[1])]
   10000[36] <- Remap(EntityData[12] - (6.0 / LevelOption[1]), EntityData[12], LevelData[14], 0, RuntimeUpdate[2])
   goto when 10000[20]
     6.0 -> 97

@@ -141,9 +141,26 @@ class InlineVars(CompilerPass):
             case IRGet(place=place):
                 if place in subs:
                     return subs[place]
+                new_place = self.substitute(place, subs)
+                if new_place is not place:
+                    return IRGet(place=new_place)
                 return stmt
             case IRSet(place=place, value=value):
                 return IRSet(place=place, value=self.substitute(value, subs))
+            case SSAPlace():
+                if stmt in subs:
+                    return subs[stmt]
+                return stmt
+            case BlockPlace(block=block, index=index, offset=offset):
+                new_block = self.substitute(block, subs)
+                new_index = self.substitute(index, subs)
+                if new_block is not block or new_index is not index:
+                    return BlockPlace(block=new_block, index=new_index, offset=offset)
+                return stmt
+            case int() | float():
+                return stmt
+            case TempBlock():
+                return stmt
             case _:
                 raise TypeError(f"Unexpected statement: {stmt}")
 
@@ -183,8 +200,20 @@ class InlineVars(CompilerPass):
             case IRGet(place=place):
                 if isinstance(place, SSAPlace):
                     uses.add(place)
+                elif isinstance(place, BlockPlace):
+                    self.get_inlinable_uses(place.block, uses)
+                    self.get_inlinable_uses(place.index, uses)
             case IRSet(place=_, value=value):
                 self.get_inlinable_uses(value, uses)
+            case SSAPlace():
+                uses.add(stmt)
+            case BlockPlace(block=block, index=index, offset=_):
+                self.get_inlinable_uses(block, uses)
+                self.get_inlinable_uses(index, uses)
+            case int() | float():
+                pass
+            case TempBlock():
+                pass
             case _:
                 raise TypeError(f"Unexpected statement: {stmt}")
         return uses
@@ -200,7 +229,7 @@ class InlineVars(CompilerPass):
                     isinstance(stmt.place, BlockPlace)
                     and isinstance(stmt.place.block, BlockData)
                     and callback not in stmt.place.block.writable
-                    and isinstance(stmt.place.index, int | SSAPlace)
+                    and self.is_inlinable_index(stmt.place.index, callback)
                 )
             case IRSet():
                 return False
@@ -216,13 +245,18 @@ class InlineVars(CompilerPass):
             case IRGet():
                 return isinstance(stmt.place, SSAPlace) or (
                     isinstance(stmt.place, BlockPlace)
-                    and isinstance(stmt.place.block, float | int)
-                    and isinstance(stmt.place.index, float | int)
+                    and isinstance(stmt.place.block, float | int | IRConst)
+                    and isinstance(stmt.place.index, float | int | IRConst)
                 )
             case IRSet():
                 return False
             case _:
                 raise TypeError(f"Unexpected statement: {stmt}")
+
+    def is_inlinable_index(self, index, callback: str) -> bool:
+        return isinstance(index, int | SSAPlace) or (
+            isinstance(index, IRConst | IRPureInstr | IRGet) and self.is_inlinable(index, callback)
+        )
 
     def is_runtime_constant(self, stmt: IRStmt, callback: str) -> bool:
         match stmt:
@@ -236,7 +270,7 @@ class InlineVars(CompilerPass):
                     and isinstance(stmt.place.block, BlockData)
                     and callback not in stmt.place.block.writable
                     and stmt.place.block.name in RUNTIME_CONSTANT_BLOCKS
-                    and isinstance(stmt.place.index, int | SSAPlace)
+                    and self.is_inlinable_index(stmt.place.index, callback)
                 )
             case IRSet():
                 return False
