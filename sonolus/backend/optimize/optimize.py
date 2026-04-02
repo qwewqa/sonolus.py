@@ -1,6 +1,7 @@
 from sonolus.backend.optimize.allocate import Allocate, AllocateBasic, TryAllocateBasic
 from sonolus.backend.optimize.constant_evaluation import SparseConditionalConstantPropagation
 from sonolus.backend.optimize.copy_coalesce import CopyCoalesce
+from sonolus.backend.optimize.cse import CommonSubexpressionElimination
 from sonolus.backend.optimize.dead_code import (
     AdvancedDeadCodeElimination,
     DeadCodeElimination,
@@ -51,7 +52,9 @@ STANDARD_PASSES = (
     DeadCodeElimination(),
     CoalesceFlow(),
     RewriteToSwitch(),
+    CommonSubexpressionElimination(),
     InlineVars(),
+    DeadCodeElimination(),
     FlattenAssociativeOps(),
     RemoveRedundantArguments(),
     FromSSA(),

@@ -117,8 +117,9 @@
   RuntimeUI[1] <- 0.95
   RuntimeUI[2] <- 1.0
   RuntimeUI[3] <- 1.0
-  RuntimeUI[4] <- 0.15 * 10000[1]
-  RuntimeUI[5] <- 0.15 * 10000[1]
+  10000[0] <- 0.15 * 10000[1]
+  RuntimeUI[4] <- 10000[0]
+  RuntimeUI[5] <- 10000[0]
   RuntimeUI[6] <- 0
   RuntimeUI[7] <- 10000[2]
   RuntimeUI[8] <- 0
@@ -202,19 +203,20 @@
   RuntimeUI[67] <- 10000[3]
   RuntimeUI[68] <- -1.0
   RuntimeUI[69] <- 1.0
-  10000[0] <- RuntimeEnvironment[1]
-  10000[1] <- RuntimeUIConfiguration[0]
-  10000[2] <- RuntimeUIConfiguration[6]
-  10000[3] <- RuntimeUIConfiguration[8]
-  10000[4] <- RuntimeUIConfiguration[9]
-  RuntimeUI[70] <- (((10000[0] - 0.05) - 0.05) - (0.15 * 10000[1])) - (0.035 * 10000[2])
-  RuntimeUI[71] <- 0.95 - (0.035 * 10000[2])
+  10000[1] <- RuntimeEnvironment[1]
+  10000[2] <- RuntimeUIConfiguration[0]
+  10000[3] <- RuntimeUIConfiguration[6]
+  10000[4] <- RuntimeUIConfiguration[8]
+  10000[5] <- RuntimeUIConfiguration[9]
+  10000[0] <- 0.035 * 10000[3]
+  RuntimeUI[70] <- (((10000[1] - 0.05) - 0.05) - (0.15 * 10000[2])) - 10000[0]
+  RuntimeUI[71] <- 0.95 - 10000[0]
   RuntimeUI[72] <- 1.0
   RuntimeUI[73] <- 1.0
   RuntimeUI[74] <- 0
-  RuntimeUI[75] <- 0.08 * 10000[3]
+  RuntimeUI[75] <- 0.08 * 10000[4]
   RuntimeUI[76] <- 0
-  RuntimeUI[77] <- 10000[4]
+  RuntimeUI[77] <- 10000[5]
   RuntimeUI[78] <- 1.0
   RuntimeUI[79] <- 0
   10000[0] <- RuntimeEnvironment[1]
@@ -234,15 +236,16 @@
   RuntimeUI[89] <- 1.0
   LevelData[0] <- -0.5
   LevelData[1] <- 1.35
-  10000[0] <- LevelData[0]
-  10000[1] <- LevelData[1]
-  10000[2] <- 1.0 / (10000[1] - 10000[0])
+  10000[1] <- LevelData[0]
+  10000[2] <- LevelData[1]
+  10000[0] <- 10000[2] - 10000[1]
+  10000[2] <- 1.0 / 10000[0]
   LevelData[2] <- 1.0
-  LevelData[3] <- 0 / (10000[1] - 10000[0])
+  LevelData[3] <- 0 / 10000[0]
   LevelData[4] <- 0
   LevelData[5] <- 0
-  LevelData[6] <- 1.0 + (10000[2] * 10000[0])
-  LevelData[7] <- 10000[0]
+  LevelData[6] <- 1.0 + (10000[2] * 10000[1])
+  LevelData[7] <- 10000[1]
   LevelData[8] <- 0
   LevelData[9] <- 10000[2]
   LevelData[10] <- 1.0
@@ -322,7 +325,7 @@
   10000[25] <- 10000[24] + 1.0
   10000[26] <- 16.0 + (10000[24] * 9.0)
   10000[27] <- LevelData[10000[26] + 1]
-  goto 5 if (10000[27] == 10000[0]) else 6
+  goto 5 if (10000[0] == 10000[27]) else 6
 5:
   LevelData[10000[26] + 2] <- 10000[30]
   LevelData[10000[26] + 3] <- 10000[31]

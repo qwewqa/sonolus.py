@@ -35,13 +35,21 @@ Block(JumpLoop(
   Execute(
     Set(
       10000
-      0
+      4
       Multiply(
         Get(
           4001
           16
         )
         3
+      )
+    )
+    Set(
+      10000
+      0
+      Get(
+        10000
+        4
       )
     )
     If(
@@ -75,16 +83,6 @@ Block(JumpLoop(
           )
         )
         Equal(
-          Trunc(Get(
-            4103
-            Add(
-              Get(
-                10000
-                0
-              )
-              1
-            )
-          ))
           Get(
             4103
             Add(
@@ -95,6 +93,16 @@ Block(JumpLoop(
               1
             )
           )
+          Trunc(Get(
+            4103
+            Add(
+              Get(
+                10000
+                0
+              )
+              1
+            )
+          ))
         )
       )
       4
@@ -233,63 +241,50 @@ Block(JumpLoop(
     )
     5
   )
-  Execute(
-    Set(
-      10000
-      0
-      Multiply(
-        Get(
-          4001
-          16
-        )
-        3
-      )
-    )
-    If(
+  Execute(If(
+    And(
       And(
-        And(
-          GreaterOr(
-            Get(
-              4103
-              Get(
-                10000
-                0
-              )
-            )
-            0
-          )
-          Less(
-            Get(
-              4103
-              Get(
-                10000
-                0
-              )
-            )
-            99999
-          )
-        )
-        Equal(
-          Trunc(Get(
-            4103
-            Get(
-              10000
-              0
-            )
-          ))
+        GreaterOr(
           Get(
             4103
             Get(
               10000
-              0
+              4
             )
           )
+          0
+        )
+        Less(
+          Get(
+            4103
+            Get(
+              10000
+              4
+            )
+          )
+          99999
         )
       )
-      9
-      10
+      Equal(
+        Get(
+          4103
+          Get(
+            10000
+            4
+          )
+        )
+        Trunc(Get(
+          4103
+          Get(
+            10000
+            4
+          )
+        ))
+      )
     )
-  )
+    9
+    10
+  ))
   Execute(
     StreamSet(
       Add(
@@ -297,7 +292,7 @@ Block(JumpLoop(
           4103
           Get(
             10000
-            0
+            4
           )
         )
         18

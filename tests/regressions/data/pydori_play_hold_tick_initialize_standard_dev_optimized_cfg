@@ -5,8 +5,9 @@
 2:
   goto 3 if (EntityData[16] >= 0) else 13
 3:
-  10000[0] <- EntityData[16] * 3.0
-  goto 4 if (((EntityInfoArray[10000[0] + 1] >= -14.0) && (EntityInfoArray[10000[0] + 1] < 14.0)) && (Trunc(EntityInfoArray[10000[0] + 1]) == EntityInfoArray[10000[0] + 1])) else 12
+  10000[4] <- EntityData[16] * 3.0
+  10000[0] <- 10000[4]
+  goto 4 if (((EntityInfoArray[10000[0] + 1] >= -14.0) && (EntityInfoArray[10000[0] + 1] < 14.0)) && (EntityInfoArray[10000[0] + 1] == Trunc(EntityInfoArray[10000[0] + 1]))) else 12
 4:
   10000[0] <- 38.0 + (EntityInfoArray[10000[0] + 1] + ((EntityInfoArray[10000[0] + 1] < 0) * 14.0))
   10000[0] <- EngineRom[10000[0]]
@@ -25,10 +26,9 @@
   10000[2] <- 10000[2] + 1.0
   goto 5
 8:
-  10000[0] <- EntityData[16] * 3.0
-  goto 9 if (((EntityInfoArray[10000[0]] >= 0) && (EntityInfoArray[10000[0]] < 99999.0)) && (Trunc(EntityInfoArray[10000[0]]) == EntityInfoArray[10000[0]])) else 10
+  goto 9 if (((EntityInfoArray[10000[4]] >= 0) && (EntityInfoArray[10000[4]] < 99999.0)) && (EntityInfoArray[10000[4]] == Trunc(EntityInfoArray[10000[4]]))) else 10
 9:
-  StreamSet(EntityInfoArray[10000[0]] + 18.0, -10.0, 0)
+  StreamSet(EntityInfoArray[10000[4]] + 18.0, -10.0, 0)
   Spawn(8.0, EntityData[16], EntityData[17], 0, 0)
   goto exit
 10:

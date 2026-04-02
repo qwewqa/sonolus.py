@@ -2,32 +2,32 @@ Block(JumpLoop(
   Execute(
     Set(
       10000
-      1
-      Trunc(Divide(
-        Get(
-          4000
-          2
+      0
+      Multiply(
+        Add(
+          Trunc(Divide(
+            Get(
+              4000
+              2
+            )
+            2
+          ))
+          0.5
         )
-        2
-      ))
+        Get(
+          2000
+          1
+        )
+      )
     )
     Set(
       10000
-      0
+      3
       Subtract(
         Add(
-          Multiply(
-            Add(
-              Get(
-                10000
-                1
-              )
-              0.5
-            )
-            Get(
-              2000
-              1
-            )
+          Get(
+            10000
+            0
           )
           0.252
         )
@@ -48,45 +48,44 @@ Block(JumpLoop(
     )
     Set(
       10000
-      1
+      2
       Subtract(
-        Subtract(
-          Add(
-            Multiply(
-              Add(
-                Get(
-                  10000
-                  1
-                )
-                0.5
-              )
-              Get(
-                2000
-                1
-              )
-            )
-            -0.252
+        Add(
+          Get(
+            10000
+            0
           )
-          Divide(
-            Subtract(
-              Get(
-                1000
-                1
-              )
-              Negate(Get(
-                1000
-                1
-              ))
+          -0.252
+        )
+        Divide(
+          Subtract(
+            Get(
+              1000
+              1
             )
-            2
+            Negate(Get(
+              1000
+              1
+            ))
           )
+          2
+        )
+      )
+    )
+    Set(
+      10000
+      4
+      Subtract(
+        Get(
+          10000
+          2
         )
         0.21599999999999997
       )
     )
     Set(
       10000
-      2
+      5
       Lerp(
         -0.9
         0.9
@@ -102,51 +101,61 @@ Block(JumpLoop(
         )
       )
     )
+    Set(
+      10000
+      0
+      Subtract(
+        Get(
+          10000
+          5
+        )
+        0.0018
+      )
+    )
+    Set(
+      10000
+      1
+      Add(
+        Get(
+          10000
+          5
+        )
+        0.0018
+      )
+    )
     Draw(
       20
       Get(
         10000
-        1
-      )
-      Subtract(
-        Get(
-          10000
-          2
-        )
-        0.0018
-      )
-      Get(
-        10000
-        1
-      )
-      Add(
-        Get(
-          10000
-          2
-        )
-        0.0018
+        4
       )
       Get(
         10000
         0
       )
-      Add(
-        Get(
-          10000
-          2
-        )
-        0.0018
+      Get(
+        10000
+        4
+      )
+      Get(
+        10000
+        1
+      )
+      Get(
+        10000
+        3
+      )
+      Get(
+        10000
+        1
+      )
+      Get(
+        10000
+        3
       )
       Get(
         10000
         0
-      )
-      Subtract(
-        Get(
-          10000
-          2
-        )
-        0.0018
       )
       250000
       0.8
@@ -159,55 +168,15 @@ Block(JumpLoop(
       21
       -1
       Add(
-        Subtract(
-          Add(
-            Multiply(
-              Add(
-                Trunc(Divide(
-                  Get(
-                    4000
-                    2
-                  )
-                  2
-                ))
-                0.5
-              )
-              Get(
-                2000
-                1
-              )
-            )
-            -0.252
-          )
-          Divide(
-            Subtract(
-              Get(
-                1000
-                1
-              )
-              Negate(Get(
-                1000
-                1
-              ))
-            )
-            2
-          )
+        Get(
+          10000
+          2
         )
         -0.015
       )
-      Lerp(
-        -0.9
-        0.9
-        Divide(
-          Mod(
-            Get(
-              4000
-              2
-            )
-            2
-          )
-          2
-        )
+      Get(
+        10000
+        5
       )
       1
       0

@@ -1047,8 +1047,8 @@ Block(JumpLoop(
       1
     )
     Set(
-      1005
-      4
+      10000
+      0
       Multiply(
         0.15
         Get(
@@ -1059,13 +1059,18 @@ Block(JumpLoop(
     )
     Set(
       1005
+      4
+      Get(
+        10000
+        0
+      )
+    )
+    Set(
+      1005
       5
-      Multiply(
-        0.15
-        Get(
-          10000
-          1
-        )
+      Get(
+        10000
+        0
       )
     )
     Set(
@@ -1669,7 +1674,7 @@ Block(JumpLoop(
     )
     Set(
       10000
-      0
+      1
       Get(
         1000
         1
@@ -1677,7 +1682,7 @@ Block(JumpLoop(
     )
     Set(
       10000
-      1
+      2
       Get(
         1006
         0
@@ -1685,7 +1690,7 @@ Block(JumpLoop(
     )
     Set(
       10000
-      2
+      3
       Get(
         1006
         6
@@ -1693,7 +1698,7 @@ Block(JumpLoop(
     )
     Set(
       10000
-      3
+      4
       Get(
         1006
         8
@@ -1701,10 +1706,21 @@ Block(JumpLoop(
     )
     Set(
       10000
-      4
+      5
       Get(
         1006
         9
+      )
+    )
+    Set(
+      10000
+      0
+      Multiply(
+        0.035
+        Get(
+          10000
+          3
+        )
       )
     )
     Set(
@@ -1716,7 +1732,7 @@ Block(JumpLoop(
             Subtract(
               Get(
                 10000
-                0
+                1
               )
               0.05
             )
@@ -1726,16 +1742,13 @@ Block(JumpLoop(
             0.15
             Get(
               10000
-              1
+              2
             )
           )
         )
-        Multiply(
-          0.035
-          Get(
-            10000
-            2
-          )
+        Get(
+          10000
+          0
         )
       )
     )
@@ -1744,12 +1757,9 @@ Block(JumpLoop(
       71
       Subtract(
         0.95
-        Multiply(
-          0.035
-          Get(
-            10000
-            2
-          )
+        Get(
+          10000
+          0
         )
       )
     )
@@ -1775,7 +1785,7 @@ Block(JumpLoop(
         0.08
         Get(
           10000
-          3
+          4
         )
       )
     )
@@ -1789,7 +1799,7 @@ Block(JumpLoop(
       77
       Get(
         10000
-        4
+        5
       )
     )
     Set(
@@ -1931,7 +1941,7 @@ Block(JumpLoop(
     )
     Set(
       10000
-      0
+      1
       Get(
         2001
         0
@@ -1939,7 +1949,7 @@ Block(JumpLoop(
     )
     Set(
       10000
-      1
+      2
       Get(
         2001
         1
@@ -1947,18 +1957,26 @@ Block(JumpLoop(
     )
     Set(
       10000
+      0
+      Subtract(
+        Get(
+          10000
+          2
+        )
+        Get(
+          10000
+          1
+        )
+      )
+    )
+    Set(
+      10000
       2
       Divide(
         1
-        Subtract(
-          Get(
-            10000
-            1
-          )
-          Get(
-            10000
-            0
-          )
+        Get(
+          10000
+          0
         )
       )
     )
@@ -1972,15 +1990,9 @@ Block(JumpLoop(
       3
       Divide(
         0
-        Subtract(
-          Get(
-            10000
-            1
-          )
-          Get(
-            10000
-            0
-          )
+        Get(
+          10000
+          0
         )
       )
     )
@@ -2006,7 +2018,7 @@ Block(JumpLoop(
           )
           Get(
             10000
-            0
+            1
           )
         )
       )
@@ -2016,7 +2028,7 @@ Block(JumpLoop(
       7
       Get(
         10000
-        0
+        1
       )
     )
     Set(
@@ -2967,11 +2979,11 @@ Block(JumpLoop(
       Equal(
         Get(
           10000
-          27
+          0
         )
         Get(
           10000
-          0
+          27
         )
       )
       5
