@@ -1,6 +1,11 @@
+### 0.15.2
+
+- Improvements to expression simplification in the optimizer.
+- Added global common subexpression elimination to the standard optimizer passes.
+
 ### 0.15.1
 
-- Fixed non-numeric variables defined outside a loop causing an error when redefined within the loop
+- Fixed non-numeric variables defined outside a loop causing an error when redefined within the loop.
 
 ### 0.15.0
 
@@ -16,7 +21,7 @@
 
 ### 0.14.5
 
-- Support iterating through Enum classes to get members
+- Support iterating through Enum classes to get members.
 
 ### 0.14.4
 
