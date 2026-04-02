@@ -52,6 +52,8 @@ STANDARD_PASSES = (
     DeadCodeElimination(),
     CoalesceFlow(),
     RewriteToSwitch(),
+    InlineVars(aggressive=True),
+    FlattenAssociativeOps(),
     CommonSubexpressionElimination(),
     InlineVars(),
     DeadCodeElimination(),

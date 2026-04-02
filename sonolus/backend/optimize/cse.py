@@ -51,7 +51,7 @@ class CommonSubexpressionElimination(CompilerPass):
     """Global CSE using the dominator tree with subexpression extraction.
 
     Walks the dominator tree in preorder. Every CSE-candidate pure expression
-    with cost > 4 is extracted into an SSA variable on first sight. Duplicates
+    with cost >= 4 is extracted into an SSA variable on first sight. Duplicates
     are replaced with a reference to the existing variable. A later InlineVars
     pass cleans up any single-use extractions.
 
@@ -83,10 +83,9 @@ class CommonSubexpressionElimination(CompilerPass):
             case IRGet(place=SSAPlace()):
                 return True
             case IRGet(place=BlockPlace(block=block, index=index)):
-                return (
-                    (isinstance(block, BlockData) and callback not in block.writable)
-                    or self._is_cse_candidate(block, callback)
-                ) and (isinstance(index, int | SSAPlace) or self._is_cse_candidate(index, callback))
+                return (isinstance(block, BlockData) and callback not in block.writable) and (
+                    isinstance(index, int | SSAPlace) or self._is_cse_candidate(index, callback)
+                )
             case IRPureInstr(op=op, args=args):
                 return op.pure and not op.side_effects and all(self._is_cse_candidate(arg, callback) for arg in args)
             case _:
@@ -99,7 +98,7 @@ class CommonSubexpressionElimination(CompilerPass):
             case IRPureInstr(op=op, args=args):
                 args = [self._canonicalize(arg, callback) for arg in args]
                 if op in COMMUTATIVE_OPS:
-                    args = sorted(args, key=_sort_key)
+                    args = sorted(args, key=lambda x: tuple(str(k) for k in _sort_key(x)))
                 return IRPureInstr(op=op, args=args)
             case IRGet(place=BlockPlace(block=block, index=index, offset=offset)):
                 new_block = (
@@ -186,16 +185,21 @@ class CommonSubexpressionElimination(CompilerPass):
     def _process_expr(self, expr, available, callback, pre_stmts, next_id, added):
         match expr:
             case IRPureInstr(op=op, args=args) if self._is_cse_candidate(expr, callback):
+                if expr in available:
+                    return IRGet(available[expr])
                 new_args = [self._process_expr(arg, available, callback, pre_stmts, next_id, added) for arg in args]
                 new_expr = IRPureInstr(op=op, args=new_args)
                 if new_expr in available:
                     return IRGet(available[new_expr])
-                if _cost(new_expr) > 4:
+                if _cost(new_expr) >= 4:
                     new_place = SSAPlace("_cse", next_id[0])
                     next_id[0] += 1
                     pre_stmts.append(IRSet(new_place, new_expr))
                     available[new_expr] = new_place
                     added.append(new_expr)
+                    if expr != new_expr:
+                        available[expr] = new_place
+                        added.append(expr)
                     return IRGet(new_place)
                 return new_expr
             case IRPureInstr(op=op, args=args) | IRInstr(op=op, args=args):

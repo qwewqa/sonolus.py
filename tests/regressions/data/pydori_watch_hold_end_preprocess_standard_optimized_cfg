@@ -77,17 +77,16 @@
   10000[1] <- EntityData[12]
   goto 17 if (0 != 10000[1]) else 29
 17:
-  10000[0] <- EngineRom[10000[0]]
   10000[1] <- EntityData[12]
   10000[2] <- EntityData[11]
   goto 29 if !LevelOption[10] else 18
 18:
-  goto when 10000[0]
+  goto when EngineRom[10000[0]]
     6.0 -> 29
     default -> 19
 19:
   10000[3] <- 0
-  goto when (10000[0] - 2.0)
+  goto when (EngineRom[10000[0]] - 2.0)
     0.0 -> 24
     1.0 -> 24
     default -> 20

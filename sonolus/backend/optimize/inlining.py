@@ -23,6 +23,9 @@ RUNTIME_CONSTANT_BLOCKS = {
 
 
 class InlineVars(CompilerPass):
+    def __init__(self, aggressive: bool = False):
+        self.aggressive = aggressive
+
     def run(self, entry: BasicBlock, config: OptimizerConfig) -> BasicBlock:
         use_counts: dict[SSAPlace, int] = {}
         definitions: dict[SSAPlace, IRStmt] = {}
@@ -66,7 +69,11 @@ class InlineVars(CompilerPass):
                 if (
                     inner_defn
                     and self.is_inlinable(inner_defn, config.callback)
-                    and (use_counts.get(inner_p, 0) <= 1 or self.is_free_to_inline(inner_defn, config.callback))
+                    and (
+                        use_counts.get(inner_p, 0) <= 1
+                        or self.is_free_to_inline(inner_defn, config.callback)
+                        or self.aggressive
+                    )
                 ):
                     canonical_definitions[p] = inner_defn
 
@@ -85,6 +92,7 @@ class InlineVars(CompilerPass):
                         (isinstance(inside_defn, IRGet) and isinstance(inside_defn.place, SSAPlace))
                         or use_counts[inside_p] == 1
                         or self.is_free_to_inline(inside_defn, config.callback)
+                        or self.aggressive
                     ):
                         subs[inside_p] = inside_defn
                 if not subs:
@@ -96,7 +104,11 @@ class InlineVars(CompilerPass):
             p
             for p in inlined_definitions
             if self.is_inlinable(inlined_definitions[p], config.callback)
-            and (use_counts.get(p, 0) <= 1 or self.is_free_to_inline(inlined_definitions[p], config.callback))
+            and (
+                use_counts.get(p, 0) <= 1
+                or self.is_free_to_inline(inlined_definitions[p], config.callback)
+                or self.aggressive
+            )
         }
 
         for block in traverse_cfg_preorder(entry):

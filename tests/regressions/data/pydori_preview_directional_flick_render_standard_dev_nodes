@@ -311,7 +311,7 @@ Block(JumpLoop(
   Execute(
     Set(
       10000
-      12
+      16
       0
     )
     SwitchIntegerWithDefault(
@@ -344,7 +344,7 @@ Block(JumpLoop(
   Execute(
     Set(
       10000
-      12
+      16
       11
     )
     16
@@ -352,7 +352,7 @@ Block(JumpLoop(
   Execute(
     Set(
       10000
-      12
+      16
       13
     )
     16
@@ -360,7 +360,7 @@ Block(JumpLoop(
   Execute(
     Set(
       10000
-      12
+      16
       9
     )
     16
@@ -383,7 +383,7 @@ Block(JumpLoop(
   Execute(
     Set(
       10000
-      13
+      17
       0
     )
     18
@@ -392,7 +392,7 @@ Block(JumpLoop(
     Less(
       Get(
         10000
-        13
+        17
       )
       Abs(Get(
         4000
@@ -405,21 +405,21 @@ Block(JumpLoop(
   Execute(
     Set(
       10000
-      14
+      18
       Add(
         Get(
           10000
-          13
+          17
         )
         1
       )
     )
     Set(
       10000
-      13
+      17
       Get(
         10000
-        14
+        18
       )
     )
     Set(
@@ -445,7 +445,7 @@ Block(JumpLoop(
   Execute(
     Set(
       10000
-      15
+      19
       1
     )
     22
@@ -453,7 +453,7 @@ Block(JumpLoop(
   Execute(
     Set(
       10000
-      15
+      19
       -1
     )
     22
@@ -461,27 +461,35 @@ Block(JumpLoop(
   Execute(
     Set(
       10000
-      14
-      Add(
+      1
+      Multiply(
         Get(
-          4000
-          0
+          10000
+          18
         )
-        Multiply(
-          Get(
-            10000
-            14
-          )
-          Get(
-            10000
-            15
-          )
+        Get(
+          10000
+          19
         )
       )
     )
     Set(
       10000
-      1
+      18
+      Add(
+        Get(
+          4000
+          0
+        )
+        Get(
+          10000
+          1
+        )
+      )
+    )
+    Set(
+      10000
+      2
       Multiply(
         Add(
           Trunc(Divide(
@@ -501,18 +509,18 @@ Block(JumpLoop(
     )
     Set(
       10000
-      15
+      19
       Subtract(
         Add(
           Get(
             10000
-            1
+            2
           )
           Multiply(
             Subtract(
               Get(
                 10000
-                14
+                18
               )
               0.5
             )
@@ -541,13 +549,17 @@ Block(JumpLoop(
         Add(
           Get(
             10000
-            1
+            2
           )
           Multiply(
             Add(
               Get(
+                4000
+                0
+              )
+              Get(
                 10000
-                14
+                1
               )
               0.5
             )
@@ -637,12 +649,12 @@ Block(JumpLoop(
   Execute(
     Set(
       10000
-      6
+      10
       Divide(
         Add(
           Get(
             10000
-            15
+            19
           )
           Get(
             10000
@@ -650,7 +662,7 @@ Block(JumpLoop(
           )
           Get(
             10000
-            15
+            19
           )
           Get(
             10000
@@ -658,51 +670,269 @@ Block(JumpLoop(
           )
         )
         4
+      )
+    )
+    Set(
+      10000
+      11
+      Divide(
+        Add(
+          Get(
+            10000
+            4
+          )
+          Get(
+            10000
+            3
+          )
+          Get(
+            10000
+            3
+          )
+          Get(
+            10000
+            4
+          )
+        )
+        4
+      )
+    )
+    Set(
+      10000
+      12
+      Subtract(
+        Get(
+          10000
+          19
+        )
+        Get(
+          10000
+          10
+        )
+      )
+    )
+    Set(
+      10000
+      13
+      Subtract(
+        Get(
+          10000
+          4
+        )
+        Get(
+          10000
+          11
+        )
+      )
+    )
+    Set(
+      10000
+      14
+      Subtract(
+        Get(
+          10000
+          3
+        )
+        Get(
+          10000
+          11
+        )
+      )
+    )
+    Set(
+      10000
+      15
+      Subtract(
+        Get(
+          10000
+          1
+        )
+        Get(
+          10000
+          10
+        )
+      )
+    )
+    Set(
+      10000
+      0
+      Cos(Get(
+        10000
+        5
+      ))
+    )
+    Set(
+      10000
+      1
+      Multiply(
+        Get(
+          10000
+          12
+        )
+        Get(
+          10000
+          0
+        )
+      )
+    )
+    Set(
+      10000
+      2
+      Sin(Get(
+        10000
+        5
+      ))
+    )
+    Set(
+      10000
+      3
+      Multiply(
+        Get(
+          10000
+          13
+        )
+        Get(
+          10000
+          2
+        )
+      )
+    )
+    Set(
+      10000
+      4
+      Multiply(
+        Get(
+          10000
+          12
+        )
+        Get(
+          10000
+          2
+        )
+      )
+    )
+    Set(
+      10000
+      5
+      Multiply(
+        Get(
+          10000
+          13
+        )
+        Get(
+          10000
+          0
+        )
+      )
+    )
+    Set(
+      10000
+      6
+      Multiply(
+        Get(
+          10000
+          14
+        )
+        Get(
+          10000
+          2
+        )
       )
     )
     Set(
       10000
       7
-      Divide(
-        Add(
-          Get(
-            10000
-            4
-          )
-          Get(
-            10000
-            3
-          )
-          Get(
-            10000
-            3
-          )
-          Get(
-            10000
-            4
-          )
+      Multiply(
+        Get(
+          10000
+          14
         )
-        4
+        Get(
+          10000
+          0
+        )
       )
     )
     Set(
       10000
       8
-      Subtract(
+      Multiply(
         Get(
           10000
           15
         )
         Get(
           10000
-          6
+          0
         )
       )
     )
     Set(
       10000
       9
-      Subtract(
+      Multiply(
+        Get(
+          10000
+          15
+        )
+        Get(
+          10000
+          2
+        )
+      )
+    )
+    Draw(
+      Get(
+        10000
+        16
+      )
+      Add(
+        Subtract(
+          Get(
+            10000
+            1
+          )
+          Get(
+            10000
+            3
+          )
+        )
+        Get(
+          10000
+          10
+        )
+      )
+      Add(
+        Get(
+          10000
+          4
+        )
+        Get(
+          10000
+          5
+        )
+        Get(
+          10000
+          11
+        )
+      )
+      Add(
+        Subtract(
+          Get(
+            10000
+            1
+          )
+          Get(
+            10000
+            6
+          )
+        )
+        Get(
+          10000
+          10
+        )
+      )
+      Add(
         Get(
           10000
           4
@@ -711,255 +941,69 @@ Block(JumpLoop(
           10000
           7
         )
-      )
-    )
-    Set(
-      10000
-      10
-      Subtract(
         Get(
           10000
-          3
+          11
         )
-        Get(
-          10000
-          7
-        )
-      )
-    )
-    Set(
-      10000
-      11
-      Subtract(
-        Get(
-          10000
-          1
-        )
-        Get(
-          10000
-          6
-        )
-      )
-    )
-    Draw(
-      Get(
-        10000
-        12
       )
       Add(
         Subtract(
-          Multiply(
-            Get(
-              10000
-              8
-            )
-            Cos(Get(
-              10000
-              5
-            ))
-          )
-          Multiply(
-            Get(
-              10000
-              9
-            )
-            Sin(Get(
-              10000
-              5
-            ))
-          )
-        )
-        Get(
-          10000
-          6
-        )
-      )
-      Add(
-        Multiply(
           Get(
             10000
             8
           )
-          Sin(Get(
-            10000
-            5
-          ))
-        )
-        Multiply(
           Get(
             10000
-            9
+            6
           )
-          Cos(Get(
-            10000
-            5
-          ))
+        )
+        Get(
+          10000
+          10
+        )
+      )
+      Add(
+        Get(
+          10000
+          9
         )
         Get(
           10000
           7
         )
+        Get(
+          10000
+          11
+        )
       )
       Add(
         Subtract(
-          Multiply(
-            Get(
-              10000
-              8
-            )
-            Cos(Get(
-              10000
-              5
-            ))
-          )
-          Multiply(
-            Get(
-              10000
-              10
-            )
-            Sin(Get(
-              10000
-              5
-            ))
-          )
-        )
-        Get(
-          10000
-          6
-        )
-      )
-      Add(
-        Multiply(
           Get(
             10000
             8
           )
-          Sin(Get(
-            10000
-            5
-          ))
-        )
-        Multiply(
           Get(
             10000
-            10
+            3
           )
-          Cos(Get(
-            10000
-            5
-          ))
         )
         Get(
           10000
-          7
+          10
         )
       )
       Add(
-        Subtract(
-          Multiply(
-            Get(
-              10000
-              11
-            )
-            Cos(Get(
-              10000
-              5
-            ))
-          )
-          Multiply(
-            Get(
-              10000
-              10
-            )
-            Sin(Get(
-              10000
-              5
-            ))
-          )
+        Get(
+          10000
+          9
         )
         Get(
           10000
-          6
-        )
-      )
-      Add(
-        Multiply(
-          Get(
-            10000
-            11
-          )
-          Sin(Get(
-            10000
-            5
-          ))
-        )
-        Multiply(
-          Get(
-            10000
-            10
-          )
-          Cos(Get(
-            10000
-            5
-          ))
+          5
         )
         Get(
           10000
-          7
-        )
-      )
-      Add(
-        Subtract(
-          Multiply(
-            Get(
-              10000
-              11
-            )
-            Cos(Get(
-              10000
-              5
-            ))
-          )
-          Multiply(
-            Get(
-              10000
-              9
-            )
-            Sin(Get(
-              10000
-              5
-            ))
-          )
-        )
-        Get(
-          10000
-          6
-        )
-      )
-      Add(
-        Multiply(
-          Get(
-            10000
-            11
-          )
-          Sin(Get(
-            10000
-            5
-          ))
-        )
-        Multiply(
-          Get(
-            10000
-            9
-          )
-          Cos(Get(
-            10000
-            5
-          ))
-        )
-        Get(
-          10000
-          7
+          11
         )
       )
       Add(
@@ -967,7 +1011,7 @@ Block(JumpLoop(
         Multiply(
           Get(
             10000
-            14
+            18
           )
           100
         )
@@ -1004,7 +1048,7 @@ Block(JumpLoop(
     )
     Set(
       10000
-      2
+      3
       Subtract(
         Add(
           Get(
@@ -1039,7 +1083,7 @@ Block(JumpLoop(
     )
     Set(
       10000
-      3
+      4
       Subtract(
         Add(
           Get(
@@ -1074,67 +1118,52 @@ Block(JumpLoop(
     )
     Set(
       10000
-      4
-      Add(
-        Lerp(
-          -0.9
-          0.9
-          Divide(
-            Mod(
-              Get(
-                4000
-                3
-              )
-              2
+      0
+      Lerp(
+        -0.9
+        0.9
+        Divide(
+          Mod(
+            Get(
+              4000
+              3
             )
             2
           )
+          2
         )
-        0.0648
       )
     )
     Set(
       10000
-      0
+      1
       Subtract(
-        Get(
-          10000
-          4
+        Add(
+          Get(
+            10000
+            0
+          )
+          0.0648
         )
         0.036
       )
     )
     Set(
       10000
-      1
+      2
       Add(
         Get(
           10000
-          4
+          0
         )
+        0.0648
         0.036
       )
     )
     Draw(
       Get(
         10000
-        12
-      )
-      Get(
-        10000
-        2
-      )
-      Get(
-        10000
-        0
-      )
-      Get(
-        10000
-        2
-      )
-      Get(
-        10000
-        1
+        16
       )
       Get(
         10000
@@ -1150,7 +1179,23 @@ Block(JumpLoop(
       )
       Get(
         10000
-        0
+        2
+      )
+      Get(
+        10000
+        4
+      )
+      Get(
+        10000
+        2
+      )
+      Get(
+        10000
+        4
+      )
+      Get(
+        10000
+        1
       )
       Add(
         320000

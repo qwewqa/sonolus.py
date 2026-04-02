@@ -1,18 +1,18 @@
 0:
   TutorialData[0] <- -0.5
   TutorialData[1] <- 1.35
-  10000[1] <- TutorialData[0]
-  10000[2] <- TutorialData[1]
-  10000[0] <- 10000[2] - 10000[1]
-  10000[2] <- 1.0 / 10000[0]
+  10000[2] <- TutorialData[0]
+  10000[3] <- TutorialData[1]
+  10000[0] <- 10000[3] - 10000[2]
+  10000[1] <- 1.0 / 10000[0]
   TutorialData[2] <- 1.0
   TutorialData[3] <- 0 / 10000[0]
   TutorialData[4] <- 0
   TutorialData[5] <- 0
-  TutorialData[6] <- 1.0 + (10000[2] * 10000[1])
-  TutorialData[7] <- 10000[1]
+  TutorialData[6] <- 1.0 + (10000[1] * 10000[2])
+  TutorialData[7] <- 10000[2]
   TutorialData[8] <- 0
-  TutorialData[9] <- 10000[2]
+  TutorialData[9] <- 10000[1]
   TutorialData[10] <- 1.0
   TutorialData[11] <- 0.35
   TutorialData[12] <- 0.35
@@ -139,17 +139,18 @@
 4:
   10000[25] <- 10000[24] + 1.0
   10000[26] <- 16.0 + (10000[24] * 9.0)
-  10000[27] <- TutorialData[10000[26] + 1]
-  goto 5 if (10000[0] == 10000[27]) else 6
+  10000[27] <- 10000[26]
+  10000[28] <- TutorialData[10000[26] + 1]
+  goto 5 if (10000[0] == 10000[28]) else 6
 5:
-  TutorialData[10000[26] + 2] <- 10000[30]
-  TutorialData[10000[26] + 3] <- 10000[31]
-  TutorialData[10000[26] + 4] <- 10000[10]
-  TutorialData[10000[26] + 5] <- 10000[11]
-  TutorialData[10000[26] + 6] <- 10000[21]
-  TutorialData[10000[26] + 7] <- 10000[22]
-  TutorialData[10000[26] + 8] <- 10000[39]
-  TutorialData[10000[26] + 9] <- 10000[40]
+  TutorialData[10000[27] + 2] <- 10000[30]
+  TutorialData[10000[27] + 3] <- 10000[31]
+  TutorialData[10000[27] + 4] <- 10000[10]
+  TutorialData[10000[27] + 5] <- 10000[11]
+  TutorialData[10000[27] + 6] <- 10000[21]
+  TutorialData[10000[27] + 7] <- 10000[22]
+  TutorialData[10000[27] + 8] <- 10000[39]
+  TutorialData[10000[27] + 9] <- 10000[40]
   10000[0] <- 10000[1]
   goto 1
 6:
