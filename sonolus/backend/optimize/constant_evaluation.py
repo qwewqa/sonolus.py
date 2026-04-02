@@ -68,6 +68,14 @@ class SparseConditionalConstantPropagation(CompilerPass):
         Op.Arctan2,
         Op.Max,
         Op.Min,
+        Op.Abs,
+        Op.Clamp,
+        Op.Degree,
+        Op.Radian,
+        Op.Lerp,
+        Op.LerpClamped,
+        Op.Remap,
+        Op.RemapClamped,
     }
 
     def run(self, entry: BasicBlock, config: OptimizerConfig) -> BasicBlock:
@@ -475,6 +483,38 @@ class SparseConditionalConstantPropagation(CompilerPass):
                     case Op.Min:
                         assert len(args) == 2
                         return min(args)
+                    case Op.Abs:
+                        assert len(args) == 1
+                        return abs(args[0])
+                    case Op.Clamp:
+                        assert len(args) == 3
+                        return min(max(args[0], args[1]), args[2])
+                    case Op.Degree:
+                        assert len(args) == 1
+                        return math.degrees(args[0])
+                    case Op.Radian:
+                        assert len(args) == 1
+                        return math.radians(args[0])
+                    case Op.Lerp:
+                        assert len(args) == 3
+                        return args[0] + (args[1] - args[0]) * args[2]
+                    case Op.LerpClamped:
+                        assert len(args) == 3
+                        return args[0] + (args[1] - args[0]) * max(0, min(1, args[2]))
+                    case Op.Remap:
+                        assert len(args) == 5
+                        try:
+                            return args[2] + (args[3] - args[2]) * (args[4] - args[0]) / (args[1] - args[0])
+                        except (ValueError, ZeroDivisionError, OverflowError):
+                            return NAC
+                    case Op.RemapClamped:
+                        assert len(args) == 5
+                        try:
+                            return args[2] + (args[3] - args[2]) * max(
+                                0, min(1, (args[4] - args[0]) / (args[1] - args[0]))
+                            )
+                        except (ValueError, ZeroDivisionError, OverflowError):
+                            return NAC
             case IRGet(place=SSAPlace() as place):
                 return values[place]
             case IRGet():
