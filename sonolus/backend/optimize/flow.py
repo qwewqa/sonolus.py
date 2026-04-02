@@ -82,6 +82,22 @@ def traverse_cfg_reverse_postorder(block: BasicBlock) -> Iterator[BasicBlock]:
     yield from reversed(list(traverse_cfg_postorder(block)))
 
 
+def compute_loop_body(header: BasicBlock, latch: BasicBlock) -> set[BasicBlock]:
+    body = {header}
+    if latch is header:
+        return body
+    worklist = [latch]
+    body.add(latch)
+    while worklist:
+        block = worklist.pop()
+        for edge in block.incoming:
+            pred = edge.src
+            if pred not in body:
+                body.add(pred)
+                worklist.append(pred)
+    return body
+
+
 def cfg_to_mermaid(entry: BasicBlock):
     def pre(s: str):
         return "\"<pre style='text-align: left;'>" + s.replace("\n", "<br/>") + '</pre>"'

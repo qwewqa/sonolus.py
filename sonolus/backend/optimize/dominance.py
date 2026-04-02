@@ -88,6 +88,17 @@ class DominanceFrontiers(CompilerPass):
         return hash(DominanceFrontiers)
 
 
+def dominates(a: BasicBlock, b: BasicBlock) -> bool:
+    runner = b
+    while runner is not None:
+        if runner is a:
+            return True
+        if runner.idom is runner:
+            break
+        runner = runner.idom
+    return False
+
+
 def get_df(block: BasicBlock) -> set[BasicBlock]:
     return block.df
 

@@ -1,7 +1,7 @@
 from sonolus.backend.blocks import BlockData
 from sonolus.backend.ir import IRConst, IRGet, IRInstr, IRPureInstr, IRSet
-from sonolus.backend.optimize.dominance import DominanceFrontiers
-from sonolus.backend.optimize.flow import BasicBlock, FlowEdge, traverse_cfg_reverse_postorder
+from sonolus.backend.optimize.dominance import DominanceFrontiers, dominates
+from sonolus.backend.optimize.flow import BasicBlock, FlowEdge, compute_loop_body, traverse_cfg_reverse_postorder
 from sonolus.backend.optimize.passes import CompilerPass, OptimizerConfig
 from sonolus.backend.place import BlockPlace, SSAPlace
 
@@ -22,33 +22,6 @@ def _cost(expr) -> int:
             return 3
         case _:
             return 1
-
-
-def _dominates(a: BasicBlock, b: BasicBlock) -> bool:
-    runner = b
-    while runner is not None:
-        if runner is a:
-            return True
-        if runner.idom is runner:
-            break
-        runner = runner.idom
-    return False
-
-
-def _compute_loop_body(header: BasicBlock, latch: BasicBlock) -> set[BasicBlock]:
-    body = {header}
-    if latch is header:
-        return body
-    worklist = [latch]
-    body.add(latch)
-    while worklist:
-        block = worklist.pop()
-        for edge in block.incoming:
-            pred = edge.src
-            if pred not in body:
-                body.add(pred)
-                worklist.append(pred)
-    return body
 
 
 class LoopInvariantCodeMotion(CompilerPass):
@@ -76,20 +49,18 @@ class LoopInvariantCodeMotion(CompilerPass):
 
         return entry
 
-    def _find_loops(
-        self, blocks: list[BasicBlock]
-    ) -> list[tuple[BasicBlock, set[BasicBlock], set[BasicBlock]]]:
+    def _find_loops(self, blocks: list[BasicBlock]) -> list[tuple[BasicBlock, set[BasicBlock], set[BasicBlock]]]:
         loops_by_header: dict[BasicBlock, set[BasicBlock]] = {}
         for block in blocks:
             for edge in block.outgoing:
-                if _dominates(edge.dst, edge.src):
+                if dominates(edge.dst, edge.src):
                     loops_by_header.setdefault(edge.dst, set()).add(edge.src)
 
         result = []
         for header, latches in loops_by_header.items():
             body: set[BasicBlock] = set()
             for latch in latches:
-                body |= _compute_loop_body(header, latch)
+                body |= compute_loop_body(header, latch)
             result.append((header, latches, body))
         return result
 
@@ -107,7 +78,7 @@ class LoopInvariantCodeMotion(CompilerPass):
 
         defs_in_loop = self._collect_defs_in_loop(body)
         guaranteed_blocks = sorted(
-            (b for b in body if all(_dominates(b, latch) for latch in latches)),
+            (b for b in body if all(dominates(b, latch) for latch in latches)),
             key=lambda b: b.num,
         )
 
@@ -117,9 +88,7 @@ class LoopInvariantCodeMotion(CompilerPass):
                 self._scan_and_hoist(stmt, preheader, defs_in_loop, callback, next_id, hoisted)
             self._scan_and_hoist(block.test, preheader, defs_in_loop, callback, next_id, hoisted)
 
-    def _get_or_create_preheader(
-        self, header: BasicBlock, body: set[BasicBlock]
-    ) -> BasicBlock | None:
+    def _get_or_create_preheader(self, header: BasicBlock, body: set[BasicBlock]) -> BasicBlock | None:
         non_back_edges = [e for e in header.incoming if e.src not in body]
         if not non_back_edges:
             return None
@@ -179,8 +148,10 @@ class LoopInvariantCodeMotion(CompilerPass):
                     return index not in defs_in_loop
                 return self._is_loop_invariant(index, defs_in_loop, callback)
             case IRPureInstr(op=op, args=args):
-                return op.pure and not op.side_effects and all(
-                    self._is_loop_invariant(a, defs_in_loop, callback) for a in args
+                return (
+                    op.pure
+                    and not op.side_effects
+                    and all(self._is_loop_invariant(a, defs_in_loop, callback) for a in args)
                 )
             case _:
                 return False

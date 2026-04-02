@@ -1,6 +1,7 @@
 from sonolus.backend.blocks import BlockData
 from sonolus.backend.ir import IRConst, IRGet, IRInstr, IRPureInstr, IRSet, IRStmt
-from sonolus.backend.optimize.flow import BasicBlock, traverse_cfg_preorder
+from sonolus.backend.optimize.dominance import DominanceFrontiers, dominates
+from sonolus.backend.optimize.flow import BasicBlock, compute_loop_body, traverse_cfg_preorder
 from sonolus.backend.optimize.passes import CompilerPass, OptimizerConfig
 from sonolus.backend.place import BlockPlace, SSAPlace, TempBlock
 
@@ -25,6 +26,9 @@ RUNTIME_CONSTANT_BLOCKS = {
 class InlineVars(CompilerPass):
     def __init__(self, aggressive: bool = False):
         self.aggressive = aggressive
+
+    def requires(self) -> set:
+        return {DominanceFrontiers()}
 
     def run(self, entry: BasicBlock, config: OptimizerConfig) -> BasicBlock:
         use_counts: dict[SSAPlace, int] = {}
@@ -111,6 +115,40 @@ class InlineVars(CompilerPass):
             )
         }
 
+        if not self.aggressive:
+            all_blocks = list(traverse_cfg_preorder(entry))
+
+            # Find loops via back-edges
+            loops_by_header: dict[BasicBlock, set[BasicBlock]] = {}
+            for b in all_blocks:
+                for edge in b.outgoing:
+                    if dominates(edge.dst, edge.src):
+                        loops_by_header.setdefault(edge.dst, set()).add(edge.src)
+            loop_bodies: list[set[BasicBlock]] = []
+            for header, latches in loops_by_header.items():
+                body: set[BasicBlock] = set()
+                for latch in latches:
+                    body |= compute_loop_body(header, latch)
+                loop_bodies.append(body)
+
+            # Map SSAPlace → defining block
+            def_blocks: dict[SSAPlace, BasicBlock] = {}
+            for b in all_blocks:
+                for phi_dst in b.phis:
+                    if isinstance(phi_dst, SSAPlace):
+                        def_blocks[phi_dst] = b
+                for stmt in b.statements:
+                    if isinstance(stmt, IRSet) and isinstance(stmt.place, SSAPlace):
+                        def_blocks[stmt.place] = b
+
+            def crosses_loop(p: SSAPlace, use_block: BasicBlock) -> bool:
+                def_block = def_blocks.get(p)
+                if def_block is None:
+                    return False
+                return any(use_block in body and def_block not in body for body in loop_bodies)
+        else:
+            crosses_loop = None
+
         for block in traverse_cfg_preorder(entry):
             new_statements = []
             for stmt in [*block.statements, block.test]:
@@ -128,7 +166,11 @@ class InlineVars(CompilerPass):
                     inlinable_uses = self.get_inlinable_uses(stmt, set())
                     subs = {}
                     for p in inlinable_uses:
-                        if p in valid:
+                        if p in valid and (
+                            self.aggressive
+                            or self.is_free_to_inline(inlined_definitions[p], config.callback)
+                            or not crosses_loop(p, block)
+                        ):
                             subs[p] = inlined_definitions[p]
 
                     if subs:
