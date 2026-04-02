@@ -1,3 +1,8 @@
+### 0.15.5
+
+- Added loop invariant code motion optimization.
+- Improved inlining optimization behavior surrounding loops.
+
 ### 0.15.4
 
 - Improved common subexpression elimination.
