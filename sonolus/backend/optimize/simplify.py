@@ -295,6 +295,8 @@ class RemoveRedundantArguments(CompilerPass):
                         ]
                         if len(args) == 1:
                             return args[0]
+                        if isinstance(args[0], IRConst) and args[0].value == 0 and len(args) == 2:
+                            return IRPureInstr(Op.Negate, [self.update_statement(args[1])])
                     case Op.Multiply:
                         args = [arg for arg in args if not (isinstance(arg, IRConst) and arg.value == 1)]
                         if len(args) == 1:
