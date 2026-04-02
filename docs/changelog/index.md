@@ -1,3 +1,7 @@
+### 0.15.3
+
+- Improved optimization of memory accesses.
+
 ### 0.15.2
 
 - Improvements to expression simplification in the optimizer.
