@@ -1,3 +1,7 @@
+### 0.15.4
+
+- Improved common subexpression elimination.
+
 ### 0.15.3
 
 - Improved optimization of memory accesses.
