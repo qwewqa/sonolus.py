@@ -1,3 +1,7 @@
+### 0.15.6
+
+- Optimization improvements.
+
 ### 0.15.5
 
 - Added loop invariant code motion optimization.
