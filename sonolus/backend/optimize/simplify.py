@@ -315,6 +315,45 @@ class RemoveRedundantArguments(CompilerPass):
                 return stmt
 
 
+class NormalizeBlocks(CompilerPass):
+    def run(self, entry: BasicBlock, config: OptimizerConfig) -> BasicBlock:
+        if config.mode is None:
+            return entry
+        blocks_type = config.mode.blocks
+        for block in traverse_cfg_preorder(entry):
+            block.statements = [self.update_statement(stmt, blocks_type) for stmt in block.statements]
+            block.test = self.update_statement(block.test, blocks_type)
+        return entry
+
+    def update_statement(self, stmt, blocks_type):
+        match stmt:
+            case IRPureInstr(op=op, args=args):
+                return IRPureInstr(op=op, args=[self.update_statement(arg, blocks_type) for arg in args])
+            case IRInstr(op=op, args=args):
+                return IRInstr(op=op, args=[self.update_statement(arg, blocks_type) for arg in args])
+            case IRGet(place=place):
+                return IRGet(place=self.update_statement(place, blocks_type))
+            case IRSet(place=SSAPlace() as place, value=value):
+                return IRSet(place=place, value=self.update_statement(value, blocks_type))
+            case IRSet(place=place, value=value):
+                return IRSet(
+                    place=self.update_statement(place, blocks_type),
+                    value=self.update_statement(value, blocks_type),
+                )
+            case BlockPlace(block=block, index=index, offset=offset):
+                block = self.update_statement(block, blocks_type)
+                index = self.update_statement(index, blocks_type)
+                if isinstance(block, IRConst):
+                    block = block.value
+                if isinstance(block, int) and not isinstance(block, blocks_type):
+                    block = blocks_type(block)
+                elif isinstance(block, float) and block == int(block) and not isinstance(block, blocks_type):
+                    block = blocks_type(int(block))
+                return BlockPlace(block=block, index=index, offset=offset)
+            case _:
+                return stmt
+
+
 class RenumberVars(CompilerPass):
     def run(self, entry: BasicBlock, config: OptimizerConfig) -> BasicBlock:
         numbers = {}

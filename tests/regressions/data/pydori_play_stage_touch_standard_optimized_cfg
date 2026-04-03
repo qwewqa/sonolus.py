@@ -27,13 +27,14 @@
   goto 3 if RuntimeTouchArray[10000[42] + 1] else 1
 3:
   10000[28] <- 0
+  10000[24] <- RuntimeTouchArray[10000[42]]
   goto 4
 4:
   10000[29] <- LevelMemory[0]
   goto 5 if (10000[28] < 10000[29]) else 8
 5:
   10000[29] <- LevelMemory[10000[28] + 1]
-  goto 6 if (10000[29] == RuntimeTouchArray[10000[42]]) else 7
+  goto 6 if (10000[29] == 10000[24]) else 7
 6:
   10000[28] <- 1.0
   goto 9
@@ -123,13 +124,14 @@
   goto 11 if !LevelOption[10] else 32
 28:
   10000[28] <- 0
+  10000[24] <- LevelData[10000[36] + 1]
   goto 29
 29:
   goto 30 if (10000[28] < LevelData[0]) else 36
 30:
   10000[29] <- 10000[28] + 1.0
   10000[30] <- 10000[28] * 9.0
-  goto 31 if (LevelData[10000[30] + 1] == LevelData[10000[36] + 1]) else 33
+  goto 31 if (LevelData[10000[30] + 1] == 10000[24]) else 33
 31:
   SpawnParticleEffect(0, LevelData[10000[30] + 2], LevelData[10000[30] + 3], LevelData[10000[30] + 4], LevelData[10000[30] + 5], LevelData[10000[30] + 6], LevelData[10000[30] + 7], LevelData[10000[30] + 8], LevelData[10000[30] + 9], 0.2, 0)
   goto 11 if !LevelOption[10] else 32

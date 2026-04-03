@@ -131,16 +131,17 @@ Block(JumpLoop(
     Set(
       10000
       2
-      0
-    )
-    3
-  )
-  Execute(If(
-    Less(
-      Get(
-        10000
-        2
+      Add(
+        Get(
+          10000
+          1
+        )
+        1
       )
+    )
+    Set(
+      10000
+      3
       Get(
         3000
         Get(
@@ -149,50 +150,55 @@ Block(JumpLoop(
         )
       )
     )
+    Set(
+      10000
+      4
+      0
+    )
+    3
+  )
+  Execute(If(
+    Less(
+      Get(
+        10000
+        4
+      )
+      Get(
+        10000
+        3
+      )
+    )
     4
     7
   ))
-  Execute(
-    Set(
-      10000
-      3
+  Execute(If(
+    Equal(
       Get(
         3000
         Add(
-          Add(
-            Get(
-              10000
-              1
-            )
-            1
-          )
           Get(
             10000
             2
           )
+          Get(
+            10000
+            4
+          )
         )
       )
+      14
     )
-    If(
-      Equal(
-        Get(
-          10000
-          3
-        )
-        14
-      )
-      6
-      5
-    )
-  )
+    6
+    5
+  ))
   Execute(
     Set(
       10000
-      2
+      4
       Add(
         Get(
           10000
-          2
+          4
         )
         1
       )

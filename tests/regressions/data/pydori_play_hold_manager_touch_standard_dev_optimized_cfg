@@ -6,40 +6,42 @@
   goto 2 if (((EntityInfoArray[10000[1] + 1] >= -14.0) && (EntityInfoArray[10000[1] + 1] < 14.0)) && (EntityInfoArray[10000[1] + 1] == Trunc(EntityInfoArray[10000[1] + 1]))) else 59
 2:
   10000[1] <- EngineRom[(38.0 + (EntityInfoArray[10000[1] + 1] + ((EntityInfoArray[10000[1] + 1] < 0) * 14.0)))]
-  10000[2] <- 0
+  10000[2] <- 10000[1] + 1.0
+  10000[3] <- EngineRom[10000[1]]
+  10000[4] <- 0
   goto 3
 3:
-  goto 4 if (10000[2] < EngineRom[10000[1]]) else 58
+  goto 4 if (10000[4] < 10000[3]) else 58
 4:
-  10000[3] <- 3000.0[((10000[1] + 1.0) + 10000[2])]
-  goto when 10000[3]
+  goto when EngineRom[(10000[2] + 10000[4])]
     13.0 -> 6
     default -> 5
 5:
-  10000[2] <- 10000[2] + 1.0
+  10000[4] <- 10000[4] + 1.0
   goto 3
 6:
-  10000[2] <- 16.0 + (10000[0] * 32.0)
-  goto 7 if (EntityDataArray[10000[2]] >= 0) else 57
+  10000[4] <- 16.0 + (10000[0] * 32.0)
+  goto 7 if (EntityDataArray[10000[4]] >= 0) else 57
 7:
-  10000[3] <- EntityDataArray[10000[2]] * 3.0
-  goto 8 if (((EntityInfoArray[10000[3] + 1] >= -14.0) && (EntityInfoArray[10000[3] + 1] < 14.0)) && (EntityInfoArray[10000[3] + 1] == Trunc(EntityInfoArray[10000[3] + 1]))) else 56
+  10000[5] <- EntityDataArray[10000[4]] * 3.0
+  goto 8 if (((EntityInfoArray[10000[5] + 1] >= -14.0) && (EntityInfoArray[10000[5] + 1] < 14.0)) && (EntityInfoArray[10000[5] + 1] == Trunc(EntityInfoArray[10000[5] + 1]))) else 56
 8:
-  10000[0] <- EngineRom[(38.0 + (EntityInfoArray[10000[3] + 1] + ((EntityInfoArray[10000[3] + 1] < 0) * 14.0)))]
-  10000[1] <- 0
+  10000[0] <- EngineRom[(38.0 + (EntityInfoArray[10000[5] + 1] + ((EntityInfoArray[10000[5] + 1] < 0) * 14.0)))]
+  10000[1] <- 10000[0] + 1.0
+  10000[2] <- EngineRom[10000[0]]
+  10000[3] <- 0
   goto 9
 9:
-  goto 10 if (10000[1] < EngineRom[10000[0]]) else 55
+  goto 10 if (10000[3] < 10000[2]) else 55
 10:
-  10000[3] <- 3000.0[((10000[0] + 1.0) + 10000[1])]
-  goto when 10000[3]
+  goto when EngineRom[(10000[1] + 10000[3])]
     13.0 -> 12
     default -> 11
 11:
-  10000[1] <- 10000[1] + 1.0
+  10000[3] <- 10000[3] + 1.0
   goto 9
 12:
-  10000[0] <- EntitySharedMemoryArray[(EntityDataArray[10000[2]] * 32.0)]
+  10000[0] <- EntitySharedMemoryArray[(EntityDataArray[10000[4]] * 32.0)]
   goto 48 if !(10000[0] > 0) else 13
 13:
   10000[0] <- EntityMemory[0]
@@ -49,17 +51,18 @@
   goto 15 if (((EntityInfoArray[10000[1] + 1] >= -14.0) && (EntityInfoArray[10000[1] + 1] < 14.0)) && (EntityInfoArray[10000[1] + 1] == Trunc(EntityInfoArray[10000[1] + 1]))) else 53
 15:
   10000[1] <- EngineRom[(38.0 + (EntityInfoArray[10000[1] + 1] + ((EntityInfoArray[10000[1] + 1] < 0) * 14.0)))]
-  10000[2] <- 0
+  10000[2] <- 10000[1] + 1.0
+  10000[3] <- EngineRom[10000[1]]
+  10000[4] <- 0
   goto 16
 16:
-  goto 17 if (10000[2] < EngineRom[10000[1]]) else 52
+  goto 17 if (10000[4] < 10000[3]) else 52
 17:
-  10000[3] <- 3000.0[((10000[1] + 1.0) + 10000[2])]
-  goto when 10000[3]
+  goto when EngineRom[(10000[2] + 10000[4])]
     13.0 -> 19
     default -> 18
 18:
-  10000[2] <- 10000[2] + 1.0
+  10000[4] <- 10000[4] + 1.0
   goto 16
 19:
   10000[0] <- 16.0 + (10000[0] * 32.0)
@@ -69,17 +72,18 @@
   goto 21 if (((EntityInfoArray[10000[1] + 1] >= -14.0) && (EntityInfoArray[10000[1] + 1] < 14.0)) && (EntityInfoArray[10000[1] + 1] == Trunc(EntityInfoArray[10000[1] + 1]))) else 50
 21:
   10000[1] <- EngineRom[(38.0 + (EntityInfoArray[10000[1] + 1] + ((EntityInfoArray[10000[1] + 1] < 0) * 14.0)))]
-  10000[2] <- 0
+  10000[2] <- 10000[1] + 1.0
+  10000[3] <- EngineRom[10000[1]]
+  10000[4] <- 0
   goto 22
 22:
-  goto 23 if (10000[2] < EngineRom[10000[1]]) else 49
+  goto 23 if (10000[4] < 10000[3]) else 49
 23:
-  10000[3] <- 3000.0[((10000[1] + 1.0) + 10000[2])]
-  goto when 10000[3]
+  goto when EngineRom[(10000[2] + 10000[4])]
     13.0 -> 25
     default -> 24
 24:
-  10000[2] <- 10000[2] + 1.0
+  10000[4] <- 10000[4] + 1.0
   goto 22
 25:
   10000[0] <- EntitySharedMemoryArray[(EntityDataArray[10000[0]] * 32.0)]
@@ -101,17 +105,18 @@
   goto 31 if (((EntityInfoArray[10000[1] + 1] >= -14.0) && (EntityInfoArray[10000[1] + 1] < 14.0)) && (EntityInfoArray[10000[1] + 1] == Trunc(EntityInfoArray[10000[1] + 1]))) else 46
 31:
   10000[1] <- EngineRom[(38.0 + (EntityInfoArray[10000[1] + 1] + ((EntityInfoArray[10000[1] + 1] < 0) * 14.0)))]
-  10000[2] <- 0
+  10000[2] <- 10000[1] + 1.0
+  10000[3] <- EngineRom[10000[1]]
+  10000[4] <- 0
   goto 32
 32:
-  goto 33 if (10000[2] < EngineRom[10000[1]]) else 45
+  goto 33 if (10000[4] < 10000[3]) else 45
 33:
-  10000[3] <- 3000.0[((10000[1] + 1.0) + 10000[2])]
-  goto when 10000[3]
+  goto when EngineRom[(10000[2] + 10000[4])]
     13.0 -> 35
     default -> 34
 34:
-  10000[2] <- 10000[2] + 1.0
+  10000[4] <- 10000[4] + 1.0
   goto 32
 35:
   10000[0] <- 16.0 + (10000[0] * 32.0)
@@ -121,17 +126,18 @@
   goto 37 if (((EntityInfoArray[10000[1] + 1] >= -14.0) && (EntityInfoArray[10000[1] + 1] < 14.0)) && (EntityInfoArray[10000[1] + 1] == Trunc(EntityInfoArray[10000[1] + 1]))) else 43
 37:
   10000[1] <- EngineRom[(38.0 + (EntityInfoArray[10000[1] + 1] + ((EntityInfoArray[10000[1] + 1] < 0) * 14.0)))]
-  10000[2] <- 0
+  10000[2] <- 10000[1] + 1.0
+  10000[3] <- EngineRom[10000[1]]
+  10000[4] <- 0
   goto 38
 38:
-  goto 39 if (10000[2] < EngineRom[10000[1]]) else 42
+  goto 39 if (10000[4] < 10000[3]) else 42
 39:
-  10000[3] <- 3000.0[((10000[1] + 1.0) + 10000[2])]
-  goto when 10000[3]
+  goto when EngineRom[(10000[2] + 10000[4])]
     13.0 -> 41
     default -> 40
 40:
-  10000[2] <- 10000[2] + 1.0
+  10000[4] <- 10000[4] + 1.0
   goto 38
 41:
   10000[0] <- EntityDataArray[10000[0]] * 32.0

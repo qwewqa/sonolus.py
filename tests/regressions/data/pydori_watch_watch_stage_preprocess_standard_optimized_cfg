@@ -537,41 +537,44 @@
   ArchetypeLife[32] <- 1.0
   ArchetypeLife[35] <- -100.0
   10000[0] <- RuntimeEnvironment[4]
-  goto 21 if !10000[0] else 9
+  goto 22 if !10000[0] else 9
 9:
   goto 10 if StreamHas(1.0, -10.0) else 11
 10:
-  10000[3] <- -10.0
+  10000[4] <- -10.0
   goto 12
 11:
-  10000[3] <- StreamGetNextKey(1.0, -10.0)
+  10000[4] <- StreamGetNextKey(1.0, -10.0)
   goto 12
 12:
-  goto 13 if StreamHas(1.0, 10000[3]) else 21
+  goto 13 if StreamHas(1.0, 10000[4]) else 22
 13:
-  10000[0] <- StreamGetNextKey(1.0, 10000[3])
-  goto 15 if (10000[0] > 10000[3]) else 14
+  10000[1] <- StreamGetNextKey(1.0, 10000[4])
+  goto 15 if (10000[1] > 10000[4]) else 14
 14:
-  10000[0] <- inf
+  10000[1] <- inf
   goto 15
 15:
   goto 16 if !LevelOption[10] else 17
 16:
-  10000[1] <- 0
+  10000[2] <- 0
   goto 18
 17:
-  PlayScheduled(0, 10000[3], 0.02)
-  10000[1] <- 0
+  PlayScheduled(0, 10000[4], 0.02)
+  10000[2] <- 0
   goto 18
 18:
-  goto 19 if (10000[1] < StreamGetValue(1.0, 10000[3])) else 20
+  10000[0] <- StreamGetValue(1.0, 10000[4])
+  goto 19
 19:
-  10000[2] <- 10000[1] + 1.0
-  Spawn(1.0, 10000[3], StreamGetValue(1.0 + (0 + 10000[1] + 1.0), 10000[3]))
-  10000[1] <- 10000[2]
-  goto 18
+  goto 20 if (10000[2] < 10000[0]) else 21
 20:
-  10000[3] <- 10000[0]
-  goto 12
+  10000[3] <- 10000[2] + 1.0
+  Spawn(1.0, 10000[4], StreamGetValue(1.0 + (0 + 10000[2] + 1.0), 10000[4]))
+  10000[2] <- 10000[3]
+  goto 19
 21:
+  10000[4] <- 10000[1]
+  goto 12
+22:
   goto exit

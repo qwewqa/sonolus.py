@@ -3334,7 +3334,7 @@ Block(JumpLoop(
   Execute(
     DebugLog(1)
     DebugPause()
-    24
+    25
   )
   Execute(
     Set(
@@ -5791,7 +5791,7 @@ Block(JumpLoop(
         10000
         0
       ))
-      23
+      24
       11
     )
   )
@@ -5806,7 +5806,7 @@ Block(JumpLoop(
   Execute(
     Set(
       10000
-      3
+      4
       -10
     )
     14
@@ -5814,7 +5814,7 @@ Block(JumpLoop(
   Execute(
     Set(
       10000
-      3
+      4
       StreamGetNextKey(
         1
         -10
@@ -5827,21 +5827,21 @@ Block(JumpLoop(
       1
       Get(
         10000
-        3
+        4
       )
     )
     15
-    23
+    24
   ))
   Execute(
     Set(
       10000
-      0
+      1
       StreamGetNextKey(
         1
         Get(
           10000
-          3
+          4
         )
       )
     )
@@ -5849,11 +5849,11 @@ Block(JumpLoop(
       Greater(
         Get(
           10000
-          0
+          1
         )
         Get(
           10000
-          3
+          4
         )
       )
       17
@@ -5863,7 +5863,7 @@ Block(JumpLoop(
   Execute(
     Set(
       10000
-      0
+      1
       Get(
         3000
         1
@@ -5882,7 +5882,7 @@ Block(JumpLoop(
   Execute(
     Set(
       10000
-      1
+      2
       0
     )
     20
@@ -5892,42 +5892,53 @@ Block(JumpLoop(
       0
       Get(
         10000
-        3
+        4
       )
       0.02
     )
     Set(
       10000
-      1
+      2
       0
     )
     20
+  )
+  Execute(
+    Set(
+      10000
+      0
+      StreamGetValue(
+        1
+        Get(
+          10000
+          4
+        )
+      )
+    )
+    21
   )
   Execute(If(
     Less(
       Get(
         10000
-        1
+        2
       )
-      StreamGetValue(
-        1
-        Get(
-          10000
-          3
-        )
+      Get(
+        10000
+        0
       )
     )
-    21
     22
+    23
   ))
   Execute(
     Set(
       10000
-      2
+      3
       Add(
         Get(
           10000
-          1
+          2
         )
         1
       )
@@ -5936,7 +5947,7 @@ Block(JumpLoop(
       1
       Get(
         10000
-        3
+        4
       )
       StreamGetValue(
         Add(
@@ -5945,38 +5956,38 @@ Block(JumpLoop(
             0
             Get(
               10000
-              1
+              2
             )
             1
           )
         )
         Get(
           10000
-          3
+          4
         )
       )
     )
     Set(
       10000
-      1
+      2
       Get(
         10000
-        2
+        3
       )
     )
-    20
+    21
   )
   Execute(
     Set(
       10000
-      3
+      4
       Get(
         10000
-        0
+        1
       )
     )
     14
   )
-  Execute(24)
+  Execute(25)
   0
 ))
