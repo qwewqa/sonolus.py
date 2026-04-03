@@ -160,49 +160,48 @@
   goto 38 if 10000[0] else 60
 38:
   10000[0] <- EntityData[9]
-  10000[0] <- 10000[0] * 3.0
-  10000[1] <- EntityInfoArray[10000[0]] + 18.0
-  goto 39 if StreamHas(10000[1], -10.0) else 40
+  10000[0] <- EntityInfoArray[(10000[0] * 3.0)] + 18.0
+  goto 39 if StreamHas(10000[0], -10.0) else 40
 39:
-  10000[2] <- -10.0
+  10000[1] <- -10.0
   goto 41
 40:
-  10000[2] <- StreamGetNextKey(10000[1], -10.0)
+  10000[1] <- StreamGetNextKey(10000[0], -10.0)
   goto 41
 41:
   10000[4] <- 0
   10000[5] <- 0
   goto 42
 42:
-  goto 43 if StreamHas(10000[1], 10000[2]) else 57
+  goto 43 if StreamHas(10000[0], 10000[1]) else 57
 43:
-  10000[3] <- StreamGetNextKey(10000[1], 10000[2])
-  goto 45 if (10000[3] > 10000[2]) else 44
+  10000[2] <- StreamGetNextKey(10000[0], 10000[1])
+  goto 45 if (10000[2] > 10000[1]) else 44
 44:
-  10000[3] <- inf
+  10000[2] <- inf
   goto 45
 45:
   10000[6] <- EntityData[9]
   10000[6] <- EntityDataArray[(5.0 + (10000[6] * 32.0))]
-  goto 46 if (10000[2] < 10000[6]) else 47
+  goto 46 if (10000[1] < 10000[6]) else 47
 46:
-  10000[2] <- 10000[3]
+  10000[1] <- 10000[2]
   goto 42
 47:
   10000[6] <- EntityData[10]
   10000[6] <- EntityDataArray[(5.0 + (10000[6] * 32.0))]
-  goto 57 if (10000[2] > 10000[6]) else 48
+  goto 57 if (10000[1] > 10000[6]) else 48
 48:
-  10000[0] <- StreamGetValue(10000[1], 10000[2])
-  goto 49 if 10000[0] else 51
+  10000[3] <- StreamGetValue(10000[0], 10000[1])
+  goto 49 if 10000[3] else 51
 49:
   goto 50 if !10000[5] else 51
 50:
   10000[5] <- 1.0
-  10000[4] <- 10000[2]
-  goto 52 if !10000[0] else 56
+  10000[4] <- 10000[1]
+  goto 52 if !10000[3] else 56
 51:
-  goto 52 if !10000[0] else 56
+  goto 52 if !10000[3] else 56
 52:
   goto 53 if 10000[5] else 56
 53:
@@ -214,12 +213,12 @@
   goto 56
 55:
   10000[7] <- PlayLoopedScheduled(7.0, 10000[4])
-  StopLoopedScheduled(10000[7], 10000[2])
+  StopLoopedScheduled(10000[7], 10000[1])
   10000[5] <- 0
   10000[4] <- 10000[6]
   goto 56
 56:
-  10000[2] <- 10000[3]
+  10000[1] <- 10000[2]
   goto 42
 57:
   goto 58 if 10000[5] else 62

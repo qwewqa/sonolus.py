@@ -163,22 +163,6 @@ class CommonSubexpressionElimination(CompilerPass):
 
     def _process_stmt(self, stmt, available, callback, pre_stmts, next_id, added):
         match stmt:
-            case IRSet(place=SSAPlace() as place, value=IRPureInstr() as value) if self._is_cse_candidate(
-                value, callback
-            ):
-                new_place = place
-                new_args = [
-                    self._process_expr(arg, available, callback, pre_stmts, next_id, added) for arg in value.args
-                ]
-                new_value = IRPureInstr(op=value.op, args=new_args)
-                if isinstance(new_place, SSAPlace) and self._is_cse_candidate(new_value, callback):
-                    if new_value not in available:
-                        available[new_value] = new_place
-                        added.append(new_value)
-                    if value not in available:
-                        available[value] = new_place
-                        added.append(value)
-                return IRSet(new_place, new_value)
             case IRSet(place=place, value=value):
                 new_place = self._process_expr(place, available, callback, pre_stmts, next_id, added)
                 new_value = self._process_expr(value, available, callback, pre_stmts, next_id, added)
