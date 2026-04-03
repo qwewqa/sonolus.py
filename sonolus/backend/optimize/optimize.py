@@ -18,6 +18,7 @@ from sonolus.backend.optimize.simplify import (
     NormalizeSwitch,
     RemoveRedundantArguments,
     RewriteToSwitch,
+    UnflattenAssociativeOps,
 )
 from sonolus.backend.optimize.ssa import FromSSA, ToSSA
 
@@ -56,10 +57,11 @@ STANDARD_PASSES = (
     CoalesceFlow(),
     RewriteToSwitch(),
     InlineVars(aggressive=True),
-    FlattenAssociativeOps(),
+    UnflattenAssociativeOps(),
     LoopInvariantCodeMotion(),
     CommonSubexpressionElimination(),
     NormalizeBlocks(),
+    FlattenAssociativeOps(),
     InlineVars(),
     DeadCodeElimination(),
     FlattenAssociativeOps(),

@@ -271,6 +271,33 @@ class FlattenAssociativeOps(CompilerPass):
                 return stmt
 
 
+class UnflattenAssociativeOps(CompilerPass):
+    FLATTENABLE_OPS = FlattenAssociativeOps.FLATTENABLE_OPS
+
+    def run(self, entry: BasicBlock, config: OptimizerConfig) -> BasicBlock:
+        for block in traverse_cfg_preorder(entry):
+            block.statements = [self.unflatten_statement(stmt) for stmt in block.statements]
+            block.test = self.unflatten_statement(block.test)
+        return entry
+
+    def unflatten_statement(self, stmt):
+        match stmt:
+            case IRPureInstr(op=op, args=args) if op in self.FLATTENABLE_OPS and len(args) > 2:
+                args = [self.unflatten_statement(arg) for arg in args]
+                result = args[0]
+                for arg in args[1:]:
+                    result = IRPureInstr(op=op, args=[result, arg])
+                return result
+            case IRPureInstr(op=op, args=args):
+                return IRPureInstr(op=op, args=[self.unflatten_statement(arg) for arg in args])
+            case IRInstr(op=op, args=args):
+                return IRInstr(op=op, args=[self.unflatten_statement(arg) for arg in args])
+            case IRSet(place=place, value=value):
+                return IRSet(place=place, value=self.unflatten_statement(value))
+            case _:
+                return stmt
+
+
 class RemoveRedundantArguments(CompilerPass):
     def run(self, entry: BasicBlock, config: OptimizerConfig) -> BasicBlock:
         for block in traverse_cfg_preorder(entry):

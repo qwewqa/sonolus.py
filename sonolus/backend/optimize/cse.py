@@ -60,6 +60,9 @@ class CommonSubexpressionElimination(CompilerPass):
     Also canonicalizes commutative operations by sorting their arguments.
     """
 
+    def __init__(self, name: str = "cse"):
+        self.name = name
+
     def requires(self) -> set[CompilerPass]:
         return {DominanceFrontiers()}
 
@@ -187,7 +190,7 @@ class CommonSubexpressionElimination(CompilerPass):
                 if new_expr in available:
                     return IRGet(available[new_expr])
                 if _cost(new_expr) >= 4:
-                    new_place = SSAPlace("_cse", next_id[0])
+                    new_place = SSAPlace(self.name, next_id[0])
                     next_id[0] += 1
                     pre_stmts.append(IRSet(new_place, new_expr))
                     available[new_expr] = new_place

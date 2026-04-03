@@ -2,27 +2,27 @@
   10000[0] <- EntityData[0] * 32.0
   10000[1] <- EntityData[1] * 32.0
   10000[2] <- 6.0 + 10000[0]
-  10000[23] <- Remap(EntityDataArray[10000[2]] - (6.0 / LevelOption[1]), EntityDataArray[10000[2]], LevelData[14], 0, RuntimeUpdate[2])
+  10000[20] <- Remap(EntityDataArray[10000[2]] - (6.0 / LevelOption[1]), EntityDataArray[10000[2]], LevelData[14], 0, RuntimeUpdate[2])
   goto 11 if !LevelOption[8] else 1
 1:
-  goto 2 if (10000[23] <= LevelData[15]) else 3
+  goto 2 if (10000[20] <= LevelData[15]) else 3
 2:
   10000[2] <- 0
   goto 10
 3:
-  goto 4 if (10000[23] <= (LevelData[15] + 0.5)) else 5
+  goto 4 if (10000[20] <= (LevelData[15] + 0.5)) else 5
 4:
-  10000[2] <- Remap(LevelData[15], LevelData[15] + 0.5, 0, 1.0, 10000[23])
+  10000[2] <- Remap(LevelData[15], LevelData[15] + 0.5, 0, 1.0, 10000[20])
   goto 10
 5:
-  goto 6 if (10000[23] <= (LevelData[14] - 0.5)) else 7
+  goto 6 if (10000[20] <= (LevelData[14] - 0.5)) else 7
 6:
-  10000[2] <- Remap(LevelData[15] + 0.5, LevelData[14] - 0.5, 1.0, 1.0, 10000[23])
+  10000[2] <- Remap(LevelData[15] + 0.5, LevelData[14] - 0.5, 1.0, 1.0, 10000[20])
   goto 10
 7:
-  goto 8 if (10000[23] <= LevelData[14]) else 9
+  goto 8 if (10000[20] <= LevelData[14]) else 9
 8:
-  10000[2] <- Remap(LevelData[14] - 0.5, LevelData[14], 1.0, 0, 10000[23])
+  10000[2] <- Remap(LevelData[14] - 0.5, LevelData[14], 1.0, 0, 10000[20])
   goto 10
 9:
   10000[2] <- 0
@@ -35,8 +35,8 @@
 12:
   10000[3] <- EntityDataArray[10000[0]] * LevelData[12]
   10000[4] <- EntityDataArray[10000[1]] * LevelData[12]
-  10000[5] <- 10000[23] - (LevelData[11] / 2.0)
-  10000[6] <- 10000[23] + (LevelData[11] / 2.0)
+  10000[5] <- 10000[20] - (LevelData[11] / 2.0)
+  10000[6] <- 10000[20] + (LevelData[11] / 2.0)
   10000[7] <- LevelData[8] * 10000[3]
   10000[8] <- LevelData[9] * 10000[5]
   10000[9] <- 10000[7] + 10000[8] + LevelData[10]
@@ -50,8 +50,8 @@
   10000[17] <- LevelData[5] * 10000[3]
   10000[18] <- LevelData[6] * 10000[5]
   10000[19] <- LevelData[3] * 10000[6]
-  10000[20] <- LevelData[6] * 10000[6]
-  10000[21] <- LevelData[2] * 10000[4]
-  10000[22] <- LevelData[5] * 10000[4]
-  Draw(18.0, (10000[15] + 10000[16] + LevelData[4]) / 10000[9], (10000[17] + 10000[18] + LevelData[7]) / 10000[9], (10000[15] + 10000[19] + LevelData[4]) / 10000[13], (10000[17] + 10000[20] + LevelData[7]) / 10000[13], (10000[21] + 10000[19] + LevelData[4]) / 10000[14], (10000[22] + 10000[20] + LevelData[7]) / 10000[14], (10000[21] + 10000[16] + LevelData[4]) / 10000[11], (10000[22] + 10000[18] + LevelData[7]) / 10000[11], 220000.0 + (Min(EntityDataArray[10000[0]], EntityDataArray[10000[1]]) * 100.0) + 10000[23], 10000[2])
+  10000[21] <- LevelData[6] * 10000[6]
+  10000[22] <- LevelData[2] * 10000[4]
+  10000[23] <- LevelData[5] * 10000[4]
+  Draw(18.0, (10000[15] + 10000[16] + LevelData[4]) / 10000[9], (10000[17] + 10000[18] + LevelData[7]) / 10000[9], (10000[15] + 10000[19] + LevelData[4]) / 10000[13], (10000[17] + 10000[21] + LevelData[7]) / 10000[13], (10000[22] + 10000[19] + LevelData[4]) / 10000[14], (10000[23] + 10000[21] + LevelData[7]) / 10000[14], (10000[22] + 10000[16] + LevelData[4]) / 10000[11], (10000[23] + 10000[18] + LevelData[7]) / 10000[11], 220000.0 + (Min(EntityDataArray[10000[0]], EntityDataArray[10000[1]]) * 100.0) + 10000[20], 10000[2])
   goto exit

@@ -32,6 +32,9 @@ class LoopInvariantCodeMotion(CompilerPass):
     against the originals inside the loop, effectively hoisting the computation.
     """
 
+    def __init__(self, name: str = "licm"):
+        self.name = name
+
     def requires(self) -> set[CompilerPass]:
         return {DominanceFrontiers()}
 
@@ -161,7 +164,7 @@ class LoopInvariantCodeMotion(CompilerPass):
             case IRPureInstr(args=args) if self._is_loop_invariant(expr, defs_in_loop, callback):
                 if _cost(expr) >= 4 and expr not in hoisted:
                     hoisted.add(expr)
-                    place = SSAPlace("_licm", next_id[0])
+                    place = SSAPlace(self.name, next_id[0])
                     next_id[0] += 1
                     preheader.statements.append(IRSet(place, expr))
             case IRPureInstr(args=args) | IRInstr(args=args):
@@ -170,7 +173,7 @@ class LoopInvariantCodeMotion(CompilerPass):
             case IRGet(place=BlockPlace() as place) if self._is_loop_invariant(expr, defs_in_loop, callback):
                 if _cost(expr) >= 4 and expr not in hoisted:
                     hoisted.add(expr)
-                    ssa_place = SSAPlace("_licm", next_id[0])
+                    ssa_place = SSAPlace(self.name, next_id[0])
                     next_id[0] += 1
                     preheader.statements.append(IRSet(ssa_place, expr))
             case IRGet(place=BlockPlace(index=index)):
