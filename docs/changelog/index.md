@@ -1,3 +1,7 @@
+### 0.15.7
+
+- Minor optimization improvements.
+
 ### 0.15.6
 
 - Optimization improvements.
