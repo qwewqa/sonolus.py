@@ -1,3 +1,7 @@
+### 0.15.8
+
+- Minor improvements to optimization of commutative operators.
+
 ### 0.15.7
 
 - Minor optimization improvements.
