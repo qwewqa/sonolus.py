@@ -96,6 +96,8 @@ class CopyCoalesce(CompilerPass):
                     continue
                 target = stmt.place.block
                 source = stmt.value.place.block
+                if target not in get_live(stmt):
+                    continue
                 result.setdefault(target, set()).add(source)
                 result.setdefault(source, set()).add(target)
         return result
