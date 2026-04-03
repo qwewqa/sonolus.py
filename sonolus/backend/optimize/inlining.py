@@ -208,7 +208,7 @@ class InlineVars(CompilerPass):
                     return IRGet(place=new_place)
                 return stmt
             case IRSet(place=place, value=value):
-                return IRSet(place=place, value=self.substitute(value, subs))
+                return IRSet(place=self.substitute(place, subs), value=self.substitute(value, subs))
             case SSAPlace():
                 if stmt in subs:
                     return subs[stmt]
@@ -265,7 +265,9 @@ class InlineVars(CompilerPass):
                 elif isinstance(place, BlockPlace):
                     self.get_inlinable_uses(place.block, uses)
                     self.get_inlinable_uses(place.index, uses)
-            case IRSet(place=_, value=value):
+            case IRSet(place=place, value=value):
+                if not isinstance(place, SSAPlace):
+                    self.get_inlinable_uses(place, uses)
                 self.get_inlinable_uses(value, uses)
             case SSAPlace():
                 uses.add(stmt)

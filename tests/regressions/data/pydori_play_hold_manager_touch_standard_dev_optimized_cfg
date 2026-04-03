@@ -140,8 +140,7 @@
   10000[4] <- 10000[4] + 1.0
   goto 38
 41:
-  10000[0] <- EntityDataArray[10000[0]] * 32.0
-  EntitySharedMemoryArray[10000[0]] <- 0
+  EntitySharedMemoryArray[(EntityDataArray[10000[0]] * 32.0)] <- 0
   goto exit
 42:
   DebugLog(18.0)

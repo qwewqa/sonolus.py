@@ -259,8 +259,7 @@
   10000[25] <- 10000[25] + 1.0
   goto 81
 84:
-  10000[21] <- EntityDataArray[10000[21]] * 32.0
-  EntitySharedMemoryArray[10000[21]] <- Remap(Remap(EntityDataArray[10000[19]] - (6.0 / LevelOption[1]), EntityDataArray[10000[19]], LevelData[14], 0, RuntimeUpdate[2]), Remap(EntityDataArray[10000[20]] - (6.0 / LevelOption[1]), EntityDataArray[10000[20]], LevelData[14], 0, RuntimeUpdate[2]), EntityDataArray[10000[1]], EntityDataArray[10000[4]], 0)
+  EntitySharedMemoryArray[(EntityDataArray[10000[21]] * 32.0)] <- Remap(Remap(EntityDataArray[10000[19]] - (6.0 / LevelOption[1]), EntityDataArray[10000[19]], LevelData[14], 0, RuntimeUpdate[2]), Remap(EntityDataArray[10000[20]] - (6.0 / LevelOption[1]), EntityDataArray[10000[20]], LevelData[14], 0, RuntimeUpdate[2]), EntityDataArray[10000[1]], EntityDataArray[10000[4]], 0)
   goto exit
 85:
   DebugLog(31.0)
