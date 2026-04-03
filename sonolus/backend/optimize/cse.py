@@ -178,15 +178,22 @@ class CommonSubexpressionElimination(CompilerPass):
             case IRSet(place=place, value=value):
                 new_place = self._process_expr(place, available, callback, pre_stmts, next_id, added)
                 new_value = self._process_expr(value, available, callback, pre_stmts, next_id, added)
+                if (
+                    isinstance(new_place, SSAPlace)
+                    and self._is_cse_candidate(new_value, callback)
+                    and new_value not in available
+                ):
+                    available[new_value] = new_place
+                    added.append(new_value)
                 return IRSet(new_place, new_value)
             case _:
                 return self._process_expr(stmt, available, callback, pre_stmts, next_id, added)
 
     def _process_expr(self, expr, available, callback, pre_stmts, next_id, added):
+        if expr in available:
+            return IRGet(available[expr])
         match expr:
             case IRPureInstr(op=op, args=args) if self._is_cse_candidate(expr, callback):
-                if expr in available:
-                    return IRGet(available[expr])
                 new_args = [self._process_expr(arg, available, callback, pre_stmts, next_id, added) for arg in args]
                 new_expr = IRPureInstr(op=op, args=new_args)
                 if new_expr in available:
@@ -204,11 +211,17 @@ class CommonSubexpressionElimination(CompilerPass):
                 return new_expr
             case IRPureInstr(op=op, args=args) | IRInstr(op=op, args=args):
                 new_args = [self._process_expr(arg, available, callback, pre_stmts, next_id, added) for arg in args]
-                return type(expr)(op=op, args=new_args)
+                new_expr = type(expr)(op=op, args=new_args)
+                if new_expr in available:
+                    return IRGet(available[new_expr])
+                return new_expr
             case IRGet(place=place):
                 new_place = self._process_expr(place, available, callback, pre_stmts, next_id, added)
                 if new_place is not place:
-                    return IRGet(new_place)
+                    new_expr = IRGet(new_place)
+                    if new_expr in available:
+                        return IRGet(available[new_expr])
+                    return new_expr
                 return expr
             case BlockPlace(block=block, index=index, offset=offset):
                 new_block = self._process_expr(block, available, callback, pre_stmts, next_id, added)

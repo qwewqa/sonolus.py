@@ -15,9 +15,9 @@
   EntityData[7] <- 10000[0] - (6.0 / LevelOption[1])
   10000[0] <- EntityData[11]
   EntityData[8] <- TimeToScaledTime(10000[0])
-  10000[0] <- 3.0 + EntityInfo[1]
+  10000[0] <- EngineRom[(3.0 + EntityInfo[1])]
   10000[1] <- 0
-  goto when EngineRom[10000[0]]
+  goto when 10000[0]
     1.0 -> 8
     2.0 -> 7
     3.0 -> 6
@@ -81,12 +81,12 @@
   10000[2] <- EntityData[11]
   goto 29 if !LevelOption[10] else 18
 18:
-  goto when EngineRom[10000[0]]
+  goto when 10000[0]
     6.0 -> 29
     default -> 19
 19:
   10000[3] <- 0
-  goto when (EngineRom[10000[0]] - 2.0)
+  goto when (10000[0] - 2.0)
     0.0 -> 24
     1.0 -> 24
     default -> 20
@@ -132,7 +132,7 @@
   10000[1] <- EntityData[5]
   goto 35 if !LevelOption[10] else 31
 31:
-  goto when EngineRom[10000[0]]
+  goto when 10000[0]
     2.0 -> 33
     3.0 -> 33
     6.0 -> 35
@@ -148,16 +148,16 @@
   goto 35
 35:
   10000[0] <- EntityData[3]
-  goto 36 if (10000[0] > 0) else 65
+  goto 36 if (10000[0] > 0) else 62
 36:
   10000[0] <- EntityData[4]
-  goto 37 if !(10000[0] > 0) else 65
+  goto 37 if !(10000[0] > 0) else 62
 37:
   10000[0] <- EntityData[9]
   10000[1] <- EntityData[10]
   Spawn(9.0, 10000[0], 10000[1], 0)
   10000[0] <- RuntimeEnvironment[4]
-  goto 38 if 10000[0] else 63
+  goto 38 if 10000[0] else 60
 38:
   10000[0] <- EntityData[9]
   10000[1] <- EntityInfoArray[(10000[0] * 3.0)] + 18.0
@@ -173,25 +173,24 @@
   10000[5] <- 0
   goto 42
 42:
-  goto 43 if StreamHas(10000[1], 10000[2]) else 60
+  goto 43 if StreamHas(10000[1], 10000[2]) else 57
 43:
-  10000[6] <- 10000[2]
   10000[3] <- StreamGetNextKey(10000[1], 10000[2])
   goto 45 if (10000[3] > 10000[2]) else 44
 44:
   10000[3] <- inf
   goto 45
 45:
-  10000[7] <- EntityData[9]
-  10000[7] <- EntityDataArray[(5.0 + (10000[7] * 32.0))]
-  goto 46 if (10000[2] < 10000[7]) else 47
+  10000[6] <- EntityData[9]
+  10000[6] <- EntityDataArray[(5.0 + (10000[6] * 32.0))]
+  goto 46 if (10000[2] < 10000[6]) else 47
 46:
   10000[2] <- 10000[3]
   goto 42
 47:
-  10000[7] <- EntityData[10]
-  10000[7] <- EntityDataArray[(5.0 + (10000[7] * 32.0))]
-  goto 60 if (10000[2] > 10000[7]) else 48
+  10000[6] <- EntityData[10]
+  10000[6] <- EntityDataArray[(5.0 + (10000[6] * 32.0))]
+  goto 57 if (10000[2] > 10000[6]) else 48
 48:
   10000[0] <- StreamGetValue(10000[1], 10000[2])
   goto 49 if 10000[0] else 51
@@ -199,53 +198,47 @@
   goto 50 if !10000[5] else 51
 50:
   10000[5] <- 1.0
-  goto 53 if !10000[0] else 58
+  10000[4] <- 10000[2]
+  goto 52 if !10000[0] else 56
 51:
-  goto 52 if !10000[0] else 57
+  goto 52 if !10000[0] else 56
 52:
-  10000[6] <- 10000[4]
-  goto 53
+  goto 53 if 10000[5] else 56
 53:
-  goto 54 if 10000[5] else 58
-54:
-  10000[4] <- 10000[6]
-  goto 55 if !LevelOption[10] else 56
-55:
-  10000[5] <- 0
-  goto 59
-56:
-  10000[5] <- PlayLoopedScheduled(7.0, 10000[6])
-  StopLoopedScheduled(10000[5], 10000[2])
-  10000[5] <- 0
-  goto 59
-57:
   10000[6] <- 10000[4]
-  goto 58
-58:
+  goto 54 if !LevelOption[10] else 55
+54:
+  10000[5] <- 0
   10000[4] <- 10000[6]
-  goto 59
-59:
+  goto 56
+55:
+  10000[7] <- PlayLoopedScheduled(7.0, 10000[4])
+  StopLoopedScheduled(10000[7], 10000[2])
+  10000[5] <- 0
+  10000[4] <- 10000[6]
+  goto 56
+56:
   10000[2] <- 10000[3]
   goto 42
-60:
-  goto 61 if 10000[5] else 65
-61:
+57:
+  goto 58 if 10000[5] else 62
+58:
   10000[5] <- EntityData[10]
   10000[5] <- EntityDataArray[(5.0 + (10000[5] * 32.0))]
-  goto 65 if !LevelOption[10] else 62
-62:
+  goto 62 if !LevelOption[10] else 59
+59:
   10000[6] <- PlayLoopedScheduled(7.0, 10000[4])
   StopLoopedScheduled(10000[6], 10000[5])
   goto exit
-63:
+60:
   10000[0] <- EntityData[9]
   10000[0] <- EntityDataArray[(5.0 + (10000[0] * 32.0))]
   10000[1] <- EntityData[10]
   10000[1] <- EntityDataArray[(5.0 + (10000[1] * 32.0))]
-  goto 65 if !LevelOption[10] else 64
-64:
+  goto 62 if !LevelOption[10] else 61
+61:
   10000[2] <- PlayLoopedScheduled(7.0, 10000[0])
   StopLoopedScheduled(10000[2], 10000[1])
   goto exit
-65:
+62:
   goto exit

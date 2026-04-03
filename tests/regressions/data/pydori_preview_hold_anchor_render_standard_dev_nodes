@@ -311,17 +311,25 @@ Block(JumpLoop(
   Execute(
     Set(
       10000
+      0
+      Get(
+        3000
+        Get(
+          10000
+          0
+        )
+      )
+    )
+    Set(
+      10000
       23
       0
     )
     SwitchIntegerWithDefault(
       Subtract(
         Get(
-          3000
-          Get(
-            10000
-            0
-          )
+          10000
+          0
         )
         2
       )
@@ -368,11 +376,8 @@ Block(JumpLoop(
   Execute(SwitchIntegerWithDefault(
     Subtract(
       Get(
-        3000
-        Get(
-          10000
-          0
-        )
+        10000
+        0
       )
       2
     )

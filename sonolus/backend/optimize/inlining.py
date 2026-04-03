@@ -158,9 +158,13 @@ class InlineVars(CompilerPass):
                     and isinstance(stmt.value, IRGet)
                     and isinstance(stmt.value.place, SSAPlace)
                 ):
-                    # Don't bother inlining a direct alias since it can get optimized away later and
-                    # reordering can reduce optimality since we don't have many other code motion optimizations.
-                    new_statements.append(stmt)
+                    replacement = inlined_definitions.get(stmt.value.place)
+                    if replacement is not None and self.is_free_to_inline(replacement, config.callback):
+                        new_statements.append(IRSet(stmt.place, replacement))
+                    else:
+                        # Don't bother inlining a direct alias since it can get optimized away later and
+                        # reordering can reduce optimality since we don't have many other code motion optimizations.
+                        new_statements.append(stmt)
                     continue
                 while True:
                     inlinable_uses = self.get_inlinable_uses(stmt, set())
