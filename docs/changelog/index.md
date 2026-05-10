@@ -1,3 +1,7 @@
+### 0.15.9
+
+- Fixed error due to a compile time division by zero in some cases.
+
 ### 0.15.8
 
 - Minor improvements to optimization of commutative operators.
