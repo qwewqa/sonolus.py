@@ -420,7 +420,10 @@ class SparseConditionalConstantPropagation(CompilerPass):
                     case Op.Divide:
                         if len(args) == 0:
                             return 1
-                        return args[0] / functools.reduce(operator.mul, args[1:], 1)
+                        denom = functools.reduce(operator.mul, args[1:], 1)
+                        if denom == 0:
+                            return NAC
+                        return args[0] / denom
                     case Op.Power:
                         if len(args) == 0:
                             return 1
