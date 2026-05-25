@@ -33,70 +33,82 @@ class Sprite(Record):
         return _has_skin_sprite(self.id)
 
     @perf_meta_fn
-    def draw(self, quad: QuadLike, z: float = 0.0, a: float = 1.0):
+    def draw(self, quad: QuadLike, z: float | tuple[float, ...] = 0.0, a: float = 1.0):
         """Draw the sprite.
 
         Arguments:
             quad: The quad to draw the sprite on.
-            z: The z-index of the sprite.
+            z: The z-index of the sprite. May be a single value or a tuple of up to 4 values,
+                where later values break ties on earlier ones.
             a: The alpha of the sprite.
         """
-        _draw(self.id, *flatten_quad(quad), z, a)
+        z1, z2, z3, z4 = pad_z_indexes(z if isinstance(z, tuple) else (z,))
+        _draw(self.id, *flatten_quad(quad), z1, a, z2, z3, z4)
 
     @perf_meta_fn
-    def draw_curved_b(self, quad: QuadLike, cp: Vec2, n: float, z: float = 0.0, a: float = 1.0):
+    def draw_curved_b(self, quad: QuadLike, cp: Vec2, n: float, z: float | tuple[float, ...] = 0.0, a: float = 1.0):
         """Draw the sprite with a curved bottom with a quadratic Bézier curve.
 
         Arguments:
             quad: The quad to draw the sprite on.
             cp: The control point of the curve.
             n: The number of segments to approximate the curve (higher is smoother but more expensive).
-            z: The z-index of the sprite.
+            z: The z-index of the sprite. May be a single value or a tuple of up to 4 values,
+                where later values break ties on earlier ones.
             a: The alpha of the sprite.
         """
-        _draw_curved_b(self.id, *flatten_quad(quad), z, a, n, *cp.tuple)
+        z1, z2, z3, z4 = pad_z_indexes(z if isinstance(z, tuple) else (z,))
+        _draw_curved_b(self.id, *flatten_quad(quad), z1, a, n, *cp.tuple, z2, z3, z4)
 
     @perf_meta_fn
-    def draw_curved_t(self, quad: QuadLike, cp: Vec2, n: float, z: float = 0.0, a: float = 1.0):
+    def draw_curved_t(self, quad: QuadLike, cp: Vec2, n: float, z: float | tuple[float, ...] = 0.0, a: float = 1.0):
         """Draw the sprite with a curved top with a quadratic Bézier curve.
 
         Arguments:
             quad: The quad to draw the sprite on.
             cp: The control point of the curve.
             n: The number of segments to approximate the curve (higher is smoother but more expensive).
-            z: The z-index of the sprite.
+            z: The z-index of the sprite. May be a single value or a tuple of up to 4 values,
+                where later values break ties on earlier ones.
             a: The alpha of the sprite.
         """
-        _draw_curved_t(self.id, *flatten_quad(quad), z, a, n, *cp.tuple)
+        z1, z2, z3, z4 = pad_z_indexes(z if isinstance(z, tuple) else (z,))
+        _draw_curved_t(self.id, *flatten_quad(quad), z1, a, n, *cp.tuple, z2, z3, z4)
 
     @perf_meta_fn
-    def draw_curved_l(self, quad: QuadLike, cp: Vec2, n: float, z: float = 0.0, a: float = 1.0):
+    def draw_curved_l(self, quad: QuadLike, cp: Vec2, n: float, z: float | tuple[float, ...] = 0.0, a: float = 1.0):
         """Draw the sprite with a curved left side with a quadratic Bézier curve.
 
         Arguments:
             quad: The quad to draw the sprite on.
             cp: The control point of the curve.
             n: The number of segments to approximate the curve (higher is smoother but more expensive).
-            z: The z-index of the sprite.
+            z: The z-index of the sprite. May be a single value or a tuple of up to 4 values,
+                where later values break ties on earlier ones.
             a: The alpha of the sprite.
         """
-        _draw_curved_l(self.id, *flatten_quad(quad), z, a, n, *cp.tuple)
+        z1, z2, z3, z4 = pad_z_indexes(z if isinstance(z, tuple) else (z,))
+        _draw_curved_l(self.id, *flatten_quad(quad), z1, a, n, *cp.tuple, z2, z3, z4)
 
     @perf_meta_fn
-    def draw_curved_r(self, quad: QuadLike, cp: Vec2, n: float, z: float = 0.0, a: float = 1.0):
+    def draw_curved_r(self, quad: QuadLike, cp: Vec2, n: float, z: float | tuple[float, ...] = 0.0, a: float = 1.0):
         """Draw the sprite with a curved right side with a quadratic Bézier curve.
 
         Arguments:
             quad: The quad to draw the sprite on.
             cp: The control point of the curve.
             n: The number of segments to approximate the curve (higher is smoother but more expensive).
-            z: The z-index of the sprite.
+            z: The z-index of the sprite. May be a single value or a tuple of up to 4 values,
+                where later values break ties on earlier ones.
             a: The alpha of the sprite.
         """
-        _draw_curved_r(self.id, *flatten_quad(quad), z, a, n, *cp.tuple)
+        z1, z2, z3, z4 = pad_z_indexes(z if isinstance(z, tuple) else (z,))
+        _draw_curved_r(self.id, *flatten_quad(quad), z1, a, n, *cp.tuple, z2, z3, z4)
 
     @perf_meta_fn
-    def draw_curved_bt(self, quad: QuadLike, cp1: Vec2, cp2: Vec2, n: float, z: float = 0.0, a: float = 1.0):
+    def draw_curved_bt(
+        self, quad: QuadLike, cp1: Vec2, cp2: Vec2, n: float, z: float | tuple[float, ...] = 0.0, a: float = 1.0
+    ):
         """Draw the sprite with a curved bottom and top with a cubic Bézier curve.
 
         Arguments:
@@ -104,13 +116,17 @@ class Sprite(Record):
             cp1: The control point of the bottom curve.
             cp2: The control point of the top curve.
             n: The number of segments to approximate the curve (higher is smoother but more expensive).
-            z: The z-index of the sprite.
+            z: The z-index of the sprite. May be a single value or a tuple of up to 4 values,
+                where later values break ties on earlier ones.
             a: The alpha of the sprite.
         """
-        _draw_curved_bt(self.id, *flatten_quad(quad), z, a, n, *cp1.tuple, *cp2.tuple)
+        z1, z2, z3, z4 = pad_z_indexes(z if isinstance(z, tuple) else (z,))
+        _draw_curved_bt(self.id, *flatten_quad(quad), z1, a, n, *cp1.tuple, *cp2.tuple, z2, z3, z4)
 
     @perf_meta_fn
-    def draw_curved_lr(self, quad: QuadLike, cp1: Vec2, cp2: Vec2, n: float, z: float = 0.0, a: float = 1.0):
+    def draw_curved_lr(
+        self, quad: QuadLike, cp1: Vec2, cp2: Vec2, n: float, z: float | tuple[float, ...] = 0.0, a: float = 1.0
+    ):
         """Draw the sprite with a curved left and right side with a cubic Bézier curve.
 
         Arguments:
@@ -118,10 +134,12 @@ class Sprite(Record):
             cp1: The control point of the left curve.
             cp2: The control point of the right curve.
             n: The number of segments to approximate the curve (higher is smoother but more expensive).
-            z: The z-index of the sprite.
+            z: The z-index of the sprite. May be a single value or a tuple of up to 4 values,
+                where later values break ties on earlier ones.
             a: The alpha of the sprite.
         """
-        _draw_curved_lr(self.id, *flatten_quad(quad), z, a, n, *cp1.tuple, *cp2.tuple)
+        z1, z2, z3, z4 = pad_z_indexes(z if isinstance(z, tuple) else (z,))
+        _draw_curved_lr(self.id, *flatten_quad(quad), z1, a, n, *cp1.tuple, *cp2.tuple, z2, z3, z4)
 
 
 class SpriteGroup(Record, ArrayLike[Sprite]):
@@ -152,6 +170,21 @@ class SpriteGroup(Record, ArrayLike[Sprite]):
         static_error("SpriteGroup is read-only")
 
 
+@perf_meta_fn
+def pad_z_indexes(values: tuple[float, ...]) -> tuple[float, float, float, float]:
+    match values:
+        case (z1,):
+            return (z1, z1, z1, z1)
+        case (z1, z2):
+            return (z1, z2, z2, z2)
+        case (z1, z2, z3):
+            return (z1, z2, z3, z3)
+        case (z1, z2, z3, z4):
+            return (z1, z2, z3, z4)
+        case _:
+            raise ValueError(f"Expected 1 to 4 z values, got {len(values)}")
+
+
 @native_function(Op.HasSkinSprite)
 def _has_skin_sprite(sprite_id: int) -> bool:
     raise NotImplementedError
@@ -168,8 +201,11 @@ def _draw(
     y3: float,
     x4: float,
     y4: float,
-    z: float,
+    z1: float,
     a: float,
+    z2: float,
+    z3: float,
+    z4: float,
 ) -> None:
     raise NotImplementedError
 
@@ -185,11 +221,14 @@ def _draw_curved_b(
     y3: float,
     x4: float,
     y4: float,
-    z: float,
+    z1: float,
     a: float,
     n: int,
     p: float,
     q: float,
+    z2: float,
+    z3: float,
+    z4: float,
 ) -> None:
     raise NotImplementedError
 
@@ -205,11 +244,14 @@ def _draw_curved_t(
     y3: float,
     x4: float,
     y4: float,
-    z: float,
+    z1: float,
     a: float,
     n: int,
     p: float,
     q: float,
+    z2: float,
+    z3: float,
+    z4: float,
 ) -> None:
     raise NotImplementedError
 
@@ -225,11 +267,14 @@ def _draw_curved_l(
     y3: float,
     x4: float,
     y4: float,
-    z: float,
+    z1: float,
     a: float,
     n: int,
     p: float,
     q: float,
+    z2: float,
+    z3: float,
+    z4: float,
 ) -> None:
     raise NotImplementedError
 
@@ -245,11 +290,14 @@ def _draw_curved_r(
     y3: float,
     x4: float,
     y4: float,
-    z: float,
+    z1: float,
     a: float,
     n: int,
     p: float,
     q: float,
+    z2: float,
+    z3: float,
+    z4: float,
 ) -> None:
     raise NotImplementedError
 
@@ -265,13 +313,16 @@ def _draw_curved_bt(
     y3: float,
     x4: float,
     y4: float,
-    z: float,
+    z1: float,
     a: float,
     n: int,
     p1: float,
     q1: float,
     p2: float,
     q2: float,
+    z2: float,
+    z3: float,
+    z4: float,
 ) -> None:
     raise NotImplementedError
 
@@ -287,13 +338,16 @@ def _draw_curved_lr(
     y3: float,
     x4: float,
     y4: float,
-    z: float,
+    z1: float,
     a: float,
     n: int,
     p1: float,
     q1: float,
     p2: float,
     q2: float,
+    z2: float,
+    z3: float,
+    z4: float,
 ) -> None:
     raise NotImplementedError
 
