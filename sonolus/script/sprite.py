@@ -174,11 +174,11 @@ class SpriteGroup(Record, ArrayLike[Sprite]):
 def pad_z_indexes(values: tuple[float, ...]) -> tuple[float, float, float, float]:
     match values:
         case (z1,):
-            return (z1, z1, z1, z1)
+            return (z1, 0, 0, 0)
         case (z1, z2):
-            return (z1, z2, z2, z2)
+            return (z1, z2, 0, 0)
         case (z1, z2, z3):
-            return (z1, z2, z3, z3)
+            return (z1, z2, z3, 0)
         case (z1, z2, z3, z4):
             return (z1, z2, z3, z4)
         case _:
