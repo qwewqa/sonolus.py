@@ -17,6 +17,7 @@ from sonolus.script.values import copy
 @dataclass
 class _SliderOption:
     name: str | None
+    title: str | None
     description: str | None
     standard: bool
     advanced: bool
@@ -38,6 +39,8 @@ class _SliderOption:
             "max": self.max,
             "step": self.step,
         }
+        if self.title is not None:
+            result["title"] = self.title
         if self.description is not None:
             result["description"] = self.description
         if self.scope is not None:
@@ -50,6 +53,7 @@ class _SliderOption:
 @dataclass
 class _ToggleOption:
     name: str | None
+    title: str | None
     description: str | None
     standard: bool
     advanced: bool
@@ -64,6 +68,8 @@ class _ToggleOption:
             "advanced": self.advanced,
             "def": int(self.default),
         }
+        if self.title is not None:
+            result["title"] = self.title
         if self.description is not None:
             result["description"] = self.description
         if self.scope is not None:
@@ -74,6 +80,7 @@ class _ToggleOption:
 @dataclass
 class _SelectOption:
     name: str | None
+    title: str | None
     description: str | None
     standard: bool
     advanced: bool
@@ -90,6 +97,8 @@ class _SelectOption:
             "def": self.default,
             "values": self.values,
         }
+        if self.title is not None:
+            result["title"] = self.title
         if self.description is not None:
             result["description"] = self.description
         if self.scope is not None:
@@ -100,6 +109,7 @@ class _SelectOption:
 def slider_option(
     *,
     name: str | None = None,
+    title: str | None = None,
     description: str | None = None,
     standard: bool = False,
     advanced: bool = False,
@@ -114,6 +124,7 @@ def slider_option(
 
     Args:
         name: The name of the option.
+        title: The display title of the option. If unset, the name is shown.
         description: The description of the option.
         standard: Whether the option is standard.
         advanced: Whether the option is advanced.
@@ -124,12 +135,13 @@ def slider_option(
         unit: The unit of the option.
         scope: The scope of the option.
     """
-    return _SliderOption(name, description, standard, advanced, scope, default, min, max, step, unit)
+    return _SliderOption(name, title, description, standard, advanced, scope, default, min, max, step, unit)
 
 
 def toggle_option(
     *,
     name: str | None = None,
+    title: str | None = None,
     description: str | None = None,
     standard: bool = False,
     advanced: bool = False,
@@ -140,18 +152,20 @@ def toggle_option(
 
     Args:
         name: The name of the option.
+        title: The display title of the option. If unset, the name is shown.
         description: The description of the option.
         standard: Whether the option is standard.
         advanced: Whether the option is advanced.
         default: The default value of the option.
         scope: The scope of the option.
     """
-    return _ToggleOption(name, description, standard, advanced, scope, default)
+    return _ToggleOption(name, title, description, standard, advanced, scope, default)
 
 
 def select_option(
     *,
     name: str | None = None,
+    title: str | None = None,
     description: str | None = None,
     standard: bool = False,
     advanced: bool = False,
@@ -163,6 +177,7 @@ def select_option(
 
     Args:
         name: The name of the option.
+        title: The display title of the option. If unset, the name is shown.
         description: The description of the option.
         standard: Whether the option is standard.
         advanced: Whether the option is advanced.
@@ -172,7 +187,7 @@ def select_option(
     """
     if isinstance(default, str):
         default = values.index(default)
-    return _SelectOption(name, description, standard, advanced, scope, default, values)
+    return _SelectOption(name, title, description, standard, advanced, scope, default, values)
 
 
 type Options = NewType("Options", Any)  # type: ignore
