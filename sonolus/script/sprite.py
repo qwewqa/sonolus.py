@@ -9,6 +9,7 @@ from sonolus.script.debug import static_error
 from sonolus.script.internal.introspection import get_field_specifiers
 from sonolus.script.internal.meta_fn import perf_meta_fn
 from sonolus.script.internal.native import native_function
+from sonolus.script.internal.tuple_impl import TupleImpl
 from sonolus.script.num import Num
 from sonolus.script.quad import QuadLike, flatten_quad
 from sonolus.script.record import Record
@@ -46,7 +47,7 @@ class Sprite(Record):
                 where later values break ties on earlier ones.
             a: The alpha of the sprite.
         """
-        z1, z2, z3, z4 = pad_z_indexes(z if isinstance(z, tuple) else (z,))
+        z1, z2, z3, z4 = pad_z_indexes(z)
         _draw(self.id, *flatten_quad(quad), z1, a, z2, z3, z4)
 
     @perf_meta_fn
@@ -61,7 +62,7 @@ class Sprite(Record):
                 where later values break ties on earlier ones.
             a: The alpha of the sprite.
         """
-        z1, z2, z3, z4 = pad_z_indexes(z if isinstance(z, tuple) else (z,))
+        z1, z2, z3, z4 = pad_z_indexes(z)
         _draw_curved_b(self.id, *flatten_quad(quad), z1, a, n, *cp.tuple, z2, z3, z4)
 
     @perf_meta_fn
@@ -76,7 +77,7 @@ class Sprite(Record):
                 where later values break ties on earlier ones.
             a: The alpha of the sprite.
         """
-        z1, z2, z3, z4 = pad_z_indexes(z if isinstance(z, tuple) else (z,))
+        z1, z2, z3, z4 = pad_z_indexes(z)
         _draw_curved_t(self.id, *flatten_quad(quad), z1, a, n, *cp.tuple, z2, z3, z4)
 
     @perf_meta_fn
@@ -91,7 +92,7 @@ class Sprite(Record):
                 where later values break ties on earlier ones.
             a: The alpha of the sprite.
         """
-        z1, z2, z3, z4 = pad_z_indexes(z if isinstance(z, tuple) else (z,))
+        z1, z2, z3, z4 = pad_z_indexes(z)
         _draw_curved_l(self.id, *flatten_quad(quad), z1, a, n, *cp.tuple, z2, z3, z4)
 
     @perf_meta_fn
@@ -106,7 +107,7 @@ class Sprite(Record):
                 where later values break ties on earlier ones.
             a: The alpha of the sprite.
         """
-        z1, z2, z3, z4 = pad_z_indexes(z if isinstance(z, tuple) else (z,))
+        z1, z2, z3, z4 = pad_z_indexes(z)
         _draw_curved_r(self.id, *flatten_quad(quad), z1, a, n, *cp.tuple, z2, z3, z4)
 
     @perf_meta_fn
@@ -122,7 +123,7 @@ class Sprite(Record):
                 where later values break ties on earlier ones.
             a: The alpha of the sprite.
         """
-        z1, z2, z3, z4 = pad_z_indexes(z if isinstance(z, tuple) else (z,))
+        z1, z2, z3, z4 = pad_z_indexes(z)
         _draw_curved_bt(self.id, *flatten_quad(quad), z1, a, n, *cp1.tuple, *cp2.tuple, z2, z3, z4)
 
     @perf_meta_fn
@@ -138,7 +139,7 @@ class Sprite(Record):
                 where later values break ties on earlier ones.
             a: The alpha of the sprite.
         """
-        z1, z2, z3, z4 = pad_z_indexes(z if isinstance(z, tuple) else (z,))
+        z1, z2, z3, z4 = pad_z_indexes(z)
         _draw_curved_lr(self.id, *flatten_quad(quad), z1, a, n, *cp1.tuple, *cp2.tuple, z2, z3, z4)
 
 
@@ -171,7 +172,9 @@ class SpriteGroup(Record, ArrayLike[Sprite]):
 
 
 @perf_meta_fn
-def pad_z_indexes(values: tuple[float, ...]) -> tuple[float, float, float, float]:
+def pad_z_indexes(values: tuple[float, ...] | float) -> tuple[float, float, float, float]:
+    if isinstance(values, TupleImpl):
+        values = values.value
     match values:
         case (z1,):
             return (z1, 0, 0, 0)
@@ -181,8 +184,8 @@ def pad_z_indexes(values: tuple[float, ...]) -> tuple[float, float, float, float
             return (z1, z2, z3, 0)
         case (z1, z2, z3, z4):
             return (z1, z2, z3, z4)
-        case _:
-            raise ValueError(f"Expected 1 to 4 z values, got {len(values)}")
+        case z1:
+            return (z1, 0, 0, 0)
 
 
 @native_function(Op.HasSkinSprite)
