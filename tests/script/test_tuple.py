@@ -19,7 +19,7 @@ def test_tuple_destructure():
     assert run_and_validate(fn) == Array(1, 2, 3, 4, 5)
 
 
-def test_tuple_addition():
+def test_tuple_packing():
     def fn():
         t1 = 1, 2
         t2 = 3, 4
@@ -27,6 +27,70 @@ def test_tuple_addition():
         return Array(a, b, c, d)
 
     assert run_and_validate(fn) == Array(1, 2, 3, 4)
+
+
+def test_tuple_addition():
+    def fn():
+        t1 = (1, 2)
+        t2 = (3, 4, 5)
+        t3 = t1 + t2
+        a, b, c, d, e = t3
+        return Array(a, b, c, d, e)
+
+    assert run_and_validate(fn) == Array(1, 2, 3, 4, 5)
+
+
+def test_tuple_addition_empty():
+    def fn():
+        t1 = ()
+        t2 = (1, 2, 3)
+        a, b, c = t1 + t2
+        d, e, f = t2 + t1
+        return Array(a, b, c, d, e, f)
+
+    assert run_and_validate(fn) == Array(1, 2, 3, 1, 2, 3)
+
+
+def test_tuple_addition_heterogeneous():
+    def fn():
+        t1 = (1, (2, 3))
+        t2 = ((4, 5), 6)
+        t3 = t1 + t2
+        a, (b, c), (d, e), f = t3
+        return Array(a, b, c, d, e, f)
+
+    assert run_and_validate(fn) == Array(1, 2, 3, 4, 5, 6)
+
+
+def test_tuple_addition_chained():
+    def fn():
+        t = (1,) + (2, 3) + (4,) + (5, 6, 7)
+        a, b, c, d, e, f, g = t
+        return Array(a, b, c, d, e, f, g)
+
+    assert run_and_validate(fn) == Array(1, 2, 3, 4, 5, 6, 7)
+
+
+def test_tuple_addition_with_runtime_values():
+    def fn():
+        x = 10
+        y = 20
+        t1 = (x, y)
+        t2 = (x + 1, y + 1)
+        a, b, c, d = t1 + t2
+        return Array(a, b, c, d)
+
+    assert run_and_validate(fn) == Array(10, 20, 11, 21)
+
+
+def test_tuple_addition_iteration():
+    def fn():
+        results = VarArray[int, 5].new()
+        for v in (1, 2) + (3, 4, 5):
+            results.append(v)
+        return results
+
+    assert list(run_and_validate(fn)) == [1, 2, 3, 4, 5]
 
 
 @given(
