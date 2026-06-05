@@ -1,3 +1,9 @@
+### 0.16.0
+
+- Now targeting Sonolus 1.1.2
+- Added support for multiple z-indexes
+- Added support for option titles
+
 ### 0.15.9
 
 - Fixed error due to a compile time division by zero in some cases.
