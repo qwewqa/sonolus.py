@@ -9,15 +9,20 @@ set (see ``tests/corpus_capture.py``). This tool:
 
 1. aggregates the per-worker event logs (provenance, hypothesis flags, encode
    rejects),
-2. verifies that every captured CFG round-trips bit-exactly through the Rust
-   decoder (``sonolus_backend.decode_cfg_canonical_dump(bytes)`` must equal the
+2. verifies that every captured CFG — frontend and post-pass — round-trips
+   bit-exactly through the Rust decoder
+   (``sonolus_backend.decode_cfg_canonical_dump(bytes)`` must equal the
    Python-side canonical dump stored at capture time) unless ``--no-verify``,
 3. deterministically selects a diverse subset (loops, switches, dynamic indexing,
    float conds, deep nesting, RNG use, every mode/callback pair seen, the biggest
    real callbacks, plus a hash-ordered fill) within the byte budget, excluding
    every CFG whose only provenance is hypothesis-driven tests, and
-4. writes the mini-corpus (CFG bytes, canonical dumps, I/O vectors, manifest) to
-   ``rust/testdata/``.
+4. writes the mini-corpus (CFG bytes, canonical dumps, I/O vectors, the post-pass
+   CFGs referenced by the selected vectors, manifest) to ``rust/testdata/``.
+
+Post-pass CFG bytes (``post_cfgs/``) are included for the Rust emitter's corpus
+replay (PORT.md T1.2); their canonical dumps are *not* shipped (round-trip
+verification already happened against the capture directory).
 
 The output is a pure function of the capture directory contents: running the tool
 twice on the same capture produces byte-identical output.
@@ -38,8 +43,8 @@ sys.path.insert(0, str(REPO_ROOT))
 
 from sonolus.backend.ops import Op
 
-MANIFEST_SCHEMA_VERSION = 1
-VECTOR_SCHEMA_VERSION = 1
+MANIFEST_SCHEMA_VERSION = 2
+VECTOR_SCHEMA_VERSION = 2
 MAX_VECTORS_PER_CFG = 4
 MAX_TOTAL_ENTRIES = 500
 MAX_MANIFEST_SOURCES = 3
@@ -61,10 +66,14 @@ class Entry:
     hypothesis_only: bool = True
     vector_hashes: list[str] = field(default_factory=list)
     vector_blob: bytes = b""
+    post_cfgs: list[str] = field(default_factory=list)  # post-pass CFG digests, sorted
+    post_cfg_size: int = 0  # total size of this entry's post-pass CFG files
 
     @property
     def cost(self) -> int:
-        return self.cfg_size + self.dump_size + len(self.vector_blob)
+        # post_cfg_size may double-count a post-pass CFG shared between entries
+        # (conservative for budget purposes; manifest totals use the union).
+        return self.cfg_size + self.dump_size + len(self.vector_blob) + self.post_cfg_size
 
 
 def load_events(capture_dir: Path) -> list[dict]:
@@ -176,22 +185,32 @@ def build_entries(capture_dir: Path, events: list[dict]) -> tuple[dict[str, Entr
         entry.callbacks = sorted(f"{mode}/{cb}" for mode, cb in pairs if cb)
         if not entry.hypothesis_only:
             entry.vector_hashes = sorted(vector_events.get(digest, set()))[:MAX_VECTORS_PER_CFG]
-            entry.vector_blob = combine_vectors(capture_dir, digest, entry.vector_hashes)
+            entry.vector_blob, payloads = combine_vectors(capture_dir, digest, entry.vector_hashes)
+            post_hashes = sorted(
+                {payload["post_cfg"] for payload in payloads if payload.get("post_cfg") is not None}
+            )
+            entry.post_cfgs = post_hashes
+            for post_hash in post_hashes:
+                post_path = capture_dir / "post_cfgs" / f"{post_hash}.scfg"
+                if not post_path.is_file():
+                    sys.exit(f"error: vector for {digest} references missing post-pass CFG {post_hash}")
+                entry.post_cfg_size += post_path.stat().st_size
         entries[digest] = entry
     return entries, unattributed
 
 
-def combine_vectors(capture_dir: Path, digest: str, vector_hashes: list[str]) -> bytes:
+def combine_vectors(capture_dir: Path, digest: str, vector_hashes: list[str]) -> tuple[bytes, list[dict]]:
+    """Returns the combined vector-file bytes and the parsed vector payloads."""
     if not vector_hashes:
-        return b""
+        return b"", []
     payloads = [
         (capture_dir / "vectors" / f"{digest}.{vector_hash}.json").read_bytes() for vector_hash in vector_hashes
     ]
     head = f'{{"schema":{VECTOR_SCHEMA_VERSION},"cfg":"{digest}","vectors":['.encode("ascii")
-    return head + b",".join(payloads) + b"]}\n"
+    return head + b",".join(payloads) + b"]}\n", [json.loads(p) for p in payloads]
 
 
-def verify_capture(capture_dir: Path, digests: list[str]) -> None:
+def verify_capture(capture_dir: Path, digests: list[str], post_digests: list[str]) -> None:
     try:
         import sonolus_backend
     except ImportError:
@@ -201,21 +220,33 @@ def verify_capture(capture_dir: Path, digests: list[str]) -> None:
             "or pass --no-verify"
         )
     failures = []
-    for digest in digests:
-        data = (capture_dir / "cfgs" / f"{digest}.scfg").read_bytes()
-        expected = (capture_dir / "dumps" / f"{digest}.txt").read_bytes().decode("utf-8")
+
+    def check(kind: str, cfg_dir: str, dump_dir: str, digest: str) -> None:
+        data = (capture_dir / cfg_dir / f"{digest}.scfg").read_bytes()
+        expected = (capture_dir / dump_dir / f"{digest}.txt").read_bytes().decode("utf-8")
         try:
             actual = sonolus_backend.decode_cfg_canonical_dump(data)
         except ValueError as e:
-            failures.append(f"{digest}: decode failed: {e}")
-            continue
+            failures.append(f"{kind} {digest}: decode failed: {e}")
+            return
         if actual != expected:
-            failures.append(f"{digest}: canonical dump mismatch (Python != Rust)")
+            failures.append(f"{kind} {digest}: canonical dump mismatch (Python != Rust)")
+
+    for digest in digests:
+        check("cfg", "cfgs", "dumps", digest)
+    for digest in post_digests:
+        check("post-cfg", "post_cfgs", "post_dumps", digest)
     if failures:
         for failure in failures:
             print(f"ROUND-TRIP FAILURE: {failure}", file=sys.stderr)
-        sys.exit(f"error: {len(failures)} of {len(digests)} captured CFGs failed round-trip verification")
-    print(f"verified: all {len(digests)} captured CFGs round-trip clean (Python dump == Rust dump)")
+        sys.exit(
+            f"error: {len(failures)} of {len(digests) + len(post_digests)} captured CFGs "
+            f"failed round-trip verification"
+        )
+    print(
+        f"verified: all {len(digests)} captured CFGs and {len(post_digests)} post-pass CFGs "
+        f"round-trip clean (Python dump == Rust dump)"
+    )
 
 
 def select_entries(entries: dict[str, Entry], budget: int) -> list[Entry]:
@@ -290,10 +321,10 @@ def select_entries(entries: dict[str, Entry], budget: int) -> list[Entry]:
     return sorted(selected.values(), key=lambda e: e.digest)
 
 
-def summarize_rejects(events: list[dict]) -> list[dict]:
+def summarize_rejects(events: list[dict], event_type: str = "reject") -> list[dict]:
     grouped: dict[str, dict] = {}
     for event in events:
-        if event["type"] != "reject":
+        if event["type"] != event_type:
             continue
         info = grouped.setdefault(event["error"], {"error": event["error"], "count": 0, "tests": set()})
         info["count"] += 1
@@ -310,7 +341,7 @@ def write_corpus(
     selected: list[Entry],
     capture_stats: dict,
 ) -> None:
-    for sub in ("cfgs", "dumps", "vectors"):
+    for sub in ("cfgs", "dumps", "post_cfgs", "vectors"):
         target = out_dir / sub
         if target.exists():
             shutil.rmtree(target)
@@ -319,6 +350,7 @@ def write_corpus(
     manifest_path.unlink(missing_ok=True)
 
     manifest_entries = []
+    post_sizes: dict[str, int] = {}  # union of selected post-pass CFGs
     for entry in selected:
         cfg_bytes = (capture_dir / "cfgs" / f"{entry.digest}.scfg").read_bytes()
         dump_bytes = (capture_dir / "dumps" / f"{entry.digest}.txt").read_bytes()
@@ -326,6 +358,11 @@ def write_corpus(
         (out_dir / "dumps" / f"{entry.digest}.txt").write_bytes(dump_bytes)
         if entry.vector_blob:
             (out_dir / "vectors" / f"{entry.digest}.json").write_bytes(entry.vector_blob)
+        for post_hash in entry.post_cfgs:
+            if post_hash not in post_sizes:
+                post_bytes = (capture_dir / "post_cfgs" / f"{post_hash}.scfg").read_bytes()
+                (out_dir / "post_cfgs" / f"{post_hash}.scfg").write_bytes(post_bytes)
+                post_sizes[post_hash] = len(post_bytes)
         manifest_entries.append(
             {
                 "hash": entry.digest,
@@ -333,6 +370,8 @@ def write_corpus(
                 "dump_size": len(dump_bytes),
                 "vector_size": len(entry.vector_blob),
                 "vectors": len(entry.vector_hashes),
+                "post_cfgs": entry.post_cfgs,
+                "post_cfg_size": entry.post_cfg_size,
                 "sources": entry.sources[:MAX_MANIFEST_SOURCES],
                 "callbacks": entry.callbacks[:MAX_MANIFEST_SOURCES],
                 "features": entry.features,
@@ -348,7 +387,12 @@ def write_corpus(
         "cfg_bytes": sum(e.cfg_size for e in selected),
         "dump_bytes": sum(e.dump_size for e in selected),
         "vector_bytes": sum(len(e.vector_blob) for e in selected),
-        "total_bytes": sum(e.cost for e in selected),
+        # The union of post-pass CFG files (per-entry post_cfg_size double-counts
+        # files shared between entries).
+        "post_cfg_count": len(post_sizes),
+        "post_cfg_bytes": sum(post_sizes.values()),
+        "total_bytes": sum(e.cfg_size + e.dump_size + len(e.vector_blob) for e in selected)
+        + sum(post_sizes.values()),
         "capture_stats": capture_stats,
         "entries": manifest_entries,
     }
@@ -374,38 +418,47 @@ def main() -> None:
     events = load_events(capture_dir)
     entries, unattributed = build_entries(capture_dir, events)
     all_digests = sorted(p.stem for p in (capture_dir / "cfgs").glob("*.scfg"))
+    post_dir = capture_dir / "post_cfgs"
+    all_post_digests = sorted(p.stem for p in post_dir.glob("*.scfg")) if post_dir.is_dir() else []
     rejects = summarize_rejects(events)
+    post_rejects = summarize_rejects(events, "post_reject")
     hypothesis_only = sum(1 for e in entries.values() if e.hypothesis_only)
 
     print(f"capture: {len(all_digests)} unique CFGs, {sum(1 for e in events if e['type'] == 'cfg')} cfg events")
+    print(f"  post-pass CFGs: {len(all_post_digests)}")
     print(f"  hypothesis-only CFGs (excluded from curation): {hypothesis_only}")
     if unattributed:
         print(f"  unattributed CFG files (no events; excluded): {unattributed}")
-    if rejects:
-        print(f"  encode rejects ({sum(r['count'] for r in rejects)} events):")
-        for reject in rejects:
-            print(f"    [{reject['count']}x] {reject['error']} (e.g. {', '.join(reject['tests'])})")
-    else:
-        print("  encode rejects: none")
+    for label, reject_list in (("encode rejects", rejects), ("post-pass encode rejects", post_rejects)):
+        if reject_list:
+            print(f"  {label} ({sum(r['count'] for r in reject_list)} events):")
+            for reject in reject_list:
+                print(f"    [{reject['count']}x] {reject['error']} (e.g. {', '.join(reject['tests'])})")
+        else:
+            print(f"  {label}: none")
 
     if not args.no_verify:
-        verify_capture(capture_dir, all_digests)
+        verify_capture(capture_dir, all_digests, all_post_digests)
 
     selected = select_entries(entries, args.budget)
     total = sum(e.cost for e in selected)
     with_vectors = sum(1 for e in selected if e.vector_blob)
+    selected_posts = {h for e in selected for h in e.post_cfgs}
     print(
         f"selected: {len(selected)} CFGs ({with_vectors} with I/O vectors, "
-        f"{sum(len(e.vector_hashes) for e in selected)} vectors), {total} bytes (budget {args.budget})"
+        f"{sum(len(e.vector_hashes) for e in selected)} vectors, "
+        f"{len(selected_posts)} post-pass CFGs), {total} bytes (budget {args.budget})"
     )
     if args.stats_only:
         return
 
     capture_stats = {
         "unique_cfgs": len(all_digests),
+        "post_cfgs": len(all_post_digests),
         "hypothesis_only_cfgs": hypothesis_only,
         "unattributed_cfgs": unattributed,
         "rejects": rejects,
+        "post_rejects": post_rejects,
     }
     write_corpus(capture_dir, args.out, selected, capture_stats)
     print(f"wrote mini-corpus to {args.out}")

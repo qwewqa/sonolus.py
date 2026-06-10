@@ -5,9 +5,11 @@
 
 pub mod cfg;
 pub mod decode;
+pub mod emit;
 pub mod interpret;
 pub mod nodes;
 pub mod ops;
+pub mod output;
 
 /// Returns the version of the backend, taken from the crate metadata.
 pub fn version() -> &'static str {

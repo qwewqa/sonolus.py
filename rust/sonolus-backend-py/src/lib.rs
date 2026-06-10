@@ -9,6 +9,7 @@ use pyo3::prelude::*;
 use pyo3::types::{PyFloat, PyInt, PyList, PyString, PyTuple};
 use sonolus_backend_core::cfg::{canonical_dump, cfg_to_text};
 use sonolus_backend_core::decode::decode_cfg;
+use sonolus_backend_core::emit;
 use sonolus_backend_core::interpret::{
     Interpreter as CoreInterpreter, InterpreterError, InterpreterErrorKind,
 };
@@ -16,6 +17,7 @@ use sonolus_backend_core::nodes::{
     EngineNodes as CoreEngineNodes, NodeArena, NodeId, format_engine_node,
 };
 use sonolus_backend_core::ops::Op;
+use sonolus_backend_core::output;
 
 /// Returns the version of the Rust backend.
 #[pyfunction]
@@ -42,6 +44,36 @@ fn decode_cfg_canonical_dump(data: &[u8]) -> PyResult<String> {
 fn decode_cfg_debug_dump(data: &[u8]) -> PyResult<String> {
     let cfg = decode_cfg(data).map_err(|e| PyValueError::new_err(e.to_string()))?;
     Ok(cfg_to_text(&cfg))
+}
+
+/// Decodes an encoded post-pass CFG and emits its `Block(JumpLoop(...))`
+/// engine-node tree, exactly like the legacy `cfg_to_engine_node` (T1.2; no
+/// optimization happens here).
+///
+/// Raises `ValueError` on malformed input or out-of-domain CFGs (`TempBlock`
+/// places, NaN edge conds).
+#[pyfunction]
+fn cfg_to_engine_nodes(data: &[u8]) -> PyResult<EngineNodes> {
+    let cfg = decode_cfg(data).map_err(|e| PyValueError::new_err(e.to_string()))?;
+    let inner =
+        emit::cfg_to_engine_nodes(&cfg).map_err(|e| PyValueError::new_err(e.to_string()))?;
+    Ok(EngineNodes { inner })
+}
+
+/// Renders the canonical output-node dump of an engine-node tree: output nodes
+/// are generated with the legacy `OutputNodeGenerator` dedup semantics and
+/// insertion order, one line per node — `v i 0x...`/`v f 0x...` for value nodes
+/// (raw IEEE-754 bits + int/float tag) and `f <OpName> <arg indices...>` for
+/// function nodes. The root is the last node.
+///
+/// Raises `ValueError` if a NaN constant is reachable (impossible for
+/// emitter-produced trees).
+#[pyfunction]
+#[allow(clippy::needless_pass_by_value)] // PyO3 argument convention
+fn engine_nodes_to_output_dump(nodes: PyRef<'_, EngineNodes>) -> PyResult<String> {
+    let out = output::generate_output_nodes(&nodes.inner.arena, nodes.inner.root)
+        .map_err(|e| PyValueError::new_err(e.to_string()))?;
+    Ok(output::output_node_dump(&out))
 }
 
 /// Maps a core interpreter error onto the Python exception type the legacy
@@ -303,6 +335,8 @@ fn sonolus_backend(m: &Bound<'_, PyModule>) -> PyResult<()> {
     m.add_function(wrap_pyfunction!(backend_version, m)?)?;
     m.add_function(wrap_pyfunction!(decode_cfg_canonical_dump, m)?)?;
     m.add_function(wrap_pyfunction!(decode_cfg_debug_dump, m)?)?;
+    m.add_function(wrap_pyfunction!(cfg_to_engine_nodes, m)?)?;
+    m.add_function(wrap_pyfunction!(engine_nodes_to_output_dump, m)?)?;
     m.add_class::<EngineNodes>()?;
     m.add_class::<Interpreter>()?;
     Ok(())

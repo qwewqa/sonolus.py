@@ -10,6 +10,12 @@ pytest run captures, for every frontend CFG compiled anywhere in the suite:
   log, written memory) observed when the legacy Python interpreter runs the
   compiled callback in ``tests/script/conftest.py``.
 
+For every recorded I/O vector, the **post-pass CFG** (the output of
+``run_passes(...)`` at the vector's optimization level, captured just before the
+legacy ``cfg_to_engine_node`` destroys it) is also encoded with the same format and
+stored content-addressed; the vector payload links to it via its ``post_cfg``
+digest. This is the input for the Rust emitter's corpus replay (PORT.md task T1.2).
+
 Everything is content-addressed (sha256 of the encoded CFG / vector payload) and
 written atomically (temp file + ``os.replace``), so concurrent pytest-xdist workers
 dedup identical CFGs without corrupting anything. Per-worker JSONL event logs record
@@ -17,8 +23,10 @@ provenance (test id, hypothesis flag, callback/mode names) and encode rejections
 
 Capture directory layout::
 
-    <dir>/cfgs/<sha256>.scfg          encoded CFG bytes (write-once)
+    <dir>/cfgs/<sha256>.scfg          encoded frontend CFG bytes (write-once)
     <dir>/dumps/<sha256>.txt          Python canonical dump (write-once)
+    <dir>/post_cfgs/<sha256>.scfg     encoded post-pass CFG bytes (write-once)
+    <dir>/post_dumps/<sha256>.txt     Python canonical dump of a post-pass CFG
     <dir>/vectors/<cfg>.<vec>.json    one I/O vector (write-once; <vec> = sha256 of payload)
     <dir>/events/<worker>-<pid>.jsonl provenance/reject events (single writer, append)
 
@@ -50,7 +58,7 @@ if TYPE_CHECKING:
     from sonolus.backend.node import EngineNode
     from sonolus.backend.optimize.flow import BasicBlock
 
-VECTOR_SCHEMA_VERSION = 1
+VECTOR_SCHEMA_VERSION = 2
 
 
 @functools.cache
@@ -94,15 +102,25 @@ class CorpusCapture:
         self.root = root
         self.cfg_dir = root / "cfgs"
         self.dump_dir = root / "dumps"
+        self.post_cfg_dir = root / "post_cfgs"
+        self.post_dump_dir = root / "post_dumps"
         self.vector_dir = root / "vectors"
         self.events_dir = root / "events"
-        for directory in (self.cfg_dir, self.dump_dir, self.vector_dir, self.events_dir):
+        for directory in (
+            self.cfg_dir,
+            self.dump_dir,
+            self.post_cfg_dir,
+            self.post_dump_dir,
+            self.vector_dir,
+            self.events_dir,
+        ):
             directory.mkdir(parents=True, exist_ok=True)
         worker = os.environ.get("PYTEST_XDIST_WORKER", "main")
         self._events_path = self.events_dir / f"{worker}-{os.getpid()}.jsonl"
         self._events_lock = threading.Lock()
         self._events_file = None
         self._known_cfgs: set[str] = set()
+        self._known_post_cfgs: set[str] = set()
         self._current_test: tuple[str, bool] = ("<session>", False)
 
     # --- test provenance (set by the tests/conftest.py hooks) ------------------------
@@ -184,6 +202,44 @@ class CorpusCapture:
             self._known_cfgs.add(digest)
         return digest
 
+    # --- post-pass CFG capture ----------------------------------------------------------
+
+    def post_cfg_ref(self, cfg: BasicBlock, *, level: str) -> str | None:
+        """Encodes and stores a POST-pass CFG (the ``run_passes`` output).
+
+        Must be called *before* the legacy ``cfg_to_engine_node``, which destroys
+        the CFG (it deletes the block attributes). Post-pass CFGs are expected to
+        be encodable (SSA- and TempBlock-free after allocation); if encoding fails
+        anyway, a ``post_reject`` event is recorded with the verbatim error and
+        None is returned (the vector is then stored without a ``post_cfg`` link).
+
+        Returns the sha256 hex digest of the encoded bytes, or None.
+        """
+        nodeid, is_hypothesis = self._current_test
+        try:
+            data = encode_cfg(cfg)
+        except CfgEncodeError as e:
+            self._event(
+                {
+                    "type": "post_reject",
+                    "error": str(e),
+                    "test": nodeid,
+                    "hypothesis": is_hypothesis,
+                    "level": level,
+                }
+            )
+            return None
+        digest = hashlib.sha256(data).hexdigest()
+        if digest not in self._known_post_cfgs:
+            cfg_path = self.post_cfg_dir / f"{digest}.scfg"
+            if not cfg_path.exists():
+                dump = cfg_canonical_dump(cfg)
+                # Dump first, like _ensure_stored: a present .scfg implies its dump.
+                _write_atomic(self.post_dump_dir / f"{digest}.txt", dump.encode("utf-8"))
+                _write_atomic(cfg_path, data)
+            self._known_post_cfgs.add(digest)
+        return digest
+
     # --- behavioral I/O vectors --------------------------------------------------------
 
     def make_interpreter(self) -> RecordingInterpreter:
@@ -198,6 +254,7 @@ class CorpusCapture:
         level: str,
         runtime_checks: str,
         temp_memory_block: int,
+        post_cfg: str | None = None,
     ) -> float:
         """Runs the legacy interpreter, capturing an I/O vector for ``cfg_hash``.
 
@@ -206,6 +263,9 @@ class CorpusCapture:
         temporarily wrapping ``random.uniform``/``random.randrange`` (delegating to
         the originals, so observable behavior is unchanged); writes are recorded by
         the RecordingInterpreter. The vector is only stored if the run completes.
+        ``post_cfg`` is the digest returned by :meth:`post_cfg_ref` for the
+        post-pass CFG that ``entry`` was emitted from (None if it was not
+        encodable).
         """
         inputs = [
             [int(block), [encode_value(v) for v in values]]
@@ -237,6 +297,7 @@ class CorpusCapture:
             "level": level,
             "runtime_checks": runtime_checks,
             "temp_memory_block": temp_memory_block,
+            "post_cfg": post_cfg,
             "inputs": inputs,
             "rng": rng_tape,
             "result": encode_value(result),

@@ -26,6 +26,8 @@ struct Manifest {
     cfg_bytes: u64,
     dump_bytes: u64,
     vector_bytes: u64,
+    post_cfg_count: usize,
+    post_cfg_bytes: u64,
     total_bytes: u64,
     entries: Vec<Entry>,
 }
@@ -37,6 +39,7 @@ struct Entry {
     dump_size: u64,
     vector_size: u64,
     vectors: u64,
+    post_cfgs: Vec<String>,
 }
 
 fn testdata_dir() -> PathBuf {
@@ -49,7 +52,7 @@ fn load_manifest() -> Manifest {
     let path = testdata_dir().join("manifest.json");
     let data = fs::read(&path).unwrap_or_else(|e| panic!("failed to read {}: {e}", path.display()));
     let manifest: Manifest = serde_json::from_slice(&data).expect("manifest.json must parse");
-    assert_eq!(manifest.schema, 1, "unknown manifest schema");
+    assert_eq!(manifest.schema, 2, "unknown manifest schema");
     assert_eq!(
         manifest.encoding_version,
         sonolus_backend_core::decode::ENCODING_VERSION,
@@ -127,9 +130,31 @@ fn every_corpus_cfg_decodes_and_round_trips() {
         manifest.vector_bytes, vector_bytes,
         "manifest vector_bytes mismatch"
     );
+    // Post-pass CFGs: the union of all entry references must decode cleanly and
+    // match the manifest's count/size accounting.
+    let post_hashes: BTreeSet<&String> =
+        manifest.entries.iter().flat_map(|e| &e.post_cfgs).collect();
+    assert_eq!(
+        manifest.post_cfg_count,
+        post_hashes.len(),
+        "manifest post_cfg_count mismatch"
+    );
+    let mut post_cfg_bytes = 0u64;
+    for hash in &post_hashes {
+        let path = testdata_dir()
+            .join("post_cfgs")
+            .join(format!("{hash}.scfg"));
+        let data = fs::read(&path).unwrap_or_else(|e| panic!("missing post-pass CFG {hash}: {e}"));
+        decode_cfg(&data).unwrap_or_else(|e| panic!("post-pass CFG {hash} failed to decode: {e}"));
+        post_cfg_bytes += data.len() as u64;
+    }
+    assert_eq!(
+        manifest.post_cfg_bytes, post_cfg_bytes,
+        "manifest post_cfg_bytes mismatch"
+    );
     assert_eq!(
         manifest.total_bytes,
-        cfg_bytes + dump_bytes + vector_bytes,
+        cfg_bytes + dump_bytes + vector_bytes + post_cfg_bytes,
         "manifest total_bytes mismatch"
     );
     assert!(
@@ -159,6 +184,12 @@ fn manifest_matches_directory_contents_exactly() {
         .filter(|e| e.vectors > 0)
         .map(|e| format!("{}.json", e.hash))
         .collect();
+    let expected_post_cfgs: BTreeSet<String> = manifest
+        .entries
+        .iter()
+        .flat_map(|e| &e.post_cfgs)
+        .map(|h| format!("{h}.scfg"))
+        .collect();
     assert_eq!(
         expected_cfgs.len(),
         manifest.count,
@@ -178,6 +209,11 @@ fn manifest_matches_directory_contents_exactly() {
         dir_file_names(&dir.join("vectors")),
         expected_vectors,
         "vectors/ does not match the manifest"
+    );
+    assert_eq!(
+        dir_file_names(&dir.join("post_cfgs")),
+        expected_post_cfgs,
+        "post_cfgs/ does not match the manifest"
     );
 }
 
@@ -200,7 +236,7 @@ fn vector_files_match_manifest() {
             .unwrap_or_else(|e| panic!("vector JSON invalid for {}: {e}", entry.hash));
         assert_eq!(
             value["schema"],
-            serde_json::json!(1),
+            serde_json::json!(2),
             "vector schema version for {}",
             entry.hash
         );
@@ -219,6 +255,16 @@ fn vector_files_match_manifest() {
             "vector count mismatch for {}",
             entry.hash
         );
+        // Every vector's post_cfg link must be listed in the entry's post_cfgs.
+        for vector in vectors {
+            if let Some(post) = vector["post_cfg"].as_str() {
+                assert!(
+                    entry.post_cfgs.iter().any(|h| h == post),
+                    "vector post_cfg {post} not in entry post_cfgs for {}",
+                    entry.hash
+                );
+            }
+        }
         vector_total += entry.vectors;
     }
     assert_eq!(

@@ -6,7 +6,7 @@
 > holds rules, tasks, state, and decisions. Maintainer notes (setup, end-of-run review)
 > live in [EXECUTION.md](EXECUTION.md).
 
-**Status:** in progress — S1 underway; next task: T1.2
+**Status:** in progress — S1 underway; next task: T1.3
 **Last updated:** 2026-06-10
 
 ## 0. Entry point — if you were pointed at this file, start here
@@ -157,7 +157,7 @@ Status values: `todo` / `in-progress` / `blocked` / `done`.
 | ID | Status | Task | DoD |
 |----|--------|------|-----|
 | T1.1 | done | Interpreter port: seeded RNG, eval + JumpLoop-dispatch counters, `HashMap<i64,Vec<f64>>` blocks (negative ids), default `-1.0` fill, exact legacy assert messages, Block/Break unwinding, all switch forms. PyO3: `Interpreter(seed=)`, `set_block`, `get`, `run`, `log`, counters. | unit tests incl. numeric-semantics edge table (floor-mod, banker's round, remainder, Sign(±0)) |
-| T1.2 | todo | Emitter: CFG → `Block(JumpLoop(...))` node tree (dense-switch selection per legacy `finalize.py` rules), node DAG dedup with canonical insertion order, int/float-tagged values, ROM NaN/inf, `format_engine_node`. | corpus check: Python-passes → encode → Rust emit runs the behavioral vectors correctly on the Rust interpreter |
+| T1.2 | done | Emitter: CFG → `Block(JumpLoop(...))` node tree (dense-switch selection per legacy `finalize.py` rules), node DAG dedup with canonical insertion order, int/float-tagged values, ROM NaN/inf, `format_engine_node`. | corpus check: Python-passes → encode → Rust emit runs the behavioral vectors correctly on the Rust interpreter |
 | T1.3 | todo | Baseline pipeline (= `minimal` level): Braun SSA construction → Boissinot out-of-SSA with coalescing → chordal-coloring slot allocation (≤4096 slots) → emit. No optimization. | pydori callbacks all compile within temp-memory budget at minimal (improvement over legacy `AllocateBasic`) |
 | T1.4 | todo | Dual-lane conftest: `SONOLUS_BACKEND=rust` routes `tests/script/conftest.py` through encode → Rust pipeline (levels available so far) + Rust interpreter, seed drawn once per invocation. CI stage B: rust-lane pytest job (Ubuntu, 3.14). | full behavioral suite green in **both** lanes, locally and in CI |
 
@@ -279,6 +279,25 @@ pointers (failing commands, metric numbers, repro). Empty deviation log = clean 
 
 ## 9. Worklog (append-only; newest first)
 
+- 2026-06-10 — **T1.2 done.** `emit.rs`: exact finalize.py port (all five dispatcher
+  forms; If(Equal) cond via IRConst path vs SwitchWithDefault conds RAW; iterative).
+  `output.rs`: OutputNodeGenerator port — dedup key = Python dict equality (consts by
+  numeric value, `5 == 5.0`, key-normalized `-0.0`→`0.0`, first encounter wins its tag;
+  funcs by (op, child indices)); insertion order proven identical to recursive `_add`.
+  Corpus schema v2: vectors link content-addressed POST-pass CFGs (captured between
+  run_passes and the destructive cfg_to_engine_node); testdata now 135 CFGs / 86 vectors
+  / 69 post CFGs / 4,899,901 B. Cargo replay test: all 86 vectors decode→emit→run with
+  RNG tape; result/log/writes match (excl. temp block 10000). Live A/B pytest: 7
+  callbacks × 3 levels, output dumps byte-identical on all 19 runnable combos; 4 skips
+  pinned to a documented gap — **standard-level legacy passes (InlineVars) can put
+  IRExpr in BlockPlace.index, outside encoding v1's domain**; product path only encodes
+  frontend CFGs so this is corpus-replay-only; T2.x differential infra must use the Rust
+  pipeline's own CFGs. Replay equality is Python `==` NaN-aware (`+0.0 == -0.0` allowed;
+  3/3074 smoke vectors hit int-vs-f64 `-0.0` log divergence; no amplified e.g. Sign
+  divergence anywhere). Verified: fresh capture 24,844+18,760 CFGs zero rejects all
+  round-trip clean (subagent) + testdata regen byte-identical from capture, 410 files
+  (orchestrator); cargo 98 green; clippy/fmt clean; pytest 1183 passed + 4 documented
+  skips.
 - 2026-06-10 — **T1.1 done.** `nodes.rs` (arena: `Const{value, is_int}` 16B nodes,
   contiguous args; `EngineNodes{arena, root}` is T1.2's product; iterative
   `format_engine_node`) + `interpret.rs` (explicit Frame/Action stack machine; central

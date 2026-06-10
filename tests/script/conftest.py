@@ -211,6 +211,10 @@ def run_and_validate[**P, R](
         if _CAPTURE is not None and passes is optimization_levels[0]:
             capture_ref = _CAPTURE.cfg_ref(cfg)
         cfg = run_passes(cfg, passes, OptimizerConfig())
+        # The post-pass CFG must be captured here: cfg_to_engine_node destroys it.
+        post_ref = None
+        if capture_ref is not None:
+            post_ref = _CAPTURE.post_cfg_ref(cfg, level=_passes_label(passes))
         entry = cfg_to_engine_node(cfg)
         interpreter = Interpreter() if capture_ref is None else _CAPTURE.make_interpreter()
         interpreter.blocks[PlayBlock.EngineRom] = rom_values
@@ -225,6 +229,7 @@ def run_and_validate[**P, R](
                 level=_passes_label(passes),
                 runtime_checks="terminate",
                 temp_memory_block=int(PlayBlock.TemporaryMemory),
+                post_cfg=post_ref,
             )
         if exception is None:
             if result_type == Num:
@@ -279,6 +284,10 @@ def run_compiled[**P](
             if _CAPTURE is not None and passes is optimization_levels[0]:
                 capture_ref = _CAPTURE.cfg_ref(cfg)
             cfg = run_passes(cfg, passes, OptimizerConfig())
+            # The post-pass CFG must be captured here: cfg_to_engine_node destroys it.
+            post_ref = None
+            if capture_ref is not None:
+                post_ref = _CAPTURE.post_cfg_ref(cfg, level=_passes_label(passes))
             entry = cfg_to_engine_node(cfg)
             interpreter = Interpreter() if capture_ref is None else _CAPTURE.make_interpreter()
             interpreter.blocks[PlayBlock.EngineRom] = rom_values
@@ -292,6 +301,7 @@ def run_compiled[**P](
                     level=_passes_label(passes),
                     runtime_checks=runtime_checks_value.name.lower(),
                     temp_memory_block=int(PlayBlock.TemporaryMemory),
+                    post_cfg=post_ref,
                 )
             results.append(result)
             logs.append(interpreter.log.copy())

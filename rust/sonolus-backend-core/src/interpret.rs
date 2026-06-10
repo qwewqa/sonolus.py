@@ -517,6 +517,9 @@ pub struct Interpreter {
     rng: Rng,
     eval_count: u64,
     dispatch_count: u64,
+    /// Last-write-wins write log, when recording is enabled (mirrors the
+    /// `RecordingInterpreter` used by the T0.5 corpus capture).
+    writes: Option<HashMap<(i64, i64), f64>>,
 }
 
 impl Default for Interpreter {
@@ -563,6 +566,7 @@ impl Interpreter {
             rng: Rng::Seeded(SplitMix64::new(seed)),
             eval_count: 0,
             dispatch_count: 0,
+            writes: None,
         }
     }
 
@@ -622,7 +626,30 @@ impl Interpreter {
     pub fn set(&mut self, block: f64, index: f64, value: f64) -> Result<f64> {
         let (block, index) = self.locate(block, index)?;
         self.blocks.entry(block).or_default()[index] = value;
+        if let Some(writes) = &mut self.writes {
+            #[allow(clippy::cast_possible_wrap)]
+            writes.insert((block, index as i64), value);
+        }
         Ok(value)
+    }
+
+    /// Enables write recording: every successful `set` (from any op) is recorded
+    /// last-write-wins per `(block, index)`, like the corpus capture's
+    /// `RecordingInterpreter`. Off by default (zero overhead).
+    pub fn record_writes(&mut self) {
+        self.writes = Some(HashMap::new());
+    }
+
+    /// The recorded writes as a sorted `(block, index, value)` list (deterministic
+    /// output), or `None` if recording was never enabled.
+    pub fn recorded_writes(&self) -> Option<Vec<(i64, i64, f64)>> {
+        let writes = self.writes.as_ref()?;
+        let mut out: Vec<(i64, i64, f64)> = writes
+            .iter()
+            .map(|(&(block, index), &value)| (block, index, value))
+            .collect();
+        out.sort_unstable_by_key(|&(block, index, _)| (block, index));
+        Some(out)
     }
 
     /// Shared `get`/`set` validation and `-1.0` extension. Check order matches the

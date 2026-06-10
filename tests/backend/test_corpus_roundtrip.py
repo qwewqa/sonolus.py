@@ -26,14 +26,20 @@ def entry_id(entry: dict) -> str:
 
 
 def test_manifest_schema_and_totals():
-    assert MANIFEST["schema"] == 1
+    assert MANIFEST["schema"] == 2
     assert MANIFEST["encoding_version"] == 1
     assert MANIFEST["count"] == len(ENTRIES) > 0
     assert MANIFEST["cfg_bytes"] == sum(e["cfg_size"] for e in ENTRIES)
     assert MANIFEST["dump_bytes"] == sum(e["dump_size"] for e in ENTRIES)
     assert MANIFEST["vector_bytes"] == sum(e["vector_size"] for e in ENTRIES)
     assert MANIFEST["vector_total"] == sum(e["vectors"] for e in ENTRIES)
-    assert MANIFEST["total_bytes"] == MANIFEST["cfg_bytes"] + MANIFEST["dump_bytes"] + MANIFEST["vector_bytes"]
+    post_hashes = {h for e in ENTRIES for h in e["post_cfgs"]}
+    assert MANIFEST["post_cfg_count"] == len(post_hashes)
+    assert MANIFEST["post_cfg_bytes"] == sum((TESTDATA / "post_cfgs" / f"{h}.scfg").stat().st_size for h in post_hashes)
+    assert (
+        MANIFEST["total_bytes"]
+        == MANIFEST["cfg_bytes"] + MANIFEST["dump_bytes"] + MANIFEST["vector_bytes"] + MANIFEST["post_cfg_bytes"]
+    )
     assert MANIFEST["total_bytes"] <= 5_000_000
 
 
@@ -45,6 +51,8 @@ def test_manifest_matches_directory_contents():
     assert sorted(p.name for p in (TESTDATA / "vectors").iterdir()) == sorted(
         f"{e['hash']}.json" for e in ENTRIES if e["vectors"]
     )
+    post_hashes = {h for e in ENTRIES for h in e["post_cfgs"]}
+    assert sorted(p.name for p in (TESTDATA / "post_cfgs").iterdir()) == sorted(f"{h}.scfg" for h in post_hashes)
 
 
 @pytest.mark.parametrize("entry", ENTRIES, ids=entry_id)
@@ -76,7 +84,7 @@ def test_corpus_vectors_match_schema(entry: dict):
     data = (TESTDATA / "vectors" / f"{entry['hash']}.json").read_bytes()
     assert len(data) == entry["vector_size"]
     payload = json.loads(data.decode("utf-8"))
-    assert payload["schema"] == 1
+    assert payload["schema"] == 2
     assert payload["cfg"] == entry["hash"]
     vectors = payload["vectors"]
     assert len(vectors) == entry["vectors"] > 0
@@ -84,6 +92,12 @@ def test_corpus_vectors_match_schema(entry: dict):
         assert vector["level"] in {"minimal", "fast", "standard", "custom"}
         assert vector["runtime_checks"] in {"none", "terminate", "notify_and_terminate"}
         assert isinstance(vector["temp_memory_block"], int)
+        post_cfg = vector["post_cfg"]
+        if post_cfg is not None:
+            # Linked post-pass CFGs are listed in the entry and decode cleanly.
+            assert post_cfg in entry["post_cfgs"]
+            post_data = (TESTDATA / "post_cfgs" / f"{post_cfg}.scfg").read_bytes()
+            assert sonolus_backend.decode_cfg_canonical_dump(post_data)
         for block, values in vector["inputs"]:
             assert isinstance(block, int)
             for value in values:
