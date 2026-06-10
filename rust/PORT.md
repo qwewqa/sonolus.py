@@ -6,7 +6,7 @@
 > holds rules, tasks, state, and decisions. Maintainer notes (setup, end-of-run review)
 > live in [EXECUTION.md](EXECUTION.md).
 
-**Status:** in progress — S0 underway; next task: T0.3
+**Status:** in progress — S0 underway; next task: T0.4
 **Last updated:** 2026-06-10
 
 ## 0. Entry point — if you were pointed at this file, start here
@@ -148,7 +148,7 @@ Status values: `todo` / `in-progress` / `blocked` / `done`.
 |----|--------|------|-------------------------------|
 | T0.1 | done | Cargo workspace `rust/` with `sonolus-backend-core` + `sonolus-backend-py` (PyO3); `maturin develop` flow into the uv venv; main `pyproject.toml` untouched (stays hatchling until S7). | `maturin develop` + `python -c "import sonolus_backend"` works locally (Windows) |
 | T0.2 | done | Op codegen: Rust `Op` enum (name, pure, side_effects, control_flow) generated from `sonolus/backend/ops.py`; checked-in generated file + sync test. | sync test passes; deliberately desynced op fails it |
-| T0.3 | todo | CI stage A: `.github/workflows/rust.yml` — fmt, clippy `-D warnings`, `cargo test`, maturin develop + import smoke. Path-filtered. `publish.yaml` untouched. | green run on a PR |
+| T0.3 | done | CI stage A: `.github/workflows/rust.yml` — fmt, clippy `-D warnings`, `cargo test`, maturin develop + import smoke. Path-filtered. `publish.yaml` untouched. | green run on a PR |
 | T0.4 | todo | CFG encoding: `rust/ENCODING.md` spec (versioned; frontend-level constructs only — no SSA/phis), Python encoder `sonolus/backend/encode.py`, Rust decoder, Rust debug `cfg_to_text` (Rust float fmt). Round-trip validation is structural/bit-exact (e.g., hex-float canonical dumps on both sides), not repr-matching (decision D7). | round-trip test green over the mini-corpus and a full corpus capture run |
 | T0.5 | todo | Corpus infra: `SONOLUS_CAPTURE_CORPUS=<dir>` pytest hook capturing frontend CFGs + behavioral I/O vectors; `tools/gen_corpus.py`; curated deterministic mini-corpus checked into `rust/testdata/` (~5MB budget, no hypothesis-derived cases). | capture run produces corpus; mini-corpus loads in `cargo test`; negative test (perturbed CFG) caught by round-trip check |
 
@@ -265,7 +265,13 @@ Every application of a §4 autonomous policy gets an entry: date, trigger, task/
 what was done instead, severity (`info` / `review-before-merge` / `blocks-merge`), and
 pointers (failing commands, metric numbers, repro). Empty deviation log = clean run.
 
-(none)
+- 2026-06-10 — T0.3 DoD proxy (§4: non-machine-checkable DoD). DoD says "green run on a
+  PR"; no `gh` CLI is installed so a PR cannot be opened autonomously. Proxy used: green
+  push-triggered run of the identical workflow on `rust-port`
+  (https://github.com/qwewqa/sonolus.py/actions/runs/27299008404, conclusion: success;
+  the workflow also declares the same path-filtered `pull_request` trigger). Severity:
+  info. Maintainer gets the true PR-triggered run for free when opening the merge-review
+  PR.
 
 ### Recorded metrics
 
@@ -273,6 +279,15 @@ pointers (failing commands, metric numbers, repro). Empty deviation log = clean 
 
 ## 9. Worklog (append-only; newest first)
 
+- 2026-06-10 — **T0.3 done.** `.github/workflows/rust.yml`: `checks` job (fmt → clippy
+  `-D warnings` → `cargo test --workspace` with setup-python 3.14 + `LD_LIBRARY_PATH` for
+  the pyo3-linked test binary) and `python-smoke` job (uv sync → `gen_ops.py --check` →
+  maturin develop → import smoke). Path-filtered to `rust/**`, `tools/**`,
+  `pyproject.toml`, `uv.lock`, the workflow itself; triggers: push (master, rust-port) +
+  pull_request. publish.yaml untouched. Authored directly by the orchestrator (single
+  YAML; DoD is a CI gate, which is never delegated). Branch `rust-port` pushed; first run
+  green: actions/runs/27299008404. DoD "green on a PR" satisfied via push-run proxy — see
+  Deviation log (info).
 - 2026-06-10 — **T0.2 done.** `tools/gen_ops.py` (pure `generate()`, `--check` flag) emits
   `rust/sonolus-backend-core/src/ops.rs`: `#[repr(u16)] Op` enum, **191 ops** (exact
   count), ids = 0-based definition order in ops.py (Abs=0 … While=190) — these ids are
