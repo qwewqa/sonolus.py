@@ -6,7 +6,7 @@
 > holds rules, tasks, state, and decisions. Maintainer notes (setup, end-of-run review)
 > live in [EXECUTION.md](EXECUTION.md).
 
-**Status:** in progress — S1 underway; next task: T1.3
+**Status:** in progress — S1 underway; next task: T1.4
 **Last updated:** 2026-06-10
 
 ## 0. Entry point — if you were pointed at this file, start here
@@ -158,7 +158,7 @@ Status values: `todo` / `in-progress` / `blocked` / `done`.
 |----|--------|------|-----|
 | T1.1 | done | Interpreter port: seeded RNG, eval + JumpLoop-dispatch counters, `HashMap<i64,Vec<f64>>` blocks (negative ids), default `-1.0` fill, exact legacy assert messages, Block/Break unwinding, all switch forms. PyO3: `Interpreter(seed=)`, `set_block`, `get`, `run`, `log`, counters. | unit tests incl. numeric-semantics edge table (floor-mod, banker's round, remainder, Sign(±0)) |
 | T1.2 | done | Emitter: CFG → `Block(JumpLoop(...))` node tree (dense-switch selection per legacy `finalize.py` rules), node DAG dedup with canonical insertion order, int/float-tagged values, ROM NaN/inf, `format_engine_node`. | corpus check: Python-passes → encode → Rust emit runs the behavioral vectors correctly on the Rust interpreter |
-| T1.3 | todo | Baseline pipeline (= `minimal` level): Braun SSA construction → Boissinot out-of-SSA with coalescing → chordal-coloring slot allocation (≤4096 slots) → emit. No optimization. | pydori callbacks all compile within temp-memory budget at minimal (improvement over legacy `AllocateBasic`) |
+| T1.3 | done | Baseline pipeline (= `minimal` level): Braun SSA construction → Boissinot out-of-SSA with coalescing → chordal-coloring slot allocation (≤4096 slots) → emit. No optimization. | pydori callbacks all compile within temp-memory budget at minimal (improvement over legacy `AllocateBasic`) |
 | T1.4 | todo | Dual-lane conftest: `SONOLUS_BACKEND=rust` routes `tests/script/conftest.py` through encode → Rust pipeline (levels available so far) + Rust interpreter, seed drawn once per invocation. CI stage B: rust-lane pytest job (Ubuntu, 3.14). | full behavioral suite green in **both** lanes, locally and in CI |
 
 ### S2 — Optimizer infrastructure
@@ -254,6 +254,22 @@ metrics ratchet not regressed; worklog entry with metric movement.
   it beats the greedy rewriter on the metrics dashboard.
 - **D9** `-O1`/`fast` stays in the CLI as a lightly-documented triage level; the regression
   suite keeps exercising it so pipeline prefixes remain valid stopping points.
+- **D10** (T1.3) The `minimal` level does **not** promote TempBlocks to SSA values: all
+  TempBlock accesses stay memory ops, keeping the differential baseline trivially
+  correct (no transform without differential coverage; the harness arrives in T2.3).
+  Braun construction + Boissinot out-of-SSA ship in T1.3 as tested infrastructure
+  (unit tests incl. hand-built phi-ful IR) and become load-bearing at W2 Mem2Reg
+  (T3.4), which owns constant-index→SSA promotion per the architecture pipeline. The
+  T1.3 allocator colors live ranges at TempBlock granularity (sized units, ≤4096),
+  which is what beats legacy `AllocateBasic` (no reuse) on pydori; scalar-slot coloring
+  of out-of-SSA values activates with W2.
+- **D11** (T1.3) And/Or binarization: MIR `ShortCircuit{lhs, rhs}` is binary (invariant 3
+  holds) but `rhs` is the root of an **unscheduled lazy expression tree** owned by the
+  instruction — the one exception to eager value operands, required because frontend
+  And/Or args may trap (loads with asserts). Right-associative binarization with an
+  induction proof of equivalence to legacy n-ary short-circuit (in mir.rs). Every
+  optimizer pass MUST respect laziness: nothing may be hoisted out of, or assumed
+  evaluated in, the lazy side. Corpus fact: real frontend And/Or are all already binary.
 
 ### Blocked / decisions needed
 
@@ -265,6 +281,16 @@ Every application of a §4 autonomous policy gets an entry: date, trigger, task/
 what was done instead, severity (`info` / `review-before-merge` / `blocks-merge`), and
 pointers (failing commands, metric numbers, repro). Empty deviation log = clean run.
 
+- 2026-06-10 — Suspected oracle quirk (§4: suspected bug in the Python backend — logged,
+  not fixed). `Allocate.get_mapping`'s overlap condition
+  (`offset + size > other_offset or other_offset + other.size > offset`,
+  sonolus/backend/optimize/allocate.py:124) is a tautology for positive sizes, so legacy
+  standard `Allocate` degenerates to max-end placement (≡ `AllocateFast`). Quality-only
+  (allocation stays correct, just non-reusing); behavioral tests unaffected. Repro: any
+  two non-interfering temp blocks still get disjoint offsets. Also: the "minimal won't
+  work" comment in tests/regressions/test_project.py is stale — legacy MINIMAL_PASSES
+  fits pydori today (max callback usage 1631 < 4096, verified by running it). Severity:
+  info.
 - 2026-06-10 — T0.3 DoD proxy (§4: non-machine-checkable DoD). DoD says "green run on a
   PR"; no `gh` CLI is installed so a PR cannot be opened autonomously. Proxy used: green
   push-triggered run of the identical workflow on `rust-port`
@@ -279,6 +305,22 @@ pointers (failing commands, metric numbers, repro). Empty deviation log = clean 
 
 ## 9. Worklog (append-only; newest first)
 
+- 2026-06-10 — **T1.3 done.** Minimal pipeline: decode → `mir.rs` (arena SSA-capable IR,
+  phi instructions, eager schedule + lazy ShortCircuit per D11, strict binarization,
+  faithful CoalesceFlow/UCE ports incl. the legacy single-edge-with-cond quirk — 46
+  corpus instances bake it in) → `alloc.rs` (bitset liveness at TempBlock granularity;
+  interference cliques at stores incl. dead stores — minimal does no DCE; deterministic
+  first-fit by (−size, table idx); budget error text "Temporary memory limit exceeded")
+  → `lower.rs` → T1.2 emit. `ssa.rs`: Braun construction + Boissinot out-of-SSA
+  (edge-splitting from any Branch pred; union-find coalescing; parallel-copy
+  sequentialization w/ scratch; 2000-case randomized property test vs parallel-semantics
+  oracle) shipped as tested infra, engaged at W2 per D10. PyO3 `run_pipeline`/
+  `run_pipeline_stats`. pydori budget: 300 callbacks, Rust max 147 slots vs legacy
+  AllocateBasic-equivalent 1631 (totals 4,078 vs 50,220, ~12×); Rust ≤ legacy on every
+  callback (structural: first-fit ≤ sum-of-sizes). Corpus: 86/86 vectors replay from
+  frontend CFGs through compile_cfg(minimal). W2 contract noted: Mem2Reg must keep
+  load-directly-before-user form for the lowering splice. Verified: cargo 158 green
+  across targets, clippy/fmt clean, pytest 1191+4 skips green.
 - 2026-06-10 — **T1.2 done.** `emit.rs`: exact finalize.py port (all five dispatcher
   forms; If(Equal) cond via IRConst path vs SwitchWithDefault conds RAW; iterative).
   `output.rs`: OutputNodeGenerator port — dedup key = Python dict equality (consts by

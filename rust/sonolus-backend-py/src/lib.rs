@@ -6,7 +6,7 @@ use pyo3::exceptions::{
     PyTypeError, PyValueError, PyZeroDivisionError,
 };
 use pyo3::prelude::*;
-use pyo3::types::{PyFloat, PyInt, PyList, PyString, PyTuple};
+use pyo3::types::{PyDict, PyFloat, PyInt, PyList, PyString, PyTuple};
 use sonolus_backend_core::cfg::{canonical_dump, cfg_to_text};
 use sonolus_backend_core::decode::decode_cfg;
 use sonolus_backend_core::emit;
@@ -18,6 +18,7 @@ use sonolus_backend_core::nodes::{
 };
 use sonolus_backend_core::ops::Op;
 use sonolus_backend_core::output;
+use sonolus_backend_core::pipeline::{self, CompileError, CompileStats, Level};
 
 /// Returns the version of the Rust backend.
 #[pyfunction]
@@ -74,6 +75,65 @@ fn engine_nodes_to_output_dump(nodes: PyRef<'_, EngineNodes>) -> PyResult<String
     let out = output::generate_output_nodes(&nodes.inner.arena, nodes.inner.root)
         .map_err(|e| PyValueError::new_err(e.to_string()))?;
     Ok(output::output_node_dump(&out))
+}
+
+/// Parses a level name (`"minimal"`/`"fast"`/`"standard"`).
+fn parse_level(level: &str) -> PyResult<Level> {
+    level
+        .parse()
+        .map_err(|e: pipeline::UnknownLevel| PyValueError::new_err(e.to_string()))
+}
+
+/// Maps a pipeline failure onto a Python exception. The temp-memory budget
+/// error matches the legacy `ValueError("Temporary memory limit exceeded")`
+/// exactly; unimplemented levels raise `NotImplementedError`.
+fn compile_error_to_py(e: &CompileError) -> PyErr {
+    match e {
+        CompileError::Unimplemented(_) => PyNotImplementedError::new_err(e.to_string()),
+        _ => PyValueError::new_err(e.to_string()),
+    }
+}
+
+/// Runs the Rust compilation pipeline on an encoded frontend CFG
+/// (`rust/ENCODING.md`) at the given optimization level and returns the
+/// engine-node tree. Only `"minimal"` is implemented so far (T1.3); other
+/// levels raise `NotImplementedError`.
+///
+/// Raises `ValueError` on malformed input, out-of-domain CFGs, or when the
+/// 4096-slot temporary-memory budget is exceeded (message matches the legacy
+/// backend: "Temporary memory limit exceeded").
+#[pyfunction]
+fn run_pipeline(data: &[u8], level: &str) -> PyResult<EngineNodes> {
+    let level = parse_level(level)?;
+    let cfg = decode_cfg(data).map_err(|e| PyValueError::new_err(e.to_string()))?;
+    let inner = pipeline::compile_cfg(&cfg, level).map_err(|e| compile_error_to_py(&e))?;
+    Ok(EngineNodes { inner })
+}
+
+fn stats_to_dict(py: Python<'_>, stats: CompileStats) -> PyResult<Py<PyDict>> {
+    let dict = PyDict::new(py);
+    dict.set_item("temp_slots_used", stats.temp_slots_used)?;
+    dict.set_item("temps_allocated", stats.temps_allocated)?;
+    dict.set_item("mir_blocks", stats.mir_blocks)?;
+    dict.set_item("mir_insts", stats.mir_insts)?;
+    dict.set_item("node_count", stats.node_count)?;
+    Ok(dict.unbind())
+}
+
+/// Like [`run_pipeline`], but also returns a stats dict with
+/// `temp_slots_used`, `temps_allocated`, `mir_blocks`, `mir_insts`, and
+/// `node_count` (used by the T1.3/T1.4 budget tests and T2.4 metrics).
+#[pyfunction]
+fn run_pipeline_stats(
+    py: Python<'_>,
+    data: &[u8],
+    level: &str,
+) -> PyResult<(EngineNodes, Py<PyDict>)> {
+    let level = parse_level(level)?;
+    let cfg = decode_cfg(data).map_err(|e| PyValueError::new_err(e.to_string()))?;
+    let (inner, stats) =
+        pipeline::compile_cfg_stats(&cfg, level).map_err(|e| compile_error_to_py(&e))?;
+    Ok((EngineNodes { inner }, stats_to_dict(py, stats)?))
 }
 
 /// Maps a core interpreter error onto the Python exception type the legacy
@@ -337,6 +397,8 @@ fn sonolus_backend(m: &Bound<'_, PyModule>) -> PyResult<()> {
     m.add_function(wrap_pyfunction!(decode_cfg_debug_dump, m)?)?;
     m.add_function(wrap_pyfunction!(cfg_to_engine_nodes, m)?)?;
     m.add_function(wrap_pyfunction!(engine_nodes_to_output_dump, m)?)?;
+    m.add_function(wrap_pyfunction!(run_pipeline, m)?)?;
+    m.add_function(wrap_pyfunction!(run_pipeline_stats, m)?)?;
     m.add_class::<EngineNodes>()?;
     m.add_class::<Interpreter>()?;
     Ok(())

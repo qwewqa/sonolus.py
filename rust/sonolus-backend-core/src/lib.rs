@@ -3,13 +3,18 @@
 //! This crate contains no Python bindings; it is consumed by `sonolus-backend-py`,
 //! which exposes it to Python as the `sonolus_backend` extension module.
 
+pub mod alloc;
 pub mod cfg;
 pub mod decode;
 pub mod emit;
 pub mod interpret;
+pub mod lower;
+pub mod mir;
 pub mod nodes;
 pub mod ops;
 pub mod output;
+pub mod pipeline;
+pub mod ssa;
 
 /// Returns the version of the backend, taken from the crate metadata.
 pub fn version() -> &'static str {
