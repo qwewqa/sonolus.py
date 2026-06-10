@@ -6,7 +6,7 @@
 > holds rules, tasks, state, and decisions. Maintainer notes (setup, end-of-run review)
 > live in [EXECUTION.md](EXECUTION.md).
 
-**Status:** in progress — S0 underway; next task: T0.5
+**Status:** in progress — S0 complete; next task: T1.1
 **Last updated:** 2026-06-10
 
 ## 0. Entry point — if you were pointed at this file, start here
@@ -150,7 +150,7 @@ Status values: `todo` / `in-progress` / `blocked` / `done`.
 | T0.2 | done | Op codegen: Rust `Op` enum (name, pure, side_effects, control_flow) generated from `sonolus/backend/ops.py`; checked-in generated file + sync test. | sync test passes; deliberately desynced op fails it |
 | T0.3 | done | CI stage A: `.github/workflows/rust.yml` — fmt, clippy `-D warnings`, `cargo test`, maturin develop + import smoke. Path-filtered. `publish.yaml` untouched. | green run on a PR |
 | T0.4 | done | CFG encoding: `rust/ENCODING.md` spec (versioned; frontend-level constructs only — no SSA/phis), Python encoder `sonolus/backend/encode.py`, Rust decoder, Rust debug `cfg_to_text` (Rust float fmt). Round-trip validation is structural/bit-exact (e.g., hex-float canonical dumps on both sides), not repr-matching (decision D7). | round-trip test green over the mini-corpus and a full corpus capture run (corpus half completed under T0.5) |
-| T0.5 | todo | Corpus infra: `SONOLUS_CAPTURE_CORPUS=<dir>` pytest hook capturing frontend CFGs + behavioral I/O vectors; `tools/gen_corpus.py`; curated deterministic mini-corpus checked into `rust/testdata/` (~5MB budget, no hypothesis-derived cases). | capture run produces corpus; mini-corpus loads in `cargo test`; negative test (perturbed CFG) caught by round-trip check |
+| T0.5 | done | Corpus infra: `SONOLUS_CAPTURE_CORPUS=<dir>` pytest hook capturing frontend CFGs + behavioral I/O vectors; `tools/gen_corpus.py`; curated deterministic mini-corpus checked into `rust/testdata/` (~5MB budget, no hypothesis-derived cases). | capture run produces corpus; mini-corpus loads in `cargo test`; negative test (perturbed CFG) caught by round-trip check |
 
 ### S1 — Interpreter + baseline backend
 
@@ -279,6 +279,25 @@ pointers (failing commands, metric numbers, repro). Empty deviation log = clean 
 
 ## 9. Worklog (append-only; newest first)
 
+- 2026-06-10 — **T0.5 done; S0 complete.** Capture: `tests/conftest.py` monkeypatches
+  `callback_to_cfg` (catches every frontend CFG suite-wide); `tests/script/conftest.py`
+  records I/O vectors at the first opt level via `RecordingInterpreter` + RNG
+  call-window tape (`random.uniform`/`randrange` delegated, behavior unchanged); all
+  gated on `SONOLUS_CAPTURE_CORPUS` — env unset ⇒ `_CAPTURE is None`, original paths.
+  Content-addressed sha256 names + atomic writes ⇒ xdist-safe. Python canonical dump is
+  stored at capture time (both sides compare against the single stored artifact).
+  `tools/gen_corpus.py`: verifies whole capture round-trips, then deterministically
+  curates `rust/testdata/` (141 CFGs, 87 vectors on 72 entries, 4,899,682 B data; all
+  19 mode/callback pairs; hypothesis-only CFGs excluded). Orchestrator verification:
+  fresh capture run → 1096 green, **24,740 unique CFGs all round-trip clean, zero encode
+  rejects** (completes T0.4's full-corpus DoD); regen from the original capture is
+  byte-identical to checked-in testdata (355 files; README is hand-written); cargo
+  19+4+4 green incl. corpus byte-flip negative test; clippy/fmt clean; pytest 1096 green
+  env-unset. Notes: vectors store an RNG *tape*, not a seed (legacy interp uses global
+  `random`); T1.2 replays the tape, T2.3 uses its own seeded RNG. Float-cond CFGs are
+  nearly hypothesis-only → T2.3 fuzz generator must cover float conds explicitly.
+  Subagent's reported pass count (1103) didn't reproduce; current tree is consistently
+  1096 with and without capture — no test loss, count verified directly.
 - 2026-06-10 — **T0.4 done.** Encoding v1 (`rust/ENCODING.md`): magic `SCFG`, u16 version,
   u16 op_count=191 desync guard; LEB128/zigzag varints, raw-bits f64; string + temp-block
   tables (first-encounter order); RPO blocks, edges sorted `(cond is None, cond)`, tagged

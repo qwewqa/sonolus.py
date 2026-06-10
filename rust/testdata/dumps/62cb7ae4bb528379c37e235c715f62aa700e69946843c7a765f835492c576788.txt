@@ -1,0 +1,43 @@
+cfg-canonical v1
+ops 191
+strings 6
+  string 0 "v1"
+  string 1 "v2"
+  string 2 "v3"
+  string 3 "v4"
+  string 4 "v5"
+  string 5 "v6"
+temps 6
+  temp 0 name=0 size=1
+  temp 1 name=1 size=1
+  temp 2 name=2 size=1
+  temp 3 name=3 size=1
+  temp 4 name=4 size=1
+  temp 5 name=5 size=1
+blocks 4
+block 0
+  stmts 0
+  test (const i:0)
+  edges 1
+    edge none -> 1
+block 1
+  stmts 6
+    (set (place b=t:0 i=i:0 o=0) (instr 120 (const i:0) (const f:0x3fefffffdfc9a9ad)))
+    (set (place b=t:1 i=i:0 o=0) (pure 78 (get (place b=t:0 i=i:0 o=0))))
+    (set (place b=t:2 i=i:0 o=0) (pure 1 (const f:0x4014000000000000) (get (place b=t:1 i=i:0 o=0))))
+    (set (place b=t:3 i=i:0 o=0) (instr 19 (get (place b=t:2 i=i:0 o=0))))
+    (set (place b=t:4 i=i:0 o=0) (pure 107 (get (place b=t:2 i=i:0 o=0)) (const f:0x4004000000000000)))
+    (set (place b=t:5 i=i:0 o=0) (instr 19 (get (place b=t:4 i=i:0 o=0))))
+  test (const i:0)
+  edges 1
+    edge none -> 2
+block 2
+  stmts 0
+  test (const i:0)
+  edges 1
+    edge none -> 3
+block 3
+  stmts 1
+    (instr 13 (const i:1) (get (place b=t:2 i=i:0 o=0)))
+  test (const i:0)
+  edges 0

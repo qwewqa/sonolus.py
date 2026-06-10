@@ -1,0 +1,79 @@
+cfg-canonical v1
+ops 191
+strings 3
+  string 0 "v1"
+  string 1 "v2"
+  string 2 "v3"
+temps 3
+  temp 0 name=0 size=1
+  temp 1 name=1 size=1
+  temp 2 name=2 size=1
+blocks 13
+block 0
+  stmts 0
+  test (const i:0)
+  edges 1
+    edge none -> 1
+block 1
+  stmts 0
+  test (const i:0)
+  edges 1
+    edge none -> 2
+block 2
+  stmts 0
+  test (const i:0)
+  edges 1
+    edge none -> 3
+block 3
+  stmts 0
+  test (const i:0)
+  edges 1
+    edge none -> 4
+block 4
+  stmts 0
+  test (const i:0)
+  edges 1
+    edge none -> 5
+block 5
+  stmts 0
+  test (const i:0)
+  edges 1
+    edge none -> 6
+block 6
+  stmts 0
+  test (const i:0)
+  edges 1
+    edge none -> 7
+block 7
+  stmts 0
+  test (const i:0)
+  edges 1
+    edge none -> 8
+block 8
+  stmts 3
+    (set (place b=t:0 i=i:0 o=0) (pure 107 (get (place b=i:4001 i=i:0 o=0)) (const f:0x4040000000000000)))
+    (set (place b=t:1 i=i:0 o=0) (pure 1 (const f:0x402a000000000000) (get (place b=t:0 i=i:0 o=0))))
+    (set (place b=t:2 i=i:0 o=0) (get (place b=t:1 i=i:0 o=0)))
+  test (const i:0)
+  edges 1
+    edge none -> 9
+block 9
+  stmts 0
+  test (const i:0)
+  edges 1
+    edge none -> 10
+block 10
+  stmts 0
+  test (const i:0)
+  edges 1
+    edge none -> 11
+block 11
+  stmts 0
+  test (const i:0)
+  edges 1
+    edge none -> 12
+block 12
+  stmts 1
+    (instr 13 (const i:1) (get (place b=i:4101 i=(place b=t:2 i=i:0 o=0) o=0)))
+  test (const i:0)
+  edges 0

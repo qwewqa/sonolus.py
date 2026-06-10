@@ -1,0 +1,78 @@
+cfg-canonical v1
+ops 191
+strings 8
+  string 0 "v1"
+  string 1 "v2"
+  string 2 "v3"
+  string 3 "v4"
+  string 4 "v5"
+  string 5 "v6"
+  string 6 "v7"
+  string 7 "v8"
+temps 8
+  temp 0 name=0 size=1
+  temp 1 name=1 size=1
+  temp 2 name=2 size=1
+  temp 3 name=3 size=1
+  temp 4 name=4 size=1
+  temp 5 name=5 size=1
+  temp 6 name=6 size=1
+  temp 7 name=7 size=1
+blocks 9
+block 0
+  stmts 0
+  test (const i:0)
+  edges 1
+    edge none -> 1
+block 1
+  stmts 0
+  test (const i:0)
+  edges 1
+    edge none -> 2
+block 2
+  stmts 0
+  test (const i:0)
+  edges 1
+    edge none -> 3
+block 3
+  stmts 0
+  test (const i:0)
+  edges 1
+    edge none -> 4
+block 4
+  stmts 4
+    (set (place b=t:0 i=i:0 o=0) (const f:0x3ff0000000000000))
+    (set (place b=t:1 i=i:0 o=0) (const f:0x4000000000000000))
+    (set (place b=t:2 i=i:0 o=0) (const f:0xc008000000000000))
+    (set (place b=t:3 i=i:0 o=0) (const f:0xc000000000000000))
+  test (const i:0)
+  edges 1
+    edge none -> 5
+block 5
+  stmts 0
+  test (const i:0)
+  edges 1
+    edge none -> 6
+block 6
+  stmts 0
+  test (const i:0)
+  edges 1
+    edge none -> 7
+block 7
+  stmts 0
+  test (const i:0)
+  edges 1
+    edge none -> 8
+block 8
+  stmts 9
+    (set (place b=i:-1 i=i:0 o=0) (const f:0x3ff0000000000000))
+    (set (place b=t:4 i=i:0 o=0) (get (place b=t:0 i=i:0 o=0)))
+    (set (place b=i:-2 i=i:0 o=0) (get (place b=t:4 i=i:0 o=0)))
+    (set (place b=t:5 i=i:0 o=0) (get (place b=t:1 i=i:0 o=0)))
+    (set (place b=i:-2 i=i:0 o=1) (get (place b=t:5 i=i:0 o=0)))
+    (set (place b=t:6 i=i:0 o=0) (get (place b=t:2 i=i:0 o=0)))
+    (set (place b=i:-2 i=i:0 o=2) (get (place b=t:6 i=i:0 o=0)))
+    (set (place b=t:7 i=i:0 o=0) (get (place b=t:3 i=i:0 o=0)))
+    (set (place b=i:-2 i=i:0 o=3) (get (place b=t:7 i=i:0 o=0)))
+  test (const i:0)
+  edges 0

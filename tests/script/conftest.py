@@ -33,6 +33,24 @@ from sonolus.script.vec import Vec2
 
 PRIMARY_PYTHON_VERSION = (3, 14)
 
+# Corpus capture (PORT.md T0.5): only active when SONOLUS_CAPTURE_CORPUS is set;
+# default runs keep _CAPTURE = None and behave exactly as before.
+_CAPTURE = None
+if os.environ.get("SONOLUS_CAPTURE_CORPUS"):
+    from tests.corpus_capture import get_capture
+
+    _CAPTURE = get_capture()
+
+
+def _passes_label(passes) -> str:
+    if passes is MINIMAL_PASSES:
+        return "minimal"
+    if passes is FAST_PASSES:
+        return "fast"
+    if passes is STANDARD_PASSES:
+        return "standard"
+    return "custom"
+
 
 def is_ci() -> bool:
     return os.getenv("CI", "false").lower() in {"true", "1"}
@@ -189,12 +207,25 @@ def run_and_validate[**P, R](
             assert type(e) is type(exception)  # noqa: PT017
             raise exception from None
 
+        capture_ref = None
+        if _CAPTURE is not None and passes is optimization_levels[0]:
+            capture_ref = _CAPTURE.cfg_ref(cfg)
         cfg = run_passes(cfg, passes, OptimizerConfig())
         entry = cfg_to_engine_node(cfg)
-        interpreter = Interpreter()
+        interpreter = Interpreter() if capture_ref is None else _CAPTURE.make_interpreter()
         interpreter.blocks[PlayBlock.EngineRom] = rom_values
 
-        num_result = interpreter.run(entry)
+        if capture_ref is None:
+            num_result = interpreter.run(entry)
+        else:
+            num_result = _CAPTURE.run_and_record(
+                interpreter,
+                entry,
+                capture_ref,
+                level=_passes_label(passes),
+                runtime_checks="terminate",
+                temp_memory_block=int(PlayBlock.TemporaryMemory),
+            )
         if exception is None:
             if result_type == Num:
                 assert num_result == regular_result
@@ -244,11 +275,24 @@ def run_compiled[**P](
         for runtime_checks_value in runtime_checks_values:
             random.setstate(initial_random_state)
             cfg, rom_values = compile_fn(wrapper, runtime_checks=runtime_checks_value)
+            capture_ref = None
+            if _CAPTURE is not None and passes is optimization_levels[0]:
+                capture_ref = _CAPTURE.cfg_ref(cfg)
             cfg = run_passes(cfg, passes, OptimizerConfig())
             entry = cfg_to_engine_node(cfg)
-            interpreter = Interpreter()
+            interpreter = Interpreter() if capture_ref is None else _CAPTURE.make_interpreter()
             interpreter.blocks[PlayBlock.EngineRom] = rom_values
-            result = interpreter.run(entry)
+            if capture_ref is None:
+                result = interpreter.run(entry)
+            else:
+                result = _CAPTURE.run_and_record(
+                    interpreter,
+                    entry,
+                    capture_ref,
+                    level=_passes_label(passes),
+                    runtime_checks=runtime_checks_value.name.lower(),
+                    temp_memory_block=int(PlayBlock.TemporaryMemory),
+                )
             results.append(result)
             logs.append(interpreter.log.copy())
 

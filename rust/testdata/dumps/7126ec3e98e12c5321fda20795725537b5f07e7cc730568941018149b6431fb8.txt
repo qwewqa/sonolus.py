@@ -1,0 +1,81 @@
+cfg-canonical v1
+ops 191
+strings 12
+  string 0 "v1"
+  string 1 "v2"
+  string 2 "v3"
+  string 3 "v4"
+  string 4 "v5"
+  string 5 "v6"
+  string 6 "v7"
+  string 7 "v8"
+  string 8 "v9"
+  string 9 "v10"
+  string 10 "v11"
+  string 11 "v12"
+temps 12
+  temp 0 name=0 size=1
+  temp 1 name=1 size=1
+  temp 2 name=2 size=1
+  temp 3 name=3 size=1
+  temp 4 name=4 size=1
+  temp 5 name=5 size=1
+  temp 6 name=6 size=1
+  temp 7 name=7 size=1
+  temp 8 name=8 size=1
+  temp 9 name=9 size=1
+  temp 10 name=10 size=1
+  temp 11 name=11 size=1
+blocks 7
+block 0
+  stmts 0
+  test (const i:0)
+  edges 1
+    edge none -> 1
+block 1
+  stmts 0
+  test (get (place b=i:2001 i=i:12 o=0))
+  edges 2
+    edge i:0 -> 3
+    edge none -> 2
+block 2
+  stmts 6
+    (set (place b=t:0 i=i:0 o=0) (get (place b=i:4000 i=i:0 o=0)))
+    (set (place b=t:1 i=i:0 o=0) (pure 108 (get (place b=t:0 i=i:0 o=0))))
+    (set (place b=i:4000 i=i:0 o=0) (get (place b=t:1 i=i:0 o=0)))
+    (set (place b=t:2 i=i:0 o=0) (get (place b=i:4000 i=i:2 o=0)))
+    (set (place b=t:3 i=i:0 o=0) (pure 108 (get (place b=t:2 i=i:0 o=0))))
+    (set (place b=i:4000 i=i:2 o=0) (get (place b=t:3 i=i:0 o=0)))
+  test (const i:0)
+  edges 1
+    edge none -> 4
+block 3
+  stmts 0
+  test (const i:0)
+  edges 1
+    edge none -> 4
+block 4
+  stmts 11
+    (set (place b=t:4 i=i:0 o=0) (get (place b=i:4000 i=i:1 o=0)))
+    (set (place b=t:5 i=i:0 o=0) (pure 11 (get (place b=t:4 i=i:0 o=0))))
+    (set (place b=i:4000 i=i:3 o=0) (get (place b=t:5 i=i:0 o=0)))
+    (set (place b=t:6 i=i:0 o=0) (get (place b=i:2000 i=i:0 o=1)))
+    (set (place b=t:7 i=i:0 o=0) (get (place b=i:4000 i=i:3 o=0)))
+    (set (place b=t:8 i=i:0 o=0) (pure 103 (get (place b=t:6 i=i:0 o=0)) (get (place b=t:7 i=i:0 o=0))))
+    (set (place b=i:2000 i=i:0 o=1) (get (place b=t:8 i=i:0 o=0)))
+    (set (place b=t:9 i=i:0 o=0) (get (place b=i:2000 i=i:0 o=2)))
+    (set (place b=t:10 i=i:0 o=0) (get (place b=i:4000 i=i:1 o=0)))
+    (set (place b=t:11 i=i:0 o=0) (pure 103 (get (place b=t:9 i=i:0 o=0)) (get (place b=t:10 i=i:0 o=0))))
+    (set (place b=i:2000 i=i:0 o=2) (get (place b=t:11 i=i:0 o=0)))
+  test (const i:0)
+  edges 1
+    edge none -> 5
+block 5
+  stmts 0
+  test (const i:0)
+  edges 1
+    edge none -> 6
+block 6
+  stmts 0
+  test (const i:0)
+  edges 0

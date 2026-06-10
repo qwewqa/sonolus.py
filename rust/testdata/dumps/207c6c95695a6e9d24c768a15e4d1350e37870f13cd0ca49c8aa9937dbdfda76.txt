@@ -1,0 +1,150 @@
+cfg-canonical v1
+ops 191
+strings 6
+  string 0 "v1"
+  string 1 "v5"
+  string 2 "v2"
+  string 3 "v4"
+  string 4 "v3"
+  string 5 "v6"
+temps 6
+  temp 0 name=0 size=1
+  temp 1 name=1 size=1
+  temp 2 name=2 size=1
+  temp 3 name=3 size=1
+  temp 4 name=4 size=1
+  temp 5 name=5 size=1
+blocks 23
+block 0
+  stmts 0
+  test (const i:0)
+  edges 1
+    edge none -> 1
+block 1
+  stmts 1
+    (set (place b=t:0 i=i:0 o=0) (const i:0))
+  test (const i:0)
+  edges 1
+    edge none -> 2
+block 2
+  stmts 0
+  test (const i:0)
+  edges 1
+    edge none -> 3
+block 3
+  stmts 0
+  test (const i:0)
+  edges 1
+    edge none -> 4
+block 4
+  stmts 0
+  test (const i:0)
+  edges 1
+    edge none -> 5
+block 5
+  stmts 1
+    (set (place b=t:1 i=i:0 o=0) (const i:0))
+  test (const i:0)
+  edges 1
+    edge none -> 6
+block 6
+  stmts 0
+  test (get (place b=t:0 i=i:0 o=0))
+  edges 5
+    edge i:0 -> 13
+    edge i:1 -> 11
+    edge i:2 -> 9
+    edge i:3 -> 7
+    edge none -> 8
+block 7
+  stmts 0
+  test (const i:0)
+  edges 1
+    edge none -> 8
+block 8
+  stmts 2
+    (set (place b=t:2 i=i:0 o=0) (const i:0))
+    (set (place b=t:3 i=i:0 o=0) (const f:0x403e000000000000))
+  test (const i:0)
+  edges 1
+    edge none -> 16
+block 9
+  stmts 0
+  test (const i:0)
+  edges 1
+    edge none -> 10
+block 10
+  stmts 2
+    (set (place b=t:0 i=i:0 o=0) (const f:0x4008000000000000))
+    (set (place b=t:4 i=i:0 o=0) (const f:0x403e000000000000))
+  test (const i:0)
+  edges 1
+    edge none -> 15
+block 11
+  stmts 0
+  test (const i:0)
+  edges 1
+    edge none -> 12
+block 12
+  stmts 2
+    (set (place b=t:0 i=i:0 o=0) (const f:0x4000000000000000))
+    (set (place b=t:4 i=i:0 o=0) (const f:0x4034000000000000))
+  test (const i:0)
+  edges 1
+    edge none -> 15
+block 13
+  stmts 0
+  test (const i:0)
+  edges 1
+    edge none -> 14
+block 14
+  stmts 2
+    (set (place b=t:0 i=i:0 o=0) (const f:0x3ff0000000000000))
+    (set (place b=t:4 i=i:0 o=0) (const f:0x4024000000000000))
+  test (const i:0)
+  edges 1
+    edge none -> 15
+block 15
+  stmts 2
+    (set (place b=t:2 i=i:0 o=0) (const f:0x3ff0000000000000))
+    (set (place b=t:3 i=i:0 o=0) (get (place b=t:4 i=i:0 o=0)))
+  test (const i:0)
+  edges 1
+    edge none -> 16
+block 16
+  stmts 0
+  test (get (place b=t:1 i=i:0 o=0))
+  edges 1
+    edge i:0 -> 17
+block 17
+  stmts 0
+  test (get (place b=t:2 i=i:0 o=0))
+  edges 2
+    edge i:0 -> 19
+    edge none -> 18
+block 18
+  stmts 1
+    (set (place b=t:5 i=i:0 o=0) (instr 19 (get (place b=t:4 i=i:0 o=0))))
+  test (const i:0)
+  edges 1
+    edge none -> 5
+block 19
+  stmts 0
+  test (const i:0)
+  edges 1
+    edge none -> 20
+block 20
+  stmts 0
+  test (const i:0)
+  edges 1
+    edge none -> 21
+block 21
+  stmts 0
+  test (const i:0)
+  edges 1
+    edge none -> 22
+block 22
+  stmts 1
+    (set (place b=i:-1 i=i:0 o=0) (const f:0x3ff0000000000000))
+  test (const i:0)
+  edges 0
