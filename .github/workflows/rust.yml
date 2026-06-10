@@ -5,6 +5,7 @@ on:
     branches: [master, rust-port]
     paths:
       - "rust/**"
+      - "tests/**"
       - "tools/**"
       - "pyproject.toml"
       - "uv.lock"
@@ -12,6 +13,7 @@ on:
   pull_request:
     paths:
       - "rust/**"
+      - "tests/**"
       - "tools/**"
       - "pyproject.toml"
       - "uv.lock"
@@ -77,3 +79,30 @@ jobs:
         run: uv run python -c "import sonolus_backend; print(sonolus_backend.backend_version())"
       - name: Backend tests (with extension)
         run: uv run pytest tests/backend -q
+
+  rust-lane:
+    name: Behavioral suite (rust lane)
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v5
+      - name: Install Rust toolchain
+        uses: dtolnay/rust-toolchain@stable
+      - name: Cache Rust build
+        uses: Swatinem/rust-cache@v2
+        with:
+          workspaces: rust
+      - name: Install uv
+        uses: astral-sh/setup-uv@v6
+      - name: Install Python
+        run: uv python install 3.14
+      - name: Install project
+        run: uv sync
+      # uv sync removes the maturin-develop artifact, so the extension build must
+      # come after it (uv run itself syncs inexactly and leaves it installed).
+      - name: Build and install extension
+        run: uv run maturin develop -m rust/sonolus-backend-py/Cargo.toml
+      - name: Full test suite (rust lane)
+        run: uv run pytest tests -n auto
+        env:
+          SONOLUS_BACKEND: rust

@@ -6,7 +6,7 @@
 > holds rules, tasks, state, and decisions. Maintainer notes (setup, end-of-run review)
 > live in [EXECUTION.md](EXECUTION.md).
 
-**Status:** in progress — S1 underway; next task: T1.4
+**Status:** in progress — S1 complete pending CI; next task: T2.1
 **Last updated:** 2026-06-10
 
 ## 0. Entry point — if you were pointed at this file, start here
@@ -159,7 +159,7 @@ Status values: `todo` / `in-progress` / `blocked` / `done`.
 | T1.1 | done | Interpreter port: seeded RNG, eval + JumpLoop-dispatch counters, `HashMap<i64,Vec<f64>>` blocks (negative ids), default `-1.0` fill, exact legacy assert messages, Block/Break unwinding, all switch forms. PyO3: `Interpreter(seed=)`, `set_block`, `get`, `run`, `log`, counters. | unit tests incl. numeric-semantics edge table (floor-mod, banker's round, remainder, Sign(±0)) |
 | T1.2 | done | Emitter: CFG → `Block(JumpLoop(...))` node tree (dense-switch selection per legacy `finalize.py` rules), node DAG dedup with canonical insertion order, int/float-tagged values, ROM NaN/inf, `format_engine_node`. | corpus check: Python-passes → encode → Rust emit runs the behavioral vectors correctly on the Rust interpreter |
 | T1.3 | done | Baseline pipeline (= `minimal` level): Braun SSA construction → Boissinot out-of-SSA with coalescing → chordal-coloring slot allocation (≤4096 slots) → emit. No optimization. | pydori callbacks all compile within temp-memory budget at minimal (improvement over legacy `AllocateBasic`) |
-| T1.4 | todo | Dual-lane conftest: `SONOLUS_BACKEND=rust` routes `tests/script/conftest.py` through encode → Rust pipeline (levels available so far) + Rust interpreter, seed drawn once per invocation. CI stage B: rust-lane pytest job (Ubuntu, 3.14). | full behavioral suite green in **both** lanes, locally and in CI |
+| T1.4 | done | Dual-lane conftest: `SONOLUS_BACKEND=rust` routes `tests/script/conftest.py` through encode → Rust pipeline (levels available so far) + Rust interpreter, seed drawn once per invocation. CI stage B: rust-lane pytest job (Ubuntu, 3.14). | full behavioral suite green in **both** lanes, locally and in CI |
 
 ### S2 — Optimizer infrastructure
 
@@ -305,6 +305,21 @@ pointers (failing commands, metric numbers, repro). Empty deviation log = clean 
 
 ## 9. Worklog (append-only; newest first)
 
+- 2026-06-10 — **T1.4 done.** Rust lane: `SONOLUS_BACKEND=rust` routes
+  run_and_validate/run_compiled through encode → run_pipeline → Rust Interpreter.
+  `RUST_OPTIMIZATION_LEVELS = ("minimal",)` — S2/S3 just append. RNG: tape recorded from
+  the direct Python execution (uniform/randrange call-window) + seed `getrandbits(63)`
+  drawn once per invocation (tape when non-empty, seed otherwise); tape exhaustion AND
+  underconsumption both fail loudly (probe-draw check); randrange caveat documented
+  (start=0/step=1 alignment — only direct form used; others would fail loudly). Guards:
+  unknown backend value, missing extension (mandatory in lane), capture×rust mutual
+  exclusion. Default lane token-identical. CI stage B: `rust-lane` job (Ubuntu/3.14,
+  SONOLUS_BACKEND=rust, full pytest); `tests/**` added to rust.yml path filters
+  (load-bearing — lane changes wouldn't trigger CI otherwise). Both lanes 1191 passed +
+  4 skips locally (807 tests exercise the rust path); zero behavioral differences; rust
+  lane is setstate-free (T6.1 direction confirmed viable). Follow-up noted:
+  `rng_tape_remaining` getter on PyO3 Interpreter would replace the probe-draw trick.
+  Verified: both lanes run by orchestrator; cargo/clippy/fmt clean; CI pending push.
 - 2026-06-10 — **T1.3 done.** Minimal pipeline: decode → `mir.rs` (arena SSA-capable IR,
   phi instructions, eager schedule + lazy ShortCircuit per D11, strict binarization,
   faithful CoalesceFlow/UCE ports incl. the legacy single-edge-with-cond quirk — 46

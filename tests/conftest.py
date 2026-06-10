@@ -22,6 +22,11 @@ checked-in mini-corpus).
 
 import os
 
+if os.environ.get("SONOLUS_CAPTURE_CORPUS") and os.environ.get("SONOLUS_BACKEND") == "rust":
+    # Corpus capture instruments the legacy Python backend pipeline, which the
+    # rust lane (PORT.md T1.4) bypasses entirely; the combination is meaningless.
+    raise RuntimeError("SONOLUS_CAPTURE_CORPUS and SONOLUS_BACKEND=rust are mutually exclusive")
+
 if os.environ.get("SONOLUS_CAPTURE_CORPUS"):
     import functools
 
