@@ -1,0 +1,22 @@
+[package]
+name = "sonolus-backend-py"
+description = "PyO3 bindings exposing the sonolus.py Rust backend as the `sonolus_backend` Python module"
+version.workspace = true
+edition.workspace = true
+rust-version.workspace = true
+license.workspace = true
+publish.workspace = true
+
+[lib]
+name = "sonolus_backend"
+crate-type = ["cdylib"]
+
+[dependencies]
+sonolus-backend-core = { workspace = true }
+# `pyo3/extension-module` is intentionally NOT enabled here so that plain
+# `cargo test`/`cargo clippy` can link test binaries against libpython.
+# maturin enables it via `features` in this crate's pyproject.toml.
+pyo3 = { workspace = true }
+
+[lints]
+workspace = true

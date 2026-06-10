@@ -1,0 +1,14 @@
+[build-system]
+requires = ["maturin>=1.9,<2.0"]
+build-backend = "maturin"
+
+[project]
+name = "sonolus-backend"
+description = "Rust compiler backend for sonolus.py"
+requires-python = ">=3.12"
+license = "MIT"
+dynamic = ["version"]
+
+[tool.maturin]
+module-name = "sonolus_backend"
+features = ["pyo3/extension-module"]

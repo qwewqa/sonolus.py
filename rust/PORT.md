@@ -6,7 +6,7 @@
 > holds rules, tasks, state, and decisions. Maintainer notes (setup, end-of-run review)
 > live in [EXECUTION.md](EXECUTION.md).
 
-**Status:** not started — next task: T0.1
+**Status:** in progress — S0 underway; next task: T0.2
 **Last updated:** 2026-06-10
 
 ## 0. Entry point — if you were pointed at this file, start here
@@ -146,7 +146,7 @@ Status values: `todo` / `in-progress` / `blocked` / `done`.
 
 | ID | Status | Task | DoD (beyond standing commands) |
 |----|--------|------|-------------------------------|
-| T0.1 | todo | Cargo workspace `rust/` with `sonolus-backend-core` + `sonolus-backend-py` (PyO3); `maturin develop` flow into the uv venv; main `pyproject.toml` untouched (stays hatchling until S7). | `maturin develop` + `python -c "import sonolus_backend"` works locally (Windows) |
+| T0.1 | done | Cargo workspace `rust/` with `sonolus-backend-core` + `sonolus-backend-py` (PyO3); `maturin develop` flow into the uv venv; main `pyproject.toml` untouched (stays hatchling until S7). | `maturin develop` + `python -c "import sonolus_backend"` works locally (Windows) |
 | T0.2 | todo | Op codegen: Rust `Op` enum (name, pure, side_effects, control_flow) generated from `sonolus/backend/ops.py`; checked-in generated file + sync test. | sync test passes; deliberately desynced op fails it |
 | T0.3 | todo | CI stage A: `.github/workflows/rust.yml` — fmt, clippy `-D warnings`, `cargo test`, maturin develop + import smoke. Path-filtered. `publish.yaml` untouched. | green run on a PR |
 | T0.4 | todo | CFG encoding: `rust/ENCODING.md` spec (versioned; frontend-level constructs only — no SSA/phis), Python encoder `sonolus/backend/encode.py`, Rust decoder, Rust debug `cfg_to_text` (Rust float fmt). Round-trip validation is structural/bit-exact (e.g., hex-float canonical dumps on both sides), not repr-matching (decision D7). | round-trip test green over the mini-corpus and a full corpus capture run |
@@ -273,4 +273,15 @@ pointers (failing commands, metric numbers, repro). Empty deviation log = clean 
 
 ## 9. Worklog (append-only; newest first)
 
+- 2026-06-10 — **T0.1 done.** Cargo workspace `rust/` (resolver 3, edition 2024, workspace
+  lints with `unsafe_code = "forbid"`): `sonolus-backend-core` (pure Rust stub) +
+  `sonolus-backend-py` (PyO3 0.28.3, abi3-py312, `gil_used = false`, module
+  `sonolus_backend`). `pyo3/extension-module` enabled via the crate pyproject's
+  `[tool.maturin] features` (not Cargo.toml) so `cargo test --workspace` links on Linux.
+  Canonical dev command: `uv run maturin develop -m rust/sonolus-backend-py/Cargo.toml`
+  from repo root (running uv inside the crate dir would spawn a second venv). Main
+  pyproject: only `maturin>=1.9` added to dev group; build-system untouched. Note for
+  T7.3/T0.3 docs: plain `uv sync` uninstalls the maturin-develop artifact (not in uv.lock)
+  — re-run maturin develop after sync, or use `uv sync --inexact`. Verified: cargo
+  test/clippy/fmt clean; import smoke OK; pytest 837 passed.
 - 2026-06-10 — Ledger and architecture documents created. Port not yet started.
