@@ -6,7 +6,7 @@
 > holds rules, tasks, state, and decisions. Maintainer notes (setup, end-of-run review)
 > live in [EXECUTION.md](EXECUTION.md).
 
-**Status:** in progress — S0 underway; next task: T0.2
+**Status:** in progress — S0 underway; next task: T0.3
 **Last updated:** 2026-06-10
 
 ## 0. Entry point — if you were pointed at this file, start here
@@ -147,7 +147,7 @@ Status values: `todo` / `in-progress` / `blocked` / `done`.
 | ID | Status | Task | DoD (beyond standing commands) |
 |----|--------|------|-------------------------------|
 | T0.1 | done | Cargo workspace `rust/` with `sonolus-backend-core` + `sonolus-backend-py` (PyO3); `maturin develop` flow into the uv venv; main `pyproject.toml` untouched (stays hatchling until S7). | `maturin develop` + `python -c "import sonolus_backend"` works locally (Windows) |
-| T0.2 | todo | Op codegen: Rust `Op` enum (name, pure, side_effects, control_flow) generated from `sonolus/backend/ops.py`; checked-in generated file + sync test. | sync test passes; deliberately desynced op fails it |
+| T0.2 | done | Op codegen: Rust `Op` enum (name, pure, side_effects, control_flow) generated from `sonolus/backend/ops.py`; checked-in generated file + sync test. | sync test passes; deliberately desynced op fails it |
 | T0.3 | todo | CI stage A: `.github/workflows/rust.yml` — fmt, clippy `-D warnings`, `cargo test`, maturin develop + import smoke. Path-filtered. `publish.yaml` untouched. | green run on a PR |
 | T0.4 | todo | CFG encoding: `rust/ENCODING.md` spec (versioned; frontend-level constructs only — no SSA/phis), Python encoder `sonolus/backend/encode.py`, Rust decoder, Rust debug `cfg_to_text` (Rust float fmt). Round-trip validation is structural/bit-exact (e.g., hex-float canonical dumps on both sides), not repr-matching (decision D7). | round-trip test green over the mini-corpus and a full corpus capture run |
 | T0.5 | todo | Corpus infra: `SONOLUS_CAPTURE_CORPUS=<dir>` pytest hook capturing frontend CFGs + behavioral I/O vectors; `tools/gen_corpus.py`; curated deterministic mini-corpus checked into `rust/testdata/` (~5MB budget, no hypothesis-derived cases). | capture run produces corpus; mini-corpus loads in `cargo test`; negative test (perturbed CFG) caught by round-trip check |
@@ -273,6 +273,16 @@ pointers (failing commands, metric numbers, repro). Empty deviation log = clean 
 
 ## 9. Worklog (append-only; newest first)
 
+- 2026-06-10 — **T0.2 done.** `tools/gen_ops.py` (pure `generate()`, `--check` flag) emits
+  `rust/sonolus-backend-core/src/ops.rs`: `#[repr(u16)] Op` enum, **191 ops** (exact
+  count), ids = 0-based definition order in ops.py (Abs=0 … While=190) — these ids are
+  the T0.4 encoding contract (append-only; reorder ⇒ version bump). `const fn` accessors,
+  `from_id`/`from_name`, `COUNT`, `all()`. `.gitattributes` pins ops.rs to LF so the
+  byte-exact pytest sync test (tests/backend/test_ops_sync.py) survives checkout. Rust
+  sanity tests (count, known flags, round-trips). Note for optimizer work: `Random`,
+  `RandomInteger`, `Get`, `Stack*` family are neither pure nor side-effecting in ops.py.
+  Verified: desync→fail→regen→pass cycle myself; cargo test/clippy/fmt clean; pytest 841
+  (837+4) green.
 - 2026-06-10 — **T0.1 done.** Cargo workspace `rust/` (resolver 3, edition 2024, workspace
   lints with `unsafe_code = "forbid"`): `sonolus-backend-core` (pure Rust stub) +
   `sonolus-backend-py` (PyO3 0.28.3, abi3-py312, `gil_used = false`, module
