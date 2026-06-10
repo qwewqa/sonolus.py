@@ -5,6 +5,8 @@
 
 pub mod cfg;
 pub mod decode;
+pub mod interpret;
+pub mod nodes;
 pub mod ops;
 
 /// Returns the version of the backend, taken from the crate metadata.

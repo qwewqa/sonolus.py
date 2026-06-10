@@ -1,10 +1,21 @@
 //! Thin `PyO3` bindings exposing `sonolus-backend-core` to Python as the
 //! `sonolus_backend` extension module.
 
-use pyo3::exceptions::PyValueError;
+use pyo3::exceptions::{
+    PyAssertionError, PyIndexError, PyNotImplementedError, PyOverflowError, PyRuntimeError,
+    PyTypeError, PyValueError, PyZeroDivisionError,
+};
 use pyo3::prelude::*;
+use pyo3::types::{PyFloat, PyInt, PyList, PyString, PyTuple};
 use sonolus_backend_core::cfg::{canonical_dump, cfg_to_text};
 use sonolus_backend_core::decode::decode_cfg;
+use sonolus_backend_core::interpret::{
+    Interpreter as CoreInterpreter, InterpreterError, InterpreterErrorKind,
+};
+use sonolus_backend_core::nodes::{
+    EngineNodes as CoreEngineNodes, NodeArena, NodeId, format_engine_node,
+};
+use sonolus_backend_core::ops::Op;
 
 /// Returns the version of the Rust backend.
 #[pyfunction]
@@ -33,11 +44,266 @@ fn decode_cfg_debug_dump(data: &[u8]) -> PyResult<String> {
     Ok(cfg_to_text(&cfg))
 }
 
+/// Maps a core interpreter error onto the Python exception type the legacy
+/// interpreter raises for the same condition (exact message preserved).
+fn interpreter_error_to_py(e: InterpreterError) -> PyErr {
+    match e.kind {
+        InterpreterErrorKind::Assertion => PyAssertionError::new_err(e.message),
+        InterpreterErrorKind::ZeroDivision => PyZeroDivisionError::new_err(e.message),
+        InterpreterErrorKind::Value => PyValueError::new_err(e.message),
+        InterpreterErrorKind::Overflow => PyOverflowError::new_err(e.message),
+        InterpreterErrorKind::Index => PyIndexError::new_err(e.message),
+        InterpreterErrorKind::NotImplemented => PyNotImplementedError::new_err(e.message),
+        InterpreterErrorKind::Runtime => PyRuntimeError::new_err(e.message),
+    }
+}
+
+/// An immutable engine-node tree (arena form; see `sonolus-backend-core::nodes`).
+///
+/// Built from nested Python data: a node is a number (`int` -> int-tagged constant,
+/// `float` -> float-tagged constant) or an `(op, args)` pair (tuple or list) where
+/// `op` is an op name (`str`) or stable op id (`int`) and `args` is a tuple/list of
+/// nodes. Construction is iterative — arbitrarily deep trees are fine. T1.2's emitter
+/// will produce these directly from the compilation pipeline.
+#[pyclass(frozen)]
+struct EngineNodes {
+    inner: CoreEngineNodes,
+}
+
+#[pymethods]
+impl EngineNodes {
+    #[new]
+    fn new(data: &Bound<'_, PyAny>) -> PyResult<Self> {
+        Ok(Self {
+            inner: build_engine_nodes(data)?,
+        })
+    }
+
+    /// Renders the tree like `sonolus.backend.node.format_engine_node` (decision D7:
+    /// Rust float formatting).
+    fn format(&self) -> String {
+        format_engine_node(&self.inner.arena, self.inner.root)
+    }
+
+    /// Total number of nodes in the arena.
+    fn node_count(&self) -> usize {
+        self.inner.arena.len()
+    }
+}
+
+/// Intermediate item while converting Python data (children hold item indices).
+enum Item {
+    Const { value: f64, is_int: bool },
+    Func { op: Op, children: Vec<usize> },
+}
+
+/// Hard cap on constructed nodes: nested Python *lists* can be cyclic, and a cycle
+/// would otherwise expand forever.
+const NODE_LIMIT: usize = 10_000_000;
+
+fn parse_op(obj: &Bound<'_, PyAny>) -> PyResult<Op> {
+    if let Ok(name) = obj.cast::<PyString>() {
+        let name = name.to_cow()?;
+        Op::from_name(&name)
+            .ok_or_else(|| PyValueError::new_err(format!("unknown op name: {name}")))
+    } else if obj.is_instance_of::<PyInt>() {
+        let id: u16 = obj.extract()?;
+        Op::from_id(id).ok_or_else(|| PyValueError::new_err(format!("unknown op id: {id}")))
+    } else {
+        Err(PyTypeError::new_err(
+            "op must be an op name (str) or op id (int)",
+        ))
+    }
+}
+
+fn sequence_items<'py>(obj: &Bound<'py, PyAny>) -> PyResult<Vec<Bound<'py, PyAny>>> {
+    if let Ok(tuple) = obj.cast::<PyTuple>() {
+        Ok(tuple.iter().collect())
+    } else if let Ok(list) = obj.cast::<PyList>() {
+        Ok(list.iter().collect())
+    } else {
+        Err(PyTypeError::new_err(
+            "engine node arguments must be a tuple or list",
+        ))
+    }
+}
+
+/// Work-stack entry while walking the Python structure: the object plus its slot
+/// (parent item index, argument position) when it is not the root.
+type WalkEntry<'py> = (Bound<'py, PyAny>, Option<(usize, usize)>);
+
+/// Iteratively converts nested Python data into arena form (no recursion: node trees
+/// are user-sized).
+fn build_engine_nodes(data: &Bound<'_, PyAny>) -> PyResult<CoreEngineNodes> {
+    // Phase 1: explicit-stack walk of the Python structure. Children are created
+    // strictly after their parent, so child item indices are always greater.
+    let mut items: Vec<Item> = Vec::new();
+    let mut stack: Vec<WalkEntry<'_>> = vec![(data.clone(), None)];
+    while let Some((obj, parent)) = stack.pop() {
+        if items.len() >= NODE_LIMIT {
+            return Err(PyValueError::new_err(
+                "engine node structure is too large (possible cycle through a list)",
+            ));
+        }
+        let index = items.len();
+        if let Some((parent_index, slot)) = parent {
+            let Item::Func { children, .. } = &mut items[parent_index] else {
+                unreachable!("parent is always a function item");
+            };
+            children[slot] = index;
+        }
+        if obj.is_instance_of::<PyFloat>() {
+            items.push(Item::Const {
+                value: obj.extract::<f64>()?,
+                is_int: false,
+            });
+        } else if obj.is_instance_of::<PyInt>() {
+            items.push(Item::Const {
+                value: obj.extract::<f64>()?,
+                is_int: true,
+            });
+        } else if obj.is_instance_of::<PyTuple>() || obj.is_instance_of::<PyList>() {
+            let pair = sequence_items(&obj)?;
+            if pair.len() != 2 {
+                return Err(PyTypeError::new_err(
+                    "an engine node pair must be (op, args)",
+                ));
+            }
+            let op = parse_op(&pair[0])?;
+            let children = sequence_items(&pair[1])?;
+            items.push(Item::Func {
+                op,
+                children: vec![usize::MAX; children.len()],
+            });
+            for (slot, child) in children.into_iter().enumerate() {
+                stack.push((child, Some((index, slot))));
+            }
+        } else {
+            return Err(PyTypeError::new_err(format!(
+                "expected a number or an (op, args) pair, got {}",
+                obj.get_type().name()?
+            )));
+        }
+    }
+    // Phase 2: build the arena bottom-up (reverse item order puts every child before
+    // its parent).
+    let mut arena = NodeArena::new();
+    let mut ids: Vec<Option<NodeId>> = vec![None; items.len()];
+    let mut scratch: Vec<NodeId> = Vec::new();
+    for i in (0..items.len()).rev() {
+        let id = match &items[i] {
+            Item::Const { value, is_int } => arena.push_const(*value, *is_int),
+            Item::Func { op, children } => {
+                scratch.clear();
+                scratch.extend(
+                    children
+                        .iter()
+                        .map(|&child| ids[child].expect("children are built before parents")),
+                );
+                arena.push_func(*op, &scratch)
+            }
+        };
+        ids[i] = Some(id);
+    }
+    Ok(CoreEngineNodes {
+        arena,
+        root: ids[0].expect("at least the root item exists"),
+    })
+}
+
+/// The engine-node interpreter (see `sonolus-backend-core::interpret` for the full
+/// semantic contract, counter definitions, and divergence notes).
+#[pyclass]
+struct Interpreter {
+    inner: CoreInterpreter,
+}
+
+#[pymethods]
+#[allow(clippy::needless_pass_by_value)]
+impl Interpreter {
+    /// `Interpreter(seed=None, tape=None)`: `seed` (default 0) seeds the
+    /// deterministic RNG; passing `tape` switches to RNG tape mode instead.
+    #[new]
+    #[pyo3(signature = (seed=None, tape=None))]
+    fn new(seed: Option<i64>, tape: Option<Vec<f64>>) -> Self {
+        #[allow(clippy::cast_sign_loss)]
+        let mut inner = CoreInterpreter::new(seed.unwrap_or(0) as u64);
+        if let Some(tape) = tape {
+            inner.set_rng_tape(tape);
+        }
+        Self { inner }
+    }
+
+    /// Switches the RNG to tape mode (values returned in order; exhaustion raises).
+    fn set_rng_tape(&mut self, values: Vec<f64>) {
+        self.inner.set_rng_tape(values);
+    }
+
+    /// Replaces a block's contents (legacy `interpreter.blocks[id] = values`).
+    fn set_block(&mut self, id: i64, values: Vec<f64>) {
+        self.inner.set_block(id, values);
+    }
+
+    /// The current contents of a block, or None if it was never touched.
+    fn get_block(&self, id: i64) -> Option<Vec<f64>> {
+        self.inner.block(id).map(<[f64]>::to_vec)
+    }
+
+    /// Sorted ids of all existing blocks.
+    fn block_ids(&self) -> Vec<i64> {
+        self.inner.block_ids()
+    }
+
+    /// The legacy mutating `get`: extends the block with -1.0 fill and returns the
+    /// value. Raises `AssertionError` with the exact legacy messages.
+    fn get(&mut self, block: f64, index: f64) -> PyResult<f64> {
+        self.inner
+            .get(block, index)
+            .map_err(interpreter_error_to_py)
+    }
+
+    /// The legacy `set`: writes and returns the value.
+    fn set(&mut self, block: f64, index: f64, value: f64) -> PyResult<f64> {
+        self.inner
+            .set(block, index, value)
+            .map_err(interpreter_error_to_py)
+    }
+
+    /// Runs an engine-node tree and returns the result.
+    fn run(&mut self, nodes: PyRef<'_, EngineNodes>) -> PyResult<f64> {
+        self.inner
+            .run(&nodes.inner)
+            .map_err(interpreter_error_to_py)
+    }
+
+    /// `Op::DebugLog` values, in order.
+    #[getter]
+    fn log(&self) -> Vec<f64> {
+        self.inner.log().to_vec()
+    }
+
+    /// Node-evaluation counter (one increment per node evaluation, equivalent to one
+    /// legacy `run()` call, including constants; accumulates across runs).
+    #[getter]
+    fn eval_count(&self) -> u64 {
+        self.inner.eval_count()
+    }
+
+    /// `JumpLoop` dispatch counter (one increment per non-tail index-walk step;
+    /// accumulates across runs).
+    #[getter]
+    fn dispatch_count(&self) -> u64 {
+        self.inner.dispatch_count()
+    }
+}
+
 /// The `sonolus_backend` Python extension module.
 #[pymodule(gil_used = false)]
 fn sonolus_backend(m: &Bound<'_, PyModule>) -> PyResult<()> {
     m.add_function(wrap_pyfunction!(backend_version, m)?)?;
     m.add_function(wrap_pyfunction!(decode_cfg_canonical_dump, m)?)?;
     m.add_function(wrap_pyfunction!(decode_cfg_debug_dump, m)?)?;
+    m.add_class::<EngineNodes>()?;
+    m.add_class::<Interpreter>()?;
     Ok(())
 }

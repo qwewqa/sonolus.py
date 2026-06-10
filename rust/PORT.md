@@ -6,7 +6,7 @@
 > holds rules, tasks, state, and decisions. Maintainer notes (setup, end-of-run review)
 > live in [EXECUTION.md](EXECUTION.md).
 
-**Status:** in progress — S0 complete; next task: T1.1
+**Status:** in progress — S1 underway; next task: T1.2
 **Last updated:** 2026-06-10
 
 ## 0. Entry point — if you were pointed at this file, start here
@@ -156,7 +156,7 @@ Status values: `todo` / `in-progress` / `blocked` / `done`.
 
 | ID | Status | Task | DoD |
 |----|--------|------|-----|
-| T1.1 | todo | Interpreter port: seeded RNG, eval + JumpLoop-dispatch counters, `HashMap<i64,Vec<f64>>` blocks (negative ids), default `-1.0` fill, exact legacy assert messages, Block/Break unwinding, all switch forms. PyO3: `Interpreter(seed=)`, `set_block`, `get`, `run`, `log`, counters. | unit tests incl. numeric-semantics edge table (floor-mod, banker's round, remainder, Sign(±0)) |
+| T1.1 | done | Interpreter port: seeded RNG, eval + JumpLoop-dispatch counters, `HashMap<i64,Vec<f64>>` blocks (negative ids), default `-1.0` fill, exact legacy assert messages, Block/Break unwinding, all switch forms. PyO3: `Interpreter(seed=)`, `set_block`, `get`, `run`, `log`, counters. | unit tests incl. numeric-semantics edge table (floor-mod, banker's round, remainder, Sign(±0)) |
 | T1.2 | todo | Emitter: CFG → `Block(JumpLoop(...))` node tree (dense-switch selection per legacy `finalize.py` rules), node DAG dedup with canonical insertion order, int/float-tagged values, ROM NaN/inf, `format_engine_node`. | corpus check: Python-passes → encode → Rust emit runs the behavioral vectors correctly on the Rust interpreter |
 | T1.3 | todo | Baseline pipeline (= `minimal` level): Braun SSA construction → Boissinot out-of-SSA with coalescing → chordal-coloring slot allocation (≤4096 slots) → emit. No optimization. | pydori callbacks all compile within temp-memory budget at minimal (improvement over legacy `AllocateBasic`) |
 | T1.4 | todo | Dual-lane conftest: `SONOLUS_BACKEND=rust` routes `tests/script/conftest.py` through encode → Rust pipeline (levels available so far) + Rust interpreter, seed drawn once per invocation. CI stage B: rust-lane pytest job (Ubuntu, 3.14). | full behavioral suite green in **both** lanes, locally and in CI |
@@ -279,6 +279,22 @@ pointers (failing commands, metric numbers, repro). Empty deviation log = clean 
 
 ## 9. Worklog (append-only; newest first)
 
+- 2026-06-10 — **T1.1 done.** `nodes.rs` (arena: `Const{value, is_int}` 16B nodes,
+  contiguous args; `EngineNodes{arena, root}` is T1.2's product; iterative
+  `format_engine_node`) + `interpret.rs` (explicit Frame/Action stack machine; central
+  Break unwinding; evaluation-order fidelity incl. interleaved vs collect-then-check
+  ensure_int, proved by side-effect-ordering tests). Counters documented: eval_count ≡
+  legacy run() calls incl. consts; dispatch_count = non-tail JumpLoop round trips (tail
+  not counted) — T2.4's Python metrics must replicate exactly. RNG: SplitMix64 seeded +
+  tape mode (`RuntimeError("RNG tape exhausted")`). Errors are values in core; PyO3 maps
+  to exact CPython-3.14 exception types/messages (verified differentially against the
+  frozen interpreter; 3.14 changed several messages vs older versions). Documented
+  divergences: complex pow → ValueError; pow overflow message; bare SwitchInteger float
+  scrutinee (unreachable — finalize.py only emits If/SwitchWithDefault/
+  SwitchIntegerWithDefault + Block(JumpLoop(…, 0-tail))); −0.0 normalization where
+  Python's int-returning round/ceil/floor/trunc kill −0.0. `py_*` numeric kernels are
+  pub for T3.1 SCCP reuse (fold-exactly-where-Python-folds). Verified: cargo 75 green
+  (24 lib + 4 corpus + 43 interp + 4 ops), clippy/fmt clean, pytest 1153 green (+57).
 - 2026-06-10 — **T0.5 done; S0 complete.** Capture: `tests/conftest.py` monkeypatches
   `callback_to_cfg` (catches every frontend CFG suite-wide); `tests/script/conftest.py`
   records I/O vectors at the first opt level via `RecordingInterpreter` + RNG
