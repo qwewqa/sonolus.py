@@ -3,6 +3,8 @@
 //! This crate contains no Python bindings; it is consumed by `sonolus-backend-py`,
 //! which exposes it to Python as the `sonolus_backend` extension module.
 
+pub mod cfg;
+pub mod decode;
 pub mod ops;
 
 /// Returns the version of the backend, taken from the crate metadata.

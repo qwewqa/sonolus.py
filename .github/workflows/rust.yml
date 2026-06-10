@@ -75,3 +75,5 @@ jobs:
         run: uv run maturin develop -m rust/sonolus-backend-py/Cargo.toml
       - name: Import smoke test
         run: uv run python -c "import sonolus_backend; print(sonolus_backend.backend_version())"
+      - name: Backend tests (with extension)
+        run: uv run pytest tests/backend -q
