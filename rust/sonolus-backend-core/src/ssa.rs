@@ -70,6 +70,14 @@
 //!    sequentialized with cycle breaking through one scratch temp
 //!    ([`sequentialize_parallel_copies`]). Copies within one class disappear —
 //!    that is the coalescing payoff.
+//! 6. A second, temp-granularity coalescing round ([`crate::coalesce`], T3.5)
+//!    then merges the surviving copy-related temps whose live ranges do not
+//!    interfere — residual cross-class parallel copies plus the `gvnN`/`m2rN`
+//!    copy chains the optimizer passes left behind — removes the self-copies
+//!    that produces, and threads out any edge-split block whose copies all
+//!    disappeared (each such block is a pure dispatcher round trip). This
+//!    only runs when destruction actually slotted something, so the
+//!    `minimal` baseline never changes.
 //!
 //! ## What gets slotted (the W2 legalization contract)
 //!
@@ -899,7 +907,7 @@ fn order_violations(
 #[allow(clippy::too_many_lines, clippy::needless_range_loop)] // block ids index several tables
 pub fn destruct_ssa(mir: &mut Mir) -> Result<(), DestructError> {
     // 1. Split edges from multi-successor predecessors into phi blocks.
-    split_pred_edges(mir);
+    let split_blocks = split_pred_edges(mir);
 
     let scheduled = mir.scheduled_mask();
     let facts = collect_use_facts(mir, &scheduled);
@@ -1169,6 +1177,11 @@ pub fn destruct_ssa(mir: &mut Mir) -> Result<(), DestructError> {
         mir.blocks[b].terminator = term;
         mir.blocks[b].insts = new_insts;
     }
+
+    // 7. Temp-granularity copy coalescing + empty-split-block threading
+    // (module docs step 6; crate::coalesce). Reached only when values were
+    // slotted, so lowerable (minimal) MIR is never touched.
+    crate::coalesce::coalesce_and_thread(mir, &split_blocks);
     Ok(())
 }
 
@@ -1234,8 +1247,11 @@ fn rewrite_lazy_slotted_refs(
 /// guarantees parallel copies only ever land in plain `Jump` blocks: a
 /// `Branch` block's test expression is evaluated by the lowered dispatcher
 /// *after* the block's statements, so copies appended there would clobber the
-/// temps its spliced test loads read.
-fn split_pred_edges(mir: &mut Mir) {
+/// temps its spliced test loads read. Returns the created block ids; split
+/// blocks whose copies all coalesce away are threaded back out at the end of
+/// destruction (`crate::coalesce`).
+fn split_pred_edges(mir: &mut Mir) -> Vec<BlockId> {
+    let mut created: Vec<BlockId> = Vec::new();
     let n = mir.blocks.len();
     for b in 0..n {
         if mir.blocks[b].phis.is_empty() {
@@ -1247,6 +1263,7 @@ fn split_pred_edges(mir: &mut Mir) {
                 continue;
             }
             let m = mir.push_block();
+            created.push(m);
             mir.blocks[m].terminator = Terminator::Jump(b);
             match &mut mir.blocks[p].terminator {
                 Terminator::Jump(t) => {
@@ -1279,6 +1296,7 @@ fn split_pred_edges(mir: &mut Mir) {
             }
         }
     }
+    created
 }
 
 #[cfg(test)]
@@ -2020,6 +2038,74 @@ mod tests {
         assert_eq!(read_cell(&interp, 20, 0), 111.0);
         let interp = run_mir(&mir, &[(-3, vec![1.0])]);
         assert_eq!(read_cell(&interp, 20, 0), 222.0);
+    }
+
+    #[test]
+    fn copy_only_split_block_is_threaded_out() {
+        // Critical-edge diamond whose phi fully coalesces with both arguments:
+        // the edge-split block ends up holding no copies and must be threaded
+        // back out (b0's cond-0 edge points at b1 again), preserving phi
+        // semantics and the branch's edge order.
+        let mut mir = Mir::new();
+        let b0 = mir.push_block();
+        let b1 = mir.push_block();
+        let b2 = mir.push_block();
+        let y = sched(
+            &mut mir,
+            b0,
+            Inst::Load {
+                place: concrete_place(-3, 1),
+            },
+        );
+        let test = sched(
+            &mut mir,
+            b0,
+            Inst::Load {
+                place: concrete_place(-3, 0),
+            },
+        );
+        mir.blocks[b0].terminator = Terminator::Branch {
+            test,
+            cases: vec![(CaseCond::Int(0), b1)],
+            default: Some(b2),
+        };
+        mir.blocks[b2].terminator = Terminator::Jump(b1);
+        mir.blocks[b1].terminator = Terminator::Exit;
+        let z = sched(
+            &mut mir,
+            b2,
+            Inst::Load {
+                place: concrete_place(-3, 2),
+            },
+        );
+        let phi = mir.push_inst(Inst::Phi {
+            args: vec![(b0, y), (b2, z)],
+        });
+        mir.blocks[b1].phis.push(phi);
+        sched(
+            &mut mir,
+            b1,
+            Inst::Store {
+                place: concrete_place(20, 0),
+                value: phi,
+            },
+        );
+        destruct_ssa(&mut mir).unwrap();
+        // The split block was created (arena grew) but is no longer reachable:
+        // b0's branch points straight back at b1/b2 with conditions intact.
+        let Terminator::Branch { cases, default, .. } = &mir.blocks[b0].terminator else {
+            panic!("branch terminator survives");
+        };
+        assert_eq!(cases.as_slice(), &[(CaseCond::Int(0), b1)]);
+        assert_eq!(*default, Some(b2));
+        assert!(
+            mir.reverse_postorder().iter().all(|&b| b < 3),
+            "no split block stays reachable"
+        );
+        let interp = run_mir(&mir, &[(-3, vec![0.0, 7.0, 9.0])]);
+        assert_eq!(read_cell(&interp, 20, 0), 7.0);
+        let interp = run_mir(&mir, &[(-3, vec![1.0, 7.0, 9.0])]);
+        assert_eq!(read_cell(&interp, 20, 0), 9.0);
     }
 
     #[test]

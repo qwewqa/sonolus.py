@@ -6,7 +6,10 @@
 > holds rules, tasks, state, and decisions. Maintainer notes (setup, end-of-run review)
 > live in [EXECUTION.md](EXECUTION.md).
 
-**Status:** in progress — W1 + G3.1 done; W2 (T3.4/T3.5) dispatched; T5.1 running in parallel
+**Status:** paused (maintainer request) — W2 tasks (T3.4, T3.5) + T5.1 done and verified;
+**next task: gate G3.2** (run wave-gate template: behavioral all levels both lanes ✓ already
+green, corpus differential ✓ in-suite, 1M-case release fuzz pending, ratchet regen pending —
+`tools/metrics.py corpus --update` + report, then worklog close-out and CI push)
 **Last updated:** 2026-06-10
 
 ## 0. Entry point — if you were pointed at this file, start here
@@ -183,7 +186,7 @@ metrics ratchet not regressed; worklog entry with metric movement.
 | T3.3 | done | W1: ADCE + branch simplification + jump threading. | per-transform differential + fuzz |
 | G3.1 | done | W1 gate. Target: ≈ legacy `fast` quality. | wave gate template |
 | T3.4 | done | W2: Mem2Reg/SROA for TempBlocks (constant-index → scalars; dynamic-index arrays stay memory). **Top-risk transform — extra fuzz emphasis on dynamic indexing.** | per-transform differential + fuzz |
-| T3.5 | todo | W2: copy-coalescing and allocation quality improvements. | per-transform differential + fuzz; temp-slot metrics |
+| T3.5 | done | W2: copy-coalescing and allocation quality improvements. | per-transform differential + fuzz; temp-slot metrics |
 | G3.2 | todo | W2 gate. | wave gate template |
 | T3.6 | todo | W3: switch formation (RewriteToSwitch successor; recognizes post-GVN comparison trees on an integer scrutinee). | per-transform differential + fuzz |
 | T3.7 | todo | W3: LICM; optional cost-modeled micro-unroll of tiny constant-trip loops. | per-transform differential + fuzz |
@@ -320,6 +323,24 @@ pointers (failing commands, metric numbers, repro). Empty deviation log = clean 
 
 ## 9. Worklog (append-only; newest first)
 
+- 2026-06-10 — **T3.5 done; run paused at maintainer request — resume at G3.2.**
+  `coalesce.rs`: second Boissinot phase at temp granularity (union-find over the
+  allocator's own interference graph; catches residual parallel copies, gvnN
+  double-stores, m2rN reroutes; self-copies deleted); copy-only split blocks threaded
+  out (T3.4's +1.3% dispatch regression fully clawed back, now below the stored
+  ratchet). `alloc.rs`: unified on analysis::BitSet; legacy array_defs/is_array_init
+  liveness parity; scalar coloring = MCS-order greedy **portfolioed against table
+  order** (ties prefer table order — slot layout is a DAG-dedup input: pure MCS cost
+  +5% dag with zero slot benefit; never worse than T1.3 by construction). pydori
+  slots: standard total 2,705→2,622, max 41 = proven structural floor (two unpromoted
+  dynamic-index arrays + pressure-optimal 17 scalar colors); further reduction needs
+  array SROA (W3+ fodder). Corpus standard: eval 23,853→22,837, static 14,015→13,651,
+  dispatch 2,065→2,016. pydori vs python-standard: eval 1.322×→1.308×, static
+  1.773×→1.701×, dispatch 1.566×→1.433×. Subagent ran 50k release fuzz (level +
+  dynamic-heavy) clean; scalar interference post-coalescing is NOT chordal (hence
+  portfolio). Orchestrator verified: cargo all suites green, clippy/fmt clean, both
+  pytest lanes 1196+4 green. **G3.2 remains**: 1M fuzz budget run, rust-corpus.json
+  ratchet regen (`tools/metrics.py corpus --update`), gate worklog, CI push.
 - 2026-06-10 — **T3.4 done (top-risk Mem2Reg) + T5.1 done (collection core), both
   merged and verified.** T3.4: whole-temp promotion via Braun (escapes: dynamic index,
   OOB const; refusal for statically-possible read-before-write paths — 160/8,992

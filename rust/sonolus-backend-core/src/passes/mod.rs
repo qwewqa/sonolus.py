@@ -146,7 +146,11 @@ pub fn registry() -> &'static [RegistryEntry] {
             stage: Stage::W1,
             make: || Box::new(dce::DcePass),
         },
-        // ===== Wave W2 (T3.4: Mem2Reg + W1 re-run; T3.5 appends after) =====
+        // ===== Wave W2 (T3.4: Mem2Reg + W1 re-run) =====
+        //
+        // T3.5 (copy coalescing + allocation quality) is deliberately NOT a
+        // registry pass: it lives after the pipeline, inside
+        // `ssa::destruct_ssa` (crate::coalesce) and `alloc::allocate_temps`.
         //
         // T3.4: Mem2Reg/SROA for TempBlocks (src/passes/mem2reg.rs) — promotes
         // constant-index temp slots to SSA values (the first phis in

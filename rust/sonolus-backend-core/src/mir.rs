@@ -400,6 +400,35 @@ impl Mir {
     pub fn is_const(&self, value: Value) -> bool {
         matches!(self.inst(value), Inst::ConstInt(_) | Inst::ConstFloat(_))
     }
+
+    /// Reverse postorder over reachable blocks from the entry, successors
+    /// visited in edge-sorted order (mirrors `encode.py::_reverse_postorder`
+    /// and `flow.py`'s traversal). Iterative. Empty for an empty MIR.
+    pub fn reverse_postorder(&self) -> Vec<BlockId> {
+        if self.blocks.is_empty() {
+            return Vec::new();
+        }
+        let mut visited = vec![false; self.blocks.len()];
+        visited[0] = true;
+        let mut postorder: Vec<BlockId> = Vec::new();
+        // (block, next successor index); successors() is already edge-sorted.
+        let mut stack: Vec<(BlockId, usize)> = vec![(0, 0)];
+        while let Some(&mut (block, ref mut next)) = stack.last_mut() {
+            let succ = self.blocks[block].terminator.successors().nth(*next);
+            *next += 1;
+            if let Some(dst) = succ {
+                if !visited[dst] {
+                    visited[dst] = true;
+                    stack.push((dst, 0));
+                }
+            } else {
+                postorder.push(block);
+                stack.pop();
+            }
+        }
+        postorder.reverse();
+        postorder
+    }
 }
 
 fn for_place_operand(place: &Place, f: &mut impl FnMut(Value)) {

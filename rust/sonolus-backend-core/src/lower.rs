@@ -113,7 +113,7 @@ pub fn lower_mir(mir: &Mir, alloc: &Allocation) -> Result<Cfg, LowerError> {
         return Ok(cfg);
     }
 
-    let order = reverse_postorder(mir);
+    let order = mir.reverse_postorder();
     let mut block_index: Vec<Option<usize>> = vec![None; mir.blocks.len()];
     for (i, &b) in order.iter().enumerate() {
         block_index[b] = Some(i);
@@ -159,31 +159,6 @@ pub fn lower_mir(mir: &Mir, alloc: &Allocation) -> Result<Cfg, LowerError> {
     }
     cfg.blocks = out_blocks;
     Ok(cfg)
-}
-
-/// Reverse postorder from the entry, successors visited in edge-sorted order
-/// (mirrors `encode.py::_reverse_postorder`). Iterative.
-fn reverse_postorder(mir: &Mir) -> Vec<BlockId> {
-    let mut visited = vec![false; mir.blocks.len()];
-    visited[0] = true;
-    let mut postorder: Vec<BlockId> = Vec::new();
-    // (block, next successor index); successors() is already edge-sorted.
-    let mut stack: Vec<(BlockId, usize)> = vec![(0, 0)];
-    while let Some(&mut (block, ref mut next)) = stack.last_mut() {
-        let succ = mir.blocks[block].terminator.successors().nth(*next);
-        *next += 1;
-        if let Some(dst) = succ {
-            if !visited[dst] {
-                visited[dst] = true;
-                stack.push((dst, 0));
-            }
-        } else {
-            postorder.push(block);
-            stack.pop();
-        }
-    }
-    postorder.reverse();
-    postorder
 }
 
 /// Global use counts over reachable references: immediate operands of
