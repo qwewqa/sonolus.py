@@ -1,0 +1,5614 @@
+{
+  "schema": 1,
+  "generated_at": "2026-06-10T19:20:50-0700",
+  "machine": {
+    "cpu": "AMD64 Family 26 Model 68 Stepping 0, AuthenticAMD",
+    "platform": "Windows-11-10.0.26200-SP0",
+    "python": "3.14.3"
+  },
+  "commit": "1f75ddb1af43f95a24a2f8ffbab335ceaed60027",
+  "project": "pydori",
+  "fill": {
+    "algorithm": "splitmix64-mix-v1 (diff.rs build_memory)",
+    "fill_len": 32,
+    "rom_block": 3000,
+    "temp_block_excluded": 10000
+  },
+  "seed_attempts": [
+    [
+      1592590337,
+      19088743
+    ],
+    [
+      1592590338,
+      2309737967
+    ],
+    [
+      1592590339,
+      1111638594
+    ]
+  ],
+  "eval_budget": 200000000,
+  "kind": "python-standard",
+  "level": "standard",
+  "passes": [
+    "CoalesceFlow",
+    "UnreachableCodeElimination",
+    "DeadCodeElimination",
+    "CoalesceSmallConditionalBlocks",
+    "ToSSA",
+    "SparseConditionalConstantPropagation",
+    "UnreachableCodeElimination",
+    "DeadCodeElimination",
+    "CoalesceFlow",
+    "NormalizeBlocks",
+    "InlineVars",
+    "DeadCodeElimination",
+    "InlineVars",
+    "CoalesceFlow",
+    "SparseConditionalConstantPropagation",
+    "FlattenAssociativeOps",
+    "RemoveRedundantArguments",
+    "DeadCodeElimination",
+    "CoalesceFlow",
+    "RewriteToSwitch",
+    "InlineVars",
+    "UnflattenAssociativeOps",
+    "LoopInvariantCodeMotion",
+    "CommonSubexpressionElimination",
+    "NormalizeBlocks",
+    "FlattenAssociativeOps",
+    "InlineVars",
+    "DeadCodeElimination",
+    "FlattenAssociativeOps",
+    "RemoveRedundantArguments",
+    "FromSSA",
+    "CoalesceFlow",
+    "CopyCoalesce",
+    "AdvancedDeadCodeElimination",
+    "CoalesceFlow",
+    "NormalizeSwitch",
+    "CombineExitBlocks",
+    "Allocate"
+  ],
+  "timing_runs": 5,
+  "callback_count": 300,
+  "aggregates": {
+    "static_nodes": 458996,
+    "dag_size": 105772,
+    "eval_count": 50245,
+    "dispatch_count": 1333,
+    "dynamic_rows": 300,
+    "dynamic_null": [],
+    "wall_time_ms_total": 25306.346
+  },
+  "rows": [
+    {
+      "label": "play/DirectionalFlick.initialize",
+      "mode": "play",
+      "callback": "initialize",
+      "static_nodes": 48,
+      "dag_size": 32,
+      "dynamic": {
+        "seed_index": 0,
+        "eval_count": 22,
+        "dispatch_count": 3,
+        "log_len": 0,
+        "outcome": {
+          "status": "ok",
+          "result": "0x0000000000000000"
+        }
+      },
+      "wall_time_ms": 1.21
+    },
+    {
+      "label": "play/DirectionalFlick.initialize_dev",
+      "mode": "play",
+      "callback": "initialize",
+      "static_nodes": 239,
+      "dag_size": 105,
+      "dynamic": {
+        "seed_index": 0,
+        "eval_count": 22,
+        "dispatch_count": 3,
+        "log_len": 0,
+        "outcome": {
+          "status": "ok",
+          "result": "0x0000000000000000"
+        }
+      },
+      "wall_time_ms": 5.916
+    },
+    {
+      "label": "play/DirectionalFlick.preprocess",
+      "mode": "play",
+      "callback": "preprocess",
+      "static_nodes": 433,
+      "dag_size": 156,
+      "dynamic": {
+        "seed_index": 0,
+        "eval_count": 81,
+        "dispatch_count": 3,
+        "log_len": 0,
+        "outcome": {
+          "status": "error",
+          "error_type": "NotImplementedError",
+          "error": "Unsupported operation: BeatToTime"
+        }
+      },
+      "wall_time_ms": 7.748
+    },
+    {
+      "label": "play/DirectionalFlick.preprocess_dev",
+      "mode": "play",
+      "callback": "preprocess",
+      "static_nodes": 1057,
+      "dag_size": 287,
+      "dynamic": {
+        "seed_index": 0,
+        "eval_count": 81,
+        "dispatch_count": 3,
+        "log_len": 0,
+        "outcome": {
+          "status": "error",
+          "error_type": "NotImplementedError",
+          "error": "Unsupported operation: BeatToTime"
+        }
+      },
+      "wall_time_ms": 23.779
+    },
+    {
+      "label": "play/DirectionalFlick.should_spawn",
+      "mode": "play",
+      "callback": "shouldSpawn",
+      "static_nodes": 14,
+      "dag_size": 13,
+      "dynamic": {
+        "seed_index": 0,
+        "eval_count": 12,
+        "dispatch_count": 1,
+        "log_len": 0,
+        "outcome": {
+          "status": "ok",
+          "result": "0x3ff0000000000000"
+        }
+      },
+      "wall_time_ms": 0.3
+    },
+    {
+      "label": "play/DirectionalFlick.should_spawn_dev",
+      "mode": "play",
+      "callback": "shouldSpawn",
+      "static_nodes": 14,
+      "dag_size": 13,
+      "dynamic": {
+        "seed_index": 0,
+        "eval_count": 12,
+        "dispatch_count": 1,
+        "log_len": 0,
+        "outcome": {
+          "status": "ok",
+          "result": "0x3ff0000000000000"
+        }
+      },
+      "wall_time_ms": 0.29
+    },
+    {
+      "label": "play/DirectionalFlick.spawn_order",
+      "mode": "play",
+      "callback": "spawnOrder",
+      "static_nodes": 10,
+      "dag_size": 9,
+      "dynamic": {
+        "seed_index": 0,
+        "eval_count": 8,
+        "dispatch_count": 1,
+        "log_len": 0,
+        "outcome": {
+          "status": "ok",
+          "result": "0xbfecd3841fcda980"
+        }
+      },
+      "wall_time_ms": 0.191
+    },
+    {
+      "label": "play/DirectionalFlick.spawn_order_dev",
+      "mode": "play",
+      "callback": "spawnOrder",
+      "static_nodes": 10,
+      "dag_size": 9,
+      "dynamic": {
+        "seed_index": 0,
+        "eval_count": 8,
+        "dispatch_count": 1,
+        "log_len": 0,
+        "outcome": {
+          "status": "ok",
+          "result": "0xbfecd3841fcda980"
+        }
+      },
+      "wall_time_ms": 0.196
+    },
+    {
+      "label": "play/DirectionalFlick.terminate",
+      "mode": "play",
+      "callback": "terminate",
+      "static_nodes": 10,
+      "dag_size": 8,
+      "dynamic": {
+        "seed_index": 0,
+        "eval_count": 4,
+        "dispatch_count": 1,
+        "log_len": 0,
+        "outcome": {
+          "status": "error",
+          "error_type": "NotImplementedError",
+          "error": "Unsupported operation: ExportValue"
+        }
+      },
+      "wall_time_ms": 0.191
+    },
+    {
+      "label": "play/DirectionalFlick.terminate_dev",
+      "mode": "play",
+      "callback": "terminate",
+      "static_nodes": 10,
+      "dag_size": 8,
+      "dynamic": {
+        "seed_index": 0,
+        "eval_count": 4,
+        "dispatch_count": 1,
+        "log_len": 0,
+        "outcome": {
+          "status": "error",
+          "error_type": "NotImplementedError",
+          "error": "Unsupported operation: ExportValue"
+        }
+      },
+      "wall_time_ms": 0.191
+    },
+    {
+      "label": "play/DirectionalFlick.touch",
+      "mode": "play",
+      "callback": "touch",
+      "static_nodes": 9703,
+      "dag_size": 1799,
+      "dynamic": {
+        "seed_index": 0,
+        "eval_count": 11,
+        "dispatch_count": 2,
+        "log_len": 0,
+        "outcome": {
+          "status": "ok",
+          "result": "0x0000000000000000"
+        }
+      },
+      "wall_time_ms": 452.455
+    },
+    {
+      "label": "play/DirectionalFlick.touch_dev",
+      "mode": "play",
+      "callback": "touch",
+      "static_nodes": 13713,
+      "dag_size": 2946,
+      "dynamic": {
+        "seed_index": 0,
+        "eval_count": 11,
+        "dispatch_count": 2,
+        "log_len": 0,
+        "outcome": {
+          "status": "ok",
+          "result": "0x0000000000000000"
+        }
+      },
+      "wall_time_ms": 713.332
+    },
+    {
+      "label": "play/DirectionalFlick.update_parallel",
+      "mode": "play",
+      "callback": "updateParallel",
+      "static_nodes": 2304,
+      "dag_size": 637,
+      "dynamic": {
+        "seed_index": 0,
+        "eval_count": 11,
+        "dispatch_count": 2,
+        "log_len": 0,
+        "outcome": {
+          "status": "ok",
+          "result": "0x0000000000000000"
+        }
+      },
+      "wall_time_ms": 222.333
+    },
+    {
+      "label": "play/DirectionalFlick.update_parallel_dev",
+      "mode": "play",
+      "callback": "updateParallel",
+      "static_nodes": 2472,
+      "dag_size": 684,
+      "dynamic": {
+        "seed_index": 0,
+        "eval_count": 11,
+        "dispatch_count": 2,
+        "log_len": 0,
+        "outcome": {
+          "status": "ok",
+          "result": "0x0000000000000000"
+        }
+      },
+      "wall_time_ms": 241.117
+    },
+    {
+      "label": "play/DirectionalFlick.update_sequential",
+      "mode": "play",
+      "callback": "updateSequential",
+      "static_nodes": 1458,
+      "dag_size": 469,
+      "dynamic": {
+        "seed_index": 0,
+        "eval_count": 39,
+        "dispatch_count": 3,
+        "log_len": 0,
+        "outcome": {
+          "status": "ok",
+          "result": "0x0000000000000000"
+        }
+      },
+      "wall_time_ms": 51.081
+    },
+    {
+      "label": "play/DirectionalFlick.update_sequential_dev",
+      "mode": "play",
+      "callback": "updateSequential",
+      "static_nodes": 1745,
+      "dag_size": 573,
+      "dynamic": {
+        "seed_index": 0,
+        "eval_count": 39,
+        "dispatch_count": 3,
+        "log_len": 0,
+        "outcome": {
+          "status": "ok",
+          "result": "0x0000000000000000"
+        }
+      },
+      "wall_time_ms": 60.104
+    },
+    {
+      "label": "play/Flick.initialize",
+      "mode": "play",
+      "callback": "initialize",
+      "static_nodes": 48,
+      "dag_size": 32,
+      "dynamic": {
+        "seed_index": 0,
+        "eval_count": 22,
+        "dispatch_count": 3,
+        "log_len": 0,
+        "outcome": {
+          "status": "ok",
+          "result": "0x0000000000000000"
+        }
+      },
+      "wall_time_ms": 1.238
+    },
+    {
+      "label": "play/Flick.initialize_dev",
+      "mode": "play",
+      "callback": "initialize",
+      "static_nodes": 239,
+      "dag_size": 105,
+      "dynamic": {
+        "seed_index": 0,
+        "eval_count": 22,
+        "dispatch_count": 3,
+        "log_len": 0,
+        "outcome": {
+          "status": "ok",
+          "result": "0x0000000000000000"
+        }
+      },
+      "wall_time_ms": 6.063
+    },
+    {
+      "label": "play/Flick.preprocess",
+      "mode": "play",
+      "callback": "preprocess",
+      "static_nodes": 433,
+      "dag_size": 156,
+      "dynamic": {
+        "seed_index": 0,
+        "eval_count": 81,
+        "dispatch_count": 3,
+        "log_len": 0,
+        "outcome": {
+          "status": "error",
+          "error_type": "NotImplementedError",
+          "error": "Unsupported operation: BeatToTime"
+        }
+      },
+      "wall_time_ms": 8.332
+    },
+    {
+      "label": "play/Flick.preprocess_dev",
+      "mode": "play",
+      "callback": "preprocess",
+      "static_nodes": 1057,
+      "dag_size": 287,
+      "dynamic": {
+        "seed_index": 0,
+        "eval_count": 81,
+        "dispatch_count": 3,
+        "log_len": 0,
+        "outcome": {
+          "status": "error",
+          "error_type": "NotImplementedError",
+          "error": "Unsupported operation: BeatToTime"
+        }
+      },
+      "wall_time_ms": 24.158
+    },
+    {
+      "label": "play/Flick.should_spawn",
+      "mode": "play",
+      "callback": "shouldSpawn",
+      "static_nodes": 14,
+      "dag_size": 13,
+      "dynamic": {
+        "seed_index": 0,
+        "eval_count": 12,
+        "dispatch_count": 1,
+        "log_len": 0,
+        "outcome": {
+          "status": "ok",
+          "result": "0x3ff0000000000000"
+        }
+      },
+      "wall_time_ms": 0.293
+    },
+    {
+      "label": "play/Flick.should_spawn_dev",
+      "mode": "play",
+      "callback": "shouldSpawn",
+      "static_nodes": 14,
+      "dag_size": 13,
+      "dynamic": {
+        "seed_index": 0,
+        "eval_count": 12,
+        "dispatch_count": 1,
+        "log_len": 0,
+        "outcome": {
+          "status": "ok",
+          "result": "0x3ff0000000000000"
+        }
+      },
+      "wall_time_ms": 0.291
+    },
+    {
+      "label": "play/Flick.spawn_order",
+      "mode": "play",
+      "callback": "spawnOrder",
+      "static_nodes": 10,
+      "dag_size": 9,
+      "dynamic": {
+        "seed_index": 0,
+        "eval_count": 8,
+        "dispatch_count": 1,
+        "log_len": 0,
+        "outcome": {
+          "status": "ok",
+          "result": "0xbfecd3841fcda980"
+        }
+      },
+      "wall_time_ms": 0.191
+    },
+    {
+      "label": "play/Flick.spawn_order_dev",
+      "mode": "play",
+      "callback": "spawnOrder",
+      "static_nodes": 10,
+      "dag_size": 9,
+      "dynamic": {
+        "seed_index": 0,
+        "eval_count": 8,
+        "dispatch_count": 1,
+        "log_len": 0,
+        "outcome": {
+          "status": "ok",
+          "result": "0xbfecd3841fcda980"
+        }
+      },
+      "wall_time_ms": 0.19
+    },
+    {
+      "label": "play/Flick.terminate",
+      "mode": "play",
+      "callback": "terminate",
+      "static_nodes": 10,
+      "dag_size": 8,
+      "dynamic": {
+        "seed_index": 0,
+        "eval_count": 4,
+        "dispatch_count": 1,
+        "log_len": 0,
+        "outcome": {
+          "status": "error",
+          "error_type": "NotImplementedError",
+          "error": "Unsupported operation: ExportValue"
+        }
+      },
+      "wall_time_ms": 0.194
+    },
+    {
+      "label": "play/Flick.terminate_dev",
+      "mode": "play",
+      "callback": "terminate",
+      "static_nodes": 10,
+      "dag_size": 8,
+      "dynamic": {
+        "seed_index": 0,
+        "eval_count": 4,
+        "dispatch_count": 1,
+        "log_len": 0,
+        "outcome": {
+          "status": "error",
+          "error_type": "NotImplementedError",
+          "error": "Unsupported operation: ExportValue"
+        }
+      },
+      "wall_time_ms": 0.204
+    },
+    {
+      "label": "play/Flick.touch",
+      "mode": "play",
+      "callback": "touch",
+      "static_nodes": 9703,
+      "dag_size": 1799,
+      "dynamic": {
+        "seed_index": 0,
+        "eval_count": 11,
+        "dispatch_count": 2,
+        "log_len": 0,
+        "outcome": {
+          "status": "ok",
+          "result": "0x0000000000000000"
+        }
+      },
+      "wall_time_ms": 490.788
+    },
+    {
+      "label": "play/Flick.touch_dev",
+      "mode": "play",
+      "callback": "touch",
+      "static_nodes": 13713,
+      "dag_size": 2946,
+      "dynamic": {
+        "seed_index": 0,
+        "eval_count": 11,
+        "dispatch_count": 2,
+        "log_len": 0,
+        "outcome": {
+          "status": "ok",
+          "result": "0x0000000000000000"
+        }
+      },
+      "wall_time_ms": 727.542
+    },
+    {
+      "label": "play/Flick.update_parallel",
+      "mode": "play",
+      "callback": "updateParallel",
+      "static_nodes": 2304,
+      "dag_size": 637,
+      "dynamic": {
+        "seed_index": 0,
+        "eval_count": 11,
+        "dispatch_count": 2,
+        "log_len": 0,
+        "outcome": {
+          "status": "ok",
+          "result": "0x0000000000000000"
+        }
+      },
+      "wall_time_ms": 230.917
+    },
+    {
+      "label": "play/Flick.update_parallel_dev",
+      "mode": "play",
+      "callback": "updateParallel",
+      "static_nodes": 2472,
+      "dag_size": 684,
+      "dynamic": {
+        "seed_index": 0,
+        "eval_count": 11,
+        "dispatch_count": 2,
+        "log_len": 0,
+        "outcome": {
+          "status": "ok",
+          "result": "0x0000000000000000"
+        }
+      },
+      "wall_time_ms": 229.932
+    },
+    {
+      "label": "play/Flick.update_sequential",
+      "mode": "play",
+      "callback": "updateSequential",
+      "static_nodes": 1458,
+      "dag_size": 469,
+      "dynamic": {
+        "seed_index": 0,
+        "eval_count": 39,
+        "dispatch_count": 3,
+        "log_len": 0,
+        "outcome": {
+          "status": "ok",
+          "result": "0x0000000000000000"
+        }
+      },
+      "wall_time_ms": 52.129
+    },
+    {
+      "label": "play/Flick.update_sequential_dev",
+      "mode": "play",
+      "callback": "updateSequential",
+      "static_nodes": 1745,
+      "dag_size": 573,
+      "dynamic": {
+        "seed_index": 0,
+        "eval_count": 39,
+        "dispatch_count": 3,
+        "log_len": 0,
+        "outcome": {
+          "status": "ok",
+          "result": "0x0000000000000000"
+        }
+      },
+      "wall_time_ms": 59.723
+    },
+    {
+      "label": "play/HoldAnchor.initialize",
+      "mode": "play",
+      "callback": "initialize",
+      "static_nodes": 48,
+      "dag_size": 32,
+      "dynamic": {
+        "seed_index": 0,
+        "eval_count": 22,
+        "dispatch_count": 3,
+        "log_len": 0,
+        "outcome": {
+          "status": "ok",
+          "result": "0x0000000000000000"
+        }
+      },
+      "wall_time_ms": 1.268
+    },
+    {
+      "label": "play/HoldAnchor.initialize_dev",
+      "mode": "play",
+      "callback": "initialize",
+      "static_nodes": 239,
+      "dag_size": 105,
+      "dynamic": {
+        "seed_index": 0,
+        "eval_count": 22,
+        "dispatch_count": 3,
+        "log_len": 0,
+        "outcome": {
+          "status": "ok",
+          "result": "0x0000000000000000"
+        }
+      },
+      "wall_time_ms": 6.074
+    },
+    {
+      "label": "play/HoldAnchor.preprocess",
+      "mode": "play",
+      "callback": "preprocess",
+      "static_nodes": 433,
+      "dag_size": 156,
+      "dynamic": {
+        "seed_index": 0,
+        "eval_count": 81,
+        "dispatch_count": 3,
+        "log_len": 0,
+        "outcome": {
+          "status": "error",
+          "error_type": "NotImplementedError",
+          "error": "Unsupported operation: BeatToTime"
+        }
+      },
+      "wall_time_ms": 7.841
+    },
+    {
+      "label": "play/HoldAnchor.preprocess_dev",
+      "mode": "play",
+      "callback": "preprocess",
+      "static_nodes": 1057,
+      "dag_size": 287,
+      "dynamic": {
+        "seed_index": 0,
+        "eval_count": 81,
+        "dispatch_count": 3,
+        "log_len": 0,
+        "outcome": {
+          "status": "error",
+          "error_type": "NotImplementedError",
+          "error": "Unsupported operation: BeatToTime"
+        }
+      },
+      "wall_time_ms": 24.437
+    },
+    {
+      "label": "play/HoldAnchor.should_spawn",
+      "mode": "play",
+      "callback": "shouldSpawn",
+      "static_nodes": 14,
+      "dag_size": 13,
+      "dynamic": {
+        "seed_index": 0,
+        "eval_count": 12,
+        "dispatch_count": 1,
+        "log_len": 0,
+        "outcome": {
+          "status": "ok",
+          "result": "0x3ff0000000000000"
+        }
+      },
+      "wall_time_ms": 0.288
+    },
+    {
+      "label": "play/HoldAnchor.should_spawn_dev",
+      "mode": "play",
+      "callback": "shouldSpawn",
+      "static_nodes": 14,
+      "dag_size": 13,
+      "dynamic": {
+        "seed_index": 0,
+        "eval_count": 12,
+        "dispatch_count": 1,
+        "log_len": 0,
+        "outcome": {
+          "status": "ok",
+          "result": "0x3ff0000000000000"
+        }
+      },
+      "wall_time_ms": 0.335
+    },
+    {
+      "label": "play/HoldAnchor.spawn_order",
+      "mode": "play",
+      "callback": "spawnOrder",
+      "static_nodes": 10,
+      "dag_size": 9,
+      "dynamic": {
+        "seed_index": 0,
+        "eval_count": 8,
+        "dispatch_count": 1,
+        "log_len": 0,
+        "outcome": {
+          "status": "ok",
+          "result": "0xbfecd3841fcda980"
+        }
+      },
+      "wall_time_ms": 0.193
+    },
+    {
+      "label": "play/HoldAnchor.spawn_order_dev",
+      "mode": "play",
+      "callback": "spawnOrder",
+      "static_nodes": 10,
+      "dag_size": 9,
+      "dynamic": {
+        "seed_index": 0,
+        "eval_count": 8,
+        "dispatch_count": 1,
+        "log_len": 0,
+        "outcome": {
+          "status": "ok",
+          "result": "0xbfecd3841fcda980"
+        }
+      },
+      "wall_time_ms": 0.19
+    },
+    {
+      "label": "play/HoldAnchor.terminate",
+      "mode": "play",
+      "callback": "terminate",
+      "static_nodes": 10,
+      "dag_size": 8,
+      "dynamic": {
+        "seed_index": 0,
+        "eval_count": 4,
+        "dispatch_count": 1,
+        "log_len": 0,
+        "outcome": {
+          "status": "error",
+          "error_type": "NotImplementedError",
+          "error": "Unsupported operation: ExportValue"
+        }
+      },
+      "wall_time_ms": 0.214
+    },
+    {
+      "label": "play/HoldAnchor.terminate_dev",
+      "mode": "play",
+      "callback": "terminate",
+      "static_nodes": 10,
+      "dag_size": 8,
+      "dynamic": {
+        "seed_index": 0,
+        "eval_count": 4,
+        "dispatch_count": 1,
+        "log_len": 0,
+        "outcome": {
+          "status": "error",
+          "error_type": "NotImplementedError",
+          "error": "Unsupported operation: ExportValue"
+        }
+      },
+      "wall_time_ms": 0.275
+    },
+    {
+      "label": "play/HoldAnchor.touch",
+      "mode": "play",
+      "callback": "touch",
+      "static_nodes": 9703,
+      "dag_size": 1799,
+      "dynamic": {
+        "seed_index": 0,
+        "eval_count": 11,
+        "dispatch_count": 2,
+        "log_len": 0,
+        "outcome": {
+          "status": "ok",
+          "result": "0x0000000000000000"
+        }
+      },
+      "wall_time_ms": 500.271
+    },
+    {
+      "label": "play/HoldAnchor.touch_dev",
+      "mode": "play",
+      "callback": "touch",
+      "static_nodes": 13713,
+      "dag_size": 2946,
+      "dynamic": {
+        "seed_index": 0,
+        "eval_count": 11,
+        "dispatch_count": 2,
+        "log_len": 0,
+        "outcome": {
+          "status": "ok",
+          "result": "0x0000000000000000"
+        }
+      },
+      "wall_time_ms": 749.701
+    },
+    {
+      "label": "play/HoldAnchor.update_parallel",
+      "mode": "play",
+      "callback": "updateParallel",
+      "static_nodes": 2304,
+      "dag_size": 637,
+      "dynamic": {
+        "seed_index": 0,
+        "eval_count": 11,
+        "dispatch_count": 2,
+        "log_len": 0,
+        "outcome": {
+          "status": "ok",
+          "result": "0x0000000000000000"
+        }
+      },
+      "wall_time_ms": 223.125
+    },
+    {
+      "label": "play/HoldAnchor.update_parallel_dev",
+      "mode": "play",
+      "callback": "updateParallel",
+      "static_nodes": 2472,
+      "dag_size": 684,
+      "dynamic": {
+        "seed_index": 0,
+        "eval_count": 11,
+        "dispatch_count": 2,
+        "log_len": 0,
+        "outcome": {
+          "status": "ok",
+          "result": "0x0000000000000000"
+        }
+      },
+      "wall_time_ms": 229.525
+    },
+    {
+      "label": "play/HoldAnchor.update_sequential",
+      "mode": "play",
+      "callback": "updateSequential",
+      "static_nodes": 1458,
+      "dag_size": 469,
+      "dynamic": {
+        "seed_index": 0,
+        "eval_count": 39,
+        "dispatch_count": 3,
+        "log_len": 0,
+        "outcome": {
+          "status": "ok",
+          "result": "0x0000000000000000"
+        }
+      },
+      "wall_time_ms": 53.624
+    },
+    {
+      "label": "play/HoldAnchor.update_sequential_dev",
+      "mode": "play",
+      "callback": "updateSequential",
+      "static_nodes": 1745,
+      "dag_size": 573,
+      "dynamic": {
+        "seed_index": 0,
+        "eval_count": 39,
+        "dispatch_count": 3,
+        "log_len": 0,
+        "outcome": {
+          "status": "ok",
+          "result": "0x0000000000000000"
+        }
+      },
+      "wall_time_ms": 60.881
+    },
+    {
+      "label": "play/HoldConnector.should_spawn",
+      "mode": "play",
+      "callback": "shouldSpawn",
+      "static_nodes": 20,
+      "dag_size": 18,
+      "dynamic": {
+        "seed_index": 0,
+        "eval_count": 18,
+        "dispatch_count": 1,
+        "log_len": 0,
+        "outcome": {
+          "status": "error",
+          "error_type": "AssertionError",
+          "error": "Value must be an integer"
+        }
+      },
+      "wall_time_ms": 0.525
+    },
+    {
+      "label": "play/HoldConnector.should_spawn_dev",
+      "mode": "play",
+      "callback": "shouldSpawn",
+      "static_nodes": 176,
+      "dag_size": 79,
+      "dynamic": {
+        "seed_index": 0,
+        "eval_count": 16,
+        "dispatch_count": 2,
+        "log_len": 1,
+        "outcome": {
+          "status": "ok",
+          "result": "0x0000000000000000"
+        }
+      },
+      "wall_time_ms": 4.485
+    },
+    {
+      "label": "play/HoldConnector.spawn_order",
+      "mode": "play",
+      "callback": "spawnOrder",
+      "static_nodes": 16,
+      "dag_size": 14,
+      "dynamic": {
+        "seed_index": 0,
+        "eval_count": 14,
+        "dispatch_count": 1,
+        "log_len": 0,
+        "outcome": {
+          "status": "error",
+          "error_type": "AssertionError",
+          "error": "Value must be an integer"
+        }
+      },
+      "wall_time_ms": 0.401
+    },
+    {
+      "label": "play/HoldConnector.spawn_order_dev",
+      "mode": "play",
+      "callback": "spawnOrder",
+      "static_nodes": 172,
+      "dag_size": 76,
+      "dynamic": {
+        "seed_index": 0,
+        "eval_count": 16,
+        "dispatch_count": 2,
+        "log_len": 1,
+        "outcome": {
+          "status": "ok",
+          "result": "0x0000000000000000"
+        }
+      },
+      "wall_time_ms": 4.538
+    },
+    {
+      "label": "play/HoldConnector.update_parallel",
+      "mode": "play",
+      "callback": "updateParallel",
+      "static_nodes": 526,
+      "dag_size": 169,
+      "dynamic": {
+        "seed_index": 0,
+        "eval_count": 11,
+        "dispatch_count": 2,
+        "log_len": 0,
+        "outcome": {
+          "status": "ok",
+          "result": "0x0000000000000000"
+        }
+      },
+      "wall_time_ms": 28.307
+    },
+    {
+      "label": "play/HoldConnector.update_parallel_dev",
+      "mode": "play",
+      "callback": "updateParallel",
+      "static_nodes": 1004,
+      "dag_size": 331,
+      "dynamic": {
+        "seed_index": 0,
+        "eval_count": 11,
+        "dispatch_count": 2,
+        "log_len": 0,
+        "outcome": {
+          "status": "ok",
+          "result": "0x0000000000000000"
+        }
+      },
+      "wall_time_ms": 44.849
+    },
+    {
+      "label": "play/HoldConnector.update_sequential",
+      "mode": "play",
+      "callback": "updateSequential",
+      "static_nodes": 173,
+      "dag_size": 77,
+      "dynamic": {
+        "seed_index": 0,
+        "eval_count": 48,
+        "dispatch_count": 2,
+        "log_len": 0,
+        "outcome": {
+          "status": "error",
+          "error_type": "AssertionError",
+          "error": "Value must be an integer"
+        }
+      },
+      "wall_time_ms": 4.204
+    },
+    {
+      "label": "play/HoldConnector.update_sequential_dev",
+      "mode": "play",
+      "callback": "updateSequential",
+      "static_nodes": 1267,
+      "dag_size": 438,
+      "dynamic": {
+        "seed_index": 0,
+        "eval_count": 112,
+        "dispatch_count": 3,
+        "log_len": 0,
+        "outcome": {
+          "status": "error",
+          "error_type": "AssertionError",
+          "error": "Index must be non-negative"
+        }
+      },
+      "wall_time_ms": 43.865
+    },
+    {
+      "label": "play/HoldEnd.initialize",
+      "mode": "play",
+      "callback": "initialize",
+      "static_nodes": 48,
+      "dag_size": 32,
+      "dynamic": {
+        "seed_index": 0,
+        "eval_count": 22,
+        "dispatch_count": 3,
+        "log_len": 0,
+        "outcome": {
+          "status": "ok",
+          "result": "0x0000000000000000"
+        }
+      },
+      "wall_time_ms": 1.244
+    },
+    {
+      "label": "play/HoldEnd.initialize_dev",
+      "mode": "play",
+      "callback": "initialize",
+      "static_nodes": 239,
+      "dag_size": 105,
+      "dynamic": {
+        "seed_index": 0,
+        "eval_count": 22,
+        "dispatch_count": 3,
+        "log_len": 0,
+        "outcome": {
+          "status": "ok",
+          "result": "0x0000000000000000"
+        }
+      },
+      "wall_time_ms": 5.955
+    },
+    {
+      "label": "play/HoldEnd.preprocess",
+      "mode": "play",
+      "callback": "preprocess",
+      "static_nodes": 433,
+      "dag_size": 156,
+      "dynamic": {
+        "seed_index": 0,
+        "eval_count": 81,
+        "dispatch_count": 3,
+        "log_len": 0,
+        "outcome": {
+          "status": "error",
+          "error_type": "NotImplementedError",
+          "error": "Unsupported operation: BeatToTime"
+        }
+      },
+      "wall_time_ms": 7.903
+    },
+    {
+      "label": "play/HoldEnd.preprocess_dev",
+      "mode": "play",
+      "callback": "preprocess",
+      "static_nodes": 1057,
+      "dag_size": 287,
+      "dynamic": {
+        "seed_index": 0,
+        "eval_count": 81,
+        "dispatch_count": 3,
+        "log_len": 0,
+        "outcome": {
+          "status": "error",
+          "error_type": "NotImplementedError",
+          "error": "Unsupported operation: BeatToTime"
+        }
+      },
+      "wall_time_ms": 24.125
+    },
+    {
+      "label": "play/HoldEnd.should_spawn",
+      "mode": "play",
+      "callback": "shouldSpawn",
+      "static_nodes": 14,
+      "dag_size": 13,
+      "dynamic": {
+        "seed_index": 0,
+        "eval_count": 12,
+        "dispatch_count": 1,
+        "log_len": 0,
+        "outcome": {
+          "status": "ok",
+          "result": "0x3ff0000000000000"
+        }
+      },
+      "wall_time_ms": 0.31
+    },
+    {
+      "label": "play/HoldEnd.should_spawn_dev",
+      "mode": "play",
+      "callback": "shouldSpawn",
+      "static_nodes": 14,
+      "dag_size": 13,
+      "dynamic": {
+        "seed_index": 0,
+        "eval_count": 12,
+        "dispatch_count": 1,
+        "log_len": 0,
+        "outcome": {
+          "status": "ok",
+          "result": "0x3ff0000000000000"
+        }
+      },
+      "wall_time_ms": 0.292
+    },
+    {
+      "label": "play/HoldEnd.spawn_order",
+      "mode": "play",
+      "callback": "spawnOrder",
+      "static_nodes": 10,
+      "dag_size": 9,
+      "dynamic": {
+        "seed_index": 0,
+        "eval_count": 8,
+        "dispatch_count": 1,
+        "log_len": 0,
+        "outcome": {
+          "status": "ok",
+          "result": "0xbfecd3841fcda980"
+        }
+      },
+      "wall_time_ms": 0.195
+    },
+    {
+      "label": "play/HoldEnd.spawn_order_dev",
+      "mode": "play",
+      "callback": "spawnOrder",
+      "static_nodes": 10,
+      "dag_size": 9,
+      "dynamic": {
+        "seed_index": 0,
+        "eval_count": 8,
+        "dispatch_count": 1,
+        "log_len": 0,
+        "outcome": {
+          "status": "ok",
+          "result": "0xbfecd3841fcda980"
+        }
+      },
+      "wall_time_ms": 0.192
+    },
+    {
+      "label": "play/HoldEnd.terminate",
+      "mode": "play",
+      "callback": "terminate",
+      "static_nodes": 10,
+      "dag_size": 8,
+      "dynamic": {
+        "seed_index": 0,
+        "eval_count": 4,
+        "dispatch_count": 1,
+        "log_len": 0,
+        "outcome": {
+          "status": "error",
+          "error_type": "NotImplementedError",
+          "error": "Unsupported operation: ExportValue"
+        }
+      },
+      "wall_time_ms": 0.193
+    },
+    {
+      "label": "play/HoldEnd.terminate_dev",
+      "mode": "play",
+      "callback": "terminate",
+      "static_nodes": 10,
+      "dag_size": 8,
+      "dynamic": {
+        "seed_index": 0,
+        "eval_count": 4,
+        "dispatch_count": 1,
+        "log_len": 0,
+        "outcome": {
+          "status": "error",
+          "error_type": "NotImplementedError",
+          "error": "Unsupported operation: ExportValue"
+        }
+      },
+      "wall_time_ms": 0.2
+    },
+    {
+      "label": "play/HoldEnd.touch",
+      "mode": "play",
+      "callback": "touch",
+      "static_nodes": 9703,
+      "dag_size": 1799,
+      "dynamic": {
+        "seed_index": 0,
+        "eval_count": 11,
+        "dispatch_count": 2,
+        "log_len": 0,
+        "outcome": {
+          "status": "ok",
+          "result": "0x0000000000000000"
+        }
+      },
+      "wall_time_ms": 559.664
+    },
+    {
+      "label": "play/HoldEnd.touch_dev",
+      "mode": "play",
+      "callback": "touch",
+      "static_nodes": 13713,
+      "dag_size": 2946,
+      "dynamic": {
+        "seed_index": 0,
+        "eval_count": 11,
+        "dispatch_count": 2,
+        "log_len": 0,
+        "outcome": {
+          "status": "ok",
+          "result": "0x0000000000000000"
+        }
+      },
+      "wall_time_ms": 725.742
+    },
+    {
+      "label": "play/HoldEnd.update_parallel",
+      "mode": "play",
+      "callback": "updateParallel",
+      "static_nodes": 2304,
+      "dag_size": 637,
+      "dynamic": {
+        "seed_index": 0,
+        "eval_count": 11,
+        "dispatch_count": 2,
+        "log_len": 0,
+        "outcome": {
+          "status": "ok",
+          "result": "0x0000000000000000"
+        }
+      },
+      "wall_time_ms": 233.226
+    },
+    {
+      "label": "play/HoldEnd.update_parallel_dev",
+      "mode": "play",
+      "callback": "updateParallel",
+      "static_nodes": 2472,
+      "dag_size": 684,
+      "dynamic": {
+        "seed_index": 0,
+        "eval_count": 11,
+        "dispatch_count": 2,
+        "log_len": 0,
+        "outcome": {
+          "status": "ok",
+          "result": "0x0000000000000000"
+        }
+      },
+      "wall_time_ms": 227.608
+    },
+    {
+      "label": "play/HoldEnd.update_sequential",
+      "mode": "play",
+      "callback": "updateSequential",
+      "static_nodes": 1458,
+      "dag_size": 469,
+      "dynamic": {
+        "seed_index": 0,
+        "eval_count": 39,
+        "dispatch_count": 3,
+        "log_len": 0,
+        "outcome": {
+          "status": "ok",
+          "result": "0x0000000000000000"
+        }
+      },
+      "wall_time_ms": 50.194
+    },
+    {
+      "label": "play/HoldEnd.update_sequential_dev",
+      "mode": "play",
+      "callback": "updateSequential",
+      "static_nodes": 1745,
+      "dag_size": 573,
+      "dynamic": {
+        "seed_index": 0,
+        "eval_count": 39,
+        "dispatch_count": 3,
+        "log_len": 0,
+        "outcome": {
+          "status": "ok",
+          "result": "0x0000000000000000"
+        }
+      },
+      "wall_time_ms": 59.938
+    },
+    {
+      "label": "play/HoldHead.initialize",
+      "mode": "play",
+      "callback": "initialize",
+      "static_nodes": 48,
+      "dag_size": 32,
+      "dynamic": {
+        "seed_index": 0,
+        "eval_count": 22,
+        "dispatch_count": 3,
+        "log_len": 0,
+        "outcome": {
+          "status": "ok",
+          "result": "0x0000000000000000"
+        }
+      },
+      "wall_time_ms": 1.227
+    },
+    {
+      "label": "play/HoldHead.initialize_dev",
+      "mode": "play",
+      "callback": "initialize",
+      "static_nodes": 239,
+      "dag_size": 105,
+      "dynamic": {
+        "seed_index": 0,
+        "eval_count": 22,
+        "dispatch_count": 3,
+        "log_len": 0,
+        "outcome": {
+          "status": "ok",
+          "result": "0x0000000000000000"
+        }
+      },
+      "wall_time_ms": 6.053
+    },
+    {
+      "label": "play/HoldHead.preprocess",
+      "mode": "play",
+      "callback": "preprocess",
+      "static_nodes": 433,
+      "dag_size": 156,
+      "dynamic": {
+        "seed_index": 0,
+        "eval_count": 81,
+        "dispatch_count": 3,
+        "log_len": 0,
+        "outcome": {
+          "status": "error",
+          "error_type": "NotImplementedError",
+          "error": "Unsupported operation: BeatToTime"
+        }
+      },
+      "wall_time_ms": 7.88
+    },
+    {
+      "label": "play/HoldHead.preprocess_dev",
+      "mode": "play",
+      "callback": "preprocess",
+      "static_nodes": 1057,
+      "dag_size": 287,
+      "dynamic": {
+        "seed_index": 0,
+        "eval_count": 81,
+        "dispatch_count": 3,
+        "log_len": 0,
+        "outcome": {
+          "status": "error",
+          "error_type": "NotImplementedError",
+          "error": "Unsupported operation: BeatToTime"
+        }
+      },
+      "wall_time_ms": 24.207
+    },
+    {
+      "label": "play/HoldHead.should_spawn",
+      "mode": "play",
+      "callback": "shouldSpawn",
+      "static_nodes": 14,
+      "dag_size": 13,
+      "dynamic": {
+        "seed_index": 0,
+        "eval_count": 12,
+        "dispatch_count": 1,
+        "log_len": 0,
+        "outcome": {
+          "status": "ok",
+          "result": "0x3ff0000000000000"
+        }
+      },
+      "wall_time_ms": 0.296
+    },
+    {
+      "label": "play/HoldHead.should_spawn_dev",
+      "mode": "play",
+      "callback": "shouldSpawn",
+      "static_nodes": 14,
+      "dag_size": 13,
+      "dynamic": {
+        "seed_index": 0,
+        "eval_count": 12,
+        "dispatch_count": 1,
+        "log_len": 0,
+        "outcome": {
+          "status": "ok",
+          "result": "0x3ff0000000000000"
+        }
+      },
+      "wall_time_ms": 0.295
+    },
+    {
+      "label": "play/HoldHead.spawn_order",
+      "mode": "play",
+      "callback": "spawnOrder",
+      "static_nodes": 10,
+      "dag_size": 9,
+      "dynamic": {
+        "seed_index": 0,
+        "eval_count": 8,
+        "dispatch_count": 1,
+        "log_len": 0,
+        "outcome": {
+          "status": "ok",
+          "result": "0xbfecd3841fcda980"
+        }
+      },
+      "wall_time_ms": 0.189
+    },
+    {
+      "label": "play/HoldHead.spawn_order_dev",
+      "mode": "play",
+      "callback": "spawnOrder",
+      "static_nodes": 10,
+      "dag_size": 9,
+      "dynamic": {
+        "seed_index": 0,
+        "eval_count": 8,
+        "dispatch_count": 1,
+        "log_len": 0,
+        "outcome": {
+          "status": "ok",
+          "result": "0xbfecd3841fcda980"
+        }
+      },
+      "wall_time_ms": 0.193
+    },
+    {
+      "label": "play/HoldHead.terminate",
+      "mode": "play",
+      "callback": "terminate",
+      "static_nodes": 10,
+      "dag_size": 8,
+      "dynamic": {
+        "seed_index": 0,
+        "eval_count": 4,
+        "dispatch_count": 1,
+        "log_len": 0,
+        "outcome": {
+          "status": "error",
+          "error_type": "NotImplementedError",
+          "error": "Unsupported operation: ExportValue"
+        }
+      },
+      "wall_time_ms": 0.192
+    },
+    {
+      "label": "play/HoldHead.terminate_dev",
+      "mode": "play",
+      "callback": "terminate",
+      "static_nodes": 10,
+      "dag_size": 8,
+      "dynamic": {
+        "seed_index": 0,
+        "eval_count": 4,
+        "dispatch_count": 1,
+        "log_len": 0,
+        "outcome": {
+          "status": "error",
+          "error_type": "NotImplementedError",
+          "error": "Unsupported operation: ExportValue"
+        }
+      },
+      "wall_time_ms": 0.198
+    },
+    {
+      "label": "play/HoldHead.touch",
+      "mode": "play",
+      "callback": "touch",
+      "static_nodes": 9703,
+      "dag_size": 1799,
+      "dynamic": {
+        "seed_index": 0,
+        "eval_count": 11,
+        "dispatch_count": 2,
+        "log_len": 0,
+        "outcome": {
+          "status": "ok",
+          "result": "0x0000000000000000"
+        }
+      },
+      "wall_time_ms": 483.646
+    },
+    {
+      "label": "play/HoldHead.touch_dev",
+      "mode": "play",
+      "callback": "touch",
+      "static_nodes": 13713,
+      "dag_size": 2946,
+      "dynamic": {
+        "seed_index": 0,
+        "eval_count": 11,
+        "dispatch_count": 2,
+        "log_len": 0,
+        "outcome": {
+          "status": "ok",
+          "result": "0x0000000000000000"
+        }
+      },
+      "wall_time_ms": 730.452
+    },
+    {
+      "label": "play/HoldHead.update_parallel",
+      "mode": "play",
+      "callback": "updateParallel",
+      "static_nodes": 2304,
+      "dag_size": 637,
+      "dynamic": {
+        "seed_index": 0,
+        "eval_count": 11,
+        "dispatch_count": 2,
+        "log_len": 0,
+        "outcome": {
+          "status": "ok",
+          "result": "0x0000000000000000"
+        }
+      },
+      "wall_time_ms": 225.288
+    },
+    {
+      "label": "play/HoldHead.update_parallel_dev",
+      "mode": "play",
+      "callback": "updateParallel",
+      "static_nodes": 2472,
+      "dag_size": 684,
+      "dynamic": {
+        "seed_index": 0,
+        "eval_count": 11,
+        "dispatch_count": 2,
+        "log_len": 0,
+        "outcome": {
+          "status": "ok",
+          "result": "0x0000000000000000"
+        }
+      },
+      "wall_time_ms": 227.812
+    },
+    {
+      "label": "play/HoldHead.update_sequential",
+      "mode": "play",
+      "callback": "updateSequential",
+      "static_nodes": 1458,
+      "dag_size": 469,
+      "dynamic": {
+        "seed_index": 0,
+        "eval_count": 39,
+        "dispatch_count": 3,
+        "log_len": 0,
+        "outcome": {
+          "status": "ok",
+          "result": "0x0000000000000000"
+        }
+      },
+      "wall_time_ms": 52.08
+    },
+    {
+      "label": "play/HoldHead.update_sequential_dev",
+      "mode": "play",
+      "callback": "updateSequential",
+      "static_nodes": 1745,
+      "dag_size": 573,
+      "dynamic": {
+        "seed_index": 0,
+        "eval_count": 39,
+        "dispatch_count": 3,
+        "log_len": 0,
+        "outcome": {
+          "status": "ok",
+          "result": "0x0000000000000000"
+        }
+      },
+      "wall_time_ms": 61.159
+    },
+    {
+      "label": "play/HoldManager.touch",
+      "mode": "play",
+      "callback": "touch",
+      "static_nodes": 138,
+      "dag_size": 56,
+      "dynamic": {
+        "seed_index": 0,
+        "eval_count": 24,
+        "dispatch_count": 1,
+        "log_len": 0,
+        "outcome": {
+          "status": "error",
+          "error_type": "AssertionError",
+          "error": "Index is too large"
+        }
+      },
+      "wall_time_ms": 3.35
+    },
+    {
+      "label": "play/HoldManager.touch_dev",
+      "mode": "play",
+      "callback": "touch",
+      "static_nodes": 1104,
+      "dag_size": 279,
+      "dynamic": {
+        "seed_index": 0,
+        "eval_count": 36,
+        "dispatch_count": 2,
+        "log_len": 0,
+        "outcome": {
+          "status": "error",
+          "error_type": "AssertionError",
+          "error": "Index is too large"
+        }
+      },
+      "wall_time_ms": 27.671
+    },
+    {
+      "label": "play/HoldManager.update_parallel",
+      "mode": "play",
+      "callback": "updateParallel",
+      "static_nodes": 1222,
+      "dag_size": 284,
+      "dynamic": {
+        "seed_index": 0,
+        "eval_count": 23,
+        "dispatch_count": 1,
+        "log_len": 0,
+        "outcome": {
+          "status": "error",
+          "error_type": "AssertionError",
+          "error": "Value must be an integer"
+        }
+      },
+      "wall_time_ms": 72.469
+    },
+    {
+      "label": "play/HoldManager.update_parallel_dev",
+      "mode": "play",
+      "callback": "updateParallel",
+      "static_nodes": 3013,
+      "dag_size": 655,
+      "dynamic": {
+        "seed_index": 0,
+        "eval_count": 22,
+        "dispatch_count": 2,
+        "log_len": 1,
+        "outcome": {
+          "status": "ok",
+          "result": "0x0000000000000000"
+        }
+      },
+      "wall_time_ms": 131.603
+    },
+    {
+      "label": "play/HoldTick.initialize",
+      "mode": "play",
+      "callback": "initialize",
+      "static_nodes": 48,
+      "dag_size": 32,
+      "dynamic": {
+        "seed_index": 0,
+        "eval_count": 22,
+        "dispatch_count": 3,
+        "log_len": 0,
+        "outcome": {
+          "status": "ok",
+          "result": "0x0000000000000000"
+        }
+      },
+      "wall_time_ms": 1.258
+    },
+    {
+      "label": "play/HoldTick.initialize_dev",
+      "mode": "play",
+      "callback": "initialize",
+      "static_nodes": 239,
+      "dag_size": 105,
+      "dynamic": {
+        "seed_index": 0,
+        "eval_count": 22,
+        "dispatch_count": 3,
+        "log_len": 0,
+        "outcome": {
+          "status": "ok",
+          "result": "0x0000000000000000"
+        }
+      },
+      "wall_time_ms": 5.94
+    },
+    {
+      "label": "play/HoldTick.preprocess",
+      "mode": "play",
+      "callback": "preprocess",
+      "static_nodes": 433,
+      "dag_size": 156,
+      "dynamic": {
+        "seed_index": 0,
+        "eval_count": 81,
+        "dispatch_count": 3,
+        "log_len": 0,
+        "outcome": {
+          "status": "error",
+          "error_type": "NotImplementedError",
+          "error": "Unsupported operation: BeatToTime"
+        }
+      },
+      "wall_time_ms": 9.381
+    },
+    {
+      "label": "play/HoldTick.preprocess_dev",
+      "mode": "play",
+      "callback": "preprocess",
+      "static_nodes": 1057,
+      "dag_size": 287,
+      "dynamic": {
+        "seed_index": 0,
+        "eval_count": 81,
+        "dispatch_count": 3,
+        "log_len": 0,
+        "outcome": {
+          "status": "error",
+          "error_type": "NotImplementedError",
+          "error": "Unsupported operation: BeatToTime"
+        }
+      },
+      "wall_time_ms": 24.14
+    },
+    {
+      "label": "play/HoldTick.should_spawn",
+      "mode": "play",
+      "callback": "shouldSpawn",
+      "static_nodes": 14,
+      "dag_size": 13,
+      "dynamic": {
+        "seed_index": 0,
+        "eval_count": 12,
+        "dispatch_count": 1,
+        "log_len": 0,
+        "outcome": {
+          "status": "ok",
+          "result": "0x3ff0000000000000"
+        }
+      },
+      "wall_time_ms": 0.297
+    },
+    {
+      "label": "play/HoldTick.should_spawn_dev",
+      "mode": "play",
+      "callback": "shouldSpawn",
+      "static_nodes": 14,
+      "dag_size": 13,
+      "dynamic": {
+        "seed_index": 0,
+        "eval_count": 12,
+        "dispatch_count": 1,
+        "log_len": 0,
+        "outcome": {
+          "status": "ok",
+          "result": "0x3ff0000000000000"
+        }
+      },
+      "wall_time_ms": 0.305
+    },
+    {
+      "label": "play/HoldTick.spawn_order",
+      "mode": "play",
+      "callback": "spawnOrder",
+      "static_nodes": 10,
+      "dag_size": 9,
+      "dynamic": {
+        "seed_index": 0,
+        "eval_count": 8,
+        "dispatch_count": 1,
+        "log_len": 0,
+        "outcome": {
+          "status": "ok",
+          "result": "0xbfecd3841fcda980"
+        }
+      },
+      "wall_time_ms": 0.194
+    },
+    {
+      "label": "play/HoldTick.spawn_order_dev",
+      "mode": "play",
+      "callback": "spawnOrder",
+      "static_nodes": 10,
+      "dag_size": 9,
+      "dynamic": {
+        "seed_index": 0,
+        "eval_count": 8,
+        "dispatch_count": 1,
+        "log_len": 0,
+        "outcome": {
+          "status": "ok",
+          "result": "0xbfecd3841fcda980"
+        }
+      },
+      "wall_time_ms": 0.187
+    },
+    {
+      "label": "play/HoldTick.terminate",
+      "mode": "play",
+      "callback": "terminate",
+      "static_nodes": 10,
+      "dag_size": 8,
+      "dynamic": {
+        "seed_index": 0,
+        "eval_count": 4,
+        "dispatch_count": 1,
+        "log_len": 0,
+        "outcome": {
+          "status": "error",
+          "error_type": "NotImplementedError",
+          "error": "Unsupported operation: ExportValue"
+        }
+      },
+      "wall_time_ms": 0.299
+    },
+    {
+      "label": "play/HoldTick.terminate_dev",
+      "mode": "play",
+      "callback": "terminate",
+      "static_nodes": 10,
+      "dag_size": 8,
+      "dynamic": {
+        "seed_index": 0,
+        "eval_count": 4,
+        "dispatch_count": 1,
+        "log_len": 0,
+        "outcome": {
+          "status": "error",
+          "error_type": "NotImplementedError",
+          "error": "Unsupported operation: ExportValue"
+        }
+      },
+      "wall_time_ms": 0.192
+    },
+    {
+      "label": "play/HoldTick.touch",
+      "mode": "play",
+      "callback": "touch",
+      "static_nodes": 9703,
+      "dag_size": 1799,
+      "dynamic": {
+        "seed_index": 0,
+        "eval_count": 11,
+        "dispatch_count": 2,
+        "log_len": 0,
+        "outcome": {
+          "status": "ok",
+          "result": "0x0000000000000000"
+        }
+      },
+      "wall_time_ms": 511.45
+    },
+    {
+      "label": "play/HoldTick.touch_dev",
+      "mode": "play",
+      "callback": "touch",
+      "static_nodes": 13713,
+      "dag_size": 2946,
+      "dynamic": {
+        "seed_index": 0,
+        "eval_count": 11,
+        "dispatch_count": 2,
+        "log_len": 0,
+        "outcome": {
+          "status": "ok",
+          "result": "0x0000000000000000"
+        }
+      },
+      "wall_time_ms": 714.751
+    },
+    {
+      "label": "play/HoldTick.update_parallel",
+      "mode": "play",
+      "callback": "updateParallel",
+      "static_nodes": 2304,
+      "dag_size": 637,
+      "dynamic": {
+        "seed_index": 0,
+        "eval_count": 11,
+        "dispatch_count": 2,
+        "log_len": 0,
+        "outcome": {
+          "status": "ok",
+          "result": "0x0000000000000000"
+        }
+      },
+      "wall_time_ms": 231.369
+    },
+    {
+      "label": "play/HoldTick.update_parallel_dev",
+      "mode": "play",
+      "callback": "updateParallel",
+      "static_nodes": 2472,
+      "dag_size": 684,
+      "dynamic": {
+        "seed_index": 0,
+        "eval_count": 11,
+        "dispatch_count": 2,
+        "log_len": 0,
+        "outcome": {
+          "status": "ok",
+          "result": "0x0000000000000000"
+        }
+      },
+      "wall_time_ms": 238.934
+    },
+    {
+      "label": "play/HoldTick.update_sequential",
+      "mode": "play",
+      "callback": "updateSequential",
+      "static_nodes": 1458,
+      "dag_size": 469,
+      "dynamic": {
+        "seed_index": 0,
+        "eval_count": 39,
+        "dispatch_count": 3,
+        "log_len": 0,
+        "outcome": {
+          "status": "ok",
+          "result": "0x0000000000000000"
+        }
+      },
+      "wall_time_ms": 54.777
+    },
+    {
+      "label": "play/HoldTick.update_sequential_dev",
+      "mode": "play",
+      "callback": "updateSequential",
+      "static_nodes": 1745,
+      "dag_size": 573,
+      "dynamic": {
+        "seed_index": 0,
+        "eval_count": 39,
+        "dispatch_count": 3,
+        "log_len": 0,
+        "outcome": {
+          "status": "ok",
+          "result": "0x0000000000000000"
+        }
+      },
+      "wall_time_ms": 62.115
+    },
+    {
+      "label": "play/SimLine.should_spawn",
+      "mode": "play",
+      "callback": "shouldSpawn",
+      "static_nodes": 20,
+      "dag_size": 18,
+      "dynamic": {
+        "seed_index": 0,
+        "eval_count": 18,
+        "dispatch_count": 1,
+        "log_len": 0,
+        "outcome": {
+          "status": "error",
+          "error_type": "AssertionError",
+          "error": "Value must be an integer"
+        }
+      },
+      "wall_time_ms": 0.536
+    },
+    {
+      "label": "play/SimLine.should_spawn_dev",
+      "mode": "play",
+      "callback": "shouldSpawn",
+      "static_nodes": 176,
+      "dag_size": 79,
+      "dynamic": {
+        "seed_index": 0,
+        "eval_count": 16,
+        "dispatch_count": 2,
+        "log_len": 1,
+        "outcome": {
+          "status": "ok",
+          "result": "0x0000000000000000"
+        }
+      },
+      "wall_time_ms": 4.504
+    },
+    {
+      "label": "play/SimLine.spawn_order",
+      "mode": "play",
+      "callback": "spawnOrder",
+      "static_nodes": 16,
+      "dag_size": 14,
+      "dynamic": {
+        "seed_index": 0,
+        "eval_count": 14,
+        "dispatch_count": 1,
+        "log_len": 0,
+        "outcome": {
+          "status": "error",
+          "error_type": "AssertionError",
+          "error": "Value must be an integer"
+        }
+      },
+      "wall_time_ms": 0.403
+    },
+    {
+      "label": "play/SimLine.spawn_order_dev",
+      "mode": "play",
+      "callback": "spawnOrder",
+      "static_nodes": 172,
+      "dag_size": 76,
+      "dynamic": {
+        "seed_index": 0,
+        "eval_count": 16,
+        "dispatch_count": 2,
+        "log_len": 1,
+        "outcome": {
+          "status": "ok",
+          "result": "0x0000000000000000"
+        }
+      },
+      "wall_time_ms": 4.342
+    },
+    {
+      "label": "play/SimLine.update_parallel",
+      "mode": "play",
+      "callback": "updateParallel",
+      "static_nodes": 599,
+      "dag_size": 205,
+      "dynamic": {
+        "seed_index": 0,
+        "eval_count": 15,
+        "dispatch_count": 1,
+        "log_len": 0,
+        "outcome": {
+          "status": "error",
+          "error_type": "AssertionError",
+          "error": "Value must be an integer"
+        }
+      },
+      "wall_time_ms": 19.279
+    },
+    {
+      "label": "play/SimLine.update_parallel_dev",
+      "mode": "play",
+      "callback": "updateParallel",
+      "static_nodes": 1200,
+      "dag_size": 424,
+      "dynamic": {
+        "seed_index": 0,
+        "eval_count": 22,
+        "dispatch_count": 2,
+        "log_len": 1,
+        "outcome": {
+          "status": "ok",
+          "result": "0x0000000000000000"
+        }
+      },
+      "wall_time_ms": 40.559
+    },
+    {
+      "label": "play/Stage.preprocess",
+      "mode": "play",
+      "callback": "preprocess",
+      "static_nodes": 4116,
+      "dag_size": 912,
+      "dynamic": {
+        "seed_index": 0,
+        "eval_count": 11219,
+        "dispatch_count": 186,
+        "log_len": 0,
+        "outcome": {
+          "status": "ok",
+          "result": "0x0000000000000000"
+        }
+      },
+      "wall_time_ms": 77.034
+    },
+    {
+      "label": "play/Stage.preprocess_dev",
+      "mode": "play",
+      "callback": "preprocess",
+      "static_nodes": 4136,
+      "dag_size": 918,
+      "dynamic": {
+        "seed_index": 0,
+        "eval_count": 2557,
+        "dispatch_count": 30,
+        "log_len": 1,
+        "outcome": {
+          "status": "ok",
+          "result": "0x0000000000000000"
+        }
+      },
+      "wall_time_ms": 77.71
+    },
+    {
+      "label": "play/Stage.should_spawn",
+      "mode": "play",
+      "callback": "shouldSpawn",
+      "static_nodes": 8,
+      "dag_size": 6,
+      "dynamic": {
+        "seed_index": 0,
+        "eval_count": 6,
+        "dispatch_count": 1,
+        "log_len": 0,
+        "outcome": {
+          "status": "ok",
+          "result": "0x3ff0000000000000"
+        }
+      },
+      "wall_time_ms": 0.16
+    },
+    {
+      "label": "play/Stage.should_spawn_dev",
+      "mode": "play",
+      "callback": "shouldSpawn",
+      "static_nodes": 8,
+      "dag_size": 6,
+      "dynamic": {
+        "seed_index": 0,
+        "eval_count": 6,
+        "dispatch_count": 1,
+        "log_len": 0,
+        "outcome": {
+          "status": "ok",
+          "result": "0x3ff0000000000000"
+        }
+      },
+      "wall_time_ms": 0.16
+    },
+    {
+      "label": "play/Stage.spawn_order",
+      "mode": "play",
+      "callback": "spawnOrder",
+      "static_nodes": 8,
+      "dag_size": 7,
+      "dynamic": {
+        "seed_index": 0,
+        "eval_count": 6,
+        "dispatch_count": 1,
+        "log_len": 0,
+        "outcome": {
+          "status": "ok",
+          "result": "0xc197d78400000000"
+        }
+      },
+      "wall_time_ms": 0.173
+    },
+    {
+      "label": "play/Stage.spawn_order_dev",
+      "mode": "play",
+      "callback": "spawnOrder",
+      "static_nodes": 8,
+      "dag_size": 7,
+      "dynamic": {
+        "seed_index": 0,
+        "eval_count": 6,
+        "dispatch_count": 1,
+        "log_len": 0,
+        "outcome": {
+          "status": "ok",
+          "result": "0xc197d78400000000"
+        }
+      },
+      "wall_time_ms": 0.159
+    },
+    {
+      "label": "play/Stage.touch",
+      "mode": "play",
+      "callback": "touch",
+      "static_nodes": 984,
+      "dag_size": 335,
+      "dynamic": {
+        "seed_index": 0,
+        "eval_count": 97,
+        "dispatch_count": 4,
+        "log_len": 0,
+        "outcome": {
+          "status": "ok",
+          "result": "0x0000000000000000"
+        }
+      },
+      "wall_time_ms": 27.792
+    },
+    {
+      "label": "play/Stage.touch_dev",
+      "mode": "play",
+      "callback": "touch",
+      "static_nodes": 1145,
+      "dag_size": 393,
+      "dynamic": {
+        "seed_index": 0,
+        "eval_count": 97,
+        "dispatch_count": 4,
+        "log_len": 0,
+        "outcome": {
+          "status": "ok",
+          "result": "0x0000000000000000"
+        }
+      },
+      "wall_time_ms": 35.923
+    },
+    {
+      "label": "play/Stage.update_parallel",
+      "mode": "play",
+      "callback": "updateParallel",
+      "static_nodes": 196,
+      "dag_size": 96,
+      "dynamic": {
+        "seed_index": 0,
+        "eval_count": 20,
+        "dispatch_count": 3,
+        "log_len": 0,
+        "outcome": {
+          "status": "error",
+          "error_type": "NotImplementedError",
+          "error": "Unsupported operation: Draw"
+        }
+      },
+      "wall_time_ms": 2.54
+    },
+    {
+      "label": "play/Stage.update_parallel_dev",
+      "mode": "play",
+      "callback": "updateParallel",
+      "static_nodes": 196,
+      "dag_size": 96,
+      "dynamic": {
+        "seed_index": 0,
+        "eval_count": 20,
+        "dispatch_count": 3,
+        "log_len": 0,
+        "outcome": {
+          "status": "error",
+          "error_type": "NotImplementedError",
+          "error": "Unsupported operation: Draw"
+        }
+      },
+      "wall_time_ms": 2.916
+    },
+    {
+      "label": "play/Stage.update_sequential",
+      "mode": "play",
+      "callback": "updateSequential",
+      "static_nodes": 13,
+      "dag_size": 9,
+      "dynamic": {
+        "seed_index": 0,
+        "eval_count": 13,
+        "dispatch_count": 1,
+        "log_len": 0,
+        "outcome": {
+          "status": "ok",
+          "result": "0x0000000000000000"
+        }
+      },
+      "wall_time_ms": 0.419
+    },
+    {
+      "label": "play/Stage.update_sequential_dev",
+      "mode": "play",
+      "callback": "updateSequential",
+      "static_nodes": 13,
+      "dag_size": 9,
+      "dynamic": {
+        "seed_index": 0,
+        "eval_count": 13,
+        "dispatch_count": 1,
+        "log_len": 0,
+        "outcome": {
+          "status": "ok",
+          "result": "0x0000000000000000"
+        }
+      },
+      "wall_time_ms": 0.407
+    },
+    {
+      "label": "play/Tap.initialize",
+      "mode": "play",
+      "callback": "initialize",
+      "static_nodes": 48,
+      "dag_size": 32,
+      "dynamic": {
+        "seed_index": 0,
+        "eval_count": 22,
+        "dispatch_count": 3,
+        "log_len": 0,
+        "outcome": {
+          "status": "ok",
+          "result": "0x0000000000000000"
+        }
+      },
+      "wall_time_ms": 1.857
+    },
+    {
+      "label": "play/Tap.initialize_dev",
+      "mode": "play",
+      "callback": "initialize",
+      "static_nodes": 239,
+      "dag_size": 105,
+      "dynamic": {
+        "seed_index": 0,
+        "eval_count": 22,
+        "dispatch_count": 3,
+        "log_len": 0,
+        "outcome": {
+          "status": "ok",
+          "result": "0x0000000000000000"
+        }
+      },
+      "wall_time_ms": 6.155
+    },
+    {
+      "label": "play/Tap.preprocess",
+      "mode": "play",
+      "callback": "preprocess",
+      "static_nodes": 433,
+      "dag_size": 156,
+      "dynamic": {
+        "seed_index": 0,
+        "eval_count": 81,
+        "dispatch_count": 3,
+        "log_len": 0,
+        "outcome": {
+          "status": "error",
+          "error_type": "NotImplementedError",
+          "error": "Unsupported operation: BeatToTime"
+        }
+      },
+      "wall_time_ms": 7.838
+    },
+    {
+      "label": "play/Tap.preprocess_dev",
+      "mode": "play",
+      "callback": "preprocess",
+      "static_nodes": 1057,
+      "dag_size": 287,
+      "dynamic": {
+        "seed_index": 0,
+        "eval_count": 81,
+        "dispatch_count": 3,
+        "log_len": 0,
+        "outcome": {
+          "status": "error",
+          "error_type": "NotImplementedError",
+          "error": "Unsupported operation: BeatToTime"
+        }
+      },
+      "wall_time_ms": 24.479
+    },
+    {
+      "label": "play/Tap.should_spawn",
+      "mode": "play",
+      "callback": "shouldSpawn",
+      "static_nodes": 14,
+      "dag_size": 13,
+      "dynamic": {
+        "seed_index": 0,
+        "eval_count": 12,
+        "dispatch_count": 1,
+        "log_len": 0,
+        "outcome": {
+          "status": "ok",
+          "result": "0x3ff0000000000000"
+        }
+      },
+      "wall_time_ms": 0.296
+    },
+    {
+      "label": "play/Tap.should_spawn_dev",
+      "mode": "play",
+      "callback": "shouldSpawn",
+      "static_nodes": 14,
+      "dag_size": 13,
+      "dynamic": {
+        "seed_index": 0,
+        "eval_count": 12,
+        "dispatch_count": 1,
+        "log_len": 0,
+        "outcome": {
+          "status": "ok",
+          "result": "0x3ff0000000000000"
+        }
+      },
+      "wall_time_ms": 0.299
+    },
+    {
+      "label": "play/Tap.spawn_order",
+      "mode": "play",
+      "callback": "spawnOrder",
+      "static_nodes": 10,
+      "dag_size": 9,
+      "dynamic": {
+        "seed_index": 0,
+        "eval_count": 8,
+        "dispatch_count": 1,
+        "log_len": 0,
+        "outcome": {
+          "status": "ok",
+          "result": "0xbfecd3841fcda980"
+        }
+      },
+      "wall_time_ms": 0.195
+    },
+    {
+      "label": "play/Tap.spawn_order_dev",
+      "mode": "play",
+      "callback": "spawnOrder",
+      "static_nodes": 10,
+      "dag_size": 9,
+      "dynamic": {
+        "seed_index": 0,
+        "eval_count": 8,
+        "dispatch_count": 1,
+        "log_len": 0,
+        "outcome": {
+          "status": "ok",
+          "result": "0xbfecd3841fcda980"
+        }
+      },
+      "wall_time_ms": 0.191
+    },
+    {
+      "label": "play/Tap.terminate",
+      "mode": "play",
+      "callback": "terminate",
+      "static_nodes": 10,
+      "dag_size": 8,
+      "dynamic": {
+        "seed_index": 0,
+        "eval_count": 4,
+        "dispatch_count": 1,
+        "log_len": 0,
+        "outcome": {
+          "status": "error",
+          "error_type": "NotImplementedError",
+          "error": "Unsupported operation: ExportValue"
+        }
+      },
+      "wall_time_ms": 0.194
+    },
+    {
+      "label": "play/Tap.terminate_dev",
+      "mode": "play",
+      "callback": "terminate",
+      "static_nodes": 10,
+      "dag_size": 8,
+      "dynamic": {
+        "seed_index": 0,
+        "eval_count": 4,
+        "dispatch_count": 1,
+        "log_len": 0,
+        "outcome": {
+          "status": "error",
+          "error_type": "NotImplementedError",
+          "error": "Unsupported operation: ExportValue"
+        }
+      },
+      "wall_time_ms": 0.214
+    },
+    {
+      "label": "play/Tap.touch",
+      "mode": "play",
+      "callback": "touch",
+      "static_nodes": 9703,
+      "dag_size": 1799,
+      "dynamic": {
+        "seed_index": 0,
+        "eval_count": 11,
+        "dispatch_count": 2,
+        "log_len": 0,
+        "outcome": {
+          "status": "ok",
+          "result": "0x0000000000000000"
+        }
+      },
+      "wall_time_ms": 480.764
+    },
+    {
+      "label": "play/Tap.touch_dev",
+      "mode": "play",
+      "callback": "touch",
+      "static_nodes": 13713,
+      "dag_size": 2946,
+      "dynamic": {
+        "seed_index": 0,
+        "eval_count": 11,
+        "dispatch_count": 2,
+        "log_len": 0,
+        "outcome": {
+          "status": "ok",
+          "result": "0x0000000000000000"
+        }
+      },
+      "wall_time_ms": 735.769
+    },
+    {
+      "label": "play/Tap.update_parallel",
+      "mode": "play",
+      "callback": "updateParallel",
+      "static_nodes": 2304,
+      "dag_size": 637,
+      "dynamic": {
+        "seed_index": 0,
+        "eval_count": 11,
+        "dispatch_count": 2,
+        "log_len": 0,
+        "outcome": {
+          "status": "ok",
+          "result": "0x0000000000000000"
+        }
+      },
+      "wall_time_ms": 227.5
+    },
+    {
+      "label": "play/Tap.update_parallel_dev",
+      "mode": "play",
+      "callback": "updateParallel",
+      "static_nodes": 2472,
+      "dag_size": 684,
+      "dynamic": {
+        "seed_index": 0,
+        "eval_count": 11,
+        "dispatch_count": 2,
+        "log_len": 0,
+        "outcome": {
+          "status": "ok",
+          "result": "0x0000000000000000"
+        }
+      },
+      "wall_time_ms": 230.523
+    },
+    {
+      "label": "play/Tap.update_sequential",
+      "mode": "play",
+      "callback": "updateSequential",
+      "static_nodes": 1458,
+      "dag_size": 469,
+      "dynamic": {
+        "seed_index": 0,
+        "eval_count": 39,
+        "dispatch_count": 3,
+        "log_len": 0,
+        "outcome": {
+          "status": "ok",
+          "result": "0x0000000000000000"
+        }
+      },
+      "wall_time_ms": 59.971
+    },
+    {
+      "label": "play/Tap.update_sequential_dev",
+      "mode": "play",
+      "callback": "updateSequential",
+      "static_nodes": 1745,
+      "dag_size": 573,
+      "dynamic": {
+        "seed_index": 0,
+        "eval_count": 39,
+        "dispatch_count": 3,
+        "log_len": 0,
+        "outcome": {
+          "status": "ok",
+          "result": "0x0000000000000000"
+        }
+      },
+      "wall_time_ms": 62.211
+    },
+    {
+      "label": "preview/DirectionalFlick.preprocess",
+      "mode": "preview",
+      "callback": "preprocess",
+      "static_nodes": 97,
+      "dag_size": 39,
+      "dynamic": {
+        "seed_index": 0,
+        "eval_count": 47,
+        "dispatch_count": 3,
+        "log_len": 0,
+        "outcome": {
+          "status": "error",
+          "error_type": "NotImplementedError",
+          "error": "Unsupported operation: BeatToTime"
+        }
+      },
+      "wall_time_ms": 1.392
+    },
+    {
+      "label": "preview/DirectionalFlick.preprocess_dev",
+      "mode": "preview",
+      "callback": "preprocess",
+      "static_nodes": 97,
+      "dag_size": 39,
+      "dynamic": {
+        "seed_index": 0,
+        "eval_count": 47,
+        "dispatch_count": 3,
+        "log_len": 0,
+        "outcome": {
+          "status": "error",
+          "error_type": "NotImplementedError",
+          "error": "Unsupported operation: BeatToTime"
+        }
+      },
+      "wall_time_ms": 1.346
+    },
+    {
+      "label": "preview/DirectionalFlick.render",
+      "mode": "preview",
+      "callback": "render",
+      "static_nodes": 902,
+      "dag_size": 263,
+      "dynamic": {
+        "seed_index": 0,
+        "eval_count": 134,
+        "dispatch_count": 3,
+        "log_len": 0,
+        "outcome": {
+          "status": "error",
+          "error_type": "NotImplementedError",
+          "error": "Unsupported operation: Draw"
+        }
+      },
+      "wall_time_ms": 47.327
+    },
+    {
+      "label": "preview/DirectionalFlick.render_dev",
+      "mode": "preview",
+      "callback": "render",
+      "static_nodes": 902,
+      "dag_size": 263,
+      "dynamic": {
+        "seed_index": 0,
+        "eval_count": 134,
+        "dispatch_count": 3,
+        "log_len": 0,
+        "outcome": {
+          "status": "error",
+          "error_type": "NotImplementedError",
+          "error": "Unsupported operation: Draw"
+        }
+      },
+      "wall_time_ms": 48.049
+    },
+    {
+      "label": "preview/Flick.preprocess",
+      "mode": "preview",
+      "callback": "preprocess",
+      "static_nodes": 97,
+      "dag_size": 39,
+      "dynamic": {
+        "seed_index": 0,
+        "eval_count": 47,
+        "dispatch_count": 3,
+        "log_len": 0,
+        "outcome": {
+          "status": "error",
+          "error_type": "NotImplementedError",
+          "error": "Unsupported operation: BeatToTime"
+        }
+      },
+      "wall_time_ms": 1.369
+    },
+    {
+      "label": "preview/Flick.preprocess_dev",
+      "mode": "preview",
+      "callback": "preprocess",
+      "static_nodes": 97,
+      "dag_size": 39,
+      "dynamic": {
+        "seed_index": 0,
+        "eval_count": 47,
+        "dispatch_count": 3,
+        "log_len": 0,
+        "outcome": {
+          "status": "error",
+          "error_type": "NotImplementedError",
+          "error": "Unsupported operation: BeatToTime"
+        }
+      },
+      "wall_time_ms": 1.35
+    },
+    {
+      "label": "preview/Flick.render",
+      "mode": "preview",
+      "callback": "render",
+      "static_nodes": 902,
+      "dag_size": 263,
+      "dynamic": {
+        "seed_index": 0,
+        "eval_count": 134,
+        "dispatch_count": 3,
+        "log_len": 0,
+        "outcome": {
+          "status": "error",
+          "error_type": "NotImplementedError",
+          "error": "Unsupported operation: Draw"
+        }
+      },
+      "wall_time_ms": 46.567
+    },
+    {
+      "label": "preview/Flick.render_dev",
+      "mode": "preview",
+      "callback": "render",
+      "static_nodes": 902,
+      "dag_size": 263,
+      "dynamic": {
+        "seed_index": 0,
+        "eval_count": 134,
+        "dispatch_count": 3,
+        "log_len": 0,
+        "outcome": {
+          "status": "error",
+          "error_type": "NotImplementedError",
+          "error": "Unsupported operation: Draw"
+        }
+      },
+      "wall_time_ms": 48.909
+    },
+    {
+      "label": "preview/HoldAnchor.preprocess",
+      "mode": "preview",
+      "callback": "preprocess",
+      "static_nodes": 97,
+      "dag_size": 39,
+      "dynamic": {
+        "seed_index": 0,
+        "eval_count": 47,
+        "dispatch_count": 3,
+        "log_len": 0,
+        "outcome": {
+          "status": "error",
+          "error_type": "NotImplementedError",
+          "error": "Unsupported operation: BeatToTime"
+        }
+      },
+      "wall_time_ms": 1.349
+    },
+    {
+      "label": "preview/HoldAnchor.preprocess_dev",
+      "mode": "preview",
+      "callback": "preprocess",
+      "static_nodes": 97,
+      "dag_size": 39,
+      "dynamic": {
+        "seed_index": 0,
+        "eval_count": 47,
+        "dispatch_count": 3,
+        "log_len": 0,
+        "outcome": {
+          "status": "error",
+          "error_type": "NotImplementedError",
+          "error": "Unsupported operation: BeatToTime"
+        }
+      },
+      "wall_time_ms": 1.371
+    },
+    {
+      "label": "preview/HoldAnchor.render",
+      "mode": "preview",
+      "callback": "render",
+      "static_nodes": 902,
+      "dag_size": 263,
+      "dynamic": {
+        "seed_index": 0,
+        "eval_count": 134,
+        "dispatch_count": 3,
+        "log_len": 0,
+        "outcome": {
+          "status": "error",
+          "error_type": "NotImplementedError",
+          "error": "Unsupported operation: Draw"
+        }
+      },
+      "wall_time_ms": 46.778
+    },
+    {
+      "label": "preview/HoldAnchor.render_dev",
+      "mode": "preview",
+      "callback": "render",
+      "static_nodes": 902,
+      "dag_size": 263,
+      "dynamic": {
+        "seed_index": 0,
+        "eval_count": 134,
+        "dispatch_count": 3,
+        "log_len": 0,
+        "outcome": {
+          "status": "error",
+          "error_type": "NotImplementedError",
+          "error": "Unsupported operation: Draw"
+        }
+      },
+      "wall_time_ms": 47.766
+    },
+    {
+      "label": "preview/HoldEnd.preprocess",
+      "mode": "preview",
+      "callback": "preprocess",
+      "static_nodes": 97,
+      "dag_size": 39,
+      "dynamic": {
+        "seed_index": 0,
+        "eval_count": 47,
+        "dispatch_count": 3,
+        "log_len": 0,
+        "outcome": {
+          "status": "error",
+          "error_type": "NotImplementedError",
+          "error": "Unsupported operation: BeatToTime"
+        }
+      },
+      "wall_time_ms": 1.428
+    },
+    {
+      "label": "preview/HoldEnd.preprocess_dev",
+      "mode": "preview",
+      "callback": "preprocess",
+      "static_nodes": 97,
+      "dag_size": 39,
+      "dynamic": {
+        "seed_index": 0,
+        "eval_count": 47,
+        "dispatch_count": 3,
+        "log_len": 0,
+        "outcome": {
+          "status": "error",
+          "error_type": "NotImplementedError",
+          "error": "Unsupported operation: BeatToTime"
+        }
+      },
+      "wall_time_ms": 1.374
+    },
+    {
+      "label": "preview/HoldEnd.render",
+      "mode": "preview",
+      "callback": "render",
+      "static_nodes": 902,
+      "dag_size": 263,
+      "dynamic": {
+        "seed_index": 0,
+        "eval_count": 134,
+        "dispatch_count": 3,
+        "log_len": 0,
+        "outcome": {
+          "status": "error",
+          "error_type": "NotImplementedError",
+          "error": "Unsupported operation: Draw"
+        }
+      },
+      "wall_time_ms": 48.643
+    },
+    {
+      "label": "preview/HoldEnd.render_dev",
+      "mode": "preview",
+      "callback": "render",
+      "static_nodes": 902,
+      "dag_size": 263,
+      "dynamic": {
+        "seed_index": 0,
+        "eval_count": 134,
+        "dispatch_count": 3,
+        "log_len": 0,
+        "outcome": {
+          "status": "error",
+          "error_type": "NotImplementedError",
+          "error": "Unsupported operation: Draw"
+        }
+      },
+      "wall_time_ms": 48.954
+    },
+    {
+      "label": "preview/HoldHead.preprocess",
+      "mode": "preview",
+      "callback": "preprocess",
+      "static_nodes": 97,
+      "dag_size": 39,
+      "dynamic": {
+        "seed_index": 0,
+        "eval_count": 47,
+        "dispatch_count": 3,
+        "log_len": 0,
+        "outcome": {
+          "status": "error",
+          "error_type": "NotImplementedError",
+          "error": "Unsupported operation: BeatToTime"
+        }
+      },
+      "wall_time_ms": 1.41
+    },
+    {
+      "label": "preview/HoldHead.preprocess_dev",
+      "mode": "preview",
+      "callback": "preprocess",
+      "static_nodes": 97,
+      "dag_size": 39,
+      "dynamic": {
+        "seed_index": 0,
+        "eval_count": 47,
+        "dispatch_count": 3,
+        "log_len": 0,
+        "outcome": {
+          "status": "error",
+          "error_type": "NotImplementedError",
+          "error": "Unsupported operation: BeatToTime"
+        }
+      },
+      "wall_time_ms": 1.354
+    },
+    {
+      "label": "preview/HoldHead.render",
+      "mode": "preview",
+      "callback": "render",
+      "static_nodes": 902,
+      "dag_size": 263,
+      "dynamic": {
+        "seed_index": 0,
+        "eval_count": 134,
+        "dispatch_count": 3,
+        "log_len": 0,
+        "outcome": {
+          "status": "error",
+          "error_type": "NotImplementedError",
+          "error": "Unsupported operation: Draw"
+        }
+      },
+      "wall_time_ms": 47.477
+    },
+    {
+      "label": "preview/HoldHead.render_dev",
+      "mode": "preview",
+      "callback": "render",
+      "static_nodes": 902,
+      "dag_size": 263,
+      "dynamic": {
+        "seed_index": 0,
+        "eval_count": 134,
+        "dispatch_count": 3,
+        "log_len": 0,
+        "outcome": {
+          "status": "error",
+          "error_type": "NotImplementedError",
+          "error": "Unsupported operation: Draw"
+        }
+      },
+      "wall_time_ms": 47.414
+    },
+    {
+      "label": "preview/HoldTick.preprocess",
+      "mode": "preview",
+      "callback": "preprocess",
+      "static_nodes": 97,
+      "dag_size": 39,
+      "dynamic": {
+        "seed_index": 0,
+        "eval_count": 47,
+        "dispatch_count": 3,
+        "log_len": 0,
+        "outcome": {
+          "status": "error",
+          "error_type": "NotImplementedError",
+          "error": "Unsupported operation: BeatToTime"
+        }
+      },
+      "wall_time_ms": 1.373
+    },
+    {
+      "label": "preview/HoldTick.preprocess_dev",
+      "mode": "preview",
+      "callback": "preprocess",
+      "static_nodes": 97,
+      "dag_size": 39,
+      "dynamic": {
+        "seed_index": 0,
+        "eval_count": 47,
+        "dispatch_count": 3,
+        "log_len": 0,
+        "outcome": {
+          "status": "error",
+          "error_type": "NotImplementedError",
+          "error": "Unsupported operation: BeatToTime"
+        }
+      },
+      "wall_time_ms": 1.397
+    },
+    {
+      "label": "preview/HoldTick.render",
+      "mode": "preview",
+      "callback": "render",
+      "static_nodes": 902,
+      "dag_size": 263,
+      "dynamic": {
+        "seed_index": 0,
+        "eval_count": 134,
+        "dispatch_count": 3,
+        "log_len": 0,
+        "outcome": {
+          "status": "error",
+          "error_type": "NotImplementedError",
+          "error": "Unsupported operation: Draw"
+        }
+      },
+      "wall_time_ms": 50.328
+    },
+    {
+      "label": "preview/HoldTick.render_dev",
+      "mode": "preview",
+      "callback": "render",
+      "static_nodes": 902,
+      "dag_size": 263,
+      "dynamic": {
+        "seed_index": 0,
+        "eval_count": 134,
+        "dispatch_count": 3,
+        "log_len": 0,
+        "outcome": {
+          "status": "error",
+          "error_type": "NotImplementedError",
+          "error": "Unsupported operation: Draw"
+        }
+      },
+      "wall_time_ms": 47.45
+    },
+    {
+      "label": "preview/PreviewBpmChange.preprocess",
+      "mode": "preview",
+      "callback": "preprocess",
+      "static_nodes": 18,
+      "dag_size": 13,
+      "dynamic": {
+        "seed_index": 0,
+        "eval_count": 13,
+        "dispatch_count": 1,
+        "log_len": 0,
+        "outcome": {
+          "status": "error",
+          "error_type": "NotImplementedError",
+          "error": "Unsupported operation: BeatToTime"
+        }
+      },
+      "wall_time_ms": 0.395
+    },
+    {
+      "label": "preview/PreviewBpmChange.preprocess_dev",
+      "mode": "preview",
+      "callback": "preprocess",
+      "static_nodes": 18,
+      "dag_size": 13,
+      "dynamic": {
+        "seed_index": 0,
+        "eval_count": 13,
+        "dispatch_count": 1,
+        "log_len": 0,
+        "outcome": {
+          "status": "error",
+          "error_type": "NotImplementedError",
+          "error": "Unsupported operation: BeatToTime"
+        }
+      },
+      "wall_time_ms": 0.342
+    },
+    {
+      "label": "preview/PreviewBpmChange.render",
+      "mode": "preview",
+      "callback": "render",
+      "static_nodes": 320,
+      "dag_size": 111,
+      "dynamic": {
+        "seed_index": 0,
+        "eval_count": 94,
+        "dispatch_count": 1,
+        "log_len": 0,
+        "outcome": {
+          "status": "error",
+          "error_type": "NotImplementedError",
+          "error": "Unsupported operation: Draw"
+        }
+      },
+      "wall_time_ms": 8.286
+    },
+    {
+      "label": "preview/PreviewBpmChange.render_dev",
+      "mode": "preview",
+      "callback": "render",
+      "static_nodes": 320,
+      "dag_size": 111,
+      "dynamic": {
+        "seed_index": 0,
+        "eval_count": 94,
+        "dispatch_count": 1,
+        "log_len": 0,
+        "outcome": {
+          "status": "error",
+          "error_type": "NotImplementedError",
+          "error": "Unsupported operation: Draw"
+        }
+      },
+      "wall_time_ms": 8.152
+    },
+    {
+      "label": "preview/PreviewHoldConnector.render",
+      "mode": "preview",
+      "callback": "render",
+      "static_nodes": 324,
+      "dag_size": 123,
+      "dynamic": {
+        "seed_index": 0,
+        "eval_count": 29,
+        "dispatch_count": 1,
+        "log_len": 0,
+        "outcome": {
+          "status": "error",
+          "error_type": "AssertionError",
+          "error": "Index is too large"
+        }
+      },
+      "wall_time_ms": 10.636
+    },
+    {
+      "label": "preview/PreviewHoldConnector.render_dev",
+      "mode": "preview",
+      "callback": "render",
+      "static_nodes": 1228,
+      "dag_size": 454,
+      "dynamic": {
+        "seed_index": 0,
+        "eval_count": 38,
+        "dispatch_count": 2,
+        "log_len": 0,
+        "outcome": {
+          "status": "error",
+          "error_type": "AssertionError",
+          "error": "Index is too large"
+        }
+      },
+      "wall_time_ms": 50.663
+    },
+    {
+      "label": "preview/PreviewSimLine.render",
+      "mode": "preview",
+      "callback": "render",
+      "static_nodes": 188,
+      "dag_size": 82,
+      "dynamic": {
+        "seed_index": 0,
+        "eval_count": 37,
+        "dispatch_count": 2,
+        "log_len": 0,
+        "outcome": {
+          "status": "error",
+          "error_type": "AssertionError",
+          "error": "Index is too large"
+        }
+      },
+      "wall_time_ms": 4.876
+    },
+    {
+      "label": "preview/PreviewSimLine.render_dev",
+      "mode": "preview",
+      "callback": "render",
+      "static_nodes": 808,
+      "dag_size": 305,
+      "dynamic": {
+        "seed_index": 0,
+        "eval_count": 44,
+        "dispatch_count": 3,
+        "log_len": 0,
+        "outcome": {
+          "status": "error",
+          "error_type": "AssertionError",
+          "error": "Index is too large"
+        }
+      },
+      "wall_time_ms": 26.313
+    },
+    {
+      "label": "preview/PreviewStage.preprocess",
+      "mode": "preview",
+      "callback": "preprocess",
+      "static_nodes": 214,
+      "dag_size": 93,
+      "dynamic": {
+        "seed_index": 0,
+        "eval_count": 214,
+        "dispatch_count": 1,
+        "log_len": 0,
+        "outcome": {
+          "status": "ok",
+          "result": "0x0000000000000000"
+        }
+      },
+      "wall_time_ms": 3.265
+    },
+    {
+      "label": "preview/PreviewStage.preprocess_dev",
+      "mode": "preview",
+      "callback": "preprocess",
+      "static_nodes": 214,
+      "dag_size": 93,
+      "dynamic": {
+        "seed_index": 0,
+        "eval_count": 214,
+        "dispatch_count": 1,
+        "log_len": 0,
+        "outcome": {
+          "status": "ok",
+          "result": "0x0000000000000000"
+        }
+      },
+      "wall_time_ms": 3.383
+    },
+    {
+      "label": "preview/PreviewStage.render",
+      "mode": "preview",
+      "callback": "render",
+      "static_nodes": 530,
+      "dag_size": 141,
+      "dynamic": {
+        "seed_index": 0,
+        "eval_count": 94,
+        "dispatch_count": 3,
+        "log_len": 0,
+        "outcome": {
+          "status": "error",
+          "error_type": "NotImplementedError",
+          "error": "Unsupported operation: Draw"
+        }
+      },
+      "wall_time_ms": 17.671
+    },
+    {
+      "label": "preview/PreviewStage.render_dev",
+      "mode": "preview",
+      "callback": "render",
+      "static_nodes": 530,
+      "dag_size": 141,
+      "dynamic": {
+        "seed_index": 0,
+        "eval_count": 94,
+        "dispatch_count": 3,
+        "log_len": 0,
+        "outcome": {
+          "status": "error",
+          "error_type": "NotImplementedError",
+          "error": "Unsupported operation: Draw"
+        }
+      },
+      "wall_time_ms": 16.621
+    },
+    {
+      "label": "preview/PreviewTimescaleChange.preprocess",
+      "mode": "preview",
+      "callback": "preprocess",
+      "static_nodes": 18,
+      "dag_size": 13,
+      "dynamic": {
+        "seed_index": 0,
+        "eval_count": 13,
+        "dispatch_count": 1,
+        "log_len": 0,
+        "outcome": {
+          "status": "error",
+          "error_type": "NotImplementedError",
+          "error": "Unsupported operation: BeatToTime"
+        }
+      },
+      "wall_time_ms": 0.366
+    },
+    {
+      "label": "preview/PreviewTimescaleChange.preprocess_dev",
+      "mode": "preview",
+      "callback": "preprocess",
+      "static_nodes": 18,
+      "dag_size": 13,
+      "dynamic": {
+        "seed_index": 0,
+        "eval_count": 13,
+        "dispatch_count": 1,
+        "log_len": 0,
+        "outcome": {
+          "status": "error",
+          "error_type": "NotImplementedError",
+          "error": "Unsupported operation: BeatToTime"
+        }
+      },
+      "wall_time_ms": 0.36
+    },
+    {
+      "label": "preview/PreviewTimescaleChange.render",
+      "mode": "preview",
+      "callback": "render",
+      "static_nodes": 149,
+      "dag_size": 65,
+      "dynamic": {
+        "seed_index": 0,
+        "eval_count": 94,
+        "dispatch_count": 1,
+        "log_len": 0,
+        "outcome": {
+          "status": "error",
+          "error_type": "NotImplementedError",
+          "error": "Unsupported operation: Draw"
+        }
+      },
+      "wall_time_ms": 3.974
+    },
+    {
+      "label": "preview/PreviewTimescaleChange.render_dev",
+      "mode": "preview",
+      "callback": "render",
+      "static_nodes": 149,
+      "dag_size": 65,
+      "dynamic": {
+        "seed_index": 0,
+        "eval_count": 94,
+        "dispatch_count": 1,
+        "log_len": 0,
+        "outcome": {
+          "status": "error",
+          "error_type": "NotImplementedError",
+          "error": "Unsupported operation: Draw"
+        }
+      },
+      "wall_time_ms": 4.181
+    },
+    {
+      "label": "preview/Tap.preprocess",
+      "mode": "preview",
+      "callback": "preprocess",
+      "static_nodes": 97,
+      "dag_size": 39,
+      "dynamic": {
+        "seed_index": 0,
+        "eval_count": 47,
+        "dispatch_count": 3,
+        "log_len": 0,
+        "outcome": {
+          "status": "error",
+          "error_type": "NotImplementedError",
+          "error": "Unsupported operation: BeatToTime"
+        }
+      },
+      "wall_time_ms": 1.381
+    },
+    {
+      "label": "preview/Tap.preprocess_dev",
+      "mode": "preview",
+      "callback": "preprocess",
+      "static_nodes": 97,
+      "dag_size": 39,
+      "dynamic": {
+        "seed_index": 0,
+        "eval_count": 47,
+        "dispatch_count": 3,
+        "log_len": 0,
+        "outcome": {
+          "status": "error",
+          "error_type": "NotImplementedError",
+          "error": "Unsupported operation: BeatToTime"
+        }
+      },
+      "wall_time_ms": 1.389
+    },
+    {
+      "label": "preview/Tap.render",
+      "mode": "preview",
+      "callback": "render",
+      "static_nodes": 902,
+      "dag_size": 263,
+      "dynamic": {
+        "seed_index": 0,
+        "eval_count": 134,
+        "dispatch_count": 3,
+        "log_len": 0,
+        "outcome": {
+          "status": "error",
+          "error_type": "NotImplementedError",
+          "error": "Unsupported operation: Draw"
+        }
+      },
+      "wall_time_ms": 48.274
+    },
+    {
+      "label": "preview/Tap.render_dev",
+      "mode": "preview",
+      "callback": "render",
+      "static_nodes": 902,
+      "dag_size": 263,
+      "dynamic": {
+        "seed_index": 0,
+        "eval_count": 134,
+        "dispatch_count": 3,
+        "log_len": 0,
+        "outcome": {
+          "status": "error",
+          "error_type": "NotImplementedError",
+          "error": "Unsupported operation: Draw"
+        }
+      },
+      "wall_time_ms": 47.033
+    },
+    {
+      "label": "tutorial/global.navigate",
+      "mode": "tutorial",
+      "callback": "navigate",
+      "static_nodes": 84,
+      "dag_size": 27,
+      "dynamic": {
+        "seed_index": 0,
+        "eval_count": 47,
+        "dispatch_count": 2,
+        "log_len": 0,
+        "outcome": {
+          "status": "ok",
+          "result": "0x0000000000000000"
+        }
+      },
+      "wall_time_ms": 1.19
+    },
+    {
+      "label": "tutorial/global.navigate_dev",
+      "mode": "tutorial",
+      "callback": "navigate",
+      "static_nodes": 84,
+      "dag_size": 27,
+      "dynamic": {
+        "seed_index": 0,
+        "eval_count": 47,
+        "dispatch_count": 2,
+        "log_len": 0,
+        "outcome": {
+          "status": "ok",
+          "result": "0x0000000000000000"
+        }
+      },
+      "wall_time_ms": 1.176
+    },
+    {
+      "label": "tutorial/global.preprocess",
+      "mode": "tutorial",
+      "callback": "preprocess",
+      "static_nodes": 2952,
+      "dag_size": 601,
+      "dynamic": {
+        "seed_index": 0,
+        "eval_count": 10055,
+        "dispatch_count": 186,
+        "log_len": 0,
+        "outcome": {
+          "status": "ok",
+          "result": "0x0000000000000000"
+        }
+      },
+      "wall_time_ms": 66.717
+    },
+    {
+      "label": "tutorial/global.preprocess_dev",
+      "mode": "tutorial",
+      "callback": "preprocess",
+      "static_nodes": 2972,
+      "dag_size": 607,
+      "dynamic": {
+        "seed_index": 0,
+        "eval_count": 1463,
+        "dispatch_count": 30,
+        "log_len": 1,
+        "outcome": {
+          "status": "ok",
+          "result": "0x0000000000000000"
+        }
+      },
+      "wall_time_ms": 64.15
+    },
+    {
+      "label": "tutorial/global.update",
+      "mode": "tutorial",
+      "callback": "update",
+      "static_nodes": 43283,
+      "dag_size": 5727,
+      "dynamic": {
+        "seed_index": 0,
+        "eval_count": 28,
+        "dispatch_count": 3,
+        "log_len": 0,
+        "outcome": {
+          "status": "error",
+          "error_type": "NotImplementedError",
+          "error": "Unsupported operation: Draw"
+        }
+      },
+      "wall_time_ms": 2782.117
+    },
+    {
+      "label": "tutorial/global.update_dev",
+      "mode": "tutorial",
+      "callback": "update",
+      "static_nodes": 45176,
+      "dag_size": 6202,
+      "dynamic": {
+        "seed_index": 0,
+        "eval_count": 28,
+        "dispatch_count": 3,
+        "log_len": 0,
+        "outcome": {
+          "status": "error",
+          "error_type": "NotImplementedError",
+          "error": "Unsupported operation: Draw"
+        }
+      },
+      "wall_time_ms": 2999.672
+    },
+    {
+      "label": "watch/DirectionalFlick.despawn_time",
+      "mode": "watch",
+      "callback": "despawnTime",
+      "static_nodes": 24,
+      "dag_size": 20,
+      "dynamic": {
+        "seed_index": 0,
+        "eval_count": 14,
+        "dispatch_count": 2,
+        "log_len": 0,
+        "outcome": {
+          "status": "ok",
+          "result": "0xc030000000000000"
+        }
+      },
+      "wall_time_ms": 0.575
+    },
+    {
+      "label": "watch/DirectionalFlick.despawn_time_dev",
+      "mode": "watch",
+      "callback": "despawnTime",
+      "static_nodes": 24,
+      "dag_size": 20,
+      "dynamic": {
+        "seed_index": 0,
+        "eval_count": 14,
+        "dispatch_count": 2,
+        "log_len": 0,
+        "outcome": {
+          "status": "ok",
+          "result": "0xc030000000000000"
+        }
+      },
+      "wall_time_ms": 0.464
+    },
+    {
+      "label": "watch/DirectionalFlick.preprocess",
+      "mode": "watch",
+      "callback": "preprocess",
+      "static_nodes": 966,
+      "dag_size": 319,
+      "dynamic": {
+        "seed_index": 0,
+        "eval_count": 47,
+        "dispatch_count": 3,
+        "log_len": 0,
+        "outcome": {
+          "status": "error",
+          "error_type": "NotImplementedError",
+          "error": "Unsupported operation: BeatToTime"
+        }
+      },
+      "wall_time_ms": 20.91
+    },
+    {
+      "label": "watch/DirectionalFlick.preprocess_dev",
+      "mode": "watch",
+      "callback": "preprocess",
+      "static_nodes": 2581,
+      "dag_size": 682,
+      "dynamic": {
+        "seed_index": 0,
+        "eval_count": 47,
+        "dispatch_count": 3,
+        "log_len": 0,
+        "outcome": {
+          "status": "error",
+          "error_type": "NotImplementedError",
+          "error": "Unsupported operation: BeatToTime"
+        }
+      },
+      "wall_time_ms": 64.465
+    },
+    {
+      "label": "watch/DirectionalFlick.spawn_time",
+      "mode": "watch",
+      "callback": "spawnTime",
+      "static_nodes": 10,
+      "dag_size": 9,
+      "dynamic": {
+        "seed_index": 0,
+        "eval_count": 8,
+        "dispatch_count": 1,
+        "log_len": 0,
+        "outcome": {
+          "status": "ok",
+          "result": "0x3feebc4bef5081fc"
+        }
+      },
+      "wall_time_ms": 0.218
+    },
+    {
+      "label": "watch/DirectionalFlick.spawn_time_dev",
+      "mode": "watch",
+      "callback": "spawnTime",
+      "static_nodes": 10,
+      "dag_size": 9,
+      "dynamic": {
+        "seed_index": 0,
+        "eval_count": 8,
+        "dispatch_count": 1,
+        "log_len": 0,
+        "outcome": {
+          "status": "ok",
+          "result": "0x3feebc4bef5081fc"
+        }
+      },
+      "wall_time_ms": 0.192
+    },
+    {
+      "label": "watch/DirectionalFlick.terminate",
+      "mode": "watch",
+      "callback": "terminate",
+      "static_nodes": 930,
+      "dag_size": 290,
+      "dynamic": {
+        "seed_index": 0,
+        "eval_count": 11,
+        "dispatch_count": 2,
+        "log_len": 0,
+        "outcome": {
+          "status": "ok",
+          "result": "0x0000000000000000"
+        }
+      },
+      "wall_time_ms": 40.65
+    },
+    {
+      "label": "watch/DirectionalFlick.terminate_dev",
+      "mode": "watch",
+      "callback": "terminate",
+      "static_nodes": 935,
+      "dag_size": 293,
+      "dynamic": {
+        "seed_index": 0,
+        "eval_count": 11,
+        "dispatch_count": 2,
+        "log_len": 0,
+        "outcome": {
+          "status": "ok",
+          "result": "0x0000000000000000"
+        }
+      },
+      "wall_time_ms": 41.64
+    },
+    {
+      "label": "watch/DirectionalFlick.update_parallel",
+      "mode": "watch",
+      "callback": "updateParallel",
+      "static_nodes": 2297,
+      "dag_size": 632,
+      "dynamic": {
+        "seed_index": 0,
+        "eval_count": 132,
+        "dispatch_count": 9,
+        "log_len": 0,
+        "outcome": {
+          "status": "error",
+          "error_type": "NotImplementedError",
+          "error": "Unsupported operation: EaseOutQuad"
+        }
+      },
+      "wall_time_ms": 224.414
+    },
+    {
+      "label": "watch/DirectionalFlick.update_parallel_dev",
+      "mode": "watch",
+      "callback": "updateParallel",
+      "static_nodes": 2465,
+      "dag_size": 679,
+      "dynamic": {
+        "seed_index": 0,
+        "eval_count": 131,
+        "dispatch_count": 8,
+        "log_len": 1,
+        "outcome": {
+          "status": "ok",
+          "result": "0x0000000000000000"
+        }
+      },
+      "wall_time_ms": 226.391
+    },
+    {
+      "label": "watch/Flick.despawn_time",
+      "mode": "watch",
+      "callback": "despawnTime",
+      "static_nodes": 24,
+      "dag_size": 20,
+      "dynamic": {
+        "seed_index": 0,
+        "eval_count": 14,
+        "dispatch_count": 2,
+        "log_len": 0,
+        "outcome": {
+          "status": "ok",
+          "result": "0xc030000000000000"
+        }
+      },
+      "wall_time_ms": 0.458
+    },
+    {
+      "label": "watch/Flick.despawn_time_dev",
+      "mode": "watch",
+      "callback": "despawnTime",
+      "static_nodes": 24,
+      "dag_size": 20,
+      "dynamic": {
+        "seed_index": 0,
+        "eval_count": 14,
+        "dispatch_count": 2,
+        "log_len": 0,
+        "outcome": {
+          "status": "ok",
+          "result": "0xc030000000000000"
+        }
+      },
+      "wall_time_ms": 0.47
+    },
+    {
+      "label": "watch/Flick.preprocess",
+      "mode": "watch",
+      "callback": "preprocess",
+      "static_nodes": 966,
+      "dag_size": 319,
+      "dynamic": {
+        "seed_index": 0,
+        "eval_count": 47,
+        "dispatch_count": 3,
+        "log_len": 0,
+        "outcome": {
+          "status": "error",
+          "error_type": "NotImplementedError",
+          "error": "Unsupported operation: BeatToTime"
+        }
+      },
+      "wall_time_ms": 21.444
+    },
+    {
+      "label": "watch/Flick.preprocess_dev",
+      "mode": "watch",
+      "callback": "preprocess",
+      "static_nodes": 2581,
+      "dag_size": 682,
+      "dynamic": {
+        "seed_index": 0,
+        "eval_count": 47,
+        "dispatch_count": 3,
+        "log_len": 0,
+        "outcome": {
+          "status": "error",
+          "error_type": "NotImplementedError",
+          "error": "Unsupported operation: BeatToTime"
+        }
+      },
+      "wall_time_ms": 64.854
+    },
+    {
+      "label": "watch/Flick.spawn_time",
+      "mode": "watch",
+      "callback": "spawnTime",
+      "static_nodes": 10,
+      "dag_size": 9,
+      "dynamic": {
+        "seed_index": 0,
+        "eval_count": 8,
+        "dispatch_count": 1,
+        "log_len": 0,
+        "outcome": {
+          "status": "ok",
+          "result": "0x3feebc4bef5081fc"
+        }
+      },
+      "wall_time_ms": 0.2
+    },
+    {
+      "label": "watch/Flick.spawn_time_dev",
+      "mode": "watch",
+      "callback": "spawnTime",
+      "static_nodes": 10,
+      "dag_size": 9,
+      "dynamic": {
+        "seed_index": 0,
+        "eval_count": 8,
+        "dispatch_count": 1,
+        "log_len": 0,
+        "outcome": {
+          "status": "ok",
+          "result": "0x3feebc4bef5081fc"
+        }
+      },
+      "wall_time_ms": 0.195
+    },
+    {
+      "label": "watch/Flick.terminate",
+      "mode": "watch",
+      "callback": "terminate",
+      "static_nodes": 930,
+      "dag_size": 290,
+      "dynamic": {
+        "seed_index": 0,
+        "eval_count": 11,
+        "dispatch_count": 2,
+        "log_len": 0,
+        "outcome": {
+          "status": "ok",
+          "result": "0x0000000000000000"
+        }
+      },
+      "wall_time_ms": 40.435
+    },
+    {
+      "label": "watch/Flick.terminate_dev",
+      "mode": "watch",
+      "callback": "terminate",
+      "static_nodes": 935,
+      "dag_size": 293,
+      "dynamic": {
+        "seed_index": 0,
+        "eval_count": 11,
+        "dispatch_count": 2,
+        "log_len": 0,
+        "outcome": {
+          "status": "ok",
+          "result": "0x0000000000000000"
+        }
+      },
+      "wall_time_ms": 40.042
+    },
+    {
+      "label": "watch/Flick.update_parallel",
+      "mode": "watch",
+      "callback": "updateParallel",
+      "static_nodes": 2297,
+      "dag_size": 632,
+      "dynamic": {
+        "seed_index": 0,
+        "eval_count": 132,
+        "dispatch_count": 9,
+        "log_len": 0,
+        "outcome": {
+          "status": "error",
+          "error_type": "NotImplementedError",
+          "error": "Unsupported operation: EaseOutQuad"
+        }
+      },
+      "wall_time_ms": 245.206
+    },
+    {
+      "label": "watch/Flick.update_parallel_dev",
+      "mode": "watch",
+      "callback": "updateParallel",
+      "static_nodes": 2465,
+      "dag_size": 679,
+      "dynamic": {
+        "seed_index": 0,
+        "eval_count": 131,
+        "dispatch_count": 8,
+        "log_len": 1,
+        "outcome": {
+          "status": "ok",
+          "result": "0x0000000000000000"
+        }
+      },
+      "wall_time_ms": 226.194
+    },
+    {
+      "label": "watch/HoldAnchor.despawn_time",
+      "mode": "watch",
+      "callback": "despawnTime",
+      "static_nodes": 24,
+      "dag_size": 20,
+      "dynamic": {
+        "seed_index": 0,
+        "eval_count": 14,
+        "dispatch_count": 2,
+        "log_len": 0,
+        "outcome": {
+          "status": "ok",
+          "result": "0xc030000000000000"
+        }
+      },
+      "wall_time_ms": 0.465
+    },
+    {
+      "label": "watch/HoldAnchor.despawn_time_dev",
+      "mode": "watch",
+      "callback": "despawnTime",
+      "static_nodes": 24,
+      "dag_size": 20,
+      "dynamic": {
+        "seed_index": 0,
+        "eval_count": 14,
+        "dispatch_count": 2,
+        "log_len": 0,
+        "outcome": {
+          "status": "ok",
+          "result": "0xc030000000000000"
+        }
+      },
+      "wall_time_ms": 0.465
+    },
+    {
+      "label": "watch/HoldAnchor.preprocess",
+      "mode": "watch",
+      "callback": "preprocess",
+      "static_nodes": 966,
+      "dag_size": 319,
+      "dynamic": {
+        "seed_index": 0,
+        "eval_count": 47,
+        "dispatch_count": 3,
+        "log_len": 0,
+        "outcome": {
+          "status": "error",
+          "error_type": "NotImplementedError",
+          "error": "Unsupported operation: BeatToTime"
+        }
+      },
+      "wall_time_ms": 22.042
+    },
+    {
+      "label": "watch/HoldAnchor.preprocess_dev",
+      "mode": "watch",
+      "callback": "preprocess",
+      "static_nodes": 2581,
+      "dag_size": 682,
+      "dynamic": {
+        "seed_index": 0,
+        "eval_count": 47,
+        "dispatch_count": 3,
+        "log_len": 0,
+        "outcome": {
+          "status": "error",
+          "error_type": "NotImplementedError",
+          "error": "Unsupported operation: BeatToTime"
+        }
+      },
+      "wall_time_ms": 66.707
+    },
+    {
+      "label": "watch/HoldAnchor.spawn_time",
+      "mode": "watch",
+      "callback": "spawnTime",
+      "static_nodes": 10,
+      "dag_size": 9,
+      "dynamic": {
+        "seed_index": 0,
+        "eval_count": 8,
+        "dispatch_count": 1,
+        "log_len": 0,
+        "outcome": {
+          "status": "ok",
+          "result": "0x3feebc4bef5081fc"
+        }
+      },
+      "wall_time_ms": 0.2
+    },
+    {
+      "label": "watch/HoldAnchor.spawn_time_dev",
+      "mode": "watch",
+      "callback": "spawnTime",
+      "static_nodes": 10,
+      "dag_size": 9,
+      "dynamic": {
+        "seed_index": 0,
+        "eval_count": 8,
+        "dispatch_count": 1,
+        "log_len": 0,
+        "outcome": {
+          "status": "ok",
+          "result": "0x3feebc4bef5081fc"
+        }
+      },
+      "wall_time_ms": 0.2
+    },
+    {
+      "label": "watch/HoldAnchor.terminate",
+      "mode": "watch",
+      "callback": "terminate",
+      "static_nodes": 930,
+      "dag_size": 290,
+      "dynamic": {
+        "seed_index": 0,
+        "eval_count": 11,
+        "dispatch_count": 2,
+        "log_len": 0,
+        "outcome": {
+          "status": "ok",
+          "result": "0x0000000000000000"
+        }
+      },
+      "wall_time_ms": 40.263
+    },
+    {
+      "label": "watch/HoldAnchor.terminate_dev",
+      "mode": "watch",
+      "callback": "terminate",
+      "static_nodes": 935,
+      "dag_size": 293,
+      "dynamic": {
+        "seed_index": 0,
+        "eval_count": 11,
+        "dispatch_count": 2,
+        "log_len": 0,
+        "outcome": {
+          "status": "ok",
+          "result": "0x0000000000000000"
+        }
+      },
+      "wall_time_ms": 38.909
+    },
+    {
+      "label": "watch/HoldAnchor.update_parallel",
+      "mode": "watch",
+      "callback": "updateParallel",
+      "static_nodes": 2297,
+      "dag_size": 632,
+      "dynamic": {
+        "seed_index": 0,
+        "eval_count": 132,
+        "dispatch_count": 9,
+        "log_len": 0,
+        "outcome": {
+          "status": "error",
+          "error_type": "NotImplementedError",
+          "error": "Unsupported operation: EaseOutQuad"
+        }
+      },
+      "wall_time_ms": 228.979
+    },
+    {
+      "label": "watch/HoldAnchor.update_parallel_dev",
+      "mode": "watch",
+      "callback": "updateParallel",
+      "static_nodes": 2465,
+      "dag_size": 679,
+      "dynamic": {
+        "seed_index": 0,
+        "eval_count": 131,
+        "dispatch_count": 8,
+        "log_len": 1,
+        "outcome": {
+          "status": "ok",
+          "result": "0x0000000000000000"
+        }
+      },
+      "wall_time_ms": 238.203
+    },
+    {
+      "label": "watch/HoldEnd.despawn_time",
+      "mode": "watch",
+      "callback": "despawnTime",
+      "static_nodes": 24,
+      "dag_size": 20,
+      "dynamic": {
+        "seed_index": 0,
+        "eval_count": 14,
+        "dispatch_count": 2,
+        "log_len": 0,
+        "outcome": {
+          "status": "ok",
+          "result": "0xc030000000000000"
+        }
+      },
+      "wall_time_ms": 0.565
+    },
+    {
+      "label": "watch/HoldEnd.despawn_time_dev",
+      "mode": "watch",
+      "callback": "despawnTime",
+      "static_nodes": 24,
+      "dag_size": 20,
+      "dynamic": {
+        "seed_index": 0,
+        "eval_count": 14,
+        "dispatch_count": 2,
+        "log_len": 0,
+        "outcome": {
+          "status": "ok",
+          "result": "0xc030000000000000"
+        }
+      },
+      "wall_time_ms": 0.702
+    },
+    {
+      "label": "watch/HoldEnd.preprocess",
+      "mode": "watch",
+      "callback": "preprocess",
+      "static_nodes": 966,
+      "dag_size": 319,
+      "dynamic": {
+        "seed_index": 0,
+        "eval_count": 47,
+        "dispatch_count": 3,
+        "log_len": 0,
+        "outcome": {
+          "status": "error",
+          "error_type": "NotImplementedError",
+          "error": "Unsupported operation: BeatToTime"
+        }
+      },
+      "wall_time_ms": 20.913
+    },
+    {
+      "label": "watch/HoldEnd.preprocess_dev",
+      "mode": "watch",
+      "callback": "preprocess",
+      "static_nodes": 2581,
+      "dag_size": 682,
+      "dynamic": {
+        "seed_index": 0,
+        "eval_count": 47,
+        "dispatch_count": 3,
+        "log_len": 0,
+        "outcome": {
+          "status": "error",
+          "error_type": "NotImplementedError",
+          "error": "Unsupported operation: BeatToTime"
+        }
+      },
+      "wall_time_ms": 67.243
+    },
+    {
+      "label": "watch/HoldEnd.spawn_time",
+      "mode": "watch",
+      "callback": "spawnTime",
+      "static_nodes": 10,
+      "dag_size": 9,
+      "dynamic": {
+        "seed_index": 0,
+        "eval_count": 8,
+        "dispatch_count": 1,
+        "log_len": 0,
+        "outcome": {
+          "status": "ok",
+          "result": "0x3feebc4bef5081fc"
+        }
+      },
+      "wall_time_ms": 0.195
+    },
+    {
+      "label": "watch/HoldEnd.spawn_time_dev",
+      "mode": "watch",
+      "callback": "spawnTime",
+      "static_nodes": 10,
+      "dag_size": 9,
+      "dynamic": {
+        "seed_index": 0,
+        "eval_count": 8,
+        "dispatch_count": 1,
+        "log_len": 0,
+        "outcome": {
+          "status": "ok",
+          "result": "0x3feebc4bef5081fc"
+        }
+      },
+      "wall_time_ms": 0.199
+    },
+    {
+      "label": "watch/HoldEnd.terminate",
+      "mode": "watch",
+      "callback": "terminate",
+      "static_nodes": 930,
+      "dag_size": 290,
+      "dynamic": {
+        "seed_index": 0,
+        "eval_count": 11,
+        "dispatch_count": 2,
+        "log_len": 0,
+        "outcome": {
+          "status": "ok",
+          "result": "0x0000000000000000"
+        }
+      },
+      "wall_time_ms": 40.435
+    },
+    {
+      "label": "watch/HoldEnd.terminate_dev",
+      "mode": "watch",
+      "callback": "terminate",
+      "static_nodes": 935,
+      "dag_size": 293,
+      "dynamic": {
+        "seed_index": 0,
+        "eval_count": 11,
+        "dispatch_count": 2,
+        "log_len": 0,
+        "outcome": {
+          "status": "ok",
+          "result": "0x0000000000000000"
+        }
+      },
+      "wall_time_ms": 39.429
+    },
+    {
+      "label": "watch/HoldEnd.update_parallel",
+      "mode": "watch",
+      "callback": "updateParallel",
+      "static_nodes": 2297,
+      "dag_size": 632,
+      "dynamic": {
+        "seed_index": 0,
+        "eval_count": 132,
+        "dispatch_count": 9,
+        "log_len": 0,
+        "outcome": {
+          "status": "error",
+          "error_type": "NotImplementedError",
+          "error": "Unsupported operation: EaseOutQuad"
+        }
+      },
+      "wall_time_ms": 232.209
+    },
+    {
+      "label": "watch/HoldEnd.update_parallel_dev",
+      "mode": "watch",
+      "callback": "updateParallel",
+      "static_nodes": 2465,
+      "dag_size": 679,
+      "dynamic": {
+        "seed_index": 0,
+        "eval_count": 131,
+        "dispatch_count": 8,
+        "log_len": 1,
+        "outcome": {
+          "status": "ok",
+          "result": "0x0000000000000000"
+        }
+      },
+      "wall_time_ms": 234.314
+    },
+    {
+      "label": "watch/HoldHead.despawn_time",
+      "mode": "watch",
+      "callback": "despawnTime",
+      "static_nodes": 24,
+      "dag_size": 20,
+      "dynamic": {
+        "seed_index": 0,
+        "eval_count": 14,
+        "dispatch_count": 2,
+        "log_len": 0,
+        "outcome": {
+          "status": "ok",
+          "result": "0xc030000000000000"
+        }
+      },
+      "wall_time_ms": 0.483
+    },
+    {
+      "label": "watch/HoldHead.despawn_time_dev",
+      "mode": "watch",
+      "callback": "despawnTime",
+      "static_nodes": 24,
+      "dag_size": 20,
+      "dynamic": {
+        "seed_index": 0,
+        "eval_count": 14,
+        "dispatch_count": 2,
+        "log_len": 0,
+        "outcome": {
+          "status": "ok",
+          "result": "0xc030000000000000"
+        }
+      },
+      "wall_time_ms": 0.459
+    },
+    {
+      "label": "watch/HoldHead.preprocess",
+      "mode": "watch",
+      "callback": "preprocess",
+      "static_nodes": 966,
+      "dag_size": 319,
+      "dynamic": {
+        "seed_index": 0,
+        "eval_count": 47,
+        "dispatch_count": 3,
+        "log_len": 0,
+        "outcome": {
+          "status": "error",
+          "error_type": "NotImplementedError",
+          "error": "Unsupported operation: BeatToTime"
+        }
+      },
+      "wall_time_ms": 20.985
+    },
+    {
+      "label": "watch/HoldHead.preprocess_dev",
+      "mode": "watch",
+      "callback": "preprocess",
+      "static_nodes": 2581,
+      "dag_size": 682,
+      "dynamic": {
+        "seed_index": 0,
+        "eval_count": 47,
+        "dispatch_count": 3,
+        "log_len": 0,
+        "outcome": {
+          "status": "error",
+          "error_type": "NotImplementedError",
+          "error": "Unsupported operation: BeatToTime"
+        }
+      },
+      "wall_time_ms": 65.424
+    },
+    {
+      "label": "watch/HoldHead.spawn_time",
+      "mode": "watch",
+      "callback": "spawnTime",
+      "static_nodes": 10,
+      "dag_size": 9,
+      "dynamic": {
+        "seed_index": 0,
+        "eval_count": 8,
+        "dispatch_count": 1,
+        "log_len": 0,
+        "outcome": {
+          "status": "ok",
+          "result": "0x3feebc4bef5081fc"
+        }
+      },
+      "wall_time_ms": 0.312
+    },
+    {
+      "label": "watch/HoldHead.spawn_time_dev",
+      "mode": "watch",
+      "callback": "spawnTime",
+      "static_nodes": 10,
+      "dag_size": 9,
+      "dynamic": {
+        "seed_index": 0,
+        "eval_count": 8,
+        "dispatch_count": 1,
+        "log_len": 0,
+        "outcome": {
+          "status": "ok",
+          "result": "0x3feebc4bef5081fc"
+        }
+      },
+      "wall_time_ms": 0.197
+    },
+    {
+      "label": "watch/HoldHead.terminate",
+      "mode": "watch",
+      "callback": "terminate",
+      "static_nodes": 930,
+      "dag_size": 290,
+      "dynamic": {
+        "seed_index": 0,
+        "eval_count": 11,
+        "dispatch_count": 2,
+        "log_len": 0,
+        "outcome": {
+          "status": "ok",
+          "result": "0x0000000000000000"
+        }
+      },
+      "wall_time_ms": 38.727
+    },
+    {
+      "label": "watch/HoldHead.terminate_dev",
+      "mode": "watch",
+      "callback": "terminate",
+      "static_nodes": 935,
+      "dag_size": 293,
+      "dynamic": {
+        "seed_index": 0,
+        "eval_count": 11,
+        "dispatch_count": 2,
+        "log_len": 0,
+        "outcome": {
+          "status": "ok",
+          "result": "0x0000000000000000"
+        }
+      },
+      "wall_time_ms": 39.545
+    },
+    {
+      "label": "watch/HoldHead.update_parallel",
+      "mode": "watch",
+      "callback": "updateParallel",
+      "static_nodes": 2297,
+      "dag_size": 632,
+      "dynamic": {
+        "seed_index": 0,
+        "eval_count": 132,
+        "dispatch_count": 9,
+        "log_len": 0,
+        "outcome": {
+          "status": "error",
+          "error_type": "NotImplementedError",
+          "error": "Unsupported operation: EaseOutQuad"
+        }
+      },
+      "wall_time_ms": 227.939
+    },
+    {
+      "label": "watch/HoldHead.update_parallel_dev",
+      "mode": "watch",
+      "callback": "updateParallel",
+      "static_nodes": 2465,
+      "dag_size": 679,
+      "dynamic": {
+        "seed_index": 0,
+        "eval_count": 131,
+        "dispatch_count": 8,
+        "log_len": 1,
+        "outcome": {
+          "status": "ok",
+          "result": "0x0000000000000000"
+        }
+      },
+      "wall_time_ms": 234.234
+    },
+    {
+      "label": "watch/HoldTick.despawn_time",
+      "mode": "watch",
+      "callback": "despawnTime",
+      "static_nodes": 24,
+      "dag_size": 20,
+      "dynamic": {
+        "seed_index": 0,
+        "eval_count": 14,
+        "dispatch_count": 2,
+        "log_len": 0,
+        "outcome": {
+          "status": "ok",
+          "result": "0xc030000000000000"
+        }
+      },
+      "wall_time_ms": 0.476
+    },
+    {
+      "label": "watch/HoldTick.despawn_time_dev",
+      "mode": "watch",
+      "callback": "despawnTime",
+      "static_nodes": 24,
+      "dag_size": 20,
+      "dynamic": {
+        "seed_index": 0,
+        "eval_count": 14,
+        "dispatch_count": 2,
+        "log_len": 0,
+        "outcome": {
+          "status": "ok",
+          "result": "0xc030000000000000"
+        }
+      },
+      "wall_time_ms": 0.508
+    },
+    {
+      "label": "watch/HoldTick.preprocess",
+      "mode": "watch",
+      "callback": "preprocess",
+      "static_nodes": 966,
+      "dag_size": 319,
+      "dynamic": {
+        "seed_index": 0,
+        "eval_count": 47,
+        "dispatch_count": 3,
+        "log_len": 0,
+        "outcome": {
+          "status": "error",
+          "error_type": "NotImplementedError",
+          "error": "Unsupported operation: BeatToTime"
+        }
+      },
+      "wall_time_ms": 21.69
+    },
+    {
+      "label": "watch/HoldTick.preprocess_dev",
+      "mode": "watch",
+      "callback": "preprocess",
+      "static_nodes": 2581,
+      "dag_size": 682,
+      "dynamic": {
+        "seed_index": 0,
+        "eval_count": 47,
+        "dispatch_count": 3,
+        "log_len": 0,
+        "outcome": {
+          "status": "error",
+          "error_type": "NotImplementedError",
+          "error": "Unsupported operation: BeatToTime"
+        }
+      },
+      "wall_time_ms": 67.611
+    },
+    {
+      "label": "watch/HoldTick.spawn_time",
+      "mode": "watch",
+      "callback": "spawnTime",
+      "static_nodes": 10,
+      "dag_size": 9,
+      "dynamic": {
+        "seed_index": 0,
+        "eval_count": 8,
+        "dispatch_count": 1,
+        "log_len": 0,
+        "outcome": {
+          "status": "ok",
+          "result": "0x3feebc4bef5081fc"
+        }
+      },
+      "wall_time_ms": 0.202
+    },
+    {
+      "label": "watch/HoldTick.spawn_time_dev",
+      "mode": "watch",
+      "callback": "spawnTime",
+      "static_nodes": 10,
+      "dag_size": 9,
+      "dynamic": {
+        "seed_index": 0,
+        "eval_count": 8,
+        "dispatch_count": 1,
+        "log_len": 0,
+        "outcome": {
+          "status": "ok",
+          "result": "0x3feebc4bef5081fc"
+        }
+      },
+      "wall_time_ms": 0.197
+    },
+    {
+      "label": "watch/HoldTick.terminate",
+      "mode": "watch",
+      "callback": "terminate",
+      "static_nodes": 930,
+      "dag_size": 290,
+      "dynamic": {
+        "seed_index": 0,
+        "eval_count": 11,
+        "dispatch_count": 2,
+        "log_len": 0,
+        "outcome": {
+          "status": "ok",
+          "result": "0x0000000000000000"
+        }
+      },
+      "wall_time_ms": 38.974
+    },
+    {
+      "label": "watch/HoldTick.terminate_dev",
+      "mode": "watch",
+      "callback": "terminate",
+      "static_nodes": 935,
+      "dag_size": 293,
+      "dynamic": {
+        "seed_index": 0,
+        "eval_count": 11,
+        "dispatch_count": 2,
+        "log_len": 0,
+        "outcome": {
+          "status": "ok",
+          "result": "0x0000000000000000"
+        }
+      },
+      "wall_time_ms": 41.556
+    },
+    {
+      "label": "watch/HoldTick.update_parallel",
+      "mode": "watch",
+      "callback": "updateParallel",
+      "static_nodes": 2297,
+      "dag_size": 632,
+      "dynamic": {
+        "seed_index": 0,
+        "eval_count": 132,
+        "dispatch_count": 9,
+        "log_len": 0,
+        "outcome": {
+          "status": "error",
+          "error_type": "NotImplementedError",
+          "error": "Unsupported operation: EaseOutQuad"
+        }
+      },
+      "wall_time_ms": 225.796
+    },
+    {
+      "label": "watch/HoldTick.update_parallel_dev",
+      "mode": "watch",
+      "callback": "updateParallel",
+      "static_nodes": 2465,
+      "dag_size": 679,
+      "dynamic": {
+        "seed_index": 0,
+        "eval_count": 131,
+        "dispatch_count": 8,
+        "log_len": 1,
+        "outcome": {
+          "status": "ok",
+          "result": "0x0000000000000000"
+        }
+      },
+      "wall_time_ms": 235.085
+    },
+    {
+      "label": "watch/Tap.despawn_time",
+      "mode": "watch",
+      "callback": "despawnTime",
+      "static_nodes": 24,
+      "dag_size": 20,
+      "dynamic": {
+        "seed_index": 0,
+        "eval_count": 14,
+        "dispatch_count": 2,
+        "log_len": 0,
+        "outcome": {
+          "status": "ok",
+          "result": "0xc030000000000000"
+        }
+      },
+      "wall_time_ms": 0.655
+    },
+    {
+      "label": "watch/Tap.despawn_time_dev",
+      "mode": "watch",
+      "callback": "despawnTime",
+      "static_nodes": 24,
+      "dag_size": 20,
+      "dynamic": {
+        "seed_index": 0,
+        "eval_count": 14,
+        "dispatch_count": 2,
+        "log_len": 0,
+        "outcome": {
+          "status": "ok",
+          "result": "0xc030000000000000"
+        }
+      },
+      "wall_time_ms": 0.457
+    },
+    {
+      "label": "watch/Tap.preprocess",
+      "mode": "watch",
+      "callback": "preprocess",
+      "static_nodes": 966,
+      "dag_size": 319,
+      "dynamic": {
+        "seed_index": 0,
+        "eval_count": 47,
+        "dispatch_count": 3,
+        "log_len": 0,
+        "outcome": {
+          "status": "error",
+          "error_type": "NotImplementedError",
+          "error": "Unsupported operation: BeatToTime"
+        }
+      },
+      "wall_time_ms": 21.533
+    },
+    {
+      "label": "watch/Tap.preprocess_dev",
+      "mode": "watch",
+      "callback": "preprocess",
+      "static_nodes": 2581,
+      "dag_size": 682,
+      "dynamic": {
+        "seed_index": 0,
+        "eval_count": 47,
+        "dispatch_count": 3,
+        "log_len": 0,
+        "outcome": {
+          "status": "error",
+          "error_type": "NotImplementedError",
+          "error": "Unsupported operation: BeatToTime"
+        }
+      },
+      "wall_time_ms": 65.94
+    },
+    {
+      "label": "watch/Tap.spawn_time",
+      "mode": "watch",
+      "callback": "spawnTime",
+      "static_nodes": 10,
+      "dag_size": 9,
+      "dynamic": {
+        "seed_index": 0,
+        "eval_count": 8,
+        "dispatch_count": 1,
+        "log_len": 0,
+        "outcome": {
+          "status": "ok",
+          "result": "0x3feebc4bef5081fc"
+        }
+      },
+      "wall_time_ms": 0.216
+    },
+    {
+      "label": "watch/Tap.spawn_time_dev",
+      "mode": "watch",
+      "callback": "spawnTime",
+      "static_nodes": 10,
+      "dag_size": 9,
+      "dynamic": {
+        "seed_index": 0,
+        "eval_count": 8,
+        "dispatch_count": 1,
+        "log_len": 0,
+        "outcome": {
+          "status": "ok",
+          "result": "0x3feebc4bef5081fc"
+        }
+      },
+      "wall_time_ms": 0.196
+    },
+    {
+      "label": "watch/Tap.terminate",
+      "mode": "watch",
+      "callback": "terminate",
+      "static_nodes": 930,
+      "dag_size": 290,
+      "dynamic": {
+        "seed_index": 0,
+        "eval_count": 11,
+        "dispatch_count": 2,
+        "log_len": 0,
+        "outcome": {
+          "status": "ok",
+          "result": "0x0000000000000000"
+        }
+      },
+      "wall_time_ms": 41.505
+    },
+    {
+      "label": "watch/Tap.terminate_dev",
+      "mode": "watch",
+      "callback": "terminate",
+      "static_nodes": 935,
+      "dag_size": 293,
+      "dynamic": {
+        "seed_index": 0,
+        "eval_count": 11,
+        "dispatch_count": 2,
+        "log_len": 0,
+        "outcome": {
+          "status": "ok",
+          "result": "0x0000000000000000"
+        }
+      },
+      "wall_time_ms": 40.063
+    },
+    {
+      "label": "watch/Tap.update_parallel",
+      "mode": "watch",
+      "callback": "updateParallel",
+      "static_nodes": 2297,
+      "dag_size": 632,
+      "dynamic": {
+        "seed_index": 0,
+        "eval_count": 132,
+        "dispatch_count": 9,
+        "log_len": 0,
+        "outcome": {
+          "status": "error",
+          "error_type": "NotImplementedError",
+          "error": "Unsupported operation: EaseOutQuad"
+        }
+      },
+      "wall_time_ms": 226.451
+    },
+    {
+      "label": "watch/Tap.update_parallel_dev",
+      "mode": "watch",
+      "callback": "updateParallel",
+      "static_nodes": 2465,
+      "dag_size": 679,
+      "dynamic": {
+        "seed_index": 0,
+        "eval_count": 131,
+        "dispatch_count": 8,
+        "log_len": 1,
+        "outcome": {
+          "status": "ok",
+          "result": "0x0000000000000000"
+        }
+      },
+      "wall_time_ms": 234.192
+    },
+    {
+      "label": "watch/WatchHoldConnector.despawn_time",
+      "mode": "watch",
+      "callback": "despawnTime",
+      "static_nodes": 16,
+      "dag_size": 14,
+      "dynamic": {
+        "seed_index": 0,
+        "eval_count": 14,
+        "dispatch_count": 1,
+        "log_len": 0,
+        "outcome": {
+          "status": "ok",
+          "result": "0x4022000000000000"
+        }
+      },
+      "wall_time_ms": 0.405
+    },
+    {
+      "label": "watch/WatchHoldConnector.despawn_time_dev",
+      "mode": "watch",
+      "callback": "despawnTime",
+      "static_nodes": 172,
+      "dag_size": 76,
+      "dynamic": {
+        "seed_index": 0,
+        "eval_count": 100,
+        "dispatch_count": 3,
+        "log_len": 0,
+        "outcome": {
+          "status": "error",
+          "error_type": "AssertionError",
+          "error": "Index must be non-negative"
+        }
+      },
+      "wall_time_ms": 4.456
+    },
+    {
+      "label": "watch/WatchHoldConnector.spawn_time",
+      "mode": "watch",
+      "callback": "spawnTime",
+      "static_nodes": 16,
+      "dag_size": 14,
+      "dynamic": {
+        "seed_index": 0,
+        "eval_count": 14,
+        "dispatch_count": 1,
+        "log_len": 0,
+        "outcome": {
+          "status": "error",
+          "error_type": "AssertionError",
+          "error": "Value must be an integer"
+        }
+      },
+      "wall_time_ms": 0.414
+    },
+    {
+      "label": "watch/WatchHoldConnector.spawn_time_dev",
+      "mode": "watch",
+      "callback": "spawnTime",
+      "static_nodes": 172,
+      "dag_size": 76,
+      "dynamic": {
+        "seed_index": 0,
+        "eval_count": 16,
+        "dispatch_count": 2,
+        "log_len": 1,
+        "outcome": {
+          "status": "ok",
+          "result": "0x0000000000000000"
+        }
+      },
+      "wall_time_ms": 4.411
+    },
+    {
+      "label": "watch/WatchHoldConnector.update_parallel",
+      "mode": "watch",
+      "callback": "updateParallel",
+      "static_nodes": 517,
+      "dag_size": 164,
+      "dynamic": {
+        "seed_index": 0,
+        "eval_count": 37,
+        "dispatch_count": 1,
+        "log_len": 0,
+        "outcome": {
+          "status": "error",
+          "error_type": "AssertionError",
+          "error": "Value must be an integer"
+        }
+      },
+      "wall_time_ms": 28.304
+    },
+    {
+      "label": "watch/WatchHoldConnector.update_parallel_dev",
+      "mode": "watch",
+      "callback": "updateParallel",
+      "static_nodes": 995,
+      "dag_size": 325,
+      "dynamic": {
+        "seed_index": 0,
+        "eval_count": 22,
+        "dispatch_count": 2,
+        "log_len": 1,
+        "outcome": {
+          "status": "ok",
+          "result": "0x0000000000000000"
+        }
+      },
+      "wall_time_ms": 44.725
+    },
+    {
+      "label": "watch/WatchHoldConnector.update_sequential",
+      "mode": "watch",
+      "callback": "updateSequential",
+      "static_nodes": 217,
+      "dag_size": 89,
+      "dynamic": {
+        "seed_index": 0,
+        "eval_count": 20,
+        "dispatch_count": 1,
+        "log_len": 0,
+        "outcome": {
+          "status": "error",
+          "error_type": "AssertionError",
+          "error": "Value must be an integer"
+        }
+      },
+      "wall_time_ms": 6.765
+    },
+    {
+      "label": "watch/WatchHoldConnector.update_sequential_dev",
+      "mode": "watch",
+      "callback": "updateSequential",
+      "static_nodes": 1591,
+      "dag_size": 576,
+      "dynamic": {
+        "seed_index": 0,
+        "eval_count": 22,
+        "dispatch_count": 2,
+        "log_len": 1,
+        "outcome": {
+          "status": "ok",
+          "result": "0x0000000000000000"
+        }
+      },
+      "wall_time_ms": 62.55
+    },
+    {
+      "label": "watch/WatchHoldManager.despawn_time",
+      "mode": "watch",
+      "callback": "despawnTime",
+      "static_nodes": 22,
+      "dag_size": 17,
+      "dynamic": {
+        "seed_index": 0,
+        "eval_count": 20,
+        "dispatch_count": 1,
+        "log_len": 0,
+        "outcome": {
+          "status": "error",
+          "error_type": "AssertionError",
+          "error": "Value must be an integer"
+        }
+      },
+      "wall_time_ms": 0.47
+    },
+    {
+      "label": "watch/WatchHoldManager.despawn_time_dev",
+      "mode": "watch",
+      "callback": "despawnTime",
+      "static_nodes": 178,
+      "dag_size": 79,
+      "dynamic": {
+        "seed_index": 0,
+        "eval_count": 22,
+        "dispatch_count": 2,
+        "log_len": 1,
+        "outcome": {
+          "status": "ok",
+          "result": "0x0000000000000000"
+        }
+      },
+      "wall_time_ms": 4.315
+    },
+    {
+      "label": "watch/WatchHoldManager.spawn_time",
+      "mode": "watch",
+      "callback": "spawnTime",
+      "static_nodes": 22,
+      "dag_size": 17,
+      "dynamic": {
+        "seed_index": 0,
+        "eval_count": 20,
+        "dispatch_count": 1,
+        "log_len": 0,
+        "outcome": {
+          "status": "error",
+          "error_type": "AssertionError",
+          "error": "Index is too large"
+        }
+      },
+      "wall_time_ms": 0.465
+    },
+    {
+      "label": "watch/WatchHoldManager.spawn_time_dev",
+      "mode": "watch",
+      "callback": "spawnTime",
+      "static_nodes": 178,
+      "dag_size": 79,
+      "dynamic": {
+        "seed_index": 0,
+        "eval_count": 36,
+        "dispatch_count": 2,
+        "log_len": 0,
+        "outcome": {
+          "status": "error",
+          "error_type": "AssertionError",
+          "error": "Index is too large"
+        }
+      },
+      "wall_time_ms": 4.338
+    },
+    {
+      "label": "watch/WatchHoldManager.terminate",
+      "mode": "watch",
+      "callback": "terminate",
+      "static_nodes": 36,
+      "dag_size": 18,
+      "dynamic": {
+        "seed_index": 0,
+        "eval_count": 24,
+        "dispatch_count": 2,
+        "log_len": 0,
+        "outcome": {
+          "status": "error",
+          "error_type": "NotImplementedError",
+          "error": "Unsupported operation: DestroyParticleEffect"
+        }
+      },
+      "wall_time_ms": 0.653
+    },
+    {
+      "label": "watch/WatchHoldManager.terminate_dev",
+      "mode": "watch",
+      "callback": "terminate",
+      "static_nodes": 36,
+      "dag_size": 18,
+      "dynamic": {
+        "seed_index": 0,
+        "eval_count": 24,
+        "dispatch_count": 2,
+        "log_len": 0,
+        "outcome": {
+          "status": "error",
+          "error_type": "NotImplementedError",
+          "error": "Unsupported operation: DestroyParticleEffect"
+        }
+      },
+      "wall_time_ms": 0.625
+    },
+    {
+      "label": "watch/WatchHoldManager.update_parallel",
+      "mode": "watch",
+      "callback": "updateParallel",
+      "static_nodes": 1088,
+      "dag_size": 264,
+      "dynamic": {
+        "seed_index": 0,
+        "eval_count": 30,
+        "dispatch_count": 3,
+        "log_len": 0,
+        "outcome": {
+          "status": "error",
+          "error_type": "NotImplementedError",
+          "error": "Unsupported operation: DestroyParticleEffect"
+        }
+      },
+      "wall_time_ms": 66.936
+    },
+    {
+      "label": "watch/WatchHoldManager.update_parallel_dev",
+      "mode": "watch",
+      "callback": "updateParallel",
+      "static_nodes": 2076,
+      "dag_size": 493,
+      "dynamic": {
+        "seed_index": 0,
+        "eval_count": 30,
+        "dispatch_count": 3,
+        "log_len": 0,
+        "outcome": {
+          "status": "error",
+          "error_type": "NotImplementedError",
+          "error": "Unsupported operation: DestroyParticleEffect"
+        }
+      },
+      "wall_time_ms": 98.396
+    },
+    {
+      "label": "watch/WatchScheduledLaneEffect.despawn_time",
+      "mode": "watch",
+      "callback": "despawnTime",
+      "static_nodes": 19,
+      "dag_size": 13,
+      "dynamic": {
+        "seed_index": 0,
+        "eval_count": 13,
+        "dispatch_count": 1,
+        "log_len": 0,
+        "outcome": {
+          "status": "error",
+          "error_type": "NotImplementedError",
+          "error": "Unsupported operation: TimeToScaledTime"
+        }
+      },
+      "wall_time_ms": 0.411
+    },
+    {
+      "label": "watch/WatchScheduledLaneEffect.despawn_time_dev",
+      "mode": "watch",
+      "callback": "despawnTime",
+      "static_nodes": 19,
+      "dag_size": 13,
+      "dynamic": {
+        "seed_index": 0,
+        "eval_count": 13,
+        "dispatch_count": 1,
+        "log_len": 0,
+        "outcome": {
+          "status": "error",
+          "error_type": "NotImplementedError",
+          "error": "Unsupported operation: TimeToScaledTime"
+        }
+      },
+      "wall_time_ms": 0.394
+    },
+    {
+      "label": "watch/WatchScheduledLaneEffect.spawn_time",
+      "mode": "watch",
+      "callback": "spawnTime",
+      "static_nodes": 17,
+      "dag_size": 12,
+      "dynamic": {
+        "seed_index": 0,
+        "eval_count": 12,
+        "dispatch_count": 1,
+        "log_len": 0,
+        "outcome": {
+          "status": "error",
+          "error_type": "NotImplementedError",
+          "error": "Unsupported operation: TimeToScaledTime"
+        }
+      },
+      "wall_time_ms": 0.393
+    },
+    {
+      "label": "watch/WatchScheduledLaneEffect.spawn_time_dev",
+      "mode": "watch",
+      "callback": "spawnTime",
+      "static_nodes": 17,
+      "dag_size": 12,
+      "dynamic": {
+        "seed_index": 0,
+        "eval_count": 12,
+        "dispatch_count": 1,
+        "log_len": 0,
+        "outcome": {
+          "status": "error",
+          "error_type": "NotImplementedError",
+          "error": "Unsupported operation: TimeToScaledTime"
+        }
+      },
+      "wall_time_ms": 0.325
+    },
+    {
+      "label": "watch/WatchScheduledLaneEffect.update_parallel",
+      "mode": "watch",
+      "callback": "updateParallel",
+      "static_nodes": 169,
+      "dag_size": 75,
+      "dynamic": {
+        "seed_index": 0,
+        "eval_count": 35,
+        "dispatch_count": 3,
+        "log_len": 0,
+        "outcome": {
+          "status": "ok",
+          "result": "0x0000000000000000"
+        }
+      },
+      "wall_time_ms": 3.01
+    },
+    {
+      "label": "watch/WatchScheduledLaneEffect.update_parallel_dev",
+      "mode": "watch",
+      "callback": "updateParallel",
+      "static_nodes": 174,
+      "dag_size": 79,
+      "dynamic": {
+        "seed_index": 0,
+        "eval_count": 35,
+        "dispatch_count": 3,
+        "log_len": 0,
+        "outcome": {
+          "status": "ok",
+          "result": "0x0000000000000000"
+        }
+      },
+      "wall_time_ms": 2.872
+    },
+    {
+      "label": "watch/WatchSimLine.despawn_time",
+      "mode": "watch",
+      "callback": "despawnTime",
+      "static_nodes": 87,
+      "dag_size": 44,
+      "dynamic": {
+        "seed_index": 0,
+        "eval_count": 21,
+        "dispatch_count": 2,
+        "log_len": 0,
+        "outcome": {
+          "status": "error",
+          "error_type": "AssertionError",
+          "error": "Value must be an integer"
+        }
+      },
+      "wall_time_ms": 2.229
+    },
+    {
+      "label": "watch/WatchSimLine.despawn_time_dev",
+      "mode": "watch",
+      "callback": "despawnTime",
+      "static_nodes": 401,
+      "dag_size": 130,
+      "dynamic": {
+        "seed_index": 0,
+        "eval_count": 16,
+        "dispatch_count": 2,
+        "log_len": 1,
+        "outcome": {
+          "status": "ok",
+          "result": "0x0000000000000000"
+        }
+      },
+      "wall_time_ms": 9.855
+    },
+    {
+      "label": "watch/WatchSimLine.spawn_time",
+      "mode": "watch",
+      "callback": "spawnTime",
+      "static_nodes": 16,
+      "dag_size": 14,
+      "dynamic": {
+        "seed_index": 0,
+        "eval_count": 14,
+        "dispatch_count": 1,
+        "log_len": 0,
+        "outcome": {
+          "status": "error",
+          "error_type": "AssertionError",
+          "error": "Value must be an integer"
+        }
+      },
+      "wall_time_ms": 0.4
+    },
+    {
+      "label": "watch/WatchSimLine.spawn_time_dev",
+      "mode": "watch",
+      "callback": "spawnTime",
+      "static_nodes": 172,
+      "dag_size": 76,
+      "dynamic": {
+        "seed_index": 0,
+        "eval_count": 16,
+        "dispatch_count": 2,
+        "log_len": 1,
+        "outcome": {
+          "status": "ok",
+          "result": "0x0000000000000000"
+        }
+      },
+      "wall_time_ms": 4.36
+    },
+    {
+      "label": "watch/WatchSimLine.update_parallel",
+      "mode": "watch",
+      "callback": "updateParallel",
+      "static_nodes": 563,
+      "dag_size": 189,
+      "dynamic": {
+        "seed_index": 0,
+        "eval_count": 37,
+        "dispatch_count": 1,
+        "log_len": 0,
+        "outcome": {
+          "status": "error",
+          "error_type": "AssertionError",
+          "error": "Value must be an integer"
+        }
+      },
+      "wall_time_ms": 18.28
+    },
+    {
+      "label": "watch/WatchSimLine.update_parallel_dev",
+      "mode": "watch",
+      "callback": "updateParallel",
+      "static_nodes": 1014,
+      "dag_size": 336,
+      "dynamic": {
+        "seed_index": 0,
+        "eval_count": 22,
+        "dispatch_count": 2,
+        "log_len": 1,
+        "outcome": {
+          "status": "ok",
+          "result": "0x0000000000000000"
+        }
+      },
+      "wall_time_ms": 31.702
+    },
+    {
+      "label": "watch/WatchStage.despawn_time",
+      "mode": "watch",
+      "callback": "despawnTime",
+      "static_nodes": 8,
+      "dag_size": 7,
+      "dynamic": {
+        "seed_index": 0,
+        "eval_count": 6,
+        "dispatch_count": 1,
+        "log_len": 0,
+        "outcome": {
+          "status": "ok",
+          "result": "0x4197d78400000000"
+        }
+      },
+      "wall_time_ms": 0.171
+    },
+    {
+      "label": "watch/WatchStage.despawn_time_dev",
+      "mode": "watch",
+      "callback": "despawnTime",
+      "static_nodes": 8,
+      "dag_size": 7,
+      "dynamic": {
+        "seed_index": 0,
+        "eval_count": 6,
+        "dispatch_count": 1,
+        "log_len": 0,
+        "outcome": {
+          "status": "ok",
+          "result": "0x4197d78400000000"
+        }
+      },
+      "wall_time_ms": 0.161
+    },
+    {
+      "label": "watch/WatchStage.preprocess",
+      "mode": "watch",
+      "callback": "preprocess",
+      "static_nodes": 4365,
+      "dag_size": 984,
+      "dynamic": {
+        "seed_index": 0,
+        "eval_count": 11322,
+        "dispatch_count": 187,
+        "log_len": 0,
+        "outcome": {
+          "status": "error",
+          "error_type": "NotImplementedError",
+          "error": "Unsupported operation: StreamHas"
+        }
+      },
+      "wall_time_ms": 80.384
+    },
+    {
+      "label": "watch/WatchStage.preprocess_dev",
+      "mode": "watch",
+      "callback": "preprocess",
+      "static_nodes": 4385,
+      "dag_size": 990,
+      "dynamic": {
+        "seed_index": 0,
+        "eval_count": 2647,
+        "dispatch_count": 30,
+        "log_len": 1,
+        "outcome": {
+          "status": "ok",
+          "result": "0x0000000000000000"
+        }
+      },
+      "wall_time_ms": 83.272
+    },
+    {
+      "label": "watch/WatchStage.spawn_time",
+      "mode": "watch",
+      "callback": "spawnTime",
+      "static_nodes": 8,
+      "dag_size": 7,
+      "dynamic": {
+        "seed_index": 0,
+        "eval_count": 6,
+        "dispatch_count": 1,
+        "log_len": 0,
+        "outcome": {
+          "status": "ok",
+          "result": "0xc197d78400000000"
+        }
+      },
+      "wall_time_ms": 0.168
+    },
+    {
+      "label": "watch/WatchStage.spawn_time_dev",
+      "mode": "watch",
+      "callback": "spawnTime",
+      "static_nodes": 8,
+      "dag_size": 7,
+      "dynamic": {
+        "seed_index": 0,
+        "eval_count": 6,
+        "dispatch_count": 1,
+        "log_len": 0,
+        "outcome": {
+          "status": "ok",
+          "result": "0xc197d78400000000"
+        }
+      },
+      "wall_time_ms": 0.169
+    },
+    {
+      "label": "watch/WatchStage.update_parallel",
+      "mode": "watch",
+      "callback": "updateParallel",
+      "static_nodes": 196,
+      "dag_size": 96,
+      "dynamic": {
+        "seed_index": 0,
+        "eval_count": 20,
+        "dispatch_count": 3,
+        "log_len": 0,
+        "outcome": {
+          "status": "error",
+          "error_type": "NotImplementedError",
+          "error": "Unsupported operation: Draw"
+        }
+      },
+      "wall_time_ms": 2.558
+    },
+    {
+      "label": "watch/WatchStage.update_parallel_dev",
+      "mode": "watch",
+      "callback": "updateParallel",
+      "static_nodes": 196,
+      "dag_size": 96,
+      "dynamic": {
+        "seed_index": 0,
+        "eval_count": 20,
+        "dispatch_count": 3,
+        "log_len": 0,
+        "outcome": {
+          "status": "error",
+          "error_type": "NotImplementedError",
+          "error": "Unsupported operation: Draw"
+        }
+      },
+      "wall_time_ms": 3.778
+    },
+    {
+      "label": "watch/global.updateSpawn",
+      "mode": "watch",
+      "callback": "updateSpawn",
+      "static_nodes": 10,
+      "dag_size": 9,
+      "dynamic": {
+        "seed_index": 0,
+        "eval_count": 8,
+        "dispatch_count": 1,
+        "log_len": 0,
+        "outcome": {
+          "status": "ok",
+          "result": "0x4022000000000000"
+        }
+      },
+      "wall_time_ms": 0.279
+    },
+    {
+      "label": "watch/global.updateSpawn_dev",
+      "mode": "watch",
+      "callback": "updateSpawn",
+      "static_nodes": 10,
+      "dag_size": 9,
+      "dynamic": {
+        "seed_index": 0,
+        "eval_count": 8,
+        "dispatch_count": 1,
+        "log_len": 0,
+        "outcome": {
+          "status": "ok",
+          "result": "0x4022000000000000"
+        }
+      },
+      "wall_time_ms": 0.19
+    }
+  ],
+  "duration_s": 213.7
+}

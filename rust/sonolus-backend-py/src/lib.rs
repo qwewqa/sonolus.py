@@ -9,12 +9,13 @@ use pyo3::prelude::*;
 use pyo3::types::{PyDict, PyFloat, PyInt, PyList, PyString, PyTuple};
 use sonolus_backend_core::cfg::{canonical_dump, cfg_to_text};
 use sonolus_backend_core::decode::decode_cfg;
+use sonolus_backend_core::diff::build_memory;
 use sonolus_backend_core::emit;
 use sonolus_backend_core::interpret::{
     Interpreter as CoreInterpreter, InterpreterError, InterpreterErrorKind,
 };
 use sonolus_backend_core::nodes::{
-    EngineNodes as CoreEngineNodes, NodeArena, NodeId, format_engine_node,
+    EngineNodes as CoreEngineNodes, NodeArena, NodeId, format_engine_node, tree_node_count,
 };
 use sonolus_backend_core::ops::Op;
 use sonolus_backend_core::output;
@@ -120,8 +121,9 @@ fn stats_to_dict(py: Python<'_>, stats: CompileStats) -> PyResult<Py<PyDict>> {
 }
 
 /// Like [`run_pipeline`], but also returns a stats dict with
-/// `temp_slots_used`, `temps_allocated`, `mir_blocks`, `mir_insts`, and
-/// `node_count` (used by the T1.3/T1.4 budget tests and T2.4 metrics).
+/// `temp_slots_used`, `temps_allocated`, `mir_blocks`, `mir_insts`,
+/// `node_count`, plus the T2.4 quality metrics `static_nodes` (tree node
+/// count, pre-dedup) and `dag_size` (output-node count after DAG dedup).
 #[pyfunction]
 fn run_pipeline_stats(
     py: Python<'_>,
@@ -132,7 +134,27 @@ fn run_pipeline_stats(
     let cfg = decode_cfg(data).map_err(|e| PyValueError::new_err(e.to_string()))?;
     let (inner, stats) =
         pipeline::compile_cfg_stats(&cfg, level).map_err(|e| compile_error_to_py(&e))?;
-    Ok((EngineNodes { inner }, stats_to_dict(py, stats)?))
+    let dict = stats_to_dict(py, stats)?;
+    dict.bind(py)
+        .set_item("static_nodes", tree_node_count(&inner.arena, inner.root))?;
+    let out = output::generate_output_nodes(&inner.arena, inner.root)
+        .map_err(|e| PyValueError::new_err(e.to_string()))?;
+    dict.bind(py).set_item("dag_size", out.nodes.len())?;
+    Ok((EngineNodes { inner }, dict))
+}
+
+/// The deterministic seeded memory fill of the differential harness
+/// (`sonolus-backend-core::diff::build_memory`), for an encoded frontend CFG:
+/// `[(block_id, [value, ...]), ...]` sorted by block id. ROM (3000) starts
+/// with NaN/+inf/-inf; temp block 10000 is never filled. `tools/metrics.py`
+/// re-implements this fill in pure Python; this handle exists so a test can
+/// pin both implementations bit-identical.
+///
+/// Raises `ValueError` on malformed input.
+#[pyfunction]
+fn seeded_memory(data: &[u8], seed: u64) -> PyResult<Vec<(i64, Vec<f64>)>> {
+    let cfg = decode_cfg(data).map_err(|e| PyValueError::new_err(e.to_string()))?;
+    Ok(build_memory(&cfg, seed))
 }
 
 /// Maps a core interpreter error onto the Python exception type the legacy
@@ -145,9 +167,9 @@ fn interpreter_error_to_py(e: InterpreterError) -> PyErr {
         InterpreterErrorKind::Overflow => PyOverflowError::new_err(e.message),
         InterpreterErrorKind::Index => PyIndexError::new_err(e.message),
         InterpreterErrorKind::NotImplemented => PyNotImplementedError::new_err(e.message),
-        // EvalBudgetExceeded is a core-side differential-testing facility
-        // (T2.3); the budget is not settable through the Python bindings
-        // today, so that arm is unreachable from Python.
+        // EvalBudgetExceeded (settable via `Interpreter.set_eval_budget`) maps
+        // to RuntimeError with the distinct "eval budget exceeded ..." message
+        // (tools/metrics.py matches on that prefix for runaway handling).
         InterpreterErrorKind::Runtime | InterpreterErrorKind::EvalBudgetExceeded => {
             PyRuntimeError::new_err(e.message)
         }
@@ -184,6 +206,24 @@ impl EngineNodes {
     /// Total number of nodes in the arena.
     fn node_count(&self) -> usize {
         self.inner.arena.len()
+    }
+
+    /// Total node count of the tree rooted at the root, counting shared arena
+    /// nodes once per occurrence (the `static_nodes` metric — pre-DAG-dedup;
+    /// saturating).
+    fn tree_node_count(&self) -> u64 {
+        tree_node_count(&self.inner.arena, self.inner.root)
+    }
+
+    /// Output-node count after DAG dedup (the `dag_size` metric; legacy
+    /// `OutputNodeGenerator` semantics).
+    ///
+    /// Raises `ValueError` if a NaN constant is reachable (impossible for
+    /// emitter-produced trees).
+    fn output_node_count(&self) -> PyResult<usize> {
+        let out = output::generate_output_nodes(&self.inner.arena, self.inner.root)
+            .map_err(|e| PyValueError::new_err(e.to_string()))?;
+        Ok(out.nodes.len())
     }
 }
 
@@ -335,6 +375,15 @@ impl Interpreter {
         self.inner.set_rng_tape(values);
     }
 
+    /// Sets (or clears, with `None`) the eval budget: once the cumulative
+    /// `eval_count` exceeds it, evaluation stops with a `RuntimeError`
+    /// whose message starts with `"eval budget exceeded"` (the T2.3/T2.4
+    /// termination backstop — a budget cutoff is not a semantic fact).
+    #[pyo3(signature = (budget))]
+    fn set_eval_budget(&mut self, budget: Option<u64>) {
+        self.inner.set_eval_budget(budget);
+    }
+
     /// Replaces a block's contents (legacy `interpreter.blocks[id] = values`).
     fn set_block(&mut self, id: i64, values: Vec<f64>) {
         self.inner.set_block(id, values);
@@ -403,6 +452,7 @@ fn sonolus_backend(m: &Bound<'_, PyModule>) -> PyResult<()> {
     m.add_function(wrap_pyfunction!(engine_nodes_to_output_dump, m)?)?;
     m.add_function(wrap_pyfunction!(run_pipeline, m)?)?;
     m.add_function(wrap_pyfunction!(run_pipeline_stats, m)?)?;
+    m.add_function(wrap_pyfunction!(seeded_memory, m)?)?;
     m.add_class::<EngineNodes>()?;
     m.add_class::<Interpreter>()?;
     Ok(())

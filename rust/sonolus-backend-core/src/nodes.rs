@@ -126,6 +126,39 @@ pub struct EngineNodes {
     pub root: NodeId,
 }
 
+/// Total node count of the **tree** rooted at `root`, counting a shared arena
+/// node once per occurrence (the `static_nodes` metric of PORT.md T2.4 —
+/// pre-DAG-dedup; the legacy backend materializes the same count as a strict
+/// tree of Python objects). Memoized per arena node and saturating, so a
+/// DAG-shaped arena is counted in linear time even when its tree expansion
+/// would overflow. Iterative (explicit work stack); arenas are acyclic by
+/// construction (`push_func` arguments always precede the node).
+pub fn tree_node_count(arena: &NodeArena, root: NodeId) -> u64 {
+    // 0 = not yet computed (every real count is >= 1).
+    let mut counts: Vec<u64> = vec![0; arena.len()];
+    let mut stack: Vec<(NodeId, bool)> = vec![(root, false)];
+    while let Some((id, ready)) = stack.pop() {
+        if counts[id.index()] != 0 {
+            continue;
+        }
+        if ready {
+            let mut total: u64 = 1;
+            for &arg in arena.args_of(id) {
+                total = total.saturating_add(counts[arg.index()]);
+            }
+            counts[id.index()] = total;
+        } else {
+            stack.push((id, true));
+            for &arg in arena.args_of(id) {
+                if counts[arg.index()] == 0 {
+                    stack.push((arg, false));
+                }
+            }
+        }
+    }
+    counts[root.index()]
+}
+
 /// Formats an engine node like `sonolus.backend.node.format_engine_node`.
 ///
 /// Layout matches the Python reference exactly: zero-arg functions render as
@@ -279,6 +312,66 @@ mod tests {
         assert!(text.starts_with("Negate(Negate("));
         assert!(text.contains("Negate(7)"));
         assert!(text.ends_with(")))"));
+    }
+
+    #[test]
+    fn tree_node_count_simple_tree() {
+        let mut arena = NodeArena::new();
+        let c = arena.push_int(1.0);
+        assert_eq!(tree_node_count(&arena, c), 1);
+        let f = arena.push_float(2.5);
+        let add = arena.push_func(Op::Add, &[c, f]);
+        assert_eq!(tree_node_count(&arena, add), 3);
+        let exec = arena.push_func(Op::Execute, &[]);
+        assert_eq!(tree_node_count(&arena, exec), 1);
+    }
+
+    #[test]
+    fn tree_node_count_counts_shared_nodes_per_occurrence() {
+        // Add(x, x) with x = Negate(7): tree expansion has 5 nodes even though
+        // the arena holds only 3 reachable nodes.
+        let mut arena = NodeArena::new();
+        let seven = arena.push_int(7.0);
+        let x = arena.push_func(Op::Negate, &[seven]);
+        let add = arena.push_func(Op::Add, &[x, x]);
+        assert_eq!(arena.len(), 3);
+        assert_eq!(tree_node_count(&arena, add), 5);
+    }
+
+    #[test]
+    fn tree_node_count_ignores_unreachable_nodes() {
+        // The emitter's FinishSet leaves dead intermediate Get nodes in the
+        // arena; they must not count.
+        let mut arena = NodeArena::new();
+        let dead = arena.push_int(9.0);
+        let _dead_func = arena.push_func(Op::Abs, &[dead]);
+        let one = arena.push_int(1.0);
+        let root = arena.push_func(Op::Negate, &[one]);
+        assert_eq!(arena.len(), 4);
+        assert_eq!(tree_node_count(&arena, root), 2);
+    }
+
+    #[test]
+    fn tree_node_count_deep_chain_is_iterative() {
+        let mut arena = NodeArena::new();
+        let mut node = arena.push_int(7.0);
+        let depth: u64 = 200_000;
+        for _ in 0..depth {
+            node = arena.push_func(Op::Negate, &[node]);
+        }
+        assert_eq!(tree_node_count(&arena, node), depth + 1);
+    }
+
+    #[test]
+    fn tree_node_count_saturates_on_exponential_sharing() {
+        // 70 levels of Add(x, x) doubles the tree expansion per level: the
+        // true tree size (2^71 - 1) overflows nothing thanks to saturation.
+        let mut arena = NodeArena::new();
+        let mut node = arena.push_int(1.0);
+        for _ in 0..70 {
+            node = arena.push_func(Op::Add, &[node, node]);
+        }
+        assert_eq!(tree_node_count(&arena, node), u64::MAX);
     }
 
     #[test]

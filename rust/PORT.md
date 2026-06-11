@@ -6,7 +6,7 @@
 > holds rules, tasks, state, and decisions. Maintainer notes (setup, end-of-run review)
 > live in [EXECUTION.md](EXECUTION.md).
 
-**Status:** in progress — S2 underway; next task: T2.4
+**Status:** in progress — S2 complete; S3 W1 next: T3.1/T3.2/T3.3 then gate G3.1
 **Last updated:** 2026-06-10
 
 ## 0. Entry point — if you were pointed at this file, start here
@@ -168,7 +168,7 @@ Status values: `todo` / `in-progress` / `blocked` / `done`.
 | T2.1 | done | Analyses: dominator tree, loop forest, liveness; on-demand caching with explicit invalidation. | cargo unit tests on hand-built and corpus CFGs |
 | T2.2 | done | Rewrite-rule framework + pipeline/level configuration (`minimal`/`fast`/`standard` as prefixes). | identity pipeline preserves baseline behavior on full corpus |
 | T2.3 | done | Differential-interpretation harness (minimal-vs-optimized, randomized memory + seeds, compares results/logs/writes) + CFG fuzz generator (proptest/arbitrary, shrinking). | seeded miscompile in a deliberately broken transform is caught and shrunk by both harness and fuzzer |
-| T2.4 | todo | Metrics: Rust collectors (static nodes, DAG size, dyn eval count, dispatch count, wall time) + `tools/metrics.py` for the Python backend; capture `rust/baselines/python-standard.json` and `python-fast` timings (for G-P1) from the frozen oracle over mini-corpus + pydori. | baseline files committed; metrics report runs in one command |
+| T2.4 | done | Metrics: Rust collectors (static nodes, DAG size, dyn eval count, dispatch count, wall time) + `tools/metrics.py` for the Python backend; capture `rust/baselines/python-standard.json` and `python-fast` timings (for G-P1) from the frozen oracle over mini-corpus + pydori. | baseline files committed; metrics report runs in one command |
 
 ### S3 — Optimizer waves (fan-out allowed within a wave; gates are single-agent)
 
@@ -273,7 +273,12 @@ metrics ratchet not regressed; worklog entry with metric movement.
 
 ### Blocked / decisions needed
 
-(none)
+- Before G3.3: decide whether to add an opt-in deterministic stub mode for
+  runtime-only ops (Draw/BeatToTime/ExportValue/…) to the interpreter for METRICS runs
+  only — 126/300 pydori baseline rows currently trap at the first runtime-only op
+  (identical trap point both backends, so comparisons stay valid, but draw-heavy
+  callbacks only measure their executable prologue). Adopting it requires a baseline
+  regen (deterministic, documented). Revisit at G3.1 with real wave metrics in hand.
 
 ### Deviation log
 
@@ -301,10 +306,33 @@ pointers (failing commands, metric numbers, repro). Empty deviation log = clean 
 
 ### Recorded metrics
 
-(populated by T2.4, G3.x, T4.4)
+- **T2.4 baselines** (2026-06-10, Zen 5 / Win11 / CPython 3.14.3, 300 pydori callbacks,
+  dynamics on the Rust interpreter under documented seeded fill, 0 dynamic:null rows):
+  - `python-standard`: static_nodes 458,996; dag_size 105,772; eval_count 50,245;
+    dispatch_count 1,333; compile wall total 25,306 ms.
+  - `python-fast`: compile wall total **1,841.9 ms** (G-P1 reference).
+  - `rust-corpus` (Rust-side, 70 entries / 86 vectors): eval 38,880; dispatch 2,049;
+    static 23,553; dag 6,934.
+  - Rust today (pre-W1, standard ≡ minimal) vs python-standard: static 2.742×, dag
+    2.157×, eval 2.342×, dispatch 1.401×; 193/300 callbacks >10% worse on eval.
+  - Caveat: 126/300 rows trap at the first runtime-only op (Draw/BeatToTime/…) —
+    identical trap point both sides; see Blocked/decisions.
 
 ## 9. Worklog (append-only; newest first)
 
+- 2026-06-10 — **T2.4 done; S2 complete.** `tools/metrics.py` baseline/report/corpus
+  (one-command report incl. `--ratchet` = the G3.3 gate path, exits 1 today as
+  expected). Both backends' dynamics measured on the RUST interpreter (legacy
+  FunctionNode→EngineNodes converter, validated against Rust counters); pydori-only
+  baseline (Python can't decode .scfg — corpus ratchet half is Rust-vs-Rust via
+  rust-corpus.json). Seeded fill = bit-exact Python mirror of diff.rs::build_memory
+  (pinned by test, 4 seeds); PyO3 gained `set_eval_budget`/`seeded_memory`;
+  `run_pipeline_stats` returns static_nodes/dag_size. Baselines committed (schema v1,
+  metadata: CPU/commit/seeds); determinism check PASSED both files (volatile fields
+  stripped). Headline numbers in §8-metrics. Notes: legacy CFGs can't deepcopy
+  (IRConst.__new__) — timings re-trace per run; `OptimizerConfig(mode=, callback=)` is
+  load-bearing for cse/inlining/licm. Verified: report run end-to-end + determinism
+  check by orchestrator; cargo 259 green; clippy/fmt clean; both lanes 1196+4 green.
 - 2026-06-10 — **T2.3 done.** `diff.rs`: `diff_levels`/`diff_with` (closure compile sides
   via new `compile_cfg_with_pipeline` — the T3.x per-transform injection point),
   `DiffOutcome::{Match, Inconclusive, Mismatch{Compile,Result,Error,Log,Writes,
