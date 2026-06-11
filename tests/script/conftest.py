@@ -66,13 +66,11 @@ if RUST_BACKEND_LANE:
         ) from e
     from sonolus.backend.encode import encode_cfg
 
-# Optimization levels implemented by the Rust pipeline so far, in pipeline-prefix
-# order (the Rust level names accepted by sonolus_backend.run_pipeline). PORT.md
-# S2/S3 append "fast" and "standard" here as they land; the rust-lane loops below
-# pick new levels up with no other change. (Once more than one level exists, the
-# non-primary-Python CI trimming applied to optimization_levels above should be
-# mirrored here.)
-RUST_OPTIMIZATION_LEVELS = ("minimal",)
+# Optimization levels implemented by the Rust pipeline, in pipeline-prefix
+# order (the Rust level names accepted by sonolus_backend.run_pipeline). All
+# three are real since wave W1 (PORT.md T3.1–T3.3, gate G3.1). Trimmed below
+# for CI on non-primary Pythons, mirroring optimization_levels.
+RUST_OPTIMIZATION_LEVELS = ("minimal", "fast", "standard")
 
 
 def _passes_label(passes) -> str:
@@ -111,6 +109,7 @@ optimization_levels = [
 
 if is_ci() and sys.version_info < PRIMARY_PYTHON_VERSION:
     optimization_levels = [STANDARD_PASSES]
+    RUST_OPTIMIZATION_LEVELS = ("standard",)
 
 
 def compile_fn(
