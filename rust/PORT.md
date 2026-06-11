@@ -178,10 +178,10 @@ metrics ratchet not regressed; worklog entry with metric movement.
 
 | ID | Status | Task | DoD |
 |----|--------|------|-----|
-| T3.1 | todo | W1: SCCP (Python folding semantics, unreachable-edge pruning). | per-transform differential + fuzz |
-| T3.2 | todo | W1: GVN + rewrite rules (commutative canonicalization, algebraic simplification, strength reduction). | per-transform differential + fuzz |
-| T3.3 | todo | W1: ADCE + branch simplification + jump threading. | per-transform differential + fuzz |
-| G3.1 | todo | W1 gate. Target: ≈ legacy `fast` quality. | wave gate template |
+| T3.1 | done | W1: SCCP (Python folding semantics, unreachable-edge pruning). | per-transform differential + fuzz |
+| T3.2 | done | W1: GVN + rewrite rules (commutative canonicalization, algebraic simplification, strength reduction). | per-transform differential + fuzz |
+| T3.3 | done | W1: ADCE + branch simplification + jump threading. | per-transform differential + fuzz |
+| G3.1 | in-progress | W1 gate. Target: ≈ legacy `fast` quality. | wave gate template |
 | T3.4 | todo | W2: Mem2Reg/SROA for TempBlocks (constant-index → scalars; dynamic-index arrays stay memory). **Top-risk transform — extra fuzz emphasis on dynamic indexing.** | per-transform differential + fuzz |
 | T3.5 | todo | W2: copy-coalescing and allocation quality improvements. | per-transform differential + fuzz; temp-slot metrics |
 | G3.2 | todo | W2 gate. | wave gate template |
@@ -320,6 +320,35 @@ pointers (failing commands, metric numbers, repro). Empty deviation log = clean 
 
 ## 9. Worklog (append-only; newest first)
 
+- 2026-06-10 — **T3.1 + T3.2 + T3.3 done (W1 wave, parallel worktrees); G3.1 underway.**
+  SCCP (`sccp.rs`: Wegman-Zadeck, py_* kernel folding with the full
+  no-fold-on-Python-error table, executable-edge pruning, ShortCircuit refinement with
+  evaluation-order-preserving rhs splice, phi-ready for W2; 34 unit tests). GVN+rules
+  (`gvn.rs`/`rules.rs`: canonical commutative operand order spec — consts first by
+  total_cmp/tag/arena idx; Min/Max deliberately NOT commutative under NaN/±0; dominator
+  GVN sharing via fresh single-slot temps to respect the single-use lowering contract;
+  6 legacy-derived rules each with safety guards — add-zero guarded on never_neg_zero,
+  unguarded legacy forms provably falsified by the T2.3 harness). DCE (`dce.rs`:
+  mark-live with trap-conservative 24-op never-raising whitelist, RNG never removed,
+  per-point temp DSE, branch simplification, empty-block jump threading; corpus static
+  nodes −13.5% standalone). Each: corpus differential 270 cases 0 mismatches +
+  per-pass 20k release fuzz clean. **Cross-task findings reconciled at merge by the
+  orchestrator**: (1) canonical-NaN rule — generated NaN (x86 inf*0 = −NaN) is
+  unmaterializable since NaN consts emit as ROM +NaN and Sign exposes the sign bit;
+  GVN discovered by fuzz, orchestrator applied the same rule to SCCP (lattice seeds
+  normalize NaN payloads; non-canonical NaN folds refused; new unit test) — T3.1's
+  fuzz had missed it. (2) fuzzgen dyn_index = `Floor(Mod(Mod(x,s),s))` combining
+  T3.1's boundary-rounding fix with T3.3's allocation-dependent-integrality fix (both
+  load-bearing, docs explain). (3) identity_levels relaxed to behavioral-replay-only.
+  Registry order SCCP→GVN→DCE. Combined tree: cargo 294 lib + all integration green,
+  clippy/fmt clean, both pytest lanes green (rust lane at all 3 levels, 1196+4).
+  Metrics vs python-standard: eval 2.342×→**2.177×**, static 2.742×→**2.619×**, dag
+  2.157×→**2.053×**, dispatch flat 1.401× (W1 does no CFG shaping); corpus ratchet
+  all-improved (eval 38,880→36,673, 0 vectors >10% worse), rust-corpus.json moved up.
+  Modest by design: loads are opaque until W2 Mem2Reg (both subagents confirmed real
+  callbacks' values flow through memory). W2 dispatch note: rerun-SCCP/GVN-after-
+  Mem2Reg question goes to T3.4's design. G3.1 remaining: 1M-case fuzz budget run
+  (in progress), CI green, gate worklog close-out.
 - 2026-06-10 — **T2.4 done; S2 complete.** `tools/metrics.py` baseline/report/corpus
   (one-command report incl. `--ratchet` = the G3.3 gate path, exits 1 today as
   expected). Both backends' dynamics measured on the RUST interpreter (legacy
