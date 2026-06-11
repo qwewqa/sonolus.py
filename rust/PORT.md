@@ -182,7 +182,7 @@ metrics ratchet not regressed; worklog entry with metric movement.
 | T3.2 | done | W1: GVN + rewrite rules (commutative canonicalization, algebraic simplification, strength reduction). | per-transform differential + fuzz |
 | T3.3 | done | W1: ADCE + branch simplification + jump threading. | per-transform differential + fuzz |
 | G3.1 | done | W1 gate. Target: ≈ legacy `fast` quality. | wave gate template |
-| T3.4 | todo | W2: Mem2Reg/SROA for TempBlocks (constant-index → scalars; dynamic-index arrays stay memory). **Top-risk transform — extra fuzz emphasis on dynamic indexing.** | per-transform differential + fuzz |
+| T3.4 | done | W2: Mem2Reg/SROA for TempBlocks (constant-index → scalars; dynamic-index arrays stay memory). **Top-risk transform — extra fuzz emphasis on dynamic indexing.** | per-transform differential + fuzz |
 | T3.5 | todo | W2: copy-coalescing and allocation quality improvements. | per-transform differential + fuzz; temp-slot metrics |
 | G3.2 | todo | W2 gate. | wave gate template |
 | T3.6 | todo | W3: switch formation (RewriteToSwitch successor; recognizes post-GVN comparison trees on an integer scrutinee). | per-transform differential + fuzz |
@@ -209,7 +209,7 @@ metrics ratchet not regressed; worklog entry with metric movement.
 
 | ID | Status | Task | DoD |
 |----|--------|------|-----|
-| T5.1 | todo | Collection core in Rust: scp/zip load, SHA1 repository, resource gzip, localization, level/engine linking, site-tree write (skip-if-hash-exists). | cargo tests on fixture scp/source trees |
+| T5.1 | done | Collection core in Rust: scp/zip load, SHA1 repository, resource gzip, localization, level/engine linking, site-tree write (skip-if-hash-exists). | cargo tests on fixture scp/source trees |
 | T5.2 | todo | PyO3 `Collection` preserving the current Python API; Python keeps orchestration, user converter callbacks, URL fetching. | `tests/build` + regressions green |
 | T5.3 | todo | A/B pydori collection both backends: structural site-tree equality (decompressed content; gzip bytes may differ); CLI smoke `sonolus-py build` on `test_projects/pydori`. | `tools/ab_collection.py` zero structural diffs |
 
@@ -320,6 +320,28 @@ pointers (failing commands, metric numbers, repro). Empty deviation log = clean 
 
 ## 9. Worklog (append-only; newest first)
 
+- 2026-06-10 — **T3.4 done (top-risk Mem2Reg) + T5.1 done (collection core), both
+  merged and verified.** T3.4: whole-temp promotion via Braun (escapes: dynamic index,
+  OOB const; refusal for statically-possible read-before-write paths — 160/8,992
+  corpus temps ≈ legacy ToSSA err-place cases; lazy-tree loads rerouted through m2r
+  temps, zero lazy refusals); `destruct_ssa` wired unconditionally into compile_cfg
+  (extended: per-occurrence multi-use loads — fixed latent Op(v,v) shared-load bug;
+  lazy-referenced scheduled values; order-breaking-splice fixpoint); W1 re-run
+  registered post-promotion (registry now [W1×3, mem2reg, W1×3 again]). **Two GVN
+  fixes**: phi-arg uses uncounted in sweep (real bug, caught by 50k fuzz, seed
+  persisted) + singleton-class CSE enabled (the main post-promotion CSE case).
+  Promotion: 97.7% of corpus temps; corpus standard metrics: **eval 36,673→23,853
+  (−35%), static 20,609→14,015 (−32%)**; dispatch +1.3% (phi-copy split blocks —
+  T3.5/W4 threading fodder). Fuzz: per-pass 50k + NEW dynamic-heavy profile 50k +
+  level 50k, all clean, release. T5.1: `collection/` (+`pyjson` CPython-3.14-exact
+  serializer incl. repr(float) and \uXXXX rules); A/B vs frozen Python on fixture scp:
+  22/22 site-tree files byte-identical, zlib-rs L9 gzip byte-matches Python gzip
+  mtime=0 (T5.3 may see zero byte diffs); skip-if-hash-exists via WriteStats;
+  divergences documented (error values vs exceptions, name-sorted source iteration);
+  deps: serde_json+preserve_order promoted, indexmap, sha1, flate2, zip(zlib-rs).
+  3.14 PurePath.stem/suffix semantics pinned. Combined tree verified: cargo 348 lib +
+  all suites green, clippy/fmt clean, both pytest lanes 1196+4 (rust lane 168s — W2
+  makes it FASTER). Next: T3.5 then gate G3.2 (incl. rust-corpus ratchet regen).
 - 2026-06-10 — **G3.1 passed (W1 gate).** All template items, run by the orchestrator:
   behavioral suite green at all 3 levels in the rust lane (1196+4 locally; CI run on
   28aa508 green incl. the rust-lane job) and default lane green; corpus differential
