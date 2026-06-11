@@ -86,18 +86,17 @@ fn parse_level(level: &str) -> PyResult<Level> {
 
 /// Maps a pipeline failure onto a Python exception. The temp-memory budget
 /// error matches the legacy `ValueError("Temporary memory limit exceeded")`
-/// exactly; unimplemented levels raise `NotImplementedError`.
+/// exactly; every pipeline failure is a `ValueError`.
 fn compile_error_to_py(e: &CompileError) -> PyErr {
-    match e {
-        CompileError::Unimplemented(_) => PyNotImplementedError::new_err(e.to_string()),
-        _ => PyValueError::new_err(e.to_string()),
-    }
+    PyValueError::new_err(e.to_string())
 }
 
 /// Runs the Rust compilation pipeline on an encoded frontend CFG
-/// (`rust/ENCODING.md`) at the given optimization level and returns the
-/// engine-node tree. Only `"minimal"` is implemented so far (T1.3); other
-/// levels raise `NotImplementedError`.
+/// (`rust/ENCODING.md`) at the given optimization level (`"minimal"`,
+/// `"fast"`, or `"standard"`) and returns the engine-node tree. The level
+/// selects a prefix of the optimization pass pipeline (T2.2); all three levels
+/// are callable (the optimization registry is empty until W1, so `fast` and
+/// `standard` are identity-equal to `minimal` today).
 ///
 /// Raises `ValueError` on malformed input, out-of-domain CFGs, or when the
 /// 4096-slot temporary-memory budget is exceeded (message matches the legacy

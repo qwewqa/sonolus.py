@@ -7,6 +7,7 @@ pub mod alloc;
 pub mod analysis;
 pub mod cfg;
 pub mod decode;
+pub mod effects;
 pub mod emit;
 pub mod interpret;
 pub mod lower;
@@ -14,7 +15,9 @@ pub mod mir;
 pub mod nodes;
 pub mod ops;
 pub mod output;
+pub mod passes;
 pub mod pipeline;
+pub mod rewrite;
 pub mod ssa;
 
 /// Returns the version of the backend, taken from the crate metadata.

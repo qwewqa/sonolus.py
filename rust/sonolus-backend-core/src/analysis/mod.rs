@@ -304,6 +304,15 @@ fn hash_inst(inst: &Inst, h: &mut impl Hasher) {
     }
 }
 
+/// A full-MIR fingerprint for debug-build consistency checks outside this
+/// module (the [`crate::passes`] changed-flag guard). It covers exactly what a
+/// pass could mutate — CFG shape, instructions, schedules, phis, branch tests,
+/// and temp sizes — by reusing [`values_fingerprint`].
+#[cfg(debug_assertions)]
+pub fn debug_mir_fingerprint(mir: &Mir) -> u64 {
+    values_fingerprint(mir)
+}
+
 /// Fingerprint of everything liveness depends on: the shape, plus
 /// instructions, schedules, phis, branch tests, and temp sizes.
 fn values_fingerprint(mir: &Mir) -> u64 {

@@ -1,20 +1,24 @@
-//! Pipeline entry point (PORT.md T1.3): `compile_cfg(cfg, level)`.
+//! Pipeline entry point (PORT.md T1.3, T2.2): `compile_cfg(cfg, level)`.
 //!
-//! `Level::Minimal` is the Rust baseline pipeline, the equivalent of the legacy
-//! `MINIMAL_PASSES` (`CoalesceFlow`, `UnreachableCodeElimination`,
-//! `AllocateBasic`):
+//! Every level shares one pipeline; the optimization phase is the [`crate::passes`]
+//! prefix selected by the level (decisions D5/D9):
 //!
 //! ```text
 //! decoded frontend Cfg
 //!   -> build_mir        (cleanups + binarized flattening; mir.rs)
+//!   -> passes::Pipeline::for_level(level).run(...)   (the level's prefix)
 //!   -> allocate_temps   (liveness + interference + first-fit slots; alloc.rs)
 //!   -> lower_mir        (statement regeneration, temp -> block 10000; lower.rs)
 //!   -> cfg_to_engine_nodes (the T1.2 emitter; emit.rs)
 //! ```
 //!
-//! No optimization happens at minimal; per decision D10 the SSA machinery
-//! (`ssa.rs`) is not engaged. `Fast`/`Standard` return
-//! [`CompileError::Unimplemented`] until T2.2 builds the level configuration.
+//! `Level::Minimal` runs an empty optimization prefix — the Rust baseline,
+//! equivalent to the legacy `MINIMAL_PASSES` (`CoalesceFlow`,
+//! `UnreachableCodeElimination`, `AllocateBasic`), with no SSA promotion
+//! (decision D10). `Fast`/`Standard` run progressively longer prefixes of the
+//! pass registry. The registry is empty until W1 lands (T3.1–T3.3), so today
+//! all three levels are behaviorally identical and produce byte-identical
+//! output — but every level is callable end to end.
 //!
 //! `compile_cfg` is a pure function: no globals, no caches, deterministic
 //! output for identical inputs (insertion-order containers throughout).
@@ -79,8 +83,6 @@ impl std::error::Error for UnknownLevel {}
 /// A pipeline failure.
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub enum CompileError {
-    /// The level's pass pipeline is not implemented yet (T2.2+).
-    Unimplemented(Level),
     /// IR build rejected the CFG (out-of-domain construct).
     Build(MirBuildError),
     /// Slot allocation exceeded the 4096-slot temporary memory budget.
@@ -94,13 +96,6 @@ pub enum CompileError {
 impl fmt::Display for CompileError {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         match self {
-            Self::Unimplemented(level) => {
-                write!(
-                    f,
-                    "the {} level is not implemented yet (only minimal is available)",
-                    level.name()
-                )
-            }
             Self::Build(e) => write!(f, "{e}"),
             Self::TempLimit(e) => write!(f, "{e}"),
             Self::Lower(e) => write!(f, "{e}"),
@@ -169,10 +164,12 @@ pub fn compile_cfg_stats(
     cfg: &Cfg,
     level: Level,
 ) -> Result<(EngineNodes, CompileStats), CompileError> {
-    if level != Level::Minimal {
-        return Err(CompileError::Unimplemented(level));
-    }
-    let mir = crate::mir::build_mir(cfg)?;
+    let mut mir = crate::mir::build_mir(cfg)?;
+    // Optimization phase: the level's pass-registry prefix (empty until W1
+    // lands; see crate::passes). Each pass owns its own analysis invalidation.
+    let mut analyses = crate::analysis::Analyses::new();
+    let pipeline = crate::passes::Pipeline::for_level(level);
+    pipeline.run(&mut mir, &mut analyses);
     let alloc = allocate_temps(&mir)?;
     let lowered = lower_mir(&mir, &alloc)?;
     let nodes = cfg_to_engine_nodes(&lowered)?;
@@ -377,12 +374,38 @@ mod tests {
     }
 
     #[test]
-    fn fast_and_standard_are_unimplemented() {
+    fn all_levels_compile_and_are_identity_equal_today() {
+        // Until W1 lands the pass registry is empty: fast/standard run the same
+        // (empty) optimization prefix as minimal and must produce byte-identical
+        // output. Wave tasks relax this once a level actually optimizes.
+        let cfg = and_log_cfg();
+        let minimal = compile_cfg(&cfg, Level::Minimal).unwrap();
+        let minimal_dump = format_engine_node(&minimal.arena, minimal.root);
+        for level in [Level::Fast, Level::Standard] {
+            let nodes = compile_cfg(&cfg, level).unwrap();
+            assert_eq!(
+                format_engine_node(&nodes.arena, nodes.root),
+                minimal_dump,
+                "{} output must equal minimal's today",
+                level.name()
+            );
+        }
+    }
+
+    #[test]
+    fn fast_and_standard_preserve_short_circuit_semantics() {
+        // The end-to-end short-circuit behavior holds at every level.
         let cfg = and_log_cfg();
         for level in [Level::Fast, Level::Standard] {
-            let err = compile_cfg(&cfg, level).unwrap_err();
-            assert_eq!(err, CompileError::Unimplemented(level));
-            assert!(err.to_string().contains("not implemented"));
+            let nodes = compile_cfg(&cfg, level).unwrap();
+            let mut interp = Interpreter::new(0);
+            interp.set_block(-3, vec![0.0]);
+            interp.run(&nodes).unwrap();
+            assert!(interp.log().is_empty(), "{}: short-circuit", level.name());
+            let mut interp = Interpreter::new(0);
+            interp.set_block(-3, vec![1.0]);
+            interp.run(&nodes).unwrap();
+            assert_eq!(interp.log(), &[7.0], "{}: log", level.name());
         }
     }
 

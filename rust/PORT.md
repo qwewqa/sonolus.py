@@ -6,7 +6,7 @@
 > holds rules, tasks, state, and decisions. Maintainer notes (setup, end-of-run review)
 > live in [EXECUTION.md](EXECUTION.md).
 
-**Status:** in progress — S1 complete (CI green both lanes); S2 underway; next task: T2.2
+**Status:** in progress — S2 underway; next task: T2.3
 **Last updated:** 2026-06-10
 
 ## 0. Entry point — if you were pointed at this file, start here
@@ -166,7 +166,7 @@ Status values: `todo` / `in-progress` / `blocked` / `done`.
 | ID | Status | Task | DoD |
 |----|--------|------|-----|
 | T2.1 | done | Analyses: dominator tree, loop forest, liveness; on-demand caching with explicit invalidation. | cargo unit tests on hand-built and corpus CFGs |
-| T2.2 | todo | Rewrite-rule framework + pipeline/level configuration (`minimal`/`fast`/`standard` as prefixes). | identity pipeline preserves baseline behavior on full corpus |
+| T2.2 | done | Rewrite-rule framework + pipeline/level configuration (`minimal`/`fast`/`standard` as prefixes). | identity pipeline preserves baseline behavior on full corpus |
 | T2.3 | todo | Differential-interpretation harness (minimal-vs-optimized, randomized memory + seeds, compares results/logs/writes) + CFG fuzz generator (proptest/arbitrary, shrinking). | seeded miscompile in a deliberately broken transform is caught and shrunk by both harness and fuzzer |
 | T2.4 | todo | Metrics: Rust collectors (static nodes, DAG size, dyn eval count, dispatch count, wall time) + `tools/metrics.py` for the Python backend; capture `rust/baselines/python-standard.json` and `python-fast` timings (for G-P1) from the frozen oracle over mini-corpus + pydori. | baseline files committed; metrics report runs in one command |
 
@@ -305,6 +305,24 @@ pointers (failing commands, metric numbers, repro). Empty deviation log = clean 
 
 ## 9. Worklog (append-only; newest first)
 
+- 2026-06-10 — **T2.2 done.** `passes/mod.rs`: `Pass` trait + plain ordered `Pipeline`
+  runner; debug builds re-fingerprint MIR after each pass (lying changed-flag or missed
+  invalidation panics — #[should_panic] pinned); `Hooks` for per-pass wall times (T2.4
+  ready), lean release path. Level config: single ordered `registry()` with `Stage`
+  (W1–W4) tags; `passes_for_level` takes the prefix; registry empty today so all three
+  levels are callable and identity-equal — `tests/identity_levels.rs` pins fast/standard
+  node trees byte-identical to minimal (one-constant relaxation for wave tasks) + 86
+  vectors replay at all levels. `rewrite.rs`: `RewriteRule`/`RewriteCtx`/`Rewrite` +
+  deterministic worklist driver (ascending arena order, first-rule-wins, `replaced`
+  mask — a fold leaves a dead defining inst behind and would re-fire forever without
+  it), hard cap (debug panic / release stop+log), D11 lazy boundary explicit
+  (`Operand::Lazy` opaque unless `enters_lazy()`); toy rules in `pub mod toy` only.
+  `effects.rs` (salvaged from the interrupted first attempt — kept, wired, 3 clippy
+  fixes): effect kinds (pure/reads/writes/RNG/control) vs T2.1's liveness facts,
+  pinned against the generated op table. NOTE for T3.1/T3.2: toy `FoldConstArith` uses
+  plain f64 — real W1 folds must route through T1.1 `py_*` kernels (no-fold-on-error).
+  Two 529-outage dispatch failures; completed on a retry with model override. Verified:
+  cargo 227 green, clippy/fmt clean, both pytest lanes 1191+4 green.
 - 2026-06-10 — **T2.1 done; T1.4 CI confirmed green** (rust-lane + python lane on
   82a3a7f — S1 fully closed). `analysis/` module: `Analyses` manager (lazy compute;
   `invalidate_cfg`/`invalidate_values`/`invalidate_all`; debug-build MIR fingerprinting
