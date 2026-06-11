@@ -6,6 +6,7 @@
 pub mod alloc;
 pub mod analysis;
 pub mod cfg;
+pub mod collection;
 pub mod decode;
 pub mod diff;
 pub mod effects;

@@ -12,6 +12,18 @@ publish = false
 [workspace.dependencies]
 sonolus-backend-core = { path = "sonolus-backend-core" }
 pyo3 = { version = "0.28.3", features = ["abi3-py312"] }
+# Collection packaging (PORT.md task T5.1):
+# - flate2: resource/mode-data gzip (mtime=0 reproducible output)
+# - indexmap: insertion-order maps anywhere ordering can reach output (invariant 5)
+# - serde_json + preserve_order: item JSON kept opaque-but-parseable with key order intact
+# - sha1: content-addressed repository names (sha1 hex, per the frozen collection.py)
+# - zip: .scp archive reading (and fixture writing in tests); deflate via the shared
+#   flate2/zlib-rs backend only — the default `deflate` meta-feature would pull in zopfli
+flate2 = "1.1.9"
+indexmap = "2.14.0"
+serde_json = { version = "1", features = ["preserve_order"] }
+sha1 = "0.11.0"
+zip = { version = "8.6.0", default-features = false, features = ["deflate-flate2-zlib-rs"] }
 
 [workspace.lints.rust]
 unsafe_code = "forbid"
