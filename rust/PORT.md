@@ -6,7 +6,7 @@
 > holds rules, tasks, state, and decisions. Maintainer notes (setup, end-of-run review)
 > live in [EXECUTION.md](EXECUTION.md).
 
-**Status:** in progress — S1 complete pending CI; next task: T2.1
+**Status:** in progress — S1 complete (CI green both lanes); S2 underway; next task: T2.2
 **Last updated:** 2026-06-10
 
 ## 0. Entry point — if you were pointed at this file, start here
@@ -165,7 +165,7 @@ Status values: `todo` / `in-progress` / `blocked` / `done`.
 
 | ID | Status | Task | DoD |
 |----|--------|------|-----|
-| T2.1 | todo | Analyses: dominator tree, loop forest, liveness; on-demand caching with explicit invalidation. | cargo unit tests on hand-built and corpus CFGs |
+| T2.1 | done | Analyses: dominator tree, loop forest, liveness; on-demand caching with explicit invalidation. | cargo unit tests on hand-built and corpus CFGs |
 | T2.2 | todo | Rewrite-rule framework + pipeline/level configuration (`minimal`/`fast`/`standard` as prefixes). | identity pipeline preserves baseline behavior on full corpus |
 | T2.3 | todo | Differential-interpretation harness (minimal-vs-optimized, randomized memory + seeds, compares results/logs/writes) + CFG fuzz generator (proptest/arbitrary, shrinking). | seeded miscompile in a deliberately broken transform is caught and shrunk by both harness and fuzzer |
 | T2.4 | todo | Metrics: Rust collectors (static nodes, DAG size, dyn eval count, dispatch count, wall time) + `tools/metrics.py` for the Python backend; capture `rust/baselines/python-standard.json` and `python-fast` timings (for G-P1) from the frozen oracle over mini-corpus + pydori. | baseline files committed; metrics report runs in one command |
@@ -305,6 +305,19 @@ pointers (failing commands, metric numbers, repro). Empty deviation log = clean 
 
 ## 9. Worklog (append-only; newest first)
 
+- 2026-06-10 — **T2.1 done; T1.4 CI confirmed green** (rust-lane + python lane on
+  82a3a7f — S1 fully closed). `analysis/` module: `Analyses` manager (lazy compute;
+  `invalidate_cfg`/`invalidate_values`/`invalidate_all`; debug-build MIR fingerprinting
+  panics loudly if a cached result is served after un-invalidated mutation — pinned by
+  #[should_panic] tests). `dom.rs`: Cooper-Harvey-Kennedy idoms + frontiers (CHK
+  entry-sentinel quirk documented: looping entry never in its own frontier — W2 phi
+  placement note; low risk since Braun doesn't use DF). `loops.rs`: natural loops only;
+  irreducible regions produce no loop (contract documented). `liveness.rs`: one worklist
+  fixpoint over values AND temps; phi/lazy-ShortCircuit/terminator uses handled per D11;
+  backward per-point cursor API. Corpus: 135 CFGs / 5,514 MIR blocks / 269 natural loops
+  (max depth 3); randomized 1000-CFG dominator check vs naive O(n²) reference. Cleanup
+  candidate noted: alloc.rs private bitset vs analysis::BitSet (when W2 touches
+  alloc.rs). Verified: cargo 204 green, clippy/fmt clean, pytest 1191+4 green.
 - 2026-06-10 — **T1.4 done.** Rust lane: `SONOLUS_BACKEND=rust` routes
   run_and_validate/run_compiled through encode → run_pipeline → Rust Interpreter.
   `RUST_OPTIMIZATION_LEVELS = ("minimal",)` — S2/S3 just append. RNG: tape recorded from

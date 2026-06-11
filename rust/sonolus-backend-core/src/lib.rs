@@ -4,6 +4,7 @@
 //! which exposes it to Python as the `sonolus_backend` extension module.
 
 pub mod alloc;
+pub mod analysis;
 pub mod cfg;
 pub mod decode;
 pub mod emit;
