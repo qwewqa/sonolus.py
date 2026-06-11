@@ -27,6 +27,18 @@
 //!   `index = int(run(args[index]))` round trip in the legacy interpreter). Evaluating
 //!   the final argument as the loop result (the tail) does not count. Accumulates
 //!   across `run` calls.
+//! - **`rng_draw_count`**: incremented once per successful `Random`/`RandomInteger`
+//!   draw (seeded or tape mode). Draw-order/count preservation is part of the
+//!   optimizer contract (same seed must yield identical draws at every optimization
+//!   level), so the differential harness (`crate::diff`, T2.3) compares it.
+//!
+//! # Eval budget (differential testing, T2.3)
+//!
+//! [`Interpreter::set_eval_budget`] installs an optional cap on the cumulative
+//! `eval_count`; exceeding it stops evaluation with the *distinct*
+//! [`InterpreterErrorKind::EvalBudgetExceeded`] outcome (the run was cut off — that is
+//! not a behavioral fact about the program). Unset, the cost is a single untaken
+//! branch per node evaluation.
 //!
 //! # RNG
 //!
@@ -108,6 +120,11 @@ pub enum InterpreterErrorKind {
     /// Conditions with no clean legacy equivalent (uncaught `Break`, RNG tape
     /// exhaustion, malformed nodes).
     Runtime,
+    /// The optional eval budget ([`Interpreter::set_eval_budget`]) was
+    /// exceeded. **Not a normal error**: it means "this run was cut off", not
+    /// "this program misbehaved". Differential testing treats it as an
+    /// inconclusive outcome, never as a behavioral fact.
+    EvalBudgetExceeded,
 }
 
 /// An interpreter failure. See the module docs: all user-reachable failures are
@@ -517,6 +534,13 @@ pub struct Interpreter {
     rng: Rng,
     eval_count: u64,
     dispatch_count: u64,
+    /// RNG draw counter: one increment per successful `Random`/`RandomInteger`
+    /// draw (seeded or tape). Draw-order/count preservation is part of the
+    /// optimizer contract, so differential testing compares this.
+    rng_draw_count: u64,
+    /// Optional eval budget (`None` = unlimited). When `eval_count` exceeds
+    /// it, evaluation stops with [`InterpreterErrorKind::EvalBudgetExceeded`].
+    eval_budget: Option<u64>,
     /// Last-write-wins write log, when recording is enabled (mirrors the
     /// `RecordingInterpreter` used by the T0.5 corpus capture).
     writes: Option<HashMap<(i64, i64), f64>>,
@@ -566,6 +590,8 @@ impl Interpreter {
             rng: Rng::Seeded(SplitMix64::new(seed)),
             eval_count: 0,
             dispatch_count: 0,
+            rng_draw_count: 0,
+            eval_budget: None,
             writes: None,
         }
     }
@@ -613,6 +639,23 @@ impl Interpreter {
     /// `JumpLoop` dispatch counter. See the module docs for the exact definition.
     pub fn dispatch_count(&self) -> u64 {
         self.dispatch_count
+    }
+
+    /// RNG draw counter: one increment per successful `Random`/`RandomInteger`
+    /// draw, in both seeded and tape modes. Accumulates across runs.
+    pub fn rng_draw_count(&self) -> u64 {
+        self.rng_draw_count
+    }
+
+    /// Sets (or clears, with `None`) the eval budget: once the cumulative
+    /// [`eval_count`](Self::eval_count) exceeds `budget`, evaluation stops with
+    /// an [`InterpreterErrorKind::EvalBudgetExceeded`] error — a distinct
+    /// outcome, not a behavioral error (the program was cut off, it did not
+    /// misbehave). The budget compares against the *cumulative* counter, which
+    /// accumulates across `run` calls. Unset (the default) costs one untaken
+    /// branch per evaluation.
+    pub fn set_eval_budget(&mut self, budget: Option<u64>) {
+        self.eval_budget = budget;
     }
 
     /// The legacy mutating `get`: validates `block`/`index`, extends the block with
@@ -675,10 +718,12 @@ impl Interpreter {
     }
 
     fn draw_uniform(&mut self, lo: f64, hi: f64) -> Result<f64> {
-        match &mut self.rng {
-            Rng::Seeded(rng) => Ok(lo + (hi - lo) * rng.next_f64()),
-            Rng::Tape { values, pos } => Self::tape_next(values, pos),
-        }
+        let value = match &mut self.rng {
+            Rng::Seeded(rng) => lo + (hi - lo) * rng.next_f64(),
+            Rng::Tape { values, pos } => Self::tape_next(values, pos)?,
+        };
+        self.rng_draw_count += 1;
+        Ok(value)
     }
 
     /// `random.randrange(lo, hi)`: arguments already integral; empty ranges error
@@ -692,15 +737,17 @@ impl Interpreter {
                 "empty range in randrange({lo_i}, {hi_i})"
             )));
         }
-        match &mut self.rng {
+        let value = match &mut self.rng {
             Rng::Seeded(rng) => {
                 let width = u64::try_from(i128::from(hi_i) - i128::from(lo_i))
                     .expect("hi > lo, so the width is positive and fits u64");
                 let offset = rng.below(width);
-                Ok((i128::from(lo_i) + i128::from(offset)) as f64)
+                (i128::from(lo_i) + i128::from(offset)) as f64
             }
-            Rng::Tape { values, pos } => Self::tape_next(values, pos),
-        }
+            Rng::Tape { values, pos } => Self::tape_next(values, pos)?,
+        };
+        self.rng_draw_count += 1;
+        Ok(value)
     }
 
     fn tape_next(values: &[f64], pos: &mut usize) -> Result<f64> {
@@ -727,6 +774,14 @@ impl Interpreter {
             action = match action {
                 Action::Eval(id) => {
                     self.eval_count += 1;
+                    if let Some(budget) = self.eval_budget
+                        && self.eval_count > budget
+                    {
+                        return Err(InterpreterError::new(
+                            InterpreterErrorKind::EvalBudgetExceeded,
+                            format!("eval budget exceeded ({budget} node evaluations)"),
+                        ));
+                    }
                     match arena.kind(id) {
                         NodeKind::Const { value, .. } => Action::Return(value),
                         NodeKind::Func { op, .. } => {

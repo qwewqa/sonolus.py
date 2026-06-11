@@ -1189,3 +1189,69 @@ fn ensure_int_kernel() {
     assert_eq!(err.kind, InterpreterErrorKind::Overflow);
     assert_eq!(err.message, "cannot convert float infinity to integer");
 }
+
+// -----------------------------------------------------------------------------------
+// Eval budget and RNG draw counter (T2.3 differential-testing instrumentation)
+// -----------------------------------------------------------------------------------
+
+#[test]
+fn eval_budget_exceeded_is_a_distinct_outcome() {
+    // While(1, 0) spins forever; the budget cuts it off with the distinct
+    // EvalBudgetExceeded kind (not a normal Runtime/Value error).
+    let mut interp = Interpreter::new(0);
+    interp.set_eval_budget(Some(1_000));
+    let err = run_in(&mut interp, &f(Op::While, vec![c(1.0), c(0.0)]))
+        .expect_err("the budget must cut off the infinite loop");
+    assert_eq!(err.kind, InterpreterErrorKind::EvalBudgetExceeded);
+    assert_eq!(err.message, "eval budget exceeded (1000 node evaluations)");
+    // The counter stops right past the budget (the failing evaluation counts).
+    assert_eq!(interp.eval_count(), 1_001);
+}
+
+#[test]
+fn eval_budget_compares_against_the_cumulative_counter() {
+    // Two runs share one budget: the first consumes most of it, the second
+    // trips it even though it is small on its own.
+    let mut interp = Interpreter::new(0);
+    interp.set_eval_budget(Some(5));
+    run_in(&mut interp, &f(Op::Add, vec![c(1.0), c(2.0)])).unwrap(); // 3 evals
+    let err = run_in(&mut interp, &f(Op::Add, vec![c(1.0), c(2.0)])).unwrap_err();
+    assert_eq!(err.kind, InterpreterErrorKind::EvalBudgetExceeded);
+    // Clearing the budget restores unlimited evaluation.
+    interp.set_eval_budget(None);
+    assert_eq!(
+        run_in(&mut interp, &f(Op::Add, vec![c(1.0), c(2.0)])).unwrap(),
+        3.0
+    );
+}
+
+#[test]
+fn eval_budget_under_the_limit_changes_nothing() {
+    let mut budgeted = Interpreter::new(7);
+    budgeted.set_eval_budget(Some(1_000_000));
+    let mut unlimited = Interpreter::new(7);
+    let expr = || f(Op::Add, vec![f(Op::Random, vec![c(0.0), c(1.0)]), c(2.0)]);
+    let a = run_in(&mut budgeted, &expr()).unwrap();
+    let b = run_in(&mut unlimited, &expr()).unwrap();
+    assert_bits(a, b);
+    assert_eq!(budgeted.eval_count(), unlimited.eval_count());
+}
+
+#[test]
+fn rng_draw_count_counts_seeded_and_tape_draws() {
+    // Seeded mode: one Random + one RandomInteger = 2 draws.
+    let mut interp = Interpreter::new(0);
+    assert_eq!(interp.rng_draw_count(), 0);
+    run_in(&mut interp, &f(Op::Random, vec![c(0.0), c(1.0)])).unwrap();
+    run_in(&mut interp, &f(Op::RandomInteger, vec![c(0.0), c(10.0)])).unwrap();
+    assert_eq!(interp.rng_draw_count(), 2);
+    // A failed draw (empty randrange) does not count.
+    let _ = run_in(&mut interp, &f(Op::RandomInteger, vec![c(5.0), c(5.0)])).unwrap_err();
+    assert_eq!(interp.rng_draw_count(), 2);
+    // Tape mode counts identically; exhaustion does not count.
+    let mut interp = Interpreter::with_tape(vec![0.25]);
+    run_in(&mut interp, &f(Op::Random, vec![c(0.0), c(1.0)])).unwrap();
+    assert_eq!(interp.rng_draw_count(), 1);
+    let _ = run_in(&mut interp, &f(Op::Random, vec![c(0.0), c(1.0)])).unwrap_err();
+    assert_eq!(interp.rng_draw_count(), 1);
+}

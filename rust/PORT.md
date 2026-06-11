@@ -6,7 +6,7 @@
 > holds rules, tasks, state, and decisions. Maintainer notes (setup, end-of-run review)
 > live in [EXECUTION.md](EXECUTION.md).
 
-**Status:** in progress — S2 underway; next task: T2.3
+**Status:** in progress — S2 underway; next task: T2.4
 **Last updated:** 2026-06-10
 
 ## 0. Entry point — if you were pointed at this file, start here
@@ -167,7 +167,7 @@ Status values: `todo` / `in-progress` / `blocked` / `done`.
 |----|--------|------|-----|
 | T2.1 | done | Analyses: dominator tree, loop forest, liveness; on-demand caching with explicit invalidation. | cargo unit tests on hand-built and corpus CFGs |
 | T2.2 | done | Rewrite-rule framework + pipeline/level configuration (`minimal`/`fast`/`standard` as prefixes). | identity pipeline preserves baseline behavior on full corpus |
-| T2.3 | todo | Differential-interpretation harness (minimal-vs-optimized, randomized memory + seeds, compares results/logs/writes) + CFG fuzz generator (proptest/arbitrary, shrinking). | seeded miscompile in a deliberately broken transform is caught and shrunk by both harness and fuzzer |
+| T2.3 | done | Differential-interpretation harness (minimal-vs-optimized, randomized memory + seeds, compares results/logs/writes) + CFG fuzz generator (proptest/arbitrary, shrinking). | seeded miscompile in a deliberately broken transform is caught and shrunk by both harness and fuzzer |
 | T2.4 | todo | Metrics: Rust collectors (static nodes, DAG size, dyn eval count, dispatch count, wall time) + `tools/metrics.py` for the Python backend; capture `rust/baselines/python-standard.json` and `python-fast` timings (for G-P1) from the frozen oracle over mini-corpus + pydori. | baseline files committed; metrics report runs in one command |
 
 ### S3 — Optimizer waves (fan-out allowed within a wave; gates are single-agent)
@@ -305,6 +305,24 @@ pointers (failing commands, metric numbers, repro). Empty deviation log = clean 
 
 ## 9. Worklog (append-only; newest first)
 
+- 2026-06-10 — **T2.3 done.** `diff.rs`: `diff_levels`/`diff_with` (closure compile sides
+  via new `compile_cfg_with_pipeline` — the T3.x per-transform injection point),
+  `DiffOutcome::{Match, Inconclusive, Mismatch{Compile,Result,Error,Log,Writes,
+  RngDraws}}`, seeded memory mix (ROM 3000 NaN/±inf; block 10000 never filled/compared),
+  budget-exceeded ⇒ inconclusive; interpreter gained `set_eval_budget` (distinct
+  `EvalBudgetExceeded`) + `rng_draw_count` (draw-order preservation is part of the
+  optimizer contract). Corpus differential: 270 cases/level, 0 mismatches. Fuzz:
+  proptest 1.11 `fuzzgen.rs` (full pure-op set, dynamic temp indices Mod-clamped, float
+  conds, And/Or with DebugLog args, bounded counter loops ≤5 trips; 53% trap-free),
+  default 256 cases in CI (~3s); persistence MUST use `FileFailurePersistence::Direct`
+  (proptest default silently broken in integration tests). Canary `Add(x,c)→x`: corpus 4
+  mismatches; fuzzer catch ~20ms, shrunk to 1 block/9 nodes. **Gate fuzz recipe:
+  `SONOLUS_FUZZ_CASES=1000000 cargo test --release -p sonolus-backend-core --test fuzz`
+  (~13-24 min)**; orchestrator spot-ran 20k release cases green in 17s. T3.2/T3.3
+  dispatch note: RewriteDriver leaves replaced defining insts scheduled — real rewrite
+  passes MUST pair with a DCE/schedule sweep before lowering (`LowerError::MultiUse`
+  otherwise); prefer wide-footprint canaries. Verified: cargo 249 green, clippy/fmt
+  clean, pytest 1191+4 green.
 - 2026-06-10 — **T2.2 done.** `passes/mod.rs`: `Pass` trait + plain ordered `Pipeline`
   runner; debug builds re-fingerprint MIR after each pass (lying changed-flag or missed
   invalidation panics — #[should_panic] pinned); `Hooks` for per-pass wall times (T2.4

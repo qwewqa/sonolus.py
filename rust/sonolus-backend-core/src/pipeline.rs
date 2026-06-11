@@ -164,11 +164,39 @@ pub fn compile_cfg_stats(
     cfg: &Cfg,
     level: Level,
 ) -> Result<(EngineNodes, CompileStats), CompileError> {
+    compile_cfg_with_pipeline_stats(cfg, &crate::passes::Pipeline::for_level(level))
+}
+
+/// Compiles a decoded frontend CFG using an **explicit** pass pipeline instead
+/// of a level's registry prefix. This is the injection point for differential
+/// testing (`crate::diff`, T2.3): per-transform diffs and the broken-transform
+/// canary compile one side with a bespoke `Pipeline` and compare it against
+/// the `minimal` baseline.
+///
+/// # Errors
+///
+/// See [`CompileError`].
+pub fn compile_cfg_with_pipeline(
+    cfg: &Cfg,
+    pipeline: &crate::passes::Pipeline,
+) -> Result<EngineNodes, CompileError> {
+    compile_cfg_with_pipeline_stats(cfg, pipeline).map(|(nodes, _)| nodes)
+}
+
+/// [`compile_cfg_with_pipeline`] plus [`CompileStats`].
+///
+/// # Errors
+///
+/// See [`CompileError`].
+pub fn compile_cfg_with_pipeline_stats(
+    cfg: &Cfg,
+    pipeline: &crate::passes::Pipeline,
+) -> Result<(EngineNodes, CompileStats), CompileError> {
     let mut mir = crate::mir::build_mir(cfg)?;
-    // Optimization phase: the level's pass-registry prefix (empty until W1
-    // lands; see crate::passes). Each pass owns its own analysis invalidation.
+    // Optimization phase (for the level entry points: the level's registry
+    // prefix, empty until W1 lands; see crate::passes). Each pass owns its own
+    // analysis invalidation.
     let mut analyses = crate::analysis::Analyses::new();
-    let pipeline = crate::passes::Pipeline::for_level(level);
     pipeline.run(&mut mir, &mut analyses);
     let alloc = allocate_temps(&mir)?;
     let lowered = lower_mir(&mir, &alloc)?;
@@ -472,6 +500,20 @@ mod tests {
         assert_eq!(
             format_engine_node(&nodes.arena, nodes.root),
             "Block(JumpLoop(0))"
+        );
+    }
+
+    #[test]
+    fn explicit_empty_pipeline_equals_minimal() {
+        // compile_cfg_with_pipeline with an empty pass list is exactly the
+        // minimal level (the differential-baseline contract diff.rs relies on).
+        let cfg = and_log_cfg();
+        let minimal = compile_cfg(&cfg, Level::Minimal).unwrap();
+        let explicit =
+            compile_cfg_with_pipeline(&cfg, &crate::passes::Pipeline::new(vec![])).unwrap();
+        assert_eq!(
+            format_engine_node(&explicit.arena, explicit.root),
+            format_engine_node(&minimal.arena, minimal.root)
         );
     }
 

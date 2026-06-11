@@ -145,7 +145,12 @@ fn interpreter_error_to_py(e: InterpreterError) -> PyErr {
         InterpreterErrorKind::Overflow => PyOverflowError::new_err(e.message),
         InterpreterErrorKind::Index => PyIndexError::new_err(e.message),
         InterpreterErrorKind::NotImplemented => PyNotImplementedError::new_err(e.message),
-        InterpreterErrorKind::Runtime => PyRuntimeError::new_err(e.message),
+        // EvalBudgetExceeded is a core-side differential-testing facility
+        // (T2.3); the budget is not settable through the Python bindings
+        // today, so that arm is unreachable from Python.
+        InterpreterErrorKind::Runtime | InterpreterErrorKind::EvalBudgetExceeded => {
+            PyRuntimeError::new_err(e.message)
+        }
     }
 }
 

@@ -19,6 +19,11 @@
 //! vector's `temp_memory_block` (slot allocation is pipeline-specific by
 //! contract).
 
+// Each test binary compiles its own copy of this module and uses a different
+// subset of it (corpus replay vs. differential testing), so per-binary
+// dead-code analysis needs a module-wide allow.
+#![allow(dead_code)]
+
 use std::collections::BTreeMap;
 use std::fs;
 use std::path::{Path, PathBuf};
