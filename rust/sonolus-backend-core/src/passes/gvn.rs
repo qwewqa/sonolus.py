@@ -62,17 +62,22 @@
 //! - Everything else — `Load` (a memory read is *not* pure: a later store may
 //!   change it and a dynamic index may trap), `Store`, RNG draws, side
 //!   effects, `ShortCircuit` (control / lazy boundary), `Phi` (control-
-//!   dependent; pre-W2 none exist, and this pass simply never numbers them) —
-//!   gets a fresh singleton class. A pure op over a singleton operand is
-//!   itself a singleton (it can never match anything).
+//!   dependent) — gets a fresh **singleton** class. Singleton classes are
+//!   legitimate key components: a singleton class id denotes exactly one SSA
+//!   value, so two pure ops with identical keys over singleton operands
+//!   compute over the *same values* and may merge. (Pre-W2 every value was
+//!   single-use, so ops over singletons could never repeat and were skipped;
+//!   post-Mem2Reg shared SSA values make this the load-bearing CSE case —
+//!   `Add(v, 1)` at two sites with the same `v` now merges.)
 //!
 //! A redundancy is a pure instruction whose class already has an occurrence
-//! in a **dominating** block (or earlier in the same block). Because operand
-//! classes bottom out in constants (loads are singletons), every numbered
-//! class is a *closed* value computation — its value cannot vary between the
-//! leader's and the redundant's execution points, and if it traps, the
-//! dominating leader traps first (identical computation, identical error), so
-//! the redundant site is unreachable. Replacement must respect the lowering
+//! in a **dominating** block (or earlier in the same block). Operand classes
+//! bottom out in constants or singleton classes (single SSA values whose defs
+//! dominate every use), so every numbered class is a *fixed* value
+//! computation — its value cannot vary between the leader's and the
+//! redundant's execution points, and if it traps, the dominating leader traps
+//! first (identical computation, identical error), so the redundant site is
+//! unreachable. Replacement must respect the lowering
 //! contract (every scheduled value used at most once, in-block): values are
 //! shared **through a fresh single-slot temp**, mirroring legacy CSE's
 //! extraction (`cse.py`, cost ≥ 4 with the same cost model):
@@ -336,8 +341,6 @@ struct Gvn {
     /// Value -> class id (assigned on first sight; operands resolve lazily).
     vn_of: Vec<Option<u32>>,
     key_map: HashMap<VnKey, u32>,
-    /// Per-class: may this class ever merge (false for singleton classes)?
-    mergeable: Vec<bool>,
     /// Per-class legacy cost (1 for constants, 1 + Σ operands for ops).
     cost: Vec<u64>,
     occurrences: HashMap<u32, OccurrenceList>,
@@ -350,8 +353,7 @@ struct Gvn {
 
 impl Gvn {
     fn fresh_singleton(&mut self) -> u32 {
-        let id = u32::try_from(self.mergeable.len()).expect("class count fits u32");
-        self.mergeable.push(false);
+        let id = u32::try_from(self.cost.len()).expect("class count fits u32");
         self.cost.push(1);
         id
     }
@@ -360,8 +362,7 @@ impl Gvn {
         if let Some(&id) = self.key_map.get(&key) {
             return id;
         }
-        let id = u32::try_from(self.mergeable.len()).expect("class count fits u32");
-        self.mergeable.push(true);
+        let id = u32::try_from(self.cost.len()).expect("class count fits u32");
         self.cost.push(cost);
         self.key_map.insert(key, id);
         id
@@ -407,7 +408,6 @@ fn run_gvn(mir: &mut Mir, analyses: &mut Analyses) -> Vec<Value> {
     let mut gvn = Gvn {
         vn_of: vec![None; mir.insts.len()],
         key_map: HashMap::new(),
-        mergeable: Vec::new(),
         cost: Vec::new(),
         occurrences: HashMap::new(),
         counts: count_scheduled_uses(mir),
@@ -440,18 +440,11 @@ fn run_gvn(mir: &mut Mir, analyses: &mut Analyses) -> Vec<Value> {
                 continue;
             }
             let mut arg_classes: Vec<u32> = Vec::with_capacity(args.len());
-            let mut mergeable = true;
             let mut cost = 1u64;
             for &a in &args {
                 let c = gvn.operand_class(mir, a);
-                mergeable &= gvn.mergeable[c as usize];
                 cost = cost.saturating_add(gvn.cost[c as usize]);
                 arg_classes.push(c);
-            }
-            if !mergeable {
-                let vn = gvn.fresh_singleton();
-                gvn.vn_of[v as usize] = Some(vn);
-                continue;
             }
             if is_commutative(op) {
                 arg_classes.sort_unstable();
@@ -603,14 +596,25 @@ fn extract_leader(
 // Sweep
 // ----------------------------------------------------------------------------------
 
-/// Reference counts over everything lowering counts: operands of scheduled
-/// instructions (including the lazy `ShortCircuit` rhs trees they own) and
-/// terminator tests. Mirrors `lower::count_uses`.
+/// Reference counts over everything that can reference a value: operands of
+/// scheduled instructions (including the lazy `ShortCircuit` rhs trees they
+/// own), terminator tests, and **phi arguments** (post-W2 MIR has phis; a
+/// value whose only use is a phi argument is NOT dead — sweeping it would
+/// leave the phi referencing an unscheduled value, caught by the W2 fuzz as
+/// `DestructError::UnscheduledCrossBlockValue`). Extends `lower::count_uses`
+/// (which never sees phis) with the phi-argument case.
 fn count_scheduled_uses(mir: &Mir) -> Vec<u32> {
     let scheduled = mir.scheduled_mask();
     let mut counts = vec![0u32; mir.insts.len()];
     let mut lazy_stack: Vec<Value> = Vec::new();
     for block in &mir.blocks {
+        for &phi in &block.phis {
+            if let Inst::Phi { args } = mir.inst(phi) {
+                for &(_, a) in args {
+                    counts[a as usize] += 1;
+                }
+            }
+        }
         for &v in &block.insts {
             let inst = mir.inst(v);
             Mir::for_each_operand(inst, |o| counts[o as usize] += 1);
@@ -1107,7 +1111,6 @@ mod tests {
         let mut gvn = Gvn {
             vn_of: vec![None; mir.insts.len()],
             key_map: HashMap::new(),
-            mergeable: Vec::new(),
             cost: Vec::new(),
             occurrences: HashMap::new(),
             counts: vec![0; mir.insts.len()],
@@ -1183,6 +1186,112 @@ mod tests {
         let temps_before = mir.temps.len();
         run_pass(&mut mir);
         assert_eq!(mir.temps.len(), temps_before, "no merges through memory");
+    }
+
+    /// Post-W2 shape: two identical pure ops over the SAME (multi-use) SSA
+    /// value merge — singleton operand classes are legitimate key components
+    /// because a singleton class id denotes exactly one value (module docs).
+    #[test]
+    fn shared_value_expressions_merge() {
+        let mut mir = Mir::new();
+        let t = mir.push_temp("t", 4);
+        let b0 = mir.push_block();
+        let load = sched(
+            &mut mir,
+            b0,
+            Inst::Load {
+                place: temp_place(t),
+            },
+        );
+        let seven = mir.push_inst(Inst::ConstInt(7));
+        // Two syntactically identical cost-4 trees over the SAME load value
+        // (multi-use SSA, the post-Mem2Reg shape): they must merge.
+        for i in 0..2 {
+            let neg = op(&mut mir, b0, Op::Negate, vec![load]);
+            let mul = op(&mut mir, b0, Op::Multiply, vec![seven, neg]);
+            store_to(&mut mir, b0, t, i + 1, mul);
+        }
+        mir.blocks[b0].terminator = Terminator::Exit;
+        let temps_before = mir.temps.len();
+        run_pass(&mut mir);
+        assert_eq!(
+            mir.temps.len(),
+            temps_before + 1,
+            "one gvn class temp for the merged expression"
+        );
+        // Exactly one Multiply remains scheduled (the leader).
+        let muls = mir.blocks[b0]
+            .insts
+            .iter()
+            .filter(|&&v| {
+                matches!(
+                    mir.inst(v),
+                    Inst::Op {
+                        op: Op::Multiply,
+                        ..
+                    }
+                )
+            })
+            .count();
+        assert_eq!(muls, 1, "the redundant Multiply was replaced by a load");
+    }
+
+    /// W2 phi-path regression (found by the 50k fuzz): a value whose ONLY use
+    /// is a phi argument must count as used — the sweep must not unschedule
+    /// it when a sibling redundancy is replaced (destruct would then reject
+    /// the phi arg as `UnscheduledCrossBlockValue`).
+    #[test]
+    fn phi_arg_uses_keep_values_alive_through_the_sweep() {
+        use crate::mir::CaseCond;
+        // Diamond: b0 -> {b1, b2} -> b3. Both arms compute the same
+        // extractable expression; one arm's copy feeds ONLY the join phi.
+        let mut mir = Mir::new();
+        let t = mir.push_temp("t", 4);
+        let b0 = mir.push_block();
+        let b1 = mir.push_block();
+        let b2 = mir.push_block();
+        let b3 = mir.push_block();
+        let test = sched(
+            &mut mir,
+            b0,
+            Inst::Load {
+                place: temp_place(t),
+            },
+        );
+        // A dominating leader of the same class in b0 (kept alive by a store).
+        let seven0 = mir.push_inst(Inst::ConstInt(7));
+        let neg0 = op(&mut mir, b0, Op::Negate, vec![seven0]);
+        let mul0 = op(&mut mir, b0, Op::Multiply, vec![seven0, neg0]);
+        store_to(&mut mir, b0, t, 1, mul0);
+        mir.blocks[b0].terminator = Terminator::Branch {
+            test,
+            cases: vec![(CaseCond::Int(0), b1)],
+            default: Some(b2),
+        };
+        mir.blocks[b1].terminator = Terminator::Jump(b3);
+        mir.blocks[b2].terminator = Terminator::Jump(b3);
+        // b1: the redundant twin, used only by the phi.
+        let seven1 = mir.push_inst(Inst::ConstInt(7));
+        let neg1 = op(&mut mir, b1, Op::Negate, vec![seven1]);
+        let mul1 = op(&mut mir, b1, Op::Multiply, vec![seven1, neg1]);
+        // b2: a distinct value for the other arm.
+        let c2 = mir.push_inst(Inst::ConstInt(2));
+        let phi = mir.push_inst(Inst::Phi {
+            args: vec![(b1, mul1), (b2, c2)],
+        });
+        mir.blocks[b3].phis.push(phi);
+        sched(
+            &mut mir,
+            b3,
+            Inst::Store {
+                place: temp_place(t),
+                value: phi,
+            },
+        );
+        run_pass(&mut mir);
+        // Whatever GVN decided, every phi arg must still be scheduled (or a
+        // constant): the full pipeline check is that destruct accepts it.
+        crate::ssa::destruct_ssa(&mut mir).expect("phi args stay materializable");
     }
 
     /// A pre-existing zero-use trapping statement (a bare `Divide(1, 0)`)

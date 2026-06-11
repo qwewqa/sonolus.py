@@ -31,6 +31,7 @@ use crate::emit::{EmitError, cfg_to_engine_nodes};
 use crate::lower::{LowerError, lower_mir};
 use crate::mir::MirBuildError;
 use crate::nodes::EngineNodes;
+use crate::ssa::DestructError;
 
 /// An optimization level (pipeline prefix).
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
@@ -84,6 +85,8 @@ impl std::error::Error for UnknownLevel {}
 pub enum CompileError {
     /// IR build rejected the CFG (out-of-domain construct).
     Build(MirBuildError),
+    /// Out-of-SSA rejected the MIR (cannot happen for pipeline-built MIR).
+    Destruct(DestructError),
     /// Slot allocation exceeded the 4096-slot temporary memory budget.
     TempLimit(TempLimitError),
     /// Lowering rejected the MIR (cannot happen for pipeline-built MIR).
@@ -96,6 +99,7 @@ impl fmt::Display for CompileError {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         match self {
             Self::Build(e) => write!(f, "{e}"),
+            Self::Destruct(e) => write!(f, "{e}"),
             Self::TempLimit(e) => write!(f, "{e}"),
             Self::Lower(e) => write!(f, "{e}"),
             Self::Emit(e) => write!(f, "{e}"),
@@ -108,6 +112,12 @@ impl std::error::Error for CompileError {}
 impl From<MirBuildError> for CompileError {
     fn from(e: MirBuildError) -> Self {
         Self::Build(e)
+    }
+}
+
+impl From<DestructError> for CompileError {
+    fn from(e: DestructError) -> Self {
+        Self::Destruct(e)
     }
 }
 
@@ -197,6 +207,9 @@ pub fn compile_cfg_with_pipeline_stats(
     // analysis invalidation.
     let mut analyses = crate::analysis::Analyses::new();
     pipeline.run(&mut mir, &mut analyses);
+    // Out-of-SSA + lowering-contract legalization (unconditional; a no-op on
+    // MIR that is already lowerable — i.e. whenever W2 Mem2Reg did not run).
+    crate::ssa::destruct_ssa(&mut mir)?;
     let alloc = allocate_temps(&mir)?;
     let lowered = lower_mir(&mir, &alloc)?;
     let nodes = cfg_to_engine_nodes(&lowered)?;
@@ -401,23 +414,29 @@ mod tests {
     }
 
     #[test]
-    fn all_levels_compile_and_are_identity_equal_today() {
+    fn fast_is_identity_on_inert_input_and_standard_promotes() {
         // and_log_cfg contains nothing the registered W1 passes touch (loads,
-        // short-circuit, stores — no pure ops, no constants to fold), so every
-        // level still produces byte-identical output for it. This pins the
-        // changed-flag honesty of the registered passes on inert input.
+        // short-circuit, stores — no pure ops, no constants to fold), so the
+        // fast level still produces byte-identical output for it. Standard
+        // (W2 Mem2Reg) promotes the temp, so its output legitimately differs
+        // (behavior is pinned by fast_and_standard_preserve_short_circuit_
+        // semantics below).
         let cfg = and_log_cfg();
         let minimal = compile_cfg(&cfg, Level::Minimal).unwrap();
         let minimal_dump = format_engine_node(&minimal.arena, minimal.root);
-        for level in [Level::Fast, Level::Standard] {
-            let nodes = compile_cfg(&cfg, level).unwrap();
-            assert_eq!(
-                format_engine_node(&nodes.arena, nodes.root),
-                minimal_dump,
-                "{} output must equal minimal's today",
-                level.name()
-            );
-        }
+        let fast = compile_cfg(&cfg, Level::Fast).unwrap();
+        assert_eq!(
+            format_engine_node(&fast.arena, fast.root),
+            minimal_dump,
+            "fast output must equal minimal's on inert input"
+        );
+        let standard = compile_cfg(&cfg, Level::Standard).unwrap();
+        assert!(
+            standard.arena.len() < minimal.arena.len(),
+            "W2 promotion must shrink the inert-for-W1 tree ({} -> {})",
+            minimal.arena.len(),
+            standard.arena.len()
+        );
     }
 
     #[test]

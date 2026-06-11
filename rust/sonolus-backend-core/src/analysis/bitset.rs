@@ -65,6 +65,18 @@ impl BitSet {
         }
     }
 
+    /// `self &= other`; returns true if `self` changed. Capacities must match.
+    pub fn intersect_with(&mut self, other: &Self) -> bool {
+        debug_assert_eq!(self.words.len(), other.words.len());
+        let mut changed = false;
+        for (w, &o) in self.words.iter_mut().zip(&other.words) {
+            let new = *w & o;
+            changed |= new != *w;
+            *w = new;
+        }
+        changed
+    }
+
     /// Set bits in ascending order.
     pub fn iter(&self) -> BitSetIter<'_> {
         BitSetIter {
@@ -145,6 +157,19 @@ mod tests {
         assert!(!a.union_with(&b), "second union changes nothing");
         a.subtract(&b);
         assert_eq!(a.iter().collect::<Vec<_>>(), vec![1]);
+    }
+
+    #[test]
+    fn intersect() {
+        let mut a = BitSet::new(100);
+        let mut b = BitSet::new(100);
+        a.insert(1);
+        a.insert(70);
+        b.insert(70);
+        b.insert(99);
+        assert!(a.intersect_with(&b));
+        assert_eq!(a.iter().collect::<Vec<_>>(), vec![70]);
+        assert!(!a.intersect_with(&b), "second intersect changes nothing");
     }
 
     #[test]

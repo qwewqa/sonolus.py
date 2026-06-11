@@ -44,8 +44,7 @@
 //!    crossed by a dispatcher-spliced terminator-test evaluation.
 //! 2. SSA-value liveness (phi-aware: a phi argument is a use at the end of its
 //!    predecessor; a phi defines at its block's head).
-//! 3. *Slotted* values — phis, values used outside their defining block, and
-//!    non-constant phi arguments — are partitioned into congruence classes by
+//! 3. *Slotted* values are partitioned into congruence classes by
 //!    interference-aware coalescing (union-find; classes merge when no two
 //!    members interfere). Interference is the standard "live at the other's
 //!    definition" test, without Boissinot's value-equivalence refinement
@@ -61,12 +60,46 @@
 //!    same machinery as user temp blocks. Slotted defs gain a
 //!    `Store(class_temp, value)` right after the def; every use of a slotted
 //!    value becomes a fresh `Load(class_temp)` directly before the user
-//!    (single-use loads — exactly the lowering contract).
+//!    (single-use loads — exactly the lowering contract). A use *inside* a
+//!    lazy `ShortCircuit` rhs tree instead becomes a fresh **unscheduled**
+//!    load owned by the tree (the value must stay conditionally evaluated;
+//!    reading the class temp lazily is exact because lazy trees contain no
+//!    stores and the def's store ran before the owner).
 //! 5. Phi argument transfers become **parallel copies** at predecessor ends
 //!    (constant arguments are value sources; everything else is temp-to-temp),
 //!    sequentialized with cycle breaking through one scratch temp
 //!    ([`sequentialize_parallel_copies`]). Copies within one class disappear —
 //!    that is the coalescing payoff.
+//!
+//! ## What gets slotted (the W2 legalization contract)
+//!
+//! `destruct_ssa` is the single point that turns *value SSA* MIR (multi-use
+//! values, cross-block uses, phis — what `Mem2Reg` and the re-run W1 passes
+//! produce) back into MIR satisfying the lowering contract (every scheduled
+//! value used at most once, schedule = evaluation order; see `lower.rs`). It
+//! runs unconditionally in `compile_cfg` after the pass pipeline and is a
+//! no-op on MIR already in lowerable form (the `minimal` baseline). Slotted
+//! values:
+//!
+//! - **S1** phis;
+//! - **S2** non-constant phi arguments;
+//! - **S3** values used outside their defining block (incl. another block's
+//!   terminator test);
+//! - **S4** values used more than once (lowering can splice a defining tree
+//!   into at most one consumer);
+//! - **S5** scheduled values referenced from inside a lazy tree (the inner
+//!   reference becomes an unscheduled class-temp load, step 4 above) — this
+//!   includes a `ShortCircuit` whose rhs root is itself a scheduled value;
+//! - **S6** single-use same-block values whose splice would *reorder
+//!   evaluation*: lowering moves a pending value's whole regenerated subtree
+//!   from its schedule slot to its consumer's operand position, which is only
+//!   semantically transparent when the regenerated statement forest's
+//!   depth-first evaluation order equals the schedule order. A per-block
+//!   check compares exactly those two orders (treating slotted values as
+//!   order-preserving leaf loads) and slots the first out-of-order value,
+//!   to a fixpoint. This is deliberately conservative — a pure constant
+//!   subtree could move freely, but SCCP already folded those — and degrades
+//!   exactly to the store+load the unpromoted memory form paid.
 
 use std::collections::{HashMap, HashSet};
 use std::fmt;
@@ -658,7 +691,207 @@ fn temp_place(t: TempId) -> Place {
     }
 }
 
-/// Out-of-SSA translation. See the module docs.
+/// Per-value use facts driving the slotting decisions (S1–S6, module docs).
+struct UseFacts {
+    /// Total references: eager operands, lazy-tree internal references,
+    /// terminator tests, and phi arguments.
+    counts: Vec<u32>,
+    /// Used from a block other than the defining one (or by a phi arg, which
+    /// materializes on a predecessor edge).
+    cross_block: Vec<bool>,
+    /// Referenced from inside a lazy tree (incl. as a scheduled rhs root).
+    lazy_ref: Vec<bool>,
+    /// Defining block of scheduled instructions and phis.
+    def_block: Vec<Option<BlockId>>,
+}
+
+/// Collects [`UseFacts`] in one deterministic scan.
+fn collect_use_facts(mir: &Mir, scheduled: &[bool]) -> UseFacts {
+    let n = mir.insts.len();
+    let mut facts = UseFacts {
+        counts: vec![0; n],
+        cross_block: vec![false; n],
+        lazy_ref: vec![false; n],
+        def_block: vec![None; n],
+    };
+    for (b, block) in mir.blocks.iter().enumerate() {
+        for &phi in &block.phis {
+            facts.def_block[phi as usize] = Some(b);
+        }
+        for &v in &block.insts {
+            facts.def_block[v as usize] = Some(b);
+        }
+    }
+    let note = |facts: &mut UseFacts, o: Value, b: BlockId| {
+        if mir.is_const(o) {
+            return;
+        }
+        facts.counts[o as usize] += 1;
+        if facts.def_block[o as usize] != Some(b) {
+            facts.cross_block[o as usize] = true;
+        }
+    };
+    for (b, block) in mir.blocks.iter().enumerate() {
+        for &v in &block.insts {
+            match mir.inst(v) {
+                Inst::ShortCircuit { lhs, rhs, .. } => {
+                    note(&mut facts, *lhs, b);
+                    if scheduled[*rhs as usize] {
+                        // A scheduled rhs root must become an unscheduled
+                        // class-temp load (S5): the tree may not reference it.
+                        note(&mut facts, *rhs, b);
+                        facts.lazy_ref[*rhs as usize] = true;
+                    } else {
+                        // Walk the owned tree; scheduled values referenced
+                        // from inside are lazy references.
+                        let mut stack = vec![*rhs];
+                        while let Some(lv) = stack.pop() {
+                            if mir.is_const(lv) || scheduled[lv as usize] {
+                                continue;
+                            }
+                            Mir::for_each_operand(mir.inst(lv), |o| {
+                                if !mir.is_const(o) && scheduled[o as usize] {
+                                    note(&mut facts, o, b);
+                                    facts.lazy_ref[o as usize] = true;
+                                } else {
+                                    stack.push(o);
+                                }
+                            });
+                        }
+                    }
+                }
+                inst => Mir::for_each_operand(inst, |o| note(&mut facts, o, b)),
+            }
+        }
+        if let Terminator::Branch { test, .. } = &block.terminator {
+            note(&mut facts, *test, b);
+        }
+        for &phi in &block.phis {
+            let Inst::Phi { args } = mir.inst(phi) else {
+                continue;
+            };
+            for &(_, a) in args {
+                if !mir.is_const(a) {
+                    facts.counts[a as usize] += 1;
+                    // Phi args materialize as copies on predecessor edges:
+                    // always treated as cross-block (and slotted via S2).
+                    facts.cross_block[a as usize] = true;
+                }
+            }
+        }
+    }
+    facts
+}
+
+/// The S6 order check for one block (module docs): compares the regenerated
+/// statement forest's DFS evaluation order with the schedule, treating
+/// slotted values as order-preserving leaves. Returns the values to slot
+/// (empty = the block is splice-transparent).
+fn order_violations(
+    mir: &Mir,
+    scheduled: &[bool],
+    facts: &UseFacts,
+    is_slotted: &HashSet<Value>,
+    b: BlockId,
+) -> Vec<Value> {
+    enum W {
+        Visit(Value),
+        Emit(Value),
+    }
+    let insts = &mir.blocks[b].insts;
+    if insts.is_empty() {
+        return Vec::new();
+    }
+    let in_block: HashSet<Value> = insts.iter().copied().collect();
+    let spliceable = |o: Value| -> bool {
+        !mir.is_const(o)
+            && scheduled.get(o as usize).copied().unwrap_or(false)
+            && in_block.contains(&o)
+            && !is_slotted.contains(&o)
+            && facts.counts[o as usize] == 1
+            && !facts.cross_block[o as usize]
+            && !facts.lazy_ref[o as usize]
+    };
+    // The unique consumer of each spliceable value (counts == 1).
+    let mut consumer: HashMap<Value, Value> = HashMap::new();
+    for &v in insts {
+        match mir.inst(v) {
+            Inst::ShortCircuit { lhs, .. } => {
+                if spliceable(*lhs) {
+                    consumer.insert(*lhs, v);
+                }
+            }
+            inst => Mir::for_each_operand(inst, |o| {
+                if spliceable(o) {
+                    consumer.insert(o, v);
+                }
+            }),
+        }
+    }
+    let test_spliced = match &mir.blocks[b].terminator {
+        Terminator::Branch { test, .. } if spliceable(*test) && !consumer.contains_key(test) => {
+            Some(*test)
+        }
+        _ => None,
+    };
+    // DFS evaluation order of the regenerated forest: roots in schedule
+    // order, each subtree postorder with operands left to right; the
+    // terminator test's tree evaluates last (the dispatcher).
+    let mut seq: Vec<Value> = Vec::with_capacity(insts.len());
+    let emit_tree = |root: Value, seq: &mut Vec<Value>| {
+        let mut work = vec![W::Visit(root)];
+        while let Some(item) = work.pop() {
+            match item {
+                W::Emit(v) => seq.push(v),
+                W::Visit(v) => {
+                    work.push(W::Emit(v));
+                    let mut kids: Vec<Value> = Vec::new();
+                    match mir.inst(v) {
+                        Inst::ShortCircuit { lhs, .. } => {
+                            if consumer.get(lhs) == Some(&v) {
+                                kids.push(*lhs);
+                            }
+                        }
+                        inst => Mir::for_each_operand(inst, |o| {
+                            if consumer.get(&o) == Some(&v) {
+                                kids.push(o);
+                            }
+                        }),
+                    }
+                    for &k in kids.iter().rev() {
+                        work.push(W::Visit(k));
+                    }
+                }
+            }
+        }
+    };
+    for &v in insts {
+        if consumer.contains_key(&v) || test_spliced == Some(v) {
+            continue;
+        }
+        emit_tree(v, &mut seq);
+    }
+    if let Some(t) = test_spliced {
+        emit_tree(t, &mut seq);
+    }
+    debug_assert_eq!(seq.len(), insts.len(), "forest covers the schedule");
+    for (i, (&got, &want)) in seq.iter().zip(insts.iter()).enumerate() {
+        if got != want {
+            let candidate = insts[i];
+            if spliceable(candidate) {
+                return vec![candidate];
+            }
+            // Defensive fallback: slot every spliced value in the block (the
+            // mismatch culprit is always a delayed splice; see module docs).
+            return insts.iter().copied().filter(|&v| spliceable(v)).collect();
+        }
+    }
+    Vec::new()
+}
+
+/// Out-of-SSA translation and lowering-contract legalization. See the module
+/// docs. Unconditional in the pipeline; a no-op (and cheap) on MIR already in
+/// lowerable form.
 ///
 /// # Errors
 ///
@@ -669,9 +902,9 @@ pub fn destruct_ssa(mir: &mut Mir) -> Result<(), DestructError> {
     split_pred_edges(mir);
 
     let scheduled = mir.scheduled_mask();
-    let live = compute_liveness(mir, &scheduled)?;
+    let facts = collect_use_facts(mir, &scheduled);
 
-    // 2. Slotted values (first-encounter order; deterministic).
+    // 2. Slotted values (first-encounter order; deterministic). S1–S5 first.
     let mut slotted: Vec<Value> = Vec::new();
     let mut is_slotted: HashSet<Value> = HashSet::new();
     {
@@ -680,36 +913,56 @@ pub fn destruct_ssa(mir: &mut Mir) -> Result<(), DestructError> {
                 slotted.push(v);
             }
         };
-        for (b, block) in mir.blocks.iter().enumerate() {
+        for block in &mir.blocks {
             for &phi in &block.phis {
-                add(phi, &mut slotted, &mut is_slotted);
+                add(phi, &mut slotted, &mut is_slotted); // S1
                 let Inst::Phi { args } = mir.inst(phi) else {
                     continue;
                 };
                 for &(_, a) in args {
                     if !mir.is_const(a) {
-                        add(a, &mut slotted, &mut is_slotted);
+                        add(a, &mut slotted, &mut is_slotted); // S2
                     }
-                }
-            }
-            let mut used: Vec<Value> = Vec::new();
-            for &v in &block.insts {
-                inst_value_uses(mir, &scheduled, v, &mut used);
-            }
-            used.extend(live.term_uses[b].iter().copied());
-            for u in used {
-                match live.def[u as usize] {
-                    DefSite::InstAt(db, _) | DefSite::PhiAt(db) if db != b => {
-                        add(u, &mut slotted, &mut is_slotted);
-                    }
-                    // Scheduled values always have a def site; an unscheduled
-                    // value used in eager position is rejected by lowering,
-                    // not here.
-                    DefSite::None | DefSite::InstAt(..) | DefSite::PhiAt(_) => {}
                 }
             }
         }
+        // S3/S4/S5 in one ascending sweep (deterministic): any scheduled
+        // value used cross-block, more than once, or from inside a lazy tree.
+        // (Unscheduled multi-use values stay unslotted: lowering rejects them
+        // loudly, same as before this legalization existed.)
+        for v in 0..mir.insts.len() {
+            let value = Value::try_from(v).expect("arena fits u32");
+            if scheduled[v]
+                && !mir.is_const(value)
+                && !matches!(mir.inst(value), Inst::Phi { .. })
+                && (facts.cross_block[v] || facts.counts[v] > 1 || facts.lazy_ref[v])
+            {
+                add(value, &mut slotted, &mut is_slotted);
+            }
+        }
+        // S6: order-preservation fixpoint (each round slots >= 1 value).
+        loop {
+            let mut added = false;
+            for b in 0..mir.blocks.len() {
+                for v in order_violations(mir, &scheduled, &facts, &is_slotted, b) {
+                    if is_slotted.insert(v) {
+                        slotted.push(v);
+                        added = true;
+                    }
+                }
+            }
+            if !added {
+                break;
+            }
+        }
     }
+    if slotted.is_empty() {
+        // Already in lowerable form (no phis: phis are always slotted).
+        debug_assert!(mir.blocks.iter().all(|b| b.phis.is_empty()));
+        return Ok(());
+    }
+
+    let live = compute_liveness(mir, &scheduled)?;
     for &v in &slotted {
         if live.def[v as usize] == DefSite::None {
             return Err(DestructError::UnscheduledCrossBlockValue(v));
@@ -786,38 +1039,92 @@ pub fn destruct_ssa(mir: &mut Mir) -> Result<(), DestructError> {
         }
     }
 
-    // 6. Rewrite blocks: loads before uses, stores after slotted defs, copies
+    // 6. Rewrite blocks: loads before uses (one per *occurrence* — a value
+    // used twice by one instruction gets two loads, each consumed once),
+    // stores after slotted defs, unscheduled loads inside lazy trees, copies
     // and (rewritten) terminator tests at block ends; phis disappear.
+    let temp_of = |classes: &Classes, o: Value| class_temp[&classes.find(o)];
     for b in 0..mir.blocks.len() {
         let old_insts = std::mem::take(&mut mir.blocks[b].insts);
         let mut new_insts: Vec<Value> = Vec::with_capacity(old_insts.len());
         for v in old_insts {
-            let mut inst = mir.insts[v as usize].clone();
-            let mut rewrites: Vec<(Value, Value)> = Vec::new();
-            Mir::for_each_operand(&inst, |o| {
-                if is_slotted.contains(&o) && !rewrites.iter().any(|&(from, _)| from == o) {
-                    rewrites.push((o, 0));
-                }
-            });
-            for (from, to) in &mut rewrites {
-                let t = class_temp[&classes.find(*from)];
-                let load = mir.push_inst(Inst::Load {
-                    place: temp_place(t),
-                });
-                new_insts.push(load);
-                *to = load;
-            }
-            if !rewrites.is_empty() {
-                Mir::for_each_operand_mut(&mut inst, |o| {
-                    if let Some(&(_, to)) = rewrites.iter().find(|&&(from, _)| from == *o) {
-                        *o = to;
+            match mir.insts[v as usize].clone() {
+                Inst::ShortCircuit {
+                    op,
+                    pure_node,
+                    lhs,
+                    rhs,
+                } => {
+                    // The eager lhs reloads from its class temp like any
+                    // operand; the rhs must stay lazy: a scheduled (slotted)
+                    // rhs root becomes an *unscheduled* class-temp load, and
+                    // tree-internal references to slotted values do the same
+                    // (step 4 of the module docs — exact because lazy trees
+                    // contain no stores).
+                    let mut new_lhs = lhs;
+                    if is_slotted.contains(&lhs) {
+                        let load = mir.push_inst(Inst::Load {
+                            place: temp_place(temp_of(&classes, lhs)),
+                        });
+                        new_insts.push(load);
+                        new_lhs = load;
                     }
-                });
-                mir.insts[v as usize] = inst;
+                    let mut new_rhs = rhs;
+                    if scheduled.get(rhs as usize).copied().unwrap_or(false)
+                        && is_slotted.contains(&rhs)
+                    {
+                        new_rhs = mir.push_inst(Inst::Load {
+                            place: temp_place(temp_of(&classes, rhs)),
+                        });
+                    } else {
+                        rewrite_lazy_slotted_refs(
+                            mir,
+                            &scheduled,
+                            &is_slotted,
+                            &classes,
+                            &class_temp,
+                            rhs,
+                        );
+                    }
+                    if (new_lhs, new_rhs) != (lhs, rhs) {
+                        mir.insts[v as usize] = Inst::ShortCircuit {
+                            op,
+                            pure_node,
+                            lhs: new_lhs,
+                            rhs: new_rhs,
+                        };
+                    }
+                }
+                mut inst => {
+                    let mut ops: Vec<Value> = Vec::new();
+                    Mir::for_each_operand(&inst, |o| ops.push(o));
+                    if ops.iter().any(|o| is_slotted.contains(o)) {
+                        let mut new_ops: Vec<Option<Value>> = Vec::with_capacity(ops.len());
+                        for &o in &ops {
+                            if is_slotted.contains(&o) {
+                                let load = mir.push_inst(Inst::Load {
+                                    place: temp_place(temp_of(&classes, o)),
+                                });
+                                new_insts.push(load);
+                                new_ops.push(Some(load));
+                            } else {
+                                new_ops.push(None);
+                            }
+                        }
+                        let mut idx = 0;
+                        Mir::for_each_operand_mut(&mut inst, |o| {
+                            if let Some(load) = new_ops[idx] {
+                                *o = load;
+                            }
+                            idx += 1;
+                        });
+                        mir.insts[v as usize] = inst;
+                    }
+                }
             }
             new_insts.push(v);
             if is_slotted.contains(&v) {
-                let t = class_temp[&classes.find(v)];
+                let t = temp_of(&classes, v);
                 let store = mir.push_inst(Inst::Store {
                     place: temp_place(t),
                     value: v,
@@ -863,6 +1170,62 @@ pub fn destruct_ssa(mir: &mut Mir) -> Result<(), DestructError> {
         mir.blocks[b].insts = new_insts;
     }
     Ok(())
+}
+
+/// Rewrites references to slotted values *inside* a lazy `ShortCircuit` rhs
+/// tree into fresh **unscheduled** class-temp loads (one per occurrence) —
+/// the value stays conditionally evaluated, and reading the class temp lazily
+/// is exact because lazy trees contain no stores and the def's store ran
+/// before the owner (module docs). Iterative; single-owner trees need no
+/// visited set.
+fn rewrite_lazy_slotted_refs(
+    mir: &mut Mir,
+    scheduled: &[bool],
+    is_slotted: &HashSet<Value>,
+    classes: &Classes,
+    class_temp: &HashMap<Value, TempId>,
+    root: Value,
+) {
+    let mut stack = vec![root];
+    while let Some(v) = stack.pop() {
+        if mir.is_const(v) || scheduled.get(v as usize).copied().unwrap_or(false) {
+            continue;
+        }
+        let mut inst = mir.insts[v as usize].clone();
+        let mut ops: Vec<Value> = Vec::new();
+        Mir::for_each_operand(&inst, |o| ops.push(o));
+        let mut new_ops: Vec<Option<Value>> = Vec::with_capacity(ops.len());
+        let mut any = false;
+        for &o in &ops {
+            let o_scheduled = scheduled.get(o as usize).copied().unwrap_or(false);
+            if !mir.is_const(o) && o_scheduled {
+                // S5 slotted every lazy-referenced scheduled value; a miss
+                // here would be a slotting bug (lowering rejects it loudly).
+                debug_assert!(is_slotted.contains(&o), "lazy ref to unslotted value {o}");
+                if is_slotted.contains(&o) {
+                    let load = mir.push_inst(Inst::Load {
+                        place: temp_place(class_temp[&classes.find(o)]),
+                    });
+                    new_ops.push(Some(load));
+                    any = true;
+                    continue;
+                }
+            } else if !mir.is_const(o) {
+                stack.push(o);
+            }
+            new_ops.push(None);
+        }
+        if any {
+            let mut idx = 0;
+            Mir::for_each_operand_mut(&mut inst, |o| {
+                if let Some(load) = new_ops[idx] {
+                    *o = load;
+                }
+                idx += 1;
+            });
+            mir.insts[v as usize] = inst;
+        }
+    }
 }
 
 /// Splits every edge from a conditionally terminated predecessor into a block
@@ -1742,5 +2105,393 @@ mod tests {
         assert!(alloc.slots_used >= 2, "two interfering scalars at least");
         let interp = run_mir(&mir, &[]);
         assert_eq!(read_cell(&interp, 20, 0), 6.0); // 0+1+2+3
+    }
+
+    // --- W2 legalization (S4/S5/S6; module docs) --------------------------------
+
+    #[test]
+    fn lowerable_mir_is_left_untouched() {
+        // Already-lowerable MIR (the minimal-pipeline shape): destruct must be
+        // a complete no-op — no class temps, no scratch, identical blocks.
+        let mut mir = Mir::new();
+        let t = mir.push_temp("t", 1);
+        let b0 = mir.push_block();
+        let c = mir.push_inst(Inst::ConstInt(7));
+        sched(
+            &mut mir,
+            b0,
+            Inst::Store {
+                place: Place {
+                    block: BlockRef::Temp(t),
+                    index: IndexRef::Const(0),
+                    offset: 0,
+                },
+                value: c,
+            },
+        );
+        let load = sched(
+            &mut mir,
+            b0,
+            Inst::Load {
+                place: Place {
+                    block: BlockRef::Temp(t),
+                    index: IndexRef::Const(0),
+                    offset: 0,
+                },
+            },
+        );
+        sched(
+            &mut mir,
+            b0,
+            Inst::Store {
+                place: concrete_place(20, 0),
+                value: load,
+            },
+        );
+        let before_blocks = mir.blocks.clone();
+        let before_temps = mir.temps.len();
+        let before_insts = mir.insts.len();
+        destruct_ssa(&mut mir).unwrap();
+        assert_eq!(mir.blocks, before_blocks, "no-op on lowerable MIR");
+        assert_eq!(mir.temps.len(), before_temps);
+        assert_eq!(mir.insts.len(), before_insts);
+    }
+
+    #[test]
+    fn multi_use_value_is_slotted_and_runs() {
+        // S4: one load feeding two stores (post-Mem2Reg shape).
+        let mut mir = Mir::new();
+        let b0 = mir.push_block();
+        let v = sched(
+            &mut mir,
+            b0,
+            Inst::Load {
+                place: concrete_place(-3, 0),
+            },
+        );
+        for i in 0..2 {
+            sched(
+                &mut mir,
+                b0,
+                Inst::Store {
+                    place: concrete_place(20, i),
+                    value: v,
+                },
+            );
+        }
+        destruct_ssa(&mut mir).unwrap();
+        let interp = run_mir(&mir, &[(-3, vec![42.0])]);
+        assert_eq!(read_cell(&interp, 20, 0), 42.0);
+        assert_eq!(read_cell(&interp, 20, 1), 42.0);
+    }
+
+    #[test]
+    fn same_instruction_double_use_gets_two_loads() {
+        // S4 per-occurrence: Add(v, v) needs one load per operand slot.
+        let mut mir = Mir::new();
+        let b0 = mir.push_block();
+        let v = sched(
+            &mut mir,
+            b0,
+            Inst::Load {
+                place: concrete_place(-3, 0),
+            },
+        );
+        let add = sched(
+            &mut mir,
+            b0,
+            Inst::Op {
+                op: Op::Add,
+                pure_node: true,
+                args: vec![v, v],
+            },
+        );
+        sched(
+            &mut mir,
+            b0,
+            Inst::Store {
+                place: concrete_place(20, 0),
+                value: add,
+            },
+        );
+        destruct_ssa(&mut mir).unwrap();
+        let interp = run_mir(&mir, &[(-3, vec![21.0])]);
+        assert_eq!(read_cell(&interp, 20, 0), 42.0);
+    }
+
+    #[test]
+    fn order_breaking_splice_is_slotted() {
+        // S6: v = load 21[0]; 21[0] <- 99; 20[0] <- v. Splicing v into the
+        // last store would re-read AFTER the write; the order check must slot
+        // v so it captures the pre-write value.
+        let mut mir = Mir::new();
+        let b0 = mir.push_block();
+        let v = sched(
+            &mut mir,
+            b0,
+            Inst::Load {
+                place: concrete_place(21, 0),
+            },
+        );
+        let c99 = mir.push_inst(Inst::ConstInt(99));
+        sched(
+            &mut mir,
+            b0,
+            Inst::Store {
+                place: concrete_place(21, 0),
+                value: c99,
+            },
+        );
+        sched(
+            &mut mir,
+            b0,
+            Inst::Store {
+                place: concrete_place(20, 0),
+                value: v,
+            },
+        );
+        destruct_ssa(&mut mir).unwrap();
+        let interp = run_mir(&mir, &[(21, vec![5.0])]);
+        assert_eq!(read_cell(&interp, 20, 0), 5.0, "pre-write value captured");
+        assert_eq!(read_cell(&interp, 21, 0), 99.0);
+    }
+
+    #[test]
+    fn adjacent_single_use_still_splices_without_slotting() {
+        // The S6 check must NOT fire on an order-preserving chain: no class
+        // temps appear (the whole point of promotion).
+        let mut mir = Mir::new();
+        let b0 = mir.push_block();
+        let v = sched(
+            &mut mir,
+            b0,
+            Inst::Load {
+                place: concrete_place(-3, 0),
+            },
+        );
+        let one = mir.push_inst(Inst::ConstInt(1));
+        let add = sched(
+            &mut mir,
+            b0,
+            Inst::Op {
+                op: Op::Add,
+                pure_node: true,
+                args: vec![v, one],
+            },
+        );
+        sched(
+            &mut mir,
+            b0,
+            Inst::Store {
+                place: concrete_place(20, 0),
+                value: add,
+            },
+        );
+        let temps_before = mir.temps.len();
+        destruct_ssa(&mut mir).unwrap();
+        assert_eq!(mir.temps.len(), temps_before, "no slotting needed");
+        let interp = run_mir(&mir, &[(-3, vec![4.0])]);
+        assert_eq!(read_cell(&interp, 20, 0), 5.0);
+    }
+
+    #[test]
+    fn lazy_referenced_value_becomes_unscheduled_class_temp_load() {
+        // S5: a scheduled value referenced from inside a lazy tree. The inner
+        // reference must become an unscheduled class-temp load so the value
+        // stays conditionally evaluated and the tree stays self-contained.
+        let mut mir = Mir::new();
+        let b0 = mir.push_block();
+        let v = sched(
+            &mut mir,
+            b0,
+            Inst::Load {
+                place: concrete_place(-3, 1),
+            },
+        );
+        let lhs = sched(
+            &mut mir,
+            b0,
+            Inst::Load {
+                place: concrete_place(-3, 0),
+            },
+        );
+        let one = mir.push_inst(Inst::ConstInt(1));
+        // Lazy tree: Add(v, 1) referencing the SCHEDULED v.
+        let lazy_add = mir.push_inst(Inst::Op {
+            op: Op::Add,
+            pure_node: true,
+            args: vec![v, one],
+        });
+        let sc = sched(
+            &mut mir,
+            b0,
+            Inst::ShortCircuit {
+                op: Op::And,
+                pure_node: true,
+                lhs,
+                rhs: lazy_add,
+            },
+        );
+        sched(
+            &mut mir,
+            b0,
+            Inst::Store {
+                place: concrete_place(20, 0),
+                value: sc,
+            },
+        );
+        destruct_ssa(&mut mir).unwrap();
+        // The lazy Add's first operand is now an UNSCHEDULED load.
+        let scheduled = mir.scheduled_mask();
+        let Inst::Op { args, .. } = mir.inst(lazy_add) else {
+            panic!()
+        };
+        let Inst::Load { place } = mir.inst(args[0]) else {
+            panic!("lazy ref must be a load, got {:?}", mir.inst(args[0]));
+        };
+        assert!(matches!(place.block, BlockRef::Temp(_)));
+        assert!(
+            !scheduled[args[0] as usize],
+            "the load is lazy (unscheduled)"
+        );
+        // Behavior: lhs = 0 -> short-circuit (And yields 0); lhs = 1 -> Add(v, 1).
+        let interp = run_mir(&mir, &[(-3, vec![0.0, 6.0])]);
+        assert_eq!(read_cell(&interp, 20, 0), 0.0);
+        let interp = run_mir(&mir, &[(-3, vec![1.0, 6.0])]);
+        assert_eq!(read_cell(&interp, 20, 0), 7.0);
+    }
+
+    #[test]
+    fn scheduled_rhs_root_becomes_unscheduled_class_temp_load() {
+        // S5b: a ShortCircuit whose rhs root is itself a scheduled value.
+        let mut mir = Mir::new();
+        let b0 = mir.push_block();
+        let v = sched(
+            &mut mir,
+            b0,
+            Inst::Load {
+                place: concrete_place(-3, 1),
+            },
+        );
+        let lhs = sched(
+            &mut mir,
+            b0,
+            Inst::Load {
+                place: concrete_place(-3, 0),
+            },
+        );
+        let sc = sched(
+            &mut mir,
+            b0,
+            Inst::ShortCircuit {
+                op: Op::Or,
+                pure_node: true,
+                lhs,
+                rhs: v,
+            },
+        );
+        sched(
+            &mut mir,
+            b0,
+            Inst::Store {
+                place: concrete_place(20, 0),
+                value: sc,
+            },
+        );
+        destruct_ssa(&mut mir).unwrap();
+        let scheduled = mir.scheduled_mask();
+        let Inst::ShortCircuit { rhs, .. } = mir.inst(sc) else {
+            panic!()
+        };
+        assert!(matches!(mir.inst(*rhs), Inst::Load { .. }));
+        assert!(!scheduled[*rhs as usize], "rhs is lazy again");
+        // Or(1, _) short-circuits to 1; Or(0, v) yields v.
+        let interp = run_mir(&mir, &[(-3, vec![1.0, 6.0])]);
+        assert_eq!(read_cell(&interp, 20, 0), 1.0);
+        let interp = run_mir(&mir, &[(-3, vec![0.0, 6.0])]);
+        assert_eq!(read_cell(&interp, 20, 0), 6.0);
+    }
+
+    #[test]
+    fn cross_block_use_is_slotted_and_runs() {
+        // S3 (pre-existing behavior, re-pinned): def in block 0, use in 1.
+        let mut mir = Mir::new();
+        let b0 = mir.push_block();
+        let b1 = mir.push_block();
+        mir.blocks[b0].terminator = Terminator::Jump(b1);
+        let v = sched(
+            &mut mir,
+            b0,
+            Inst::Load {
+                place: concrete_place(-3, 0),
+            },
+        );
+        sched(
+            &mut mir,
+            b1,
+            Inst::Store {
+                place: concrete_place(20, 0),
+                value: v,
+            },
+        );
+        destruct_ssa(&mut mir).unwrap();
+        let interp = run_mir(&mir, &[(-3, vec![9.0])]);
+        assert_eq!(read_cell(&interp, 20, 0), 9.0);
+    }
+
+    #[test]
+    fn spliced_test_value_stays_last_or_slots() {
+        // A branch test defined before a later effect: the dispatcher
+        // evaluates the test AFTER the statements, so the test value must be
+        // slotted (captured at its def) — minimal-form MIR always computes
+        // the test last, but value-SSA MIR may not.
+        let mut mir = Mir::new();
+        let b0 = mir.push_block();
+        let b1 = mir.push_block();
+        let b2 = mir.push_block();
+        let test = sched(
+            &mut mir,
+            b0,
+            Inst::Load {
+                place: concrete_place(21, 0),
+            },
+        );
+        let c9 = mir.push_inst(Inst::ConstInt(9));
+        sched(
+            &mut mir,
+            b0,
+            Inst::Store {
+                place: concrete_place(21, 0),
+                value: c9,
+            },
+        );
+        mir.blocks[b0].terminator = Terminator::Branch {
+            test,
+            cases: vec![(CaseCond::Int(0), b1)],
+            default: Some(b2),
+        };
+        let c1 = mir.push_inst(Inst::ConstInt(1));
+        sched(
+            &mut mir,
+            b1,
+            Inst::Store {
+                place: concrete_place(20, 0),
+                value: c1,
+            },
+        );
+        let c2 = mir.push_inst(Inst::ConstInt(2));
+        sched(
+            &mut mir,
+            b2,
+            Inst::Store {
+                place: concrete_place(20, 0),
+                value: c2,
+            },
+        );
+        destruct_ssa(&mut mir).unwrap();
+        // 21[0] starts 0: the ORIGINAL test value 0 must take the 0-case,
+        // even though 21[0] is 9 by dispatch time.
+        let interp = run_mir(&mir, &[(21, vec![0.0])]);
+        assert_eq!(read_cell(&interp, 20, 0), 1.0, "pre-write test captured");
     }
 }

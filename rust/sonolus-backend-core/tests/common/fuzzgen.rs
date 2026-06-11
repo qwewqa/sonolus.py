@@ -474,6 +474,97 @@ pub fn program_loop_free() -> BoxedStrategy<Program> {
 }
 
 // ----------------------------------------------------------------------------------
+// Dynamic-indexing-heavy profile (T3.4 Mem2Reg's top-risk surface)
+// ----------------------------------------------------------------------------------
+
+/// An index strategy weighted heavily toward *dynamic* indices (Mem2Reg's
+/// escape boundary) while keeping constant indices in the mix, so the same
+/// temp pool gets both access kinds within one program.
+fn dyn_heavy_index() -> BoxedStrategy<Index> {
+    prop_oneof![
+        2 => const_index().boxed(),
+        5 => index_shaped().prop_map(|e| Index::Dyn(Box::new(e))).boxed(),
+        1 => expr().prop_map(|e| Index::Dyn(Box::new(e))).boxed(),
+    ]
+    .boxed()
+}
+
+/// Temp reads with the dynamic-heavy index mix.
+fn dyn_heavy_temp_read() -> BoxedStrategy<Expr> {
+    (0..TEMP_POOL.len(), dyn_heavy_index())
+        .prop_map(|(temp, index)| Expr::ReadTemp { temp, index })
+        .boxed()
+}
+
+/// Value expressions for the dynamic-heavy profile: dominated by temp reads
+/// (const AND dynamic indices on the same pool), small arithmetic over them,
+/// and short-circuit `And`/`Or` whose lazy sides read temps (the D11 case
+/// Mem2Reg must handle), with the general [`expr`] mix as a minority.
+fn dyn_heavy_value() -> BoxedStrategy<Expr> {
+    prop_oneof![
+        4 => dyn_heavy_temp_read(),
+        2 => expr(),
+        2 => vec(dyn_heavy_temp_read(), 2..=3).prop_map(|args| Expr::Reduce { op: 0, args }),
+        2 => (any::<bool>(), vec(dyn_heavy_temp_read(), 1..=3))
+            .prop_map(|(is_or, args)| Expr::Sc { is_or, args }),
+    ]
+    .boxed()
+}
+
+/// Statements for the dynamic-heavy profile: mostly temp writes (mixed
+/// const/dynamic indices), plus concrete writes and logs of temp-heavy values
+/// so differences are observable.
+fn dyn_heavy_stmt() -> BoxedStrategy<Stmt> {
+    prop_oneof![
+        5 => (0..TEMP_POOL.len(), dyn_heavy_index(), dyn_heavy_value())
+            .prop_map(|(temp, index, value)| Stmt::SetTemp { temp, index, value }),
+        2 => (0..WRITE_BLOCKS.len(), dyn_heavy_index(), dyn_heavy_value())
+            .prop_map(|(block, index, value)| Stmt::SetConcrete { block, index, value }),
+        2 => dyn_heavy_value().prop_map(Stmt::Log),
+        1 => dyn_heavy_value().prop_map(Stmt::Ret),
+    ]
+    .boxed()
+}
+
+fn dyn_heavy_stmts() -> impl Strategy<Value = Vec<Stmt>> {
+    vec(dyn_heavy_stmt(), 1..=4)
+}
+
+/// Control-flow shapes for the dynamic-heavy profile: straight lines,
+/// diamonds branching on temp-heavy conditions, and bounded loops over them
+/// (promoted slots crossing loop back-edges get real phis).
+fn dyn_heavy_shape() -> BoxedStrategy<Shape> {
+    let loop_free = prop_oneof![
+        3 => dyn_heavy_stmts().prop_map(Shape::Straight).boxed(),
+        2 => (dyn_heavy_value(), any::<bool>(), dyn_heavy_stmts(), dyn_heavy_stmts()).prop_map(
+            |(cond, float_cond, then_stmts, else_stmts)| Shape::Diamond {
+                cond,
+                float_cond,
+                then_stmts,
+                else_stmts,
+            }
+        ).boxed(),
+        1 => shape_loop_free(),
+    ]
+    .boxed();
+    loop_free
+        .prop_recursive(2, 6, 2, |inner| {
+            (1..=5u8, vec(inner, 1..=2))
+                .prop_map(|(trips, body)| Shape::Loop { trips, body })
+                .boxed()
+        })
+        .boxed()
+}
+
+/// A whole program with the dynamic-indexing-heavy profile: the dedicated
+/// fuzz surface for W2 Mem2Reg (mixed const/dynamic temp access, lazy temp
+/// reads, loops over temps). Same AST and lowering as [`program`] — only the
+/// strategy weights differ (additive knob; see PORT.md T3.4).
+pub fn program_dynamic_heavy() -> BoxedStrategy<Program> {
+    program_from_shapes(dyn_heavy_shape())
+}
+
+// ----------------------------------------------------------------------------------
 // AST -> Cfg lowering
 // ----------------------------------------------------------------------------------
 

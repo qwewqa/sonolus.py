@@ -41,7 +41,8 @@
 //! [`passes_for_level`] computes the prefix. Wave tasks append their pass
 //! constructors to the registry with the right stage tag; nothing else in this
 //! module changes. W1 is registered: T3.1 SCCP → T3.2 GVN+rules → T3.3 DCE,
-//! in pipeline order.
+//! in pipeline order. W2 follows: T3.4 `Mem2Reg`, then a re-run of the W1
+//! passes (fresh instances; pass names repeat for deliberate re-runs).
 //!
 //! # Determinism
 //!
@@ -51,6 +52,7 @@
 
 pub mod dce;
 pub mod gvn;
+pub mod mem2reg;
 pub mod rules;
 pub mod sccp;
 
@@ -65,8 +67,8 @@ use crate::pipeline::Level;
 /// Passes are constructed by the [`registry`] and owned by a [`Pipeline`]. A
 /// pass holds no per-run state; everything it needs comes through `run`.
 pub trait Pass {
-    /// A stable, human-readable name (used in debug logs and stats; should be
-    /// unique within the registry).
+    /// A stable, human-readable name (used in debug logs and stats; unique
+    /// within the registry except for deliberate re-runs of the same pass).
     fn name(&self) -> &'static str;
 
     /// Runs the pass over `mir`, using and (after mutation) invalidating
@@ -142,6 +144,30 @@ pub fn registry() -> &'static [RegistryEntry] {
         // T3.3: DCE + branch simplification + jump threading (src/passes/dce.rs).
         RegistryEntry {
             stage: Stage::W1,
+            make: || Box::new(dce::DcePass),
+        },
+        // ===== Wave W2 (T3.4: Mem2Reg + W1 re-run; T3.5 appends after) =====
+        //
+        // T3.4: Mem2Reg/SROA for TempBlocks (src/passes/mem2reg.rs) — promotes
+        // constant-index temp slots to SSA values (the first phis in
+        // production; compile_cfg runs destruct_ssa after the pipeline).
+        RegistryEntry {
+            stage: Stage::W2,
+            make: || Box::new(mem2reg::Mem2Reg),
+        },
+        // T3.4: W1 re-run post-promotion — the W1 passes finally see through
+        // what used to be opaque memory (fresh instances; repeated names are
+        // deliberate re-runs).
+        RegistryEntry {
+            stage: Stage::W2,
+            make: || Box::new(sccp::Sccp),
+        },
+        RegistryEntry {
+            stage: Stage::W2,
+            make: || Box::new(gvn::GvnRewritePass),
+        },
+        RegistryEntry {
+            stage: Stage::W2,
             make: || Box::new(dce::DcePass),
         },
     ]
