@@ -1,0 +1,9 @@
+# Seeds for failure cases proptest has generated in the past. It is
+# automatically read and these particular cases re-run before any
+# novel cases are generated.
+#
+# It is recommended to check this file in to source control so that
+# everyone who runs the test benefits from these saved cases.
+cc 211f5ee013d37bbd24bdd53980ad3cdf931aec67fd12c89737205195cae8776a # shrinks to (Program { nested_target: 0, shapes: [Loop { trips: 1, body: [Diamond { cond: Sc { is_or: false, args: [Log(Int(0))] }, float_cond: false, then_stmts: [SetConcrete { block: 0, index: Const(0), value: Int(0) }], else_stmts: [SetConcrete { block: 0, index: Const(0), value: Unary { op: 4, arg: Reduce { op: 0, args: [Fixed { op: 8, args: [Int(0), Float(8)] }] } } }] }] }], ret: None }, 0, 0)
+cc 2a565018b09b72cfe4edf2951643245002198adf1c323f60e23d0cc40c97e2d1 # shrinks to (Program { nested_target: 0, shapes: [Loop { trips: 1, body: [Switch { scrutinee: Int(0), wrap_mod: true, cases: [SwitchCase { cond_half: false, cond: 0, stmts: [SetConcrete { block: 0, index: Dyn(Reduce { op: 2, args: [Unary { op: 1, arg: Int(0) }, Fixed { op: 0, args: [Float(0), Int(0)] }, Unary { op: 4, arg: Float(8) }] }), value: Int(0) }] }], default: None }] }], ret: None }, 0, 0)
+cc 11deb99fbfbea59f764890507546eede6a5edcffc53649dd5b6287763cabdc2e # shrinks to (Program { nested_target: 0, shapes: [Loop { trips: 1, body: [Straight([Log(Unary { op: 3, arg: Unary { op: 8, arg: Float(13) } })])] }], ret: None }, 0, 0)

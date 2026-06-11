@@ -428,6 +428,34 @@ fn py_overflowing(x: f64, f: fn(f64) -> f64) -> Result<f64> {
     Ok(result)
 }
 
+/// `math.sin` (see [`py_trig`]'s domain rule): infinite inputs error, NaN passes.
+/// `pub` for constant folding (T3.1/T3.2): folds must share the interpreter's
+/// exact kernels.
+pub fn py_sin(x: f64) -> Result<f64> {
+    py_trig(x, f64::sin)
+}
+
+/// `math.cos` (see [`py_sin`]).
+pub fn py_cos(x: f64) -> Result<f64> {
+    py_trig(x, f64::cos)
+}
+
+/// `math.tan` (see [`py_sin`]).
+pub fn py_tan(x: f64) -> Result<f64> {
+    py_trig(x, f64::tan)
+}
+
+/// `math.sinh` (see [`py_overflowing`]'s overflow rule). `pub` for constant
+/// folding.
+pub fn py_sinh(x: f64) -> Result<f64> {
+    py_overflowing(x, f64::sinh)
+}
+
+/// `math.cosh` (see [`py_sinh`]).
+pub fn py_cosh(x: f64) -> Result<f64> {
+    py_overflowing(x, f64::cosh)
+}
+
 /// Python `min(a, b)`: returns `a` unless `b < a`. NOT `f64::min` — NaN handling is
 /// position-dependent (`min(nan, x) == nan`, `min(x, nan) == x`) and `-0.0`/`0.0`
 /// keep the first value, exactly like Python.

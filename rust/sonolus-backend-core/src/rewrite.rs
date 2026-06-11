@@ -221,6 +221,11 @@ pub struct RewriteReport {
     /// `true` iff the iteration cap was hit before reaching fixpoint (release
     /// builds stop and log; debug builds panic instead of returning this).
     pub capped: bool,
+    /// The values whose uses were redirected, in rewrite order. Their defining
+    /// instructions are dead but still scheduled — the pass driving the
+    /// rewrites must sweep them out of the schedule before lowering
+    /// (`LowerError::MultiUse` otherwise; see the T3.2 GVN pass's sweep).
+    pub replaced: Vec<Value>,
 }
 
 /// A deterministic worklist driver applying a rule list to fixpoint with a hard
@@ -283,6 +288,9 @@ impl<'r> RewriteDriver<'r> {
         // again (its operands are unchanged, so a rule would re-fire on it
         // forever). Grows with the arena across rounds.
         let mut replaced = vec![false; mir.insts.len()];
+        // The same set in rewrite order, surfaced in the report so the driving
+        // pass can sweep the dead defining instructions.
+        let mut replaced_order: Vec<Value> = Vec::new();
         loop {
             rounds += 1;
             let scheduled = mir.scheduled_mask();
@@ -302,10 +310,11 @@ impl<'r> RewriteDriver<'r> {
                 apply_rewrite(mir, v, rewrite);
                 replaced.resize(mir.insts.len(), false);
                 replaced[v as usize] = true;
+                replaced_order.push(v);
                 rewrites += 1;
                 changed_this_round = true;
                 if rewrites >= self.cap {
-                    return self.capped_report(rewrites, rounds);
+                    return self.capped_report(rewrites, rounds, replaced_order);
                 }
             }
 
@@ -314,10 +323,11 @@ impl<'r> RewriteDriver<'r> {
                     rewrites,
                     rounds,
                     capped: false,
+                    replaced: replaced_order,
                 };
             }
             if rewrites >= self.cap {
-                return self.capped_report(rewrites, rounds);
+                return self.capped_report(rewrites, rounds, replaced_order);
             }
         }
     }
@@ -354,7 +364,11 @@ impl<'r> RewriteDriver<'r> {
         None
     }
 
-    fn capped_report(&self, rewrites: u32, rounds: u32) -> RewriteReport {
+    #[cfg_attr(
+        debug_assertions,
+        allow(unused_variables, clippy::needless_pass_by_value)
+    )]
+    fn capped_report(&self, rewrites: u32, rounds: u32, replaced: Vec<Value>) -> RewriteReport {
         #[cfg(debug_assertions)]
         panic!(
             "rewrite driver exceeded its iteration cap of {} ({rewrites} rewrites over \
@@ -368,13 +382,15 @@ impl<'r> RewriteDriver<'r> {
             rewrites,
             rounds,
             capped: true,
+            replaced,
         }
     }
 }
 
 /// Materializes a [`Rewrite`] for value `v`: builds the replacement value and
-/// redirects every operand reference to `v` onto it.
-fn apply_rewrite(mir: &mut Mir, v: Value, rewrite: Rewrite) {
+/// redirects every operand reference to `v` onto it. `pub(crate)` so the T3.2
+/// GVN pass applies its merges through the exact same machinery as the driver.
+pub(crate) fn apply_rewrite(mir: &mut Mir, v: Value, rewrite: Rewrite) {
     let replacement = match rewrite {
         Rewrite::Existing(r) => r,
         Rewrite::ConstInt(i) => mir.push_inst(Inst::ConstInt(i)),

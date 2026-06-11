@@ -16,9 +16,8 @@
 //! equivalent to the legacy `MINIMAL_PASSES` (`CoalesceFlow`,
 //! `UnreachableCodeElimination`, `AllocateBasic`), with no SSA promotion
 //! (decision D10). `Fast`/`Standard` run progressively longer prefixes of the
-//! pass registry. The registry is empty until W1 lands (T3.1–T3.3), so today
-//! all three levels are behaviorally identical and produce byte-identical
-//! output — but every level is callable end to end.
+//! pass registry (the W1 passes land per T3.1–T3.3; behavior at every level
+//! is pinned by the differential suites in `tests/`).
 //!
 //! `compile_cfg` is a pure function: no globals, no caches, deterministic
 //! output for identical inputs (insertion-order containers throughout).
@@ -403,9 +402,10 @@ mod tests {
 
     #[test]
     fn all_levels_compile_and_are_identity_equal_today() {
-        // Until W1 lands the pass registry is empty: fast/standard run the same
-        // (empty) optimization prefix as minimal and must produce byte-identical
-        // output. Wave tasks relax this once a level actually optimizes.
+        // and_log_cfg contains nothing the registered W1 passes touch (loads,
+        // short-circuit, stores — no pure ops, no constants to fold), so every
+        // level still produces byte-identical output for it. This pins the
+        // changed-flag honesty of the registered passes on inert input.
         let cfg = and_log_cfg();
         let minimal = compile_cfg(&cfg, Level::Minimal).unwrap();
         let minimal_dump = format_engine_node(&minimal.arena, minimal.root);

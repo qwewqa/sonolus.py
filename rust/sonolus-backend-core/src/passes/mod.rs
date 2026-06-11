@@ -38,19 +38,20 @@
 //! - [`Level::Fast`] — through wave [`Stage::W1`].
 //! - [`Level::Standard`] — the whole list.
 //!
-//! [`passes_for_level`] computes the prefix. Today the registry is **empty**
-//! (the real W1 passes land in T3.1–T3.3), so all three levels select the same
-//! (empty) optimization sequence and are behaviorally identical — but the whole
-//! framework is callable end to end at every level (`compile_cfg(cfg, Fast)`
-//! and `Standard` run the empty prefix and succeed). Wave tasks append their
-//! pass constructors to the registry with the right stage tag; nothing else in
-//! this module changes.
+//! [`passes_for_level`] computes the prefix. The registry fills in as the wave
+//! tasks land (T3.2's GVN+rules is registered; T3.1's SCCP and T3.3's ADCE
+//! slot in around it — see the marked positions in [`registry`]). Wave tasks
+//! append their pass constructors to the registry with the right stage tag;
+//! nothing else in this module changes.
 //!
 //! # Determinism
 //!
 //! The pipeline is a `Vec` walked front to back; passes are constructed in
 //! registry order. No ordering escapes to output beyond the registry's own
 //! order (invariant §3.5).
+
+pub mod gvn;
+pub mod rules;
 
 use std::time::Duration;
 
@@ -118,15 +119,29 @@ pub struct RegistryEntry {
 /// The single ordered optimization pipeline (decisions D5/D9). Levels are
 /// prefixes of this list (see [`passes_for_level`]).
 ///
-/// **Empty until W1 lands** (T3.1–T3.3 append SCCP / GVN+rules / ADCE here with
-/// `Stage::W1`; later waves append with their own stage). The entries must be
-/// in pipeline-execution order, grouped by ascending [`Stage`] — `passes_for_level`
-/// relies on the prefix property (every selected stage's entries precede every
-/// unselected stage's entries).
+/// W1 entries land here as T3.1–T3.3 complete (SCCP / GVN+rules / ADCE, in
+/// that pipeline order); later waves append with their own stage. The entries
+/// must be in pipeline-execution order, grouped by ascending [`Stage`] —
+/// `passes_for_level` relies on the prefix property (every selected stage's
+/// entries precede every unselected stage's entries).
 pub fn registry() -> &'static [RegistryEntry] {
-    // No optimization passes yet: every level's optimization prefix is empty.
-    // Wave tasks insert RegistryEntry values here in pipeline order.
-    &[]
+    &[
+        // ----- Stage::W1 — order within the wave: SCCP (T3.1), then GVN+rules
+        // (T3.2), then ADCE + branch simplification (T3.3). -----
+        //
+        // T3.1 (SCCP) registers its entry immediately ABOVE this one.
+        //
+        // T3.2: GVN + rewrite rules (canonical commutative ordering, const
+        // folding, algebraic identities, dominator GVN; src/passes/gvn.rs).
+        // Keep this entry SECOND within W1.
+        RegistryEntry {
+            stage: Stage::W1,
+            make: || Box::new(gvn::GvnRewritePass),
+        },
+        //
+        // T3.3 (ADCE + branch simplification + jump threading) registers its
+        // entry immediately BELOW this one.
+    ]
 }
 
 /// The passes to run at `level`: the [`registry`] prefix whose stage is within
@@ -465,12 +480,24 @@ mod tests {
     }
 
     #[test]
-    fn levels_are_prefixes_empty_registry() {
-        // With an empty registry every level is an empty pipeline.
-        for level in [Level::Minimal, Level::Fast, Level::Standard] {
-            assert!(passes_for_level(level).is_empty(), "{level:?}");
-            assert!(Pipeline::for_level(level).is_empty(), "{level:?}");
-        }
+    fn levels_are_prefixes() {
+        // Minimal is always the empty prefix; fast/standard include the
+        // registered W1 passes (currently T3.2's GVN+rules).
+        assert!(passes_for_level(Level::Minimal).is_empty());
+        assert!(Pipeline::for_level(Level::Minimal).is_empty());
+        let fast: Vec<&'static str> = passes_for_level(Level::Fast)
+            .iter()
+            .map(|p| p.name())
+            .collect();
+        let standard: Vec<&'static str> = passes_for_level(Level::Standard)
+            .iter()
+            .map(|p| p.name())
+            .collect();
+        assert!(fast.contains(&"gvn"), "W1 includes GVN+rules: {fast:?}");
+        assert!(
+            standard.starts_with(&fast),
+            "fast is a prefix of standard: {fast:?} vs {standard:?}"
+        );
     }
 
     #[test]
