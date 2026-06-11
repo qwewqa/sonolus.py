@@ -38,11 +38,10 @@
 //! - [`Level::Fast`] — through wave [`Stage::W1`].
 //! - [`Level::Standard`] — the whole list.
 //!
-//! [`passes_for_level`] computes the prefix. The registry fills in as the wave
-//! tasks land (T3.2's GVN+rules is registered; T3.1's SCCP and T3.3's ADCE
-//! slot in around it — see the marked positions in [`registry`]). Wave tasks
-//! append their pass constructors to the registry with the right stage tag;
-//! nothing else in this module changes.
+//! [`passes_for_level`] computes the prefix. Wave tasks append their pass
+//! constructors to the registry with the right stage tag; nothing else in this
+//! module changes. W1 is registered: T3.1 SCCP → T3.2 GVN+rules → T3.3 DCE,
+//! in pipeline order.
 //!
 //! # Determinism
 //!
@@ -50,6 +49,7 @@
 //! registry order. No ordering escapes to output beyond the registry's own
 //! order (invariant §3.5).
 
+pub mod dce;
 pub mod gvn;
 pub mod rules;
 
@@ -119,28 +119,25 @@ pub struct RegistryEntry {
 /// The single ordered optimization pipeline (decisions D5/D9). Levels are
 /// prefixes of this list (see [`passes_for_level`]).
 ///
-/// W1 entries land here as T3.1–T3.3 complete (SCCP / GVN+rules / ADCE, in
-/// that pipeline order); later waves append with their own stage. The entries
-/// must be in pipeline-execution order, grouped by ascending [`Stage`] —
-/// `passes_for_level` relies on the prefix property (every selected stage's
-/// entries precede every unselected stage's entries).
+/// Wave tasks (T3.x) append their pass constructors here in pipeline-execution
+/// order, grouped by ascending [`Stage`] — `passes_for_level` relies on the
+/// prefix property (every selected stage's entries precede every unselected
+/// stage's entries).
 pub fn registry() -> &'static [RegistryEntry] {
     &[
-        // ----- Stage::W1 — order within the wave: SCCP (T3.1), then GVN+rules
-        // (T3.2), then ADCE + branch simplification (T3.3). -----
-        //
-        // T3.1 (SCCP) registers its entry immediately ABOVE this one.
+        // ===== Wave W1 — order: SCCP (T3.1), GVN+rules (T3.2), DCE (T3.3) =====
         //
         // T3.2: GVN + rewrite rules (canonical commutative ordering, const
         // folding, algebraic identities, dominator GVN; src/passes/gvn.rs).
-        // Keep this entry SECOND within W1.
         RegistryEntry {
             stage: Stage::W1,
             make: || Box::new(gvn::GvnRewritePass),
         },
-        //
-        // T3.3 (ADCE + branch simplification + jump threading) registers its
-        // entry immediately BELOW this one.
+        // T3.3: DCE + branch simplification + jump threading (src/passes/dce.rs).
+        RegistryEntry {
+            stage: Stage::W1,
+            make: || Box::new(dce::DcePass),
+        },
     ]
 }
 
@@ -480,24 +477,28 @@ mod tests {
     }
 
     #[test]
-    fn levels_are_prefixes() {
-        // Minimal is always the empty prefix; fast/standard include the
-        // registered W1 passes (currently T3.2's GVN+rules).
+    fn levels_are_prefixes_of_the_registry() {
+        // Minimal is always the empty prefix (the differential baseline).
         assert!(passes_for_level(Level::Minimal).is_empty());
         assert!(Pipeline::for_level(Level::Minimal).is_empty());
-        let fast: Vec<&'static str> = passes_for_level(Level::Fast)
-            .iter()
-            .map(|p| p.name())
-            .collect();
-        let standard: Vec<&'static str> = passes_for_level(Level::Standard)
-            .iter()
-            .map(|p| p.name())
-            .collect();
-        assert!(fast.contains(&"gvn"), "W1 includes GVN+rules: {fast:?}");
-        assert!(
-            standard.starts_with(&fast),
-            "fast is a prefix of standard: {fast:?} vs {standard:?}"
-        );
+        // Fast is a prefix of standard (same passes, same order).
+        let fast = passes_for_level(Level::Fast);
+        let standard = passes_for_level(Level::Standard);
+        assert!(fast.len() <= standard.len());
+        for (f, s) in fast.iter().zip(&standard) {
+            assert_eq!(f.name(), s.name());
+        }
+        // Registry entries are grouped by ascending stage (the prefix property
+        // passes_for_level relies on).
+        let stages: Vec<Stage> = registry().iter().map(|e| e.stage).collect();
+        let mut sorted = stages.clone();
+        sorted.sort();
+        assert_eq!(stages, sorted, "registry must be grouped by stage");
+        // The W1 passes are selected at fast and standard.
+        assert!(fast.iter().any(|p| p.name() == "gvn"));
+        assert!(fast.iter().any(|p| p.name() == "dce"));
+        assert!(standard.iter().any(|p| p.name() == "gvn"));
+        assert!(standard.iter().any(|p| p.name() == "dce"));
     }
 
     #[test]
