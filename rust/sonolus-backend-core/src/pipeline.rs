@@ -193,7 +193,7 @@ pub fn compile_cfg_with_pipeline_stats(
 ) -> Result<(EngineNodes, CompileStats), CompileError> {
     let mut mir = crate::mir::build_mir(cfg)?;
     // Optimization phase (for the level entry points: the level's registry
-    // prefix, empty until W1 lands; see crate::passes). Each pass owns its own
+    // prefix; see crate::passes). Each pass owns its own
     // analysis invalidation.
     let mut analyses = crate::analysis::Analyses::new();
     pipeline.run(&mut mir, &mut analyses);

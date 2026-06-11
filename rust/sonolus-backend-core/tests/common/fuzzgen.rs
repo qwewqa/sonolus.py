@@ -14,9 +14,9 @@
 //!   and *dynamic* indices. A dynamic index is realized the way the frontend
 //!   does it — the index expression is stored to a dedicated single-slot temp
 //!   and the place's index is a nested place reading it — and is clamped
-//!   into-range with `Floor(Mod(..))`, so traps stay a minority (NaN/inf
-//!   values still trap, deliberately, inside the `Floor`; see [`Builder::dyn_index`]
-//!   for why finite values must be made integral).
+//!   into-range with `Floor(Mod(Mod(..)))` (see [`Builder::dyn_index`] for
+//!   why both the double Mod and the Floor are load-bearing), so traps stay a
+//!   minority (NaN/inf values still trap, deliberately, inside the `Floor`).
 //! - Nested places in both positions: dynamic indices give
 //!   `IndexValue::Place`; [`Expr::ReadNested`] gives `BlockValue::Place` (the
 //!   block id is read from cell `21[31]`, initialized to a real block id in
@@ -42,10 +42,12 @@
 //!   control-flow ops in expression position (other than `And`/`Or`, and
 //!   `Break` as a statement).
 //! - Temp accesses are in-bounds by construction (constant indices are
-//!   reduced mod the temp size; dynamic indices are `Floor(Mod(..))`-clamped),
-//!   so slot allocation differences between pipelines can never alias — and
-//!   never make the index *assert* allocation-dependent either (the
-//!   [`Builder::dyn_index`] docs explain the rounding hazard).
+//!   reduced mod the temp size; dynamic indices are
+//!   `Floor(Mod(Mod(..)))`-clamped), and every temp-pool cell is initialized
+//!   in the entry block, so no temp read ever observes allocator-placed
+//!   (pipeline-specific) memory, and the index assert can never be
+//!   allocation-dependent (the [`Builder::dyn_index`] docs explain both
+//!   hazards).
 //!
 //! # No recursion over generated structures
 //!
@@ -71,6 +73,12 @@ pub const WRITE_BLOCKS: [i64; 3] = [20, 21, 1000];
 /// The shared general-purpose temp pool: `(name, size)`. Sized > 1 so dynamic
 /// indexing inside a temp block is meaningful.
 pub const TEMP_POOL: [(&str, u64); 4] = [("g0", 1), ("g1", 4), ("g2", 8), ("g3", 16)];
+
+/// Entry-block scaffolding node count: the nested-place block-id init plus one
+/// `Set` of every temp-pool cell (2 nodes each: the value const and the Set).
+/// Exposed so the canary shrink-size assertion can subtract the constant
+/// scaffolding every generated CFG carries.
+pub const SCAFFOLD_NODES: usize = 2 * (1 + (1 + 4 + 8 + 16));
 
 /// The cell holding the block id used by [`Expr::ReadNested`] (initialized in
 /// the entry block to `READ_BLOCKS[program.nested_target]`).
@@ -540,30 +548,40 @@ impl Builder {
     }
 
     /// Routes a dynamic index through a fresh single-slot temp:
-    /// `i{n} <- Floor(Mod(child, range))`, then `IndexValue::Place(read of
-    /// i{n})`. The Mod clamps into `[0, range)` and the Floor makes finite
-    /// values integral, so in-range accesses are in-bounds by construction;
-    /// NaN/inf still trap (inside `Floor`, deliberately, as a minority).
+    /// `i{n} <- Floor(Mod(Mod(child, range), range))`, then
+    /// `IndexValue::Place(read of i{n})`. This combines two independently
+    /// discovered, load-bearing fixes (W1 merge):
     ///
-    /// The Floor is **load-bearing for the differential contract**: temp-slot
-    /// allocation is pipeline-specific (diff.rs module docs), and the emitter
-    /// adds the temp's allocated base offset to the index, so a finite
-    /// *non-integral* index would make the index assert
-    /// (`Value must be an integer`) allocation-dependent — `tiny + base` can
-    /// round to an exact integer for one pipeline's base and not another's
-    /// (caught by the T3.3 DCE fuzz at 20k cases: removing a dead store
-    /// shifted every temp offset). NaN/inf trap identically on both sides:
-    /// `NaN + base` is still NaN.
+    /// - **Double Mod** (T3.1 SCCP fuzz): a single floor-mod of a tiny
+    ///   negative value rounds to exactly `range` in f64 (`m + range` with
+    ///   `m -> -0`), which would index one past the temp block — an
+    ///   out-of-bounds temp access observes allocator-placed memory and
+    ///   breaks minimal-vs-optimized differential soundness. The outer Mod of
+    ///   a value in `[0, range]` is a pure positive `fmod` (exact): it maps
+    ///   `range` to `0` and leaves everything else unchanged.
+    /// - **Floor** (T3.3 DCE fuzz): temp-slot allocation is pipeline-specific
+    ///   and the emitter adds the temp's allocated base offset to the index,
+    ///   so a finite *non-integral* index makes the index assert
+    ///   (`Value must be an integer`) allocation-dependent — `tiny + base`
+    ///   can round to an exact integer for one pipeline's base and not
+    ///   another's (caught when removing a dead store shifted every temp
+    ///   offset). Floor of the exact in-range value is integral in
+    ///   `[0, range-1]`.
+    ///
+    /// NaN/inf still trap (inside `Floor`, Python `math.floor` semantics),
+    /// deliberately and allocation-independently: `NaN` survives both Mods.
     fn dyn_index(&mut self, child: usize, range: i64) -> IndexValue {
         let t = self.new_temp(format!("i{}", self.idx_temps), 1);
         self.idx_temps += 1;
         let range_c = self.const_int(range);
-        let clamped = self.op_node(Op::Mod, vec![child, range_c]);
-        let modded = self.op_node(Op::Floor, vec![clamped]);
+        let m1 = self.op_node(Op::Mod, vec![child, range_c]);
+        let range_c2 = self.const_int(range);
+        let m2 = self.op_node(Op::Mod, vec![m1, range_c2]);
+        let clamped = self.op_node(Op::Floor, vec![m2]);
         let write = self.temp_place(t, IndexValue::Int(0), 0);
         let set = self.node(Node::Set {
             place: write,
-            value: modded,
+            value: clamped,
         });
         self.push_stmt(set);
         let read = self.temp_place(t, IndexValue::Int(0), 0);
@@ -795,6 +813,26 @@ pub fn build_cfg(p: &Program) -> Cfg {
         value: bid,
     });
     b.push_stmt(init);
+
+    // Initialize every temp-pool cell with a small deterministic value.
+    // Load-bearing for differential soundness: a read of a never-written temp
+    // cell observes whatever the *slot allocator* placed there (block 10000
+    // is shared and allocation is pipeline-specific by contract), so two
+    // correct pipelines can legitimately disagree on such reads once an
+    // optimization changes liveness/allocation. Generated programs must be
+    // free of read-before-write temp accesses for minimal-vs-optimized
+    // differential comparison to be meaningful. (Found by the T3.1 SCCP fuzz
+    // run: a dropped never-evaluated lazy load shifted the allocation and a
+    // read-only temp aliased a loop counter on one side only.)
+    #[allow(clippy::cast_possible_wrap)]
+    for (t, (_, size)) in TEMP_POOL.iter().enumerate() {
+        for i in 0..*size {
+            let v = b.const_int(((t as i64) * 7 + (i as i64) * 5) % 19 - 3);
+            let place = b.temp_place(t, IndexValue::Int(i as i64), 0);
+            let set = b.node(Node::Set { place, value: v });
+            b.push_stmt(set);
+        }
+    }
 
     let mut work: Vec<Work<'_>> = p.shapes.iter().rev().map(Work::Shape).collect();
     while let Some(item) = work.pop() {

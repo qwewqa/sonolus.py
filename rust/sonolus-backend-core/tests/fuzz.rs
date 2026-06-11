@@ -241,8 +241,10 @@ fn fuzzer_catches_and_shrinks_canary_miscompile() {
         cfg.blocks.len()
     );
     assert!(
-        cfg.nodes.len() <= 32,
-        "shrunk case still has {} nodes — shrinking is not working",
-        cfg.nodes.len()
+        cfg.nodes.len() <= fuzzgen::SCAFFOLD_NODES + 32,
+        "shrunk case still has {} nodes (incl. {} constant entry scaffolding) — \
+         shrinking is not working",
+        cfg.nodes.len(),
+        fuzzgen::SCAFFOLD_NODES
     );
 }

@@ -7,16 +7,13 @@
 //! 2. replays every behavioral I/O vector against the result (result, log,
 //!    writes must match the recorded values, excluding the temp memory block),
 //!    and
-//! 3. asserts the emitted node tree at `fast` and `standard` is **byte-identical**
-//!    to `minimal`'s.
+//! 3. asserts byte-identity to `minimal` for any level listed in
+//!    [`IDENTITY_LEVELS`] (empty since wave W1 landed — fast/standard now
+//!    genuinely optimize; the list existed for the pre-W1 era when the
+//!    registry was empty, decisions D5/D9).
 //!
-//! Step 3 is the strongest identity statement available today: with the
-//! optimization registry empty (`fast`/`standard` are pipeline prefixes that
-//! contain no passes yet, decisions D5/D9), every level must produce the exact
-//! same output. The structure isolates that assumption in
-//! [`IDENTITY_LEVELS`]/[`identical_to_minimal`] so a wave task can relax it for
-//! the levels it starts optimizing by editing one place, while keeping the
-//! behavioral replay (step 2) at every level forever.
+//! Step 2 — behavioral replay of every corpus vector at every level — runs
+//! forever and is the load-bearing check.
 
 mod common;
 
@@ -30,10 +27,10 @@ use sonolus_backend_core::pipeline::{Level, compile_cfg};
 /// All levels exercised by the identity check.
 const ALL_LEVELS: [Level; 3] = [Level::Minimal, Level::Fast, Level::Standard];
 
-/// Levels whose output must currently be byte-identical to `minimal`'s. Today
-/// that is every non-minimal level (the optimization registry is empty). A
-/// wave task that starts optimizing at `fast` removes `Level::Fast` here.
-const IDENTITY_LEVELS: [Level; 2] = [Level::Fast, Level::Standard];
+/// Levels whose output must currently be byte-identical to `minimal`'s. Empty
+/// since wave W1 landed (T3.1–T3.3: fast/standard genuinely optimize now);
+/// the behavioral replay below still runs at every level, forever.
+const IDENTITY_LEVELS: [Level; 0] = [];
 
 fn identical_to_minimal(level: Level) -> bool {
     IDENTITY_LEVELS.contains(&level)

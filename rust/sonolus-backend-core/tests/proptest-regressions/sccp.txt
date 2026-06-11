@@ -1,0 +1,8 @@
+# Seeds for failure cases proptest has generated in the past. It is
+# automatically read and these particular cases re-run before any
+# novel cases are generated.
+#
+# It is recommended to check this file in to source control so that
+# everyone who runs the test benefits from these saved cases.
+cc 9ae22d429ed41ea7dc5944bc6407209f6baf7c7b880965e5875c166d1933e98a # shrinks to (Program { nested_target: 0, shapes: [Straight([SetConcrete { block: 0, index: Const(0), value: Int(0) }])], ret: Some(ReadTemp { temp: 0, index: Dyn(Log(Unary { op: 3, arg: Float(8) })) }) }, 0, 0)
+cc 2dc7e9daf254d57f7e13b72d8a0dfb95f14d322b6007b1e63f2e407af290e6c2 # shrinks to (Program { nested_target: 0, shapes: [Loop { trips: 1, body: [Straight([SetConcrete { block: 0, index: Const(0), value: Reduce { op: 0, args: [Fixed { op: 0, args: [ReadTemp { temp: 1, index: Const(0) }, Int(0)] }] } }])] }, Loop { trips: 1, body: [Straight([SetConcrete { block: 0, index: Const(0), value: Fixed { op: 0, args: [Unary { op: 2, arg: Int(0) }, ReadTemp { temp: 2, index: Dyn(ReadConcrete { block: 0, index: Const(5), offset: 1 }) }] } }, SetTemp { temp: 0, index: Const(0), value: Sc { is_or: true, args: [Int(1), ReadTemp { temp: 0, index: Const(0) }] } }])] }], ret: None }, 15245405521249142898, 0)

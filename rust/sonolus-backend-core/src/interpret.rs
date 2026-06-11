@@ -407,8 +407,8 @@ pub fn py_asin(x: f64) -> Result<f64> {
 }
 
 /// `math.sin`/`cos`/`tan` share `CPython`'s domain rule: infinite inputs are errors,
-/// NaN passes through.
-fn py_trig(x: f64, f: fn(f64) -> f64) -> Result<f64> {
+/// NaN passes through. `pub(crate)`: shared with SCCP constant folding (T3.1).
+pub(crate) fn py_trig(x: f64, f: fn(f64) -> f64) -> Result<f64> {
     if x.is_infinite() {
         return Err(value_error(format!(
             "expected a finite input, got {}",
@@ -420,7 +420,8 @@ fn py_trig(x: f64, f: fn(f64) -> f64) -> Result<f64> {
 
 /// `math.sinh`/`cosh` overflow rule: a finite input producing an infinite result is an
 /// `OverflowError` (`"math range error"`); infinite inputs pass through.
-fn py_overflowing(x: f64, f: fn(f64) -> f64) -> Result<f64> {
+/// `pub(crate)`: shared with SCCP constant folding (T3.1).
+pub(crate) fn py_overflowing(x: f64, f: fn(f64) -> f64) -> Result<f64> {
     let result = f(x);
     if result.is_infinite() && x.is_finite() {
         return Err(overflow_error("math range error"));
@@ -470,7 +471,8 @@ pub fn py_max(a: f64, b: f64) -> f64 {
 
 /// Python `max(0, min(1, s))`, the clamping used by `LerpClamped`/`RemapClamped`/
 /// `UnlerpClamped`. NaN clamps to 1.0 (Python: `min(1, nan)` keeps 1).
-fn clamp01(s: f64) -> f64 {
+/// `pub(crate)`: shared with SCCP constant folding (T3.1).
+pub(crate) fn clamp01(s: f64) -> f64 {
     py_max(0.0, py_min(1.0, s))
 }
 
