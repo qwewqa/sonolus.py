@@ -6,7 +6,7 @@
 > holds rules, tasks, state, and decisions. Maintainer notes (setup, end-of-run review)
 > live in [EXECUTION.md](EXECUTION.md).
 
-**Status:** in progress — S2 complete; S3 W1 next: T3.1/T3.2/T3.3 then gate G3.1
+**Status:** in progress — W1 + G3.1 done; W2 (T3.4/T3.5) dispatched; T5.1 running in parallel
 **Last updated:** 2026-06-10
 
 ## 0. Entry point — if you were pointed at this file, start here
@@ -181,7 +181,7 @@ metrics ratchet not regressed; worklog entry with metric movement.
 | T3.1 | done | W1: SCCP (Python folding semantics, unreachable-edge pruning). | per-transform differential + fuzz |
 | T3.2 | done | W1: GVN + rewrite rules (commutative canonicalization, algebraic simplification, strength reduction). | per-transform differential + fuzz |
 | T3.3 | done | W1: ADCE + branch simplification + jump threading. | per-transform differential + fuzz |
-| G3.1 | in-progress | W1 gate. Target: ≈ legacy `fast` quality. | wave gate template |
+| G3.1 | done | W1 gate. Target: ≈ legacy `fast` quality. | wave gate template |
 | T3.4 | todo | W2: Mem2Reg/SROA for TempBlocks (constant-index → scalars; dynamic-index arrays stay memory). **Top-risk transform — extra fuzz emphasis on dynamic indexing.** | per-transform differential + fuzz |
 | T3.5 | todo | W2: copy-coalescing and allocation quality improvements. | per-transform differential + fuzz; temp-slot metrics |
 | G3.2 | todo | W2 gate. | wave gate template |
@@ -320,6 +320,17 @@ pointers (failing commands, metric numbers, repro). Empty deviation log = clean 
 
 ## 9. Worklog (append-only; newest first)
 
+- 2026-06-10 — **G3.1 passed (W1 gate).** All template items, run by the orchestrator:
+  behavioral suite green at all 3 levels in the rust lane (1196+4 locally; CI run on
+  28aa508 green incl. the rust-lane job) and default lane green; corpus differential
+  clean (in-suite, minimal-vs-fast + minimal-vs-standard, 0 mismatches); **fuzz budget
+  clean: 1M release cases, 3/3 tests ok in 1,324s, 0 mismatches**; metrics ratchet
+  not regressed — improved across the board (pydori vs python-standard: eval
+  2.342×→2.177×, static 2.742×→2.619×, dag 2.157×→2.053×, dispatch flat; corpus:
+  eval 38,880→36,673, 0 vectors >10% worse; rust-corpus.json ratcheted up). Target
+  "≈ legacy fast quality" comfortably met (legacy FAST_PASSES does no optimization —
+  Rust fast additionally beats it on allocation ~12×). W1 quality is load-gated on
+  memory promotion as designed; W2 next.
 - 2026-06-10 — **T3.1 + T3.2 + T3.3 done (W1 wave, parallel worktrees); G3.1 underway.**
   SCCP (`sccp.rs`: Wegman-Zadeck, py_* kernel folding with the full
   no-fold-on-Python-error table, executable-edge pruning, ShortCircuit refinement with
