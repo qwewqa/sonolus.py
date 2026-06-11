@@ -14,8 +14,9 @@
 //!   and *dynamic* indices. A dynamic index is realized the way the frontend
 //!   does it — the index expression is stored to a dedicated single-slot temp
 //!   and the place's index is a nested place reading it — and is clamped
-//!   into-range with `Mod`, so traps stay a minority (non-integral/NaN values
-//!   still trap, deliberately).
+//!   into-range with `Floor(Mod(..))`, so traps stay a minority (NaN/inf
+//!   values still trap, deliberately, inside the `Floor`; see [`Builder::dyn_index`]
+//!   for why finite values must be made integral).
 //! - Nested places in both positions: dynamic indices give
 //!   `IndexValue::Place`; [`Expr::ReadNested`] gives `BlockValue::Place` (the
 //!   block id is read from cell `21[31]`, initialized to a real block id in
@@ -41,8 +42,10 @@
 //!   control-flow ops in expression position (other than `And`/`Or`, and
 //!   `Break` as a statement).
 //! - Temp accesses are in-bounds by construction (constant indices are
-//!   reduced mod the temp size; dynamic indices are `Mod`-clamped), so slot
-//!   allocation differences between pipelines can never alias.
+//!   reduced mod the temp size; dynamic indices are `Floor(Mod(..))`-clamped),
+//!   so slot allocation differences between pipelines can never alias — and
+//!   never make the index *assert* allocation-dependent either (the
+//!   [`Builder::dyn_index`] docs explain the rounding hazard).
 //!
 //! # No recursion over generated structures
 //!
@@ -537,14 +540,26 @@ impl Builder {
     }
 
     /// Routes a dynamic index through a fresh single-slot temp:
-    /// `i{n} <- Mod(child, range)`, then `IndexValue::Place(read of i{n})`.
-    /// The Mod keeps integral values in `[0, range)`; non-integral/NaN values
-    /// trap downstream (deliberately, as a minority).
+    /// `i{n} <- Floor(Mod(child, range))`, then `IndexValue::Place(read of
+    /// i{n})`. The Mod clamps into `[0, range)` and the Floor makes finite
+    /// values integral, so in-range accesses are in-bounds by construction;
+    /// NaN/inf still trap (inside `Floor`, deliberately, as a minority).
+    ///
+    /// The Floor is **load-bearing for the differential contract**: temp-slot
+    /// allocation is pipeline-specific (diff.rs module docs), and the emitter
+    /// adds the temp's allocated base offset to the index, so a finite
+    /// *non-integral* index would make the index assert
+    /// (`Value must be an integer`) allocation-dependent — `tiny + base` can
+    /// round to an exact integer for one pipeline's base and not another's
+    /// (caught by the T3.3 DCE fuzz at 20k cases: removing a dead store
+    /// shifted every temp offset). NaN/inf trap identically on both sides:
+    /// `NaN + base` is still NaN.
     fn dyn_index(&mut self, child: usize, range: i64) -> IndexValue {
         let t = self.new_temp(format!("i{}", self.idx_temps), 1);
         self.idx_temps += 1;
         let range_c = self.const_int(range);
-        let modded = self.op_node(Op::Mod, vec![child, range_c]);
+        let clamped = self.op_node(Op::Mod, vec![child, range_c]);
+        let modded = self.op_node(Op::Floor, vec![clamped]);
         let write = self.temp_place(t, IndexValue::Int(0), 0);
         let set = self.node(Node::Set {
             place: write,

@@ -38,19 +38,18 @@
 //! - [`Level::Fast`] — through wave [`Stage::W1`].
 //! - [`Level::Standard`] — the whole list.
 //!
-//! [`passes_for_level`] computes the prefix. Today the registry is **empty**
-//! (the real W1 passes land in T3.1–T3.3), so all three levels select the same
-//! (empty) optimization sequence and are behaviorally identical — but the whole
-//! framework is callable end to end at every level (`compile_cfg(cfg, Fast)`
-//! and `Standard` run the empty prefix and succeed). Wave tasks append their
-//! pass constructors to the registry with the right stage tag; nothing else in
-//! this module changes.
+//! [`passes_for_level`] computes the prefix. Wave tasks append their pass
+//! constructors to the registry with the right stage tag; nothing else in this
+//! module changes. W1 passes are landing now (T3.1 SCCP, T3.2 GVN, T3.3 DCE —
+//! intended registry order; see the merge marker in [`registry`]).
 //!
 //! # Determinism
 //!
 //! The pipeline is a `Vec` walked front to back; passes are constructed in
 //! registry order. No ordering escapes to output beyond the registry's own
 //! order (invariant §3.5).
+
+pub mod dce;
 
 use std::time::Duration;
 
@@ -118,15 +117,21 @@ pub struct RegistryEntry {
 /// The single ordered optimization pipeline (decisions D5/D9). Levels are
 /// prefixes of this list (see [`passes_for_level`]).
 ///
-/// **Empty until W1 lands** (T3.1–T3.3 append SCCP / GVN+rules / ADCE here with
-/// `Stage::W1`; later waves append with their own stage). The entries must be
-/// in pipeline-execution order, grouped by ascending [`Stage`] — `passes_for_level`
-/// relies on the prefix property (every selected stage's entries precede every
-/// unselected stage's entries).
+/// Wave tasks (T3.x) append their pass constructors here in pipeline-execution
+/// order, grouped by ascending [`Stage`] — `passes_for_level` relies on the
+/// prefix property (every selected stage's entries precede every unselected
+/// stage's entries).
 pub fn registry() -> &'static [RegistryEntry] {
-    // No optimization passes yet: every level's optimization prefix is empty.
-    // Wave tasks insert RegistryEntry values here in pipeline order.
-    &[]
+    &[
+        // ===== Wave W1 — intended order: SCCP (T3.1), GVN (T3.2), DCE (T3.3) =====
+        // T3.3 DCE + branch simplification + jump threading. THIRD W1 position:
+        // when merging the W1 wave, keep this entry AFTER the T3.1 SCCP and
+        // T3.2 GVN entries (merge-resolution marker for the orchestrator).
+        RegistryEntry {
+            stage: Stage::W1,
+            make: || Box::new(dce::DcePass),
+        },
+    ]
 }
 
 /// The passes to run at `level`: the [`registry`] prefix whose stage is within
@@ -465,12 +470,26 @@ mod tests {
     }
 
     #[test]
-    fn levels_are_prefixes_empty_registry() {
-        // With an empty registry every level is an empty pipeline.
-        for level in [Level::Minimal, Level::Fast, Level::Standard] {
-            assert!(passes_for_level(level).is_empty(), "{level:?}");
-            assert!(Pipeline::for_level(level).is_empty(), "{level:?}");
+    fn levels_are_prefixes_of_the_registry() {
+        // Minimal is always the empty prefix (the differential baseline).
+        assert!(passes_for_level(Level::Minimal).is_empty());
+        assert!(Pipeline::for_level(Level::Minimal).is_empty());
+        // Fast is a prefix of standard (same passes, same order).
+        let fast = passes_for_level(Level::Fast);
+        let standard = passes_for_level(Level::Standard);
+        assert!(fast.len() <= standard.len());
+        for (f, s) in fast.iter().zip(&standard) {
+            assert_eq!(f.name(), s.name());
         }
+        // Registry entries are grouped by ascending stage (the prefix property
+        // passes_for_level relies on).
+        let stages: Vec<Stage> = registry().iter().map(|e| e.stage).collect();
+        let mut sorted = stages.clone();
+        sorted.sort();
+        assert_eq!(stages, sorted, "registry must be grouped by stage");
+        // The W1 DCE pass (T3.3) is selected at fast and standard.
+        assert!(fast.iter().any(|p| p.name() == "dce"));
+        assert!(standard.iter().any(|p| p.name() == "dce"));
     }
 
     #[test]
