@@ -212,12 +212,14 @@ fn baseline_aggregates() -> (u64, u64) {
     )
 }
 
-/// W2 effectiveness (the wave's quality claim): replaying every corpus
-/// vector at `standard` (the same measurement tools/metrics.py corpus mode
-/// performs) must strictly beat the recorded W1-era aggregate on eval count,
-/// and must not regress static nodes.
+/// Corpus metrics ratchet: replaying every corpus vector at `standard` (the
+/// same measurement tools/metrics.py corpus mode performs) must not regress
+/// eval count or static nodes vs the stored baseline. The baseline file is
+/// rewritten at each wave gate (`tools/metrics.py corpus --update`), so this
+/// pins quality to the last gate's snapshot; strict per-wave improvement
+/// claims are recorded in the PORT.md worklog, not asserted here.
 #[test]
-fn corpus_effectiveness_eval_count_beats_w1_baseline() {
+fn corpus_ratchet_eval_and_static_not_regressed() {
     let dir = common::testdata_dir();
     let manifest = common::load_manifest();
     let mut eval_total: u64 = 0;
@@ -257,16 +259,16 @@ fn corpus_effectiveness_eval_count_beats_w1_baseline() {
     }
     let (baseline_eval, baseline_static) = baseline_aggregates();
     println!(
-        "corpus standard metrics: eval {eval_total} (W1 baseline {baseline_eval}), \
-         static {static_total} (W1 baseline {baseline_static}), dispatch {dispatch_total}, \
+        "corpus standard metrics: eval {eval_total} (ratchet {baseline_eval}), \
+         static {static_total} (ratchet {baseline_static}), dispatch {dispatch_total}, \
          {vectors} vectors"
     );
     assert!(
-        eval_total < baseline_eval,
-        "W2 must strictly improve the corpus eval count: {eval_total} >= {baseline_eval}"
+        eval_total <= baseline_eval,
+        "corpus eval count regressed vs the ratchet baseline: {eval_total} > {baseline_eval}"
     );
     assert!(
         static_total <= baseline_static,
-        "W2 must not regress corpus static nodes: {static_total} > {baseline_static}"
+        "corpus static nodes regressed vs the ratchet baseline: {static_total} > {baseline_static}"
     );
 }
