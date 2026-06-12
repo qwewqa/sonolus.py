@@ -6,11 +6,13 @@
 > holds rules, tasks, state, and decisions. Maintainer notes (setup, end-of-run review)
 > live in [EXECUTION.md](EXECUTION.md).
 
-**Status:** running — **W4 complete** (T3.8 + T3.9 merged; composition miscompile
-root-caused to a latent alloc.rs hole and fixed in cycle 1/3; final registry order
-[shape, if_convert] by D13 measurement; pydori dispatch **0.950×** — below legacy).
-**Next: gate G3.4** (wave gate template) with T4.2 dispatched into the fuzz window.
-Then W5, G3.5 (ratchet re-assertion), S4 remainder, S6, S7.
+**Status:** running — **G3.4 passed** (1M fuzz clean, all template items green;
+CI green on ff9468f); T4.2 done in the fuzz window (single-call build_engine,
+675 ms pydori vs 1,501 ms G-P1 reference). **In flight: W5 fan-out part 1**
+(T3.10 flattening + T3.11 NormalizeSwitch, parallel worktrees; T3.12 fused tiling
+follows sequentially — it needs the post-flatten metrics landscape for its
+data-driven rules). Then G3.5 (= final S3 gate + the G3.3-transferred parity
+ratchet), T4.3/T4.4, S6, S7.
 **Last updated:** 2026-06-12
 
 ## 0. Entry point — if you were pointed at this file, start here
@@ -194,7 +196,7 @@ metrics ratchet not regressed; worklog entry with metric movement.
 | G3.3 | done | **W3 gate = switchover ratchet**: aggregate ≥ parity with `rust/baselines/python-standard.json`; no callback >10% worse on dyn eval count. **Ratchet FAILED → proceeded flagged per §4; parity criterion transferred to G3.5** (see Deviation log + worklog). All other template items passed. | wave gate template + ratchet |
 | T3.8 | done | W4: expression-level if-conversion (small diamonds/triangles → `If`/`And`/`Or` value nodes, cost-modeled). | per-transform differential + fuzz; dispatch-count metric drop |
 | T3.9 | done | W4: block merging, exit combining, tiny-block duplication into predecessors. | per-transform differential + fuzz |
-| G3.4 | todo | W4 gate. | wave gate template |
+| G3.4 | done | W4 gate. | wave gate template |
 | T3.10 | todo | W5: emission-time FlattenAssociativeOps (sharing-aware vs node DAG dedup). | per-transform differential + fuzz; node-count metric |
 | T3.11 | todo | W5: NormalizeSwitch (dense 0-based case manufacture) + dense-form selection in the emitter. | per-transform differential + fuzz |
 | T3.12 | todo | W5: fused-op tiling (`Lerp`/`Remap`/`Clamp`/`*Shifted`/`*Pointed`/`Set*`/`Increment*`), Execute0/Execute selection. Rules added data-driven from metrics hot spots. | per-transform differential + fuzz; eval-count metric |
@@ -361,6 +363,19 @@ pointers (failing commands, metric numbers, repro). Empty deviation log = clean 
 
 ## 9. Worklog (append-only; newest first)
 
+- 2026-06-12 — **G3.4 passed (W4 gate).** All template items, run by the
+  orchestrator on the final-order tree: behavioral green both lanes at all 3
+  levels (1248+4 at gate start; 1261+4 after T4.2 merged mid-window); corpus
+  differential clean (all six differential suites incl. the W4 pair, in the
+  final-order workspace run); **1M-case release fuzz clean: 3/3 ok in 2,839.91s,
+  0 failures**; corpus ratchet regenerated and improved on every metric (eval
+  20,687, dispatch 1,318, static 11,202, dag 4,519; the 1 vector ×1.104 is the
+  documented T3.6-era conditional-update idiom, in-cargo non-strict test green);
+  CI green on ff9468f (Rust workflow incl. rust-lane + persisted-seed replays).
+  W4 metric movement recorded in the T3.8 close-out entry (headline: dispatch
+  1.950×→0.950×, below legacy). Remaining eval gap (2.416×, concentrated in
+  PreviewStage.render's loop bodies) carries to W5 (flattening, NormalizeSwitch,
+  fused tiling) with the G3.3-transferred parity ratchet asserted at G3.5.
 - 2026-06-12 — **T4.2 done (a406147), merged and verified** (ran in the G3.4 fuzz
   window). `sonolus_backend.build_engine(payload)`: PAYLOAD-v1 dict validated
   GIL-held, build runs under `py.detach`; call-wide D6 dedup keyed on exact cfg
