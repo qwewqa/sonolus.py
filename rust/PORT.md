@@ -204,7 +204,7 @@ metrics ratchet not regressed; worklog entry with metric movement.
 
 | ID | Status | Task | DoD |
 |----|--------|------|-----|
-| T4.1 | in-progress | Payload schema + Python assembly: per-mode work units (callback, archetype idx, order, encoded CFG) + metadata JSON + ROM + level selection. | schema doc + assembly unit tests |
+| T4.1 | done | Payload schema + Python assembly: per-mode work units (callback, archetype idx, order, encoded CFG) + metadata JSON + ROM + level selection. | schema doc + assembly unit tests |
 | T4.2 | todo | Rust `build_engine`: stateless intra-call dedup (hash of encoded CFG), rayon per callback with GIL released, canonical node ordering (archetype order then callback order), mode JSON (`preserve_order`), gzip mtime=0, ROM packing. Pure function. | A/B vs Python on pydori: decompressed structural equality of mode data + per-callback differential interpretation |
 | T4.3 | todo | Wire `package_engine`; `validate_engine` stays pure-Python trace-only. **Remove** `CompileCache`, `hash_cfg`, the `cache` parameter threading (~8 signatures), and dev-server cache lifecycle (`reset_accessed`/`prune_unaccessed`). | `tests/build/test_dev_server.py` + full suite green; grep audit: no `CompileCache`/`hash_cfg` references |
 | T4.4 | todo | Flip dev default to `standard` in `cli.py` (keep `-O0/-O1/-O2`); perf gates **G-P1** and **G-P2** measured on pydori and recorded below in §8-metrics. | gates pass; CLI help updated |
@@ -361,6 +361,27 @@ pointers (failing commands, metric numbers, repro). Empty deviation log = clean 
 
 ## 9. Worklog (append-only; newest first)
 
+- 2026-06-12 — **T4.1 done (eb04112), merged and verified** (file-disjoint S4
+  overlap during the W4 fan-out). `rust/PAYLOAD.md` v1: payload = plain dict over
+  PyO3 (schema/level/configuration JSON/rom f64s/4 modes); work unit =
+  {callback camelCase, archetype idx|None, order, ENCODING-v1 cfg bytes}, unit
+  list position = unit id; mode metadata = final legacy mode-data JSON shape with
+  unit-id callback slots + "nodes": null placeholder (key order documented per
+  mode); canonical node ordering = unit order, proven equal to the legacy
+  GIL-build OutputNodeGenerator.add order (derived archetypes share base unit
+  ids); D6 dedup identity = exact encoded bytes (SHA-256 reference key);
+  T4.2 parity contract spelled out (config+ROM byte-identical decompressed; mode
+  JSON structural except callback indices and nodes). `sonolus/build/payload.py`
+  pure assembler (sequential play→watch→preview→tutorial — ROM indices bake into
+  CFGs, trace order is meaning-bearing; ROM byte-parity test). 12 tests; suite
+  1236→1248. Findings: legacy FREE-THREADED build is nondeterministic (ROM layout
+  + node order timing-dependent; payload path deliberately sequential —
+  deterministic parallel tracing is a T4.3+ follow-up needing a ROM-merge
+  design); cross-mode dedup real (default callbacks = byte-identical 76-byte
+  CFGs); `struct.pack("<f", 1e300)` raises OverflowError where Rust `as f32`
+  saturates — T4.2 must error for parity (§5.6). Nothing imports the module in
+  the product path yet (T4.3 wires it). Orchestrator verified on combined tree
+  (incl. T3.9, which the worktree predated): both lanes 1248+4.
 - 2026-06-12 — **T3.9 done (W4 block shaping, 6fc97df), merged and verified.**
   `shape.rs`, Stage::W4 after licm: six sub-transforms — late trivial/dead-phi
   simplification; empty-block threading with phi-arg copying **restricted to Jump
