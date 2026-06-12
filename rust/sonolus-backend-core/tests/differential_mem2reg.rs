@@ -196,6 +196,132 @@ fn corpus_promotion_statistics() {
     );
 }
 
+/// G3.2 regression (deterministic, independent of proptest persistence): a
+/// **dead temp store whose value tree contains a trap-capable op**, plus a
+/// read of a *different* slot of the same temp. Minimal evaluates the dead
+/// store's `Arcsin` and traps when its input is outside [-1, 1]; the shrunk
+/// 1M-fuzz case showed the standard pipeline losing that trap: Mem2Reg
+/// removes the dead store (leaving the value tree scheduled) and replaces the
+/// `u[0]` load with the reaching constant 0, the re-run GVN's sub-zero rule
+/// collapses `Subtract(Arcsin(x), 0)`, and the rules sweep then cascaded into
+/// the orphaned trap-capable `Arcsin`. Optimized code must trap whenever
+/// minimal traps, with the same error (PORT.md §3.7).
+#[test]
+fn dead_temp_store_with_trapping_value_tree_keeps_the_trap_at_every_level() {
+    use sonolus_backend_core::cfg::{
+        BasicBlock, BlockValue, IndexValue, Node, Place, TempBlockDef,
+    };
+    use sonolus_backend_core::ops::Op;
+
+    let mut cfg = Cfg::default();
+    cfg.strings.push("t".to_owned());
+    cfg.strings.push("u".to_owned());
+    cfg.temp_blocks.push(TempBlockDef { name: 0, size: 2 }); // t
+    cfg.temp_blocks.push(TempBlockDef { name: 1, size: 1 }); // u
+    let node = |cfg: &mut Cfg, n: Node| {
+        cfg.nodes.push(n);
+        cfg.nodes.len() - 1
+    };
+    let place = |cfg: &mut Cfg, block: BlockValue, index: i64| {
+        cfg.places.push(Place {
+            block,
+            index: IndexValue::Int(index),
+            offset: 0,
+        });
+        cfg.places.len() - 1
+    };
+    let mut stmts = Vec::new();
+    // Initialize every temp cell (mirrors the fuzz generator's entry init —
+    // makes both temps promotable: no read-before-write refusal).
+    for (t, size) in [(0usize, 2i64), (1, 1)] {
+        for i in 0..size {
+            let v = node(&mut cfg, Node::ConstInt(if t == 0 { 1 } else { 0 }));
+            let p = place(&mut cfg, BlockValue::Temp(t), i);
+            stmts.push(node(&mut cfg, Node::Set { place: p, value: v }));
+        }
+    }
+    // The dead store: t[0] <- Subtract(Arcsin(Get(-3[0])), Get(u[0])).
+    // t[0] is never read afterwards; u[0]'s reaching value is the constant 0.
+    let in_p = place(&mut cfg, BlockValue::Int(-3), 0);
+    let get_in = node(&mut cfg, Node::Get(in_p));
+    let arcsin = node(
+        &mut cfg,
+        Node::PureInstr {
+            op: Op::Arcsin,
+            args: vec![get_in],
+        },
+    );
+    let u_p = place(&mut cfg, BlockValue::Temp(1), 0);
+    let get_u = node(&mut cfg, Node::Get(u_p));
+    let sub = node(
+        &mut cfg,
+        Node::PureInstr {
+            op: Op::Subtract,
+            args: vec![arcsin, get_u],
+        },
+    );
+    let t0_p = place(&mut cfg, BlockValue::Temp(0), 0);
+    stmts.push(node(
+        &mut cfg,
+        Node::Set {
+            place: t0_p,
+            value: sub,
+        },
+    ));
+    // Observable read of the *other* slot: 20[0] <- Get(t[1]).
+    let t1_p = place(&mut cfg, BlockValue::Temp(0), 1);
+    let get_t1 = node(&mut cfg, Node::Get(t1_p));
+    let out_p = place(&mut cfg, BlockValue::Int(20), 0);
+    stmts.push(node(
+        &mut cfg,
+        Node::Set {
+            place: out_p,
+            value: get_t1,
+        },
+    ));
+    let test = node(&mut cfg, Node::ConstInt(0));
+    cfg.blocks.push(BasicBlock {
+        statements: stmts,
+        test,
+        outgoing: Vec::new(),
+    });
+
+    let run_level = |level: Level, input: f64| {
+        let nodes = compile_cfg(&cfg, level)
+            .unwrap_or_else(|e| panic!("{} failed to compile: {e}", level.name()));
+        let mut interp = Interpreter::new(0);
+        interp.set_block(-3, vec![input]);
+        let result = interp.run(&nodes).map_err(|e| e.to_string());
+        let out = interp.block(20).map(<[f64]>::to_vec);
+        (result, out)
+    };
+    for level in [Level::Fast, Level::Standard] {
+        // Trap input: Arcsin(2.5) raises in minimal; the optimized levels
+        // must produce the identical error.
+        let (base, _) = run_level(Level::Minimal, 2.5);
+        let (test, _) = run_level(level, 2.5);
+        let base_err = base.expect_err("minimal must trap on Arcsin(2.5)");
+        assert!(
+            base_err.contains("expected a number in range from -1 up to 1"),
+            "unexpected baseline error: {base_err}"
+        );
+        assert_eq!(
+            test.expect_err(&format!("{} must trap exactly like minimal", level.name())),
+            base_err,
+            "{}: trap error must match minimal's",
+            level.name()
+        );
+        // Clean input: identical results and writes.
+        let (base, base_out) = run_level(Level::Minimal, 0.5);
+        let (test, test_out) = run_level(level, 0.5);
+        assert_eq!(
+            base.expect("minimal runs clean"),
+            test.expect("optimized runs clean")
+        );
+        assert_eq!(base_out, test_out, "{}: writes must match", level.name());
+    }
+}
+
 /// The recorded W1-era corpus aggregates (rust/baselines/rust-corpus.json).
 fn baseline_aggregates() -> (u64, u64) {
     let path = common::testdata_dir()

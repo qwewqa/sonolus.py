@@ -100,16 +100,32 @@
 //! Every value replaced by the driver or by GVN has zero remaining
 //! references; its defining instruction is unscheduled, and any operand whose
 //! reference count thereby drops to zero is unscheduled too if it is a pure
-//! op. The sweep runs twice — after the rules phase (GVN must never see a
-//! dead-but-scheduled instruction: extracting one as a merge leader would
-//! resurrect references to its operands and break the single-use lowering
-//! contract) and again after GVN for its own replacements. Safety: a rules-replaced instruction never traps (folds refuse
-//! Python-error inputs; identity targets like `Multiply(x, 1)` cannot raise),
-//! and a GVN-replaced instruction (or any orphan in its operand tree) has an
-//! identical dominating computation that traps first. **Pre-existing**
-//! zero-use instructions (bare expression statements from the frontend,
-//! which may trap or read memory) are never seeds and never reach a count
-//! transition, so they are preserved exactly.
+//! op the sweep's [`OrphanPolicy`] permits. The sweep runs twice — after the
+//! rules phase (GVN must never see a dead-but-scheduled instruction:
+//! extracting one as a merge leader would resurrect references to its
+//! operands and break the single-use lowering contract) and again after GVN
+//! for its own replacements.
+//!
+//! Safety is argued separately for seeds and orphans. A *seed* (a replaced
+//! instruction) never traps under its replacement's fire conditions: folds
+//! refuse Python-error inputs; identity targets like `Multiply(x, 1)` cannot
+//! raise; a GVN redundancy has an identical dominating computation that traps
+//! first. A transitively orphaned *operand*, however, is only covered when
+//! something still stands in for its evaluation: GVN's leaders do (class
+//! equality is recursive, so the leader's operand tree computes the same
+//! values earlier — [`OrphanPolicy::CoveredByLeader`]), but a rules-replaced
+//! root may have had **zero uses** — the dead value tree of a store removed
+//! by `Mem2Reg` (or DCE's temp DSE), deliberately left scheduled because it
+//! may trap (PORT.md §3.7: errors are observable behavior). Nothing then
+//! stands in for the orphan tree, so the rules sweep removes an orphan only
+//! when its op provably cannot raise ([`OrphanPolicy::RequireTotal`], the same
+//! never-raising whitelist DCE uses) — dropping a trap-capable orphan (a dead
+//! `Arcsin` under a `Subtract(Arcsin(x), 0)` the sub-zero rule collapsed)
+//! silently removed the baseline's trap, the G3.2 fuzz-caught miscompile.
+//! **Pre-existing** zero-use instructions (bare expression statements from
+//! the frontend, which may trap or read memory) are never seeds; they become
+//! orphan candidates only through a rule firing on a user, where the policy
+//! above protects them.
 //!
 //! # Determinism, recursion, invalidation
 //!
@@ -154,7 +170,7 @@ impl Pass for GvnRewritePass {
         let rule_list = rules::w1_rules();
         let report = RewriteDriver::new(&rule_list).run(mir);
         changed |= report.rewrites > 0;
-        changed |= sweep(mir, &report.replaced) > 0;
+        changed |= sweep(mir, &report.replaced, OrphanPolicy::RequireTotal) > 0;
 
         // The driver/canonicalization mutated instructions (never CFG shape);
         // drop value-level caches before requesting the dominator tree.
@@ -163,7 +179,7 @@ impl Pass for GvnRewritePass {
         // 3. Dominator-based GVN, then sweep its replaced redundancies.
         let gvn_replaced = run_gvn(mir, analyses);
         changed |= !gvn_replaced.is_empty();
-        changed |= sweep(mir, &gvn_replaced) > 0;
+        changed |= sweep(mir, &gvn_replaced, OrphanPolicy::CoveredByLeader) > 0;
 
         if changed {
             analyses.invalidate_values();
@@ -183,8 +199,10 @@ fn is_commutative(op: Op) -> bool {
 }
 
 /// Pure ops whose kernel can never raise for any f64 inputs (used by the
-/// reorder-transparency check). Conservative whitelist over the interpreter's
-/// `apply_simple`/`reduce_fold`: anything not listed is assumed trappable.
+/// reorder-transparency check and the sweep's [`OrphanPolicy::RequireTotal`];
+/// the same op set as DCE's `op_is_total`). Conservative whitelist over the
+/// interpreter's `apply_simple`/`reduce_fold`: anything not listed is assumed
+/// trappable.
 fn op_cannot_trap(op: Op) -> bool {
     matches!(
         op,
@@ -638,22 +656,55 @@ fn count_scheduled_uses(mir: &Mir) -> Vec<u32> {
     counts
 }
 
+/// How the transitive orphan cascade of [`sweep`] may treat **trap-capable**
+/// pure ops. Seeds (the `replaced` list itself) are always justified by the
+/// caller — see the module docs' sweep section for the two safety arguments.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+enum OrphanPolicy {
+    /// Remove an orphan only when its op provably cannot raise
+    /// ([`op_cannot_trap`]). Used by the rules sweep: a rules-replaced root
+    /// may have had zero uses (the dead value tree of a store removed by
+    /// `Mem2Reg` or DCE's temp DSE, kept scheduled for trap preservation), in
+    /// which case nothing stands in for its orphaned operands — removing a
+    /// trap-capable one would drop an observable trap (the G3.2 miscompile).
+    /// Never-trapping dead trees still sweep fully (the load-bearing W2
+    /// metrics case).
+    RequireTotal,
+    /// Trap-capable orphans may be removed. Used by the GVN sweep: every
+    /// replaced value has an identical-class dominating leader, and class
+    /// equality is recursive (same op, same operand classes, bottoming out
+    /// in constants and singleton classes — shared values), so the leader's
+    /// operand tree computes the same values earlier; if the orphan tree
+    /// would trap, the leader's already did, with the same error.
+    CoveredByLeader,
+}
+
 /// Unschedules the replaced values (all reference-free by construction) and,
-/// transitively, any pure-op operand whose reference count drops to zero.
-/// Returns the number of removed schedule slots. See the module docs for why
-/// pre-existing zero-use statements are untouched.
-fn sweep(mir: &mut Mir, replaced: &[Value]) -> usize {
+/// transitively, any policy-permitted pure-op operand whose reference count
+/// drops to zero. Returns the number of removed schedule slots. See the
+/// module docs for the seed-vs-orphan safety split and why pre-existing
+/// zero-use statements are untouched.
+fn sweep(mir: &mut Mir, replaced: &[Value], orphans: OrphanPolicy) -> usize {
     if replaced.is_empty() {
         return 0;
     }
     let scheduled = mir.scheduled_mask();
     let mut counts = count_scheduled_uses(mir);
-    let removable = |mir: &Mir, v: Value| matches!(mir.inst(v), Inst::Op { op, .. } if op_effects(*op).is_pure());
+    // Seeds: justified by the rule/merge that replaced them (module docs).
+    let seed_removable = |mir: &Mir, v: Value| matches!(mir.inst(v), Inst::Op { op, .. } if op_effects(*op).is_pure());
+    // Orphans: additionally subject to the trap policy.
+    let orphan_removable = |mir: &Mir, v: Value| match mir.inst(v) {
+        Inst::Op { op, .. } => {
+            op_effects(*op).is_pure()
+                && (orphans == OrphanPolicy::CoveredByLeader || op_cannot_trap(*op))
+        }
+        _ => false,
+    };
     let mut dead = vec![false; mir.insts.len()];
     let mut stack: Vec<Value> = replaced
         .iter()
         .copied()
-        .filter(|&v| scheduled[v as usize] && counts[v as usize] == 0 && removable(mir, v))
+        .filter(|&v| scheduled[v as usize] && counts[v as usize] == 0 && seed_removable(mir, v))
         .collect();
     while let Some(v) = stack.pop() {
         if dead[v as usize] {
@@ -665,7 +716,7 @@ fn sweep(mir: &mut Mir, replaced: &[Value]) -> usize {
             if counts[o as usize] == 0
                 && scheduled[o as usize]
                 && !dead[o as usize]
-                && removable(mir, o)
+                && orphan_removable(mir, o)
             {
                 stack.push(o);
             }
@@ -1292,6 +1343,73 @@ mod tests {
         // Whatever GVN decided, every phi arg must still be scheduled (or a
         // constant): the full pipeline check is that destruct accepts it.
         crate::ssa::destruct_ssa(&mut mir).expect("phi args stay materializable");
+    }
+
+    /// G3.2 regression (the 1M-fuzz miscompile): a rule firing on the root of
+    /// a **zero-use** value tree — the dead store tree Mem2Reg (or DCE's temp
+    /// DSE) leaves scheduled for trap preservation — must not let the sweep
+    /// cascade into trap-capable orphans. Shape: dead `Subtract(Arcsin(load),
+    /// 0)`; `w1-sub-zero` collapses the Subtract, and the orphaned `Arcsin`
+    /// (raises for |x| > 1) must stay scheduled with its operand chain.
+    #[test]
+    fn rules_sweep_keeps_trap_capable_orphans_of_dead_value_trees() {
+        let mut mir = Mir::new();
+        let x = mir.push_temp("x", 1);
+        let b0 = mir.push_block();
+        let load = sched(
+            &mut mir,
+            b0,
+            Inst::Load {
+                place: temp_place(x),
+            },
+        );
+        let arcsin = op(&mut mir, b0, Op::Arcsin, vec![load]);
+        let zero = mir.push_inst(Inst::ConstInt(0));
+        let dead_sub = op(&mut mir, b0, Op::Subtract, vec![arcsin, zero]);
+        mir.blocks[b0].terminator = Terminator::Exit;
+        run_pass(&mut mir);
+        assert!(
+            !mir.blocks[b0].insts.contains(&dead_sub),
+            "the replaced Subtract itself is swept (it cannot trap)"
+        );
+        assert!(
+            mir.blocks[b0].insts.contains(&arcsin),
+            "the trap-capable Arcsin orphan must stay scheduled (trap conservatism)"
+        );
+        assert!(
+            mir.blocks[b0].insts.contains(&load),
+            "the kept Arcsin's operand stays scheduled"
+        );
+    }
+
+    /// Counterpart pinning no pessimization: a zero-use dead tree of provably
+    /// never-trapping ops still sweeps fully when a rule fires on its root
+    /// (the load-bearing W2 dead-store-tree metrics case).
+    #[test]
+    fn rules_sweep_still_removes_never_trapping_dead_trees() {
+        let mut mir = Mir::new();
+        let x = mir.push_temp("x", 1);
+        let b0 = mir.push_block();
+        let load = sched(
+            &mut mir,
+            b0,
+            Inst::Load {
+                place: temp_place(x),
+            },
+        );
+        let sign = op(&mut mir, b0, Op::Sign, vec![load]);
+        let one = mir.push_inst(Inst::ConstInt(1));
+        let dead_mul = op(&mut mir, b0, Op::Multiply, vec![sign, one]);
+        mir.blocks[b0].terminator = Terminator::Exit;
+        run_pass(&mut mir);
+        assert!(
+            !mir.blocks[b0].insts.contains(&dead_mul),
+            "the replaced Multiply is swept"
+        );
+        assert!(
+            !mir.blocks[b0].insts.contains(&sign),
+            "a never-trapping orphan (Sign) is swept too"
+        );
     }
 
     /// A pre-existing zero-use trapping statement (a bare `Divide(1, 0)`)
