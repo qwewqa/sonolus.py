@@ -212,7 +212,7 @@ metrics ratchet not regressed; worklog entry with metric movement.
 | ID | Status | Task | DoD |
 |----|--------|------|-----|
 | T5.1 | done | Collection core in Rust: scp/zip load, SHA1 repository, resource gzip, localization, level/engine linking, site-tree write (skip-if-hash-exists). | cargo tests on fixture scp/source trees |
-| T5.2 | todo | PyO3 `Collection` preserving the current Python API; Python keeps orchestration, user converter callbacks, URL fetching. | `tests/build` + regressions green |
+| T5.2 | done | PyO3 `Collection` preserving the current Python API; Python keeps orchestration, user converter callbacks, URL fetching. | `tests/build` + regressions green |
 | T5.3 | todo | A/B pydori collection both backends: structural site-tree equality (decompressed content; gzip bytes may differ); CLI smoke `sonolus-py build` on `test_projects/pydori`. | `tools/ab_collection.py` zero structural diffs |
 
 ### S6 — Test rewiring + golden regeneration
@@ -322,6 +322,30 @@ pointers (failing commands, metric numbers, repro). Empty deviation log = clean 
 
 ## 9. Worklog (append-only; newest first)
 
+- 2026-06-12 — **T5.2 done (PyO3 Collection), merged and verified; run wrapped at
+  maintainer request — resume at W3 (T3.6 + T3.7).** Subagent ran in a worktree during
+  the G3.2 fuzz window (S5 overlap per §6). `sonolus_backend.Collection` (PyO3,
+  `rust/sonolus-backend-py/src/collection.rs`): persistent SHA1 repo (IndexMap),
+  scp/zip load, resource gzip, level/engine link, pyjson serialization, site-tree
+  write; categories cross as JSON; errors map to legacy KeyError/OSError/ValueError
+  messages. Python `RustCollection(Collection)` drop-in (`sonolus/build/
+  rust_collection.py`): inherits the live-categories dict-mutation pattern, user
+  converters, URL fetch; `write` links in Rust and adopts the post-link snapshot
+  (preserves legacy dev-rebuild aliasing incl. the stale-engine quirk — A/B equality
+  prioritized, documented). Selection: `make_collection()` honors `SONOLUS_BACKEND`
+  (same value set as the test lane); both classes stay directly constructible for
+  T5.3's A/B. 12 parity tests (`tests/build/test_collection.py`); gzip byte-identical
+  in all of them (zlib-rs L9) — T5.3 zero-byte-diff plausible. **Suite-coverage find:
+  pytest's default `norecursedirs` contains `build`, so `tests/build/` had been
+  silently skipped in every full-suite/CI run ever** (§5's "behavioral + build +
+  regressions" was aspirational; T4.3's dev-server DoD would have been vacuous) —
+  fixed via `[tool.pytest.ini_options] norecursedirs` in pyproject.toml; suite 1196→
+  1235 passed. Divergences documented in the class docstring (garbage-input error
+  types, name-sorted source iteration, JSON-round-trippable item values). Follow-ups
+  noted: GIL released during `write` as a dev-server micro-improvement; T5.3 needs a
+  real pydori `resources/` tree. Orchestrator verified on the merged tree (49430c3):
+  cargo 363 lib + all suites, clippy/fmt clean, both lanes 1235+4, explicit
+  build+regressions 43 passed.
 - 2026-06-12 — **G3.2 passed (W2 gate), one fix cycle.** Template items, all run by the
   orchestrator: behavioral green both lanes at all 3 levels (1196+4 each, re-verified
   post-fix); corpus differential clean in-suite; **the first 1M-case release fuzz run
