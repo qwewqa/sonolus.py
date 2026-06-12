@@ -214,7 +214,7 @@ metrics ratchet not regressed; worklog entry with metric movement.
 |----|--------|------|-----|
 | T5.1 | done | Collection core in Rust: scp/zip load, SHA1 repository, resource gzip, localization, level/engine linking, site-tree write (skip-if-hash-exists). | cargo tests on fixture scp/source trees |
 | T5.2 | done | PyO3 `Collection` preserving the current Python API; Python keeps orchestration, user converter callbacks, URL fetching. | `tests/build` + regressions green |
-| T5.3 | todo | A/B pydori collection both backends: structural site-tree equality (decompressed content; gzip bytes may differ); CLI smoke `sonolus-py build` on `test_projects/pydori`. | `tools/ab_collection.py` zero structural diffs |
+| T5.3 | done | A/B pydori collection both backends: structural site-tree equality (decompressed content; gzip bytes may differ); CLI smoke `sonolus-py build` on `test_projects/pydori`. | `tools/ab_collection.py` zero structural diffs |
 
 ### S6 — Test rewiring + golden regeneration
 
@@ -340,6 +340,23 @@ pointers (failing commands, metric numbers, repro). Empty deviation log = clean 
 
 ## 9. Worklog (append-only; newest first)
 
+- 2026-06-12 — **T5.3 done (5e37552), merged and verified — S5 complete.**
+  `tools/ab_collection.py` (subagent in worktree during the G3.3 fuzz window):
+  (1) pydori full build A/B via the production `build_collection` path with
+  fabricated minimal resources (pixel/darkblue/particle items + T5.2 fixture scp —
+  exercises scp load, source load, engine/level packaging, linking, site write;
+  the ledger's "needs a real resources/ tree" follow-up is addressed by
+  fabrication); (2) synthetic-resources A/B reusing the tests/build fixtures;
+  (3) CLI smoke `sonolus-py build` both modes (writes dist/, not a site tree —
+  documented; the site tree comes from the dev-server path the A/B drives
+  directly). Results: **pydori 44/44 files byte-identical, fixture 25/25
+  byte-identical, zero structural diffs, zero non-byte equivalences needed** (on
+  NTFS; json/gzip equivalence levels implemented for the documented source-load
+  divergence on other filesystems); legacy-vs-legacy determinism control built
+  in; dist trees byte-identical across modes. No new divergences; nothing
+  escalated. Orchestrator verified: cherry-pick clean, ab_collection.py PASS exit
+  0 on the merged tree; subagent's standing commands all green (1236+4 both
+  lanes, cargo 24 suites, --all-targets clippy, fmt).
 - 2026-06-12 — **T3.7 done (W3 LICM, c243d7b), merged; W3 complete; D13 ordering
   experiments run by the orchestrator.** `licm.rs` (move-based on the value-SSA MIR
   W2 leaves; hoisted cross-block uses legalized by the unconditional destruct_ssa —
