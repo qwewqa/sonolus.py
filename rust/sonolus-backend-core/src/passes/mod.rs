@@ -42,8 +42,10 @@
 //! constructors to the registry with the right stage tag; nothing else in this
 //! module changes. W1 is registered: T3.1 SCCP → T3.2 GVN+rules → T3.3 DCE,
 //! in pipeline order. W2 follows: T3.4 `Mem2Reg`, then a re-run of the W1
-//! passes (fresh instances; pass names repeat for deliberate re-runs). W3
-//! follows with T3.7 `LICM` (T3.6 switch formation precedes it when it lands).
+//! passes (fresh instances; pass names repeat for deliberate re-runs). W3 is
+//! T3.6 switch formation → T3.7 `LICM` (order measured equivalent on
+//! corpus+pydori; a trailing GVN+DCE cleanup re-run measured as not worth it —
+//! see the D13 worklog entry in PORT.md).
 //!
 //! # Determinism
 //!

@@ -6,10 +6,10 @@
 > holds rules, tasks, state, and decisions. Maintainer notes (setup, end-of-run review)
 > live in [EXECUTION.md](EXECUTION.md).
 
-**Status:** running — T5.2 CI fix landed and CI-confirmed (d255ef5, Rust workflow green
-incl. rust-lane on Ubuntu: actions/runs/27429400703); **W3 in progress** (T3.6 switch
-formation + T3.7 LICM, parallel fan-out per §2.2), then gate G3.3 (the switchover
-ratchet).
+**Status:** running — W3 complete (T3.6 + T3.7 merged and verified; D13 ordering
+experiments done, registry = [switch_form, licm], no cleanup re-run); **next: gate
+G3.3** (switchover ratchet; stub-on baseline regen per D12 first), with T5.3
+overlapped during the fuzz window.
 **Last updated:** 2026-06-12
 
 ## 0. Entry point — if you were pointed at this file, start here
@@ -189,7 +189,7 @@ metrics ratchet not regressed; worklog entry with metric movement.
 | T3.5 | done | W2: copy-coalescing and allocation quality improvements. | per-transform differential + fuzz; temp-slot metrics |
 | G3.2 | done | W2 gate. | wave gate template |
 | T3.6 | done | W3: switch formation (RewriteToSwitch successor; recognizes post-GVN comparison trees on an integer scrutinee). | per-transform differential + fuzz |
-| T3.7 | in-progress | W3: LICM; optional cost-modeled micro-unroll of tiny constant-trip loops. | per-transform differential + fuzz |
+| T3.7 | done | W3: LICM; optional cost-modeled micro-unroll of tiny constant-trip loops (unroll deferred — see worklog). | per-transform differential + fuzz |
 | G3.3 | todo | **W3 gate = switchover ratchet**: aggregate ≥ parity with `rust/baselines/python-standard.json`; no callback >10% worse on dyn eval count. | wave gate template + ratchet |
 | T3.8 | todo | W4: expression-level if-conversion (small diamonds/triangles → `If`/`And`/`Or` value nodes, cost-modeled). | per-transform differential + fuzz; dispatch-count metric drop |
 | T3.9 | todo | W4: block merging, exit combining, tiny-block duplication into predecessors. | per-transform differential + fuzz |
@@ -340,7 +340,36 @@ pointers (failing commands, metric numbers, repro). Empty deviation log = clean 
 
 ## 9. Worklog (append-only; newest first)
 
-- 2026-06-12 — **T3.6 done (W3 switch formation, f6d3810 + hygiene 74d5776), merged and
+- 2026-06-12 — **T3.7 done (W3 LICM, c243d7b), merged; W3 complete; D13 ordering
+  experiments run by the orchestrator.** `licm.rs` (move-based on the value-SSA MIR
+  W2 leaves; hoisted cross-block uses legalized by the unconditional destruct_ssa —
+  no legacy copy-then-CSE dance). Hoist conditions: pure per op_effects AND
+  never-trapping per DCE's `op_is_total` (now pub(crate)) — whitelist-only
+  speculation safety (executing a total pure op early is unobservable; legacy
+  hoisted trap-capable ops and would raise on zero-trip loops, a real divergence,
+  deliberately dropped) — AND operands invariant (chains move together, one
+  RPO×schedule scan, dominance proof in module docs) AND block dominates every
+  latch AND legacy cost ≥4. Legacy's writability-metadata `Get` hoisting dropped
+  (no such metadata in Rust MIR; documented). Preheader: reuse sole Jump pred or
+  edge-split with phi re-keying; nested loops hoist outward over bounded rounds
+  with fresh dom/loop analyses. **Micro-unroll DEFERRED** (rationale in pass docs:
+  needs body cloning incl. lazy trees + a cost model W4/W5 will invalidate; corpus
+  shows the W3 eval headline is hoisting-bound). DoD: per-pass differential 270×3
+  clean; 50k main + 50k per-pass + 50k dynamic-heavy fuzz all clean, 0 fix cycles;
+  17 unit tests (e2e counter-loop eval 205→179). Corpus movement NIL by
+  measurement (1 guaranteed-hoistable site corpus-wide; 72/135 entries have loops
+  but in-loop ops are variant/trap-capable/impure); pydori: LICM fires on 8/101
+  CFGs (17 sites) but every hoisted region sits past the runtime-only trap point —
+  stub-off eval unchanged 64,379, static +216/dag +99 (destruct materialization);
+  stub-on (D12) shows the wave at eval 1.254×, dispatch 1.308×, coverage 260/0/40.
+  **D13 ordering experiments** (orchestrator, corpus + pydori stub-off/on):
+  [switch_form,licm] ≡ [licm,switch_form] on every metric; trailing GVN+DCE
+  cleanup re-run: static −504 (−0.07%), dag +165 (+0.13%), dynamics identical →
+  NOT adopted (two extra passes for noise). Registry stays [switch_form, licm].
+  Orchestrator verified combined tree: cargo 0 failures (411 lib), --all-targets
+  clippy + fmt clean, both lanes 1236+4, corpus/pydori reproduced. Follow-ups: 60
+  conditional-only pydori hoist sites = post-W4 if-conversion fodder; W3 cleanup
+  re-run re-evaluable at G3.4/G3.5 if W4/W5 change the landscape.
   verified.** `switch_form.rs`, first Stage::W3 registry entry. Two transforms:
   (1) Equal-test→single-case-switch (finite consts only — NaN conds outside encoding
   domain, ±inf would emit raw vs legacy's ROM path; documented refusal vs legacy);
