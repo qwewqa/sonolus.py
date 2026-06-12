@@ -193,7 +193,7 @@ metrics ratchet not regressed; worklog entry with metric movement.
 | T3.7 | done | W3: LICM; optional cost-modeled micro-unroll of tiny constant-trip loops (unroll deferred — see worklog). | per-transform differential + fuzz |
 | G3.3 | done | **W3 gate = switchover ratchet**: aggregate ≥ parity with `rust/baselines/python-standard.json`; no callback >10% worse on dyn eval count. **Ratchet FAILED → proceeded flagged per §4; parity criterion transferred to G3.5** (see Deviation log + worklog). All other template items passed. | wave gate template + ratchet |
 | T3.8 | in-progress | W4: expression-level if-conversion (small diamonds/triangles → `If`/`And`/`Or` value nodes, cost-modeled). | per-transform differential + fuzz; dispatch-count metric drop |
-| T3.9 | in-progress | W4: block merging, exit combining, tiny-block duplication into predecessors. | per-transform differential + fuzz |
+| T3.9 | done | W4: block merging, exit combining, tiny-block duplication into predecessors. | per-transform differential + fuzz |
 | G3.4 | todo | W4 gate. | wave gate template |
 | T3.10 | todo | W5: emission-time FlattenAssociativeOps (sharing-aware vs node DAG dedup). | per-transform differential + fuzz; node-count metric |
 | T3.11 | todo | W5: NormalizeSwitch (dense 0-based case manufacture) + dense-form selection in the emitter. | per-transform differential + fuzz |
@@ -361,6 +361,31 @@ pointers (failing commands, metric numbers, repro). Empty deviation log = clean 
 
 ## 9. Worklog (append-only; newest first)
 
+- 2026-06-12 — **T3.9 done (W4 block shaping, 6fc97df), merged and verified.**
+  `shape.rs`, Stage::W4 after licm: six sub-transforms — late trivial/dead-phi
+  simplification; empty-block threading with phi-arg copying **restricted to Jump
+  sources** (headline mechanism finding: destruct_ssa re-splits non-Jump critical
+  edges, so branch-source threading is provably neutral pre-destruct and a static
+  loss for shared empties — measured AND derived from ssa.rs::split_pred_edges);
+  exit shaping (Jump→empty-exit becomes Exit; default/case drops guarded against
+  degrading dense switches); DCE's simplify_branches/merge_chains/clear_unreachable
+  made pub(crate) and run in a bounded fixpoint (the Get/Set lever); tiny-block
+  duplication into Jump preds (cost 3/12 caps incl. successor-phi copies; RNG
+  refused hard; outside-use refusal covers loop-carried; trap-capable allowed with
+  exactly-once proof; lazy trees deep-clone whole per D11); structural exit
+  combining (ascending-block-id survivor — RPO sibling order is reversed, noted).
+  DoD: per-pass differential 270×3 clean (fire rate 76/135); 50k main + 50k×2
+  shape-heavy fuzz clean (new program_shape_heavy profile — existing profiles had
+  no empty arms), 0 fix cycles; 32 unit tests. Metrics (orchestrator-reproduced):
+  corpus eval 22,340→**20,446** (−8.5%), dispatch 1,970→**1,652** (−16.1%), static
+  13,581→11,282, dag 5,416→4,660, 0 vectors >10% worse; pydori static 1.668×→
+  **1.631×**, dag 1.222×→**1.163×**, >10%-worse 103→**75**; eval/dispatch flat at
+  2.422×/1.950× — PreviewStage.render UNTOUCHED as predicted by mechanism: its
+  three loops' tiny branch-edge diamonds are reachable only by T3.8 if-conversion.
+  Combined-W4 note for the merge: [if_convert, shape] is the natural composition
+  (shape mops up what if-conversion leaves); measure both orders per D13.
+  Orchestrator verified: cargo 0 failures, --all-targets clippy/fmt clean, both
+  lanes 1236+4, corpus + pydori numbers reproduced bit-exact.
 - 2026-06-12 — **G3.3 closed (W3 gate): all template items green; switchover
   ratchet FAILED → proceed flagged (see Deviation log).** Template items, all run
   by the orchestrator on the final W3 tree: behavioral green both lanes (1236+4
