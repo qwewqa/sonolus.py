@@ -730,11 +730,21 @@ pub fn program_shape_heavy() -> BoxedStrategy<Program> {
 /// logs, lazy `And`/`Or` reads, trap-capable expressions) in the mix to
 /// exercise the conversion's exactness and refusal rules. Multi-statement
 /// and concrete-write arms keep the refusal paths (multi-phi, stores that
-/// stay memory) covered.
+/// stay memory) covered. Dynamically-indexed temp writes keep the temp
+/// **unpromoted**, so conversion moves a real memory store into the select's
+/// lazy arm — the shape behind the W4 composition-fuzz miscompile (lazy
+/// may-defs missing from the allocator's interference model), which the
+/// original const-index-only mix could never produce.
 fn diamond_heavy_arm_stmt() -> BoxedStrategy<Stmt> {
     prop_oneof![
         6 => (0..TEMP_POOL.len(), const_index(), expr())
             .prop_map(|(temp, index, value)| Stmt::SetTemp { temp, index, value }),
+        1 => (0..TEMP_POOL.len(), index_shaped(), expr())
+            .prop_map(|(temp, index, value)| Stmt::SetTemp {
+                temp,
+                index: Index::Dyn(Box::new(index)),
+                value,
+            }),
         1 => (0..WRITE_BLOCKS.len(), stmt_index(), expr())
             .prop_map(|(block, index, value)| Stmt::SetConcrete { block, index, value }),
         1 => expr().prop_map(Stmt::Log),

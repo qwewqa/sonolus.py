@@ -12,8 +12,18 @@
 //!   so any in-bounds write is a full definition — same rule as legacy
 //!   `get_defs`). Stores to larger temps (arrays) define without killing, and
 //!   do not count as uses (same as legacy `get_uses` for `IRSet`).
-//! - Loads inside a `ShortCircuit` lazy tree are *conditional* uses; they count
-//!   as uses at the short-circuit's schedule point (may-use ⊆ live).
+//! - Loads inside a lazy tree (`ShortCircuit` rhs / `Select` arm) are
+//!   *conditional* uses; they count as uses at the owner's schedule point
+//!   (may-use ⊆ live).
+//! - Stores inside a lazy tree are *conditional may-defs* at the owner's
+//!   schedule point: they never kill (the pre-store value may flow past the
+//!   owner on the untaken path), they participate in the array may-defined
+//!   fixpoint below (a may analysis), and they contribute store-site
+//!   interference cliques exactly like scheduled stores (next section). The
+//!   W4 if-conversion composition fuzz caught the pre-fix model (lazy stores
+//!   as plain uses): a temp written *only* inside lazy arms built no
+//!   interference at all and was overlaid on live scalar slots, which its
+//!   dynamically-indexed store then clobbered at runtime.
 //!
 //! Like legacy, arrays (size > 1) get the `array_defs`/`is_array_init`
 //! refinement (T3.5; legacy `LivenessAnalysis.preprocess_arrays`): a forward
@@ -43,6 +53,10 @@
 //! contributes a clique over the temps live after it — plus the stored temp
 //! itself even when it is dead afterwards (legacy instead *deletes* dead
 //! stores; keeping them means their writes must not clobber anything live).
+//! Lazy stores contribute the same clique at their owner's schedule point,
+//! with the owner tree's own loads counted live first (the tree's internal
+//! order is invisible at this granularity, so a lazy store must not share a
+//! slot with anything the same tree may read).
 //! Size-0 temps never interfere (they hold no data; legacy filters `size > 0`).
 //!
 //! # Assignment
@@ -156,10 +170,11 @@ fn place_temp(inst: &Inst) -> Option<(TempId, bool)> {
     }
 }
 
-/// Collects the temps loaded anywhere inside a lazy tree (`ShortCircuit` rhs
-/// or `Select` arm; conditional uses — see the module docs). Stops at
-/// scheduled values and constants; iterative.
-fn lazy_temp_uses(mir: &Mir, scheduled: &[bool], root: Value, out: &mut Vec<TempId>) {
+/// Collects the temps accessed anywhere inside a lazy tree (`ShortCircuit`
+/// rhs or `Select` arm) in walk order: `(temp, is_store)` — loads are
+/// *conditional uses*, stores are *conditional may-defs* (see the module
+/// docs). Stops at scheduled values and constants; iterative.
+fn lazy_temp_accesses(mir: &Mir, scheduled: &[bool], root: Value, out: &mut Vec<(TempId, bool)>) {
     let mut stack = vec![root];
     while let Some(v) = stack.pop() {
         if scheduled[v as usize] {
@@ -181,9 +196,9 @@ fn lazy_temp_uses(mir: &Mir, scheduled: &[bool], root: Value, out: &mut Vec<Temp
                 stack.push(*then_root);
                 stack.push(*else_root);
             }
-            Inst::Load { place } | Inst::Store { place, .. } => {
+            inst @ (Inst::Load { place } | Inst::Store { place, .. }) => {
                 if let BlockRef::Temp(t) = place.block {
-                    out.push(t);
+                    out.push((t, matches!(inst, Inst::Store { .. })));
                 }
                 if let BlockRef::Value(v) = place.block {
                     stack.push(v);
@@ -191,7 +206,7 @@ fn lazy_temp_uses(mir: &Mir, scheduled: &[bool], root: Value, out: &mut Vec<Temp
                 if let crate::mir::IndexRef::Value(v) = place.index {
                     stack.push(v);
                 }
-                if let Inst::Store { value, .. } = mir.inst(v) {
+                if let Inst::Store { value, .. } = inst {
                     stack.push(*value);
                 }
             }
@@ -208,21 +223,31 @@ enum Effect {
         temp: TempId,
         kills: bool,
     },
-    /// Conditional uses from a lazy tree.
-    Uses(Vec<TempId>),
+    /// Conditional accesses from a lazy tree (`(temp, is_store)` in walk
+    /// order). Loads are conditional uses. Stores are conditional
+    /// **may-defs**: they never kill (the tree runs only on its taken path,
+    /// so the pre-store value may flow past the owner), but whenever taken
+    /// they write their cells at the owner's schedule point — so they enter
+    /// the may-defined (array) fixpoint and contribute store-site
+    /// interference cliques exactly like scheduled stores. Modeling them as
+    /// plain uses let a temp written *only* inside lazy arms (a shape W4
+    /// if-conversion creates) end up interference-free and be overlaid on
+    /// live scalar slots, which the lazy store then clobbered at runtime
+    /// (caught by the W4 composition fuzz).
+    Lazy(Vec<(TempId, bool)>),
 }
 
 fn effect(mir: &Mir, scheduled: &[bool], v: Value) -> Effect {
     match mir.inst(v) {
         inst @ (Inst::ShortCircuit { .. } | Inst::Select { .. }) => {
-            let mut uses = Vec::new();
+            let mut accesses = Vec::new();
             Mir::for_each_lazy_root(inst, |root| {
-                lazy_temp_uses(mir, scheduled, root, &mut uses);
+                lazy_temp_accesses(mir, scheduled, root, &mut accesses);
             });
-            if uses.is_empty() {
+            if accesses.is_empty() {
                 Effect::None
             } else {
-                Effect::Uses(uses)
+                Effect::Lazy(accesses)
             }
         }
         inst => match place_temp(inst) {
@@ -250,6 +275,17 @@ pub(crate) struct TempInterference {
     pub adj: Vec<HashSet<u32>>,
 }
 
+/// Adds pairwise interference edges over one store-site clique.
+fn clique(interference: &mut [HashSet<u32>], members: &[usize]) {
+    for x in 0..members.len() {
+        for y in (x + 1)..members.len() {
+            let (a, c) = (members[x], members[y]);
+            interference[a].insert(u32::try_from(c).expect("temp id fits u32"));
+            interference[c].insert(u32::try_from(a).expect("temp id fits u32"));
+        }
+    }
+}
+
 /// Computes temp-block liveness and builds the interference graph (module
 /// docs: a clique over the live-after set ∪ {stored temp} at every `Store`).
 #[allow(clippy::too_many_lines)] // one linear dataflow pipeline
@@ -271,10 +307,21 @@ pub(crate) fn temp_interference(mir: &Mir) -> TempInterference {
     for block in &mir.blocks {
         let mut gen_set = BitSet::new(n_temps);
         for &v in &block.insts {
-            if let Effect::Def { temp, kills: false } = effect(mir, &scheduled, v)
-                && mir.temps[temp].size > 1
-            {
-                gen_set.insert(temp);
+            match effect(mir, &scheduled, v) {
+                Effect::Def { temp, kills: false } if mir.temps[temp].size > 1 => {
+                    gen_set.insert(temp);
+                }
+                Effect::Lazy(accesses) => {
+                    // A lazy store is a may-write at the owner's schedule
+                    // point — the may-defined fixpoint is a union (may)
+                    // analysis, so conditional writes belong in it.
+                    for (t, is_store) in accesses {
+                        if is_store && mir.temps[t].size > 1 {
+                            gen_set.insert(t);
+                        }
+                    }
+                }
+                _ => {}
             }
         }
         array_gen.push(gen_set);
@@ -306,12 +353,24 @@ pub(crate) fn temp_interference(mir: &Mir) -> TempInterference {
         let mut flags = vec![false; block.insts.len()];
         let mut running = ad_in[b].clone();
         for (i, &v) in block.insts.iter().enumerate() {
-            if let Effect::Def { temp, kills: false } = effect(mir, &scheduled, v)
-                && mir.temps[temp].size > 1
-                && !running.contains(temp)
-            {
-                flags[i] = true;
-                running.insert(temp);
+            match effect(mir, &scheduled, v) {
+                Effect::Def { temp, kills: false }
+                    if mir.temps[temp].size > 1 && !running.contains(temp) =>
+                {
+                    flags[i] = true;
+                    running.insert(temp);
+                }
+                Effect::Lazy(accesses) => {
+                    // A lazy store is never an init kill itself (conditional;
+                    // live ranges only grow), but it does make any later
+                    // store non-first.
+                    for (t, is_store) in accesses {
+                        if is_store && mir.temps[t].size > 1 {
+                            running.insert(t);
+                        }
+                    }
+                }
+                _ => {}
             }
         }
         init_at.push(flags);
@@ -341,11 +400,16 @@ pub(crate) fn temp_interference(mir: &Mir) -> TempInterference {
                     gen_set.insert(t);
                     kill.remove(t);
                 }
-                Effect::Uses(ts) => {
-                    for t in ts {
+                Effect::Lazy(accesses) => {
+                    for (t, is_store) in accesses {
                         present[t] = true;
-                        gen_set.insert(t);
-                        kill.remove(t);
+                        if !is_store {
+                            gen_set.insert(t);
+                            kill.remove(t);
+                        }
+                        // A lazy store neither uses nor kills: like a
+                        // scheduled array store it is made safe by its
+                        // interference clique (below), not by liveness.
                     }
                 }
                 Effect::Def { temp, kills } => {
@@ -398,9 +462,28 @@ pub(crate) fn temp_interference(mir: &Mir) -> TempInterference {
             match effect(mir, &scheduled, v) {
                 Effect::None => {}
                 Effect::Use(t) => live.insert(t),
-                Effect::Uses(ts) => {
-                    for t in ts {
-                        live.insert(t);
+                Effect::Lazy(accesses) => {
+                    // The tree's internal order is invisible here: count its
+                    // loads as live first, so its stores interfere with
+                    // everything the same tree may read.
+                    for &(t, is_store) in &accesses {
+                        if !is_store {
+                            live.insert(t);
+                        }
+                    }
+                    // One store-site clique per may-def, against the same
+                    // live-after set a scheduled store of that temp would see
+                    // (no kill: the write is conditional).
+                    for &(temp, is_store) in &accesses {
+                        if !is_store {
+                            continue;
+                        }
+                        scratch.clear();
+                        scratch.extend(live.iter().filter(|&t| mir.temps[t].size > 0));
+                        if mir.temps[temp].size > 0 && !live.contains(temp) {
+                            scratch.push(temp);
+                        }
+                        clique(&mut interference, &scratch);
                     }
                 }
                 Effect::Def { temp, kills } => {
@@ -409,13 +492,7 @@ pub(crate) fn temp_interference(mir: &Mir) -> TempInterference {
                     if mir.temps[temp].size > 0 && !live.contains(temp) {
                         scratch.push(temp);
                     }
-                    for x in 0..scratch.len() {
-                        for y in (x + 1)..scratch.len() {
-                            let (a, c) = (scratch[x], scratch[y]);
-                            interference[a].insert(u32::try_from(c).expect("temp id fits u32"));
-                            interference[c].insert(u32::try_from(a).expect("temp id fits u32"));
-                        }
-                    }
+                    clique(&mut interference, &scratch);
                     if kills || init_at[b][i] {
                         live.remove(temp);
                     }
@@ -464,8 +541,10 @@ fn first_occurrence(mir: &Mir) -> Vec<usize> {
             match effect(mir, &scheduled, v) {
                 Effect::None => {}
                 Effect::Use(t) | Effect::Def { temp: t, .. } => note(t, &mut first),
-                Effect::Uses(ts) => {
-                    for t in ts {
+                Effect::Lazy(accesses) => {
+                    // Walk order, loads and stores alike (the same temps the
+                    // pre-fix code noted, in the same order).
+                    for (t, _) in accesses {
                         note(t, &mut first);
                     }
                 }
@@ -778,6 +857,130 @@ mod tests {
         store_out(&mut mir, blk, sc);
         let alloc = allocate_temps(&mir).unwrap();
         assert_ne!(alloc.offsets[c], alloc.offsets[x]);
+    }
+
+    /// `a` must lie outside `arr`'s slot range.
+    fn assert_disjoint(alloc: &Allocation, a: TempId, arr: TempId, arr_size: u32) {
+        let o_a = alloc.offsets[a].expect("a placed");
+        let o_arr = alloc.offsets[arr].expect("arr placed");
+        assert!(
+            o_a < o_arr || o_a >= o_arr + arr_size,
+            "scalar at {o_a} overlaps array at {o_arr}..{}",
+            o_arr + arr_size
+        );
+    }
+
+    #[test]
+    fn lazy_store_interferes_with_live_scalars() {
+        // The W4 composition-fuzz miscompile (per-temp may-def modeling): a
+        // temp written ONLY inside a Select's lazy arm built no interference
+        // at all and was overlaid on a scalar live across the select, which
+        // the (conditional, dynamically-indexed in the fuzz find) lazy store
+        // then clobbered at runtime. The scalar's def sits in a predecessor
+        // block so no scheduled store site sees the array live — only the
+        // may-def clique at the select itself protects it.
+        //   b0: a = 1
+        //   b1: sel = Select(t, k, Execute(arr[0] <- 9, k)); out = sel;
+        //       out = a  — `a` is live across the select; arr must not share.
+        let mut mir = Mir::new();
+        let a = mir.push_temp("a", 1);
+        let arr = mir.push_temp("arr", 3);
+        let b0 = mir.push_block();
+        let b1 = mir.push_block();
+        store_const(&mut mir, b0, a, 1);
+        mir.blocks[b0].terminator = Terminator::Jump(b1);
+        let test = sched(
+            &mut mir,
+            b1,
+            Inst::Load {
+                place: Place {
+                    block: BlockRef::Concrete(21),
+                    index: IndexRef::Const(0),
+                    offset: 0,
+                },
+            },
+        );
+        let k = mir.push_inst(Inst::ConstInt(9));
+        let st = mir.push_inst(Inst::Store {
+            place: temp_place(arr),
+            value: k,
+        }); // unscheduled: lives in the select's else arm
+        let ex = mir.push_inst(Inst::Op {
+            op: Op::Execute,
+            pure_node: false,
+            args: vec![st, k],
+        });
+        let sel = sched(
+            &mut mir,
+            b1,
+            Inst::Select {
+                test,
+                then_root: k,
+                else_root: ex,
+            },
+        );
+        store_out(&mut mir, b1, sel);
+        let va = load(&mut mir, b1, a);
+        store_out(&mut mir, b1, va);
+        let alloc = allocate_temps(&mir).unwrap();
+        assert_disjoint(&alloc, a, arr, 3);
+    }
+
+    #[test]
+    fn lazy_store_feeds_the_array_fixpoint() {
+        // The cross-block half of the same fix: the lazy may-def must enter
+        // the may-defined (array) fixpoint, else `arr` is filtered from every
+        // live-out and a later block's scalar store builds no clique with it
+        // — even though arr is read after that store.
+        //   b0: sel = Select(t, k, Execute(arr[0] <- 9, k)); out = sel
+        //   b1: s = 1
+        //   b2: out = arr[0]; out = s
+        let mut mir = Mir::new();
+        let s = mir.push_temp("s", 1);
+        let arr = mir.push_temp("arr", 3);
+        let b0 = mir.push_block();
+        let b1 = mir.push_block();
+        let b2 = mir.push_block();
+        let test = sched(
+            &mut mir,
+            b0,
+            Inst::Load {
+                place: Place {
+                    block: BlockRef::Concrete(21),
+                    index: IndexRef::Const(0),
+                    offset: 0,
+                },
+            },
+        );
+        let k = mir.push_inst(Inst::ConstInt(9));
+        let st = mir.push_inst(Inst::Store {
+            place: temp_place(arr),
+            value: k,
+        }); // unscheduled lazy store
+        let ex = mir.push_inst(Inst::Op {
+            op: Op::Execute,
+            pure_node: false,
+            args: vec![st, k],
+        });
+        let sel = sched(
+            &mut mir,
+            b0,
+            Inst::Select {
+                test,
+                then_root: k,
+                else_root: ex,
+            },
+        );
+        store_out(&mut mir, b0, sel);
+        mir.blocks[b0].terminator = Terminator::Jump(b1);
+        store_const(&mut mir, b1, s, 1);
+        mir.blocks[b1].terminator = Terminator::Jump(b2);
+        let varr = load(&mut mir, b2, arr);
+        store_out(&mut mir, b2, varr);
+        let vs = load(&mut mir, b2, s);
+        store_out(&mut mir, b2, vs);
+        let alloc = allocate_temps(&mir).unwrap();
+        assert_disjoint(&alloc, s, arr, 3);
     }
 
     #[test]

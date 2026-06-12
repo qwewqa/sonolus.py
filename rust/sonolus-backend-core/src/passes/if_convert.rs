@@ -2218,6 +2218,151 @@ mod tests {
     }
 
     #[test]
+    #[allow(clippy::too_many_lines)] // one literal loop CFG, kept linear
+    fn converted_lazy_arm_store_does_not_clobber_loop_state() {
+        // End-to-end pin for the W4 composition-fuzz miscompile (shape-heavy
+        // profile, persisted seed in tests/proptest-regressions/fuzz_shape.txt):
+        // a counter loop whose body is a triangle; the arm stores into a
+        // dynamically-indexed — hence unpromotable — array temp. Conversion
+        // moves those stores into the select's lazy arm, where the allocator
+        // must model them as may-defs: pre-fix they counted only as uses, the
+        // array built no interference, was overlaid on the loop's class-temp
+        // slots, and the lazy store clobbered the loop counter at runtime
+        // (observed as a wrong DebugLog count: 4 -> 2 on the fuzz seed).
+        //
+        // b0: jump b1
+        // b1: c = phi[(b0, 0), (b4, cp)]; t = Less(c, 2); branch t {0: b5} b2
+        // b2: lg = DebugLog(0); f = Floor(lg); branch f {0: b3} b4
+        // b3 (arm): d = Load(21[1]); arr[d] <- 100; arr[1] <- 100;
+        //           arr[2] <- 100; arr[3] <- 100; jump b4
+        // b4 (join): x = phi[(b2, 7), (b3, 1)]; Store(20[0], x);
+        //            cp = Add(c, 1); jump b1
+        // b5: exit
+        fn run_mir(mut mir: Mir) -> (Vec<f64>, f64) {
+            crate::ssa::destruct_ssa(&mut mir).unwrap();
+            let alloc = crate::alloc::allocate_temps(&mir).unwrap();
+            let lowered = crate::lower::lower_mir(&mir, &alloc).unwrap();
+            let nodes = crate::emit::cfg_to_engine_nodes(&lowered).unwrap();
+            let mut interp = crate::interpret::Interpreter::new(0);
+            interp.set_block(21, vec![0.0, 0.0]);
+            interp.set_block(20, vec![0.0]);
+            interp.run(&nodes).unwrap();
+            (interp.log().to_vec(), interp.block(20).unwrap()[0])
+        }
+        let mut mir = Mir::new();
+        let arr = mir.push_temp("arr", 4);
+        let b0 = mir.push_block();
+        let b1 = mir.push_block();
+        let b2 = mir.push_block();
+        let b3 = mir.push_block();
+        let b4 = mir.push_block();
+        let b5 = mir.push_block();
+        mir.blocks[b0].terminator = Terminator::Jump(b1);
+        let zero = mir.push_inst(Inst::ConstInt(0));
+        let c_phi = add_phi(&mut mir, b1, vec![(b0, zero)]); // cp keyed below
+        let two = mir.push_inst(Inst::ConstInt(2));
+        let t = sched(
+            &mut mir,
+            b1,
+            Inst::Op {
+                op: Op::Less,
+                pure_node: true,
+                args: vec![c_phi, two],
+            },
+        );
+        mir.blocks[b1].terminator = Terminator::Branch {
+            test: t,
+            cases: vec![(CaseCond::Int(0), b5)],
+            default: Some(b2),
+        };
+        let lg = sched(
+            &mut mir,
+            b2,
+            Inst::Op {
+                op: Op::DebugLog,
+                pure_node: false,
+                args: vec![zero],
+            },
+        );
+        let f = sched(
+            &mut mir,
+            b2,
+            Inst::Op {
+                op: Op::Floor,
+                pure_node: true,
+                args: vec![lg],
+            },
+        );
+        mir.blocks[b2].terminator = Terminator::Branch {
+            test: f,
+            cases: vec![(CaseCond::Int(0), b3)],
+            default: Some(b4),
+        };
+        let hundred = mir.push_inst(Inst::ConstInt(100));
+        let d = load(&mut mir, b3, concrete_place(21, 1));
+        sched(
+            &mut mir,
+            b3,
+            Inst::Store {
+                place: Place {
+                    block: BlockRef::Temp(arr),
+                    index: IndexRef::Value(d),
+                    offset: 0,
+                },
+                value: hundred,
+            },
+        );
+        for i in 1..4 {
+            sched(
+                &mut mir,
+                b3,
+                Inst::Store {
+                    place: Place {
+                        block: BlockRef::Temp(arr),
+                        index: IndexRef::Const(i),
+                        offset: 0,
+                    },
+                    value: hundred,
+                },
+            );
+        }
+        mir.blocks[b3].terminator = Terminator::Jump(b4);
+        let seven = mir.push_inst(Inst::ConstInt(7));
+        let one = mir.push_inst(Inst::ConstInt(1));
+        let x_phi = add_phi(&mut mir, b4, vec![(b2, seven), (b3, one)]);
+        store_out(&mut mir, b4, x_phi);
+        let cp = sched(
+            &mut mir,
+            b4,
+            Inst::Op {
+                op: Op::Add,
+                pure_node: true,
+                args: vec![c_phi, one],
+            },
+        );
+        mir.blocks[b4].terminator = Terminator::Jump(b1);
+        mir.blocks[b5].terminator = Terminator::Exit;
+        let Inst::Phi { args } = &mut mir.insts[c_phi as usize] else {
+            unreachable!()
+        };
+        args.push((b4, cp));
+        let baseline = mir.clone();
+        assert!(run_pass(&mut mir), "the triangle must convert");
+        assert!(
+            matches!(mir.blocks[b2].terminator, Terminator::Jump(j) if j == b1),
+            "the join merged into the body head"
+        );
+        let (base_log, base_out) = run_mir(baseline);
+        let (conv_log, conv_out) = run_mir(mir);
+        assert_eq!(base_log, vec![0.0, 0.0], "two iterations, one log each");
+        assert_eq!(
+            conv_log, base_log,
+            "the lazy arm stores must not clobber the loop counter"
+        );
+        assert_eq!(conv_out, base_out);
+    }
+
+    #[test]
     fn end_to_end_matches_minimal_differentially() {
         use crate::diff::{DiffConfig, DiffOutcome, diff_with};
         use crate::passes::Pipeline;
