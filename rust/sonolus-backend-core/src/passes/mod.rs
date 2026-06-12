@@ -59,6 +59,7 @@ pub mod licm;
 pub mod mem2reg;
 pub mod rules;
 pub mod sccp;
+pub mod shape;
 pub mod switch_form;
 
 use std::time::Duration;
@@ -198,6 +199,18 @@ pub fn registry() -> &'static [RegistryEntry] {
         RegistryEntry {
             stage: Stage::W3,
             make: || Box::new(licm::LicmPass),
+        },
+        // ===== Wave W4 — T3.9 block shaping (T3.8 if-conversion in parallel
+        // development; the orchestrator resolves W4-internal order at merge
+        // by measurement, per D13) =====
+        //
+        // T3.9: JumpLoop-aware CFG shaping (src/passes/shape.rs) — trivial-phi
+        // cleanup, phi-aware empty-block threading, exit shaping/combining,
+        // chain merging, tiny-block duplication into predecessors
+        // (dispatch_count + cross-block Get/Set headline).
+        RegistryEntry {
+            stage: Stage::W4,
+            make: || Box::new(shape::ShapePass),
         },
     ]
 }

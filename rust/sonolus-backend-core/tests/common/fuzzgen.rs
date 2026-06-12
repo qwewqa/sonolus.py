@@ -643,6 +643,84 @@ pub fn program_chain_heavy() -> BoxedStrategy<Program> {
 }
 
 // ----------------------------------------------------------------------------------
+// Shape-heavy profile (T3.9 block shaping's surface)
+// ----------------------------------------------------------------------------------
+
+/// Constant stores to constant temp cells: after `Mem2Reg`+SCCP these arms
+/// become *empty* blocks feeding constant phi arguments — the empty-block /
+/// tiny-join landscape T3.9's threading, merging, and duplication reshape.
+fn const_temp_store() -> BoxedStrategy<Stmt> {
+    (
+        0..TEMP_POOL.len(),
+        const_index(),
+        (0..INT_POOL.len()).prop_map(Expr::Int),
+    )
+        .prop_map(|(temp, index, value)| Stmt::SetTemp { temp, index, value })
+        .boxed()
+}
+
+/// Sparse arm bodies: **possibly empty** (0..=2 statements), dominated by
+/// constant temp stores, with general statements (incl. `Ret` — extra exit
+/// paths) in the mix.
+fn sparse_arm_stmts() -> BoxedStrategy<Vec<Stmt>> {
+    prop_oneof![
+        3 => vec(const_temp_store(), 0..=2),
+        1 => vec(stmt(), 0..=2),
+    ]
+    .boxed()
+}
+
+/// Control-flow shapes for the shape-heavy profile: diamonds and switches
+/// with sparse/empty arms (post-W2 empty blocks and tiny joins), switches
+/// with and without defaults (empty-exit shapes), tiny straight-line blocks,
+/// and bounded loops over all of it (joins on loop paths get real phis).
+fn shape_heavy_shape() -> BoxedStrategy<Shape> {
+    let switch_case =
+        (any::<bool>(), 0..=6u8, sparse_arm_stmts()).prop_map(|(cond_half, cond, stmts)| {
+            SwitchCase {
+                cond_half,
+                cond,
+                stmts,
+            }
+        });
+    let loop_free = prop_oneof![
+        3 => (expr(), any::<bool>(), sparse_arm_stmts(), sparse_arm_stmts()).prop_map(
+            |(cond, float_cond, then_stmts, else_stmts)| Shape::Diamond {
+                cond,
+                float_cond,
+                then_stmts,
+                else_stmts,
+            }
+        ).boxed(),
+        3 => (expr(), any::<bool>(), vec(switch_case, 1..=4), option::of(sparse_arm_stmts()))
+            .prop_map(|(scrutinee, wrap_mod, cases, default)| Shape::Switch {
+                scrutinee,
+                wrap_mod,
+                cases,
+                default,
+            })
+            .boxed(),
+        2 => vec(stmt(), 1..=2).prop_map(Shape::Straight).boxed(),
+        1 => shape_loop_free(),
+    ]
+    .boxed();
+    loop_free
+        .prop_recursive(2, 6, 2, |inner| {
+            (1..=5u8, vec(inner, 1..=2))
+                .prop_map(|(trips, body)| Shape::Loop { trips, body })
+                .boxed()
+        })
+        .boxed()
+}
+
+/// A whole program with the shape-heavy profile: the dedicated fuzz surface
+/// for W4 block shaping (T3.9). Same AST and lowering as [`program`] — only
+/// the strategy weights differ (additive knob, the T3.4/T3.6 precedent).
+pub fn program_shape_heavy() -> BoxedStrategy<Program> {
+    program_from_shapes(shape_heavy_shape())
+}
+
+// ----------------------------------------------------------------------------------
 // AST -> Cfg lowering
 // ----------------------------------------------------------------------------------
 

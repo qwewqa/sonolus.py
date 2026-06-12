@@ -192,7 +192,14 @@ fn cond_matches(cond: CaseCond, test: &Inst) -> bool {
 
 /// Constant-test folding, duplicate-of-default case removal, and degenerate
 /// branch → jump. See the module docs (transform 1).
-fn simplify_branches(mir: &mut Mir) -> bool {
+///
+/// `pub(crate)`: the W4 shape pass (`passes::shape`) reuses this inside its
+/// own fixpoint — its threading can make every edge of a branch reach the
+/// default's target, which this transform then collapses to a jump (enabling
+/// the chain merge). A test value orphaned by the collapse stays scheduled
+/// (same evaluation point); only DCE's own sweep removes it when provably
+/// unobservable.
+pub(crate) fn simplify_branches(mir: &mut Mir) -> bool {
     let mut changed = false;
     for b in 0..mir.blocks.len() {
         let Terminator::Branch {
@@ -340,7 +347,12 @@ fn thread_jumps(mir: &mut Mir) -> bool {
 // ----------------------------------------------------------------------------------
 
 /// Empties unreachable blocks in place and prunes stale phi args (transform 3).
-fn clear_unreachable(mir: &mut Mir) -> bool {
+///
+/// `pub(crate)`: the W4 shape pass (`passes::shape`) reuses this exact
+/// hygiene step inside its own fixpoint (its transforms leave blocks
+/// unreachable and phi args keyed by ex-predecessors, the same way this
+/// pass's transforms do).
+pub(crate) fn clear_unreachable(mir: &mut Mir) -> bool {
     let mut reachable = vec![false; mir.blocks.len()];
     reachable[0] = true;
     let mut stack: Vec<BlockId> = vec![0];
@@ -383,7 +395,11 @@ fn clear_unreachable(mir: &mut Mir) -> bool {
 }
 
 /// Merges single-predecessor jump chains (transform 4).
-fn merge_chains(mir: &mut Mir) -> bool {
+///
+/// `pub(crate)`: the W4 shape pass (`passes::shape`) reuses this merge inside
+/// its own fixpoint — after its trivial-phi elimination, single-predecessor
+/// phi-bearing targets become phi-free and this exact merge absorbs them.
+pub(crate) fn merge_chains(mir: &mut Mir) -> bool {
     let mut changed = false;
     loop {
         // Predecessors are recomputed after every merge (a merge changes
