@@ -67,7 +67,8 @@ pub enum LowerError {
     CrossBlockUse(Value),
     /// A lazy tree references a scheduled value.
     LazyScheduledRef(Value),
-    /// A `Store`/`Phi` appeared inside a lazy tree.
+    /// A `Phi` appeared inside a lazy tree. (`Store`s are legal there: W4
+    /// if-conversion wraps arm statements in `Execute` chains.)
     InvalidLazyInst(Value),
     /// A dynamic place component's tree is not a `Get`.
     DynamicPlaceNotLoad(Value),
@@ -170,18 +171,16 @@ fn count_uses(mir: &Mir, scheduled: &[bool]) -> Vec<u32> {
         for &v in &block.insts {
             let inst = mir.inst(v);
             Mir::for_each_operand(inst, |o| counts[o as usize] += 1);
-            if let Inst::ShortCircuit { rhs, .. } = inst {
-                // Count references inside the lazy tree as well.
-                lazy_stack.push(*rhs);
-                while let Some(lv) = lazy_stack.pop() {
-                    if scheduled[lv as usize] || mir.is_const(lv) {
-                        continue;
-                    }
-                    Mir::for_each_operand(mir.inst(lv), |o| {
-                        counts[o as usize] += 1;
-                        lazy_stack.push(o);
-                    });
+            // Count references inside the owned lazy tree(s) as well.
+            Mir::for_each_lazy_root(inst, |root| lazy_stack.push(root));
+            while let Some(lv) = lazy_stack.pop() {
+                if scheduled[lv as usize] || mir.is_const(lv) {
+                    continue;
                 }
+                Mir::for_each_operand(mir.inst(lv), |o| {
+                    counts[o as usize] += 1;
+                    lazy_stack.push(o);
+                });
             }
         }
         if let Terminator::Branch { test, .. } = &block.terminator {
@@ -307,6 +306,23 @@ impl Lowerer<'_> {
                 let rhs_tree = self.lower_lazy_tree(rhs)?;
                 Ok(self.push_node(make_instr(op, pure_node, vec![lhs_tree, rhs_tree])))
             }
+            Inst::Select {
+                test,
+                then_root,
+                else_root,
+            } => {
+                // The runtime `If` op as a value node: the interpreter
+                // evaluates the test, then only the taken arm (the same node
+                // shape the emitter's two-way dispatchers use).
+                let test_tree = self.operand(test, pending)?;
+                let then_tree = self.lower_lazy_tree(then_root)?;
+                let else_tree = self.lower_lazy_tree(else_root)?;
+                Ok(self.push_node(make_instr(
+                    Op::If,
+                    false,
+                    vec![test_tree, then_tree, else_tree],
+                )))
+            }
             Inst::Load { place } => {
                 let (block_tree, index_tree) = self.place_components(&place, pending)?;
                 let p = self.lower_place(&place, block_tree, index_tree)?;
@@ -343,7 +359,9 @@ impl Lowerer<'_> {
         Ok((block_tree, index_tree))
     }
 
-    /// Regenerates a lazy (`ShortCircuit` rhs) expression tree, iteratively.
+    /// Regenerates a lazy expression tree (`ShortCircuit` rhs, `Select`
+    /// arm), iteratively.
+    #[allow(clippy::too_many_lines)] // one work-stack state machine
     fn lower_lazy_tree(&mut self, root: Value) -> Result<usize, LowerError> {
         enum Work {
             Visit(Value),
@@ -378,6 +396,15 @@ impl Lowerer<'_> {
                             work.push(Work::Visit(*rhs));
                             work.push(Work::Visit(*lhs));
                         }
+                        Inst::Select {
+                            test,
+                            then_root,
+                            else_root,
+                        } => {
+                            work.push(Work::Visit(*else_root));
+                            work.push(Work::Visit(*then_root));
+                            work.push(Work::Visit(*test));
+                        }
                         Inst::Load { place } => {
                             // Index then block (LIFO -> block evaluates first).
                             if let IndexRef::Value(iv) = place.index {
@@ -387,7 +414,20 @@ impl Lowerer<'_> {
                                 work.push(Work::Visit(bv));
                             }
                         }
-                        Inst::Store { .. } | Inst::Phi { .. } => {
+                        Inst::Store { place, value } => {
+                            // Stores are legal inside W4 if-conversion arm
+                            // trees (Execute-wrapped statements evaluated iff
+                            // the arm is taken). Legacy Set evaluation order:
+                            // block, index, value (LIFO push reverse).
+                            work.push(Work::Visit(*value));
+                            if let IndexRef::Value(iv) = place.index {
+                                work.push(Work::Visit(iv));
+                            }
+                            if let BlockRef::Value(bv) = place.block {
+                                work.push(Work::Visit(bv));
+                            }
+                        }
+                        Inst::Phi { .. } => {
                             return Err(LowerError::InvalidLazyInst(v));
                         }
                         Inst::ConstInt(_) | Inst::ConstFloat(_) => unreachable!(),
@@ -411,6 +451,17 @@ impl Lowerer<'_> {
                             self.push_node(make_instr(op, pure_node, vec![lhs_tree, rhs_tree]));
                         results.push(node);
                     }
+                    Inst::Select { .. } => {
+                        let else_tree = results.pop().expect("else tree");
+                        let then_tree = results.pop().expect("then tree");
+                        let test_tree = results.pop().expect("test tree");
+                        let node = self.push_node(make_instr(
+                            Op::If,
+                            false,
+                            vec![test_tree, then_tree, else_tree],
+                        ));
+                        results.push(node);
+                    }
                     Inst::Load { place } => {
                         let index_tree = match place.index {
                             IndexRef::Value(_) => Some(results.pop().expect("index tree")),
@@ -424,7 +475,27 @@ impl Lowerer<'_> {
                         let node = self.push_node(Node::Get(p));
                         results.push(node);
                     }
-                    _ => unreachable!("only Op/ShortCircuit/Load reach Finish"),
+                    Inst::Store { place, .. } => {
+                        let value_tree = results.pop().expect("store value tree");
+                        let index_tree = match place.index {
+                            IndexRef::Value(_) => Some(results.pop().expect("index tree")),
+                            IndexRef::Const(_) => None,
+                        };
+                        let block_tree = match place.block {
+                            BlockRef::Value(_) => Some(results.pop().expect("block tree")),
+                            _ => None,
+                        };
+                        let p = self.lower_place(&place, block_tree, index_tree)?;
+                        // A `Set` node in expression position: the emitter
+                        // and interpreter handle it anywhere in a tree (it
+                        // evaluates to 0.0; the wrapping Execute discards it).
+                        let node = self.push_node(Node::Set {
+                            place: p,
+                            value: value_tree,
+                        });
+                        results.push(node);
+                    }
+                    _ => unreachable!("only Op/ShortCircuit/Select/Load/Store reach Finish"),
                 },
             }
         }

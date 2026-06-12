@@ -174,6 +174,13 @@ pub fn inst_effects(mir: &Mir, v: Value) -> Effects {
             control: true,
             ..Effects::PURE
         },
+        // The W4 if-conversion product (runtime `If` as a value): the select
+        // itself is a pure fold of its test, but both arms are lazy trees —
+        // the same D11 boundary as `ShortCircuit`.
+        Inst::Select { .. } => Effects {
+            control: true,
+            ..Effects::PURE
+        },
         Inst::Load { .. } => Effects {
             reads_memory: true,
             ..Effects::PURE
@@ -190,16 +197,17 @@ pub fn inst_effects(mir: &Mir, v: Value) -> Effects {
 }
 
 /// [`inst_effects`] unioned with the effects of every instruction inside the
-/// owned lazy rhs tree of a `ShortCircuit` (iterative walk; nested
-/// `ShortCircuit`s included). For non-`ShortCircuit` instructions this equals
-/// the shallow form.
+/// owned lazy tree(s) of a `ShortCircuit` rhs or `Select` arm (iterative
+/// walk; nested lazy owners included). For instructions without lazy roots
+/// this equals the shallow form.
 pub fn inst_effects_deep(mir: &Mir, v: Value) -> Effects {
     let mut effects = inst_effects(mir, v);
-    let Inst::ShortCircuit { rhs, .. } = mir.inst(v) else {
+    let mut stack: Vec<Value> = Vec::new();
+    Mir::for_each_lazy_root(mir.inst(v), |root| stack.push(root));
+    if stack.is_empty() {
         return effects;
-    };
+    }
     let scheduled = mir.scheduled_mask();
-    let mut stack = vec![*rhs];
     while let Some(lv) = stack.pop() {
         // Scheduled values are ordinary operands evaluated before the owner,
         // not part of the lazy tree (single-owner contract; defensive — the

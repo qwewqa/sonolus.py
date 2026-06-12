@@ -516,7 +516,11 @@ fn temp_index_in_bounds(mir: &Mir, t: TempId, index: i64, offset: i64) -> bool {
 /// the folded `index + offset` provably inside the runtime assert range
 /// (`0..=65535` for concrete blocks; the temp's own size for temps). Any
 /// dynamic component may evaluate to NaN/non-integral/out-of-range and trap.
-fn load_is_total(mir: &Mir, place: &Place) -> bool {
+/// `pub(crate)`: the W4 if-conversion pass (`passes::if_convert`) uses the
+/// same proof for its pure-total arm-tree hoisting (an arm value tree may
+/// move to the head — executed on the untaken path too — only when nothing
+/// in it can raise or write).
+pub(crate) fn load_is_total(mir: &Mir, place: &Place) -> bool {
     let IndexRef::Const(i) = place.index else {
         return false;
     };
@@ -557,6 +561,17 @@ fn lazy_tree_removable(mir: &Mir, scheduled: &[bool], rhs: Value) -> bool {
                 stack.push(*lhs);
                 stack.push(*rhs);
             }
+            Inst::Select {
+                test,
+                then_root,
+                else_root,
+            } => {
+                // The select itself is total (a 3-arg `If` cannot trap); the
+                // test and both arms are part of the tree.
+                stack.push(*test);
+                stack.push(*then_root);
+                stack.push(*else_root);
+            }
             Inst::Load { place } => {
                 if !load_is_total(mir, place) {
                     return false;
@@ -564,8 +579,9 @@ fn lazy_tree_removable(mir: &Mir, scheduled: &[bool], rhs: Value) -> bool {
                 // A total load has no value operands (constant index,
                 // non-computed block): nothing further to walk.
             }
-            // Stores/phis inside a lazy tree are out of contract; keep the
-            // owner rather than guessing.
+            // A store inside a lazy tree (a W4 if-conversion arm statement)
+            // is a conditional write the owner must preserve; phis are out
+            // of contract — keep the owner rather than guessing.
             Inst::Store { .. } | Inst::Phi { .. } => return false,
         }
     }
@@ -631,6 +647,17 @@ fn sweep_dead(mir: &mut Mir) -> (bool, bool) {
                 }
                 Inst::Load { place } => !load_is_total(mir, place),
                 Inst::ShortCircuit { rhs, .. } => !lazy_tree_removable(mir, &scheduled, *rhs),
+                Inst::Select {
+                    then_root,
+                    else_root,
+                    ..
+                } => {
+                    // Removable only when *both* arms are removable (either
+                    // may be the taken one). The eager test is a separate
+                    // scheduled instruction, classified on its own.
+                    !lazy_tree_removable(mir, &scheduled, *then_root)
+                        || !lazy_tree_removable(mir, &scheduled, *else_root)
+                }
                 Inst::ConstInt(_) | Inst::ConstFloat(_) | Inst::Phi { .. } => false,
             };
             if keep {

@@ -471,8 +471,10 @@ impl<'a> Solver<'a> {
         }
         for i in 0..self.mir.blocks[b].insts.len() {
             let v = self.mir.blocks[b].insts[i];
-            if let Inst::ShortCircuit { rhs, .. } = self.mir.inst(v) {
-                self.visit_lazy_tree(*rhs);
+            let mut roots: Vec<Value> = Vec::new();
+            Mir::for_each_lazy_root(self.mir.inst(v), |root| roots.push(root));
+            for root in roots {
+                self.visit_lazy_tree(root);
             }
             self.visit_value(v);
         }
@@ -614,6 +616,28 @@ impl<'a> Solver<'a> {
                     } else {
                         // Pass-through: the result is exactly eval(rhs).
                         self.lattice[*rhs as usize]
+                    }
+                }
+            },
+            // The W4 if-conversion product. SCCP runs before if-conversion in
+            // the registry, so this is defensive coverage: with a known test
+            // the result is exactly the taken arm's lattice value (the other
+            // arm never runs); an unknown test is overdefined (no
+            // phase-2 splicing refinement is implemented for `Select`).
+            Inst::Select {
+                test,
+                then_root,
+                else_root,
+            } => match self.lattice[*test as usize] {
+                Lattice::Top => Lattice::Top,
+                Lattice::Bottom => Lattice::Bottom,
+                Lattice::Const(c) => {
+                    // `If` semantics: test != 0.0 takes the then arm (NaN is
+                    // truthy).
+                    if c == 0.0 {
+                        self.lattice[*else_root as usize]
+                    } else {
+                        self.lattice[*then_root as usize]
                     }
                 }
             },
@@ -858,6 +882,27 @@ impl<'a> Rewriter<'a> {
                 }
                 self.rewrite_lazy_tree(new_rhs);
             }
+            Inst::Select {
+                test,
+                then_root,
+                else_root,
+            } => {
+                let new_test = self.resolve(test);
+                let new_then = self.resolve(then_root);
+                let new_else = self.resolve(else_root);
+                if (new_test, new_then, new_else) != (test, then_root, else_root)
+                    && let Inst::Select {
+                        test,
+                        then_root,
+                        else_root,
+                    } = &mut self.mir.insts[v as usize]
+                {
+                    (*test, *then_root, *else_root) = (new_test, new_then, new_else);
+                    self.values_changed = true;
+                }
+                self.rewrite_lazy_tree(new_then);
+                self.rewrite_lazy_tree(new_else);
+            }
             Inst::Load { mut place } => {
                 if self.rewrite_place(&mut place) {
                     self.mir.insts[v as usize] = Inst::Load { place };
@@ -948,6 +993,28 @@ impl<'a> Rewriter<'a> {
                         self.values_changed = true;
                     }
                 }
+                Inst::Select {
+                    test,
+                    then_root,
+                    else_root,
+                } => {
+                    let new_test = self.resolve(test);
+                    let new_then = self.resolve(then_root);
+                    let new_else = self.resolve(else_root);
+                    stack.push(new_test);
+                    stack.push(new_then);
+                    stack.push(new_else);
+                    if (new_test, new_then, new_else) != (test, then_root, else_root)
+                        && let Inst::Select {
+                            test,
+                            then_root,
+                            else_root,
+                        } = &mut self.mir.insts[v as usize]
+                    {
+                        (*test, *then_root, *else_root) = (new_test, new_then, new_else);
+                        self.values_changed = true;
+                    }
+                }
                 Inst::Load { mut place } => {
                     if self.rewrite_place(&mut place) {
                         self.mir.insts[v as usize] = Inst::Load { place };
@@ -959,8 +1026,28 @@ impl<'a> Rewriter<'a> {
                         stack.push(iv);
                     }
                 }
-                Inst::Store { .. } | Inst::Phi { .. } => {
-                    debug_assert!(false, "Store/Phi inside a lazy tree (value {v})");
+                Inst::Store { mut place, value } => {
+                    // Legal inside W4 if-conversion arm trees (Execute-wrapped
+                    // statements); rewrite like the eager Store case.
+                    let place_changed = self.rewrite_place(&mut place);
+                    let new_value = self.resolve(value);
+                    if place_changed || new_value != value {
+                        self.mir.insts[v as usize] = Inst::Store {
+                            place,
+                            value: new_value,
+                        };
+                        self.values_changed = true;
+                    }
+                    stack.push(new_value);
+                    if let BlockRef::Value(bv) = place.block {
+                        stack.push(bv);
+                    }
+                    if let IndexRef::Value(iv) = place.index {
+                        stack.push(iv);
+                    }
+                }
+                Inst::Phi { .. } => {
+                    debug_assert!(false, "Phi inside a lazy tree (value {v})");
                 }
             }
         }
@@ -1004,6 +1091,7 @@ impl<'a> Rewriter<'a> {
     /// eager schedule at the instruction's own slot, in lazy-evaluation order
     /// (module docs). The `ShortCircuit` itself is dropped; its uses resolve
     /// to the rhs root.
+    #[allow(clippy::too_many_lines)] // one work-stack state machine
     fn splice_sc(&mut self, v: Value, out: &mut Vec<Value>) {
         enum W {
             Visit(Value),
@@ -1061,6 +1149,31 @@ impl<'a> Rewriter<'a> {
                             stack.push(W::Sched(x));
                             stack.push(W::Visit(new_lhs));
                         }
+                        Inst::Select {
+                            test,
+                            then_root,
+                            else_root,
+                        } => {
+                            // Becomes a scheduled Select: the test is eager,
+                            // both arm trees stay lazy (operand-rewritten
+                            // only).
+                            let new_test = self.resolve(test);
+                            let new_then = self.resolve(then_root);
+                            let new_else = self.resolve(else_root);
+                            if (new_test, new_then, new_else) != (test, then_root, else_root)
+                                && let Inst::Select {
+                                    test,
+                                    then_root,
+                                    else_root,
+                                } = &mut self.mir.insts[x as usize]
+                            {
+                                (*test, *then_root, *else_root) = (new_test, new_then, new_else);
+                            }
+                            self.rewrite_lazy_tree(new_then);
+                            self.rewrite_lazy_tree(new_else);
+                            stack.push(W::Sched(x));
+                            stack.push(W::Visit(new_test));
+                        }
                         Inst::Load { mut place } => {
                             if self.rewrite_place(&mut place) {
                                 self.mir.insts[x as usize] = Inst::Load { place };
@@ -1074,8 +1187,29 @@ impl<'a> Rewriter<'a> {
                                 stack.push(W::Visit(bv));
                             }
                         }
-                        Inst::Store { .. } | Inst::Phi { .. } => {
-                            debug_assert!(false, "Store/Phi inside a lazy tree (value {x})");
+                        Inst::Store { mut place, value } => {
+                            // Legal inside W4 if-conversion arm trees: splice
+                            // back into the eager schedule like any member,
+                            // evaluation order block, index, value (LIFO).
+                            let place_changed = self.rewrite_place(&mut place);
+                            let new_value = self.resolve(value);
+                            if place_changed || new_value != value {
+                                self.mir.insts[x as usize] = Inst::Store {
+                                    place,
+                                    value: new_value,
+                                };
+                            }
+                            stack.push(W::Sched(x));
+                            stack.push(W::Visit(new_value));
+                            if let IndexRef::Value(iv) = place.index {
+                                stack.push(W::Visit(iv));
+                            }
+                            if let BlockRef::Value(bv) = place.block {
+                                stack.push(W::Visit(bv));
+                            }
+                        }
+                        Inst::Phi { .. } => {
+                            debug_assert!(false, "Phi inside a lazy tree (value {x})");
                             stack.push(W::Sched(x));
                         }
                     }

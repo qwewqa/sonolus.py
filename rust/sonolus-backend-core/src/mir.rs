@@ -21,7 +21,9 @@
 //!
 //! - **Constants** are never scheduled; they materialize at each use.
 //! - **Phis** live in `block.phis`, not the schedule.
-//! - **`ShortCircuit` right operands**: see below.
+//! - **`ShortCircuit` right operands** (see below) and **`Select` arms**
+//!   (the W4 if-conversion product; same lazy-tree contract — see
+//!   [`Inst::Select`] and `passes/if_convert.rs`).
 //!
 //! # Binarization (invariant §3.3: the mid-level IR is strictly binary)
 //!
@@ -194,6 +196,21 @@ pub enum Inst {
         lhs: Value,
         rhs: Value,
     },
+    /// The runtime `If` op as a value (W4 if-conversion, T3.8): evaluates
+    /// `test`, then **only** the taken arm (`test != 0.0` — NaN is truthy —
+    /// selects `then_root`, else `else_root`), and yields the taken arm's
+    /// value. `test` is an ordinary eager operand. Each arm root follows the
+    /// `ShortCircuit` rhs contract (the second species of the D11 lazy
+    /// boundary): a constant, a scheduled value (legalized by `destruct_ssa`
+    /// S5 into an unscheduled class-temp load), or the root of an unscheduled
+    /// lazy expression tree owned by this instruction and evaluated iff its
+    /// side is taken. The frontend never produces `Select`; only the
+    /// if-conversion pass creates it, so `minimal` MIR never contains one.
+    Select {
+        test: Value,
+        then_root: Value,
+        else_root: Value,
+    },
     /// `IRGet`: read one cell.
     Load { place: Place },
     /// `IRSet`: write one cell. Produces no usable value (statement-only, like
@@ -343,8 +360,8 @@ impl Mir {
     }
 
     /// Calls `f` for every *immediate* operand value of an instruction
-    /// (including the lazy `ShortCircuit` rhs root and place block/index
-    /// values, but not descending into lazy trees).
+    /// (including the lazy roots — `ShortCircuit` rhs, `Select` arms — and
+    /// place block/index values, but not descending into lazy trees).
     pub fn for_each_operand(inst: &Inst, mut f: impl FnMut(Value)) {
         match inst {
             Inst::ConstInt(_) | Inst::ConstFloat(_) => {}
@@ -356,6 +373,15 @@ impl Mir {
             Inst::ShortCircuit { lhs, rhs, .. } => {
                 f(*lhs);
                 f(*rhs);
+            }
+            Inst::Select {
+                test,
+                then_root,
+                else_root,
+            } => {
+                f(*test);
+                f(*then_root);
+                f(*else_root);
             }
             Inst::Load { place } => for_place_operand(place, &mut f),
             Inst::Store { place, value } => {
@@ -383,6 +409,15 @@ impl Mir {
                 f(lhs);
                 f(rhs);
             }
+            Inst::Select {
+                test,
+                then_root,
+                else_root,
+            } => {
+                f(test);
+                f(then_root);
+                f(else_root);
+            }
             Inst::Load { place } => for_place_operand_mut(place, &mut f),
             Inst::Store { place, value } => {
                 for_place_operand_mut(place, &mut f);
@@ -393,6 +428,28 @@ impl Mir {
                     f(a);
                 }
             }
+        }
+    }
+
+    /// Calls `f` for every **lazy root** an instruction owns: the
+    /// `ShortCircuit` rhs and both `Select` arms. Nothing for every other
+    /// instruction. The shared entry point for the "walk the owned lazy
+    /// trees" pattern (lower/coalesce/GVN/DCE use counting, liveness, …);
+    /// callers stop their walk at constants and scheduled values exactly as
+    /// for a `ShortCircuit` rhs (a scheduled root is an ordinary use the
+    /// `destruct_ssa` S5 rule legalizes).
+    pub fn for_each_lazy_root(inst: &Inst, mut f: impl FnMut(Value)) {
+        match inst {
+            Inst::ShortCircuit { rhs, .. } => f(*rhs),
+            Inst::Select {
+                then_root,
+                else_root,
+                ..
+            } => {
+                f(*then_root);
+                f(*else_root);
+            }
+            _ => {}
         }
     }
 

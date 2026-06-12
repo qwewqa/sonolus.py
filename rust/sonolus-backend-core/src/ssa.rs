@@ -61,10 +61,13 @@
 //!    `Store(class_temp, value)` right after the def; every use of a slotted
 //!    value becomes a fresh `Load(class_temp)` directly before the user
 //!    (single-use loads — exactly the lowering contract). A use *inside* a
-//!    lazy `ShortCircuit` rhs tree instead becomes a fresh **unscheduled**
-//!    load owned by the tree (the value must stay conditionally evaluated;
-//!    reading the class temp lazily is exact because lazy trees contain no
-//!    stores and the def's store ran before the owner).
+//!    lazy tree (`ShortCircuit` rhs, `Select` arm) instead becomes a fresh
+//!    **unscheduled** load owned by the tree (the value must stay
+//!    conditionally evaluated; reading the class temp lazily is exact
+//!    because the def's store ran before the owner and no lazy store can
+//!    alias a class temp — class temps are fresh temps created here, after
+//!    every pass, while the stores W4 if-conversion places into arm trees
+//!    write pre-existing user/optimizer temps or concrete blocks).
 //! 5. Phi argument transfers become **parallel copies** at predecessor ends
 //!    (constant arguments are value sources; everything else is temp-to-temp),
 //!    sequentialized with cycle breaking through one scratch temp
@@ -97,7 +100,8 @@
 //!   into at most one consumer);
 //! - **S5** scheduled values referenced from inside a lazy tree (the inner
 //!   reference becomes an unscheduled class-temp load, step 4 above) — this
-//!   includes a `ShortCircuit` whose rhs root is itself a scheduled value;
+//!   includes a `ShortCircuit` whose rhs root (or a `Select` whose arm root,
+//!   the W4 if-conversion product) is itself a scheduled value;
 //! - **S6** single-use same-block values whose splice would *reorder
 //!   evaluation*: lowering moves a pending value's whole regenerated subtree
 //!   from its schedule slot to its consumer's operand position, which is only
@@ -533,11 +537,17 @@ struct Liveness {
 /// surface as uses (none exist in builder-produced MIR).
 fn inst_value_uses(mir: &Mir, scheduled: &[bool], v: Value, out: &mut Vec<Value>) {
     match mir.inst(v) {
-        Inst::ShortCircuit { lhs, rhs, .. } => {
-            if !mir.is_const(*lhs) {
-                out.push(*lhs);
+        inst @ (Inst::ShortCircuit { .. } | Inst::Select { .. }) => {
+            let eager = match inst {
+                Inst::ShortCircuit { lhs, .. } => *lhs,
+                Inst::Select { test, .. } => *test,
+                _ => unreachable!(),
+            };
+            if !mir.is_const(eager) {
+                out.push(eager);
             }
-            let mut stack = vec![*rhs];
+            let mut stack: Vec<Value> = Vec::new();
+            Mir::for_each_lazy_root(inst, |root| stack.push(root));
             while let Some(lv) = stack.pop() {
                 if mir.is_const(lv) {
                     continue;
@@ -742,29 +752,39 @@ fn collect_use_facts(mir: &Mir, scheduled: &[bool]) -> UseFacts {
     for (b, block) in mir.blocks.iter().enumerate() {
         for &v in &block.insts {
             match mir.inst(v) {
-                Inst::ShortCircuit { lhs, rhs, .. } => {
-                    note(&mut facts, *lhs, b);
-                    if scheduled[*rhs as usize] {
-                        // A scheduled rhs root must become an unscheduled
-                        // class-temp load (S5): the tree may not reference it.
-                        note(&mut facts, *rhs, b);
-                        facts.lazy_ref[*rhs as usize] = true;
-                    } else {
-                        // Walk the owned tree; scheduled values referenced
-                        // from inside are lazy references.
-                        let mut stack = vec![*rhs];
-                        while let Some(lv) = stack.pop() {
-                            if mir.is_const(lv) || scheduled[lv as usize] {
-                                continue;
-                            }
-                            Mir::for_each_operand(mir.inst(lv), |o| {
-                                if !mir.is_const(o) && scheduled[o as usize] {
-                                    note(&mut facts, o, b);
-                                    facts.lazy_ref[o as usize] = true;
-                                } else {
-                                    stack.push(o);
+                inst @ (Inst::ShortCircuit { .. } | Inst::Select { .. }) => {
+                    let eager = match inst {
+                        Inst::ShortCircuit { lhs, .. } => *lhs,
+                        Inst::Select { test, .. } => *test,
+                        _ => unreachable!(),
+                    };
+                    note(&mut facts, eager, b);
+                    let mut roots: Vec<Value> = Vec::new();
+                    Mir::for_each_lazy_root(inst, |root| roots.push(root));
+                    for root in roots {
+                        if !mir.is_const(root) && scheduled[root as usize] {
+                            // A scheduled lazy root must become an unscheduled
+                            // class-temp load (S5): the tree may not reference
+                            // it.
+                            note(&mut facts, root, b);
+                            facts.lazy_ref[root as usize] = true;
+                        } else {
+                            // Walk the owned tree; scheduled values referenced
+                            // from inside are lazy references.
+                            let mut stack = vec![root];
+                            while let Some(lv) = stack.pop() {
+                                if mir.is_const(lv) || scheduled[lv as usize] {
+                                    continue;
                                 }
-                            });
+                                Mir::for_each_operand(mir.inst(lv), |o| {
+                                    if !mir.is_const(o) && scheduled[o as usize] {
+                                        note(&mut facts, o, b);
+                                        facts.lazy_ref[o as usize] = true;
+                                    } else {
+                                        stack.push(o);
+                                    }
+                                });
+                            }
                         }
                     }
                 }
@@ -824,9 +844,16 @@ fn order_violations(
     let mut consumer: HashMap<Value, Value> = HashMap::new();
     for &v in insts {
         match mir.inst(v) {
+            // Only the eager operand splices; lazy roots never do (they are
+            // either unscheduled — not spliceable — or S5-slotted).
             Inst::ShortCircuit { lhs, .. } => {
                 if spliceable(*lhs) {
                     consumer.insert(*lhs, v);
+                }
+            }
+            Inst::Select { test, .. } => {
+                if spliceable(*test) {
+                    consumer.insert(*test, v);
                 }
             }
             inst => Mir::for_each_operand(inst, |o| {
@@ -858,6 +885,11 @@ fn order_violations(
                         Inst::ShortCircuit { lhs, .. } => {
                             if consumer.get(lhs) == Some(&v) {
                                 kids.push(*lhs);
+                            }
+                        }
+                        Inst::Select { test, .. } => {
+                            if consumer.get(test) == Some(&v) {
+                                kids.push(*test);
                             }
                         }
                         inst => Mir::for_each_operand(inst, |o| {
@@ -1077,29 +1109,61 @@ pub fn destruct_ssa(mir: &mut Mir) -> Result<(), DestructError> {
                         new_insts.push(load);
                         new_lhs = load;
                     }
-                    let mut new_rhs = rhs;
-                    if scheduled.get(rhs as usize).copied().unwrap_or(false)
-                        && is_slotted.contains(&rhs)
-                    {
-                        new_rhs = mir.push_inst(Inst::Load {
-                            place: temp_place(temp_of(&classes, rhs)),
-                        });
-                    } else {
-                        rewrite_lazy_slotted_refs(
-                            mir,
-                            &scheduled,
-                            &is_slotted,
-                            &classes,
-                            &class_temp,
-                            rhs,
-                        );
-                    }
+                    let new_rhs = legalize_lazy_root(
+                        mir,
+                        &scheduled,
+                        &is_slotted,
+                        &classes,
+                        &class_temp,
+                        rhs,
+                    );
                     if (new_lhs, new_rhs) != (lhs, rhs) {
                         mir.insts[v as usize] = Inst::ShortCircuit {
                             op,
                             pure_node,
                             lhs: new_lhs,
                             rhs: new_rhs,
+                        };
+                    }
+                }
+                Inst::Select {
+                    test,
+                    then_root,
+                    else_root,
+                } => {
+                    // Same shape as `ShortCircuit`: eager test reloads; each
+                    // arm root stays lazy (S5 — a scheduled slotted root
+                    // becomes an unscheduled class-temp load, tree-internal
+                    // slotted references likewise).
+                    let mut new_test = test;
+                    if is_slotted.contains(&test) {
+                        let load = mir.push_inst(Inst::Load {
+                            place: temp_place(temp_of(&classes, test)),
+                        });
+                        new_insts.push(load);
+                        new_test = load;
+                    }
+                    let new_then = legalize_lazy_root(
+                        mir,
+                        &scheduled,
+                        &is_slotted,
+                        &classes,
+                        &class_temp,
+                        then_root,
+                    );
+                    let new_else = legalize_lazy_root(
+                        mir,
+                        &scheduled,
+                        &is_slotted,
+                        &classes,
+                        &class_temp,
+                        else_root,
+                    );
+                    if (new_test, new_then, new_else) != (test, then_root, else_root) {
+                        mir.insts[v as usize] = Inst::Select {
+                            test: new_test,
+                            then_root: new_then,
+                            else_root: new_else,
                         };
                     }
                 }
@@ -1185,12 +1249,35 @@ pub fn destruct_ssa(mir: &mut Mir) -> Result<(), DestructError> {
     Ok(())
 }
 
-/// Rewrites references to slotted values *inside* a lazy `ShortCircuit` rhs
-/// tree into fresh **unscheduled** class-temp loads (one per occurrence) —
-/// the value stays conditionally evaluated, and reading the class temp lazily
-/// is exact because lazy trees contain no stores and the def's store ran
-/// before the owner (module docs). Iterative; single-owner trees need no
-/// visited set.
+/// Legalizes one lazy root (a `ShortCircuit` rhs or `Select` arm) during the
+/// step-6 rewrite: a scheduled (slotted) root becomes a fresh **unscheduled**
+/// class-temp load; otherwise tree-internal references to slotted values are
+/// rewritten in place ([`rewrite_lazy_slotted_refs`]). Returns the
+/// (possibly new) root.
+fn legalize_lazy_root(
+    mir: &mut Mir,
+    scheduled: &[bool],
+    is_slotted: &HashSet<Value>,
+    classes: &Classes,
+    class_temp: &HashMap<Value, TempId>,
+    root: Value,
+) -> Value {
+    if scheduled.get(root as usize).copied().unwrap_or(false) && is_slotted.contains(&root) {
+        mir.push_inst(Inst::Load {
+            place: temp_place(class_temp[&classes.find(root)]),
+        })
+    } else {
+        rewrite_lazy_slotted_refs(mir, scheduled, is_slotted, classes, class_temp, root);
+        root
+    }
+}
+
+/// Rewrites references to slotted values *inside* a lazy tree (`ShortCircuit`
+/// rhs, `Select` arm) into fresh **unscheduled** class-temp loads (one per
+/// occurrence) — the value stays conditionally evaluated, and reading the
+/// class temp lazily is exact because the def's store ran before the owner
+/// and no lazy store aliases a class temp (module docs step 4). Iterative;
+/// single-owner trees need no visited set.
 fn rewrite_lazy_slotted_refs(
     mir: &mut Mir,
     scheduled: &[bool],

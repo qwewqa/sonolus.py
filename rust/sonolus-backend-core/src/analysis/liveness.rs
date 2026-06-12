@@ -20,13 +20,13 @@
 //! its value at its block's head, so phi destinations are excluded from that
 //! block's `value_in`. This matches `ssa.rs`'s out-of-SSA liveness.
 //!
-//! # Lazy `ShortCircuit` trees (decision D11)
+//! # Lazy trees (`ShortCircuit` rhs, `Select` arms — decision D11)
 //!
-//! Uses inside a `ShortCircuit` instruction's unscheduled rhs tree are
-//! *conditional* uses that belong to the owning instruction's program point:
-//! every value and temp read anywhere in the lazy tree counts as used by the
-//! `ShortCircuit` itself (may-use ⊆ live). Nothing inside a lazy tree ever
-//! kills.
+//! Uses inside an instruction's unscheduled lazy tree (a `ShortCircuit` rhs,
+//! either `Select` arm) are *conditional* uses that belong to the owning
+//! instruction's program point: every value and temp read anywhere in the
+//! lazy tree counts as used by the owner itself (may-use ⊆ live). Nothing
+//! inside a lazy tree ever kills.
 //!
 //! # Terminator uses
 //!
@@ -85,12 +85,19 @@ pub fn inst_effect(mir: &Mir, scheduled: &[bool], v: Value) -> InstEffect {
                 }
             }
         }
-        Inst::ShortCircuit { lhs, rhs, .. } => {
-            if !mir.is_const(*lhs) {
-                eff.value_uses.push(*lhs);
+        inst @ (Inst::ShortCircuit { .. } | Inst::Select { .. }) => {
+            let eager = match inst {
+                Inst::ShortCircuit { lhs, .. } => *lhs,
+                Inst::Select { test, .. } => *test,
+                _ => unreachable!(),
+            };
+            if !mir.is_const(eager) {
+                eff.value_uses.push(eager);
             }
-            // Iterative walk of the lazy tree (single-owner; module docs).
-            let mut stack = vec![*rhs];
+            // Iterative walk of the owned lazy tree(s) (single-owner; module
+            // docs). `Select` owns two roots, both conditional uses.
+            let mut stack: Vec<Value> = Vec::new();
+            Mir::for_each_lazy_root(inst, |root| stack.push(root));
             while let Some(lv) = stack.pop() {
                 if mir.is_const(lv) {
                     continue;
@@ -101,12 +108,12 @@ pub fn inst_effect(mir: &Mir, scheduled: &[bool], v: Value) -> InstEffect {
                 }
                 match mir.inst(lv) {
                     Inst::ConstInt(_) | Inst::ConstFloat(_) | Inst::Phi { .. } => {}
-                    inst @ (Inst::Op { .. } | Inst::ShortCircuit { .. }) => {
+                    inst @ (Inst::Op { .. } | Inst::ShortCircuit { .. } | Inst::Select { .. }) => {
                         Mir::for_each_operand(inst, |o| stack.push(o));
                     }
                     Inst::Load { place } | Inst::Store { place, .. } => {
-                        // A store inside a lazy tree is out of contract (the
-                        // builder rejects Set in expressions); treat its temp
+                        // A store inside a lazy tree (a W4 if-conversion arm
+                        // statement) is a conditional write: treat its temp
                         // as a conditional use, like `alloc.rs` (no kill).
                         if let BlockRef::Temp(t) = place.block {
                             eff.temp_uses.push(t);

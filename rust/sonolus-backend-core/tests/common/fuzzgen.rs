@@ -721,6 +721,92 @@ pub fn program_shape_heavy() -> BoxedStrategy<Program> {
 }
 
 // ----------------------------------------------------------------------------------
+// Diamond/triangle-heavy profile (T3.8 if-conversion's surface)
+// ----------------------------------------------------------------------------------
+
+/// Arm statements for the diamond-heavy profile: dominated by single
+/// constant-index temp writes (`Mem2Reg` promotes these, so the join gets a
+/// real phi — the if-conversion candidate), with effectful values (RNG,
+/// logs, lazy `And`/`Or` reads, trap-capable expressions) in the mix to
+/// exercise the conversion's exactness and refusal rules. Multi-statement
+/// and concrete-write arms keep the refusal paths (multi-phi, stores that
+/// stay memory) covered.
+fn diamond_heavy_arm_stmt() -> BoxedStrategy<Stmt> {
+    prop_oneof![
+        6 => (0..TEMP_POOL.len(), const_index(), expr())
+            .prop_map(|(temp, index, value)| Stmt::SetTemp { temp, index, value }),
+        1 => (0..WRITE_BLOCKS.len(), stmt_index(), expr())
+            .prop_map(|(block, index, value)| Stmt::SetConcrete { block, index, value }),
+        1 => expr().prop_map(Stmt::Log),
+    ]
+    .boxed()
+}
+
+/// Arms of 0..=2 statements: empty arms become **triangles** after the
+/// builder's empty block is coalesced through; single-write arms are the
+/// bread-and-butter diamond; two-statement arms exercise multi-phi and
+/// leftover refusals.
+fn diamond_heavy_arm() -> impl Strategy<Value = Vec<Stmt>> {
+    vec(diamond_heavy_arm_stmt(), 0..=2)
+}
+
+/// Control-flow shapes for the diamond-heavy profile: dominated by diamonds
+/// (int and float zero-conds) whose arms write the shared temp pool, with
+/// straight-line reads of those temps after the join (the phi use), chains
+/// (post-W3 single-case switches feed the non-zero-cond Equal path), and
+/// bounded loops (diamonds inside loops; loop-carried phis).
+fn diamond_heavy_shape() -> BoxedStrategy<Shape> {
+    let diamond = (
+        expr(),
+        any::<bool>(),
+        diamond_heavy_arm(),
+        diamond_heavy_arm(),
+    )
+        .prop_map(
+            |(cond, float_cond, then_stmts, else_stmts)| Shape::Diamond {
+                cond,
+                float_cond,
+                then_stmts,
+                else_stmts,
+            },
+        );
+    let chain = (
+        0..TEMP_POOL.len(),
+        0..32u8,
+        vec(chain_arm(), 1..=2),
+        option::of(stmts()),
+    )
+        .prop_map(|(temp, index, arms, else_stmts)| Shape::IfChain {
+            temp,
+            index,
+            arms,
+            else_stmts,
+        });
+    let loop_free = prop_oneof![
+        6 => diamond.boxed(),
+        2 => stmts().prop_map(Shape::Straight).boxed(),
+        1 => chain.boxed(),
+        1 => shape_loop_free(),
+    ]
+    .boxed();
+    loop_free
+        .prop_recursive(2, 8, 3, |inner| {
+            (1..=5u8, vec(inner, 1..=3))
+                .prop_map(|(trips, body)| Shape::Loop { trips, body })
+                .boxed()
+        })
+        .boxed()
+}
+
+/// A whole program with the diamond/triangle-heavy profile: the dedicated
+/// fuzz surface for W4 if-conversion (T3.8). Same AST and lowering as
+/// [`program`] — only the strategy weights differ (additive knob, the
+/// T3.4/T3.6 precedent).
+pub fn program_diamond_heavy() -> BoxedStrategy<Program> {
+    program_from_shapes(diamond_heavy_shape())
+}
+
+// ----------------------------------------------------------------------------------
 // AST -> Cfg lowering
 // ----------------------------------------------------------------------------------
 

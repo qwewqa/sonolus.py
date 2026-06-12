@@ -132,17 +132,15 @@ fn count_uses(mir: &Mir) -> Vec<u32> {
         for &v in &block.insts {
             let inst = mir.inst(v);
             Mir::for_each_operand(inst, |o| counts[o as usize] += 1);
-            if let Inst::ShortCircuit { rhs, .. } = inst {
-                lazy_stack.push(*rhs);
-                while let Some(lv) = lazy_stack.pop() {
-                    if scheduled[lv as usize] || mir.is_const(lv) {
-                        continue;
-                    }
-                    Mir::for_each_operand(mir.inst(lv), |o| {
-                        counts[o as usize] += 1;
-                        lazy_stack.push(o);
-                    });
+            Mir::for_each_lazy_root(inst, |root| lazy_stack.push(root));
+            while let Some(lv) = lazy_stack.pop() {
+                if scheduled[lv as usize] || mir.is_const(lv) {
+                    continue;
                 }
+                Mir::for_each_operand(mir.inst(lv), |o| {
+                    counts[o as usize] += 1;
+                    lazy_stack.push(o);
+                });
             }
         }
         if let Terminator::Branch { test, .. } = &block.terminator {

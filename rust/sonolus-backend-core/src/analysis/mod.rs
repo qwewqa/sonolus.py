@@ -301,6 +301,16 @@ fn hash_inst(inst: &Inst, h: &mut impl Hasher) {
             6u8.hash(h);
             args.hash(h);
         }
+        Inst::Select {
+            test,
+            then_root,
+            else_root,
+        } => {
+            7u8.hash(h);
+            test.hash(h);
+            then_root.hash(h);
+            else_root.hash(h);
+        }
     }
 }
 

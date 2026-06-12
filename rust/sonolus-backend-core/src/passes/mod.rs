@@ -55,6 +55,7 @@
 
 pub mod dce;
 pub mod gvn;
+pub mod if_convert;
 pub mod licm;
 pub mod mem2reg;
 pub mod rules;
@@ -200,10 +201,21 @@ pub fn registry() -> &'static [RegistryEntry] {
             stage: Stage::W3,
             make: || Box::new(licm::LicmPass),
         },
-        // ===== Wave W4 — T3.9 block shaping (T3.8 if-conversion in parallel
-        // development; the orchestrator resolves W4-internal order at merge
-        // by measurement, per D13) =====
+        // ===== Wave W4 — order: if-conversion (T3.8), block shaping (T3.9) =====
         //
+        // Order chosen by measurement per D13: if-conversion manufactures the
+        // single-pred chains and empty shapes that shape's merging then
+        // absorbs (both agents' composition analysis; orchestrator-measured at
+        // the W4 merge — see the PORT.md worklog).
+        //
+        // T3.8: single-phi(s) diamonds/triangles become `If`/`And`/`Or` value
+        // nodes (src/passes/if_convert.rs); dispatch_count and the
+        // cross-block Get/Set materialization (G3.3 diagnosis) are the
+        // headline metrics.
+        RegistryEntry {
+            stage: Stage::W4,
+            make: || Box::new(if_convert::IfConvert),
+        },
         // T3.9: JumpLoop-aware CFG shaping (src/passes/shape.rs) — trivial-phi
         // cleanup, phi-aware empty-block threading, exit shaping/combining,
         // chain merging, tiny-block duplication into predecessors

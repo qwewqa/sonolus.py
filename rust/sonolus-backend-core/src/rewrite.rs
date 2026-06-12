@@ -156,6 +156,22 @@ impl RewriteCtx<'_> {
                     self.classify_operand(*rhs, rhs_lazy),
                 ]
             }
+            Inst::Select {
+                test,
+                then_root,
+                else_root,
+            } => {
+                // Same model as `ShortCircuit`: the test is eager; each arm
+                // root is opaque ([`Operand::Lazy`]) when it heads an
+                // unscheduled lazy tree.
+                let then_lazy = !self.scheduled[*then_root as usize];
+                let else_lazy = !self.scheduled[*else_root as usize];
+                vec![
+                    self.classify_operand(*test, false),
+                    self.classify_operand(*then_root, then_lazy),
+                    self.classify_operand(*else_root, else_lazy),
+                ]
+            }
             Inst::Store { value, .. } => vec![self.classify_operand(*value, false)],
             Inst::Phi { args } => args
                 .iter()

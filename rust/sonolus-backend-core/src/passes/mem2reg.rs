@@ -376,9 +376,11 @@ fn const_slot(place: &Place) -> Option<i64> {
     }
 }
 
-/// Walks a lazy rhs tree, calling `f` for every owned (unscheduled) `Load`
-/// or (out-of-contract, defensive) `Store`. Stops at constants and at
-/// scheduled values. Iterative.
+/// Walks a lazy tree (`ShortCircuit` rhs, `Select` arm), calling `f` for
+/// every owned (unscheduled) `Load` or `Store` (a lazy store is a W4
+/// if-conversion arm statement — the registry runs `Mem2Reg` first, so in
+/// production none exist here; defensively its temp is refused). Stops at
+/// constants and at scheduled values. Iterative.
 fn for_each_lazy_access(mir: &Mir, scheduled: &[bool], rhs: Value, mut f: impl FnMut(Value)) {
     let mut stack = vec![rhs];
     while let Some(v) = stack.pop() {
@@ -395,6 +397,15 @@ fn for_each_lazy_access(mir: &Mir, scheduled: &[bool], rhs: Value, mut f: impl F
             Inst::ShortCircuit { lhs, rhs, .. } => {
                 stack.push(*rhs);
                 stack.push(*lhs);
+            }
+            Inst::Select {
+                test,
+                then_root,
+                else_root,
+            } => {
+                stack.push(*else_root);
+                stack.push(*then_root);
+                stack.push(*test);
             }
             Inst::Load { place } => {
                 f(v);
@@ -459,19 +470,28 @@ fn analyze(mir: &Mir, reachable: &[bool]) -> (PromotionStats, Promotion) {
                 Inst::Load { place } | Inst::Store { place, .. } => {
                     classify(place, &mut refusal, &mut accessed);
                 }
-                Inst::ShortCircuit { rhs, .. } => {
-                    for_each_lazy_access(mir, &scheduled, *rhs, |access| match mir.inst(access) {
-                        Inst::Load { place } => classify(place, &mut refusal, &mut accessed),
-                        Inst::Store { place, .. } => {
-                            // Out-of-contract lazy store: refuse the temp
-                            // outright (conditional writes cannot be promoted).
-                            if let BlockRef::Temp(t) = place.block {
-                                accessed[t] = true;
-                                refusal[t] = Refusal::Dynamic;
+                inst @ (Inst::ShortCircuit { .. } | Inst::Select { .. }) => {
+                    let mut roots: Vec<Value> = Vec::new();
+                    Mir::for_each_lazy_root(inst, |root| roots.push(root));
+                    for root in roots {
+                        for_each_lazy_access(mir, &scheduled, root, |access| {
+                            match mir.inst(access) {
+                                Inst::Load { place } => {
+                                    classify(place, &mut refusal, &mut accessed);
+                                }
+                                Inst::Store { place, .. } => {
+                                    // Out-of-contract lazy store: refuse the temp
+                                    // outright (conditional writes cannot be
+                                    // promoted).
+                                    if let BlockRef::Temp(t) = place.block {
+                                        accessed[t] = true;
+                                        refusal[t] = Refusal::Dynamic;
+                                    }
+                                }
+                                _ => unreachable!("for_each_lazy_access yields loads/stores"),
                             }
-                        }
-                        _ => unreachable!("for_each_lazy_access yields loads/stores"),
-                    });
+                        });
+                    }
                 }
                 _ => {}
             }
@@ -559,19 +579,24 @@ fn analyze(mir: &Mir, reachable: &[bool]) -> (PromotionStats, Promotion) {
                             state.insert(s);
                         }
                     }
-                    Inst::ShortCircuit { rhs, .. } => {
-                        for_each_lazy_access(mir, &scheduled, *rhs, |access| {
-                            // Lazy stores were refused above; only loads matter.
-                            let Inst::Load { place } = mir.inst(access) else {
-                                return;
-                            };
-                            if let Some(s) = slot_of(place)
-                                && !state.contains(s)
-                                && let BlockRef::Temp(t) = place.block
-                            {
-                                refusal[t] = refusal[t].max(Refusal::ReadBeforeWrite);
-                            }
-                        });
+                    inst @ (Inst::ShortCircuit { .. } | Inst::Select { .. }) => {
+                        let mut roots: Vec<Value> = Vec::new();
+                        Mir::for_each_lazy_root(inst, |root| roots.push(root));
+                        for root in roots {
+                            for_each_lazy_access(mir, &scheduled, root, |access| {
+                                // Lazy stores were refused above; only loads
+                                // matter.
+                                let Inst::Load { place } = mir.inst(access) else {
+                                    return;
+                                };
+                                if let Some(s) = slot_of(place)
+                                    && !state.contains(s)
+                                    && let BlockRef::Temp(t) = place.block
+                                {
+                                    refusal[t] = refusal[t].max(Refusal::ReadBeforeWrite);
+                                }
+                            });
+                        }
                     }
                     _ => {}
                 }
@@ -674,31 +699,36 @@ fn rewrite(mir: &mut Mir, reachable: &[bool], promo: &Promotion, stats: &mut Pro
                     ssa.write_variable(var, b, val);
                     stats.stores_removed += 1;
                 }
-                Inst::ShortCircuit { rhs, .. } => {
+                inst @ (Inst::ShortCircuit { .. } | Inst::Select { .. }) => {
                     // Rewrite promoted lazy loads in place; m2r stores go
                     // directly before the owner (module docs). Loads that are
                     // referenced as *place components* of other lazy accesses
                     // must stay `Load`-shaped (the lowering place grammar
                     // nests only places), so they always take the m2r route.
+                    let mut roots: Vec<Value> = Vec::new();
+                    Mir::for_each_lazy_root(&inst, |root| roots.push(root));
                     let mut targets: Vec<Value> = Vec::new();
                     let mut component_refs: Vec<Value> = Vec::new();
-                    for_each_lazy_access(mir, &scheduled, rhs, |access| {
-                        let (Inst::Load { place } | Inst::Store { place, .. }) = mir.inst(access)
-                        else {
-                            unreachable!("for_each_lazy_access yields loads/stores");
-                        };
-                        if let BlockRef::Value(bv) = place.block {
-                            component_refs.push(bv);
-                        }
-                        if let IndexRef::Value(iv) = place.index {
-                            component_refs.push(iv);
-                        }
-                        if matches!(mir.inst(access), Inst::Load { .. })
-                            && promo.place_var(place).is_some()
-                        {
-                            targets.push(access);
-                        }
-                    });
+                    for &root in &roots {
+                        for_each_lazy_access(mir, &scheduled, root, |access| {
+                            let (Inst::Load { place } | Inst::Store { place, .. }) =
+                                mir.inst(access)
+                            else {
+                                unreachable!("for_each_lazy_access yields loads/stores");
+                            };
+                            if let BlockRef::Value(bv) = place.block {
+                                component_refs.push(bv);
+                            }
+                            if let IndexRef::Value(iv) = place.index {
+                                component_refs.push(iv);
+                            }
+                            if matches!(mir.inst(access), Inst::Load { .. })
+                                && promo.place_var(place).is_some()
+                            {
+                                targets.push(access);
+                            }
+                        });
+                    }
                     let mut value_temp: Vec<(Value, TempId)> = Vec::new();
                     for load in targets {
                         let Inst::Load { place } = mir.inst(load).clone() else {

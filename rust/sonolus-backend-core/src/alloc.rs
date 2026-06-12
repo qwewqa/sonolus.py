@@ -156,9 +156,9 @@ fn place_temp(inst: &Inst) -> Option<(TempId, bool)> {
     }
 }
 
-/// Collects the temps loaded anywhere inside a `ShortCircuit` lazy tree
-/// (conditional uses; see the module docs). Stops at scheduled values and
-/// constants; iterative.
+/// Collects the temps loaded anywhere inside a lazy tree (`ShortCircuit` rhs
+/// or `Select` arm; conditional uses — see the module docs). Stops at
+/// scheduled values and constants; iterative.
 fn lazy_temp_uses(mir: &Mir, scheduled: &[bool], root: Value, out: &mut Vec<TempId>) {
     let mut stack = vec![root];
     while let Some(v) = stack.pop() {
@@ -171,6 +171,15 @@ fn lazy_temp_uses(mir: &Mir, scheduled: &[bool], root: Value, out: &mut Vec<Temp
             Inst::ShortCircuit { lhs, rhs, .. } => {
                 stack.push(*lhs);
                 stack.push(*rhs);
+            }
+            Inst::Select {
+                test,
+                then_root,
+                else_root,
+            } => {
+                stack.push(*test);
+                stack.push(*then_root);
+                stack.push(*else_root);
             }
             Inst::Load { place } | Inst::Store { place, .. } => {
                 if let BlockRef::Temp(t) = place.block {
@@ -205,9 +214,11 @@ enum Effect {
 
 fn effect(mir: &Mir, scheduled: &[bool], v: Value) -> Effect {
     match mir.inst(v) {
-        Inst::ShortCircuit { rhs, .. } => {
+        inst @ (Inst::ShortCircuit { .. } | Inst::Select { .. }) => {
             let mut uses = Vec::new();
-            lazy_temp_uses(mir, scheduled, *rhs, &mut uses);
+            Mir::for_each_lazy_root(inst, |root| {
+                lazy_temp_uses(mir, scheduled, root, &mut uses);
+            });
             if uses.is_empty() {
                 Effect::None
             } else {
