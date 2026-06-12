@@ -6,11 +6,13 @@
 > holds rules, tasks, state, and decisions. Maintainer notes (setup, end-of-run review)
 > live in [EXECUTION.md](EXECUTION.md).
 
-**Status:** running — G3.3 closed (proceed-flagged ratchet → G3.5; CI green on
-8ee40bf incl. rust-lane); S5 complete. **In flight: W4 fan-out** (T3.8 if-conversion
-+ T3.9 block shaping, parallel worktrees) **and T4.1** (payload schema, file-disjoint
-S4 overlap). Then: W4 merge by measurement (D13), gate G3.4, W5, G3.5 (ratchet
-re-assertion), S4 remainder, S6, S7.
+**Status:** running — W4 merged ([if_convert, shape] at a60fdff + Select
+reconciliation 42a8300) but **combined-tree fuzz caught an if_convert miscompile**
+(log doubling; seed persisted in tests/proptest-regressions/fuzz_shape.txt;
+bisected: fails with shape fully disabled, passes without if_convert) — **fix cycle
+1/3 in flight** with a dedicated agent. DO NOT push rust-port until the seed is
+green (CI replays persisted seeds). Then: W4 order measurement, gate G3.4, W5,
+G3.5 (ratchet re-assertion), S4 remainder (T4.1 done), S6, S7.
 **Last updated:** 2026-06-12
 
 ## 0. Entry point — if you were pointed at this file, start here
@@ -361,6 +363,34 @@ pointers (failing commands, metric numbers, repro). Empty deviation log = clean 
 
 ## 9. Worklog (append-only; newest first)
 
+- 2026-06-12 — **T3.8 merged (a60fdff) + W4 reconciliation (42a8300); combined-tree
+  fuzz FOUND A MISCOMPILE — fix cycle 1/3 dispatched.** T3.8 highlights (subagent
+  report; full verification deferred until the fix): `Inst::Select` = If-as-value,
+  the second D11 lazy species (arms = const | scheduled external | owned tree;
+  arm statements wrapped via binary Execute chains — stores now in-contract
+  inside lazy trees); exactness gate = depth-first completion order of kept arm
+  trees must equal the arm schedule, with pure-total out-of-order hoisting gated
+  by a memory-writer guard (its own 50k fuzz caught a hoist-across-store
+  miscompile, fixed cycle 1/3, seed persisted); multi-phi joins = per-phi selects
+  + select-branch cleanup (naive form cost pydori eval 2.508×, cleanup recovered
+  2.416×). Its solo numbers: pydori dispatch 1.950×→**0.950×** (below legacy!),
+  dag 1.182×, static 1.651×, eval 2.416×, >10%-worse 75; PreviewStage.render all
+  four hot diamonds converted, MIR 24→12 blocks; corpus dispatch −25.7%, eval
+  −1.8%, 1 vector ×1.104 (conditional-update idiom — cost-model fodder).
+  **Merge reconciliation (orchestrator, 42a8300)**: shape.rs was Select-blind —
+  compiler caught 2 sites (clone arms added: Select Build in clone_lazy_tree,
+  Select in clone_inst); manual audit found 3 silent unsoundness sites fixed via
+  the generic `for_each_lazy_root` (reference_counts undercounting Select-arm
+  interiors → live-phi deletion risk; dup_facts not refusing Store-in-arm;
+  used_outside_def_block missing arm-interior uses); exit combining's structural
+  matcher is wildcard-conservative on Select (refuses; follow-up). Registry
+  [if_convert, shape] (both agents' composition analysis; alternative order
+  measured after the fix). **Composition fuzz (shape-heavy profile vs standard)
+  then caught log-doubling (10 vs 5)**: bisected with env knobs — persists with
+  shape fully OFF, clean without if_convert ⇒ if_convert bug exposed by
+  shape-heavy's input distribution (empty arms/switches/Ret/complex float conds —
+  diamond-heavy never generated them). Seed persisted+committed; fix agent
+  running. rust-port NOT pushed (CI would replay the failing seed).
 - 2026-06-12 — **T4.1 done (eb04112), merged and verified** (file-disjoint S4
   overlap during the W4 fan-out). `rust/PAYLOAD.md` v1: payload = plain dict over
   PyO3 (schema/level/configuration JSON/rom f64s/4 modes); work unit =
