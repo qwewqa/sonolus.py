@@ -6,13 +6,10 @@
 > holds rules, tasks, state, and decisions. Maintainer notes (setup, end-of-run review)
 > live in [EXECUTION.md](EXECUTION.md).
 
-**Status:** paused (maintainer request) — **G3.2 passed** (W2 gate, one fix cycle) and
-T5.2 done and verified; **first item at resume: T5.2 CI fix** — rust-lane CI on d4243c3
-(Ubuntu) fails 2/12 collection parity tests (`test_source_tree_parity`,
-`test_load_resources_files_to_collection_lane_parity`: repository insertion order;
-local Windows green — looks like the documented name-sorted source iteration divergence
-surfacing on Linux readdir order). Then **W3** (T3.6 switch formation + T3.7 LICM,
-parallel fan-out per §2.2), then gate G3.3 (the switchover ratchet).
+**Status:** running — T5.2 CI fix landed and CI-confirmed (d255ef5, Rust workflow green
+incl. rust-lane on Ubuntu: actions/runs/27429400703); **W3 in progress** (T3.6 switch
+formation + T3.7 LICM, parallel fan-out per §2.2), then gate G3.3 (the switchover
+ratchet).
 **Last updated:** 2026-06-12
 
 ## 0. Entry point — if you were pointed at this file, start here
@@ -191,8 +188,8 @@ metrics ratchet not regressed; worklog entry with metric movement.
 | T3.4 | done | W2: Mem2Reg/SROA for TempBlocks (constant-index → scalars; dynamic-index arrays stay memory). **Top-risk transform — extra fuzz emphasis on dynamic indexing.** | per-transform differential + fuzz |
 | T3.5 | done | W2: copy-coalescing and allocation quality improvements. | per-transform differential + fuzz; temp-slot metrics |
 | G3.2 | done | W2 gate. | wave gate template |
-| T3.6 | todo | W3: switch formation (RewriteToSwitch successor; recognizes post-GVN comparison trees on an integer scrutinee). | per-transform differential + fuzz |
-| T3.7 | todo | W3: LICM; optional cost-modeled micro-unroll of tiny constant-trip loops. | per-transform differential + fuzz |
+| T3.6 | in-progress | W3: switch formation (RewriteToSwitch successor; recognizes post-GVN comparison trees on an integer scrutinee). | per-transform differential + fuzz |
+| T3.7 | in-progress | W3: LICM; optional cost-modeled micro-unroll of tiny constant-trip loops. | per-transform differential + fuzz |
 | G3.3 | todo | **W3 gate = switchover ratchet**: aggregate ≥ parity with `rust/baselines/python-standard.json`; no callback >10% worse on dyn eval count. | wave gate template + ratchet |
 | T3.8 | todo | W4: expression-level if-conversion (small diamonds/triangles → `If`/`And`/`Or` value nodes, cost-modeled). | per-transform differential + fuzz; dispatch-count metric drop |
 | T3.9 | todo | W4: block merging, exit combining, tiny-block duplication into predecessors. | per-transform differential + fuzz |
@@ -277,14 +274,20 @@ metrics ratchet not regressed; worklog entry with metric movement.
   optimizer pass MUST respect laziness: nothing may be hoisted out of, or assumed
   evaluated in, the lazy side. Corpus fact: real frontend And/Or are all already binary.
 
+- **D12** (2026-06-12, pre-G3.3) Adopt the opt-in deterministic stub mode for
+  runtime-only ops (METRICS runs only): stubbed ops evaluate their args in normal
+  order (effects/counters preserved) and return `0.0`; flag default-off; diff harness
+  and fuzzing stay stub-free; baseline files self-describe stub usage in metadata.
+  Rationale: G3.3 is the switchover ratchet — 126/300 pydori rows truncating at the
+  first runtime-only op measure only their prologue, which could hide real
+  regressions (or improvements) in draw-heavy callbacks at exactly the gate that
+  matters. Identical-trap-point comparisons remain valid, so the old methodology is
+  kept available (flag off) and the G3.3 report records both. Requires python-standard
+  baseline regen (orchestrator-run, deterministic, metadata-documented).
+
 ### Blocked / decisions needed
 
-- Before G3.3: decide whether to add an opt-in deterministic stub mode for
-  runtime-only ops (Draw/BeatToTime/ExportValue/…) to the interpreter for METRICS runs
-  only — 126/300 pydori baseline rows currently trap at the first runtime-only op
-  (identical trap point both backends, so comparisons stay valid, but draw-heavy
-  callbacks only measure their executable prologue). Adopting it requires a baseline
-  regen (deterministic, documented). Revisit at G3.1 with real wave metrics in hand.
+- (none — the pre-G3.3 stub-mode question is resolved as D12)
 
 ### Deviation log
 
@@ -326,6 +329,24 @@ pointers (failing commands, metric numbers, repro). Empty deviation log = clean 
 
 ## 9. Worklog (append-only; newest first)
 
+- 2026-06-12 — **T5.2 CI fix done (d255ef5).** Root cause confirmed as the documented
+  `load_from_source` iteration divergence: legacy iterates OS enumeration order
+  (name-sorted on NTFS, arbitrary on ext4), Rust name-sorts. Two findings beyond the
+  ledger's diagnosis: (1) the fixture comment's claim that name-sorted *file names*
+  keep the lanes in agreement was NTFS-only reasoning; (2) **iteration order reaches
+  output bytes** — legacy inserts resource SRLs into the item dict in visit order
+  (`collection.py:138`), so written item JSON key order is platform-dependent in the
+  legacy implementation itself (the site-tree byte-equality asserts would have failed
+  on ext4 too; they were shadowed by the earlier in-memory assert). Fix is tests-only
+  (oracle untouched, Rust determinism kept): `assert_same_state(strict_order=False)`
+  for source-load states; `assert_equivalent_site_trees` (byte-identical or
+  structurally-equal JSON; repository blobs bytes-only); new
+  `test_source_tree_parity_is_os_enumeration_order_independent` pins the contract by
+  reversing `Path.iterdir` — deterministic ext4-failure repro on any platform,
+  verified red against the old asserts (it caught the key-order divergence on
+  Windows). RustCollection docstring updated. Verified: both lanes 1236+4, cargo 20
+  suites 0 failed, clippy/fmt clean. CI on d255ef5 GREEN (Rust workflow incl. the
+  Ubuntu rust-lane job: actions/runs/27429400703) — the d4243c3 failure is closed.
 - 2026-06-12 — **T5.2 done (PyO3 Collection), merged and verified; run wrapped at
   maintainer request — resume at W3 (T3.6 + T3.7).** Subagent ran in a worktree during
   the G3.2 fuzz window (S5 overlap per §6). `sonolus_backend.Collection` (PyO3,
