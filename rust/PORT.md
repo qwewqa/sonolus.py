@@ -6,10 +6,11 @@
 > holds rules, tasks, state, and decisions. Maintainer notes (setup, end-of-run review)
 > live in [EXECUTION.md](EXECUTION.md).
 
-**Status:** running — W3 complete (T3.6 + T3.7 merged and verified; D13 ordering
-experiments done, registry = [switch_form, licm], no cleanup re-run); **next: gate
-G3.3** (switchover ratchet; stub-on baseline regen per D12 first), with T5.3
-overlapped during the fuzz window.
+**Status:** running — G3.3 closed (template items green incl. 1M fuzz clean; the
+switchover ratchet FAILED and the run proceeds flagged per §4 — parity criterion
+transferred to G3.5; diagnosis: cross-block Get/Set materialization, W4's charter);
+S5 complete (T5.3 done). **Next: W4** (T3.8 if-conversion + T3.9 block shaping,
+parallel fan-out per §2.2), then G3.4.
 **Last updated:** 2026-06-12
 
 ## 0. Entry point — if you were pointed at this file, start here
@@ -190,7 +191,7 @@ metrics ratchet not regressed; worklog entry with metric movement.
 | G3.2 | done | W2 gate. | wave gate template |
 | T3.6 | done | W3: switch formation (RewriteToSwitch successor; recognizes post-GVN comparison trees on an integer scrutinee). | per-transform differential + fuzz |
 | T3.7 | done | W3: LICM; optional cost-modeled micro-unroll of tiny constant-trip loops (unroll deferred — see worklog). | per-transform differential + fuzz |
-| G3.3 | todo | **W3 gate = switchover ratchet**: aggregate ≥ parity with `rust/baselines/python-standard.json`; no callback >10% worse on dyn eval count. | wave gate template + ratchet |
+| G3.3 | done | **W3 gate = switchover ratchet**: aggregate ≥ parity with `rust/baselines/python-standard.json`; no callback >10% worse on dyn eval count. **Ratchet FAILED → proceeded flagged per §4; parity criterion transferred to G3.5** (see Deviation log + worklog). All other template items passed. | wave gate template + ratchet |
 | T3.8 | todo | W4: expression-level if-conversion (small diamonds/triangles → `If`/`And`/`Or` value nodes, cost-modeled). | per-transform differential + fuzz; dispatch-count metric drop |
 | T3.9 | todo | W4: block merging, exit combining, tiny-block duplication into predecessors. | per-transform differential + fuzz |
 | G3.4 | todo | W4 gate. | wave gate template |
@@ -306,6 +307,26 @@ Every application of a §4 autonomous policy gets an entry: date, trigger, task/
 what was done instead, severity (`info` / `review-before-merge` / `blocks-merge`), and
 pointers (failing commands, metric numbers, repro). Empty deviation log = clean run.
 
+- 2026-06-12 — **G3.3 switchover ratchet FAILED → proceed flagged** (§4: wave-gate
+  metrics ratchet fails; fix-cycle budget deliberately not spent — see below).
+  Severity: **review-before-merge** (the parity criterion is the switchover bar; it
+  is re-asserted at G3.5 and adjudicated at merge review). Numbers
+  (`uv run python tools/metrics.py report --stub-runtime-ops --ratchet`, D12
+  stub-on full-coverage baseline): aggregate eval 2.422× (275,978,751 vs
+  113,961,015), dispatch 1.950×, static 1.668×, dag 1.222×; 103/300 callbacks >10%
+  worse on eval; 0 behavior mismatches; coverage 260/0/40 both sides. Under the
+  pre-D12 prologue-only methodology the same tree measures eval 1.281×, dispatch
+  1.296× (recorded for continuity). Diagnosis (tools/diag_g33.py):
+  `preview/PreviewStage.render(+_dev)` alone is ~99.9% of aggregate evals (56.95M→
+  137.95M each); its static profile shows the gap is cross-block SSA
+  materialization — Get +88, Set +82, If 8-vs-4 vs legacy (temp-slot store/load
+  pairs where legacy InlineVars/CopyCoalesce keep values in expression trees) —
+  exactly W4's charter (expression-level if-conversion + block merging turn
+  cross-block values into same-block single-use values that already lower inline).
+  No W3-scoped fix task plausibly moves this; spending the 3 gate fix cycles
+  re-implementing W4 under a gate label would duplicate planned work without its
+  per-task rigor (D13 supports sequencing on engineering merit). W4/W5 proceed as
+  scoped; G3.5 re-runs this exact ratchet.
 - 2026-06-10 — Suspected oracle quirk (§4: suspected bug in the Python backend — logged,
   not fixed). `Allocate.get_mapping`'s overlap condition
   (`offset + size > other_offset or other_offset + other.size > offset`,
@@ -340,6 +361,23 @@ pointers (failing commands, metric numbers, repro). Empty deviation log = clean 
 
 ## 9. Worklog (append-only; newest first)
 
+- 2026-06-12 — **G3.3 closed (W3 gate): all template items green; switchover
+  ratchet FAILED → proceed flagged (see Deviation log).** Template items, all run
+  by the orchestrator on the final W3 tree: behavioral green both lanes (1236+4
+  each; rust lane covers all 3 levels); corpus differential explicitly clean
+  (differential + differential_switch_form + differential_licm, 10 tests);
+  **1M-case release fuzz clean: 3/3 ok in 2,845.84s, 0 failures**; corpus ratchet
+  regenerated (`corpus --update`: eval 22,837→22,340, dispatch 2,016→1,970, static
+  13,651→13,581, dag 5,452→5,416; 0 vectors >10% worse; in-cargo ratchet test
+  green). **D12 executed**: python-standard.json + python-fast.json regenerated
+  stub-on (python-standard eval 113,961,015 / dispatch 2,623,088, coverage
+  260/0/40, wall 21,504 ms; python-fast wall 1,501.1 ms = new G-P1 reference);
+  determinism check PASSED both files. Ratchet verdict and full diagnosis in the
+  Deviation log; headline: full-coverage eval 2.422× dominated entirely by
+  PreviewStage.render's loop, gap = cross-block Get/Set materialization, W4's
+  charter. `tools/diag_g33.py` committed as the gate diagnostic (op-histogram A/B
+  per callback; G3.4/G3.5 will reuse). T5.3 ran in the fuzz window (separate
+  entry). Next: W4 fan-out (T3.8 + T3.9), gate G3.4.
 - 2026-06-12 — **T5.3 done (5e37552), merged and verified — S5 complete.**
   `tools/ab_collection.py` (subagent in worktree during the G3.3 fuzz window):
   (1) pydori full build A/B via the production `build_collection` path with
