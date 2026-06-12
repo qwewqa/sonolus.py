@@ -329,6 +329,25 @@ pointers (failing commands, metric numbers, repro). Empty deviation log = clean 
 
 ## 9. Worklog (append-only; newest first)
 
+- 2026-06-12 — **D12 stub-mode infrastructure done (55f6c87), merged and verified**
+  (subagent in worktree during the W3 fan-out; orchestrator cherry-picked d4d10b5).
+  Runtime-only ops = the 116/191 ops hitting the interpreter's final-else
+  `Unsupported operation:` error (not derivable from ops.py flags); stub rule: args
+  evaluated left-to-right exactly like Execute (effects/counters/errors at identical
+  points), result `0.0`; default OFF and the off path is the identical Err return.
+  PyO3 `set_stub_runtime_ops`; `tools/metrics.py --stub-runtime-ops` on
+  baseline/report with `"stub_runtime_ops": true` in metadata (absence = off, so
+  pre-flag baselines stay byte-comparable); cross-mode runs WARN. pydori coverage:
+  completed/budget-exceeded/trapped 174/0/126 → **260/0/40** (remaining 40 = real
+  seeded-memory traps past the formerly-trapping op, mostly `_dev` index asserts;
+  they should match both sides after the gate's stub-on baseline regen). Default
+  path proven unchanged: stub-off report ratios bit-identical to ledger (eval
+  1.308×/static 1.701×/dag 1.286×/dispatch 1.433×, 0 mismatches). Orchestrator
+  verified on merged tree: both lanes 1236+4, cargo 0 failures, standing clippy/fmt
+  clean, stub-on report reproduces 260/0/40. NOTE: `--all-targets` clippy has 281
+  PRE-EXISTING test-target lints (verified identical on base d255ef5) — standing §5
+  clippy (no --all-targets) is the gate; test-lint cleanup is follow-up fodder.
+  Baseline regen deliberately deferred to G3.3 prep (D12).
 - 2026-06-12 — **T5.2 CI fix done (d255ef5).** Root cause confirmed as the documented
   `load_from_source` iteration divergence: legacy iterates OS enumeration order
   (name-sorted on NTFS, arbitrary on ext4), Rust name-sorts. Two findings beyond the
