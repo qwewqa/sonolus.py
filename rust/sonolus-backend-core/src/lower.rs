@@ -487,7 +487,7 @@ mod tests {
     use super::*;
     use crate::alloc::allocate_temps;
     use crate::cfg::cfg_to_text;
-    use crate::mir::{CaseCond, MirBlock};
+    use crate::mir::CaseCond;
 
     fn temp_place(t: TempId) -> Place {
         Place {

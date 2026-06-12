@@ -6,11 +6,10 @@
 > holds rules, tasks, state, and decisions. Maintainer notes (setup, end-of-run review)
 > live in [EXECUTION.md](EXECUTION.md).
 
-**Status:** paused (maintainer request) — W2 tasks (T3.4, T3.5) + T5.1 done and verified;
-**next task: gate G3.2** (run wave-gate template: behavioral all levels both lanes ✓ already
-green, corpus differential ✓ in-suite, 1M-case release fuzz pending, ratchet regen pending —
-`tools/metrics.py corpus --update` + report, then worklog close-out and CI push)
-**Last updated:** 2026-06-10
+**Status:** paused (maintainer request) — **G3.2 passed** (W2 gate, one fix cycle) and
+T5.2 done and verified; **next task: W3** (T3.6 switch formation + T3.7 LICM, parallel
+fan-out per §2.2), then gate G3.3 (the switchover ratchet).
+**Last updated:** 2026-06-12
 
 ## 0. Entry point — if you were pointed at this file, start here
 
@@ -187,7 +186,7 @@ metrics ratchet not regressed; worklog entry with metric movement.
 | G3.1 | done | W1 gate. Target: ≈ legacy `fast` quality. | wave gate template |
 | T3.4 | done | W2: Mem2Reg/SROA for TempBlocks (constant-index → scalars; dynamic-index arrays stay memory). **Top-risk transform — extra fuzz emphasis on dynamic indexing.** | per-transform differential + fuzz |
 | T3.5 | done | W2: copy-coalescing and allocation quality improvements. | per-transform differential + fuzz; temp-slot metrics |
-| G3.2 | todo | W2 gate. | wave gate template |
+| G3.2 | done | W2 gate. | wave gate template |
 | T3.6 | todo | W3: switch formation (RewriteToSwitch successor; recognizes post-GVN comparison trees on an integer scrutinee). | per-transform differential + fuzz |
 | T3.7 | todo | W3: LICM; optional cost-modeled micro-unroll of tiny constant-trip loops. | per-transform differential + fuzz |
 | G3.3 | todo | **W3 gate = switchover ratchet**: aggregate ≥ parity with `rust/baselines/python-standard.json`; no callback >10% worse on dyn eval count. | wave gate template + ratchet |
@@ -323,6 +322,31 @@ pointers (failing commands, metric numbers, repro). Empty deviation log = clean 
 
 ## 9. Worklog (append-only; newest first)
 
+- 2026-06-12 — **G3.2 passed (W2 gate), one fix cycle.** Template items, all run by the
+  orchestrator: behavioral green both lanes at all 3 levels (1196+4 each, re-verified
+  post-fix); corpus differential clean in-suite; **the first 1M-case release fuzz run
+  CAUGHT a real W2 miscompile** — GVN's rules-phase sweep cascade-deleted trap-capable
+  orphans: a rewrite rule firing on an already-zero-use root (the dead-store value tree
+  Mem2Reg correctly leaves scheduled for trap preservation) put it in `replaced`, and
+  `sweep()`'s purity-only transitive-orphan check then deleted an `Arcsin` whose trap
+  minimal observes. Shrunk shape: dead `temp[0] <- Sub(Arcsin(Add(uniform[0,6))), t1[19])`
+  with only never-written `temp[1]` read; minimal-vs-fast PASSED on the same input —
+  W1-only is clean, the hole needed the post-promotion W1 re-run (w1-sub-zero firing on
+  the dead tree). Fix (2cf7927, cycle 1/3): `sweep()` takes an `OrphanPolicy` — rules
+  sweep requires transitive orphans to be on the 24-op never-trapping whitelist (= DCE's
+  `op_is_total`; seeds stay fully removable — each rule/fold proves its own root);
+  GVN-sweep orphans unchanged (dominating same-class leader computes the same values
+  earlier and traps first with the same error). 2 GVN unit tests + a hand-built-CFG
+  end-to-end regression test, all verified failing pre-fix; fuzz seed persisted
+  (c44c938). Re-run: **1M cases, 3/3 ok in 3,284s, clean**. Ratchet regen
+  (`corpus --update`): eval 36,673→22,837, static 20,609→13,651, dispatch 2,039→2,016,
+  dag 6,634→5,452; the fix cost ZERO on the corpus; 0 vectors >10% worse. The in-cargo
+  corpus test now enforces non-strict ratchet semantics (`corpus_ratchet_*` — the old
+  strict-improvement assert read the live ratchet file and broke at the first gate regen
+  by construction; c44c938). pydori vs python-standard (unchanged by the fix): eval
+  1.308×, static 1.701×, dag 1.286×, dispatch 1.433× — G3.3 parity needs W3+ as planned.
+  Hygiene: 2 unused test-cfg imports fixed (invisible to standing clippy — no
+  `--all-targets`).
 - 2026-06-10 — **T3.5 done; run paused at maintainer request — resume at G3.2.**
   `coalesce.rs`: second Boissinot phase at temp granularity (union-find over the
   allocator's own interference graph; catches residual parallel copies, gvnN

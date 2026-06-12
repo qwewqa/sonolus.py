@@ -6,10 +6,10 @@
 //! block \[Mem2Reg, SCCP, GVN, DCE\], plus the full `standard` level — zero
 //! mismatches allowed, two memory seeds each. Stays in the suite permanently.
 //!
-//! Also asserts effectiveness (the W2 quality claim): corpus aggregate
-//! eval_count at `standard` must strictly improve on the recorded W1-era
-//! baseline (`rust/baselines/rust-corpus.json`), and reports the promotion
-//! statistics (how many temps promote and why others refuse) over the corpus.
+//! Also enforces the corpus metrics ratchet: aggregate eval_count and static
+//! nodes at `standard` must not regress vs `rust/baselines/rust-corpus.json`
+//! (rewritten at each wave gate), and reports the promotion statistics (how
+//! many temps promote and why others refuse) over the corpus.
 
 mod common;
 

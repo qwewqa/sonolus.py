@@ -227,9 +227,7 @@ pub fn compile_cfg_with_pipeline_stats(
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::cfg::{
-        BasicBlock, BlockValue, Edge, EdgeCond, IndexValue, Node, Place, TempBlockDef,
-    };
+    use crate::cfg::{BasicBlock, BlockValue, IndexValue, Node, Place, TempBlockDef};
     use crate::interpret::Interpreter;
     use crate::nodes::format_engine_node;
     use crate::ops::Op;
