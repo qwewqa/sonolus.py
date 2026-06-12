@@ -166,7 +166,7 @@ fn fuzz_differential_minimal_vs_sccp() {
 ///
 /// Context for the (small) corpus numbers: these are *frontend* CFGs, where
 /// the Python tracer already folds constant expressions at trace time, and
-/// W1 SCCP runs before Mem2Reg (W2, T3.4) so constants stored to temps are
+/// W1 SCCP runs before `Mem2Reg` (W2, T3.4) so constants stored to temps are
 /// invisible (`Load` = Bottom). The legacy SCCP ran *after* legacy SSA
 /// promotion, which is where most of its corpus wins came from.
 #[test]

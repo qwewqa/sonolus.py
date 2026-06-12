@@ -1,14 +1,14 @@
-//! Per-pass CFG fuzz for the T3.4 Mem2Reg pass — the ledger's **top-risk
+//! Per-pass CFG fuzz for the T3.4 `Mem2Reg` pass — the ledger's **top-risk
 //! transform**, so it gets two nets:
 //!
 //! 1. the standard generator (`fuzzgen::program`), `minimal` vs
-//!    `minimal`+\[Mem2Reg\] standalone (every `compile_cfg` includes the
+//!    `minimal`+\[`Mem2Reg`\] standalone (every `compile_cfg` includes the
 //!    unconditional `destruct_ssa`, so this also exercises the W2
 //!    legalization);
 //! 2. a **dynamic-indexing-heavy** profile (`fuzzgen::program_dynamic_heavy`)
 //!    that hammers the promotion/escape boundary — mixed const/dynamic
 //!    accesses to the same temp pool, lazy (`And`/`Or`) temp reads, loops —
-//!    checked both against \[Mem2Reg\] standalone and the full `standard`
+//!    checked both against \[`Mem2Reg`\] standalone and the full `standard`
 //!    level (the [W1, mem2reg, W1-rerun] registry).
 //!
 //! Default 256 cases (PR CI); scale with `SONOLUS_FUZZ_CASES`, e.g.
@@ -118,6 +118,7 @@ fn fuzz_differential_dynamic_heavy() {
             rng_seed,
             eval_budget: EVAL_BUDGET,
         };
+        #[allow(clippy::type_complexity)] // a two-row closure table, not an API
         let sides: [(&str, Box<dyn Fn(&_) -> _>); 2] = [
             (
                 "mem2reg-only",

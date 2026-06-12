@@ -1,6 +1,6 @@
 //! Per-transform differential tests for the T3.3 DCE pass (PORT.md invariant
 //! §3.7): every frontend CFG in the mini-corpus, compiled `minimal` vs
-//! `minimal`+\[DcePass\] only (the pass standalone, without SCCP/GVN), run on
+//! `minimal`+\[`DcePass`\] only (the pass standalone, without SCCP/GVN), run on
 //! randomized memory with seeded RNG — zero mismatches allowed. Stays in the
 //! suite permanently as the pass's standing safety net.
 //!

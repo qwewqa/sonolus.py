@@ -733,6 +733,9 @@ fn sweep(mir: &mut Mir, replaced: &[Value], orphans: OrphanPolicy) -> usize {
 
 #[cfg(test)]
 mod tests {
+    // Toolchain note: clippy 1.96 newly lints test code under --all-targets;
+    // terse local names are the test-builder convention in this module.
+    #![allow(clippy::similar_names)]
     use super::*;
     use crate::cfg::{
         BasicBlock, BlockValue, Cfg, Edge, EdgeCond, IndexValue, Node, Place as CfgPlace,
@@ -1346,7 +1349,7 @@ mod tests {
     }
 
     /// G3.2 regression (the 1M-fuzz miscompile): a rule firing on the root of
-    /// a **zero-use** value tree — the dead store tree Mem2Reg (or DCE's temp
+    /// a **zero-use** value tree — the dead store tree `Mem2Reg` (or DCE's temp
     /// DSE) leaves scheduled for trap preservation — must not let the sweep
     /// cascade into trap-capable orphans. Shape: dead `Subtract(Arcsin(load),
     /// 0)`; `w1-sub-zero` collapses the Subtract, and the orphaned `Arcsin`

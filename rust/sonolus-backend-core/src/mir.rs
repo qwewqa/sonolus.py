@@ -1108,6 +1108,14 @@ pub fn build_mir(cfg: &Cfg) -> Result<Mir, MirBuildError> {
 
 #[cfg(test)]
 mod tests {
+    // Toolchain note: clippy 1.96 newly lints test code under --all-targets;
+    // terse local names are the test-builder convention in this module.
+    // test constants are tiny; the casts cannot truncate/wrap in practice.
+    #![allow(
+        clippy::many_single_char_names,
+        clippy::cast_possible_truncation,
+        clippy::cast_sign_loss
+    )]
     use super::*;
     use crate::cfg::{BasicBlock, Edge, Place as CfgPlace, TempBlockDef};
 

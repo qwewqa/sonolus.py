@@ -1,6 +1,6 @@
 //! Per-pass CFG fuzz for the T3.3 DCE pass: proptest-generated well-formed
 //! frontend CFGs (`common/fuzzgen.rs`), differentially interpreted `minimal`
-//! vs `minimal`+\[DcePass\] **standalone** (without SCCP/GVN — the pass must
+//! vs `minimal`+\[`DcePass`\] **standalone** (without SCCP/GVN — the pass must
 //! be correct on its own).
 //!
 //! Default 256 cases (PR CI); scale with `SONOLUS_FUZZ_CASES`, e.g.
@@ -48,7 +48,7 @@ fn fuzz_config(cases: u32) -> Config {
     }
 }
 
-/// The per-pass fuzz differential: minimal vs minimal+[DcePass] with fuzzed
+/// The per-pass fuzz differential: minimal vs minimal+[`DcePass`] with fuzzed
 /// memory/RNG seeds. Catches dropped traps, dropped RNG draws, broken
 /// threading/merging — anything observable.
 #[test]

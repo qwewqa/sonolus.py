@@ -889,6 +889,10 @@ fn place_const(mir: &Mir, v: Value) -> Option<i64> {
 
 #[cfg(test)]
 mod tests {
+    // Toolchain note: clippy 1.96 newly lints test code under --all-targets;
+    // exact f64 equality is the assertion contract here (ARCHITECTURE §6).
+    // terse local names are the test-builder convention in this module.
+    #![allow(clippy::float_cmp, clippy::similar_names)]
     use super::*;
     use crate::cfg::{
         BasicBlock, BlockValue, Cfg, Edge, EdgeCond, IndexValue, Node, Place as CfgPlace,
@@ -909,7 +913,7 @@ mod tests {
         mem2reg_pipeline().run(mir, &mut Analyses::new())
     }
 
-    /// Asserts minimal and minimal+[Mem2Reg] behave identically on a frontend
+    /// Asserts minimal and minimal+[`Mem2Reg`] behave identically on a frontend
     /// CFG (two memory seeds).
     fn assert_diff_match(cfg: &Cfg) {
         for seed in [0x5EED_0001u64, 0x5EED_0002] {

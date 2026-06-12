@@ -1,12 +1,12 @@
-//! Per-transform differential tests for the T3.4 Mem2Reg pass (PORT.md
+//! Per-transform differential tests for the T3.4 `Mem2Reg` pass (PORT.md
 //! invariant §3.7): every frontend CFG in the mini-corpus, compiled `minimal`
-//! vs `minimal`+\[Mem2Reg\] (standalone, no W1 — every `compile_cfg` includes
+//! vs `minimal`+\[`Mem2Reg`\] (standalone, no W1 — every `compile_cfg` includes
 //! the unconditional `destruct_ssa`, so this *is* the "[mem2reg, destruct]"
 //! comparison: promoted MIR cannot lower without destruction) and vs the W2
-//! block \[Mem2Reg, SCCP, GVN, DCE\], plus the full `standard` level — zero
+//! block \[`Mem2Reg`, SCCP, GVN, DCE\], plus the full `standard` level — zero
 //! mismatches allowed, two memory seeds each. Stays in the suite permanently.
 //!
-//! Also enforces the corpus metrics ratchet: aggregate eval_count and static
+//! Also enforces the corpus metrics ratchet: aggregate `eval_count` and static
 //! nodes at `standard` must not regress vs `rust/baselines/rust-corpus.json`
 //! (rewritten at each wave gate), and reports the promotion statistics (how
 //! many temps promote and why others refuse) over the corpus.
@@ -200,13 +200,15 @@ fn corpus_promotion_statistics() {
 /// **dead temp store whose value tree contains a trap-capable op**, plus a
 /// read of a *different* slot of the same temp. Minimal evaluates the dead
 /// store's `Arcsin` and traps when its input is outside [-1, 1]; the shrunk
-/// 1M-fuzz case showed the standard pipeline losing that trap: Mem2Reg
+/// 1M-fuzz case showed the standard pipeline losing that trap: `Mem2Reg`
 /// removes the dead store (leaving the value tree scheduled) and replaces the
 /// `u[0]` load with the reaching constant 0, the re-run GVN's sub-zero rule
 /// collapses `Subtract(Arcsin(x), 0)`, and the rules sweep then cascaded into
 /// the orphaned trap-capable `Arcsin`. Optimized code must trap whenever
 /// minimal traps, with the same error (PORT.md §3.7).
 #[test]
+// One deliberate end-to-end scenario; exact f64 equality is the contract.
+#[allow(clippy::too_many_lines, clippy::float_cmp)]
 fn dead_temp_store_with_trapping_value_tree_keeps_the_trap_at_every_level() {
     use sonolus_backend_core::cfg::{
         BasicBlock, BlockValue, IndexValue, Node, Place, TempBlockDef,
@@ -235,7 +237,7 @@ fn dead_temp_store_with_trapping_value_tree_keeps_the_trap_at_every_level() {
     // makes both temps promotable: no read-before-write refusal).
     for (t, size) in [(0usize, 2i64), (1, 1)] {
         for i in 0..size {
-            let v = node(&mut cfg, Node::ConstInt(if t == 0 { 1 } else { 0 }));
+            let v = node(&mut cfg, Node::ConstInt(i64::from(t == 0)));
             let p = place(&mut cfg, BlockValue::Temp(t), i);
             stmts.push(node(&mut cfg, Node::Set { place: p, value: v }));
         }

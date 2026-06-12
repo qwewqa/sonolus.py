@@ -226,6 +226,10 @@ pub fn compile_cfg_with_pipeline_stats(
 
 #[cfg(test)]
 mod tests {
+    // Toolchain note: clippy 1.96 newly lints test code under --all-targets;
+    // exact f64 equality is the assertion contract here (ARCHITECTURE §6).
+    // test constants are tiny; the casts cannot truncate/wrap in practice.
+    #![allow(clippy::float_cmp, clippy::cast_possible_wrap)]
     use super::*;
     use crate::cfg::{BasicBlock, BlockValue, IndexValue, Node, Place, TempBlockDef};
     use crate::interpret::Interpreter;

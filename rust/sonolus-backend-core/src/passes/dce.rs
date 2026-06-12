@@ -657,6 +657,9 @@ fn sweep_dead(mir: &mut Mir) -> (bool, bool) {
 
 #[cfg(test)]
 mod tests {
+    // Toolchain note: clippy 1.96 newly lints test code under --all-targets;
+    // terse local names are the test-builder convention in this module.
+    #![allow(clippy::similar_names)]
     use super::*;
     use crate::analysis::Analyses;
     use crate::cfg::{

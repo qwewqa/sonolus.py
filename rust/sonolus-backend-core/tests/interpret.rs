@@ -1,9 +1,14 @@
 //! Behavioral tests for the engine-node interpreter.
 //!
-//! Expected values for numeric edge cases are pinned from CPython 3.14 (the legacy
+//! Expected values for numeric edge cases are pinned from `CPython` 3.14 (the legacy
 //! `sonolus/backend/interpret.py` oracle); see the inline comments. The Python-side
 //! counterpart (`tests/backend/test_interpreter.py`) re-checks a subset differentially
 //! against the legacy interpreter through the FFI.
+
+// Toolchain note: clippy 1.96 newly lints test code under --all-targets; exact
+// f64 equality is the assertion contract here (ARCHITECTURE §6), and the spec
+// helpers take node values by design.
+#![allow(clippy::float_cmp, clippy::needless_pass_by_value)]
 
 use sonolus_backend_core::interpret::{Interpreter, InterpreterError, InterpreterErrorKind};
 use sonolus_backend_core::nodes::{NodeArena, NodeId};
@@ -834,7 +839,7 @@ fn deep_block_break_unwinding_is_iterative() {
     let depth = 200_000;
     let mut arena = NodeArena::new();
     #[allow(clippy::cast_precision_loss)]
-    let n_const = arena.push_int(depth as f64);
+    let n_const = arena.push_int(f64::from(depth));
     let value = arena.push_float(42.0);
     let mut node = arena.push_func(Op::Break, &[n_const, value]);
     for _ in 0..depth {

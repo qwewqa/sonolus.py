@@ -1139,6 +1139,13 @@ impl<'a> Rewriter<'a> {
 
 #[cfg(test)]
 mod tests {
+    // Toolchain note: clippy 1.96 newly lints test code under --all-targets;
+    // test constants are tiny; the casts cannot truncate/wrap in practice.
+    #![allow(
+        clippy::type_complexity,
+        clippy::cast_possible_wrap,
+        clippy::cast_precision_loss
+    )]
     use super::*;
     use crate::cfg::{BasicBlock, BlockValue, Cfg, Edge, EdgeCond, IndexValue, Node, Place};
     use crate::diff::{DiffConfig, DiffOutcome, diff_with, run_with_memory};

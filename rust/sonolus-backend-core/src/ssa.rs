@@ -1301,6 +1301,14 @@ fn split_pred_edges(mir: &mut Mir) -> Vec<BlockId> {
 
 #[cfg(test)]
 mod tests {
+    // Toolchain note: clippy 1.96 newly lints test code under --all-targets;
+    // exact f64 equality is the assertion contract here (ARCHITECTURE §6).
+    // test constants are tiny; the casts cannot truncate/wrap in practice.
+    #![allow(
+        clippy::float_cmp,
+        clippy::cast_possible_truncation,
+        clippy::cast_possible_wrap
+    )]
     use super::*;
     use crate::alloc::allocate_temps;
     use crate::interpret::Interpreter;

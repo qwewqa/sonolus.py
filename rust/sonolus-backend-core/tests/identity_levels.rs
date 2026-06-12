@@ -1,4 +1,4 @@
-//! Identity-pipeline corpus check (PORT.md T2.2 DoD).
+//! Identity-pipeline corpus check (PORT.md T2.2 `DoD`).
 //!
 //! For every corpus entry and every optimization level
 //! (`minimal`/`fast`/`standard`) this:

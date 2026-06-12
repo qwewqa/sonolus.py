@@ -94,6 +94,8 @@ fn naive_dom_sets(mir: &Mir) -> Vec<Option<Vec<bool>>> {
 fn check_dominators(mir: &Mir, dt: &DomTree) {
     let n = mir.blocks.len();
     let dom_sets = naive_dom_sets(mir);
+    // Block ids are indices by definition; iterating them as indices is the point.
+    #[allow(clippy::needless_range_loop)]
     for b in 0..n {
         assert_eq!(
             dt.is_reachable(b),
@@ -101,6 +103,7 @@ fn check_dominators(mir: &Mir, dt: &DomTree) {
             "reachability mismatch at block {b}"
         );
     }
+    #[allow(clippy::needless_range_loop)]
     for a in 0..n {
         for b in 0..n {
             let expected = dom_sets[b].as_ref().is_some_and(|s| s[a]);

@@ -33,7 +33,7 @@ fn build_zip(entries: &[(&str, &[u8])]) -> Vec<u8> {
     writer.finish().expect("finish zip").into_inner()
 }
 
-fn details(item: Value) -> Vec<u8> {
+fn details(item: &Value) -> Vec<u8> {
     serde_json::to_vec(&json!({
         "item": item,
         "actions": [],
@@ -51,7 +51,7 @@ fn details(item: Value) -> Vec<u8> {
 fn fixture_scp() -> Vec<u8> {
     let blob_one = b"blob-one".as_slice();
     let blob_two = b"blob-two".as_slice();
-    let level_a = details(json!({
+    let level_a = details(&json!({
         "name": "level-a",
         "engine": "engine-a",
         "title": "Level A",
@@ -60,7 +60,7 @@ fn fixture_scp() -> Vec<u8> {
         "useEffect": {"useDefault": false, "item": {"name": "fx-a"}},
         "useParticle": {"useDefault": false, "item": "missing"},
     }));
-    let level_b = details(json!({
+    let level_b = details(&json!({
         "name": "level-b",
         "engine": {"name": "engine-a", "title": "already linked"},
         "useSkin": {"useDefault": true},
@@ -68,11 +68,11 @@ fn fixture_scp() -> Vec<u8> {
         "useEffect": {"useDefault": true},
         "useParticle": {"useDefault": true},
     }));
-    let skin_a = details(json!({"name": "skin-a", "title": "Skin A"}));
-    let fx_a = details(json!({"name": "fx-a", "title": "FX A"}));
-    let p1 = details(json!({"name": "p1", "title": "P1"}));
-    let engine_a = details(json!({"name": "engine-a", "title": "Engine A"}));
-    let bg_a = details(json!({"name": "bg-a", "title": "BG A"}));
+    let skin_a = details(&json!({"name": "skin-a", "title": "Skin A"}));
+    let fx_a = details(&json!({"name": "fx-a", "title": "FX A"}));
+    let p1 = details(&json!({"name": "p1", "title": "P1"}));
+    let engine_a = details(&json!({"name": "engine-a", "title": "Engine A"}));
+    let bg_a = details(&json!({"name": "bg-a", "title": "BG A"}));
     let hash_one = sha1_hex(blob_one);
     let hash_two = sha1_hex(blob_two);
     let repo_one = format!("repository/{hash_one}");

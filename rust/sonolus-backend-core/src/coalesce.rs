@@ -303,6 +303,9 @@ fn thread_empty_split_blocks(mir: &mut Mir, split_blocks: &[BlockId]) -> usize {
 
 #[cfg(test)]
 mod tests {
+    // Toolchain note: clippy 1.96 newly lints test code under --all-targets;
+    // exact f64 equality is the assertion contract here (ARCHITECTURE §6).
+    #![allow(clippy::float_cmp, clippy::too_many_lines)]
     use super::*;
     use crate::alloc::allocate_temps;
     use crate::interpret::Interpreter;

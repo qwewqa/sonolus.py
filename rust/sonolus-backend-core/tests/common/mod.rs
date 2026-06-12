@@ -83,10 +83,15 @@ pub fn load_manifest() -> Manifest {
 pub fn load_vector_file(hash: &str) -> VectorFile {
     let path = testdata_dir().join("vectors").join(format!("{hash}.json"));
     let file: VectorFile = serde_json::from_slice(
-        &fs::read(&path).unwrap_or_else(|e| panic!("missing vector file {path:?}: {e}")),
+        &fs::read(&path).unwrap_or_else(|e| panic!("missing vector file {}: {e}", path.display())),
     )
-    .unwrap_or_else(|e| panic!("vector file {path:?} invalid: {e}"));
-    assert_eq!(file.schema, 2, "unknown vector schema in {path:?}");
+    .unwrap_or_else(|e| panic!("vector file {} invalid: {e}", path.display()));
+    assert_eq!(
+        file.schema,
+        2,
+        "unknown vector schema in {}",
+        path.display()
+    );
     assert_eq!(file.cfg, hash);
     file
 }
