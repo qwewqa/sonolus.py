@@ -6,11 +6,11 @@
 > holds rules, tasks, state, and decisions. Maintainer notes (setup, end-of-run review)
 > live in [EXECUTION.md](EXECUTION.md).
 
-**Status:** running — G3.3 closed (template items green incl. 1M fuzz clean; the
-switchover ratchet FAILED and the run proceeds flagged per §4 — parity criterion
-transferred to G3.5; diagnosis: cross-block Get/Set materialization, W4's charter);
-S5 complete (T5.3 done). **Next: W4** (T3.8 if-conversion + T3.9 block shaping,
-parallel fan-out per §2.2), then G3.4.
+**Status:** running — G3.3 closed (proceed-flagged ratchet → G3.5; CI green on
+8ee40bf incl. rust-lane); S5 complete. **In flight: W4 fan-out** (T3.8 if-conversion
++ T3.9 block shaping, parallel worktrees) **and T4.1** (payload schema, file-disjoint
+S4 overlap). Then: W4 merge by measurement (D13), gate G3.4, W5, G3.5 (ratchet
+re-assertion), S4 remainder, S6, S7.
 **Last updated:** 2026-06-12
 
 ## 0. Entry point — if you were pointed at this file, start here
@@ -192,8 +192,8 @@ metrics ratchet not regressed; worklog entry with metric movement.
 | T3.6 | done | W3: switch formation (RewriteToSwitch successor; recognizes post-GVN comparison trees on an integer scrutinee). | per-transform differential + fuzz |
 | T3.7 | done | W3: LICM; optional cost-modeled micro-unroll of tiny constant-trip loops (unroll deferred — see worklog). | per-transform differential + fuzz |
 | G3.3 | done | **W3 gate = switchover ratchet**: aggregate ≥ parity with `rust/baselines/python-standard.json`; no callback >10% worse on dyn eval count. **Ratchet FAILED → proceeded flagged per §4; parity criterion transferred to G3.5** (see Deviation log + worklog). All other template items passed. | wave gate template + ratchet |
-| T3.8 | todo | W4: expression-level if-conversion (small diamonds/triangles → `If`/`And`/`Or` value nodes, cost-modeled). | per-transform differential + fuzz; dispatch-count metric drop |
-| T3.9 | todo | W4: block merging, exit combining, tiny-block duplication into predecessors. | per-transform differential + fuzz |
+| T3.8 | in-progress | W4: expression-level if-conversion (small diamonds/triangles → `If`/`And`/`Or` value nodes, cost-modeled). | per-transform differential + fuzz; dispatch-count metric drop |
+| T3.9 | in-progress | W4: block merging, exit combining, tiny-block duplication into predecessors. | per-transform differential + fuzz |
 | G3.4 | todo | W4 gate. | wave gate template |
 | T3.10 | todo | W5: emission-time FlattenAssociativeOps (sharing-aware vs node DAG dedup). | per-transform differential + fuzz; node-count metric |
 | T3.11 | todo | W5: NormalizeSwitch (dense 0-based case manufacture) + dense-form selection in the emitter. | per-transform differential + fuzz |
@@ -204,7 +204,7 @@ metrics ratchet not regressed; worklog entry with metric movement.
 
 | ID | Status | Task | DoD |
 |----|--------|------|-----|
-| T4.1 | todo | Payload schema + Python assembly: per-mode work units (callback, archetype idx, order, encoded CFG) + metadata JSON + ROM + level selection. | schema doc + assembly unit tests |
+| T4.1 | in-progress | Payload schema + Python assembly: per-mode work units (callback, archetype idx, order, encoded CFG) + metadata JSON + ROM + level selection. | schema doc + assembly unit tests |
 | T4.2 | todo | Rust `build_engine`: stateless intra-call dedup (hash of encoded CFG), rayon per callback with GIL released, canonical node ordering (archetype order then callback order), mode JSON (`preserve_order`), gzip mtime=0, ROM packing. Pure function. | A/B vs Python on pydori: decompressed structural equality of mode data + per-callback differential interpretation |
 | T4.3 | todo | Wire `package_engine`; `validate_engine` stays pure-Python trace-only. **Remove** `CompileCache`, `hash_cfg`, the `cache` parameter threading (~8 signatures), and dev-server cache lifecycle (`reset_accessed`/`prune_unaccessed`). | `tests/build/test_dev_server.py` + full suite green; grep audit: no `CompileCache`/`hash_cfg` references |
 | T4.4 | todo | Flip dev default to `standard` in `cli.py` (keep `-O0/-O1/-O2`); perf gates **G-P1** and **G-P2** measured on pydori and recorded below in §8-metrics. | gates pass; CLI help updated |
