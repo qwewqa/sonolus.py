@@ -205,7 +205,7 @@ metrics ratchet not regressed; worklog entry with metric movement.
 | ID | Status | Task | DoD |
 |----|--------|------|-----|
 | T4.1 | done | Payload schema + Python assembly: per-mode work units (callback, archetype idx, order, encoded CFG) + metadata JSON + ROM + level selection. | schema doc + assembly unit tests |
-| T4.2 | todo | Rust `build_engine`: stateless intra-call dedup (hash of encoded CFG), rayon per callback with GIL released, canonical node ordering (archetype order then callback order), mode JSON (`preserve_order`), gzip mtime=0, ROM packing. Pure function. | A/B vs Python on pydori: decompressed structural equality of mode data + per-callback differential interpretation |
+| T4.2 | done | Rust `build_engine`: stateless intra-call dedup (hash of encoded CFG), rayon per callback with GIL released, canonical node ordering (archetype order then callback order), mode JSON (`preserve_order`), gzip mtime=0, ROM packing. Pure function. | A/B vs Python on pydori: decompressed structural equality of mode data + per-callback differential interpretation |
 | T4.3 | todo | Wire `package_engine`; `validate_engine` stays pure-Python trace-only. **Remove** `CompileCache`, `hash_cfg`, the `cache` parameter threading (~8 signatures), and dev-server cache lifecycle (`reset_accessed`/`prune_unaccessed`). | `tests/build/test_dev_server.py` + full suite green; grep audit: no `CompileCache`/`hash_cfg` references |
 | T4.4 | todo | Flip dev default to `standard` in `cli.py` (keep `-O0/-O1/-O2`); perf gates **G-P1** and **G-P2** measured on pydori and recorded below in §8-metrics. | gates pass; CLI help updated |
 
@@ -361,6 +361,29 @@ pointers (failing commands, metric numbers, repro). Empty deviation log = clean 
 
 ## 9. Worklog (append-only; newest first)
 
+- 2026-06-12 — **T4.2 done (a406147), merged and verified** (ran in the G3.4 fuzz
+  window). `sonolus_backend.build_engine(payload)`: PAYLOAD-v1 dict validated
+  GIL-held, build runs under `py.detach`; call-wide D6 dedup keyed on exact cfg
+  bytes (byte-confirmed by map equality); rayon par_iter into unique-index slots
+  (completion-order independent); `output.rs` OutputNodeGenerator made persistent
+  across add() calls = legacy per-mode indexes dict, mode-wide; metadata slots
+  validated+rewritten per PAYLOAD; node array spliced as a separately rendered
+  string (legacy json.dumps emits Infinity/-Infinity, serde_json can't hold
+  them); new pyjson::dumps_compact; ROM `<f` LE with struct.pack OverflowError
+  boundary pinned byte-for-byte; gzip mtime=0 reused; return = PackagedEngine
+  field names (`PackagedEngine(**result)` is T4.3's wiring one-liner). PAYLOAD.md
+  §5.8 return-shape pinned via marked T4.2 amendment (only PAYLOAD edit). A/B:
+  13 tests — config+ROM byte-identical decompressed, mode JSON structural incl.
+  key order + node-index sharing pattern, per-callback differential over 120
+  units (= all 300 metric rows' work; pydori is 60 units/config, derived
+  archetypes share base compilations), determinism byte-identical, cross-mode
+  dedup, error-surface tests. **Wall: median 675 ms / min 645 ms** on pydori
+  standard (release, UNDER 1M-fuzz contention) vs python-fast G-P1 reference
+  1,501 ms — the perf gates look comfortable; re-measure clean at T4.4. Suite
+  1248→1261. Follow-ups: build errors don't name the failing callback (legacy
+  parity; UX candidate); metadata ints beyond i64/u64 documented unreachable.
+  Orchestrator verified on merged tree: cargo 616 tests 0 failed, --all-targets
+  clippy/fmt clean, A/B 13 passed, both lanes 1261+4.
 - 2026-06-12 — **T3.8 done; W4 complete and verified (fix 5e248ea, order final).**
   The composition miscompile root cause was NOT if_convert's transform logic: a
   **latent alloc.rs hole** — stores inside lazy trees were modeled as conditional
