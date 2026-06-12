@@ -112,13 +112,46 @@ def walk_files(root: Path) -> dict[str, bytes]:
     return {path.relative_to(root).as_posix(): path.read_bytes() for path in sorted(root.rglob("*")) if path.is_file()}
 
 
-def assert_same_state(legacy: Collection, rust: RustCollection) -> None:
-    assert list(rust.categories) == list(legacy.categories), "category insertion order"
-    for category, legacy_items in legacy.categories.items():
-        assert list(rust.categories[category]) == list(legacy_items), f"item order in {category}"
+def assert_same_state(legacy: Collection, rust: RustCollection, *, strict_order: bool = True) -> None:
+    """Compare in-memory state across the two implementations.
+
+    ``strict_order=False`` is for states built via ``load_from_source``: the
+    legacy loader visits directories in OS enumeration order (name-sorted on
+    NTFS, arbitrary on ext4) while the Rust loader name-sorts (documented
+    divergence), so insertion order is only content-comparable there. Compare
+    the written site trees with ``assert_equivalent_site_trees`` for the same
+    reason.
+    """
+    if strict_order:
+        assert list(rust.categories) == list(legacy.categories), "category insertion order"
+        for category, legacy_items in legacy.categories.items():
+            assert list(rust.categories[category]) == list(legacy_items), f"item order in {category}"
+        assert list(rust.repository) == list(legacy.repository), "repository insertion order"
     assert rust.categories == legacy.categories
-    assert list(rust.repository) == list(legacy.repository), "repository insertion order"
     assert dict(rust.repository) == legacy.repository
+
+
+def assert_equivalent_site_trees(legacy_dir: Path, rust_dir: Path) -> None:
+    """Site-tree comparison tolerant of the source-load iteration divergence.
+
+    The legacy loader inserts resource SRLs into the item dict in OS
+    enumeration order (``item_data[resource_path.stem] = srl``), so JSON key
+    order in written item/info/list files is platform-dependent. Files must be
+    byte-identical or structurally equal JSON. Repository blobs are
+    content-addressed, so for them only the byte-identical arm can match.
+    """
+    legacy_files = walk_files(legacy_dir)
+    rust_files = walk_files(rust_dir)
+    assert list(legacy_files) == list(rust_files)
+    for name, data in legacy_files.items():
+        if rust_files[name] == data:
+            continue
+        try:
+            legacy_json = json.loads(data)
+            rust_json = json.loads(rust_files[name])
+        except ValueError:
+            raise AssertionError(f"site-tree file {name} differs (non-JSON)") from None
+        assert legacy_json == rust_json, f"site-tree file {name} differs structurally"
 
 
 def write_both(legacy: Collection, rust: RustCollection, tmp_path: Path) -> tuple[Path, Path]:
@@ -212,10 +245,12 @@ def test_in_place_item_mutation_reaches_write(tmp_path):
 
 
 def source_tree(root: Path) -> None:
-    """Builds a source resource tree with name-sorted entries.
+    """Builds a source resource tree.
 
-    Sorted names keep the legacy OS-order iteration and the Rust name-sorted
-    iteration in agreement (the iteration order is a documented divergence).
+    The legacy loader iterates in OS enumeration order and the Rust loader
+    name-sorts (documented divergence), so source-load parity checks must be
+    insertion-order-insensitive: OS order happens to be name-sorted on NTFS
+    but is arbitrary on ext4 (this bit a rust-lane CI run on Ubuntu).
     """
     pixel = root / "skins" / "pixel"
     pixel.mkdir(parents=True)
@@ -253,7 +288,7 @@ def test_source_tree_parity(tmp_path):
     rust = RustCollection()
     rust.load_from_source(source_root)
 
-    assert_same_state(legacy, rust)
+    assert_same_state(legacy, rust, strict_order=False)
     item = rust.categories["skins"]["pixel"]["item"]
     assert item["title"] == "Pixel"
     assert item["subtitle"] == "st-de", "smallest language key wins when 'en' is absent"
@@ -267,7 +302,37 @@ def test_source_tree_parity(tmp_path):
     assert rust.repository[data_hash] == gzipped
 
     legacy_dir, rust_dir = write_both(legacy, rust, tmp_path)
-    assert walk_files(legacy_dir) == walk_files(rust_dir)
+    assert_equivalent_site_trees(legacy_dir, rust_dir)
+
+
+def test_source_tree_parity_is_os_enumeration_order_independent(tmp_path, monkeypatch):
+    """Deterministic stand-in for the ext4 readdir-order CI failure.
+
+    Reversing ``Path.iterdir`` forces the legacy loader's enumeration order to
+    diverge from the Rust loader's name-sorted order on every platform (only
+    the legacy loader enumerates via pathlib; the Rust loader reads the
+    directory natively). Content parity and the written site tree must hold
+    regardless.
+    """
+    source_root = tmp_path / "resources"
+    source_root.mkdir()
+    source_tree(source_root)
+
+    real_iterdir = Path.iterdir
+    monkeypatch.setattr(Path, "iterdir", lambda self: iter(sorted(real_iterdir(self), reverse=True)))
+
+    legacy = Collection()
+    legacy.load_from_source(source_root)
+    rust = RustCollection()
+    rust.load_from_source(source_root)
+
+    # The divergence is real under reversed enumeration: pixel's two
+    # repository blobs land in opposite orders.
+    assert list(legacy.repository) == list(reversed(list(rust.repository)))
+
+    assert_same_state(legacy, rust, strict_order=False)
+    legacy_dir, rust_dir = write_both(legacy, rust, tmp_path)
+    assert_equivalent_site_trees(legacy_dir, rust_dir)
 
 
 def test_source_tree_invalid_item_warns(tmp_path):
@@ -396,9 +461,9 @@ def test_load_resources_files_to_collection_lane_parity(tmp_path, monkeypatch):
     rust = load_resources_files_to_collection(resources)
     assert type(rust) is RustCollection
 
-    assert_same_state(legacy, rust)
+    assert_same_state(legacy, rust, strict_order=False)
     legacy_dir, rust_dir = write_both(legacy, rust, tmp_path)
-    assert walk_files(legacy_dir) == walk_files(rust_dir)
+    assert_equivalent_site_trees(legacy_dir, rust_dir)
 
 
 def test_link_missing_engine_raises_keyerror(tmp_path):

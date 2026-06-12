@@ -29,7 +29,11 @@ see also the T5.1 notes in ``rust/sonolus-backend-core/src/collection/mod.rs``):
   keys);
 - ``load_from_source`` visits directories in name-sorted order (deterministic)
   instead of OS enumeration order, and re-emits its warnings/prints after the
-  load instead of interleaved with it;
+  load instead of interleaved with it. Iteration order reaches output: resource
+  SRL keys are inserted into the item dict in visit order, so written item JSON
+  key order matches the legacy class only where OS enumeration happens to be
+  name-sorted (NTFS yes, ext4 no — content is structurally identical either
+  way);
 - item values must round-trip through JSON: integers beyond 64 bits and
   non-finite floats are not supported (the legacy class would serialize them).
 """
