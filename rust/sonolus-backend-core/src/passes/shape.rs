@@ -277,17 +277,18 @@ fn reference_counts(mir: &Mir) -> Vec<u32> {
         for &v in &block.insts {
             let inst = mir.inst(v);
             Mir::for_each_operand(inst, |o| counts[o as usize] += 1);
-            if let Inst::ShortCircuit { rhs, .. } = inst {
-                lazy_stack.push(*rhs);
-                while let Some(lv) = lazy_stack.pop() {
-                    if scheduled[lv as usize] || mir.is_const(lv) {
-                        continue;
-                    }
-                    Mir::for_each_operand(mir.inst(lv), |o| {
-                        counts[o as usize] += 1;
-                        lazy_stack.push(o);
-                    });
+            // Owned lazy interiors of ANY lazy owner (ShortCircuit rhs,
+            // Select arms — T3.8's second D11 species). The roots were
+            // counted as operands above; this walk counts the deep nodes.
+            Mir::for_each_lazy_root(inst, |r| lazy_stack.push(r));
+            while let Some(lv) = lazy_stack.pop() {
+                if scheduled[lv as usize] || mir.is_const(lv) {
+                    continue;
                 }
+                Mir::for_each_operand(mir.inst(lv), |o| {
+                    counts[o as usize] += 1;
+                    lazy_stack.push(o);
+                });
             }
         }
         if let Terminator::Branch { test, .. } = &block.terminator {
@@ -624,27 +625,31 @@ fn dup_facts(mir: &Mir, scheduled: &[bool], t: BlockId) -> DupFacts {
                     facts.refused = true;
                 }
             }
-            Inst::ShortCircuit { rhs, .. } => {
-                lazy_stack.push(*rhs);
-                while let Some(lv) = lazy_stack.pop() {
-                    if mir.is_const(lv) || scheduled[lv as usize] {
-                        continue;
-                    }
-                    facts.clone_insts += 1;
-                    match mir.inst(lv) {
-                        Inst::Op { op, .. } => {
-                            if op_effects(*op).rng {
-                                facts.refused = true;
-                            }
-                        }
-                        Inst::Store { .. } | Inst::Phi { .. } => facts.refused = true,
-                        _ => {}
-                    }
-                    Mir::for_each_operand(mir.inst(lv), |o| lazy_stack.push(o));
-                }
-            }
             Inst::Phi { .. } => facts.refused = true, // malformed; defensive
             _ => {}
+        }
+        // Owned lazy trees of ANY lazy owner (ShortCircuit rhs, Select arms —
+        // T3.8's second D11 species).
+        Mir::for_each_lazy_root(mir.inst(v), |r| lazy_stack.push(r));
+        while let Some(lv) = lazy_stack.pop() {
+            if mir.is_const(lv) || scheduled[lv as usize] {
+                continue;
+            }
+            facts.clone_insts += 1;
+            match mir.inst(lv) {
+                Inst::Op { op, .. } => {
+                    if op_effects(*op).rng {
+                        facts.refused = true;
+                    }
+                }
+                // Stores inside Select arms are in-contract post-T3.8, but
+                // `clone_lazy_tree` deliberately does not clone them; phis in
+                // lazy trees stay out of contract. Refuse both for
+                // duplication (conservative; revisit with W5 tuning).
+                Inst::Store { .. } | Inst::Phi { .. } => facts.refused = true,
+                _ => {}
+            }
+            Mir::for_each_operand(mir.inst(lv), |o| lazy_stack.push(o));
         }
     }
     facts
@@ -674,20 +679,20 @@ fn used_outside_def_block(mir: &Mir) -> Vec<bool> {
         for &v in &block.insts {
             let inst = mir.inst(v);
             Mir::for_each_operand(inst, |o| note(o, &mut outside));
-            if let Inst::ShortCircuit { rhs, .. } = inst {
-                lazy_stack.push(*rhs);
-                while let Some(lv) = lazy_stack.pop() {
-                    if mir.is_const(lv) || scheduled[lv as usize] {
-                        continue;
-                    }
-                    Mir::for_each_operand(mir.inst(lv), |o| {
-                        if scheduled[o as usize] {
-                            note(o, &mut outside);
-                        } else {
-                            lazy_stack.push(o);
-                        }
-                    });
+            // Owned lazy interiors of ANY lazy owner (ShortCircuit rhs,
+            // Select arms — T3.8's second D11 species).
+            Mir::for_each_lazy_root(inst, |r| lazy_stack.push(r));
+            while let Some(lv) = lazy_stack.pop() {
+                if mir.is_const(lv) || scheduled[lv as usize] {
+                    continue;
                 }
+                Mir::for_each_operand(mir.inst(lv), |o| {
+                    if scheduled[o as usize] {
+                        note(o, &mut outside);
+                    } else {
+                        lazy_stack.push(o);
+                    }
+                });
             }
         }
         if let Terminator::Branch { test, .. } = &block.terminator {
@@ -784,6 +789,17 @@ fn clone_lazy_tree(
                             rhs: pair[1],
                         }
                     }
+                    Inst::Select { .. } => {
+                        // A converted inner diamond moved into an outer arm
+                        // tree (T3.8 fixpoint). Operands arrive as
+                        // [test, then_root, else_root] in order.
+                        let trio = results.split_off(results.len() - 3);
+                        Inst::Select {
+                            test: trio[0],
+                            then_root: trio[1],
+                            else_root: trio[2],
+                        }
+                    }
                     Inst::Load { place } => {
                         // Place value operands (block, then index) arrive on
                         // the results stack in `for_each_operand` order.
@@ -839,6 +855,20 @@ fn clone_inst(
             place: remap_place(map, &place),
             value: remap(map, value),
         },
+        Inst::Select {
+            test,
+            then_root,
+            else_root,
+        } => {
+            let new_test = remap(map, test);
+            let new_then = clone_lazy_tree(mir, scheduled, then_root, map);
+            let new_else = clone_lazy_tree(mir, scheduled, else_root, map);
+            Inst::Select {
+                test: new_test,
+                then_root: new_then,
+                else_root: new_else,
+            }
+        }
         Inst::ShortCircuit {
             op,
             pure_node,

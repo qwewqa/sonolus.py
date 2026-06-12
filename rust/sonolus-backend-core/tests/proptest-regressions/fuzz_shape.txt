@@ -1,0 +1,7 @@
+# Seeds for failure cases proptest has generated in the past. It is
+# automatically read and these particular cases re-run before any
+# novel cases are generated.
+#
+# It is recommended to check this file in to source control so that
+# everyone who runs the test benefits from these saved cases.
+cc 9d1639b9605eb4c88db0b40906e768ea63ceaa5e4fb884417e752f6363e7f82a # shrinks to (Program { nested_target: 0, shapes: [Diamond { cond: Fixed { op: 0, args: [ReadConcrete { block: 0, index: Dyn(ReadTemp { temp: 0, index: Const(0) }), offset: 0 }, Int(0)] }, float_cond: false, then_stmts: [SetTemp { temp: 0, index: Const(0), value: Int(0) }], else_stmts: [] }, Loop { trips: 2, body: [Loop { trips: 2, body: [Diamond { cond: Unary { op: 4, arg: Log(Int(0)) }, float_cond: false, then_stmts: [], else_stmts: [SetTemp { temp: 2, index: Dyn(ReadTemp { temp: 1, index: Const(11) }), value: Reduce { op: 0, args: [Reduce { op: 0, args: [ReadTemp { temp: 0, index: Const(0) }] }] } }, SetTemp { temp: 0, index: Const(0), value: Reduce { op: 0, args: [Int(1)] } }] }] }] }], ret: None }, 0, 0)
