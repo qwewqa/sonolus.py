@@ -44,6 +44,22 @@ enum Frame<'a> {
 /// cannot represent NaN or infinities (without the `arbitrary_precision`
 /// feature), so this is unreachable for parsed or `json!`-built values.
 pub fn dumps(value: &Value) -> String {
+    dumps_with(value, ", ", ": ")
+}
+
+/// Serializes a [`Value`] exactly like `CPython`'s
+/// `json.dumps(value, separators=(",", ":"))` — the compact form the frozen
+/// `sonolus/build/engine.py` `package_data` uses for engine data (PORT.md
+/// task T4.2 consumer).
+///
+/// # Panics
+///
+/// Panics if the value contains a non-finite float (see [`dumps`]).
+pub fn dumps_compact(value: &Value) -> String {
+    dumps_with(value, ",", ":")
+}
+
+fn dumps_with(value: &Value, item_sep: &'static str, key_sep: &'static str) -> String {
     let mut out = String::new();
     let mut stack: Vec<Frame> = vec![Frame::Value(value)];
     while let Some(frame) = stack.pop() {
@@ -51,7 +67,7 @@ pub fn dumps(value: &Value) -> String {
             Frame::Text(text) => out.push_str(text),
             Frame::Key(key) => {
                 write_string(&mut out, key);
-                out.push_str(": ");
+                out.push_str(key_sep);
             }
             Frame::Value(value) => match value {
                 Value::Null => out.push_str("null"),
@@ -65,7 +81,7 @@ pub fn dumps(value: &Value) -> String {
                     for (i, item) in items.iter().enumerate().rev() {
                         stack.push(Frame::Value(item));
                         if i > 0 {
-                            stack.push(Frame::Text(", "));
+                            stack.push(Frame::Text(item_sep));
                         }
                     }
                 }
@@ -76,7 +92,7 @@ pub fn dumps(value: &Value) -> String {
                         stack.push(Frame::Value(item));
                         stack.push(Frame::Key(key));
                         if i > 0 {
-                            stack.push(Frame::Text(", "));
+                            stack.push(Frame::Text(item_sep));
                         }
                     }
                 }
@@ -105,7 +121,10 @@ fn write_number(out: &mut String, n: &serde_json::Number) {
 /// `< -4` or `>= 16`, writes the exponent sign explicitly with at least two
 /// digits, and always includes a decimal point in positional form (`2.0`,
 /// not `2`).
-fn py_float_repr(x: f64) -> String {
+///
+/// Crate-visible for the engine packager (`crate::build`), which renders
+/// float-tagged output-node values with `repr(float)` semantics.
+pub(crate) fn py_float_repr(x: f64) -> String {
     debug_assert!(x.is_finite(), "JSON numbers are always finite");
     // Rust's LowerExp gives the shortest round-trip digits, e.g. "-1.2345e-3".
     let formatted = format!("{x:e}");
@@ -163,7 +182,10 @@ fn py_float_repr(x: f64) -> String {
 /// printable ASCII range (0x20..=0x7E) except `"` and `\` is literal, the
 /// usual short escapes apply, and everything else becomes a lowercase
 /// 4-hex-digit backslash-u escape (astral characters as surrogate pairs).
-fn write_string(out: &mut String, s: &str) {
+///
+/// Crate-visible for the engine packager (`crate::build`), which assembles
+/// the mode-data document around the spliced node array.
+pub(crate) fn write_string(out: &mut String, s: &str) {
     out.push('"');
     for c in s.chars() {
         match c {
@@ -254,6 +276,25 @@ mod tests {
         for &(value, expected) in table {
             assert_eq!(py_float_repr(value), expected, "for {value:e}");
         }
+    }
+
+    #[test]
+    fn compact_matches_python_compact_separators() {
+        // Expected string captured verbatim from CPython 3.14
+        // `json.dumps(..., separators=(",", ":"))` on the same value.
+        let value = json!({
+            "a": 1,
+            "b": [1.5, 2.0, true, null],
+            "t": "caf\u{e9}",
+            "e": 1e16,
+            "z": -0.0,
+        });
+        let expected = bs(r#"{"a":1,"b":[1.5,2.0,true,null],"t":"caf^u00e9","e":1e+16,"z":-0.0}"#);
+        assert_eq!(dumps_compact(&value), expected);
+        assert_eq!(
+            dumps_compact(&json!({"e": {}, "l": []})),
+            r#"{"e":{},"l":[]}"#
+        );
     }
 
     #[test]

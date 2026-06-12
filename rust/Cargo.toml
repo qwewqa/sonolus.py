@@ -21,6 +21,9 @@ pyo3 = { version = "0.28.3", features = ["abi3-py312"] }
 #   flate2/zlib-rs backend only — the default `deflate` meta-feature would pull in zopfli
 flate2 = "1.1.9"
 indexmap = "2.14.0"
+# rayon: per-unit parallel compilation inside the single `build_engine` call
+# (PORT.md task T4.2; deterministic assembly — results land in unit-indexed slots)
+rayon = "1.11"
 serde_json = { version = "1", features = ["preserve_order"] }
 sha1 = "0.11.0"
 zip = { version = "8.6.0", default-features = false, features = ["deflate-flate2-zlib-rs"] }

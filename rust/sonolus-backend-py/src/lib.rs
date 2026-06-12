@@ -8,7 +8,10 @@ use pyo3::exceptions::{
     PyTypeError, PyValueError, PyZeroDivisionError,
 };
 use pyo3::prelude::*;
-use pyo3::types::{PyDict, PyFloat, PyInt, PyList, PyString, PyTuple};
+use pyo3::types::{PyBytes, PyDict, PyFloat, PyInt, PyList, PyString, PyTuple};
+use sonolus_backend_core::build::{
+    self, BuildEngineError, EnginePayload, ModePayload, PAYLOAD_SCHEMA_VERSION, WorkUnit,
+};
 use sonolus_backend_core::cfg::{canonical_dump, cfg_to_text};
 use sonolus_backend_core::decode::decode_cfg;
 use sonolus_backend_core::diff::build_memory;
@@ -143,6 +146,160 @@ fn run_pipeline_stats(
         .map_err(|e| PyValueError::new_err(e.to_string()))?;
     dict.bind(py).set_item("dag_size", out.nodes.len())?;
     Ok((EngineNodes { inner }, dict))
+}
+
+/// Validates that a payload dict has exactly the expected keys (any order).
+fn expect_exact_keys(dict: &Bound<'_, PyDict>, expected: &[&str], what: &str) -> PyResult<()> {
+    let mut keys: Vec<String> = Vec::with_capacity(dict.len());
+    for key in dict.keys() {
+        keys.push(
+            key.extract::<String>()
+                .map_err(|_| PyTypeError::new_err(format!("{what} keys must be strings")))?,
+        );
+    }
+    let mut sorted = keys.clone();
+    sorted.sort_unstable();
+    let mut expected_sorted: Vec<&str> = expected.to_vec();
+    expected_sorted.sort_unstable();
+    if sorted != expected_sorted {
+        return Err(PyValueError::new_err(format!(
+            "{what} must have exactly the keys {expected:?}, got {keys:?}"
+        )));
+    }
+    Ok(())
+}
+
+fn get_required<'py>(
+    dict: &Bound<'py, PyDict>,
+    key: &str,
+    what: &str,
+) -> PyResult<Bound<'py, PyAny>> {
+    dict.get_item(key)?
+        .ok_or_else(|| PyValueError::new_err(format!("{what} is missing the {key:?} key")))
+}
+
+/// Converts the schema-v1 payload dict (`rust/PAYLOAD.md`) into the core
+/// representation, validating its shape. Runs with the GIL held; everything
+/// it produces is GIL-independent so the build itself can detach.
+fn convert_payload(payload: &Bound<'_, PyDict>) -> PyResult<EnginePayload> {
+    expect_exact_keys(
+        payload,
+        &["schema", "level", "configuration", "rom", "modes"],
+        "the payload",
+    )?;
+    let schema: i64 = get_required(payload, "schema", "the payload")?.extract()?;
+    if schema != PAYLOAD_SCHEMA_VERSION {
+        return Err(PyValueError::new_err(format!(
+            "unsupported payload schema {schema} (this backend consumes schema \
+             {PAYLOAD_SCHEMA_VERSION})"
+        )));
+    }
+    let level = parse_level(&get_required(payload, "level", "the payload")?.extract::<String>()?)?;
+    let configuration: String = get_required(payload, "configuration", "the payload")?.extract()?;
+    let rom: Vec<f64> = get_required(payload, "rom", "the payload")?.extract()?;
+
+    let modes_obj = get_required(payload, "modes", "the payload")?;
+    let all_modes = modes_obj
+        .cast::<PyDict>()
+        .map_err(|_| PyTypeError::new_err("the payload modes value must be a dict"))?;
+    // PAYLOAD.md §1: exactly the four mode keys, in that insertion order
+    // (validated in order by core's `validate_modes` via the names below).
+    let mut modes: Vec<ModePayload> = Vec::with_capacity(all_modes.len());
+    for (name_obj, mode_obj) in all_modes.iter() {
+        let name: String = name_obj
+            .extract()
+            .map_err(|_| PyTypeError::new_err("mode keys must be strings"))?;
+        let mode_dict = mode_obj
+            .cast::<PyDict>()
+            .map_err(|_| PyTypeError::new_err(format!("mode {name:?} must be a dict")))?;
+        expect_exact_keys(mode_dict, &["metadata", "units"], &format!("mode {name:?}"))?;
+        let metadata: String = get_required(mode_dict, "metadata", &name)?.extract()?;
+        let units_obj = get_required(mode_dict, "units", &name)?;
+        let units_list = units_obj
+            .cast::<PyList>()
+            .map_err(|_| PyTypeError::new_err(format!("mode {name:?} units must be a list")))?;
+        let mut units: Vec<WorkUnit> = Vec::with_capacity(units_list.len());
+        for (i, unit_obj) in units_list.iter().enumerate() {
+            let what = format!("mode {name:?} unit {i}");
+            let unit_dict = unit_obj
+                .cast::<PyDict>()
+                .map_err(|_| PyTypeError::new_err(format!("{what} must be a dict")))?;
+            expect_exact_keys(unit_dict, &["callback", "archetype", "order", "cfg"], &what)?;
+            let callback: String = get_required(unit_dict, "callback", &what)?.extract()?;
+            let archetype: Option<i64> = get_required(unit_dict, "archetype", &what)?.extract()?;
+            let order: i64 = get_required(unit_dict, "order", &what)?.extract()?;
+            let cfg_obj = get_required(unit_dict, "cfg", &what)?;
+            let cfg: Vec<u8> = cfg_obj
+                .cast::<PyBytes>()
+                .map_err(|_| PyTypeError::new_err(format!("{what} cfg must be bytes")))?
+                .as_bytes()
+                .to_vec();
+            units.push(WorkUnit {
+                callback,
+                archetype,
+                order,
+                cfg,
+            });
+        }
+        modes.push(ModePayload {
+            name,
+            metadata,
+            units,
+        });
+    }
+
+    Ok(EnginePayload {
+        level,
+        configuration,
+        rom,
+        modes,
+    })
+}
+
+/// Maps a failed engine build onto the legacy exception surface: the ROM
+/// overflow mirrors `struct.pack("<f", ...)`'s `OverflowError` (message
+/// included); everything else is a `ValueError` (unit compilation failures
+/// carry the pipeline message verbatim, e.g. "Temporary memory limit
+/// exceeded").
+fn build_engine_error_to_py(e: &BuildEngineError) -> PyErr {
+    match e {
+        BuildEngineError::RomOverflow { .. } => PyOverflowError::new_err(e.to_string()),
+        _ => PyValueError::new_err(e.to_string()),
+    }
+}
+
+/// Builds the six packaged engine blobs from a schema-v1 build payload
+/// (`rust/PAYLOAD.md`; produced by `sonolus.build.payload.assemble_engine_payload`)
+/// in one call: per-unit compilation at the payload's level (parallel, GIL
+/// released), stateless intra-call dedup of byte-identical CFGs, per-mode
+/// node arrays in canonical unit order, metadata rewrite, and gzip (mtime 0).
+///
+/// Pure function: no state survives the call (PORT.md invariant §3.8, D6).
+///
+/// Returns a dict shaped like the legacy `PackagedEngine` dataclass:
+/// `{"configuration", "play_data", "watch_data", "preview_data",
+/// "tutorial_data", "rom"}`, each a gzipped `bytes` value.
+///
+/// Raises `ValueError` for malformed payloads and unit compilation failures
+/// (legacy message parity, e.g. "Temporary memory limit exceeded") and
+/// `OverflowError` for finite ROM values that overflow f32 (legacy
+/// `struct.pack("<f", ...)` parity).
+#[pyfunction]
+fn build_engine(py: Python<'_>, payload: &Bound<'_, PyDict>) -> PyResult<Py<PyDict>> {
+    let payload = convert_payload(payload)?;
+    // The compile phase is pure Rust; release the GIL so rayon workers (and
+    // other Python threads) can run.
+    let packaged = py
+        .detach(|| build::build_engine(&payload))
+        .map_err(|e| build_engine_error_to_py(&e))?;
+    let dict = PyDict::new(py);
+    dict.set_item("configuration", PyBytes::new(py, &packaged.configuration))?;
+    dict.set_item("play_data", PyBytes::new(py, &packaged.play_data))?;
+    dict.set_item("watch_data", PyBytes::new(py, &packaged.watch_data))?;
+    dict.set_item("preview_data", PyBytes::new(py, &packaged.preview_data))?;
+    dict.set_item("tutorial_data", PyBytes::new(py, &packaged.tutorial_data))?;
+    dict.set_item("rom", PyBytes::new(py, &packaged.rom))?;
+    Ok(dict.unbind())
 }
 
 /// The deterministic seeded memory fill of the differential harness
@@ -466,6 +623,7 @@ fn sonolus_backend(m: &Bound<'_, PyModule>) -> PyResult<()> {
     m.add_function(wrap_pyfunction!(run_pipeline, m)?)?;
     m.add_function(wrap_pyfunction!(run_pipeline_stats, m)?)?;
     m.add_function(wrap_pyfunction!(seeded_memory, m)?)?;
+    m.add_function(wrap_pyfunction!(build_engine, m)?)?;
     m.add_class::<EngineNodes>()?;
     m.add_class::<Interpreter>()?;
     m.add_class::<collection::Collection>()?;

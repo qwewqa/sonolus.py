@@ -90,13 +90,108 @@ impl fmt::Display for OutputError {
 impl std::error::Error for OutputError {}
 
 /// Dedup key with Python dict-key equality (see the module docs).
-#[derive(PartialEq, Eq, Hash)]
+#[derive(Debug, PartialEq, Eq, Hash)]
 enum Key {
     /// Raw bits of the value with `-0.0` normalized to `0.0` (so `0 == -0.0`).
     /// Tags are not part of the key (so `5 == 5.0`).
     Const(u64),
     /// Op plus child output indices (equivalent to structural equality).
     Func(Op, Vec<u32>),
+}
+
+/// Incremental output-node generator with the legacy `OutputNodeGenerator`
+/// semantics, deduplicating across **every tree added** to it.
+///
+/// The single-tree case is [`generate_output_nodes`]. The engine packager
+/// (`crate::build`, PORT.md task T4.2) uses one generator per *mode*: every
+/// callback's tree is [`add`](Self::add)ed in canonical unit order and
+/// sub-trees shared between callbacks of the same mode collapse onto one
+/// entry, exactly like the legacy per-mode generator in
+/// `sonolus/build/compile.py::compile_mode`. The dedup map and the node list
+/// persist across `add` calls (the legacy `indexes` dict); the per-arena memo
+/// is rebuilt per call, which cannot change the result because the persistent
+/// key map already canonicalizes equal nodes to their first-encounter index.
+#[derive(Debug, Default)]
+pub struct OutputNodeGenerator {
+    keys: HashMap<Key, u32>,
+    nodes: Vec<OutputNode>,
+}
+
+impl OutputNodeGenerator {
+    pub fn new() -> Self {
+        Self::default()
+    }
+
+    /// Adds one engine-node tree and returns the output index of its root.
+    ///
+    /// Nodes are appended in the legacy first-encounter post-order; nodes
+    /// already known to this generator (from this or any earlier tree) are
+    /// shared, so adding an identical tree twice returns the same index and
+    /// appends nothing.
+    ///
+    /// # Errors
+    ///
+    /// Returns [`OutputError::NanConstant`] if a NaN constant node is
+    /// reachable (impossible for emitter-produced trees).
+    pub fn add(&mut self, arena: &NodeArena, root: NodeId) -> Result<u32, OutputError> {
+        let mut memo: Vec<Option<u32>> = vec![None; arena.len()];
+        // (node, expanded): expanded means all children have been processed.
+        let mut stack: Vec<(NodeId, bool)> = vec![(root, false)];
+        while let Some((id, expanded)) = stack.pop() {
+            if memo[id.index()].is_some() {
+                continue;
+            }
+            match arena.kind(id) {
+                NodeKind::Const { value, is_int } => {
+                    if value.is_nan() {
+                        return Err(OutputError::NanConstant);
+                    }
+                    let key = Key::Const(normalize_zero(value).to_bits());
+                    let index = *self.keys.entry(key).or_insert_with(|| {
+                        self.nodes.push(OutputNode::Value { value, is_int });
+                        last_index(&self.nodes)
+                    });
+                    memo[id.index()] = Some(index);
+                }
+                NodeKind::Func { op, .. } => {
+                    let args = arena.args_of(id);
+                    if expanded {
+                        let arg_indices: Vec<u32> = args
+                            .iter()
+                            .map(|arg| {
+                                memo[arg.index()].expect("children are processed before parents")
+                            })
+                            .collect();
+                        let key = Key::Func(op, arg_indices.clone());
+                        let index = *self.keys.entry(key).or_insert_with(|| {
+                            self.nodes.push(OutputNode::Func {
+                                op,
+                                args: arg_indices,
+                            });
+                            last_index(&self.nodes)
+                        });
+                        memo[id.index()] = Some(index);
+                    } else {
+                        stack.push((id, true));
+                        for &arg in args.iter().rev() {
+                            stack.push((arg, false));
+                        }
+                    }
+                }
+            }
+        }
+        Ok(memo[root.index()].expect("the root was processed"))
+    }
+
+    /// The nodes generated so far, in insertion order.
+    pub fn nodes(&self) -> &[OutputNode] {
+        &self.nodes
+    }
+
+    /// Consumes the generator, returning the node list.
+    pub fn into_nodes(self) -> Vec<OutputNode> {
+        self.nodes
+    }
 }
 
 /// Generates the deduplicated output-node list for a tree, in the legacy
@@ -107,56 +202,14 @@ enum Key {
 /// Returns [`OutputError::NanConstant`] if a NaN constant node is reachable
 /// (impossible for emitter-produced trees).
 pub fn generate_output_nodes(arena: &NodeArena, root: NodeId) -> Result<OutputNodes, OutputError> {
-    let mut keys: HashMap<Key, u32> = HashMap::new();
-    let mut memo: Vec<Option<u32>> = vec![None; arena.len()];
-    let mut nodes: Vec<OutputNode> = Vec::new();
-    // (node, expanded): expanded means all children have been processed.
-    let mut stack: Vec<(NodeId, bool)> = vec![(root, false)];
-    while let Some((id, expanded)) = stack.pop() {
-        if memo[id.index()].is_some() {
-            continue;
-        }
-        match arena.kind(id) {
-            NodeKind::Const { value, is_int } => {
-                if value.is_nan() {
-                    return Err(OutputError::NanConstant);
-                }
-                let key = Key::Const(normalize_zero(value).to_bits());
-                let index = *keys.entry(key).or_insert_with(|| {
-                    nodes.push(OutputNode::Value { value, is_int });
-                    last_index(&nodes)
-                });
-                memo[id.index()] = Some(index);
-            }
-            NodeKind::Func { op, .. } => {
-                let args = arena.args_of(id);
-                if expanded {
-                    let arg_indices: Vec<u32> = args
-                        .iter()
-                        .map(|arg| {
-                            memo[arg.index()].expect("children are processed before parents")
-                        })
-                        .collect();
-                    let key = Key::Func(op, arg_indices.clone());
-                    let index = *keys.entry(key).or_insert_with(|| {
-                        nodes.push(OutputNode::Func {
-                            op,
-                            args: arg_indices,
-                        });
-                        last_index(&nodes)
-                    });
-                    memo[id.index()] = Some(index);
-                } else {
-                    stack.push((id, true));
-                    for &arg in args.iter().rev() {
-                        stack.push((arg, false));
-                    }
-                }
-            }
-        }
-    }
-    let root = memo[root.index()].expect("the root was processed");
-    debug_assert_eq!(root, last_index(&nodes), "the root must be the last node");
+    let mut generator = OutputNodeGenerator::new();
+    let root = generator.add(arena, root)?;
+    let nodes = generator.into_nodes();
+    debug_assert_eq!(
+        root,
+        last_index(&nodes),
+        "a fresh generator's first root must be the last node"
+    );
     Ok(OutputNodes { nodes, root })
 }
 
@@ -316,6 +369,69 @@ mod tests {
                 OutputNode::Func {
                     op: Op::Execute,
                     args: vec![2, 2, 3],
+                },
+            ]
+        );
+    }
+
+    #[test]
+    fn generator_dedups_across_trees() {
+        // Mode-wide dedup (T4.2): a sub-tree shared between two separately
+        // added trees gets one entry, and re-adding an identical tree appends
+        // nothing and returns the same root index — exactly the legacy
+        // per-mode `OutputNodeGenerator` behavior.
+        let mut arena_a = NodeArena::new();
+        let one = arena_a.push_int(1.0);
+        let two = arena_a.push_int(2.0);
+        let add = arena_a.push_func(Op::Add, &[one, two]);
+        let root_a = arena_a.push_func(Op::Execute, &[add]);
+
+        let mut arena_b = NodeArena::new();
+        let one_b = arena_b.push_int(1.0);
+        let two_b = arena_b.push_int(2.0);
+        let add_b = arena_b.push_func(Op::Add, &[one_b, two_b]);
+        let root_b = arena_b.push_func(Op::Multiply, &[add_b, one_b]);
+
+        let mut generator = OutputNodeGenerator::new();
+        let a = generator.add(&arena_a, root_a).unwrap();
+        let len_after_a = generator.nodes().len();
+        let b = generator.add(&arena_b, root_b).unwrap();
+        // Tree B reuses 1, 2, and Add(1, 2); only Multiply is new.
+        assert_eq!(generator.nodes().len(), len_after_a + 1);
+        assert_eq!(
+            generator.nodes()[b as usize],
+            OutputNode::Func {
+                op: Op::Multiply,
+                args: vec![2, 0],
+            }
+        );
+        // Re-adding tree A is a no-op returning the original index.
+        let a_again = generator.add(&arena_a, root_a).unwrap();
+        assert_eq!(a_again, a);
+        assert_eq!(generator.nodes().len(), len_after_a + 1);
+        // The combined list matches the legacy insertion order.
+        assert_eq!(
+            generator.nodes(),
+            &[
+                OutputNode::Value {
+                    value: 1.0,
+                    is_int: true,
+                },
+                OutputNode::Value {
+                    value: 2.0,
+                    is_int: true,
+                },
+                OutputNode::Func {
+                    op: Op::Add,
+                    args: vec![0, 1],
+                },
+                OutputNode::Func {
+                    op: Op::Execute,
+                    args: vec![2],
+                },
+                OutputNode::Func {
+                    op: Op::Multiply,
+                    args: vec![2, 0],
                 },
             ]
         );

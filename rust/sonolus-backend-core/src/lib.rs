@@ -5,6 +5,7 @@
 
 pub mod alloc;
 pub mod analysis;
+pub mod build;
 pub mod cfg;
 pub(crate) mod coalesce;
 pub mod collection;

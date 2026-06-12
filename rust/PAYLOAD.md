@@ -189,7 +189,16 @@ Plus, once per call:
    for parity. NaN/±inf pack fine on both sides.
 7. **Configuration**: UTF-8 encode the `configuration` string as-is and gzip
    (`mtime=0`).
-8. Return the six blobs (`PackagedEngine` shape).
+8. Return the six blobs (`PackagedEngine` shape). *(T4.2 amendment, pinning the
+   FFI shape the implementation chose:* `sonolus_backend.build_engine(payload)`
+   *returns a `dict` with the legacy dataclass's field names —*
+   `configuration`, `play_data`, `watch_data`, `preview_data`, `tutorial_data`,
+   `rom` *— each a gzipped `bytes` value, so `PackagedEngine(**result)`
+   constructs the legacy object directly. Error surface: `OverflowError` with
+   the exact `struct.pack` message for ROM overflow ([§5.6](#5-rust-side-assembly-t42));
+   `ValueError` for everything else, with unit compilation failures carrying
+   the pipeline message verbatim — e.g. `Temporary memory limit exceeded` —
+   for legacy parity.)*
 
 Errors anywhere (decode failure, budget exhaustion, slot/unit-id validation,
 ROM overflow) abort the whole call with an exception; there are no partial results.
