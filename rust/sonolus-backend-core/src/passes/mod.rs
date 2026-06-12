@@ -55,6 +55,7 @@ pub mod gvn;
 pub mod mem2reg;
 pub mod rules;
 pub mod sccp;
+pub mod switch_form;
 
 use std::time::Duration;
 
@@ -173,6 +174,16 @@ pub fn registry() -> &'static [RegistryEntry] {
         RegistryEntry {
             stage: Stage::W2,
             make: || Box::new(dce::DcePass),
+        },
+        // ===== Wave W3 =====
+        //
+        // T3.6: switch formation (src/passes/switch_form.rs) — the legacy
+        // RewriteToSwitch successor: post-GVN Equal-test branches become
+        // single-case switches on the scrutinee, and same-scrutinee branch
+        // chains merge into one multi-way block (dispatch_count headline).
+        RegistryEntry {
+            stage: Stage::W3,
+            make: || Box::new(switch_form::SwitchForm),
         },
     ]
 }
@@ -528,8 +539,8 @@ mod tests {
             "fast {fast:?} must be a prefix of standard {standard:?}"
         );
         assert_eq!(fast.first(), Some(&"sccp"), "SCCP is the first W1 pass");
-        assert!(fast.iter().any(|p| *p == "gvn"));
-        assert!(fast.iter().any(|p| *p == "dce"));
+        assert!(fast.contains(&"gvn"));
+        assert!(fast.contains(&"dce"));
         // Registry entries are grouped by ascending stage (the prefix property
         // passes_for_level relies on).
         let stages: Vec<Stage> = registry().iter().map(|e| e.stage).collect();

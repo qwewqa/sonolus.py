@@ -259,6 +259,15 @@ pub struct SwitchCase {
     pub stmts: Vec<Stmt>,
 }
 
+/// One arm of a [`Shape::IfChain`]: `elif scrutinee == c:` with `c` the
+/// int-tagged `cond`, or the float-tagged `cond + 0.5` when `cond_half`.
+#[derive(Debug, Clone)]
+pub struct ChainArm {
+    pub cond_half: bool,
+    pub cond: u8,
+    pub stmts: Vec<Stmt>,
+}
+
 /// A control-flow shape. Shapes compose sequentially; loops nest shapes.
 #[derive(Debug, Clone)]
 pub enum Shape {
@@ -281,6 +290,21 @@ pub enum Shape {
         wrap_mod: bool,
         cases: Vec<SwitchCase>,
         default: Option<Vec<Stmt>>,
+    },
+    /// If/elif chain on one temp-cell scrutinee:
+    /// `if t[i] == c0 {..} elif t[i] == c1 {..} ... else {..}` — the traced
+    /// frontend shape W3 switch formation (T3.6) rewrites. The scrutinee cell
+    /// is **re-read for every comparison**, exactly like traced frontend
+    /// code, and each check block tests `Equal(get, const)` with `{0: next,
+    /// None: arm}` edges. Duplicate cond values across arms are deliberately
+    /// allowed (the later arm is unreachable — the merge's duplicate-drop
+    /// path must preserve that). Cond constants are int-tagged `cond` or
+    /// float-tagged `cond + 0.5` per arm.
+    IfChain {
+        temp: usize,
+        index: u8,
+        arms: Vec<ChainArm>,
+        else_stmts: Option<Vec<Stmt>>,
     },
     /// Bounded counter loop: `for c in 0..trips { body }` on a dedicated
     /// counter temp that nothing else can write. Terminates by construction.
@@ -477,7 +501,7 @@ pub fn program_loop_free() -> BoxedStrategy<Program> {
 // Dynamic-indexing-heavy profile (T3.4 Mem2Reg's top-risk surface)
 // ----------------------------------------------------------------------------------
 
-/// An index strategy weighted heavily toward *dynamic* indices (Mem2Reg's
+/// An index strategy weighted heavily toward *dynamic* indices (`Mem2Reg`'s
 /// escape boundary) while keeping constant indices in the mix, so the same
 /// temp pool gets both access kinds within one program.
 fn dyn_heavy_index() -> BoxedStrategy<Index> {
@@ -499,7 +523,7 @@ fn dyn_heavy_temp_read() -> BoxedStrategy<Expr> {
 /// Value expressions for the dynamic-heavy profile: dominated by temp reads
 /// (const AND dynamic indices on the same pool), small arithmetic over them,
 /// and short-circuit `And`/`Or` whose lazy sides read temps (the D11 case
-/// Mem2Reg must handle), with the general [`expr`] mix as a minority.
+/// `Mem2Reg` must handle), with the general [`expr`] mix as a minority.
 fn dyn_heavy_value() -> BoxedStrategy<Expr> {
     prop_oneof![
         4 => dyn_heavy_temp_read(),
@@ -557,11 +581,65 @@ fn dyn_heavy_shape() -> BoxedStrategy<Shape> {
 }
 
 /// A whole program with the dynamic-indexing-heavy profile: the dedicated
-/// fuzz surface for W2 Mem2Reg (mixed const/dynamic temp access, lazy temp
+/// fuzz surface for W2 `Mem2Reg` (mixed const/dynamic temp access, lazy temp
 /// reads, loops over temps). Same AST and lowering as [`program`] — only the
 /// strategy weights differ (additive knob; see PORT.md T3.4).
 pub fn program_dynamic_heavy() -> BoxedStrategy<Program> {
     program_from_shapes(dyn_heavy_shape())
+}
+
+// ----------------------------------------------------------------------------------
+// If/elif-chain-heavy profile (T3.6 switch formation's surface)
+// ----------------------------------------------------------------------------------
+
+fn chain_arm() -> impl Strategy<Value = ChainArm> {
+    (any::<bool>(), 0..=6u8, stmts()).prop_map(|(cond_half, cond, stmts)| ChainArm {
+        cond_half,
+        cond,
+        stmts,
+    })
+}
+
+/// Control-flow shapes for the chain-heavy profile: dominated by if/elif
+/// chains on temp cells (1..=5 arms, optional else, int/float comparison
+/// constants, duplicate conds allowed), with straight lines, the general
+/// loop-free shapes, and bounded loops in the mix (a chain inside a loop
+/// gets a phi-defined scrutinee after `Mem2Reg`; arm statements that write the
+/// scrutinee cell exercise the variant-(b) clobber refusals).
+fn chain_heavy_shape() -> BoxedStrategy<Shape> {
+    let chain = (
+        0..TEMP_POOL.len(),
+        0..32u8,
+        vec(chain_arm(), 1..=5),
+        option::of(stmts()),
+    )
+        .prop_map(|(temp, index, arms, else_stmts)| Shape::IfChain {
+            temp,
+            index,
+            arms,
+            else_stmts,
+        });
+    let loop_free = prop_oneof![
+        5 => chain.boxed(),
+        2 => stmts().prop_map(Shape::Straight).boxed(),
+        2 => shape_loop_free(),
+    ]
+    .boxed();
+    loop_free
+        .prop_recursive(2, 6, 2, |inner| {
+            (1..=5u8, vec(inner, 1..=2))
+                .prop_map(|(trips, body)| Shape::Loop { trips, body })
+                .boxed()
+        })
+        .boxed()
+}
+
+/// A whole program with the if/elif-chain-heavy profile: the dedicated fuzz
+/// surface for W3 switch formation (T3.6). Same AST and lowering as
+/// [`program`] — only the strategy weights differ (additive knob, the T3.4
+/// precedent).
+pub fn program_chain_heavy() -> BoxedStrategy<Program> {
+    program_from_shapes(chain_heavy_shape())
 }
 
 // ----------------------------------------------------------------------------------
@@ -1024,6 +1102,77 @@ pub fn build_cfg(p: &Program) -> Cfg {
                     let zt = b.zero_test();
                     b.finalize(
                         arm,
+                        zt,
+                        vec![Edge {
+                            cond: EdgeCond::None,
+                            target: merge,
+                        }],
+                    );
+                }
+                b.cur = merge;
+            }
+            Work::Shape(Shape::IfChain {
+                temp,
+                index,
+                arms,
+                else_stmts,
+            }) => {
+                #[allow(clippy::cast_possible_wrap)]
+                let size = TEMP_POOL[*temp].1 as i64;
+                let idx = i64::from(*index) % size;
+                let merge = b.new_block();
+                let mut check = b.cur;
+                for (i, arm) in arms.iter().enumerate() {
+                    let arm_b = b.new_block();
+                    let next = if i + 1 < arms.len() || else_stmts.is_some() {
+                        b.new_block()
+                    } else {
+                        merge
+                    };
+                    // check: test Equal(Get(t[idx]), c); {0: next, None: arm}
+                    // — the traced frontend `if`/`elif` shape (scrutinee
+                    // re-read per comparison, constant on the right).
+                    let read_p = b.temp_place(*temp, IndexValue::Int(idx), 0);
+                    let get = b.node(Node::Get(read_p));
+                    let c = if arm.cond_half {
+                        b.node(Node::ConstFloat(f64::from(arm.cond) + 0.5))
+                    } else {
+                        b.const_int(i64::from(arm.cond))
+                    };
+                    let eq = b.op_node(Op::Equal, vec![get, c]);
+                    b.finalize(
+                        check,
+                        eq,
+                        vec![
+                            Edge {
+                                cond: EdgeCond::Int(0),
+                                target: next,
+                            },
+                            Edge {
+                                cond: EdgeCond::None,
+                                target: arm_b,
+                            },
+                        ],
+                    );
+                    b.cur = arm_b;
+                    b.emit_stmts(&arm.stmts);
+                    let zt = b.zero_test();
+                    b.finalize(
+                        arm_b,
+                        zt,
+                        vec![Edge {
+                            cond: EdgeCond::None,
+                            target: merge,
+                        }],
+                    );
+                    check = next;
+                }
+                if let Some(stmts) = else_stmts {
+                    b.cur = check;
+                    b.emit_stmts(stmts);
+                    let zt = b.zero_test();
+                    b.finalize(
+                        check,
                         zt,
                         vec![Edge {
                             cond: EdgeCond::None,
