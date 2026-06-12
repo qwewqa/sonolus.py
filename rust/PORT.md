@@ -7,8 +7,12 @@
 > live in [EXECUTION.md](EXECUTION.md).
 
 **Status:** paused (maintainer request) — **G3.2 passed** (W2 gate, one fix cycle) and
-T5.2 done and verified; **next task: W3** (T3.6 switch formation + T3.7 LICM, parallel
-fan-out per §2.2), then gate G3.3 (the switchover ratchet).
+T5.2 done and verified; **first item at resume: T5.2 CI fix** — rust-lane CI on d4243c3
+(Ubuntu) fails 2/12 collection parity tests (`test_source_tree_parity`,
+`test_load_resources_files_to_collection_lane_parity`: repository insertion order;
+local Windows green — looks like the documented name-sorted source iteration divergence
+surfacing on Linux readdir order). Then **W3** (T3.6 switch formation + T3.7 LICM,
+parallel fan-out per §2.2), then gate G3.3 (the switchover ratchet).
 **Last updated:** 2026-06-12
 
 ## 0. Entry point — if you were pointed at this file, start here
