@@ -3,7 +3,7 @@ from datetime import datetime
 from pathlib import Path
 from typing import cast
 
-from sonolus.build.collection import Asset, Collection, Srl
+from sonolus.build.collection import Asset, Collection, Srl, make_collection
 from sonolus.build.compile import CompileCache
 from sonolus.build.engine import package_engine, unpackage_data
 from sonolus.build.level import package_level_data
@@ -180,7 +180,9 @@ def load_resource(collection: Collection, asset: Asset | None, base_path: Path, 
 
 
 def load_resources_files_to_collection(base_path: Path) -> Collection:
-    collection = Collection()
+    # The factory selects the legacy or Rust-backed implementation from the
+    # SONOLUS_BACKEND environment variable (PORT.md T5.2).
+    collection = make_collection()
     for path in base_path.rglob("*.scp"):
         collection.load_from_scp(path)
     collection.load_from_source(base_path)

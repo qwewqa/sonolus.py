@@ -3,6 +3,7 @@ from __future__ import annotations
 import gzip
 import hashlib
 import json
+import os
 import urllib.request
 import warnings
 import zipfile
@@ -319,6 +320,30 @@ class Collection:
         self.repository.update(other.repository)
         for category, items in other.categories.items():
             self.categories.setdefault(category, {}).update(items)
+
+
+def make_collection() -> Collection:
+    """Builds an empty collection, honoring the ``SONOLUS_BACKEND`` lane (PORT.md T5.2).
+
+    ``SONOLUS_BACKEND=rust`` selects the Rust-backed implementation
+    (:class:`sonolus.build.rust_collection.RustCollection`, requires the
+    ``sonolus_backend`` extension module); unset or ``python`` selects this
+    module's pure-Python :class:`Collection`. Both classes remain directly
+    constructible for explicit side-by-side comparison (the T5.3 A/B).
+    """
+    backend = os.environ.get("SONOLUS_BACKEND", "")
+    if backend == "rust":
+        try:
+            from sonolus.build.rust_collection import RustCollection
+        except ImportError as e:
+            raise RuntimeError(
+                "SONOLUS_BACKEND=rust requires the sonolus_backend extension module; "
+                "build it with: uv run maturin develop -m rust/sonolus-backend-py/Cargo.toml"
+            ) from e
+        return RustCollection()
+    if backend in {"", "python"}:
+        return Collection()
+    raise RuntimeError(f"Unsupported SONOLUS_BACKEND value {backend!r}; expected 'rust', 'python', or unset")
 
 
 class Srl(TypedDict):

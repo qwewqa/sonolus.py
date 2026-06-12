@@ -1,6 +1,8 @@
 //! Thin `PyO3` bindings exposing `sonolus-backend-core` to Python as the
 //! `sonolus_backend` extension module.
 
+mod collection;
+
 use pyo3::exceptions::{
     PyAssertionError, PyIndexError, PyNotImplementedError, PyOverflowError, PyRuntimeError,
     PyTypeError, PyValueError, PyZeroDivisionError,
@@ -455,5 +457,6 @@ fn sonolus_backend(m: &Bound<'_, PyModule>) -> PyResult<()> {
     m.add_function(wrap_pyfunction!(seeded_memory, m)?)?;
     m.add_class::<EngineNodes>()?;
     m.add_class::<Interpreter>()?;
+    m.add_class::<collection::Collection>()?;
     Ok(())
 }

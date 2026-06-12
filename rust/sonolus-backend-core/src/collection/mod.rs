@@ -233,6 +233,12 @@ pub struct WriteStats {
     pub repository_files_skipped: usize,
 }
 
+/// All item details by category then item name (insertion-ordered).
+pub type Categories = IndexMap<Category, IndexMap<String, Value>>;
+
+/// The SHA1 content-addressed blob repository (insertion-ordered).
+pub type Repository = IndexMap<String, Vec<u8>>;
+
 /// An in-memory Sonolus collection: items by category plus a SHA1
 /// content-addressed blob repository. Port of `collection.py::Collection`.
 ///
@@ -242,8 +248,8 @@ pub struct WriteStats {
 pub struct Collection {
     /// The collection title written to the main info file.
     pub name: String,
-    categories: IndexMap<Category, IndexMap<String, Value>>,
-    repository: IndexMap<String, Vec<u8>>,
+    categories: Categories,
+    repository: Repository,
 }
 
 impl Default for Collection {
@@ -598,6 +604,59 @@ impl Collection {
             fs::write(&target_path, data)?;
             stats.repository_files_written += 1;
         }
+        Ok(())
+    }
+
+    /// Consumes the collection into its categories and repository (the T5.2
+    /// FFI bridge: the `PyO3` layer keeps the repository persistently and
+    /// hands the categories to Python, which owns them between operations).
+    pub fn into_parts(self) -> (Categories, Repository) {
+        (self.categories, self.repository)
+    }
+
+    /// The categories as a `{category: {name: details}}` JSON object.
+    /// Insertion order is preserved at both levels and empty categories are
+    /// included (they carry a main-info button even with no items).
+    pub fn categories_value(&self) -> Value {
+        let mut out = Map::new();
+        for (category, items) in &self.categories {
+            let mut items_map = Map::new();
+            for (name, details) in items {
+                items_map.insert(name.clone(), details.clone());
+            }
+            out.insert(category.as_str().to_owned(), Value::Object(items_map));
+        }
+        Value::Object(out)
+    }
+
+    /// Replaces the categories from a `{category: {name: details}}` JSON
+    /// object (the inverse of [`Collection::categories_value`]). Unknown
+    /// category names and non-object shapes are errors (the Python reference
+    /// can only reach `write` with valid category keys; junk crashes it too).
+    pub fn set_categories_from_value(&mut self, value: &Value) -> Result<(), CollectionError> {
+        let Some(map) = value.as_object() else {
+            return Err(CollectionError::InvalidItem(
+                "categories must be a JSON object".to_owned(),
+            ));
+        };
+        let mut categories = Categories::new();
+        for (category_name, items_value) in map {
+            let Some(category) = Category::from_name(category_name) else {
+                return Err(CollectionError::InvalidItem(format!(
+                    "unknown category '{category_name}'"
+                )));
+            };
+            let Some(items) = items_value.as_object() else {
+                return Err(CollectionError::InvalidItem(format!(
+                    "items for category '{category_name}' must be a JSON object"
+                )));
+            };
+            let entry = categories.entry(category).or_default();
+            for (name, details) in items {
+                entry.insert(name.clone(), details.clone());
+            }
+        }
+        self.categories = categories;
         Ok(())
     }
 
@@ -1095,6 +1154,96 @@ mod tests {
         assert_eq!(zip_path_parts("levels\\x"), ["levels", "x"]);
         assert_eq!(zip_path_parts("levels/.."), ["levels", ".."]);
         assert_eq!(zip_path_parts(""), Vec::<&str>::new());
+    }
+
+    #[test]
+    fn categories_value_round_trips_through_set_categories() {
+        use serde_json::json;
+
+        let mut original = Collection::new();
+        original
+            .add_item(Category::Levels, "l1", &json!({"name": "l1", "v": 1}))
+            .unwrap();
+        original
+            .add_item(Category::Skins, "s2", &json!({"name": "s2"}))
+            .unwrap();
+        original
+            .add_item(Category::Skins, "s1", &json!({"name": "s1"}))
+            .unwrap();
+        // An empty category still carries a main-info button and must survive.
+        original.ensure_category(Category::Posts);
+
+        let value = original.categories_value();
+        let mut restored = Collection::new();
+        restored.set_categories_from_value(&value).unwrap();
+        assert_eq!(
+            restored
+                .categories()
+                .map(|(c, _)| c)
+                .collect::<Vec<Category>>(),
+            [Category::Levels, Category::Skins, Category::Posts],
+            "category insertion order is preserved"
+        );
+        assert_eq!(
+            restored
+                .items(Category::Skins)
+                .unwrap()
+                .keys()
+                .collect::<Vec<_>>(),
+            ["s2", "s1"],
+            "item insertion order is preserved"
+        );
+        assert_eq!(pyjson::dumps(&restored.categories_value()), {
+            pyjson::dumps(&value)
+        });
+
+        // set_categories_from_value replaces, not merges.
+        restored
+            .set_categories_from_value(&json!({"engines": {}}))
+            .unwrap();
+        assert_eq!(
+            restored
+                .categories()
+                .map(|(c, _)| c)
+                .collect::<Vec<Category>>(),
+            [Category::Engines]
+        );
+    }
+
+    #[test]
+    fn set_categories_from_value_rejects_malformed_shapes() {
+        use serde_json::json;
+
+        let mut collection = Collection::new();
+        assert!(collection.set_categories_from_value(&json!([])).is_err());
+        assert!(
+            collection
+                .set_categories_from_value(&json!({"nonsense": {}}))
+                .is_err()
+        );
+        assert!(
+            collection
+                .set_categories_from_value(&json!({"levels": []}))
+                .is_err()
+        );
+    }
+
+    #[test]
+    fn into_parts_returns_categories_and_repository() {
+        use serde_json::json;
+
+        let mut collection = Collection::new();
+        collection
+            .add_item(Category::Levels, "l", &json!({"name": "l"}))
+            .unwrap();
+        let srl = collection.add_asset(b"blob".to_vec());
+        let (categories, repository) = collection.into_parts();
+        assert_eq!(categories.len(), 1);
+        assert!(categories[&Category::Levels].contains_key("l"));
+        assert_eq!(
+            repository.get(&srl.hash).map(Vec::as_slice),
+            Some(&b"blob"[..])
+        );
     }
 
     #[test]

@@ -30,6 +30,12 @@ ignore = ["E402", "D1", "COM812", "PLW2901", "PLW3201", "PLR6301", "PLC0415", "P
 [tool.ruff.lint.pydocstyle]
 convention = "google"
 
+[tool.pytest.ini_options]
+# Pytest's default norecursedirs includes "build", which silently excluded
+# tests/build/ from `pytest tests` runs. This is the default list minus "build"
+# (PORT.md T5.2 finding).
+norecursedirs = ["*.egg", ".*", "_darcs", "CVS", "dist", "node_modules", "venv", "{arch}"]
+
 [build-system]
 requires = ["hatchling"]
 build-backend = "hatchling.build"
