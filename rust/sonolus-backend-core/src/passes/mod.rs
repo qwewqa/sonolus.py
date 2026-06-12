@@ -45,7 +45,8 @@
 //! passes (fresh instances; pass names repeat for deliberate re-runs). W3 is
 //! T3.6 switch formation → T3.7 `LICM` (order measured equivalent on
 //! corpus+pydori; a trailing GVN+DCE cleanup re-run measured as not worth it —
-//! see the D13 worklog entry in PORT.md).
+//! see the D13 worklog entry in PORT.md). W4 is T3.9 `shape` → T3.8
+//! `if_convert` (order measured; see the W4 D13 worklog entry).
 //!
 //! # Determinism
 //!
@@ -201,12 +202,13 @@ pub fn registry() -> &'static [RegistryEntry] {
             stage: Stage::W3,
             make: || Box::new(licm::LicmPass),
         },
-        // ===== Wave W4 — order: if-conversion (T3.8), block shaping (T3.9) =====
+        // ===== Wave W4 — order: block shaping (T3.9), if-conversion (T3.8) =====
         //
-        // Order chosen by measurement per D13: if-conversion manufactures the
-        // single-pred chains and empty shapes that shape's merging then
-        // absorbs (both agents' composition analysis; orchestrator-measured at
-        // the W4 merge — see the PORT.md worklog).
+        // Order chosen by measurement per D13 (PORT.md worklog): shape-first
+        // exposes more convertible diamonds (corpus eval -2.1% vs
+        // if-convert-first; pydori eval/dispatch identical); a trailing shape
+        // re-run measured as noise. if_convert performs the one local
+        // join-into-head merge its conversion needs itself.
         //
         // T3.8: single-phi(s) diamonds/triangles become `If`/`And`/`Or` value
         // nodes (src/passes/if_convert.rs); dispatch_count and the
@@ -214,7 +216,7 @@ pub fn registry() -> &'static [RegistryEntry] {
         // headline metrics.
         RegistryEntry {
             stage: Stage::W4,
-            make: || Box::new(if_convert::IfConvert),
+            make: || Box::new(shape::ShapePass),
         },
         // T3.9: JumpLoop-aware CFG shaping (src/passes/shape.rs) — trivial-phi
         // cleanup, phi-aware empty-block threading, exit shaping/combining,
@@ -222,7 +224,7 @@ pub fn registry() -> &'static [RegistryEntry] {
         // (dispatch_count + cross-block Get/Set headline).
         RegistryEntry {
             stage: Stage::W4,
-            make: || Box::new(shape::ShapePass),
+            make: || Box::new(if_convert::IfConvert),
         },
     ]
 }

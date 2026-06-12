@@ -6,13 +6,11 @@
 > holds rules, tasks, state, and decisions. Maintainer notes (setup, end-of-run review)
 > live in [EXECUTION.md](EXECUTION.md).
 
-**Status:** running — W4 merged ([if_convert, shape] at a60fdff + Select
-reconciliation 42a8300) but **combined-tree fuzz caught an if_convert miscompile**
-(log doubling; seed persisted in tests/proptest-regressions/fuzz_shape.txt;
-bisected: fails with shape fully disabled, passes without if_convert) — **fix cycle
-1/3 in flight** with a dedicated agent. DO NOT push rust-port until the seed is
-green (CI replays persisted seeds). Then: W4 order measurement, gate G3.4, W5,
-G3.5 (ratchet re-assertion), S4 remainder (T4.1 done), S6, S7.
+**Status:** running — **W4 complete** (T3.8 + T3.9 merged; composition miscompile
+root-caused to a latent alloc.rs hole and fixed in cycle 1/3; final registry order
+[shape, if_convert] by D13 measurement; pydori dispatch **0.950×** — below legacy).
+**Next: gate G3.4** (wave gate template) with T4.2 dispatched into the fuzz window.
+Then W5, G3.5 (ratchet re-assertion), S4 remainder, S6, S7.
 **Last updated:** 2026-06-12
 
 ## 0. Entry point — if you were pointed at this file, start here
@@ -194,7 +192,7 @@ metrics ratchet not regressed; worklog entry with metric movement.
 | T3.6 | done | W3: switch formation (RewriteToSwitch successor; recognizes post-GVN comparison trees on an integer scrutinee). | per-transform differential + fuzz |
 | T3.7 | done | W3: LICM; optional cost-modeled micro-unroll of tiny constant-trip loops (unroll deferred — see worklog). | per-transform differential + fuzz |
 | G3.3 | done | **W3 gate = switchover ratchet**: aggregate ≥ parity with `rust/baselines/python-standard.json`; no callback >10% worse on dyn eval count. **Ratchet FAILED → proceeded flagged per §4; parity criterion transferred to G3.5** (see Deviation log + worklog). All other template items passed. | wave gate template + ratchet |
-| T3.8 | in-progress | W4: expression-level if-conversion (small diamonds/triangles → `If`/`And`/`Or` value nodes, cost-modeled). | per-transform differential + fuzz; dispatch-count metric drop |
+| T3.8 | done | W4: expression-level if-conversion (small diamonds/triangles → `If`/`And`/`Or` value nodes, cost-modeled). | per-transform differential + fuzz; dispatch-count metric drop |
 | T3.9 | done | W4: block merging, exit combining, tiny-block duplication into predecessors. | per-transform differential + fuzz |
 | G3.4 | todo | W4 gate. | wave gate template |
 | T3.10 | todo | W5: emission-time FlattenAssociativeOps (sharing-aware vs node DAG dedup). | per-transform differential + fuzz; node-count metric |
@@ -363,6 +361,37 @@ pointers (failing commands, metric numbers, repro). Empty deviation log = clean 
 
 ## 9. Worklog (append-only; newest first)
 
+- 2026-06-12 — **T3.8 done; W4 complete and verified (fix 5e248ea, order final).**
+  The composition miscompile root cause was NOT if_convert's transform logic: a
+  **latent alloc.rs hole** — stores inside lazy trees were modeled as conditional
+  uses only (no store-site interference clique, invisible to the array
+  may-defined fixpoint), so a dyn-index temp written exclusively inside a
+  converted arm got zero interference edges and the allocator overlapped it with
+  live scalar slots → the lazy store clobbered a loop counter (the log doubling).
+  Reachable only post-T3.8 (only if_convert moves temp stores into lazy trees),
+  though frontend-origin And/Or lazy stores were in-principle exposed too — the
+  fix covers that class. Fix: lazy stores = conditional may-defs at the owner's
+  schedule point (never kill; enter the array fixpoint + init-flag running set;
+  same store-site clique as scheduled stores, owner-tree loads counted live
+  first); coalesce inherits via temp_interference; **zero conversion capability
+  narrowed, metrics bit-identical, fix cost zero**. Pins: 2 alloc unit tests +
+  1 e2e if_convert test (all red pre-fix); seed kept; diamond-heavy generator
+  now emits dyn-index arm stores (167/2000 programs carry a lazy temp store —
+  was structurally 0). Why both 50k per-pass runs missed it: only the
+  shape-heavy distribution composed unpromotable-store-in-arm + loop-carried
+  slot coincidence. **W4 order (D13, orchestrator-measured)**: A=[if_convert,
+  shape] corpus eval 21,122/dispatch 1,319, pydori dag 1.138×; B=[shape,
+  if_convert] corpus eval **20,687**/1,318, pydori dag 1.147×; C=[shape,
+  if_convert, shape] ≈ B + noise. Picked **B** — eval is metric priority #1,
+  pydori eval/dispatch identical (2.416×/0.950×) across all three; shape-first
+  exposes more convertible diamonds. Final-order verification (orchestrator):
+  cargo 0 failures (602 tests), --all-targets clippy/fmt clean, 50k×3 fuzz
+  clean, both lanes 1248+4, corpus eval 22,340→**20,687** (−7.4% over W3),
+  dispatch 1,970→**1,318** (−33%), static 13,581→11,202, dag 5,416→4,519;
+  pydori static 1.668×→**1.625×**, dag 1.222×→**1.147×**, eval 2.422×→2.416×,
+  dispatch 1.950×→**0.950×** (below legacy), >10%-worse 103→**75**. Remaining
+  eval gap (PreviewStage.render 2.42×) = unpromoted-temp traffic + in-loop
+  expression shapes — W5's charter (flattening, fused tiling, NormalizeSwitch).
 - 2026-06-12 — **T3.8 merged (a60fdff) + W4 reconciliation (42a8300); combined-tree
   fuzz FOUND A MISCOMPILE — fix cycle 1/3 dispatched.** T3.8 highlights (subagent
   report; full verification deferred until the fix): `Inst::Select` = If-as-value,
