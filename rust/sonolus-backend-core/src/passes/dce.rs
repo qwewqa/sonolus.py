@@ -453,7 +453,10 @@ fn merge_chains(mir: &mut Mir) -> bool {
 ///   NaN/inf pass through.
 ///
 /// The unit test below pins every whitelisted op as `pure` in the op table.
-fn op_is_total(op: Op) -> bool {
+/// `pub(crate)`: the W3 LICM pass (`passes::licm`) uses the same whitelist as
+/// its speculation-safety gate (hoisting to a preheader executes an op the
+/// loop body might never have executed, so only never-raising ops may move).
+pub(crate) fn op_is_total(op: Op) -> bool {
     matches!(
         op,
         Op::Abs

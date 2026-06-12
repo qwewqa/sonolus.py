@@ -42,7 +42,8 @@
 //! constructors to the registry with the right stage tag; nothing else in this
 //! module changes. W1 is registered: T3.1 SCCP → T3.2 GVN+rules → T3.3 DCE,
 //! in pipeline order. W2 follows: T3.4 `Mem2Reg`, then a re-run of the W1
-//! passes (fresh instances; pass names repeat for deliberate re-runs).
+//! passes (fresh instances; pass names repeat for deliberate re-runs). W3
+//! follows with T3.7 `LICM` (T3.6 switch formation precedes it when it lands).
 //!
 //! # Determinism
 //!
@@ -52,6 +53,7 @@
 
 pub mod dce;
 pub mod gvn;
+pub mod licm;
 pub mod mem2reg;
 pub mod rules;
 pub mod sccp;
@@ -175,7 +177,10 @@ pub fn registry() -> &'static [RegistryEntry] {
             stage: Stage::W2,
             make: || Box::new(dce::DcePass),
         },
-        // ===== Wave W3 =====
+        // ===== Wave W3 — order: switch formation (T3.6), LICM (T3.7) =====
+        //
+        // Order chosen by measurement per decision D13 (see PORT.md), not
+        // legacy precedent.
         //
         // T3.6: switch formation (src/passes/switch_form.rs) — the legacy
         // RewriteToSwitch successor: post-GVN Equal-test branches become
@@ -184,6 +189,13 @@ pub fn registry() -> &'static [RegistryEntry] {
         RegistryEntry {
             stage: Stage::W3,
             make: || Box::new(switch_form::SwitchForm),
+        },
+        // T3.7: loop-invariant code motion (src/passes/licm.rs) — runs on the
+        // value-SSA MIR W2 leaves behind (cross-block uses created by hoisting
+        // are legalized by the unconditional destruct_ssa).
+        RegistryEntry {
+            stage: Stage::W3,
+            make: || Box::new(licm::LicmPass),
         },
     ]
 }
