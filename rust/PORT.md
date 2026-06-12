@@ -188,7 +188,7 @@ metrics ratchet not regressed; worklog entry with metric movement.
 | T3.4 | done | W2: Mem2Reg/SROA for TempBlocks (constant-index → scalars; dynamic-index arrays stay memory). **Top-risk transform — extra fuzz emphasis on dynamic indexing.** | per-transform differential + fuzz |
 | T3.5 | done | W2: copy-coalescing and allocation quality improvements. | per-transform differential + fuzz; temp-slot metrics |
 | G3.2 | done | W2 gate. | wave gate template |
-| T3.6 | in-progress | W3: switch formation (RewriteToSwitch successor; recognizes post-GVN comparison trees on an integer scrutinee). | per-transform differential + fuzz |
+| T3.6 | done | W3: switch formation (RewriteToSwitch successor; recognizes post-GVN comparison trees on an integer scrutinee). | per-transform differential + fuzz |
 | T3.7 | in-progress | W3: LICM; optional cost-modeled micro-unroll of tiny constant-trip loops. | per-transform differential + fuzz |
 | G3.3 | todo | **W3 gate = switchover ratchet**: aggregate ≥ parity with `rust/baselines/python-standard.json`; no callback >10% worse on dyn eval count. | wave gate template + ratchet |
 | T3.8 | todo | W4: expression-level if-conversion (small diamonds/triangles → `If`/`And`/`Or` value nodes, cost-modeled). | per-transform differential + fuzz; dispatch-count metric drop |
@@ -329,7 +329,31 @@ pointers (failing commands, metric numbers, repro). Empty deviation log = clean 
 
 ## 9. Worklog (append-only; newest first)
 
-- 2026-06-12 — **D12 stub-mode infrastructure done (55f6c87), merged and verified**
+- 2026-06-12 — **T3.6 done (W3 switch formation, f6d3810 + hygiene 74d5776), merged and
+  verified.** `switch_form.rs`, first Stage::W3 registry entry. Two transforms:
+  (1) Equal-test→single-case-switch (finite consts only — NaN conds outside encoding
+  domain, ±inf would emit raw vs legacy's ROM path; documented refusal vs legacy);
+  dead Equal unscheduled only at zero global refs, Equal is op_is_total and operands
+  never orphan — no trap-capable cascade by construction (G3.2 lesson applied).
+  (2) Same-scrutinee chain merge of the *default* successor: empty no-phi single-pred
+  blocks whose test is provably the same runtime value — (a) identical SSA Value or
+  (b) re-load of the same constant cell with block-granular aliasing refusal (lazy
+  trees consulted only to refuse, per D11); merged cases re-sorted ascending, phi args
+  re-keyed, duplicate conds dropped (Python ==). Dense chains now emit
+  SwitchIntegerWithDefault O(1) dispatch. fuzzgen gained Shape::IfChain +
+  chain-heavy profile. DoD: per-pass differential 270 cases 0 mismatches (1
+  pre-existing budget-inconclusive); 50k release fuzz main + 50k chain-heavy
+  per-pass, both clean, zero fix cycles; 34 unit tests + e2e dense-switch test.
+  Hygiene commit: clippy 1.96 toolchain drift (~250 new test-code float_cmp etc.
+  sites) fixed — **--all-targets clippy is now clean tree-wide** and enters my
+  verification set. Orchestrator verified on merged tree (with D12 stub infra):
+  cargo 0 failures, --all-targets clippy + fmt clean, both lanes 1236+4, pydori
+  report reproduced bit-exact: **dispatch 1.433×→1.296×, eval 1.308×→1.281×, static
+  1.701×→1.668×, dag 1.286×→1.221×**, 0 behavior mismatches; corpus dispatch
+  2016→1970, eval 22837→22340, 0 vectors >10% worse. 98/300 callbacks still >10%
+  worse on eval — G3.3 needs T3.7. Follow-ups recorded: optional switch-form re-run
+  after LICM; W3-final DCE re-run (duplicate-of-default case mop-up) — decide at
+  G3.3 with metrics.
   (subagent in worktree during the W3 fan-out; orchestrator cherry-picked d4d10b5).
   Runtime-only ops = the 116/191 ops hitting the interpreter's final-else
   `Unsupported operation:` error (not derivable from ops.py flags); stub rule: args
