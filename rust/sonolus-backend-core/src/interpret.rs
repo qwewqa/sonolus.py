@@ -40,6 +40,15 @@
 //! not a behavioral fact about the program). Unset, the cost is a single untaken
 //! branch per node evaluation.
 //!
+//! # Runtime-only op stubbing (metrics only)
+//!
+//! [`Interpreter::set_stub_runtime_ops`] (default OFF) replaces the
+//! `"Unsupported operation: ..."` failure for runtime-only ops with a deterministic
+//! stub so METRICS runs can measure past the first `Draw`/`BeatToTime`/... The full
+//! rule is documented in one place, on the setter. The behavioral suite and the
+//! differential/fuzz harnesses (`crate::diff`) never enable it; disabled, behavior is
+//! identical to an interpreter without the feature.
+//!
 //! # RNG
 //!
 //! The legacy interpreter uses Python's global Mersenne Twister; matching it is
@@ -571,6 +580,9 @@ pub struct Interpreter {
     /// Optional eval budget (`None` = unlimited). When `eval_count` exceeds
     /// it, evaluation stops with [`InterpreterErrorKind::EvalBudgetExceeded`].
     eval_budget: Option<u64>,
+    /// Metrics-only runtime-op stubbing (default off). See
+    /// [`set_stub_runtime_ops`](Self::set_stub_runtime_ops) for the rule.
+    stub_runtime_ops: bool,
     /// Last-write-wins write log, when recording is enabled (mirrors the
     /// `RecordingInterpreter` used by the T0.5 corpus capture).
     writes: Option<HashMap<(i64, i64), f64>>,
@@ -622,6 +634,7 @@ impl Interpreter {
             dispatch_count: 0,
             rng_draw_count: 0,
             eval_budget: None,
+            stub_runtime_ops: false,
             writes: None,
         }
     }
@@ -686,6 +699,35 @@ impl Interpreter {
     /// branch per evaluation.
     pub fn set_eval_budget(&mut self, budget: Option<u64>) {
         self.eval_budget = budget;
+    }
+
+    /// Enables (or disables) **runtime-only op stubbing** — an opt-in mode for
+    /// METRICS runs only (PORT.md §8 decision; `tools/metrics.py
+    /// --stub-runtime-ops`). Default OFF; the behavioral suite and the
+    /// differential/fuzz harnesses never enable it, and disabled behavior is
+    /// identical to an interpreter without the feature.
+    ///
+    /// **The stub rule** (this is the single place it is defined): the affected
+    /// ops are *exactly* the set the interpreter otherwise rejects with the
+    /// [`NotImplemented`](InterpreterErrorKind::NotImplemented)-kind error
+    /// `"Unsupported operation: <name>"` — every op that is neither a
+    /// control-flow form handled by `step`, a `reduce_args` op
+    /// ([`reduce_fold`]), nor a fixed-arity table op ([`simple_arity`]). Those
+    /// are the runtime-only ops the engine host implements (`Draw`, `Play`,
+    /// `Spawn`, `BeatToTime`, `ExportValue`, the `Ease*` family, ...). With
+    /// stubbing enabled, such an op instead:
+    ///
+    /// 1. evaluates **all** of its arguments, left to right, exactly like
+    ///    `Execute` — argument side effects (memory writes, `DebugLog`, RNG
+    ///    draws) and counter increments land normally, and an argument error
+    ///    (including the eval budget) interrupts evaluation at the same point
+    ///    it would anywhere else; then
+    /// 2. produces the deterministic result `0.0`.
+    ///
+    /// `Random`/`RandomInteger` are NOT runtime-only — they are implemented
+    /// with the seeded RNG and are unaffected by this mode.
+    pub fn set_stub_runtime_ops(&mut self, enabled: bool) {
+        self.stub_runtime_ops = enabled;
     }
 
     /// The legacy mutating `get`: validates `block`/`index`, extends the block with
@@ -1186,6 +1228,19 @@ impl Interpreter {
                                 Action::CompleteTop(result)
                             }
                         }
+                    }
+                } else if self.stub_runtime_ops {
+                    // Runtime-only op stub (metrics only): evaluate every argument in
+                    // order — like `Execute`, the incoming values unused — then
+                    // produce 0.0. The full rule is documented on
+                    // `set_stub_runtime_ops`.
+                    if incoming.is_some() {
+                        frame.idx += 1;
+                    }
+                    if frame.idx == args.len() {
+                        Action::CompleteTop(0.0)
+                    } else {
+                        Action::Eval(args[frame.idx])
                     }
                 } else {
                     return Err(InterpreterError::new(

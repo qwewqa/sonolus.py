@@ -71,6 +71,23 @@ retried with the next documented ``SEED_ATTEMPTS`` pair; if every attempt runs a
 row records ``dynamic: null`` with a reason. The successful attempt's index is recorded
 per row and reused by ``report`` so both backends are always measured under identical
 inputs.
+
+Runtime-only op stubbing (``--stub-runtime-ops`` on ``baseline`` and ``report``, off by
+default): enables the Rust interpreter's METRICS-only stub mode
+(``Interpreter::set_stub_runtime_ops`` — see
+``rust/sonolus-backend-core/src/interpret.rs`` for the rule). Runtime-only ops
+(Draw/BeatToTime/ExportValue/...) evaluate their arguments in order and produce ``0.0``
+instead of trapping, so draw-heavy callbacks measure their full dynamics instead of just
+the prologue before the first runtime-only op. The flag applies to the dynamic
+measurement of BOTH backends (the legacy-baseline path under ``baseline`` and the Rust
+path under ``report``). A baseline generated with stubs on records
+``"stub_runtime_ops": true`` in its metadata so the file self-describes; files generated
+with stubs off omit the key (absence means off, keeping pre-flag baselines comparable),
+and ``report`` warns when its flag does not match the baseline's. Rows that exceed the
+eval budget under stub mode (a previously-trapping callback may now run long or loop on
+stubbed-zero conditions) are handled exactly like any other budget-exceeded row
+(seed-attempt retry, then ``dynamic: null``), and both subcommands report how many rows
+ran to completion vs budget-exceeded vs trapped.
 """
 
 from __future__ import annotations
@@ -453,14 +470,23 @@ def _results_match(a_bits: str, b_bits: str) -> bool:
     return a_bits == b_bits
 
 
-def run_dynamic(engine_nodes, memory: list[tuple[int, list[float]]], rng_seed: int, eval_budget: int):
+def run_dynamic(
+    engine_nodes,
+    memory: list[tuple[int, list[float]]],
+    rng_seed: int,
+    eval_budget: int,
+    stub_runtime_ops: bool = False,
+):
     """Runs a node tree under seeded memory and collects the dynamic counters.
 
     Returns a dynamic row dict, or None when the eval budget was exceeded (a cutoff is
-    not a semantic fact).
+    not a semantic fact). ``stub_runtime_ops`` enables the interpreter's metrics-only
+    runtime-op stub mode (see the module docstring).
     """
     interp = sonolus_backend.Interpreter(seed=rng_seed)
     interp.set_eval_budget(eval_budget)
+    if stub_runtime_ops:
+        interp.set_stub_runtime_ops(True)
     for block, values in memory:
         interp.set_block(block, values)
     try:
@@ -484,6 +510,7 @@ def run_dynamic_with_attempts(
     engine_nodes,
     read_blocks: list[int],
     seed_index: int | None = None,
+    stub_runtime_ops: bool = False,
 ) -> tuple[dict[str, Any] | None, str | None]:
     """Runs under the documented seed attempts (or one specific attempt).
 
@@ -494,7 +521,7 @@ def run_dynamic_with_attempts(
     for i in indices:
         memory_seed, rng_seed = SEED_ATTEMPTS[i]
         memory = build_fill(read_blocks, memory_seed)
-        row = run_dynamic(engine_nodes, memory, rng_seed, EVAL_BUDGET)
+        row = run_dynamic(engine_nodes, memory, rng_seed, EVAL_BUDGET, stub_runtime_ops)
         if row is not None:
             row = {"seed_index": i, **row}
             return row, None
@@ -508,6 +535,18 @@ def _outcomes_match(a: dict[str, Any], b: dict[str, Any]) -> bool:
     if a["status"] == "ok":
         return _results_match(a["result"], b["result"])
     return a["error_type"] == b["error_type"] and a["error"] == b["error"]
+
+
+def _row_coverage(dynamics: list[dict[str, Any] | None]) -> tuple[int, int, int]:
+    """``(completed, budget_exceeded, trapped)`` counts over dynamic rows.
+
+    ``None`` dynamics are budget-exceeded rows (the only way a row goes null); error
+    outcomes are trapped rows (the run stopped at an erroring op).
+    """
+    completed = sum(1 for d in dynamics if d is not None and d["outcome"]["status"] == "ok")
+    budget_exceeded = sum(1 for d in dynamics if d is None)
+    trapped = sum(1 for d in dynamics if d is not None and d["outcome"]["status"] == "error")
+    return completed, budget_exceeded, trapped
 
 
 # ----------------------------------------------------------------------------------
@@ -610,7 +649,9 @@ def _load_json(path: Path) -> dict[str, Any]:
 # ----------------------------------------------------------------------------------
 
 
-def collect_python_baselines(runs: int, limit: int | None = None) -> tuple[dict[str, Any], dict[str, Any]]:
+def collect_python_baselines(
+    runs: int, limit: int | None = None, stub_runtime_ops: bool = False
+) -> tuple[dict[str, Any], dict[str, Any]]:
     """Measures the frozen Python backend over pydori; returns the two baseline docs."""
     started = time.perf_counter()
     specs = iter_pydori_callbacks()
@@ -623,7 +664,9 @@ def collect_python_baselines(runs: int, limit: int | None = None) -> tuple[dict[
     for n, spec in enumerate(specs, 1):
         print(f"[{n}/{len(specs)}] {spec.label}", flush=True)
         engine_nodes, static, read_blocks = compile_legacy(spec, STANDARD_PASSES)
-        dynamic, null_reason = run_dynamic_with_attempts(engine_nodes, read_blocks)
+        dynamic, null_reason = run_dynamic_with_attempts(
+            engine_nodes, read_blocks, stub_runtime_ops=stub_runtime_ops
+        )
         row: dict[str, Any] = {
             "label": spec.label,
             "mode": spec.mode.name.lower(),
@@ -646,6 +689,10 @@ def collect_python_baselines(runs: int, limit: int | None = None) -> tuple[dict[
     dynamic_rows = [r for r in standard_rows if r["dynamic"] is not None]
     standard_doc = {
         **_common_metadata(),
+        # Self-description (the dynamics contract): present and true only when the
+        # metrics-only runtime-op stub mode was on; absent means off, keeping files
+        # generated before the flag existed comparable.
+        **({"stub_runtime_ops": True} if stub_runtime_ops else {}),
         "kind": "python-standard",
         "level": "standard",
         "passes": [type(p).__name__ for p in STANDARD_PASSES],
@@ -679,7 +726,7 @@ def collect_python_baselines(runs: int, limit: int | None = None) -> tuple[dict[
 
 
 def cmd_baseline(args) -> int:
-    standard_doc, fast_doc = collect_python_baselines(args.runs, args.limit)
+    standard_doc, fast_doc = collect_python_baselines(args.runs, args.limit, args.stub_runtime_ops)
     if args.check_determinism:
         ok = True
         for path, doc in ((PYTHON_STANDARD_FILE, standard_doc), (PYTHON_FAST_FILE, fast_doc)):
@@ -702,6 +749,11 @@ def cmd_baseline(args) -> int:
         f"python-standard aggregates: static_nodes={agg['static_nodes']} dag_size={agg['dag_size']} "
         f"eval_count={agg['eval_count']} dispatch_count={agg['dispatch_count']} "
         f"(dynamic rows: {agg['dynamic_rows']}, null: {len(agg['dynamic_null'])})"
+    )
+    completed, budget_exceeded, trapped = _row_coverage([r["dynamic"] for r in standard_doc["rows"]])
+    print(
+        f"dynamic row coverage (stub_runtime_ops={args.stub_runtime_ops}): "
+        f"completed={completed} budget-exceeded={budget_exceeded} trapped={trapped}"
     )
     print(f"python-standard wall total: {agg['wall_time_ms_total']:.1f} ms")
     print(f"python-fast wall total: {fast_doc['aggregates']['wall_time_ms_total']:.1f} ms (G-P1 reference)")
@@ -741,7 +793,12 @@ def _diff_summary(stored: Any, fresh: Any, path: str = "$") -> None:
 # ----------------------------------------------------------------------------------
 
 
-def collect_rust_row(spec: CallbackSpec, level: str, baseline_dynamic: dict[str, Any] | None):
+def collect_rust_row(
+    spec: CallbackSpec,
+    level: str,
+    baseline_dynamic: dict[str, Any] | None,
+    stub_runtime_ops: bool = False,
+):
     """Measures one pydori callback compiled through the Rust pipeline.
 
     The dynamic run uses the baseline row's recorded seed attempt so both backends see
@@ -755,7 +812,10 @@ def collect_rust_row(spec: CallbackSpec, level: str, baseline_dynamic: dict[str,
     null_reason = None
     if baseline_dynamic is not None:
         dynamic, null_reason = run_dynamic_with_attempts(
-            engine_nodes, read_blocks, seed_index=baseline_dynamic["seed_index"]
+            engine_nodes,
+            read_blocks,
+            seed_index=baseline_dynamic["seed_index"],
+            stub_runtime_ops=stub_runtime_ops,
         )
     return {
         "static_nodes": stats["static_nodes"],
@@ -768,6 +828,14 @@ def collect_rust_row(spec: CallbackSpec, level: str, baseline_dynamic: dict[str,
 def cmd_report(args) -> int:
     baseline = _load_json(PYTHON_STANDARD_FILE)
     fast_doc = _load_json(PYTHON_FAST_FILE)
+    baseline_stub = bool(baseline.get("stub_runtime_ops", False))
+    if baseline_stub != args.stub_runtime_ops:
+        print(
+            f"WARNING: --stub-runtime-ops={args.stub_runtime_ops} but the stored baseline was generated "
+            f"with stub_runtime_ops={baseline_stub}; outcome comparisons cross stub modes (previously "
+            f"trapping rows show as behavior mismatches). Regenerate the baseline with the matching "
+            f"flag for a valid comparison."
+        )
     specs = {s.label: s for s in iter_pydori_callbacks()}
     rows = baseline["rows"]
     if args.limit is not None:
@@ -787,17 +855,19 @@ def cmd_report(args) -> int:
     behavior_mismatches: list[str] = []
     rust_runaways: list[str] = []
     eval_ratios: list[tuple[float, str, int, int]] = []
+    rust_dynamics: list[dict[str, Any] | None] = []
 
     for n, row in enumerate(rows, 1):
         label = row["label"]
         print(f"[{n}/{len(rows)}] {label}", flush=True)
-        rust = collect_rust_row(specs[label], args.level, row["dynamic"])
+        rust = collect_rust_row(specs[label], args.level, row["dynamic"], args.stub_runtime_ops)
         totals["static_nodes"][0] += row["static_nodes"]
         totals["static_nodes"][1] += rust["static_nodes"]
         totals["dag_size"][0] += row["dag_size"]
         totals["dag_size"][1] += rust["dag_size"]
         if row["dynamic"] is None:
             continue
+        rust_dynamics.append(rust["dynamic"])
         if rust["dynamic"] is None:
             rust_runaways.append(f"{label}: {rust['dynamic_null_reason']}")
             continue
@@ -831,6 +901,15 @@ def cmd_report(args) -> int:
     for metric, (py_total, rust_total) in totals.items():
         ratio = rust_total / py_total if py_total else math.inf
         print(f"  {metric:<16} {py_total:>14} {rust_total:>14} {ratio:>12.3f}")
+    print()
+    base_cov = _row_coverage([r["dynamic"] for r in rows])
+    rust_cov = _row_coverage(rust_dynamics)
+    print("  dynamic row coverage (completed / budget-exceeded / trapped):")
+    print(f"    python baseline (stub_runtime_ops={baseline_stub}): {base_cov[0]} / {base_cov[1]} / {base_cov[2]}")
+    print(
+        f"    rust this run (stub_runtime_ops={args.stub_runtime_ops}): "
+        f"{rust_cov[0]} / {rust_cov[1]} / {rust_cov[2]} (of {len(rust_dynamics)} measured)"
+    )
     print()
 
     worse = sorted((r for r in eval_ratios if r[0] > 1.10), reverse=True)
@@ -979,6 +1058,12 @@ def main(argv: list[str] | None = None) -> int:
         action="store_true",
         help="recompute and compare against the stored files with volatile fields stripped; writes nothing",
     )
+    p_baseline.add_argument(
+        "--stub-runtime-ops",
+        action="store_true",
+        help="METRICS-only: runtime-only ops (Draw/BeatToTime/...) evaluate their args and produce 0.0 "
+        "instead of trapping; recorded in the baseline metadata (see the module docstring)",
+    )
     p_baseline.set_defaults(func=cmd_baseline)
 
     p_report = sub.add_parser("report", help="compare the current Rust backend against the stored baseline")
@@ -986,6 +1071,12 @@ def main(argv: list[str] | None = None) -> int:
     p_report.add_argument("--limit", type=int, default=None, help="dev aid: only the first N baseline rows")
     p_report.add_argument("--worst", type=int, default=20, help="how many worst callbacks to list")
     p_report.add_argument("--ratchet", action="store_true", help="exit 1 unless the G3.3 ratchet passes")
+    p_report.add_argument(
+        "--stub-runtime-ops",
+        action="store_true",
+        help="METRICS-only: enable the runtime-op stub mode for the Rust dynamic runs; must match the "
+        "baseline's recorded mode for a valid comparison (see the module docstring)",
+    )
     p_report.set_defaults(func=cmd_report)
 
     p_corpus = sub.add_parser("corpus", help="Rust-side mini-corpus metrics (compared Rust-vs-Rust across waves)")

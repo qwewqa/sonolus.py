@@ -386,6 +386,17 @@ impl Interpreter {
         self.inner.set_eval_budget(budget);
     }
 
+    /// Enables (or disables) the METRICS-only runtime-op stub mode (default
+    /// off): runtime-only ops the interpreter does not implement (`Draw`,
+    /// `BeatToTime`, `ExportValue`, ...) evaluate their arguments in order
+    /// and produce `0.0` instead of raising `NotImplementedError`. Used only
+    /// by `tools/metrics.py --stub-runtime-ops`; see
+    /// `Interpreter::set_stub_runtime_ops` in `sonolus-backend-core` for the
+    /// exact rule.
+    fn set_stub_runtime_ops(&mut self, enabled: bool) {
+        self.inner.set_stub_runtime_ops(enabled);
+    }
+
     /// Replaces a block's contents (legacy `interpreter.blocks[id] = values`).
     fn set_block(&mut self, id: i64, values: Vec<f64>) {
         self.inner.set_block(id, values);

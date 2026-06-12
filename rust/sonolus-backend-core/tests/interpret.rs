@@ -1035,6 +1035,119 @@ fn unsupported_op_message_matches_legacy_format() {
 }
 
 // -----------------------------------------------------------------------------------
+// Runtime-only op stubbing (metrics only; see `Interpreter::set_stub_runtime_ops`)
+// -----------------------------------------------------------------------------------
+
+#[test]
+fn stub_mode_off_errors_exactly_as_before() {
+    // Default OFF is pinned by `unsupported_op_message_matches_legacy_format`; an
+    // explicit on/off round trip restores the identical error, and the arguments are
+    // never evaluated (only the Draw node itself was counted).
+    let mut interp = Interpreter::new(0);
+    interp.set_stub_runtime_ops(true);
+    interp.set_stub_runtime_ops(false);
+    let n = f(Op::Draw, vec![f(Op::DebugLog, vec![c(1.0)])]);
+    let err = run_in(&mut interp, &n).expect_err("expected an interpreter error");
+    assert_eq!(err.kind, InterpreterErrorKind::NotImplemented);
+    assert_eq!(err.message, "Unsupported operation: Draw");
+    assert_eq!(interp.log(), &[] as &[f64]);
+    assert_eq!(interp.eval_count(), 1);
+}
+
+#[test]
+fn stub_mode_evaluates_args_in_order_with_effects_and_returns_zero() {
+    let mut interp = Interpreter::new(0);
+    interp.set_stub_runtime_ops(true);
+    // Argument side effects land left to right, the result is 0.0.
+    let n = f(
+        Op::Draw,
+        vec![
+            f(Op::DebugLog, vec![c(1.5)]),
+            f(Op::Set, vec![c(0.0), c(0.0), c(7.0)]),
+            f(Op::DebugLog, vec![c(-2.0)]),
+        ],
+    );
+    assert_bits(run_in(&mut interp, &n).unwrap(), 0.0);
+    assert_eq!(interp.log(), &[1.5, -2.0]);
+    assert_eq!(interp.block(0).unwrap(), &[7.0]);
+    // Zero-argument runtime-only op: still 0.0.
+    assert_bits(
+        run_in(&mut interp, &f(Op::ExportValue, vec![])).unwrap(),
+        0.0,
+    );
+    // Nested stubbed ops: the inner stub result (0.0) is an ordinary value.
+    let n = f(
+        Op::BeatToTime,
+        vec![f(Op::Draw, vec![f(Op::DebugLog, vec![c(3.0)])])],
+    );
+    assert_bits(run_in(&mut interp, &n).unwrap(), 0.0);
+    assert_eq!(interp.log(), &[1.5, -2.0, 3.0]);
+}
+
+#[test]
+fn stub_mode_argument_errors_interrupt_at_the_same_point() {
+    let mut interp = Interpreter::new(0);
+    interp.set_stub_runtime_ops(true);
+    // The failing second argument stops evaluation before the third runs.
+    let n = f(
+        Op::Draw,
+        vec![
+            f(Op::DebugLog, vec![c(1.0)]),
+            f(Op::Divide, vec![c(1.0), c(0.0)]),
+            f(Op::DebugLog, vec![c(2.0)]),
+        ],
+    );
+    let err = run_in(&mut interp, &n).expect_err("expected an interpreter error");
+    assert_eq!(err.kind, InterpreterErrorKind::ZeroDivision);
+    assert_eq!(err.message, "division by zero");
+    assert_eq!(interp.log(), &[1.0]);
+}
+
+#[test]
+fn stub_mode_counts_argument_evaluations() {
+    let mut interp = Interpreter::new(0);
+    interp.set_stub_runtime_ops(true);
+    // Draw node + three constant arguments: 4 evaluations.
+    run_in(&mut interp, &f(Op::Draw, vec![c(1.0), c(2.0), c(3.0)])).unwrap();
+    assert_eq!(interp.eval_count(), 4);
+    // The eval budget applies inside stubbed arguments too.
+    let mut interp = Interpreter::new(0);
+    interp.set_stub_runtime_ops(true);
+    interp.set_eval_budget(Some(2));
+    let err = run_in(&mut interp, &f(Op::Draw, vec![c(1.0), c(2.0)]))
+        .expect_err("expected the eval budget to trip");
+    assert_eq!(err.kind, InterpreterErrorKind::EvalBudgetExceeded);
+}
+
+#[test]
+fn stub_mode_is_deterministic() {
+    let run_once = || {
+        let mut interp = Interpreter::new(123);
+        interp.set_stub_runtime_ops(true);
+        // A stubbed op consuming RNG and memory arguments, run twice (counters and
+        // the seeded RNG accumulate across runs).
+        let n = f(
+            Op::Draw,
+            vec![
+                f(Op::Random, vec![c(0.0), c(1.0)]),
+                f(Op::Get, vec![c(0.0), c(0.0)]),
+            ],
+        );
+        let a = run_in(&mut interp, &n).unwrap();
+        let b = run_in(&mut interp, &n).unwrap();
+        (
+            a.to_bits(),
+            b.to_bits(),
+            interp.eval_count(),
+            interp.dispatch_count(),
+            interp.rng_draw_count(),
+            interp.block(0).unwrap().to_vec(),
+        )
+    };
+    assert_eq!(run_once(), run_once());
+}
+
+// -----------------------------------------------------------------------------------
 // Counters
 // -----------------------------------------------------------------------------------
 
