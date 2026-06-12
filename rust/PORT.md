@@ -274,6 +274,17 @@ metrics ratchet not regressed; worklog entry with metric movement.
   optimizer pass MUST respect laziness: nothing may be hoisted out of, or assumed
   evaluated in, the lazy side. Corpus fact: real frontend And/Or are all already binary.
 
+- **D13** (2026-06-12, maintainer instruction mid-run) The legacy pass set and
+  ordering are NOT contracts: choose whatever pass lineup/ordering gives the best
+  balance of maintainability and performance (modern best practices). Runtime-shaped
+  passes (e.g., RewriteToSwitch successor, NormalizeSwitch, fused-op tiling) stay
+  because the target runtime rewards them; everything else — ordering, re-runs,
+  pass granularity, whether a legacy pass exists at all — is free, subject to the
+  unchanged correctness contract (behavioral suite + differential + fuzz + ratchet)
+  and §3 invariants. Concretely: registry order within/across waves is chosen on
+  measured metrics, not legacy precedent; cleanup re-runs are fair game; W4/W5 task
+  shapes may be re-scoped if a better-engineered equivalent covers the same metric
+  goals.
 - **D12** (2026-06-12, pre-G3.3) Adopt the opt-in deterministic stub mode for
   runtime-only ops (METRICS runs only): stubbed ops evaluate their args in normal
   order (effects/counters preserved) and return `0.0`; flag default-off; diff harness
