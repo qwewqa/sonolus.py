@@ -305,6 +305,14 @@ impl std::fmt::Debug for Hooks<'_> {
 /// deterministic, each pass owning its own invalidation.
 pub struct Pipeline {
     passes: Vec<Box<dyn Pass>>,
+    /// Whether emission-time `FlattenAssociativeOps` (W5 T3.10,
+    /// `crate::flatten`) runs on this pipeline's emitted node tree. Not a
+    /// registry [`Pass`]: it lives in the lowering→emission seam (invariant
+    /// §3.3 — MIR never sees flattened form), so it is pipeline configuration
+    /// rather than a pipeline entry. `true` for `standard` only: `minimal`
+    /// stays the trivially-correct differential baseline, and `fast` remains
+    /// the plain W1 prefix (legacy `FAST_PASSES` did not flatten either).
+    flatten_at_emit: bool,
 }
 
 impl std::fmt::Debug for Pipeline {
@@ -314,21 +322,43 @@ impl std::fmt::Debug for Pipeline {
                 "passes",
                 &self.passes.iter().map(|p| p.name()).collect::<Vec<_>>(),
             )
+            .field("flatten_at_emit", &self.flatten_at_emit)
             .finish()
     }
 }
 
 impl Pipeline {
-    /// The pipeline for an optimization level (the [`registry`] prefix).
+    /// The pipeline for an optimization level (the [`registry`] prefix, plus
+    /// emission-time flattening at `standard` — see [`Self::flatten_at_emit`]).
     pub fn for_level(level: Level) -> Self {
         Self {
             passes: passes_for_level(level),
+            flatten_at_emit: level == Level::Standard,
         }
     }
 
-    /// A pipeline from an explicit pass list (test/bespoke use).
+    /// A pipeline from an explicit pass list (test/bespoke use). Emission-time
+    /// flattening defaults **off** so per-transform differential pipelines
+    /// isolate exactly their pass list; opt in with [`Self::with_flatten`].
     pub fn new(passes: Vec<Box<dyn Pass>>) -> Self {
-        Self { passes }
+        Self {
+            passes,
+            flatten_at_emit: false,
+        }
+    }
+
+    /// Returns the pipeline with emission-time flattening switched on/off
+    /// (test/bespoke use; [`Self::for_level`] already configures levels).
+    #[must_use]
+    pub fn with_flatten(mut self, flatten_at_emit: bool) -> Self {
+        self.flatten_at_emit = flatten_at_emit;
+        self
+    }
+
+    /// Whether emission-time `FlattenAssociativeOps` runs after the emitter
+    /// for this pipeline (consumed by `crate::pipeline::compile_cfg_*`).
+    pub fn flatten_at_emit(&self) -> bool {
+        self.flatten_at_emit
     }
 
     /// The number of passes in this pipeline.

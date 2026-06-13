@@ -13,6 +13,7 @@ pub mod decode;
 pub mod diff;
 pub mod effects;
 pub mod emit;
+pub mod flatten;
 pub mod interpret;
 pub mod lower;
 pub mod mir;

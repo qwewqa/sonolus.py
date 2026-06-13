@@ -10,6 +10,8 @@
 //!   -> allocate_temps   (liveness + interference + first-fit slots; alloc.rs)
 //!   -> lower_mir        (statement regeneration, temp -> block 10000; lower.rs)
 //!   -> cfg_to_engine_nodes (the T1.2 emitter; emit.rs)
+//!   -> flatten_engine_nodes (W5 T3.10 emission-time FlattenAssociativeOps;
+//!                            flatten.rs — standard pipelines only)
 //! ```
 //!
 //! `Level::Minimal` runs an empty optimization prefix — the Rust baseline,
@@ -213,6 +215,14 @@ pub fn compile_cfg_with_pipeline_stats(
     let alloc = allocate_temps(&mir)?;
     let lowered = lower_mir(&mir, &alloc)?;
     let nodes = cfg_to_engine_nodes(&lowered)?;
+    // Emission-time FlattenAssociativeOps (W5 T3.10, invariant §3.3): the
+    // last transform before output-node generation, on the emitted tree only
+    // (MIR stays binary). Enabled per-pipeline; `standard` only.
+    let nodes = if pipeline.flatten_at_emit() {
+        crate::flatten::flatten_engine_nodes(&nodes, crate::flatten::DEFAULT_POLICY)
+    } else {
+        nodes
+    };
     let stats = CompileStats {
         temp_slots_used: alloc.slots_used,
         temps_allocated: u32::try_from(alloc.offsets.iter().filter(|o| o.is_some()).count())
