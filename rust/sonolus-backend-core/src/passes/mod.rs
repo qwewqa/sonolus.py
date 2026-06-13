@@ -46,7 +46,9 @@
 //! T3.6 switch formation → T3.7 `LICM` (order measured equivalent on
 //! corpus+pydori; a trailing GVN+DCE cleanup re-run measured as not worth it —
 //! see the D13 worklog entry in PORT.md). W4 is T3.9 `shape` → T3.8
-//! `if_convert` (order measured; see the W4 D13 worklog entry).
+//! `if_convert` (order measured; see the W4 D13 worklog entry). W5 is T3.11
+//! `normalize_switch`, deliberately last so its manufactured dense case sets
+//! reach the emitter untouched.
 //!
 //! # Determinism
 //!
@@ -59,6 +61,7 @@ pub mod gvn;
 pub mod if_convert;
 pub mod licm;
 pub mod mem2reg;
+pub mod normalize_switch;
 pub mod rules;
 pub mod sccp;
 pub mod shape;
@@ -103,6 +106,9 @@ pub enum Stage {
     W3,
     /// Wave W4 (expression-level if-conversion, block shaping).
     W4,
+    /// Wave W5 (switch normalization; T3.12 fused tiling is emission-time and
+    /// does not register here).
+    W5,
 }
 
 impl Stage {
@@ -113,7 +119,7 @@ impl Stage {
         match level {
             Level::Minimal => None,
             Level::Fast => Some(Self::W1),
-            Level::Standard => Some(Self::W4),
+            Level::Standard => Some(Self::W5),
         }
     }
 }
@@ -225,6 +231,22 @@ pub fn registry() -> &'static [RegistryEntry] {
         RegistryEntry {
             stage: Stage::W4,
             make: || Box::new(if_convert::IfConvert),
+        },
+        // ===== Wave W5 — switch normalization (T3.11) =====
+        //
+        // Runs last so the manufactured dense case sets reach the emitter
+        // intact (its module docs own the placement rationale). T3.10
+        // (flattening) and T3.12 (fused tiling) are emission-time, not
+        // registry passes.
+        //
+        // T3.11: dense 0-based case manufacture
+        // (src/passes/normalize_switch.rs) — affine integer case
+        // progressions get their scrutinee rebased to `(x - base) / stride`
+        // so the emitter selects the O(1) `SwitchIntegerWithDefault` form
+        // (eval_count + static_nodes headline).
+        RegistryEntry {
+            stage: Stage::W5,
+            make: || Box::new(normalize_switch::NormalizeSwitch),
         },
     ]
 }
@@ -595,8 +617,9 @@ mod tests {
         // minimal selects nothing; fast <= standard in stage coverage.
         assert_eq!(Stage::cutoff(Level::Minimal), None);
         assert_eq!(Stage::cutoff(Level::Fast), Some(Stage::W1));
-        assert_eq!(Stage::cutoff(Level::Standard), Some(Stage::W4));
-        assert!(Stage::W1 <= Stage::W4);
+        assert_eq!(Stage::cutoff(Level::Standard), Some(Stage::W5));
+        assert!(Stage::W1 <= Stage::W5);
         assert!(Stage::W1 < Stage::W2);
+        assert!(Stage::W4 < Stage::W5);
     }
 }

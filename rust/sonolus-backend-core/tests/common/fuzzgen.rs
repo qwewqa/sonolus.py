@@ -817,6 +817,194 @@ pub fn program_diamond_heavy() -> BoxedStrategy<Program> {
 }
 
 // ----------------------------------------------------------------------------------
+// Affine-progression profile (T3.11 NormalizeSwitch's surface)
+// ----------------------------------------------------------------------------------
+//
+// The general profiles draw switch/chain conds from 0..=6, which is almost
+// always already dense 0-based (or trivially sparse) — NormalizeSwitch's
+// manufacture would essentially never fire under them. This profile generates
+// **strided/offset affine case sets** (`base + i*stride`) on both the
+// frontend `Switch` shape (pre-formed multi-way branches — the standalone
+// per-pass surface) and the `IfChain` shape (merged into multi-way blocks by
+// W3 switch formation — the composition surface), with scrutinees shaped to
+// actually hit the cases, plus deliberate refusal coverage: `+0.5` float
+// conds (non-integral), perturbed sets (non-affine), base-0 strided sets
+// (outside the exactness proof), and below-threshold sizes.
+
+/// `INT_POOL` indices usable as affine bases: values 0, 1, 2, 3, 7.
+const AFFINE_BASE_POOL: [usize; 5] = [0, 1, 2, 3, 5];
+/// `INT_POOL` indices usable as affine strides: values 1, 2, 3, 7.
+const AFFINE_STRIDE_POOL: [usize; 4] = [1, 2, 3, 5];
+
+/// One affine recipe: `(base pool index, stride pool index, n, half, perturb)`.
+/// `half` floats every cond to `c + 0.5` (refusal coverage); `perturb` bumps
+/// the last cond by 1 (breaks affinity for stride 1 with n >= 3; for n == 2
+/// it just widens the stride — still a valid program).
+fn affine_recipe() -> BoxedStrategy<(usize, usize, usize, bool, bool)> {
+    (
+        prop_oneof![1 => Just(0usize), 4 => 1..AFFINE_BASE_POOL.len()],
+        prop_oneof![3 => Just(0usize), 2 => 1..AFFINE_STRIDE_POOL.len()],
+        prop_oneof![1 => Just(2usize), 6 => 3..=9usize],
+        prop_oneof![5 => Just(false), 1 => Just(true)],
+        prop_oneof![5 => Just(false), 1 => Just(true)],
+    )
+        .boxed()
+}
+
+/// The cond values for a recipe (`u8`, max 7 + 8*7 + 1 = 64).
+fn affine_conds(base_idx: usize, stride_idx: usize, n: usize, perturb: bool) -> Vec<u8> {
+    let base = u8::try_from(INT_POOL[AFFINE_BASE_POOL[base_idx]]).expect("pool base fits u8");
+    let stride =
+        u8::try_from(INT_POOL[AFFINE_STRIDE_POOL[stride_idx]]).expect("pool stride fits u8");
+    let mut conds: Vec<u8> = (0..n)
+        .map(|i| base + u8::try_from(i).expect("n <= 9") * stride)
+        .collect();
+    if perturb {
+        *conds.last_mut().expect("n >= 2") += 1;
+    }
+    conds
+}
+
+/// A scrutinee shaped to hit the recipe's cases: mostly
+/// `base + stride * RandomInteger(0, n + 2)` (hits every case and overshoots
+/// into the default), sometimes the same affine shape over a usually-integral
+/// memory expression, sometimes an arbitrary expression (misses, floats,
+/// NaN/inf), and occasionally a `+0.5` non-integral probe.
+fn affine_scrutinee(base_idx: usize, stride_idx: usize, n: usize) -> BoxedStrategy<Expr> {
+    let base_pool = AFFINE_BASE_POOL[base_idx];
+    let stride_pool = AFFINE_STRIDE_POOL[stride_idx];
+    let hi = u8::try_from(n + 2).expect("n + 2 fits u8");
+    let affine_over = move |inner: Expr| Expr::Reduce {
+        op: 0, // Add
+        args: vec![
+            Expr::Int(base_pool),
+            Expr::Reduce {
+                op: 1, // Multiply
+                args: vec![Expr::Int(stride_pool), inner],
+            },
+        ],
+    };
+    let hit = move || affine_over(Expr::RandomInt { hi });
+    prop_oneof![
+        4 => Just(hit()),
+        2 => index_shaped().prop_map(affine_over),
+        2 => expr(),
+        1 => Just(Expr::Reduce {
+            op: 0,
+            args: vec![hit(), Expr::Float(3)], // FLOAT_POOL[3] = 0.5
+        }),
+    ]
+    .boxed()
+}
+
+/// A frontend multi-way switch with affine conds — the standalone per-pass
+/// surface (the multi-way branch exists before any other pass runs).
+fn affine_switch_group() -> BoxedStrategy<Vec<Shape>> {
+    affine_recipe()
+        .prop_flat_map(|(base_idx, stride_idx, n, half, perturb)| {
+            let conds = affine_conds(base_idx, stride_idx, n, perturb);
+            (
+                affine_scrutinee(base_idx, stride_idx, n),
+                vec(stmts(), conds.len()),
+                option::of(stmts()),
+            )
+                .prop_map(move |(scrutinee, case_stmts, default)| {
+                    let cases = conds
+                        .iter()
+                        .copied()
+                        .zip(case_stmts)
+                        .map(|(cond, stmts)| SwitchCase {
+                            cond_half: half,
+                            cond,
+                            stmts,
+                        })
+                        .collect();
+                    vec![Shape::Switch {
+                        scrutinee,
+                        wrap_mod: false,
+                        cases,
+                        default,
+                    }]
+                })
+        })
+        .boxed()
+}
+
+/// An if/elif chain with affine comparison constants on a temp cell that is
+/// seeded with a case-hitting value first — W3 switch formation merges the
+/// chain into one multi-way block, then `NormalizeSwitch` rebases it (the
+/// composition surface).
+fn affine_chain_group() -> BoxedStrategy<Vec<Shape>> {
+    (affine_recipe(), 0..TEMP_POOL.len(), 0..32u8)
+        .prop_flat_map(|((base_idx, stride_idx, n, half, perturb), temp, index)| {
+            let conds = affine_conds(base_idx, stride_idx, n, perturb);
+            (
+                affine_scrutinee(base_idx, stride_idx, n),
+                vec(stmts(), conds.len()),
+                option::of(stmts()),
+            )
+                .prop_map(move |(seed_value, arm_stmts, else_stmts)| {
+                    let arms = conds
+                        .iter()
+                        .copied()
+                        .zip(arm_stmts)
+                        .map(|(cond, stmts)| ChainArm {
+                            cond_half: half,
+                            cond,
+                            stmts,
+                        })
+                        .collect();
+                    vec![
+                        Shape::Straight(vec![Stmt::SetTemp {
+                            temp,
+                            index: Index::Const(index),
+                            value: seed_value,
+                        }]),
+                        Shape::IfChain {
+                            temp,
+                            index,
+                            arms,
+                            else_stmts,
+                        },
+                    ]
+                })
+        })
+        .boxed()
+}
+
+/// One shape group of the affine profile: affine switches and chains
+/// (occasionally inside a bounded loop — loop-carried phis feed the
+/// scrutinee), with the general shapes in the mix.
+fn affine_group() -> BoxedStrategy<Vec<Shape>> {
+    prop_oneof![
+        4 => affine_switch_group(),
+        3 => affine_chain_group(),
+        1 => (1..=3u8, affine_switch_group())
+            .prop_map(|(trips, body)| vec![Shape::Loop { trips, body }]),
+        2 => shape().prop_map(|s| vec![s]),
+    ]
+    .boxed()
+}
+
+/// A whole program with the affine-progression profile: the dedicated fuzz
+/// surface for W5 switch normalization (T3.11). Same AST and lowering as
+/// [`program`] — only the strategies composing the shapes differ (additive
+/// knob, the T3.4/T3.6/T3.9 precedent).
+pub fn program_affine_heavy() -> BoxedStrategy<Program> {
+    (
+        0..READ_BLOCKS.len(),
+        vec(affine_group(), 1..=3),
+        option::of(expr()),
+    )
+        .prop_map(|(nested_target, groups, ret)| Program {
+            nested_target,
+            shapes: groups.into_iter().flatten().collect(),
+            ret,
+        })
+        .boxed()
+}
+
+// ----------------------------------------------------------------------------------
 // AST -> Cfg lowering
 // ----------------------------------------------------------------------------------
 
