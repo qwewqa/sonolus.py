@@ -198,7 +198,7 @@ metrics ratchet not regressed; worklog entry with metric movement.
 | T3.9 | done | W4: block merging, exit combining, tiny-block duplication into predecessors. | per-transform differential + fuzz |
 | G3.4 | done | W4 gate. | wave gate template |
 | T3.10 | todo | W5: emission-time FlattenAssociativeOps (sharing-aware vs node DAG dedup). | per-transform differential + fuzz; node-count metric |
-| T3.11 | todo | W5: NormalizeSwitch (dense 0-based case manufacture) + dense-form selection in the emitter. | per-transform differential + fuzz |
+| T3.11 | done | W5: NormalizeSwitch (dense 0-based case manufacture) + dense-form selection in the emitter. | per-transform differential + fuzz |
 | T3.12 | todo | W5: fused-op tiling (`Lerp`/`Remap`/`Clamp`/`*Shifted`/`*Pointed`/`Set*`/`Increment*`), Execute0/Execute selection. Rules added data-driven from metrics hot spots. | per-transform differential + fuzz; eval-count metric |
 | G3.5 | todo | W5 gate; final S3 metrics report committed to the worklog. | wave gate template |
 
@@ -329,6 +329,18 @@ pointers (failing commands, metric numbers, repro). Empty deviation log = clean 
   re-implementing W4 under a gate label would duplicate planned work without its
   per-task rigor (D13 supports sequencing on engineering merit). W4/W5 proceed as
   scoped; G3.5 re-runs this exact ratchet.
+- 2026-06-12 — Suspected oracle bug (§4: suspected bug in the Python backend — logged,
+  not fixed). Legacy `NormalizeSwitch` (sonolus/backend/optimize/simplify.py) rebases
+  affine case sets unguarded, including negative-base and base-0 strided sets, which
+  are **latently unsound under f64 rounding**: minimal repro — cases {−3,−2,−1,0},
+  scrutinee 1e-17: `fl(1e-17 + 3) == 3.0` (absorption), so the legacy-normalized form
+  takes the 0-case edge while the unnormalized form takes the default. Similarly
+  base-0 strided sets misroute `f64::from_bits(1)` (subnormal halving ties to +0).
+  Unreachable in practice (traced case sets are small non-negative integers, base ≥ 1
+  after switch formation), behavioral suite unaffected. The Rust pass (T3.11) proves
+  its accepted configs exact (integer cases ≤ 2^51, base ≥ 1, stride ≥ 1) and pins
+  both legacy divergences as raw-f64 tests (`refused_configs_have_real_divergences`,
+  normalize_switch.rs). Severity: info.
 - 2026-06-10 — Suspected oracle quirk (§4: suspected bug in the Python backend — logged,
   not fixed). `Allocate.get_mapping`'s overlap condition
   (`offset + size > other_offset or other_offset + other.size > offset`,
@@ -363,6 +375,27 @@ pointers (failing commands, metric numbers, repro). Empty deviation log = clean 
 
 ## 9. Worklog (append-only; newest first)
 
+- 2026-06-12 — **T3.11 done (ae938fb), merged and verified.** `normalize_switch.rs`:
+  last `standard` pass under new `Stage::W5` (registry route over D4's lowering
+  sketch, per D13 — rebase is two pure binary insts, destruct/lowering handle them
+  with zero special cases, and the pass gets the standard differential/fuzz
+  injection; ZERO emitter changes — T1.2's dense-form selection fires on the
+  manufactured conds). Manufacture: ascending affine case sets → Subtract(+Divide)
+  wrap of the test, conds relabeled 0..n-1; **exactness proved** for integer cases
+  ≤2^51, base ≥1, stride ≥1 (any positive integer stride is exact — the windowing
+  argument is in the module docs; the real hazard is the BASE: base ≤ −1 and
+  base-0-strided are real f64 miscompiles, pinned as raw-f64 tests, and legacy did
+  them unguarded — see the new Deviation entry). Cost model: fire at n≥3 (s=1) /
+  n≥7 (s≥2), eval-priority conservative. DoD: per-pass differential 270×2 clean;
+  50k×3 fuzz targets clean incl. new additive affine-heavy profile (fire rates
+  32.5% standalone, 45.0% post-W4); 19 unit tests incl. brute-force exactness over
+  14 accepted configs × adversarial probes (±ulp, subnormals, 2^53, NaN/±inf,
+  −0.0). Metrics: corpus eval 20,687→**20,562**, static 11,202→**11,041**, dag +7,
+  dispatch flat, 0 vectors worse; pydori static −476, dag +112 (+0.09%, consts
+  traded for rebase nodes — re-tunable), eval −245 (render-dominated total),
+  dispatch flat 0.950×, **>10%-worse 75→68** (fires on 98/300 callbacks).
+  Orchestrator verified on merged tree: cargo 0 failures, --all-targets clippy/fmt
+  clean, both lanes 1261+4, corpus reproduced exactly.
 - 2026-06-12 — **G3.4 passed (W4 gate).** All template items, run by the
   orchestrator on the final-order tree: behavioral green both lanes at all 3
   levels (1248+4 at gate start; 1261+4 after T4.2 merged mid-window); corpus
