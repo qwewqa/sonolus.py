@@ -6,11 +6,22 @@
 > holds rules, tasks, state, and decisions. Maintainer notes (setup, end-of-run review)
 > live in [EXECUTION.md](EXECUTION.md).
 
-**Status:** running — T3.10 + T3.11 done, merged, W5-pair verified together (50k×6
-fuzz clean; corpus eval 20,517, pydori dag 1.136×, dispatch 0.950×, >10%-worse 68).
-**In flight: T3.12 fused-op tiling** (last S3 task; targets the render-loop Get/Set
-traffic = the residual eval 2.415× gap). Then **G3.5** (final S3 gate + the
-G3.3-transferred parity ratchet), T4.3/T4.4, S6, S7.
+**Status:** paused (maintainer request) — **all S3 wave tasks T3.1–T3.12 done**;
+gates G3.1–G3.4 passed. **First item at resume: gate G3.5** (final S3 gate): wave
+gate template (behavioral both lanes all levels, corpus differential, 1M release
+fuzz, corpus ratchet regen — note rust-corpus.json is stale vs the now-better tree:
+eval 19,974 vs stored 20,517 — CI push) PLUS the G3.3-transferred switchover parity
+ratchet (`report --stub-runtime-ops --ratchet`; currently eval 2.415×, will FAIL on
+aggregate) and the final S3 metrics report in the worklog. Gate fix budget (3
+cycles) has two measured levers from T3.12's analysis: (1) **mem2reg
+ReadBeforeWrite-refused loop counters** (render's conditional-update idiom; legacy
+render has 78 Gets vs our 175 — the biggest lever, a promotion follow-up task);
+(2) interpreter kernels for the `Set*` RMW family — 18,476 pydori tile sites but
+**needs a ledger decision first** (legacy interpreter rejects these ops: oracle
+parity + D12 stub-set + baseline-regen implications). If parity still fails after
+budget: §4 proceed-flagged, maintainer adjudicates at merge review. T4.3 (wire
+package_engine, remove CompileCache) can overlap the G3.5 fuzz window; then T4.4
+(perf gates), S6, S7.
 **Last updated:** 2026-06-12
 
 ## 0. Entry point — if you were pointed at this file, start here
@@ -197,7 +208,7 @@ metrics ratchet not regressed; worklog entry with metric movement.
 | G3.4 | done | W4 gate. | wave gate template |
 | T3.10 | done | W5: emission-time FlattenAssociativeOps (sharing-aware vs node DAG dedup). | per-transform differential + fuzz; node-count metric |
 | T3.11 | done | W5: NormalizeSwitch (dense 0-based case manufacture) + dense-form selection in the emitter. | per-transform differential + fuzz |
-| T3.12 | in-progress | W5: fused-op tiling (`Lerp`/`Remap`/`Clamp`/`*Shifted`/`*Pointed`/`Set*`/`Increment*`), Execute0/Execute selection. Rules added data-driven from metrics hot spots. | per-transform differential + fuzz; eval-count metric |
+| T3.12 | done | W5: fused-op tiling (`Lerp`/`Remap`/`Clamp`/`*Shifted`/`*Pointed`/`Set*`/`Increment*`), Execute0/Execute selection. Rules added data-driven from metrics hot spots. | per-transform differential + fuzz; eval-count metric |
 | G3.5 | todo | W5 gate; final S3 metrics report committed to the worklog. | wave gate template |
 
 ### S4 — Single-call build
@@ -381,6 +392,34 @@ pointers (failing commands, metric numbers, repro). Empty deviation log = clean 
 
 ## 9. Worklog (append-only; newest first)
 
+- 2026-06-12 — **T3.12 done (merged as tip), S3 wave tasks ALL COMPLETE; run
+  wrapped at maintainer request — resume at G3.5.** `tile.rs` between
+  cfg_to_engine_nodes and flatten (standard-only, `tile_at_emit`). Census-first
+  (table in the agent report; PyO3 `tile_census` diagnostic added): implemented
+  IncrementPre (719 pydori sites), IncrementPost pair-merge (15), const-index
+  fold (6,650 — lowering's static place offsets, invisible to mid-level SCCP);
+  refused-by-measurement: Lerp/Clamp/Remap spellings (frontend emits the fused
+  ops natively — 0 sites), shifted-offset forms (exact eval tie), Execute0
+  selection (emitter already optimal). **Set*/RMW family (18,476 pydori sites
+  incl. 26 in render's hot loops) refused: no interpreter kernel in EITHER
+  backend** — emitting them would be unverifiable by the oracle; recorded as the
+  largest refused population (resume decision). Exactness: bit-strict structural
+  dedup of pure RNG-free subtrees; IncrementPre needs B-integral-or-I-total
+  (interleaved ensure_int trap-order); pair-merge needs proven disjointness +
+  J-bounds + value-discarded position. DoD: 3 differential suites clean; 50k×6
+  fuzz + new rmw-heavy profile (99.6% fire rate) clean, 0 fix cycles; 20 unit
+  tests. Metrics (orchestrator-reproduced): corpus eval 20,517→**19,974**
+  (−2.6%), static →10,918, dag →4,493; pydori static 1.620×→**1.583×**, dag
+  1.136×→**1.129×**, eval 2.415× (−1,181 absolute — the seeded vectors never
+  take the one tiled render arm), dispatch 0.950×, >10%-worse 68. **Render
+  accounting (the G3.5 brief)**: remaining +97 Get/+81 Set are (1) the
+  conditional-update idiom from mem2reg ReadBeforeWrite-refused loop counters —
+  promotion is the biggest lever (legacy render: 78 Gets vs our 175); (2) the
+  kernel-less RMW sites; (3) plain unpromoted-temp materialization. W5 closes
+  with static/dag/dispatch all improved; the eval ratchet is upstream of
+  emission. Orchestrator verified on merged tree: cargo 0 failures (34
+  binaries), --all-targets clippy/fmt clean, 50k tile fuzz re-run clean, both
+  lanes 1261+4, corpus + pydori reproduced exactly.
 - 2026-06-12 — **T3.10 done (3c44de2-cherry → merged clean), W5 pair verified
   together.** `flatten.rs` at the emission seam (after cfg_to_engine_nodes, before
   output-node generation; emit.rs untouched — zero T3.11 overlap by construction);
