@@ -197,7 +197,7 @@ metrics ratchet not regressed; worklog entry with metric movement.
 | T3.8 | done | W4: expression-level if-conversion (small diamonds/triangles → `If`/`And`/`Or` value nodes, cost-modeled). | per-transform differential + fuzz; dispatch-count metric drop |
 | T3.9 | done | W4: block merging, exit combining, tiny-block duplication into predecessors. | per-transform differential + fuzz |
 | G3.4 | done | W4 gate. | wave gate template |
-| T3.10 | todo | W5: emission-time FlattenAssociativeOps (sharing-aware vs node DAG dedup). | per-transform differential + fuzz; node-count metric |
+| T3.10 | done | W5: emission-time FlattenAssociativeOps (sharing-aware vs node DAG dedup). | per-transform differential + fuzz; node-count metric |
 | T3.11 | done | W5: NormalizeSwitch (dense 0-based case manufacture) + dense-form selection in the emitter. | per-transform differential + fuzz |
 | T3.12 | todo | W5: fused-op tiling (`Lerp`/`Remap`/`Clamp`/`*Shifted`/`*Pointed`/`Set*`/`Increment*`), Execute0/Execute selection. Rules added data-driven from metrics hot spots. | per-transform differential + fuzz; eval-count metric |
 | G3.5 | todo | W5 gate; final S3 metrics report committed to the worklog. | wave gate template |
@@ -329,6 +329,14 @@ pointers (failing commands, metric numbers, repro). Empty deviation log = clean 
   re-implementing W4 under a gate label would duplicate planned work without its
   per-task rigor (D13 supports sequencing on engineering merit). W4/W5 proceed as
   scoped; G3.5 re-runs this exact ratchet.
+- 2026-06-12 — Suspected oracle bug (§4 — logged, not fixed). Legacy
+  `FlattenAssociativeOps` splices `Mod`/`Rem` chains; the interpreter's collect-then-
+  fold `reduce_args` then moves a raising `%`/`remainder` fold past later arguments'
+  side effects — an observable reorder legacy shipped unchecked. Zero opportunities
+  measured on corpus + all 300 pydori callbacks (which is why it never bit). The Rust
+  T3.10 flatten drops Mod/Rem from the splice set (only never-raising folds are
+  spliceable without a totality proof for trailing args — bound documented in
+  flatten.rs). Severity: info.
 - 2026-06-12 — Suspected oracle bug (§4: suspected bug in the Python backend — logged,
   not fixed). Legacy `NormalizeSwitch` (sonolus/backend/optimize/simplify.py) rebases
   affine case sets unguarded, including negative-base and base-0 strided sets, which
@@ -375,6 +383,32 @@ pointers (failing commands, metric numbers, repro). Empty deviation log = clean 
 
 ## 9. Worklog (append-only; newest first)
 
+- 2026-06-12 — **T3.10 done (3c44de2-cherry → merged clean), W5 pair verified
+  together.** `flatten.rs` at the emission seam (after cfg_to_engine_nodes, before
+  output-node generation; emit.rs untouched — zero T3.11 overlap by construction);
+  **standard-only** via Pipeline `flatten_at_emit` (minimal stays the trivially
+  correct baseline; fast matches legacy). Op set (each measured, D13): Add/Multiply
+  position-0 splice + **proven-bitwise-exact const-sibling rotation** (GVN's
+  consts-first order right-nests real chains — rotation covers 98/98 pydori
+  position-1 Add pairs; documented deviation from no-reorder guidance, with proofs
+  + differential + 100k seam fuzz); Subtract added (never-raising left fold);
+  And/Or/Execute any-position (exact for short-circuit/sequencing; collapses
+  T3.8's arm chains); **Mod/Rem DROPPED — legacy's splice is latently unsound**
+  (collect-then-fold reorder; new Deviation entry; zero real opportunities
+  anyway). Sharing policy `Always` weakly dominates (variants table pinned by a
+  permanent cost-model test; dag provably never grows). DoD: per-pass differential
+  4 suites clean; 26 unit tests incl. 200k-deep iterativeness; fuzz_flatten added.
+  **Combined W5-pair verification (orchestrator)**: clean cherry-pick (no
+  conflicts), cargo 0 failures, --all-targets clippy/fmt clean, **50k×6 fuzz
+  targets all clean (13 tests — normalize_switch×flatten composition included)**,
+  both lanes 1261+4, corpus eval 20,562→**20,517**, static →**11,024**, dag
+  →**4,509**, dispatch 1,318, 0 worse; pydori static 1.626×→**1.620×**, dag
+  1.147×→**1.136×**, eval 2.416×→**2.415×**, dispatch 0.950×, >10%-worse 68.
+  PreviewStage.render static 1104/dag 223; residual gap = Get +98/Set +82 memory
+  traffic — T3.12/unpromoted-temp territory, exactly as diagnosed at G3.3. T3.12
+  contract stated: tiling slots between cfg_to_engine_nodes and flatten (sees
+  pre-flattened binary trees; GVN consts-first means patterns appear as
+  Op(c, expr)).
 - 2026-06-12 — **T3.11 done (ae938fb), merged and verified.** `normalize_switch.rs`:
   last `standard` pass under new `Stage::W5` (registry route over D4's lowering
   sketch, per D13 — rebase is two pure binary insts, destruct/lowering handle them
