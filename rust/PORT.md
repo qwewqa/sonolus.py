@@ -6,13 +6,11 @@
 > holds rules, tasks, state, and decisions. Maintainer notes (setup, end-of-run review)
 > live in [EXECUTION.md](EXECUTION.md).
 
-**Status:** running — **G3.4 passed** (1M fuzz clean, all template items green;
-CI green on ff9468f); T4.2 done in the fuzz window (single-call build_engine,
-675 ms pydori vs 1,501 ms G-P1 reference). **In flight: W5 fan-out part 1**
-(T3.10 flattening + T3.11 NormalizeSwitch, parallel worktrees; T3.12 fused tiling
-follows sequentially — it needs the post-flatten metrics landscape for its
-data-driven rules). Then G3.5 (= final S3 gate + the G3.3-transferred parity
-ratchet), T4.3/T4.4, S6, S7.
+**Status:** running — T3.10 + T3.11 done, merged, W5-pair verified together (50k×6
+fuzz clean; corpus eval 20,517, pydori dag 1.136×, dispatch 0.950×, >10%-worse 68).
+**In flight: T3.12 fused-op tiling** (last S3 task; targets the render-loop Get/Set
+traffic = the residual eval 2.415× gap). Then **G3.5** (final S3 gate + the
+G3.3-transferred parity ratchet), T4.3/T4.4, S6, S7.
 **Last updated:** 2026-06-12
 
 ## 0. Entry point — if you were pointed at this file, start here
@@ -199,7 +197,7 @@ metrics ratchet not regressed; worklog entry with metric movement.
 | G3.4 | done | W4 gate. | wave gate template |
 | T3.10 | done | W5: emission-time FlattenAssociativeOps (sharing-aware vs node DAG dedup). | per-transform differential + fuzz; node-count metric |
 | T3.11 | done | W5: NormalizeSwitch (dense 0-based case manufacture) + dense-form selection in the emitter. | per-transform differential + fuzz |
-| T3.12 | todo | W5: fused-op tiling (`Lerp`/`Remap`/`Clamp`/`*Shifted`/`*Pointed`/`Set*`/`Increment*`), Execute0/Execute selection. Rules added data-driven from metrics hot spots. | per-transform differential + fuzz; eval-count metric |
+| T3.12 | in-progress | W5: fused-op tiling (`Lerp`/`Remap`/`Clamp`/`*Shifted`/`*Pointed`/`Set*`/`Increment*`), Execute0/Execute selection. Rules added data-driven from metrics hot spots. | per-transform differential + fuzz; eval-count metric |
 | G3.5 | todo | W5 gate; final S3 metrics report committed to the worklog. | wave gate template |
 
 ### S4 — Single-call build
