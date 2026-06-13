@@ -25,6 +25,7 @@ use sonolus_backend_core::nodes::{
 use sonolus_backend_core::ops::Op;
 use sonolus_backend_core::output;
 use sonolus_backend_core::pipeline::{self, CompileError, CompileStats, Level};
+use sonolus_backend_core::tile;
 
 /// Returns the version of the Rust backend.
 #[pyfunction]
@@ -123,6 +124,34 @@ fn stats_to_dict(py: Python<'_>, stats: CompileStats) -> PyResult<Py<PyDict>> {
     dict.set_item("mir_insts", stats.mir_insts)?;
     dict.set_item("node_count", stats.node_count)?;
     Ok(dict.unbind())
+}
+
+/// T3.12 census/diagnostic handle: compiles an encoded frontend CFG with the
+/// `standard` pass registry but with emission-time tiling and flattening
+/// **off** (the exact tree the tiler sees), and returns
+/// `(census_dict, fired_dict)` — the candidate-shape census of that tree
+/// (`crate::tile::census_engine_nodes`) and the tile counts that
+/// `tile_engine_nodes` fires on it.
+///
+/// Raises `ValueError` on malformed input or pipeline failures.
+#[pyfunction]
+fn tile_census(py: Python<'_>, data: &[u8]) -> PyResult<(Py<PyDict>, Py<PyDict>)> {
+    let cfg = decode_cfg(data).map_err(|e| PyValueError::new_err(e.to_string()))?;
+    let pipeline = sonolus_backend_core::passes::Pipeline::for_level(Level::Standard)
+        .with_flatten(false)
+        .with_tile(false);
+    let nodes = pipeline::compile_cfg_with_pipeline(&cfg, &pipeline)
+        .map_err(|e| compile_error_to_py(&e))?;
+    let census = PyDict::new(py);
+    for (row, count) in tile::census_engine_nodes(&nodes) {
+        census.set_item(row, count)?;
+    }
+    let (_, stats) = tile::tile_engine_nodes_stats(&nodes);
+    let fired = PyDict::new(py);
+    fired.set_item("increment_pre", stats.increment_pre)?;
+    fired.set_item("increment_post", stats.increment_post)?;
+    fired.set_item("const_index_folds", stats.const_index_folds)?;
+    Ok((census.unbind(), fired.unbind()))
 }
 
 /// Like [`run_pipeline`], but also returns a stats dict with
@@ -622,6 +651,7 @@ fn sonolus_backend(m: &Bound<'_, PyModule>) -> PyResult<()> {
     m.add_function(wrap_pyfunction!(engine_nodes_to_output_dump, m)?)?;
     m.add_function(wrap_pyfunction!(run_pipeline, m)?)?;
     m.add_function(wrap_pyfunction!(run_pipeline_stats, m)?)?;
+    m.add_function(wrap_pyfunction!(tile_census, m)?)?;
     m.add_function(wrap_pyfunction!(seeded_memory, m)?)?;
     m.add_function(wrap_pyfunction!(build_engine, m)?)?;
     m.add_class::<EngineNodes>()?;

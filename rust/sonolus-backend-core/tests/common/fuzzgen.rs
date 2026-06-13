@@ -1005,6 +1005,234 @@ pub fn program_affine_heavy() -> BoxedStrategy<Program> {
 }
 
 // ----------------------------------------------------------------------------------
+// Read-modify-write-heavy profile (T3.12 fused-op tiling's surface)
+// ----------------------------------------------------------------------------------
+//
+// The general profiles correlate a `Set`'s place with its value's reads only
+// by chance, so increment idioms (`x = x + 1`), post-increment pairs
+// (`t = x; x = x + 1`) and the constant-place-offset reads the T3.12 tiles
+// match are structurally near-absent. This profile generates them directly —
+// on concrete blocks (never promoted: the shapes reach emission verbatim)
+// AND on temps (Mem2Reg promotes constant-index cells; the increment comes
+// back out of out-of-SSA as a slot RMW — the PreviewStage.render shape), with
+// deliberate near-miss coverage: non-`1` addends (the kernel-less `SetAdd`
+// shape), `Subtract`/`Multiply` RMWs, mismatched places, aliasing
+// post-increment pairs, and value-position pairs.
+
+/// `WRITE_BLOCKS[w] == READ_BLOCKS[w + 1]` (compile-checked): lets a write
+/// statement build a read of the same concrete block.
+const _: () = {
+    assert!(WRITE_BLOCKS[0] == READ_BLOCKS[1]);
+    assert!(WRITE_BLOCKS[1] == READ_BLOCKS[2]);
+    assert!(WRITE_BLOCKS[2] == READ_BLOCKS[3]);
+};
+
+/// RMW addend: mostly `1` (int- or float-tagged — both must tile), with
+/// near-miss `0`/`2` (must NOT tile: kernel-less `SetAdd` shapes).
+fn rmw_addend() -> BoxedStrategy<Expr> {
+    prop_oneof![
+        5 => Just(Expr::Int(1)),   // INT_POOL[1] = 1
+        2 => Just(Expr::Float(1)), // FLOAT_POOL[1] = 1.0
+        1 => Just(Expr::Int(0)),   // 0
+        1 => Just(Expr::Int(2)),   // 2
+    ]
+    .boxed()
+}
+
+/// RMW operator: mostly `Add` (the increment kernels), with `Multiply`/
+/// `Subtract` near-misses (kernel-less `SetMultiply`/`SetSubtract` shapes).
+fn rmw_op() -> BoxedStrategy<usize> {
+    prop_oneof![
+        6 => Just(0usize), // REDUCE_OPS[0] = Add
+        1 => Just(1usize), // Multiply
+        1 => Just(2usize), // Subtract
+    ]
+    .boxed()
+}
+
+/// `x[i] = x[i] <op> addend` on a concrete block (with occasional
+/// mismatched-index near-misses).
+fn rmw_concrete_stmt() -> BoxedStrategy<Stmt> {
+    (
+        0..WRITE_BLOCKS.len(),
+        0..8u8,
+        rmw_addend(),
+        rmw_op(),
+        any::<bool>(),
+        prop_oneof![6 => Just(0u8), 1 => Just(1u8)], // index mismatch near-miss
+    )
+        .prop_map(|(block, index, addend, op, addend_first, skew)| {
+            let read = Expr::ReadConcrete {
+                block: block + 1, // see the const assertion above
+                index: Index::Const(index + skew),
+                offset: 0,
+            };
+            let args = if addend_first {
+                vec![addend, read]
+            } else {
+                vec![read, addend]
+            };
+            Stmt::SetConcrete {
+                block,
+                index: Index::Const(index),
+                value: Expr::Reduce { op, args },
+            }
+        })
+        .boxed()
+}
+
+/// `t[i] = t[i] <op> addend` on a temp (constant indices promote; the RMW
+/// shape re-materializes as a slot increment after out-of-SSA).
+fn rmw_temp_stmt() -> BoxedStrategy<Stmt> {
+    (
+        0..TEMP_POOL.len(),
+        0..16u8,
+        rmw_addend(),
+        rmw_op(),
+        any::<bool>(),
+    )
+        .prop_map(|(temp, index, addend, op, addend_first)| {
+            let read = Expr::ReadTemp {
+                temp,
+                index: Index::Const(index),
+            };
+            let args = if addend_first {
+                vec![addend, read]
+            } else {
+                vec![read, addend]
+            };
+            Stmt::SetTemp {
+                temp,
+                index: Index::Const(index),
+                value: Expr::Reduce { op, args },
+            }
+        })
+        .boxed()
+}
+
+/// The post-increment statement pair `save = x[i]; x[i] = x[i] + 1` (the
+/// bump occasionally reading the saved copy instead, occasionally ALIASING
+/// the save place with the source — the refusal case).
+fn rmw_pair_stmts() -> BoxedStrategy<Vec<Stmt>> {
+    (
+        0..WRITE_BLOCKS.len(),
+        0..4u8,
+        0..WRITE_BLOCKS.len(),
+        4..8u8,
+        any::<bool>(),
+        prop_oneof![5 => Just(false), 1 => Just(true)], // aliasing near-miss
+    )
+        .prop_map(|(src_b, src_i, save_b, save_i, reads_copy, alias)| {
+            let (save_b, save_i) = if alias {
+                (src_b, src_i)
+            } else {
+                (save_b, save_i)
+            };
+            let read_src = Expr::ReadConcrete {
+                block: src_b + 1,
+                index: Index::Const(src_i),
+                offset: 0,
+            };
+            let bump_read = if reads_copy && !alias {
+                Expr::ReadConcrete {
+                    block: save_b + 1,
+                    index: Index::Const(save_i),
+                    offset: 0,
+                }
+            } else {
+                read_src.clone()
+            };
+            vec![
+                Stmt::SetConcrete {
+                    block: save_b,
+                    index: Index::Const(save_i),
+                    value: read_src,
+                },
+                Stmt::SetConcrete {
+                    block: src_b,
+                    index: Index::Const(src_i),
+                    value: Expr::Reduce {
+                        op: 0, // Add
+                        args: vec![Expr::Int(1), bump_read],
+                    },
+                },
+            ]
+        })
+        .boxed()
+}
+
+/// Reads with static place offsets on constant indices (the constant-index
+/// `Add` fold's surface) logged for observability.
+fn rmw_offset_read_stmt() -> BoxedStrategy<Stmt> {
+    (0..READ_BLOCKS.len(), 0..8u8, 1..3u8)
+        .prop_map(|(block, index, offset)| {
+            Stmt::Log(Expr::ReadConcrete {
+                block,
+                index: Index::Const(index),
+                offset,
+            })
+        })
+        .boxed()
+}
+
+/// Statement runs for the RMW profile: increment idioms dominate, with the
+/// post-increment pair, offset reads, logs of the touched cells (so value
+/// differences are observable), and the general mix as a minority.
+fn rmw_stmts() -> BoxedStrategy<Vec<Stmt>> {
+    let single = prop_oneof![
+        4 => rmw_concrete_stmt(),
+        3 => rmw_temp_stmt(),
+        1 => rmw_offset_read_stmt(),
+        2 => stmt(),
+    ]
+    .boxed();
+    (vec(
+        prop_oneof![
+            5 => single.prop_map(|s| vec![s]),
+            2 => rmw_pair_stmts(),
+        ],
+        1..=4,
+    ),)
+        .prop_map(|(groups,)| groups.into_iter().flatten().collect())
+        .boxed()
+}
+
+/// Control-flow shapes for the RMW profile: straight runs, diamonds with RMW
+/// arms (post-W4 if-conversion moves the increments into lazy `If` arms —
+/// the conditional-boundary surface), and bounded loops over RMW bodies (the
+/// hot-loop counter shape).
+fn rmw_shape() -> BoxedStrategy<Shape> {
+    let loop_free = prop_oneof![
+        3 => rmw_stmts().prop_map(Shape::Straight).boxed(),
+        2 => (expr(), any::<bool>(), rmw_stmts(), rmw_stmts()).prop_map(
+            |(cond, float_cond, then_stmts, else_stmts)| Shape::Diamond {
+                cond,
+                float_cond,
+                then_stmts,
+                else_stmts,
+            }
+        ).boxed(),
+        1 => shape_loop_free(),
+    ]
+    .boxed();
+    loop_free
+        .prop_recursive(2, 6, 2, |inner| {
+            (1..=5u8, vec(inner, 1..=2))
+                .prop_map(|(trips, body)| Shape::Loop { trips, body })
+                .boxed()
+        })
+        .boxed()
+}
+
+/// A whole program with the read-modify-write-heavy profile: the dedicated
+/// fuzz surface for W5 fused-op tiling (T3.12). Same AST and lowering as
+/// [`program`] — only the strategy weights differ (additive knob; the
+/// T3.4/T3.6/T3.9/T3.11 precedent).
+pub fn program_rmw_heavy() -> BoxedStrategy<Program> {
+    program_from_shapes(rmw_shape())
+}
+
+// ----------------------------------------------------------------------------------
 // AST -> Cfg lowering
 // ----------------------------------------------------------------------------------
 

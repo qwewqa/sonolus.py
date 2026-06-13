@@ -104,6 +104,14 @@ impl NodeArena {
         self.nodes[id.index()]
     }
 
+    /// The [`NodeId`] at an arena index (`0..len()`). Arena order is
+    /// topological: `push_func` arguments always precede the node, so a
+    /// forward scan visits children before parents.
+    pub fn id_at(&self, index: usize) -> NodeId {
+        debug_assert!(index < self.nodes.len());
+        NodeId(u32::try_from(index).expect("node arena overflow"))
+    }
+
     /// The argument list of a node (empty for constants).
     pub fn args_of(&self, id: NodeId) -> &[NodeId] {
         match self.kind(id) {

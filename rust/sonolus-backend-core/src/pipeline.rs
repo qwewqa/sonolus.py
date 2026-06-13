@@ -215,6 +215,14 @@ pub fn compile_cfg_with_pipeline_stats(
     let alloc = allocate_temps(&mir)?;
     let lowered = lower_mir(&mir, &alloc)?;
     let nodes = cfg_to_engine_nodes(&lowered)?;
+    // Emission-time fused-op tiling (W5 T3.12): before flattening — tiles
+    // match the pre-flattened binary emitted form. Enabled per-pipeline;
+    // `standard` only.
+    let nodes = if pipeline.tile_at_emit() {
+        crate::tile::tile_engine_nodes(&nodes)
+    } else {
+        nodes
+    };
     // Emission-time FlattenAssociativeOps (W5 T3.10, invariant §3.3): the
     // last transform before output-node generation, on the emitted tree only
     // (MIR stays binary). Enabled per-pipeline; `standard` only.

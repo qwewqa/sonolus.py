@@ -24,6 +24,7 @@ pub mod passes;
 pub mod pipeline;
 pub mod rewrite;
 pub mod ssa;
+pub mod tile;
 
 /// Returns the version of the backend, taken from the crate metadata.
 pub fn version() -> &'static str {

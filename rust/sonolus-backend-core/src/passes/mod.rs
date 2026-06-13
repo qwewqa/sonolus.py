@@ -313,6 +313,11 @@ pub struct Pipeline {
     /// stays the trivially-correct differential baseline, and `fast` remains
     /// the plain W1 prefix (legacy `FAST_PASSES` did not flatten either).
     flatten_at_emit: bool,
+    /// Whether emission-time fused-op tiling (W5 T3.12, `crate::tile`) runs
+    /// on this pipeline's emitted node tree, **before** flattening (tiles
+    /// match the pre-flattened binary form). Same gating rationale as
+    /// [`Self::flatten_at_emit`]: `standard` only.
+    tile_at_emit: bool,
 }
 
 impl std::fmt::Debug for Pipeline {
@@ -323,27 +328,32 @@ impl std::fmt::Debug for Pipeline {
                 &self.passes.iter().map(|p| p.name()).collect::<Vec<_>>(),
             )
             .field("flatten_at_emit", &self.flatten_at_emit)
+            .field("tile_at_emit", &self.tile_at_emit)
             .finish()
     }
 }
 
 impl Pipeline {
     /// The pipeline for an optimization level (the [`registry`] prefix, plus
-    /// emission-time flattening at `standard` — see [`Self::flatten_at_emit`]).
+    /// emission-time tiling + flattening at `standard` — see
+    /// [`Self::flatten_at_emit`] / [`Self::tile_at_emit`]).
     pub fn for_level(level: Level) -> Self {
         Self {
             passes: passes_for_level(level),
             flatten_at_emit: level == Level::Standard,
+            tile_at_emit: level == Level::Standard,
         }
     }
 
     /// A pipeline from an explicit pass list (test/bespoke use). Emission-time
-    /// flattening defaults **off** so per-transform differential pipelines
-    /// isolate exactly their pass list; opt in with [`Self::with_flatten`].
+    /// flattening and tiling default **off** so per-transform differential
+    /// pipelines isolate exactly their pass list; opt in with
+    /// [`Self::with_flatten`] / [`Self::with_tile`].
     pub fn new(passes: Vec<Box<dyn Pass>>) -> Self {
         Self {
             passes,
             flatten_at_emit: false,
+            tile_at_emit: false,
         }
     }
 
@@ -355,10 +365,26 @@ impl Pipeline {
         self
     }
 
+    /// Returns the pipeline with emission-time fused-op tiling switched
+    /// on/off (test/bespoke use; [`Self::for_level`] already configures
+    /// levels).
+    #[must_use]
+    pub fn with_tile(mut self, tile_at_emit: bool) -> Self {
+        self.tile_at_emit = tile_at_emit;
+        self
+    }
+
     /// Whether emission-time `FlattenAssociativeOps` runs after the emitter
     /// for this pipeline (consumed by `crate::pipeline::compile_cfg_*`).
     pub fn flatten_at_emit(&self) -> bool {
         self.flatten_at_emit
+    }
+
+    /// Whether emission-time fused-op tiling runs after the emitter (before
+    /// flattening) for this pipeline (consumed by
+    /// `crate::pipeline::compile_cfg_*`).
+    pub fn tile_at_emit(&self) -> bool {
+        self.tile_at_emit
     }
 
     /// The number of passes in this pipeline.
