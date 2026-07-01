@@ -17,6 +17,15 @@ Changelog = "https://sonolus.py.qwewqa.xyz/changelog/"
 
 [tool.uv]
 default-groups = ["dev", "docs"]
+# Rebuild the Cython extension when the build inputs change (setup.py, the
+# .pyx/.pxd sources, or pyproject.toml). The checked-in _ops_gen.pxd is covered
+# by the .pxd glob. See OPTIMIZER_REWRITE.md section 9.
+cache-keys = [
+    { file = "pyproject.toml" },
+    { file = "setup.py" },
+    { file = "sonolus/**/*.pyx" },
+    { file = "sonolus/**/*.pxd" },
+]
 
 [tool.ruff]
 line-length = 120
@@ -31,8 +40,13 @@ ignore = ["E402", "D1", "COM812", "PLW2901", "PLW3201", "PLR6301", "PLC0415", "P
 convention = "google"
 
 [build-system]
-requires = ["hatchling"]
-build-backend = "hatchling.build"
+requires = ["setuptools>=77", "Cython>=3.1"]
+build-backend = "setuptools.build_meta"
+
+[tool.setuptools.packages.find]
+# Explicit discovery: tools/, rust/, docs/, tests/, and test_projects/ live at
+# the repo root, so flat-layout auto-discovery is not safe here.
+include = ["sonolus*"]
 
 [dependency-groups]
 dev = [
@@ -55,8 +69,14 @@ docs = [
     "mkdocstrings[python]>=0.30.1",
 ]
 
-[tool.hatch.build.targets.wheel]
-packages = ["sonolus"]
+[tool.cibuildwheel]
+# Build CPython 3.12/3.13/3.14 only. Free-threaded builds stay disabled
+# (cibuildwheel default); musllinux stays enabled (default). See §9.
+build = "cp312-* cp313-* cp314-*"
+
+[tool.cibuildwheel.windows]
+# Only 64-bit Windows wheels (no win32, no windows-arm64; sdist covers ARM).
+archs = ["AMD64"]
 
 [tool.tox]
 requires = ["tox>=4.19"]

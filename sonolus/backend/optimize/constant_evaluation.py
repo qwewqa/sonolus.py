@@ -446,10 +446,14 @@ class SparseConditionalConstantPropagation(CompilerPass):
                         return smath.frac(args[0])
                     case Op.Mod:
                         assert len(args) == 2
+                        if args[1] == 0:
+                            return NAC
                         return args[0] % args[1]
                     case Op.Rem:
                         assert len(args) == 2
-                        return smath.remainder(args[0], args[1])
+                        if args[1] == 0:
+                            return NAC
+                        return smath._remainder(args[0], args[1])
                     case Op.Sin:
                         assert len(args) == 1
                         return math.sin(args[0])

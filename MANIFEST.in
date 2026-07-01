@@ -1,0 +1,5 @@
+# Ship the Cython sources in the sdist so it can cythonize at build time.
+recursive-include sonolus *.pyx *.pxd
+# Never ship generated C sources; the sdist rebuilds them from the .pyx.
+# (cythonize adds the generated .c files as ext-module sources by default.)
+global-exclude *.c

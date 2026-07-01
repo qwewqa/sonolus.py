@@ -1,0 +1,807 @@
+"""Baseline metrics capture for the optimizer rewrite (milestone M0).
+
+This tool compiles every callback of a regression project (default: ``pydori``)
+at one or more optimization levels and records, per callback:
+
+* ``function_node_count`` / ``value_node_count`` -- emitted ``EngineNode`` counts,
+  counted **per reference** over the expanded node tree (shared/hash-consed nodes
+  are re-executed per reference by the real runtime, see OPTIMIZER_REWRITE.md §2).
+* ``effective_node_count`` -- the same tree, but every *maximal* runtime-constant
+  subtree counts as 1 (models the runtime's own constant folding, §2). This is the
+  number the M4 gate compares against. Runtime-constant follows the full
+  ``inlining.is_runtime_constant`` semantics (constant-index reads of
+  RUNTIME_CONSTANT_BLOCKS that are *not writable in the current callback*), and the
+  CFG-skeleton nodes finalize emits (Block/JumpLoop/Execute/terminators) never fold --
+  the runtime compiles block structure to bytecode and folds only expressions within.
+* ``per_op_counts`` -- expanded, per-reference op-name -> count.
+* ``temp_slots`` -- optimizer temporary-memory usage scanned from the optimized CFG
+  *before* emission (emission destroys block attributes).
+* ``timing`` -- wall-clock split into frontend tracing / optimize / emit.
+
+It also implements a warm-cache dev-server rebuild timing mode (``--dev-rebuild``,
+OPTIMIZER_REWRITE.md §13 / §11-M0) -- the bar that removing ``CompileCache`` must meet.
+
+Standard library only (plus the ``sonolus`` package and the regression project).
+
+Usage::
+
+    uv run python tools/metrics.py                      # print JSON to stdout
+    uv run python tools/metrics.py --output baseline.json
+    uv run python tools/metrics.py --levels fast,standard --repeat 3
+    uv run python tools/metrics.py --limit 5            # small subset (validation)
+    uv run python tools/metrics.py --dev-rebuild
+    uv run python tools/metrics.py --full-baseline --repeat 3 --output baseline.json
+    # ^ one JSON: callbacks+totals, dev_rebuild (repeat 3), full_build timings (repeat 3)
+"""
+
+from __future__ import annotations
+
+import argparse
+import json
+import platform
+import subprocess
+import sys
+import tempfile
+from collections import Counter
+from datetime import UTC, datetime
+from pathlib import Path
+from time import perf_counter
+
+# --- sys.path: make <repo> and <repo>/test_projects importable when run from repo root ---
+_REPO_ROOT = Path(__file__).resolve().parent.parent
+for _p in (str(_REPO_ROOT / "test_projects"), str(_REPO_ROOT)):
+    if _p not in sys.path:
+        sys.path.insert(0, _p)
+
+# Frontend tracing can recurse; match the limit the CLI uses for builds (sonolus/build/cli.py).
+# Node/CFG *analysis* in this module is iterative, so it does not depend on this.
+sys.setrecursionlimit(10_000)
+
+from sonolus.backend.finalize import cfg_to_engine_node
+from sonolus.backend.ir import IRConst, IRGet, IRInstr, IRPureInstr, IRSet
+from sonolus.backend.mode import Mode
+from sonolus.backend.node import FunctionNode
+from sonolus.backend.ops import Op
+from sonolus.backend.optimize.flow import BasicBlock, traverse_cfg_preorder
+from sonolus.backend.optimize.passes import OptimizerConfig, run_passes
+from sonolus.backend.place import BlockPlace, SSAPlace, TempBlock
+from sonolus.build.compile import callback_to_cfg
+from sonolus.script.internal.callbacks import (
+    navigate_callback,
+    preprocess_callback,
+    update_callback,
+    update_spawn_callback,
+)
+from sonolus.script.internal.context import (
+    ModeContextState,
+    ProjectContextState,
+    RuntimeChecks,
+)
+from sonolus.script.project import BuildConfig
+
+TEMP_MEMORY_BLOCK_ID = 10000
+
+# Blocks whose constant-index reads the real runtime constant-folds (see §2 and
+# sonolus/backend/optimize/inlining.py:9 RUNTIME_CONSTANT_BLOCKS). Copied here so the
+# tool keeps working after inlining.py is deleted in M1; kept in sync via an assertion.
+RUNTIME_CONSTANT_BLOCKS = frozenset(
+    {
+        "RuntimeEnvironment",
+        "RuntimeUI",
+        "RuntimeUIConfiguration",
+        "LevelData",
+        "LevelOption",
+        "LevelBucket",
+        "LevelScore",
+        "LevelLife",
+        "EngineRom",
+        "ArchetypeLife",
+        "RuntimeCanvas",
+        "PreviewData",
+        "PreviewOption",
+        "TutorialData",
+    }
+)
+
+try:  # keep the local copy honest while inlining.py still exists (M0)
+    from sonolus.backend.optimize.inlining import RUNTIME_CONSTANT_BLOCKS as _RCB_SRC
+
+    assert set(RUNTIME_CONSTANT_BLOCKS) == set(_RCB_SRC), (
+        "RUNTIME_CONSTANT_BLOCKS drifted from sonolus.backend.optimize.inlining"
+    )
+except ImportError:
+    pass
+
+
+LEVELS: dict[str, object] = {
+    "minimal": BuildConfig.MINIMAL_PASSES,
+    "fast": BuildConfig.FAST_PASSES,
+    "standard": BuildConfig.STANDARD_PASSES,
+}
+
+
+def camel_to_snake(name: str) -> str:
+    """Mirror tests/regressions/test_project.py:camel_to_snake for stable keys."""
+    return "".join(f"_{c.lower()}" if c.isupper() else c for c in name).lstrip("_")
+
+
+# --------------------------------------------------------------------------------------
+# Project / callback enumeration (mirrors tests/regressions/test_project.py exactly)
+# --------------------------------------------------------------------------------------
+
+PROJECTS = {"pydori": ("pydori.project", "project")}
+
+
+def load_project(name: str):
+    if name not in PROJECTS:
+        raise SystemExit(f"Unknown project {name!r}; known: {', '.join(sorted(PROJECTS))}")
+    module_name, attr = PROJECTS[name]
+    import importlib
+
+    module = importlib.import_module(module_name)
+    return getattr(module, attr)
+
+
+class CallbackTask:
+    """A single (mode, callback) unit of work with a stable metrics key."""
+
+    __slots__ = ("archetype", "archetypes_map", "callback_name", "cb", "cb_name", "key", "mode")
+
+    def __init__(self, mode, archetype, cb, cb_name, callback_name, archetypes_map, key):
+        self.mode = mode
+        self.archetype = archetype
+        self.cb = cb
+        self.cb_name = cb_name
+        self.callback_name = callback_name
+        self.archetypes_map = archetypes_map
+        self.key = key
+
+
+def _mode_tasks(project_name, mode, archetypes, global_callbacks):
+    """Enumerate callbacks for one mode, mirroring _build_mode_callbacks (non-dev)."""
+    archetypes_map = {a: i for i, a in enumerate(archetypes)} if archetypes is not None else None
+    mode_label = mode.name.lower()
+
+    for archetype in archetypes or []:
+        archetype._init_fields()
+        callback_items = [
+            (cb_name, cb_info, getattr(archetype, cb_name))
+            for cb_name, cb_info in archetype._supported_callbacks_.items()
+            if getattr(archetype, cb_name) not in archetype._default_callbacks_
+        ]
+        for cb_name, cb_info, cb in callback_items:
+            key = f"{project_name}_{mode_label}_{camel_to_snake(archetype.__name__)}_{cb_name}"
+            yield CallbackTask(mode, archetype, cb, cb_name, cb_info.name, archetypes_map, key)
+
+    for cb_info, cb in global_callbacks or []:
+        key = f"{project_name}_{mode_label}_global_{camel_to_snake(cb_info.name)}"
+        yield CallbackTask(mode, None, cb, cb_info.name, cb_info.name, archetypes_map, key)
+
+
+def iter_callback_tasks(project_name, project):
+    engine = project.engine.data
+    yield from _mode_tasks(project_name, Mode.PLAY, engine.play.archetypes, None)
+    yield from _mode_tasks(
+        project_name,
+        Mode.WATCH,
+        engine.watch.archetypes,
+        [(update_spawn_callback, engine.watch.update_spawn)],
+    )
+    yield from _mode_tasks(project_name, Mode.PREVIEW, engine.preview.archetypes, None)
+    yield from _mode_tasks(
+        project_name,
+        Mode.TUTORIAL,
+        None,
+        [
+            (preprocess_callback, engine.tutorial.preprocess),
+            (navigate_callback, engine.tutorial.navigate),
+            (update_callback, engine.tutorial.update),
+        ],
+    )
+
+
+# --------------------------------------------------------------------------------------
+# Runtime-constant classification + node counting over the emitted tree
+# --------------------------------------------------------------------------------------
+
+
+def _is_value_node(node) -> bool:
+    return isinstance(node, (int, float)) and not isinstance(node, bool)
+
+
+def _block_is_runtime_constant(block, mode, callback_name: str) -> bool:
+    """Full is_runtime_constant block semantics from inlining.py.
+
+    The block id must resolve to a BlockData whose name is in RUNTIME_CONSTANT_BLOCKS
+    AND that is not writable in the current callback (a block the callback can write is
+    not constant at runtime even if the runtime treats it as constant elsewhere).
+    """
+    if isinstance(block, float):
+        if not block.is_integer():
+            return False
+        block = int(block)
+    if not isinstance(block, int) or isinstance(block, bool):
+        return False
+    try:
+        block_data = mode.blocks(block)
+    except ValueError:
+        return False
+    return block_data.name in RUNTIME_CONSTANT_BLOCKS and callback_name not in block_data.writable
+
+
+def _node_is_runtime_constant(node: FunctionNode, is_rc: dict[int, bool], mode, callback_name: str) -> bool:
+    op = node.func
+    if op is Op.Get and len(node.args) == 2:
+        block, index = node.args
+        return (
+            _is_value_node(block) and _is_value_node(index) and _block_is_runtime_constant(block, mode, callback_name)
+        )
+    if op.pure:
+        # Pure ops (including And/Or/If/Switch appearing *inside* statement trees) fold
+        # when all args are runtime-constant. CFG-skeleton structural nodes never reach
+        # here (see _skeleton_ids); they are excluded before classification.
+        return all(is_rc[id(arg)] for arg in node.args)
+    return False
+
+
+def _skeleton_ids(root) -> set[int]:
+    """Identify the CFG-skeleton nodes finalize emits, by identity.
+
+    The runtime compiles the block *structure* to bytecode and constant-folds only the
+    expressions within, so the outer Block, the JumpLoop, each per-block Execute, and
+    each Execute's final terminator arg (If/Switch* over block indexes) are treated as
+    never-runtime-constant containers. Their operand subtrees (statements, switch/if
+    test expressions) are classified normally. Safe by identity: finalize constructs
+    each of these nodes exactly once, so they cannot alias a statement subtree node.
+    """
+    ids: set[int] = set()
+    if not (isinstance(root, FunctionNode) and root.func is Op.Block and len(root.args) == 1):
+        return ids
+    jump_loop = root.args[0]
+    if not (isinstance(jump_loop, FunctionNode) and jump_loop.func is Op.JumpLoop):
+        return ids
+    ids.add(id(root))
+    ids.add(id(jump_loop))
+    for execute in jump_loop.args:
+        if isinstance(execute, FunctionNode) and execute.func is Op.Execute:
+            ids.add(id(execute))
+            if execute.args:
+                terminator = execute.args[-1]
+                if isinstance(terminator, FunctionNode):
+                    ids.add(id(terminator))
+    return ids
+
+
+def _post_order(root):
+    """Return unique nodes (by identity) in topological post-order.
+
+    Every node appears after all of its descendants. Works for trees and DAGs
+    (the emitted node tree is hash-consed, so shared subtrees are DAG edges);
+    each unique node appears exactly once. The tree is acyclic by construction.
+    """
+    order = []
+    entered: set[int] = set()
+    done: set[int] = set()
+    stack = [(root, False)]
+    while stack:
+        node, processed = stack.pop()
+        nid = id(node)
+        if processed:
+            if nid in done:
+                continue
+            done.add(nid)
+            order.append(node)
+            continue
+        if nid in entered:
+            continue
+        entered.add(nid)
+        stack.append((node, True))
+        if isinstance(node, FunctionNode):
+            stack.extend((arg, False) for arg in node.args if id(arg) not in entered)
+    return order
+
+
+def analyze_node(root, mode, callback_name: str) -> dict:
+    """Compute per-reference node counts, effective count, and per-op counts.
+
+    Counts are memoized per unique node and combined (per §2) so shared subtrees are
+    counted once per reference without exponential expansion.
+    """
+    post = _post_order(root)
+    skeleton = _skeleton_ids(root)
+
+    is_rc: dict[int, bool] = {}
+    sub_fn: dict[int, int] = {}
+    sub_val: dict[int, int] = {}
+    sub_eff: dict[int, int] = {}
+    sub_ops: dict[int, Counter] = {}
+
+    for node in post:
+        nid = id(node)
+        if isinstance(node, FunctionNode):
+            is_rc[nid] = nid not in skeleton and _node_is_runtime_constant(node, is_rc, mode, callback_name)
+            fn = 1
+            val = 0
+            ops: Counter = Counter()
+            ops[node.func.name] += 1
+            for arg in node.args:
+                aid = id(arg)
+                fn += sub_fn[aid]
+                val += sub_val[aid]
+                ops += sub_ops[aid]
+            sub_fn[nid] = fn
+            sub_val[nid] = val
+            sub_ops[nid] = ops
+            if is_rc[nid]:
+                sub_eff[nid] = 1
+            else:
+                sub_eff[nid] = 1 + sum(sub_eff[id(arg)] for arg in node.args)
+        else:  # value node (int/float): always runtime-constant
+            is_rc[nid] = True
+            sub_fn[nid] = 0
+            sub_val[nid] = 1
+            sub_eff[nid] = 1
+            sub_ops[nid] = Counter()
+
+    rid = id(root)
+    return {
+        "function_node_count": sub_fn[rid],
+        "value_node_count": sub_val[rid],
+        "effective_node_count": sub_eff[rid],
+        "per_op_counts": dict(sub_ops[rid]),
+    }
+
+
+# --------------------------------------------------------------------------------------
+# Temp-slot scan over the optimized CFG (before emission destroys it)
+# --------------------------------------------------------------------------------------
+
+
+def _collect_temp_offsets(stmt, offsets: list[int]) -> None:
+    stack = [stmt]
+    while stack:
+        s = stack.pop()
+        if isinstance(s, (IRPureInstr, IRInstr)):
+            stack.extend(s.args)
+        elif isinstance(s, IRGet):
+            stack.append(s.place)
+        elif isinstance(s, IRSet):
+            stack.append(s.place)
+            stack.append(s.value)
+        elif isinstance(s, BlockPlace):
+            block = s.block
+            # Compare by int value: temps land in block 10000 (TemporaryMemory), which may
+            # be a plain int or a BlockData(int) subclass after allocation.
+            if isinstance(block, int) and not isinstance(block, bool) and int(block) == TEMP_MEMORY_BLOCK_ID:
+                offsets.append(s.offset)
+            stack.append(block)
+            stack.append(s.index)
+        # IRConst / int / float / TempBlock / SSAPlace / None: nothing to descend into
+        elif isinstance(s, (IRConst, int, float, TempBlock, SSAPlace, type(None))):
+            continue
+
+
+def scan_temp_slots(entry: BasicBlock) -> dict:
+    offsets: list[int] = []
+    for block in traverse_cfg_preorder(entry):
+        for phi_srcs in block.phis.values():
+            for place in phi_srcs.values():
+                _collect_temp_offsets(place, offsets)
+        for stmt in block.statements:
+            _collect_temp_offsets(stmt, offsets)
+        _collect_temp_offsets(block.test, offsets)
+
+    non_negative = [o for o in offsets if o >= 0]
+    return {
+        "max_offset_plus_1": (max(non_negative) + 1) if non_negative else 0,
+        "distinct_offsets": len({o for o in offsets if o >= 0}),
+    }
+
+
+# --------------------------------------------------------------------------------------
+# Per-callback measurement
+# --------------------------------------------------------------------------------------
+
+
+def measure_callback(project_name, task: CallbackTask, level_name, passes, repeat) -> dict:
+    frontend_times: list[float] = []
+    optimize_times: list[float] = []
+    emit_times: list[float] = []
+    reference: dict | None = None
+
+    for _ in range(repeat):
+        project_state = ProjectContextState(runtime_checks=RuntimeChecks.NONE)
+        mode_state = ModeContextState(task.mode, task.archetypes_map)
+
+        t0 = perf_counter()
+        cfg = callback_to_cfg(project_state, mode_state, task.cb, task.callback_name, task.archetype)
+        t1 = perf_counter()
+        cfg = run_passes(cfg, passes, OptimizerConfig(mode=task.mode, callback=task.callback_name))
+        t2 = perf_counter()
+        # CFG inspection MUST happen before emit: cfg_to_engine_node deletes block attrs.
+        temp_slots = scan_temp_slots(cfg)
+        node = cfg_to_engine_node(cfg)
+        t3 = perf_counter()
+
+        counts = analyze_node(node, task.mode, task.callback_name)
+        # Invariant self-checks (tool correctness).
+        assert counts["effective_node_count"] <= counts["function_node_count"] + counts["value_node_count"], (
+            f"effective > function+value for {task.key} [{level_name}]"
+        )
+        assert sum(counts["per_op_counts"].values()) == counts["function_node_count"], (
+            f"per_op total != function count for {task.key} [{level_name}]"
+        )
+
+        snapshot = {**counts, "temp_slots": temp_slots}
+        if reference is None:
+            reference = snapshot
+        elif snapshot != reference:
+            raise AssertionError(
+                f"Non-deterministic counts across repeats for {task.key} [{level_name}]:\n"
+                f"  first={reference}\n  now={snapshot}"
+            )
+
+        frontend_times.append(t1 - t0)
+        optimize_times.append(t2 - t1)
+        emit_times.append(t3 - t2)
+
+    assert reference is not None
+    return {
+        **reference,
+        "timing": {
+            "frontend_s": min(frontend_times),
+            "optimize_s": min(optimize_times),
+            "emit_s": min(emit_times),
+        },
+    }
+
+
+def _empty_totals() -> dict:
+    return {
+        "callback_count": 0,
+        "function_node_count": 0,
+        "value_node_count": 0,
+        "effective_node_count": 0,
+        "per_op_counts": Counter(),
+        "timing": {"frontend_s": 0.0, "optimize_s": 0.0, "emit_s": 0.0},
+        "temp_slots": {"max_offset_plus_1": 0, "total_distinct_offsets": 0, "callbacks_with_temps": 0},
+    }
+
+
+def _accumulate(totals: dict, result: dict) -> None:
+    totals["callback_count"] += 1
+    totals["function_node_count"] += result["function_node_count"]
+    totals["value_node_count"] += result["value_node_count"]
+    totals["effective_node_count"] += result["effective_node_count"]
+    totals["per_op_counts"] += Counter(result["per_op_counts"])
+    for phase in ("frontend_s", "optimize_s", "emit_s"):
+        totals["timing"][phase] += result["timing"][phase]
+    ts = result["temp_slots"]
+    totals["temp_slots"]["max_offset_plus_1"] = max(totals["temp_slots"]["max_offset_plus_1"], ts["max_offset_plus_1"])
+    totals["temp_slots"]["total_distinct_offsets"] += ts["distinct_offsets"]
+    if ts["max_offset_plus_1"] > 0:
+        totals["temp_slots"]["callbacks_with_temps"] += 1
+
+
+def _finalize_totals(totals: dict) -> dict:
+    out = dict(totals)
+    out["per_op_counts"] = dict(totals["per_op_counts"])
+    return out
+
+
+def run_metrics(project_name, level_names, repeat, limit) -> dict:
+    project = load_project(project_name)
+    tasks = list(iter_callback_tasks(project_name, project))
+    if limit is not None:
+        tasks = tasks[:limit]
+
+    levels_out: dict[str, dict] = {}
+    grand = _empty_totals()
+
+    for level_name in level_names:
+        passes = LEVELS[level_name]
+        callbacks: dict[str, dict] = {}
+        level_totals = _empty_totals()
+        for task in tasks:
+            result = measure_callback(project_name, task, level_name, passes, repeat)
+            callbacks[task.key] = result
+            _accumulate(level_totals, result)
+            _accumulate(grand, result)
+        levels_out[level_name] = {
+            "callbacks": callbacks,
+            "totals": _finalize_totals(level_totals),
+        }
+
+    return {
+        "meta": _build_meta(project_name, level_names, repeat, limit),
+        "levels": levels_out,
+        "grand_totals": _finalize_totals(grand),
+    }
+
+
+# --------------------------------------------------------------------------------------
+# Warm-cache dev-server rebuild timing (§13 / §11-M0)
+# --------------------------------------------------------------------------------------
+
+
+def _dev_rebuild_via_collection(project, config, repeat):
+    """Faithful replication of a warm dev rebuild.
+
+    build_collection cold, then time repeated warm rebuilds via
+    build_project_to_existing_collection (dev_server.py:110-155). Requires the project's
+    resources to resolve (skins/particles/etc.).
+    """
+    from sonolus.build.cli import build_collection
+    from sonolus.build.compile import CompileCache
+    from sonolus.build.project import build_project_to_existing_collection
+
+    with tempfile.TemporaryDirectory(prefix="sonolus-devrebuild-") as tmp:
+        cache = CompileCache()
+        project_state = ProjectContextState.from_build_config(config)
+
+        cold_start = perf_counter()
+        collection = build_collection(project, Path(tmp), config, cache=cache, project_state=project_state)
+        cold_seconds = perf_counter() - cold_start
+
+        warm_seconds: list[float] = []
+        for _ in range(repeat):
+            cache.reset_accessed()
+            # RebuildCommand creates a fresh project_state each rebuild; the cache stays warm.
+            rebuild_state = ProjectContextState.from_build_config(config)
+            start = perf_counter()
+            build_project_to_existing_collection(project, collection, config, cache=cache, project_state=rebuild_state)
+            warm_seconds.append(perf_counter() - start)
+            cache.prune_unaccessed()
+
+    return "build_project_to_existing_collection", cold_seconds, warm_seconds
+
+
+def _dev_rebuild_via_package_engine(project, config, repeat):
+    """Fallback for projects without resolvable resources (e.g. pydori ships none).
+
+    Drives the CompileCache directly through package_engine -- the exact compile step
+    add_engine_to_collection invokes, and the only work CompileCache accelerates. Same
+    warm-cache protocol (reset_accessed -> compile -> prune_unaccessed).
+    """
+    from sonolus.build.compile import CompileCache
+    from sonolus.build.engine import package_engine
+
+    engine = project.engine.data
+    cache = CompileCache()
+    project_state = ProjectContextState.from_build_config(config)
+
+    cold_start = perf_counter()
+    package_engine(engine, config, cache=cache, project_state=project_state)
+    cold_seconds = perf_counter() - cold_start
+
+    warm_seconds: list[float] = []
+    for _ in range(repeat):
+        cache.reset_accessed()
+        rebuild_state = ProjectContextState.from_build_config(config)
+        start = perf_counter()
+        package_engine(engine, config, cache=cache, project_state=rebuild_state)
+        warm_seconds.append(perf_counter() - start)
+        cache.prune_unaccessed()
+
+    return "package_engine", cold_seconds, warm_seconds
+
+
+def run_dev_rebuild(project_name, level_name, repeat) -> dict:
+    """Warm-cache dev-server rebuild timing (OPTIMIZER_REWRITE.md §13 / §11-M0).
+
+    Replicates dev_server.RebuildCommand.execute for a warm rebuild, minus the HTTP
+    server and the sys.modules purge / project re-import. Module-reload cost is excluded.
+    """
+    payload = _dev_rebuild_section(project_name, level_name, repeat)
+    return {
+        "meta": {
+            **_build_meta(project_name, [level_name], repeat, None),
+            "mode": "dev_rebuild_warm_cache",
+            **payload["config"],
+        },
+        "cold_build_s": payload["cold_build_s"],
+        "warm_rebuild_s": payload["warm_rebuild_s"],
+    }
+
+
+def _dev_rebuild_section(project_name, level_name, repeat) -> dict:
+    """Compute the dev-rebuild timings as an embeddable JSON section (no global meta)."""
+    from statistics import median
+
+    from sonolus.script.project import BuildConfig as _BuildConfig
+
+    project = load_project(project_name)
+    # Dev server defaults (CLI dev path): fast passes, notify-and-terminate checks.
+    config = _BuildConfig(passes=LEVELS[level_name], runtime_checks=RuntimeChecks.NOTIFY_AND_TERMINATE)
+
+    notes = [
+        "Warm-cache dev-server rebuild timing (the bar CompileCache removal must meet, §13).",
+        "sys.modules purge + project re-import cost is EXCLUDED (module-reload cost not modeled).",
+    ]
+    try:
+        method, cold_seconds, warm_seconds = _dev_rebuild_via_collection(project, config, repeat)
+        notes.append("Timed region = build_project_to_existing_collection (compile with warm CompileCache).")
+        notes.append("write_collection / prune_unaccessed are outside the timed region.")
+    except Exception as exc:
+        method, cold_seconds, warm_seconds = _dev_rebuild_via_package_engine(project, config, repeat)
+        notes.append(
+            "Full collection build unavailable "
+            f"({type(exc).__name__}: {exc}); measured package_engine directly instead "
+            "(the compile step add_engine_to_collection invokes, i.e. the CompileCache-relevant work)."
+        )
+        notes.append("Timed region = package_engine (compile with warm CompileCache).")
+
+    return {
+        "config": {
+            "level": level_name,
+            "repeat": repeat,
+            "runtime_checks": config.runtime_checks.value,
+            "timed_call": method,
+            "notes": notes,
+        },
+        "cold_build_s": cold_seconds,
+        "warm_rebuild_s": {
+            "min": min(warm_seconds),
+            "median": median(warm_seconds),
+            "samples": warm_seconds,
+        },
+    }
+
+
+# --------------------------------------------------------------------------------------
+# Full-build timing + combined baseline capture
+# --------------------------------------------------------------------------------------
+
+
+def run_full_build(project_name, level_names, repeat) -> dict:
+    """Time full package_engine builds per level (bench_compile-style, embeddable)."""
+    from statistics import median
+
+    from sonolus.build.engine import package_engine
+
+    project = load_project(project_name)
+    engine = project.engine.data
+
+    levels: dict[str, dict] = {}
+    for level_name in level_names:
+        samples: list[float] = []
+        for _ in range(repeat):
+            config = BuildConfig(passes=LEVELS[level_name])
+            start = perf_counter()
+            package_engine(engine, config)
+            samples.append(perf_counter() - start)
+        levels[level_name] = {
+            "min_s": min(samples),
+            "median_s": median(samples),
+            "samples": samples,
+        }
+
+    return {"repeat": repeat, "timed_call": "package_engine", "levels": levels}
+
+
+def run_full_baseline(
+    project_name,
+    level_names,
+    repeat,
+    limit,
+    dev_rebuild_level,
+    dev_rebuild_repeat=3,
+    full_build_repeat=3,
+) -> dict:
+    """Produce ONE JSON with per-callback metrics, dev-rebuild timing, and full-build timings."""
+    data = run_metrics(project_name, level_names, repeat, limit)
+    data["meta"]["mode"] = "full_baseline"
+    data["dev_rebuild"] = _dev_rebuild_section(project_name, dev_rebuild_level, dev_rebuild_repeat)
+    data["full_build"] = run_full_build(project_name, level_names, full_build_repeat)
+    return data
+
+
+# --------------------------------------------------------------------------------------
+# Meta / output
+# --------------------------------------------------------------------------------------
+
+
+def _repo_version() -> str | None:
+    pyproject = _REPO_ROOT / "pyproject.toml"
+    try:
+        import tomllib
+
+        with pyproject.open("rb") as f:
+            return tomllib.load(f)["project"]["version"]
+    except Exception:
+        return None
+
+
+def _git_rev() -> str | None:
+    try:
+        rev = subprocess.run(
+            ["git", "rev-parse", "HEAD"],
+            check=False, cwd=str(_REPO_ROOT),
+            capture_output=True,
+            text=True,
+            timeout=10,
+        )
+        if rev.returncode == 0:
+            return rev.stdout.strip()
+    except Exception:
+        pass
+    return None
+
+
+def _build_meta(project_name, level_names, repeat, limit) -> dict:
+    return {
+        "date": datetime.now(UTC).isoformat(timespec="seconds"),
+        "python_version": platform.python_version(),
+        "python_implementation": platform.python_implementation(),
+        "gil_enabled": bool(getattr(sys, "_is_gil_enabled", lambda: True)()),
+        "platform": platform.platform(),
+        "repo_version": _repo_version(),
+        "git_rev": _git_rev(),
+        "project": project_name,
+        "levels": list(level_names),
+        "repeat": repeat,
+        "limit": limit,
+        "counting": (
+            "per-reference over expanded EngineNode tree; effective = maximal runtime-constant subtree counts as 1 "
+            "(OPTIMIZER_REWRITE.md §2); runtime-constant per inlining.is_runtime_constant semantics "
+            "(RUNTIME_CONSTANT_BLOCKS + not writable in the callback); CFG skeleton nodes "
+            "(Block/JumpLoop/Execute/terminators) never fold"
+        ),
+    }
+
+
+def _dump(data: dict, output: str | None) -> None:
+    text = json.dumps(data, indent=2, sort_keys=True)
+    if output is None:
+        print(text)
+    else:
+        Path(output).write_text(text, encoding="utf-8")
+        print(f"Wrote {output}", file=sys.stderr)
+
+
+def main(argv=None) -> int:
+    parser = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
+    parser.add_argument("--project", default="pydori", help="Regression project (default: pydori)")
+    parser.add_argument(
+        "--levels",
+        default="fast,standard",
+        help="Comma-separated optimization levels (minimal,fast,standard). Default: fast,standard",
+    )
+    parser.add_argument("--repeat", type=int, default=1, help="Repeat timing runs; min per phase is kept (counts asserted identical)")
+    parser.add_argument("--limit", type=int, default=None, help="Only measure the first N callbacks (validation)")
+    parser.add_argument("--output", default=None, help="Write JSON to this path (default: stdout)")
+    parser.add_argument("--dev-rebuild", action="store_true", help="Run warm-cache dev-server rebuild timing instead of node metrics")
+    parser.add_argument("--dev-rebuild-level", default="fast", help="Optimization level for the dev-rebuild timing (default: fast)")
+    parser.add_argument(
+        "--full-baseline",
+        action="store_true",
+        help="Single combined capture: per-callback metrics (--repeat) + dev-rebuild timing (repeat 3) + package_engine full-build timings (repeat 3), in one JSON",
+    )
+    args = parser.parse_args(argv)
+
+    if args.dev_rebuild_level not in LEVELS:
+        parser.error(f"unknown --dev-rebuild-level {args.dev_rebuild_level!r}")
+
+    if args.dev_rebuild:
+        repeat = args.repeat if args.repeat and args.repeat > 1 else 3
+        data = run_dev_rebuild(args.project, args.dev_rebuild_level, repeat)
+        _dump(data, args.output)
+        return 0
+
+    level_names = [lv.strip() for lv in args.levels.split(",") if lv.strip()]
+    for lv in level_names:
+        if lv not in LEVELS:
+            parser.error(f"unknown level {lv!r}; known: {', '.join(LEVELS)}")
+    if args.repeat < 1:
+        parser.error("--repeat must be >= 1")
+
+    if args.full_baseline:
+        data = run_full_baseline(args.project, level_names, args.repeat, args.limit, args.dev_rebuild_level)
+    else:
+        data = run_metrics(args.project, level_names, args.repeat, args.limit)
+    _dump(data, args.output)
+    return 0
+
+
+if __name__ == "__main__":
+    raise SystemExit(main())

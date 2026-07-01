@@ -1,6 +1,7 @@
 import math
 import operator
 import random
+from collections.abc import Callable
 
 from sonolus.backend.node import EngineNode, FunctionNode
 from sonolus.backend.ops import Op
@@ -13,6 +14,357 @@ class BreakException(Exception):  # noqa: N818
     def __init__(self, n: int, value: float):
         self.n = n
         self.value = value
+
+
+def _rem(a: float, b: float) -> float:
+    """Truncated remainder with the sign of the dividend (JS ``%``).
+
+    Matches ``sonolus.script.internal.math_impls._remainder`` exactly, including yielding
+    ``-0.0`` for a negative dividend whose remainder is zero (as JS / the real runtime do).
+    """
+    return math.copysign(abs(a) % abs(b), a)
+
+
+def _sign(x: float) -> float:
+    """JS ``Math.sign``: ``0``/``-0``/``NaN`` map to themselves, otherwise ``+/-1``."""
+    if math.isnan(x):
+        return x
+    if x > 0:
+        return 1.0
+    if x < 0:
+        return -1.0
+    # Preserve the sign of zero (+0.0 or -0.0).
+    return x
+
+
+def _judge(
+    diff: float,
+    perfect_min: float,
+    perfect_max: float,
+    great_min: float,
+    great_max: float,
+    good_min: float,
+    good_max: float,
+) -> float:
+    """Mirror of ``sonolus.script.bucket._judge`` (diff is ``source - target``)."""
+    if perfect_min <= diff <= perfect_max:
+        return 1.0
+    if great_min <= diff <= great_max:
+        return 2.0
+    if good_min <= diff <= good_max:
+        return 3.0
+    return 0.0
+
+
+# Registry of easing ops -> literal transcriptions of the bodies in sonolus/script/easing.py.
+# Each begins with ``x = max(0, min(1, x))`` which is exactly ``clamp(x, 0, 1)``
+# (``clamp(x, a, b) = max(a, min(b, x))``). The transcription is verified bit-for-bit against
+# easing.py by tests/backend/test_interpret_oracle.py so the two cannot silently drift.
+_EASE_FUNCS: dict[Op, Callable[[float], float]] = {}
+
+
+def _ease(op: Op) -> Callable[[Callable[[float], float]], Callable[[float], float]]:
+    def register(fn: Callable[[float], float]) -> Callable[[float], float]:
+        _EASE_FUNCS[op] = fn
+        return fn
+
+    return register
+
+
+@_ease(Op.EaseInBack)
+def _ease_in_back(x: float) -> float:
+    x = max(0, min(1, x))
+    c1 = 1.70158
+    c3 = c1 + 1
+    return c3 * x**3 - c1 * x**2
+
+
+@_ease(Op.EaseOutBack)
+def _ease_out_back(x: float) -> float:
+    x = max(0, min(1, x))
+    c1 = 1.70158
+    c3 = c1 + 1
+    return 1 + c3 * (x - 1) ** 3 + c1 * (x - 1) ** 2
+
+
+@_ease(Op.EaseInOutBack)
+def _ease_in_out_back(x: float) -> float:
+    x = max(0, min(1, x))
+    c1 = 1.70158
+    c2 = c1 * 1.525
+    if x < 0.5:
+        return ((2 * x) ** 2 * ((c2 + 1) * 2 * x - c2)) / 2
+    else:
+        return ((2 * x - 2) ** 2 * ((c2 + 1) * (2 * x - 2) + c2) + 2) / 2
+
+
+@_ease(Op.EaseOutInBack)
+def _ease_out_in_back(x: float) -> float:
+    x = max(0, min(1, x))
+    c1 = 1.70158
+    c3 = c1 + 1
+    if x < 0.5:
+        return (1 + c3 * (2 * x - 1) ** 3 + c1 * (2 * x - 1) ** 2) / 2
+    else:
+        return (c3 * (2 * x - 1) ** 3 - c1 * (2 * x - 1) ** 2) / 2 + 0.5
+
+
+@_ease(Op.EaseInCirc)
+def _ease_in_circ(x: float) -> float:
+    x = max(0, min(1, x))
+    return 1 - math.sqrt(1 - x**2)
+
+
+@_ease(Op.EaseOutCirc)
+def _ease_out_circ(x: float) -> float:
+    x = max(0, min(1, x))
+    return math.sqrt(1 - (x - 1) ** 2)
+
+
+@_ease(Op.EaseInOutCirc)
+def _ease_in_out_circ(x: float) -> float:
+    x = max(0, min(1, x))
+    if x < 0.5:
+        return (1 - math.sqrt(1 - (2 * x) ** 2)) / 2
+    else:
+        return (math.sqrt(1 - (2 * x - 2) ** 2) + 1) / 2
+
+
+@_ease(Op.EaseOutInCirc)
+def _ease_out_in_circ(x: float) -> float:
+    x = max(0, min(1, x))
+    if x < 0.5:
+        return math.sqrt(1 - (2 * x - 1) ** 2) / 2
+    else:
+        return (1 - math.sqrt(1 - (2 * x - 1) ** 2)) / 2 + 0.5
+
+
+@_ease(Op.EaseInCubic)
+def _ease_in_cubic(x: float) -> float:
+    x = max(0, min(1, x))
+    return x**3
+
+
+@_ease(Op.EaseOutCubic)
+def _ease_out_cubic(x: float) -> float:
+    x = max(0, min(1, x))
+    return 1 - (1 - x) ** 3
+
+
+@_ease(Op.EaseInOutCubic)
+def _ease_in_out_cubic(x: float) -> float:
+    x = max(0, min(1, x))
+    if x < 0.5:
+        return 4 * x**3
+    else:
+        return 1 - (-2 * x + 2) ** 3 / 2
+
+
+@_ease(Op.EaseOutInCubic)
+def _ease_out_in_cubic(x: float) -> float:
+    x = max(0, min(1, x))
+    if x < 0.5:
+        return (1 - (1 - 2 * x) ** 3) / 2
+    else:
+        return ((2 * x - 1) ** 3) / 2 + 0.5
+
+
+@_ease(Op.EaseInElastic)
+def _ease_in_elastic(x: float) -> float:
+    x = max(0, min(1, x))
+    c4 = (2 * math.pi) / 3
+    if x in {0, 1}:
+        return x
+    else:
+        return -(2 ** (10 * x - 10)) * math.sin((x * 10 - 10.75) * c4)
+
+
+@_ease(Op.EaseOutElastic)
+def _ease_out_elastic(x: float) -> float:
+    x = max(0, min(1, x))
+    c4 = (2 * math.pi) / 3
+    if x in {0, 1}:
+        return x
+    else:
+        return 2 ** (-10 * x) * math.sin((x * 10 - 0.75) * c4) + 1
+
+
+@_ease(Op.EaseInOutElastic)
+def _ease_in_out_elastic(x: float) -> float:
+    x = max(0, min(1, x))
+    c5 = (2 * math.pi) / 4.5
+    if x in {0, 1}:
+        return x
+    elif x < 0.5:
+        return -(2 ** (20 * x - 10) * math.sin((20 * x - 11.125) * c5)) / 2
+    else:
+        return (2 ** (-20 * x + 10) * math.sin((20 * x - 11.125) * c5)) / 2 + 1
+
+
+@_ease(Op.EaseOutInElastic)
+def _ease_out_in_elastic(x: float) -> float:
+    x = max(0, min(1, x))
+    c4 = (2 * math.pi) / 3
+    if x < 0.5:
+        if x == 0:
+            return 0
+        else:
+            return (2 ** (-20 * x + 10) * math.sin((20 * x - 0.75) * c4)) / 2 + 0.5
+    elif x == 1:
+        return 1
+    else:
+        return (-(2 ** (10 * (2 * x - 1) - 10)) * math.sin((20 * x - 10.75) * c4)) / 2 + 0.5
+
+
+@_ease(Op.EaseInExpo)
+def _ease_in_expo(x: float) -> float:
+    x = max(0, min(1, x))
+    return 0 if x == 0 else 2 ** (10 * x - 10)
+
+
+@_ease(Op.EaseOutExpo)
+def _ease_out_expo(x: float) -> float:
+    x = max(0, min(1, x))
+    return 1 if x == 1 else 1 - 2 ** (-10 * x)
+
+
+@_ease(Op.EaseInOutExpo)
+def _ease_in_out_expo(x: float) -> float:
+    x = max(0, min(1, x))
+    if x in {0, 1}:
+        return x
+    elif x < 0.5:
+        return 2 ** (20 * x - 10) / 2
+    else:
+        return (2 - 2 ** (-20 * x + 10)) / 2
+
+
+@_ease(Op.EaseOutInExpo)
+def _ease_out_in_expo(x: float) -> float:
+    x = max(0, min(1, x))
+    if x in {0, 1}:
+        return x
+    elif x < 0.5:
+        return (1 - 2 ** (-20 * x)) / 2
+    else:
+        return (2 ** (20 * x - 20)) / 2 + 0.5
+
+
+@_ease(Op.EaseInQuad)
+def _ease_in_quad(x: float) -> float:
+    x = max(0, min(1, x))
+    return x**2
+
+
+@_ease(Op.EaseOutQuad)
+def _ease_out_quad(x: float) -> float:
+    x = max(0, min(1, x))
+    return 1 - (1 - x) ** 2
+
+
+@_ease(Op.EaseInOutQuad)
+def _ease_in_out_quad(x: float) -> float:
+    x = max(0, min(1, x))
+    if x < 0.5:
+        return 2 * x**2
+    else:
+        return 1 - (-2 * x + 2) ** 2 / 2
+
+
+@_ease(Op.EaseOutInQuad)
+def _ease_out_in_quad(x: float) -> float:
+    x = max(0, min(1, x))
+    if x < 0.5:
+        return (1 - (1 - 2 * x) ** 2) / 2
+    else:
+        return ((2 * x - 1) ** 2) / 2 + 0.5
+
+
+@_ease(Op.EaseInQuart)
+def _ease_in_quart(x: float) -> float:
+    x = max(0, min(1, x))
+    return x**4
+
+
+@_ease(Op.EaseOutQuart)
+def _ease_out_quart(x: float) -> float:
+    x = max(0, min(1, x))
+    return 1 - (1 - x) ** 4
+
+
+@_ease(Op.EaseInOutQuart)
+def _ease_in_out_quart(x: float) -> float:
+    x = max(0, min(1, x))
+    if x < 0.5:
+        return 8 * x**4
+    else:
+        return 1 - (-2 * x + 2) ** 4 / 2
+
+
+@_ease(Op.EaseOutInQuart)
+def _ease_out_in_quart(x: float) -> float:
+    x = max(0, min(1, x))
+    if x < 0.5:
+        return (1 - (1 - 2 * x) ** 4) / 2
+    else:
+        return ((2 * x - 1) ** 4) / 2 + 0.5
+
+
+@_ease(Op.EaseInQuint)
+def _ease_in_quint(x: float) -> float:
+    x = max(0, min(1, x))
+    return x**5
+
+
+@_ease(Op.EaseOutQuint)
+def _ease_out_quint(x: float) -> float:
+    x = max(0, min(1, x))
+    return 1 - (1 - x) ** 5
+
+
+@_ease(Op.EaseInOutQuint)
+def _ease_in_out_quint(x: float) -> float:
+    x = max(0, min(1, x))
+    if x < 0.5:
+        return 16 * x**5
+    else:
+        return 1 - (-2 * x + 2) ** 5 / 2
+
+
+@_ease(Op.EaseOutInQuint)
+def _ease_out_in_quint(x: float) -> float:
+    x = max(0, min(1, x))
+    if x < 0.5:
+        return (1 - (1 - 2 * x) ** 5) / 2
+    else:
+        return ((2 * x - 1) ** 5) / 2 + 0.5
+
+
+@_ease(Op.EaseInSine)
+def _ease_in_sine(x: float) -> float:
+    x = max(0, min(1, x))
+    return 1 - math.cos((x * math.pi) / 2)
+
+
+@_ease(Op.EaseOutSine)
+def _ease_out_sine(x: float) -> float:
+    x = max(0, min(1, x))
+    return math.sin((x * math.pi) / 2)
+
+
+@_ease(Op.EaseInOutSine)
+def _ease_in_out_sine(x: float) -> float:
+    x = max(0, min(1, x))
+    return -(math.cos(math.pi * x) - 1) / 2
+
+
+@_ease(Op.EaseOutInSine)
+def _ease_out_in_sine(x: float) -> float:
+    x = max(0, min(1, x))
+    if x < 0.5:
+        return math.sin(math.pi * x) / 2
+    else:
+        return (1 - math.cos(math.pi * x)) / 2
 
 
 class Interpreter:
@@ -247,7 +599,7 @@ class Interpreter:
                 lo, hi = (self.ensure_int(self.run(arg)) for arg in args)
                 return random.randrange(lo, hi)
             case Op.Rem:
-                return self.reduce_args(args, math.remainder)
+                return self.reduce_args(args, _rem)
             case Op.Remap:
                 from_min, from_max, to_min, to_max, value = (self.run(arg) for arg in args)
                 return to_min + (to_max - to_min) * (value - from_min) / (from_max - from_min)
@@ -275,7 +627,7 @@ class Interpreter:
 
                 return self.set(block, offset + index * stride, value)
             case Op.Sign:
-                return math.copysign(1, self.run(args[0]))
+                return _sign(self.run(args[0]))
             case Op.Sin:
                 return math.sin(self.run(args[0]))
             case Op.Sinh:
@@ -294,6 +646,26 @@ class Interpreter:
             case Op.UnlerpClamped:
                 lo, hi, value = (self.run(arg) for arg in args)
                 return max(0, min(1, (value - lo) / (hi - lo)))
+            case Op.Judge:
+                source, target, perfect_min, perfect_max, great_min, great_max, good_min, good_max = (
+                    self.run(arg) for arg in args
+                )
+                return _judge(
+                    source - target, perfect_min, perfect_max, great_min, great_max, good_min, good_max
+                )
+            case Op.JudgeSimple:
+                source, target, max_perfect, max_great, max_good = (self.run(arg) for arg in args)
+                return _judge(
+                    source - target,
+                    -max_perfect,
+                    max_perfect,
+                    -max_great,
+                    max_great,
+                    -max_good,
+                    max_good,
+                )
+            case _ if func in _EASE_FUNCS:
+                return _EASE_FUNCS[func](self.run(args[0]))
             case _:
                 raise NotImplementedError(f"Unsupported operation: {func}")
 
