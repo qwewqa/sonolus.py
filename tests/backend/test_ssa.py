@@ -347,6 +347,29 @@ def test_parallel_edges_equal_operands():
     assert "phi(" in text
 
 
+def test_parallel_edges_nan_operands_export():
+    # Regression: the two parallel edges from b0 carry a NaN const. The export
+    # compares arena value ids (not exported IRConst objects, since NaN != NaN),
+    # so the equal-operand check does not spuriously raise; the two b0 edges
+    # collapse to one per-pred entry.
+    nan = float("nan")
+    entry = BasicBlock(test=IRGet(_sc("sel")))
+    b0, b1, merge = BasicBlock(), BasicBlock(), BasicBlock()
+    entry.statements = [IRSet(_sc("sel"), IRConst(0))]
+    entry.connect_to(b0, 0)
+    entry.connect_to(b1, None)
+    b0.statements = [IRSet(_sc("x"), IRConst(nan))]
+    b0.test = IRGet(_sc("sel"))
+    b0.connect_to(merge, 0)
+    b0.connect_to(merge, 1)  # parallel edge to the same target, both carrying NaN
+    b1.statements = [IRSet(_sc("x"), IRConst(1.0))]
+    b1.connect_to(merge, None)
+    merge.statements = [IRInstr(Op.DebugLog, [IRGet(_sc("x"))]), IRInstr(Op.DebugPause, [IRGet(_sc("x"))])]
+    text = _ssa_text(entry)  # must not raise on the NaN parallel operands
+    assert "phi(" in text
+    assert "nan" in text.lower()
+
+
 # ---------------------------------------------------------------------------
 # Out-of-SSA: critical-edge splitting + copy-cycle sequentialization.
 # ---------------------------------------------------------------------------

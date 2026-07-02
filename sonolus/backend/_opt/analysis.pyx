@@ -1,9 +1,8 @@
 # cython: language_level=3
-"""Liveness analysis over the arena IR (milestone M1).
+"""Liveness analysis over the arena IR.
 
-This is a faithful C port of ``sonolus/backend/optimize/liveness.py`` restricted
-to the non-SSA M1 arena form (size-1 temp reads/writes are explicit OPX_GET /
-OPX_SET; there are no phis). It computes, for every basic block:
+Liveness over the non-SSA arena form (size-1 temp reads/writes are explicit
+OPX_GET / OPX_SET; there are no phis). It computes, for every basic block:
 
 * ``live_in`` / ``live_out`` bitsets over temp ids;
 * per-statement-root live-out bitsets (``root_live``), shared with the
@@ -11,7 +10,7 @@ OPX_SET; there are no phis). It computes, for every basic block:
 * ``is_array_init`` per OPX_SET (the forward array pass), and
   ``array_defs_out`` per block.
 
-Semantics mirrored exactly from the old pass (see OPTIMIZER_REWRITE.md §3, §7.5):
+Semantics:
 
 * Uses of a statement = every temp *read* anywhere in the operand tree
   (OPX_GET of a temp place, plus temps read in a dynamic block/index subtree).
@@ -26,7 +25,7 @@ Semantics mirrored exactly from the old pass (see OPTIMIZER_REWRITE.md §3, §7.
   live) but are never defs/array_defs; they are filtered out at allocation time.
 * ``can_skip``: a store whose value is not side-effecting and whose def set is
   non-empty and disjoint from live-out contributes nothing (its uses do not
-  keep operands alive) -- exactly the old ``can_skip``.
+  keep operands alive).
 * Block tests count as uses at block end.
 
 Backward dataflow runs to a fixpoint over a worklist seeded from exit blocks; the
@@ -34,7 +33,7 @@ forward array-init pass runs to a fixpoint from the entry block. Both are monoto
 so the result is order-independent (deterministic).
 """
 
-from libc.stdint cimport int32_t, uint8_t, uint16_t, uint32_t, uint64_t
+from libc.stdint cimport int32_t, int64_t, uint8_t, uint16_t, uint32_t, uint64_t
 from libc.stdlib cimport calloc, free, malloc
 from libc.string cimport memcmp, memcpy, memset
 
@@ -105,8 +104,11 @@ cdef void _gen_place_write(Instr* instrs, uint32_t* args, PlaceInfo* places,
 # Bitset helpers over multi-word blocks.
 # --------------------------------------------------------------------------
 
-cdef inline uint64_t* _c64(int32_t count) except NULL:
-    cdef int32_t n = count if count > 0 else 1
+cdef inline uint64_t* _c64(int64_t count) except NULL:
+    # count is int64 so callers can pass nb*nw products without int32 overflow;
+    # an oversized request fails cleanly in calloc (MemoryError) rather than
+    # wrapping to a small buffer that the strided passes then overrun.
+    cdef int64_t n = count if count > 0 else 1
     cdef uint64_t* p = <uint64_t*>calloc(<size_t>n, sizeof(uint64_t))
     if p == NULL:
         raise MemoryError()
@@ -251,11 +253,11 @@ cdef Liveness compute_liveness(Func func):
             L.root_slot[i] = -1
     L.n_roots = n_roots
 
-    L.live_in = _c64(nb * nw)
-    L.live_out = _c64(nb * nw)
-    L.array_defs_out = _c64(nb * nw)
+    L.live_in = _c64(<int64_t>nb * nw)
+    L.live_out = _c64(<int64_t>nb * nw)
+    L.array_defs_out = _c64(<int64_t>nb * nw)
     L.array_mask = _c64(nw)
-    L.root_live = _c64(n_roots * nw)
+    L.root_live = _c64(<int64_t>n_roots * nw)
     L.is_array_init = <uint8_t*>calloc(<size_t>(ni if ni > 0 else 1), sizeof(uint8_t))
     if L.is_array_init == NULL:
         raise MemoryError()
@@ -265,13 +267,49 @@ cdef Liveness compute_liveness(Func func):
         if func.temps[t].size > 1:
             bs_set(L.array_mask, t)
 
+    # A CFG with no exit block (a `while True` with no break, or an exit that
+    # cfg_cleanup proved unreachable) is an infinite loop: the backward liveness
+    # pass would seed nothing and yield all-empty (unsound) live sets, which pack
+    # distinct live temps into the same slot and let dead-store elimination strip
+    # their initializing stores. The old pass rejected this loudly; keep that
+    # contract. Checked before any allocation so the raise cannot leak.
+    cdef bint has_exit = False
+    for b in range(nb):
+        if blocks[b].edge_count == 0:
+            has_exit = True
+            break
+    if nb > 0 and not has_exit:
+        raise ValueError("Infinite loop detected")
+
+    # All raw scratch buffers are allocated up front and checked for NULL in a
+    # single combined guard that frees every partial allocation before raising,
+    # so no buffer leaks on any OOM path. The L.* fields above are owned by ``L``
+    # and freed by __dealloc__; these raw locals are freed at the end (``cursor``
+    # is freed early once the CSR is built).
+    cdef uint64_t* array_written = <uint64_t*>calloc(<size_t>(nw if nw > 0 else 1), sizeof(uint64_t))
+    cdef int32_t* pred_head = <int32_t*>calloc(<size_t>(nb + 1), sizeof(int32_t))
+    cdef int32_t* pred_src = <int32_t*>malloc(<size_t>(ne if ne > 0 else 1) * sizeof(int32_t))
+    cdef int32_t* cursor = <int32_t*>malloc(<size_t>(nb if nb > 0 else 1) * sizeof(int32_t))
+    cdef uint64_t* array_defs_in = <uint64_t*>calloc(<size_t>(<int64_t>nb * nw if nb > 0 and nw > 0 else 1), sizeof(uint64_t))
+    cdef uint64_t* acc = <uint64_t*>calloc(<size_t>(nw if nw > 0 else 1), sizeof(uint64_t))
+    cdef uint64_t* live = <uint64_t*>calloc(<size_t>(nw if nw > 0 else 1), sizeof(uint64_t))
+    cdef uint8_t* visited = <uint8_t*>calloc(<size_t>(nb if nb > 0 else 1), sizeof(uint8_t))
+    cdef uint8_t* inq = <uint8_t*>calloc(<size_t>(nb if nb > 0 else 1), sizeof(uint8_t))
+    cdef int32_t* stack = <int32_t*>malloc(<size_t>(nb if nb > 0 else 1) * sizeof(int32_t))
+    if (array_written == NULL or pred_head == NULL or pred_src == NULL or cursor == NULL
+            or array_defs_in == NULL or acc == NULL or live == NULL
+            or visited == NULL or inq == NULL or stack == NULL):
+        free(array_written); free(pred_head); free(pred_src); free(cursor)
+        free(array_defs_in); free(acc); free(live)
+        free(visited); free(inq); free(stack)
+        raise MemoryError()
+
     # array_written: arrays with at least one write anywhere in the func. The
     # not-live-before-first-write rule only applies to these; a never-written
     # array that is still read (a legal degenerate case, e.g. a provably-dead
     # VarArray access) must keep ordinary read-liveness back to entry so it
     # interferes with live temps and gets its own slot (reads then observe the
     # never-written -1.0 padding, matching the bump allocators).
-    cdef uint64_t* array_written = _c64(nw)
     cdef int32_t aw_pid
     for i in range(ni):
         if instrs[i].op == OPX_SET and (instrs[i].flags & FLAG_STMT_ROOT):
@@ -280,12 +318,6 @@ cdef Liveness compute_liveness(Func func):
                 bs_set(array_written, places[aw_pid].block_ref)
 
     # Predecessor CSR (pred_head[b]..pred_head[b+1] index into pred_src).
-    cdef int32_t* pred_head = <int32_t*>calloc(<size_t>(nb + 1), sizeof(int32_t))
-    cdef int32_t* pred_src = <int32_t*>malloc(<size_t>(ne if ne > 0 else 1) * sizeof(int32_t))
-    cdef int32_t* cursor = <int32_t*>malloc(<size_t>(nb if nb > 0 else 1) * sizeof(int32_t))
-    if pred_head == NULL or pred_src == NULL or cursor == NULL:
-        free(pred_head); free(pred_src); free(cursor)
-        raise MemoryError()
     for e in range(ne):
         pred_head[edges[e].dst + 1] += 1
     for b in range(nb):
@@ -296,18 +328,7 @@ cdef Liveness compute_liveness(Func func):
         pred_src[cursor[edges[e].dst]] = edges[e].src
         cursor[edges[e].dst] += 1
     free(cursor)
-
-    # Scratch buffers.
-    cdef uint64_t* array_defs_in = _c64(nb * nw)
-    cdef uint64_t* acc = _c64(nw)
-    cdef uint64_t* live = _c64(nw)
-    cdef uint8_t* visited = <uint8_t*>calloc(<size_t>(nb if nb > 0 else 1), sizeof(uint8_t))
-    cdef uint8_t* inq = <uint8_t*>calloc(<size_t>(nb if nb > 0 else 1), sizeof(uint8_t))
-    cdef int32_t* stack = <int32_t*>malloc(<size_t>(nb if nb > 0 else 1) * sizeof(int32_t))
-    if visited == NULL or inq == NULL or stack == NULL:
-        free(array_defs_in); free(acc); free(live); free(visited); free(inq); free(stack)
-        free(pred_head); free(pred_src)
-        raise MemoryError()
+    cursor = NULL
 
     cdef int32_t sp, istart, icount, s, vid, pid, dt, adt, tv, rs
     cdef uint16_t op
@@ -353,10 +374,10 @@ cdef Liveness compute_liveness(Func func):
                         inq[s] = 1
 
         # ---- backward liveness pass (seeded from exits) ------------------
-        # ``visited`` is reused as ``touched``: whether a block's live_out has
-        # been initialized by a successor yet (mirrors the old pass treating the
-        # None -> empty-set transition as a change, so every block that can
-        # reach an exit is processed at least once even with empty live_out).
+        # ``visited`` is reused as ``touched``: whether a block's live_out has been
+        # initialized by a successor yet (the first touch counts as a change, so
+        # every block that can reach an exit is processed at least once even with
+        # empty live_out).
         memset(inq, 0, <size_t>(nb if nb > 0 else 1) * sizeof(uint8_t))
         memset(visited, 0, <size_t>(nb if nb > 0 else 1) * sizeof(uint8_t))
         sp = 0
@@ -768,7 +789,7 @@ cdef LoopForest compute_loops(Func func, Dominators D):
     F.header = <int32_t*>malloc(<size_t>(n_loops if n_loops > 0 else 1) * sizeof(int32_t))
     F.parent = <int32_t*>malloc(<size_t>(n_loops if n_loops > 0 else 1) * sizeof(int32_t))
     F.loop_depth = <int32_t*>calloc(<size_t>(n_loops if n_loops > 0 else 1), sizeof(int32_t))
-    F.body = <uint64_t*>calloc(<size_t>((n_loops * nwb) if (n_loops * nwb) > 0 else 1), sizeof(uint64_t))
+    F.body = <uint64_t*>calloc(<size_t>(<int64_t>n_loops * nwb if n_loops > 0 and nwb > 0 else 1), sizeof(uint64_t))
     if (F.depth == NULL or F.innermost == NULL or F.header == NULL or F.parent == NULL
             or F.loop_depth == NULL or F.body == NULL):
         free(is_header)

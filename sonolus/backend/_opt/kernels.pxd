@@ -1,7 +1,7 @@
 # cython: language_level=3
-"""cdef API for the constant-fold kernels (OPTIMIZER_REWRITE.md section 7.2.2).
+"""cdef API for the constant-fold kernels.
 
-SCCP (``midend.pyx``, a later wave) cimports :c:func:`fold_op` to evaluate an
+SCCP (``midend.pyx``) cimports :c:func:`fold_op` to evaluate an
 all-constant-operand instance of a foldable op at compile time:
 
     cdef double out
@@ -14,8 +14,7 @@ all-constant-operand instance of a foldable op at compile time:
 never allocates, never touches Python, and returns a status rather than raising.
 
 See ``kernels.pyx`` for the numeric contract (a literal transcription of
-``sonolus/backend/interpret.py`` post-M0, and ``math_impls``/``easing.py``/
-``bucket.py``).
+``sonolus/backend/interpret.py`` and ``math_impls``/``easing.py``/``bucket.py``).
 """
 
 from libc.stdint cimport uint16_t

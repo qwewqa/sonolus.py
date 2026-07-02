@@ -1,11 +1,11 @@
 import gzip
 import json
+import os
 import struct
 from collections.abc import Callable
 from concurrent.futures import Executor
 from concurrent.futures.thread import ThreadPoolExecutor
 from dataclasses import dataclass
-from os import process_cpu_count
 from pathlib import Path
 
 from sonolus.backend.mode import Mode
@@ -32,6 +32,12 @@ from sonolus.script.sprite import Skin
 from sonolus.script.ui import UiConfig
 
 type JsonValue = bool | int | float | str | list[JsonValue] | dict[str, JsonValue] | None
+
+
+def _logical_cpu_count() -> int | None:
+    # os.process_cpu_count() (Python 3.13+) honors CPU affinity; fall back to
+    # os.cpu_count() on 3.12, which the project still supports.
+    return getattr(os, "process_cpu_count", os.cpu_count)()
 
 
 @dataclass
@@ -76,20 +82,19 @@ def package_engine(
     preview_mode = engine.preview if config.build_preview else empty_preview_mode()
     tutorial_mode = engine.tutorial if config.build_tutorial else empty_tutorial_mode()
 
-    # Always create the per-callback thread pool (M4: dropped the free-threaded
-    # gate). The Cython optimizer releases the GIL in its nogil pass regions, so
-    # the pool parallelises optimize+emit on standard GIL builds. Worker formula
-    # kept as-is (headroom + one per logical CPU capped at 8).
+    # The per-callback thread pool is always created: the Cython optimizer releases
+    # the GIL in its nogil pass regions, so the pool parallelizes optimize+emit even
+    # on standard GIL builds. Worker count: headroom + one per logical CPU capped at 8.
     #
     # DETERMINISM: the modes are built SEQUENTIALLY (not fanned out across the
     # pool), so the frontend tracing of every callback -- across all four modes --
     # runs in one fixed, serial order. That keeps the engine-wide, first-touch
     # -ordered shared state deterministic (project_state.rom and const/debug-string
     # maps are shared across modes). Each mode's compile_mode still uses the pool
-    # internally to parallelise its per-callback optimize+emit. Running modes
-    # inline (rather than as pool tasks that themselves submit to the pool) also
-    # removes the nested-submission deadlock the old +4 headroom guarded against.
-    with ThreadPoolExecutor(4 + max(1, min(8, (process_cpu_count() or 1)))) as thread_pool:
+    # internally to parallelize its per-callback optimize+emit; modes run inline
+    # rather than as pool tasks, so no pool task ever submits to the pool and
+    # nested-submission deadlock is impossible.
+    with ThreadPoolExecutor(4 + max(1, min(8, (_logical_cpu_count() or 1)))) as thread_pool:
         play_data = build_play_mode(
             archetypes=play_mode.archetypes,
             skin=play_mode.skin,

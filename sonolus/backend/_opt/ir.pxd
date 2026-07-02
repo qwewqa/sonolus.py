@@ -1,14 +1,11 @@
 # cython: language_level=3
-"""Arena IR for the Cython optimizer core (milestone M1 foundation).
+"""Arena IR for the Cython optimizer core.
 
-This ``.pxd`` is the load-bearing contract three later agent waves build on
-(mid-end SSA/SCCP/GVN, lowering/allocation, emission). It declares the flat,
-arena-allocated IR described in OPTIMIZER_REWRITE.md section 6.1 and the C
-layout the ``nogil`` passes read directly.
+Declares the flat, arena-allocated IR and the C layout the ``nogil`` passes read
+directly. This ``.pxd`` is the load-bearing contract the mid-end (SSA/SCCP/GVN),
+lowering/allocation, and emission build on.
 
-================================================================================
-DESIGN SUMMARY (read before extending)
-================================================================================
+Design summary (read before extending):
 
 One ``Func`` arena per callback. No global mutable state (op metadata is the
 static ``const`` table in ``_ops_gen``), so per-callback threading is safe by
@@ -46,16 +43,19 @@ other instruction is a sub-value reached as an operand. In non-SSA form operands
 always reference strictly-earlier instructions in the same block (def-before-use
 in the linear stream), which is what makes the tree rebuild a single forward pass.
 
-M2 SSA form (``is_ssa`` set; produced by ``build_ssa`` in midend.pyx, consumed by
+SSA form (``is_ssa`` set; produced by ``build_ssa`` in midend.pyx, consumed by
 ``out_of_ssa``): size-1 temp OPX_GET/OPX_SET dissolve into value edges. Phis are
 real ``OPX_PHI`` instructions at each block head (the leading ``phi_count``
 instructions of the block slice, starting at ``phi_start``); a phi's ``aux`` is
 the source temp id it was created for (naming only) and its ``arg`` slice holds
 exactly one operand value-id PER INCOMING EDGE, in the incoming-edge order
 defined below. ``OPX_UNDEF`` is a single value (id ``undef_val``, first instr of
-the entry block) standing for a read of a never-written scalar (Braun trivial-phi
-elimination folds ``phi(UNDEF, v) = v``; a surviving live UNDEF lowers to one
-shared never-written temp in out-of-SSA). In SSA form a non-phi operand def
+the entry block) standing for a read of a never-written scalar. UNDEF is a normal
+distinct phi operand during trivial-phi elimination -- ``phi(UNDEF, v)`` is NOT
+folded to ``v`` (folding a live uninitialized merge mis-compiles and can create
+def-before-use cycles; provably-dead collapse belongs to SCCP edge executability).
+A surviving live UNDEF lowers to one shared never-written temp in out-of-SSA. In
+SSA form a non-phi operand def
 *dominates* its use (so an operand may reference an instruction in a dominating
 block, not just the same block; still def-before-use in the flat stream since ids
 are RPO), while a phi operand's def dominates the corresponding predecessor's exit
@@ -97,7 +97,7 @@ Edge                        per-edge; parallel edges between a block pair legal
                 else as ``float`` (raw CFGs use int cases, post-opt CFGs use
                 float cases -- preserved for byte-faithful export).
 * cond          f64 case value (meaningful only when cond_kind==VALUE). SCCP
-                (M2) compares against constants in f64, which unifies int/float.
+                compares against constants in f64, which unifies int/float.
 
 Legal per-block outgoing shapes (validated by ``verify``): {} exit, {NONE}
 unconditional, {VALUE 0, NONE} two-way, {VALUE..., NONE} multi-way with
@@ -111,7 +111,7 @@ PlaceInfo                   interned
                 (static numbered memory block), PLACE_DYNAMIC_BLOCK (pointer
                 deref: block computed at runtime).
 * flags         PLACE_WRITABLE (this callback may write this location; reads of
-                non-writable locations are motion/GVN-eligible in M2) and
+                non-writable locations are motion/GVN-eligible) and
                 PLACE_BLOCK_IS_ENUM (real block reproduced as its Mode BlockData
                 member on export, vs a raw int).
 * block_ref     temp id (temps) | resolved block id (real) | block value-id
@@ -132,9 +132,8 @@ consts                      f64 pool, interned by bit-pattern
 Interning unifies int/float (2 and 2.0 share an id -- both are f64 2.0) but is
 bit-pattern keyed, so -0.0 is a DISTINCT const from 0.0 and NaN is canonicalized
 to a single quiet-NaN pattern. (The frontend's IRConst collapses -0.0 to 0, so
--0.0 only ever enters via the C fold kernels in a later wave; the table is ready
-for it regardless.) A per-instruction FLAG_CONST_IS_INT records only the display
-form for faithful export.
+-0.0 only ever enters via the C fold kernels.) A per-instruction
+FLAG_CONST_IS_INT records only the display form for faithful export.
 
 ------------------------------------------------------------------------------
 temps / names
@@ -201,9 +200,9 @@ cdef enum:
     FLAG_DEAD = 8
     FLAG_STMT_ROOT = 16
     FLAG_CONST_IS_INT = 32
-    # Set by if-conversion (lower.pyx, OPTIMIZER_REWRITE.md 7.3) on every strictly
+    # Set by if-conversion (lower.pyx) on every strictly
     # pure arm value it hoists into the head block P as an operand subtree of an
-    # ``If``/``Switch`` select. It is a MUST-FOLD contract for treeify (7.4.2): the
+    # ``If``/``Switch`` select. It is a MUST-FOLD contract for treeify (lower.pyx): the
     # value is single-use by construction and MUST fold into its consuming select
     # tree -- never materialised to a temp, never duplicated into several temps.
     # Materialising an arm value would evaluate it UNCONDITIONALLY on both control
@@ -228,10 +227,10 @@ cdef enum:
     PLACE_BLOCK_IS_ENUM = 2
     # A constant-index read of a non-writable block whose resolved name is in
     # ``RUNTIME_CONSTANT_BLOCKS`` (set once at marshal-in, ir.pyx). The real
-    # runtime constant-folds such reads to a single push (OPTIMIZER_REWRITE.md
-    # section 2), so the treeify cost model (lower.pyx) treats a pure tree over
-    # these + OPX_CONSTs as effective cost 1 and duplicates it regardless of
-    # size rather than materialising a temp (which would defeat the fold).
+    # runtime constant-folds such reads to a single push, so the treeify cost
+    # model (lower.pyx) treats a pure tree over these + OPX_CONSTs as effective
+    # cost 1 and duplicates it regardless of size rather than materializing a
+    # temp (which would defeat the fold).
     PLACE_RUNTIME_CONST = 4
 
 
@@ -272,13 +271,15 @@ cdef class Func:
 
         int32_t entry_block
 
-        # SSA form (M2): set by build_ssa, cleared by out_of_ssa / marshal_in.
+        # SSA form: set by build_ssa, cleared by out_of_ssa / marshal_in.
         # undef_val is the value-id of the shared OPX_UNDEF instr (or -1).
         bint is_ssa
         int32_t undef_val
-        # Value ids widened by phi(UNDEF,v)=v elimination (used out of their strict
-        # dominance region on a provably-dead path); verify() tolerates their
-        # non-dominating uses. None outside SSA form. (Python set, boundary-only.)
+        # Carrier for value ids whose non-dominating uses verify() should tolerate
+        # (a dead-path relaxation). Retained as the verify() relaxation hook; UNDEF
+        # is a normal distinct phi operand (trivial-phi elimination does not widen
+        # it), so this stays empty in practice. None outside SSA form. (Python set,
+        # boundary-only.)
         object _ssa_undef
 
         # Boundary-only Python state (GIL held; never touched in nogil passes).

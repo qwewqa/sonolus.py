@@ -1,6 +1,5 @@
-"""Compiled Cython optimizer core.
-
-This package grows into the arena-SSA optimizer described in
-OPTIMIZER_REWRITE.md (§8 module plan: ir, analysis, midend, lower, driver).
-For milestone M0 it contains only ``driver`` proving the toolchain builds.
+"""Compiled Cython optimizer core: arena IR (``ir``), analyses (``analysis``),
+mid-end passes (``midend``), lowering/allocation (``lower``), constant-fold
+kernels (``kernels``), EngineNode emission (``emit``), and the pipeline driver
+(``driver``).
 """

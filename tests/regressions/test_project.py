@@ -8,7 +8,7 @@ from sonolus.backend.node import format_engine_node
 from sonolus.backend.optimize import OptimizerConfig, cfg_to_engine_node, run_passes
 from sonolus.backend.optimize.flow import cfg_to_text
 from sonolus.build.compile import callback_to_cfg
-from sonolus.build.engine import package_engine
+from sonolus.build.engine import _logical_cpu_count, package_engine  # noqa: PLC2701
 from sonolus.script.archetype import _BaseArchetype
 from sonolus.script.internal.callbacks import (
     CallbackInfo,
@@ -45,6 +45,26 @@ def test_project_full_build_succeeds(
             passes=PASSES[passes],
         ),
     )
+
+
+def test_logical_cpu_count_available():
+    # Guards the build path's worker-count helper against the 3.12 break where a
+    # module-level `from os import process_cpu_count` (3.13+) crashed every build:
+    # the helper must import and return a positive count on every supported Python.
+    count = _logical_cpu_count()
+    assert count is None or (isinstance(count, int) and count >= 1)
+
+
+def test_project_build_is_deterministic():
+    # The always-on thread pool must not make output depend on completion order:
+    # two builds of the same project must be byte-for-byte identical (the merge
+    # runs single-threaded in submission order). Pins cross-run + threaded
+    # determinism, which the golden-based regression test does not exercise.
+    engine = PROJECTS["pydori"].engine.data
+    config = BuildConfig(passes=BuildConfig.STANDARD_PASSES)
+    first = package_engine(engine, config)
+    second = package_engine(engine, config)
+    assert first == second
 
 
 @pytest.mark.parametrize("project", ["pydori"])

@@ -19,13 +19,16 @@ Changelog = "https://sonolus.py.qwewqa.xyz/changelog/"
 default-groups = ["dev", "docs"]
 # Rebuild the Cython extension when the build inputs change (setup.py, the
 # .pyx/.pxd sources, or pyproject.toml). The checked-in _ops_gen.pxd is covered
-# by the .pxd glob. See OPTIMIZER_REWRITE.md section 9.
+# by the .pxd glob. SONOLUS_OPT_DEBUG_BUILD is read by setup.py to toggle
+# bounds-checking/NDEBUG, so toggling it must invalidate the cached extension.
+# See OPTIMIZER_REWRITE.md section 9.
 cache-keys = [
     { file = "pyproject.toml" },
     { file = "setup.py" },
     { file = "sonolus/**/*.pyx" },
     { file = "sonolus/**/*.pxd" },
     { file = "sonolus/**/*.h" },
+    { env = "SONOLUS_OPT_DEBUG_BUILD" },
 ]
 
 [tool.ruff]

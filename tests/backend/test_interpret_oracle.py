@@ -62,6 +62,23 @@ def easing_body(op: Op):
 
 
 # --------------------------------------------------------------------------------------------- #
+# Op.SwitchInteger: index the branch list with the integer test result
+# --------------------------------------------------------------------------------------------- #
+
+
+def test_switch_integer_functionnode_test_selects_branch():
+    # A FunctionNode test evaluates to a float; the branch list must be indexed
+    # with int(test_result), not the float (which would raise TypeError).
+    assert run_node(Op.SwitchInteger, FunctionNode(Op.Add, (0, 0)), 10, 20) == 10.0
+    assert run_node(Op.SwitchInteger, FunctionNode(Op.Add, (0, 1)), 10, 20) == 20.0
+
+
+def test_switch_integer_out_of_range_and_non_integer_default_to_zero():
+    assert run_node(Op.SwitchInteger, FunctionNode(Op.Add, (0, 5)), 10, 20) == 0.0
+    assert run_node(Op.SwitchInteger, FunctionNode(Op.Divide, (1, 2)), 10, 20) == 0.0
+
+
+# --------------------------------------------------------------------------------------------- #
 # Op.Rem: truncated remainder with the sign of the dividend (JS `%`), n-ary left fold, empty = 0
 # --------------------------------------------------------------------------------------------- #
 

@@ -1,5 +1,9 @@
 # Ship the Cython sources in the sdist so it can cythonize at build time.
 recursive-include sonolus *.pyx *.pxd
+# Ship hand-written C headers (e.g. _ops_gen.h) reached via include_dirs; they
+# are not auto-included as Extension sources, so the sdist would otherwise omit
+# them and fail at C-compile time with a missing-header error.
+recursive-include sonolus *.h
 # Never ship generated C sources; the sdist rebuilds them from the .pyx.
 # (cythonize adds the generated .c files as ext-module sources by default.)
 global-exclude *.c

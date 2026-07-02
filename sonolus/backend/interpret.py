@@ -416,7 +416,7 @@ class Interpreter:
                 test, *branches = args
                 test_result = self.run(test)
                 if 0 <= test_result < len(branches) and int(test_result) == test_result:
-                    return self.run(branches[test_result])
+                    return self.run(branches[int(test_result)])
                 else:
                     return 0.0
             case Op.SwitchIntegerWithDefault:

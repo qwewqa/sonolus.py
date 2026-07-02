@@ -294,7 +294,9 @@ def test_side_effecting_store_not_skipped():
 # Size-0 temps.
 # --------------------------------------------------------------------------
 
-def test_size0_temp_matches_old():
+def test_size0_temp_write_is_never_a_def():
+    # A size-0 temp is never a def: writing it (but never reading it) leaves it
+    # out of every live set, since the write kills nothing and gens nothing.
     def make():
         e = TempBlock("e", 0)
         b0 = BasicBlock()
@@ -304,4 +306,21 @@ def test_size0_temp_matches_old():
         ]
         return b0
 
-    _liveness(make)
+    d = _liveness(make)
+    assert "e" not in d["live_in"][0]
+    assert "e" not in d["live_out"][0]
+    assert all("e" not in s for s in d["live_out"].values())
+    assert all("e" not in s for s in d["stmt_live"].values())
+
+
+def test_size0_temp_read_is_use_gen():
+    # A size-0 temp is still an ordinary use for gen: reading a never-written
+    # size-0 temp keeps it live back to block entry (like any read scalar).
+    def make():
+        e = TempBlock("e", 0)
+        b0 = BasicBlock()
+        b0.statements = [IRSet(BlockPlace(500, 0, 0), IRGet(BlockPlace(e, 0, 0)))]
+        return b0
+
+    d = _liveness(make)
+    assert d["live_in"][0] == {"e"}

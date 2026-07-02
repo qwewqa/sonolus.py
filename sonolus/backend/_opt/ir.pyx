@@ -1,14 +1,14 @@
 # cython: language_level=3
 """Arena IR implementation: interning, marshal in/out, verify, debug entry.
 
-See ir.pxd for the data-layout contract and OPTIMIZER_REWRITE.md sections 6.1
-and 6.2 for the semantics. Marshal in/out hold the GIL (they touch Python
-BasicBlock/IR objects); the flat arena they build/consume is what the M2+ passes
-will operate on in nogil regions.
+See ir.pxd for the data-layout contract. Marshal in/out hold the GIL (they touch
+Python BasicBlock/IR objects); the flat arena they build/consume is what the
+optimizer passes operate on in nogil regions.
 """
 
 from libc.stdint cimport int16_t, int32_t, uint8_t, uint16_t, uint32_t, uint64_t
 from libc.stdlib cimport free, realloc
+from libc.string cimport memcpy
 from libc.math cimport isinf, isnan
 
 from sonolus.backend._opt._ops_gen cimport (
@@ -48,11 +48,10 @@ _ASSOC_IDS = frozenset(
 
 # Blocks the real runtime treats as runtime-constant: a constant-index read of
 # one (when not writable in this callback) is constant-folded to a single push
-# during bytecode compilation (OPTIMIZER_REWRITE.md section 2 / section 4).
-# Verified identical to the old ``inlining.py`` RUNTIME_CONSTANT_BLOCKS set (14
-# names). Exposed as a module-level constant so downstream code can import it;
-# ``tools/metrics.py`` keeps its own copy for now. The per-place marshal-in flag
-# ``PLACE_RUNTIME_CONST`` records membership so nogil passes never touch names.
+# during bytecode compilation. Exposed as a module-level constant so downstream
+# code (e.g. tools/metrics.py, tests) can use it as the single source of truth.
+# The per-place marshal-in flag ``PLACE_RUNTIME_CONST`` records membership so
+# nogil passes never touch names.
 RUNTIME_CONSTANT_BLOCKS = frozenset({
     "RuntimeEnvironment",
     "RuntimeUI",
@@ -76,12 +75,16 @@ cdef double _CANON_NAN = 0.0
 
 
 cdef double _bits_to_double(uint64_t b) noexcept nogil:
-    return (<double*>&b)[0]
+    # memcpy-based type punning (defined behavior; compiles to a single move,
+    # unlike the strict-aliasing-UB pointer cast).
+    cdef double result
+    memcpy(&result, &b, sizeof(result))
+    return result
 
 
 cdef inline bint _op_pure_c(uint16_t op) noexcept nogil:
-    # Reads the generated static const table with no GIL -- the property M2's
-    # nogil passes rely on.
+    # Reads the generated static const table with no GIL -- callable from nogil
+    # pass regions.
     return SONOLUS_OP_PURE[op] != 0
 
 
@@ -171,6 +174,11 @@ cdef class Func:
         cdef int32_t nargs = len(arg_vids)
         cdef int32_t astart = self.n_args
         cdef int32_t k
+        if nargs > 32767:
+            raise ValueError(
+                f"instruction operand count {nargs} exceeds the int16 limit (32767); "
+                f"the arena stores nargs as int16"
+            )
         for k in range(nargs):
             self.args = <uint32_t*>_grow(<void*>self.args, &self.cap_args, self.n_args + 1, sizeof(uint32_t))
             self.args[self.n_args] = <uint32_t>(<int32_t>arg_vids[k])
@@ -192,7 +200,8 @@ cdef class Func:
             d = _CANON_NAN
             bits = _CANON_NAN_BITS
         else:
-            bits = (<uint64_t*>&d)[0]
+            # memcpy-based type punning (defined behavior; see _bits_to_double).
+            memcpy(&bits, &d, sizeof(bits))
         key = int(bits)
         cached = self._const_intern.get(key)
         if cached is not None:
@@ -301,9 +310,9 @@ cdef class Func:
 
         # Runtime-constant place flag: a constant-index (index_val == -1) read of
         # a resolved, non-writable block whose name is a RUNTIME_CONSTANT_BLOCKS
-        # member. Mirrors the old ``is_runtime_constant`` leaf condition (block in
-        # the set, callback not in block.writable, constant index). callback==None
-        # makes every resolved block non-writable, so those paths mark it too.
+        # member (block in the set, callback not in block.writable, constant index).
+        # callback==None makes every resolved block non-writable, so those paths
+        # mark it too.
         if (
             kind == PLACE_REAL_BLOCK
             and index_val == -1
@@ -758,18 +767,27 @@ cdef class Func:
         cdef int32_t pi, k, astart, nargs
         cdef int32_t pstart = self.blocks[bid].phi_start
         cdef int32_t pcount = self.blocks[bid].phi_count
+        cdef int32_t src_idx, vid
         for pi in range(pstart, pstart + pcount):
             astart = self.instrs[pi].arg_start
             nargs = self.instrs[pi].nargs
             if nargs != len(inc):
                 raise AssertionError("phi arity does not match incoming edge count")
             per_pred = {}
+            # Compare arena value ids (not exported objects) so parallel same-pred
+            # operands that carry the SAME interned const compare equal -- exported
+            # IRConst(NaN) != IRConst(NaN), and IRConst(-0.0) == IRConst(0.0), both
+            # of which the id comparison gets right (distinct NaN/-0.0 intern ids).
+            vid_per_src = {}
             for k in range(nargs):
-                src_block = py_blocks[self.edges[inc[k]].src]
-                operand = self._ssa_phi_src(<int32_t>self.args[astart + k], place_of)
-                if src_block in per_pred and per_pred[src_block] != operand:
-                    raise ValueError("parallel edges from the same predecessor carry unequal phi operands")
-                per_pred[src_block] = operand
+                src_idx = self.edges[inc[k]].src
+                vid = <int32_t>self.args[astart + k]
+                if src_idx in vid_per_src:
+                    if vid_per_src[src_idx] != vid:
+                        raise ValueError("parallel edges from the same predecessor carry unequal phi operands")
+                    continue
+                vid_per_src[src_idx] = vid
+                per_pred[py_blocks[src_idx]] = self._ssa_phi_src(vid, place_of)
             result[place_of[pi]] = per_pred
         return result
 
@@ -801,6 +819,9 @@ cdef class Func:
         cdef bint ssa = self.is_ssa
         cdef uint16_t op
         cdef uint8_t kind
+        cdef bint none_seen
+        cdef uint64_t cbits
+        cdef double cval
         cdef set uw = self._ssa_undef if self._ssa_undef is not None else set()
         for i in range(self.n_instrs):
             b = self.instrs[i].block
@@ -851,10 +872,26 @@ cdef class Func:
             estart = self.blocks[b].edge_start
             ecount = self.blocks[b].edge_count
             assert estart + ecount <= self.n_edges, f"block {b}: edge slice out of range"
+            # Edge-shape contract (ir.pxd): at most one EDGE_COND_NONE (default)
+            # edge, and no two EDGE_COND_VALUE edges with the same case bit-pattern
+            # (emit builds a {cond: dst} dict from these; duplicates would silently
+            # emit last-wins terminators). Bit-pattern keys keep -0.0/0.0 distinct.
+            none_seen = False
+            seen_conds = set()
             for i in range(estart, estart + ecount):
                 assert self.edges[i].src == b, f"block {b}: edge {i} has wrong src"
                 assert 0 <= self.edges[i].dst < self.n_blocks, f"block {b}: edge {i} bad dst"
                 assert self.edges[i].cond_kind == EDGE_COND_NONE or self.edges[i].cond_kind == EDGE_COND_VALUE
+                if self.edges[i].cond_kind == EDGE_COND_NONE:
+                    assert not none_seen, f"block {b}: more than one EDGE_COND_NONE (default) edge"
+                    none_seen = True
+                else:
+                    cval = self.edges[i].cond
+                    memcpy(&cbits, &cval, sizeof(cbits))
+                    assert cbits not in seen_conds, (
+                        f"block {b}: duplicate EDGE_COND_VALUE case {self.edges[i].cond}"
+                    )
+                    seen_conds.add(cbits)
             # Phi bookkeeping: phi_count leading OPX_PHI instrs at phi_start; each
             # phi has exactly one operand per incoming edge.
             pi = self.blocks[b].phi_start
@@ -885,16 +922,26 @@ cdef class Func:
         cdef int32_t b = self.instrs[i].block
         cdef int32_t astart = self.instrs[i].arg_start
         cdef int32_t nargs = self.instrs[i].nargs
-        cdef int32_t k, a, ei
+        cdef int32_t k, a, ei, src
         # incoming edges of b in ascending edge-index order (the contract).
         inc = [ei for ei in range(self.n_edges) if self.edges[ei].dst == b]
         assert len(inc) == nargs, f"instr {i}: phi arity != incoming edges"
+        # Parallel edges from one predecessor must carry equal operand value ids
+        # (the value at a pred's exit is unique); out_of_ssa picks a single edge.
+        vid_per_src = {}
         for k in range(nargs):
             a = <int32_t>self.args[astart + k]
             assert 0 <= a < self.n_instrs, f"instr {i}: phi operand {a} out of range"
             assert self._dom(self.instrs[a].block, self.edges[inc[k]].src) or a in uw, (
                 f"instr {i}: phi operand {a} does not dominate predecessor exit"
             )
+            src = self.edges[inc[k]].src
+            if src in vid_per_src:
+                assert vid_per_src[src] == a, (
+                    f"instr {i}: parallel edges from predecessor {src} carry unequal phi operands"
+                )
+            else:
+                vid_per_src[src] = a
 
     def stats(self):
         """Return arena element counts (for tests / marshal_stats)."""
@@ -979,7 +1026,7 @@ def register_phase(name, fn):
 
 
 def debug_run(entry, mode=None, callback=None, phases=None):
-    """Marshal in, run the named registry phases in order, export back (10 debug API)."""
+    """Marshal in, run the named registry phases in order, export back (debug/test API)."""
     cdef Func func = Func()
     func._marshal(entry, mode, callback)
     func.verify()

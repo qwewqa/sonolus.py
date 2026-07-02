@@ -1,24 +1,24 @@
-"""M4 metrics gate (OPTIMIZER_REWRITE.md §10 / §11-M4).
+"""Metrics gate.
 
 Recomputes the pydori ``standard``-level node metrics with the *current* optimizer via
-``tools/metrics.py``'s library API and gates them against the committed M0 baseline
-(``baseline_v0.16_metrics.json``, captured with the OLD optimizer at v0.16.0):
+``tools/metrics.py``'s library API and gates them against the committed baseline
+(``baseline_v0.16_metrics.json``, captured at v0.16.0 with the pre-rewrite optimizer):
 
-* aggregate ``effective_node_count`` must be <= the baseline aggregate -- the hard M4
-  gate. ``effective`` counts each maximal runtime-constant subtree as 1 (models the
-  runtime's own constant folding, §2), so deliberate duplication of runtime-constant
-  trees (which raises *raw* counts by design) does not read as a regression here.
+* aggregate ``effective_node_count`` must be <= the baseline aggregate -- the hard gate.
+  ``effective`` counts each maximal runtime-constant subtree as 1 (models the runtime's
+  own constant folding), so deliberate duplication of runtime-constant trees (which
+  raises *raw* counts by design) does not read as a regression here.
 * per callback, current ``effective`` must be within ``1.02x`` of baseline OR within
   ``+8`` nodes absolute (a small-callback noise floor). Any callback that fails both is
   a regression and must be listed in ``EXCEPTIONS`` with a rationale -- the dict starts
-  empty; nothing should fall out at M3.5/M3.6.
+  empty.
 * the per-op sanity invariant ``sum(per_op_counts) == function_node_count`` holds for
   every callback (keeps the counting tool honest).
 
 Counts are deterministic across repeats (``measure_callback`` asserts this), so the
 baseline's ``repeat=3`` numbers and this test's ``repeat=1`` numbers are directly
 comparable. One full ``standard`` metrics pass is a full trace+optimize+emit of every
-pydori callback (a few seconds); left unmarked per the plan.
+pydori callback (a few seconds); deliberately not marked slow.
 """
 
 from __future__ import annotations
@@ -39,10 +39,9 @@ _BASELINE_PATH = Path(__file__).parent / "data" / "baseline_v0.16_metrics.json"
 _REL_TOLERANCE = 1.02
 _ABS_TOLERANCE = 8
 
-# Callbacks allowed to exceed the per-callback tolerance, each with a rationale. Start
-# empty: M3.5/M3.6 cleared M3's lone ~1.014x callback, and the worst current per-callback
-# effective delta is +1 node (ratio <= 1.007), inside the noise floor. Keep empty unless a
-# real, justified regression appears -- and prefer fixing it upstream over listing it here.
+# Callbacks allowed to exceed the per-callback tolerance, each with a rationale. Keep
+# empty unless a real, justified regression appears -- and prefer fixing it upstream over
+# listing it here.
 EXCEPTIONS: dict[str, str] = {}
 
 _LEVEL = "standard"
@@ -77,7 +76,7 @@ def current_metrics() -> dict:
 
 
 def test_aggregate_effective_not_worse_than_baseline(baseline_metrics, current_metrics):
-    """Hard M4 gate: aggregate standard effective node count <= baseline aggregate."""
+    """Hard gate: aggregate standard effective node count <= baseline aggregate."""
     baseline_total = baseline_metrics["totals"]["effective_node_count"]
     current_total = current_metrics["totals"]["effective_node_count"]
     assert current_total <= baseline_total, (

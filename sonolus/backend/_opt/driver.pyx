@@ -1,12 +1,11 @@
 # cython: language_level=3
 """Optimizer driver: level dispatch and the from-Func pipeline.
 
-Keeps the M0 toolchain-proof helpers (``compiled`` / ``nogil_sum``) that
-``tests/backend/test_opt_toolchain.py`` exercises, and wires the milestone-M3
-pipelines described in OPTIMIZER_REWRITE.md 5/7.0/11.
+Keeps the toolchain-proof helpers (``compiled`` / ``nogil_sum``) that
+``tests/backend/test_opt_toolchain.py`` exercises, and wires the optimization
+pipelines.
 
-Levels (7.0), as of M3 (``standard`` is now the full pipeline: LICM +
-rewrite_switch via ``midend_standard``, then if-conversion, then packing):
+Levels:
 
     minimal  (-O0): cfg_cleanup -> bump allocation  (mid-end bypassed)
     fast     (-O1): cfg_cleanup -> build_ssa -> midend_round(allow_repeat=False)
@@ -16,12 +15,12 @@ rewrite_switch via ``midend_standard``, then if-conversion, then packing):
 
 ``midend_round`` runs SCCP -> simplify/GVN -> DCE over the SSA arena (repeating
 once when ``allow_repeat`` and something changed). ``midend_standard`` runs that
-core plus LICM and rewrite_switch, repeating the core once on change (7.2.7).
+core plus LICM and rewrite_switch, repeating the core once on change.
 ``if_convert`` (standard only) folds diamonds/triangles/{VALUE C, NONE} blocks
-into ``If`` expression selects over SSA while phis still exist (7.3), relying on
+into ``If`` expression selects over SSA while phis still exist, relying on
 must-fold flags that ``lower_from_ssa`` honors. ``lower_from_ssa`` is the real
 out-of-SSA + treeify + coalesce + phi-free cleanup + normalize_switch that
-supersedes the naive ``out_of_ssa``, producing a 3-legal non-SSA arena ready for
+supersedes the naive ``out_of_ssa``, producing a legal non-SSA arena ready for
 ``allocate_func`` + emission.
 
 The thin Python shim ``sonolus/backend/optimize/__init__.py`` (``run_passes`` /
@@ -30,8 +29,8 @@ points below with a level *name*; ``compile_mode`` uses ``optimize_and_finalize`
 ``allocate=False`` (visualize_cfg) stops after ``lower_from_ssa`` (or after
 ``cfg_cleanup`` at minimal), leaving temp places unallocated.
 
-This module also populates the phase registry consulted by ``ir.debug_run`` (the
-10 debug API), registering ``cfg_cleanup``, ``lower``, and the three allocators so
+This module also populates the phase registry consulted by ``ir.debug_run``,
+registering ``cfg_cleanup``, ``lower``, and the three allocators so
 ``debug_run(cfg, phases=["cfg_cleanup"])`` runs a single named phase.
 """
 
@@ -54,10 +53,10 @@ import os
 from sonolus.backend._opt.ir import marshal_in, register_phase, to_basic_blocks
 from sonolus.backend.optimize.flow import cfg_to_text
 
-# Debug tracing (OPTIMIZER_REWRITE.md 8): when ``SONOLUS_OPT_TRACE=1`` is set in
-# the environment, the pipeline exports and prints the CFG after each pass so a
-# contributor can watch the IR evolve. Read once at import (like a build flag);
-# the common (untraced) path pays only a cheap module-global check per stage.
+# Debug tracing: when ``SONOLUS_OPT_TRACE=1`` is set in the environment, the
+# pipeline exports and prints the CFG after each pass so a contributor can watch
+# the IR evolve. Read once at import (like a build flag); the common (untraced)
+# path pays only a cheap module-global check per stage.
 _TRACE = os.environ.get("SONOLUS_OPT_TRACE") == "1"
 
 
@@ -68,7 +67,7 @@ def _trace_dump(func, str label):
 
 
 # --------------------------------------------------------------------------
-# M0 toolchain proof (kept -- used by test_opt_toolchain.py).
+# Toolchain-proof helpers (used by test_opt_toolchain.py).
 # --------------------------------------------------------------------------
 
 def compiled() -> bool:
@@ -119,7 +118,7 @@ cdef Func _pipeline(Func func, int level, bint allocate):
     """Run the level-``level`` pipeline over ``func``, returning a fresh arena.
 
     ``minimal`` bypasses the mid-end (cfg_cleanup -> bump). ``fast`` and
-    ``standard`` share the cfg_cleanup -> build_ssa front, then diverge (7.0):
+    ``standard`` share the cfg_cleanup -> build_ssa front, then diverge:
 
         fast     (-O1): midend_round(allow_repeat=False) -> lower_from_ssa
                         -> try-bump allocation. No LICM / rewrite_switch /
@@ -167,7 +166,7 @@ cdef Func _pipeline(Func func, int level, bint allocate):
             _trace_dump(lowered, "lower_from_ssa")
         if allocate:
             allocate_func(lowered, ALLOC_TRY_BUMP)
-            fuse_rmw(lowered)  # place-based RMW fusion (post-allocation, M3.5)
+            fuse_rmw(lowered)  # place-based RMW fusion (post-allocation)
             if _TRACE:
                 _trace_dump(lowered, "allocate(try_bump)+fuse_rmw")
         return lowered
@@ -185,7 +184,7 @@ cdef Func _pipeline(Func func, int level, bint allocate):
         _trace_dump(lowered, "lower_from_ssa")
     if allocate:
         allocate_func(lowered, ALLOC_PACKING)
-        fuse_rmw(lowered)  # place-based RMW fusion (post-allocation, M3.5)
+        fuse_rmw(lowered)  # place-based RMW fusion (post-allocation)
         if _TRACE:
             _trace_dump(lowered, "allocate(packing)+fuse_rmw")
     return lowered
@@ -196,7 +195,7 @@ cdef Func _pipeline(Func func, int level, bint allocate):
 # --------------------------------------------------------------------------
 
 def run_pipeline_cfg(entry, level, mode=None, callback=None, allocate=True):
-    """marshal_in -> level pipeline (7.0) -> (allocate) -> to_basic_blocks.
+    """marshal_in -> level pipeline -> (allocate) -> to_basic_blocks.
 
     ``allocate=False`` stops before allocation (for ``visualize_cfg``), leaving
     temp places unallocated (post-lower_from_ssa for fast/standard, post-cleanup
@@ -209,7 +208,7 @@ def run_pipeline_cfg(entry, level, mode=None, callback=None, allocate=True):
 
 
 def optimize_and_finalize_cfg(entry, level, mode=None, callback=None):
-    """marshal_in -> level pipeline (7.0) -> allocate -> emit (fused; no export)."""
+    """marshal_in -> level pipeline -> allocate -> emit (fused; no export)."""
     cdef int lvl = _level_code(level)
     cdef Func func = <Func>marshal_in(entry, mode, callback)
     cdef Func result = _pipeline(func, lvl, True)
@@ -217,15 +216,14 @@ def optimize_and_finalize_cfg(entry, level, mode=None, callback=None):
 
 
 # --------------------------------------------------------------------------
-# compile_mode: per-mode callback compilation driver (OPTIMIZER_REWRITE.md
-# 5/11 M4). Moved here from sonolus/build/compile.py so the compile driver
-# lives in the compiled package; ``sonolus/build/compile.py`` keeps the public
-# ``compile_mode`` name as a thin delegator (engine.py / tests import it from
-# there). ``callback_to_cfg`` and the rest of the frontend stay in Python and
-# are passed in, keeping the frontend/optimizer boundary explicit and avoiding
-# an import cycle (compile.py imports this module).
+# compile_mode: per-mode callback compilation driver. Lives here (rather than
+# sonolus/build/compile.py, which keeps the public ``compile_mode`` name as a
+# thin delegator that engine.py / tests import) so the compile driver lives in
+# the compiled package. ``callback_to_cfg`` and the rest of the frontend stay in
+# Python and are passed in, keeping the frontend/optimizer boundary explicit and
+# avoiding an import cycle (compile.py imports this module).
 #
-# Threading + determinism (task 3): per-callback optimize+emit runs in the
+# Threading + determinism: per-callback optimize+emit runs in the
 # thread pool (releasing the GIL inside the nogil pass regions), but the cheap
 # cross-callback ``OutputNodeGenerator.add`` merge runs SINGLE-THREADED in fixed
 # SUBMISSION order after gathering the futures -- so node indices (and thus the
@@ -241,10 +239,12 @@ _OPT_CONFIG = None
 _OPT_FINALIZE = None
 _STANDARD_LEVEL = None
 _PLAY_MODE = None
+_COMPILATION_ERROR = None
 
 
 cdef _ensure_compile_deps():
     global _MODE_STATE, _OUTPUT_GEN, _OPT_CONFIG, _OPT_FINALIZE, _STANDARD_LEVEL, _PLAY_MODE
+    global _COMPILATION_ERROR
     if _MODE_STATE is None:
         from sonolus.backend.optimize import (
             STANDARD_PASSES as _sp,
@@ -254,12 +254,14 @@ cdef _ensure_compile_deps():
         from sonolus.backend.mode import Mode as _mode
         from sonolus.build.node import OutputNodeGenerator as _og
         from sonolus.script.internal.context import ModeContextState as _ms
+        from sonolus.script.internal.error import CompilationError as _ce
         _MODE_STATE = _ms
         _OUTPUT_GEN = _og
         _OPT_CONFIG = _oc
         _OPT_FINALIZE = _of
         _STANDARD_LEVEL = _sp
         _PLAY_MODE = _mode.PLAY
+        _COMPILATION_ERROR = _ce
 
 
 def compile_mode(
@@ -285,10 +287,23 @@ def compile_mode(
 
         Submitted to the thread pool. Operates on a per-callback-local arena and
         touches no shared state, so it is race-free and its output is independent
-        of thread scheduling; the nogil pass regions release the GIL here."""
-        return _OPT_FINALIZE(cfg, level, _OPT_CONFIG(mode=mode, callback=cb_name))
+        of thread scheduling; the nogil pass regions release the GIL here.
 
-    # DETERMINISM + OVERLAP CONTRACT (task 3):
+        Failures (e.g. the temp-slot cap, marshal-in validation) are wrapped with
+        the callback name and mode so the merge loop's ``future.result()`` re-raise
+        attributes them, and as a CompilationError so the cli/dev-server pretty
+        handlers catch them (matching the frontend error pattern). ``from`` keeps
+        the original traceback."""
+        try:
+            return _OPT_FINALIZE(cfg, level, _OPT_CONFIG(mode=mode, callback=cb_name))
+        except _COMPILATION_ERROR:
+            raise
+        except Exception as e:
+            raise _COMPILATION_ERROR(
+                f"Optimization failed for callback {cb_name!r} in {getattr(mode, 'name', mode)} mode: {e}"
+            ) from e
+
+    # DETERMINISM + OVERLAP CONTRACT:
     #
     #   * FRONTEND (serial, main thread, fixed order): ``callback_to_cfg`` populates
     #     shared, first-touch-ordered maps -- ``project_state`` ROM / const /

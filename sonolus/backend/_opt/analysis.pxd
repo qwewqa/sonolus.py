@@ -1,11 +1,10 @@
 # cython: language_level=3
-"""Liveness analysis over the arena IR (milestone M1, §7.5).
+"""Liveness, dominators, and loop forest over the arena IR.
 
 Backward dataflow over per-block bitsets indexed by temp id, at *statement*
 granularity, plus the forward array-init pass that decides when an
-array-element write kills whole-array liveness. This mirrors the semantics of
-the old ``sonolus/backend/optimize/liveness.py`` pass exactly (non-SSA form),
-and feeds the allocators in ``lower.pyx``.
+array-element write kills whole-array liveness. Non-SSA form; feeds the
+allocators in ``lower.pyx``.
 
 See the module docstring in ``analysis.pyx`` for the full contract.
 """
@@ -60,7 +59,7 @@ cdef Liveness compute_liveness(Func func)
 
 
 # --------------------------------------------------------------------------
-# Dominators (Cooper-Harvey-Kennedy iterative idom over RPO) -- milestone M2.
+# Dominators (Cooper-Harvey-Kennedy iterative idom over RPO).
 #
 # Block ids are already reverse-postorder (marshal / cfg_cleanup number them so),
 # so id order == RPO and the idom intersection compares ids directly. Results:
@@ -93,14 +92,14 @@ cdef Dominators compute_dominators(Func func)
 
 
 # --------------------------------------------------------------------------
-# Loop forest (natural loops from dominator back edges) -- milestone M2.
+# Loop forest (natural loops from dominator back edges).
 #
 # A back edge is an edge ``u -> h`` whose head ``h`` dominates its tail ``u``;
 # ``h`` is a loop header. The natural loop of a header is the union, over all its
 # latches ``u``, of the blocks that reach ``u`` without passing through ``h``
-# (standard backward reachability, the old ``flow.compute_loop_body`` rule). One
-# loop per distinct header (parallel/multiple latches merge). Loops nest by
-# header containment. Reusable by M3 LICM (hoist targets, preheaders):
+# (standard backward reachability). One loop per distinct header (parallel/multiple
+# latches merge). Loops nest by header containment. Used by LICM (hoist targets,
+# preheaders):
 #
 # * ``depth[b]``       number of loops containing block ``b`` (0 == not in a loop).
 # * ``innermost[b]``   deepest loop id containing ``b`` (or -1).
@@ -110,7 +109,7 @@ cdef Dominators compute_dominators(Func func)
 # * ``crosses_loop(def_b, use_b)`` -- true iff sinking a value defined in
 #   ``def_b`` to a use in ``use_b`` would move it into a strictly deeper loop
 #   (``use_b`` is in a loop that does not contain ``def_b``); the treeify
-#   cross-block fold gate (OPTIMIZER_REWRITE.md 7.4.1, old ``crosses_loop``).
+#   cross-block fold gate.
 # --------------------------------------------------------------------------
 
 cdef class LoopForest:

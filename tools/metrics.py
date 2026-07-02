@@ -1,25 +1,23 @@
-"""Baseline metrics capture for the optimizer rewrite (milestone M0).
+"""Node-count and compile-time metrics capture for the optimizer.
 
 This tool compiles every callback of a regression project (default: ``pydori``)
 at one or more optimization levels and records, per callback:
 
 * ``function_node_count`` / ``value_node_count`` -- emitted ``EngineNode`` counts,
   counted **per reference** over the expanded node tree (shared/hash-consed nodes
-  are re-executed per reference by the real runtime, see OPTIMIZER_REWRITE.md §2).
+  are re-executed per reference by the real runtime).
 * ``effective_node_count`` -- the same tree, but every *maximal* runtime-constant
-  subtree counts as 1 (models the runtime's own constant folding, §2). This is the
-  number the M4 gate compares against. Runtime-constant follows the full
-  ``inlining.is_runtime_constant`` semantics (constant-index reads of
-  RUNTIME_CONSTANT_BLOCKS that are *not writable in the current callback*), and the
-  CFG-skeleton nodes finalize emits (Block/JumpLoop/Execute/terminators) never fold --
-  the runtime compiles block structure to bytecode and folds only expressions within.
+  subtree counts as 1 (models the runtime's own constant folding). This is the number
+  the gate test (``tests/regressions/test_metrics_gate.py``) compares against.
+  Runtime-constant follows the optimizer's runtime-constant rule (constant-index reads
+  of ``RUNTIME_CONSTANT_BLOCKS`` that are *not writable in the current callback*), and
+  the CFG-skeleton nodes (Block/JumpLoop/Execute/terminators) never fold -- the runtime
+  compiles block structure to bytecode and folds only the expressions within.
 * ``per_op_counts`` -- expanded, per-reference op-name -> count.
-* ``temp_slots`` -- optimizer temporary-memory usage scanned from the optimized CFG
-  *before* emission (emission destroys block attributes).
+* ``temp_slots`` -- optimizer temporary-memory usage scanned from the optimized CFG.
 * ``timing`` -- wall-clock split into frontend tracing / optimize / emit.
 
-It also implements a warm-cache dev-server rebuild timing mode (``--dev-rebuild``,
-OPTIMIZER_REWRITE.md §13 / §11-M0) -- the bar that removing ``CompileCache`` must meet.
+It also implements a warm dev-server rebuild timing mode (``--dev-rebuild``).
 
 Standard library only (plus the ``sonolus`` package and the regression project).
 
@@ -57,6 +55,8 @@ for _p in (str(_REPO_ROOT / "test_projects"), str(_REPO_ROOT)):
 # Node/CFG *analysis* in this module is iterative, so it does not depend on this.
 sys.setrecursionlimit(10_000)
 
+from sonolus.backend._opt.ir import RUNTIME_CONSTANT_BLOCKS  # noqa: PLC2701
+
 from sonolus.backend.ir import IRConst, IRGet, IRInstr, IRPureInstr, IRSet
 from sonolus.backend.mode import Mode
 from sonolus.backend.node import FunctionNode
@@ -80,28 +80,9 @@ from sonolus.script.project import BuildConfig
 
 TEMP_MEMORY_BLOCK_ID = 10000
 
-# Blocks whose constant-index reads the real runtime constant-folds (see §2). This
-# was formerly sonolus/backend/optimize/inlining.py's RUNTIME_CONSTANT_BLOCKS; that
-# module was deleted in M1, so this is now the sole copy (the C mid-end reintroduces
-# the same set in M2). The old cross-module sync assertion is gone with inlining.py.
-RUNTIME_CONSTANT_BLOCKS = frozenset(
-    {
-        "RuntimeEnvironment",
-        "RuntimeUI",
-        "RuntimeUIConfiguration",
-        "LevelData",
-        "LevelOption",
-        "LevelBucket",
-        "LevelScore",
-        "LevelLife",
-        "EngineRom",
-        "ArchetypeLife",
-        "RuntimeCanvas",
-        "PreviewData",
-        "PreviewOption",
-        "TutorialData",
-    }
-)
+# Blocks whose constant-index read the real runtime constant-folds. Imported from
+# the optimizer core (sonolus.backend._opt.ir) so there is a single source of truth
+# rather than a drifting duplicate.
 
 
 LEVELS: dict[str, object] = {
@@ -201,7 +182,7 @@ def _is_value_node(node) -> bool:
 
 
 def _block_is_runtime_constant(block, mode, callback_name: str) -> bool:
-    """Full is_runtime_constant block semantics from inlining.py.
+    """The optimizer's runtime-constant block rule.
 
     The block id must resolve to a BlockData whose name is in RUNTIME_CONSTANT_BLOCKS
     AND that is not writable in the current callback (a block the callback can write is
@@ -229,38 +210,52 @@ def _node_is_runtime_constant(node: FunctionNode, is_rc: dict[int, bool], mode, 
         )
     if op.pure:
         # Pure ops (including And/Or/If/Switch appearing *inside* statement trees) fold
-        # when all args are runtime-constant. CFG-skeleton structural nodes never reach
-        # here (see _skeleton_ids); they are excluded before classification.
+        # when all args are runtime-constant. Classification is value-based; the CFG
+        # skeleton is handled positionally by _skeleton_effective, not by excluding
+        # nodes here, so a terminator that the emitter interned to the same object as a
+        # statement select still folds correctly at its statement occurrence.
         return all(is_rc[id(arg)] for arg in node.args)
     return False
 
 
-def _skeleton_ids(root) -> set[int]:
-    """Identify the CFG-skeleton nodes finalize emits, by identity.
+def _skeleton_effective(root, sub_eff: dict[int, int]) -> int:
+    """Effective node count with the CFG skeleton classified by *position*.
 
     The runtime compiles the block *structure* to bytecode and constant-folds only the
     expressions within, so the outer Block, the JumpLoop, each per-block Execute, and
-    each Execute's final terminator arg (If/Switch* over block indexes) are treated as
-    never-runtime-constant containers. Their operand subtrees (statements, switch/if
-    test expressions) are classified normally. Safe by identity: finalize constructs
-    each of these nodes exactly once, so they cannot alias a statement subtree node.
+    each Execute's final terminator (If/Switch* over block indexes) are structural
+    containers that never fold: each counts 1, and its operand subtrees (statements,
+    terminator test expressions) contribute their value-based ``sub_eff``.
+
+    Position-based, not identity-based: the hash-consing emitter can intern a terminator
+    node to the very same object as a statement-level select, so an identity set would
+    wrongly force that shared statement subtree to never fold (inflating the count).
+    Walking the Block -> JumpLoop -> Execute* -> terminator spine by position keeps each
+    occurrence classified by where it sits in the tree.
     """
-    ids: set[int] = set()
     if not (isinstance(root, FunctionNode) and root.func is Op.Block and len(root.args) == 1):
-        return ids
+        return sub_eff[id(root)]
     jump_loop = root.args[0]
     if not (isinstance(jump_loop, FunctionNode) and jump_loop.func is Op.JumpLoop):
-        return ids
-    ids.add(id(root))
-    ids.add(id(jump_loop))
+        return sub_eff[id(root)]
+    total = 2  # Block + JumpLoop container nodes
     for execute in jump_loop.args:
-        if isinstance(execute, FunctionNode) and execute.func is Op.Execute:
-            ids.add(id(execute))
-            if execute.args:
-                terminator = execute.args[-1]
-                if isinstance(terminator, FunctionNode):
-                    ids.add(id(terminator))
-    return ids
+        if not (isinstance(execute, FunctionNode) and execute.func is Op.Execute):
+            total += sub_eff[id(execute)]
+            continue
+        total += 1  # Execute container node
+        args = execute.args
+        for stmt in args[:-1]:
+            total += sub_eff[id(stmt)]
+        if args:
+            terminator = args[-1]
+            if isinstance(terminator, FunctionNode):
+                total += 1  # terminator container node
+                for targ in terminator.args:
+                    total += sub_eff[id(targ)]
+            else:
+                total += sub_eff[id(terminator)]
+    return total
 
 
 def _post_order(root):
@@ -299,7 +294,6 @@ def analyze_node(root, mode, callback_name: str) -> dict:
     counted once per reference without exponential expansion.
     """
     post = _post_order(root)
-    skeleton = _skeleton_ids(root)
 
     is_rc: dict[int, bool] = {}
     sub_fn: dict[int, int] = {}
@@ -310,7 +304,7 @@ def analyze_node(root, mode, callback_name: str) -> dict:
     for node in post:
         nid = id(node)
         if isinstance(node, FunctionNode):
-            is_rc[nid] = nid not in skeleton and _node_is_runtime_constant(node, is_rc, mode, callback_name)
+            is_rc[nid] = _node_is_runtime_constant(node, is_rc, mode, callback_name)
             fn = 1
             val = 0
             ops: Counter = Counter()
@@ -338,13 +332,13 @@ def analyze_node(root, mode, callback_name: str) -> dict:
     return {
         "function_node_count": sub_fn[rid],
         "value_node_count": sub_val[rid],
-        "effective_node_count": sub_eff[rid],
+        "effective_node_count": _skeleton_effective(root, sub_eff),
         "per_op_counts": dict(sub_ops[rid]),
     }
 
 
 # --------------------------------------------------------------------------------------
-# Temp-slot scan over the optimized CFG (before emission destroys it)
+# Temp-slot scan over the optimized CFG
 # --------------------------------------------------------------------------------------
 
 
@@ -409,7 +403,7 @@ def measure_callback(project_name, task: CallbackTask, level_name, passes, repea
         t1 = perf_counter()
         cfg = run_passes(cfg, passes, OptimizerConfig(mode=task.mode, callback=task.callback_name))
         t2 = perf_counter()
-        # CFG inspection MUST happen before emit: cfg_to_engine_node deletes block attrs.
+        # Scan temp slots from the optimized CFG before emitting it.
         temp_slots = scan_temp_slots(cfg)
         node = cfg_to_engine_node(cfg)
         t3 = perf_counter()
@@ -511,7 +505,7 @@ def run_metrics(project_name, level_names, repeat, limit) -> dict:
 
 
 # --------------------------------------------------------------------------------------
-# Warm-cache dev-server rebuild timing (§13 / §11-M0)
+# Warm dev-server rebuild timing
 # --------------------------------------------------------------------------------------
 
 
@@ -535,8 +529,7 @@ def _dev_rebuild_via_collection(project, config, repeat):
         warm_seconds: list[float] = []
         for _ in range(repeat):
             # RebuildCommand creates a fresh project_state each rebuild. Compilation is
-            # now cache-free (CompileCache was removed in M1), so a "warm" rebuild just
-            # re-optimizes every callback.
+            # cache-free, so a "warm" rebuild re-optimizes every callback.
             rebuild_state = ProjectContextState.from_build_config(config)
             start = perf_counter()
             build_project_to_existing_collection(project, collection, config, project_state=rebuild_state)
@@ -549,8 +542,7 @@ def _dev_rebuild_via_package_engine(project, config, repeat):
     """Fallback for projects without resolvable resources (e.g. pydori ships none).
 
     Drives package_engine directly -- the exact compile step add_engine_to_collection
-    invokes. Compilation is cache-free after M1 (CompileCache removed), so a "warm"
-    rebuild simply re-optimizes every callback.
+    invokes. Compilation is cache-free, so a "warm" rebuild re-optimizes every callback.
     """
     from sonolus.build.engine import package_engine
 
@@ -572,7 +564,7 @@ def _dev_rebuild_via_package_engine(project, config, repeat):
 
 
 def run_dev_rebuild(project_name, level_name, repeat) -> dict:
-    """Warm-cache dev-server rebuild timing (OPTIMIZER_REWRITE.md §13 / §11-M0).
+    """Warm dev-server rebuild timing.
 
     Replicates dev_server.RebuildCommand.execute for a warm rebuild, minus the HTTP
     server and the sys.modules purge / project re-import. Module-reload cost is excluded.
@@ -600,7 +592,7 @@ def _dev_rebuild_section(project_name, level_name, repeat) -> dict:
     config = _BuildConfig(passes=LEVELS[level_name], runtime_checks=RuntimeChecks.NOTIFY_AND_TERMINATE)
 
     notes = [
-        "Dev-server rebuild timing (cache-free after M1; the CompileCache was removed, §11-M1/§13).",
+        "Dev-server rebuild timing (compilation is cache-free; every rebuild re-optimizes all callbacks).",
         "sys.modules purge + project re-import cost is EXCLUDED (module-reload cost not modeled).",
     ]
     try:
@@ -727,10 +719,9 @@ def _build_meta(project_name, level_names, repeat, limit) -> dict:
         "repeat": repeat,
         "limit": limit,
         "counting": (
-            "per-reference over expanded EngineNode tree; effective = maximal runtime-constant subtree counts as 1 "
-            "(OPTIMIZER_REWRITE.md §2); runtime-constant per inlining.is_runtime_constant semantics "
-            "(RUNTIME_CONSTANT_BLOCKS + not writable in the callback); CFG skeleton nodes "
-            "(Block/JumpLoop/Execute/terminators) never fold"
+            "per-reference over expanded EngineNode tree; effective = maximal runtime-constant subtree counts as 1; "
+            "runtime-constant = constant-index read of RUNTIME_CONSTANT_BLOCKS not writable in the callback; "
+            "CFG skeleton nodes (Block/JumpLoop/Execute/terminators) never fold"
         ),
     }
 

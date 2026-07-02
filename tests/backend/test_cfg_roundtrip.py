@@ -10,12 +10,15 @@ from __future__ import annotations
 import math
 import struct
 
+import pytest
+
+from sonolus.backend._opt import ir  # noqa: PLC2701
 from sonolus.backend.blocks import PlayBlock
 from sonolus.backend.ir import IRConst, IRGet, IRInstr, IRPureInstr, IRSet
 from sonolus.backend.mode import Mode
 from sonolus.backend.ops import Op
 from sonolus.backend.optimize.flow import BasicBlock, cfg_to_text
-from sonolus.backend.place import BlockPlace, TempBlock
+from sonolus.backend.place import BlockPlace, SSAPlace, TempBlock
 from tests.backend._roundtrip_helpers import assert_faithful, assert_idempotent, roundtrip
 
 
@@ -242,3 +245,38 @@ def test_self_loop():
     b1.connect_to(exit_b, None)
     assert_faithful(b0)
     assert_idempotent(b0)
+
+
+# --------------------------------------------------------------------------
+# Negative marshal-in validation: the section-6.2 contract rejects malformed
+# input with a clear error rather than miscompiling. Each of ir.pyx's input
+# rejection paths is covered here.
+# --------------------------------------------------------------------------
+
+def test_marshal_in_rejects_prepopulated_phis():
+    # Marshal-in input is non-SSA; a block carrying phis is rejected.
+    b0 = BasicBlock()
+    b0.phis = {TempBlock("x", 1): {}}
+    with pytest.raises(ValueError, match=r"block\.phis must be empty"):
+        ir.marshal_in(b0, None, None)
+
+
+def test_marshal_in_rejects_ssa_place():
+    b0 = BasicBlock()
+    b0.statements = [IRSet(SSAPlace("x", 0), IRConst(1))]
+    with pytest.raises(ValueError, match="SSA places are not valid marshal-in input"):
+        ir.marshal_in(b0, None, None)
+
+
+def test_marshal_in_rejects_unsupported_ir_value():
+    b0 = BasicBlock()
+    b0.statements = [IRSet(_scalar("x"), "not-an-ir-node")]
+    with pytest.raises(ValueError, match="Unsupported IR value"):
+        ir.marshal_in(b0, None, None)
+
+
+def test_marshal_in_rejects_unsupported_block_value():
+    b0 = BasicBlock()
+    b0.statements = [IRSet(BlockPlace("bad-block", 0, 0), IRConst(1))]
+    with pytest.raises(ValueError, match="Unsupported block value"):
+        ir.marshal_in(b0, None, None)
