@@ -244,14 +244,15 @@ cdef class Func:
 
         block = place.block
         index = place.index
-        cdef int32_t offset = <int32_t>place.offset
+        py_offset = place.offset
 
         cdef uint8_t kind
         cdef uint8_t flags = 0
         cdef int32_t block_ref
         cdef int32_t block_id_int
         cdef int32_t index_val
-        cdef int32_t off = offset
+        cdef int32_t off
+        cdef object folded_off
         resolved_member = None
 
         if isinstance(block, TempBlock):
@@ -287,26 +288,33 @@ cdef class Func:
             raise ValueError(f"Unsupported block value: {type(block).__name__}: {block!r}")
 
         # Index: fold a constant integer index into the offset; keep dynamic
-        # indices as a value id.
+        # indices as a value id. The fold sum is computed in unbounded Python ints
+        # and range-checked once, so the int32 ``off`` store below can never
+        # silently wrap (signed-overflow UB) nor raise a bare OverflowError on an
+        # out-of-range constant index or base offset.
         if isinstance(index, bool):
             raise ValueError(f"Unsupported index: {index!r}")
         if isinstance(index, int):
             index_val = -1
-            off = offset + <int32_t>index
+            folded_off = py_offset + index
         elif isinstance(index, IRConst):
             v = index.value
             if isinstance(v, int) and not isinstance(v, bool):
                 index_val = -1
-                off = offset + <int32_t>v
+                folded_off = py_offset + v
             elif isinstance(v, float) and (not isinf(v)) and (not isnan(v)) and v.is_integer():
                 index_val = -1
-                off = offset + <int32_t>v
+                folded_off = py_offset + int(v)
             else:
                 index_val = self._value_of(index, block_id)
-                off = offset
+                folded_off = py_offset
         else:
             index_val = self._value_of(index, block_id)
-            off = offset
+            folded_off = py_offset
+
+        if folded_off < -2147483648 or folded_off > 2147483647:
+            raise ValueError(f"constant memory offset {folded_off} is outside the int32 range")
+        off = <int32_t>folded_off
 
         # Runtime-constant place flag: a constant-index (index_val == -1) read of
         # a resolved, non-writable block whose name is a RUNTIME_CONSTANT_BLOCKS

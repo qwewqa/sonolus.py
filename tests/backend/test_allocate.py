@@ -104,6 +104,29 @@ def test_interference_honored_distinct_slots():
     assert offs[0] != offs[1], f"co-live a,b share a slot: {offs}"
 
 
+def test_conditional_infinite_loop_store_survives():
+    # `if c: while True: use(x)`: x is written before the branch and read only
+    # inside the exit-unreachable spin loop. Liveness must keep x live at its store,
+    # so packing's dead-store elimination must NOT drop it (pre-fix the spin block
+    # was never visited, x looked dead, and its store was clobbered).
+    def make():
+        x = _sc("x")
+        b0 = BasicBlock()
+        spin = BasicBlock()
+        after = BasicBlock()
+        b0.statements = [IRSet(x, IRConst(5))]
+        b0.test = IRGet(BlockPlace(501, 0, 0))  # runtime branch condition
+        b0.connect_to(after, 0)  # false -> exit path
+        b0.connect_to(spin, None)  # true -> infinite loop
+        spin.statements = [IRSet(BlockPlace(500, 0, 0), IRGet(x))]  # reads x each iter
+        spin.connect_to(spin, None)  # self-loop, never exits
+        return b0
+
+    cfg = lower.run_allocate(make(), strategy="packing")
+    # x is the only temp, so its surviving store is the sole block-10000 write.
+    assert len(store_offsets(cfg)) == 1, cfg_to_text(cfg)
+
+
 def test_non_interfering_temps_share_slot():
     # a dies before b is defined: packing reuses the slot; bump does not.
     def make():
@@ -217,6 +240,70 @@ def test_overflow_raises():
     for strat in ("bump", "packing", "try_bump"):
         with pytest.raises(ValueError, match="Temporary memory limit exceeded"):
             lower.run_allocate(make(), strategy=strat)
+
+
+def test_bump_rejects_near_int32_temp_without_overflow():
+    # A size-1 temp then a near-INT32_MAX array: the bump accumulator's `index +
+    # size` must not overflow int32 and slip past the cap; reject cleanly.
+    def make():
+        small = TempBlock("s", 1)
+        big = TempBlock("g", 2**31 - 1)
+        b0 = BasicBlock()
+        b0.statements = [
+            IRSet(BlockPlace(small, 0, 0), IRConst(1)),
+            IRSet(BlockPlace(big, 0, 0), IRConst(2)),
+        ]
+        return b0
+
+    with pytest.raises(ValueError, match="Temporary memory limit exceeded"):
+        lower.run_allocate(make(), strategy="bump")
+
+
+def test_try_bump_rejects_near_int32_temp_sum_without_overflow():
+    # Two temps whose sizes sum past INT32_MAX: `_bump_fits` must not wrap its int32
+    # sum below the cap and wrongly report "fits"; it declines bump and packing rejects.
+    def make():
+        a = TempBlock("a", 2)
+        big = TempBlock("g", 2**31 - 1)
+        b0 = BasicBlock()
+        b0.statements = [
+            IRSet(BlockPlace(a, 0, 0), IRConst(1)),
+            IRSet(BlockPlace(big, 0, 0), IRConst(2)),
+        ]
+        return b0
+
+    with pytest.raises(ValueError, match="Temporary memory limit exceeded"):
+        lower.run_allocate(make(), strategy="try_bump")
+
+
+def test_rewrite_places_rejects_out_of_range_constant_offset():
+    # A constant index near INT32_MAX folded into a temp place: `temp_offset[t] +
+    # offset` must not overflow int32 into a negative real-block offset; the sum
+    # lands outside the 4096-slot temp block and is rejected.
+    def make():
+        pre = TempBlock("pre", 1)  # forces x's temp base >= 1
+        x = TempBlock("x", 1)
+        b0 = BasicBlock()
+        b0.statements = [
+            IRSet(BlockPlace(pre, 0, 0), IRConst(1)),
+            IRSet(BlockPlace(x, 0, 2**31 - 1), IRConst(2)),
+        ]
+        return b0
+
+    with pytest.raises(ValueError, match="Temporary memory limit exceeded"):
+        lower.run_allocate(make(), strategy="bump")
+
+
+def test_marshal_rejects_out_of_range_constant_index():
+    # A constant real-block index+offset summing past INT32_MAX: the fold `offset +
+    # index` must not silently overflow int32; marshal rejects the out-of-range place.
+    def make():
+        b0 = BasicBlock()
+        b0.statements = [IRSet(BlockPlace(500, 2**31 - 1, 1), IRConst(0))]
+        return b0
+
+    with pytest.raises(ValueError, match="int32 range"):
+        lower.run_allocate(make(), strategy="bump")
 
 
 # --------------------------------------------------------------------------

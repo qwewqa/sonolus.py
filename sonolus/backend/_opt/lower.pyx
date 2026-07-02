@@ -128,19 +128,27 @@ cdef void _bump(Func func, int32_t* temp_offset) except *:
         size = func.temps[t].size
         if size == 0:
             continue
+        # index stays in [0, TEMP_SIZE); check capacity before the add so a huge
+        # ``size`` (up to INT32_MAX) cannot overflow ``index + size`` (int32 UB) and
+        # wrap negative past the cap. Equivalent to the old ``index + size >= TEMP_SIZE``.
+        if size >= TEMP_SIZE - index:
+            raise ValueError("Temporary memory limit exceeded")
         temp_offset[t] = index
         index += size
-        if index >= TEMP_SIZE:
-            raise ValueError("Temporary memory limit exceeded")
 
 
 cdef bint _bump_fits(Func func):
-    cdef int32_t total = 0
+    # 64-bit accumulator with an early exit: summing size>0 temps (each up to
+    # INT32_MAX) in int32 could overflow and wrap below TEMP_SIZE, wrongly reporting
+    # a fit for an over-budget function and funnelling it into _bump.
+    cdef int64_t total = 0
     cdef int32_t t, size
     for t in range(func.n_temps):
         size = func.temps[t].size
         if size > 0:
             total += size
+            if total >= TEMP_SIZE:
+                return False
     return total < TEMP_SIZE
 
 
@@ -282,10 +290,11 @@ cdef void _dead_store_elim(Func func, Liveness L):
 # Place rewriting: temp -> real block 10000.
 # --------------------------------------------------------------------------
 
-cdef void _rewrite_places(Func func, int32_t* temp_offset):
+cdef void _rewrite_places(Func func, int32_t* temp_offset) except *:
     cdef PlaceInfo* places = func.places
     cdef int32_t pid, t
     cdef uint8_t kind
+    cdef int64_t new_off
     for pid in range(func.n_places):
         kind = places[pid].kind
         if kind == PLACE_TEMP_SIZE0:
@@ -295,7 +304,14 @@ cdef void _rewrite_places(Func func, int32_t* temp_offset):
             places[pid].offset = -1
         elif kind == PLACE_TEMP_SCALAR or kind == PLACE_TEMP_ARRAY:
             t = places[pid].block_ref
-            places[pid].offset = temp_offset[t] + places[pid].offset
+            # Sum in int64: a constant index folded into offset (up to INT32_MAX,
+            # e.g. set_unchecked with an out-of-bounds constant index) must not
+            # overflow the int32 add (UB) into a negative real-block offset. The
+            # result has to land inside the 4096-slot temp block.
+            new_off = <int64_t>temp_offset[t] + <int64_t>places[pid].offset
+            if new_off < 0 or new_off >= TEMP_SIZE:
+                raise ValueError("Temporary memory limit exceeded")
+            places[pid].offset = <int32_t>new_off
             places[pid].kind = PLACE_REAL_BLOCK
             places[pid].flags = 0
             places[pid].block_ref = TEMP_BLOCK

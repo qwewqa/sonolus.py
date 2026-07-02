@@ -59,7 +59,7 @@ lets ``to_basic_blocks`` export it unchanged.
 from libc.stdint cimport int16_t, int32_t, int64_t, uint8_t, uint16_t, uint32_t, uint64_t
 from libc.stdlib cimport calloc, free, malloc, realloc
 from libc.string cimport memcpy
-from libc.math cimport floor, isinf, isnan, signbit
+from libc.math cimport floor, isfinite, isinf, isnan, signbit
 
 from sonolus.backend._opt.ir cimport (
     BlockInfo,
@@ -137,6 +137,15 @@ from sonolus.backend._opt.analysis cimport Dominators, LoopForest, compute_domin
 from sonolus.backend._opt.kernels cimport FOLD_OK, fold_op
 
 from sonolus.backend._opt.ir import marshal_in, register_phase, to_basic_blocks
+
+
+cdef inline bint _int32_block_const(double d) noexcept nogil:
+    # A constant dynamic-block id folds to a static REAL_BLOCK int32 place only when
+    # it is a finite integer in int32 range; the range check precedes the <int64_t>
+    # cast so the cast is always in range (Cython lowers <int32_t>int(double) to a
+    # raw C double->int cast, UB for inf/NaN/out-of-range). Duplicated from lower.pyx
+    # (a cimport would create a midend<->lower cycle).
+    return isfinite(d) and -2147483648.0 <= d <= 2147483647.0 and d == <double>(<int64_t>d)
 
 
 # --------------------------------------------------------------------------
@@ -1780,10 +1789,10 @@ cdef class _UnSSA:
             # (a scalar temp holding a block id dissolved), lower it to a plain
             # real-block place -- a non-SSA BasicBlock cannot carry an IRConst as
             # its block.
-            if src.instrs[br].op == OPX_CONST:
+            if src.instrs[br].op == OPX_CONST and _int32_block_const(src.consts[src.instrs[br].aux]):
                 kind = PLACE_REAL_BLOCK
                 flags = 0
-                br = <int32_t>int(src.consts[src.instrs[br].aux])
+                br = <int32_t>(<int64_t>src.consts[src.instrs[br].aux])
             else:
                 br = self._emit_ref(br, block)
         if iv >= 0:

@@ -154,7 +154,7 @@ cdef class Liveness:
 
     cdef uint64_t* _root_live_ptr(self, int32_t instr_idx) noexcept nogil:
         cdef int32_t rs = self.root_slot[instr_idx]
-        return &self.root_live[rs * self.n_words]
+        return &self.root_live[<int64_t>rs * self.n_words]
 
     cdef object _bitset_names(self, const uint64_t* bs):
         cdef Func f = self.func
@@ -267,12 +267,11 @@ cdef Liveness compute_liveness(Func func):
         if func.temps[t].size > 1:
             bs_set(L.array_mask, t)
 
-    # A CFG with no exit block (a `while True` with no break, or an exit that
-    # cfg_cleanup proved unreachable) is an infinite loop: the backward liveness
-    # pass would seed nothing and yield all-empty (unsound) live sets, which pack
-    # distinct live temps into the same slot and let dead-store elimination strip
-    # their initializing stores. Reject it loudly, before any allocation, so the
-    # raise cannot leak.
+    # A CFG with no exit block at all (whole-callback `while True` with no break,
+    # or an exit that cfg_cleanup proved unreachable) is a non-terminating callback
+    # and is rejected. The seed-all backward pass below would compute sound liveness
+    # for it regardless; this is a policy rejection, done before any raw allocation
+    # so the raise cannot leak.
     cdef bint has_exit = False
     for b in range(nb):
         if blocks[b].edge_count == 0:
@@ -345,7 +344,7 @@ cdef Liveness compute_liveness(Func func):
             sp -= 1
             b = stack[sp]
             inq[b] = 0
-            memcpy(acc, &array_defs_in[b * nw], <size_t>nw * sizeof(uint64_t))
+            memcpy(acc, &array_defs_in[<int64_t>b * nw], <size_t>nw * sizeof(uint64_t))
             istart = blocks[b].instr_start
             icount = blocks[b].instr_count
             for i in range(istart, istart + icount):
@@ -360,32 +359,36 @@ cdef Liveness compute_liveness(Func func):
                             bs_set(acc, t)
                         else:
                             L.is_array_init[i] = 0
-            changed = (not visited[b]) or (memcmp(acc, &L.array_defs_out[b * nw],
+            changed = (not visited[b]) or (memcmp(acc, &L.array_defs_out[<int64_t>b * nw],
                                                   <size_t>nw * sizeof(uint64_t)) != 0)
             if changed:
                 visited[b] = 1
-                memcpy(&L.array_defs_out[b * nw], acc, <size_t>nw * sizeof(uint64_t))
+                memcpy(&L.array_defs_out[<int64_t>b * nw], acc, <size_t>nw * sizeof(uint64_t))
                 for e in range(blocks[b].edge_start, blocks[b].edge_start + blocks[b].edge_count):
                     s = edges[e].dst
-                    _or_into(&array_defs_in[s * nw], acc, nw)
+                    _or_into(&array_defs_in[<int64_t>s * nw], acc, nw)
                     if not inq[s]:
                         stack[sp] = s
                         sp += 1
                         inq[s] = 1
 
-        # ---- backward liveness pass (seeded from exits) ------------------
+        # ---- backward liveness pass (seeded from all blocks) -------------
         # ``visited`` is reused as ``touched``: whether a block's live_out has been
-        # initialized by a successor yet (the first touch counts as a change, so
-        # every block that can reach an exit is processed at least once even with
-        # empty live_out).
+        # initialized by a successor yet (the first touch counts as a change).
+        # Seeding EVERY block -- not only exit-capable ones -- guarantees each is
+        # processed at least once, so uses inside an exit-unreachable region (e.g.
+        # the body of a conditional infinite loop `if c: while True: use(x)`, which
+        # no backward walk from an exit can reach) still propagate to predecessors.
+        # The dataflow has a unique fixpoint: exit-reachable blocks converge to the
+        # same live sets an exit-only seed would give (identical codegen); only the
+        # exit-unreachable blocks, previously left calloc-zero (unsound), change.
         memset(inq, 0, <size_t>(nb if nb > 0 else 1) * sizeof(uint8_t))
         memset(visited, 0, <size_t>(nb if nb > 0 else 1) * sizeof(uint8_t))
         sp = 0
         for b in range(nb):
-            if blocks[b].edge_count == 0:
-                stack[sp] = b
-                sp += 1
-                inq[b] = 1
+            stack[sp] = b
+            sp += 1
+            inq[b] = 1
         while sp > 0:
             sp -= 1
             b = stack[sp]
@@ -394,8 +397,8 @@ cdef Liveness compute_liveness(Func func):
             # live := live_out[b] with written arrays not yet defined-on-all-paths
             # dropped (never-written arrays keep ordinary read-liveness).
             for w in range(nw):
-                live[w] = L.live_out[b * nw + w] & ~(
-                    (L.array_mask[w] & array_written[w]) & ~L.array_defs_out[b * nw + w]
+                live[w] = L.live_out[<int64_t>b * nw + w] & ~(
+                    (L.array_mask[w] & array_written[w]) & ~L.array_defs_out[<int64_t>b * nw + w]
                 )
 
             # Block test counts as a use at block end.
@@ -409,7 +412,7 @@ cdef Liveness compute_liveness(Func func):
                 if not (instrs[i].flags & FLAG_STMT_ROOT):
                     continue
                 rs = L.root_slot[i]
-                memcpy(&L.root_live[rs * nw], live, <size_t>nw * sizeof(uint64_t))
+                memcpy(&L.root_live[<int64_t>rs * nw], live, <size_t>nw * sizeof(uint64_t))
                 op = instrs[i].op
                 if op == OPX_SET:
                     vid = <int32_t>args[instrs[i].arg_start]
@@ -445,10 +448,10 @@ cdef Liveness compute_liveness(Func func):
             # live is now live_in[b]; always propagate to predecessors so a
             # first-touch reaches them even when live_in is empty. Re-enqueue a
             # predecessor when it is first touched or its live_out grew.
-            memcpy(&L.live_in[b * nw], live, <size_t>nw * sizeof(uint64_t))
+            memcpy(&L.live_in[<int64_t>b * nw], live, <size_t>nw * sizeof(uint64_t))
             for e in range(pred_head[b], pred_head[b + 1]):
                 s = pred_src[e]
-                changed = _or_into(&L.live_out[s * nw], live, nw)
+                changed = _or_into(&L.live_out[<int64_t>s * nw], live, nw)
                 if (not visited[s]) or changed:
                     visited[s] = 1
                     if not inq[s]:
@@ -714,7 +717,7 @@ cdef class LoopForest:
         free(self.body)
 
     cdef bint in_loop(self, int32_t loop_id, int32_t block) noexcept nogil:
-        return bs_get(&self.body[loop_id * self.nwb], block)
+        return bs_get(&self.body[<int64_t>loop_id * self.nwb], block)
 
     cdef bint crosses_loop(self, int32_t def_block, int32_t use_block) noexcept nogil:
         # Sinking a def into use_block crosses a loop iff use_block is in some
@@ -840,7 +843,7 @@ cdef LoopForest compute_loops(Func func, Dominators D):
         if not D.dominates(h, u):
             continue
         li = loop_of_header[h]
-        lbody = &F.body[li * nwb]
+        lbody = &F.body[<int64_t>li * nwb]
         bs_set(lbody, h)
         if not bs_get(lbody, u):
             bs_set(lbody, u)
@@ -862,7 +865,7 @@ cdef LoopForest compute_loops(Func func, Dominators D):
     for li in range(n_loops):
         di = 0
         for lj in range(n_loops):
-            if bs_get(&F.body[lj * nwb], F.header[li]):
+            if bs_get(&F.body[<int64_t>lj * nwb], F.header[li]):
                 di += 1
         F.loop_depth[li] = di
 
@@ -875,7 +878,7 @@ cdef LoopForest compute_loops(Func func, Dominators D):
         for lj in range(n_loops):
             if lj == li:
                 continue
-            if bs_get(&F.body[lj * nwb], F.header[li]):
+            if bs_get(&F.body[<int64_t>lj * nwb], F.header[li]):
                 if F.loop_depth[lj] > best_depth:
                     best_depth = F.loop_depth[lj]
                     best = lj
@@ -888,7 +891,7 @@ cdef LoopForest compute_loops(Func func, Dominators D):
         best = -1
         best_depth = 0
         for li in range(n_loops):
-            if bs_get(&F.body[li * nwb], b):
+            if bs_get(&F.body[<int64_t>li * nwb], b):
                 cnt += 1
                 if F.loop_depth[li] > best_depth:
                     best_depth = F.loop_depth[li]

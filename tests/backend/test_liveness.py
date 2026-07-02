@@ -90,6 +90,31 @@ def test_loop_back_edge_keeps_temp_live():
     assert "i" in d["live_in"][1]
 
 
+def test_conditional_infinite_loop_keeps_use_live():
+    # `if c: while True: use(x)`: x is written before the branch and read only
+    # inside a spin loop that cannot reach any exit. The backward pass must still
+    # visit that exit-unreachable region so x's use propagates -- otherwise the
+    # store of x looks dead and dead-store elimination / packing clobbers it.
+    def make():
+        x = _scalar("x")
+        b0 = BasicBlock()
+        spin = BasicBlock()
+        after = BasicBlock()
+        b0.statements = [IRSet(x, IRConst(5))]
+        b0.test = IRGet(BlockPlace(501, 0, 0))  # runtime branch condition
+        b0.connect_to(after, 0)  # false -> exit path
+        b0.connect_to(spin, None)  # true -> infinite loop
+        spin.statements = [IRSet(BlockPlace(500, 0, 0), IRGet(x))]  # reads x each iter
+        spin.connect_to(spin, None)  # self-loop, never exits
+        return b0
+
+    d = _liveness(make)
+    # x is live leaving the branch block (block 0) -- used downstream in the loop.
+    assert "x" in d["live_out"][0]
+    # and live entering the spin block that reads it.
+    assert any("x" in s for s in d["live_in"].values())
+
+
 # --------------------------------------------------------------------------
 # Arrays.
 # --------------------------------------------------------------------------

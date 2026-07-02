@@ -707,7 +707,7 @@ def _observe(it: Interpreter, ret=0.0) -> tuple:
     return tuple(key)
 
 
-@settings(max_examples=300, deadline=None, suppress_health_check=list(HealthCheck))
+@settings(max_examples=300, deadline=None, suppress_health_check=[HealthCheck.too_slow])
 @given(program=programs())
 def test_random_programs_match_reference(program):
     def build():
@@ -718,7 +718,7 @@ def test_random_programs_match_reference(program):
     assert _observe(ref) == _observe(low)
 
 
-@settings(max_examples=120, deadline=None, suppress_health_check=list(HealthCheck))
+@settings(max_examples=120, deadline=None, suppress_health_check=[HealthCheck.too_slow])
 @given(program=programs(max_depth=4))
 def test_random_deeper_programs_match_reference(program):
     def build():
