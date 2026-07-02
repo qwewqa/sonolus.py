@@ -79,20 +79,45 @@ from sonolus.backend._opt._ops_gen cimport (
     OPX_UNDEF,
     OP_Add,
     OP_And,
+    OP_DecrementPostPointed,
+    OP_DecrementPostShifted,
     OP_Divide,
     OP_Equal,
+    OP_GetPointed,
+    OP_GetShifted,
     OP_Greater,
     OP_GreaterOr,
+    OP_IncrementPostPointed,
+    OP_IncrementPostShifted,
     OP_Less,
     OP_LessOr,
     OP_Max,
     OP_Min,
+    OP_Mod,
     OP_Multiply,
     OP_Negate,
     OP_Not,
     OP_NotEqual,
     OP_Or,
+    OP_Power,
+    OP_Rem,
     OP_RUNTIME_COUNT,
+    OP_SetAddPointed,
+    OP_SetAddShifted,
+    OP_SetDividePointed,
+    OP_SetDivideShifted,
+    OP_SetModPointed,
+    OP_SetModShifted,
+    OP_SetMultiplyPointed,
+    OP_SetMultiplyShifted,
+    OP_SetPointed,
+    OP_SetPowerPointed,
+    OP_SetPowerShifted,
+    OP_SetRemPointed,
+    OP_SetRemShifted,
+    OP_SetShifted,
+    OP_SetSubtractPointed,
+    OP_SetSubtractShifted,
     OP_Subtract,
     SONOLUS_OP_FOLDABLE,
 )
@@ -3875,11 +3900,170 @@ cdef Func rewrite_switch(Func func):
     return <Func>res[0]
 
 
+# --------------------------------------------------------------------------
+# Op-level Pointed/Shifted read-modify-write fusion (M3.5, OPTIMIZER_REWRITE.md).
+# Runs on SSA AFTER GVN (so identical address args share value ids) and BEFORE
+# DCE (which reaps the orphaned GetPointed/BinOp). The frontend never emits
+# Pointed/Shifted ops, so this never fires on the pydori corpus -- it is guarded
+# by a cheap pre-scan so the common (no-such-op) case allocates nothing.
+# --------------------------------------------------------------------------
+
+cdef inline int32_t _fused_ptr_op(uint16_t binop, bint shifted) noexcept nogil:
+    if not shifted:
+        if binop == <uint16_t>OP_Add:
+            return OP_SetAddPointed
+        if binop == <uint16_t>OP_Subtract:
+            return OP_SetSubtractPointed
+        if binop == <uint16_t>OP_Multiply:
+            return OP_SetMultiplyPointed
+        if binop == <uint16_t>OP_Divide:
+            return OP_SetDividePointed
+        if binop == <uint16_t>OP_Mod:
+            return OP_SetModPointed
+        if binop == <uint16_t>OP_Rem:
+            return OP_SetRemPointed
+        if binop == <uint16_t>OP_Power:
+            return OP_SetPowerPointed
+        return -1
+    if binop == <uint16_t>OP_Add:
+        return OP_SetAddShifted
+    if binop == <uint16_t>OP_Subtract:
+        return OP_SetSubtractShifted
+    if binop == <uint16_t>OP_Multiply:
+        return OP_SetMultiplyShifted
+    if binop == <uint16_t>OP_Divide:
+        return OP_SetDivideShifted
+    if binop == <uint16_t>OP_Mod:
+        return OP_SetModShifted
+    if binop == <uint16_t>OP_Rem:
+        return OP_SetRemShifted
+    if binop == <uint16_t>OP_Power:
+        return OP_SetPowerShifted
+    return -1
+
+
+cdef inline bint _is_one(Func f, int32_t vid) noexcept nogil:
+    return f.instrs[vid].op == <uint16_t>OPX_CONST and f.consts[f.instrs[vid].aux] == 1.0
+
+
+cdef bint _no_effect_between(Func f, int32_t lo, int32_t hi) noexcept nogil:
+    # No FLAG_SIDE_EFFECT instr strictly between linear indices lo and hi (same
+    # block; pinned/effectful instrs keep program order, so the linear scan is the
+    # program-order scan -- mirrors treeify's pinned-read fold guard).
+    cdef int32_t j
+    for j in range(lo + 1, hi):
+        if f.instrs[j].flags & FLAG_SIDE_EFFECT:
+            return False
+    return True
+
+
+def _fuse_ptr_rmw(Func f):
+    cdef int32_t n = f.n_instrs
+    cdef int32_t i, op
+    # Cheap pre-scan: bail (allocating nothing) unless a Set{Pointed,Shifted}
+    # statement root exists. The corpus has none, so this is the taken path.
+    cdef bint present = False
+    for i in range(n):
+        op = f.instrs[i].op
+        if (op == <uint16_t>OP_SetPointed or op == <uint16_t>OP_SetShifted) and (
+            f.instrs[i].flags & FLAG_STMT_ROOT
+        ):
+            present = True
+            break
+    if not present:
+        return False
+
+    cdef int32_t b, tv, astart, nargs, k, a, pid, ivv
+    uc = [0] * n
+    for i in range(n):
+        op = f.instrs[i].op
+        astart = f.instrs[i].arg_start
+        nargs = f.instrs[i].nargs
+        for k in range(nargs):
+            a = <int32_t>f.args[astart + k]
+            uc[a] = <int32_t>uc[a] + 1
+        if op == OPX_GET or op == OPX_SET:
+            pid = f.instrs[i].aux
+            if f.places[pid].kind == PLACE_DYNAMIC_BLOCK:
+                a = f.places[pid].block_ref
+                uc[a] = <int32_t>uc[a] + 1
+            ivv = f.places[pid].index_val
+            if ivv >= 0:
+                uc[ivv] = <int32_t>uc[ivv] + 1
+    for b in range(f.n_blocks):
+        tv = f.blocks[b].test_val
+        if tv >= 0:
+            uc[tv] = <int32_t>uc[tv] + 1
+
+    cdef bint changed = False
+    for i in range(n):
+        op = f.instrs[i].op
+        if not (f.instrs[i].flags & FLAG_STMT_ROOT):
+            continue
+        if op == <uint16_t>OP_SetPointed:
+            if _try_fuse_ptr(f, i, uc, 3, <uint16_t>OP_GetPointed, False):
+                changed = True
+        elif op == <uint16_t>OP_SetShifted:
+            if _try_fuse_ptr(f, i, uc, 4, <uint16_t>OP_GetShifted, True):
+                changed = True
+    return changed
+
+
+cdef bint _try_fuse_ptr(Func f, int32_t i, list uc, int32_t naddr, uint16_t get_op, bint shifted) except -1:
+    cdef int32_t astart = f.instrs[i].arg_start
+    if f.instrs[i].nargs != naddr + 1:
+        return False
+    cdef int32_t vid = <int32_t>f.args[astart + naddr]  # value operand (the binop)
+    if <int32_t>uc[vid] != 1 or f.instrs[vid].nargs != 2:
+        return False
+    cdef uint16_t vop = f.instrs[vid].op
+    cdef int32_t fused = _fused_ptr_op(vop, shifted)
+    if fused < 0:
+        return False
+    cdef int32_t g = <int32_t>f.args[f.instrs[vid].arg_start]
+    cdef int32_t w = <int32_t>f.args[f.instrs[vid].arg_start + 1]
+    # args[0] of the binop must be a single-use Get{Pointed,Shifted} whose address
+    # value-ids (GVN'd) equal the store's address value-ids. Single-use on ``g``
+    # also guarantees ``w`` cannot reference it (evaluation-order guard for free).
+    if f.instrs[g].op != get_op or f.instrs[g].nargs != naddr or <int32_t>uc[g] != 1:
+        return False
+    cdef int32_t gstart = f.instrs[g].arg_start
+    cdef int32_t k
+    for k in range(naddr):
+        if <int32_t>f.args[astart + k] != <int32_t>f.args[gstart + k]:
+            return False
+    # The read must be immediately consumed: same block, no effect between it and
+    # the store (pinned-read guard, mirroring treeify).
+    if f.instrs[g].block != f.instrs[i].block:
+        return False
+    if not _no_effect_between(f, g, i):
+        return False
+    cdef int32_t inc_op, dec_op
+    if not shifted:
+        inc_op = OP_IncrementPostPointed
+        dec_op = OP_DecrementPostPointed
+    else:
+        inc_op = OP_IncrementPostShifted
+        dec_op = OP_DecrementPostShifted
+    if vop == <uint16_t>OP_Add and _is_one(f, w):
+        f.instrs[i].op = <uint16_t>inc_op
+        f.instrs[i].nargs = <int16_t>naddr
+    elif vop == <uint16_t>OP_Subtract and _is_one(f, w):
+        f.instrs[i].op = <uint16_t>dec_op
+        f.instrs[i].nargs = <int16_t>naddr
+    else:
+        f.instrs[i].op = <uint16_t>fused
+        f.args[astart + naddr] = <uint32_t>w  # replace the binop operand with w
+        # nargs stays naddr + 1
+    return True
+
+
 def _midend_pass(Func func):
     f1, c1 = _run_sccp(func)  # includes single-operand phi collapse
     _, c2 = _run_gvn_inplace(<Func>f1)
-    f2, c3 = _run_dce(<Func>f1)
-    return (f2, c1 or c2 or c3)
+    cf = _fuse_ptr_rmw(<Func>f1)  # op-level Pointed/Shifted RMW fusion (M3.5)
+    f2, c3 = _run_dce(<Func>f1)  # reaps the orphaned GetPointed/BinOp
+    return (f2, c1 or c2 or c3 or cf)
 
 
 cdef Func midend_round(Func func, bint allow_repeat):

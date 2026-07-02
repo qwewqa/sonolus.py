@@ -10,6 +10,7 @@ The ``Ease*`` implementations in the oracle are literal transcriptions of the bo
 """
 
 import math
+import operator
 import re
 import struct
 
@@ -18,7 +19,7 @@ from hypothesis import given
 from hypothesis import strategies as st
 
 import sonolus.script.internal.math_impls as smath
-from sonolus.backend.interpret import _EASE_FUNCS, Interpreter  # noqa: PLC2701
+from sonolus.backend.interpret import _EASE_FUNCS, Interpreter, _rem  # noqa: PLC2701
 from sonolus.backend.node import FunctionNode
 from sonolus.backend.ops import Op
 from sonolus.script import easing
@@ -258,3 +259,213 @@ def test_ease_clamps_input(op):
     # Out-of-range inputs are clamped, so ease(-5) == ease(0) and ease(5) == ease(1).
     assert same_bits(run_node(op, -5.0), run_node(op, 0.0))
     assert same_bits(run_node(op, 5.0), run_node(op, 1.0))
+
+
+# --------------------------------------------------------------------------------------------- #
+# Fused read-modify-write ops (M3.5): Set<BinOp>[|Pointed|Shifted], Increment*/Decrement*.
+#
+# Each fused op is checked against its definitional expansion executed on a fresh interpreter
+# (same seeded memory), asserting BOTH the final memory and the return value match (the
+# expansion's return being the wrapping ``Set``'s value). Constant addresses are used so the
+# expansion's double index-evaluation is harmless. Pre/Post return conventions (REVERSE of C:
+# Pre=old, Post=new), pointer-pair addressing, x+y*s striding, and Mod/Rem sign edges are
+# covered through the fused forms.
+# --------------------------------------------------------------------------------------------- #
+
+# (scalar, pointed, shifted) fused op per binary operator, plus the plain binop + Python impl.
+_FUSED = {
+    Op.Add: (Op.SetAdd, Op.SetAddPointed, Op.SetAddShifted, operator.add),
+    Op.Subtract: (Op.SetSubtract, Op.SetSubtractPointed, Op.SetSubtractShifted, operator.sub),
+    Op.Multiply: (Op.SetMultiply, Op.SetMultiplyPointed, Op.SetMultiplyShifted, operator.mul),
+    Op.Divide: (Op.SetDivide, Op.SetDividePointed, Op.SetDivideShifted, operator.truediv),
+    Op.Mod: (Op.SetMod, Op.SetModPointed, Op.SetModShifted, operator.mod),
+    Op.Rem: (Op.SetRem, Op.SetRemPointed, Op.SetRemShifted, _rem),
+    Op.Power: (Op.SetPower, Op.SetPowerPointed, Op.SetPowerShifted, operator.pow),
+}
+
+BINOPS = list(_FUSED)
+
+
+def _run_seeded(node: FunctionNode, seed: dict) -> tuple:
+    """Run ``node`` on a fresh interpreter seeded with ``seed`` (block -> {index: value}).
+
+    Returns ``(return_value, memory_snapshot)`` where the snapshot is a dict of the touched
+    blocks as tuples.
+    """
+    it = Interpreter()
+    for block, slots in seed.items():
+        for index, value in slots.items():
+            it.set(block, index, value)
+    ret = it.run(node)
+    mem = {block: tuple(cells) for block, cells in it.blocks.items()}
+    return ret, mem
+
+
+def _c(x) -> float:
+    return float(x)
+
+
+# ---- scalar Set<BinOp> vs Set(id, index, BinOp(Get(id, index), value)) --------------------- #
+
+
+@pytest.mark.parametrize("binop", BINOPS, ids=lambda op: op.name)
+@pytest.mark.parametrize("old", [8.0, -8.0, 6.0, -6.0, 2.5])
+@pytest.mark.parametrize("value", [3.0, -3.0, 2.0])
+def test_scalar_fused_matches_expansion(binop, old, value):
+    scalar_op = _FUSED[binop][0]
+    block, index = 100, 5
+    seed = {block: {index: old}}
+    fused = FunctionNode(scalar_op, (_c(block), _c(index), _c(value)))
+    get = FunctionNode(Op.Get, (_c(block), _c(index)))
+    expansion = FunctionNode(Op.Set, (_c(block), _c(index), FunctionNode(binop, (get, _c(value)))))
+    assert _run_seeded(fused, seed) == _run_seeded(expansion, seed)
+
+
+# ---- Pointed: double-deref addressing (ptr block at index, ptr index at index+1) ----------- #
+
+
+@pytest.mark.parametrize("binop", BINOPS, ids=lambda op: op.name)
+@pytest.mark.parametrize("value", [3.0, -2.0])
+def test_pointed_fused_matches_expansion(binop, value):
+    pointed_op = _FUSED[binop][1]
+    # mem[100][0] = target block 200; mem[100][1] = base index 3; offset 2 -> mem[200][5].
+    ptr_block, ptr_index, offset = 100, 0, 2
+    seed = {ptr_block: {ptr_index: 200.0, ptr_index + 1: 3.0}, 200: {5: 40.0}}
+    args = (_c(ptr_block), _c(ptr_index), _c(offset), _c(value))
+    fused = FunctionNode(pointed_op, args)
+    get = FunctionNode(Op.GetPointed, (_c(ptr_block), _c(ptr_index), _c(offset)))
+    deref_block = FunctionNode(Op.Get, (_c(ptr_block), _c(ptr_index)))
+    deref_index = FunctionNode(Op.Add, (FunctionNode(Op.Get, (_c(ptr_block), _c(ptr_index) + 1)), _c(offset)))
+    expansion = FunctionNode(Op.Set, (deref_block, deref_index, FunctionNode(binop, (get, _c(value)))))
+    assert _run_seeded(fused, seed) == _run_seeded(expansion, seed)
+
+
+# ---- Shifted: addr = x + y * s ------------------------------------------------------------- #
+
+
+@pytest.mark.parametrize("binop", BINOPS, ids=lambda op: op.name)
+@pytest.mark.parametrize("value", [3.0, -2.0])
+def test_shifted_fused_matches_expansion(binop, value):
+    shifted_op = _FUSED[binop][2]
+    block, x, y, s = 100, 2, 3, 4  # addr = 2 + 3*4 = 14
+    seed = {block: {x + y * s: 40.0}}
+    args = (_c(block), _c(x), _c(y), _c(s), _c(value))
+    fused = FunctionNode(shifted_op, args)
+    get = FunctionNode(Op.GetShifted, (_c(block), _c(x), _c(y), _c(s)))
+    addr = FunctionNode(Op.Add, (_c(x), FunctionNode(Op.Multiply, (_c(y), _c(s)))))
+    expansion = FunctionNode(Op.Set, (_c(block), addr, FunctionNode(binop, (get, _c(value)))))
+    assert _run_seeded(fused, seed) == _run_seeded(expansion, seed)
+
+
+def test_shifted_addressing_x_plus_y_times_s():
+    # Directly assert the x + y*s address is where the store lands.
+    it = Interpreter()
+    it.set(7, 14, 100.0)  # 2 + 3*4 = 14
+    ret = it.run(FunctionNode(Op.SetAddShifted, (7.0, 2.0, 3.0, 4.0, 5.0)))
+    assert ret == 105.0
+    assert it.get(7, 14) == 105.0
+
+
+# ---- Increment/Decrement Pre/Post return + memory (REVERSE of C: Pre=old, Post=new) -------- #
+
+
+@pytest.mark.parametrize(
+    ("op", "ret_is_new", "delta"),
+    [
+        (Op.IncrementPost, True, 1),
+        (Op.IncrementPre, False, 1),
+        (Op.DecrementPost, True, -1),
+        (Op.DecrementPre, False, -1),
+    ],
+)
+def test_increment_decrement_scalar_return_and_memory(op, ret_is_new, delta):
+    block, index, old = 100, 5, 8.0
+    it = Interpreter()
+    it.set(block, index, old)
+    ret = it.run(FunctionNode(op, (float(block), float(index))))
+    assert it.get(block, index) == old + delta  # memory always changes by +/-1
+    assert ret == (old + delta if ret_is_new else old)  # Post=new, Pre=old
+
+
+@pytest.mark.parametrize(
+    ("op", "ret_is_new", "delta"),
+    [
+        (Op.IncrementPostPointed, True, 1),
+        (Op.IncrementPrePointed, False, 1),
+        (Op.DecrementPostPointed, True, -1),
+        (Op.DecrementPrePointed, False, -1),
+    ],
+)
+def test_increment_decrement_pointed_return_and_addressing(op, ret_is_new, delta):
+    # ptr pair mem[100][0]=200, mem[100][1]=3; offset 2 -> target mem[200][5].
+    seed_old = 40.0
+    it = Interpreter()
+    it.set(100, 0, 200.0)
+    it.set(100, 1, 3.0)
+    it.set(200, 5, seed_old)
+    ret = it.run(FunctionNode(op, (100.0, 0.0, 2.0)))
+    assert it.get(200, 5) == seed_old + delta
+    assert ret == (seed_old + delta if ret_is_new else seed_old)
+
+
+@pytest.mark.parametrize(
+    ("op", "ret_is_new", "delta"),
+    [
+        (Op.IncrementPostShifted, True, 1),
+        (Op.IncrementPreShifted, False, 1),
+        (Op.DecrementPostShifted, True, -1),
+        (Op.DecrementPreShifted, False, -1),
+    ],
+)
+def test_increment_decrement_shifted_return_and_addressing(op, ret_is_new, delta):
+    seed_old = 40.0
+    it = Interpreter()
+    it.set(100, 14, seed_old)  # 2 + 3*4
+    ret = it.run(FunctionNode(op, (100.0, 2.0, 3.0, 4.0)))
+    assert it.get(100, 14) == seed_old + delta
+    assert ret == (seed_old + delta if ret_is_new else seed_old)
+
+
+# ---- Mod / Rem sign edge cases through the fused forms ------------------------------------- #
+
+
+@pytest.mark.parametrize(
+    ("old", "value"),
+    [(-7.0, 3.0), (7.0, -3.0), (-7.0, -3.0), (7.0, 3.0), (-6.0, 3.0), (6.0, -3.0)],
+)
+def test_set_mod_matches_python_floored(old, value):
+    it = Interpreter()
+    it.set(1, 0, old)
+    ret = it.run(FunctionNode(Op.SetMod, (1.0, 0.0, value)))
+    assert same_bits(ret, operator.mod(old, value))
+    assert same_bits(it.get(1, 0), operator.mod(old, value))
+
+
+@pytest.mark.parametrize(
+    ("old", "value"),
+    [(-7.0, 3.0), (7.0, -3.0), (-7.0, -3.0), (7.0, 3.0), (-6.0, 3.0), (6.0, -3.0)],
+)
+def test_set_rem_matches_sign_of_dividend(old, value):
+    it = Interpreter()
+    it.set(1, 0, old)
+    ret = it.run(FunctionNode(Op.SetRem, (1.0, 0.0, value)))
+    assert same_bits(ret, _rem(old, value))
+    assert same_bits(it.get(1, 0), _rem(old, value))
+
+
+def test_set_rem_negative_zero_remainder_is_negative_zero():
+    # Negative dividend, zero remainder -> -0.0 stored (sign-of-dividend), through the fused form.
+    it = Interpreter()
+    it.set(1, 0, -6.0)
+    ret = it.run(FunctionNode(Op.SetRem, (1.0, 0.0, 3.0)))
+    assert ret == 0.0
+    assert math.copysign(1.0, ret) == -1.0
+    assert math.copysign(1.0, it.get(1, 0)) == -1.0
+
+
+@given(old=finite_floats, value=finite_floats.filter(lambda v: abs(v) > 1e-6))
+def test_set_rem_hypothesis_matches_expansion(old, value):
+    it = Interpreter()
+    it.set(1, 0, old)
+    ret = it.run(FunctionNode(Op.SetRem, (1.0, 0.0, value)))
+    assert same_bits(ret, _rem(old, value))

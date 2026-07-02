@@ -504,6 +504,44 @@ class Interpreter:
                 return 0.0
             case Op.DebugPause:
                 return 0.0
+            case Op.DecrementPost:
+                # Post returns the NEW value (REVERSE of C; wiki-confirmed semantics).
+                block, index = (self.ensure_int(self.run(arg)) for arg in args)
+                old = self.get(block, index)
+                self.set(block, index, old - 1)
+                return old - 1
+            case Op.DecrementPostPointed:
+                block, index, offset = (self.ensure_int(self.run(arg)) for arg in args)
+                deref_block = self.get(block, index)
+                deref_index = self.get(block, index + 1) + offset
+                old = self.get(deref_block, deref_index)
+                self.set(deref_block, deref_index, old - 1)
+                return old - 1
+            case Op.DecrementPostShifted:
+                block, offset, index, stride = (self.ensure_int(self.run(arg)) for arg in args)
+                addr = offset + index * stride
+                old = self.get(block, addr)
+                self.set(block, addr, old - 1)
+                return old - 1
+            case Op.DecrementPre:
+                # Pre returns the OLD value (REVERSE of C; wiki-confirmed semantics).
+                block, index = (self.ensure_int(self.run(arg)) for arg in args)
+                old = self.get(block, index)
+                self.set(block, index, old - 1)
+                return old
+            case Op.DecrementPrePointed:
+                block, index, offset = (self.ensure_int(self.run(arg)) for arg in args)
+                deref_block = self.get(block, index)
+                deref_index = self.get(block, index + 1) + offset
+                old = self.get(deref_block, deref_index)
+                self.set(deref_block, deref_index, old - 1)
+                return old
+            case Op.DecrementPreShifted:
+                block, offset, index, stride = (self.ensure_int(self.run(arg)) for arg in args)
+                addr = offset + index * stride
+                old = self.get(block, addr)
+                self.set(block, addr, old - 1)
+                return old
             case Op.Degree:
                 return math.degrees(self.run(args[0]))
             case Op.Divide:
@@ -529,39 +567,43 @@ class Interpreter:
             case Op.GreaterOr:
                 return 1.0 if self.run(args[0]) >= self.run(args[1]) else 0.0
             case Op.IncrementPost:
+                # Post returns the NEW value (REVERSE of C; wiki-confirmed semantics).
                 block, index = (self.ensure_int(self.run(arg)) for arg in args)
-                value = self.get(block, index)
-                self.set(block, index, value + 1)
-                return value
+                old = self.get(block, index)
+                self.set(block, index, old + 1)
+                return old + 1
             case Op.IncrementPostPointed:
                 block, index, offset = (self.ensure_int(self.run(arg)) for arg in args)
                 deref_block = self.get(block, index)
                 deref_index = self.get(block, index + 1) + offset
-                value = self.get(deref_block, deref_index)
-                self.set(deref_block, deref_index, value + 1)
-                return value
+                old = self.get(deref_block, deref_index)
+                self.set(deref_block, deref_index, old + 1)
+                return old + 1
             case Op.IncrementPostShifted:
                 block, offset, index, stride = (self.ensure_int(self.run(arg)) for arg in args)
-                value = self.get(block, offset + index * stride)
-                self.set(block, offset + index * stride, value + 1)
-                return value
+                addr = offset + index * stride
+                old = self.get(block, addr)
+                self.set(block, addr, old + 1)
+                return old + 1
             case Op.IncrementPre:
+                # Pre returns the OLD value (REVERSE of C; wiki-confirmed semantics).
                 block, index = (self.ensure_int(self.run(arg)) for arg in args)
-                value = self.get(block, index) + 1
-                self.set(block, index, value)
-                return value
+                old = self.get(block, index)
+                self.set(block, index, old + 1)
+                return old
             case Op.IncrementPrePointed:
                 block, index, offset = (self.ensure_int(self.run(arg)) for arg in args)
                 deref_block = self.get(block, index)
                 deref_index = self.get(block, index + 1) + offset
-                value = self.get(deref_block, deref_index) + 1
-                self.set(deref_block, deref_index, value)
-                return value
+                old = self.get(deref_block, deref_index)
+                self.set(deref_block, deref_index, old + 1)
+                return old
             case Op.IncrementPreShifted:
                 block, offset, index, stride = (self.ensure_int(self.run(arg)) for arg in args)
-                value = self.get(block, offset + index * stride) + 1
-                self.set(block, offset + index * stride, value)
-                return value
+                addr = offset + index * stride
+                old = self.get(block, addr)
+                self.set(block, addr, old + 1)
+                return old
             case Op.Lerp:
                 x, y, s = (self.run(arg) for arg in args)
                 return x + (y - x) * s
@@ -612,6 +654,53 @@ class Interpreter:
                 block, index, value = (self.run(arg) for arg in args)
                 block, index = self.ensure_int(block), self.ensure_int(index)
                 return self.set(block, index, value)
+            # Fused read-modify-write ops. Each is defined as
+            #   Set(addr, <binop>(Get(addr), value))
+            # with the address computed once and ``value`` evaluated before the read.
+            # The binop reuses the exact operator/helper of the plain binary op so the
+            # numeric result matches bit-for-bit. Each returns the new (stored) value.
+            case Op.SetAdd:
+                return self._set_rmw(args, operator.add)
+            case Op.SetAddPointed:
+                return self._set_rmw_pointed(args, operator.add)
+            case Op.SetAddShifted:
+                return self._set_rmw_shifted(args, operator.add)
+            case Op.SetSubtract:
+                return self._set_rmw(args, operator.sub)
+            case Op.SetSubtractPointed:
+                return self._set_rmw_pointed(args, operator.sub)
+            case Op.SetSubtractShifted:
+                return self._set_rmw_shifted(args, operator.sub)
+            case Op.SetMultiply:
+                return self._set_rmw(args, operator.mul)
+            case Op.SetMultiplyPointed:
+                return self._set_rmw_pointed(args, operator.mul)
+            case Op.SetMultiplyShifted:
+                return self._set_rmw_shifted(args, operator.mul)
+            case Op.SetDivide:
+                return self._set_rmw(args, operator.truediv)
+            case Op.SetDividePointed:
+                return self._set_rmw_pointed(args, operator.truediv)
+            case Op.SetDivideShifted:
+                return self._set_rmw_shifted(args, operator.truediv)
+            case Op.SetMod:
+                return self._set_rmw(args, operator.mod)
+            case Op.SetModPointed:
+                return self._set_rmw_pointed(args, operator.mod)
+            case Op.SetModShifted:
+                return self._set_rmw_shifted(args, operator.mod)
+            case Op.SetRem:
+                return self._set_rmw(args, _rem)
+            case Op.SetRemPointed:
+                return self._set_rmw_pointed(args, _rem)
+            case Op.SetRemShifted:
+                return self._set_rmw_shifted(args, _rem)
+            case Op.SetPower:
+                return self._set_rmw(args, operator.pow)
+            case Op.SetPowerPointed:
+                return self._set_rmw_pointed(args, operator.pow)
+            case Op.SetPowerShifted:
+                return self._set_rmw_shifted(args, operator.pow)
             case Op.SetPointed:
                 block, index, offset, value = (self.run(arg) for arg in args)
                 block, index, offset = self.ensure_int(block), self.ensure_int(index), self.ensure_int(offset)
@@ -676,6 +765,36 @@ class Interpreter:
         for arg in rest:
             acc = operator(acc, arg)
         return acc
+
+    def _set_rmw(self, args: list[EngineNode], op: Callable[[float, float], float]) -> float:
+        """Fused scalar RMW: ``Set(id, index, op(Get(id, index), value))``.
+
+        Address args are evaluated once, left-to-right, and ``value`` is evaluated
+        before the memory read; the new (stored) value is returned.
+        """
+        block, index, value = (self.run(arg) for arg in args)
+        block, index = self.ensure_int(block), self.ensure_int(index)
+        return self.set(block, index, op(self.get(block, index), value))
+
+    def _set_rmw_pointed(self, args: list[EngineNode], op: Callable[[float, float], float]) -> float:
+        """Fused pointer-relative RMW mirroring ``SetPointed``'s double-deref addressing."""
+        block, index, offset, value = (self.run(arg) for arg in args)
+        block, index, offset = self.ensure_int(block), self.ensure_int(index), self.ensure_int(offset)
+        deref_block = self.get(block, index)
+        deref_index = self.get(block, index + 1) + offset
+        return self.set(deref_block, deref_index, op(self.get(deref_block, deref_index), value))
+
+    def _set_rmw_shifted(self, args: list[EngineNode], op: Callable[[float, float], float]) -> float:
+        """Fused strided RMW mirroring ``SetShifted``'s ``offset + index * stride`` addressing."""
+        block, offset, index, stride, value = (self.run(arg) for arg in args)
+        block, offset, index, stride = (
+            self.ensure_int(block),
+            self.ensure_int(offset),
+            self.ensure_int(index),
+            self.ensure_int(stride),
+        )
+        addr = offset + index * stride
+        return self.set(block, addr, op(self.get(block, addr), value))
 
     def get(self, block: float, index: float) -> float:
         block = self.ensure_int(block)

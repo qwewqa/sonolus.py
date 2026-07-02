@@ -57,16 +57,26 @@ from sonolus.backend._opt.ir cimport (
 )
 from sonolus.backend._opt._ops_gen cimport (
     OP_Add,
+    OP_DecrementPost,
     OP_Divide,
     OP_Equal,
     OP_If,
+    OP_IncrementPost,
     OP_Mod,
     OP_Multiply,
     OP_Negate,
+    OP_Power,
     OP_Random,
     OP_RandomInteger,
     OP_Rem,
     OP_RUNTIME_COUNT,
+    OP_SetAdd,
+    OP_SetDivide,
+    OP_SetMod,
+    OP_SetMultiply,
+    OP_SetPower,
+    OP_SetRem,
+    OP_SetSubtract,
     OP_Subtract,
     OPX_CONST,
     OPX_GET,
@@ -297,6 +307,167 @@ cdef void allocate_func(Func func, int32_t strategy) except *:
         free(temp_offset)
 
 
+# --------------------------------------------------------------------------
+# Place-based read-modify-write fusion (M3.5, OPTIMIZER_REWRITE.md §3 wiki
+# semantics). Runs post-allocation, pre-emit/export.
+# --------------------------------------------------------------------------
+
+cdef inline int32_t _fused_set_op(uint16_t binop) noexcept nogil:
+    """Map a binary arithmetic op id to its fused ``Set<BinOp>`` op id, or -1."""
+    if binop == <uint16_t>OP_Add:
+        return OP_SetAdd
+    if binop == <uint16_t>OP_Subtract:
+        return OP_SetSubtract
+    if binop == <uint16_t>OP_Multiply:
+        return OP_SetMultiply
+    if binop == <uint16_t>OP_Divide:
+        return OP_SetDivide
+    if binop == <uint16_t>OP_Mod:
+        return OP_SetMod
+    if binop == <uint16_t>OP_Rem:
+        return OP_SetRem
+    if binop == <uint16_t>OP_Power:
+        return OP_SetPower
+    return -1
+
+
+cdef bint _values_equal(Func func, int32_t v1, int32_t v2) except -1:
+    """Structural equality of two value-ids (pure address/index expressions).
+
+    ``lower_from_ssa`` re-emits a fresh place (and index/pointer tree) per
+    OPX_GET/OPX_SET, so the store target and the folded read reference the SAME
+    logical location under DIFFERENT place ids. fuse_rmw compares them
+    structurally instead of by id. Side-effecting values (e.g. two ``Random``
+    draws) are never equal.
+    """
+    if v1 == v2:
+        return True
+    cdef uint16_t o1 = func.instrs[v1].op
+    cdef uint16_t o2 = func.instrs[v2].op
+    if o1 != o2:
+        return False
+    if o1 == <uint16_t>OPX_CONST:
+        return func.consts[func.instrs[v1].aux] == func.consts[func.instrs[v2].aux]
+    if o1 == <uint16_t>OPX_GET:
+        return _places_equal(func, func.instrs[v1].aux, func.instrs[v2].aux)
+    if func.instrs[v1].flags & FLAG_SIDE_EFFECT:
+        return False
+    cdef int16_t n1 = func.instrs[v1].nargs
+    if n1 != func.instrs[v2].nargs:
+        return False
+    cdef int32_t s1 = func.instrs[v1].arg_start
+    cdef int32_t s2 = func.instrs[v2].arg_start
+    cdef int32_t k
+    for k in range(n1):
+        if not _values_equal(func, <int32_t>func.args[s1 + k], <int32_t>func.args[s2 + k]):
+            return False
+    return True
+
+
+cdef bint _places_equal(Func func, int32_t p1, int32_t p2) except -1:
+    """Structural place equality (same kind, block, index expression, offset)."""
+    if p1 == p2:
+        return True
+    cdef PlaceInfo* places = func.places
+    cdef uint8_t kind = places[p1].kind
+    if kind != places[p2].kind:
+        return False
+    if places[p1].offset != places[p2].offset:
+        return False
+    cdef int32_t iv1 = places[p1].index_val
+    cdef int32_t iv2 = places[p2].index_val
+    if (iv1 < 0) != (iv2 < 0):
+        return False
+    if iv1 >= 0 and not _values_equal(func, iv1, iv2):
+        return False
+    if kind == PLACE_DYNAMIC_BLOCK:
+        return _values_equal(func, places[p1].block_ref, places[p2].block_ref)
+    return places[p1].block_ref == places[p2].block_ref
+
+
+cdef bint _subtree_refs(Func func, int32_t root, int32_t target) except -1:
+    """True iff the operand DAG rooted at ``root`` references value-id ``target``.
+
+    Bounded DFS: in non-SSA arena form every operand strictly precedes its user
+    (``a < i``), so the reachable set is finite; the lowered value trees are tiny.
+    """
+    if root == target:
+        return True
+    cdef int32_t astart = func.instrs[root].arg_start
+    cdef int32_t nargs = func.instrs[root].nargs
+    cdef int32_t k, a
+    for k in range(nargs):
+        a = <int32_t>func.args[astart + k]
+        if _subtree_refs(func, a, target):
+            return True
+    return False
+
+
+cdef inline bint _is_const_one(Func func, int32_t vid) noexcept nogil:
+    return func.instrs[vid].op == <uint16_t>OPX_CONST and func.consts[func.instrs[vid].aux] == 1.0
+
+
+cdef void _fuse_scalar(Func func, int32_t i) except *:
+    # Place-based: OPX_SET(place p, BinOp(OPX_GET(p), w)) -> Set<BinOp>(p, w).
+    cdef Instr* instrs = func.instrs
+    cdef uint32_t* args = func.args
+    cdef int32_t pid = instrs[i].aux
+    cdef int32_t vid = <int32_t>args[instrs[i].arg_start]
+    cdef uint16_t vop = instrs[vid].op
+    if instrs[vid].nargs != 2:
+        return
+    cdef int32_t fused = _fused_set_op(vop)
+    if fused < 0:
+        return
+    cdef int32_t a0 = <int32_t>args[instrs[vid].arg_start]
+    cdef int32_t a1 = <int32_t>args[instrs[vid].arg_start + 1]
+    # args[0] must read a place structurally identical to the store target
+    # (lower_from_ssa re-emits places per use, so compare by structure not id).
+    if instrs[a0].op != <uint16_t>OPX_GET or not _places_equal(func, instrs[a0].aux, pid):
+        return
+    # Evaluation-order guard: the GET must not appear in args[1].
+    if _subtree_refs(func, a1, a0):
+        return
+    if vop == <uint16_t>OP_Add and _is_const_one(func, a1):
+        instrs[i].op = <uint16_t>OP_IncrementPost
+        instrs[i].nargs = 0
+    elif vop == <uint16_t>OP_Subtract and _is_const_one(func, a1):
+        instrs[i].op = <uint16_t>OP_DecrementPost
+        instrs[i].nargs = 0
+    else:
+        instrs[i].op = <uint16_t>fused
+        args[instrs[i].arg_start] = <uint32_t>a1  # replace binop with w
+        # nargs stays 1
+    instrs[i].flags = <uint8_t>(FLAG_SIDE_EFFECT | FLAG_PINNED | FLAG_STMT_ROOT)
+
+
+cdef void fuse_rmw(Func func) except *:
+    """Fuse place-based read-modify-write statement roots in place (see lower.pxd).
+
+    A statement-root ``OPX_SET(place p, BinOp(OPX_GET(p), w))`` where BinOp is a
+    BINARY (nargs==2) Add/Subtract/Multiply/Divide/Mod/Rem/Power and the read place
+    is structurally identical to the store target -> ``Set<BinOp>(place p, w)``.
+    ``Add``/``Subtract`` by const 1.0 collapse to ``IncrementPost``/``DecrementPost``
+    (statement position, unread return). n-ary (nargs>2) values are never fused (FP
+    left-fold order forbids it); the GET must not appear in ``w`` (evaluation
+    order). The dying GET/BinOp instrs are left orphaned (no stmt root,
+    unreferenced) -- emit/export skip them.
+
+    (The op-level ``GetPointed``/``GetShifted`` RMW forms are fused earlier, on SSA,
+    in ``midend._fuse_ptr_rmw`` -- treeify materialises those pinned reads to temps
+    so they are never inline here.)
+    """
+    cdef Instr* instrs = func.instrs
+    cdef int32_t ni = func.n_instrs
+    cdef int32_t i
+    for i in range(ni):
+        if instrs[i].op != <uint16_t>OPX_SET:
+            continue
+        if not (instrs[i].flags & FLAG_STMT_ROOT):
+            continue
+        _fuse_scalar(func, i)
+
+
 cdef int32_t _strategy_code(object strategy) except -1:
     if strategy == "bump":
         return ALLOC_BUMP
@@ -329,6 +500,19 @@ def run_allocate(entry, mode=None, callback=None, strategy="packing"):
     ``strategy`` is one of ``"bump"``, ``"packing"`` (default), ``"try_bump"``.
     """
     return to_basic_blocks(allocate_arena(entry, mode, callback, strategy))
+
+
+def run_fuse_rmw(entry, mode=None, callback=None, strategy="packing"):
+    """Marshal, allocate temps, fuse RMW ops, and export back to a CFG (test API).
+
+    Mirrors the fast/standard pipeline tail (allocation then ``fuse_rmw``) so unit
+    tests can inspect the fused output directly.
+    """
+    cdef int32_t code = _strategy_code(strategy)
+    cdef Func func = <Func>marshal_in(entry, mode, callback)
+    allocate_func(func, code)
+    fuse_rmw(func)
+    return to_basic_blocks(func)
 
 
 # ==========================================================================

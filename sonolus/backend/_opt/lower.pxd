@@ -28,6 +28,16 @@ cdef enum:
 cdef void allocate_func(Func func, int32_t strategy) except *
 
 
+# Fused read-modify-write peephole (OPTIMIZER_REWRITE.md M3.5, place-based).
+# Runs STRICTLY AFTER ``allocate_func`` (so liveness/interference/dead-store logic
+# never sees fused instrs): rewrites, in place, every statement-root
+# ``OPX_SET(p, BinOp(OPX_GET(p), w))`` into the fused runtime op ``Set<BinOp>``
+# (carrying the place in ``aux`` and ``w`` as its sole operand), collapsing
+# ``+1``/``-1`` to ``IncrementPost``/``DecrementPost``. The wire point is the
+# driver ``_pipeline`` for fast + standard; minimal stays un-fused.
+cdef void fuse_rmw(Func func) except *
+
+
 # Out-of-SSA + treeify (OPTIMIZER_REWRITE.md 7.4): consume a value-based SSA
 # ``Func`` (from ``midend.build_ssa``) and return a fresh non-SSA 3-legal arena
 # ready for ``allocate_func`` + emission. Supersedes ``midend.out_of_ssa``. The

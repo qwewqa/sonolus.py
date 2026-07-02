@@ -483,6 +483,37 @@ cdef class Func:
         index_obj = self._export_value(index_val, names, True)
         return BlockPlace(block_obj, index_obj, offset)
 
+    cdef tuple _export_place_components(self, int32_t pid, dict names):
+        # Split an interned place into (block_expr, index_expr) IR VALUES, mirroring
+        # emit._place_components / finalize's Set folding, for exporting place-based
+        # fused RMW ops as IRInstr(Set<BinOp>, [block, index, value]). A real block
+        # is exported as an int const (not its enum member) so export is round-trip
+        # idempotent -- re-marshalling collapses the enum to its int id anyway, and
+        # emission uses the int block id regardless. Fused ops only ever carry
+        # allocated (real / dynamic) places (fuse_rmw runs post-allocation).
+        cdef uint8_t kind = self.places[pid].kind
+        cdef int32_t block_ref = self.places[pid].block_ref
+        cdef int32_t index_val = self.places[pid].index_val
+        cdef int32_t offset = self.places[pid].offset
+        cdef object block_obj, index_obj
+        if kind == PLACE_REAL_BLOCK:
+            block_obj = self._make_const(<double>block_ref, True)
+        elif kind == PLACE_DYNAMIC_BLOCK:
+            block_obj = self._export_value(block_ref, names, False)
+        else:
+            raise AssertionError(
+                f"fused RMW place kind {kind} is not allocated (temps must be lowered first)"
+            )
+        if index_val < 0:
+            index_obj = self._make_const(<double>offset, True)
+        elif offset == 0:
+            index_obj = self._export_value(index_val, names, False)
+        else:
+            index_obj = IRPureInstr(
+                _Op.Add, [self._export_value(index_val, names, False), self._make_const(<double>offset, True)]
+            )
+        return (block_obj, index_obj)
+
     cdef object _export_value(self, int32_t vid, dict names, bint as_read_place):
         cdef uint16_t op = self.instrs[vid].op
         cdef int32_t astart, k, nargs
@@ -509,7 +540,21 @@ cdef class Func:
             place_obj = self._export_place(self.instrs[i].aux, names)
             value = self._export_value(<int32_t>self.args[self.instrs[i].arg_start], names, False)
             return IRSet(place_obj, value)
+        # A runtime op carrying a place id (aux >= 0) is a place-based fused RMW op.
+        if op < OP_RUNTIME_COUNT and self.instrs[i].aux >= 0:
+            return self._export_fused_rmw(i, op, names)
         return self._export_value(i, names, False)
+
+    cdef object _export_fused_rmw(self, int32_t i, uint16_t op, dict names):
+        cdef int32_t pid = self.instrs[i].aux
+        cdef int32_t astart = self.instrs[i].arg_start
+        cdef int32_t nargs = self.instrs[i].nargs
+        cdef int32_t k
+        block_obj, index_obj = self._export_place_components(pid, names)
+        arg_objs = [block_obj, index_obj]
+        for k in range(nargs):
+            arg_objs.append(self._export_value(<int32_t>self.args[astart + k], names, False))
+        return IRInstr(_ID_TO_OP[op], arg_objs)
 
     cdef _assign_temp_names(self, dict names):
         cdef int32_t counter = 0

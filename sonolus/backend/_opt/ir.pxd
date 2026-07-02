@@ -307,8 +307,10 @@ cdef class Func:
     cdef int _marshal(self, object entry, object mode, object callback) except -1
     cdef object _make_const(self, double d, bint is_int)
     cdef object _export_place(self, int32_t pid, dict names)
+    cdef tuple _export_place_components(self, int32_t pid, dict names)
     cdef object _export_value(self, int32_t vid, dict names, bint as_read_place)
     cdef object _export_stmt(self, int32_t i, dict names)
+    cdef object _export_fused_rmw(self, int32_t i, uint16_t op, dict names)
     cdef _assign_temp_names(self, dict names)
     # SSA export helpers (_export_ssa / _export_phis / _ssa_* / _dom) are plain
     # ``def`` methods in ir.pyx -- they run under the GIL at the export boundary.

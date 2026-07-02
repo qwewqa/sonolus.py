@@ -70,6 +70,7 @@ from sonolus.backend._opt._ops_gen cimport (
     OP_Multiply,
     OP_Mod,
     OP_Rem,
+    OP_RUNTIME_COUNT,
 )
 
 from sonolus.backend.node import FunctionNode
@@ -271,10 +272,27 @@ cdef class _Emitter:
         value_node = self._emit_value(val_vid)
         return self._intern_fn(_OP_SET, [block_node, index_node, value_node])
 
+    cdef object _emit_fused_rmw(self, int32_t i, uint16_t op):
+        # Place-based fused RMW op (fuse_rmw): ``aux`` carries the place, args hold
+        # the (optional) ``w`` operand. Lower to FunctionNode(Op, (block, index[, w]))
+        # reusing the exact place->(block, index) folding ``Set`` emission uses.
+        cdef int32_t pid = self.func.instrs[i].aux
+        cdef int32_t astart = self.func.instrs[i].arg_start
+        cdef int32_t nargs = self.func.instrs[i].nargs
+        cdef int32_t k
+        block_node, index_node = self._place_components(pid)
+        cdef list children = [block_node, index_node]
+        for k in range(nargs):
+            children.append(self._emit_value(<int32_t>self.func.args[astart + k]))
+        return self._intern_fn(_ID_TO_OP[op], children)
+
     cdef object _emit_stmt(self, int32_t i):
         cdef uint16_t op = self.func.instrs[i].op
         if op == <uint16_t>OPX_SET:
             return self._emit_set(i)
+        # A runtime op carrying a place id (aux >= 0) is a place-based fused RMW op.
+        if op < <uint16_t>OP_RUNTIME_COUNT and self.func.instrs[i].aux >= 0:
+            return self._emit_fused_rmw(i, op)
         # A bare side-effecting op used as a statement root.
         return self._emit_value(i)
 

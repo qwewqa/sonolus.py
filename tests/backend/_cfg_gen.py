@@ -60,6 +60,12 @@ _BINARY_OPS = (Op.Add, Op.Subtract, Op.Multiply, Op.Min, Op.Max, Op.Equal, Op.Le
 _GUARDED_BINARY_OPS = (Op.Divide, Op.Mod)  # rhs forced to a non-zero constant
 _UNARY_OPS = (Op.Abs, Op.Floor, Op.Round, Op.Negate, Op.Not)
 
+# Read-modify-write operators kept finite by construction (see ``Rmw``). Multiply
+# uses a magnitude<=1 constant so the target never grows; Divide/Mod/Rem use a
+# nonzero constant; Add/Subtract use a clamped step (linear growth only).
+_RMW_ADDLIKE = (Op.Add, Op.Subtract)
+_RMW_MUL_CONSTS = (-1, -0.5, 0, 0.5, 1)
+
 
 # ==========================================================================
 # Recipe data model (immutable; drawn once, lowered many times).
@@ -142,6 +148,26 @@ class Log:
 
 
 @dataclass(frozen=True)
+class Rmw:
+    """A read-modify-write ``Set(p, BinOp(Get(p), v))`` over a reused place ``p``.
+
+    This is the shape the M3.5 fusion peephole targets. ``target`` selects the
+    reused place (a scalar temp, an observable plain block, or an array element);
+    the store is deliberately NOT magnitude-clamped (clamping would wrap the store
+    in ``Min(Max(...))`` and hide the ``BinOp`` root from fusion). The (op, value)
+    pairs are chosen to keep every value finite regardless of loop nesting:
+    ``Add``/``Subtract`` grow only linearly (clamped step), ``Multiply`` uses a
+    magnitude<=1 constant, and ``Divide``/``Mod``/``Rem`` use a nonzero constant.
+    """
+
+    target: str  # 'scalar' | 'obs' | 'arr'
+    ref: tuple  # scalar: (temp,); obs: (block, index); arr: (arr, index)
+    op: Op  # binary operator (Add/Subtract/Multiply/Divide/Mod/Rem)
+    value_kind: str  # 'clamped' | 'const'
+    value: object  # expr recipe (clamped) or a numeric constant (const)
+
+
+@dataclass(frozen=True)
 class BlockNode:
     stmts: tuple
 
@@ -220,6 +246,38 @@ def _expr(draw, n_scalars, array_sizes, depth):
 
 
 @st.composite
+def _rmw(draw, n_scalars, array_sizes):
+    """Draw a read-modify-write recipe over a reused scalar / obs / array-element place."""
+    kind = draw(st.sampled_from(["add", "mul", "div", "mod", "rem", "inc"]))
+    if kind == "add":
+        op = draw(st.sampled_from(_RMW_ADDLIKE))
+        value_kind, value = "clamped", draw(_expr(n_scalars, array_sizes, draw(st.integers(0, 1))))
+    elif kind == "mul":
+        op, value_kind, value = Op.Multiply, "const", draw(st.sampled_from(_RMW_MUL_CONSTS))
+    elif kind == "div":
+        op, value_kind, value = Op.Divide, "const", draw(st.sampled_from(_NONZERO))
+    elif kind == "mod":
+        op, value_kind, value = Op.Mod, "const", draw(st.sampled_from(_NONZERO))
+    elif kind == "rem":
+        op, value_kind, value = Op.Rem, "const", draw(st.sampled_from(_NONZERO))
+    else:  # inc: +/- 1, exercising the Increment/Decrement special case
+        op, value_kind, value = draw(st.sampled_from(_RMW_ADDLIKE)), "const", 1
+
+    targets = ["scalar", "obs"]
+    if array_sizes:
+        targets.append("arr")
+    target = draw(st.sampled_from(targets))
+    if target == "scalar":
+        ref = (draw(st.integers(0, n_scalars - 1)),)
+    elif target == "obs":
+        ref = (draw(st.integers(0, 1)), draw(st.integers(0, OBS_SLOTS - 1)))
+    else:
+        a = draw(st.integers(0, len(array_sizes) - 1))
+        ref = (a, draw(st.integers(0, array_sizes[a] - 1)))
+    return Rmw(target, ref, op, value_kind, value)
+
+
+@st.composite
 def _stmt(draw, n_scalars, array_sizes):
     def expr():
         return draw(_expr(n_scalars, array_sizes, draw(st.integers(0, 2))))
@@ -227,7 +285,7 @@ def _stmt(draw, n_scalars, array_sizes):
     def scalar():
         return draw(st.integers(0, n_scalars - 1))
 
-    kinds = ["set_scalar", "set_obs", "load_obs", "log", "log"]
+    kinds = ["set_scalar", "set_obs", "load_obs", "log", "log", "rmw", "rmw"]
     if array_sizes:
         kinds += ["set_arr_const", "set_arr_dyn", "load_arr_dyn"]
     kind = draw(st.sampled_from(kinds))
@@ -239,6 +297,8 @@ def _stmt(draw, n_scalars, array_sizes):
         return LoadObs(scalar(), draw(st.integers(0, 1)), draw(st.integers(0, OBS_SLOTS - 1)))
     if kind == "log":
         return Log(expr())
+    if kind == "rmw":
+        return draw(_rmw(n_scalars, array_sizes))
     if kind == "set_arr_const":
         arr = draw(st.integers(0, len(array_sizes) - 1))
         return SetArrConst(arr, draw(st.integers(0, array_sizes[arr] - 1)), expr())
@@ -373,6 +433,16 @@ class _Builder:
                 return IRSet(self.scalar(dst), _clamp(IRGet(BlockPlace(OBS_BLOCKS[block], index))))
             case Log(expr):
                 return IRInstr(Op.DebugLog, [self.expr(expr)])
+            case Rmw(target, ref, op, value_kind, value):
+                if target == "scalar":
+                    place = self.scalar(ref[0])
+                elif target == "obs":
+                    place = BlockPlace(OBS_BLOCKS[ref[0]], ref[1])
+                else:
+                    place = BlockPlace(self.arrays[ref[0]], ref[1])
+                v = _clamp(self.expr(value)) if value_kind == "clamped" else IRConst(value)
+                # Deliberately unclamped store so the BinOp stays the value root (fusible).
+                return IRSet(place, IRPureInstr(op, [IRGet(place), v]))
         raise TypeError(f"bad stmt {s!r}")
 
     # -- control flow -------------------------------------------------------

@@ -628,7 +628,15 @@ def test_corpus_if_convert(mode: Mode):
 
 
 def _f(x: float) -> bytes:
-    return struct.pack(">d", float(x))
+    # Compare +0.0 and -0.0 as equal: the mid-end legitimately collapses the sign
+    # of zero relative to the MINIMAL reference via the documented policy exceptions
+    # (OPTIMIZER_REWRITE.md 7.2.2 / 4 -- e.g. SCCP folds ``Negate(Not(k))`` to +0.0
+    # where the unoptimized tree evaluates to -0.0). Mirrors test_random_cfg.py's _f;
+    # NaN bytes pass through unchanged (NaN != 0.0), so NaN drift is still caught.
+    x = float(x)
+    if x == 0.0:
+        x = 0.0
+    return struct.pack(">d", x)
 
 
 def _observe(it: Interpreter) -> tuple:

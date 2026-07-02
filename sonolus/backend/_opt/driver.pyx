@@ -43,6 +43,7 @@ from sonolus.backend._opt.lower cimport (
     ALLOC_PACKING,
     ALLOC_TRY_BUMP,
     allocate_func,
+    fuse_rmw,
     if_convert,
     lower_from_ssa,
 )
@@ -139,6 +140,7 @@ cdef Func _pipeline(Func func, int level, bint allocate):
         lowered = lower_from_ssa(opt)
         if allocate:
             allocate_func(lowered, ALLOC_TRY_BUMP)
+            fuse_rmw(lowered)  # place-based RMW fusion (post-allocation, M3.5)
         return lowered
 
     # standard (-O2): full mid-end (LICM + rewrite_switch) then if-conversion
@@ -148,6 +150,7 @@ cdef Func _pipeline(Func func, int level, bint allocate):
     lowered = lower_from_ssa(conv)
     if allocate:
         allocate_func(lowered, ALLOC_PACKING)
+        fuse_rmw(lowered)  # place-based RMW fusion (post-allocation, M3.5)
     return lowered
 
 
