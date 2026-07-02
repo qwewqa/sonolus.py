@@ -1,3 +1,25 @@
+### 0.17.0
+
+- The optimizer has been rewritten as a compiled Cython core. Standard builds are around 4x faster and
+  generate better code, with about 22% fewer effective runtime operations on the reference project.
+- Improved constant folding, now covering all pure operations including the easing and judgment functions.
+- Added if-conversion, fused read-modify-write operations, jump-table switches, and strided memory
+  addressing.
+- Builds are now deterministic.
+- Compilation is now always multithreaded.
+- Corrected the semantics of the `Rem` and `Sign` operations to match the Sonolus runtime.
+- The reference interpreter used for testing now supports the easing and judgment operations.
+- **Breaking:** The `CompilerPass` subclassing API and custom pass sequences have been removed.
+  `BuildConfig.passes` now accepts only the `MINIMAL_PASSES`, `FAST_PASSES`, and `STANDARD_PASSES`
+  optimization levels.
+- **Breaking:** The dev server's compile cache has been removed, so rebuilds now recompile every
+  callback. Warm rebuilds of the reference project take around 1.5s (compared to around 1.0s with the
+  old cache) and are expected to improve in future releases.
+- **Breaking:** Installation now requires a prebuilt wheel or a C compiler. Wheels are published for
+  CPython 3.12-3.14 on Linux (x86_64/aarch64), Windows (x86_64), and macOS (arm64/x86_64); the source
+  distribution compiles via Cython at install time.
+- `visualize_cfg` now shows pre-allocation temporaries at all optimization levels.
+
 ### 0.16.0
 
 - Now targeting Sonolus 1.1.2

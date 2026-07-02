@@ -1,6 +1,6 @@
 [project]
 name = "sonolus.py"
-version = "0.16.0"
+version = "0.17.0"
 description = "Sonolus engine development in Python"
 readme = "README.md"
 requires-python = ">=3.12.5"
@@ -48,6 +48,14 @@ build-backend = "setuptools.build_meta"
 # Explicit discovery: tools/, rust/, docs/, tests/, and test_projects/ live at
 # the repo root, so flat-layout auto-discovery is not safe here.
 include = ["sonolus*"]
+
+[tool.setuptools.exclude-package-data]
+# The Cython ``.pyx`` sources (and any stray generated ``.c``) are build inputs
+# shipped in the sdist via MANIFEST.in; they are not needed in the binary wheel,
+# where the compiled ``.pyd`` is what gets imported. The ``.pxd``/``_ops_gen.h``
+# stay in the wheel as the conventional Cython interface artifacts. sdist
+# contents come from MANIFEST.in and are unaffected by this exclusion.
+"*" = ["*.pyx", "*.c"]
 
 [dependency-groups]
 dev = [

@@ -49,7 +49,22 @@ from sonolus.backend._opt.lower cimport (
 )
 from sonolus.backend._opt.emit cimport emit_func
 
+import os
+
 from sonolus.backend._opt.ir import marshal_in, register_phase, to_basic_blocks
+from sonolus.backend.optimize.flow import cfg_to_text
+
+# Debug tracing (OPTIMIZER_REWRITE.md 8): when ``SONOLUS_OPT_TRACE=1`` is set in
+# the environment, the pipeline exports and prints the CFG after each pass so a
+# contributor can watch the IR evolve. Read once at import (like a build flag);
+# the common (untraced) path pays only a cheap module-global check per stage.
+_TRACE = os.environ.get("SONOLUS_OPT_TRACE") == "1"
+
+
+def _trace_dump(func, str label):
+    """Print ``cfg_to_text`` of ``func`` under a labelled header (GIL held)."""
+    print(f"===== SONOLUS_OPT_TRACE: after {label} =====")
+    print(cfg_to_text(to_basic_blocks(func)))
 
 
 # --------------------------------------------------------------------------
@@ -127,30 +142,52 @@ cdef Func _pipeline(Func func, int level, bint allocate):
 
     if level == LEVEL_MINIMAL:
         cleaned = cfg_cleanup(func, False)
+        if _TRACE:
+            _trace_dump(cleaned, "cfg_cleanup")
         if allocate:
             allocate_func(cleaned, ALLOC_BUMP)
+            if _TRACE:
+                _trace_dump(cleaned, "allocate(bump)")
         return cleaned
 
     cleaned = cfg_cleanup(func, False)
+    if _TRACE:
+        _trace_dump(cleaned, "cfg_cleanup")
     ssa = build_ssa(cleaned)
+    if _TRACE:
+        _trace_dump(ssa, "build_ssa")
 
     if level == LEVEL_FAST:
         # fast (-O1): one mid-end round, cheap allocation, no LICM/switch/if-conv.
         opt = midend_round(ssa, False)
+        if _TRACE:
+            _trace_dump(opt, "midend_round")
         lowered = lower_from_ssa(opt)
+        if _TRACE:
+            _trace_dump(lowered, "lower_from_ssa")
         if allocate:
             allocate_func(lowered, ALLOC_TRY_BUMP)
             fuse_rmw(lowered)  # place-based RMW fusion (post-allocation, M3.5)
+            if _TRACE:
+                _trace_dump(lowered, "allocate(try_bump)+fuse_rmw")
         return lowered
 
     # standard (-O2): full mid-end (LICM + rewrite_switch) then if-conversion
     # over SSA (while phis still exist), then lowering + packing allocation.
     opt = midend_standard(ssa)
+    if _TRACE:
+        _trace_dump(opt, "midend_standard")
     conv = if_convert(opt)
+    if _TRACE:
+        _trace_dump(conv, "if_convert")
     lowered = lower_from_ssa(conv)
+    if _TRACE:
+        _trace_dump(lowered, "lower_from_ssa")
     if allocate:
         allocate_func(lowered, ALLOC_PACKING)
         fuse_rmw(lowered)  # place-based RMW fusion (post-allocation, M3.5)
+        if _TRACE:
+            _trace_dump(lowered, "allocate(packing)+fuse_rmw")
     return lowered
 
 
