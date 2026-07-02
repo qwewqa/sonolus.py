@@ -14,7 +14,7 @@ identical program as many times as they need (``run_passes`` /
 
 Safety invariants that keep the oracle (``sonolus.backend.interpret``) from ever
 raising, so that any cross-level disagreement is a real miscompile and not a
-generator artefact:
+generator artifact:
 
 * Every store into a temp (scalar or array) and every value loaded out of an
   observable block is clamped into ``[-BOUND, BOUND]`` via ``Min(Max(...))``.
@@ -24,7 +24,7 @@ generator artefact:
 * Dynamic array indexes are ``Mod(Floor(Abs(x)), size)`` (or ``Mod(counter,
   size)`` inside a loop) -- always a non-negative in-bounds integer, even when
   ``x`` is an undefined temp read (which yields ``-1.0``).
-* Loop counters are dedicated integer temps, initialised to 0 and incremented by
+* Loop counters are dedicated integer temps, initialized to 0 and incremented by
   exactly 1 per iteration, tested ``counter < bound`` with ``bound <= 8`` -- so
   every loop terminates by construction.
 """

@@ -1,8 +1,8 @@
-"""Compile-time benchmark for full pydori engine builds (OPTIMIZER_REWRITE.md §10/§11).
+"""Compile-time benchmark for full pydori engine builds.
 
 Times ``package_engine(project.engine.data, BuildConfig(passes=...))`` for the ``fast``
 and ``standard`` levels, single- vs multi-threaded, and reports the frontend / optimize
-/ emit split so the parallelism goal (§1) stays honest: only optimize+emit runs in the
+/ emit split so the parallelism payoff stays measurable: only optimize+emit runs in the
 per-callback thread pool (with the Cython optimizer's nogil regions releasing the GIL);
 the frontend tracer is serial Python, and if it dominates wall time the pool gains little.
 
@@ -13,7 +13,7 @@ Threading toggle (``--threads``):
 * ``auto`` / ``on``     -- pool on with the production worker formula.
 * ``<N>``               -- pool on with exactly N workers.
 
-Serial mode is realised by swapping ``ThreadPoolExecutor`` for an inline executor
+Serial mode is realized by swapping ``ThreadPoolExecutor`` for an inline executor
 (``submit`` runs synchronously), so the exact same code path is exercised with no threads.
 
 Standard library only (plus the ``sonolus`` package and the regression project).

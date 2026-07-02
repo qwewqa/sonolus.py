@@ -1,17 +1,16 @@
-"""Random-CFG differential property tests for the optimizer rewrite (M1+).
+"""Random-CFG differential property tests for the optimizer.
 
-Per OPTIMIZER_REWRITE.md section 10 ("Random CFG property tests"): a Hypothesis
-generator of small, legal, terminating, deterministic CFG programs
+A Hypothesis generator of small, legal, terminating, deterministic CFG programs
 (``tests/backend/_cfg_gen.py``) is run through the public optimizer at every
 level, and the interpreted results must agree bit-for-bit. This is the safety
-net that gates the mid-end as it lands.
+net that gates the mid-end.
 
 Design
 ------
-* The generator (section 3 input contract) emits shallow three-address CFGs over
-  scalar/array ``TempBlock`` registers and plain int memory blocks, with
-  sequences, if-diamonds, multi-way switches (contiguous / non-contiguous,
-  with and without a default edge), and bounded counting loops.
+* The generator emits shallow three-address CFGs over scalar/array ``TempBlock``
+  registers and plain int memory blocks, with sequences, if-diamonds, multi-way
+  switches (contiguous / non-contiguous, with and without a default edge), and
+  bounded counting loops.
 * For each program the CFG is *regenerated* fresh for every use, because
   ``run_passes`` may mutate its input and ``cfg_to_engine_node`` consumes a CFG.
 * Observables captured after interpretation: the return value, the ``DebugLog``
@@ -26,11 +25,8 @@ Design
 Config: ``OptimizerConfig()`` (mode=None) -- the observable int blocks 20/21 are
 raw ints, resolved conservatively writable, matching the dual-run suite's config.
 
-Requires the M1 public API (``sonolus.backend.optimize`` level sentinels +
-``cfg_to_engine_node``). Validated against the M1 tip; see the module report.
-
-A real M1 bug found by this suite is pinned by
-``test_never_written_array_read_aliases_live_temp`` -- see its docstring.
+``test_never_written_array_read_aliases_live_temp`` pins an allocation bug this
+suite found; see its docstring.
 """
 
 from __future__ import annotations
@@ -57,7 +53,7 @@ from tests.backend._cfg_gen import OBS_BLOCKS, OBS_CAPTURE_LEN, build_cfg, count
 LEVELS = (MINIMAL_PASSES, FAST_PASSES, STANDARD_PASSES)
 OPT_LEVELS = (FAST_PASSES, STANDARD_PASSES)  # compared against the MINIMAL reference
 
-# Interpreter ROM seed (block 3000): NaN, +Inf, -Inf. finalize lowers non-finite
+# Interpreter ROM seed (block 3000): NaN, +Inf, -Inf. The emitter lowers non-finite
 # constants to ROM reads, so a program that ever emits one reads a real special
 # value instead of the lazy -1.0 padding. The random corpus stays finite, but
 # seeding is harmless and keeps directed tests robust.
@@ -68,9 +64,9 @@ def _f(x: float) -> bytes:
     # Compare +0.0 and -0.0 as equal (NaN bit checks are kept: NaN != 0.0, so its
     # bytes pass through unchanged). The mid-end legitimately collapses the sign of
     # zero relative to the MINIMAL reference via two *documented policy exceptions*:
-    # OPTIMIZER_REWRITE.md 7.2.2 (Multiply with a constant-0 arg folds to +0.0) and
-    # 4 (the x+0 identity drops the +0 addend, which can turn -0.0 into +0.0).
-    # This is the ONLY relaxation of the bit-exact observable comparison.
+    # Multiply with a constant-0 arg folds to +0.0, and the x+0 identity drops the
+    # +0 addend (which can turn -0.0 into +0.0). This is the ONLY relaxation of the
+    # bit-exact observable comparison.
     x = float(x)
     if x == 0.0:  # True for both +0.0 and -0.0, False for NaN and everything else
         x = 0.0
@@ -141,7 +137,7 @@ def test_levels_agree_on_deeper_programs(program):
 @settings(max_examples=60, deadline=None, suppress_health_check=[HealthCheck.too_slow])
 @given(program=programs())
 def test_generated_programs_are_small(program):
-    # Sanity on the generator's size envelope (section 10: small CFGs).
+    # Sanity on the generator's size envelope (small CFGs).
     assert count_blocks(build_cfg(program)) <= 60
 
 
@@ -171,7 +167,7 @@ def _obs(block, index, value):
 
 def test_directed_defaultless_switch_falls_to_exit():
     # Default-less multiway {0, 2}; a miss (test not in {0,2}) jumps to exit,
-    # skipping the join (log 99 / B[0]=7). Legal per section 3.
+    # skipping the join (log 99 / B[0]=7). A default-less multiway is a legal shape.
     def build_for(sel):
         def build():
             a = BasicBlock(statements=[_obs(A, 0, sel)], test=IRGet(BlockPlace(A, 0)))
@@ -307,8 +303,8 @@ def test_directed_undef_loop_carried_dead_sibling():
     # the def-point interference graph used to omit the s_obs<->s_dead edge, so
     # coalescing fused two independent variables. s_obs (observed) then got
     # divided by BOTH 2 and 7 each iteration. All levels must agree with MINIMAL:
-    # s_obs stays halved (-1, -0.5, -0.25, ...). Regression for the shared-UNDEF
-    # coalescing miscompile (OPTIMIZER_REWRITE.md 7.4.4 / 7.2.1).
+    # s_obs stays halved (-1, -0.5, -0.25, ...). This pins the shared-UNDEF
+    # coalescing miscompile.
     def build():
         init = BasicBlock(statements=[IRSet(_sc("k"), IRConst(0))])
         header = BasicBlock(test=IRPureInstr(Op.Less, [_rd("k"), IRConst(4)]))
@@ -368,8 +364,8 @@ def test_directed_deep_chain_stack_safety():
 
 
 def test_directed_swap_loop():
-    # a, b = b, a repeated -- copy chains that will stress phi cycles once SSA
-    # lands. Three swaps of (1, 2) -> (2, 1).
+    # a, b = b, a repeated -- copy chains that stress phi cycles under SSA. Three
+    # swaps of (1, 2) -> (2, 1).
     def build():
         init = BasicBlock(
             statements=[IRSet(_sc("a"), IRConst(1)), IRSet(_sc("b"), IRConst(2)), IRSet(_sc("k"), IRConst(0))]
@@ -395,7 +391,7 @@ def test_directed_swap_loop():
 
 def test_directed_pointer_deref():
     # BlockPlace(block=BlockPlace(...)) -- a block id read from memory we control
-    # (section 3: BlockPlace.block may be a place; finalize emits nested Gets).
+    # (BlockPlace.block may be a place; the emitter emits nested Gets).
     def build():
         b0 = BasicBlock(
             statements=[
@@ -466,11 +462,11 @@ def test_directed_noncontiguous_switch_with_default():
 
 
 # ==========================================================================
-# Regression: never-written (but read) arrays must not alias live temps.
-# Found by this suite as an M1 allocation bug: the not-live-before-any-write
-# rule dropped never-written arrays from liveness entirely, so STANDARD's
-# first-fit packing overlapped their slots onto live scalars. Fixed in
-# analysis.pyx by restricting that rule to arrays with at least one write.
+# Never-written (but read) arrays must not alias live temps.
+# Found by this suite: the not-live-before-any-write rule dropped never-written
+# arrays from liveness entirely, so STANDARD's first-fit packing overlapped their
+# slots onto live scalars. Fixed in analysis.pyx by restricting that rule to
+# arrays with at least one write.
 # ==========================================================================
 
 

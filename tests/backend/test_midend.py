@@ -1,8 +1,7 @@
-"""M2 mid-end tests: SCCP, simplify/GVN, DCE, the round driver, and end-to-end.
+"""Mid-end tests: SCCP, simplify/GVN, DCE, the round driver, and end-to-end.
 
-Covers OPTIMIZER_REWRITE.md 7.2.2 (SCCP + set lattice + policy exceptions),
-7.2.3 (dominator-scoped GVN + algebraic identities), 7.2.4 (DCE), and 7.2.7 (the
-change-driven round). Three layers, mirroring test_ssa.py:
+Covers SCCP (+ set lattice + policy exceptions), dominator-scoped GVN (+ algebraic
+identities), DCE, and the change-driven round. Three layers, mirroring test_ssa.py:
 
 * structural units -- inspect ``cfg_to_text`` of the ``["cfg_cleanup","ssa",...]``
   debug exports (const folding, edge pruning, GVN unification, dead-code removal);
@@ -10,9 +9,9 @@ change-driven round). Three layers, mirroring test_ssa.py:
 * corpus + differential -- the full pydori corpus and the random-CFG property suite
   run through ``run_midend``, verify()-green and observably identical.
 
-The Multiply x0 / x+0 rewrites legally collapse -0.0 -> +0.0 (the documented
-7.2.2/section-4 tolerance); the differential comparison relaxes to treat
-+0.0 == -0.0 while keeping full NaN bit-checks (kernel-level tests stay bit-exact).
+The Multiply x0 / x+0 rewrites legally collapse -0.0 -> +0.0 (a documented policy
+tolerance); the differential comparison relaxes to treat +0.0 == -0.0 while
+keeping full NaN bit-checks (kernel-level tests stay bit-exact).
 """
 
 from __future__ import annotations
@@ -120,7 +119,7 @@ def _assert_semantics(build, mode=None, cb=None):
 
 
 # ==========================================================================
-# SCCP (7.2.2)
+# SCCP
 # ==========================================================================
 
 
@@ -344,7 +343,7 @@ def test_sccp_undef_statement_removal():
 
 
 # ==========================================================================
-# GVN (7.2.3)
+# GVN
 # ==========================================================================
 
 
@@ -467,7 +466,7 @@ def test_gvn_random_never_unified():
 
 
 # ==========================================================================
-# DCE (7.2.4)
+# DCE
 # ==========================================================================
 
 
@@ -537,7 +536,7 @@ def test_dce_store_to_real_block_kept_unused_read_deleted():
 
 
 # ==========================================================================
-# Round driver (7.2.7): allow_repeat exposes second-round opportunities.
+# Round driver: allow_repeat exposes second-round opportunities.
 # ==========================================================================
 
 
@@ -600,8 +599,8 @@ def test_corpus_run_midend(mode: Mode):
 
 
 def _f(x: float) -> bytes:
-    # +-0.0 folded to a single key (the documented 7.2.2/section-4 tolerance);
-    # NaN keeps its bit pattern.
+    # +-0.0 folded to a single key (a documented policy tolerance); NaN keeps its
+    # bit pattern.
     if x == 0.0:
         return struct.pack(">d", 0.0)
     return struct.pack(">d", float(x))

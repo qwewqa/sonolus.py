@@ -23,7 +23,7 @@ cfg_cleanup design
 The input arena (fresh from ``marshal_in``) is a *forest*: marshal-in does no
 value CSE, so every block's instruction slice is a set of independent statement
 and test trees with no shared sub-values. That makes the pass structure-only:
-it never rewrites instructions, it reorganises the *block/edge graph* and records
+it never rewrites instructions, it reorganizes the *block/edge graph* and records
 which source blocks' statement trees feed each output block (a "chain").
 
 A logical graph is built over the source block ids:
@@ -34,13 +34,13 @@ A logical graph is built over the source block ids:
   block's statements are the concatenation of the chain members' statements and
   its test/edges come from the chain *tail*.
 * a flat array of logical edges ``(src_head, dst_head, cond)``; parallel edges
-  between a head pair are legal (matching section 3).
+  between a head pair are legal (see the edge-shape contract in ir.pxd).
 
 Transformations run to a fixpoint (each is monotone or bounded, so the pass
 terminates and is deterministic -- everything iterates ids in order, no set
 iteration):
 
-* constant-test fold (finalize edge-selection semantics),
+* constant-test fold (pick the edge a constant test selects),
 * parallel-edge dedup (dict-keyed-by-cond model),
 * empty-block threading (forwarder elimination),
 * single-pred/single-succ chain merge,
@@ -450,7 +450,7 @@ cdef class _Cleaner:
             if tv < 0 or self.src_instrs[tv].op != OPX_CONST:
                 continue
             tval = self.src_consts[self.src_instrs[tv].aux]
-            # finalize edge-selection: value edge whose cond == test, else the
+            # Edge selection: value edge whose cond == test, else the
             # unconditional (default) edge, else the block becomes an exit.
             live_edge = -1
             for i in range(self.n_e):
@@ -708,7 +708,7 @@ cdef class _Cleaner:
     cdef void run(self) except *:
         # The six pure-C transforms run in a ``nogil`` region (they operate only on
         # the flat logical-edge / chain C arrays and the cached read-only source
-        # pointers), which is what lets the per-callback build pool parallelise this
+        # pointers), which is what lets the per-callback build pool parallelize this
         # pass -- cfg_cleanup's ``run()`` is ~94% of the pass and >50% of the whole
         # optimize phase. ``_canonicalize_exits`` (RPO over Python lists) stays under
         # the GIL; it is ~1/7 of the loop and left untouched to keep the byte-exact
@@ -936,7 +936,7 @@ def run_cfg_cleanup(entry, mode=None, callback=None, phi_safe=False):
 #
 # Construction runs over Python-level working state (GIL held; correctness-first)
 # then compacts into a fresh tight arena ``Func`` with contiguous per-block instr
-# slices (phis first) so the M2+ nogil passes get the flat value-based form.
+# slices (phis first) so the downstream nogil passes get the flat value-based form.
 # ==========================================================================
 
 
@@ -1224,12 +1224,12 @@ cdef class _SSABuilder:
         # distinct operand besides self-references. UNDEF is treated as a NORMAL
         # distinct operand here -- deliberately NOT skipped. Collapsing
         # phi(UNDEF, v) -> v is only sound when the UNDEF path is provably dead,
-        # which construction cannot prove; skipping UNDEF (the old behaviour)
-        # mis-folds *live* uninitialized merges (a loop preheader, or an untaken
-        # switch arm) to v, diverging from the oracle, and -- for a loop back-edge
-        # v -- produces a value-graph cycle / def-before-use arena. Keeping the phi
-        # is always sound; the provably-dead collapse now lives in SCCP, which
-        # drops the UNDEF operand's incoming edge via edge executability (7.2.2).
+        # which construction cannot prove; skipping UNDEF instead would mis-fold
+        # *live* uninitialized merges (a loop preheader, or an untaken switch arm)
+        # to v, diverging from the oracle, and -- for a loop back-edge v --
+        # produce a value-graph cycle / def-before-use arena. Keeping the phi
+        # is always sound; the provably-dead collapse lives in SCCP, which
+        # drops the UNDEF operand's incoming edge via edge executability.
         # Consequently ``undef_widened`` / ``_ssa_undef`` stay empty.
         cdef list worklist = [phi]
         cdef int32_t p, o, r, same, u
@@ -1779,7 +1779,7 @@ cdef class _UnSSA:
             # If SSA collapsed the pointer to a compile-time constant block id
             # (a scalar temp holding a block id dissolved), lower it to a plain
             # real-block place -- a non-SSA BasicBlock cannot carry an IRConst as
-            # its block, and this is exactly what finalize would fold it to.
+            # its block.
             if src.instrs[br].op == OPX_CONST:
                 kind = PLACE_REAL_BLOCK
                 flags = 0
@@ -2032,16 +2032,15 @@ def run_unssa(entry, mode=None, callback=None):
 
 
 # ==========================================================================
-# M2 mid-end: SCCP -> simplify/GVN -> DCE, driven once (or twice) per round.
+# Mid-end core: SCCP -> simplify/GVN -> DCE, driven once (or twice) per round.
 #
 # All three passes operate on the value-based SSA arena produced by ``build_ssa``
 # and leave it in valid SSA form (verify()-green), so ``out_of_ssa`` consumes the
 # optimized arena unchanged. SCCP and DCE produce fresh compacted arenas (via the
 # shared ``_build_compacted`` rebuilder); GVN rewrites operands in place.
 #
-# The passes run correctness-first under the GIL (like ``build_ssa`` /
-# ``out_of_ssa``), using Python working state; the orchestrator wires them into
-# nogil-friendly driver stages later. See OPTIMIZER_REWRITE.md 7.2.2-7.2.7.
+# The passes run under the GIL (like ``build_ssa`` / ``out_of_ssa``), using
+# Python working state.
 # ==========================================================================
 
 cdef object _MISSING = object()
@@ -2066,16 +2065,16 @@ cdef inline double _bits_to_d(uint64_t b) noexcept nogil:
 
 
 cdef enum:
-    _LAT_TOP = 0      # nothing known yet (old UNDEF)
+    _LAT_TOP = 0      # nothing known yet (UNDEF)
     _LAT_CONST = 1    # a single f64
     _LAT_SET = 2      # a small (<=100) set of f64 (branch-correlated)
-    _LAT_BOTTOM = 3   # not-a-constant (old NAC)
+    _LAT_BOTTOM = 3   # not-a-constant (NAC)
 
 
 # --------------------------------------------------------------------------
 # Structural boolean-ness (value is provably 0/1) -- shared by the SCCP And/Or
 # short-circuit exception and the GVN Not(Not(b)) identity. Fixpoint over:
-# const 0/1, comparisons, Not, And/Or/phi of boolean values (7.2.2).
+# const 0/1, comparisons, Not, And/Or/phi of boolean values.
 # --------------------------------------------------------------------------
 
 cdef list _compute_bool(Func f):
@@ -2115,7 +2114,7 @@ cdef list _compute_bool(Func f):
 
 
 # --------------------------------------------------------------------------
-# SCCP -- Wegman-Zadeck sparse conditional constant propagation (7.2.2).
+# SCCP -- Wegman-Zadeck sparse conditional constant propagation.
 # --------------------------------------------------------------------------
 
 cdef class _SCCP:
@@ -2253,7 +2252,7 @@ cdef class _SCCP:
             return (_LAT_BOTTOM, 0.0, None)
         if op == OPX_SET:
             return None
-        # --- policy exceptions (7.2.2), applied before the strict fold ---
+        # --- policy exceptions, applied before the strict fold ---
         if op == OP_Multiply and n == 2:
             a0 = <int32_t>f.args[astart]
             a1 = <int32_t>f.args[astart + 1]
@@ -2566,13 +2565,13 @@ cdef class _SCCP:
                     # -0.0 is unrepresentable across the boundary: the Python
                     # IRConst cache collapses -0.0 -> +0.0 at construction (export /
                     # re-marshal), and emission int-demotes integral floats to int 0
-                    # (finalize behaviour). A materialized -0.0 would therefore ship
-                    # as +0.0, diverging from the *unfolded* path where the runtime
+                    # (emit.pyx ``_emit_numeric``). A materialized -0.0 would therefore
+                    # ship as +0.0, diverging from the *unfolded* path where the runtime
                     # computes e.g. 0 / -8 = -0.0 and keeps the sign -- a dual-run
                     # (debug-log) parity break. Leaving the instruction in place lets
                     # the real runtime fold it, preserving -0.0. The lattice value is
                     # still -0.0, so consumers that fold to a non-(-0.0) result are
-                    # unaffected. (OPTIMIZER_REWRITE.md 7.2.2)
+                    # unaffected.
                     continue
                 const_override[i] = cv
         changed = (len(order) < nb) or (len(const_override) > 0)
@@ -2921,7 +2920,7 @@ def _build_compacted(Func src, list order, list keep_instr, dict const_override,
 
 
 # --------------------------------------------------------------------------
-# GVN -- dominator-scoped hash value numbering + algebraic identities (7.2.3).
+# GVN -- dominator-scoped hash value numbering + algebraic identities.
 # Rewrites operands in place (uses -> dominating canonical value); the redundant
 # defs become unused and DCE reclaims them.
 # --------------------------------------------------------------------------
@@ -2983,7 +2982,7 @@ def _gvn_instr(Func f, int32_t i, dict avail, list undo, dict subst, list is_boo
         if av in widened:
             return
         a.append(av)
-    # algebraic identities (binary/unary forms; 7.2.3 / section 4).
+    # algebraic identities (binary/unary forms).
     if op == OP_Add and n == 2:
         if _is_c(f, <int32_t>a[1], 0.0):
             subst[i] = <int32_t>a[0]; changed[0] = True; return
@@ -3002,7 +3001,8 @@ def _gvn_instr(Func f, int32_t i, dict avail, list undo, dict subst, list is_boo
         if _is_c(f, <int32_t>a[1], 0.0):
             subst[i] = <int32_t>a[0]; changed[0] = True; return
         if _is_c(f, <int32_t>a[0], 0.0):
-            # 0 - x -> Negate(x)  (documented -0.0 tolerance, matches old)
+            # 0 - x -> Negate(x)  (deliberate -0.0 tolerance: 0 - 0.0 == +0.0 but
+            # Negate(0.0) == -0.0)
             f.instrs[i].op = OP_Negate
             f.args[astart] = <uint32_t><int32_t>a[1]
             f.instrs[i].nargs = 1
@@ -3156,8 +3156,8 @@ def _run_gvn_inplace(Func f):
 
 
 # --------------------------------------------------------------------------
-# Two-way branch canonicalization: If(Not(x)) -> swap edges, drop the Not (7.2 /
-# survey finding #2). Runs in the shared mid-end pass (fast + standard), after
+# Two-way branch canonicalization: If(Not(x)) -> swap edges, drop the Not.
+# Runs in the shared mid-end pass (fast + standard), after
 # GVN's _apply_subst (so tests/operands are resolved) and before DCE (so a freed
 # Not is reaped). Pure edge relabel on the arena; no instrs move.
 # --------------------------------------------------------------------------
@@ -3217,7 +3217,7 @@ def _canon_branch_not(Func f):
 
 # --------------------------------------------------------------------------
 # DCE -- worklist mark from roots (block tests + FLAG_STMT_ROOT stores/effects),
-# then compact away everything unmarked (7.2.4).
+# then compact away everything unmarked.
 # --------------------------------------------------------------------------
 
 def _run_dce(Func f):
@@ -3231,8 +3231,8 @@ def _run_dce(Func f):
             live[tv] = True
             wl.append(tv)
     for i in range(n):
-        # Roots: bare statement roots AND every side-effecting instruction (7.2.4 --
-        # side effects are never deletable). A side-effecting value can lack
+        # Roots: bare statement roots AND every side-effecting instruction
+        # (side effects are never deletable). A side-effecting value can lack
         # FLAG_STMT_ROOT when its size-1 scalar store dissolved during SSA promotion
         # (e.g. ``x <- DebugLog(...)`` where ``x`` is unread): the effect must still
         # persist. FLAG_SIDE_EFFECT excludes ``Random`` (side_effects=False), which
@@ -3285,7 +3285,7 @@ def _run_dce(Func f):
 
 
 # ==========================================================================
-# LICM (7.2.5) and rewrite_switch (7.2.6) -- M3 standard-level SSA passes.
+# LICM and rewrite_switch -- standard-level SSA passes.
 #
 # Both reshape the CFG on SSA form (phis live). ``rewrite_switch`` only rewrites
 # block tests + edge conds/targets and drops dead blocks (no instr relocation),
@@ -3571,16 +3571,16 @@ def _emit_from_model(Func src, list pblocks, int entry_pb):
     return dst
 
 
-# ---- LICM (7.2.5) --------------------------------------------------------
+# ---- LICM -----------------------------------------------------------------
 # Loop forest from dominators + back edges. For each loop (inner-first), hoist
 # pure / effectively-pure (non-writable static real-block reads), loop-invariant,
 # guaranteed-to-execute (def block dominates every latch) values whose EFFECTIVE
-# cost (section 2) is >= 4 into a preheader. Effective cost: runtime-constant
-# subtrees (pure ops over OPX_CONST + PLACE_RUNTIME_CONST reads) cost 1, so they
-# NEVER hoist -- deliberately diverging from the old LICM, which hoisted them and
-# blocked the runtime's own constant folding (OPTIMIZER_REWRITE.md 7.2.5). This
-# effective-cost walk duplicates the one in lower.pyx (a cimport would create a
-# midend<->lower cycle); the two stay aligned with section 2.
+# cost (runtime cost model) is >= 4 into a preheader. Effective cost: runtime-
+# constant subtrees (pure ops over OPX_CONST + PLACE_RUNTIME_CONST reads) cost 1,
+# so they NEVER hoist -- hoisting one to a preheader temp would defeat the
+# runtime's own constant folding of the tree. This effective-cost walk duplicates
+# the one in lower.pyx (a cimport would create a midend<->lower cycle); the two
+# stay aligned with the runtime cost model.
 
 
 cdef bint _licm_is_rtc(Func f, int32_t v, dict memo) except -1:
@@ -3609,8 +3609,8 @@ cdef bint _licm_is_rtc(Func f, int32_t v, dict memo) except -1:
 
 
 cdef int32_t _licm_eff_cost(Func f, int32_t v, dict memo, dict memo_rtc) except -1:
-    # Effective cost (section 2), mirroring the old CSE/LICM _cost tree walk with
-    # the runtime-constant refinement. Memoised per value id.
+    # Effective cost (runtime cost model), with the runtime-constant refinement.
+    # Memoised per value id.
     cached = memo.get(v)
     if cached is not None:
         return <int32_t>cached
@@ -3642,7 +3642,7 @@ cdef int32_t _licm_eff_cost(Func f, int32_t v, dict memo, dict memo_rtc) except 
         for k in range(n):
             c += _licm_eff_cost(f, <int32_t>f.args[astart + k], memo, memo_rtc)
     else:
-        # phi / impure / Random -- a materialised scalar value reference.
+        # phi / impure / Random -- a materialized scalar value reference.
         c = 3
     memo[v] = c
     return c
@@ -3902,8 +3902,8 @@ def _licm_pass_once(Func f):
     cdef int32_t L
     if nl == 0:
         return None
-    # inner-first: process loops by header block id descending (mirrors the old
-    # LICM, which sorted headers by num descending).
+    # inner-first: process loops by header block id descending (an inner header's
+    # RPO id is always greater than its enclosing header's).
     order = sorted(range(nl), key=lambda li: F.header[li], reverse=True)
     for L in order:
         nf = _licm_try_loop(f, D, F, <int32_t>L)
@@ -3927,8 +3927,8 @@ def _run_licm(Func f):
     return (cur, any_changed)
 
 
-# ---- rewrite_switch (7.2.6 / section 4) ----------------------------------
-# Mirrors the old RewriteToSwitch: (1) a two-way block {VALUE 0 -> false, NONE ->
+# ---- rewrite_switch -------------------------------------------------------
+# Two rewrites: (1) a two-way block {VALUE 0 -> false, NONE ->
 # true} whose test is Equal(x, C) with C an OPX_CONST becomes test=x with the true
 # edge carrying cond=C and the false edge becoming the NONE default; (2) chain
 # splicing: while the default target is an empty single-pred block with the same
@@ -4222,7 +4222,7 @@ def _run_sccp(Func f):
 
 
 # --------------------------------------------------------------------------
-# Pass entry points + the change-driven round (7.2.7).
+# Pass entry points + the change-driven round.
 # --------------------------------------------------------------------------
 
 cdef Func sccp(Func func):
@@ -4251,7 +4251,7 @@ cdef Func rewrite_switch(Func func):
 
 
 # --------------------------------------------------------------------------
-# Op-level Pointed/Shifted read-modify-write fusion (M3.5, OPTIMIZER_REWRITE.md).
+# Op-level Pointed/Shifted read-modify-write fusion.
 # Runs on SSA AFTER GVN (so identical address args share value ids) and BEFORE
 # DCE (which reaps the orphaned GetPointed/BinOp). The frontend never emits
 # Pointed/Shifted ops, so this never fires on the pydori corpus -- it is guarded
@@ -4411,8 +4411,8 @@ cdef bint _try_fuse_ptr(Func f, int32_t i, list uc, int32_t naddr, uint16_t get_
 def _midend_pass(Func func):
     f1, c1 = _run_sccp(func)  # includes single-operand phi collapse
     _, c2 = _run_gvn_inplace(<Func>f1)
-    cb = _canon_branch_not(<Func>f1)  # If(Not) two-way branch canon (finding #2)
-    cf = _fuse_ptr_rmw(<Func>f1)  # op-level Pointed/Shifted RMW fusion (M3.5)
+    cb = _canon_branch_not(<Func>f1)  # If(Not) two-way branch canon
+    cf = _fuse_ptr_rmw(<Func>f1)  # op-level Pointed/Shifted RMW fusion
     f2, c3 = _run_dce(<Func>f1)  # reaps the orphaned GetPointed/BinOp + freed Not
     return (f2, c1 or c2 or c3 or cf or cb)
 
@@ -4428,7 +4428,7 @@ cdef Func midend_round(Func func, bint allow_repeat):
 
 
 cdef Func midend_standard(Func func):
-    # Standard (-O2) mid-end round (7.2.7): core (SCCP -> GVN -> DCE) -> LICM ->
+    # Standard (-O2) mid-end round: core (SCCP -> GVN -> DCE) -> LICM ->
     # rewrite_switch, then repeat the core ONCE if the core, LICM, or
     # rewrite_switch changed anything. LICM and rewrite_switch themselves run once.
     res = _midend_pass(func)

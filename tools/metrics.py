@@ -290,7 +290,7 @@ def _post_order(root):
 def analyze_node(root, mode, callback_name: str) -> dict:
     """Compute per-reference node counts, effective count, and per-op counts.
 
-    Counts are memoized per unique node and combined (per §2) so shared subtrees are
+    Counts are memoized per unique node and combined so shared subtrees are
     counted once per reference without exponential expansion.
     """
     post = _post_order(root)

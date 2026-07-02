@@ -67,7 +67,7 @@ _SCCP_SUPPORTED_42 = (
     "Radian", "Lerp", "LerpClamped", "Remap", "RemapClamped",
 )  # fmt: skip
 
-# The six ops folded by the rewrite beyond SCCP-42, besides the Ease* family.
+# The six ops the optimizer folds beyond SCCP-42, besides the Ease* family.
 _FOLDABLE_ADDITIONS = ("Sign", "Trunc", "Unlerp", "UnlerpClamped", "Judge", "JudgeSimple")
 
 # Pure ops that must NEVER be folded because their value depends on the runtime

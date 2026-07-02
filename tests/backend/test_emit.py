@@ -1,12 +1,9 @@
 """Tests for the arena EngineNode emitter (``sonolus.backend._opt.emit``).
 
-The emitter is a behaviour-preserving port of the old ``finalize.py``
-(``cfg_to_engine_node``) operating on the flat ``Func`` arena, plus the one
-deliberate OPTIMIZER_REWRITE.md 7.6 addition: it re-flattens associative left
-spines (``Add``/``Multiply``/``Mod``/``Rem``) as it builds the tree.
+The emitter builds the EngineNode tree from the flat ``Func`` arena, re-flattening
+associative left spines (``Add``/``Multiply``/``Mod``/``Rem``) as it builds.
 
-Two layers of coverage (the wave-2 A/B corpus comparison against the now-deleted
-old ``finalize`` served its purpose and is retired with M1):
+Two layers of coverage:
 
 1. ``test_*`` unit tests -- every terminator form, NaN/+-Inf/-0.0 constant
    lowering, pointer-deref nested ``Get``s, offset-folding branches, and n-ary
@@ -143,7 +140,7 @@ def test_terminator_switch_integer_default_less():
 
 def test_terminator_switch_with_default_gap():
     # Gapped but near-dense 0-based cases (0, 2) -> SwitchIntegerWithDefault, the
-    # hole (slot 1) routed to the default (finding #1: dense gap-fill).
+    # hole (slot 1) routed to the default (dense gap-fill).
     b0 = BasicBlock(test=IRGet(BlockPlace(500, 0, 0)))
     b_a, b_c, bd = BasicBlock(), BasicBlock(), BasicBlock()
     b0.connect_to(b_a, 0)
@@ -195,8 +192,8 @@ def test_terminator_switch_with_default_non_integral():
 
 def test_terminator_switch_with_default_default_less():
     # Default-less near-dense multiway (0, 2) -> SwitchIntegerWithDefault; the hole
-    # and out-of-range both route to the exit index (finding #1: the exit is the
-    # value a non-matching test already reaches for a default-less block).
+    # and out-of-range both route to the exit index (the exit is the value a
+    # non-matching test already reaches for a default-less block).
     b0 = BasicBlock(test=IRGet(BlockPlace(500, 0, 0)))
     b_a, b_c = BasicBlock(), BasicBlock()
     b0.connect_to(b_a, 0)
@@ -322,7 +319,7 @@ def test_const_finite_non_integral_stays_float():
 
 
 def test_const_negative_zero_emits_int_zero():
-    # Bit-level: -0.0 is integral, so it demotes to *int* 0 (matches old behavior).
+    # Bit-level: -0.0 is integral, so it demotes to *int* 0.
     v = _set_value_node(IRConst(-0.0))
     assert v == 0
     assert type(v) is int
@@ -374,7 +371,7 @@ def test_place_offset_nonzero_index_zero():
 
 def test_place_offset_nonzero_index_dynamic():
     # offset != 0, dynamic (non-Multiply) index -> SetShifted(block, offset, index,
-    # 1, value): the address Add(index, offset) is absorbed as stride 1 (finding #5).
+    # 1, value): the address Add(index, offset) is absorbed as stride 1.
     b0 = BasicBlock(statements=[IRSet(BlockPlace(500, IRGet(BlockPlace(501, 0, 0)), 7), IRConst(0))])
     _node, executes, _idx = _emit_program(b0)
     set_node = executes[0].args[0]
@@ -392,7 +389,7 @@ def test_place_pointer_deref_nested_gets():
 
 
 # ---------------------------------------------------------------------------
-# 2c'. Strided address -> GetShifted / SetShifted / SetAddShifted (findings #3/#5).
+# 2c'. Strided address -> GetShifted / SetShifted / SetAddShifted.
 # GetShifted(block, offset, index, stride) == get(block, offset + index*stride).
 # ---------------------------------------------------------------------------
 
@@ -404,7 +401,7 @@ def _strided_index(base_block=501, stride=4):
 
 def test_place_strided_multiply_get_offset():
     # Get(block, Add(Multiply(i, s), offset)) -> GetShifted(block, offset, i, s):
-    # both the Multiply and the offset Add are absorbed (finding #3).
+    # both the Multiply and the offset Add are absorbed.
     b0 = BasicBlock(statements=[IRSet(BlockPlace(500, 0, 0), IRGet(BlockPlace(500, _strided_index(), 8)))])
     _node, executes, _idx = _emit_program(b0)
     value = executes[0].args[0].args[2]
@@ -526,7 +523,7 @@ def test_flatten_deep_left_spine():
 
 
 def test_flatten_already_nary_idempotent():
-    # An already-n-ary Add (binarised by marshal-in) re-flattens to the same tree.
+    # An already-n-ary Add (binarized by marshal-in) re-flattens to the same tree.
     a, b, c = _reads(0, 1, 2)
     v = _set_value_node(IRPureInstr(Op.Add, [a, b, c]))
     assert v.func == Op.Add
@@ -548,8 +545,8 @@ def test_flatten_right_nested_not_flattened():
 
 
 def test_flatten_descends_into_effectful_args():
-    # FlattenAssociativeOps descends into impure-instr args; so does emit. The
-    # Add spine inside a Draw's args must flatten while Draw stays as-is.
+    # emit descends into impure-instr args: the Add spine inside a Draw's args
+    # must flatten while Draw stays as-is.
     a, b, c = _reads(0, 1, 2)
     add = IRPureInstr(Op.Add, [IRPureInstr(Op.Add, [a, b]), c])
     b0 = BasicBlock(statements=[IRInstr(Op.DebugLog, [add])])
@@ -711,7 +708,7 @@ def test_semantic_nary_flatten_preserves_result():
 
     it = _assert_semantic_parity(build)
     assert it.log == [15.0]
-    # new emit flattens the spine; result is unchanged.
+    # emit flattens the spine; result is unchanged.
     node = emit.emit_cfg(build())
     add = node.args[0].args[0].args[4].args[0]
     assert add.func == Op.Add

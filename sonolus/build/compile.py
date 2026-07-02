@@ -34,10 +34,10 @@ def compile_mode(
 ) -> dict:
     """Thin delegator to the compiled per-mode compile driver.
 
-    The work loop lives in ``sonolus.backend._opt.driver.compile_mode`` (moved
-    there in M4 so the compile driver sits in the compiled package). The frontend
-    tracer ``callback_to_cfg`` stays in Python and is passed through. This name is
-    kept because ``engine.py`` and tests import ``compile_mode`` from here.
+    The work loop lives in ``sonolus.backend._opt.driver.compile_mode`` so the
+    compile driver sits in the compiled package. The frontend tracer
+    ``callback_to_cfg`` stays in Python and is passed through. This name is kept
+    because ``engine.py`` and tests import ``compile_mode`` from here.
     """
     return _driver.compile_mode(
         mode,

@@ -1,16 +1,17 @@
-"""SSA construction, dominators, and naive out-of-SSA (milestone M2 keystone).
+"""SSA construction, dominators, and naive out-of-SSA.
 
-Covers OPTIMIZER_REWRITE.md 7.2.1 (Braun SSA construction), the CHK dominators
-in ``analysis.pyx``, and the naive 7.4.2 out-of-SSA (split-all-critical-edges +
-parallel-copy sequentialization). Three layers:
+Covers Braun SSA construction, the CHK dominators in ``analysis.pyx``, and the
+naive out-of-SSA (split-all-critical-edges + parallel-copy sequentialization).
+Three layers:
 
 * structural unit tests -- inspect ``cfg_to_text`` of the ``["cfg_cleanup","ssa"]``
   and ``["...","unssa"]`` debug exports (phis, per-pred operands, UNDEF, arrays
   staying pinned, critical-edge splits, copy cycles);
-* semantic parity -- interpret hand-built CFGs unoptimized (M1 pipeline) vs
-  ssa->unssa->(M1 pipeline); identical results / logs / memory;
+* semantic parity -- interpret hand-built CFGs unoptimized (the minimal
+  cfg_cleanup + allocate + emit pipeline) vs ssa->unssa->(minimal pipeline);
+  identical results / logs / memory;
 * corpus round-trip -- every pydori callback through cfg_cleanup->ssa->unssa then
-  the standard M1 pipeline + node emission, asserting verify() green at each stage.
+  the standard pipeline + node emission, asserting verify() green at each stage.
 """
 
 from __future__ import annotations
@@ -46,7 +47,7 @@ def _unssa_cfg(cfg: BasicBlock, mode=None, cb=None) -> BasicBlock:
 
 
 def _interp(cfg: BasicBlock, level=MINIMAL_PASSES, mode=None, cb=None, rom=None) -> Interpreter:
-    """Run the M1 pipeline, emit, and interpret; returns the Interpreter."""
+    """Run the pipeline, emit, and interpret; returns the Interpreter."""
     opt = run_passes(cfg, level, OptimizerConfig(mode=mode, callback=cb))
     node = cfg_to_engine_node(opt)
     it = Interpreter()
@@ -348,10 +349,10 @@ def test_parallel_edges_equal_operands():
 
 
 def test_parallel_edges_nan_operands_export():
-    # Regression: the two parallel edges from b0 carry a NaN const. The export
-    # compares arena value ids (not exported IRConst objects, since NaN != NaN),
-    # so the equal-operand check does not spuriously raise; the two b0 edges
-    # collapse to one per-pred entry.
+    # The two parallel edges from b0 carry a NaN const. The export compares arena
+    # value ids (not exported IRConst objects, since NaN != NaN), so the
+    # equal-operand check does not spuriously raise; the two b0 edges collapse to
+    # one per-pred entry.
     nan = float("nan")
     entry = BasicBlock(test=IRGet(_sc("sel")))
     b0, b1, merge = BasicBlock(), BasicBlock(), BasicBlock()
@@ -440,8 +441,8 @@ def test_determinism_byte_identical():
 def test_corpus_ssa_unssa_roundtrip(mode: Mode):
     """Round-trip every pydori callback through cfg_cleanup->ssa->unssa.
 
-    verify() runs after each phase; the standard M1 pipeline + node emission on
-    the lowered CFG must then succeed.
+    verify() runs after each phase; the standard pipeline + node emission on the
+    lowered CFG must then succeed.
     """
     count = 0
     for _label, cbname, factory in _iter_callbacks(mode):

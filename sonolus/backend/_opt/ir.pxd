@@ -204,7 +204,7 @@ cdef enum:
     # pure arm value it hoists into the head block P as an operand subtree of an
     # ``If``/``Switch`` select. It is a MUST-FOLD contract for treeify (lower.pyx): the
     # value is single-use by construction and MUST fold into its consuming select
-    # tree -- never materialised to a temp, never duplicated into several temps.
+    # tree -- never materialized to a temp, never duplicated into several temps.
     # Materialising an arm value would evaluate it UNCONDITIONALLY on both control
     # paths (e.g. a guarded ``a/b``), which the interpret.py oracle faults on
     # (ZeroDivisionError) even though the real runtime's lazy ``If`` tolerates it --

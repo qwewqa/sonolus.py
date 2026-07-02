@@ -1,11 +1,11 @@
-"""Out-of-SSA lowering + treeify tests (milestone M2, OPTIMIZER_REWRITE.md 7.4).
+"""Out-of-SSA lowering + treeify tests.
 
 Three layers, mirroring test_ssa.py:
 
 * scheduling / treeify units -- inspect ``cfg_to_text`` of ``lower_debug`` to
-  assert the fold / duplicate / materialize decision (7.4.1), phi elimination
-  (7.4.2 -- critical-edge splits, cycle temps, UNDEF), n-ary flattening +
-  identity dropping (7.4.3), and ``normalize_switch`` (7.4.5);
+  assert the fold / duplicate / materialize decision, phi elimination
+  (critical-edge splits, cycle temps, UNDEF), n-ary flattening + identity
+  dropping, and ``normalize_switch``;
 * semantic parity -- the random-CFG property recipes interpreted through
   ``run_lower`` vs the MINIMAL reference (observables equal);
 * corpus -- every pydori callback through ``run_lower``: verify() green,
@@ -81,7 +81,7 @@ def _assert_parity(build, mode=None, cb=None, rom=None):
 
 
 # ---------------------------------------------------------------------------
-# 7.4.1 scheduling decisions (structural).
+# Scheduling decisions (structural).
 # ---------------------------------------------------------------------------
 
 
@@ -114,12 +114,12 @@ def test_single_use_pure_folds_cross_block():
     cfg = _diamond_defer(IRPureInstr(Op.Sign, [_ru(0)]))
     text = _low_text(cfg, Mode.PLAY, "updateSequential")
     assert "DebugLog(Sign(RuntimeUpdate[0]))" in text, text
-    assert "<- Sign(" not in text, text  # not materialised to a temp
+    assert "<- Sign(" not in text, text  # not materialized to a temp
 
 
 def test_single_use_does_not_sink_into_deeper_loop():
     # x = Sign(RuntimeUpdate[0]) defined before a loop, used once INSIDE the loop
-    # body. Folding would sink the computation into the loop; treeify materialises
+    # body. Folding would sink the computation into the loop; treeify materializes
     # it instead (a single eval hoisted out, read via a temp inside).
     pre = BasicBlock(
         statements=[IRSet(_sc("x"), IRPureInstr(Op.Sign, [_ru(0)])), IRSet(_sc("k"), IRConst(0))]
@@ -134,7 +134,7 @@ def test_single_use_does_not_sink_into_deeper_loop():
     body.connect_to(step, None)
     step.connect_to(head, None)
     text = _low_text(pre, Mode.PLAY, "updateSequential")
-    # Sign is computed ONCE (materialised before the loop), read via a temp inside.
+    # Sign is computed ONCE (materialized before the loop), read via a temp inside.
     assert text.count("Sign(") == 1, text
     assert "<- Sign(" in text, text
 
@@ -152,7 +152,7 @@ def test_multi_use_cheap_expr_duplicates():
     b0.connect_to(b1, None)
     text = _low_text(b0, Mode.PLAY, "updateSequential")
     assert text.count("RuntimeUpdate[0]") == 2, text  # duplicated at both uses
-    assert "<- RuntimeUpdate" not in text, text  # not materialised
+    assert "<- RuntimeUpdate" not in text, text  # not materialized
 
 
 def test_multi_use_expensive_expr_materializes():
@@ -169,7 +169,7 @@ def test_multi_use_expensive_expr_materializes():
     b0.connect_to(b1, None)
     text = _low_text(b0, Mode.PLAY, "updateSequential")
     assert text.count("RuntimeUpdate[0]") == 1, text  # folded once into the temp
-    assert "<- " in text, text  # materialised to a temp
+    assert "<- " in text, text  # materialized to a temp
 
 
 def _rom(idx: int) -> IRGet:
@@ -202,8 +202,8 @@ def test_runtime_constant_tree_duplicates_regardless_of_size():
 
 
 def test_writable_block_const_index_read_not_duplicated():
-    # Deliberate 7.4.1 divergence: a constant-index read of a WRITABLE block used
-    # multiple times is materialised, never duplicated (duplication across a write
+    # Deliberate divergence: a constant-index read of a WRITABLE block used
+    # multiple times is materialized, never duplicated (duplication across a write
     # could observe it). Raw int block 20 with mode=None is conservatively writable.
     b0 = BasicBlock(
         statements=[
@@ -216,7 +216,7 @@ def test_writable_block_const_index_read_not_duplicated():
     b1 = BasicBlock()
     b0.connect_to(b1, None)
     text = _low_text(b0)
-    # Materialised to one temp, read three times: the "20[0]" place text appears
+    # Materialized to one temp, read three times: the "20[0]" place text appears
     # exactly once (the temp store), not at the three uses.
     assert text.count("20[0]") == 1, text
     assert "<- 20[0]" in text, text
@@ -224,7 +224,7 @@ def test_writable_block_const_index_read_not_duplicated():
 
 def test_pinned_read_fold_blocked_by_intervening_effect():
     # A single-use writable read folds into its consumer only if no effect lies
-    # between def and use. With an intervening store it materialises instead.
+    # between def and use. With an intervening store it materializes instead.
     def with_effect():
         b0 = BasicBlock(
             statements=[
@@ -250,7 +250,7 @@ def test_pinned_read_fold_blocked_by_intervening_effect():
 
     te = _low_text(with_effect())
     tn = _low_text(no_effect())
-    # blocked -> the read is stored to a temp (a "<- 20[0]" materialisation).
+    # blocked -> the read is stored to a temp (a "<- 20[0]" materialization).
     assert "<- 20[0]" in te, te
     # allowed -> folded straight into the DebugLog, no temp store of the read.
     assert "DebugLog(20[0])" in tn, tn
@@ -283,7 +283,7 @@ def _undef_build():
 
 
 # ---------------------------------------------------------------------------
-# 7.4.4 coalescing safety around the shared UNDEF slot. Two loop phis both fed
+# Coalescing safety around the shared UNDEF slot. Two loop phis both fed
 # by the single UNDEF value get a chained copy from the parallel-copy
 # sequentializer (``a <- undef; b <- a``); if one phi is a dead loop-carried
 # temp, the def-point interference graph used to omit the a<->b edge (a dead
@@ -405,7 +405,7 @@ def test_many_undef_temps_never_alias_written():
 
 
 # ---------------------------------------------------------------------------
-# 7.4.2 phi elimination.
+# Phi elimination.
 # ---------------------------------------------------------------------------
 
 
@@ -453,7 +453,7 @@ def test_critical_edge_split_creates_block():
 
 
 # ---------------------------------------------------------------------------
-# 7.4.3 n-ary emission: flatten + identity dropping.
+# n-ary emission: flatten + identity dropping.
 # ---------------------------------------------------------------------------
 
 
@@ -482,7 +482,7 @@ def test_left_spine_flattened_to_nary():
 
 def test_identity_dropping_inside_impure_instr_args():
     # Add(x, 0) folds to x even when nested inside an impure Set's value tree
-    # (fixing the old RemoveRedundantArguments impure-recursion bug).
+    # (identity dropping recurses into impure instrs' args).
     val = IRPureInstr(Op.Add, [_rd("x"), IRConst(0)])
     b0 = BasicBlock(
         statements=[
@@ -517,7 +517,7 @@ def _find_op(node, op):
 
 
 # ---------------------------------------------------------------------------
-# 7.4.5 normalize_switch.
+# normalize_switch.
 # ---------------------------------------------------------------------------
 
 
@@ -690,10 +690,10 @@ def test_dynamic_block_const_id_int32_still_folds():
 def _f(x: float) -> bytes:
     # Compare +-0.0 as equal (NaN bytes pass through unchanged: NaN != 0.0). The
     # lowering path legitimately collapses the sign of zero relative to the
-    # MINIMAL reference via two documented policy exceptions -- 7.2.2 (Multiply
-    # with a constant-0 arg folds to +0.0) and 4 (the x+0 / x/1 identity drops an
-    # operand, which can turn -0.0 into +0.0). This mirrors test_random_cfg._f and
-    # is the ONLY relaxation of the bit-exact observable comparison.
+    # MINIMAL reference via two documented policy exceptions -- Multiply with a
+    # constant-0 arg folds to +0.0, and the x+0 / x/1 identity drops an operand
+    # (which can turn -0.0 into +0.0). This mirrors test_random_cfg._f and is the
+    # ONLY relaxation of the bit-exact observable comparison.
     x = float(x)
     if x == 0.0:
         x = 0.0
@@ -757,7 +757,7 @@ def _is_rc(node, rcids: set) -> bool:
 
 
 def _eff_nodes(node, rcids: set) -> int:
-    # Effective cost (section 2): a runtime-constant subtree the runtime folds to
+    # Effective cost: a runtime-constant subtree the runtime folds to
     # a single push counts as 1 regardless of size.
     if not isinstance(node, FunctionNode):
         return 1
@@ -774,15 +774,14 @@ def test_corpus_run_lower(mode: Mode):
     for _label, cbname, factory in _iter_callbacks(mode):
         # This isolates the LOWERING strategy holding the mid-end constant: both
         # sides run cfg_cleanup -> ssa -> mid-end, then differ only in out-of-SSA.
-        # (Before the M2 wiring the baseline was STANDARD_PASSES == the dumb M1
-        # pipeline; STANDARD now runs the full mid-end + real treeify, so using it
-        # as the naive baseline would be circular -- it would re-lower with the very
-        # treeify under test. We build a genuine mid-end-then-naive-out_of_ssa
-        # baseline via the debug phase registry instead.)
+        # STANDARD_PASSES can't be the naive baseline: it runs the full mid-end +
+        # real treeify, so using it would be circular -- it would re-lower with the
+        # very treeify under test. We build a genuine mid-end-then-naive-out_of_ssa
+        # baseline via the debug phase registry instead.
         #   mine:  ... -> lower_from_ssa (real treeify) -> packing
         node = cfg_to_engine_node(lower.run_lower(factory(), mode, cbname, midend=True))
         assert isinstance(node, FunctionNode)  # Block(JumpLoop(...))
-        #   naive: ... -> out_of_ssa (naive, materialise-everything) -> packing
+        #   naive: ... -> out_of_ssa (naive, materialize-everything) -> packing
         lowered = ir.debug_run(
             factory(), mode, cbname, phases=["cfg_cleanup", "ssa", "midend", "unssa", "packing"]
         )

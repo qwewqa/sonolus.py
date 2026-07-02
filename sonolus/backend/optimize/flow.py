@@ -62,12 +62,12 @@ def traverse_cfg_preorder(block: BasicBlock) -> Iterator[BasicBlock]:
 
 def traverse_cfg_postorder(block: BasicBlock) -> Iterator[BasicBlock]:
     # Iterative DFS postorder (an explicit stack, so arbitrarily deep CFGs -- e.g.
-    # unrolled large-container code -- never overflow the Python call stack the way
-    # a recursive walk would). The emission order is byte-identical to the classic
-    # recursive form: children are visited in ``(cond is None, cond)`` sorted edge
-    # order, each node yielded after its subtrees, leaves yielded inline on
-    # discovery, and successors marked visited at discovery time (pre-order marking,
-    # with ``block`` pre-marked) so shared successors resolve identically.
+    # unrolled large-container code -- never overflow the Python call stack). Order
+    # contract (goldens and block numbering depend on it): children visited in
+    # ``(cond is None, cond)`` sorted edge order, each node yielded after its
+    # subtrees, leaves yielded on discovery, and successors marked visited at
+    # discovery time (``block`` pre-marked) so shared successors resolve
+    # deterministically.
     visited = {block}
     stack = [(block, iter(sorted(block.outgoing, key=lambda e: (e.cond is None, e.cond))))]
     while stack:

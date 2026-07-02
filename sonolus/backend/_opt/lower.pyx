@@ -266,7 +266,7 @@ cdef void _dead_store_elim(Func func, Liveness L):
                 disj1 = True
         # Self-copy SET(p) = GET(p): detected by place id (post-coalesce these
         # share one interned place id; a structurally-equal copy under distinct ids
-        # is a rare missed drop, output-quality only, never wrong behaviour).
+        # is a rare missed drop, output-quality only, never wrong behavior).
         disj2 = (instrs[vid].op == OPX_GET and instrs[vid].aux == pid)
         is_live = not (disj1 or disj2)
         if is_live:
@@ -485,7 +485,7 @@ cdef void fuse_rmw(Func func) except *:
     unreferenced) -- emit/export skip them.
 
     (The op-level ``GetPointed``/``GetShifted`` RMW forms are fused earlier, on SSA,
-    in ``midend._fuse_ptr_rmw`` -- treeify materialises those pinned reads to temps
+    in ``midend._fuse_ptr_rmw`` -- treeify materializes those pinned reads to temps
     so they are never inline here.)
     """
     cdef Instr* instrs = func.instrs
@@ -547,41 +547,41 @@ def run_fuse_rmw(entry, mode=None, callback=None, strategy="packing"):
 
 
 # ==========================================================================
-# Out-of-SSA + treeify (OPTIMIZER_REWRITE.md 7.4). Supersedes the naive
-# midend.out_of_ssa. Consumes a value-based SSA Func (build_ssa), produces a
-# non-SSA 3-legal arena for allocate_func + emit_func.
+# Out-of-SSA + treeify (``midend.out_of_ssa`` is a naive debug-only variant).
+# Consumes a value-based SSA Func (build_ssa), produces a legal non-SSA arena
+# for allocate_func + emit_func.
 #
 # Pipeline (lower_from_ssa):
-#   1-3. _Lower.build()   scheduling decision (7.4.1) + phi elimination (7.4.2)
-#                         + tree emission with n-ary flatten & identity dropping
-#                         (7.4.3), producing a fresh non-SSA arena.
+#   1-3. _Lower.build()   scheduling decision + phi elimination + tree emission
+#                         with n-ary flatten & identity dropping, producing a
+#                         fresh non-SSA arena.
 #   4.   _coalesce()      final-schedule liveness -> interference -> coalesce
-#                         phi-copy / copy-related webs; delete self-copies (7.4.4).
-#   5.   cfg_cleanup(phi_safe=True) -> RPO layout, then _normalize_switch (7.4.5).
+#                         phi-copy / copy-related webs; delete self-copies.
+#   5.   cfg_cleanup(phi_safe=True) -> RPO layout, then _normalize_switch.
 #
-# SCHEDULING SEMANTICS actually implemented (7.4.1), per SSA value v:
+# SCHEDULING SEMANTICS, per SSA value v:
 #
 # * Use positions: a normal operand use is at its consumer instruction; a block
 #   test use is at the block END; a phi operand use is at the END of the
 #   corresponding predecessor edge (per the incoming-edge contract).
-# * ``rematerialisable/inlinable-anywhere`` (``inlinable[v]``): recomputable at
+# * ``rematerializable/inlinable-anywhere`` (``inlinable[v]``): recomputable at
 #   any point v dominates. Structurally: OPX_CONST; a non-writable real-block
 #   OPX_GET with a constant or itself-stable index; a pure op all of whose
-#   operands are stable (materialised temp / phi / const / undef) or themselves
+#   operands are stable (materialized temp / phi / const / undef) or themselves
 #   inlinable. Writable/dynamic/array reads, Random, and side-effecting values
 #   are NOT inlinable. (Decision-aware: computed bottom-up in value-id order, so
-#   a materialised operand counts as a stable leaf.)
+#   a materialized operand counts as a stable leaf.)
 # * ``runtime-constant tree`` (``_rtc``): pure ops over OPX_CONST + PLACE_
 #   RUNTIME_CONST reads (the marshal-in flag). ALWAYS folded/duplicated, never
-#   materialised and never gated by loop-crossing -- a temp defeats the runtime's
-#   own constant folding (effective cost 1, section 2), so it duplicates
+#   materialized and never gated by loop-crossing -- a temp defeats the runtime's
+#   own constant folding (effective cost 1, runtime cost model), so it duplicates
 #   regardless of size, including into phi copies (safe: no phi/temp reads).
 # * Decision (skipping consts/undef/phis/roots):
 #     - use_count==0 & not side-effecting        -> DROP.
 #     - side-effecting non-root                  -> MATERIALISE (never fold an
 #                                                    effect; matches the naive
 #                                                    lowering exactly).
-#     - runtime-constant tree                    -> FOLD/DUP (never materialise).
+#     - runtime-constant tree                    -> FOLD/DUP (never materialize).
 #     - used by a phi (and not runtime-const)    -> MATERIALISE (phi operands are
 #                                                    a temp or a runtime-const
 #                                                    tree, so coalescing owns the
@@ -592,7 +592,7 @@ def run_fuse_rmw(entry, mode=None, callback=None, strategy="packing"):
 #         single-use  -> FOLD unless crosses_loop(def, use) (sinking into a
 #                        deeper loop; then MATERIALISE, hoisting the single eval).
 #         multi-use   -> DUPLICATE iff decision-aware tree cost < 4 (a
-#                        materialised operand costs 3, a scalar-temp get), else
+#                        materialized operand costs 3, a scalar-temp get), else
 #                        MATERIALISE.
 #     - not inlinable (pinned OPX_GET of a writable/dynamic block, or a pure op
 #       over such a read):
@@ -603,13 +603,13 @@ def run_fuse_rmw(entry, mode=None, callback=None, strategy="packing"):
 #         pinned non-GET values never take this path -> MATERIALISE.
 # * set_cost derivation for the cost comparison ``dup_cost*uses <
 #   set_cost + get_cost*uses``: get_cost = scalar-temp get = 3 (runtime cost
-#   model); the materialise side is ``tree_cost + get_cost*uses`` (compute once,
-#   read each use -- the temp write is amortised to zero), and duplication is
+#   model); the materialize side is ``tree_cost + get_cost*uses`` (compute once,
+#   read each use -- the temp write is amortized to zero), and duplication is
 #   ``tree_cost*uses``, so break-even is ``get_cost < tree_cost`` <=>
 #   ``tree_cost >= 4``, independent of uses -> the constant-4 threshold above.
 #
 # POLICY: constant-index reads of WRITABLE blocks are never duplicated (they are
-# not inlinable, so multi-use materialises) -- duplicating across an intervening
+# not inlinable, so multi-use materializes) -- duplicating across an intervening
 # write could observe it.
 # ==========================================================================
 
@@ -789,11 +789,11 @@ cdef class _Lower:
 
     def _rtc(self, int32_t v):
         # Runtime-constant tree: pure ops over OPX_CONST + PLACE_RUNTIME_CONST
-        # reads. A materialised / phi / undef operand emits as a temp read (never
-        # runtime-constant), which also STOPS recursion at materialised values --
-        # essential because an uninitialised self-referential loop variable makes
+        # reads. A materialized / phi / undef operand emits as a temp read (never
+        # runtime-constant), which also STOPS recursion at materialized values --
+        # essential because an uninitialized self-referential loop variable makes
         # the SSA value graph cyclic (phi(UNDEF,v)=v collapse), and the cycle's
-        # back edge is always a materialised undef-widened value. Memoized.
+        # back edge is always a materialized undef-widened value. Memoized.
         cached = self.rtc_memo[v]
         if cached is not None:
             return <bint>cached
@@ -973,14 +973,14 @@ cdef class _Lower:
                 self._record_use(src.blocks[b].test_val, b, _TEST_USE, False)
 
         # Values used outside their strict dominance region (from phi(UNDEF,v)=v
-        # collapses in build_ssa) MUST be materialised: on the undef path the def
-        # has not executed, so the reference reads an uninitialised temp; folding
+        # collapses in build_ssa) MUST be materialized: on the undef path the def
+        # has not executed, so the reference reads an uninitialized temp; folding
         # or duplicating would evaluate the value there instead. Force a temp.
         # These are also the ONLY non-phi operands that may reference a LATER value
-        # (a loop back edge), and an uninitialised self-referential loop variable
+        # (a loop back edge), and an uninitialized self-referential loop variable
         # makes the value graph cyclic through exactly such an edge -- so
-        # pre-marking them materialised (before any _rtc / _tree_cost recursion)
-        # both keeps semantics and breaks the cycle at a materialised leaf.
+        # pre-marking them materialized (before any _rtc / _tree_cost recursion)
+        # both keeps semantics and breaks the cycle at a materialized leaf.
         undef_set = src._ssa_undef if src._ssa_undef is not None else set()
         for i in undef_set:
             op = src.instrs[i].op
@@ -998,13 +998,13 @@ cdef class _Lower:
                 continue
             if <bint>self.materialize[i]:  # pre-marked undef-widened value
                 continue
-            # MUST-FOLD invariant (7.4.2): an if-conversion arm value hoisted into
+            # MUST-FOLD invariant: an if-conversion arm value hoisted into
             # the head block is single-use by construction and MUST fold into its
-            # consuming ``If``/``Switch`` select tree -- never materialise (that
+            # consuming ``If``/``Switch`` select tree -- never materialize (that
             # would evaluate a guarded arm UNCONDITIONALLY, a miscompile the oracle
             # faults on; see FLAG_MUST_FOLD in ir.pxd). This OVERRIDES every cost /
             # loop rule below. Enforced + asserted here so a future budget change
-            # cannot silently start materialising an arm.
+            # cannot silently start materializing an arm.
             if src.instrs[i].flags & FLAG_MUST_FOLD:
                 assert <int32_t>self.use_count[i] == 1, (
                     "FLAG_MUST_FOLD value is not single-use (if-conversion invariant broken)"
@@ -1115,7 +1115,7 @@ cdef class _Lower:
             iv = self._emit_ref(iv, block)
         return _add_place_l(self.dst, <uint8_t>kind, <uint8_t>flags, br, iv, off)
 
-    # -- tree emission (7.4.3) --------------------------------------------
+    # -- tree emission -----------------------------------------------------
 
     def _emit_ref(self, int32_t v, int32_t block):
         cdef Func src = self.src
@@ -1154,7 +1154,7 @@ cdef class _Lower:
 
     def _emit_op(self, int32_t op, int32_t flags, list args, int32_t block):
         # Flatten associative left spines (Add/Multiply/Mod/Rem, args[0] only) and
-        # re-apply n-ary identity dropping (RemoveRedundantArguments semantics).
+        # re-apply n-ary identity dropping (drop redundant identity operands).
         cdef Func dst = self.dst
         cdef int32_t a0, k, na
         cdef list rest
@@ -1198,7 +1198,7 @@ cdef class _Lower:
         cdef int32_t r = self.dst._emit(src.instrs[v].op, src.instrs[v].flags, block, -1, args)
         self.dst.instrs[r].flags = <uint8_t>(self.dst.instrs[r].flags | FLAG_STMT_ROOT)
 
-    # -- phi copies (7.4.2) ------------------------------------------------
+    # -- phi copies --------------------------------------------------------
 
     def _make_cycle_temp(self):
         return self._new_temp(1)
@@ -1379,7 +1379,7 @@ cdef class _Lower:
 
 
 # --------------------------------------------------------------------------
-# Coalescing on the final schedule (7.4.4).
+# Coalescing on the final schedule.
 # --------------------------------------------------------------------------
 
 cdef void _coalesce(Func func) except *:
@@ -1427,7 +1427,7 @@ cdef void _coalesce(Func func) except *:
         # phis both fed by the single UNDEF slot get a chained copy from the
         # parallel-copy sequentializer, and if one phi is a dead loop-carried
         # temp the missing interference edge let coalescing fuse two independent
-        # variables into one slot (OPTIMIZER_REWRITE.md 7.4.4 / 7.2.1).
+        # variables into one slot.
         #
         # Fix: a dead-store target X interferes with every temp whose value must
         # survive X's block -- root_live(X) (temps live across the store) plus
@@ -1556,7 +1556,7 @@ cdef void _coalesce(Func func) except *:
 
 
 # --------------------------------------------------------------------------
-# normalize_switch (7.4.5): arithmetic-progression case normalization. Runs
+# normalize_switch: arithmetic-progression case normalization. Runs
 # strictly AFTER all cleanup. Rewrites in place by appending the (test-a)/b
 # instructions (referenced only via test_val, so block slices stay contiguous).
 # --------------------------------------------------------------------------
@@ -1713,11 +1713,11 @@ def _offset_stride(list cases):
 
 
 # --------------------------------------------------------------------------
-# Driver: lower_from_ssa (7.4, steps 1-5).
+# Driver: lower_from_ssa (steps 1-5).
 # --------------------------------------------------------------------------
 
 cdef Func lower_from_ssa(Func func):
-    """Lower an SSA ``Func`` to a non-SSA 3-legal arena (treeify + out-of-SSA).
+    """Lower an SSA ``Func`` to a legal non-SSA arena (treeify + out-of-SSA).
 
     Returns a fresh ``Func``: scheduling decision + phi elimination + tree
     emission (``_Lower``), then final-schedule coalescing, phi-free cfg_cleanup
@@ -1766,7 +1766,7 @@ cdef Func lower_from_ssa(Func func):
 # TRANSFORM (fresh SSA arena rebuild): the select ``If`` is created at the END of
 # P; every arm instr is MOVED into P (pure => relocation legal; P dominates the
 # arms so dominance holds) and marked FLAG_MUST_FOLD (single-use; treeify MUST fold
-# it under the select -- materialising a guarded arm would evaluate it
+# it under the select -- materializing a guarded arm would evaluate it
 # unconditionally, a miscompile the oracle faults on; see ir.pxd). Arm blocks are
 # deleted; P's two edges collapse to one NONE edge P->J. Each J phi's operands for
 # the removed edges collapse to that phi's select on the new edge; a phi left with a
@@ -2428,9 +2428,9 @@ def run_lower(entry, mode=None, callback=None, strategy="packing", midend=False)
     """marshal -> cfg_cleanup -> build_ssa -> [midend] -> lower_from_ssa ->
     allocate -> export.
 
-    The ``midend`` flag optionally runs a mid-end round if the parallel mid-end
-    agent has exposed one (probed by name; skipped otherwise -- lowering does not
-    depend on it). ``strategy`` is the allocator ("packing"/"bump"/"try_bump").
+    The ``midend`` flag optionally runs one SCCP/GVN/DCE mid-end round before
+    lowering (skipped when False -- lowering does not depend on it). ``strategy``
+    is the allocator ("packing"/"bump"/"try_bump").
     """
     cdef Func func = cfg_cleanup(<Func>marshal_in(entry, mode, callback), False)
     cdef Func ssa = build_ssa(func)

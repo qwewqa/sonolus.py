@@ -249,7 +249,7 @@ cdef class _Emitter:
         return result
 
     cdef object _flatten_left_spine(self, object op_member, bint flattenable, list children):
-        # Section 7.6 addition: re-flatten the associative left spine.
+        # Re-flatten the associative left spine.
         # ``children[0]`` was already emitted (hence already flattened), so a
         # single splice fully flattens; right-nested trees (``Add(a, Add(b,c))``)
         # are left intact, preserving left-to-right FP evaluation order.
@@ -481,7 +481,7 @@ cdef class _Emitter:
             # The exact 0..k-1 contiguous set is the no-gap special case. Holes route
             # to the default (the NONE target, or the exit index for a default-less
             # block -- both are the value a non-matching test already reaches, so the
-            # fill is behaviour-preserving). A density guard bounds the synthesized
+            # fill is behavior-preserving). A density guard bounds the synthesized
             # table (matches lower._normalize_switch).
             #
             # All conds are finite integers here (the gate above rejects +-inf/NaN),

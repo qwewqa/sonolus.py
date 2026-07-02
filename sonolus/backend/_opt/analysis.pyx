@@ -271,8 +271,8 @@ cdef Liveness compute_liveness(Func func):
     # cfg_cleanup proved unreachable) is an infinite loop: the backward liveness
     # pass would seed nothing and yield all-empty (unsound) live sets, which pack
     # distinct live temps into the same slot and let dead-store elimination strip
-    # their initializing stores. The old pass rejected this loudly; keep that
-    # contract. Checked before any allocation so the raise cannot leak.
+    # their initializing stores. Reject it loudly, before any allocation, so the
+    # raise cannot leak.
     cdef bint has_exit = False
     for b in range(nb):
         if blocks[b].edge_count == 0:

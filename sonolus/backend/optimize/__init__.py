@@ -1,9 +1,7 @@
 """Public optimizer API -- a thin Python shim over the compiled ``_opt`` core.
 
-Replaces the old pass-pipeline surface (the ``CompilerPass`` subclassing API,
-user-supplied pass sequences, and ``CompileCache``/``hash_cfg``) with opaque
-optimization-level sentinels and three entry points, per OPTIMIZER_REWRITE.md 5.
-The heavy lifting lives in the Cython ``sonolus.backend._opt`` package
+Exposes opaque optimization-level sentinels and three entry points. The heavy
+lifting lives in the Cython ``sonolus.backend._opt`` package
 (marshal in -> passes (nogil) -> export back | emit).
 
 Public surface:
@@ -113,8 +111,7 @@ def optimize_and_finalize(
 def cfg_to_engine_node(entry: BasicBlock) -> EngineNode:
     """Emit an ``EngineNode`` from an already-optimized CFG (no passes run).
 
-    Non-destructive on ``entry`` (unlike the old ``finalize.cfg_to_engine_node``,
-    which deleted block attributes). Used by conftest/goldens to emit a CFG that
+    Non-destructive on ``entry``. Used by conftest/goldens to emit a CFG that
     ``run_passes`` already optimized.
     """
     from sonolus.backend._opt import emit

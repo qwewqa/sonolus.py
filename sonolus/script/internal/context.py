@@ -27,12 +27,12 @@ if TYPE_CHECKING:
 
 _compiler_internal_ = True
 
-# Per-callback compilation context. A ContextVar (not a plain global) so the
-# per-callback build thread pool (sonolus/build/compile.py) is race-free: the
-# ThreadPoolExecutor snapshots the ambient contextvars for each submitted task
-# (``copy_context().run(task)``), so each callback's ``using_ctx``/``set_ctx``
-# mutations are isolated to that task's context copy. On the serial path this
-# behaves exactly like the old module global.
+# Per-callback compilation context. A ContextVar (not a plain module global) so the
+# per-callback build thread pool (sonolus/build/compile.py) is race-free: each thread
+# has its own context, so a worker sees the default None rather than another thread's
+# live Context mid-mutation. ThreadPoolExecutor does NOT propagate contextvars to its
+# workers, so pooled tasks must not read or mutate ctx -- all tracing (the only ctx
+# user) runs serially on the calling thread.
 _context: ContextVar[Context | None] = ContextVar("_sonolus_context", default=None)
 
 

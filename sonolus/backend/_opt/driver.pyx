@@ -228,8 +228,8 @@ def optimize_and_finalize_cfg(entry, level, mode=None, callback=None):
 # cross-callback ``OutputNodeGenerator.add`` merge runs SINGLE-THREADED in fixed
 # SUBMISSION order after gathering the futures -- so node indices (and thus the
 # serialized output) are deterministic regardless of thread completion order.
-# The result-dict shapes match the old compile.py exactly (archetype callbacks
-# -> {"index", "order"}; global callbacks -> bare node index).
+# Result-dict shapes: archetype callbacks -> {"index", "order"}; global
+# callbacks -> bare node index.
 # --------------------------------------------------------------------------
 
 # Lazily-populated Python deps (avoid import-time cycles / heavy top-level imports).

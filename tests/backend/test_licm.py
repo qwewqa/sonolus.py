@@ -1,11 +1,10 @@
-"""M3 LICM tests (OPTIMIZER_REWRITE.md 7.2.5).
+"""LICM tests.
 
 Loop-invariant code motion on SSA form: hoist pure / effectively-pure
 (non-writable static real-block reads), loop-invariant, guaranteed-to-execute
-(def block dominates every latch) values whose EFFECTIVE cost (section 2) is >= 4
-into a preheader. Runtime-constant subtrees have effective cost 1, so they NEVER
-hoist -- deliberately diverging from the old LICM (which hoisted them and blocked
-the runtime's own constant folding).
+(def block dominates every latch) values whose EFFECTIVE cost is >= 4 into a
+preheader. Runtime-constant subtrees have effective cost 1, so they NEVER hoist --
+a dedicated temp would defeat the runtime's own constant folding.
 
 Three layers:
 
@@ -191,7 +190,7 @@ def test_cheap_expr_not_hoisted():
 def test_runtime_constant_tree_not_hoisted():
     # LevelData is a RUNTIME_CONSTANT_BLOCK: LevelData[0]*LevelData[1] is a
     # runtime-constant subtree (effective cost 1), so LICM must NOT hoist it --
-    # a temp would defeat the runtime's own constant folding (7.2.5).
+    # a temp would defeat the runtime's own constant folding.
     expr = IRPureInstr(Op.Multiply, [_rc(0), _rc(1)])
     build = lambda: _self_loop(expr)  # noqa: E731
     after = _text(build, _SSA_LICM)

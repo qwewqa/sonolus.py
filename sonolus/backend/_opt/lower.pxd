@@ -1,5 +1,5 @@
 # cython: language_level=3
-"""Temp-memory allocation / lowering over the arena IR (milestone M1, §7.5).
+"""Temp-memory allocation / lowering over the arena IR.
 
 Three allocation strategies rewrite size-1/size>1/size-0 temp places to
 ``BlockPlace(10000, ...)`` real-block places, with dead-store elimination for
@@ -17,7 +17,7 @@ cdef enum:
     ALLOC_TRY_BUMP = 2
 
 
-# Block id all temps are packed into (matches finalize / old allocate.py).
+# Block id all temps are packed into (part of the emitted-node contract).
 cdef enum:
     TEMP_BLOCK = 10000
     TEMP_SIZE = 4096
@@ -28,7 +28,7 @@ cdef enum:
 cdef void allocate_func(Func func, int32_t strategy) except *
 
 
-# Fused read-modify-write peephole (OPTIMIZER_REWRITE.md M3.5, place-based).
+# Fused read-modify-write peephole (place-based).
 # Runs STRICTLY AFTER ``allocate_func`` (so liveness/interference/dead-store logic
 # never sees fused instrs): rewrites, in place, every statement-root
 # ``OPX_SET(p, BinOp(OPX_GET(p), w))`` into the fused runtime op ``Set<BinOp>``
@@ -38,10 +38,11 @@ cdef void allocate_func(Func func, int32_t strategy) except *
 cdef void fuse_rmw(Func func) except *
 
 
-# Out-of-SSA + treeify (OPTIMIZER_REWRITE.md 7.4): consume a value-based SSA
-# ``Func`` (from ``midend.build_ssa``) and return a fresh non-SSA 3-legal arena
-# ready for ``allocate_func`` + emission. Supersedes ``midend.out_of_ssa``. The
-# driver slots this between the mid-end and allocation (see lower.pyx run_lower).
+# Out-of-SSA + treeify: consume a value-based SSA ``Func`` (from
+# ``midend.build_ssa``) and return a fresh non-SSA 3-legal arena ready for
+# ``allocate_func`` + emission. The production de-SSA path (``midend.out_of_ssa``
+# is the naive/debug variant). The driver slots this between the mid-end and
+# allocation (see lower.pyx run_lower).
 cdef Func lower_from_ssa(Func func)
 
 
