@@ -282,6 +282,128 @@ def _undef_build():
 
 
 # ---------------------------------------------------------------------------
+# 7.4.4 coalescing safety around the shared UNDEF slot. Two loop phis both fed
+# by the single UNDEF value get a chained copy from the parallel-copy
+# sequentializer (``a <- undef; b <- a``); if one phi is a dead loop-carried
+# temp, the def-point interference graph used to omit the a<->b edge (a dead
+# store records no interference for its target), so coalescing merged two
+# independent variables into one slot. The observed variable then got clobbered
+# by the "dead" sibling's update. Regression: all levels must observe the
+# UNDEF-seeded value (never-written scalar -> -1.0), same as the MINIMAL bump
+# reference. Found probabilistically by test_random_programs_match_reference;
+# these are the hand-minimized directed cases.
+# ---------------------------------------------------------------------------
+
+
+def _undef_loop_dead_sibling():
+    # s_obs and s_dead are BOTH read undefined on iteration 1 (loop-carried from
+    # UNDEF via the header phi) and both read-modify-written; s_dead is never
+    # observed. s_obs must stay in its own slot: logged before its /2 update, so
+    # -1.0, -0.5, -0.25, -0.125 -- NOT -1/14/14/14 (the bug divided the shared
+    # slot by both 2 and 7 each iteration).
+    init = BasicBlock(statements=[IRSet(_sc("k"), IRConst(0))])
+    header = BasicBlock(test=IRPureInstr(Op.Less, [_rd("k"), IRConst(4)]))
+    body = BasicBlock(
+        statements=[
+            IRInstr(Op.DebugLog, [_rd("s_obs")]),
+            IRSet(_sc("s_obs"), IRPureInstr(Op.Divide, [_rd("s_obs"), IRConst(2)])),
+            IRSet(_sc("s_dead"), IRPureInstr(Op.Divide, [_rd("s_dead"), IRConst(7)])),
+        ]
+    )
+    step = BasicBlock(statements=[IRSet(_sc("k"), IRPureInstr(Op.Add, [_rd("k"), IRConst(1)]))])
+    after = BasicBlock()
+    init.connect_to(header, None)
+    header.connect_to(body, None)
+    header.connect_to(after, 0)
+    body.connect_to(step, None)
+    step.connect_to(header, None)
+    return init
+
+
+def test_undef_loop_dead_sibling_not_coalesced():
+    _ref, low = _assert_parity(_undef_loop_dead_sibling)
+    assert low.log == [-1.0, -0.5, -0.25, -0.125]
+
+
+def _undef_loop_two_observed():
+    # Both loop-carried-from-UNDEF scalars are observed (both live). They must
+    # stay distinct: s_a divides by 2, s_b by 4, independently.
+    init = BasicBlock(statements=[IRSet(_sc("k"), IRConst(0))])
+    header = BasicBlock(test=IRPureInstr(Op.Less, [_rd("k"), IRConst(3)]))
+    body = BasicBlock(
+        statements=[
+            IRInstr(Op.DebugLog, [_rd("s_a")]),
+            IRInstr(Op.DebugLog, [_rd("s_b")]),
+            IRSet(_sc("s_a"), IRPureInstr(Op.Divide, [_rd("s_a"), IRConst(2)])),
+            IRSet(_sc("s_b"), IRPureInstr(Op.Divide, [_rd("s_b"), IRConst(4)])),
+        ]
+    )
+    step = BasicBlock(statements=[IRSet(_sc("k"), IRPureInstr(Op.Add, [_rd("k"), IRConst(1)]))])
+    after = BasicBlock()
+    init.connect_to(header, None)
+    header.connect_to(body, None)
+    header.connect_to(after, 0)
+    body.connect_to(step, None)
+    step.connect_to(header, None)
+    return init
+
+
+def test_undef_loop_two_observed_stay_distinct():
+    _ref, low = _assert_parity(_undef_loop_two_observed)
+    # s_a: -1, -0.5, -0.25 ; s_b: -1, -0.25, -0.0625, interleaved.
+    assert low.log == [-1.0, -1.0, -0.5, -0.25, -0.25, -0.0625]
+
+
+def _undef_through_copies():
+    # An undef value flows through a chain of coalescible copies before use, and
+    # a dead sibling copy chain shares the UNDEF. c is observed; d is dead.
+    b0 = BasicBlock(
+        statements=[
+            IRSet(_sc("c"), _rd("u")),  # c <- undef
+            IRSet(_sc("d"), _rd("u")),  # d <- undef (dead)
+            IRSet(BlockPlace(20, 0), _rd("c")),  # observe c
+            IRSet(_sc("d"), IRPureInstr(Op.Add, [_rd("d"), IRConst(5)])),  # dead update of d
+        ]
+    )
+    b1 = BasicBlock()
+    b0.connect_to(b1, None)
+    return b0
+
+
+def test_undef_through_coalescible_copies():
+    _ref, low = _assert_parity(_undef_through_copies)
+    assert low.get(20, 0) == -1.0
+
+
+def _many_undef_with_written():
+    # Several distinct never-written scalars (may share the ONE undef slot with
+    # each other) coexist with a written, observed temp. The undef reads must
+    # yield -1.0; the written temp must keep its value (7), never aliased onto
+    # the undef slot.
+    b0 = BasicBlock(
+        statements=[
+            IRSet(_sc("w"), IRConst(7)),
+            IRInstr(Op.DebugLog, [_rd("u0")]),
+            IRInstr(Op.DebugLog, [_rd("u1")]),
+            IRInstr(Op.DebugLog, [_rd("u2")]),
+            IRInstr(Op.DebugLog, [_rd("w")]),
+            IRSet(BlockPlace(20, 0), _rd("u0")),
+            IRSet(BlockPlace(20, 1), _rd("w")),
+        ]
+    )
+    b1 = BasicBlock()
+    b0.connect_to(b1, None)
+    return b0
+
+
+def test_many_undef_temps_never_alias_written():
+    _ref, low = _assert_parity(_many_undef_with_written)
+    assert low.log == [-1.0, -1.0, -1.0, 7.0]
+    assert low.get(20, 0) == -1.0
+    assert low.get(20, 1) == 7.0
+
+
+# ---------------------------------------------------------------------------
 # 7.4.2 phi elimination.
 # ---------------------------------------------------------------------------
 
@@ -454,7 +576,16 @@ def test_normalize_switch_already_contiguous_untouched():
 
 
 def _f(x: float) -> bytes:
-    return struct.pack(">d", float(x))
+    # Compare +-0.0 as equal (NaN bytes pass through unchanged: NaN != 0.0). The
+    # lowering path legitimately collapses the sign of zero relative to the
+    # MINIMAL reference via two documented policy exceptions -- 7.2.2 (Multiply
+    # with a constant-0 arg folds to +0.0) and 4 (the x+0 / x/1 identity drops an
+    # operand, which can turn -0.0 into +0.0). This mirrors test_random_cfg._f and
+    # is the ONLY relaxation of the bit-exact observable comparison.
+    x = float(x)
+    if x == 0.0:
+        x = 0.0
+    return struct.pack(">d", x)
 
 
 def _observe(it: Interpreter, ret=0.0) -> tuple:

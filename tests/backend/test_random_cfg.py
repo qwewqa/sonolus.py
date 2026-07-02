@@ -298,6 +298,40 @@ def test_directed_undefined_scalar_read():
     assert it.get(A, 0) == -1.0
 
 
+def test_directed_undef_loop_carried_dead_sibling():
+    # Two scalars are both read undefined on iteration 1 (loop-carried from the
+    # single shared UNDEF value through the header phi) and both read-modify-
+    # written; s_dead is never observed. Lowering must keep them in distinct
+    # slots -- the shared UNDEF makes the parallel-copy sequentializer chain the
+    # two preheader copies (s_obs <- s_dead) and, since s_dead is a dead store,
+    # the def-point interference graph used to omit the s_obs<->s_dead edge, so
+    # coalescing fused two independent variables. s_obs (observed) then got
+    # divided by BOTH 2 and 7 each iteration. All levels must agree with MINIMAL:
+    # s_obs stays halved (-1, -0.5, -0.25, ...). Regression for the shared-UNDEF
+    # coalescing miscompile (OPTIMIZER_REWRITE.md 7.4.4 / 7.2.1).
+    def build():
+        init = BasicBlock(statements=[IRSet(_sc("k"), IRConst(0))])
+        header = BasicBlock(test=IRPureInstr(Op.Less, [_rd("k"), IRConst(4)]))
+        body = BasicBlock(
+            statements=[
+                _obs(A, 5, _rd("s_obs")),
+                IRSet(_sc("s_obs"), IRPureInstr(Op.Divide, [_rd("s_obs"), IRConst(2)])),
+                IRSet(_sc("s_dead"), IRPureInstr(Op.Divide, [_rd("s_dead"), IRConst(7)])),
+            ]
+        )
+        step = BasicBlock(statements=[IRSet(_sc("k"), IRPureInstr(Op.Add, [_rd("k"), IRConst(1)]))])
+        after = BasicBlock()
+        init.connect_to(header, None)
+        header.connect_to(body, None)
+        header.connect_to(after, 0)
+        body.connect_to(step, None)
+        step.connect_to(header, None)
+        return init
+
+    it, _ = _assert_levels_agree(build)
+    assert it.get(A, 5) == -0.125  # -1.0 / 2 / 2 / 2 (captured before the 4th /2)
+
+
 def test_directed_all_dead_stores():
     # Whole body is dead stores; only the log is observable.
     def build():

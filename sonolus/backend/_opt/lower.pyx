@@ -1350,15 +1350,37 @@ cdef void _coalesce(Func func) except *:
         free(scalar_mask); free(adj); free(work)
         raise MemoryError()
 
-    cdef int32_t i, t, u, w, rs, pid, vid, spid, s
+    cdef int32_t i, t, u, w, rs, pid, vid, spid, s, dsc
     cdef uint64_t* rl
+    cdef uint64_t* blo
     try:
         for t in range(n_temps):
             if func.temps[t].size == 1:
                 bs_set(scalar_mask, t)
 
         # Interference: at each OPX_SET's live-out, all scalar temps mutually
-        # interfere (the standard def-point interference graph; complete).
+        # interfere (the standard def-point interference graph). Extended to
+        # close a coalescing-safety hole around DEAD scalar stores.
+        #
+        # A store ``X <- v`` whose target X is not itself live-out (X's value is
+        # never read -- e.g. a dead loop-carried temp) records no interference
+        # for X under the plain live-out rule, so X looks non-interfering with
+        # everything. Coalescing may then merge X into a live temp via a copy
+        # ``X <- Y`` (or ``Y <- X``); that revives X's "dead" store as a live
+        # clobber of the shared slot. This is the shared-UNDEF hazard: two loop
+        # phis both fed by the single UNDEF slot get a chained copy from the
+        # parallel-copy sequentializer, and if one phi is a dead loop-carried
+        # temp the missing interference edge let coalescing fuse two independent
+        # variables into one slot (OPTIMIZER_REWRITE.md 7.4.4 / 7.2.1).
+        #
+        # Fix: a dead-store target X interferes with every temp whose value must
+        # survive X's block -- root_live(X) (temps live across the store) plus
+        # the block's live-out (parallel-copy siblings that are only momentarily
+        # "dead" between sequentialized writes and would otherwise escape the
+        # per-statement live-out). Adding edges is always allocation-safe; it
+        # only blocks the unsound merge. Live stores are unaffected (X is already
+        # in root_live). Dead stores themselves are removed later by
+        # _dead_store_elim, so this never wastes a live slot.
         for i in range(ni):
             if instrs[i].op != OPX_SET:
                 continue
@@ -1370,6 +1392,14 @@ cdef void _coalesce(Func func) except *:
             rl = &L.root_live[rs * nw]
             for w in range(nw):
                 work[w] = rl[w] & scalar_mask[w]
+            pid = instrs[i].aux
+            if places[pid].kind == PLACE_TEMP_SCALAR:
+                dsc = places[pid].block_ref
+                if not bs_get(work, dsc):
+                    blo = &L.live_out[instrs[i].block * nw]
+                    for w in range(nw):
+                        work[w] |= blo[w] & scalar_mask[w]
+                bs_set(work, dsc)
             for t in range(n_temps):
                 if bs_get(work, t):
                     for w in range(nw):
