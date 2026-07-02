@@ -545,8 +545,8 @@ def test_flatten_right_nested_not_flattened():
 
 
 def test_flatten_descends_into_effectful_args():
-    # emit descends into impure-instr args: the Add spine inside a Draw's args
-    # must flatten while Draw stays as-is.
+    # emit descends into impure-instr args: the Add spine inside a DebugLog's args
+    # must flatten while DebugLog stays as-is.
     a, b, c = _reads(0, 1, 2)
     add = IRPureInstr(Op.Add, [IRPureInstr(Op.Add, [a, b]), c])
     b0 = BasicBlock(statements=[IRInstr(Op.DebugLog, [add])])

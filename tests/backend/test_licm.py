@@ -254,11 +254,26 @@ def test_conditionally_executed_not_hoisted():
     _assert_semantics(build, seed={RU.value: [3.0, 5.0]})
 
 
+def test_unguarded_invariant_divide_hoists():
+    # Companion to test_conditionally_executed_faulting_op_not_speculated: an
+    # UNGUARDED loop-invariant Divide (guaranteed to execute every iteration) IS
+    # hoisted -- so it is the guard, not the op, that blocks speculation below.
+    expr = IRPureInstr(Op.Divide, [_ru(0), _ru(1)])
+    build = lambda: _self_loop(expr)  # noqa: E731
+    after = _text(build, _SSA_LICM)
+    # the divide left the phi-carrying loop block for a no-phi preheader.
+    for phi_sec in _phi_sections(after):
+        assert " / " not in phi_sec
+    assert " / " in after
+    _assert_semantics(build, seed={RU.value: [6.0, 3.0]})
+
+
 def test_conditionally_executed_faulting_op_not_speculated():
     # A loop-invariant, cost-eligible division RU[0]/RU[2] guarded by `if RU[2]`
-    # (the unguarded form DOES hoist -- see test above), with RU[2] seeded 0. The
-    # guaranteed-to-execute rule must keep it in the guarded arm: speculating it into
-    # the preheader would divide by zero unconditionally and the oracle would raise.
+    # (the unguarded form DOES hoist -- see test_unguarded_invariant_divide_hoists),
+    # with RU[2] seeded 0. The guaranteed-to-execute rule must keep it in the guarded
+    # arm: speculating it into the preheader would divide by zero unconditionally and
+    # the oracle would raise.
     def build():
         b0 = BasicBlock(statements=[IRSet(_sc("i"), IRConst(0)), IRSet(_sc("acc"), IRConst(0))])
         head = BasicBlock(test=IRPureInstr(Op.Less, [_rd("i"), IRConst(10)]))

@@ -28,9 +28,11 @@ Semantics:
   keep operands alive).
 * Block tests count as uses at block end.
 
-Backward dataflow runs to a fixpoint over a worklist seeded from exit blocks; the
-forward array-init pass runs to a fixpoint from the entry block. Both are monotone
-so the result is order-independent (deterministic).
+Backward dataflow runs to a fixpoint over a worklist seeded from all blocks (so
+exit-unreachable regions are analyzed too, not just those a backward walk from an
+exit reaches); a CFG with no exit block at all is a non-terminating callback and
+raises ValueError. The forward array-init pass runs to a fixpoint from the entry
+block. Both are monotone so the result is order-independent (deterministic).
 """
 
 from libc.stdint cimport int32_t, int64_t, uint8_t, uint16_t, uint32_t, uint64_t
@@ -171,14 +173,14 @@ cdef class Liveness:
         cdef dict d = {}
         cdef int32_t b
         for b in range(self.n_blocks):
-            d[b] = self._bitset_names(&self.live_in[b * self.n_words])
+            d[b] = self._bitset_names(&self.live_in[<int64_t>b * self.n_words])
         return d
 
     def live_out_names(self):
         cdef dict d = {}
         cdef int32_t b
         for b in range(self.n_blocks):
-            d[b] = self._bitset_names(&self.live_out[b * self.n_words])
+            d[b] = self._bitset_names(&self.live_out[<int64_t>b * self.n_words])
         return d
 
     def root_live_names(self):
@@ -188,14 +190,14 @@ cdef class Liveness:
         cdef int32_t i
         for i in range(self.n_instrs):
             if self.root_slot[i] >= 0:
-                d[i] = self._bitset_names(&self.root_live[self.root_slot[i] * self.n_words])
+                d[i] = self._bitset_names(&self.root_live[<int64_t>self.root_slot[i] * self.n_words])
         return d
 
     def array_defs_out_names(self):
         cdef dict d = {}
         cdef int32_t b
         for b in range(self.n_blocks):
-            d[b] = self._bitset_names(&self.array_defs_out[b * self.n_words])
+            d[b] = self._bitset_names(&self.array_defs_out[<int64_t>b * self.n_words])
         return d
 
     def is_array_init_map(self):
@@ -379,9 +381,12 @@ cdef Liveness compute_liveness(Func func):
         # processed at least once, so uses inside an exit-unreachable region (e.g.
         # the body of a conditional infinite loop `if c: while True: use(x)`, which
         # no backward walk from an exit can reach) still propagate to predecessors.
-        # The dataflow has a unique fixpoint: exit-reachable blocks converge to the
-        # same live sets an exit-only seed would give (identical codegen); only the
-        # exit-unreachable blocks, previously left calloc-zero (unsound), change.
+        # The dataflow has a unique fixpoint. Exit-reachable blocks with NO path
+        # into an exit-unreachable region keep the same live sets an exit-only seed
+        # would give (golden corpus unchanged); an exit-reachable block that CAN
+        # reach such a region gains that region's uses in its live_out (so its
+        # stores stop being DSE'd -- the intended behavioral change), as do the
+        # exit-unreachable blocks themselves, previously left calloc-zero (unsound).
         memset(inq, 0, <size_t>(nb if nb > 0 else 1) * sizeof(uint8_t))
         memset(visited, 0, <size_t>(nb if nb > 0 else 1) * sizeof(uint8_t))
         sp = 0
@@ -750,7 +755,7 @@ cdef class LoopForest:
         cdef list out = []
         cdef int32_t li, b
         for li in range(self.n_loops):
-            members = [b for b in range(self.n_blocks) if bs_get(&self.body[li * self.nwb], b)]
+            members = [b for b in range(self.n_blocks) if bs_get(&self.body[<int64_t>li * self.nwb], b)]
             out.append((self.header[li], self.parent[li], self.loop_depth[li], members))
         return out
 

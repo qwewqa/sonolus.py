@@ -827,8 +827,6 @@ cdef class Func:
         cdef bint ssa = self.is_ssa
         cdef uint16_t op
         cdef uint8_t kind
-        cdef bint none_seen
-        cdef uint64_t cbits
         cdef double cval
         cdef set uw = self._ssa_undef if self._ssa_undef is not None else set()
         for i in range(self.n_instrs):
@@ -880,26 +878,30 @@ cdef class Func:
             estart = self.blocks[b].edge_start
             ecount = self.blocks[b].edge_count
             assert estart + ecount <= self.n_edges, f"block {b}: edge slice out of range"
-            # Edge-shape contract (ir.pxd): at most one EDGE_COND_NONE (default)
-            # edge, and no two EDGE_COND_VALUE edges with the same case bit-pattern
-            # (emit builds a {cond: dst} dict from these; duplicates would silently
-            # emit last-wins terminators). Bit-pattern keys keep -0.0/0.0 distinct.
-            none_seen = False
-            seen_conds = set()
+            # Edge-shape contract (ir.pxd): the terminator is emitted from a
+            # {cond: dst} dict (emit.pyx) keyed the SAME way here -- int(cond) for a
+            # cond_is_int case, else the float cond, with None for the default edge.
+            # Parallel edges that collide on that key are unambiguous only when they
+            # share one dst (the dict keeps a single entry); colliding edges to
+            # DIFFERENT dsts would silently emit a last-wins terminator, so reject
+            # only those. -0.0/+0.0 fold together (int()/float ==) and NaN conds
+            # never collide (distinct float keys), matching emit exactly.
+            seen_conds = {}
             for i in range(estart, estart + ecount):
                 assert self.edges[i].src == b, f"block {b}: edge {i} has wrong src"
                 assert 0 <= self.edges[i].dst < self.n_blocks, f"block {b}: edge {i} bad dst"
                 assert self.edges[i].cond_kind == EDGE_COND_NONE or self.edges[i].cond_kind == EDGE_COND_VALUE
                 if self.edges[i].cond_kind == EDGE_COND_NONE:
-                    assert not none_seen, f"block {b}: more than one EDGE_COND_NONE (default) edge"
-                    none_seen = True
+                    cond_key = None
                 else:
                     cval = self.edges[i].cond
-                    memcpy(&cbits, &cval, sizeof(cbits))
-                    assert cbits not in seen_conds, (
-                        f"block {b}: duplicate EDGE_COND_VALUE case {self.edges[i].cond}"
+                    cond_key = int(cval) if self.edges[i].cond_is_int else cval
+                if cond_key in seen_conds:
+                    assert seen_conds[cond_key] == self.edges[i].dst, (
+                        f"block {b}: parallel edges with the same case {cond_key} target different blocks"
                     )
-                    seen_conds.add(cbits)
+                else:
+                    seen_conds[cond_key] = self.edges[i].dst
             # Phi bookkeeping: phi_count leading OPX_PHI instrs at phi_start; each
             # phi has exactly one operand per incoming edge.
             pi = self.blocks[b].phi_start

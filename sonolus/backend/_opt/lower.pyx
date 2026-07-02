@@ -104,10 +104,17 @@ from sonolus.backend._opt.ir import marshal_in, to_basic_blocks
 # can never overflow; callbacks large enough to hit this are rejected cleanly.
 cdef int64_t _INTERF_MATRIX_CAP = <int64_t>2147483647
 
-# Case magnitudes beyond 2^53 are not exactly representable as f64 and would make
-# the int64 arithmetic in switch normalization inexact/overflow-prone, so such
+# The runtime evaluates the synthesized ``(test - off) / stride`` in 32-bit float,
+# whose exact-integer range is [-2^24, 2^24]. A case magnitude beyond 2^24 -- or a
+# case-set span beyond 2^24 (below) -- makes that runtime subtraction/division
+# inexact, so the int64 case rewrite would disagree with the f32 dispatch. Such
 # switches are left un-normalized (see _normalize_switch).
-cdef double _CASE_MAG_LIMIT = 9007199254740992.0  # 2**53
+cdef double _CASE_MAG_LIMIT = 16777216.0  # 2**24 (exact-integer bound of the f32 runtime)
+
+# Max case-set span (max - min): keeps ``test - off`` inside [0, 2^24] so the f32
+# subtraction is exact even when both endpoints are individually in range (e.g.
+# min=-2^24, max=+2^24 spans 2^25 -- per-case magnitude alone is insufficient).
+cdef int64_t _CASE_SPAN_LIMIT = <int64_t>16777216  # 2**24
 
 
 cdef inline bint _int32_block_const(double d) noexcept nogil:
@@ -196,7 +203,7 @@ cdef void _pack(Func func, Liveness L, int32_t* temp_offset) except *:
             rs = L.root_slot[i]
             if rs < 0:
                 continue
-            rl = &L.root_live[rs * nw]
+            rl = &L.root_live[<int64_t>rs * nw]
             for w in range(nw):
                 work[w] = rl[w] & nonzero[w]
             for t in range(n_temps):
@@ -310,7 +317,7 @@ cdef void _rewrite_places(Func func, int32_t* temp_offset) except *:
             # result has to land inside the 4096-slot temp block.
             new_off = <int64_t>temp_offset[t] + <int64_t>places[pid].offset
             if new_off < 0 or new_off >= TEMP_SIZE:
-                raise ValueError("Temporary memory limit exceeded")
+                raise ValueError("Temp place offset out of range (out-of-bounds constant index?)")
             places[pid].offset = <int32_t>new_off
             places[pid].kind = PLACE_REAL_BLOCK
             places[pid].flags = 0
@@ -1461,14 +1468,14 @@ cdef void _coalesce(Func func) except *:
             rs = L.root_slot[i]
             if rs < 0:
                 continue
-            rl = &L.root_live[rs * nw]
+            rl = &L.root_live[<int64_t>rs * nw]
             for w in range(nw):
                 work[w] = rl[w] & scalar_mask[w]
             pid = instrs[i].aux
             if places[pid].kind == PLACE_TEMP_SCALAR:
                 dsc = places[pid].block_ref
                 if not bs_get(work, dsc):
-                    blo = &L.live_out[instrs[i].block * nw]
+                    blo = &L.live_out[<int64_t>instrs[i].block * nw]
                     for w in range(nw):
                         work[w] |= blo[w] & scalar_mask[w]
                 bs_set(work, dsc)
@@ -1496,7 +1503,7 @@ cdef void _coalesce(Func func) except *:
             if s == t:
                 continue
             rs = L.root_slot[i]
-            if not bs_get(&L.root_live[rs * nw], t):
+            if not bs_get(&L.root_live[<int64_t>rs * nw], t):
                 continue
             copy_pairs.add((t, s) if t < s else (s, t))
 
@@ -1596,10 +1603,12 @@ def _dense_offset_stride(list cases):
     # (case - offset) (int, >= 1, so evenly-strided-but-gapped sets stay compact),
     # and span = (max - offset)/stride + 1 == the number of SwitchIntegerWithDefault
     # slots. Returns None (leaving the switch un-normalized) if any case is
-    # non-integral, non-finite, or of magnitude > 2^53 -- outside that range the
-    # int64 offset/diff/span arithmetic would be inexact or overflow. All
-    # (case - offset)/stride are then distinct integers in [0, span); the emit
-    # switch gate fills the span - k holes with the default target.
+    # non-integral, non-finite, of magnitude > 2^24, or if the span (max - min)
+    # exceeds 2^24 -- outside that range the runtime ``(test - off) / stride``
+    # (evaluated in f32) would not be exact, so the int64 case rewrite would
+    # disagree with the f32 dispatch. All (case - offset)/stride are then distinct
+    # integers in [0, span); the emit switch gate fills the span - k holes with the
+    # default target.
     cdef int32_t n = len(cases)
     if n < 2:
         return None
@@ -1609,6 +1618,9 @@ def _dense_offset_stride(list cases):
     for c in cases:
         if not isfinite(c) or fabs(c) > _CASE_MAG_LIMIT or c != <double>(<int64_t>c):
             return None
+    # Span guard: keep ``test - off`` in [0, 2^24] so the f32 subtraction is exact.
+    if <int64_t>(<double>cases[n - 1]) - <int64_t>(<double>cases[0]) > _CASE_SPAN_LIMIT:
+        return None
     cdef int64_t off = <int64_t>(<double>cases[0])
     cdef int64_t g = 0
     cdef int32_t i
@@ -1644,8 +1656,9 @@ cdef void _normalize_switch(Func func) except *:
         if len(cases) + (1 if has_default else 0) < 3:
             continue
         # Both helpers return None (leaving the switch as a general
-        # SwitchWithDefault) for any non-integral / non-finite / out-of-2^53-range
-        # case, so all offset/stride/case arithmetic below stays in exact int64.
+        # SwitchWithDefault) for any non-integral / non-finite / out-of-2^24-range
+        # case, or a set whose span exceeds 2^24, so both the compile-time int64
+        # rewrite below and the runtime f32 ``(test - off) / stride`` stay exact.
         res = _offset_stride(cases)
         if res is not None:
             off_i = <int64_t>res[0]
@@ -1678,8 +1691,9 @@ cdef void _normalize_switch(Func func) except *:
                 continue
         # Rewrite case conds to (c - off)/stride: 0..k-1 for an exact progression,
         # or a gapped 0..span-1 set for the dense fallback (the emitter fills the
-        # holes). Exact int64 math -- every case is a checked in-range integer and
-        # off/stride divide it exactly (cond >= off, stride >= 1).
+        # holes). Exact int64 math -- every case is a checked in-range integer of
+        # magnitude <= 2^24 and span <= 2^24, so cond - off in [0, 2^24] and the
+        # stride (>= 1) divides it exactly.
         for e in range(estart, estart + ecount):
             if edges[e].cond_kind == EDGE_COND_VALUE:
                 idx = (<int64_t>(edges[e].cond) - off_i) // str_i
@@ -1706,22 +1720,28 @@ cdef void _normalize_switch(Func func) except *:
 def _offset_stride(list cases):
     # cases: sorted distinct case values (as f64). Return (offset, stride) ints
     # for an exact arithmetic progression, or None. Returns None (leaving the
-    # switch un-normalized) if any case is non-integral, non-finite, or of
-    # magnitude > 2^53 -- outside that range int() would crash on inf/nan and the
-    # progression check would be inexact.
-    if len(cases) < 2:
+    # switch un-normalized) if any case is non-integral, non-finite, of magnitude
+    # > 2^24, or if the span (max - min) exceeds 2^24 -- outside that range int()
+    # would crash on inf/nan and, more importantly, the runtime ``(test - off) /
+    # stride`` (evaluated in f32) would not be exact, so the int64 case rewrite
+    # would disagree with the f32 dispatch.
+    cdef int32_t n = len(cases)
+    if n < 2:
         return None
     cdef double c
     for c in cases:
         if not isfinite(c) or fabs(c) > _CASE_MAG_LIMIT or c != <double>(<int64_t>c):
             return None
+    # Span guard: keep ``test - off`` in [0, 2^24] so the f32 subtraction is exact.
+    if <int64_t>(<double>cases[n - 1]) - <int64_t>(<double>cases[0]) > _CASE_SPAN_LIMIT:
+        return None
     cdef double offset = <double>cases[0]
     cdef double stride = <double>cases[1] - offset
     if stride == 0.0:
         return None
     cdef int32_t i
     cdef double case
-    for i in range(2, len(cases)):
+    for i in range(2, n):
         case = <double>cases[i]
         if case != offset + i * stride:
             return None

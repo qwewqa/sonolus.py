@@ -1,8 +1,8 @@
-"""Marshal round-trips over hand-built CFGs covering every section-3 shape.
+"""Marshal round-trips over hand-built CFGs covering every CFG shape.
 
 Faithfulness is checked modulo the exporter's deterministic temp renumbering
 (``canon_text``); ``assert_idempotent`` additionally pins byte-for-byte
-export/import stability. See OPTIMIZER_REWRITE.md sections 3 and 6.2.
+export/import stability.
 """
 
 from __future__ import annotations
@@ -248,9 +248,9 @@ def test_self_loop():
 
 
 # --------------------------------------------------------------------------
-# Negative marshal-in validation: the section-6.2 contract rejects malformed
-# input with a clear error rather than miscompiling. Each of ir.pyx's input
-# rejection paths is covered here.
+# Negative marshal-in validation: the marshal-in contract rejects malformed input
+# with a clear error rather than miscompiling. Each of ir.pyx's input rejection
+# paths is covered here.
 # --------------------------------------------------------------------------
 
 def test_marshal_in_rejects_prepopulated_phis():

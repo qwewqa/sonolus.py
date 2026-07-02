@@ -68,14 +68,28 @@ def easing_body(op: Op):
 
 def test_switch_integer_functionnode_test_selects_branch():
     # A FunctionNode test evaluates to a float; the branch list must be indexed
-    # with int(test_result), not the float (which would raise TypeError).
+    # with int(test_result) for an integral in-range index...
     assert run_node(Op.SwitchInteger, FunctionNode(Op.Add, (0, 0)), 10, 20) == 10.0
     assert run_node(Op.SwitchInteger, FunctionNode(Op.Add, (0, 1)), 10, 20) == 20.0
+    # ...and a FunctionNode that evaluates to a NON-integral (0.5) or OUT-OF-RANGE
+    # (5) index must fall through to 0.0, not index the list with a float / OOB int.
+    assert run_node(Op.SwitchInteger, FunctionNode(Op.Divide, (1, 2)), 10, 20) == 0.0
+    assert run_node(Op.SwitchInteger, FunctionNode(Op.Add, (0, 5)), 10, 20) == 0.0
 
 
 def test_switch_integer_out_of_range_and_non_integer_default_to_zero():
     assert run_node(Op.SwitchInteger, FunctionNode(Op.Add, (0, 5)), 10, 20) == 0.0
     assert run_node(Op.SwitchInteger, FunctionNode(Op.Divide, (1, 2)), 10, 20) == 0.0
+
+
+def test_switch_integer_with_default_functionnode_float_or_oob_takes_default():
+    # SwitchIntegerWithDefault(test, b0, b1, default): the same int(test)==test /
+    # in-range guard applies -- a non-integral or out-of-range FunctionNode index
+    # takes the default (the last arg), not branch int(test).
+    assert run_node(Op.SwitchIntegerWithDefault, FunctionNode(Op.Add, (0, 0)), 10, 20, 99) == 10.0
+    assert run_node(Op.SwitchIntegerWithDefault, FunctionNode(Op.Add, (0, 1)), 10, 20, 99) == 20.0
+    assert run_node(Op.SwitchIntegerWithDefault, FunctionNode(Op.Divide, (1, 2)), 10, 20, 99) == 99.0
+    assert run_node(Op.SwitchIntegerWithDefault, FunctionNode(Op.Add, (0, 5)), 10, 20, 99) == 99.0
 
 
 # --------------------------------------------------------------------------------------------- #

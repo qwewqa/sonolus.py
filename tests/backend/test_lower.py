@@ -571,18 +571,24 @@ def test_normalize_switch_already_contiguous_untouched():
     assert _switch_conds(_switch([0, 1, 2], default=True)) == {0, 1, 2, None}
 
 
-# --- normalize_switch must never miscompile / crash on out-of-range or
-# non-finite case values (int64 arithmetic + finiteness/magnitude guards). ---
+# --- normalize_switch correctness. The runtime is 32-bit float (exact integers
+# in [-2^24, 2^24]); the synthesized ``(test - off) / stride`` is evaluated in f32,
+# so a case magnitude or case-set span beyond 2^24 makes that arithmetic inexact
+# and the int64 case rewrite disagrees with the f32 dispatch. The switch scrutinee
+# is an OPAQUE EngineRom[0] read (seed ``rom=[testval]``) so the switch survives
+# cfg_cleanup/SSA to _normalize_switch -- a written-then-read constant would be
+# folded away before lowering and pin nothing. The f64 oracle cannot see an f32
+# mis-dispatch, so for out-of-range sets we assert the guard LEFT THE SWITCH PLAIN
+# (no synthesized divide), not that the oracle agrees. ---
 
 
 def _switch_dispatch(conds, testval):
-    """Multiway block dispatching a written-then-read scalar == ``testval``.
+    """Multiway block dispatching on an opaque ``EngineRom[0]`` read == ``testval``.
 
-    Case ``i`` logs ``100+i``, the default logs 199. Dispatch is deterministic under
-    any pipeline, so ``run_lower`` (which normalizes) and the un-normalizing MINIMAL
-    reference must interpret to identical logs.
+    Case ``i`` logs ``100+i``, the default logs 199. The scrutinee is opaque so the
+    switch reaches _normalize_switch; the reader seeds it with ``rom=[testval]``.
     """
-    b0 = BasicBlock(statements=[IRSet(_sc("s"), IRConst(testval))], test=_rd("s"))
+    b0 = BasicBlock(test=_rom(0))
     join = BasicBlock(statements=[IRInstr(Op.DebugLog, [IRConst(-2)])])
     for i, c in enumerate(conds):
         blk = BasicBlock(statements=[IRInstr(Op.DebugLog, [IRConst(100 + i)])])
@@ -594,57 +600,98 @@ def _switch_dispatch(conds, testval):
     return b0
 
 
+def _lowered_switch_conds(conds, testval) -> set:
+    return _switch_conds(_switch_dispatch(conds, testval))
+
+
 def _assert_switch_dispatch_parity(conds, testval):
+    # f64 differential parity: the un-normalizing MINIMAL reference and the
+    # normalizing run_lower interpret to identical logs for an actual case value.
     build = lambda: _switch_dispatch(conds, testval)  # noqa: E731
-    ref = _run_ref(build)
-    low = _interp(cfg_to_engine_node(lower.run_lower(build())))
+    ref = _run_ref(build, rom=[testval])
+    low = _interp(cfg_to_engine_node(lower.run_lower(build())), rom=[testval])
     assert ref.log == low.log, f"conds={conds} test={testval!r}: ref={ref.log} low={low.log}"
+
+
+@pytest.mark.parametrize("testval", [3, 4, 6, 8, 5, -1])
+def test_normalize_switch_in_range_progression_normalizes(testval):
+    # Spread 4 (<= 2^24) exact progression: still normalized to 0,1,2, and the
+    # normalized dispatch matches the oracle for an actual case value.
+    assert _lowered_switch_conds([4, 6, 8], testval) == {0, 1, 2, None}
+    _assert_switch_dispatch_parity([4, 6, 8], testval)
 
 
 @pytest.mark.parametrize("testval", [-2000000000, 3, 2000000003, 42])
 def test_normalize_switch_spread_over_2p31_no_miscompile(testval):
-    # Cases whose spread exceeds 2^31: diff/gcd/span must be int64. In 32-bit
-    # ``long`` the spread wrapped negative, passed the density guard, and produced a
-    # garbage <int32> cond that silently sent the max case to the default.
+    # Spread far exceeds 2^24: the guard declines (also exercises int64 diff/gcd/span
+    # -- in 32-bit ``long`` the spread wrapped negative). Left as a plain switch.
     _assert_switch_dispatch_parity([-2000000000, 3, 2000000003], testval)
 
 
-@pytest.mark.parametrize("testval", [0, 5, 2**31, 7])
-def test_normalize_switch_case_at_2p31_no_crash(testval):
-    # A case >= 2^31 must not raise OverflowError from a <long> conversion; the set
-    # is left as a plain switch (span exceeds the density guard).
-    _assert_switch_dispatch_parity([0, 5, 2**31], testval)
+# Sets the 2^24 guard must leave UN-normalized (spread > 2^24 or magnitude > 2^24):
+# the f32 ``(test - off)/stride`` would be inexact, so the switch stays a plain
+# SwitchWithDefault (conds == the original case values, no synthesized divide).
+_OUT_OF_RANGE_SETS = [
+    [-3, 8388612, 16777227],  # magnitude 16777227 = 2^24+11 > 2^24
+    [0, 5, 2**31],            # magnitude > 2^24
+    [0, 5, 2**53],            # magnitude > 2^24
+    [0, 5, 2**62],            # magnitude beyond int64-exact f64 range
+    [0, 2**40, 2**41],        # exact progression, magnitude > 2^24
+    [-8388609, 4, 8388617],   # exact progression, each |case| < 2^24 but span 2^24+10 > 2^24
+    [-8388606, 8, 8388622],   # exact progression, each |case| < 2^24 but span 2^24+12 > 2^24
+]
 
 
-@pytest.mark.parametrize("testval", [0, 5, 2**53, 9])
-def test_normalize_switch_case_at_2p53_no_crash(testval):
-    _assert_switch_dispatch_parity([0, 5, 2**53], testval)
+@pytest.mark.parametrize("cases", _OUT_OF_RANGE_SETS)
+def test_normalize_switch_out_of_range_left_plain(cases):
+    # Structural: the guard declined, so conds are unchanged and no ``(test-off)/
+    # stride`` divide was synthesized. (The f64 oracle cannot see the f32
+    # mis-dispatch a normalization would cause, so we assert the decline directly.)
+    assert _lowered_switch_conds(cases, cases[0]) == set(cases) | {None}
+    assert " / " not in _low_text(_switch_dispatch(cases, cases[0]))
 
 
-@pytest.mark.parametrize("testval", [0, 5, 2**62, 11])
-def test_normalize_switch_case_over_2p53_left_plain(testval):
-    # Beyond 2^53 the case is not exactly representable / int64-safe -> no
-    # normalization, plain switch, correct dispatch.
-    _assert_switch_dispatch_parity([0, 5, 2**62], testval)
+@pytest.mark.parametrize("testval", [-2000000000, 3, 2000000003, 0, 5, 42])
+def test_normalize_switch_out_of_range_dispatch_parity(testval):
+    # And the plain switch still dispatches actual case values correctly (f64
+    # oracle parity, since a plain equality dispatch is f32-exact too).
+    _assert_switch_dispatch_parity([-2000000000, 3, 2000000003], testval)
 
 
-@pytest.mark.parametrize("testval", [0, 2**40, 2**41, 1])
-def test_normalize_switch_huge_stride_progression(testval):
-    # Exact arithmetic progression with a large (<= 2^53) stride: normalizes
-    # correctly via the affine path (0, 2^40, 2^41 -> 0, 1, 2).
-    _assert_switch_dispatch_parity([0, 2**40, 2**41], testval)
+def test_normalize_switch_f32_miscompile_prevented():
+    # The runtime evaluates (test - off)/stride in f32. A reverted (2^53) guard
+    # would take the affine path off=-3, stride=8388615 -> conds 0,1,2. The case
+    # value 16777227 is f32(16777227) == 16777228 at runtime, and
+    # (16777228 - (-3)) / 8388615 is NOT an exact integer in f32, so case #2 would
+    # be sent to the DEFAULT. The f64 oracle cannot see this, so we (a) model the
+    # mis-dispatch in numpy.float32 and (b) assert the guard left the switch plain
+    # (exact f32 equality dispatch instead).
+    np = pytest.importorskip("numpy")
+    f32 = np.float32
+    cases = [-3, 8388612, 16777227]
+    off, stride = -3, 8388615  # what the reverted affine path would synthesize
+    # (a) f32(16777227) rounds to 16777228, and its normalized index is non-integral:
+    case2 = f32(16777227)
+    assert float(case2) == 16777228.0
+    idx = f32(f32(case2 - f32(off)) / f32(stride))
+    assert float(idx) != float(int(idx)), "reverted normalization mis-dispatches case #2 to default"
+    # (b) the guard declined, so the switch is plain and dispatches by exact equality:
+    assert _lowered_switch_conds(cases, cases[0]) == set(cases) | {None}
+    assert " / " not in _low_text(_switch_dispatch(cases, cases[0]))
 
 
 @pytest.mark.parametrize("testval", [0.0, 2.0, 4.0, math.inf])
 def test_normalize_switch_inf_case_no_crash(testval):
-    # A +inf case must not crash int()/the <long> cast; the switch is left plain and
-    # dispatches finite values (and inf itself) correctly.
+    # A +inf case must not crash int()/the <int64> cast; the switch is left plain
+    # and dispatches finite values (and inf itself) correctly.
+    assert " / " not in _low_text(_switch_dispatch([0, 2, math.inf], testval))
     _assert_switch_dispatch_parity([0, 2, math.inf], testval)
 
 
 @pytest.mark.parametrize("testval", [0.0, 2.0, 4.0])
 def test_normalize_switch_nan_case_no_crash(testval):
     # A NaN case must not raise ValueError from int(); left plain, dispatch correct.
+    assert " / " not in _low_text(_switch_dispatch([0, 2, math.nan], testval))
     _assert_switch_dispatch_parity([0, 2, math.nan], testval)
 
 

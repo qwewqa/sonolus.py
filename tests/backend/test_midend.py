@@ -234,6 +234,109 @@ def test_sccp_set_lattice_over_100_goes_bottom():
     assert "199" in text  # default also survives under BOTTOM
 
 
+def _set_switch_defaultless(cases):
+    # Like _set_switch but the merge switch is DEFAULT-LESS (only ``cases`` get an
+    # edge, no default). The scrutinee's set lattice is {0,1,2}; an element with no
+    # matching case must fall through to exit -- SCCP must NOT promote a surviving
+    # case edge to the default here, or it would misroute that missed element.
+    entry = BasicBlock(test=_w(0))
+    merge = BasicBlock(statements=[_log(-2), IRInstr(Op.DebugPause, [IRConst(0)])], test=_rd("x"))
+    for i in range(3):
+        arm = BasicBlock(statements=[IRSet(_sc("x"), IRConst(i))])
+        entry.connect_to(arm, None if i == 2 else i)
+        arm.connect_to(merge, None)
+    join = BasicBlock(statements=[_log(-1)])
+    for c in cases:
+        blk = BasicBlock(statements=[_log(100 + c)])
+        merge.connect_to(blk, c)
+        blk.connect_to(join, None)
+    return entry
+
+
+def _run_seeded(node, wsel):
+    it = Interpreter()
+    it.blocks[3000] = list(_ROM)
+    it.blocks[W] = [wsel]
+    it.run(node)
+    return it
+
+
+def test_sccp_defaultless_nonexhaustive_switch_missed_element_exits():
+    # Set lattice {0,1,2}; the DEFAULT-LESS downstream switch has cases 0,1 only.
+    # For selector 7 the phi is 2, which no case matches: with no default it must
+    # exit ([-2] only). SCCP's max-cond->default promotion is guarded to fire only
+    # when every set element matches a case; neutralizing that guard would promote
+    # case 1 to the default and route the missed element 2 to case 1 ([-2, 101, -1]).
+    build = lambda: _set_switch_defaultless([0, 1])  # noqa: E731
+    for wsel, expect in [(0, [-2, 100, -1]), (1, [-2, 101, -1]), (7, [-2])]:
+        ref = _run_seeded(cfg_to_engine_node(run_passes(build(), MINIMAL_PASSES, OptimizerConfig())), wsel)
+        mid = _run_seeded(
+            cfg_to_engine_node(run_passes(midend.run_midend(build(), None, None, allow_repeat=True),
+                                          MINIMAL_PASSES, OptimizerConfig())),
+            wsel,
+        )
+        assert ref.log == mid.log == expect, f"wsel={wsel}: ref={ref.log} mid={mid.log} expect={expect}"
+
+
+def test_out_of_ssa_pure_self_loop_splits_self_edge():
+    # A pure self-loop (both test outcomes re-enter b) whose test reads the loop
+    # phi: out_of_ssa must SPLIT the self-edge so the phi copies land on a fresh
+    # block past b's test, never as a direct b->b edge. Without the split the copies
+    # would be emitted at b's end and b would keep a direct self-edge; verify() runs
+    # inside run_unssa, and the CFG must carry no direct self-edge.
+    def build():
+        entry = BasicBlock(statements=[IRSet(_sc("x"), IRConst(0))])
+        b = BasicBlock(
+            statements=[
+                IRInstr(Op.DebugPause, [_rd("x")]),
+                IRSet(_sc("x"), IRPureInstr(Op.Add, [_rd("x"), IRConst(1)])),
+            ],
+            test=_rd("x"),
+        )
+        entry.connect_to(b, None)
+        b.connect_to(b, 0)     # x == 0 -> loop
+        b.connect_to(b, None)  # else -> loop (pure self-loop)
+        return entry
+
+    cfg = midend.run_unssa(build())  # verify() runs inside
+    blocks = list(traverse_cfg_reverse_postorder(cfg))
+    self_edges = [blk for blk in blocks for e in blk.outgoing if e.dst is blk]
+    assert not self_edges, "the self-edge must be split (no block targets itself directly)"
+    # the split added a block beyond entry + the loop body.
+    assert len(blocks) >= 3
+
+
+def test_sccp_dead_loop_entry_self_phi_collapses_cleanly():
+    # s == 0 is provably false (s := 1 in SSA), so SCCP prunes the loop-entry edge;
+    # the loop becomes reachable only via its own back-edge and its loop-carried phi
+    # realigns to a single self-referential operand. _collapse_trivial_phis must
+    # leave that degenerate phi for DCE -- substituting it would build a subst[p]=p
+    # cycle (hanging _resolve) or a def-before-use. This must simply complete,
+    # verify() green after every phase, and interpret to the loop-skipped result.
+    def build():
+        entry = BasicBlock(
+            statements=[IRSet(_sc("s"), IRConst(1)), IRSet(_sc("acc"), IRConst(0))],
+            test=IRPureInstr(Op.Equal, [_rd("s"), IRConst(0)]),
+        )
+        loop = BasicBlock(
+            statements=[
+                IRSet(_sc("acc"), IRPureInstr(Op.Add, [_rd("acc"), IRConst(1)])),
+                IRInstr(Op.DebugPause, [_rd("acc")]),
+            ],
+            test=IRPureInstr(Op.Less, [_rd("acc"), IRConst(3)]),
+        )
+        after = BasicBlock(statements=[_log(42)])
+        entry.connect_to(after, 0)     # s == 0 -> after (taken)
+        entry.connect_to(loop, None)   # default -> loop (SCCP proves dead)
+        loop.connect_to(loop, 0)       # self back-edge
+        loop.connect_to(after, None)
+        return entry
+
+    text = _text(build(), ["cfg_cleanup", "ssa", "sccp", "dce"])  # verify() runs inside
+    assert "DebugPause" not in text  # the dead loop is gone
+    assert _assert_semantics(build).log == [42.0]
+
+
 def test_sccp_multiply_by_zero_exception():
     # Multiply(unknown, 0) -> 0 even though the other arg is non-constant.
     def build():

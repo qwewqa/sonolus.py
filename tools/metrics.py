@@ -55,6 +55,8 @@ for _p in (str(_REPO_ROOT / "test_projects"), str(_REPO_ROOT)):
 # Node/CFG *analysis* in this module is iterative, so it does not depend on this.
 sys.setrecursionlimit(10_000)
 
+# Blocks whose constant-index read the real runtime constant-folds. Imported from
+# the optimizer core so there is a single source of truth, not a drifting duplicate.
 from sonolus.backend._opt.ir import RUNTIME_CONSTANT_BLOCKS  # noqa: PLC2701
 
 from sonolus.backend.ir import IRConst, IRGet, IRInstr, IRPureInstr, IRSet
@@ -79,10 +81,6 @@ from sonolus.script.internal.context import (
 from sonolus.script.project import BuildConfig
 
 TEMP_MEMORY_BLOCK_ID = 10000
-
-# Blocks whose constant-index read the real runtime constant-folds. Imported from
-# the optimizer core (sonolus.backend._opt.ir) so there is a single source of truth
-# rather than a drifting duplicate.
 
 
 LEVELS: dict[str, object] = {

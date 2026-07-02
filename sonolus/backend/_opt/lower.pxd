@@ -39,10 +39,10 @@ cdef void fuse_rmw(Func func) except *
 
 
 # Out-of-SSA + treeify: consume a value-based SSA ``Func`` (from
-# ``midend.build_ssa``) and return a fresh non-SSA 3-legal arena ready for
-# ``allocate_func`` + emission. The production de-SSA path (``midend.out_of_ssa``
-# is the naive/debug variant). The driver slots this between the mid-end and
-# allocation (see lower.pyx run_lower).
+# ``midend.build_ssa``) and return a fresh, legal non-SSA arena ready for
+# ``allocate_func`` + emission. This is the production de-SSA path;
+# ``midend.out_of_ssa`` is the naive/debug variant. The driver slots this between
+# the mid-end and allocation (see lower.pyx run_lower).
 cdef Func lower_from_ssa(Func func)
 
 

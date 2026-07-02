@@ -243,6 +243,37 @@ def test_phis_at_targets_preserved():
     assert std.log == [99.0]  # last run: default arm
 
 
+def test_combine_blocks_refuses_splice_with_escaping_const_phi():
+    # combine_blocks would splice the same-test empty default block ``nxt`` up into
+    # the head, but ``nxt`` shares successor A with the head and A's phi carries a
+    # DISTINCT operand on the nxt->A edge (r == 5, defined in nxt) vs the head->A
+    # edge (r == 7). Splicing would give the head two parallel edges to A with
+    # unequal phi operands (an SSA-invariant violation _rsw_splice_safe forbids), so
+    # the default block must stay un-spliced: BOTH switch blocks survive. Neutralizing
+    # the guard (forcing splice) makes verify() fail (unequal parallel operands).
+    def build():
+        x = _sel(0)
+        b = BasicBlock(statements=[IRSet(_sc("r"), IRConst(7))], test=IRPureInstr(Op.Equal, [x, IRConst(1)]))
+        nxt = BasicBlock(statements=[IRSet(_sc("r"), IRConst(5))], test=IRPureInstr(Op.Equal, [x, IRConst(2)]))
+        a = BasicBlock(statements=[_log(_rd("r")), IRInstr(Op.DebugPause, [_rd("r")])])
+        d = BasicBlock(statements=[_log(199)])
+        end = BasicBlock()
+        b.connect_to(a, None)    # x == 1 -> A
+        b.connect_to(nxt, 0)     # else -> nxt (default)
+        nxt.connect_to(a, None)  # x == 2 -> A (shared successor)
+        nxt.connect_to(d, 0)     # else -> D
+        a.connect_to(end, None)
+        d.connect_to(end, None)
+        return b
+
+    after = _text(build, _SSA_RSW)  # verify() runs inside debug_run after the phase
+    assert after.count("goto when") == 2, "the escaping-const default block must NOT be spliced"
+    assert "phi(" in after  # the shared-successor phi with distinct per-edge operands survives
+    _assert_semantics(build, seed={SEL.value: [1.0]})
+    _assert_semantics(build, seed={SEL.value: [2.0]})
+    _assert_semantics(build, seed={SEL.value: [3.0]})
+
+
 def test_normalize_switch_downstream_emits_switch_integer_with_default():
     # An arithmetic-progression Equal chain (x==10, 20, 30) collapses to a multiway
     # with cases {10, 20, 30}; downstream normalize_switch (in lower_from_ssa)

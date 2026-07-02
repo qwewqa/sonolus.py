@@ -1,13 +1,10 @@
-"""Temp-memory allocation tests for the arena optimizer core (M1, §7.5).
+"""Temp-memory allocation tests for the arena optimizer core.
 
 Covers the three strategies (``bump`` / ``packing`` / ``try_bump``), the
 true-first-fit gap packer, array contiguity, size-0 sentinels, the 4096-slot
 cap, determinism, dead-store elimination, a semantic differential across the
 three strategies (emit + ``Interpreter``) on hand-built interpretable CFGs, and
 a pydori corpus check that packing ``verify()``s green and stays within the cap.
-The wave-2 A/B comparisons against the now-deleted old ``Allocate`` /
-``LivenessAnalysis`` served their purpose and are retired with M1. See
-OPTIMIZER_REWRITE.md §4 and §7.5.
 """
 
 from __future__ import annotations
@@ -290,7 +287,7 @@ def test_rewrite_places_rejects_out_of_range_constant_offset():
         ]
         return b0
 
-    with pytest.raises(ValueError, match="Temporary memory limit exceeded"):
+    with pytest.raises(ValueError, match="Temp place offset out of range"):
         lower.run_allocate(make(), strategy="bump")
 
 

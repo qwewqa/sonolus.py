@@ -1,9 +1,7 @@
-"""Liveness analysis tests for the arena optimizer core (M1, §7.5).
+"""Liveness analysis tests for the arena optimizer core.
 
 Unit tests pin the subtle array/scalar/size-0/block-test rules directly against
-``analysis.liveness_debug`` (name-set dicts keyed by arena block id). The wave-2
-cross-checks against the now-deleted old ``LivenessAnalysis`` pass served their
-purpose and are retired with M1. See OPTIMIZER_REWRITE.md §3 and §7.5.
+``analysis.liveness_debug`` (name-set dicts keyed by arena block id).
 """
 
 from __future__ import annotations

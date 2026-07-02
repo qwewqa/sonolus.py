@@ -1449,6 +1449,13 @@ cdef class _SSABuilder:
                 aux = <int32_t>self.val_aux[v]
                 raw_args = <list>self.val_args[v]
                 nargs = len(raw_args)
+                # Phi operand counts (one per predecessor) are built here, not via
+                # the marshal-guarded _emit, so guard the same int16 nargs field.
+                if nargs > 32767:
+                    raise ValueError(
+                        f"instruction operand count {nargs} exceeds the int16 limit (32767); "
+                        f"the arena stores nargs as int16"
+                    )
                 dst.instrs[ni].op = <uint16_t>op
                 dst.instrs[ni].flags = <uint8_t>flags
                 dst.instrs[ni].block = b
@@ -1881,11 +1888,11 @@ cdef class _UnSSA:
             elif <bint>self.materialize[i]:
                 self.value_temp[i] = self._new_temp(1)
         # Splits: an edge into a phi-block whose source has >1 distinct successor,
-        # OR a self-edge into a phi-block. A self-edge (b -> b, b has phis) must be
-        # split even when b's only distinct successor is itself: otherwise the phi
-        # copies are emitted at the end of b BEFORE its test, so the test reads the
-        # next-iteration phi values (a lost-copy that exits the loop a step early).
-        # Splitting moves the copies onto the back edge, past the test.
+        # OR a self-edge into a phi-block. A pure self-loop (b -> b is b's only
+        # distinct successor) has a control-dead test -- every outcome re-enters b --
+        # so splitting changes no observable behavior; it is a normalization that
+        # puts the phi copies on a dedicated split block (past b's test), keeping
+        # verify() and lowering uniform with the general critical-edge case.
         self.n_out = self.nb
         for b in range(src.n_blocks):
             for e in range(src.blocks[b].edge_start, src.blocks[b].edge_start + src.blocks[b].edge_count):
@@ -1952,9 +1959,9 @@ cdef class _UnSSA:
                     dst._emit(OPX_SET, FLAG_SIDE_EFFECT | FLAG_PINNED | FLAG_STMT_ROOT, b,
                               self._scalar_place_of(<int32_t>self.value_temp[i]), [val])
             # phi copies at the end of b for a single-successor phi target -- but
-            # NOT when that sole successor is b itself: a self-edge is always split
-            # (see _plan), so its copies live on the split block (past b's test), and
-            # emitting them here too would clobber b's own phi temps before the test.
+            # NOT when that sole successor is b itself: a pure self-loop's self-edge
+            # is always split (see _plan), so its copies belong on the split block,
+            # not duplicated here at b's end.
             if len(<list>self.distinct_succ[b]) == 1:
                 di = <int32_t>(<list>self.distinct_succ[b])[0]
                 if di != b and src.blocks[di].phi_count > 0:
