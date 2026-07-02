@@ -159,9 +159,12 @@ def test_array_read_makes_whole_array_live():
     assert "g" in d["live_out"][0]
 
 
-def test_array_never_written_is_never_live():
-    # An array read with no prior write anywhere: the live-out filter keeps it
-    # from being live across blocks; matches old semantics.
+def test_array_never_written_keeps_read_liveness():
+    # An array read with no write anywhere: the not-live-before-first-write
+    # filter only applies to arrays that have at least one write, so a
+    # never-written array keeps ordinary read-liveness back to entry. This
+    # gives it interference edges so allocation cannot overlap it with live
+    # temps (undefined reads then observe the -1.0 padding consistently).
     def make():
         arr = TempBlock("g", 4)
         b0 = BasicBlock()
@@ -171,12 +174,28 @@ def test_array_never_written_is_never_live():
         return b0
 
     d = _liveness(make)
-    # arr is read in b1 (so live-in of b1) but the live-out filter drops it when
-    # deriving b0's live-in, because arr is not in b0's array_defs_out (never
-    # written on any path). So arr is not actually live before its first write.
     assert "g" in d["live_in"][1]
-    assert "g" not in d["live_in"][0]
+    assert "g" in d["live_in"][0]
     assert d["array_defs_out"][0] == set()
+
+
+def test_array_written_not_live_before_first_write():
+    # An array that IS written somewhere is not live before its first write
+    # (the original rule, unchanged for written arrays).
+    def make():
+        arr = TempBlock("g", 4)
+        b0 = BasicBlock()
+        b1 = BasicBlock()
+        b0.connect_to(b1, None)
+        b1.statements = [
+            IRSet(_elem(arr, 0), IRConst(7)),
+            IRSet(BlockPlace(810, 0, 0), IRGet(_elem(arr, 0))),
+        ]
+        return b0
+
+    d = _liveness(make)
+    assert "g" not in d["live_in"][0]
+    assert "g" not in d["live_in"][1]
 
 
 def test_dynamic_array_index_reads_index_temp():

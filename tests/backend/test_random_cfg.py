@@ -424,23 +424,14 @@ def test_directed_noncontiguous_switch_with_default():
 
 
 # ==========================================================================
-# Pinned real M1 bug (found by this suite).
+# Regression: never-written (but read) arrays must not alias live temps.
+# Found by this suite as an M1 allocation bug: the not-live-before-any-write
+# rule dropped never-written arrays from liveness entirely, so STANDARD's
+# first-fit packing overlapped their slots onto live scalars. Fixed in
+# analysis.pyx by restricting that rule to arrays with at least one write.
 # ==========================================================================
 
 
-@pytest.mark.xfail(
-    reason=(
-        "M1 allocation bug: STANDARD's first-fit interference packing treats a "
-        "never-written (but read) size>1 array temp as dead -- arrays are 'not "
-        "live before any write' (section 7.5) and there is no write -- so it "
-        "overlaps the array's base slot onto a live scalar. The undefined array "
-        "read then aliases that scalar instead of yielding the -1.0 padding, so "
-        "STANDARD diverges from MINIMAL/FAST (bump/try-bump keep them separate). "
-        "This is the 'undefined read assumption violated' case called out in the "
-        "task; fix belongs in liveness/interference for never-written arrays."
-    ),
-    strict=True,
-)
 def test_never_written_array_read_aliases_live_temp():
     # arr0 is never written but arr0[0] is read; k0 is a live loop counter. Under
     # STANDARD packing, arr0 base collides with k0, so DebugLog(arr0[0]) logs k0's

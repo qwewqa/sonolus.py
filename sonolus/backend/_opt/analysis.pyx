@@ -265,6 +265,20 @@ cdef Liveness compute_liveness(Func func):
         if func.temps[t].size > 1:
             bs_set(L.array_mask, t)
 
+    # array_written: arrays with at least one write anywhere in the func. The
+    # not-live-before-first-write rule only applies to these; a never-written
+    # array that is still read (a legal degenerate case, e.g. a provably-dead
+    # VarArray access) must keep ordinary read-liveness back to entry so it
+    # interferes with live temps and gets its own slot (reads then observe the
+    # never-written -1.0 padding, matching the bump allocators).
+    cdef uint64_t* array_written = _c64(nw)
+    cdef int32_t aw_pid
+    for i in range(ni):
+        if instrs[i].op == OPX_SET and (instrs[i].flags & FLAG_STMT_ROOT):
+            aw_pid = instrs[i].aux
+            if places[aw_pid].kind == PLACE_TEMP_ARRAY:
+                bs_set(array_written, places[aw_pid].block_ref)
+
     # Predecessor CSR (pred_head[b]..pred_head[b+1] index into pred_src).
     cdef int32_t* pred_head = <int32_t*>calloc(<size_t>(nb + 1), sizeof(int32_t))
     cdef int32_t* pred_src = <int32_t*>malloc(<size_t>(ne if ne > 0 else 1) * sizeof(int32_t))
@@ -356,9 +370,12 @@ cdef Liveness compute_liveness(Func func):
             b = stack[sp]
             inq[b] = 0
 
-            # live := live_out[b] with arrays not yet defined-on-all-paths dropped.
+            # live := live_out[b] with written arrays not yet defined-on-all-paths
+            # dropped (never-written arrays keep ordinary read-liveness).
             for w in range(nw):
-                live[w] = L.live_out[b * nw + w] & ~(L.array_mask[w] & ~L.array_defs_out[b * nw + w])
+                live[w] = L.live_out[b * nw + w] & ~(
+                    (L.array_mask[w] & array_written[w]) & ~L.array_defs_out[b * nw + w]
+                )
 
             # Block test counts as a use at block end.
             tv = blocks[b].test_val
@@ -419,6 +436,7 @@ cdef Liveness compute_liveness(Func func):
                         inq[s] = 1
 
     free(array_defs_in)
+    free(array_written)
     free(acc)
     free(live)
     free(visited)
