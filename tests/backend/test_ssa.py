@@ -221,7 +221,12 @@ def test_undef_read_of_never_written_scalar():
 
 
 def test_phi_undef_v_collapses_to_v():
-    # u written on one path only; the merge phi(UNDEF, 7) collapses to 7.
+    # u written on one path only; the merge phi(UNDEF, 7) collapses to 7 once the
+    # dead undef path is pruned. build_ssa deliberately KEEPS phi(UNDEF, v) (the
+    # provably-dead collapse is unsound at construction time -- see
+    # midend._try_remove_trivial); the collapse is SCCP's job, via edge
+    # executability: here c == 1 never takes the cond-0 edge, so that (undef)
+    # incoming edge is dead and the phi reduces to 7.
     b0 = BasicBlock(test=IRGet(_sc("c")))
     b1, b3 = BasicBlock(), BasicBlock()
     b0.statements = [IRSet(_sc("c"), IRConst(1))]
@@ -230,8 +235,10 @@ def test_phi_undef_v_collapses_to_v():
     b0.connect_to(b3, 0)  # skips b1 -> u undefined on this edge
     b0.connect_to(b1, None)
     b1.connect_to(b3, None)
-    text = _ssa_text(b0)
-    # phi(UNDEF, 7) == 7: no phi survives for u, and the 7 flows through.
+    # After SSA the phi is present (kept); after SCCP the dead undef edge is
+    # pruned and the phi collapses to 7.
+    assert "phi(" in _ssa_text(b0)
+    text = cfg_to_text(ir.debug_run(b0, phases=["cfg_cleanup", "ssa", "sccp", "dce"]))
     assert "phi" not in text
     assert "7" in text
 
