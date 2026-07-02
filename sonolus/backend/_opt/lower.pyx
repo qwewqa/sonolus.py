@@ -38,6 +38,7 @@ from sonolus.backend._opt.ir cimport (
     EDGE_COND_NONE,
     EDGE_COND_VALUE,
     FLAG_CONST_IS_INT,
+    FLAG_MUST_FOLD,
     FLAG_PINNED,
     FLAG_PURE,
     FLAG_SIDE_EFFECT,
@@ -57,9 +58,13 @@ from sonolus.backend._opt.ir cimport (
 from sonolus.backend._opt._ops_gen cimport (
     OP_Add,
     OP_Divide,
+    OP_Equal,
+    OP_If,
     OP_Mod,
     OP_Multiply,
     OP_Negate,
+    OP_Random,
+    OP_RandomInteger,
     OP_Rem,
     OP_RUNTIME_COUNT,
     OP_Subtract,
@@ -765,6 +770,21 @@ cdef class _Lower:
                 continue
             if <bint>self.materialize[i]:  # pre-marked undef-widened value
                 continue
+            # MUST-FOLD invariant (7.4.2): an if-conversion arm value hoisted into
+            # the head block is single-use by construction and MUST fold into its
+            # consuming ``If``/``Switch`` select tree -- never materialise (that
+            # would evaluate a guarded arm UNCONDITIONALLY, a miscompile the oracle
+            # faults on; see FLAG_MUST_FOLD in ir.pxd). This OVERRIDES every cost /
+            # loop rule below. Enforced + asserted here so a future budget change
+            # cannot silently start materialising an arm.
+            if src.instrs[i].flags & FLAG_MUST_FOLD:
+                assert <int32_t>self.use_count[i] == 1, (
+                    "FLAG_MUST_FOLD value is not single-use (if-conversion invariant broken)"
+                )
+                self.inlinable[i] = self._compute_inlinable(i)
+                self.materialize[i] = False
+                self.drop[i] = False
+                continue
             uc = <int32_t>self.use_count[i]
             side = (src.instrs[i].flags & FLAG_SIDE_EFFECT) != 0
             if uc == 0 and not side:
@@ -1353,6 +1373,696 @@ cdef Func lower_from_ssa(Func func):
     return cleaned
 
 
+# ==========================================================================
+# If-conversion (OPTIMIZER_REWRITE.md 7.3). Standard level, runs on value-based
+# SSA AFTER the mid-end, BEFORE lower_from_ssa (while phis exist). Folds a
+# diamond/triangle/{VALUE C, NONE} two-way head block into an ``If`` EXPRESSION
+# select feeding the join phis (one select per phi), removing whole Execute
+# blocks + JumpLoop round-trips.
+#
+# SHAPES matched (head block P, exactly two outgoing edges, one VALUE + one NONE):
+#   * {VALUE 0, NONE}  -> If(test, none-side, zero-side)          (raw two-way).
+#   * {VALUE C, NONE}  -> If(Equal(test, C), C-side, none-side)   (equality two-way,
+#                          e.g. the shape rewrite_switch produces; C is a NEW const
+#                          and Equal a NEW instr). Mirrors emit's terminator lowering.
+# Each side is either an ARM BLOCK (single-pred P, single-succ J, unconditional,
+# no phis, strictly pure) or a DIRECT edge P->J (triangle / both-direct).
+#
+# ARM LEGALITY (strict, 7.3): an arm block may hold ONLY strictly pure runtime ops
+# (and OPX_CONSTs) -- no OPX_SET, no side effects, NO OPX_GET AT ALL (not even an
+# effectively-pure non-writable read: a speculated guarded read would fault the
+# oracle's bounds assert), no Random/RandomInteger, no OPX_PHI, no OPX_UNDEF, and
+# no UNDEF-widened value. Every non-const arm instr must be SINGLE-USE (a pure tree,
+# not a shared DAG) so it folds cleanly; a value used beyond its one select operand
+# blocks the conversion. (T/F-defined values can only be used inside the arm or as a
+# J phi operand on the arm->J edge, by dominance -- so single-use is exactly the
+# "consumed only by the select tree" rule.)
+#
+# ARM BUDGET (7.3 / 13, tunable at M4): per select arm TREE, effective §2 cost
+# <= IFCONV_ARM_BUDGET. Cost walk (_arm_cost): a runtime-constant subtree or an
+# OPX_CONST costs 1 (the runtime folds it); a reference to a value defined ABOVE/IN
+# P (not in the arm) costs 3 (it is an independent temp/foldable); an arm-defined
+# pure op costs 1 + sum(children). A direct side (no arm) is a single leaf (<= 3),
+# always within budget.
+#
+# TRANSFORM (fresh SSA arena rebuild): the select ``If`` is created at the END of
+# P; every arm instr is MOVED into P (pure => relocation legal; P dominates the
+# arms so dominance holds) and marked FLAG_MUST_FOLD (single-use; treeify MUST fold
+# it under the select -- materialising a guarded arm would evaluate it
+# unconditionally, a miscompile the oracle faults on; see ir.pxd). Arm blocks are
+# deleted; P's two edges collapse to one NONE edge P->J. Each J phi's operands for
+# the removed edges collapse to that phi's select on the new edge; a phi left with a
+# single operand collapses to the select (mirrors midend trivial-phi handling).
+#
+# MULTIWAY (Switch selects): DEFERRED -- see if_convert()'s note. Two-way + equality
+# cover the ternary/short-circuit motivation; multiway adds default-less handling
+# and per-case arm legality for a smaller payoff, and is a clean follow-up at M4.
+#
+# ITERATION: single-pass batches of NON-OVERLAPPING conversions (claiming {P, arms,
+# J}), run to a LOCAL FIXPOINT (_if_convert_run loops until a pass converts nothing).
+# Converting an inner diamond turns its head into a pure single-succ block, which the
+# next pass may fold as an outer arm -- so nested diamonds resolve inner-out across
+# passes.
+# ==========================================================================
+
+# Initial if-conversion arm budget (effective §2 cost per select arm tree). Tuned
+# against pydori metrics at M4; module-level + Python-visible so it is a single
+# tunable knob.
+IFCONV_ARM_BUDGET = 8
+
+
+cdef class _IfConv:
+    cdef Func src
+    cdef list incoming       # per block -> edge ids (ascending == contract)
+    cdef list edge_pos       # per edge -> its index in incoming[dst]
+    cdef list use_count      # per value -> total use count
+    cdef list rtc_memo       # per value -> runtime-constant tri-state (None unknown)
+    cdef object undef_set    # _ssa_undef (set) or empty set
+
+    def __cinit__(self, Func src):
+        self.src = src
+        cdef int32_t nb = src.n_blocks
+        cdef int32_t ni = src.n_instrs
+        cdef int32_t ne = src.n_edges
+        cdef int32_t e, d
+        self.incoming = [[] for _ in range(nb)]
+        self.edge_pos = [0] * ne
+        for e in range(ne):
+            d = src.edges[e].dst
+            lst = <list>self.incoming[d]
+            self.edge_pos[e] = len(lst)
+            lst.append(e)
+        self.rtc_memo = [None] * ni
+        self.undef_set = src._ssa_undef if src._ssa_undef is not None else set()
+        self._count_uses()
+
+    def _count_uses(self):
+        cdef Func src = self.src
+        cdef int32_t ni = src.n_instrs
+        cdef int32_t i, op, astart, nargs, k, pid, b
+        cdef list uc = [0] * ni
+        for i in range(ni):
+            op = src.instrs[i].op
+            if op == OPX_CONST or op == OPX_UNDEF:
+                continue
+            astart = src.instrs[i].arg_start
+            nargs = src.instrs[i].nargs
+            for k in range(nargs):
+                uc[<int32_t>src.args[astart + k]] += 1
+            if op == OPX_GET or op == OPX_SET:
+                pid = src.instrs[i].aux
+                if src.places[pid].kind == PLACE_DYNAMIC_BLOCK:
+                    uc[src.places[pid].block_ref] += 1
+                if src.places[pid].index_val >= 0:
+                    uc[src.places[pid].index_val] += 1
+        for b in range(src.n_blocks):
+            if src.blocks[b].test_val >= 0:
+                uc[src.blocks[b].test_val] += 1
+        self.use_count = uc
+
+    # -- analyses ----------------------------------------------------------
+
+    def _is_rtc(self, int32_t v):
+        # Runtime-constant tree: pure ops over OPX_CONST + PLACE_RUNTIME_CONST reads.
+        # Terminates at phi/undef (returns False), so acyclic. Memoized.
+        cached = self.rtc_memo[v]
+        if cached is not None:
+            return <bint>cached
+        cdef Func src = self.src
+        cdef int32_t op = src.instrs[v].op
+        cdef int32_t astart, nargs, k, o
+        cdef bint r
+        if op == OPX_CONST:
+            r = True
+        elif op == OPX_GET:
+            r = (src.places[src.instrs[v].aux].flags & PLACE_RUNTIME_CONST) != 0
+        elif op < OP_RUNTIME_COUNT and (src.instrs[v].flags & FLAG_PURE):
+            r = True
+            astart = src.instrs[v].arg_start
+            nargs = src.instrs[v].nargs
+            for k in range(nargs):
+                o = <int32_t>src.args[astart + k]
+                if not self._is_rtc(o):
+                    r = False
+                    break
+        else:
+            r = False
+        self.rtc_memo[v] = r
+        return r
+
+    def _arm_cost(self, int32_t v, int32_t arm_block):
+        # Effective §2 cost of the folded arm tree rooted at v (§7.3 walk).
+        cdef Func src = self.src
+        cdef int32_t op, astart, nargs, k
+        cdef int32_t r
+        if self._is_rtc(v):
+            return 1
+        op = src.instrs[v].op
+        if op == OPX_CONST:
+            return 1
+        if src.instrs[v].block != arm_block:
+            return 3  # a value defined above/in P: an independent temp/foldable leaf.
+        # Arm-defined pure op (legality guarantees pure op, no GET/SET/phi/undef).
+        r = 1
+        astart = src.instrs[v].arg_start
+        nargs = src.instrs[v].nargs
+        for k in range(nargs):
+            r += <int32_t>self._arm_cost(<int32_t>src.args[astart + k], arm_block)
+        return r
+
+    def _arm_legal_op(self, int32_t i):
+        # Non-const arm instr legality (called after OPX_CONST is filtered out).
+        cdef int32_t op = self.src.instrs[i].op
+        if op >= OP_RUNTIME_COUNT:
+            return False  # OPX_GET/OPX_SET/OPX_PHI/OPX_UNDEF: all illegal in an arm.
+        if not (self.src.instrs[i].flags & FLAG_PURE):
+            return False  # side-effecting / impure runtime op.
+        if op == OP_Random or op == OP_RandomInteger:
+            return False  # draw count must not change.
+        return True
+
+    def _is_arm(self, int32_t s, int32_t p, int32_t e_ps):
+        # ``s`` is a valid arm block of head ``p`` reached via the single edge e_ps.
+        cdef Func src = self.src
+        cdef int32_t i, op, istart, icount
+        if s == p:
+            return False
+        inc = <list>self.incoming[s]
+        if len(inc) != 1 or <int32_t>inc[0] != e_ps:
+            return False  # exactly one predecessor, and it is P via e_ps.
+        if src.blocks[s].edge_count != 1:
+            return False  # single successor.
+        if src.edges[src.blocks[s].edge_start].cond_kind != EDGE_COND_NONE:
+            return False  # unconditional out-edge.
+        if src.blocks[s].phi_count != 0:
+            return False  # no phis in an arm.
+        istart = src.blocks[s].instr_start
+        icount = src.blocks[s].instr_count
+        for i in range(istart, istart + icount):
+            op = src.instrs[i].op
+            if op == OPX_CONST:
+                continue  # pure, freely duplicable, multi-use OK.
+            if not <bint>self._arm_legal_op(i):
+                return False
+            if <int32_t>self.use_count[i] > 1:
+                return False  # must be single-use (a pure tree, not a shared DAG).
+            if i in self.undef_set:
+                return False  # UNDEF-widened value cannot be must-fold.
+        return True
+
+    def _side(self, int32_t e_ps, int32_t p):
+        # Classify head-out edge e_ps (P -> S): return (arm, edge_into_J, J).
+        cdef Func src = self.src
+        cdef int32_t s = src.edges[e_ps].dst
+        cdef int32_t e_out
+        if <bint>self._is_arm(s, p, e_ps):
+            e_out = src.blocks[s].edge_start
+            return (s, e_out, src.edges[e_out].dst)
+        return (-1, e_ps, s)
+
+    def _phi_operand(self, int32_t phi, int32_t edge):
+        cdef int32_t pos = <int32_t>self.edge_pos[edge]
+        return <int32_t>self.src.args[self.src.instrs[phi].arg_start + pos]
+
+    def _try_head(self, int32_t p):
+        cdef Func src = self.src
+        cdef int32_t estart = src.blocks[p].edge_start
+        cdef int32_t ecount = src.blocks[p].edge_count
+        cdef int32_t e, none_edge = -1, val_edge = -1
+        cdef double cval = 0.0
+        cdef int32_t cond_is_int = 0
+        cdef int32_t test_old = src.blocks[p].test_val
+        cdef int32_t kind, true_edge_p, false_edge_p
+        cdef int32_t arm_t, ejt, jt, arm_f, ejf, jf, j
+        cdef int32_t jps, jpc, phi, budget
+        if ecount != 2 or test_old < 0:
+            return None
+        for e in range(estart, estart + ecount):
+            if src.edges[e].cond_kind == EDGE_COND_NONE:
+                none_edge = e
+            elif src.edges[e].cond_kind == EDGE_COND_VALUE:
+                val_edge = e
+                cval = src.edges[e].cond
+                cond_is_int = src.edges[e].cond_is_int
+        if none_edge < 0 or val_edge < 0:
+            return None  # need exactly one NONE + one VALUE edge.
+
+        if cval == 0.0:
+            kind = 0            # raw {VALUE 0, NONE}: If(test, none, zero).
+            true_edge_p = none_edge
+            false_edge_p = val_edge
+        else:
+            kind = 1            # equal {VALUE C, NONE}: If(Equal(test, C), C, none).
+            true_edge_p = val_edge
+            false_edge_p = none_edge
+
+        ti = self._side(true_edge_p, p)
+        fi = self._side(false_edge_p, p)
+        arm_t = <int32_t>ti[0]; ejt = <int32_t>ti[1]; jt = <int32_t>ti[2]
+        arm_f = <int32_t>fi[0]; ejf = <int32_t>fi[1]; jf = <int32_t>fi[2]
+        if jt != jf:
+            return None  # both sides must reach the same join.
+        j = jt
+        if j == p:
+            return None
+        if arm_t >= 0 and (arm_t == j or arm_t == p):
+            return None
+        if arm_f >= 0 and (arm_f == j or arm_f == p):
+            return None
+        if arm_t >= 0 and arm_f >= 0 and arm_t == arm_f:
+            return None
+
+        # Per select-arm-tree budget (each J phi, each side).
+        budget = <int32_t>IFCONV_ARM_BUDGET
+        jps = src.blocks[j].phi_start
+        jpc = src.blocks[j].phi_count
+        for phi in range(jps, jps + jpc):
+            if <int32_t>self._arm_cost(self._phi_operand(phi, ejt), arm_t) > budget:
+                return None
+            if <int32_t>self._arm_cost(self._phi_operand(phi, ejf), arm_f) > budget:
+                return None
+
+        return {
+            "P": p, "J": j,
+            "arm_true": arm_t, "arm_false": arm_f,
+            "sel_true_edge": ejt, "sel_false_edge": ejf,
+            "kind": kind, "cval": cval, "cond_is_int": cond_is_int,
+            "test_old": test_old,
+        }
+
+    def _plan(self):
+        cdef int32_t p
+        convs = []
+        claimed = set()
+        for p in range(self.src.n_blocks):
+            conv = self._try_head(p)
+            if conv is None:
+                continue
+            used = {conv["P"], conv["J"]}
+            if conv["arm_true"] >= 0:
+                used.add(conv["arm_true"])
+            if conv["arm_false"] >= 0:
+                used.add(conv["arm_false"])
+            if used & claimed:
+                continue
+            claimed |= used
+            convs.append(conv)
+        return convs
+
+    # -- build (fresh SSA arena) -------------------------------------------
+
+    def _argcount(self, int32_t i):
+        cdef int32_t op = self.src.instrs[i].op
+        if op == OPX_CONST or op == OPX_UNDEF or op == OPX_GET:
+            return 0
+        if op == OPX_SET:
+            return 1
+        return self.src.instrs[i].nargs
+
+    def _resolve(self, dict newidx, dict subst_phi, int32_t v):
+        if v in subst_phi:
+            return <int32_t>subst_phi[v]
+        return <int32_t>newidx[v]
+
+    def _remap_place(self, Func dst, dict newidx, dict subst_phi, dict place_map, int32_t old_pid):
+        cdef Func src = self.src
+        cdef int32_t kind = src.places[old_pid].kind
+        cdef int32_t flags = src.places[old_pid].flags
+        cdef int32_t br = src.places[old_pid].block_ref
+        cdef int32_t iv = src.places[old_pid].index_val
+        cdef int32_t off = src.places[old_pid].offset
+        if kind == PLACE_DYNAMIC_BLOCK:
+            br = <int32_t>self._resolve(newidx, subst_phi, br)
+        if iv >= 0:
+            iv = <int32_t>self._resolve(newidx, subst_phi, iv)
+        key = (kind, flags, br, iv, off)
+        cached = place_map.get(key)
+        if cached is not None:
+            return <int32_t>cached
+        cdef int32_t pid = _add_place_l(dst, <uint8_t>kind, <uint8_t>flags, br, iv, off)
+        place_map[key] = pid
+        return pid
+
+    def _build(self, list conversions):
+        cdef Func src = self.src
+        cdef Func dst = Func()
+        cdef int32_t nb_old = src.n_blocks
+        cdef int32_t i, b, k, e, p, d, op, astart, nargs, kk, pos, oe
+        cdef int32_t jps, jpc, a_istart, a_icount, ef, arm, nei, ni
+        cdef int32_t pstart, pcount
+
+        head_conv = {}
+        join_conv = {}
+        arm_blocks = set()
+        for conv in conversions:
+            head_conv[conv["P"]] = conv
+            join_conv[conv["J"]] = conv
+            if conv["arm_true"] >= 0:
+                arm_blocks.add(conv["arm_true"])
+            if conv["arm_false"] >= 0:
+                arm_blocks.add(conv["arm_false"])
+
+        new_order = [b for b in range(nb_old) if b not in arm_blocks]
+        cdef int32_t nb_new = len(new_order)
+        newblk = [-1] * nb_old
+        for k in range(nb_new):
+            newblk[<int32_t>new_order[k]] = k
+
+        # consts / temps / meta carry over 1:1 (ids preserved).
+        if src.n_consts > 0:
+            dst.consts = <double*>malloc(<size_t>src.n_consts * sizeof(double))
+            if dst.consts == NULL:
+                raise MemoryError()
+            memcpy(dst.consts, src.consts, <size_t>src.n_consts * sizeof(double))
+        dst.n_consts = src.n_consts
+        dst.cap_consts = src.n_consts
+        dst._const_intern = dict(src._const_intern)
+        if src.n_temps > 0:
+            dst.temps = <TempInfo*>malloc(<size_t>src.n_temps * sizeof(TempInfo))
+            if dst.temps == NULL:
+                raise MemoryError()
+            memcpy(dst.temps, src.temps, <size_t>src.n_temps * sizeof(TempInfo))
+        dst.n_temps = src.n_temps
+        dst.cap_temps = src.n_temps
+        dst.names = list(src.names)
+        dst._temp_intern = dict(src._temp_intern)
+        dst._block_enum_by_id = dict(src._block_enum_by_id)
+        dst.blocks_type = src.blocks_type
+        dst.callback = src.callback
+        dst._block_map = dict(src._block_map)
+        dst.is_ssa = True
+
+        # Intern each equality-form C into the fresh const pool.
+        for conv in conversions:
+            if conv["kind"] == 1:
+                conv["_cid"] = <int32_t>dst._intern_const(<double>conv["cval"])
+
+        # phi_opmap: phi old vid -> {old_edge: old_operand}.
+        phi_opmap = {}
+        for b in range(nb_old):
+            pstart = src.blocks[b].phi_start
+            pcount = src.blocks[b].phi_count
+            inclist = <list>self.incoming[b]
+            for p in range(pstart, pstart + pcount):
+                astart = src.instrs[p].arg_start
+                m = {}
+                for kk in range(src.instrs[p].nargs):
+                    m[<int32_t>inclist[kk]] = <int32_t>src.args[astart + kk]
+                phi_opmap[p] = m
+
+        # New edges + incoming provenance: (new_edge_idx, old_edge or -1 for select).
+        new_edges = []
+        incoming_new = [[] for _ in range(nb_old)]
+        block_edge_start = [0] * nb_new
+        block_edge_count = [0] * nb_new
+        for k in range(nb_new):
+            b = <int32_t>new_order[k]
+            block_edge_start[k] = len(new_edges)
+            if b in head_conv:
+                conv = head_conv[b]
+                d = <int32_t>conv["J"]
+                nei = len(new_edges)
+                new_edges.append((k, <int32_t>newblk[d], <int32_t>EDGE_COND_NONE, 0.0, 0))
+                (<list>incoming_new[d]).append((nei, -1))
+            else:
+                for e in range(src.blocks[b].edge_start, src.blocks[b].edge_start + src.blocks[b].edge_count):
+                    d = src.edges[e].dst
+                    nei = len(new_edges)
+                    new_edges.append(
+                        (k, <int32_t>newblk[d], src.edges[e].cond_kind, src.edges[e].cond, src.edges[e].cond_is_int)
+                    )
+                    (<list>incoming_new[d]).append((nei, e))
+            block_edge_count[k] = len(new_edges) - block_edge_start[k]
+
+        # Pass A: assign new instr ids + descriptors, forward over new_order (P
+        # precedes its J since P dominates J, so a J phi's select id is known when
+        # J is processed).
+        newidx = {}
+        subst_phi = {}
+        phi_select = {}
+        block_desc = [None] * nb_new
+        block_start = [0] * nb_new
+        cdef int32_t next_idx = 0
+        cdef int32_t total_args = 0
+        for k in range(nb_new):
+            b = <int32_t>new_order[k]
+            block_start[k] = next_idx
+            descs = []
+            conv = head_conv.get(b)
+            is_join = b in join_conv
+            n_in = len(<list>incoming_new[b])
+            for i in range(src.blocks[b].instr_start, src.blocks[b].instr_start + src.blocks[b].instr_count):
+                op = src.instrs[i].op
+                if op == OPX_PHI:
+                    if is_join and n_in == 1:
+                        subst_phi[i] = <int32_t>phi_select[i]  # collapse to the sole select
+                        continue
+                    descs.append(("phi", i))
+                    newidx[i] = next_idx
+                    next_idx += 1
+                    total_args += n_in
+                else:
+                    descs.append(("src", i, 0))
+                    newidx[i] = next_idx
+                    next_idx += 1
+                    total_args += <int32_t>self._argcount(i)
+            if conv is not None:
+                for arm in (conv["arm_true"], conv["arm_false"]):
+                    if arm >= 0:
+                        a_istart = src.blocks[arm].instr_start
+                        a_icount = src.blocks[arm].instr_count
+                        for i in range(a_istart, a_istart + a_icount):
+                            op = src.instrs[i].op
+                            # must-fold only single-use pure-op arm values; dead ones
+                            # (use_count 0) drop, consts fold naturally -> no flag.
+                            if op < OP_RUNTIME_COUNT and <int32_t>self.use_count[i] == 1:
+                                ef = FLAG_MUST_FOLD
+                            else:
+                                ef = 0
+                            descs.append(("src", i, ef))
+                            newidx[i] = next_idx
+                            next_idx += 1
+                            total_args += <int32_t>self._argcount(i)
+                if conv["kind"] == 1:
+                    descs.append(("const", conv))
+                    conv["_const_id"] = next_idx
+                    next_idx += 1
+                    descs.append(("eq", conv))
+                    conv["_eq_id"] = next_idx
+                    next_idx += 1
+                    total_args += 2
+                jps = src.blocks[<int32_t>conv["J"]].phi_start
+                jpc = src.blocks[<int32_t>conv["J"]].phi_count
+                for p in range(jps, jps + jpc):
+                    descs.append(("sel", conv, p))
+                    phi_select[p] = next_idx
+                    next_idx += 1
+                    total_args += 3
+            block_desc[k] = descs
+
+        cdef int32_t total_instrs = next_idx
+        dst.instrs = <Instr*>malloc(<size_t>(total_instrs if total_instrs > 0 else 1) * sizeof(Instr))
+        dst.args = <uint32_t*>malloc(<size_t>(total_args if total_args > 0 else 1) * sizeof(uint32_t))
+        if dst.instrs == NULL or dst.args == NULL:
+            raise MemoryError()
+        dst.n_instrs = total_instrs
+        dst.cap_instrs = total_instrs
+        dst.cap_args = total_args
+        dst.blocks = <BlockInfo*>malloc(<size_t>(nb_new if nb_new > 0 else 1) * sizeof(BlockInfo))
+        if dst.blocks == NULL:
+            raise MemoryError()
+        dst.n_blocks = nb_new
+        dst.cap_blocks = nb_new
+        dst.entry_block = <int32_t>newblk[src.entry_block]
+
+        # Pass B: fill instrs.
+        place_map = {}
+        cdef int32_t arg_cursor = 0
+        cdef int32_t phi_first, phi_cnt, operand, test_new, t_op, f_op, tv
+        for k in range(nb_new):
+            b = <int32_t>new_order[k]
+            descs = <list>block_desc[k]
+            phi_first = -1
+            phi_cnt = 0
+            ni = block_start[k]
+            for desc in descs:
+                tag = desc[0]
+                dst.instrs[ni].block = k
+                dst.instrs[ni].arg_start = arg_cursor
+                if tag == "phi":
+                    p = <int32_t>desc[1]
+                    for prov in <list>incoming_new[b]:
+                        oe = <int32_t>prov[1]
+                        if oe < 0:
+                            operand = <int32_t>phi_select[p]
+                        else:
+                            operand = <int32_t>self._resolve(newidx, subst_phi, <int32_t>(<dict>phi_opmap[p])[oe])
+                        dst.args[arg_cursor] = <uint32_t>operand
+                        arg_cursor += 1
+                    dst.instrs[ni].op = OPX_PHI
+                    dst.instrs[ni].flags = src.instrs[p].flags
+                    dst.instrs[ni].aux = src.instrs[p].aux
+                    dst.instrs[ni].nargs = <int16_t>len(<list>incoming_new[b])
+                    if phi_first == -1:
+                        phi_first = ni
+                    phi_cnt += 1
+                elif tag == "src":
+                    p = <int32_t>desc[1]
+                    ef = <int32_t>desc[2]
+                    op = src.instrs[p].op
+                    dst.instrs[ni].flags = <uint8_t>(src.instrs[p].flags | ef)
+                    if op == OPX_CONST:
+                        dst.instrs[ni].op = OPX_CONST
+                        dst.instrs[ni].aux = src.instrs[p].aux
+                        dst.instrs[ni].nargs = 0
+                    elif op == OPX_UNDEF:
+                        dst.instrs[ni].op = OPX_UNDEF
+                        dst.instrs[ni].aux = -1
+                        dst.instrs[ni].nargs = 0
+                    elif op == OPX_GET:
+                        dst.instrs[ni].op = OPX_GET
+                        dst.instrs[ni].aux = <int32_t>self._remap_place(dst, newidx, subst_phi, place_map, src.instrs[p].aux)
+                        dst.instrs[ni].nargs = 0
+                    elif op == OPX_SET:
+                        operand = <int32_t>self._resolve(newidx, subst_phi, <int32_t>src.args[src.instrs[p].arg_start])
+                        dst.instrs[ni].op = OPX_SET
+                        dst.instrs[ni].aux = <int32_t>self._remap_place(dst, newidx, subst_phi, place_map, src.instrs[p].aux)
+                        dst.args[arg_cursor] = <uint32_t>operand
+                        arg_cursor += 1
+                        dst.instrs[ni].nargs = 1
+                    else:
+                        astart = src.instrs[p].arg_start
+                        nargs = src.instrs[p].nargs
+                        for kk in range(nargs):
+                            dst.args[arg_cursor] = <uint32_t><int32_t>self._resolve(
+                                newidx, subst_phi, <int32_t>src.args[astart + kk]
+                            )
+                            arg_cursor += 1
+                        dst.instrs[ni].op = <uint16_t>op
+                        dst.instrs[ni].aux = src.instrs[p].aux
+                        dst.instrs[ni].nargs = <int16_t>nargs
+                elif tag == "const":
+                    conv = desc[1]
+                    dst.instrs[ni].op = OPX_CONST
+                    dst.instrs[ni].flags = <uint8_t>(FLAG_PURE | (FLAG_CONST_IS_INT if conv["cond_is_int"] else 0))
+                    dst.instrs[ni].aux = <int32_t>conv["_cid"]
+                    dst.instrs[ni].nargs = 0
+                elif tag == "eq":
+                    conv = desc[1]
+                    test_new = <int32_t>self._resolve(newidx, subst_phi, <int32_t>conv["test_old"])
+                    dst.args[arg_cursor] = <uint32_t>test_new
+                    arg_cursor += 1
+                    dst.args[arg_cursor] = <uint32_t><int32_t>conv["_const_id"]
+                    arg_cursor += 1
+                    dst.instrs[ni].op = <uint16_t>OP_Equal
+                    dst.instrs[ni].flags = FLAG_PURE
+                    dst.instrs[ni].aux = -1
+                    dst.instrs[ni].nargs = 2
+                else:  # "sel"
+                    conv = desc[1]
+                    p = <int32_t>desc[2]
+                    if conv["kind"] == 0:
+                        test_new = <int32_t>self._resolve(newidx, subst_phi, <int32_t>conv["test_old"])
+                    else:
+                        test_new = <int32_t>conv["_eq_id"]
+                    t_op = <int32_t>self._resolve(
+                        newidx, subst_phi, <int32_t>(<dict>phi_opmap[p])[<int32_t>conv["sel_true_edge"]]
+                    )
+                    f_op = <int32_t>self._resolve(
+                        newidx, subst_phi, <int32_t>(<dict>phi_opmap[p])[<int32_t>conv["sel_false_edge"]]
+                    )
+                    dst.args[arg_cursor] = <uint32_t>test_new
+                    arg_cursor += 1
+                    dst.args[arg_cursor] = <uint32_t>t_op
+                    arg_cursor += 1
+                    dst.args[arg_cursor] = <uint32_t>f_op
+                    arg_cursor += 1
+                    dst.instrs[ni].op = <uint16_t>OP_If
+                    dst.instrs[ni].flags = FLAG_PURE
+                    dst.instrs[ni].aux = -1
+                    dst.instrs[ni].nargs = 3
+                ni += 1
+            dst.blocks[k].instr_start = block_start[k]
+            dst.blocks[k].instr_count = ni - block_start[k]
+            dst.blocks[k].phi_start = phi_first if phi_cnt > 0 else block_start[k]
+            dst.blocks[k].phi_count = phi_cnt
+            dst.blocks[k].rpo = k
+            dst.blocks[k].idom = -1
+            dst.blocks[k].edge_start = block_edge_start[k]
+            dst.blocks[k].edge_count = block_edge_count[k]
+            if b in head_conv:
+                dst.blocks[k].test_val = -1
+            else:
+                tv = src.blocks[b].test_val
+                if tv >= 0:
+                    dst.blocks[k].test_val = <int32_t>self._resolve(newidx, subst_phi, tv)
+                else:
+                    dst.blocks[k].test_val = -1
+        dst.n_args = arg_cursor
+
+        # Edges array.
+        cdef int32_t nen = len(new_edges)
+        dst.edges = <Edge*>malloc(<size_t>(nen if nen > 0 else 1) * sizeof(Edge))
+        if dst.edges == NULL:
+            raise MemoryError()
+        for e in range(nen):
+            t = new_edges[e]
+            dst.edges[e].src = <int32_t>t[0]
+            dst.edges[e].dst = <int32_t>t[1]
+            dst.edges[e].cond_kind = <uint8_t><int32_t>t[2]
+            dst.edges[e].cond = <double>t[3]
+            dst.edges[e].cond_is_int = <uint8_t><int32_t>t[4]
+        dst.n_edges = nen
+        dst.cap_edges = nen
+
+        if src.undef_val >= 0 and src.undef_val in newidx:
+            dst.undef_val = <int32_t>newidx[src.undef_val]
+        else:
+            dst.undef_val = -1
+        widened = set()
+        if src._ssa_undef:
+            for wv in src._ssa_undef:
+                if wv in subst_phi:
+                    widened.add(<int32_t>subst_phi[wv])
+                elif wv in newidx:
+                    widened.add(<int32_t>newidx[wv])
+        dst._ssa_undef = widened
+
+        compute_dominators(dst)
+        return dst
+
+
+def _if_convert_once(Func func):
+    """One batch of non-overlapping conversions. Returns (Func, n_converted)."""
+    cdef _IfConv ic = _IfConv(func)
+    convs = ic._plan()
+    if not convs:
+        return (func, 0)
+    return (ic._build(convs), len(convs))
+
+
+def _if_convert_run(Func func):
+    """Run if-conversion to a local fixpoint. Returns (Func, total_converted)."""
+    cdef Func cur = func
+    cdef int32_t total = 0
+    cdef int32_t guard = 0
+    while True:
+        res = _if_convert_once(cur)
+        cur = <Func>res[0]
+        n = <int32_t>res[1]
+        total += n
+        guard += 1
+        if n == 0 or guard > 4096:
+            break
+    return (cur, total)
+
+
+cdef Func if_convert(Func func):
+    """If-convert ``func`` (SSA in, SSA out) to a local fixpoint (7.3)."""
+    res = _if_convert_run(func)
+    return <Func>res[0]
+
+
 # --------------------------------------------------------------------------
 # Python-visible test/driver wrappers.
 # --------------------------------------------------------------------------
@@ -1396,3 +2106,56 @@ cdef Func _maybe_midend(Func ssa, bint midend):
     if not midend:
         return ssa
     return midend_round(ssa, True)
+
+
+# --------------------------------------------------------------------------
+# If-conversion test/driver wrappers (7.3). run_ifconv exports the post-ifconv
+# SSA CFG; ifconv_full runs the whole standard-style path to allocation; the
+# _counted variants report how many conversions fired (for tests / metrics).
+# --------------------------------------------------------------------------
+
+cdef Func _ifconv_ssa(entry, mode, callback):
+    # marshal -> cfg_cleanup -> build_ssa -> midend_round(True) -> if_convert.
+    cdef Func func = cfg_cleanup(<Func>marshal_in(entry, mode, callback), False)
+    cdef Func ssa = build_ssa(func)
+    cdef Func opt = midend_round(ssa, True)
+    return if_convert(opt)
+
+
+def run_ifconv(entry, mode=None, callback=None):
+    """marshal -> cfg_cleanup -> build_ssa -> midend_round(True) -> if_convert ->
+    export (the SSA-form CFG after if-conversion, for inspection / node shape)."""
+    cdef Func conv = _ifconv_ssa(entry, mode, callback)
+    conv.verify()
+    return to_basic_blocks(conv)
+
+
+def run_ifconv_counted(entry, mode=None, callback=None):
+    """Like :func:`run_ifconv` but returns ``(BasicBlock, n_conversions)``."""
+    cdef Func func = cfg_cleanup(<Func>marshal_in(entry, mode, callback), False)
+    cdef Func ssa = build_ssa(func)
+    cdef Func opt = midend_round(ssa, True)
+    res = _if_convert_run(opt)
+    cdef Func conv = <Func>res[0]
+    conv.verify()
+    return (to_basic_blocks(conv), <int32_t>res[1])
+
+
+def run_ifconv_full(entry, mode=None, callback=None, strategy="packing"):
+    """Full standard-style path through if-conversion + lowering + allocation:
+
+    marshal -> cfg_cleanup -> build_ssa -> midend_round(True) -> if_convert ->
+    lower_from_ssa -> allocate -> export. Ready for ``cfg_to_engine_node`` / emit.
+    """
+    cdef Func conv = _ifconv_ssa(entry, mode, callback)
+    cdef Func lowered = lower_from_ssa(conv)
+    cdef int32_t code = _strategy_code(strategy)
+    allocate_func(lowered, code)
+    return to_basic_blocks(lowered)
+
+
+def ifconv_lower_debug(entry, mode=None, callback=None):
+    """Pre-allocation full if-conversion + lowering form (temps unallocated)."""
+    cdef Func conv = _ifconv_ssa(entry, mode, callback)
+    cdef Func lowered = lower_from_ssa(conv)
+    return to_basic_blocks(lowered)

@@ -201,6 +201,18 @@ cdef enum:
     FLAG_DEAD = 8
     FLAG_STMT_ROOT = 16
     FLAG_CONST_IS_INT = 32
+    # Set by if-conversion (lower.pyx, OPTIMIZER_REWRITE.md 7.3) on every strictly
+    # pure arm value it hoists into the head block P as an operand subtree of an
+    # ``If``/``Switch`` select. It is a MUST-FOLD contract for treeify (7.4.2): the
+    # value is single-use by construction and MUST fold into its consuming select
+    # tree -- never materialised to a temp, never duplicated into several temps.
+    # Materialising an arm value would evaluate it UNCONDITIONALLY on both control
+    # paths (e.g. a guarded ``a/b``), which the interpret.py oracle faults on
+    # (ZeroDivisionError) even though the real runtime's lazy ``If`` tolerates it --
+    # i.e. a miscompile. ``_Lower._analyze`` reads this bit and forces FOLD,
+    # overriding any cost/loop rule, and asserts single-use. u8 ``flags`` bit 6
+    # (bits 1..32 above are bits 0..5); value 128 remains free.
+    FLAG_MUST_FOLD = 64
 
 
 cdef enum:
