@@ -1,13 +1,25 @@
 # cython: language_level=3
-"""Mid-end pass: ``cfg_cleanup`` (milestone M1).
+"""Mid-end passes over the arena IR.
 
-Worklist-based CFG cleanup over the arena IR, subsuming the old Python passes
-``CoalesceFlow`` + ``UnreachableCodeElimination`` + ``CombineExitBlocks`` +
-``CoalesceSmallConditionalBlocks`` (see OPTIMIZER_REWRITE.md section 7.1 and the
-originals under ``sonolus/backend/optimize/{simplify,dead_code}.py``).
+This module implements the mid-end of the optimizer, all operating on the
+``Func`` arena produced by ``marshal_in``:
 
-Design
-------
+* ``cfg_cleanup`` -- structural CFG cleanup (const-test fold, edge dedup, empty
+  forwarder threading, single-pred/succ chain merge, bounded pre-SSA
+  tail-duplication, unreachable elimination, shared-exit canonicalization).
+  Requires non-SSA input.
+* ``build_ssa`` -- value-based SSA construction (Braun et al., on-the-fly with
+  trivial-phi removal).
+* the SSA passes ``sccp`` (sparse conditional constant propagation), ``gvn``
+  (dominator-scoped value numbering), ``dce``, ``licm``, and ``rewrite_switch``,
+  plus the ``midend_round`` (fast) / ``midend_standard`` (-O2) orchestrators that
+  sequence them and repeat the core round on change.
+* ``out_of_ssa`` -- naive correctness-first de-SSA (materialize values to temps,
+  phis to parallel copies on split edges) used by the debug/inspection entry
+  points; production lowering uses ``lower_from_ssa`` in ``lower.pyx``.
+
+cfg_cleanup design
+------------------
 The input arena (fresh from ``marshal_in``) is a *forest*: marshal-in does no
 value CSE, so every block's instruction slice is a set of independent statement
 and test trees with no shared sub-values. That makes the pass structure-only:
@@ -44,7 +56,7 @@ carried over 1:1, so identity is preserved), which keeps ``verify()`` green and
 lets ``to_basic_blocks`` export it unchanged.
 """
 
-from libc.stdint cimport int16_t, int32_t, uint8_t, uint16_t, uint32_t, uint64_t
+from libc.stdint cimport int16_t, int32_t, int64_t, uint8_t, uint16_t, uint32_t, uint64_t
 from libc.stdlib cimport calloc, free, malloc, realloc
 from libc.string cimport memcpy
 from libc.math cimport floor, isinf, isnan, signbit
@@ -235,18 +247,44 @@ cdef class _Cleaner:
         if need <= self.cap_e:
             return
         cdef int32_t nc = self.cap_e if self.cap_e > 0 else 8
+        cdef int32_t* p_i32
+        cdef uint8_t* p_u8
+        cdef double* p_dbl
         while nc < need:
             nc *= 2
-        self.e_src = <int32_t*>realloc(self.e_src, <size_t>nc * sizeof(int32_t))
-        self.e_dst = <int32_t*>realloc(self.e_dst, <size_t>nc * sizeof(int32_t))
-        self.e_ck = <uint8_t*>realloc(self.e_ck, <size_t>nc * sizeof(uint8_t))
-        self.e_ci = <uint8_t*>realloc(self.e_ci, <size_t>nc * sizeof(uint8_t))
-        self.e_cond = <double*>realloc(self.e_cond, <size_t>nc * sizeof(double))
-        self.e_alive = <uint8_t*>realloc(self.e_alive, <size_t>nc * sizeof(uint8_t))
-        if (self.e_src == NULL or self.e_dst == NULL or self.e_ck == NULL
-                or self.e_ci == NULL or self.e_cond == NULL or self.e_alive == NULL):
+        # realloc into a temporary and only publish the field on success, so a
+        # failing realloc leaves the field pointing at the still-owned old buffer
+        # (rather than the ``p = realloc(p, ...)`` anti-pattern that leaks it).
+        p_i32 = <int32_t*>realloc(self.e_src, <size_t>nc * sizeof(int32_t))
+        if p_i32 == NULL:
             with gil:
                 raise MemoryError()
+        self.e_src = p_i32
+        p_i32 = <int32_t*>realloc(self.e_dst, <size_t>nc * sizeof(int32_t))
+        if p_i32 == NULL:
+            with gil:
+                raise MemoryError()
+        self.e_dst = p_i32
+        p_u8 = <uint8_t*>realloc(self.e_ck, <size_t>nc * sizeof(uint8_t))
+        if p_u8 == NULL:
+            with gil:
+                raise MemoryError()
+        self.e_ck = p_u8
+        p_u8 = <uint8_t*>realloc(self.e_ci, <size_t>nc * sizeof(uint8_t))
+        if p_u8 == NULL:
+            with gil:
+                raise MemoryError()
+        self.e_ci = p_u8
+        p_dbl = <double*>realloc(self.e_cond, <size_t>nc * sizeof(double))
+        if p_dbl == NULL:
+            with gil:
+                raise MemoryError()
+        self.e_cond = p_dbl
+        p_u8 = <uint8_t*>realloc(self.e_alive, <size_t>nc * sizeof(uint8_t))
+        if p_u8 == NULL:
+            with gil:
+                raise MemoryError()
+        self.e_alive = p_u8
         self.cap_e = nc
 
     cdef void _add_edge(self, int32_t s, int32_t d, uint8_t ck, uint8_t ci, double cond) except * nogil:
@@ -263,15 +301,23 @@ cdef class _Cleaner:
     cdef int32_t _new_cn(self, int32_t src_block) except -1 nogil:
         cdef int32_t k = self.n_cn
         cdef int32_t nc
+        cdef int32_t* p_i32
         if k + 1 > self.cap_cn:
             nc = self.cap_cn if self.cap_cn > 0 else 8
             while nc < k + 1:
                 nc *= 2
-            self.cn_src = <int32_t*>realloc(self.cn_src, <size_t>nc * sizeof(int32_t))
-            self.cn_next = <int32_t*>realloc(self.cn_next, <size_t>nc * sizeof(int32_t))
-            if self.cn_src == NULL or self.cn_next == NULL:
+            # realloc into a temporary; publish only on success (avoid the
+            # p = realloc(p, ...) leak-on-failure anti-pattern).
+            p_i32 = <int32_t*>realloc(self.cn_src, <size_t>nc * sizeof(int32_t))
+            if p_i32 == NULL:
                 with gil:
                     raise MemoryError()
+            self.cn_src = p_i32
+            p_i32 = <int32_t*>realloc(self.cn_next, <size_t>nc * sizeof(int32_t))
+            if p_i32 == NULL:
+                with gil:
+                    raise MemoryError()
+            self.cn_next = p_i32
             self.cap_cn = nc
         self.cn_src[k] = src_block
         self.cn_next[k] = -1
@@ -288,9 +334,15 @@ cdef class _Cleaner:
         self.nstmt = <int32_t*>calloc(nb, sizeof(int32_t))
         self.chain_head = <int32_t*>malloc(<size_t>nb * sizeof(int32_t))
         self.chain_tail = <int32_t*>malloc(<size_t>nb * sizeof(int32_t))
-        self.tailduped = <uint8_t*>calloc(<size_t>nb * <size_t>nb, sizeof(uint8_t))
+        # The quadratic (nb*nb) tail-dup firing matrix is only read by _taildup,
+        # which is skipped entirely when phi_safe -- so allocate it lazily and
+        # never pay the nb^2 bytes on the phi_safe path (e.g. lower_from_ssa).
+        if not self.phi_safe:
+            self.tailduped = <uint8_t*>calloc(<size_t>nb * <size_t>nb, sizeof(uint8_t))
+            if self.tailduped == NULL:
+                raise MemoryError()
         if (self.alive == NULL or self.is_head == NULL or self.nstmt == NULL
-                or self.chain_head == NULL or self.chain_tail == NULL or self.tailduped == NULL):
+                or self.chain_head == NULL or self.chain_tail == NULL):
             raise MemoryError()
 
         # statement counts + one-element chain per block.
@@ -516,11 +568,11 @@ cdef class _Cleaner:
                 continue
             if self._chain_nstmt(c) > 1:
                 continue
-            if self.tailduped[h * self.nb + c]:
+            if self.tailduped[<size_t>h * <size_t>self.nb + <size_t>c]:
                 continue
             # duplicate the tiny block c into h (h unconditionally reaches c), then
             # branch like c -- exposing threading. Bounded once per (h, c) pair.
-            self.tailduped[h * self.nb + c] = 1
+            self.tailduped[<size_t>h * <size_t>self.nb + <size_t>c] = 1
             self.e_alive[the_edge] = 0
             self._append_chain_copy(h, c)
             n_e0 = self.n_e
@@ -611,21 +663,41 @@ cdef class _Cleaner:
         items.sort()
         return [it[2] for it in items]
 
-    cdef void _dfs_post(self, int32_t b, uint8_t* visited, list post) except *:
-        visited[b] = 1
-        cdef int32_t d
-        for d in self._sorted_succ(b):
-            if not visited[d]:
-                self._dfs_post(d, visited, post)
-        post.append(b)
-
     cdef list _rpo_order(self):
+        # Iterative postorder DFS (explicit stack) so a deep chain of blocks can
+        # never overflow the C call stack -- the recursive _dfs_post it replaces
+        # was unbounded cdef recursion re-run every _canonicalize_exits iteration.
+        # Produces the exact same order as the recursion: successors visited in
+        # _sorted_succ order, node appended after all its successors.
         cdef uint8_t* visited = <uint8_t*>calloc(self.nb, sizeof(uint8_t))
         if visited == NULL:
             raise MemoryError()
         cdef list post = []
+        cdef list node_stack = [self.entry_head]
+        cdef list succ_stack = [self._sorted_succ(self.entry_head)]
+        cdef list idx_stack = [0]
+        cdef int32_t depth, node, idx, d
+        cdef list slist
         try:
-            self._dfs_post(self.entry_head, visited, post)
+            visited[self.entry_head] = 1
+            while node_stack:
+                depth = len(node_stack) - 1
+                node = <int32_t>node_stack[depth]
+                slist = <list>succ_stack[depth]
+                idx = <int32_t>idx_stack[depth]
+                if idx < len(slist):
+                    idx_stack[depth] = idx + 1
+                    d = <int32_t>slist[idx]
+                    if not visited[d]:
+                        visited[d] = 1
+                        node_stack.append(d)
+                        succ_stack.append(self._sorted_succ(d))
+                        idx_stack.append(0)
+                else:
+                    post.append(node)
+                    node_stack.pop()
+                    succ_stack.pop()
+                    idx_stack.pop()
         finally:
             free(visited)
         post.reverse()
@@ -642,8 +714,11 @@ cdef class _Cleaner:
         # the GIL; it is ~1/7 of the loop and left untouched to keep the byte-exact
         # exit-block ordering. The GIL is toggled once per fixpoint iteration only.
         cdef bint changed = True
-        cdef long iters = 0
-        cdef long cap = <long>self.nb * self.nb + self.n_e + 100000
+        # 64-bit iteration cap: nb*nb overflows a 32-bit C ``long`` (Windows LLP64)
+        # at nb >= ~46341, which would wrap negative and spuriously trip the
+        # convergence guard on very large CFGs.
+        cdef int64_t iters = 0
+        cdef int64_t cap = <int64_t>self.nb * self.nb + self.n_e + 100000
         while changed:
             changed = False
             with nogil:
@@ -821,7 +896,18 @@ cdef class _Cleaner:
 
 
 cdef Func cfg_cleanup(Func func, bint phi_safe):
-    """Run CFG cleanup over ``func``; returns a fresh cleaned arena ``Func``."""
+    """Run CFG cleanup over ``func``; returns a fresh cleaned arena ``Func``.
+
+    ``func`` must be in non-SSA form (no ``OPX_PHI``). cfg_cleanup is NOT
+    phi-aware: its tree copier has no phi case and would recurse forever through
+    a loop-carried phi's back-edge operand cycle, and its rebuild drops phis.
+    ``phi_safe`` only disables the pre-SSA tail-duplication transform (used by the
+    post-phi-elimination ``lower_from_ssa`` layout pass); it is not an SSA mode.
+    """
+    if func.is_ssa:
+        raise ValueError(
+            "cfg_cleanup requires non-SSA input; it is not phi-aware "
+            "(phi_safe only disables tail-duplication, not phi handling)")
     cdef _Cleaner cleaner = _Cleaner(func, phi_safe)
     cleaner.run()
     return cleaner.rebuild()
@@ -852,8 +938,6 @@ def run_cfg_cleanup(entry, mode=None, callback=None, phi_safe=False):
 # then compacts into a fresh tight arena ``Func`` with contiguous per-block instr
 # slices (phis first) so the M2+ nogil passes get the flat value-based form.
 # ==========================================================================
-
-import sys as _sys
 
 
 cdef class _SSABuilder:
@@ -1015,12 +1099,19 @@ cdef class _SSABuilder:
     cdef int32_t _new_phi(self, int32_t block, int32_t temp):
         return self._new_val(OPX_PHI, 0, block, temp, [])
 
-    cdef int32_t _read_variable(self, int32_t temp, int32_t block):
+    cdef object _begin_read(self, int32_t temp, int32_t block):
+        # Walk the single-pred chain + leaf cases of a variable read. Returns a
+        # (value, frame) tuple: for a leaf, frame is None and value is the final
+        # resolved read result (any single-pred chain already written); for a
+        # multi-pred (sealed) block it creates the phi and returns value=-1 with a
+        # not-yet-filled frame ``[temp, phi, block, chain, preds, 0, []]`` whose
+        # operand fill (and chain writes) _drain performs iteratively.
         cdef list chain = []
         cdef int32_t b = block
         cdef int32_t val, phi
         cdef list preds
         cdef object cd
+        cdef int32_t cb
         while True:
             cd = self.cur_def.get((temp, b))
             if cd is not None:
@@ -1043,32 +1134,90 @@ cdef class _SSABuilder:
                 continue
             phi = self._new_phi(b, temp)
             self._write_variable(temp, b, phi)
-            self._add_phi_operands(temp, phi)
-            val = self._resolve(phi)
-            self._write_variable(temp, b, val)
-            break
-        cdef int32_t cb
+            return (-1, [temp, phi, b, chain, preds, 0, []])
         for cb in chain:
             self._write_variable(temp, cb, val)
-        return val
+        return (val, None)
 
-    cdef void _add_phi_operands(self, int32_t temp, int32_t phi):
+    cdef int32_t _read_variable(self, int32_t temp, int32_t block):
+        # Iterative Braun value read (explicit frame stack instead of the
+        # readVariable/addPhiOperands mutual recursion), so a deep chain of join
+        # blocks cannot overflow the native C stack.
+        cdef object res = self._begin_read(temp, block)
+        if res[1] is None:
+            return <int32_t>res[0]
+        return self._drain(<list>res[1])
+
+    cdef void _fill_phi(self, int32_t temp, int32_t phi):
+        # Fill an already-created (incomplete, sealed-block) phi's operands. Used by
+        # _seal; a seal frame (chain is None) does not resolve-write the phi's block.
         cdef int32_t block = <int32_t>self.val_block[phi]
         cdef list preds = <list>self.incoming[block]
-        cdef list ops = []
-        cdef int32_t e, p, o, ro
-        for e in preds:
-            p = self.src.edges[<int32_t>e].src
-            ops.append(self._read_variable(temp, p))
-        self.val_args[phi] = ops
-        for o in ops:
-            ro = self._resolve(o)
-            s = self.phi_users.get(ro)
-            if s is None:
-                s = set()
-                self.phi_users[ro] = s
-            s.add(phi)
-        self._try_remove_trivial(phi)
+        self._drain([temp, phi, block, None, preds, 0, []])
+
+    cdef int32_t _drain(self, list root):
+        # Depth-first-process phi-fill frames until the root completes, returning its
+        # resolved value. Mirrors the recursion exactly: a frame's phi already
+        # exists; read its preds in order (each a nested _begin_read yielding either
+        # an immediate value or a child frame), then -- once every operand is in --
+        # set val_args, register phi_users, run trivial-phi removal, and (read frames
+        # only, chain is not None) resolve-write the phi's block and single-pred chain.
+        cdef list stack = [root]
+        cdef int32_t have_val = 0
+        cdef int32_t child = 0
+        cdef list f, chain, preds, ops
+        cdef int32_t temp, phi, blk, pidx, e, p, cb, val, o, ro
+        cdef object res
+        cdef bint suspended
+        while stack:
+            f = <list>stack[len(stack) - 1]
+            temp = <int32_t>f[0]
+            phi = <int32_t>f[1]
+            blk = <int32_t>f[2]
+            chain = f[3]
+            preds = <list>f[4]
+            pidx = <int32_t>f[5]
+            ops = <list>f[6]
+            if have_val:
+                ops.append(child)
+                have_val = 0
+            suspended = False
+            while pidx < len(preds):
+                e = <int32_t>preds[pidx]
+                p = self.src.edges[e].src
+                res = self._begin_read(temp, p)
+                if res[1] is None:
+                    ops.append(<int32_t>res[0])
+                    pidx += 1
+                    continue
+                # child multi-pred read: suspend and resume at the next pred once it
+                # completes (its value is appended via have_val on resume).
+                f[5] = pidx + 1
+                stack.append(<list>res[1])
+                suspended = True
+                break
+            if suspended:
+                continue
+            self.val_args[phi] = ops
+            for o in ops:
+                ro = self._resolve(o)
+                s = self.phi_users.get(ro)
+                if s is None:
+                    s = set()
+                    self.phi_users[ro] = s
+                s.add(phi)
+            self._try_remove_trivial(phi)
+            if chain is not None:
+                val = self._resolve(phi)
+                self._write_variable(temp, blk, val)
+                for cb in chain:
+                    self._write_variable(temp, cb, val)
+                child = val
+            else:
+                child = phi
+            have_val = 1
+            stack.pop()
+        return child
 
     cdef void _try_remove_trivial(self, int32_t phi):
         # Braun trivial-phi removal: a phi collapses only when it has at most one
@@ -1128,7 +1277,7 @@ cdef class _SSABuilder:
         inc.clear()
         cdef int32_t temp, phi
         for temp, phi in items:
-            self._add_phi_operands(temp, phi)
+            self._fill_phi(temp, phi)
 
     # -- fill a block: process its source statement roots + test ----------
 
@@ -1161,22 +1310,19 @@ cdef class _SSABuilder:
             self.block_test[block] = -1
 
     cdef void _run(self):
+        # No recursion-limit fiddling: the Braun read path is now explicit-stack
+        # iteration (_begin_read/_drain), so deep CFGs cannot overflow the C stack.
         cdef int32_t b, s
-        old_limit = _sys.getrecursionlimit()
-        _sys.setrecursionlimit(max(old_limit, 100000 + self.nb * 8))
-        try:
-            for b in range(self.nb):
-                if <int32_t>self.unfilled_preds[b] == 0:
-                    self._seal(b)
-            for b in range(self.nb):
-                self._fill(b)
-                self.filled[b] = True
-                for s in <list>self.succs_distinct[b]:
-                    self.unfilled_preds[s] = <int32_t>self.unfilled_preds[s] - 1
-                    if <int32_t>self.unfilled_preds[s] == 0 and not <bint>self.sealed[s]:
-                        self._seal(<int32_t>s)
-        finally:
-            _sys.setrecursionlimit(old_limit)
+        for b in range(self.nb):
+            if <int32_t>self.unfilled_preds[b] == 0:
+                self._seal(b)
+        for b in range(self.nb):
+            self._fill(b)
+            self.filled[b] = True
+            for s in <list>self.succs_distinct[b]:
+                self.unfilled_preds[s] = <int32_t>self.unfilled_preds[s] - 1
+                if <int32_t>self.unfilled_preds[s] == 0 and not <bint>self.sealed[s]:
+                    self._seal(<int32_t>s)
 
     # -- compact loose SSA into a fresh tight arena Func -------------------
 
@@ -1313,7 +1459,10 @@ cdef class _SSABuilder:
         dst.edges = <Edge*>malloc(<size_t>(src.n_edges if src.n_edges > 0 else 1) * sizeof(Edge))
         if dst.edges == NULL:
             raise MemoryError()
-        memcpy(dst.edges, src.edges, <size_t>src.n_edges * sizeof(Edge))
+        if src.n_edges > 0:
+            # src.edges is NULL for a branch-free single-block callback; memcpy
+            # with a NULL src is UB even for n == 0, so guard like the other copies.
+            memcpy(dst.edges, src.edges, <size_t>src.n_edges * sizeof(Edge))
         dst.n_edges = src.n_edges
         dst.cap_edges = src.n_edges
         for b in range(nb):
@@ -1379,18 +1528,22 @@ def run_ssa(entry, mode=None, callback=None):
 
 
 # ==========================================================================
-# Out-of-SSA -- naive, correct-first (OPTIMIZER_REWRITE.md 7.4.2 simple version).
+# Out-of-SSA -- naive, correctness-first de-SSA.
 #
 # Every SSA value is materialized to a fresh size-1 temp (except constants, which
 # inline, single-use same-block pure values, which fold into their consumer, and
 # the shared UNDEF value, which lowers to ONE shared never-written temp). Phis
 # become parallel copies at the predecessor's exit -- placed at the end of the
-# predecessor when it has a single successor, else on a freshly split critical
-# edge -- and the parallel copies are sequentialized (fresh temps break cycles,
-# e.g. a swap phi(a<-b, b<-a)). No coalescing / treeify: correctness only (a later
-# agent adds those on this SSA form). The output is a normal non-SSA arena Func
-# (self-contained blocks, scalar temps as OPX_GET/OPX_SET, no phis) that
-# lower.pyx / emit.pyx consume unchanged.
+# predecessor when it has a single distinct successor, else on a freshly split
+# critical edge; a self-edge is always split so a conditional self-loop's test
+# still reads the pre-copy (current-iteration) phi values -- and the parallel
+# copies are sequentialized (fresh temps break cycles, e.g. a swap
+# phi(a<-b, b<-a)). No coalescing / treeify: this is the correctness-first de-SSA
+# used by the debug/inspection entry points (run_unssa / run_midend* /
+# debug_run's ``unssa`` phase); the production pipeline lowers via
+# ``lower_from_ssa`` (lower.pyx), which coalesces and treeifies. The output is a
+# normal non-SSA arena Func (self-contained blocks, scalar temps as
+# OPX_GET/OPX_SET, no phis) that lower.pyx / emit.pyx consume unchanged.
 # ==========================================================================
 
 
@@ -1718,12 +1871,17 @@ cdef class _UnSSA:
                 continue
             elif <bint>self.materialize[i]:
                 self.value_temp[i] = self._new_temp(1)
-        # Splits: an edge into a phi-block whose source has >1 distinct successor.
+        # Splits: an edge into a phi-block whose source has >1 distinct successor,
+        # OR a self-edge into a phi-block. A self-edge (b -> b, b has phis) must be
+        # split even when b's only distinct successor is itself: otherwise the phi
+        # copies are emitted at the end of b BEFORE its test, so the test reads the
+        # next-iteration phi values (a lost-copy that exits the loop a step early).
+        # Splitting moves the copies onto the back edge, past the test.
         self.n_out = self.nb
         for b in range(src.n_blocks):
             for e in range(src.blocks[b].edge_start, src.blocks[b].edge_start + src.blocks[b].edge_count):
                 d = src.edges[e].dst
-                if src.blocks[d].phi_count > 0 and len(<list>self.distinct_succ[b]) > 1:
+                if src.blocks[d].phi_count > 0 and (len(<list>self.distinct_succ[b]) > 1 or d == b):
                     self.edge_split[e] = self.n_out
                     self.split_edge.append(e)
                     self.n_out += 1
@@ -1784,10 +1942,13 @@ cdef class _UnSSA:
                     val = self._emit_tree(i, b)
                     dst._emit(OPX_SET, FLAG_SIDE_EFFECT | FLAG_PINNED | FLAG_STMT_ROOT, b,
                               self._scalar_place_of(<int32_t>self.value_temp[i]), [val])
-            # phi copies at the end of b for single-successor phi targets.
+            # phi copies at the end of b for a single-successor phi target -- but
+            # NOT when that sole successor is b itself: a self-edge is always split
+            # (see _plan), so its copies live on the split block (past b's test), and
+            # emitting them here too would clobber b's own phi temps before the test.
             if len(<list>self.distinct_succ[b]) == 1:
                 di = <int32_t>(<list>self.distinct_succ[b])[0]
-                if src.blocks[di].phi_count > 0:
+                if di != b and src.blocks[di].phi_count > 0:
                     # representative edge b -> di (parallel edges carry equal operands).
                     e = self._first_edge(b, di)
                     self._emit_copies(e, b)
@@ -1889,14 +2050,19 @@ cdef object _MISSING = object()
 cdef inline uint64_t _dbits(double d) noexcept nogil:
     # Bit pattern with a single canonical quiet-NaN, so lattice equality is
     # bitwise (the fix for NaN-through-a-loop-phi nontermination) and -0.0 stays
-    # distinct from +0.0.
+    # distinct from +0.0. memcpy (not a pointer cast) so the type-pun is
+    # well-defined under strict aliasing in the -O2/-O3 release wheels.
+    cdef uint64_t bits
     if d != d:
         return <uint64_t>0x7FF8000000000000
-    return (<uint64_t*>&d)[0]
+    memcpy(&bits, &d, sizeof(bits))
+    return bits
 
 
 cdef inline double _bits_to_d(uint64_t b) noexcept nogil:
-    return (<double*>&b)[0]
+    cdef double d
+    memcpy(&d, &b, sizeof(d))
+    return d
 
 
 cdef enum:
@@ -2430,22 +2596,55 @@ cdef class _SCCP:
                         changed = True
             elif kind == _LAT_SET:
                 has_none = False
+                orig_has_none = False
+                for e in range(es, es + ec):
+                    if f.edges[e].cond_kind == EDGE_COND_NONE:
+                        orig_has_none = True
                 for e in survivors:
                     if f.edges[e].cond_kind == EDGE_COND_NONE:
                         has_none = True
                     spec.append((f.edges[e].dst, f.edges[e].cond_kind, f.edges[e].cond,
                                  f.edges[e].cond_is_int, e))
+                # Promote the max-cond survivor to the default edge (dropping its
+                # case comparison) ONLY when the exit/default path is provably dead,
+                # i.e. every possible test value maps to a surviving case. This holds
+                # in exactly two situations:
+                #   (a) the block originally had a default edge that SCCP pruned --
+                #       an executable default is only marked when some set element
+                #       matches no case, so a pruned default means every element
+                #       matched; or
+                #   (b) every element of the lattice set equals some surviving value
+                #       cond (checked below, C == so -0.0 matches 0.0; a NaN element
+                #       matches nothing and correctly blocks the promotion).
+                # For a DEFAULT-LESS block whose set has an element matching no case,
+                # that element must fall through to exit (default-less semantics), so
+                # the value edges are kept as-is -- promoting one to the default here
+                # would wrongly route the missed element to that target.
                 if not has_none and len(spec) > 0:
-                    mi = -1
-                    mc = None
-                    for si in range(len(spec)):
-                        if spec[si][1] == EDGE_COND_VALUE and (mc is None or spec[si][2] > mc):
-                            mc = spec[si][2]
-                            mi = si
-                    if mi >= 0:
-                        old = spec[mi]
-                        spec[mi] = (old[0], EDGE_COND_NONE, 0.0, 0, old[4])
-                        changed = True
+                    exhaustive = orig_has_none
+                    if not exhaustive:
+                        exhaustive = True
+                        for bits in <object>self.ls[tv]:
+                            cv = _bits_to_d(<uint64_t><object>bits)
+                            matched = False
+                            for si in range(len(spec)):
+                                if spec[si][1] == EDGE_COND_VALUE and <double>spec[si][2] == cv:
+                                    matched = True
+                                    break
+                            if not matched:
+                                exhaustive = False
+                                break
+                    if exhaustive:
+                        mi = -1
+                        mc = None
+                        for si in range(len(spec)):
+                            if spec[si][1] == EDGE_COND_VALUE and (mc is None or spec[si][2] > mc):
+                                mc = spec[si][2]
+                                mi = si
+                        if mi >= 0:
+                            old = spec[mi]
+                            spec[mi] = (old[0], EDGE_COND_NONE, 0.0, 0, old[4])
+                            changed = True
             else:
                 for e in survivors:
                     spec.append((f.edges[e].dst, f.edges[e].cond_kind, f.edges[e].cond,
@@ -2887,14 +3086,30 @@ def _collapse_trivial_phis(Func f):
     away in place; DCE then drops the now-unused phi. Chains (a 1-phi feeding a
     1-phi) resolve through the subst map.
     """
-    cdef int32_t b, ps, pc, p
+    cdef int32_t b, ps, pc, p, e, d, operand
+    # A 1-operand phi has exactly one incoming edge. Record, per block, whether
+    # that sole incoming edge is a self-edge (src == dst): such a phi's operand is
+    # NOT guaranteed to dominate the block (it may be the phi itself -> a subst[p]=p
+    # cycle that hangs _resolve, or a value defined later in the same block ->
+    # def-before-use). Leave those degenerate phis for DCE/later rounds.
+    cdef list in_count = [0] * f.n_blocks
+    cdef list sole_in_src = [-1] * f.n_blocks
+    for e in range(f.n_edges):
+        d = f.edges[e].dst
+        in_count[d] = <int32_t>in_count[d] + 1
+        sole_in_src[d] = f.edges[e].src
     subst = {}
     for b in range(f.n_blocks):
+        if <int32_t>in_count[b] == 1 and <int32_t>sole_in_src[b] == b:
+            continue  # sole incoming edge is a self-edge: skip all 1-op phis here
         ps = f.blocks[b].phi_start
         pc = f.blocks[b].phi_count
         for p in range(ps, ps + pc):
             if f.instrs[p].nargs == 1:
-                subst[p] = <int32_t>f.args[f.instrs[p].arg_start]
+                operand = <int32_t>f.args[f.instrs[p].arg_start]
+                if operand == p:
+                    continue  # self-referential single operand: not a copy
+                subst[p] = operand
     if subst:
         _apply_subst(f, subst)
         return (f, True)
@@ -3777,6 +3992,40 @@ cdef bint _rsw_relocatable(Func f, int32_t nxt, set ext) except -1:
     return True
 
 
+def _rsw_splice_safe(Func f, list kept, list nxt_edges, int32_t nxt):
+    # Refuse a splice that would give the head parallel edges to one target
+    # carrying UNEQUAL phi operands. After splicing, the head (with edges ``kept``,
+    # its default to nxt removed) also gains nxt's edges. If nxt shares a successor
+    # T with the head, the head ends up with two edges to T -- its own (operand =
+    # the value at the head's exit) and nxt's spliced edge (operand = the value at
+    # nxt's exit). Those operands are EQUAL only when nxt passes the value through
+    # unchanged; they DIFFER when T's phi operand on the nxt->T edge is a value
+    # DEFINED in nxt (an escaping const, the shape _rsw_relocatable admits). That
+    # violates the parallel-same-pred equal-operand invariant (crashing SSA export
+    # and mis-lowering the naive out_of_ssa), so refuse those splices.
+    cdef int32_t istart = f.blocks[nxt].instr_start
+    cdef int32_t icount = f.blocks[nxt].instr_count
+    cdef int32_t t, ps, pc, p, astart, k, a
+    b_targets = set()
+    for ed in kept:
+        b_targets.add(<int32_t>(<dict>ed)["dst"])
+    for ed in nxt_edges:
+        t = <int32_t>(<dict>ed)["dst"]
+        if t not in b_targets:
+            continue
+        pc = f.blocks[t].phi_count
+        if pc == 0:
+            continue
+        ps = f.blocks[t].phi_start
+        for p in range(ps, ps + pc):
+            astart = f.instrs[p].arg_start
+            for k in range(f.instrs[p].nargs):
+                a = <int32_t>f.args[astart + k]
+                if istart <= a < istart + icount:
+                    return False
+    return True
+
+
 def _rsw_incoming_count(list out, int32_t nb, int32_t target):
     cdef int32_t b, c = 0
     for b in range(nb):
@@ -3894,12 +4143,16 @@ def _run_rewrite_switch(Func f):
         # (see _rsw_ext_ref). Escaping consts are relocated to entry below.
         if not _rsw_relocatable(f, nxt, ext):
             continue
+        kept = [ed for ed in <list>out[b] if ed is not default]
+        # splice-safety: refuse if it would create parallel edges from b to a
+        # shared successor carrying unequal phi operands (see _rsw_splice_safe).
+        if not _rsw_splice_safe(f, kept, <list>out[nxt], nxt):
+            continue
         # splice.
         existing = set()
-        for ed in <list>out[b]:
+        for ed in kept:
             if <int32_t>(<dict>ed)["ck"] == EDGE_COND_VALUE:
                 existing.add((<dict>ed)["cond"])
-        kept = [ed for ed in <list>out[b] if ed is not default]
         for ed in <list>out[nxt]:
             if <int32_t>(<dict>ed)["ck"] == EDGE_COND_VALUE and (<dict>ed)["cond"] in existing:
                 continue  # duplicate cond: unreachable, drop
@@ -4237,8 +4490,9 @@ register_phase("midend_standard", _phase_midend_standard)
 def run_midend(entry, mode=None, callback=None, allow_repeat=False):
     """marshal_in -> cfg_cleanup -> build_ssa -> midend_round -> out_of_ssa -> export.
 
-    The full mid-end, testable end-to-end today (the treeify agent is building the
-    real lowering in parallel; this uses the naive ``out_of_ssa``).
+    Runs the fast (``midend_round``) mid-end end-to-end and exports the result.
+    This debug/inspection entry point uses the naive ``out_of_ssa``; the
+    production pipeline lowers via ``lower_from_ssa`` (lower.pyx) instead.
     """
     cdef Func func = cfg_cleanup(<Func>marshal_in(entry, mode, callback), False)
     cdef Func ssa = build_ssa(func)
@@ -4250,9 +4504,10 @@ def run_midend(entry, mode=None, callback=None, allow_repeat=False):
 def run_midend_standard(entry, mode=None, callback=None):
     """marshal_in -> cfg_cleanup -> build_ssa -> midend_standard -> out_of_ssa -> export.
 
-    The full standard (-O2) mid-end (7.2.7: core round + LICM + rewrite_switch),
-    testable end-to-end (uses the naive ``out_of_ssa`` until the treeify lowering
-    is wired). This is the ``standard`` mid-end entry the driver will call.
+    Runs the standard (-O2) mid-end (core SCCP/GVN/DCE round + LICM +
+    rewrite_switch) end-to-end and exports the result. This debug/inspection entry
+    point uses the naive ``out_of_ssa``; the production pipeline lowers via
+    ``lower_from_ssa`` (lower.pyx) instead.
     """
     cdef Func func = cfg_cleanup(<Func>marshal_in(entry, mode, callback), False)
     cdef Func ssa = build_ssa(func)

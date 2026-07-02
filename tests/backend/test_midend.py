@@ -90,8 +90,12 @@ def _interp_plain(build, mode=None, cb=None) -> Interpreter:
 
 
 def _interp_midend(build, mode=None, cb=None, repeat=True) -> Interpreter:
+    # Allocate run_midend's output with MINIMAL (-O0: cfg_cleanup + bump alloc, no
+    # SSA / SCCP / GVN / DCE / LICM), NOT STANDARD. Re-running the full -O2 pipeline
+    # here would re-optimize the output and could mask a defect in run_midend, so
+    # the parity layer would no longer isolate the mid-end pass under test.
     mid = midend.run_midend(build(), mode, cb, allow_repeat=repeat)
-    allocated = run_passes(mid, STANDARD_PASSES, OptimizerConfig(mode=mode, callback=cb))
+    allocated = run_passes(mid, MINIMAL_PASSES, OptimizerConfig(mode=mode, callback=cb))
     return _run(cfg_to_engine_node(allocated))
 
 
@@ -274,6 +278,48 @@ def test_sccp_division_by_zero_does_not_fold():
     b0.connect_to(BasicBlock(), None)
     text = _text(b0, ["cfg_cleanup", "ssa", "sccp", "dce"])
     assert "6 / 0" in text  # left as a runtime division, not folded to a constant
+
+
+def test_sccp_degenerate_constant_ops_never_raise():
+    # Compile-time evaluation must NEVER raise on JS-like degenerate arithmetic: the
+    # fold either produces the correct IEEE value or declines. Compile-only text
+    # checks (the interpreter oracle raises on mod/div by zero -- see
+    # test_sccp_division_by_zero_does_not_fold, which is why this stays textual).
+    def _blk(rhs):
+        b0 = BasicBlock(statements=[IRSet(BlockPlace(W, 0), rhs)])
+        b0.connect_to(BasicBlock(), None)
+        return b0
+
+    phases = ["cfg_cleanup", "ssa", "sccp", "gvn", "dce"]
+    big = IRPureInstr(Op.Multiply, [IRConst(1e308), IRConst(10.0)])  # overflow -> +inf
+    # mod-by-zero declines to fold (left as a runtime op), like divide-by-zero.
+    assert "5 % 0" in _text(_blk(IRPureInstr(Op.Mod, [IRConst(5), IRConst(0)])), phases)
+    # overflow folds to the IEEE inf; inf - inf folds to nan (interned as a float const,
+    # exercising the isinf/isnan-guarded is_int path in the SCCP rebuild).
+    assert "<- inf" in _text(_blk(big), phases)
+    assert "<- nan" in _text(_blk(IRPureInstr(Op.Subtract, [big, big])), phases)
+
+
+def test_sccp_switch_on_degenerate_constant_takes_default():
+    # A multi-way switch whose test folds to a non-matching constant (inf) selects
+    # the default/exit edge -- inf equals no integer case (C ``==`` on NaN/inf never
+    # matches). Must fold without raising, mirroring the runtime's switch semantics.
+    def build(val):
+        head = BasicBlock(statements=[IRSet(_sc("t"), val)], test=_rd("t"))
+        a = BasicBlock(statements=[_log(1)])
+        b = BasicBlock(statements=[_log(2)])
+        ex = BasicBlock(statements=[_log(99)])
+        head.connect_to(a, 0)
+        head.connect_to(b, 1)
+        head.connect_to(ex, None)  # default: missed -> exit
+        a.connect_to(ex, None)
+        b.connect_to(ex, None)
+        return head
+
+    inf = IRPureInstr(Op.Multiply, [IRConst(1e308), IRConst(10.0)])
+    text = _text(build(inf), ["cfg_cleanup", "ssa", "sccp", "gvn", "dce"])
+    assert "DebugLog(99)" in text  # default arm reached
+    assert "DebugLog(1)" not in text and "DebugLog(2)" not in text  # cases pruned
 
 
 def test_sccp_undef_statement_removal():

@@ -1,15 +1,20 @@
 # cython: language_level=3
-"""cdef API for the mid-end passes (milestone M1: cfg_cleanup).
+"""cdef API for the mid-end passes.
 
-Other optimizer modules cimport ``cfg_cleanup`` to run the CFG-cleanup pass
-over an arena ``Func`` (see OPTIMIZER_REWRITE.md section 7.1). The Python-visible
-``run_cfg_cleanup`` wrapper (marshal_in -> pass -> to_basic_blocks) lives in
-``midend.pyx`` for tests/debugging.
+Other optimizer modules cimport these to run the mid-end over an arena ``Func``:
+``cfg_cleanup`` (structural CFG cleanup), ``build_ssa`` / ``out_of_ssa`` (SSA
+construction and naive de-SSA), and the ``midend_round`` / ``midend_standard``
+orchestrators plus the individual SSA passes. The Python-visible ``run_*``
+wrappers (marshal_in -> passes -> to_basic_blocks) live in ``midend.pyx`` for
+tests/debugging.
 """
 
 from sonolus.backend._opt.ir cimport Func
 
 
+# ``func`` MUST be non-SSA (no OPX_PHI): cfg_cleanup is not phi-aware and raises
+# ValueError on an SSA-form arena. ``phi_safe`` only disables tail-duplication
+# (used by the post-phi-elimination lower_from_ssa layout pass), NOT phi handling.
 cdef Func cfg_cleanup(Func func, bint phi_safe)
 cdef Func build_ssa(Func func)
 cdef Func out_of_ssa(Func func)

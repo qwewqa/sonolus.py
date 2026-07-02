@@ -15,8 +15,9 @@ Three layers:
 * semantic parity -- interpret hand-built loops through the full standard
   pipeline (``...,"midend_standard","lower","packing"``) vs the MINIMAL
   reference, matching log + observable memory;
-* corpus + random-CFG -- exercised by tests/backend/test_licm_corpus via the
-  shared standard-with-LICM path (see test_rewrite_switch.py for the corpus).
+* corpus + random-CFG -- covered by test_rewrite_switch.py, whose corpus and
+  random-CFG differentials run the shared standard mid-end path (LICM +
+  rewrite_switch).
 """
 
 from __future__ import annotations
@@ -245,12 +246,43 @@ def test_conditionally_executed_not_hoisted():
         merge.connect_to(head, None)
         return b0
 
-    after = _text(build, _SSA_LICM)
-    # the product is guarded, so it stays inside the loop (some block reachable in
-    # the loop still computes it -- it did not move to a preheader before `head`).
-    assert " * " in after
-    # semantics preserved regardless.
+    # The guarded product's def block (the `then` arm) does not dominate the latch,
+    # so LICM must NOT hoist it: adding the licm phase is a pure no-op (cf.
+    # test_licm_only_runs_once_no_hoist_is_stable). A speculative hoist would move
+    # the product into a preheader and change this text -- ` * ` in after alone
+    # would not catch that (the product text survives either way).
+    assert _text(build, _SSA_PRE) == _text(build, _SSA_LICM)
     _assert_semantics(build, seed={RU.value: [3.0, 5.0]})
+
+
+def test_conditionally_executed_faulting_op_not_speculated():
+    # A loop-invariant, cost-eligible division RU[0]/RU[2] guarded by `if RU[2]`
+    # (the unguarded form DOES hoist -- see test above), with RU[2] seeded 0. The
+    # guaranteed-to-execute rule must keep it in the guarded arm: speculating it into
+    # the preheader would divide by zero unconditionally and the oracle would raise.
+    def build():
+        b0 = BasicBlock(statements=[IRSet(_sc("i"), IRConst(0)), IRSet(_sc("acc"), IRConst(0))])
+        head = BasicBlock(test=IRPureInstr(Op.Less, [_rd("i"), IRConst(10)]))
+        br = BasicBlock(test=_ru(2))  # guard: take the then-arm only when RU[2] != 0
+        then = BasicBlock(
+            statements=[IRSet(_sc("acc"), IRPureInstr(Op.Add, [_rd("acc"), IRPureInstr(Op.Divide, [_ru(0), _ru(2)])]))]
+        )
+        merge = BasicBlock(statements=[IRSet(_sc("i"), IRPureInstr(Op.Add, [_rd("i"), IRConst(1)]))])
+        ex = BasicBlock(statements=[_log(_rd("acc"))])
+        b0.connect_to(head, None)
+        head.connect_to(br, None)
+        head.connect_to(ex, 0)
+        br.connect_to(merge, 0)  # RU[2] == 0: skip the division
+        br.connect_to(then, None)  # RU[2] != 0: divide
+        then.connect_to(merge, None)
+        merge.connect_to(head, None)
+        return b0
+
+    # LICM must be a no-op (the division stays guarded, not speculated).
+    assert _text(build, _SSA_PRE) == _text(build, _SSA_LICM)
+    # RU[2] == 0 -> the guard is always false -> the oracle never divides. A wrong
+    # speculative hoist would divide by zero in the preheader and raise here.
+    _assert_semantics(build, seed={RU.value: [3.0, 5.0, 0.0]})
 
 
 def test_nested_loops_hoist_past_both():
@@ -314,14 +346,16 @@ def test_preheader_creation_with_phi_splitting():
         return entry
 
     after = _text(build, _SSA_LICM)
-    # hoisted (product left the phi/loop block); a preheader phi merges the two acc
-    # entry values.
-    for phi_sec in _phi_sections(after):
-        if " * " in phi_sec:
-            # the only phi block that may contain the product is a *preheader* phi
-            # (no back edge). The loop header phi block must be clean.
-            pass
+    # Exactly one product survives, and it has moved into a *preheader* phi block:
+    # one that merges the two entry `acc` operands (contains `phi(`) but is NOT the
+    # loop header (which carries the `< 5` latch test). A failure to hoist would
+    # leave the product in the `< 5` header block; a missing preheader would
+    # falsify the `phi(` check.
     assert after.count(" * ") == 1
+    sections = _parse_sections(after)
+    star = next(s for s in sections.values() if " * " in s)
+    assert "< 5" not in star, "product must not stay in the loop-header block"
+    assert "phi(" in star, "product must move into the merged preheader phi block"
     _assert_semantics(build, mode=Mode.PLAY, cb=None, seed={RU.value: [3.0, 4.0], WBLOCK: [0.0] * 16})
 
 
