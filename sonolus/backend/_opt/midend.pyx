@@ -2878,7 +2878,13 @@ def _run_dce(Func f):
             live[tv] = True
             wl.append(tv)
     for i in range(n):
-        if f.instrs[i].flags & FLAG_STMT_ROOT:
+        # Roots: bare statement roots AND every side-effecting instruction (7.2.4 --
+        # side effects are never deletable). A side-effecting value can lack
+        # FLAG_STMT_ROOT when its size-1 scalar store dissolved during SSA promotion
+        # (e.g. ``x <- DebugLog(...)`` where ``x`` is unread): the effect must still
+        # persist. FLAG_SIDE_EFFECT excludes ``Random`` (side_effects=False), which
+        # stays deletable-when-unused, matching lower.pyx's materialize logic.
+        if f.instrs[i].flags & (FLAG_STMT_ROOT | FLAG_SIDE_EFFECT):
             if not <bint>live[i]:
                 live[i] = True
                 wl.append(i)

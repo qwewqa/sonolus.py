@@ -26,7 +26,7 @@ from sonolus.backend.ir import IRConst, IRGet, IRInstr, IRPureInstr, IRSet
 from sonolus.backend.mode import Mode
 from sonolus.backend.node import FunctionNode
 from sonolus.backend.ops import Op
-from sonolus.backend.optimize import MINIMAL_PASSES, STANDARD_PASSES, OptimizerConfig, cfg_to_engine_node, run_passes
+from sonolus.backend.optimize import MINIMAL_PASSES, OptimizerConfig, cfg_to_engine_node, run_passes
 from sonolus.backend.optimize.flow import BasicBlock, cfg_to_text, traverse_cfg_reverse_postorder
 from sonolus.backend.place import BlockPlace, TempBlock
 from tests.backend._cfg_gen import OBS_BLOCKS, OBS_CAPTURE_LEN, build_cfg, programs
@@ -529,12 +529,21 @@ def test_corpus_run_lower(mode: Mode):
     raw_mine = raw_naive = eff_mine = eff_naive = 0
     count = 0
     for _label, cbname, factory in _iter_callbacks(mode):
-        # mine: run_lower -> emit (verify + allocation-fits + emit are exercised).
-        node = cfg_to_engine_node(lower.run_lower(factory(), mode, cbname))
+        # This isolates the LOWERING strategy holding the mid-end constant: both
+        # sides run cfg_cleanup -> ssa -> mid-end, then differ only in out-of-SSA.
+        # (Before the M2 wiring the baseline was STANDARD_PASSES == the dumb M1
+        # pipeline; STANDARD now runs the full mid-end + real treeify, so using it
+        # as the naive baseline would be circular -- it would re-lower with the very
+        # treeify under test. We build a genuine mid-end-then-naive-out_of_ssa
+        # baseline via the debug phase registry instead.)
+        #   mine:  ... -> lower_from_ssa (real treeify) -> packing
+        node = cfg_to_engine_node(lower.run_lower(factory(), mode, cbname, midend=True))
         assert isinstance(node, FunctionNode)  # Block(JumpLoop(...))
-        # naive: build_ssa -> naive out_of_ssa -> M1 pipeline -> emit.
-        lowered = ir.debug_run(factory(), mode, cbname, phases=["cfg_cleanup", "ssa", "unssa"])
-        naive = cfg_to_engine_node(run_passes(lowered, STANDARD_PASSES, OptimizerConfig(mode=mode, callback=cbname)))
+        #   naive: ... -> out_of_ssa (naive, materialise-everything) -> packing
+        lowered = ir.debug_run(
+            factory(), mode, cbname, phases=["cfg_cleanup", "ssa", "midend", "unssa", "packing"]
+        )
+        naive = cfg_to_engine_node(lowered)
         raw_mine += _count_nodes(node)
         raw_naive += _count_nodes(naive)
         eff_mine += _eff_nodes(node, rcids)

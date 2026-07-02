@@ -16,7 +16,7 @@ from __future__ import annotations
 import pytest
 
 from sonolus.backend.mode import Mode
-from sonolus.backend.optimize import STANDARD_PASSES, OptimizerConfig, run_passes
+from sonolus.backend.optimize import STANDARD_PASSES, OptimizerConfig, cfg_to_engine_node, run_passes
 from sonolus.backend.optimize.flow import cfg_to_text
 from sonolus.build.compile import callback_to_cfg
 from sonolus.script.internal.callbacks import (
@@ -92,13 +92,19 @@ def _check_callback(label, callback_name, factory, mode):
     raw_rt2 = roundtrip(raw_rt, mode, callback_name)
     assert cfg_to_text(raw_rt) == cfg_to_text(raw_rt2), f"{label}: raw not idempotent"
 
-    # Optimized form: the NEW pipeline output (already binary + allocated, and
-    # non-destructive on cfg) must round-trip faithfully and be idempotent.
+    # Optimized form: the NEW pipeline output (allocated, non-destructive on cfg)
+    # must be round-trip idempotent. Since the M2 mid-end wiring, STANDARD output
+    # contains n-ary associative ops (tree emission, OPTIMIZER_REWRITE.md 4/7.4.3),
+    # which marshal-in binarizes (6.2) -- so ``opt`` itself is NOT text-faithful
+    # under round-trip (see _roundtrip_helpers.assert_faithful's documented rule).
+    # The meaningful faithfulness invariant is the 7.6 guarantee that emission
+    # agrees across the binarization (re-flatten makes the fused and
+    # export->reimport paths converge byte-for-byte).
     opt = run_passes(cfg, STANDARD_PASSES, OptimizerConfig(mode=mode, callback=callback_name))
     opt_rt = roundtrip(opt, mode, callback_name)
     opt_rt2 = roundtrip(opt_rt, mode, callback_name)
     assert cfg_to_text(opt_rt) == cfg_to_text(opt_rt2), f"{label}: optimized not idempotent"
-    assert canon_text(opt) == canon_text(opt_rt), f"{label}: optimized not faithful"
+    assert cfg_to_engine_node(opt) == cfg_to_engine_node(opt_rt), f"{label}: emit not stable across round-trip"
 
 
 @pytest.mark.parametrize("mode", list(_MODE_SETUP))

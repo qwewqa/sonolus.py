@@ -79,7 +79,7 @@ from sonolus.backend._opt.analysis cimport (
     compute_liveness,
     compute_loops,
 )
-from sonolus.backend._opt.midend cimport build_ssa, cfg_cleanup
+from sonolus.backend._opt.midend cimport build_ssa, cfg_cleanup, midend_round
 
 from sonolus.backend._opt.ir import marshal_in, to_basic_blocks
 
@@ -1388,12 +1388,11 @@ def lower_debug(entry, mode=None, callback=None, midend=False):
 
 
 cdef Func _maybe_midend(Func ssa, bint midend):
-    # Optionally run a mid-end round if the parallel agent exposed a Python-level
-    # ``midend_round`` on the midend module. Do NOT depend on it existing.
+    # Optionally run one SCCP/GVN/DCE mid-end round (allow_repeat like ``standard``)
+    # when requested. NOTE: the historical getattr("midend_round") probe here always
+    # no-op'd -- ``midend_round`` is a ``cdef`` function and is never Python-visible,
+    # so ``run_lower(midend=True)`` silently skipped the mid-end. Call the cimported
+    # cdef directly instead.
     if not midend:
         return ssa
-    from sonolus.backend._opt import midend as _m
-    fn = getattr(_m, "midend_round", None)
-    if fn is None:
-        return ssa
-    return <Func>fn(ssa)
+    return midend_round(ssa, True)

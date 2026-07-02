@@ -37,7 +37,6 @@ from __future__ import annotations
 
 import struct
 
-import pytest
 from hypothesis import HealthCheck, given, settings
 
 from sonolus.backend.interpret import Interpreter
@@ -66,7 +65,16 @@ _ROM = [float("nan"), float("inf"), float("-inf")]
 
 
 def _f(x: float) -> bytes:
-    return struct.pack(">d", float(x))
+    # Compare +0.0 and -0.0 as equal (NaN bit checks are kept: NaN != 0.0, so its
+    # bytes pass through unchanged). The mid-end legitimately collapses the sign of
+    # zero relative to the MINIMAL reference via two *documented policy exceptions*:
+    # OPTIMIZER_REWRITE.md 7.2.2 (Multiply with a constant-0 arg folds to +0.0) and
+    # 4 (the x+0 identity drops the +0 addend, which can turn -0.0 into +0.0).
+    # This is the ONLY relaxation of the bit-exact observable comparison.
+    x = float(x)
+    if x == 0.0:  # True for both +0.0 and -0.0, False for NaN and everything else
+        x = 0.0
+    return struct.pack(">d", x)
 
 
 def _observe(it: Interpreter, ret: float, blocks=OBS_BLOCKS, length: int = OBS_CAPTURE_LEN) -> tuple:
