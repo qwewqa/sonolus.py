@@ -10,10 +10,27 @@ from __future__ import annotations
 import importlib.util
 from pathlib import Path
 
-from sonolus.backend._opt import ir  # noqa: PLC2701
+from sonolus.backend._opt import (
+    ir,  # noqa: PLC2701
+    kernels,  # noqa: PLC2701
+)
 from sonolus.backend.ops import Op
 
 _REPO_ROOT = Path(__file__).resolve().parents[2]
+
+# The 42 ops SCCP folds today (constant_evaluation.py's SUPPORTED_OPS), the six
+# the rewrite newly folds, and the 36 Ease* ops -- kept here as an independent
+# copy so the test cross-checks the generator rather than merely re-running it.
+_EXPECTED_SCCP_42 = {
+    "Equal", "NotEqual", "Greater", "GreaterOr", "Less", "LessOr", "Not", "And", "Or",
+    "Negate", "Add", "Subtract", "Multiply", "Divide", "Power", "Log", "Ceil", "Floor",
+    "Round", "Frac", "Mod", "Rem", "Sin", "Cos", "Tan", "Sinh", "Cosh", "Tanh",
+    "Arcsin", "Arccos", "Arctan", "Arctan2", "Max", "Min", "Abs", "Clamp", "Degree",
+    "Radian", "Lerp", "LerpClamped", "Remap", "RemapClamped",
+}  # fmt: skip
+_EXPECTED_ADDITIONS = {"Sign", "Trunc", "Unlerp", "UnlerpClamped", "Judge", "JudgeSimple"}
+_EXPECTED_EASE = {op.value for op in Op if op.value.startswith("Ease")}
+_EXPECTED_FOLDABLE = _EXPECTED_SCCP_42 | _EXPECTED_ADDITIONS | _EXPECTED_EASE
 
 
 def _load_gen_ops():
@@ -49,3 +66,65 @@ def test_synthetic_opcodes_present():
     base = ir.op_runtime_count()
     names = [ir.op_table_entry(base + k)[0] for k in range(5)]
     assert names == ["PHI", "CONST", "GET", "SET", "UNDEF"]
+
+
+# --------------------------------------------------------------------------
+# Foldability table (OPTIMIZER_REWRITE.md section 7.2.2): the exactly-84 pure,
+# data-independent ops the C fold kernels evaluate.
+# --------------------------------------------------------------------------
+
+
+def test_generator_foldable_list_is_exactly_84():
+    gen_ops = _load_gen_ops()
+    names = gen_ops.foldable_op_names()
+    assert gen_ops.FOLDABLE_COUNT == 84
+    assert len(names) == 84
+    assert len(set(names)) == 84
+    assert set(names) == _EXPECTED_FOLDABLE
+    assert len(_EXPECTED_SCCP_42) == 42
+    assert len(_EXPECTED_EASE) == 36
+    # Declaration order (id-aligned) so the generated static array lines up.
+    all_names = [op.value for op in Op]
+    assert names == [n for n in all_names if n in _EXPECTED_FOLDABLE]
+
+
+def test_foldable_excludes_env_dependent_and_control_flow():
+    # Pure but must NOT fold: environment-dependent + structural control-flow.
+    for name in (
+        "BeatToBPM", "BeatToTime", "TimeToScaledTime", "TimeToTimeScale",
+        "HasEffectClip", "HasParticleEffect", "HasSkinSprite",
+        "StreamGetValue", "StreamHas", "StreamGetNextKey",
+        "If", "Switch", "SwitchInteger", "SwitchIntegerWithDefault", "SwitchWithDefault",
+        "Execute", "Execute0", "While", "DoWhile", "JumpLoop", "Block", "Break",
+    ):  # fmt: skip
+        assert name not in _EXPECTED_FOLDABLE
+        assert not kernels.is_op_foldable(_op_id(name))
+    # And/Or are control_flow=True yet ARE foldable (short-circuit value folds).
+    assert Op.And.control_flow
+    assert Op.Or.control_flow
+    assert kernels.is_op_foldable(_op_id("And"))
+    assert kernels.is_op_foldable(_op_id("Or"))
+
+
+def test_compiled_foldable_table_matches_generator():
+    gen_ops = _load_gen_ops()
+    foldable_names = set(gen_ops.foldable_op_names())
+    for i, op in enumerate(Op):
+        expected = op.value in foldable_names
+        assert kernels.is_op_foldable(i) == expected, op.value
+        if expected:
+            # Every foldable op is pure (never side-effecting).
+            assert op.pure, op.value
+    # The compiled id list maps back to exactly the 84 foldable op names.
+    got_names = {list(Op)[i].value for i in kernels.foldable_op_ids()}
+    assert got_names == _EXPECTED_FOLDABLE
+
+
+def test_synthetic_opcodes_not_foldable():
+    base = ir.op_runtime_count()
+    for k in range(5):  # PHI/CONST/GET/SET/UNDEF
+        assert not kernels.is_op_foldable(base + k)
+
+
+def _op_id(name: str) -> int:
+    return {op.value: i for i, op in enumerate(Op)}[name]
