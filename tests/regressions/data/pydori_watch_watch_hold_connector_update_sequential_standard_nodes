@@ -29,13 +29,13 @@ Block(JumpLoop(
         )
       )
       1
-      8
+      5
     )
   )
   Execute(
     Set(
       10000
-      3
+      1
       Multiply(
         Get(
           4001
@@ -56,65 +56,96 @@ Block(JumpLoop(
             5
             Get(
               10000
-              3
+              1
             )
           )
         )
       )
       2
-      8
+      5
     )
   )
-  Execute(If(
-    Get(
-      1000
-      4
-    )
-    3
-    7
-  ))
   Execute(
     Set(
       10000
-      1
+      2
       Add(
+        9
         Get(
+          10000
+          0
+        )
+      )
+    )
+    If(
+      Get(
+        1000
+        4
+      )
+      3
+      4
+    )
+  )
+  Execute(
+    Set(
+      10000
+      3
+      Add(
+        GetShifted(
           4103
-          Multiply(
-            Get(
-              4101
-              Add(
-                9
-                Multiply(
+          0
+          Get(
+            4101
+            Add(
+              9
+              Multiply(
+                Get(
+                  4101
                   Get(
-                    4101
-                    Add(
-                      9
-                      Get(
-                        10000
-                        0
-                      )
-                    )
+                    10000
+                    2
                   )
-                  32
                 )
+                32
               )
             )
-            3
           )
+          3
         )
         18
       )
     )
     If(
-      StreamHas(
+      StreamGetValue(
         Get(
           10000
-          1
+          3
         )
-        Get(
-          1001
-          0
+        If(
+          StreamHas(
+            Get(
+              10000
+              3
+            )
+            Get(
+              1001
+              0
+            )
+          )
+          Get(
+            1001
+            0
+          )
+          StreamGetPreviousKey(
+            Get(
+              10000
+              3
+            )
+            Get(
+              1001
+              0
+            )
+          )
         )
       )
       4
@@ -124,101 +155,58 @@ Block(JumpLoop(
   Execute(
     Set(
       10000
-      2
+      3
       Get(
-        1001
-        0
-      )
-    )
-    6
-  )
-  Execute(
-    Set(
-      10000
-      2
-      StreamGetPreviousKey(
-        Get(
-          10000
-          1
-        )
-        Get(
-          1001
-          0
-        )
-      )
-    )
-    6
-  )
-  Execute(If(
-    StreamGetValue(
-      Get(
-        10000
-        1
-      )
-      Get(
-        10000
-        2
-      )
-    )
-    7
-    8
-  ))
-  Execute(
-    Set(
-      10000
-      1
-      Add(
-        6
-        Get(
-          10000
-          0
-        )
-      )
-    )
-    Set(
-      10000
-      2
-      Add(
-        6
-        Get(
-          10000
-          3
-        )
-      )
-    )
-    Set(
-      4102
-      Multiply(
-        Get(
-          4101
-          Add(
-            9
-            Multiply(
-              Get(
-                4101
-                Add(
-                  9
-                  Get(
-                    10000
-                    0
-                  )
-                )
-              )
-              32
-            )
+        4101
+        Add(
+          6
+          Get(
+            10000
+            0
           )
         )
-        32
       )
-      Remap(
-        Remap(
-          Subtract(
+    )
+    Set(
+      10000
+      4
+      Get(
+        4101
+        Add(
+          6
+          Get(
+            10000
+            1
+          )
+        )
+      )
+    )
+    SetShifted(
+      4102
+      0
+      Get(
+        4101
+        Add(
+          9
+          Multiply(
             Get(
               4101
               Get(
                 10000
-                1
+                2
               )
+            )
+            32
+          )
+        )
+      )
+      32
+      Remap(
+        Remap(
+          Subtract(
+            Get(
+              10000
+              3
             )
             Divide(
               6
@@ -229,11 +217,8 @@ Block(JumpLoop(
             )
           )
           Get(
-            4101
-            Get(
-              10000
-              1
-            )
+            10000
+            3
           )
           Get(
             2001
@@ -248,11 +233,8 @@ Block(JumpLoop(
         Remap(
           Subtract(
             Get(
-              4101
-              Get(
-                10000
-                2
-              )
+              10000
+              4
             )
             Divide(
               6
@@ -263,11 +245,8 @@ Block(JumpLoop(
             )
           )
           Get(
-            4101
-            Get(
-              10000
-              2
-            )
+            10000
+            4
           )
           Get(
             2001
@@ -290,14 +269,13 @@ Block(JumpLoop(
           4101
           Get(
             10000
-            3
+            1
           )
         )
         0
       )
     )
-    9
+    5
   )
-  Execute(9)
   0
 ))

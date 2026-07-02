@@ -1,26 +1,19 @@
 0:
   10000[0] <- EntityData[0] * 32.0
-  goto 1 if (EntityDataArray[(5.0 + 10000[0])] <= RuntimeUpdate[0]) else 8
+  goto 1 if (EntityDataArray[(5.0 + 10000[0])] <= RuntimeUpdate[0]) else 5
 1:
-  10000[3] <- EntityData[1] * 32.0
-  goto 2 if (RuntimeUpdate[0] < EntityDataArray[(5.0 + 10000[3])]) else 8
+  10000[1] <- EntityData[1] * 32.0
+  goto 2 if (RuntimeUpdate[0] < EntityDataArray[(5.0 + 10000[1])]) else 5
 2:
-  goto 3 if RuntimeEnvironment[4] else 7
+  10000[2] <- 9.0 + 10000[0]
+  goto 3 if RuntimeEnvironment[4] else 4
 3:
-  10000[1] <- EntityInfoArray[(EntityDataArray[(9.0 + (EntityDataArray[(9.0 + 10000[0])] * 32.0))] * 3.0)] + 18.0
-  goto 4 if StreamHas(10000[1], RuntimeUpdate[0]) else 5
+  10000[3] <- EntityInfoArray[(EntityDataArray[(9.0 + (EntityDataArray[10000[2]] * 32.0))] * 3.0)] + 18.0
+  goto 4 if StreamGetValue(10000[3], If(StreamHas(10000[3], RuntimeUpdate[0]), RuntimeUpdate[0], StreamGetPreviousKey(10000[3], RuntimeUpdate[0]))) else 5
 4:
-  10000[2] <- RuntimeUpdate[0]
-  goto 6
-5:
-  10000[2] <- StreamGetPreviousKey(10000[1], RuntimeUpdate[0])
-  goto 6
-6:
-  goto 7 if StreamGetValue(10000[1], 10000[2]) else 8
-7:
-  10000[1] <- 6.0 + 10000[0]
-  10000[2] <- 6.0 + 10000[3]
-  EntitySharedMemoryArray[(EntityDataArray[(9.0 + (EntityDataArray[(9.0 + 10000[0])] * 32.0))] * 32.0)] <- Remap(Remap(EntityDataArray[10000[1]] - (6.0 / LevelOption[1]), EntityDataArray[10000[1]], LevelData[14], 0, RuntimeUpdate[2]), Remap(EntityDataArray[10000[2]] - (6.0 / LevelOption[1]), EntityDataArray[10000[2]], LevelData[14], 0, RuntimeUpdate[2]), EntityDataArray[10000[0]], EntityDataArray[10000[3]], 0)
+  10000[3] <- EntityDataArray[(6.0 + 10000[0])]
+  10000[4] <- EntityDataArray[(6.0 + 10000[1])]
+  EntitySharedMemoryArray[(EntityDataArray[(9.0 + (EntityDataArray[10000[2]] * 32.0))] * 32.0)] <- Remap(Remap(10000[3] - (6.0 / LevelOption[1]), 10000[3], LevelData[14], 0, RuntimeUpdate[2]), Remap(10000[4] - (6.0 / LevelOption[1]), 10000[4], LevelData[14], 0, RuntimeUpdate[2]), EntityDataArray[10000[0]], EntityDataArray[10000[1]], 0)
   goto exit
-8:
+5:
   goto exit

@@ -32,15 +32,6 @@ PASSES = {
     "standard": BuildConfig.STANDARD_PASSES,
 }
 
-# The frontend ``_cfg`` goldens are byte-identical before/after the rewrite and stay
-# ACTIVE. The ``_optimized_cfg`` and ``_nodes`` goldens reflect the OLD optimizer's
-# output; M1 ships deliberately weaker codegen (cfg_cleanup + allocation, the mid-end
-# lands in M2/M3), so those comparisons are gated off until M4 deletes and regenerates
-# them (OPTIMIZER_REWRITE.md 10/11). The pipeline is still exercised end-to-end here
-# (run_passes + cfg_to_engine_node run on every callback) -- only the stale-golden
-# assertions are skipped.
-GOLDENS_PENDING_M4_REGEN = True
-
 
 @pytest.mark.parametrize("project", ["pydori"])
 @pytest.mark.parametrize("passes", ["fast", "standard"])
@@ -134,15 +125,14 @@ def _build_mode_callbacks(
                 )
                 cfg = run_passes(cfg, PASSES[passes], OptimizerConfig(mode=mode, callback=cb_info.name))
                 node = cfg_to_engine_node(cfg)
-                if not GOLDENS_PENDING_M4_REGEN:
-                    compare_with_reference(
-                        f"{project_name}_{mode.name.lower()}_{camel_to_snake(archetype.__name__)}_{cb_name}_{passes}{suffix}_optimized_cfg",
-                        cfg_to_text(cfg),
-                    )
-                    compare_with_reference(
-                        f"{project_name}_{mode.name.lower()}_{camel_to_snake(archetype.__name__)}_{cb_name}_{passes}{suffix}_nodes",
-                        format_engine_node(node),
-                    )
+                compare_with_reference(
+                    f"{project_name}_{mode.name.lower()}_{camel_to_snake(archetype.__name__)}_{cb_name}_{passes}{suffix}_optimized_cfg",
+                    cfg_to_text(cfg),
+                )
+                compare_with_reference(
+                    f"{project_name}_{mode.name.lower()}_{camel_to_snake(archetype.__name__)}_{cb_name}_{passes}{suffix}_nodes",
+                    format_engine_node(node),
+                )
 
         for cb_info, cb in global_callbacks or []:
             project_state = ProjectContextState(
@@ -159,15 +149,14 @@ def _build_mode_callbacks(
             )
             cfg = run_passes(cfg, PASSES[passes], OptimizerConfig(mode=mode, callback=cb_info.name))
             node = cfg_to_engine_node(cfg)
-            if not GOLDENS_PENDING_M4_REGEN:
-                compare_with_reference(
-                    f"{project_name}_{mode.name.lower()}_global_{camel_to_snake(cb_info.name)}_{passes}{suffix}_optimized_cfg",
-                    cfg_to_text(cfg),
-                )
-                compare_with_reference(
-                    f"{project_name}_{mode.name.lower()}_global_{camel_to_snake(cb_info.name)}_{passes}{suffix}_nodes",
-                    format_engine_node(node),
-                )
+            compare_with_reference(
+                f"{project_name}_{mode.name.lower()}_global_{camel_to_snake(cb_info.name)}_{passes}{suffix}_optimized_cfg",
+                cfg_to_text(cfg),
+            )
+            compare_with_reference(
+                f"{project_name}_{mode.name.lower()}_global_{camel_to_snake(cb_info.name)}_{passes}{suffix}_nodes",
+                format_engine_node(node),
+            )
 
 
 def camel_to_snake(name: str) -> str:

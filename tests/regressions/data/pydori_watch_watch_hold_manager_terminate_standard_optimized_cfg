@@ -1,9 +1,7 @@
 0:
-  10000[0] <- EntityMemory[2]
-  goto 1 if (0 != 10000[0]) else 2
+  goto 1 if (EntityMemory[2] != 0) else 2
 1:
-  10000[0] <- EntityMemory[2]
-  DestroyParticleEffect(10000[0])
+  DestroyParticleEffect(EntityMemory[2])
   EntityMemory[2] <- 0
   goto exit
 2:

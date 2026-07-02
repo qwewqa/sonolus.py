@@ -1,23 +1,12 @@
 0:
-  10000[0] <- RuntimeUpdate[2] > 0
-  goto 1 if 10000[0] else 2
+  goto 1 if (RuntimeUpdate[2] > 0) else 2
 1:
-  10000[1] <- TutorialMemory[0]
-  10000[2] <- 10000[1] + 1.0
-  TutorialMemory[0] <- 10000[2]
-  10000[3] <- TutorialMemory[0]
-  10000[4] <- 10000[3] % 7.0
-  TutorialMemory[0] <- 10000[4]
+  IncrementPost(2000, 0)
+  SetMod(2000, 0, 7.0)
   TutorialMemory[1] <- RuntimeUpdate[0]
-  goto 3
+  goto exit
 2:
-  10000[1] <- TutorialMemory[0]
-  10000[2] <- 10000[1] - 1.0
-  TutorialMemory[0] <- 10000[2]
-  10000[3] <- TutorialMemory[0]
-  10000[4] <- 10000[3] % 7.0
-  TutorialMemory[0] <- 10000[4]
+  DecrementPost(2000, 0)
+  SetMod(2000, 0, 7.0)
   TutorialMemory[1] <- RuntimeUpdate[0]
-  goto 3
-3:
   goto exit
