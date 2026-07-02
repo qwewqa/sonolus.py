@@ -214,6 +214,13 @@ cdef enum:
 cdef enum:
     PLACE_WRITABLE = 1
     PLACE_BLOCK_IS_ENUM = 2
+    # A constant-index read of a non-writable block whose resolved name is in
+    # ``RUNTIME_CONSTANT_BLOCKS`` (set once at marshal-in, ir.pyx). The real
+    # runtime constant-folds such reads to a single push (OPTIMIZER_REWRITE.md
+    # section 2), so the treeify cost model (lower.pyx) treats a pure tree over
+    # these + OPX_CONSTs as effective cost 1 and duplicates it regardless of
+    # size rather than materialising a temp (which would defeat the fold).
+    PLACE_RUNTIME_CONST = 4
 
 
 cdef enum:
