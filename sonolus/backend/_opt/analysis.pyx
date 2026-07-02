@@ -665,3 +665,240 @@ def dominators_debug(entry, mode=None, callback=None):
         "n_blocks": D.n_blocks,
         "dominates": D.dominates_q,
     }
+
+
+# --------------------------------------------------------------------------
+# Loop forest: natural loops from dominator back edges.
+# --------------------------------------------------------------------------
+
+cdef class LoopForest:
+    def __cinit__(self):
+        self.func = None
+        self.n_blocks = 0
+        self.n_loops = 0
+        self.nwb = 0
+        self.depth = NULL
+        self.innermost = NULL
+        self.header = NULL
+        self.parent = NULL
+        self.loop_depth = NULL
+        self.body = NULL
+
+    def __dealloc__(self):
+        free(self.depth)
+        free(self.innermost)
+        free(self.header)
+        free(self.parent)
+        free(self.loop_depth)
+        free(self.body)
+
+    cdef bint in_loop(self, int32_t loop_id, int32_t block) noexcept nogil:
+        return bs_get(&self.body[loop_id * self.nwb], block)
+
+    cdef bint crosses_loop(self, int32_t def_block, int32_t use_block) noexcept nogil:
+        # Sinking a def into use_block crosses a loop iff use_block is in some
+        # loop that does not contain def_block. Because the loops containing a
+        # block form a nested chain, this holds iff def_block is not in
+        # use_block's innermost loop.
+        cdef int32_t li = self.innermost[use_block]
+        if li < 0:
+            return False
+        return not self.in_loop(li, def_block)
+
+    # --- python debug accessors ------------------------------------------
+
+    def depth_map(self):
+        cdef dict d = {}
+        cdef int32_t b
+        for b in range(self.n_blocks):
+            d[b] = self.depth[b]
+        return d
+
+    def innermost_map(self):
+        cdef dict d = {}
+        cdef int32_t b
+        for b in range(self.n_blocks):
+            d[b] = self.innermost[b]
+        return d
+
+    def loops(self):
+        # For each loop id: (header, parent, depth, sorted body block ids).
+        cdef list out = []
+        cdef int32_t li, b
+        for li in range(self.n_loops):
+            members = [b for b in range(self.n_blocks) if bs_get(&self.body[li * self.nwb], b)]
+            out.append((self.header[li], self.parent[li], self.loop_depth[li], members))
+        return out
+
+    def crosses_loop_q(self, int def_block, int use_block):
+        return bool(self.crosses_loop(<int32_t>def_block, <int32_t>use_block))
+
+
+cdef LoopForest compute_loops(Func func, Dominators D):
+    cdef LoopForest F = LoopForest()
+    F.func = func
+    cdef int32_t nb = func.n_blocks
+    cdef int32_t ne = func.n_edges
+    cdef int32_t nwb = (nb + 63) >> 6
+    F.n_blocks = nb
+    F.nwb = nwb
+
+    cdef Edge* edges = func.edges
+    cdef int32_t e, b, u, h, li, lj, p, w
+
+    # Header blocks: a block h with a back edge u->h (h dominates u). Deterministic
+    # loop ids assigned in ascending header-block order.
+    cdef uint8_t* is_header = <uint8_t*>calloc(<size_t>(nb if nb > 0 else 1), sizeof(uint8_t))
+    if is_header == NULL:
+        raise MemoryError()
+    for e in range(ne):
+        u = edges[e].src
+        h = edges[e].dst
+        if D.dominates(h, u):
+            is_header[h] = 1
+
+    cdef int32_t n_loops = 0
+    for b in range(nb):
+        if is_header[b]:
+            n_loops += 1
+    F.n_loops = n_loops
+
+    F.depth = <int32_t*>calloc(<size_t>(nb if nb > 0 else 1), sizeof(int32_t))
+    F.innermost = <int32_t*>malloc(<size_t>(nb if nb > 0 else 1) * sizeof(int32_t))
+    F.header = <int32_t*>malloc(<size_t>(n_loops if n_loops > 0 else 1) * sizeof(int32_t))
+    F.parent = <int32_t*>malloc(<size_t>(n_loops if n_loops > 0 else 1) * sizeof(int32_t))
+    F.loop_depth = <int32_t*>calloc(<size_t>(n_loops if n_loops > 0 else 1), sizeof(int32_t))
+    F.body = <uint64_t*>calloc(<size_t>((n_loops * nwb) if (n_loops * nwb) > 0 else 1), sizeof(uint64_t))
+    if (F.depth == NULL or F.innermost == NULL or F.header == NULL or F.parent == NULL
+            or F.loop_depth == NULL or F.body == NULL):
+        free(is_header)
+        raise MemoryError()
+    for b in range(nb):
+        F.innermost[b] = -1
+
+    # loop id per header block (ascending header order == ascending block id).
+    cdef int32_t* loop_of_header = <int32_t*>malloc(<size_t>(nb if nb > 0 else 1) * sizeof(int32_t))
+    if loop_of_header == NULL:
+        free(is_header)
+        raise MemoryError()
+    for b in range(nb):
+        loop_of_header[b] = -1
+    li = 0
+    for b in range(nb):
+        if is_header[b]:
+            loop_of_header[b] = li
+            F.header[li] = b
+            F.parent[li] = -1
+            li += 1
+
+    # Predecessor CSR for backward reachability.
+    cdef int32_t* pred_head = <int32_t*>calloc(<size_t>(nb + 1), sizeof(int32_t))
+    cdef int32_t* pred_src = <int32_t*>malloc(<size_t>(ne if ne > 0 else 1) * sizeof(int32_t))
+    cdef int32_t* cursor = <int32_t*>malloc(<size_t>(nb if nb > 0 else 1) * sizeof(int32_t))
+    cdef int32_t* stack = <int32_t*>malloc(<size_t>(nb if nb > 0 else 1) * sizeof(int32_t))
+    if pred_head == NULL or pred_src == NULL or cursor == NULL or stack == NULL:
+        free(is_header); free(loop_of_header); free(pred_head); free(pred_src); free(cursor); free(stack)
+        raise MemoryError()
+    for e in range(ne):
+        pred_head[edges[e].dst + 1] += 1
+    for b in range(nb):
+        pred_head[b + 1] += pred_head[b]
+    for b in range(nb):
+        cursor[b] = pred_head[b]
+    for e in range(ne):
+        pred_src[cursor[edges[e].dst]] = edges[e].src
+        cursor[edges[e].dst] += 1
+
+    # Body of each loop: header + backward reach from every latch, stopping at
+    # the header (which is pre-seeded, so its own predecessors are not added).
+    cdef uint64_t* lbody
+    cdef int32_t sp
+    for e in range(ne):
+        u = edges[e].src
+        h = edges[e].dst
+        if not D.dominates(h, u):
+            continue
+        li = loop_of_header[h]
+        lbody = &F.body[li * nwb]
+        bs_set(lbody, h)
+        if not bs_get(lbody, u):
+            bs_set(lbody, u)
+            sp = 0
+            stack[sp] = u
+            sp += 1
+            while sp > 0:
+                sp -= 1
+                b = stack[sp]
+                for p in range(pred_head[b], pred_head[b + 1]):
+                    w = pred_src[p]
+                    if not bs_get(lbody, w):
+                        bs_set(lbody, w)
+                        stack[sp] = w
+                        sp += 1
+
+    # Loop depth = number of loops containing a loop's header (including itself).
+    cdef int32_t di
+    for li in range(n_loops):
+        di = 0
+        for lj in range(n_loops):
+            if bs_get(&F.body[lj * nwb], F.header[li]):
+                di += 1
+        F.loop_depth[li] = di
+
+    # Parent loop of L = the loop (other than L) containing L's header with the
+    # greatest depth (the immediately-enclosing loop).
+    cdef int32_t best, best_depth
+    for li in range(n_loops):
+        best = -1
+        best_depth = 0
+        for lj in range(n_loops):
+            if lj == li:
+                continue
+            if bs_get(&F.body[lj * nwb], F.header[li]):
+                if F.loop_depth[lj] > best_depth:
+                    best_depth = F.loop_depth[lj]
+                    best = lj
+        F.parent[li] = best
+
+    # Per-block innermost loop (max depth) and depth (count of containing loops).
+    cdef int32_t cnt, bi
+    for b in range(nb):
+        cnt = 0
+        best = -1
+        best_depth = 0
+        for li in range(n_loops):
+            if bs_get(&F.body[li * nwb], b):
+                cnt += 1
+                if F.loop_depth[li] > best_depth:
+                    best_depth = F.loop_depth[li]
+                    best = li
+        F.depth[b] = cnt
+        F.innermost[b] = best
+
+    free(is_header)
+    free(loop_of_header)
+    free(pred_head)
+    free(pred_src)
+    free(cursor)
+    free(stack)
+    return F
+
+
+def loops_debug(entry, mode=None, callback=None):
+    """Marshal ``entry``, compute dominators + loop forest, return a summary dict.
+
+    Keyed by arena block id (reverse-postorder). ``crosses`` is the O(1)
+    ``crosses_loop(def_block, use_block)`` query used by treeify.
+    """
+    cdef Func func = <Func>marshal_in(entry, mode, callback)
+    func.verify()
+    cdef Dominators D = compute_dominators(func)
+    cdef LoopForest F = compute_loops(func, D)
+    return {
+        "depth": F.depth_map(),
+        "innermost": F.innermost_map(),
+        "loops": F.loops(),
+        "n_blocks": F.n_blocks,
+        "n_loops": F.n_loops,
+        "crosses": F.crosses_loop_q,
+    }

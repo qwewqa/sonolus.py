@@ -26,3 +26,10 @@ cdef enum:
 # Rewrite ``func`` in place: allocate temps and lower temp places to real-block
 # places, doing dead-store elimination for the liveness-based strategies.
 cdef void allocate_func(Func func, int32_t strategy) except *
+
+
+# Out-of-SSA + treeify (OPTIMIZER_REWRITE.md 7.4): consume a value-based SSA
+# ``Func`` (from ``midend.build_ssa``) and return a fresh non-SSA 3-legal arena
+# ready for ``allocate_func`` + emission. Supersedes ``midend.out_of_ssa``. The
+# driver slots this between the mid-end and allocation (see lower.pyx run_lower).
+cdef Func lower_from_ssa(Func func)

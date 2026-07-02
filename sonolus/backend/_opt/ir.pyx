@@ -46,6 +46,30 @@ _ASSOC_IDS = frozenset(
     {_OP_TO_ID[_Op.Add], _OP_TO_ID[_Op.Multiply], _OP_TO_ID[_Op.Mod], _OP_TO_ID[_Op.Rem]}
 )
 
+# Blocks the real runtime treats as runtime-constant: a constant-index read of
+# one (when not writable in this callback) is constant-folded to a single push
+# during bytecode compilation (OPTIMIZER_REWRITE.md section 2 / section 4).
+# Verified identical to the old ``inlining.py`` RUNTIME_CONSTANT_BLOCKS set (14
+# names). Exposed as a module-level constant so downstream code can import it;
+# ``tools/metrics.py`` keeps its own copy for now. The per-place marshal-in flag
+# ``PLACE_RUNTIME_CONST`` records membership so nogil passes never touch names.
+RUNTIME_CONSTANT_BLOCKS = frozenset({
+    "RuntimeEnvironment",
+    "RuntimeUI",
+    "RuntimeUIConfiguration",
+    "LevelData",
+    "LevelOption",
+    "LevelBucket",
+    "LevelScore",
+    "LevelLife",
+    "EngineRom",
+    "ArchetypeLife",
+    "RuntimeCanvas",
+    "PreviewData",
+    "PreviewOption",
+    "TutorialData",
+})
+
 # Canonical quiet-NaN used so all NaN constants intern to one id.
 cdef uint64_t _CANON_NAN_BITS = <uint64_t>0x7FF8000000000000
 cdef double _CANON_NAN = 0.0
@@ -274,6 +298,20 @@ cdef class Func:
         else:
             index_val = self._value_of(index, block_id)
             off = offset
+
+        # Runtime-constant place flag: a constant-index (index_val == -1) read of
+        # a resolved, non-writable block whose name is a RUNTIME_CONSTANT_BLOCKS
+        # member. Mirrors the old ``is_runtime_constant`` leaf condition (block in
+        # the set, callback not in block.writable, constant index). callback==None
+        # makes every resolved block non-writable, so those paths mark it too.
+        if (
+            kind == PLACE_REAL_BLOCK
+            and index_val == -1
+            and not (flags & PLACE_WRITABLE)
+            and resolved_member is not None
+            and getattr(resolved_member, "name", None) in RUNTIME_CONSTANT_BLOCKS
+        ):
+            flags |= PLACE_RUNTIME_CONST
 
         key = (kind, block_ref, index_val, off, flags)
         cached = self._place_intern.get(key)

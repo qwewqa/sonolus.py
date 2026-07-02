@@ -90,3 +90,43 @@ cdef class Dominators:
 
 
 cdef Dominators compute_dominators(Func func)
+
+
+# --------------------------------------------------------------------------
+# Loop forest (natural loops from dominator back edges) -- milestone M2.
+#
+# A back edge is an edge ``u -> h`` whose head ``h`` dominates its tail ``u``;
+# ``h`` is a loop header. The natural loop of a header is the union, over all its
+# latches ``u``, of the blocks that reach ``u`` without passing through ``h``
+# (standard backward reachability, the old ``flow.compute_loop_body`` rule). One
+# loop per distinct header (parallel/multiple latches merge). Loops nest by
+# header containment. Reusable by M3 LICM (hoist targets, preheaders):
+#
+# * ``depth[b]``       number of loops containing block ``b`` (0 == not in a loop).
+# * ``innermost[b]``   deepest loop id containing ``b`` (or -1).
+# * ``header[L]``      the header block of loop ``L``.
+# * ``parent[L]``      enclosing loop id (or -1), i.e. the loop tree.
+# * ``in_loop(L, b)``  O(1) membership (block bitset).
+# * ``crosses_loop(def_b, use_b)`` -- true iff sinking a value defined in
+#   ``def_b`` to a use in ``use_b`` would move it into a strictly deeper loop
+#   (``use_b`` is in a loop that does not contain ``def_b``); the treeify
+#   cross-block fold gate (OPTIMIZER_REWRITE.md 7.4.1, old ``crosses_loop``).
+# --------------------------------------------------------------------------
+
+cdef class LoopForest:
+    cdef Func func
+    cdef int32_t n_blocks
+    cdef int32_t n_loops
+    cdef int32_t nwb                # 64-bit words per block-bitset
+    cdef int32_t* depth             # [nb]        loop-nesting depth of each block
+    cdef int32_t* innermost         # [nb]        innermost loop id, or -1
+    cdef int32_t* header            # [n_loops]   header block of each loop
+    cdef int32_t* parent            # [n_loops]   enclosing loop id, or -1
+    cdef int32_t* loop_depth        # [n_loops]   nesting depth of each loop (>=1)
+    cdef uint64_t* body             # [n_loops*nwb] membership bitset over block ids
+
+    cdef bint in_loop(self, int32_t loop_id, int32_t block) noexcept nogil
+    cdef bint crosses_loop(self, int32_t def_block, int32_t use_block) noexcept nogil
+
+
+cdef LoopForest compute_loops(Func func, Dominators D)
