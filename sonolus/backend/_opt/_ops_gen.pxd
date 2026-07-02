@@ -208,4 +208,5 @@ cdef extern from "_ops_gen.h":
     const unsigned char SONOLUS_OP_PURE[OP_TABLE_SIZE]
     const unsigned char SONOLUS_OP_SIDE_EFFECTS[OP_TABLE_SIZE]
     const unsigned char SONOLUS_OP_CONTROL_FLOW[OP_TABLE_SIZE]
+    const unsigned char SONOLUS_OP_FOLDABLE[OP_TABLE_SIZE]
     const char* SONOLUS_OP_NAMES[OP_TABLE_SIZE]
