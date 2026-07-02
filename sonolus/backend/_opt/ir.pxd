@@ -35,17 +35,42 @@ Instr (AoS)               one array; per-block slice == the initial schedule
 * aux       i32   op-specific: OPX_CONST -> const id; OPX_GET/OPX_SET ->
                   place id; runtime ops -> unused (-1).
 
-M1 arena form is NOT yet SSA: size-1 temp reads/writes are explicit OPX_GET /
-OPX_SET instructions over interned places (SSA construction in M2 collapses
-size-1 temps into def/use value edges; arrays and real-block accesses stay as
-pinned OPX_GET/OPX_SET). "An instruction is its value": a runtime pure/impure
-op instruction's value-id is used directly as an operand elsewhere.
+The non-SSA arena form (marshal-in output, cfg_cleanup output, out-of-SSA
+output) is NOT SSA: size-1 temp reads/writes are explicit OPX_GET / OPX_SET
+instructions over interned places. "An instruction is its value": a runtime
+pure/impure op instruction's value-id is used directly as an operand elsewhere.
 
 Statement structure is recovered on export from FLAG_STMT_ROOT: exactly the
 OPX_SET stores and the bare side-effecting op instructions are roots; every
-other instruction is a sub-value reached as an operand. Operands always
-reference strictly-earlier instructions in the same block (def-before-use in
-the linear stream), which is what makes the tree rebuild a single forward pass.
+other instruction is a sub-value reached as an operand. In non-SSA form operands
+always reference strictly-earlier instructions in the same block (def-before-use
+in the linear stream), which is what makes the tree rebuild a single forward pass.
+
+M2 SSA form (``is_ssa`` set; produced by ``build_ssa`` in midend.pyx, consumed by
+``out_of_ssa``): size-1 temp OPX_GET/OPX_SET dissolve into value edges. Phis are
+real ``OPX_PHI`` instructions at each block head (the leading ``phi_count``
+instructions of the block slice, starting at ``phi_start``); a phi's ``aux`` is
+the source temp id it was created for (naming only) and its ``arg`` slice holds
+exactly one operand value-id PER INCOMING EDGE, in the incoming-edge order
+defined below. ``OPX_UNDEF`` is a single value (id ``undef_val``, first instr of
+the entry block) standing for a read of a never-written scalar (Braun trivial-phi
+elimination folds ``phi(UNDEF, v) = v``; a surviving live UNDEF lowers to one
+shared never-written temp in out-of-SSA). In SSA form a non-phi operand def
+*dominates* its use (so an operand may reference an instruction in a dominating
+block, not just the same block; still def-before-use in the flat stream since ids
+are RPO), while a phi operand's def dominates the corresponding predecessor's exit
+(and may reference a LATER instruction across a loop back edge). ``verify()``
+checks these when ``is_ssa`` is set.
+
+Incoming-edge order contract (the keystone of phi operand <-> edge mapping): the
+incoming edges of a block are enumerated in ASCENDING global edge-index order
+(edge index into ``edges``; edges are grouped by src block in block/RPO order).
+Phi operand ``k`` corresponds to the ``k``-th incoming edge in that order. Both
+``build_ssa`` (operand construction) and ``_export_phis`` / ``out_of_ssa`` use
+exactly this order. Parallel edges from one predecessor each carry their own
+operand, but the value at a predecessor's exit is unique, so parallel same-pred
+operands are EQUAL (verified; the per-pred ``BasicBlock.phis`` export normalizes
+them, checking equality).
 
 ------------------------------------------------------------------------------
 BlockInfo
@@ -54,11 +79,13 @@ BlockInfo
 * test_val                  value-id of the block ``test`` (or -1).
 * edge_start/edge_count     contiguous slice of ``edges`` (this block's OUTGOING
                             edges).
-* phi_start/phi_count       contiguous slice of ``phis`` (block-head phis; empty
-                            in M1 -- SSA is M2).
-* rpo, idom                 reserved for M2 analyses (-1 == unset). Blocks are
-                            numbered in reverse-postorder at marshal-in, so id
-                            order already is a valid RPO for the initial CFG.
+* phi_start/phi_count       the block's leading ``OPX_PHI`` instructions (SSA form
+                            only; both 0 in non-SSA form). phi_start is the index
+                            of the first phi (== instr_start, except the entry
+                            block whose OPX_UNDEF precedes its phis).
+* rpo, idom                 rpo == block id (blocks are numbered in reverse-
+                            postorder at marshal-in / cfg_cleanup). idom is filled
+                            by ``compute_dominators`` (analysis.pyx); -1 == unset.
 
 ------------------------------------------------------------------------------
 Edge                        per-edge; parallel edges between a block pair legal
@@ -167,12 +194,6 @@ cdef struct TempInfo:
     int32_t size
 
 
-cdef struct PhiInfo:
-    int32_t dest_temp
-    int32_t operand_start
-    int32_t operand_count
-
-
 cdef enum:
     FLAG_PURE = 1
     FLAG_SIDE_EFFECT = 2
@@ -230,15 +251,16 @@ cdef class Func:
         int32_t n_temps
         int32_t cap_temps
 
-        int32_t* phi_operands
-        int32_t n_phi_operands
-        int32_t cap_phi_operands
-
-        PhiInfo* phis
-        int32_t n_phis
-        int32_t cap_phis
-
         int32_t entry_block
+
+        # SSA form (M2): set by build_ssa, cleared by out_of_ssa / marshal_in.
+        # undef_val is the value-id of the shared OPX_UNDEF instr (or -1).
+        bint is_ssa
+        int32_t undef_val
+        # Value ids widened by phi(UNDEF,v)=v elimination (used out of their strict
+        # dominance region on a provably-dead path); verify() tolerates their
+        # non-dominating uses. None outside SSA form. (Python set, boundary-only.)
+        object _ssa_undef
 
         # Boundary-only Python state (GIL held; never touched in nogil passes).
         list names
@@ -269,4 +291,5 @@ cdef class Func:
     cdef object _export_value(self, int32_t vid, dict names, bint as_read_place)
     cdef object _export_stmt(self, int32_t i, dict names)
     cdef _assign_temp_names(self, dict names)
-    cdef object _export_phis(self, int32_t bid, dict names, list py_blocks, list incoming)
+    # SSA export helpers (_export_ssa / _export_phis / _ssa_* / _dom) are plain
+    # ``def`` methods in ir.pyx -- they run under the GIL at the export boundary.

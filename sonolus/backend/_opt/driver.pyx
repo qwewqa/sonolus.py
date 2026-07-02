@@ -25,7 +25,8 @@ This module also populates the phase registry consulted by ``ir.debug_run`` (the
 """
 
 from sonolus.backend._opt.ir cimport Func
-from sonolus.backend._opt.midend cimport cfg_cleanup
+from sonolus.backend._opt.midend cimport build_ssa, cfg_cleanup, out_of_ssa
+from sonolus.backend._opt.analysis cimport compute_dominators
 from sonolus.backend._opt.lower cimport (
     ALLOC_BUMP,
     ALLOC_PACKING,
@@ -134,6 +135,19 @@ def _phase_cfg_cleanup(func):
     return cfg_cleanup(<Func>func, False)
 
 
+def _phase_ssa(func):
+    return build_ssa(<Func>func)
+
+
+def _phase_unssa(func):
+    return out_of_ssa(<Func>func)
+
+
+def _phase_dominators(func):
+    compute_dominators(<Func>func)
+    return func
+
+
 def _phase_bump(func):
     allocate_func(<Func>func, ALLOC_BUMP)
     return func
@@ -150,6 +164,9 @@ def _phase_try_bump(func):
 
 
 register_phase("cfg_cleanup", _phase_cfg_cleanup)
+register_phase("ssa", _phase_ssa)
+register_phase("unssa", _phase_unssa)
+register_phase("dominators", _phase_dominators)
 register_phase("bump", _phase_bump)
 register_phase("packing", _phase_packing)
 register_phase("try_bump", _phase_try_bump)

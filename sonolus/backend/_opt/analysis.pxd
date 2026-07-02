@@ -57,3 +57,36 @@ cdef class Liveness:
 
 
 cdef Liveness compute_liveness(Func func)
+
+
+# --------------------------------------------------------------------------
+# Dominators (Cooper-Harvey-Kennedy iterative idom over RPO) -- milestone M2.
+#
+# Block ids are already reverse-postorder (marshal / cfg_cleanup number them so),
+# so id order == RPO and the idom intersection compares ids directly. Results:
+#
+# * ``idom[b]``          immediate dominator (idom[entry] == entry); also written
+#                        back into ``func.blocks[b].idom`` (the reserved field).
+# * dom-tree children    CSR (``child_head`` / ``child_list``).
+# * ``tin`` / ``tout``   Euler-tour in/out numbers over the dom tree, giving an
+#                        O(1) ``dominates(a, b)`` query (a dom b iff a's interval
+#                        contains b's).
+# * predecessor CSR      (``pred_head`` / ``pred_src``) built once and kept.
+# --------------------------------------------------------------------------
+
+cdef class Dominators:
+    cdef Func func
+    cdef int32_t n_blocks
+    cdef int32_t* idom          # [nb]      immediate dominator (idom[entry]==entry)
+    cdef int32_t* tin           # [nb]      Euler-tour enter time over the dom tree
+    cdef int32_t* tout          # [nb]      Euler-tour exit time
+    cdef int32_t* pred_head     # [nb+1]    predecessor CSR offsets
+    cdef int32_t* pred_src      # [ne]      predecessor block ids
+    cdef int32_t* child_head    # [nb+1]    dom-tree child CSR offsets
+    cdef int32_t* child_list    # [nb]      dom-tree children (each non-entry once)
+
+    # a dominates b (reflexive: a dom a). O(1) via the Euler intervals.
+    cdef bint dominates(self, int32_t a, int32_t b) noexcept nogil
+
+
+cdef Dominators compute_dominators(Func func)

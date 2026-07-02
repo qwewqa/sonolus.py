@@ -14,7 +14,9 @@ from libc.math cimport isinf, isnan
 from sonolus.backend._opt._ops_gen cimport (
     OPX_CONST,
     OPX_GET,
+    OPX_PHI,
     OPX_SET,
+    OPX_UNDEF,
     OP_RUNTIME_COUNT,
     OP_TABLE_SIZE,
     SONOLUS_OP_CONTROL_FLOW,
@@ -111,13 +113,10 @@ cdef class Func:
         self.temps = NULL
         self.n_temps = 0
         self.cap_temps = 0
-        self.phi_operands = NULL
-        self.n_phi_operands = 0
-        self.cap_phi_operands = 0
-        self.phis = NULL
-        self.n_phis = 0
-        self.cap_phis = 0
         self.entry_block = 0
+        self.is_ssa = False
+        self.undef_val = -1
+        self._ssa_undef = None
         self.names = []
         self._const_intern = {}
         self._temp_intern = {}
@@ -135,8 +134,6 @@ cdef class Func:
         free(self.consts)
         free(self.places)
         free(self.temps)
-        free(self.phi_operands)
-        free(self.phis)
 
     # -- growable-buffer allocation helpers --------------------------------
 
@@ -492,19 +489,14 @@ cdef class Func:
                         counter += 1
 
     def _export(self):
+        if self.is_ssa:
+            return self._export_ssa()
         cdef int32_t nb = self.n_blocks
         cdef int32_t bid, i, istart, icount, estart, ecount, tv
         cdef object cond
         py_blocks = [BasicBlock() for _ in range(nb)]
         names = {}
         self._assign_temp_names(names)
-
-        # Precompute incoming edges only if phis exist (M2); dormant in M1.
-        incoming = None
-        if self.n_phis > 0:
-            incoming = [[] for _ in range(nb)]
-            for i in range(self.n_edges):
-                incoming[self.edges[i].dst].append(i)
 
         for bid in range(nb):
             blk = py_blocks[bid]
@@ -520,10 +512,14 @@ cdef class Func:
                 blk.test = self._export_value(tv, names, False)
             else:
                 blk.test = IRConst(0)
-            if self.blocks[bid].phi_count > 0:
-                blk.phis = self._export_phis(bid, names, py_blocks, incoming)
 
-        for bid in range(nb):
+        self._wire_edges(py_blocks)
+        return py_blocks[self.entry_block]
+
+    def _wire_edges(self, list py_blocks):
+        cdef int32_t bid, i, estart, ecount
+        cdef object cond
+        for bid in range(self.n_blocks):
             estart = self.blocks[bid].edge_start
             ecount = self.blocks[bid].edge_count
             for i in range(estart, estart + ecount):
@@ -540,30 +536,174 @@ cdef class Func:
                 src_b.outgoing.add(edge)
                 dst_b.incoming.add(edge)
 
+    # ------------------------------------------------------------------
+    # SSA-form export (inspection only; the ["cfg_cleanup","ssa"] debug path).
+    #
+    # Value-based SSA has cross-block value edges and per-edge phi operands that
+    # the non-SSA BasicBlock IR cannot represent directly, so this fully
+    # materializes every value (except inlined constants and the shared UNDEF)
+    # as an ``SSAPlace`` and emits shallow three-address statements. It does NOT
+    # round-trip through marshal_in (which rejects SSA); it exists so
+    # ``cfg_to_text`` can render the SSA form. Out-of-SSA consumes the arena
+    # directly, not this export.
+    # ------------------------------------------------------------------
+
+    def _export_ssa(self):
+        cdef int32_t nb = self.n_blocks
+        cdef int32_t bid, i, istart, icount, tv
+        cdef uint16_t op
+
+        py_blocks = [BasicBlock() for _ in range(nb)]
+
+        # Incoming-edge lists in the contract order (ascending edge index).
+        incoming = [[] for _ in range(nb)]
+        for i in range(self.n_edges):
+            incoming[self.edges[i].dst].append(i)
+
+        # Assign an SSAPlace to every value that needs one: every non-root,
+        # non-const, non-undef instruction (phis included). Deterministic id.
+        place_of = {}
+        counter = 0
+        for bid in range(nb):
+            istart = self.blocks[bid].instr_start
+            icount = self.blocks[bid].instr_count
+            for i in range(istart, istart + icount):
+                op = self.instrs[i].op
+                if op == OPX_CONST or op == OPX_UNDEF:
+                    continue
+                if self.instrs[i].flags & FLAG_STMT_ROOT:
+                    continue
+                if op == OPX_PHI:
+                    nm = self.names[self.temps[self.instrs[i].aux].name_id]
+                else:
+                    nm = "v"
+                place_of[i] = SSAPlace(nm, counter)
+                counter += 1
+
+        for bid in range(nb):
+            blk = py_blocks[bid]
+            blk.phis = self._export_phis(bid, place_of, py_blocks, incoming)
+            istart = self.blocks[bid].instr_start
+            icount = self.blocks[bid].instr_count
+            stmts = []
+            for i in range(istart, istart + icount):
+                op = self.instrs[i].op
+                if op == OPX_CONST or op == OPX_UNDEF or op == OPX_PHI:
+                    continue
+                if self.instrs[i].flags & FLAG_STMT_ROOT:
+                    if op == OPX_SET:
+                        place_obj = self._ssa_export_place(self.instrs[i].aux, place_of)
+                        value = self._ssa_ref(<int32_t>self.args[self.instrs[i].arg_start], place_of)
+                        stmts.append(IRSet(place_obj, value))
+                    else:
+                        stmts.append(self._ssa_build_op(i, place_of))
+                else:
+                    stmts.append(IRSet(place_of[i], self._ssa_build_tree(i, place_of)))
+            blk.statements = stmts
+            tv = self.blocks[bid].test_val
+            if tv >= 0:
+                blk.test = self._ssa_ref(tv, place_of)
+            else:
+                blk.test = IRConst(0)
+
+        self._wire_edges(py_blocks)
         return py_blocks[self.entry_block]
 
-    cdef object _export_phis(self, int32_t bid, dict names, list py_blocks, list incoming):
-        # M2 path (dormant in M1: no marshal-in produces phis). Phi operands are
-        # stored per incoming edge; normalize to the Python per-predecessor
-        # format, verifying parallel same-pred edges carry equal operands.
+    def _ssa_build_tree(self, int32_t vid, dict place_of):
+        # Shallow RHS tree for a materialized value: operands referenced by place.
+        cdef uint16_t op = self.instrs[vid].op
+        if op == OPX_GET:
+            return IRGet(self._ssa_export_place(self.instrs[vid].aux, place_of))
+        return self._ssa_build_op(vid, place_of)
+
+    def _ssa_build_op(self, int32_t vid, dict place_of):
+        cdef uint16_t op = self.instrs[vid].op
+        cdef int32_t astart = self.instrs[vid].arg_start
+        cdef int32_t nargs = self.instrs[vid].nargs
+        cdef int32_t k
+        op_member = _ID_TO_OP[op]
+        arg_objs = [self._ssa_ref(<int32_t>self.args[astart + k], place_of) for k in range(nargs)]
+        if op_member.pure:
+            return IRPureInstr(op_member, arg_objs)
+        return IRInstr(op_member, arg_objs)
+
+    def _ssa_ref(self, int32_t vid, dict place_of):
+        # A value in read/operand position -> an IR expression.
+        cdef uint16_t op = self.instrs[vid].op
+        if op == OPX_CONST:
+            return self._make_const(self.consts[self.instrs[vid].aux], self.instrs[vid].flags & FLAG_CONST_IS_INT)
+        if op == OPX_UNDEF:
+            return IRGet(SSAPlace("undef", 0))
+        return IRGet(place_of[vid])
+
+    def _ssa_phi_src(self, int32_t vid, dict place_of):
+        # A value as a phi operand -> a place (or an inlined constant).
+        cdef uint16_t op = self.instrs[vid].op
+        if op == OPX_CONST:
+            return self._make_const(self.consts[self.instrs[vid].aux], self.instrs[vid].flags & FLAG_CONST_IS_INT)
+        if op == OPX_UNDEF:
+            return SSAPlace("undef", 0)
+        return place_of[vid]
+
+    def _ssa_export_place(self, int32_t pid, dict place_of):
+        cdef uint8_t kind = self.places[pid].kind
+        cdef uint8_t flags = self.places[pid].flags
+        cdef int32_t block_ref = self.places[pid].block_ref
+        cdef int32_t index_val = self.places[pid].index_val
+        cdef int32_t offset = self.places[pid].offset
+        if kind == PLACE_TEMP_SCALAR or kind == PLACE_TEMP_ARRAY or kind == PLACE_TEMP_SIZE0:
+            block_obj = TempBlock(self.names[self.temps[block_ref].name_id], self.temps[block_ref].size)
+        elif kind == PLACE_REAL_BLOCK:
+            if flags & PLACE_BLOCK_IS_ENUM:
+                block_obj = self._block_enum_by_id[block_ref]
+            else:
+                block_obj = block_ref
+        elif kind == PLACE_DYNAMIC_BLOCK:
+            block_obj = self._ssa_ref(block_ref, place_of)
+        else:
+            raise AssertionError("bad place kind")
+        if index_val < 0:
+            return BlockPlace(block_obj, offset, 0)
+        return BlockPlace(block_obj, self._ssa_ref(index_val, place_of), offset)
+
+    def _export_phis(self, int32_t bid, dict place_of, list py_blocks, list incoming):
+        # Phi operands are stored per incoming edge (the contract order); normalize
+        # to the Python per-predecessor format, checking the equal-operand invariant
+        # for parallel edges from the same predecessor.
         inc = incoming[bid]
         result = {}
-        cdef int32_t pi, k, ostart, ocount
-        for pi in range(self.blocks[bid].phi_start, self.blocks[bid].phi_start + self.blocks[bid].phi_count):
-            ostart = self.phis[pi].operand_start
-            ocount = self.phis[pi].operand_count
-            if ocount != len(inc):
+        cdef int32_t pi, k, astart, nargs
+        cdef int32_t pstart = self.blocks[bid].phi_start
+        cdef int32_t pcount = self.blocks[bid].phi_count
+        for pi in range(pstart, pstart + pcount):
+            astart = self.instrs[pi].arg_start
+            nargs = self.instrs[pi].nargs
+            if nargs != len(inc):
                 raise AssertionError("phi arity does not match incoming edge count")
             per_pred = {}
-            for k in range(ocount):
+            for k in range(nargs):
                 src_block = py_blocks[self.edges[inc[k]].src]
-                operand = self._export_value(self.phi_operands[ostart + k], names, True)
+                operand = self._ssa_phi_src(<int32_t>self.args[astart + k], place_of)
                 if src_block in per_pred and per_pred[src_block] != operand:
                     raise ValueError("parallel edges from the same predecessor carry unequal phi operands")
                 per_pred[src_block] = operand
-            dest = TempBlock(names.get(self.phis[pi].dest_temp, f"phi{self.phis[pi].dest_temp}"), 1)
-            result[dest] = per_pred
+            result[place_of[pi]] = per_pred
         return result
+
+    def _dom(self, int32_t a, int32_t b):
+        # a dominates b (reflexive), via the idom chain (filled by
+        # compute_dominators; entry's idom is entry). Debug-only (verify).
+        cdef int32_t r = b
+        cdef int32_t nr
+        while True:
+            if r == a:
+                return True
+            if r == self.entry_block:
+                return False
+            nr = self.blocks[r].idom
+            if nr < 0 or nr == r:
+                return False
+            r = nr
 
     # -- python-callable API ----------------------------------------------
 
@@ -571,11 +711,14 @@ cdef class Func:
         """Check arena invariants; raises AssertionError on violation.
 
         Always available (used by debug_run and the tests); the release build
-        does not call it on the hot marshal path.
+        does not call it on the hot marshal path. Structural checks run for both
+        forms; the def/use ordering check is form-dependent (``is_ssa``).
         """
         cdef int32_t i, b, k, a, astart, nargs, istart, icount, estart, ecount, pid, tv, iv, inc, pi
+        cdef bint ssa = self.is_ssa
         cdef uint16_t op
         cdef uint8_t kind
+        cdef set uw = self._ssa_undef if self._ssa_undef is not None else set()
         for i in range(self.n_instrs):
             b = self.instrs[i].block
             assert 0 <= b < self.n_blocks, f"instr {i}: block {b} out of range"
@@ -583,16 +726,33 @@ cdef class Func:
             nargs = self.instrs[i].nargs
             assert nargs >= 0, f"instr {i}: negative nargs"
             assert astart + nargs <= self.n_args, f"instr {i}: args slice out of range"
-            for k in range(nargs):
-                a = <int32_t>self.args[astart + k]
-                assert 0 <= a < self.n_instrs, f"instr {i}: arg {a} out of range"
-                assert a < i, f"instr {i}: uses later value {a} (def-before-use)"
-                assert self.instrs[a].block == b, f"instr {i}: arg {a} from another block"
             op = self.instrs[i].op
+            if op == OPX_PHI:
+                assert ssa, f"instr {i}: OPX_PHI outside SSA form"
+                # Phi operands may reference later instrs (back edges); each
+                # operand's def dominates the corresponding predecessor's exit.
+                self._verify_phi(i)
+            else:
+                for k in range(nargs):
+                    a = <int32_t>self.args[astart + k]
+                    assert 0 <= a < self.n_instrs, f"instr {i}: arg {a} out of range"
+                    assert a < i, f"instr {i}: uses later value {a} (def-before-use)"
+                    if ssa:
+                        # cross-block operands allowed if the def dominates the use
+                        # (UNDEF-widened values are exempt: dead-path relaxation).
+                        assert self._dom(self.instrs[a].block, b) or a in uw, (
+                            f"instr {i}: arg {a} def does not dominate use"
+                        )
+                    else:
+                        assert self.instrs[a].block == b, f"instr {i}: arg {a} from another block"
             if op == OPX_CONST:
                 assert 0 <= self.instrs[i].aux < self.n_consts, f"instr {i}: const id out of range"
             elif op == OPX_GET or op == OPX_SET:
                 assert 0 <= self.instrs[i].aux < self.n_places, f"instr {i}: place id out of range"
+            elif op == OPX_PHI:
+                assert 0 <= self.instrs[i].aux < self.n_temps, f"instr {i}: phi temp out of range"
+            elif op == OPX_UNDEF:
+                assert ssa, f"instr {i}: OPX_UNDEF outside SSA form"
             else:
                 assert op < OP_RUNTIME_COUNT, f"instr {i}: unexpected synthetic op {op}"
                 # The FLAG_PURE bit must agree with the static op-metadata table.
@@ -612,13 +772,19 @@ cdef class Func:
                 assert self.edges[i].src == b, f"block {b}: edge {i} has wrong src"
                 assert 0 <= self.edges[i].dst < self.n_blocks, f"block {b}: edge {i} bad dst"
                 assert self.edges[i].cond_kind == EDGE_COND_NONE or self.edges[i].cond_kind == EDGE_COND_VALUE
+            # Phi bookkeeping: phi_count leading OPX_PHI instrs at phi_start; each
+            # phi has exactly one operand per incoming edge.
+            pi = self.blocks[b].phi_start
+            assert self.blocks[b].phi_count >= 0
             if self.blocks[b].phi_count > 0:
+                assert ssa, f"block {b}: phis outside SSA form"
                 inc = 0
                 for i in range(self.n_edges):
                     if self.edges[i].dst == b:
                         inc += 1
-                for pi in range(self.blocks[b].phi_start, self.blocks[b].phi_start + self.blocks[b].phi_count):
-                    assert self.phis[pi].operand_count == inc, f"block {b}: phi arity mismatch"
+                for i in range(pi, pi + self.blocks[b].phi_count):
+                    assert self.instrs[i].op == OPX_PHI, f"block {b}: phi slice not all OPX_PHI"
+                    assert self.instrs[i].nargs == inc, f"block {b}: phi arity mismatch"
         for pid in range(self.n_places):
             kind = self.places[pid].kind
             if kind == PLACE_TEMP_SCALAR or kind == PLACE_TEMP_ARRAY or kind == PLACE_TEMP_SIZE0:
@@ -629,8 +795,31 @@ cdef class Func:
             assert iv == -1 or (0 <= iv < self.n_instrs), f"place {pid}: bad index value"
         return True
 
+    def _verify_phi(self, int32_t i):
+        # Each phi operand def dominates the corresponding predecessor's exit
+        # (UNDEF-widened operands exempt: dead-path relaxation).
+        cdef set uw = self._ssa_undef if self._ssa_undef is not None else set()
+        cdef int32_t b = self.instrs[i].block
+        cdef int32_t astart = self.instrs[i].arg_start
+        cdef int32_t nargs = self.instrs[i].nargs
+        cdef int32_t k, a, ei
+        # incoming edges of b in ascending edge-index order (the contract).
+        inc = [ei for ei in range(self.n_edges) if self.edges[ei].dst == b]
+        assert len(inc) == nargs, f"instr {i}: phi arity != incoming edges"
+        for k in range(nargs):
+            a = <int32_t>self.args[astart + k]
+            assert 0 <= a < self.n_instrs, f"instr {i}: phi operand {a} out of range"
+            assert self._dom(self.instrs[a].block, self.edges[inc[k]].src) or a in uw, (
+                f"instr {i}: phi operand {a} does not dominate predecessor exit"
+            )
+
     def stats(self):
         """Return arena element counts (for tests / marshal_stats)."""
+        cdef int32_t i
+        cdef int32_t nphi = 0
+        for i in range(self.n_instrs):
+            if self.instrs[i].op == OPX_PHI:
+                nphi += 1
         return {
             "instrs": self.n_instrs,
             "blocks": self.n_blocks,
@@ -639,7 +828,7 @@ cdef class Func:
             "places": self.n_places,
             "temps": self.n_temps,
             "args": self.n_args,
-            "phis": self.n_phis,
+            "phis": nphi,
         }
 
     def intern_const(self, value):

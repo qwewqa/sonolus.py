@@ -11,3 +11,5 @@ from sonolus.backend._opt.ir cimport Func
 
 
 cdef Func cfg_cleanup(Func func, bint phi_safe)
+cdef Func build_ssa(Func func)
+cdef Func out_of_ssa(Func func)

@@ -453,3 +453,197 @@ def liveness_debug(entry, mode=None, callback=None):
         "is_array_init": L.is_array_init_map(),
         "n_blocks": L.n_blocks,
     }
+
+
+# --------------------------------------------------------------------------
+# Dominators: Cooper-Harvey-Kennedy iterative idom + dom-tree Euler tour.
+# --------------------------------------------------------------------------
+
+cdef class Dominators:
+    def __cinit__(self):
+        self.func = None
+        self.n_blocks = 0
+        self.idom = NULL
+        self.tin = NULL
+        self.tout = NULL
+        self.pred_head = NULL
+        self.pred_src = NULL
+        self.child_head = NULL
+        self.child_list = NULL
+
+    def __dealloc__(self):
+        free(self.idom)
+        free(self.tin)
+        free(self.tout)
+        free(self.pred_head)
+        free(self.pred_src)
+        free(self.child_head)
+        free(self.child_list)
+
+    cdef bint dominates(self, int32_t a, int32_t b) noexcept nogil:
+        # a dominates b iff a's Euler interval encloses b's (reflexive).
+        return self.tin[a] <= self.tin[b] and self.tout[b] <= self.tout[a]
+
+    # --- python debug accessors ------------------------------------------
+
+    def idom_map(self):
+        cdef dict d = {}
+        cdef int32_t b
+        for b in range(self.n_blocks):
+            d[b] = self.idom[b]
+        return d
+
+    def children_map(self):
+        cdef dict d = {}
+        cdef int32_t b, k
+        for b in range(self.n_blocks):
+            d[b] = [self.child_list[k] for k in range(self.child_head[b], self.child_head[b + 1])]
+        return d
+
+    def dominates_q(self, int a, int b):
+        return bool(self.dominates(<int32_t>a, <int32_t>b))
+
+
+cdef int32_t _dom_intersect(int32_t* idom, int32_t a, int32_t b) noexcept nogil:
+    # CHK "intersect": walk the two fingers up (by id == RPO number) to the
+    # nearest common dominator.
+    while a != b:
+        while a > b:
+            a = idom[a]
+        while b > a:
+            b = idom[b]
+    return a
+
+
+cdef Dominators compute_dominators(Func func):
+    cdef Dominators D = Dominators()
+    D.func = func
+    cdef int32_t nb = func.n_blocks
+    cdef int32_t ne = func.n_edges
+    D.n_blocks = nb
+
+    cdef Edge* edges = func.edges
+    cdef int32_t i, b, e, s, p, new_idom, cur
+
+    D.idom = <int32_t*>malloc(<size_t>(nb if nb > 0 else 1) * sizeof(int32_t))
+    D.tin = <int32_t*>malloc(<size_t>(nb if nb > 0 else 1) * sizeof(int32_t))
+    D.tout = <int32_t*>malloc(<size_t>(nb if nb > 0 else 1) * sizeof(int32_t))
+    D.pred_head = <int32_t*>calloc(<size_t>(nb + 1), sizeof(int32_t))
+    D.pred_src = <int32_t*>malloc(<size_t>(ne if ne > 0 else 1) * sizeof(int32_t))
+    D.child_head = <int32_t*>calloc(<size_t>(nb + 1), sizeof(int32_t))
+    D.child_list = <int32_t*>malloc(<size_t>(nb if nb > 0 else 1) * sizeof(int32_t))
+    if (D.idom == NULL or D.tin == NULL or D.tout == NULL or D.pred_head == NULL
+            or D.pred_src == NULL or D.child_head == NULL or D.child_list == NULL):
+        raise MemoryError()
+
+    # Predecessor CSR.
+    cdef int32_t* cursor = <int32_t*>malloc(<size_t>(nb if nb > 0 else 1) * sizeof(int32_t))
+    if cursor == NULL:
+        raise MemoryError()
+    for e in range(ne):
+        D.pred_head[edges[e].dst + 1] += 1
+    for b in range(nb):
+        D.pred_head[b + 1] += D.pred_head[b]
+    for b in range(nb):
+        cursor[b] = D.pred_head[b]
+    for e in range(ne):
+        D.pred_src[cursor[edges[e].dst]] = edges[e].src
+        cursor[edges[e].dst] += 1
+    free(cursor)
+
+    # CHK iterative idom over RPO (block id order). entry (0) dominates itself.
+    cdef int32_t entry = func.entry_block
+    for b in range(nb):
+        D.idom[b] = -1
+    D.idom[entry] = entry
+    cdef bint changed = True
+    while changed:
+        changed = False
+        for b in range(nb):
+            if b == entry:
+                continue
+            new_idom = -1
+            for i in range(D.pred_head[b], D.pred_head[b + 1]):
+                p = D.pred_src[i]
+                if D.idom[p] == -1:
+                    continue
+                if new_idom == -1:
+                    new_idom = p
+                else:
+                    new_idom = _dom_intersect(D.idom, p, new_idom)
+            if new_idom != -1 and D.idom[b] != new_idom:
+                D.idom[b] = new_idom
+                changed = True
+
+    # Write idom back into the reserved BlockInfo field.
+    for b in range(nb):
+        func.blocks[b].idom = D.idom[b]
+
+    # Dom-tree child CSR (each non-entry block is a child of its idom).
+    for b in range(nb):
+        if b != entry and D.idom[b] != -1:
+            D.child_head[D.idom[b] + 1] += 1
+    for b in range(nb):
+        D.child_head[b + 1] += D.child_head[b]
+    cdef int32_t* ccur = <int32_t*>malloc(<size_t>(nb if nb > 0 else 1) * sizeof(int32_t))
+    if ccur == NULL:
+        raise MemoryError()
+    for b in range(nb):
+        ccur[b] = D.child_head[b]
+    for b in range(nb):
+        if b != entry and D.idom[b] != -1:
+            p = D.idom[b]
+            D.child_list[ccur[p]] = b
+            ccur[p] += 1
+    free(ccur)
+
+    # Euler-tour tin/tout over the dom tree (iterative DFS from entry).
+    for b in range(nb):
+        D.tin[b] = -1
+        D.tout[b] = -1
+    cdef int32_t* stack = <int32_t*>malloc(<size_t>(2 * nb if nb > 0 else 1) * sizeof(int32_t))
+    cdef int32_t* it = <int32_t*>malloc(<size_t>(nb if nb > 0 else 1) * sizeof(int32_t))
+    if stack == NULL or it == NULL:
+        free(stack); free(it)
+        raise MemoryError()
+    cdef int32_t timer = 0
+    cdef int32_t sp = 0
+    for b in range(nb):
+        it[b] = D.child_head[b]
+    stack[sp] = entry
+    sp += 1
+    D.tin[entry] = timer
+    timer += 1
+    while sp > 0:
+        cur = stack[sp - 1]
+        if it[cur] < D.child_head[cur + 1]:
+            s = D.child_list[it[cur]]
+            it[cur] += 1
+            D.tin[s] = timer
+            timer += 1
+            stack[sp] = s
+            sp += 1
+        else:
+            D.tout[cur] = timer
+            timer += 1
+            sp -= 1
+    free(stack)
+    free(it)
+    return D
+
+
+def dominators_debug(entry, mode=None, callback=None):
+    """Marshal ``entry``, compute dominators, return idom / children / a few queries.
+
+    Returns ``{"idom", "children", "n_blocks", "dominates"}`` keyed by arena block
+    id (reverse-postorder). ``dominates`` is the callable O(1) query object.
+    """
+    cdef Func func = <Func>marshal_in(entry, mode, callback)
+    func.verify()
+    cdef Dominators D = compute_dominators(func)
+    return {
+        "idom": D.idom_map(),
+        "children": D.children_map(),
+        "n_blocks": D.n_blocks,
+        "dominates": D.dominates_q,
+    }
