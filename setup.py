@@ -25,6 +25,9 @@ extensions = [
     Extension(
         "sonolus.backend._opt.*",
         ["sonolus/backend/_opt/*.pyx"],
+        # The generated ``_ops_gen.h`` (static op-metadata table) is included by
+        # ``ir.pyx`` via ``cdef extern from "_ops_gen.h"``; make it findable.
+        include_dirs=["sonolus/backend/_opt"],
         # In a debug build, actively undefine NDEBUG so C ``assert``s fire even
         # though the toolchain defines it for release extension builds.
         undef_macros=["NDEBUG"] if DEBUG_BUILD else [],
