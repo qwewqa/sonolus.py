@@ -2721,7 +2721,7 @@ def _gvn_instr(Func f, int32_t i, dict avail, list undo, dict subst, list is_boo
     cdef int32_t op = f.instrs[i].op
     cdef int32_t astart = f.instrs[i].arg_start
     cdef int32_t n = f.instrs[i].nargs
-    cdef int32_t pid, iv, ivr, inner, k, av, innerarg
+    cdef int32_t pid, iv, ivr, inner, k, av, innerarg, neg_inner
     if i in widened:
         return
     if op == OPX_UNDEF or op == OPX_SET or op == OPX_PHI:
@@ -2770,6 +2770,15 @@ def _gvn_instr(Func f, int32_t i, dict avail, list undo, dict subst, list is_boo
             subst[i] = <int32_t>a[0]; changed[0] = True; return
         if _is_c(f, <int32_t>a[0], 0.0):
             subst[i] = <int32_t>a[1]; changed[0] = True; return
+        if f.instrs[<int32_t>a[1]].op == OP_Negate and f.instrs[<int32_t>a[1]].nargs == 1:
+            # x + (-y) -> x - y  (bit-exact IEEE: a + (-y) == a - y). Only the
+            # trailing arg (args[1]); the Add spine's FP order is preserved.
+            neg_inner = _resolve(subst, <int32_t>f.args[f.instrs[<int32_t>a[1]].arg_start])
+            f.instrs[i].op = OP_Subtract
+            f.args[astart + 1] = <uint32_t>neg_inner
+            op = OP_Subtract
+            a[1] = neg_inner
+            changed[0] = True
     elif op == OP_Subtract and n == 2:
         if _is_c(f, <int32_t>a[1], 0.0):
             subst[i] = <int32_t>a[0]; changed[0] = True; return
@@ -2781,6 +2790,14 @@ def _gvn_instr(Func f, int32_t i, dict avail, list undo, dict subst, list is_boo
             op = OP_Negate
             n = 1
             a = [a[1]]
+            changed[0] = True
+        elif f.instrs[<int32_t>a[1]].op == OP_Negate and f.instrs[<int32_t>a[1]].nargs == 1:
+            # x - (-y) -> x + y  (bit-exact IEEE: a - (-y) == a + y).
+            neg_inner = _resolve(subst, <int32_t>f.args[f.instrs[<int32_t>a[1]].arg_start])
+            f.instrs[i].op = OP_Add
+            f.args[astart + 1] = <uint32_t>neg_inner
+            op = OP_Add
+            a[1] = neg_inner
             changed[0] = True
     elif op == OP_Multiply and n == 2:
         if _is_c(f, <int32_t>a[1], 1.0):
@@ -2901,6 +2918,66 @@ def _run_gvn_inplace(Func f):
         _apply_subst(f, subst)
         return (f, True)
     return (f, False)
+
+
+# --------------------------------------------------------------------------
+# Two-way branch canonicalization: If(Not(x)) -> swap edges, drop the Not (7.2 /
+# survey finding #2). Runs in the shared mid-end pass (fast + standard), after
+# GVN's _apply_subst (so tests/operands are resolved) and before DCE (so a freed
+# Not is reaped). Pure edge relabel on the arena; no instrs move.
+# --------------------------------------------------------------------------
+
+def _canon_branch_not(Func f):
+    """Rewrite a two-way ``{VALUE 0, NONE}`` block whose test is ``Not(x)``.
+
+    Emit lowers such a block to ``If(test, none_target, zero_target)``. Since
+    ``Not(x)`` is nonzero iff ``x == 0``, ``If(Not(x), a, b) == If(x, b, a)`` --
+    so peeling one ``Not`` swaps the ``cond=0`` and ``NONE`` edge labels while
+    setting the test to the inner value; ``Not(Not(x))`` reduces to ``x`` with no
+    swap (a block test only distinguishes zero/nonzero, so double-Not is a no-op
+    regardless of boolean-ness). Behaviour-preserving including NaN: ``Not(NaN)=0``
+    took the false branch; after the swap ``NaN != 0`` takes the true edge, which
+    now targets the original false block. Only two-way ``{VALUE 0, NONE}`` blocks
+    (multiway case conds compare against the test value, so swapping does not
+    apply). The dead ``Not`` instrs are left orphaned for DCE.
+    """
+    cdef int32_t nb = f.n_blocks
+    cdef Edge* edges = f.edges
+    cdef int32_t b, e, estart, ecount, tv, val_e, none_e, count
+    cdef bint changed = False
+    for b in range(nb):
+        ecount = f.blocks[b].edge_count
+        if ecount != 2:
+            continue
+        tv = f.blocks[b].test_val
+        if tv < 0:
+            continue
+        estart = f.blocks[b].edge_start
+        val_e = -1
+        none_e = -1
+        for e in range(estart, estart + ecount):
+            if edges[e].cond_kind == EDGE_COND_NONE:
+                none_e = e
+            elif edges[e].cond_kind == EDGE_COND_VALUE and edges[e].cond == 0.0:
+                val_e = e
+        if val_e < 0 or none_e < 0:
+            continue
+        count = 0
+        while f.instrs[tv].op == OP_Not and f.instrs[tv].nargs == 1:
+            tv = <int32_t>f.args[f.instrs[tv].arg_start]
+            count += 1
+        if count == 0:
+            continue
+        f.blocks[b].test_val = tv
+        if count % 2 == 1:
+            edges[val_e].cond_kind = EDGE_COND_NONE
+            edges[val_e].cond = 0.0
+            edges[val_e].cond_is_int = 0
+            edges[none_e].cond_kind = EDGE_COND_VALUE
+            edges[none_e].cond = 0.0
+            edges[none_e].cond_is_int = 1
+        changed = True
+    return changed
 
 
 # --------------------------------------------------------------------------
@@ -4061,9 +4138,10 @@ cdef bint _try_fuse_ptr(Func f, int32_t i, list uc, int32_t naddr, uint16_t get_
 def _midend_pass(Func func):
     f1, c1 = _run_sccp(func)  # includes single-operand phi collapse
     _, c2 = _run_gvn_inplace(<Func>f1)
+    cb = _canon_branch_not(<Func>f1)  # If(Not) two-way branch canon (finding #2)
     cf = _fuse_ptr_rmw(<Func>f1)  # op-level Pointed/Shifted RMW fusion (M3.5)
-    f2, c3 = _run_dce(<Func>f1)  # reaps the orphaned GetPointed/BinOp
-    return (f2, c1 or c2 or c3 or cf)
+    f2, c3 = _run_dce(<Func>f1)  # reaps the orphaned GetPointed/BinOp + freed Not
+    return (f2, c1 or c2 or c3 or cf or cb)
 
 
 cdef Func midend_round(Func func, bint allow_repeat):

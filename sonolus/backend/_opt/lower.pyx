@@ -1468,12 +1468,53 @@ cdef void _coalesce(Func func) except *:
 # instructions (referenced only via test_val, so block slices stay contiguous).
 # --------------------------------------------------------------------------
 
+cdef long _gcd(long a, long b) noexcept nogil:
+    cdef long t
+    if a < 0:
+        a = -a
+    if b < 0:
+        b = -b
+    while b != 0:
+        t = b
+        b = a % b
+        a = t
+    return a
+
+
+def _dense_offset_stride(list cases):
+    # cases: sorted distinct f64. Dense (gap-tolerant) normalization for survey
+    # finding #1: return (offset, stride, span) with offset = min (int), stride =
+    # gcd of all (case - offset) (int, >= 1, generalizes the survey's stride-1
+    # dense fill so evenly-strided-but-gapped sets stay compact), and span =
+    # (max - offset)/stride + 1 == the number of SwitchIntegerWithDefault slots.
+    # None if any case is non-integral. All (case - offset)/stride are then
+    # distinct integers in [0, span); the emit switch gate fills the span - k holes
+    # with the default target.
+    cdef int32_t n = len(cases)
+    if n < 2:
+        return None
+    cdef double c
+    for c in cases:
+        if c != float(int(c)):
+            return None
+    cdef long off = <long>int(cases[0])
+    cdef long g = 0
+    cdef int32_t i
+    for i in range(1, n):
+        g = _gcd(g, <long>int(cases[i]) - off)
+    if g == 0:
+        return None
+    cdef long span = (<long>int(cases[n - 1]) - off) // g + 1
+    return (off, g, span)
+
+
 cdef void _normalize_switch(Func func) except *:
     cdef int32_t nb = func.n_blocks
     cdef Edge* edges = func.edges
-    cdef int32_t b, e, estart, ecount, tv, coff, cstr, new_tv, cid
+    cdef int32_t b, e, estart, ecount, tv, coff, cstr, new_tv, cid, k
     cdef bint has_default
     cdef double offv, strv, cval, newc
+    cdef long span
     cdef list cases
     for b in range(nb):
         estart = func.blocks[b].edge_start
@@ -1491,13 +1532,37 @@ cdef void _normalize_switch(Func func) except *:
         if len(cases) + (1 if has_default else 0) < 3:
             continue
         res = _offset_stride(cases)
-        if res is None:
-            continue
-        offv = <double>res[0]
-        strv = <double>res[1]
-        if offv == 0.0 and strv == 1.0:
-            continue
-        # Rewrite case conds to 0..k-1.
+        if res is not None:
+            offv = <double>res[0]
+            strv = <double>res[1]
+            if offv == 0.0 and strv == 1.0:
+                continue
+        else:
+            # Gapped/dense fallback (finding #1): shift a near-dense integral case
+            # set to a 0-based table; the emit switch gate then fills the holes with
+            # the default. Density guard bounds the synthesized table (span vs case
+            # count k); the emitter re-applies the SAME guard, so a set left un-
+            # shifted (already 0-based) is filled only when it also passes there.
+            dres = _dense_offset_stride(cases)
+            if dres is None:
+                continue
+            offv = <double>(<long>dres[0])
+            strv = <double>(<long>dres[1])
+            span = <long>dres[2]
+            k = len(cases)
+            # Density guard: keep the synthesized table gate-safe. A
+            # SwitchIntegerWithDefault has span+1 target leaves vs a
+            # SwitchWithDefault's 2k+1 (k conds + k targets + default), so the
+            # conversion never grows the node count iff span <= 2k (and upgrades a
+            # linear scan to O(1) jump-table dispatch). Reject sparser sets; the
+            # emitter re-applies the SAME guard.
+            if span > 2 * k:
+                continue
+            if offv == 0.0 and strv == 1.0:
+                # Already 0-based; nothing to rewrite -- emit fills the gaps.
+                continue
+        # Rewrite case conds to (c - a)/b: 0..k-1 for an exact progression, or a
+        # gapped 0..span-1 set for the dense fallback (the emitter fills the holes).
         for e in range(estart, estart + ecount):
             if edges[e].cond_kind == EDGE_COND_VALUE:
                 newc = <double>(<int32_t>((edges[e].cond - offv) / strv))

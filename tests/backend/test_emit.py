@@ -142,7 +142,8 @@ def test_terminator_switch_integer_default_less():
 
 
 def test_terminator_switch_with_default_gap():
-    # Gap in case values (0, 2) breaks contiguity -> SwitchWithDefault.
+    # Gapped but near-dense 0-based cases (0, 2) -> SwitchIntegerWithDefault, the
+    # hole (slot 1) routed to the default (finding #1: dense gap-fill).
     b0 = BasicBlock(test=IRGet(BlockPlace(500, 0, 0)))
     b_a, b_c, bd = BasicBlock(), BasicBlock(), BasicBlock()
     b0.connect_to(b_a, 0)
@@ -150,10 +151,11 @@ def test_terminator_switch_with_default_gap():
     b0.connect_to(bd, None)
     _node, executes, idx = _emit_program(b0)
     t = _term(executes[idx[b0]])
-    assert t.func == Op.SwitchWithDefault
+    assert t.func == Op.SwitchIntegerWithDefault
     assert t.args[0] == FunctionNode(Op.Get, (500, 0))
-    assert list(t.args[1:5]) == [0, idx[b_a], 2, idx[b_c]]
-    assert t.args[5] == idx[bd]
+    # slots 0,1,2: the hole at 1 routes to the default (bd); trailing default = bd.
+    assert list(t.args[1:4]) == [idx[b_a], idx[bd], idx[b_c]]
+    assert t.args[4] == idx[bd]
 
 
 def test_terminator_switch_with_default_nonzero_min():
@@ -192,16 +194,19 @@ def test_terminator_switch_with_default_non_integral():
 
 
 def test_terminator_switch_with_default_default_less():
-    # Default-less non-contiguous multiway -> SwitchWithDefault, default = exit.
+    # Default-less near-dense multiway (0, 2) -> SwitchIntegerWithDefault; the hole
+    # and out-of-range both route to the exit index (finding #1: the exit is the
+    # value a non-matching test already reaches for a default-less block).
     b0 = BasicBlock(test=IRGet(BlockPlace(500, 0, 0)))
     b_a, b_c = BasicBlock(), BasicBlock()
     b0.connect_to(b_a, 0)
     b0.connect_to(b_c, 2)
     _node, executes, idx = _emit_program(b0)
     t = _term(executes[idx[b0]])
-    assert t.func == Op.SwitchWithDefault
-    assert list(t.args[1:5]) == [0, idx[b_a], 2, idx[b_c]]
-    assert t.args[5] == 3  # exit index (3 blocks), no default edge
+    assert t.func == Op.SwitchIntegerWithDefault
+    # 3 blocks -> exit index 3; slot 1 hole -> exit; trailing default = exit.
+    assert list(t.args[1:4]) == [idx[b_a], 3, idx[b_c]]
+    assert t.args[4] == 3
 
 
 # ---------------------------------------------------------------------------
@@ -282,10 +287,13 @@ def test_place_offset_nonzero_index_zero():
 
 
 def test_place_offset_nonzero_index_dynamic():
-    # offset != 0, dynamic index -> Add(emit(index), offset).
-    block, index = _set_target_place_node(BlockPlace(500, IRGet(BlockPlace(501, 0, 0)), 7))
-    assert block == 500
-    assert index == FunctionNode(Op.Add, (FunctionNode(Op.Get, (501, 0)), 7))
+    # offset != 0, dynamic (non-Multiply) index -> SetShifted(block, offset, index,
+    # 1, value): the address Add(index, offset) is absorbed as stride 1 (finding #5).
+    b0 = BasicBlock(statements=[IRSet(BlockPlace(500, IRGet(BlockPlace(501, 0, 0)), 7), IRConst(0))])
+    _node, executes, _idx = _emit_program(b0)
+    set_node = executes[0].args[0]
+    assert set_node.func == Op.SetShifted
+    assert list(set_node.args) == [500, 7, FunctionNode(Op.Get, (501, 0)), 1, 0]
 
 
 def test_place_pointer_deref_nested_gets():
@@ -295,6 +303,118 @@ def test_place_pointer_deref_nested_gets():
     _node, executes, _idx = _emit_program(b0)
     value = executes[0].args[0].args[2]
     assert value == FunctionNode(Op.Get, (FunctionNode(Op.Get, (600, 3)), 5))
+
+
+# ---------------------------------------------------------------------------
+# 2c'. Strided address -> GetShifted / SetShifted / SetAddShifted (findings #3/#5).
+# GetShifted(block, offset, index, stride) == get(block, offset + index*stride).
+# ---------------------------------------------------------------------------
+
+
+def _strided_index(base_block=501, stride=4):
+    # index = Get(base_block, 0) * stride  (a Multiply with a constant stride).
+    return IRPureInstr(Op.Multiply, [IRGet(BlockPlace(base_block, 0, 0)), IRConst(stride)])
+
+
+def test_place_strided_multiply_get_offset():
+    # Get(block, Add(Multiply(i, s), offset)) -> GetShifted(block, offset, i, s):
+    # both the Multiply and the offset Add are absorbed (finding #3).
+    b0 = BasicBlock(statements=[IRSet(BlockPlace(500, 0, 0), IRGet(BlockPlace(500, _strided_index(), 8)))])
+    _node, executes, _idx = _emit_program(b0)
+    value = executes[0].args[0].args[2]
+    assert value.func == Op.GetShifted
+    assert list(value.args) == [500, 8, FunctionNode(Op.Get, (501, 0)), 4]
+
+
+def test_place_strided_multiply_get_no_offset():
+    # Get(block, Multiply(i, s)) -> GetShifted(block, 0, i, s) (offset 0; node-neutral,
+    # removes the Multiply fn node).
+    b0 = BasicBlock(statements=[IRSet(BlockPlace(500, 0, 0), IRGet(BlockPlace(500, _strided_index(), 0)))])
+    _node, executes, _idx = _emit_program(b0)
+    value = executes[0].args[0].args[2]
+    assert value.func == Op.GetShifted
+    assert list(value.args) == [500, 0, FunctionNode(Op.Get, (501, 0)), 4]
+
+
+def test_place_strided_multiply_set():
+    # Set into a strided place -> SetShifted(block, offset, index, stride, value).
+    b0 = BasicBlock(statements=[IRSet(BlockPlace(500, _strided_index(), 8), IRConst(9))])
+    _node, executes, _idx = _emit_program(b0)
+    set_node = executes[0].args[0]
+    assert set_node.func == Op.SetShifted
+    assert list(set_node.args) == [500, 8, FunctionNode(Op.Get, (501, 0)), 4, 9]
+
+
+def test_place_nonstrided_no_offset_stays_plain_get():
+    # A bare dynamic index with offset 0 and no Multiply stays a plain Get
+    # (a stride-1 shift would only ADD nodes).
+    b0 = BasicBlock(statements=[IRSet(BlockPlace(500, 0, 0), IRGet(BlockPlace(500, IRGet(BlockPlace(501, 0, 0)), 0)))])
+    _node, executes, _idx = _emit_program(b0)
+    assert executes[0].args[0].args[2].func == Op.Get
+
+
+def test_semantic_strided_get_set_match_manual_address():
+    # A strided Set then a strided Get land on the same computed address
+    # (offset + index*stride), verified against the Interpreter oracle.
+    def build():
+        b0 = BasicBlock(
+            statements=[
+                IRSet(BlockPlace(501, 0, 0), IRConst(3)),  # index base i = 3
+                IRSet(BlockPlace(500, _strided_index(stride=4), 8), IRConst(42)),  # addr 3*4+8 = 20
+                IRSet(BlockPlace(502, 0, 0), IRGet(BlockPlace(500, _strided_index(stride=4), 8))),  # read back
+            ]
+        )
+        b1 = BasicBlock()
+        b0.connect_to(b1, None)
+        return b0
+
+    it = _assert_semantic_parity(build)
+    assert it.blocks[500][20] == 42  # stored at offset + index*stride = 8 + 3*4
+    assert it.blocks[502][0] == 42  # GetShifted read it back
+
+
+def _find_op(node, op, out=None):
+    out = [] if out is None else out
+    if isinstance(node, FunctionNode):
+        if node.func == op:
+            out.append(node)
+        for arg in node.args:
+            _find_op(arg, op, out)
+    return out
+
+
+def test_semantic_strided_fused_rmw_set_add_shifted():
+    # A read-modify-write on a strided place fuses to SetAddShifted through the full
+    # standard pipeline; the interpreter agrees with the expected stored value.
+    from sonolus.backend.optimize import STANDARD_PASSES, OptimizerConfig, optimize_and_finalize
+    from sonolus.backend.place import TempBlock
+
+    in_blk, out_blk = 20, 21
+
+    def build():
+        arr = TempBlock("arr", 8)
+        idx = IRPureInstr(Op.Multiply, [IRGet(BlockPlace(in_blk, 0)), IRConst(2)])
+        b0 = BasicBlock(
+            statements=[
+                IRSet(BlockPlace(arr, idx, 1), IRConst(10)),
+                IRSet(
+                    BlockPlace(arr, idx, 1),
+                    IRPureInstr(Op.Add, [IRGet(BlockPlace(arr, idx, 1)), IRConst(5)]),
+                ),
+                IRSet(BlockPlace(out_blk, 0), IRGet(BlockPlace(arr, idx, 1))),
+            ]
+        )
+        b1 = BasicBlock()
+        b0.connect_to(b1, None)
+        return b0
+
+    node = optimize_and_finalize(build(), STANDARD_PASSES, OptimizerConfig())
+    assert len(_find_op(node, Op.SetAddShifted)) >= 1, "the strided RMW should fuse to SetAddShifted"
+    it = Interpreter()
+    it.blocks[3000] = [math.nan, math.inf, -math.inf]
+    it.blocks[in_blk] = [3.0]
+    it.run(node)
+    assert it.get(out_blk, 0) == 15  # (10 + 5) stored at arr[3*2 + 1]
 
 
 # ---------------------------------------------------------------------------

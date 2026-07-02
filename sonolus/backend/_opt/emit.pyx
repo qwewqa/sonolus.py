@@ -67,10 +67,28 @@ from sonolus.backend._opt._ops_gen cimport (
     OPX_GET,
     OPX_SET,
     OP_Add,
+    OP_DecrementPost,
+    OP_DecrementPostShifted,
+    OP_IncrementPost,
+    OP_IncrementPostShifted,
     OP_Multiply,
     OP_Mod,
     OP_Rem,
     OP_RUNTIME_COUNT,
+    OP_SetAdd,
+    OP_SetAddShifted,
+    OP_SetDivide,
+    OP_SetDivideShifted,
+    OP_SetMod,
+    OP_SetModShifted,
+    OP_SetMultiply,
+    OP_SetMultiplyShifted,
+    OP_SetPower,
+    OP_SetPowerShifted,
+    OP_SetRem,
+    OP_SetRemShifted,
+    OP_SetSubtract,
+    OP_SetSubtractShifted,
 )
 
 from sonolus.backend.node import FunctionNode
@@ -90,9 +108,35 @@ _OP_BLOCK = _Op.Block
 _OP_JUMPLOOP = _Op.JumpLoop
 _OP_SWITCH_INT_DEFAULT = _Op.SwitchIntegerWithDefault
 _OP_SWITCH_DEFAULT = _Op.SwitchWithDefault
+_OP_GET_SHIFTED = _Op.GetShifted
+_OP_SET_SHIFTED = _Op.SetShifted
 
 # EngineRom block id: NaN/+-Inf constants are lowered to reads from it (finalize).
 cdef int32_t _ENGINE_ROM = 3000
+
+
+cdef inline int32_t _shifted_fused_op(uint16_t op) noexcept nogil:
+    """Map a place-based fused RMW op (fuse_rmw output) to its strided ``*Shifted``
+    form, or -1 if the op is not a fused RMW (findings #3/#5 interplay)."""
+    if op == <uint16_t>OP_SetAdd:
+        return OP_SetAddShifted
+    if op == <uint16_t>OP_SetSubtract:
+        return OP_SetSubtractShifted
+    if op == <uint16_t>OP_SetMultiply:
+        return OP_SetMultiplyShifted
+    if op == <uint16_t>OP_SetDivide:
+        return OP_SetDivideShifted
+    if op == <uint16_t>OP_SetMod:
+        return OP_SetModShifted
+    if op == <uint16_t>OP_SetRem:
+        return OP_SetRemShifted
+    if op == <uint16_t>OP_SetPower:
+        return OP_SetPowerShifted
+    if op == <uint16_t>OP_IncrementPost:
+        return OP_IncrementPostShifted
+    if op == <uint16_t>OP_DecrementPost:
+        return OP_DecrementPostShifted
+    return -1
 
 
 cdef inline bint _is_flattenable(uint16_t op) noexcept nogil:
@@ -115,6 +159,8 @@ cdef class _Emitter:
     cdef dict _float_leaves # python float value -> that float object (interned)
     cdef dict _val_cache    # arena value id -> EngineNode (memo, tolerates shared vids)
     cdef list _pin          # keeps interned objects alive so their id() is stable
+    cdef list _block_map    # old block id -> emitted index (elided -> exit index)
+    cdef int32_t _exit_index  # index of the trailing halt sentinel (# emitted blocks)
 
     def __cinit__(self, Func func):
         self.func = func
@@ -123,6 +169,8 @@ cdef class _Emitter:
         self._float_leaves = {}
         self._val_cache = {}
         self._pin = []
+        self._block_map = None
+        self._exit_index = func.n_blocks
 
     # -- leaf / function-node interning ------------------------------------
 
@@ -225,8 +273,57 @@ cdef class _Emitter:
     # -- places (finalize._block_place_to_engine_node) ---------------------
 
     cdef object _emit_get(self, int32_t pid):
+        cdef tuple shifted = self._shifted_components(pid)
+        if shifted is not None:
+            return self._intern_fn(_OP_GET_SHIFTED, list(shifted))
         block_node, index_node = self._place_components(pid)
         return self._intern_fn(_OP_GET, [block_node, index_node])
+
+    cdef tuple _shifted_components(self, int32_t pid):
+        # Return (block, offset, index, stride) nodes when this place's address can
+        # be emitted as {Get,Set}Shifted(block, offset, index, stride) ==
+        # {get,set}(block, offset + index*stride), else None (findings #3/#5).
+        #
+        # Two shapes, both gate-safe (never grow the node count):
+        #  * index is a binary ``Multiply(a, b)`` -> Shifted(block, offset, a, b):
+        #    absorbs the ``Multiply`` (and the offset ``Add`` when offset != 0) into
+        #    one node. The stride may be a runtime value, not just a constant --
+        #    GetShifted's stride operand handles it (-2 with offset; neutral without).
+        #  * a non-``Multiply`` index with a nonzero constant offset -> stride 1:
+        #    absorbs the offset ``Add`` (neutral, one fewer fn dispatch; #5). Skipped
+        #    when the index is itself an ``Add`` -- there the emitter folds the offset
+        #    into the existing flattened ``Add`` spine for free, so shifting would ADD
+        #    a node. A bare index with offset 0 stays a plain ``Get``.
+        #
+        # Address components are pure and evaluated block, offset, index, stride
+        # left-to-right; only the compile-time-constant offset moves relative to the
+        # index subtree, so no impure op is reordered (the runtime never has a Set
+        # inside an address expression).
+        cdef int32_t kind = self.func.places[pid].kind
+        cdef int32_t block_ref = self.func.places[pid].block_ref
+        cdef int32_t index_val = self.func.places[pid].index_val
+        cdef int32_t offset = self.func.places[pid].offset
+        cdef int32_t iastart, a0, a1
+        cdef uint16_t iop
+        cdef object block_node, offset_node
+        if index_val < 0:
+            return None  # constant index folded into offset -> plain Get(block, offset)
+        if kind != <int32_t>PLACE_REAL_BLOCK and kind != <int32_t>PLACE_DYNAMIC_BLOCK:
+            return None
+        iop = self.func.instrs[index_val].op
+        if kind == <int32_t>PLACE_REAL_BLOCK:
+            block_node = self._emit_numeric(<double>block_ref)
+        else:
+            block_node = self._emit_value(block_ref)
+        offset_node = self._emit_numeric(<double>offset)
+        if iop == <uint16_t>OP_Multiply and self.func.instrs[index_val].nargs == 2:
+            iastart = self.func.instrs[index_val].arg_start
+            a0 = <int32_t>self.func.args[iastart]
+            a1 = <int32_t>self.func.args[iastart + 1]
+            return (block_node, offset_node, self._emit_value(a0), self._emit_value(a1))
+        if offset != 0 and iop != <uint16_t>OP_Add:
+            return (block_node, offset_node, self._emit_value(index_val), self._int_leaf(1))
+        return None
 
     cdef tuple _place_components(self, int32_t pid):
         cdef int32_t kind = self.func.places[pid].kind
@@ -268,6 +365,13 @@ cdef class _Emitter:
     cdef object _emit_set(self, int32_t vid):
         cdef int32_t pid = self.func.instrs[vid].aux
         cdef int32_t val_vid = <int32_t>self.func.args[self.func.instrs[vid].arg_start]
+        cdef tuple shifted = self._shifted_components(pid)
+        cdef object value_node
+        if shifted is not None:
+            # SetShifted(block, offset, index, stride, value); value stays last
+            # (evaluated after the address, matching Set semantics).
+            value_node = self._emit_value(val_vid)
+            return self._intern_fn(_OP_SET_SHIFTED, list(shifted) + [value_node])
         block_node, index_node = self._place_components(pid)
         value_node = self._emit_value(val_vid)
         return self._intern_fn(_OP_SET, [block_node, index_node, value_node])
@@ -275,13 +379,23 @@ cdef class _Emitter:
     cdef object _emit_fused_rmw(self, int32_t i, uint16_t op):
         # Place-based fused RMW op (fuse_rmw): ``aux`` carries the place, args hold
         # the (optional) ``w`` operand. Lower to FunctionNode(Op, (block, index[, w]))
-        # reusing the exact place->(block, index) folding ``Set`` emission uses.
+        # reusing the exact place->(block, index) folding ``Set`` emission uses. When
+        # the place is strided, emit the ``*Shifted`` fused op instead (findings
+        # #3/#5 interplay: Set<BinOp>Shifted(block, offset, index, stride[, w])).
         cdef int32_t pid = self.func.instrs[i].aux
         cdef int32_t astart = self.func.instrs[i].arg_start
         cdef int32_t nargs = self.func.instrs[i].nargs
         cdef int32_t k
+        cdef int32_t sop = _shifted_fused_op(op)
+        cdef tuple shifted = self._shifted_components(pid) if sop >= 0 else None
+        cdef list children
+        if shifted is not None:
+            children = list(shifted)
+            for k in range(nargs):
+                children.append(self._emit_value(<int32_t>self.func.args[astart + k]))
+            return self._intern_fn(_ID_TO_OP[sop], children)
         block_node, index_node = self._place_components(pid)
-        cdef list children = [block_node, index_node]
+        children = [block_node, index_node]
         for k in range(nargs):
             children.append(self._emit_value(<int32_t>self.func.args[astart + k]))
         return self._intern_fn(_ID_TO_OP[op], children)
@@ -304,13 +418,15 @@ cdef class _Emitter:
     cdef object _emit_terminator(self, int32_t bid):
         cdef int32_t estart = self.func.blocks[bid].edge_start
         cdef int32_t ecount = self.func.blocks[bid].edge_count
-        cdef int32_t exit_index = self.func.n_blocks
+        cdef int32_t exit_index = self._exit_index
         cdef int32_t i
         cdef object pc, cond_key
         # Rebuild finalize's ``{edge.cond: edge.dst}`` dict. The arena stores this
         # block's edges already sorted (value cases ascending, then the NONE edge),
         # matching finalize's ``sorted(..., key=(cond is None, cond))`` insertion
-        # order, so a plain forward insertion reproduces the dict exactly.
+        # order, so a plain forward insertion reproduces the dict exactly. Targets are
+        # remapped through ``_block_map`` (finding #4: elided empty shared-exit blocks
+        # collapse to the exit index).
         cdef dict outgoing = {}
         for i in range(estart, estart + ecount):
             if self.func.edges[i].cond_kind == <int32_t>EDGE_COND_NONE:
@@ -318,7 +434,7 @@ cdef class _Emitter:
             else:
                 pc = self.func.edges[i].cond  # a python float
                 cond_key = int(pc) if self.func.edges[i].cond_is_int else pc
-            outgoing[cond_key] = <int>self.func.edges[i].dst
+            outgoing[cond_key] = <int><int32_t>self._block_map[self.func.edges[i].dst]
         return self._terminator_node(bid, outgoing, exit_index)
 
     cdef object _terminator_node(self, int32_t bid, dict outgoing, int32_t exit_index):
@@ -355,22 +471,31 @@ cdef class _Emitter:
         cdef int32_t default_val = exit_index
         cdef int nconds = len(value_conds)
         cdef object cond, target
-        cdef int32_t ci
+        cdef int32_t ci, span, maxc
 
         if (
             nconds > 0
             and min(value_conds) == 0
-            and max(value_conds) == nconds - 1
             and all(_cond_is_integral(c) for c in value_conds)
         ):
-            # Contiguous 0..k-1 integer cases -> SwitchIntegerWithDefault. Targets
-            # are the case dsts in ascending order (outgoing[i] for i in 0..k-1).
-            for ci in range(nconds):
-                args.append(self._int_leaf(outgoing[ci]))
-            if has_none:
-                default_val = outgoing[None]
-            args.append(self._int_leaf(default_val))
-            return self._intern_fn(_OP_SWITCH_INT_DEFAULT, args)
+            # Dense (gap-tolerant) 0..max integer cases -> SwitchIntegerWithDefault
+            # (survey finding #1). The exact 0..k-1 contiguous set is the no-gap
+            # special case. Holes route to the default (the NONE target, or the exit
+            # index for a default-less block -- both are the value a non-matching
+            # test already reaches, so the fill is behaviour-preserving). A density
+            # guard bounds the synthesized table (matches lower._normalize_switch).
+            maxc = int(max(value_conds))
+            span = maxc + 1
+            # Gate-safe density guard: span+1 SwitchIntegerWithDefault target leaves
+            # <= 2k+1 SwitchWithDefault leaves iff span <= 2k. Matches
+            # lower._normalize_switch's guard so a normalized set is always filled.
+            if span <= 2 * nconds:
+                if has_none:
+                    default_val = outgoing[None]
+                for ci in range(span):
+                    args.append(self._int_leaf(outgoing.get(ci, default_val)))
+                args.append(self._int_leaf(default_val))
+                return self._intern_fn(_OP_SWITCH_INT_DEFAULT, args)
 
         # General case -> SwitchWithDefault(test, c0, t0, c1, t1, ..., default);
         # dict order is value cases ascending then None last.
@@ -396,13 +521,57 @@ cdef class _Emitter:
         statements.append(self._emit_terminator(bid))
         return self._intern_fn(_OP_EXECUTE, statements)
 
+    cdef void _compute_block_map(self):
+        # Finding #4: elide empty SHARED exit blocks (>= 2 predecessors, no statements,
+        # no outgoing edges, not the entry). Such a block only emits Execute(exit) --
+        # a one-hop bounce to the JumpLoop halt sentinel -- so its predecessors can
+        # target the exit index directly. Emission-only: the CFG/export keep the block.
+        # Single-predecessor empty exits are left in place (rare; keeps emission
+        # deterministic and the emit unit tests stable). The exit index is recomputed
+        # as the number of blocks actually emitted (== the trailing sentinel index).
+        cdef int32_t nb = self.func.n_blocks
+        cdef int32_t bid, e, i, istart, icount, c
+        cdef bint has_stmt
+        cdef list indeg = [0] * nb
+        for e in range(self.func.n_edges):
+            indeg[self.func.edges[e].dst] = <int32_t>indeg[self.func.edges[e].dst] + 1
+        cdef list elided = [False] * nb
+        for bid in range(nb):
+            if bid == self.func.entry_block:
+                continue
+            if self.func.blocks[bid].edge_count != 0:
+                continue
+            if <int32_t>indeg[bid] < 2:
+                continue
+            istart = self.func.blocks[bid].instr_start
+            icount = self.func.blocks[bid].instr_count
+            has_stmt = False
+            for i in range(istart, istart + icount):
+                if self.func.instrs[i].flags & <int32_t>FLAG_STMT_ROOT:
+                    has_stmt = True
+                    break
+            if not has_stmt:
+                elided[bid] = True
+        self._block_map = [0] * nb
+        c = 0
+        for bid in range(nb):
+            if not <bint>elided[bid]:
+                self._block_map[bid] = c
+                c += 1
+        self._exit_index = c
+        for bid in range(nb):
+            if <bint>elided[bid]:
+                self._block_map[bid] = c  # collapse to the exit / halt sentinel
+
     cdef object run(self):
         cdef int32_t nb = self.func.n_blocks
         cdef int32_t bid
+        self._compute_block_map()
         cdef list block_nodes = []
         for bid in range(nb):
-            block_nodes.append(self._emit_block(bid))
-        block_nodes.append(self._int_leaf(0))  # trailing exit sentinel at index nb
+            if <int32_t>self._block_map[bid] != self._exit_index:
+                block_nodes.append(self._emit_block(bid))
+        block_nodes.append(self._int_leaf(0))  # trailing exit sentinel at exit_index
         jumploop = self._intern_fn(_OP_JUMPLOOP, block_nodes)
         return self._intern_fn(_OP_BLOCK, [jumploop])
 

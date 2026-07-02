@@ -280,18 +280,20 @@ def _head_ab():
 
 
 def test_arm_budget_boundary():
-    # cost 8: Subtract(a, Negate(b)) = 1 + 3(a) + (1+3)(Negate b) = 8 -> converts.
-    # cost 9: Subtract(Negate(a), Negate(b)) = 1 + 4 + 4 = 9 -> does NOT convert.
+    # cost 8: Multiply(a, Negate(b)) = 1 + 3(a) + (1+3)(Negate b) = 8 -> converts.
+    # cost 9: Multiply(Negate(a), Negate(b)) = 1 + 4 + 4 = 9 -> does NOT convert.
+    # (Multiply avoids the GVN Subtract/Add<->Negate recombination (finding #6),
+    # which would otherwise fold Subtract(x, Negate(y)) -> Add(x, y) pre-ifconv.)
     def c8():
         return _two_use_join(
-            IRPureInstr(Op.Subtract, [_rd("a"), IRPureInstr(Op.Negate, [_rd("b")])]),
+            IRPureInstr(Op.Multiply, [_rd("a"), IRPureInstr(Op.Negate, [_rd("b")])]),
             IRConst(0),
             head_stmts=_head_ab(),
         )
 
     def c9():
         return _two_use_join(
-            IRPureInstr(Op.Subtract, [IRPureInstr(Op.Negate, [_rd("a")]), IRPureInstr(Op.Negate, [_rd("b")])]),
+            IRPureInstr(Op.Multiply, [IRPureInstr(Op.Negate, [_rd("a")]), IRPureInstr(Op.Negate, [_rd("b")])]),
             IRConst(0),
             head_stmts=_head_ab(),
         )

@@ -60,15 +60,23 @@ game-changer — this is a list of cheap, safe, incremental wins, ranked.
 
 ## 2. Ranked findings
 
+> **Implementation status (2026-07, M3.5 tip 783b525, baseline standard effective = 138192).**
+> Findings #1–#6 IMPLEMENTED; #7 DROPPED-AT-IMPL (no reproducible target at M3.5). Measured
+> per-finding standard-effective deltas (attributable, in implementation order): #2+#6 −191,
+> #1 −196, #3+#5 −46, #4 −148 → **total −581** (standard 138192→137611; fast 150301→149916).
+> `SwitchWithDefault` 140→**0**; `SwitchIntegerWithDefault` 154→294; `Not` 453→57;
+> `GetShifted` 0→1075, `SetShifted` 0→67; `Execute` 5780→5706 (74 shared exits elided). Full
+> suite green (1759). See per-row Rec column for details.
+
 | # | Opportunity | Freq | Gate Δ (eff) | Real effect (beyond gate) | Home / effort | Risk | Rec |
 |---|---|---|---|---|---|---|---|
-| 1 | `SwitchWithDefault` → `SwitchIntegerWithDefault` via **dense (gap-tolerant) normalize** | 140 blocks | **−476** | linear-scan → jump-table dispatch | `normalize_switch` (lower.pyx) / **S–M** | LOW | **KEEP** |
-| 2 | `If(Not(x))` terminator → **swap edges, drop `Not`** | 394 (187 non-const) | **−187** | fewer branch fn-instrs | midend branch canon / **S** | LOW | **KEEP** |
-| 3 | Strided address → **`GetShifted`/`SetShifted`** (`Add(off, Mul(i,s))`) | 166 | **−332** | −2 fn-instrs each | emit `_place_components` / **S–M** | MED | **KEEP** |
-| 4 | Empty **shared-exit-block elision** | 74 blocks | **~−148** | one fewer dispatch/callback | emit / **S–M** | LOW–MED | KEEP-low |
-| 5 | Off-`k` address → `GetShifted`/`SetShifted` (`Add(i, const)`, stride 1) | 1284 | 0 | −1 fn-instr each (`Add`→push) | emit `_place_components` / **S** | MED | COND. |
-| 6 | `Subtract(x,Negate(y))`→`Add`, `Add(x,Negate(y))`→`Subtract` | ~92 | ~−80 | trivial | midend GVN / **S** | LOW | KEEP-low |
-| 7 | Treeify: **duplicate** runtime-const values instead of materialising | 8 temps | ~−16 | removes temp barrier to runtime folding | treeify (lower.pyx) / **S** | LOW | KEEP-low |
+| 1 | `SwitchWithDefault` → `SwitchIntegerWithDefault` via **dense (gap-tolerant) normalize** | 140 blocks | **−476** | linear-scan → jump-table dispatch | `normalize_switch` (lower.pyx) / **S–M** | LOW | **IMPLEMENTED** (measured −196, not −476: the survey's estimate omitted the +2/block affine test-shift (`test−a`), and the 56 `(2,3,6)` blocks are net +1/block on the gate but still gain jump-table dispatch. All 140 convert; `SwitchWithDefault`→0. Gap-fill done emit-side (`_switch_node`) so it uniformly handles default & default-less without adding arena edges; density guard `span≤2k` keeps it gate-safe.) |
+| 2 | `If(Not(x))` terminator → **swap edges, drop `Not`** | 394 (187 non-const) | **−187** | fewer branch fn-instrs | midend branch canon / **S** | LOW | **IMPLEMENTED** (`_canon_branch_not` in the shared mid-end pass; iterates `Not` chains, NaN-verified. `Not` 453→57. −191 combined with #6.) |
+| 3 | Strided address → **`GetShifted`/`SetShifted`** (`Add(off, Mul(i,s))`) | 166 | **−332** | −2 fn-instrs each | emit `_place_components` / **S–M** | MED | **IMPLEMENTED** (emit `_shifted_components`; generalized to absorb *any* binary `Multiply` (runtime stride too, via the shifted `stride` operand). Also SetAddShifted via fuse_rmw interplay. −46 combined with #5.) |
+| 4 | Empty **shared-exit-block elision** | 74 blocks | **~−148** | one fewer dispatch/callback | emit / **S–M** | LOW–MED | **IMPLEMENTED** (emit `_compute_block_map`, gated to ≥2-pred exits; **−148**, exactly 74 blocks. Emission-only; both emit paths agree byte-for-byte.) |
+| 5 | Off-`k` address → `GetShifted`/`SetShifted` (`Add(i, const)`, stride 1) | 1284 | 0 | −1 fn-instr each (`Add`→push) | emit `_place_components` / **S** | MED | **IMPLEMENTED** (bundled with #3; gate-neutral by design. Skipped when the index is itself an `Add` — there the offset folds into the flattened `Add` spine for free, so shifting would ADD a node.) |
+| 6 | `Subtract(x,Negate(y))`→`Add`, `Add(x,Negate(y))`→`Subtract` | ~92 | ~−80 | trivial | midend GVN / **S** | LOW | **IMPLEMENTED** (GVN identities, args[1] only, n==2; bit-exact vs the Interpreter. `Negate` 1749→1664.) |
+| 7 | Treeify: **duplicate** runtime-const values instead of materialising | 8 temps | ~−16 | removes temp barrier to runtime folding | treeify (lower.pyx) / **S** | LOW | **DROPPED-AT-IMPL** (No reproducible target at M3.5: the fully-runtime-const temp stores in the current corpus are correct phi-copies (the rtc tree *is* duplicated into the copy body, not materialised) or dynamic-index reads (not rtc). The one path that could materialise an rtc value — undef pre-marking (ir.pxd, load-bearing for correctness + cycle-breaking) — never fires on a structurally-rtc value: a guarded exception was a measured **0-node** no-op. Not worth touching that machinery for zero gain.) |
 | — | `Op.Copy` for bulk struct moves | 6 runs | 0 | — | — | — | **DROP** (sources are permutations) |
 | — | `Clamp` from `Min`/`Max` nests | 0 | 0 | — | — | — | **DROP** (0 occurrences) |
 | — | `JudgeSimple` from `Judge` | 0 | 0 | — | — | — | **DROP** (windows non-const) |
