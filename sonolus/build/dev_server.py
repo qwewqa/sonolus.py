@@ -22,7 +22,6 @@ from typing import TYPE_CHECKING, NamedTuple, Protocol
 from sonolus.backend.excepthook import print_simple_traceback
 from sonolus.backend.utils import get_function, get_functions, get_tree_from_file
 from sonolus.build.collection import Collection
-from sonolus.build.compile import CompileCache
 from sonolus.build.project import (
     build_project_to_existing_collection,
     load_resources_files_to_collection,
@@ -96,7 +95,6 @@ class ServerState:
     core_module_names: set[str]
     build_dir: Path
     config: BuildConfig
-    cache: CompileCache
     project_state: ProjectContextState
     collection: Collection
     last_build_time: float
@@ -131,18 +129,15 @@ class RebuildCommand:
             if path_was_modified_after(server_state.project.resources, server_state.last_build_time):
                 server_state.collection = load_resources_files_to_collection(server_state.project.resources)
 
-            server_state.cache.reset_accessed()
             server_state.project_state = ProjectContextState.from_build_config(server_state.config)
             server_state.project = project_module.project
             build_project_to_existing_collection(
                 server_state.project,
                 server_state.collection,
                 server_state.config,
-                cache=server_state.cache,
                 project_state=server_state.project_state,
             )
             write_collection(server_state.collection, server_state.build_dir, clear=False)
-            server_state.cache.prune_unaccessed()
             server_state.last_build_time = time()
             end_time = perf_counter()
             print(f"Rebuild completed in {end_time - start_time:.2f} seconds")
@@ -297,11 +292,10 @@ def run_server(
 ):
     from sonolus.build.cli import build_collection
 
-    cache = CompileCache()
     project_state = ProjectContextState.from_build_config(config)
 
     start_time = perf_counter()
-    collection = build_collection(project, build_dir, config, cache=cache, project_state=project_state)
+    collection = build_collection(project, build_dir, config, project_state=project_state)
     end_time = perf_counter()
     print(f"Build finished in {end_time - start_time:.2f}s")
 
@@ -332,7 +326,6 @@ def run_server(
                 core_module_names=core_module_names,
                 build_dir=build_dir,
                 config=config,
-                cache=cache,
                 project_state=project_state,
                 collection=collection,
                 last_build_time=time(),

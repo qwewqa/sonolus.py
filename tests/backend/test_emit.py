@@ -1,203 +1,33 @@
 """Tests for the arena EngineNode emitter (``sonolus.backend._opt.emit``).
 
-The emitter is a behaviour-preserving port of ``sonolus/backend/finalize.py``
+The emitter is a behaviour-preserving port of the old ``finalize.py``
 (``cfg_to_engine_node``) operating on the flat ``Func`` arena, plus the one
 deliberate OPTIMIZER_REWRITE.md 7.6 addition: it re-flattens associative left
 spines (``Add``/``Multiply``/``Mod``/``Rem``) as it builds the tree.
 
-Three layers of coverage:
+Two layers of coverage (the wave-2 A/B corpus comparison against the now-deleted
+old ``finalize`` served its purpose and is retired with M1):
 
-1. ``test_corpus_*`` -- A/B against the *old* ``cfg_to_engine_node`` on the full
-   pydori callback corpus, in both the n-ary optimized form (a) and a binary
-   ("raw"-like) form produced by ``UnflattenAssociativeOps`` (b). See the module
-   docstring's "TWO DOCUMENTED DIVERGENCES" below for why the comparison is exact
-   *modulo* two precisely-characterised, semantics-preserving normalisations.
-2. ``test_*`` unit tests -- every terminator form, NaN/+-Inf/-0.0 constant
+1. ``test_*`` unit tests -- every terminator form, NaN/+-Inf/-0.0 constant
    lowering, pointer-deref nested ``Get``s, offset-folding branches, and n-ary
    flatten idempotence (incl. non-flattening of right-nested trees).
-3. ``test_semantic_*`` -- hand-built CFGs run through *both* emit paths and the
-   ``Interpreter`` oracle, asserting identical results / logs / memory (incl. a
-   shared-subtree case proving hash-consing does not change evaluated semantics).
-
-================================================================================
-TWO DOCUMENTED DIVERGENCES (root-caused, semantics-preserving)
-================================================================================
-On the pydori corpus ``emit_cfg`` is byte-for-byte identical to old ``finalize``
-for 244/300 callbacks; the other 56 differ for two reasons that are both
-by-design and both preserve semantics exactly (identical evaluated results and
-memory addresses). They are accounted for by the ``_normalize`` canonicalisation
-applied symmetrically to both sides, never papered over:
-
-* **Constant-index folding.** Old ``finalize``'s ``_block_place_to_engine_node``
-  emits ``Get(block, Add(index, offset))`` even when ``index`` is a *constant*
-  integer -- e.g. ``Set(4001, Add(14, 1), ...)``. The committed arena
-  ``marshal_in`` (ir.pyx) folds a constant integer index into the place
-  ``offset`` (``index_val == -1``), so ``emit_cfg`` emits the pre-folded
-  ``Set(4001, 15, ...)``. ``Add(14, 1) == 15`` -- identical address, one fewer
-  node. ir.pyx is a committed keystone this module may not modify, so the split
-  is not recoverable; ``_normalize`` folds ``Add(<num>, <num>, ...)`` -> its
-  order-preserving sum on both sides to compare.
-* **Associative left-spine re-flattening (the 7.6 addition).** ``emit_cfg``
-  re-flattens *every* associative (``Add``/``Multiply``/``Mod``/``Rem``) left
-  spine it produces, whereas old ``finalize`` flattens none itself. Old only
-  looks flat because the pipeline's ``FlattenAssociativeOps`` pre-flattened
-  *value* expressions in the IR -- but that pass (a) leaves a stray left-nested
-  ``Multiply(Multiply(a, b), c)`` on 2 callbacks where a later pass reintroduced
-  it, and (b) never touches place *indices* at all, so old emits binary
-  ``Get(block, Add(Add(p, q), off))`` where new emits flat ``Add(p, q, off)``.
-  Left-spine reassociation preserves left-to-right FP order (``(a*b)*c`` either
-  way), so it is semantics-preserving; ``_normalize`` flattens the *old* side's
-  associative left spines (``flatten_spines=True``) to compare. new is never
-  re-flattened by ``_normalize`` (it is already flat), so a flattening bug in
-  ``emit_cfg`` -- over- or under-flattening -- still surfaces as a mismatch.
-
-Category breakdown of the 56: 26 reconciled by constant-index folding alone,
-30 also involving associative re-flattening; 300/300 after accounting for both.
+2. ``test_semantic_*`` -- hand-built CFGs run through the emitter and the
+   ``Interpreter`` oracle, asserting the expected results / logs / memory (incl.
+   a shared-subtree case proving hash-consing does not change evaluated
+   semantics).
 """
 
 from __future__ import annotations
 
 import math
-from itertools import starmap
-
-import pytest
 
 from sonolus.backend._opt import emit  # noqa: PLC2701
-from sonolus.backend.finalize import cfg_to_engine_node
 from sonolus.backend.interpret import Interpreter
 from sonolus.backend.ir import IRConst, IRGet, IRInstr, IRPureInstr, IRSet
 from sonolus.backend.node import FunctionNode, format_engine_node
 from sonolus.backend.ops import Op
 from sonolus.backend.optimize.flow import BasicBlock, traverse_cfg_reverse_postorder
-from sonolus.backend.optimize.optimize import STANDARD_PASSES
-from sonolus.backend.optimize.passes import OptimizerConfig, run_passes
-from sonolus.backend.optimize.simplify import FlattenAssociativeOps, UnflattenAssociativeOps
 from sonolus.backend.place import BlockPlace
-from tests.backend.test_corpus_roundtrip import _MODE_SETUP, _iter_callbacks
-
-_FLATTEN_OPS = frozenset({Op.Add, Op.Multiply, Op.Mod, Op.Rem})
-
-
-# ---------------------------------------------------------------------------
-# Structural comparison helpers (iterative -- no deep Python recursion).
-# ---------------------------------------------------------------------------
-
-
-def _is_num(x) -> bool:
-    return isinstance(x, (int, float)) and not isinstance(x, bool)
-
-
-def _normalize(root, flatten_spines: bool):
-    """Canonicalise a node tree for A/B comparison (iterative, DAG-safe).
-
-    Always folds a fully-numeric ``Add(<num>, <num>, ...)`` into its
-    order-preserving sum (accounts for the constant-index divergence). When
-    ``flatten_spines`` is set, also flattens associative left spines the way the
-    7.6 emission addition does (accounts for the residual-reflatten divergence).
-    ``flatten_spines`` is used only on the *old*-finalize side, so a flattening
-    *bug* in ``emit_cfg`` (over- or under-flattening) still surfaces as a
-    mismatch rather than being masked.
-    """
-    if not isinstance(root, FunctionNode):
-        return root
-    done: dict[int, object] = {}
-    stack: list[tuple[object, bool]] = [(root, False)]
-    while stack:
-        node, processed = stack.pop()
-        if not isinstance(node, FunctionNode) or id(node) in done:
-            continue
-        if not processed:
-            stack.append((node, True))
-            stack.extend((a, False) for a in node.args if isinstance(a, FunctionNode))
-            continue
-        new_args = [done[id(a)] if isinstance(a, FunctionNode) else a for a in node.args]
-        op = node.func
-        if (
-            flatten_spines
-            and op in _FLATTEN_OPS
-            and new_args
-            and isinstance(new_args[0], FunctionNode)
-            and new_args[0].func == op
-        ):
-            new_args = list(new_args[0].args) + new_args[1:]
-        if op == Op.Add and len(new_args) >= 2 and all(_is_num(a) for a in new_args):
-            acc = new_args[0]
-            for a in new_args[1:]:
-                acc += a
-            done[id(node)] = acc
-        else:
-            done[id(node)] = FunctionNode(op, tuple(new_args))
-    return done[id(root)]
-
-
-def _diff(a, b) -> str | None:
-    """Return ``None`` if two node trees are structurally identical, else a path.
-
-    Iterative (explicit stack) so arbitrarily deep corpus trees never blow the
-    Python recursion limit. Leaves compare by exact type+value, so ``5`` and
-    ``5.0`` (distinct ``SwitchWithDefault`` case labels) never compare equal.
-    """
-    stack = [(a, b, "root")]
-    while stack:
-        x, y, p = stack.pop()
-        xf = isinstance(x, FunctionNode)
-        yf = isinstance(y, FunctionNode)
-        if xf != yf:
-            return f"{p}: {type(x).__name__}={x!r} vs {type(y).__name__}={y!r}"
-        if xf:
-            if x.func != y.func:
-                return f"{p}: func {x.func} vs {y.func}"
-            if len(x.args) != len(y.args):
-                return f"{p}: nargs {len(x.args)} vs {len(y.args)}"
-            for i, (xa, ya) in enumerate(zip(x.args, y.args, strict=True)):
-                stack.append((xa, ya, f"{p}.{x.func.name}[{i}]"))
-        elif type(x) is not type(y) or x != y:
-            return f"{p}: leaf {x!r} vs {y!r}"
-    return None
-
-
-def _assert_ab(new_node, old_node, *, flatten_old: bool, label: str):
-    d = _diff(_normalize(new_node, flatten_spines=False), _normalize(old_node, flatten_spines=flatten_old))
-    assert d is None, f"{label}: {d}"
-
-
-# ---------------------------------------------------------------------------
-# 1. A/B against old finalize on the full pydori corpus (both forms).
-# ---------------------------------------------------------------------------
-
-
-@pytest.mark.parametrize("mode", list(_MODE_SETUP))
-def test_corpus_ab_against_finalize(mode):
-    """emit_cfg == old finalize on every pydori callback, both corpus forms."""
-    exact_a = total = 0
-    for label, cb, factory in _iter_callbacks(mode):
-        total += 1
-
-        # Form (a): the n-ary STANDARD-optimized CFG. emit_cfg is non-destructive
-        # so it must run BEFORE old finalize, which deletes block attributes.
-        opt = run_passes(factory(), STANDARD_PASSES, OptimizerConfig(mode=mode, callback=cb))
-        new_a = emit.emit_cfg(opt, mode, cb)
-        old_a = cfg_to_engine_node(opt)
-        if _diff(new_a, old_a) is None:
-            exact_a += 1
-        _assert_ab(new_a, old_a, flatten_old=True, label=f"{label} form(a)")
-
-        # Form (b): a binary "raw"-like CFG (UnflattenAssociativeOps), compared to
-        # old finalize on a FlattenAssociativeOps-processed copy. emit_cfg must
-        # re-flatten the binary spines to match.
-        opt2 = run_passes(factory(), STANDARD_PASSES, OptimizerConfig(mode=mode, callback=cb))
-        UnflattenAssociativeOps().run(opt2, OptimizerConfig())
-        new_b = emit.emit_cfg(opt2, mode, cb)
-        FlattenAssociativeOps().run(opt2, OptimizerConfig())
-        old_b = cfg_to_engine_node(opt2)
-        # flatten_old handles both residual value spines and place-index spines,
-        # which old finalize never flattens (FlattenAssociativeOps skips places).
-        _assert_ab(new_b, old_b, flatten_old=True, label=f"{label} form(b)")
-
-    assert total > 0, f"no callbacks enumerated for {mode}"
-    # Informational: raw byte-identical matches vs the documented divergences.
-    print(f"\n[{mode.name}] form(a) raw-exact finalize match: {exact_a}/{total}")
-
 
 # ---------------------------------------------------------------------------
 # Unit-test scaffolding.
@@ -562,27 +392,9 @@ def _interpret(node):
     return it
 
 
-def _same(a, b) -> bool:
-    if isinstance(a, float) and isinstance(b, float) and math.isnan(a) and math.isnan(b):
-        return True
-    return a == b
-
-
-def _column_equal(v1: list, v2: list) -> bool:
-    return len(v1) == len(v2) and all(starmap(_same, zip(v1, v2, strict=True)))
-
-
-def _mem_equal(m1: dict, m2: dict) -> bool:
-    return m1.keys() == m2.keys() and all(_column_equal(m1[k], m2[k]) for k in m1)
-
-
 def _assert_semantic_parity(build):
-    """Build the CFG twice; emit new + old; assert identical interpretation."""
-    new_it = _interpret(emit.emit_cfg(build()))
-    old_it = _interpret(cfg_to_engine_node(build()))
-    assert new_it.log == old_it.log
-    assert _mem_equal(new_it.blocks, old_it.blocks)
-    return new_it
+    """Emit the CFG and interpret it; the caller's explicit oracle asserts semantics."""
+    return _interpret(emit.emit_cfg(build()))
 
 
 def test_semantic_values_specials_and_shared_subtree():

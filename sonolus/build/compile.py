@@ -1,15 +1,16 @@
-from collections.abc import Callable, Sequence
+from collections.abc import Callable
 from concurrent.futures import Executor, Future
-from threading import Event, Lock
 
-from sonolus.backend.finalize import cfg_to_engine_node
 from sonolus.backend.ir import IRConst, IRInstr
 from sonolus.backend.mode import Mode
-from sonolus.backend.node import EngineNode
 from sonolus.backend.ops import Op
-from sonolus.backend.optimize.flow import BasicBlock, hash_cfg
-from sonolus.backend.optimize.optimize import STANDARD_PASSES
-from sonolus.backend.optimize.passes import CompilerPass, OptimizerConfig, run_passes
+from sonolus.backend.optimize import (
+    STANDARD_PASSES,
+    OptimizationLevel,
+    OptimizerConfig,
+    optimize_and_finalize,
+)
+from sonolus.backend.optimize.flow import BasicBlock
 from sonolus.build.node import OutputNodeGenerator
 from sonolus.script.archetype import _BaseArchetype
 from sonolus.script.internal.callbacks import CallbackInfo
@@ -27,56 +28,17 @@ from sonolus.script.internal.visitor import compile_and_call_at_definition
 from sonolus.script.num import _is_num
 
 
-class CompileCache:
-    def __init__(self):
-        self._cache = {}
-        self._lock = Lock()
-        self._event = Event()
-        self._accessed_hashes = set()
-
-    def get(self, entry_hash: int) -> EngineNode | None:
-        with self._lock:
-            self._accessed_hashes.add(entry_hash)
-            if entry_hash not in self._cache:
-                self._cache[entry_hash] = None  # Mark as being compiled
-                return None
-        while True:
-            with self._lock:
-                node = self._cache[entry_hash]
-                if node is not None:
-                    return node
-            self._event.wait()
-
-    def set(self, entry_hash: int, node: EngineNode) -> None:
-        with self._lock:
-            self._accessed_hashes.add(entry_hash)
-            self._cache[entry_hash] = node
-            self._event.set()
-            self._event.clear()
-
-    def reset_accessed(self) -> None:
-        with self._lock:
-            self._accessed_hashes.clear()
-
-    def prune_unaccessed(self) -> None:
-        with self._lock:
-            unaccessed_hashes = set(self._cache.keys()) - self._accessed_hashes
-            for h in unaccessed_hashes:
-                del self._cache[h]
-
-
 def compile_mode(
     mode: Mode,
     project_state: ProjectContextState,
     archetypes: list[type[_BaseArchetype]] | None,
     global_callbacks: list[tuple[CallbackInfo, Callable]] | None,
-    passes: Sequence[CompilerPass] | None = None,
+    level: OptimizationLevel | None = None,
     thread_pool: Executor | None = None,
     validate_only: bool = False,
-    cache: CompileCache | None = None,
 ) -> dict:
-    if passes is None:
-        passes = STANDARD_PASSES
+    if level is None:
+        level = STANDARD_PASSES
 
     mode_state = ModeContextState(
         mode,
@@ -104,18 +66,8 @@ def compile_mode(
             else:
                 return cb_info.name, 0
 
-        if cache is not None:
-            cfg_hash = hash_cfg(cfg)
-            node = cache.get(cfg_hash)
-            if node is None:
-                optimized_cfg = run_passes(cfg, passes, OptimizerConfig(mode=mode, callback=cb_info.name))
-                node = cfg_to_engine_node(optimized_cfg)
-                cache.set(cfg_hash, node)
-            node_index = nodes.add(node)
-        else:
-            optimized_cfg = run_passes(cfg, passes, OptimizerConfig(mode=mode, callback=cb_info.name))
-            node = cfg_to_engine_node(optimized_cfg)
-            node_index = nodes.add(node)
+        node = optimize_and_finalize(cfg, level, OptimizerConfig(mode=mode, callback=cb_info.name))
+        node_index = nodes.add(node)
 
         if arch is not None:
             cb_order = getattr(cb, "_callback_order_", 0)

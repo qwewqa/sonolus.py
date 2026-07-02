@@ -1,11 +1,10 @@
 """Marshal round-trip over the whole pydori callback corpus.
 
 For every callback CFG (all modes, dev + non-dev), both raw (frontend output)
-and optimized (old STANDARD_PASSES output) forms must:
+and optimized (new ``STANDARD_PASSES`` output) forms must:
 
-* round-trip faithfully modulo the exporter's temp renumbering
-  (``canon_text``; the optimized form is compared against an unflattened copy,
-  since marshal-in binarizes n-ary associative ops), and
+* round-trip faithfully modulo the exporter's temp renumbering (``canon_text``),
+  and
 * be export/import idempotent byte-for-byte.
 
 Mirrors tests/regressions/test_project.py's enumeration. See
@@ -17,10 +16,8 @@ from __future__ import annotations
 import pytest
 
 from sonolus.backend.mode import Mode
+from sonolus.backend.optimize import STANDARD_PASSES, OptimizerConfig, run_passes
 from sonolus.backend.optimize.flow import cfg_to_text
-from sonolus.backend.optimize.optimize import STANDARD_PASSES
-from sonolus.backend.optimize.passes import OptimizerConfig, run_passes
-from sonolus.backend.optimize.simplify import UnflattenAssociativeOps
 from sonolus.build.compile import callback_to_cfg
 from sonolus.script.internal.callbacks import (
     navigate_callback,
@@ -95,12 +92,12 @@ def _check_callback(label, callback_name, factory, mode):
     raw_rt2 = roundtrip(raw_rt, mode, callback_name)
     assert cfg_to_text(raw_rt) == cfg_to_text(raw_rt2), f"{label}: raw not idempotent"
 
-    # Optimized form (mutates cfg): idempotent + faithful vs an unflattened copy.
+    # Optimized form: the NEW pipeline output (already binary + allocated, and
+    # non-destructive on cfg) must round-trip faithfully and be idempotent.
     opt = run_passes(cfg, STANDARD_PASSES, OptimizerConfig(mode=mode, callback=callback_name))
     opt_rt = roundtrip(opt, mode, callback_name)
     opt_rt2 = roundtrip(opt_rt, mode, callback_name)
     assert cfg_to_text(opt_rt) == cfg_to_text(opt_rt2), f"{label}: optimized not idempotent"
-    UnflattenAssociativeOps().run(opt, OptimizerConfig())
     assert canon_text(opt) == canon_text(opt_rt), f"{label}: optimized not faithful"
 
 

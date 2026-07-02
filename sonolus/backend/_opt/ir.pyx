@@ -696,14 +696,32 @@ def to_basic_blocks(func):
     return (<Func>func)._export()
 
 
+# Debug phase registry: name -> callable(Func) -> Func. Populated by the driver
+# module on import (see driver.pyx); debug_run consults it below.
+_PHASE_REGISTRY = {}
+
+
+def register_phase(name, fn):
+    """Register a named debug phase (``Func -> Func``) for :func:`debug_run`."""
+    _PHASE_REGISTRY[name] = fn
+
+
 def debug_run(entry, mode=None, callback=None, phases=None):
-    """Marshal in, run named phases (none registered yet), export back."""
-    if phases:
-        for ph in phases:
-            raise ValueError(f"Unknown optimizer phase {ph!r} (no phases are registered in M1)")
+    """Marshal in, run the named registry phases in order, export back (10 debug API)."""
     cdef Func func = Func()
     func._marshal(entry, mode, callback)
     func.verify()
+    if phases:
+        # The driver registers the phases on import; import it lazily (it cimports
+        # ir, so importing at ir load time would be a cycle) to populate the table.
+        if not _PHASE_REGISTRY:
+            from sonolus.backend._opt import driver as _driver  # noqa: F401
+        for ph in phases:
+            fn = _PHASE_REGISTRY.get(ph)
+            if fn is None:
+                raise ValueError(f"Unknown optimizer phase {ph!r}")
+            func = fn(func)
+            func.verify()
     return func._export()
 
 

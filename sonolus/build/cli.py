@@ -9,9 +9,8 @@ from time import perf_counter
 from types import ModuleType
 
 from sonolus.backend.excepthook import print_simple_traceback
-from sonolus.backend.optimize.optimize import FAST_PASSES, MINIMAL_PASSES, STANDARD_PASSES
+from sonolus.backend.optimize import FAST_PASSES, MINIMAL_PASSES, STANDARD_PASSES
 from sonolus.build.collection import Collection
-from sonolus.build.compile import CompileCache
 from sonolus.build.dev_server import run_server
 from sonolus.build.engine import no_gil, package_engine, validate_engine
 from sonolus.build.level import package_level_data
@@ -95,10 +94,9 @@ def build_collection(
     project: Project,
     build_dir: Path,
     config: BuildConfig | None,
-    cache: CompileCache | None = None,
     project_state: ProjectContextState | None = None,
 ) -> Collection:
-    collection = build_project_to_collection(project, config, cache=cache, project_state=project_state)
+    collection = build_project_to_collection(project, config, project_state=project_state)
 
     write_collection(collection, build_dir)
 

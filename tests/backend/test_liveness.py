@@ -1,10 +1,9 @@
 """Liveness analysis tests for the arena optimizer core (M1, §7.5).
 
 Unit tests pin the subtle array/scalar/size-0/block-test rules directly against
-``analysis.liveness_debug``; a set of cross-checks runs the OLD
-``LivenessAnalysis`` pass over the same hand-built CFGs and asserts the new
-bitset liveness produces identical ``live_in``/``live_out`` sets (after mapping
-temps to their source names). See OPTIMIZER_REWRITE.md §3 and §7.5.
+``analysis.liveness_debug`` (name-set dicts keyed by arena block id). The wave-2
+cross-checks against the now-deleted old ``LivenessAnalysis`` pass served their
+purpose and are retired with M1. See OPTIMIZER_REWRITE.md §3 and §7.5.
 """
 
 from __future__ import annotations
@@ -12,9 +11,7 @@ from __future__ import annotations
 from sonolus.backend._opt import analysis  # noqa: PLC2701
 from sonolus.backend.ir import IRConst, IRGet, IRInstr, IRPureInstr, IRSet
 from sonolus.backend.ops import Op
-from sonolus.backend.optimize.flow import BasicBlock, traverse_cfg_reverse_postorder
-from sonolus.backend.optimize.liveness import LivenessAnalysis
-from sonolus.backend.optimize.passes import OptimizerConfig, run_passes
+from sonolus.backend.optimize.flow import BasicBlock
 from sonolus.backend.place import BlockPlace, TempBlock
 
 
@@ -27,29 +24,12 @@ def _elem(arr, index, offset=0):
 
 
 # --------------------------------------------------------------------------
-# Cross-check helper against the old pass.
+# Liveness helper (new bitset liveness -> source-name sets).
 # --------------------------------------------------------------------------
 
-def _old_names(s):
-    if s is None:
-        return set()
-    return {p.name for p in s if isinstance(p, TempBlock)}
-
-
-def _assert_matches_old(make_cfg, mode=None, callback=None):
-    """Assert new liveness == old LivenessAnalysis on a freshly built CFG."""
-    new = analysis.liveness_debug(make_cfg(), mode, callback)
-    cfg_old = make_cfg()
-    run_passes(cfg_old, [LivenessAnalysis()], OptimizerConfig(mode=mode, callback=callback))
-    old_blocks = list(traverse_cfg_reverse_postorder(cfg_old))
-    for i, blk in enumerate(old_blocks):
-        assert new["live_in"][i] == _old_names(blk.live_in), (
-            f"live_in[{i}] new={new['live_in'][i]} old={_old_names(blk.live_in)}"
-        )
-        assert new["live_out"][i] == _old_names(getattr(blk, "live_out", None)), (
-            f"live_out[{i}] new={new['live_out'][i]} old={_old_names(getattr(blk, 'live_out', None))}"
-        )
-    return new
+def _liveness(make_cfg, mode=None, callback=None):
+    """Compute the new bitset liveness for a freshly built CFG (name-set dicts)."""
+    return analysis.liveness_debug(make_cfg(), mode, callback)
 
 
 # --------------------------------------------------------------------------
@@ -66,7 +46,7 @@ def test_straight_line_def_use():
         ]
         return b0
 
-    d = _assert_matches_old(make)
+    d = _liveness(make)
     # a and b never simultaneously live (b defined where a dies).
     assert d["live_in"][0] == set()
     # per-statement live-out: a live after its def, b live after its def.
@@ -82,7 +62,7 @@ def test_undef_read_is_live_in():
         b0.statements = [IRSet(BlockPlace(500, 0, 0), IRGet(_scalar("x")))]
         return b0
 
-    d = _assert_matches_old(make)
+    d = _liveness(make)
     assert d["live_in"][0] == {"x"}
 
 
@@ -104,7 +84,7 @@ def test_loop_back_edge_keeps_temp_live():
         ex.statements = [IRSet(BlockPlace(500, 0, 0), IRGet(_scalar("i")))]
         return b0
 
-    d = _assert_matches_old(make)
+    d = _liveness(make)
     # i is live across the loop head (used and redefined each iteration).
     assert "i" in d["live_out"][1]
     assert "i" in d["live_in"][1]
@@ -127,7 +107,7 @@ def test_array_first_write_kills_liveness():
         ]
         return b0
 
-    d = _assert_matches_old(make)
+    d = _liveness(make)
     assert "g" not in d["live_in"][0]
     # the array write is flagged init.
     assert all(d["is_array_init"].values())
@@ -154,7 +134,7 @@ def test_array_non_first_write_not_init():
         ]
         return b0
 
-    d = _assert_matches_old(make)
+    d = _liveness(make)
     # b1's write initializes; b3's write does not.
     inits = d["is_array_init"]
     assert list(inits.values()).count(True) == 1
@@ -173,7 +153,7 @@ def test_array_read_makes_whole_array_live():
         b1.statements = [IRSet(BlockPlace(800, 0, 0), IRGet(_elem(arr, 3)))]  # read a different element
         return b0
 
-    d = _assert_matches_old(make)
+    d = _liveness(make)
     # Reading any element makes the whole array live at b1 entry and b0 exit.
     assert "g" in d["live_in"][1]
     assert "g" in d["live_out"][0]
@@ -190,7 +170,7 @@ def test_array_never_written_is_never_live():
         b1.statements = [IRSet(BlockPlace(810, 0, 0), IRGet(_elem(arr, 0)))]
         return b0
 
-    d = _assert_matches_old(make)
+    d = _liveness(make)
     # arr is read in b1 (so live-in of b1) but the live-out filter drops it when
     # deriving b0's live-in, because arr is not in b0's array_defs_out (never
     # written on any path). So arr is not actually live before its first write.
@@ -210,7 +190,7 @@ def test_dynamic_array_index_reads_index_temp():
         ]
         return b0
 
-    d = _assert_matches_old(make)
+    d = _liveness(make)
     # k (the dynamic index) is live entering the block.
     assert "k" in d["live_in"][0]
     # arr is live where read but killed by the init write.
@@ -233,7 +213,7 @@ def test_block_test_counts_as_use():
         f.statements = [IRSet(BlockPlace(900, 0, 0), IRConst(2))]
         return b0
 
-    d = _assert_matches_old(make)
+    d = _liveness(make)
     # x is used only by the block test, so it is live at block entry.
     assert "x" in d["live_in"][0]
 
@@ -253,7 +233,7 @@ def test_test_use_propagates_to_predecessor_live_out():
         f.statements = [IRSet(BlockPlace(910, 0, 0), IRConst(0))]
         return b0
 
-    d = _assert_matches_old(make)
+    d = _liveness(make)
     # x is defined in b0, tested in b1: live-out of b0, live-in of b1.
     assert "x" in d["live_out"][0]
     assert "x" in d["live_in"][1]
@@ -274,7 +254,7 @@ def test_dead_store_does_not_keep_operands_live():
         ]
         return b0
 
-    d = _assert_matches_old(make)
+    d = _liveness(make)
     assert "b" not in d["live_in"][0]
     assert "a" not in d["live_in"][0]
 
@@ -287,7 +267,7 @@ def test_side_effecting_store_not_skipped():
         b0.statements = [IRSet(_scalar("a"), IRInstr(Op.DebugLog, [IRGet(_scalar("x"))]))]
         return b0
 
-    d = _assert_matches_old(make)
+    d = _liveness(make)
     assert "x" in d["live_in"][0]
 
 
@@ -305,4 +285,4 @@ def test_size0_temp_matches_old():
         ]
         return b0
 
-    _assert_matches_old(make)
+    _liveness(make)

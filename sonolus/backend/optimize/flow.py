@@ -61,41 +61,36 @@ def traverse_cfg_preorder(block: BasicBlock) -> Iterator[BasicBlock]:
 
 
 def traverse_cfg_postorder(block: BasicBlock) -> Iterator[BasicBlock]:
+    # Iterative DFS postorder (an explicit stack, so arbitrarily deep CFGs -- e.g.
+    # unrolled large-container code -- never overflow the Python call stack the way
+    # a recursive walk would). The emission order is byte-identical to the classic
+    # recursive form: children are visited in ``(cond is None, cond)`` sorted edge
+    # order, each node yielded after its subtrees, leaves yielded inline on
+    # discovery, and successors marked visited at discovery time (pre-order marking,
+    # with ``block`` pre-marked) so shared successors resolve identically.
     visited = {block}
-
-    def dfs(current: BasicBlock):
-        for edge in sorted(current.outgoing, key=lambda e: (e.cond is None, e.cond)):
+    stack = [(block, iter(sorted(block.outgoing, key=lambda e: (e.cond is None, e.cond))))]
+    while stack:
+        node, edges = stack[-1]
+        descended = False
+        for edge in edges:
             dst = edge.dst
             if dst in visited:
                 continue
             visited.add(dst)
             if dst.outgoing:
-                yield from dfs(dst)
+                stack.append((dst, iter(sorted(dst.outgoing, key=lambda e: (e.cond is None, e.cond)))))
+                descended = True
+                break
             else:
                 yield dst
-        yield current
-
-    yield from dfs(block)
+        if not descended:
+            yield node
+            stack.pop()
 
 
 def traverse_cfg_reverse_postorder(block: BasicBlock) -> Iterator[BasicBlock]:
     yield from reversed(list(traverse_cfg_postorder(block)))
-
-
-def compute_loop_body(header: BasicBlock, latch: BasicBlock) -> set[BasicBlock]:
-    body = {header}
-    if latch is header:
-        return body
-    worklist = [latch]
-    body.add(latch)
-    while worklist:
-        block = worklist.pop()
-        for edge in block.incoming:
-            pred = edge.src
-            if pred not in body:
-                body.add(pred)
-                worklist.append(pred)
-    return body
 
 
 def cfg_to_mermaid(entry: BasicBlock):
@@ -158,20 +153,6 @@ def cfg_to_mermaid(entry: BasicBlock):
 
     body = textwrap.indent("\n".join(lines), "    ")
     return f"graph\n{body}"
-
-
-def hash_cfg(entry: BasicBlock) -> int:
-    # Note: not stable between Python runs due to hash randomization
-    block_indexes = {block: i for i, block in enumerate(traverse_cfg_preorder(entry))}
-
-    h = 0
-    for block, index in block_indexes.items():
-        outgoing = [(edge.cond, block_indexes.get(edge.dst, -1)) for edge in block.outgoing]
-        h = hash(
-            (h, index, tuple(block.statements), block.test, tuple(sorted(outgoing, key=lambda x: (x[0] is None, x[0]))))
-        )
-
-    return h
 
 
 def cfg_to_text(entry: BasicBlock) -> str:

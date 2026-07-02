@@ -57,13 +57,12 @@ for _p in (str(_REPO_ROOT / "test_projects"), str(_REPO_ROOT)):
 # Node/CFG *analysis* in this module is iterative, so it does not depend on this.
 sys.setrecursionlimit(10_000)
 
-from sonolus.backend.finalize import cfg_to_engine_node
 from sonolus.backend.ir import IRConst, IRGet, IRInstr, IRPureInstr, IRSet
 from sonolus.backend.mode import Mode
 from sonolus.backend.node import FunctionNode
 from sonolus.backend.ops import Op
+from sonolus.backend.optimize import OptimizerConfig, cfg_to_engine_node, run_passes
 from sonolus.backend.optimize.flow import BasicBlock, traverse_cfg_preorder
-from sonolus.backend.optimize.passes import OptimizerConfig, run_passes
 from sonolus.backend.place import BlockPlace, SSAPlace, TempBlock
 from sonolus.build.compile import callback_to_cfg
 from sonolus.script.internal.callbacks import (
@@ -81,9 +80,10 @@ from sonolus.script.project import BuildConfig
 
 TEMP_MEMORY_BLOCK_ID = 10000
 
-# Blocks whose constant-index reads the real runtime constant-folds (see §2 and
-# sonolus/backend/optimize/inlining.py:9 RUNTIME_CONSTANT_BLOCKS). Copied here so the
-# tool keeps working after inlining.py is deleted in M1; kept in sync via an assertion.
+# Blocks whose constant-index reads the real runtime constant-folds (see §2). This
+# was formerly sonolus/backend/optimize/inlining.py's RUNTIME_CONSTANT_BLOCKS; that
+# module was deleted in M1, so this is now the sole copy (the C mid-end reintroduces
+# the same set in M2). The old cross-module sync assertion is gone with inlining.py.
 RUNTIME_CONSTANT_BLOCKS = frozenset(
     {
         "RuntimeEnvironment",
@@ -102,15 +102,6 @@ RUNTIME_CONSTANT_BLOCKS = frozenset(
         "TutorialData",
     }
 )
-
-try:  # keep the local copy honest while inlining.py still exists (M0)
-    from sonolus.backend.optimize.inlining import RUNTIME_CONSTANT_BLOCKS as _RCB_SRC
-
-    assert set(RUNTIME_CONSTANT_BLOCKS) == set(_RCB_SRC), (
-        "RUNTIME_CONSTANT_BLOCKS drifted from sonolus.backend.optimize.inlining"
-    )
-except ImportError:
-    pass
 
 
 LEVELS: dict[str, object] = {
@@ -532,26 +523,24 @@ def _dev_rebuild_via_collection(project, config, repeat):
     resources to resolve (skins/particles/etc.).
     """
     from sonolus.build.cli import build_collection
-    from sonolus.build.compile import CompileCache
     from sonolus.build.project import build_project_to_existing_collection
 
     with tempfile.TemporaryDirectory(prefix="sonolus-devrebuild-") as tmp:
-        cache = CompileCache()
         project_state = ProjectContextState.from_build_config(config)
 
         cold_start = perf_counter()
-        collection = build_collection(project, Path(tmp), config, cache=cache, project_state=project_state)
+        collection = build_collection(project, Path(tmp), config, project_state=project_state)
         cold_seconds = perf_counter() - cold_start
 
         warm_seconds: list[float] = []
         for _ in range(repeat):
-            cache.reset_accessed()
-            # RebuildCommand creates a fresh project_state each rebuild; the cache stays warm.
+            # RebuildCommand creates a fresh project_state each rebuild. Compilation is
+            # now cache-free (CompileCache was removed in M1), so a "warm" rebuild just
+            # re-optimizes every callback.
             rebuild_state = ProjectContextState.from_build_config(config)
             start = perf_counter()
-            build_project_to_existing_collection(project, collection, config, cache=cache, project_state=rebuild_state)
+            build_project_to_existing_collection(project, collection, config, project_state=rebuild_state)
             warm_seconds.append(perf_counter() - start)
-            cache.prune_unaccessed()
 
     return "build_project_to_existing_collection", cold_seconds, warm_seconds
 
@@ -559,29 +548,25 @@ def _dev_rebuild_via_collection(project, config, repeat):
 def _dev_rebuild_via_package_engine(project, config, repeat):
     """Fallback for projects without resolvable resources (e.g. pydori ships none).
 
-    Drives the CompileCache directly through package_engine -- the exact compile step
-    add_engine_to_collection invokes, and the only work CompileCache accelerates. Same
-    warm-cache protocol (reset_accessed -> compile -> prune_unaccessed).
+    Drives package_engine directly -- the exact compile step add_engine_to_collection
+    invokes. Compilation is cache-free after M1 (CompileCache removed), so a "warm"
+    rebuild simply re-optimizes every callback.
     """
-    from sonolus.build.compile import CompileCache
     from sonolus.build.engine import package_engine
 
     engine = project.engine.data
-    cache = CompileCache()
     project_state = ProjectContextState.from_build_config(config)
 
     cold_start = perf_counter()
-    package_engine(engine, config, cache=cache, project_state=project_state)
+    package_engine(engine, config, project_state=project_state)
     cold_seconds = perf_counter() - cold_start
 
     warm_seconds: list[float] = []
     for _ in range(repeat):
-        cache.reset_accessed()
         rebuild_state = ProjectContextState.from_build_config(config)
         start = perf_counter()
-        package_engine(engine, config, cache=cache, project_state=rebuild_state)
+        package_engine(engine, config, project_state=rebuild_state)
         warm_seconds.append(perf_counter() - start)
-        cache.prune_unaccessed()
 
     return "package_engine", cold_seconds, warm_seconds
 
@@ -615,21 +600,21 @@ def _dev_rebuild_section(project_name, level_name, repeat) -> dict:
     config = _BuildConfig(passes=LEVELS[level_name], runtime_checks=RuntimeChecks.NOTIFY_AND_TERMINATE)
 
     notes = [
-        "Warm-cache dev-server rebuild timing (the bar CompileCache removal must meet, §13).",
+        "Dev-server rebuild timing (cache-free after M1; the CompileCache was removed, §11-M1/§13).",
         "sys.modules purge + project re-import cost is EXCLUDED (module-reload cost not modeled).",
     ]
     try:
         method, cold_seconds, warm_seconds = _dev_rebuild_via_collection(project, config, repeat)
-        notes.append("Timed region = build_project_to_existing_collection (compile with warm CompileCache).")
-        notes.append("write_collection / prune_unaccessed are outside the timed region.")
+        notes.append("Timed region = build_project_to_existing_collection (cache-free re-optimize).")
+        notes.append("write_collection is outside the timed region.")
     except Exception as exc:
         method, cold_seconds, warm_seconds = _dev_rebuild_via_package_engine(project, config, repeat)
         notes.append(
             "Full collection build unavailable "
             f"({type(exc).__name__}: {exc}); measured package_engine directly instead "
-            "(the compile step add_engine_to_collection invokes, i.e. the CompileCache-relevant work)."
+            "(the compile step add_engine_to_collection invokes)."
         )
-        notes.append("Timed region = package_engine (compile with warm CompileCache).")
+        notes.append("Timed region = package_engine (cache-free re-optimize).")
 
     return {
         "config": {

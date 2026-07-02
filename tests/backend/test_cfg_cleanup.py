@@ -1,6 +1,7 @@
 """Tests for the ``cfg_cleanup`` mid-end pass (milestone M1, section 7.1).
 
-Four layers, per the task:
+Three layers (the wave-2 block-count-<=-old corpus assertion compared against the
+now-deleted old cleanup pipeline and is retired with M1):
 
 1. Hand-built unit tests asserting exact ``cfg_to_text`` output for every
    cleanup rule (constant-test folds in both if-shape polarities incl. NaN,
@@ -8,14 +9,12 @@ Four layers, per the task:
    parallel-edge dedup, single-pred/succ merge, tail-dup enabling threading,
    exit-block sharing, unreachable elimination).
 2. Semantic differential on hand-built interpretable CFGs: the ORIGINAL and the
-   CLEANED CFG, each run through the old ``AllocateBasic`` -> ``cfg_to_engine_node``
-   -> ``Interpreter`` path, must agree on result, debug log, and observable
-   memory. Covers loops, switches, dead branches, and ``Op.Break``.
+   CLEANED CFG, each run through the NEW ``run_allocate`` (bump) ->
+   ``cfg_to_engine_node`` -> ``Interpreter`` path, must agree on result, debug
+   log, and observable memory. Covers loops, switches, dead branches, ``Op.Break``.
 3. Corpus properties over all pydori callbacks (raw CFGs): verify() stays green,
    cleanup is idempotent, block/edge counts never grow, and the output shape is
    canonical.
-4. Old-vs-new sanity: new block count <= the old CoalesceFlow + UCE +
-   CombineExitBlocks + CoalesceFlow pipeline on every callback.
 """
 
 from __future__ import annotations
@@ -26,16 +25,13 @@ import pytest
 from sonolus.backend._opt.midend import cleanup_func, run_cfg_cleanup  # noqa: PLC2701
 
 from sonolus.backend._opt import ir as _ir  # noqa: PLC2701
-from sonolus.backend.finalize import cfg_to_engine_node
+from sonolus.backend._opt import lower  # noqa: PLC2701
 from sonolus.backend.interpret import Interpreter
 from sonolus.backend.ir import IRConst, IRGet, IRInstr, IRPureInstr, IRSet
 from sonolus.backend.mode import Mode
 from sonolus.backend.ops import Op
-from sonolus.backend.optimize.allocate import AllocateBasic
-from sonolus.backend.optimize.dead_code import UnreachableCodeElimination
+from sonolus.backend.optimize import cfg_to_engine_node
 from sonolus.backend.optimize.flow import BasicBlock, cfg_to_text, traverse_cfg_reverse_postorder
-from sonolus.backend.optimize.passes import OptimizerConfig, run_passes
-from sonolus.backend.optimize.simplify import CoalesceFlow, CombineExitBlocks
 from sonolus.backend.place import BlockPlace, TempBlock
 from tests.backend.test_corpus_roundtrip import _iter_callbacks
 
@@ -303,8 +299,11 @@ def test_phi_safe_disables_tail_duplication():
 
 
 def _interp(entry, seed):
-    AllocateBasic().run(entry, OptimizerConfig())
-    node = cfg_to_engine_node(entry)
+    # Allocate temps (bump, == old AllocateBasic behaviour) then emit via the new
+    # arena emitter, so the original and cleaned CFGs are compared through the same
+    # NEW toolchain (OPTIMIZER_REWRITE.md 5).
+    allocated = lower.run_allocate(entry, strategy="bump")
+    node = cfg_to_engine_node(allocated)
     it = Interpreter()
     for (blk, idx), val in seed.items():
         it.set(blk, idx, val)
@@ -516,24 +515,3 @@ def test_corpus_statements_nonincreasing_without_tail_dup(mode):
         out = run_cfg_cleanup(factory(), mode, callback_name, phi_safe=True)
         _, _, so = _counts(out)
         assert so <= si, f"{label}: statements grew {si} -> {so} under phi_safe"
-
-
-# ==========================================================================
-# 4. Old-vs-new sanity
-# ==========================================================================
-
-
-@pytest.mark.parametrize("mode", list(Mode))
-def test_corpus_not_worse_than_old_pipeline(mode):
-    # The old cleanup pipeline (a subset of this pass); new block count must be
-    # <= old on every callback. Structural equality is NOT expected.
-    old_passes = [CoalesceFlow(), UnreachableCodeElimination(), CombineExitBlocks(), CoalesceFlow()]
-    worse = []
-    for label, callback_name, factory in _iter_callbacks(mode):
-        old = run_passes(factory(), old_passes, OptimizerConfig(mode=mode, callback=callback_name))
-        old_blocks = len(list(traverse_cfg_reverse_postorder(old)))
-        new = run_cfg_cleanup(factory(), mode, callback_name)
-        new_blocks = len(list(traverse_cfg_reverse_postorder(new)))
-        if new_blocks > old_blocks:
-            worse.append((label, old_blocks, new_blocks))
-    assert not worse, f"new pass produced more blocks than old on: {worse}"

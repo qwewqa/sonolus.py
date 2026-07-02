@@ -2,11 +2,12 @@
 
 Covers the three strategies (``bump`` / ``packing`` / ``try_bump``), the
 true-first-fit gap packer, array contiguity, size-0 sentinels, the 4096-slot
-cap, determinism, dead-store elimination, a semantic differential against the
-OLD pipeline (old ``Allocate`` + ``finalize`` + ``Interpreter``) on hand-built
-interpretable CFGs, and a pydori corpus check that new packing verifies, never
-uses more slots than the old ``Allocate``, and loses no statement except
-legitimately-dead stores. See OPTIMIZER_REWRITE.md §4 and §7.5.
+cap, determinism, dead-store elimination, a semantic differential across the
+three strategies (emit + ``Interpreter``) on hand-built interpretable CFGs, and
+a pydori corpus check that packing ``verify()``s green and stays within the cap.
+The wave-2 A/B comparisons against the now-deleted old ``Allocate`` /
+``LivenessAnalysis`` served their purpose and are retired with M1. See
+OPTIMIZER_REWRITE.md §4 and §7.5.
 """
 
 from __future__ import annotations
@@ -14,14 +15,12 @@ from __future__ import annotations
 import pytest
 
 from sonolus.backend._opt import ir, lower  # noqa: PLC2701
-from sonolus.backend.finalize import cfg_to_engine_node
 from sonolus.backend.interpret import Interpreter
 from sonolus.backend.ir import IRConst, IRGet, IRInstr, IRPureInstr, IRSet
 from sonolus.backend.mode import Mode
 from sonolus.backend.ops import Op
-from sonolus.backend.optimize.allocate import Allocate
+from sonolus.backend.optimize import cfg_to_engine_node
 from sonolus.backend.optimize.flow import BasicBlock, cfg_to_text, traverse_cfg_reverse_postorder
-from sonolus.backend.optimize.passes import OptimizerConfig, run_passes
 from sonolus.backend.place import BlockPlace, TempBlock
 
 TEMP_BLOCK = 10000
@@ -124,10 +123,10 @@ def test_non_interfering_temps_share_slot():
 
 
 # --------------------------------------------------------------------------
-# Gap reuse: true first-fit beats the old bump-past packer.
+# Gap reuse: true first-fit reuses a dead array's slots, unlike bump.
 # --------------------------------------------------------------------------
 
-def test_gap_reuse_beats_old_packer():
+def test_gap_reuse_packs_below_bump():
     def make():
         arr = TempBlock("p", 4)
         b0 = BasicBlock()
@@ -140,9 +139,10 @@ def test_gap_reuse_beats_old_packer():
         ]
         return b0
 
-    new_cfg = lower.run_allocate(make(), strategy="packing")
-    old_cfg = run_passes(make(), [Allocate()], OptimizerConfig())
-    assert slot_count(new_cfg) < slot_count(old_cfg)
+    packed = lower.run_allocate(make(), strategy="packing")
+    bumped = lower.run_allocate(make(), strategy="bump")
+    # First-fit reuses the dead 4-slot array's range for n/t; bump never does.
+    assert slot_count(packed) < slot_count(bumped)
 
 
 # --------------------------------------------------------------------------
@@ -318,11 +318,11 @@ def test_verify_green_after_allocation():
 
 
 # --------------------------------------------------------------------------
-# Semantic differential vs the OLD pipeline on interpretable CFGs.
+# Semantic differential across the three strategies on interpretable CFGs.
 # --------------------------------------------------------------------------
 
 def _interpret(cfg, seed=None):
-    node = cfg_to_engine_node(cfg)  # consumes/mutates cfg
+    node = cfg_to_engine_node(cfg)  # non-destructive (marshals a fresh arena)
     interp = Interpreter()
     for block, values in (seed or {}).items():
         interp.blocks[block] = list(values)
@@ -332,10 +332,15 @@ def _interpret(cfg, seed=None):
 
 
 def _assert_semantic_match(make_cfg, seed=None, mode=None, callback=None):
-    old = _interpret(run_passes(make_cfg(), [Allocate()], OptimizerConfig(mode=mode, callback=callback)), seed)
-    for strat in ("packing", "bump", "try_bump"):
-        new = _interpret(lower.run_allocate(make_cfg(), mode, callback, strat), seed)
-        assert new == old, f"strategy {strat}: new={new} old={old}"
+    # All three allocation strategies must be observably equivalent (result, log,
+    # and non-scratch memory); packing is the reference.
+    results = {
+        strat: _interpret(lower.run_allocate(make_cfg(), mode, callback, strat), seed)
+        for strat in ("packing", "bump", "try_bump")
+    }
+    ref = results["packing"]
+    for strat, res in results.items():
+        assert res == ref, f"strategy {strat}: {res} != packing {ref}"
 
 
 def test_semantic_loop_sum():
@@ -427,7 +432,7 @@ def test_semantic_branch_and_memory():
 
 
 # --------------------------------------------------------------------------
-# pydori corpus: verify green, slots <= old, no statement lost.
+# pydori corpus: packing verifies green and stays within the slot cap.
 # --------------------------------------------------------------------------
 
 def _enumerate_pydori_callbacks():
@@ -479,27 +484,18 @@ def _enumerate_pydori_callbacks():
 
 
 def test_pydori_corpus_packing(capsys):
-    old_total = 0
     new_total = 0
     n = 0
     for name, cfg, mode, callback in _enumerate_pydori_callbacks():
         n += 1
-        # marshal_in does not mutate cfg, so the same cfg feeds the old pass after.
         func = lower.allocate_arena(cfg, mode, callback, "packing")
         assert func.verify(), f"{name}: verify failed"
         new_cfg = ir.to_basic_blocks(func)
         new_slots = slot_count(new_cfg)
-        new_stmts = stmt_count(new_cfg)
-
-        old_cfg = run_passes(cfg, [Allocate()], OptimizerConfig(mode=mode, callback=callback))
-        old_slots = slot_count(old_cfg)
-        old_stmts = stmt_count(old_cfg)
-
-        assert new_slots <= old_slots, f"{name}: new {new_slots} > old {old_slots} slots"
-        assert new_stmts == old_stmts, f"{name}: statement count {new_stmts} != old {old_stmts}"
-        old_total += old_slots
+        # Packing must stay within the 4096-slot temp-memory cap (block 10000).
+        assert new_slots <= 4096, f"{name}: {new_slots} slots exceeds cap"
         new_total += new_slots
 
     assert n > 0
     with capsys.disabled():
-        print(f"\n[pydori corpus] {n} callbacks: old slots total={old_total}, new slots total={new_total}")
+        print(f"\n[pydori corpus] {n} callbacks: packing slots total={new_total}")

@@ -1,13 +1,12 @@
 from __future__ import annotations
 
-from collections.abc import Callable, Iterable, Sequence
+from collections.abc import Callable, Iterable
 from dataclasses import dataclass
 from os import PathLike
 from pathlib import Path
 from typing import ClassVar, TypedDict
 
-from sonolus.backend.optimize import optimize
-from sonolus.backend.optimize.passes import CompilerPass
+from sonolus.backend import optimize
 from sonolus.script.archetype import ArchetypeSchema
 from sonolus.script.engine import Engine
 from sonolus.script.internal.context import RuntimeChecks
@@ -120,17 +119,17 @@ class ProjectSchema(TypedDict):
 class BuildConfig:
     """A configuration for building an engine package."""
 
-    MINIMAL_PASSES: ClassVar[Sequence[CompilerPass]] = optimize.MINIMAL_PASSES
-    """The minimal list of compiler passes."""
+    MINIMAL_PASSES: ClassVar[optimize.OptimizationLevel] = optimize.MINIMAL_PASSES
+    """The minimal optimization level (-O0)."""
 
-    FAST_PASSES: ClassVar[Sequence[CompilerPass]] = optimize.FAST_PASSES
-    """The list of compiler passes for faster builds."""
+    FAST_PASSES: ClassVar[optimize.OptimizationLevel] = optimize.FAST_PASSES
+    """The fast optimization level for quicker builds (-O1)."""
 
-    STANDARD_PASSES: ClassVar[Sequence[CompilerPass]] = optimize.STANDARD_PASSES
-    """The standard list of compiler passes."""
+    STANDARD_PASSES: ClassVar[optimize.OptimizationLevel] = optimize.STANDARD_PASSES
+    """The standard optimization level (-O2)."""
 
-    passes: Sequence[CompilerPass] = optimize.STANDARD_PASSES
-    """The list of compiler passes to use."""
+    passes: optimize.OptimizationLevel = optimize.STANDARD_PASSES
+    """The optimization level to use."""
 
     build_play: bool = True
     """Whether to build the play package."""

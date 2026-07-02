@@ -11,12 +11,17 @@ from types import CellType
 from hypothesis import settings
 
 from sonolus.backend.blocks import PlayBlock
-from sonolus.backend.finalize import cfg_to_engine_node
 from sonolus.backend.interpret import Interpreter
 from sonolus.backend.mode import Mode
+from sonolus.backend.optimize import (
+    FAST_PASSES,
+    MINIMAL_PASSES,
+    STANDARD_PASSES,
+    OptimizerConfig,
+    cfg_to_engine_node,
+    run_passes,
+)
 from sonolus.backend.optimize.flow import BasicBlock
-from sonolus.backend.optimize.optimize import FAST_PASSES, MINIMAL_PASSES, STANDARD_PASSES
-from sonolus.backend.optimize.passes import OptimizerConfig, run_passes
 from sonolus.backend.place import BlockPlace
 from sonolus.build.compile import callback_to_cfg
 from sonolus.script.debug import debug_log_callback, simulation_context
