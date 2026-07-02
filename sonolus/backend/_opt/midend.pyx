@@ -67,6 +67,7 @@ from sonolus.backend._opt.ir cimport (
     PLACE_TEMP_ARRAY,
     PLACE_TEMP_SCALAR,
     PLACE_TEMP_SIZE0,
+    PLACE_RUNTIME_CONST,
     PLACE_WRITABLE,
     TempInfo,
 )
@@ -95,7 +96,7 @@ from sonolus.backend._opt._ops_gen cimport (
     OP_Subtract,
     SONOLUS_OP_FOLDABLE,
 )
-from sonolus.backend._opt.analysis cimport Dominators, compute_dominators
+from sonolus.backend._opt.analysis cimport Dominators, LoopForest, compute_dominators, compute_loops
 from sonolus.backend._opt.kernels cimport FOLD_OK, fold_op
 
 from sonolus.backend._opt.ir import marshal_in, register_phase, to_basic_blocks
@@ -2931,6 +2932,892 @@ def _run_dce(Func f):
     return (newf, True)
 
 
+# ==========================================================================
+# LICM (7.2.5) and rewrite_switch (7.2.6) -- M3 standard-level SSA passes.
+#
+# Both reshape the CFG on SSA form (phis live). ``rewrite_switch`` only rewrites
+# block tests + edge conds/targets and drops dead blocks (no instr relocation),
+# so it reuses the SCCP/DCE arena rebuilder (``_build_compacted``) after mutating
+# tests in place. LICM relocates instructions into a fresh preheader block, which
+# ``_build_compacted`` cannot express, so it uses the general model-driven
+# rebuilder ``_emit_from_model`` below.
+# ==========================================================================
+
+
+# ---- general model-driven SSA arena rebuilder ----------------------------
+# A "model" is a list of plan-blocks (``pblocks``; arbitrary order, entry given).
+# Each plan-block is a dict:
+#   "items": value items in schedule order (phis first):
+#       ("i",  old_vid, opmap|None)   copy src instr old_vid. If it is an OPX_PHI,
+#                                     ``opmap`` {edge_key: vref} gives per-edge
+#                                     operands; otherwise opmap is None (operands
+#                                     copied from src and remapped).
+#       ("np", token, temp_id, opmap) a brand-new phi ({edge_key: vref}).
+#   "test":  vref | None
+#   "edges": list of [dst_pb, cond_kind, cond, cond_is_int, edge_key]
+# vref = ("o", old_vid) | ("n", token). ``edge_key`` is any hashable, matched
+# between an incoming edge spec and a phi's opmap. Produces a fresh SSA ``Func``.
+
+cdef int32_t _resolve_vref(object ref, dict oldmap, dict tokenmap) except -1:
+    if <str>ref[0] == "o":
+        return <int32_t>oldmap[<int32_t>ref[1]]
+    return <int32_t>tokenmap[ref[1]]
+
+
+def _emit_from_model(Func src, list pblocks, int entry_pb):
+    cdef Func dst = Func()
+    cdef int32_t npb = len(pblocks)
+    cdef int32_t i, k, pb, kk, nn, astart, ov, op, pid, val_new, ni, arg_cursor
+    cdef int32_t total_instrs, total_args, nb_new, ninc
+
+    # --- reachability + RPO from entry over model edges ---
+    succ = [[] for _ in range(npb)]
+    for pb in range(npb):
+        for espec in <list>(<dict>pblocks[pb])["edges"]:
+            (<list>succ[pb]).append(<int32_t>espec[0])
+    visited = [False] * npb
+    post = []
+    stack = [(entry_pb, 0)]
+    visited[entry_pb] = True
+    while stack:
+        top = stack[len(stack) - 1]
+        node = <int32_t>top[0]
+        idx = <int32_t>top[1]
+        slist = <list>succ[node]
+        if idx < len(slist):
+            stack[len(stack) - 1] = (node, idx + 1)
+            ch = <int32_t>slist[idx]
+            if not <bint>visited[ch]:
+                visited[ch] = True
+                stack.append((ch, 0))
+        else:
+            post.append(node)
+            stack.pop()
+    rpo = list(reversed(post))
+    nb_new = len(rpo)
+    new_bid = {}
+    for k in range(nb_new):
+        new_bid[<int32_t>rpo[k]] = k
+
+    # --- consts / temps / names carry over 1:1 (ids preserved) ---
+    if src.n_consts > 0:
+        dst.consts = <double*>malloc(<size_t>src.n_consts * sizeof(double))
+        if dst.consts == NULL:
+            raise MemoryError()
+        memcpy(dst.consts, src.consts, <size_t>src.n_consts * sizeof(double))
+    dst.n_consts = src.n_consts
+    dst.cap_consts = src.n_consts
+    dst._const_intern = dict(src._const_intern)
+    if src.n_temps > 0:
+        dst.temps = <TempInfo*>malloc(<size_t>src.n_temps * sizeof(TempInfo))
+        if dst.temps == NULL:
+            raise MemoryError()
+        memcpy(dst.temps, src.temps, <size_t>src.n_temps * sizeof(TempInfo))
+    dst.n_temps = src.n_temps
+    dst.cap_temps = src.n_temps
+    dst.names = list(src.names)
+    dst._temp_intern = dict(src._temp_intern)
+    dst._block_enum_by_id = dict(src._block_enum_by_id)
+    dst.blocks_type = src.blocks_type
+    dst.callback = src.callback
+    dst._block_map = dict(src._block_map)
+    dst.is_ssa = True
+
+    # --- edges (block-by-block in RPO) + per-dst incoming (new-edge-index order) ---
+    new_edges = []
+    incoming_new = [[] for _ in range(nb_new)]
+    block_edge_start = [0] * nb_new
+    block_edge_count = [0] * nb_new
+    for k in range(nb_new):
+        pb = <int32_t>rpo[k]
+        block_edge_start[k] = len(new_edges)
+        for espec in <list>(<dict>pblocks[pb])["edges"]:
+            dst_pb = <int32_t>espec[0]
+            if dst_pb not in new_bid:
+                continue
+            nb_dst = <int32_t>new_bid[dst_pb]
+            nei = len(new_edges)
+            new_edges.append((k, nb_dst, <int32_t>espec[1], <double>espec[2], <int32_t>espec[3]))
+            (<list>incoming_new[nb_dst]).append((nei, espec[4]))
+        block_edge_count[k] = len(new_edges) - block_edge_start[k]
+
+    # --- assign new value ids (phis first per block already, by item order) ---
+    oldmap = {}
+    tokenmap = {}
+    block_items = [None] * nb_new
+    block_start = [0] * nb_new
+    ni = 0
+    for k in range(nb_new):
+        pb = <int32_t>rpo[k]
+        items = <list>(<dict>pblocks[pb])["items"]
+        block_items[k] = items
+        block_start[k] = ni
+        for it in items:
+            if <str>it[0] == "i":
+                oldmap[<int32_t>it[1]] = ni
+            else:
+                tokenmap[it[1]] = ni
+            ni += 1
+    total_instrs = ni
+
+    # --- count operand slots ---
+    total_args = 0
+    for k in range(nb_new):
+        ninc = len(<list>incoming_new[k])
+        for it in <list>block_items[k]:
+            if <str>it[0] == "np":
+                total_args += ninc
+            else:
+                ov = <int32_t>it[1]
+                op = src.instrs[ov].op
+                if op == OPX_PHI:
+                    total_args += ninc
+                elif op == OPX_CONST or op == OPX_UNDEF or op == OPX_GET:
+                    pass
+                elif op == OPX_SET:
+                    total_args += 1
+                else:
+                    total_args += src.instrs[ov].nargs
+
+    dst.instrs = <Instr*>malloc(<size_t>(total_instrs if total_instrs > 0 else 1) * sizeof(Instr))
+    dst.args = <uint32_t*>malloc(<size_t>(total_args if total_args > 0 else 1) * sizeof(uint32_t))
+    if dst.instrs == NULL or dst.args == NULL:
+        raise MemoryError()
+    dst.n_instrs = total_instrs
+    dst.cap_instrs = total_instrs
+    dst.cap_args = total_args
+
+    dst.blocks = <BlockInfo*>malloc(<size_t>(nb_new if nb_new > 0 else 1) * sizeof(BlockInfo))
+    if dst.blocks == NULL:
+        raise MemoryError()
+    dst.n_blocks = nb_new
+    dst.cap_blocks = nb_new
+    dst.entry_block = <int32_t>new_bid[entry_pb]
+
+    place_map = {}
+    arg_cursor = 0
+    cdef int32_t phi_first, phi_cnt
+    for k in range(nb_new):
+        pb = <int32_t>rpo[k]
+        inclist = <list>incoming_new[k]
+        ninc = len(inclist)
+        phi_first = -1
+        phi_cnt = 0
+        ni = <int32_t>block_start[k]
+        for it in <list>block_items[k]:
+            dst.instrs[ni].block = k
+            dst.instrs[ni].arg_start = arg_cursor
+            if <str>it[0] == "np":
+                opmap = <dict>it[3]
+                for pair in inclist:
+                    dst.args[arg_cursor] = <uint32_t>_resolve_vref(opmap[pair[1]], oldmap, tokenmap)
+                    arg_cursor += 1
+                dst.instrs[ni].op = OPX_PHI
+                dst.instrs[ni].flags = 0
+                dst.instrs[ni].aux = <int32_t>it[2]
+                dst.instrs[ni].nargs = <int16_t>ninc
+                if phi_first == -1:
+                    phi_first = ni
+                phi_cnt += 1
+            else:
+                ov = <int32_t>it[1]
+                op = src.instrs[ov].op
+                if op == OPX_PHI:
+                    opmap = <dict>it[2]
+                    for pair in inclist:
+                        dst.args[arg_cursor] = <uint32_t>_resolve_vref(opmap[pair[1]], oldmap, tokenmap)
+                        arg_cursor += 1
+                    dst.instrs[ni].op = OPX_PHI
+                    dst.instrs[ni].flags = src.instrs[ov].flags
+                    dst.instrs[ni].aux = src.instrs[ov].aux
+                    dst.instrs[ni].nargs = <int16_t>ninc
+                    if phi_first == -1:
+                        phi_first = ni
+                    phi_cnt += 1
+                elif op == OPX_CONST:
+                    dst.instrs[ni].op = OPX_CONST
+                    dst.instrs[ni].flags = src.instrs[ov].flags
+                    dst.instrs[ni].aux = src.instrs[ov].aux
+                    dst.instrs[ni].nargs = 0
+                elif op == OPX_UNDEF:
+                    dst.instrs[ni].op = OPX_UNDEF
+                    dst.instrs[ni].flags = src.instrs[ov].flags
+                    dst.instrs[ni].aux = -1
+                    dst.instrs[ni].nargs = 0
+                elif op == OPX_GET:
+                    pid = _remap_place_c(dst, src, src.instrs[ov].aux, oldmap, place_map)
+                    dst.instrs[ni].op = OPX_GET
+                    dst.instrs[ni].flags = src.instrs[ov].flags
+                    dst.instrs[ni].aux = pid
+                    dst.instrs[ni].nargs = 0
+                elif op == OPX_SET:
+                    val_new = <int32_t>oldmap[<int32_t>src.args[src.instrs[ov].arg_start]]
+                    pid = _remap_place_c(dst, src, src.instrs[ov].aux, oldmap, place_map)
+                    dst.args[arg_cursor] = <uint32_t>val_new
+                    arg_cursor += 1
+                    dst.instrs[ni].op = OPX_SET
+                    dst.instrs[ni].flags = src.instrs[ov].flags
+                    dst.instrs[ni].aux = pid
+                    dst.instrs[ni].nargs = 1
+                else:
+                    astart = src.instrs[ov].arg_start
+                    nn = src.instrs[ov].nargs
+                    for kk in range(nn):
+                        dst.args[arg_cursor] = <uint32_t><int32_t>oldmap[<int32_t>src.args[astart + kk]]
+                        arg_cursor += 1
+                    dst.instrs[ni].op = <uint16_t>op
+                    dst.instrs[ni].flags = src.instrs[ov].flags
+                    dst.instrs[ni].aux = src.instrs[ov].aux
+                    dst.instrs[ni].nargs = <int16_t>nn
+            ni += 1
+        dst.blocks[k].instr_start = <int32_t>block_start[k]
+        dst.blocks[k].instr_count = len(<list>block_items[k])
+        dst.blocks[k].phi_start = phi_first if phi_cnt > 0 else <int32_t>block_start[k]
+        dst.blocks[k].phi_count = phi_cnt
+        dst.blocks[k].rpo = k
+        dst.blocks[k].idom = -1
+        dst.blocks[k].edge_start = <int32_t>block_edge_start[k]
+        dst.blocks[k].edge_count = <int32_t>block_edge_count[k]
+        tref = (<dict>pblocks[pb])["test"]
+        has_value_edge = False
+        for espec in <list>(<dict>pblocks[pb])["edges"]:
+            if <int32_t>espec[0] in new_bid and <int32_t>espec[1] == EDGE_COND_VALUE:
+                has_value_edge = True
+                break
+        if tref is not None and has_value_edge:
+            dst.blocks[k].test_val = _resolve_vref(tref, oldmap, tokenmap)
+        else:
+            dst.blocks[k].test_val = -1
+    dst.n_args = arg_cursor
+
+    cdef int32_t nen = len(new_edges)
+    dst.edges = <Edge*>malloc(<size_t>(nen if nen > 0 else 1) * sizeof(Edge))
+    if dst.edges == NULL:
+        raise MemoryError()
+    for i in range(nen):
+        ne_t = new_edges[i]
+        dst.edges[i].src = <int32_t>ne_t[0]
+        dst.edges[i].dst = <int32_t>ne_t[1]
+        dst.edges[i].cond_kind = <uint8_t>ne_t[2]
+        dst.edges[i].cond = <double>ne_t[3]
+        dst.edges[i].cond_is_int = <uint8_t>ne_t[4]
+    dst.n_edges = nen
+    dst.cap_edges = nen
+
+    if src.undef_val >= 0 and src.undef_val in oldmap:
+        dst.undef_val = <int32_t>oldmap[src.undef_val]
+    else:
+        dst.undef_val = -1
+    widened = set()
+    if src._ssa_undef:
+        for wv in src._ssa_undef:
+            if wv in oldmap:
+                widened.add(<int32_t>oldmap[wv])
+    dst._ssa_undef = widened
+
+    compute_dominators(dst)
+    return dst
+
+
+# ---- LICM (7.2.5) --------------------------------------------------------
+# Loop forest from dominators + back edges. For each loop (inner-first), hoist
+# pure / effectively-pure (non-writable static real-block reads), loop-invariant,
+# guaranteed-to-execute (def block dominates every latch) values whose EFFECTIVE
+# cost (section 2) is >= 4 into a preheader. Effective cost: runtime-constant
+# subtrees (pure ops over OPX_CONST + PLACE_RUNTIME_CONST reads) cost 1, so they
+# NEVER hoist -- deliberately diverging from the old LICM, which hoisted them and
+# blocked the runtime's own constant folding (OPTIMIZER_REWRITE.md 7.2.5). This
+# effective-cost walk duplicates the one in lower.pyx (a cimport would create a
+# midend<->lower cycle); the two stay aligned with section 2.
+
+
+cdef bint _licm_is_rtc(Func f, int32_t v, dict memo) except -1:
+    # True iff the whole subtree rooted at v is runtime-constant.
+    cached = memo.get(v)
+    if cached is not None:
+        return <bint>cached
+    cdef uint16_t op = f.instrs[v].op
+    cdef int32_t astart, n, k, pid
+    cdef bint r = False
+    if op == OPX_CONST:
+        r = True
+    elif op == OPX_GET:
+        pid = f.instrs[v].aux
+        r = (f.places[pid].flags & PLACE_RUNTIME_CONST) != 0
+    elif op < OP_RUNTIME_COUNT and (f.instrs[v].flags & FLAG_PURE):
+        r = True
+        astart = f.instrs[v].arg_start
+        n = f.instrs[v].nargs
+        for k in range(n):
+            if not _licm_is_rtc(f, <int32_t>f.args[astart + k], memo):
+                r = False
+                break
+    memo[v] = r
+    return r
+
+
+cdef int32_t _licm_eff_cost(Func f, int32_t v, dict memo, dict memo_rtc) except -1:
+    # Effective cost (section 2), mirroring the old CSE/LICM _cost tree walk with
+    # the runtime-constant refinement. Memoised per value id.
+    cached = memo.get(v)
+    if cached is not None:
+        return <int32_t>cached
+    if _licm_is_rtc(f, v, memo_rtc):
+        memo[v] = 1
+        return 1
+    cdef uint16_t op = f.instrs[v].op
+    cdef int32_t astart, n, k, pid, iv, c
+    if op == OPX_CONST:
+        c = 1
+    elif op == OPX_UNDEF:
+        c = 3
+    elif op == OPX_GET:
+        pid = f.instrs[v].aux
+        c = 1
+        if f.places[pid].kind == PLACE_DYNAMIC_BLOCK:
+            c += _licm_eff_cost(f, f.places[pid].block_ref, memo, memo_rtc)
+        else:
+            c += 1
+        iv = f.places[pid].index_val
+        if iv < 0:
+            c += 1
+        else:
+            c += _licm_eff_cost(f, iv, memo, memo_rtc)
+    elif op < OP_RUNTIME_COUNT and (f.instrs[v].flags & FLAG_PURE):
+        c = 1
+        astart = f.instrs[v].arg_start
+        n = f.instrs[v].nargs
+        for k in range(n):
+            c += _licm_eff_cost(f, <int32_t>f.args[astart + k], memo, memo_rtc)
+    else:
+        # phi / impure / Random -- a materialised scalar value reference.
+        c = 3
+    memo[v] = c
+    return c
+
+
+cdef bint _licm_hoist_kind(Func f, int32_t v) noexcept nogil:
+    cdef uint16_t op = f.instrs[v].op
+    cdef int32_t pid
+    if op == OPX_GET:
+        pid = f.instrs[v].aux
+        return f.places[pid].kind == PLACE_REAL_BLOCK and not (f.places[pid].flags & PLACE_WRITABLE)
+    if op < OP_RUNTIME_COUNT and (f.instrs[v].flags & FLAG_PURE):
+        return True
+    return False
+
+
+cdef list _licm_operands(Func f, int32_t v):
+    # Value ids this value directly consumes (for the hoist-set closure).
+    cdef int32_t pid, astart, n, k
+    res = []
+    if f.instrs[v].op == OPX_GET:
+        pid = f.instrs[v].aux
+        if f.places[pid].kind == PLACE_DYNAMIC_BLOCK:
+            res.append(f.places[pid].block_ref)
+        if f.places[pid].index_val >= 0:
+            res.append(f.places[pid].index_val)
+        return res
+    astart = f.instrs[v].arg_start
+    n = f.instrs[v].nargs
+    for k in range(n):
+        res.append(<int32_t>f.args[astart + k])
+    return res
+
+
+cdef bint _licm_operand_inv(Func f, LoopForest F, int32_t L, int32_t a, dict inv) except -1:
+    # An operand is loop-invariant if defined outside the loop, or invariant itself.
+    if not F.in_loop(L, f.instrs[a].block):
+        return True
+    return <bint>inv.get(a, False)
+
+
+cdef bint _licm_is_invariant(Func f, LoopForest F, int32_t L, int32_t v, dict inv) except -1:
+    cdef uint16_t op = f.instrs[v].op
+    cdef int32_t pid, astart, n, k, iv
+    if op == OPX_PHI:
+        return False
+    if op == OPX_UNDEF or op == OPX_CONST:
+        return True
+    if op == OPX_GET:
+        pid = f.instrs[v].aux
+        if f.places[pid].kind != PLACE_REAL_BLOCK:
+            return False
+        if f.places[pid].flags & PLACE_WRITABLE:
+            return False
+        iv = f.places[pid].index_val
+        if iv >= 0 and not _licm_operand_inv(f, F, L, iv, inv):
+            return False
+        return True
+    if op < OP_RUNTIME_COUNT and (f.instrs[v].flags & FLAG_PURE):
+        astart = f.instrs[v].arg_start
+        n = f.instrs[v].nargs
+        for k in range(n):
+            if not _licm_operand_inv(f, F, L, <int32_t>f.args[astart + k], inv):
+                return False
+        return True
+    return False
+
+
+def _phi_opmap_src(Func f, int32_t vid):
+    # {src_edge_index: ("o", operand_vid)} for a phi, by incoming-edge order.
+    cdef int32_t b = f.instrs[vid].block
+    cdef int32_t astart = f.instrs[vid].arg_start
+    cdef int32_t nargs = f.instrs[vid].nargs
+    cdef int32_t e, k
+    inc = []
+    for e in range(f.n_edges):
+        if f.edges[e].dst == b:
+            inc.append(e)
+    opmap = {}
+    for k in range(nargs):
+        opmap[<int32_t>inc[k]] = ("o", <int32_t>f.args[astart + k])
+    return opmap
+
+
+def _licm_try_loop(Func f, Dominators D, LoopForest F, int32_t L):
+    cdef int32_t header = F.header[L]
+    cdef int32_t entry = f.entry_block
+    cdef int32_t nb = f.n_blocks
+    cdef int32_t e, u, vid, b, a
+    if header == entry:
+        return None
+
+    # latches: tails of back edges into the header.
+    latches = []
+    for e in range(f.n_edges):
+        if f.edges[e].dst == header and D.dominates(header, f.edges[e].src):
+            latches.append(f.edges[e].src)
+    if not latches:
+        return None
+
+    # invariant set: single forward pass over loop-body values (operands of a
+    # non-phi value have strictly smaller ids, so one pass suffices; phis are
+    # never invariant and break any cycle).
+    inv = {}
+    for vid in range(f.n_instrs):
+        b = f.instrs[vid].block
+        if not F.in_loop(L, b):
+            continue
+        inv[vid] = _licm_is_invariant(f, F, L, vid, inv)
+
+    # hoist roots: invariant, hoistable kind, guaranteed-to-execute, cost >= 4.
+    memo_cost = {}
+    memo_rtc = {}
+    roots = []
+    for vid in range(f.n_instrs):
+        b = f.instrs[vid].block
+        if not F.in_loop(L, b):
+            continue
+        if not <bint>inv.get(vid, False):
+            continue
+        if not _licm_hoist_kind(f, vid):
+            continue
+        guaranteed = True
+        for u in latches:
+            if not D.dominates(b, u):
+                guaranteed = False
+                break
+        if not guaranteed:
+            continue
+        if _licm_eff_cost(f, vid, memo_cost, memo_rtc) < 4:
+            continue
+        roots.append(vid)
+    if not roots:
+        return None
+
+    # closure over in-loop (invariant) operands so the preheader is self-contained.
+    H = set()
+    work = list(roots)
+    while work:
+        v = <int32_t>work.pop()
+        if v in H:
+            continue
+        if not F.in_loop(L, f.instrs[v].block):
+            continue
+        if not <bint>inv.get(v, False):
+            continue
+        H.add(v)
+        for a in _licm_operands(f, v):
+            work.append(a)
+    if not H:
+        return None
+
+    return _licm_apply(f, D, F, L, header, H)
+
+
+def _licm_apply(Func f, Dominators D, LoopForest F, int32_t L, int32_t header, set H):
+    cdef int32_t nb = f.n_blocks
+    cdef int32_t b, vid, istart, icount, es, ec, e, pred
+
+    # base model: one plan-block per src block (index == src block id).
+    pblocks = []
+    for b in range(nb):
+        items = []
+        istart = f.blocks[b].instr_start
+        icount = f.blocks[b].instr_count
+        for vid in range(istart, istart + icount):
+            if vid in H:
+                continue  # hoisted values are relocated to the preheader
+            if f.instrs[vid].op == OPX_PHI:
+                items.append(("i", vid, _phi_opmap_src(f, vid)))
+            else:
+                items.append(("i", vid, None))
+        test = ("o", f.blocks[b].test_val) if f.blocks[b].test_val >= 0 else None
+        edges = []
+        es = f.blocks[b].edge_start
+        ec = f.blocks[b].edge_count
+        for e in range(es, es + ec):
+            edges.append([f.edges[e].dst, f.edges[e].cond_kind, f.edges[e].cond, f.edges[e].cond_is_int, e])
+        pblocks.append({"items": items, "test": test, "edges": edges})
+
+    entry_pb = f.entry_block
+
+    # header incoming edges: entry (from outside the loop) vs back (from inside).
+    entry_edges = []
+    back_edges = []
+    for e in range(f.n_edges):
+        if f.edges[e].dst != header:
+            continue
+        if F.in_loop(L, f.edges[e].src):
+            back_edges.append(e)
+        else:
+            entry_edges.append(e)
+    if not entry_edges:
+        return None
+
+    # hoisted values in dependency order (ascending id == def-before-use).
+    hoist_items = [("i", v, None) for v in sorted(H)]
+
+    # reuse an existing clean preheader (single entry edge whose src has exactly
+    # one outgoing edge and no phis), else create one.
+    reuse_pre = -1
+    if len(entry_edges) == 1:
+        pred = f.edges[entry_edges[0]].src
+        if f.blocks[pred].edge_count == 1 and f.blocks[pred].phi_count == 0:
+            reuse_pre = pred
+
+    if reuse_pre >= 0:
+        (<dict>pblocks[reuse_pre])["items"].extend(hoist_items)
+        return _emit_from_model(f, pblocks, entry_pb)
+
+    # create a new preheader.
+    pre_pb = len(pblocks)
+    p_key = ("licm_pre", header)
+    pre_phis = []
+    tok_ctr = 0
+    header_pb = <dict>pblocks[header]
+    new_header_items = []
+    for it in <list>header_pb["items"]:
+        if <str>it[0] == "i" and f.instrs[<int32_t>it[1]].op == OPX_PHI:
+            old_opmap = <dict>it[2]
+            if len(entry_edges) == 1:
+                pre_operand = old_opmap[entry_edges[0]]
+            else:
+                tok = ("licm_np", header, tok_ctr)
+                tok_ctr += 1
+                np_opmap = {}
+                for e in entry_edges:
+                    np_opmap[e] = old_opmap[e]
+                pre_phis.append(("np", tok, f.instrs[<int32_t>it[1]].aux, np_opmap))
+                pre_operand = ("n", tok)
+            new_opmap = {p_key: pre_operand}
+            for e in back_edges:
+                new_opmap[e] = old_opmap[e]
+            new_header_items.append(("i", <int32_t>it[1], new_opmap))
+        else:
+            new_header_items.append(it)
+    header_pb["items"] = new_header_items
+
+    # retarget entry edges to the preheader (keep their edge keys).
+    for e in entry_edges:
+        src_b = f.edges[e].src
+        for espec in <list>(<dict>pblocks[src_b])["edges"]:
+            if espec[4] == e:
+                espec[0] = pre_pb
+                break
+
+    pre_items = list(pre_phis) + hoist_items
+    pre_edges = [[header, EDGE_COND_NONE, 0.0, 0, p_key]]
+    pblocks.append({"items": pre_items, "test": None, "edges": pre_edges})
+    return _emit_from_model(f, pblocks, entry_pb)
+
+
+def _licm_pass_once(Func f):
+    cdef Dominators D = compute_dominators(f)
+    cdef LoopForest F = compute_loops(f, D)
+    cdef int32_t nl = F.n_loops
+    cdef int32_t L
+    if nl == 0:
+        return None
+    # inner-first: process loops by header block id descending (mirrors the old
+    # LICM, which sorted headers by num descending).
+    order = sorted(range(nl), key=lambda li: F.header[li], reverse=True)
+    for L in order:
+        nf = _licm_try_loop(f, D, F, <int32_t>L)
+        if nf is not None:
+            return nf
+    return None
+
+
+def _run_licm(Func f):
+    cur = f
+    any_changed = False
+    cdef int32_t cap = f.n_instrs + f.n_blocks + 16
+    cdef int32_t iters = 0
+    while iters < cap:
+        iters += 1
+        nf = _licm_pass_once(<Func>cur)
+        if nf is None:
+            break
+        cur = nf
+        any_changed = True
+    return (cur, any_changed)
+
+
+# ---- rewrite_switch (7.2.6 / section 4) ----------------------------------
+# Mirrors the old RewriteToSwitch: (1) a two-way block {VALUE 0 -> false, NONE ->
+# true} whose test is Equal(x, C) with C an OPX_CONST becomes test=x with the true
+# edge carrying cond=C and the false edge becoming the NONE default; (2) chain
+# splicing: while the default target is an empty single-pred block with the same
+# test, splice its cases up (dropping duplicate conds) and let it die. Runs on SSA
+# via _build_compacted (tests mutated in place; no instrs move).
+
+
+cdef bint _rsw_block_empty(Func f, int32_t b) noexcept nogil:
+    cdef int32_t i, istart, icount
+    if f.blocks[b].phi_count > 0:
+        return False
+    istart = f.blocks[b].instr_start
+    icount = f.blocks[b].instr_count
+    for i in range(istart, istart + icount):
+        if f.instrs[i].flags & FLAG_STMT_ROOT:
+            return False
+    return True
+
+
+def _rsw_ext_ref(Func f):
+    # Set of value ids referenced from a block OTHER than their defining block
+    # (operands, phi operands, block tests, and dynamic place index/block refs).
+    # A chain block that is empty of statements/phis may still *define* a value
+    # (a short-circuit Equal, or -- because SSA places consts in a dominator block
+    # -- a downstream phi-operand const) used by a survivor; splicing it away would
+    # orphan that value. Consts are freely relocatable (moved to entry on splice);
+    # a non-const external reference makes the block un-spliceable.
+    cdef int32_t i, bi, op, astart, k, a, pid, iv, br, b, tv
+    ext = set()
+    for i in range(f.n_instrs):
+        bi = f.instrs[i].block
+        op = f.instrs[i].op
+        astart = f.instrs[i].arg_start
+        for k in range(f.instrs[i].nargs):
+            a = <int32_t>f.args[astart + k]
+            if f.instrs[a].block != bi:
+                ext.add(a)
+        if op == OPX_GET or op == OPX_SET:
+            pid = f.instrs[i].aux
+            iv = f.places[pid].index_val
+            if iv >= 0 and f.instrs[iv].block != bi:
+                ext.add(iv)
+            if f.places[pid].kind == PLACE_DYNAMIC_BLOCK:
+                br = f.places[pid].block_ref
+                if f.instrs[br].block != bi:
+                    ext.add(br)
+    for b in range(f.n_blocks):
+        tv = f.blocks[b].test_val
+        if tv >= 0 and f.instrs[tv].block != b:
+            ext.add(tv)
+    return ext
+
+
+cdef bint _rsw_relocatable(Func f, int32_t nxt, set ext) except -1:
+    # nxt is spliceable iff every value it defines that is referenced externally is
+    # an OPX_CONST (relocatable to entry).
+    cdef int32_t vid, istart = f.blocks[nxt].instr_start, icount = f.blocks[nxt].instr_count
+    for vid in range(istart, istart + icount):
+        if vid in ext and f.instrs[vid].op != OPX_CONST:
+            return False
+    return True
+
+
+def _rsw_incoming_count(list out, int32_t nb, int32_t target):
+    cdef int32_t b, c = 0
+    for b in range(nb):
+        for ed in <list>out[b]:
+            if <int32_t>(<dict>ed)["dst"] == target:
+                c += 1
+    return c
+
+
+def _rsw_rpo(list out, int32_t entry, int32_t nb):
+    visited = [False] * nb
+    post = []
+    stack = [(entry, 0)]
+    visited[entry] = True
+    cdef int32_t node, idx
+    while stack:
+        top = stack[len(stack) - 1]
+        node = <int32_t>top[0]
+        idx = <int32_t>top[1]
+        edges = <list>out[node]
+        if idx < len(edges):
+            stack[len(stack) - 1] = (node, idx + 1)
+            ch = <int32_t>(<dict>edges[idx])["dst"]
+            if not <bint>visited[ch]:
+                visited[ch] = True
+                stack.append((ch, 0))
+        else:
+            post.append(node)
+            stack.pop()
+    return list(reversed(post))
+
+
+def _run_rewrite_switch(Func f):
+    cdef int32_t nb = f.n_blocks
+    cdef int32_t b, e, es, ec, tv, a0, a1, const_v, other_v
+    cdef int32_t entry = f.entry_block
+    cdef bint changed = False
+
+    # mutable edge model.
+    out = [[] for _ in range(nb)]
+    for b in range(nb):
+        es = f.blocks[b].edge_start
+        ec = f.blocks[b].edge_count
+        for e in range(es, es + ec):
+            (<list>out[b]).append({
+                "dst": f.edges[e].dst, "ck": f.edges[e].cond_kind,
+                "cond": f.edges[e].cond, "ci": f.edges[e].cond_is_int, "key": e,
+            })
+    test_val = [f.blocks[b].test_val for b in range(nb)]
+
+    # (1) ifs_to_switch.
+    for b in range(nb):
+        edges = <list>out[b]
+        if len(edges) != 2:
+            continue
+        val_edge = None
+        none_edge = None
+        for ed in edges:
+            if <int32_t>(<dict>ed)["ck"] == EDGE_COND_VALUE and (<dict>ed)["cond"] == 0.0:
+                val_edge = <dict>ed
+            elif <int32_t>(<dict>ed)["ck"] == EDGE_COND_NONE:
+                none_edge = <dict>ed
+        if val_edge is None or none_edge is None:
+            continue
+        tv = <int32_t>test_val[b]
+        if tv < 0 or f.instrs[tv].op != OP_Equal or f.instrs[tv].nargs != 2:
+            continue
+        a0 = <int32_t>f.args[f.instrs[tv].arg_start]
+        a1 = <int32_t>f.args[f.instrs[tv].arg_start + 1]
+        if f.instrs[a0].op == OPX_CONST:
+            const_v = a0
+            other_v = a1
+        elif f.instrs[a1].op == OPX_CONST:
+            other_v = a0
+            const_v = a1
+        else:
+            continue
+        test_val[b] = other_v
+        none_edge["ck"] = EDGE_COND_VALUE
+        none_edge["cond"] = f.consts[f.instrs[const_v].aux]
+        none_edge["ci"] = 1 if (f.instrs[const_v].flags & FLAG_CONST_IS_INT) else 0
+        val_edge["ck"] = EDGE_COND_NONE
+        val_edge["cond"] = 0.0
+        val_edge["ci"] = 0
+        changed = True
+
+    # (2) combine_blocks: splice same-test empty single-pred default chains.
+    ext = _rsw_ext_ref(f)
+    processed = set()
+    queue = [entry]
+    while queue:
+        b = <int32_t>queue.pop()
+        if b in processed:
+            continue
+        processed.add(b)
+        for ed in <list>out[b]:
+            queue.append(<int32_t>(<dict>ed)["dst"])
+        default = None
+        for ed in <list>out[b]:
+            if <int32_t>(<dict>ed)["ck"] == EDGE_COND_NONE:
+                default = <dict>ed
+                break
+        if default is None:
+            continue
+        nxt = <int32_t>default["dst"]
+        if b == nxt or nxt == entry:
+            continue
+        if <int32_t>test_val[b] < 0 or test_val[b] != test_val[nxt]:
+            continue
+        if not _rsw_block_empty(f, nxt):
+            continue
+        if _rsw_incoming_count(out, nb, nxt) > 1:
+            continue
+        # splice-safety: nxt must define no non-const value used by a survivor
+        # (see _rsw_ext_ref). Escaping consts are relocated to entry below.
+        if not _rsw_relocatable(f, nxt, ext):
+            continue
+        # splice.
+        existing = set()
+        for ed in <list>out[b]:
+            if <int32_t>(<dict>ed)["ck"] == EDGE_COND_VALUE:
+                existing.add((<dict>ed)["cond"])
+        kept = [ed for ed in <list>out[b] if ed is not default]
+        for ed in <list>out[nxt]:
+            if <int32_t>(<dict>ed)["ck"] == EDGE_COND_VALUE and (<dict>ed)["cond"] in existing:
+                continue  # duplicate cond: unreachable, drop
+            kept.append(ed)
+            if <int32_t>(<dict>ed)["ck"] == EDGE_COND_VALUE:
+                existing.add((<dict>ed)["cond"])
+        out[b] = kept
+        out[nxt] = []  # nxt is now unreachable
+        changed = True
+        processed.discard(b)
+        queue.append(b)
+
+    if not changed:
+        return (f, False)
+
+    # apply: build a value model reflecting the mutated tests + edges, relocating
+    # any externally-referenced const from a now-unreachable block into entry (its
+    # own block dies but its value is still a live phi operand / operand elsewhere),
+    # then rebuild via the general model builder.
+    reach = set(_rsw_rpo(out, entry, nb))
+    pblocks = []
+    cdef int32_t vid, istart, icount
+    for b in range(nb):
+        items = []
+        istart = f.blocks[b].instr_start
+        icount = f.blocks[b].instr_count
+        for vid in range(istart, istart + icount):
+            if f.instrs[vid].op == OPX_PHI:
+                items.append(("i", vid, _phi_opmap_src(f, vid)))
+            else:
+                items.append(("i", vid, None))
+        tv2 = <int32_t>test_val[b]
+        test = ("o", tv2) if tv2 >= 0 else None
+        edges = []
+        for ed in <list>out[b]:
+            edges.append([
+                <int32_t>(<dict>ed)["dst"], <int32_t>(<dict>ed)["ck"],
+                <double>(<dict>ed)["cond"], <int32_t>(<dict>ed)["ci"], <int32_t>(<dict>ed)["key"],
+            ])
+        pblocks.append({"items": items, "test": test, "edges": edges})
+    relocate = []
+    for b in range(nb):
+        if b in reach:
+            continue
+        istart = f.blocks[b].instr_start
+        icount = f.blocks[b].instr_count
+        for vid in range(istart, istart + icount):
+            if f.instrs[vid].op == OPX_CONST and vid in ext:
+                relocate.append(vid)
+    if relocate:
+        (<dict>pblocks[entry])["items"].extend([("i", v, None) for v in relocate])
+    newf = _emit_from_model(f, pblocks, entry)
+    return (newf, True)
+
+
 def _run_sccp(Func f):
     cdef _SCCP sc = _SCCP(f)
     sc.run()
@@ -2963,6 +3850,16 @@ cdef Func dce(Func func):
     return <Func>res[0]
 
 
+cdef Func licm(Func func):
+    res = _run_licm(func)
+    return <Func>res[0]
+
+
+cdef Func rewrite_switch(Func func):
+    res = _run_rewrite_switch(func)
+    return <Func>res[0]
+
+
 def _midend_pass(Func func):
     f1, c1 = _run_sccp(func)  # includes single-operand phi collapse
     _, c2 = _run_gvn_inplace(<Func>f1)
@@ -2975,6 +3872,25 @@ cdef Func midend_round(Func func, bint allow_repeat):
     cdef Func cur = <Func>res[0]
     cdef bint ch = <bint>res[1]
     if allow_repeat and ch:
+        res = _midend_pass(cur)
+        cur = <Func>res[0]
+    return cur
+
+
+cdef Func midend_standard(Func func):
+    # Standard (-O2) mid-end round (7.2.7): core (SCCP -> GVN -> DCE) -> LICM ->
+    # rewrite_switch, then repeat the core ONCE if the core, LICM, or
+    # rewrite_switch changed anything. LICM and rewrite_switch themselves run once.
+    res = _midend_pass(func)
+    cdef Func cur = <Func>res[0]
+    cdef bint ch = <bint>res[1]
+    lres = _run_licm(cur)
+    cur = <Func>lres[0]
+    cdef bint lch = <bint>lres[1]
+    rres = _run_rewrite_switch(cur)
+    cur = <Func>rres[0]
+    cdef bint rch = <bint>rres[1]
+    if ch or lch or rch:
         res = _midend_pass(cur)
         cur = <Func>res[0]
     return cur
@@ -3000,10 +3916,25 @@ def _phase_midend(func):
     return midend_round(<Func>func, True)
 
 
+def _phase_licm(func):
+    return licm(<Func>func)
+
+
+def _phase_rewrite_switch(func):
+    return rewrite_switch(<Func>func)
+
+
+def _phase_midend_standard(func):
+    return midend_standard(<Func>func)
+
+
 register_phase("sccp", _phase_sccp)
 register_phase("gvn", _phase_gvn)
 register_phase("dce", _phase_dce)
 register_phase("midend", _phase_midend)
+register_phase("licm", _phase_licm)
+register_phase("rewrite_switch", _phase_rewrite_switch)
+register_phase("midend_standard", _phase_midend_standard)
 
 
 def run_midend(entry, mode=None, callback=None, allow_repeat=False):
@@ -3015,6 +3946,20 @@ def run_midend(entry, mode=None, callback=None, allow_repeat=False):
     cdef Func func = cfg_cleanup(<Func>marshal_in(entry, mode, callback), False)
     cdef Func ssa = build_ssa(func)
     cdef Func opt = midend_round(ssa, <bint>allow_repeat)
+    cdef Func lowered = out_of_ssa(opt)
+    return to_basic_blocks(lowered)
+
+
+def run_midend_standard(entry, mode=None, callback=None):
+    """marshal_in -> cfg_cleanup -> build_ssa -> midend_standard -> out_of_ssa -> export.
+
+    The full standard (-O2) mid-end (7.2.7: core round + LICM + rewrite_switch),
+    testable end-to-end (uses the naive ``out_of_ssa`` until the treeify lowering
+    is wired). This is the ``standard`` mid-end entry the driver will call.
+    """
+    cdef Func func = cfg_cleanup(<Func>marshal_in(entry, mode, callback), False)
+    cdef Func ssa = build_ssa(func)
+    cdef Func opt = midend_standard(ssa)
     cdef Func lowered = out_of_ssa(opt)
     return to_basic_blocks(lowered)
 
