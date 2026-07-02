@@ -161,7 +161,10 @@ cdef class _Emitter:
 
     cdef object _emit_numeric(self, double v):
         # Int-demote integral floats (incl. -0.0 -> int 0); finite non-integral
-        # floats emit as-is; +-Inf and NaN lower to EngineRom reads.
+        # floats emit as-is; +-Inf and NaN lower to EngineRom reads. (-0.0 never
+        # reaches here as a materialized const: SCCP declines to materialize a
+        # folded -0.0, and the frontend IRConst collapses -0.0 -> +0.0, so the
+        # arena has no standalone -0.0 const to emit. See midend.pyx decisions().)
         cdef object pv
         if isnan(v):
             return self._rom_read(0)

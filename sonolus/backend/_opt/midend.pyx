@@ -47,7 +47,7 @@ lets ``to_basic_blocks`` export it unchanged.
 from libc.stdint cimport int16_t, int32_t, uint8_t, uint16_t, uint32_t, uint64_t
 from libc.stdlib cimport calloc, free, malloc, realloc
 from libc.string cimport memcpy
-from libc.math cimport floor, isinf, isnan
+from libc.math cimport floor, isinf, isnan, signbit
 
 from sonolus.backend._opt.ir cimport (
     BlockInfo,
@@ -2306,6 +2306,7 @@ cdef class _SCCP:
         cdef int32_t nb = f.n_blocks
         cdef int32_t ne = f.n_edges
         cdef int32_t e, b, bi, i, op, es, ec, tv, kind, si, mi
+        cdef double cv
         keep_edge = [False] * ne
         for e in range(ne):
             if self.executable[e] and self.reached[f.edges[e].src] and self.reached[f.edges[e].dst]:
@@ -2348,7 +2349,21 @@ cdef class _SCCP:
                     continue
                 if f.instrs[i].flags & FLAG_STMT_ROOT:
                     continue
-                const_override[i] = <double>self.lc[i]
+                cv = <double>self.lc[i]
+                if cv == 0.0 and signbit(cv):
+                    # Do NOT materialize a folded -0.0 as a standalone constant.
+                    # -0.0 is unrepresentable across the boundary: the Python
+                    # IRConst cache collapses -0.0 -> +0.0 at construction (export /
+                    # re-marshal), and emission int-demotes integral floats to int 0
+                    # (finalize behaviour). A materialized -0.0 would therefore ship
+                    # as +0.0, diverging from the *unfolded* path where the runtime
+                    # computes e.g. 0 / -8 = -0.0 and keeps the sign -- a dual-run
+                    # (debug-log) parity break. Leaving the instruction in place lets
+                    # the real runtime fold it, preserving -0.0. The lattice value is
+                    # still -0.0, so consumers that fold to a non-(-0.0) result are
+                    # unaffected. (OPTIMIZER_REWRITE.md 7.2.2)
+                    continue
+                const_override[i] = cv
         changed = (len(order) < nb) or (len(const_override) > 0)
         for e in range(ne):
             if self.reached[f.edges[e].src] and not <bint>keep_edge[e]:
