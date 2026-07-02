@@ -12,7 +12,7 @@ from sonolus.backend.excepthook import print_simple_traceback
 from sonolus.backend.optimize import FAST_PASSES, MINIMAL_PASSES, STANDARD_PASSES
 from sonolus.build.collection import Collection
 from sonolus.build.dev_server import run_server
-from sonolus.build.engine import no_gil, package_engine, validate_engine
+from sonolus.build.engine import package_engine, validate_engine
 from sonolus.build.level import package_level_data
 from sonolus.build.project import build_project_to_collection, get_project_schema
 from sonolus.script.internal.context import ProjectContextState, RuntimeChecks
@@ -242,8 +242,6 @@ def main():
         elif hasattr(args, "no_gc") and args.no_gc:
             gc.disable()
 
-    if no_gil():
-        print("Multithreading is enabled")
     if hasattr(sys, "_jit") and sys._jit.is_enabled():
         print("Python JIT is enabled")
 

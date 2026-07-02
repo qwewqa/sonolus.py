@@ -2,6 +2,7 @@ from __future__ import annotations
 
 from collections.abc import Iterable, Sequence
 from contextlib import contextmanager
+from contextvars import ContextVar
 from dataclasses import dataclass
 from enum import Enum
 from threading import Lock
@@ -26,7 +27,13 @@ if TYPE_CHECKING:
 
 _compiler_internal_ = True
 
-_context: Context | None = None
+# Per-callback compilation context. A ContextVar (not a plain global) so the
+# per-callback build thread pool (sonolus/build/compile.py) is race-free: the
+# ThreadPoolExecutor snapshots the ambient contextvars for each submitted task
+# (``copy_context().run(task)``), so each callback's ``using_ctx``/``set_ctx``
+# mutations are isolated to that task's context copy. On the serial path this
+# behaves exactly like the old module global.
+_context: ContextVar[Context | None] = ContextVar("_sonolus_context", default=None)
 
 
 @dataclass(frozen=True)
@@ -444,25 +451,23 @@ class Context:
 
 
 def ctx() -> Context | Any:  # Using Any to silence type checker warnings if it's None
-    return _context
+    return _context.get()
 
 
 def set_ctx(value: Context | None):
-    global _context  # noqa: PLW0603
-    old_value = _context
-    _context = value
+    old_value = _context.get()
+    _context.set(value)
     return old_value
 
 
 @contextmanager
 def using_ctx(value: Context | None):
-    global _context  # noqa: PLW0603
-    old_value = _context
-    _context = value
+    old_value = _context.get()
+    _context.set(value)
     try:
         yield
     finally:
-        _context = old_value
+        _context.set(old_value)
 
 
 class ReadOnlyMemory:

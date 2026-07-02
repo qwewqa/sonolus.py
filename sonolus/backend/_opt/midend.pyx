@@ -178,10 +178,19 @@ cdef class _Cleaner:
     cdef int32_t entry_head
     cdef uint8_t* tailduped         # [nb*nb]  (head,target) pair already tail-duped
 
+    # Cached raw C pointers into the (read-only) source arena, so the nogil
+    # transform passes never touch the ``self.src`` Python object attribute.
+    cdef Instr* src_instrs
+    cdef BlockInfo* src_blocks
+    cdef double* src_consts
+
     # ---- construction ------------------------------------------------------
 
     def __cinit__(self, Func src, bint phi_safe):
         self.src = src
+        self.src_instrs = src.instrs
+        self.src_blocks = src.blocks
+        self.src_consts = src.consts
         self.phi_safe = phi_safe
         self.nb = src.n_blocks
         self.alive = NULL
@@ -221,7 +230,7 @@ cdef class _Cleaner:
         free(self.e_alive)
         free(self.tailduped)
 
-    cdef void _ensure_edge_cap(self, int32_t need) except *:
+    cdef void _ensure_edge_cap(self, int32_t need) except * nogil:
         # the six edge arrays share cap_e; grow them all in lockstep.
         if need <= self.cap_e:
             return
@@ -236,10 +245,11 @@ cdef class _Cleaner:
         self.e_alive = <uint8_t*>realloc(self.e_alive, <size_t>nc * sizeof(uint8_t))
         if (self.e_src == NULL or self.e_dst == NULL or self.e_ck == NULL
                 or self.e_ci == NULL or self.e_cond == NULL or self.e_alive == NULL):
-            raise MemoryError()
+            with gil:
+                raise MemoryError()
         self.cap_e = nc
 
-    cdef void _add_edge(self, int32_t s, int32_t d, uint8_t ck, uint8_t ci, double cond) except *:
+    cdef void _add_edge(self, int32_t s, int32_t d, uint8_t ck, uint8_t ci, double cond) except * nogil:
         cdef int32_t k = self.n_e
         self._ensure_edge_cap(k + 1)
         self.e_src[k] = s
@@ -250,7 +260,7 @@ cdef class _Cleaner:
         self.e_alive[k] = 1
         self.n_e = k + 1
 
-    cdef int32_t _new_cn(self, int32_t src_block) except -1:
+    cdef int32_t _new_cn(self, int32_t src_block) except -1 nogil:
         cdef int32_t k = self.n_cn
         cdef int32_t nc
         if k + 1 > self.cap_cn:
@@ -260,7 +270,8 @@ cdef class _Cleaner:
             self.cn_src = <int32_t*>realloc(self.cn_src, <size_t>nc * sizeof(int32_t))
             self.cn_next = <int32_t*>realloc(self.cn_next, <size_t>nc * sizeof(int32_t))
             if self.cn_src == NULL or self.cn_next == NULL:
-                raise MemoryError()
+                with gil:
+                    raise MemoryError()
             self.cap_cn = nc
         self.cn_src[k] = src_block
         self.cn_next[k] = -1
@@ -324,7 +335,7 @@ cdef class _Cleaner:
 
     # ---- chain helpers -----------------------------------------------------
 
-    cdef int32_t _chain_nstmt(self, int32_t head):
+    cdef int32_t _chain_nstmt(self, int32_t head) noexcept nogil:
         cdef int32_t total = 0
         cdef int32_t node = self.chain_head[head]
         while node != -1:
@@ -332,12 +343,12 @@ cdef class _Cleaner:
             node = self.cn_next[node]
         return total
 
-    cdef void _append_chain_transfer(self, int32_t a, int32_t b) except *:
+    cdef void _append_chain_transfer(self, int32_t a, int32_t b) noexcept nogil:
         # Splice b's chain onto a (b is about to be killed; reuse its nodes).
         self.cn_next[self.chain_tail[a]] = self.chain_head[b]
         self.chain_tail[a] = self.chain_tail[b]
 
-    cdef void _append_chain_copy(self, int32_t a, int32_t b) except *:
+    cdef void _append_chain_copy(self, int32_t a, int32_t b) except * nogil:
         # Append a fresh copy of b's chain onto a (b stays live -- tail-dup).
         cdef int32_t node = self.chain_head[b]
         cdef int32_t nn
@@ -349,14 +360,14 @@ cdef class _Cleaner:
 
     # ---- edge helpers ------------------------------------------------------
 
-    cdef bint _has_value_edge(self, int32_t h):
+    cdef bint _has_value_edge(self, int32_t h) noexcept nogil:
         cdef int32_t i
         for i in range(self.n_e):
             if self.e_alive[i] and self.e_src[i] == h and self.e_ck[i] == EDGE_COND_VALUE:
                 return True
         return False
 
-    cdef int32_t _single_none_succ(self, int32_t h, int32_t* edge_out):
+    cdef int32_t _single_none_succ(self, int32_t h, int32_t* edge_out) noexcept nogil:
         # If h has exactly one alive out-edge and it is unconditional, return the
         # target head and set *edge_out to the edge index; else return -1.
         cdef int32_t i
@@ -373,7 +384,7 @@ cdef class _Cleaner:
 
     # ---- transformations ---------------------------------------------------
 
-    cdef bint _const_fold(self) except -1:
+    cdef bint _const_fold(self) except -1 nogil:
         cdef bint changed = False
         cdef int32_t h, i, tv, tail_block, live_edge
         cdef double tval
@@ -383,10 +394,10 @@ cdef class _Cleaner:
             if not self._has_value_edge(h):
                 continue
             tail_block = self.cn_src[self.chain_tail[h]]
-            tv = self.src.blocks[tail_block].test_val
-            if tv < 0 or self.src.instrs[tv].op != OPX_CONST:
+            tv = self.src_blocks[tail_block].test_val
+            if tv < 0 or self.src_instrs[tv].op != OPX_CONST:
                 continue
-            tval = self.src.consts[self.src.instrs[tv].aux]
+            tval = self.src_consts[self.src_instrs[tv].aux]
             # finalize edge-selection: value edge whose cond == test, else the
             # unconditional (default) edge, else the block becomes an exit.
             live_edge = -1
@@ -411,7 +422,7 @@ cdef class _Cleaner:
                 changed = True
         return changed
 
-    cdef bint _dedup(self) except -1:
+    cdef bint _dedup(self) except -1 nogil:
         cdef bint changed = False
         cdef int32_t h, i, j, default_dst
         for h in range(self.nb):
@@ -443,7 +454,7 @@ cdef class _Cleaner:
                         changed = True
         return changed
 
-    cdef bint _thread_forwarders(self) except -1:
+    cdef bint _thread_forwarders(self) except -1 nogil:
         cdef bint changed = False
         cdef int32_t h, i, the_edge, c
         for h in range(self.nb):
@@ -466,7 +477,7 @@ cdef class _Cleaner:
             changed = True
         return changed
 
-    cdef bint _merge_single(self) except -1:
+    cdef bint _merge_single(self) except -1 nogil:
         cdef bint changed = False
         cdef int32_t h, i, the_edge, c, incnt
         for h in range(self.nb):
@@ -492,7 +503,7 @@ cdef class _Cleaner:
             changed = True
         return changed
 
-    cdef bint _taildup(self) except -1:
+    cdef bint _taildup(self) except -1 nogil:
         cdef bint changed = False
         cdef int32_t h, i, the_edge, c, n_e0
         if self.phi_safe:
@@ -519,7 +530,7 @@ cdef class _Cleaner:
             changed = True
         return changed
 
-    cdef bint _prune_unreachable(self) except -1:
+    cdef bint _prune_unreachable(self) except -1 nogil:
         cdef bint changed = False
         cdef int32_t i, cur, d, sp
         cdef uint8_t* visited = <uint8_t*>calloc(self.nb, sizeof(uint8_t))
@@ -527,7 +538,8 @@ cdef class _Cleaner:
         if visited == NULL or stack == NULL:
             free(visited)
             free(stack)
-            raise MemoryError()
+            with gil:
+                raise MemoryError()
         sp = 0
         visited[self.entry_head] = 1
         stack[sp] = self.entry_head
@@ -622,23 +634,31 @@ cdef class _Cleaner:
     # ---- driver ------------------------------------------------------------
 
     cdef void run(self) except *:
+        # The six pure-C transforms run in a ``nogil`` region (they operate only on
+        # the flat logical-edge / chain C arrays and the cached read-only source
+        # pointers), which is what lets the per-callback build pool parallelise this
+        # pass -- cfg_cleanup's ``run()`` is ~94% of the pass and >50% of the whole
+        # optimize phase. ``_canonicalize_exits`` (RPO over Python lists) stays under
+        # the GIL; it is ~1/7 of the loop and left untouched to keep the byte-exact
+        # exit-block ordering. The GIL is toggled once per fixpoint iteration only.
         cdef bint changed = True
         cdef long iters = 0
         cdef long cap = <long>self.nb * self.nb + self.n_e + 100000
         while changed:
             changed = False
-            if self._const_fold():
-                changed = True
-            if self._dedup():
-                changed = True
-            if self._thread_forwarders():
-                changed = True
-            if self._merge_single():
-                changed = True
-            if self._taildup():
-                changed = True
-            if self._prune_unreachable():
-                changed = True
+            with nogil:
+                if self._const_fold():
+                    changed = True
+                if self._dedup():
+                    changed = True
+                if self._thread_forwarders():
+                    changed = True
+                if self._merge_single():
+                    changed = True
+                if self._taildup():
+                    changed = True
+                if self._prune_unreachable():
+                    changed = True
             if self._canonicalize_exits():
                 changed = True
             iters += 1

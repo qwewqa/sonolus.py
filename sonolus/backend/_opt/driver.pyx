@@ -180,6 +180,193 @@ def optimize_and_finalize_cfg(entry, level, mode=None, callback=None):
 
 
 # --------------------------------------------------------------------------
+# compile_mode: per-mode callback compilation driver (OPTIMIZER_REWRITE.md
+# 5/11 M4). Moved here from sonolus/build/compile.py so the compile driver
+# lives in the compiled package; ``sonolus/build/compile.py`` keeps the public
+# ``compile_mode`` name as a thin delegator (engine.py / tests import it from
+# there). ``callback_to_cfg`` and the rest of the frontend stay in Python and
+# are passed in, keeping the frontend/optimizer boundary explicit and avoiding
+# an import cycle (compile.py imports this module).
+#
+# Threading + determinism (task 3): per-callback optimize+emit runs in the
+# thread pool (releasing the GIL inside the nogil pass regions), but the cheap
+# cross-callback ``OutputNodeGenerator.add`` merge runs SINGLE-THREADED in fixed
+# SUBMISSION order after gathering the futures -- so node indices (and thus the
+# serialized output) are deterministic regardless of thread completion order.
+# The result-dict shapes match the old compile.py exactly (archetype callbacks
+# -> {"index", "order"}; global callbacks -> bare node index).
+# --------------------------------------------------------------------------
+
+# Lazily-populated Python deps (avoid import-time cycles / heavy top-level imports).
+_MODE_STATE = None
+_OUTPUT_GEN = None
+_OPT_CONFIG = None
+_OPT_FINALIZE = None
+_STANDARD_LEVEL = None
+_PLAY_MODE = None
+
+
+cdef _ensure_compile_deps():
+    global _MODE_STATE, _OUTPUT_GEN, _OPT_CONFIG, _OPT_FINALIZE, _STANDARD_LEVEL, _PLAY_MODE
+    if _MODE_STATE is None:
+        from sonolus.backend.optimize import (
+            STANDARD_PASSES as _sp,
+            OptimizerConfig as _oc,
+            optimize_and_finalize as _of,
+        )
+        from sonolus.backend.mode import Mode as _mode
+        from sonolus.build.node import OutputNodeGenerator as _og
+        from sonolus.script.internal.context import ModeContextState as _ms
+        _MODE_STATE = _ms
+        _OUTPUT_GEN = _og
+        _OPT_CONFIG = _oc
+        _OPT_FINALIZE = _of
+        _STANDARD_LEVEL = _sp
+        _PLAY_MODE = _mode.PLAY
+
+
+def compile_mode(
+    mode,
+    project_state,
+    archetypes,
+    global_callbacks,
+    callback_to_cfg,
+    level=None,
+    thread_pool=None,
+    validate_only=False,
+):
+    _ensure_compile_deps()
+    if level is None:
+        level = _STANDARD_LEVEL
+
+    mode_state = _MODE_STATE(mode, archetypes)
+    nodes = _OUTPUT_GEN()
+    results = {}
+
+    def optimize_cfg(cfg, cb_name):
+        """optimize + emit for one already-traced CFG -> its EngineNode.
+
+        Submitted to the thread pool. Operates on a per-callback-local arena and
+        touches no shared state, so it is race-free and its output is independent
+        of thread scheduling; the nogil pass regions release the GIL here."""
+        return _OPT_FINALIZE(cfg, level, _OPT_CONFIG(mode=mode, callback=cb_name))
+
+    # DETERMINISM + OVERLAP CONTRACT (task 3):
+    #
+    #   * FRONTEND (serial, main thread, fixed order): ``callback_to_cfg`` populates
+    #     shared, first-touch-ordered maps -- ``project_state`` ROM / const /
+    #     debug-string indices and ``mode_state`` global-memory offsets -- so it
+    #     must never run concurrently: parallel tracing would reorder those first
+    #     touches and change the output (offsets/indices) even though every write
+    #     is lock-guarded. Tracing callbacks in one fixed serial order makes the
+    #     shared-map assignments identical to a fully serial build.
+    #   * OPTIMIZE+EMIT (parallel, INTERLEAVED): each callback's optimize is
+    #     submitted to the pool IMMEDIATELY after its trace completes, so the
+    #     optimizer's nogil regions (cfg_cleanup + analysis) run concurrently
+    #     under the tracing of subsequent callbacks -- wall time approaches
+    #     max(frontend_total, optimize_tail) instead of frontend_total +
+    #     optimize_total/N. This is safe: optimize+emit operates on the
+    #     already-built per-callback CFG and per-callback-local arenas, reading
+    #     only static mode block tables -- it never touches the shared maps the
+    #     tracer is still mutating, so its results are independent of scheduling.
+    #   * MERGE (serial, last): register nodes into the shared
+    #     ``OutputNodeGenerator`` in the fixed submission order, so node indices
+    #     are deterministic regardless of thread completion order.
+    #
+    # Task entry: (kind, archetype_data|None, cb_name, cb_order, payload, is_future)
+    # where payload is a Future (pool), the EngineNode (serial), or None (validate).
+    tasks = []
+    base_archetype_entries = {}
+
+    if archetypes is not None:
+        base_archetypes = []
+        seen_base_archetypes = set()
+        for a in archetypes:
+            base = getattr(a, "_derived_base_", a)
+            if base not in seen_base_archetypes:
+                seen_base_archetypes.add(base)
+                base_archetypes.append(base)
+
+        for archetype in base_archetypes:
+            archetype._init_fields()
+
+            imports = []
+            for name, import_info in archetype._imported_keys_.items():
+                import_entry = {"name": name, "index": import_info.index}
+                if import_info.default is not None:
+                    import_entry["def"] = import_info.default
+                imports.append(import_entry)
+
+            archetype_data = {
+                "name": archetype.name,
+                "hasInput": archetype.is_scored,
+                "imports": imports,
+            }
+            if mode == _PLAY_MODE:
+                archetype_data["exports"] = [*archetype._exported_keys_]
+
+            callback_items = [
+                (cb_name, cb_info, archetype._callbacks_[cb_name])
+                for cb_name, cb_info in archetype._supported_callbacks_.items()
+                if cb_name in archetype._callbacks_
+                and archetype._callbacks_[cb_name] not in archetype._default_callbacks_
+            ]
+
+            for cb_name, cb_info, cb in callback_items:
+                cb_order = getattr(cb, "_callback_order_", 0)
+                if not cb_info.supports_order and cb_order != 0:
+                    raise ValueError(f"Callback '{cb_name}' does not support a non-zero order")
+                # Trace serially on this thread (deterministic shared maps; always
+                # traced -- validation traces too), then hand optimize+emit to the
+                # pool immediately so it overlaps the next callback's trace.
+                cfg = callback_to_cfg(project_state, mode_state, cb, cb_info.name, archetype)
+                if validate_only:
+                    tasks.append(("archetype", archetype_data, cb_info.name, cb_order, None, False))
+                elif thread_pool is not None:
+                    fut = thread_pool.submit(optimize_cfg, cfg, cb_info.name)
+                    tasks.append(("archetype", archetype_data, cb_info.name, cb_order, fut, True))
+                else:
+                    node = optimize_cfg(cfg, cb_info.name)
+                    tasks.append(("archetype", archetype_data, cb_info.name, cb_order, node, False))
+
+            base_archetype_entries[archetype] = archetype_data
+
+    if global_callbacks is not None:
+        for cb_info, cb in global_callbacks:
+            cfg = callback_to_cfg(project_state, mode_state, cb, cb_info.name, None)
+            if validate_only:
+                tasks.append(("global", None, cb_info.name, 0, None, False))
+            elif thread_pool is not None:
+                fut = thread_pool.submit(optimize_cfg, cfg, cb_info.name)
+                tasks.append(("global", None, cb_info.name, 0, fut, True))
+            else:
+                node = optimize_cfg(cfg, cb_info.name)
+                tasks.append(("global", None, cb_info.name, 0, node, False))
+
+    # Deterministic single-threaded merge in submission order. ``future.result()``
+    # re-raises any worker exception here (on this thread).
+    for kind, archetype_data, cb_name, cb_order, payload, is_future in tasks:
+        if validate_only:
+            node_index = 0
+        else:
+            node = payload.result() if is_future else payload
+            node_index = nodes.add(node)
+        if kind == "archetype":
+            archetype_data[cb_name] = {"index": node_index, "order": cb_order}
+        else:
+            results[cb_name] = node_index
+
+    if archetypes is not None:
+        results["archetypes"] = [
+            {**base_archetype_entries[getattr(a, "_derived_base_", a)], "name": a.name, "hasInput": a.is_scored}
+            for a in archetypes
+        ]
+
+    results["nodes"] = nodes.get()
+    return results
+
+
+# --------------------------------------------------------------------------
 # Debug phase registry (consulted by ir.debug_run).
 # --------------------------------------------------------------------------
 

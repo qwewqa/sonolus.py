@@ -1,11 +1,11 @@
 import gzip
 import json
 import struct
-import sys
 from collections.abc import Callable
 from concurrent.futures import Executor
 from concurrent.futures.thread import ThreadPoolExecutor
 from dataclasses import dataclass
+from os import process_cpu_count
 from pathlib import Path
 
 from sonolus.backend.mode import Mode
@@ -61,10 +61,6 @@ class PackagedEngine:
         self.rom = (path / "EngineRom").read_bytes()
 
 
-def no_gil() -> bool:
-    return sys.version_info >= (3, 13) and not sys._is_gil_enabled()
-
-
 def package_engine(
     engine: EngineData,
     config: BuildConfig | None = None,
@@ -74,74 +70,26 @@ def package_engine(
     if project_state is None:
         project_state = ProjectContextState.from_build_config(config)
     configuration = build_engine_configuration(engine.options, engine.ui)
-    if no_gil():
-        # process_cpu_count is available in Python 3.13+
-        from os import process_cpu_count
-
-        # Need a worker for each mode (so +4) plus at least one to do work
-        thread_pool = ThreadPoolExecutor(4 + max(1, min(8, (process_cpu_count() or 1))))
-    else:
-        thread_pool = None
 
     play_mode = engine.play if config.build_play else empty_play_mode()
     watch_mode = engine.watch if config.build_watch else empty_watch_mode()
     preview_mode = engine.preview if config.build_preview else empty_preview_mode()
     tutorial_mode = engine.tutorial if config.build_tutorial else empty_tutorial_mode()
 
-    if thread_pool is not None:
-        futures = {
-            "play": thread_pool.submit(
-                build_play_mode,
-                archetypes=play_mode.archetypes,
-                skin=play_mode.skin,
-                effects=play_mode.effects,
-                particles=play_mode.particles,
-                buckets=play_mode.buckets,
-                project_state=project_state,
-                config=config,
-                thread_pool=thread_pool,
-            ),
-            "watch": thread_pool.submit(
-                build_watch_mode,
-                archetypes=watch_mode.archetypes,
-                skin=watch_mode.skin,
-                effects=watch_mode.effects,
-                particles=watch_mode.particles,
-                buckets=watch_mode.buckets,
-                project_state=project_state,
-                update_spawn=watch_mode.update_spawn,
-                config=config,
-                thread_pool=thread_pool,
-            ),
-            "preview": thread_pool.submit(
-                build_preview_mode,
-                archetypes=preview_mode.archetypes,
-                skin=preview_mode.skin,
-                project_state=project_state,
-                config=config,
-                thread_pool=thread_pool,
-            ),
-            "tutorial": thread_pool.submit(
-                build_tutorial_mode,
-                skin=tutorial_mode.skin,
-                effects=tutorial_mode.effects,
-                particles=tutorial_mode.particles,
-                instructions=tutorial_mode.instructions,
-                instruction_icons=tutorial_mode.instruction_icons,
-                preprocess=tutorial_mode.preprocess,
-                navigate=tutorial_mode.navigate,
-                update=tutorial_mode.update,
-                project_state=project_state,
-                config=config,
-                thread_pool=thread_pool,
-            ),
-        }
-
-        play_data = futures["play"].result()
-        watch_data = futures["watch"].result()
-        preview_data = futures["preview"].result()
-        tutorial_data = futures["tutorial"].result()
-    else:
+    # Always create the per-callback thread pool (M4: dropped the free-threaded
+    # gate). The Cython optimizer releases the GIL in its nogil pass regions, so
+    # the pool parallelises optimize+emit on standard GIL builds. Worker formula
+    # kept as-is (headroom + one per logical CPU capped at 8).
+    #
+    # DETERMINISM: the modes are built SEQUENTIALLY (not fanned out across the
+    # pool), so the frontend tracing of every callback -- across all four modes --
+    # runs in one fixed, serial order. That keeps the engine-wide, first-touch
+    # -ordered shared state deterministic (project_state.rom and const/debug-string
+    # maps are shared across modes). Each mode's compile_mode still uses the pool
+    # internally to parallelise its per-callback optimize+emit. Running modes
+    # inline (rather than as pool tasks that themselves submit to the pool) also
+    # removes the nested-submission deadlock the old +4 headroom guarded against.
+    with ThreadPoolExecutor(4 + max(1, min(8, (process_cpu_count() or 1)))) as thread_pool:
         play_data = build_play_mode(
             archetypes=play_mode.archetypes,
             skin=play_mode.skin,
@@ -150,7 +98,7 @@ def package_engine(
             buckets=play_mode.buckets,
             project_state=project_state,
             config=config,
-            thread_pool=None,
+            thread_pool=thread_pool,
         )
         watch_data = build_watch_mode(
             archetypes=watch_mode.archetypes,
@@ -161,14 +109,14 @@ def package_engine(
             project_state=project_state,
             update_spawn=watch_mode.update_spawn,
             config=config,
-            thread_pool=None,
+            thread_pool=thread_pool,
         )
         preview_data = build_preview_mode(
             archetypes=preview_mode.archetypes,
             skin=preview_mode.skin,
             project_state=project_state,
             config=config,
-            thread_pool=None,
+            thread_pool=thread_pool,
         )
         tutorial_data = build_tutorial_mode(
             skin=tutorial_mode.skin,
@@ -181,7 +129,7 @@ def package_engine(
             update=tutorial_mode.update,
             project_state=project_state,
             config=config,
-            thread_pool=None,
+            thread_pool=thread_pool,
         )
 
     return PackagedEngine(
