@@ -209,6 +209,92 @@ def test_terminator_switch_with_default_default_less():
     assert t.args[4] == 3
 
 
+# --- The dense-switch gate must guard integrality/finiteness/range BEFORE any
+# int32 narrowing: conds >= 2^31 / +-inf / NaN / huge integral floats fall back to
+# SwitchWithDefault instead of crashing (OverflowError / ValueError). ---
+
+
+def test_terminator_switch_case_at_2p31_falls_back():
+    # A case >= 2^31 overflows the dense gate's int32 span -> SwitchWithDefault.
+    b0 = BasicBlock(test=IRGet(BlockPlace(500, 0, 0)))
+    b_a, b_b, bd = BasicBlock(), BasicBlock(), BasicBlock()
+    b0.connect_to(b_a, 0)
+    b0.connect_to(b_b, 2**31)
+    b0.connect_to(bd, None)
+    _node, executes, idx = _emit_program(b0)
+    t = _term(executes[idx[b0]])
+    assert t.func == Op.SwitchWithDefault
+    assert list(t.args[1:5]) == [0, idx[b_a], 2**31, idx[b_b]]
+    assert t.args[5] == idx[bd]
+
+
+def test_terminator_switch_inf_case_falls_back():
+    b0 = BasicBlock(test=IRGet(BlockPlace(500, 0, 0)))
+    b_a, b_b, bd = BasicBlock(), BasicBlock(), BasicBlock()
+    b0.connect_to(b_a, 0)
+    b0.connect_to(b_b, math.inf)
+    b0.connect_to(bd, None)
+    _node, executes, idx = _emit_program(b0)
+    t = _term(executes[idx[b0]])
+    assert t.func == Op.SwitchWithDefault
+    assert list(t.args[1:5]) == [0, idx[b_a], math.inf, idx[b_b]]
+    assert t.args[5] == idx[bd]
+
+
+def test_terminator_switch_nan_case_falls_back():
+    b0 = BasicBlock(test=IRGet(BlockPlace(500, 0, 0)))
+    b_a, b_b, bd = BasicBlock(), BasicBlock(), BasicBlock()
+    b0.connect_to(b_a, 0)
+    b0.connect_to(b_b, math.nan)
+    b0.connect_to(bd, None)
+    _node, executes, idx = _emit_program(b0)
+    t = _term(executes[idx[b0]])
+    assert t.func == Op.SwitchWithDefault  # NaN is never a dense case -> no crash
+    assert len(t.args) == 6  # test + (cond,target) x2 + default
+
+
+def test_terminator_switch_large_integral_float_falls_back():
+    # An integral-valued float far beyond int32 (1e300) must not overflow the dense
+    # gate's int32 narrowing.
+    b0 = BasicBlock(test=IRGet(BlockPlace(500, 0, 0)))
+    b_a, b_b, bd = BasicBlock(), BasicBlock(), BasicBlock()
+    b0.connect_to(b_a, 0)
+    b0.connect_to(b_b, 1e300)
+    b0.connect_to(bd, None)
+    _node, executes, idx = _emit_program(b0)
+    t = _term(executes[idx[b0]])
+    assert t.func == Op.SwitchWithDefault
+    assert list(t.args[3:5]) == [1e300, idx[b_b]]
+
+
+def test_semantic_switch_fallback_dispatch():
+    # Non-dense case sets (huge int / +inf / NaN) fall back to SwitchWithDefault and
+    # still dispatch every value correctly.
+    def build_for(cases, sel):
+        def build():
+            b0 = BasicBlock(test=IRGet(BlockPlace(500, 0, 0)))
+            b0.statements = [IRSet(BlockPlace(500, 0, 0), IRConst(sel))]
+            exit_b = BasicBlock()
+            for i, c in enumerate(cases):
+                bc = BasicBlock(statements=[IRInstr(Op.DebugLog, [IRConst(100 + i)])])
+                b0.connect_to(bc, c)
+                bc.connect_to(exit_b, None)
+            bd = BasicBlock(statements=[IRInstr(Op.DebugLog, [IRConst(199)])])
+            b0.connect_to(bd, None)
+            bd.connect_to(exit_b, None)
+            return b0
+
+        return build
+
+    assert _assert_semantic_parity(build_for([0, 2**31], 0)).log == [100.0]
+    assert _assert_semantic_parity(build_for([0, 2**31], 2**31)).log == [101.0]
+    assert _assert_semantic_parity(build_for([0, 2**31], 7)).log == [199.0]
+    assert _assert_semantic_parity(build_for([0, math.inf], math.inf)).log == [101.0]
+    assert _assert_semantic_parity(build_for([0, math.inf], 3)).log == [199.0]
+    assert _assert_semantic_parity(build_for([0, math.nan], 0)).log == [100.0]
+    assert _assert_semantic_parity(build_for([0, math.nan], 5)).log == [199.0]
+
+
 # ---------------------------------------------------------------------------
 # 2b. Constant lowering (int demotion, NaN / +-Inf via ROM, -0.0 -> int 0).
 # ---------------------------------------------------------------------------

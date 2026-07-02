@@ -45,11 +45,10 @@ cdef void fuse_rmw(Func func) except *
 cdef Func lower_from_ssa(Func func)
 
 
-# If-conversion (OPTIMIZER_REWRITE.md 7.3, standard level only): consume a
-# value-based SSA ``Func`` (AFTER the mid-end, while phis exist) and fold
-# diamonds/triangles/{VALUE C, NONE} two-way blocks into ``If`` EXPRESSION selects
-# feeding the join phis, returning a fresh SSA ``Func`` (verify()-green). Runs to
-# a local fixpoint. The driver slots this between ``midend_round`` and
-# ``lower_from_ssa`` at standard (integration wiring is deferred -- driver.pyx is
-# owned elsewhere this wave; tests drive it via ``run_ifconv`` in lower.pyx).
+# If-conversion (standard level only): consume a value-based SSA ``Func`` (AFTER
+# the mid-end, while phis exist) and fold diamonds/triangles/{VALUE C, NONE}
+# two-way blocks into ``If`` EXPRESSION selects feeding the join phis, returning
+# a fresh SSA ``Func`` (verify()-green). Runs to a local fixpoint. The driver
+# runs this between ``midend_standard`` and ``lower_from_ssa`` (tests drive it via
+# ``run_ifconv`` in lower.pyx).
 cdef Func if_convert(Func func)

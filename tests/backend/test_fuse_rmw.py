@@ -21,6 +21,7 @@ import struct
 
 import pytest
 from sonolus.backend._opt.ir import marshal_in, to_basic_blocks  # noqa: PLC2701
+from sonolus.backend._opt.lower import run_fuse_rmw  # noqa: PLC2701
 
 from sonolus.backend.interpret import Interpreter
 from sonolus.backend.ir import IRConst, IRGet, IRInstr, IRPureInstr, IRSet
@@ -199,6 +200,35 @@ def test_different_place_does_not_fuse():
         return b0
 
     assert "SetAdd(" not in _std(build)
+
+
+def test_random_index_places_do_not_fuse():
+    # run_fuse_rmw (the exported allocate+fuse test API) skips treeify, so an inline
+    # Random draw can survive in a place index -- unlike production, where treeify
+    # materializes it. Two DISTINCT Random draws must never compare structurally
+    # equal (each is a separate observable event: _values_equal only compares pure
+    # operand trees), so Set(p[Random], Add(Get(p[Random]), 1)) must NOT fuse --
+    # fusing would drop one draw and alias two independent cells.
+    def build():
+        return BasicBlock(
+            statements=[
+                IRSet(
+                    BlockPlace(A, IRInstr(Op.Random, [IRConst(0), IRConst(4)])),
+                    IRPureInstr(
+                        Op.Add,
+                        [
+                            IRGet(BlockPlace(A, IRInstr(Op.Random, [IRConst(0), IRConst(4)]))),
+                            IRConst(1),
+                        ],
+                    ),
+                ),
+            ]
+        )
+
+    text = cfg_to_text(run_fuse_rmw(build()))
+    assert "IncrementPost(" not in text, text
+    assert "SetAdd(" not in text, text
+    assert text.count("Random(") >= 2, text  # both independent draws survive
 
 
 def test_minimal_never_fuses():

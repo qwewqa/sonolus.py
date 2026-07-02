@@ -1,32 +1,27 @@
 # cython: language_level=3
-"""EngineNode emission from the arena IR (milestone M1, OPTIMIZER_REWRITE.md 7.6).
+"""EngineNode emission from the arena IR.
 
-This module is a *behaviour-preserving* reimplementation of
-``sonolus/backend/finalize.py``'s ``cfg_to_engine_node`` that reads the flat
-``Func`` arena (see ir.pxd) instead of the Python ``BasicBlock`` graph. It
-reproduces finalize byte-for-byte (compared via ``format_engine_node`` / an
-iterative structural walk) with exactly one deliberate addition mandated by
-section 7.6: it re-flattens associative left spines (``Add``/``Multiply``/
-``Mod``/``Rem``, ``args[0]`` only) as it builds the node tree, mirroring the old
-``FlattenAssociativeOps`` pass. Because marshal-in *binarises* n-ary associative
-input (ir.pyx ``_emit_pure``), re-flattening here makes the two emit paths agree:
-the fused ``optimize_and_finalize`` path emits from n-ary trees, while the
-test/golden path (export -> ``cfg_to_engine_node``) round-trips through
-marshal-in; without re-flattening the latter would emit ``Add(Add(a,b),c)``
-where the real build emits ``Add(a,b,c)``.
+Builds the EngineNode tree directly from the flat ``Func`` arena (see ir.pxd),
+with one deliberate rewrite on the way out: associative left spines
+(``Add``/``Multiply``/``Mod``/``Rem``, ``args[0]`` only) are re-flattened as the
+tree is built. Because marshal-in *binarises* n-ary associative input (ir.pyx
+``_emit_pure``), re-flattening keeps the two emit paths in agreement: the fused
+``optimize_and_finalize`` path emits from n-ary trees, while the test/golden path
+(export -> ``cfg_to_engine_node``) round-trips through marshal-in; without it the
+latter would emit ``Add(Add(a,b),c)`` where the former emits ``Add(a,b,c)``.
 
 Emission also performs intra-callback hash-consing on the arena so structurally
 equal subtrees become the *same* ``FunctionNode`` object.
 
 --------------------------------------------------------------------------------
-HASH-CONSING POLICY (section 6.2 / 7.6)
+HASH-CONSING POLICY
 --------------------------------------------------------------------------------
 Every emitted node -- leaf (``int``/``float``) and ``FunctionNode`` alike -- is
 interned by a structural key built from integer identities:
 
 * a ``FunctionNode`` key is ``(id(op_member), id(arg0), id(arg1), ...)`` where the
-  arg ids are the identities of already-interned children (O(1) per node, at the
-  "arena/int level" the plan asks for -- no recursive Python tree hashing);
+  arg ids are the identities of already-interned children (O(1) per node -- no
+  recursive Python tree hashing);
 * leaf ints and leaf floats are interned in separate value-keyed tables so that
   the display forms ``5`` and ``5.0`` never collapse (they are distinct in
   ``SwitchWithDefault`` case labels), while a canonical integral value like a
@@ -53,7 +48,7 @@ identical, which the exact keys guarantee.
 """
 
 from libc.stdint cimport int32_t, uint16_t
-from libc.math cimport isinf, isnan
+from libc.math cimport isfinite, isinf, isnan
 
 from sonolus.backend._opt.ir cimport (
     Func,
@@ -111,13 +106,13 @@ _OP_SWITCH_DEFAULT = _Op.SwitchWithDefault
 _OP_GET_SHIFTED = _Op.GetShifted
 _OP_SET_SHIFTED = _Op.SetShifted
 
-# EngineRom block id: NaN/+-Inf constants are lowered to reads from it (finalize).
+# EngineRom block id: NaN/+-Inf constants are lowered to reads from it.
 cdef int32_t _ENGINE_ROM = 3000
 
 
 cdef inline int32_t _shifted_fused_op(uint16_t op) noexcept nogil:
     """Map a place-based fused RMW op (fuse_rmw output) to its strided ``*Shifted``
-    form, or -1 if the op is not a fused RMW (findings #3/#5 interplay)."""
+    form, or -1 if the op is not a fused RMW."""
     if op == <uint16_t>OP_SetAdd:
         return OP_SetAddShifted
     if op == <uint16_t>OP_SetSubtract:
@@ -144,9 +139,13 @@ cdef inline bint _is_flattenable(uint16_t op) noexcept nogil:
 
 
 cdef bint _cond_is_integral(object cond):
-    # Mirrors finalize's ``int(cond) == cond`` integrality gate for switch cases.
+    # Integrality gate for the dense-switch shortcut. A Python int is always
+    # integral; a float must be finite before int() (which raises OverflowError on
+    # +-inf and ValueError on NaN) -- non-finite conds are never dense cases.
     if type(cond) is int:
         return True
+    if not isfinite(<double>cond):
+        return False
     return int(cond) == cond
 
 
@@ -203,7 +202,7 @@ cdef class _Emitter:
             self._pin.append(node)
         return node
 
-    # -- numeric constant emission (finalize._numeric_to_engine_node) ------
+    # -- numeric constant emission ----------------------------------------
 
     cdef object _rom_read(self, int32_t k):
         return self._intern_fn(_OP_GET, [self._int_leaf(_ENGINE_ROM), self._int_leaf(k)])
@@ -270,7 +269,7 @@ cdef class _Emitter:
             children.append(self._emit_value(<int32_t>self.func.args[astart + k]))
         return self._flatten_left_spine(_ID_TO_OP[op], _is_flattenable(op), children)
 
-    # -- places (finalize._block_place_to_engine_node) ---------------------
+    # -- places ------------------------------------------------------------
 
     cdef object _emit_get(self, int32_t pid):
         cdef tuple shifted = self._shifted_components(pid)
@@ -282,7 +281,7 @@ cdef class _Emitter:
     cdef tuple _shifted_components(self, int32_t pid):
         # Return (block, offset, index, stride) nodes when this place's address can
         # be emitted as {Get,Set}Shifted(block, offset, index, stride) ==
-        # {get,set}(block, offset + index*stride), else None (findings #3/#5).
+        # {get,set}(block, offset + index*stride), else None.
         #
         # Two shapes, both gate-safe (never grow the node count):
         #  * index is a binary ``Multiply(a, b)`` -> Shifted(block, offset, a, b):
@@ -336,13 +335,13 @@ cdef class _Emitter:
         elif kind == <int32_t>PLACE_DYNAMIC_BLOCK:
             block_node = self._emit_value(block_ref)
         else:
-            # Temp places are rewritten to real blocks before emission (Allocate);
-            # a surviving temp place is a lowering bug (finalize would crash too).
+            # Temp places are rewritten to real blocks before emission (allocation);
+            # a surviving temp place is a lowering bug.
             raise AssertionError(
                 f"temp place kind {kind} reached emission (temps must be allocated first)"
             )
-        # Index folding, exactly as old ``_block_place_to_engine_node``. Marshal-in
-        # folds a constant integer index into ``offset`` (index_val < 0), so:
+        # Index folding. Marshal-in folds a constant integer index into ``offset``
+        # (index_val < 0), so:
         #   * index_val < 0            -> raw int offset  (offset==0 & const index,
         #                                 or nonzero offset & index 0: both == offset)
         #   * index_val >= 0, offset 0 -> emit(index)
@@ -380,8 +379,8 @@ cdef class _Emitter:
         # Place-based fused RMW op (fuse_rmw): ``aux`` carries the place, args hold
         # the (optional) ``w`` operand. Lower to FunctionNode(Op, (block, index[, w]))
         # reusing the exact place->(block, index) folding ``Set`` emission uses. When
-        # the place is strided, emit the ``*Shifted`` fused op instead (findings
-        # #3/#5 interplay: Set<BinOp>Shifted(block, offset, index, stride[, w])).
+        # the place is strided, emit the ``*Shifted`` fused op instead
+        # (Set<BinOp>Shifted(block, offset, index, stride[, w])).
         cdef int32_t pid = self.func.instrs[i].aux
         cdef int32_t astart = self.func.instrs[i].arg_start
         cdef int32_t nargs = self.func.instrs[i].nargs
@@ -413,7 +412,7 @@ cdef class _Emitter:
     cdef object _emit_test(self, int32_t bid):
         return self._emit_value(self.func.blocks[bid].test_val)
 
-    # -- terminators (finalize's outgoing-edge match) ----------------------
+    # -- terminators -------------------------------------------------------
 
     cdef object _emit_terminator(self, int32_t bid):
         cdef int32_t estart = self.func.blocks[bid].edge_start
@@ -421,12 +420,11 @@ cdef class _Emitter:
         cdef int32_t exit_index = self._exit_index
         cdef int32_t i
         cdef object pc, cond_key
-        # Rebuild finalize's ``{edge.cond: edge.dst}`` dict. The arena stores this
-        # block's edges already sorted (value cases ascending, then the NONE edge),
-        # matching finalize's ``sorted(..., key=(cond is None, cond))`` insertion
-        # order, so a plain forward insertion reproduces the dict exactly. Targets are
-        # remapped through ``_block_map`` (finding #4: elided empty shared-exit blocks
-        # collapse to the exit index).
+        # Build the ``{edge.cond: edge.dst}`` dict. The arena stores this block's
+        # edges already sorted (value cases ascending, then the NONE edge), so a
+        # plain forward insertion yields cases ascending with the default last.
+        # Targets are remapped through ``_block_map`` (elided empty shared-exit
+        # blocks collapse to the exit index).
         cdef dict outgoing = {}
         for i in range(estart, estart + ecount):
             if self.func.edges[i].cond_kind == <int32_t>EDGE_COND_NONE:
@@ -471,25 +469,33 @@ cdef class _Emitter:
         cdef int32_t default_val = exit_index
         cdef int nconds = len(value_conds)
         cdef object cond, target
-        cdef int32_t ci, span, maxc
+        cdef int32_t ci, span
+        cdef object maxc, span_obj
 
         if (
             nconds > 0
             and min(value_conds) == 0
             and all(_cond_is_integral(c) for c in value_conds)
         ):
-            # Dense (gap-tolerant) 0..max integer cases -> SwitchIntegerWithDefault
-            # (survey finding #1). The exact 0..k-1 contiguous set is the no-gap
-            # special case. Holes route to the default (the NONE target, or the exit
-            # index for a default-less block -- both are the value a non-matching
-            # test already reaches, so the fill is behaviour-preserving). A density
-            # guard bounds the synthesized table (matches lower._normalize_switch).
+            # Dense (gap-tolerant) 0..max integer cases -> SwitchIntegerWithDefault.
+            # The exact 0..k-1 contiguous set is the no-gap special case. Holes route
+            # to the default (the NONE target, or the exit index for a default-less
+            # block -- both are the value a non-matching test already reaches, so the
+            # fill is behaviour-preserving). A density guard bounds the synthesized
+            # table (matches lower._normalize_switch).
+            #
+            # All conds are finite integers here (the gate above rejects +-inf/NaN),
+            # so max()/int() and the span are computed as Python ints and the density
+            # guard is applied BEFORE any int32 narrowing: a set with a case >= 2^31
+            # (or a sparse set) would overflow the cast, so it falls through to the
+            # general SwitchWithDefault instead of crashing.
             maxc = int(max(value_conds))
-            span = maxc + 1
+            span_obj = maxc + 1
             # Gate-safe density guard: span+1 SwitchIntegerWithDefault target leaves
             # <= 2k+1 SwitchWithDefault leaves iff span <= 2k. Matches
             # lower._normalize_switch's guard so a normalized set is always filled.
-            if span <= 2 * nconds:
+            if span_obj <= 2 * nconds:
+                span = <int32_t>span_obj  # bounded by 2*nconds, so the narrowing is safe
                 if has_none:
                     default_val = outgoing[None]
                 for ci in range(span):
@@ -589,8 +595,7 @@ cdef object emit_func(Func func):
 def emit_cfg(entry, mode=None, callback=None):
     """Marshal a Python ``BasicBlock`` CFG into the arena and emit its EngineNode.
 
-    Non-destructive on ``entry`` (unlike the old ``cfg_to_engine_node``, which
-    deletes block attributes), so callers may run this before other consumers.
+    Non-destructive on ``entry``, so callers may run this before other consumers.
     """
     cdef Func func = Func()
     func._marshal(entry, mode, callback)

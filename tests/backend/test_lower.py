@@ -14,6 +14,7 @@ Three layers, mirroring test_ssa.py:
 
 from __future__ import annotations
 
+import math
 import struct
 
 import pytest
@@ -568,6 +569,117 @@ def test_normalize_switch_already_contiguous_untouched():
     assert " / " not in text, text
     assert " - " not in text, text
     assert _switch_conds(_switch([0, 1, 2], default=True)) == {0, 1, 2, None}
+
+
+# --- normalize_switch must never miscompile / crash on out-of-range or
+# non-finite case values (int64 arithmetic + finiteness/magnitude guards). ---
+
+
+def _switch_dispatch(conds, testval):
+    """Multiway block dispatching a written-then-read scalar == ``testval``.
+
+    Case ``i`` logs ``100+i``, the default logs 199. Dispatch is deterministic under
+    any pipeline, so ``run_lower`` (which normalizes) and the un-normalizing MINIMAL
+    reference must interpret to identical logs.
+    """
+    b0 = BasicBlock(statements=[IRSet(_sc("s"), IRConst(testval))], test=_rd("s"))
+    join = BasicBlock(statements=[IRInstr(Op.DebugLog, [IRConst(-2)])])
+    for i, c in enumerate(conds):
+        blk = BasicBlock(statements=[IRInstr(Op.DebugLog, [IRConst(100 + i)])])
+        b0.connect_to(blk, c)
+        blk.connect_to(join, None)
+    d = BasicBlock(statements=[IRInstr(Op.DebugLog, [IRConst(199)])])
+    b0.connect_to(d, None)
+    d.connect_to(join, None)
+    return b0
+
+
+def _assert_switch_dispatch_parity(conds, testval):
+    build = lambda: _switch_dispatch(conds, testval)  # noqa: E731
+    ref = _run_ref(build)
+    low = _interp(cfg_to_engine_node(lower.run_lower(build())))
+    assert ref.log == low.log, f"conds={conds} test={testval!r}: ref={ref.log} low={low.log}"
+
+
+@pytest.mark.parametrize("testval", [-2000000000, 3, 2000000003, 42])
+def test_normalize_switch_spread_over_2p31_no_miscompile(testval):
+    # Cases whose spread exceeds 2^31: diff/gcd/span must be int64. In 32-bit
+    # ``long`` the spread wrapped negative, passed the density guard, and produced a
+    # garbage <int32> cond that silently sent the max case to the default.
+    _assert_switch_dispatch_parity([-2000000000, 3, 2000000003], testval)
+
+
+@pytest.mark.parametrize("testval", [0, 5, 2**31, 7])
+def test_normalize_switch_case_at_2p31_no_crash(testval):
+    # A case >= 2^31 must not raise OverflowError from a <long> conversion; the set
+    # is left as a plain switch (span exceeds the density guard).
+    _assert_switch_dispatch_parity([0, 5, 2**31], testval)
+
+
+@pytest.mark.parametrize("testval", [0, 5, 2**53, 9])
+def test_normalize_switch_case_at_2p53_no_crash(testval):
+    _assert_switch_dispatch_parity([0, 5, 2**53], testval)
+
+
+@pytest.mark.parametrize("testval", [0, 5, 2**62, 11])
+def test_normalize_switch_case_over_2p53_left_plain(testval):
+    # Beyond 2^53 the case is not exactly representable / int64-safe -> no
+    # normalization, plain switch, correct dispatch.
+    _assert_switch_dispatch_parity([0, 5, 2**62], testval)
+
+
+@pytest.mark.parametrize("testval", [0, 2**40, 2**41, 1])
+def test_normalize_switch_huge_stride_progression(testval):
+    # Exact arithmetic progression with a large (<= 2^53) stride: normalizes
+    # correctly via the affine path (0, 2^40, 2^41 -> 0, 1, 2).
+    _assert_switch_dispatch_parity([0, 2**40, 2**41], testval)
+
+
+@pytest.mark.parametrize("testval", [0.0, 2.0, 4.0, math.inf])
+def test_normalize_switch_inf_case_no_crash(testval):
+    # A +inf case must not crash int()/the <long> cast; the switch is left plain and
+    # dispatches finite values (and inf itself) correctly.
+    _assert_switch_dispatch_parity([0, 2, math.inf], testval)
+
+
+@pytest.mark.parametrize("testval", [0.0, 2.0, 4.0])
+def test_normalize_switch_nan_case_no_crash(testval):
+    # A NaN case must not raise ValueError from int(); left plain, dispatch correct.
+    _assert_switch_dispatch_parity([0, 2, math.nan], testval)
+
+
+# --- A constant dynamic-block id is folded to a static REAL_BLOCK only when it is
+# a finite int32 integer; an out-of-range / non-integral id must keep its exact
+# value (folding it into the int32 block_ref field would truncate/wrap it). ---
+
+
+def _dynblock_get(block_expr):
+    # DebugLog(read of a place whose BLOCK id is a runtime expression that SCCP
+    # folds to a constant). run_lower(midend=True) runs SCCP, then lowers.
+    def build():
+        p = BlockPlace(block_expr, 0, 0)
+        return BasicBlock(statements=[IRInstr(Op.DebugLog, [IRGet(p)])])
+
+    return build
+
+
+def test_dynamic_block_const_id_over_int32_preserved():
+    # 2**40 folded into the int32 block_ref used to wrap to -2147483648.
+    text = cfg_to_text(lower.run_lower(_dynblock_get(IRPureInstr(Op.Add, [IRConst(2**40), IRConst(0)]))(), midend=True))
+    assert "1099511627776" in text, text
+    assert "-2147483648" not in text, text
+
+
+def test_dynamic_block_const_id_non_integral_preserved():
+    # 1000.5 folded into the int32 block_ref used to truncate to 1000.
+    text = cfg_to_text(lower.run_lower(_dynblock_get(IRPureInstr(Op.Add, [IRConst(1000.5), IRConst(0)]))(), midend=True))
+    assert "1000.5" in text, text
+
+
+def test_dynamic_block_const_id_int32_still_folds():
+    # A normal in-range integer block id still folds to a static block (unchanged).
+    text = cfg_to_text(lower.run_lower(_dynblock_get(IRPureInstr(Op.Add, [IRConst(1000), IRConst(0)]))(), midend=True))
+    assert "1000[0]" in text, text
 
 
 # ---------------------------------------------------------------------------

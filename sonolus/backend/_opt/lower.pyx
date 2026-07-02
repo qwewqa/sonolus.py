@@ -1,13 +1,13 @@
 # cython: language_level=3
-"""Out-of-SSA lowering + treeify, then temp-memory allocation (§7.4, §7.5).
+"""Out-of-SSA lowering + treeify, then temp-memory allocation.
 
 Two layers live here:
 
-* ``lower_from_ssa`` (§7.4) -- the real out-of-SSA + treeify that supersedes the
-  naive ``midend.out_of_ssa``. It takes a value-based SSA ``Func`` (from
-  ``build_ssa``) and produces a non-SSA §3-legal arena ready for
-  ``allocate_func`` + ``emit_func``. See ``_Lower`` below for the full contract.
-* ``allocate_func`` (§7.5) -- rewrites every temp place (size-1 scalar, size>1
+* ``lower_from_ssa`` -- out-of-SSA + treeify (``midend.out_of_ssa`` is a naive
+  debug-only variant). It takes a value-based SSA ``Func`` (from ``build_ssa``)
+  and produces a legal non-SSA arena ready for ``allocate_func`` + ``emit_func``.
+  See ``_Lower`` below for the full contract.
+* ``allocate_func`` -- rewrites every temp place (size-1 scalar, size>1
   array, size-0 placeholder) to a ``BlockPlace(10000, ...)`` real-block place,
   with three strategies:
 
@@ -18,17 +18,17 @@ Two layers live here:
                     base+size)`` range. Plus dead-store elimination.
   * ``try_bump`` -- bump if it fits the 4096-slot cap, else ``packing``.
 
-Dead-store elimination mirrors the old ``Allocate.update_stmt`` exactly: a store
-is dead iff its temp target is not live-out, or it is a self-copy; a dead store
-with a side-effecting value is replaced by the bare value statement, others are
-dropped. Determinism comes from temp-id order (marshal first-touch) and the
-``(-size, temp id)`` sort key -- no Python strings involved.
+Dead-store elimination: a store is dead iff its temp target is not live-out, or
+it is a self-copy; a dead store with a side-effecting value is replaced by the
+bare value statement, others are dropped. Determinism comes from temp-id order
+(marshal first-touch) and the ``(-size, temp id)`` sort key -- no Python strings
+involved.
 
-The 4096-slot cap raises ``ValueError("Temporary memory limit exceeded")``, the
-same message as the old ``allocate.py``.
+The 4096-slot cap raises ``ValueError("Temporary memory limit exceeded")``.
 """
 
-from libc.stdint cimport int16_t, int32_t, uint8_t, uint16_t, uint32_t, uint64_t
+from libc.math cimport fabs, isfinite
+from libc.stdint cimport int16_t, int32_t, int64_t, uint8_t, uint16_t, uint32_t, uint64_t
 from libc.stdlib cimport calloc, free, malloc, realloc
 from libc.string cimport memcpy
 
@@ -99,6 +99,24 @@ from sonolus.backend._opt.midend cimport build_ssa, cfg_cleanup, midend_round
 from sonolus.backend._opt.ir import marshal_in, to_basic_blocks
 
 
+# Upper bound on the interference-matrix element count (n_temps * n_words). Kept
+# at INT32_MAX so the int32 row index ``t * nw + w`` used to address the matrix
+# can never overflow; callbacks large enough to hit this are rejected cleanly.
+cdef int64_t _INTERF_MATRIX_CAP = <int64_t>2147483647
+
+# Case magnitudes beyond 2^53 are not exactly representable as f64 and would make
+# the int64 arithmetic in switch normalization inexact/overflow-prone, so such
+# switches are left un-normalized (see _normalize_switch).
+cdef double _CASE_MAG_LIMIT = 9007199254740992.0  # 2**53
+
+
+cdef inline bint _int32_block_const(double d) noexcept nogil:
+    # A constant dynamic-block id may be folded to a static REAL_BLOCK int32 place
+    # only when it is a finite integer in int32 range; the range check precedes the
+    # ``<int64_t>d`` cast so that cast is always in-range (never UB).
+    return isfinite(d) and -2147483648.0 <= d <= 2147483647.0 and d == <double>(<int64_t>d)
+
+
 # --------------------------------------------------------------------------
 # Bump allocator (no liveness, no dead-store elimination).
 # --------------------------------------------------------------------------
@@ -143,9 +161,16 @@ cdef void _pack(Func func, Liveness L, int32_t* temp_offset) except *:
     if n_temps == 0:
         return
 
+    # Interference matrix is n_temps x nw uint64 words. Compute the size in 64-bit
+    # (n_temps * nw overflows int32 at ~370k temps) and reject absurd sizes so the
+    # int32 row index ``t * nw + w`` below can never overflow / write OOB.
+    if <int64_t>n_temps * <int64_t>nw > _INTERF_MATRIX_CAP:
+        raise ValueError("Temporary interference graph too large")
+
     # nonzero mask: temps with size > 0 (size-0 temps never interfere).
     cdef uint64_t* nonzero = <uint64_t*>calloc(<size_t>(nw if nw > 0 else 1), sizeof(uint64_t))
-    cdef uint64_t* adj = <uint64_t*>calloc(<size_t>(n_temps * nw if nw > 0 else 1), sizeof(uint64_t))
+    cdef uint64_t* adj = <uint64_t*>calloc(
+        (<size_t>n_temps * <size_t>nw) if nw > 0 else 1, sizeof(uint64_t))
     cdef uint64_t* work = <uint64_t*>calloc(<size_t>(nw if nw > 0 else 1), sizeof(uint64_t))
     if nonzero == NULL or adj == NULL or work == NULL:
         free(nonzero); free(adj); free(work)
@@ -156,7 +181,7 @@ cdef void _pack(Func func, Liveness L, int32_t* temp_offset) except *:
                 bs_set(nonzero, t)
 
         # Build interference: for each OPX_SET statement, all size>0 temps in its
-        # live-out set mutually interfere (old get_interference semantics).
+        # live-out set mutually interfere (def-point interference graph).
         for i in range(ni):
             if instrs[i].op != OPX_SET:
                 continue
@@ -210,7 +235,7 @@ cdef void _pack(Func func, Liveness L, int32_t* temp_offset) except *:
 
 
 # --------------------------------------------------------------------------
-# Dead-store elimination (mirror of old Allocate.update_stmt).
+# Dead-store elimination.
 # --------------------------------------------------------------------------
 
 cdef void _dead_store_elim(Func func, Liveness L):
@@ -239,6 +264,9 @@ cdef void _dead_store_elim(Func func, Liveness L):
             t = places[pid].block_ref
             if not bs_get(rl, t):
                 disj1 = True
+        # Self-copy SET(p) = GET(p): detected by place id (post-coalesce these
+        # share one interned place id; a structurally-equal copy under distinct ids
+        # is a rare missed drop, output-quality only, never wrong behaviour).
         disj2 = (instrs[vid].op == OPX_GET and instrs[vid].aux == pid)
         is_live = not (disj1 or disj2)
         if is_live:
@@ -308,8 +336,7 @@ cdef void allocate_func(Func func, int32_t strategy) except *:
 
 
 # --------------------------------------------------------------------------
-# Place-based read-modify-write fusion (M3.5, OPTIMIZER_REWRITE.md §3 wiki
-# semantics). Runs post-allocation, pre-emit/export.
+# Place-based read-modify-write fusion. Runs post-allocation, pre-emit/export.
 # --------------------------------------------------------------------------
 
 cdef inline int32_t _fused_set_op(uint16_t binop) noexcept nogil:
@@ -337,8 +364,10 @@ cdef bint _values_equal(Func func, int32_t v1, int32_t v2) except -1:
     ``lower_from_ssa`` re-emits a fresh place (and index/pointer tree) per
     OPX_GET/OPX_SET, so the store target and the folded read reference the SAME
     logical location under DIFFERENT place ids. fuse_rmw compares them
-    structurally instead of by id. Side-effecting values (e.g. two ``Random``
-    draws) are never equal.
+    structurally instead of by id. Non-pure values (e.g. two ``Random`` draws,
+    which carry FLAG_PINNED but not FLAG_PURE) are never equal -- each evaluation
+    is a distinct observable event, so structural sameness of the operand trees
+    does not imply the two values are interchangeable.
     """
     if v1 == v2:
         return True
@@ -350,7 +379,9 @@ cdef bint _values_equal(Func func, int32_t v1, int32_t v2) except -1:
         return func.consts[func.instrs[v1].aux] == func.consts[func.instrs[v2].aux]
     if o1 == <uint16_t>OPX_GET:
         return _places_equal(func, func.instrs[v1].aux, func.instrs[v2].aux)
-    if func.instrs[v1].flags & FLAG_SIDE_EFFECT:
+    # Only pure ops may be compared by their operand trees; anything impure
+    # (side-effecting OR merely order-sensitive like Random) is never equal.
+    if not (func.instrs[v1].flags & FLAG_PURE):
         return False
     cdef int16_t n1 = func.instrs[v1].nargs
     if n1 != func.instrs[v2].nargs:
@@ -561,9 +592,7 @@ def run_fuse_rmw(entry, mode=None, callback=None, strategy="packing"):
 #         single-use  -> FOLD unless crosses_loop(def, use) (sinking into a
 #                        deeper loop; then MATERIALISE, hoisting the single eval).
 #         multi-use   -> DUPLICATE iff decision-aware tree cost < 4 (a
-#                        materialised operand costs 3, a scalar-temp get; the
-#                        threshold reproduces the old CSE cost>=4 extraction and
-#                        InlineVars leaving cheap exprs duplicated), else
+#                        materialised operand costs 3, a scalar-temp get), else
 #                        MATERIALISE.
 #     - not inlinable (pinned OPX_GET of a writable/dynamic block, or a pure op
 #       over such a read):
@@ -573,17 +602,15 @@ def run_fuse_rmw(entry, mode=None, callback=None, strategy="packing"):
 #         Never across a loop back edge (same-block => same loop). Random/other
 #         pinned non-GET values never take this path -> MATERIALISE.
 # * set_cost derivation for the cost comparison ``dup_cost*uses <
-#   set_cost + get_cost*uses``: get_cost = scalar-temp get = 3 (section 2); the
-#   materialise side is ``tree_cost + get_cost*uses`` (compute once, read each
-#   use -- the temp write is amortised to zero, exactly as the old CSE SSA
-#   extraction), and duplication is ``tree_cost*uses``, so break-even is
-#   ``get_cost < tree_cost`` <=> ``tree_cost >= 4``, independent of uses -> the
-#   constant-4 threshold above.
+#   set_cost + get_cost*uses``: get_cost = scalar-temp get = 3 (runtime cost
+#   model); the materialise side is ``tree_cost + get_cost*uses`` (compute once,
+#   read each use -- the temp write is amortised to zero), and duplication is
+#   ``tree_cost*uses``, so break-even is ``get_cost < tree_cost`` <=>
+#   ``tree_cost >= 4``, independent of uses -> the constant-4 threshold above.
 #
-# DELIBERATE DIVERGENCE (7.4.1): constant-index reads of WRITABLE blocks are
-# never duplicated (they are not inlinable, so multi-use materialises). Old
-# InlineVars' alias path duplicated them freely regardless of writability;
-# duplicating across an intervening write could observe it, so this is stricter.
+# POLICY: constant-index reads of WRITABLE blocks are never duplicated (they are
+# not inlinable, so multi-use materialises) -- duplicating across an intervening
+# write could observe it.
 # ==========================================================================
 
 
@@ -699,6 +726,9 @@ cdef class _Lower:
     cdef list value_temp
     cdef list rtc_memo
     cdef list tc_memo
+    # prefix[i] = count of FLAG_SIDE_EFFECT instrs in indices [0, i); lets
+    # _no_effect_between answer in O(1) instead of rescanning per candidate.
+    cdef int32_t* se_prefix
     # topology
     cdef list incoming          # per block -> edge ids (ascending == contract)
     cdef list edge_pos          # per edge -> its index in incoming[dst]
@@ -718,6 +748,7 @@ cdef class _Lower:
     def __cinit__(self, Func src):
         self.src = src
         self.dst = Func()
+        self.se_prefix = NULL
         self.nb = src.n_blocks
         self.array_temp_map = {}
         self.scalar_place = {}
@@ -750,6 +781,9 @@ cdef class _Lower:
         self.split_edge = []
         self.doms = compute_dominators(src)
         self.loops = compute_loops(src, self.doms)
+
+    def __dealloc__(self):
+        free(self.se_prefix)
 
     # -- runtime-constant / inlinable / cost analyses ----------------------
 
@@ -873,21 +907,20 @@ cdef class _Lower:
 
     def _no_effect_between(self, int32_t v, int32_t upos):
         # No FLAG_SIDE_EFFECT instruction strictly between v and its use (same
-        # block). For a test use, scan to the block end.
+        # block). For a test use, the use position is the block end. O(1) via the
+        # side-effect prefix sums (blocks occupy contiguous instr-index ranges, so
+        # a global prefix answers a within-block range query directly).
         cdef Instr* instrs = self.src.instrs
         cdef int32_t b = instrs[v].block
         cdef int32_t lo = v + 1
-        cdef int32_t hi, i
+        cdef int32_t hi
         if upos == _TEST_USE:
             hi = self.src.blocks[b].instr_start + self.src.blocks[b].instr_count
         elif upos >= 0:
             hi = upos
         else:
             return False
-        for i in range(lo, hi):
-            if instrs[i].flags & FLAG_SIDE_EFFECT:
-                return False
-        return True
+        return self.se_prefix[hi] - self.se_prefix[lo] == 0
 
     # -- use analysis ------------------------------------------------------
 
@@ -902,6 +935,17 @@ cdef class _Lower:
         cdef Func src = self.src
         cdef int32_t i, b, op, k, astart, nargs, e, pid, tv, uc
         cdef bint side, ih, single, opk
+        # Side-effect prefix sums for _no_effect_between (se_prefix[i] = count of
+        # side-effecting instrs in [0, i)). Computed once; the class is single-use
+        # (a fresh _Lower per lower_from_ssa call), so the buffer is always NULL here.
+        cdef int32_t ni = src.n_instrs
+        self.se_prefix = <int32_t*>malloc(<size_t>(ni + 1) * sizeof(int32_t))
+        if self.se_prefix == NULL:
+            raise MemoryError()
+        self.se_prefix[0] = 0
+        for i in range(ni):
+            self.se_prefix[i + 1] = self.se_prefix[i] + (
+                1 if (src.instrs[i].flags & FLAG_SIDE_EFFECT) else 0)
         # Phase 1: use counts + positions.
         for i in range(src.n_instrs):
             op = src.instrs[i].op
@@ -1055,10 +1099,16 @@ cdef class _Lower:
         if kind == PLACE_TEMP_ARRAY or kind == PLACE_TEMP_SIZE0:
             br = self._map_array_temp(br)
         elif kind == PLACE_DYNAMIC_BLOCK:
-            if src.instrs[br].op == OPX_CONST:
+            # Fold a constant block id to a static REAL_BLOCK only when it is a
+            # finite integer in int32 range. A non-integral / non-finite / out-of-
+            # range id (e.g. a block index folded from user arithmetic) is left
+            # dynamic so emission preserves its exact value; folding it into the
+            # int32 block_ref field would truncate or wrap it (a miscompile), and
+            # ``int()`` on inf/NaN would raise.
+            if src.instrs[br].op == OPX_CONST and _int32_block_const(src.consts[src.instrs[br].aux]):
                 kind = PLACE_REAL_BLOCK
                 flags = 0
-                br = <int32_t>int(src.consts[src.instrs[br].aux])
+                br = <int32_t>(<int64_t>src.consts[src.instrs[br].aux])
             else:
                 br = self._emit_ref(br, block)
         if iv >= 0:
@@ -1343,8 +1393,14 @@ cdef void _coalesce(Func func) except *:
     if n_temps == 0:
         return
 
+    # See _pack: size the interference matrix in 64-bit and reject absurd sizes so
+    # the int32 row index ``t * nw + w`` cannot overflow / write OOB.
+    if <int64_t>n_temps * <int64_t>nw > _INTERF_MATRIX_CAP:
+        raise ValueError("Temporary interference graph too large")
+
     cdef uint64_t* scalar_mask = <uint64_t*>calloc(<size_t>(nw if nw > 0 else 1), sizeof(uint64_t))
-    cdef uint64_t* adj = <uint64_t*>calloc(<size_t>(n_temps * nw if nw > 0 else 1), sizeof(uint64_t))
+    cdef uint64_t* adj = <uint64_t*>calloc(
+        (<size_t>n_temps * <size_t>nw) if nw > 0 else 1, sizeof(uint64_t))
     cdef uint64_t* work = <uint64_t*>calloc(<size_t>(nw if nw > 0 else 1), sizeof(uint64_t))
     if scalar_mask == NULL or adj == NULL or work == NULL:
         free(scalar_mask); free(adj); free(work)
@@ -1431,12 +1487,19 @@ cdef void _coalesce(Func func) except *:
         if not copy_pairs:
             return
 
-        # Interference as Python sets (small funcs), then union non-interfering
-        # copy-related webs (old CopyCoalesce.get_mapping), min-canonical.
+        # Interference as Python sets, then union non-interfering copy-related
+        # webs (min-canonical). interf is only ever READ at copy-pair endpoints
+        # (the decision check and combined_interf), and webs only ever contain
+        # endpoints, so building neighbor sets for the endpoints alone is
+        # byte-identical to the full n_temps x n_temps rebuild while dropping the
+        # quadratic scan over unrelated temps. Endpoints are all scalar temps by
+        # construction (copy_pairs only pairs PLACE_TEMP_SCALAR block_refs).
+        endpoints = set()
+        for pair in copy_pairs:
+            endpoints.add(pair[0])
+            endpoints.add(pair[1])
         interf = {}
-        for t in range(n_temps):
-            if not bs_get(scalar_mask, t):
-                continue
+        for t in endpoints:
             iset = set()
             for u in range(n_temps):
                 if u != t and bs_get(&adj[t * nw], u):
@@ -1498,8 +1561,8 @@ cdef void _coalesce(Func func) except *:
 # instructions (referenced only via test_val, so block slices stay contiguous).
 # --------------------------------------------------------------------------
 
-cdef long _gcd(long a, long b) noexcept nogil:
-    cdef long t
+cdef int64_t _gcd(int64_t a, int64_t b) noexcept nogil:
+    cdef int64_t t
     if a < 0:
         a = -a
     if b < 0:
@@ -1512,29 +1575,32 @@ cdef long _gcd(long a, long b) noexcept nogil:
 
 
 def _dense_offset_stride(list cases):
-    # cases: sorted distinct f64. Dense (gap-tolerant) normalization for survey
-    # finding #1: return (offset, stride, span) with offset = min (int), stride =
-    # gcd of all (case - offset) (int, >= 1, generalizes the survey's stride-1
-    # dense fill so evenly-strided-but-gapped sets stay compact), and span =
-    # (max - offset)/stride + 1 == the number of SwitchIntegerWithDefault slots.
-    # None if any case is non-integral. All (case - offset)/stride are then
-    # distinct integers in [0, span); the emit switch gate fills the span - k holes
-    # with the default target.
+    # cases: sorted distinct f64. Dense (gap-tolerant) normalization: return
+    # (offset, stride, span) with offset = min (int), stride = gcd of all
+    # (case - offset) (int, >= 1, so evenly-strided-but-gapped sets stay compact),
+    # and span = (max - offset)/stride + 1 == the number of SwitchIntegerWithDefault
+    # slots. Returns None (leaving the switch un-normalized) if any case is
+    # non-integral, non-finite, or of magnitude > 2^53 -- outside that range the
+    # int64 offset/diff/span arithmetic would be inexact or overflow. All
+    # (case - offset)/stride are then distinct integers in [0, span); the emit
+    # switch gate fills the span - k holes with the default target.
     cdef int32_t n = len(cases)
     if n < 2:
         return None
     cdef double c
+    # Reject anything not exactly representable as an in-range integer BEFORE any
+    # double->int64 cast (a cast of an out-of-range/non-finite double is UB).
     for c in cases:
-        if c != float(int(c)):
+        if not isfinite(c) or fabs(c) > _CASE_MAG_LIMIT or c != <double>(<int64_t>c):
             return None
-    cdef long off = <long>int(cases[0])
-    cdef long g = 0
+    cdef int64_t off = <int64_t>(<double>cases[0])
+    cdef int64_t g = 0
     cdef int32_t i
     for i in range(1, n):
-        g = _gcd(g, <long>int(cases[i]) - off)
+        g = _gcd(g, <int64_t>(<double>cases[i]) - off)
     if g == 0:
         return None
-    cdef long span = (<long>int(cases[n - 1]) - off) // g + 1
+    cdef int64_t span = (<int64_t>(<double>cases[n - 1]) - off) // g + 1
     return (off, g, span)
 
 
@@ -1543,8 +1609,8 @@ cdef void _normalize_switch(Func func) except *:
     cdef Edge* edges = func.edges
     cdef int32_t b, e, estart, ecount, tv, coff, cstr, new_tv, cid, k
     cdef bint has_default
-    cdef double offv, strv, cval, newc
-    cdef long span
+    cdef double offv, strv
+    cdef int64_t off_i, str_i, span, idx
     cdef list cases
     for b in range(nb):
         estart = func.blocks[b].edge_start
@@ -1557,28 +1623,31 @@ cdef void _normalize_switch(Func func) except *:
             else:
                 cases.append(edges[e].cond)
         cases = sorted(set(cases))
-        # Mirror old NormalizeSwitch: at least 3 distinct outgoing conds (numeric
-        # cases + default). Fewer (two-way / default-less 2-case) is not a switch.
+        # At least 3 distinct outgoing conds (numeric cases + default). Fewer
+        # (two-way / default-less 2-case) is not a switch.
         if len(cases) + (1 if has_default else 0) < 3:
             continue
+        # Both helpers return None (leaving the switch as a general
+        # SwitchWithDefault) for any non-integral / non-finite / out-of-2^53-range
+        # case, so all offset/stride/case arithmetic below stays in exact int64.
         res = _offset_stride(cases)
         if res is not None:
-            offv = <double>res[0]
-            strv = <double>res[1]
-            if offv == 0.0 and strv == 1.0:
+            off_i = <int64_t>res[0]
+            str_i = <int64_t>res[1]
+            if off_i == 0 and str_i == 1:
                 continue
         else:
-            # Gapped/dense fallback (finding #1): shift a near-dense integral case
-            # set to a 0-based table; the emit switch gate then fills the holes with
-            # the default. Density guard bounds the synthesized table (span vs case
+            # Gapped/dense fallback: shift a near-dense integral case set to a
+            # 0-based table; the emit switch gate then fills the holes with the
+            # default. Density guard bounds the synthesized table (span vs case
             # count k); the emitter re-applies the SAME guard, so a set left un-
             # shifted (already 0-based) is filled only when it also passes there.
             dres = _dense_offset_stride(cases)
             if dres is None:
                 continue
-            offv = <double>(<long>dres[0])
-            strv = <double>(<long>dres[1])
-            span = <long>dres[2]
+            off_i = <int64_t>dres[0]
+            str_i = <int64_t>dres[1]
+            span = <int64_t>dres[2]
             k = len(cases)
             # Density guard: keep the synthesized table gate-safe. A
             # SwitchIntegerWithDefault has span+1 target leaves vs a
@@ -1586,27 +1655,32 @@ cdef void _normalize_switch(Func func) except *:
             # conversion never grows the node count iff span <= 2k (and upgrades a
             # linear scan to O(1) jump-table dispatch). Reject sparser sets; the
             # emitter re-applies the SAME guard.
-            if span > 2 * k:
+            if span > 2 * <int64_t>k:
                 continue
-            if offv == 0.0 and strv == 1.0:
+            if off_i == 0 and str_i == 1:
                 # Already 0-based; nothing to rewrite -- emit fills the gaps.
                 continue
-        # Rewrite case conds to (c - a)/b: 0..k-1 for an exact progression, or a
-        # gapped 0..span-1 set for the dense fallback (the emitter fills the holes).
+        # Rewrite case conds to (c - off)/stride: 0..k-1 for an exact progression,
+        # or a gapped 0..span-1 set for the dense fallback (the emitter fills the
+        # holes). Exact int64 math -- every case is a checked in-range integer and
+        # off/stride divide it exactly (cond >= off, stride >= 1).
         for e in range(estart, estart + ecount):
             if edges[e].cond_kind == EDGE_COND_VALUE:
-                newc = <double>(<int32_t>((edges[e].cond - offv) / strv))
-                edges[e].cond = newc
+                idx = (<int64_t>(edges[e].cond) - off_i) // str_i
+                edges[e].cond = <double>idx
                 edges[e].cond_is_int = 1
-        # Rewrite the test to (test - a) / b, appended at the arena end (block=b,
-        # referenced via test_val; not a statement root, not in the block slice).
+        # Rewrite the test to (test - off) / stride, appended at the arena end
+        # (block=b, referenced via test_val; not a statement root, not in the
+        # block slice).
+        offv = <double>off_i
+        strv = <double>str_i
         tv = func.blocks[b].test_val
         new_tv = tv
-        if offv != 0.0:
+        if off_i != 0:
             cid = func._intern_const(offv)
             coff = func._emit(OPX_CONST, FLAG_PURE | FLAG_CONST_IS_INT, b, cid, [])
             new_tv = func._emit(<uint16_t>OP_Subtract, FLAG_PURE, b, -1, [new_tv, coff])
-        if strv != 1.0:
+        if str_i != 1:
             cid = func._intern_const(strv)
             cstr = func._emit(OPX_CONST, FLAG_PURE | FLAG_CONST_IS_INT, b, cid, [])
             new_tv = func._emit(<uint16_t>OP_Divide, FLAG_PURE, b, -1, [new_tv, cstr])
@@ -1614,14 +1688,19 @@ cdef void _normalize_switch(Func func) except *:
 
 
 def _offset_stride(list cases):
-    # cases: sorted distinct case values (as f64). Return (offset, stride) ints,
-    # or None. Mirrors old NormalizeSwitch.get_offset_stride.
+    # cases: sorted distinct case values (as f64). Return (offset, stride) ints
+    # for an exact arithmetic progression, or None. Returns None (leaving the
+    # switch un-normalized) if any case is non-integral, non-finite, or of
+    # magnitude > 2^53 -- outside that range int() would crash on inf/nan and the
+    # progression check would be inexact.
     if len(cases) < 2:
         return None
+    cdef double c
+    for c in cases:
+        if not isfinite(c) or fabs(c) > _CASE_MAG_LIMIT or c != <double>(<int64_t>c):
+            return None
     cdef double offset = <double>cases[0]
     cdef double stride = <double>cases[1] - offset
-    if offset != float(int(offset)) or stride != float(int(stride)):
-        return None
     if stride == 0.0:
         return None
     cdef int32_t i
@@ -1653,7 +1732,7 @@ cdef Func lower_from_ssa(Func func):
 
 
 # ==========================================================================
-# If-conversion (OPTIMIZER_REWRITE.md 7.3). Standard level, runs on value-based
+# If-conversion (standard level). Runs on value-based
 # SSA AFTER the mid-end, BEFORE lower_from_ssa (while phis exist). Folds a
 # diamond/triangle/{VALUE C, NONE} two-way head block into an ``If`` EXPRESSION
 # select feeding the join phis (one select per phi), removing whole Execute
@@ -1667,7 +1746,7 @@ cdef Func lower_from_ssa(Func func):
 # Each side is either an ARM BLOCK (single-pred P, single-succ J, unconditional,
 # no phis, strictly pure) or a DIRECT edge P->J (triangle / both-direct).
 #
-# ARM LEGALITY (strict, 7.3): an arm block may hold ONLY strictly pure runtime ops
+# ARM LEGALITY (strict): an arm block may hold ONLY strictly pure runtime ops
 # (and OPX_CONSTs) -- no OPX_SET, no side effects, NO OPX_GET AT ALL (not even an
 # effectively-pure non-writable read: a speculated guarded read would fault the
 # oracle's bounds assert), no Random/RandomInteger, no OPX_PHI, no OPX_UNDEF, and
@@ -1677,7 +1756,7 @@ cdef Func lower_from_ssa(Func func):
 # J phi operand on the arm->J edge, by dominance -- so single-use is exactly the
 # "consumed only by the select tree" rule.)
 #
-# ARM BUDGET (7.3 / 13, tunable at M4): per select arm TREE, effective §2 cost
+# ARM BUDGET: per select arm TREE, effective runtime cost
 # <= IFCONV_ARM_BUDGET. Cost walk (_arm_cost): a runtime-constant subtree or an
 # OPX_CONST costs 1 (the runtime folds it); a reference to a value defined ABOVE/IN
 # P (not in the arm) costs 3 (it is an independent temp/foldable); an arm-defined
@@ -1693,9 +1772,9 @@ cdef Func lower_from_ssa(Func func):
 # the removed edges collapse to that phi's select on the new edge; a phi left with a
 # single operand collapses to the select (mirrors midend trivial-phi handling).
 #
-# MULTIWAY (Switch selects): DEFERRED -- see if_convert()'s note. Two-way + equality
-# cover the ternary/short-circuit motivation; multiway adds default-less handling
-# and per-case arm legality for a smaller payoff, and is a clean follow-up at M4.
+# MULTIWAY (Switch selects): NOT IMPLEMENTED -- two-way + equality cover the
+# ternary/short-circuit motivation; multiway adds default-less handling and
+# per-case arm legality for a smaller payoff.
 #
 # ITERATION: single-pass batches of NON-OVERLAPPING conversions (claiming {P, arms,
 # J}), run to a LOCAL FIXPOINT (_if_convert_run loops until a pass converts nothing).
@@ -1704,9 +1783,8 @@ cdef Func lower_from_ssa(Func func):
 # passes.
 # ==========================================================================
 
-# Initial if-conversion arm budget (effective §2 cost per select arm tree). Tuned
-# against pydori metrics at M4; module-level + Python-visible so it is a single
-# tunable knob.
+# If-conversion arm budget (effective runtime cost per select arm tree);
+# module-level + Python-visible so it is a single tunable knob.
 IFCONV_ARM_BUDGET = 8
 
 
@@ -1790,7 +1868,7 @@ cdef class _IfConv:
         return r
 
     def _arm_cost(self, int32_t v, int32_t arm_block):
-        # Effective §2 cost of the folded arm tree rooted at v (§7.3 walk).
+        # Effective runtime cost of the folded arm tree rooted at v.
         cdef Func src = self.src
         cdef int32_t op, astart, nargs, k
         cdef int32_t r
@@ -2337,7 +2415,7 @@ def _if_convert_run(Func func):
 
 
 cdef Func if_convert(Func func):
-    """If-convert ``func`` (SSA in, SSA out) to a local fixpoint (7.3)."""
+    """If-convert ``func`` (SSA in, SSA out) to a local fixpoint."""
     res = _if_convert_run(func)
     return <Func>res[0]
 
@@ -2378,17 +2456,15 @@ def lower_debug(entry, mode=None, callback=None, midend=False):
 
 cdef Func _maybe_midend(Func ssa, bint midend):
     # Optionally run one SCCP/GVN/DCE mid-end round (allow_repeat like ``standard``)
-    # when requested. NOTE: the historical getattr("midend_round") probe here always
-    # no-op'd -- ``midend_round`` is a ``cdef`` function and is never Python-visible,
-    # so ``run_lower(midend=True)`` silently skipped the mid-end. Call the cimported
-    # cdef directly instead.
+    # when requested; ``midend_round`` is a ``cdef`` function, so call the cimport
+    # directly.
     if not midend:
         return ssa
     return midend_round(ssa, True)
 
 
 # --------------------------------------------------------------------------
-# If-conversion test/driver wrappers (7.3). run_ifconv exports the post-ifconv
+# If-conversion test/driver wrappers. run_ifconv exports the post-ifconv
 # SSA CFG; ifconv_full runs the whole standard-style path to allocation; the
 # _counted variants report how many conversions fired (for tests / metrics).
 # --------------------------------------------------------------------------
