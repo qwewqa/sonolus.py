@@ -270,7 +270,7 @@ cdef void _dead_store_elim(Func func, Liveness L):
         if not (instrs[i].flags & FLAG_STMT_ROOT):
             continue
         rs = L.root_slot[i]
-        rl = &L.root_live[rs * nw]
+        rl = &L.root_live[<int64_t>rs * nw]
         pid = instrs[i].aux
         vid = <int32_t>args[instrs[i].arg_start]
         kind = places[pid].kind

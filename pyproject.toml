@@ -104,6 +104,13 @@ deps = [
     "numpy>=2.3.5"
 ]
 uv_python_preference = "managed"
+# Editable (in-place) install so the compiled extension is built into the source
+# tree with the running interpreter's ABI tag. The test suite imports ``sonolus``
+# from the source tree (pytest puts the project root on sys.path to import the
+# ``tests`` package), which would otherwise shadow a wheel-installed copy and load
+# only whichever ABI was last built in-place -- passing on the primary Python but
+# failing to import the extension on the others.
+package = "editable"
 commands = [["pytest", "tests", "-n", "auto"]]
 
 [tool.ty.environment]

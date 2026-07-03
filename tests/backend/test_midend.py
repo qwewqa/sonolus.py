@@ -307,12 +307,11 @@ def test_out_of_ssa_pure_self_loop_splits_self_edge():
 
 
 def test_sccp_dead_loop_entry_self_phi_collapses_cleanly():
-    # s == 0 is provably false (s := 1 in SSA), so SCCP prunes the loop-entry edge;
-    # the loop becomes reachable only via its own back-edge and its loop-carried phi
-    # realigns to a single self-referential operand. _collapse_trivial_phis must
-    # leave that degenerate phi for DCE -- substituting it would build a subst[p]=p
-    # cycle (hanging _resolve) or a def-before-use. This must simply complete,
-    # verify() green after every phase, and interpret to the loop-skipped result.
+    # s == 0 is provably false (s := 1 in SSA), so SCCP proves the loop-entry edge
+    # dead and drops the loop as unreachable (reachable only via its own back-edge).
+    # Pins that a dead self-loop with a loop-carried phi is eliminated cleanly:
+    # compaction/phi-collapse must complete with verify() green after every phase and
+    # interpret to the loop-skipped result -- no subst[p]=p cycle or def-before-use.
     def build():
         entry = BasicBlock(
             statements=[IRSet(_sc("s"), IRConst(1)), IRSet(_sc("acc"), IRConst(0))],
