@@ -196,6 +196,25 @@ cdef class _Cleaner:
     cdef int32_t n_e
     cdef int32_t cap_e
 
+    # Per-head edge adjacency (append-only intrusive lists into one node pool), so
+    # every transform iterates a head's own edges instead of rescanning all n_e --
+    # the O(nb*ne) rescans were the dominant cfg_cleanup cost. out_first/out_last
+    # bucket alive+stale edge ids by e_src; in_first/in_last by e_dst. Entries are
+    # never removed: a kill (e_alive=0) or a redirect (e_src/e_dst rewritten, with a
+    # fresh node appended to the new head's list) just leaves a stale node behind,
+    # which consumers skip by re-checking e_alive and e_src/e_dst == h. Appending at
+    # the tail keeps each head's live edges in ascending edge-index order, matching
+    # the original full-array scans exactly (merge/taildup only ever add edges to a
+    # single-successor head, so a multi-edge switch head keeps its original order).
+    cdef int32_t* adj_edge          # node -> edge id
+    cdef int32_t* adj_next          # node -> next node (-1 = end of list)
+    cdef int32_t n_adj
+    cdef int32_t cap_adj
+    cdef int32_t* out_first         # [nb]  first out-adjacency node of a head (by e_src)
+    cdef int32_t* out_last          # [nb]
+    cdef int32_t* in_first          # [nb]  first in-adjacency node of a head (by e_dst)
+    cdef int32_t* in_last           # [nb]
+
     cdef int32_t entry_head
     cdef uint8_t* tailduped         # [nb*nb]  (head,target) pair already tail-duped
 
@@ -231,6 +250,14 @@ cdef class _Cleaner:
         self.e_alive = NULL
         self.n_e = 0
         self.cap_e = 0
+        self.adj_edge = NULL
+        self.adj_next = NULL
+        self.n_adj = 0
+        self.cap_adj = 0
+        self.out_first = NULL
+        self.out_last = NULL
+        self.in_first = NULL
+        self.in_last = NULL
         self.entry_head = src.entry_block
         self.tailduped = NULL
         self._build()
@@ -249,6 +276,12 @@ cdef class _Cleaner:
         free(self.e_ci)
         free(self.e_cond)
         free(self.e_alive)
+        free(self.adj_edge)
+        free(self.adj_next)
+        free(self.out_first)
+        free(self.out_last)
+        free(self.in_first)
+        free(self.in_last)
         free(self.tailduped)
 
     cdef void _ensure_edge_cap(self, int32_t need) except * nogil:
@@ -306,6 +339,50 @@ cdef class _Cleaner:
         self.e_cond[k] = cond
         self.e_alive[k] = 1
         self.n_e = k + 1
+        self._push_out(s, k)
+        self._push_in(d, k)
+
+    # ---- adjacency-list pool (append-only; see the field comment) --------------
+
+    cdef int32_t _adj_alloc(self, int32_t edge) except -1 nogil:
+        cdef int32_t k = self.n_adj
+        cdef int32_t nc
+        cdef int32_t* p
+        if k + 1 > self.cap_adj:
+            nc = self.cap_adj if self.cap_adj > 0 else 16
+            while nc < k + 1:
+                nc *= 2
+            p = <int32_t*>realloc(self.adj_edge, <size_t>nc * sizeof(int32_t))
+            if p == NULL:
+                with gil:
+                    raise MemoryError()
+            self.adj_edge = p
+            p = <int32_t*>realloc(self.adj_next, <size_t>nc * sizeof(int32_t))
+            if p == NULL:
+                with gil:
+                    raise MemoryError()
+            self.adj_next = p
+            self.cap_adj = nc
+        self.adj_edge[k] = edge
+        self.adj_next[k] = -1
+        self.n_adj = k + 1
+        return k
+
+    cdef void _push_out(self, int32_t h, int32_t edge) except * nogil:
+        cdef int32_t node = self._adj_alloc(edge)
+        if self.out_first[h] == -1:
+            self.out_first[h] = node
+        else:
+            self.adj_next[self.out_last[h]] = node
+        self.out_last[h] = node
+
+    cdef void _push_in(self, int32_t d, int32_t edge) except * nogil:
+        cdef int32_t node = self._adj_alloc(edge)
+        if self.in_first[d] == -1:
+            self.in_first[d] = node
+        else:
+            self.adj_next[self.in_last[d]] = node
+        self.in_last[d] = node
 
     cdef int32_t _new_cn(self, int32_t src_block) except -1 nogil:
         cdef int32_t k = self.n_cn
@@ -343,6 +420,10 @@ cdef class _Cleaner:
         self.nstmt = <int32_t*>calloc(nb, sizeof(int32_t))
         self.chain_head = <int32_t*>malloc(<size_t>nb * sizeof(int32_t))
         self.chain_tail = <int32_t*>malloc(<size_t>nb * sizeof(int32_t))
+        self.out_first = <int32_t*>malloc(<size_t>nb * sizeof(int32_t))
+        self.out_last = <int32_t*>malloc(<size_t>nb * sizeof(int32_t))
+        self.in_first = <int32_t*>malloc(<size_t>nb * sizeof(int32_t))
+        self.in_last = <int32_t*>malloc(<size_t>nb * sizeof(int32_t))
         # The quadratic (nb*nb) tail-dup firing matrix is only read by _taildup,
         # which is skipped entirely when phi_safe -- so allocate it lazily and
         # never pay the nb^2 bytes on the phi_safe path (e.g. lower_from_ssa).
@@ -351,10 +432,12 @@ cdef class _Cleaner:
             if self.tailduped == NULL:
                 raise MemoryError()
         if (self.alive == NULL or self.is_head == NULL or self.nstmt == NULL
-                or self.chain_head == NULL or self.chain_tail == NULL):
+                or self.chain_head == NULL or self.chain_tail == NULL
+                or self.out_first == NULL or self.out_last == NULL
+                or self.in_first == NULL or self.in_last == NULL):
             raise MemoryError()
 
-        # statement counts + one-element chain per block.
+        # statement counts + one-element chain + empty adjacency lists per block.
         for b in range(nb):
             self.nstmt[b] = 0
             for i in range(src.blocks[b].instr_start, src.blocks[b].instr_start + src.blocks[b].instr_count):
@@ -363,6 +446,10 @@ cdef class _Cleaner:
             node = self._new_cn(b)
             self.chain_head[b] = node
             self.chain_tail[b] = node
+            self.out_first[b] = -1
+            self.out_last[b] = -1
+            self.in_first[b] = -1
+            self.in_last[b] = -1
 
         # reachability from entry over source edges.
         cdef int32_t* stack = <int32_t*>malloc(<size_t>nb * sizeof(int32_t))
@@ -422,22 +509,28 @@ cdef class _Cleaner:
     # ---- edge helpers ------------------------------------------------------
 
     cdef bint _has_value_edge(self, int32_t h) noexcept nogil:
+        cdef int32_t node = self.out_first[h]
         cdef int32_t i
-        for i in range(self.n_e):
+        while node != -1:
+            i = self.adj_edge[node]
             if self.e_alive[i] and self.e_src[i] == h and self.e_ck[i] == EDGE_COND_VALUE:
                 return True
+            node = self.adj_next[node]
         return False
 
     cdef int32_t _single_none_succ(self, int32_t h, int32_t* edge_out) noexcept nogil:
         # If h has exactly one alive out-edge and it is unconditional, return the
         # target head and set *edge_out to the edge index; else return -1.
+        cdef int32_t node = self.out_first[h]
         cdef int32_t i
         cdef int32_t cnt = 0
         cdef int32_t the = -1
-        for i in range(self.n_e):
+        while node != -1:
+            i = self.adj_edge[node]
             if self.e_alive[i] and self.e_src[i] == h:
                 cnt += 1
                 the = i
+            node = self.adj_next[node]
         if cnt != 1 or self.e_ck[the] != EDGE_COND_NONE:
             return -1
         edge_out[0] = the
@@ -447,7 +540,7 @@ cdef class _Cleaner:
 
     cdef bint _const_fold(self) except -1 nogil:
         cdef bint changed = False
-        cdef int32_t h, i, tv, tail_block, live_edge
+        cdef int32_t h, i, tv, tail_block, live_edge, node
         cdef double tval
         for h in range(self.nb):
             if not self.alive[h] or not self.is_head[h]:
@@ -462,20 +555,29 @@ cdef class _Cleaner:
             # Edge selection: value edge whose cond == test, else the
             # unconditional (default) edge, else the block becomes an exit.
             live_edge = -1
-            for i in range(self.n_e):
+            node = self.out_first[h]
+            while node != -1:
+                i = self.adj_edge[node]
                 if self.e_alive[i] and self.e_src[i] == h and self.e_ck[i] == EDGE_COND_VALUE:
                     if self.e_cond[i] == tval:  # C ==: NaN matches nothing; -0.0 == 0.0
                         live_edge = i
                         break
+                node = self.adj_next[node]
             if live_edge == -1:
-                for i in range(self.n_e):
+                node = self.out_first[h]
+                while node != -1:
+                    i = self.adj_edge[node]
                     if self.e_alive[i] and self.e_src[i] == h and self.e_ck[i] == EDGE_COND_NONE:
                         live_edge = i
                         break
-            for i in range(self.n_e):
+                    node = self.adj_next[node]
+            node = self.out_first[h]
+            while node != -1:
+                i = self.adj_edge[node]
                 if self.e_alive[i] and self.e_src[i] == h and i != live_edge:
                     self.e_alive[i] = 0
                     changed = True
+                node = self.adj_next[node]
             if live_edge != -1 and self.e_ck[live_edge] != EDGE_COND_NONE:
                 self.e_ck[live_edge] = EDGE_COND_NONE
                 self.e_ci[live_edge] = 0
@@ -485,39 +587,50 @@ cdef class _Cleaner:
 
     cdef bint _dedup(self) except -1 nogil:
         cdef bint changed = False
-        cdef int32_t h, i, j, default_dst
+        cdef int32_t h, i, j, default_dst, node_i, node_j
         for h in range(self.nb):
             if not self.alive[h] or not self.is_head[h]:
                 continue
             # value edge to the same target as the default edge is redundant.
             default_dst = -1
-            for i in range(self.n_e):
+            node_i = self.out_first[h]
+            while node_i != -1:
+                i = self.adj_edge[node_i]
                 if self.e_alive[i] and self.e_src[i] == h and self.e_ck[i] == EDGE_COND_NONE:
                     default_dst = self.e_dst[i]
                     break
+                node_i = self.adj_next[node_i]
             if default_dst != -1:
-                for i in range(self.n_e):
+                node_i = self.out_first[h]
+                while node_i != -1:
+                    i = self.adj_edge[node_i]
                     if (self.e_alive[i] and self.e_src[i] == h
                             and self.e_ck[i] == EDGE_COND_VALUE and self.e_dst[i] == default_dst):
                         self.e_alive[i] = 0
                         changed = True
-            # duplicate edges keyed by cond (the outgoing dict collapses these).
-            for i in range(self.n_e):
-                if not (self.e_alive[i] and self.e_src[i] == h):
-                    continue
-                for j in range(i + 1, self.n_e):
-                    if not (self.e_alive[j] and self.e_src[j] == h):
-                        continue
-                    if self.e_ck[i] != self.e_ck[j]:
-                        continue
-                    if self.e_ck[i] == EDGE_COND_NONE or self.e_cond[i] == self.e_cond[j]:
-                        self.e_alive[j] = 0
-                        changed = True
+                    node_i = self.adj_next[node_i]
+            # duplicate edges keyed by cond (the outgoing dict collapses these). The
+            # inner cursor starts after node_i, so j ranges over strictly-later edges
+            # (out[h] stays in ascending edge-index order for a multi-edge head).
+            node_i = self.out_first[h]
+            while node_i != -1:
+                i = self.adj_edge[node_i]
+                if self.e_alive[i] and self.e_src[i] == h:
+                    node_j = self.adj_next[node_i]
+                    while node_j != -1:
+                        j = self.adj_edge[node_j]
+                        if (self.e_alive[j] and self.e_src[j] == h
+                                and self.e_ck[i] == self.e_ck[j]
+                                and (self.e_ck[i] == EDGE_COND_NONE or self.e_cond[i] == self.e_cond[j])):
+                            self.e_alive[j] = 0
+                            changed = True
+                        node_j = self.adj_next[node_j]
+                node_i = self.adj_next[node_i]
         return changed
 
     cdef bint _thread_forwarders(self) except -1 nogil:
         cdef bint changed = False
-        cdef int32_t h, i, the_edge, c
+        cdef int32_t h, i, the_edge, c, node
         for h in range(self.nb):
             if not self.alive[h] or not self.is_head[h]:
                 continue
@@ -527,9 +640,13 @@ cdef class _Cleaner:
             if c == -1 or c == h:
                 continue
             # h is a pure forwarder: redirect its predecessors straight to c.
-            for i in range(self.n_e):
+            node = self.in_first[h]
+            while node != -1:
+                i = self.adj_edge[node]
                 if self.e_alive[i] and self.e_dst[i] == h:
                     self.e_dst[i] = c
+                    self._push_in(c, i)
+                node = self.adj_next[node]
             if h == self.entry_head:
                 self.entry_head = c
             self.e_alive[the_edge] = 0
@@ -540,7 +657,7 @@ cdef class _Cleaner:
 
     cdef bint _merge_single(self) except -1 nogil:
         cdef bint changed = False
-        cdef int32_t h, i, the_edge, c, incnt
+        cdef int32_t h, i, the_edge, c, incnt, node
         for h in range(self.nb):
             if not self.alive[h] or not self.is_head[h]:
                 continue
@@ -548,17 +665,24 @@ cdef class _Cleaner:
             if c == -1 or c == h or c == self.entry_head:
                 continue
             incnt = 0
-            for i in range(self.n_e):
+            node = self.in_first[c]
+            while node != -1:
+                i = self.adj_edge[node]
                 if self.e_alive[i] and self.e_dst[i] == c:
                     incnt += 1
+                node = self.adj_next[node]
             if incnt != 1:
                 continue
             # c has h as its only predecessor: absorb c into h.
             self.e_alive[the_edge] = 0
             self._append_chain_transfer(h, c)
-            for i in range(self.n_e):
+            node = self.out_first[c]
+            while node != -1:
+                i = self.adj_edge[node]
                 if self.e_alive[i] and self.e_src[i] == c:
                     self.e_src[i] = h
+                    self._push_out(h, i)
+                node = self.adj_next[node]
             self.alive[c] = 0
             self.is_head[c] = 0
             changed = True
@@ -566,7 +690,7 @@ cdef class _Cleaner:
 
     cdef bint _taildup(self) except -1 nogil:
         cdef bint changed = False
-        cdef int32_t h, i, the_edge, c, n_e0
+        cdef int32_t h, i, the_edge, c, node
         if self.phi_safe:
             return False
         for h in range(self.nb):
@@ -580,20 +704,25 @@ cdef class _Cleaner:
             if self.tailduped[<size_t>h * <size_t>self.nb + <size_t>c]:
                 continue
             # duplicate the tiny block c into h (h unconditionally reaches c), then
-            # branch like c -- exposing threading. Bounded once per (h, c) pair.
+            # branch like c -- exposing threading. Bounded once per (h, c) pair. The
+            # copied edges are appended with e_src == h, so they land in out[h], not
+            # out[c]; iterating out[c] therefore never revisits them (no n_e snapshot
+            # needed).
             self.tailduped[<size_t>h * <size_t>self.nb + <size_t>c] = 1
             self.e_alive[the_edge] = 0
             self._append_chain_copy(h, c)
-            n_e0 = self.n_e
-            for i in range(n_e0):
+            node = self.out_first[c]
+            while node != -1:
+                i = self.adj_edge[node]
                 if self.e_alive[i] and self.e_src[i] == c:
                     self._add_edge(h, self.e_dst[i], self.e_ck[i], self.e_ci[i], self.e_cond[i])
+                node = self.adj_next[node]
             changed = True
         return changed
 
     cdef bint _prune_unreachable(self) except -1 nogil:
         cdef bint changed = False
-        cdef int32_t i, cur, d, sp
+        cdef int32_t i, cur, d, sp, node
         cdef uint8_t* visited = <uint8_t*>calloc(self.nb, sizeof(uint8_t))
         cdef int32_t* stack = <int32_t*>malloc(<size_t>self.nb * sizeof(int32_t))
         if visited == NULL or stack == NULL:
@@ -608,13 +737,16 @@ cdef class _Cleaner:
         while sp > 0:
             sp -= 1
             cur = stack[sp]
-            for i in range(self.n_e):
+            node = self.out_first[cur]
+            while node != -1:
+                i = self.adj_edge[node]
                 if self.e_alive[i] and self.e_src[i] == cur:
                     d = self.e_dst[i]
                     if not visited[d]:
                         visited[d] = 1
                         stack[sp] = d
                         sp += 1
+                node = self.adj_next[node]
         for i in range(self.nb):
             if self.alive[i] and self.is_head[i] and not visited[i]:
                 self.alive[i] = 0
@@ -634,24 +766,31 @@ cdef class _Cleaner:
         cdef bint changed = False
         cdef list order = self._rpo_order()
         cdef int32_t first_exit = -1
-        cdef int32_t h, i
+        cdef int32_t h, i, node
         cdef bint has_out
         for h in order:
             if not self.alive[h] or not self.is_head[h]:
                 continue
             has_out = False
-            for i in range(self.n_e):
+            node = self.out_first[h]
+            while node != -1:
+                i = self.adj_edge[node]
                 if self.e_alive[i] and self.e_src[i] == h:
                     has_out = True
                     break
+                node = self.adj_next[node]
             if has_out or self._chain_nstmt(h) != 0:
                 continue
             if first_exit == -1:
                 first_exit = h
             else:
-                for i in range(self.n_e):
+                node = self.in_first[h]
+                while node != -1:
+                    i = self.adj_edge[node]
                     if self.e_alive[i] and self.e_dst[i] == h:
                         self.e_dst[i] = first_exit
+                        self._push_in(first_exit, i)
+                    node = self.adj_next[node]
                 self.alive[h] = 0
                 self.is_head[h] = 0
                 changed = True
@@ -662,13 +801,16 @@ cdef class _Cleaner:
     cdef list _sorted_succ(self, int32_t h):
         # dst heads of h's alive edges, sorted (unconditional last, then by cond).
         cdef list items = []
+        cdef int32_t node = self.out_first[h]
         cdef int32_t i
-        for i in range(self.n_e):
+        while node != -1:
+            i = self.adj_edge[node]
             if self.e_alive[i] and self.e_src[i] == h:
                 if self.e_ck[i] == EDGE_COND_NONE:
                     items.append((1, 0.0, self.e_dst[i]))
                 else:
                     items.append((0, self.e_cond[i], self.e_dst[i]))
+            node = self.adj_next[node]
         items.sort()
         return [it[2] for it in items]
 
@@ -715,13 +857,15 @@ cdef class _Cleaner:
     # ---- driver ------------------------------------------------------------
 
     cdef void run(self) except *:
-        # The six pure-C transforms run in a ``nogil`` region (they operate only on
-        # the flat logical-edge / chain C arrays and the cached read-only source
-        # pointers), which is what lets the per-callback build pool parallelize this
-        # pass -- cfg_cleanup's ``run()`` is ~94% of the pass and >50% of the whole
-        # optimize phase. ``_canonicalize_exits`` (RPO over Python lists) stays under
-        # the GIL; it is ~1/7 of the loop and left untouched to keep the byte-exact
-        # exit-block ordering. The GIL is toggled once per fixpoint iteration only.
+        # Fixpoint of the CFG-cleanup transforms. Each transform iterates a head's
+        # own edges through the per-head adjacency lists (see the field comment), so
+        # one iteration is O(nb + ne) rather than the O(nb * ne) of the old
+        # full-edge-array rescans -- the dominant cost on the large marshal-in CFGs.
+        # The six edge/chain transforms run in a ``nogil`` region (they touch only
+        # the flat C arrays and the cached read-only source pointers; nogil is kept
+        # to document their GIL-independence). ``_canonicalize_exits`` (RPO over
+        # Python lists) stays under the GIL to keep the byte-exact exit-block
+        # ordering; the GIL is toggled once per fixpoint iteration.
         cdef bint changed = True
         # 64-bit iteration cap: nb*nb overflows a 32-bit C ``long`` (Windows LLP64)
         # at nb >= ~46341, which would wrap negative and spuriously trip the
@@ -893,13 +1037,16 @@ cdef class _Cleaner:
 
     cdef list _sorted_edge_indices(self, int32_t h):
         cdef list items = []
+        cdef int32_t node = self.out_first[h]
         cdef int32_t i
-        for i in range(self.n_e):
+        while node != -1:
+            i = self.adj_edge[node]
             if self.e_alive[i] and self.e_src[i] == h:
                 if self.e_ck[i] == EDGE_COND_NONE:
                     items.append((1, 0.0, i))
                 else:
                     items.append((0, self.e_cond[i], i))
+            node = self.adj_next[node]
         items.sort()
         return [it[2] for it in items]
 
