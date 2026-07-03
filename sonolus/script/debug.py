@@ -211,7 +211,7 @@ def visualize_cfg(
     callback: str = "",
     archetype: type | None = None,
     archetypes: list[type] | None = None,
-    passes: OptimizationLevel | Literal["minimal", "fast", "standard"] = "fast",
+    passes: OptimizationLevel | Literal["minimal", "fast", "standard"] = "standard",
 ) -> str:
     from sonolus.build.compile import callback_to_cfg
 

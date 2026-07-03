@@ -120,7 +120,11 @@ def get_config(args: argparse.Namespace) -> BuildConfig:
     elif hasattr(args, "optimize_standard") and args.optimize_standard:
         optimization_passes = STANDARD_PASSES
     else:
-        optimization_passes = FAST_PASSES if args.command == "dev" else STANDARD_PASSES
+        # Standard (-O2) is the default for every command. It used to be fast for
+        # `dev` (iteration speed), but the compiled core made standard nearly as
+        # fast to build, so dev now gets the shipping codegen by default too. Pass
+        # -O1/-O0 explicitly for a quicker dev rebuild.
+        optimization_passes = STANDARD_PASSES
 
     if any(hasattr(args, attr) and getattr(args, attr) for attr in ["play", "watch", "preview", "tutorial"]):
         build_play = hasattr(args, "play") and args.play

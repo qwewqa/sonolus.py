@@ -6,6 +6,8 @@
 - Added if-conversion, fused read-modify-write operations, jump-table switches, and strided memory
   addressing.
 - Builds are now deterministic.
+- The `dev` command now uses standard (`-O2`) optimization by default, matching `build`; the compiled
+  core makes it nearly as fast to rebuild as the old fast default. Pass `-O1`/`-O0` for quicker rebuilds.
 - Corrected the semantics of the `Rem` and `Sign` operations to match the Sonolus runtime.
 - The reference interpreter used for testing now supports the easing and judgment operations.
 - **Breaking:** The `CompilerPass` subclassing API and custom pass sequences have been removed.
