@@ -824,7 +824,7 @@ cdef class _Cleaner:
             memcpy(dst.consts, src.consts, <size_t>src.n_consts * sizeof(double))
         dst.n_consts = src.n_consts
         dst.cap_consts = src.n_consts
-        dst._const_intern = dict(src._const_intern)
+        dst._rebuild_const_intern()  # rebuild the bits->id map from the copied pool
 
         if src.n_temps > 0:
             dst.temps = <TempInfo*>malloc(<size_t>src.n_temps * sizeof(TempInfo))
@@ -1390,7 +1390,7 @@ cdef class _SSABuilder:
             memcpy(dst.consts, src.consts, <size_t>src.n_consts * sizeof(double))
         dst.n_consts = src.n_consts
         dst.cap_consts = src.n_consts
-        dst._const_intern = dict(src._const_intern)
+        dst._rebuild_const_intern()  # rebuild the bits->id map from the copied pool
         if src.n_temps > 0:
             dst.temps = <TempInfo*>malloc(<size_t>src.n_temps * sizeof(TempInfo))
             if dst.temps == NULL:
@@ -1916,7 +1916,7 @@ cdef class _UnSSA:
             memcpy(dst.consts, src.consts, <size_t>src.n_consts * sizeof(double))
         dst.n_consts = src.n_consts
         dst.cap_consts = src.n_consts
-        dst._const_intern = dict(src._const_intern)
+        dst._rebuild_const_intern()  # rebuild the bits->id map from the copied pool
         dst._block_enum_by_id = dict(src._block_enum_by_id)
         dst.blocks_type = src.blocks_type
         dst.callback = src.callback
@@ -2712,7 +2712,7 @@ def _build_compacted(Func src, list order, list keep_instr, dict const_override,
         memcpy(dst.consts, src.consts, <size_t>src.n_consts * sizeof(double))
     dst.n_consts = src.n_consts
     dst.cap_consts = src.n_consts
-    dst._const_intern = dict(src._const_intern)
+    dst._rebuild_const_intern()  # rebuild the bits->id map from the copied pool
     if src.n_temps > 0:
         dst.temps = <TempInfo*>malloc(<size_t>src.n_temps * sizeof(TempInfo))
         if dst.temps == NULL:
@@ -3375,7 +3375,7 @@ def _emit_from_model(Func src, list pblocks, int entry_pb):
         memcpy(dst.consts, src.consts, <size_t>src.n_consts * sizeof(double))
     dst.n_consts = src.n_consts
     dst.cap_consts = src.n_consts
-    dst._const_intern = dict(src._const_intern)
+    dst._rebuild_const_intern()  # rebuild the bits->id map from the copied pool
     if src.n_temps > 0:
         dst.temps = <TempInfo*>malloc(<size_t>src.n_temps * sizeof(TempInfo))
         if dst.temps == NULL:

@@ -150,6 +150,8 @@ Growth doubles capacity via realloc. No per-node allocation.
 
 from libc.stdint cimport int16_t, int32_t, uint8_t, uint16_t, uint32_t
 
+from sonolus.backend._opt._khash cimport kh_i64i32_t
+
 
 cdef struct Instr:
     uint16_t op
@@ -282,9 +284,14 @@ cdef class Func:
         # boundary-only.)
         object _ssa_undef
 
+        # Const-pool interning: f64 bit pattern -> const id. A vendored khash int
+        # map (not a Python dict) so interning a const is a raw uint64 lookup with
+        # no boxing. Owned by ``Func`` (kh_init in __cinit__, kh_destroy in
+        # __dealloc__). GIL held at every touch; never mutated in nogil passes.
+        kh_i64i32_t* _const_intern
+
         # Boundary-only Python state (GIL held; never touched in nogil passes).
         list names
-        dict _const_intern
         dict _temp_intern
         dict _place_intern
         object blocks_type
@@ -296,6 +303,7 @@ cdef class Func:
     cdef int32_t _alloc_instr(self) except -1
     cdef int32_t _emit(self, uint16_t op, uint8_t flags, int32_t block, int32_t aux, list arg_vids) except -1
     cdef int32_t _intern_const(self, double d) except -1
+    cdef int _rebuild_const_intern(self) except -1
     cdef int32_t _intern_temp(self, object temp) except -1
     cdef bint _writable_for_block(self, object member) except -1
     cdef int32_t _intern_place(self, object place, int32_t block_id) except -1

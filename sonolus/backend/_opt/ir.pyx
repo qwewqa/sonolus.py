@@ -24,6 +24,13 @@ from sonolus.backend._opt._ops_gen cimport (
     SONOLUS_OP_PURE,
     SONOLUS_OP_SIDE_EFFECTS,
 )
+from sonolus.backend._opt._khash cimport (
+    khint_t,
+    kh_destroy_i64i32,
+    kh_get_i64i32,
+    kh_init_i64i32,
+    kh_put_i64i32,
+)
 
 from sonolus.backend.ir import IRConst, IRGet, IRInstr, IRPureInstr, IRSet
 from sonolus.backend.ops import Op as _Op
@@ -145,7 +152,9 @@ cdef class Func:
         self.undef_val = -1
         self._ssa_undef = None
         self.names = []
-        self._const_intern = {}
+        self._const_intern = kh_init_i64i32()
+        if self._const_intern == NULL:
+            raise MemoryError()
         self._temp_intern = {}
         self._place_intern = {}
         self.blocks_type = None
@@ -161,6 +170,7 @@ cdef class Func:
         free(self.consts)
         free(self.places)
         free(self.temps)
+        kh_destroy_i64i32(self._const_intern)  # NULL-safe
 
     # -- growable-buffer allocation helpers --------------------------------
 
@@ -202,16 +212,37 @@ cdef class Func:
         else:
             # memcpy-based type punning (defined behavior; see _bits_to_double).
             memcpy(&bits, &d, sizeof(bits))
-        key = int(bits)
-        cached = self._const_intern.get(key)
-        if cached is not None:
-            return <int32_t>cached
+        cdef khint_t it = kh_get_i64i32(self._const_intern, bits)
+        if it != self._const_intern.n_buckets:  # present (n_buckets == kh_end)
+            return self._const_intern.vals[it]
         cdef int32_t cid = self.n_consts
         self.consts = <double*>_grow(<void*>self.consts, &self.cap_consts, self.n_consts + 1, sizeof(double))
         self.consts[cid] = d
         self.n_consts += 1
-        self._const_intern[key] = cid
+        cdef int ret
+        it = kh_put_i64i32(self._const_intern, bits, &ret)
+        if ret < 0:
+            raise MemoryError()
+        self._const_intern.vals[it] = cid
         return cid
+
+    cdef int _rebuild_const_intern(self) except -1:
+        # Rebuild the bit-pattern -> const-id map from the (already-populated)
+        # consts pool. Used when a pass clones a Func's const pool 1:1: ids are
+        # preserved, so the map is exactly {bits(consts[i]): i} and can be
+        # reconstructed from the pool without iterating the source map (khash has
+        # no copy, and iteration order is unspecified anyway).
+        cdef int32_t cid
+        cdef uint64_t bits
+        cdef int ret
+        cdef khint_t it
+        for cid in range(self.n_consts):
+            memcpy(&bits, &self.consts[cid], sizeof(bits))
+            it = kh_put_i64i32(self._const_intern, bits, &ret)
+            if ret < 0:
+                raise MemoryError()
+            self._const_intern.vals[it] = cid
+        return 0
 
     cdef int32_t _intern_temp(self, object temp) except -1:
         key = (temp.name, temp.size)

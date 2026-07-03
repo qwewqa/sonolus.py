@@ -1317,7 +1317,7 @@ cdef class _Lower:
             memcpy(dst.consts, src.consts, <size_t>src.n_consts * sizeof(double))
         dst.n_consts = src.n_consts
         dst.cap_consts = src.n_consts
-        dst._const_intern = dict(src._const_intern)
+        dst._rebuild_const_intern()  # rebuild the bits->id map from the copied pool
         dst._block_enum_by_id = dict(src._block_enum_by_id)
         dst.blocks_type = src.blocks_type
         dst.callback = src.callback
@@ -2129,7 +2129,7 @@ cdef class _IfConv:
             memcpy(dst.consts, src.consts, <size_t>src.n_consts * sizeof(double))
         dst.n_consts = src.n_consts
         dst.cap_consts = src.n_consts
-        dst._const_intern = dict(src._const_intern)
+        dst._rebuild_const_intern()  # rebuild the bits->id map from the copied pool
         if src.n_temps > 0:
             dst.temps = <TempInfo*>malloc(<size_t>src.n_temps * sizeof(TempInfo))
             if dst.temps == NULL:
