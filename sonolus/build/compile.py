@@ -1,5 +1,4 @@
 from collections.abc import Callable
-from concurrent.futures import Executor
 
 from sonolus.backend._opt import driver as _driver
 from sonolus.backend.ir import IRConst, IRInstr
@@ -29,7 +28,6 @@ def compile_mode(
     archetypes: list[type[_BaseArchetype]] | None,
     global_callbacks: list[tuple[CallbackInfo, Callable]] | None,
     level: OptimizationLevel | None = None,
-    thread_pool: Executor | None = None,
     validate_only: bool = False,
 ) -> dict:
     """Thin delegator to the compiled per-mode compile driver.
@@ -46,7 +44,6 @@ def compile_mode(
         global_callbacks,
         callback_to_cfg,
         level,
-        thread_pool,
         validate_only,
     )
 

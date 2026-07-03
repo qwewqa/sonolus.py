@@ -223,11 +223,9 @@ def optimize_and_finalize_cfg(entry, level, mode=None, callback=None):
 # Python and are passed in, keeping the frontend/optimizer boundary explicit and
 # avoiding an import cycle (compile.py imports this module).
 #
-# Threading + determinism: per-callback optimize+emit runs in the
-# thread pool (releasing the GIL inside the nogil pass regions), but the cheap
-# cross-callback ``OutputNodeGenerator.add`` merge runs SINGLE-THREADED in fixed
-# SUBMISSION order after gathering the futures -- so node indices (and thus the
-# serialized output) are deterministic regardless of thread completion order.
+# Compilation is serial: each callback is traced, optimized, and emitted in one
+# fixed order, and node indices are assigned by ``OutputNodeGenerator.add`` in
+# that same order -- so the serialized output is deterministic by construction.
 # Result-dict shapes: archetype callbacks -> {"index", "order"}; global
 # callbacks -> bare node index.
 # --------------------------------------------------------------------------
@@ -271,7 +269,6 @@ def compile_mode(
     global_callbacks,
     callback_to_cfg,
     level=None,
-    thread_pool=None,
     validate_only=False,
 ):
     _ensure_compile_deps()
@@ -285,15 +282,12 @@ def compile_mode(
     def optimize_cfg(cfg, cb_name):
         """optimize + emit for one already-traced CFG -> its EngineNode.
 
-        Submitted to the thread pool. Operates on a per-callback-local arena and
-        touches no shared state, so it is race-free and its output is independent
-        of thread scheduling; the nogil pass regions release the GIL here.
+        Operates on a per-callback-local arena and touches no shared state.
 
         Failures (e.g. the temp-slot cap, marshal-in validation) are wrapped with
-        the callback name and mode so the merge loop's ``future.result()`` re-raise
-        attributes them, and as a CompilationError so the cli/dev-server pretty
-        handlers catch them (matching the frontend error pattern). ``from`` keeps
-        the original traceback."""
+        the callback name and mode as a CompilationError so the cli/dev-server
+        pretty handlers catch them (matching the frontend error pattern). ``from``
+        keeps the original traceback."""
         try:
             return _OPT_FINALIZE(cfg, level, _OPT_CONFIG(mode=mode, callback=cb_name))
         except _COMPILATION_ERROR:
@@ -303,30 +297,15 @@ def compile_mode(
                 f"Optimization failed for callback {cb_name!r} in {getattr(mode, 'name', mode)} mode: {e}"
             ) from e
 
-    # DETERMINISM + OVERLAP CONTRACT:
+    # DETERMINISM: ``callback_to_cfg`` populates shared, first-touch-ordered maps
+    # -- ``project_state`` ROM / const / debug-string indices and ``mode_state``
+    # global-memory offsets. Tracing callbacks in one fixed serial order makes
+    # those first-touch assignments deterministic, and registering nodes into the
+    # shared ``OutputNodeGenerator`` in that same order makes node indices
+    # deterministic too.
     #
-    #   * FRONTEND (serial, main thread, fixed order): ``callback_to_cfg`` populates
-    #     shared, first-touch-ordered maps -- ``project_state`` ROM / const /
-    #     debug-string indices and ``mode_state`` global-memory offsets -- so it
-    #     must never run concurrently: parallel tracing would reorder those first
-    #     touches and change the output (offsets/indices) even though every write
-    #     is lock-guarded. Tracing callbacks in one fixed serial order makes the
-    #     shared-map assignments identical to a fully serial build.
-    #   * OPTIMIZE+EMIT (parallel, INTERLEAVED): each callback's optimize is
-    #     submitted to the pool IMMEDIATELY after its trace completes, so the
-    #     optimizer's nogil regions (cfg_cleanup + analysis) run concurrently
-    #     under the tracing of subsequent callbacks -- wall time approaches
-    #     max(frontend_total, optimize_tail) instead of frontend_total +
-    #     optimize_total/N. This is safe: optimize+emit operates on the
-    #     already-built per-callback CFG and per-callback-local arenas, reading
-    #     only static mode block tables -- it never touches the shared maps the
-    #     tracer is still mutating, so its results are independent of scheduling.
-    #   * MERGE (serial, last): register nodes into the shared
-    #     ``OutputNodeGenerator`` in the fixed submission order, so node indices
-    #     are deterministic regardless of thread completion order.
-    #
-    # Task entry: (kind, archetype_data|None, cb_name, cb_order, payload, is_future)
-    # where payload is a Future (pool), the EngineNode (serial), or None (validate).
+    # Task entry: (kind, archetype_data|None, cb_name, cb_order, payload) where
+    # payload is the EngineNode, or None for validate_only.
     tasks = []
     base_archetype_entries = {}
 
@@ -368,18 +347,13 @@ def compile_mode(
                 cb_order = getattr(cb, "_callback_order_", 0)
                 if not cb_info.supports_order and cb_order != 0:
                     raise ValueError(f"Callback '{cb_name}' does not support a non-zero order")
-                # Trace serially on this thread (deterministic shared maps; always
-                # traced -- validation traces too), then hand optimize+emit to the
-                # pool immediately so it overlaps the next callback's trace.
+                # Trace, then optimize+emit -- always traced (validation traces too).
                 cfg = callback_to_cfg(project_state, mode_state, cb, cb_info.name, archetype)
                 if validate_only:
-                    tasks.append(("archetype", archetype_data, cb_info.name, cb_order, None, False))
-                elif thread_pool is not None:
-                    fut = thread_pool.submit(optimize_cfg, cfg, cb_info.name)
-                    tasks.append(("archetype", archetype_data, cb_info.name, cb_order, fut, True))
+                    tasks.append(("archetype", archetype_data, cb_info.name, cb_order, None))
                 else:
                     node = optimize_cfg(cfg, cb_info.name)
-                    tasks.append(("archetype", archetype_data, cb_info.name, cb_order, node, False))
+                    tasks.append(("archetype", archetype_data, cb_info.name, cb_order, node))
 
             base_archetype_entries[archetype] = archetype_data
 
@@ -387,22 +361,17 @@ def compile_mode(
         for cb_info, cb in global_callbacks:
             cfg = callback_to_cfg(project_state, mode_state, cb, cb_info.name, None)
             if validate_only:
-                tasks.append(("global", None, cb_info.name, 0, None, False))
-            elif thread_pool is not None:
-                fut = thread_pool.submit(optimize_cfg, cfg, cb_info.name)
-                tasks.append(("global", None, cb_info.name, 0, fut, True))
+                tasks.append(("global", None, cb_info.name, 0, None))
             else:
                 node = optimize_cfg(cfg, cb_info.name)
-                tasks.append(("global", None, cb_info.name, 0, node, False))
+                tasks.append(("global", None, cb_info.name, 0, node))
 
-    # Deterministic single-threaded merge in submission order. ``future.result()``
-    # re-raises any worker exception here (on this thread).
-    for kind, archetype_data, cb_name, cb_order, payload, is_future in tasks:
+    # Register nodes into the shared generator in the fixed trace order.
+    for kind, archetype_data, cb_name, cb_order, payload in tasks:
         if validate_only:
             node_index = 0
         else:
-            node = payload.result() if is_future else payload
-            node_index = nodes.add(node)
+            node_index = nodes.add(payload)
         if kind == "archetype":
             archetype_data[cb_name] = {"index": node_index, "order": cb_order}
         else:

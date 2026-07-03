@@ -6,7 +6,6 @@
 - Added if-conversion, fused read-modify-write operations, jump-table switches, and strided memory
   addressing.
 - Builds are now deterministic.
-- Compilation is now always multithreaded.
 - Corrected the semantics of the `Rem` and `Sign` operations to match the Sonolus runtime.
 - The reference interpreter used for testing now supports the easing and judgment operations.
 - **Breaking:** The `CompilerPass` subclassing API and custom pass sequences have been removed.

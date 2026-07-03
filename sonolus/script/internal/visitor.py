@@ -250,7 +250,6 @@ def record_visit_time(function_name: str, total_time: int, own_time: int) -> Non
         visit_stats[function_name] = stats = FunctionVisitStatistics()
     else:
         stats = visit_stats[function_name]
-    # Not accurate if multithreaded, but it's preferable to collect performance statistics single-threaded anyway
     stats.total_time += total_time
     stats.own_time += own_time
     stats.call_count += 1

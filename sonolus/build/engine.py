@@ -1,10 +1,7 @@
 import gzip
 import json
-import os
 import struct
 from collections.abc import Callable
-from concurrent.futures import Executor
-from concurrent.futures.thread import ThreadPoolExecutor
 from dataclasses import dataclass
 from pathlib import Path
 
@@ -32,12 +29,6 @@ from sonolus.script.sprite import Skin
 from sonolus.script.ui import UiConfig
 
 type JsonValue = bool | int | float | str | list[JsonValue] | dict[str, JsonValue] | None
-
-
-def _logical_cpu_count() -> int | None:
-    # os.process_cpu_count() (Python 3.13+) honors CPU affinity; fall back to
-    # os.cpu_count() on 3.12, which the project still supports.
-    return getattr(os, "process_cpu_count", os.cpu_count)()
 
 
 @dataclass
@@ -82,60 +73,47 @@ def package_engine(
     preview_mode = engine.preview if config.build_preview else empty_preview_mode()
     tutorial_mode = engine.tutorial if config.build_tutorial else empty_tutorial_mode()
 
-    # The per-callback thread pool is always created: the Cython optimizer releases
-    # the GIL in its nogil pass regions, so the pool parallelizes optimize+emit even
-    # on standard GIL builds. Worker count: headroom + one per logical CPU capped at 8.
-    #
-    # DETERMINISM: the modes are built SEQUENTIALLY (not fanned out across the
-    # pool), so the frontend tracing of every callback -- across all four modes --
-    # runs in one fixed, serial order. That keeps the engine-wide, first-touch
-    # -ordered shared state deterministic (project_state.rom and const/debug-string
-    # maps are shared across modes). Each mode's compile_mode still uses the pool
-    # internally to parallelize its per-callback optimize+emit; modes run inline
-    # rather than as pool tasks, so no pool task ever submits to the pool and
-    # nested-submission deadlock is impossible.
-    with ThreadPoolExecutor(4 + max(1, min(8, (_logical_cpu_count() or 1)))) as thread_pool:
-        play_data = build_play_mode(
-            archetypes=play_mode.archetypes,
-            skin=play_mode.skin,
-            effects=play_mode.effects,
-            particles=play_mode.particles,
-            buckets=play_mode.buckets,
-            project_state=project_state,
-            config=config,
-            thread_pool=thread_pool,
-        )
-        watch_data = build_watch_mode(
-            archetypes=watch_mode.archetypes,
-            skin=watch_mode.skin,
-            effects=watch_mode.effects,
-            particles=watch_mode.particles,
-            buckets=watch_mode.buckets,
-            project_state=project_state,
-            update_spawn=watch_mode.update_spawn,
-            config=config,
-            thread_pool=thread_pool,
-        )
-        preview_data = build_preview_mode(
-            archetypes=preview_mode.archetypes,
-            skin=preview_mode.skin,
-            project_state=project_state,
-            config=config,
-            thread_pool=thread_pool,
-        )
-        tutorial_data = build_tutorial_mode(
-            skin=tutorial_mode.skin,
-            effects=tutorial_mode.effects,
-            particles=tutorial_mode.particles,
-            instructions=tutorial_mode.instructions,
-            instruction_icons=tutorial_mode.instruction_icons,
-            preprocess=tutorial_mode.preprocess,
-            navigate=tutorial_mode.navigate,
-            update=tutorial_mode.update,
-            project_state=project_state,
-            config=config,
-            thread_pool=thread_pool,
-        )
+    # Modes are built sequentially. The frontend tracing of every callback -- across
+    # all four modes -- runs in one fixed order, which keeps the engine-wide,
+    # first-touch-ordered shared state deterministic (project_state.rom and
+    # const/debug-string maps are shared across modes).
+    play_data = build_play_mode(
+        archetypes=play_mode.archetypes,
+        skin=play_mode.skin,
+        effects=play_mode.effects,
+        particles=play_mode.particles,
+        buckets=play_mode.buckets,
+        project_state=project_state,
+        config=config,
+    )
+    watch_data = build_watch_mode(
+        archetypes=watch_mode.archetypes,
+        skin=watch_mode.skin,
+        effects=watch_mode.effects,
+        particles=watch_mode.particles,
+        buckets=watch_mode.buckets,
+        project_state=project_state,
+        update_spawn=watch_mode.update_spawn,
+        config=config,
+    )
+    preview_data = build_preview_mode(
+        archetypes=preview_mode.archetypes,
+        skin=preview_mode.skin,
+        project_state=project_state,
+        config=config,
+    )
+    tutorial_data = build_tutorial_mode(
+        skin=tutorial_mode.skin,
+        effects=tutorial_mode.effects,
+        particles=tutorial_mode.particles,
+        instructions=tutorial_mode.instructions,
+        instruction_icons=tutorial_mode.instruction_icons,
+        preprocess=tutorial_mode.preprocess,
+        navigate=tutorial_mode.navigate,
+        update=tutorial_mode.update,
+        project_state=project_state,
+        config=config,
+    )
 
     return PackagedEngine(
         configuration=package_data(configuration),
@@ -169,7 +147,6 @@ def validate_engine(
         buckets=play_mode.buckets,
         project_state=project_state,
         config=config,
-        thread_pool=None,
         validate_only=True,
     )
     build_watch_mode(
@@ -181,7 +158,6 @@ def validate_engine(
         project_state=project_state,
         update_spawn=watch_mode.update_spawn,
         config=config,
-        thread_pool=None,
         validate_only=True,
     )
     build_preview_mode(
@@ -189,7 +165,6 @@ def validate_engine(
         skin=preview_mode.skin,
         project_state=project_state,
         config=config,
-        thread_pool=None,
         validate_only=True,
     )
     build_tutorial_mode(
@@ -203,7 +178,6 @@ def validate_engine(
         update=tutorial_mode.update,
         project_state=project_state,
         config=config,
-        thread_pool=None,
         validate_only=True,
     )
 
@@ -229,7 +203,6 @@ def build_play_mode(
     buckets: Buckets,
     project_state: ProjectContextState,
     config: BuildConfig,
-    thread_pool: Executor | None = None,
     validate_only: bool = False,
 ):
     return {
@@ -239,7 +212,6 @@ def build_play_mode(
             archetypes=archetypes,
             global_callbacks=None,
             level=config.passes,
-            thread_pool=thread_pool,
             validate_only=validate_only,
         ),
         "skin": build_skin(skin),
@@ -258,7 +230,6 @@ def build_watch_mode(
     project_state: ProjectContextState,
     update_spawn: Callable[[], float],
     config: BuildConfig,
-    thread_pool: Executor | None = None,
     validate_only: bool = False,
 ):
     return {
@@ -268,7 +239,6 @@ def build_watch_mode(
             archetypes=archetypes,
             global_callbacks=[(update_spawn_callback, update_spawn)],
             level=config.passes,
-            thread_pool=thread_pool,
             validate_only=validate_only,
         ),
         "skin": build_skin(skin),
@@ -283,7 +253,6 @@ def build_preview_mode(
     skin: Skin,
     project_state: ProjectContextState,
     config: BuildConfig,
-    thread_pool: Executor | None = None,
     validate_only: bool = False,
 ):
     return {
@@ -293,7 +262,6 @@ def build_preview_mode(
             archetypes=archetypes,
             global_callbacks=None,
             level=config.passes,
-            thread_pool=thread_pool,
             validate_only=validate_only,
         ),
         "skin": build_skin(skin),
@@ -311,7 +279,6 @@ def build_tutorial_mode(
     update: Callable[[], None],
     project_state: ProjectContextState,
     config: BuildConfig,
-    thread_pool: Executor | None = None,
     validate_only: bool = False,
 ):
     return {
@@ -325,7 +292,6 @@ def build_tutorial_mode(
                 (update_callback, update),
             ],
             level=config.passes,
-            thread_pool=thread_pool,
             validate_only=validate_only,
         ),
         "skin": build_skin(skin),
