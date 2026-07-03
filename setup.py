@@ -25,6 +25,10 @@ extensions = [
     Extension(
         "sonolus.backend._opt.*",
         ["sonolus/backend/_opt/*.pyx"],
+        # C++ so the passes can use libcpp containers (vector/unordered_map) as
+        # nogil-safe replacements for Python dict/set/list. ``_ops_gen.h`` is a
+        # plain C header, valid under C++.
+        language="c++",
         # The generated ``_ops_gen.h`` (static op-metadata table) is included by
         # ``ir.pyx`` via ``cdef extern from "_ops_gen.h"``; make it findable.
         include_dirs=["sonolus/backend/_opt"],
