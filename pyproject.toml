@@ -85,10 +85,17 @@ docs = [
 # Build CPython 3.12/3.13/3.14 only. Free-threaded builds stay disabled
 # (cibuildwheel default); musllinux stays enabled (default). See §9.
 build = "cp312-* cp313-* cp314-*"
+# Smoke-test every built wheel in its target environment: import the compiled
+# optimizer core and the public entry points so an import-broken or mistagged
+# wheel fails the build instead of reaching PyPI. Kept dependency-free (no
+# pytest/numpy, no test sources) so it runs on every arch, including the native
+# ARM64 legs.
+test-command = 'python -c "from sonolus.backend.optimize import run_passes, cfg_to_engine_node, optimize_and_finalize; from sonolus.backend._opt import ir, analysis, midend, lower, kernels, emit, driver"'
 
 [tool.cibuildwheel.windows]
-# Only 64-bit Windows wheels (no win32, no windows-arm64; sdist covers ARM).
-archs = ["AMD64"]
+# 64-bit native Windows wheels only (no win32). ``auto64`` resolves to AMD64 on
+# the x86-64 runner and ARM64 on the windows-11-arm runner.
+archs = ["auto64"]
 
 [tool.tox]
 requires = ["tox>=4.19"]
