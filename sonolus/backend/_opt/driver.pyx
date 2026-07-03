@@ -52,6 +52,7 @@ import os
 
 from sonolus.backend._opt.ir import marshal_in, register_phase, to_basic_blocks
 from sonolus.backend.optimize.flow import cfg_to_text
+from sonolus.backend.optimize import profiling as _prof
 
 # Debug tracing: when ``SONOLUS_OPT_TRACE=1`` is set in the environment, the
 # pipeline exports and prints the CFG after each pass so a contributor can watch
@@ -138,53 +139,79 @@ cdef Func _pipeline(Func func, int level, bint allocate):
     cdef Func opt
     cdef Func conv
     cdef Func lowered
+    # Opt-in per-pass timing (SONOLUS_OPT_PROFILE / CLI --profile); read the flag
+    # once so an untraced build pays only a bint test per pass. Same idiom as _TRACE.
+    cdef bint prof = _prof.enabled
+    cdef long long t0 = 0
 
     if level == LEVEL_MINIMAL:
+        if prof: t0 = _prof.now_ns()
         cleaned = cfg_cleanup(func, False)
+        if prof: _prof.record("cfg_cleanup", _prof.now_ns() - t0)
         if _TRACE:
             _trace_dump(cleaned, "cfg_cleanup")
         if allocate:
+            if prof: t0 = _prof.now_ns()
             allocate_func(cleaned, ALLOC_BUMP)
+            if prof: _prof.record("allocate", _prof.now_ns() - t0)
             if _TRACE:
                 _trace_dump(cleaned, "allocate(bump)")
         return cleaned
 
+    if prof: t0 = _prof.now_ns()
     cleaned = cfg_cleanup(func, False)
+    if prof: _prof.record("cfg_cleanup", _prof.now_ns() - t0)
     if _TRACE:
         _trace_dump(cleaned, "cfg_cleanup")
+    if prof: t0 = _prof.now_ns()
     ssa = build_ssa(cleaned)
+    if prof: _prof.record("build_ssa", _prof.now_ns() - t0)
     if _TRACE:
         _trace_dump(ssa, "build_ssa")
 
     if level == LEVEL_FAST:
         # fast (-O1): one mid-end round, cheap allocation, no LICM/switch/if-conv.
+        if prof: t0 = _prof.now_ns()
         opt = midend_round(ssa, False)
+        if prof: _prof.record("midend", _prof.now_ns() - t0)
         if _TRACE:
             _trace_dump(opt, "midend_round")
+        if prof: t0 = _prof.now_ns()
         lowered = lower_from_ssa(opt)
+        if prof: _prof.record("lower", _prof.now_ns() - t0)
         if _TRACE:
             _trace_dump(lowered, "lower_from_ssa")
         if allocate:
+            if prof: t0 = _prof.now_ns()
             allocate_func(lowered, ALLOC_TRY_BUMP)
             fuse_rmw(lowered)  # place-based RMW fusion (post-allocation)
+            if prof: _prof.record("allocate", _prof.now_ns() - t0)
             if _TRACE:
                 _trace_dump(lowered, "allocate(try_bump)+fuse_rmw")
         return lowered
 
     # standard (-O2): full mid-end (LICM + rewrite_switch) then if-conversion
     # over SSA (while phis still exist), then lowering + packing allocation.
+    if prof: t0 = _prof.now_ns()
     opt = midend_standard(ssa)
+    if prof: _prof.record("midend", _prof.now_ns() - t0)
     if _TRACE:
         _trace_dump(opt, "midend_standard")
+    if prof: t0 = _prof.now_ns()
     conv = if_convert(opt)
+    if prof: _prof.record("if_convert", _prof.now_ns() - t0)
     if _TRACE:
         _trace_dump(conv, "if_convert")
+    if prof: t0 = _prof.now_ns()
     lowered = lower_from_ssa(conv)
+    if prof: _prof.record("lower", _prof.now_ns() - t0)
     if _TRACE:
         _trace_dump(lowered, "lower_from_ssa")
     if allocate:
+        if prof: t0 = _prof.now_ns()
         allocate_func(lowered, ALLOC_PACKING)
         fuse_rmw(lowered)  # place-based RMW fusion (post-allocation)
+        if prof: _prof.record("allocate", _prof.now_ns() - t0)
         if _TRACE:
             _trace_dump(lowered, "allocate(packing)+fuse_rmw")
     return lowered
@@ -202,17 +229,31 @@ def run_pipeline_cfg(entry, level, mode=None, callback=None, allocate=True):
     for minimal).
     """
     cdef int lvl = _level_code(level)
+    cdef bint prof = _prof.enabled
+    cdef long long t0 = 0
+    if prof: t0 = _prof.now_ns()
     cdef Func func = <Func>marshal_in(entry, mode, callback)
+    if prof: _prof.record("marshal_in", _prof.now_ns() - t0)
     cdef Func result = _pipeline(func, lvl, allocate)
-    return to_basic_blocks(result)
+    if prof: t0 = _prof.now_ns()
+    bb = to_basic_blocks(result)
+    if prof: _prof.record("marshal_out", _prof.now_ns() - t0)
+    return bb
 
 
 def optimize_and_finalize_cfg(entry, level, mode=None, callback=None):
     """marshal_in -> level pipeline -> allocate -> emit (fused; no export)."""
     cdef int lvl = _level_code(level)
+    cdef bint prof = _prof.enabled
+    cdef long long t0 = 0
+    if prof: t0 = _prof.now_ns()
     cdef Func func = <Func>marshal_in(entry, mode, callback)
+    if prof: _prof.record("marshal_in", _prof.now_ns() - t0)
     cdef Func result = _pipeline(func, lvl, True)
-    return emit_func(result)
+    if prof: t0 = _prof.now_ns()
+    node = emit_func(result)
+    if prof: _prof.record("emit", _prof.now_ns() - t0)
+    return node
 
 
 # --------------------------------------------------------------------------

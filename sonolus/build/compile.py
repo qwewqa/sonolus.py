@@ -2,6 +2,7 @@ from collections.abc import Callable
 
 from sonolus.backend._opt import driver as _driver
 from sonolus.backend.ir import IRConst, IRInstr
+from sonolus.backend.optimize import profiling as _prof
 from sonolus.backend.mode import Mode
 from sonolus.backend.ops import Op
 from sonolus.backend.optimize import OptimizationLevel
@@ -55,11 +56,15 @@ def callback_to_cfg(
     name: str,
     archetype: type[_BaseArchetype] | None = None,
 ) -> BasicBlock:
+    t0 = _prof.now_ns() if _prof.enabled else 0
     try:
         # Default to no_eval=True for performance unless there's an error.
         return _callback_to_cfg(project_state, mode_state, callback, name, archetype, no_eval=True)
     except CompilationError:
         return _callback_to_cfg(project_state, mode_state, callback, name, archetype, no_eval=False)
+    finally:
+        if _prof.enabled:
+            _prof.record("frontend", _prof.now_ns() - t0)
 
 
 def _callback_to_cfg(

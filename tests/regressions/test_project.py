@@ -58,6 +58,34 @@ def test_project_build_is_deterministic():
     assert first == second
 
 
+def test_compile_profiling_records_stages():
+    # With profiling enabled, a build records a per-stage timing breakdown whose
+    # JSON summary has the documented shape.
+    from sonolus.backend.optimize import profiling
+
+    was_enabled = profiling.enabled
+    profiling.enable()
+    profiling.reset()
+    try:
+        package_engine(PROJECTS["pydori"].engine.data, BuildConfig(passes=BuildConfig.FAST_PASSES))
+        summary = profiling.summary()
+    finally:
+        profiling.enabled = was_enabled
+        profiling.reset()
+
+    assert set(summary) == {"stages", "total_ns"}
+    stages = summary["stages"]
+    # The fast pipeline exercises the frontend, marshal-in, every fast-level pass, and emit.
+    assert {"frontend", "marshal_in", "cfg_cleanup", "build_ssa", "midend", "lower", "allocate", "emit"} <= set(
+        stages
+    )
+    for stage in stages.values():
+        assert set(stage) == {"total_ns", "count"}
+        assert stage["total_ns"] >= 0
+        assert stage["count"] >= 1
+    assert summary["total_ns"] == sum(stage["total_ns"] for stage in stages.values())
+
+
 @pytest.mark.parametrize("project", ["pydori"])
 @pytest.mark.parametrize("passes", ["fast", "standard"])
 def test_project_method_build_regressions(

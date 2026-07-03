@@ -24,6 +24,10 @@ Two build/run-time environment variables help when working on the optimizer:
   `verify()` invariants fire.
 - `SONOLUS_OPT_TRACE=1` (set **at run time**) dumps the CFG (`cfg_to_text`) after each optimizer pass
   during a build, so you can watch the IR evolve.
+- `SONOLUS_OPT_PROFILE=1` (set **at run time**) accumulates per-stage compile timings (frontend tracing,
+  marshal-in, each optimizer pass, emit) during a build. The `sonolus-py build`/`check` CLI exposes the
+  same feature as `--profile` (print a summary to stderr) and `--profile-json PATH` (write the timings as
+  JSON); it has zero overhead when off.
 
 For focused testing, `sonolus.backend._opt.ir.debug_run(cfg, phases=[...])` runs an explicit list of
 named optimizer phases (`cfg_cleanup`, `ssa`, `sccp`, `gvn`, `dce`, `midend`, `licm`, `rewrite_switch`,
