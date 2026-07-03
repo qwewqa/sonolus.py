@@ -1,5 +1,13 @@
 # Optimizer Rewrite Plan
 
+> **Historical plan-of-record.** This is the pre-implementation design; it is kept
+> as history. Some of it has been **superseded by M9 (2026-07-02): the per-callback
+> thread pool was removed and builds are now serial** (the `nogil` annotations are
+> retained only to document GIL-independence). Wherever this document presents
+> multithreading / a thread pool as the plan, read it as superseded — see
+> `M9_RESUME.md` and `REVIEWER_INFO.md` for the current design. The `CompilerPass`,
+> `CompileCache`, and `hash_cfg` removals it describes did ship as planned.
+
 Status: proposal (pre-implementation)
 Scope: `sonolus/backend/optimize/*`, `sonolus/backend/finalize.py`, `sonolus/build/compile.py`,
 `sonolus/build/engine.py` (thread-pool gate + `cache` parameter), `sonolus/build/dev_server.py` and

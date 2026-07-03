@@ -12,8 +12,8 @@
   `BuildConfig.passes` now accepts only the `MINIMAL_PASSES`, `FAST_PASSES`, and `STANDARD_PASSES`
   optimization levels.
 - **Breaking:** The dev server's compile cache has been removed, so rebuilds now recompile every
-  callback. Warm rebuilds of the reference project take around 1.5s (compared to around 1.0s with the
-  old cache) and are expected to improve in future releases.
+  callback. The compiled core is fast enough that warm rebuilds of the reference project still complete
+  in well under a second.
 - **Breaking:** Installation now requires a prebuilt wheel or a C compiler. Wheels are published for
   CPython 3.12-3.14 on Linux (x86_64/aarch64), Windows (x86_64), and macOS (arm64/x86_64); the source
   distribution compiles via Cython at install time.

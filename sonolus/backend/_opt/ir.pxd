@@ -8,10 +8,12 @@ lowering/allocation, and emission build on.
 Design summary (read before extending):
 
 One ``Func`` arena per callback. No global mutable state (op metadata is the
-static ``const`` table in ``_ops_gen``), so per-callback threading is safe by
-construction. All hot state is flat C arrays of integer ids; the only Python
-objects (``names`` and the interning dicts) are touched at the marshal
-boundaries under the GIL and never inside ``nogil`` passes.
+static ``const`` table in ``_ops_gen``), so the passes are thread-safe by
+construction -- builds are currently serial, and the ``nogil`` annotations are
+kept only to document that GIL-independence, not to spin up threads. All hot
+state is flat C arrays of integer ids; the only Python objects (``names``, the
+temp/place interning dicts, and the khash const-intern map) are touched at the
+marshal boundaries under the GIL and never inside ``nogil`` passes.
 
 Everything is index-addressed:
 
