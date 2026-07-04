@@ -3108,7 +3108,7 @@
 
 
 <h3 id="sonolus.script.sprite.Sprite.draw" class="doc doc-heading">
-<code class="doc-symbol doc-symbol-heading doc-symbol-method"></code>            <code class="highlight language-python"><span class="n">draw</span><span class="p">(</span><span class="n">quad</span><span class="p">:</span> <span class="n">QuadLike</span><span class="p">,</span> <span class="n">z</span><span class="p">:</span> <span class="nb">float</span> <span class="o">=</span> <span class="mf">0.0</span><span class="p">,</span> <span class="n">a</span><span class="p">:</span> <span class="nb">float</span> <span class="o">=</span> <span class="mf">1.0</span><span class="p">)</span></code>
+<code class="doc-symbol doc-symbol-heading doc-symbol-method"></code>            <code class="highlight language-python"><span class="n">draw</span><span class="p">(</span><span class="n">quad</span><span class="p">:</span> <span class="n">QuadLike</span><span class="p">,</span> <span class="n">z</span><span class="p">:</span> <span class="n">ZIndex</span> <span class="o">=</span> <span class="mf">0.0</span><span class="p">,</span> <span class="n">a</span><span class="p">:</span> <span class="nb">float</span> <span class="o">=</span> <span class="mf">1.0</span><span class="p">)</span></code>
 
 <a href="#sonolus.script.sprite.Sprite.draw" class="headerlink" title="Permanent link">&para;</a></h3>
 
@@ -3150,11 +3150,12 @@
                 <code>z</code>
             </td>
             <td>
-                  <code><span title="float">float</span></code>
+                  <code><span title="sonolus.script.sprite.ZIndex">ZIndex</span></code>
             </td>
             <td>
               <div class="doc-md-description">
-                <p>The z-index of the sprite.</p>
+                <p>The z-index of the sprite. May be a single value or a tuple of up to 4 values,
+where later values break ties on earlier ones.</p>
               </div>
             </td>
             <td>
@@ -3189,7 +3190,7 @@
 
 
 <h3 id="sonolus.script.sprite.Sprite.draw_curved_b" class="doc doc-heading">
-<code class="doc-symbol doc-symbol-heading doc-symbol-method"></code>            <code class="highlight language-python"><span class="n">draw_curved_b</span><span class="p">(</span><span class="n">quad</span><span class="p">:</span> <span class="n">QuadLike</span><span class="p">,</span> <span class="n">cp</span><span class="p">:</span> <span class="n">Vec2</span><span class="p">,</span> <span class="n">n</span><span class="p">:</span> <span class="nb">float</span><span class="p">,</span> <span class="n">z</span><span class="p">:</span> <span class="nb">float</span> <span class="o">=</span> <span class="mf">0.0</span><span class="p">,</span> <span class="n">a</span><span class="p">:</span> <span class="nb">float</span> <span class="o">=</span> <span class="mf">1.0</span><span class="p">)</span></code>
+<code class="doc-symbol doc-symbol-heading doc-symbol-method"></code>            <code class="highlight language-python"><span class="n">draw_curved_b</span><span class="p">(</span><span class="n">quad</span><span class="p">:</span> <span class="n">QuadLike</span><span class="p">,</span> <span class="n">cp</span><span class="p">:</span> <span class="n">Vec2</span><span class="p">,</span> <span class="n">n</span><span class="p">:</span> <span class="nb">float</span><span class="p">,</span> <span class="n">z</span><span class="p">:</span> <span class="n">ZIndex</span> <span class="o">=</span> <span class="mf">0.0</span><span class="p">,</span> <span class="n">a</span><span class="p">:</span> <span class="nb">float</span> <span class="o">=</span> <span class="mf">1.0</span><span class="p">)</span></code>
 
 <a href="#sonolus.script.sprite.Sprite.draw_curved_b" class="headerlink" title="Permanent link">&para;</a></h3>
 
@@ -3263,11 +3264,12 @@
                 <code>z</code>
             </td>
             <td>
-                  <code><span title="float">float</span></code>
+                  <code><span title="sonolus.script.sprite.ZIndex">ZIndex</span></code>
             </td>
             <td>
               <div class="doc-md-description">
-                <p>The z-index of the sprite.</p>
+                <p>The z-index of the sprite. May be a single value or a tuple of up to 4 values,
+where later values break ties on earlier ones.</p>
               </div>
             </td>
             <td>
@@ -3302,7 +3304,7 @@
 
 
 <h3 id="sonolus.script.sprite.Sprite.draw_curved_bt" class="doc doc-heading">
-<code class="doc-symbol doc-symbol-heading doc-symbol-method"></code>            <code class="highlight language-python"><span class="n">draw_curved_bt</span><span class="p">(</span><span class="n">quad</span><span class="p">:</span> <span class="n">QuadLike</span><span class="p">,</span> <span class="n">cp1</span><span class="p">:</span> <span class="n">Vec2</span><span class="p">,</span> <span class="n">cp2</span><span class="p">:</span> <span class="n">Vec2</span><span class="p">,</span> <span class="n">n</span><span class="p">:</span> <span class="nb">float</span><span class="p">,</span> <span class="n">z</span><span class="p">:</span> <span class="nb">float</span> <span class="o">=</span> <span class="mf">0.0</span><span class="p">,</span> <span class="n">a</span><span class="p">:</span> <span class="nb">float</span> <span class="o">=</span> <span class="mf">1.0</span><span class="p">)</span></code>
+<code class="doc-symbol doc-symbol-heading doc-symbol-method"></code>            <code class="highlight language-python"><span class="n">draw_curved_bt</span><span class="p">(</span><span class="n">quad</span><span class="p">:</span> <span class="n">QuadLike</span><span class="p">,</span> <span class="n">cp1</span><span class="p">:</span> <span class="n">Vec2</span><span class="p">,</span> <span class="n">cp2</span><span class="p">:</span> <span class="n">Vec2</span><span class="p">,</span> <span class="n">n</span><span class="p">:</span> <span class="nb">float</span><span class="p">,</span> <span class="n">z</span><span class="p">:</span> <span class="n">ZIndex</span> <span class="o">=</span> <span class="mf">0.0</span><span class="p">,</span> <span class="n">a</span><span class="p">:</span> <span class="nb">float</span> <span class="o">=</span> <span class="mf">1.0</span><span class="p">)</span></code>
 
 <a href="#sonolus.script.sprite.Sprite.draw_curved_bt" class="headerlink" title="Permanent link">&para;</a></h3>
 
@@ -3392,11 +3394,12 @@
                 <code>z</code>
             </td>
             <td>
-                  <code><span title="float">float</span></code>
+                  <code><span title="sonolus.script.sprite.ZIndex">ZIndex</span></code>
             </td>
             <td>
               <div class="doc-md-description">
-                <p>The z-index of the sprite.</p>
+                <p>The z-index of the sprite. May be a single value or a tuple of up to 4 values,
+where later values break ties on earlier ones.</p>
               </div>
             </td>
             <td>
@@ -3431,7 +3434,7 @@
 
 
 <h3 id="sonolus.script.sprite.Sprite.draw_curved_l" class="doc doc-heading">
-<code class="doc-symbol doc-symbol-heading doc-symbol-method"></code>            <code class="highlight language-python"><span class="n">draw_curved_l</span><span class="p">(</span><span class="n">quad</span><span class="p">:</span> <span class="n">QuadLike</span><span class="p">,</span> <span class="n">cp</span><span class="p">:</span> <span class="n">Vec2</span><span class="p">,</span> <span class="n">n</span><span class="p">:</span> <span class="nb">float</span><span class="p">,</span> <span class="n">z</span><span class="p">:</span> <span class="nb">float</span> <span class="o">=</span> <span class="mf">0.0</span><span class="p">,</span> <span class="n">a</span><span class="p">:</span> <span class="nb">float</span> <span class="o">=</span> <span class="mf">1.0</span><span class="p">)</span></code>
+<code class="doc-symbol doc-symbol-heading doc-symbol-method"></code>            <code class="highlight language-python"><span class="n">draw_curved_l</span><span class="p">(</span><span class="n">quad</span><span class="p">:</span> <span class="n">QuadLike</span><span class="p">,</span> <span class="n">cp</span><span class="p">:</span> <span class="n">Vec2</span><span class="p">,</span> <span class="n">n</span><span class="p">:</span> <span class="nb">float</span><span class="p">,</span> <span class="n">z</span><span class="p">:</span> <span class="n">ZIndex</span> <span class="o">=</span> <span class="mf">0.0</span><span class="p">,</span> <span class="n">a</span><span class="p">:</span> <span class="nb">float</span> <span class="o">=</span> <span class="mf">1.0</span><span class="p">)</span></code>
 
 <a href="#sonolus.script.sprite.Sprite.draw_curved_l" class="headerlink" title="Permanent link">&para;</a></h3>
 
@@ -3505,11 +3508,12 @@
                 <code>z</code>
             </td>
             <td>
-                  <code><span title="float">float</span></code>
+                  <code><span title="sonolus.script.sprite.ZIndex">ZIndex</span></code>
             </td>
             <td>
               <div class="doc-md-description">
-                <p>The z-index of the sprite.</p>
+                <p>The z-index of the sprite. May be a single value or a tuple of up to 4 values,
+where later values break ties on earlier ones.</p>
               </div>
             </td>
             <td>
@@ -3544,7 +3548,7 @@
 
 
 <h3 id="sonolus.script.sprite.Sprite.draw_curved_lr" class="doc doc-heading">
-<code class="doc-symbol doc-symbol-heading doc-symbol-method"></code>            <code class="highlight language-python"><span class="n">draw_curved_lr</span><span class="p">(</span><span class="n">quad</span><span class="p">:</span> <span class="n">QuadLike</span><span class="p">,</span> <span class="n">cp1</span><span class="p">:</span> <span class="n">Vec2</span><span class="p">,</span> <span class="n">cp2</span><span class="p">:</span> <span class="n">Vec2</span><span class="p">,</span> <span class="n">n</span><span class="p">:</span> <span class="nb">float</span><span class="p">,</span> <span class="n">z</span><span class="p">:</span> <span class="nb">float</span> <span class="o">=</span> <span class="mf">0.0</span><span class="p">,</span> <span class="n">a</span><span class="p">:</span> <span class="nb">float</span> <span class="o">=</span> <span class="mf">1.0</span><span class="p">)</span></code>
+<code class="doc-symbol doc-symbol-heading doc-symbol-method"></code>            <code class="highlight language-python"><span class="n">draw_curved_lr</span><span class="p">(</span><span class="n">quad</span><span class="p">:</span> <span class="n">QuadLike</span><span class="p">,</span> <span class="n">cp1</span><span class="p">:</span> <span class="n">Vec2</span><span class="p">,</span> <span class="n">cp2</span><span class="p">:</span> <span class="n">Vec2</span><span class="p">,</span> <span class="n">n</span><span class="p">:</span> <span class="nb">float</span><span class="p">,</span> <span class="n">z</span><span class="p">:</span> <span class="n">ZIndex</span> <span class="o">=</span> <span class="mf">0.0</span><span class="p">,</span> <span class="n">a</span><span class="p">:</span> <span class="nb">float</span> <span class="o">=</span> <span class="mf">1.0</span><span class="p">)</span></code>
 
 <a href="#sonolus.script.sprite.Sprite.draw_curved_lr" class="headerlink" title="Permanent link">&para;</a></h3>
 
@@ -3634,11 +3638,12 @@
                 <code>z</code>
             </td>
             <td>
-                  <code><span title="float">float</span></code>
+                  <code><span title="sonolus.script.sprite.ZIndex">ZIndex</span></code>
             </td>
             <td>
               <div class="doc-md-description">
-                <p>The z-index of the sprite.</p>
+                <p>The z-index of the sprite. May be a single value or a tuple of up to 4 values,
+where later values break ties on earlier ones.</p>
               </div>
             </td>
             <td>
@@ -3673,7 +3678,7 @@
 
 
 <h3 id="sonolus.script.sprite.Sprite.draw_curved_r" class="doc doc-heading">
-<code class="doc-symbol doc-symbol-heading doc-symbol-method"></code>            <code class="highlight language-python"><span class="n">draw_curved_r</span><span class="p">(</span><span class="n">quad</span><span class="p">:</span> <span class="n">QuadLike</span><span class="p">,</span> <span class="n">cp</span><span class="p">:</span> <span class="n">Vec2</span><span class="p">,</span> <span class="n">n</span><span class="p">:</span> <span class="nb">float</span><span class="p">,</span> <span class="n">z</span><span class="p">:</span> <span class="nb">float</span> <span class="o">=</span> <span class="mf">0.0</span><span class="p">,</span> <span class="n">a</span><span class="p">:</span> <span class="nb">float</span> <span class="o">=</span> <span class="mf">1.0</span><span class="p">)</span></code>
+<code class="doc-symbol doc-symbol-heading doc-symbol-method"></code>            <code class="highlight language-python"><span class="n">draw_curved_r</span><span class="p">(</span><span class="n">quad</span><span class="p">:</span> <span class="n">QuadLike</span><span class="p">,</span> <span class="n">cp</span><span class="p">:</span> <span class="n">Vec2</span><span class="p">,</span> <span class="n">n</span><span class="p">:</span> <span class="nb">float</span><span class="p">,</span> <span class="n">z</span><span class="p">:</span> <span class="n">ZIndex</span> <span class="o">=</span> <span class="mf">0.0</span><span class="p">,</span> <span class="n">a</span><span class="p">:</span> <span class="nb">float</span> <span class="o">=</span> <span class="mf">1.0</span><span class="p">)</span></code>
 
 <a href="#sonolus.script.sprite.Sprite.draw_curved_r" class="headerlink" title="Permanent link">&para;</a></h3>
 
@@ -3747,11 +3752,12 @@
                 <code>z</code>
             </td>
             <td>
-                  <code><span title="float">float</span></code>
+                  <code><span title="sonolus.script.sprite.ZIndex">ZIndex</span></code>
             </td>
             <td>
               <div class="doc-md-description">
-                <p>The z-index of the sprite.</p>
+                <p>The z-index of the sprite. May be a single value or a tuple of up to 4 values,
+where later values break ties on earlier ones.</p>
               </div>
             </td>
             <td>
@@ -3786,7 +3792,7 @@
 
 
 <h3 id="sonolus.script.sprite.Sprite.draw_curved_t" class="doc doc-heading">
-<code class="doc-symbol doc-symbol-heading doc-symbol-method"></code>            <code class="highlight language-python"><span class="n">draw_curved_t</span><span class="p">(</span><span class="n">quad</span><span class="p">:</span> <span class="n">QuadLike</span><span class="p">,</span> <span class="n">cp</span><span class="p">:</span> <span class="n">Vec2</span><span class="p">,</span> <span class="n">n</span><span class="p">:</span> <span class="nb">float</span><span class="p">,</span> <span class="n">z</span><span class="p">:</span> <span class="nb">float</span> <span class="o">=</span> <span class="mf">0.0</span><span class="p">,</span> <span class="n">a</span><span class="p">:</span> <span class="nb">float</span> <span class="o">=</span> <span class="mf">1.0</span><span class="p">)</span></code>
+<code class="doc-symbol doc-symbol-heading doc-symbol-method"></code>            <code class="highlight language-python"><span class="n">draw_curved_t</span><span class="p">(</span><span class="n">quad</span><span class="p">:</span> <span class="n">QuadLike</span><span class="p">,</span> <span class="n">cp</span><span class="p">:</span> <span class="n">Vec2</span><span class="p">,</span> <span class="n">n</span><span class="p">:</span> <span class="nb">float</span><span class="p">,</span> <span class="n">z</span><span class="p">:</span> <span class="n">ZIndex</span> <span class="o">=</span> <span class="mf">0.0</span><span class="p">,</span> <span class="n">a</span><span class="p">:</span> <span class="nb">float</span> <span class="o">=</span> <span class="mf">1.0</span><span class="p">)</span></code>
 
 <a href="#sonolus.script.sprite.Sprite.draw_curved_t" class="headerlink" title="Permanent link">&para;</a></h3>
 
@@ -3860,11 +3866,12 @@
                 <code>z</code>
             </td>
             <td>
-                  <code><span title="float">float</span></code>
+                  <code><span title="sonolus.script.sprite.ZIndex">ZIndex</span></code>
             </td>
             <td>
               <div class="doc-md-description">
-                <p>The z-index of the sprite.</p>
+                <p>The z-index of the sprite. May be a single value or a tuple of up to 4 values,
+where later values break ties on earlier ones.</p>
               </div>
             </td>
             <td>
