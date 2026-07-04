@@ -5,33 +5,12 @@ Block(JumpLoop(
       8
     )
     1
-    26
+    14
   ))
   Execute(
     Set(
       10000
       0
-      GreaterOr(
-        Get(
-          4000
-          0
-        )
-        0
-      )
-    )
-    If(
-      Get(
-        10000
-        0
-      )
-      2
-      25
-    )
-  )
-  Execute(
-    Set(
-      10000
-      1
       SwitchWithDefault(
         GetShifted(
           4102
@@ -62,16 +41,16 @@ Block(JumpLoop(
     If(
       Get(
         10000
-        1
+        0
       )
-      3
-      24
+      2
+      13
     )
   )
   Execute(
     Set(
       10000
-      2
+      1
       Multiply(
         Get(
           4000
@@ -82,28 +61,7 @@ Block(JumpLoop(
     )
     Set(
       10000
-      3
-      GreaterOr(
-        Get(
-          4000
-          1
-        )
-        0
-      )
-    )
-    If(
-      Get(
-        10000
-        3
-      )
-      4
-      23
-    )
-  )
-  Execute(
-    Set(
-      10000
-      4
+      2
       SwitchWithDefault(
         GetShifted(
           4102
@@ -134,10 +92,10 @@ Block(JumpLoop(
     If(
       Get(
         10000
-        4
+        2
       )
-      5
-      22
+      3
+      12
     )
   )
   Execute(If(
@@ -145,41 +103,33 @@ Block(JumpLoop(
       10000
       0
     )
-    6
-    21
-  ))
-  Execute(If(
-    Get(
-      10000
-      1
-    )
-    7
-    20
+    4
+    11
   ))
   Execute(
     Set(
       10000
-      5
+      3
       Get(
         4100
         Add(
           3
           Get(
             10000
-            2
+            1
           )
         )
       )
     )
     Set(
       10000
-      6
+      4
       Multiply(
         Add(
           Trunc(Divide(
             Get(
               10000
-              5
+              3
             )
             2
           ))
@@ -193,28 +143,28 @@ Block(JumpLoop(
     )
     Set(
       10000
-      2
+      1
       Get(
         4100
         Get(
           10000
-          2
+          1
         )
       )
     )
     Set(
       10000
-      7
+      5
       Subtract(
         Add(
           Get(
             10000
-            6
+            4
           )
           Multiply(
             Get(
               10000
-              2
+              1
             )
             0.072
           )
@@ -236,7 +186,7 @@ Block(JumpLoop(
     )
     Set(
       10000
-      8
+      6
       GetShifted(
         4100
         0
@@ -249,17 +199,17 @@ Block(JumpLoop(
     )
     Set(
       10000
-      6
+      4
       Subtract(
         Add(
           Get(
             10000
-            6
+            4
           )
           Multiply(
             Get(
               10000
-              8
+              6
             )
             0.072
           )
@@ -281,7 +231,7 @@ Block(JumpLoop(
     )
     Set(
       10000
-      9
+      7
       Lerp(
         -0.9
         0.9
@@ -289,7 +239,7 @@ Block(JumpLoop(
           Mod(
             Get(
               10000
-              5
+              3
             )
             2
           )
@@ -299,18 +249,18 @@ Block(JumpLoop(
     )
     Set(
       10000
-      10
+      8
       Subtract(
         Get(
           10000
-          9
+          7
         )
         0.009
       )
     )
     SetAdd(
       10000
-      9
+      7
       0.009
     )
     If(
@@ -318,60 +268,48 @@ Block(JumpLoop(
         10000
         0
       )
-      8
-      19
+      5
+      10
     )
   )
   Execute(If(
     Get(
       10000
-      1
+      2
     )
+    6
     9
-    18
-  ))
-  Execute(If(
-    Get(
-      10000
-      3
-    )
-    10
-    17
-  ))
-  Execute(If(
-    Get(
-      10000
-      4
-    )
-    11
-    16
   ))
   Execute(If(
     Get(
       10000
       0
     )
-    12
-    15
-  ))
-  Execute(If(
-    Get(
-      10000
-      1
-    )
-    13
-    14
+    7
+    8
   ))
   Execute(
     Draw(
       18
       Get(
         10000
+        5
+      )
+      Get(
+        10000
+        8
+      )
+      Get(
+        10000
+        5
+      )
+      Get(
+        10000
         7
       )
       Get(
         10000
-        10
+        4
       )
       Get(
         10000
@@ -379,23 +317,11 @@ Block(JumpLoop(
       )
       Get(
         10000
-        9
+        4
       )
       Get(
         10000
-        6
-      )
-      Get(
-        10000
-        9
-      )
-      Get(
-        10000
-        6
-      )
-      Get(
-        10000
-        10
+        8
       )
       Add(
         220000
@@ -403,18 +329,18 @@ Block(JumpLoop(
           Min(
             Get(
               10000
-              2
+              1
             )
             Get(
               10000
-              8
+              6
             )
           )
           100
         )
         Get(
           10000
-          5
+          3
         )
       )
       Get(
@@ -425,68 +351,38 @@ Block(JumpLoop(
       0
       0
     )
-    27
-  )
-  Execute(
-    DebugLog(10)
-    DebugPause()
-    27
-  )
-  Execute(
-    DebugLog(9)
-    DebugPause()
-    27
-  )
-  Execute(
-    DebugLog(8)
-    DebugPause()
-    27
-  )
-  Execute(
-    DebugLog(7)
-    DebugPause()
-    27
-  )
-  Execute(
-    DebugLog(6)
-    DebugPause()
-    27
+    15
   )
   Execute(
     DebugLog(5)
     DebugPause()
-    27
-  )
-  Execute(
-    DebugLog(2)
-    DebugPause()
-    27
-  )
-  Execute(
-    DebugLog(1)
-    DebugPause()
-    27
+    15
   )
   Execute(
     DebugLog(4)
     DebugPause()
-    27
+    15
   )
   Execute(
     DebugLog(3)
     DebugPause()
-    27
-  )
-  Execute(
-    DebugLog(2)
-    DebugPause()
-    27
+    15
   )
   Execute(
     DebugLog(1)
     DebugPause()
-    27
+    15
   )
-  Execute(27)
+  Execute(
+    DebugLog(2)
+    DebugPause()
+    15
+  )
+  Execute(
+    DebugLog(1)
+    DebugPause()
+    15
+  )
+  Execute(15)
   0
 ))

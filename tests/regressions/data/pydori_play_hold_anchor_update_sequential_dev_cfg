@@ -22,7 +22,7 @@
   goto 9 if v4 else 10
 9:
   EntityDespawn[0] <- 1.0
-  goto 337
+  goto 332
 10:
   goto 11
 11:
@@ -32,7 +32,7 @@
   goto 13 if v5 else 14
 13:
   EntityDespawn[0] <- 1.0
-  goto 337
+  goto 332
 14:
   goto 15
 15:
@@ -933,56 +933,57 @@
 265:
   goto 266
 266:
-  v27 <- EntityData[16] >= 0
-  goto 267
+  v27 <- EntityData[16] * 3.0
+  v28 <- v27
+  v29 <- SwitchWithDefault(EntityInfoArray[v28 + 1], 1.0, 1.0, 2.0, 1.0, 3.0, 1.0, 4.0, 1.0, 5.0, 1.0, 6.0, 1.0, 7.0, 1.0, 0)
+  goto 267 if v29 else 334
 267:
-  goto 268 if v27 else 340
+  goto 268
 268:
-  v30 <- EntityData[16] * 3.0
-  v31 <- v30
-  v32 <- SwitchWithDefault(EntityInfoArray[v31 + 1], 1.0, 1.0, 2.0, 1.0, 3.0, 1.0, 4.0, 1.0, 5.0, 1.0, 6.0, 1.0, 7.0, 1.0, 0)
-  goto 269 if v32 else 339
+  goto 269
 269:
   goto 270
 270:
   goto 271
 271:
+  v27 <- EntityData[16] * 32.0
+  v28 <- v27
+  v29 <- EntitySharedMemoryArray[v28]
   goto 272
 272:
   goto 273
 273:
-  v27 <- EntityData[16] * 32.0
-  v28 <- v27
-  v29 <- EntitySharedMemoryArray[v28]
+  v30 <- v29 > 0
   goto 274
 274:
   goto 275
 275:
-  v30 <- v29 > 0
   goto 276
 276:
-  goto 277
+  goto 277 if v30 else 330
 277:
   goto 278
 278:
-  goto 279 if v30 else 335
+  goto 279
 279:
   goto 280
 280:
-  goto 281
+  v31 <- EntityData[16] * 3.0
+  v32 <- v31
+  v33 <- SwitchWithDefault(EntityInfoArray[v32 + 1], 1.0, 1.0, 2.0, 1.0, 3.0, 1.0, 4.0, 1.0, 5.0, 1.0, 6.0, 1.0, 7.0, 1.0, 0)
+  goto 281 if v33 else 329
 281:
   goto 282
 282:
-  v31 <- EntityData[16] >= 0
   goto 283
 283:
-  goto 284 if v31 else 334
+  goto 284
 284:
-  v34 <- EntityData[16] * 3.0
-  v35 <- v34
-  v36 <- SwitchWithDefault(EntityInfoArray[v35 + 1], 1.0, 1.0, 2.0, 1.0, 3.0, 1.0, 4.0, 1.0, 5.0, 1.0, 6.0, 1.0, 7.0, 1.0, 0)
-  goto 285 if v36 else 333
+  goto 285
 285:
+  v31 <- EntityData[16] * 32.0
+  v32 <- v31
+  v33 <- EntitySharedMemoryArray[v32]
   goto 286
 286:
   goto 287
@@ -991,95 +992,84 @@
 288:
   goto 289
 289:
-  v31 <- EntityData[16] * 32.0
-  v32 <- v31
-  v33 <- EntitySharedMemoryArray[v32]
   goto 290
 290:
+  v34 <- LevelMemory[17]
+  v35 <- v34 >= 16.0
   goto 291
 291:
-  goto 292
+  goto 292 if v35 else 293
 292:
-  goto 293
+  v46 <- 0
+  goto 322
 293:
   goto 294
 294:
-  v34 <- LevelMemory[17]
-  v35 <- v34 >= 16.0
   goto 295
 295:
-  goto 296 if v35 else 297
+  v36 <- 0
+  goto 296
 296:
-  v46 <- 0
-  goto 326
+  goto 297
 297:
+  v37 <- LevelMemory[17]
   goto 298
 298:
   goto 299
 299:
-  v36 <- 0
+  v38 <- v36 < v37
   goto 300
 300:
-  goto 301
+  goto 301 if v38 else 309
 301:
-  v37 <- LevelMemory[17]
   goto 302
 302:
-  goto 303
-303:
-  v38 <- v36 < v37
-  goto 304
-304:
-  goto 305 if v38 else 313
-305:
-  goto 306
-306:
   v39 <- 17.0 + v36
   v40 <- v39
   v41 <- LevelMemory[v40 + 1]
-  goto 307
+  goto 303
+303:
+  goto 304
+304:
+  v42 <- v41 == v33
+  goto 305
+305:
+  goto 306 if v42 else 307
+306:
+  v45 <- 1.0
+  goto 311
 307:
   goto 308
 308:
-  v42 <- v41 == v33
-  goto 309
-309:
-  goto 310 if v42 else 311
-310:
-  v45 <- 1.0
-  goto 315
-311:
-  goto 312
-312:
   v43 <- v36 + 1.0
   v44 <- v43
   v36 <- v44
-  goto 300
-313:
-  goto 314
-314:
+  goto 296
+309:
+  goto 310
+310:
   v45 <- 0
-  goto 315
+  goto 311
+311:
+  goto 312
+312:
+  goto 313
+313:
+  goto 314 if v45 else 315
+314:
+  v46 <- 0
+  goto 322
 315:
   goto 316
 316:
   goto 317
 317:
-  goto 318 if v45 else 319
-318:
-  v46 <- 0
-  goto 326
-319:
-  goto 320
-320:
-  goto 321
-321:
   v46 <- LevelMemory[17]
   v47 <- v46 < 16.0
-  goto 322
-322:
-  goto 323 if v47 else 332
-323:
+  goto 318
+318:
+  goto 319 if v47 else 328
+319:
   v50 <- LevelMemory[17]
   v51 <- 17.0 + v50
   v52 <- v51
@@ -1087,49 +1077,41 @@
   v53 <- LevelMemory[17]
   v54 <- v53 + 1.0
   LevelMemory[17] <- v54
+  goto 320
+320:
+  goto 321
+321:
+  v46 <- 1.0
+  goto 322
+322:
+  goto 323
+323:
   goto 324
 324:
   goto 325
 325:
-  v46 <- 1.0
   goto 326
 326:
   goto 327
 327:
-  goto 328
+  goto 331
 328:
-  goto 329
+  v48 <- DebugLog(5.0)
+  v49 <- DebugPause()
+  goto exit
 329:
-  goto 330
+  v34 <- DebugLog(4.0)
+  v35 <- DebugPause()
+  goto exit
 330:
   goto 331
 331:
-  goto 336
+  goto 332
 332:
-  v48 <- DebugLog(7.0)
-  v49 <- DebugPause()
-  goto exit
+  goto 333
 333:
-  v37 <- DebugLog(6.0)
-  v38 <- DebugPause()
   goto exit
 334:
-  v32 <- DebugLog(5.0)
-  v33 <- DebugPause()
-  goto exit
-335:
-  goto 336
-336:
-  goto 337
-337:
-  goto 338
-338:
-  goto exit
-339:
-  v33 <- DebugLog(4.0)
-  v34 <- DebugPause()
-  goto exit
-340:
-  v28 <- DebugLog(3.0)
-  v29 <- DebugPause()
+  v30 <- DebugLog(3.0)
+  v31 <- DebugPause()
   goto exit

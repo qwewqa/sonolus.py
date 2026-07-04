@@ -1,7 +1,7 @@
 0:
   10000[0] <- EngineRom[(3.0 + EntityInfo[1])]
   goto when 10000[0]
-    6.0 -> 69
+    6.0 -> 65
     default -> 1
 1:
   goto 2 if (RuntimeUpdate[0] > EntityData[15]) else 3
@@ -201,60 +201,48 @@
 50:
   EntityDespawn[0] <- 1.0
   EntitySharedMemory[2] <- 1.0
-  goto 52 if (EntityData[16] >= 0) else 68
+  goto 51
 51:
-  goto 52 if (EntityData[16] >= 0) else 68
-52:
   10000[0] <- SwitchWithDefault(EntityInfoArray[(EntityData[16] * 3.0) + 1], 1.0, 1.0, 2.0, 1.0, 3.0, 1.0, 4.0, 1.0, 5.0, 1.0, 6.0, 1.0, 7.0, 1.0, 0)
-  goto 53 if 10000[0] else 67
-53:
+  goto 52 if 10000[0] else 64
+52:
   10000[1] <- EntityData[16] * 32.0
-  goto 54 if (EntitySharedMemoryArray[10000[1]] > 0) else 66
+  goto 53 if (EntitySharedMemoryArray[10000[1]] > 0) else 63
+53:
+  goto 54 if 10000[0] else 62
 54:
-  goto 55 if (EntityData[16] >= 0) else 65
-55:
-  goto 56 if 10000[0] else 64
-56:
   10000[0] <- EntitySharedMemoryArray[10000[1]]
-  goto 66 if (LevelMemory[17] >= 16.0) else 57
-57:
+  goto 63 if (LevelMemory[17] >= 16.0) else 55
+55:
   10000[1] <- 0
-  goto 58
+  goto 56
+56:
+  goto 57 if (10000[1] < LevelMemory[17]) else 59
+57:
+  goto 63 if (10000[0] == LevelMemory[(17 + 10000[1]) + 1]) else 58
 58:
-  goto 59 if (10000[1] < LevelMemory[17]) else 61
-59:
-  goto 66 if (10000[0] == LevelMemory[(17 + 10000[1]) + 1]) else 60
-60:
   IncrementPost(10000, 1.0)
-  goto 58
-61:
-  goto 62 if (LevelMemory[17] < 16.0) else 63
-62:
+  goto 56
+59:
+  goto 60 if (LevelMemory[17] < 16.0) else 61
+60:
   LevelMemory[(17 + LevelMemory[17]) + 1] <- 10000[0]
   IncrementPost(2000, 17)
   goto exit
-63:
-  DebugLog(7.0)
-  DebugPause()
-  goto exit
-64:
-  DebugLog(6.0)
-  DebugPause()
-  goto exit
-65:
+61:
   DebugLog(5.0)
   DebugPause()
   goto exit
-66:
-  goto exit
-67:
+62:
   DebugLog(4.0)
   DebugPause()
   goto exit
-68:
+63:
+  goto exit
+64:
   DebugLog(3.0)
   DebugPause()
   goto exit
-69:
+65:
   EntityDespawn[0] <- 1.0
   goto exit

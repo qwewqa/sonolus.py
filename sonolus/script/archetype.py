@@ -724,9 +724,9 @@ class _BaseArchetype(metaclass=_BaseArchetypeMeta):
     def _check_is_at(cls, index: int, check: bool):
         if not check or not runtime_checks_enabled():
             return
-        assert index >= 0, "Entity index must be non-negative"
+        # If index is invalid, we'll get 0 as the id.
         assert cls._matches_archetype_id(entity_info_at(index).archetype_id), (
-            "Entity at index is not of the expected archetype"
+            "Entity at index is not of the expected archetype or index is invalid"
         )
 
     @classmethod

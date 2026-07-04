@@ -8,54 +8,41 @@
   goto 3
 3:
   10000[0] <- EntityMemory[0]
-  goto 4 if (10000[0] >= 0) else 36
+  goto 4 if SwitchWithDefault(EntityInfoArray[(10000[0] * 3.0) + 1], 2.0, 1.0, 3.0, 1.0, 4.0, 1.0, 5.0, 1.0, 6.0, 1.0, 7.0, 1.0, 8.0, 1.0, 0) else 24
 4:
-  goto 5 if SwitchWithDefault(EntityInfoArray[(10000[0] * 3.0) + 1], 2.0, 1.0, 3.0, 1.0, 4.0, 1.0, 5.0, 1.0, 6.0, 1.0, 7.0, 1.0, 8.0, 1.0, 0) else 35
+  goto 5 if RuntimeEnvironment[4] else 13
 5:
-  goto 6 if RuntimeEnvironment[4] else 16
+  10000[0] <- EntityDataArray[(9.0 + (10000[0] * 32.0))] * 3.0
+  goto 6 if SwitchWithDefault(EntityInfoArray[10000[0] + 1], 2.0, 1.0, 3.0, 1.0, 4.0, 1.0, 5.0, 1.0, 6.0, 1.0, 7.0, 1.0, 8.0, 1.0, 0) else 12
 6:
-  10000[0] <- EntityDataArray[(9.0 + (10000[0] * 32.0))]
-  goto 7 if (10000[0] >= 0) else 15
-7:
-  SetMultiply(10000, 0, 3.0)
-  goto 8 if SwitchWithDefault(EntityInfoArray[10000[0] + 1], 2.0, 1.0, 3.0, 1.0, 4.0, 1.0, 5.0, 1.0, 6.0, 1.0, 7.0, 1.0, 8.0, 1.0, 0) else 14
-8:
   10000[0] <- EntityInfoArray[10000[0]]
-  goto 9 if (((10000[0] >= 0) && (10000[0] < 99999.0)) && (10000[0] == Trunc(10000[0]))) else 13
-9:
+  goto 7 if (((10000[0] >= 0) && (10000[0] < 99999.0)) && (10000[0] == Trunc(10000[0]))) else 11
+7:
   SetAdd(10000, 0, 18.0)
-  goto 16 if StreamGetValue(10000[0], If(StreamHas(10000[0], RuntimeUpdate[0]), RuntimeUpdate[0], StreamGetPreviousKey(10000[0], RuntimeUpdate[0]))) else 10
-10:
-  goto 11 if (0 != EntityMemory[2]) else 12
-11:
+  goto 13 if StreamGetValue(10000[0], If(StreamHas(10000[0], RuntimeUpdate[0]), RuntimeUpdate[0], StreamGetPreviousKey(10000[0], RuntimeUpdate[0]))) else 8
+8:
+  goto 9 if (0 != EntityMemory[2]) else 10
+9:
   DestroyParticleEffect(EntityMemory[2])
   EntityMemory[2] <- 0
   goto exit
-12:
+10:
   goto exit
-13:
-  DebugLog(5.0)
-  DebugPause()
-  goto exit
-14:
-  DebugLog(4.0)
-  DebugPause()
-  goto exit
-15:
+11:
   DebugLog(3.0)
   DebugPause()
   goto exit
-16:
+12:
+  DebugLog(2.0)
+  DebugPause()
+  goto exit
+13:
   10000[0] <- EntityMemory[0]
-  goto 17 if (10000[0] >= 0) else 34
-17:
-  goto 18 if SwitchWithDefault(EntityInfoArray[(10000[0] * 3.0) + 1], 2.0, 1.0, 3.0, 1.0, 4.0, 1.0, 5.0, 1.0, 6.0, 1.0, 7.0, 1.0, 8.0, 1.0, 0) else 33
-18:
+  goto 14 if SwitchWithDefault(EntityInfoArray[(10000[0] * 3.0) + 1], 2.0, 1.0, 3.0, 1.0, 4.0, 1.0, 5.0, 1.0, 6.0, 1.0, 7.0, 1.0, 8.0, 1.0, 0) else 23
+14:
   10000[0] <- EntityDataArray[(9.0 + (10000[0] * 32.0))]
-  goto 19 if (10000[0] >= 0) else 32
-19:
-  goto 20 if SwitchWithDefault(EntityInfoArray[(10000[0] * 3.0) + 1], 2.0, 1.0, 3.0, 1.0, 4.0, 1.0, 5.0, 1.0, 6.0, 1.0, 7.0, 1.0, 8.0, 1.0, 0) else 31
-20:
+  goto 15 if SwitchWithDefault(EntityInfoArray[(10000[0] * 3.0) + 1], 2.0, 1.0, 3.0, 1.0, 4.0, 1.0, 5.0, 1.0, 6.0, 1.0, 7.0, 1.0, 8.0, 1.0, 0) else 22
+15:
   10000[0] <- EntitySharedMemoryArray[(10000[0] * 32.0)]
   10000[1] <- 10000[0] * LevelData[12]
   10000[2] <- 10000[1] + (LevelData[11] / 2.0)
@@ -72,15 +59,11 @@
   10000[2] <- 10000[2] + (LevelData[9] * (LevelData[11] / 2.0)) + LevelData[10]
   Draw(14.0, (10000[3] + (LevelData[3] * -(LevelData[11] / 2.0)) + LevelData[4]) / 10000[5], (10000[4] + (LevelData[6] * -(LevelData[11] / 2.0)) + LevelData[7]) / 10000[5], (10000[3] + (LevelData[3] * (LevelData[11] / 2.0)) + LevelData[4]) / 10000[1], (10000[4] + (LevelData[6] * (LevelData[11] / 2.0)) + LevelData[7]) / 10000[1], (10000[6] + (LevelData[3] * (LevelData[11] / 2.0)) + LevelData[4]) / 10000[2], (10000[7] + (LevelData[6] * (LevelData[11] / 2.0)) + LevelData[7]) / 10000[2], (10000[6] + (LevelData[3] * -(LevelData[11] / 2.0)) + LevelData[4]) / 10000[8], (10000[7] + (LevelData[6] * -(LevelData[11] / 2.0)) + LevelData[7]) / 10000[8], 300000.0 + (10000[0] * 100.0), 1.0, 0, 0, 0)
   10000[0] <- EntityMemory[0]
-  goto 21 if (10000[0] >= 0) else 30
-21:
-  goto 22 if SwitchWithDefault(EntityInfoArray[(10000[0] * 3.0) + 1], 2.0, 1.0, 3.0, 1.0, 4.0, 1.0, 5.0, 1.0, 6.0, 1.0, 7.0, 1.0, 8.0, 1.0, 0) else 29
-22:
+  goto 16 if SwitchWithDefault(EntityInfoArray[(10000[0] * 3.0) + 1], 2.0, 1.0, 3.0, 1.0, 4.0, 1.0, 5.0, 1.0, 6.0, 1.0, 7.0, 1.0, 8.0, 1.0, 0) else 21
+16:
   10000[0] <- EntityDataArray[(9.0 + (10000[0] * 32.0))]
-  goto 23 if (10000[0] >= 0) else 28
-23:
-  goto 24 if SwitchWithDefault(EntityInfoArray[(10000[0] * 3.0) + 1], 2.0, 1.0, 3.0, 1.0, 4.0, 1.0, 5.0, 1.0, 6.0, 1.0, 7.0, 1.0, 8.0, 1.0, 0) else 27
-24:
+  goto 17 if SwitchWithDefault(EntityInfoArray[(10000[0] * 3.0) + 1], 2.0, 1.0, 3.0, 1.0, 4.0, 1.0, 5.0, 1.0, 6.0, 1.0, 7.0, 1.0, 8.0, 1.0, 0) else 20
+17:
   10000[0] <- EntitySharedMemoryArray[(10000[0] * 32.0)] * LevelData[12]
   10000[1] <- 10000[0] + ((LevelData[11] * 1.8) / 2.0)
   SetSubtract(10000, 0, (LevelData[11] * 1.8) / 2.0)
@@ -109,51 +92,31 @@
   10000[5] <- 10000[7] + 10000[2]
   10000[7] <- 10000[6] - 10000[2]
   10000[2] <- 10000[6] + 10000[2]
-  goto 25 if EntityMemory[2] else 26
-25:
+  goto 18 if EntityMemory[2] else 19
+18:
   MoveParticleEffect(EntityMemory[2], 10000[3], 10000[4], 10000[7], 10000[0], 10000[2], 10000[1], 10000[5], 10000[8])
   goto exit
-26:
+19:
   10000[0] <- SpawnParticleEffect(5.0, 10000[3], 10000[4], 10000[7], 10000[0], 10000[2], 10000[1], 10000[5], 10000[8], 1.5, 1.0)
   EntityMemory[2] <- 10000[0]
   goto exit
-27:
-  DebugLog(13.0)
-  DebugPause()
-  goto exit
-28:
-  DebugLog(12.0)
-  DebugPause()
-  goto exit
-29:
-  DebugLog(11.0)
-  DebugPause()
-  goto exit
-30:
-  DebugLog(10.0)
-  DebugPause()
-  goto exit
-31:
-  DebugLog(9.0)
-  DebugPause()
-  goto exit
-32:
-  DebugLog(8.0)
-  DebugPause()
-  goto exit
-33:
+20:
   DebugLog(7.0)
   DebugPause()
   goto exit
-34:
+21:
   DebugLog(6.0)
   DebugPause()
   goto exit
-35:
-  DebugLog(2.0)
+22:
+  DebugLog(5.0)
   DebugPause()
   goto exit
-36:
+23:
+  DebugLog(4.0)
+  DebugPause()
+  goto exit
+24:
   DebugLog(1.0)
   DebugPause()
   goto exit
