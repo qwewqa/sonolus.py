@@ -6,6 +6,13 @@ dist/
 wheels/
 *.egg-info
 
+# Cython / C-extension build artifacts (we ship .pyx and cythonize at build time)
+sonolus/**/*.c
+sonolus/**/*.cpp
+sonolus/**/*.html
+sonolus/**/*.so
+sonolus/**/*.pyd
+
 # Virtual environments
 .venv*
 
@@ -24,3 +31,6 @@ site/
 
 .coverage
 coverage.xml
+
+# tox environments
+.tox/

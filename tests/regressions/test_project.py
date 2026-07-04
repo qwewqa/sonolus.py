@@ -3,11 +3,10 @@ from typing import Literal
 
 import pytest
 
-from sonolus.backend.finalize import cfg_to_engine_node
 from sonolus.backend.mode import Mode
 from sonolus.backend.node import format_engine_node
+from sonolus.backend.optimize import OptimizerConfig, cfg_to_engine_node, run_passes
 from sonolus.backend.optimize.flow import cfg_to_text
-from sonolus.backend.optimize.passes import OptimizerConfig, run_passes
 from sonolus.build.compile import callback_to_cfg
 from sonolus.build.engine import package_engine
 from sonolus.script.archetype import _BaseArchetype
@@ -46,6 +45,43 @@ def test_project_full_build_succeeds(
             passes=PASSES[passes],
         ),
     )
+
+
+def test_project_build_is_deterministic():
+    # Two builds of the same project must be byte-for-byte identical. Both builds
+    # run in one process, so this pins same-process repeat determinism (not true
+    # cross-run determinism).
+    engine = PROJECTS["pydori"].engine.data
+    config = BuildConfig(passes=BuildConfig.STANDARD_PASSES)
+    first = package_engine(engine, config)
+    second = package_engine(engine, config)
+    assert first == second
+
+
+def test_compile_profiling_records_stages():
+    # With profiling enabled, a build records a per-stage timing breakdown whose
+    # JSON summary has the documented shape.
+    from sonolus.backend.optimize import profiling
+
+    was_enabled = profiling.enabled
+    profiling.enable()
+    profiling.reset()
+    try:
+        package_engine(PROJECTS["pydori"].engine.data, BuildConfig(passes=BuildConfig.FAST_PASSES))
+        summary = profiling.summary()
+    finally:
+        profiling.enabled = was_enabled
+        profiling.reset()
+
+    assert set(summary) == {"stages", "total_ns"}
+    stages = summary["stages"]
+    # The fast pipeline exercises the frontend, marshal-in, every fast-level pass, and emit.
+    assert {"frontend", "marshal_in", "cfg_cleanup", "build_ssa", "midend", "lower", "allocate", "emit"} <= set(stages)
+    for stage in stages.values():
+        assert set(stage) == {"total_ns", "count"}
+        assert stage["total_ns"] >= 0
+        assert stage["count"] >= 1
+    assert summary["total_ns"] == sum(stage["total_ns"] for stage in stages.values())
 
 
 @pytest.mark.parametrize("project", ["pydori"])
@@ -125,11 +161,11 @@ def _build_mode_callbacks(
                     cfg_to_text(cfg),
                 )
                 cfg = run_passes(cfg, PASSES[passes], OptimizerConfig(mode=mode, callback=cb_info.name))
+                node = cfg_to_engine_node(cfg)
                 compare_with_reference(
                     f"{project_name}_{mode.name.lower()}_{camel_to_snake(archetype.__name__)}_{cb_name}_{passes}{suffix}_optimized_cfg",
                     cfg_to_text(cfg),
                 )
-                node = cfg_to_engine_node(cfg)
                 compare_with_reference(
                     f"{project_name}_{mode.name.lower()}_{camel_to_snake(archetype.__name__)}_{cb_name}_{passes}{suffix}_nodes",
                     format_engine_node(node),
@@ -149,11 +185,11 @@ def _build_mode_callbacks(
                 cfg_to_text(cfg),
             )
             cfg = run_passes(cfg, PASSES[passes], OptimizerConfig(mode=mode, callback=cb_info.name))
+            node = cfg_to_engine_node(cfg)
             compare_with_reference(
                 f"{project_name}_{mode.name.lower()}_global_{camel_to_snake(cb_info.name)}_{passes}{suffix}_optimized_cfg",
                 cfg_to_text(cfg),
             )
-            node = cfg_to_engine_node(cfg)
             compare_with_reference(
                 f"{project_name}_{mode.name.lower()}_global_{camel_to_snake(cb_info.name)}_{passes}{suffix}_nodes",
                 format_engine_node(node),

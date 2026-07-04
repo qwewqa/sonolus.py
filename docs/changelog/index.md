@@ -1,3 +1,8 @@
+### 0.17.0
+
+- Improved optimizer.
+- The `dev` command now uses standard (`-O2`) optimization by default.
+
 ### 0.16.0
 
 - Now targeting Sonolus 1.1.2

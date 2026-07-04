@@ -11,28 +11,27 @@ Block(JumpLoop(
     3
   ))
   Execute(If(
-    Not(Greater(
+    Greater(
       Get(
         4001
         3
       )
       0
-    ))
-    2
+    )
     3
+    2
   ))
   Execute(
     StreamSet(
       Add(
-        Get(
+        GetShifted(
           4103
-          Multiply(
-            Get(
-              4001
-              16
-            )
-            3
+          0
+          Get(
+            4001
+            16
           )
+          3
         )
         18
       )
@@ -52,8 +51,7 @@ Block(JumpLoop(
       0
       0
     )
-    4
+    3
   )
-  Execute(4)
   0
 ))

@@ -2,6 +2,19 @@ from enum import StrEnum
 
 
 class Op(StrEnum):
+    """Runtime op enum; each member carries (name, side_effects, pure, control_flow).
+
+    And/Or and the five select ops (If/Switch*) have control_flow=True yet are
+    foldable (tools/gen_ops.py): as optimizer IR values they are strict selects --
+    a total function of their operands. Runtime branch laziness is a performance
+    property, never a semantic guard: a folded/duplicated/hoisted arm may run zero
+    or many times, so every non-test operand must be side-effect-free and total.
+    The frontend guarantees this by emitting selects in strict form only: the test
+    may be a complex expression; keys, arms, and default are single constants.
+    Guarding semantics (guarded division, conditional effects, conditional Random
+    draws) must stay CFG edges, never these value ops.
+    """
+
     side_effects: bool
     pure: bool
     control_flow: bool

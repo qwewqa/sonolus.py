@@ -1,6 +1,6 @@
 [project]
 name = "sonolus.py"
-version = "0.16.0"
+version = "0.17.0"
 description = "Sonolus engine development in Python"
 readme = "README.md"
 requires-python = ">=3.12.5"
@@ -17,6 +17,18 @@ Changelog = "https://sonolus.py.qwewqa.xyz/changelog/"
 
 [tool.uv]
 default-groups = ["dev", "docs"]
+# Rebuild the Cython extension when the build inputs change (setup.py, the
+# .pyx/.pxd sources, or pyproject.toml). The checked-in _ops_gen.pxd is covered
+# by the .pxd glob. SONOLUS_OPT_DEBUG_BUILD is read by setup.py to toggle
+# bounds-checking/NDEBUG, so toggling it must invalidate the cached extension.
+cache-keys = [
+    { file = "pyproject.toml" },
+    { file = "setup.py" },
+    { file = "sonolus/**/*.pyx" },
+    { file = "sonolus/**/*.pxd" },
+    { file = "sonolus/**/*.h" },
+    { env = "SONOLUS_OPT_DEBUG_BUILD" },
+]
 
 [tool.ruff]
 line-length = 120
@@ -31,8 +43,21 @@ ignore = ["E402", "D1", "COM812", "PLW2901", "PLW3201", "PLR6301", "PLC0415", "P
 convention = "google"
 
 [build-system]
-requires = ["hatchling"]
-build-backend = "hatchling.build"
+requires = ["setuptools>=77", "Cython>=3.1"]
+build-backend = "setuptools.build_meta"
+
+[tool.setuptools.packages.find]
+# Explicit discovery: tools/, rust/, docs/, tests/, and test_projects/ live at
+# the repo root, so flat-layout auto-discovery is not safe here.
+include = ["sonolus*"]
+
+[tool.setuptools.exclude-package-data]
+# The Cython ``.pyx`` sources (and any stray generated ``.c``/``.cpp``) are build
+# inputs shipped in the sdist via MANIFEST.in; they are not needed in the binary
+# wheel, where the compiled ``.pyd`` is what gets imported. The ``.pxd``/
+# ``_ops_gen.h`` stay in the wheel as the conventional Cython interface artifacts.
+# sdist contents come from MANIFEST.in and are unaffected by this exclusion.
+"*" = ["*.pyx", "*.c", "*.cpp"]
 
 [dependency-groups]
 dev = [
@@ -55,8 +80,21 @@ docs = [
     "mkdocstrings[python]>=0.30.1",
 ]
 
-[tool.hatch.build.targets.wheel]
-packages = ["sonolus"]
+[tool.cibuildwheel]
+# Build CPython 3.12/3.13/3.14 only. Free-threaded builds stay disabled
+# (cibuildwheel default); musllinux stays enabled (default).
+build = "cp312-* cp313-* cp314-*"
+# Smoke-test every built wheel in its target environment: import the compiled
+# optimizer core and the public entry points so an import-broken or mistagged
+# wheel fails the build instead of reaching PyPI. Kept dependency-free (no
+# pytest/numpy, no test sources) so it runs on every arch, including the native
+# ARM64 legs.
+test-command = 'python -c "from sonolus.backend.optimize import run_passes, cfg_to_engine_node, optimize_and_finalize; from sonolus.backend._opt import ir, analysis, midend, lower, kernels, emit, driver"'
+
+[tool.cibuildwheel.windows]
+# 64-bit native Windows wheels only (no win32). ``auto64`` resolves to AMD64 on
+# the x86-64 runner and ARM64 on the windows-11-arm runner.
+archs = ["auto64"]
 
 [tool.tox]
 requires = ["tox>=4.19"]
@@ -72,6 +110,13 @@ deps = [
     "numpy>=2.3.5"
 ]
 uv_python_preference = "managed"
+# Editable (in-place) install so the compiled extension is built into the source
+# tree with the running interpreter's ABI tag. The test suite imports ``sonolus``
+# from the source tree (pytest puts the project root on sys.path to import the
+# ``tests`` package), which would otherwise shadow a wheel-installed copy and load
+# only whichever ABI was last built in-place -- passing on the primary Python but
+# failing to import the extension on the others.
+package = "editable"
 commands = [["pytest", "tests", "-n", "auto"]]
 
 [tool.ty.environment]

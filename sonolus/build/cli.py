@@ -9,11 +9,10 @@ from time import perf_counter
 from types import ModuleType
 
 from sonolus.backend.excepthook import print_simple_traceback
-from sonolus.backend.optimize.optimize import FAST_PASSES, MINIMAL_PASSES, STANDARD_PASSES
+from sonolus.backend.optimize import FAST_PASSES, MINIMAL_PASSES, STANDARD_PASSES, profiling
 from sonolus.build.collection import Collection
-from sonolus.build.compile import CompileCache
 from sonolus.build.dev_server import run_server
-from sonolus.build.engine import no_gil, package_engine, validate_engine
+from sonolus.build.engine import package_engine, validate_engine
 from sonolus.build.level import package_level_data
 from sonolus.build.project import build_project_to_collection, get_project_schema
 from sonolus.script.internal.context import ProjectContextState, RuntimeChecks
@@ -95,10 +94,9 @@ def build_collection(
     project: Project,
     build_dir: Path,
     config: BuildConfig | None,
-    cache: CompileCache | None = None,
     project_state: ProjectContextState | None = None,
 ) -> Collection:
-    collection = build_project_to_collection(project, config, cache=cache, project_state=project_state)
+    collection = build_project_to_collection(project, config, project_state=project_state)
 
     write_collection(collection, build_dir)
 
@@ -122,7 +120,7 @@ def get_config(args: argparse.Namespace) -> BuildConfig:
     elif hasattr(args, "optimize_standard") and args.optimize_standard:
         optimization_passes = STANDARD_PASSES
     else:
-        optimization_passes = FAST_PASSES if args.command == "dev" else STANDARD_PASSES
+        optimization_passes = STANDARD_PASSES
 
     if any(hasattr(args, attr) and getattr(args, attr) for attr in ["play", "watch", "preview", "tutorial"]):
         build_play = hasattr(args, "play") and args.play
@@ -151,6 +149,16 @@ def get_runtime_checks(args: argparse.Namespace) -> RuntimeChecks:
             "notify": RuntimeChecks.NOTIFY_AND_TERMINATE,
         }[args.runtime_checks]
     return RuntimeChecks.NOTIFY_AND_TERMINATE if args.command == "dev" else RuntimeChecks.NONE
+
+
+def emit_profile(args: argparse.Namespace) -> None:
+    """Print / write the accumulated compile profile if profiling is enabled."""
+    if profiling.enabled:
+        print(profiling.format_text(), file=sys.stderr)
+    json_path = getattr(args, "profile_json", None)
+    if json_path:
+        Path(json_path).write_text(json.dumps(profiling.summary(), indent=2), encoding="utf-8")
+        print(f"Wrote compile profile to {json_path}", file=sys.stderr)
 
 
 def main():
@@ -188,6 +196,14 @@ def main():
         build_components.add_argument("--tutorial", action="store_true", help="Build tutorial component")
 
         parser.add_argument("-v", "--verbose", action="store_true", help="Enable verbose output")
+
+        profile_group = parser.add_argument_group("compile profiling")
+        profile_group.add_argument(
+            "--profile", action="store_true", help="Print a per-stage compile timing summary to stderr"
+        )
+        profile_group.add_argument(
+            "--profile-json", metavar="PATH", help="Write per-stage compile timings as JSON to PATH"
+        )
 
     build_parser = subparsers.add_parser("build")
     build_parser.add_argument(
@@ -229,6 +245,9 @@ def main():
 
     args = parser.parse_args()
 
+    if args.command == "dev" and (getattr(args, "profile", False) or getattr(args, "profile_json", None)):
+        parser.error("--profile/--profile-json are not supported for 'dev'; use 'build' or 'check' instead")
+
     if not args.module:
         default_module = find_default_module()
         if default_module:
@@ -244,8 +263,6 @@ def main():
         elif hasattr(args, "no_gc") and args.no_gc:
             gc.disable()
 
-    if no_gil():
-        print("Multithreading is enabled")
     if hasattr(sys, "_jit") and sys._jit.is_enabled():
         print("Python JIT is enabled")
 
@@ -256,6 +273,12 @@ def main():
         sys.exit(1)
     print(f"Project imported in {end_time - start_time:.2f}s")
 
+    # Enable profiling (if requested) after the import so only the build is timed.
+    if getattr(args, "profile", False) or getattr(args, "profile_json", None):
+        profiling.enable()
+    if profiling.enabled:
+        profiling.reset()
+
     try:
         if args.command == "build":
             build_dir = Path(args.build_dir)
@@ -264,6 +287,7 @@ def main():
             build_project(project, build_dir, config)
             end_time = perf_counter()
             print(f"Project built successfully to '{build_dir.resolve()}' in {end_time - start_time:.2f}s")
+            emit_profile(args)
         elif args.command == "dev":
             build_dir = Path(args.build_dir)
             config = get_config(args)
@@ -278,6 +302,7 @@ def main():
             validate_project(project, config)
             end_time = perf_counter()
             print(f"Project validation completed successfully in {end_time - start_time:.2f}s")
+            emit_profile(args)
     except CompilationError:
         if args.verbose:
             raise

@@ -1,48 +1,61 @@
 Block(JumpLoop(
-  Execute(If(
-    Equal(
-      2
-      Get(
+  Execute(
+    Set(
+      10000
+      0
+      GetShifted(
         4103
-        Add(
-          Multiply(
-            Get(
-              4001
-              0
-            )
-            3
-          )
-          2
+        2
+        Get(
+          4001
+          0
         )
+        3
       )
     )
-    15
-    1
+    If(
+      Equal(
+        Get(
+          10000
+          0
+        )
+        2
+      )
+      2
+      1
+    )
+  )
+  Execute(If(
+    Equal(
+      GetShifted(
+        4103
+        2
+        Get(
+          4001
+          1
+        )
+        3
+      )
+      2
+    )
+    13
+    3
   ))
   Execute(If(
     Equal(
       Get(
-        4103
-        Add(
-          Multiply(
-            Get(
-              4001
-              1
-            )
-            3
-          )
-          2
-        )
+        10000
+        0
       )
       2
     )
-    15
-    2
+    13
+    3
   ))
   Execute(
     Set(
       10000
-      7
+      0
       Multiply(
         Get(
           4001
@@ -53,37 +66,26 @@ Block(JumpLoop(
     )
     Set(
       10000
-      15
-      Multiply(
-        Get(
-          4001
-          1
-        )
-        32
-      )
-    )
-    Set(
-      10000
-      16
-      Add(
-        12
-        Get(
-          10000
-          7
+      1
+      Get(
+        4101
+        Add(
+          12
+          Get(
+            10000
+            0
+          )
         )
       )
     )
     Set(
       10000
-      23
+      1
       Remap(
         Subtract(
           Get(
-            4101
-            Get(
-              10000
-              16
-            )
+            10000
+            1
           )
           Divide(
             6
@@ -94,11 +96,8 @@ Block(JumpLoop(
           )
         )
         Get(
-          4101
-          Get(
-            10000
-            16
-          )
+          10000
+          1
         )
         Get(
           2001
@@ -112,41 +111,41 @@ Block(JumpLoop(
       )
     )
     If(
-      Not(Get(
+      Get(
         2002
         8
-      ))
-      13
-      3
+      )
+      4
+      14
     )
   )
   Execute(If(
     LessOr(
       Get(
         10000
-        23
+        1
       )
       Get(
         2001
         15
       )
     )
-    4
     5
+    6
   ))
   Execute(
     Set(
       10000
-      0
+      2
       0
     )
-    12
+    11
   )
   Execute(If(
     LessOr(
       Get(
         10000
-        23
+        1
       )
       Add(
         Get(
@@ -156,13 +155,13 @@ Block(JumpLoop(
         0.5
       )
     )
-    6
     7
+    8
   ))
   Execute(
     Set(
       10000
-      0
+      2
       Remap(
         Get(
           2001
@@ -179,17 +178,17 @@ Block(JumpLoop(
         1
         Get(
           10000
-          23
+          1
         )
       )
     )
-    12
+    11
   )
   Execute(If(
     LessOr(
       Get(
         10000
-        23
+        1
       )
       Subtract(
         Get(
@@ -199,13 +198,13 @@ Block(JumpLoop(
         0.5
       )
     )
-    8
     9
+    10
   ))
   Execute(
     Set(
       10000
-      0
+      2
       Remap(
         Add(
           Get(
@@ -225,64 +224,55 @@ Block(JumpLoop(
         1
         Get(
           10000
-          23
+          1
         )
       )
     )
-    12
-  )
-  Execute(If(
-    LessOr(
-      Get(
-        10000
-        23
-      )
-      Get(
-        2001
-        14
-      )
-    )
-    10
     11
-  ))
+  )
   Execute(
     Set(
       10000
-      0
-      Remap(
-        Subtract(
+      2
+      If(
+        LessOr(
+          Get(
+            10000
+            1
+          )
           Get(
             2001
             14
           )
-          0.5
         )
-        Get(
-          2001
-          14
+        Remap(
+          Subtract(
+            Get(
+              2001
+              14
+            )
+            0.5
+          )
+          Get(
+            2001
+            14
+          )
+          1
+          0
+          Get(
+            10000
+            1
+          )
         )
-        1
         0
-        Get(
-          10000
-          23
-        )
       )
     )
-    12
+    11
   )
   Execute(
     Set(
       10000
-      0
-      0
-    )
-    12
-  )
-  Execute(
-    Set(
-      10000
-      0
+      2
       Multiply(
         Get(
           2002
@@ -290,7 +280,7 @@ Block(JumpLoop(
         )
         EaseOutQuad(Get(
           10000
-          0
+          2
         ))
       )
     )
@@ -298,82 +288,51 @@ Block(JumpLoop(
       LessOr(
         Get(
           10000
-          0
+          2
         )
         0
       )
-      13
       14
+      12
     )
   )
-  Execute(16)
   Execute(
     Set(
       10000
-      1
-      Multiply(
+      0
+      Get(
+        4101
         Get(
-          4101
-          Get(
-            10000
-            7
-          )
-        )
-        Get(
-          2001
-          12
-        )
-      )
-    )
-    Set(
-      10000
-      2
-      Multiply(
-        Get(
-          4101
-          Get(
-            10000
-            15
-          )
-        )
-        Get(
-          2001
-          12
+          10000
+          0
         )
       )
     )
     Set(
       10000
       3
-      Subtract(
+      Multiply(
         Get(
           10000
-          23
+          0
         )
-        Divide(
-          Get(
-            2001
-            11
-          )
-          2
+        Get(
+          2001
+          12
         )
       )
     )
     Set(
       10000
       4
-      Add(
+      GetShifted(
+        4101
+        0
         Get(
-          10000
-          23
+          4001
+          1
         )
-        Divide(
-          Get(
-            2001
-            11
-          )
-          2
-        )
+        32
       )
     )
     Set(
@@ -381,12 +340,116 @@ Block(JumpLoop(
       5
       Multiply(
         Get(
+          10000
+          4
+        )
+        Get(
+          2001
+          12
+        )
+      )
+    )
+    Set(
+      10000
+      6
+      Subtract(
+        Get(
+          10000
+          1
+        )
+        Divide(
+          Get(
+            2001
+            11
+          )
+          2
+        )
+      )
+    )
+    Set(
+      10000
+      7
+      Add(
+        Get(
+          10000
+          1
+        )
+        Divide(
+          Get(
+            2001
+            11
+          )
+          2
+        )
+      )
+    )
+    Set(
+      10000
+      8
+      Multiply(
+        Get(
+          2001
+          2
+        )
+        Get(
+          10000
+          3
+        )
+      )
+    )
+    Set(
+      10000
+      9
+      Multiply(
+        Get(
+          2001
+          3
+        )
+        Get(
+          10000
+          6
+        )
+      )
+    )
+    Set(
+      10000
+      10
+      Multiply(
+        Get(
+          2001
+          5
+        )
+        Get(
+          10000
+          3
+        )
+      )
+    )
+    Set(
+      10000
+      11
+      Multiply(
+        Get(
+          2001
+          6
+        )
+        Get(
+          10000
+          6
+        )
+      )
+    )
+    Set(
+      10000
+      3
+      Multiply(
+        Get(
           2001
           8
         )
         Get(
           10000
-          1
+          3
         )
       )
     )
@@ -400,71 +463,7 @@ Block(JumpLoop(
         )
         Get(
           10000
-          3
-        )
-      )
-    )
-    Set(
-      10000
-      8
-      Add(
-        Get(
-          10000
-          5
-        )
-        Get(
-          10000
           6
-        )
-        Get(
-          2001
-          10
-        )
-      )
-    )
-    Set(
-      10000
-      9
-      Multiply(
-        Get(
-          2001
-          8
-        )
-        Get(
-          10000
-          2
-        )
-      )
-    )
-    Set(
-      10000
-      10
-      Add(
-        Get(
-          10000
-          9
-        )
-        Get(
-          10000
-          6
-        )
-        Get(
-          2001
-          10
-        )
-      )
-    )
-    Set(
-      10000
-      11
-      Multiply(
-        Get(
-          2001
-          9
-        )
-        Get(
-          10000
-          4
         )
       )
     )
@@ -474,11 +473,11 @@ Block(JumpLoop(
       Add(
         Get(
           10000
-          5
+          3
         )
         Get(
           10000
-          11
+          6
         )
         Get(
           2001
@@ -489,18 +488,14 @@ Block(JumpLoop(
     Set(
       10000
       13
-      Add(
-        Get(
-          10000
-          9
-        )
-        Get(
-          10000
-          11
-        )
+      Multiply(
         Get(
           2001
-          10
+          2
+        )
+        Get(
+          10000
+          5
         )
       )
     )
@@ -510,11 +505,57 @@ Block(JumpLoop(
       Multiply(
         Get(
           2001
-          2
+          5
         )
         Get(
           10000
-          1
+          5
+        )
+      )
+    )
+    Set(
+      10000
+      5
+      Multiply(
+        Get(
+          2001
+          8
+        )
+        Get(
+          10000
+          5
+        )
+      )
+    )
+    Set(
+      10000
+      6
+      Add(
+        Get(
+          10000
+          5
+        )
+        Get(
+          10000
+          6
+        )
+        Get(
+          2001
+          10
+        )
+      )
+    )
+    Set(
+      10000
+      15
+      Multiply(
+        Get(
+          2001
+          3
+        )
+        Get(
+          10000
+          7
         )
       )
     )
@@ -524,95 +565,61 @@ Block(JumpLoop(
       Multiply(
         Get(
           2001
-          3
-        )
-        Get(
-          10000
-          3
-        )
-      )
-    )
-    Set(
-      10000
-      17
-      Multiply(
-        Get(
-          2001
-          5
-        )
-        Get(
-          10000
-          1
-        )
-      )
-    )
-    Set(
-      10000
-      18
-      Multiply(
-        Get(
-          2001
           6
         )
         Get(
           10000
+          7
+        )
+      )
+    )
+    Set(
+      10000
+      7
+      Multiply(
+        Get(
+          2001
+          9
+        )
+        Get(
+          10000
+          7
+        )
+      )
+    )
+    Set(
+      10000
+      3
+      Add(
+        Get(
+          10000
           3
         )
-      )
-    )
-    Set(
-      10000
-      19
-      Multiply(
-        Get(
-          2001
-          3
-        )
         Get(
           10000
-          4
+          7
+        )
+        Get(
+          2001
+          10
         )
       )
     )
     Set(
       10000
-      20
-      Multiply(
-        Get(
-          2001
-          6
-        )
+      5
+      Add(
         Get(
           10000
-          4
-        )
-      )
-    )
-    Set(
-      10000
-      21
-      Multiply(
-        Get(
-          2001
-          2
-        )
-        Get(
-          10000
-          2
-        )
-      )
-    )
-    Set(
-      10000
-      22
-      Multiply(
-        Get(
-          2001
           5
         )
         Get(
           10000
-          2
+          7
+        )
+        Get(
+          2001
+          10
         )
       )
     )
@@ -622,51 +629,11 @@ Block(JumpLoop(
         Add(
           Get(
             10000
-            14
+            8
           )
           Get(
             10000
-            16
-          )
-          Get(
-            2001
-            4
-          )
-        )
-        Get(
-          10000
-          8
-        )
-      )
-      Divide(
-        Add(
-          Get(
-            10000
-            17
-          )
-          Get(
-            10000
-            18
-          )
-          Get(
-            2001
-            7
-          )
-        )
-        Get(
-          10000
-          8
-        )
-      )
-      Divide(
-        Add(
-          Get(
-            10000
-            14
-          )
-          Get(
-            10000
-            19
+            9
           )
           Get(
             2001
@@ -682,11 +649,11 @@ Block(JumpLoop(
         Add(
           Get(
             10000
-            17
+            10
           )
           Get(
             10000
-            20
+            11
           )
           Get(
             2001
@@ -702,11 +669,11 @@ Block(JumpLoop(
         Add(
           Get(
             10000
-            21
+            8
           )
           Get(
             10000
-            19
+            15
           )
           Get(
             2001
@@ -715,34 +682,14 @@ Block(JumpLoop(
         )
         Get(
           10000
-          13
+          3
         )
       )
       Divide(
         Add(
           Get(
             10000
-            22
-          )
-          Get(
-            10000
-            20
-          )
-          Get(
-            2001
-            7
-          )
-        )
-        Get(
-          10000
-          13
-        )
-      )
-      Divide(
-        Add(
-          Get(
-            10000
-            21
+            10
           )
           Get(
             10000
@@ -750,23 +697,43 @@ Block(JumpLoop(
           )
           Get(
             2001
-            4
+            7
           )
         )
         Get(
           10000
-          10
+          3
         )
       )
       Divide(
         Add(
           Get(
             10000
-            22
+            13
           )
           Get(
             10000
-            18
+            15
+          )
+          Get(
+            2001
+            4
+          )
+        )
+        Get(
+          10000
+          5
+        )
+      )
+      Divide(
+        Add(
+          Get(
+            10000
+            14
+          )
+          Get(
+            10000
+            16
           )
           Get(
             2001
@@ -775,7 +742,47 @@ Block(JumpLoop(
         )
         Get(
           10000
-          10
+          5
+        )
+      )
+      Divide(
+        Add(
+          Get(
+            10000
+            13
+          )
+          Get(
+            10000
+            9
+          )
+          Get(
+            2001
+            4
+          )
+        )
+        Get(
+          10000
+          6
+        )
+      )
+      Divide(
+        Add(
+          Get(
+            10000
+            14
+          )
+          Get(
+            10000
+            11
+          )
+          Get(
+            2001
+            7
+          )
+        )
+        Get(
+          10000
+          6
         )
       )
       Add(
@@ -783,36 +790,30 @@ Block(JumpLoop(
         Multiply(
           Min(
             Get(
-              4101
-              Get(
-                10000
-                7
-              )
+              10000
+              0
             )
             Get(
-              4101
-              Get(
-                10000
-                15
-              )
+              10000
+              4
             )
           )
           100
         )
         Get(
           10000
-          23
+          1
         )
       )
       Get(
         10000
-        0
+        2
       )
       0
       0
       0
     )
-    16
+    14
   )
   Execute(
     Set(
@@ -820,7 +821,7 @@ Block(JumpLoop(
       0
       1
     )
-    16
+    14
   )
   0
 ))

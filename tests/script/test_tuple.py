@@ -64,7 +64,7 @@ def test_tuple_addition_heterogeneous():
 
 def test_tuple_addition_chained():
     def fn():
-        t = (1,) + (2, 3) + (4,) + (5, 6, 7)
+        t = (1,) + (2, 3) + (4,) + (5, 6, 7)  # noqa: RUF005
         a, b, c, d, e, f, g = t
         return Array(a, b, c, d, e, f, g)
 
@@ -86,7 +86,7 @@ def test_tuple_addition_with_runtime_values():
 def test_tuple_addition_iteration():
     def fn():
         results = VarArray[int, 5].new()
-        for v in (1, 2) + (3, 4, 5):
+        for v in (1, 2) + (3, 4, 5):  # noqa: RUF005
             results.append(v)
         return results
 

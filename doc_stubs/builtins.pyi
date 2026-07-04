@@ -92,10 +92,8 @@ def dict(*args, **kwargs) -> builtins.dict:
     All dict keys must be compile-time constants. Dynamic access using a key that is not
     a compile-time constant is only supported for numeric, Array, and Record values.
 
-    Args:
-        mapping_or_iterable: An optional dict to copy from, or an iterable of
-            ``(key, value)`` pairs.
-        **kwargs: Optional keyword arguments to include in the dict.
+    Accepts an optional dict to copy from or an iterable of ``(key, value)`` pairs, plus
+    optional keyword arguments to include in the dict.
 
     Returns:
         A new dict.
@@ -340,10 +338,8 @@ def set[T](iterable: Iterable[T]) -> builtins.set[T]: ...
 def set(*args) -> builtins.set:
     """Construct a set from an iterable.
 
-    All set members must be compile-time constants.
-
-    Args:
-        iterable: An optional iterable of compile-time constant values.
+    All set members must be compile-time constants. Accepts an optional iterable of
+    compile-time constant values.
 
     Returns:
         A new set.

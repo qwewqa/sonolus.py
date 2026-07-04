@@ -1,47 +1,21 @@
 Block(JumpLoop(
+  Execute(If(
+    NotEqual(
+      Get(
+        4000
+        2
+      )
+      0
+    )
+    1
+    2
+  ))
   Execute(
     Set(
       10000
       0
-      Get(
-        4000
-        2
-      )
-    )
-    Set(
-      10000
-      1
-      NotEqual(
-        Get(
-          10000
-          0
-        )
-        0
-      )
-    )
-    If(
-      Get(
-        10000
-        1
-      )
-      1
-      2
-    )
-  )
-  Execute(
-    Set(
-      10000
-      2
-      Get(
-        4000
-        2
-      )
-    )
-    Set(
-      10000
-      3
       DestroyParticleEffect(Get(
-        10000
+        4000
         2
       ))
     )
@@ -50,7 +24,7 @@ Block(JumpLoop(
       2
       0
     )
-    2
+    3
   )
   Execute(3)
   0

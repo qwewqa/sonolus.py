@@ -1,12 +1,18 @@
-from collections.abc import Callable, Sequence
+from collections.abc import Callable
 from contextvars import ContextVar
 from typing import Any, Literal, Never, assert_never
 
 from sonolus.backend.mode import Mode
 from sonolus.backend.ops import Op
+from sonolus.backend.optimize import (
+    FAST_PASSES,
+    MINIMAL_PASSES,
+    STANDARD_PASSES,
+    OptimizationLevel,
+    OptimizerConfig,
+    run_passes,
+)
 from sonolus.backend.optimize.flow import cfg_to_mermaid
-from sonolus.backend.optimize.passes import CompilerPass, OptimizerConfig, run_passes
-from sonolus.backend.optimize.simplify import RenumberVars
 from sonolus.script.internal.context import ModeContextState, ProjectContextState, RuntimeChecks, ctx, set_ctx
 from sonolus.script.internal.impl import validate_value
 from sonolus.script.internal.meta_fn import meta_fn
@@ -205,27 +211,17 @@ def visualize_cfg(
     callback: str = "",
     archetype: type | None = None,
     archetypes: list[type] | None = None,
-    passes: Sequence[CompilerPass] | Literal["minimal", "fast", "standard"] = "fast",
+    passes: OptimizationLevel | Literal["minimal", "fast", "standard"] = "standard",
 ) -> str:
-    from sonolus.backend.optimize.optimize import FAST_PASSES, MINIMAL_PASSES, STANDARD_PASSES
     from sonolus.build.compile import callback_to_cfg
 
-    match passes:
-        case "minimal":
-            passes = [
-                *MINIMAL_PASSES[:-1],
-                RenumberVars(),
-            ]
-        case "fast":
-            passes = [
-                *FAST_PASSES[:-1],
-                RenumberVars(),
-            ]
-        case "standard":
-            passes = [
-                *STANDARD_PASSES[:-1],
-                RenumberVars(),
-            ]
+    levels = {"minimal": MINIMAL_PASSES, "fast": FAST_PASSES, "standard": STANDARD_PASSES}
+    if isinstance(passes, str):
+        if passes not in levels:
+            raise ValueError(f"Unknown optimization level {passes!r} (expected 'minimal', 'fast', or 'standard')")
+        level = levels[passes]
+    else:
+        level = passes
 
     project_state = ProjectContextState(runtime_checks=RuntimeChecks.NOTIFY_AND_TERMINATE)
     mode_state = ModeContextState(
@@ -234,7 +230,9 @@ def visualize_cfg(
     )
 
     cfg = callback_to_cfg(project_state, mode_state, fn, callback, archetype=archetype)  # type: ignore
-    cfg = run_passes(cfg, passes, OptimizerConfig(mode=mode))
+    # allocate=False: visualizations show pre-allocation temps rather than packed
+    # block-10000 offsets.
+    cfg = run_passes(cfg, level, OptimizerConfig(mode=mode), allocate=False)
     return cfg_to_mermaid(cfg)
 
 

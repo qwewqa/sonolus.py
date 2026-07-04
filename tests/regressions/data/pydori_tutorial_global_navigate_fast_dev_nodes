@@ -1,79 +1,24 @@
 Block(JumpLoop(
-  Execute(
-    Set(
-      10000
-      0
-      Greater(
-        Get(
-          1001
-          2
-        )
-        0
-      )
-    )
-    If(
+  Execute(If(
+    Greater(
       Get(
-        10000
-        0
-      )
-      1
-      2
-    )
-  )
-  Execute(
-    Set(
-      10000
-      1
-      Get(
-        2000
-        0
-      )
-    )
-    Set(
-      10000
-      2
-      Add(
-        Get(
-          10000
-          1
-        )
-        1
-      )
-    )
-    Set(
-      2000
-      0
-      Get(
-        10000
+        1001
         2
       )
+      0
     )
-    Set(
-      10000
-      3
-      Get(
-        2000
-        0
-      )
-    )
-    Set(
-      10000
-      4
-      Mod(
-        Get(
-          10000
-          3
-        )
-        7
-      )
-    )
-    Set(
+    1
+    2
+  ))
+  Execute(
+    IncrementPost(
       2000
       0
-      Get(
-        10000
-        4
-      )
+    )
+    SetMod(
+      2000
+      0
+      7
     )
     Set(
       2000
@@ -86,59 +31,14 @@ Block(JumpLoop(
     3
   )
   Execute(
-    Set(
-      10000
-      1
-      Get(
-        2000
-        0
-      )
-    )
-    Set(
-      10000
-      2
-      Subtract(
-        Get(
-          10000
-          1
-        )
-        1
-      )
-    )
-    Set(
+    DecrementPost(
       2000
       0
-      Get(
-        10000
-        2
-      )
     )
-    Set(
-      10000
-      3
-      Get(
-        2000
-        0
-      )
-    )
-    Set(
-      10000
-      4
-      Mod(
-        Get(
-          10000
-          3
-        )
-        7
-      )
-    )
-    Set(
+    SetMod(
       2000
       0
-      Get(
-        10000
-        4
-      )
+      7
     )
     Set(
       2000
@@ -150,6 +50,5 @@ Block(JumpLoop(
     )
     3
   )
-  Execute(4)
   0
 ))

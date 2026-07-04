@@ -1,7 +1,7 @@
 0:
-  10000[0] <- 3.0 + EntityInfo[1]
-  goto when EngineRom[10000[0]]
-    6.0 -> 80
+  10000[0] <- EngineRom[(3.0 + EntityInfo[1])]
+  goto when 10000[0]
+    6.0 -> 79
     default -> 1
 1:
   goto 2 if (RuntimeUpdate[0] > EntityData[15]) else 3
@@ -13,27 +13,21 @@
 4:
   goto 5 if (RuntimeUpdate[0] <= EntityData[15]) else 8
 5:
-  10000[1] <- LevelMemory[0]
-  goto 6 if (10000[1] < 16.0) else 7
+  goto 6 if (LevelMemory[0] < 16.0) else 7
 6:
-  10000[1] <- LevelMemory[0]
-  LevelMemory[10000[1] + 1] <- EntityInfo[0]
-  10000[1] <- LevelMemory[0]
-  LevelMemory[0] <- 10000[1] + 1.0
+  LevelMemory[LevelMemory[0] + 1] <- EntityInfo[0]
+  IncrementPost(2000, 0)
   goto 8
 7:
   DebugLog(1.0)
   DebugPause()
   goto exit
 8:
-  10000[1] <- EntityMemory[0]
-  goto 9 if (10000[1] > -100000000.0) else 52
+  goto 9 if (EntityMemory[0] > -100000000.0) else 51
 9:
-  10000[1] <- EntityMemory[0]
-  goto 10 if (10000[1] < EntityData[11]) else 11
+  goto 10 if (EntityMemory[0] < EntityData[11]) else 11
 10:
-  10000[1] <- EntityMemory[0]
-  goto 11 if !(((RuntimeUpdate[0] - RuntimeEnvironment[3]) - EntityData[11]) < (EntityData[11] - 10000[1])) else 52
+  goto 51 if (((RuntimeUpdate[0] - RuntimeEnvironment[3]) - EntityData[11]) < (EntityData[11] - EntityMemory[0])) else 11
 11:
   10000[1] <- EntityMemory[0]
   goto 12 if ((EntityData[11] - 0.03333333333333333) <= 10000[1]) else 14
@@ -43,281 +37,260 @@
   EntityMemory[0] <- EntityData[11]
   goto 14
 14:
-  10000[2] <- EntityMemory[0]
-  10000[1] <- Judge(10000[2], EntityData[11], EntityData[5], EntityData[6], EntityData[7], EntityData[8], EntityData[9], EntityData[10])
-  EntityInput[0] <- 10000[1]
-  EntityInput[1] <- Clamp(10000[2] - EntityData[11], -1.0, 1.0)
-  10000[2] <- EntityInput[1]
-  EntityInput[3] <- 10000[2] * 1000.0
-  goto 15 if (0 != 10000[1]) else 51
+  10000[1] <- EntityMemory[0]
+  10000[2] <- Judge(10000[1], EntityData[11], EntityData[5], EntityData[6], EntityData[7], EntityData[8], EntityData[9], EntityData[10])
+  EntityInput[0] <- 10000[2]
+  EntityInput[1] <- Clamp(10000[1] - EntityData[11], -1.0, 1.0)
+  EntityInput[3] <- EntityInput[1] * 1000.0
+  goto 15 if (10000[2] != 0) else 50
 15:
-  goto 16 if !LevelOption[11] else 28
+  goto 29 if LevelOption[11] else 16
 16:
-  10000[2] <- EngineRom[10000[0]]
-  goto 28 if !LevelOption[10] else 17
+  goto 17 if LevelOption[10] else 29
 17:
-  goto when 10000[2]
-    6.0 -> 28
+  goto when (10000[0] - 2.0)
+    0 -> 23
+    1 -> 23
+    4 -> 29
     default -> 18
 18:
-  10000[3] <- 0
-  goto when (10000[2] - 2.0)
-    0.0 -> 23
-    1.0 -> 23
+  goto when (10000[2] - 1.0)
+    0 -> 22
+    1 -> 21
+    2 -> 20
     default -> 19
 19:
-  goto when (10000[1] - 1.0)
-    0.0 -> 22
-    1.0 -> 21
-    2.0 -> 20
-    default -> 27
+  10000[1] <- 0
+  goto 28
 20:
-  10000[3] <- 3.0
-  goto 27
+  10000[1] <- 3.0
+  goto 28
 21:
-  10000[3] <- 2.0
-  goto 27
+  10000[1] <- 2.0
+  goto 28
 22:
-  10000[3] <- 1.0
-  goto 27
+  10000[1] <- 1.0
+  goto 28
 23:
-  goto when (10000[1] - 1.0)
-    0.0 -> 26
-    1.0 -> 25
-    2.0 -> 24
-    default -> 27
+  goto when (10000[2] - 1.0)
+    0 -> 27
+    1 -> 26
+    2 -> 25
+    default -> 24
 24:
-  10000[3] <- 6.0
-  goto 27
+  10000[1] <- 0
+  goto 28
 25:
-  10000[3] <- 5.0
-  goto 27
+  10000[1] <- 6.0
+  goto 28
 26:
-  10000[3] <- 4.0
-  goto 27
+  10000[1] <- 5.0
+  goto 28
 27:
-  Play(10000[3], 0)
+  10000[1] <- 4.0
   goto 28
 28:
-  10000[26] <- EngineRom[10000[0]]
-  goto when 10000[26]
-    6.0 -> 51
-    default -> 29
+  Play(10000[1], 0)
+  goto 29
 29:
-  goto 51 if !LevelOption[6] else 30
+  goto when 10000[0]
+    6.0 -> 50
+    default -> 30
 30:
-  10000[27] <- 0
-  goto when 10000[26]
-    1.0 -> 36
-    2.0 -> 35
-    3.0 -> 32
-    4.0 -> 31
-    5.0 -> 31
-    7.0 -> 31
-    default -> 37
+  goto 31 if LevelOption[6] else 50
 31:
-  10000[27] <- 3.0
-  goto 37
+  goto when (10000[0] - 1.0)
+    0 -> 36
+    1 -> 35
+    2 -> 34
+    3 -> 33
+    4 -> 33
+    6 -> 33
+    default -> 32
 32:
-  goto 33 if (EntityData[2] > 0) else 34
+  10000[1] <- 0
+  goto 37
 33:
-  10000[27] <- 8.0
+  10000[1] <- 3.0
   goto 37
 34:
-  10000[27] <- 10.0
+  10000[1] <- If(EntityData[2] > 0, 8.0, 10.0)
   goto 37
 35:
-  10000[27] <- 6.0
+  10000[1] <- 6.0
   goto 37
 36:
-  10000[27] <- 1.0
+  10000[1] <- 1.0
   goto 37
 37:
-  10000[0] <- EntityData[0] * LevelData[12]
-  10000[1] <- 10000[0] - (LevelData[11] / 2.0)
-  10000[2] <- (LevelData[8] * 10000[1]) + LevelData[10]
-  10000[3] <- ((LevelData[2] * 10000[1]) + LevelData[4]) / 10000[2]
-  10000[4] <- ((LevelData[5] * 10000[1]) + LevelData[7]) / 10000[2]
-  10000[5] <- 10000[0] + (LevelData[11] / 2.0)
-  10000[6] <- (LevelData[8] * 10000[5]) + LevelData[10]
-  10000[7] <- ((LevelData[2] * 10000[5]) + LevelData[4]) / 10000[6]
-  10000[8] <- ((LevelData[5] * 10000[5]) + LevelData[7]) / 10000[6]
-  10000[9] <- Power(Power(10000[7] - 10000[3], 2.0) + Power(10000[8] - 10000[4], 2.0), 0.5)
-  SpawnParticleEffect(10000[27], 10000[3], 10000[4], 10000[3] + 0, 10000[4] + 10000[9], 10000[7] + 0, 10000[8] + 10000[9], 10000[7], 10000[8], 0.5, 0)
-  10000[25] <- 0
-  goto when 10000[26]
-    1.0 -> 43
-    2.0 -> 42
-    3.0 -> 39
-    4.0 -> 38
-    5.0 -> 38
-    7.0 -> 38
-    default -> 44
+  10000[2] <- EntityData[0] * LevelData[12]
+  10000[3] <- 10000[2] - (LevelData[11] / 2.0)
+  10000[4] <- (LevelData[8] * 10000[3]) + LevelData[10]
+  10000[5] <- ((LevelData[2] * 10000[3]) + LevelData[4]) / 10000[4]
+  10000[3] <- ((LevelData[5] * 10000[3]) + LevelData[7]) / 10000[4]
+  10000[4] <- 10000[2] + (LevelData[11] / 2.0)
+  10000[6] <- (LevelData[8] * 10000[4]) + LevelData[10]
+  10000[7] <- ((LevelData[2] * 10000[4]) + LevelData[4]) / 10000[6]
+  10000[4] <- ((LevelData[5] * 10000[4]) + LevelData[7]) / 10000[6]
+  10000[6] <- Power(Power(10000[7] - 10000[5], 2.0) + Power(10000[4] - 10000[3], 2.0), 0.5)
+  SpawnParticleEffect(10000[1], 10000[5], 10000[3], 10000[5], 10000[3] + 10000[6], 10000[7], 10000[4] + 10000[6], 10000[7], 10000[4], 0.5, 0)
+  goto when (10000[0] - 1.0)
+    0 -> 42
+    1 -> 41
+    2 -> 40
+    3 -> 39
+    4 -> 39
+    6 -> 39
+    default -> 38
 38:
-  10000[25] <- 4.0
-  goto 44
+  10000[0] <- 0
+  goto 43
 39:
-  goto 40 if (EntityData[2] > 0) else 41
+  10000[0] <- 4.0
+  goto 43
 40:
-  10000[25] <- 9.0
-  goto 44
+  10000[0] <- If(EntityData[2] > 0, 9.0, 11.0)
+  goto 43
 41:
-  10000[25] <- 11.0
-  goto 44
+  10000[0] <- 7.0
+  goto 43
 42:
-  10000[25] <- 7.0
-  goto 44
+  10000[0] <- 2.0
+  goto 43
 43:
-  10000[25] <- 2.0
-  goto 44
+  10000[1] <- 10000[2] + ((LevelData[11] * 1.8) / 2.0)
+  SetSubtract(10000, 2.0, (LevelData[11] * 1.8) / 2.0)
+  10000[3] <- LevelData[2] * 10000[2]
+  10000[4] <- LevelData[5] * 10000[2]
+  10000[2] <- LevelData[8] * 10000[2]
+  10000[5] <- 10000[2] + (LevelData[9] * -((LevelData[11] * 1.8) / 2.0)) + LevelData[10]
+  10000[6] <- (10000[3] + (LevelData[3] * -((LevelData[11] * 1.8) / 2.0)) + LevelData[4]) / 10000[5]
+  10000[7] <- LevelData[2] * 10000[1]
+  10000[8] <- LevelData[5] * 10000[1]
+  10000[1] <- LevelData[8] * 10000[1]
+  10000[9] <- 10000[1] + (LevelData[9] * -((LevelData[11] * 1.8) / 2.0)) + LevelData[10]
+  10000[10] <- (10000[7] + (LevelData[3] * -((LevelData[11] * 1.8) / 2.0)) + LevelData[4]) / 10000[9]
+  10000[2] <- 10000[2] + (LevelData[9] * ((LevelData[11] * 1.8) / 2.0)) + LevelData[10]
+  10000[3] <- (10000[3] + (LevelData[3] * ((LevelData[11] * 1.8) / 2.0)) + LevelData[4]) / 10000[2]
+  10000[1] <- 10000[1] + (LevelData[9] * ((LevelData[11] * 1.8) / 2.0)) + LevelData[10]
+  10000[7] <- (10000[7] + (LevelData[3] * ((LevelData[11] * 1.8) / 2.0)) + LevelData[4]) / 10000[1]
+  10000[11] <- (10000[3] + 10000[7]) / 2.0
+  10000[12] <- (10000[6] + 10000[10]) / 2.0
+  10000[3] <- ((((10000[7] - 10000[3]) + 10000[10]) - 10000[6]) / 2.0) / 2.0
+  SpawnParticleEffect(10000[0], 10000[12] - 10000[3], (10000[4] + (LevelData[6] * -((LevelData[11] * 1.8) / 2.0)) + LevelData[7]) / 10000[5], 10000[11] - 10000[3], (10000[4] + (LevelData[6] * ((LevelData[11] * 1.8) / 2.0)) + LevelData[7]) / 10000[2], 10000[11] + 10000[3], (10000[8] + (LevelData[6] * ((LevelData[11] * 1.8) / 2.0)) + LevelData[7]) / 10000[1], 10000[12] + 10000[3], (10000[8] + (LevelData[6] * -((LevelData[11] * 1.8) / 2.0)) + LevelData[7]) / 10000[9], 0.5, 0)
+  goto 44 if LevelOption[7] else 50
 44:
-  10000[2] <- 10000[0] + ((LevelData[11] * 1.8) / 2.0)
-  10000[3] <- 10000[0] - ((LevelData[11] * 1.8) / 2.0)
-  10000[4] <- LevelData[8] * 10000[3]
-  10000[5] <- -((LevelData[11] * 1.8) / 2.0)
-  10000[6] <- LevelData[9] * 10000[5]
-  10000[7] <- 10000[4] + 10000[6] + LevelData[10]
-  10000[8] <- LevelData[2] * 10000[3]
-  10000[9] <- LevelData[3] * 10000[5]
-  10000[10] <- (10000[8] + 10000[9] + LevelData[4]) / 10000[7]
-  10000[11] <- LevelData[8] * 10000[2]
-  10000[12] <- 10000[11] + 10000[6] + LevelData[10]
-  10000[13] <- LevelData[2] * 10000[2]
-  10000[14] <- (10000[13] + 10000[9] + LevelData[4]) / 10000[12]
-  10000[15] <- LevelData[9] * ((LevelData[11] * 1.8) / 2.0)
-  10000[16] <- 10000[4] + 10000[15] + LevelData[10]
-  10000[17] <- LevelData[3] * ((LevelData[11] * 1.8) / 2.0)
-  10000[18] <- (10000[8] + 10000[17] + LevelData[4]) / 10000[16]
-  10000[19] <- 10000[11] + 10000[15] + LevelData[10]
-  10000[20] <- (10000[13] + 10000[17] + LevelData[4]) / 10000[19]
-  10000[21] <- (10000[18] + 10000[20]) / 2.0
-  10000[22] <- (10000[10] + 10000[14]) / 2.0
-  10000[23] <- ((((10000[20] - 10000[18]) + 10000[14]) - 10000[10]) / 2.0) / 2.0
-  10000[24] <- LevelData[5] * 10000[3]
-  10000[0] <- LevelData[6] * -((LevelData[11] * 1.8) / 2.0)
-  10000[1] <- LevelData[6] * ((LevelData[11] * 1.8) / 2.0)
-  10000[2] <- LevelData[5] * 10000[2]
-  SpawnParticleEffect(10000[25], 10000[22] - 10000[23], (10000[24] + 10000[0] + LevelData[7]) / 10000[7], 10000[21] - 10000[23], (10000[24] + 10000[1] + LevelData[7]) / 10000[16], 10000[21] + 10000[23], (10000[2] + 10000[1] + LevelData[7]) / 10000[19], 10000[22] + 10000[23], (10000[2] + 10000[0] + LevelData[7]) / 10000[12], 0.5, 0)
-  goto 51 if !LevelOption[7] else 45
+  10000[0] <- 0
+  goto 45
 45:
-  10000[1] <- 0
-  goto 46
+  goto 46 if (10000[0] < LevelData[16]) else 49
 46:
-  goto 47 if (10000[1] < LevelData[16]) else 50
+  10000[1] <- 10000[0] + 1.0
+  10000[0] <- 16.0 + (10000[0] * 9.0)
+  goto 47 if (EntityData[0] == LevelData[10000[0] + 1]) else 48
 47:
-  10000[0] <- 10000[1] + 1.0
-  10000[1] <- 16.0 + (10000[1] * 9.0)
-  goto 48 if (LevelData[10000[1] + 1] == EntityData[0]) else 49
+  SpawnParticleEffect(0, LevelData[10000[0] + 2], LevelData[10000[0] + 3], LevelData[10000[0] + 4], LevelData[10000[0] + 5], LevelData[10000[0] + 6], LevelData[10000[0] + 7], LevelData[10000[0] + 8], LevelData[10000[0] + 9], 0.2, 0)
+  goto 50
 48:
-  SpawnParticleEffect(0, LevelData[10000[1] + 2], LevelData[10000[1] + 3], LevelData[10000[1] + 4], LevelData[10000[1] + 5], LevelData[10000[1] + 6], LevelData[10000[1] + 7], LevelData[10000[1] + 8], LevelData[10000[1] + 9], 0.2, 0)
-  goto 51
+  10000[0] <- 10000[1]
+  goto 45
 49:
-  10000[1] <- 10000[0]
-  goto 46
-50:
   DebugLog(2.0)
   DebugPause()
   goto exit
-51:
+50:
   EntityDespawn[0] <- 1.0
   EntitySharedMemory[2] <- 1.0
-  goto 53 if (EntityData[16] >= 0) else 79
+  goto 52 if (EntityData[16] >= 0) else 78
+51:
+  goto 52 if (EntityData[16] >= 0) else 78
 52:
-  goto 53 if (EntityData[16] >= 0) else 79
+  10000[0] <- EntityInfoArray[(EntityData[16] * 3.0) + 1]
+  10000[1] <- ((10000[0] >= -14.0) && (10000[0] < 14.0)) && (10000[0] == Trunc(10000[0]))
+  goto 53 if 10000[1] else 77
 53:
-  10000[0] <- EntityData[16] * 3.0
-  10000[1] <- ((EntityInfoArray[10000[0] + 1] >= -14.0) && (EntityInfoArray[10000[0] + 1] < 14.0)) && (EntityInfoArray[10000[0] + 1] == Trunc(EntityInfoArray[10000[0] + 1]))
-  goto 54 if 10000[1] else 78
-54:
-  10000[3] <- EngineRom[(52.0 + (EntityInfoArray[10000[0] + 1] + ((EntityInfoArray[10000[0] + 1] < 0) * 14.0)))]
-  10000[2] <- 10000[3] + 1.0
-  10000[5] <- EngineRom[10000[3]]
+  10000[0] <- EngineRom[(52.0 + (10000[0] + ((10000[0] < 0) * 14.0)))]
+  10000[2] <- 10000[0] + 1.0
+  10000[0] <- EngineRom[10000[0]]
   10000[3] <- 0
-  goto 55
+  goto 54
+54:
+  goto 55 if (10000[3] < 10000[0]) else 76
 55:
-  goto 56 if (10000[3] < 10000[5]) else 77
+  goto when 3000[(10000[2] + 10000[3])]
+    13.0 -> 57
+    default -> 56
 56:
-  goto when EngineRom[(10000[2] + 10000[3])]
-    13.0 -> 58
-    default -> 57
+  IncrementPost(10000, 3.0)
+  goto 54
 57:
-  10000[3] <- 10000[3] + 1.0
-  goto 55
-58:
   10000[3] <- EntityData[16] * 32.0
-  10000[4] <- EntitySharedMemoryArray[10000[3]]
-  goto 59 if (10000[4] > 0) else 76
+  goto 58 if (EntitySharedMemoryArray[10000[3]] > 0) else 75
+58:
+  goto 59 if (EntityData[16] >= 0) else 74
 59:
-  goto 60 if (EntityData[16] >= 0) else 75
+  goto 60 if 10000[1] else 73
 60:
-  goto 61 if 10000[1] else 74
+  10000[1] <- 0
+  goto 61
 61:
-  10000[4] <- 0
-  goto 62
+  goto 62 if (10000[1] < 10000[0]) else 72
 62:
-  goto 63 if (10000[4] < 10000[5]) else 73
+  goto when 3000[(10000[2] + 10000[1])]
+    13.0 -> 64
+    default -> 63
 63:
-  goto when EngineRom[(10000[2] + 10000[4])]
-    13.0 -> 65
-    default -> 64
+  IncrementPost(10000, 1.0)
+  goto 61
 64:
-  10000[4] <- 10000[4] + 1.0
-  goto 62
+  10000[0] <- EntitySharedMemoryArray[10000[3]]
+  goto 75 if (LevelMemory[17] >= 16.0) else 65
 65:
-  10000[1] <- EntitySharedMemoryArray[10000[3]]
-  10000[2] <- LevelMemory[17]
-  goto 76 if (10000[2] >= 16.0) else 66
+  10000[1] <- 0
+  goto 66
 66:
-  10000[0] <- 0
-  goto 67
+  goto 67 if (10000[1] < LevelMemory[17]) else 69
 67:
-  10000[2] <- LevelMemory[17]
-  goto 68 if (10000[0] < 10000[2]) else 70
+  goto 75 if (10000[0] == LevelMemory[(17 + 10000[1]) + 1]) else 68
 68:
-  10000[2] <- LevelMemory[(17.0 + 10000[0]) + 1]
-  goto 76 if (10000[1] == 10000[2]) else 69
+  IncrementPost(10000, 1.0)
+  goto 66
 69:
-  10000[0] <- 10000[0] + 1.0
-  goto 67
+  goto 70 if (LevelMemory[17] < 16.0) else 71
 70:
-  10000[2] <- LevelMemory[17]
-  goto 71 if (10000[2] < 16.0) else 72
-71:
-  10000[2] <- LevelMemory[17]
-  LevelMemory[(17.0 + 10000[2]) + 1] <- 10000[1]
-  10000[0] <- LevelMemory[17]
-  LevelMemory[17] <- 10000[0] + 1.0
+  LevelMemory[(17 + LevelMemory[17]) + 1] <- 10000[0]
+  IncrementPost(2000, 17)
   goto exit
-72:
+71:
   DebugLog(9.0)
   DebugPause()
   goto exit
-73:
+72:
   DebugLog(8.0)
   DebugPause()
   goto exit
-74:
+73:
   DebugLog(7.0)
   DebugPause()
   goto exit
-75:
+74:
   DebugLog(6.0)
   DebugPause()
   goto exit
-76:
+75:
   goto exit
-77:
+76:
   DebugLog(5.0)
   DebugPause()
   goto exit
-78:
+77:
   DebugLog(4.0)
   DebugPause()
   goto exit
-79:
+78:
   DebugLog(3.0)
   DebugPause()
   goto exit
-80:
+79:
   EntityDespawn[0] <- 1.0
   goto exit
