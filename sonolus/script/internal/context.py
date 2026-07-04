@@ -7,7 +7,7 @@ from enum import Enum
 from threading import Lock
 from typing import TYPE_CHECKING, Any, Literal, Self
 
-from sonolus.backend.blocks import BlockData, PlayBlock
+from sonolus.backend.blocks import BLOCK_MEMORY_SIZES, BlockData, PlayBlock
 from sonolus.backend.ir import IRConst, IRExpr, IRStmt
 from sonolus.backend.mode import Mode
 from sonolus.backend.optimize.flow import BasicBlock, FlowEdge
@@ -18,6 +18,7 @@ from sonolus.backend.place import (
     TempBlock,
     preallocated_temp_block_places,
 )
+from sonolus.script.internal.error import CompilationError
 from sonolus.script.internal.value import Value
 
 if TYPE_CHECKING:
@@ -416,8 +417,16 @@ class Context:
             if value not in self.mode_state.environment_mappings:
                 if value.offset is None:
                     offset = self.mode_state.environment_offsets.get(block, 0)
+                    new_size = offset + value.size
+                    capacity = BLOCK_MEMORY_SIZES.get(block)
+                    if capacity is not None and new_size > capacity:
+                        raise CompilationError(
+                            f"The {block} memory block exceeded its maximum size in "
+                            f"{self.mode_state.mode.name} mode: {new_size} values are used, but the maximum "
+                            f"is {capacity}. Reduce the amount of data stored in {block}."
+                        )
                     self.mode_state.environment_mappings[value] = offset
-                    self.mode_state.environment_offsets[block] = offset + value.size
+                    self.mode_state.environment_offsets[block] = new_size
                 else:
                     self.mode_state.environment_mappings[value] = value.offset
             return BlockPlace(block, self.mode_state.environment_mappings[value])

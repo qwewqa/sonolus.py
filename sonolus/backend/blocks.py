@@ -894,3 +894,14 @@ class WatchBlock(BlockEnum):
 
 
 type Block = TutorialBlock | PlayBlock | PreviewBlock | WatchBlock
+
+
+BLOCK_MEMORY_SIZES: dict[Block, int] = {
+    PlayBlock.LevelMemory: 4096,
+    PlayBlock.LevelData: 4096,
+    WatchBlock.LevelMemory: 4096,
+    WatchBlock.LevelData: 4096,
+    PreviewBlock.PreviewData: 4096,
+    TutorialBlock.TutorialMemory: 4096,
+    TutorialBlock.TutorialData: 4096,
+}
