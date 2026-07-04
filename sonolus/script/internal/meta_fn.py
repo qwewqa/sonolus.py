@@ -35,6 +35,7 @@ def meta_fn(fn=None, *, show_in_stack: bool = True):
         else:
             qualified_name = f"<unknown>.{getattr(base_fn, '__qualname__', function_name)}"
         source_file, node = get_function(base_fn)
+        stack_entry = f'File "{source_file}", line {node.lineno}, in {function_name}'
 
         @wraps(fn)
         def wrapper(*args, **kwargs):
@@ -43,7 +44,7 @@ def meta_fn(fn=None, *, show_in_stack: bool = True):
                 debug_stack = ctx().callback_state.debug_stack
                 try:
                     if show_in_stack:
-                        debug_stack.append(f'File "{source_file}", line {node.lineno}, in {function_name}')
+                        debug_stack.append(stack_entry)
                     return fn(*args, **kwargs)
                 finally:
                     if show_in_stack:

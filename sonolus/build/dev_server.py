@@ -29,6 +29,7 @@ from sonolus.build.project import (
 )
 from sonolus.script.internal.context import ProjectContextState
 from sonolus.script.internal.error import CompilationError
+from sonolus.script.internal.visitor import clear_frontend_caches
 
 if TYPE_CHECKING:
     from sonolus.script.project import BuildConfig, Project
@@ -122,6 +123,7 @@ class RebuildCommand:
         get_function.cache_clear()
         get_tree_from_file.cache_clear()
         get_functions.cache_clear()
+        clear_frontend_caches()
         print("Rebuilding...")
         try:
             start_time = perf_counter()

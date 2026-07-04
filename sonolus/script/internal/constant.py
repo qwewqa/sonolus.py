@@ -36,12 +36,13 @@ class ConstantValue(Value):
 
     @classmethod
     def of(cls, value: Any) -> Self:
-        if value in cls._parameterized_:
-            return cls._parameterized_[value]()
-
-        parameterized = cls._get_parameterized(value)
-        cls._parameterized_[value] = parameterized
-        return parameterized()
+        parameterized = cls._parameterized_.get(value)
+        if parameterized is None:
+            parameterized = cls._get_parameterized(value)
+            cls._parameterized_[value] = parameterized
+        # Parameterized classes always have _value set, so calling parameterized()
+        # would just return parameterized.instance; return it directly.
+        return parameterized.instance
 
     @classmethod
     def _get_parameterized(cls, parameter: Any) -> type[Self]:

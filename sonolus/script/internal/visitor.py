@@ -4,6 +4,8 @@ import ast
 import builtins
 import functools
 import inspect
+import os
+from collections import ChainMap
 from collections.abc import Callable, Iterable, Sequence
 from inspect import ismethod
 from time import perf_counter_ns
@@ -11,7 +13,7 @@ from types import FunctionType, MethodType, MethodWrapperType
 from typing import Any, Never
 
 from sonolus.backend.excepthook import install_excepthook
-from sonolus.backend.utils import get_function, scan_writes
+from sonolus.backend.utils import get_function, get_signature, scan_writes
 from sonolus.script.debug import assert_true
 from sonolus.script.internal.builtin_impls import BUILTIN_IMPLS, _bool, _float, _int, _len, _super
 from sonolus.script.internal.constant import ConstantValue
@@ -44,6 +46,9 @@ _compiler_internal_ = True
 def compile_and_call[**P, R](fn: Callable[P, R], /, *args: P.args, **kwargs: P.kwargs) -> R:
     if not ctx():
         return fn(*args, **kwargs)
+    if type(fn) is FunctionType and not fn.__dict__.get("_meta_fn_", False):
+        # Fast path equivalent to the FunctionType arm of generate_fn_impl.
+        return validate_value(eval_fn(fn, *args, **kwargs))
     if getattr(fn, "_meta_fn_", False):
         return validate_value(fn(*args, **kwargs))
     return validate_value(generate_fn_impl(fn)(*args, **kwargs))
@@ -88,8 +93,13 @@ def compile_and_call_at_definition[**P, R](fn: Callable[P, R], /, *args: P.args,
         debug_stack.pop()
 
 
-def generate_fn_impl(fn: Callable):
+@functools.cache
+def _ensure_excepthook() -> None:
     install_excepthook()
+
+
+def generate_fn_impl(fn: Callable):
+    _ensure_excepthook()
     match fn:
         case ConstantValue() as value if value._is_py_():
             return generate_fn_impl(value._as_py_())
@@ -108,9 +118,30 @@ def generate_fn_impl(fn: Callable):
                 raise TypeError(f"'{type(fn).__name__}' object is not callable")
 
 
+def _compute_fn_info(fn: Callable) -> tuple[str, str, ChainMap]:
+    function_name = getattr(fn, "__name__", "<unnamed>")
+    module = getattr(fn, "__module__", None)
+    if module is not None:
+        qualified_name = f"{module}.{getattr(fn, '__qualname__', function_name)}"
+    else:
+        qualified_name = f"<unknown>.{getattr(fn, '__qualname__', function_name)}"
+    return function_name, qualified_name, ChainMap(fn.__globals__, builtins.__dict__)
+
+
+# Only cache plain functions; bound methods are ephemeral and would leak cache entries.
+_get_fn_info = functools.cache(_compute_fn_info)
+
+
 def eval_fn(fn: Callable, /, *args, **kwargs):
+    _ensure_excepthook()
     source_file, node = get_function(fn)
-    bound_args = inspect.signature(fn).bind(*args, **kwargs)
+    if type(fn) is FunctionType:
+        sig = get_signature(fn)
+        function_name, qualified_name, global_base = _get_fn_info(fn)
+    else:
+        sig = inspect.signature(fn)
+        function_name, qualified_name, global_base = _compute_fn_info(fn)
+    bound_args = sig.bind(*args, **kwargs)
     bound_args.apply_defaults()
     if ismethod(fn):
         code = fn.__func__.__code__
@@ -119,22 +150,12 @@ def eval_fn(fn: Callable, /, *args, **kwargs):
         code = fn.__code__
         closure = fn.__closure__
     if closure is None:
-        nonlocal_vars = {}
+        global_vars = global_base
     else:
         nonlocal_vars = {
             var: cell.cell_contents for var, cell in zip(code.co_freevars, closure, strict=True) if cell is not None
         }
-    global_vars = {
-        **builtins.__dict__,
-        **fn.__globals__,
-        **nonlocal_vars,
-    }
-    function_name = getattr(fn, "__name__", "<unnamed>")
-    module = getattr(fn, "__module__", None)
-    if module is not None:
-        qualified_name = f"{module}.{getattr(fn, '__qualname__', function_name)}"
-    else:
-        qualified_name = f"<unknown>.{getattr(fn, '__qualname__', function_name)}"
+        global_vars = ChainMap(nonlocal_vars, *global_base.maps)
     return Visitor(
         source_file, bound_args, global_vars, parent=None, function_name=function_name, qualified_name=qualified_name
     ).run(node)
@@ -243,6 +264,56 @@ op_to_symbol = {
     ast.NotIn: "not in",
 }
 
+# Binary operator method names implemented by Num. For two Num operands, these never return NotImplemented,
+# so the NotImplemented negotiation protocol can be skipped as a fast path.
+_NUM_BIN_OP_NAMES = frozenset(
+    {
+        "__add__",
+        "__sub__",
+        "__mul__",
+        "__truediv__",
+        "__floordiv__",
+        "__mod__",
+        "__pow__",
+    }
+)
+
+# Type-keyed dispatch cache for Visitor.visit. AST node classes are a small closed set.
+_VISITOR_DISPATCH: dict[type, Callable] = {}
+
+# Cache of resolved descriptors (or None) keyed by (type, attribute name) for handle_getattr/handle_setattr.
+# Within a single build session, classes and their signatures are assumed immutable, so a resolved
+# descriptor stays valid for the whole build. Across build sessions a class may be redefined or a
+# property monkeypatched, so this cache (together with get_signature and _get_fn_info) is reset once
+# per build via clear_frontend_caches().
+_descriptor_cache: dict[tuple[type, str], Any] = {}
+_DESCRIPTOR_CACHE_MISS = object()
+
+
+def clear_frontend_caches() -> None:
+    """Reset the process-lifetime frontend caches that assume within-build immutability."""
+    _get_fn_info.cache_clear()
+    get_signature.cache_clear()
+    _descriptor_cache.clear()
+
+
+def _resolve_descriptor(target_type: type, key: str) -> Any:
+    """Resolve `key` to the first descriptor found on target_type's MRO (or None), with caching."""
+    descriptor = _descriptor_cache.get((target_type, key), _DESCRIPTOR_CACHE_MISS)
+    if descriptor is _DESCRIPTOR_CACHE_MISS:
+        descriptor = None
+        for cls in type.mro(target_type):
+            descriptor = cls.__dict__.get(key, None)
+            if descriptor is not None:
+                break
+        _descriptor_cache[target_type, key] = descriptor
+    return descriptor
+
+
+# Visit-time statistics are for diagnostics only (see print_visit_stats in sonolus/build/engine.py),
+# so they're gated behind an environment variable to avoid the bookkeeping overhead in normal builds.
+VISIT_STATS_ENABLED = os.environ.get("SONOLUS_VISIT_STATS") == "1"
+
 
 def record_visit_time(function_name: str, total_time: int, own_time: int) -> None:
     visit_stats = ctx().project_state.visit_stats
@@ -256,7 +327,13 @@ def record_visit_time(function_name: str, total_time: int, own_time: int) -> Non
     ctx().callback_state.visitor_own_time += own_time
 
 
+def _noop_mark_end() -> None:
+    pass
+
+
 def mark_start(function_name: str) -> Callable[[], None]:
+    if not VISIT_STATS_ENABLED:
+        return _noop_mark_end
     start_time = perf_counter_ns()
     start_own_time = ctx().callback_state.visitor_own_time
 
@@ -501,12 +578,13 @@ class Visitor(ast.NodeVisitor):
     def visit(self, node):
         """Visit a node."""
         # We want this here so this is filtered out of tracebacks
-        method = "visit_" + node.__class__.__name__
-        visitor = getattr(self, method, self.generic_visit)
-        # with self.reporting_errors_at_node(node):
-        #     return visitor(node)
+        node_cls = node.__class__
+        visitor = _VISITOR_DISPATCH.get(node_cls)
+        if visitor is None:
+            visitor = getattr(Visitor, "visit_" + node_cls.__name__, Visitor.generic_visit)
+            _VISITOR_DISPATCH[node_cls] = visitor
         try:
-            return visitor(node)
+            return visitor(self, node)
         except Exception as e:
             if isinstance(e, CompilationError):
                 raise
@@ -571,8 +649,18 @@ class Visitor(ast.NodeVisitor):
     def visit_AugAssign(self, node):
         lhs_value = self.visit(node.target)
         rhs_value = self.visit(node.value)
-        inplace_fn_name = inplace_ops[type(node.op)]
         regular_fn_name = bin_ops[type(node.op)]
+        if (
+            type(lhs_value) is Num
+            and type(rhs_value) is Num
+            and regular_fn_name in _NUM_BIN_OP_NAMES
+            and (active_ctx := ctx()).callback_state.no_eval
+        ):
+            # Num has no in-place operators and never returns NotImplemented for Num operands
+            self.active_ctx = active_ctx
+            self.handle_assign(node.target, getattr(lhs_value, regular_fn_name)(rhs_value))
+            return
+        inplace_fn_name = inplace_ops[type(node.op)]
         right_fn_name = rbin_ops[type(node.op)]
         if hasattr(lhs_value, inplace_fn_name):
             result = self.handle_call(node, getattr(lhs_value, inplace_fn_name), rhs_value)
@@ -1002,6 +1090,15 @@ class Visitor(ast.NodeVisitor):
         lhs = self.visit(node.left)
         rhs = self.visit(node.right)
         op = bin_ops[type(node.op)]
+        if (
+            type(lhs) is Num
+            and type(rhs) is Num
+            and op in _NUM_BIN_OP_NAMES
+            and (active_ctx := ctx()).callback_state.no_eval
+        ):
+            # Num operators never return NotImplemented for Num operands, so the negotiation can be skipped
+            self.active_ctx = active_ctx
+            return getattr(lhs, op)(rhs)
         if lhs._is_py_() and rhs._is_py_():
             lhs_py = lhs._as_py_()
             rhs_py = rhs._as_py_()
@@ -1174,6 +1271,15 @@ class Visitor(ast.NodeVisitor):
                     result = Num._accept_(l_val._is_py_() and l_val._as_py_() is None)
                 else:
                     result = Num._accept_(not (l_val._is_py_() and l_val._as_py_() is None))
+            elif (
+                type(l_val) is Num
+                and type(r_val) is Num
+                and (comp_fn_name := comp_ops.get(type(op))) is not None
+                and (active_ctx := ctx()).callback_state.no_eval
+            ):
+                # Num comparison operators never return NotImplemented for Num operands
+                self.active_ctx = active_ctx
+                result = getattr(l_val, comp_fn_name)(r_val)
             elif type(op) in comp_ops and self._has_real_method(l_val, comp_ops[type(op)]):
                 result = self.handle_call(node, getattr(l_val, comp_ops[type(op)]), r_val)
             if (
@@ -1285,15 +1391,22 @@ class Visitor(ast.NodeVisitor):
         return self.get_name(node.id)
 
     def get_name(self, name: str):
-        if name in self.used_parent_binding_values:
-            return self.used_parent_binding_values[name]
+        used_parent_binding_values = self.used_parent_binding_values
+        if name in used_parent_binding_values:
+            return used_parent_binding_values[name]
         self.active_ctx = ctx()
         v = self
         while v:
-            if not isinstance(v.active_ctx.scope.get_binding(name), EmptyBinding):
-                result = v.active_ctx.scope.get_value(name)
+            binding = v.active_ctx.scope.bindings.get(name)
+            if binding is not None and type(binding) is not EmptyBinding:
+                if type(binding) is ValueBinding:
+                    binding.read_count += 1
+                    result = binding.value
+                else:
+                    # Delegate to reproduce the error message from the scope
+                    return v.active_ctx.scope.get_value(name)
                 if v is not self:
-                    self.used_parent_binding_values[name] = result
+                    used_parent_binding_values[name] = result
                 return result
             v = v.parent
         if name in self.globals:
@@ -1408,11 +1521,8 @@ class Visitor(ast.NodeVisitor):
             if isinstance(target, ConstantValue):
                 # Unwrap so we can access fields
                 target = target._as_py_()
-            descriptor = None
-            for cls in type.mro(type(target)):
-                descriptor = cls.__dict__.get(key, None)
-                if descriptor is not None:
-                    break
+            target_type = type(target)
+            descriptor = _resolve_descriptor(target_type, key)
             match descriptor:
                 case property(fget=getter):
                     return self.handle_call(node, getter, target)
@@ -1428,11 +1538,8 @@ class Visitor(ast.NodeVisitor):
         with self.reporting_errors_at_node(node):
             if target._is_py_():
                 target = target._as_py_()
-            descriptor = None
-            for cls in type.mro(type(target)):
-                descriptor = cls.__dict__.get(key, None)
-                if descriptor is not None:
-                    break
+            target_type = type(target)
+            descriptor = _resolve_descriptor(target_type, key)
             match descriptor:
                 case property(fset=setter):
                     if setter is None:
@@ -1447,8 +1554,9 @@ class Visitor(ast.NodeVisitor):
         self, node: ast.stmt | ast.expr, fn: Callable[P, R], /, *args: P.args, **kwargs: P.kwargs
     ) -> R | Value:
         """Handles a call to the given callable."""
-        self.active_ctx = ctx()
-        debug_stack = self.active_ctx.callback_state.debug_stack
+        self.active_ctx = active_ctx = ctx()
+        callback_state = active_ctx.callback_state
+        debug_stack = callback_state.debug_stack
         try:
             debug_stack.append(f'File "{self.source_file}", line {node.lineno}, in {self.function_name}')
             if (
@@ -1457,7 +1565,16 @@ class Visitor(ast.NodeVisitor):
                 and isinstance(fn._as_py_(), type)
                 and issubclass(fn._as_py_(), Value)
             ):
+                if callback_state.no_eval:
+                    # Fast path equivalent to execute_at_node, which is a passthrough when no_eval is set
+                    return validate_value(fn._as_py_()(*args, **kwargs))
                 return validate_value(self.execute_at_node(node, fn._as_py_(), *args, **kwargs))
+            elif callback_state.no_eval:
+                # Fast path: execute_at_node is a passthrough when no_eval is set, so skip it and delegate
+                # to compile_and_call (ctx() is known to be set here). compile_and_call validates its own
+                # result and owns the callable dispatch -- including the FunctionType->eval_fn fast path --
+                # so there's no outer validate_value and no duplicated dispatch logic here.
+                return compile_and_call(fn, *args, **kwargs)
             else:
                 return self.execute_at_node(node, lambda: validate_value(compile_and_call(fn, *args, **kwargs)))
         finally:
@@ -1498,6 +1615,9 @@ class Visitor(ast.NodeVisitor):
         raise ValueError("Unsupported starred expression")
 
     def is_not_implemented(self, value):
+        if type(value) is Num:
+            # Num._as_py_() never returns NotImplemented
+            return False
         value = validate_value(value)
         return value._is_py_() and value._as_py_() is NotImplemented
 

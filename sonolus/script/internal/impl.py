@@ -7,11 +7,14 @@ from typing import TYPE_CHECKING, Annotated, Final, Literal, TypeVar, Union, get
 if TYPE_CHECKING:
     from sonolus.script.internal.value import Value
 
+# Hoisted tuple: building `int | float` inline allocates a new types.UnionType per call.
+_INT_FLOAT = (int, float)
+
 
 def validate_value[T](value: T) -> Value | T:
     if isinstance(value, Value):
         return value
-    if isinstance(value, int | float):
+    if isinstance(value, _INT_FLOAT):
         return Num._accept_(value)
     if isinstance(value, Enum):
         return validate_value(value.value)

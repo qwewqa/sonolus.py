@@ -32,7 +32,7 @@ from sonolus.script.internal.impl import validate_value
 from sonolus.script.internal.meta_fn import meta_fn
 from sonolus.script.internal.set_impl import SetImpl
 from sonolus.script.internal.tuple_impl import TupleImpl
-from sonolus.script.internal.visitor import compile_and_call
+from sonolus.script.internal.visitor import clear_frontend_caches, compile_and_call
 from sonolus.script.num import Num
 from sonolus.script.vec import Vec2
 
@@ -70,6 +70,7 @@ if is_ci() and sys.version_info < PRIMARY_PYTHON_VERSION:
 def compile_fn(
     callback: Callable, runtime_checks: RuntimeChecks = RuntimeChecks.NONE
 ) -> tuple[BasicBlock, list[float]]:
+    clear_frontend_caches()
     project_state = ProjectContextState(runtime_checks=runtime_checks)
     mode_state = ModeContextState(Mode.PLAY)
     return callback_to_cfg(project_state, mode_state, callback, ""), project_state.rom.values

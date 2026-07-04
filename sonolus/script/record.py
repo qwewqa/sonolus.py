@@ -22,6 +22,31 @@ from sonolus.script.internal.value import BackingSource, DataValue, Value
 from sonolus.script.num import Num
 
 
+def _bind_constructor_args(cls: type[Record], args: tuple[Any, ...], kwargs: dict[str, Any]) -> dict[str, Any]:
+    """Bind Record constructor arguments to field names.
+
+    Record fields cannot have default values, so binding reduces to a name mapping in the common case.
+    Falls back to Signature.bind on any mismatch so error messages are identical.
+    """
+    names = cls._field_names_
+    if names is not None:
+        num_args = len(args)
+        num_names = len(names)
+        if num_args == num_names:
+            if not kwargs:
+                return dict(zip(names, args, strict=False))
+        elif num_args < num_names and len(kwargs) == num_names - num_args:
+            rest = names[num_args:]
+            if all(name in kwargs for name in rest):
+                arguments = dict(zip(names, args, strict=False))
+                for name in rest:
+                    arguments[name] = kwargs[name]
+                return arguments
+    bound = cls._constructor_signature_.bind(*args, **kwargs)
+    bound.apply_defaults()
+    return bound.arguments
+
+
 # Protocol metaclass is a subclass of ABCMeta, but let's make ABCMeta explicit for clarity
 class RecordMeta(type(Protocol), ABCMeta):
     @meta_fn
@@ -66,6 +91,7 @@ class Record(GenericValue, metaclass=RecordMeta):
 
     _value_: dict[str, Value]
     _fields_: ClassVar[list[_RecordField] | None] = None
+    _field_names_: ClassVar[tuple[str, ...] | None] = None
     _constructor_signature_: ClassVar[inspect.Signature]
     _is_frozen_: bool = False
 
@@ -87,12 +113,11 @@ class Record(GenericValue, metaclass=RecordMeta):
         # We override __new__ to allow changing to the parameterized version
         if cls._constructor_signature_ is None:
             raise TypeError(f"Cannot instantiate {cls.__name__}")
-        bound = cls._constructor_signature_.bind(*args, **kwargs)
-        bound.apply_defaults()
+        arguments = _bind_constructor_args(cls, args, kwargs)
         values = {}
         type_vars = {}
         for field in cls._fields_:
-            value = bound.arguments[field.name]
+            value = arguments[field.name]
             value = accept_and_infer_types(field.type, value, type_vars)
             values[field.name] = value._get_readonly_()
         for type_param in cls.__type_params__:
@@ -132,6 +157,7 @@ class Record(GenericValue, metaclass=RecordMeta):
                 setattr(cls, field.name, field)
                 offset += resolved_type._size_()
             cls._fields_ = fields
+            cls._field_names_ = tuple(field.name for field in fields)
             return
         is_inheriting_from_existing_record_class = cls._fields_ is not None
         if is_inheriting_from_existing_record_class and not is_parameterizing:
@@ -171,13 +197,15 @@ class Record(GenericValue, metaclass=RecordMeta):
             except Exception as e:
                 raise TypeError(f"Error processing field '{name}' of Record {cls.__name__}: {e}") from e
 
+        field_names = tuple(field.name for field in fields)
         cls._parameterized_ = {}
         cls._fields_ = fields
+        cls._field_names_ = field_names
         cls._constructor_signature_ = inspect.Signature(params)
 
         _add_inplace_ops(cls)
 
-        cls.__match_args__ = tuple(field.name for field in fields)
+        cls.__match_args__ = field_names
 
         if len(getattr(cls, "__type_params__", ())) == 0:
             # Make the class behave as the parameterized version
@@ -189,12 +217,11 @@ class Record(GenericValue, metaclass=RecordMeta):
         # We override __new__ to allow changing to the parameterized version
         if cls._constructor_signature_ is None:
             raise TypeError(f"Cannot instantiate {cls.__name__}")
-        bound = cls._constructor_signature_.bind(*args, **kwargs)
-        bound.apply_defaults()
+        arguments = _bind_constructor_args(cls, args, kwargs)
         values = {}
         type_vars = {}
         for field in cls._fields_:
-            value = bound.arguments[field.name]
+            value = arguments[field.name]
             value = accept_and_infer_types(field.type, value, type_vars)
             if field.final:
                 values[field.name] = value._get_readonly_()
@@ -396,14 +423,12 @@ class _RecordField(SonolusDescriptor):
     def __get__(self, instance: Record | None, owner=None):
         if instance is None:
             return self
-        if instance._is_frozen_ or self.final:
-            result = instance._value_[self.name]
-        else:
-            result = instance._value_[self.name]._get_readonly_()
+        result = instance._value_[self.name]
+        if not (self.final or instance._is_frozen_):
+            result = result._get_readonly_()
         if ctx():
             return result
-        else:
-            return result._as_py_()
+        return result._as_py_()
 
     def __set__(self, instance: Record, value):
         if instance._is_frozen_:

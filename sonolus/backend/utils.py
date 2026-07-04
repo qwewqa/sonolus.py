@@ -18,6 +18,11 @@ def get_function(fn: Callable) -> tuple[str, ast.FunctionDef]:
 
 
 @cache
+def get_signature(fn: Callable) -> inspect.Signature:
+    return inspect.signature(fn)
+
+
+@cache
 def get_tree_from_file(file: str | Path) -> ast.Module:
     return ast.parse(Path(file).read_text(encoding="utf-8"))
 

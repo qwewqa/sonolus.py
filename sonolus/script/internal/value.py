@@ -8,6 +8,8 @@ from sonolus.backend.place import BlockPlace
 
 
 class BackingValue:
+    __slots__ = ()
+
     def read(self) -> IRExpr:
         raise NotImplementedError()
 
@@ -17,6 +19,8 @@ class BackingValue:
 
 class ExprBackingValue(BackingValue):
     """A backing value that is backed by an expression."""
+
+    __slots__ = ("_expr",)
 
     def __init__(self, expr: IRExpr):
         self._expr = expr
@@ -30,6 +34,8 @@ class ExprBackingValue(BackingValue):
 
 class ReadOnlyBackingValueWrapper(BackingValue):
     """A wrapper around another backing value that blocks reads."""
+
+    __slots__ = ("_value",)
 
     def __init__(self, value: BackingValue):
         self._value = value
@@ -47,6 +53,10 @@ type BackingSource = Callable[[IRExpr], BackingValue]
 
 class Value:
     """Base class for values."""
+
+    # Empty slots so that subclasses declaring __slots__ (like Num) don't get a
+    # __dict__ from this base class. Subclasses without __slots__ still get one.
+    __slots__ = ()
 
     @classmethod
     def _is_concrete_(cls) -> bool:

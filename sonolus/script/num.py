@@ -14,15 +14,30 @@ from sonolus.script.internal.error import InternalError
 from sonolus.script.internal.simple_meta_fn import simple_meta_fn
 from sonolus.script.internal.value import BackingValue, DataValue, ExprBackingValue, Value
 
+# Hoisted tuples for isinstance checks; building `A | B` unions inline allocates a new
+# types.UnionType on every call, while tuples are constant and semantically identical.
+_IR_EXPR_TYPES = (IRConst, IRPureInstr, IRGet)
+_FLOAT_INT_BOOL = (float, int, bool)
+_FLOAT_INT = (float, int)
+
 
 class _NumMeta(type):
     def __instancecheck__(cls, instance):
-        return isinstance(instance, float | int | bool) or _is_num(instance)
+        return isinstance(instance, _FLOAT_INT_BOOL) or _is_num(instance)
 
 
 def _is_num(value: Any) -> TypeGuard[Num]:
     """Check if a value is a precisely Num instance."""
-    return type.__instancecheck__(Num, value)  # type: ignore # noqa: PLC2801
+    return type(value) is _Num  # _Num is final, so an exact type check is equivalent
+
+
+def _coerce_num(other: Any) -> Num | None:
+    """Coerce an operand to a Num for arithmetic, or return None if it is not an accepted numeric type."""
+    if type(other) is Num:
+        return other
+    if isinstance(other, _FLOAT_INT_BOOL):
+        return Num(other)
+    return None
 
 
 @final
@@ -36,10 +51,11 @@ class _Num(Value, metaclass=_NumMeta):
     data: DataValue
 
     def __init__(self, data: DataValue | IRExpr):
-        if isinstance(data, int):
-            data = float(data)
-        elif isinstance(data, IRConst | IRPureInstr | IRGet):
-            data = ExprBackingValue(data)
+        if type(data) is not float:  # Fast path: exact floats need no normalization
+            if isinstance(data, int):
+                data = float(data)
+            elif isinstance(data, _IR_EXPR_TYPES):
+                data = ExprBackingValue(data)
         self.data = data
 
     def __str__(self) -> str:
@@ -64,44 +80,48 @@ class _Num(Value, metaclass=_NumMeta):
 
     @classmethod
     def _from_place_(cls, place: BlockPlace) -> Self:
-        return cls(place)
+        return _num_of(place)
 
     @classmethod
     def _accepts_(cls, value: Value) -> bool:
-        return isinstance(value, Num | float | int | bool)
+        return type(value) is Num or isinstance(value, _FLOAT_INT_BOOL)
 
     @classmethod
     def _accept_(cls, value: Any) -> Self:
-        if not cls._accepts_(value):
-            raise TypeError(f"Cannot accept {value}")
-        if _is_num(value):
+        if type(value) is Num:
             return value
-        return cls(value)
+        if isinstance(value, _FLOAT_INT_BOOL):
+            return cls(value)
+        raise TypeError(f"Cannot accept {value}")
 
     def _is_rom_constant(self) -> bool:
-        return (
-            ctx()
-            and isinstance(self.data, BlockPlace)
-            and self.data.block == ctx().blocks.EngineRom
-            and isinstance(self.data.index, int)
-        )
+        d = self.data
+        if type(d) is not BlockPlace:
+            return False
+        c = ctx()
+        return c is not None and d.block == c.blocks.EngineRom and isinstance(d.index, int)
 
     def _is_py_(self) -> bool:
-        return isinstance(self.data, float | int) or self._is_rom_constant()
+        d = self.data
+        return type(d) is float or isinstance(d, _FLOAT_INT) or self._is_rom_constant()
 
     def _as_py_(self) -> Any:
-        if not self._is_py_():
-            raise ValueError("Not a compile time constant Num")
+        d = self.data
+        if type(d) is float:
+            return int(d) if d.is_integer() else d
         if self._is_rom_constant():
-            return ctx().rom.get_value(self.data.index + self.data.offset)
-        if self.data.is_integer():
-            return int(self.data)
-        return self.data
+            return ctx().rom.get_value(d.index + d.offset)
+        if isinstance(d, _FLOAT_INT):
+            return int(d) if d.is_integer() else d
+        raise ValueError("Not a compile time constant Num")
 
     def _as_py_or_none(self) -> int | bool | float | None:
-        if not self._is_py_():
-            return None
-        return self._as_py_()
+        d = self.data
+        if type(d) is float:
+            return int(d) if d.is_integer() else d
+        if self._is_py_():
+            return self._as_py_()
+        return None
 
     @classmethod
     def _from_list_(cls, values: Iterable[DataValue]) -> Self:
@@ -116,39 +136,46 @@ class _Num(Value, metaclass=_NumMeta):
         return [prefix]
 
     def _get_(self) -> Self:
-        if ctx():
-            if isinstance(self.data, BlockPlace):
-                ctx().check_readable(self.data)
-            place = ctx().alloc(size=1)
-            ctx().add_statements(IRSet(place, self.ir()))
-            return Num(place)
+        c = ctx()
+        if c:
+            d = self.data
+            if isinstance(d, BlockPlace):
+                c.check_readable(d)
+            place = c.alloc(size=1)
+            c.add_statements(IRSet(place, self.ir()))
+            return _num_of(place)
         else:
             return Num(self.data)
 
     def _get_readonly_(self) -> Self:
-        if ctx():
-            if isinstance(self.data, BlockPlace):
-                ctx().check_readable(self.data)
-                if isinstance(self.data.block, BlockData) and not ctx().is_writable(self.data):
+        c = ctx()
+        if c:
+            d = self.data
+            if isinstance(d, BlockPlace):
+                c.check_readable(d)
+                if isinstance(d.block, BlockData) and not c.is_writable(d):
                     # This block is immutable in the current callback, so no need to copy it in case it changes.
-                    return Num(self.data)
-            if isinstance(self.data, int | float | bool):
-                return Num(self.data)
-            place = ctx().alloc(size=1)
-            ctx().add_statements(IRSet(place, self.ir()))
-            return Num(place)
+                    return _num_of(d)
+            if type(d) is float:
+                return _num_of(d)
+            if isinstance(d, _FLOAT_INT_BOOL):
+                return Num(d)
+            place = c.alloc(size=1)
+            c.add_statements(IRSet(place, self.ir()))
+            return _num_of(place)
         else:
             return Num(self.data)
 
     def _set_(self, value: Any):
         value = Num._accept_(value)
-        if ctx():
+        c = ctx()
+        if c:
             match self.data:
                 case BackingValue():
                     self.data.write(value.ir())
                 case BlockPlace():
-                    ctx().check_writable(self.data)
-                    ctx().add_statements(IRSet(self.data, value.ir()))
+                    c.check_writable(self.data)
+                    c.add_statements(IRSet(self.data, value.ir()))
                 case _:
                     raise ValueError("Cannot set a read-only value")
         else:
@@ -165,28 +192,29 @@ class _Num(Value, metaclass=_NumMeta):
 
     @classmethod
     def _alloc_(cls) -> Self:
-        if ctx():
-            return Num(ctx().alloc(size=1))
+        c = ctx()
+        if c:
+            return _num_of(c.alloc(size=1))
         else:
             return Num(-1)
 
     @classmethod
     def _zero_(cls) -> Self:
-        if ctx():
-            result_place = ctx().alloc(size=1)
-            ctx().add_statements(IRSet(result_place, IRConst(0)))
-            return cls(result_place)
+        c = ctx()
+        if c:
+            result_place = c.alloc(size=1)
+            c.add_statements(IRSet(result_place, IRConst(0)))
+            return _num_of(result_place)
         else:
             return cls(0)
 
     def ir(self):
-        match self.data:
-            case BlockPlace():
-                return IRGet(self.data)
-            case BackingValue():
-                return self.data.read()
-            case _:
-                return IRConst(self.data)
+        d = self.data
+        if isinstance(d, BlockPlace):
+            return IRGet(d)
+        if isinstance(d, BackingValue):
+            return d.read()
+        return IRConst(d)
 
     def index(self) -> int | BlockPlace:
         if isinstance(self.data, BlockPlace):
@@ -196,26 +224,31 @@ class _Num(Value, metaclass=_NumMeta):
     def _bin_op(
         self, other: Self, const_fn: Callable[[Self, Self], Self | None], ir_op: Op, fallback=NotImplemented
     ) -> Self:
-        if not Num._accepts_(other):
-            return fallback
-        other = Num._accept_(other)
+        # Same coercion as _coerce_num, kept inline: this is the hottest compile-time path and the
+        # extra function call measures as a regression here (unlike the reflected ops).
+        if type(other) is not Num:
+            if not isinstance(other, _FLOAT_INT_BOOL):
+                return fallback
+            other = Num(other)
         const_value = const_fn(self, other)
         if const_value is not None:
             return const_value
-        if ctx():
-            result_place = ctx().alloc(size=1)
-            ctx().add_statements(IRSet(result_place, IRPureInstr(ir_op, [self.ir(), other.ir()])))
-            return Num(result_place)
+        c = ctx()
+        if c:
+            result_place = c.alloc(size=1)
+            c.add_statements(IRSet(result_place, IRPureInstr(ir_op, [self.ir(), other.ir()])))
+            return _num_of(result_place)
         else:
             raise InternalError("Unexpected call on non-comptime Num instance outside a compilation context")
 
     def _unary_op(self, py_fn: Callable[[float], float], ir_op: Op) -> Self:
         if self._is_py_():
             return Num(py_fn(self._as_py_()))
-        elif ctx():
-            result_place = ctx().alloc(size=1)
-            ctx().add_statements(IRSet(result_place, IRPureInstr(ir_op, [self.ir()])))
-            return Num(result_place)
+        c = ctx()
+        if c:
+            result_place = c.alloc(size=1)
+            c.add_statements(IRSet(result_place, IRPureInstr(ir_op, [self.ir()])))
+            return _num_of(result_place)
         else:
             raise InternalError("Unexpected call on non-comptime Num instance outside a compilation context")
 
@@ -404,45 +437,52 @@ class _Num(Value, metaclass=_NumMeta):
 
     @simple_meta_fn
     def __radd__(self, other) -> Self:
-        if not Num._accepts_(other):
+        other = _coerce_num(other)
+        if other is None:
             return NotImplemented
-        return Num._accept_(other).__add__(self)
+        return other.__add__(self)
 
     @simple_meta_fn
     def __rsub__(self, other) -> Self:
-        if not Num._accepts_(other):
+        other = _coerce_num(other)
+        if other is None:
             return NotImplemented
-        return Num._accept_(other).__sub__(self)
+        return other.__sub__(self)
 
     @simple_meta_fn
     def __rmul__(self, other) -> Self:
-        if not Num._accepts_(other):
+        other = _coerce_num(other)
+        if other is None:
             return NotImplemented
-        return Num._accept_(other).__mul__(self)
+        return other.__mul__(self)
 
     @simple_meta_fn
     def __rtruediv__(self, other) -> Self:
-        if not Num._accepts_(other):
+        other = _coerce_num(other)
+        if other is None:
             return NotImplemented
-        return Num._accept_(other).__truediv__(self)
+        return other.__truediv__(self)
 
     @simple_meta_fn
     def __rfloordiv__(self, other) -> Self:
-        if not Num._accepts_(other):
+        other = _coerce_num(other)
+        if other is None:
             return NotImplemented
-        return Num._accept_(other).__floordiv__(self)
+        return other.__floordiv__(self)
 
     @simple_meta_fn
     def __rmod__(self, other) -> Self:
-        if not Num._accepts_(other):
+        other = _coerce_num(other)
+        if other is None:
             return NotImplemented
-        return Num._accept_(other).__mod__(self)
+        return other.__mod__(self)
 
     @simple_meta_fn
     def __rpow__(self, other) -> Self:
-        if not Num._accepts_(other):
+        other = _coerce_num(other)
+        if other is None:
             return NotImplemented
-        return Num._accept_(other).__pow__(self)
+        return other.__pow__(self)
 
     @simple_meta_fn
     def __neg__(self) -> Self:
@@ -510,6 +550,16 @@ class _Num(Value, metaclass=_NumMeta):
 def _create_num_raw(i: int) -> Num:
     result = object.__new__(_Num)
     result.data = float(i)
+    return result
+
+
+def _num_of(data: DataValue) -> Num:
+    """Create a Num from data known to already be normalized (a float, BlockPlace, or BackingValue).
+
+    Trusted fast path for internal callers; bypasses the validation in __init__.
+    """
+    result = object.__new__(_Num)
+    result.data = data
     return result
 
 

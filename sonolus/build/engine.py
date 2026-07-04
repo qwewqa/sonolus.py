@@ -22,6 +22,7 @@ from sonolus.script.internal.callbacks import (
     update_spawn_callback,
 )
 from sonolus.script.internal.context import ProjectContextState, ReadOnlyMemory
+from sonolus.script.internal.visitor import clear_frontend_caches
 from sonolus.script.options import Options
 from sonolus.script.particle import Particles
 from sonolus.script.project import BuildConfig
@@ -63,6 +64,7 @@ def package_engine(
     config: BuildConfig | None = None,
     project_state: ProjectContextState | None = None,
 ):
+    clear_frontend_caches()
     config = config or BuildConfig()
     if project_state is None:
         project_state = ProjectContextState.from_build_config(config)
@@ -130,6 +132,7 @@ def validate_engine(
     config: BuildConfig | None = None,
     project_state: ProjectContextState | None = None,
 ):
+    clear_frontend_caches()
     config = config or BuildConfig()
     if project_state is None:
         project_state = ProjectContextState.from_build_config(config)

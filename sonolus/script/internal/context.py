@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from collections.abc import Iterable, Sequence
+from collections.abc import Sequence
 from contextlib import contextmanager
 from dataclasses import dataclass
 from enum import Enum
@@ -27,6 +27,8 @@ if TYPE_CHECKING:
 _compiler_internal_ = True
 
 _context: Context | None = None
+
+_validate_value = None  # Lazily initialized to avoid a circular import
 
 
 @dataclass(frozen=True)
@@ -203,7 +205,6 @@ class Context:
         callback_state: CallbackContextState,
         scope: Scope | None = None,
         live: bool = True,
-        foldable_constants: dict[TempBlock, list[float | None]] | None = None,
     ):
         self.project_state = project_state
         self.mode_state = mode_state
@@ -214,7 +215,6 @@ class Context:
         self.scope = scope if scope is not None else Scope()
         self.loop_variables = {}
         self.live = live
-        self.foldable_constants = foldable_constants if foldable_constants is not None else {}
 
     @property
     def rom(self) -> ReadOnlyMemory:
@@ -236,31 +236,42 @@ class Context:
     def no_eval(self) -> bool:
         return self.callback_state.no_eval
 
+    def _is_block_accessible(self, block: Block, callback: str, writable: bool) -> bool:
+        """Whether `callback` may read (or write, if `writable`) `block` in the current mode."""
+        block_perms = self.mode_state.mode.blocks(block)
+        return callback in (block_perms.writable if writable else block_perms.readable)
+
     def check_readable(self, place: BlockPlace):
-        if debug_config().unchecked_reads:
+        if _debug_config.unchecked_reads:
             return
-        if not self.callback:
+        callback = self.callback_state.callback
+        if not callback:
             return
-        if isinstance(place.block, BlockData) and not self.is_readable(place):
-            raise RuntimeError(f"Block {place.block} is not readable in {self.callback}")
+        block = place.block
+        if isinstance(block, BlockData) and not self._is_block_accessible(block, callback, False):
+            raise RuntimeError(f"Block {block} is not readable in {callback}")
 
     def check_writable(self, place: BlockPlace):
-        if debug_config().unchecked_writes:
+        if _debug_config.unchecked_writes:
             return
-        if not self.callback:
+        callback = self.callback_state.callback
+        if not callback:
             return
-        if isinstance(place.block, BlockData) and not self.is_writable(place):
-            raise RuntimeError(f"Block {place.block} is not writable in {self.callback}")
+        block = place.block
+        if isinstance(block, BlockData) and not self._is_block_accessible(block, callback, True):
+            raise RuntimeError(f"Block {block} is not writable in {callback}")
 
     def is_readable(self, place: BlockPlace) -> bool:
         if debug_config().unchecked_reads:
             return True
-        return self.callback and self.callback in self.blocks(place.block).readable
+        callback = self.callback
+        return callback and self._is_block_accessible(place.block, callback, False)
 
     def is_writable(self, place: BlockPlace) -> bool:
         if debug_config().unchecked_writes:
             return True
-        return self.callback and self.callback in self.blocks(place.block).writable
+        callback = self.callback
+        return callback and self._is_block_accessible(place.block, callback, True)
 
     def add_statement(self, statement: IRStmt):
         if not self.live:
@@ -281,10 +292,10 @@ class Context:
         return BlockPlace(TempBlock(f"{name}{num}", size), 0)
 
     def _get_alloc_number(self, name: str) -> int:
-        if name not in self.used_names:
-            self.used_names[name] = 0
-        self.used_names[name] += 1
-        return self.used_names[name]
+        used_names = self.callback_state.used_names
+        num = used_names.get(name, 0) + 1
+        used_names[name] = num
+        return num
 
     def save_alloc_state(self) -> dict[str, int]:
         return self.used_names.copy()
@@ -299,7 +310,6 @@ class Context:
             callback_state=self.callback_state,
             scope=scope,
             live=self.live,
-            foldable_constants={**self.foldable_constants},  # We want this to persist even if the scope changes
         )
 
     def branch(self, condition: float | None):
@@ -420,7 +430,6 @@ class Context:
             return contexts[0].into_dead()
         contexts = [context for context in contexts if context.live]
         assert not any(context.outgoing for context in contexts)
-        assert all(len(context.outgoing) == 0 for context in contexts)
         target = contexts[0].copy_with_scope(Scope())
         Scope.apply_merge(target, contexts)
         for context in contexts:
@@ -491,8 +500,9 @@ class ReadOnlyMemory:
 
     @property
     def block(self) -> Block:
-        if ctx():
-            return ctx().blocks.EngineRom
+        context = _context
+        if context:
+            return context.blocks.EngineRom
         else:
             return PlayBlock.EngineRom
 
@@ -520,18 +530,18 @@ def debug_config() -> DebugConfig:
     return _debug_config
 
 
-@dataclass
+@dataclass(slots=True)
 class ValueBinding:
     value: Value
     read_count: int = 0
 
 
-@dataclass
+@dataclass(slots=True)
 class ConflictBinding:
     pass
 
 
-@dataclass
+@dataclass(slots=True)
 class EmptyBinding:
     pass
 
@@ -568,9 +578,12 @@ class Scope:
                 raise RuntimeError(f"Binding '{name}' is not defined")
 
     def set_value(self, name: str, value: Value):
-        from sonolus.script.internal.impl import validate_value
+        global _validate_value  # noqa: PLW0603
+        if _validate_value is None:
+            from sonolus.script.internal.impl import validate_value
 
-        self.bindings[name] = ValueBinding(validate_value(value))
+            _validate_value = validate_value
+        self.bindings[name] = ValueBinding(_validate_value(value))
 
     def delete_binding(self, name: str):
         del self.bindings[name]
@@ -582,21 +595,38 @@ class Scope:
     def apply_merge(cls, target: Context, incoming: list[Context]):
         if not incoming:
             return
-        assert all(len(inc.outgoing) == 0 for inc in incoming)
-        sources = [context.scope for context in incoming]
-        keys = unique(key for source in sources for key in source.bindings)
+        bindings_by_source = [context.scope.bindings for context in incoming]
+        first_bindings = bindings_by_source[0]
+        rest_bindings = bindings_by_source[1:]
+        target_bindings = target.scope.bindings
+        # Keys in first-seen order across sources, matching
+        # unique(key for source in sources for key in source.bindings).
+        keys: dict[str, Binding] = {}
+        for bindings in bindings_by_source:
+            keys.update(bindings)
         for key in keys:
-            bindings = [source.get_binding(key) for source in sources]
+            first = first_bindings.get(key, _EMPTY_BINDING)
+            for bindings in rest_bindings:
+                if bindings.get(key, _EMPTY_BINDING) is not first:
+                    break
+            else:
+                # Fast path: every source holds the same binding object.
+                if isinstance(first, ValueBinding):
+                    target_bindings[key] = ValueBinding(first.value)
+                else:
+                    target_bindings[key] = ConflictBinding()
+                continue
+            bindings = [source.get(key, _EMPTY_BINDING) for source in bindings_by_source]
             if not all(isinstance(binding, ValueBinding) for binding in bindings):
-                target.scope.set_binding(key, ConflictBinding())
+                target_bindings[key] = ConflictBinding()
                 continue
             values = [binding.value for binding in bindings]
             if len({id(value) for value in values}) == 1:
-                target.scope.set_binding(key, ValueBinding(values[0]))
+                target_bindings[key] = ValueBinding(values[0])
                 continue
             types = {type(value) for value in values}
             if len(types) > 1:
-                target.scope.set_binding(key, ConflictBinding())
+                target_bindings[key] = ConflictBinding()
                 continue
             common_type: type[Value] = types.pop()
             with using_ctx(target):
@@ -608,43 +638,33 @@ class Scope:
                 target.scope.set_value(key, target_value)
                 continue
             else:
-                target.scope.set_binding(key, ConflictBinding())
+                target_bindings[key] = ConflictBinding()
                 continue
 
 
-def iter_contexts(context: Context):
+def context_to_cfg(context: Context) -> BasicBlock:
+    blocks = {context: BasicBlock(statements=context.statements, test=context.test)}
     seen = set()
+    visited = []
     queue = [context]
     while queue:
         current = queue.pop()
         if current in seen:
             continue
         seen.add(current)
-        yield current
-        queue.extend(current.outgoing.values())
-
-
-def context_to_cfg(context: Context) -> BasicBlock:
-    blocks = {context: BasicBlock(statements=context.statements, test=context.test)}
-    for current in iter_contexts(context):
+        visited.append(current)
+        current_block = blocks[current]
         for condition, target in current.outgoing.items():
-            if target not in blocks:
-                blocks[target] = BasicBlock(statements=target.statements, test=target.test)
-            edge = FlowEdge(src=blocks[current], dst=blocks[target], cond=condition)
-            blocks[current].outgoing.add(edge)
-            blocks[target].incoming.add(edge)
+            target_block = blocks.get(target)
+            if target_block is None:
+                target_block = BasicBlock(statements=target.statements, test=target.test)
+                blocks[target] = target_block
+            edge = FlowEdge(src=current_block, dst=target_block, cond=condition)
+            current_block.outgoing.add(edge)
+            target_block.incoming.add(edge)
+        queue.extend(current.outgoing.values())
     result = blocks[context]
-    for current in tuple(iter_contexts(context)):
+    for current in visited:
         # Break cycles so memory can be cleaned without gc
         del current.outgoing
-    return result
-
-
-def unique[T](iterable: Iterable[T]) -> list[T]:
-    result = []
-    seen = set()
-    for item in iterable:
-        if item not in seen:
-            seen.add(item)
-            result.append(item)
     return result
