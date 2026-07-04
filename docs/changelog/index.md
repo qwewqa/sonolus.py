@@ -1,7 +1,9 @@
 ### 0.17.0
 
-- Improved optimizer.
+- Improved performance.
+- Rewritten optimizer.
 - The `dev` command now uses standard (`-O2`) optimization by default.
+- Exceeding level memory and level data capacity now results in an error.
 
 ### 0.16.0
 
