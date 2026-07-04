@@ -20,7 +20,7 @@ from sonolus.script.internal.generic import validate_concrete_type
 from sonolus.script.internal.impl import validate_value
 from sonolus.script.internal.introspection import get_field_specifiers
 from sonolus.script.internal.meta_fn import meta_fn
-from sonolus.script.internal.native import native_call
+from sonolus.script.internal.native import native_call, native_switch_membership
 from sonolus.script.internal.value import BackingValue, DataValue, Value
 from sonolus.script.internal.visitor import compile_and_call
 from sonolus.script.num import Num
@@ -718,17 +718,32 @@ class _BaseArchetype(metaclass=_BaseArchetypeMeta):
         if strict:
             return index >= 0 and cls._compile_time_id() == entity_info_at(index).archetype_id
         else:
-            mro_ids = cls._get_mro_id_array(entity_info_at(index).archetype_id)
-            return index >= 0 and cls._compile_time_id() in mro_ids
+            return index >= 0 and cls._matches_archetype_id(entity_info_at(index).archetype_id)
 
     @classmethod
     def _check_is_at(cls, index: int, check: bool):
         if not check or not runtime_checks_enabled():
             return
         assert index >= 0, "Entity index must be non-negative"
-        assert cls._compile_time_id() in cls._get_mro_id_array(entity_info_at(index).archetype_id), (
+        assert cls._matches_archetype_id(entity_info_at(index).archetype_id), (
             "Entity at index is not of the expected archetype"
         )
+
+    @classmethod
+    @meta_fn
+    def _matches_archetype_id(cls, archetype_id: int) -> bool:
+        """Check whether the given runtime archetype id is this archetype or a subclass of it."""
+        if not ctx():
+            raise RuntimeError("Archetype._matches_archetype_id is only available during compilation")
+        mode_state = ctx().mode_state
+        if cls not in mode_state.archetypes:
+            raise RuntimeError("Archetype is not registered")
+        subclass_ids = [
+            id_
+            for archetype, id_ in mode_state.archetypes.items()
+            if archetype not in mode_state.compile_time_only_archetypes and issubclass(archetype, cls)
+        ]
+        return native_switch_membership(archetype_id, subclass_ids)
 
     @staticmethod
     @meta_fn

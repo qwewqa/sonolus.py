@@ -1,301 +1,145 @@
 0:
   10000[0] <- EntityData[1] >= 0
-  goto 1 if 10000[0] else 95
+  goto 1 if 10000[0] else 45
 1:
-  10000[1] <- EntityInfoArray[(EntityData[1] * 3.0) + 1]
-  10000[2] <- ((10000[1] >= -14.0) && (10000[1] < 14.0)) && (10000[1] == Trunc(10000[1]))
-  goto 2 if 10000[2] else 94
+  10000[1] <- SwitchWithDefault(EntityInfoArray[(EntityData[1] * 3.0) + 1], 1.0, 1.0, 2.0, 1.0, 3.0, 1.0, 4.0, 1.0, 5.0, 1.0, 6.0, 1.0, 7.0, 1.0, 0)
+  goto 2 if 10000[1] else 44
 2:
-  10000[3] <- EngineRom[(38.0 + (10000[1] + ((10000[1] < 0) * 14.0)))]
-  10000[4] <- 10000[3] + 1.0
-  10000[5] <- EngineRom[10000[3]]
-  10000[6] <- 0
-  goto 3
+  10000[2] <- EntityData[1] * 32.0
+  10000[3] <- EntityDataArray[(11.0 + 10000[2])]
+  goto 3 if (RuntimeUpdate[0] >= 10000[3]) else 4
 3:
-  goto 4 if (10000[6] < 10000[5]) else 93
-4:
-  goto 5 if (3000[(10000[4] + 10000[6])] == 13.0) else 92
-5:
-  10000[7] <- EntityData[1] * 32.0
-  10000[8] <- EntityDataArray[(11.0 + 10000[7])]
-  goto 6 if (RuntimeUpdate[0] >= 10000[8]) else 7
-6:
   EntityDespawn[0] <- 1.0
   goto exit
+4:
+  10000[4] <- EntityData[0] >= 0
+  goto 5 if 10000[4] else 43
+5:
+  10000[5] <- SwitchWithDefault(EntityInfoArray[(EntityData[0] * 3.0) + 1], 1.0, 1.0, 2.0, 1.0, 3.0, 1.0, 4.0, 1.0, 5.0, 1.0, 6.0, 1.0, 7.0, 1.0, 0)
+  goto 6 if 10000[5] else 42
+6:
+  10000[6] <- EntityData[0] * 32.0
+  goto 7 if (EntityDataArray[(11.0 + 10000[6])] <= RuntimeUpdate[0]) else 41
 7:
-  10000[9] <- EntityData[0] >= 0
-  goto 8 if 10000[9] else 91
+  goto 8 if 10000[0] else 40
 8:
-  10000[10] <- EntityInfoArray[(EntityData[0] * 3.0) + 1]
-  10000[11] <- ((10000[10] >= -14.0) && (10000[10] < 14.0)) && (10000[10] == Trunc(10000[10]))
-  goto 9 if 10000[11] else 90
+  goto 9 if 10000[1] else 39
 9:
-  10000[12] <- EngineRom[(38.0 + (10000[10] + ((10000[10] < 0) * 14.0)))]
-  10000[13] <- 10000[12] + 1.0
-  10000[14] <- EngineRom[10000[12]]
-  10000[15] <- 0
-  goto 10
+  goto 10 if (RuntimeUpdate[0] < 10000[3]) else 41
 10:
-  goto 11 if (10000[15] < 10000[14]) else 89
+  goto 11 if 10000[4] else 38
 11:
-  goto 12 if (13.0 == 3000[(10000[13] + 10000[15])]) else 88
+  goto 12 if 10000[5] else 37
 12:
-  10000[16] <- EntityData[0] * 32.0
-  goto 13 if (EntityDataArray[(11.0 + 10000[16])] <= RuntimeUpdate[0]) else 87
+  10000[7] <- EntityDataArray[(12.0 + 10000[6])]
+  goto 13 if 10000[0] else 36
 13:
-  goto 14 if 10000[0] else 86
+  goto 14 if 10000[1] else 35
 14:
-  goto 15 if 10000[2] else 85
+  10000[8] <- EntityDataArray[(12.0 + 10000[2])]
+  goto 15 if 10000[4] else 34
 15:
-  10000[17] <- 0
-  goto 16
+  goto 16 if 10000[5] else 33
 16:
-  goto 17 if (10000[17] < 10000[5]) else 84
+  goto 17 if 10000[0] else 32
 17:
-  goto 18 if (13.0 == 3000[(10000[4] + 10000[17])]) else 83
+  goto 18 if 10000[1] else 31
 18:
-  goto 19 if (RuntimeUpdate[0] < 10000[8]) else 87
+  goto 19 if 10000[4] else 30
 19:
-  goto 20 if 10000[9] else 82
+  goto 20 if 10000[5] else 29
 20:
-  goto 21 if 10000[11] else 81
+  10000[9] <- EntityDataArray[(16.0 + 10000[6])]
+  goto 21 if (10000[9] >= 0) else 28
 21:
-  10000[18] <- 0
-  goto 22
+  goto 22 if SwitchWithDefault(EntityInfoArray[(10000[9] * 3.0) + 1], 1.0, 1.0, 2.0, 1.0, 3.0, 1.0, 4.0, 1.0, 5.0, 1.0, 6.0, 1.0, 7.0, 1.0, 0) else 27
 22:
-  goto 23 if (10000[18] < 10000[14]) else 80
+  10000[10] <- EntityDataArray[(16.0 + (10000[9] * 32.0))]
+  goto 23 if (10000[10] >= 0) else 26
 23:
-  goto 24 if (13.0 == 3000[(10000[13] + 10000[18])]) else 79
+  goto 24 if SwitchWithDefault(EntityInfoArray[(10000[10] * 3.0) + 1], 1.0, 1.0, 2.0, 1.0, 3.0, 1.0, 4.0, 1.0, 5.0, 1.0, 6.0, 1.0, 7.0, 1.0, 0) else 25
 24:
-  10000[19] <- EntityDataArray[(12.0 + 10000[16])]
-  goto 25 if 10000[0] else 78
+  EntitySharedMemoryArray[(1.0 + (10000[10] * 32.0))] <- Remap(Remap(10000[7] - (6.0 / LevelOption[1]), 10000[7], LevelData[14], 0, RuntimeUpdate[2]), Remap(10000[8] - (6.0 / LevelOption[1]), 10000[8], LevelData[14], 0, RuntimeUpdate[2]), EntityDataArray[10000[6]], EntityDataArray[10000[2]], 0)
+  goto exit
 25:
-  goto 26 if 10000[2] else 77
+  10000[11] <- DebugLog(16.0)
+  10000[12] <- DebugPause()
+  goto exit
 26:
-  10000[20] <- 0
-  goto 27
+  10000[13] <- DebugLog(15.0)
+  10000[14] <- DebugPause()
+  goto exit
 27:
-  goto 28 if (10000[20] < 10000[5]) else 76
+  10000[15] <- DebugLog(14.0)
+  10000[16] <- DebugPause()
+  goto exit
 28:
-  goto 29 if (13.0 == 3000[(10000[4] + 10000[20])]) else 75
+  10000[17] <- DebugLog(13.0)
+  10000[18] <- DebugPause()
+  goto exit
 29:
-  10000[21] <- EntityDataArray[(12.0 + 10000[7])]
-  goto 30 if 10000[9] else 74
+  10000[19] <- DebugLog(12.0)
+  10000[20] <- DebugPause()
+  goto exit
 30:
-  goto 31 if 10000[11] else 73
+  10000[21] <- DebugLog(11.0)
+  10000[22] <- DebugPause()
+  goto exit
 31:
-  10000[22] <- 0
-  goto 32
+  10000[23] <- DebugLog(10.0)
+  10000[24] <- DebugPause()
+  goto exit
 32:
-  goto 33 if (10000[22] < 10000[14]) else 72
+  10000[25] <- DebugLog(9.0)
+  10000[26] <- DebugPause()
+  goto exit
 33:
-  goto 34 if (13.0 == 3000[(10000[13] + 10000[22])]) else 71
+  10000[27] <- DebugLog(8.0)
+  10000[28] <- DebugPause()
+  goto exit
 34:
-  goto 35 if 10000[0] else 70
+  10000[29] <- DebugLog(7.0)
+  10000[30] <- DebugPause()
+  goto exit
 35:
-  goto 36 if 10000[2] else 69
+  10000[31] <- DebugLog(10.0)
+  10000[32] <- DebugPause()
+  goto exit
 36:
-  10000[23] <- 0
-  goto 37
+  10000[33] <- DebugLog(9.0)
+  10000[34] <- DebugPause()
+  goto exit
 37:
-  goto 38 if (10000[23] < 10000[5]) else 68
+  10000[35] <- DebugLog(8.0)
+  10000[36] <- DebugPause()
+  goto exit
 38:
-  goto 39 if (13.0 == 3000[(10000[4] + 10000[23])]) else 67
+  10000[37] <- DebugLog(7.0)
+  10000[38] <- DebugPause()
+  goto exit
 39:
-  goto 40 if 10000[9] else 66
+  10000[39] <- DebugLog(6.0)
+  10000[40] <- DebugPause()
+  goto exit
 40:
-  goto 41 if 10000[11] else 65
+  10000[41] <- DebugLog(5.0)
+  10000[42] <- DebugPause()
+  goto exit
 41:
-  10000[24] <- 0
-  goto 42
+  goto exit
 42:
-  goto 43 if (10000[24] < 10000[14]) else 64
+  10000[43] <- DebugLog(4.0)
+  10000[44] <- DebugPause()
+  goto exit
 43:
-  goto 44 if (13.0 == 3000[(10000[13] + 10000[24])]) else 63
-44:
-  10000[25] <- EntityDataArray[(16.0 + 10000[16])]
-  goto 45 if (10000[25] >= 0) else 62
-45:
-  10000[26] <- EntityInfoArray[(10000[25] * 3.0) + 1]
-  goto 46 if (((10000[26] >= -14.0) && (10000[26] < 14.0)) && (10000[26] == Trunc(10000[26]))) else 61
-46:
-  10000[27] <- EngineRom[(38.0 + (10000[26] + ((10000[26] < 0) * 14.0)))]
-  10000[28] <- 10000[27] + 1.0
-  10000[29] <- EngineRom[10000[27]]
-  10000[30] <- 0
-  goto 47
-47:
-  goto 48 if (10000[30] < 10000[29]) else 60
-48:
-  goto 49 if (13.0 == 3000[(10000[28] + 10000[30])]) else 59
-49:
-  10000[31] <- EntityDataArray[(16.0 + (10000[25] * 32.0))]
-  goto 50 if (10000[31] >= 0) else 58
-50:
-  10000[32] <- EntityInfoArray[(10000[31] * 3.0) + 1]
-  goto 51 if (((10000[32] >= -14.0) && (10000[32] < 14.0)) && (10000[32] == Trunc(10000[32]))) else 57
-51:
-  10000[33] <- EngineRom[(38.0 + (10000[32] + ((10000[32] < 0) * 14.0)))]
-  10000[34] <- 10000[33] + 1.0
-  10000[35] <- EngineRom[10000[33]]
-  10000[36] <- 0
-  goto 52
-52:
-  goto 53 if (10000[36] < 10000[35]) else 56
-53:
-  goto 54 if (13.0 == 3000[(10000[34] + 10000[36])]) else 55
-54:
-  EntitySharedMemoryArray[(1.0 + (10000[31] * 32.0))] <- Remap(Remap(10000[19] - (6 / LevelOption[1]), 10000[19], LevelData[14], 0, RuntimeUpdate[2]), Remap(10000[21] - (6 / LevelOption[1]), 10000[21], LevelData[14], 0, RuntimeUpdate[2]), EntityDataArray[10000[16]], EntityDataArray[10000[7]], 0)
-  goto exit
-55:
-  IncrementPost(10000, 36)
-  goto 52
-56:
-  10000[38] <- DebugLog(24)
-  10000[39] <- DebugPause()
-  goto exit
-57:
-  10000[40] <- DebugLog(23)
-  10000[41] <- DebugPause()
-  goto exit
-58:
-  10000[42] <- DebugLog(22)
-  10000[43] <- DebugPause()
-  goto exit
-59:
-  IncrementPost(10000, 30)
-  goto 47
-60:
-  10000[45] <- DebugLog(21.0)
+  10000[45] <- DebugLog(3.0)
   10000[46] <- DebugPause()
   goto exit
-61:
-  10000[47] <- DebugLog(20)
+44:
+  10000[47] <- DebugLog(2.0)
   10000[48] <- DebugPause()
   goto exit
-62:
-  10000[49] <- DebugLog(19.0)
+45:
+  10000[49] <- DebugLog(1.0)
   10000[50] <- DebugPause()
-  goto exit
-63:
-  IncrementPost(10000, 24)
-  goto 42
-64:
-  10000[52] <- DebugLog(18)
-  10000[53] <- DebugPause()
-  goto exit
-65:
-  10000[54] <- DebugLog(17)
-  10000[55] <- DebugPause()
-  goto exit
-66:
-  10000[56] <- DebugLog(16.0)
-  10000[57] <- DebugPause()
-  goto exit
-67:
-  IncrementPost(10000, 23)
-  goto 37
-68:
-  10000[59] <- DebugLog(15)
-  10000[60] <- DebugPause()
-  goto exit
-69:
-  10000[61] <- DebugLog(14.0)
-  10000[62] <- DebugPause()
-  goto exit
-70:
-  10000[63] <- DebugLog(13.0)
-  10000[64] <- DebugPause()
-  goto exit
-71:
-  IncrementPost(10000, 22)
-  goto 32
-72:
-  10000[66] <- DebugLog(12.0)
-  10000[67] <- DebugPause()
-  goto exit
-73:
-  10000[68] <- DebugLog(11.0)
-  10000[69] <- DebugPause()
-  goto exit
-74:
-  10000[70] <- DebugLog(10.0)
-  10000[71] <- DebugPause()
-  goto exit
-75:
-  IncrementPost(10000, 20)
-  goto 27
-76:
-  10000[73] <- DebugLog(15)
-  10000[74] <- DebugPause()
-  goto exit
-77:
-  10000[75] <- DebugLog(14.0)
-  10000[76] <- DebugPause()
-  goto exit
-78:
-  10000[77] <- DebugLog(13.0)
-  10000[78] <- DebugPause()
-  goto exit
-79:
-  IncrementPost(10000, 18)
-  goto 22
-80:
-  10000[80] <- DebugLog(12.0)
-  10000[81] <- DebugPause()
-  goto exit
-81:
-  10000[82] <- DebugLog(11.0)
-  10000[83] <- DebugPause()
-  goto exit
-82:
-  10000[84] <- DebugLog(10.0)
-  10000[85] <- DebugPause()
-  goto exit
-83:
-  IncrementPost(10000, 17)
-  goto 16
-84:
-  10000[87] <- DebugLog(9.0)
-  10000[88] <- DebugPause()
-  goto exit
-85:
-  10000[89] <- DebugLog(8.0)
-  10000[90] <- DebugPause()
-  goto exit
-86:
-  10000[91] <- DebugLog(7.0)
-  10000[92] <- DebugPause()
-  goto exit
-87:
-  goto exit
-88:
-  IncrementPost(10000, 15)
-  goto 10
-89:
-  10000[94] <- DebugLog(6)
-  10000[95] <- DebugPause()
-  goto exit
-90:
-  10000[96] <- DebugLog(5.0)
-  10000[97] <- DebugPause()
-  goto exit
-91:
-  10000[98] <- DebugLog(4.0)
-  10000[99] <- DebugPause()
-  goto exit
-92:
-  IncrementPost(10000, 6)
-  goto 3
-93:
-  10000[101] <- DebugLog(3.0)
-  10000[102] <- DebugPause()
-  goto exit
-94:
-  10000[103] <- DebugLog(2.0)
-  10000[104] <- DebugPause()
-  goto exit
-95:
-  10000[105] <- DebugLog(1.0)
-  10000[106] <- DebugPause()
   goto exit

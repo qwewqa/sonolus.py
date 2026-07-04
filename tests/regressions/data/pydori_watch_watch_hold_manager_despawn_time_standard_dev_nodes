@@ -17,13 +17,11 @@ Block(JumpLoop(
         0
       )
       1
-      9
+      4
     )
   )
-  Execute(
-    Set(
-      10000
-      1
+  Execute(If(
+    SwitchWithDefault(
       GetShifted(
         4103
         1
@@ -33,137 +31,25 @@ Block(JumpLoop(
         )
         3
       )
-    )
-    If(
-      And(
-        And(
-          GreaterOr(
-            Get(
-              10000
-              1
-            )
-            -15
-          )
-          Less(
-            Get(
-              10000
-              1
-            )
-            15
-          )
-        )
-        Equal(
-          Get(
-            10000
-            1
-          )
-          Trunc(Get(
-            10000
-            1
-          ))
-        )
-      )
       2
-      8
-    )
-  )
-  Execute(
-    Set(
-      10000
       1
-      Get(
-        3000
-        Add(
-          40
-          Add(
-            Get(
-              10000
-              1
-            )
-            Multiply(
-              Less(
-                Get(
-                  10000
-                  1
-                )
-                0
-              )
-              15
-            )
-          )
-        )
-      )
-    )
-    Set(
-      10000
-      2
-      Add(
-        Get(
-          10000
-          1
-        )
-        1
-      )
-    )
-    Set(
-      10000
-      1
-      Get(
-        3000
-        Get(
-          10000
-          1
-        )
-      )
-    )
-    Set(
-      10000
       3
+      1
+      4
+      1
+      5
+      1
+      6
+      1
+      7
+      1
+      8
+      1
       0
     )
+    2
     3
-  )
-  Execute(If(
-    Less(
-      Get(
-        10000
-        3
-      )
-      Get(
-        10000
-        1
-      )
-    )
-    4
-    7
   ))
-  Execute(If(
-    Equal(
-      Get(
-        3000
-        Add(
-          Get(
-            10000
-            2
-          )
-          Get(
-            10000
-            3
-          )
-        )
-      )
-      14
-    )
-    6
-    5
-  ))
-  Execute(
-    IncrementPost(
-      10000
-      3
-    )
-    3
-  )
   Execute(
     Break(
       1
@@ -181,22 +67,17 @@ Block(JumpLoop(
         )
       )
     )
-    10
-  )
-  Execute(
-    DebugLog(3)
-    DebugPause()
-    10
+    5
   )
   Execute(
     DebugLog(2)
     DebugPause()
-    10
+    5
   )
   Execute(
     DebugLog(1)
     DebugPause()
-    10
+    5
   )
   0
 ))

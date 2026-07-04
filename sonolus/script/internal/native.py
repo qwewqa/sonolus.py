@@ -1,8 +1,8 @@
 import functools
 import inspect
-from collections.abc import Callable
+from collections.abc import Callable, Iterable
 
-from sonolus.backend.ir import IRInstr, IRPureInstr, IRSet
+from sonolus.backend.ir import IRConst, IRInstr, IRPureInstr, IRSet
 from sonolus.backend.ops import Op
 from sonolus.script.internal.context import ctx
 from sonolus.script.internal.impl import validate_value
@@ -18,6 +18,35 @@ def native_call(op: Op, *args: int | float | bool) -> Num:
     result = ctx().alloc(size=1)
     ctx().add_statements(IRSet(result, (IRPureInstr if op.pure else IRInstr)(op, [arg.ir() for arg in args])))
     return Num._from_place_(result)
+
+
+def native_switch_membership(value: int | float | bool, cases: Iterable[int | float]) -> bool:
+    """Check whether value equals one of the given compile time constant cases.
+
+    Emits a SwitchWithDefault mapping each case to 1 with a default of 0. Cases are
+    deduplicated and sorted so the emitted keys are canonical and dense ranges lower well.
+    """
+    if not ctx():
+        raise RuntimeError("Unexpected native switch membership check")
+    value = validate_value(value)
+    if not _is_num(value):
+        raise RuntimeError("Value must be of type Num")
+    cases = sorted({float(case) for case in cases})
+    if value._is_py_():
+        return Num._accept_(float(value._as_py_()) in cases)
+    if not cases:
+        return Num._accept_(False)
+    args = [value.ir()]
+    for case in cases:
+        args.append(IRConst(case))
+        args.append(IRConst(1))
+    args.append(IRConst(0))
+    result = ctx().alloc(size=1)
+    ctx().add_statements(IRSet(result, IRPureInstr(Op.SwitchWithDefault, args)))
+    return Num._from_place_(result)
+
+
+native_switch_membership._meta_fn_ = True
 
 
 def native_function[**P, R](op: Op, const_eval: bool = False) -> Callable[[Callable[P, R]], Callable[P, R]]:

@@ -8,237 +8,99 @@
   v1 <- EntityData[0] >= 0
   goto 4
 4:
-  goto 5 if v1 else 71
+  goto 5 if v1 else 35
 5:
   v4 <- EntityData[0] * 3.0
   v5 <- v4
-  v6 <- EntityInfoArray[v5 + 1] >= -15.0
-  v7 <- EntityInfoArray[v5 + 1] < 15.0
-  v8 <- v6 && v7
-  v9 <- Trunc(EntityInfoArray[v5 + 1])
-  v10 <- v9 == EntityInfoArray[v5 + 1]
-  v11 <- v8 && v10
-  goto 6 if v11 else 70
+  v6 <- SwitchWithDefault(EntityInfoArray[v5 + 1], 2.0, 1, 3.0, 1, 4.0, 1, 5.0, 1, 6.0, 1, 7.0, 1, 8.0, 1, 0)
+  goto 6 if v6 else 34
 6:
-  v14 <- EntityInfoArray[v5 + 1] < 0
-  v15 <- v14 * 15.0
-  v16 <- EntityInfoArray[v5 + 1] + v15
-  v17 <- 40.0 + v16
-  v18 <- v17
-  v19 <- EngineRom[v18]
-  v20 <- v19
-  v21 <- v19 + 1
-  v22 <- EngineRom[v20]
-  v23 <- 3000.0
-  v24 <- v21
   goto 7
 7:
-  v25 <- 0
   goto 8
 8:
   goto 9
 9:
-  v26 <- v22
   goto 10
 10:
   goto 11
 11:
-  v27 <- v25 < v26
-  goto 12
+  goto 12 if RuntimeEnvironment[4] else 13
 12:
-  goto 13 if v27 else 18
+  v1 <- EntityData[0] * 32.0
+  v2 <- 8.0 + v1
+  v3 <- v2
+  v7 <- EntityDataArray[v3]
+  goto 14
 13:
-  v28 <- v23
-  v29 <- v24
-  v30 <- v29 + v25
-  v31 <- v28
-  v32 <- v30
-  v33 <- v31[v32]
-  v34 <- v33 == 14.0
+  v4 <- EntityData[0] * 32.0
+  v5 <- 6.0 + v4
+  v6 <- v5
+  v7 <- EntityDataArray[v6]
   goto 14
 14:
-  goto 15 if v34 else 16
+  goto 15
 15:
-  v37 <- 1
-  goto 20
+  goto 16
 16:
   goto 17
 17:
-  v35 <- v25 + 1
-  v36 <- v35
-  v25 <- v36
-  goto 8
+  v8 <- EntityData[1] >= 0
+  goto 18
 18:
-  goto 19
+  goto 19 if v8 else 33
 19:
-  v37 <- 0
-  goto 20
+  v11 <- EntityData[1] * 3.0
+  v12 <- v11
+  v13 <- SwitchWithDefault(EntityInfoArray[v12 + 1], 2.0, 1, 3.0, 1, 4.0, 1, 5.0, 1, 6.0, 1, 7.0, 1, 8.0, 1, 0)
+  goto 20 if v13 else 32
 20:
   goto 21
 21:
   goto 22
 22:
-  goto 23 if v37 else 69
+  goto 23
 23:
   goto 24
 24:
   goto 25
 25:
-  goto 26
+  goto 26 if RuntimeEnvironment[4] else 27
 26:
-  goto 27
-27:
-  goto 28
-28:
-  goto 29 if RuntimeEnvironment[4] else 30
-29:
-  v1 <- EntityData[0] * 32.0
-  v2 <- 8.0 + v1
-  v3 <- v2
-  v7 <- EntityDataArray[v3]
-  goto 31
-30:
-  v4 <- EntityData[0] * 32.0
-  v5 <- 6.0 + v4
-  v6 <- v5
-  v7 <- EntityDataArray[v6]
-  goto 31
-31:
-  goto 32
-32:
-  goto 33
-33:
-  goto 34
-34:
-  v8 <- EntityData[1] >= 0
-  goto 35
-35:
-  goto 36 if v8 else 68
-36:
-  v11 <- EntityData[1] * 3.0
-  v12 <- v11
-  v13 <- EntityInfoArray[v12 + 1] >= -15.0
-  v14 <- EntityInfoArray[v12 + 1] < 15.0
-  v15 <- v13 && v14
-  v16 <- Trunc(EntityInfoArray[v12 + 1])
-  v17 <- v16 == EntityInfoArray[v12 + 1]
-  v18 <- v15 && v17
-  goto 37 if v18 else 67
-37:
-  v21 <- EntityInfoArray[v12 + 1] < 0
-  v22 <- v21 * 15.0
-  v23 <- EntityInfoArray[v12 + 1] + v22
-  v24 <- 40.0 + v23
-  v25 <- v24
-  v26 <- EngineRom[v25]
-  v27 <- v26
-  v28 <- v26 + 1
-  v29 <- EngineRom[v27]
-  v30 <- 3000.0
-  v31 <- v28
-  goto 38
-38:
-  v32 <- 0
-  goto 39
-39:
-  goto 40
-40:
-  v33 <- v29
-  goto 41
-41:
-  goto 42
-42:
-  v34 <- v32 < v33
-  goto 43
-43:
-  goto 44 if v34 else 49
-44:
-  v35 <- v30
-  v36 <- v31
-  v37 <- v36 + v32
-  v38 <- v35
-  v39 <- v37
-  v40 <- v38[v39]
-  v41 <- v40 == 14.0
-  goto 45
-45:
-  goto 46 if v41 else 47
-46:
-  v44 <- 1
-  goto 51
-47:
-  goto 48
-48:
-  v42 <- v32 + 1
-  v43 <- v42
-  v32 <- v43
-  goto 39
-49:
-  goto 50
-50:
-  v44 <- 0
-  goto 51
-51:
-  goto 52
-52:
-  goto 53
-53:
-  goto 54 if v44 else 66
-54:
-  goto 55
-55:
-  goto 56
-56:
-  goto 57
-57:
-  goto 58
-58:
-  goto 59
-59:
-  goto 60 if RuntimeEnvironment[4] else 61
-60:
   v8 <- EntityData[1] * 32.0
   v9 <- 8.0 + v8
   v10 <- v9
   v14 <- EntityDataArray[v10]
-  goto 62
-61:
+  goto 28
+27:
   v11 <- EntityData[1] * 32.0
   v12 <- 6.0 + v11
   v13 <- v12
   v14 <- EntityDataArray[v13]
-  goto 62
-62:
-  goto 63
-63:
+  goto 28
+28:
+  goto 29
+29:
   v15 <- Min(v7, v14)
-  goto 64
-64:
-  goto 65
-65:
+  goto 30
+30:
+  goto 31
+31:
   Break(1, v15)
   goto exit
-66:
-  v45 <- DebugLog(6.0)
-  v46 <- DebugPause()
+32:
+  v14 <- DebugLog(4.0)
+  v15 <- DebugPause()
   goto exit
-67:
-  v19 <- DebugLog(5.0)
-  v20 <- DebugPause()
-  goto exit
-68:
-  v9 <- DebugLog(4.0)
+33:
+  v9 <- DebugLog(3.0)
   v10 <- DebugPause()
   goto exit
-69:
-  v38 <- DebugLog(3.0)
-  v39 <- DebugPause()
+34:
+  v7 <- DebugLog(2.0)
+  v8 <- DebugPause()
   goto exit
-70:
-  v12 <- DebugLog(2.0)
-  v13 <- DebugPause()
-  goto exit
-71:
+35:
   v2 <- DebugLog(1)
   v3 <- DebugPause()
   goto exit

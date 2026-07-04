@@ -218,89 +218,57 @@
 71:
   EntityDespawn[0] <- 1.0
   EntitySharedMemory[2] <- 1.0
-  goto 73 if (EntityData[16] >= 0) else 99
+  goto 73 if (EntityData[16] >= 0) else 89
 72:
-  goto 73 if (EntityData[16] >= 0) else 99
+  goto 73 if (EntityData[16] >= 0) else 89
 73:
-  10000[49] <- EntityInfoArray[(EntityData[16] * 3.0) + 1]
-  10000[50] <- ((10000[49] >= -14.0) && (10000[49] < 14.0)) && (10000[49] == Trunc(10000[49]))
-  goto 74 if 10000[50] else 98
+  10000[49] <- SwitchWithDefault(EntityInfoArray[(EntityData[16] * 3.0) + 1], 1.0, 1.0, 2.0, 1.0, 3.0, 1.0, 4.0, 1.0, 5.0, 1.0, 6.0, 1.0, 7.0, 1.0, 0)
+  goto 74 if 10000[49] else 88
 74:
-  10000[51] <- EngineRom[(52.0 + (10000[49] + ((10000[49] < 0) * 14.0)))]
-  10000[52] <- 10000[51] + 1.0
-  10000[53] <- EngineRom[10000[51]]
-  10000[54] <- 0
-  goto 75
+  10000[50] <- EntityData[16] * 32.0
+  goto 75 if (EntitySharedMemoryArray[10000[50]] > 0) else 87
 75:
-  goto 76 if (10000[54] < 10000[53]) else 97
+  goto 76 if (EntityData[16] >= 0) else 86
 76:
-  goto 77 if (3000[(10000[52] + 10000[54])] == 13.0) else 96
+  goto 77 if 10000[49] else 85
 77:
-  10000[55] <- EntityData[16] * 32.0
-  goto 78 if (EntitySharedMemoryArray[10000[55]] > 0) else 95
+  10000[51] <- EntitySharedMemoryArray[10000[50]]
+  goto 87 if (LevelMemory[17] >= 16.0) else 78
 78:
-  goto 79 if (EntityData[16] >= 0) else 94
+  10000[52] <- 0
+  goto 79
 79:
-  goto 80 if 10000[50] else 93
+  goto 80 if (10000[52] < LevelMemory[17]) else 82
 80:
-  10000[56] <- 0
-  goto 81
+  goto 87 if (10000[51] == LevelMemory[(17 + 10000[52]) + 1]) else 81
 81:
-  goto 82 if (10000[56] < 10000[53]) else 92
+  IncrementPost(10000, 52)
+  goto 79
 82:
-  goto 83 if (13.0 == 3000[(10000[52] + 10000[56])]) else 91
+  goto 83 if (LevelMemory[17] < 16.0) else 84
 83:
-  10000[57] <- EntitySharedMemoryArray[10000[55]]
-  goto 95 if (LevelMemory[17] >= 16.0) else 84
-84:
-  10000[58] <- 0
-  goto 85
-85:
-  goto 86 if (10000[58] < LevelMemory[17]) else 88
-86:
-  goto 95 if (10000[57] == LevelMemory[(17 + 10000[58]) + 1]) else 87
-87:
-  IncrementPost(10000, 58)
-  goto 85
-88:
-  goto 89 if (LevelMemory[17] < 16.0) else 90
-89:
-  LevelMemory[(17 + LevelMemory[17]) + 1] <- 10000[57]
+  LevelMemory[(17 + LevelMemory[17]) + 1] <- 10000[51]
   IncrementPost(2000, 17)
   goto exit
-90:
-  10000[60] <- DebugLog(9.0)
+84:
+  10000[54] <- DebugLog(7.0)
+  10000[55] <- DebugPause()
+  goto exit
+85:
+  10000[56] <- DebugLog(6.0)
+  10000[57] <- DebugPause()
+  goto exit
+86:
+  10000[58] <- DebugLog(5.0)
+  10000[59] <- DebugPause()
+  goto exit
+87:
+  goto exit
+88:
+  10000[60] <- DebugLog(4.0)
   10000[61] <- DebugPause()
   goto exit
-91:
-  IncrementPost(10000, 56)
-  goto 81
-92:
-  10000[63] <- DebugLog(8.0)
-  10000[64] <- DebugPause()
-  goto exit
-93:
-  10000[65] <- DebugLog(7.0)
-  10000[66] <- DebugPause()
-  goto exit
-94:
-  10000[67] <- DebugLog(6.0)
-  10000[68] <- DebugPause()
-  goto exit
-95:
-  goto exit
-96:
-  IncrementPost(10000, 54)
-  goto 75
-97:
-  10000[70] <- DebugLog(5.0)
-  10000[71] <- DebugPause()
-  goto exit
-98:
-  10000[72] <- DebugLog(4.0)
-  10000[73] <- DebugPause()
-  goto exit
-99:
-  10000[74] <- DebugLog(3.0)
-  10000[75] <- DebugPause()
+89:
+  10000[62] <- DebugLog(3.0)
+  10000[63] <- DebugPause()
   goto exit

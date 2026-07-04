@@ -1,320 +1,152 @@
 0:
   10000[0] <- EntityData[0] >= 0
-  goto 1 if 10000[0] else 93
+  goto 1 if 10000[0] else 43
 1:
-  10000[1] <- EntityInfoArray[(EntityData[0] * 2.0) + 1]
-  10000[2] <- ((10000[1] >= -13.0) && (10000[1] < 13.0)) && (10000[1] == Trunc(10000[1]))
-  goto 2 if 10000[2] else 92
+  10000[1] <- SwitchWithDefault(EntityInfoArray[(EntityData[0] * 2.0) + 1], 1, 1, 2.0, 1, 3.0, 1, 4.0, 1, 5.0, 1, 6.0, 1, 7.0, 1, 0)
+  goto 2 if 10000[1] else 42
 2:
-  10000[1] <- EngineRom[(36.0 + (10000[1] + ((10000[1] < 0) * 13.0)))]
-  10000[3] <- 10000[1] + 1.0
-  10000[1] <- EngineRom[10000[1]]
-  10000[4] <- 0
-  goto 3
+  10000[2] <- EntityData[0] * 32.0
+  10000[3] <- EntityDataArray[(3.0 + 10000[2])]
+  10000[4] <- Trunc(10000[3] / 2.0)
+  10000[5] <- EntityData[1] >= 0
+  goto 3 if 10000[5] else 41
 3:
-  goto 4 if (10000[4] < 10000[1]) else 91
+  10000[6] <- SwitchWithDefault(EntityInfoArray[(EntityData[1] * 2.0) + 1], 1, 1, 2.0, 1, 3.0, 1, 4.0, 1, 5.0, 1, 6.0, 1, 7.0, 1, 0)
+  goto 4 if 10000[6] else 40
 4:
-  goto when 3000[(10000[3] + 10000[4])]
-    12.0 -> 6
-    default -> 5
+  10000[7] <- EntityData[1] * 32.0
+  10000[8] <- EntityDataArray[(3.0 + 10000[7])]
+  10000[9] <- Trunc(10000[8] / 2.0) + 1
+  10000[2] <- EntityDataArray[10000[2]]
+  10000[10] <- (10000[2] - 0.5) * 0.072
+  10000[11] <- (10000[2] + 0.5) * 0.072
+  10000[7] <- EntityDataArray[10000[7]]
+  10000[12] <- (10000[7] - 0.5) * 0.072
+  10000[13] <- (10000[7] + 0.5) * 0.072
+  10000[2] <- 100000.0 + (Min(10000[2], 10000[7]) * 100.0) + Min(10000[3], 10000[8])
+  goto 5
 5:
-  IncrementPost(10000, 4.0)
-  goto 3
+  goto 6 if (10000[4] < 10000[9]) else 39
 6:
-  10000[4] <- EntityData[0] * 32.0
-  10000[5] <- EntityDataArray[(3.0 + 10000[4])]
-  10000[6] <- Trunc(10000[5] / 2.0)
-  10000[7] <- EntityData[1] >= 0
-  goto 7 if 10000[7] else 90
+  10000[7] <- 10000[4] + 1
+  goto 7 if 10000[0] else 38
 7:
-  10000[8] <- EntityInfoArray[(EntityData[1] * 2.0) + 1]
-  10000[9] <- ((10000[8] >= -13.0) && (10000[8] < 13.0)) && (10000[8] == Trunc(10000[8]))
-  goto 8 if 10000[9] else 89
+  goto 8 if 10000[1] else 37
 8:
-  10000[8] <- EngineRom[(36.0 + (10000[8] + ((10000[8] < 0) * 13.0)))]
-  10000[10] <- 10000[8] + 1.0
-  10000[8] <- EngineRom[10000[8]]
-  10000[11] <- 0
-  goto 9
+  goto 9 if 10000[5] else 36
 9:
-  goto 10 if (10000[11] < 10000[8]) else 88
+  goto 10 if 10000[6] else 35
 10:
-  goto when 3000[(10000[10] + 10000[11])]
-    12.0 -> 12
-    default -> 11
+  goto 11 if 10000[0] else 34
 11:
-  IncrementPost(10000, 11.0)
-  goto 9
+  goto 12 if 10000[1] else 33
 12:
-  10000[11] <- EntityData[1] * 32.0
-  10000[12] <- EntityDataArray[(3.0 + 10000[11])]
-  10000[13] <- Trunc(10000[12] / 2.0) + 1.0
-  10000[4] <- EntityDataArray[10000[4]]
-  10000[14] <- (10000[4] - 0.5) * 0.072
-  10000[15] <- (10000[4] + 0.5) * 0.072
-  10000[11] <- EntityDataArray[10000[11]]
-  10000[16] <- (10000[11] - 0.5) * 0.072
-  10000[17] <- (10000[11] + 0.5) * 0.072
-  10000[4] <- 100000.0 + (Min(10000[4], 10000[11]) * 100.0) + Min(10000[5], 10000[12])
-  goto 13
+  goto 13 if 10000[5] else 32
 13:
-  goto 14 if (10000[6] < 10000[13]) else 87
+  goto 14 if 10000[6] else 31
 14:
-  10000[11] <- 10000[6] + 1.0
-  goto 15 if 10000[0] else 86
+  10000[14] <- 10000[4] * 2.0
+  10000[4] <- (10000[4] + 0.5) * PreviewData[1]
+  10000[15] <- Lerp(-0.9, 0.9, (10000[3] - 10000[14]) / 2.0)
+  10000[14] <- Lerp(-0.9, 0.9, (10000[8] - 10000[14]) / 2.0)
+  goto 15 if 10000[0] else 30
 15:
-  goto 16 if 10000[2] else 85
+  goto 16 if 10000[1] else 29
 16:
-  10000[18] <- 0
-  goto 17
+  goto 17 if 10000[5] else 28
 17:
-  goto 18 if (10000[18] < 10000[1]) else 84
+  goto 18 if 10000[6] else 27
 18:
-  goto when 3000[(10000[3] + 10000[18])]
-    12.0 -> 20
-    default -> 19
+  goto 19 if 10000[0] else 26
 19:
-  IncrementPost(10000, 18.0)
-  goto 17
+  goto 20 if 10000[1] else 25
 20:
-  goto 21 if 10000[7] else 83
+  goto 21 if 10000[5] else 24
 21:
-  goto 22 if 10000[9] else 82
+  goto 22 if 10000[6] else 23
 22:
-  10000[18] <- 0
-  goto 23
+  Draw(17.0, (10000[4] + 10000[10]) - ((RuntimeEnvironment[1] + RuntimeEnvironment[1]) / 2.0), 10000[15], (10000[4] + 10000[12]) - ((RuntimeEnvironment[1] + RuntimeEnvironment[1]) / 2.0), 10000[14], (10000[4] + 10000[13]) - ((RuntimeEnvironment[1] + RuntimeEnvironment[1]) / 2.0), 10000[14], (10000[4] + 10000[11]) - ((RuntimeEnvironment[1] + RuntimeEnvironment[1]) / 2.0), 10000[15], 10000[2], PreviewOption[5], 0, 0, 0)
+  10000[4] <- 10000[7]
+  goto 5
 23:
-  goto 24 if (10000[18] < 10000[8]) else 81
-24:
-  goto when 3000[(10000[10] + 10000[18])]
-    12.0 -> 26
-    default -> 25
-25:
-  IncrementPost(10000, 18.0)
-  goto 23
-26:
-  goto 27 if 10000[0] else 80
-27:
-  goto 28 if 10000[2] else 79
-28:
-  10000[18] <- 0
-  goto 29
-29:
-  goto 30 if (10000[18] < 10000[1]) else 78
-30:
-  goto when 3000[(10000[3] + 10000[18])]
-    12.0 -> 32
-    default -> 31
-31:
-  IncrementPost(10000, 18.0)
-  goto 29
-32:
-  goto 33 if 10000[7] else 77
-33:
-  goto 34 if 10000[9] else 76
-34:
-  10000[18] <- 0
-  goto 35
-35:
-  goto 36 if (10000[18] < 10000[8]) else 75
-36:
-  goto when 3000[(10000[10] + 10000[18])]
-    12.0 -> 38
-    default -> 37
-37:
-  IncrementPost(10000, 18.0)
-  goto 35
-38:
-  10000[18] <- 10000[6] * 2.0
-  10000[6] <- (10000[6] + 0.5) * PreviewData[1]
-  10000[19] <- Lerp(-0.9, 0.9, (10000[5] - 10000[18]) / 2.0)
-  10000[18] <- Lerp(-0.9, 0.9, (10000[12] - 10000[18]) / 2.0)
-  goto 39 if 10000[0] else 74
-39:
-  goto 40 if 10000[2] else 73
-40:
-  10000[20] <- 0
-  goto 41
-41:
-  goto 42 if (10000[20] < 10000[1]) else 72
-42:
-  goto when 3000[(10000[3] + 10000[20])]
-    12.0 -> 44
-    default -> 43
-43:
-  IncrementPost(10000, 20.0)
-  goto 41
-44:
-  goto 45 if 10000[7] else 71
-45:
-  goto 46 if 10000[9] else 70
-46:
-  10000[20] <- 0
-  goto 47
-47:
-  goto 48 if (10000[20] < 10000[8]) else 69
-48:
-  goto when 3000[(10000[10] + 10000[20])]
-    12.0 -> 50
-    default -> 49
-49:
-  IncrementPost(10000, 20.0)
-  goto 47
-50:
-  goto 51 if 10000[0] else 68
-51:
-  goto 52 if 10000[2] else 67
-52:
-  10000[20] <- 0
-  goto 53
-53:
-  goto 54 if (10000[20] < 10000[1]) else 66
-54:
-  goto when 3000[(10000[3] + 10000[20])]
-    12.0 -> 56
-    default -> 55
-55:
-  IncrementPost(10000, 20.0)
-  goto 53
-56:
-  goto 57 if 10000[7] else 65
-57:
-  goto 58 if 10000[9] else 64
-58:
-  10000[20] <- 0
-  goto 59
-59:
-  goto 60 if (10000[20] < 10000[8]) else 63
-60:
-  goto when 3000[(10000[10] + 10000[20])]
-    12.0 -> 62
-    default -> 61
-61:
-  IncrementPost(10000, 20.0)
-  goto 59
-62:
-  Draw(17.0, (10000[6] + 10000[14]) - ((RuntimeEnvironment[1] + RuntimeEnvironment[1]) / 2.0), 10000[19], (10000[6] + 10000[16]) - ((RuntimeEnvironment[1] + RuntimeEnvironment[1]) / 2.0), 10000[18], (10000[6] + 10000[17]) - ((RuntimeEnvironment[1] + RuntimeEnvironment[1]) / 2.0), 10000[18], (10000[6] + 10000[15]) - ((RuntimeEnvironment[1] + RuntimeEnvironment[1]) / 2.0), 10000[19], 10000[4], PreviewOption[5], 0, 0, 0)
-  10000[6] <- 10000[11]
-  goto 13
-63:
-  DebugLog(24.0)
-  DebugPause()
-  goto exit
-64:
-  DebugLog(23.0)
-  DebugPause()
-  goto exit
-65:
-  DebugLog(22.0)
-  DebugPause()
-  goto exit
-66:
-  DebugLog(21.0)
-  DebugPause()
-  goto exit
-67:
-  DebugLog(20.0)
-  DebugPause()
-  goto exit
-68:
-  DebugLog(19.0)
-  DebugPause()
-  goto exit
-69:
-  DebugLog(18.0)
-  DebugPause()
-  goto exit
-70:
-  DebugLog(17.0)
-  DebugPause()
-  goto exit
-71:
   DebugLog(16.0)
   DebugPause()
   goto exit
-72:
+24:
   DebugLog(15.0)
   DebugPause()
   goto exit
-73:
+25:
   DebugLog(14.0)
   DebugPause()
   goto exit
-74:
+26:
   DebugLog(13.0)
   DebugPause()
   goto exit
-75:
+27:
   DebugLog(12.0)
   DebugPause()
   goto exit
-76:
+28:
   DebugLog(11.0)
   DebugPause()
   goto exit
-77:
+29:
   DebugLog(10.0)
   DebugPause()
   goto exit
-78:
+30:
   DebugLog(9.0)
   DebugPause()
   goto exit
-79:
+31:
   DebugLog(8.0)
   DebugPause()
   goto exit
-80:
+32:
   DebugLog(7.0)
   DebugPause()
   goto exit
-81:
-  DebugLog(12.0)
-  DebugPause()
-  goto exit
-82:
-  DebugLog(11.0)
-  DebugPause()
-  goto exit
-83:
-  DebugLog(10.0)
-  DebugPause()
-  goto exit
-84:
-  DebugLog(9.0)
-  DebugPause()
-  goto exit
-85:
-  DebugLog(8.0)
-  DebugPause()
-  goto exit
-86:
-  DebugLog(7.0)
-  DebugPause()
-  goto exit
-87:
-  goto exit
-88:
+33:
   DebugLog(6.0)
   DebugPause()
   goto exit
-89:
+34:
   DebugLog(5.0)
   DebugPause()
   goto exit
-90:
+35:
+  DebugLog(8.0)
+  DebugPause()
+  goto exit
+36:
+  DebugLog(7.0)
+  DebugPause()
+  goto exit
+37:
+  DebugLog(6.0)
+  DebugPause()
+  goto exit
+38:
+  DebugLog(5.0)
+  DebugPause()
+  goto exit
+39:
+  goto exit
+40:
   DebugLog(4.0)
   DebugPause()
   goto exit
-91:
+41:
   DebugLog(3.0)
   DebugPause()
   goto exit
-92:
+42:
   DebugLog(2.0)
   DebugPause()
   goto exit
-93:
-  DebugLog(1.0)
+43:
+  DebugLog(1)
   DebugPause()
   goto exit
