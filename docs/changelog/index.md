@@ -1,3 +1,7 @@
+### 0.17.2
+
+- Performance improvements.
+
 ### 0.17.1
 
 - Reduced the runtime check overhead from archetype is at checks.
