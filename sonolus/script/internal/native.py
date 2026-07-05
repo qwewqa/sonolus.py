@@ -57,8 +57,9 @@ def native_function[**P, R](op: Op, const_eval: bool = False) -> Callable[[Calla
         n_required = sum(1 for p in params if p.default is inspect.Parameter.empty)
         # Native functions are always called positionally via ``wrapper(*args)``, so for an
         # all-positional signature ``bind(*args).args`` after ``apply_defaults()`` is just
-        # ``args + trailing_defaults``. Anything more exotic (var-positional/keyword-only)
-        # falls back to inspect's bind so behavior and error messages are unchanged.
+        # ``args + trailing_defaults``. Anything more exotic (var-positional/keyword-only,
+        # too many args) takes the signature.bind path below, which stays the source of
+        # truth for behavior and error messages.
         simple_positional = all(
             p.kind in (inspect.Parameter.POSITIONAL_ONLY, inspect.Parameter.POSITIONAL_OR_KEYWORD) for p in params
         )

@@ -4268,9 +4268,9 @@ def _run_rewrite_switch(Func f):
     # (2) combine_blocks: splice same-test empty single-pred default chains.
     ext = _rsw_ext_ref(f)
     # Per-block incoming-edge count over the mutable model, maintained
-    # incrementally across splices so the single-predecessor test is O(1)
-    # instead of an O(edges) rescan per candidate. (1) never changes an edge's
-    # dst, so the marshaled edges give the pre-splice counts.
+    # incrementally across splices so the single-predecessor test is O(1).
+    # Seeding from the marshaled edges is valid because (1) rewrites edge
+    # conds in place and never changes an edge's dst.
     cdef list ic = [0] * nb
     cdef int32_t _e, _d
     for _e in range(f.n_edges):

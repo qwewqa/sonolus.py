@@ -250,11 +250,10 @@ cdef void _pack(Func func, Liveness L, int32_t* temp_offset) except *:
             # Collect the intervals of already-placed interfering temps by
             # iterating only the SET bits of t's interference row, mark them in
             # the occupancy map, and take the lowest contiguous free run of
-            # >= size slots. This is exactly the first-fit offset the previous
-            # bump-to-fixpoint loop converged to (bumping to an overlapping
-            # neighbor's end skips no viable offsets: every offset strictly
-            # below that end still overlaps the same neighbor), computed in
-            # O(deg + TEMP_SIZE) instead of O(n_temps) per bump pass.
+            # >= size slots. The result must be the lowest offset that overlaps
+            # no placed neighbor (first-fit): emitted temp addresses, and hence
+            # the packaged output, depend on it. O(nw + total placed-neighbor
+            # size + TEMP_SIZE) per temp (~O(deg + TEMP_SIZE) for scalar temps).
             ndeg = 0
             hi = 0
             rowp = &adj[t * nw]
@@ -1600,21 +1599,25 @@ cdef void _coalesce(Func func) except *:
             return
 
         # Union non-interfering copy-related webs (min-canonical) with an arena
-        # union-find. Interference is stored ONCE per web root: ``pbase[root]`` is
-        # the web's neighbour bitset, shared by every member instead of copied
-        # per member at each merge. The original processes copy pairs in sorted
-        # order and, at each accepted merge, (A) overwrites every member's
-        # neighbour set with the merged set and (B) adds the merged web's
-        # membership to every neighbour's neighbour set. (A) is the shared
-        # ``pbase``; (B)'s per-endpoint updates are modelled by ``pextra``, a
-        # per-endpoint bitset that is logically cleared whenever the endpoint's
-        # own web is re-synced (a merge) -- tracked lazily with a generation
-        # stamp (``xgen`` vs the root's ``wgen``) so the O(members) reset is a
-        # single counter bump. Neighbour sets only ever hold endpoints (the
-        # original reads them solely at copy-pair endpoints), so all bitsets are
-        # over the dense endpoint index [0, ne). ``pmemb[root]`` is the web's
-        # membership bitset (for (B)); ``uf_wmin`` tracks the min temp id per web
-        # for the canonical id.
+        # union-find over the dense endpoint index [0, ne). Neighbour sets are
+        # only ever consulted at copy-pair endpoints, so they hold endpoints
+        # only. The merge semantics below are load-bearing for output stability
+        # (emitted temp numbering depends on which pairs are accepted); in
+        # particular, a plain union-find with one fully-shared neighbour set
+        # per root is NOT equivalent -- it over-preserves neighbours:
+        # - ``pbase[root]`` is the web's shared neighbour bitset. An accepted
+        #   merge combines the two webs' bases plus the two PAIR ENDPOINTS'
+        #   currently-valid extras, then invalidates every member's extras.
+        # - ``pextra[endpoint]`` holds the neighbour-side updates an endpoint
+        #   receives when a web it interferes with merges (that web's
+        #   membership is added to each of its neighbours). An endpoint's
+        #   extras remain valid only until its own web next merges: each merge
+        #   stamps the root's ``wgen`` with a fresh global generation, and
+        #   validity is ``xgen[endpoint] == wgen[root]``, so invalidating all
+        #   members' extras is a single counter bump.
+        # ``pmemb[root]`` is the web's membership bitset (the neighbour-side
+        # update payload); ``uf_wmin`` tracks the min temp id per web for the
+        # canonical id.
 
         # Dense endpoint index in ascending temp-id order.
         endpoints = set()
@@ -1673,7 +1676,8 @@ cdef void _coalesce(Func func) except *:
             td = eidx[t]
             sd = eidx[s]
             rt0 = _uf_find(uf_parent, td)
-            # accept test: source in interf[target] = pbase[rt0] | valid pextra[td]
+            # Accept test: does source interfere with target's web
+            # (base | target's currently-valid extras)?
             if bs_get(&pbase[<int64_t>rt0 * ew], sd) or (
                     xgen[td] == wgen[rt0] and bs_get(&pextra[<int64_t>td * ew], sd)):
                 continue
@@ -1698,7 +1702,8 @@ cdef void _coalesce(Func func) except *:
                 orow = &pmemb[<int64_t>wother * ew]
                 for kk in range(ew):
                     mrow[kk] |= orow[kk]
-            # new base = base[rt0] | base[rs0] | valid extras, accumulated in pbase[wroot].
+            # Merged base = base(rt0) | base(rs0) | both endpoints' valid extras,
+            # accumulated in pbase[wroot].
             brow = &pbase[<int64_t>wroot * ew]
             if wother >= 0:
                 orow = &pbase[<int64_t>wother * ew]
@@ -1714,7 +1719,7 @@ cdef void _coalesce(Func func) except *:
                     brow[kk] |= xrow[kk]
             Ggen += 1
             wgen[wroot] = Ggen
-            # (B) add merged web membership to every neighbour's neighbour set.
+            # Add the merged web's membership to every neighbour's extras.
             mrow = &pmemb[<int64_t>wroot * ew]
             for w in range(ew):
                 word = brow[w]
