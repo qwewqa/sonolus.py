@@ -626,9 +626,13 @@ class Scope:
                 if bindings.get(key, _EMPTY_BINDING) is not first:
                     break
             else:
-                # Fast path: every source holds the same binding object.
+                # Fast path: every source holds the same binding object. Keep that
+                # object rather than rebuilding it so loop-variable read counts
+                # survive the merge; rebuilding severed the identity link to
+                # header.loop_variables, silently suppressing the read-before-rebind
+                # conflict check behind any multi-predecessor join.
                 if isinstance(first, ValueBinding):
-                    target_bindings[key] = ValueBinding(first.value)
+                    target_bindings[key] = first
                 else:
                     target_bindings[key] = ConflictBinding()
                 continue

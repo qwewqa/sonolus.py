@@ -726,6 +726,26 @@ def test_error_while_conflicting_definitions_behind_single_predecessor_merge():
         run_compiled(fn)
 
 
+def test_error_while_conflicting_definitions_behind_multi_predecessor_merge():
+    # Same hazard behind a merge with two live predecessors: the merge must keep the
+    # loop-variable binding object (and its read counts) rather than rebuilding it,
+    # or the read after the join never reaches the back-edge conflict check and the
+    # loop silently reads the stale pre-loop reference.
+    def fn():
+        x = Pair(1, 2)
+        i = 0
+        while i < 2:
+            i += 1
+            if black_box():
+                debug_log(0)
+            debug_log(x.first)
+            x = Pair(3, 4)
+        return 1
+
+    with pytest.raises(CompilationError, match="conflicting definitions"):
+        run_compiled(fn)
+
+
 def test_walrus_operator():
     def fn():
         x: int = 0
