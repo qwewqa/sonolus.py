@@ -99,6 +99,20 @@ from sonolus.backend._opt.midend cimport build_ssa, cfg_cleanup, midend_round
 from sonolus.backend._opt.ir import marshal_in, to_basic_blocks
 from sonolus.backend._opt.midend import _seq_parallel_copies
 
+cdef extern from *:
+    """
+    /* Count trailing zeros of a nonzero 64-bit word (callers only pass nonzero). */
+    #if defined(_MSC_VER)
+    #include <intrin.h>
+    static inline int _sonolus_ctz64(unsigned long long x){
+        unsigned long r; _BitScanForward64(&r, (unsigned __int64)x); return (int)r;
+    }
+    #else
+    static inline int _sonolus_ctz64(unsigned long long x){ return __builtin_ctzll(x); }
+    #endif
+    """
+    int _sonolus_ctz64(unsigned long long x) nogil
+
 
 # Upper bound on the interference-matrix element count (n_temps * n_words). Kept
 # at INT32_MAX so the int32 row index ``t * nw + w`` used to address the matrix
@@ -177,9 +191,11 @@ cdef void _pack(Func func, Liveness L, int32_t* temp_offset) except *:
     cdef int32_t nw = L.n_words
     cdef int32_t ni = func.n_instrs
     cdef Instr* instrs = func.instrs
-    cdef int32_t i, t, u, w, rs, size, offset, new_off, us, ue
+    cdef int32_t i, t, u, w, rs, size, offset, us, ue
+    cdef int32_t k, p, hi, run, ndeg
     cdef uint64_t* rl
-    cdef bint changed
+    cdef uint64_t* rowp
+    cdef uint64_t word
 
     if n_temps == 0:
         return
@@ -195,8 +211,13 @@ cdef void _pack(Func func, Liveness L, int32_t* temp_offset) except *:
     cdef uint64_t* adj = <uint64_t*>calloc(
         (<size_t>n_temps * <size_t>nw) if nw > 0 else 1, sizeof(uint64_t))
     cdef uint64_t* work = <uint64_t*>calloc(<size_t>(nw if nw > 0 else 1), sizeof(uint64_t))
-    if nonzero == NULL or adj == NULL or work == NULL:
-        free(nonzero); free(adj); free(work)
+    # Scratch for the first-fit slot sweep: an occupancy byte-map over the temp
+    # block plus a placed-neighbor interval buffer (at most n_temps neighbors).
+    cdef uint8_t* cover = <uint8_t*>calloc(<size_t>TEMP_SIZE, sizeof(uint8_t))
+    cdef int32_t* nb_us = <int32_t*>malloc(<size_t>n_temps * sizeof(int32_t))
+    cdef int32_t* nb_ue = <int32_t*>malloc(<size_t>n_temps * sizeof(int32_t))
+    if nonzero == NULL or adj == NULL or work == NULL or cover == NULL or nb_us == NULL or nb_ue == NULL:
+        free(nonzero); free(adj); free(work); free(cover); free(nb_us); free(nb_ue)
         raise MemoryError()
     try:
         for t in range(n_temps):
@@ -226,34 +247,59 @@ cdef void _pack(Func func, Liveness L, int32_t* temp_offset) except *:
 
         for t in order:
             size = func.temps[t].size
-            offset = 0
-            changed = True
-            while changed:
-                changed = False
-                new_off = offset
-                for u in range(n_temps):
+            # Collect the intervals of already-placed interfering temps by
+            # iterating only the SET bits of t's interference row, mark them in
+            # the occupancy map, and take the lowest contiguous free run of
+            # >= size slots. This is exactly the first-fit offset the previous
+            # bump-to-fixpoint loop converged to (bumping to an overlapping
+            # neighbor's end skips no viable offsets: every offset strictly
+            # below that end still overlaps the same neighbor), computed in
+            # O(deg + TEMP_SIZE) instead of O(n_temps) per bump pass.
+            ndeg = 0
+            hi = 0
+            rowp = &adj[t * nw]
+            for w in range(nw):
+                word = rowp[w]
+                while word != 0:
+                    u = (w << 6) + _sonolus_ctz64(word)
+                    word &= word - 1
                     if u == t:
-                        continue
-                    if not bs_get(&adj[t * nw], u):
                         continue
                     if temp_offset[u] < 0:
                         continue
                     us = temp_offset[u]
                     ue = us + func.temps[u].size
-                    # overlap of [offset, offset+size) with [us, ue)
-                    if us < offset + size and ue > offset:
-                        if ue > new_off:
-                            new_off = ue
-                if new_off != offset:
-                    offset = new_off
-                    changed = True
-            if offset + size > TEMP_SIZE:
+                    nb_us[ndeg] = us
+                    nb_ue[ndeg] = ue
+                    ndeg += 1
+                    for p in range(us, ue):
+                        cover[p] = 1
+                    if ue > hi:
+                        hi = ue
+            offset = -1
+            run = 0
+            for p in range(TEMP_SIZE):
+                if p < hi and cover[p]:
+                    run = 0
+                else:
+                    run += 1
+                    if run >= size:
+                        offset = p - size + 1
+                        break
+            # Clear the occupancy map for the next temp (only the touched slots).
+            for k in range(ndeg):
+                for p in range(nb_us[k], nb_ue[k]):
+                    cover[p] = 0
+            if offset < 0 or offset + size > TEMP_SIZE:
                 raise ValueError("Temporary memory limit exceeded")
             temp_offset[t] = offset
     finally:
         free(nonzero)
         free(adj)
         free(work)
+        free(cover)
+        free(nb_us)
+        free(nb_ue)
 
 
 # --------------------------------------------------------------------------
@@ -1446,6 +1492,8 @@ cdef void _coalesce(Func func) except *:
     cdef int32_t i, t, u, w, rs, pid, vid, spid, s, dsc
     cdef uint64_t* rl
     cdef uint64_t* blo
+    cdef uint64_t* rowp
+    cdef uint64_t word
     try:
         for t in range(n_temps):
             if func.temps[t].size == 1:
@@ -1537,10 +1585,17 @@ cdef void _coalesce(Func func) except *:
             endpoints.add(pair[1])
         interf = {}
         for t in endpoints:
+            # Iterate only the set bits of t's interference row; rows are sparse
+            # relative to n_temps, so this beats probing every temp id.
             iset = set()
-            for u in range(n_temps):
-                if u != t and bs_get(&adj[t * nw], u):
-                    iset.add(u)
+            rowp = &adj[t * nw]
+            for w in range(nw):
+                word = rowp[w]
+                while word != 0:
+                    u = (w << 6) + _sonolus_ctz64(word)
+                    word &= word - 1
+                    if u != t:
+                        iset.add(u)
             interf[t] = iset
 
         mapping = {}
