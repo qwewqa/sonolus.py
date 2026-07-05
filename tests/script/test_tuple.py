@@ -269,3 +269,17 @@ def test_tuple_contains_heterogeneous():
         )
 
     assert tuple(run_and_validate(fn)) == (True, False, True, True, False)
+
+
+def test_enumerate_tuple_with_start():
+    # enumerate() over a compile-time tuple with an explicit start must offset indices by
+    # start exactly once. The buggy impl passed the (Num) start to builtin enumerate (a
+    # TypeError) and also double-counted it.
+    def fn():
+        t = (10, 20, 30)
+        results = VarArray[int, 3].new()
+        for i, v in enumerate(t, 5):
+            results.append(i * 100 + v)
+        return results
+
+    assert list(run_and_validate(fn)) == [510, 620, 730]

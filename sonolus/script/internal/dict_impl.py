@@ -1,7 +1,7 @@
 from typing import Any
 
 from sonolus.script.array import Array
-from sonolus.script.debug import error
+from sonolus.script.debug import static_error
 from sonolus.script.internal.context import Context, ctx, set_ctx
 from sonolus.script.internal.impl import validate_value
 from sonolus.script.internal.meta_fn import meta_fn
@@ -62,6 +62,16 @@ class DictImpl[Keys, OrderedKeys, Values](Record):
                 return Some(self._values.get_unchecked(index))
             else:
                 return Some(self._values[index])
+        # A runtime (non-constant) key into a dict whose values are not a uniform-constant
+        # Array can only be resolved by indexing a tuple with a runtime index, which is
+        # impossible to compile. numsearch/binsearch/linsearch all produce runtime indices,
+        # so reject here (before them) with a clear compile-time diagnostic. constsearch above
+        # already handled compile-time-constant keys, which are valid for tuple values.
+        if not self._has_array_values:
+            static_error(
+                "Dict must be accessed via a compile time constant unless "
+                "all values are compile time constants of a uniform type."
+            )
         index = self._try_numsearch(item)
         if index is not None:
             if index < 0:
@@ -70,11 +80,6 @@ class DictImpl[Keys, OrderedKeys, Values](Record):
                 return Some(self._values.get_unchecked(index))
             else:
                 return Some(self._values[index])
-        if not self._has_array_values:
-            error(
-                "Dict must be accessed via a compile time constant unless "
-                "all value are compile time constants of a uniform type."
-            )
         if self._has_ordered_keys:
             index = self._binsearch(item)
         else:

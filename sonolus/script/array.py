@@ -238,6 +238,8 @@ class Array[T, Size](GenericValue, ArrayLike[T], metaclass=ArrayMeta):
                 raise InternalError("Unexpected array value")
         else:
             if not ctx():
+                if index._is_py_():
+                    raise IndexError("Array index out of range")
                 raise InternalError("Unexpected non-constant index")
             if isinstance(self._value, list | BlockPlace):
                 try:

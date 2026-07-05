@@ -5,13 +5,14 @@ import pytest
 from sonolus.script.array import Array
 from sonolus.script.containers import Box
 from sonolus.script.internal.context import ctx
+from sonolus.script.internal.error import CompilationError
 from sonolus.script.internal.impl import validate_value
 from sonolus.script.internal.math_impls import _floor
 from sonolus.script.internal.meta_fn import meta_fn
 from sonolus.script.internal.random import _random
 from sonolus.script.internal.tuple_impl import TupleImpl
 from sonolus.script.num import _is_num
-from tests.script.conftest import run_and_validate
+from tests.script.conftest import compile_fn, run_and_validate
 
 
 @meta_fn
@@ -2122,3 +2123,15 @@ def test_isinstance_dict_not_set():
         return isinstance(s, dict)
 
     assert not run_and_validate(fn)
+
+
+def test_getitem_runtime_key_non_array_values_errors_clearly():
+    # A numeric-keyed dict whose values are non-constant (stored as a tuple, not an Array),
+    # indexed with a runtime key, must give the clear "Dict must be accessed via a compile
+    # time constant" diagnostic instead of a confusing internal "Cannot index tuple" error.
+    def fn():
+        d = {1: Box(10), 2: Box(20)}
+        return d[bb(1)].value
+
+    with pytest.raises(CompilationError, match="Dict must be accessed via a compile time constant"):
+        compile_fn(fn)

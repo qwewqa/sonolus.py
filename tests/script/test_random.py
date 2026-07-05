@@ -283,3 +283,25 @@ def test_impl_uniform_distribution(_random_module, a, width):
     counts, missing = collect_until_complete(get_bucket, expected)
 
     assert missing == 0, f"Failed to generate values in buckets: {expected - set(counts.keys())}"
+
+
+@given(
+    st.random_module(),
+    st.integers(min_value=-MAX_RANGE_SIZE, max_value=MAX_RANGE_SIZE),
+    st.integers(min_value=1, max_value=MAX_RANGE_SIZE),
+    st.integers(min_value=-5, max_value=-1),
+)
+def test_impl_randrange_with_negative_step(_random_module, start, width, step):
+    # randrange with a negative step must only ever return members of range(start, stop, step).
+    # The buggy length formula used the positive-step ceiling division and returned
+    # out-of-range values for negative steps.
+    stop = start - width
+    expected = set(range(start, stop, step))
+    if not expected:  # Empty range
+        return
+
+    counts, missing = collect_until_complete(lambda: srandom._randrange(start, stop, step), expected)
+
+    assert missing == 0, f"Failed to generate values: {expected - set(counts)}"
+    assert all((x - start) % step == 0 for x in counts)
+    assert all(x in expected for x in counts)

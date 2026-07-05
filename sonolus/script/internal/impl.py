@@ -57,7 +57,7 @@ def validate_value[T](value: T) -> Value | T:
         return set_impl.SetImpl.from_set(value)
     if get_origin(value) in {Literal, Annotated, UnionType, Final, tuple, type}:
         return constant.BasicConstantValue.of(value)
-    if value in {Literal, Annotated, Union}:
+    if value is Literal or value is Annotated or value is Union:
         return constant.TypingSpecialFormConstant.of(value)
     if value_type is sonolus_globals._GlobalPlaceholder:
         return value.get()

@@ -402,7 +402,8 @@ class _Num(Value, metaclass=_NumMeta):
                 return -a
             return None
 
-        return self._bin_op(other, const_fn, Op.Divide)._unary_op(lambda x: x, Op.Floor)
+        result = self._bin_op(other, const_fn, Op.Divide)
+        return result if result is NotImplemented else result._unary_op(lambda x: x, Op.Floor)
 
     @simple_meta_fn
     def __mod__(self, other) -> Self:
@@ -424,9 +425,16 @@ class _Num(Value, metaclass=_NumMeta):
             b_py = b._as_py_or_none()
             if a_py is not None and b_py is not None:
                 try:
-                    return Num(a_py**b_py)
-                except OverflowError:
+                    result = a_py**b_py
+                except (OverflowError, ZeroDivisionError):
+                    # OverflowError: result too large; ZeroDivisionError: 0 ** negative.
+                    # Defer to Op.Power so the runtime yields its IEEE value instead of
+                    # crashing the compiler on a possibly-dead branch.
                     return None
+                if isinstance(result, complex):
+                    # Negative base, fractional exponent -> complex; defer to Op.Power.
+                    return None
+                return Num(result)
             if b_py == 0:
                 return Num(1)
             if b_py == 1:

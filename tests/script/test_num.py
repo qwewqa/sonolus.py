@@ -3,6 +3,7 @@ from hypothesis import strategies as st
 
 from sonolus.script.array import Array
 from tests.script.conftest import run_and_validate
+from tests.script.test_dict import bb
 
 ints = st.integers(min_value=-1000, max_value=1000)
 floats = st.floats(min_value=-99999, max_value=99999, allow_nan=False, allow_infinity=False)
@@ -203,3 +204,27 @@ def test_num_while_continue(a, b):
         return result
 
     run_and_validate(fn)
+
+
+def test_pow_zero_to_negative_exponent_does_not_crash_compiler():
+    # 0 ** -1 raises ZeroDivisionError in Python; the frontend must defer the fold to a
+    # runtime Op.Power (never executed here) instead of crashing the compiler while visiting
+    # a runtime-guarded branch.
+    def fn():
+        result = 42
+        if bb(0):  # runtime-false: the branch is compiled but never executed
+            result = 0**-1
+        return result
+
+    assert run_and_validate(fn) == 42
+
+
+def test_pow_negative_base_fractional_exponent_does_not_crash_compiler():
+    # (-8.0) ** 0.5 is complex in Python; folding it would corrupt the IR, so defer to Op.Power.
+    def fn():
+        result = 42
+        if bb(0):
+            result = (-8.0) ** 0.5
+        return result
+
+    assert run_and_validate(fn) == 42

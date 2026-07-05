@@ -681,7 +681,30 @@ class Visitor(ast.NodeVisitor):
         raise NotImplementedError("Type aliases are not supported")
 
     def visit_AugAssign(self, node):
-        lhs_value = self.visit(node.target)
+        target = node.target
+        # Evaluate the target's base (and subscript key / attribute) exactly once so a
+        # side-effecting subscript index or attribute base is not re-evaluated on write-back,
+        # matching Python's rule that an augmented-assignment target is evaluated only once.
+        match target:
+            case ast.Attribute(value=base_expr, attr=attr):
+                base = self.visit(base_expr)
+                lhs_value = self.handle_getattr(target, base, attr)
+
+                def store(result):
+                    self.handle_setattr(target, base, attr, result)
+            case ast.Subscript(value=base_expr, slice=slice_expr):
+                base = self.visit(base_expr)
+                key = self.visit(slice_expr)
+                lhs_value = self.handle_getitem(target, base, key)
+
+                def store(result):
+                    self.handle_setitem(target, base, key, result)
+            case _:
+                # Name (or any other target): plain read/write with no separate base to reuse.
+                lhs_value = self.visit(target)
+
+                def store(result):
+                    self.handle_assign(target, result)
         rhs_value = self.visit(node.value)
         regular_fn_name = bin_ops[type(node.op)]
         if (
@@ -692,7 +715,7 @@ class Visitor(ast.NodeVisitor):
         ):
             # Num has no in-place operators and never returns NotImplemented for Num operands
             self.active_ctx = active_ctx
-            self.handle_assign(node.target, getattr(lhs_value, regular_fn_name)(rhs_value))
+            store(getattr(lhs_value, regular_fn_name)(rhs_value))
             return
         inplace_fn_name = inplace_ops[type(node.op)]
         right_fn_name = rbin_ops[type(node.op)]
@@ -701,17 +724,17 @@ class Visitor(ast.NodeVisitor):
             if not self.is_not_implemented(result):
                 if result is not lhs_value:
                     raise ValueError("Inplace operation must return the same object")
-                self.handle_assign(node.target, result)
+                store(result)
                 return
         if hasattr(lhs_value, regular_fn_name):
             result = self.handle_call(node, getattr(lhs_value, regular_fn_name), rhs_value)
             if not self.is_not_implemented(result):
-                self.handle_assign(node.target, result)
+                store(result)
                 return
         if hasattr(rhs_value, right_fn_name) and type(lhs_value) is not type(rhs_value):
             result = self.handle_call(node, getattr(rhs_value, right_fn_name), lhs_value)
             if not self.is_not_implemented(result):
-                self.handle_assign(node.target, result)
+                store(result)
                 return
         raise TypeError(
             f"unsupported operand type(s) for {op_to_symbol[type(node.op)]}=: "
@@ -1682,7 +1705,7 @@ class Visitor(ast.NodeVisitor):
         parameters: list[inspect.Parameter] = []
         pos_only_count = len(arguments.posonlyargs)
         for i, arg in enumerate(arguments.posonlyargs):
-            default_idx = i - pos_only_count + len(arguments.defaults)
+            default_idx = i - pos_only_count - len(arguments.args) + len(arguments.defaults)
             default = self.visit(arguments.defaults[default_idx]) if default_idx >= 0 else None
             param = inspect.Parameter(
                 name=arg.arg,

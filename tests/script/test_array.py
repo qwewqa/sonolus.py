@@ -430,3 +430,38 @@ def test_array_with_iter():
         return total
 
     assert run_and_validate(fn) == 6
+
+
+def test_array_reversed_negative_index():
+    # Indexing a reversed view must normalize/bounds-check the caller's index before the
+    # reversal transform. The buggy reverser applied the transform first, so valid negative
+    # indices raised and out-of-range indices silently wrapped.
+    def fn():
+        array = Array(10, 20, 30, 40, 50)
+        rev = reversed(array)  # logical view [50, 40, 30, 20, 10]
+        return Array(rev[-1], rev[-2], rev[-5])
+
+    assert list(run_and_validate(fn)) == [10, 20, 50]
+
+
+def test_array_reversed_negative_index_set():
+    def fn():
+        array = Array(10, 20, 30, 40, 50)
+        rev = reversed(array)
+        rev[-1] = 99  # first element of the underlying array
+        rev[0] = 77  # last element of the underlying array
+        return array
+
+    assert list(run_and_validate(fn)) == [99, 20, 30, 40, 77]
+
+
+def test_get_unchecked_out_of_bounds_raises_index_error():
+    # A constant out-of-bounds index to get_unchecked (outside a compilation context) is an
+    # IndexError, not the misleading InternalError("Unexpected non-constant index").
+    a = Array(1, 2, 3)
+    with pytest.raises(IndexError, match="out of range"):
+        a.get_unchecked(3)  # one past the end
+    with pytest.raises(IndexError, match="out of range"):
+        a.get_unchecked(5)  # positive out of bounds
+    with pytest.raises(IndexError, match="out of range"):
+        a.get_unchecked(-1)  # negative (not normalized by get_unchecked)

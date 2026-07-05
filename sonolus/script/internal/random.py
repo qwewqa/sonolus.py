@@ -22,7 +22,7 @@ def _randrange(start: int, stop: int | None = None, step: int = 1) -> int:
     if stop is None:
         stop = start
         start = 0
-    range_len = (stop - start + step - 1) // step
+    range_len = max(0, (stop - start + (step - (1 if step > 0 else -1))) // step)
     return start + step * _random_integer(0, range_len)
 
 

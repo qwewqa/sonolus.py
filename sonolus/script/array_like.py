@@ -330,9 +330,14 @@ class _ArrayReverser[V: ArrayLike](Record, ArrayLike):
         return len(self.array)
 
     def __getitem__(self, index: int) -> V:
+        # Normalize/bounds-check the caller's index before applying the reversal transform,
+        # so negative indices resolve and out-of-range indices raise (rather than silently
+        # wrapping into a valid index of the underlying array).
+        index = get_positive_index(index, len(self))
         return self.array[len(self) - 1 - index]
 
     def __setitem__(self, index: int, value: V):
+        index = get_positive_index(index, len(self))
         self.array[len(self) - 1 - index] = value
 
     def get_unchecked(self, index: Num) -> V:

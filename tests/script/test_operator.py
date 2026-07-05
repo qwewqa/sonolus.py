@@ -395,3 +395,37 @@ def test_bool_call_false():
         return bool(x)
 
     assert not run_and_validate(fn)
+
+
+def test_max_two_arg_key_tie_returns_first():
+    # On a key tie, max() must return the FIRST maximal argument (Python semantics and the
+    # library's own single-iterable path). The buggy _max2_generic returned the second.
+    def fn():
+        return max(3, -3, key=lambda x: x * x)
+
+    assert run_and_validate(fn) == 3
+
+
+def test_min_two_arg_key_tie_returns_first():
+    def fn():
+        return min(-3, 3, key=lambda x: x * x)
+
+    assert run_and_validate(fn) == -3
+
+
+class RFloorDivOnly(Record):
+    def __rfloordiv__(self, other):
+        debug_log(30)
+        return RFloorDivOnly()
+
+
+def test_floordiv_falls_back_to_reflected_op():
+    # Num.__floordiv__ must return NotImplemented for a non-numeric operand so the reflected
+    # __rfloordiv__ is tried. The buggy version chained ._unary_op onto NotImplemented and
+    # raised AttributeError, aborting compilation.
+    def fn():
+        x = 5
+        y = RFloorDivOnly()
+        return x // y
+
+    run_and_validate(fn)

@@ -1206,3 +1206,49 @@ def test_nested_function_with_complex_signature():
         return nested(1, 2, 3, 4, 12345, kw_only_1=5, kw_only_2=6, extra=7)
 
     assert run_and_validate(fn) == 21
+
+
+def test_nested_posonly_with_pos_or_kw_default():
+    # A nested function combining positional-only params with a positional-or-keyword default
+    # exercises arguments_to_signature's positional-only default indexing. The buggy index
+    # gave `b` a bogus default (and could raise "non-default argument follows default argument").
+    def fn():
+        def nested(a, /, b, c=10):
+            return a * 100 + b * 10 + c
+
+        return nested(1, 2) + nested(3, 4, 5)  # (100+20+10) + (300+40+5)
+
+    assert run_and_validate(fn) == 475
+
+
+def test_nested_posonly_default_value_not_shifted():
+    # Value-shift case: posonly `x` has a default, pos-or-kw `z` has a default. The buggy
+    # index mis-assigned defaults across the boundary.
+    def fn():
+        def g(x, y=100, /, z=200):
+            return x + y + z
+
+        return g(1)  # x=1, y=100 (default), z=200 (default) -> 301
+
+    assert run_and_validate(fn) == 301
+
+
+def test_augassign_subscript_index_evaluated_once():
+    # An augmented assignment target must be evaluated exactly once (Python semantics). The
+    # buggy visit_AugAssign re-visited the subscript base+index on write-back, so a
+    # side-effecting index ran twice (reading one slot and writing another).
+    def fn():
+        arr = Array(0, 0, 0)
+        state = Array(0)  # state[0] doubles as the next index and a call counter
+
+        def bump():
+            i = state[0]
+            debug_log(i)
+            state[0] += 1
+            return i
+
+        arr[bump()] += 10
+        # Evaluated once: bump() -> 0, arr[0] += 10, state[0] == 1, log == [0].
+        return Array(arr[0], arr[1], arr[2], state[0])
+
+    assert run_and_validate(fn) == Array(10, 0, 0, 1)

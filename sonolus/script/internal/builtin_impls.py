@@ -67,7 +67,7 @@ def _enumerate(iterable, start=0):
     iterable = validate_value(iterable)
     if has_tuple_iter(iterable):
         return TupleImpl._accept_(
-            tuple((start + i, value) for i, value in enumerate(tuple_iter(iterable), start=start))
+            tuple((start + i, value) for i, value in enumerate(tuple_iter(iterable)))
         )
     elif not hasattr(iterable, "__iter__"):
         raise TypeError(f"'{type(iterable).__name__}' object is not iterable")
@@ -196,10 +196,12 @@ def _max2_num(a, b):
 
 
 def _max2_generic(a, b, key=_identity):
-    if key(a) > key(b):
-        return a
-    else:
+    # Return the FIRST argument on a key tie, matching Python's max() and the library's
+    # single-iterable path (index_of_max uses a strict comparison).
+    if key(b) > key(a):
         return b
+    else:
+        return a
 
 
 def _max_num_iterator(iterable, default, key):
@@ -290,10 +292,12 @@ def _min2_num(a, b):
 
 
 def _min2_generic(a, b, key=_identity):
-    if key(a) < key(b):
-        return a
-    else:
+    # Return the FIRST argument on a key tie, matching Python's min() and the library's
+    # single-iterable path (index_of_min uses a strict comparison).
+    if key(b) < key(a):
         return b
+    else:
+        return a
 
 
 def _min_num_iterator(iterable, default, key):
