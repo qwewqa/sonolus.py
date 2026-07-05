@@ -1465,6 +1465,13 @@ cdef class _Lower:
 # Coalescing on the final schedule.
 # --------------------------------------------------------------------------
 
+cdef inline int32_t _uf_find(int32_t* parent, int32_t x) noexcept nogil:
+    while parent[x] != x:
+        parent[x] = parent[parent[x]]
+        x = parent[x]
+    return x
+
+
 cdef void _coalesce(Func func) except *:
     cdef Liveness L = compute_liveness(func)
     cdef int32_t nw = L.n_words
@@ -1494,6 +1501,26 @@ cdef void _coalesce(Func func) except *:
     cdef uint64_t* blo
     cdef uint64_t* rowp
     cdef uint64_t word
+
+    # Coalescer union-find + dense-bitset interference (see the merge section).
+    cdef int32_t ne = 0, ew = 0, d, du, td, sd, rt0, rs0, wroot, wother, pd, rp, kk
+    cdef int64_t Ggen = 0
+    cdef bint et_valid, es_valid
+    cdef int32_t* eidx = NULL
+    cdef int32_t* elist = NULL
+    cdef int32_t* uf_parent = NULL
+    cdef int32_t* uf_size = NULL
+    cdef int32_t* uf_wmin = NULL
+    cdef int64_t* wgen = NULL
+    cdef int64_t* xgen = NULL
+    cdef uint64_t* pbase = NULL
+    cdef uint64_t* pextra = NULL
+    cdef uint64_t* pmemb = NULL
+    cdef uint64_t* brow
+    cdef uint64_t* orow
+    cdef uint64_t* xrow
+    cdef uint64_t* mrow
+    cdef uint64_t* erow
     try:
         for t in range(n_temps):
             if func.temps[t].size == 1:
@@ -1572,53 +1599,143 @@ cdef void _coalesce(Func func) except *:
         if not copy_pairs:
             return
 
-        # Interference as Python sets, then union non-interfering copy-related
-        # webs (min-canonical). interf is only ever READ at copy-pair endpoints
-        # (the decision check and combined_interf), and webs only ever contain
-        # endpoints, so building neighbor sets for the endpoints alone is
-        # byte-identical to the full n_temps x n_temps rebuild while dropping the
-        # quadratic scan over unrelated temps. Endpoints are all scalar temps by
-        # construction (copy_pairs only pairs PLACE_TEMP_SCALAR block_refs).
+        # Union non-interfering copy-related webs (min-canonical) with an arena
+        # union-find. Interference is stored ONCE per web root: ``pbase[root]`` is
+        # the web's neighbour bitset, shared by every member instead of copied
+        # per member at each merge. The original processes copy pairs in sorted
+        # order and, at each accepted merge, (A) overwrites every member's
+        # neighbour set with the merged set and (B) adds the merged web's
+        # membership to every neighbour's neighbour set. (A) is the shared
+        # ``pbase``; (B)'s per-endpoint updates are modelled by ``pextra``, a
+        # per-endpoint bitset that is logically cleared whenever the endpoint's
+        # own web is re-synced (a merge) -- tracked lazily with a generation
+        # stamp (``xgen`` vs the root's ``wgen``) so the O(members) reset is a
+        # single counter bump. Neighbour sets only ever hold endpoints (the
+        # original reads them solely at copy-pair endpoints), so all bitsets are
+        # over the dense endpoint index [0, ne). ``pmemb[root]`` is the web's
+        # membership bitset (for (B)); ``uf_wmin`` tracks the min temp id per web
+        # for the canonical id.
+
+        # Dense endpoint index in ascending temp-id order.
         endpoints = set()
         for pair in copy_pairs:
             endpoints.add(pair[0])
             endpoints.add(pair[1])
-        interf = {}
-        for t in endpoints:
-            # Iterate only the set bits of t's interference row; rows are sparse
-            # relative to n_temps, so this beats probing every temp id.
-            iset = set()
-            rowp = &adj[t * nw]
+        ep_sorted = sorted(endpoints)
+        ne = <int32_t>len(ep_sorted)
+        ew = (ne + 63) >> 6
+
+        eidx = <int32_t*>malloc(<size_t>n_temps * sizeof(int32_t))
+        elist = <int32_t*>malloc(<size_t>ne * sizeof(int32_t))
+        uf_parent = <int32_t*>malloc(<size_t>ne * sizeof(int32_t))
+        uf_size = <int32_t*>malloc(<size_t>ne * sizeof(int32_t))
+        uf_wmin = <int32_t*>malloc(<size_t>ne * sizeof(int32_t))
+        wgen = <int64_t*>malloc(<size_t>ne * sizeof(int64_t))
+        xgen = <int64_t*>malloc(<size_t>ne * sizeof(int64_t))
+        pbase = <uint64_t*>calloc(<size_t>(<int64_t>ne * ew), sizeof(uint64_t))
+        pextra = <uint64_t*>calloc(<size_t>(<int64_t>ne * ew), sizeof(uint64_t))
+        pmemb = <uint64_t*>calloc(<size_t>(<int64_t>ne * ew), sizeof(uint64_t))
+        if (eidx == NULL or elist == NULL or uf_parent == NULL or uf_size == NULL
+                or uf_wmin == NULL or wgen == NULL or xgen == NULL
+                or pbase == NULL or pextra == NULL or pmemb == NULL):
+            raise MemoryError()
+
+        for t in range(n_temps):
+            eidx[t] = -1
+        for d in range(ne):
+            t = <int32_t>ep_sorted[d]
+            elist[d] = t
+            eidx[t] = d
+        for d in range(ne):
+            uf_parent[d] = d
+            uf_size[d] = 1
+            uf_wmin[d] = elist[d]
+            wgen[d] = 0
+            xgen[d] = 0
+            bs_set(&pmemb[<int64_t>d * ew], d)
+            # base = endpoint-restricted interference row of temp elist[d].
+            t = elist[d]
+            brow = &pbase[<int64_t>d * ew]
+            rowp = &adj[<int64_t>t * nw]
             for w in range(nw):
                 word = rowp[w]
                 while word != 0:
                     u = (w << 6) + _sonolus_ctz64(word)
                     word &= word - 1
                     if u != t:
-                        iset.add(u)
-            interf[t] = iset
+                        du = eidx[u]
+                        if du >= 0:
+                            bs_set(brow, du)
 
-        mapping = {}
         for pair in sorted(copy_pairs):
-            target = pair[0]
-            source = pair[1]
-            if source in interf.get(target, set()):
+            t = <int32_t>pair[0]
+            s = <int32_t>pair[1]
+            td = eidx[t]
+            sd = eidx[s]
+            rt0 = _uf_find(uf_parent, td)
+            # accept test: source in interf[target] = pbase[rt0] | valid pextra[td]
+            if bs_get(&pbase[<int64_t>rt0 * ew], sd) or (
+                    xgen[td] == wgen[rt0] and bs_get(&pextra[<int64_t>td * ew], sd)):
                 continue
-            combined_map = mapping.get(target, {target}) | mapping.get(source, {source})
-            combined_interf = interf.get(target, set()) | interf.get(source, set())
-            for place in combined_map:
-                mapping[place] = combined_map
-                interf[place] = set(combined_interf)
-            for place in combined_interf:
-                interf.setdefault(place, set()).update(combined_map)
+            rs0 = _uf_find(uf_parent, sd)
+            et_valid = xgen[td] == wgen[rt0]
+            es_valid = xgen[sd] == wgen[rs0]
+            if rt0 == rs0:
+                wroot = rt0
+                wother = -1
+            else:
+                if uf_size[rt0] >= uf_size[rs0]:
+                    wroot = rt0
+                    wother = rs0
+                else:
+                    wroot = rs0
+                    wother = rt0
+                uf_parent[wother] = wroot
+                uf_size[wroot] += uf_size[wother]
+                if uf_wmin[wother] < uf_wmin[wroot]:
+                    uf_wmin[wroot] = uf_wmin[wother]
+                mrow = &pmemb[<int64_t>wroot * ew]
+                orow = &pmemb[<int64_t>wother * ew]
+                for kk in range(ew):
+                    mrow[kk] |= orow[kk]
+            # new base = base[rt0] | base[rs0] | valid extras, accumulated in pbase[wroot].
+            brow = &pbase[<int64_t>wroot * ew]
+            if wother >= 0:
+                orow = &pbase[<int64_t>wother * ew]
+                for kk in range(ew):
+                    brow[kk] |= orow[kk]
+            if et_valid:
+                xrow = &pextra[<int64_t>td * ew]
+                for kk in range(ew):
+                    brow[kk] |= xrow[kk]
+            if es_valid:
+                xrow = &pextra[<int64_t>sd * ew]
+                for kk in range(ew):
+                    brow[kk] |= xrow[kk]
+            Ggen += 1
+            wgen[wroot] = Ggen
+            # (B) add merged web membership to every neighbour's neighbour set.
+            mrow = &pmemb[<int64_t>wroot * ew]
+            for w in range(ew):
+                word = brow[w]
+                while word != 0:
+                    pd = (w << 6) + _sonolus_ctz64(word)
+                    word &= word - 1
+                    rp = _uf_find(uf_parent, pd)
+                    erow = &pextra[<int64_t>pd * ew]
+                    if xgen[pd] != wgen[rp]:
+                        for kk in range(ew):
+                            erow[kk] = 0
+                        xgen[pd] = wgen[rp]
+                    for kk in range(ew):
+                        erow[kk] |= mrow[kk]
 
+        # canonical: temp id -> canonical (min) temp id, for multi-member webs only.
         canonical = {}
-        for place, group in mapping.items():
-            if place in canonical:
-                continue
-            c = min(group)
-            for member in group:
-                canonical[member] = c
+        for d in range(ne):
+            wroot = _uf_find(uf_parent, d)
+            if uf_size[wroot] >= 2:
+                canonical[elist[d]] = uf_wmin[wroot]
 
         # Apply: rewrite scalar-temp place block_refs to their canonical temp.
         for pid in range(func.n_places):
@@ -1645,6 +1762,16 @@ cdef void _coalesce(Func func) except *:
         free(scalar_mask)
         free(adj)
         free(work)
+        free(eidx)
+        free(elist)
+        free(uf_parent)
+        free(uf_size)
+        free(uf_wmin)
+        free(wgen)
+        free(xgen)
+        free(pbase)
+        free(pextra)
+        free(pmemb)
 
 
 # --------------------------------------------------------------------------
