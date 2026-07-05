@@ -113,6 +113,7 @@ class ModeContextState:
     archetypes: dict[type, int]
     compile_time_only_archetypes: set[type]
     archetypes_by_name: dict[str, type]
+    subclass_ids_cache: dict[type, list[int]]
     keys_by_archetype_id: Sequence[int]
     is_scored_by_archetype_id: Sequence[bool]
     archetype_mro_id_array_rom_indexes: Sequence[int] | None = None
@@ -136,6 +137,7 @@ class ModeContextState:
         self.archetypes = {type_: idx for idx, type_ in enumerate(archetypes)}
         self.compile_time_only_archetypes = compile_time_only_archetypes
         self.archetypes_by_name = {type_.name: type_ for type_, _ in self.archetypes.items()}  # type: ignore
+        self.subclass_ids_cache = {}
         self.keys_by_archetype_id = (
             Array(*((getattr(a, "_key_", -1)) for a in archetypes)) if archetypes else Array[int, Literal[0]]()
         )
@@ -656,8 +658,24 @@ class Scope:
                 continue
 
 
+def _new_cfg_block(statements, test) -> BasicBlock:
+    # Fast constructor for the transient blocks context_to_cfg feeds straight to the
+    # optimizer: bypass BasicBlock.__init__'s keyword handling and per-block
+    # ``x or default`` allocations. ``incoming`` is left as None: this path's
+    # consumers (marshal-in and the CFG traversals) only read
+    # outgoing/statements/test/phis, and these blocks never reach connect_to.
+    block = BasicBlock.__new__(BasicBlock)
+    block.phis = {}
+    block.statements = statements
+    block.test = test
+    block.incoming = None
+    block.outgoing = set()
+    return block
+
+
 def context_to_cfg(context: Context) -> BasicBlock:
-    blocks = {context: BasicBlock(statements=context.statements, test=context.test)}
+    result = _new_cfg_block(context.statements, context.test)
+    blocks = {context: result}
     seen = set()
     visited = []
     queue = [context]
@@ -668,16 +686,14 @@ def context_to_cfg(context: Context) -> BasicBlock:
         seen.add(current)
         visited.append(current)
         current_block = blocks[current]
+        current_outgoing = current_block.outgoing
         for condition, target in current.outgoing.items():
             target_block = blocks.get(target)
             if target_block is None:
-                target_block = BasicBlock(statements=target.statements, test=target.test)
+                target_block = _new_cfg_block(target.statements, target.test)
                 blocks[target] = target_block
-            edge = FlowEdge(src=current_block, dst=target_block, cond=condition)
-            current_block.outgoing.add(edge)
-            target_block.incoming.add(edge)
-        queue.extend(current.outgoing.values())
-    result = blocks[context]
+            current_outgoing.add(FlowEdge(src=current_block, dst=target_block, cond=condition))
+            queue.append(target)
     for current in visited:
         # Break cycles so memory can be cleaned without gc
         del current.outgoing

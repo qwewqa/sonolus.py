@@ -47,6 +47,19 @@ class BasicBlock:
         other.incoming.add(edge)
 
 
+def _edge_sort_key(edge: FlowEdge):
+    return (edge.cond is None, edge.cond)
+
+
+def _ordered_edges(outgoing):
+    # Sorting a 0/1-element set is a no-op on order but still allocates a list and
+    # invokes the key; ~90% of pre-cleanup blocks have a single successor, so skip
+    # the sort for them.
+    if len(outgoing) <= 1:
+        return outgoing
+    return sorted(outgoing, key=_edge_sort_key)
+
+
 def traverse_cfg_preorder(block: BasicBlock) -> Iterator[BasicBlock]:
     visited = set()
     queue = deque([block])
@@ -56,7 +69,7 @@ def traverse_cfg_preorder(block: BasicBlock) -> Iterator[BasicBlock]:
             continue
         visited.add(block)
         yield block
-        for edge in sorted(block.outgoing, key=lambda e: (e.cond is None, e.cond)):
+        for edge in _ordered_edges(block.outgoing):
             queue.append(edge.dst)
 
 
@@ -69,7 +82,7 @@ def traverse_cfg_postorder(block: BasicBlock) -> Iterator[BasicBlock]:
     # discovery time (``block`` pre-marked) so shared successors resolve
     # deterministically.
     visited = {block}
-    stack = [(block, iter(sorted(block.outgoing, key=lambda e: (e.cond is None, e.cond))))]
+    stack = [(block, iter(_ordered_edges(block.outgoing)))]
     while stack:
         node, edges = stack[-1]
         descended = False
@@ -79,7 +92,7 @@ def traverse_cfg_postorder(block: BasicBlock) -> Iterator[BasicBlock]:
                 continue
             visited.add(dst)
             if dst.outgoing:
-                stack.append((dst, iter(sorted(dst.outgoing, key=lambda e: (e.cond is None, e.cond)))))
+                stack.append((dst, iter(_ordered_edges(dst.outgoing))))
                 descended = True
                 break
             else:

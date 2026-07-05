@@ -738,11 +738,17 @@ class _BaseArchetype(metaclass=_BaseArchetypeMeta):
         mode_state = ctx().mode_state
         if cls not in mode_state.archetypes:
             raise RuntimeError("Archetype is not registered")
-        subclass_ids = [
-            id_
-            for archetype, id_ in mode_state.archetypes.items()
-            if archetype not in mode_state.compile_time_only_archetypes and issubclass(archetype, cls)
-        ]
+        # subclass_ids depends only on (mode_state.archetypes, compile_time_only_archetypes,
+        # cls), all fixed once the mode_state is constructed; memoize per cls so repeated
+        # check sites skip the O(archetypes) ABCMeta issubclass sweep.
+        subclass_ids = mode_state.subclass_ids_cache.get(cls)
+        if subclass_ids is None:
+            subclass_ids = [
+                id_
+                for archetype, id_ in mode_state.archetypes.items()
+                if archetype not in mode_state.compile_time_only_archetypes and issubclass(archetype, cls)
+            ]
+            mode_state.subclass_ids_cache[cls] = subclass_ids
         return native_switch_membership(archetype_id, subclass_ids)
 
     @staticmethod

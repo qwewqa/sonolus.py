@@ -52,11 +52,23 @@ native_switch_membership._meta_fn_ = True
 def native_function[**P, R](op: Op, const_eval: bool = False) -> Callable[[Callable[P, R]], Callable[P, R]]:
     def decorator(fn: Callable[P, int | float | bool]) -> Callable[P, Num]:
         signature = inspect.signature(fn)
+        params = list(signature.parameters.values())
+        n_params = len(params)
+        n_required = sum(1 for p in params if p.default is inspect.Parameter.empty)
+        # Native functions are always called positionally via ``wrapper(*args)``, so for an
+        # all-positional signature ``bind(*args).args`` after ``apply_defaults()`` is just
+        # ``args + trailing_defaults``. Anything more exotic (var-positional/keyword-only)
+        # falls back to inspect's bind so behavior and error messages are unchanged.
+        simple_positional = all(
+            p.kind in (inspect.Parameter.POSITIONAL_ONLY, inspect.Parameter.POSITIONAL_OR_KEYWORD) for p in params
+        )
+        param_defaults = tuple(p.default for p in params)
 
         @functools.wraps(fn)
         def wrapper(*args: int | float | bool) -> Num:
-            if len(args) < sum(1 for p in signature.parameters.values() if p.default == inspect.Parameter.empty):
-                raise TypeError(f"Expected {len(signature.parameters)} arguments, got {len(args)}")
+            n = len(args)
+            if n < n_required:
+                raise TypeError(f"Expected {n_params} arguments, got {n}")
             if ctx():
                 if const_eval:
                     args = tuple(validate_value(arg) for arg in args)
@@ -64,9 +76,13 @@ def native_function[**P, R](op: Op, const_eval: bool = False) -> Callable[[Calla
                         raise RuntimeError("All arguments must be of type Num")
                     if all(arg._is_py_() for arg in args):
                         return Num._accept_(fn(*[arg._as_py_() for arg in args]))
-                bound_args = signature.bind(*args)
-                bound_args.apply_defaults()
-                return native_call(op, *bound_args.args)
+                if simple_positional and n <= n_params:
+                    full_args = args if n == n_params else args + param_defaults[n:]
+                else:
+                    bound_args = signature.bind(*args)
+                    bound_args.apply_defaults()
+                    full_args = bound_args.args
+                return native_call(op, *full_args)
             return fn(*args)  # type: ignore
 
         wrapper._meta_fn_ = True

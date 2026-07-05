@@ -131,6 +131,29 @@ def _compute_fn_info(fn: Callable) -> tuple[str, str, ChainMap]:
 # Only cache plain functions; bound methods are ephemeral and would leak cache entries.
 _get_fn_info = functools.cache(_compute_fn_info)
 
+_POSITIONAL_PARAM_KINDS = (inspect.Parameter.POSITIONAL_ONLY, inspect.Parameter.POSITIONAL_OR_KEYWORD)
+
+
+def _compute_fast_binder(fn: Callable):
+    """Precompute a positional binder for `fn`, or None if its signature is not all-positional.
+
+    For an all-positional signature called without kwargs, ``sig.bind(*args).apply_defaults()``
+    produces exactly ``dict(zip(names, args))`` extended with the trailing parameter defaults
+    (apply_defaults builds the arguments dict in parameter order). Signatures with
+    *args/**kwargs/keyword-only parameters return None and keep using inspect's bind.
+    """
+    sig = get_signature(fn)
+    params = list(sig.parameters.values())
+    if not all(p.kind in _POSITIONAL_PARAM_KINDS for p in params):
+        return None
+    names = tuple(p.name for p in params)
+    defaults = tuple(p.default for p in params)
+    n_required = sum(1 for p in params if p.default is inspect.Parameter.empty)
+    return names, defaults, len(params), n_required
+
+
+_get_fast_binder = functools.cache(_compute_fast_binder)
+
 
 def eval_fn(fn: Callable, /, *args, **kwargs):
     _ensure_excepthook()
@@ -138,11 +161,21 @@ def eval_fn(fn: Callable, /, *args, **kwargs):
     if type(fn) is FunctionType:
         sig = get_signature(fn)
         function_name, qualified_name, global_base = _get_fn_info(fn)
+        binder = _get_fast_binder(fn)
     else:
         sig = inspect.signature(fn)
         function_name, qualified_name, global_base = _compute_fn_info(fn)
-    bound_args = sig.bind(*args, **kwargs)
-    bound_args.apply_defaults()
+        binder = None
+    if binder is not None and not kwargs and binder[3] <= len(args) <= binder[2]:
+        names, defaults, n_params, _n_required = binder
+        n = len(args)
+        arguments = dict(zip(names, args, strict=False))
+        for i in range(n, n_params):
+            arguments[names[i]] = defaults[i]
+        bound_args = inspect.BoundArguments(sig, arguments)
+    else:
+        bound_args = sig.bind(*args, **kwargs)
+        bound_args.apply_defaults()
     if ismethod(fn):
         code = fn.__func__.__code__
         closure = fn.__func__.__closure__
@@ -293,6 +326,7 @@ _DESCRIPTOR_CACHE_MISS = object()
 def clear_frontend_caches() -> None:
     """Reset the process-lifetime frontend caches that assume within-build immutability."""
     _get_fn_info.cache_clear()
+    _get_fast_binder.cache_clear()
     get_signature.cache_clear()
     _descriptor_cache.clear()
 
