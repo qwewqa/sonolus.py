@@ -4188,15 +4188,6 @@ def _rsw_splice_safe(Func f, list kept, list nxt_edges, int32_t nxt):
     return True
 
 
-def _rsw_incoming_count(list out, int32_t nb, int32_t target):
-    cdef int32_t b, c = 0
-    for b in range(nb):
-        for ed in <list>out[b]:
-            if <int32_t>(<dict>ed)["dst"] == target:
-                c += 1
-    return c
-
-
 def _rsw_rpo(list out, int32_t entry, int32_t nb):
     visited = [False] * nb
     post = []
@@ -4276,6 +4267,15 @@ def _run_rewrite_switch(Func f):
 
     # (2) combine_blocks: splice same-test empty single-pred default chains.
     ext = _rsw_ext_ref(f)
+    # Per-block incoming-edge count over the mutable model, maintained
+    # incrementally across splices so the single-predecessor test is O(1)
+    # instead of an O(edges) rescan per candidate. (1) never changes an edge's
+    # dst, so the marshaled edges give the pre-splice counts.
+    cdef list ic = [0] * nb
+    cdef int32_t _e, _d
+    for _e in range(f.n_edges):
+        _d = <int32_t>f.edges[_e].dst
+        ic[_d] = <int32_t>ic[_d] + 1
     processed = set()
     queue = [entry]
     while queue:
@@ -4299,7 +4299,7 @@ def _run_rewrite_switch(Func f):
             continue
         if not _rsw_block_empty(f, nxt):
             continue
-        if _rsw_incoming_count(out, nb, nxt) > 1:
+        if <int32_t>ic[nxt] > 1:
             continue
         # splice-safety: nxt must define no non-const value used by a survivor
         # (see _rsw_ext_ref). Escaping consts are relocated to entry below.
@@ -4316,13 +4316,19 @@ def _run_rewrite_switch(Func f):
             if <int32_t>(<dict>ed)["ck"] == EDGE_COND_VALUE:
                 existing.add((<dict>ed)["cond"])
         for ed in <list>out[nxt]:
+            # Each of nxt's edges leaves nxt; keep ``ic`` in step as edges move
+            # from nxt to b (net zero) or are dropped as duplicates (net -1).
+            _d = <int32_t>(<dict>ed)["dst"]
+            ic[_d] = <int32_t>ic[_d] - 1
             if <int32_t>(<dict>ed)["ck"] == EDGE_COND_VALUE and (<dict>ed)["cond"] in existing:
                 continue  # duplicate cond: unreachable, drop
             kept.append(ed)
+            ic[_d] = <int32_t>ic[_d] + 1
             if <int32_t>(<dict>ed)["ck"] == EDGE_COND_VALUE:
                 existing.add((<dict>ed)["cond"])
         out[b] = kept
         out[nxt] = []  # nxt is now unreachable
+        ic[nxt] = <int32_t>ic[nxt] - 1  # default edge b->nxt removed
         changed = True
         processed.discard(b)
         queue.append(b)
