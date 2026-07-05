@@ -708,6 +708,24 @@ def test_error_for_conflicting_definitions():
         run_compiled(fn)
 
 
+def test_error_while_conflicting_definitions_behind_single_predecessor_merge():
+    # The read-before-rebind hazard must still be caught when the read sits after a
+    # merge point with only one live predecessor (the early return makes the true
+    # branch dead at the join). Such merges reuse the predecessor context directly,
+    # and the loop-variable read counts must survive that reuse.
+    def fn():
+        x = Pair(1, 2)
+        while black_box():
+            if black_box():
+                return 0
+            debug_log(x.first)
+            x = Pair(3, 4)
+        return 1
+
+    with pytest.raises(CompilationError, match="conflicting definitions"):
+        run_compiled(fn)
+
+
 def test_walrus_operator():
     def fn():
         x: int = 0
