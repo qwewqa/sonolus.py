@@ -836,7 +836,7 @@ class StandardText(StrEnum):
     """Enter background..."""
 
     EFFECT_PLACEHOLDER = "#EFFECT_PLACEHOLDER"
-    """Enter sFX..."""
+    """Enter SFX..."""
 
     PARTICLE_PLACEHOLDER = "#PARTICLE_PLACEHOLDER"
     """Enter particle..."""

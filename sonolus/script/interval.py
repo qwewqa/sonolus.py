@@ -25,7 +25,7 @@ class Interval(Record):
 
     @classmethod
     def zero(cls) -> Interval:
-        """Get an empty interval."""
+        """Get a zero-length interval ``[0, 0]``."""
         return cls(0, 0)
 
     @property
@@ -148,7 +148,7 @@ class Interval(Record):
             value: The value to shrink by.
 
         Returns:
-            A new interval with the value subtracted from the start and added to the end.
+            A new interval with the value added to the start and subtracted from the end.
         """
         return Interval(self.start + value, self.end - value)
 

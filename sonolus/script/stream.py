@@ -215,7 +215,7 @@ class Stream[T](Record):
 
     @classmethod
     def element_type(cls) -> type[T] | type[Value]:
-        """Return the type of elements in this array type."""
+        """Return the type of elements in this stream."""
         return cls.type_var_value(T)
 
     @classmethod
@@ -507,7 +507,7 @@ class StreamGroup[T, Size](Record):
     @classmethod
     @meta_fn
     def backing_size(cls) -> int:
-        """Return the number of underlying single-value streams backing this stream."""
+        """Return the total number of underlying single-value streams backing this group."""
         return max(1, sizeof(cls.element_type())) * cls.size()
 
     def __contains__(self, item: int) -> bool:

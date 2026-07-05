@@ -340,10 +340,11 @@ class Context:
         return result
 
     def prepare_loop_header(self, to_merge: set[str]) -> Context:
-        # to_merge is the set of bindings set anywhere in the loop
-        # we need to invalidate them in the header if they're reference types
-        # or merge them if they're value types
-        # structure is self -> intermediate -> header -> body (continue -> header) | exit
+        # to_merge is the set of bindings set anywhere in the loop.
+        # In the header we merge value types (allocating a fresh slot and copying the value in)
+        # and re-bind reference types as loop variables (rebind conflicts are checked later in
+        # branch_to_loop_header).
+        # structure is self -> header -> body (continue -> header) | exit
         assert len(self.outgoing) == 0
         header = self.branch(None)
         for name in sorted(to_merge):

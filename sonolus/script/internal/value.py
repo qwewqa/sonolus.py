@@ -33,7 +33,7 @@ class ExprBackingValue(BackingValue):
 
 
 class ReadOnlyBackingValueWrapper(BackingValue):
-    """A wrapper around another backing value that blocks reads."""
+    """A wrapper around another backing value that blocks writes (reads pass through)."""
 
     __slots__ = ("_value",)
 

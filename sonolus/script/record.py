@@ -110,7 +110,8 @@ class Record(GenericValue, metaclass=RecordMeta):
         Returns:
             A frozen record instance.
         """
-        # We override __new__ to allow changing to the parameterized version
+        # Construct an instance of the parameterized subclass directly (frozen fields are
+        # stored as read-only copies).
         if cls._constructor_signature_ is None:
             raise TypeError(f"Cannot instantiate {cls.__name__}")
         arguments = _bind_constructor_args(cls, args, kwargs)

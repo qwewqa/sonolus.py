@@ -188,7 +188,6 @@ def get_project_schema(project: Project) -> ProjectSchema:
     for archetype in project.engine.data.play.archetypes:
         archetype._init_fields()
         fields = by_archetype.setdefault(archetype.name, {})
-        # If a field is exported, we should exclude it if it's imported in watch mode
         for field in archetype._exported_keys_:
             fields[field] = False
         for field in archetype._imported_keys_:

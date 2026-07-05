@@ -585,9 +585,10 @@ class ArrayMap[K, V, Capacity](Record):
             map[1] = Pair(2, 3)
             map[3] = Pair(4, 5)
             map[5] = Pair(6, 7)
-            p = map[3]
+            p = map[1]
             map.pop(1)
-            # The value of `p` may now be different
+            # `p` may now read a different value: pop() swaps the last entry into the freed
+            # slot, so the storage `p` refers to no longer holds Pair(2, 3).
             ```
         """
         for i in range(self._size):
