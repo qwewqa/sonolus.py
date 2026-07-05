@@ -59,7 +59,7 @@ def import_project(module_path: str) -> tuple[Project, ModuleType, set[str]] | t
                 project_module = importlib.import_module(f"{module_path}.project")
                 project = getattr(project_module, "project", None)
             except ImportError as e:
-                if not str(e).endswith(f"'{module_path}.project'"):
+                if e.name != f"{module_path}.project":
                     raise
 
         if project is None:

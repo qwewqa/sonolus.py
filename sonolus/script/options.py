@@ -240,6 +240,7 @@ class _OptionField(SonolusDescriptor):
                     assert_unreachable()
             if block is not None:
                 Num._from_place_(BlockPlace(block, self.index))._set_(Num._accept_(value))
+                return
             else:
                 raise RuntimeError("Options in the current mode cannot be set and use the default value")
         raise AttributeError("Options are read-only")

@@ -198,3 +198,19 @@ def _build_mode_callbacks(
 
 def camel_to_snake(name: str) -> str:
     return "".join(f"_{c.lower()}" if c.isupper() else c for c in name).lstrip("_")
+
+
+def test_with_levels_preserves_converters():
+    # with_levels() is a copy-with-modified-levels builder; it must not drop the converters
+    # mapping (which build/project.py consumes to convert external levels).
+    from sonolus.script.project import Project
+
+    def conv(data):
+        return None
+
+    converters = {None: conv, "some-engine": conv}
+    project = Project(engine=object(), levels=[], resources="res", converters=converters)
+    new_project = project.with_levels([1, 2, 3])
+    assert new_project.converters == converters  # {} before the fix, preserved after
+    assert new_project.engine is project.engine
+    assert new_project.resources == project.resources

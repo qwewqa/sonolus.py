@@ -1653,7 +1653,7 @@ class EntityRef[A: _BaseArchetype](Record):
     @meta_fn
     def get_as(self, archetype: type[_BaseArchetype]) -> _BaseArchetype:
         """Get the entity as the given archetype type."""
-        if getattr(archetype, "_ref_", None):
+        if getattr(self, "_ref_", None):
             raise TypeError("Using get_as in level data is not supported.")
         return self.with_archetype(archetype).get()
 

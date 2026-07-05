@@ -53,7 +53,7 @@ class Project:
         Returns:
             The new project.
         """
-        return Project(self.engine, levels, self.resources)
+        return Project(self.engine, levels, self.resources, self.converters)
 
     def dev(self, build_dir: PathLike, port: int = 8080, config: BuildConfig | None = None):
         """Start a development server for the project.
