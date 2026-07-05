@@ -409,6 +409,21 @@ def test_sccp_degenerate_constant_ops_never_raise():
     assert "<- nan" in _text(_blk(IRPureInstr(Op.Subtract, [big, big])), phases)
 
 
+def test_sccp_multiply_zero_by_constant_inf_folds_to_nan():
+    # The Multiply-by-0 SCCP exception is for a KNOWN 0 with an UNKNOWN other operand. When
+    # both operands are constant (0 * inf), it must fall through to the strict fold and yield
+    # nan (IEEE), not be absorbed to 0.
+    def _blk(rhs):
+        b0 = BasicBlock(statements=[IRSet(BlockPlace(W, 0), rhs)])
+        b0.connect_to(BasicBlock(), None)
+        return b0
+
+    phases = ["cfg_cleanup", "ssa", "sccp", "gvn", "dce"]
+    inf = IRPureInstr(Op.Multiply, [IRConst(1e308), IRConst(10.0)])  # overflow -> +inf
+    text = _text(_blk(IRPureInstr(Op.Multiply, [IRConst(0.0), inf])), phases)
+    assert "<- nan" in text  # 0 * inf == nan, not 0
+
+
 def test_sccp_switch_on_degenerate_constant_takes_default():
     # A multi-way switch whose test folds to a non-matching constant (inf) selects
     # the default/exit edge -- inf equals no integer case (C ``==`` on NaN/inf never

@@ -740,7 +740,7 @@ class WatchBlock(BlockEnum):
     EntityInput = (
         4004,
         {"preprocess", "spawnTime", "despawnTime", "initialize", "updateSequential", "updateParallel", "terminate"},
-        {"preprocess"},
+        {"preprocess", "spawnTime", "despawnTime", "initialize", "updateSequential", "updateParallel", "terminate"},
     )
     EntityScore = (
         4005,

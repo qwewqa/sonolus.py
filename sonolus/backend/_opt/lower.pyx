@@ -160,8 +160,9 @@ cdef void _bump(Func func, int32_t* temp_offset) except *:
             continue
         # index stays in [0, TEMP_SIZE); check capacity before the add so a huge
         # ``size`` (up to INT32_MAX) cannot overflow ``index + size`` (int32 UB) and
-        # wrap negative past the cap. Equivalent to the naive ``index + size >= TEMP_SIZE``.
-        if size >= TEMP_SIZE - index:
+        # wrap negative past the cap. Equivalent to the naive ``index + size > TEMP_SIZE``
+        # (a temp occupying [index, index+size) fits iff index + size <= TEMP_SIZE).
+        if size > TEMP_SIZE - index:
             raise ValueError("Temporary memory limit exceeded")
         temp_offset[t] = index
         index += size
@@ -177,9 +178,9 @@ cdef bint _bump_fits(Func func):
         size = func.temps[t].size
         if size > 0:
             total += size
-            if total >= TEMP_SIZE:
+            if total > TEMP_SIZE:
                 return False
-    return total < TEMP_SIZE
+    return total <= TEMP_SIZE
 
 
 # --------------------------------------------------------------------------

@@ -245,6 +245,25 @@ def test_overflow_raises():
             lower.run_allocate(make(), strategy=strat)
 
 
+def test_allocate_allows_exact_full_temp_block():
+    # A temp of exactly TEMP_SIZE (4096) slots occupies offsets 0..4095 and must fit under
+    # every strategy: the capacity check is an exclusive-end bound (index + size <= 4096),
+    # not an off-by-one. One slot more (4097) must still overflow.
+    def make(n):
+        arr = TempBlock("full", n)
+        b0 = BasicBlock()
+        b0.statements = [
+            IRSet(BlockPlace(arr, 0, 0), IRConst(1)),
+            IRSet(BlockPlace(700, 0, 0), IRGet(BlockPlace(arr, 0, 0))),
+        ]
+        return b0
+
+    for strat in ("bump", "packing", "try_bump"):
+        lower.run_allocate(make(4096), strategy=strat)  # exact fit -> must not raise
+        with pytest.raises(ValueError, match="Temporary memory limit exceeded"):
+            lower.run_allocate(make(4097), strategy=strat)
+
+
 def test_bump_rejects_near_int32_temp_without_overflow():
     # A size-1 temp then a near-INT32_MAX array: the bump accumulator's `index +
     # size` must not overflow int32 and slip past the cap; reject cleanly.

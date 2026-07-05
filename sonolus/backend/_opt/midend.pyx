@@ -2379,8 +2379,11 @@ cdef class _SCCP:
         if op == OP_Multiply and n == 2:
             a0 = <int32_t>f.args[astart]
             a1 = <int32_t>f.args[astart + 1]
-            if (<int32_t>self.lk[a0] == _LAT_CONST and <double>self.lc[a0] == 0.0) or \
-               (<int32_t>self.lk[a1] == _LAT_CONST and <double>self.lc[a1] == 0.0):
+            # Fire only when the OTHER operand is not itself a known constant, so an
+            # all-constant Multiply (e.g. 0 * inf, 0 * nan) falls through to the strict
+            # fold_op path (which yields nan per IEEE) instead of being absorbed to 0.
+            if (<int32_t>self.lk[a0] == _LAT_CONST and <double>self.lc[a0] == 0.0 and <int32_t>self.lk[a1] != _LAT_CONST) or \
+               (<int32_t>self.lk[a1] == _LAT_CONST and <double>self.lc[a1] == 0.0 and <int32_t>self.lk[a0] != _LAT_CONST):
                 return (_LAT_CONST, 0.0, None)
         if op == OP_And and n == 2:
             if self._and_zero(<int32_t>f.args[astart], <int32_t>f.args[astart + 1]):

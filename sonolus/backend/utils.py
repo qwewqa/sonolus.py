@@ -68,7 +68,11 @@ def find_function(tree: ast.Module, line: int):
         if node.lineno == line or (
             isinstance(node, ast.FunctionDef)
             and node.decorator_list
-            and (node.decorator_list[0].end_lineno <= line <= node.lineno)
+            # inspect.getsourcelines / co_firstlineno returns exactly the first decorator's
+            # start line for a decorated function, so match that line precisely rather than the
+            # whole span up to the def line (which would also claim a lambda nested in the
+            # decorator).
+            and node.decorator_list[0].lineno == line
         ):
             return node
     raise ValueError("Function not found")

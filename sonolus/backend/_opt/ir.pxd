@@ -32,7 +32,10 @@ Instr (AoS)               one array; per-block slice == the initial schedule
 * arg_start i32   start index into ``args`` (operand value-ids).
 * nargs     i16   operand count.
 * aux       i32   op-specific: OPX_CONST -> const id; OPX_GET/OPX_SET ->
-                  place id; runtime ops -> unused (-1).
+                  place id; runtime ops -> normally unused (-1), EXCEPT the
+                  place-based fused RMW ops (Set<BinOp>/IncrementPost/
+                  DecrementPost produced by fuse_rmw) whose aux holds the
+                  target place id (>= 0).
 
 The non-SSA arena form (marshal-in output, cfg_cleanup output, out-of-SSA
 output) is NOT SSA: size-1 temp reads/writes are explicit OPX_GET / OPX_SET
