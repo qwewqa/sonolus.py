@@ -8,26 +8,20 @@
   v1 <- EntityData[1] * 3.0
   v2 <- v1
   v3 <- SwitchWithDefault(EntityInfoArray[v2 + 1], 2.0, 1, 3.0, 1, 4.0, 1, 5.0, 1, 6.0, 1, 7.0, 1, 8.0, 1, 0)
-  goto 4 if v3 else 11
+  goto 4 if v3 else 8
 4:
   goto 5
 5:
   goto 6
 6:
-  goto 7
-7:
-  goto 8
-8:
   v1 <- EntityData[1] * 32.0
   v2 <- 6.0 + v1
   v3 <- v2
-  goto 9
-9:
-  goto 10
-10:
+  goto 7
+7:
   Break(1, EntityDataArray[v3])
   goto exit
-11:
+8:
   v4 <- DebugLog(1)
   v5 <- DebugPause()
   goto exit

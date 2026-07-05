@@ -18,237 +18,175 @@
 7:
   goto 8
 8:
+  v4 <- 6.0 / LevelOption[1]
   goto 9
 9:
+  v5 <- EntityData[6] - v4
+  v6 <- Remap(v5, EntityData[6], LevelData[14], 0, RuntimeUpdate[2])
   goto 10
 10:
-  v4 <- 6.0 / LevelOption[1]
   goto 11
 11:
   goto 12
 12:
-  v5 <- EntityData[6] - v4
-  v6 <- Remap(v5, EntityData[6], LevelData[14], 0, RuntimeUpdate[2])
-  goto 13
+  v7 <- v3 == 6.0
+  goto 13 if v7 else 14
 13:
-  goto 14
+  goto 242
 14:
   goto 15
 15:
-  goto 16
-16:
-  goto 17
-17:
-  v7 <- v3 == 6.0
-  goto 18
-18:
-  goto 19 if v7 else 20
-19:
-  goto 394
-20:
-  goto 21
-21:
-  goto 22
-22:
   v8 <- 0
   v9 <- v3 == 1.0
-  goto 23 if v9 else 24
-23:
+  goto 16 if v9 else 17
+16:
   v8 <- 7.0
-  goto 41
-24:
+  goto 33
+17:
   v10 <- v3 == 2.0
-  goto 25 if v10 else 26
-25:
+  goto 18 if v10 else 19
+18:
   v8 <- 8.0
-  goto 41
-26:
+  goto 33
+19:
   v11 <- v3 == 3.0
-  goto 27 if v11 else 32
-27:
+  goto 20 if v11 else 24
+20:
   v12 <- EntityData[2] > 0
-  goto 28
-28:
-  goto 29 if v12 else 30
-29:
+  goto 21 if v12 else 22
+21:
   v8 <- 10.0
-  goto 31
-30:
+  goto 23
+22:
   v8 <- 12.0
-  goto 31
-31:
-  goto 41
-32:
+  goto 23
+23:
+  goto 33
+24:
   v13 <- v3 == 4.0
-  goto 33 if v13 else 34
-33:
+  goto 25 if v13 else 26
+25:
   v8 <- 14.0
-  goto 41
-34:
+  goto 33
+26:
   v14 <- v3 == 5.0
-  goto 35 if v14 else 36
-35:
+  goto 27 if v14 else 28
+27:
   v8 <- 16.0
-  goto 41
-36:
+  goto 33
+28:
   v15 <- v3 == 6.0
-  goto 37 if v15 else 38
-37:
-  goto 41
-38:
+  goto 29 if v15 else 30
+29:
+  goto 33
+30:
   v16 <- v3 == 7.0
-  goto 39 if v16 else 40
-39:
+  goto 31 if v16 else 32
+31:
   v8 <- 15.0
+  goto 33
+32:
+  goto 33
+33:
+  goto 34
+34:
+  goto 35
+35:
+  v17 <- 0
+  v18 <- v3 == 2.0
+  goto 36 if v18 else 37
+36:
+  v17 <- 9.0
+  goto 43
+37:
+  v19 <- v3 == 3.0
+  goto 38 if v19 else 42
+38:
+  v20 <- EntityData[2] > 0
+  goto 39 if v20 else 40
+39:
+  v17 <- 11.0
   goto 41
 40:
+  v17 <- 13.0
   goto 41
 41:
-  goto 42
+  goto 43
 42:
   goto 43
 43:
   goto 44
 44:
-  v17 <- 0
-  v18 <- v3 == 2.0
-  goto 45 if v18 else 46
+  goto 45
 45:
-  v17 <- 9.0
-  goto 53
+  goto 46
 46:
-  v19 <- v3 == 3.0
-  goto 47 if v19 else 52
+  v21 <- LevelData[15] + 0.5
+  v22 <- LevelData[14] - 0.5
+  goto 47
 47:
-  v20 <- EntityData[2] > 0
-  goto 48
+  v23 <- v6 <= LevelData[15]
+  goto 48 if v23 else 49
 48:
-  goto 49 if v20 else 50
+  v33 <- 0
+  goto 59
 49:
-  v17 <- 11.0
-  goto 51
+  goto 50
 50:
-  v17 <- 13.0
-  goto 51
+  v24 <- v21 > LevelData[15]
+  v25 <- v6 <= v21
+  goto 51 if v25 else 52
 51:
-  goto 53
+  v26 <- Remap(LevelData[15], v21, 0, 1.0, v6)
+  v33 <- v26
+  goto 59
 52:
   goto 53
 53:
-  goto 54
+  v27 <- v22 > v21
+  v28 <- v6 <= v22
+  goto 54 if v28 else 55
 54:
-  goto 55
+  v29 <- Remap(v21, v22, 1.0, 1.0, v6)
+  v33 <- v29
+  goto 59
 55:
   goto 56
 56:
-  goto 57
+  v30 <- LevelData[14] > v22
+  v31 <- v6 <= LevelData[14]
+  goto 57 if v31 else 58
 57:
-  v21 <- LevelData[15] + 0.5
-  v22 <- LevelData[14] - 0.5
-  goto 58
+  v32 <- Remap(v22, LevelData[14], 1.0, 0, v6)
+  v33 <- v32
+  goto 59
 58:
+  v33 <- 0
   goto 59
 59:
   goto 60
 60:
-  v23 <- v6 <= LevelData[15]
+  v34 <- EaseOutQuad(v33)
   goto 61
 61:
-  goto 62 if v23 else 63
+  v35 <- v34 <= 0
+  goto 62 if v35 else 63
 62:
-  v33 <- 0
-  goto 86
+  goto 92
 63:
   goto 64
 64:
   goto 65
 65:
-  v24 <- v21 > LevelData[15]
+  v36 <- EntityData[0] * LevelData[12]
   goto 66
 66:
-  v25 <- v6 <= v21
-  goto 67
-67:
-  goto 68 if v25 else 69
-68:
-  v26 <- Remap(LevelData[15], v21, 0, 1.0, v6)
-  v33 <- v26
-  goto 86
-69:
-  goto 70
-70:
-  goto 71
-71:
-  goto 72
-72:
-  v27 <- v22 > v21
-  goto 73
-73:
-  v28 <- v6 <= v22
-  goto 74
-74:
-  goto 75 if v28 else 76
-75:
-  v29 <- Remap(v21, v22, 1.0, 1.0, v6)
-  v33 <- v29
-  goto 86
-76:
-  goto 77
-77:
-  goto 78
-78:
-  goto 79
-79:
-  v30 <- LevelData[14] > v22
-  goto 80
-80:
-  v31 <- v6 <= LevelData[14]
-  goto 81
-81:
-  goto 82 if v31 else 83
-82:
-  v32 <- Remap(v22, LevelData[14], 1.0, 0, v6)
-  v33 <- v32
-  goto 86
-83:
-  goto 84
-84:
-  goto 85
-85:
-  v33 <- 0
-  goto 86
-86:
-  goto 87
-87:
-  v34 <- EaseOutQuad(v33)
-  goto 88
-88:
-  goto 89
-89:
-  v35 <- v34 <= 0
-  goto 90
-90:
-  goto 91 if v35 else 92
-91:
-  goto 136
-92:
-  goto 93
-93:
-  goto 94
-94:
-  goto 95
-95:
-  v36 <- EntityData[0] * LevelData[12]
-  goto 96
-96:
-  goto 97
-97:
   v37 <- v36
   v38 <- v6
   v39 <- LevelData[11]
   v40 <- LevelData[11]
-  goto 98
-98:
+  goto 67
+67:
   v41 <- v38
   v42 <- v40
   v43 <- v42 / 2.0
@@ -269,26 +207,22 @@
   v58 <- v48
   v59 <- v52
   v60 <- v56
-  goto 99
-99:
-  goto 100
-100:
-  goto 101
-101:
-  goto 102
-102:
-  goto 103
-103:
+  goto 68
+68:
+  goto 69
+69:
+  goto 70
+70:
+  goto 71
+71:
   v61 <- v60
   v62 <- v59
   v63 <- v61
   v64 <- v62
-  goto 104
-104:
-  goto 105
-105:
-  goto 106
-106:
+  goto 72
+72:
+  goto 73
+73:
   v65 <- v63
   v66 <- LevelData[2] * v65
   v67 <- v64
@@ -311,22 +245,18 @@
   v84 <- v76 / v82
   v85 <- v83
   v86 <- v84
-  goto 107
-107:
-  goto 108
-108:
-  goto 109
-109:
+  goto 74
+74:
+  goto 75
+75:
   v87 <- v58
   v88 <- v59
   v89 <- v87
   v90 <- v88
-  goto 110
-110:
-  goto 111
-111:
-  goto 112
-112:
+  goto 76
+76:
+  goto 77
+77:
   v91 <- v89
   v92 <- LevelData[2] * v91
   v93 <- v90
@@ -349,22 +279,18 @@
   v110 <- v102 / v108
   v111 <- v109
   v112 <- v110
-  goto 113
-113:
-  goto 114
-114:
-  goto 115
-115:
+  goto 78
+78:
+  goto 79
+79:
   v113 <- v60
   v114 <- v57
   v115 <- v113
   v116 <- v114
-  goto 116
-116:
-  goto 117
-117:
-  goto 118
-118:
+  goto 80
+80:
+  goto 81
+81:
   v117 <- v115
   v118 <- LevelData[2] * v117
   v119 <- v116
@@ -387,22 +313,18 @@
   v136 <- v128 / v134
   v137 <- v135
   v138 <- v136
-  goto 119
-119:
-  goto 120
-120:
-  goto 121
-121:
+  goto 82
+82:
+  goto 83
+83:
   v139 <- v58
   v140 <- v57
   v141 <- v139
   v142 <- v140
-  goto 122
-122:
-  goto 123
-123:
-  goto 124
-124:
+  goto 84
+84:
+  goto 85
+85:
   v143 <- v141
   v144 <- LevelData[2] * v143
   v145 <- v142
@@ -425,31 +347,21 @@
   v162 <- v154 / v160
   v163 <- v161
   v164 <- v162
-  goto 125
-125:
-  goto 126
-126:
-  goto 127
-127:
-  goto 128
-128:
-  goto 129
-129:
-  goto 130
-130:
-  goto 131
-131:
-  goto 132
-132:
-  goto 133
-133:
+  goto 86
+86:
+  goto 87
+87:
+  goto 88
+88:
+  goto 89
+89:
+  goto 90
+90:
   v165 <- EntityData[0] * 100.0
   v166 <- 310000.0 + v165
   v167 <- v166 + v6
-  goto 134
-134:
-  goto 135
-135:
+  goto 91
+91:
   v168 <- v8
   v169 <- v85
   v170 <- v86
@@ -460,203 +372,129 @@
   v175 <- v111
   v176 <- v112
   v177 <- Draw(v168, v169, v170, v171, v172, v173, v174, v175, v176, v167, v34, 0, 0, 0)
-  goto 136
-136:
-  goto 137
-137:
+  goto 92
+92:
+  goto 93
+93:
   v21 <- v3 == 2.0
-  goto 138
-138:
-  goto 139 if v21 else 234
-139:
-  goto 140
-140:
+  goto 94 if v21 else 146
+94:
+  goto 95
+95:
   v22 <- RuntimeUpdate[0] % 0.3
   v23 <- v22 / 0.3
-  goto 141
-141:
+  goto 96
+96:
   v24 <- LevelData[15] + 0.5
   v25 <- LevelData[14] - 0.5
-  goto 142
-142:
-  goto 143
-143:
-  goto 144
-144:
+  goto 97
+97:
   v26 <- v6 <= LevelData[15]
-  goto 145
-145:
-  goto 146 if v26 else 147
-146:
+  goto 98 if v26 else 99
+98:
   v36 <- 0
-  goto 170
-147:
-  goto 148
-148:
-  goto 149
-149:
+  goto 109
+99:
+  goto 100
+100:
   v27 <- v24 > LevelData[15]
-  goto 150
-150:
   v28 <- v6 <= v24
-  goto 151
-151:
-  goto 152 if v28 else 153
-152:
+  goto 101 if v28 else 102
+101:
   v29 <- Remap(LevelData[15], v24, 0, 1.0, v6)
   v36 <- v29
-  goto 170
-153:
-  goto 154
-154:
-  goto 155
-155:
-  goto 156
-156:
+  goto 109
+102:
+  goto 103
+103:
   v30 <- v25 > v24
-  goto 157
-157:
   v31 <- v6 <= v25
-  goto 158
-158:
-  goto 159 if v31 else 160
-159:
+  goto 104 if v31 else 105
+104:
   v32 <- Remap(v24, v25, 1.0, 1.0, v6)
   v36 <- v32
-  goto 170
-160:
-  goto 161
-161:
-  goto 162
-162:
-  goto 163
-163:
+  goto 109
+105:
+  goto 106
+106:
   v33 <- LevelData[14] > v25
-  goto 164
-164:
   v34 <- v6 <= LevelData[14]
-  goto 165
-165:
-  goto 166 if v34 else 167
-166:
+  goto 107 if v34 else 108
+107:
   v35 <- Remap(v25, LevelData[14], 1.0, 0, v6)
   v36 <- v35
-  goto 170
-167:
-  goto 168
-168:
-  goto 169
-169:
+  goto 109
+108:
   v36 <- 0
-  goto 170
-170:
-  goto 171
-171:
+  goto 109
+109:
+  goto 110
+110:
   v37 <- EaseOutQuad(v36)
-  goto 172
-172:
-  goto 173
-173:
-  goto 174
-174:
-  goto 175
-175:
-  goto 176
-176:
+  goto 111
+111:
+  goto 112
+112:
   v38 <- v22 <= 0
-  goto 177
-177:
-  goto 178 if v38 else 179
-178:
+  goto 113 if v38 else 114
+113:
   v45 <- 0
-  goto 202
-179:
-  goto 180
-180:
-  goto 181
-181:
-  goto 182
-182:
+  goto 124
+114:
+  goto 115
+115:
   v39 <- v22 <= 0.1
-  goto 183
-183:
-  goto 184 if v39 else 185
-184:
+  goto 116 if v39 else 117
+116:
   v40 <- Remap(0, 0.1, 0, 1.0, v22)
   v45 <- v40
-  goto 202
-185:
-  goto 186
-186:
-  goto 187
-187:
-  goto 188
-188:
-  goto 189
-189:
+  goto 124
+117:
+  goto 118
+118:
   v41 <- v22 <= 0.19999999999999998
-  goto 190
-190:
-  goto 191 if v41 else 192
-191:
+  goto 119 if v41 else 120
+119:
   v42 <- Remap(0.1, 0.19999999999999998, 1.0, 1.0, v22)
   v45 <- v42
-  goto 202
-192:
-  goto 193
-193:
-  goto 194
-194:
-  goto 195
-195:
-  goto 196
-196:
+  goto 124
+120:
+  goto 121
+121:
   v43 <- v22 <= 0.3
-  goto 197
-197:
-  goto 198 if v43 else 199
-198:
+  goto 122 if v43 else 123
+122:
   v44 <- Remap(0.19999999999999998, 0.3, 1.0, 0, v22)
   v45 <- v44
-  goto 202
-199:
-  goto 200
-200:
-  goto 201
-201:
+  goto 124
+123:
   v45 <- 0
-  goto 202
-202:
-  goto 203
-203:
+  goto 124
+124:
+  goto 125
+125:
   v46 <- EaseOutQuad(v45)
   v47 <- v37 * v46
   v48 <- v47 <= 0
-  goto 204
-204:
-  goto 205 if v48 else 206
-205:
-  goto 232
-206:
-  goto 207
-207:
-  goto 208
-208:
-  goto 209
-209:
+  goto 126 if v48 else 127
+126:
+  goto 144
+127:
+  goto 128
+128:
+  goto 129
+129:
   v49 <- EntityData[0] * LevelData[12]
-  goto 210
-210:
-  goto 211
-211:
+  goto 130
+130:
   v50 <- LevelData[11] / 2.0
   v51 <- v49 - v50
   v52 <- v51
   v53 <- v6
-  goto 212
-212:
-  goto 213
-213:
+  goto 131
+131:
+  goto 132
+132:
   v54 <- v52
   v55 <- LevelData[2] * v54
   v56 <- v53
@@ -679,29 +517,23 @@
   v73 <- v65 / v71
   v74 <- v72
   v75 <- v73
-  goto 214
-214:
-  goto 215
-215:
-  goto 216
-216:
-  goto 217
-217:
-  goto 218
-218:
+  goto 133
+133:
+  goto 134
+134:
+  goto 135
+135:
   v76 <- EntityData[0] * LevelData[12]
-  goto 219
-219:
-  goto 220
-220:
+  goto 136
+136:
   v77 <- LevelData[11] / 2.0
   v78 <- v76 + v77
   v79 <- v78
   v80 <- v6
-  goto 221
-221:
-  goto 222
-222:
+  goto 137
+137:
+  goto 138
+138:
   v81 <- v79
   v82 <- LevelData[2] * v81
   v83 <- v80
@@ -724,14 +556,10 @@
   v100 <- v92 / v98
   v101 <- v99
   v102 <- v100
-  goto 223
-223:
-  goto 224
-224:
-  goto 225
-225:
-  goto 226
-226:
+  goto 139
+139:
+  goto 140
+140:
   v103 <- v101
   v104 <- v74
   v105 <- v103 - v104
@@ -775,19 +603,15 @@
   v143 <- v133
   v144 <- v116
   v145 <- v143 + v144
-  goto 227
-227:
-  goto 228
-228:
-  goto 229
-229:
+  goto 141
+141:
+  goto 142
+142:
   v146 <- EntityData[0] * 100.0
   v147 <- 320000.0 + v146
   v148 <- v147 + v6
-  goto 230
-230:
-  goto 231
-231:
+  goto 143
+143:
   v149 <- v17
   v150 <- v124
   v151 <- v127
@@ -798,288 +622,198 @@
   v156 <- v130
   v157 <- v133
   v158 <- Draw(v149, v150, v151, v152, v153, v154, v155, v156, v157, v148, v47, 0, 0, 0)
-  goto 232
-232:
-  goto 233
-233:
-  goto 393
-234:
+  goto 144
+144:
+  goto 145
+145:
+  goto 241
+146:
   v22 <- v3 == 3.0
-  goto 235
-235:
-  goto 236 if v22 else 391
-236:
-  goto 237
-237:
+  goto 147 if v22 else 239
+147:
+  goto 148
+148:
   v23 <- RuntimeUpdate[0] % 0.3
   v24 <- v23 / 0.3
-  goto 238
-238:
+  goto 149
+149:
   v25 <- LevelData[15] + 0.5
   v26 <- LevelData[14] - 0.5
-  goto 239
-239:
-  goto 240
-240:
-  goto 241
-241:
+  goto 150
+150:
   v27 <- v6 <= LevelData[15]
-  goto 242
-242:
-  goto 243 if v27 else 244
-243:
+  goto 151 if v27 else 152
+151:
   v37 <- 0
-  goto 267
-244:
-  goto 245
-245:
-  goto 246
-246:
+  goto 162
+152:
+  goto 153
+153:
   v28 <- v25 > LevelData[15]
-  goto 247
-247:
   v29 <- v6 <= v25
-  goto 248
-248:
-  goto 249 if v29 else 250
-249:
+  goto 154 if v29 else 155
+154:
   v30 <- Remap(LevelData[15], v25, 0, 1.0, v6)
   v37 <- v30
-  goto 267
-250:
-  goto 251
-251:
-  goto 252
-252:
-  goto 253
-253:
+  goto 162
+155:
+  goto 156
+156:
   v31 <- v26 > v25
-  goto 254
-254:
   v32 <- v6 <= v26
-  goto 255
-255:
-  goto 256 if v32 else 257
-256:
+  goto 157 if v32 else 158
+157:
   v33 <- Remap(v25, v26, 1.0, 1.0, v6)
   v37 <- v33
-  goto 267
-257:
-  goto 258
-258:
-  goto 259
-259:
-  goto 260
-260:
+  goto 162
+158:
+  goto 159
+159:
   v34 <- LevelData[14] > v26
-  goto 261
-261:
   v35 <- v6 <= LevelData[14]
-  goto 262
-262:
-  goto 263 if v35 else 264
-263:
+  goto 160 if v35 else 161
+160:
   v36 <- Remap(v26, LevelData[14], 1.0, 0, v6)
   v37 <- v36
-  goto 267
-264:
-  goto 265
-265:
-  goto 266
-266:
+  goto 162
+161:
   v37 <- 0
-  goto 267
-267:
-  goto 268
-268:
+  goto 162
+162:
+  goto 163
+163:
   v38 <- EaseOutQuad(v37)
-  goto 269
-269:
-  goto 270
-270:
+  goto 164
+164:
   v39 <- Abs(EntityData[2])
   v40 <- v39
-  goto 271
-271:
+  goto 165
+165:
   v41 <- 0
   v42 <- v40
-  goto 272
-272:
-  goto 273
-273:
-  goto 274
-274:
-  goto 275
-275:
-  goto 276
-276:
+  goto 166
+166:
+  goto 167
+167:
+  goto 168
+168:
   v43 <- v41
   v44 <- v43 < v42
-  goto 277
-277:
-  goto 278 if v44 else 282
-278:
+  goto 169 if v44 else 172
+169:
   v45 <- v41
   v46 <- v41
   v47 <- v46 + 1.0
   v41 <- v47
-  goto 279
-279:
-  goto 280
-280:
-  goto 281
-281:
+  goto 170
+170:
+  goto 171
+171:
   v48 <- 1.0
-  goto 284
-282:
-  goto 283
-283:
+  goto 173
+172:
   v48 <- 0
-  goto 284
-284:
-  goto 285
-285:
-  goto 286 if v48 else 387
-286:
+  goto 173
+173:
+  goto 174
+174:
+  goto 175 if v48 else 237
+175:
   v49 <- v45 == 0
-  goto 287
-287:
-  goto 288 if v49 else 289
-288:
+  goto 176 if v49 else 177
+176:
   v50 <- 0
-  goto 290
-289:
+  goto 178
+177:
   v50 <- 1.0
-  goto 290
-290:
+  goto 178
+178:
   v51 <- Abs(EntityData[2])
   v52 <- v51 - 1.0
   v53 <- v45 == v52
-  goto 291
-291:
-  goto 292 if v53 else 293
-292:
+  goto 179 if v53 else 180
+179:
   v54 <- 0
-  goto 294
-293:
+  goto 181
+180:
   v54 <- 1.0
-  goto 294
-294:
-  goto 295
-295:
-  goto 296
-296:
-  goto 297
-297:
+  goto 181
+181:
+  goto 182
+182:
   v55 <- v23 <= 0
-  goto 298
-298:
-  goto 299 if v55 else 300
-299:
+  goto 183 if v55 else 184
+183:
   v62 <- v50
-  goto 323
-300:
-  goto 301
-301:
-  goto 302
-302:
-  goto 303
-303:
+  goto 194
+184:
+  goto 185
+185:
   v56 <- v23 <= 0.1
-  goto 304
-304:
-  goto 305 if v56 else 306
-305:
+  goto 186 if v56 else 187
+186:
   v57 <- Remap(0, 0.1, v50, 1.0, v23)
   v62 <- v57
-  goto 323
-306:
-  goto 307
-307:
-  goto 308
-308:
-  goto 309
-309:
-  goto 310
-310:
+  goto 194
+187:
+  goto 188
+188:
   v58 <- v23 <= 0.19999999999999998
-  goto 311
-311:
-  goto 312 if v58 else 313
-312:
+  goto 189 if v58 else 190
+189:
   v59 <- Remap(0.1, 0.19999999999999998, 1.0, 1.0, v23)
   v62 <- v59
-  goto 323
-313:
-  goto 314
-314:
-  goto 315
-315:
-  goto 316
-316:
-  goto 317
-317:
+  goto 194
+190:
+  goto 191
+191:
   v60 <- v23 <= 0.3
-  goto 318
-318:
-  goto 319 if v60 else 320
-319:
+  goto 192 if v60 else 193
+192:
   v61 <- Remap(0.19999999999999998, 0.3, 1.0, v54, v23)
   v62 <- v61
-  goto 323
-320:
-  goto 321
-321:
-  goto 322
-322:
+  goto 194
+193:
   v62 <- v54
-  goto 323
-323:
-  goto 324
-324:
+  goto 194
+194:
+  goto 195
+195:
   v63 <- EaseOutQuad(v62)
   v64 <- v38 * v63
   v65 <- v64 <= 0
-  goto 325
-325:
-  goto 326 if v65 else 327
-326:
-  goto 274
-327:
-  goto 328
-328:
-  goto 329
-329:
+  goto 196 if v65 else 197
+196:
+  goto 167
+197:
+  goto 198
+198:
   v66 <- EntityData[2] > 0
-  goto 330
-330:
-  goto 331 if v66 else 332
-331:
+  goto 199 if v66 else 200
+199:
   v67 <- 1.0
-  goto 333
-332:
+  goto 201
+200:
   v67 <- -1.0
-  goto 333
-333:
+  goto 201
+201:
   v68 <- 0.4 + v45
   v69 <- v68 + v24
   v70 <- v67 * v69
   v71 <- EntityData[0] + v70
-  goto 334
-334:
+  goto 202
+202:
   v72 <- v71 * LevelData[12]
-  goto 335
-335:
-  goto 336
-336:
+  goto 203
+203:
   v73 <- v72
   v74 <- v6
   v75 <- LevelData[11] * 1.5
   v76 <- LevelData[11] * 1.5
   v77 <- v75
   v78 <- v76
-  goto 337
-337:
+  goto 204
+204:
   v79 <- v74
   v80 <- v78
   v81 <- v80 / 2.0
@@ -1100,62 +834,50 @@
   v96 <- v86
   v97 <- v90
   v98 <- v94
-  goto 338
-338:
-  goto 339
-339:
-  goto 340
-340:
-  goto 341
-341:
+  goto 205
+205:
+  goto 206
+206:
+  goto 207
+207:
   v99 <- v98
   v100 <- v97
   v101 <- v99
   v102 <- v100
-  goto 342
-342:
-  goto 343
-343:
-  goto 344
-344:
+  goto 208
+208:
+  goto 209
+209:
   v103 <- v98
   v104 <- v95
   v105 <- v103
   v106 <- v104
-  goto 345
-345:
-  goto 346
-346:
-  goto 347
-347:
+  goto 210
+210:
+  goto 211
+211:
   v107 <- v96
   v108 <- v95
   v109 <- v107
   v110 <- v108
-  goto 348
-348:
-  goto 349
-349:
-  goto 350
-350:
+  goto 212
+212:
+  goto 213
+213:
   v111 <- v96
   v112 <- v97
   v113 <- v111
   v114 <- v112
-  goto 351
-351:
-  goto 352
-352:
-  goto 353
-353:
-  goto 354
-354:
+  goto 214
+214:
+  goto 215
+215:
   v115 <- v67 * -3.141592653589793
   v116 <- v115 / 2.0
-  goto 355
-355:
-  goto 356
-356:
+  goto 216
+216:
+  goto 217
+217:
   v117 <- v101
   v118 <- v109
   v119 <- v117 + v118
@@ -1178,12 +900,10 @@
   v136 <- v135 / 4.0
   v137 <- v134
   v138 <- v137 / 4.0
-  goto 357
-357:
-  goto 358
-358:
-  goto 359
-359:
+  goto 218
+218:
+  goto 219
+219:
   v139 <- v101
   v140 <- v136
   v141 <- v139 - v140
@@ -1288,20 +1008,16 @@
   v240 <- v236
   v241 <- v138
   v242 <- v240 + v241
-  goto 360
-360:
-  goto 361
-361:
-  goto 362
-362:
-  goto 363
-363:
-  goto 364
-364:
-  goto 365
-365:
-  goto 366
-366:
+  goto 220
+220:
+  goto 221
+221:
+  goto 222
+222:
+  goto 223
+223:
+  goto 224
+224:
   v243 <- v161
   v244 <- LevelData[2] * v243
   v245 <- v164
@@ -1324,12 +1040,10 @@
   v262 <- v254 / v260
   v263 <- v261
   v264 <- v262
-  goto 367
-367:
-  goto 368
-368:
-  goto 369
-369:
+  goto 225
+225:
+  goto 226
+226:
   v265 <- v239
   v266 <- LevelData[2] * v265
   v267 <- v242
@@ -1352,12 +1066,10 @@
   v284 <- v276 / v282
   v285 <- v283
   v286 <- v284
-  goto 370
-370:
-  goto 371
-371:
-  goto 372
-372:
+  goto 227
+227:
+  goto 228
+228:
   v287 <- v187
   v288 <- LevelData[2] * v287
   v289 <- v190
@@ -1380,12 +1092,10 @@
   v306 <- v298 / v304
   v307 <- v305
   v308 <- v306
-  goto 373
-373:
-  goto 374
-374:
-  goto 375
-375:
+  goto 229
+229:
+  goto 230
+230:
   v309 <- v213
   v310 <- LevelData[2] * v309
   v311 <- v216
@@ -1408,31 +1118,21 @@
   v328 <- v320 / v326
   v329 <- v327
   v330 <- v328
-  goto 376
-376:
-  goto 377
-377:
-  goto 378
-378:
-  goto 379
-379:
-  goto 380
-380:
-  goto 381
-381:
-  goto 382
-382:
-  goto 383
-383:
-  goto 384
-384:
+  goto 231
+231:
+  goto 232
+232:
+  goto 233
+233:
+  goto 234
+234:
+  goto 235
+235:
   v331 <- EntityData[0] * 100.0
   v332 <- 320000.0 + v331
   v333 <- v332 + v6
-  goto 385
-385:
-  goto 386
-386:
+  goto 236
+236:
   v334 <- v17
   v335 <- v263
   v336 <- v264
@@ -1443,26 +1143,20 @@
   v341 <- v285
   v342 <- v286
   v343 <- Draw(v334, v335, v336, v337, v338, v339, v340, v341, v342, v333, v64, 0, 0, 0)
-  goto 274
-387:
-  goto 388
-388:
-  goto 389
-389:
-  goto 390
-390:
-  goto 392
-391:
-  goto 392
-392:
-  goto 393
-393:
-  goto 394
-394:
-  goto 395
-395:
-  goto 396
-396:
-  goto 397
-397:
+  goto 167
+237:
+  goto 238
+238:
+  goto 240
+239:
+  goto 240
+240:
+  goto 241
+241:
+  goto 242
+242:
+  goto 243
+243:
+  goto 244
+244:
   goto exit

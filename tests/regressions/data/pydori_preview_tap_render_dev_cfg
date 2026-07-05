@@ -14,188 +14,152 @@
 5:
   goto 6
 6:
-  goto 7
-7:
-  goto 8
-8:
   v4 <- v3 == 6.0
+  goto 7 if v4 else 8
+7:
+  goto 53
+8:
   goto 9
 9:
-  goto 10 if v4 else 11
+  v5 <- 3.0 + EntityInfo[1]
+  v6 <- v5
+  v7 <- EngineRom[v6]
+  goto 10
 10:
-  goto 71
+  goto 11
 11:
   goto 12
 12:
   goto 13
 13:
-  v5 <- 3.0 + EntityInfo[1]
-  v6 <- v5
-  v7 <- EngineRom[v6]
-  goto 14
-14:
-  goto 15
-15:
-  goto 16
-16:
-  goto 17
-17:
-  goto 18
-18:
-  goto 19
-19:
   v8 <- 0
   v9 <- v7 == 1.0
-  goto 20 if v9 else 21
-20:
+  goto 14 if v9 else 15
+14:
   v8 <- 7.0
-  goto 38
-21:
+  goto 31
+15:
   v10 <- v7 == 2.0
-  goto 22 if v10 else 23
-22:
+  goto 16 if v10 else 17
+16:
   v8 <- 8.0
-  goto 38
-23:
+  goto 31
+17:
   v11 <- v7 == 3.0
-  goto 24 if v11 else 29
-24:
+  goto 18 if v11 else 22
+18:
   v12 <- EntityData[2] > 0
-  goto 25
-25:
-  goto 26 if v12 else 27
-26:
+  goto 19 if v12 else 20
+19:
   v8 <- 10.0
-  goto 28
-27:
+  goto 21
+20:
   v8 <- 12.0
-  goto 28
-28:
-  goto 38
-29:
+  goto 21
+21:
+  goto 31
+22:
   v13 <- v7 == 4.0
-  goto 30 if v13 else 31
-30:
+  goto 23 if v13 else 24
+23:
   v8 <- 14.0
-  goto 38
-31:
+  goto 31
+24:
   v14 <- v7 == 5.0
-  goto 32 if v14 else 33
-32:
+  goto 25 if v14 else 26
+25:
   v8 <- 16.0
-  goto 38
-33:
+  goto 31
+26:
   v15 <- v7 == 6.0
-  goto 34 if v15 else 35
-34:
-  goto 38
-35:
+  goto 27 if v15 else 28
+27:
+  goto 31
+28:
   v16 <- v7 == 7.0
-  goto 36 if v16 else 37
-36:
+  goto 29 if v16 else 30
+29:
   v8 <- 15.0
-  goto 38
-37:
-  goto 38
-38:
-  goto 39
-39:
-  goto 40
-40:
-  goto 41
-41:
-  goto 42
-42:
+  goto 31
+30:
+  goto 31
+31:
+  goto 32
+32:
+  goto 33
+33:
+  goto 34
+34:
   v17 <- EntityData[3] / 2.0
   v18 <- Trunc(v17)
-  goto 43
-43:
-  goto 44
-44:
-  goto 45
-45:
+  goto 35
+35:
+  goto 36
+36:
   v19 <- EntityData[3] % 2.0
   v20 <- v19 / 2.0
   v21 <- Lerp(-0.9, 0.9, v20)
-  goto 46
-46:
-  goto 47
-47:
-  goto 48
-48:
+  goto 37
+37:
+  goto 38
+38:
   v22 <- EntityData[0] - 0.5
-  goto 49
-49:
+  goto 39
+39:
   v23 <- v18 + 0.5
   v24 <- v23 * PreviewData[1]
   v25 <- v22 * 0.072
   v26 <- v24 + v25
   v27 <- -RuntimeEnvironment[1]
-  goto 50
-50:
+  goto 40
+40:
   v28 <- v27
   v29 <- RuntimeEnvironment[1] - v28
-  goto 51
-51:
-  goto 52
-52:
+  goto 41
+41:
   v30 <- v29 / 2.0
   v31 <- v26 - v30
-  goto 53
-53:
-  goto 54
-54:
-  goto 55
-55:
-  goto 56
-56:
-  goto 57
-57:
+  goto 42
+42:
+  goto 43
+43:
+  goto 44
+44:
   v32 <- EntityData[0] + 0.5
-  goto 58
-58:
+  goto 45
+45:
   v33 <- v18 + 0.5
   v34 <- v33 * PreviewData[1]
   v35 <- v32 * 0.072
   v36 <- v34 + v35
   v37 <- -RuntimeEnvironment[1]
-  goto 59
-59:
+  goto 46
+46:
   v38 <- v37
   v39 <- RuntimeEnvironment[1] - v38
-  goto 60
-60:
-  goto 61
-61:
+  goto 47
+47:
   v40 <- v39 / 2.0
   v41 <- v36 - v40
-  goto 62
-62:
-  goto 63
-63:
-  goto 64
-64:
-  goto 65
-65:
+  goto 48
+48:
+  goto 49
+49:
   v42 <- v21 + 0.036
   v43 <- v21 - 0.036
   v44 <- v42
   v45 <- v41
   v46 <- v43
   v47 <- v31
-  goto 66
-66:
-  goto 67
-67:
-  goto 68
-68:
+  goto 50
+50:
+  goto 51
+51:
   v48 <- EntityData[0] * 100.0
   v49 <- 310000.0 + v48
   v50 <- v49 + EntityData[3]
-  goto 69
-69:
-  goto 70
-70:
+  goto 52
+52:
   v51 <- v8
   v52 <- v47
   v53 <- v46
@@ -222,151 +186,123 @@
   v74 <- v66
   v75 <- v67
   v76 <- Draw(v51, v68, v69, v70, v71, v72, v73, v74, v75, v50, 1.0, 0, 0, 0)
+  goto 53
+53:
+  goto 54
+54:
+  goto 55
+55:
+  goto 56
+56:
+  v1 <- 3.0 + EntityInfo[1]
+  v2 <- v1
+  v3 <- EngineRom[v2]
+  goto 57
+57:
+  goto 58
+58:
+  goto 59
+59:
+  goto 60
+60:
+  v4 <- 0
+  v5 <- v3 == 2.0
+  goto 61 if v5 else 62
+61:
+  v4 <- 9.0
+  goto 68
+62:
+  v6 <- v3 == 3.0
+  goto 63 if v6 else 67
+63:
+  v7 <- EntityData[2] > 0
+  goto 64 if v7 else 65
+64:
+  v4 <- 11.0
+  goto 66
+65:
+  v4 <- 13.0
+  goto 66
+66:
+  goto 68
+67:
+  goto 68
+68:
+  goto 69
+69:
+  goto 70
+70:
+  v8 <- 3.0 + EntityInfo[1]
+  v9 <- v8
+  v10 <- EngineRom[v9]
   goto 71
 71:
   goto 72
 72:
   goto 73
 73:
-  goto 74
+  v11 <- v10 == 2.0
+  goto 74 if v11 else 95
 74:
-  v1 <- 3.0 + EntityInfo[1]
-  v2 <- v1
-  v3 <- EngineRom[v2]
   goto 75
 75:
   goto 76
 76:
+  v12 <- EntityData[3] / 2.0
+  v13 <- Trunc(v12)
   goto 77
 77:
   goto 78
 78:
+  v14 <- EntityData[0] - 0.5
   goto 79
 79:
-  goto 80
-80:
-  v4 <- 0
-  v5 <- v3 == 2.0
-  goto 81 if v5 else 82
-81:
-  v4 <- 9.0
-  goto 89
-82:
-  v6 <- v3 == 3.0
-  goto 83 if v6 else 88
-83:
-  v7 <- EntityData[2] > 0
-  goto 84
-84:
-  goto 85 if v7 else 86
-85:
-  v4 <- 11.0
-  goto 87
-86:
-  v4 <- 13.0
-  goto 87
-87:
-  goto 89
-88:
-  goto 89
-89:
-  goto 90
-90:
-  goto 91
-91:
-  goto 92
-92:
-  v8 <- 3.0 + EntityInfo[1]
-  v9 <- v8
-  v10 <- EngineRom[v9]
-  goto 93
-93:
-  goto 94
-94:
-  goto 95
-95:
-  goto 96
-96:
-  goto 97
-97:
-  v11 <- v10 == 2.0
-  goto 98 if v11 else 129
-98:
-  goto 99
-99:
-  goto 100
-100:
-  v12 <- EntityData[3] / 2.0
-  v13 <- Trunc(v12)
-  goto 101
-101:
-  goto 102
-102:
-  goto 103
-103:
-  v14 <- EntityData[0] - 0.5
-  goto 104
-104:
   v15 <- v13 + 0.5
   v16 <- v15 * PreviewData[1]
   v17 <- v14 * 0.072
   v18 <- v16 + v17
   v19 <- -RuntimeEnvironment[1]
-  goto 105
-105:
+  goto 80
+80:
   v20 <- v19
   v21 <- RuntimeEnvironment[1] - v20
-  goto 106
-106:
-  goto 107
-107:
+  goto 81
+81:
   v22 <- v21 / 2.0
   v23 <- v18 - v22
-  goto 108
-108:
-  goto 109
-109:
-  goto 110
-110:
-  goto 111
-111:
-  goto 112
-112:
+  goto 82
+82:
+  goto 83
+83:
+  goto 84
+84:
   v24 <- EntityData[0] + 0.5
-  goto 113
-113:
+  goto 85
+85:
   v25 <- v13 + 0.5
   v26 <- v25 * PreviewData[1]
   v27 <- v24 * 0.072
   v28 <- v26 + v27
   v29 <- -RuntimeEnvironment[1]
-  goto 114
-114:
+  goto 86
+86:
   v30 <- v29
   v31 <- RuntimeEnvironment[1] - v30
-  goto 115
-115:
-  goto 116
-116:
+  goto 87
+87:
   v32 <- v31 / 2.0
   v33 <- v28 - v32
-  goto 117
-117:
-  goto 118
-118:
-  goto 119
-119:
-  goto 120
-120:
-  goto 121
-121:
+  goto 88
+88:
+  goto 89
+89:
+  goto 90
+90:
   v34 <- EntityData[3] % 2.0
   v35 <- v34 / 2.0
   v36 <- Lerp(-0.9, 0.9, v35)
-  goto 122
-122:
-  goto 123
-123:
+  goto 91
+91:
   v37 <- v36 + 0.0648
   v38 <- v37 - 0.036
   v39 <- v23
@@ -380,19 +316,15 @@
   v47 <- v37 + 0.036
   v48 <- v23
   v49 <- v47
-  goto 124
-124:
-  goto 125
-125:
-  goto 126
-126:
+  goto 92
+92:
+  goto 93
+93:
   v50 <- EntityData[0] * 100.0
   v51 <- 320000.0 + v50
   v52 <- v51 + EntityData[3]
-  goto 127
-127:
-  goto 128
-128:
+  goto 94
+94:
   v53 <- v4
   v54 <- v39
   v55 <- v40
@@ -403,211 +335,171 @@
   v60 <- v42
   v61 <- v43
   v62 <- Draw(v53, v54, v55, v56, v57, v58, v59, v60, v61, v52, 1.0, 0, 0, 0)
-  goto 212
-129:
+  goto 152
+95:
   v63 <- v10 == 3.0
-  goto 130 if v63 else 211
-130:
+  goto 96 if v63 else 151
+96:
   v64 <- Abs(EntityData[2])
   v65 <- v64
-  goto 131
-131:
+  goto 97
+97:
   v66 <- 0
   v67 <- v65
-  goto 132
-132:
-  goto 133
-133:
-  goto 134
-134:
-  goto 135
-135:
-  goto 136
-136:
+  goto 98
+98:
+  goto 99
+99:
+  goto 100
+100:
   v68 <- v66
   v69 <- v68 < v67
-  goto 137
-137:
-  goto 138 if v69 else 142
-138:
+  goto 101 if v69 else 104
+101:
   v70 <- v66
   v71 <- v66
   v72 <- v71 + 1.0
   v66 <- v72
-  goto 139
-139:
-  goto 140
-140:
-  goto 141
-141:
+  goto 102
+102:
+  goto 103
+103:
   v73 <- 1.0
-  goto 144
-142:
-  goto 143
-143:
+  goto 105
+104:
   v73 <- 0
-  goto 144
-144:
-  goto 145
-145:
-  goto 146 if v73 else 209
-146:
+  goto 105
+105:
+  goto 106
+106:
+  goto 107 if v73 else 150
+107:
   v74 <- v70 + 1.0
   v75 <- EntityData[2] > 0
-  goto 147
-147:
-  goto 148 if v75 else 149
-148:
+  goto 108 if v75 else 109
+108:
   v76 <- 1.0
-  goto 150
-149:
+  goto 110
+109:
   v76 <- -1.0
-  goto 150
-150:
+  goto 110
+110:
   v77 <- v74 * v76
   v78 <- EntityData[0] + v77
-  goto 151
-151:
-  goto 152
-152:
+  goto 111
+111:
+  goto 112
+112:
   v79 <- EntityData[3] / 2.0
   v80 <- Trunc(v79)
-  goto 153
-153:
-  goto 154
-154:
-  goto 155
-155:
+  goto 113
+113:
+  goto 114
+114:
   v81 <- v78 - 0.5
-  goto 156
-156:
+  goto 115
+115:
   v82 <- v80 + 0.5
   v83 <- v82 * PreviewData[1]
   v84 <- v81 * 0.072
   v85 <- v83 + v84
   v86 <- -RuntimeEnvironment[1]
-  goto 157
-157:
+  goto 116
+116:
   v87 <- v86
   v88 <- RuntimeEnvironment[1] - v87
-  goto 158
-158:
-  goto 159
-159:
+  goto 117
+117:
   v89 <- v88 / 2.0
   v90 <- v85 - v89
-  goto 160
-160:
-  goto 161
-161:
-  goto 162
-162:
-  goto 163
-163:
-  goto 164
-164:
+  goto 118
+118:
+  goto 119
+119:
+  goto 120
+120:
   v91 <- v78 + 0.5
-  goto 165
-165:
+  goto 121
+121:
   v92 <- v80 + 0.5
   v93 <- v92 * PreviewData[1]
   v94 <- v91 * 0.072
   v95 <- v93 + v94
   v96 <- -RuntimeEnvironment[1]
-  goto 166
-166:
+  goto 122
+122:
   v97 <- v96
   v98 <- RuntimeEnvironment[1] - v97
-  goto 167
-167:
-  goto 168
-168:
+  goto 123
+123:
   v99 <- v98 / 2.0
   v100 <- v95 - v99
-  goto 169
-169:
-  goto 170
-170:
-  goto 171
-171:
-  goto 172
-172:
-  goto 173
-173:
+  goto 124
+124:
+  goto 125
+125:
+  goto 126
+126:
   v101 <- EntityData[3] % 2.0
   v102 <- v101 / 2.0
   v103 <- Lerp(-0.9, 0.9, v102)
-  goto 174
-174:
-  goto 175
-175:
+  goto 127
+127:
   v104 <- v103 + 0.036
   v105 <- v103 - 0.036
   v106 <- v104
   v107 <- v100
   v108 <- v105
   v109 <- v90
-  goto 176
-176:
-  goto 177
-177:
+  goto 128
+128:
+  goto 129
+129:
   v110 <- v109
   v111 <- v108
   v112 <- v110
   v113 <- v111
-  goto 178
-178:
-  goto 179
-179:
-  goto 180
-180:
+  goto 130
+130:
+  goto 131
+131:
   v114 <- v109
   v115 <- v106
   v116 <- v114
   v117 <- v115
-  goto 181
-181:
-  goto 182
-182:
-  goto 183
-183:
+  goto 132
+132:
+  goto 133
+133:
   v118 <- v107
   v119 <- v106
   v120 <- v118
   v121 <- v119
-  goto 184
-184:
-  goto 185
-185:
-  goto 186
-186:
+  goto 134
+134:
+  goto 135
+135:
   v122 <- v107
   v123 <- v108
   v124 <- v122
   v125 <- v123
-  goto 187
-187:
-  goto 188
-188:
-  goto 189
-189:
-  goto 190
-190:
+  goto 136
+136:
+  goto 137
+137:
   v126 <- EntityData[2] > 0
-  goto 191
-191:
-  goto 192 if v126 else 193
-192:
+  goto 138 if v126 else 139
+138:
   v127 <- -1.5707963267948966
-  goto 194
-193:
+  goto 140
+139:
   v127 <- 1.5707963267948966
-  goto 194
-194:
-  goto 195
-195:
-  goto 196
-196:
+  goto 140
+140:
+  goto 141
+141:
+  goto 142
+142:
   v128 <- v112
   v129 <- v120
   v130 <- v128 + v129
@@ -630,12 +522,10 @@
   v147 <- v146 / 4.0
   v148 <- v145
   v149 <- v148 / 4.0
-  goto 197
-197:
-  goto 198
-198:
-  goto 199
-199:
+  goto 143
+143:
+  goto 144
+144:
   v150 <- v112
   v151 <- v147
   v152 <- v150 - v151
@@ -740,27 +630,19 @@
   v251 <- v247
   v252 <- v149
   v253 <- v251 + v252
-  goto 200
-200:
-  goto 201
-201:
-  goto 202
-202:
-  goto 203
-203:
-  goto 204
-204:
-  goto 205
-205:
-  goto 206
-206:
+  goto 145
+145:
+  goto 146
+146:
+  goto 147
+147:
+  goto 148
+148:
   v254 <- v78 * 100.0
   v255 <- 320000.0 + v254
   v256 <- v255 + EntityData[3]
-  goto 207
-207:
-  goto 208
-208:
+  goto 149
+149:
   v257 <- v4
   v258 <- v172
   v259 <- v175
@@ -771,20 +653,14 @@
   v264 <- v250
   v265 <- v253
   v266 <- Draw(v257, v258, v259, v260, v261, v262, v263, v264, v265, v256, 1.0, 0, 0, 0)
-  goto 134
-209:
-  goto 210
-210:
-  goto 212
-211:
-  goto 212
-212:
-  goto 213
-213:
-  goto 214
-214:
-  goto 215
-215:
-  goto 216
-216:
+  goto 99
+150:
+  goto 152
+151:
+  goto 152
+152:
+  goto 153
+153:
+  goto 154
+154:
   goto exit

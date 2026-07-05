@@ -31,8 +31,6 @@
   v10 <- 6.0 / LevelOption[1]
   goto 6
 6:
-  goto 7
-7:
   v11 <- v9 - v10
   EntityData[13] <- v11
   v12 <- EntityData[11]
@@ -49,71 +47,65 @@
   EntityData[14] <- v22
   v23 <- v21
   EntityData[15] <- v23
-  goto 8
-8:
+  goto 7
+7:
   v24 <- 3.0 + EntityInfo[1]
   v25 <- v24
   v26 <- EngineRom[v25]
+  goto 8
+8:
   goto 9
 9:
   goto 10
 10:
   goto 11
 11:
-  goto 12
-12:
-  goto 13
-13:
-  goto 14
-14:
   v27 <- 0
   v28 <- v26 == 1.0
-  goto 15 if v28 else 16
-15:
+  goto 12 if v28 else 13
+12:
   v27 <- 0
-  goto 29
-16:
+  goto 26
+13:
   v29 <- v26 == 2.0
-  goto 17 if v29 else 18
-17:
+  goto 14 if v29 else 15
+14:
   v27 <- 4.0
-  goto 29
-18:
+  goto 26
+15:
   v30 <- v26 == 3.0
-  goto 19 if v30 else 20
-19:
+  goto 16 if v30 else 17
+16:
   v27 <- 5.0
-  goto 29
-20:
+  goto 26
+17:
   v31 <- v26 == 4.0
-  goto 21 if v31 else 22
-21:
+  goto 18 if v31 else 19
+18:
   v27 <- 1.0
-  goto 29
-22:
+  goto 26
+19:
   v32 <- v26 == 5.0
-  goto 23 if v32 else 24
-23:
+  goto 20 if v32 else 21
+20:
   v27 <- 3.0
-  goto 29
-24:
+  goto 26
+21:
   v33 <- v26 == 6.0
-  goto 25 if v33 else 26
-25:
-  goto 29
-26:
+  goto 22 if v33 else 23
+22:
+  goto 26
+23:
   v34 <- v26 == 7.0
-  goto 27 if v34 else 28
-27:
+  goto 24 if v34 else 25
+24:
   v27 <- 2.0
-  goto 29
-28:
-  goto 29
-29:
-  goto 30
-30:
-  goto 31
-31:
+  goto 26
+25:
+  goto 26
+26:
+  goto 27
+27:
   v35 <- v27
   EntityInput[2] <- v35
   EntityInput[1] <- 1.0
@@ -125,49 +117,37 @@
   v40 <- v39
   v41 <- v40
   EntityData[16] <- v41
+  goto 28
+28:
+  goto 29
+29:
+  v42 <- EntityData[16]
+  goto 30
+30:
+  goto 31
+31:
   goto 32
 32:
   goto 33
 33:
-  v42 <- EntityData[16]
+  v43 <- v42 * 32.0
+  v44 <- 3.0 + v43
+  v45 <- v44
+  v46 <- EntityDataArray[v45]
+  v47 <- v46 > 0
   goto 34
 34:
-  goto 35
+  goto 35 if v47 else 40
 35:
   goto 36
 36:
+  v48 <- EntityData[16]
   goto 37
 37:
   goto 38
 38:
   goto 39
 39:
-  v43 <- v42 * 32.0
-  v44 <- 3.0 + v43
-  v45 <- v44
-  v46 <- EntityDataArray[v45]
-  v47 <- v46 > 0
-  goto 40
-40:
-  goto 41
-41:
-  goto 42
-42:
-  goto 43 if v47 else 50
-43:
-  goto 44
-44:
-  v48 <- EntityData[16]
-  goto 45
-45:
-  goto 46
-46:
-  goto 47
-47:
-  goto 48
-48:
-  goto 49
-49:
   v49 <- v48 * 32.0
   v50 <- 3.0 + v49
   v51 <- v50
@@ -177,10 +157,8 @@
   v55 <- v54
   v56 <- v55
   EntityData[16] <- v56
-  goto 32
-50:
-  goto 51
-51:
+  goto 28
+40:
   v57 <- EntityInfo[0]
   v58 <- v57
   v59 <- v58
@@ -188,49 +166,37 @@
   v61 <- v60
   v62 <- v61
   EntityData[17] <- v62
-  goto 52
-52:
-  goto 53
-53:
+  goto 41
+41:
+  goto 42
+42:
   v63 <- EntityData[17]
-  goto 54
-54:
-  goto 55
-55:
-  goto 56
-56:
-  goto 57
-57:
-  goto 58
-58:
-  goto 59
-59:
+  goto 43
+43:
+  goto 44
+44:
+  goto 45
+45:
+  goto 46
+46:
   v64 <- v63 * 32.0
   v65 <- 4.0 + v64
   v66 <- v65
   v67 <- EntityDataArray[v66]
   v68 <- v67 > 0
-  goto 60
-60:
-  goto 61
-61:
-  goto 62
-62:
-  goto 63 if v68 else 70
-63:
-  goto 64
-64:
+  goto 47
+47:
+  goto 48 if v68 else 53
+48:
+  goto 49
+49:
   v69 <- EntityData[17]
-  goto 65
-65:
-  goto 66
-66:
-  goto 67
-67:
-  goto 68
-68:
-  goto 69
-69:
+  goto 50
+50:
+  goto 51
+51:
+  goto 52
+52:
   v70 <- v69 * 32.0
   v71 <- 4.0 + v70
   v72 <- v71
@@ -240,85 +206,65 @@
   v76 <- v75
   v77 <- v76
   EntityData[17] <- v77
-  goto 52
-70:
-  goto 71
-71:
-  goto 72 if LevelOption[11] else 100
-72:
-  goto 73
-73:
+  goto 41
+53:
+  goto 54 if LevelOption[11] else 74
+54:
+  goto 55
+55:
   v78 <- 3.0 + EntityInfo[1]
   v79 <- v78
   v80 <- EngineRom[v79]
-  goto 74
+  goto 56
+56:
+  goto 57
+57:
+  goto 58
+58:
+  v81 <- EntityData[11]
+  goto 59
+59:
+  v82 <- !LevelOption[10]
+  goto 60 if v82 else 61
+60:
+  goto 72
+61:
+  v83 <- v80 == 6.0
+  goto 62 if v83 else 63
+62:
+  goto 72
+63:
+  goto 64
+64:
+  v84 <- 0
+  v85 <- v80 == 2.0
+  goto 65 if v85 else 66
+65:
+  goto 68
+66:
+  v86 <- v80 == 3.0
+  goto 67 if v86 else 69
+67:
+  goto 68
+68:
+  v84 <- 4.0
+  goto 70
+69:
+  v84 <- 1.0
+  goto 70
+70:
+  goto 71
+71:
+  v87 <- v84
+  v88 <- PlayScheduled(v87, v81, 0)
+  goto 72
+72:
+  goto 73
+73:
+  goto 75
 74:
   goto 75
 75:
   goto 76
 76:
-  goto 77
-77:
-  goto 78
-78:
-  v81 <- EntityData[11]
-  goto 79
-79:
-  v82 <- !LevelOption[10]
-  goto 80 if v82 else 81
-80:
-  goto 98
-81:
-  goto 82
-82:
-  v83 <- v80 == 6.0
-  goto 83
-83:
-  goto 84 if v83 else 85
-84:
-  goto 98
-85:
-  goto 86
-86:
-  goto 87
-87:
-  v84 <- 0
-  v85 <- v80 == 2.0
-  goto 88 if v85 else 89
-88:
-  goto 91
-89:
-  v86 <- v80 == 3.0
-  goto 90 if v86 else 93
-90:
-  goto 91
-91:
-  v84 <- 4.0
-  goto 92
-92:
-  goto 95
-93:
-  v84 <- 1.0
-  goto 94
-94:
-  goto 95
-95:
-  goto 96
-96:
-  goto 97
-97:
-  v87 <- v84
-  v88 <- PlayScheduled(v87, v81, 0)
-  goto 98
-98:
-  goto 99
-99:
-  goto 101
-100:
-  goto 101
-101:
-  goto 102
-102:
-  goto 103
-103:
   goto exit

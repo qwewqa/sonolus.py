@@ -12,164 +12,126 @@
 5:
   goto 6
 6:
-  goto 7
-7:
-  goto 8
-8:
   v2 <- v1
   v3 <- v2 < PreviewData[0]
-  goto 9
-9:
-  goto 10 if v3 else 14
-10:
+  goto 7 if v3 else 10
+7:
   v4 <- v1
   v5 <- v1
   v6 <- v5 + 1.0
   v1 <- v6
+  goto 8
+8:
+  goto 9
+9:
+  v7 <- 1.0
+  goto 11
+10:
+  v7 <- 0
   goto 11
 11:
   goto 12
 12:
-  goto 13
+  goto 13 if v7 else 42
 13:
-  v7 <- 1.0
-  goto 16
+  goto 14
 14:
   goto 15
 15:
-  v7 <- 0
   goto 16
 16:
-  goto 17
-17:
-  goto 18 if v7 else 61
-18:
-  goto 19
-19:
-  goto 20
-20:
-  goto 21
-21:
   v8 <- v4 + 0.5
   v9 <- v8 * PreviewData[1]
   v10 <- v9 + -0.252
   v11 <- -RuntimeEnvironment[1]
-  goto 22
-22:
+  goto 17
+17:
   v12 <- v11
   v13 <- RuntimeEnvironment[1] - v12
-  goto 23
-23:
-  goto 24
-24:
+  goto 18
+18:
   v14 <- v13 / 2.0
   v15 <- v10 - v14
-  goto 25
-25:
-  goto 26
-26:
-  goto 27
-27:
-  goto 28
-28:
+  goto 19
+19:
+  goto 20
+20:
   v16 <- v15 - 0.018
-  goto 29
-29:
-  goto 30
-30:
+  goto 21
+21:
+  goto 22
+22:
   v17 <- v4 + 0.5
   v18 <- v17 * PreviewData[1]
   v19 <- v18 + -0.252
   v20 <- -RuntimeEnvironment[1]
-  goto 31
-31:
+  goto 23
+23:
   v21 <- v20
   v22 <- RuntimeEnvironment[1] - v21
-  goto 32
-32:
-  goto 33
-33:
+  goto 24
+24:
   v23 <- v22 / 2.0
   v24 <- v19 - v23
+  goto 25
+25:
+  goto 26
+26:
+  v25 <- 1.0
+  v26 <- v24
+  v27 <- -1.0
+  v28 <- v16
+  goto 27
+27:
+  goto 28
+28:
+  goto 29
+29:
+  goto 30
+30:
+  v29 <- v4 + 0.5
+  v30 <- v29 * PreviewData[1]
+  v31 <- v30 + 0.252
+  v32 <- -RuntimeEnvironment[1]
+  goto 31
+31:
+  v33 <- v32
+  v34 <- RuntimeEnvironment[1] - v33
+  goto 32
+32:
+  v35 <- v34 / 2.0
+  v36 <- v31 - v35
+  goto 33
+33:
   goto 34
 34:
   goto 35
 35:
   goto 36
 36:
-  goto 37
-37:
-  v25 <- 1.0
-  v26 <- v24
-  v27 <- -1.0
-  v28 <- v16
-  goto 38
-38:
-  goto 39
-39:
-  goto 40
-40:
-  goto 41
-41:
-  goto 42
-42:
-  v29 <- v4 + 0.5
-  v30 <- v29 * PreviewData[1]
-  v31 <- v30 + 0.252
-  v32 <- -RuntimeEnvironment[1]
-  goto 43
-43:
-  v33 <- v32
-  v34 <- RuntimeEnvironment[1] - v33
-  goto 44
-44:
-  goto 45
-45:
-  v35 <- v34 / 2.0
-  v36 <- v31 - v35
-  goto 46
-46:
-  goto 47
-47:
-  goto 48
-48:
-  goto 49
-49:
-  goto 50
-50:
-  goto 51
-51:
   v37 <- v4 + 0.5
   v38 <- v37 * PreviewData[1]
   v39 <- v38 + 0.252
   v40 <- -RuntimeEnvironment[1]
-  goto 52
-52:
+  goto 37
+37:
   v41 <- v40
   v42 <- RuntimeEnvironment[1] - v41
-  goto 53
-53:
-  goto 54
-54:
+  goto 38
+38:
   v43 <- v42 / 2.0
   v44 <- v39 - v43
-  goto 55
-55:
-  goto 56
-56:
-  goto 57
-57:
-  goto 58
-58:
+  goto 39
+39:
+  goto 40
+40:
   v45 <- v44 + 0.018
   v46 <- 1.0
   v47 <- v45
   v48 <- -1.0
   v49 <- v36
-  goto 59
-59:
-  goto 60
-60:
+  goto 41
+41:
   v50 <- v28
   v51 <- v27
   v52 <- v50
@@ -220,164 +182,126 @@
   v97 <- v89
   v98 <- v90
   v99 <- Draw(3.0, v91, v92, v93, v94, v95, v96, v97, v98, 0, 1.0, 0, 0, 0)
-  goto 6
-61:
-  goto 62
-62:
-  goto 63
-63:
-  goto 64
-64:
-  goto 65
-65:
-  goto 66
-66:
+  goto 5
+42:
+  goto 43
+43:
+  goto 44
+44:
+  goto 45
+45:
   v1 <- 0
-  goto 67
-67:
-  goto 68
-68:
-  goto 69
-69:
-  goto 70
-70:
-  goto 71
-71:
+  goto 46
+46:
+  goto 47
+47:
+  goto 48
+48:
   v2 <- v1
   v3 <- v2 < PreviewData[0]
-  goto 72
-72:
-  goto 73 if v3 else 77
-73:
+  goto 49 if v3 else 52
+49:
   v4 <- v1
   v5 <- v1
   v6 <- v5 + 1.0
   v1 <- v6
-  goto 74
-74:
-  goto 75
-75:
-  goto 76
-76:
+  goto 50
+50:
+  goto 51
+51:
   v7 <- 1.0
-  goto 79
-77:
-  goto 78
-78:
+  goto 53
+52:
   v7 <- 0
-  goto 79
-79:
-  goto 80
-80:
-  goto 81 if v7 else 121
-81:
-  goto 82
-82:
+  goto 53
+53:
+  goto 54
+54:
+  goto 55 if v7 else 82
+55:
+  goto 56
+56:
   v8 <- -3.0
-  goto 83
-83:
-  goto 84
-84:
-  goto 85
-85:
-  goto 86
-86:
-  goto 87
-87:
+  goto 57
+57:
+  goto 58
+58:
+  goto 59
+59:
   v9 <- v8
   v10 <- v9 < 4.0
-  goto 88
-88:
-  goto 89 if v10 else 93
-89:
+  goto 60 if v10 else 63
+60:
   v11 <- v8
   v12 <- v8
   v13 <- v12 + 1.0
   v8 <- v13
-  goto 90
-90:
-  goto 91
-91:
-  goto 92
-92:
+  goto 61
+61:
+  goto 62
+62:
   v14 <- 1.0
-  goto 95
-93:
-  goto 94
-94:
+  goto 64
+63:
   v14 <- 0
-  goto 95
-95:
-  goto 96
-96:
-  goto 97 if v14 else 119
-97:
-  goto 98
-98:
-  goto 99
-99:
+  goto 64
+64:
+  goto 65
+65:
+  goto 66 if v14 else 81
+66:
+  goto 67
+67:
+  goto 68
+68:
   v15 <- v11 - 0.5
-  goto 100
-100:
+  goto 69
+69:
   v16 <- v4 + 0.5
   v17 <- v16 * PreviewData[1]
   v18 <- v15 * 0.072
   v19 <- v17 + v18
   v20 <- -RuntimeEnvironment[1]
-  goto 101
-101:
+  goto 70
+70:
   v21 <- v20
   v22 <- RuntimeEnvironment[1] - v21
-  goto 102
-102:
-  goto 103
-103:
+  goto 71
+71:
   v23 <- v22 / 2.0
   v24 <- v19 - v23
-  goto 104
-104:
-  goto 105
-105:
-  goto 106
-106:
-  goto 107
-107:
-  goto 108
-108:
+  goto 72
+72:
+  goto 73
+73:
+  goto 74
+74:
   v25 <- v11 + 0.5
-  goto 109
-109:
+  goto 75
+75:
   v26 <- v4 + 0.5
   v27 <- v26 * PreviewData[1]
   v28 <- v25 * 0.072
   v29 <- v27 + v28
   v30 <- -RuntimeEnvironment[1]
-  goto 110
-110:
+  goto 76
+76:
   v31 <- v30
   v32 <- RuntimeEnvironment[1] - v31
-  goto 111
-111:
-  goto 112
-112:
+  goto 77
+77:
   v33 <- v32 / 2.0
   v34 <- v29 - v33
-  goto 113
-113:
-  goto 114
-114:
-  goto 115
-115:
-  goto 116
-116:
+  goto 78
+78:
+  goto 79
+79:
   v35 <- 1.0
   v36 <- v34
   v37 <- -1.0
   v38 <- v24
-  goto 117
-117:
-  goto 118
-118:
+  goto 80
+80:
   v39 <- v38
   v40 <- v37
   v41 <- v39
@@ -403,20 +327,14 @@
   v61 <- v53
   v62 <- v54
   v63 <- Draw(1.0, v55, v56, v57, v58, v59, v60, v61, v62, 1.0, 1.0, 0, 0, 0)
-  goto 85
-119:
-  goto 120
-120:
-  goto 69
-121:
-  goto 122
-122:
-  goto 123
-123:
-  goto 124
-124:
-  goto 125
-125:
+  goto 58
+81:
+  goto 47
+82:
+  goto 83
+83:
+  goto 84
+84:
   v1 <- -RuntimeEnvironment[1]
   v2 <- v1
   v3 <- PreviewData[1] * PreviewData[0]
@@ -425,12 +343,10 @@
   v6 <- v4
   v7 <- -1.0
   v8 <- v2
-  goto 126
-126:
-  goto 127
-127:
-  goto 128
-128:
+  goto 85
+85:
+  goto 86
+86:
   v9 <- v8
   v10 <- v7
   v11 <- v9
@@ -460,12 +376,10 @@
   v35 <- v4
   v36 <- 0.9
   v37 <- v2
-  goto 129
-129:
-  goto 130
-130:
-  goto 131
-131:
+  goto 87
+87:
+  goto 88
+88:
   v38 <- v37
   v39 <- v36
   v40 <- v38
@@ -491,113 +405,85 @@
   v60 <- v52
   v61 <- v53
   v62 <- Draw(0, v54, v55, v56, v57, v58, v59, v60, v61, 200000.0, 1.0, 0, 0, 0)
-  goto 132
-132:
-  goto 133
-133:
-  goto 134
-134:
+  goto 89
+89:
+  goto 90
+90:
   v1 <- Floor(PreviewData[3])
   v2 <- v1 + 1.0
   v3 <- v2
-  goto 135
-135:
+  goto 91
+91:
   v4 <- 0
   v5 <- v3
-  goto 136
-136:
-  goto 137
-137:
-  goto 138
-138:
-  goto 139
-139:
-  goto 140
-140:
+  goto 92
+92:
+  goto 93
+93:
+  goto 94
+94:
   v6 <- v4
   v7 <- v6 < v5
-  goto 141
-141:
-  goto 142 if v7 else 146
-142:
+  goto 95 if v7 else 98
+95:
   v8 <- v4
   v9 <- v4
   v10 <- v9 + 1.0
   v4 <- v10
-  goto 143
-143:
-  goto 144
-144:
-  goto 145
-145:
+  goto 96
+96:
+  goto 97
+97:
   v11 <- 1.0
-  goto 148
-146:
-  goto 147
-147:
+  goto 99
+98:
   v11 <- 0
-  goto 148
-148:
-  goto 149
-149:
-  goto 150 if v11 else 195
-150:
-  goto 151
-151:
-  goto 152
-152:
-  goto 153
-153:
+  goto 99
+99:
+  goto 100
+100:
+  goto 101 if v11 else 128
+101:
+  goto 102
+102:
+  goto 103
+103:
   v12 <- v8 / 2.0
   v13 <- Trunc(v12)
-  goto 154
-154:
-  goto 155
-155:
-  goto 156
-156:
+  goto 104
+104:
+  goto 105
+105:
   v14 <- v13 + 0.5
   v15 <- v14 * PreviewData[1]
   v16 <- v15 + -0.252
   v17 <- -RuntimeEnvironment[1]
-  goto 157
-157:
+  goto 106
+106:
   v18 <- v17
   v19 <- RuntimeEnvironment[1] - v18
-  goto 158
-158:
-  goto 159
-159:
+  goto 107
+107:
   v20 <- v19 / 2.0
   v21 <- v16 - v20
-  goto 160
-160:
-  goto 161
-161:
-  goto 162
-162:
+  goto 108
+108:
   v22 <- v21 + -0.015
-  goto 163
-163:
+  goto 109
+109:
   v23 <- v8 % 2.0
   v24 <- v23 / 2.0
   v25 <- Lerp(-0.9, 0.9, v24)
-  goto 164
-164:
-  goto 165
-165:
+  goto 110
+110:
   v26 <- v22
   v27 <- v25
-  goto 166
-166:
   v28 <- 1.0
   v29 <- 0
   v30 <- 0.22
   v31 <- 0.12
-  goto 167
-167:
-  goto 168
-168:
+  goto 111
+111:
   v32 <- v26
   v33 <- v27
   v34 <- v28
@@ -605,76 +491,58 @@
   v36 <- v30
   v37 <- v31
   v38 <- Print(v8, 10.0, 0, v32, v33, v34, v35, v36, v37, 0, 6.0, 1.0, 1.0, 0)
-  goto 169
-169:
-  goto 170
-170:
-  goto 171
-171:
-  goto 172
-172:
-  goto 173
-173:
-  goto 174
-174:
+  goto 112
+112:
+  goto 113
+113:
+  goto 114
+114:
+  goto 115
+115:
   v12 <- v8 / 2.0
   v13 <- Trunc(v12)
-  goto 175
-175:
-  goto 176
-176:
-  goto 177
-177:
+  goto 116
+116:
+  goto 117
+117:
   v14 <- v13 + 0.5
   v15 <- v14 * PreviewData[1]
   v16 <- v15 + -0.252
   v17 <- -RuntimeEnvironment[1]
-  goto 178
-178:
+  goto 118
+118:
   v18 <- v17
   v19 <- RuntimeEnvironment[1] - v18
-  goto 179
-179:
-  goto 180
-180:
+  goto 119
+119:
   v20 <- v19 / 2.0
   v21 <- v16 - v20
-  goto 181
-181:
-  goto 182
-182:
-  goto 183
-183:
+  goto 120
+120:
+  goto 121
+121:
   v22 <- v13 + 0.5
   v23 <- v22 * PreviewData[1]
   v24 <- v23 + 0.252
   v25 <- -RuntimeEnvironment[1]
-  goto 184
-184:
+  goto 122
+122:
   v26 <- v25
   v27 <- RuntimeEnvironment[1] - v26
-  goto 185
-185:
-  goto 186
-186:
+  goto 123
+123:
   v28 <- v27 / 2.0
   v29 <- v24 - v28
-  goto 187
-187:
-  goto 188
-188:
+  goto 124
+124:
   v30 <- v21 - 0.21599999999999997
-  goto 189
-189:
-  goto 190
-190:
+  goto 125
+125:
   v31 <- v8 % 2.0
   v32 <- v31 / 2.0
   v33 <- Lerp(-0.9, 0.9, v32)
-  goto 191
-191:
-  goto 192
-192:
+  goto 126
+126:
   v34 <- v33 - 0.0018
   v35 <- v30
   v36 <- v34
@@ -687,10 +555,8 @@
   v43 <- v33 + 0.0018
   v44 <- v30
   v45 <- v43
-  goto 193
-193:
-  goto 194
-194:
+  goto 127
+127:
   v46 <- v35
   v47 <- v36
   v48 <- v44
@@ -700,16 +566,10 @@
   v52 <- v38
   v53 <- v39
   v54 <- Draw(22.0, v46, v47, v48, v49, v50, v51, v52, v53, 23.0, 0.8, 0, 0, 0)
-  goto 138
-195:
-  goto 196
-196:
-  goto 197
-197:
-  goto 198
-198:
-  goto 199
-199:
-  goto 200
-200:
+  goto 93
+128:
+  goto 129
+129:
+  goto 130
+130:
   goto exit

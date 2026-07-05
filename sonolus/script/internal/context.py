@@ -439,6 +439,11 @@ class Context:
             return contexts[0].into_dead()
         contexts = [context for context in contexts if context.live]
         assert not any(context.outgoing for context in contexts)
+        if len(contexts) == 1:
+            # A single live predecessor has nothing to merge; continue directly in it
+            # instead of minting an empty pass-through block + edge that the optimizer
+            # would collapse anyway.
+            return contexts[0]
         target = contexts[0].copy_with_scope(Scope())
         Scope.apply_merge(target, contexts)
         for context in contexts:
