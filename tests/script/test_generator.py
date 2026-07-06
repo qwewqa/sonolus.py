@@ -647,3 +647,16 @@ def test_comptime_empty_generator():
         return 2
 
     assert run_and_validate(fn) == 2
+
+
+def test_generator_return_nonnone_constant_rejected():
+    def fn():
+        def gen():
+            yield 1
+            return 5  # noqa: B901
+
+        for i in gen():
+            debug_log(i)
+
+    with pytest.raises(CompilationError, match="Generator function return statements must return None"):
+        run_compiled(fn)

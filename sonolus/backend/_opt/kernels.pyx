@@ -368,11 +368,11 @@ cdef int _fold_ease(uint16_t op, double x, double* out) noexcept nogil:
             if x == 0.0:
                 out[0] = 0.0
             else:
-                out[0] = (_fpow(2.0, -20.0 * x + 10.0) * sin((20.0 * x - 0.75) * c4)) / 2.0 + 0.5
+                out[0] = (_fpow(2.0, -20.0 * x) * sin((20.0 * x - 0.75) * c4)) / 2.0 + 0.5
         elif x == 1.0:
             out[0] = 1.0
         else:
-            out[0] = (-_fpow(2.0, 10.0 * (2.0 * x - 1.0) - 10.0) * sin((20.0 * x - 10.75) * c4)) / 2.0 + 0.5
+            out[0] = (-_fpow(2.0, 10.0 * (2.0 * x - 1.0) - 10.0) * sin((20.0 * x - 20.75) * c4)) / 2.0 + 0.5
         return FOLD_OK
 
     # ---- Expo ----
@@ -473,7 +473,7 @@ cdef int _fold_ease(uint16_t op, double x, double* out) noexcept nogil:
         if x < 0.5:
             out[0] = sin(M_PI * x) / 2.0
         else:
-            out[0] = (1.0 - cos(M_PI * x)) / 2.0
+            out[0] = 1.0 - sin(M_PI * x) / 2.0
         return FOLD_OK
 
     return FOLD_NOT_CONSTANT

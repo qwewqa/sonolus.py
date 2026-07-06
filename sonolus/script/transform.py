@@ -688,5 +688,9 @@ def perspective_approach(
     """
     d_0 = distance_ratio
     d_1 = 1.0
+    if d_0 == d_1:
+        # Flat stage: the remap interval [1/d_0, 1/d_1] is degenerate (zero width), which would
+        # divide by zero. Return progress unchanged, as documented.
+        return progress
     d = max(lerp(d_0, d_1, progress), 1e-6)  # Avoid a zero or negative distance
     return remap(1 / d_0, 1 / d_1, 0, 1, 1 / d)

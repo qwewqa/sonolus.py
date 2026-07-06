@@ -93,7 +93,7 @@ def streams[T](cls: type[T]) -> T:
         ```
     """
     if len(cls.__bases__) != 1:
-        raise ValueError("Options class must not inherit from any class (except object)")
+        raise ValueError("Streams class must not inherit from any class (except object)")
 
     @classmethod
     def _init_(cls):

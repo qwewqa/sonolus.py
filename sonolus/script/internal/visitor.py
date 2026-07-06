@@ -479,7 +479,7 @@ class Visitor(ast.NodeVisitor):
             result_binding = return_ctx.scope.get_binding("$return")
             if not isinstance(result_binding, ValueBinding):
                 raise ValueError("Function has conflicting return values")
-            if not result_binding.value._is_py_() and result_binding.value._as_py_() is not None:
+            if not (result_binding.value._is_py_() and result_binding.value._as_py_() is None):
                 raise ValueError("Generator function return statements must return None")
             with using_ctx(start_ctx):
                 state_var = Num._alloc_()
@@ -705,6 +705,7 @@ class Visitor(ast.NodeVisitor):
 
                 def store(result):
                     self.handle_assign(target, result)
+
         rhs_value = self.visit(node.value)
         regular_fn_name = bin_ops[type(node.op)]
         if (
@@ -1039,10 +1040,20 @@ class Visitor(ast.NodeVisitor):
                         raise TypeError("Class does not support match patterns")
                     if len(cls.__match_args__) < len(patterns):
                         raise ValueError("Too many match patterns")
-                    # kwd_attrs can't be mixed with patterns on the syntax level,
-                    # so we can just set it like this since it's empty
-                    kwd_attrs = cls.__match_args__[: len(patterns)]
-                    kwd_patterns = patterns
+                    # Positional sub-patterns bind to the first len(patterns) __match_args__.
+                    # Python allows mixing them with keyword sub-patterns (e.g. Point(0, y=1)), so
+                    # prepend the positional attrs/patterns to the existing keyword ones rather than
+                    # overwriting them.
+                    kwd_attrs = [*cls.__match_args__[: len(patterns)], *kwd_attrs]
+                    kwd_patterns = [*patterns, *kwd_patterns]
+                    # A positional and a keyword sub-pattern targeting the same attribute is a
+                    # runtime TypeError in CPython; reject it rather than silently emitting an arm
+                    # that can never match (it would test the attribute against both sub-patterns).
+                    seen_attrs = set()
+                    for attr in kwd_attrs:
+                        if attr in seen_attrs:
+                            raise TypeError(f"{cls.__name__}() got multiple sub-patterns for attribute {attr!r}")
+                        seen_attrs.add(attr)
                 if kwd_attrs:
                     true_ctx = ctx()
                     false_ctxs = []

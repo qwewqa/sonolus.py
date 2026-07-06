@@ -83,7 +83,7 @@ def instructions[T](cls: type[T]) -> T | TutorialInstructions:
         @instructions
         class Instructions:
             tap: StandardInstruction.TAP
-            other_instruction: InstructionText = instruction("Other Instruction")
+            other_instruction: Instruction = instruction("Other Instruction")
         ```
     """
     if len(cls.__bases__) != 1:

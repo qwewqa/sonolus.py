@@ -378,7 +378,7 @@ class ArrayPointer[T](Record, ArrayLike[T]):
         if self.element_type()._is_value_type_():
             dst._set_(value)
         else:
-            dst._copy_from__(value)
+            dst._copy_from_(value)
 
 
 class ArraySet[T, Capacity](Record):

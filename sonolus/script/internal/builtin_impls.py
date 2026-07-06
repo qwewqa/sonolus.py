@@ -66,9 +66,7 @@ def _enumerate(iterable, start=0):
 
     iterable = validate_value(iterable)
     if has_tuple_iter(iterable):
-        return TupleImpl._accept_(
-            tuple((start + i, value) for i, value in enumerate(tuple_iter(iterable)))
-        )
+        return TupleImpl._accept_(tuple((start + i, value) for i, value in enumerate(tuple_iter(iterable))))
     elif not hasattr(iterable, "__iter__"):
         raise TypeError(f"'{type(iterable).__name__}' object is not iterable")
     elif isinstance(iterable, ArrayLike):
@@ -174,7 +172,7 @@ def _max(*args, default=_empty, key=None):
                 result = _max2(result, arg, key=key)
             return result
         else:
-            return max(arg._as_py_() for arg in args)
+            return max((arg._as_py_() for arg in args), key=key)
 
 
 def _max2(a, b, key=_identity):
@@ -270,7 +268,7 @@ def _min(*args, default=_empty, key=None):
                 result = _min2(result, arg, key=key)
             return result
         else:
-            return min(arg._as_py_() for arg in args)
+            return min((arg._as_py_() for arg in args), key=key)
 
 
 def _min2(a, b, key=_identity):

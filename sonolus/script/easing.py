@@ -159,11 +159,11 @@ def ease_out_in_elastic(x: float) -> float:
         if x == 0:
             return 0
         else:
-            return (2 ** (-20 * x + 10) * math.sin((20 * x - 0.75) * c4)) / 2 + 0.5
+            return (2 ** (-20 * x) * math.sin((20 * x - 0.75) * c4)) / 2 + 0.5
     elif x == 1:
         return 1
     else:
-        return (-(2 ** (10 * (2 * x - 1) - 10)) * math.sin((20 * x - 10.75) * c4)) / 2 + 0.5
+        return (-(2 ** (10 * (2 * x - 1) - 10)) * math.sin((20 * x - 20.75) * c4)) / 2 + 0.5
 
 
 @native_function(Op.EaseInExpo)
@@ -334,7 +334,7 @@ def ease_out_in_sine(x: float) -> float:
     if x < 0.5:
         return math.sin(math.pi * x) / 2
     else:
-        return (1 - math.cos(math.pi * x)) / 2
+        return 1 - math.sin(math.pi * x) / 2
 
 
 def linstep(x: float) -> float:

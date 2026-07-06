@@ -61,7 +61,7 @@ def native_function[**P, R](op: Op, const_eval: bool = False) -> Callable[[Calla
         # too many args) takes the signature.bind path below, which stays the source of
         # truth for behavior and error messages.
         simple_positional = all(
-            p.kind in (inspect.Parameter.POSITIONAL_ONLY, inspect.Parameter.POSITIONAL_OR_KEYWORD) for p in params
+            p.kind in {inspect.Parameter.POSITIONAL_ONLY, inspect.Parameter.POSITIONAL_OR_KEYWORD} for p in params
         )
         param_defaults = tuple(p.default for p in params)
 

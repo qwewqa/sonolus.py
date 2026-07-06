@@ -1351,7 +1351,7 @@ class WatchArchetype(_BaseArchetype):
     def update_parallel(self):
         """Parallel update callback.
 
-        Runs after [`touch`][sonolus.script.archetype.PlayArchetype.touch] each frame.
+        Runs after [`update_sequential`][sonolus.script.archetype.WatchArchetype.update_sequential] each frame.
 
         This is where most gameplay logic should be placed.
         """

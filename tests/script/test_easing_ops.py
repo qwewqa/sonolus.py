@@ -136,3 +136,31 @@ def test_remainder_hypothesis(a, b):
         return _rem(a, b)
 
     run_and_validate(fn)
+
+
+EASE_ABSOLUTE_CASES = [
+    (easing.ease_out_in_elastic, 0.1, 0.5625),
+    (easing.ease_out_in_elastic, 0.25, 0.5078125),
+    (easing.ease_out_in_elastic, 0.35, 0.501953125),
+    (easing.ease_out_in_elastic, 0.65, 0.498046875),
+    (easing.ease_out_in_elastic, 0.75, 0.4921875),
+    (easing.ease_out_in_elastic, 0.9, 0.4375),
+    (easing.ease_out_in_sine, 0.6, 0.5244717418524233),
+    (easing.ease_out_in_sine, 0.75, 0.6464466094067263),
+    (easing.ease_out_in_sine, 0.9, 0.8454915028125263),
+]
+
+_EASE_IDS = [f"{func.__name__}-{x}" for func, x, _ in EASE_ABSOLUTE_CASES]
+
+
+@pytest.mark.parametrize(("ease_func", "x", "expected"), EASE_ABSOLUTE_CASES, ids=_EASE_IDS)
+def test_ease_out_in_absolute_reference(ease_func, x, expected):
+    assert math.isclose(ease_func(x), expected, rel_tol=0, abs_tol=1e-9)
+
+
+@pytest.mark.parametrize(("ease_func", "x", "expected"), EASE_ABSOLUTE_CASES, ids=_EASE_IDS)
+def test_ease_out_in_absolute_compiled(ease_func, x, expected):
+    def fn(_ease=ease_func):
+        return _ease(x)
+
+    assert math.isclose(run_and_validate(fn), expected, rel_tol=0, abs_tol=1e-9)

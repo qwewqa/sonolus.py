@@ -599,3 +599,12 @@ def test_perspective_approach_against_transform(progress):
 
     result = run_and_validate(fn)
     assert is_close(result[0], result[1], rel_tol=1e-4, abs_tol=1e-4)
+
+
+def test_perspective_approach_flat_stage_returns_progress():
+    ratio = 1.0
+
+    def fn():
+        return perspective_approach(ratio, 0.5)
+
+    assert run_and_validate(fn) == 0.5

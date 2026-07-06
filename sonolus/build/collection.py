@@ -260,7 +260,10 @@ class Collection:
         return base_dir
 
     def _write_main_info(self, base_dir: Path) -> None:
-        sorted_categories = sorted(self.categories.keys(), key=lambda c: CATEGORY_SORT_ORDER.get(c, 100))
+        sorted_categories = sorted(
+            (category for category, items in self.categories.items() if items),
+            key=lambda c: CATEGORY_SORT_ORDER.get(c, 100),
+        )
         info = {
             "title": self.name,
             "buttons": [{"type": SINGULAR_CATEGORY_NAMES[category]} for category in sorted_categories],

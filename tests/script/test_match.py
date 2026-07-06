@@ -2,12 +2,15 @@
 
 from enum import IntEnum
 
+import pytest
+
 from sonolus.script.array import Array
 from sonolus.script.containers import VarArray
 from sonolus.script.debug import debug_log
+from sonolus.script.internal.error import CompilationError
 from sonolus.script.num import Num
 from sonolus.script.record import Record
-from tests.script.conftest import run_and_validate
+from tests.script.conftest import run_and_validate, run_compiled
 from tests.script.test_record import Pair
 
 
@@ -531,3 +534,40 @@ def test_match_partial_binding():
         m(p9)
 
     run_and_validate(fn)
+
+
+def test_match_class_mixed_positional_and_keyword():
+    def fn():
+        p = Point(0, 5)
+        match p:
+            case Point(0, y=1):
+                return 1
+            case _:
+                return 0
+
+    assert run_and_validate(fn) == 0
+
+
+def test_match_class_mixed_positional_and_keyword_true_case():
+    def fn():
+        p = Point(0, 5)
+        match p:
+            case Point(0, y=5):
+                return 1
+            case _:
+                return 0
+
+    assert run_and_validate(fn) == 1
+
+
+def test_match_class_duplicate_positional_and_keyword_attr_rejected():
+    def fn():
+        p = Point(0, 5)
+        match p:
+            case Point(0, x=1):
+                return 1
+            case _:
+                return 0
+
+    with pytest.raises(CompilationError, match="multiple sub-patterns for attribute"):
+        run_compiled(fn)

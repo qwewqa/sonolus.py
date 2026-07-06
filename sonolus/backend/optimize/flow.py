@@ -179,7 +179,7 @@ def cfg_to_text(entry: BasicBlock) -> str:
         for dst, phi_srcs in phis.items():
             srcs = ", ".join(
                 f"{block_indexes.get(src_block, '<dead>')}: {src_place}"
-                for src_block, src_place in sorted(phi_srcs.items(), key=lambda x: block_indexes.get(x[0]))
+                for src_block, src_place in sorted(phi_srcs.items(), key=lambda x: block_indexes.get(x[0], -1))
             )
             yield f"{dst} := phi({srcs})\n"
 

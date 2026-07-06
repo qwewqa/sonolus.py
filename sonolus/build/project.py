@@ -37,6 +37,7 @@ def build_project_to_existing_collection(
     config: BuildConfig | None,
     project_state: ProjectContextState | None = None,
 ) -> None:
+    config = config or BuildConfig()
     for src_engine, converter in project.converters.items():
         if src_engine is None:
             continue
