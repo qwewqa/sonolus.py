@@ -3897,9 +3897,10 @@ If the map may be modified in the future, it's recommended to make a copy of the
 <span class="nb">map</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span> <span class="o">=</span> <span class="n">Pair</span><span class="p">(</span><span class="mi">2</span><span class="p">,</span> <span class="mi">3</span><span class="p">)</span>
 <span class="nb">map</span><span class="p">[</span><span class="mi">3</span><span class="p">]</span> <span class="o">=</span> <span class="n">Pair</span><span class="p">(</span><span class="mi">4</span><span class="p">,</span> <span class="mi">5</span><span class="p">)</span>
 <span class="nb">map</span><span class="p">[</span><span class="mi">5</span><span class="p">]</span> <span class="o">=</span> <span class="n">Pair</span><span class="p">(</span><span class="mi">6</span><span class="p">,</span> <span class="mi">7</span><span class="p">)</span>
-<span class="n">p</span> <span class="o">=</span> <span class="nb">map</span><span class="p">[</span><span class="mi">3</span><span class="p">]</span>
+<span class="n">p</span> <span class="o">=</span> <span class="nb">map</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span>
 <span class="nb">map</span><span class="o">.</span><span class="n">pop</span><span class="p">(</span><span class="mi">1</span><span class="p">)</span>
-<span class="c1"># The value of `p` may now be different</span>
+<span class="c1"># `p` may now read a different value: pop() swaps the last entry into the freed</span>
+<span class="c1"># slot, so the storage `p` refers to no longer holds Pair(2, 3).</span>
 </code></pre></div></p>
 </details>
 
