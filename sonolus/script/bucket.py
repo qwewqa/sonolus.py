@@ -11,6 +11,7 @@ from sonolus.script.internal.introspection import get_field_specifiers
 from sonolus.script.internal.meta_fn import meta_fn, perf_meta_fn
 from sonolus.script.internal.native import native_function
 from sonolus.script.interval import Interval
+from sonolus.script.metadata import AnyText, encode_localization_text
 from sonolus.script.pointer import _deref
 from sonolus.script.record import Record
 from sonolus.script.sprite import Sprite
@@ -224,9 +225,9 @@ def bucket_sprite(
     return _BucketSprite(sprite.id, fallback_sprite.id if fallback_sprite else None, x, y, w, h, rotation)
 
 
-def bucket(*, sprites: list[_BucketSprite], unit: str | None = None) -> Any:
+def bucket(*, sprites: list[_BucketSprite], unit: AnyText | None = None) -> Any:
     """Define a bucket with the given sprites and unit."""
-    return _BucketInfo(sprites, unit)
+    return _BucketInfo(sprites, encode_localization_text(unit))
 
 
 type Buckets = NewType("Buckets", Any)  # type: ignore

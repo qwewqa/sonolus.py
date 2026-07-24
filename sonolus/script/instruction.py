@@ -4,6 +4,7 @@ from typing import Annotated, Any, NewType, dataclass_transform, get_origin
 from sonolus.backend.ops import Op
 from sonolus.script.internal.introspection import get_field_specifiers
 from sonolus.script.internal.native import native_function
+from sonolus.script.metadata import AnyText, encode_localization_text
 from sonolus.script.record import Record
 from sonolus.script.runtime import _TutorialInstruction
 from sonolus.script.text import StandardText
@@ -60,9 +61,9 @@ class _InstructionIconInfo:
     name: str
 
 
-def instruction(name: str) -> Any:
+def instruction(name: AnyText) -> Any:
     """Define an instruction with the given name."""
-    return _InstructionTextInfo(name=name)
+    return _InstructionTextInfo(name=encode_localization_text(name))
 
 
 def instruction_icon(name: str) -> Any:

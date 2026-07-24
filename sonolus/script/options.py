@@ -10,6 +10,7 @@ from sonolus.script.internal.descriptor import SonolusDescriptor
 from sonolus.script.internal.generic import validate_concrete_type
 from sonolus.script.internal.introspection import get_field_specifiers
 from sonolus.script.internal.simulation_context import sim_ctx
+from sonolus.script.metadata import AnyText, encode_localization_text
 from sonolus.script.num import Num
 from sonolus.script.values import copy
 
@@ -109,15 +110,15 @@ class _SelectOption:
 def slider_option(
     *,
     name: str | None = None,
-    title: str | None = None,
-    description: str | None = None,
+    title: AnyText | None = None,
+    description: AnyText | None = None,
     standard: bool = False,
     advanced: bool = False,
     default: float,
     min: float,
     max: float,
     step: float,
-    unit: str | None = None,
+    unit: AnyText | None = None,
     scope: str | None = None,
 ) -> Any:
     """Define a slider option.
@@ -135,14 +136,26 @@ def slider_option(
         unit: The unit of the option.
         scope: The scope of the option.
     """
-    return _SliderOption(name, title, description, standard, advanced, scope, default, min, max, step, unit)
+    return _SliderOption(
+        name,
+        encode_localization_text(title),
+        encode_localization_text(description),
+        standard,
+        advanced,
+        scope,
+        default,
+        min,
+        max,
+        step,
+        encode_localization_text(unit),
+    )
 
 
 def toggle_option(
     *,
     name: str | None = None,
-    title: str | None = None,
-    description: str | None = None,
+    title: AnyText | None = None,
+    description: AnyText | None = None,
     standard: bool = False,
     advanced: bool = False,
     default: bool,
@@ -159,18 +172,26 @@ def toggle_option(
         default: The default value of the option.
         scope: The scope of the option.
     """
-    return _ToggleOption(name, title, description, standard, advanced, scope, default)
+    return _ToggleOption(
+        name,
+        encode_localization_text(title),
+        encode_localization_text(description),
+        standard,
+        advanced,
+        scope,
+        default,
+    )
 
 
 def select_option(
     *,
     name: str | None = None,
-    title: str | None = None,
-    description: str | None = None,
+    title: AnyText | None = None,
+    description: AnyText | None = None,
     standard: bool = False,
     advanced: bool = False,
-    default: str | int,
-    values: list[str],
+    default: AnyText | int,
+    values: list[AnyText],
     scope: str | None = None,
 ) -> Any:
     """Define a select option.
@@ -181,13 +202,22 @@ def select_option(
         description: The description of the option.
         standard: Whether the option is standard.
         advanced: Whether the option is advanced.
-        default: The default value of the option.
+        default: The default value of the option, given as an entry of `values` or an index into it.
         values: The values of the option.
         scope: The scope of the option.
     """
-    if isinstance(default, str):
+    if not isinstance(default, int):
         default = values.index(default)
-    return _SelectOption(name, title, description, standard, advanced, scope, default, values)
+    return _SelectOption(
+        name,
+        encode_localization_text(title),
+        encode_localization_text(description),
+        standard,
+        advanced,
+        scope,
+        default,
+        [encode_localization_text(value) for value in values],
+    )
 
 
 type Options = NewType("Options", Any)  # type: ignore

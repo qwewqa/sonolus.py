@@ -1,3 +1,7 @@
+### 0.18.0
+
+- Added support for localized text in options, buckets, and instructions.
+
 ### 0.17.3
 
 - Bug fixes.
