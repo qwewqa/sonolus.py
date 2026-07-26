@@ -1,3 +1,8 @@
+### 0.18.1
+
+- Fixed a reference type rebound inside a loop being silently read as its pre-loop value, whether read on a later
+  iteration or after the loop.
+
 ### 0.18.0
 
 - Added support for localized text in options, buckets, and instructions, given as an

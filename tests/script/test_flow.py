@@ -717,7 +717,7 @@ def test_error_if_conflicting_definitions():
             x = Pair(3, 4)
         debug_log(x.first)
 
-    with pytest.raises(CompilationError, match="conflicting definitions"):
+    with pytest.raises(CompilationError, match="'x' has multiple conflicting definitions"):
         run_compiled(fn)
 
 
@@ -729,7 +729,7 @@ def test_error_while_conflicting_definitions():
             x = Pair(3, 4)
         return 1
 
-    with pytest.raises(CompilationError, match="conflicting definitions"):
+    with pytest.raises(CompilationError, match="'x' may have conflicting definitions between loop iterations"):
         run_compiled(fn)
 
 
@@ -741,7 +741,7 @@ def test_error_for_conflicting_definitions():
             x = Pair(3, 4)
         return 1
 
-    with pytest.raises(CompilationError, match="conflicting definitions"):
+    with pytest.raises(CompilationError, match="'x' may have conflicting definitions between loop iterations"):
         run_compiled(fn)
 
 
@@ -759,7 +759,7 @@ def test_error_while_conflicting_definitions_behind_single_predecessor_merge():
             x = Pair(3, 4)
         return 1
 
-    with pytest.raises(CompilationError, match="conflicting definitions"):
+    with pytest.raises(CompilationError, match="'x' may have conflicting definitions between loop iterations"):
         run_compiled(fn)
 
 
@@ -767,7 +767,7 @@ def test_error_while_conflicting_definitions_behind_multi_predecessor_merge():
     # Same hazard behind a merge with two live predecessors: the merge must keep the
     # loop-variable binding object (and its read counts) rather than rebuilding it,
     # or the read after the join never reaches the back-edge conflict check and the
-    # loop silently reads the stale pre-loop reference.
+    # loop silently reads the pre-loop reference.
     def fn():
         x = Pair(1, 2)
         i = 0
@@ -779,8 +779,705 @@ def test_error_while_conflicting_definitions_behind_multi_predecessor_merge():
             x = Pair(3, 4)
         return 1
 
-    with pytest.raises(CompilationError, match="conflicting definitions"):
+    with pytest.raises(CompilationError, match="'x' may have conflicting definitions between loop iterations"):
         run_compiled(fn)
+
+
+def test_error_while_conflicting_definitions_behind_distinct_binding_merge():
+    # Same hazard behind a merge whose live predecessors hold distinct binding objects over
+    # the same value: rebinding x to the pre-loop alias y mints a fresh binding wrapping the
+    # value the loop header already holds, while the fallthrough path keeps the header's own
+    # binding. The merge of those must keep the read that follows it visible to the header,
+    # or the back-edge check never fires and the loop silently reads the pre-loop reference
+    # on later iterations.
+    def fn():
+        x = Pair(1, 2)
+        y = x
+        i = 0
+        while i < 2:
+            i += 1
+            if black_box():
+                x = y
+            debug_log(x.first)
+            x = Pair(3, 4)
+        return 1
+
+    with pytest.raises(CompilationError, match="'x' may have conflicting definitions between loop iterations"):
+        run_compiled(fn)
+
+
+def test_error_while_conflicting_definitions_behind_distinct_binding_merge_in_else_branch():
+    # The same shape with the rebinding arm second, so the header's binding is the merge's
+    # first source rather than its second. Which source carries the header's binding must not
+    # matter.
+    def fn():
+        x = Pair(1, 2)
+        y = x
+        i = 0
+        while i < 2:
+            i += 1
+            if black_box():
+                debug_log(0)
+            else:
+                x = y
+            debug_log(x.first)
+            x = Pair(3, 4)
+        return 1
+
+    with pytest.raises(CompilationError, match="'x' may have conflicting definitions between loop iterations"):
+        run_compiled(fn)
+
+
+def test_error_while_conflicting_definitions_behind_nested_distinct_binding_merges():
+    # Two merges stack: the inner join rebuilds the binding once and the outer join rebuilds
+    # that result again, so the read is two merges removed from the header's binding. The
+    # check has to follow the whole chain, not just one link of it.
+    def fn():
+        x = Pair(1, 2)
+        y = x
+        i = 0
+        while i < 2:
+            i += 1
+            if black_box():
+                if black_box():
+                    x = y
+            debug_log(x.first)
+            x = Pair(3, 4)
+        return 1
+
+    with pytest.raises(CompilationError, match="'x' may have conflicting definitions between loop iterations"):
+        run_compiled(fn)
+
+
+def test_no_error_when_read_follows_rebind_in_the_same_branch():
+    # The read sits after the rebind in the arm that rebound x, so it reads that arm's value
+    # and never the header's own reference. The merge really does discard a read here, and
+    # discarding it is correct: attributing a source's reads to the header would reject this.
+    def fn():
+        x = Pair(1, 2)
+        y = x
+        i = 0
+        while i < 2:
+            i += 1
+            if black_box():
+                x = y
+                debug_log(x.first)
+            else:
+                debug_log(0)
+            x = Pair(3, 4)
+        return 1
+
+    assert run_compiled(fn) == 1
+
+
+def test_no_error_when_every_path_rebinds_loop_variable_before_read():
+    # Every path rebinds x before the read, so neither merge source is the header's binding
+    # and the read is of the rebound value. This must keep compiling.
+    def fn():
+        x = Pair(1, 2)
+        y = x
+        i = 0
+        while i < 2:
+            i += 1
+            if black_box():
+                x = y
+                debug_log(1)
+            else:
+                x = y
+                debug_log(2)
+            debug_log(x.first)
+            x = Pair(3, 4)
+        return 1
+
+    assert run_compiled(fn) == 1
+
+
+def test_no_error_when_merged_loop_variable_is_never_read():
+    # The same merge as the failing cases with no read of x in the body at all: rebinding it
+    # before the back edge is harmless, so the check must stay quiet.
+    def fn():
+        x = Pair(1, 2)
+        y = x
+        i = 0
+        while i < 2:
+            i += 1
+            if black_box():
+                x = y
+            x = Pair(3, 4)
+        return 1
+
+    assert run_compiled(fn) == 1
+
+
+def test_error_while_conflicting_definitions_across_nested_loop_header():
+    # The inner loop writes x, so the inner loop header mints its own binding over the value the
+    # outer header holds. The read inside the inner loop lands on that binding, and unless the
+    # outer header's binding can reach it the outer back edge sees no read at all: the loop
+    # silently reads the pre-loop reference on every iteration.
+    def fn():
+        x = Pair(1, 2)
+        y = x
+        i = 0
+        while i < 3:
+            i += 1
+            j = 0
+            while j < 1:
+                j += 1
+                debug_log(x.first)
+                x = y
+            x = Pair(3, 4)
+        return 1
+
+    with pytest.raises(CompilationError, match="'x' may have conflicting definitions between loop iterations"):
+        run_compiled(fn)
+
+
+def test_error_while_conflicting_definitions_across_nested_for_loop_header():
+    # The same shape with a for loop inside. Both loop forms mint the inner header's binding
+    # through the same path, and nothing else pins that they do.
+    def fn():
+        x = Pair(1, 2)
+        y = x
+        i = 0
+        while i < 3:
+            i += 1
+            for _ in range(1):
+                debug_log(x.first)
+                x = y
+            x = Pair(3, 4)
+        return 1
+
+    with pytest.raises(CompilationError, match="'x' may have conflicting definitions between loop iterations"):
+        run_compiled(fn)
+
+
+def test_no_error_when_outer_loop_rebinds_before_a_nested_loop_reads():
+    # The loop analogue of test_no_error_when_read_follows_rebind_in_the_same_branch: the outer
+    # loop rebinds x before entering the inner one, so the inner header's binding descends from
+    # that rebind rather than from the outer header's binding, and the read is of the rebound
+    # value. Whatever links the two headers must be taken from the binding live at inner-loop
+    # entry, or this program is rejected for no reason.
+    def fn():
+        x = Pair(1, 2)
+        i = 0
+        while i < 3:
+            i += 1
+            x = Pair(3, 4)
+            y = x
+            j = 0
+            while j < 1:
+                j += 1
+                debug_log(x.first)
+                x = y
+        return 1
+
+    assert run_and_validate(fn) == 1
+
+
+def test_error_while_conflicting_definitions_when_read_follows_a_rebinding_continue():
+    # The continue reaches the header before the read below it is traced, so a check made once
+    # per back edge cannot see that read: the loop compiles against the pre-loop reference
+    # and logs 1 where plain Python logs 3.
+    def fn():
+        x = Pair(1, 2)
+        i = 0
+        while i < 3:
+            i += 1
+            if i == 1:
+                x = Pair(3, 4)
+                continue
+            debug_log(x.first)
+        return 1
+
+    with pytest.raises(CompilationError, match="'x' may have conflicting definitions between loop iterations"):
+        run_compiled(fn)
+
+
+def test_error_for_conflicting_definitions_when_read_follows_a_rebinding_continue():
+    # The same ordering hazard in a for loop, which closes its header at its own site.
+    def fn():
+        x = Pair(1, 2)
+        for i in range(3):
+            if i == 0:
+                x = Pair(3, 4)
+                continue
+            debug_log(x.first)
+        return 1
+
+    with pytest.raises(CompilationError, match="'x' may have conflicting definitions between loop iterations"):
+        run_compiled(fn)
+
+
+def test_error_while_true_conflicting_definitions_when_read_follows_a_rebinding_continue():
+    # A statically true test closes the loop at a third site, reached by neither test above.
+    def fn():
+        x = Pair(1, 2)
+        i = 0
+        while True:
+            i += 1
+            if i > 3:
+                break
+            if i == 1:
+                x = Pair(3, 4)
+                continue
+            debug_log(x.first)
+        return 1
+
+    with pytest.raises(CompilationError, match="'x' may have conflicting definitions between loop iterations"):
+        run_compiled(fn)
+
+
+def test_error_while_conflicting_definitions_when_read_follows_a_continue_that_does_not_rebind():
+    # The regression guard for the pair above: here the read really is a read, reached through a
+    # continue that leaves x alone, and the fallthrough rebinds. Deferring the check must not
+    # lose this, and neither must dropping the back edge's own lookup of x.
+    def fn():
+        x = Pair(1, 2)
+        i = 0
+        while i < 3:
+            i += 1
+            if i == 1:
+                continue
+            debug_log(x.first)
+            x = Pair(3, 4)
+        return 1
+
+    with pytest.raises(CompilationError, match="'x' may have conflicting definitions between loop iterations"):
+        run_compiled(fn)
+
+
+def test_no_error_when_loop_variable_is_rebound_but_never_read():
+    # x is never read anywhere, so rebinding it on the way back to the header carries no hazard.
+    # The only thing that ever touched this binding's read count is the check's own lookup of x
+    # on the continue edge, which is not a read the program performs.
+    def fn():
+        x = Pair(1, 2)
+        i = 0
+        while i < 3:
+            i += 1
+            if i == 1:
+                continue
+            x = Pair(3, 4)
+        return 1
+
+    assert run_and_validate(fn) == 1
+
+
+def test_no_error_when_loop_variable_is_rebound_before_a_continue_and_never_read():
+    # The mirror image of the test above, with the rebind on the continue arm instead. The two
+    # differ only in which arm rebinds, so they have to agree.
+    def fn():
+        x = Pair(1, 2)
+        i = 0
+        while i < 3:
+            i += 1
+            if i == 1:
+                x = Pair(3, 4)
+                continue
+        return 1
+
+    assert run_and_validate(fn) == 1
+
+
+def test_no_error_when_merged_loop_variable_is_rebound_but_never_read():
+    # The same shape as the two above with a merge in front of it, so the check's own lookup
+    # lands on a binding the header can reach through the merge rather than on the header's
+    # binding itself. x is still never read: nothing here is a hazard.
+    def fn():
+        x = Pair(1, 2)
+        y = x
+        i = 0
+        while i < 3:
+            i += 1
+            if black_box():
+                x = y
+            if i == 1:
+                continue
+            x = Pair(3, 4)
+        return 1
+
+    assert run_and_validate(fn) == 1
+
+
+def test_error_while_conflicting_definitions_when_read_is_in_a_nested_loop_after_a_rebinding_continue():
+    # Both hazards at once, and it needs both fixes: the read is inside an inner loop that
+    # rebinds x, so only a link between the two headers makes it visible, and it is traced after
+    # the continue's back edge, so only a check deferred to loop close is still listening.
+    def fn():
+        x = Pair(1, 2)
+        y = x
+        i = 0
+        while i < 3:
+            i += 1
+            if i == 1:
+                x = Pair(3, 4)
+                continue
+            j = 0
+            while j < 1:
+                j += 1
+                debug_log(x.first)
+                x = y
+        return 1
+
+    with pytest.raises(CompilationError, match="'x' may have conflicting definitions between loop iterations"):
+        run_compiled(fn)
+
+
+def test_error_while_conflicting_definitions_when_a_rebound_reference_is_read_after_the_loop():
+    # The loop's exit is branched off the header before the body is traced, so it still names the
+    # object the loop was entered with and whatever the body rebound is lost on the way out: this
+    # logs 1 where plain Python logs 3. Adding a break already errors here, because that exit goes
+    # through a merge that yields a conflict; the fallthrough exit has to match it.
+    def fn():
+        x = Pair(1, 2)
+        i = 0
+        while i < 3:
+            i += 1
+            x = Pair(3, 4)
+        debug_log(x.first)
+        return 1
+
+    with pytest.raises(CompilationError, match="'x' has multiple conflicting definitions"):
+        run_compiled(fn)
+
+
+def test_error_while_conflicting_definitions_when_a_rebinding_continue_is_read_after_the_loop():
+    # The same hazard with a continue in front of the rebind. Nothing about the continue matters to
+    # the exit path, and the pair pins that: whatever makes one conflicting has to do the same to the other.
+    def fn():
+        x = Pair(1, 2)
+        i = 0
+        while i < 3:
+            i += 1
+            if i == 1:
+                continue
+            x = Pair(3, 4)
+        debug_log(x.first)
+        return 1
+
+    with pytest.raises(CompilationError, match="'x' has multiple conflicting definitions"):
+        run_compiled(fn)
+
+
+def test_error_for_conflicting_definitions_when_a_rebound_reference_is_read_after_the_loop():
+    # The for loop builds its header and its exit at its own site, reached by neither test above.
+    def fn():
+        x = Pair(1, 2)
+        for _ in range(3):
+            x = Pair(3, 4)
+        debug_log(x.first)
+        return 1
+
+    with pytest.raises(CompilationError, match="'x' has multiple conflicting definitions"):
+        run_compiled(fn)
+
+
+def test_error_while_true_conflicting_definitions_when_a_break_precedes_the_rebind():
+    # A statically true test has no fallthrough exit, so every way out is a break, and this break
+    # sits before the rebind and so still names the pre-loop object. One live exit means the merge
+    # after the loop returns that context unchanged and never mints a conflict of its own, which is
+    # why handling only the fallthrough exit would leave this shape silently wrong.
+    def fn():
+        x = Pair(1, 2)
+        i = 0
+        while True:
+            i += 1
+            if i > 3:
+                break
+            x = Pair(3, 4)
+        debug_log(x.first)
+        return 1
+
+    with pytest.raises(CompilationError, match="'x' has multiple conflicting definitions"):
+        run_compiled(fn)
+
+
+def test_error_while_conflicting_definitions_when_a_nested_loop_rebinds_and_the_outer_reads_after():
+    # The inner loop makes its own exit conflicting, and the outer body continues from it. That has to
+    # survive being carried through the enclosing loop rather than being re-minted clean.
+    def fn():
+        x = Pair(1, 2)
+        i = 0
+        while i < 3:
+            i += 1
+            j = 0
+            while j < 2:
+                j += 1
+                x = Pair(3, 4)
+            debug_log(x.first)
+        return 1
+
+    with pytest.raises(CompilationError, match="'x' has multiple conflicting definitions"):
+        run_compiled(fn)
+
+
+def test_error_while_conflicting_definitions_when_the_read_is_in_the_else_clause():
+    # The else clause is traced in the exit context itself, so this is the most direct expression of
+    # the hazard, and it pins that the exit is made conflicting before the clause is visited rather than after.
+    def fn():
+        x = Pair(1, 2)
+        i = 0
+        while i < 3:
+            i += 1
+            x = Pair(3, 4)
+        else:
+            debug_log(x.first)
+        return 1
+
+    with pytest.raises(CompilationError, match="'x' has multiple conflicting definitions"):
+        run_compiled(fn)
+
+
+def test_error_for_conflicting_definitions_when_the_read_is_in_the_else_clause():
+    # The same for the for loop, whose else clause runs in its own exit context.
+    def fn():
+        x = Pair(1, 2)
+        for _ in range(3):
+            x = Pair(3, 4)
+        else:
+            debug_log(x.first)
+        return 1
+
+    with pytest.raises(CompilationError, match="'x' has multiple conflicting definitions"):
+        run_compiled(fn)
+
+
+def test_error_while_conflicting_definitions_when_the_exit_carries_a_merged_binding():
+    # Rebinding x to the pre-loop alias y in one arm makes the merge below the if mint a fresh
+    # binding over the value the header already holds, so the break carries a descendant of the
+    # header's binding rather than the binding itself. That has to follow those edges.
+    def fn():
+        x = Pair(1, 2)
+        y = x
+        i = 0
+        while True:
+            i += 1
+            if i == 1:
+                x = y
+            if i > 3:
+                break
+            x = Pair(3, 4)
+        debug_log(x.first)
+        return 1
+
+    with pytest.raises(CompilationError, match="'x' has multiple conflicting definitions"):
+        run_compiled(fn)
+
+
+def test_error_while_conflicting_definitions_when_a_rebound_reference_is_returned():
+    # Returning the reference reads it through the same conflicting exit as a debug_log does.
+    def fn():
+        x = Pair(1, 2)
+        i = 0
+        while i < 3:
+            i += 1
+            x = Pair(3, 4)
+        return x.first
+
+    with pytest.raises(CompilationError, match="'x' has multiple conflicting definitions"):
+        run_compiled(fn)
+
+
+def test_error_while_conflicting_definitions_when_a_closure_reads_after_the_loop():
+    # A closure resolves a name from the enclosing function's scope through a different path than a
+    # plain load does, and it has to see the conflicting binding too.
+    def fn():
+        x = Pair(1, 2)
+        i = 0
+        while i < 3:
+            i += 1
+            x = Pair(3, 4)
+
+        def inner():
+            return x.first
+
+        debug_log(inner())
+        return 1
+
+    with pytest.raises(CompilationError, match="'x' has multiple conflicting definitions"):
+        run_compiled(fn)
+
+
+def test_error_while_conflicting_definitions_when_a_later_loop_reads_a_rebound_reference():
+    # A second loop over the same name prepares its own header from the conflicting binding, so this
+    # pins that the conflicting binding survives prepare_loop_header rather than being re-bound clean.
+    def fn():
+        x = Pair(1, 2)
+        i = 0
+        while i < 3:
+            i += 1
+            x = Pair(3, 4)
+        j = 0
+        while j < 2:
+            j += 1
+            debug_log(x.first)
+        return 1
+
+    with pytest.raises(CompilationError, match="'x' has multiple conflicting definitions"):
+        run_compiled(fn)
+
+
+def test_error_while_conflicting_definitions_when_a_rebound_array_is_read_after_the_loop():
+    # Every reference type is in this family, not only Record: the guard is on whether the type is a
+    # value type, so one non-Record case pins that it is not written against Record.
+    def fn():
+        x = Array(1, 2)
+        i = 0
+        while i < 3:
+            i += 1
+            x = Array(3, 4)
+        debug_log(x[0])
+        return 1
+
+    with pytest.raises(CompilationError, match="'x' has multiple conflicting definitions"):
+        run_compiled(fn)
+
+
+def test_no_error_when_a_break_after_the_rebind_carries_the_new_reference():
+    # This break really does hold the re-bound object, which is what Python leaves too, so it must
+    # be skipped. Making every exit conflicting unconditionally would reject this.
+    def fn():
+        x = Pair(1, 2)
+        i = 0
+        while True:
+            i += 1
+            x = Pair(3, 4)
+            if i > 3:
+                break
+        debug_log(x.first)
+        return 1
+
+    assert run_and_validate(fn) == 1
+
+
+def test_no_error_when_a_break_rebinds_to_the_pre_loop_reference():
+    # The break assigns x the pre-loop object outright, so it names a fresh binding that happens to
+    # hold the value the header holds, and the program is correct. This is what makes the conflicting
+    # set a question of which binding an exit names rather than which value it holds: a rule written
+    # on the value would reject this, and a rule written on the binding cannot, because an unlinked
+    # binding over that value can only have come from a real assignment on this path.
+    def fn():
+        x = Pair(1, 2)
+        y = x
+        i = 0
+        while True:
+            i += 1
+            x = Pair(3, 4)
+            if i > 3:
+                x = y
+                break
+        debug_log(x.first)
+        return 1
+
+    assert run_and_validate(fn) == 1
+
+
+def test_no_error_when_a_nested_loop_rebinds_a_reference_that_is_never_read():
+    # The inner loop makes x conflicting, and the outer back edge then finds a conflicting binding where it
+    # expects the outer header's object. It has to read that as a rebind rather than raise on it:
+    # nothing reads x anywhere, so there is no hazard to report.
+    def fn():
+        x = Pair(1, 2)
+        i = 0
+        while i < 3:
+            i += 1
+            for _ in range(2):
+                x = Pair(3, 4)
+        return 1
+
+    assert run_and_validate(fn) == 1
+
+
+def test_no_error_when_a_conditionally_rebound_reference_is_never_read():
+    # Only one arm rebinds x, so the back edge carries a conflicting binding, and nothing ever reads
+    # it. Valid Python, and the back edge must not reject it on the strength of the conflict alone.
+    def fn():
+        x = Pair(1, 2)
+        i = 0
+        while i < 3:
+            i += 1
+            if i == 1:
+                x = Pair(3, 4)
+        return 1
+
+    assert run_and_validate(fn) == 1
+
+
+def test_no_error_when_rebound_to_the_same_reference_and_read_after_the_loop():
+    # The back edge names the object the header holds, so nothing conflicts and no exit is made conflicting.
+    def fn():
+        x = Pair(1, 2)
+        y = x
+        i = 0
+        while i < 3:
+            i += 1
+            x = y
+        debug_log(x.first)
+        return 1
+
+    assert run_and_validate(fn) == 1
+
+
+def test_no_error_when_the_body_restores_the_loop_reference_before_the_back_edge():
+    # x is rebound and then restored, so by the back edge it names the header's object again.
+    def fn():
+        x = Pair(1, 2)
+        y = x
+        i = 0
+        while i < 3:
+            i += 1
+            x = Pair(3, 4)
+            x = y
+        debug_log(x.first)
+        return 1
+
+    assert run_and_validate(fn) == 1
+
+
+def test_no_error_when_a_value_type_loop_variable_is_read_after_the_loop():
+    # A value type merges through a slot the header allocates, so it is never a rebind candidate and
+    # no exit of a loop that only writes value types is ever made conflicting.
+    def fn():
+        x = 1
+        i = 0
+        while i < 3:
+            i += 1
+            x = 3
+        debug_log(x)
+        for _ in range(2):
+            x = x + 1
+        debug_log(x)
+        return 1
+
+    assert run_and_validate(fn) == 1
+
+
+def test_no_error_when_an_unrolled_for_rebinds_a_reference():
+    # Iterating a tuple unrolls into straight-line code with no header and no back edge, so it
+    # reproduces Python exactly and must stay outside this mechanism entirely.
+    def fn():
+        x = Pair(1, 2)
+        for _ in (0, 1, 2):
+            x = Pair(3, 4)
+        debug_log(x.first)
+        return 1
+
+    assert run_and_validate(fn) == 1
+
+
+def test_no_error_when_a_rebound_reference_is_reassigned_before_the_read():
+    # Assigning after the loop replaces the conflicting binding, so the read that follows is fine.
+    def fn():
+        x = Pair(1, 2)
+        i = 0
+        while i < 3:
+            i += 1
+            x = Pair(3, 4)
+        x = Pair(5, 6)
+        debug_log(x.first)
+        return 1
+
+    assert run_and_validate(fn) == 1
 
 
 def test_walrus_operator():
@@ -1017,7 +1714,7 @@ def test_loop_redefinition_of_reference_type_with_invalid_read():
             x = Vec2(3, 4)
             debug_log(x.x + x.y)
 
-    with pytest.raises(CompilationError, match="conflicting definitions"):
+    with pytest.raises(CompilationError, match="'x' may have conflicting definitions between loop iterations"):
         run_compiled(fn)
 
 

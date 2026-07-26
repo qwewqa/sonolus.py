@@ -12,7 +12,7 @@ from sonolus.script.internal.math_impls import _trunc
 from sonolus.script.internal.meta_fn import meta_fn
 from sonolus.script.iterator import SonolusIterator
 from sonolus.script.maybe import Maybe, Nothing, Some
-from sonolus.script.num import Num, _is_num
+from sonolus.script.num import Num
 from sonolus.script.record import Record
 from sonolus.script.values import copy
 
@@ -296,7 +296,7 @@ def _extremum_default_type_name(value) -> str:
     """A readable name for a `min()`/`max()` element or `default=` value, for use in error messages."""
     from sonolus.script.internal.builtin_impls import _type_name
 
-    return  _type_name(value)
+    return _type_name(value)
 
 
 def _validate_extremum_default(element, default):

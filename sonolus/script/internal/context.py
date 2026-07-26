@@ -200,6 +200,7 @@ class Context:
     scope: Scope
     loop_variables: dict[str, ValueBinding]
     live: bool
+    loop_conflict_candidates: list[str] | None = None
 
     def __init__(
         self,
@@ -342,8 +343,8 @@ class Context:
     def prepare_loop_header(self, to_merge: set[str]) -> Context:
         # to_merge is the set of bindings set anywhere in the loop.
         # In the header we merge value types (allocating a fresh slot and copying the value in)
-        # and re-bind reference types as loop variables (rebind conflicts are checked later in
-        # branch_to_loop_header).
+        # and re-bind reference types as loop variables (rebind conflicts are checked once the loop
+        # is closed, in check_loop_conflicts).
         # structure is self -> header -> body (continue -> header) | exit
         assert len(self.outgoing) == 0
         header = self.branch(None)
@@ -362,6 +363,12 @@ class Context:
                 header.loop_variables[name] = loop_binding
             else:
                 loop_binding = ValueBinding(value)
+                # A read inside this loop increments loop_binding, which an enclosing loop's header
+                # does not hold. Link it forward so that header's check still sees the read.
+                if binding.merged_into is None:
+                    binding.merged_into = [loop_binding]
+                else:
+                    binding.merged_into.append(loop_binding)
                 header.scope.set_binding(name, loop_binding)
                 header.loop_variables[name] = loop_binding
         return header
@@ -391,11 +398,44 @@ class Context:
                     value = type(target_value)._accept_(value)
                     target_value._set_(value)
                 else:
-                    value = self.scope.get_value(name)
-                    if target_value is not value and binding.read_count > 0:
-                        raise RuntimeError(
-                            f"Variable '{name}' may have conflicting definitions between loop iterations"
-                        )
+                    incoming = self.scope.bindings.get(name)
+                    if incoming is None or incoming.__class__ is not ValueBinding or incoming.value is not target_value:
+                        # Recorded rather than raised: a read later in the body is not traced yet.
+                        # Read from bindings rather than through the scope, so this does not count
+                        # as a read and does not raise on an already conflicting name.
+                        candidates = header.loop_conflict_candidates
+                        if candidates is None:
+                            header.loop_conflict_candidates = [name]
+                        else:
+                            candidates.append(name)
+
+    def check_loop_conflicts(self, exit_ctx: Context | None = None, break_ctxs: Sequence[Context] = ()):
+        """Handle every loop variable a back edge re-bound, once the loop is closed.
+
+        Called on the header rather than at each back edge, which would miss a read after it. A
+        re-bound variable the body also read is an error. Otherwise each exit still holding the
+        header's binding is re-bound to a ConflictBinding, so a read after the loop is that same
+        error rather than a silent read of the value the loop was entered with. An exit holding
+        anything else assigned the name on the way out, which is what Python leaves there too.
+
+        `exit_ctx` is the fallthrough exit, which a statically true test does not have.
+        """
+        candidates = self.loop_conflict_candidates
+        if candidates is None:
+            return
+        self.loop_conflict_candidates = None
+        exits = break_ctxs if exit_ctx is None else [exit_ctx, *break_ctxs]
+        loop_variables = self.loop_variables
+        for name in candidates:
+            loop_binding = loop_variables[name]
+            if _binding_was_read(loop_binding):
+                raise RuntimeError(f"Variable '{name}' may have conflicting definitions between loop iterations")
+            entry_binding_ids = _binding_and_descendants(loop_binding)
+            for exit_context in exits:
+                bindings = exit_context.scope.bindings
+                binding = bindings.get(name)
+                if binding is not None and id(binding) in entry_binding_ids:
+                    bindings[name] = ConflictBinding()
 
     def map_constant(self, value: Any) -> int:
         with self.project_state.lock:
@@ -552,6 +592,51 @@ def debug_config() -> DebugConfig:
 class ValueBinding:
     value: Value
     read_count: int = 0
+    # Bindings a merge or loop header created from this one over the same value object. A read
+    # through one increments only that object, so read checks have to follow these edges.
+    merged_into: list[ValueBinding] | None = None
+
+
+def _binding_was_read(binding: ValueBinding) -> bool:
+    if binding.read_count > 0:
+        return True
+    if not binding.merged_into:
+        return False
+    # Key the visited set by id: ValueBinding is an unhashable mutable dataclass, and every
+    # object reached here is kept alive by the stack and the edges themselves.
+    seen = {id(binding)}
+    stack = [*binding.merged_into]
+    while stack:
+        current = stack.pop()
+        if id(current) in seen:
+            continue
+        seen.add(id(current))
+        if current.read_count > 0:
+            return True
+        if current.merged_into:
+            stack.extend(current.merged_into)
+    return False
+
+
+def _binding_and_descendants(binding: ValueBinding) -> set[int]:
+    """Collect the id of `binding` and of every binding a merge or a nested loop header derived from it.
+
+    Every binding along those edges holds this binding's value object, so a scope holding any of
+    them holds the value the loop was entered with. Keyed by id for the reason _binding_was_read is,
+    and safely: the edges keep everything reachable alive, so no id can be recycled under the set.
+    """
+    result = {id(binding)}
+    if not binding.merged_into:
+        return result
+    stack = [*binding.merged_into]
+    while stack:
+        current = stack.pop()
+        if id(current) in result:
+            continue
+        result.add(id(current))
+        if current.merged_into:
+            stack.extend(current.merged_into)
+    return result
 
 
 @dataclass(slots=True)
@@ -644,7 +729,18 @@ class Scope:
                 continue
             values = [binding.value for binding in bindings]
             if len({id(value) for value in values}) == 1:
-                target_bindings[key] = ValueBinding(values[0])
+                # The sources are distinct objects, so the merge mints a new binding and a later read
+                # would increment one no loop header holds. Link each source forward. Directed on
+                # purpose: reads a source accrued before the merge must not reach the header.
+                first_value = values[0]
+                merged = ValueBinding(first_value)
+                if not type(first_value)._is_value_type_():
+                    for binding in bindings:
+                        if binding.merged_into is None:
+                            binding.merged_into = [merged]
+                        else:
+                            binding.merged_into.append(merged)
+                target_bindings[key] = merged
                 continue
             types = {type(value) for value in values}
             if len(types) > 1:

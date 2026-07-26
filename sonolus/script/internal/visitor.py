@@ -824,7 +824,7 @@ class Visitor(ast.NodeVisitor):
             raise ValueError("Iterator next must return a Maybe")
         if next_value._present._is_py_() and not next_value._present._as_py_():
             # The loop will never run, continue after evaluating the condition
-            self.loop_head_ctxs.pop()
+            self.loop_head_ctxs.pop().check_loop_conflicts()
             self.break_ctxs.pop()
             for stmt in node.orelse:
                 if not ctx().live:
@@ -843,8 +843,9 @@ class Visitor(ast.NodeVisitor):
             self.visit(stmt)
         ctx().branch_to_loop_header(header_ctx)
 
-        self.loop_head_ctxs.pop()
+        # Before set_ctx(else_ctx), so the else block traces against the checked exit.
         break_ctxs = self.break_ctxs.pop()
+        self.loop_head_ctxs.pop().check_loop_conflicts(else_ctx, break_ctxs)
 
         set_ctx(else_ctx)
         for stmt in node.orelse:
@@ -874,17 +875,19 @@ class Visitor(ast.NodeVisitor):
                     self.visit(stmt)
                 ctx().branch_to_loop_header(header_ctx)
 
-                self.loop_head_ctxs.pop()
                 break_ctxs = self.break_ctxs.pop()
+                # A statically true test has no fallthrough exit, so the dead continuation stands in.
+                dead_ctx = ctx().into_dead()
+                self.loop_head_ctxs.pop().check_loop_conflicts(dead_ctx, break_ctxs)
 
                 # Skip the else block
 
-                after_ctx = Context.meet([ctx().into_dead(), *break_ctxs])
+                after_ctx = Context.meet([dead_ctx, *break_ctxs])
                 set_ctx(after_ctx)
                 return
             else:
                 # The loop will never run, continue after evaluating the condition
-                self.loop_head_ctxs.pop()
+                self.loop_head_ctxs.pop().check_loop_conflicts()
                 self.break_ctxs.pop()
                 for stmt in node.orelse:
                     if not ctx().live:
@@ -902,8 +905,8 @@ class Visitor(ast.NodeVisitor):
             self.visit(stmt)
         ctx().branch_to_loop_header(header_ctx)
 
-        self.loop_head_ctxs.pop()
         break_ctxs = self.break_ctxs.pop()
+        self.loop_head_ctxs.pop().check_loop_conflicts(else_ctx, break_ctxs)
 
         set_ctx(else_ctx)
         for stmt in node.orelse:
