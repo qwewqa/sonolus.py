@@ -2,7 +2,7 @@
 
 Recomputes the pydori ``standard``-level node metrics with the *current* optimizer via
 ``tools/metrics.py``'s library API and gates them against the committed baseline
-(``baseline_v0.16_metrics.json``, captured at v0.16.0):
+(``baseline_metrics.json``; its ``meta`` records the version and revision it was captured at):
 
 * aggregate ``effective_node_count`` must be <= the baseline aggregate -- the hard gate.
   ``effective`` counts each maximal runtime-constant subtree as 1 (models the runtime's
@@ -32,7 +32,7 @@ from pathlib import Path
 import pytest
 
 _REPO_ROOT = Path(__file__).resolve().parents[2]
-_BASELINE_PATH = Path(__file__).parent / "data" / "baseline_v0.16_metrics.json"
+_BASELINE_PATH = Path(__file__).parent / "data" / "baseline_metrics.json"
 
 _REL_TOLERANCE = 1.02
 _ABS_TOLERANCE = 8
