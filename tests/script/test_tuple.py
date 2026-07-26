@@ -1,10 +1,42 @@
+# ruff: noqa: PLC2701, C417
+
+import re
+from enum import Enum
+
+import pytest
 from hypothesis import given
 from hypothesis import strategies as st
 
 from sonolus.script.array import Array
 from sonolus.script.containers import VarArray
+from sonolus.script.debug import debug_log
+from sonolus.script.internal.context import ctx
+from sonolus.script.internal.error import CompilationError
+from sonolus.script.internal.impl import validate_value
+from sonolus.script.internal.math_impls import _floor
+from sonolus.script.internal.meta_fn import meta_fn
+from sonolus.script.internal.random import _random
 from sonolus.script.internal.range import range_or_tuple
-from tests.script.conftest import run_and_validate
+from sonolus.script.internal.tuple_impl import TupleImpl
+from sonolus.script.num import _is_num
+from tests.script.conftest import compile_fn, run_and_validate, run_compiled
+
+
+@meta_fn
+def bb(*x):
+    """Black box: returns its argument as a value that is not known at compile time."""
+    if len(x) == 1:
+        x = x[0]
+    if not ctx():
+        return x
+    x = validate_value(x)
+    if _is_num(x):
+        return x + _floor(_random())
+    elif isinstance(x, TupleImpl):
+        return TupleImpl(tuple(bb(e) for e in x.value))
+    else:
+        return x
+
 
 ints = st.integers(min_value=-10, max_value=10)
 floats = st.floats(min_value=-99999, max_value=99999, allow_nan=False, allow_infinity=False)
@@ -283,3 +315,595 @@ def test_enumerate_tuple_with_start():
         return results
 
     assert list(run_and_validate(fn)) == [510, 620, 730]
+
+
+# map() over compile-time tuples
+
+
+def test_map_tuple_single():
+    def fn():
+        t = (1, 2, 3)
+        return sum(map(lambda x: x * 2, t))
+
+    assert run_and_validate(fn) == 12
+
+
+def test_map_tuple_has_no_len():
+    # As in plain Python, map() returns a lazy iterator rather than a sequence, so it has no len().
+    def fn():
+        t = (1, 2, 3, 4)
+        return len(map(lambda x: x + 1, t))
+
+    with pytest.raises(CompilationError, match=re.escape("has no len()")):
+        compile_fn(fn)
+
+
+def test_map_tuple_for_loop():
+    def fn():
+        t = (1, 2, 3)
+        results = VarArray[int, 3].new()
+        for v in map(lambda x: x * 10, t):
+            results.append(v)
+        return results
+
+    assert list(run_and_validate(fn)) == [10, 20, 30]
+
+
+def test_map_tuple_not_subscriptable():
+    # As in plain Python, the result of map() is a lazy iterator and cannot be indexed.
+    def fn():
+        t = (5, 6, 7)
+        m = map(lambda x: x - 1, t)
+        return m[0]
+
+    with pytest.raises(CompilationError, match="Cannot get items"):
+        compile_fn(fn)
+
+
+def test_map_tuple_empty():
+    def fn():
+        t = ()
+        return sum(map(lambda x: x * 2, t))
+
+    assert run_and_validate(fn) == 0
+
+
+def test_map_tuple_with_runtime_values():
+    # The element count is compile time even though the elements themselves are not.
+    def fn():
+        t = (bb(2), bb(4))
+        return sum(map(lambda x: x * 3, t))
+
+    assert run_and_validate(fn) == 18
+
+
+def test_map_tuple_fn_emits_runtime_code():
+    def fn():
+        results = VarArray[int, 3].new()
+
+        def push(x):
+            results.append(x * 10)
+            return x + 1
+
+        t = (1, 2, 3)
+        total = sum(map(push, t))
+        return Array(total, results[0], results[1], results[2])
+
+    assert run_and_validate(fn) == Array(9, 10, 20, 30)
+
+
+def test_map_tuple_two_iterables():
+    def fn():
+        a = (1, 2, 3)
+        b = (10, 20, 30)
+        return sum(map(lambda x, y: x * y, a, b))
+
+    assert run_and_validate(fn) == 140
+
+
+def test_map_tuple_three_iterables():
+    def fn():
+        a = (1, 2)
+        b = (3, 4)
+        c = (5, 6)
+        return sum(map(lambda x, y, z: x + y + z, a, b, c))
+
+    assert run_and_validate(fn) == 21
+
+
+def test_map_tuple_stops_at_shortest():
+    def fn():
+        a = (1, 2, 3, 4)
+        b = (10, 20)
+        return sum(map(lambda x, y: x * y, a, b))
+
+    assert run_and_validate(fn) == 50
+
+
+def test_map_tuple_of_tuples():
+    def fn():
+        t = ((1, 2), (3, 4))
+        return sum(map(lambda p: p[0] + p[1], t))
+
+    assert run_and_validate(fn) == 10
+
+
+def test_map_mixing_tuple_and_array_raises():
+    def fn():
+        return sum(map(lambda x, y: x * y, (1, 2, 3), Array(4, 5, 6)))
+
+    with pytest.raises(CompilationError, match=r"Cannot mix compile-time iterables .* with other types in map"):
+        compile_fn(fn)
+
+
+def test_map_array_still_works():
+    def fn():
+        return sum(map(lambda x: x * 2, Array(1, 2, 3)))
+
+    assert run_and_validate(fn) == 12
+
+
+def test_map_range_still_works():
+    def fn():
+        return sum(map(lambda x: x + 1, range(4)))
+
+    assert run_and_validate(fn) == 10
+
+
+def test_map_two_arrays_still_works():
+    def fn():
+        return sum(map(lambda x, y: x * y, Array(1, 2, 3), Array(4, 5, 6)))
+
+    assert run_and_validate(fn) == 32
+
+
+# filter() over compile-time tuples
+
+
+def test_filter_tuple_comptime_predicate():
+    def fn():
+        t = (1, 2, 3, 4)
+        return sum(filter(lambda x: x > 2, t))
+
+    assert run_and_validate(fn) == 7
+
+
+def test_filter_tuple_has_no_len():
+    # As in plain Python, filter() returns a lazy iterator rather than a sequence, so it has no len().
+    def fn():
+        t = (1, 2, 3, 4, 5)
+        return len(filter(lambda x: x % 2 == 0, t))
+
+    with pytest.raises(CompilationError, match=re.escape("has no len()")):
+        compile_fn(fn)
+
+
+def test_filter_tuple_for_loop():
+    def fn():
+        t = (1, 2, 3, 4, 5)
+        results = VarArray[int, 5].new()
+        for v in filter(lambda x: x != 3, t):
+            results.append(v)
+        return results
+
+    assert list(run_and_validate(fn)) == [1, 2, 4, 5]
+
+
+def test_filter_tuple_none_predicate():
+    def fn():
+        t = (0, 1, 0, 2, 3)
+        return sum(filter(None, t))
+
+    assert run_and_validate(fn) == 6
+
+
+def test_filter_tuple_empty_result():
+    def fn():
+        t = (1, 2, 3)
+        return sum(filter(lambda x: x > 100, t))
+
+    assert run_and_validate(fn) == 0
+
+
+def test_filter_tuple_empty_input():
+    def fn():
+        t = ()
+        return sum(filter(lambda x: x > 0, t))
+
+    assert run_and_validate(fn) == 0
+
+
+def test_filter_tuple_keeps_runtime_elements():
+    # The predicate result is compile time even though the kept elements are not.
+    def fn():
+        t = ((bb(2), 1), (bb(4), 0))
+        return sum(map(lambda p: p[0], filter(lambda p: p[1] == 1, t)))
+
+    assert run_and_validate(fn) == 2
+
+
+def test_filter_tuple_runtime_predicate():
+    # The condition need not be a compile-time constant: filtering compiles to the generator protocol,
+    # so whether an element survives can be a runtime branch.
+    def fn():
+        t = (1, 2, 3)
+        return sum(filter(lambda x: x > bb(1), t))
+
+    assert run_and_validate(fn) == 5
+
+
+def test_filter_tuple_none_predicate_runtime_element():
+    def fn():
+        t = (bb(0), bb(1), bb(2))
+        return sum(filter(None, t))
+
+    assert run_and_validate(fn) == 3
+
+
+def test_filter_tuple_non_num_predicate_result():
+    # A non-Num condition goes through the ordinary truthiness protocol, exactly as an `if` would: an Array is
+    # truthy when it is non-empty, so every element survives, matching plain Python.
+    def fn():
+        t = (1, 2, 3)
+        return sum(filter(lambda x: Array(x, x), t))
+
+    assert run_and_validate(fn) == 6
+
+
+def test_filter_array_still_works():
+    def fn():
+        return sum(filter(lambda x: x > 1, Array(1, 2, 3)))
+
+    assert run_and_validate(fn) == 5
+
+
+def test_filter_array_none_predicate_still_works():
+    def fn():
+        return sum(filter(None, Array(0, 1, 2)))
+
+    assert run_and_validate(fn) == 3
+
+
+def test_filter_array_runtime_predicate_still_works():
+    def fn():
+        return sum(filter(lambda x: x > bb(1), Array(1, 2, 3)))
+
+    assert run_and_validate(fn) == 5
+
+
+def test_map_filter_tuple_composed():
+    def fn():
+        t = (1, 2, 3, 4, 5)
+        return sum(map(lambda x: x * 2, filter(lambda x: x % 2 == 1, t)))
+
+    assert run_and_validate(fn) == 18
+
+
+def test_map_over_range_or_tuple():
+    def fn():
+        return sum(map(lambda x: x * 2, range_or_tuple(4)))
+
+    assert run_and_validate(fn) == 12
+
+
+def test_map_mixing_array_and_tuple_raises_either_order():
+    # Reversed argument order relative to test_map_mixing_tuple_and_array_raises. Before the fix this leaked
+    # zip's message ("... in zip") even though the user wrote map.
+    def fn():
+        return sum(map(lambda x, y: x * y, Array(4, 5, 6), (1, 2, 3)))
+
+    with pytest.raises(CompilationError, match=r"Cannot mix compile-time iterables .* with other types in map"):
+        compile_fn(fn)
+
+
+def test_map_tuple_and_dict():
+    # has_tuple_iter() is also true for dicts, so mixing a tuple with a dict is not "mixing" and iterates the keys.
+    d = {1: 10, 2: 20, 3: 30}
+
+    def fn():
+        return sum(map(lambda x, y: x * y, (1, 2, 3), d))
+
+    assert run_and_validate(fn) == 14
+
+
+def test_map_dict_keys():
+    d = {1: 10, 2: 20, 3: 30}
+
+    def fn():
+        return sum(map(lambda k: k * 2, d))
+
+    assert run_and_validate(fn) == 12
+
+
+def test_filter_dict_keys():
+    d = {1: 10, 2: 20, 3: 30}
+
+    def fn():
+        return sum(filter(lambda k: k > 1, d))
+
+    assert run_and_validate(fn) == 5
+
+
+def test_filter_dict_keys_has_no_len():
+    d = {1: 10, 2: 20, 3: 30}
+
+    def fn():
+        return len(filter(lambda k: k > 1, d))
+
+    with pytest.raises(CompilationError, match=re.escape("has no len()")):
+        compile_fn(fn)
+
+
+# map() and filter() over a compile-time iterable must behave exactly like the equivalent generator expression.
+#
+# Both compile to the same generator protocol, so the mapped function and the filter condition run once per
+# element actually consumed, interleaved with the consumer's body, and the condition may be a runtime value.
+
+
+def _logged_double(x):
+    debug_log(200 + x)
+    return x * 2
+
+
+def _logged_mul(x, y):
+    debug_log(200 + x)
+    return x * y
+
+
+def _logged_is_odd(x):
+    debug_log(200 + x)
+    return x % 2 == 1
+
+
+def _compiled_with_log(fn):
+    """Compile and run fn, returning its result together with the debug_log entries it produced."""
+    log = []
+    result = run_compiled(fn, log_callback=log.append)
+    return result, log
+
+
+def _map_tuple_via_genexpr():
+    total = 0
+    for v in (_logged_double(x) for x in (1, 2, 3)):
+        debug_log(300 + v)
+        total += v
+    return total
+
+
+def _map_tuple_via_map():
+    total = 0
+    for v in map(_logged_double, (1, 2, 3)):
+        debug_log(300 + v)
+        total += v
+    return total
+
+
+def test_map_tuple_matches_genexpr():
+    assert _compiled_with_log(_map_tuple_via_map) == _compiled_with_log(_map_tuple_via_genexpr)
+
+
+def test_map_tuple_is_lazy_like_python():
+    # run_and_validate also checks the debug_log order against plain Python's lazy map().
+    assert run_and_validate(_map_tuple_via_map) == 12
+    assert _compiled_with_log(_map_tuple_via_map) == (12, [201, 302, 202, 304, 203, 306])
+
+
+def _map_two_tuples_via_genexpr():
+    total = 0
+    for v in (_logged_mul(x, y) for x, y in zip((1, 2, 3), (10, 20, 30))):  # noqa: B905, FURB140
+        debug_log(300 + v)
+        total += v
+    return total
+
+
+def _map_two_tuples_via_map():
+    total = 0
+    for v in map(_logged_mul, (1, 2, 3), (10, 20, 30)):
+        debug_log(300 + v)
+        total += v
+    return total
+
+
+def test_map_two_tuples_matches_genexpr():
+    assert _compiled_with_log(_map_two_tuples_via_map) == _compiled_with_log(_map_two_tuples_via_genexpr)
+
+
+def test_map_two_tuples_is_lazy_like_python():
+    assert run_and_validate(_map_two_tuples_via_map) == 140
+
+
+def _filter_tuple_via_genexpr():
+    total = 0
+    for v in (x for x in (1, 2, 3) if _logged_is_odd(x)):
+        debug_log(300 + v)
+        total += v
+    return total
+
+
+def _filter_tuple_via_filter():
+    total = 0
+    for v in filter(_logged_is_odd, (1, 2, 3)):
+        debug_log(300 + v)
+        total += v
+    return total
+
+
+def test_filter_tuple_matches_genexpr():
+    assert _compiled_with_log(_filter_tuple_via_filter) == _compiled_with_log(_filter_tuple_via_genexpr)
+
+
+def test_filter_tuple_is_lazy_like_python():
+    assert run_and_validate(_filter_tuple_via_filter) == 4
+    assert _compiled_with_log(_filter_tuple_via_filter) == (4, [201, 301, 202, 203, 303])
+
+
+def _filter_tuple_dynamic_via_genexpr():
+    n = bb(1)
+    total = 0
+    for v in (x for x in (1, 2, 3) if x > n):
+        debug_log(300 + v)
+        total += v
+    return total
+
+
+def _filter_tuple_dynamic_via_filter():
+    n = bb(1)
+    total = 0
+    for v in filter(lambda x: x > n, (1, 2, 3)):
+        debug_log(300 + v)
+        total += v
+    return total
+
+
+def test_filter_tuple_dynamic_condition_matches_genexpr():
+    assert _compiled_with_log(_filter_tuple_dynamic_via_filter) == _compiled_with_log(_filter_tuple_dynamic_via_genexpr)
+
+
+def test_filter_tuple_dynamic_condition_is_lazy_like_python():
+    assert run_and_validate(_filter_tuple_dynamic_via_filter) == 5
+    assert _compiled_with_log(_filter_tuple_dynamic_via_filter) == (5, [302, 303])
+
+
+def _filter_dict_dynamic_via_genexpr():
+    d = {1: 10, 2: 20, 3: 30}
+    n = bb(1)
+    total = 0
+    for k in (k for k in d if k > n):
+        debug_log(300 + k)
+        total += k
+    return total
+
+
+def _filter_dict_dynamic_via_filter():
+    d = {1: 10, 2: 20, 3: 30}
+    n = bb(1)
+    total = 0
+    for k in filter(lambda k: k > n, d):
+        debug_log(300 + k)
+        total += k
+    return total
+
+
+def test_filter_dict_dynamic_condition_matches_genexpr():
+    assert _compiled_with_log(_filter_dict_dynamic_via_filter) == _compiled_with_log(_filter_dict_dynamic_via_genexpr)
+
+
+def _filter_set_dynamic_via_filter():
+    n = bb(1)
+    total = 0
+    for v in filter(lambda v: v > n, {1, 2, 3}):
+        total += v
+    return total
+
+
+def test_filter_set_dynamic_condition():
+    assert run_and_validate(_filter_set_dynamic_via_filter) == 5
+
+
+def _map_filter_composed_via_genexpr():
+    total = 0
+    for v in (_logged_double(x) for x in (x for x in (1, 2, 3, 4) if _logged_is_odd(x))):
+        debug_log(300 + v)
+        total += v
+    return total
+
+
+def _map_filter_composed_via_map_filter():
+    total = 0
+    for v in map(_logged_double, filter(_logged_is_odd, (1, 2, 3, 4))):
+        debug_log(300 + v)
+        total += v
+    return total
+
+
+def test_map_over_filter_matches_genexpr():
+    assert _compiled_with_log(_map_filter_composed_via_map_filter) == _compiled_with_log(
+        _map_filter_composed_via_genexpr
+    )
+
+
+def test_map_over_filter_is_lazy_like_python():
+    assert run_and_validate(_map_filter_composed_via_map_filter) == 8
+
+
+def _map_array_via_genexpr():
+    total = 0
+    for v in (_logged_double(x) for x in Array(1, 2, 3)):
+        debug_log(300 + v)
+        total += v
+    return total
+
+
+def _map_array_via_map():
+    total = 0
+    for v in map(_logged_double, Array(1, 2, 3)):
+        debug_log(300 + v)
+        total += v
+    return total
+
+
+def test_map_array_matches_genexpr():
+    # The runtime-iterator path was already lazy; check that the two agree there too.
+    assert _compiled_with_log(_map_array_via_map) == _compiled_with_log(_map_array_via_genexpr)
+    assert run_and_validate(_map_array_via_map) == 12
+
+
+def _map_tuple_break_via_genexpr():
+    total = 0
+    for v in (_logged_double(x) for x in (1, 2, 3)):
+        debug_log(300 + v)
+        total += v
+        if v >= 4:
+            break
+    return total
+
+
+def _map_tuple_break_via_map():
+    total = 0
+    for v in map(_logged_double, (1, 2, 3)):
+        debug_log(300 + v)
+        total += v
+        if v >= 4:
+            break
+    return total
+
+
+def test_map_tuple_break_matches_genexpr():
+    # The payoff of laziness: the third element is never mapped, because it is never consumed.
+    assert _compiled_with_log(_map_tuple_break_via_map) == _compiled_with_log(_map_tuple_break_via_genexpr)
+
+
+def test_map_tuple_break_is_lazy_like_python():
+    assert run_and_validate(_map_tuple_break_via_map) == 6
+    assert _compiled_with_log(_map_tuple_break_via_map) == (6, [201, 302, 202, 304])
+
+
+def test_map_tuple_is_not_reversible():
+    # As in plain Python, a lazy map() iterator is not reversible.
+    def fn():
+        return sum(reversed(map(lambda x: x, (1, 2, 3))))
+
+    with pytest.raises(CompilationError, match="not reversible"):
+        compile_fn(fn)
+
+
+class _Color(Enum):
+    RED = 1
+    GREEN = 2
+    BLUE = 3
+
+
+def test_map_enum_class():
+    # An enum class is a compile-time iterable too, and its members compile to their values.
+    def fn():
+        return sum(map(lambda c: c * 10, _Color))
+
+    assert run_compiled(fn) == 60
+
+
+def test_filter_enum_class_dynamic_condition():
+    def fn():
+        n = bb(1)
+        return sum(filter(lambda c: c > n, _Color))
+
+    assert run_compiled(fn) == 5

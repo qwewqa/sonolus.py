@@ -188,7 +188,9 @@ def main():
         gc_group.add_argument("--no-gc", action="store_true", default=True, help="Disable garbage collection (default)")
         gc_group.add_argument("--gc", action="store_true", help="Enable garbage collection")
 
-        build_components = parser.add_argument_group("build components")
+        build_components = parser.add_argument_group(
+            "build components", "If none of these are given, all four components are built."
+        )
         build_components.add_argument("--play", action="store_true", help="Build play component")
         build_components.add_argument("--watch", action="store_true", help="Build watch component")
         build_components.add_argument("--preview", action="store_true", help="Build preview component")
@@ -211,7 +213,9 @@ def main():
         nargs="?",
         help="Module path (e.g., 'module.name'). If omitted, will auto-detect if only one module exists.",
     )
-    build_parser.add_argument("--build-dir", type=str, default="./build")
+    build_parser.add_argument(
+        "--build-dir", type=str, default="./build", help="Directory to write the built engine to (default: ./build)"
+    )
     add_common_arguments(build_parser)
 
     dev_parser = subparsers.add_parser("dev")
@@ -221,8 +225,15 @@ def main():
         nargs="?",
         help="Module path (e.g., 'module.name'). If omitted, will auto-detect if only one module exists.",
     )
-    dev_parser.add_argument("--build-dir", type=str, default="./build")
-    dev_parser.add_argument("--port", type=int, default=8000)
+    dev_parser.add_argument(
+        "--build-dir",
+        type=str,
+        default="./build",
+        help="Directory to build into and serve from (default: ./build)",
+    )
+    dev_parser.add_argument(
+        "--port", type=int, default=8000, help="Port to serve the development server on (default: 8000)"
+    )
     add_common_arguments(dev_parser)
 
     schema_parser = subparsers.add_parser("schema")

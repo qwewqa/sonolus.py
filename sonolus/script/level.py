@@ -45,14 +45,18 @@ class ExportedLevel:
 class Level:
     """A Sonolus level.
 
+    The `title`, `artists`, `author`, and `description` fields accept either a plain string or an
+    [`AnyText`][sonolus.script.metadata.AnyText] localization dict.
+
     Args:
         name: The name of the level.
-        title: The title of the level.
+        title: The title of the level. If unset, `name` is used.
         rating: The rating of the level.
         artists: The artists of the level.
         author: The author of the level.
         cover: The cover of the level.
         bgm: The background music of the level.
+        preview: The audio preview of the level.
         data: The data of the level.
         use_skin: The skin to use, overriding the engine skin.
         use_background: The background to use, overriding the engine background.
@@ -170,7 +174,7 @@ class LevelData:
 
     Args:
         bgm_offset: The background music audio offset.
-        entities: The entities of the level.
+        entities: The entities of the level. May be a single entity, or (possibly nested) lists of entities.
     """
 
     bgm_offset: float
@@ -234,6 +238,9 @@ def parse_external_level_data(raw_data: ExternalLevelDataDict | str | bytes, /) 
     """Parse level data from an external source.
 
     If given a string, it is parsed as JSON. If given bytes, it is un-gzipped and then parsed as JSON.
+
+    Entity data entries with a `ref` key are resolved to the index of the referenced entity, matched by name. If the
+    reference cannot be resolved, the value falls back to `0`.
 
     Args:
         raw_data: The raw level data to parse.

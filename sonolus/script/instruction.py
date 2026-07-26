@@ -44,7 +44,7 @@ class InstructionIcon(Record):
         Args:
             position: The position of the icon.
             size: The size of the icon.
-            rotation: The rotation of the icon.
+            rotation: The rotation of the icon, in degrees.
             z: The z-index of the icon.
             a: The alpha of the icon.
         """
@@ -62,7 +62,12 @@ class _InstructionIconInfo:
 
 
 def instruction(name: AnyText) -> Any:
-    """Define an instruction with the given name."""
+    """Define an instruction with the given name.
+
+    Args:
+        name: The instruction's text, as a plain string or an [`AnyText`][sonolus.script.metadata.AnyText]
+            localization dict.
+    """
     return _InstructionTextInfo(name=encode_localization_text(name))
 
 
@@ -87,7 +92,7 @@ def instructions[T](cls: type[T]) -> T | TutorialInstructions:
             other_instruction: Instruction = instruction("Other Instruction")
         ```
     """
-    if len(cls.__bases__) != 1:
+    if cls.__bases__ != (object,):
         raise ValueError("Instructions class must not inherit from any class (except object)")
     instance = cls()
     names = []
@@ -122,7 +127,7 @@ def instruction_icons[T](cls: type[T]) -> T | TutorialInstructionIcons:
             other_icon: InstructionIcon = instruction_icon("Other Icon")
         ```
     """
-    if len(cls.__bases__) != 1:
+    if cls.__bases__ != (object,):
         raise ValueError("Instruction icons class must not inherit from any class (except object)")
     instance = cls()
     names = []
@@ -175,12 +180,12 @@ class StandardInstructionIcon:
 
 @instructions
 class EmptyInstructions:
-    pass
+    """An instruction set with no instructions, used as the default when a mode declares none."""
 
 
 @instruction_icons
 class EmptyInstructionIcons:
-    pass
+    """An instruction icon set with no icons, used as the default when a mode declares none."""
 
 
 @native_function(Op.Paint)

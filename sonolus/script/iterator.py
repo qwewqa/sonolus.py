@@ -17,6 +17,9 @@ class SonolusIterator[T]:
     Inheritors must implement the [`next`][sonolus.script.iterator.SonolusIterator.next] method,
     which should return a [`Maybe[T]`][sonolus.script.maybe.Maybe].
 
+    An iterator should be treated as single use: do not advance one that is already being consumed, or consume
+    one again after it is exhausted. Doing so may lead to unexpected behavior.
+
     Usage:
         ```python
         class MyIterator(Record, SonolusIterator):
@@ -33,6 +36,10 @@ class SonolusIterator[T]:
         raise NotImplementedError
 
     def __next__(self) -> T:
+        """Return the next item, for use outside of compiled code only.
+
+        This is not intended to be overridden, and just serves to allow iterators to work in regular Python code.
+        """
         result = self.next()
         if result.is_some:
             return result.get_unsafe()
@@ -40,6 +47,7 @@ class SonolusIterator[T]:
             raise StopIteration
 
     def __iter__(self) -> SonolusIterator[T]:
+        """Return the iterator itself."""
         return self
 
 
@@ -122,7 +130,10 @@ class _FilteringIterator[T, Fn](Record, SonolusIterator):
 
 @meta_fn
 def maybe_next[T](iterator: Iterator[T]) -> Maybe[T]:
-    """Get the next item from an iterator as a [`Maybe`][sonolus.script.maybe.Maybe]."""
+    """Get the next item from an iterator as a [`Maybe`][sonolus.script.maybe.Maybe].
+
+    The iterator must be a [`SonolusIterator`][sonolus.script.iterator.SonolusIterator] instance.
+    """
     from sonolus.script.internal.visitor import compile_and_call
 
     if not isinstance(iterator, SonolusIterator):

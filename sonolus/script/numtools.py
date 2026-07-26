@@ -250,8 +250,6 @@ def quantize_to_step(value: float, start: float, stop: float, step: float) -> tu
 def make_comparable_float(*values: tuple[int, int]) -> float:
     """Convert a series of non-negative integer values into a float that compares the same way as the original series.
 
-    This is useful for z-indexes, since Sonolus only supports a single float for z-index.
-
     The product of all maximum values must be less than 2^31.
 
     Usage:

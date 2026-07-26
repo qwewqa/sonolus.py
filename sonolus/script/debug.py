@@ -112,6 +112,7 @@ def notify(message: str):
 
 @meta_fn
 def runtime_checks_enabled() -> bool:
+    """Return whether runtime checks are enabled, i.e. not set to none."""
     if ctx():
         return ctx().project_state.runtime_checks != RuntimeChecks.NONE
     else:
@@ -154,6 +155,17 @@ def require(value: int | float | bool, message: str | None = None):
 
 @simple_meta_fn
 def assert_true(value: int | float | bool, message: str | None = None):
+    """Check that a value is true, terminating the current callback if it is false.
+
+    If runtime checks are disabled (the default in production builds), this check is skipped, unless `value` is
+    a compile-time constant known to be false, in which case the callback is still terminated. This preserves
+    the common `assert False` pattern used to mark unreachable code, since stripping it out could otherwise
+    cause compilation errors.
+
+    Args:
+        value: The condition to check.
+        message: The message to log if the condition is false.
+    """
     value = validate_value(value)
     if (
         ctx()
@@ -169,16 +181,45 @@ def assert_true(value: int | float | bool, message: str | None = None):
 
 @simple_meta_fn
 def assert_false(value: int | float | bool, message: str | None = None):
+    """Check that a value is false, terminating the current callback if it is true.
+
+    Has the same runtime-check behavior as [`assert_true`][sonolus.script.debug.assert_true].
+
+    Args:
+        value: The condition to check.
+        message: The message to log if the condition is true.
+    """
     assert_true(value == 0, message)
 
 
 def static_assert(value: int | float | bool, message: str | None = None):
+    """Assert that a value is a compile-time constant known to be true, or raise a compile-time error.
+
+    Unlike [`assert_true`][sonolus.script.debug.assert_true], this check runs at compile time regardless of
+    runtime checks, so it is not removed in production builds. It fails whenever `value` is not a compile-time
+    constant known to be true, whether because it is false or because it depends on a runtime value.
+
+    Args:
+        value: The condition to check.
+        message: The message to log if `value` is not statically known to be true.
+    """
     message = message if message is not None else "Static assertion failed"
     if not is_static_true(value):
         static_error(message)
 
 
 def try_static_assert(value: int | float | bool, message: str | None = None):
+    """Assert that a value is true, raising a compile-time error if it is statically known to be false.
+
+    If `value` is not a compile-time constant known to be false, this falls back to a runtime check via
+    [`error`][sonolus.script.debug.error], which unconditionally terminates the callback if `value` turns out to
+    be false. Like [`static_assert`][sonolus.script.debug.static_assert], this does not check runtime checks and
+    so is not removed in production builds.
+
+    Args:
+        value: The condition to check.
+        message: The message to log if `value` is false.
+    """
     message = message if message is not None else "Static assertion failed"
     if is_static_false(value):
         static_error(message)
@@ -188,15 +229,25 @@ def try_static_assert(value: int | float | bool, message: str | None = None):
 
 @simple_meta_fn
 def assert_unreachable(message: str | None = None) -> Never:
-    # This works a bit differently from assert_never from typing in that it throws an error if the Sonolus.py
-    # compiler cannot guarantee that this function will not be called, which is different from what type checkers
-    # may be able to infer.
+    """Assert that this code is unreachable, raising a compile-time error if the compiler traces it anyway.
+
+    Unlike `typing.assert_never`, which compiles to a runtime error that terminates the callback if reached, this
+    raises an error at compile time whenever the Sonolus.py compiler cannot statically guarantee that this code
+    will not be reached, even if a type checker would consider it unreachable.
+
+    Args:
+        message: The message to log.
+    """
     message = validate_value(message)._as_py_() or "Unreachable code reached"  # type: ignore
     raise RuntimeError(message)
 
 
 @simple_meta_fn
 def terminate():
+    """Terminate the current callback.
+
+    Any code that follows in the same code path is unreachable, similar to code following a `return` statement.
+    """
     if ctx():
         set_ctx(ctx().into_dead())
     else:
@@ -242,6 +293,7 @@ def simulation_context() -> SimulationContext:
 
 @meta_fn
 def is_static_true(value: int | float | bool) -> bool:
+    """Return whether `value` is a compile-time constant that is true."""
     if ctx() is None:
         return bool(value)
     else:
@@ -251,6 +303,7 @@ def is_static_true(value: int | float | bool) -> bool:
 
 @meta_fn
 def is_static_false(value: int | float | bool) -> bool:
+    """Return whether `value` is a compile-time constant that is false."""
     if ctx() is None:
         return not bool(value)
     else:

@@ -1,9 +1,9 @@
 # Types
-Sonolus.py has 3 core types: [`Num`](#num), [`Array`](#array), and [`Record`](#record). representing numeric values, fixed-size arrays, 
-and custom data structures, respectively. Arrays and records can be nested within each other to create complex data
-structures.
+Sonolus.py has 3 core types: [`Num`](#num), [`Array`](#array), and [`Record`](#record), representing numeric
+values, fixed-size arrays, and custom data structures, respectively. Arrays and records can be nested within each
+other to create complex data structures.
 
-Additionally, Sonolus.py supports the built-in types `tuple`, `dict`, `str`, classes and functions, and
+Additionally, Sonolus.py supports the built-in types `tuple`, `dict`, `set`, `str`, classes and functions, and
 the constants `None`, `Ellipsis`, and `NotImplemented`.
 
 ## Num
@@ -85,13 +85,13 @@ match x:
 ```
 
 ### Conversion
-Calling `int`, `float`, or `bool` is only supported for an argument of type `Num`.
+Calling `int` or `float` is only supported for an argument of type `Num`.
 
 Details:
 
 - `int`: Equivalent to `math.trunc`.
 - `float`: Validates that the value is a `Num` and returns it as is.
-- `bool`: Validates that the value is a `Num` and returns `1` for `True` and `0` for `False`.
+- `bool`: Returns `True` for a truthy value and `False` for a falsy one.
 
 ## Array
 
@@ -154,12 +154,12 @@ a6 = Array[Array, 2](Array(1, 2, 3), Array(4, 5, 6))  # The element type must be
 Copies are made of any values provided to the constructor:
 
 ```python
-pair = Pair(1, 2)
-a = Array[Pair, 1](pair)
-assert a[0] == Pair(1, 2)
+vec = Vec2(1, 2)
+a = Array[Vec2, 1](vec)
+assert a[0] == Vec2(1, 2)
 
-pair.x = 3
-assert a[0] == Pair(1, 2)  # The value in the array is independent of the original value
+vec.x = 3
+assert a[0] == Vec2(1, 2)  # The value in the array is independent of the original value
 ```
 
 ### Operations
@@ -212,21 +212,21 @@ assert a == Array(4, 2, 3)
     results when updating either value.
 
     ```python
-    pair = Pair(1, 2)
-    a = Array(Pair(0, 0))
+    vec = Vec2(1, 2)
+    a = Array(Vec2(0, 0))
     
-    a[0] = pair  # or equivalently: a[0] @= pair
-    assert a[0] == Pair(1, 2)
+    a[0] = vec  # or equivalently: a[0] @= vec
+    assert a[0] == Vec2(1, 2)
 
-    pair.x = 3
-    assert a[0] == Pair(1, 2)  # The value in the array is independent of the original value
+    vec.x = 3
+    assert a[0] == Vec2(1, 2)  # The value in the array is independent of the original value
     ```
     
     For clarity, it's recommended to use the copy from operator (`@=`) when updating elements that are known to be
     an array or record.
 
     ```python
-    a[0] @= pair
+    a[0] @= vec
     ```
 
 The length of an array can be accessed using the `len()` function:
@@ -263,21 +263,7 @@ Only an array with the exact element type and size is considered an instance of 
 a = Array(1, 2, 3)
 assert isinstance(a, Array[int, 3])
 assert not isinstance(a, Array[int, 2])
-assert not isinstance(a, Array[Pair, 3])
-```
-
-### Enums
-
-There is limited support for enums containing [`Num`](#num) values. Methods on enums are not supported. 
-When used as a type, any enum class is treated as [`Num`](#num) and no enforcement is done on the values.
-
-```python
-class MyEnum(IntEnum):
-    A = 1
-    B = 2
-    
-a = Array[MyEnum, 2](MyEnum.A, MyEnum.B)
-b = Array[MyEnum, 2](1, 2)
+assert not isinstance(a, Array[Vec2, 3])
 ```
 
 ## Record
@@ -301,7 +287,7 @@ class MyPair(Record):
 ```
 
 Fields must be annotated by [`Num`](#num) (or equivalently `int`, `float`, or `bool`), 
-a concrete array type, or a concrete record type.
+a concrete array type, a concrete record type, or, in a generic record, a type parameter (see [Generics](#generics)).
 
 ```python
 # Not ok:
@@ -327,6 +313,23 @@ pair_1 = MyPair(1, 2)
 pair_2 = MyPair(first=1, second=2)
 pair_3 = +MyPair  # Create a zero-initialized record
 ```
+
+Unlike [`Array`](#array), constructing a record does not copy a field's value when it is a reference type such as
+another record or an array: the field aliases the value passed in, so mutating one is visible through the other.
+Fields of an immutable type such as [`Num`](#num) are always modified independently.
+
+```python
+class Holder[T](Record):
+    value: T
+
+array = Array(1, 2, 3)
+outer = Holder(array)  # outer.value aliases array; no copy is made
+array[0] = 99
+assert outer.value[0] == 99  # mutating array is visible through outer
+```
+
+Pass a value through [`copy`][sonolus.script.values.copy] when constructing a record if the field must be
+independent of it.
 
 ### Generics
 
@@ -422,7 +425,7 @@ class MyRecord(Record):
     def my_property(self):
         ...
 
-    @property.setter
+    @my_property.setter
     def my_property(self, value):
         ...
 
@@ -447,18 +450,18 @@ assert pair == MyPair(3, 2)
 ```
 
 !!! warning
-    If a value in a record is not a [`Num`](#num), updating it will copy the given value into the corresponding field
-    of the record. However, that field remains independent of the original value.
+    If a value in a record is not a [`Num`](#num), assigning to it copies the given value into the field's existing
+    storage, so the field remains independent of the value it was assigned from.
 
     ```python
     array = Array(1, 2, 3)
-    record = MyRecord(array)
-    
-    record.array = Array(4, 5, 6)  # or equivalently: record.array @= Array(4, 5, 6)
-    assert record.array == Array(4, 5, 6)
+    record = ContainsArray(Array(0, 0, 0))  # built from a separate array, so storage isn't shared
+
+    record.array = array  # or equivalently: record.array @= array
+    assert record.array == Array(1, 2, 3)
 
     array[0] = 7
-    assert record.array == Array(4, 5, 6)  # The value in the record is independent of the original
+    assert record.array == Array(1, 2, 3)  # The value in the record is independent of the assigned-from array
     ```
     
     For clarity, it's recommended to use the copy from operator (`@=`) when updating fields that are known to be
@@ -484,12 +487,29 @@ pair = MyGenericPair[int, int](1, 2)
 assert isinstance(pair, MyGenericPair)
 ```
 
-Only an instance of a record with the exact field types is considered an instance of a concrete [`Record`][sonolus.script.record.Record] type:
+Only an instance of a generic record with the exact type arguments is considered an instance of a concrete
+[`Record`][sonolus.script.record.Record] type:
 
 ```python
-pair = MyPair(1, 2)
-assert isinstance(pair, MyPair[int, int])
-assert not isinstance(pair, MyPair[int, Array[int, 2]])
+pair = MyGenericPair[int, int](1, 2)
+assert isinstance(pair, MyGenericPair[int, int])
+assert not isinstance(pair, MyGenericPair[int, Array[int, 2]])
+```
+
+## Enums
+
+There is limited support for enums containing [`Num`](#num) values. Methods on enums are not supported.
+When used as a type, any enum class is treated as [`Num`](#num) and no enforcement is done on the values.
+
+```python
+from enum import IntEnum
+
+class MyEnum(IntEnum):
+    A = 1
+    B = 2
+
+a = Array[MyEnum, 2](MyEnum.A, MyEnum.B)
+b = Array[MyEnum, 2](1, 2)
 ```
 
 ## Transient Types
@@ -501,7 +521,7 @@ There are some restrictions on how they can be used:
     # Not ok:
     Array[str, 3]
     ```
-- They cannot be used as a field types:
+- They cannot be used as field types:
     ```python
     # Not ok:
     class MyRecord(Record):
@@ -511,6 +531,8 @@ There are some restrictions on how they can be used:
     class MyArchetype(PlayArchetype):
         field: str = imported()
     ```
+
+    See [Imported](resources.md#imported) for archetype fields.
 
 ### tuple
 
@@ -524,13 +546,15 @@ a, (b, c) = t
 Tuples may be indexed, but the given index must be a compile-time constant:
 
 ```python
+import random
+
 t = (1, 2, 3)
 
 # Ok
 debug_log(t[0])
 
 # Not ok:
-debug_log(t[random_integer(0, 2)])
+debug_log(t[random.randint(0, 2)])
 ```
 
 They may also be created as an \*args argument to a function and unpacked as an argument to a function:
@@ -562,6 +586,21 @@ def f1(a, b):
     
 def f2(**kwargs):
     return f1(**kwargs)
+```
+
+### set
+
+Sets can be created from a set literal or from a tuple. Members must be compile-time constants. Sets support
+membership testing and iteration:
+
+```python
+s = {1, 2, 3}
+a = 2 in s  # True
+b = 5 in s  # False
+
+total = 0
+for v in s:
+    total += v  # 6
 ```
 
 ### str

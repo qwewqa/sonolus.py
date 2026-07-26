@@ -129,11 +129,13 @@ def _find_node(root, func):
 # ==========================================================================
 
 
-def _eq_chain(consts, tails=None, mid_stmt=None):
+def _eq_chain(consts, tails=None, mid_stmt=None, mid_effect=None):
     """Build ``if x==c0 -> A0 elif x==c1 -> A1 ... else D``; each arm logs 100+i (or ``tails``).
 
     ``mid_stmt`` (index) inserts a statement into that chain block, making it
-    non-empty so splicing stops there.
+    non-empty so splicing stops there. ``mid_effect`` (index) instead stores the
+    side-effecting call into a temp that is never read, so SSA promotion dissolves
+    the store and leaves a bare FLAG_SIDE_EFFECT value with no FLAG_STMT_ROOT.
     """
     x = _sel(0)
     end = BasicBlock()
@@ -143,6 +145,8 @@ def _eq_chain(consts, tails=None, mid_stmt=None):
         h = BasicBlock(test=IRPureInstr(Op.Equal, [x, IRConst(c)]))
         if mid_stmt == i:
             h.statements = [_log(-i - 1)]
+        if mid_effect == i:
+            h.statements = [IRSet(_sc(f"unread{i}"), _log(-i - 1))]
         a = BasicBlock(statements=[_log(100 + i)])
         a.connect_to(end, None)
         heads.append(h)
@@ -197,6 +201,15 @@ def test_non_empty_chain_block_stops_splicing():
     _assert_semantics(build, seed={SEL.value: [2.0]})
     _assert_semantics(build, seed={SEL.value: [3.0]})
     _assert_semantics(build, seed={SEL.value: [8.0]})
+
+
+def test_side_effecting_chain_block_not_spliced():
+    # The block is still not empty: splicing it away would delete the effect.
+    build = lambda: _eq_chain([1, 2, 3], mid_effect=1)  # noqa: E731
+    for c in (1.0, 2.0, 3.0, 8.0):
+        _assert_semantics(build, seed={SEL.value: [c]})
+    after = _text(build, _SSA_RSW)
+    assert "DebugLog(-2)" in after, "the side effect must survive rewrite_switch"
 
 
 def test_duplicate_cond_edge_dropped():

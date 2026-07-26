@@ -111,6 +111,8 @@ class _TutorialRuntimeUpdate:
 
 
 class ScrollDirection(IntEnum):
+    """The scroll direction of the preview canvas."""
+
     LEFT_TO_RIGHT = 0
     TOP_TO_BOTTOM = 1
     RIGHT_TO_LEFT = 2
@@ -130,8 +132,13 @@ class _PreviewRuntimeCanvas:
 
 
 class RuntimeUiConfig(Record):
+    """The raw user configuration values backing a [`UiConfig`][sonolus.script.runtime.UiConfig]."""
+
     scale: float
+    """The scale of the UI element."""
+
     alpha: float
+    """The alpha (opacity) of the UI element."""
 
 
 @_play_runtime_ui_configuration
@@ -168,12 +175,16 @@ class _TutorialRuntimeUiConfigs:
 
 
 class HorizontalAlign(IntEnum):
+    """Horizontal alignment."""
+
     LEFT = -1
     CENTER = 0
     RIGHT = 1
 
 
 class RuntimeUiLayout(Record):
+    """The layout of a UI element in play or watch mode."""
+
     anchor: Vec2
     pivot: Vec2
     dimensions: Vec2
@@ -192,6 +203,10 @@ class RuntimeUiLayout(Record):
         horizontal_align: HorizontalAlign | None = None,
         background: bool | None = None,
     ):
+        """Update the layout.
+
+        Arguments left as None do not change the corresponding property.
+        """
         if anchor is not None:
             self.anchor = anchor
         if pivot is not None:
@@ -209,6 +224,8 @@ class RuntimeUiLayout(Record):
 
 
 class BasicRuntimeUiLayout(Record):
+    """The layout of a UI element in preview or tutorial mode."""
+
     anchor: Vec2
     pivot: Vec2
     dimensions: Vec2
@@ -225,6 +242,10 @@ class BasicRuntimeUiLayout(Record):
         alpha: float | None = None,
         background: bool | None = None,
     ):
+        """Update the layout.
+
+        Arguments left as None do not change the corresponding property.
+        """
         if anchor is not None:
             self.anchor = anchor
         if pivot is not None:
@@ -294,7 +315,10 @@ class UiLayout[T](Record):
         horizontal_align: HorizontalAlign | None = None,
         background: bool | None = None,
     ):
-        """Update the layout properties if it's available in the current mode and do nothing otherwise."""
+        """Update the layout properties if it's available in the current mode and do nothing otherwise.
+
+        In preview and tutorial mode, `horizontal_align` has no effect, as the underlying layout doesn't support it.
+        """
         match self._underlying:
             case RuntimeUiLayout():
                 self._underlying.update(
@@ -359,7 +383,7 @@ class RuntimeUi(Record):
     @property
     @meta_fn
     def menu(self) -> UiLayout:
-        """The configuration for the menu UI element.
+        """The layout of the menu UI element.
 
         Available in play, watch, preview, and tutorial mode.
         """
@@ -397,7 +421,7 @@ class RuntimeUi(Record):
     @property
     @meta_fn
     def judgment(self) -> UiLayout:
-        """The configuration for the judgment UI element.
+        """The layout of the judgment UI element.
 
         Available in play and watch mode.
         """
@@ -427,7 +451,7 @@ class RuntimeUi(Record):
     @property
     @meta_fn
     def combo_value(self) -> UiLayout:
-        """The configuration for the combo value UI element.
+        """The layout of the combo value UI element.
 
         Available in play and watch mode.
         """
@@ -442,7 +466,7 @@ class RuntimeUi(Record):
     @property
     @meta_fn
     def combo_text(self) -> UiLayout:
-        """The configuration for the combo text UI element.
+        """The layout of the combo text UI element.
 
         Available in play and watch mode.
         """
@@ -472,7 +496,7 @@ class RuntimeUi(Record):
     @property
     @meta_fn
     def primary_metric_bar(self) -> UiLayout:
-        """The configuration for the primary metric bar UI element.
+        """The layout of the primary metric bar UI element.
 
         Available in play and watch mode.
         """
@@ -487,7 +511,7 @@ class RuntimeUi(Record):
     @property
     @meta_fn
     def primary_metric_value(self) -> UiLayout:
-        """The configuration for the primary metric value UI element.
+        """The layout of the primary metric value UI element.
 
         Available in play and watch mode.
         """
@@ -517,7 +541,7 @@ class RuntimeUi(Record):
     @property
     @meta_fn
     def secondary_metric_bar(self) -> UiLayout:
-        """The configuration for the secondary metric bar UI element.
+        """The layout of the secondary metric bar UI element.
 
         Available in play and watch mode.
         """
@@ -532,7 +556,7 @@ class RuntimeUi(Record):
     @property
     @meta_fn
     def secondary_metric_value(self) -> UiLayout:
-        """The configuration for the secondary metric value UI element.
+        """The layout of the secondary metric value UI element.
 
         Available in play and watch mode.
         """
@@ -562,7 +586,7 @@ class RuntimeUi(Record):
     @property
     @meta_fn
     def progress(self) -> UiLayout:
-        """The configuration for the progress UI element.
+        """The layout of the progress UI element.
 
         Available in watch and preview mode.
         """
@@ -577,7 +601,7 @@ class RuntimeUi(Record):
     @property
     @meta_fn
     def progress_graph(self) -> UiLayout:
-        """The configuration for the progress graph UI element.
+        """The layout of the progress graph UI element.
 
         Available in watch mode.
         """
@@ -605,7 +629,7 @@ class RuntimeUi(Record):
     @property
     @meta_fn
     def previous(self) -> UiLayout:
-        """The configuration for the previous navigation UI element.
+        """The layout of the previous navigation UI element.
 
         Available in tutorial mode.
         """
@@ -618,7 +642,7 @@ class RuntimeUi(Record):
     @property
     @meta_fn
     def next(self) -> UiLayout:
-        """The configuration for the next navigation UI element.
+        """The layout of the next navigation UI element.
 
         Available in tutorial mode.
         """
@@ -644,7 +668,7 @@ class RuntimeUi(Record):
     @property
     @meta_fn
     def instruction(self) -> UiLayout:
-        """The configuration for the instruction UI element.
+        """The layout of the instruction UI element.
 
         Available in tutorial mode.
         """
@@ -930,7 +954,11 @@ def is_preprocessing() -> bool:
 
 @meta_fn
 def aspect_ratio() -> float:
-    """Get the aspect ratio of the game."""
+    """Get the aspect ratio of the game.
+
+    Since the screen is two units tall, this is also the x coordinate of the right edge of the screen. See
+    [`screen`][sonolus.script.runtime.screen] for the coordinate system.
+    """
     if not ctx():
         return 16 / 9
     match ctx().mode_state.mode:
@@ -1097,7 +1125,10 @@ def prev_time() -> float:
 
 @meta_fn
 def touches() -> ArrayLike[Touch]:
-    """Get the current touches of the game."""
+    """Get the current touches of the game.
+
+    Returns an empty array if not in play mode.
+    """
     if not ctx():
         return Array[Touch, 0]()  # type: ignore
     match ctx().mode_state.mode:
@@ -1153,23 +1184,35 @@ def set_skin_transform(value: Transform2d):
 
 
 def particle_transform() -> Transform2d:
-    """Get the global particle transform."""
+    """Get the global particle transform.
+
+    Not available in preview mode.
+    """
     return _ParticleTransform.transform  # type: ignore
 
 
 @meta_fn
 def set_particle_transform(value: Transform2d):
-    """Set the global particle transform."""
+    """Set the global particle transform.
+
+    Not available in preview mode.
+    """
     _ParticleTransform.transform._copy_from_(value)  # type: ignore
 
 
 def background() -> Quad:
-    """Get the background quad."""
+    """Get the background quad.
+
+    Not available in preview mode.
+    """
     return _Background.value
 
 
 def set_background(value: Quad):
-    """Set the background quad."""
+    """Set the background quad.
+
+    Not available in preview mode.
+    """
     _Background.value = value
 
 
@@ -1191,13 +1234,20 @@ def runtime_ui() -> RuntimeUi:
 
 
 def canvas() -> _PreviewRuntimeCanvas:
-    """Get the preview canvas."""
+    """Get the preview canvas.
+
+    Only available in preview mode.
+    """
     return _PreviewRuntimeCanvas  # type: ignore
 
 
 @perf_meta_fn
 def screen() -> Rect:
-    """Get the screen boundaries as a rectangle."""
+    """Get the screen boundaries as a rectangle.
+
+    The screen spans from `1` at the top to `-1` at the bottom, and from `-aspect_ratio()` on the left to
+    `aspect_ratio()` on the right. The origin is therefore at the center of the screen, and y increases upward.
+    """
     return Rect._unchecked(t=1, r=aspect_ratio(), b=-1, l=-aspect_ratio())
 
 
@@ -1238,17 +1288,25 @@ def safe_area() -> Rect:
 
 
 def level_score() -> _LevelScore:
-    """Get the level score configuration."""
+    """Get the level score configuration.
+
+    Only available in play and watch mode.
+    """
     return _LevelScore  # type: ignore
 
 
 def level_life() -> _LevelLife:
-    """Get the level life configuration."""
+    """Get the level life configuration.
+
+    Only available in play and watch mode.
+    """
     return _LevelLife  # type: ignore
 
 
 def add_life_scheduled(value: int, time: float):
     """Schedule adding life at a specific time.
+
+    Only valid in play and watch mode.
 
     Args:
         value: The amount of life to add.

@@ -25,7 +25,7 @@ class Interval(Record):
 
     @classmethod
     def zero(cls) -> Interval:
-        """Get a zero-length interval ``[0, 0]``."""
+        """Get a zero-length interval `[0, 0]`."""
         return cls(0, 0)
 
     @property
@@ -197,7 +197,7 @@ class Interval(Record):
         return unlerp(self.start, self.end, x)
 
     def unlerp_clamped(self, x: float, /) -> float:
-        """Inverse linear interpolation of a value within the interval, clamped to the interval.
+        """Inverse linear interpolation of a value within the interval, clamped to `[0, 1]`.
 
         Args:
             x: The value to unlerp.
@@ -294,7 +294,7 @@ def unlerp(a: float, b: float, x: float, /) -> float:
 
 @native_function(Op.UnlerpClamped)
 def unlerp_clamped(a: float, b: float, x: float, /) -> float:
-    """Inverse linear interpolation, clamped to the interval.
+    """Inverse linear interpolation, clamped to `[0, 1]`.
 
     Args:
         a: The start value.

@@ -15,10 +15,19 @@ how it differs from standard Python.
 - Destructuring assignment does not support the `*` operator.
 - Sequence `match` patterns do not support the `*` operator.
 - Mapping `match` patterns are unsupported.
+- Match patterns cannot match the literals `True` or `False` directly; use `1` and `0` instead.
 - Imports may not be done within functions
 - The `global` and `nonlocal` keywords are unsupported.
+- List literals (`[1, 2, 3]`) are unsupported; use a tuple or [`Array`][sonolus.script.array.Array] instead.
+- List, set, and dict comprehensions are unsupported; only generator expressions are supported.
+- Exception statements (`try`, `except`, `finally`, `raise`) and `with` statements are unsupported.
+- F-strings and slices are unsupported.
+- The bitwise operators (`&`, `|`, `^`, `<<`, `>>`, `~`) are not supported for [`Num`](types.md#num), since the
+  Sonolus runtime has no bitwise operations. They are available only for types that define them, such as
+  [`Interval`][sonolus.script.interval.Interval].
+- `is` and `is not` are only supported against `None`.
 
-## Overview
+## Supported Constructs
 
 The following constructs are supported in Sonolus.py:  
 
@@ -28,10 +37,12 @@ The following constructs are supported in Sonolus.py:
         - Booleans: `True`, `False`
         - Strings: `'Hello, World!'`, `"Hello, World!"`
         - Tuples: `(1, 2, 3)`
+        - Dicts (keys must be compile-time constants): `{1: 'a', 2: 'b'}`
+        - Sets (members must be compile-time constants): `{1, 2, 3}`
     - Operators (if supported by the operands):
-        - Unary: `+`, `-`, `not`, `~`
-        - Binary: `+`, `-`, `*`, `/`, `//`, `%`, `**`, `&`, `|`, `^`, `<<`, `>>`
-        - Comparison: `==`, `!=`, `>`, `<`, `>=`, `<=`, `is`, `is not`, `in`, `not in`
+        - Unary: `+`, `-`, `not`, and `~` for types implementing it
+        - Binary: `+`, `-`, `*`, `/`, `//`, `%`, `**`, and `&`, `|`, `^`, `<<`, `>>` for types implementing them
+        - Comparison: `==`, `!=`, `>`, `<`, `>=`, `<=`, `in`, `not in`, and `is`/`is not` against `None`
         - Logical: `and`, `or` (for [`Num`](types.md#num) arguments only)
         - Ternary: `a if <condition> else b`
         - Attribute: `a.b`
@@ -50,8 +61,10 @@ The following constructs are supported in Sonolus.py:
             - Index assignment: `a[b] = c`
             - Destructuring assignment: `a, b = b, a`
             - Multiple assignment: `a = b = c = 1`
-            - Annotated assignment: `a: int = 1`
+            - Annotated assignment: `a: int = 1` (a bare annotation, `a: int`, binds nothing, though for a target
+              like `a.b` or `a[i]` the target expression is still evaluated, as in standard Python)
         - Assert: `assert <condition>, <message>`
+        - Delete: `del a[b]` (subscript targets only)
         - Pass: `pass`
         - Break: `break`
         - Continue: `continue`
@@ -62,7 +75,7 @@ The following constructs are supported in Sonolus.py:
         - If: `if <condition>:`, `elif <condition>:`, `else:`
         - While: `while <condition>:`, `else:`
         - For: `for <target> in <iterable>:`, `else:`
-        - Match: `match <value>:`, `case <pattern>:`
+        - Match: `match <value>:`, `case <pattern>:`, `case <pattern> if <guard>:`
         - Function Definition: `def <name>(<parameters>):`
         - Class Definition: `class <name>:` (only outside of functions)
 
@@ -72,19 +85,19 @@ Some expressions can be evaluated at compile time:
 
 - Numeric literals: `1`, `2.5`, `True`, `False`, ...
 - None: `None`
-- Basic arithmetic: for compile time constant operands: `a + b`, `a - b`, `a * b`, `a / b`, ...
+- Basic arithmetic: for compile-time constant operands: `a + b`, `a - b`, `a * b`, `a / b`, ...
 - Is/Is Not None: for any left-hand operand, `a is None`, `a is not None`
-- Type checks: for any value, `isinstance(a, t)`, `issubclass(a, t)`
+- Type checks: `isinstance(a, t)` for any value, and `issubclass(a, t)` where both arguments are compile-time types
 - Boolean operations:
     - Negation: `not a`
     - And
-        - Both operands are compile time constants: `a and b`
+        - Both operands are compile-time constants: `a and b`
         - One operand is known to be False: `False and a`, `a and False`
     - Or
-        - Both operands are compile time constants: `a or b`
+        - Both operands are compile-time constants: `a or b`
         - One operand is known to be True: `True or a`, `a or True`
-- Comparison: for compile time constant operands: `a == b`, `a != b`, `a > b`, `a < b`, `a >= b`, `a <= b`, ...
-- Variables assigned to compile time constants: `a = 1`, `b = a + 1`, ...
+- Comparison: for compile-time constant operands: `a == b`, `a != b`, `a > b`, `a < b`, `a >= b`, `a <= b`, ...
+- Variables assigned to compile-time constants: `a = 1`, `b = a + 1`, ...
 
 Some values like array sizes must be compile-time constants.
 
@@ -112,7 +125,7 @@ b = 2
 c = a + b
 ```
 
-Unlike vanilla Python, non-num variables must have a single unambiguous definition when used.
+Unlike vanilla Python, non-num variables must have a single live definition when used.
 Nums have no such restriction.
 
 The following are allowed:
@@ -163,7 +176,8 @@ while condition():
 
 ### Literals
 
-`int`, `float`, `bool`, `str`, and `tuple` literals are supported:
+`int`, `float`, `bool`, `str`, `tuple`, `dict`, and `set` literals are supported. `dict` keys and `set` members
+must be compile-time constants:
 
 ```python
 a = 1
@@ -171,6 +185,8 @@ b = 1.0
 c = True
 d = 'Hello, World!'
 e = (1, 2, 3)
+f = {1: 'a', 2: 'b'}
+g = {1, 2, 3}
 ```
 
 ### Operators
@@ -189,8 +205,10 @@ h = g[0] + g[1] + g[2]
 (i := 1)
 ```
 
-The ternary operator is supported for, but the condition must be a [`Num`](types.md#num). If the operands are not nums,
-the condition must be a compile-time constant or this will be considered an error:
+The ternary operator is supported for any type, but if the operands are not [`Num`](types.md#num) values, the
+two branches must produce the same object, or a type that supports merging such as
+[`Maybe`][sonolus.script.maybe.Maybe]. Otherwise the condition must be a compile-time constant, or this is
+considered an error:
 
 ```python
 # Ok
@@ -224,11 +242,6 @@ d[0] = 4
 
 # Not ok
 h, *i = 1, 2, 3  # Not supported
-```
-
-```python
-if a > 0:
-    pass
 ```
 
 ### Conditional Statements
@@ -286,7 +299,8 @@ def f(a: Vec2 | int):
 #### match / case
 
 The `match` statement is supported for matching values against patterns. All patterns, including subpatterns,
-except mapping patterns and sequences with the `*` operator are supported. 
+are supported except mapping patterns, sequences with the `*` operator, and the singleton patterns `case True:`
+and `case False:` (use `case 1:` and `case 0:` instead).
 Records have a `__match_args__` attribute defined automatically, so they can be used with positional subpatterns.
 
 ```python
@@ -392,11 +406,47 @@ def g(a):
     return lambda b: f(a, b)
 ```
 
-Function returns follow the same rules as variable access. If a function returns a non-num value, it most only
+#### Closures
+
+Nested functions and lambdas can read variables from an enclosing function. Unlike default argument values, which
+are evaluated once when the function is defined, a captured variable is looked up using the enclosing scope's
+current value each time the closure runs:
+
+```python
+def f():
+    x = 1
+
+    def g():
+        return x
+
+    debug_log(g())  # 1
+    x = 2
+    debug_log(g())  # 2
+```
+
+Since the `global` and `nonlocal` keywords are unsupported, a closure cannot rebind a name from an enclosing
+scope, but it can mutate a captured [`Record`][sonolus.script.record.Record] in place:
+
+```python
+def f():
+    p = Pair(1, 2)
+
+    def increment():
+        p.first += 1
+
+    increment()
+    debug_log(p.first)  # 2
+```
+
+A captured variable is subject to the same single-live-definition rule as any other variable.
+
+#### Return Values
+
+Function returns follow the same rules as variable access. If a function returns a non-num value, it must only
 return that value. If the function always returns a num, it may have any number of returns. Similarly, if a function
 always returns None (`return None` or just `return`), it may have any number of returns. 
-The [`Maybe`][sonolus.script.maybe.Maybe] is also an exception, see the 
-[Maybe documentation](../reference/sonolus.script.maybe.md) for details
+The [`Maybe`][sonolus.script.maybe.Maybe] type is also an exception; see the
+[`Maybe` documentation](../reference/sonolus.script.maybe.md) for details.
 
 The following are allowed:
 
@@ -452,6 +502,36 @@ def k():
 
 Outside of functions returning `None` or a num, most functions should have a single `return` statement at the end.
 
+#### Generators
+
+A function containing `yield` is a generator function. Calling it returns an iterator that can be used with `for`
+or other functions that accept an iterator:
+
+```python
+def gen():
+    yield 1
+    yield 2
+    yield 3
+
+for x in gen():
+    debug_log(x)
+```
+
+Generators are lazy: code before the first `yield` does not run until the first value is requested. Yielded
+values follow the same single-live-definition rule as function return values, and a generator function's `return`
+statements must not return a value.
+
+##### Reusing iterators
+
+Treating an iterator as single use is recommended: consume it once, and build a fresh one if the values are needed
+again.
+
+Advancing an iterator that is already being consumed, by nesting two loops over it or mixing `next` with a `for`
+loop, is not supported. Neither is consuming one a second time after it has
+been exhausted. Use [`copy`][sonolus.script.values.copy] if a value taken from an iterator needs to outlive the
+next advance. This is an area which diverges from normal Python behavior. Otherwise, values obtained previously from
+an iterator may unexpectedly change when the iterator is advanced.
+
 ### Classes
 
 Classes are supported at the module level. User defined classes should subclass [`Record`][sonolus.script.record.Record] or have a supported
@@ -486,14 +566,22 @@ Imports are supported at the module level, but not within functions.
 
 ### assert
 
-Assertions are supported. Assertion failures cannot be handled and in dev builds will terminate the current
-callback when running in the Sonolus app. In debug mode, the game will also pause to indicate the error.
+Assertions are supported. Assertion failures terminate the current callback.
 
-In production builds, assertions are removed, so they must not be relied upon.
+When runtime checks are disabled (the default in production builds), an assertion on a runtime-dependent
+condition is skipped and must not be relied upon. An assertion on a condition that is a compile-time constant
+known to be false, such as `assert False`, is always kept and still terminates the callback, so it can be used
+to mark unreachable code.
 
 ```python
 assert a > 0, 'a must be positive'
 ```
+
+### del
+
+`del a[b]` is supported for types implementing `__delitem__`, such as
+[`VarArray`][sonolus.script.containers.VarArray] and [`ArrayMap`][sonolus.script.containers.ArrayMap].
+Deleting a variable (`del a`) or an attribute (`del a.b`) is not supported.
 
 ### pass
 

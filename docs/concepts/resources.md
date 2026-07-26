@@ -1,4 +1,8 @@
 # Resources & Declarations
+This page covers two kinds of declaration: the storage available to modes and archetypes (level memory, level data,
+imported and exported fields, entity data, entity memory, shared memory, and streams) and the resources an engine
+declares (skins, sound effects, particles, buckets, tutorial instructions, options, and UI configuration).
+For where the underlying asset files are placed on disk, see [Resource Files](project.md#resource-files).
 
 ## Global Variables
 
@@ -24,13 +28,15 @@ from sonolus.script.vec import Vec2
 level_memory_value = level_memory(Vec2)
 ```
 
-Level memory may be modified in sequential callbacks:
+Level memory may be modified in sequential callbacks (see [Modes](project.md#modes) for each mode's callbacks):
 
 - `preprocess`
 - `update_sequential`
 - `touch`
 
 and may be read in any callback.
+
+All level memory in a mode shares a combined limit of 4096 values; exceeding it raises a compilation error.
 
 ### Level Data
 Level data is defined with the [`@level_data`][sonolus.script.globals.level_data] class decorator:
@@ -56,6 +62,8 @@ level_data_value = level_data(Vec2)
 
 Level data may only be modified in the `preprocess` callback and may be read in any callback.
 
+All level data in a mode shares a combined limit of 4096 values; exceeding it raises a compilation error.
+
 ## Archetype Variables
 
 ### Imported
@@ -67,9 +75,11 @@ from sonolus.script.archetype import PlayArchetype, imported
 class MyArchetype(PlayArchetype):
     field: int = imported()
     field_with_explicit_name: int = imported(name="field_name")
+    field_with_default: int = imported(default=0)
 ```
 
-Imported fields may be loaded from the level data. In watch mode, data may also be loaded from a corresponding exported field in play mode.
+Imported fields may be loaded from the level. In watch mode, data may also be loaded from a corresponding
+exported field in play mode.
 
 Imported fields may only be updated in the `preprocess` callback, and are read-only in other callbacks.
 
@@ -150,9 +160,9 @@ class Streams:
 Streams and stream groups are declared by annotating class attributes with [`Stream`][sonolus.script.stream.Stream] or [`StreamGroup`][sonolus.script.stream.StreamGroup].
 
 Other types are also supported in the form of data fields. They may be used to store additional data to export from
-Play to Watch mode.
+play mode to watch mode.
 
-In either case, data is write-only in Play mode and read-only in Watch mode.
+In either case, data is write-only in play mode and read-only in watch mode.
 
 This should only be used once in most projects, as multiple decorated classes will overlap with each other and
 interfere when both are used at the same time.
@@ -165,7 +175,7 @@ not work on new versions of the engine.
 Skins are defined with the [`@skin`][sonolus.script.sprite.skin] decorator:
 
 ```python
-from sonolus.script.sprite import skin, StandardSprite, sprite, Sprite, RenderMode
+from sonolus.script.sprite import skin, StandardSprite, sprite, Sprite, sprite_group, SpriteGroup, RenderMode
 
 
 @skin
@@ -174,47 +184,67 @@ class Skin:
 
     note: StandardSprite.NOTE_HEAD_RED
     other: Sprite = sprite("other")
+    group: SpriteGroup = sprite_group(["one", "two", "three"])
 ```
 
 Standard sprites are defined by annotating the field with the corresponding value from [`StandardSprite`][sonolus.script.sprite.StandardSprite].
 
 Custom sprites are defined by annotating the field with [`Sprite`][sonolus.script.sprite.Sprite] and calling [`sprite`][sonolus.script.sprite.sprite] with the sprite name.
 
+A group of sprites sharing consecutive IDs can be defined by annotating the field with
+[`SpriteGroup`][sonolus.script.sprite.SpriteGroup] and calling [`sprite_group`][sonolus.script.sprite.sprite_group]
+with the sprite names; indexing the group returns the [`Sprite`][sonolus.script.sprite.Sprite] at that index.
+
 To set the render mode for the skin, set the `render_mode` field to the desired value from [`RenderMode`][sonolus.script.sprite.RenderMode].
+
+The [`draw`][sonolus.script.sprite.Sprite.draw] methods take a `z` argument, which may be a single value or a tuple
+of up to four values, where later values break ties on earlier ones. Values that are not supplied are treated
+as `0`.
 
 ## Sound Effects
 Sound effects are defined with the [`@effects`][sonolus.script.effect.effects] decorator:
 
 ```python
-from sonolus.script.effect import effects, StandardEffect, Effect, effect
+from sonolus.script.effect import effects, StandardEffect, Effect, effect, effect_group, EffectGroup
 
 
 @effects
 class Effects:
     tap_perfect: StandardEffect.PERFECT
     other: Effect = effect("other")
+    group: EffectGroup = effect_group(["one", "two", "three"])
 ```
 
 Standard sound effects are defined by annotating the field with the corresponding value from [`StandardEffect`][sonolus.script.effect.StandardEffect].
 
 Custom sound effects are defined by annotating the field with [`Effect`][sonolus.script.effect.Effect] and calling [`effect`][sonolus.script.effect.effect] with the effect name.
 
+A group of sound effects sharing consecutive IDs can be defined by annotating the field with
+[`EffectGroup`][sonolus.script.effect.EffectGroup] and calling [`effect_group`][sonolus.script.effect.effect_group]
+with the effect names; indexing the group returns the [`Effect`][sonolus.script.effect.Effect] at that index.
+
 ## Particles
 Particles are defined with the [`@particles`][sonolus.script.particle.particles] decorator:
 
 ```python
-from sonolus.script.particle import particles, StandardParticle, Particle, particle
+from sonolus.script.particle import particles, StandardParticle, Particle, particle, particle_group, ParticleGroup
 
 
 @particles
 class Particles:
     tap: StandardParticle.NOTE_CIRCULAR_TAP_RED
     other: Particle = particle("other")
+    group: ParticleGroup = particle_group(["one", "two", "three"])
 ```
 
 Standard particles are defined by annotating the field with the corresponding value from [`StandardParticle`][sonolus.script.particle.StandardParticle].
 
 Custom particles are defined by annotating the field with [`Particle`][sonolus.script.particle.Particle] and calling [`particle`][sonolus.script.particle.particle] with the particle name.
+
+A group of particles sharing consecutive IDs can be defined by annotating the field with
+[`ParticleGroup`][sonolus.script.particle.ParticleGroup] and calling
+[`particle_group`][sonolus.script.particle.particle_group] with the particle names; indexing the group returns the
+[`Particle`][sonolus.script.particle.Particle] at that index.
 
 ## Buckets
 Buckets are defined with the [`@buckets`][sonolus.script.bucket.buckets] decorator:
@@ -240,7 +270,28 @@ class Buckets:
     )
 ```
 
-Buckets are defined by annotating the field with [`Bucket`][sonolus.script.bucket.Bucket] and calling [`bucket`][sonolus.script.bucket.bucket] with the bucket name.
+Buckets are defined by annotating the field with [`Bucket`][sonolus.script.bucket.Bucket] and calling
+[`bucket`][sonolus.script.bucket.bucket] with the sprites that make up the bucket's icon.
+
+The `unit` label may be a plain string or an [`AnyText`][sonolus.script.metadata.AnyText] localization dict mapping
+locale codes to text.
+
+### Judging
+
+Each bucket has a [`window`][sonolus.script.bucket.Bucket.window] holding the
+[`JudgmentWindow`][sonolus.script.bucket.JudgmentWindow] used to judge hits, which is built from a `perfect`,
+`great`, and `good` [`Interval`][sonolus.script.interval.Interval]. It is writable only during
+[`preprocess`][sonolus.script.archetype.PlayArchetype.preprocess].
+
+[`JudgmentWindow.judge`][sonolus.script.bucket.JudgmentWindow.judge] compares an `actual` time against a `target`
+time and returns the matching [`Judgment`][sonolus.script.bucket.Judgment], which is one of `PERFECT`, `GREAT`,
+`GOOD`, or `MISS`.
+
+An entity reports its outcome by writing to [`result`][sonolus.script.archetype.PlayArchetype.result], a
+[`PlayEntityInput`][sonolus.script.archetype.PlayEntityInput] with `judgment`, `accuracy`, `bucket`,
+`bucket_value`, and `haptic` fields. This is only meaningful for archetypes that set
+[`is_scored`][sonolus.script.archetype.PlayArchetype.is_scored], since those are the entities that contribute to
+combo and score.
 
 ## Tutorial Instructions
 Tutorial instructions are defined with the [`@instructions`][sonolus.script.instruction.instructions] decorator:
@@ -258,6 +309,9 @@ class Instructions:
 Standard instructions are defined by annotating the field with the corresponding value from [`StandardInstruction`][sonolus.script.instruction.StandardInstruction].
 
 Custom instructions are defined by annotating the field with [`Instruction`][sonolus.script.instruction.Instruction] and calling [`instruction`][sonolus.script.instruction.instruction] with the instruction name.
+
+The instruction name given to [`instruction`][sonolus.script.instruction.instruction] may be a plain string or an
+[`AnyText`][sonolus.script.metadata.AnyText] localization dict.
 
 ## Tutorial Instruction Icons
 Tutorial instruction icons are defined with the [`@instruction_icons`][sonolus.script.instruction.instruction_icons] decorator:
@@ -287,6 +341,7 @@ from sonolus.script.options import options, select_option, slider_option, toggle
 class Options:
     slider_option: float = slider_option(
         name="Slider Option",
+        title="Slider Option Title",
         standard=True,
         advanced=False,
         default=0.5,
@@ -298,6 +353,7 @@ class Options:
     )
     toggle_option: bool = toggle_option(
         name="Toggle Option",
+        title="Toggle Option Title",
         standard=True,
         advanced=False,
         default=True,
@@ -305,6 +361,7 @@ class Options:
     )
     select_option: int = select_option(
         name="Select Option",
+        title="Select Option Title",
         standard=True,
         advanced=False,
         default="value",
@@ -319,8 +376,12 @@ There are three types of options available:
 2. [`toggle_option`][sonolus.script.options.toggle_option]: A toggle switch for boolean values
 3. [`select_option`][sonolus.script.options.select_option]: A dropdown menu for selecting from predefined values
 
+If `title` is unset, the option's `name` is shown instead. `title`, `description`, and (for `slider_option`) `unit`
+may each be a plain string or an [`AnyText`][sonolus.script.metadata.AnyText] localization dict, as can each entry of
+`select_option`'s `values`.
+
 ## UI
-Ui configuration is defined with the [`UiConfig`][sonolus.script.ui.UiConfig] class:
+UI configuration is defined with the [`UiConfig`][sonolus.script.ui.UiConfig] class:
 
 ```python
 from sonolus.script.ui import (

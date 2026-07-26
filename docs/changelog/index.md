@@ -1,6 +1,57 @@
 ### 0.18.0
 
-- Added support for localized text in options, buckets, and instructions.
+- Added support for localized text in options, buckets, and instructions, given as an
+  [`AnyText`][sonolus.script.metadata.AnyText] dict mapping locale codes to text.
+- Added support for `issubclass`. Both `isinstance` and `issubclass` now also accept a tuple of types.
+- Added support for `math.degrees` and `math.radians`.
+- Added support for `map` and `filter` over tuples, dicts, sets, and enum classes, behaving like the equivalent
+  generator expression. `iter` remains unsupported for these, which have no iterator, but now reports why.
+- `enumerate`, `zip`, `min`, and `max` now accept a `set`.
+- Fixed the `else` clause of a `for` loop being skipped when iterating over a tuple, dict, set, or enum class.
+- Fixed generator expression `if` filters being ignored when iterating over a tuple, dict, set, or enum class.
+- Fixed a name bound by a `match` capture pattern, or by a nested `def`, not being carried between loop iterations.
+- Fixed a `dict` subject incorrectly matching a sequence pattern such as `case [a, b]`, and an internal error when
+  matching a sequence pattern against an enum class subject.
+- Fixed an internal error when using an empty sequence pattern (`case []`).
+- A star sub-pattern in a sequence pattern, such as `case [a, *rest]`, is now rejected when the `case` is visited.
+  Previously it was only rejected once the sub-pattern was reached, so an arm whose length test failed at compile
+  time silently did not match instead of reporting the unsupported pattern.
+- Fixed the message expression of an `assert` being evaluated even when the assertion passed. An `assert` also now
+  converts its test the same way `if` does, so a value with `__bool__` or `__len__` behaves alike in both.
+- Fixed an internal error when using a bare variable annotation (`x: int`); it is now a no-op. As in Python, it
+  also makes the name local, so reading it before it is assigned is an error rather than reading a global.
+- A [`Record`][sonolus.script.record.Record] field annotated with a generic type missing its type arguments, such as
+  [`EntityRef`][sonolus.script.archetype.EntityRef] rather than `EntityRef[Any]`, is now rejected when the class is
+  defined. Previously it was accepted and the field silently overlapped the following field.
+- An [`Array`][sonolus.script.array.Array] element type that is not a concrete supported type, such as `Array`
+  without its own type arguments, is now rejected when the array type is parameterized. Equivalent spellings of the
+  element type, such as `int | float`, `Final[int]`, and `Annotated[int, ...]`, are now normalized so that they
+  share a single parameterization.
+- An `Array` size that is negative or not an integer is now rejected.
+- Fixed a `@streams` data field annotated with a plain type such as `int` being silently dropped.
+- [`@streams`][sonolus.script.stream.streams] now reports the offending field name in every declaration error, and
+  correctly distinguishes a field annotated with `Annotated[...]` from one with a real default value.
+- The declaration decorators ([`@options`][sonolus.script.options.options], [`@skin`][sonolus.script.sprite.skin],
+  [`@buckets`][sonolus.script.bucket.buckets], `@streams`, ...) now reject a base class other than `object`;
+  previously, using one caused every inherited declaration to be silently dropped.
+- `round`'s second parameter is now named `ndigits`, matching Python, so `round(x, ndigits=2)` works.
+- Fixed `callable` always returning `False`.
+- Fixed `bool` failing on runtime values, and on values whose `__bool__` returns a `Num`. `bool` of an empty string
+  or `None` now correctly returns `False`.
+- Fixed `reversed()` failing to compile for values whose length is not a compile time constant.
+- `sum` now reports an error for non-numeric values instead of modifying the value passed as `start`.
+- `min` and `max` now honor the `default` argument for `Array`, [`VarArray`][sonolus.script.containers.VarArray],
+  and `range`, which previously ignored it.
+- `map` and `filter` now report a non-iterable argument the same way `iter` and `zip` do.
+- Fixed `isinstance` reporting a `set` or `dict` as a `Record`; `issubclass` rejects those pairings in the same way.
+- Fixed a numeric value returned by `next` on a generator changing when `next` was called again.
+- Fixed an overflow error when raising a float to a large power.
+- Fixed a copied `EntityRef` losing the entity it refers to, which wrote a dangling reference into level data. This
+  affected [`copy()`][sonolus.script.values.copy], including copying an `Array` or `Record` that holds references,
+  and constructing an `Array` directly from references, such as `Array(a.ref(), b.ref())`.
+- Fixed `!=` on an `EntityRef` created by `ref()` comparing fields rather than the referenced entity, so that two
+  references to different entities reported neither equal nor unequal while building level data.
+- Fixed the optimizer removing a block whose only contents were side effects.
 
 ### 0.17.3
 
@@ -23,9 +74,9 @@
 
 ### 0.16.0
 
-- Now targeting Sonolus 1.1.2
-- Added support for multiple z-indexes
-- Added support for option titles
+- Now targeting Sonolus 1.1.2.
+- Added support for multiple z-indexes.
+- Added support for option titles.
 
 ### 0.15.9
 
@@ -89,9 +140,8 @@
 
 ### 0.14.3
 
-
-- Access to a `dict` with a non-compile-time-constant key is now supported when all values are compile time constants of
-a single supported type (numeric, array, or record).
+- Access to a `dict` with a non-compile-time-constant key is now supported when all values are compile time constants
+  of a single supported type (numeric, array, or record).
 - Usage of set literals containing non-numeric types is now supported.
 
 ### 0.14.2
@@ -170,7 +220,7 @@ a single supported type (numeric, array, or record).
 
 ### 0.12.2
 
-- Incorrectly declared resources such as Buckets missing an [`@buckets`][sonolus.script.bucket.buckets] decorator now 
+- Incorrectly declared resources such as Buckets missing an [`@buckets`][sonolus.script.bucket.buckets] decorator now
   result in a helpful error message.
 - [`Record`][sonolus.script.record.Record] classes can now subclass `ABC` or `Protocol` from the Python standard
   library.
@@ -210,7 +260,7 @@ a single supported type (numeric, array, or record).
 ### 0.10.7
 
 - Added support for the `type()` built-in function.
-- Added the [`angle_diff()`][sonolus.script.vec.angle_diff] and 
+- Added the [`angle_diff()`][sonolus.script.vec.angle_diff] and
   [`signed_angle_diff()`][sonolus.script.vec.signed_angle_diff] functions.
 - Added the [`sort_linked_entities()`][sonolus.script.containers.sort_linked_entities] function.
 

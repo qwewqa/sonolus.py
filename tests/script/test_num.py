@@ -1,8 +1,9 @@
+import pytest
 from hypothesis import given
 from hypothesis import strategies as st
 
 from sonolus.script.array import Array
-from tests.script.conftest import run_and_validate
+from tests.script.conftest import run_and_validate, run_compiled
 from tests.script.test_dict import bb
 
 ints = st.integers(min_value=-1000, max_value=1000)
@@ -228,3 +229,37 @@ def test_pow_negative_base_fractional_exponent_does_not_crash_compiler():
         return result
 
     assert run_and_validate(fn) == 42
+
+
+def test_pow_overflow_integral_base_does_not_crash_compiler():
+    # 10.0 ** 400.0 overflows a float; the frontend must defer the fold to a runtime Op.Power
+    # instead of crashing the compiler. An integral base must behave like a fractional one here.
+    def fn():
+        result = 42
+        if bb(0):
+            result = 10.0**400.0
+        return result
+
+    assert run_and_validate(fn) == 42
+
+
+# The frontend defers an overflowing power to a runtime Op.Power, and IR constants are plain Python numbers, so
+# this coerces to float and raises just as CPython's own `10.0 ** 400.0` does. run_and_validate is unusable for
+# these because plain Python raises before the compiled side can be compared.
+# Non-overflowing powers stay covered bit-for-bit by tests/backend/test_fold_kernels.py.
+
+
+def test_overflowing_power_does_not_interpret_as_an_exact_integer():
+    with pytest.raises(OverflowError):
+        run_compiled(lambda: 10.0**400.0)
+
+
+def test_overflowing_augmented_power_does_not_interpret_as_an_exact_integer():
+    # `**=` lowers to the Op.SetPower family, which the same fix had to cover.
+    def fn():
+        result = bb(10.0)
+        result **= 400.0
+        return result
+
+    with pytest.raises(OverflowError):
+        run_compiled(fn)

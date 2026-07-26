@@ -25,6 +25,11 @@ def _rem(a: float, b: float) -> float:
     return math.copysign(abs(a) % abs(b), a)
 
 
+def _pow(base: float, exponent: float) -> float:
+    """``float ** float``, so the runtime's float machine is not modelled with Python's exact integers."""
+    return float(base) ** float(exponent)
+
+
 def _sign(x: float) -> float:
     """JS ``Math.sign``: ``0``/``-0``/``NaN`` map to themselves, otherwise ``+/-1``."""
     if math.isnan(x):
@@ -627,7 +632,7 @@ class Interpreter:
             case Op.NotEqual:
                 return 1.0 if self.run(args[0]) != self.run(args[1]) else 0.0
             case Op.Power:
-                return self.reduce_args(args, operator.pow)
+                return self.reduce_args(args, _pow)
             case Op.Radian:
                 return math.radians(self.run(args[0]))
             case Op.Random:
@@ -688,11 +693,11 @@ class Interpreter:
             case Op.SetRemShifted:
                 return self._set_rmw_shifted(args, _rem)
             case Op.SetPower:
-                return self._set_rmw(args, operator.pow)
+                return self._set_rmw(args, _pow)
             case Op.SetPowerPointed:
-                return self._set_rmw_pointed(args, operator.pow)
+                return self._set_rmw_pointed(args, _pow)
             case Op.SetPowerShifted:
-                return self._set_rmw_shifted(args, operator.pow)
+                return self._set_rmw_shifted(args, _pow)
             case Op.SetPointed:
                 block, index, offset, value = (self.run(arg) for arg in args)
                 block, index, offset = self.ensure_int(block), self.ensure_int(index), self.ensure_int(offset)

@@ -1,17 +1,28 @@
 # Overview
 
 Sonolus.py is a Python library for creating Sonolus engines. This page provides an overview of the key functionality
-available in the library. For detailed information, see the [Reference](../reference/index.md) section.
+available in the library. For detailed information, see [Types](types.md), [Constructs](constructs.md), and
+[Builtins](builtins.md), or the [Reference](../reference/index.md) section for the API listings.
+
+A [`Project`](../reference/sonolus.script.project.md) bundles an [`Engine`](../reference/sonolus.script.engine.md)
+with the levels it can play. An engine's behavior is split across up to four modes: play mode, watch mode,
+preview mode, and tutorial mode. Play, watch, and preview modes are driven by archetypes, classes that describe a kind
+of entity and the callbacks Sonolus invokes for entities of that archetype; tutorial mode instead defines standalone
+`preprocess`, `navigate`, and `update` callbacks. See the [Project](project.md) page for how these pieces fit together
+in a project's file layout, and [Resources & Declarations](resources.md) for how engines declare skins, particles,
+options, and other resources.
 
 ## Language
 
 Sonolus.py compiles Python code into Sonolus nodes. It supports a subset of Python including
 most syntax and a portion of the standard library. Additionally, Sonolus.py provides its own library of types and
-functions that are designed for use in Sonolus engines.
+functions that are designed for use in Sonolus engines. See [Constructs](constructs.md) for what is and is not
+supported.
 
 ### Syntax
 
-Most Python syntax is supported, but there are a few limitations. The primary restrictions are:
+Most Python syntax is supported, but there are a few limitations. The primary restrictions are listed below; see
+[Key Differences](constructs.md#key-differences) for the complete list:
 
 - Destructuring assignment with the `*` operator is unsupported.
 - Sequence (list and array) `match` patterns with the `*` operator are unsupported.
@@ -23,10 +34,11 @@ Most Python syntax is supported, but there are a few limitations. The primary re
 ### Compile Time Evaluation
 
 Sonolus.py will evaluate some expressions at compile time such as basic arithmetic operations on constants,
-boolean logical operations (`and`, `or`, `not`) on constants, and type checks (`isinstance`, `issubclass`).
+boolean logical operations (`and`, `or`, `not`) on constants, and `isinstance` type checks. See
+[Compile Time Evaluation](constructs.md#compile-time-evaluation) for the full list.
 
 In control flow constructs like `if` and `match`, Sonolus.py may determine some branches to be unreachable at compile
-and eliminate them without evaluating them. This allows code like the following to compile successfully:
+time and eliminate them without evaluating them. This allows code like the following to compile successfully:
 
 ```python
 a = 1
@@ -40,7 +52,8 @@ else:
 
 ### Variables
 
-Numeric (`int`, `float`, `bool`) variables are fully supported and can be freely assigned and modified.
+Numeric (`int`, `float`, `bool`) variables are fully supported and can be freely assigned and modified. See
+[Variables](constructs.md#variables) for details.
 
 All other variables have the restriction that if the compiler finds multiple possible values for a variable, it may
 not be accessed. For example, the following code will not compile:
@@ -59,9 +72,9 @@ debug_log(a.x)
 Similar to variables, functions returning `int`, `float`, or `bool` can have any number of return statements. Functions
 returning `None` may also have any number of `return` or `return None` statements.
 
-Functions returning any other type must have exactly one `return` statement, and it must be the only exit point of the
-function [^1]. It is ok, however, for a function to have other `return` statements that are eliminated at compile time.
-For example, the following code will compile successfully:
+Functions returning any other type must only ever return the same value [^1]. Multiple `return` statements are fine
+when they all return that same object, or when the extra ones are eliminated at compile time. See
+[Return Values](constructs.md#return-values) for details. For example, the following code will compile successfully:
 
 ```python
 def fn(a: int | Vec2):
@@ -75,15 +88,18 @@ fn(123)
 
 ## Types
 
+See [Types](types.md) for full details on each of these.
+
 ### Numbers
 
-Sonolus.py supports `int`, `float`, and `bool` types and most of the standard operations such as mathematical operations
-(`+`, `-`, `*`, `/`, `//`, `%`), comparisons (`<`, `<=`, `>`, `>=`, `==`, `!=`), and boolean operations
+Sonolus.py supports the [`int`, `float`, and `bool` types](types.md#num) and most of the standard operations
+such as mathematical operations
+(`+`, `-`, `*`, `/`, `//`, `%`, `**`), comparisons (`<`, `<=`, `>`, `>=`, `==`, `!=`), and boolean operations
 (`and`, `or`, `not`).
 
 ### Record
 
-[`Record`](../reference/sonolus.script.record.md) is the main way to define custom types in Sonolus.py.
+[`Record`](types.md#record) is the main way to define custom types in Sonolus.py.
 It functions similarly to a data class and provides a way to define a type with named fields:
 
 ```python
@@ -104,7 +120,8 @@ record_1 = MyGenericRecord[int](123)
 record_2 = MyGenericRecord(MyRecord(4, 5.6))  # Type arguments are inferred
 ```
 
-Record arguments are retained by reference, so modifying the original record will also modify the record in the array:
+Record arguments are retained by reference, so modifying the original record will also modify the record stored in the
+other record:
 
 ```python
 record_1 = MyRecord(1, 2.3)
@@ -115,7 +132,7 @@ assert record_1.a == record_2.value.a == 789
 
 ### Array
 
-[`Array`](../reference/sonolus.script.array.md) is a type that represents a fixed-size array of elements of a
+[`Array`](types.md#array) is a type that represents a fixed-size array of elements of a
 specific type:
 
 ```python
@@ -134,8 +151,9 @@ assert record_1.a == 1
 
 ### Operations
 
-This section is an overview of the operations available for records and arrays. For full details see the
-[Record documentation](../reference/sonolus.script.record.md) and [Array documentation](../reference/sonolus.script.array.md).
+This section is an overview of the operations available for records and arrays. For full details see
+[Record](types.md#record) and [Array](types.md#array); for the API listings see the
+[Record](../reference/sonolus.script.record.md) and [Array](../reference/sonolus.script.array.md) reference pages.
 
 Records and arrays come with the `==` and `!=` operators predefined to compare their values for equality:
 
@@ -172,7 +190,8 @@ record_1.a = 123
 array_1[1] = 456
 ```
 
-Setting a record field that's a record or array using the `=` operator will modify the field in-place:
+Setting a record field that's a record or array using the `=` operator will modify the field in-place; see
+[Instantiation](types.md#instantiation) for when a field does and does not alias the value it was constructed from:
 
 ```python
 record_1 = MyRecord(1, 2.3)
@@ -192,8 +211,8 @@ assert record_1 == array_1[0] == MyRecord(4, 5.6)
 
 ### Other Types
 
-Sonolus.py has limited support for other types of values such as strings, tuples, and functions. These have restrictions
-such as not being valid as Record field types or Array element types.
+Sonolus.py has limited support for [other types](types.md#transient-types) of values such as strings, tuples, and
+functions. These have restrictions such as not being valid as Record field types or Array element types.
 
 `dict` and `set` are immutable after creation. All dict keys and set members must be compile-time constants. Dicts can
 be created from literals, the `dict()` constructor (from another dict, an iterable of key-value pairs, or keyword
@@ -221,10 +240,10 @@ Sonolus.py provides a number of built-in modules that can be used in Sonolus eng
     - [Options](../reference/sonolus.script.options.md): Engine options.
     - [Particle](../reference/sonolus.script.particle.md): Particle effects.
     - [Sprite](../reference/sonolus.script.sprite.md): Sprites and skins.
-    - [UI](../reference/sonolus.script.ui.md): Engine ui configuration.
+    - [UI](../reference/sonolus.script.ui.md): Engine UI configuration.
 - Sonolus Runtime
     - [Globals](../reference/sonolus.script.globals.md): Level data and level memory definition.
-    - [Runtime](../reference/sonolus.script.runtime.md): Runtime functions like time and ui configuration.
+    - [Runtime](../reference/sonolus.script.runtime.md): Runtime functions like time and UI configuration.
     - [Stream](../reference/sonolus.script.stream.md): Data streams recorded in play mode and used in watch mode.
     - [Text](../reference/sonolus.script.text.md): Standard Sonolus text constants.
     - [Timing](../reference/sonolus.script.timing.md): Beat and timescale related functions.
@@ -241,6 +260,7 @@ Sonolus.py provides a number of built-in modules that can be used in Sonolus eng
     - [Interval](../reference/sonolus.script.interval.md): Mathematical intervals.
     - [Iterator](../reference/sonolus.script.iterator.md): Iterators over collections.
     - [Maybe](../reference/sonolus.script.maybe.md): Optional function return values.
+    - [Metadata](../reference/sonolus.script.metadata.md): Localized text and tags for engines and levels.
     - [Numtools](../reference/sonolus.script.numtools.md): Additional numeric utilities.
     - [Printing](../reference/sonolus.script.printing.md): Preview mode number printing.
     - [Quad](../reference/sonolus.script.quad.md): Quadrilaterals.

@@ -497,6 +497,10 @@ def callback[T: Callable](*, order: int = 0) -> Callable[[T], T]:
 
     Callbacks are executed from lowest to highest order. By default, callbacks have an order of 0.
 
+    Note:
+        Only `preprocess`, `spawn_order`, `update_sequential`, and `touch` support a non-zero order. Using a
+        non-zero order on any other archetype callback raises an error at compile time.
+
     Usage:
         ```python
         class MyArchetype(PlayArchetype):
@@ -642,7 +646,8 @@ class _BaseArchetype(metaclass=_BaseArchetypeMeta):
     name: ClassVar[str | None] = None
     """The name of the archetype.
 
-    If not set, the name will be the class name.
+    If not set, defaults to the class name with the leading `Play`, `Watch`, or `Preview` prefix for this
+    archetype's mode removed, if present.
 
     The name is used in level data.
     """
@@ -690,8 +695,8 @@ class _BaseArchetype(metaclass=_BaseArchetypeMeta):
 
         Args:
             index: The index of the entity to reference.
-            check: If true, raises an error if the entity at the index is not of this archetype or of a subclass of
-                   this archetype. If false, no validation is performed.
+            check: If true and runtime checks are enabled, asserts that the entity at the index is of this
+                   archetype or of a subclass of this archetype. If false, no validation is performed.
 
         Returns:
             The entity at the given index.
@@ -764,6 +769,8 @@ class _BaseArchetype(metaclass=_BaseArchetypeMeta):
     def spawn(cls, **kwargs: Any) -> None:
         """Spawn an entity of this archetype, injecting the given values into entity memory.
 
+        Entity memory fields not passed as keyword arguments are initialized to zero.
+
         Usage:
             ```python
             class MyArchetype(PlayArchetype):
@@ -774,7 +781,7 @@ class _BaseArchetype(metaclass=_BaseArchetypeMeta):
             ```
 
         Args:
-            **kwargs: Entity memory values to inject by field name as defined in the Archetype.
+            **kwargs: Entity memory values to inject by field name as defined in the archetype.
         """
         cls._init_fields()
         if not ctx():
@@ -1034,6 +1041,8 @@ class _BaseArchetype(metaclass=_BaseArchetypeMeta):
         whether it is scored. Compared to manually subclassing, this method also enables faster compilation when
         the same base archetype has multiple derived archetypes by compiling callbacks only once for the base archetype.
 
+        This cannot be called on an archetype that was itself created by `derive`.
+
         Args:
             name: The name of the new archetype.
             is_scored: Whether the new archetype is scored.
@@ -1103,7 +1112,8 @@ class PlayArchetype(_BaseArchetype):
     life: ClassVar[LifeInfo]
     """How entities of this archetype contribute to life depending on judgment.
 
-    Alias for archetype_life, provided for backwards compatibility.
+    Alias for [`archetype_life`][sonolus.script.archetype.PlayArchetype.archetype_life], provided for backwards
+    compatibility.
     """
 
     archetype_life: ClassVar[LifeInfo]
@@ -1112,7 +1122,8 @@ class PlayArchetype(_BaseArchetype):
     entity_life: LifeInfo
     """How this specific entity contributes to life depending on judgment.
 
-    This is additive with archetype_life - the total life increment is the sum of both.
+    This is additive with [`archetype_life`][sonolus.script.archetype.PlayArchetype.archetype_life] - the total
+    life increment is the sum of both.
     """
 
     archetype_score_multiplier: ClassVar[float]
@@ -1291,7 +1302,8 @@ class WatchArchetype(_BaseArchetype):
     life: ClassVar[LifeInfo]
     """How entities of this archetype contribute to life depending on judgment.
 
-    Alias for archetype_life, provided for backwards compatibility.
+    Alias for [`archetype_life`][sonolus.script.archetype.WatchArchetype.archetype_life], provided for backwards
+    compatibility.
     """
 
     archetype_life: ClassVar[LifeInfo]
@@ -1300,7 +1312,8 @@ class WatchArchetype(_BaseArchetype):
     entity_life: LifeInfo
     """How this specific entity contributes to life depending on judgment.
 
-    This is additive with archetype_life - the total life increment is the sum of both.
+    This is additive with [`archetype_life`][sonolus.script.archetype.WatchArchetype.archetype_life] - the total
+    life increment is the sum of both.
     """
 
     archetype_score_multiplier: ClassVar[float]
@@ -1344,12 +1357,12 @@ class WatchArchetype(_BaseArchetype):
 
         This is where logic affecting shared memory should be placed.
         Other logic should typically be placed in
-        [`update_parallel`][sonolus.script.archetype.PlayArchetype.update_parallel] for better performance.
+        [`update_parallel`][sonolus.script.archetype.WatchArchetype.update_parallel] for better performance.
         """
         self._delegate("update_sequential")
 
     def update_parallel(self):
-        """Parallel update callback.
+        """Perform parallel actions for this frame.
 
         Runs after [`update_sequential`][sonolus.script.archetype.WatchArchetype.update_sequential] each frame.
 
@@ -1415,7 +1428,6 @@ class PreviewArchetype(_BaseArchetype):
         ```python
         class MyArchetype(PreviewArchetype):
             imported_field: int = imported()
-            entity_memory_field: int = entity_memory()
             shared_memory_field: int = shared_memory()
 
             @callback(order=1)
@@ -1438,7 +1450,7 @@ class PreviewArchetype(_BaseArchetype):
     def render(self):
         """Render the entity.
 
-        Runs after `preprocess`.
+        Runs after [`preprocess`][sonolus.script.archetype.PreviewArchetype.preprocess].
         """
         self._delegate("render")
 
@@ -1541,7 +1553,10 @@ class LifeInfo(Record):
         good_increment: int | None = None,
         miss_increment: int | None = None,
     ):
-        """Update the life increments."""
+        """Update the life increments.
+
+        Arguments left as None do not change the corresponding increment.
+        """
         if perfect_increment is not None:
             self.perfect_increment = perfect_increment
         if great_increment is not None:
@@ -1553,7 +1568,7 @@ class LifeInfo(Record):
 
 
 ArchetypeLife = LifeInfo
-"""Alias for LifeInfo, kept for backwards compatibility."""
+"""Alias for [`LifeInfo`][sonolus.script.archetype.LifeInfo], kept for backwards compatibility."""
 
 
 class HapticType(IntEnum):
@@ -1576,17 +1591,42 @@ class HapticType(IntEnum):
 
 
 class PlayEntityInput(Record):
+    """The judgment result recorded for an entity in play mode.
+
+    Accessed as [`result`][sonolus.script.archetype.PlayArchetype.result] on a scored entity, and written to in
+    order to report how the entity was hit.
+    """
+
     judgment: Judgment
+    """The [`Judgment`][sonolus.script.bucket.Judgment] recorded for the entity."""
+
     accuracy: float
+    """The accuracy value recorded for the entity."""
+
     bucket: Bucket
+    """The [`Bucket`][sonolus.script.bucket.Bucket] the entity's result is recorded in."""
+
     bucket_value: float
+    """The value recorded in `bucket`, shown with that bucket's unit."""
+
     haptic: HapticType
+    """The [`HapticType`][sonolus.script.archetype.HapticType] of haptic feedback for the entity."""
 
 
 class WatchEntityInput(Record):
+    """The judgment result recorded for an entity in watch mode.
+
+    Accessed as [`result`][sonolus.script.archetype.WatchArchetype.result] on a scored entity.
+    """
+
     target_time: float
+    """The target time of the entity's hit."""
+
     bucket: Bucket
+    """The [`Bucket`][sonolus.script.bucket.Bucket] the entity's result is recorded in."""
+
     bucket_value: float
+    """The value recorded in `bucket`, shown with that bucket's unit."""
 
 
 class EntityRef[A: _BaseArchetype](Record):
@@ -1613,13 +1653,23 @@ class EntityRef[A: _BaseArchetype](Record):
 
     def with_archetype[T: _BaseArchetype](self, archetype: type[T]) -> EntityRef[T]:
         """Return a new reference with the given archetype type."""
-        return EntityRef[archetype](index=self.index)
+        result = EntityRef[archetype](index=self.index)
+        if hasattr(self, "_ref_"):
+            # Preserve the referenced entity so the new reference isn't dangling in level data.
+            result._ref_ = self._ref_
+        return result
 
     @meta_fn
     def __eq__(self, other: Any) -> bool:
         if not ctx() and hasattr(self, "_ref_") and hasattr(other, "_ref_"):
             return self._ref_ is other._ref_
         return super().__eq__(other)
+
+    @meta_fn
+    def __ne__(self, other: Any) -> bool:
+        if not ctx() and hasattr(self, "_ref_") and hasattr(other, "_ref_"):
+            return self._ref_ is not other._ref_
+        return super().__ne__(other)
 
     def __hash__(self) -> int:
         if not ctx() and hasattr(self, "_ref_"):
@@ -1637,8 +1687,8 @@ class EntityRef[A: _BaseArchetype](Record):
         """Get the entity this reference points to.
 
         Args:
-            check: If true, raises an error if the referenced entity is not of this archetype or of a subclass of
-                   this archetype. If false, no validation is performed.
+            check: If true and runtime checks are enabled, asserts that the referenced entity is of this
+                   archetype or of a subclass of this archetype. If false, no validation is performed.
 
         Returns:
             The entity this reference points to.
@@ -1652,7 +1702,11 @@ class EntityRef[A: _BaseArchetype](Record):
 
     @meta_fn
     def get_as(self, archetype: type[_BaseArchetype]) -> _BaseArchetype:
-        """Get the entity as the given archetype type."""
+        """Get the entity as the given archetype type.
+
+        Not supported for a reference created by [`ref`][sonolus.script.archetype.PlayArchetype.ref] while
+        building level data.
+        """
         if getattr(self, "_ref_", None):
             raise TypeError("Using get_as in level data is not supported.")
         return self.with_archetype(archetype).get()
@@ -1687,6 +1741,14 @@ class EntityRef[A: _BaseArchetype](Record):
         super()._copy_from_(value)
         if hasattr(value, "_ref_"):
             self._ref_ = value._ref_
+        else:
+            self.__dict__.pop("_ref_", None)
+
+    def _copy_(self) -> Self:
+        result = super()._copy_()
+        if hasattr(self, "_ref_"):
+            result._ref_ = self._ref_
+        return result
 
     @classmethod
     def _accepts_(cls, value: Any) -> bool:
@@ -1700,10 +1762,7 @@ class EntityRef[A: _BaseArchetype](Record):
     def _accept_(cls, value: Any) -> Self:
         if not cls._accepts_(value):
             raise TypeError(f"Expected {cls}, got {type(value)}")
-        result = value.with_archetype(cls.archetype())
-        if hasattr(value, "_ref_"):
-            result._ref_ = value._ref_
-        return result
+        return value.with_archetype(cls.archetype())
 
     @classmethod
     def _validate_parameterized_(cls):

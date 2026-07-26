@@ -67,21 +67,25 @@ class Pair[T, U](Record):
     """The second value."""
 
     def __lt__(self, other):
+        """Return whether this pair is less than the other, comparing `first` then `second`."""
         if self.first == other.first:
             return self.second < other.second
         return self.first < other.first
 
     def __le__(self, other):
+        """Return whether this pair is less than or equal to the other, comparing `first` then `second`."""
         if self.first == other.first:
             return self.second <= other.second
         return self.first <= other.first
 
     def __gt__(self, other):
+        """Return whether this pair is greater than the other, comparing `first` then `second`."""
         if self.first == other.first:
             return self.second > other.second
         return self.first > other.first
 
     def __ge__(self, other):
+        """Return whether this pair is greater than or equal to the other, comparing `first` then `second`."""
         if self.first == other.first:
             return self.second >= other.second
         return self.first >= other.first
@@ -146,7 +150,7 @@ class VarArray[T, Capacity](Record, ArrayLike[T]):
 
             For example:
             ```python
-            a = VarArray[Pair, 10].new()
+            a = VarArray[Pair[int, int], 10].new()
             a.append(Pair(1, 2))
             a.append(Pair(3, 4))
             a.append(Pair(5, 6))
@@ -168,6 +172,8 @@ class VarArray[T, Capacity](Record, ArrayLike[T]):
     def append(self, value: T):
         """Append a copy of the given value to the end of the array.
 
+        Must not be called if the array is full.
+
         Args:
             value: The value to append.
         """
@@ -187,7 +193,9 @@ class VarArray[T, Capacity](Record, ArrayLike[T]):
         self._size += 1
 
     def extend(self, values: ArrayLike[T]):
-        """Appends copies of the values in the given array to the end of the array.
+        """Append copies of the values in the given array to the end of the array.
+
+        Must not be called if there is not enough remaining capacity.
 
         Args:
             values: The values to append.
@@ -222,6 +230,8 @@ class VarArray[T, Capacity](Record, ArrayLike[T]):
 
         Preserves the relative order of the elements.
 
+        Must not be called if the array is full.
+
         Args:
             index: The index at which to insert the value. Must be in the range [0, size].
             value: The value to insert.
@@ -239,7 +249,7 @@ class VarArray[T, Capacity](Record, ArrayLike[T]):
         Preserves the relative order of the elements.
 
         Args:
-            value: The value to remove
+            value: The value to remove.
 
         Returns:
             True if the value was removed, False otherwise.
@@ -258,13 +268,13 @@ class VarArray[T, Capacity](Record, ArrayLike[T]):
         self._size = 0
 
     def set_add(self, value: T) -> bool:
-        """Adds a copy of the given value if it is not already present, returning whether the value was added.
+        """Add a copy of the given value if it is not already present, returning whether the value was added.
 
         If the value is already present, the array is not modified.
         If the array is full, the value is not added.
 
         Args:
-            value: The value to add
+            value: The value to add.
 
         Returns:
             True if the value was added, False otherwise.
@@ -277,12 +287,12 @@ class VarArray[T, Capacity](Record, ArrayLike[T]):
         return True
 
     def set_remove(self, value: T) -> bool:
-        """Removes the first occurrence of the given value, returning whether the value was removed.
+        """Remove the first occurrence of the given value, returning whether the value was removed.
 
         Does not preserve the relative order of the elements.
 
         Args:
-            value: The value to remove
+            value: The value to remove.
 
         Returns:
             True if the value was removed, False otherwise.
@@ -296,7 +306,7 @@ class VarArray[T, Capacity](Record, ArrayLike[T]):
         return True
 
     def __iadd__(self, other):
-        """Appends copies of the values in the given array to the end of the array."""
+        """Append copies of the values in the given array to the end of the array."""
         self.extend(other)
         return self
 
@@ -319,9 +329,29 @@ class VarArray[T, Capacity](Record, ArrayLike[T]):
         raise TypeError("unhashable type: 'VarArray'")
 
     def get_unchecked(self, index: Num) -> T:
+        """Get the element at the given index possibly without bounds checking or conversion of negative indexes.
+
+        The compiler may still determine that the index is out of bounds and throw an error, but it may skip these
+        checks at runtime.
+
+        Args:
+            index: The index to get.
+
+        Returns:
+            The element at the given index.
+        """
         return self._array.get_unchecked(index)
 
     def set_unchecked(self, index: Num, value: T):
+        """Set the element at the given index possibly without bounds checking or conversion of negative indexes.
+
+        The compiler may still determine that the index is out of bounds and throw an error, but it may skip these
+        checks at runtime.
+
+        Args:
+            index: The index to set.
+            value: The value to set.
+        """
         self._array.set_unchecked(index, value)
 
 
@@ -363,17 +393,44 @@ class ArrayPointer[T](Record, ArrayLike[T]):
         )
 
     def __getitem__(self, item) -> T:
+        """Return the item at the given index, where a negative index counts from the end of the array."""
         return self.get_unchecked(get_positive_index(item, self.size))
 
     def __setitem__(self, key: int, value: T):
+        """Set the value of the item at the given index.
+
+        Args:
+            key: The index of the item. A negative index counts from the end of the array.
+            value: The value to set.
+        """
         self.set_unchecked(get_positive_index(key, self.size), value)
 
     @meta_fn
     def get_unchecked(self, item: int) -> T:
+        """Get the element at the given index possibly without bounds checking or conversion of negative indexes.
+
+        The compiler may still determine that the index is out of bounds and throw an error, but it may skip these
+        checks at runtime.
+
+        Args:
+            item: The index to get.
+
+        Returns:
+            The element at the given index.
+        """
         return self._get_item(item)._get_()
 
     @meta_fn
     def set_unchecked(self, key: int, value: T):
+        """Set the element at the given index possibly without bounds checking or conversion of negative indexes.
+
+        The compiler may still determine that the index is out of bounds and throw an error, but it may skip these
+        checks at runtime.
+
+        Args:
+            key: The index to set.
+            value: The value to set.
+        """
         dst = self._get_item(key)
         if self.element_type()._is_value_type_():
             dst._set_(value)
@@ -454,11 +511,31 @@ class ArraySet[T, Capacity](Record):
 
 
 class FrozenNumSet[Size](Record):
+    """A fixed-size collection of numeric values, supporting membership testing with `in`.
+
+    Usage:
+        ```python
+        FrozenNumSet.of(value_1, value_2, ...)  # Create a set from the given values
+        ```
+
+    Examples:
+        ```python
+        s = FrozenNumSet.of(1, 2, 3)
+        assert 2 in s
+        assert 4 not in s
+        ```
+    """
+
     _values: Array[Num, Size]
 
     @classmethod
     @meta_fn
     def of(cls, *values: Num) -> Self:
+        """Create a set containing the given values.
+
+        Duplicate values are kept rather than collapsed, so `len` and iteration report every value passed in.
+        Membership testing is unaffected.
+        """
         if ctx():
             try:
                 num_values = [Num._accept_(v) for v in values]
@@ -476,9 +553,11 @@ class FrozenNumSet[Size](Record):
         return cls(arr)
 
     def __len__(self) -> int:
+        """Return the number of values in the set."""
         return len(self._values)
 
     def __contains__(self, value: Num) -> bool:
+        """Return whether the given value is present in the set."""
         if len(self) < 16:
             return value in self._as_tuple()
         else:
@@ -496,6 +575,7 @@ class FrozenNumSet[Size](Record):
             return False
 
     def __iter__(self) -> SonolusIterator[Num]:
+        """Return an iterator over the values in the set."""
         return self._values.__iter__()
 
     @meta_fn
@@ -575,7 +655,7 @@ class ArrayMap[K, V, Capacity](Record):
         The returned value continues to be part of the map.
         Future modifications to the map will affect the returned value.
 
-        Notes:
+        Note:
             Future modifications to the map may cause unexpected changes to the returned value.
             If the map may be modified in the future, it's recommended to make a copy of the value.
 
@@ -600,12 +680,12 @@ class ArrayMap[K, V, Capacity](Record):
     def __setitem__(self, key: K, value: V):
         """Associate the given key with the given value.
 
-        If the key is already present in the map, the value is updated.
-        Must not be called if the map is full.
+        If the key is already present in the map, the value is updated, even if the map is full.
+        Must not be called with a new key if the map is full.
 
         Args:
             key: The key to associate with the value.
-            value: The value to associate with the key
+            value: The value to associate with the key.
         """
         for i in range(self._size):
             entry = self._array.get_unchecked(i)
@@ -619,10 +699,11 @@ class ArrayMap[K, V, Capacity](Record):
     def __delitem__(self, key: K):
         """Remove the key-value pair associated with the given key.
 
-        Must be called with a key that is present in the map.
+        Must be called with a key that is present in the map. If the key is not present, the current callback is
+        terminated, even when runtime checks are disabled.
 
         Args:
-            key: The key to remove
+            key: The key to remove.
         """
         for i in range(self._size):
             entry = self._array.get_unchecked(i)
@@ -637,7 +718,7 @@ class ArrayMap[K, V, Capacity](Record):
         """Return whether the given key is present in the map.
 
         Args:
-            key: The key to check for
+            key: The key to check for.
 
         Returns:
             True if the key is present, False otherwise.
@@ -650,13 +731,14 @@ class ArrayMap[K, V, Capacity](Record):
     def pop(self, key: K) -> V:
         """Remove and return a copy of the value associated with the given key.
 
-        Must be called with a key that is present in the map.
+        Must be called with a key that is present in the map. If the key is not present, the current callback is
+        terminated, even when runtime checks are disabled.
 
         Args:
-            key: The key to remove
+            key: The key to remove.
 
         Returns:
-            The value associated with the key
+            The value associated with the key.
         """
         for i in range(self._size):
             entry = self._array.get_unchecked(i)
@@ -669,7 +751,10 @@ class ArrayMap[K, V, Capacity](Record):
         error()
 
     def clear(self):
-        """Clear the map, removing all key-value pairs."""
+        """Clear the map, removing all key-value pairs.
+
+        No behavior is guaranteed regarding the value of existing references to values in the map.
+        """
         self._size = 0
 
 

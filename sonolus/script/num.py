@@ -425,7 +425,10 @@ class _Num(Value, metaclass=_NumMeta):
             b_py = b._as_py_or_none()
             if a_py is not None and b_py is not None:
                 try:
-                    result = a_py**b_py
+                    # Fold with float semantics: _as_py_ yields an int for integral values, and
+                    # Python's arbitrary-precision int power would not raise OverflowError here,
+                    # so the guard below would be bypassed and Num(result) would fail instead.
+                    result = float(a_py) ** float(b_py)
                 except (OverflowError, ZeroDivisionError):
                     # OverflowError: result too large; ZeroDivisionError: 0 ** negative.
                     # Defer to Op.Power so the runtime yields its IEEE value instead of

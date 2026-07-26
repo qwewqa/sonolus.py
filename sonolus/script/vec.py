@@ -241,6 +241,7 @@ class Vec2(Record):
 
     @perf_meta_fn
     def __rmul__(self, other):
+        """Multiply this vector by a scalar and return a new vector."""
         match other:
             case Num(factor):
                 return Vec2._unchecked(x=self.x * factor, y=self.y * factor)

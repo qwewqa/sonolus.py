@@ -1,36 +1,42 @@
 # Builtins
 Sonolus.py comes with support for a number of built-in functions.
-The supported functions and parameters are listed below.
+The supported functions and parameters are listed below; see the [builtins](../reference/builtins.md) reference for
+full signatures.
 
 - `abs(x)`
-- `bool(object)`
+- `all(iterable)`
+- `any(iterable)`
+- `bool(x=False)`
 - `callable(object)`
 - `dict()`, `dict(mapping, **kwargs)`, `dict(iterable, **kwargs)`, `dict(**kwargs)` (keys must be compile-time constants)
 - `enumerate(iterable, start=0)`
 - `filter(function, iterable)`
-- `float(x)` (for a num argument)
+- `float(x=0.0)` (for a num argument)
 - `getattr(object, name[, default])`
 - `hasattr(object, name)`
-- `int(x)` (for a num argument)
+- `int(x=0)` (for a num argument)
 - `isinstance(object, classinfo)`
-- `issubclass(class, classinfo)`
-- `iter(iterable)`
+- `issubclass(cls, classinfo)`
+- `iter(iterable)` (not supported for a `tuple`, `dict`, `set`, or enum class)
 - `len(s)`
-- `map(function, iterable)`
+- `map(function, iterable, *iterables)`
 - `max(iterable, *, default=..., key=None)`, `max(arg1, arg2, *args, key=None)`
 - `min(iterable, *, default=..., key=None)`, `min(arg1, arg2, *args, key=None)`
-- `next(iterator)`
+- `next(iterator)` (see [reusing iterators](constructs.md#reusing-iterators))
 - `range(stop)`, `range(start, stop[, step])`
 - `reversed(seq)`
 - `round(number[, ndigits])`
 - `set()`, `set(iterable)` (members must be compile-time constants)
 - `setattr(object, name, value)`
-- `sum(iterable, start=0)`
+- `sum(iterable, start=0)` (numeric values only)
 - `super(type[, object-or-type])`
-- `zip(*iterables)`
+- `type(object)`
+- `zip(*iterables, strict=False)` (`strict=True` is not supported)
 
 ## Standard library modules
-Sonolus.py also comes with support for some standard library modules.
+Sonolus.py also comes with support for some standard library modules. Each has a corresponding reference page with
+full signatures: [math](../reference/math.md), [random](../reference/random.md), and
+[typing](../reference/typing.md).
 
 ### math
 - `sin(x)`
@@ -56,7 +62,7 @@ Sonolus.py also comes with support for some standard library modules.
 - `inf`
 
 ### random
-- `randrange(stop)`, `random.randrange(start, stop[, step])`
+- `randrange(stop)`, `randrange(start, stop[, step])`
 - `randint(a, b)`
 - `choice(seq)`
 - `shuffle(seq)`

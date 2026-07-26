@@ -571,3 +571,306 @@ def test_match_class_duplicate_positional_and_keyword_attr_rejected():
 
     with pytest.raises(CompilationError, match="multiple sub-patterns for attribute"):
         run_compiled(fn)
+
+
+def test_match_capture_is_loop_carried_in_while():
+    def fn():
+        total = 0
+        x = 0
+        i = 0
+        while i < 4:
+            total = total * 10 + x
+            debug_log(x)
+            match i:
+                case x:
+                    pass
+            i += 1
+        return total
+
+    assert run_and_validate(fn) == 12
+
+
+def test_match_capture_is_loop_carried_in_for():
+    def fn():
+        total = 0
+        x = 0
+        for i in range(4):
+            total = total * 10 + x
+            debug_log(x)
+            match i:
+                case x:
+                    pass
+        return total
+
+    assert run_and_validate(fn) == 12
+
+
+def test_match_as_capture_is_loop_carried():
+    def fn():
+        total = 0
+        z = 0
+        i = 0
+        while i < 3:
+            total = total * 10 + z
+            match i:
+                case 0 | 1 | 2 as z:
+                    pass
+            i += 1
+        return total
+
+    assert run_and_validate(fn) == 1
+
+
+def test_match_capture_nested_under_as_is_loop_carried():
+    def fn():
+        total = 0
+        b = 0
+        i = 0
+        while i < 4:
+            total = total * 10 + b
+            debug_log(b)
+            match (i, i + 1):
+                case (_, b) as whole:  # noqa: F841
+                    pass
+            i += 1
+        return total
+
+    assert run_and_validate(fn) == 123
+
+
+def test_match_dict_subject_does_not_match_sequence_pattern():
+    def fn():
+        d = {0: 10, 1: 20}
+        match d:
+            case [10, 20]:
+                return 100
+            case _:
+                return 200
+
+    assert run_and_validate(fn) == 200
+
+
+def test_match_dict_subject_sequence_capture_falls_through():
+    def fn():
+        d = {0: 10, 1: 20}
+        match d:
+            case [a, b]:
+                return a * 1000 + b
+            case _:
+                return -1
+
+    assert run_and_validate(fn) == -1
+
+
+def test_match_dict_subject_with_non_zero_keys_falls_through():
+    def fn():
+        d = {1: 10, 2: 20}
+        match d:
+            case [a, b]:
+                return a * 1000 + b
+            case _:
+                return 2
+
+    assert run_and_validate(fn) == 2
+
+
+def test_match_dict_nested_in_tuple_does_not_match_sequence_pattern():
+    def fn():
+        d = {0: 5}
+        match (d,):
+            case [[5]]:
+                return 1
+            case _:
+                return 2
+
+    assert run_and_validate(fn) == 2
+
+
+def test_match_enum_class_subject_does_not_match_sequence_pattern():
+    def fn():
+        match Color:
+            case [_, _, _]:
+                return 1
+            case _:
+                return 2
+
+    assert run_and_validate(fn) == 2
+
+
+def test_match_empty_list_pattern_against_empty_tuple():
+    def fn():
+        t = ()
+        match t:
+            case []:
+                return 1
+            case _:
+                return 2
+
+    assert run_and_validate(fn) == 1
+
+
+def test_match_empty_tuple_pattern_against_empty_tuple():
+    def fn():
+        t = ()
+        match t:
+            case ():
+                return 10
+            case _:
+                return 20
+
+    assert run_and_validate(fn) == 10
+
+
+def test_match_empty_sequence_pattern_against_empty_array():
+    def fn():
+        a = Array[Num, 0]()
+        match a:
+            case []:
+                return 1
+            case _:
+                return 2
+
+    assert run_and_validate(fn) == 1
+
+
+def test_match_empty_sequence_pattern_with_guard():
+    def fn():
+        t = ()
+        x = 0
+        match t:
+            case [] if x > 5:
+                return 1
+            case []:
+                return 2
+            case _:
+                return 3
+
+    assert run_and_validate(fn) == 2
+
+
+def test_match_empty_sequence_pattern_against_non_empty_tuple():
+    def fn():
+        t = (1, 2)
+        match t:
+            case []:
+                return 1
+            case _:
+                return 2
+
+    assert run_and_validate(fn) == 2
+
+
+def test_match_sequence_pattern_with_trailing_star_rejected():
+    def fn():
+        t = (1, 2, 3)
+        match t:
+            case [a, *rest]:  # noqa: F841
+                return a
+            case _:
+                return -1
+
+    with pytest.raises(CompilationError, match="Star sub-patterns"):
+        run_compiled(fn)
+
+
+def test_match_sequence_pattern_with_star_in_middle_rejected():
+    def fn():
+        t = (1, 2, 3)
+        match t:
+            case [a, *mid, b]:  # noqa: F841
+                return a + b
+            case _:
+                return -1
+
+    with pytest.raises(CompilationError, match="Star sub-patterns"):
+        run_compiled(fn)
+
+
+def test_match_sequence_pattern_with_only_star_rejected():
+    def fn():
+        t = (1, 2, 3)
+        match t:
+            case [*rest]:
+                return len(rest)
+            case _:
+                return -1
+
+    with pytest.raises(CompilationError, match="Star sub-patterns"):
+        run_compiled(fn)
+
+
+def test_match_sequence_pattern_with_anonymous_star_rejected():
+    def fn():
+        t = (1, 2, 3)
+        match t:
+            case [1, *_]:
+                return 1
+            case _:
+                return -1
+
+    with pytest.raises(CompilationError, match="Star sub-patterns"):
+        run_compiled(fn)
+
+
+def test_match_nested_sequence_pattern_with_star_rejected():
+    def fn():
+        t = (1, 2)
+        match t:
+            case [[x, *rest]]:  # noqa: F841
+                return x
+            case _:
+                return -1
+
+    with pytest.raises(CompilationError, match="Star sub-patterns"):
+        run_compiled(fn)
+
+
+def test_match_sequence_pattern_with_star_on_non_sequence_subject_rejected():
+    def fn():
+        d = {0: 10, 1: 20}
+        match d:
+            case [a, *rest]:  # noqa: F841
+                return a
+            case _:
+                return -1
+
+    with pytest.raises(CompilationError, match="Star sub-patterns"):
+        run_compiled(fn)
+
+
+def test_match_sequence_pattern_without_star_still_matches():
+    def fn():
+        t = (1, 2, 3)
+        match t:
+            case [a, b, c]:
+                return a * 100 + b * 10 + c
+            case _:
+                return -1
+
+    assert run_and_validate(fn) == 123
+
+
+def test_match_sequence_pattern_without_star_length_mismatch_falls_through():
+    def fn():
+        t = (1, 2, 3)
+        match t:
+            case [a, b]:
+                return a * 10 + b
+            case [a, b, c]:
+                return a * 100 + b * 10 + c
+            case _:
+                return -1
+
+    assert run_and_validate(fn) == 123
+
+
+def test_match_nested_sequence_pattern_without_star_still_matches():
+    def fn():
+        t = ((1, 2), 3)
+        match t:
+            case [[a, b], c]:
+                return a * 100 + b * 10 + c
+            case _:
+                return -1
+
+    assert run_and_validate(fn) == 123

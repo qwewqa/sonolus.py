@@ -41,9 +41,12 @@ A typical project structure might look like this:
 my_engine/
     __init__.py
     project.py
-    common/
+    level.py
+    lib/
         ...
     play/
+        ...
+    watch/
         ...
     preview/
         ...
@@ -55,6 +58,9 @@ resources/
 
 ## Modes
 Modes are defined using the [`PlayMode`][sonolus.script.engine.PlayMode], [`WatchMode`][sonolus.script.engine.WatchMode], [`PreviewMode`][sonolus.script.engine.PreviewMode], and [`TutorialMode`][sonolus.script.engine.TutorialMode] classes.
+
+The `skin`, `effects`, `particles`, `buckets`, and `instructions` classes passed to these constructors are declared as
+shown in [Resources & Declarations](resources.md).
 
 ### Play Mode
 
@@ -217,8 +223,21 @@ my_level = Level(
 )
 ```
 
-## Resources
+## Localization
+`title`, `subtitle`, `author`, and `description` on [`Engine`][sonolus.script.engine.Engine], and `title`, `artists`,
+`author`, and `description` on [`Level`][sonolus.script.level.Level], accept either a plain string or a
+[`LocalizationText`][sonolus.script.metadata.LocalizationText] dict keyed by [locale
+code][sonolus.script.metadata.Locale]
+to per-locale text; see [`AnyText`][sonolus.script.metadata.AnyText].
+
+Individual engine resources (bucket units, instruction names, and option labels) are localizable in the same way;
+see [Resources & Declarations](resources.md).
+
+## Resource Files
 Resources should be placed in the `resources` directory next to the top-level package of the project.
 
 They can be `.scp` files, regular `.mp3` or `.png` files, or be organized as unpacked Sonolus resources
 (see [sonolus-pack](https://github.com/Sonolus/sonolus-pack)).
+
+For the in-code declarations that consume these files (skins, sound effects, particles) see
+[Resources & Declarations](resources.md). To build, serve, or validate a project, see [Command Line](cli.md).

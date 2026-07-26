@@ -1,9 +1,12 @@
 import pytest
 
 from sonolus.script.array import Array
+from sonolus.script.array_like import ArrayLike
 from sonolus.script.debug import debug_log
 from sonolus.script.internal.error import CompilationError
+from sonolus.script.num import Num
 from sonolus.script.record import Record
+from sonolus.script.vec import Vec2
 from tests.script.conftest import run_and_validate, run_compiled
 
 
@@ -224,4 +227,423 @@ def test_setattr_type_not_supported():
         return 1
 
     with pytest.raises(CompilationError, match="Unsupported field"):
+        run_compiled(fn)
+
+
+def test_issubclass_record_subclass():
+    def fn():
+        return issubclass(MyBox, Record)
+
+    assert run_and_validate(fn)
+
+
+def test_issubclass_not_subclass():
+    def fn():
+        return issubclass(Num, Record)
+
+    assert not run_and_validate(fn)
+
+
+def test_issubclass_generic_specialization():
+    def fn():
+        return issubclass(MyBox[Num], MyBox)
+
+    assert run_and_validate(fn)
+
+
+def test_issubclass_array_like():
+    def fn():
+        return issubclass(Array[Num, 2], ArrayLike)
+
+    assert run_and_validate(fn)
+
+
+def test_issubclass_of_type_result():
+    def fn():
+        return issubclass(type(MyBox(1)), Record)
+
+    assert run_and_validate(fn)
+
+
+def test_issubclass_dict():
+    def fn():
+        return issubclass(dict, dict)
+
+    assert run_and_validate(fn)
+
+
+def test_issubclass_dict_not_set():
+    def fn():
+        return issubclass(dict, set)
+
+    assert not run_and_validate(fn)
+
+
+# dict and set are represented internally by Record subclasses. The builtin aliases must not expose that, since
+# plain Python answers False for every one of these.
+
+
+@pytest.mark.parametrize("builtin", [set, dict, tuple])
+def test_builtin_alias_is_not_a_record_subclass(builtin):
+    def fn():
+        return issubclass(builtin, Record)
+
+    assert not run_and_validate(fn)
+
+
+@pytest.mark.parametrize("value", [{1, 2}, {1: 2}, (1, 2)])
+def test_builtin_alias_value_is_not_a_record_instance(value):
+    def fn():
+        return isinstance(value, Record)
+
+    assert not run_and_validate(fn)
+
+
+def test_issubclass_int_not_supported():
+    def fn():
+        return issubclass(Num, int)
+
+    with pytest.raises(CompilationError, match="use Num instead"):
+        run_compiled(fn)
+
+
+def test_issubclass_instance_not_supported():
+    def fn():
+        return issubclass(MyBox(1), Record)
+
+    with pytest.raises(CompilationError, match="arg 1 must be a class"):
+        run_compiled(fn)
+
+
+def test_isinstance_frozenset_not_supported():
+    # frozenset values are represented as ordinary sets, so there is no frozenset type to check against.
+    s = {1, 2}
+
+    def fn():
+        return isinstance(s, frozenset)
+
+    with pytest.raises(CompilationError, match="against frozenset is not supported"):
+        run_compiled(fn)
+
+
+def test_issubclass_frozenset_not_supported():
+    # A directional check between set and frozenset can't match Python's answer, so it is rejected
+    # rather than answered incorrectly.
+    def fn():
+        return issubclass(frozenset, set)
+
+    with pytest.raises(CompilationError, match="against frozenset is not supported"):
+        run_compiled(fn)
+
+
+def test_issubclass_unhashable_arg_reports_cleanly():
+    # Set and dict values are unhashable, so the type aliases must be compared by identity rather than
+    # by set membership, which would surface an internal error instead of this one.
+    s = {1, 2}
+
+    def fn():
+        return issubclass(s, set)
+
+    with pytest.raises(CompilationError, match="arg 1 must be a class"):
+        run_compiled(fn)
+
+
+def test_isinstance_unhashable_type_arg_reports_cleanly():
+    s = {1, 2}
+
+    def fn():
+        return isinstance(MyBox(1), s)
+
+    with pytest.raises(CompilationError, match="Unsupported type"):
+        run_compiled(fn)
+
+
+def test_issubclass_runtime_class_not_supported():
+    def fn():
+        x = 0
+        for i in range(3):
+            x += i
+        return issubclass(x, Record)
+
+    with pytest.raises(CompilationError, match="arg 1 must be a class known at compile time"):
+        run_compiled(fn)
+
+
+def test_isinstance_runtime_classinfo_not_supported():
+    # Mirrors the issubclass guard below: both fold at compile time, so both reject a runtime classinfo the
+    # same way rather than one of them leaking an internal error.
+    def fn():
+        x = 0
+        for i in range(3):
+            x += i
+        return isinstance(MyBox(1), x)
+
+    with pytest.raises(CompilationError, match="arg 2 must be a class known at compile time"):
+        run_compiled(fn)
+
+
+def test_issubclass_runtime_classinfo_not_supported():
+    def fn():
+        x = 0
+        for i in range(3):
+            x += i
+        return issubclass(MyBox, x)
+
+    with pytest.raises(CompilationError, match="arg 2 must be a class known at compile time"):
+        run_compiled(fn)
+
+
+# classinfo may be a tuple of types, as in Python: the check is true if any member matches. The tuple is a
+# compile-time construct, so the whole thing still folds to a compile-time boolean.
+
+
+def test_isinstance_tuple_matches_first_member():
+    def fn():
+        return isinstance(Vec2(1, 2), (Vec2, Num))
+
+    assert run_and_validate(fn)
+
+
+def test_isinstance_tuple_matches_second_member():
+    def fn():
+        return isinstance(Vec2(1, 2), (Num, Vec2))
+
+    assert run_and_validate(fn)
+
+
+def test_isinstance_tuple_matches_no_member():
+    def fn():
+        return isinstance(Vec2(1, 2), (Num, MyBox))
+
+    assert not run_and_validate(fn)
+
+
+def test_isinstance_single_element_tuple():
+    def fn():
+        return isinstance(Vec2(1, 2), (Vec2,))
+
+    assert run_and_validate(fn)
+
+
+def test_isinstance_empty_tuple():
+    def fn():
+        return isinstance(Vec2(1, 2), ())
+
+    assert not run_and_validate(fn)
+
+
+def test_isinstance_nested_tuple():
+    def fn():
+        return isinstance(Vec2(1, 2), (Num, (MyBox, Vec2)))
+
+    assert run_and_validate(fn)
+
+
+def test_isinstance_nested_tuple_matches_no_member():
+    def fn():
+        return isinstance(Vec2(1, 2), (Num, (MyBox, ArrayLike)))
+
+    assert not run_and_validate(fn)
+
+
+def test_isinstance_tuple_array_like_member():
+    # ArrayLike opts in via _allow_instance_check_ rather than being a Value subclass, so the tuple path has to
+    # accept it too.
+    def fn():
+        return isinstance(Array(1, 2), (Num, ArrayLike))
+
+    assert run_and_validate(fn)
+
+
+def test_isinstance_tuple_dict_alias():
+    def fn():
+        d = {1: 2}
+        return isinstance(d, (dict, Num))
+
+    assert run_and_validate(fn)
+
+
+def test_isinstance_tuple_set_alias():
+    def fn():
+        s = {1, 2}
+        return isinstance(s, (set, Num))
+
+    assert run_and_validate(fn)
+
+
+def test_isinstance_tuple_tuple_alias():
+    def fn():
+        t = (1, 2)
+        return isinstance(t, (tuple, Num))
+
+    assert run_and_validate(fn)
+
+
+def test_isinstance_tuple_int_member_not_supported():
+    # Every member is validated, even one after an earlier match, so the diagnostic doesn't depend on tuple order.
+    def fn():
+        return isinstance(Vec2(1, 2), (Vec2, int))
+
+    with pytest.raises(CompilationError, match="use Num instead"):
+        run_compiled(fn)
+
+
+def test_isinstance_tuple_float_member_not_supported():
+    def fn():
+        return isinstance(Vec2(1, 2), (MyBox, float))
+
+    with pytest.raises(CompilationError, match="use Num instead"):
+        run_compiled(fn)
+
+
+def test_isinstance_tuple_bool_member_not_supported():
+    def fn():
+        return isinstance(Vec2(1, 2), (MyBox, bool))
+
+    with pytest.raises(CompilationError, match="use Num instead"):
+        run_compiled(fn)
+
+
+def test_isinstance_tuple_frozenset_member_not_supported():
+    def fn():
+        return isinstance(Vec2(1, 2), (MyBox, frozenset))
+
+    with pytest.raises(CompilationError, match="against frozenset is not supported"):
+        run_compiled(fn)
+
+
+def test_isinstance_tuple_non_type_member_not_supported():
+    def fn():
+        return isinstance(Vec2(1, 2), (Vec2, None))
+
+    with pytest.raises(CompilationError, match="Unsupported type"):
+        run_compiled(fn)
+
+
+def test_isinstance_nested_tuple_non_type_member_not_supported():
+    def fn():
+        return isinstance(Vec2(1, 2), (Vec2, (Num, None)))
+
+    with pytest.raises(CompilationError, match="Unsupported type"):
+        run_compiled(fn)
+
+
+def test_issubclass_tuple_matches_first_member():
+    def fn():
+        return issubclass(MyBox, (MyBox, Record))
+
+    assert run_and_validate(fn)
+
+
+def test_issubclass_tuple_matches_second_member():
+    def fn():
+        return issubclass(MyBox, (Num, Record))
+
+    assert run_and_validate(fn)
+
+
+def test_issubclass_tuple_matches_no_member():
+    def fn():
+        return issubclass(Num, (Record, ArrayLike))
+
+    assert not run_and_validate(fn)
+
+
+def test_issubclass_single_element_tuple():
+    def fn():
+        return issubclass(MyBox, (Record,))
+
+    assert run_and_validate(fn)
+
+
+def test_issubclass_empty_tuple():
+    def fn():
+        return issubclass(MyBox, ())
+
+    assert not run_and_validate(fn)
+
+
+def test_issubclass_nested_tuple():
+    def fn():
+        return issubclass(MyBox, (Num, (ArrayLike, Record)))
+
+    assert run_and_validate(fn)
+
+
+def test_issubclass_nested_tuple_matches_no_member():
+    def fn():
+        return issubclass(Num, (Record, (ArrayLike, MyBox)))
+
+    assert not run_and_validate(fn)
+
+
+def test_issubclass_tuple_array_like_member():
+    def fn():
+        return issubclass(Array[Num, 2], (Record, ArrayLike))
+
+    assert run_and_validate(fn)
+
+
+def test_issubclass_tuple_dict_alias():
+    def fn():
+        return issubclass(dict, (dict, Num))
+
+    assert run_and_validate(fn)
+
+
+def test_issubclass_tuple_set_alias():
+    def fn():
+        return issubclass(set, (Num, set))
+
+    assert run_and_validate(fn)
+
+
+def test_issubclass_tuple_tuple_alias():
+    def fn():
+        return issubclass(tuple, (Num, tuple))
+
+    assert run_and_validate(fn)
+
+
+def test_issubclass_tuple_int_member_not_supported():
+    def fn():
+        return issubclass(MyBox, (Record, int))
+
+    with pytest.raises(CompilationError, match="use Num instead"):
+        run_compiled(fn)
+
+
+def test_issubclass_tuple_frozenset_member_not_supported():
+    def fn():
+        return issubclass(MyBox, (Record, frozenset))
+
+    with pytest.raises(CompilationError, match="against frozenset is not supported"):
+        run_compiled(fn)
+
+
+def test_issubclass_tuple_non_type_member_not_supported():
+    def fn():
+        return issubclass(MyBox, (Record, None))
+
+    with pytest.raises(CompilationError, match="Unsupported type"):
+        run_compiled(fn)
+
+
+def test_issubclass_tuple_as_arg_1_not_supported():
+    # A tuple is only accepted for classinfo, matching Python, which rejects it as arg 1.
+    def fn():
+        return issubclass((MyBox, Record), Record)
+
+    with pytest.raises(CompilationError, match="arg 1 must be a class"):
+        run_compiled(fn)
+
+
+def test_issubclass_runtime_value_in_classinfo_tuple_not_supported():
+    def fn():
+        x = 0
+        for i in range(3):
+            x += i
+        return issubclass(MyBox, (Record, x))
+
+    with pytest.raises(CompilationError, match="arg 2 must be a class known at compile time"):
         run_compiled(fn)

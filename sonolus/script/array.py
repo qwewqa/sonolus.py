@@ -2,7 +2,7 @@ from __future__ import annotations
 
 from abc import ABCMeta
 from collections.abc import Iterable
-from typing import Any, Literal, Self, final
+from typing import Any, Literal, Self, TypeVar, final
 
 from sonolus.backend.ir import IRConst, IRSet
 from sonolus.backend.place import BlockPlace
@@ -10,7 +10,7 @@ from sonolus.script.array_like import ArrayLike, get_positive_index
 from sonolus.script.debug import assert_unreachable
 from sonolus.script.internal.context import ctx
 from sonolus.script.internal.error import InternalError
-from sonolus.script.internal.generic import GenericValue
+from sonolus.script.internal.generic import GenericValue, PartialGeneric, validate_concrete_type
 from sonolus.script.internal.impl import validate_value
 from sonolus.script.internal.meta_fn import meta_fn, perf_meta_fn
 from sonolus.script.internal.value import BackingSource, DataValue, Value
@@ -21,6 +21,8 @@ Dim = Literal
 
 
 class ArrayMeta(ABCMeta):
+    """The metaclass for [`Array`][sonolus.script.array.Array] types."""
+
     @meta_fn
     def __pos__[T](cls: type[T]) -> T:
         """Create a zero-initialized array instance."""
@@ -44,6 +46,27 @@ class Array[T, Size](GenericValue, ArrayLike[T], metaclass=ArrayMeta):
     """
 
     _value: list[T] | BlockPlace | BackingSource
+
+    @classmethod
+    def _validate_type_args_(cls, args: tuple[Any, ...]) -> tuple[Any, ...]:
+        args = super()._validate_type_args_(args)
+        element_type, size = args
+        # A type parameter is instead validated once it's resolved to a concrete type.
+        if not isinstance(element_type, TypeVar | PartialGeneric):
+            try:
+                # This also normalizes the spec, e.g. int | float and Final[int] to Num, so equivalent
+                # spellings share a single parameterization.
+                element_type = validate_concrete_type(element_type)
+            except TypeError as e:
+                raise TypeError(f"Invalid element type for {cls.__name__}: {e}") from e
+        if isinstance(size, TypeVar | PartialGeneric):
+            return element_type, size
+        # Integral floats and bools are normalized to ints by validate_type_arg before this point.
+        if not isinstance(size, int):
+            raise TypeError(f"{cls.__name__} size must be an integer, got {size!r}")
+        if size < 0:
+            raise ValueError(f"{cls.__name__} size must be non-negative, got {size}")
+        return element_type, size
 
     @classmethod
     def element_type(cls) -> type[T] | type[Value]:
@@ -193,15 +216,22 @@ class Array[T, Size](GenericValue, ArrayLike[T], metaclass=ArrayMeta):
 
     @perf_meta_fn
     def __len__(self):
+        """Return the length of the array."""
         return self.size()
 
     @meta_fn
     def __getitem__(self, index: int) -> T:
+        """Return the item at the given index.
+
+        Args:
+            index: The index of the item. Must be an integer between `-len(self)` and `len(self) - 1`, where a
+                negative index counts from the end of the array.
+        """
         return self.get_unchecked(get_positive_index(index, self.size()))
 
     @meta_fn
     def get_unchecked(self, index: Num) -> T:
-        """Get the element at the given index possibly without bounds checking.
+        """Get the element at the given index possibly without bounds checking or conversion of negative indexes.
 
         The compiler may still determine that the index is out of bounds and throw an error, but it may skip these
         checks at runtime.
@@ -262,11 +292,18 @@ class Array[T, Size](GenericValue, ArrayLike[T], metaclass=ArrayMeta):
 
     @meta_fn
     def __setitem__(self, index: int, value: T):
+        """Set the value of the item at the given index.
+
+        Args:
+            index: The index of the item. Must be an integer between `-len(self)` and `len(self) - 1`, where a
+                negative index counts from the end of the array.
+            value: The value to set.
+        """
         self.set_unchecked(get_positive_index(index, self.size()), value)
 
     @meta_fn
     def set_unchecked(self, index: Num, value: T):
-        """Set the element at the given index possibly without bounds checking.
+        """Set the element at the given index possibly without bounds checking or conversion of negative indexes.
 
         The compiler may still determine that the index is out of bounds and throw an error, but it may skip these
         checks at runtime.
@@ -319,6 +356,7 @@ class Array[T, Size](GenericValue, ArrayLike[T], metaclass=ArrayMeta):
                 dst._copy_from_(value)
 
     def __eq__(self, other):
+        """Return whether the other value is an array-like of the same length with equal elements."""
         if not isinstance(other, ArrayLike):
             return False
         if len(self) != len(other):

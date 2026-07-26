@@ -158,21 +158,30 @@ class SpriteGroup(Record, ArrayLike[Sprite]):
     size: int
 
     def __len__(self) -> int:
+        """Return the number of sprites in the group."""
         return self.size
 
     def __getitem__(self, index: int) -> Sprite:
+        """Return the sprite at the given index.
+
+        Args:
+            index: The index of the sprite. Must be an integer between 0 and `len(self) - 1`.
+        """
         check_positive_index(index, self.size)
         return Sprite(self.start_id + index)
 
     def get_unchecked(self, index: Num) -> Sprite:
+        """Return the sprite at the given index, possibly without bounds checking."""
         return Sprite(self.start_id + index)
 
     def __setitem__(self, index: int, value: Sprite) -> None:
+        """Raise a compile-time error; sprite groups are read-only."""
         static_error("SpriteGroup is read-only")
 
 
 @perf_meta_fn
 def pad_z_indexes(values: tuple[float, ...] | float) -> tuple[float, float, float, float]:
+    """Pad a z-index into a 4-tuple, filling unsupplied values with 0."""
     if isinstance(values, TupleImpl):
         values = values.value
     match values:
@@ -407,7 +416,7 @@ def skin[T](cls: type[T]) -> T | Skin:
             group_2: SpriteGroup = sprite_group(f"name_{i}" for i in range(10))
         ```
     """
-    if len(cls.__bases__) != 1:
+    if cls.__bases__ != (object,):
         raise ValueError("Skin class must not inherit from any class (except object)")
     instance = cls()
     names = []
@@ -557,4 +566,4 @@ class StandardSprite:
 
 @skin
 class EmptySkin:
-    pass
+    """A skin with no sprites, used as the default when a mode declares none."""

@@ -5,6 +5,8 @@ from sonolus.script.internal.native import native_function
 
 
 class TimescaleEase(IntEnum):
+    """The easing type for a timescale change marker."""
+
     NONE = 0
     LINEAR = 1
 

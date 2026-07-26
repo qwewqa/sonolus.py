@@ -10,7 +10,11 @@ from sonolus.script.vec import Vec2
 
 
 class Transform2d(Record):
-    """A transformation matrix for 2D points.
+    """A 3x3 homogeneous transformation matrix for 2D points.
+
+    Supports translation, scaling, rotation, shearing, and perspective. Chained calls apply left to right:
+    `self.translate(v).rotate(a)` translates first, then rotates. `compose` combines two transforms explicitly,
+    applying `other` after `self`.
 
     Usage:
         ```python
@@ -322,7 +326,7 @@ class Transform2d(Record):
     def normalize(self) -> Transform2d:
         """Normalize the transform to have a 1 in the bottom right corner and return a new transform.
 
-        This may fail in some special cases involving perspective transformations where the bottom right corner is 0.
+        If the bottom right corner is 0, an assertion error is raised if runtime checks are enabled.
 
         Returns:
             A new normalized transform.
@@ -405,7 +409,12 @@ class Transform2d(Record):
 
 
 class InvertibleTransform2d(Record):
-    """A transformation matrix for 2D points that can be inverted.
+    """A transformation matrix for 2D points that maintains its own inverse alongside the forward transform.
+
+    Wraps a [`Transform2d`][sonolus.script.transform.Transform2d] `forward` and its `inverse`, updating both
+    together as each operation is applied, so `inverse_transform_vec` and `inverse_transform_quad` stay valid
+    without recomputing a matrix inverse. Chained calls and `compose` follow the same left-to-right ordering as
+    [`Transform2d`][sonolus.script.transform.Transform2d].
 
     Usage:
         ```python
@@ -589,7 +598,8 @@ class InvertibleTransform2d(Record):
     def normalize(self) -> InvertibleTransform2d:
         """Normalize the transform to have a 1 in the bottom right corner and return a new transform.
 
-        This may fail in some special cases involving perspective transformations where the bottom right corner is 0.
+        The bottom right corner of the forward and inverse transforms must not be 0, which can occur for certain
+        perspective transformations.
 
         Returns:
             A new normalized invertible transform.
@@ -673,7 +683,7 @@ def perspective_approach(
     distance_ratio: float,
     progress: float,
 ) -> float:
-    """Calculate the perspective correct approach curve given the initial distance, target distance, and progress.
+    """Calculate the perspective-correct approach curve given the distance ratio and progress.
 
     For typical engines with stage tilt, distance_ratio is the displayed width of a lane at the judge line divided
     by the displayed width of a lane at note spawn. For flat stages, this will be 1.0, and this function would simply

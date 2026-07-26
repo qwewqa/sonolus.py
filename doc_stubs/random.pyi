@@ -60,6 +60,8 @@ def randint(a: int, b: int) -> int:
 def choice[T](seq: Sequence[T]) -> T:
     """Return a randomly selected element from a non-empty sequence.
 
+    The sequence must be array-like, such as an `Array` or `VarArray`. Tuples are not supported.
+
     Args:
         seq: The sequence to choose from.
 

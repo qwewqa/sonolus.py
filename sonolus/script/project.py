@@ -20,7 +20,11 @@ class Project:
         engine: The engine of the project.
         levels: The levels of the project.
         resources: The path to the resources of the project.
-        converters: A dictionary mapping engine names to converter functions, for converting loaded levels.
+        converters: A dict mapping source engine names to functions converting the
+            [`ExternalLevelData`][sonolus.script.level.ExternalLevelData] of levels included in the project's
+            resources into [`LevelData`][sonolus.script.level.LevelData]. A converter may return `None` to leave
+            a level unconverted. The converter under the `None` key, if present, is applied to every level, after
+            the engine-specific ones.
     """
 
     def __init__(
@@ -61,7 +65,8 @@ class Project:
         Args:
             build_dir: The path to the build directory.
             port: The port of the development server.
-            config: The build configuration.
+            config: The build configuration. If unset, defaults to runtime checks that log, pause, and terminate
+                on errors, unlike [`build`][sonolus.script.project.Project.build]'s default of no checks.
         """
         from sonolus.build.cli import run_server
 
@@ -94,7 +99,7 @@ class Project:
         """Generate the schema of the project.
 
         Returns:
-            The schema of the project.
+            The [`ProjectSchema`][sonolus.script.project.ProjectSchema] of the project.
         """
         from sonolus.build.project import get_project_schema
 
@@ -102,16 +107,20 @@ class Project:
 
     @property
     def levels(self) -> list[Level]:
+        """The project's levels, loaded and cached on first access."""
         if self._levels is None:
             self._levels = list(self._level_source)
         return self._levels
 
 
 def lazy_loader(fn):
+    """Lazily yield the levels produced by the given callable."""
     yield from fn()
 
 
 class ProjectSchema(TypedDict):
+    """The schema of a project, as returned by [`Project.schema`][sonolus.script.project.Project.schema]."""
+
     archetypes: list[ArchetypeSchema]
 
 
@@ -150,3 +159,4 @@ class BuildConfig:
     """Runtime error checking mode."""
 
     verbose: bool = False
+    """Whether to print full tracebacks for compilation errors instead of a simplified summary."""

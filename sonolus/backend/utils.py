@@ -35,6 +35,7 @@ class FindFunction(ast.NodeVisitor):
 
     def visit_FunctionDef(self, node: ast.FunctionDef):
         self.results.append(node)
+        node.declared_locals = set()
         outer_fn = self.current_fn
         self.current_fn = node
         self.generic_visit(node)
@@ -42,6 +43,7 @@ class FindFunction(ast.NodeVisitor):
 
     def visit_Lambda(self, node: ast.Lambda):
         self.results.append(node)
+        node.declared_locals = set()
         outer_fn = self.current_fn
         self.current_fn = node
         self.generic_visit(node)
@@ -54,6 +56,14 @@ class FindFunction(ast.NodeVisitor):
 
     def visit_YieldFrom(self, node):
         self.current_fn.has_yield = True
+
+    def visit_AnnAssign(self, node):
+        # A bare annotation makes the name local to the enclosing function for the whole body, including reads
+        # that precede it, so it has to be known before the body is visited. Only an unparenthesized name counts:
+        # `(x): int` is `simple=0` and leaves x resolving outward.
+        if node.value is None and node.simple and self.current_fn is not None:
+            self.current_fn.declared_locals.add(node.target.id)
+        self.generic_visit(node)
 
 
 @cache
@@ -85,6 +95,27 @@ class ScanWrites(ast.NodeVisitor):
     def visit_Name(self, node):
         if isinstance(node.ctx, ast.Store | ast.Delete):
             self.writes.append(node.id)
+
+    def visit_FunctionDef(self, node):
+        # A nested def binds its name through a plain str attribute rather than a Name node, so it must be
+        # recorded here to be treated as loop-carried.
+        self.writes.append(node.name)
+        self.generic_visit(node)
+
+    def visit_MatchAs(self, node):
+        if node.name is not None:
+            self.writes.append(node.name)
+        self.generic_visit(node)
+
+    def visit_MatchStar(self, node):
+        if node.name is not None:
+            self.writes.append(node.name)
+        self.generic_visit(node)
+
+    def visit_MatchMapping(self, node):
+        if node.rest is not None:
+            self.writes.append(node.rest)
+        self.generic_visit(node)
 
 
 def scan_writes(node: ast.AST) -> set[str]:

@@ -36,7 +36,7 @@
   v9 <- !v8
   goto 14 if v9 else 15
 14:
-  goto 60
+  goto 62
 15:
   goto 16
 16:
@@ -88,72 +88,76 @@
   goto 35
 35:
   v19 <- v18 < RuntimeUpdate[3]
-  goto 36 if v19 else 39
+  goto 36 if v19 else 41
 36:
   v20 <- v17
+  goto 37
+37:
   v21 <- v20 * 15.0
   v22 <- v21
+  goto 38
+38:
   v23 <- v17
   v24 <- v23 + 1.0
   v17 <- v24
-  goto 37
-37:
-  goto 38
-38:
-  v25 <- 1.0
-  goto 40
+  goto 39
 39:
-  v25 <- 0
   goto 40
 40:
-  goto 41
+  v25 <- 1.0
+  goto 42
 41:
-  goto 42 if v25 else 58
+  v25 <- 0
+  goto 42
 42:
-  v26 <- RuntimeTouchArray[v22] != v16
-  goto 43 if v26 else 44
+  goto 43
 43:
-  goto 30
+  goto 44 if v25 else 60
 44:
-  goto 45 if RuntimeTouchArray[v22 + 2] else 56
+  v26 <- RuntimeTouchArray[v22] != v16
+  goto 45 if v26 else 46
 45:
-  goto 46
+  goto 30
 46:
-  v27 <- EntityMemory[0]
-  goto 47
+  goto 47 if RuntimeTouchArray[v22 + 2] else 58
 47:
   goto 48
 48:
+  v27 <- EntityMemory[0]
   goto 49
 49:
   goto 50
 50:
   goto 51
 51:
-  v28 <- v27 * 32.0
-  v29 <- 16.0 + v28
-  v30 <- v29
   goto 52
 52:
   goto 53
 53:
+  v28 <- v27 * 32.0
+  v29 <- 16.0 + v28
+  v30 <- v29
   goto 54
 54:
+  goto 55
+55:
+  goto 56
+56:
   v31 <- EntityDataArray[v30] * 32.0
   v32 <- v31
   EntitySharedMemoryArray[v32] <- 0
-  goto 55
-55:
-  goto 57
-56:
   goto 57
 57:
   goto 59
 58:
   goto 59
 59:
-  goto 60
+  goto 61
 60:
   goto 61
 61:
+  goto 62
+62:
+  goto 63
+63:
   goto exit

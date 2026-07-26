@@ -1,35 +1,65 @@
 # Command Line
-The Sonolus.py CLI provides commands to run and build Sonolus scripts.
+The `sonolus-py` command line tool builds, serves, and validates a Sonolus.py project.
 
-## Starting a development server
-To start a development server, run the following command in the root directory of your project:
+## The project module
 
-```bash
-sonolus-py dev
-```
+When a command is run, the current directory is scanned for a single `*/project.py` or `*/__init__.py` to use as
+the project module.
 
-## Building the project
-To build the project, run the following command in the root directory of your project:
+It's also possible to provide an explicit `module` argument giving the dotted path to the [project's](project.md)
+package or module, e.g. `sonolus-py build my_engine`.
 
-```bash
-sonolus-py build
-```
-
-## Checking for errors without building
-To check for errors, run the following command in the root directory of your project:
+## `sonolus-py build`
+Compiles the project and writes the engine and level packages to disk.
 
 ```bash
-sonolus-py check
+sonolus-py build [module] [--build-dir DIR]
 ```
 
-## Outputting the level schema
-To output the level schema of the project, run the following command in the root directory of your project:
+- `--build-dir DIR`: directory to write output to. Defaults to `./build`.
+
+## `sonolus-py dev`
+Builds the project once, then serves it over HTTP and starts an interactive CLI for the server.
 
 ```bash
-sonolus-py schema
+sonolus-py dev [module] [--build-dir DIR] [--port PORT]
 ```
+
+- `--build-dir DIR`: defaults to `./build`.
+- `--port PORT`: defaults to `8000`.
+
+## `sonolus-py check`
+Compiles and validates the project without writing engine or level output.
+
+```bash
+sonolus-py check [module]
+```
+
+`check` accepts the [shared options](#shared-options) below, except `--build-dir`.
+
+## `sonolus-py schema`
+Prints the project's archetype schema as JSON to stdout.
+
+```bash
+sonolus-py schema [module]
+```
+
+## Shared options
+`build`, `dev`, and `check` all accept the following:
+
+| Option | Default | Effect |
+|---|---|---|
+| `-O0`, `--optimize-minimal` | | Use the minimal optimization passes. |
+| `-O1`, `--optimize-fast` | | Use the fast optimization passes. |
+| `-O2`, `--optimize-standard` | used if none of `-O0`/`-O1`/`-O2` is given | Use the standard optimization passes. |
+| `--runtime-checks {none,terminate,notify}` | `none` for `build`/`check`, `notify` for `dev` | `none` disables runtime checks; `terminate` stops the callback on error; `notify` additionally logs and pauses before terminating. |
+| `--gc` | off | Enable the Python garbage collector during compilation. |
+| `--play`, `--watch`, `--preview`, `--tutorial` | all enabled if none are given | Restrict which components are built (or, for `check`, validated). Passing any one of the four narrows the set to just those given. |
+| `-v`, `--verbose` | off | On a compilation error, print the full traceback instead of a simplified summary. |
+| `--profile` | off | Print a per-stage compile timing summary to stderr. Not available for `dev`. |
+| `--profile-json PATH` | | Write per-stage compile timings as JSON to `PATH`, confirming with a line on stderr. Also enables profiling, so the `--profile` summary is printed to stderr as well. Not available for `dev`. |
 
 ## Programmatic usage
-The same functionality can be accessed programmatically as methods of a project.
-
-See [Project](../reference/sonolus.script.project.md) for more information.
+Most of the same functionality is available as methods on [`Project`][sonolus.script.project.Project]:
+[`Project.build`][sonolus.script.project.Project.build], [`Project.dev`][sonolus.script.project.Project.dev], and
+[`Project.schema`][sonolus.script.project.Project.schema].

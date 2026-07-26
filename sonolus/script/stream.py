@@ -9,6 +9,7 @@ from sonolus.backend.ops import Op
 from sonolus.script.array_like import check_positive_index
 from sonolus.script.internal.context import ctx
 from sonolus.script.internal.descriptor import SonolusDescriptor
+from sonolus.script.internal.generic import validate_concrete_type
 from sonolus.script.internal.introspection import get_field_specifiers
 from sonolus.script.internal.meta_fn import meta_fn
 from sonolus.script.internal.native import native_function
@@ -68,9 +69,13 @@ def streams[T](cls: type[T]) -> T:
     [`Stream`][sonolus.script.stream.Stream] or [`StreamGroup`][sonolus.script.stream.StreamGroup].
 
     Other types are also supported in the form of data fields. They may be used to store additional data to export from
-    Play to Watch mode.
+    play mode to watch mode.
 
-    In either case, data is write-only in Play mode and read-only in Watch mode.
+    In either case, data is write-only in play mode and read-only in watch mode.
+
+    Note:
+        Fields must not have default values, and must be annotated directly with `Stream[...]`, `StreamGroup[...]`,
+        or a concrete data type. A wrapped form such as `Final[Stream[int]]` is not supported.
 
     This should only be used once in most projects, as multiple decorated classes will overlap with each other and
     interfere when both are used at the same time.
@@ -92,7 +97,7 @@ def streams[T](cls: type[T]) -> T:
             data_field_2: Vec2  # A data field of type Vec2
         ```
     """
-    if len(cls.__bases__) != 1:
+    if cls.__bases__ != (object,):
         raise ValueError("Streams class must not inherit from any class (except object)")
 
     @classmethod
@@ -102,20 +107,38 @@ def streams[T](cls: type[T]) -> T:
         entries = []
         # Offset 0 is unused so we can tell when a stream object is uninitialized since it'll have offset 0.
         offset = 1
-        for name, annotation in get_field_specifiers(cls, skip={"_init_done_"}).items():
-            if issubclass(annotation, Stream | StreamGroup):
-                annotation = cast(type[Stream | StreamGroup], annotation)
-                if annotation is Stream or annotation is StreamGroup:
-                    raise TypeError(f"Invalid annotation for streams: {annotation}. Must have type arguments.")
-                setattr(cls, name, _StreamField(offset, annotation))
-                # Streams store their data across several backing streams
-                entries.append((name, offset, annotation))
-                offset += annotation.backing_size()
-            elif issubclass(annotation, Value) and annotation._is_concrete_():
-                setattr(cls, name, _StreamDataField(offset, annotation))
-                # Data fields store their data in a single backing stream at different offsets in the same stream
-                entries.append((name, offset, annotation))
-                offset += 1
+        specifiers = get_field_specifiers(cls, skip={"_init_done_"})
+        # Detected here rather than from the Annotated wrapper get_field_specifiers adds for a class value: a
+        # user-written Annotated[...] annotation is indistinguishable from that wrapper.
+        defaulted = {name for name in specifiers if hasattr(cls, name)}
+        for name, annotation in specifiers.items():
+            try:
+                if name in defaulted:
+                    raise TypeError("Default values are not supported for streams fields")
+                if isinstance(annotation, type) and issubclass(annotation, Stream | StreamGroup):
+                    annotation = cast(type[Stream | StreamGroup], annotation)
+                    if annotation is Stream or annotation is StreamGroup:
+                        raise TypeError(f"Invalid annotation for streams: {annotation}. Must have type arguments.")
+                    setattr(cls, name, _StreamField(offset, annotation))
+                    # Streams store their data across several backing streams
+                    entries.append((name, offset, annotation))
+                    offset += annotation.backing_size()
+                else:
+                    # Normalize like other declarations do, so e.g. `int` becomes `Num` rather than being dropped.
+                    annotation = validate_concrete_type(annotation)
+                    if issubclass(annotation, Stream | StreamGroup):
+                        # Wrapped forms like `Final[Stream[int]]` normalize back to a stream type here. Reject them
+                        # rather than silently laying them out as data fields.
+                        raise TypeError(
+                            f"{annotation} is not supported as a streams data field. Annotate it directly with "
+                            f"Stream[...] or StreamGroup[...] instead."
+                        )
+                    setattr(cls, name, _StreamDataField(offset, annotation))
+                    # Data fields store their data in a single backing stream at different offsets in the same stream
+                    entries.append((name, offset, annotation))
+                    offset += 1
+            except Exception as e:
+                raise TypeError(f"Error processing streams field '{name}': {e}") from e
         cls._streams_ = entries
         cls._is_comptime_value_ = True
         cls._init_done_ = True
@@ -192,6 +215,8 @@ class Stream[T](Record):
     Most users should use [`@streams`][sonolus.script.stream.streams] to declare streams and stream groups, rather than
     creating instances of this class directly.
 
+    Values can only be written in play mode and read in watch mode.
+
     If used directly, it is important that streams do not overlap. No other streams should have an offset in
     `range(self.offset, self.offset + max(1, sizeof(self.element_type())))`, or they will overlap and interfere
     with each other.
@@ -236,7 +261,7 @@ class Stream[T](Record):
         If the key is not in the stream, interpolates linearly between surrounding values.
         If the stream is empty, returns the zero value of the element type.
         """
-        # This is allowed in Play mode since a stream value may be accessed just to write to it without reading.
+        # This is allowed in play mode since a stream value may be accessed just to write to it without reading.
         _check_can_read_or_write_stream()
         return self.element_type()._from_backing_source_(lambda offset: _StreamBacking(self.offset + Num(offset), key))
 

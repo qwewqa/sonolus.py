@@ -41,9 +41,9 @@
   goto when v22
     0 -> 12
     1 -> 11
-    default -> 53
+    default -> 55
 11:
-  goto 52
+  goto 54
 12:
   goto 13
 13:
@@ -68,145 +68,149 @@
   goto 22
 22:
   v4 <- v3 < RuntimeUpdate[3]
-  goto 23 if v4 else 26
+  goto 23 if v4 else 28
 23:
   v5 <- v2
+  goto 24
+24:
   v6 <- v5 * 15.0
   v7 <- v6
+  goto 25
+25:
   v8 <- v2
   v9 <- v8 + 1.0
   v2 <- v9
-  goto 24
-24:
-  goto 25
-25:
-  v10 <- 1.0
-  goto 27
+  goto 26
 26:
-  v10 <- 0
   goto 27
 27:
-  goto 28
+  v10 <- 1.0
+  goto 29
 28:
-  goto 29 if v10 else 53
+  v10 <- 0
+  goto 29
 29:
-  goto 30 if RuntimeTouchArray[v7 + 1] else 47
+  goto 30
 30:
-  goto 31
+  goto 31 if v10 else 55
 31:
-  goto 32
+  goto 32 if RuntimeTouchArray[v7 + 1] else 49
 32:
   goto 33
 33:
-  v11 <- 0
   goto 34
 34:
   goto 35
 35:
-  v12 <- LevelMemory[0]
+  v11 <- 0
   goto 36
 36:
-  v13 <- v11 < v12
-  goto 37 if v13 else 42
+  goto 37
 37:
+  v12 <- LevelMemory[0]
   goto 38
 38:
+  v13 <- v11 < v12
+  goto 39 if v13 else 44
+39:
+  goto 40
+40:
   v14 <- v11
   v15 <- LevelMemory[v14 + 1]
-  goto 39
-39:
-  v16 <- v15 == RuntimeTouchArray[v7]
-  goto 40 if v16 else 41
-40:
-  v19 <- 1.0
-  goto 43
+  goto 41
 41:
+  v16 <- v15 == RuntimeTouchArray[v7]
+  goto 42 if v16 else 43
+42:
+  v19 <- 1.0
+  goto 45
+43:
   v17 <- v11 + 1.0
   v18 <- v17
   v11 <- v18
-  goto 34
-42:
-  v19 <- 0
-  goto 43
-43:
-  goto 44
+  goto 36
 44:
+  v19 <- 0
   goto 45
 45:
   goto 46
 46:
-  v20 <- !v19
-  v21 <- v20
-  goto 48
+  goto 47
 47:
-  v21 <- 0
   goto 48
 48:
-  goto 49 if v21 else 51
+  v20 <- !v19
+  v21 <- v20
+  goto 50
 49:
+  v21 <- 0
   goto 50
 50:
-  v22 <- 1.0
-  v23 <- 1.0
-  goto 54
+  goto 51 if v21 else 53
 51:
   goto 52
 52:
-  goto 17
+  v22 <- 1.0
+  v23 <- 1.0
+  goto 56
 53:
-  v23 <- 0
   goto 54
 54:
-  goto when v24
-    0 -> 55
+  goto 17
 55:
-  goto 56 if v23 else 140
+  v23 <- 0
+  goto 56
 56:
-  goto 57
+  goto when v24
+    0 -> 57
 57:
-  v25 <- 0
-  goto 58
+  goto 58 if v23 else 142
 58:
   goto 59
 59:
+  v25 <- 0
   goto 60
 60:
   goto 61
 61:
   goto 62
 62:
-  v26 <- v25
   goto 63
 63:
   goto 64
 64:
-  v27 <- v26 < LevelData[0]
-  goto 65 if v27 else 68
+  v26 <- v25
+  goto 65
 65:
+  goto 66
+66:
+  v27 <- v26 < LevelData[0]
+  goto 67 if v27 else 70
+67:
   v28 <- v25
   v29 <- v28 * 9.0
   v30 <- v29
   v31 <- v25
   v32 <- v31 + 1.0
   v25 <- v32
-  goto 66
-66:
-  goto 67
-67:
-  v33 <- 1.0
-  goto 69
+  goto 68
 68:
-  v33 <- 0
   goto 69
 69:
-  goto 70
+  v33 <- 1.0
+  goto 71
 70:
-  goto 71 if v33 else 139
+  v33 <- 0
+  goto 71
 71:
   goto 72
 72:
-  goto 73
+  goto 73 if v33 else 141
 73:
+  goto 74
+74:
+  goto 75
+75:
   a2[0] <- LevelData[v30 + 2]
   a2[1] <- LevelData[v30 + 3]
   a2[2] <- LevelData[v30 + 4]
@@ -218,11 +222,11 @@
   v34 <- 0
   v35 <- 0
   v36 <- 3.0
-  goto 74
-74:
+  goto 76
+76:
   v37 <- v35 < 4.0
-  goto 75 if v37 else 82
-75:
+  goto 77 if v37 else 84
+77:
   v38 <- v35 >= -4.0
   v39 <- v35 < 4.0
   v40 <- v38 && v39
@@ -250,8 +254,8 @@
   v62 <- a2[v61 + 1]
   v63 <- v62 > RuntimeTouchArray[v7 + 6]
   v64 <- v50 != v63
-  goto 76 if v64 else 77
-76:
+  goto 78 if v64 else 79
+78:
   v65 <- v36 >= -4.0
   v66 <- v36 < 4.0
   v67 <- v65 && v66
@@ -332,20 +336,20 @@
   v142 <- v129 + v141
   v143 <- RuntimeTouchArray[v7 + 5] < v142
   v144 <- v143
-  goto 78
-77:
-  v144 <- 0
-  goto 78
-78:
-  goto 79 if v144 else 80
+  goto 80
 79:
+  v144 <- 0
+  goto 80
+80:
+  goto 81 if v144 else 82
+81:
   v145 <- !v34
   v146 <- v145
-  goto 81
-80:
+  goto 83
+82:
   v146 <- v34
-  goto 81
-81:
+  goto 83
+83:
   v147 <- v35 + 1.0
   v148 <- v146
   v149 <- v147
@@ -353,67 +357,67 @@
   v34 <- v148
   v35 <- v149
   v36 <- v150
-  goto 74
-82:
-  goto 83
-83:
-  goto 84
+  goto 76
 84:
-  goto 85 if v34 else 137
+  goto 85
 85:
   goto 86
 86:
-  goto 87
+  goto 87 if v34 else 139
 87:
+  goto 88
+88:
+  goto 89
+89:
   v151 <- v1
   v152 <- v151 >= 16.0
-  goto 88 if v152 else 89
-88:
-  v162 <- 0
-  goto 106
-89:
-  goto 90
+  goto 90 if v152 else 91
 90:
-  v153 <- 0
-  goto 91
+  v162 <- 0
+  goto 108
 91:
   goto 92
 92:
-  v154 <- v1
+  v153 <- 0
   goto 93
 93:
-  v155 <- v153 < v154
-  goto 94 if v155 else 99
+  goto 94
 94:
+  v154 <- v1
   goto 95
 95:
+  v155 <- v153 < v154
+  goto 96 if v155 else 101
+96:
+  goto 97
+97:
   v156 <- v153
   v157 <- a1[v156]
-  goto 96
-96:
-  v158 <- v157 == LevelData[v30 + 1]
-  goto 97 if v158 else 98
-97:
-  v161 <- 1.0
-  goto 100
+  goto 98
 98:
+  v158 <- v157 == LevelData[v30 + 1]
+  goto 99 if v158 else 100
+99:
+  v161 <- 1.0
+  goto 102
+100:
   v159 <- v153 + 1.0
   v160 <- v159
   v153 <- v160
-  goto 91
-99:
-  v161 <- 0
-  goto 100
-100:
-  goto 101
+  goto 93
 101:
-  goto 102 if v161 else 103
+  v161 <- 0
+  goto 102
 102:
-  v162 <- 0
-  goto 106
+  goto 103
 103:
-  goto 104
+  goto 104 if v161 else 105
 104:
+  v162 <- 0
+  goto 108
+105:
+  goto 106
+106:
   v162 <- v1
   v163 <- v162 < 16.0
   v164 <- v1
@@ -422,108 +426,108 @@
   v166 <- v1
   v167 <- v166 + 1.0
   v1 <- v167
-  goto 105
-105:
-  v162 <- 1.0
-  goto 106
-106:
   goto 107
 107:
+  v162 <- 1.0
   goto 108
 108:
   goto 109
 109:
-  v163 <- !LevelOption[7]
-  goto 110 if v163 else 111
+  goto 110
 110:
-  goto 128
+  goto 111
 111:
-  goto 112
+  v163 <- !LevelOption[7]
+  goto 112 if v163 else 113
 112:
-  goto 113
+  goto 130
 113:
   goto 114
 114:
-  v164 <- 0
   goto 115
 115:
   goto 116
 116:
+  v164 <- 0
   goto 117
 117:
+  goto 118
+118:
+  goto 119
+119:
   v165 <- v164
   v166 <- v165 < LevelData[0]
-  goto 118 if v166 else 121
-118:
+  goto 120 if v166 else 123
+120:
   v167 <- v164
   v168 <- v164
   v169 <- v168 + 1.0
   v164 <- v169
-  goto 119
-119:
-  goto 120
-120:
-  v170 <- 1.0
-  goto 122
+  goto 121
 121:
-  v170 <- 0
   goto 122
 122:
-  goto 123
+  v170 <- 1.0
+  goto 124
 123:
-  goto 124 if v170 else 136
+  v170 <- 0
+  goto 124
 124:
+  goto 125
+125:
+  goto 126 if v170 else 138
+126:
   v171 <- v167 * 9.0
   v172 <- v171
   v173 <- LevelData[v172 + 1] == LevelData[v30 + 1]
-  goto 125 if v173 else 135
-125:
-  goto 126
-126:
-  goto 127
+  goto 127 if v173 else 137
 127:
-  v174 <- SpawnParticleEffect(0, LevelData[v172 + 2], LevelData[v172 + 3], LevelData[v172 + 4], LevelData[v172 + 5], LevelData[v172 + 6], LevelData[v172 + 7], LevelData[v172 + 8], LevelData[v172 + 9], 0.2, 0)
-  v175 <- v174
   goto 128
 128:
   goto 129
 129:
+  v174 <- SpawnParticleEffect(0, LevelData[v172 + 2], LevelData[v172 + 3], LevelData[v172 + 4], LevelData[v172 + 5], LevelData[v172 + 6], LevelData[v172 + 7], LevelData[v172 + 8], LevelData[v172 + 9], 0.2, 0)
+  v175 <- v174
   goto 130
 130:
-  v163 <- !LevelOption[10]
-  goto 131 if v163 else 132
+  goto 131
 131:
-  goto 133
+  goto 132
 132:
-  v164 <- Play(0, 0.02)
-  goto 133
+  v163 <- !LevelOption[10]
+  goto 133 if v163 else 134
 133:
-  goto 134
+  goto 135
 134:
-  goto 138
+  v164 <- Play(0, 0.02)
+  goto 135
 135:
-  goto 116
+  goto 136
 136:
-  goto exit
+  goto 140
 137:
-  goto 138
+  goto 118
 138:
-  goto 61
+  goto exit
 139:
-  goto 9
+  goto 140
 140:
-  goto 141
+  goto 63
 141:
-  goto 142
+  goto 9
 142:
-  v163 <- v1
   goto 143
 143:
   goto 144
 144:
-  v164 <- v163 > 0
-  goto 145 if v164 else 146
+  v163 <- v1
+  goto 145
 145:
+  goto 146
+146:
+  v164 <- v163 > 0
+  goto 147 if v164 else 148
+147:
   v165 <- 1.0
   v166 <- v165
   v167 <- StreamSet(v166, RuntimeUpdate[0], v1)
@@ -575,12 +579,12 @@
   v213 <- v165
   v214 <- v213 + 16.0
   v215 <- StreamSet(v214, RuntimeUpdate[0], a1[15])
-  goto 147
-146:
-  goto 147
-147:
-  goto 148
+  goto 149
 148:
   goto 149
 149:
+  goto 150
+150:
+  goto 151
+151:
   goto exit

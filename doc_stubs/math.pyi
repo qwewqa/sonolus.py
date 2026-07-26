@@ -187,3 +187,15 @@ def radians(x: float) -> float:
         The angle in radians.
     """
     ...
+
+pi: float
+"""The mathematical constant pi."""
+
+e: float
+"""The mathematical constant e."""
+
+tau: float
+"""The mathematical constant tau."""
+
+inf: float
+"""Positive infinity."""

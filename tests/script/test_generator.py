@@ -660,3 +660,262 @@ def test_generator_return_nonnone_constant_rejected():
 
     with pytest.raises(CompilationError, match="Generator function return statements must return None"):
         run_compiled(fn)
+
+
+def test_generator_two_next_results_live_in_one_expression():
+    def fn():
+        def gen():
+            yield 1
+            yield 2
+            yield 3
+
+        g = gen()
+        return next(g) + next(g)
+
+    assert run_and_validate(fn) == 3
+
+
+def test_generator_three_next_results_live_in_one_expression():
+    def fn():
+        def gen():
+            yield 2
+            yield 4
+            yield 6
+
+        g = gen()
+        return next(g) + next(g) + next(g)
+
+    assert run_and_validate(fn) == 12
+
+
+def test_generator_next_results_held_in_locals():
+    def fn():
+        def gen():
+            yield 2
+            yield 4
+            yield 6
+
+        g = gen()
+        a = next(g)
+        b = next(g)
+        c = next(g)
+        debug_log(a)
+        debug_log(b)
+        debug_log(c)
+        return a * 100 + b * 10 + c
+
+    assert run_and_validate(fn) == 246
+
+
+def test_generator_next_results_live_across_branch():
+    def fn():
+        def gen():
+            yield 5
+            yield 1
+
+        g = gen()
+        first = next(g)
+        second = next(g)
+        if first > second:
+            return first - second
+        return second - first
+
+    assert run_and_validate(fn) == 4
+
+
+def test_generator_next_results_in_tuple():
+    def fn():
+        def gen():
+            yield 3
+            yield 7
+
+        g = gen()
+        pair = (next(g), next(g))
+        return pair[0] * 10 + pair[1]
+
+    assert run_and_validate(fn) == 37
+
+
+def test_genexpr_two_next_results_live_in_one_expression():
+    def fn():
+        g = (v * 10 for v in Array(1, 2, 3))
+        return next(g) + next(g)
+
+    assert run_and_validate(fn) == 30
+
+
+def test_genexpr_three_next_results_live_in_one_expression():
+    def fn():
+        g = (v * 10 for v in Array(1, 2, 3))
+        return next(g) + next(g) + next(g)
+
+    assert run_and_validate(fn) == 60
+
+
+def test_generator_next_interleaved_with_consumption_unchanged():
+    def fn():
+        def gen():
+            yield 1
+            yield 2
+            yield 3
+
+        g = gen()
+        debug_log(next(g))
+        debug_log(next(g))
+        debug_log(next(g))
+
+    run_and_validate(fn)
+
+
+def test_generator_next_then_for_loop_unchanged():
+    def fn():
+        def gen():
+            yield 1
+            yield 2
+            yield 3
+            yield 4
+
+        g = gen()
+        total = next(g)
+        for v in g:
+            total += v
+        return total
+
+    assert run_and_validate(fn) == 10
+
+
+def test_generator_next_exhausted_still_errors():
+    def fn():
+        def gen():
+            yield 1
+
+        g = gen()
+        debug_log(next(g))
+        debug_log(next(g))
+
+    with pytest.raises(StopIteration):
+        run_and_validate(fn)
+
+
+def test_generator_yielding_record_next_results_alias_pinned():
+    # Pinned limitation, not a bug report: the fix copies Num payloads only. For a reference-type payload
+    # `_get_` (and so `_get_readonly_`) returns self by contract, so two live next() results still view the
+    # generator's single yield storage. Compiled-only assertion: plain Python would give 24 here, so
+    # run_and_validate cannot be used.
+    def fn():
+        def gen():
+            for i in range(1, 3):
+                yield Box(i * 2)
+
+        g = gen()
+        a = next(g)
+        b = next(g)
+        return a.value * 10 + b.value
+
+    assert run_compiled(fn) == 44
+
+
+def test_generator_next_results_via_enumerate_alias_pinned():
+    # `enumerate`/`zip` wrap the payload in a TupleImpl, which is a TransientValue: its `_get_` (and so
+    # `_get_readonly_`) returns self, so the Num elements inside are never snapshotted and both live results
+    # still read the generator's latest yield.
+    def fn():
+        def gen():
+            yield 1
+            yield 2
+
+        it = enumerate(gen())
+        a = next(it)
+        b = next(it)
+        return a[1] * 10 + b[1]
+
+    assert run_compiled(fn) == 22
+
+
+def test_generator_next_results_via_zip_alias_pinned():
+    # Same pinned TupleImpl limitation, via zip.
+    def fn():
+        def gen():
+            yield 1
+            yield 2
+
+        it = zip(gen(), Array(7, 8), strict=False)
+        a = next(it)
+        b = next(it)
+        return a[0] * 10 + b[0]
+
+    assert run_compiled(fn) == 22
+
+
+def test_nested_loops_over_one_generator_alias_pinned():
+    # run_compiled, not run_and_validate: this is an accepted divergence. A generator reuses one location for the
+    # value it yields, so the inner loop's advance overwrites the outer loop's variable. Plain Python logs
+    # [2, 1, 4, 3]; this is the documented behaviour in concepts/constructs.md.
+    def fn():
+        def gen():
+            yield 1
+            yield 2
+            yield 3
+            yield 4
+
+        it = gen()
+        for a in it:
+            for b in it:
+                debug_log(b)
+                break
+            debug_log(a)
+        return 0
+
+    logs = []
+    run_compiled(fn, log_callback=logs.append)
+    assert logs == [2, 2, 4, 4]
+
+
+def test_nested_loops_over_one_array_iterator_match_python():
+    # The array case is not affected: elements have distinct storage, so nothing is overwritten.
+    def fn():
+        it = iter(Array(1, 2, 3, 4))
+        for a in it:
+            for b in it:
+                debug_log(b)
+                break
+            debug_log(a)
+        return 0
+
+    run_and_validate(fn)
+
+
+def test_generator_consumed_by_two_sequential_loops_matches_python():
+    # Reuse is only a problem while an earlier value is still live; back-to-back loops are fine.
+    def fn():
+        def gen():
+            yield 1
+            yield 2
+            yield 3
+
+        total = 0
+        it = gen()
+        for x in it:
+            total += x
+        for x in it:
+            total += x * 10
+        return total
+
+    assert run_and_validate(fn) == 6
+
+
+def test_exhausted_compile_time_zip_repeats_pinned():
+    # run_compiled, not run_and_validate: accepted divergence. zip/enumerate/reversed over a compile-time
+    # construct produce a tuple rather than a one-shot iterator, so a second loop repeats the sequence where
+    # plain Python yields nothing.
+    def fn():
+        it = zip((1, 2), (10, 20), strict=False)
+        for a, b in it:
+            debug_log(a + b)
+        for a, b in it:
+            debug_log(a + b)
+        return 0
+
+    logs = []
+    run_compiled(fn, log_callback=logs.append)
+    assert logs == [11, 22, 11, 22]

@@ -4108,7 +4108,8 @@ cdef bint _rsw_block_empty(Func f, int32_t b) noexcept nogil:
     istart = f.blocks[b].instr_start
     icount = f.blocks[b].instr_count
     for i in range(istart, istart + icount):
-        if f.instrs[i].flags & FLAG_STMT_ROOT:
+        # A side-effecting instr can lack FLAG_STMT_ROOT (see _run_dce); splicing the block away would delete it.
+        if f.instrs[i].flags & (FLAG_STMT_ROOT | FLAG_SIDE_EFFECT):
             return False
     return True
 

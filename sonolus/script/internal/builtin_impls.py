@@ -1,3 +1,4 @@
+from enum import Enum
 from types import FunctionType
 from typing import Any, Never, assert_never
 
@@ -31,21 +32,155 @@ from sonolus.script.record import Record
 _empty = object()
 
 
+def _type_name(value) -> str:
+    """A readable type name for a value, for use in error messages.
+
+    `type(value).__name__` is not usable directly: a compile-time constant is wrapped in a per-value ConstantValue
+    subclass whose name embeds `object.__repr__` of the wrapped value, memory address included, and DictImpl and
+    SetImpl are generics whose type arguments spell out the same wrappers.
+    """
+    from sonolus.script.internal.constant import ConstantValue
+
+    if isinstance(value, ConstantValue):
+        py_value = value._as_py_()
+        # A class's own type is its metaclass (RecordMeta, EnumType, ...), which is an internal detail; report
+        # classes the way Python does instead.
+        if isinstance(py_value, (type, *_BUILTIN_TYPE_SHIMS)):
+            return "type"
+        return type(py_value).__name__
+    if isinstance(value, _BUILTIN_TYPE_SHIMS):
+        return "type"
+    if isinstance(value, SetImpl):
+        return "set"
+    if isinstance(value, DictImpl):
+        return "dict"
+    return type(value).__name__
+
+
+def _unwrap_set(value):
+    """Return the value that carries a set's elements, leaving anything else alone."""
+    return value._dict if isinstance(value, SetImpl) else value
+
+
+def _class_arg_name(value) -> str:
+    """A readable description of the class argument to isinstance() or issubclass()."""
+    if id(value) in _BUILTIN_ALIAS_NAMES:
+        return _BUILTIN_ALIAS_NAMES[id(value)]
+    if isinstance(value, SetImpl | DictImpl):
+        return _type_name(value)
+    if isinstance(value, tuple):
+        # A tuple of classes is described element by element, since a set or dict nested in one would otherwise
+        # print its own repr.
+        inner = ", ".join(_class_arg_name(item) for item in value)
+        return f"({inner},)" if len(value) == 1 else f"({inner})"
+    return str(value)
+
+
+def _comptime_iter_result(items) -> TupleImpl:
+    """Wrap the result of a compile-time `zip`, `enumerate`, or `reversed` as a tuple."""
+    return TupleImpl._accept_(tuple(items))
+
+
+def _compile_time_iterable_kind(value) -> str | None:
+    if isinstance(value, TupleImpl):
+        return "a tuple"
+    if isinstance(value, DictImpl):
+        return "a dict"
+    if isinstance(value, SetImpl):
+        return "a set"
+    if value._is_py_():
+        py_value = value._as_py_()
+        if isinstance(py_value, type) and issubclass(py_value, Enum):
+            return "an enum class"
+    return None
+
+
+def _resolve_class_arg(value, check: str):
+    """Map a builtin type to the internal type representing it, mirroring the aliases isinstance() accepts.
+
+    `check` names the kind of check for the error messages, and is "Instance" or "Subclass".
+    """
+    if value is dict or value is _dict:
+        return DictImpl
+    if value is set or value is _set:
+        return SetImpl
+    if value is frozenset:
+        raise TypeError(f"{check} check against frozenset is not supported")
+    if value is tuple:
+        return TupleImpl
+    if value is _int or value is _float or value is _bool:
+        raise TypeError(f"{check} check against int, float, or bool is not supported, use Num instead")
+    return value
+
+
+# dict, set, and tuple resolve to internal types that subclass Record or TransientValue, so a plain issubclass
+# would report them as subclasses of those bases too, which Python does not. Since the builtin aliases are the
+# only spelling for these types, anything outside the aliases must fail rather than expose that hierarchy.
+_ALIAS_REPRS = (DictImpl, SetImpl, TupleImpl)
+
+
+def _alias_repr_isolated(cls) -> bool:
+    """Whether cls is one of the internal types dict, set, and tuple resolve to."""
+    return isinstance(cls, type) and issubclass(cls, _ALIAS_REPRS)
+
+
+def _matches_outside_alias_repr(candidate, base) -> bool:
+    """Whether candidate is allowed to match base, given the alias representations sit outside the public tree."""
+    return _alias_repr_isolated(base) or not _alias_repr_isolated(candidate)
+
+
+def _comptime_class_arg(value, name: str, position: str):
+    """Unwrap a class argument to isinstance()/issubclass(), which both fold entirely at compile time."""
+    value = validate_value(value)
+    if not value._is_py_():
+        raise TypeError(f"{name}() arg {position} must be a class known at compile time")
+    return value._as_py_()
+
+
+def _check_classinfo(classinfo, matches, *, check: str, name: str, original) -> bool:
+    """Evaluate an isinstance()/issubclass() check against classinfo, which may be a tuple of classes."""
+    if isinstance(classinfo, tuple):
+        results = [_check_classinfo(member, matches, check=check, name=name, original=original) for member in classinfo]
+        return any(results)
+    classinfo = _resolve_class_arg(classinfo, check)
+    if not (
+        isinstance(classinfo, type)
+        and (issubclass(classinfo, Value) or getattr(classinfo, "_allow_instance_check_", False))
+    ):
+        raise TypeError(f"Unsupported type: {_class_arg_name(original)} for {name}")
+    return matches(classinfo)
+
+
 @meta_fn
 def _isinstance(value, type_):
     value = validate_value(value)
-    type_ = validate_value(type_)._as_py_()
-    if type_ in {dict, _dict}:
-        return isinstance(value, DictImpl)
-    if type_ in {set, frozenset, _set}:
-        return isinstance(value, SetImpl)
-    if type_ is tuple:
-        return isinstance(value, TupleImpl)
-    if type_ in {_int, _float, _bool}:
-        raise TypeError("Instance check against int, float, or bool is not supported, use Num instead")
-    if not (isinstance(type_, type) and (issubclass(type_, Value) or getattr(type_, "_allow_instance_check_", False))):
-        raise TypeError(f"Unsupported type: {type_} for isinstance")
-    return validate_value(isinstance(value, type_))
+    type_ = _comptime_class_arg(type_, "isinstance", "2")
+    result = _check_classinfo(
+        type_,
+        lambda cls: isinstance(value, cls) and _matches_outside_alias_repr(type(value), cls),
+        check="Instance",
+        name="isinstance",
+        original=type_,
+    )
+    return validate_value(result)
+
+
+@meta_fn
+def _issubclass(cls, classinfo):
+    cls = _comptime_class_arg(cls, "issubclass", "1")
+    classinfo = _comptime_class_arg(classinfo, "issubclass", "2")
+    # Only classinfo may be a tuple; a tuple as arg 1 falls through to the "must be a class" check, as in Python.
+    cls = _resolve_class_arg(cls, "Subclass")
+    if not isinstance(cls, type):
+        raise TypeError("issubclass() arg 1 must be a class")
+    result = _check_classinfo(
+        classinfo,
+        lambda base: issubclass(cls, base) and _matches_outside_alias_repr(cls, base),
+        check="Subclass",
+        name="issubclass",
+        original=classinfo,
+    )
+    return validate_value(result)
 
 
 @meta_fn
@@ -56,7 +191,7 @@ def _len(value):
     if has_tuple_iter(value):
         return len(tuple_iter(value))
     if not hasattr(value, "__len__"):
-        raise TypeError(f"object of type '{type(value).__name__}' has no len()")
+        raise TypeError(f"object of type '{_type_name(value)}' has no len()")
     return compile_and_call(value.__len__)  # type: ignore
 
 
@@ -64,11 +199,11 @@ def _len(value):
 def _enumerate(iterable, start=0):
     from sonolus.script.internal.visitor import compile_and_call
 
-    iterable = validate_value(iterable)
+    iterable = _unwrap_set(validate_value(iterable))
     if has_tuple_iter(iterable):
-        return TupleImpl._accept_(tuple((start + i, value) for i, value in enumerate(tuple_iter(iterable))))
+        return _comptime_iter_result((start + i, value) for i, value in enumerate(tuple_iter(iterable)))
     elif not hasattr(iterable, "__iter__"):
-        raise TypeError(f"'{type(iterable).__name__}' object is not iterable")
+        raise TypeError(f"'{_type_name(iterable)}' object is not iterable")
     elif isinstance(iterable, ArrayLike):
         return compile_and_call(iterable._enumerate_, start)
     else:
@@ -84,9 +219,9 @@ def _reversed(iterable):
 
     iterable = validate_value(iterable)
     if has_tuple_iter(iterable):
-        return TupleImpl(tuple(reversed(tuple_iter(iterable))))
+        return _comptime_iter_result(reversed(tuple_iter(iterable)))
     if not isinstance(iterable, ArrayLike):
-        raise TypeError(f"Unsupported type: {type(iterable)} for reversed")
+        raise TypeError(f"'{_type_name(iterable)}' object is not reversible")
     return compile_and_call(iterable.__reversed__)
 
 
@@ -101,11 +236,16 @@ def _zip(*iterables, strict: bool = False):
     if not iterables:
         return _EmptyIterator()
 
-    iterables = [validate_value(iterable) for iterable in iterables]
+    iterables = [_unwrap_set(validate_value(iterable)) for iterable in iterables]
     if any(has_tuple_iter(iterable) for iterable in iterables):
         if not all(has_tuple_iter(iterable) for iterable in iterables):
             raise TypeError("Cannot mix tuples with other types in zip")
-        return TupleImpl._accept_(tuple(zip(*(tuple_iter(iterable) for iterable in iterables), strict=False)))
+        return _comptime_iter_result(zip(*(tuple_iter(iterable) for iterable in iterables), strict=False))
+    for iterable in iterables:
+        # Checked explicitly so a non-iterable argument gets the same message as it would from iter(), rather than
+        # an internal AttributeError naming the wrapper class.
+        if not hasattr(iterable, "__iter__"):
+            raise TypeError(f"'{_type_name(iterable)}' object is not iterable")
     iterators = [compile_and_call(iterable.__iter__) for iterable in iterables]
     if not all(isinstance(iterator, SonolusIterator) for iterator in iterators):
         raise TypeError("Only subclasses of SonolusIterator are supported as iterators")
@@ -121,12 +261,37 @@ def _abs(value):
 
     value = validate_value(value)
     if not hasattr(value, "__abs__"):
-        raise TypeError(f"bad operand type for abs(): '{type(value).__name__}'")
+        raise TypeError(f"bad operand type for abs(): '{_type_name(value)}'")
     return compile_and_call(value.__abs__)  # type: ignore
 
 
 def _identity(value):
     return value
+
+
+def _array_like_extremum(iterable, default, key, *, is_max: bool):
+    from sonolus.script.array_like import _validate_extremum_default
+    from sonolus.script.internal.visitor import compile_and_call
+
+    name = "max" if is_max else "min"
+    plain = iterable._max_ if is_max else iterable._min_
+    if default is _empty:
+        return compile_and_call(plain, key=key)
+    default = validate_value(default)
+    if not (_is_num(default) or isinstance(default, Record | Array)):
+        raise TypeError(f"default argument to {name}() must be a number, record, or array, got '{_type_name(default)}'")
+    length = validate_value(compile_and_call(iterable.__len__))
+    if length._is_py_():
+        if length._as_py_() == 0:
+            # Known to be empty, so the default is the result and there is nothing to compare it against.
+            return default
+        # Known to be non-empty, so the default is unreachable, but still has to be a usable stand-in for an
+        # element so that the same call doesn't start failing once the length stops being a constant.
+        result = compile_and_call(plain, key=key)
+        _validate_extremum_default(result, default)
+        return result
+    with_default = iterable._max_with_default_ if is_max else iterable._min_with_default_
+    return compile_and_call(with_default, default, key=key)
 
 
 @meta_fn
@@ -140,9 +305,9 @@ def _max(*args, default=_empty, key=None):
     if len(args) == 0:
         raise ValueError("Expected at least one argument to max")
     elif len(args) == 1:
-        (iterable,) = args
+        iterable = _unwrap_set(args[0])
         if isinstance(iterable, ArrayLike):
-            return compile_and_call(iterable._max_, key=key)
+            return _array_like_extremum(iterable, default, key, is_max=True)
         elif has_tuple_iter(iterable) and all(_is_num(v) for v in tuple_iter(iterable)):
             t = tuple_iter(iterable)
             if len(t) == 0:
@@ -160,7 +325,7 @@ def _max(*args, default=_empty, key=None):
                 key=key if key is not _identity else None,
             )
         else:
-            raise TypeError(f"Unsupported type: {type(iterable)} for max")
+            raise TypeError(f"Unsupported type: '{_type_name(iterable)}' for max")
     else:
         if default is not _empty:
             raise TypeError("default argument is not supported for max with multiple arguments")
@@ -236,9 +401,9 @@ def _min(*args, default=_empty, key=None):
     if len(args) == 0:
         raise ValueError("Expected at least one argument to min")
     elif len(args) == 1:
-        (iterable,) = args
+        iterable = _unwrap_set(args[0])
         if isinstance(iterable, ArrayLike):
-            return compile_and_call(iterable._min_, key=key)
+            return _array_like_extremum(iterable, default, key, is_max=False)
         elif has_tuple_iter(iterable) and all(_is_num(v) for v in tuple_iter(iterable)):
             t = tuple_iter(iterable)
             if len(t) == 0:
@@ -256,7 +421,7 @@ def _min(*args, default=_empty, key=None):
                 key=key if key is not _identity else None,
             )
         else:
-            raise TypeError(f"Unsupported type: {type(iterable)} for min")
+            raise TypeError(f"Unsupported type: '{_type_name(iterable)}' for min")
     else:
         if default is not _empty:
             raise TypeError("default argument is not supported for min with multiple arguments")
@@ -323,18 +488,79 @@ def _min_num_iterator(iterable, default, key):
 
 @meta_fn
 def _callable(value):
-    return callable(value)
+    value = validate_value(value)
+    if value._is_py_():
+        value = value._as_py_()
+    return validate_value(callable(value))
 
 
+def _map_over_compile_time_iterables(fn, *iterables):
+    """map() over compile-time iterables, written as an ordinary generator function.
+
+    zip() stops at the shortest iterable, matching Python's map() and the runtime path.
+    """
+    for args in zip(*iterables):  # noqa: B905
+        yield fn(*args)
+
+
+@meta_fn
 def _map(fn, iterable, *iterables):
+    """map(), dispatching between the compile-time iterable path and the runtime iterator path.
+
+    Tuples, dicts, sets, and enum classes are unrolled at compile time and have no runtime iterator, so they get a
+    compiled generator function instead of going through _MappingIterator. Either way the result is a lazy
+    iterator, as in Python.
+    """
+    from sonolus.script.internal.visitor import compile_and_call
+
+    all_iterables = [_unwrap_set(validate_value(it)) for it in (iterable, *iterables)]
+    if any(has_tuple_iter(it) for it in all_iterables):
+        # Checked here rather than being left to the zip() inside the helper so that the message names map(),
+        # which is what the user wrote.
+        if not all(has_tuple_iter(it) for it in all_iterables):
+            raise TypeError("Cannot mix compile-time iterables (tuple, dict, set, enum class) with other types in map")
+        return compile_and_call(_map_over_compile_time_iterables, fn, *all_iterables)
+    for it in all_iterables:
+        if not hasattr(it, "__iter__"):
+            raise TypeError(f"'{_type_name(it)}' object is not iterable")
+    return compile_and_call(_map_runtime, fn, *all_iterables)
+
+
+def _map_runtime(fn, iterable, *iterables):
     if len(iterables) == 0:
         return _MappingIterator(fn, iterable.__iter__())  # noqa: PLC2801
     return _MappingIterator(lambda args: fn(*args), zip(iterable, *iterables))  # noqa: B905
 
 
-def _filter(fn, iterable):
+def _is_none_arg(fn) -> bool:
+    """Whether an argument is None, whether it arrived raw or wrapped as a compile-time constant."""
     if fn is None:
+        return True
+    fn = validate_value(fn)
+    return fn._is_py_() and fn._as_py_() is None
+
+
+def _filter_over_compile_time_iterable(fn, iterable):
+    for value in iterable:
+        if fn(value):
+            yield value
+
+
+@meta_fn
+def _filter(fn, iterable):
+    from sonolus.script.internal.visitor import compile_and_call
+
+    if _is_none_arg(fn):
         fn = _identity
+    iterable = _unwrap_set(validate_value(iterable))
+    if has_tuple_iter(iterable):
+        return compile_and_call(_filter_over_compile_time_iterable, fn, iterable)
+    if not hasattr(iterable, "__iter__"):
+        raise TypeError(f"'{_type_name(iterable)}' object is not iterable")
+    return compile_and_call(_filter_runtime, fn, iterable)
+
+
+def _filter_runtime(fn, iterable):
     return _FilteringIterator(fn, iterable.__iter__())  # noqa: PLC2801
 
 
@@ -382,17 +608,34 @@ class _Float:
 _float = _Float()
 
 
+def _bool_by_compiling(value):
+    """Convert a value to a boolean by putting it in a boolean context."""
+    if value:  # noqa: SIM103
+        return True
+    else:
+        return False
+
+
 class _Bool:
     _is_comptime_value_ = True
     _type_mapping_ = Num
 
     @meta_fn
     def __call__(self, value=False):
-        # Relies on the compiler to perform the conversion in a boolean context
-        if validate_value(value):  # noqa: SIM103
-            return True
-        else:
-            return False
+        from sonolus.script.internal.visitor import compile_and_call
+
+        value = validate_value(value)
+        if _is_num(value):
+            # Unlike a boolean context, which accepts any Num, bool() must normalize to 0/1. Compile-time
+            # values still fold to a compile-time result.
+            return Num._accept_(bool(value._as_py_())) if value._is_py_() else value != 0
+        if value._is_py_() and not (hasattr(type(value), "__bool__") or hasattr(type(value), "__len__")):
+            # Compile-time constants with no truthiness protocol of their own (strings, None, types, functions,
+            # and Records defining neither __bool__ nor __len__) follow ordinary Python truthiness. Unwrapping
+            # first matters: the wrapper itself is always truthy, so bool("") would return True otherwise.
+            return Num._accept_(bool(value._as_py_()))
+        # Everything else is converted by the compiler, since __bool__ and __len__ may return a runtime Num.
+        return compile_and_call(_bool_by_compiling, value)
 
     def __or__(self, other):
         other = validate_value(other)
@@ -418,7 +661,7 @@ class _Set:
             return SetImpl.from_set(tuple_iter(iterable._dict))
         if has_tuple_iter(iterable):
             return SetImpl.from_set(tuple_iter(iterable))
-        raise TypeError(f"'{type(iterable).__name__}' object is not iterable")
+        raise TypeError(f"'{_type_name(iterable)}' object is not iterable")
 
     @meta_fn
     def __getitem__(self, item):
@@ -457,7 +700,7 @@ class _Dict:
             for item in items:
                 item = validate_value(item)
                 if not has_tuple_iter(item):
-                    raise TypeError(f"cannot convert '{type(item).__name__}' object to dict items")
+                    raise TypeError(f"cannot convert '{_type_name(item)}' object to dict items")
                 kv = tuple_iter(item)
                 if len(kv) != 2:
                     raise ValueError(f"dictionary update sequence element has length {len(kv)}; 2 is required")
@@ -466,7 +709,7 @@ class _Dict:
             if kwargs:
                 d.update(kwargs)
             return DictImpl.from_dict(d)
-        raise TypeError(f"'{type(arg).__name__}' object is not a mapping")
+        raise TypeError(f"'{_type_name(arg)}' object is not a mapping")
 
     @meta_fn
     def __getitem__(self, item):
@@ -497,22 +740,54 @@ def _all(iterable):
     return True
 
 
+@meta_fn
+def _require_sum_num(value, what):
+    value = validate_value(value)
+    if not _is_num(value):
+        raise TypeError(
+            f"sum() only supports numeric values, but the {validate_value(what)._as_py_()} has type "
+            f"'{_type_name(value)}'. Accumulate non-numeric values with an explicit loop instead."
+        )
+    return value
+
+
 def _sum(iterable, /, start=0):
+    total = _require_sum_num(start, "start value")
     for value in iterable:
-        start += value
-    return start
+        total = total + _require_sum_num(value, "iterable element")  # noqa: PLR6104
+    return total
+
+
+@meta_fn
+def _detach_next_result(value):
+    if not ctx():
+        return value
+    return validate_value(value)._get_readonly_()
 
 
 def _next(iterator):
     require(isinstance(iterator, SonolusIterator), "Only subclasses of SonolusIterator are supported as iterators")
     value = iterator.next()
     if value.is_some:
-        return value.get_unsafe()
+        return _detach_next_result(value.get_unsafe())
     error("Iterator has been exhausted")
 
 
+@meta_fn
 def _iter(iterable):
-    return iterable.__iter__()  # type: ignore # noqa: PLC2801
+    from sonolus.script.internal.visitor import compile_and_call
+
+    iterable = validate_value(iterable)
+    kind = _compile_time_iterable_kind(iterable)
+    if kind is not None:
+        raise TypeError(
+            f"Cannot call iter() on {kind}: {kind} is a compile-time construct and has no iterator; "
+            "iterate over it directly in a for loop (or via map/filter/zip/enumerate/reversed), "
+            "or use an Array if you need a runtime iterator"
+        )
+    if not hasattr(iterable, "__iter__"):
+        raise TypeError(f"'{_type_name(iterable)}' object is not iterable")
+    return compile_and_call(iterable.__iter__)  # type: ignore
 
 
 @meta_fn
@@ -607,6 +882,21 @@ class _Type(Record):
 
 _type = _Type()
 
+# The singleton stand-ins for the builtin types, which _type_name reports as `type` rather than by their own
+# class names.
+_BUILTIN_TYPE_SHIMS = (_Int, _Float, _Bool, _Set, _Dict, _Type)
+
+# Keyed by id, matching _resolve_class_arg: these are singletons, and _Type is a Record whose __eq__ compares
+# fields rather than identity.
+_BUILTIN_ALIAS_NAMES = {
+    id(_int): "int",
+    id(_float): "float",
+    id(_bool): "bool",
+    id(_set): "set",
+    id(_dict): "dict",
+    id(_type): "type",
+}
+
 
 @meta_fn
 def _assert_never(arg: Never, /):
@@ -629,6 +919,7 @@ BUILTIN_IMPLS = {
     id(hasattr): _hasattr,
     id(int): _int,
     id(isinstance): _isinstance,
+    id(issubclass): _issubclass,
     id(iter): _iter,
     id(len): _len,
     id(map): _map,

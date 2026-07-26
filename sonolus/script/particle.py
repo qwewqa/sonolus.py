@@ -35,13 +35,13 @@ class Particle(Record):
             loop: Whether to loop the particle effect.
 
         Returns:
-            ParticleHandle: A handle to the spawned particle effect.
+            A handle to the spawned particle effect.
         """
         return ParticleHandle(_spawn_particle_effect(self.id, *flatten_quad(quad), duration, loop))
 
 
 class ParticleHandle(Record):
-    """A handle to a looping particle effect."""
+    """A handle to a spawned particle effect."""
 
     id: int
 
@@ -73,16 +73,24 @@ class ParticleGroup(Record, ArrayLike[Particle]):
     size: int
 
     def __len__(self) -> int:
+        """Return the number of particle effects in the group."""
         return self.size
 
     def __getitem__(self, index: int) -> Particle:
+        """Return the particle effect at the given index.
+
+        Args:
+            index: The index of the particle effect. Must be an integer between 0 and `len(self) - 1`.
+        """
         check_positive_index(index, self.size)
         return Particle(self.start_id + index)
 
     def get_unchecked(self, index: int) -> Particle:
+        """Return the particle effect at the given index, possibly without bounds checking."""
         return Particle(self.start_id + index)
 
     def __setitem__(self, index: int, value: Particle) -> None:
+        """Raise a compile-time error; particle groups are read-only."""
         static_error("ParticleGroup is read-only")
 
 
@@ -157,7 +165,7 @@ def particles[T](cls: type[T]) -> T | Particles:
             group_2: ParticleGroup = particle_group(f"name_{i}" for i in range(10))
         ```
     """
-    if len(cls.__bases__) != 1:
+    if cls.__bases__ != (object,):
         raise ValueError("Particles class must not inherit from any class (except object)")
     instance = cls()
     names = []
@@ -256,4 +264,4 @@ class StandardParticle:
 
 @particles
 class EmptyParticles:
-    pass
+    """A particle set with no particles, used as the default when a mode declares none."""

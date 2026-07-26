@@ -43,7 +43,11 @@ def copy[T](value: T) -> T:
 
 
 def swap[T](a: T, b: T):
-    """Swap the values of the two provided mutable values."""
+    """Swap the values of the two provided mutable values.
+
+    Only supported for values of a reference type such as `Array` or `Record`, which support the copy-from operator
+    (`@=`) this relies on. `Num` values do not support `@=` and cannot be swapped with this function.
+    """
     temp = copy(a)
     a @= b  # type: ignore
     b @= temp  # type: ignore

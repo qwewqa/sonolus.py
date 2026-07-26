@@ -154,7 +154,10 @@ class Bucket(Record):
     @property
     @meta_fn
     def window(self) -> JudgmentWindow:
-        """The judgment window of the bucket."""
+        """The judgment window of the bucket.
+
+        Writable only during [`preprocess`][sonolus.script.archetype.PlayArchetype.preprocess].
+        """
         if not ctx():
             raise RuntimeError("Bucket window access outside of compilation")
         match ctx().mode_state.mode:
@@ -226,7 +229,13 @@ def bucket_sprite(
 
 
 def bucket(*, sprites: list[_BucketSprite], unit: AnyText | None = None) -> Any:
-    """Define a bucket with the given sprites and unit."""
+    """Define a bucket with the given sprites and unit.
+
+    Args:
+        sprites: The sprites that make up the bucket's icon, each drawn at its own position and size.
+        unit: The unit label shown with the bucket's accuracy values, as a plain string or an
+            [`AnyText`][sonolus.script.metadata.AnyText] localization dict. If unset, no unit is shown.
+    """
     return _BucketInfo(sprites, encode_localization_text(unit))
 
 
@@ -255,7 +264,7 @@ def buckets[T](cls: type[T]) -> T | Buckets:
             )
         ```
     """
-    if len(cls.__bases__) != 1:
+    if cls.__bases__ != (object,):
         raise ValueError("Buckets class must not inherit from any class (except object)")
     instance = cls()
     bucket_info = []
@@ -280,4 +289,4 @@ def buckets[T](cls: type[T]) -> T | Buckets:
 
 @buckets
 class EmptyBuckets:
-    pass
+    """A bucket set with no buckets, used as the default when a mode declares none."""

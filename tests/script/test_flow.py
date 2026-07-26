@@ -1,5 +1,8 @@
 # ruff: noqa
-"""Test cases intended to cover more complex control flow."""
+"""Test cases intended to cover more complex control flow.
+
+PYTEST_DONT_REWRITE
+"""
 
 import random
 
@@ -10,6 +13,7 @@ from hypothesis import strategies as st
 from sonolus.script.array import Array
 from sonolus.script.containers import Box
 from sonolus.script.debug import debug_log
+from sonolus.script.internal.context import RuntimeChecks
 from sonolus.script.internal.error import CompilationError
 from sonolus.script.vec import Vec2
 from tests.script.conftest import run_compiled
@@ -656,6 +660,39 @@ def test_for_else_not_taken():
     run_and_validate(fn)
 
 
+def test_for_else_over_tuple():
+    # The tuple form is unrolled rather than compiled as a loop, so it needs its own coverage.
+    def fn():
+        for i in (1, 2, 3):
+            debug_log(i)
+        else:
+            debug_log(-1)
+
+    run_and_validate(fn)
+
+
+def test_for_else_over_empty_tuple():
+    def fn():
+        for i in ():
+            debug_log(i)
+        else:
+            debug_log(-1)
+
+    run_and_validate(fn)
+
+
+def test_for_else_over_tuple_with_break():
+    def fn():
+        for i in (1, 2, 3):
+            debug_log(i)
+            if i == 2:
+                break
+        else:
+            debug_log(-1)
+
+    run_and_validate(fn)
+
+
 def black_box():
     # This really always returns True, but the optimizer doesn't know that,
     # so we can use it as a black box to prevent branches from being optimized away.
@@ -982,3 +1019,241 @@ def test_loop_redefinition_of_reference_type_with_invalid_read():
 
     with pytest.raises(CompilationError, match="conflicting definitions"):
         run_compiled(fn)
+
+
+def test_bare_annotation_is_a_noop():
+    def fn():
+        x: int
+        x = 5
+        y: float = 2.5
+        return x + y
+
+    assert run_and_validate(fn) == 7.5
+
+
+def test_bare_annotation_does_not_rebind_existing_value():
+    def fn():
+        x = 3
+        x: int
+        return x
+
+    assert run_and_validate(fn) == 3
+
+
+def test_bare_annotation_for_name_never_assigned():
+    def fn():
+        x: int
+        return 1
+
+    assert run_and_validate(fn) == 1
+
+
+def test_bare_annotation_does_not_bind_name():
+    # Per PEP 526 a bare annotation binds nothing, so reading the name is an error rather than reading
+    # some placeholder value.
+    def fn():
+        x: int
+        return x
+
+    with pytest.raises(CompilationError, match="Name x is not defined"):
+        run_compiled(fn)
+
+
+_SHADOWED_GLOBAL = 5
+
+
+def test_bare_annotation_shadows_a_global():
+    # PEP 526 makes an annotated name local to the whole function, so the module-level value is not visible.
+    def fn():
+        _SHADOWED_GLOBAL: int
+        return _SHADOWED_GLOBAL
+
+    with pytest.raises(CompilationError, match="Name _SHADOWED_GLOBAL is not defined"):
+        run_compiled(fn)
+
+
+def test_bare_annotation_shadows_a_builtin():
+    def fn():
+        len: int  # noqa: A001
+        return len((1, 2, 3))
+
+    with pytest.raises(CompilationError, match="Name len is not defined"):
+        run_compiled(fn)
+
+
+def test_bare_annotation_shadows_for_the_whole_function():
+    def fn():
+        value = _SHADOWED_GLOBAL
+        _SHADOWED_GLOBAL: int
+        return value
+
+    with pytest.raises(CompilationError, match="Name _SHADOWED_GLOBAL is not defined"):
+        run_compiled(fn)
+
+
+def test_parenthesized_bare_annotation_does_not_shadow():
+    # `(x): int` is not a simple target, so unlike `x: int` it does not make the name local and the module-level
+    # value stays visible.
+    def fn():
+        (_SHADOWED_GLOBAL): int
+        return _SHADOWED_GLOBAL
+
+    assert run_and_validate(fn) == 5
+
+
+def test_bare_annotation_in_nested_function_does_not_shadow_outer():
+    def fn():
+        def inner():
+            x: int
+            return 1
+
+        x = 5
+        return x + inner()
+
+    assert run_and_validate(fn) == 6
+
+
+def test_bare_annotation_then_assigned_in_branches():
+    def fn():
+        n = 0
+        for _ in range(3):
+            n += 1
+        total: int
+        if n > 2:
+            total = 10
+        else:
+            total = 20
+        return total
+
+    assert run_and_validate(fn) == 10
+
+
+def test_bare_annotation_on_attribute_target_evaluates_primary():
+    # `p.first: int` binds nothing, but CPython still evaluates the primary `p` for its side effects.
+    def fn():
+        def side(pair):
+            debug_log(11)
+            return pair
+
+        p = Pair(4, 5)
+        side(p).first: int
+        return p.first
+
+    assert run_and_validate(fn) == 4
+
+
+def test_bare_annotation_on_subscript_target_evaluates_primary():
+    def fn():
+        def side(arr):
+            debug_log(7)
+            return arr
+
+        a = Array(1, 2, 3)
+        side(a)[0]: int
+        return a[0]
+
+    assert run_and_validate(fn) == 1
+
+
+def test_bare_annotation_on_subscript_target_evaluates_index():
+    # The index is evaluated too, after the primary and without the subscript itself being performed.
+    def fn():
+        def side_arr(arr):
+            debug_log(7)
+            return arr
+
+        def side_idx(i):
+            debug_log(13)
+            return i
+
+        a = Array(1, 2, 3)
+        side_arr(a)[side_idx(1)]: int
+        return a[1]
+
+    assert run_and_validate(fn) == 2
+
+
+def test_bare_annotation_on_nested_attribute_target_evaluates_primary():
+    def fn():
+        def side(pair):
+            debug_log(11)
+            return pair
+
+        p = Pair(Pair(4, 5), 6)
+        side(p).first.first: int
+        return p.first.second
+
+    assert run_and_validate(fn) == 5
+
+
+def unsupported_msg():
+    return [x for x in range(3)]
+
+
+def test_assert_message_is_compiled_regardless_of_runtime_checks():
+    # Under RuntimeChecks.NONE the assertion is stripped, so the message can never be evaluated, but it's still
+    # compiled so that whether a program compiles doesn't depend on the runtime checks setting.
+    def fn():
+        n = 0
+        for _ in range(3):
+            n += 1
+        assert n == 3, unsupported_msg()
+        return n
+
+    for runtime_checks in RuntimeChecks:
+        with pytest.raises(CompilationError, match="List comprehensions are not supported"):
+            run_compiled(fn, runtime_checks=runtime_checks)
+
+
+def test_statically_true_assert_does_not_compile_its_message():
+    # A statically passing assertion emits nothing at all, message included, so an unsupported construct in the
+    # message is not reported.
+    def fn():
+        assert True, unsupported_msg()
+        return 1
+
+    for runtime_checks in RuntimeChecks:
+        assert run_compiled(fn, runtime_checks=runtime_checks) == 1
+
+
+def test_assert_message_side_effects_do_not_run_when_checks_are_disabled():
+    # The message is compiled into a discarded context, so nothing it emits ends up on the straight-line path.
+    # run_and_validate only compiles with checks disabled without running, so this runs it explicitly.
+    def fn():
+        def message():
+            debug_log(99)
+            return "failed"
+
+        n = 0
+        for _ in range(3):
+            n += 1
+        debug_log(1)
+        assert n == 3, message()
+        debug_log(2)
+        return n
+
+    assert run_and_validate(fn) == 3
+    log = []
+    assert run_compiled(fn, runtime_checks=RuntimeChecks.NONE, log_callback=log.append) == 3
+    assert log == [1, 2]
+
+
+def test_assert_message_bindings_do_not_escape_discarded_context():
+    def fn():
+        def message(value):
+            return "failed" if value else "failed"
+
+        n = 0
+        for _ in range(3):
+            n += 1
+        x = 1
+        assert n == 3, message(x := 2)
+
+        # Python never evaluates the message here, so the walrus doesn't run and x is still 1.
+        def inner():
+            return x
+
+        return inner() * 10 + n
+
+    assert run_and_validate(fn) == 13
+    assert run_compiled(fn, runtime_checks=RuntimeChecks.NONE) == 13

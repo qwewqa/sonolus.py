@@ -86,7 +86,7 @@ def _create_global(cls: type, blocks: dict[Mode, Block], offset: int | None):
     if issubclass(cls, Value):
         cls = validate_concrete_type(cls)
         return _GlobalPlaceholder(cls, blocks, offset)
-    if len(cls.__bases__) != 1:
+    if cls.__bases__ != (object,):
         raise TypeError("Expected a class with no bases or a Value subclass")
     field_offset = 0
     for i, (
@@ -241,6 +241,9 @@ def level_memory[T](cls: type[T]) -> T:
     [`touch`][sonolus.script.archetype.PlayArchetype.touch]).
     Compared to level data, it allows modification during gameplay, but prevents some optimizations.
 
+    All level memory in a given mode shares a combined limit of 4096 values; exceeding it raises a compilation
+    error.
+
     Usage:
         ```python
         @level_memory
@@ -272,6 +275,9 @@ def level_data[T](cls: type[T]) -> T:
     Level data may only be modified during [`preprocess`][sonolus.script.archetype.PlayArchetype.preprocess].
     Compared to level memory, it enables some optimizations during gameplay, so it's recommended to use it
     if mutation is only needed during preprocessing.
+
+    All level data in a given mode shares a combined limit of 4096 values; exceeding it raises a compilation
+    error.
 
     Usage:
         ```python

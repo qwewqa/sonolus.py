@@ -97,7 +97,15 @@ class Quad(Record):
         )
 
     def scale_about(self, factor: Vec2, /, pivot: Vec2) -> Quad:
-        """Scale the quad by the given factor about the given pivot and return a new quad."""
+        """Scale the quad by the given factor about the given pivot and return a new quad.
+
+        Args:
+            factor: The scale factor vector.
+            pivot: The pivot point for scaling.
+
+        Returns:
+            A new scaled quad.
+        """
         return Quad(
             bl=(self.bl - pivot) * factor + pivot,
             tl=(self.tl - pivot) * factor + pivot,
@@ -238,7 +246,15 @@ class Rect(Record):
 
     @classmethod
     def from_center(cls, center: Vec2, dimensions: Vec2) -> Rect:
-        """Create a rectangle from its center and dimensions."""
+        """Create a rectangle from its center and dimensions.
+
+        Args:
+            center: The center point of the rectangle.
+            dimensions: The width (x) and height (y) of the rectangle.
+
+        Returns:
+            A new rectangle with the given center and dimensions.
+        """
         return cls(
             t=center.y + dimensions.y / 2,
             r=center.x + dimensions.x / 2,
@@ -380,7 +396,15 @@ class Rect(Record):
         )
 
     def scale_about(self, factor: Vec2, /, pivot: Vec2) -> Rect:
-        """Scale the rectangle by the given factor about the given pivot and return a new rectangle."""
+        """Scale the rectangle by the given factor about the given pivot and return a new rectangle.
+
+        Args:
+            factor: The scale factor vector.
+            pivot: The pivot point for scaling.
+
+        Returns:
+            A new scaled rectangle.
+        """
         return Rect(
             t=(self.t - pivot.y) * factor.y + pivot.y,
             r=(self.r - pivot.x) * factor.x + pivot.x,
@@ -398,7 +422,15 @@ class Rect(Record):
         ).translate(self.center * (Vec2(1, 1) - factor))
 
     def expand(self, expansion: Vec2, /) -> Rect:
-        """Expand the rectangle by the given amount and return a new rectangle."""
+        """Expand the rectangle by the given amount and return a new rectangle.
+
+        Args:
+            expansion: The distance each edge moves outward, with the x component applied to the left and right
+                edges and the y component applied to the top and bottom edges.
+
+        Returns:
+            A new expanded rectangle.
+        """
         return Rect(
             t=self.t + expansion.y,
             r=self.r + expansion.x,
@@ -407,7 +439,15 @@ class Rect(Record):
         )
 
     def shrink(self, shrinkage: Vec2, /) -> Rect:
-        """Shrink the rectangle by the given amount and return a new rectangle."""
+        """Shrink the rectangle by the given amount and return a new rectangle.
+
+        Args:
+            shrinkage: The distance each edge moves inward, with the x component applied to the left and right
+                edges and the y component applied to the top and bottom edges.
+
+        Returns:
+            A new shrunken rectangle.
+        """
         return Rect(
             t=self.t - shrinkage.y,
             r=self.r - shrinkage.x,
@@ -454,6 +494,14 @@ type QuadLike = _QuadLike | Quad
 
 @perf_meta_fn
 def flatten_quad(quad: QuadLike) -> tuple[float, float, float, float, float, float, float, float]:
+    """Flatten a quad-like value into a tuple of its corner coordinates.
+
+    Args:
+        quad: The quad to flatten.
+
+    Returns:
+        The x and y coordinates of the bottom-left, top-left, top-right, and bottom-right corners, in that order.
+    """
     bl = quad.bl
     tl = quad.tl
     tr = quad.tr

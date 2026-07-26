@@ -74,10 +74,10 @@ def __round(x: float) -> float:
     return round(x)
 
 
-def _round(x: float, n: int = 0) -> float:
-    if n == 0:
-        return __round(x)
-    return __round(x * 10**n) / 10**n
+def _round(number: float, ndigits: int = 0) -> float:
+    if ndigits == 0:
+        return __round(number)
+    return __round(number * 10**ndigits) / 10**ndigits
 
 
 @native_function(Op.Frac, const_eval=True)
@@ -136,4 +136,6 @@ MATH_BUILTIN_IMPLS = {
     id(round): _round,
     id(math.log): _log,
     id(math.sqrt): _sqrt,
+    id(math.degrees): _degrees,
+    id(math.radians): _radians,
 }

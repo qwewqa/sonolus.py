@@ -2103,7 +2103,7 @@
   v2 <- !v1
   goto 313 if v2 else 314
 313:
-  goto 372
+  goto 376
 314:
   v3 <- 1.0
   goto 315
@@ -2189,7 +2189,7 @@
 343:
   goto 344
 344:
-  goto 345 if v22 else 371
+  goto 345 if v22 else 375
 345:
   goto 346
 346:
@@ -2231,39 +2231,47 @@
   goto 362
 362:
   v26 <- v24 < v25
-  goto 363 if v26 else 366
+  goto 363 if v26 else 370
 363:
   v27 <- v23
-  v28 <- 0 + v27
-  v29 <- v28 + 1.0
-  v30 <- v3
-  v31 <- v30 + v29
-  v32 <- v23
-  v33 <- v32 + 1.0
-  v23 <- v33
   goto 364
 364:
   goto 365
 365:
-  v34 <- 1.0
-  goto 367
+  v28 <- 0 + v27
+  v29 <- v28 + 1.0
+  v30 <- v3
+  v31 <- v30 + v29
+  goto 366
 366:
-  v34 <- 0
   goto 367
 367:
+  v32 <- v23
+  v33 <- v32 + 1.0
+  v23 <- v33
   goto 368
 368:
-  goto 369 if v34 else 370
+  goto 369
 369:
-  v35 <- Spawn(1.0, v13, StreamGetValue(v31, v14))
-  goto 357
+  v34 <- 1.0
+  goto 371
 370:
-  goto 328
+  v34 <- 0
+  goto 371
 371:
   goto 372
 372:
-  goto 373
+  goto 373 if v34 else 374
 373:
-  goto 374
+  v35 <- Spawn(1.0, v13, StreamGetValue(v31, v14))
+  goto 357
 374:
+  goto 328
+375:
+  goto 376
+376:
+  goto 377
+377:
+  goto 378
+378:
   goto exit

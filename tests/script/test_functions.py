@@ -1,5 +1,8 @@
+import pytest
+
 from sonolus.script.array import Array
 from sonolus.script.debug import debug_log
+from sonolus.script.internal.error import CompilationError
 from tests.script.conftest import run_and_validate
 from tests.script.test_record import Pair
 
@@ -1252,3 +1255,24 @@ def test_augassign_subscript_index_evaluated_once():
         return Array(arr[0], arr[1], arr[2], state[0])
 
     assert run_and_validate(fn) == Array(10, 0, 0, 1)
+
+
+def test_nested_def_in_loop_is_loop_carried():
+    def fn():
+        def f():
+            return 100
+
+        total = 0
+        i = 0
+        while i < 3:
+            i += 1
+            total += f()
+
+            def f():
+                return 1
+
+        return total
+
+    assert fn() == 102
+    with pytest.raises(CompilationError, match="Variable 'f' may have conflicting definitions"):
+        run_and_validate(fn)

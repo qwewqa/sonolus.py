@@ -14,14 +14,15 @@ from typing import Any, Never
 
 from sonolus.backend.excepthook import install_excepthook
 from sonolus.backend.utils import get_function, get_signature, scan_writes
-from sonolus.script.debug import assert_true
-from sonolus.script.internal.builtin_impls import BUILTIN_IMPLS, _bool, _float, _int, _len, _super
+from sonolus.script.debug import assert_true, require
+from sonolus.script.internal.builtin_impls import BUILTIN_IMPLS, _bool, _float, _int, _len, _super, _type_name
 from sonolus.script.internal.constant import ConstantValue
 from sonolus.script.internal.context import (
     ConflictBinding,
     Context,
     EmptyBinding,
     FunctionVisitStatistics,
+    RuntimeChecks,
     Scope,
     ValueBinding,
     ctx,
@@ -33,7 +34,7 @@ from sonolus.script.internal.error import CompilationError
 from sonolus.script.internal.impl import validate_value
 from sonolus.script.internal.meta_fn import meta_fn
 from sonolus.script.internal.transient import TransientValue
-from sonolus.script.internal.tuple_impl import has_tuple_iter, tuple_iter
+from sonolus.script.internal.tuple_impl import TupleImpl, has_tuple_iter, tuple_iter
 from sonolus.script.internal.value import Value
 from sonolus.script.iterator import SonolusIterator
 from sonolus.script.maybe import Maybe, Nothing
@@ -115,7 +116,7 @@ def generate_fn_impl(fn: Callable):
             elif callable(fn):
                 raise TypeError(f"Unsupported callable {fn!r}")
             else:
-                raise TypeError(f"'{type(fn).__name__}' object is not callable")
+                raise TypeError(f"'{_type_name(fn)}' object is not callable")
 
 
 def _compute_fn_info(fn: Callable) -> tuple[str, str, ChainMap]:
@@ -419,6 +420,7 @@ class Visitor(ast.NodeVisitor):
         self.active_ctx = None
         self.parent = parent
         self.used_parent_binding_values = {}
+        self.declared_locals = frozenset()
         self.function_name = function_name
         if qualified_name is None:
             if parent is None:
@@ -444,6 +446,7 @@ class Visitor(ast.NodeVisitor):
         match node:
             case ast.FunctionDef(body=body):
                 ctx().scope.set_value("$return", validate_value(None))
+                self.declared_locals = getattr(node, "declared_locals", frozenset())
                 for stmt in body:
                     if not ctx().live:
                         break
@@ -461,7 +464,7 @@ class Visitor(ast.NodeVisitor):
                     initial_iterator = iterable
                 else:
                     if not hasattr(iterable, "__iter__"):
-                        raise TypeError(f"Object of type '{type(iterable).__name__}' is not iterable")
+                        raise TypeError(f"Object of type '{_type_name(iterable)}' is not iterable")
                     initial_iterator = self.handle_call(first_generator.iter, iterable.__iter__)
                     if not isinstance(initial_iterator, SonolusIterator):
                         raise ValueError("Unsupported iterator")
@@ -568,13 +571,33 @@ class Visitor(ast.NodeVisitor):
             for value in tuple_iter(iterable):
                 set_ctx(ctx().branch(None))
                 self.handle_assign(generator.target, validate_value(value))
-                self.construct_genexpr(others, elt)
+                # Unlike the iterator arm below there's no loop header to branch back to, so a filtered out
+                # element falls forward into the next element's code instead, which is only emitted afterwards.
+                skip_ctxs = []
+                skipped = False
+                for if_expr in generator.ifs:
+                    test = self.convert_to_boolean_num(if_expr, self.visit(if_expr))
+                    if test._is_py_():
+                        if test._as_py_():
+                            continue
+                        else:
+                            skipped = True
+                            break
+                    else:
+                        ctx().test = test.ir()
+                        if_then_ctx = ctx().branch(None)
+                        skip_ctxs.append(ctx().branch(0))
+                        set_ctx(if_then_ctx)
+                if not skipped:
+                    self.construct_genexpr(others, elt)
+                if skip_ctxs:
+                    set_ctx(Context.meet([ctx(), *skip_ctxs]))
         else:
             if initial_iterator is not None:
                 iterator = initial_iterator
             else:
                 if not hasattr(iterable, "__iter__"):
-                    raise TypeError(f"Object of type '{type(iterable).__name__}' is not iterable")
+                    raise TypeError(f"Object of type '{_type_name(iterable)}' is not iterable")
                 iterator = self.handle_call(generator.iter, iterable.__iter__)
             if not isinstance(iterator, SonolusIterator):
                 raise ValueError("Unsupported iterator")
@@ -739,10 +762,21 @@ class Visitor(ast.NodeVisitor):
                 return
         raise TypeError(
             f"unsupported operand type(s) for {op_to_symbol[type(node.op)]}=: "
-            f"'{type(lhs_value).__name__}' and '{type(rhs_value).__name__}'"
+            f"'{_type_name(lhs_value)}' and '{_type_name(rhs_value)}'"
         )
 
     def visit_AnnAssign(self, node):
+        if node.value is None:
+            # A bare annotation like `x: int` binds nothing and doesn't evaluate the annotation. For a non-simple
+            # target CPython still evaluates the primary (and the subscript index) for their side effects, but
+            # discards them without loading the attribute or item.
+            match node.target:
+                case ast.Attribute(value=primary):
+                    self.visit(primary)
+                case ast.Subscript(value=primary, slice=slice_expr):
+                    self.visit(primary)
+                    self.visit(slice_expr)
+            return
         value = self.visit(node.value)
         self.handle_assign(node.target, value)
 
@@ -767,11 +801,16 @@ class Visitor(ast.NodeVisitor):
                 continue_ctxs = [*self.loop_head_ctxs.pop(), ctx()]
                 break_ctxs.extend(self.break_ctxs.pop())
                 set_ctx(Context.meet(continue_ctxs))
+            # Visited here, in the fall-through context, before the break contexts are merged in.
+            for stmt in node.orelse:
+                if not ctx().live:
+                    break
+                self.visit(stmt)
             if break_ctxs:
                 set_ctx(Context.meet([*break_ctxs, ctx()]))
             return
         if not hasattr(iterable, "__iter__"):
-            raise TypeError(f"Object of type '{type(iterable).__name__}' is not iterable")
+            raise TypeError(f"Object of type '{_type_name(iterable)}' is not iterable")
         iterator = self.handle_call(node, iterable.__iter__)
         if not isinstance(iterator, SonolusIterator):
             raise ValueError("Unsupported iterator")
@@ -925,6 +964,12 @@ class Visitor(ast.NodeVisitor):
         for case in node.cases:
             if not ctx().live:
                 break
+            # Reject stars up front rather than in handle_match_pattern: a star nested inside a sequence pattern
+            # whose length test fails statically is never visited, which would make the arm silently not match.
+            if any(isinstance(sub, ast.MatchStar) for sub in ast.walk(case.pattern)):
+                raise NotImplementedError(
+                    "Star sub-patterns (e.g. `case [a, *rest]:`) in sequence match patterns are not supported"
+                )
             true_ctx, false_ctx = self.handle_match_pattern(subject, case.pattern)
             if not true_ctx.live:
                 set_ctx(false_ctx)
@@ -1002,7 +1047,7 @@ class Visitor(ast.NodeVisitor):
                     return true_ctx, false_ctx
             case ast.MatchSequence(patterns=patterns):
                 target_len = len(patterns)
-                if not (isinstance(subject, Sequence) or has_tuple_iter(subject)):
+                if not isinstance(subject, Sequence | TupleImpl):
                     return ctx().into_dead(), ctx()
                 length_test = self.convert_to_boolean_num(pattern, validate_value(_len(subject) == target_len))
                 ctx_init = ctx()
@@ -1023,6 +1068,9 @@ class Visitor(ast.NodeVisitor):
                     true_ctx, false_ctx = self.handle_match_pattern(value, subpattern)
                     false_ctxs.append(false_ctx)
                     set_ctx(true_ctx)
+                if not false_ctxs:
+                    # Empty sequence pattern with a statically-matching length: nothing can fail.
+                    return true_ctx, true_ctx.into_dead()
                 return true_ctx, Context.meet(false_ctxs)
             case ast.MatchMapping():
                 raise NotImplementedError("Match mappings are not supported")
@@ -1067,7 +1115,10 @@ class Visitor(ast.NodeVisitor):
                     return true_ctx, Context.meet(false_ctxs)
                 return ctx(), ctx().into_dead()
             case ast.MatchStar():
-                raise NotImplementedError("Match stars are not supported")
+                # Unreachable: visit_Match rejects patterns containing stars before recursing here.
+                raise NotImplementedError(
+                    "Star sub-patterns (e.g. `case [a, *rest]:`) in sequence match patterns are not supported"
+                )
             case ast.MatchAs(pattern=pattern, name=name):
                 if pattern:
                     true_ctx, false_ctx = self.handle_match_pattern(subject, pattern)
@@ -1099,9 +1150,31 @@ class Visitor(ast.NodeVisitor):
         raise NotImplementedError("Try* statements are not supported")
 
     def visit_Assert(self, node):
-        self.handle_call(
-            node, assert_true, self.visit(node.test), self.visit(node.msg) if node.msg else validate_value(None)
-        )
+        test = self.convert_to_boolean_num(node.test, self.visit(node.test))
+        if node.msg is None:
+            self.handle_call(node, assert_true, test, validate_value(None))
+            return
+        # The message must not be emitted on the straight-line path, since its side effects would run even
+        # when the assertion passes.
+        if test._is_py_():
+            if test._as_py_():
+                return
+            self.handle_call(node, assert_true, test, self.visit(node.msg))
+            return
+        if ctx().project_state.runtime_checks == RuntimeChecks.NONE:
+            # Run the msg in a dead context to still get some errors out of it.
+            active_ctx = self.active_ctx
+            with using_ctx(ctx().new_disconnected()):
+                self.visit(node.msg)
+            self.active_ctx = active_ctx
+            return
+        ctx().test = test.ir()
+        true_ctx = ctx().branch(None)
+        false_ctx = ctx().branch(0)
+        set_ctx(false_ctx)
+        # The test is known to be false here, so this evaluates the message and terminates like assert_true would.
+        self.handle_call(node, require, validate_value(0), self.visit(node.msg))
+        set_ctx(true_ctx)
 
     def visit_Import(self, node):
         raise NotImplementedError("Import statements are not supported")
@@ -1186,7 +1259,7 @@ class Visitor(ast.NodeVisitor):
                 return result
         raise TypeError(
             f"unsupported operand type(s) for {op_to_symbol[type(node.op)]}: "
-            f"'{type(lhs).__name__}' and '{type(rhs).__name__}'"
+            f"'{_type_name(lhs)}' and '{_type_name(rhs)}'"
         )
 
     def visit_UnaryOp(self, node):
@@ -1200,7 +1273,7 @@ class Visitor(ast.NodeVisitor):
                 return self.handle_call(node, getattr(type(operand_py), op), operand_py)
         if hasattr(operand, op):
             return self.handle_call(node, getattr(operand, op))
-        raise TypeError(f"bad operand type for unary {op_to_symbol[type(node.op)]}: '{type(operand).__name__}'")
+        raise TypeError(f"bad operand type for unary {op_to_symbol[type(node.op)]}: '{_type_name(operand)}'")
 
     def visit_Lambda(self, node):
         signature = self.arguments_to_signature(node.args)
@@ -1301,7 +1374,7 @@ class Visitor(ast.NodeVisitor):
                 set_ctx(resume_ctx)
             return validate_value(None)
         if not hasattr(value, "__iter__"):
-            raise TypeError(f"Object of type '{type(value).__name__}' is not iterable")
+            raise TypeError(f"Object of type '{_type_name(value)}' is not iterable")
         iterator = self.handle_call(node, value.__iter__)
         if not isinstance(iterator, SonolusIterator):
             raise ValueError("Expected a SonolusIterator")
@@ -1364,8 +1437,8 @@ class Visitor(ast.NodeVisitor):
                     return Num._accept_(True)
                 else:
                     raise TypeError(
-                        f"'{op_to_symbol[type(op)]}' not supported between instances of '{type(l_val).__name__}' and "
-                        f"'{type(r_val).__name__}'"
+                        f"'{op_to_symbol[type(op)]}' not supported between instances of '{_type_name(l_val)}' and "
+                        f"'{_type_name(r_val)}'"
                     )
             result = self.ensure_boolean_num(result)
             if inverted:
@@ -1476,6 +1549,8 @@ class Visitor(ast.NodeVisitor):
                 if v is not self:
                     used_parent_binding_values[name] = result
                 return result
+            if name in v.declared_locals:
+                raise NameError(f"Name {name} is not defined")
             v = v.parent
         if name in self.globals:
             value = self.globals[name]
@@ -1663,19 +1738,19 @@ class Visitor(ast.NodeVisitor):
             else:
                 if isinstance(target, Value) and hasattr(target, "__getitem__"):
                     return self.handle_call(node, target.__getitem__, key)
-                raise TypeError(f"Cannot get items on {type(target).__name__}")
+                raise TypeError(f"Cannot get items on {_type_name(target)}")
 
     def handle_setitem(self, node: ast.stmt | ast.expr, target: Value, key: Value, value: Value):
         with self.reporting_errors_at_node(node):
             if isinstance(target, Value) and hasattr(target, "__setitem__"):
                 return self.handle_call(node, target.__setitem__, key, value)
-            raise TypeError(f"Cannot set items on {type(target).__name__}")
+            raise TypeError(f"Cannot set items on {_type_name(target)}")
 
     def handle_delitem(self, node: ast.stmt | ast.expr, target: Value, key: Value):
         with self.reporting_errors_at_node(node):
             if isinstance(target, Value) and hasattr(target, "__delitem__"):
                 return self.handle_call(node, target.__delitem__, key)
-            raise TypeError(f"Cannot delete items on {type(target).__name__}")
+            raise TypeError(f"Cannot delete items on {_type_name(target)}")
 
     def handle_starred(self, value: Value) -> tuple[Value, ...]:
         if has_tuple_iter(value):
@@ -1692,7 +1767,7 @@ class Visitor(ast.NodeVisitor):
     def ensure_boolean_num(self, value) -> Num:
         # This just checks the type for now, although we could support custom __bool__ implementations in the future
         if not _is_num(value):
-            raise TypeError(f"Invalid type where a bool (Num) was expected: {type(value).__name__}")
+            raise TypeError(f"Invalid type where a bool (Num) was expected: {_type_name(value)}")
         return value
 
     def convert_to_boolean_num(self, node, value: Value) -> Num:
@@ -1703,14 +1778,14 @@ class Visitor(ast.NodeVisitor):
         if hasattr(type(value), "__len__"):
             length = self.handle_call(node, type(value).__len__, validate_value(value))
             if not _is_num(length):
-                raise TypeError(f"Invalid type for __len__: {type(length).__name__}")
+                raise TypeError(f"Invalid type for __len__: {_type_name(length)}")
             if length._is_py_():
                 return Num._accept_(length._as_py_() > 0)
             return length > Num._accept_(0)
         if isinstance(value, Record):
             return Num._accept_(1)
         # Not allowing other types to default to truthy for now in case there's any edge cases.
-        raise TypeError(f"Converting {type(value).__name__} to bool is not supported")
+        raise TypeError(f"Converting {_type_name(value)} to bool is not supported")
 
     def arguments_to_signature(self, arguments: ast.arguments) -> inspect.Signature:
         parameters: list[inspect.Parameter] = []

@@ -5,6 +5,7 @@ from typing import (
     Callable,
     Iterable,
     Iterator,
+    Literal,
     Sequence,
     overload,
 )
@@ -45,7 +46,7 @@ def sum(
     """
     ...
 
-def abs(x: builtins.int | builtins.float) -> builtins.int | builtins.float:
+def abs(x: builtins.int | builtins.float, /) -> builtins.int | builtins.float:
     """Return the absolute value of a number.
 
     Args:
@@ -56,18 +57,18 @@ def abs(x: builtins.int | builtins.float) -> builtins.int | builtins.float:
     """
     ...
 
-def bool(x: builtins.int | builtins.float | builtins.bool) -> builtins.bool:
+def bool(x: object = False, /) -> builtins.bool:
     """Convert a value to a Boolean.
 
     Args:
-        x: The value to convert.
+        x: The value to convert. Defaults to False if omitted.
 
     Returns:
         The Boolean value of x.
     """
     ...
 
-def callable(obj: object) -> bool:
+def callable(obj: object, /) -> builtins.bool:
     """Check if the object appears callable.
 
     Args:
@@ -92,7 +93,7 @@ def dict(*args, **kwargs) -> builtins.dict:
     All dict keys must be compile-time constants. Dynamic access using a key that is not
     a compile-time constant is only supported for numeric, Array, and Record values.
 
-    Accepts an optional dict to copy from or an iterable of ``(key, value)`` pairs, plus
+    Accepts an optional dict to copy from or an iterable of `(key, value)` pairs, plus
     optional keyword arguments to include in the dict.
 
     Returns:
@@ -100,7 +101,7 @@ def dict(*args, **kwargs) -> builtins.dict:
     """
     ...
 
-def enumerate[T](iterable: Iterable[T], start: int = 0) -> Iterator[tuple[int, T]]:
+def enumerate[T](iterable: Iterable[T], start: builtins.int = 0) -> Iterator[tuple[builtins.int, T]]:
     """Return an enumerate object.
 
     Args:
@@ -124,11 +125,11 @@ def filter[T](function: Callable[[T], builtins.bool] | None, iterable: Iterable[
     """
     ...
 
-def float(x: builtins.int | builtins.float) -> builtins.float:
+def float(x: builtins.int | builtins.float = 0.0, /) -> builtins.float:
     """Convert a number to a floating point number.
 
     Args:
-        x: The number to convert.
+        x: The number to convert. Defaults to 0.0 if omitted.
 
     Returns:
         The floating point representation of x.
@@ -167,11 +168,11 @@ def hasattr(obj: object, name: builtins.str) -> builtins.bool:
     """
     ...
 
-def int(x: builtins.int | builtins.float) -> builtins.int:
+def int(x: builtins.int | builtins.float = 0, /) -> builtins.int:
     """Convert a number to an integer.
 
     Args:
-        x: The number to convert.
+        x: The number to convert. Defaults to 0 if omitted.
 
     Returns:
         The integer representation of x.
@@ -180,6 +181,9 @@ def int(x: builtins.int | builtins.float) -> builtins.int:
 
 def isinstance(obj: object, classinfo: type | tuple[type, ...]) -> builtins.bool:
     """Check if an object is an instance of a class or of a subclass thereof.
+
+    `classinfo` may be a single type or a tuple of types. Checking against `int`, `float`, or `bool` directly is not
+    supported; use `Num` instead.
 
     Args:
         obj: The object to check.
@@ -193,6 +197,9 @@ def isinstance(obj: object, classinfo: type | tuple[type, ...]) -> builtins.bool
 def issubclass(cls: type, classinfo: type | tuple[type, ...]) -> builtins.bool:
     """Check if a class is a subclass of another class or a tuple of classes.
 
+    Both arguments must be types known at compile time. `classinfo` may be a single type or a tuple of types.
+    Checking against `int`, `float`, or `bool` directly is not supported; use `Num` instead.
+
     Args:
         cls: The class to check.
         classinfo: A class or a tuple of classes.
@@ -205,6 +212,8 @@ def issubclass(cls: type, classinfo: type | tuple[type, ...]) -> builtins.bool:
 def iter[T](iterable: Iterable[T]) -> Iterator[T]:
     """Return an iterator for the given iterable.
 
+    Not supported for a `tuple`, `dict`, `set`, or enum class.
+
     Args:
         iterable: The iterable to convert to an iterator.
 
@@ -213,7 +222,7 @@ def iter[T](iterable: Iterable[T]) -> Iterator[T]:
     """
     ...
 
-def len(s: object) -> builtins.int:
+def len(s: object, /) -> builtins.int:
     """Return the number of items in a container.
 
     Args:
@@ -224,12 +233,16 @@ def len(s: object) -> builtins.int:
     """
     ...
 
-def map[T, S](function: Callable[[T], S], iterable: Iterable[T]) -> Iterator[S]:
+def map[T, S](function: Callable[..., S], iterable: Iterable[T], *iterables: Iterable[Any]) -> Iterator[S]:
     """Apply a function to every item of an iterable and return an iterator.
+
+    A `tuple`, `dict`, `set`, or enum class may be used, but every argument must be one of those, or none may be;
+    mixing them with other iterables raises an error.
 
     Args:
         function: The function to apply.
         iterable: The iterable to process.
+        *iterables: Additional iterables to process in parallel with iterable.
 
     Returns:
         An iterator with the results.
@@ -239,46 +252,68 @@ def map[T, S](function: Callable[[T], S], iterable: Iterable[T]) -> Iterator[S]:
 @overload
 def max[T](iterable: Iterable[T], *, key: Callable[[T], Any] | None = ...) -> T: ...
 @overload
-def max(
-    iterable: Iterable[builtins.int | builtins.float],
+def max[T](
+    iterable: Iterable[T],
     *,
-    default: builtins.int | builtins.float = ...,
+    default: T = ...,
+    key: Callable[[T], Any] | None = ...,
+) -> T: ...
+@overload
+def max(
+    arg1: builtins.int | builtins.float,
+    arg2: builtins.int | builtins.float,
+    *args: builtins.int | builtins.float,
     key: Callable[[builtins.int | builtins.float], Any] | None = ...,
 ) -> builtins.int | builtins.float: ...
-@overload
-def max[T](arg1: T, arg2: T, *args: T, key: Callable[[T], Any] | None = ...) -> T: ...
 def max(*args, **kwargs):
     """Return the largest item in an iterable or the largest of multiple arguments.
 
-    When called with a single iterable, returns the largest item from that iterable.
-    When called with multiple arguments, returns the largest argument.
+    When called with a single iterable, returns the largest item from that iterable. When called with two or
+    more arguments, all arguments must be numbers, and the largest one is returned.
 
-    Use the `key` parameter to specify a function that transforms each element
-    before comparison. Use the `default` parameter to specify a value to return
-    if the iterable is empty (supported only for numeric values).
+    Use the `key` parameter to specify a function that transforms each element before comparison.
+
+    A `tuple`, `dict`, `set`, or enum class argument is only supported when every element is numeric; use an
+    `Array` or `VarArray` for a collection of other types.
+
+    The `default` parameter specifies a value to return if the iterable is empty. It is not supported when called
+    with multiple arguments, and it must be usable in place of an element. When the iterable's length is not known
+    at compile time, the choice between an element and `default` is made at runtime, which only numbers support,
+    so a `Record` or `Array` element type fails to compile there.
     """
     ...
 
 @overload
 def min[T](iterable: Iterable[T], *, key: Callable[[T], Any] | None = ...) -> T: ...
 @overload
-def min(
-    iterable: Iterable[builtins.int | builtins.float],
+def min[T](
+    iterable: Iterable[T],
     *,
-    default: builtins.int | builtins.float = ...,
+    default: T = ...,
+    key: Callable[[T], Any] | None = ...,
+) -> T: ...
+@overload
+def min(
+    arg1: builtins.int | builtins.float,
+    arg2: builtins.int | builtins.float,
+    *args: builtins.int | builtins.float,
     key: Callable[[builtins.int | builtins.float], Any] | None = ...,
 ) -> builtins.int | builtins.float: ...
-@overload
-def min[T](arg1: T, arg2: T, *args: T, key: Callable[[T], Any] | None = ...) -> T: ...
 def min(*args, **kwargs):
     """Return the smallest item in an iterable or the smallest of multiple arguments.
 
-    When called with a single iterable, returns the smallest item from that iterable.
-    When called with multiple arguments, returns the smallest argument.
+    When called with a single iterable, returns the smallest item from that iterable. When called with two or
+    more arguments, all arguments must be numbers, and the smallest one is returned.
 
-    Use the `key` parameter to specify a function that transforms each element
-    before comparison. Use the `default` parameter to specify a value to return
-    if the iterable is empty (supported only for numeric values).
+    Use the `key` parameter to specify a function that transforms each element before comparison.
+
+    A `tuple`, `dict`, `set`, or enum class argument is only supported when every element is numeric; use an
+    `Array` or `VarArray` for a collection of other types.
+
+    The `default` parameter specifies a value to return if the iterable is empty. It is not supported when called
+    with multiple arguments, and it must be usable in place of an element. When the iterable's length is not known
+    at compile time, the choice between an element and `default` is made at runtime, which only numbers support,
+    so a `Record` or `Array` element type fails to compile there.
     """
     ...
 
@@ -308,7 +343,7 @@ def range(*args) -> builtins.range:
     """
     ...
 
-def reversed[T](seq: Sequence[T]) -> Iterator[T]:
+def reversed[T](seq: Sequence[T], /) -> Iterator[T]:
     """Return a reverse iterator.
 
     Args:
@@ -338,8 +373,8 @@ def set[T](iterable: Iterable[T]) -> builtins.set[T]: ...
 def set(*args) -> builtins.set:
     """Construct a set from an iterable.
 
-    All set members must be compile-time constants. Accepts an optional iterable of
-    compile-time constant values.
+    All set members must be compile-time constants. Accepts an optional `tuple`, `dict`, enum class, or `set`.
+    An `Array`, `VarArray`, or `range` is not accepted.
 
     Returns:
         A new set.
@@ -349,13 +384,13 @@ def set(*args) -> builtins.set:
 def setattr(obj: object, name: builtins.str, value: Any) -> None:
     """Set a named attribute on an object.
 
+    The attribute must already exist as a supported field or property; setting an unsupported name is a
+    compile-time error.
+
     Args:
         obj: The object to set the attribute on.
         name: The name of the attribute.
         value: The value to set.
-
-    Returns:
-        None.
     """
     ...
 
@@ -365,12 +400,13 @@ def super(cls: type = ..., instance: Any = ...) -> Any:
     Args:
         cls: The class to delegate.
         instance: The instance to delegate to.
+
     Returns:
         A proxy object that can be used to call methods from the parent or sibling class.
     """
     ...
 
-def type(obj: object) -> builtins.type:
+def type(obj: object, /) -> builtins.type:
     """Return the type of an object.
 
     Args:
@@ -381,11 +417,12 @@ def type(obj: object) -> builtins.type:
     """
     ...
 
-def zip[T](*iterables: Iterable[T]) -> Iterator[tuple[T, ...]]:
+def zip[T](*iterables: Iterable[T], strict: Literal[False] = False) -> Iterator[tuple[T, ...]]:
     """Return an iterator of tuples, where the i-th tuple contains the i-th element from each of the argument sequences.
 
     Args:
         *iterables: Iterables to aggregate.
+        strict: Must be False; strict zipping is not currently supported.
 
     Returns:
         An iterator of aggregated tuples.

@@ -1,9 +1,17 @@
+from enum import IntEnum
+
 import pytest
 
 from sonolus.script.array import Array
 from sonolus.script.debug import debug_log
 from sonolus.script.internal.error import CompilationError
 from tests.script.conftest import run_and_validate, run_compiled
+
+
+class Suit(IntEnum):
+    CLUBS = 5
+    DIAMONDS = 6
+    HEARTS = 7
 
 
 def test_simple_genexpr():
@@ -322,3 +330,90 @@ def test_genexpr_eagerly_evaluates_first_item_tuples():
         debug_log(5)
 
     run_and_validate(fn)
+
+
+def test_genexpr_filter_over_tuple():
+    def fn():
+        return sum(i for i in (1, 2, 3, 4, 5) if i % 2 == 1)
+
+    assert run_and_validate(fn) == 9
+
+
+def test_genexpr_filter_over_tuple_with_logs():
+    def fn():
+        def emit(i):
+            debug_log(i)
+            return i
+
+        gen = (emit(i) for i in (1, 2, 3) if i != 2)
+        for x in gen:
+            debug_log(x * 10)
+
+    run_and_validate(fn)
+
+
+def test_genexpr_filter_over_set():
+    def fn():
+        return sum(i for i in {1, 2, 3, 4} if i % 2 == 0)  # noqa: PLC0208
+
+    assert run_and_validate(fn) == 6
+
+
+def test_genexpr_filter_over_dict():
+    def fn():
+        d = {1: 10, 2: 20, 3: 30}
+        return sum(k for k in d if k > 1)
+
+    assert run_and_validate(fn) == 5
+
+
+def test_genexpr_filter_over_enum():
+    def fn():
+        return sum(int(e) for e in Suit if int(e) > 5)
+
+    assert run_and_validate(fn) == 13
+
+
+def test_genexpr_filter_over_tuple_with_dynamic_test():
+    def fn():
+        n = 0
+        for _ in range(2):
+            n += 1
+        return sum(i for i in (1, 2, 3, 4) if i > n)
+
+    assert run_and_validate(fn) == 7
+
+
+def test_genexpr_filter_on_unrolled_outer_clause():
+    def fn():
+        return sum(i * 10 + j for i in (1, 2, 3) if i > 1 for j in range(2))
+
+    assert run_and_validate(fn) == 102
+
+
+def test_genexpr_filter_on_both_unrolled_clauses():
+    def fn():
+        return sum(i * j for i in (1, 2, 3) if i > 1 for j in (0, 1, 2) if j > 1)
+
+    assert run_and_validate(fn) == 10
+
+
+def test_genexpr_filter_on_inner_unrolled_clause():
+    def fn():
+        return sum(i * j for i in range(3) for j in (0, 1, 2) if j > 1)
+
+    assert run_and_validate(fn) == 6
+
+
+def test_genexpr_filter_multiple_ifs_over_tuple():
+    def fn():
+        return sum(i for i in (1, 2, 3, 4, 5, 6) if i % 2 == 0 if i > 2)
+
+    assert run_and_validate(fn) == 10
+
+
+def test_genexpr_filter_over_tuple_all_filtered_out():
+    def fn():
+        return sum(i for i in (1, 2, 3) if i > 10)
+
+    assert run_and_validate(fn) == 0

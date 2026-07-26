@@ -116,16 +116,24 @@ class EffectGroup(Record, ArrayLike[Effect]):
     size: int
 
     def __len__(self) -> int:
+        """Return the number of effect clips in the group."""
         return self.size
 
     def __getitem__(self, index: int) -> Effect:
+        """Return the effect clip at the given index.
+
+        Args:
+            index: The index of the effect clip. Must be an integer between 0 and `len(self) - 1`.
+        """
         check_positive_index(index, self.size)
         return Effect(self.start_id + index)
 
     def get_unchecked(self, index: int) -> Effect:
+        """Return the effect clip at the given index, possibly without bounds checking."""
         return Effect(self.start_id + index)
 
     def __setitem__(self, index: int, value: Effect) -> None:
+        """Raise a compile-time error; effect groups are read-only."""
         static_error("EffectGroup is read-only")
 
 
@@ -201,7 +209,7 @@ def effects[T](cls: type[T]) -> T | Effects:
             group_2: EffectGroup = effect_group(f"name_{i}" for i in range(10))
         ```
     """
-    if len(cls.__bases__) != 1:
+    if cls.__bases__ != (object,):
         raise ValueError("Effects class must not inherit from any class (except object)")
     instance = cls()
     names = []
@@ -259,4 +267,4 @@ class StandardEffect:
 
 @effects
 class EmptyEffects:
-    pass
+    """An effect set with no effects, used as the default when a mode declares none."""

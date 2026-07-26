@@ -125,15 +125,18 @@ def slider_option(
 
     Args:
         name: The name of the option.
-        title: The display title of the option. If unset, the name is shown.
-        description: The description of the option.
+        title: The display title of the option, as a plain string or an
+            [`AnyText`][sonolus.script.metadata.AnyText] localization dict. If unset, the name is shown.
+        description: The description of the option, as a plain string or an
+            [`AnyText`][sonolus.script.metadata.AnyText] localization dict.
         standard: Whether the option is standard.
         advanced: Whether the option is advanced.
         default: The default value of the option.
         min: The minimum value of the option.
         max: The maximum value of the option.
         step: The step value of the option.
-        unit: The unit of the option.
+        unit: The unit of the option, as a plain string or an
+            [`AnyText`][sonolus.script.metadata.AnyText] localization dict.
         scope: The scope of the option.
     """
     return _SliderOption(
@@ -165,8 +168,10 @@ def toggle_option(
 
     Args:
         name: The name of the option.
-        title: The display title of the option. If unset, the name is shown.
-        description: The description of the option.
+        title: The display title of the option, as a plain string or an
+            [`AnyText`][sonolus.script.metadata.AnyText] localization dict. If unset, the name is shown.
+        description: The description of the option, as a plain string or an
+            [`AnyText`][sonolus.script.metadata.AnyText] localization dict.
         standard: Whether the option is standard.
         advanced: Whether the option is advanced.
         default: The default value of the option.
@@ -198,12 +203,15 @@ def select_option(
 
     Args:
         name: The name of the option.
-        title: The display title of the option. If unset, the name is shown.
-        description: The description of the option.
+        title: The display title of the option, as a plain string or an
+            [`AnyText`][sonolus.script.metadata.AnyText] localization dict. If unset, the name is shown.
+        description: The description of the option, as a plain string or an
+            [`AnyText`][sonolus.script.metadata.AnyText] localization dict.
         standard: Whether the option is standard.
         advanced: Whether the option is advanced.
         default: The default value of the option, given as an entry of `values` or an index into it.
-        values: The values of the option.
+        values: The values of the option, each a plain string or an
+            [`AnyText`][sonolus.script.metadata.AnyText] localization dict.
         scope: The scope of the option.
     """
     if not isinstance(default, int):
@@ -280,6 +288,10 @@ class _OptionField(SonolusDescriptor):
 def options[T](cls: type[T]) -> T | Options:
     """Decorator to define options.
 
+    Note:
+        A `replay_fallback_option_names` class attribute is excluded from the options list and is instead
+        forwarded as `replayFallbackOptionNames` in the built engine configuration.
+
     Usage:
         ```python
         @options
@@ -312,7 +324,7 @@ def options[T](cls: type[T]) -> T | Options:
             )
         ```
     """
-    if len(cls.__bases__) != 1:
+    if cls.__bases__ != (object,):
         raise ValueError("Options class must not inherit from any class (except object)")
     instance = cls()
     entries = []
@@ -340,4 +352,4 @@ def options[T](cls: type[T]) -> T | Options:
 
 @options
 class EmptyOptions:
-    pass
+    """An option set with no options, used as the default when an engine declares none."""

@@ -11,7 +11,11 @@ These are the codes from [the Sonolus locale list](https://i18n.sonolus.com/list
 """
 
 type LocalizationText = dict[Locale | str, str]
-"""Text localized per locale."""
+"""Text localized per locale.
+
+Keys are usually [locale codes][sonolus.script.metadata.Locale], but any string key is accepted and unrecognized
+keys are not validated.
+"""
 
 type AnyText = str | LocalizationText
 """Text given either as a plain string or as a localization dict."""

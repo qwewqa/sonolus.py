@@ -67,6 +67,10 @@ class Maybe[T](TransientValue):
 
     @meta_fn
     def get_unsafe(self) -> T:
+        """Get the value without checking whether it is present.
+
+        If the value is not present, the result is unspecified.
+        """
         if ctx():
             return self._value
         else:
@@ -165,6 +169,7 @@ class Maybe[T](TransientValue):
     @property
     @meta_fn
     def contained_type(self):
+        """The type of the contained value."""
         return type(self._value)
 
     @classmethod

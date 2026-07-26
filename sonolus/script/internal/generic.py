@@ -142,9 +142,12 @@ class GenericValue(Value):
         """Validate the type arguments and return them as a tuple.
 
         This may be called with PartialGeneric or TypeVar instances inside args.
+
+        The returned arguments are what's used as the parameterization's cache key and type arguments, so
+        implementations may also normalize them so equivalent spellings share a single parameterization.
         """
         if len(args) != len(cls.__type_params__):
-            raise TypeError(f"Expected {len(cls.__type_params__)} type arguments, got {len(args)}")
+            raise TypeError(f"{cls.__name__} expects {len(cls.__type_params__)} type arguments, got {len(args)}")
         return args
 
     @classmethod

@@ -12,6 +12,7 @@ from sonolus.script.internal.context import ctx
 from sonolus.script.internal.descriptor import SonolusDescriptor
 from sonolus.script.internal.generic import (
     GenericValue,
+    PartialGeneric,
     accept_and_infer_types,
     validate_and_resolve_type,
     validate_concrete_type,
@@ -58,6 +59,26 @@ class RecordMeta(type(Protocol), ABCMeta):
 @dataclass_transform(eq_default=True)
 class Record(GenericValue, metaclass=RecordMeta):
     """Base class for user-defined data structures.
+
+    Note:
+        A field whose type is itself a reference type, such as another `Record` or an `Array`, stores a reference to
+        the value passed to the constructor rather than a copy, so mutating one mutates the other. Assigning to such
+        a field afterward copies the assigned value's data into the field's existing storage in place rather than
+        rebinding the field, so the update is visible through any other reference to that storage. Fields of a value
+        type such as `Num` are always independent, both at construction and on assignment.
+
+        ```python
+        class Box[T](Record):
+            value: T
+
+        inner = Box(1)
+        outer = Box(inner)  # outer.value aliases inner; no copy is made
+        inner.value = 2
+        assert outer.value.value == 2  # mutating inner is visible through outer
+
+        outer.value = Box(3)  # copies the new value into the shared storage in place
+        assert inner.value == 3  # inner is updated too, since outer.value still aliases it
+        ```
 
     Usage:
         A regular record:
@@ -183,6 +204,11 @@ class Record(GenericValue, metaclass=RecordMeta):
                     raise TypeError("Default values are not supported for Record fields")
                 type_info = validate_type_spec_with_extras(hint)
                 type_ = type_info.value
+                if not isinstance(type_, TypeVar | PartialGeneric):
+                    # A type which doesn't depend on this class's type parameters must already be concrete, since
+                    # parameterizing this class will leave it unchanged. Otherwise, it has no well-defined size and
+                    # would silently overlap the following field.
+                    validate_concrete_type(type_)
                 fields.append(_RecordField(name, type_, index, offset, type_info.final))
                 if isinstance(type_, type) and issubclass(type_, Value) and type_._is_concrete_():
                     offset += type_._size_()

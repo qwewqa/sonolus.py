@@ -7,11 +7,12 @@ from typing import Any, Final
 
 from sonolus.script.debug import assert_true
 from sonolus.script.internal.context import ctx
+from sonolus.script.internal.impl import validate_value
 from sonolus.script.internal.math_impls import _trunc
 from sonolus.script.internal.meta_fn import meta_fn
 from sonolus.script.iterator import SonolusIterator
 from sonolus.script.maybe import Maybe, Nothing, Some
-from sonolus.script.num import Num
+from sonolus.script.num import Num, _is_num
 from sonolus.script.record import Record
 from sonolus.script.values import copy
 
@@ -73,7 +74,9 @@ class ArrayLike[T](Sequence[T]):
         Returns:
             The element at the given index.
         """
-        return self[index]
+        from sonolus.script.internal.visitor import compile_and_call
+
+        return compile_and_call(self.__getitem__, index)
 
     @meta_fn
     def set_unchecked(self, index: Num, value: T):
@@ -86,7 +89,9 @@ class ArrayLike[T](Sequence[T]):
             index: The index to set.
             value: The value to set.
         """
-        self[index] = value
+        from sonolus.script.internal.visitor import compile_and_call
+
+        compile_and_call(self.__setitem__, index, value)
 
     def __iter__(self) -> SonolusIterator[T]:
         """Return an iterator over the array."""
@@ -119,6 +124,9 @@ class ArrayLike[T](Sequence[T]):
             value: The value to search for.
             start: The index to start searching from.
             stop: The index to stop searching at. If `None`, search to the end of the array.
+
+        Returns:
+            The index of the first matching occurrence, or -1 if the value is not found.
         """
         if stop is None:
             stop = len(self)
@@ -152,6 +160,9 @@ class ArrayLike[T](Sequence[T]):
 
         Args:
             value: The value to search for.
+
+        Returns:
+            The index of the last matching occurrence, or -1 if the value is not found.
         """
         i = len(self) - 1
         while i >= 0:
@@ -165,6 +176,9 @@ class ArrayLike[T](Sequence[T]):
 
         Args:
             key: A one-argument ordering function to use for comparison like the one used in `max()`.
+
+        Returns:
+            The index of the maximum value, or -1 if the array is empty.
         """
         if len(self) == 0:
             return -1
@@ -183,6 +197,9 @@ class ArrayLike[T](Sequence[T]):
 
         Args:
             key: A one-argument ordering function to use for comparison like the one used in `min()`.
+
+        Returns:
+            The index of the minimum value, or -1 if the array is empty.
         """
         if len(self) == 0:
             return -1
@@ -205,6 +222,12 @@ class ArrayLike[T](Sequence[T]):
         index = self.index_of_min(key=key)
         assert index != -1
         return self.get_unchecked(index)
+
+    def _max_with_default_(self, default: Any, key: Callable[[T], Any] | None = None) -> T:
+        return _element_or_default(self.index_of_max(key=key), self, default)
+
+    def _min_with_default_(self, default: Any, key: Callable[[T], Any] | None = None) -> T:
+        return _element_or_default(self.index_of_min(key=key), self, default)
 
     def swap(self, i: int, j: int, /):
         """Swap the values at the given positive indices.
@@ -230,6 +253,9 @@ class ArrayLike[T](Sequence[T]):
 
     def sort(self, *, key: Callable[[T], Any] | None = None, reverse: bool = False):
         """Sort the values in the array in place.
+
+        Note:
+            The sort is not guaranteed to be stable; the relative order of equal elements may not be preserved.
 
         Args:
             key: A one-argument ordering function to use for comparison.
@@ -264,6 +290,43 @@ class ArrayLike[T](Sequence[T]):
 
 def _identity[T](value: T) -> T:
     return value
+
+
+def _extremum_default_type_name(value) -> str:
+    """A readable name for a `min()`/`max()` element or `default=` value, for use in error messages."""
+    from sonolus.script.internal.builtin_impls import _type_name
+
+    return  _type_name(value)
+
+
+def _validate_extremum_default(element, default):
+    """Check that `default` can stand in for an element of an array, and return the element.
+
+    `min()`/`max()` with `default=` has to produce a single value from two sources, so the default and the
+    elements must be of the same type.
+    """
+    element = validate_value(element)
+    default = validate_value(default)
+    if not type(default)._accepts_(element):
+        raise TypeError(
+            f"default argument of type '{_extremum_default_type_name(default)}' is incompatible with the element "
+            f"type '{_extremum_default_type_name(element)}'"
+        )
+    return element
+
+
+@meta_fn
+def _checked_element(element, default):
+    return _validate_extremum_default(element, default)
+
+
+def _element_or_default(index, array, default):
+    # Whether there is an element to return is a runtime condition, so this is a runtime branch between two
+    # different values. Only numbers can merge out of a branch, so an element type like a record leaves the two
+    # branches with conflicting definitions and fails to compile, which is an accepted outcome here.
+    if index == -1:
+        return default
+    return _checked_element(array.get_unchecked(index), default)
 
 
 def _insertion_sort[T](array: ArrayLike[T], start: int, end: int, key: Callable[[T], Any], reverse: bool):
@@ -367,7 +430,7 @@ class _ArrayEnumerator[V: ArrayLike](Record, SonolusIterator):
 def get_positive_index(
     index: int | float, length: int | float, *, include_end: bool = False, check: bool = True
 ) -> int:
-    """Get the positive index for the given index in the array of the given length, and also perform bounds checking.
+    """Get the positive index for the given index in the array of the given length, with optional bounds checking.
 
     This is used to convert negative indices relative to the end of the array to positive indices.
 
@@ -443,13 +506,30 @@ def check_positive_index(index: int, length: int, include_end: bool = False) -> 
 
 
 class UncheckedArrayProxy[T](Record, ArrayLike):
+    """A proxy over an array-like object that may skip bounds checking and may not support negative indexes.
+
+    Returned by [`ArrayLike.unchecked`][sonolus.script.array_like.ArrayLike.unchecked].
+    """
+
     array: T
 
     def __len__(self) -> int:
+        """Return the length of the underlying array."""
         return len(self.array)
 
     def __getitem__(self, index: int) -> Any:
+        """Return the item at the given index, possibly without bounds checking.
+
+        Args:
+            index: The index of the item. Negative indexes may not be supported.
+        """
         return self.array.get_unchecked(index)
 
     def __setitem__(self, index: int, value: Any):
+        """Set the value of the item at the given index, possibly without bounds checking.
+
+        Args:
+            index: The index of the item. Negative indexes may not be supported.
+            value: The value to set.
+        """
         self.array.set_unchecked(index, value)

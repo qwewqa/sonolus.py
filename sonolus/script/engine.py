@@ -48,7 +48,11 @@ class ExportedEngine:
         self.configuration = configuration
 
     def write_to_dir(self, path: PathLike):
-        """Write the exported engine to a directory."""
+        """Write the exported engine to a directory, creating it if it does not already exist.
+
+        Writes `item.json`, `thumbnail`, `playData`, `watchData`, `previewData`, `tutorialData`, `configuration`,
+        and `rom` (if set), overwriting any existing files at those paths.
+        """
         path = Path(path)
         path.mkdir(parents=True, exist_ok=True)
         (path / "item.json").write_text(json.dumps(self.item, ensure_ascii=False), encoding="utf-8")
@@ -65,9 +69,12 @@ class ExportedEngine:
 class Engine:
     """A Sonolus.py engine.
 
+    The `title`, `subtitle`, `author`, and `description` fields accept either a plain string or an
+    [`AnyText`][sonolus.script.metadata.AnyText] localization dict.
+
     Args:
         name: The name of the engine.
-        title: The title of the engine.
+        title: The title of the engine. If unset, `name` is used.
         subtitle: The subtitle of the engine.
         author: The author of the engine.
         skin: The default skin for the engine.
@@ -118,7 +125,7 @@ class Engine:
         """Export the engine in a sonolus-pack compatible format.
 
         Returns:
-            An exported engine.
+            An [`ExportedEngine`][sonolus.script.engine.ExportedEngine].
         """
         from sonolus.build.engine import package_engine
         from sonolus.build.project import BLANK_PNG
