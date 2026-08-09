@@ -261,7 +261,7 @@ class _Num(Value, metaclass=_NumMeta):
                 return Num(True)
             return None
 
-        return self._bin_op(other, const_fn, Op.Equal, fallback=0)
+        return self._bin_op(other, const_fn, Op.Equal)
 
     def __hash__(self):
         if self._is_py_():
@@ -277,7 +277,7 @@ class _Num(Value, metaclass=_NumMeta):
                 return Num(False)
             return None
 
-        return self._bin_op(other, const_fn, Op.NotEqual, fallback=1)
+        return self._bin_op(other, const_fn, Op.NotEqual)
 
     @simple_meta_fn
     def __lt__(self, other) -> Self:

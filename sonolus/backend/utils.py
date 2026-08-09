@@ -53,9 +53,11 @@ class FindFunction(ast.NodeVisitor):
 
     def visit_Yield(self, node):
         self.current_fn.has_yield = True
+        self.generic_visit(node)
 
     def visit_YieldFrom(self, node):
         self.current_fn.has_yield = True
+        self.generic_visit(node)
 
     def visit_AnnAssign(self, node):
         # A bare annotation makes the name local to the enclosing function for the whole body, including reads

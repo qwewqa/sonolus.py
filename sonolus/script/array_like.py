@@ -408,7 +408,7 @@ class _ArrayReverser[V: ArrayLike](Record, ArrayLike):
     def set_unchecked(self, index: Num, value: V):
         self.array.set_unchecked(len(self) - 1 - index, value)
 
-    def reversed(self) -> ArrayLike[V]:
+    def __reversed__(self) -> ArrayLike[V]:
         return self.array
 
 

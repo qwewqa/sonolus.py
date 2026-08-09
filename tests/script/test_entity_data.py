@@ -142,7 +142,7 @@ def test_schema_omits_entity_data_fields():
 def test_project_schema_omits_entity_data_fields():
     project = Project(engine=Engine(name="test", data=EngineData(play=PlayMode(archetypes=[Mixed]))))
 
-    assert project.schema()["archetypes"] == [{"name": "Mixed", "fields": ["#BEAT"]}]
+    assert project.schema()["archetypes"] == [{"name": "Mixed", "fields": ["#BEAT"], "exports": []}]
 
 
 def test_level_data_entries_omit_entity_data_fields():

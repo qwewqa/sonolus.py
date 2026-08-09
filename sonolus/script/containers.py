@@ -1010,8 +1010,8 @@ def sort_linked_entities[T: AnyArchetype](
     Usage:
         ```python
         class MyArchetype(PlayArchetype):
-            sort_key: int
-            next: EntityRef[MyArchetype]
+            sort_key: int = imported()
+            next: EntityRef[MyArchetype] = imported()
 
         def sort_my_archetype(head: EntityRef[MyArchetype]) -> EntityRef[MyArchetype]:
             return sort_linked_entities(

@@ -1,10 +1,13 @@
 """LICM tests.
 
 Loop-invariant code motion on SSA form: hoist pure / effectively-pure
-(non-writable static real-block reads), loop-invariant, guaranteed-to-execute
-(def block dominates every latch) values whose EFFECTIVE cost is >= 4 into a
-preheader. Runtime-constant subtrees have effective cost 1, so they NEVER hoist --
-a dedicated temp would defeat the runtime's own constant folding.
+(non-writable static real-block reads), loop-invariant values whose EFFECTIVE cost
+is >= 4 into a preheader. A hoist root's def block must dominate every latch, and any
+value in the subtree it drags along that the oracle can raise on must additionally
+dominate every exiting block (proof the loop is not zero-trip); a division by a literal
+nonzero divisor is not such a value, a read at a runtime address is. Runtime-constant
+subtrees have effective cost 1, so they NEVER hoist -- a dedicated temp would defeat the
+runtime's own constant folding.
 
 Three layers:
 
@@ -297,6 +300,126 @@ def test_conditionally_executed_faulting_op_not_speculated():
     # RU[2] == 0 -> the guard is always false -> the oracle never divides. A wrong
     # speculative hoist would divide by zero in the preheader and raise here.
     _assert_semantics(build, seed={RU.value: [3.0, 5.0, 0.0]})
+
+
+def _top_tested_loop(body_expr, head_stmts=()):
+    """i=0; while i<RuntimeUpdate[1]: w[0]=i; w[1]=i; acc += <body_expr>; i+=1; log acc.
+
+    Unlike ``_self_loop`` the test runs before the body, so with RuntimeUpdate[1] <= 0
+    the loop is zero-trip while its preheader still runs, and the body block does not
+    dominate the header -- the loop's only exiting block. The two stores keep the
+    header above cfg_cleanup's one-statement tail-duplication limit: without them the
+    header is copied into the entry block, rotating the loop into the guarded do-while
+    form this helper exists to avoid.
+    """
+    b0 = BasicBlock(statements=[IRSet(_sc("i"), IRConst(0)), IRSet(_sc("acc"), IRConst(0))])
+    head = BasicBlock(
+        statements=[
+            IRSet(BlockPlace(WBLOCK, 0), _rd("i")),
+            IRSet(BlockPlace(WBLOCK, 1), _rd("i")),
+            *head_stmts,
+        ],
+        test=IRPureInstr(Op.Less, [_rd("i"), _ru(1)]),
+    )
+    body = BasicBlock(
+        statements=[
+            IRSet(_sc("acc"), IRPureInstr(Op.Add, [_rd("acc"), body_expr])),
+            IRSet(_sc("i"), IRPureInstr(Op.Add, [_rd("i"), IRConst(1)])),
+        ]
+    )
+    ex = BasicBlock(statements=[_log(_rd("acc"))])
+    b0.connect_to(head, None)
+    head.connect_to(body, None)
+    head.connect_to(ex, 0)
+    body.connect_to(head, None)
+    return b0
+
+
+def test_zero_trip_loop_does_not_speculate_faulting_op():
+    # The invariant, cost-eligible RU[0]/RU[2] is in the body of a top-tested loop:
+    # it dominates the latch (the do-while criterion) but not the header, the loop's
+    # only exiting block. With RU[1] == 0 the loop never runs and RU[2] == 0, so
+    # hoisting the divide into the preheader would divide by zero where the source
+    # never divides.
+    expr = IRPureInstr(Op.Divide, [_ru(0), _ru(2)])
+    build = lambda: _top_tested_loop(expr)  # noqa: E731
+    assert _text(build, _SSA_PRE) == _text(build, _SSA_LICM)
+    _assert_semantics(build, seed={RU.value: [3.0, 0.0, 0.0]})
+
+
+def test_zero_trip_loop_does_not_speculate_faulting_operand():
+    # Same shape, but the divide is an OPERAND of a non-faulting root: the product is
+    # what passes the latch test, and hoisting it would take the divide along. The
+    # rule has to look at the whole subtree a root drags into the preheader.
+    expr = IRPureInstr(Op.Multiply, [IRPureInstr(Op.Divide, [_ru(0), _ru(2)]), _ru(3)])
+    build = lambda: _top_tested_loop(expr)  # noqa: E731
+    assert _text(build, _SSA_PRE) == _text(build, _SSA_LICM)
+    _assert_semantics(build, seed={RU.value: [3.0, 0.0, 0.0, 5.0]})
+
+
+def test_zero_trip_loop_still_hoists_non_faulting_op():
+    # The counterpart: in the same zero-trip-capable loop an invariant product still
+    # hoists, because no operand value makes Multiply raise. Speculation stays the
+    # rule; guaranteed execution is required only of the ops that can fault.
+    expr = IRPureInstr(Op.Multiply, [_ru(3), _ru(4)])
+    build = lambda: _top_tested_loop(expr)  # noqa: E731
+    after = _text(build, _SSA_LICM)
+    assert after.count(" * ") == 1
+    for phi_sec in _phi_sections(after):
+        assert " * " not in phi_sec
+    _assert_semantics(build, seed={RU.value: [0.0, 4.0, 0.0, 2.0, 3.0]})
+
+
+def test_zero_trip_loop_hoists_division_by_a_literal():
+    # RU[0] / 2.0 in the same zero-trip-capable body. A literal nonzero divisor
+    # cannot raise, so the divide is not a faulting op here and speculation stands.
+    expr = IRPureInstr(Op.Divide, [_ru(0), IRConst(2.0)])
+    build = lambda: _top_tested_loop(expr)  # noqa: E731
+    after = _text(build, _SSA_LICM)
+    assert after.count(" / ") == 1
+    for phi_sec in _phi_sections(after):
+        assert " / " not in phi_sec
+    _assert_semantics(build, seed={RU.value: [7.0, 3.0]})
+
+
+def test_zero_trip_loop_does_not_speculate_runtime_index_read():
+    # RuntimeUpdate[RuntimeUpdate[2]] in the same zero-trip-capable body: a read whose
+    # address is a runtime value, so the oracle's get() can raise on it just as Divide
+    # can. With RU[1] == 0 the loop never runs and RU[2] == -1, so hoisting the read
+    # into the preheader would read a negative address the source never reads.
+    expr = IRGet(BlockPlace(RU, _ru(2)))
+    build = lambda: _top_tested_loop(expr)  # noqa: E731
+    assert _text(build, _SSA_PRE) == _text(build, _SSA_LICM)
+    _assert_semantics(build, seed={RU.value: [3.0, 0.0, -1.0]})
+
+
+def test_guaranteed_execution_loop_hoists_runtime_index_read():
+    # The counterpart: the same runtime-address read moved into the HEADER, the loop's
+    # only exiting block, so entering the loop always reaches it and it hoists. Without
+    # this, the test above could not tell a blocked speculation from a read that never
+    # hoists at all.
+    read = IRGet(BlockPlace(RU, _ru(2)))
+    build = lambda: _top_tested_loop(_rd("q"), head_stmts=[IRSet(_sc("q"), read)])  # noqa: E731
+    after = _text(build, _SSA_LICM)
+    # a runtime-address read prints its index as a value id; the header's own
+    # RuntimeUpdate[1] loop bound is a constant-index read and does not match.
+    assert after.count("RuntimeUpdate[v.") == 1
+    for phi_sec in _phi_sections(after):
+        assert "RuntimeUpdate[v." not in phi_sec
+    _assert_semantics(build, seed={RU.value: [3.0, 2.0, 4.0, 0.0, 9.0]})
+
+
+def test_guaranteed_execution_loop_hoists_faulting_op():
+    # The divide moves into the HEADER of the same zero-trip-capable loop. The header
+    # is the loop's only exiting block and dominates itself, so entering the loop
+    # always reaches the divide and it hoists.
+    div = IRPureInstr(Op.Divide, [_ru(0), _ru(2)])
+    build = lambda: _top_tested_loop(_rd("q"), head_stmts=[IRSet(_sc("q"), div)])  # noqa: E731
+    after = _text(build, _SSA_LICM)
+    assert after.count(" / ") == 1
+    for phi_sec in _phi_sections(after):
+        assert " / " not in phi_sec
+    _assert_semantics(build, seed={RU.value: [6.0, 3.0, 3.0]})
 
 
 def test_nested_loops_hoist_past_both():

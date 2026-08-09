@@ -298,7 +298,7 @@ def _array_like_extremum(iterable, default, key, *, is_max: bool):
 def _max(*args, default=_empty, key=None):
     from sonolus.script.internal.visitor import compile_and_call
 
-    if key is None:
+    if _is_none_arg(key):
         key = _identity
 
     args = tuple(validate_value(arg) for arg in args)
@@ -394,7 +394,7 @@ def _max_num_iterator(iterable, default, key):
 def _min(*args, default=_empty, key=None):
     from sonolus.script.internal.visitor import compile_and_call
 
-    if key is None:
+    if _is_none_arg(key):
         key = _identity
 
     args = tuple(validate_value(arg) for arg in args)

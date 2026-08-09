@@ -7,9 +7,9 @@
 2:
   EntityData[5] <- BeatToTime(EntityData[1])
   EntityData[6] <- TimeToScaledTime(EntityData[5])
-  EntityData[7] <- EntityData[6] - (6.0 / LevelOption[1])
+  EntityData[7] <- EntityData[6] - (6 / LevelOption[1])
   EntityData[8] <- TimeToScaledTime(EntityData[11])
-  10000[0] <- EngineRom[(3.0 + EntityInfo[1])]
+  10000[0] <- EngineRom[(3 + EntityInfo[1])]
   goto when (10000[0] - 1)
     0 -> 10
     1 -> 9
@@ -23,22 +23,22 @@
   10000[1] <- 0
   goto 11
 4:
-  10000[1] <- 2.0
+  10000[1] <- 2
   goto 11
 5:
   10000[1] <- 0
   goto 11
 6:
-  10000[1] <- 3.0
+  10000[1] <- 3
   goto 11
 7:
   10000[1] <- 1
   goto 11
 8:
-  10000[1] <- 5.0
+  10000[1] <- 5
   goto 11
 9:
-  10000[1] <- 4.0
+  10000[1] <- 4
   goto 11
 10:
   10000[1] <- 0
@@ -50,17 +50,17 @@
   goto 12
 12:
   10000[1] <- EntityData[9]
-  goto 13 if SwitchWithDefault(EntityInfoArray[(10000[1] * 3.0) + 1], 2.0, 1, 3.0, 1, 4.0, 1, 5.0, 1, 6.0, 1, 7.0, 1, 8.0, 1, 0) else 87
+  goto 13 if SwitchWithDefault(EntityInfoArray[(10000[1] * 3) + 1], 2, 1, 3, 1, 4, 1, 5, 1, 6, 1, 7, 1, 8, 1, 0) else 87
 13:
-  goto 14 if (EntityDataArray[(3.0 + (10000[1] * 32.0))] > 0) else 17
+  goto 14 if (EntityDataArray[(3 + (10000[1] * 32))] > 0) else 17
 14:
   10000[1] <- EntityData[9]
-  goto 15 if SwitchWithDefault(EntityInfoArray[(10000[1] * 3.0) + 1], 2.0, 1, 3.0, 1, 4.0, 1, 5.0, 1, 6.0, 1, 7.0, 1, 8.0, 1, 0) else 16
+  goto 15 if SwitchWithDefault(EntityInfoArray[(10000[1] * 3) + 1], 2, 1, 3, 1, 4, 1, 5, 1, 6, 1, 7, 1, 8, 1, 0) else 16
 15:
-  EntityData[9] <- EntityDataArray[(3.0 + (10000[1] * 32.0))]
+  EntityData[9] <- EntityDataArray[(3 + (10000[1] * 32))]
   goto 12
 16:
-  DebugLog(2.0)
+  DebugLog(2)
   DebugPause()
   goto exit
 17:
@@ -68,17 +68,17 @@
   goto 18
 18:
   10000[1] <- EntityData[10]
-  goto 19 if SwitchWithDefault(EntityInfoArray[(10000[1] * 3.0) + 1], 2.0, 1, 3.0, 1, 4.0, 1, 5.0, 1, 6.0, 1, 7.0, 1, 8.0, 1, 0) else 86
+  goto 19 if SwitchWithDefault(EntityInfoArray[(10000[1] * 3) + 1], 2, 1, 3, 1, 4, 1, 5, 1, 6, 1, 7, 1, 8, 1, 0) else 86
 19:
-  goto 20 if (EntityDataArray[(4.0 + (10000[1] * 32.0))] > 0) else 23
+  goto 20 if (EntityDataArray[(4 + (10000[1] * 32))] > 0) else 23
 20:
   10000[1] <- EntityData[10]
-  goto 21 if SwitchWithDefault(EntityInfoArray[(10000[1] * 3.0) + 1], 2.0, 1, 3.0, 1, 4.0, 1, 5.0, 1, 6.0, 1, 7.0, 1, 8.0, 1, 0) else 22
+  goto 21 if SwitchWithDefault(EntityInfoArray[(10000[1] * 3) + 1], 2, 1, 3, 1, 4, 1, 5, 1, 6, 1, 7, 1, 8, 1, 0) else 22
 21:
-  EntityData[10] <- EntityDataArray[(4.0 + (10000[1] * 32.0))]
+  EntityData[10] <- EntityDataArray[(4 + (10000[1] * 32))]
   goto 18
 22:
-  DebugLog(4.0)
+  DebugLog(4)
   DebugPause()
   goto exit
 23:
@@ -90,7 +90,7 @@
   10000[2] <- EntityData[11]
   goto 26 if LevelOption[10] else 38
 26:
-  goto when (10000[0] - 2.0)
+  goto when (10000[0] - 2)
     0 -> 32
     1 -> 32
     4 -> 38
@@ -105,10 +105,10 @@
   10000[0] <- 0
   goto 37
 29:
-  10000[0] <- 3.0
+  10000[0] <- 3
   goto 37
 30:
-  10000[0] <- 2.0
+  10000[0] <- 2
   goto 37
 31:
   10000[0] <- 1
@@ -123,26 +123,26 @@
   10000[0] <- 0
   goto 37
 34:
-  10000[0] <- 6.0
+  10000[0] <- 6
   goto 37
 35:
-  10000[0] <- 5.0
+  10000[0] <- 5
   goto 37
 36:
-  10000[0] <- 4.0
+  10000[0] <- 4
   goto 37
 37:
   PlayScheduled(10000[0], 10000[2], 0)
   goto 38
 38:
-  EntityInput[2] <- EntityData[13] * 1000.0
+  EntityInput[2] <- EntityData[13] * 1000
   goto 44
 39:
   EntityData[12] <- 1
   10000[1] <- EntityData[5]
   goto 40 if LevelOption[10] else 44
 40:
-  goto when (10000[0] - 2.0)
+  goto when (10000[0] - 2)
     0 -> 42
     1 -> 42
     4 -> 44
@@ -151,7 +151,7 @@
   10000[0] <- 1
   goto 43
 42:
-  10000[0] <- 4.0
+  10000[0] <- 4
   goto 43
 43:
   PlayScheduled(10000[0], 10000[1], 0)
@@ -161,17 +161,17 @@
 45:
   goto 85 if (EntityData[4] > 0) else 46
 46:
-  Spawn(9.0, EntityData[9], EntityData[10], 0)
+  Spawn(9, EntityData[9], EntityData[10], 0)
   goto 47 if RuntimeEnvironment[4] else 79
 47:
-  10000[0] <- EntityData[9] * 3.0
-  goto 48 if SwitchWithDefault(EntityInfoArray[10000[0] + 1], 2.0, 1, 3.0, 1, 4.0, 1, 5.0, 1, 6.0, 1, 7.0, 1, 8.0, 1, 0) else 78
+  10000[0] <- EntityData[9] * 3
+  goto 48 if SwitchWithDefault(EntityInfoArray[10000[0] + 1], 2, 1, 3, 1, 4, 1, 5, 1, 6, 1, 7, 1, 8, 1, 0) else 78
 48:
   10000[0] <- EntityInfoArray[10000[0]]
-  goto 49 if (((10000[0] >= 0) && (10000[0] < 99999.0)) && (10000[0] == Trunc(10000[0]))) else 77
+  goto 49 if (((10000[0] >= 0) && (10000[0] < 99999)) && (10000[0] == Trunc(10000[0]))) else 77
 49:
-  SetAdd(10000, 0, 18.0)
-  10000[1] <- If(StreamHas(10000[0], -10.0), -10.0, StreamGetNextKey(10000[0], -10.0))
+  SetAdd(10000, 0, 18)
+  10000[1] <- If(StreamHas(10000[0], -10), -10, StreamGetNextKey(10000[0], -10))
   10000[3] <- 0
   10000[2] <- 10000[3]
   goto 50
@@ -181,17 +181,17 @@
   10000[4] <- StreamGetNextKey(10000[0], 10000[1])
   10000[4] <- If(10000[4] > 10000[1], 10000[4], inf)
   10000[5] <- EntityData[9]
-  goto 52 if SwitchWithDefault(EntityInfoArray[(10000[5] * 3.0) + 1], 2.0, 1, 3.0, 1, 4.0, 1, 5.0, 1, 6.0, 1, 7.0, 1, 8.0, 1, 0) else 71
+  goto 52 if SwitchWithDefault(EntityInfoArray[(10000[5] * 3) + 1], 2, 1, 3, 1, 4, 1, 5, 1, 6, 1, 7, 1, 8, 1, 0) else 71
 52:
-  goto 53 if (10000[1] < EntityDataArray[(5.0 + (10000[5] * 32.0))]) else 54
+  goto 53 if (10000[1] < EntityDataArray[(5 + (10000[5] * 32))]) else 54
 53:
   10000[1] <- 10000[4]
   goto 50
 54:
   10000[5] <- EntityData[10]
-  goto 55 if SwitchWithDefault(EntityInfoArray[(10000[5] * 3.0) + 1], 2.0, 1, 3.0, 1, 4.0, 1, 5.0, 1, 6.0, 1, 7.0, 1, 8.0, 1, 0) else 70
+  goto 55 if SwitchWithDefault(EntityInfoArray[(10000[5] * 3) + 1], 2, 1, 3, 1, 4, 1, 5, 1, 6, 1, 7, 1, 8, 1, 0) else 70
 55:
-  goto 72 if (10000[1] > EntityDataArray[(5.0 + (10000[5] * 32.0))]) else 56
+  goto 72 if (10000[1] > EntityDataArray[(5 + (10000[5] * 32))]) else 56
 56:
   10000[5] <- StreamGetValue(10000[0], 10000[1])
   goto 57 if 10000[5] else 61
@@ -219,7 +219,7 @@
 65:
   goto 66 if LevelOption[10] else 67
 66:
-  10000[3] <- PlayLoopedScheduled(7.0, 10000[2])
+  10000[3] <- PlayLoopedScheduled(7, 10000[2])
   StopLoopedScheduled(10000[3], 10000[1])
   10000[3] <- 0
   10000[1] <- 10000[2]
@@ -236,63 +236,63 @@
   10000[1] <- 10000[4]
   goto 50
 70:
-  DebugLog(8.0)
+  DebugLog(8)
   DebugPause()
   goto exit
 71:
-  DebugLog(7.0)
+  DebugLog(7)
   DebugPause()
   goto exit
 72:
   goto 73 if 10000[3] else 85
 73:
   10000[0] <- EntityData[10]
-  goto 74 if SwitchWithDefault(EntityInfoArray[(10000[0] * 3.0) + 1], 2.0, 1, 3.0, 1, 4.0, 1, 5.0, 1, 6.0, 1, 7.0, 1, 8.0, 1, 0) else 76
+  goto 74 if SwitchWithDefault(EntityInfoArray[(10000[0] * 3) + 1], 2, 1, 3, 1, 4, 1, 5, 1, 6, 1, 7, 1, 8, 1, 0) else 76
 74:
-  10000[0] <- EntityDataArray[(5.0 + (10000[0] * 32.0))]
+  10000[0] <- EntityDataArray[(5 + (10000[0] * 32))]
   goto 75 if LevelOption[10] else 85
 75:
-  10000[1] <- PlayLoopedScheduled(7.0, 10000[2])
+  10000[1] <- PlayLoopedScheduled(7, 10000[2])
   StopLoopedScheduled(10000[1], 10000[0])
   goto exit
 76:
-  DebugLog(9.0)
+  DebugLog(9)
   DebugPause()
   goto exit
 77:
-  DebugLog(6.0)
+  DebugLog(6)
   DebugPause()
   goto exit
 78:
-  DebugLog(5.0)
+  DebugLog(5)
   DebugPause()
   goto exit
 79:
   10000[0] <- EntityData[9]
-  goto 80 if SwitchWithDefault(EntityInfoArray[(10000[0] * 3.0) + 1], 2.0, 1, 3.0, 1, 4.0, 1, 5.0, 1, 6.0, 1, 7.0, 1, 8.0, 1, 0) else 84
+  goto 80 if SwitchWithDefault(EntityInfoArray[(10000[0] * 3) + 1], 2, 1, 3, 1, 4, 1, 5, 1, 6, 1, 7, 1, 8, 1, 0) else 84
 80:
-  10000[0] <- EntityDataArray[(5.0 + (10000[0] * 32.0))]
+  10000[0] <- EntityDataArray[(5 + (10000[0] * 32))]
   10000[1] <- EntityData[10]
-  goto 81 if SwitchWithDefault(EntityInfoArray[(10000[1] * 3.0) + 1], 2.0, 1, 3.0, 1, 4.0, 1, 5.0, 1, 6.0, 1, 7.0, 1, 8.0, 1, 0) else 83
+  goto 81 if SwitchWithDefault(EntityInfoArray[(10000[1] * 3) + 1], 2, 1, 3, 1, 4, 1, 5, 1, 6, 1, 7, 1, 8, 1, 0) else 83
 81:
-  10000[1] <- EntityDataArray[(5.0 + (10000[1] * 32.0))]
+  10000[1] <- EntityDataArray[(5 + (10000[1] * 32))]
   goto 82 if LevelOption[10] else 85
 82:
-  10000[0] <- PlayLoopedScheduled(7.0, 10000[0])
+  10000[0] <- PlayLoopedScheduled(7, 10000[0])
   StopLoopedScheduled(10000[0], 10000[1])
   goto exit
 83:
-  DebugLog(11.0)
+  DebugLog(11)
   DebugPause()
   goto exit
 84:
-  DebugLog(10.0)
+  DebugLog(10)
   DebugPause()
   goto exit
 85:
   goto exit
 86:
-  DebugLog(3.0)
+  DebugLog(3)
   DebugPause()
   goto exit
 87:

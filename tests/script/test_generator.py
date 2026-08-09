@@ -919,3 +919,31 @@ def test_exhausted_compile_time_zip_repeats_pinned():
     logs = []
     run_compiled(fn, log_callback=logs.append)
     assert logs == [11, 22, 11, 22]
+
+
+def test_lambda_yielded_by_host_generator_is_locatable():
+    # Regression: the source-finding visitor must traverse into a lambda that is itself a `yield`
+    # expression of a plain (non-compiled-subset) host generator, or the lambda's AST node is never
+    # collected and calling it from compiled code fails to locate its source.
+    def make_callback():
+        yield lambda: 42
+
+    callback = next(make_callback())
+
+    def fn():
+        return callback()
+
+    assert run_and_validate(fn) == 42
+
+
+def test_lambda_yielded_from_host_generator_is_locatable():
+    # Same regression via `yield from`.
+    def make_callback():
+        yield from [lambda: 43]
+
+    callback = next(make_callback())
+
+    def fn():
+        return callback()
+
+    assert run_and_validate(fn) == 43

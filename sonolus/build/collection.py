@@ -51,6 +51,18 @@ CATEGORY_SORT_ORDER = {
 }
 
 
+def validate_item_name(name: str, subject: str, context: str = "") -> None:
+    qualifier = f" {context}" if context else ""
+    if not isinstance(name, str) or not name:
+        raise ValueError(f"{subject}{qualifier} must be a non-empty string, got {name!r}")
+    if name.casefold() in RESERVED_FILENAMES:
+        raise ValueError(f"{subject} '{name}'{qualifier} is reserved: 'info' and 'list' are the category index files")
+    if name in {".", ".."} or "/" in name or "\\" in name:
+        raise ValueError(
+            f"{subject} '{name}'{qualifier} is not a usable filename: path separators, '.' and '..' are not allowed"
+        )
+
+
 class Collection:
     def __init__(self) -> None:
         self.name = "Unnamed"
@@ -75,18 +87,7 @@ class Collection:
         self.categories.setdefault(category, {})[name] = details
 
     def _validate_item_name(self, category: Category, name: str) -> None:
-        if not isinstance(name, str) or not name:
-            raise ValueError(f"Item name in category '{category}' must be a non-empty string, got {name!r}")
-        if name.casefold() in RESERVED_FILENAMES:
-            raise ValueError(
-                f"Item name '{name}' in category '{category}' is reserved: "
-                f"'info' and 'list' are the category index files"
-            )
-        if name in {".", ".."} or "/" in name or "\\" in name:
-            raise ValueError(
-                f"Item name '{name}' in category '{category}' is not a usable filename: "
-                f"path separators, '.' and '..' are not allowed"
-            )
+        validate_item_name(name, "Item name", f"in category '{category}'")
 
     @classmethod
     def _make_item_details(cls, item: dict[str, Any]) -> dict[str, Any]:
@@ -361,7 +362,7 @@ def load_asset(value: Asset) -> bytes:
             request = urllib.request.Request(value, headers=headers)
             with urllib.request.urlopen(request) as response:
                 return response.read()
-        case PathLike():
+        case PathLike() | str():
             return Path(value).read_bytes()
         case bytes():
             return value

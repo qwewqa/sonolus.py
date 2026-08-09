@@ -10,7 +10,7 @@ from types import ModuleType
 
 from sonolus.backend.excepthook import print_simple_traceback
 from sonolus.backend.optimize import FAST_PASSES, MINIMAL_PASSES, STANDARD_PASSES, profiling
-from sonolus.build.collection import Collection
+from sonolus.build.collection import Collection, validate_item_name
 from sonolus.build.dev_server import run_server
 from sonolus.build.engine import package_engine, validate_engine
 from sonolus.build.level import package_level_data
@@ -72,6 +72,9 @@ def import_project(module_path: str) -> tuple[Project, ModuleType, set[str]] | t
 
 
 def build_project(project: Project, build_dir: Path, config: BuildConfig):
+    for level in project.levels:
+        validate_item_name(level.name, "Level name")
+
     dist_dir = build_dir / "dist"
     levels_dir = dist_dir / "levels"
     shutil.rmtree(dist_dir, ignore_errors=True)
@@ -273,15 +276,12 @@ def main():
         elif hasattr(args, "no_gc") and args.no_gc:
             gc.disable()
 
-    if hasattr(sys, "_jit") and sys._jit.is_enabled():
-        print("Python JIT is enabled")
-
     start_time = perf_counter()
     project, project_module, core_module_names = import_project(args.module)
     end_time = perf_counter()
     if project is None:
         sys.exit(1)
-    print(f"Project imported in {end_time - start_time:.2f}s")
+    print(f"Project imported in {end_time - start_time:.2f}s", file=sys.stderr)
 
     # Enable profiling (if requested) after the import so only the build is timed.
     if getattr(args, "profile", False) or getattr(args, "profile_json", None):

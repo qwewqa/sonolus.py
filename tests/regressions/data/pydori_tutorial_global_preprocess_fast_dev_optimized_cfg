@@ -3,32 +3,32 @@
   TutorialData[1] <- 1.35
   10000[0] <- TutorialData[0]
   10000[1] <- TutorialData[1] - 10000[0]
-  10000[2] <- 1.0 / 10000[1]
-  TutorialData[2] <- 1.0
+  10000[2] <- 1 / 10000[1]
+  TutorialData[2] <- 1
   TutorialData[3] <- 0 / 10000[1]
   TutorialData[4] <- 0
   TutorialData[5] <- 0
-  TutorialData[6] <- 1.0 + (10000[2] * 10000[0])
+  TutorialData[6] <- 1 + (10000[2] * 10000[0])
   TutorialData[7] <- 10000[0]
   TutorialData[8] <- 0
   TutorialData[9] <- 10000[2]
-  TutorialData[10] <- 1.0
+  TutorialData[10] <- 1
   TutorialData[11] <- 0.35
   TutorialData[12] <- 0.35
   TutorialData[13] <- 0.0875
   TutorialData[14] <- 6.4
-  TutorialData[15] <- -1.0
+  TutorialData[15] <- -1
   10000[3] <- 0.15 * RuntimeUIConfiguration[0]
   10000[4] <- RuntimeUIConfiguration[1]
   RuntimeUI[0] <- RuntimeEnvironment[1] + -0.05
   RuntimeUI[1] <- 0.95
-  RuntimeUI[2] <- 1.0
-  RuntimeUI[3] <- 1.0
+  RuntimeUI[2] <- 1
+  RuntimeUI[3] <- 1
   RuntimeUI[4] <- 10000[3]
   RuntimeUI[5] <- 10000[3]
   RuntimeUI[6] <- 0
   RuntimeUI[7] <- 10000[4]
-  RuntimeUI[8] <- 1.0
+  RuntimeUI[8] <- 1
   10000[5] <- 0.15 * RuntimeUIConfiguration[2]
   10000[6] <- RuntimeUIConfiguration[3]
   RuntimeUI[9] <- -RuntimeEnvironment[1] + 0.05
@@ -39,18 +39,18 @@
   RuntimeUI[14] <- 10000[5]
   RuntimeUI[15] <- 0
   RuntimeUI[16] <- 10000[6]
-  RuntimeUI[17] <- 1.0
+  RuntimeUI[17] <- 1
   10000[7] <- 0.15 * RuntimeUIConfiguration[2]
   10000[8] <- RuntimeUIConfiguration[3]
   RuntimeUI[18] <- RuntimeEnvironment[1] - 0.05
   RuntimeUI[19] <- 0
-  RuntimeUI[20] <- 1.0
+  RuntimeUI[20] <- 1
   RuntimeUI[21] <- 0.5
   RuntimeUI[22] <- 10000[7]
   RuntimeUI[23] <- 10000[7]
   RuntimeUI[24] <- 0
   RuntimeUI[25] <- 10000[8]
-  RuntimeUI[26] <- 1.0
+  RuntimeUI[26] <- 1
   10000[9] <- RuntimeUIConfiguration[4]
   10000[10] <- RuntimeUIConfiguration[5]
   RuntimeUI[27] <- 0
@@ -61,16 +61,16 @@
   RuntimeUI[32] <- 0.15 * 10000[9]
   RuntimeUI[33] <- 0
   RuntimeUI[34] <- 10000[10]
-  RuntimeUI[35] <- 1.0
-  10000[11] <- -3.0
+  RuntimeUI[35] <- 1
+  10000[11] <- -3
   goto 1
 1:
-  goto 2 if (10000[11] < 4.0) else 10
+  goto 2 if (10000[11] < 4) else 10
 2:
-  10000[12] <- 10000[11] + 1.0
+  10000[12] <- 10000[11] + 1
   10000[13] <- 10000[11] * TutorialData[12]
-  10000[14] <- 10000[13] - (TutorialData[12] / 2.0)
-  10000[15] <- 10000[13] + (TutorialData[12] / 2.0)
+  10000[14] <- 10000[13] - (TutorialData[12] / 2)
+  10000[15] <- 10000[13] + (TutorialData[12] / 2)
   10000[16] <- TutorialData[15]
   10000[17] <- TutorialData[14]
   10000[18] <- (TutorialData[8] * 10000[14]) + (TutorialData[9] * 10000[16]) + TutorialData[10]
@@ -91,8 +91,8 @@
 3:
   goto 4 if (10000[31] < 10000[30]) else 7
 4:
-  10000[32] <- 10000[31] + 1.0
-  10000[33] <- 16 + (10000[31] * 9.0)
+  10000[32] <- 10000[31] + 1
+  10000[33] <- 16 + (10000[31] * 9)
   goto 5 if (10000[11] == TutorialData[10000[33] + 1]) else 6
 5:
   TutorialData[10000[33] + 2] <- 10000[19]
@@ -109,9 +109,9 @@
   10000[31] <- 10000[32]
   goto 3
 7:
-  goto 8 if (TutorialData[16] < 7.0) else 9
+  goto 8 if (TutorialData[16] < 7) else 9
 8:
-  10000[34] <- 16 + (TutorialData[16] * 9.0)
+  10000[34] <- 16 + (TutorialData[16] * 9)
   TutorialData[10000[34] + 1] <- 10000[11]
   TutorialData[10000[34] + 2] <- 10000[19]
   TutorialData[10000[34] + 3] <- 10000[20]
@@ -125,7 +125,7 @@
   10000[11] <- 10000[12]
   goto 1
 9:
-  10000[35] <- DebugLog(1.0)
+  10000[35] <- DebugLog(1)
   10000[36] <- DebugPause()
   goto exit
 10:
@@ -177,8 +177,8 @@
   TutorialData[95] <- 10000[60]
   10000[67] <- -3.5 * TutorialData[12]
   10000[68] <- 3.5 * TutorialData[12]
-  10000[69] <- -TutorialData[11] / 2.0
-  10000[70] <- TutorialData[11] / 2.0
+  10000[69] <- -TutorialData[11] / 2
+  10000[70] <- TutorialData[11] / 2
   10000[71] <- (TutorialData[8] * 10000[67]) + (TutorialData[9] * 10000[69]) + TutorialData[10]
   10000[72] <- ((TutorialData[5] * 10000[67]) + (TutorialData[6] * 10000[69]) + TutorialData[7]) / 10000[71]
   10000[73] <- (TutorialData[8] * 10000[68]) + (TutorialData[9] * 10000[69]) + TutorialData[10]

@@ -1,6 +1,12 @@
+import argparse
+import json
 import sys
+from types import SimpleNamespace
 
 import pytest
+
+from sonolus.build.cli import build_project, get_config, get_runtime_checks, main
+from sonolus.script.internal.context import RuntimeChecks
 
 
 def test_import_project_non_package_module_falls_through(tmp_path, monkeypatch, capsys):
@@ -80,3 +86,122 @@ def test_import_project_plain_import_error_in_project_submodule_propagates(tmp_p
         import_project("pkg_circ_xyz")
     assert not isinstance(exc_info.value, ModuleNotFoundError)
     assert exc_info.value.name == "pkg_circ_xyz.project"
+
+
+SCHEMA_PROJECT_MODULE = """
+from sonolus.script.archetype import PlayArchetype, imported
+from sonolus.script.engine import Engine, EngineData, PlayMode
+from sonolus.script.project import Project
+
+
+class Note(PlayArchetype):
+    beat: float = imported(name="#BEAT")
+
+
+project = Project(engine=Engine(name="test", data=EngineData(play=PlayMode(archetypes=[Note]))))
+"""
+
+
+def test_schema_command_stdout_parses_as_json(tmp_path, monkeypatch, capsys):
+    (tmp_path / "schemamod_xyz.py").write_text(SCHEMA_PROJECT_MODULE, encoding="utf-8")
+    monkeypatch.syspath_prepend(str(tmp_path))
+    monkeypatch.chdir(tmp_path)
+    monkeypatch.delitem(sys.modules, "schemamod_xyz", raising=False)
+    monkeypatch.setattr(sys, "argv", ["sonolus-py", "schema", "schemamod_xyz"])
+
+    limit = sys.getrecursionlimit()
+    try:
+        main()
+    finally:
+        # main() raises the limit for the compiler; keep that out of the rest of the session.
+        sys.setrecursionlimit(limit)
+
+    captured = capsys.readouterr()
+    # The schema's shape is out of scope here: that stdout parses at all is the whole assertion.
+    json.loads(captured.out)
+    assert "Project imported in" in captured.err
+
+
+def _stub_project(*level_names: str) -> SimpleNamespace:
+    return SimpleNamespace(engine=None, levels=[SimpleNamespace(name=name) for name in level_names])
+
+
+def test_build_project_rejects_a_level_name_with_a_separator(tmp_path):
+    with pytest.raises(ValueError, match="Level name 'sub/level' is not a usable filename"):
+        build_project(_stub_project("sub/level"), tmp_path, None)
+
+
+def test_build_project_rejects_a_reserved_level_name(tmp_path):
+    with pytest.raises(ValueError, match="Level name 'info' is reserved"):
+        build_project(_stub_project("info"), tmp_path, None)
+
+
+def test_build_project_rejects_a_bad_level_name_before_clearing_dist(tmp_path):
+    previous = tmp_path / "dist" / "engine"
+    previous.parent.mkdir(parents=True)
+    previous.write_bytes(b"previous build")
+
+    with pytest.raises(ValueError, match=r"Level name '\.\.' is not a usable filename"):
+        build_project(_stub_project("good", ".."), tmp_path, None)
+
+    assert previous.read_bytes() == b"previous build"
+
+
+def _args(command: str, **overrides) -> argparse.Namespace:
+    """Build the namespace argparse produces for the given subcommand when no flag is passed."""
+    defaults = {
+        "command": command,
+        "optimize_minimal": False,
+        "optimize_fast": False,
+        "optimize_standard": False,
+        "runtime_checks": None,
+        "play": False,
+        "watch": False,
+        "preview": False,
+        "tutorial": False,
+        "verbose": False,
+    }
+    return argparse.Namespace(**(defaults | overrides))
+
+
+@pytest.mark.parametrize(
+    ("command", "expected"),
+    [
+        ("dev", RuntimeChecks.NOTIFY_AND_TERMINATE),
+        ("build", RuntimeChecks.NONE),
+        ("check", RuntimeChecks.NONE),
+    ],
+)
+def test_get_runtime_checks_default_per_command(command, expected):
+    assert get_runtime_checks(_args(command)) == expected
+
+
+def test_get_runtime_checks_flag_overrides_the_dev_default():
+    assert get_runtime_checks(_args("dev", runtime_checks="none")) == RuntimeChecks.NONE
+
+
+def test_get_config_builds_every_component_when_none_is_requested():
+    config = get_config(_args("build"))
+
+    assert (config.build_play, config.build_watch, config.build_preview, config.build_tutorial) == (
+        True,
+        True,
+        True,
+        True,
+    )
+
+
+def test_get_config_narrows_to_the_requested_components():
+    config = get_config(_args("build", play=True, preview=True))
+
+    assert (config.build_play, config.build_watch, config.build_preview, config.build_tutorial) == (
+        True,
+        False,
+        True,
+        False,
+    )
+
+
+def test_get_config_takes_runtime_checks_from_the_command():
+    assert get_config(_args("dev")).runtime_checks == RuntimeChecks.NOTIFY_AND_TERMINATE
+    assert get_config(_args("build")).runtime_checks == RuntimeChecks.NONE

@@ -755,3 +755,75 @@ def test_next_over_enumerate_iterator_two_results_live():
         return first[0] * 1000 + first[1] * 100 + second[0] * 10 + second[1]
 
     assert run_and_validate(fn) == 1030
+
+
+def test_max_two_args():
+    a, b = 3, 7
+
+    def fn():
+        return max(a, b)
+
+    assert run_and_validate(fn) == 7
+
+
+def test_max_two_args_reversed():
+    a, b = 7, 3
+
+    def fn():
+        return max(a, b)
+
+    assert run_and_validate(fn) == 7
+
+
+def test_min_two_args():
+    a, b = 3, 7
+
+    def fn():
+        return min(a, b)
+
+    assert run_and_validate(fn) == 3
+
+
+def test_min_two_args_reversed():
+    a, b = 7, 3
+
+    def fn():
+        return min(a, b)
+
+    assert run_and_validate(fn) == 3
+
+
+def test_max_two_args_explicit_key_none():
+    a, b = 3, 7
+
+    def fn():
+        return max(a, b, key=None)
+
+    assert run_and_validate(fn) == 7
+
+
+def test_max_two_args_explicit_key_none_reversed():
+    a, b = 7, 3
+
+    def fn():
+        return max(a, b, key=None)
+
+    assert run_and_validate(fn) == 7
+
+
+def test_min_two_args_explicit_key_none():
+    a, b = 3, 7
+
+    def fn():
+        return min(a, b, key=None)
+
+    assert run_and_validate(fn) == 3
+
+
+def test_min_two_args_explicit_key_none_reversed():
+    a, b = 7, 3
+
+    def fn():
+        return min(a, b, key=None)
+
+    assert run_and_validate(fn) == 3

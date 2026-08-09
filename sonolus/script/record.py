@@ -498,8 +498,10 @@ def _make_inplace_op(op: str, orig_fn):
     @meta_fn
     @wraps(orig_fn)
     def inplace_op(self, other):
+        from sonolus.script.internal.visitor import compile_and_call
+
         _compiler_internal_ = True  # noqa: F841
-        self._copy_from_(getattr(self, op)(other))
+        self._copy_from_(compile_and_call(getattr(self, op), other))
         return self
 
     return inplace_op

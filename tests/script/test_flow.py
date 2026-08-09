@@ -1965,3 +1965,21 @@ def test_assert_message_bindings_do_not_escape_discarded_context():
 
     assert run_and_validate(fn) == 13
     assert run_compiled(fn, runtime_checks=RuntimeChecks.NONE) == 13
+
+
+def test_zero_trip_loop_does_not_speculate_invariant_division():
+    def fn():
+        n = black_box_value(0)
+        a = black_box_value(6.0)
+        b = black_box_value(0)
+        total = 0.0
+        i = 0
+        # The black_box_value call in the guard keeps the loop top-tested; with a bare
+        # header, cfg_cleanup rotates it into a do-while, where hoisting the division
+        # is legitimate and this test pins nothing.
+        while i < black_box_value(n):
+            total += a / b
+            i += 1
+        return total
+
+    assert run_and_validate(fn) == 0.0

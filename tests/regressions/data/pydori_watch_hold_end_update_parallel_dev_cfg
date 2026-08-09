@@ -3,7 +3,7 @@
 1:
   goto 2
 2:
-  v1 <- 3.0 + EntityInfo[1]
+  v1 <- 3 + EntityInfo[1]
   v2 <- v1
   v3 <- EngineRom[v2]
   goto 3
@@ -18,7 +18,7 @@
 7:
   goto 8
 8:
-  v4 <- 6.0 / LevelOption[1]
+  v4 <- 6 / LevelOption[1]
   goto 9
 9:
   v5 <- EntityData[6] - v4
@@ -29,7 +29,7 @@
 11:
   goto 12
 12:
-  v7 <- v3 == 6.0
+  v7 <- v3 == 6
   goto 13 if v7 else 14
 13:
   goto 257
@@ -37,53 +37,53 @@
   goto 15
 15:
   v8 <- 0
-  v9 <- v3 == 1.0
+  v9 <- v3 == 1
   goto 16 if v9 else 17
 16:
-  v8 <- 7.0
+  v8 <- 7
   goto 33
 17:
-  v10 <- v3 == 2.0
+  v10 <- v3 == 2
   goto 18 if v10 else 19
 18:
-  v8 <- 8.0
+  v8 <- 8
   goto 33
 19:
-  v11 <- v3 == 3.0
+  v11 <- v3 == 3
   goto 20 if v11 else 24
 20:
   v12 <- EntityData[2] > 0
   goto 21 if v12 else 22
 21:
-  v8 <- 10.0
+  v8 <- 10
   goto 23
 22:
-  v8 <- 12.0
+  v8 <- 12
   goto 23
 23:
   goto 33
 24:
-  v13 <- v3 == 4.0
+  v13 <- v3 == 4
   goto 25 if v13 else 26
 25:
-  v8 <- 14.0
+  v8 <- 14
   goto 33
 26:
-  v14 <- v3 == 5.0
+  v14 <- v3 == 5
   goto 27 if v14 else 28
 27:
-  v8 <- 16.0
+  v8 <- 16
   goto 33
 28:
-  v15 <- v3 == 6.0
+  v15 <- v3 == 6
   goto 29 if v15 else 30
 29:
   goto 33
 30:
-  v16 <- v3 == 7.0
+  v16 <- v3 == 7
   goto 31 if v16 else 32
 31:
-  v8 <- 15.0
+  v8 <- 15
   goto 33
 32:
   goto 33
@@ -93,22 +93,22 @@
   goto 35
 35:
   v17 <- 0
-  v18 <- v3 == 2.0
+  v18 <- v3 == 2
   goto 36 if v18 else 37
 36:
-  v17 <- 9.0
+  v17 <- 9
   goto 43
 37:
-  v19 <- v3 == 3.0
+  v19 <- v3 == 3
   goto 38 if v19 else 42
 38:
   v20 <- EntityData[2] > 0
   goto 39 if v20 else 40
 39:
-  v17 <- 11.0
+  v17 <- 11
   goto 41
 40:
-  v17 <- 13.0
+  v17 <- 13
   goto 41
 41:
   goto 43
@@ -139,7 +139,7 @@
   v27 <- v6 <= v21
   goto 52 if v27 else 53
 52:
-  v28 <- Remap(LevelData[15], v21, 0, 1.0, v6)
+  v28 <- Remap(LevelData[15], v21, 0, 1, v6)
   v39 <- v28
   goto 62
 53:
@@ -151,7 +151,7 @@
   v32 <- v6 <= v22
   goto 56 if v32 else 57
 56:
-  v33 <- Remap(v21, v22, 1.0, 1.0, v6)
+  v33 <- Remap(v21, v22, 1, 1, v6)
   v39 <- v33
   goto 62
 57:
@@ -163,7 +163,7 @@
   v37 <- v6 <= LevelData[14]
   goto 60 if v37 else 61
 60:
-  v38 <- Remap(v22, LevelData[14], 1.0, 0, v6)
+  v38 <- Remap(v22, LevelData[14], 1, 0, v6)
   v39 <- v38
   goto 62
 61:
@@ -195,19 +195,19 @@
 70:
   v47 <- v44
   v48 <- v46
-  v49 <- v48 / 2.0
+  v49 <- v48 / 2
   v50 <- v47 + v49
   v51 <- v43
   v52 <- v45
-  v53 <- v52 / 2.0
+  v53 <- v52 / 2
   v54 <- v51 + v53
   v55 <- v44
   v56 <- v46
-  v57 <- v56 / 2.0
+  v57 <- v56 / 2
   v58 <- v55 - v57
   v59 <- v43
   v60 <- v45
-  v61 <- v60 / 2.0
+  v61 <- v60 / 2
   v62 <- v59 - v61
   v63 <- v50
   v64 <- v54
@@ -363,8 +363,8 @@
 92:
   goto 93
 93:
-  v171 <- EntityData[0] * 100.0
-  v172 <- 310000.0 + v171
+  v171 <- EntityData[0] * 100
+  v172 <- 310000 + v171
   v173 <- v172 + v6
   goto 94
 94:
@@ -382,7 +382,7 @@
 95:
   goto 96
 96:
-  v21 <- v3 == 2.0
+  v21 <- v3 == 2
   goto 97 if v21 else 155
 97:
   goto 98
@@ -409,7 +409,7 @@
   v30 <- v6 <= v24
   goto 105 if v30 else 106
 105:
-  v31 <- Remap(LevelData[15], v24, 0, 1.0, v6)
+  v31 <- Remap(LevelData[15], v24, 0, 1, v6)
   v42 <- v31
   goto 115
 106:
@@ -421,7 +421,7 @@
   v35 <- v6 <= v25
   goto 109 if v35 else 110
 109:
-  v36 <- Remap(v24, v25, 1.0, 1.0, v6)
+  v36 <- Remap(v24, v25, 1, 1, v6)
   v42 <- v36
   goto 115
 110:
@@ -433,7 +433,7 @@
   v40 <- v6 <= LevelData[14]
   goto 113 if v40 else 114
 113:
-  v41 <- Remap(v25, LevelData[14], 1.0, 0, v6)
+  v41 <- Remap(v25, LevelData[14], 1, 0, v6)
   v42 <- v41
   goto 115
 114:
@@ -458,7 +458,7 @@
   v45 <- v22 <= 0.1
   goto 122 if v45 else 123
 122:
-  v46 <- Remap(0, 0.1, 0, 1.0, v22)
+  v46 <- Remap(0, 0.1, 0, 1, v22)
   v51 <- v46
   goto 130
 123:
@@ -467,7 +467,7 @@
   v47 <- v22 <= 0.19999999999999998
   goto 125 if v47 else 126
 125:
-  v48 <- Remap(0.1, 0.19999999999999998, 1.0, 1.0, v22)
+  v48 <- Remap(0.1, 0.19999999999999998, 1, 1, v22)
   v51 <- v48
   goto 130
 126:
@@ -476,7 +476,7 @@
   v49 <- v22 <= 0.3
   goto 128 if v49 else 129
 128:
-  v50 <- Remap(0.19999999999999998, 0.3, 1.0, 0, v22)
+  v50 <- Remap(0.19999999999999998, 0.3, 1, 0, v22)
   v51 <- v50
   goto 130
 129:
@@ -499,7 +499,7 @@
   v55 <- EntityData[0] * LevelData[12]
   goto 136
 136:
-  v56 <- LevelData[11] / 2.0
+  v56 <- LevelData[11] / 2
   v57 <- v55 - v56
   v58 <- v57
   v59 <- v6
@@ -538,7 +538,7 @@
   v82 <- EntityData[0] * LevelData[12]
   goto 142
 142:
-  v83 <- LevelData[11] / 2.0
+  v83 <- LevelData[11] / 2
   v84 <- v82 + v83
   v85 <- v84
   v86 <- v6
@@ -619,8 +619,8 @@
 147:
   goto 148
 148:
-  v152 <- EntityData[0] * 100.0
-  v153 <- 320000.0 + v152
+  v152 <- EntityData[0] * 100
+  v153 <- 320000 + v152
   v154 <- v153 + v6
   goto 149
 149:
@@ -640,19 +640,19 @@
 151:
   goto 256
 152:
-  v38 <- DebugLog(2.0)
+  v38 <- DebugLog(2)
   v39 <- DebugPause()
   goto exit
 153:
-  v33 <- DebugLog(2.0)
+  v33 <- DebugLog(2)
   v34 <- DebugPause()
   goto exit
 154:
-  v28 <- DebugLog(2.0)
+  v28 <- DebugLog(2)
   v29 <- DebugPause()
   goto exit
 155:
-  v22 <- v3 == 3.0
+  v22 <- v3 == 3
   goto 156 if v22 else 254
 156:
   goto 157
@@ -679,7 +679,7 @@
   v31 <- v6 <= v25
   goto 164 if v31 else 165
 164:
-  v32 <- Remap(LevelData[15], v25, 0, 1.0, v6)
+  v32 <- Remap(LevelData[15], v25, 0, 1, v6)
   v43 <- v32
   goto 174
 165:
@@ -691,7 +691,7 @@
   v36 <- v6 <= v26
   goto 168 if v36 else 169
 168:
-  v37 <- Remap(v25, v26, 1.0, 1.0, v6)
+  v37 <- Remap(v25, v26, 1, 1, v6)
   v43 <- v37
   goto 174
 169:
@@ -703,7 +703,7 @@
   v41 <- v6 <= LevelData[14]
   goto 172 if v41 else 173
 172:
-  v42 <- Remap(v26, LevelData[14], 1.0, 0, v6)
+  v42 <- Remap(v26, LevelData[14], 1, 0, v6)
   v43 <- v42
   goto 174
 173:
@@ -733,13 +733,13 @@
 181:
   v51 <- v47
   v52 <- v47
-  v53 <- v52 + 1.0
+  v53 <- v52 + 1
   v47 <- v53
   goto 182
 182:
   goto 183
 183:
-  v54 <- 1.0
+  v54 <- 1
   goto 185
 184:
   v54 <- 0
@@ -755,18 +755,18 @@
   v56 <- 0
   goto 190
 189:
-  v56 <- 1.0
+  v56 <- 1
   goto 190
 190:
   v57 <- Abs(EntityData[2])
-  v58 <- v57 - 1.0
+  v58 <- v57 - 1
   v59 <- v51 == v58
   goto 191 if v59 else 192
 191:
   v60 <- 0
   goto 193
 192:
-  v60 <- 1.0
+  v60 <- 1
   goto 193
 193:
   goto 194
@@ -782,7 +782,7 @@
   v62 <- v23 <= 0.1
   goto 198 if v62 else 199
 198:
-  v63 <- Remap(0, 0.1, v56, 1.0, v23)
+  v63 <- Remap(0, 0.1, v56, 1, v23)
   v68 <- v63
   goto 206
 199:
@@ -791,7 +791,7 @@
   v64 <- v23 <= 0.19999999999999998
   goto 201 if v64 else 202
 201:
-  v65 <- Remap(0.1, 0.19999999999999998, 1.0, 1.0, v23)
+  v65 <- Remap(0.1, 0.19999999999999998, 1, 1, v23)
   v68 <- v65
   goto 206
 202:
@@ -800,7 +800,7 @@
   v66 <- v23 <= 0.3
   goto 204 if v66 else 205
 204:
-  v67 <- Remap(0.19999999999999998, 0.3, 1.0, v60, v23)
+  v67 <- Remap(0.19999999999999998, 0.3, 1, v60, v23)
   v68 <- v67
   goto 206
 205:
@@ -821,10 +821,10 @@
   v72 <- EntityData[2] > 0
   goto 211 if v72 else 212
 211:
-  v73 <- 1.0
+  v73 <- 1
   goto 213
 212:
-  v73 <- -1.0
+  v73 <- -1
   goto 213
 213:
   v74 <- 0.4 + v51
@@ -846,19 +846,19 @@
 216:
   v85 <- v80
   v86 <- v84
-  v87 <- v86 / 2.0
+  v87 <- v86 / 2
   v88 <- v85 + v87
   v89 <- v79
   v90 <- v83
-  v91 <- v90 / 2.0
+  v91 <- v90 / 2
   v92 <- v89 + v91
   v93 <- v80
   v94 <- v84
-  v95 <- v94 / 2.0
+  v95 <- v94 / 2
   v96 <- v93 - v95
   v97 <- v79
   v98 <- v83
-  v99 <- v98 / 2.0
+  v99 <- v98 / 2
   v100 <- v97 - v99
   v101 <- v88
   v102 <- v92
@@ -903,7 +903,7 @@
   goto 227
 227:
   v121 <- v73 * -3.141592653589793
-  v122 <- v121 / 2.0
+  v122 <- v121 / 2
   goto 228
 228:
   goto 229
@@ -927,9 +927,9 @@
   v139 <- v120
   v140 <- v138 + v139
   v141 <- v137
-  v142 <- v141 / 4.0
+  v142 <- v141 / 4
   v143 <- v140
-  v144 <- v143 / 4.0
+  v144 <- v143 / 4
   goto 230
 230:
   goto 231
@@ -1158,8 +1158,8 @@
 246:
   goto 247
 247:
-  v337 <- EntityData[0] * 100.0
-  v338 <- 320000.0 + v337
+  v337 <- EntityData[0] * 100
+  v338 <- 320000 + v337
   v339 <- v338 + v6
   goto 248
 248:
@@ -1179,15 +1179,15 @@
 250:
   goto 255
 251:
-  v39 <- DebugLog(3.0)
+  v39 <- DebugLog(3)
   v40 <- DebugPause()
   goto exit
 252:
-  v34 <- DebugLog(3.0)
+  v34 <- DebugLog(3)
   v35 <- DebugPause()
   goto exit
 253:
-  v29 <- DebugLog(3.0)
+  v29 <- DebugLog(3)
   v30 <- DebugPause()
   goto exit
 254:
@@ -1203,14 +1203,14 @@
 259:
   goto exit
 260:
-  v35 <- DebugLog(1.0)
+  v35 <- DebugLog(1)
   v36 <- DebugPause()
   goto exit
 261:
-  v30 <- DebugLog(1.0)
+  v30 <- DebugLog(1)
   v31 <- DebugPause()
   goto exit
 262:
-  v25 <- DebugLog(1.0)
+  v25 <- DebugLog(1)
   v26 <- DebugPause()
   goto exit

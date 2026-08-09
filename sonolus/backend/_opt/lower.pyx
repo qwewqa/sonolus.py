@@ -27,7 +27,7 @@ involved.
 The 4096-slot cap raises ``ValueError("Temporary memory limit exceeded")``.
 """
 
-from libc.math cimport fabs, isfinite
+from libc.math cimport INFINITY, fabs, isfinite, nextafterf
 from libc.stdint cimport int16_t, int32_t, int64_t, uint8_t, uint16_t, uint32_t, uint64_t
 from libc.stdlib cimport calloc, free, malloc, realloc
 from libc.string cimport memcpy
@@ -1799,6 +1799,40 @@ cdef int64_t _gcd(int64_t a, int64_t b) noexcept nogil:
     return a
 
 
+cdef inline float _switch_test_f32(float test, int64_t off_i, int64_t str_i) noexcept nogil:
+    # Must stay in lockstep with the expression _normalize_switch emits below: if that
+    # shape changes, this guard silently stops matching what the runtime evaluates.
+    cdef float t = test
+    if off_i != 0:
+        t = t - <float>off_i
+    if str_i != 1:
+        t = t / <float>str_i
+    return t
+
+
+cdef bint _f32_dispatch_exact(list cases, int64_t off_i, int64_t str_i):
+    # Whether the rewritten switch still selects a case arm for that case value alone.
+    # _CASE_MAG_LIMIT/_CASE_SPAN_LIMIT bound the cases, not the test, and the runtime
+    # rounds (test - off)/stride to f32: a value matching no case can land exactly on a
+    # case index and steal its arm, since every switch form compares the index for exact
+    # equality.
+    #
+    # Probing each case's two immediate f32 neighbors decides this exactly rather than
+    # approximately: stride > 0 makes the composed map monotonic, so an index's preimage
+    # is one contiguous f32 run, which collapses to the case alone iff both neighbors
+    # land elsewhere.
+    cdef double c
+    cdef float cf, idx
+    for c in cases:
+        cf = <float>c
+        idx = <float>((<int64_t>c - off_i) // str_i)
+        if _switch_test_f32(nextafterf(cf, -INFINITY), off_i, str_i) == idx:
+            return False
+        if _switch_test_f32(nextafterf(cf, INFINITY), off_i, str_i) == idx:
+            return False
+    return True
+
+
 def _dense_offset_stride(list cases):
     # cases: sorted distinct f64. Dense (gap-tolerant) normalization: return
     # (offset, stride, span) with offset = min (int), stride = gcd of all
@@ -1806,9 +1840,10 @@ def _dense_offset_stride(list cases):
     # and span = (max - offset)/stride + 1 == the number of SwitchIntegerWithDefault
     # slots. Returns None (leaving the switch un-normalized) if any case is
     # non-integral, non-finite, or out of range (see _CASE_MAG_LIMIT/
-    # _CASE_SPAN_LIMIT). All (case - offset)/stride are then distinct
-    # integers in [0, span); the emit switch gate fills the span - k holes with the
-    # default target.
+    # _CASE_SPAN_LIMIT), or if the rewrite would misdispatch a near-case test under
+    # the runtime's f32 (see _f32_dispatch_exact). All (case - offset)/stride are
+    # then distinct integers in [0, span); the emit switch gate fills the span - k
+    # holes with the default target.
     cdef int32_t n = len(cases)
     if n < 2:
         return None
@@ -1827,6 +1862,10 @@ def _dense_offset_stride(list cases):
     for i in range(1, n):
         g = _gcd(g, <int64_t>(<double>cases[i]) - off)
     if g == 0:
+        return None
+    # Runtime-dispatch guard: see _f32_dispatch_exact. Last, so every cast above is
+    # already known safe.
+    if not _f32_dispatch_exact(cases, off, g):
         return None
     cdef int64_t span = (<int64_t>(<double>cases[n - 1]) - off) // g + 1
     return (off, g, span)
@@ -1915,7 +1954,8 @@ def _offset_stride(list cases):
     # cases: sorted distinct case values (as f64). Return (offset, stride) ints
     # for an exact arithmetic progression, or None (leaving the switch
     # un-normalized) if any case is non-integral, non-finite, or out of range
-    # (see _CASE_MAG_LIMIT/_CASE_SPAN_LIMIT).
+    # (see _CASE_MAG_LIMIT/_CASE_SPAN_LIMIT), or if the rewrite would misdispatch a
+    # near-case test under the runtime's f32 (see _f32_dispatch_exact).
     cdef int32_t n = len(cases)
     if n < 2:
         return None
@@ -1936,6 +1976,10 @@ def _offset_stride(list cases):
         case = <double>cases[i]
         if case != offset + i * stride:
             return None
+    # Runtime-dispatch guard: see _f32_dispatch_exact. Last, so every cast above is
+    # already known safe.
+    if not _f32_dispatch_exact(cases, <int64_t>offset, <int64_t>stride):
+        return None
     return (int(offset), int(stride))
 
 

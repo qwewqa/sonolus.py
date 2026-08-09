@@ -185,33 +185,34 @@ def load_resources_files_to_collection(base_path: Path) -> Collection:
 
 
 def get_project_schema(project: Project) -> ProjectSchema:
-    by_archetype: dict[str, dict[str, bool]] = {}
+    fields_by_archetype: dict[str, dict[str, None]] = {}
+    exports_by_archetype: dict[str, list[str]] = {}
     for archetype in project.engine.data.play.archetypes:
         archetype._init_fields()
-        fields = by_archetype.setdefault(archetype.name, {})
-        for field in archetype._exported_keys_:
-            fields[field] = False
+        fields = fields_by_archetype.setdefault(archetype.name, {})
+        exports_by_archetype[archetype.name] = [*archetype._exported_keys_]
         for field in archetype._imported_keys_:
-            fields[field] = True
+            fields[field] = None
     for archetype in project.engine.data.watch.archetypes:
         archetype._init_fields()
-        fields = by_archetype.setdefault(archetype.name, {})
+        fields = fields_by_archetype.setdefault(archetype.name, {})
+        runtime_supplied = {*exports_by_archetype.get(archetype.name, ()), "#ACCURACY", "#JUDGMENT"}
         for field in archetype._imported_keys_:
-            if field in {"#ACCURACY", "#JUDGMENT"}:
+            if field in runtime_supplied:
                 continue
-            if field not in fields:
-                fields[field] = True
+            fields[field] = None
     for archetype in project.engine.data.preview.archetypes:
         archetype._init_fields()
-        fields = by_archetype.setdefault(archetype.name, {})
+        fields = fields_by_archetype.setdefault(archetype.name, {})
         for field in archetype._imported_keys_:
-            fields[field] = True
+            fields[field] = None
     return {
         "archetypes": [
             {
                 "name": name,
                 "fields": [*fields],
+                "exports": exports_by_archetype.get(name, []),
             }
-            for name, fields in by_archetype.items()
+            for name, fields in fields_by_archetype.items()
         ]
     }

@@ -1,10 +1,12 @@
-"""Tests for _BaseArchetype.is_at and EntityRef.get_as / archetype_matches.
+"""Tests for _BaseArchetype.is_at, EntityRef.get_as / archetype_matches, and EntityRef acceptance.
 
-All three read entity_info_at(index), which is only available inside a compile context, so there is no
-plain-Python reference to run them against. Each test builds a Play-mode compile context with a base, a subclass,
-and an unrelated archetype registered, pre-populates the interpreter's EntityInfoArray block the way the real
-engine would, and interprets the compiled result, following tests/script/test_global_memory.py and
-tests/backend/test_block_access.py.
+is_at, get_as, and archetype_matches all read entity_info_at(index), which is only available inside a compile
+context, so there is no plain-Python reference to run them against. Those tests build a Play-mode compile context
+with a base, a subclass, and an unrelated archetype registered, pre-populate the interpreter's EntityInfoArray
+block the way the real engine would, and interpret the compiled result, following
+tests/script/test_global_memory.py and tests/backend/test_block_access.py.
+
+The acceptance tests need none of that and go through run_and_validate.
 """
 
 from typing import Any
@@ -22,7 +24,8 @@ from sonolus.script.internal.context import ModeContextState, ProjectContextStat
 from sonolus.script.internal.meta_fn import meta_fn
 from sonolus.script.internal.visitor import clear_frontend_caches, compile_and_call
 from sonolus.script.num import Num
-from tests.script.conftest import optimization_levels
+from sonolus.script.record import Record
+from tests.script.conftest import optimization_levels, run_and_validate
 
 
 class RefBase(PlayArchetype):
@@ -35,6 +38,14 @@ class RefSub(RefBase):
 
 class RefOther(PlayArchetype):
     name = "RefOther"
+
+
+class BaseRefHolder(Record):
+    ref: EntityRef[RefBase]
+
+
+class AnyRefHolder(Record):
+    ref: EntityRef[Any]
 
 
 ARCHETYPES = [RefBase, RefSub, RefOther]
@@ -159,3 +170,33 @@ def test_get_as_right_and_wrong_archetype_targets(archetype, expect_terminated):
     assert terminated is expect_terminated
     if not terminated:
         assert result == 0
+
+
+def test_entity_ref_record_field_aliases_constructor_argument():
+    def fn():
+        ref = EntityRef[RefBase](index=1)
+        holder = BaseRefHolder(ref)
+        holder.ref.index = 7
+        return ref.index
+
+    assert run_and_validate(fn) == 7
+
+
+def test_entity_ref_frozen_record_field_aliases_constructor_argument():
+    def fn():
+        ref = EntityRef[RefBase](index=1)
+        holder = BaseRefHolder.frozen(ref)
+        ref.index = 7
+        return holder.ref.index
+
+    assert run_and_validate(fn) == 7
+
+
+def test_entity_ref_record_field_converts_to_an_any_parameterization():
+    assert AnyRefHolder(EntityRef[RefSub](index=3)).ref.archetype() is Any
+    assert run_and_validate(lambda: AnyRefHolder(EntityRef[RefSub](index=3)).ref.index) == 3
+
+
+def test_entity_ref_record_field_converts_to_a_base_parameterization():
+    assert BaseRefHolder(EntityRef[RefSub](index=3)).ref.archetype() is RefBase
+    assert run_and_validate(lambda: BaseRefHolder(EntityRef[RefSub](index=3)).ref.index) == 3

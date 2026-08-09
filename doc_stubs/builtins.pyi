@@ -82,9 +82,9 @@ def callable(obj: object, /) -> builtins.bool:
 @overload
 def dict() -> builtins.dict: ...
 @overload
-def dict[K, V](mapping: builtins.dict[K, V], **kwargs: V) -> builtins.dict[K, V]: ...
+def dict[K, V](mapping_or_iterable: builtins.dict[K, V], **kwargs: V) -> builtins.dict[K, V]: ...
 @overload
-def dict[K, V](iterable: Iterable[tuple[K, V]], **kwargs: V) -> builtins.dict[K, V]: ...
+def dict[K, V](mapping_or_iterable: Iterable[tuple[K, V]], **kwargs: V) -> builtins.dict[K, V]: ...
 @overload
 def dict[V](**kwargs: V) -> builtins.dict[builtins.str, V]: ...
 def dict(*args, **kwargs) -> builtins.dict:
@@ -251,10 +251,11 @@ def map[T, S](function: Callable[..., S], iterable: Iterable[T], /, *iterables: 
     ...
 
 @overload
-def max[T](iterable: Iterable[T], *, key: Callable[[T], Any] | None = ...) -> T: ...
+def max[T](iterable: Iterable[T], /, *, key: Callable[[T], Any] | None = ...) -> T: ...
 @overload
 def max[T](
     iterable: Iterable[T],
+    /,
     *,
     default: T = ...,
     key: Callable[[T], Any] | None = ...,
@@ -263,6 +264,7 @@ def max[T](
 def max(
     arg1: builtins.int | builtins.float,
     arg2: builtins.int | builtins.float,
+    /,
     *args: builtins.int | builtins.float,
     key: Callable[[builtins.int | builtins.float], Any] | None = ...,
 ) -> builtins.int | builtins.float: ...
@@ -285,10 +287,11 @@ def max(*args, **kwargs):
     ...
 
 @overload
-def min[T](iterable: Iterable[T], *, key: Callable[[T], Any] | None = ...) -> T: ...
+def min[T](iterable: Iterable[T], /, *, key: Callable[[T], Any] | None = ...) -> T: ...
 @overload
 def min[T](
     iterable: Iterable[T],
+    /,
     *,
     default: T = ...,
     key: Callable[[T], Any] | None = ...,
@@ -297,6 +300,7 @@ def min[T](
 def min(
     arg1: builtins.int | builtins.float,
     arg2: builtins.int | builtins.float,
+    /,
     *args: builtins.int | builtins.float,
     key: Callable[[builtins.int | builtins.float], Any] | None = ...,
 ) -> builtins.int | builtins.float: ...
@@ -332,7 +336,7 @@ def next[T](iterator: Iterator[T]) -> T:
     ...
 
 @overload
-def range(stop: builtins.int) -> builtins.range: ...
+def range(stop: builtins.int, /) -> builtins.range: ...
 @overload
 def range(start: builtins.int, stop: builtins.int, step: builtins.int = ...) -> builtins.range: ...
 def range(*args) -> builtins.range:
@@ -344,14 +348,14 @@ def range(*args) -> builtins.range:
     """
     ...
 
-def reversed[T](seq: Sequence[T], /) -> Iterator[T]:
-    """Return a reverse iterator.
+def reversed[T](seq: Sequence[T], /) -> Sequence[T]:
+    """Return a reversed view of the sequence.
 
     Args:
         seq: The sequence to reverse.
 
     Returns:
-        An iterator over the reversed sequence.
+        A reversed view of the sequence.
     """
     ...
 
@@ -397,7 +401,7 @@ def setattr(obj: object, name: builtins.str, value: Any) -> None:
     """
     ...
 
-def super(cls: type = ..., instance: Any = ...) -> Any:
+def super(cls: type = ..., instance: Any = ..., /) -> Any:
     """Return a proxy object that delegates method calls to a parent or sibling class.
 
     Args:

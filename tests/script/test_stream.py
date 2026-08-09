@@ -13,6 +13,7 @@ from sonolus.script.debug import debug_log
 from sonolus.script.internal.context import ModeContextState, ProjectContextState, RuntimeChecks
 from sonolus.script.internal.visitor import clear_frontend_caches
 from sonolus.script.num import Num
+from sonolus.script.runtime import time
 from sonolus.script.stream import (
     Stream,
     StreamGroup,
@@ -254,3 +255,85 @@ def test_since_previous_frame_does_not_repeat_the_last_key_on_the_next_frame():
     keys = (10, 20, 30)
     assert _run_watch_frame(_log_keys_since_previous_frame, keys=keys, prev_time=25, time=30) == [30.0]
     assert _run_watch_frame(_log_keys_since_previous_frame, keys=keys, prev_time=30, time=35) == []
+
+
+def _log_keys_from_desc():
+    for key in Stream[Num](_STREAM_ID).iter_keys_from_desc(time()):
+        debug_log(key)
+
+
+def _log_values_from_desc():
+    for value in Stream[Num](_STREAM_ID).iter_values_from_desc(time()):
+        debug_log(value)
+
+
+def _log_items_from_desc():
+    for key, value in Stream[Num](_STREAM_ID).iter_items_from_desc(time()):
+        debug_log(key)
+        debug_log(value)
+
+
+_FROM_DESC_VARIANTS = {
+    "keys": (_log_keys_from_desc, lambda keys: [float(key) for key in keys]),
+    "values": (_log_values_from_desc, lambda keys: [_value_of(key) for key in keys]),
+    "items": (
+        _log_items_from_desc,
+        lambda keys: [entry for key in keys for entry in (float(key), _value_of(key))],
+    ),
+}
+
+
+@pytest.mark.parametrize("variant", list(_FROM_DESC_VARIANTS))
+@pytest.mark.parametrize(
+    ("stream_keys", "start", "expected_keys"),
+    [
+        ((10, 20, 30), 35, (30, 20, 10)),
+        ((10, 20, 30), 30, (30, 20, 10)),
+        ((10, 20, 30), 25, (20, 10)),
+        ((10, 20, 30), 20, (20, 10)),
+        ((10, 20, 30), 10, (10,)),
+        ((10, 20, 30), 5, ()),
+        ((), 10, ()),
+    ],
+    ids=[
+        "start-beyond-last-key",
+        "start-at-last-key-inclusive",
+        "start-strictly-between-keys",
+        "start-at-interior-key-inclusive",
+        "start-at-first-key-nothing-precedes",
+        "start-before-first-key",
+        "empty-stream",
+    ],
+)
+def test_iter_from_desc_visits_keys_strictly_descending(variant, stream_keys, start, expected_keys):
+    # Iteration begins at previous_key_inclusive(start) and stops once nothing precedes the current key, so it
+    # visits every stream key <= start in strictly descending order.
+    fn, expected_log = _FROM_DESC_VARIANTS[variant]
+    assert _run_watch_frame(fn, keys=stream_keys, prev_time=start, time=start) == expected_log(expected_keys)
+
+
+def _log_previous_key_or_default():
+    debug_log(Stream[Num](_STREAM_ID).previous_key_or_default(time(), -1))
+
+
+@pytest.mark.parametrize(
+    ("stream_keys", "start", "expected"),
+    [
+        ((10, 20, 30), 35, 30),
+        ((10, 20, 30), 20, 10),
+        ((10, 20, 30), 10, -1),
+        ((10, 20, 30), 5, -1),
+        ((), 10, -1),
+    ],
+    ids=[
+        "previous-key-exists",
+        "previous-key-exists-at-interior-key",
+        "first-key-nothing-precedes",
+        "below-first-key-nothing-precedes",
+        "empty-stream",
+    ],
+)
+def test_previous_key_or_default_returns_default_when_nothing_precedes(stream_keys, start, expected):
+    assert _run_watch_frame(_log_previous_key_or_default, keys=stream_keys, prev_time=start, time=start) == [
+        float(expected)
+    ]

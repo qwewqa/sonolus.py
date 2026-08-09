@@ -1,17 +1,17 @@
 0:
-  10000[0] <- EntityInfoArray[(EntityData[0] * 3.0) + 2] == 2.0
+  10000[0] <- EntityInfoArray[(EntityData[0] * 3) + 2] == 2
   goto 1 if 10000[0] else 2
 1:
   goto 3 if 10000[0] else 4
 2:
-  goto 3 if (2.0 == EntityInfoArray[(EntityData[1] * 3.0) + 2]) else 4
+  goto 3 if (2 == EntityInfoArray[(EntityData[1] * 3) + 2]) else 4
 3:
-  EntityDespawn[0] <- 1.0
+  EntityDespawn[0] <- 1
   goto exit
 4:
-  10000[1] <- EntityData[0] * 32.0
-  10000[2] <- EntityDataArray[(12.0 + 10000[1])]
-  10000[3] <- Remap(10000[2] - (6.0 / LevelOption[1]), 10000[2], LevelData[14], 0, RuntimeUpdate[2])
+  10000[1] <- EntityData[0] * 32
+  10000[2] <- EntityDataArray[(12 + 10000[1])]
+  10000[3] <- Remap(10000[2] - (6 / LevelOption[1]), 10000[2], LevelData[14], 0, RuntimeUpdate[2])
   goto 5 if LevelOption[8] else 16
 5:
   goto 6 if (10000[3] <= LevelData[15]) else 7
@@ -21,17 +21,17 @@
 7:
   goto 8 if (10000[3] <= (LevelData[15] + 0.5)) else 9
 8:
-  10000[4] <- Remap(LevelData[15], LevelData[15] + 0.5, 0, 1.0, 10000[3])
+  10000[4] <- Remap(LevelData[15], LevelData[15] + 0.5, 0, 1, 10000[3])
   goto 14
 9:
   goto 10 if (10000[3] <= (LevelData[14] - 0.5)) else 11
 10:
-  10000[4] <- Remap(LevelData[15] + 0.5, LevelData[14] - 0.5, 1.0, 1.0, 10000[3])
+  10000[4] <- Remap(LevelData[15] + 0.5, LevelData[14] - 0.5, 1, 1, 10000[3])
   goto 14
 11:
   goto 12 if (10000[3] <= LevelData[14]) else 13
 12:
-  10000[4] <- Remap(LevelData[14] - 0.5, LevelData[14], 1.0, 0, 10000[3])
+  10000[4] <- Remap(LevelData[14] - 0.5, LevelData[14], 1, 0, 10000[3])
   goto 14
 13:
   10000[4] <- 0
@@ -42,10 +42,10 @@
 15:
   10000[9] <- EntityDataArray[10000[1]]
   10000[10] <- 10000[9] * LevelData[12]
-  10000[11] <- EntityDataArray[(EntityData[1] * 32.0)]
+  10000[11] <- EntityDataArray[(EntityData[1] * 32)]
   10000[12] <- 10000[11] * LevelData[12]
-  10000[13] <- 10000[3] - (LevelData[11] / 2.0)
-  10000[14] <- 10000[3] + (LevelData[11] / 2.0)
+  10000[13] <- 10000[3] - (LevelData[11] / 2)
+  10000[14] <- 10000[3] + (LevelData[11] / 2)
   10000[15] <- LevelData[2] * 10000[10]
   10000[16] <- LevelData[3] * 10000[13]
   10000[17] <- LevelData[5] * 10000[10]
@@ -62,7 +62,7 @@
   10000[28] <- LevelData[9] * 10000[14]
   10000[29] <- 10000[19] + 10000[28] + LevelData[10]
   10000[30] <- 10000[24] + 10000[28] + LevelData[10]
-  10000[31] <- Draw(18.0, (10000[15] + 10000[16] + LevelData[4]) / 10000[21], (10000[17] + 10000[18] + LevelData[7]) / 10000[21], (10000[15] + 10000[26] + LevelData[4]) / 10000[29], (10000[17] + 10000[27] + LevelData[7]) / 10000[29], (10000[22] + 10000[26] + LevelData[4]) / 10000[30], (10000[23] + 10000[27] + LevelData[7]) / 10000[30], (10000[22] + 10000[16] + LevelData[4]) / 10000[25], (10000[23] + 10000[18] + LevelData[7]) / 10000[25], 220000.0 + (Min(10000[9], 10000[11]) * 100.0) + 10000[3], 10000[8], 0, 0, 0)
+  10000[31] <- Draw(18, (10000[15] + 10000[16] + LevelData[4]) / 10000[21], (10000[17] + 10000[18] + LevelData[7]) / 10000[21], (10000[15] + 10000[26] + LevelData[4]) / 10000[29], (10000[17] + 10000[27] + LevelData[7]) / 10000[29], (10000[22] + 10000[26] + LevelData[4]) / 10000[30], (10000[23] + 10000[27] + LevelData[7]) / 10000[30], (10000[22] + 10000[16] + LevelData[4]) / 10000[25], (10000[23] + 10000[18] + LevelData[7]) / 10000[25], 220000 + (Min(10000[9], 10000[11]) * 100) + 10000[3], 10000[8], 0, 0, 0)
   goto exit
 16:
   goto exit

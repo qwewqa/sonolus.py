@@ -7,7 +7,7 @@ from pathlib import Path
 
 import pytest
 
-from sonolus.build.collection import SINGULAR_CATEGORY_NAMES, Collection
+from sonolus.build.collection import SINGULAR_CATEGORY_NAMES, Collection, load_asset
 from sonolus.build.project import load_resources_files_to_collection
 
 
@@ -229,6 +229,30 @@ def test_source_files_override_scp_items(tmp_path):
     c = load_resources_files_to_collection(source)
 
     assert c.get_item("skins", "pixel")["title"] == "FROM SOURCE"
+
+
+def test_load_asset_reads_a_relative_path_string(tmp_path, monkeypatch):
+    (tmp_path / "bgm.mp3").write_bytes(b"audio bytes")
+    monkeypatch.chdir(tmp_path)
+
+    assert load_asset("bgm.mp3") == b"audio bytes"
+
+
+def test_load_asset_reads_an_absolute_path_string(tmp_path):
+    asset = tmp_path / "cover.png"
+    asset.write_bytes(b"image bytes")
+
+    assert load_asset(str(asset)) == load_asset(asset)
+
+
+def test_add_asset_accepts_a_path_string(tmp_path, monkeypatch):
+    (tmp_path / "thumbnail.png").write_bytes(b"image bytes")
+    monkeypatch.chdir(tmp_path)
+    c = Collection()
+
+    srl = c.add_asset("thumbnail.png")
+
+    assert c.repository[srl["hash"]] == b"image bytes"
 
 
 def test_write_preserves_insertion_order(tmp_path):

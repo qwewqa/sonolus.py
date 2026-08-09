@@ -4,6 +4,7 @@ from hypothesis import strategies as st
 from sonolus.script.array import Array
 from sonolus.script.internal.context import RuntimeChecks
 from sonolus.script.interval import Interval, interp, interp_clamped, lerp, remap, remap_clamped
+from sonolus.script.record import Record
 from tests.script.conftest import implies, is_close, run_and_validate, run_compiled
 
 ints = st.integers(min_value=-99999, max_value=99999)
@@ -139,6 +140,46 @@ def test_interval_intersection(start, end, other_start, other_end):
         return interval & other
 
     assert run_and_validate(fn) == Interval(max(start, other_start), min(end, other_end))
+
+
+@given(floats, floats, floats, floats)
+def test_interval_inplace_intersection(start, end, other_start, other_end):
+    def fn():
+        interval = Interval(start, end)
+        other = Interval(other_start, other_end)
+        interval &= other
+        return interval
+
+    assert run_and_validate(fn) == Interval(max(start, other_start), min(end, other_end))
+
+
+# The branch in __add__ is the point of this Record: a straight-line body compiles either way, so only a branching
+# one catches the auto-generated __iadd__ running its base operator as host Python.
+class ClampedSum(Record):
+    value: float
+
+    def __add__(self, other):
+        total = self.value + other.value
+        if total > 10.0:  # noqa: PLR1730
+            total = 10.0
+        return ClampedSum(total)
+
+
+@given(floats, floats)
+def test_record_inplace_op_traces_branching_base_op(first, second):
+    def fn():
+        acc = ClampedSum(first)
+        acc += ClampedSum(second)
+        return acc.value
+
+    assert run_and_validate(fn) == min(first + second, 10.0)
+
+
+def test_inplace_ops_are_generated():
+    # With no in-place form at all, visit_AugAssign falls back to the base operator and rebinds, so the two
+    # augmented-assignment tests here would pass whether or not the generated form traces its base operator.
+    assert "__iand__" in Interval.__dict__
+    assert "__iadd__" in ClampedSum.__dict__
 
 
 @given(floats, floats, floats, floats)

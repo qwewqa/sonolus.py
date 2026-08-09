@@ -91,6 +91,7 @@ class DictImpl[Keys, OrderedKeys, Values](Record):
         else:
             return Some(self._values[index])
 
+    @meta_fn
     def __eq__(self, other: Any):
         raise TypeError("Dict equality comparison is not supported")
 
@@ -149,7 +150,10 @@ class DictImpl[Keys, OrderedKeys, Values](Record):
                 del orig_ctx.outgoing[None]
                 set_ctx(orig_ctx)
                 return None
-            if eq._as_py_():
+            eq_py = eq._as_py_()
+            if eq_py is NotImplemented:
+                continue
+            if eq_py:
                 return i
         return -1
 

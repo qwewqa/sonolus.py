@@ -429,3 +429,26 @@ def test_floordiv_falls_back_to_reflected_op():
         return x // y
 
     run_and_validate(fn)
+
+
+def test_eq_falls_back_to_reflected_op():
+    # Num.__eq__ must return NotImplemented for a non-numeric operand so the reflected __eq__ is
+    # tried. EqOnly.__eq__ logs debug_log(16), so the oracle's log check pins that the reflected op
+    # actually ran rather than the return value matching by chance.
+    def fn():
+        x = 5
+        y = EqOnly()
+        return x == y
+
+    assert run_and_validate(fn)
+
+
+def test_ne_falls_back_to_reflected_op():
+    # The mirror for Num.__ne__. EqNotImplemented.__ne__ logs debug_log(18) and then declines,
+    # leaving the different-types rule to supply the True.
+    def fn():
+        x = 5
+        y = EqNotImplemented()
+        return x != y
+
+    assert run_and_validate(fn)

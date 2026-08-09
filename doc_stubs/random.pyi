@@ -7,7 +7,7 @@ from typing import (
 )
 
 @overload
-def randrange(stop: int) -> int:
+def randrange(stop: int, /) -> int:
     """Return a randomly selected element from range(stop).
 
     Args:

@@ -93,6 +93,9 @@ def _create_global(cls: type, blocks: dict[Mode, Block], offset: int | None):
         name,
         annotation,
     ) in enumerate(inspect.get_annotations(cls, eval_str=True).items()):
+        # hasattr doesn't work here: it returns True for a field named e.g. mro via the metaclass.
+        if name in cls.__dict__:
+            raise TypeError("Default values are not supported for global fields")
         type_ = validate_concrete_type(annotation)
         setattr(cls, name, _GlobalField(name, type_, i, field_offset))
         field_offset += type_._size_()

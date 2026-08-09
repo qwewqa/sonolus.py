@@ -551,6 +551,7 @@ type _ArchetypeData = _ArchetypeSelfData | _ArchetypeReferenceData | _ArchetypeL
 class ArchetypeSchema(TypedDict):
     name: str
     fields: list[str]
+    exports: list[str]
 
 
 class ImportInfo(NamedTuple):
@@ -809,7 +810,11 @@ class _BaseArchetype(metaclass=_BaseArchetypeMeta):
     @classmethod
     def schema(cls) -> ArchetypeSchema:
         cls._init_fields()
-        return {"name": cls.name or "unnamed", "fields": list(cls._imported_keys_)}
+        return {
+            "name": cls.name or "unnamed",
+            "fields": list(cls._imported_keys_),
+            "exports": list(cls._exported_keys_),
+        }
 
     def _level_data_entries(self, level_refs: dict[Any, str] | None = None):
         self._init_fields()
@@ -1782,6 +1787,8 @@ class EntityRef[A: _BaseArchetype](Record):
     def _accept_(cls, value: Any) -> Self:
         if not cls._accepts_(value):
             raise TypeError(f"Expected {cls}, got {type(value)}")
+        if type(value) is cls:
+            return value
         return value.with_archetype(cls.archetype())
 
     @classmethod

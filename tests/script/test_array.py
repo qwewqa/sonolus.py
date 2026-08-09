@@ -4,14 +4,19 @@ import pytest
 from hypothesis import given
 from hypothesis import strategies as st
 
+from sonolus.backend.optimize import STANDARD_PASSES, optimize_and_finalize
+from sonolus.backend.place import BlockPlace
 from sonolus.script.array import Array
+from sonolus.script.array_like import _ArrayReverser, _identity, _insertion_sort  # noqa: PLC2701
 from sonolus.script.containers import VarArray
 from sonolus.script.debug import assert_false, assert_true
 from sonolus.script.internal.error import CompilationError
+from sonolus.script.internal.impl import validate_value
+from sonolus.script.internal.meta_fn import meta_fn
 from sonolus.script.num import Num
 from sonolus.script.record import Record
 from sonolus.script.vec import Vec2
-from tests.script.conftest import run_and_validate
+from tests.script.conftest import compile_fn, run_and_validate
 from tests.script.test_record import Simple
 
 # A permutation of 0..19, defined here since tuples can't be built inside a compiled function.
@@ -305,6 +310,67 @@ def test_array_sort_with_key(args, reverse: bool, a: int, b: int, c: int):
     assert list(run_and_validate(fn)) == sorted(args, key=lambda x: a * x * x + b * x + c, reverse=reverse)
 
 
+@meta_fn
+def _sort_fold_rt(i):
+    # Force a genuinely runtime element value (a BlockPlace read) so the optimizer cannot
+    # constant-fold the sort away entirely; only the *branch choice* between insertion sort and
+    # heap sort should fold at compile time.
+    idx = int(validate_value(i)._as_py_())
+    return Num._from_place_(BlockPlace(100, idx))
+
+
+def _sort_fold_node_count(node) -> int:
+    args = getattr(node, "args", None)
+    if args:
+        return 1 + sum(_sort_fold_node_count(a) for a in args)
+    return 1
+
+
+def _sort_fold_measure(cb) -> int:
+    cfg, _rom = compile_fn(cb)
+    node = optimize_and_finalize(cfg, STANDARD_PASSES)
+    return _sort_fold_node_count(node)
+
+
+def test_array_sort_compile_time_length_folds_to_direct_insertion_sort():
+    # With a compile-time-constant length under 15, ArrayLike.sort() should take only the direct
+    # insertion-sort branch; the heap-sort alternative must fold away entirely rather than being
+    # emitted alongside it. Pins the node count against calling _insertion_sort directly, so a
+    # regression in that fold (e.g. the branch condition losing its compile-time len, which would
+    # emit both branches) shows up as a node-count increase rather than silently shipping.
+    def sort_fn():
+        array = Array(
+            _sort_fold_rt(0),
+            _sort_fold_rt(1),
+            _sort_fold_rt(2),
+            _sort_fold_rt(3),
+            _sort_fold_rt(4),
+            _sort_fold_rt(5),
+            _sort_fold_rt(6),
+            _sort_fold_rt(7),
+        )
+        array.sort()
+        return array[0]
+
+    def insertion_fn():
+        array = Array(
+            _sort_fold_rt(0),
+            _sort_fold_rt(1),
+            _sort_fold_rt(2),
+            _sort_fold_rt(3),
+            _sort_fold_rt(4),
+            _sort_fold_rt(5),
+            _sort_fold_rt(6),
+            _sort_fold_rt(7),
+        )
+        _insertion_sort(array.unchecked(), 0, len(array), _identity, False)
+        return array[0]
+
+    # <=, not ==: a future optimization that makes the folded sort path cheaper than a manual
+    # insertion-sort call should not fail this test.
+    assert _sort_fold_measure(sort_fn) <= _sort_fold_measure(insertion_fn)
+
+
 @given(
     args=st.lists(st.integers(min_value=-999, max_value=999), min_size=1, max_size=100),
     a=st.integers(min_value=-9, max_value=9),
@@ -546,6 +612,17 @@ def test_var_array_double_reversed_iteration():
         return total
 
     assert run_and_validate(fn) == 102030
+
+
+def test_array_double_reversed_unwraps_instead_of_nesting():
+    # __reversed__ is what dispatch actually calls, so reversing an already-reversed view unwraps
+    # back to the original array rather than nesting a second _ArrayReverser proxy around it.
+    # Host-side only: reversed() runs as plain Python here, not compiled.
+    array = Array(1, 2, 3)
+    once = reversed(array)
+    assert isinstance(once, _ArrayReverser)
+    twice = reversed(once)
+    assert not isinstance(twice, _ArrayReverser)
 
 
 def test_get_unchecked_out_of_bounds_raises_index_error():

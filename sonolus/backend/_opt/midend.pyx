@@ -91,6 +91,9 @@ from sonolus.backend._opt._ops_gen cimport (
     OPX_UNDEF,
     OP_Add,
     OP_And,
+    OP_Arccos,
+    OP_Arcsin,
+    OP_Cosh,
     OP_DecrementPostPointed,
     OP_DecrementPostShifted,
     OP_Divide,
@@ -103,6 +106,7 @@ from sonolus.backend._opt._ops_gen cimport (
     OP_IncrementPostShifted,
     OP_Less,
     OP_LessOr,
+    OP_Log,
     OP_Max,
     OP_Min,
     OP_Mod,
@@ -113,6 +117,8 @@ from sonolus.backend._opt._ops_gen cimport (
     OP_Or,
     OP_Power,
     OP_Rem,
+    OP_Remap,
+    OP_RemapClamped,
     OP_RUNTIME_COUNT,
     OP_SetAddPointed,
     OP_SetAddShifted,
@@ -130,7 +136,10 @@ from sonolus.backend._opt._ops_gen cimport (
     OP_SetShifted,
     OP_SetSubtractPointed,
     OP_SetSubtractShifted,
+    OP_Sinh,
     OP_Subtract,
+    OP_Unlerp,
+    OP_UnlerpClamped,
     SONOLUS_OP_FOLDABLE,
 )
 from sonolus.backend._opt.analysis cimport Dominators, LoopForest, compute_dominators, compute_loops
@@ -3707,14 +3716,21 @@ def _emit_from_model(Func src, list pblocks, int entry_pb):
 
 # ---- LICM -----------------------------------------------------------------
 # Loop forest from dominators + back edges. For each loop (inner-first), hoist
-# pure / effectively-pure (non-writable static real-block reads), loop-invariant,
-# guaranteed-to-execute (def block dominates every latch) values whose EFFECTIVE
-# cost (runtime cost model) is >= 4 into a preheader. Effective cost: runtime-
-# constant subtrees (pure ops over OPX_CONST + PLACE_RUNTIME_CONST reads) cost 1,
-# so they NEVER hoist -- hoisting one to a preheader temp would defeat the
-# runtime's own constant folding of the tree. This effective-cost walk duplicates
-# the one in lower.pyx (a cimport would create a midend<->lower cycle); the two
-# stay aligned with the runtime cost model.
+# pure / effectively-pure (non-writable static real-block reads), loop-invariant
+# values whose EFFECTIVE cost (runtime cost model) is >= 4 into a preheader.
+#
+# Placement gate. A hoist root's def block must dominate every latch, so it is
+# reached on the way round the loop, though not that the loop runs at all (a
+# zero-trip loop can skip the body). An op that can fault (_licm_can_fault) must
+# also dominate every exiting block, proving the body runs whenever the preheader
+# does: a Divide lifted out of `for _ in range(n): ... / n` would otherwise divide
+# by n == 0 where the source never does.
+#
+# Effective cost: runtime-constant subtrees (pure ops over OPX_CONST +
+# PLACE_RUNTIME_CONST reads) cost 1, so they NEVER hoist -- hoisting one to a
+# preheader temp would defeat the runtime's own constant folding of the tree.
+# This effective-cost walk duplicates the one in lower.pyx (a cimport would create
+# a midend<->lower cycle); the two stay aligned with the runtime cost model.
 
 
 cdef bint _licm_is_rtc(Func f, int32_t v, dict memo) except -1:
@@ -3793,6 +3809,55 @@ cdef bint _licm_hoist_kind(Func f, int32_t v) noexcept nogil:
     return False
 
 
+cdef inline bint _licm_const_at(Func f, int32_t v, int32_t k, double* out) noexcept nogil:
+    # Caller must have checked nargs.
+    cdef int32_t a = <int32_t>f.args[f.instrs[v].arg_start + k]
+    if f.instrs[a].op != OPX_CONST:
+        return False
+    out[0] = f.consts[f.instrs[a].aux]
+    return True
+
+
+cdef bint _licm_can_fault(Func f, int32_t v) noexcept nogil:
+    # True where the oracle's interpret.py handler for v raises, so evaluating v on a
+    # path the source never takes turns a working program into an oracle error. One
+    # deliberate narrowing: Trunc / Floor / Ceil / Round and Sin / Cos / Tan raise only
+    # on an infinite or NaN operand. The oracle can still produce inf/NaN silently
+    # (f64 overflow, inf - inf), so hoisting such a tree over a zero-trip loop is an
+    # accepted residual; listing these ops would sink whole invariant trees back into
+    # the loop to close it.
+    #
+    # Memory reads: the oracle's get() asserts the block id and the address are
+    # integers and the address is in [0, 65535], so only a static-block read at a
+    # compile-time-constant address in range is free to speculate.
+    cdef uint16_t op = f.instrs[v].op
+    cdef int32_t n = f.instrs[v].nargs
+    cdef int32_t pid
+    cdef double lo, hi
+    if op == OPX_GET:
+        pid = f.instrs[v].aux
+        if f.places[pid].kind == PLACE_DYNAMIC_BLOCK or f.places[pid].index_val >= 0:
+            return True
+        return not (0 <= f.places[pid].offset <= 65535)
+    if op >= OP_RUNTIME_COUNT:
+        return False
+    if op == OP_Divide or op == OP_Mod or op == OP_Rem:
+        # A literal nonzero divisor cannot raise. Two-operand form only: reduce_args
+        # folds left to right, so a longer chain divides by its middle operands too.
+        return not (n == 2 and _licm_const_at(f, v, 1, &hi) and hi != 0.0)
+    if op == OP_Unlerp or op == OP_UnlerpClamped:
+        # Divides by hi - lo.
+        return not (n == 3 and _licm_const_at(f, v, 0, &lo) and _licm_const_at(f, v, 1, &hi) and hi != lo)
+    if op == OP_Remap or op == OP_RemapClamped:
+        # Divides by from_max - from_min.
+        return not (n == 5 and _licm_const_at(f, v, 0, &lo) and _licm_const_at(f, v, 1, &hi) and hi != lo)
+    return (
+        op == OP_Power                                             # 0 ** negative, negative ** fractional, overflow
+        or op == OP_Log or op == OP_Arcsin or op == OP_Arccos      # math_1 domain error
+        or op == OP_Sinh or op == OP_Cosh                          # math_1: overflow from a finite argument
+    )
+
+
 cdef list _licm_operands(Func f, int32_t v):
     # Value ids this value directly consumes (for the hoist-set closure).
     cdef int32_t pid, astart, n, k
@@ -3809,6 +3874,39 @@ cdef list _licm_operands(Func f, int32_t v):
     for k in range(n):
         res.append(<int32_t>f.args[astart + k])
     return res
+
+
+cdef bint _licm_speculatable(
+    Func f, Dominators D, LoopForest F, int32_t L, int32_t v, dict inv, list exits, dict memo
+) except -1:
+    # True iff v and every in-loop invariant value the hoist closure would take with
+    # it may run unconditionally in the preheader: each faulting op among them
+    # dominates every exiting block, so entering the loop reaches it. An operand
+    # defined outside the loop already ran before the preheader. A loop with no
+    # exiting block never terminates, so nothing in it is provably reached.
+    cached = memo.get(v)
+    if cached is not None:
+        return <bint>cached
+    cdef int32_t a, b, u
+    cdef bint r = True
+    if _licm_can_fault(f, v):
+        b = f.instrs[v].block
+        r = len(exits) > 0
+        for u in exits:
+            if not D.dominates(b, u):
+                r = False
+                break
+    if r:
+        for a in _licm_operands(f, v):
+            if not F.in_loop(L, f.instrs[a].block):
+                continue
+            if not <bint>inv.get(a, False):
+                continue
+            if not _licm_speculatable(f, D, F, L, a, inv, exits, memo):
+                r = False
+                break
+    memo[v] = r
+    return r
 
 
 cdef bint _licm_operand_inv(Func f, LoopForest F, int32_t L, int32_t a, dict inv) except -1:
@@ -3886,6 +3984,14 @@ def _licm_try_loop(Func f, Dominators D, LoopForest F, int32_t L):
     if not latches:
         return None
 
+    # exiting blocks: loop blocks with an edge leaving the loop; see
+    # _licm_speculatable and the placement-gate note above.
+    exit_set = set()
+    for e in range(f.n_edges):
+        if F.in_loop(L, f.edges[e].src) and not F.in_loop(L, f.edges[e].dst):
+            exit_set.add(f.edges[e].src)
+    exits = sorted(exit_set)
+
     # invariant set: single forward pass over loop-body values (operands of a
     # non-phi value have strictly smaller ids, so one pass suffices; phis are
     # never invariant and break any cycle). The bitset walk visits vids ascending
@@ -3908,9 +4014,10 @@ def _licm_try_loop(Func f, Dominators D, LoopForest F, int32_t L):
             for vid in range(istart, istart + icount):
                 inv[vid] = _licm_is_invariant(f, F, L, vid, inv)
 
-    # hoist roots: invariant, hoistable kind, guaranteed-to-execute, cost >= 4.
+    # hoist roots: invariant, hoistable kind, latch-dominating, speculatable, cost >= 4.
     memo_cost = {}
     memo_rtc = {}
+    memo_spec = {}
     roots = []
     for w in range(F.nwb):
         word = F.body[body_off + w]
@@ -3934,6 +4041,8 @@ def _licm_try_loop(Func f, Dominators D, LoopForest F, int32_t L):
                         guaranteed = False
                         break
                 if not guaranteed:
+                    continue
+                if not _licm_speculatable(f, D, F, L, vid, inv, exits, memo_spec):
                     continue
                 if _licm_eff_cost(f, vid, memo_cost, memo_rtc) < 4:
                     continue

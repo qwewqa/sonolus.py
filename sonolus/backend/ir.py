@@ -14,17 +14,16 @@ class IRConst:
 
     value: float | int
 
+    # No __init__: it would re-run on a cache hit and rewrite the shared instance's value.
     def __new__(cls, value):
         if float(value).is_integer():
             int_value = int(value)
             if _IR_CONST_CACHE_START <= int_value < _IR_CONST_CACHE_STOP:
                 return _IR_CONST_CACHE[int_value - _IR_CONST_CACHE_START]
-            else:
-                return _create_raw_const(int_value)
-        return super().__new__(cls)
-
-    def __init__(self, value: float):
-        self.value = value
+            return _create_raw_const(int_value)
+        result = super().__new__(cls)
+        result.value = value
+        return result
 
     def __repr__(self):
         return f"IRConst({self.value!r})"

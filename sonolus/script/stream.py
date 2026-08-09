@@ -366,11 +366,11 @@ class Stream[T](Record):
         If the key is in the stream, it will be included in the iteration.
 
         Usage:
-        ```python
-        stream = ...
-        for key, value in stream.iter_items_from(0):
-            do_something(key, value)
-        ```
+            ```python
+            stream = ...
+            for key, value in stream.iter_items_from(0):
+                do_something(key, value)
+            ```
         """
         _check_can_read_stream()
         return _StreamAscIterator(self, self.next_key_inclusive(start))
@@ -382,11 +382,11 @@ class Stream[T](Record):
         previous frame and up to and including the current time.
 
         Usage:
-        ```python
-        stream = ...
-        for key, value in stream.iter_items_since_previous_frame():
-            do_something(key, value)
-        ```
+            ```python
+            stream = ...
+            for key, value in stream.iter_items_since_previous_frame():
+                do_something(key, value)
+            ```
         """
         _check_can_read_stream()
         # next_key returns prev_time() unchanged when prev_time() is the stream's last key, re-yielding the item
@@ -399,11 +399,11 @@ class Stream[T](Record):
         If the key is in the stream, it will be included in the iteration.
 
         Usage:
-        ```python
-        stream = ...
-        for key, value in stream.iter_items_from_desc(0):
-            do_something(key, value)
-        ```
+            ```python
+            stream = ...
+            for key, value in stream.iter_items_from_desc(0):
+                do_something(key, value)
+            ```
         """
         _check_can_read_stream()
         return _StreamDescIterator(self, self.previous_key_inclusive(start))
@@ -414,11 +414,11 @@ class Stream[T](Record):
         If the key is in the stream, it will be included in the iteration.
 
         Usage:
-        ```python
-        stream = ...
-        for key in stream.iter_keys_from(0):
-            do_something(key)
-        ```
+            ```python
+            stream = ...
+            for key in stream.iter_keys_from(0):
+                do_something(key)
+            ```
         """
         _check_can_read_stream()
         return _StreamAscKeyIterator(self, self.next_key_inclusive(start))
@@ -430,11 +430,11 @@ class Stream[T](Record):
         previous frame and up to and including the current time.
 
         Usage:
-        ```python
-        stream = ...
-        for key in stream.iter_keys_since_previous_frame():
-            do_something(key)
-        ```
+            ```python
+            stream = ...
+            for key in stream.iter_keys_since_previous_frame():
+                do_something(key)
+            ```
         """
         _check_can_read_stream()
         return _StreamBoundedAscKeyIterator(self, self.next_key_or_default(prev_time(), inf), time())
@@ -445,11 +445,11 @@ class Stream[T](Record):
         If the key is in the stream, it will be included in the iteration.
 
         Usage:
-        ```python
-        stream = ...
-        for key in stream.iter_keys_from_desc(0):
-            do_something(key)
-        ```
+            ```python
+            stream = ...
+            for key in stream.iter_keys_from_desc(0):
+                do_something(key)
+            ```
         """
         _check_can_read_stream()
         return _StreamDescKeyIterator(self, self.previous_key_inclusive(start))
@@ -460,11 +460,11 @@ class Stream[T](Record):
         If the key is in the stream, it will be included in the iteration.
 
         Usage:
-        ```python
-        stream = ...
-        for value in stream.iter_values_from(0):
-            do_something(value)
-        ```
+            ```python
+            stream = ...
+            for value in stream.iter_values_from(0):
+                do_something(value)
+            ```
         """
         _check_can_read_stream()
         return _StreamAscValueIterator(self, self.next_key_inclusive(start))
@@ -476,11 +476,11 @@ class Stream[T](Record):
         previous frame and up to and including the current time.
 
         Usage:
-        ```python
-        stream = ...
-        for value in stream.iter_values_since_previous_frame():
-            do_something(value)
-        ```
+            ```python
+            stream = ...
+            for value in stream.iter_values_since_previous_frame():
+                do_something(value)
+            ```
         """
         _check_can_read_stream()
         return _StreamBoundedAscValueIterator(self, self.next_key_or_default(prev_time(), inf), time())
@@ -491,11 +491,11 @@ class Stream[T](Record):
         If the key is in the stream, it will be included in the iteration.
 
         Usage:
-        ```python
-        stream = ...
-        for value in stream.iter_values_from_desc(0):
-            do_something(value)
-        ```
+            ```python
+            stream = ...
+            for value in stream.iter_values_from_desc(0):
+                do_something(value)
+            ```
         """
         _check_can_read_stream()
         return _StreamDescValueIterator(self, self.previous_key_inclusive(start))
