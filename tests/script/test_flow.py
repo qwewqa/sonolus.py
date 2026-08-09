@@ -1630,6 +1630,17 @@ def test_chained_comparison(x, y, z):
     assert run_and_validate(fn) == Array(*(x < y < z for _ in range(8)))
 
 
+def test_chained_comparison_with_incomparable_types():
+    def fn():
+        a = black_box_value(1)
+        b = black_box_value(1)
+        c = black_box_value(2)
+        pair = (1, 2)
+        return Array(a == b == pair, a == c == pair, a == b, a != b != pair)
+
+    assert run_and_validate(fn) == Array(0, 0, 1, 0)
+
+
 def test_while_true():
     def fn():
         debug_log(1)

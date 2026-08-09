@@ -92,10 +92,10 @@ Some expressions can be evaluated at compile time:
     - Negation: `not a`
     - And
         - Both operands are compile-time constants: `a and b`
-        - One operand is known to be False: `False and a`, `a and False`
+        - The left operand is known to be False: `False and a`
     - Or
         - Both operands are compile-time constants: `a or b`
-        - One operand is known to be True: `True or a`, `a or True`
+        - The left operand is known to be True: `True or a`
 - Comparison: for compile-time constant operands: `a == b`, `a != b`, `a > b`, `a < b`, `a >= b`, `a <= b`, ...
 - Variables assigned to compile-time constants: `a = 1`, `b = a + 1`, ...
 

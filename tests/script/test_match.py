@@ -6,11 +6,13 @@ import pytest
 
 from sonolus.script.array import Array
 from sonolus.script.containers import VarArray
-from sonolus.script.debug import debug_log
+from sonolus.script.debug import assert_true, debug_log
 from sonolus.script.internal.error import CompilationError
+from sonolus.script.internal.range import Range
 from sonolus.script.num import Num
 from sonolus.script.record import Record
 from tests.script.conftest import run_and_validate, run_compiled
+from tests.script.test_flow import black_box_value
 from tests.script.test_record import Pair
 
 
@@ -874,3 +876,241 @@ def test_match_nested_sequence_pattern_without_star_still_matches():
                 return -1
 
     assert run_and_validate(fn) == 123
+
+
+class WeirdEq(Record):
+    value: Num
+
+    def __eq__(self, other):
+        # __eq__ returns a VarArray rather than a Num: empty when the values differ, one element when they
+        # match. A value pattern truth-tests the result of ==, per PEP 634, so an empty result is a non-match.
+        result = VarArray[Num, 1].new()
+        if self.value == other.value:
+            result.append(1)
+        return result
+
+    def __ne__(self, other):
+        return not self == other
+
+    def __hash__(self):
+        raise TypeError("unhashable type: 'WeirdEq'")
+
+
+class MatchValueConstants:
+    # Value patterns in a case must be dotted names, so this class holds the constants they name.
+    TUPLE_A = (1, 2)
+    TUPLE_B = (3, 4)
+    NESTED = ((1, 2), 3)
+    ARRAY = Array(1, 2)
+    RANGE = Range(0, 3)
+    WEIRD = WeirdEq(0)
+    WEIRD_OTHER = WeirdEq(7)
+
+
+def test_match_runtime_tuple_against_constant_tuple_pattern():
+    def fn():
+        t = (black_box_value(1), 2)
+        match t:
+            case MatchValueConstants.TUPLE_B:
+                return 20
+            case MatchValueConstants.TUPLE_A:
+                return 10
+            case _:
+                return -1
+
+    assert run_and_validate(fn) == 10
+
+
+def test_match_runtime_tuple_against_constant_tuple_pattern_no_match():
+    def fn():
+        t = (black_box_value(5), 2)
+        match t:
+            case MatchValueConstants.TUPLE_A:
+                return 10
+            case _:
+                return -1
+
+    assert run_and_validate(fn) == -1
+
+
+def test_match_runtime_array_against_constant_array_pattern():
+    def fn():
+        a = Array(black_box_value(1), 2)
+        match a:
+            case MatchValueConstants.ARRAY:
+                return 10
+            case _:
+                return -1
+
+    assert run_and_validate(fn) == 10
+
+
+def test_match_runtime_range_against_constant_range_pattern():
+    def fn():
+        r = Range(0, black_box_value(3))
+        match r:
+            case MatchValueConstants.RANGE:
+                return 10
+            case _:
+                return -1
+
+    assert run_and_validate(fn) == 10
+
+
+def test_match_var_array_against_constant_array_pattern():
+    def fn():
+        v = VarArray[Num, 4].new()
+        v.append(black_box_value(1))
+        v.append(2)
+        match v:
+            case MatchValueConstants.ARRAY:
+                return 10
+            case _:
+                return -1
+
+    assert run_and_validate(fn) == 10
+
+
+def test_match_runtime_tuple_against_or_pattern_of_constant_tuples():
+    def fn():
+        t = (black_box_value(3), 4)
+        match t:
+            case MatchValueConstants.TUPLE_A | MatchValueConstants.TUPLE_B:
+                return 10
+            case _:
+                return -1
+
+    assert run_and_validate(fn) == 10
+
+
+def test_match_runtime_tuple_with_guard_after_runtime_value_pattern():
+    def fn():
+        n = black_box_value(1)
+        t = (n, 2)
+        match t:
+            case MatchValueConstants.TUPLE_A if n > 5:
+                return 1
+            case MatchValueConstants.TUPLE_A:
+                return 2
+            case _:
+                return -1
+
+    assert run_and_validate(fn) == 2
+
+
+def test_match_runtime_tuple_with_as_capture():
+    def fn():
+        t = (black_box_value(1), 2)
+        match t:
+            case MatchValueConstants.TUPLE_A as m:
+                return m[0] + m[1]
+            case _:
+                return -1
+
+    assert run_and_validate(fn) == 3
+
+
+def test_match_runtime_value_pattern_nested_in_sequence_pattern():
+    def fn():
+        t = ((black_box_value(1), 2), 3)
+        match t:
+            case [MatchValueConstants.TUPLE_A, 3]:
+                return 10
+            case _:
+                return -1
+
+    assert run_and_validate(fn) == 10
+
+
+def test_match_runtime_nested_tuple_against_constant_nested_tuple_pattern():
+    def fn():
+        t = ((black_box_value(1), 2), 3)
+        match t:
+            case MatchValueConstants.NESTED:
+                return 10
+            case _:
+                return -1
+
+    assert run_and_validate(fn) == 10
+
+
+def test_match_runtime_tuple_pattern_in_loop():
+    def fn():
+        total = 0
+        i = 0
+        while i < 4:
+            t = (black_box_value(i), 2)
+            match t:
+                case MatchValueConstants.TUPLE_A:
+                    total += 10
+                case _:
+                    total += 1
+            i += 1
+        return total
+
+    assert run_and_validate(fn) == 13
+
+
+def test_match_num_subject_against_constant_tuple_pattern_falls_through():
+    def fn():
+        n = black_box_value(1)
+        match n:
+            case MatchValueConstants.TUPLE_A:
+                return 10
+            case _:
+                return -1
+
+    assert run_and_validate(fn) == -1
+
+
+def test_match_value_pattern_with_non_num_truthy_eq_matches():
+    def fn():
+        w = WeirdEq(black_box_value(0))
+        match w:
+            case MatchValueConstants.WEIRD:
+                return 10
+            case _:
+                return -1
+
+    assert run_and_validate(fn) == 10
+
+
+def test_match_value_pattern_with_non_num_falsy_eq_does_not_match():
+    def fn():
+        w = WeirdEq(black_box_value(0))
+        match w:
+            case MatchValueConstants.WEIRD_OTHER:
+                return 10
+            case _:
+                return -1
+
+    assert run_and_validate(fn) == -1
+
+
+class TerminatingEq(Record):
+    value: Num
+
+    def __eq__(self, other):
+        assert_true(False, "eq says no")
+        return 1
+
+    def __hash__(self):
+        raise TypeError("unhashable type: 'TerminatingEq'")
+
+
+class TerminatingEqConstants:
+    ONLY = TerminatingEq(0)
+
+
+def test_match_value_pattern_with_terminating_eq_terminates():
+    # The match must still compile when a traced __eq__ terminates the callback and leaves no result to test.
+    def fn():
+        w = TerminatingEq(0)
+        match w:
+            case TerminatingEqConstants.ONLY:
+                return 10
+            case _:
+                return -1
+
+    with pytest.raises(AssertionError, match="eq says no"):
+        run_and_validate(fn)

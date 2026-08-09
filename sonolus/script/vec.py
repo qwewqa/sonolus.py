@@ -290,6 +290,7 @@ def pnpoly(vertices: ArrayLike[Vec2] | tuple[Vec2, ...], test: Vec2) -> bool:
     """
     if isinstance(vertices, tuple):
         vertices = Array(*vertices)
+    vertices = vertices.unchecked()
     i = 0
     j = len(vertices) - 1
     c = False

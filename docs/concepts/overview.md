@@ -218,7 +218,8 @@ functions. These have restrictions such as not being valid as Record field types
 be created from literals, the `dict()` constructor (from another dict, an iterable of key-value pairs, or keyword
 arguments), or by merging with `|`. Sets can be created from literals or the `set()` constructor (from another set or
 an iterable). Accessing a dict value with a compile-time constant key is always supported; dynamic access using a
-runtime key is only supported when the values are numeric, `Array`, or `Record` types.
+runtime key is only supported when all values are compile-time constants of a single type, and that type is
+numeric, `Array`, or `Record`.
 
 ## Modules
 

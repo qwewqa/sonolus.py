@@ -23,8 +23,16 @@ class Range(Record, ArrayLike[int]):
     @classmethod
     @meta_fn
     def frozen(cls, start: int, stop: int | None = None, step: int = 1) -> Self:
+        from sonolus.script.debug import assert_true
+
         if stop is None:
             start, stop = 0, start
+        step = Num._accept_(step)
+        if not ctx():
+            if step._as_py_() == 0:
+                raise ValueError("range() arg 3 must not be zero")
+        else:
+            assert_true(step != 0, "range() arg 3 must not be zero")
         return super().frozen(start, stop, step)
 
     def __iter__(self) -> SonolusIterator:
@@ -110,5 +118,7 @@ def range_or_tuple(start: int, stop: int | None = None, step: int = 1) -> Range 
         step_int = step._as_py_()
         if start_int % 1 != 0 or stop_int % 1 != 0 or step_int % 1 != 0:
             raise TypeError("Range arguments must be integers")
-        return validate_value(tuple(range(int(start_int), int(stop_int), int(step_int))))  # type: ignore
+        # Keep it as a runtime failure if step is 0
+        if step_int != 0:
+            return validate_value(tuple(range(int(start_int), int(stop_int), int(step_int))))  # type: ignore
     return Range.frozen(start, stop, step)

@@ -264,7 +264,6 @@ class ArrayLike[T](Sequence[T]):
         if key is not None or len(self) < 15:
             if key is None:
                 key = _identity  # type: ignore
-            # May be worth adding a block sort variant for better performance on large arrays in the future
             _insertion_sort(self.unchecked(), 0, len(self), key, reverse)  # type: ignore
         else:
             # Heap sort is unstable, so if there's a key, we can't rely on it
@@ -272,7 +271,7 @@ class ArrayLike[T](Sequence[T]):
 
     def shuffle(self):
         """Shuffle the values in the array in place."""
-        random.shuffle(self)  # type: ignore
+        random.shuffle(self.unchecked())  # type: ignore
 
     def reverse(self):
         """Reverse the values in the array in place."""

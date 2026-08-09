@@ -2,7 +2,7 @@ from __future__ import annotations
 
 import gzip
 import json
-from collections.abc import Iterator
+from collections.abc import Iterator, Sequence
 from os import PathLike
 from pathlib import Path
 from typing import Any, NamedTuple, NotRequired, TypedDict
@@ -150,23 +150,25 @@ class Level:
         )
 
 
-type EntityListArg = list[list[PlayArchetype] | PlayArchetype] | PlayArchetype
+type EntityListArg = PlayArchetype | Sequence[EntityListArg]
 
 
 def flatten_entities(entities: EntityListArg) -> Iterator[PlayArchetype]:
-    """Flatten a list of entities.
+    """Flatten an entity or an arbitrarily nested sequence of entities.
 
     Args:
-        entities: The list of entities.
+        entities: The entities to flatten.
 
     Yields:
         The flattened entities.
     """
-    if isinstance(entities, list):
+    if isinstance(entities, PlayArchetype):
+        yield entities
+    elif isinstance(entities, str | bytes | bytearray):
+        raise TypeError(f"Expected an entity or a sequence of entities, got {entities!r}")
+    else:
         for entity in entities:
             yield from flatten_entities(entity)
-    else:
-        yield entities
 
 
 class LevelData:
@@ -174,7 +176,7 @@ class LevelData:
 
     Args:
         bgm_offset: The background music audio offset.
-        entities: The entities of the level. May be a single entity, or (possibly nested) lists of entities.
+        entities: The entities of the level. May be a single entity or a (possibly nested) sequence of entities.
     """
 
     bgm_offset: float

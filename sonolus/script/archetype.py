@@ -8,7 +8,7 @@ from enum import Enum, IntEnum, StrEnum
 from types import FunctionType
 from typing import Annotated, Any, ClassVar, NamedTuple, Self, TypedDict, get_origin
 
-from sonolus.backend.ir import IRConst, IRExpr, IRInstr, IRPureInstr, IRStmt
+from sonolus.backend.ir import IRConst, IRExpr, IRInstr, IRPureInstr
 from sonolus.backend.mode import Mode
 from sonolus.backend.ops import Op
 from sonolus.script.bucket import Bucket, Judgment
@@ -36,6 +36,7 @@ _ENTITY_SHARED_MEMORY_SIZE = 32
 
 class _StorageType(Enum):
     IMPORTED = "imported"
+    DATA = "data"
     EXPORTED = "exported"
     MEMORY = "memory"
     SHARED = "shared_memory"
@@ -55,8 +56,8 @@ class _ExportBackingValue(BackingValue):
     def read(self) -> IRExpr:
         raise NotImplementedError("Exported fields are write-only")
 
-    def write(self, value: IRExpr) -> IRStmt:
-        return IRInstr(Op.ExportValue, [self.index, value])
+    def write(self, value: IRExpr) -> None:
+        ctx().add_statement(IRInstr(Op.ExportValue, [self.index, value]))
 
 
 class _ArchetypeField(SonolusDescriptor):
@@ -81,7 +82,7 @@ class _ArchetypeField(SonolusDescriptor):
             return self
         result = None
         match self.storage:
-            case _StorageType.IMPORTED:
+            case _StorageType.IMPORTED | _StorageType.DATA:
                 match instance._data_:
                     case _ArchetypeSelfData():
                         result = _deref(ctx().blocks.EntityData, self.offset, self.type)
@@ -92,6 +93,8 @@ class _ArchetypeField(SonolusDescriptor):
                             self.type,
                         )
                     case _ArchetypeLevelData(values=values):
+                        if self.storage is _StorageType.DATA:
+                            raise RuntimeError("Entity data fields are not available in level data")
                         result = values[self.name]
             case _StorageType.EXPORTED:
                 match instance._data_:
@@ -142,7 +145,7 @@ class _ArchetypeField(SonolusDescriptor):
             raise TypeError(f"Expected {self.type}, got {type(value)}")
         target = None
         match self.storage:
-            case _StorageType.IMPORTED:
+            case _StorageType.IMPORTED | _StorageType.DATA:
                 match instance._data_:
                     case _ArchetypeSelfData():
                         target = _deref(ctx().blocks.EntityData, self.offset, self.type)
@@ -153,6 +156,8 @@ class _ArchetypeField(SonolusDescriptor):
                             self.type,
                         )
                     case _ArchetypeLevelData(values=values):
+                        if self.storage is _StorageType.DATA:
+                            raise RuntimeError("Entity data fields are not available in level data")
                         target = values[self.name]
             case _StorageType.EXPORTED:
                 match instance._data_:
@@ -417,8 +422,9 @@ def entity_data() -> Any:
     [`preprocess`][sonolus.script.archetype.PlayArchetype.preprocess] callback
     and is read-only in other callbacks.
 
-    It functions like [`imported`][sonolus.script.archetype.imported] and shares the same underlying storage,
-    except that it is not loaded from a level.
+    Entity data shares storage with [`imported`][sonolus.script.archetype.imported] fields but is private to the
+    engine: it is not part of the archetype schema, may not be set when constructing level data, and is never
+    loaded from a level.
 
     Usage:
         ```python
@@ -426,7 +432,7 @@ def entity_data() -> Any:
             field: int = entity_data()
         ```
     """
-    return _ArchetypeFieldInfo(None, _StorageType.IMPORTED)
+    return _ArchetypeFieldInfo(None, _StorageType.DATA)
 
 
 def exported(*, name: str | None = None) -> Any:
@@ -486,6 +492,7 @@ def shared_memory() -> Any:
 
 _annotation_defaults: dict[Callable, _ArchetypeFieldInfo] = {
     imported: imported(),
+    entity_data: entity_data(),
     exported: exported(),
     entity_memory: entity_memory(),
     shared_memory: shared_memory(),
@@ -606,6 +613,7 @@ class _BaseArchetype(metaclass=_BaseArchetypeMeta):
     _default_callbacks_: ClassVar[set[Callable]]
 
     _imported_fields_: ClassVar[dict[str, _ArchetypeField]]
+    _data_fields_: ClassVar[dict[str, _ArchetypeField]]
     _exported_fields_: ClassVar[dict[str, _ArchetypeField]]
     _memory_fields_: ClassVar[dict[str, _ArchetypeField]]
     _shared_memory_fields_: ClassVar[dict[str, _ArchetypeField]]
@@ -801,7 +809,7 @@ class _BaseArchetype(metaclass=_BaseArchetypeMeta):
     @classmethod
     def schema(cls) -> ArchetypeSchema:
         cls._init_fields()
-        return {"name": cls.name or "unnamed", "fields": list(cls._imported_fields_)}
+        return {"name": cls.name or "unnamed", "fields": list(cls._imported_keys_)}
 
     def _level_data_entries(self, level_refs: dict[Any, str] | None = None):
         self._init_fields()
@@ -872,6 +880,10 @@ class _BaseArchetype(metaclass=_BaseArchetypeMeta):
             cls._imported_fields_ = {}
         else:
             cls._imported_fields_ = {**cls._imported_fields_}
+        if not hasattr(cls, "_data_fields_"):
+            cls._data_fields_ = {}
+        else:
+            cls._data_fields_ = {**cls._data_fields_}
         if not hasattr(cls, "_exported_fields_"):
             cls._exported_fields_ = {}
         else:
@@ -884,7 +896,9 @@ class _BaseArchetype(metaclass=_BaseArchetypeMeta):
             cls._shared_memory_fields_ = {}
         else:
             cls._shared_memory_fields_ = {**cls._shared_memory_fields_}
-        imported_offset = sum(field.type._size_() for field in cls._imported_fields_.values())
+        entity_data_offset = sum(
+            field.type._size_() for field in (*cls._imported_fields_.values(), *cls._data_fields_.values())
+        )
         exported_offset = sum(field.type._size_() for field in cls._exported_fields_.values())
         memory_offset = sum(field.type._size_() for field in cls._memory_fields_.values())
         shared_memory_offset = sum(field.type._size_() for field in cls._shared_memory_fields_.values())
@@ -893,7 +907,8 @@ class _BaseArchetype(metaclass=_BaseArchetypeMeta):
                 continue
             if get_origin(value) is not Annotated:
                 raise TypeError(
-                    "Archetype fields must be annotated using imported, exported, entity_memory, or shared_memory"
+                    "Archetype fields must be annotated using imported, entity_data, exported, entity_memory, "
+                    "or shared_memory"
                 )
             field_info = None
             for metadata in value.__metadata__:
@@ -910,17 +925,19 @@ class _BaseArchetype(metaclass=_BaseArchetypeMeta):
                         else:
                             raise TypeError(
                                 f"Unexpected multiple annotations for field '{name}' of {cls.__name__}, "
-                                f"expected exactly one of imported, exported, entity_memory, or shared_memory"
+                                f"expected exactly one of imported, entity_data, exported, entity_memory, "
+                                f"or shared_memory"
                             )
                     else:
                         field_info = metadata
             if field_info is None:
                 raise TypeError(
                     f"Missing annotation for '{name}' of {cls.__name__}, "
-                    f"expected exactly one of imported, exported, entity_memory, or shared_memory"
+                    f"expected exactly one of imported, entity_data, exported, entity_memory, or shared_memory"
                 )
             if (
                 name in cls._imported_fields_
+                or name in cls._data_fields_
                 or name in cls._exported_fields_
                 or name in cls._memory_fields_
                 or name in cls._shared_memory_fields_
@@ -936,14 +953,22 @@ class _BaseArchetype(metaclass=_BaseArchetypeMeta):
                         name,
                         field_info.name or name,
                         field_info.storage,
-                        imported_offset,
+                        entity_data_offset,
                         field_type,
                         field_info.default,
                     )
-                    imported_offset += field_type._size_()
-                    if imported_offset > _ENTITY_DATA_SIZE:
-                        raise ValueError("Imported fields exceed entity data size")
+                    entity_data_offset += field_type._size_()
+                    if entity_data_offset > _ENTITY_DATA_SIZE:
+                        raise ValueError("Imported and entity data fields exceed entity data size")
                     setattr(cls, name, cls._imported_fields_[name])
+                case _StorageType.DATA:
+                    cls._data_fields_[name] = _ArchetypeField(
+                        name, field_info.name or name, field_info.storage, entity_data_offset, field_type
+                    )
+                    entity_data_offset += field_type._size_()
+                    if entity_data_offset > _ENTITY_DATA_SIZE:
+                        raise ValueError("Imported and entity data fields exceed entity data size")
+                    setattr(cls, name, cls._data_fields_[name])
                 case _StorageType.EXPORTED:
                     cls._exported_fields_[name] = _ArchetypeField(
                         name, field_info.name or name, field_info.storage, exported_offset, field_type
@@ -969,18 +994,13 @@ class _BaseArchetype(metaclass=_BaseArchetypeMeta):
                         raise ValueError("Shared memory fields exceed entity shared memory size")
                     setattr(cls, name, cls._shared_memory_fields_[name])
         imported_keys = {}
-        index = 0
         for field in cls._imported_fields_.values():
             keys = list(field.type._flat_keys_(field.data_name))
-            if field.default is not None:
-                defaults = field.default._to_list_()
-                for key, default_value in zip(keys, defaults, strict=True):
-                    imported_keys[key] = ImportInfo(index=index, default=default_value)
-                    index += 1
-            else:
-                for key in keys:
-                    imported_keys[key] = ImportInfo(index=index, default=None)
-                    index += 1
+            # An import's index is the entity data slot the runtime writes its level value to. Entity data
+            # fields occupy slots but contribute no keys, so these indexes need not be contiguous.
+            defaults = field.default._to_list_() if field.default is not None else [None] * len(keys)
+            for i, (key, default_value) in enumerate(zip(keys, defaults, strict=True)):
+                imported_keys[key] = ImportInfo(index=field.offset + i, default=default_value)
         cls._imported_keys_ = imported_keys
         cls._exported_keys_ = {
             name: i

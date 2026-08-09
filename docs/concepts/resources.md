@@ -108,7 +108,9 @@ class MyArchetype(PlayArchetype):
 
 Entity data is accessible from other entities, but may only be updated in the `preprocess` callback and is read-only in other callbacks.
 
-It functions like [`imported()`][sonolus.script.archetype.imported] and shares the same underlying storage, except that it is not loaded from a level.
+Entity data shares storage with [`imported()`][sonolus.script.archetype.imported] fields but is private to the
+engine: it is not part of the archetype schema, may not be set when constructing level data, and is never loaded
+from a level.
 
 ### Entity Memory
 Entity memory fields are declared with [`entity_memory()`][sonolus.script.archetype.entity_memory]:

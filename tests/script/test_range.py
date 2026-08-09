@@ -1,9 +1,12 @@
+import pytest
 from hypothesis import given
 from hypothesis import strategies as st
 
 from sonolus.script.array import Array
 from sonolus.script.containers import VarArray
-from tests.script.conftest import run_and_validate
+from sonolus.script.internal.context import RuntimeChecks
+from tests.script.conftest import run_and_validate, run_compiled
+from tests.script.test_flow import black_box_value
 from tests.script.test_record import Pair
 
 
@@ -202,3 +205,107 @@ def test_range_truthiness_non_empty():
         return 1 if x else 0
 
     assert run_and_validate(fn) == 1
+
+
+def test_range_zero_step_constant_terminates():
+    # Each of these loops is bounded by a break, so a zero-step regression fails the test instead of hanging it.
+    def fn():
+        total = 0
+        for _i in range(0, 5, 0):
+            total += 1
+            if total > 20:
+                break
+        return total
+
+    with pytest.raises(ValueError, match=r"range\(\) arg 3 must not be zero"):
+        run_and_validate(fn)
+
+
+def test_range_zero_step_constant_terminates_reversed_bounds():
+    def fn():
+        total = 0
+        for _i in range(5, 0, 0):
+            total += 1
+            if total > 20:
+                break
+        return total
+
+    with pytest.raises(ValueError, match=r"range\(\) arg 3 must not be zero"):
+        run_and_validate(fn)
+
+
+def test_range_zero_step_constant_in_runtime_dead_branch_compiles():
+    def fn():
+        x = black_box_value(1)
+        total = 0
+        if x > 100:
+            for _i in range(0, 5, 0):
+                total += 1
+                if total > 20:
+                    break
+        return total
+
+    assert run_and_validate(fn) == 0
+
+
+def test_range_zero_step_runtime_ascending():
+    def fn():
+        total = 0
+        for _i in range(0, 5, black_box_value(0)):
+            total += 1
+            if total > 20:
+                break
+        return total
+
+    with pytest.raises(ValueError, match=r"range\(\) arg 3 must not be zero"):
+        run_and_validate(fn)
+
+
+def test_range_zero_step_runtime_descending():
+    def fn():
+        total = 0
+        for _i in range(5, 0, black_box_value(0)):
+            total += 1
+            if total > 20:
+                break
+        return total
+
+    with pytest.raises(ValueError, match=r"range\(\) arg 3 must not be zero"):
+        run_and_validate(fn)
+
+
+def test_range_zero_step_runtime_checks_disabled_unchanged():
+    # This pins an accepted divergence from Python. With runtime checks disabled, a runtime-computed zero
+    # step is not validated, so the loop runs instead of raising.
+    def fn():
+        total = 0
+        for _i in range(5, 0, black_box_value(0)):
+            total += 1
+            if total > 30:
+                break
+        return total
+
+    assert run_compiled(fn, runtime_checks=RuntimeChecks.NONE) == 31
+
+
+def test_range_zero_step_constant_terminates_with_runtime_checks_disabled():
+    # A constant-false assert terminates even under RuntimeChecks.NONE, like assert False.
+    def fn():
+        total = 0
+        for _i in range(5, 0, 0):
+            total += 1
+            if total > 30:
+                break
+        return total
+
+    assert run_compiled(fn, runtime_checks=RuntimeChecks.NONE) == 0
+
+
+def test_range_nonzero_step_unaffected():
+    def fn():
+        total = 0
+        for i in range(0, 10, 2):
+            total += i
+        return total
+
+    assert run_and_validate(fn) == sum(range(0, 10, 2))

@@ -91,7 +91,8 @@ def dict(*args, **kwargs) -> builtins.dict:
     """Construct a dict from a mapping, an iterable of key-value pairs, or keyword arguments.
 
     All dict keys must be compile-time constants. Dynamic access using a key that is not
-    a compile-time constant is only supported for numeric, Array, and Record values.
+    a compile-time constant is only supported when all values are compile-time constants of a
+    single type, and that type is numeric, `Array`, or `Record`.
 
     Accepts an optional dict to copy from or an iterable of `(key, value)` pairs, plus
     optional keyword arguments to include in the dict.
@@ -113,7 +114,7 @@ def enumerate[T](iterable: Iterable[T], start: builtins.int = 0) -> Iterator[tup
     """
     ...
 
-def filter[T](function: Callable[[T], builtins.bool] | None, iterable: Iterable[T]) -> Iterator[T]:
+def filter[T](function: Callable[[T], builtins.bool] | None, iterable: Iterable[T], /) -> Iterator[T]:
     """Construct an iterator from those elements of iterable for which function returns true.
 
     Args:
@@ -179,7 +180,7 @@ def int(x: builtins.int | builtins.float = 0, /) -> builtins.int:
     """
     ...
 
-def isinstance(obj: object, classinfo: type | tuple[type, ...]) -> builtins.bool:
+def isinstance(obj: object, classinfo: type | tuple[type, ...], /) -> builtins.bool:
     """Check if an object is an instance of a class or of a subclass thereof.
 
     `classinfo` may be a single type or a tuple of types. Checking against `int`, `float`, or `bool` directly is not
@@ -233,7 +234,7 @@ def len(s: object, /) -> builtins.int:
     """
     ...
 
-def map[T, S](function: Callable[..., S], iterable: Iterable[T], *iterables: Iterable[Any]) -> Iterator[S]:
+def map[T, S](function: Callable[..., S], iterable: Iterable[T], /, *iterables: Iterable[Any]) -> Iterator[S]:
     """Apply a function to every item of an iterable and return an iterator.
 
     A `tuple`, `dict`, `set`, or enum class may be used, but every argument must be one of those, or none may be;
@@ -356,6 +357,8 @@ def reversed[T](seq: Sequence[T], /) -> Iterator[T]:
 
 def round(number: builtins.int | builtins.float, ndigits: builtins.int = ...) -> builtins.float:
     """Round a number to a given precision in decimal digits.
+
+    With `ndigits`, a value near the midpoint between two rounded values may round differently than in Python.
 
     Args:
         number: The number to round.

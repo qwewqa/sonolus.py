@@ -2,8 +2,9 @@ from hypothesis import assume, given
 from hypothesis import strategies as st
 
 from sonolus.script.array import Array
+from sonolus.script.internal.context import RuntimeChecks
 from sonolus.script.interval import Interval, interp, interp_clamped, lerp, remap, remap_clamped
-from tests.script.conftest import implies, is_close, run_and_validate
+from tests.script.conftest import implies, is_close, run_and_validate, run_compiled
 
 ints = st.integers(min_value=-99999, max_value=99999)
 floats = st.floats(min_value=-99999, max_value=99999, allow_infinity=False, allow_nan=False)
@@ -534,6 +535,62 @@ def test_interp_inverse_tuples(xp_fp_pair, x):
 
     original_x, recovered_x = run_and_validate(fn)
     assert is_close(original_x, recovered_x, abs_tol=1e-3)
+
+
+def test_interp_len2_out_of_order_fails():
+    def fn():
+        v = 0.0
+        for _ in range(3):
+            v += 1.0
+        xp = Array(v, v - 1.0)
+        fp = Array(0.0, 1.0)
+        return interp(xp, fp, 0.5)
+
+    log_calls = []
+    result = run_compiled(
+        fn,
+        runtime_checks=RuntimeChecks.NOTIFY_AND_TERMINATE,
+        log_callback=log_calls.append,
+    )
+    assert result == 0
+    assert len(log_calls) == 1
+
+
+def test_interp_bad_final_segment_fails():
+    def fn():
+        v = 0.0
+        for _ in range(3):
+            v += 1.0
+        xp = Array(1.0, 2.0, 2.0 - v)
+        fp = Array(0.0, 1.0, 2.0)
+        # x is past xp[1], so interp reaches the assert on the fall-through path, the only check of the final pair.
+        return interp(xp, fp, 2.5)
+
+    log_calls = []
+    result = run_compiled(
+        fn,
+        runtime_checks=RuntimeChecks.NOTIFY_AND_TERMINATE,
+        log_callback=log_calls.append,
+    )
+    assert result == 0
+    assert len(log_calls) == 1
+
+
+def test_interp_final_segment_good_input_does_not_false_fire():
+    def fn():
+        xp = Array(1.0, 2.0, 4.0)
+        fp = Array(10.0, 20.0, 40.0)
+        # x is beyond xp[-1], forcing the fall-through path through the assert.
+        return interp(xp, fp, 5.0)
+
+    log_calls = []
+    result = run_compiled(
+        fn,
+        runtime_checks=RuntimeChecks.NOTIFY_AND_TERMINATE,
+        log_callback=log_calls.append,
+    )
+    assert is_close(result, 50.0, abs_tol=1e-4)
+    assert len(log_calls) == 0
 
 
 @given(xp_fp_pairs_monotonic(), floats_0_1)

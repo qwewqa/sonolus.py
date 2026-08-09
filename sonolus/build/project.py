@@ -178,7 +178,7 @@ def load_resource(collection: Collection, asset: Asset | None, base_path: Path, 
 
 def load_resources_files_to_collection(base_path: Path) -> Collection:
     collection = Collection()
-    for path in base_path.rglob("*.scp"):
+    for path in sorted(base_path.rglob("*.scp"), key=lambda p: p.parts):
         collection.load_from_scp(path)
     collection.load_from_source(base_path)
     return collection

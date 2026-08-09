@@ -298,6 +298,8 @@ op_to_symbol = {
     ast.NotIn: "not in",
 }
 
+_EQ_OP = ast.Eq()
+
 # Binary operator method names implemented by Num. For two Num operands, these never return NotImplemented,
 # so the NotImplemented negotiation protocol can be skipped as a fast path.
 _NUM_BIN_OP_NAMES = frozenset(
@@ -784,6 +786,8 @@ class Visitor(ast.NodeVisitor):
         from sonolus.script.internal.set_impl import SetImpl
 
         iterable = self.visit(node.iter)
+        if not ctx().live:
+            return
         if isinstance(iterable, SetImpl):
             iterable = iterable._dict
         if has_tuple_iter(iterable):
@@ -1016,7 +1020,11 @@ class Visitor(ast.NodeVisitor):
         match pattern:
             case ast.MatchValue(value=value):
                 value = self.visit(value)
-                test = self.convert_to_boolean_num(pattern, validate_value(subject == value))
+                with self.reporting_errors_at_node(pattern):
+                    comparison = self.handle_comparison(pattern, _EQ_OP, subject, value)
+                    if not ctx().live:
+                        return ctx().into_dead(), ctx()
+                    test = self.convert_to_boolean_num(pattern, comparison)
                 if test._is_py_():
                     if test._as_py_():
                         return ctx(), ctx().into_dead()
@@ -1326,6 +1334,9 @@ class Visitor(ast.NodeVisitor):
     def visit_Dict(self, node):
         results = {}
         for k, v in zip(node.keys, node.values, strict=True):
+            if k is None:
+                # The AST uses a None key for a ** entry.
+                raise NotImplementedError("** unpacking in dict literals is not supported")
             k_visited = self.visit(k)
             v_visited = self.visit(v)
             if not k_visited._is_py_():
@@ -1399,6 +1410,48 @@ class Visitor(ast.NodeVisitor):
     def _has_real_method(self, obj: Value, method_name: str) -> bool:
         return hasattr(obj, method_name) and not isinstance(getattr(obj, method_name), MethodWrapperType)
 
+    def handle_comparison(self, node: ast.stmt | ast.expr | ast.pattern, op: ast.cmpop, l_val: Value, r_val: Value):
+        """Evaluate `l_val op r_val` and return the raw result of the comparison.
+
+        The caller applies `not in` inversion and converts the result to a truth value.
+        """
+        if isinstance(op, ast.Is | ast.IsNot):
+            if not (r_val._is_py_() and r_val._as_py_() is None):
+                raise TypeError("The right operand of 'is' must be None")
+            if isinstance(op, ast.Is):
+                return Num._accept_(l_val._is_py_() and l_val._as_py_() is None)
+            return Num._accept_(not (l_val._is_py_() and l_val._as_py_() is None))
+        result = None
+        if (
+            type(l_val) is Num
+            and type(r_val) is Num
+            and (comp_fn_name := comp_ops.get(type(op))) is not None
+            and (active_ctx := ctx()).callback_state.no_eval
+        ):
+            # Num comparison operators never return NotImplemented for Num operands.
+            self.active_ctx = active_ctx
+            result = getattr(l_val, comp_fn_name)(r_val)
+        elif type(op) in comp_ops and self._has_real_method(l_val, comp_ops[type(op)]):
+            result = self.handle_call(node, getattr(l_val, comp_ops[type(op)]), r_val)
+        if (
+            (result is None or self.is_not_implemented(result))
+            and type(op) in rcomp_ops
+            and self._has_real_method(r_val, rcomp_ops[type(op)])
+        ):
+            result = self.handle_call(node, getattr(r_val, rcomp_ops[type(op)]), l_val)
+        if result is None or self.is_not_implemented(result):
+            # The default object.__eq__/__ne__ compares identity, which is not reliable for traced values.
+            if type(op) is ast.Eq and type(l_val) is not type(r_val):
+                return Num._accept_(False)
+            elif type(op) is ast.NotEq and type(l_val) is not type(r_val):
+                return Num._accept_(True)
+            else:
+                raise TypeError(
+                    f"'{op_to_symbol[type(op)]}' not supported between instances of '{_type_name(l_val)}' and "
+                    f"'{_type_name(r_val)}'"
+                )
+        return result
+
     def visit_Compare(self, node):
         result_name = self.new_name("compare")
         ctx().scope.set_value(result_name, Num._accept_(0))
@@ -1407,43 +1460,7 @@ class Visitor(ast.NodeVisitor):
         for i, (op, rhs) in enumerate(zip(node.ops, node.comparators, strict=True)):
             r_val = self.visit(rhs)
             inverted = isinstance(op, ast.NotIn)
-            result = None
-            if isinstance(op, ast.Is | ast.IsNot):
-                if not (r_val._is_py_() and r_val._as_py_() is None):
-                    raise TypeError("The right operand of 'is' must be None")
-                if isinstance(op, ast.Is):
-                    result = Num._accept_(l_val._is_py_() and l_val._as_py_() is None)
-                else:
-                    result = Num._accept_(not (l_val._is_py_() and l_val._as_py_() is None))
-            elif (
-                type(l_val) is Num
-                and type(r_val) is Num
-                and (comp_fn_name := comp_ops.get(type(op))) is not None
-                and (active_ctx := ctx()).callback_state.no_eval
-            ):
-                # Num comparison operators never return NotImplemented for Num operands
-                self.active_ctx = active_ctx
-                result = getattr(l_val, comp_fn_name)(r_val)
-            elif type(op) in comp_ops and self._has_real_method(l_val, comp_ops[type(op)]):
-                result = self.handle_call(node, getattr(l_val, comp_ops[type(op)]), r_val)
-            if (
-                (result is None or self.is_not_implemented(result))
-                and type(op) in rcomp_ops
-                and self._has_real_method(r_val, rcomp_ops[type(op)])
-            ):
-                result = self.handle_call(node, getattr(r_val, rcomp_ops[type(op)]), l_val)
-            if result is None or self.is_not_implemented(result):
-                # Can't defer to the default object.__eq__ or similar since reference equality (is) is not reliable
-                if type(op) is ast.Eq and type(l_val) is not type(r_val):
-                    return Num._accept_(False)
-                elif type(op) is ast.NotEq and type(l_val) is not type(r_val):
-                    return Num._accept_(True)
-                else:
-                    raise TypeError(
-                        f"'{op_to_symbol[type(op)]}' not supported between instances of '{_type_name(l_val)}' and "
-                        f"'{_type_name(r_val)}'"
-                    )
-            result = self.ensure_boolean_num(result)
+            result = self.ensure_boolean_num(self.handle_comparison(node, op, l_val, r_val))
             if inverted:
                 result = result.not_()
             curr_ctx = ctx()

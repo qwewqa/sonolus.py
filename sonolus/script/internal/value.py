@@ -3,7 +3,7 @@ from collections.abc import Callable, Iterable
 from types import NotImplementedType
 from typing import Any, Self
 
-from sonolus.backend.ir import IRConst, IRExpr, IRStmt
+from sonolus.backend.ir import IRConst, IRExpr
 from sonolus.backend.place import BlockPlace
 
 
@@ -13,7 +13,7 @@ class BackingValue:
     def read(self) -> IRExpr:
         raise NotImplementedError()
 
-    def write(self, value: IRExpr) -> IRStmt:
+    def write(self, value: IRExpr) -> None:
         raise NotImplementedError()
 
 
@@ -28,7 +28,7 @@ class ExprBackingValue(BackingValue):
     def read(self) -> IRExpr:
         return self._expr
 
-    def write(self, value: IRExpr) -> IRStmt:
+    def write(self, value: IRExpr) -> None:
         raise RuntimeError("Value is read-only, cannot write to it")
 
 
@@ -43,7 +43,7 @@ class ReadOnlyBackingValueWrapper(BackingValue):
     def read(self) -> IRExpr:
         return self._value.read()
 
-    def write(self, value: IRExpr) -> IRStmt:
+    def write(self, value: IRExpr) -> None:
         raise RuntimeError("Value is read-only, cannot write to it")
 
 

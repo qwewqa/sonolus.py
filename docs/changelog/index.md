@@ -1,3 +1,33 @@
+### 0.18.2
+
+- [`entity_data()`][sonolus.script.archetype.entity_data], previously identical to
+  [`imported()`][sonolus.script.archetype.imported], is now private to the engine: entity data fields are no
+  longer part of the archetype schema, may not be set when constructing level data, and are never loaded from a
+  level.
+- `Archetype.schema()` now reports the flat field names level data contains, such as `pos.x` or an
+  `imported(name=...)` override, rather than Python attribute names.
+- Fixed a write to part of an [`exported()`][sonolus.script.archetype.exported] field, such as a member of a
+  `Record` export or an element of an `Array` export, silently exporting nothing.
+- Fixed a `match` value pattern, such as a tuple, [`Array`][sonolus.script.array.Array], or `range` constant,
+  failing to compile against a subject holding runtime values.
+- Fixed a chained comparison with a link between incomparable types evaluating the whole chain as a compile-time
+  constant, ignoring the comparisons before that link.
+- `**` unpacking in a dict literal, such as `{**base, "b": 2}`, now reports that it is unsupported rather than
+  failing with an internal error.
+- `range()` with a step of zero now fails an assertion with `range() arg 3 must not be zero`.
+- [`interp`][sonolus.script.interval.interp] now also checks that the final `xp` segment is in increasing order.
+- Fixed [`Stream.iter_items_since_previous_frame`][sonolus.script.stream.Stream.iter_items_since_previous_frame]
+  and its key and value variants yielding the stream's last item again on the next frame when the previous
+  frame's time was exactly that item's key.
+- An item name that cannot be stored in a collection is now rejected when the item is added: `info` and `list`
+  in any letter case (previously such an item silently overwrote the category index), an empty name, a name
+  containing a path separator, and `.` or `..`.
+- An item loaded from an `.scp` file now keeps its full filename as its name.
+- `.scp` files, resource directories, and archive entries are now loaded in sorted order, so category listing
+  order and default resource selection no longer depend on filesystem or archive order.
+- Reduced the compiled cost of [`Quad.contains_point`][sonolus.script.quad.Quad.contains_point],
+  [`pnpoly`][sonolus.script.vec.pnpoly], and [`shuffle`][sonolus.script.array_like.ArrayLike.shuffle].
+
 ### 0.18.1
 
 - Fixed a reference type rebound inside a loop being silently read as its pre-loop value, whether read on a later

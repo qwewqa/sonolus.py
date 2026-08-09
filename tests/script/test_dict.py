@@ -2135,3 +2135,13 @@ def test_getitem_runtime_key_non_array_values_errors_clearly():
 
     with pytest.raises(CompilationError, match="Dict must be accessed via a compile time constant"):
         compile_fn(fn)
+
+
+def test_dict_literal_double_star_unpacking_rejected():
+    def fn():
+        base = {"a": 1}
+        d = {**base, "b": 2}
+        return Array(d["a"], d["b"])
+
+    with pytest.raises(CompilationError, match=r"\*\* unpacking"):
+        compile_fn(fn)

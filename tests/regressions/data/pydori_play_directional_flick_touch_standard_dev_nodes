@@ -4,7 +4,7 @@ Block(JumpLoop(
       4004
       0
     )
-    575
+    447
     1
   ))
   Execute(
@@ -348,7 +348,7 @@ Block(JumpLoop(
   Execute(
     DebugLog(1)
     DebugPause()
-    575
+    447
   )
   Execute(
     Set(
@@ -508,7 +508,7 @@ Block(JumpLoop(
   Execute(
     DebugLog(2)
     DebugPause()
-    575
+    447
   )
   Execute(
     Set(
@@ -1444,7 +1444,7 @@ Block(JumpLoop(
         )
         1
       )
-      488
+      376
       33
     )
   )
@@ -1456,7 +1456,7 @@ Block(JumpLoop(
       )
       4
     )
-    488
+    376
     34
   ))
   Execute(If(
@@ -1467,7 +1467,7 @@ Block(JumpLoop(
       )
       5
     )
-    358
+    278
     35
   ))
   Execute(If(
@@ -1478,7 +1478,7 @@ Block(JumpLoop(
       )
       7
     )
-    229
+    181
     36
   ))
   Execute(SwitchIntegerWithDefault(
@@ -1491,7 +1491,7 @@ Block(JumpLoop(
     )
     37
     37
-    575
+    447
   ))
   Execute(
     Set(
@@ -1625,17 +1625,17 @@ Block(JumpLoop(
       3
     )
     45
-    575
+    447
   ))
   Execute(
-    DebugLog(35)
+    DebugLog(20)
     DebugPause()
-    575
+    447
   )
   Execute(
-    DebugLog(35)
+    DebugLog(20)
     DebugPause()
-    575
+    447
   )
   Execute(If(
     LessOr(
@@ -1649,7 +1649,7 @@ Block(JumpLoop(
       )
     )
     46
-    575
+    447
   ))
   Execute(If(
     LessOr(
@@ -1663,7 +1663,7 @@ Block(JumpLoop(
       )
     )
     47
-    575
+    447
   ))
   Execute(If(
     Get(
@@ -1671,7 +1671,7 @@ Block(JumpLoop(
       0
     )
     48
-    97
+    81
   ))
   Execute(
     Set(
@@ -1710,7 +1710,7 @@ Block(JumpLoop(
         10
       )
       49
-      96
+      80
     )
   )
   Execute(
@@ -1736,7 +1736,7 @@ Block(JumpLoop(
         )
         0
       )
-      148
+      116
       50
     )
   )
@@ -1876,7 +1876,7 @@ Block(JumpLoop(
       24
     )
     60
-    148
+    116
   ))
   Execute(
     Set(
@@ -1980,157 +1980,35 @@ Block(JumpLoop(
     Set(
       10000
       28
-      And(
-        And(
-          GreaterOr(
-            Get(
-              10000
-              25
-            )
-            -4
-          )
-          Less(
-            Get(
-              10000
-              25
-            )
-            4
-          )
-        )
-        Equal(
-          Get(
-            10000
-            25
-          )
-          Trunc(Get(
-            10000
-            25
-          ))
-        )
-      )
-    )
-    If(
-      Get(
-        10000
-        28
-      )
-      62
-      95
-    )
-  )
-  Execute(
-    Set(
-      10000
-      29
       Multiply(
-        Add(
-          Get(
-            10000
-            25
-          )
-          Multiply(
-            Less(
-              Get(
-                10000
-                25
-              )
-              0
-            )
-            4
-          )
-        )
-        2
-      )
-    )
-    Set(
-      10000
-      30
-      Greater(
-        GetShifted(
-          10000
-          1
-          Get(
-            10000
-            29
-          )
-          1
-        )
         Get(
           10000
-          24
-        )
-      )
-    )
-    Set(
-      10000
-      31
-      And(
-        And(
-          GreaterOr(
-            Get(
-              10000
-              26
-            )
-            -4
-          )
-          Less(
-            Get(
-              10000
-              26
-            )
-            4
-          )
-        )
-        Equal(
-          Get(
-            10000
-            26
-          )
-          Trunc(Get(
-            10000
-            26
-          ))
-        )
-      )
-    )
-    If(
-      Get(
-        10000
-        31
-      )
-      63
-      94
-    )
-  )
-  Execute(
-    Set(
-      10000
-      26
-      Multiply(
-        Add(
-          Get(
-            10000
-            26
-          )
-          Multiply(
-            Less(
-              Get(
-                10000
-                26
-              )
-              0
-            )
-            4
-          )
+          25
         )
         2
       )
+    )
+    SetMultiply(
+      10000
+      26
+      2
     )
     If(
       NotEqual(
-        Get(
-          10000
-          30
+        Greater(
+          GetShifted(
+            10000
+            1
+            Get(
+              10000
+              28
+            )
+            1
+          )
+          Get(
+            10000
+            24
+          )
         )
         Greater(
           GetShifted(
@@ -2148,145 +2026,8 @@ Block(JumpLoop(
           )
         )
       )
+      62
       64
-      78
-    )
-  )
-  Execute(If(
-    Get(
-      10000
-      31
-    )
-    65
-    77
-  ))
-  Execute(
-    Set(
-      10000
-      30
-      Get(
-        10000
-        Get(
-          10000
-          26
-        )
-      )
-    )
-    If(
-      Get(
-        10000
-        28
-      )
-      66
-      76
-    )
-  )
-  Execute(
-    SetSubtract(
-      10000
-      30
-      Get(
-        10000
-        Get(
-          10000
-          29
-        )
-      )
-    )
-    If(
-      Get(
-        10000
-        28
-      )
-      67
-      75
-    )
-  )
-  Execute(
-    SetMultiply(
-      10000
-      30
-      Subtract(
-        Get(
-          10000
-          24
-        )
-        GetShifted(
-          10000
-          1
-          Get(
-            10000
-            29
-          )
-          1
-        )
-      )
-    )
-    If(
-      Get(
-        10000
-        31
-      )
-      68
-      74
-    )
-  )
-  Execute(
-    Set(
-      10000
-      26
-      GetShifted(
-        10000
-        1
-        Get(
-          10000
-          26
-        )
-        1
-      )
-    )
-    If(
-      Get(
-        10000
-        28
-      )
-      69
-      73
-    )
-  )
-  Execute(
-    Set(
-      10000
-      26
-      Divide(
-        Get(
-          10000
-          30
-        )
-        Subtract(
-          Get(
-            10000
-            26
-          )
-          GetShifted(
-            10000
-            1
-            Get(
-              10000
-              29
-            )
-            1
-          )
-        )
-      )
-    )
-    If(
-      Get(
-        10000
-        28
-      )
-      70
-      72
     )
   )
   Execute(If(
@@ -2301,21 +2042,72 @@ Block(JumpLoop(
         1
       )
       Add(
-        Get(
-          10000
-          26
+        Divide(
+          Multiply(
+            Subtract(
+              Get(
+                10000
+                Get(
+                  10000
+                  26
+                )
+              )
+              Get(
+                10000
+                Get(
+                  10000
+                  28
+                )
+              )
+            )
+            Subtract(
+              Get(
+                10000
+                24
+              )
+              GetShifted(
+                10000
+                1
+                Get(
+                  10000
+                  28
+                )
+                1
+              )
+            )
+          )
+          Subtract(
+            GetShifted(
+              10000
+              1
+              Get(
+                10000
+                26
+              )
+              1
+            )
+            GetShifted(
+              10000
+              1
+              Get(
+                10000
+                28
+              )
+              1
+            )
+          )
         )
         Get(
           10000
           Get(
             10000
-            29
+            28
           )
         )
       )
     )
-    71
-    78
+    63
+    64
   ))
   Execute(
     Set(
@@ -2326,37 +2118,7 @@ Block(JumpLoop(
         27
       ))
     )
-    78
-  )
-  Execute(
-    DebugLog(39)
-    DebugPause()
-    575
-  )
-  Execute(
-    DebugLog(39)
-    DebugPause()
-    575
-  )
-  Execute(
-    DebugLog(39)
-    DebugPause()
-    575
-  )
-  Execute(
-    DebugLog(38)
-    DebugPause()
-    575
-  )
-  Execute(
-    DebugLog(37)
-    DebugPause()
-    575
-  )
-  Execute(
-    DebugLog(37)
-    DebugPause()
-    575
+    64
   )
   Execute(
     Set(
@@ -2378,8 +2140,8 @@ Block(JumpLoop(
         )
         4
       )
-      79
-      80
+      65
+      66
     )
   )
   Execute(
@@ -2406,8 +2168,8 @@ Block(JumpLoop(
       10000
       27
     )
-    81
-    93
+    67
+    79
   ))
   Execute(If(
     GetShifted(
@@ -2419,8 +2181,8 @@ Block(JumpLoop(
       )
       1
     )
-    93
-    82
+    79
+    68
   ))
   Execute(If(
     GreaterOr(
@@ -2430,8 +2192,8 @@ Block(JumpLoop(
       )
       16
     )
-    89
-    83
+    75
+    69
   ))
   Execute(
     Set(
@@ -2450,7 +2212,7 @@ Block(JumpLoop(
       23
       0
     )
-    84
+    70
   )
   Execute(If(
     Less(
@@ -2463,8 +2225,8 @@ Block(JumpLoop(
         17
       )
     )
-    85
-    87
+    71
+    73
   ))
   Execute(If(
     Equal(
@@ -2484,15 +2246,15 @@ Block(JumpLoop(
         )
       )
     )
-    89
-    86
+    75
+    72
   ))
   Execute(
     IncrementPost(
       10000
       23
     )
-    84
+    70
   )
   Execute(If(
     Less(
@@ -2502,8 +2264,8 @@ Block(JumpLoop(
       )
       16
     )
-    88
-    92
+    74
+    78
   ))
   Execute(
     Set(
@@ -2525,15 +2287,15 @@ Block(JumpLoop(
       2000
       17
     )
-    89
+    75
   )
   Execute(If(
     Get(
       10000
       10
     )
-    90
-    91
+    76
+    77
   ))
   Execute(
     Set(
@@ -2550,17 +2312,17 @@ Block(JumpLoop(
         )
       )
     )
-    148
+    116
   )
   Execute(
-    DebugLog(41)
+    DebugLog(23)
     DebugPause()
-    575
+    447
   )
   Execute(
-    DebugLog(40)
+    DebugLog(22)
     DebugPause()
-    575
+    447
   )
   Execute(If(
     Get(
@@ -2571,19 +2333,9 @@ Block(JumpLoop(
     51
   ))
   Execute(
-    DebugLog(37)
+    DebugLog(21)
     DebugPause()
-    575
-  )
-  Execute(
-    DebugLog(37)
-    DebugPause()
-    575
-  )
-  Execute(
-    DebugLog(36)
-    DebugPause()
-    575
+    447
   )
   Execute(
     Set(
@@ -2621,8 +2373,8 @@ Block(JumpLoop(
         10000
         10
       )
-      98
-      228
+      82
+      180
     )
   )
   Execute(
@@ -2648,8 +2400,8 @@ Block(JumpLoop(
         )
         0
       )
-      148
-      99
+      116
+      83
     )
   )
   Execute(
@@ -2658,7 +2410,7 @@ Block(JumpLoop(
       12
       0
     )
-    100
+    84
   )
   Execute(
     Set(
@@ -2666,7 +2418,7 @@ Block(JumpLoop(
       23
       0
     )
-    101
+    85
   )
   Execute(If(
     Less(
@@ -2679,8 +2431,8 @@ Block(JumpLoop(
         3
       )
     )
-    102
-    111
+    86
+    95
   ))
   Execute(
     Set(
@@ -2708,8 +2460,8 @@ Block(JumpLoop(
         )
         1
       )
-      103
-      101
+      87
+      85
     )
   )
   Execute(
@@ -2729,7 +2481,7 @@ Block(JumpLoop(
       25
       0
     )
-    104
+    88
   )
   Execute(If(
     Less(
@@ -2742,8 +2494,8 @@ Block(JumpLoop(
         17
       )
     )
-    105
-    108
+    89
+    92
   ))
   Execute(If(
     Equal(
@@ -2763,8 +2515,8 @@ Block(JumpLoop(
         )
       )
     )
-    106
-    107
+    90
+    91
   ))
   Execute(
     Set(
@@ -2772,14 +2524,14 @@ Block(JumpLoop(
       24
       1
     )
-    109
+    93
   )
   Execute(
     IncrementPost(
       10000
       25
     )
-    104
+    88
   )
   Execute(
     Set(
@@ -2787,15 +2539,15 @@ Block(JumpLoop(
       24
       0
     )
-    109
+    93
   )
   Execute(If(
     Get(
       10000
       24
     )
-    101
-    110
+    85
+    94
   ))
   Execute(
     Set(
@@ -2811,7 +2563,7 @@ Block(JumpLoop(
         12
       )
     )
-    112
+    96
   )
   Execute(
     Set(
@@ -2819,15 +2571,15 @@ Block(JumpLoop(
       24
       0
     )
-    112
+    96
   )
   Execute(If(
     Get(
       10000
       24
     )
-    113
-    148
+    97
+    116
   ))
   Execute(
     Set(
@@ -2925,163 +2677,41 @@ Block(JumpLoop(
         27
       )
     )
-    114
+    98
   )
   Execute(
     Set(
       10000
       28
-      And(
-        And(
-          GreaterOr(
-            Get(
-              10000
-              25
-            )
-            -4
-          )
-          Less(
-            Get(
-              10000
-              25
-            )
-            4
-          )
-        )
-        Equal(
-          Get(
-            10000
-            25
-          )
-          Trunc(Get(
-            10000
-            25
-          ))
-        )
-      )
-    )
-    If(
-      Get(
-        10000
-        28
-      )
-      115
-      147
-    )
-  )
-  Execute(
-    Set(
-      10000
-      29
       Multiply(
-        Add(
-          Get(
-            10000
-            25
-          )
-          Multiply(
-            Less(
-              Get(
-                10000
-                25
-              )
-              0
-            )
-            4
-          )
-        )
-        2
-      )
-    )
-    Set(
-      10000
-      30
-      Greater(
-        GetShifted(
-          10000
-          1
-          Get(
-            10000
-            29
-          )
-          1
-        )
         Get(
           10000
-          24
-        )
-      )
-    )
-    Set(
-      10000
-      31
-      And(
-        And(
-          GreaterOr(
-            Get(
-              10000
-              26
-            )
-            -4
-          )
-          Less(
-            Get(
-              10000
-              26
-            )
-            4
-          )
-        )
-        Equal(
-          Get(
-            10000
-            26
-          )
-          Trunc(Get(
-            10000
-            26
-          ))
-        )
-      )
-    )
-    If(
-      Get(
-        10000
-        31
-      )
-      116
-      146
-    )
-  )
-  Execute(
-    Set(
-      10000
-      26
-      Multiply(
-        Add(
-          Get(
-            10000
-            26
-          )
-          Multiply(
-            Less(
-              Get(
-                10000
-                26
-              )
-              0
-            )
-            4
-          )
+          25
         )
         2
       )
+    )
+    SetMultiply(
+      10000
+      26
+      2
     )
     If(
       NotEqual(
-        Get(
-          10000
-          30
+        Greater(
+          GetShifted(
+            10000
+            1
+            Get(
+              10000
+              28
+            )
+            1
+          )
+          Get(
+            10000
+            24
+          )
         )
         Greater(
           GetShifted(
@@ -3099,145 +2729,8 @@ Block(JumpLoop(
           )
         )
       )
-      117
-      131
-    )
-  )
-  Execute(If(
-    Get(
-      10000
-      31
-    )
-    118
-    130
-  ))
-  Execute(
-    Set(
-      10000
-      30
-      Get(
-        10000
-        Get(
-          10000
-          26
-        )
-      )
-    )
-    If(
-      Get(
-        10000
-        28
-      )
-      119
-      129
-    )
-  )
-  Execute(
-    SetSubtract(
-      10000
-      30
-      Get(
-        10000
-        Get(
-          10000
-          29
-        )
-      )
-    )
-    If(
-      Get(
-        10000
-        28
-      )
-      120
-      128
-    )
-  )
-  Execute(
-    SetMultiply(
-      10000
-      30
-      Subtract(
-        Get(
-          10000
-          24
-        )
-        GetShifted(
-          10000
-          1
-          Get(
-            10000
-            29
-          )
-          1
-        )
-      )
-    )
-    If(
-      Get(
-        10000
-        31
-      )
-      121
-      127
-    )
-  )
-  Execute(
-    Set(
-      10000
-      26
-      GetShifted(
-        10000
-        1
-        Get(
-          10000
-          26
-        )
-        1
-      )
-    )
-    If(
-      Get(
-        10000
-        28
-      )
-      122
-      126
-    )
-  )
-  Execute(
-    Set(
-      10000
-      26
-      Divide(
-        Get(
-          10000
-          30
-        )
-        Subtract(
-          Get(
-            10000
-            26
-          )
-          GetShifted(
-            10000
-            1
-            Get(
-              10000
-              29
-            )
-            1
-          )
-        )
-      )
-    )
-    If(
-      Get(
-        10000
-        28
-      )
-      123
-      125
+      99
+      101
     )
   )
   Execute(If(
@@ -3252,21 +2745,72 @@ Block(JumpLoop(
         1
       )
       Add(
-        Get(
-          10000
-          26
+        Divide(
+          Multiply(
+            Subtract(
+              Get(
+                10000
+                Get(
+                  10000
+                  26
+                )
+              )
+              Get(
+                10000
+                Get(
+                  10000
+                  28
+                )
+              )
+            )
+            Subtract(
+              Get(
+                10000
+                24
+              )
+              GetShifted(
+                10000
+                1
+                Get(
+                  10000
+                  28
+                )
+                1
+              )
+            )
+          )
+          Subtract(
+            GetShifted(
+              10000
+              1
+              Get(
+                10000
+                26
+              )
+              1
+            )
+            GetShifted(
+              10000
+              1
+              Get(
+                10000
+                28
+              )
+              1
+            )
+          )
         )
         Get(
           10000
           Get(
             10000
-            29
+            28
           )
         )
       )
     )
-    124
-    131
+    100
+    101
   ))
   Execute(
     Set(
@@ -3277,37 +2821,7 @@ Block(JumpLoop(
         27
       ))
     )
-    131
-  )
-  Execute(
-    DebugLog(45)
-    DebugPause()
-    575
-  )
-  Execute(
-    DebugLog(45)
-    DebugPause()
-    575
-  )
-  Execute(
-    DebugLog(45)
-    DebugPause()
-    575
-  )
-  Execute(
-    DebugLog(44)
-    DebugPause()
-    575
-  )
-  Execute(
-    DebugLog(43)
-    DebugPause()
-    575
-  )
-  Execute(
-    DebugLog(43)
-    DebugPause()
-    575
+    101
   )
   Execute(
     Set(
@@ -3329,8 +2843,8 @@ Block(JumpLoop(
         )
         4
       )
-      132
-      133
+      102
+      103
     )
   )
   Execute(
@@ -3350,15 +2864,15 @@ Block(JumpLoop(
         28
       )
     )
-    114
+    98
   )
   Execute(If(
     Get(
       10000
       27
     )
-    134
-    145
+    104
+    115
   ))
   Execute(If(
     GreaterOr(
@@ -3368,8 +2882,8 @@ Block(JumpLoop(
       )
       16
     )
-    141
-    135
+    111
+    105
   ))
   Execute(
     Set(
@@ -3388,7 +2902,7 @@ Block(JumpLoop(
       23
       0
     )
-    136
+    106
   )
   Execute(If(
     Less(
@@ -3401,8 +2915,8 @@ Block(JumpLoop(
         17
       )
     )
-    137
-    139
+    107
+    109
   ))
   Execute(If(
     Equal(
@@ -3422,15 +2936,15 @@ Block(JumpLoop(
         )
       )
     )
-    141
-    138
+    111
+    108
   ))
   Execute(
     IncrementPost(
       10000
       23
     )
-    136
+    106
   )
   Execute(If(
     Less(
@@ -3440,8 +2954,8 @@ Block(JumpLoop(
       )
       16
     )
-    140
-    144
+    110
+    114
   ))
   Execute(
     Set(
@@ -3463,15 +2977,15 @@ Block(JumpLoop(
       2000
       17
     )
-    141
+    111
   )
   Execute(If(
     Get(
       10000
       10
     )
-    142
-    143
+    112
+    113
   ))
   Execute(
     Set(
@@ -3488,36 +3002,26 @@ Block(JumpLoop(
         )
       )
     )
-    148
+    116
   )
   Execute(
-    DebugLog(47)
+    DebugLog(26)
     DebugPause()
-    575
+    447
   )
   Execute(
-    DebugLog(46)
+    DebugLog(25)
     DebugPause()
-    575
+    447
   )
   Execute(If(
     Get(
       10000
       12
     )
-    101
-    100
+    85
+    84
   ))
-  Execute(
-    DebugLog(43)
-    DebugPause()
-    575
-  )
-  Execute(
-    DebugLog(43)
-    DebugPause()
-    575
-  )
   Execute(
     Set(
       10000
@@ -3554,8 +3058,8 @@ Block(JumpLoop(
         10000
         10
       )
-      149
-      227
+      117
+      179
     )
   )
   Execute(
@@ -3581,8 +3085,8 @@ Block(JumpLoop(
         )
         0
       )
-      150
-      575
+      118
+      447
     )
   )
   Execute(
@@ -3591,7 +3095,7 @@ Block(JumpLoop(
       12
       0
     )
-    151
+    119
   )
   Execute(If(
     Less(
@@ -3604,8 +3108,8 @@ Block(JumpLoop(
         3
       )
     )
-    152
-    575
+    120
+    447
   ))
   Execute(
     Set(
@@ -3628,8 +3132,8 @@ Block(JumpLoop(
         10000
         10
       )
-      153
-      226
+      121
+      178
     )
   )
   Execute(If(
@@ -3649,8 +3153,8 @@ Block(JumpLoop(
         )
       )
     )
-    151
-    154
+    119
+    122
   ))
   Execute(
     Set(
@@ -3669,8 +3173,8 @@ Block(JumpLoop(
         4001
         2
       )
-      155
-      156
+      123
+      124
     )
   )
   Execute(
@@ -3694,7 +3198,7 @@ Block(JumpLoop(
         )
       )
     )
-    157
+    125
   )
   Execute(
     Set(
@@ -3708,15 +3212,15 @@ Block(JumpLoop(
         )
       )
     )
-    157
+    125
   )
   Execute(If(
     Get(
       4001
       2
     )
-    158
-    159
+    126
+    127
   ))
   Execute(
     Set(
@@ -3741,7 +3245,7 @@ Block(JumpLoop(
         0
       )
     )
-    159
+    127
   )
   Execute(
     Set(
@@ -3839,163 +3343,41 @@ Block(JumpLoop(
         16
       )
     )
-    160
+    128
   )
   Execute(
     Set(
       10000
       17
-      And(
-        And(
-          GreaterOr(
-            Get(
-              10000
-              14
-            )
-            -4
-          )
-          Less(
-            Get(
-              10000
-              14
-            )
-            4
-          )
-        )
-        Equal(
-          Get(
-            10000
-            14
-          )
-          Trunc(Get(
-            10000
-            14
-          ))
-        )
-      )
-    )
-    If(
-      Get(
-        10000
-        17
-      )
-      161
-      225
-    )
-  )
-  Execute(
-    Set(
-      10000
-      18
       Multiply(
-        Add(
-          Get(
-            10000
-            14
-          )
-          Multiply(
-            Less(
-              Get(
-                10000
-                14
-              )
-              0
-            )
-            4
-          )
-        )
-        2
-      )
-    )
-    Set(
-      10000
-      19
-      Greater(
-        GetShifted(
-          10000
-          1
-          Get(
-            10000
-            18
-          )
-          1
-        )
         Get(
           10000
-          12
-        )
-      )
-    )
-    Set(
-      10000
-      20
-      And(
-        And(
-          GreaterOr(
-            Get(
-              10000
-              15
-            )
-            -4
-          )
-          Less(
-            Get(
-              10000
-              15
-            )
-            4
-          )
-        )
-        Equal(
-          Get(
-            10000
-            15
-          )
-          Trunc(Get(
-            10000
-            15
-          ))
-        )
-      )
-    )
-    If(
-      Get(
-        10000
-        20
-      )
-      162
-      224
-    )
-  )
-  Execute(
-    Set(
-      10000
-      15
-      Multiply(
-        Add(
-          Get(
-            10000
-            15
-          )
-          Multiply(
-            Less(
-              Get(
-                10000
-                15
-              )
-              0
-            )
-            4
-          )
+          14
         )
         2
       )
+    )
+    SetMultiply(
+      10000
+      15
+      2
     )
     If(
       NotEqual(
-        Get(
-          10000
-          19
+        Greater(
+          GetShifted(
+            10000
+            1
+            Get(
+              10000
+              17
+            )
+            1
+          )
+          Get(
+            10000
+            12
+          )
         )
         Greater(
           GetShifted(
@@ -4013,145 +3395,8 @@ Block(JumpLoop(
           )
         )
       )
-      163
-      177
-    )
-  )
-  Execute(If(
-    Get(
-      10000
-      20
-    )
-    164
-    176
-  ))
-  Execute(
-    Set(
-      10000
-      19
-      Get(
-        10000
-        Get(
-          10000
-          15
-        )
-      )
-    )
-    If(
-      Get(
-        10000
-        17
-      )
-      165
-      175
-    )
-  )
-  Execute(
-    SetSubtract(
-      10000
-      19
-      Get(
-        10000
-        Get(
-          10000
-          18
-        )
-      )
-    )
-    If(
-      Get(
-        10000
-        17
-      )
-      166
-      174
-    )
-  )
-  Execute(
-    SetMultiply(
-      10000
-      19
-      Subtract(
-        Get(
-          10000
-          12
-        )
-        GetShifted(
-          10000
-          1
-          Get(
-            10000
-            18
-          )
-          1
-        )
-      )
-    )
-    If(
-      Get(
-        10000
-        20
-      )
-      167
-      173
-    )
-  )
-  Execute(
-    Set(
-      10000
-      15
-      GetShifted(
-        10000
-        1
-        Get(
-          10000
-          15
-        )
-        1
-      )
-    )
-    If(
-      Get(
-        10000
-        17
-      )
-      168
-      172
-    )
-  )
-  Execute(
-    Set(
-      10000
-      15
-      Divide(
-        Get(
-          10000
-          19
-        )
-        Subtract(
-          Get(
-            10000
-            15
-          )
-          GetShifted(
-            10000
-            1
-            Get(
-              10000
-              18
-            )
-            1
-          )
-        )
-      )
-    )
-    If(
-      Get(
-        10000
-        17
-      )
-      169
-      171
+      129
+      131
     )
   )
   Execute(If(
@@ -4166,21 +3411,72 @@ Block(JumpLoop(
         1
       )
       Add(
-        Get(
-          10000
-          15
+        Divide(
+          Multiply(
+            Subtract(
+              Get(
+                10000
+                Get(
+                  10000
+                  15
+                )
+              )
+              Get(
+                10000
+                Get(
+                  10000
+                  17
+                )
+              )
+            )
+            Subtract(
+              Get(
+                10000
+                12
+              )
+              GetShifted(
+                10000
+                1
+                Get(
+                  10000
+                  17
+                )
+                1
+              )
+            )
+          )
+          Subtract(
+            GetShifted(
+              10000
+              1
+              Get(
+                10000
+                15
+              )
+              1
+            )
+            GetShifted(
+              10000
+              1
+              Get(
+                10000
+                17
+              )
+              1
+            )
+          )
         )
         Get(
           10000
           Get(
             10000
-            18
+            17
           )
         )
       )
     )
-    170
-    177
+    130
+    131
   ))
   Execute(
     Set(
@@ -4191,37 +3487,7 @@ Block(JumpLoop(
         16
       ))
     )
-    177
-  )
-  Execute(
-    DebugLog(52)
-    DebugPause()
-    575
-  )
-  Execute(
-    DebugLog(52)
-    DebugPause()
-    575
-  )
-  Execute(
-    DebugLog(52)
-    DebugPause()
-    575
-  )
-  Execute(
-    DebugLog(51)
-    DebugPause()
-    575
-  )
-  Execute(
-    DebugLog(50)
-    DebugPause()
-    575
-  )
-  Execute(
-    DebugLog(50)
-    DebugPause()
-    575
+    131
   )
   Execute(
     Set(
@@ -4243,8 +3509,8 @@ Block(JumpLoop(
         )
         4
       )
-      178
-      179
+      132
+      133
     )
   )
   Execute(
@@ -4264,15 +3530,15 @@ Block(JumpLoop(
         17
       )
     )
-    160
+    128
   )
   Execute(If(
     Get(
       10000
       16
     )
-    180
-    184
+    134
+    138
   ))
   Execute(If(
     GreaterOr(
@@ -4290,16 +3556,16 @@ Block(JumpLoop(
         11
       )
     )
-    181
-    184
+    135
+    138
   ))
   Execute(If(
     Get(
       10000
       10
     )
-    182
-    184
+    136
+    138
   ))
   Execute(
     Set(
@@ -4339,8 +3605,8 @@ Block(JumpLoop(
           )
         ))
       )
-      183
-      184
+      137
+      138
     )
   )
   Execute(
@@ -4362,8 +3628,8 @@ Block(JumpLoop(
         )
         1
       )
-      185
-      186
+      139
+      140
     )
   )
   Execute(If(
@@ -4376,8 +3642,8 @@ Block(JumpLoop(
       )
       1
     )
-    185
-    186
+    139
+    140
   ))
   Execute(If(
     GetShifted(
@@ -4389,8 +3655,8 @@ Block(JumpLoop(
       )
       1
     )
-    187
-    575
+    141
+    447
   ))
   Execute(If(
     GreaterOr(
@@ -4403,8 +3669,8 @@ Block(JumpLoop(
         11
       )
     )
-    187
-    575
+    141
+    447
   ))
   Execute(
     Set(
@@ -4498,8 +3764,8 @@ Block(JumpLoop(
           1
         )
       )
-      188
-      223
+      142
+      177
     )
   )
   Execute(If(
@@ -4507,16 +3773,16 @@ Block(JumpLoop(
       2002
       11
     )
-    202
-    189
+    156
+    143
   ))
   Execute(If(
     Get(
       2002
       10
     )
-    190
-    202
+    144
+    156
   ))
   Execute(SwitchIntegerWithDefault(
     Subtract(
@@ -4526,12 +3792,12 @@ Block(JumpLoop(
       )
       2
     )
-    196
-    196
-    191
-    191
-    202
-    191
+    150
+    150
+    145
+    145
+    156
+    145
   ))
   Execute(SwitchIntegerWithDefault(
     Subtract(
@@ -4541,10 +3807,10 @@ Block(JumpLoop(
       )
       1
     )
-    195
-    194
-    193
-    192
+    149
+    148
+    147
+    146
   ))
   Execute(
     Set(
@@ -4552,7 +3818,7 @@ Block(JumpLoop(
       0
       0
     )
-    201
+    155
   )
   Execute(
     Set(
@@ -4560,7 +3826,7 @@ Block(JumpLoop(
       0
       3
     )
-    201
+    155
   )
   Execute(
     Set(
@@ -4568,7 +3834,7 @@ Block(JumpLoop(
       0
       2
     )
-    201
+    155
   )
   Execute(
     Set(
@@ -4576,7 +3842,7 @@ Block(JumpLoop(
       0
       1
     )
-    201
+    155
   )
   Execute(SwitchIntegerWithDefault(
     Subtract(
@@ -4586,10 +3852,10 @@ Block(JumpLoop(
       )
       1
     )
-    200
-    199
-    198
-    197
+    154
+    153
+    152
+    151
   ))
   Execute(
     Set(
@@ -4597,7 +3863,7 @@ Block(JumpLoop(
       0
       0
     )
-    201
+    155
   )
   Execute(
     Set(
@@ -4605,7 +3871,7 @@ Block(JumpLoop(
       0
       6
     )
-    201
+    155
   )
   Execute(
     Set(
@@ -4613,7 +3879,7 @@ Block(JumpLoop(
       0
       5
     )
-    201
+    155
   )
   Execute(
     Set(
@@ -4621,7 +3887,7 @@ Block(JumpLoop(
       0
       4
     )
-    201
+    155
   )
   Execute(
     Play(
@@ -4631,7 +3897,7 @@ Block(JumpLoop(
       )
       0
     )
-    202
+    156
   )
   Execute(If(
     Equal(
@@ -4641,16 +3907,16 @@ Block(JumpLoop(
       )
       6
     )
-    223
-    203
+    177
+    157
   ))
   Execute(If(
     Get(
       2002
       6
     )
-    204
-    223
+    158
+    177
   ))
   Execute(SwitchIntegerWithDefault(
     Subtract(
@@ -4660,14 +3926,14 @@ Block(JumpLoop(
       )
       1
     )
-    209
-    208
-    207
-    206
-    206
-    205
-    206
-    205
+    163
+    162
+    161
+    160
+    160
+    159
+    160
+    159
   ))
   Execute(
     Set(
@@ -4675,7 +3941,7 @@ Block(JumpLoop(
       0
       0
     )
-    210
+    164
   )
   Execute(
     Set(
@@ -4683,7 +3949,7 @@ Block(JumpLoop(
       0
       3
     )
-    210
+    164
   )
   Execute(
     Set(
@@ -4698,7 +3964,7 @@ Block(JumpLoop(
         10
       )
     )
-    210
+    164
   )
   Execute(
     Set(
@@ -4706,7 +3972,7 @@ Block(JumpLoop(
       0
       6
     )
-    210
+    164
   )
   Execute(
     Set(
@@ -4714,7 +3980,7 @@ Block(JumpLoop(
       0
       1
     )
-    210
+    164
   )
   Execute(
     Set(
@@ -4990,14 +4256,14 @@ Block(JumpLoop(
         )
         1
       )
-      215
-      214
-      213
-      212
-      212
-      211
-      212
-      211
+      169
+      168
+      167
+      166
+      166
+      165
+      166
+      165
     )
   )
   Execute(
@@ -5006,7 +4272,7 @@ Block(JumpLoop(
       0
       0
     )
-    216
+    170
   )
   Execute(
     Set(
@@ -5014,7 +4280,7 @@ Block(JumpLoop(
       0
       4
     )
-    216
+    170
   )
   Execute(
     Set(
@@ -5029,7 +4295,7 @@ Block(JumpLoop(
         11
       )
     )
-    216
+    170
   )
   Execute(
     Set(
@@ -5037,7 +4303,7 @@ Block(JumpLoop(
       0
       7
     )
-    216
+    170
   )
   Execute(
     Set(
@@ -5045,7 +4311,7 @@ Block(JumpLoop(
       0
       2
     )
-    216
+    170
   )
   Execute(
     Set(
@@ -5683,8 +4949,8 @@ Block(JumpLoop(
         2002
         7
       )
-      217
-      223
+      171
+      177
     )
   )
   Execute(
@@ -5693,7 +4959,7 @@ Block(JumpLoop(
       0
       0
     )
-    218
+    172
   )
   Execute(If(
     Less(
@@ -5706,8 +4972,8 @@ Block(JumpLoop(
         16
       )
     )
-    219
-    222
+    173
+    176
   ))
   Execute(
     Set(
@@ -5751,8 +5017,8 @@ Block(JumpLoop(
           1
         )
       )
-      220
-      221
+      174
+      175
     )
   )
   Execute(
@@ -5833,7 +5099,7 @@ Block(JumpLoop(
       0.2
       0
     )
-    223
+    177
   )
   Execute(
     Set(
@@ -5844,12 +5110,12 @@ Block(JumpLoop(
         1
       )
     )
-    218
+    172
   )
   Execute(
-    DebugLog(53)
+    DebugLog(29)
     DebugPause()
-    575
+    447
   )
   Execute(
     Set(
@@ -5862,32 +5128,22 @@ Block(JumpLoop(
       2
       1
     )
-    575
+    447
   )
   Execute(
-    DebugLog(50)
+    DebugLog(28)
     DebugPause()
-    575
+    447
   )
   Execute(
-    DebugLog(50)
+    DebugLog(27)
     DebugPause()
-    575
+    447
   )
   Execute(
-    DebugLog(49)
+    DebugLog(24)
     DebugPause()
-    575
-  )
-  Execute(
-    DebugLog(48)
-    DebugPause()
-    575
-  )
-  Execute(
-    DebugLog(42)
-    DebugPause()
-    575
+    447
   )
   Execute(If(
     Greater(
@@ -5897,8 +5153,8 @@ Block(JumpLoop(
       )
       0
     )
-    230
-    237
+    182
+    189
   ))
   Execute(
     Set(
@@ -5947,1649 +5203,1163 @@ Block(JumpLoop(
         10000
         1
       )
-      231
+      183
+      188
+    )
+  )
+  Execute(
+    Set(
+      10000
+      2
+      Get(
+        4102
+        Add(
+          2
+          Multiply(
+            Get(
+              4001
+              16
+            )
+            32
+          )
+        )
+      )
+    )
+    If(
+      Get(
+        10000
+        2
+      )
+      186
+      184
+    )
+  )
+  Execute(If(
+    Get(
+      10000
+      1
+    )
+    185
+    187
+  ))
+  Execute(
+    Set(
+      10000
+      2
+      Equal(
+        2
+        GetShifted(
+          4103
+          2
+          Get(
+            10000
+            0
+          )
+          1
+        )
+      )
+    )
+    186
+  )
+  Execute(If(
+    Get(
+      10000
+      2
+    )
+    189
+    447
+  ))
+  Execute(
+    DebugLog(13)
+    DebugPause()
+    447
+  )
+  Execute(
+    DebugLog(13)
+    DebugPause()
+    447
+  )
+  Execute(If(
+    LessOr(
+      Get(
+        4001
+        14
+      )
+      Get(
+        1001
+        0
+      )
+    )
+    190
+    447
+  ))
+  Execute(If(
+    LessOr(
+      Get(
+        1001
+        0
+      )
+      Get(
+        4001
+        15
+      )
+    )
+    191
+    447
+  ))
+  Execute(
+    Set(
+      10000
+      10
+      SwitchWithDefault(
+        GetShifted(
+          4103
+          1
+          Get(
+            4001
+            16
+          )
+          3
+        )
+        1
+        1
+        2
+        1
+        3
+        1
+        4
+        1
+        5
+        1
+        6
+        1
+        7
+        1
+        0
+      )
+    )
+    If(
+      Get(
+        10000
+        10
+      )
+      192
+      277
+    )
+  )
+  Execute(
+    Set(
+      10000
+      11
+      Multiply(
+        Get(
+          4001
+          16
+        )
+        32
+      )
+    )
+    If(
+      Greater(
+        Get(
+          4102
+          Get(
+            10000
+            11
+          )
+        )
+        0
+      )
+      223
+      193
+    )
+  )
+  Execute(
+    Set(
+      10000
+      13
+      0
+    )
+    194
+  )
+  Execute(
+    Set(
+      10000
+      23
+      0
+    )
+    195
+  )
+  Execute(If(
+    Less(
+      Get(
+        10000
+        23
+      )
+      Get(
+        1001
+        3
+      )
+    )
+    196
+    201
+  ))
+  Execute(
+    Set(
+      10000
+      12
+      Multiply(
+        Get(
+          10000
+          23
+        )
+        15
+      )
+    )
+    IncrementPost(
+      10000
+      23
+    )
+    Set(
+      10000
+      24
+      Get(
+        1002
+        Get(
+          10000
+          12
+        )
+      )
+    )
+    Set(
+      10000
+      25
+      0
+    )
+    197
+  )
+  Execute(If(
+    Less(
+      Get(
+        10000
+        25
+      )
+      Get(
+        2000
+        17
+      )
+    )
+    198
+    200
+  ))
+  Execute(If(
+    Equal(
+      Get(
+        10000
+        24
+      )
+      Get(
+        2000
+        Add(
+          17
+          Get(
+            10000
+            25
+          )
+          1
+        )
+      )
+    )
+    195
+    199
+  ))
+  Execute(
+    IncrementPost(
+      10000
+      25
+    )
+    197
+  )
+  Execute(
+    Set(
+      10000
+      13
+      1
+    )
+    Set(
+      10000
+      24
+      Get(
+        10000
+        13
+      )
+    )
+    202
+  )
+  Execute(
+    Set(
+      10000
+      24
+      0
+    )
+    202
+  )
+  Execute(If(
+    Get(
+      10000
+      24
+    )
+    203
+    223
+  ))
+  Execute(
+    Set(
+      10000
+      0
+      Get(
+        10000
+        14
+      )
+    )
+    Set(
+      10000
+      1
+      Get(
+        10000
+        15
+      )
+    )
+    Set(
+      10000
+      2
+      Get(
+        10000
+        18
+      )
+    )
+    Set(
+      10000
+      3
+      Get(
+        10000
+        19
+      )
+    )
+    Set(
+      10000
+      4
+      Get(
+        10000
+        20
+      )
+    )
+    Set(
+      10000
+      5
+      Get(
+        10000
+        21
+      )
+    )
+    Set(
+      10000
+      6
+      Get(
+        10000
+        16
+      )
+    )
+    Set(
+      10000
+      7
+      Get(
+        10000
+        17
+      )
+    )
+    Set(
+      10000
+      24
+      GetShifted(
+        1002
+        6
+        Get(
+          10000
+          12
+        )
+        1
+      )
+    )
+    Set(
+      10000
+      27
+      0
+    )
+    Set(
+      10000
+      26
+      3
+    )
+    Set(
+      10000
+      25
+      Get(
+        10000
+        27
+      )
+    )
+    204
+  )
+  Execute(
+    Set(
+      10000
+      28
+      Multiply(
+        Get(
+          10000
+          25
+        )
+        2
+      )
+    )
+    SetMultiply(
+      10000
+      26
+      2
+    )
+    If(
+      NotEqual(
+        Greater(
+          GetShifted(
+            10000
+            1
+            Get(
+              10000
+              28
+            )
+            1
+          )
+          Get(
+            10000
+            24
+          )
+        )
+        Greater(
+          GetShifted(
+            10000
+            1
+            Get(
+              10000
+              26
+            )
+            1
+          )
+          Get(
+            10000
+            24
+          )
+        )
+      )
+      205
+      207
+    )
+  )
+  Execute(If(
+    Less(
+      GetShifted(
+        1002
+        5
+        Get(
+          10000
+          12
+        )
+        1
+      )
+      Add(
+        Divide(
+          Multiply(
+            Subtract(
+              Get(
+                10000
+                Get(
+                  10000
+                  26
+                )
+              )
+              Get(
+                10000
+                Get(
+                  10000
+                  28
+                )
+              )
+            )
+            Subtract(
+              Get(
+                10000
+                24
+              )
+              GetShifted(
+                10000
+                1
+                Get(
+                  10000
+                  28
+                )
+                1
+              )
+            )
+          )
+          Subtract(
+            GetShifted(
+              10000
+              1
+              Get(
+                10000
+                26
+              )
+              1
+            )
+            GetShifted(
+              10000
+              1
+              Get(
+                10000
+                28
+              )
+              1
+            )
+          )
+        )
+        Get(
+          10000
+          Get(
+            10000
+            28
+          )
+        )
+      )
+    )
+    206
+    207
+  ))
+  Execute(
+    Set(
+      10000
+      27
+      Not(Get(
+        10000
+        27
+      ))
+    )
+    207
+  )
+  Execute(
+    Set(
+      10000
+      28
+      Add(
+        Get(
+          10000
+          25
+        )
+        1
+      )
+    )
+    If(
+      Less(
+        Get(
+          10000
+          28
+        )
+        4
+      )
+      208
+      209
+    )
+  )
+  Execute(
+    Set(
+      10000
+      26
+      Get(
+        10000
+        25
+      )
+    )
+    Set(
+      10000
+      25
+      Get(
+        10000
+        28
+      )
+    )
+    204
+  )
+  Execute(If(
+    Get(
+      10000
+      27
+    )
+    210
+    222
+  ))
+  Execute(If(
+    GetShifted(
+      1002
+      2
+      Get(
+        10000
+        12
+      )
+      1
+    )
+    222
+    211
+  ))
+  Execute(If(
+    GreaterOr(
+      Get(
+        2000
+        17
+      )
+      16
+    )
+    218
+    212
+  ))
+  Execute(
+    Set(
+      10000
+      13
+      Get(
+        1002
+        Get(
+          10000
+          12
+        )
+      )
+    )
+    Set(
+      10000
+      23
+      0
+    )
+    213
+  )
+  Execute(If(
+    Less(
+      Get(
+        10000
+        23
+      )
+      Get(
+        2000
+        17
+      )
+    )
+    214
+    216
+  ))
+  Execute(If(
+    Equal(
+      Get(
+        10000
+        13
+      )
+      Get(
+        2000
+        Add(
+          17
+          Get(
+            10000
+            23
+          )
+          1
+        )
+      )
+    )
+    218
+    215
+  ))
+  Execute(
+    IncrementPost(
+      10000
+      23
+    )
+    213
+  )
+  Execute(If(
+    Less(
+      Get(
+        2000
+        17
+      )
+      16
+    )
+    217
+    221
+  ))
+  Execute(
+    Set(
+      2000
+      Add(
+        17
+        Get(
+          2000
+          17
+        )
+        1
+      )
+      Get(
+        10000
+        13
+      )
+    )
+    IncrementPost(
+      2000
+      17
+    )
+    218
+  )
+  Execute(If(
+    Get(
+      10000
+      10
+    )
+    219
+    220
+  ))
+  Execute(
+    Set(
+      4102
+      Get(
+        10000
+        11
+      )
+      Get(
+        1002
+        Get(
+          10000
+          12
+        )
+      )
+    )
+    223
+  )
+  Execute(
+    DebugLog(16)
+    DebugPause()
+    447
+  )
+  Execute(
+    DebugLog(15)
+    DebugPause()
+    447
+  )
+  Execute(If(
+    Get(
+      10000
+      13
+    )
+    195
+    194
+  ))
+  Execute(If(
+    Get(
+      10000
+      10
+    )
+    224
+    276
+  ))
+  Execute(If(
+    Greater(
+      Get(
+        4102
+        Get(
+          10000
+          11
+        )
+      )
+      0
+    )
+    225
+    447
+  ))
+  Execute(
+    Set(
+      10000
+      12
+      0
+    )
+    226
+  )
+  Execute(If(
+    Less(
+      Get(
+        10000
+        12
+      )
+      Get(
+        1001
+        3
+      )
+    )
+    227
+    447
+  ))
+  Execute(
+    Set(
+      10000
+      13
+      Multiply(
+        Get(
+          10000
+          12
+        )
+        15
+      )
+    )
+    IncrementPost(
+      10000
+      12
+    )
+    If(
+      Get(
+        10000
+        10
+      )
+      228
+      275
+    )
+  )
+  Execute(If(
+    NotEqual(
+      Get(
+        4102
+        Get(
+          10000
+          11
+        )
+      )
+      Get(
+        1002
+        Get(
+          10000
+          13
+        )
+      )
+    )
+    226
+    229
+  ))
+  Execute(If(
+    GetShifted(
+      1002
+      2
+      Get(
+        10000
+        13
+      )
+      1
+    )
+    230
+    447
+  ))
+  Execute(
+    Set(
+      10000
+      0
+      Get(
+        10000
+        14
+      )
+    )
+    Set(
+      10000
+      1
+      Get(
+        10000
+        15
+      )
+    )
+    Set(
+      10000
+      2
+      Get(
+        10000
+        18
+      )
+    )
+    Set(
+      10000
+      3
+      Get(
+        10000
+        19
+      )
+    )
+    Set(
+      10000
+      4
+      Get(
+        10000
+        20
+      )
+    )
+    Set(
+      10000
+      5
+      Get(
+        10000
+        21
+      )
+    )
+    Set(
+      10000
+      6
+      Get(
+        10000
+        16
+      )
+    )
+    Set(
+      10000
+      7
+      Get(
+        10000
+        17
+      )
+    )
+    Set(
+      10000
+      10
+      GetShifted(
+        1002
+        6
+        Get(
+          10000
+          13
+        )
+        1
+      )
+    )
+    Set(
+      10000
+      14
+      0
+    )
+    Set(
+      10000
+      12
+      3
+    )
+    Set(
+      10000
+      11
+      Get(
+        10000
+        14
+      )
+    )
+    231
+  )
+  Execute(
+    Set(
+      10000
+      15
+      Multiply(
+        Get(
+          10000
+          11
+        )
+        2
+      )
+    )
+    SetMultiply(
+      10000
+      12
+      2
+    )
+    If(
+      NotEqual(
+        Greater(
+          GetShifted(
+            10000
+            1
+            Get(
+              10000
+              15
+            )
+            1
+          )
+          Get(
+            10000
+            10
+          )
+        )
+        Greater(
+          GetShifted(
+            10000
+            1
+            Get(
+              10000
+              12
+            )
+            1
+          )
+          Get(
+            10000
+            10
+          )
+        )
+      )
+      232
+      234
+    )
+  )
+  Execute(If(
+    Less(
+      GetShifted(
+        1002
+        5
+        Get(
+          10000
+          13
+        )
+        1
+      )
+      Add(
+        Divide(
+          Multiply(
+            Subtract(
+              Get(
+                10000
+                Get(
+                  10000
+                  12
+                )
+              )
+              Get(
+                10000
+                Get(
+                  10000
+                  15
+                )
+              )
+            )
+            Subtract(
+              Get(
+                10000
+                10
+              )
+              GetShifted(
+                10000
+                1
+                Get(
+                  10000
+                  15
+                )
+                1
+              )
+            )
+          )
+          Subtract(
+            GetShifted(
+              10000
+              1
+              Get(
+                10000
+                12
+              )
+              1
+            )
+            GetShifted(
+              10000
+              1
+              Get(
+                10000
+                15
+              )
+              1
+            )
+          )
+        )
+        Get(
+          10000
+          Get(
+            10000
+            15
+          )
+        )
+      )
+    )
+    233
+    234
+  ))
+  Execute(
+    Set(
+      10000
+      14
+      Not(Get(
+        10000
+        14
+      ))
+    )
+    234
+  )
+  Execute(
+    Set(
+      10000
+      15
+      Add(
+        Get(
+          10000
+          11
+        )
+        1
+      )
+    )
+    If(
+      Less(
+        Get(
+          10000
+          15
+        )
+        4
+      )
+      235
       236
     )
   )
   Execute(
     Set(
       10000
-      2
-      Get(
-        4102
-        Add(
-          2
-          Multiply(
-            Get(
-              4001
-              16
-            )
-            32
-          )
-        )
-      )
-    )
-    If(
+      12
       Get(
         10000
-        2
+        11
       )
-      234
-      232
     )
-  )
-  Execute(If(
-    Get(
-      10000
-      1
-    )
-    233
-    235
-  ))
-  Execute(
     Set(
       10000
-      2
-      Equal(
-        2
-        GetShifted(
-          4103
-          2
-          Get(
-            10000
-            0
-          )
-          1
-        )
+      11
+      Get(
+        10000
+        15
       )
     )
-    234
+    231
   )
   Execute(If(
     Get(
       10000
-      2
+      14
     )
     237
-    575
-  ))
-  Execute(
-    DebugLog(22)
-    DebugPause()
-    575
-  )
-  Execute(
-    DebugLog(22)
-    DebugPause()
-    575
-  )
-  Execute(If(
-    LessOr(
-      Get(
-        4001
-        14
-      )
-      Get(
-        1001
-        0
-      )
-    )
-    238
-    575
-  ))
-  Execute(If(
-    LessOr(
-      Get(
-        1001
-        0
-      )
-      Get(
-        4001
-        15
-      )
-    )
-    239
-    575
-  ))
-  Execute(
-    Set(
-      10000
-      10
-      SwitchWithDefault(
-        GetShifted(
-          4103
-          1
-          Get(
-            4001
-            16
-          )
-          3
-        )
-        1
-        1
-        2
-        1
-        3
-        1
-        4
-        1
-        5
-        1
-        6
-        1
-        7
-        1
-        0
-      )
-    )
-    If(
-      Get(
-        10000
-        10
-      )
-      240
-      357
-    )
-  )
-  Execute(
-    Set(
-      10000
-      11
-      Multiply(
-        Get(
-          4001
-          16
-        )
-        32
-      )
-    )
-    If(
-      Greater(
-        Get(
-          4102
-          Get(
-            10000
-            11
-          )
-        )
-        0
-      )
-      287
-      241
-    )
-  )
-  Execute(
-    Set(
-      10000
-      13
-      0
-    )
-    242
-  )
-  Execute(
-    Set(
-      10000
-      23
-      0
-    )
-    243
-  )
-  Execute(If(
-    Less(
-      Get(
-        10000
-        23
-      )
-      Get(
-        1001
-        3
-      )
-    )
-    244
-    249
-  ))
-  Execute(
-    Set(
-      10000
-      12
-      Multiply(
-        Get(
-          10000
-          23
-        )
-        15
-      )
-    )
-    IncrementPost(
-      10000
-      23
-    )
-    Set(
-      10000
-      24
-      Get(
-        1002
-        Get(
-          10000
-          12
-        )
-      )
-    )
-    Set(
-      10000
-      25
-      0
-    )
-    245
-  )
-  Execute(If(
-    Less(
-      Get(
-        10000
-        25
-      )
-      Get(
-        2000
-        17
-      )
-    )
-    246
-    248
-  ))
-  Execute(If(
-    Equal(
-      Get(
-        10000
-        24
-      )
-      Get(
-        2000
-        Add(
-          17
-          Get(
-            10000
-            25
-          )
-          1
-        )
-      )
-    )
-    243
-    247
-  ))
-  Execute(
-    IncrementPost(
-      10000
-      25
-    )
-    245
-  )
-  Execute(
-    Set(
-      10000
-      13
-      1
-    )
-    Set(
-      10000
-      24
-      Get(
-        10000
-        13
-      )
-    )
-    250
-  )
-  Execute(
-    Set(
-      10000
-      24
-      0
-    )
-    250
-  )
-  Execute(If(
-    Get(
-      10000
-      24
-    )
-    251
-    287
-  ))
-  Execute(
-    Set(
-      10000
-      0
-      Get(
-        10000
-        14
-      )
-    )
-    Set(
-      10000
-      1
-      Get(
-        10000
-        15
-      )
-    )
-    Set(
-      10000
-      2
-      Get(
-        10000
-        18
-      )
-    )
-    Set(
-      10000
-      3
-      Get(
-        10000
-        19
-      )
-    )
-    Set(
-      10000
-      4
-      Get(
-        10000
-        20
-      )
-    )
-    Set(
-      10000
-      5
-      Get(
-        10000
-        21
-      )
-    )
-    Set(
-      10000
-      6
-      Get(
-        10000
-        16
-      )
-    )
-    Set(
-      10000
-      7
-      Get(
-        10000
-        17
-      )
-    )
-    Set(
-      10000
-      24
-      GetShifted(
-        1002
-        6
-        Get(
-          10000
-          12
-        )
-        1
-      )
-    )
-    Set(
-      10000
-      27
-      0
-    )
-    Set(
-      10000
-      26
-      3
-    )
-    Set(
-      10000
-      25
-      Get(
-        10000
-        27
-      )
-    )
-    252
-  )
-  Execute(
-    Set(
-      10000
-      28
-      And(
-        And(
-          GreaterOr(
-            Get(
-              10000
-              25
-            )
-            -4
-          )
-          Less(
-            Get(
-              10000
-              25
-            )
-            4
-          )
-        )
-        Equal(
-          Get(
-            10000
-            25
-          )
-          Trunc(Get(
-            10000
-            25
-          ))
-        )
-      )
-    )
-    If(
-      Get(
-        10000
-        28
-      )
-      253
-      286
-    )
-  )
-  Execute(
-    Set(
-      10000
-      29
-      Multiply(
-        Add(
-          Get(
-            10000
-            25
-          )
-          Multiply(
-            Less(
-              Get(
-                10000
-                25
-              )
-              0
-            )
-            4
-          )
-        )
-        2
-      )
-    )
-    Set(
-      10000
-      30
-      Greater(
-        GetShifted(
-          10000
-          1
-          Get(
-            10000
-            29
-          )
-          1
-        )
-        Get(
-          10000
-          24
-        )
-      )
-    )
-    Set(
-      10000
-      31
-      And(
-        And(
-          GreaterOr(
-            Get(
-              10000
-              26
-            )
-            -4
-          )
-          Less(
-            Get(
-              10000
-              26
-            )
-            4
-          )
-        )
-        Equal(
-          Get(
-            10000
-            26
-          )
-          Trunc(Get(
-            10000
-            26
-          ))
-        )
-      )
-    )
-    If(
-      Get(
-        10000
-        31
-      )
-      254
-      285
-    )
-  )
-  Execute(
-    Set(
-      10000
-      26
-      Multiply(
-        Add(
-          Get(
-            10000
-            26
-          )
-          Multiply(
-            Less(
-              Get(
-                10000
-                26
-              )
-              0
-            )
-            4
-          )
-        )
-        2
-      )
-    )
-    If(
-      NotEqual(
-        Get(
-          10000
-          30
-        )
-        Greater(
-          GetShifted(
-            10000
-            1
-            Get(
-              10000
-              26
-            )
-            1
-          )
-          Get(
-            10000
-            24
-          )
-        )
-      )
-      255
-      269
-    )
-  )
-  Execute(If(
-    Get(
-      10000
-      31
-    )
-    256
-    268
-  ))
-  Execute(
-    Set(
-      10000
-      30
-      Get(
-        10000
-        Get(
-          10000
-          26
-        )
-      )
-    )
-    If(
-      Get(
-        10000
-        28
-      )
-      257
-      267
-    )
-  )
-  Execute(
-    SetSubtract(
-      10000
-      30
-      Get(
-        10000
-        Get(
-          10000
-          29
-        )
-      )
-    )
-    If(
-      Get(
-        10000
-        28
-      )
-      258
-      266
-    )
-  )
-  Execute(
-    SetMultiply(
-      10000
-      30
-      Subtract(
-        Get(
-          10000
-          24
-        )
-        GetShifted(
-          10000
-          1
-          Get(
-            10000
-            29
-          )
-          1
-        )
-      )
-    )
-    If(
-      Get(
-        10000
-        31
-      )
-      259
-      265
-    )
-  )
-  Execute(
-    Set(
-      10000
-      26
-      GetShifted(
-        10000
-        1
-        Get(
-          10000
-          26
-        )
-        1
-      )
-    )
-    If(
-      Get(
-        10000
-        28
-      )
-      260
-      264
-    )
-  )
-  Execute(
-    Set(
-      10000
-      26
-      Divide(
-        Get(
-          10000
-          30
-        )
-        Subtract(
-          Get(
-            10000
-            26
-          )
-          GetShifted(
-            10000
-            1
-            Get(
-              10000
-              29
-            )
-            1
-          )
-        )
-      )
-    )
-    If(
-      Get(
-        10000
-        28
-      )
-      261
-      263
-    )
-  )
-  Execute(If(
-    Less(
-      GetShifted(
-        1002
-        5
-        Get(
-          10000
-          12
-        )
-        1
-      )
-      Add(
-        Get(
-          10000
-          26
-        )
-        Get(
-          10000
-          Get(
-            10000
-            29
-          )
-        )
-      )
-    )
-    262
-    269
-  ))
-  Execute(
-    Set(
-      10000
-      27
-      Not(Get(
-        10000
-        27
-      ))
-    )
-    269
-  )
-  Execute(
-    DebugLog(26)
-    DebugPause()
-    575
-  )
-  Execute(
-    DebugLog(26)
-    DebugPause()
-    575
-  )
-  Execute(
-    DebugLog(26)
-    DebugPause()
-    575
-  )
-  Execute(
-    DebugLog(25)
-    DebugPause()
-    575
-  )
-  Execute(
-    DebugLog(24)
-    DebugPause()
-    575
-  )
-  Execute(
-    DebugLog(24)
-    DebugPause()
-    575
-  )
-  Execute(
-    Set(
-      10000
-      28
-      Add(
-        Get(
-          10000
-          25
-        )
-        1
-      )
-    )
-    If(
-      Less(
-        Get(
-          10000
-          28
-        )
-        4
-      )
-      270
-      271
-    )
-  )
-  Execute(
-    Set(
-      10000
-      26
-      Get(
-        10000
-        25
-      )
-    )
-    Set(
-      10000
-      25
-      Get(
-        10000
-        28
-      )
-    )
-    252
-  )
-  Execute(If(
-    Get(
-      10000
-      27
-    )
-    272
-    284
-  ))
-  Execute(If(
-    GetShifted(
-      1002
-      2
-      Get(
-        10000
-        12
-      )
-      1
-    )
-    284
-    273
-  ))
-  Execute(If(
-    GreaterOr(
-      Get(
-        2000
-        17
-      )
-      16
-    )
-    280
     274
-  ))
-  Execute(
-    Set(
-      10000
-      13
-      Get(
-        1002
-        Get(
-          10000
-          12
-        )
-      )
-    )
-    Set(
-      10000
-      23
-      0
-    )
-    275
-  )
-  Execute(If(
-    Less(
-      Get(
-        10000
-        23
-      )
-      Get(
-        2000
-        17
-      )
-    )
-    276
-    278
-  ))
-  Execute(If(
-    Equal(
-      Get(
-        10000
-        13
-      )
-      Get(
-        2000
-        Add(
-          17
-          Get(
-            10000
-            23
-          )
-          1
-        )
-      )
-    )
-    280
-    277
-  ))
-  Execute(
-    IncrementPost(
-      10000
-      23
-    )
-    275
-  )
-  Execute(If(
-    Less(
-      Get(
-        2000
-        17
-      )
-      16
-    )
-    279
-    283
-  ))
-  Execute(
-    Set(
-      2000
-      Add(
-        17
-        Get(
-          2000
-          17
-        )
-        1
-      )
-      Get(
-        10000
-        13
-      )
-    )
-    IncrementPost(
-      2000
-      17
-    )
-    280
-  )
-  Execute(If(
-    Get(
-      10000
-      10
-    )
-    281
-    282
-  ))
-  Execute(
-    Set(
-      4102
-      Get(
-        10000
-        11
-      )
-      Get(
-        1002
-        Get(
-          10000
-          12
-        )
-      )
-    )
-    287
-  )
-  Execute(
-    DebugLog(28)
-    DebugPause()
-    575
-  )
-  Execute(
-    DebugLog(27)
-    DebugPause()
-    575
-  )
-  Execute(If(
-    Get(
-      10000
-      13
-    )
-    243
-    242
-  ))
-  Execute(
-    DebugLog(24)
-    DebugPause()
-    575
-  )
-  Execute(
-    DebugLog(24)
-    DebugPause()
-    575
-  )
-  Execute(If(
-    Get(
-      10000
-      10
-    )
-    288
-    356
-  ))
-  Execute(If(
-    Greater(
-      Get(
-        4102
-        Get(
-          10000
-          11
-        )
-      )
-      0
-    )
-    289
-    575
-  ))
-  Execute(
-    Set(
-      10000
-      12
-      0
-    )
-    290
-  )
-  Execute(If(
-    Less(
-      Get(
-        10000
-        12
-      )
-      Get(
-        1001
-        3
-      )
-    )
-    291
-    575
-  ))
-  Execute(
-    Set(
-      10000
-      13
-      Multiply(
-        Get(
-          10000
-          12
-        )
-        15
-      )
-    )
-    IncrementPost(
-      10000
-      12
-    )
-    If(
-      Get(
-        10000
-        10
-      )
-      292
-      355
-    )
-  )
-  Execute(If(
-    NotEqual(
-      Get(
-        4102
-        Get(
-          10000
-          11
-        )
-      )
-      Get(
-        1002
-        Get(
-          10000
-          13
-        )
-      )
-    )
-    290
-    293
-  ))
-  Execute(If(
-    GetShifted(
-      1002
-      2
-      Get(
-        10000
-        13
-      )
-      1
-    )
-    294
-    575
-  ))
-  Execute(
-    Set(
-      10000
-      0
-      Get(
-        10000
-        14
-      )
-    )
-    Set(
-      10000
-      1
-      Get(
-        10000
-        15
-      )
-    )
-    Set(
-      10000
-      2
-      Get(
-        10000
-        18
-      )
-    )
-    Set(
-      10000
-      3
-      Get(
-        10000
-        19
-      )
-    )
-    Set(
-      10000
-      4
-      Get(
-        10000
-        20
-      )
-    )
-    Set(
-      10000
-      5
-      Get(
-        10000
-        21
-      )
-    )
-    Set(
-      10000
-      6
-      Get(
-        10000
-        16
-      )
-    )
-    Set(
-      10000
-      7
-      Get(
-        10000
-        17
-      )
-    )
-    Set(
-      10000
-      10
-      GetShifted(
-        1002
-        6
-        Get(
-          10000
-          13
-        )
-        1
-      )
-    )
-    Set(
-      10000
-      14
-      0
-    )
-    Set(
-      10000
-      12
-      3
-    )
-    Set(
-      10000
-      11
-      Get(
-        10000
-        14
-      )
-    )
-    295
-  )
-  Execute(
-    Set(
-      10000
-      15
-      And(
-        And(
-          GreaterOr(
-            Get(
-              10000
-              11
-            )
-            -4
-          )
-          Less(
-            Get(
-              10000
-              11
-            )
-            4
-          )
-        )
-        Equal(
-          Get(
-            10000
-            11
-          )
-          Trunc(Get(
-            10000
-            11
-          ))
-        )
-      )
-    )
-    If(
-      Get(
-        10000
-        15
-      )
-      296
-      354
-    )
-  )
-  Execute(
-    Set(
-      10000
-      16
-      Multiply(
-        Add(
-          Get(
-            10000
-            11
-          )
-          Multiply(
-            Less(
-              Get(
-                10000
-                11
-              )
-              0
-            )
-            4
-          )
-        )
-        2
-      )
-    )
-    Set(
-      10000
-      17
-      Greater(
-        GetShifted(
-          10000
-          1
-          Get(
-            10000
-            16
-          )
-          1
-        )
-        Get(
-          10000
-          10
-        )
-      )
-    )
-    Set(
-      10000
-      18
-      And(
-        And(
-          GreaterOr(
-            Get(
-              10000
-              12
-            )
-            -4
-          )
-          Less(
-            Get(
-              10000
-              12
-            )
-            4
-          )
-        )
-        Equal(
-          Get(
-            10000
-            12
-          )
-          Trunc(Get(
-            10000
-            12
-          ))
-        )
-      )
-    )
-    If(
-      Get(
-        10000
-        18
-      )
-      297
-      353
-    )
-  )
-  Execute(
-    Set(
-      10000
-      12
-      Multiply(
-        Add(
-          Get(
-            10000
-            12
-          )
-          Multiply(
-            Less(
-              Get(
-                10000
-                12
-              )
-              0
-            )
-            4
-          )
-        )
-        2
-      )
-    )
-    If(
-      NotEqual(
-        Get(
-          10000
-          17
-        )
-        Greater(
-          GetShifted(
-            10000
-            1
-            Get(
-              10000
-              12
-            )
-            1
-          )
-          Get(
-            10000
-            10
-          )
-        )
-      )
-      298
-      312
-    )
-  )
-  Execute(If(
-    Get(
-      10000
-      18
-    )
-    299
-    311
-  ))
-  Execute(
-    Set(
-      10000
-      17
-      Get(
-        10000
-        Get(
-          10000
-          12
-        )
-      )
-    )
-    If(
-      Get(
-        10000
-        15
-      )
-      300
-      310
-    )
-  )
-  Execute(
-    SetSubtract(
-      10000
-      17
-      Get(
-        10000
-        Get(
-          10000
-          16
-        )
-      )
-    )
-    If(
-      Get(
-        10000
-        15
-      )
-      301
-      309
-    )
-  )
-  Execute(
-    SetMultiply(
-      10000
-      17
-      Subtract(
-        Get(
-          10000
-          10
-        )
-        GetShifted(
-          10000
-          1
-          Get(
-            10000
-            16
-          )
-          1
-        )
-      )
-    )
-    If(
-      Get(
-        10000
-        18
-      )
-      302
-      308
-    )
-  )
-  Execute(
-    Set(
-      10000
-      12
-      GetShifted(
-        10000
-        1
-        Get(
-          10000
-          12
-        )
-        1
-      )
-    )
-    If(
-      Get(
-        10000
-        15
-      )
-      303
-      307
-    )
-  )
-  Execute(
-    Set(
-      10000
-      12
-      Divide(
-        Get(
-          10000
-          17
-        )
-        Subtract(
-          Get(
-            10000
-            12
-          )
-          GetShifted(
-            10000
-            1
-            Get(
-              10000
-              16
-            )
-            1
-          )
-        )
-      )
-    )
-    If(
-      Get(
-        10000
-        15
-      )
-      304
-      306
-    )
-  )
-  Execute(If(
-    Less(
-      GetShifted(
-        1002
-        5
-        Get(
-          10000
-          13
-        )
-        1
-      )
-      Add(
-        Get(
-          10000
-          12
-        )
-        Get(
-          10000
-          Get(
-            10000
-            16
-          )
-        )
-      )
-    )
-    305
-    312
-  ))
-  Execute(
-    Set(
-      10000
-      14
-      Not(Get(
-        10000
-        14
-      ))
-    )
-    312
-  )
-  Execute(
-    DebugLog(33)
-    DebugPause()
-    575
-  )
-  Execute(
-    DebugLog(33)
-    DebugPause()
-    575
-  )
-  Execute(
-    DebugLog(33)
-    DebugPause()
-    575
-  )
-  Execute(
-    DebugLog(32)
-    DebugPause()
-    575
-  )
-  Execute(
-    DebugLog(31)
-    DebugPause()
-    575
-  )
-  Execute(
-    DebugLog(31)
-    DebugPause()
-    575
-  )
-  Execute(
-    Set(
-      10000
-      15
-      Add(
-        Get(
-          10000
-          11
-        )
-        1
-      )
-    )
-    If(
-      Less(
-        Get(
-          10000
-          15
-        )
-        4
-      )
-      313
-      314
-    )
-  )
-  Execute(
-    Set(
-      10000
-      12
-      Get(
-        10000
-        11
-      )
-    )
-    Set(
-      10000
-      11
-      Get(
-        10000
-        15
-      )
-    )
-    295
-  )
-  Execute(If(
-    Get(
-      10000
-      14
-    )
-    315
-    352
   ))
   Execute(
     Set(
@@ -7689,8 +6459,8 @@ Block(JumpLoop(
           1
         )
       )
-      316
-      351
+      238
+      273
     )
   )
   Execute(If(
@@ -7698,16 +6468,16 @@ Block(JumpLoop(
       2002
       11
     )
-    330
-    317
+    252
+    239
   ))
   Execute(If(
     Get(
       2002
       10
     )
-    318
-    330
+    240
+    252
   ))
   Execute(SwitchIntegerWithDefault(
     Subtract(
@@ -7717,12 +6487,12 @@ Block(JumpLoop(
       )
       2
     )
-    324
-    324
-    319
-    319
-    330
-    319
+    246
+    246
+    241
+    241
+    252
+    241
   ))
   Execute(SwitchIntegerWithDefault(
     Subtract(
@@ -7732,10 +6502,10 @@ Block(JumpLoop(
       )
       1
     )
-    323
-    322
-    321
-    320
+    245
+    244
+    243
+    242
   ))
   Execute(
     Set(
@@ -7743,7 +6513,7 @@ Block(JumpLoop(
       0
       0
     )
-    329
+    251
   )
   Execute(
     Set(
@@ -7751,7 +6521,7 @@ Block(JumpLoop(
       0
       3
     )
-    329
+    251
   )
   Execute(
     Set(
@@ -7759,7 +6529,7 @@ Block(JumpLoop(
       0
       2
     )
-    329
+    251
   )
   Execute(
     Set(
@@ -7767,7 +6537,7 @@ Block(JumpLoop(
       0
       1
     )
-    329
+    251
   )
   Execute(SwitchIntegerWithDefault(
     Subtract(
@@ -7777,10 +6547,10 @@ Block(JumpLoop(
       )
       1
     )
-    328
-    327
-    326
-    325
+    250
+    249
+    248
+    247
   ))
   Execute(
     Set(
@@ -7788,7 +6558,7 @@ Block(JumpLoop(
       0
       0
     )
-    329
+    251
   )
   Execute(
     Set(
@@ -7796,7 +6566,7 @@ Block(JumpLoop(
       0
       6
     )
-    329
+    251
   )
   Execute(
     Set(
@@ -7804,7 +6574,7 @@ Block(JumpLoop(
       0
       5
     )
-    329
+    251
   )
   Execute(
     Set(
@@ -7812,7 +6582,7 @@ Block(JumpLoop(
       0
       4
     )
-    329
+    251
   )
   Execute(
     Play(
@@ -7822,7 +6592,7 @@ Block(JumpLoop(
       )
       0
     )
-    330
+    252
   )
   Execute(If(
     Equal(
@@ -7832,16 +6602,16 @@ Block(JumpLoop(
       )
       6
     )
-    351
-    331
+    273
+    253
   ))
   Execute(If(
     Get(
       2002
       6
     )
-    332
-    351
+    254
+    273
   ))
   Execute(SwitchIntegerWithDefault(
     Subtract(
@@ -7851,14 +6621,14 @@ Block(JumpLoop(
       )
       1
     )
-    337
-    336
-    335
-    334
-    334
-    333
-    334
-    333
+    259
+    258
+    257
+    256
+    256
+    255
+    256
+    255
   ))
   Execute(
     Set(
@@ -7866,7 +6636,7 @@ Block(JumpLoop(
       0
       0
     )
-    338
+    260
   )
   Execute(
     Set(
@@ -7874,7 +6644,7 @@ Block(JumpLoop(
       0
       3
     )
-    338
+    260
   )
   Execute(
     Set(
@@ -7889,7 +6659,7 @@ Block(JumpLoop(
         10
       )
     )
-    338
+    260
   )
   Execute(
     Set(
@@ -7897,7 +6667,7 @@ Block(JumpLoop(
       0
       6
     )
-    338
+    260
   )
   Execute(
     Set(
@@ -7905,7 +6675,7 @@ Block(JumpLoop(
       0
       1
     )
-    338
+    260
   )
   Execute(
     Set(
@@ -8181,14 +6951,14 @@ Block(JumpLoop(
         )
         1
       )
-      343
-      342
-      341
-      340
-      340
-      339
-      340
-      339
+      265
+      264
+      263
+      262
+      262
+      261
+      262
+      261
     )
   )
   Execute(
@@ -8197,7 +6967,7 @@ Block(JumpLoop(
       0
       0
     )
-    344
+    266
   )
   Execute(
     Set(
@@ -8205,7 +6975,7 @@ Block(JumpLoop(
       0
       4
     )
-    344
+    266
   )
   Execute(
     Set(
@@ -8220,7 +6990,7 @@ Block(JumpLoop(
         11
       )
     )
-    344
+    266
   )
   Execute(
     Set(
@@ -8228,7 +6998,7 @@ Block(JumpLoop(
       0
       7
     )
-    344
+    266
   )
   Execute(
     Set(
@@ -8236,7 +7006,7 @@ Block(JumpLoop(
       0
       2
     )
-    344
+    266
   )
   Execute(
     Set(
@@ -8874,8 +7644,8 @@ Block(JumpLoop(
         2002
         7
       )
-      345
-      351
+      267
+      273
     )
   )
   Execute(
@@ -8884,7 +7654,7 @@ Block(JumpLoop(
       0
       0
     )
-    346
+    268
   )
   Execute(If(
     Less(
@@ -8897,8 +7667,8 @@ Block(JumpLoop(
         16
       )
     )
-    347
-    350
+    269
+    272
   ))
   Execute(
     Set(
@@ -8942,8 +7712,8 @@ Block(JumpLoop(
           1
         )
       )
-      348
-      349
+      270
+      271
     )
   )
   Execute(
@@ -9024,7 +7794,7 @@ Block(JumpLoop(
       0.2
       0
     )
-    351
+    273
   )
   Execute(
     Set(
@@ -9035,12 +7805,12 @@ Block(JumpLoop(
         1
       )
     )
-    346
+    268
   )
   Execute(
-    DebugLog(34)
+    DebugLog(19)
     DebugPause()
-    575
+    447
   )
   Execute(
     Set(
@@ -9053,7 +7823,7 @@ Block(JumpLoop(
       2
       1
     )
-    575
+    447
   )
   Execute(
     Set(
@@ -9087,32 +7857,22 @@ Block(JumpLoop(
       2
       1
     )
-    575
+    447
   )
   Execute(
-    DebugLog(31)
+    DebugLog(18)
     DebugPause()
-    575
+    447
   )
   Execute(
-    DebugLog(31)
+    DebugLog(17)
     DebugPause()
-    575
+    447
   )
   Execute(
-    DebugLog(30)
+    DebugLog(14)
     DebugPause()
-    575
-  )
-  Execute(
-    DebugLog(29)
-    DebugPause()
-    575
-  )
-  Execute(
-    DebugLog(23)
-    DebugPause()
-    575
+    447
   )
   Execute(If(
     Greater(
@@ -9122,8 +7882,8 @@ Block(JumpLoop(
       )
       0
     )
-    359
-    366
+    279
+    286
   ))
   Execute(
     Set(
@@ -9172,8 +7932,8 @@ Block(JumpLoop(
         10000
         1
       )
-      360
-      365
+      280
+      285
     )
   )
   Execute(
@@ -9199,8 +7959,8 @@ Block(JumpLoop(
         10000
         2
       )
-      363
-      361
+      283
+      281
     )
   )
   Execute(If(
@@ -9208,8 +7968,8 @@ Block(JumpLoop(
       10000
       1
     )
-    362
-    364
+    282
+    284
   ))
   Execute(
     Set(
@@ -9228,25 +7988,25 @@ Block(JumpLoop(
         )
       )
     )
-    363
+    283
   )
   Execute(If(
     Get(
       10000
       2
     )
-    366
-    575
+    286
+    447
   ))
   Execute(
-    DebugLog(9)
+    DebugLog(6)
     DebugPause()
-    575
+    447
   )
   Execute(
-    DebugLog(9)
+    DebugLog(6)
     DebugPause()
-    575
+    447
   )
   Execute(If(
     LessOr(
@@ -9259,8 +8019,8 @@ Block(JumpLoop(
         0
       )
     )
-    367
-    575
+    287
+    447
   ))
   Execute(If(
     LessOr(
@@ -9273,8 +8033,8 @@ Block(JumpLoop(
         15
       )
     )
-    368
-    575
+    288
+    447
   ))
   Execute(
     Set(
@@ -9312,8 +8072,8 @@ Block(JumpLoop(
         10000
         10
       )
-      369
-      487
+      289
+      375
     )
   )
   Execute(
@@ -9339,8 +8099,8 @@ Block(JumpLoop(
         )
         0
       )
-      416
-      370
+      320
+      290
     )
   )
   Execute(
@@ -9349,7 +8109,7 @@ Block(JumpLoop(
       13
       0
     )
-    371
+    291
   )
   Execute(
     Set(
@@ -9357,7 +8117,7 @@ Block(JumpLoop(
       23
       0
     )
-    372
+    292
   )
   Execute(If(
     Less(
@@ -9370,8 +8130,8 @@ Block(JumpLoop(
         3
       )
     )
-    373
-    378
+    293
+    298
   ))
   Execute(
     Set(
@@ -9405,7 +8165,7 @@ Block(JumpLoop(
       25
       0
     )
-    374
+    294
   )
   Execute(If(
     Less(
@@ -9418,8 +8178,8 @@ Block(JumpLoop(
         17
       )
     )
-    375
-    377
+    295
+    297
   ))
   Execute(If(
     Equal(
@@ -9439,15 +8199,15 @@ Block(JumpLoop(
         )
       )
     )
-    372
-    376
+    292
+    296
   ))
   Execute(
     IncrementPost(
       10000
       25
     )
-    374
+    294
   )
   Execute(
     Set(
@@ -9463,7 +8223,7 @@ Block(JumpLoop(
         13
       )
     )
-    379
+    299
   )
   Execute(
     Set(
@@ -9471,15 +8231,15 @@ Block(JumpLoop(
       24
       0
     )
-    379
+    299
   )
   Execute(If(
     Get(
       10000
       24
     )
-    380
-    416
+    300
+    320
   ))
   Execute(
     Set(
@@ -9577,163 +8337,41 @@ Block(JumpLoop(
         27
       )
     )
-    381
+    301
   )
   Execute(
     Set(
       10000
       28
-      And(
-        And(
-          GreaterOr(
-            Get(
-              10000
-              25
-            )
-            -4
-          )
-          Less(
-            Get(
-              10000
-              25
-            )
-            4
-          )
-        )
-        Equal(
-          Get(
-            10000
-            25
-          )
-          Trunc(Get(
-            10000
-            25
-          ))
-        )
-      )
-    )
-    If(
-      Get(
-        10000
-        28
-      )
-      382
-      415
-    )
-  )
-  Execute(
-    Set(
-      10000
-      29
       Multiply(
-        Add(
-          Get(
-            10000
-            25
-          )
-          Multiply(
-            Less(
-              Get(
-                10000
-                25
-              )
-              0
-            )
-            4
-          )
-        )
-        2
-      )
-    )
-    Set(
-      10000
-      30
-      Greater(
-        GetShifted(
-          10000
-          1
-          Get(
-            10000
-            29
-          )
-          1
-        )
         Get(
           10000
-          24
-        )
-      )
-    )
-    Set(
-      10000
-      31
-      And(
-        And(
-          GreaterOr(
-            Get(
-              10000
-              26
-            )
-            -4
-          )
-          Less(
-            Get(
-              10000
-              26
-            )
-            4
-          )
-        )
-        Equal(
-          Get(
-            10000
-            26
-          )
-          Trunc(Get(
-            10000
-            26
-          ))
-        )
-      )
-    )
-    If(
-      Get(
-        10000
-        31
-      )
-      383
-      414
-    )
-  )
-  Execute(
-    Set(
-      10000
-      26
-      Multiply(
-        Add(
-          Get(
-            10000
-            26
-          )
-          Multiply(
-            Less(
-              Get(
-                10000
-                26
-              )
-              0
-            )
-            4
-          )
+          25
         )
         2
       )
+    )
+    SetMultiply(
+      10000
+      26
+      2
     )
     If(
       NotEqual(
-        Get(
-          10000
-          30
+        Greater(
+          GetShifted(
+            10000
+            1
+            Get(
+              10000
+              28
+            )
+            1
+          )
+          Get(
+            10000
+            24
+          )
         )
         Greater(
           GetShifted(
@@ -9751,145 +8389,8 @@ Block(JumpLoop(
           )
         )
       )
-      384
-      398
-    )
-  )
-  Execute(If(
-    Get(
-      10000
-      31
-    )
-    385
-    397
-  ))
-  Execute(
-    Set(
-      10000
-      30
-      Get(
-        10000
-        Get(
-          10000
-          26
-        )
-      )
-    )
-    If(
-      Get(
-        10000
-        28
-      )
-      386
-      396
-    )
-  )
-  Execute(
-    SetSubtract(
-      10000
-      30
-      Get(
-        10000
-        Get(
-          10000
-          29
-        )
-      )
-    )
-    If(
-      Get(
-        10000
-        28
-      )
-      387
-      395
-    )
-  )
-  Execute(
-    SetMultiply(
-      10000
-      30
-      Subtract(
-        Get(
-          10000
-          24
-        )
-        GetShifted(
-          10000
-          1
-          Get(
-            10000
-            29
-          )
-          1
-        )
-      )
-    )
-    If(
-      Get(
-        10000
-        31
-      )
-      388
-      394
-    )
-  )
-  Execute(
-    Set(
-      10000
-      26
-      GetShifted(
-        10000
-        1
-        Get(
-          10000
-          26
-        )
-        1
-      )
-    )
-    If(
-      Get(
-        10000
-        28
-      )
-      389
-      393
-    )
-  )
-  Execute(
-    Set(
-      10000
-      26
-      Divide(
-        Get(
-          10000
-          30
-        )
-        Subtract(
-          Get(
-            10000
-            26
-          )
-          GetShifted(
-            10000
-            1
-            Get(
-              10000
-              29
-            )
-            1
-          )
-        )
-      )
-    )
-    If(
-      Get(
-        10000
-        28
-      )
-      390
-      392
+      302
+      304
     )
   )
   Execute(If(
@@ -9904,21 +8405,72 @@ Block(JumpLoop(
         1
       )
       Add(
-        Get(
-          10000
-          26
+        Divide(
+          Multiply(
+            Subtract(
+              Get(
+                10000
+                Get(
+                  10000
+                  26
+                )
+              )
+              Get(
+                10000
+                Get(
+                  10000
+                  28
+                )
+              )
+            )
+            Subtract(
+              Get(
+                10000
+                24
+              )
+              GetShifted(
+                10000
+                1
+                Get(
+                  10000
+                  28
+                )
+                1
+              )
+            )
+          )
+          Subtract(
+            GetShifted(
+              10000
+              1
+              Get(
+                10000
+                26
+              )
+              1
+            )
+            GetShifted(
+              10000
+              1
+              Get(
+                10000
+                28
+              )
+              1
+            )
+          )
         )
         Get(
           10000
           Get(
             10000
-            29
+            28
           )
         )
       )
     )
-    391
-    398
+    303
+    304
   ))
   Execute(
     Set(
@@ -9929,37 +8481,7 @@ Block(JumpLoop(
         27
       ))
     )
-    398
-  )
-  Execute(
-    DebugLog(13)
-    DebugPause()
-    575
-  )
-  Execute(
-    DebugLog(13)
-    DebugPause()
-    575
-  )
-  Execute(
-    DebugLog(13)
-    DebugPause()
-    575
-  )
-  Execute(
-    DebugLog(12)
-    DebugPause()
-    575
-  )
-  Execute(
-    DebugLog(11)
-    DebugPause()
-    575
-  )
-  Execute(
-    DebugLog(11)
-    DebugPause()
-    575
+    304
   )
   Execute(
     Set(
@@ -9981,8 +8503,8 @@ Block(JumpLoop(
         )
         4
       )
-      399
-      400
+      305
+      306
     )
   )
   Execute(
@@ -10002,15 +8524,15 @@ Block(JumpLoop(
         28
       )
     )
-    381
+    301
   )
   Execute(If(
     Get(
       10000
       27
     )
-    401
-    413
+    307
+    319
   ))
   Execute(If(
     GetShifted(
@@ -10022,8 +8544,8 @@ Block(JumpLoop(
       )
       1
     )
-    413
-    402
+    319
+    308
   ))
   Execute(If(
     GreaterOr(
@@ -10033,8 +8555,8 @@ Block(JumpLoop(
       )
       16
     )
-    409
-    403
+    315
+    309
   ))
   Execute(
     Set(
@@ -10053,7 +8575,7 @@ Block(JumpLoop(
       23
       0
     )
-    404
+    310
   )
   Execute(If(
     Less(
@@ -10066,8 +8588,8 @@ Block(JumpLoop(
         17
       )
     )
-    405
-    407
+    311
+    313
   ))
   Execute(If(
     Equal(
@@ -10087,15 +8609,15 @@ Block(JumpLoop(
         )
       )
     )
-    409
-    406
+    315
+    312
   ))
   Execute(
     IncrementPost(
       10000
       23
     )
-    404
+    310
   )
   Execute(If(
     Less(
@@ -10105,8 +8627,8 @@ Block(JumpLoop(
       )
       16
     )
-    408
-    412
+    314
+    318
   ))
   Execute(
     Set(
@@ -10128,15 +8650,15 @@ Block(JumpLoop(
       2000
       17
     )
-    409
+    315
   )
   Execute(If(
     Get(
       10000
       10
     )
-    410
-    411
+    316
+    317
   ))
   Execute(
     Set(
@@ -10153,43 +8675,33 @@ Block(JumpLoop(
         )
       )
     )
-    416
+    320
   )
   Execute(
-    DebugLog(15)
+    DebugLog(9)
     DebugPause()
-    575
+    447
   )
   Execute(
-    DebugLog(14)
+    DebugLog(8)
     DebugPause()
-    575
+    447
   )
   Execute(If(
     Get(
       10000
       13
     )
-    372
-    371
+    292
+    291
   ))
-  Execute(
-    DebugLog(11)
-    DebugPause()
-    575
-  )
-  Execute(
-    DebugLog(11)
-    DebugPause()
-    575
-  )
   Execute(If(
     Get(
       10000
       10
     )
-    417
-    486
+    321
+    374
   ))
   Execute(If(
     Greater(
@@ -10202,8 +8714,8 @@ Block(JumpLoop(
       )
       0
     )
-    418
-    575
+    322
+    447
   ))
   Execute(
     Set(
@@ -10211,7 +8723,7 @@ Block(JumpLoop(
       11
       0
     )
-    419
+    323
   )
   Execute(If(
     Less(
@@ -10224,8 +8736,8 @@ Block(JumpLoop(
         3
       )
     )
-    420
-    575
+    324
+    447
   ))
   Execute(
     Set(
@@ -10248,8 +8760,8 @@ Block(JumpLoop(
         10000
         10
       )
-      421
-      485
+      325
+      373
     )
   )
   Execute(If(
@@ -10269,8 +8781,8 @@ Block(JumpLoop(
         )
       )
     )
-    419
-    422
+    323
+    326
   ))
   Execute(
     Set(
@@ -10368,163 +8880,41 @@ Block(JumpLoop(
         14
       )
     )
-    423
+    327
   )
   Execute(
     Set(
       10000
       15
-      And(
-        And(
-          GreaterOr(
-            Get(
-              10000
-              11
-            )
-            -4
-          )
-          Less(
-            Get(
-              10000
-              11
-            )
-            4
-          )
-        )
-        Equal(
-          Get(
-            10000
-            11
-          )
-          Trunc(Get(
-            10000
-            11
-          ))
-        )
-      )
-    )
-    If(
-      Get(
-        10000
-        15
-      )
-      424
-      484
-    )
-  )
-  Execute(
-    Set(
-      10000
-      16
       Multiply(
-        Add(
-          Get(
-            10000
-            11
-          )
-          Multiply(
-            Less(
-              Get(
-                10000
-                11
-              )
-              0
-            )
-            4
-          )
-        )
-        2
-      )
-    )
-    Set(
-      10000
-      17
-      Greater(
-        GetShifted(
-          10000
-          1
-          Get(
-            10000
-            16
-          )
-          1
-        )
         Get(
           10000
-          10
-        )
-      )
-    )
-    Set(
-      10000
-      18
-      And(
-        And(
-          GreaterOr(
-            Get(
-              10000
-              12
-            )
-            -4
-          )
-          Less(
-            Get(
-              10000
-              12
-            )
-            4
-          )
-        )
-        Equal(
-          Get(
-            10000
-            12
-          )
-          Trunc(Get(
-            10000
-            12
-          ))
-        )
-      )
-    )
-    If(
-      Get(
-        10000
-        18
-      )
-      425
-      483
-    )
-  )
-  Execute(
-    Set(
-      10000
-      12
-      Multiply(
-        Add(
-          Get(
-            10000
-            12
-          )
-          Multiply(
-            Less(
-              Get(
-                10000
-                12
-              )
-              0
-            )
-            4
-          )
+          11
         )
         2
       )
+    )
+    SetMultiply(
+      10000
+      12
+      2
     )
     If(
       NotEqual(
-        Get(
-          10000
-          17
+        Greater(
+          GetShifted(
+            10000
+            1
+            Get(
+              10000
+              15
+            )
+            1
+          )
+          Get(
+            10000
+            10
+          )
         )
         Greater(
           GetShifted(
@@ -10542,145 +8932,8 @@ Block(JumpLoop(
           )
         )
       )
-      426
-      440
-    )
-  )
-  Execute(If(
-    Get(
-      10000
-      18
-    )
-    427
-    439
-  ))
-  Execute(
-    Set(
-      10000
-      17
-      Get(
-        10000
-        Get(
-          10000
-          12
-        )
-      )
-    )
-    If(
-      Get(
-        10000
-        15
-      )
-      428
-      438
-    )
-  )
-  Execute(
-    SetSubtract(
-      10000
-      17
-      Get(
-        10000
-        Get(
-          10000
-          16
-        )
-      )
-    )
-    If(
-      Get(
-        10000
-        15
-      )
-      429
-      437
-    )
-  )
-  Execute(
-    SetMultiply(
-      10000
-      17
-      Subtract(
-        Get(
-          10000
-          10
-        )
-        GetShifted(
-          10000
-          1
-          Get(
-            10000
-            16
-          )
-          1
-        )
-      )
-    )
-    If(
-      Get(
-        10000
-        18
-      )
-      430
-      436
-    )
-  )
-  Execute(
-    Set(
-      10000
-      12
-      GetShifted(
-        10000
-        1
-        Get(
-          10000
-          12
-        )
-        1
-      )
-    )
-    If(
-      Get(
-        10000
-        15
-      )
-      431
-      435
-    )
-  )
-  Execute(
-    Set(
-      10000
-      12
-      Divide(
-        Get(
-          10000
-          17
-        )
-        Subtract(
-          Get(
-            10000
-            12
-          )
-          GetShifted(
-            10000
-            1
-            Get(
-              10000
-              16
-            )
-            1
-          )
-        )
-      )
-    )
-    If(
-      Get(
-        10000
-        15
-      )
-      432
-      434
+      328
+      330
     )
   )
   Execute(If(
@@ -10695,21 +8948,72 @@ Block(JumpLoop(
         1
       )
       Add(
-        Get(
-          10000
-          12
+        Divide(
+          Multiply(
+            Subtract(
+              Get(
+                10000
+                Get(
+                  10000
+                  12
+                )
+              )
+              Get(
+                10000
+                Get(
+                  10000
+                  15
+                )
+              )
+            )
+            Subtract(
+              Get(
+                10000
+                10
+              )
+              GetShifted(
+                10000
+                1
+                Get(
+                  10000
+                  15
+                )
+                1
+              )
+            )
+          )
+          Subtract(
+            GetShifted(
+              10000
+              1
+              Get(
+                10000
+                12
+              )
+              1
+            )
+            GetShifted(
+              10000
+              1
+              Get(
+                10000
+                15
+              )
+              1
+            )
+          )
         )
         Get(
           10000
           Get(
             10000
-            16
+            15
           )
         )
       )
     )
-    433
-    440
+    329
+    330
   ))
   Execute(
     Set(
@@ -10720,37 +9024,7 @@ Block(JumpLoop(
         14
       ))
     )
-    440
-  )
-  Execute(
-    DebugLog(20)
-    DebugPause()
-    575
-  )
-  Execute(
-    DebugLog(20)
-    DebugPause()
-    575
-  )
-  Execute(
-    DebugLog(20)
-    DebugPause()
-    575
-  )
-  Execute(
-    DebugLog(19)
-    DebugPause()
-    575
-  )
-  Execute(
-    DebugLog(18)
-    DebugPause()
-    575
-  )
-  Execute(
-    DebugLog(18)
-    DebugPause()
-    575
+    330
   )
   Execute(
     Set(
@@ -10772,8 +9046,8 @@ Block(JumpLoop(
         )
         4
       )
-      441
-      442
+      331
+      332
     )
   )
   Execute(
@@ -10793,15 +9067,15 @@ Block(JumpLoop(
         15
       )
     )
-    423
+    327
   )
   Execute(If(
     Get(
       10000
       14
     )
-    443
-    445
+    333
+    335
   ))
   Execute(
     Set(
@@ -10841,8 +9115,8 @@ Block(JumpLoop(
           )
         ))
       )
-      444
-      445
+      334
+      335
     )
   )
   Execute(
@@ -10854,7 +9128,7 @@ Block(JumpLoop(
         0
       )
     )
-    445
+    335
   )
   Execute(If(
     GreaterOr(
@@ -10867,8 +9141,8 @@ Block(JumpLoop(
         11
       )
     )
-    446
-    575
+    336
+    447
   ))
   Execute(
     Set(
@@ -10962,8 +9236,8 @@ Block(JumpLoop(
           1
         )
       )
-      447
-      482
+      337
+      372
     )
   )
   Execute(If(
@@ -10971,16 +9245,16 @@ Block(JumpLoop(
       2002
       11
     )
-    461
-    448
+    351
+    338
   ))
   Execute(If(
     Get(
       2002
       10
     )
-    449
-    461
+    339
+    351
   ))
   Execute(SwitchIntegerWithDefault(
     Subtract(
@@ -10990,12 +9264,12 @@ Block(JumpLoop(
       )
       2
     )
-    455
-    455
-    450
-    450
-    461
-    450
+    345
+    345
+    340
+    340
+    351
+    340
   ))
   Execute(SwitchIntegerWithDefault(
     Subtract(
@@ -11005,10 +9279,10 @@ Block(JumpLoop(
       )
       1
     )
-    454
-    453
-    452
-    451
+    344
+    343
+    342
+    341
   ))
   Execute(
     Set(
@@ -11016,7 +9290,7 @@ Block(JumpLoop(
       0
       0
     )
-    460
+    350
   )
   Execute(
     Set(
@@ -11024,7 +9298,7 @@ Block(JumpLoop(
       0
       3
     )
-    460
+    350
   )
   Execute(
     Set(
@@ -11032,7 +9306,7 @@ Block(JumpLoop(
       0
       2
     )
-    460
+    350
   )
   Execute(
     Set(
@@ -11040,7 +9314,7 @@ Block(JumpLoop(
       0
       1
     )
-    460
+    350
   )
   Execute(SwitchIntegerWithDefault(
     Subtract(
@@ -11050,10 +9324,10 @@ Block(JumpLoop(
       )
       1
     )
-    459
-    458
-    457
-    456
+    349
+    348
+    347
+    346
   ))
   Execute(
     Set(
@@ -11061,7 +9335,7 @@ Block(JumpLoop(
       0
       0
     )
-    460
+    350
   )
   Execute(
     Set(
@@ -11069,7 +9343,7 @@ Block(JumpLoop(
       0
       6
     )
-    460
+    350
   )
   Execute(
     Set(
@@ -11077,7 +9351,7 @@ Block(JumpLoop(
       0
       5
     )
-    460
+    350
   )
   Execute(
     Set(
@@ -11085,7 +9359,7 @@ Block(JumpLoop(
       0
       4
     )
-    460
+    350
   )
   Execute(
     Play(
@@ -11095,7 +9369,7 @@ Block(JumpLoop(
       )
       0
     )
-    461
+    351
   )
   Execute(If(
     Equal(
@@ -11105,16 +9379,16 @@ Block(JumpLoop(
       )
       6
     )
-    482
-    462
+    372
+    352
   ))
   Execute(If(
     Get(
       2002
       6
     )
-    463
-    482
+    353
+    372
   ))
   Execute(SwitchIntegerWithDefault(
     Subtract(
@@ -11124,14 +9398,14 @@ Block(JumpLoop(
       )
       1
     )
-    468
-    467
-    466
-    465
-    465
-    464
-    465
-    464
+    358
+    357
+    356
+    355
+    355
+    354
+    355
+    354
   ))
   Execute(
     Set(
@@ -11139,7 +9413,7 @@ Block(JumpLoop(
       0
       0
     )
-    469
+    359
   )
   Execute(
     Set(
@@ -11147,7 +9421,7 @@ Block(JumpLoop(
       0
       3
     )
-    469
+    359
   )
   Execute(
     Set(
@@ -11162,7 +9436,7 @@ Block(JumpLoop(
         10
       )
     )
-    469
+    359
   )
   Execute(
     Set(
@@ -11170,7 +9444,7 @@ Block(JumpLoop(
       0
       6
     )
-    469
+    359
   )
   Execute(
     Set(
@@ -11178,7 +9452,7 @@ Block(JumpLoop(
       0
       1
     )
-    469
+    359
   )
   Execute(
     Set(
@@ -11454,14 +9728,14 @@ Block(JumpLoop(
         )
         1
       )
-      474
-      473
-      472
-      471
-      471
-      470
-      471
-      470
+      364
+      363
+      362
+      361
+      361
+      360
+      361
+      360
     )
   )
   Execute(
@@ -11470,7 +9744,7 @@ Block(JumpLoop(
       0
       0
     )
-    475
+    365
   )
   Execute(
     Set(
@@ -11478,7 +9752,7 @@ Block(JumpLoop(
       0
       4
     )
-    475
+    365
   )
   Execute(
     Set(
@@ -11493,7 +9767,7 @@ Block(JumpLoop(
         11
       )
     )
-    475
+    365
   )
   Execute(
     Set(
@@ -11501,7 +9775,7 @@ Block(JumpLoop(
       0
       7
     )
-    475
+    365
   )
   Execute(
     Set(
@@ -11509,7 +9783,7 @@ Block(JumpLoop(
       0
       2
     )
-    475
+    365
   )
   Execute(
     Set(
@@ -12147,8 +10421,8 @@ Block(JumpLoop(
         2002
         7
       )
-      476
-      482
+      366
+      372
     )
   )
   Execute(
@@ -12157,7 +10431,7 @@ Block(JumpLoop(
       0
       0
     )
-    477
+    367
   )
   Execute(If(
     Less(
@@ -12170,8 +10444,8 @@ Block(JumpLoop(
         16
       )
     )
-    478
-    481
+    368
+    371
   ))
   Execute(
     Set(
@@ -12215,8 +10489,8 @@ Block(JumpLoop(
           1
         )
       )
-      479
-      480
+      369
+      370
     )
   )
   Execute(
@@ -12297,7 +10571,7 @@ Block(JumpLoop(
       0.2
       0
     )
-    482
+    372
   )
   Execute(
     Set(
@@ -12308,12 +10582,12 @@ Block(JumpLoop(
         1
       )
     )
-    477
+    367
   )
   Execute(
-    DebugLog(21)
+    DebugLog(12)
     DebugPause()
-    575
+    447
   )
   Execute(
     Set(
@@ -12326,32 +10600,22 @@ Block(JumpLoop(
       2
       1
     )
-    575
+    447
   )
   Execute(
-    DebugLog(18)
+    DebugLog(11)
     DebugPause()
-    575
-  )
-  Execute(
-    DebugLog(18)
-    DebugPause()
-    575
-  )
-  Execute(
-    DebugLog(17)
-    DebugPause()
-    575
-  )
-  Execute(
-    DebugLog(16)
-    DebugPause()
-    575
+    447
   )
   Execute(
     DebugLog(10)
     DebugPause()
-    575
+    447
+  )
+  Execute(
+    DebugLog(7)
+    DebugPause()
+    447
   )
   Execute(If(
     LessOr(
@@ -12364,8 +10628,8 @@ Block(JumpLoop(
         0
       )
     )
-    489
-    575
+    377
+    447
   ))
   Execute(If(
     LessOr(
@@ -12378,8 +10642,8 @@ Block(JumpLoop(
         15
       )
     )
-    490
-    575
+    378
+    447
   ))
   Execute(
     Set(
@@ -12387,7 +10651,7 @@ Block(JumpLoop(
       11
       0
     )
-    491
+    379
   )
   Execute(
     Set(
@@ -12395,7 +10659,7 @@ Block(JumpLoop(
       12
       0
     )
-    492
+    380
   )
   Execute(If(
     Less(
@@ -12408,8 +10672,8 @@ Block(JumpLoop(
         3
       )
     )
-    493
-    502
+    381
+    390
   ))
   Execute(
     Set(
@@ -12437,8 +10701,8 @@ Block(JumpLoop(
         )
         1
       )
-      494
-      492
+      382
+      380
     )
   )
   Execute(
@@ -12458,7 +10722,7 @@ Block(JumpLoop(
       23
       0
     )
-    495
+    383
   )
   Execute(If(
     Less(
@@ -12471,8 +10735,8 @@ Block(JumpLoop(
         17
       )
     )
-    496
-    499
+    384
+    387
   ))
   Execute(If(
     Equal(
@@ -12492,8 +10756,8 @@ Block(JumpLoop(
         )
       )
     )
-    497
-    498
+    385
+    386
   ))
   Execute(
     Set(
@@ -12501,14 +10765,14 @@ Block(JumpLoop(
       13
       1
     )
-    500
+    388
   )
   Execute(
     IncrementPost(
       10000
       23
     )
-    495
+    383
   )
   Execute(
     Set(
@@ -12516,15 +10780,15 @@ Block(JumpLoop(
       13
       0
     )
-    500
+    388
   )
   Execute(If(
     Get(
       10000
       13
     )
-    492
-    501
+    380
+    389
   ))
   Execute(
     Set(
@@ -12540,7 +10804,7 @@ Block(JumpLoop(
         11
       )
     )
-    503
+    391
   )
   Execute(
     Set(
@@ -12548,15 +10812,15 @@ Block(JumpLoop(
       13
       0
     )
-    503
+    391
   )
   Execute(If(
     Get(
       10000
       13
     )
-    504
-    575
+    392
+    447
   ))
   Execute(
     Set(
@@ -12654,163 +10918,41 @@ Block(JumpLoop(
         25
       )
     )
-    505
+    393
   )
   Execute(
     Set(
       10000
       26
-      And(
-        And(
-          GreaterOr(
-            Get(
-              10000
-              23
-            )
-            -4
-          )
-          Less(
-            Get(
-              10000
-              23
-            )
-            4
-          )
-        )
-        Equal(
-          Get(
-            10000
-            23
-          )
-          Trunc(Get(
-            10000
-            23
-          ))
-        )
-      )
-    )
-    If(
-      Get(
-        10000
-        26
-      )
-      506
-      574
-    )
-  )
-  Execute(
-    Set(
-      10000
-      27
       Multiply(
-        Add(
-          Get(
-            10000
-            23
-          )
-          Multiply(
-            Less(
-              Get(
-                10000
-                23
-              )
-              0
-            )
-            4
-          )
-        )
-        2
-      )
-    )
-    Set(
-      10000
-      28
-      Greater(
-        GetShifted(
-          10000
-          1
-          Get(
-            10000
-            27
-          )
-          1
-        )
         Get(
           10000
-          13
-        )
-      )
-    )
-    Set(
-      10000
-      29
-      And(
-        And(
-          GreaterOr(
-            Get(
-              10000
-              24
-            )
-            -4
-          )
-          Less(
-            Get(
-              10000
-              24
-            )
-            4
-          )
-        )
-        Equal(
-          Get(
-            10000
-            24
-          )
-          Trunc(Get(
-            10000
-            24
-          ))
-        )
-      )
-    )
-    If(
-      Get(
-        10000
-        29
-      )
-      507
-      573
-    )
-  )
-  Execute(
-    Set(
-      10000
-      24
-      Multiply(
-        Add(
-          Get(
-            10000
-            24
-          )
-          Multiply(
-            Less(
-              Get(
-                10000
-                24
-              )
-              0
-            )
-            4
-          )
+          23
         )
         2
       )
+    )
+    SetMultiply(
+      10000
+      24
+      2
     )
     If(
       NotEqual(
-        Get(
-          10000
-          28
+        Greater(
+          GetShifted(
+            10000
+            1
+            Get(
+              10000
+              26
+            )
+            1
+          )
+          Get(
+            10000
+            13
+          )
         )
         Greater(
           GetShifted(
@@ -12828,145 +10970,8 @@ Block(JumpLoop(
           )
         )
       )
-      508
-      522
-    )
-  )
-  Execute(If(
-    Get(
-      10000
-      29
-    )
-    509
-    521
-  ))
-  Execute(
-    Set(
-      10000
-      28
-      Get(
-        10000
-        Get(
-          10000
-          24
-        )
-      )
-    )
-    If(
-      Get(
-        10000
-        26
-      )
-      510
-      520
-    )
-  )
-  Execute(
-    SetSubtract(
-      10000
-      28
-      Get(
-        10000
-        Get(
-          10000
-          27
-        )
-      )
-    )
-    If(
-      Get(
-        10000
-        26
-      )
-      511
-      519
-    )
-  )
-  Execute(
-    SetMultiply(
-      10000
-      28
-      Subtract(
-        Get(
-          10000
-          13
-        )
-        GetShifted(
-          10000
-          1
-          Get(
-            10000
-            27
-          )
-          1
-        )
-      )
-    )
-    If(
-      Get(
-        10000
-        29
-      )
-      512
-      518
-    )
-  )
-  Execute(
-    Set(
-      10000
-      24
-      GetShifted(
-        10000
-        1
-        Get(
-          10000
-          24
-        )
-        1
-      )
-    )
-    If(
-      Get(
-        10000
-        26
-      )
-      513
-      517
-    )
-  )
-  Execute(
-    Set(
-      10000
-      24
-      Divide(
-        Get(
-          10000
-          28
-        )
-        Subtract(
-          Get(
-            10000
-            24
-          )
-          GetShifted(
-            10000
-            1
-            Get(
-              10000
-              27
-            )
-            1
-          )
-        )
-      )
-    )
-    If(
-      Get(
-        10000
-        26
-      )
-      514
-      516
+      394
+      396
     )
   )
   Execute(If(
@@ -12981,21 +10986,72 @@ Block(JumpLoop(
         1
       )
       Add(
-        Get(
-          10000
-          24
+        Divide(
+          Multiply(
+            Subtract(
+              Get(
+                10000
+                Get(
+                  10000
+                  24
+                )
+              )
+              Get(
+                10000
+                Get(
+                  10000
+                  26
+                )
+              )
+            )
+            Subtract(
+              Get(
+                10000
+                13
+              )
+              GetShifted(
+                10000
+                1
+                Get(
+                  10000
+                  26
+                )
+                1
+              )
+            )
+          )
+          Subtract(
+            GetShifted(
+              10000
+              1
+              Get(
+                10000
+                24
+              )
+              1
+            )
+            GetShifted(
+              10000
+              1
+              Get(
+                10000
+                26
+              )
+              1
+            )
+          )
         )
         Get(
           10000
           Get(
             10000
-            27
+            26
           )
         )
       )
     )
-    515
-    522
+    395
+    396
   ))
   Execute(
     Set(
@@ -13006,37 +11062,7 @@ Block(JumpLoop(
         25
       ))
     )
-    522
-  )
-  Execute(
-    DebugLog(5)
-    DebugPause()
-    575
-  )
-  Execute(
-    DebugLog(5)
-    DebugPause()
-    575
-  )
-  Execute(
-    DebugLog(5)
-    DebugPause()
-    575
-  )
-  Execute(
-    DebugLog(4)
-    DebugPause()
-    575
-  )
-  Execute(
-    DebugLog(3)
-    DebugPause()
-    575
-  )
-  Execute(
-    DebugLog(3)
-    DebugPause()
-    575
+    396
   )
   Execute(
     Set(
@@ -13058,8 +11084,8 @@ Block(JumpLoop(
         )
         4
       )
-      523
-      524
+      397
+      398
     )
   )
   Execute(
@@ -13079,15 +11105,15 @@ Block(JumpLoop(
         26
       )
     )
-    505
+    393
   )
   Execute(If(
     Get(
       10000
       25
     )
-    525
-    572
+    399
+    446
   ))
   Execute(If(
     GreaterOr(
@@ -13097,8 +11123,8 @@ Block(JumpLoop(
       )
       16
     )
-    532
-    526
+    406
+    400
   ))
   Execute(
     Set(
@@ -13117,7 +11143,7 @@ Block(JumpLoop(
       1
       0
     )
-    527
+    401
   )
   Execute(If(
     Less(
@@ -13130,8 +11156,8 @@ Block(JumpLoop(
         17
       )
     )
-    528
-    530
+    402
+    404
   ))
   Execute(If(
     Equal(
@@ -13151,15 +11177,15 @@ Block(JumpLoop(
         )
       )
     )
-    532
-    529
+    406
+    403
   ))
   Execute(
     IncrementPost(
       10000
       1
     )
-    527
+    401
   )
   Execute(If(
     Less(
@@ -13169,8 +11195,8 @@ Block(JumpLoop(
       )
       16
     )
-    531
-    571
+    405
+    445
   ))
   Execute(
     Set(
@@ -13192,7 +11218,7 @@ Block(JumpLoop(
       2000
       17
     )
-    532
+    406
   )
   Execute(If(
     SwitchWithDefault(
@@ -13221,8 +11247,8 @@ Block(JumpLoop(
       1
       0
     )
-    533
-    570
+    407
+    444
   ))
   Execute(
     SetShifted(
@@ -13337,8 +11363,8 @@ Block(JumpLoop(
           1
         )
       )
-      534
-      569
+      408
+      443
     )
   )
   Execute(If(
@@ -13346,16 +11372,16 @@ Block(JumpLoop(
       2002
       11
     )
-    548
-    535
+    422
+    409
   ))
   Execute(If(
     Get(
       2002
       10
     )
-    536
-    548
+    410
+    422
   ))
   Execute(SwitchIntegerWithDefault(
     Subtract(
@@ -13365,12 +11391,12 @@ Block(JumpLoop(
       )
       2
     )
-    542
-    542
-    537
-    537
-    548
-    537
+    416
+    416
+    411
+    411
+    422
+    411
   ))
   Execute(SwitchIntegerWithDefault(
     Subtract(
@@ -13380,10 +11406,10 @@ Block(JumpLoop(
       )
       1
     )
-    541
-    540
-    539
-    538
+    415
+    414
+    413
+    412
   ))
   Execute(
     Set(
@@ -13391,7 +11417,7 @@ Block(JumpLoop(
       0
       0
     )
-    547
+    421
   )
   Execute(
     Set(
@@ -13399,7 +11425,7 @@ Block(JumpLoop(
       0
       3
     )
-    547
+    421
   )
   Execute(
     Set(
@@ -13407,7 +11433,7 @@ Block(JumpLoop(
       0
       2
     )
-    547
+    421
   )
   Execute(
     Set(
@@ -13415,7 +11441,7 @@ Block(JumpLoop(
       0
       1
     )
-    547
+    421
   )
   Execute(SwitchIntegerWithDefault(
     Subtract(
@@ -13425,10 +11451,10 @@ Block(JumpLoop(
       )
       1
     )
-    546
-    545
-    544
-    543
+    420
+    419
+    418
+    417
   ))
   Execute(
     Set(
@@ -13436,7 +11462,7 @@ Block(JumpLoop(
       0
       0
     )
-    547
+    421
   )
   Execute(
     Set(
@@ -13444,7 +11470,7 @@ Block(JumpLoop(
       0
       6
     )
-    547
+    421
   )
   Execute(
     Set(
@@ -13452,7 +11478,7 @@ Block(JumpLoop(
       0
       5
     )
-    547
+    421
   )
   Execute(
     Set(
@@ -13460,7 +11486,7 @@ Block(JumpLoop(
       0
       4
     )
-    547
+    421
   )
   Execute(
     Play(
@@ -13470,7 +11496,7 @@ Block(JumpLoop(
       )
       0
     )
-    548
+    422
   )
   Execute(If(
     Equal(
@@ -13480,16 +11506,16 @@ Block(JumpLoop(
       )
       6
     )
-    569
-    549
+    443
+    423
   ))
   Execute(If(
     Get(
       2002
       6
     )
-    550
-    569
+    424
+    443
   ))
   Execute(SwitchIntegerWithDefault(
     Subtract(
@@ -13499,14 +11525,14 @@ Block(JumpLoop(
       )
       1
     )
-    555
-    554
-    553
-    552
-    552
-    551
-    552
-    551
+    429
+    428
+    427
+    426
+    426
+    425
+    426
+    425
   ))
   Execute(
     Set(
@@ -13514,7 +11540,7 @@ Block(JumpLoop(
       0
       0
     )
-    556
+    430
   )
   Execute(
     Set(
@@ -13522,7 +11548,7 @@ Block(JumpLoop(
       0
       3
     )
-    556
+    430
   )
   Execute(
     Set(
@@ -13537,7 +11563,7 @@ Block(JumpLoop(
         10
       )
     )
-    556
+    430
   )
   Execute(
     Set(
@@ -13545,7 +11571,7 @@ Block(JumpLoop(
       0
       6
     )
-    556
+    430
   )
   Execute(
     Set(
@@ -13553,7 +11579,7 @@ Block(JumpLoop(
       0
       1
     )
-    556
+    430
   )
   Execute(
     Set(
@@ -13829,14 +11855,14 @@ Block(JumpLoop(
         )
         1
       )
-      561
-      560
-      559
-      558
-      558
-      557
-      558
-      557
+      435
+      434
+      433
+      432
+      432
+      431
+      432
+      431
     )
   )
   Execute(
@@ -13845,7 +11871,7 @@ Block(JumpLoop(
       0
       0
     )
-    562
+    436
   )
   Execute(
     Set(
@@ -13853,7 +11879,7 @@ Block(JumpLoop(
       0
       4
     )
-    562
+    436
   )
   Execute(
     Set(
@@ -13868,7 +11894,7 @@ Block(JumpLoop(
         11
       )
     )
-    562
+    436
   )
   Execute(
     Set(
@@ -13876,7 +11902,7 @@ Block(JumpLoop(
       0
       7
     )
-    562
+    436
   )
   Execute(
     Set(
@@ -13884,7 +11910,7 @@ Block(JumpLoop(
       0
       2
     )
-    562
+    436
   )
   Execute(
     Set(
@@ -14522,8 +12548,8 @@ Block(JumpLoop(
         2002
         7
       )
-      563
-      569
+      437
+      443
     )
   )
   Execute(
@@ -14532,7 +12558,7 @@ Block(JumpLoop(
       0
       0
     )
-    564
+    438
   )
   Execute(If(
     Less(
@@ -14545,8 +12571,8 @@ Block(JumpLoop(
         16
       )
     )
-    565
-    568
+    439
+    442
   ))
   Execute(
     Set(
@@ -14590,8 +12616,8 @@ Block(JumpLoop(
           1
         )
       )
-      566
-      567
+      440
+      441
     )
   )
   Execute(
@@ -14672,7 +12698,7 @@ Block(JumpLoop(
       0.2
       0
     )
-    569
+    443
   )
   Execute(
     Set(
@@ -14683,12 +12709,12 @@ Block(JumpLoop(
         1
       )
     )
-    564
+    438
   )
   Execute(
-    DebugLog(8)
+    DebugLog(5)
     DebugPause()
-    575
+    447
   )
   Execute(
     Set(
@@ -14701,35 +12727,25 @@ Block(JumpLoop(
       2
       1
     )
-    575
+    447
   )
   Execute(
-    DebugLog(7)
+    DebugLog(4)
     DebugPause()
-    575
+    447
   )
   Execute(
-    DebugLog(6)
+    DebugLog(3)
     DebugPause()
-    575
+    447
   )
   Execute(If(
     Get(
       10000
       11
     )
-    492
-    491
+    380
+    379
   ))
-  Execute(
-    DebugLog(3)
-    DebugPause()
-    575
-  )
-  Execute(
-    DebugLog(3)
-    DebugPause()
-    575
-  )
   0
 ))
