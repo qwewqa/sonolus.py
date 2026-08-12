@@ -64,6 +64,10 @@ def import_project(module_path: str) -> tuple[Project, ModuleType, set[str]] | t
         if project is None:
             print(f"Error: No Project instance found in module {module_path} or {module_path}.project")
             return None, None, None
+        if not isinstance(project, Project):
+            raise TypeError(
+                f"Expected project in module {project_module.__name__} to be a Project instance, got {type(project).__name__}"
+            )
 
         return project, project_module, initial_modules
     except Exception as e:

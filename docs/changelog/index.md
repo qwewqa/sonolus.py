@@ -41,7 +41,8 @@
   and its key and value variants yielding the stream's last item again on the next frame when the previous
   frame's time was exactly that item's key.
 - An item name that cannot be stored in a collection is now rejected when the item is added: `info` and `list`
-  in any letter case, an empty name, a name containing a path separator, and `.` or `..`.
+  in any letter case, an empty name, a name containing characters unsupported by common filesystems, a reserved
+  Windows device name, a trailing dot or space, and `.` or `..`.
 - A level or engine name that cannot be stored in a collection is now rejected by `sonolus-py build` and
   [`Project.build`][sonolus.script.project.Project.build].
 - An item loaded from an `.scp` file now keeps its full filename as its name.
@@ -91,6 +92,8 @@
   numbering rather than the running build's.
 - Corrected the published signature of `random.shuffle`, which accepts a mutable array-like such as an
   [`Array`][sonolus.script.array.Array] rather than any mutable sequence.
+- Public signatures for buckets, runtime canvas, level score and life, entity references, and engine modes now use
+  documented public types rather than private implementation names.
 - Two [`imported()`][sonolus.script.archetype.imported] fields of an archetype that resolve to the same name in
   level data, whether through an `imported(name=...)` override, a repeated
   [`StandardImport`][sonolus.script.archetype.StandardImport], or an inherited field, are now rejected.
@@ -99,6 +102,9 @@
 - An archetype field named after a property the archetype inherits, such as `index` or `result`, is now rejected.
 - Listing the same archetype class more than once in a mode is now rejected.
 - Two different archetype classes that resolve to the same name within a single mode now produce a warning.
+- Preview archetypes now reject entity-memory fields, and a non-boolean `is_scored` value is rejected when an
+  archetype is defined.
+- Rebinding an inherited callback to the mode's default callback now suppresses the inherited callback.
 - Fixed a falsy value given for an archetype's level data field, such as a
   [`Record`][sonolus.script.record.Record] whose `__bool__` returns false, being shipped as zeros instead of the
   value given. A falsy value of the wrong type, such as `None`, is now rejected rather than silently replaced with
@@ -178,6 +184,10 @@
   `range.index(x): x not in range`.
 - Added support for `.index()` on tuples, with optional `start` and `stop` bounds. A value not in the tuple
   fails an assertion with `tuple.index(x): x not in tuple`.
+- `random.randrange`, `random.randint`, and `random.choice` now validate empty ranges, non-integral bounds, zero
+  steps, reversed bounds, and empty inputs.
+- Drawing a sprite with an empty or more-than-four-value z-index tuple, and testing a point against an empty
+  polygon with [`pnpoly`][sonolus.script.vec.pnpoly], now fail an assertion.
 - An invalid annotation on an [`@options`][sonolus.script.options.options] field now reports the field name and
   the annotation.
 - [`Engine.export()`][sonolus.script.engine.Engine.export] now requires `skin`, `background`, `effect`, and
@@ -213,7 +223,9 @@
 - Calling [`spawn()`][sonolus.script.archetype.PlayArchetype.spawn] in preview or tutorial mode is now
   rejected during compilation.
 - A [`bucket`][sonolus.script.bucket.bucket] whose sprite id or fallback sprite id does not name a sprite of
-  the same mode's [`@skin`][sonolus.script.sprite.skin] is now rejected when the engine is built.
+  the same mode's [`@skin`][sonolus.script.sprite.skin], or is not an integer, is now rejected when the engine is
+  built.
+- Starting the dev server with port `0` now prints the ephemeral port selected by the operating system.
 - A relative `Path` given for a level's `cover`, `bgm`, or `preview`, or for an engine's `thumbnail`, now
   resolves against the project's `resources` directory, the way the equivalent `str` already did.
 - The optimizer now removes a store that writes a memory cell's own value back to it, which an `@=` copy could
@@ -292,7 +304,7 @@
 
 ### 0.17.1
 
-- Reduced the runtime check overhead from archetype is at checks.
+- Reduced the runtime check overhead of archetype checks.
 
 ### 0.17.0
 

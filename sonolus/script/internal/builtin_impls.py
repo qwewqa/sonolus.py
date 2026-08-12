@@ -144,8 +144,7 @@ def _comptime_class_arg(value, name: str, position: str):
 def _check_classinfo(classinfo, matches, *, check: str, name: str, original) -> bool:
     """Evaluate an isinstance()/issubclass() check against classinfo, which may be a tuple of classes."""
     if isinstance(classinfo, tuple):
-        results = [_check_classinfo(member, matches, check=check, name=name, original=original) for member in classinfo]
-        return any(results)
+        return any(_check_classinfo(member, matches, check=check, name=name, original=original) for member in classinfo)
     classinfo = _resolve_class_arg(classinfo, check)
     if not (
         isinstance(classinfo, type)
@@ -521,6 +520,7 @@ def _map(fn, iterable, *iterables):
     compiled generator function instead of going through _MappingIterator. Either way the result is a lazy
     iterator, as in Python.
     """
+    from sonolus.script.containers import Pair
     from sonolus.script.internal.visitor import compile_and_call
 
     all_iterables = [_unwrap_set(validate_value(it)) for it in (iterable, *iterables)]
@@ -533,13 +533,22 @@ def _map(fn, iterable, *iterables):
     for it in all_iterables:
         if not hasattr(it, "__iter__"):
             raise TypeError(f"'{_type_name(it)}' object is not iterable")
-    return compile_and_call(_map_runtime, fn, *all_iterables)
+    iterators = []
+    for it in all_iterables:
+        iterator = compile_and_call(it.__iter__)
+        if not ctx().live:
+            return _EmptyIterator()
+        iterators.append(_validate_iterator_result(iterator))
+    if len(iterators) == 1:
+        return _MappingIterator(fn, iterators[0])
+    chain = iterators.pop()
+    while iterators:
+        chain = Pair(iterators.pop(), chain)
+    return compile_and_call(_map_zipped_runtime, fn, _Zipper(chain))
 
 
-def _map_runtime(fn, iterable, *iterables):
-    if len(iterables) == 0:
-        return _MappingIterator(fn, iterable.__iter__())  # noqa: PLC2801
-    return _MappingIterator(lambda args: fn(*args), zip(iterable, *iterables))  # noqa: B905
+def _map_zipped_runtime(fn, iterator):
+    return _MappingIterator(lambda args: fn(*args), iterator)
 
 
 def _is_none_arg(fn) -> bool:
@@ -567,11 +576,14 @@ def _filter(fn, iterable):
         return compile_and_call(_filter_over_compile_time_iterable, fn, iterable)
     if not hasattr(iterable, "__iter__"):
         raise TypeError(f"'{_type_name(iterable)}' object is not iterable")
-    return compile_and_call(_filter_runtime, fn, iterable)
+    iterator = compile_and_call(iterable.__iter__)  # type: ignore
+    if not ctx().live:
+        return _EmptyIterator()
+    return compile_and_call(_filter_runtime, fn, _validate_iterator_result(iterator))
 
 
-def _filter_runtime(fn, iterable):
-    return _FilteringIterator(fn, iterable.__iter__())  # noqa: PLC2801
+def _filter_runtime(fn, iterator):
+    return _FilteringIterator(fn, iterator)
 
 
 class _Int:
@@ -751,7 +763,7 @@ def _all(iterable):
 
 
 def contains_by_iteration(item, iterable):
-    """Membership by scanning `iterable` when `__contains__` does not provide a result."""
+    """Scan `iterable` for `item` when the iterable has no `__contains__` method."""
     for value in iterable:  # noqa: SIM110
         if value == item:
             return True
@@ -805,7 +817,16 @@ def _iter(iterable):
         )
     if not hasattr(iterable, "__iter__"):
         raise TypeError(f"'{_type_name(iterable)}' object is not iterable")
-    return compile_and_call(iterable.__iter__)  # type: ignore
+    iterator = compile_and_call(iterable.__iter__)  # type: ignore
+    if not ctx().live:
+        return _EmptyIterator()
+    return _validate_iterator_result(iterator)
+
+
+def _validate_iterator_result(iterator):
+    if not isinstance(iterator, SonolusIterator):
+        raise TypeError(f"iter() returned non-iterator of type '{_type_name(iterator)}'")
+    return iterator
 
 
 @meta_fn
@@ -816,28 +837,17 @@ def _super(*args):
 
 @meta_fn
 def _hasattr(obj: Any, name: str) -> bool:
-    from sonolus.script.internal.constant import ConstantValue
-    from sonolus.script.internal.descriptor import SonolusDescriptor
+    from sonolus.script.internal.error import caused_by_attribute_error
+    from sonolus.script.internal.visitor import compile_and_call
 
-    name = validate_value(name)._as_py_()
-    if isinstance(obj, ConstantValue):
-        # Unwrap so we can access fields
-        obj = obj._as_py_()
-    descriptor = None
-    for cls in type.mro(type(obj)):
-        descriptor = cls.__dict__.get(name, None)
-        if descriptor is not None:
-            break
-    # We want to mirror what getattr supports and fail fast if a future getattr would fail.
-    match descriptor:
-        case None:
-            return hasattr(obj, name)
-        case property() | SonolusDescriptor() | FunctionType() | classmethod() | staticmethod():
-            return True
-        case non_descriptor if not hasattr(non_descriptor, "__get__"):
-            return True
-        case _:
-            raise TypeError(f"Unsupported field or descriptor {name}")
+    try:
+        compile_and_call(_getattr, obj, name)
+    except Exception as e:
+        if caused_by_attribute_error(e):
+            return False
+        raise
+    context = ctx()
+    return not context or context.live
 
 
 @meta_fn
@@ -900,6 +910,8 @@ class _Type(Record):
         value = validate_value(value)
         if value._is_py_():
             value = value._as_py_()
+        if isinstance(value, _BUILTIN_TYPE_SHIMS):
+            return validate_value(_type)
         return validate_value(type(value))
 
     def __getitem__(self, item):

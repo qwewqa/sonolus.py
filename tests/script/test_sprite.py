@@ -6,16 +6,19 @@ neither run_and_validate nor run_compiled can observe the call at all, and the s
 the finalized node tree instead, the way tests/script/test_array.py does for the sort fold.
 """
 
+import random
+
 import pytest
 
 from sonolus.backend.node import FunctionNode
 from sonolus.backend.ops import Op
 from sonolus.backend.optimize import STANDARD_PASSES, optimize_and_finalize
 from sonolus.script.array import Array
+from sonolus.script.internal.context import RuntimeChecks
 from sonolus.script.quad import Rect
 from sonolus.script.sprite import Sprite, pad_z_indexes
 from sonolus.script.vec import Vec2
-from tests.script.conftest import compile_fn, run_and_validate
+from tests.script.conftest import compile_fn, run_and_validate, run_compiled
 
 QUAD = Rect(t=1, r=2, b=-3, l=-4)
 
@@ -39,6 +42,27 @@ def test_pad_z_indexes(z, expected):
 
     result = run_and_validate(fn)
     assert tuple(result) == expected
+
+
+@pytest.mark.parametrize("z", [(), (1.0, 2.0, 3.0, 4.0, 5.0)])
+@pytest.mark.parametrize("runtime_checks", list(RuntimeChecks))
+def test_pad_z_indexes_rejects_invalid_tuple_length(z, runtime_checks):
+    def fn():
+        pad_z_indexes(z)
+        return 23
+
+    assert run_compiled(fn, runtime_checks=runtime_checks) == 0
+
+
+@pytest.mark.parametrize("z", [(), (1.0, 2.0, 3.0, 4.0, 5.0)])
+def test_invalid_z_index_in_runtime_dead_branch_compiles(z):
+    def fn():
+        if random.randrange(0, 1):
+            pad_z_indexes(z)
+        return 23
+
+    # Unlike run_and_validate, the default run_compiled matrix covers every runtime-check setting.
+    assert run_compiled(fn) == 23
 
 
 DRAW_OPS = {

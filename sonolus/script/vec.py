@@ -4,7 +4,7 @@ from math import pi
 
 from sonolus.script.array import Array
 from sonolus.script.array_like import ArrayLike
-from sonolus.script.debug import assert_false
+from sonolus.script.debug import assert_false, assert_true
 from sonolus.script.internal.math_impls import _atan2, _cos, _sin
 from sonolus.script.internal.meta_fn import perf_meta_fn
 from sonolus.script.num import Num
@@ -282,12 +282,13 @@ def pnpoly(vertices: ArrayLike[Vec2] | tuple[Vec2, ...], test: Vec2) -> bool:
     No guaranteed behavior for points on the edges or very close to the edges.
 
     Args:
-        vertices: The vertices of the polygon.
+        vertices: The vertices of the polygon. Must contain at least one vertex.
         test: The point to test.
 
     Returns:
         Whether the point is inside the polygon.
     """
+    assert_true(len(vertices) > 0, "Polygon must contain at least one vertex")
     if isinstance(vertices, tuple):
         vertices = Array(*vertices)
     vertices = vertices.unchecked()

@@ -30,7 +30,6 @@ def compile_mode(
     level: OptimizationLevel | None = None,
     validate_only: bool = False,
 ) -> dict:
-    """Delegates to `sonolus.backend._opt.driver.compile_mode`; this wrapper keeps `compile_mode` importable from here (engine.py imports it)."""
     return driver.compile_mode(
         mode,
         project_state,

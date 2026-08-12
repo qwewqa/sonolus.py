@@ -19,6 +19,7 @@ from sonolus.script.internal.random import _random
 from sonolus.script.internal.range import range_or_tuple
 from sonolus.script.internal.tuple_impl import TupleImpl
 from sonolus.script.num import _is_num
+from sonolus.script.record import Record
 from tests.script.conftest import compile_fn, run_and_validate, run_compiled
 
 
@@ -40,6 +41,23 @@ def bb(*x):
 
 ints = st.integers(min_value=-10, max_value=10)
 floats = st.floats(min_value=-99999, max_value=99999, allow_nan=False, allow_infinity=False)
+
+
+class NonComplementaryEquality(Record):
+    value: int
+    __hash__ = None
+
+    def __eq__(self, other):
+        return True
+
+    def __ne__(self, other):
+        return True
+
+    def __lt__(self, other):
+        return True
+
+    def __gt__(self, other):
+        return True
 
 
 def test_tuple_destructure():
@@ -137,6 +155,15 @@ def test_tuple_comparison(t1_list, t2_list):
         return Array(t1 == t2, t1 != t2, t1 < t2, t1 <= t2, t1 > t2, t1 >= t2)
 
     assert run_and_validate(fn) == Array(t1 == t2, t1 != t2, t1 < t2, t1 <= t2, t1 > t2, t1 >= t2)
+
+
+def test_tuple_comparison_uses_element_equality_not_inequality():
+    def fn():
+        left = (NonComplementaryEquality(1),)
+        right = (NonComplementaryEquality(2),)
+        return Array(left == right, left != right, left < right, left <= right, left > right, left >= right)
+
+    assert run_and_validate(fn) == Array(True, False, False, True, False, True)
 
 
 @given(

@@ -85,6 +85,8 @@ class SimulationContext:
             if isinstance(module, ModuleType):
                 self._substitute_module_variables(module)
 
+            self._substitute_module_variables(sys.modules.get(name))
+
             if fromlist:
                 for item in fromlist:
                     if hasattr(module, item):

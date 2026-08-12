@@ -1,7 +1,7 @@
 import gzip
 import json
 import struct
-from collections.abc import Callable
+from collections.abc import Callable, Sequence
 from dataclasses import dataclass
 from pathlib import Path
 
@@ -194,11 +194,18 @@ def build_engine_configuration(
         "ui": ui.to_dict(),
     }
     replay_fallback_option_names = getattr(options, "replay_fallback_option_names", None)
-    if isinstance(replay_fallback_option_names, str | bytes | bytearray):
+    if replay_fallback_option_names is not None and (
+        isinstance(replay_fallback_option_names, str | bytes | bytearray)
+        or not isinstance(replay_fallback_option_names, Sequence)
+    ):
         raise TypeError(
             f"Expected a sequence of option names, got {replay_fallback_option_names!r}; "
             f"one name is written ({replay_fallback_option_names!r},)"
         )
+    if replay_fallback_option_names is not None and not all(
+        isinstance(name, str) for name in replay_fallback_option_names
+    ):
+        raise TypeError(f"Expected a sequence of string option names, got {replay_fallback_option_names!r}")
     if replay_fallback_option_names:
         result["replayFallbackOptionNames"] = list(replay_fallback_option_names)
     return result
@@ -337,6 +344,8 @@ def validate_bucket_sprites(skin: Skin, buckets: Buckets) -> None:
     for index, info in enumerate(buckets._buckets_):
         for bucket_sprite in info.sprites:
             for id_, subject in ((bucket_sprite.id, "sprite"), (bucket_sprite.fallback_id, "fallback sprite")):
+                if id_ is not None and type(id_) is not int:
+                    raise ValueError(f"Bucket {index} references a non-integral {subject} id {id_}")
                 if id_ is not None and not 0 <= id_ < sprite_count:
                     raise ValueError(
                         f"Bucket {index} references {subject} id {id_}, but the skin of this mode declares "

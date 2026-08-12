@@ -23,6 +23,20 @@ def test_simple_generator():
     run_and_validate(fn)
 
 
+def test_yield_in_nested_function_default_belongs_to_enclosing_generator():
+    def fn():
+        def gen():
+            def nested(value=(yield 3)):
+                return value
+
+        total = 0
+        for value in gen():
+            total += value
+        return total
+
+    assert run_and_validate(fn) == 3
+
+
 def test_generator_interspersed():
     def fn():
         def gen():

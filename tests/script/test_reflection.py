@@ -3,6 +3,7 @@ import pytest
 from sonolus.script.array import Array
 from sonolus.script.array_like import ArrayLike
 from sonolus.script.debug import debug_log
+from sonolus.script.internal.descriptor import SonolusDescriptor
 from sonolus.script.internal.error import CompilationError
 from sonolus.script.num import Num
 from sonolus.script.record import Record
@@ -16,6 +17,18 @@ class UnsupportedDescriptor:
 
     def __set__(self, instance, value):
         pass
+
+
+class MissingDescriptor(SonolusDescriptor):
+    def __get__(self, instance, owner):
+        raise AttributeError
+
+    def __set__(self, instance, value):
+        pass
+
+
+def missing_property(self):
+    return self.does_not_exist
 
 
 class MyBox[T](Record):
@@ -36,8 +49,15 @@ class MyBox[T](Record):
     def my_property(self, value):
         debug_log(value)
 
+    @property
+    def logging_property(self):
+        debug_log(123)
+        return 789
+
 
 MyBox.unsupported_descriptor = UnsupportedDescriptor()
+MyBox.missing_descriptor = MissingDescriptor()
+MyBox.missing_property = property(missing_property)
 
 
 def test_hasattr_record_field():
@@ -66,6 +86,27 @@ def test_hasattr_record_property():
         return hasattr(MyBox(1), "my_property")
 
     assert run_and_validate(fn) == 1
+
+
+def test_hasattr_invokes_property_getter():
+    def fn():
+        return hasattr(MyBox(1), "logging_property")
+
+    assert run_and_validate(fn) == 1
+
+
+def test_hasattr_suppresses_attribute_error_from_descriptor():
+    def fn():
+        return hasattr(MyBox(1), "missing_descriptor")
+
+    assert run_and_validate(fn) == 0
+
+
+def test_hasattr_suppresses_attribute_error_from_property():
+    def fn():
+        return hasattr(MyBox(1), "missing_property")
+
+    assert run_and_validate(fn) == 0
 
 
 def test_hasattr_record_not_present():
@@ -261,6 +302,14 @@ def test_issubclass_array_like():
 def test_issubclass_of_type_result():
     def fn():
         return issubclass(type(MyBox(1)), Record)
+
+    assert run_and_validate(fn)
+
+
+@pytest.mark.parametrize("builtin", [int, float, bool, set, dict, type])
+def test_type_of_builtin_alias_is_type(builtin):
+    def fn():
+        return type(builtin) == type  # noqa: E721
 
     assert run_and_validate(fn)
 
@@ -479,13 +528,11 @@ def test_isinstance_tuple_tuple_alias():
     assert run_and_validate(fn)
 
 
-def test_isinstance_tuple_int_member_not_supported():
-    # Every member is validated, even one after an earlier match, so the diagnostic doesn't depend on tuple order.
+def test_isinstance_tuple_short_circuits_before_unsupported_member():
     def fn():
         return isinstance(Vec2(1, 2), (Vec2, int))
 
-    with pytest.raises(CompilationError, match="use Num instead"):
-        run_compiled(fn)
+    assert run_and_validate(fn)
 
 
 def test_isinstance_tuple_float_member_not_supported():
@@ -512,20 +559,18 @@ def test_isinstance_tuple_frozenset_member_not_supported():
         run_compiled(fn)
 
 
-def test_isinstance_tuple_non_type_member_not_supported():
+def test_isinstance_tuple_short_circuits_before_non_type_member():
     def fn():
         return isinstance(Vec2(1, 2), (Vec2, None))
 
-    with pytest.raises(CompilationError, match="Unsupported type"):
-        run_compiled(fn)
+    assert run_and_validate(fn)
 
 
-def test_isinstance_nested_tuple_non_type_member_not_supported():
+def test_isinstance_tuple_short_circuits_before_invalid_nested_tuple():
     def fn():
         return isinstance(Vec2(1, 2), (Vec2, (Num, None)))
 
-    with pytest.raises(CompilationError, match="Unsupported type"):
-        run_compiled(fn)
+    assert run_and_validate(fn)
 
 
 def test_issubclass_tuple_matches_first_member():
@@ -605,28 +650,25 @@ def test_issubclass_tuple_tuple_alias():
     assert run_and_validate(fn)
 
 
-def test_issubclass_tuple_int_member_not_supported():
+def test_issubclass_tuple_short_circuits_before_unsupported_member():
     def fn():
         return issubclass(MyBox, (Record, int))
 
-    with pytest.raises(CompilationError, match="use Num instead"):
-        run_compiled(fn)
+    assert run_and_validate(fn)
 
 
-def test_issubclass_tuple_frozenset_member_not_supported():
+def test_issubclass_tuple_short_circuits_before_frozenset_member():
     def fn():
         return issubclass(MyBox, (Record, frozenset))
 
-    with pytest.raises(CompilationError, match="against frozenset is not supported"):
-        run_compiled(fn)
+    assert run_and_validate(fn)
 
 
-def test_issubclass_tuple_non_type_member_not_supported():
+def test_issubclass_tuple_short_circuits_before_non_type_member():
     def fn():
         return issubclass(MyBox, (Record, None))
 
-    with pytest.raises(CompilationError, match="Unsupported type"):
-        run_compiled(fn)
+    assert run_and_validate(fn)
 
 
 def test_issubclass_tuple_as_arg_1_not_supported():

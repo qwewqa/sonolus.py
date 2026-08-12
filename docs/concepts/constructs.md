@@ -378,7 +378,7 @@ else:
     ...
 ```
 
-Tuples can be iterated over and result in an unrolled loop. This can be useful for iterating of objects of different,
+Tuples can be iterated over and result in an unrolled loop. This is useful for iterating over objects of different
 types, but care should be taken since it results in more code being generated compared to a normal loop:
 
 <div class="grid" markdown>

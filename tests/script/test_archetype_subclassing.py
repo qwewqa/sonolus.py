@@ -10,7 +10,14 @@ import pytest
 
 from sonolus.backend.mode import Mode
 from sonolus.build.compile import compile_mode
-from sonolus.script.archetype import PlayArchetype, PreviewArchetype, WatchArchetype, callback, imported
+from sonolus.script.archetype import (
+    PlayArchetype,
+    PreviewArchetype,
+    WatchArchetype,
+    callback,
+    entity_memory,
+    imported,
+)
 from sonolus.script.internal.context import ProjectContextState, RuntimeChecks
 
 
@@ -103,6 +110,33 @@ def test_a_subclass_of_a_plain_archetype_is_accepted():
     assert SubOfPlain.schema() == {"name": "SubOfPlain", "fields": ["beat", "extra"], "exports": []}
 
 
+def test_field_initialization_does_not_create_a_subclass():
+    subclasses = []
+
+    class Base(PlayArchetype):
+        def __init_subclass__(cls, **kwargs):
+            super().__init_subclass__(**kwargs)
+            subclasses.append(cls)
+
+    class Note(Base):
+        pass
+
+    subclasses.clear()
+    assert Note.schema() == {"name": "Note", "fields": [], "exports": []}
+    assert subclasses == []
+
+
+def test_field_initialization_does_not_invoke_a_hook_with_missing_class_keywords():
+    class Base(PlayArchetype):
+        def __init_subclass__(cls, *, kind, **kwargs):
+            super().__init_subclass__(**kwargs)
+
+    class Note(Base, kind="note"):
+        pass
+
+    assert Note.schema() == {"name": "Note", "fields": [], "exports": []}
+
+
 @pytest.mark.parametrize("order", [0, 3])
 def test_a_callback_marker_on_a_method_that_is_not_a_callback_is_rejected(order: int):
     with pytest.raises(TypeError, match="Method 'helper' of MarkedHelper is decorated with @callback"):
@@ -129,6 +163,50 @@ def test_a_callback_marker_on_a_callback_of_this_mode_is_accepted():
             pass
 
     assert "update_sequential" in Ordered._callbacks_
+
+
+def test_rebinding_an_inherited_callback_to_the_mode_default_suppresses_it():
+    class Base(PlayArchetype):
+        def update_sequential(self):
+            pass
+
+    class Suppressed(Base):
+        update_sequential = PlayArchetype.update_sequential
+
+    result = compile_archetypes(Mode.PLAY, [Suppressed])
+
+    assert "update_sequential" not in Suppressed._callbacks_
+    assert "updateSequential" not in result["archetypes"][0]
+
+
+def test_a_floating_callback_order_is_accepted():
+    class Ordered(PlayArchetype):
+        @callback(order=1.5)
+        def update_sequential(self):
+            pass
+
+    result = compile_archetypes(Mode.PLAY, [Ordered])
+
+    assert result["archetypes"][0]["updateSequential"]["order"] == 1.5
+
+
+@pytest.mark.parametrize("is_scored", [0, 1, 0.0, 1.0, None, "yes"])
+def test_a_non_boolean_is_scored_value_is_rejected(is_scored):
+    with pytest.raises(TypeError, match="is_scored of InvalidScoring must be a bool"):
+        type("InvalidScoring", (PlayArchetype,), {"is_scored": is_scored})
+
+
+def test_derive_rejects_a_non_boolean_is_scored_value():
+    with pytest.raises(TypeError, match="is_scored of DerivedNote must be a bool"):
+        plain_archetype().derive("DerivedNote", is_scored=1)
+
+
+def test_preview_archetype_rejects_entity_memory_fields():
+    class PreviewNote(PreviewArchetype):
+        value: float = entity_memory()
+
+    with pytest.raises(RuntimeError, match="Preview archetypes cannot have entity memory fields"):
+        PreviewNote.schema()
 
 
 def test_a_non_zero_order_on_a_callback_that_does_not_support_one_is_rejected_by_the_build():

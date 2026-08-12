@@ -67,6 +67,18 @@ def test_import_project_dotted_path_through_non_package_reports_gracefully(tmp_p
     assert "No Project instance found" in capsys.readouterr().out
 
 
+def test_import_project_rejects_a_non_project_value(tmp_path, monkeypatch):
+    (tmp_path / "notaproject_xyz.py").write_text("project = 42\n", encoding="utf-8")
+    monkeypatch.syspath_prepend(str(tmp_path))
+    monkeypatch.chdir(tmp_path)
+    monkeypatch.delitem(sys.modules, "notaproject_xyz", raising=False)
+
+    from sonolus.build.cli import import_project
+
+    with pytest.raises(TypeError, match="Expected project in module notaproject_xyz to be a Project instance, got int"):
+        import_project("notaproject_xyz")
+
+
 def test_import_project_plain_import_error_in_project_submodule_propagates(tmp_path, monkeypatch):
     pkg = tmp_path / "pkg_circ_xyz"
     pkg.mkdir()

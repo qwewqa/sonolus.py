@@ -1129,6 +1129,100 @@ class PropertyHolder(Record):
         return self.b
 
 
+class LoggedPropertyHolder(Record):
+    value: Num
+
+    @property
+    def logged(self) -> Num:
+        debug_log(2468)
+        return self.value
+
+
+class MissingPropertyHolder(Record):
+    value: Num
+
+    @property
+    def missing(self) -> Num:
+        return self.does_not_exist
+
+
+class DynamicAttributeHolder(Record):
+    value: Num
+
+    def __getattr__(self, name):
+        if name == "dynamic":
+            return self.value
+        raise AttributeError(name)
+
+
+class TerminatingClassProvider(Record):
+    value: Num
+
+    @property
+    def pattern(self):
+        assert_true(False, "class pattern says no")
+        return Point
+
+
+TERMINATING_CLASS_PROVIDER = TerminatingClassProvider(0)
+
+
+def test_match_class_keyword_property_is_read_once():
+    def fn():
+        match LoggedPropertyHolder(3):
+            case LoggedPropertyHolder(logged=3):
+                return 1
+            case _:
+                return 0
+
+    assert run_and_validate(fn) == 1
+
+
+def test_match_class_missing_keyword_attribute_fails_the_pattern():
+    def fn():
+        match PropertyHolder(1, 2):
+            case PropertyHolder(missing=1):
+                return 1
+            case _:
+                return 0
+
+    assert run_and_validate(fn) == 0
+
+
+def test_match_class_property_raising_attribute_error_fails_the_pattern():
+    def fn():
+        match MissingPropertyHolder(1):
+            case MissingPropertyHolder(missing=1):
+                return 1
+            case _:
+                return 0
+
+    assert run_and_validate(fn) == 0
+
+
+def test_match_class_keyword_attribute_uses_getattr():
+    def fn():
+        match DynamicAttributeHolder(5):
+            case DynamicAttributeHolder(dynamic=5):
+                return 1
+            case _:
+                return 0
+
+    assert run_and_validate(fn) == 1
+
+
+def test_terminating_class_pattern_expression_compiles():
+    def fn():
+        match Point(1, 2):
+            case TERMINATING_CLASS_PROVIDER.pattern():
+                return 1
+            case _:
+                return 0
+
+    with pytest.raises(AssertionError, match="class pattern says no"):
+        run_and_validate(fn)
+
+
 def test_match_class_pattern_reads_no_property_after_a_statically_failing_sub_pattern():
     # `a=Unrelated()` cannot match a Num, so it leaves the arm's context dead. The keyword loop has to stop
     # there, as the sequence and or-pattern loops do: `p` is a property, so reading it would trace its
@@ -1420,7 +1514,7 @@ def test_match_capture_that_is_the_only_binding_is_not_defined_after_a_failed_pa
                 pass
         return a
 
-    with pytest.raises(CompilationError, match="Name a is not defined"):
+    with pytest.raises(CompilationError, match="cannot access local variable 'a'"):
         run_compiled(fn)
 
 

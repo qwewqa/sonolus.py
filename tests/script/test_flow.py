@@ -1785,8 +1785,8 @@ def test_bare_annotation_does_not_bind_name():
         x: int
         return x
 
-    with pytest.raises(CompilationError, match="Name x is not defined"):
-        run_compiled(fn)
+    with pytest.raises(UnboundLocalError, match="cannot access local variable 'x'"):
+        run_and_validate(fn)
 
 
 _SHADOWED_GLOBAL = 5
@@ -1798,8 +1798,8 @@ def test_bare_annotation_shadows_a_global():
         _SHADOWED_GLOBAL: int
         return _SHADOWED_GLOBAL
 
-    with pytest.raises(CompilationError, match="Name _SHADOWED_GLOBAL is not defined"):
-        run_compiled(fn)
+    with pytest.raises(UnboundLocalError, match="cannot access local variable '_SHADOWED_GLOBAL'"):
+        run_and_validate(fn)
 
 
 def test_bare_annotation_shadows_a_builtin():
@@ -1807,8 +1807,8 @@ def test_bare_annotation_shadows_a_builtin():
         len: int  # noqa: A001
         return len((1, 2, 3))
 
-    with pytest.raises(CompilationError, match="Name len is not defined"):
-        run_compiled(fn)
+    with pytest.raises(UnboundLocalError, match="cannot access local variable 'len'"):
+        run_and_validate(fn)
 
 
 def test_bare_annotation_shadows_for_the_whole_function():
@@ -1817,8 +1817,18 @@ def test_bare_annotation_shadows_for_the_whole_function():
         _SHADOWED_GLOBAL: int
         return value
 
-    with pytest.raises(CompilationError, match="Name _SHADOWED_GLOBAL is not defined"):
-        run_compiled(fn)
+    with pytest.raises(UnboundLocalError, match="cannot access local variable '_SHADOWED_GLOBAL'"):
+        run_and_validate(fn)
+
+
+def test_assignment_shadows_a_global_for_the_whole_function():
+    def fn():
+        value = _SHADOWED_GLOBAL
+        _SHADOWED_GLOBAL = 7  # noqa: F841
+        return value
+
+    with pytest.raises(UnboundLocalError, match="cannot access local variable '_SHADOWED_GLOBAL'"):
+        run_and_validate(fn)
 
 
 def test_parenthesized_bare_annotation_does_not_shadow():

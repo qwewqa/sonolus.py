@@ -51,7 +51,7 @@ class Effect(Record):
 
         Not available in preview mode.
 
-        Arguments:
+        Args:
             distance: Minimum time in seconds since the last play for the effect to play.
         """
         _check_effect_playback_mode()
@@ -70,7 +70,7 @@ class Effect(Record):
 
         Not available in preview mode.
 
-        Arguments:
+        Args:
             time: Time in seconds when the effect should play.
             distance: Minimum time in seconds after a previous play for the effect to play.
         """
@@ -97,6 +97,9 @@ class Effect(Record):
         Use [`loop`][sonolus.script.effect.Effect.loop] instead.
 
         Not available in preview mode.
+
+        Args:
+            start_time: The time in seconds at which to start the effect.
 
         Returns:
             A handle to stop the loop.
@@ -128,6 +131,8 @@ class ScheduledLoopedEffectHandle(Record):
         """Stop the scheduled looped effect.
 
         Not available in preview mode.
+
+        Schedule the stop at least 0.5 seconds in advance when possible.
 
         Args:
             end_time: The time at which to stop the effect.

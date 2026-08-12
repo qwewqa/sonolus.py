@@ -13,6 +13,7 @@ from sonolus.script.internal.meta_fn import meta_fn
 from sonolus.script.internal.random import _random
 from sonolus.script.internal.tuple_impl import TupleImpl
 from sonolus.script.num import _is_num
+from sonolus.script.record import Record
 from sonolus.script.vec import Vec2
 from tests.script.conftest import compile_fn, run_and_validate
 
@@ -32,7 +33,93 @@ def bb(*x):
         return x
 
 
+class ReflectedEqualityKey(Record):
+    value: int
+
+    def __eq__(self, other):
+        return self.value == other
+
+    def __hash__(self):
+        return hash(self.value)
+
+
+class OrderedStoredKey(Record):
+    value: int
+
+    def __eq__(self, other):
+        if isinstance(other, OrderedStoredKey):
+            return self.value == other.value
+        return self.value == other.value + 1000
+
+    def __lt__(self, other):
+        return self.value < other.value
+
+    def __hash__(self):
+        return hash(self.value)
+
+
+class OrderedProbeKey(Record):
+    value: int
+
+    def __eq__(self, other):
+        return self.value == other.value
+
+    def __lt__(self, other):
+        return self.value < other.value
+
+    def __hash__(self):
+        return hash(self.value)
+
+
+class OrderedDecliningKey(Record):
+    value: int
+
+    def __eq__(self, other):
+        if isinstance(other, OrderedDecliningKey):
+            return self.value == other.value
+        return NotImplemented
+
+    def __lt__(self, other):
+        return self.value < other.value
+
+    def __hash__(self):
+        return hash(self.value)
+
+
+class DecliningEqualityKey(Record):
+    value: int
+
+    def __eq__(self, other):
+        return NotImplemented
+
+    def __hash__(self):
+        return hash(self.value)
+
+
+class SameTypeReflectedEqualityKey(Record):
+    side: int
+
+    def __eq__(self, other):
+        if self.side == 0:
+            return NotImplemented
+        return other.side == 0
+
+    def __hash__(self):
+        return 1
+
+
 # __getitem__
+
+
+def test_constant_search_tries_probe_equality_for_same_type_after_not_implemented():
+    stored = SameTypeReflectedEqualityKey(0)
+    probe = SameTypeReflectedEqualityKey(1)
+    values = {stored: 10}
+
+    def fn():
+        return probe in values
+
+    assert run_and_validate(fn) == 1
 
 
 def test_get_present_small_size_string_key():
@@ -878,6 +965,41 @@ def test_contains_key_of_unrelated_type():
         return Vec2(1, 2) in d
 
     assert not run_and_validate(fn)
+
+
+def test_contains_uses_reflected_equality_after_not_implemented():
+    def fn():
+        d = {1: 10}
+        return ReflectedEqualityKey(1) in d
+
+    assert run_and_validate(fn)
+
+
+def test_contains_treats_two_declined_equalities_as_unequal():
+    d = {DecliningEqualityKey(1): 10}
+
+    def fn():
+        return DecliningEqualityKey(1) in d
+
+    assert not run_and_validate(fn)
+
+
+def test_ordered_search_uses_stored_key_equality_first():
+    d = {OrderedStoredKey(i): i * 10 for i in range(5)}
+
+    def fn():
+        return OrderedProbeKey(bb(2)) in d
+
+    assert not run_and_validate(fn)
+
+
+def test_ordered_search_uses_reflected_equality_after_not_implemented():
+    d = {OrderedDecliningKey(i): i * 10 for i in range(5)}
+
+    def fn():
+        return OrderedProbeKey(bb(2)) in d
+
+    assert run_and_validate(fn)
 
 
 # __or__

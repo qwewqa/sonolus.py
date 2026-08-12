@@ -463,3 +463,48 @@ def test_rebuild_failure_in_compiled_code_keeps_the_verbose_hint(tmp_path, monke
     )
 
     assert "--verbose" in _rebuild_output_for(server_state, from_compiled_code, monkeypatch, capsys)
+
+
+def test_server_with_an_ephemeral_port_prints_its_bound_port(tmp_path, monkeypatch, capsys):
+    from sonolus.build import dev_server
+
+    bound_port = 43123
+
+    class StopServingError(Exception):
+        pass
+
+    class FakeServer:
+        server_address = ("", bound_port)
+
+        def __enter__(self):
+            return self
+
+        def __exit__(self, *args):
+            return False
+
+        def serve_forever(self):
+            raise StopServingError
+
+    monkeypatch.setattr(dev_server, "load_resources_files_to_collection", lambda resources: Collection())
+    monkeypatch.setattr(dev_server, "build_project_to_existing_collection", lambda *args, **kwargs: None)
+    monkeypatch.setattr(dev_server, "get_local_ips", lambda: ["192.0.2.1"])
+    monkeypatch.setattr(dev_server.socketserver, "TCPServer", lambda *args: FakeServer())
+
+    import sonolus.build.cli
+
+    monkeypatch.setattr(sonolus.build.cli, "write_collection", lambda *args, **kwargs: None)
+
+    with pytest.raises(StopServingError):
+        dev_server.run_server(
+            tmp_path,
+            0,
+            None,
+            None,
+            tmp_path / "build",
+            BuildConfig(),
+            Project(engine=Engine(name="dev_server_test_engine", data=EngineData()), resources=tmp_path),
+        )
+
+    output = capsys.readouterr().out
+    assert f"Server started on port {bound_port}" in output
+    assert f"http://192.0.2.1:{bound_port}" in output

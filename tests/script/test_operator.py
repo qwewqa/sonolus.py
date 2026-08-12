@@ -1,12 +1,13 @@
 # ruff: noqa: PLW1641, PT017
 import re
+import sys
 
 import pytest
 from hypothesis import assume, given
 from hypothesis import strategies as st
 
 from sonolus.script.array import Array
-from sonolus.script.debug import debug_log
+from sonolus.script.debug import debug_log, static_error
 from sonolus.script.internal.error import CompilationError
 from sonolus.script.record import Record
 from sonolus.script.vec import Vec2
@@ -568,6 +569,17 @@ class Holder(Record):
         return iter(self.values)
 
 
+class DecliningContains(Record):
+    values: Array[int, 3]
+
+    def __contains__(self, value):
+        return NotImplemented
+
+    def __iter__(self):
+        static_error("membership fell back to iteration")
+        return iter(self.values)
+
+
 def _logged(v):
     debug_log(v)
     return v
@@ -602,6 +614,17 @@ def test_in_falls_back_to_iteration_over_a_record_defining_only_iter():
         return (1 if 5 in h else 0) * 10 + (1 if 7 in h else 0)
 
     assert run_and_validate(fn) == 10
+
+
+def test_in_does_not_fall_back_when_contains_returns_not_implemented():
+    def fn():
+        return 2 in DecliningContains(Array(1, 2, 3))
+
+    if sys.version_info >= (3, 14):
+        with pytest.raises(TypeError, match="NotImplemented should not be used in a boolean context"):
+            run_and_validate(fn)
+    else:
+        assert run_and_validate(fn)
 
 
 def test_in_short_circuits_at_the_first_match():

@@ -41,7 +41,7 @@ from sonolus.script.internal.context import (
     using_ctx,
 )
 from sonolus.script.internal.descriptor import SonolusDescriptor
-from sonolus.script.internal.error import CompilationError
+from sonolus.script.internal.error import CompilationError, caused_by_attribute_error
 from sonolus.script.internal.impl import bind_arguments, validate_value
 from sonolus.script.internal.meta_fn import meta_fn
 from sonolus.script.internal.transient import TransientValue
@@ -900,7 +900,7 @@ class Visitor(ast.NodeVisitor):
             return
         if not isinstance(iterator, SonolusIterator):
             raise ValueError("Unsupported iterator")
-        writes = scan_writes(node)
+        writes = scan_writes(node.target, *node.body)
         header_ctx = ctx().prepare_loop_header(writes)
         self.loop_head_ctxs.append(header_ctx)
         self.break_ctxs.append([])
@@ -941,7 +941,7 @@ class Visitor(ast.NodeVisitor):
         set_ctx(after_ctx)
 
     def visit_While(self, node):
-        writes = scan_writes(node)
+        writes = scan_writes(node.test, *node.body)
         header_ctx = ctx().prepare_loop_header(writes)
         self.loop_head_ctxs.append(header_ctx)
         self.break_ctxs.append([])
@@ -1153,6 +1153,8 @@ class Visitor(ast.NodeVisitor):
                 raise NotImplementedError("Match mappings are not supported")
             case ast.MatchClass(cls=cls, patterns=patterns, kwd_attrs=kwd_attrs, kwd_patterns=kwd_patterns):
                 cls = self.visit(cls)
+                if not ctx().live:
+                    return ctx().into_dead(), ctx(), []
                 if cls._is_py_() and cls._as_py_() in {_int, _float, _bool}:
                     raise TypeError("Instance check against int, float, or bool is not supported, use Num instead")
                 cls = validate_type_spec(cls)
@@ -1186,9 +1188,13 @@ class Visitor(ast.NodeVisitor):
                     for attr, subpattern in zip(kwd_attrs, kwd_patterns, strict=False):
                         if not ctx().live:
                             break
-                        if not hasattr(subject, attr):
-                            raise AttributeError(f"Object has no attribute {attr}")
-                        value = self.handle_getattr(subpattern, subject, attr)
+                        try:
+                            value = self.handle_getattr(subpattern, subject, attr, report_errors=False)
+                        except Exception as e:
+                            if not caused_by_attribute_error(e):
+                                raise
+                            false_ctxs.append(ctx())
+                            return ctx().into_dead(), Context.meet(false_ctxs), captures
                         if not ctx().live:
                             raise NotImplementedError(_TERMINATING_MATCH_READ_MESSAGE)
                         true_ctx, false_ctx, sub_captures = self.handle_match_pattern(value, subpattern)
@@ -1578,12 +1584,10 @@ class Visitor(ast.NodeVisitor):
             and self._has_real_method(r_val, rcomp_ops[type(op)])
         ):
             result = self.handle_call(node, getattr(r_val, rcomp_ops[type(op)]), l_val)
-        if (
-            (result is None or self.is_not_implemented(result))
-            and type(op) in {ast.In, ast.NotIn}
-            and self._has_real_method(r_val, "__iter__")
-        ):
+        if result is None and type(op) in {ast.In, ast.NotIn} and self._has_real_method(r_val, "__iter__"):
             result = self.handle_call(node, contains_by_iteration, l_val, r_val)
+        if result is not None and type(op) in {ast.In, ast.NotIn} and self.is_not_implemented(result):
+            return validate_value(bool(NotImplemented))
         if result is None or self.is_not_implemented(result):
             # The default object.__eq__/__ne__ compares identity, which is not reliable for traced values.
             if type(op) is ast.Eq and type(l_val) is not type(r_val):
@@ -1721,7 +1725,14 @@ class Visitor(ast.NodeVisitor):
                     used_parent_binding_values[name] = result
                 return result
             if name in v.declared_locals:
-                raise NameError(f"Name {name} is not defined")
+                if v is not self:
+                    raise NameError(
+                        f"cannot access free variable '{name}' where it is not associated with a value "
+                        "in enclosing scope"
+                    )
+                raise UnboundLocalError(
+                    f"cannot access local variable '{name}' where it is not associated with a value"
+                )
             v = v.parent
         if name in self.globals:
             value = self.globals[name]
@@ -1837,33 +1848,42 @@ class Visitor(ast.NodeVisitor):
                 raise NotImplementedError(f"Unsupported syntax: {type(node).__name__}")
         raise NotImplementedError(f"Unsupported syntax: {type(node).__name__}")
 
-    def handle_getattr(self, node: ast.stmt | ast.expr, target: Value, key: str) -> Value:
+    def handle_getattr(
+        self, node: ast.stmt | ast.expr, target: Value, key: str, *, report_errors: bool = True
+    ) -> Value:
         if not ctx().live:
             return validate_value(None)
-        # If this is changed, remember to update the getattr impl too
-        with self.reporting_errors_at_node(node):
-            if isinstance(target, ConstantValue):
+
+        def get_attribute():
+            attribute_target = target
+            if isinstance(attribute_target, ConstantValue):
                 # Unwrap so we can access fields
-                target = target._as_py_()
-            target_type = type(target)
+                attribute_target = attribute_target._as_py_()
+            target_type = type(attribute_target)
             descriptor = _resolve_descriptor(target_type, key)
             match descriptor:
                 case property(fget=getter):
-                    return self.handle_call(node, getter, target)
+                    return self.handle_call(node, getter, attribute_target)
                 case SonolusDescriptor() | FunctionType() | classmethod() | staticmethod() | None:
-                    attribute = getattr(target, key)
-                    if isinstance(target, type):
-                        reject_instance_only_attribute(target, key, attribute)
+                    attribute = getattr(attribute_target, key)
+                    if isinstance(attribute_target, type):
+                        reject_instance_only_attribute(attribute_target, key, attribute)
                     return validate_value(attribute)
                 case non_descriptor if not hasattr(non_descriptor, "__get__"):
-                    return validate_value(getattr(target, key))
+                    return validate_value(getattr(attribute_target, key))
                 case _:
                     raise TypeError(f"Unsupported field or descriptor {key}")
+
+        # Keep descriptor handling aligned with builtin_impls._getattr.
+        if report_errors:
+            with self.reporting_errors_at_node(node):
+                return get_attribute()
+        return get_attribute()
 
     def handle_setattr(self, node: ast.stmt | ast.expr, target: Value, key: str, value: Value):
         if not ctx().live:
             return
-        # If this is changed, remember to update the setattr impl too
+        # Keep descriptor handling aligned with builtin_impls._setattr.
         with self.reporting_errors_at_node(node):
             if target._is_py_():
                 target = target._as_py_()

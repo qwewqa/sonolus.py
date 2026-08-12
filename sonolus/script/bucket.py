@@ -177,7 +177,19 @@ class Bucket(Record):
 
 
 @dataclass
-class _BucketSprite:
+class BucketSprite:
+    """A positioned sprite in a bucket icon, created with [`bucket_sprite`][sonolus.script.bucket.bucket_sprite].
+
+    Args:
+        id: The skin sprite ID.
+        fallback_id: The fallback skin sprite ID, if one is defined.
+        x: The x-coordinate of the sprite's center.
+        y: The y-coordinate of the sprite's center.
+        w: The width of the sprite.
+        h: The height of the sprite.
+        rotation: The clockwise rotation of the sprite in degrees.
+    """
+
     id: int
     fallback_id: int | None
     x: float
@@ -202,7 +214,7 @@ class _BucketSprite:
 
 @dataclass
 class _BucketInfo:
-    sprites: list[_BucketSprite]
+    sprites: list[BucketSprite]
     unit: str | None = None
 
     def to_dict(self):
@@ -223,12 +235,12 @@ def bucket_sprite(
     w: float,
     h: float,
     rotation: float = 0,
-) -> _BucketSprite:
+) -> BucketSprite:
     """Define a sprite for a bucket."""
-    return _BucketSprite(sprite.id, fallback_sprite.id if fallback_sprite else None, x, y, w, h, rotation)
+    return BucketSprite(sprite.id, fallback_sprite.id if fallback_sprite else None, x, y, w, h, rotation)
 
 
-def bucket(*, sprites: list[_BucketSprite], unit: AnyText | None = None) -> Any:
+def bucket(*, sprites: list[BucketSprite], unit: AnyText | None = None) -> Any:
     """Define a bucket with the given sprites and unit.
 
     Args:

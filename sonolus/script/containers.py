@@ -212,6 +212,8 @@ class VarArray[T, Capacity](Record, ArrayLike[T]):
 
         Preserves the relative order of the elements.
 
+        Must not be called if the array is empty.
+
         Args:
             index: The index of the value to remove. If None, the last element is removed.
         """
@@ -233,7 +235,7 @@ class VarArray[T, Capacity](Record, ArrayLike[T]):
         Must not be called if the array is full.
 
         Args:
-            index: The index at which to insert the value. Must be in the range [0, size].
+            index: The index at which to insert the value. A negative index counts from the end of the array.
             value: The value to insert.
         """
         index = clamp(get_positive_index(index, self._size, include_end=True), 0, self._size)
@@ -331,8 +333,7 @@ class VarArray[T, Capacity](Record, ArrayLike[T]):
     def get_unchecked(self, index: Num) -> T:
         """Get the element at the given index possibly without bounds checking or conversion of negative indexes.
 
-        The compiler may still determine that the index is out of bounds and throw an error, but it may skip these
-        checks at runtime.
+        The index must be between 0 and `len(self) - 1`.
 
         Args:
             index: The index to get.
@@ -345,8 +346,7 @@ class VarArray[T, Capacity](Record, ArrayLike[T]):
     def set_unchecked(self, index: Num, value: T):
         """Set the element at the given index possibly without bounds checking or conversion of negative indexes.
 
-        The compiler may still determine that the index is out of bounds and throw an error, but it may skip these
-        checks at runtime.
+        The index must be between 0 and `len(self) - 1`.
 
         Args:
             index: The index to set.
@@ -409,8 +409,7 @@ class ArrayPointer[T](Record, ArrayLike[T]):
     def get_unchecked(self, item: int) -> T:
         """Get the element at the given index possibly without bounds checking or conversion of negative indexes.
 
-        The compiler may still determine that the index is out of bounds and throw an error, but it may skip these
-        checks at runtime.
+        The index must be between 0 and `len(self) - 1`.
 
         Args:
             item: The index to get.
@@ -424,8 +423,7 @@ class ArrayPointer[T](Record, ArrayLike[T]):
     def set_unchecked(self, key: int, value: T):
         """Set the element at the given index possibly without bounds checking or conversion of negative indexes.
 
-        The compiler may still determine that the index is out of bounds and throw an error, but it may skip these
-        checks at runtime.
+        The index must be between 0 and `len(self) - 1`.
 
         Args:
             key: The index to set.

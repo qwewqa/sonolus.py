@@ -144,8 +144,7 @@ def test_build_particles_empty():
 
 
 def test_build_buckets_is_a_bare_list_not_a_dict():
-    # Also covers the conditional "fallbackId" (on _BucketSprite) and "unit" (on _BucketInfo) keys,
-    # which only appear when set, via the second bucket.
+    # The conditional "fallbackId" and "unit" keys only appear when set, via the second bucket.
     result = build_buckets(_TwoBuckets)
 
     assert result == [
@@ -334,6 +333,11 @@ class _BucketWithinTheSkin:
     note: Bucket = bucket(sprites=[bucket_sprite(sprite=Sprite(1), fallback_sprite=Sprite(0), x=0, y=0, w=1, h=1)])
 
 
+@buckets
+class _BucketWithFractionalSpriteId:
+    note: Bucket = bucket(sprites=[bucket_sprite(sprite=Sprite(0.5), x=0, y=0, w=1, h=1)])
+
+
 MODE_BUILDERS = {
     "play": lambda **kwargs: engine_module.build_play_mode(
         archetypes=[],
@@ -390,3 +394,11 @@ def test_a_bucket_sprite_within_the_declared_skin_is_accepted(mode, monkeypatch)
     result = MODE_BUILDERS[mode](skin=_TwoSpriteSkin, buckets=_BucketWithinTheSkin)
 
     assert result["buckets"] == build_buckets(_BucketWithinTheSkin)
+
+
+@pytest.mark.parametrize("mode", sorted(MODE_BUILDERS))
+def test_a_bucket_sprite_id_must_be_integral(mode, monkeypatch):
+    _stub_compile_mode(monkeypatch)
+
+    with pytest.raises(ValueError, match=r"Bucket 0 references a non-integral sprite id 0\.5"):
+        MODE_BUILDERS[mode](skin=_TwoSpriteSkin, buckets=_BucketWithFractionalSpriteId)

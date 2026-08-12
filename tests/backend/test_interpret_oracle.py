@@ -92,6 +92,17 @@ def test_switch_integer_with_default_functionnode_float_or_oob_takes_default():
     assert run_node(Op.SwitchIntegerWithDefault, FunctionNode(Op.Add, (0, 5)), 10, 20, 99) == 99.0
 
 
+def test_jump_loop_rejects_fractional_branch_index():
+    node = FunctionNode(Op.JumpLoop, (FunctionNode(Op.Divide, (3, 2)), 10))
+    assert Interpreter().run(node) == 0.0
+
+
+def test_integer_inputs_and_results_are_normalized_to_float():
+    assert Interpreter().run(2**53 + 1) == float(2**53 + 1)
+    assert run_node(Op.Add, 2**53, 1) == float(2**53)
+    assert type(run_node(Op.Floor, 1.5)) is float
+
+
 # --------------------------------------------------------------------------------------------- #
 # Op.Rem: truncated remainder with the sign of the dividend (JS `%`), n-ary left fold, empty = 0
 # --------------------------------------------------------------------------------------------- #

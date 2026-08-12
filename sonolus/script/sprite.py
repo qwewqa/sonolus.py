@@ -5,7 +5,7 @@ from typing import Annotated, Any, NewType, dataclass_transform, get_origin
 
 from sonolus.backend.ops import Op
 from sonolus.script.array_like import ArrayLike, check_positive_index
-from sonolus.script.debug import static_error
+from sonolus.script.debug import assert_true, static_error
 from sonolus.script.internal.introspection import describe_value, get_field_specifiers
 from sonolus.script.internal.meta_fn import perf_meta_fn
 from sonolus.script.internal.native import native_function
@@ -41,9 +41,9 @@ class Sprite(Record):
     def draw(self, quad: QuadLike, z: ZIndex = 0.0, a: float = 1.0):
         """Draw the sprite.
 
-        Arguments:
+        Args:
             quad: The quad to draw the sprite on.
-            z: The z-index of the sprite. May be a single value or a tuple of up to 4 values,
+            z: The z-index of the sprite. May be a single value or a tuple containing one to four values,
                 where later values break ties on earlier ones.
             a: The alpha of the sprite.
         """
@@ -54,11 +54,11 @@ class Sprite(Record):
     def draw_curved_b(self, quad: QuadLike, cp: Vec2, n: float, z: ZIndex = 0.0, a: float = 1.0):
         """Draw the sprite with a curved bottom with a quadratic Bézier curve.
 
-        Arguments:
+        Args:
             quad: The quad to draw the sprite on.
             cp: The control point of the curve.
             n: The number of segments to approximate the curve (higher is smoother but more expensive).
-            z: The z-index of the sprite. May be a single value or a tuple of up to 4 values,
+            z: The z-index of the sprite. May be a single value or a tuple containing one to four values,
                 where later values break ties on earlier ones.
             a: The alpha of the sprite.
         """
@@ -69,11 +69,11 @@ class Sprite(Record):
     def draw_curved_t(self, quad: QuadLike, cp: Vec2, n: float, z: ZIndex = 0.0, a: float = 1.0):
         """Draw the sprite with a curved top with a quadratic Bézier curve.
 
-        Arguments:
+        Args:
             quad: The quad to draw the sprite on.
             cp: The control point of the curve.
             n: The number of segments to approximate the curve (higher is smoother but more expensive).
-            z: The z-index of the sprite. May be a single value or a tuple of up to 4 values,
+            z: The z-index of the sprite. May be a single value or a tuple containing one to four values,
                 where later values break ties on earlier ones.
             a: The alpha of the sprite.
         """
@@ -84,11 +84,11 @@ class Sprite(Record):
     def draw_curved_l(self, quad: QuadLike, cp: Vec2, n: float, z: ZIndex = 0.0, a: float = 1.0):
         """Draw the sprite with a curved left side with a quadratic Bézier curve.
 
-        Arguments:
+        Args:
             quad: The quad to draw the sprite on.
             cp: The control point of the curve.
             n: The number of segments to approximate the curve (higher is smoother but more expensive).
-            z: The z-index of the sprite. May be a single value or a tuple of up to 4 values,
+            z: The z-index of the sprite. May be a single value or a tuple containing one to four values,
                 where later values break ties on earlier ones.
             a: The alpha of the sprite.
         """
@@ -99,11 +99,11 @@ class Sprite(Record):
     def draw_curved_r(self, quad: QuadLike, cp: Vec2, n: float, z: ZIndex = 0.0, a: float = 1.0):
         """Draw the sprite with a curved right side with a quadratic Bézier curve.
 
-        Arguments:
+        Args:
             quad: The quad to draw the sprite on.
             cp: The control point of the curve.
             n: The number of segments to approximate the curve (higher is smoother but more expensive).
-            z: The z-index of the sprite. May be a single value or a tuple of up to 4 values,
+            z: The z-index of the sprite. May be a single value or a tuple containing one to four values,
                 where later values break ties on earlier ones.
             a: The alpha of the sprite.
         """
@@ -114,12 +114,12 @@ class Sprite(Record):
     def draw_curved_bt(self, quad: QuadLike, cp1: Vec2, cp2: Vec2, n: float, z: ZIndex = 0.0, a: float = 1.0):
         """Draw the sprite with a curved bottom and top with a cubic Bézier curve.
 
-        Arguments:
+        Args:
             quad: The quad to draw the sprite on.
             cp1: The control point of the bottom curve.
             cp2: The control point of the top curve.
             n: The number of segments to approximate the curve (higher is smoother but more expensive).
-            z: The z-index of the sprite. May be a single value or a tuple of up to 4 values,
+            z: The z-index of the sprite. May be a single value or a tuple containing one to four values,
                 where later values break ties on earlier ones.
             a: The alpha of the sprite.
         """
@@ -130,12 +130,12 @@ class Sprite(Record):
     def draw_curved_lr(self, quad: QuadLike, cp1: Vec2, cp2: Vec2, n: float, z: ZIndex = 0.0, a: float = 1.0):
         """Draw the sprite with a curved left and right side with a cubic Bézier curve.
 
-        Arguments:
+        Args:
             quad: The quad to draw the sprite on.
             cp1: The control point of the left curve.
             cp2: The control point of the right curve.
             n: The number of segments to approximate the curve (higher is smoother but more expensive).
-            z: The z-index of the sprite. May be a single value or a tuple of up to 4 values,
+            z: The z-index of the sprite. May be a single value or a tuple containing one to four values,
                 where later values break ties on earlier ones.
             a: The alpha of the sprite.
         """
@@ -180,10 +180,13 @@ class SpriteGroup(Record, ArrayLike[Sprite]):
 
 
 @perf_meta_fn
-def pad_z_indexes(values: tuple[float, ...] | float) -> tuple[float, float, float, float]:
+def pad_z_indexes(values: ZIndex) -> tuple[float, float, float, float]:
     """Pad a z-index into a 4-tuple, filling unsupplied values with 0."""
     if isinstance(values, TupleImpl):
         values = values.value
+    if isinstance(values, tuple) and not 1 <= len(values) <= 4:
+        assert_true(False, "A z-index tuple must contain between one and four values")
+        return (0, 0, 0, 0)
     match values:
         case (z1,):
             return (z1, 0, 0, 0)

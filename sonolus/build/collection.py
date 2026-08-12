@@ -37,6 +37,14 @@ SINGULAR_CATEGORY_NAMES: dict[Category, str] = {
 }
 BASE_PATH = "/sonolus/"
 RESERVED_FILENAMES = {"info", "list"}
+WINDOWS_RESERVED_FILENAMES = {
+    "con",
+    "prn",
+    "aux",
+    "nul",
+    *(f"com{i}" for i in range(1, 10)),
+    *(f"lpt{i}" for i in range(1, 10)),
+}
 LOCALIZED_KEYS = {"title", "subtitle", "author", "description", "artists"}
 CATEGORY_SORT_ORDER = {
     "levels": 0,
@@ -57,10 +65,14 @@ def validate_item_name(name: str, subject: str, context: str = "") -> None:
         raise ValueError(f"{subject}{qualifier} must be a non-empty string, got {name!r}")
     if name.casefold() in RESERVED_FILENAMES:
         raise ValueError(f"{subject} '{name}'{qualifier} is reserved: 'info' and 'list' are the category index files")
-    if name in {".", ".."} or "/" in name or "\\" in name:
-        raise ValueError(
-            f"{subject} '{name}'{qualifier} is not a usable filename: path separators, '.' and '..' are not allowed"
-        )
+    stem = name.split(".", maxsplit=1)[0].casefold()
+    if (
+        name in {".", ".."}
+        or name.endswith((".", " "))
+        or any(ord(char) < 32 or char in '<>:"/\\|?*' for char in name)
+        or stem in WINDOWS_RESERVED_FILENAMES
+    ):
+        raise ValueError(f"{subject} '{name}'{qualifier} is not a usable filename on all supported platforms")
 
 
 class Collection:
@@ -208,6 +220,8 @@ class Collection:
 
     def _should_skip_zip_entry(self, zip_entry: zipfile.ZipInfo) -> bool:
         path = Path(zip_entry.filename)
+        if not path.parts:
+            return True
         if path.parts[0] == "sonolus":
             path = Path(*path.parts[1:])
         return zip_entry.filename.endswith("/") or len(path.parts) < 2 or path.name.lower() in RESERVED_FILENAMES
@@ -328,7 +342,6 @@ class Collection:
         for key, data in self.repository.items():
             target_path = repo_dir / key
             if target_path.exists():
-                # Since the content is identified by its hash, a matching file can be skipped
                 continue
             target_path.write_bytes(data)
 

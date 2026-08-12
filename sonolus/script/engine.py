@@ -8,7 +8,7 @@ from pathlib import Path
 from typing import Any, Literal
 
 from sonolus.build.collection import Asset, load_asset
-from sonolus.script.archetype import PlayArchetype, PreviewArchetype, WatchArchetype, _BaseArchetype
+from sonolus.script.archetype import AnyArchetype, PlayArchetype, PreviewArchetype, WatchArchetype
 from sonolus.script.bucket import Buckets, EmptyBuckets
 from sonolus.script.effect import Effects, EmptyEffects
 from sonolus.script.instruction import (
@@ -185,9 +185,9 @@ def check_particles(particles: Any):
         raise ValueError(f"Invalid particles: {describe_value(particles)}. Missing an @particles decorator?")
 
 
-def check_archetypes(archetypes: list[type[_BaseArchetype]], expected_type: type[_BaseArchetype]):
+def check_archetypes(archetypes: list[type[AnyArchetype]], expected_type: type[AnyArchetype]):
     seen = set()
-    by_name: dict[str, type[_BaseArchetype]] = {}
+    by_name: dict[str, type[AnyArchetype]] = {}
     for archetype in archetypes:
         if not isinstance(archetype, type) or not issubclass(archetype, expected_type):
             raise ValueError(f"archetype {describe_value(archetype)} is not a {expected_type.__name__}")
@@ -235,7 +235,7 @@ class PlayMode:
     def __init__(
         self,
         *,
-        archetypes: Iterable[type[_BaseArchetype]] | None = None,
+        archetypes: Iterable[type[PlayArchetype]] | None = None,
         skin: Skin = EmptySkin,
         effects: Effects = EmptyEffects,
         particles: Particles = EmptyParticles,
@@ -270,7 +270,7 @@ class WatchMode:
     def __init__(
         self,
         *,
-        archetypes: Iterable[type[_BaseArchetype]] | None = None,
+        archetypes: Iterable[type[WatchArchetype]] | None = None,
         skin: Skin = EmptySkin,
         effects: Effects = EmptyEffects,
         particles: Particles = EmptyParticles,
@@ -303,7 +303,7 @@ class PreviewMode:
     def __init__(
         self,
         *,
-        archetypes: Iterable[type[_BaseArchetype]] | None = None,
+        archetypes: Iterable[type[PreviewArchetype]] | None = None,
         skin: Skin = EmptySkin,
     ) -> None:
         self.archetypes = list(archetypes) if archetypes is not None else []

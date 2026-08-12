@@ -9,8 +9,11 @@ import pytest
 
 from sonolus.script.array import Array
 from sonolus.script.containers import VarArray
+from sonolus.script.debug import debug_log
 from sonolus.script.internal.builtin_impls import _max, _min  # noqa: PLC2701
 from sonolus.script.internal.error import CompilationError
+from sonolus.script.iterator import SonolusIterator
+from sonolus.script.maybe import Nothing, Some
 from sonolus.script.num import Num
 from sonolus.script.record import Record
 from sonolus.script.vec import Vec2
@@ -28,6 +31,26 @@ def test_min_comptime_honors_key():
 class _Pt(Record):
     x: int
     y: int
+
+
+class _InvalidIterable(Record):
+    def __iter__(self):
+        return None
+
+
+class _CountingIterator(Record, SonolusIterator):
+    value: int
+    done: int
+
+    def __iter__(self):
+        debug_log(self.value)
+        return self
+
+    def next(self):
+        if self.done:
+            return Nothing
+        self.done = 1
+        return Some(self.value)
 
 
 def _plain_fn(x):
@@ -155,6 +178,31 @@ def test_iter_on_array_still_works():
         return next(iter(Array(4, 5, 6)))
 
     assert run_and_validate(fn) == 4
+
+
+@pytest.mark.parametrize(
+    "make_fn",
+    [
+        lambda: iter(_InvalidIterable()),
+        lambda: map(lambda x: x, _InvalidIterable()),  # noqa: C417
+        lambda: filter(None, _InvalidIterable()),
+    ],
+    ids=["iter", "map", "filter"],
+)
+def test_iterator_builtins_reject_invalid_iter_result(make_fn):
+    def fn():
+        make_fn()
+        return 0
+
+    with pytest.raises(TypeError, match=r"iter\(\) returned non-iterator of type 'NoneType'"):
+        run_and_validate(fn)
+
+
+def test_map_calls_iter_once_per_input():
+    def fn():
+        return sum(map(lambda a, b: a + b, _CountingIterator(1, 0), _CountingIterator(2, 0)))
+
+    assert run_and_validate(fn) == 3
 
 
 class _BoolByField(Record):

@@ -5,9 +5,11 @@ from types import TracebackType
 
 
 def should_filter_traceback(tb: TracebackType | None) -> bool:
-    return tb is not None and (
-        tb.tb_frame.f_globals.get("_filter_traceback_", False) or should_filter_traceback(tb.tb_next)
-    )
+    while tb is not None:
+        if tb.tb_frame.f_globals.get("_filter_traceback_", False):
+            return True
+        tb = tb.tb_next
+    return False
 
 
 def is_compiler_internal(tb: TracebackType):
@@ -17,27 +19,34 @@ def is_compiler_internal(tb: TracebackType):
 
 
 def is_traceback_root(tb: TracebackType | None) -> bool:
-    return tb.tb_frame.f_locals.get("_traceback_root_", False) or tb.tb_frame.f_globals.get("_traceback_root_", False)
+    return tb is not None and (
+        tb.tb_frame.f_locals.get("_traceback_root_", False) or tb.tb_frame.f_globals.get("_traceback_root_", False)
+    )
 
 
 def filter_traceback(tb: TracebackType | None) -> TracebackType | None:
-    if tb is None:
-        return None
-    if is_compiler_internal(tb):
-        return filter_traceback(tb.tb_next)
-    tb.tb_next = filter_traceback(tb.tb_next)
-    return tb
+    result = None
+    tail = None
+    while tb is not None:
+        next_tb = tb.tb_next
+        if not is_compiler_internal(tb):
+            if result is None:
+                result = tb
+            else:
+                tail.tb_next = tb
+            tail = tb
+        tb = next_tb
+    if tail is not None:
+        tail.tb_next = None
+    return result
 
 
 def truncate_traceback(tb: TracebackType | None) -> TracebackType | None:
-    if tb is None:
-        return None
-    if is_compiler_internal(tb):
-        return truncate_traceback(tb.tb_next)
-    if is_traceback_root(tb):
-        return tb
-    else:
-        return truncate_traceback(tb.tb_next)
+    while tb is not None:
+        if not is_compiler_internal(tb) and is_traceback_root(tb):
+            return tb
+        tb = tb.tb_next
+    return None
 
 
 def excepthook(exc, value, tb):

@@ -92,6 +92,13 @@ def test_add_item_rejects_unusable_names(name):
         c.add_item("skins", name, _item(name))
 
 
+@pytest.mark.parametrize("name", ["trailing.", "trailing ", "nul\x00byte", "star*", "aux.txt"])
+def test_add_item_rejects_names_that_are_not_portable_output_filenames(name):
+    c = Collection()
+    with pytest.raises(ValueError, match="is not a usable filename"):
+        c.add_item("skins", name, _item(name))
+
+
 def test_add_item_allows_same_name_overwrite():
     c = Collection()
     c.add_item("skins", "pixel", _item("pixel"))
@@ -111,6 +118,10 @@ def test_scp_reserved_entries_are_skipped_not_rejected():
     c = Collection()
     c.load_from_scp(scp)
     assert list(c.categories["skins"]) == ["normal"]
+
+
+def test_scp_skips_an_empty_entry_name():
+    assert Collection()._should_skip_zip_entry(zipfile.ZipInfo(""))
 
 
 def test_scp_keeps_dotted_item_names():

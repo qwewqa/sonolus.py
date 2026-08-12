@@ -13,3 +13,11 @@ class CompilationError(RuntimeError):
 
     def __init__(self, message: str):
         super().__init__(message)
+
+
+def caused_by_attribute_error(error: BaseException) -> bool:
+    while error is not None:
+        if isinstance(error, AttributeError):
+            return True
+        error = error.__cause__
+    return False

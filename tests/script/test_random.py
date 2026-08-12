@@ -3,12 +3,15 @@ import random
 from collections import defaultdict
 from collections.abc import Callable
 
+import pytest
 from hypothesis import given
 from hypothesis import strategies as st
 
 import sonolus.script.internal.random as srandom
 from sonolus.script.array import Array
+from sonolus.script.containers import VarArray
 from sonolus.script.debug import assert_true
+from sonolus.script.internal.context import RuntimeChecks
 from sonolus.script.values import copy
 from tests.script.conftest import run_compiled
 
@@ -85,6 +88,155 @@ def test_choice(_r, values_list):
 
     result = run_compiled(fn)
     assert result in values_list
+
+
+def _randrange_empty():
+    random.randrange(0)
+    return 23
+
+
+def _randrange_zero_step():
+    random.randrange(0, 10, 0)
+    return 23
+
+
+def _randrange_non_integral_start():
+    random.randrange(0.5, 10)
+    return 23
+
+
+def _randrange_non_integral_stop():
+    random.randrange(0, 10.5)
+    return 23
+
+
+def _randrange_non_integral_step():
+    random.randrange(0, 10, 1.5)
+    return 23
+
+
+def _randint_reversed():
+    random.randint(10, 0)
+    return 23
+
+
+def _randint_non_integral_start():
+    random.randint(0.5, 10)
+    return 23
+
+
+def _randint_non_integral_stop():
+    random.randint(0, 10.5)
+    return 23
+
+
+def _choice_empty():
+    random.choice(Array[int, 0]())
+    return 23
+
+
+INVALID_RANDOM_CALLS = [
+    _randrange_empty,
+    _randrange_zero_step,
+    _randrange_non_integral_start,
+    _randrange_non_integral_stop,
+    _randrange_non_integral_step,
+    _randint_reversed,
+    _randint_non_integral_start,
+    _randint_non_integral_stop,
+    _choice_empty,
+]
+
+
+@pytest.mark.parametrize("runtime_checks", list(RuntimeChecks))
+@pytest.mark.parametrize("invalid_call", INVALID_RANDOM_CALLS)
+def test_invalid_random_domain_terminates(invalid_call, runtime_checks):
+    assert run_compiled(invalid_call, runtime_checks=runtime_checks) == 0
+
+
+@pytest.mark.parametrize("invalid_call", INVALID_RANDOM_CALLS)
+def test_invalid_random_domain_in_runtime_dead_branch_compiles(invalid_call):
+    def fn():
+        if random.randrange(0, 1):
+            invalid_call()
+        return 23
+
+    assert run_compiled(fn) == 23
+
+
+def _runtime_randrange_empty():
+    stop = random.randrange(0, 1)
+    random.randrange(stop)
+    return 23
+
+
+def _runtime_randrange_zero_step():
+    step = random.randrange(0, 1)
+    random.randrange(0, 10, step)
+    return 23
+
+
+def _runtime_randrange_non_integral_start():
+    start = random.randrange(0, 1) + 0.5
+    random.randrange(start, 10)
+    return 23
+
+
+def _runtime_randrange_non_integral_stop():
+    stop = random.randrange(0, 1) + 10.5
+    random.randrange(0, stop)
+    return 23
+
+
+def _runtime_randrange_non_integral_step():
+    step = random.randrange(0, 1) + 1.5
+    random.randrange(0, 10, step)
+    return 23
+
+
+def _runtime_randint_reversed():
+    b = random.randrange(0, 1)
+    random.randint(1, b)
+    return 23
+
+
+def _runtime_randint_non_integral_start():
+    a = random.randrange(0, 1) + 0.5
+    random.randint(a, 10)
+    return 23
+
+
+def _runtime_randint_non_integral_stop():
+    b = random.randrange(0, 1) + 10.5
+    random.randint(0, b)
+    return 23
+
+
+def _runtime_choice_empty():
+    random.choice(VarArray[int, 1].new())
+    return 23
+
+
+RUNTIME_INVALID_RANDOM_CALLS = [
+    _runtime_randrange_empty,
+    _runtime_randrange_zero_step,
+    _runtime_randrange_non_integral_start,
+    _runtime_randrange_non_integral_stop,
+    _runtime_randrange_non_integral_step,
+    _runtime_randint_reversed,
+    _runtime_randint_non_integral_start,
+    _runtime_randint_non_integral_stop,
+    _runtime_choice_empty,
+]
+
+
+@pytest.mark.parametrize("runtime_checks", [RuntimeChecks.TERMINATE, RuntimeChecks.NOTIFY_AND_TERMINATE])
+@pytest.mark.parametrize("invalid_call", RUNTIME_INVALID_RANDOM_CALLS)
+def test_runtime_invalid_random_domain_terminates(invalid_call, runtime_checks):
+    # A preceding RandomInteger result or a VarArray's stored size hides the invalid domain from the compiler.
+    # Dynamic assertions are intentionally omitted when runtime checks are disabled, so only the two checking modes
+    # promise to terminate here.
+    assert run_compiled(invalid_call, runtime_checks=runtime_checks) == 0
 
 
 @given(st.random_module(), lists)

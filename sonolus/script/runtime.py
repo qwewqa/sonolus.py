@@ -1,4 +1,5 @@
 from enum import IntEnum
+from typing import Protocol
 
 from sonolus.backend.mode import Mode
 from sonolus.backend.ops import Op
@@ -118,6 +119,24 @@ class ScrollDirection(IntEnum):
     TOP_TO_BOTTOM = 1
     RIGHT_TO_LEFT = 2
     BOTTOM_TO_TOP = 3
+
+
+class PreviewRuntimeCanvas(Protocol):
+    """The preview canvas configuration returned by [`canvas`][sonolus.script.runtime.canvas]."""
+
+    scroll_direction: ScrollDirection
+    """The direction in which the canvas scrolls."""
+
+    size: float
+    """The length of the canvas along its scrolling axis."""
+
+    def update(self, scroll_direction: ScrollDirection | None = None, size: float | None = None):
+        """Update the preview canvas configuration.
+
+        Args:
+            scroll_direction: The direction in which the canvas scrolls.
+            size: The length of the canvas along its scrolling axis.
+        """
 
 
 @_preview_runtime_canvas
@@ -807,6 +826,78 @@ class _Background:
     value: Quad
 
 
+class LevelScoreData(Protocol):
+    """The level score configuration returned by [`level_score`][sonolus.script.runtime.level_score]."""
+
+    perfect_multiplier: float
+    """The score multiplier for a perfect judgment."""
+
+    great_multiplier: float
+    """The score multiplier for a great judgment."""
+
+    good_multiplier: float
+    """The score multiplier for a good judgment."""
+
+    consecutive_perfect_multiplier: float
+    """The score multiplier gained at each consecutive-perfect step."""
+
+    consecutive_perfect_step: float
+    """The number of consecutive perfect judgments required for each multiplier increase."""
+
+    consecutive_perfect_cap: float
+    """The maximum consecutive-perfect count used to calculate the multiplier."""
+
+    consecutive_great_multiplier: float
+    """The score multiplier gained at each consecutive-great step."""
+
+    consecutive_great_step: float
+    """The number of consecutive great judgments required for each multiplier increase."""
+
+    consecutive_great_cap: float
+    """The maximum consecutive-great count used to calculate the multiplier."""
+
+    consecutive_good_multiplier: float
+    """The score multiplier gained at each consecutive-good step."""
+
+    consecutive_good_step: float
+    """The number of consecutive good judgments required for each multiplier increase."""
+
+    consecutive_good_cap: float
+    """The maximum consecutive-good count used to calculate the multiplier."""
+
+    def update(
+        self,
+        perfect_multiplier: float | None = None,
+        great_multiplier: float | None = None,
+        good_multiplier: float | None = None,
+        consecutive_perfect_multiplier: float | None = None,
+        consecutive_perfect_step: float | None = None,
+        consecutive_perfect_cap: float | None = None,
+        consecutive_great_multiplier: float | None = None,
+        consecutive_great_step: float | None = None,
+        consecutive_great_cap: float | None = None,
+        consecutive_good_multiplier: float | None = None,
+        consecutive_good_step: float | None = None,
+        consecutive_good_cap: float | None = None,
+    ):
+        """Update the level score configuration.
+
+        Args:
+            perfect_multiplier: The score multiplier for a perfect judgment.
+            great_multiplier: The score multiplier for a great judgment.
+            good_multiplier: The score multiplier for a good judgment.
+            consecutive_perfect_multiplier: The score multiplier gained at each consecutive-perfect step.
+            consecutive_perfect_step: The number of consecutive perfect judgments required for each increase.
+            consecutive_perfect_cap: The maximum consecutive-perfect count used to calculate the multiplier.
+            consecutive_great_multiplier: The score multiplier gained at each consecutive-great step.
+            consecutive_great_step: The number of consecutive great judgments required for each increase.
+            consecutive_great_cap: The maximum consecutive-great count used to calculate the multiplier.
+            consecutive_good_multiplier: The score multiplier gained at each consecutive-good step.
+            consecutive_good_step: The number of consecutive good judgments required for each increase.
+            consecutive_good_cap: The maximum consecutive-good count used to calculate the multiplier.
+        """
+
+
 @_level_score
 class _LevelScore:
     perfect_multiplier: float
@@ -861,6 +952,58 @@ class _LevelScore:
             self.consecutive_good_step = consecutive_good_step
         if consecutive_good_cap is not None:
             self.consecutive_good_cap = consecutive_good_cap
+
+
+class LevelLifeData(Protocol):
+    """The level life configuration returned by [`level_life`][sonolus.script.runtime.level_life]."""
+
+    consecutive_perfect_increment: float
+    """The life gained at each consecutive-perfect step."""
+
+    consecutive_perfect_step: float
+    """The number of consecutive perfect judgments required for each life increment."""
+
+    consecutive_great_increment: float
+    """The life gained at each consecutive-great step."""
+
+    consecutive_great_step: float
+    """The number of consecutive great judgments required for each life increment."""
+
+    consecutive_good_increment: float
+    """The life gained at each consecutive-good step."""
+
+    consecutive_good_step: float
+    """The number of consecutive good judgments required for each life increment."""
+
+    initial: int
+    """The life at the start of the level."""
+
+    maximum: int
+    """The upper limit for life."""
+
+    def update(
+        self,
+        consecutive_perfect_increment: float | None = None,
+        consecutive_perfect_step: float | None = None,
+        consecutive_great_increment: float | None = None,
+        consecutive_great_step: float | None = None,
+        consecutive_good_increment: float | None = None,
+        consecutive_good_step: float | None = None,
+        initial: int | None = None,
+        maximum: int | None = None,
+    ):
+        """Update the level life configuration.
+
+        Args:
+            consecutive_perfect_increment: The life gained at each consecutive-perfect step.
+            consecutive_perfect_step: The number of consecutive perfect judgments required for each life increment.
+            consecutive_great_increment: The life gained at each consecutive-great step.
+            consecutive_great_step: The number of consecutive great judgments required for each life increment.
+            consecutive_good_increment: The life gained at each consecutive-good step.
+            consecutive_good_step: The number of consecutive good judgments required for each life increment.
+            initial: The life at the start of the level.
+            maximum: The upper limit for life.
+        """
 
 
 @_level_life
@@ -1245,8 +1388,8 @@ def runtime_ui() -> RuntimeUi:
     return _runtime_ui  # type: ignore
 
 
-def canvas() -> _PreviewRuntimeCanvas:
-    """Get the preview canvas.
+def canvas() -> PreviewRuntimeCanvas:
+    """Get the [`PreviewRuntimeCanvas`][sonolus.script.runtime.PreviewRuntimeCanvas] configuration.
 
     Only available in preview mode.
     """
@@ -1299,16 +1442,16 @@ def safe_area() -> Rect:
             )
 
 
-def level_score() -> _LevelScore:
-    """Get the level score configuration.
+def level_score() -> LevelScoreData:
+    """Get the [`LevelScoreData`][sonolus.script.runtime.LevelScoreData] for the level.
 
     Only available in play and watch mode.
     """
     return _LevelScore  # type: ignore
 
 
-def level_life() -> _LevelLife:
-    """Get the level life configuration.
+def level_life() -> LevelLifeData:
+    """Get the [`LevelLifeData`][sonolus.script.runtime.LevelLifeData] for the level.
 
     Only available in play and watch mode.
     """

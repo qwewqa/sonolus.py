@@ -10,6 +10,21 @@ from sonolus.script.num import Num, _is_num
 from sonolus.script.record import Record
 
 
+@meta_fn
+def _keys_equal(stored, probe):
+    from sonolus.script.internal.visitor import compile_and_call
+
+    stored = validate_value(stored)
+    probe = validate_value(probe)
+    result = validate_value(compile_and_call(stored.__eq__, probe))
+    if not (result._is_py_() and result._as_py_() is NotImplemented):
+        return result
+    result = validate_value(compile_and_call(probe.__eq__, stored))
+    if result._is_py_() and result._as_py_() is NotImplemented:
+        return False
+    return result
+
+
 class DictImpl[Keys, OrderedKeys, Values](Record):
     _keys: Keys  # tuple[K, ...]
     _ordered_keys: OrderedKeys  # tuple[tuple[K, int], ...] | None
@@ -144,7 +159,7 @@ class DictImpl[Keys, OrderedKeys, Values](Record):
         set_ctx(begin_ctx)
 
         for i, k in enumerate(self._keys):
-            eq = validate_value(compile_and_call(k.__eq__, item))
+            eq = validate_value(compile_and_call(_keys_equal, k, item))
             if not eq._is_py_():
                 # A bit of a hack to allow resetting to the original state
                 del orig_ctx.outgoing[None]
@@ -198,7 +213,7 @@ class DictImpl[Keys, OrderedKeys, Values](Record):
         if hi - lo <= 3:
             # Linear search
             lo_value, orig_index = self._ordered_keys[lo]
-            eq_test = compile_and_call(item.__eq__, lo_value).ir()
+            eq_test = compile_and_call(_keys_equal, lo_value, item).ir()
             ctx_init = ctx()
             ctx_init.test = eq_test
             eq_ctx = ctx_init.branch(None)
@@ -216,7 +231,7 @@ class DictImpl[Keys, OrderedKeys, Values](Record):
 
         mid = (lo + hi) // 2
         mid_value, orig_index = self._ordered_keys[mid]
-        eq_test = compile_and_call(item.__eq__, mid_value).ir()
+        eq_test = compile_and_call(_keys_equal, mid_value, item).ir()
         ctx_init = ctx()
         ctx_init.test = eq_test
         eq_ctx = ctx_init.branch(None)

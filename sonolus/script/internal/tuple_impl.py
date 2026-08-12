@@ -53,7 +53,7 @@ class TupleImpl(TransientValue):
         if len(self) != len(other):
             return False
         for a, b in zip(self, other):  # noqa: SIM110
-            if a != b:
+            if not (a == b):
                 return False
         return True
 
@@ -63,7 +63,7 @@ class TupleImpl(TransientValue):
         if len(self) != len(other):
             return True
         for a, b in zip(self, other):  # noqa: SIM110
-            if a != b:
+            if not (a == b):
                 return True
         return False
 
@@ -71,7 +71,7 @@ class TupleImpl(TransientValue):
         if not self._is_tuple_impl(other):
             return NotImplemented
         for a, b in zip(self, other):
-            if a != b:
+            if not (a == b):
                 return a < b
         return len(self.value) < len(other.value)
 
@@ -79,7 +79,7 @@ class TupleImpl(TransientValue):
         if not self._is_tuple_impl(other):
             return NotImplemented
         for a, b in zip(self, other):
-            if a != b:
+            if not (a == b):
                 return a < b
         return len(self.value) <= len(other.value)
 
@@ -87,7 +87,7 @@ class TupleImpl(TransientValue):
         if not self._is_tuple_impl(other):
             return NotImplemented
         for a, b in zip(self, other):
-            if a != b:
+            if not (a == b):
                 return a > b
         return len(self.value) > len(other.value)
 
@@ -95,7 +95,7 @@ class TupleImpl(TransientValue):
         if not self._is_tuple_impl(other):
             return NotImplemented
         for a, b in zip(self, other):
-            if a != b:
+            if not (a == b):
                 return a > b
         return len(self.value) >= len(other.value)
 

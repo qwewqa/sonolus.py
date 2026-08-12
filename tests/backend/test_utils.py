@@ -2,7 +2,7 @@ import ast
 
 import pytest
 
-from sonolus.backend.utils import find_function, get_function
+from sonolus.backend.utils import find_function, get_function, get_functions, scan_writes
 
 
 def _identity_deco(*args, **kwargs):
@@ -207,3 +207,105 @@ def test_ambiguous_line_without_position_info_raises():
         find_function(tree, 1, _NoPositionCode())
     with pytest.raises(ValueError, match="Multiple functions defined on the same line"):
         find_function(tree, 1)
+
+
+def test_yields_in_definition_expressions_belong_to_enclosing_scope():
+    tree = ast.parse(
+        """
+def outer():
+    def by_default(value=(yield 1)):
+        return value
+    @(yield 2)
+    def by_decorator():
+        return 0
+    def by_annotation() -> (yield 3):
+        return 0
+    class ByBase((yield 4)):
+        pass
+"""
+    )
+    outer, by_default, by_decorator, by_annotation = get_functions(tree)
+
+    assert outer.has_yield
+    assert not getattr(by_default, "has_yield", False)
+    assert not getattr(by_decorator, "has_yield", False)
+    assert not getattr(by_annotation, "has_yield", False)
+
+
+def test_all_lexical_local_bindings_are_predeclared():
+    tree = ast.parse(
+        """
+def outer():
+    assigned = 1
+    for loop_target in ():
+        pass
+    with manager as with_target:
+        pass
+    try:
+        pass
+    except Exception as exception_target:
+        pass
+    import package as imported
+    from package import member
+    def nested():
+        nested_only = 1
+    class Nested:
+        class_only = 1
+    [comprehension_target for comprehension_target in ()]
+"""
+    )
+    outer = get_functions(tree)[0]
+
+    assert outer.declared_locals == {
+        "assigned",
+        "loop_target",
+        "with_target",
+        "exception_target",
+        "imported",
+        "member",
+        "nested",
+        "Nested",
+    }
+
+
+def test_loop_write_scan_excludes_else_and_nested_scope_bodies():
+    loop = ast.parse(
+        """
+while condition:
+    body_value = 1
+    def nested():
+        nested_value = 2
+    class Nested:
+        class_value = 3
+else:
+    else_value = 4
+"""
+    ).body[0]
+
+    assert scan_writes(loop.test, *loop.body) == {"body_value", "nested", "Nested"}
+
+
+def test_loop_write_scan_includes_nested_definition_expressions():
+    loop = ast.parse(
+        """
+while condition:
+    @(decorator_value := identity)
+    def nested(default=(default_value := 1)):
+        nested_value = 2
+"""
+    ).body[0]
+
+    assert scan_writes(loop.test, *loop.body) == {"nested", "decorator_value", "default_value"}
+
+
+def test_for_loop_write_scan_excludes_iterable_expression():
+    loop = ast.parse(
+        """
+for target in (iter_value := values):
+    body_value = target
+else:
+    else_value = 1
+"""
+    ).body[0]
+
+    assert scan_writes(loop.target, *loop.body) == {"target", "body_value"}

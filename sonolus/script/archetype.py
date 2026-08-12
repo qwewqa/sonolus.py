@@ -636,6 +636,8 @@ class _BaseArchetypeMeta(ABCMeta):
     def __new__(mcs, name, bases, namespace, **kwargs):
         module = namespace.get("__module__", "")
         is_derived = namespace.get("_is_derived_", False)
+        if "is_scored" in namespace and type(namespace["is_scored"]) is not bool:
+            raise TypeError(f"is_scored of {name} must be a bool, got {type(namespace['is_scored'])}")
         if module != "sonolus.script.archetype" and not is_derived:
             for field_name in namespace:
                 if (
@@ -914,9 +916,12 @@ class _BaseArchetype(metaclass=_BaseArchetypeMeta):
                             f"Callback '{name}' of {cls.__name__} is declared as a @{type(cb).__name__}. "
                             "An archetype callback must be a plain method taking self."
                         )
-                    if cb not in cls._default_callbacks_:
-                        cls._callbacks_[name] = cb
-                        break
+                    if cb in cls._default_callbacks_:
+                        if mro_entry.__module__ != _BaseArchetype.__module__:
+                            break
+                        continue
+                    cls._callbacks_[name] = cb
+                    break
         # Only the class's own members are checked as to not affect mixins.
         registered = [getattr(cb, "__func__", cb) for cb in cls._callbacks_.values()]
         for name, member in cls.__dict__.items():
@@ -951,9 +956,8 @@ class _BaseArchetype(metaclass=_BaseArchetypeMeta):
                 mro_entry._init_fields()
         if sum(issubclass(base, _BaseArchetype) for base in cls.__bases__) > 1:
             raise TypeError("Multiple inheritance of Archetypes is not supported")
-        mro_from_archetype_parents = set(
-            type("Dummy", tuple(base for base in cls.__bases__ if issubclass(base, _BaseArchetype)), {}).mro()
-        )
+        archetype_parents = [base for base in cls.__bases__ if issubclass(base, _BaseArchetype)]
+        mro_from_archetype_parents = {entry for base in archetype_parents for entry in base.mro()}
         # Archetype parents would have already initialized relevant fields, so only consider the current class
         # and mixins that were not already included via an archetype parent
         mro_excluding_archetype_parents = [entry for entry in cls.mro() if entry not in mro_from_archetype_parents]
@@ -1106,7 +1110,7 @@ class _BaseArchetype(metaclass=_BaseArchetypeMeta):
                     raise _duplicate_key_error(cls, "export", key, exported_key_fields[key], field)
                 exported_keys[key] = len(exported_keys)
                 exported_key_fields[key] = field
-        cls._post_init_fields(exported_fields)
+        cls._post_init_fields(exported_fields, memory_fields)
         cls._imported_fields_ = imported_fields
         cls._data_fields_ = data_fields
         cls._exported_fields_ = exported_fields
@@ -1149,11 +1153,15 @@ class _BaseArchetype(metaclass=_BaseArchetypeMeta):
                 raise RuntimeError("Invalid entity data")
 
     @classmethod
-    def _post_init_fields(cls, exported_fields: dict[str, _ArchetypeField]):
+    def _post_init_fields(
+        cls,
+        exported_fields: dict[str, _ArchetypeField],
+        memory_fields: dict[str, _ArchetypeField],
+    ):
         """Reject a field combination this mode does not support, once the fields are computed."""
 
     @classmethod
-    def derive[T](cls: type[T], name: str, is_scored: bool, key: int | float | None = None) -> type[T]:
+    def derive(cls: type[Self], name: str, is_scored: bool, key: int | float | None = None) -> type[Self]:
         """Derive a new archetype class from this archetype.
 
         Roughly equivalent to returning:
@@ -1544,7 +1552,11 @@ class WatchArchetype(_BaseArchetype):
                 raise RuntimeError("Result is only accessible from the entity itself")
 
     @classmethod
-    def _post_init_fields(cls, exported_fields: dict[str, _ArchetypeField]):
+    def _post_init_fields(
+        cls,
+        exported_fields: dict[str, _ArchetypeField],
+        memory_fields: dict[str, _ArchetypeField],
+    ):
         if exported_fields:
             raise RuntimeError("Watch archetypes cannot have exported fields")
 
@@ -1601,9 +1613,19 @@ class PreviewArchetype(_BaseArchetype):
         return self._info.index
 
     @classmethod
-    def _post_init_fields(cls, exported_fields: dict[str, _ArchetypeField]):
+    def _post_init_fields(
+        cls,
+        exported_fields: dict[str, _ArchetypeField],
+        memory_fields: dict[str, _ArchetypeField],
+    ):
         if exported_fields:
             raise RuntimeError("Preview archetypes cannot have exported fields")
+        if memory_fields:
+            raise RuntimeError("Preview archetypes cannot have entity memory fields")
+
+
+type AnyArchetype = PlayArchetype | WatchArchetype | PreviewArchetype
+"""Union of all archetype types."""
 
 
 @meta_fn
@@ -1757,7 +1779,7 @@ class WatchEntityInput(Record):
     """The value recorded in `bucket`, shown with that bucket's unit."""
 
 
-class EntityRef[A: _BaseArchetype](Record):
+class EntityRef[A: AnyArchetype](Record):
     """Reference to another entity.
 
     May be used with `typing.Any` to reference an unknown archetype.
@@ -1779,7 +1801,7 @@ class EntityRef[A: _BaseArchetype](Record):
         """Get the archetype type."""
         return cls.type_var_value(A)
 
-    def with_archetype[T: _BaseArchetype](self, archetype: type[T]) -> EntityRef[T]:
+    def with_archetype[T: AnyArchetype](self, archetype: type[T]) -> EntityRef[T]:
         """Return a new reference with the given archetype type."""
         result = EntityRef[archetype](index=self.index)
         if hasattr(self, "_ref_"):
@@ -1789,14 +1811,20 @@ class EntityRef[A: _BaseArchetype](Record):
 
     @meta_fn
     def __eq__(self, other: Any) -> bool:
-        if not ctx() and hasattr(self, "_ref_") and hasattr(other, "_ref_"):
-            return self._ref_ is other._ref_
+        if not ctx() and isinstance(other, EntityRef):
+            self_has_ref = hasattr(self, "_ref_")
+            other_has_ref = hasattr(other, "_ref_")
+            if self_has_ref or other_has_ref:
+                return self_has_ref and other_has_ref and self._ref_ is other._ref_
         return super().__eq__(other)
 
     @meta_fn
     def __ne__(self, other: Any) -> bool:
-        if not ctx() and hasattr(self, "_ref_") and hasattr(other, "_ref_"):
-            return self._ref_ is not other._ref_
+        if not ctx() and isinstance(other, EntityRef):
+            self_has_ref = hasattr(self, "_ref_")
+            other_has_ref = hasattr(other, "_ref_")
+            if self_has_ref or other_has_ref:
+                return not (self_has_ref and other_has_ref and self._ref_ is other._ref_)
         return super().__ne__(other)
 
     def __hash__(self) -> int:
@@ -1829,7 +1857,7 @@ class EntityRef[A: _BaseArchetype](Record):
         return self.archetype().at(self.index, check=check)
 
     @meta_fn
-    def get_as(self, archetype: type[_BaseArchetype]) -> _BaseArchetype:
+    def get_as[T: AnyArchetype](self, archetype: type[T]) -> T:
         """Get the entity as the given archetype type.
 
         Not supported for a reference created by [`ref`][sonolus.script.archetype.PlayArchetype.ref] while
@@ -1914,10 +1942,6 @@ class StandardArchetypeName(StrEnum):
 
     TIMESCALE_GROUP = "#TIMESCALE_GROUP"
     """Entity referenced by the timescale changes in a group"""
-
-
-type AnyArchetype = PlayArchetype | WatchArchetype | PreviewArchetype
-"""Union of all archetype types."""
 
 
 class StandardImportName:

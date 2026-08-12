@@ -54,6 +54,7 @@ sonolus-py schema [module]
 | `-O2`, `--optimize-standard` | used if none of `-O0`/`-O1`/`-O2` is given | Use the standard optimization passes. |
 | `--runtime-checks {none,terminate,notify}` | `none` for `build`/`check`, `notify` for `dev` | `none` disables runtime checks; `terminate` stops the callback on error; `notify` additionally logs and pauses before terminating. |
 | `--gc` | off | Enable the Python garbage collector during compilation. |
+| `--no-gc` | on | Disable the Python garbage collector during compilation. |
 | `--play`, `--watch`, `--preview`, `--tutorial` | all enabled if none are given | Restrict which components are built (or, for `check`, validated). Passing any one of the four narrows the set to just those given. |
 | `-v`, `--verbose` | off | Print the full traceback for a compilation error instead of a simplified summary when one is available. |
 | `--profile` | off | Print a per-stage compile timing summary to stderr. Not available for `dev`. |

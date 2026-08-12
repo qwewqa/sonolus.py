@@ -119,6 +119,40 @@ def test_import_hook_substitutes_a_module_imported_inside_the_context(tmp_path):
         sys.path.remove(str(tmp_path))
 
 
+def test_import_hook_substitutes_a_dotted_module_imported_inside_the_context(tmp_path):
+    package_name = "_sonolus_simulation_context_package"
+    submodule_name = f"{package_name}.probe"
+    package = tmp_path / package_name
+    package.mkdir()
+    (package / "__init__.py").write_text("")
+    (package / "probe.py").write_text(
+        textwrap.dedent(
+            """
+            from sonolus.script.array import Array
+            from sonolus.script.globals import level_memory
+
+            probe_memory = level_memory(Array[int, 2])
+            """
+        )
+    )
+    sys.path.insert(0, str(tmp_path))
+    importlib.invalidate_caches()
+    assert package_name not in sys.modules
+    assert submodule_name not in sys.modules
+
+    try:
+        with simulation_context():
+            package_module = __import__(submodule_name)
+            package_module.probe.probe_memory[0] = 3
+            assert list(package_module.probe.probe_memory) == [3, 0]
+
+        assert isinstance(sys.modules[submodule_name].probe_memory, _GlobalPlaceholder)
+    finally:
+        sys.modules.pop(submodule_name, None)
+        sys.modules.pop(package_name, None)
+        sys.path.remove(str(tmp_path))
+
+
 def test_abandoned_construction_does_not_block_a_later_context():
     # Regression: the guard used to be claimed in __init__, so a context that was built but never entered blocked
     # every later context in the process.

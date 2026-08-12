@@ -1,4 +1,4 @@
-from typing import Any
+from typing import Annotated, Any
 
 import pytest
 from hypothesis import given
@@ -59,6 +59,13 @@ class Pair[T, U](Record):
 class ConcreteCompound(Record):
     a: Pair[Num, Num]
     b: Pair[Num, Num]
+
+
+def test_record_field_type_spec_is_normalized():
+    class Tagged(Record):
+        value: Annotated[int, "tag"]
+
+    assert Tagged._fields_[0].type is Num
 
 
 @given(a=f32_range_floats)

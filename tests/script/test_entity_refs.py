@@ -217,3 +217,29 @@ def test_entity_ref_in_a_boolean_context_is_rejected():
 def test_entity_ref_bool_outside_compilation_is_true():
     # Host-side, an EntityRef is an ordinary truthy object, so `if ref:` in build-time code keeps working.
     assert bool(EntityRef[RefBase](index=0)) is True
+
+
+def test_host_backed_entity_refs_that_compare_equal_have_equal_hashes():
+    entity = RefBase()
+    first = entity.ref()
+    second = entity.ref()
+
+    assert first == second
+    assert hash(first) == hash(second)
+
+
+def test_host_backed_entity_ref_does_not_equal_a_raw_ref_with_its_placeholder_index():
+    backed = RefBase().ref()
+    raw = EntityRef[RefBase](index=-1)
+
+    assert backed != raw
+
+
+def test_host_entity_ref_does_not_compare_equal_to_an_unrelated_object_with_the_same_ref_marker():
+    entity = RefBase()
+    backed = entity.ref()
+
+    class Unrelated:
+        _ref_ = entity
+
+    assert backed != Unrelated()

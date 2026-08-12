@@ -40,7 +40,7 @@ def preprocess_type_spec(arg: Any) -> Any:
     if hasattr(result, "_type_mapping_"):
         return result._type_mapping_
     if get_origin(result) is Annotated:
-        return result.__args__[0]
+        return preprocess_type_spec(result.__args__[0])
     if get_origin(result) is Literal:
         if len({type(v) for v in result.__args__}) != 1:
             raise TypeError(f"Literal[] type arguments must all be of the same type, got {result.__args__}")
@@ -77,7 +77,7 @@ class TypeInfo(typing.NamedTuple):
 
 
 def validate_type_spec_with_extras(spec: Any) -> TypeInfo:
-    spec = validate_type_arg(spec)
+    spec = preprocess_type_spec(spec)
     if isinstance(spec, PartialGeneric | TypeVar) or (isinstance(spec, type) and issubclass(spec, Value)):
         return TypeInfo(spec, final=False)
     origin = typing.get_origin(spec)

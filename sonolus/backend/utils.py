@@ -39,26 +39,70 @@ class FindFunction(ast.NodeVisitor):
         self.results: list[ast.FunctionDef | ast.Lambda] = []
         self.current_fn = None
 
-    def _visit_scope(self, node: ast.FunctionDef | ast.AsyncFunctionDef | ast.Lambda | ast.ClassDef):
+    def _visit_scope(self, node: ast.FunctionDef | ast.AsyncFunctionDef | ast.Lambda | ast.ClassDef, body):
         node.declared_locals = set()
         outer_fn = self.current_fn
         self.current_fn = node
-        self.generic_visit(node)
+        if not isinstance(node, ast.ClassDef):
+            for arg in [*node.args.posonlyargs, *node.args.args, *node.args.kwonlyargs]:
+                node.declared_locals.add(arg.arg)
+            if node.args.vararg is not None:
+                node.declared_locals.add(node.args.vararg.arg)
+            if node.args.kwarg is not None:
+                node.declared_locals.add(node.args.kwarg.arg)
+        for entry in body:
+            self.visit(entry)
         self.current_fn = outer_fn
 
+    def _visit_arguments(self, arguments: ast.arguments):
+        for arg in [*arguments.posonlyargs, *arguments.args, *arguments.kwonlyargs]:
+            if arg.annotation is not None:
+                self.visit(arg.annotation)
+        if arguments.vararg is not None and arguments.vararg.annotation is not None:
+            self.visit(arguments.vararg.annotation)
+        if arguments.kwarg is not None and arguments.kwarg.annotation is not None:
+            self.visit(arguments.kwarg.annotation)
+        for default in [*arguments.defaults, *arguments.kw_defaults]:
+            if default is not None:
+                self.visit(default)
+
+    def _visit_function_expressions(self, node: ast.FunctionDef | ast.AsyncFunctionDef):
+        for decorator in node.decorator_list:
+            self.visit(decorator)
+        self._visit_arguments(node.args)
+        if node.returns is not None:
+            self.visit(node.returns)
+        for type_param in getattr(node, "type_params", ()):
+            self.visit(type_param)
+
     def visit_FunctionDef(self, node: ast.FunctionDef):
+        if self.current_fn is not None:
+            self.current_fn.declared_locals.add(node.name)
         self.results.append(node)
-        self._visit_scope(node)
+        self._visit_function_expressions(node)
+        self._visit_scope(node, node.body)
 
     def visit_Lambda(self, node: ast.Lambda):
         self.results.append(node)
-        self._visit_scope(node)
+        self._visit_arguments(node.args)
+        self._visit_scope(node, (node.body,))
 
     def visit_AsyncFunctionDef(self, node: ast.AsyncFunctionDef):
-        self._visit_scope(node)
+        if self.current_fn is not None:
+            self.current_fn.declared_locals.add(node.name)
+        self._visit_function_expressions(node)
+        self._visit_scope(node, node.body)
 
     def visit_ClassDef(self, node: ast.ClassDef):
-        self._visit_scope(node)
+        if self.current_fn is not None:
+            self.current_fn.declared_locals.add(node.name)
+        for expression in [*node.decorator_list, *node.bases]:
+            self.visit(expression)
+        for keyword in node.keywords:
+            self.visit(keyword.value)
+        for type_param in getattr(node, "type_params", ()):
+            self.visit(type_param)
+        self._visit_scope(node, node.body)
 
     # Visitors have high overhead, so we detect generators here rather than in a separate pass.
 
@@ -74,9 +118,74 @@ class FindFunction(ast.NodeVisitor):
         # A bare annotation makes the name local to the enclosing function for the whole body, including reads
         # that precede it, so it has to be known before the body is visited. Only an unparenthesized name counts:
         # `(x): int` is `simple=0` and leaves x resolving outward.
-        if node.value is None and node.simple and self.current_fn is not None:
-            self.current_fn.declared_locals.add(node.target.id)
+        if node.value is None:
+            if node.simple and self.current_fn is not None:
+                self.current_fn.declared_locals.add(node.target.id)
+            elif isinstance(node.target, ast.Attribute):
+                self.visit(node.target.value)
+            elif isinstance(node.target, ast.Subscript):
+                self.visit(node.target.value)
+                self.visit(node.target.slice)
+            return
+        self.visit(node.target)
+        self.visit(node.value)
+
+    def visit_Name(self, node: ast.Name):
+        if isinstance(node.ctx, ast.Store | ast.Del) and self.current_fn is not None:
+            self.current_fn.declared_locals.add(node.id)
+
+    def visit_Import(self, node: ast.Import):
+        if self.current_fn is not None:
+            for alias in node.names:
+                self.current_fn.declared_locals.add(alias.asname or alias.name.partition(".")[0])
+
+    def visit_ImportFrom(self, node: ast.ImportFrom):
+        if self.current_fn is not None:
+            for alias in node.names:
+                if alias.name != "*":
+                    self.current_fn.declared_locals.add(alias.asname or alias.name)
+
+    def visit_ExceptHandler(self, node: ast.ExceptHandler):
+        if node.name is not None and self.current_fn is not None:
+            self.current_fn.declared_locals.add(node.name)
         self.generic_visit(node)
+
+    def visit_MatchAs(self, node: ast.MatchAs):
+        if node.name is not None and self.current_fn is not None:
+            self.current_fn.declared_locals.add(node.name)
+        self.generic_visit(node)
+
+    def visit_MatchStar(self, node: ast.MatchStar):
+        if node.name is not None and self.current_fn is not None:
+            self.current_fn.declared_locals.add(node.name)
+
+    def visit_MatchMapping(self, node: ast.MatchMapping):
+        if node.rest is not None and self.current_fn is not None:
+            self.current_fn.declared_locals.add(node.rest)
+        self.generic_visit(node)
+
+    def _visit_comprehension(self, node: ast.ListComp | ast.SetComp | ast.DictComp | ast.GeneratorExp):
+        for generator in node.generators:
+            self.visit(generator.iter)
+            for condition in generator.ifs:
+                self.visit(condition)
+        if isinstance(node, ast.DictComp):
+            self.visit(node.key)
+            self.visit(node.value)
+        else:
+            self.visit(node.elt)
+
+    def visit_ListComp(self, node: ast.ListComp):
+        self._visit_comprehension(node)
+
+    def visit_SetComp(self, node: ast.SetComp):
+        self._visit_comprehension(node)
+
+    def visit_DictComp(self, node: ast.DictComp):
+        self._visit_comprehension(node)
+
+    def visit_GeneratorExp(self, node: ast.GeneratorExp):
+        self._visit_comprehension(node)
 
 
 @cache
@@ -162,10 +271,29 @@ class ScanWrites(ast.NodeVisitor):
             self.writes.append(node.id)
 
     def visit_FunctionDef(self, node):
-        # A nested def binds its name through a plain str attribute rather than a Name node, so it must be
-        # recorded here to be treated as loop-carried.
         self.writes.append(node.name)
-        self.generic_visit(node)
+        for decorator in node.decorator_list:
+            self.visit(decorator)
+        self.visit(node.args)
+        if node.returns is not None:
+            self.visit(node.returns)
+        for type_param in getattr(node, "type_params", ()):
+            self.visit(type_param)
+
+    def visit_AsyncFunctionDef(self, node):
+        self.visit_FunctionDef(node)
+
+    def visit_Lambda(self, node):
+        self.visit(node.args)
+
+    def visit_ClassDef(self, node):
+        self.writes.append(node.name)
+        for expression in [*node.decorator_list, *node.bases]:
+            self.visit(expression)
+        for keyword in node.keywords:
+            self.visit(keyword.value)
+        for type_param in getattr(node, "type_params", ()):
+            self.visit(type_param)
 
     def visit_MatchAs(self, node):
         if node.name is not None:
@@ -182,8 +310,46 @@ class ScanWrites(ast.NodeVisitor):
             self.writes.append(node.rest)
         self.generic_visit(node)
 
+    def visit_Import(self, node: ast.Import):
+        for alias in node.names:
+            self.writes.append(alias.asname or alias.name.partition(".")[0])
 
-def scan_writes(node: ast.AST) -> set[str]:
+    def visit_ImportFrom(self, node: ast.ImportFrom):
+        for alias in node.names:
+            if alias.name != "*":
+                self.writes.append(alias.asname or alias.name)
+
+    def visit_ExceptHandler(self, node: ast.ExceptHandler):
+        if node.name is not None:
+            self.writes.append(node.name)
+        self.generic_visit(node)
+
+    def _visit_comprehension(self, node: ast.ListComp | ast.SetComp | ast.DictComp | ast.GeneratorExp):
+        for generator in node.generators:
+            self.visit(generator.iter)
+            for condition in generator.ifs:
+                self.visit(condition)
+        if isinstance(node, ast.DictComp):
+            self.visit(node.key)
+            self.visit(node.value)
+        else:
+            self.visit(node.elt)
+
+    def visit_ListComp(self, node: ast.ListComp):
+        self._visit_comprehension(node)
+
+    def visit_SetComp(self, node: ast.SetComp):
+        self._visit_comprehension(node)
+
+    def visit_DictComp(self, node: ast.DictComp):
+        self._visit_comprehension(node)
+
+    def visit_GeneratorExp(self, node: ast.GeneratorExp):
+        self._visit_comprehension(node)
+
+
+def scan_writes(*nodes: ast.AST) -> set[str]:
     visitor = ScanWrites()
-    visitor.visit(node)
+    for node in nodes:
+        visitor.visit(node)
     return set(visitor.writes)

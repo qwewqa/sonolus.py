@@ -391,6 +391,10 @@ class Interpreter:
         self.timescale_changes = [(0.0, 1.0)]
 
     def run(self, node: EngineNode) -> float:
+        result = self._run(node)
+        return float(result) if isinstance(result, int) else result
+
+    def _run(self, node: EngineNode) -> float:
         if not isinstance(node, FunctionNode):
             return node
         func = node.func
@@ -472,7 +476,10 @@ class Interpreter:
                 while 0 <= index < len(args):
                     if index == len(args) - 1:
                         return self.run(args[index])
-                    index = int(self.run(args[index]))
+                    next_index = self.run(args[index])
+                    if not (0 <= next_index < len(args) and int(next_index) == next_index):
+                        return 0.0
+                    index = int(next_index)
                 return 0.0
             case Op.Block:
                 try:

@@ -157,9 +157,6 @@ def getattr(obj: object, name: builtins.str, default: Any = ...) -> Any:
 def hasattr(obj: object, name: builtins.str) -> builtins.bool:
     """Check if an object has a named attribute.
 
-    Can result in a compile-time error if an unsupported property is checked,
-    since later trying to access it would also fail.
-
     Args:
         obj: The object to check.
         name: The name of the attribute.
@@ -237,8 +234,8 @@ def len(s: object, /) -> builtins.int:
 def map[T, S](function: Callable[..., S], iterable: Iterable[T], /, *iterables: Iterable[Any]) -> Iterator[S]:
     """Apply a function to every item of an iterable and return an iterator.
 
-    A `tuple`, `dict`, `set`, or enum class may be used, but every argument must be one of those, or none may be;
-    mixing them with other iterables raises an error.
+    A `tuple`, `dict`, `set`, or enum class may be used when every iterable argument is one of those. Other
+    supported iterable types may be mixed with each other, but not with those compile-time collections.
 
     Args:
         function: The function to apply.
@@ -279,10 +276,8 @@ def max(*args, **kwargs):
     A `tuple`, `dict`, `set`, or enum class argument is only supported when every element is numeric; use an
     `Array` or `VarArray` for a collection of other types.
 
-    The `default` parameter specifies a value to return if the iterable is empty. It is not supported when called
-    with multiple arguments, and it must be usable in place of an element. When the iterable's length is not known
-    at compile time, the choice between an element and `default` is made at runtime, which only numbers support,
-    so a `Record` or `Array` element type fails to compile there.
+    The `default` parameter is supported only with a single iterable and must be usable in place of an element.
+    When the iterable's length is not known at compile time, only numeric elements support `default`.
     """
     ...
 
@@ -315,10 +310,8 @@ def min(*args, **kwargs):
     A `tuple`, `dict`, `set`, or enum class argument is only supported when every element is numeric; use an
     `Array` or `VarArray` for a collection of other types.
 
-    The `default` parameter specifies a value to return if the iterable is empty. It is not supported when called
-    with multiple arguments, and it must be usable in place of an element. When the iterable's length is not known
-    at compile time, the choice between an element and `default` is made at runtime, which only numbers support,
-    so a `Record` or `Array` element type fails to compile there.
+    The `default` parameter is supported only with a single iterable and must be usable in place of an element.
+    When the iterable's length is not known at compile time, only numeric elements support `default`.
     """
     ...
 
@@ -391,8 +384,7 @@ def set(*args) -> builtins.set:
 def setattr(obj: object, name: builtins.str, value: Any) -> None:
     """Set a named attribute on an object.
 
-    The attribute must already exist as a supported field or property; setting an unsupported name is a
-    compile-time error.
+    The attribute must already exist as a supported field or property.
 
     Args:
         obj: The object to set the attribute on.

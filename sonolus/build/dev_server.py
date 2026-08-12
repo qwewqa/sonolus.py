@@ -149,8 +149,7 @@ class RebuildCommand:
                 project_state=project_state,
             )
             write_collection(collection, server_state.build_dir, clear=False)
-            # Only now is the new build the one being served. Committing earlier would leave a failed rebuild's
-            # partial debug_str_mappings installed, and decode reads those for the build the client is running.
+            # Decode must keep the previous debug mappings if compilation or writing fails.
             server_state.project_state = project_state
             server_state.project = project
             server_state.base_collection = base_collection
@@ -240,14 +239,12 @@ def parse_dev_command(command_line: str) -> Command | None:
         elif args.cmd in {"quit", "q"}:
             return ExitCommand()
         else:
-            # Really, we should not reach here, since argparse would have errored out earlier
             print("Unknown command.\n")
             return None
     except (argparse.ArgumentError, argparse.ArgumentTypeError) as e:
         print(f"Error parsing command: {e}\n")
         return None
     except SystemExit:
-        # argparse throws this on some errors, and will print out help automatically
         print()
         return None
 
@@ -270,7 +267,6 @@ def command_input_thread(command_queue: queue.Queue, prompt_event: threading.Eve
                         break
                 else:
                     print(f"Available commands:\n{HELP_TEXT}")
-                    # Show prompt again
                     prompt_event.set()
             else:
                 prompt_event.set()
@@ -334,11 +330,12 @@ def run_server(
             sys.stdout.flush()
 
     with socketserver.TCPServer(("", port), DirectoryHandler) as httpd:
+        bound_port = httpd.server_address[1]
         local_ips = get_local_ips()
-        print(f"Server started on port {port}")
+        print(f"Server started on port {bound_port}")
         print("Available on:")
         for ip in local_ips:
-            print(f"  http://{ip}:{port}")
+            print(f"  http://{ip}:{bound_port}")
 
         if interactive:
             server_state = ServerState(

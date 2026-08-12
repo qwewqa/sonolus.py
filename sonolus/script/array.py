@@ -236,8 +236,7 @@ class Array[T, Size](GenericValue, ArrayLike[T], metaclass=ArrayMeta):
     def get_unchecked(self, index: Num) -> T:
         """Get the element at the given index possibly without bounds checking or conversion of negative indexes.
 
-        The compiler may still determine that the index is out of bounds and throw an error, but it may skip these
-        checks at runtime.
+        The index must be between 0 and `len(self) - 1`.
 
         Args:
             index: The index to get.
@@ -308,8 +307,7 @@ class Array[T, Size](GenericValue, ArrayLike[T], metaclass=ArrayMeta):
     def set_unchecked(self, index: Num, value: T):
         """Set the element at the given index possibly without bounds checking or conversion of negative indexes.
 
-        The compiler may still determine that the index is out of bounds and throw an error, but it may skip these
-        checks at runtime.
+        The index must be between 0 and `len(self) - 1`.
 
         Args:
             index: The index to set.
