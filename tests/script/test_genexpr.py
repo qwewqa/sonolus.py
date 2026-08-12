@@ -503,6 +503,15 @@ def test_genexpr_inner_clause_iterable_reads_the_preceding_target():
     assert run_and_validate(fn) == 33
 
 
+def test_genexpr_later_target_is_local_in_its_iterable():
+    def fn():
+        y = 10
+        return sum(y for x in Array(1) for y in Array(y, y + 1))
+
+    with pytest.raises(UnboundLocalError, match="cannot access local variable 'y'"):
+        run_and_validate(fn)
+
+
 def test_nested_genexpr_inner_iterable_reads_the_outer_target():
     def fn():
         return sum(sum(v for v in Array(x, x)) for x in Array(1, 2))

@@ -144,6 +144,7 @@ class ProjectSchema(TypedDict):
     """The schema of a project, as returned by [`Project.schema`][sonolus.script.project.Project.schema]."""
 
     archetypes: list[ArchetypeSchema]
+    """The schemas of the project's archetypes."""
 
 
 @dataclass

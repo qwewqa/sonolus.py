@@ -16,6 +16,7 @@ from sonolus.backend.excepthook import install_excepthook
 from sonolus.backend.utils import get_function, get_signature, scan_writes
 from sonolus.script.debug import assert_true, require
 from sonolus.script.internal.builtin_impls import (
+    BUILTIN_IMPL_NAMES,
     BUILTIN_IMPLS,
     _bool,
     _float,
@@ -49,7 +50,7 @@ from sonolus.script.internal.transient import TransientValue
 from sonolus.script.internal.tuple_impl import TupleImpl, has_tuple_iter, tuple_iter
 from sonolus.script.internal.value import Value
 from sonolus.script.iterator import SonolusIterator
-from sonolus.script.maybe import Maybe, Nothing
+from sonolus.script.maybe import Maybe, Nothing, Some
 from sonolus.script.num import Num, _is_num
 from sonolus.script.record import Record
 
@@ -312,6 +313,7 @@ op_to_symbol = {
     ast.Not: "not",
     ast.In: "in",
     ast.NotIn: "not in",
+    ast.MatMult: "@",
 }
 
 _EQ_OP = ast.Eq()
@@ -331,6 +333,50 @@ def _has_strict_subclass_reflected_priority(lhs: Value, rhs: Value, reflected_na
     )
 
 
+_NOT_IMPLEMENTED = object()
+_SPECIAL_METHOD_MISSING = object()
+
+
+def _raw_special_method(cls: type, name: str) -> Any:
+    for base in cls.__mro__:
+        if name in base.__dict__:
+            return base.__dict__[name]
+    return _SPECIAL_METHOD_MISSING
+
+
+def _bind_special_method(value: Any, name: str) -> Any:
+    descriptor = _raw_special_method(type(value), name)
+    if descriptor is _SPECIAL_METHOD_MISSING:
+        return descriptor
+    descriptor_get = getattr(type(descriptor), "__get__", None)
+    return descriptor_get(descriptor, value, type(value)) if descriptor_get is not None else descriptor
+
+
+def _comptime_binop(lhs: Any, rhs: Any, op: str, reflected_op: str) -> Any:
+    lhs_type = type(lhs)
+    rhs_type = type(rhs)
+    lhs_descriptor = _raw_special_method(lhs_type, op)
+    rhs_descriptor = _raw_special_method(rhs_type, reflected_op)
+    right_has_priority = (
+        lhs_type is not rhs_type
+        and issubclass(rhs_type, lhs_type)
+        and rhs_descriptor is not _raw_special_method(lhs_type, reflected_op)
+    )
+    if right_has_priority and rhs_descriptor is not _SPECIAL_METHOD_MISSING:
+        result = _bind_special_method(rhs, reflected_op)(lhs)
+        if result is not NotImplemented:
+            return result
+    if lhs_descriptor is not _SPECIAL_METHOD_MISSING:
+        result = _bind_special_method(lhs, op)(rhs)
+        if result is not NotImplemented:
+            return result
+    if not right_has_priority and rhs_descriptor is not _SPECIAL_METHOD_MISSING and lhs_type is not rhs_type:
+        result = _bind_special_method(rhs, reflected_op)(lhs)
+        if result is not NotImplemented:
+            return result
+    return _NOT_IMPLEMENTED
+
+
 # Binary operator method names implemented by Num. For two Num operands, these never return NotImplemented,
 # so the NotImplemented negotiation protocol can be skipped as a fast path.
 _NUM_BIN_OP_NAMES = frozenset(
@@ -347,6 +393,8 @@ _NUM_BIN_OP_NAMES = frozenset(
 
 # Type-keyed dispatch cache for Visitor.visit. AST node classes are a small closed set.
 _VISITOR_DISPATCH: dict[type, Callable] = {}
+
+_ACTIVE_VISITORS = []
 
 # Cache of resolved descriptors (or None) keyed by (type, attribute name) for handle_getattr/handle_setattr.
 # Within a single build session, classes and their signatures are assumed immutable, so a resolved
@@ -481,6 +529,7 @@ class Visitor(ast.NodeVisitor):
     active_ctx: Context | None  # The active context for use in nested functions
     parent: Visitor | None  # The parent visitor for use in nested functions
     used_parent_binding_values: dict[str, Value]  # Values of parent bindings used in this
+    generator_dependencies: dict[tuple[int, str], tuple[Visitor, str, Value]]
     function_name: str
     qualified_name: str
 
@@ -503,8 +552,11 @@ class Visitor(ast.NodeVisitor):
         self.yield_ctxs = []
         self.resume_ctxs = []
         self.active_ctx = None
+        self.is_running = False
+        self.is_generator = False
         self.parent = parent
         self.used_parent_binding_values = {}
+        self.generator_dependencies = {}
         self.declared_locals = frozenset()
         self.function_name = function_name
         if qualified_name is None:
@@ -516,6 +568,23 @@ class Visitor(ast.NodeVisitor):
             self.qualified_name = qualified_name
 
     def run(self, node, initial_iterator: Value | None = None):
+        caller_ctx = ctx()
+        caller_is_in_generator = caller_ctx.callback_state.is_in_generator
+        self.is_running = True
+        _ACTIVE_VISITORS.append(self)
+        try:
+            return self._run(node, initial_iterator)
+        except Exception:
+            failed_ctx = ctx()
+            caller_ctx.callback_state.is_in_generator = caller_is_in_generator
+            failed_ctx.scope = caller_ctx.scope.copy()
+            set_ctx(failed_ctx)
+            raise
+        finally:
+            assert _ACTIVE_VISITORS.pop() is self
+            self.is_running = False
+
+    def _run(self, node, initial_iterator: Value | None = None):
         completion_timer = mark_start(self.qualified_name)
         before_ctx = ctx()
         before_alloc_state = ctx().save_alloc_state()
@@ -525,6 +594,7 @@ class Visitor(ast.NodeVisitor):
             ctx().scope.set_value(name, validate_value(value))
         was_in_generator = ctx().callback_state.is_in_generator
         is_generator_fn = getattr(node, "has_yield", False)
+        self.is_generator = is_generator_fn or isinstance(node, ast.GeneratorExp)
         ctx().callback_state.is_in_generator = ctx().callback_state.is_in_generator or is_generator_fn
         match node:
             case ast.FunctionDef(body=body):
@@ -537,10 +607,14 @@ class Visitor(ast.NodeVisitor):
                 self.declared_locals = getattr(node, "declared_locals", frozenset())
                 self.visit_statements(body)
             case ast.Lambda(body=body):
+                self.declared_locals = getattr(node, "declared_locals", frozenset())
                 result = self.visit(body)
                 ctx().scope.set_value("$return", result)
             case ast.GeneratorExp(elt=elt, generators=generators):
                 ctx().callback_state.is_in_generator = True
+                self.declared_locals = frozenset(
+                    name for generator in generators for name in scan_writes(generator.target)
+                )
                 # The initial iterator is evaluated eagerly, in the enclosing scope, by visit_GeneratorExp.
                 before_ctx = ctx().branch_with_scope(None, before_ctx.scope.copy())
                 start_ctx = before_ctx.branch_with_scope(None, Scope())
@@ -588,7 +662,11 @@ class Visitor(ast.NodeVisitor):
                     case ValueBinding():
                         with using_ctx(yield_merge_ctx):
                             is_present_var._set_(1)
-                        yield_value = Maybe(present=is_present_var, value=yield_binding.value)
+                        yield_value = (
+                            Some(yield_binding.value)
+                            if not return_ctx.live
+                            else Maybe(present=is_present_var, value=yield_binding.value)
+                        )
                     case EmptyBinding():
                         yield_value = Nothing
                     case ConflictBinding():
@@ -604,7 +682,7 @@ class Visitor(ast.NodeVisitor):
                 entry,
                 next_result_ctx,
                 yield_value,
-                self.used_parent_binding_values,
+                self.generator_dependencies,
                 self,
             )
         after_ctx = Context.meet([*self.return_ctxs, ctx()])
@@ -710,13 +788,17 @@ class Visitor(ast.NodeVisitor):
                 raise ValueError("Iterator next must return a Maybe")
             if next_value._present._is_py_() and not next_value._present._as_py_():
                 return
-            ctx().test = next_value._present.ir()
-            body_ctx = ctx().branch(None)
-            else_ctx = ctx().branch(0)
+            if next_value._present._is_py_():
+                body_ctx = ctx()
+                else_ctx = None
+            else:
+                ctx().test = next_value._present.ir()
+                body_ctx = ctx().branch(None)
+                else_ctx = ctx().branch(0)
             set_ctx(body_ctx)
             self.handle_assign(generator.target, next_value._value)
             if not ctx().live:
-                set_ctx(else_ctx)
+                set_ctx(else_ctx if else_ctx is not None else ctx().into_dead())
                 return
             skipped = False
             for if_expr in generator.ifs:
@@ -741,7 +823,7 @@ class Visitor(ast.NodeVisitor):
             if not skipped:
                 self.construct_genexpr(others, elt)
                 ctx().outgoing[None] = header_ctx
-            set_ctx(else_ctx)
+            set_ctx(else_ctx if else_ctx is not None else ctx().into_dead())
 
     def visit(self, node):
         """Visit a node."""
@@ -984,9 +1066,13 @@ class Visitor(ast.NodeVisitor):
             self.break_ctxs.pop()
             self.visit_statements(node.orelse)
             return
-        ctx().test = next_value._present.ir()
-        body_ctx = ctx().branch(None)
-        else_ctx = ctx().branch(0)
+        if next_value._present._is_py_():
+            body_ctx = ctx()
+            else_ctx = None
+        else:
+            ctx().test = next_value._present.ir()
+            body_ctx = ctx().branch(None)
+            else_ctx = ctx().branch(0)
 
         set_ctx(body_ctx)
         self.handle_assign(node.target, next_value._value)
@@ -995,11 +1081,14 @@ class Visitor(ast.NodeVisitor):
 
         # Before set_ctx(else_ctx), so the else block traces against the checked exit.
         break_ctxs = self.break_ctxs.pop()
-        self.loop_head_ctxs.pop().check_loop_conflicts(else_ctx, break_ctxs)
-
-        set_ctx(else_ctx)
-        self.visit_statements(node.orelse)
-        else_end_ctx = ctx()
+        if else_ctx is None:
+            else_end_ctx = ctx().into_dead()
+            self.loop_head_ctxs.pop().check_loop_conflicts(else_end_ctx, break_ctxs)
+        else:
+            self.loop_head_ctxs.pop().check_loop_conflicts(else_ctx, break_ctxs)
+            set_ctx(else_ctx)
+            self.visit_statements(node.orelse)
+            else_end_ctx = ctx()
 
         after_ctx = Context.meet([else_end_ctx, *break_ctxs])
         set_ctx(after_ctx)
@@ -1232,7 +1321,11 @@ class Visitor(ast.NodeVisitor):
                     if not hasattr(cls, "__match_args__"):
                         raise TypeError("Class does not support match patterns")
                     if len(cls.__match_args__) < len(patterns):
-                        raise ValueError("Too many match patterns")
+                        limit = len(cls.__match_args__)
+                        plural = "" if limit == 1 else "s"
+                        raise TypeError(
+                            f"{cls.__name__}() accepts {limit} positional sub-pattern{plural} ({len(patterns)} given)"
+                        )
                     # Positional sub-patterns bind to the first len(patterns) __match_args__.
                     # Python allows mixing them with keyword sub-patterns (e.g. Point(0, y=1)), so
                     # prepend the positional attrs/patterns to the existing keyword ones rather than
@@ -1435,12 +1528,12 @@ class Visitor(ast.NodeVisitor):
         if lhs._is_py_() and rhs._is_py_():
             lhs_py = lhs._as_py_()
             rhs_py = rhs._as_py_()
-            if (
-                (isinstance(lhs_py, type) or getattr(lhs_py, "_is_comptime_value_", False))
-                and (isinstance(rhs_py, type) or getattr(rhs_py, "_is_comptime_value_", False))
-                and hasattr(type(lhs_py), op)
+            if (isinstance(lhs_py, type) or getattr(lhs_py, "_is_comptime_value_", False)) and (
+                isinstance(rhs_py, type) or getattr(rhs_py, "_is_comptime_value_", False)
             ):
-                return validate_value(getattr(lhs_py, op)(rhs_py))
+                result = _comptime_binop(lhs_py, rhs_py, op, rbin_ops[type(node.op)])
+                if result is not _NOT_IMPLEMENTED:
+                    return validate_value(result)
         right_op = rbin_ops[type(node.op)]
         right_has_priority = _has_strict_subclass_reflected_priority(lhs, rhs, right_op)
         if right_has_priority and hasattr(rhs, right_op):
@@ -1636,16 +1729,20 @@ class Visitor(ast.NodeVisitor):
             raise ValueError("Iterator next must return a Maybe")
         if result._present._is_py_() and not result._present._as_py_():
             return validate_value(None)
-        nothing_branch = ctx().branch(0)
-        some_branch = ctx().branch(None)
-        ctx().test = result._present.ir()
+        if result._present._is_py_():
+            nothing_branch = None
+            some_branch = ctx()
+        else:
+            nothing_branch = ctx().branch(0)
+            some_branch = ctx().branch(None)
+            ctx().test = result._present.ir()
         set_ctx(some_branch)
         ctx().scope.set_value("$yield", result._value)
         self.yield_ctxs.append(ctx())
         resume_ctx = ctx().new_disconnected()
         self.resume_ctxs.append(resume_ctx)
         resume_ctx.outgoing[None] = header
-        set_ctx(nothing_branch)
+        set_ctx(nothing_branch if nothing_branch is not None else ctx().into_dead())
         return validate_value(None)
 
     def _has_real_method(self, obj: Value, method_name: str) -> bool:
@@ -1722,7 +1819,12 @@ class Visitor(ast.NodeVisitor):
             if not ctx().live:
                 break
             inverted = isinstance(op, ast.NotIn)
-            result = self.ensure_boolean_num(self.handle_comparison(node, op, l_val, r_val))
+            raw_result = self.handle_comparison(node, op, l_val, r_val)
+            result = (
+                self.convert_to_boolean_num(node, raw_result)
+                if isinstance(op, ast.In | ast.NotIn)
+                else self.ensure_boolean_num(raw_result)
+            )
             if inverted:
                 result = result.not_()
             curr_ctx = ctx()
@@ -1754,6 +1856,13 @@ class Visitor(ast.NodeVisitor):
             return validate_value(None)
         args = []
         kwargs = {}
+        if fn._is_py_():
+            py_fn = fn._as_py_()
+            callee_name = BUILTIN_IMPL_NAMES.get(
+                id(py_fn), getattr(py_fn, "__qualname__", getattr(py_fn, "__name__", _type_name(fn)))
+            )
+        else:
+            callee_name = _type_name(fn)
         for arg in node.args:
             if isinstance(arg, ast.Starred):
                 value = self.visit(arg.value)
@@ -1771,7 +1880,7 @@ class Visitor(ast.NodeVisitor):
                 if not ctx().live:
                     return validate_value(None)
                 if keyword.arg in kwargs:
-                    raise TypeError(f"got multiple values for keyword argument '{keyword.arg}'")
+                    raise TypeError(f"{callee_name}() got multiple values for keyword argument '{keyword.arg}'")
                 kwargs[keyword.arg] = value
             else:
                 value = self.visit(keyword.value)
@@ -1780,13 +1889,13 @@ class Visitor(ast.NodeVisitor):
                 if isinstance(value, DictImpl):
                     value_dict = value._as_dict_with_py_keys()
                     if not all(isinstance(k, str) for k in value_dict):
-                        raise ValueError("Keyword arguments must be strings")
+                        raise TypeError("keywords must be strings")
                     for key in value_dict:
                         if key in kwargs:
-                            raise TypeError(f"got multiple values for keyword argument '{key}'")
+                            raise TypeError(f"{callee_name}() got multiple values for keyword argument '{key}'")
                     kwargs.update(value_dict)
                 else:
-                    raise ValueError("Starred keyword arguments (**kwargs) must be dictionaries")
+                    raise TypeError(f"{callee_name}() argument after ** must be a mapping, not {_type_name(value)}")
         if not ctx().live:
             return validate_value(None)
         if fn._is_py_() and fn._as_py_() is _super and not args and not kwargs and "__class__" in self.globals:
@@ -1847,7 +1956,26 @@ class Visitor(ast.NodeVisitor):
                     # Delegate to reproduce the error message from the scope
                     return v.active_ctx.scope.get_value(name)
                 if v is not self:
-                    used_parent_binding_values[name] = result
+                    child = self
+                    while child is not v:
+                        if child is self or child.is_running:
+                            child.used_parent_binding_values[name] = result
+                        child = child.parent
+                    active_generator = next(
+                        (
+                            active_visitor
+                            for active_visitor in reversed(_ACTIVE_VISITORS)
+                            if active_visitor.is_generator
+                        ),
+                        None,
+                    )
+                    owner_is_transient_call = (
+                        active_generator is not None
+                        and v in _ACTIVE_VISITORS
+                        and _ACTIVE_VISITORS.index(v) > _ACTIVE_VISITORS.index(active_generator)
+                    )
+                    if active_generator is not None and active_generator is not v and not owner_is_transient_call:
+                        active_generator.generator_dependencies[id(v), name] = (v, name, result)
                 return result
             if name in v.declared_locals:
                 if v is not self:
@@ -1997,7 +2125,19 @@ class Visitor(ast.NodeVisitor):
             descriptor = _resolve_descriptor(target_type, key)
             match descriptor:
                 case property(fget=getter):
-                    return self.handle_call(node, getter, attribute_target)
+                    if getter is None:
+                        error = AttributeError(f"property '{key}' of '{target_type.__name__}' object has no getter")
+                    else:
+                        try:
+                            return self.handle_call(node, getter, attribute_target)
+                        except Exception as e:
+                            if not caused_by_attribute_error(e):
+                                raise
+                            error = e
+                    fallback = _bind_special_method(attribute_target, "__getattr__")
+                    if fallback is not _SPECIAL_METHOD_MISSING:
+                        return self.handle_call(node, fallback, validate_value(key))
+                    raise error
                 case SonolusDescriptor() | FunctionType() | classmethod() | staticmethod() | None:
                     attribute = getattr(attribute_target, key)
                     if isinstance(attribute_target, type):
@@ -2287,7 +2427,7 @@ class Generator(TransientValue, SonolusIterator):
         entry: Context,
         exit_: Context,
         value: Maybe,
-        used_bindings: dict[str, Value],
+        dependencies: dict[tuple[int, str], tuple[Visitor, str, Value]],
         parent: Visitor,
     ):
         self.i = 0
@@ -2295,11 +2435,24 @@ class Generator(TransientValue, SonolusIterator):
         self.entry = entry
         self.exit = exit_
         self.value = value
-        self.used_bindings = used_bindings
+        self.dependencies = dependencies
         self.parent = parent
 
     @meta_fn
     def next(self):
+        active_generator = next(
+            (active_visitor for active_visitor in reversed(_ACTIVE_VISITORS) if active_visitor.is_generator), None
+        )
+        if active_generator is not None and active_generator is not self.parent:
+            active_generator_index = _ACTIVE_VISITORS.index(active_generator)
+            active_generator.generator_dependencies.update(
+                {
+                    dependency_key: dependency
+                    for dependency_key, dependency in self.dependencies.items()
+                    if dependency[0] not in _ACTIVE_VISITORS
+                    or _ACTIVE_VISITORS.index(dependency[0]) < active_generator_index
+                }
+            )
         self._validate_bindings()
         self.return_test._set_(self.i)
         after_ctx = ctx().new_disconnected()
@@ -2310,15 +2463,10 @@ class Generator(TransientValue, SonolusIterator):
         return self.value
 
     def _validate_bindings(self):
-        for key, value in self.used_bindings.items():
-            v = self.parent
-            while v:
-                if not isinstance(v.active_ctx.scope.get_binding(key), EmptyBinding):
-                    result = v.active_ctx.scope.get_value(key)
-                    if result is not value:
-                        raise ValueError(f"Binding '{key}' has been modified since the generator was created")
-                    break
-                v = v.parent
+        for owner, key, value in self.dependencies.values():
+            result = owner.active_ctx.scope.get_value(key)
+            if result is not value:
+                raise ValueError(f"Binding '{key}' has been modified since the generator was created")
 
     def __iter__(self):
         return self

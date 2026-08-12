@@ -382,7 +382,7 @@ def test_a_keyword_supplied_after_a_dict_splat_is_rejected():
     def fn():
         return _helper(1, **{"b": 1}, b=2)  # noqa: PIE804, PLE1132
 
-    with pytest.raises(CompilationError, match=re.escape("got multiple values for keyword argument 'b'")):
+    with pytest.raises(CompilationError, match=re.escape("_helper() got multiple values for keyword argument 'b'")):
         run_compiled(fn)
 
 
@@ -390,7 +390,7 @@ def test_a_dict_splat_over_an_earlier_keyword_is_rejected():
     def fn():
         return _helper(1, b=2, **{"b": 1})  # noqa: PIE804, PLE1132
 
-    with pytest.raises(CompilationError, match=re.escape("got multiple values for keyword argument 'b'")):
+    with pytest.raises(CompilationError, match=re.escape("_helper() got multiple values for keyword argument 'b'")):
         run_compiled(fn)
 
 
@@ -416,7 +416,15 @@ def test_a_duplicate_keyword_to_a_builtin_is_rejected():
     def fn():
         return max(3.0, 1.0, **{"key": abs}, key=abs)  # noqa: PIE804, PLE1132
 
-    with pytest.raises(CompilationError, match=re.escape("got multiple values for keyword argument 'key'")):
+    with pytest.raises(CompilationError, match=re.escape("max() got multiple values for keyword argument 'key'")):
+        run_compiled(fn)
+
+
+def test_a_duplicate_keyword_to_a_builtin_shim_names_the_builtin():
+    def fn():
+        return dict(**{"a": 1}, **{"a": 2})  # noqa: PIE804, PLE1132
+
+    with pytest.raises(CompilationError, match=re.escape("dict() got multiple values for keyword argument 'a'")):
         run_compiled(fn)
 
 
@@ -425,3 +433,28 @@ def test_a_dict_splat_with_no_collision_is_still_accepted():
         return _helper(1, **{"b": 2}, c=3)  # noqa: PIE804
 
     assert run_and_validate(fn) == 123
+
+
+def test_a_non_mapping_dict_splat_raises_type_error():
+    def fn():
+        return _helper(1, **2)  # type: ignore
+
+    # Python distinguishes int and float here, while the compiled subset represents both as Num.
+    with pytest.raises(CompilationError, match=r"argument after \*\* must be a mapping, not Num"):
+        run_compiled(fn)
+
+
+def test_a_non_string_dict_splat_key_raises_type_error():
+    def fn():
+        return _helper(1, **{2: 3})  # type: ignore
+
+    with pytest.raises(TypeError, match="keywords must be strings"):
+        run_and_validate(fn)
+
+
+def test_a_duplicate_expanded_keyword_names_the_callee():
+    def fn():
+        return _helper(1, **{"b": 2}, **{"b": 3})  # noqa: PIE804, PLE1132
+
+    with pytest.raises(CompilationError, match=re.escape("_helper() got multiple values for keyword argument 'b'")):
+        run_compiled(fn)

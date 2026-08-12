@@ -8,6 +8,7 @@ from sonolus.script.array import Array
 from sonolus.script.containers import VarArray
 from sonolus.script.debug import assert_true, debug_log
 from sonolus.script.internal.error import CompilationError
+from sonolus.script.internal.meta_fn import meta_fn
 from sonolus.script.internal.range import Range
 from sonolus.script.num import Num
 from sonolus.script.record import Record
@@ -1155,6 +1156,28 @@ class DynamicAttributeHolder(Record):
         raise AttributeError(name)
 
 
+@meta_fn
+def match_outer_exception_from_attribute_error(_self):
+    raise ValueError("outer") from AttributeError("inner")
+
+
+class MatchOuterExceptionHolder(Record):
+    failing = property(match_outer_exception_from_attribute_error)
+
+
+@meta_fn
+def match_missing_attribute(_self):
+    raise AttributeError("missing")
+
+
+class MatchClassMethodFallbackHolder(Record):
+    missing = property(match_missing_attribute)
+
+    @classmethod
+    def __getattr__(cls, name):
+        return 7
+
+
 class TerminatingClassProvider(Record):
     value: Num
 
@@ -1191,13 +1214,14 @@ def test_match_class_missing_keyword_attribute_fails_the_pattern():
 
 def test_match_class_property_raising_attribute_error_fails_the_pattern():
     def fn():
+        x = 5
         match MissingPropertyHolder(1):
             case MissingPropertyHolder(missing=1):
                 return 1
             case _:
-                return 0
+                return x
 
-    assert run_and_validate(fn) == 0
+    assert run_and_validate(fn) == 5
 
 
 def test_match_class_keyword_attribute_uses_getattr():
@@ -1209,6 +1233,41 @@ def test_match_class_keyword_attribute_uses_getattr():
                 return 0
 
     assert run_and_validate(fn) == 1
+
+
+def test_match_class_binds_classmethod_getattr_after_property_attribute_error():
+    def fn():
+        match MatchClassMethodFallbackHolder():
+            case MatchClassMethodFallbackHolder(missing=7):
+                return 1
+            case _:
+                return 0
+
+    assert run_and_validate(fn) == 1
+
+
+def test_match_class_propagates_outer_exception_caused_by_attribute_error():
+    def fn():
+        match MatchOuterExceptionHolder():
+            case MatchOuterExceptionHolder(failing=1):
+                return 1
+            case _:
+                return 0
+
+    with pytest.raises(ValueError, match="outer"):
+        run_and_validate(fn)
+
+
+def test_match_class_excess_positional_patterns_match_python_diagnostic():
+    def fn():
+        match Point(1, 2):
+            case Point(1, 2, 3):
+                return 1
+            case _:
+                return 0
+
+    with pytest.raises(TypeError, match=r"Point\(\) accepts 2 positional sub-patterns \(3 given\)"):
+        run_and_validate(fn)
 
 
 def test_terminating_class_pattern_expression_compiles():

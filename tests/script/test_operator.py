@@ -250,6 +250,75 @@ class InheritedEqualitySub(InheritedEqualityBase):
     __slots__ = ()
 
 
+class CompileTimeOpBase:
+    _is_comptime_value_ = True
+
+    def __or__(self, other):
+        return 40
+
+    def __ror__(self, other):
+        return 41
+
+
+class CompileTimeOpSub(CompileTimeOpBase):
+    def __ror__(self, other):
+        return 42
+
+
+class CompileTimeOpDeclines:
+    _is_comptime_value_ = True
+
+    def __or__(self, other):
+        return NotImplemented
+
+
+class CompileTimeReflected:
+    _is_comptime_value_ = True
+
+    def __ror__(self, other):
+        return 43
+
+
+class CompileTimeClassMethod:
+    _is_comptime_value_ = True
+
+    @classmethod
+    def __or__(cls, other):
+        return 44
+
+
+class CompileTimeStaticMethod:
+    _is_comptime_value_ = True
+
+    @staticmethod
+    def __or__(other):
+        return 45
+
+
+class CompileTimeNoneReflectedBase:
+    _is_comptime_value_ = True
+
+    def __or__(self, other):
+        return 46
+
+    def __ror__(self, other):
+        return 47
+
+
+class CompileTimeNoneReflectedSub(CompileTimeNoneReflectedBase):
+    __ror__ = None
+
+
+COMPTIME_BASE = CompileTimeOpBase()
+COMPTIME_SUB = CompileTimeOpSub()
+COMPTIME_DECLINES = CompileTimeOpDeclines()
+COMPTIME_REFLECTED = CompileTimeReflected()
+COMPTIME_CLASS_METHOD = CompileTimeClassMethod()
+COMPTIME_STATIC_METHOD = CompileTimeStaticMethod()
+COMPTIME_NONE_REFLECTED_BASE = CompileTimeNoneReflectedBase()
+COMPTIME_NONE_REFLECTED_SUB = CompileTimeNoneReflectedSub()
+
+
 bin_values = [
     AllAddOps(),
     AllAddNotImplemented(),
@@ -545,6 +614,51 @@ def test_strict_subclass_reflected_binop_has_priority():
     assert run_and_validate(fn) == 3
 
 
+def test_compile_time_strict_subclass_reflected_binop_has_priority():
+    def fn():
+        return COMPTIME_BASE | COMPTIME_SUB
+
+    assert run_and_validate(fn) == 42
+
+
+def test_compile_time_binop_falls_back_after_not_implemented():
+    def fn():
+        return COMPTIME_DECLINES | COMPTIME_REFLECTED
+
+    assert run_and_validate(fn) == 43
+
+
+def test_compile_time_classmethod_binop_is_bound_like_python():
+    def fn():
+        return COMPTIME_CLASS_METHOD | COMPTIME_BASE
+
+    assert run_and_validate(fn) == 44
+
+
+def test_compile_time_staticmethod_binop_is_bound_like_python():
+    def fn():
+        return COMPTIME_STATIC_METHOD | COMPTIME_BASE
+
+    assert run_and_validate(fn) == 45
+
+
+def test_compile_time_none_reflected_binop_is_called_like_python():
+    def fn():
+        return COMPTIME_NONE_REFLECTED_BASE | COMPTIME_NONE_REFLECTED_SUB
+
+    with pytest.raises(TypeError, match="'NoneType' object is not callable"):
+        run_and_validate(fn)
+
+
+def test_builtin_numeric_alias_union_is_symmetric():
+    def fn():
+        left = Array[Num | int, 1](1)
+        right = Array[int | Num, 1](2)
+        return left[0] + right[0]
+
+    assert run_and_validate(fn) == 3
+
+
 def test_strict_subclass_reflected_comparison_has_priority():
     def fn():
         return PriorityBase(1) == PrioritySub(2)
@@ -656,6 +770,15 @@ class DecliningContains(Record):
         return iter(self.values)
 
 
+class TruthyContainsResult(Record):
+    pass
+
+
+class TruthyContains(Record):
+    def __contains__(self, value):
+        return TruthyContainsResult()
+
+
 def _logged(v):
     debug_log(v)
     return v
@@ -666,6 +789,28 @@ def test_in_falls_back_to_iteration_over_a_generator_expression():
         return 6 in (v * 2 for v in Array(1, 2, 3))
 
     assert run_and_validate(fn)
+
+
+def test_membership_truth_converts_contains_result():
+    def fn():
+        return 1 in TruthyContains()
+
+    assert run_and_validate(fn)
+
+
+def test_not_in_truth_converts_contains_result_before_inverting():
+    def fn():
+        return 1 not in TruthyContains()
+
+    assert not run_and_validate(fn)
+
+
+def test_unsupported_matrix_multiplication_reports_operator_error():
+    def fn():
+        return Plain(1) @ Plain(2)
+
+    with pytest.raises(TypeError, match=re.escape("unsupported operand type(s) for @: 'Plain' and 'Plain'")):
+        run_and_validate(fn)
 
 
 def test_not_in_falls_back_to_iteration_over_a_generator_expression():

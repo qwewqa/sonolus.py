@@ -16,6 +16,7 @@ from sonolus.script.containers import Box
 from sonolus.script.debug import debug_log
 from sonolus.script.internal.context import RuntimeChecks
 from sonolus.script.internal.error import CompilationError
+from sonolus.script.maybe import Nothing, Some
 from sonolus.script.vec import Vec2
 from tests.script.conftest import run_compiled
 from tests.script.conftest import run_and_validate
@@ -1080,6 +1081,39 @@ def test_no_error_when_loop_variable_is_rebound_before_a_continue_and_never_read
     assert run_and_validate(fn) == 1
 
 
+def test_no_error_when_maybe_merge_rebinds_an_unread_loop_variable():
+    # The merge internally copies the header's Maybe binding, but that bookkeeping must not
+    # count as a source read. A real read of m would still make the later rebind conflicting.
+    def fn():
+        m = Nothing
+        i = 0
+        while i < 3:
+            i += 1
+            if black_box():
+                m = Some(i)
+        return i
+
+    assert run_and_validate(fn) == 3
+
+
+def test_error_when_maybe_merge_rebinds_a_read_loop_variable():
+    # This is the corresponding genuine read: bypassing the merge's bookkeeping lookup
+    # must not make source reads safe to rebind on a later loop iteration.
+    def fn():
+        m = Nothing
+        i = 0
+        while i < 3:
+            i += 1
+            if m.is_some:
+                debug_log(i)
+            if black_box():
+                m = Some(i)
+        return i
+
+    with pytest.raises(CompilationError, match="'m' may have conflicting definitions between loop iterations"):
+        run_compiled(fn)
+
+
 def test_no_error_when_merged_loop_variable_is_rebound_but_never_read():
     # The same shape as the two above with a merge in front of it, so the check's own lookup
     # lands on a binding the header can reach through the merge rather than on the header's
@@ -1768,6 +1802,16 @@ def test_bare_annotation_does_not_rebind_existing_value():
         return x
 
     assert run_and_validate(fn) == 3
+
+
+def test_lambda_assignment_target_is_local_before_the_assignment():
+    def fn():
+        x = 10
+        f = lambda: x + (x := 1)
+        return f()
+
+    with pytest.raises(UnboundLocalError, match="cannot access local variable 'x'"):
+        run_and_validate(fn)
 
 
 def test_bare_annotation_for_name_never_assigned():

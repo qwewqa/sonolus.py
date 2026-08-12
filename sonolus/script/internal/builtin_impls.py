@@ -616,6 +616,8 @@ class _Int:
         other = getattr(other, "_type_mapping_", other)
         return Num | other
 
+    __ror__ = __or__
+
 
 _int = _Int()
 
@@ -637,6 +639,8 @@ class _Float:
             other = other._as_py_()
         other = getattr(other, "_type_mapping_", other)
         return Num | other
+
+    __ror__ = __or__
 
 
 _float = _Float()
@@ -678,6 +682,8 @@ class _Bool:
         other = getattr(other, "_type_mapping_", other)
         return Num | other
 
+    __ror__ = __or__
+
 
 _bool = _Bool()
 
@@ -707,6 +713,8 @@ class _Set:
             other = other._as_py_()
         other = getattr(other, "_type_mapping_", other)
         return SetImpl | other
+
+    __ror__ = __or__
 
 
 _set = _Set()
@@ -756,6 +764,8 @@ class _Dict:
         other = getattr(other, "_type_mapping_", other)
         return DictImpl | other
 
+    __ror__ = __or__
+
 
 _dict = _Dict()
 
@@ -776,6 +786,8 @@ class _Range:
             other = other._as_py_()
         other = getattr(other, "_type_mapping_", other)
         return Range | other
+
+    __ror__ = __or__
 
 
 _range = _Range()
@@ -887,7 +899,13 @@ def _hasattr(obj: Any, name: str) -> bool:
 def _getattr(obj: Any, name: str, default=_empty) -> Any:
     from sonolus.script.internal.constant import ConstantValue
     from sonolus.script.internal.descriptor import SonolusDescriptor
-    from sonolus.script.internal.visitor import compile_and_call, reject_instance_only_attribute
+    from sonolus.script.internal.error import caused_by_attribute_error
+    from sonolus.script.internal.visitor import (
+        _SPECIAL_METHOD_MISSING,
+        _bind_special_method,
+        compile_and_call,
+        reject_instance_only_attribute,
+    )
 
     name = validate_value(name)._as_py_()
     if isinstance(obj, ConstantValue):
@@ -899,7 +917,26 @@ def _getattr(obj: Any, name: str, default=_empty) -> Any:
             break
     match descriptor:
         case property(fget=getter):
-            return compile_and_call(getter, obj)
+            if getter is None:
+                error = AttributeError(f"property '{name}' of '{type(obj).__name__}' object has no getter")
+            else:
+                try:
+                    return compile_and_call(getter, obj)
+                except Exception as e:
+                    if not caused_by_attribute_error(e):
+                        raise
+                    error = e
+            fallback = _bind_special_method(obj, "__getattr__")
+            if fallback is not _SPECIAL_METHOD_MISSING:
+                try:
+                    return compile_and_call(fallback, name)
+                except Exception as e:
+                    if not caused_by_attribute_error(e):
+                        raise
+                    error = e
+            if default is not _empty:
+                return default
+            raise error
         case SonolusDescriptor() | FunctionType() | classmethod() | staticmethod() | None:
             attribute = getattr(obj, name) if default is _empty else getattr(obj, name, default)
             if isinstance(obj, type):

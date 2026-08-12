@@ -549,9 +549,16 @@ type _ArchetypeData = _ArchetypeSelfData | _ArchetypeReferenceData | _ArchetypeL
 
 
 class ArchetypeSchema(TypedDict):
+    """The schema of an archetype, as returned by its `schema()` method."""
+
     name: str
+    """The archetype name."""
+
     fields: list[str]
+    """The flat names of fields supplied by level data."""
+
     exports: list[str]
+    """The flat names of fields exported by the archetype."""
 
 
 class ImportInfo(NamedTuple):
@@ -1638,6 +1645,9 @@ def entity_info_at(index: int) -> PlayEntityInfo | WatchEntityInfo | PreviewEnti
     """Retrieve entity info of the entity at the given index.
 
     Available in play, watch, and preview mode.
+
+    Returns:
+        The entity info for the current mode.
     """
     if not ctx():
         raise RuntimeError("Calling entity_info_at is only allowed within a callback")
@@ -1653,20 +1663,39 @@ def entity_info_at(index: int) -> PlayEntityInfo | WatchEntityInfo | PreviewEnti
 
 
 class PlayEntityInfo(Record):
+    """Information about a play-mode entity."""
+
     index: int
+    """The entity index."""
+
     archetype_id: int
+    """The runtime ID of the entity's archetype."""
+
     state: int
+    """The entity state."""
 
 
 class WatchEntityInfo(Record):
+    """Information about a watch-mode entity."""
+
     index: int
+    """The entity index."""
+
     archetype_id: int
+    """The runtime ID of the entity's archetype."""
+
     state: int
+    """The entity state."""
 
 
 class PreviewEntityInfo(Record):
+    """Information about a preview-mode entity."""
+
     index: int
+    """The entity index."""
+
     archetype_id: int
+    """The runtime ID of the entity's archetype."""
 
 
 class LifeInfo(Record):

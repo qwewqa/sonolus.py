@@ -770,9 +770,9 @@ class Scope:
             with using_ctx(target):
                 target_value = common_type._get_merge_target_(values)
             if target_value is not NotImplemented:
-                for inc in incoming:
+                for inc, value in zip(incoming, values, strict=True):
                     with using_ctx(inc):
-                        target_value._set_(inc.scope.get_value(key))
+                        target_value._set_(value)
                 target.scope.set_value(key, target_value)
                 continue
             else:

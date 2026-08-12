@@ -62,6 +62,72 @@ MyBox.missing_descriptor = MissingDescriptor()
 MyBox.missing_property = property(missing_property)
 
 
+class GetterlessPropertyBox(Record):
+    missing = property()
+
+
+class PropertyFallbackBox(Record):
+    @property
+    def fallback(self):
+        return self.does_not_exist
+
+    def __getattr__(self, name):
+        if name == "fallback":
+            return 321
+        raise AttributeError(name)
+
+
+@meta_fn
+def missing_attribute(_self):
+    raise AttributeError("missing")
+
+
+def property_with_transient_closure_then_attribute_error(self):
+    z = 1
+    get_z = lambda: z  # noqa: E731
+    get_z()
+    z = 2
+    return missing_attribute(self)
+
+
+class ClassMethodPropertyFallbackBox(Record):
+    fallback = property(missing_attribute)
+
+    @classmethod
+    def __getattr__(cls, name):
+        return 432
+
+
+class StaticMethodPropertyFallbackBox(Record):
+    fallback = property(missing_attribute)
+
+    @staticmethod
+    def __getattr__(name):
+        return 543
+
+
+class TransientClosurePropertyFallbackBox(Record):
+    fallback = property(property_with_transient_closure_then_attribute_error)
+
+    def __getattr__(self, name):
+        return 2
+
+
+class PropertyDefaultBox(Record):
+    @property
+    def missing(self):
+        return self.does_not_exist
+
+
+@meta_fn
+def outer_exception_from_attribute_error(_self):
+    raise ValueError("outer") from AttributeError("inner")
+
+
+class OuterExceptionFromAttributeErrorBox(Record):
+    failing = property(outer_exception_from_attribute_error)
+
+
 Record.masked_for_test = property(lambda self: 123)
 MyBox.masked_for_test = None
 
@@ -220,6 +286,98 @@ def test_getattr_record_property():
         return box.my_property
 
     assert run_and_validate(fn) == 789
+
+
+def test_direct_attribute_uses_getattr_after_property_attribute_error():
+    def fn():
+        x = 5
+        y = PropertyFallbackBox().fallback
+        return x + y
+
+    assert run_and_validate(fn) == 326
+
+
+def test_builtin_getattr_uses_getattr_after_property_attribute_error():
+    def fn():
+        x = 5
+        y = getattr(PropertyFallbackBox(), "fallback")  # noqa: B009
+        return x + y
+
+    assert run_and_validate(fn) == 326
+
+
+def test_direct_attribute_binds_classmethod_getattr():
+    def fn():
+        return ClassMethodPropertyFallbackBox().fallback
+
+    assert run_and_validate(fn) == 432
+
+
+def test_builtin_getattr_binds_classmethod_getattr():
+    def fn():
+        return getattr(ClassMethodPropertyFallbackBox(), "fallback")  # noqa: B009
+
+    assert run_and_validate(fn) == 432
+
+
+def test_direct_attribute_binds_staticmethod_getattr():
+    def fn():
+        return StaticMethodPropertyFallbackBox().fallback
+
+    assert run_and_validate(fn) == 543
+
+
+def test_builtin_getattr_binds_staticmethod_getattr():
+    def fn():
+        return getattr(StaticMethodPropertyFallbackBox(), "fallback")  # noqa: B009
+
+    assert run_and_validate(fn) == 543
+
+
+def test_generator_property_fallback_does_not_capture_transient_getter_local():
+    def fn():
+        def gen():
+            yield TransientClosurePropertyFallbackBox().fallback
+            yield TransientClosurePropertyFallbackBox().fallback
+
+        iterator = gen()
+        return next(iterator) + next(iterator)
+
+    assert run_and_validate(fn) == 4
+
+
+def test_builtin_getattr_default_handles_property_attribute_error():
+    def fn():
+        x = 5
+        y = getattr(PropertyDefaultBox(), "missing", 654)
+        return x + y
+
+    assert run_and_validate(fn) == 659
+
+
+def test_hasattr_continues_with_caller_scope_after_property_attribute_error():
+    def fn():
+        x = 5
+        found = hasattr(PropertyDefaultBox(), "missing")
+        return x + found
+
+    assert run_and_validate(fn) == 5
+
+
+def test_getterless_property_is_an_unreadable_attribute():
+    def fn():
+        return GetterlessPropertyBox().missing
+
+    with pytest.raises(AttributeError, match=r"property 'missing'.*has no getter"):
+        run_and_validate(fn)
+
+
+def test_hasattr_propagates_outer_exception_caused_by_attribute_error():
+    def fn():
+        return hasattr(OuterExceptionFromAttributeErrorBox(), "failing")
+
+    with pytest.raises(ValueError, match="outer"):
+        run_and_validate(fn)
 
 
 def test_attribute_none_masks_inherited_property():

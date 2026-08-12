@@ -16,8 +16,6 @@ class CompilationError(RuntimeError):
 
 
 def caused_by_attribute_error(error: BaseException) -> bool:
-    while error is not None:
-        if isinstance(error, AttributeError):
-            return True
+    while isinstance(error, CompilationError) and error.__cause__ is not None:
         error = error.__cause__
-    return False
+    return isinstance(error, AttributeError)

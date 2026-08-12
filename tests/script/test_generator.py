@@ -5,7 +5,7 @@ from sonolus.script.containers import Box
 from sonolus.script.debug import debug_log
 from sonolus.script.internal.error import CompilationError
 from sonolus.script.iterator import SonolusIterator
-from sonolus.script.maybe import Maybe, Nothing
+from sonolus.script.maybe import Maybe, Nothing, Some
 from sonolus.script.record import Record
 from tests.script.conftest import run_and_validate, run_compiled
 
@@ -397,6 +397,20 @@ class StaticallyEmpty(Record):
         return StaticallyEmptyIterator(self.v)
 
 
+class StaticallyNonemptyIterator(Record, SonolusIterator):
+    value: float
+
+    def next(self) -> Maybe[float]:
+        return Some(self.value)
+
+
+class StaticallyNonempty(Record):
+    value: float
+
+    def __iter__(self):
+        return StaticallyNonemptyIterator(self.value)
+
+
 class NonMaybeIterator(Record, SonolusIterator):
     def next(self):
         return 1
@@ -417,6 +431,58 @@ def test_yield_from_requires_next_to_return_maybe():
 
     with pytest.raises(CompilationError, match="Iterator next must return a Maybe"):
         run_compiled(fn)
+
+
+def test_for_over_statically_nonempty_iterator_has_no_exhaustion_path():
+    def fn():
+        for value in StaticallyNonempty(3):
+            return value
+        return Box(1)
+
+    assert run_and_validate(fn) == 3
+
+
+def test_yield_from_statically_nonempty_iterator_has_no_later_yield_path():
+    def fn():
+        def gen():
+            yield from StaticallyNonempty(3)
+            yield Box(1)
+
+        for value in gen():
+            return value
+        return 0
+
+    assert run_and_validate(fn) == 3
+
+
+def test_genexpr_over_statically_nonempty_iterator_has_no_exhaustion_path():
+    def fn():
+        def gen():
+            yield from (3 for _ in StaticallyNonempty(0))
+            yield Box(1)
+
+        for value in gen():
+            return value
+        return 0
+
+    assert run_and_validate(fn) == 3
+
+
+def test_yield_from_statically_infinite_generator_has_no_later_yield_path():
+    def fn():
+        def infinite():
+            while True:
+                yield 3
+
+        def gen():
+            yield from infinite()
+            yield Box(1)
+
+        for value in gen():
+            return value
+        return 0
+
+    assert run_and_validate(fn) == 3
 
 
 def test_yield_from_empty_zip_yields_nothing():
@@ -542,6 +608,193 @@ def test_generator_changing_closure_sequential():
         return 0
 
     with pytest.raises(CompilationError, match=r"Binding 'x' has been modified.*"):
+        run_compiled(fn)
+
+
+def test_generator_transitive_capture_rebound_between_next_calls_is_rejected():
+    def fn():
+        x = 1
+
+        def gen():
+            get_x = lambda: x  # noqa: E731
+            yield get_x()
+            yield get_x()
+
+        iterator = gen()
+        first = next(iterator)
+        x = 2
+        return first + next(iterator)
+
+    # Plain Python permits the rebind, but compiled generators require every captured binding to keep its
+    # definition between resumptions.
+    with pytest.raises(CompilationError, match="Binding 'x' has been modified since the generator was created"):
+        run_compiled(fn)
+
+
+def test_closure_called_after_it_is_yielded_does_not_become_a_generator_capture():
+    def fn():
+        x = 1
+
+        def gen():
+            get_x = lambda: x  # noqa: E731
+            yield get_x
+            yield get_x
+
+        iterator = gen()
+        get_x = next(iterator)
+        first = get_x()
+        x = 2
+        next(iterator)
+        return first
+
+    assert run_and_validate(fn) == 1
+
+
+def test_generator_capture_propagates_through_externally_defined_closure():
+    def fn():
+        x = 1
+        get_x = lambda: x  # noqa: E731
+
+        def gen():
+            yield get_x()
+            yield get_x()
+
+        iterator = gen()
+        first = next(iterator)
+        x = 2
+        return first + next(iterator)
+
+    # Plain Python permits the rebind; this pins the compiled generator binding restriction through an
+    # externally defined closure.
+    with pytest.raises(CompilationError, match="Binding 'x' has been modified since the generator was created"):
+        run_compiled(fn)
+
+
+def test_external_closure_read_does_not_freeze_its_owner_binding():
+    def fn():
+        x = 1
+        get_x = lambda: x  # noqa: E731
+        first = get_x()
+        x = 2
+        return first + x
+
+    assert run_and_validate(fn) == 3
+
+
+def test_generator_does_not_capture_shadowed_binding_from_unrelated_closure_owner():
+    def fn():
+        y = 1
+
+        def make_get_y():
+            y = 2
+            return lambda: y
+
+        get_y = make_get_y()
+
+        def gen():
+            yield get_y()
+            yield get_y()
+
+        iterator = gen()
+        return next(iterator) + next(iterator) + y
+
+    assert run_and_validate(fn) == 5
+
+
+def test_outer_generator_does_not_capture_binding_used_only_by_nested_generator():
+    def fn():
+        x = 1
+
+        def gen():
+            inner = (x for _ in Array(1))
+            yield inner
+            yield inner
+
+        iterator = gen()
+        next(iterator)
+        x = 2
+        next(iterator)
+        return 1
+
+    assert run_and_validate(fn) == 1
+
+
+def test_outer_generator_captures_binding_when_it_consumes_nested_generator():
+    def fn():
+        x = 1
+
+        def gen():
+            yield from (x for _ in Array(1, 1))
+
+        iterator = gen()
+        next(iterator)
+        x = 2
+        return next(iterator)
+
+    # Plain Python permits the rebind; consuming the nested generator makes its dependency part of the outer
+    # compiled generator's binding restriction.
+    with pytest.raises(CompilationError, match="Binding 'x' has been modified since the generator was created"):
+        run_compiled(fn)
+
+
+def test_generator_does_not_capture_local_from_transient_callback_frame():
+    def fn():
+        def helper():
+            z = 1
+            get_z = lambda: z  # noqa: E731
+            get_z()
+            z = 2
+            return 5
+
+        def gen():
+            yield helper()
+            yield helper()
+
+        iterator = gen()
+        return next(iterator)
+
+    assert run_and_validate(fn) == 5
+
+
+def test_generator_does_not_inherit_nested_generator_capture_from_transient_callback():
+    def fn():
+        def helper():
+            z = 1
+
+            def inner():
+                yield z
+
+            value = next(inner())
+            z = 2
+            return value
+
+        def outer():
+            yield helper()
+            yield helper()
+
+        iterator = outer()
+        return next(iterator) + next(iterator)
+
+    assert run_and_validate(fn) == 2
+
+
+def _generator_reading_callback(reader):
+    yield reader()
+    yield reader()
+
+
+def test_module_level_generator_tracks_callback_closure_owner():
+    def fn():
+        x = 1
+        reader = lambda: x  # noqa: E731
+        iterator = _generator_reading_callback(reader)
+        first = next(iterator)
+        x = 2
+        return first + next(iterator)
+
+    # Plain Python permits the rebind; this pins the compiled generator binding restriction when the generator
+    # has no lexical parent and reaches the binding through a callback.
+    with pytest.raises(CompilationError, match="Binding 'x' has been modified since the generator was created"):
         run_compiled(fn)
 
 
