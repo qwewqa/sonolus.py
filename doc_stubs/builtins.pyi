@@ -277,7 +277,7 @@ def max(*args, **kwargs):
     `Array` or `VarArray` for a collection of other types.
 
     The `default` parameter is supported only with a single iterable and must be usable in place of an element.
-    When the iterable's length is not known at compile time, only numeric elements support `default`.
+    When it is known only at runtime whether the iterable is empty, only numeric elements support `default`.
     """
     ...
 
@@ -311,7 +311,7 @@ def min(*args, **kwargs):
     `Array` or `VarArray` for a collection of other types.
 
     The `default` parameter is supported only with a single iterable and must be usable in place of an element.
-    When the iterable's length is not known at compile time, only numeric elements support `default`.
+    When it is known only at runtime whether the iterable is empty, only numeric elements support `default`.
     """
     ...
 

@@ -132,8 +132,6 @@ class ScheduledLoopedEffectHandle(Record):
 
         Not available in preview mode.
 
-        Schedule the stop at least 0.5 seconds in advance when possible.
-
         Args:
             end_time: The time at which to stop the effect.
         """
