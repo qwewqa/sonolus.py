@@ -20,6 +20,11 @@ Working in one pass looks more efficient and reliably under-reports: judging eac
 biases toward leaving it, because the local context always makes a comment look motivated. Separating the passes is
 what makes the protected list actually get consulted.
 
+The bar is necessity, not truth: a comment that is accurate, relevant, and durable is still removed unless the
+code cannot be correctly understood without it. Review rounds here have cut about half of the comments a careful
+first pass kept, so expect the trim list to be long, and treat the protected classes below as the only reliable
+exceptions.
+
 ## Observable signatures
 
 What to look for, one line each. The reasoning behind each is in the authoring skill.

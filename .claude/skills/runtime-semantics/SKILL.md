@@ -96,6 +96,9 @@ What the runtime charges for, which is what `tools/metrics.py` and the metrics g
 
 The practical consequence: an optimization that reduces unique nodes while increasing references is a regression,
 and one that duplicates a runtime-constant expression costs nothing the gate measures, though it still grows the
-emitted engine data. Materializing a runtime-constant subtree into a temp is worse than duplicating it at any
-size: a temp read is not runtime-constant, so the temp is both a barrier to the runtime's own folding and a
-wasted write.
+emitted engine data. Materializing a runtime-constant subtree into a temp is worse on this cost model at any size:
+a temp read is not runtime-constant, so the temp is both a barrier to the runtime's own folding and a wasted
+write. Lowering duplicates by default for that reason, with one deliberate exception. Past `_RTC_DUP_BUDGET`
+(`lower.pyx`) a tree materializes anyway, buying a bounded arena and bounded compile time at exactly the
+effective-node cost above; trees whose duplicated size is no larger than a temp read's are exempt from that
+budget, because there the temp saves nothing to trade.
