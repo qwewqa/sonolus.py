@@ -120,12 +120,29 @@ class CallbackTask:
         self.key = key
 
 
+def base_archetypes(archetypes):
+    """The archetypes a build compiles callbacks for, in order.
+
+    A derived archetype shares its base's callbacks and the build compiles them once, against the base
+    (``compile_mode`` in ``sonolus/backend/_opt/driver.pyx``), so measuring the derived binding measures a
+    compilation that never happens. Archetype ids come from the full list and are unaffected.
+    """
+    result = []
+    seen = set()
+    for archetype in archetypes or []:
+        base = getattr(archetype, "_derived_base_", archetype)
+        if base not in seen:
+            seen.add(base)
+            result.append(base)
+    return result
+
+
 def _mode_tasks(project_name, mode, archetypes, global_callbacks):
     """Enumerate callbacks for one mode, mirroring _build_mode_callbacks (non-dev)."""
     archetypes_map = {a: i for i, a in enumerate(archetypes)} if archetypes is not None else None
     mode_label = mode.name.lower()
 
-    for archetype in archetypes or []:
+    for archetype in base_archetypes(archetypes):
         archetype._init_fields()
         callback_items = [
             (cb_name, cb_info, getattr(archetype, cb_name))
@@ -346,9 +363,10 @@ def measure_callback(project_name, task: CallbackTask, level_name, passes, repea
         t0 = perf_counter()
         cfg = callback_to_cfg(project_state, mode_state, task.cb, task.callback_name, task.archetype)
         t1 = perf_counter()
-        cfg = run_passes(cfg, passes, OptimizerConfig(mode=task.mode, callback=task.callback_name))
+        config = OptimizerConfig(mode=task.mode, callback=task.callback_name)
+        cfg = run_passes(cfg, passes, config)
         t2 = perf_counter()
-        node = cfg_to_engine_node(cfg)
+        node = cfg_to_engine_node(cfg, config)
         t3 = perf_counter()
 
         counts = analyze_node(node, task.mode, task.callback_name)

@@ -6,6 +6,7 @@ from hypothesis.stateful import RuleBasedStateMachine, invariant, precondition, 
 
 from sonolus.script.array import Array
 from sonolus.script.interval import remap
+from sonolus.script.quad import Rect
 from sonolus.script.transform import InvertibleTransform2d, Transform2d, perspective_approach
 from sonolus.script.vec import Vec2
 from tests.script.conftest import is_close, run_and_validate
@@ -194,6 +195,17 @@ def test_perspective_x_at_infinity(v_y, foreground_x, vanishing_point):
     result = run_and_validate(fn)
     assert is_close(result.x, vanishing_point.x, rel_tol=1e-3, abs_tol=1e-3)
     assert is_close(result.y, vanishing_point.y, rel_tol=1e-3, abs_tol=1e-3)
+
+
+def test_compose_before():
+    # The scale runs first: (1, 0) -> (2, 0), then the translate -> (5, 0). The other direction would
+    # translate first and land on (8, 0). A commuting pair would not tell the two apart.
+    def fn():
+        translate = Transform2d.new().translate(Vec2(3, 0))
+        scale = Transform2d.new().scale(Vec2(2, 2))
+        return translate.compose_before(scale).transform_vec(Vec2(1, 0))
+
+    assert run_and_validate(fn) == Vec2(5, 0)
 
 
 class TransformInverse(RuleBasedStateMachine):
@@ -472,6 +484,102 @@ def test_invertible_compose_matches_direct(v, translation, angle):
     assert is_close(forward_result.y, forward_result_direct.y, rel_tol=1e-4, abs_tol=1e-4)
     assert is_close(inverse_result.x, inverse_result_direct.x, rel_tol=1e-4, abs_tol=1e-4)
     assert is_close(inverse_result.y, inverse_result_direct.y, rel_tol=1e-4, abs_tol=1e-4)
+
+
+def test_invertible_compose_before():
+    def fn():
+        translate = InvertibleTransform2d.new().translate(Vec2(3, 0))
+        scale = InvertibleTransform2d.new().scale(Vec2(2, 2))
+        return translate.compose_before(scale).transform_vec(Vec2(1, 0))
+
+    assert run_and_validate(fn) == Vec2(5, 0)
+
+
+def test_invertible_transform_quad():
+    def fn():
+        transform = InvertibleTransform2d.new().translate(Vec2(10, 20))
+        return transform.transform_quad(Rect(t=1, r=2, b=-3, l=-4))
+
+    result = run_and_validate(fn)
+    assert result.bl == Vec2(6, 17)
+    assert result.tl == Vec2(6, 21)
+    assert result.tr == Vec2(12, 21)
+    assert result.br == Vec2(12, 17)
+
+
+def test_invertible_inverse_transform_quad():
+    def fn():
+        transform = InvertibleTransform2d.new().translate(Vec2(10, 20))
+        return transform.inverse_transform_quad(Rect(t=1, r=2, b=-3, l=-4))
+
+    result = run_and_validate(fn)
+    assert result.bl == Vec2(-14, -23)
+    assert result.tl == Vec2(-14, -19)
+    assert result.tr == Vec2(-8, -19)
+    assert result.br == Vec2(-8, -23)
+
+
+def test_invertible_simple_perspective_x():
+    # With the vanishing point at x = 4, the homogeneous coordinate is w = v.x / 4 + 1, so (4, 6)
+    # divides by 2 and lands on (2, 3).
+    def fn():
+        transform = InvertibleTransform2d.new().simple_perspective_x(4)
+        return transform.transform_vec(Vec2(4, 6))
+
+    result = run_and_validate(fn)
+    assert is_close(result.x, 2, rel_tol=1e-6, abs_tol=1e-6)
+    assert is_close(result.y, 3, rel_tol=1e-6, abs_tol=1e-6)
+
+
+def test_invertible_simple_perspective_x_inverse():
+    def fn():
+        transform = InvertibleTransform2d.new().simple_perspective_x(4)
+        return transform.inverse_transform_vec(Vec2(2, 3))
+
+    result = run_and_validate(fn)
+    assert is_close(result.x, 4, rel_tol=1e-6, abs_tol=1e-6)
+    assert is_close(result.y, 6, rel_tol=1e-6, abs_tol=1e-6)
+
+
+def _unnormalized_invertible() -> InvertibleTransform2d:
+    # A translate on each side of the perspective, so that neither half starts out normalized: the
+    # forward matrix takes its bottom right corner from the translate applied before the perspective,
+    # the inverse from the one applied after.
+    return InvertibleTransform2d.new().translate(Vec2(0, 3)).simple_perspective_y(4).translate(Vec2(0, 4))
+
+
+def test_invertible_normalize():
+    def fn():
+        transform = _unnormalized_invertible()
+        normalized = transform.normalize()
+        return Array(
+            transform.forward.a22,
+            transform.inverse.a22,
+            normalized.forward.a22,
+            normalized.inverse.a22,
+        )
+
+    forward_a22, inverse_a22, normalized_forward_a22, normalized_inverse_a22 = run_and_validate(fn)
+    assert forward_a22 != 1
+    assert inverse_a22 != 1
+    assert is_close(normalized_forward_a22, 1)
+    assert is_close(normalized_inverse_a22, 1)
+
+
+def test_invertible_normalize_preserves_the_mapping():
+    def fn():
+        transform = _unnormalized_invertible()
+        normalized = transform.normalize()
+        return Array(
+            transform.transform_vec(Vec2(1, 1)),
+            normalized.transform_vec(Vec2(1, 1)),
+            transform.inverse_transform_vec(Vec2(1, 1)),
+            normalized.inverse_transform_vec(Vec2(1, 1)),
+        )
+
+    forward, normalized_forward, inverse, normalized_inverse = run_and_validate(fn)
+    assert is_close(normalized_forward, forward)
+    assert is_close(normalized_inverse, inverse)
 
 
 class InvertibleTransformStateMachine(RuleBasedStateMachine):

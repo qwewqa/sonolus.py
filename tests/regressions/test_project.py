@@ -138,7 +138,7 @@ def _build_mode_callbacks(
         if dev:
             suffixes.append("dev")
         suffix = "_".join(suffixes)
-        for archetype in archetypes or []:
+        for archetype in base_archetypes(archetypes):
             archetype._init_fields()
 
             callback_items = [
@@ -160,8 +160,9 @@ def _build_mode_callbacks(
                     f"{project_name}_{mode.name.lower()}_{camel_to_snake(archetype.__name__)}_{cb_name}{suffix}_cfg",
                     cfg_to_text(cfg),
                 )
-                cfg = run_passes(cfg, PASSES[passes], OptimizerConfig(mode=mode, callback=cb_info.name))
-                node = cfg_to_engine_node(cfg)
+                config = OptimizerConfig(mode=mode, callback=cb_info.name)
+                cfg = run_passes(cfg, PASSES[passes], config)
+                node = cfg_to_engine_node(cfg, config)
                 compare_with_reference(
                     f"{project_name}_{mode.name.lower()}_{camel_to_snake(archetype.__name__)}_{cb_name}_{passes}{suffix}_optimized_cfg",
                     cfg_to_text(cfg),
@@ -184,8 +185,9 @@ def _build_mode_callbacks(
                 f"{project_name}_{mode.name.lower()}_global_{camel_to_snake(cb_info.name)}_{passes}{suffix}_cfg",
                 cfg_to_text(cfg),
             )
-            cfg = run_passes(cfg, PASSES[passes], OptimizerConfig(mode=mode, callback=cb_info.name))
-            node = cfg_to_engine_node(cfg)
+            config = OptimizerConfig(mode=mode, callback=cb_info.name)
+            cfg = run_passes(cfg, PASSES[passes], config)
+            node = cfg_to_engine_node(cfg, config)
             compare_with_reference(
                 f"{project_name}_{mode.name.lower()}_global_{camel_to_snake(cb_info.name)}_{passes}{suffix}_optimized_cfg",
                 cfg_to_text(cfg),
@@ -194,6 +196,70 @@ def _build_mode_callbacks(
                 f"{project_name}_{mode.name.lower()}_global_{camel_to_snake(cb_info.name)}_{passes}{suffix}_nodes",
                 format_engine_node(node),
             )
+
+
+def base_archetypes(archetypes: list[type[_BaseArchetype]] | None) -> list[type[_BaseArchetype]]:
+    """The archetypes a build compiles callbacks for, in order.
+
+    A derived archetype shares its base's callbacks and the build compiles them once, against the base
+    (`compile_mode` in `sonolus/backend/_opt/driver.pyx`), then ships the base's node tree under each derived
+    name. Comparing the derived binding against a golden pins a compilation the build never performs;
+    test_derived_archetype_callbacks_match_their_base is what holds the sharing itself. Archetype ids come from
+    the full list and are unaffected.
+    """
+    result = []
+    seen = set()
+    for archetype in archetypes or []:
+        base = getattr(archetype, "_derived_base_", archetype)
+        if base not in seen:
+            seen.add(base)
+            result.append(base)
+    return result
+
+
+def _emit_node_text(
+    mode: Mode,
+    archetypes: list[type[_BaseArchetype]],
+    archetype: type[_BaseArchetype],
+    cb_name: str,
+    cb_info: CallbackInfo,
+) -> str:
+    project_state = ProjectContextState(runtime_checks=RuntimeChecks.NONE)
+    mode_state = ModeContextState(mode, {a: i for i, a in enumerate(archetypes)})
+    cfg = callback_to_cfg(project_state, mode_state, getattr(archetype, cb_name), cb_info.name, archetype)
+    config = OptimizerConfig(mode=mode, callback=cb_info.name)
+    return format_engine_node(cfg_to_engine_node(run_passes(cfg, PASSES["standard"], config), config))
+
+
+def test_derived_archetype_callbacks_match_their_base():
+    # The build compiles a shared callback once against the base archetype and lists the resulting node index
+    # under every derived archetype's name, so a derived binding that emitted anything else would ship the
+    # wrong tree. Nothing else compiles a derived binding: the goldens and the metrics gate measure the base.
+    engine = PROJECTS["pydori"].engine.data
+    compared = 0
+    for mode, archetypes in (
+        (Mode.PLAY, engine.play.archetypes),
+        (Mode.WATCH, engine.watch.archetypes),
+        (Mode.PREVIEW, engine.preview.archetypes),
+    ):
+        base_texts: dict[tuple[type[_BaseArchetype], str], str] = {}
+        for archetype in archetypes:
+            base = getattr(archetype, "_derived_base_", archetype)
+            if base is archetype:
+                continue
+            archetype._init_fields()
+            base._init_fields()
+            for cb_name, cb_info in archetype._supported_callbacks_.items():
+                if getattr(archetype, cb_name) in archetype._default_callbacks_:
+                    continue
+                key = (base, cb_name)
+                if key not in base_texts:
+                    base_texts[key] = _emit_node_text(mode, archetypes, base, cb_name, cb_info)
+                assert _emit_node_text(mode, archetypes, archetype, cb_name, cb_info) == base_texts[key], (
+                    f"{mode.name} {archetype.__name__}.{cb_name} emits different nodes than {base.__name__}"
+                )
+                compared += 1
+    assert compared, "no derived archetype was compared, so this test pins nothing"
 
 
 def camel_to_snake(name: str) -> str:

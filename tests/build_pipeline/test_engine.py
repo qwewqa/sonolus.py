@@ -10,6 +10,8 @@ import gzip
 import json
 import struct
 
+import pytest
+
 from sonolus.build import engine as engine_module
 from sonolus.build.engine import (
     build_buckets,
@@ -19,11 +21,14 @@ from sonolus.build.engine import (
     build_particles,
     build_skin,
     package_data,
+    package_engine,
     package_rom,
     unpackage_data,
 )
+from sonolus.script.archetype import PlayArchetype, imported
 from sonolus.script.bucket import Bucket, EmptyBuckets, bucket, bucket_sprite, buckets
 from sonolus.script.effect import Effect, EmptyEffects, effect, effects
+from sonolus.script.engine import EngineData, PlayMode, TutorialMode
 from sonolus.script.instruction import (
     Instruction,
     InstructionIcon,
@@ -81,6 +86,18 @@ class _OneInstructionIcon:
 class _OptionsWithFallback:
     replay_fallback_option_names = ("legacy_option",)
     toggle: bool = toggle_option(name="Toggle", default=True)
+
+
+class _OneArchetype(PlayArchetype):
+    name = "OneArchetype"
+    beat: float = imported()
+
+    def update_sequential(self):
+        self.despawn = True
+
+
+def _noop():
+    pass
 
 
 def test_build_skin_key_names_and_render_mode():
@@ -249,6 +266,22 @@ def test_build_tutorial_mode_wrapper_keys_uses_instruction_not_buckets(monkeypat
     assert result.keys() == {"compiled", "skin", "effect", "particle", "instruction"}
 
 
+def test_packaged_tutorial_payload_has_no_archetypes_section():
+    # The EngineTutorialData spec declares no archetypes field, and a TutorialMode names no archetypes,
+    # so the section must be absent rather than present and empty. Play is asserted from the same build
+    # as the contrast: its spec does declare the field, so this pins the omission to tutorial alone.
+    # The wrapper-key tests above stub compile_mode out, which is why none of them can see this.
+    packaged = package_engine(
+        EngineData(
+            play=PlayMode(archetypes=[_OneArchetype]),
+            tutorial=TutorialMode(preprocess=_noop, navigate=_noop, update=_noop),
+        )
+    )
+
+    assert "archetypes" not in unpackage_data(packaged.tutorial_data)
+    assert "archetypes" in unpackage_data(packaged.play_data)
+
+
 def test_package_rom_encoding_is_little_endian_f32_then_gzip_mtime_zero():
     rom = ReadOnlyMemory()
     rom.values = [0.0, 1.5, -2.25]
@@ -282,3 +315,78 @@ def test_package_data_unpackage_data_round_trip():
     value = {"skin": {"renderMode": "standard", "sprites": []}}
 
     assert unpackage_data(package_data(value)) == value
+
+
+@buckets
+class _BucketPastTheSkin:
+    note: Bucket = bucket(sprites=[bucket_sprite(sprite=Sprite(2), x=0, y=0, w=1, h=1)])
+
+
+@buckets
+class _BucketWithFallbackPastTheSkin:
+    note: Bucket = bucket(
+        sprites=[bucket_sprite(sprite=Sprite(0), fallback_sprite=Sprite(3), x=0, y=0, w=1, h=1)],
+    )
+
+
+@buckets
+class _BucketWithinTheSkin:
+    note: Bucket = bucket(sprites=[bucket_sprite(sprite=Sprite(1), fallback_sprite=Sprite(0), x=0, y=0, w=1, h=1)])
+
+
+MODE_BUILDERS = {
+    "play": lambda **kwargs: engine_module.build_play_mode(
+        archetypes=[],
+        effects=EmptyEffects,
+        particles=EmptyParticles,
+        project_state=None,
+        config=BuildConfig(),
+        **kwargs,
+    ),
+    "watch": lambda **kwargs: engine_module.build_watch_mode(
+        archetypes=[],
+        effects=EmptyEffects,
+        particles=EmptyParticles,
+        project_state=None,
+        update_spawn=lambda: 0.0,
+        config=BuildConfig(),
+        **kwargs,
+    ),
+}
+
+
+@pytest.mark.parametrize("mode", sorted(MODE_BUILDERS))
+def test_a_bucket_sprite_past_the_declared_skin_is_rejected(mode, monkeypatch):
+    # A sprite id indexes the skin the same mode declares, so an id past its end can only render as the
+    # missing-sprite fallback, and there is no runtime value involved for the check to be uncertain about.
+    _stub_compile_mode(monkeypatch)
+
+    with pytest.raises(ValueError, match="Bucket 0 references sprite id 2, but the skin of this mode declares 2"):
+        MODE_BUILDERS[mode](skin=_TwoSpriteSkin, buckets=_BucketPastTheSkin)
+
+
+@pytest.mark.parametrize("mode", sorted(MODE_BUILDERS))
+def test_a_bucket_fallback_sprite_past_the_declared_skin_is_rejected(mode, monkeypatch):
+    _stub_compile_mode(monkeypatch)
+
+    with pytest.raises(ValueError, match="Bucket 0 references fallback sprite id 3"):
+        MODE_BUILDERS[mode](skin=_TwoSpriteSkin, buckets=_BucketWithFallbackPastTheSkin)
+
+
+@pytest.mark.parametrize("mode", sorted(MODE_BUILDERS))
+def test_a_bucket_against_a_mode_that_declares_no_skin_is_rejected(mode, monkeypatch):
+    # The likelier spelling of the same mistake: buckets are passed to the mode and the skin is left at its
+    # default, so every bucket sprite is out of range.
+    _stub_compile_mode(monkeypatch)
+
+    with pytest.raises(ValueError, match="Bucket 0 references sprite id 1, but the skin of this mode declares 0"):
+        MODE_BUILDERS[mode](skin=EmptySkin, buckets=_BucketWithinTheSkin)
+
+
+@pytest.mark.parametrize("mode", sorted(MODE_BUILDERS))
+def test_a_bucket_sprite_within_the_declared_skin_is_accepted(mode, monkeypatch):
+    _stub_compile_mode(monkeypatch)
+
+    result = MODE_BUILDERS[mode](skin=_TwoSpriteSkin, buckets=_BucketWithinTheSkin)
+
+    assert result["buckets"] == build_buckets(_BucketWithinTheSkin)

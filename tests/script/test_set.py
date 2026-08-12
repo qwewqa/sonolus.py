@@ -4,6 +4,7 @@ import pytest
 
 from sonolus.script.array import Array
 from sonolus.script.internal.context import ctx
+from sonolus.script.internal.error import CompilationError
 from sonolus.script.internal.impl import validate_value
 from sonolus.script.internal.math_impls import _floor
 from sonolus.script.internal.meta_fn import meta_fn
@@ -11,7 +12,7 @@ from sonolus.script.internal.random import _random
 from sonolus.script.internal.set_impl import SetImpl
 from sonolus.script.internal.tuple_impl import TupleImpl
 from sonolus.script.num import _is_num
-from tests.script.conftest import run_and_validate
+from tests.script.conftest import run_and_validate, run_compiled
 
 
 @meta_fn
@@ -65,6 +66,38 @@ def test_contains_present_small_size_mixed_key():
         return Array("a" in s, 2 in s, (3, 3) in s)
 
     assert run_and_validate(fn) == Array(True, True, True)
+
+
+# Runtime members are rejected with the documented rule. run_compiled because the host leg builds these
+# sets happily: only the compiled leg rejects them.
+
+
+def test_set_literal_with_runtime_element_reports_the_membership_rule():
+    def fn():
+        s = {bb(1.0), 2.0}
+        return 1.0 in s
+
+    with pytest.raises(CompilationError, match="Set members must be compile time constants"):
+        run_compiled(fn)
+
+
+def test_set_builtin_with_runtime_element_reports_the_membership_rule():
+    def fn():
+        s = set((bb(1.0), 2.0))
+        return 1.0 in s
+
+    with pytest.raises(CompilationError, match="Set members must be compile time constants"):
+        run_compiled(fn)
+
+
+def test_dict_literal_with_runtime_key_keeps_its_own_message():
+    # Pinned beside the set messages so the two spellings stay distinct.
+    def fn():
+        d = {bb(1.0): 2.0}
+        return 1.0 in d
+
+    with pytest.raises(CompilationError, match="Dict keys must be compile time constants"):
+        run_compiled(fn)
 
 
 def test_contains_present_large_size_numeric_key():

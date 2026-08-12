@@ -159,7 +159,8 @@ class Maybe[T](TransientValue):
     def tuple(self) -> tuple[bool, T]:
         """Return whether the value is present and a copy of the contained value if present as a tuple.
 
-        If the value is not present, the tuple will contain `False` and a zero initialized value of the contained type.
+        If the value is not present, the first element is `False` and the second element is unspecified, so it must
+        not be used.
         """
         result_value = _box(zeros(self.contained_type))
         if self.is_some:

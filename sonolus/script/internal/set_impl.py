@@ -30,5 +30,10 @@ class SetImpl[Keys, OrderedKeys, Values](Record):
     @staticmethod
     def from_set(s):
         values = [validate_value(v) for v in s]
+        # Checked here rather than at the call sites so every route (a set literal, the set() builtin, a host
+        # set) reports the rule; hashing a runtime value below would raise about the hash instead.
+        for value in values:
+            if not value._is_py_():
+                raise ValueError("Set members must be compile time constants")
         d = DictImpl.from_dict(dict.fromkeys(values))
         return SetImpl(d)

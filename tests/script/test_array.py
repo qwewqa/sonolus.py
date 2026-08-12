@@ -1,3 +1,4 @@
+import math
 from typing import Annotated, Any, Final
 
 import pytest
@@ -722,6 +723,34 @@ def test_array_wrong_type_arg_count_still_rejected():
         Array[int]
 
 
+def test_array_mixed_element_types_message_is_deterministic():
+    class First(Record):
+        x: float
+
+    class Second(Record):
+        x: float
+
+    with pytest.raises(TypeError) as exc_info:
+        Array(1, First(1.0), Second(2.0), Array(1, 2))
+
+    # The type names are sorted, so the text cannot reorder from process to process.
+    assert (
+        str(exc_info.value)
+        == "Array constructor should be used with values of the same type, got Array[Num, 2], First, Num, Second"
+    )
+
+
+def test_subscripting_a_parameterized_array_is_rejected():
+    with pytest.raises(TypeError, match=r"Type Array\[Num, 2\] is already parameterized or has no parameters"):
+        Array[int, 2][int]
+
+
+def test_subscripting_a_non_generic_record_is_rejected():
+    # Vec2 takes no type parameters, so the message must not claim it was parameterized outright.
+    with pytest.raises(TypeError, match=r"Type Vec2 is already parameterized or has no parameters"):
+        Vec2[int]
+
+
 def test_array_generic_element_type_rejected():
     with pytest.raises(TypeError, match="Invalid element type for"):
         Array[Array, 2]
@@ -1184,4 +1213,185 @@ def test_var_array_min_default_unsupported_type_fails():
         return min(array, default=(1, 2))
 
     with pytest.raises(CompilationError, match="must be a number, record, or array"):
+        run_and_validate(fn)
+
+
+# --- last_index and swap ---------------------------------------------------------------------------
+
+
+def test_array_last_index():
+    def fn():
+        array = Array(1, 2, 3, 2, 5)
+
+        # index() and last_index() on the same array is what pins last rather than first.
+        assert_true(array.last_index(2) == 3)
+        assert_true(array.index(2) == 1)
+
+        assert_true(array.last_index(1) == 0)
+        assert_true(array.last_index(5) == 4)
+        assert_true(array.last_index(9) == -1)
+
+        return 1
+
+    assert run_and_validate(fn) == 1
+
+
+def test_array_last_index_all_equal():
+    def fn():
+        return Array(7, 7, 7).last_index(7)
+
+    assert run_and_validate(fn) == 2
+
+
+def test_array_last_index_empty():
+    def fn():
+        return Array[int, 0]().last_index(1)
+
+    assert run_and_validate(fn) == -1
+
+
+def test_array_last_index_of_record():
+    def fn():
+        return Array(Vec2(1, 1), Vec2(2, 2), Vec2(1, 1)).last_index(Vec2(1, 1))
+
+    assert run_and_validate(fn) == 2
+
+
+def test_array_swap():
+    def fn():
+        array = Array(10, 20, 30, 40)
+        array.swap(0, 2)
+        array.swap(1, 1)
+        return array
+
+    assert list(run_and_validate(fn)) == [30, 20, 10, 40]
+
+
+def test_array_swap_of_records():
+    def fn():
+        array = Array(Vec2(1, 2), Vec2(3, 4))
+        array.swap(0, 1)
+        return array[0].x * 10 + array[1].x
+
+    assert run_and_validate(fn) == 31
+
+
+def test_array_swap_negative_index_rejected():
+    # A negative subscript counts from the end, but swap takes positive indices only.
+    def read_negative():
+        return Array(10, 20, 30)[-1]
+
+    assert run_and_validate(read_negative) == 30
+
+    def swap_negative_first():
+        array = Array(10, 20, 30)
+        array.swap(-1, 0)
+        return array[0]
+
+    def swap_negative_second():
+        array = Array(10, 20, 30)
+        array.swap(0, -1)
+        return array[0]
+
+    for fn in (swap_negative_first, swap_negative_second):
+        with pytest.raises(IndexError, match=r"^Index out of range$"):
+            run_and_validate(fn)
+
+
+def test_array_swap_index_past_the_end_rejected():
+    def fn():
+        array = Array(10, 20, 30)
+        array.swap(0, 3)
+        return array[0]
+
+    with pytest.raises(IndexError, match=r"^Index out of range$"):
+        run_and_validate(fn)
+
+
+# --- Constants that reach engine ROM ----------------------------------------------------------------
+#
+# A constant array read at a runtime index is interned into ROM, which ships as 32-bit floats, so a
+# magnitude the format cannot hold has to be rejected while a non-finite one must not be.
+
+_OVER_F32_TABLE = Array(1e39, 2.0, 3.0, 4.0)
+_NON_FINITE_TABLE = Array(1.0, 2.0, 3.0, math.inf)
+
+
+def test_array_constant_above_f32_range_rejected():
+    def fn():
+        index = 0
+        for _ in range(3):
+            index += 1
+        return _OVER_F32_TABLE[index]
+
+    with pytest.raises(CompilationError, match="out of range for engine data"):
+        run_and_validate(fn)
+
+
+def test_array_non_finite_constant_accepted():
+    def fn():
+        index = 0
+        for _ in range(3):
+            index += 1
+        return _NON_FINITE_TABLE[index]
+
+    assert run_and_validate(fn) == math.inf
+
+
+# --- Records with a Final field -----------------------------------------------------------------------
+
+
+class FinalPair(Record):
+    first: Final[int]
+    second: int
+
+
+def test_array_of_records_with_final_field():
+    def fn():
+        pairs = Array(FinalPair(1, 2), FinalPair(9, 8))
+        return pairs[0].first * 100 + pairs[1].first * 10 + pairs[1].second
+
+    assert run_and_validate(fn) == 198
+
+
+def test_array_of_records_with_final_field_copied():
+    def fn():
+        pairs = Array(FinalPair(1, 2), FinalPair(9, 8))
+        copy = +pairs
+        copy[1].second = 5
+        # pairs[1].second is unchanged, so the copy has its own storage.
+        return copy[1].first * 100 + copy[1].second * 10 + pairs[1].second
+
+    assert run_and_validate(fn) == 958
+
+
+def test_final_field_assignment_rejected():
+    def fn():
+        pair = FinalPair(1, 2)
+        pair.first = 5
+        return pair.first
+
+    with pytest.raises(TypeError, match="Cannot set a final field"):
+        run_and_validate(fn)
+
+
+def test_array_element_assignment_of_record_with_final_field_rejected():
+    def fn():
+        pairs = Array(FinalPair(1, 2), FinalPair(9, 8))
+        pairs[0] = FinalPair(3, 4)
+        return pairs[0].first
+
+    with pytest.raises(TypeError, match="Cannot set a final field"):
+        run_and_validate(fn)
+
+
+def test_var_array_append_of_record_with_final_field_rejected():
+    # Deliberate: append is excluded from the initializing bypass that lets Array construction and +array
+    # write a Final field, so this rejection is the intended behavior rather than a gap left to close.
+    def fn():
+        pairs = VarArray[FinalPair, 4].new()
+        pairs.append(FinalPair(1, 2))
+        return pairs[0].first
+
+    with pytest.raises(TypeError, match="Cannot set a final field"):
         run_and_validate(fn)

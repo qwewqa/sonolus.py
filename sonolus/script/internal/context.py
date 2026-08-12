@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import struct
 from collections.abc import Sequence
 from contextlib import contextmanager
 from dataclasses import dataclass
@@ -188,6 +189,17 @@ class CallbackContextState:
         self.no_eval = no_eval
         self.visitor_own_time = 0
         self.is_in_generator = False
+
+
+def _describe_global(value: _GlobalInfo | _GlobalPlaceholder) -> str:
+    """Name a global for an error message.
+
+    A global declared as a class carries that class's name. One declared from a bare type has no name of its
+    own, so its type stands in. Neither class defines __repr__, so interpolating the object itself would print
+    a heap address instead.
+    """
+    name = getattr(value, "name", None)
+    return name if name is not None else value.type.__name__
 
 
 class Context:
@@ -456,7 +468,11 @@ class Context:
         with self.mode_state.lock:
             block = value.blocks.get(self.mode_state.mode)
             if block is None:
-                raise RuntimeError(f"Global {value} is not available in '{self.mode_state.mode.name}' mode")
+                message = f"Global {_describe_global(value)} is not available in '{self.mode_state.mode.name}' mode"
+                available = ", ".join(mode.name for mode in value.blocks)
+                if available:
+                    message = f"{message}, only in {available}"
+                raise RuntimeError(message)
             if value not in self.mode_state.environment_mappings:
                 if value.offset is None:
                     offset = self.mode_state.environment_offsets.get(block, 0)
@@ -532,6 +548,10 @@ def using_ctx(value: Context | None):
         _context = old_value
 
 
+# The largest finite value a 32-bit float can hold.
+_F32_MAX = 3.4028234663852886e38
+
+
 class ReadOnlyMemory:
     values: list[float]
     indexes: dict[tuple[float, ...], int]
@@ -549,6 +569,20 @@ class ReadOnlyMemory:
     def __getitem__(self, item: tuple[float, ...]) -> BlockPlace:
         with self._lock:
             if item not in self.indexes:
+                # struct.pack is what packages the rom, so probing with it rejects exactly the values
+                # packaging would abort on, at a point where the visitor can attach a source location. A slot
+                # holding anything but a number is left for packaging to reject as it does today.
+                for value in item:
+                    if isinstance(value, float | int) and abs(value) > _F32_MAX:
+                        try:
+                            struct.pack("<f", value)
+                        except (OverflowError, struct.error):
+                            # float(): anything out of f32 range is integral in f64, so Num._as_py_ has already
+                            # widened it to an int, and a 1e39 literal would otherwise report as 39 digits.
+                            raise ValueError(
+                                f"Value {float(value)} is out of range for engine data, "
+                                f"which is stored as 32-bit floats"
+                            ) from None
                 index = len(self.values)
                 self.indexes[item] = index
                 self.values.extend(item)

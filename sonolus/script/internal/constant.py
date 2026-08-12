@@ -1,5 +1,6 @@
-from collections.abc import Iterable
+from collections.abc import Iterable, MutableMapping
 from typing import Any, ClassVar, Self
+from weakref import WeakValueDictionary
 
 from sonolus.backend.place import BlockPlace
 from sonolus.script.internal.simple_meta_fn import simple_meta_fn
@@ -16,11 +17,40 @@ class _Missing:
 
 _MISSING = _Missing()
 
+# The repr of a wrapped constant is unbounded, and the label built from it reaches user-facing messages.
+_MAX_PARAMETER_NAME_LENGTH = 40
+
+
+def _parameter_name(parameter: Any) -> str:
+    """A short label for a wrapped constant, used to name the class that carries it.
+
+    That class name reaches user-facing errors, so it must not carry a memory address: `object.__repr__` puts
+    one there, and so does the repr of a function. A `__name__` is address-free, so it is preferred wherever one
+    exists. The label is for display only, and two wrapped values can share one: `Literal[1]` and `Literal[2]`
+    both label `Const[Literal]`, and a long repr is truncated. Identity comes from `_parameterized_`, which is
+    keyed on the value itself.
+    """
+    name = getattr(parameter, "__name__", None)
+    if isinstance(name, str):
+        return name
+    if type(parameter).__repr__ is object.__repr__:
+        return f"{type(parameter).__name__} object"
+    text = repr(parameter)
+    if len(text) > _MAX_PARAMETER_NAME_LENGTH:
+        text = f"{text[: _MAX_PARAMETER_NAME_LENGTH - 3]}..."
+    return text
+
 
 class ConstantValue(Value):
     """Wraps a python constant value usable in Sonolus scripts."""
 
-    _parameterized_: ClassVar[dict[Any, type[Self]]] = {}
+    # Weakly valued, with the key reachable from the class it maps to, so an entry lives exactly as long as
+    # something holds the class minted for its value. That class is the value's identity (`__eq__` is `is`, and
+    # a Record generic over a constant is parameterized on it), so an entry can only go once nothing is left to
+    # observe the difference: dropping entries per build instead hands a value built before the drop a
+    # different class than one built after it. A strong dict grows for the life of the process, since most keys
+    # are objects a later build cannot produce again.
+    _parameterized_: ClassVar[MutableMapping[Any, type[Self]]] = WeakValueDictionary()
     _value: ClassVar[Any] = _MISSING
     instance: ClassVar[Self | _Missing] = _MISSING
 
@@ -49,7 +79,7 @@ class ConstantValue(Value):
         class Parameterized(cls):
             _value = (parameter,)
 
-        Parameterized.__name__ = f"Const[{object.__repr__(parameter)}]"  # noqa: PLC2801
+        Parameterized.__name__ = f"Const[{_parameter_name(parameter)}]"
         Parameterized.__qualname__ = Parameterized.__name__
         Parameterized.__module__ = cls.__module__
         Parameterized.instance = object.__new__(Parameterized)
@@ -87,7 +117,7 @@ class ConstantValue(Value):
         # We rely on validate_value to create the correct instance
         value = validate_value(value)
         if not isinstance(value, cls):
-            raise ValueError(f"Value {value} is not of type {cls}")
+            raise ValueError(f"Value {value} is not of type {cls.__name__}")
         return value
 
     def _is_py_(self) -> bool:
@@ -140,6 +170,11 @@ class ConstantValue(Value):
     @simple_meta_fn
     def __hash__(self):
         return hash(self.value())
+
+    def __repr__(self) -> str:
+        # The parameterized class name already carries the wrapped value, and without this a message
+        # interpolating an instance gets object.__repr__'s memory address.
+        return type(self).__name__
 
 
 class BasicConstantValue(ConstantValue):

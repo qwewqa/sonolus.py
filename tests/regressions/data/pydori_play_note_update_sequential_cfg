@@ -1,0 +1,907 @@
+0:
+  goto 1
+1:
+  goto 2
+2:
+  v1 <- 3 + EntityInfo[1]
+  v2 <- v1
+  v3 <- EngineRom[v2]
+  goto 3
+3:
+  goto 4
+4:
+  goto 5
+5:
+  v4 <- v3 == 6
+  goto 6 if v4 else 7
+6:
+  EntityDespawn[0] <- 1
+  goto 238
+7:
+  v5 <- RuntimeUpdate[0] > EntityData[15]
+  goto 8 if v5 else 9
+8:
+  EntityDespawn[0] <- 1
+  goto 238
+9:
+  goto 10
+10:
+  goto 11
+11:
+  goto 12
+12:
+  v6 <- EntityData[14] <= RuntimeUpdate[0]
+  goto 13 if v6 else 14
+13:
+  v7 <- RuntimeUpdate[0] <= EntityData[15]
+  v8 <- v7
+  goto 15
+14:
+  v8 <- 0
+  goto 15
+15:
+  goto 16
+16:
+  goto 17 if v8 else 20
+17:
+  v9 <- EntityInfo[0]
+  goto 18
+18:
+  v10 <- LevelMemory[0]
+  v11 <- v10 < 16
+  v12 <- LevelMemory[0]
+  v13 <- v12
+  v14 <- v9
+  LevelMemory[v13 + 1] <- v14
+  v15 <- LevelMemory[0]
+  v16 <- v15 + 1
+  LevelMemory[0] <- v16
+  goto 19
+19:
+  goto 21
+20:
+  goto 21
+21:
+  v10 <- EntityMemory[0]
+  v11 <- v10 > -100000000
+  goto 22 if v11 else 194
+22:
+  v12 <- EntityMemory[0]
+  v13 <- v12 < EntityData[11]
+  goto 23 if v13 else 24
+23:
+  v14 <- RuntimeUpdate[0] - RuntimeEnvironment[3]
+  v15 <- v14 - EntityData[11]
+  v16 <- EntityMemory[0]
+  v17 <- EntityData[11] - v16
+  v18 <- v15 < v17
+  v19 <- v18
+  goto 25
+24:
+  v19 <- 0
+  goto 25
+25:
+  v20 <- !v19
+  goto 26 if v20 else 192
+26:
+  v21 <- EntityData[11] - 0.03333333333333333
+  v22 <- EntityMemory[0]
+  v23 <- v21 <= v22
+  goto 27 if v23 else 28
+27:
+  v24 <- v22 <= EntityData[11]
+  v25 <- v24
+  goto 29
+28:
+  v25 <- 0
+  goto 29
+29:
+  goto 30 if v25 else 31
+30:
+  EntityMemory[0] <- EntityData[11]
+  goto 32
+31:
+  goto 32
+32:
+  v26 <- EntityMemory[0]
+  goto 33
+33:
+  goto 34
+34:
+  goto 35
+35:
+  goto 36
+36:
+  goto 37
+37:
+  goto 38
+38:
+  goto 39
+39:
+  goto 40
+40:
+  v27 <- Judge(v26, EntityData[11], EntityData[5], EntityData[6], EntityData[7], EntityData[8], EntityData[9], EntityData[10])
+  goto 41
+41:
+  EntityInput[0] <- v27
+  v28 <- v26 - EntityData[11]
+  v29 <- Clamp(v28, -1, 1)
+  EntityInput[1] <- v29
+  v30 <- EntityInput[1]
+  v31 <- v30 * 1000
+  EntityInput[3] <- v31
+  v32 <- v27 != 0
+  goto 42 if v32 else 189
+42:
+  v33 <- !LevelOption[11]
+  goto 43 if v33 else 77
+43:
+  goto 44
+44:
+  v34 <- 3 + EntityInfo[1]
+  v35 <- v34
+  v36 <- EngineRom[v35]
+  goto 45
+45:
+  goto 46
+46:
+  goto 47
+47:
+  goto 48
+48:
+  v37 <- !LevelOption[10]
+  goto 49 if v37 else 50
+49:
+  goto 75
+50:
+  v38 <- v36 == 6
+  goto 51 if v38 else 52
+51:
+  goto 75
+52:
+  goto 53
+53:
+  v39 <- 0
+  v40 <- v36 == 2
+  goto 54 if v40 else 55
+54:
+  goto 57
+55:
+  v41 <- v36 == 3
+  goto 56 if v41 else 65
+56:
+  goto 57
+57:
+  v42 <- v27 == 1
+  goto 58 if v42 else 59
+58:
+  v39 <- 4
+  goto 64
+59:
+  v43 <- v27 == 2
+  goto 60 if v43 else 61
+60:
+  v39 <- 5
+  goto 64
+61:
+  v44 <- v27 == 3
+  goto 62 if v44 else 63
+62:
+  v39 <- 6
+  goto 64
+63:
+  goto 64
+64:
+  goto 73
+65:
+  v45 <- v27 == 1
+  goto 66 if v45 else 67
+66:
+  v39 <- 1
+  goto 72
+67:
+  v46 <- v27 == 2
+  goto 68 if v46 else 69
+68:
+  v39 <- 2
+  goto 72
+69:
+  v47 <- v27 == 3
+  goto 70 if v47 else 71
+70:
+  v39 <- 3
+  goto 72
+71:
+  goto 72
+72:
+  goto 73
+73:
+  goto 74
+74:
+  v48 <- v39
+  v49 <- Play(v48, 0)
+  goto 75
+75:
+  goto 76
+76:
+  goto 78
+77:
+  goto 78
+78:
+  goto 79
+79:
+  v37 <- 3 + EntityInfo[1]
+  v38 <- v37
+  v39 <- EngineRom[v38]
+  goto 80
+80:
+  goto 81
+81:
+  goto 82
+82:
+  goto 83
+83:
+  v40 <- v39 == 6
+  goto 84 if v40 else 85
+84:
+  goto 185
+85:
+  v41 <- !LevelOption[6]
+  goto 86 if v41 else 87
+86:
+  goto 185
+87:
+  goto 88
+88:
+  v42 <- 0
+  v43 <- v39 == 1
+  goto 89 if v43 else 90
+89:
+  v42 <- 1
+  goto 105
+90:
+  v44 <- v39 == 2
+  goto 91 if v44 else 92
+91:
+  v42 <- 6
+  goto 105
+92:
+  v45 <- v39 == 3
+  goto 93 if v45 else 97
+93:
+  v46 <- EntityData[2] > 0
+  goto 94 if v46 else 95
+94:
+  v42 <- 8
+  goto 96
+95:
+  v42 <- 10
+  goto 96
+96:
+  goto 105
+97:
+  v47 <- v39 == 4
+  goto 98 if v47 else 99
+98:
+  goto 103
+99:
+  v48 <- v39 == 5
+  goto 100 if v48 else 101
+100:
+  goto 103
+101:
+  v49 <- v39 == 7
+  goto 102 if v49 else 104
+102:
+  goto 103
+103:
+  v42 <- 3
+  goto 105
+104:
+  goto 105
+105:
+  goto 106
+106:
+  goto 107
+107:
+  goto 108
+108:
+  v50 <- EntityData[0] * LevelData[12]
+  goto 109
+109:
+  v51 <- LevelData[11] / 2
+  v52 <- v50 - v51
+  v53 <- v52
+  v54 <- 0
+  goto 110
+110:
+  goto 111
+111:
+  v55 <- v53
+  v56 <- LevelData[2] * v55
+  v57 <- v54
+  v58 <- LevelData[3] * v57
+  v59 <- v56 + v58
+  v60 <- v59 + LevelData[4]
+  v61 <- v53
+  v62 <- LevelData[5] * v61
+  v63 <- v54
+  v64 <- LevelData[6] * v63
+  v65 <- v62 + v64
+  v66 <- v65 + LevelData[7]
+  v67 <- v53
+  v68 <- LevelData[8] * v67
+  v69 <- v54
+  v70 <- LevelData[9] * v69
+  v71 <- v68 + v70
+  v72 <- v71 + LevelData[10]
+  v73 <- v60 / v72
+  v74 <- v66 / v72
+  v75 <- v73
+  v76 <- v74
+  goto 112
+112:
+  goto 113
+113:
+  v77 <- LevelData[11] / 2
+  v78 <- v50 + v77
+  v79 <- v78
+  v80 <- 0
+  goto 114
+114:
+  goto 115
+115:
+  v81 <- v79
+  v82 <- LevelData[2] * v81
+  v83 <- v80
+  v84 <- LevelData[3] * v83
+  v85 <- v82 + v84
+  v86 <- v85 + LevelData[4]
+  v87 <- v79
+  v88 <- LevelData[5] * v87
+  v89 <- v80
+  v90 <- LevelData[6] * v89
+  v91 <- v88 + v90
+  v92 <- v91 + LevelData[7]
+  v93 <- v79
+  v94 <- LevelData[8] * v93
+  v95 <- v80
+  v96 <- LevelData[9] * v95
+  v97 <- v94 + v96
+  v98 <- v97 + LevelData[10]
+  v99 <- v86 / v98
+  v100 <- v92 / v98
+  v101 <- v99
+  v102 <- v100
+  goto 116
+116:
+  goto 117
+117:
+  v103 <- v101
+  v104 <- v75
+  v105 <- v103 - v104
+  v106 <- v102
+  v107 <- v76
+  v108 <- v106 - v107
+  v109 <- v105
+  v110 <- Power(v109, 2)
+  v111 <- v108
+  v112 <- Power(v111, 2)
+  v113 <- v110 + v112
+  v114 <- Power(v113, 0.5)
+  v115 <- 0
+  v116 <- v114
+  v117 <- v75
+  v118 <- v115
+  v119 <- v117 + v118
+  v120 <- v76
+  v121 <- v116
+  v122 <- v120 + v121
+  v123 <- 0
+  v124 <- v114
+  v125 <- v101
+  v126 <- v123
+  v127 <- v125 + v126
+  v128 <- v102
+  v129 <- v124
+  v130 <- v128 + v129
+  goto 118
+118:
+  v131 <- v42
+  v132 <- v75
+  v133 <- v76
+  v134 <- v119
+  v135 <- v122
+  v136 <- v127
+  v137 <- v130
+  v138 <- v101
+  v139 <- v102
+  v140 <- SpawnParticleEffect(v131, v132, v133, v134, v135, v136, v137, v138, v139, 0.5, 0)
+  v141 <- v140
+  goto 119
+119:
+  v142 <- 0
+  v143 <- v39 == 1
+  goto 120 if v143 else 121
+120:
+  v142 <- 2
+  goto 136
+121:
+  v144 <- v39 == 2
+  goto 122 if v144 else 123
+122:
+  v142 <- 7
+  goto 136
+123:
+  v145 <- v39 == 3
+  goto 124 if v145 else 128
+124:
+  v146 <- EntityData[2] > 0
+  goto 125 if v146 else 126
+125:
+  v142 <- 9
+  goto 127
+126:
+  v142 <- 11
+  goto 127
+127:
+  goto 136
+128:
+  v147 <- v39 == 4
+  goto 129 if v147 else 130
+129:
+  goto 134
+130:
+  v148 <- v39 == 5
+  goto 131 if v148 else 132
+131:
+  goto 134
+132:
+  v149 <- v39 == 7
+  goto 133 if v149 else 135
+133:
+  goto 134
+134:
+  v142 <- 4
+  goto 136
+135:
+  goto 136
+136:
+  goto 137
+137:
+  goto 138
+138:
+  goto 139
+139:
+  v150 <- EntityData[0] * LevelData[12]
+  goto 140
+140:
+  v151 <- v150
+  v152 <- 0
+  v153 <- LevelData[11]
+  v154 <- LevelData[11]
+  v155 <- v153
+  v156 <- v155 * 1.8
+  v157 <- v154
+  v158 <- v157 * 1.8
+  goto 141
+141:
+  v159 <- v152
+  v160 <- v158
+  v161 <- v160 / 2
+  v162 <- v159 + v161
+  v163 <- v151
+  v164 <- v156
+  v165 <- v164 / 2
+  v166 <- v163 + v165
+  v167 <- v152
+  v168 <- v158
+  v169 <- v168 / 2
+  v170 <- v167 - v169
+  v171 <- v151
+  v172 <- v156
+  v173 <- v172 / 2
+  v174 <- v171 - v173
+  v175 <- v162
+  v176 <- v166
+  v177 <- v170
+  v178 <- v174
+  goto 142
+142:
+  goto 143
+143:
+  goto 144
+144:
+  goto 145
+145:
+  v179 <- v178
+  v180 <- v177
+  v181 <- v179
+  v182 <- v180
+  goto 146
+146:
+  goto 147
+147:
+  v183 <- v181
+  v184 <- LevelData[2] * v183
+  v185 <- v182
+  v186 <- LevelData[3] * v185
+  v187 <- v184 + v186
+  v188 <- v187 + LevelData[4]
+  v189 <- v181
+  v190 <- LevelData[5] * v189
+  v191 <- v182
+  v192 <- LevelData[6] * v191
+  v193 <- v190 + v192
+  v194 <- v193 + LevelData[7]
+  v195 <- v181
+  v196 <- LevelData[8] * v195
+  v197 <- v182
+  v198 <- LevelData[9] * v197
+  v199 <- v196 + v198
+  v200 <- v199 + LevelData[10]
+  v201 <- v188 / v200
+  v202 <- v194 / v200
+  v203 <- v201
+  v204 <- v202
+  goto 148
+148:
+  goto 149
+149:
+  v205 <- v176
+  v206 <- v177
+  v207 <- v205
+  v208 <- v206
+  goto 150
+150:
+  goto 151
+151:
+  v209 <- v207
+  v210 <- LevelData[2] * v209
+  v211 <- v208
+  v212 <- LevelData[3] * v211
+  v213 <- v210 + v212
+  v214 <- v213 + LevelData[4]
+  v215 <- v207
+  v216 <- LevelData[5] * v215
+  v217 <- v208
+  v218 <- LevelData[6] * v217
+  v219 <- v216 + v218
+  v220 <- v219 + LevelData[7]
+  v221 <- v207
+  v222 <- LevelData[8] * v221
+  v223 <- v208
+  v224 <- LevelData[9] * v223
+  v225 <- v222 + v224
+  v226 <- v225 + LevelData[10]
+  v227 <- v214 / v226
+  v228 <- v220 / v226
+  v229 <- v227
+  v230 <- v228
+  goto 152
+152:
+  goto 153
+153:
+  v231 <- v178
+  v232 <- v175
+  v233 <- v231
+  v234 <- v232
+  goto 154
+154:
+  goto 155
+155:
+  v235 <- v233
+  v236 <- LevelData[2] * v235
+  v237 <- v234
+  v238 <- LevelData[3] * v237
+  v239 <- v236 + v238
+  v240 <- v239 + LevelData[4]
+  v241 <- v233
+  v242 <- LevelData[5] * v241
+  v243 <- v234
+  v244 <- LevelData[6] * v243
+  v245 <- v242 + v244
+  v246 <- v245 + LevelData[7]
+  v247 <- v233
+  v248 <- LevelData[8] * v247
+  v249 <- v234
+  v250 <- LevelData[9] * v249
+  v251 <- v248 + v250
+  v252 <- v251 + LevelData[10]
+  v253 <- v240 / v252
+  v254 <- v246 / v252
+  v255 <- v253
+  v256 <- v254
+  goto 156
+156:
+  goto 157
+157:
+  v257 <- v176
+  v258 <- v175
+  v259 <- v257
+  v260 <- v258
+  goto 158
+158:
+  goto 159
+159:
+  v261 <- v259
+  v262 <- LevelData[2] * v261
+  v263 <- v260
+  v264 <- LevelData[3] * v263
+  v265 <- v262 + v264
+  v266 <- v265 + LevelData[4]
+  v267 <- v259
+  v268 <- LevelData[5] * v267
+  v269 <- v260
+  v270 <- LevelData[6] * v269
+  v271 <- v268 + v270
+  v272 <- v271 + LevelData[7]
+  v273 <- v259
+  v274 <- LevelData[8] * v273
+  v275 <- v260
+  v276 <- LevelData[9] * v275
+  v277 <- v274 + v276
+  v278 <- v277 + LevelData[10]
+  v279 <- v266 / v278
+  v280 <- v272 / v278
+  v281 <- v279
+  v282 <- v280
+  goto 160
+160:
+  goto 161
+161:
+  goto 162
+162:
+  v283 <- v281
+  v284 <- v255
+  v285 <- v283 - v284
+  v286 <- v229
+  v287 <- v285 + v286
+  v288 <- v203
+  v289 <- v287 - v288
+  v290 <- v289 / 2
+  v291 <- v255
+  v292 <- v281
+  v293 <- v291 + v292
+  v294 <- v293 / 2
+  v295 <- v203
+  v296 <- v229
+  v297 <- v295 + v296
+  v298 <- v297 / 2
+  v299 <- v290 / 2
+  v300 <- v298 - v299
+  v301 <- v204
+  v302 <- v300
+  v303 <- v301
+  v304 <- v290 / 2
+  v305 <- v298 + v304
+  v306 <- v230
+  v307 <- v305
+  v308 <- v306
+  v309 <- v290 / 2
+  v310 <- v294 - v309
+  v311 <- v256
+  v312 <- v310
+  v313 <- v311
+  v314 <- v290 / 2
+  v315 <- v294 + v314
+  v316 <- v282
+  v317 <- v315
+  v318 <- v316
+  goto 163
+163:
+  v319 <- v142
+  v320 <- v302
+  v321 <- v303
+  v322 <- v312
+  v323 <- v313
+  v324 <- v317
+  v325 <- v318
+  v326 <- v307
+  v327 <- v308
+  v328 <- SpawnParticleEffect(v319, v320, v321, v322, v323, v324, v325, v326, v327, 0.5, 0)
+  v329 <- v328
+  goto 164
+164:
+  v330 <- !LevelOption[7]
+  goto 165 if v330 else 166
+165:
+  goto 183
+166:
+  goto 167
+167:
+  goto 168
+168:
+  goto 169
+169:
+  v331 <- 0
+  goto 170
+170:
+  goto 171
+171:
+  goto 172
+172:
+  v332 <- v331
+  v333 <- v332 < LevelData[16]
+  goto 173 if v333 else 176
+173:
+  v334 <- v331
+  v335 <- v331
+  v336 <- v335 + 1
+  v331 <- v336
+  goto 174
+174:
+  goto 175
+175:
+  v337 <- 1
+  goto 177
+176:
+  v337 <- 0
+  goto 177
+177:
+  goto 178
+178:
+  goto 179 if v337 else 188
+179:
+  v338 <- v334 * 9
+  v339 <- 16 + v338
+  v340 <- v339
+  v341 <- LevelData[v340 + 1] == EntityData[0]
+  goto 180 if v341 else 187
+180:
+  goto 181
+181:
+  goto 182
+182:
+  v342 <- SpawnParticleEffect(0, LevelData[v340 + 2], LevelData[v340 + 3], LevelData[v340 + 4], LevelData[v340 + 5], LevelData[v340 + 6], LevelData[v340 + 7], LevelData[v340 + 8], LevelData[v340 + 9], 0.2, 0)
+  v343 <- v342
+  goto 183
+183:
+  goto 184
+184:
+  goto 185
+185:
+  goto 186
+186:
+  goto 190
+187:
+  goto 171
+188:
+  goto exit
+189:
+  goto 190
+190:
+  EntityDespawn[0] <- 1
+  EntitySharedMemory[2] <- 1
+  goto 191
+191:
+  goto 193
+192:
+  goto 193
+193:
+  goto 195
+194:
+  goto 195
+195:
+  goto 196
+196:
+  goto 197
+197:
+  goto 198
+198:
+  goto 199
+199:
+  goto 200
+200:
+  goto 201
+201:
+  v27 <- EntityData[16] * 32
+  v28 <- v27
+  v29 <- EntitySharedMemoryArray[v28]
+  goto 202
+202:
+  v30 <- v29 > 0
+  goto 203
+203:
+  goto 204 if v30 else 236
+204:
+  goto 205
+205:
+  goto 206
+206:
+  goto 207
+207:
+  goto 208
+208:
+  goto 209
+209:
+  v31 <- EntityData[16] * 32
+  v32 <- v31
+  v33 <- EntitySharedMemoryArray[v32]
+  goto 210
+210:
+  goto 211
+211:
+  goto 212
+212:
+  goto 213
+213:
+  v34 <- LevelMemory[17]
+  v35 <- v34 >= 16
+  goto 214 if v35 else 215
+214:
+  v46 <- 0
+  goto 232
+215:
+  goto 216
+216:
+  v36 <- 0
+  goto 217
+217:
+  goto 218
+218:
+  v37 <- LevelMemory[17]
+  goto 219
+219:
+  v38 <- v36 < v37
+  goto 220 if v38 else 225
+220:
+  goto 221
+221:
+  v39 <- 17 + v36
+  v40 <- v39
+  v41 <- LevelMemory[v40 + 1]
+  goto 222
+222:
+  v42 <- v41 == v33
+  goto 223 if v42 else 224
+223:
+  v45 <- 1
+  goto 226
+224:
+  v43 <- v36 + 1
+  v44 <- v43
+  v36 <- v44
+  goto 217
+225:
+  v45 <- 0
+  goto 226
+226:
+  goto 227
+227:
+  goto 228 if v45 else 229
+228:
+  v46 <- 0
+  goto 232
+229:
+  goto 230
+230:
+  v46 <- LevelMemory[17]
+  v47 <- v46 < 16
+  v48 <- LevelMemory[17]
+  v49 <- 17 + v48
+  v50 <- v49
+  LevelMemory[v50 + 1] <- v33
+  v51 <- LevelMemory[17]
+  v52 <- v51 + 1
+  LevelMemory[17] <- v52
+  goto 231
+231:
+  v46 <- 1
+  goto 232
+232:
+  goto 233
+233:
+  goto 234
+234:
+  goto 235
+235:
+  goto 237
+236:
+  goto 237
+237:
+  goto 238
+238:
+  goto 239
+239:
+  goto exit

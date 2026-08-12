@@ -334,7 +334,13 @@ class Collection:
 
     @staticmethod
     def _write_json(path: Path, content: Any) -> None:
-        path.write_text(json.dumps(content), encoding="utf-8")
+        try:
+            text = json.dumps(content, allow_nan=False)
+        except ValueError as e:
+            # A non-finite value reaches here from a third-party pack, whose item.json json.loads accepts, so the
+            # message has to name the file: json's own says only which value it refused.
+            raise ValueError(f"Cannot write {path}: {e}") from e
+        path.write_text(text, encoding="utf-8")
 
     def update(self, other: Collection) -> None:
         self.repository.update(other.repository)

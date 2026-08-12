@@ -1,10 +1,12 @@
 """Tests for the group forms of the skin, effects, and particles decorators."""
 
 import random
+from typing import Annotated
 
 import pytest
 
 from sonolus.build.engine import build_effects, build_particles, build_skin
+from sonolus.script.bucket import bucket, buckets
 from sonolus.script.effect import Effect, EffectGroup, effect, effect_group, effects
 from sonolus.script.internal.error import CompilationError
 from sonolus.script.particle import Particle, ParticleGroup, particle, particle_group, particles
@@ -53,6 +55,12 @@ _READ_ONLY_GROUPS = [
     pytest.param(_Skin.trio, Sprite(9), "SpriteGroup is read-only", id="sprite"),
     pytest.param(_Effects.trio, Effect(9), "EffectGroup is read-only", id="effect"),
     pytest.param(_Particles.trio, Particle(9), "ParticleGroup is read-only", id="particle"),
+]
+
+_GROUP_CONSTRUCTORS = [
+    pytest.param(sprite_group, id="sprite"),
+    pytest.param(effect_group, id="effect"),
+    pytest.param(particle_group, id="particle"),
 ]
 
 
@@ -212,8 +220,95 @@ def test_group_setitem_is_rejected(group, element, message):
         run_compiled(fn)
 
 
+@pytest.mark.parametrize("constructor", _GROUP_CONSTRUCTORS)
+def test_group_constructor_rejects_a_bare_string(constructor):
+    # A string is itself a sequence of one-character names, and nothing downstream rejects a one-character
+    # resource name, so a group written without its brackets has to be caught here or not at all.
+    with pytest.raises(TypeError, match="Expected a sequence of names, got 'tap'"):
+        constructor("tap")
+
+
+@pytest.mark.parametrize("constructor", _GROUP_CONSTRUCTORS)
+def test_group_constructor_keeps_a_one_name_sequence(constructor):
+    assert constructor(("tap",)).names == ["tap"]
+
+
 def test_group_read_through_decorated_instance():
     def fn():
         return _Skin.trio[black_box_value(1)].id
 
     assert run_and_validate(fn) == 2
+
+
+# One row per rejection arm the declaration decorators can take against a plausible mistake: a second
+# specifier in the same annotation, a group specifier under a single-resource annotation type, and the
+# reverse. The pinned fragment is the discriminating tail plus the field name; the middle of each message
+# is the annotation's own repr, which these tests deliberately do not freeze.
+_BAD_DECLARATIONS = [
+    pytest.param(
+        skin,
+        Annotated[Sprite, sprite("x"), sprite("y")],
+        r"Invalid annotation for skin: .* on field a, too many annotation values",
+        id="skin-too-many-values",
+    ),
+    pytest.param(
+        skin,
+        Annotated[SpriteGroup, sprite("x")],
+        r"Invalid annotation for skin: .* on field a, expected Sprite$",
+        id="skin-sprite-under-group-type",
+    ),
+    pytest.param(
+        skin,
+        Annotated[Sprite, sprite_group(["x", "y"])],
+        r"Invalid annotation for skin: .* on field a, expected SpriteGroup$",
+        id="skin-group-under-sprite-type",
+    ),
+    pytest.param(
+        effects,
+        Annotated[Effect, effect("x"), effect("y")],
+        r"Invalid annotation for effects: .* on field a, too many annotation values",
+        id="effects-too-many-values",
+    ),
+    pytest.param(
+        effects,
+        Annotated[EffectGroup, effect("x")],
+        r"Invalid annotation for effects: .* on field a, expected Effect$",
+        id="effects-effect-under-group-type",
+    ),
+    pytest.param(
+        effects,
+        Annotated[Effect, effect_group(["x", "y"])],
+        r"Invalid annotation for effects: .* on field a, expected EffectGroup$",
+        id="effects-group-under-effect-type",
+    ),
+    pytest.param(
+        particles,
+        Annotated[Particle, particle("x"), particle("y")],
+        r"Invalid annotation for particles: .* on field a, too many annotation values",
+        id="particles-too-many-values",
+    ),
+    pytest.param(
+        particles,
+        Annotated[ParticleGroup, particle("x")],
+        r"Invalid annotation for particles: .* on field a, expected Particle$",
+        id="particles-particle-under-group-type",
+    ),
+    pytest.param(
+        particles,
+        Annotated[Particle, particle_group(["x", "y"])],
+        r"Invalid annotation for particles: .* on field a, expected ParticleGroup$",
+        id="particles-group-under-particle-type",
+    ),
+    pytest.param(
+        buckets,
+        Annotated[int, bucket(sprites=[], unit="")],
+        r"Invalid annotation for buckets: .* on field a, expected annotation of type Bucket",
+        id="buckets-non-bucket-type",
+    ),
+]
+
+
+@pytest.mark.parametrize(("decorator", "annotation", "message"), _BAD_DECLARATIONS)
+def test_declaration_rejection_names_the_arm_and_the_field(decorator, annotation, message):
+    with pytest.raises(TypeError, match=message):
+        decorator(type("Bad", (), {"__annotations__": {"a": annotation}}))

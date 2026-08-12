@@ -1,0 +1,6614 @@
+0:
+  goto 1
+1:
+  goto 2 if EntityDespawn[0] else 3
+2:
+  goto 1887
+3:
+  goto 4
+4:
+  goto 5
+5:
+  goto 6
+6:
+  goto 7
+7:
+  v1 <- EntityData[0] * LevelData[12]
+  goto 8
+8:
+  v2 <- LevelData[12] * 2.5
+  goto 9
+9:
+  v3 <- v2 / 2
+  v4 <- v1 - v3
+  v5 <- v2 / 2
+  v6 <- v1 + v5
+  v7 <- v4
+  v8 <- v6
+  goto 10
+10:
+  v9 <- EntityData[2] > 0
+  goto 11 if v9 else 12
+11:
+  v10 <- v8
+  v11 <- LevelData[12] * EntityData[2]
+  v12 <- v10 + v11
+  v8 <- v12
+  goto 13
+12:
+  goto 13
+13:
+  v13 <- EntityData[2] < 0
+  goto 14 if v13 else 15
+14:
+  v14 <- v7
+  v15 <- LevelData[12] * EntityData[2]
+  v16 <- v14 + v15
+  v7 <- v16
+  goto 16
+15:
+  goto 16
+16:
+  goto 17
+17:
+  goto 18
+18:
+  goto 19
+19:
+  goto 20
+20:
+  goto 21
+21:
+  v17 <- 0
+  goto 22
+22:
+  goto 23
+23:
+  goto 24
+24:
+  v34 <- 0
+  goto 25
+25:
+  goto 26
+26:
+  goto 27
+27:
+  goto 28
+28:
+  v63 <- 0
+  goto 29
+29:
+  goto 30
+30:
+  v66 <- 0
+  v67 <- 0
+  goto 31
+31:
+  v65 <- 0
+  goto 32
+32:
+  goto when v63
+    0 -> 34
+    1 -> 33
+    default -> 88
+33:
+  goto 35
+34:
+  goto 35
+35:
+  v36 <- 0
+  goto 36
+36:
+  goto when v34
+    0 -> 38
+    1 -> 37
+    default -> 65
+37:
+  goto 39
+38:
+  goto 39
+39:
+  goto 40
+40:
+  v18 <- v17
+  goto 41
+41:
+  goto 42
+42:
+  v19 <- LevelMemory[0]
+  goto 43
+43:
+  goto 44
+44:
+  v20 <- v18 < v19
+  goto 45 if v20 else 52
+45:
+  v21 <- v17
+  goto 46
+46:
+  goto 47
+47:
+  v22 <- v21
+  goto 48
+48:
+  goto 49
+49:
+  v23 <- v17
+  v24 <- v23 + 1
+  v17 <- v24
+  goto 50
+50:
+  goto 51
+51:
+  v25 <- 1
+  goto 53
+52:
+  v25 <- 0
+  goto 53
+53:
+  goto 54
+54:
+  goto 55 if v25 else 65
+55:
+  v26 <- LevelMemory[v22 + 1]
+  goto 56
+56:
+  goto 57
+57:
+  v27 <- v26 != EntityInfo[0]
+  goto 58 if v27 else 64
+58:
+  v28 <- LevelMemory[v22 + 1]
+  goto 59
+59:
+  v29 <- v28 * 3
+  v30 <- v29
+  v31 <- SwitchWithDefault(EntityInfoArray[v30 + 1], 1, 1, 2, 1, 3, 1, 4, 1, 5, 1, 6, 1, 7, 1, 0)
+  goto 60 if v31 else 63
+60:
+  goto 61
+61:
+  goto 62
+62:
+  v34 <- 1
+  v35 <- 1
+  goto 66
+63:
+  v32 <- DebugLog(1)
+  v33 <- DebugPause()
+  goto exit
+64:
+  goto 39
+65:
+  v35 <- 0
+  goto 66
+66:
+  goto when v36
+    0 -> 67
+67:
+  goto 68 if v35 else 88
+68:
+  v37 <- v28 * 32
+  v38 <- 2 + v37
+  v39 <- v38
+  v40 <- EntitySharedMemoryArray[v39]
+  v41 <- !v40
+  goto 69 if v41 else 83
+69:
+  v42 <- v28 * 32
+  v43 <- 11 + v42
+  v44 <- v43
+  v45 <- EntityDataArray[v44] - EntityData[11]
+  v46 <- Abs(v45)
+  v47 <- v46 <= 0.005
+  goto 70 if v47 else 81
+70:
+  goto 71
+71:
+  goto 72
+72:
+  goto 73
+73:
+  v48 <- v28 * 32
+  v49 <- 16 + v48
+  v50 <- v49
+  goto 74
+74:
+  v51 <- EntityDataArray[v50] * 3
+  v52 <- v51
+  v53 <- SwitchWithDefault(EntityInfoArray[v52 + 1], 1, 1, 2, 1, 3, 1, 4, 1, 5, 1, 6, 1, 7, 1, 0)
+  goto 75 if v53 else 80
+75:
+  goto 76
+76:
+  goto 77
+77:
+  v56 <- EntityDataArray[v50] * 32
+  v57 <- v56
+  v58 <- EntitySharedMemoryArray[v57]
+  goto 78
+78:
+  v59 <- v58 > 0
+  goto 79
+79:
+  v60 <- !v59
+  v61 <- v60
+  goto 82
+80:
+  v54 <- DebugLog(2)
+  v55 <- DebugPause()
+  goto exit
+81:
+  v61 <- 0
+  goto 82
+82:
+  v62 <- v61
+  goto 84
+83:
+  v62 <- 0
+  goto 84
+84:
+  goto 85 if v62 else 87
+85:
+  goto 86
+86:
+  v63 <- 1
+  v64 <- 1
+  goto 89
+87:
+  goto 35
+88:
+  v64 <- 0
+  goto 89
+89:
+  goto when v65
+    0 -> 90
+90:
+  goto 91 if v64 else 112
+91:
+  goto 92
+92:
+  v68 <- v28 * 32
+  v69 <- v68
+  v70 <- v28 * 32
+  v71 <- 2 + v70
+  v72 <- v71
+  goto 93
+93:
+  goto 94
+94:
+  v73 <- EntityDataArray[v69] * LevelData[12]
+  goto 95
+95:
+  v74 <- LevelData[12] * 2.5
+  goto 96
+96:
+  v75 <- v74 / 2
+  v76 <- v73 - v75
+  v77 <- v74 / 2
+  v78 <- v73 + v77
+  v79 <- v76
+  v80 <- v78
+  goto 97
+97:
+  v81 <- EntityDataArray[v72] > 0
+  goto 98 if v81 else 99
+98:
+  v82 <- v80
+  v83 <- LevelData[12] * EntityDataArray[v72]
+  v84 <- v82 + v83
+  v80 <- v84
+  goto 100
+99:
+  goto 100
+100:
+  v85 <- EntityDataArray[v72] < 0
+  goto 101 if v85 else 102
+101:
+  v86 <- v79
+  v87 <- LevelData[12] * EntityDataArray[v72]
+  v88 <- v86 + v87
+  v79 <- v88
+  goto 103
+102:
+  goto 103
+103:
+  goto 104
+104:
+  goto 105
+105:
+  v89 <- v28 * 32
+  v90 <- v89
+  v91 <- EntityDataArray[v90] > EntityData[0]
+  goto 106 if v91 else 107
+106:
+  v92 <- v8
+  v93 <- v79
+  v94 <- v92 - v93
+  v95 <- Max(v67, v94)
+  v104 <- v95
+  v105 <- v66
+  goto 111
+107:
+  v96 <- v28 * 32
+  v97 <- v96
+  v98 <- EntityDataArray[v97] < EntityData[0]
+  goto 108 if v98 else 109
+108:
+  v99 <- v80
+  v100 <- v7
+  v101 <- v99 - v100
+  v102 <- Max(v66, v101)
+  v103 <- v102
+  goto 110
+109:
+  v103 <- v66
+  goto 110
+110:
+  v104 <- v67
+  v105 <- v103
+  goto 111
+111:
+  v106 <- v105
+  v107 <- v104
+  v66 <- v106
+  v67 <- v107
+  goto 31
+112:
+  v108 <- v7
+  v109 <- v66 / 2
+  v110 <- v108 + v109
+  v111 <- v8
+  v112 <- v67 / 2
+  v113 <- v111 - v112
+  v114 <- v110
+  v115 <- v113
+  goto 113
+113:
+  goto 114
+114:
+  v116 <- v114
+  v117 <- v115
+  v118 <- LevelData[14]
+  v119 <- v117
+  v120 <- LevelData[15]
+  v121 <- v116
+  goto 115
+115:
+  goto 116
+116:
+  goto 117
+117:
+  v122 <- v121
+  v123 <- v120
+  v124 <- v122
+  v125 <- v123
+  goto 118
+118:
+  goto 119
+119:
+  v126 <- v124
+  v127 <- LevelData[2] * v126
+  v128 <- v125
+  v129 <- LevelData[3] * v128
+  v130 <- v127 + v129
+  v131 <- v130 + LevelData[4]
+  v132 <- v124
+  v133 <- LevelData[5] * v132
+  v134 <- v125
+  v135 <- LevelData[6] * v134
+  v136 <- v133 + v135
+  v137 <- v136 + LevelData[7]
+  v138 <- v124
+  v139 <- LevelData[8] * v138
+  v140 <- v125
+  v141 <- LevelData[9] * v140
+  v142 <- v139 + v141
+  v143 <- v142 + LevelData[10]
+  v144 <- v131 / v143
+  v145 <- v137 / v143
+  v146 <- v144
+  v147 <- v145
+  goto 120
+120:
+  goto 121
+121:
+  v148 <- v119
+  v149 <- v120
+  v150 <- v148
+  v151 <- v149
+  goto 122
+122:
+  goto 123
+123:
+  v152 <- v150
+  v153 <- LevelData[2] * v152
+  v154 <- v151
+  v155 <- LevelData[3] * v154
+  v156 <- v153 + v155
+  v157 <- v156 + LevelData[4]
+  v158 <- v150
+  v159 <- LevelData[5] * v158
+  v160 <- v151
+  v161 <- LevelData[6] * v160
+  v162 <- v159 + v161
+  v163 <- v162 + LevelData[7]
+  v164 <- v150
+  v165 <- LevelData[8] * v164
+  v166 <- v151
+  v167 <- LevelData[9] * v166
+  v168 <- v165 + v167
+  v169 <- v168 + LevelData[10]
+  v170 <- v157 / v169
+  v171 <- v163 / v169
+  v172 <- v170
+  v173 <- v171
+  goto 124
+124:
+  goto 125
+125:
+  v174 <- v121
+  v175 <- v118
+  v176 <- v174
+  v177 <- v175
+  goto 126
+126:
+  goto 127
+127:
+  v178 <- v176
+  v179 <- LevelData[2] * v178
+  v180 <- v177
+  v181 <- LevelData[3] * v180
+  v182 <- v179 + v181
+  v183 <- v182 + LevelData[4]
+  v184 <- v176
+  v185 <- LevelData[5] * v184
+  v186 <- v177
+  v187 <- LevelData[6] * v186
+  v188 <- v185 + v187
+  v189 <- v188 + LevelData[7]
+  v190 <- v176
+  v191 <- LevelData[8] * v190
+  v192 <- v177
+  v193 <- LevelData[9] * v192
+  v194 <- v191 + v193
+  v195 <- v194 + LevelData[10]
+  v196 <- v183 / v195
+  v197 <- v189 / v195
+  v198 <- v196
+  v199 <- v197
+  goto 128
+128:
+  goto 129
+129:
+  v200 <- v119
+  v201 <- v118
+  v202 <- v200
+  v203 <- v201
+  goto 130
+130:
+  goto 131
+131:
+  v204 <- v202
+  v205 <- LevelData[2] * v204
+  v206 <- v203
+  v207 <- LevelData[3] * v206
+  v208 <- v205 + v207
+  v209 <- v208 + LevelData[4]
+  v210 <- v202
+  v211 <- LevelData[5] * v210
+  v212 <- v203
+  v213 <- LevelData[6] * v212
+  v214 <- v211 + v213
+  v215 <- v214 + LevelData[7]
+  v216 <- v202
+  v217 <- LevelData[8] * v216
+  v218 <- v203
+  v219 <- LevelData[9] * v218
+  v220 <- v217 + v219
+  v221 <- v220 + LevelData[10]
+  v222 <- v209 / v221
+  v223 <- v215 / v221
+  v224 <- v222
+  v225 <- v223
+  goto 132
+132:
+  goto 133
+133:
+  goto 134
+134:
+  goto 135
+135:
+  goto 136
+136:
+  v226 <- 3 + EntityInfo[1]
+  v227 <- v226
+  v228 <- EngineRom[v227]
+  goto 137
+137:
+  goto 138
+138:
+  goto 139
+139:
+  v229 <- v228 == 1
+  goto 140 if v229 else 141
+140:
+  goto 143
+141:
+  v230 <- v228 == 4
+  goto 142 if v230 else 441
+142:
+  goto 143
+143:
+  goto 144
+144:
+  goto 145
+145:
+  goto 146
+146:
+  goto 147
+147:
+  v231 <- EntityData[14] <= RuntimeUpdate[0]
+  goto 148 if v231 else 149
+148:
+  v232 <- RuntimeUpdate[0] <= EntityData[15]
+  v233 <- v232
+  goto 150
+149:
+  v233 <- 0
+  goto 150
+150:
+  goto 151
+151:
+  v234 <- !v233
+  goto 152 if v234 else 153
+152:
+  goto 439
+153:
+  v256 <- 0
+  goto 154
+154:
+  goto 155
+155:
+  goto 156
+156:
+  v258 <- 0
+  goto 157
+157:
+  goto when v256
+    0 -> 159
+    1 -> 158
+    default -> 202
+158:
+  goto 201
+159:
+  goto 160
+160:
+  goto 161
+161:
+  goto 162
+162:
+  v235 <- 0
+  goto 163
+163:
+  goto 164
+164:
+  goto 165
+165:
+  v236 <- v235
+  goto 166
+166:
+  goto 167
+167:
+  goto 168
+168:
+  goto 169
+169:
+  v237 <- v236 < RuntimeUpdate[3]
+  goto 170 if v237 else 175
+170:
+  v238 <- v235
+  goto 171
+171:
+  v239 <- v238 * 15
+  v240 <- v239
+  goto 172
+172:
+  v241 <- v235
+  v242 <- v241 + 1
+  v235 <- v242
+  goto 173
+173:
+  goto 174
+174:
+  v243 <- 1
+  goto 176
+175:
+  v243 <- 0
+  goto 176
+176:
+  goto 177
+177:
+  goto 178 if v243 else 202
+178:
+  goto 179 if RuntimeTouchArray[v240 + 1] else 196
+179:
+  goto 180
+180:
+  goto 181
+181:
+  goto 182
+182:
+  v244 <- 0
+  goto 183
+183:
+  goto 184
+184:
+  v245 <- LevelMemory[17]
+  goto 185
+185:
+  v246 <- v244 < v245
+  goto 186 if v246 else 191
+186:
+  goto 187
+187:
+  v247 <- 17 + v244
+  v248 <- v247
+  v249 <- LevelMemory[v248 + 1]
+  goto 188
+188:
+  v250 <- v249 == RuntimeTouchArray[v240]
+  goto 189 if v250 else 190
+189:
+  v253 <- 1
+  goto 192
+190:
+  v251 <- v244 + 1
+  v252 <- v251
+  v244 <- v252
+  goto 183
+191:
+  v253 <- 0
+  goto 192
+192:
+  goto 193
+193:
+  goto 194
+194:
+  goto 195
+195:
+  v254 <- !v253
+  v255 <- v254
+  goto 197
+196:
+  v255 <- 0
+  goto 197
+197:
+  goto 198 if v255 else 200
+198:
+  goto 199
+199:
+  v256 <- 1
+  v257 <- 1
+  goto 203
+200:
+  goto 201
+201:
+  goto 164
+202:
+  v257 <- 0
+  goto 203
+203:
+  goto when v258
+    0 -> 204
+204:
+  goto 205 if v257 else 437
+205:
+  goto 206
+206:
+  goto 207
+207:
+  v259 <- v146
+  a1[0] <- v259
+  v260 <- v147
+  a1[1] <- v260
+  v261 <- v198
+  a1[2] <- v261
+  v262 <- v199
+  a1[3] <- v262
+  v263 <- v224
+  a1[4] <- v263
+  v264 <- v225
+  a1[5] <- v264
+  v265 <- v172
+  a1[6] <- v265
+  v266 <- v173
+  a1[7] <- v266
+  goto 208
+208:
+  goto 209
+209:
+  goto 210
+210:
+  goto 211
+211:
+  v267 <- 0
+  v268 <- 0
+  v269 <- 3
+  goto 212
+212:
+  goto 213
+213:
+  goto 214
+214:
+  v270 <- v268 < 4
+  goto 215 if v270 else 238
+215:
+  goto 216
+216:
+  v271 <- v268 * 2
+  v272 <- v271
+  goto 217
+217:
+  v273 <- a1[v272 + 1]
+  v274 <- v273 > RuntimeTouchArray[v240 + 6]
+  goto 218
+218:
+  v275 <- v269 * 2
+  v276 <- v275
+  goto 219
+219:
+  v277 <- a1[v276 + 1]
+  v278 <- v277 > RuntimeTouchArray[v240 + 6]
+  v279 <- v274 != v278
+  goto 220 if v279 else 233
+220:
+  goto 221
+221:
+  v280 <- v269 * 2
+  v281 <- v280
+  goto 222
+222:
+  v282 <- a1[v281]
+  goto 223
+223:
+  v283 <- v268 * 2
+  v284 <- v283
+  goto 224
+224:
+  v285 <- a1[v284]
+  v286 <- v282 - v285
+  goto 225
+225:
+  v287 <- v268 * 2
+  v288 <- v287
+  goto 226
+226:
+  v289 <- a1[v288 + 1]
+  v290 <- RuntimeTouchArray[v240 + 6] - v289
+  v291 <- v286 * v290
+  goto 227
+227:
+  v292 <- v269 * 2
+  v293 <- v292
+  goto 228
+228:
+  v294 <- a1[v293 + 1]
+  goto 229
+229:
+  v295 <- v268 * 2
+  v296 <- v295
+  goto 230
+230:
+  v297 <- a1[v296 + 1]
+  v298 <- v294 - v297
+  v299 <- v291 / v298
+  goto 231
+231:
+  v300 <- v268 * 2
+  v301 <- v300
+  goto 232
+232:
+  v302 <- a1[v301]
+  v303 <- v299 + v302
+  v304 <- RuntimeTouchArray[v240 + 5] < v303
+  v305 <- v304
+  goto 234
+233:
+  v305 <- 0
+  goto 234
+234:
+  goto 235 if v305 else 236
+235:
+  v306 <- !v267
+  v307 <- v306
+  goto 237
+236:
+  v307 <- v267
+  goto 237
+237:
+  v308 <- v268 + 1
+  v309 <- v307
+  v310 <- v308
+  v311 <- v268
+  v267 <- v309
+  v268 <- v310
+  v269 <- v311
+  goto 212
+238:
+  goto 239
+239:
+  goto 240
+240:
+  v312 <- !v267
+  goto 241 if v312 else 242
+241:
+  goto 156
+242:
+  goto 243
+243:
+  goto 244
+244:
+  goto 245
+245:
+  v313 <- LevelMemory[17]
+  v314 <- v313 >= 16
+  goto 246 if v314 else 247
+246:
+  v325 <- 0
+  goto 265
+247:
+  goto 248
+248:
+  v315 <- 0
+  goto 249
+249:
+  goto 250
+250:
+  v316 <- LevelMemory[17]
+  goto 251
+251:
+  v317 <- v315 < v316
+  goto 252 if v317 else 257
+252:
+  goto 253
+253:
+  v318 <- 17 + v315
+  v319 <- v318
+  v320 <- LevelMemory[v319 + 1]
+  goto 254
+254:
+  v321 <- v320 == RuntimeTouchArray[v240]
+  goto 255 if v321 else 256
+255:
+  v324 <- 1
+  goto 258
+256:
+  v322 <- v315 + 1
+  v323 <- v322
+  v315 <- v323
+  goto 249
+257:
+  v324 <- 0
+  goto 258
+258:
+  goto 259
+259:
+  goto 260 if v324 else 261
+260:
+  v325 <- 0
+  goto 265
+261:
+  goto 262
+262:
+  v325 <- LevelMemory[17]
+  v326 <- v325 < 16
+  goto 263 if v326 else 436
+263:
+  v329 <- LevelMemory[17]
+  v330 <- 17 + v329
+  v331 <- v330
+  LevelMemory[v331 + 1] <- RuntimeTouchArray[v240]
+  v332 <- LevelMemory[17]
+  v333 <- v332 + 1
+  LevelMemory[17] <- v333
+  goto 264
+264:
+  v325 <- 1
+  goto 265
+265:
+  goto 266
+266:
+  goto 267
+267:
+  goto 268
+268:
+  goto 269
+269:
+  goto 270
+270:
+  goto 271
+271:
+  v313 <- EntityData[16] * 3
+  v314 <- v313
+  v315 <- SwitchWithDefault(EntityInfoArray[v314 + 1], 1, 1, 2, 1, 3, 1, 4, 1, 5, 1, 6, 1, 7, 1, 0)
+  goto 272 if v315 else 435
+272:
+  goto 273
+273:
+  goto 274
+274:
+  v313 <- EntityData[16] * 32
+  v314 <- v313
+  EntitySharedMemoryArray[v314] <- RuntimeTouchArray[v240]
+  goto 275
+275:
+  goto 276
+276:
+  goto 277
+277:
+  goto 278
+278:
+  goto 279
+279:
+  goto 280
+280:
+  goto 281
+281:
+  goto 282
+282:
+  goto 283
+283:
+  v313 <- Judge(RuntimeTouchArray[v240 + 4], EntityData[11], EntityData[5], EntityData[6], EntityData[7], EntityData[8], EntityData[9], EntityData[10])
+  goto 284
+284:
+  EntityInput[0] <- v313
+  v314 <- RuntimeTouchArray[v240 + 4] - EntityData[11]
+  v315 <- Clamp(v314, -1, 1)
+  EntityInput[1] <- v315
+  v316 <- EntityInput[1]
+  v317 <- v316 * 1000
+  EntityInput[3] <- v317
+  v318 <- v313 != 0
+  goto 285 if v318 else 432
+285:
+  v319 <- !LevelOption[11]
+  goto 286 if v319 else 320
+286:
+  goto 287
+287:
+  v320 <- 3 + EntityInfo[1]
+  v321 <- v320
+  v322 <- EngineRom[v321]
+  goto 288
+288:
+  goto 289
+289:
+  goto 290
+290:
+  goto 291
+291:
+  v323 <- !LevelOption[10]
+  goto 292 if v323 else 293
+292:
+  goto 318
+293:
+  v324 <- v322 == 6
+  goto 294 if v324 else 295
+294:
+  goto 318
+295:
+  goto 296
+296:
+  v325 <- 0
+  v326 <- v322 == 2
+  goto 297 if v326 else 298
+297:
+  goto 300
+298:
+  v327 <- v322 == 3
+  goto 299 if v327 else 308
+299:
+  goto 300
+300:
+  v328 <- v313 == 1
+  goto 301 if v328 else 302
+301:
+  v325 <- 4
+  goto 307
+302:
+  v329 <- v313 == 2
+  goto 303 if v329 else 304
+303:
+  v325 <- 5
+  goto 307
+304:
+  v330 <- v313 == 3
+  goto 305 if v330 else 306
+305:
+  v325 <- 6
+  goto 307
+306:
+  goto 307
+307:
+  goto 316
+308:
+  v331 <- v313 == 1
+  goto 309 if v331 else 310
+309:
+  v325 <- 1
+  goto 315
+310:
+  v332 <- v313 == 2
+  goto 311 if v332 else 312
+311:
+  v325 <- 2
+  goto 315
+312:
+  v333 <- v313 == 3
+  goto 313 if v333 else 314
+313:
+  v325 <- 3
+  goto 315
+314:
+  goto 315
+315:
+  goto 316
+316:
+  goto 317
+317:
+  v334 <- v325
+  v335 <- Play(v334, 0)
+  goto 318
+318:
+  goto 319
+319:
+  goto 321
+320:
+  goto 321
+321:
+  goto 322
+322:
+  v323 <- 3 + EntityInfo[1]
+  v324 <- v323
+  v325 <- EngineRom[v324]
+  goto 323
+323:
+  goto 324
+324:
+  goto 325
+325:
+  goto 326
+326:
+  v326 <- v325 == 6
+  goto 327 if v326 else 328
+327:
+  goto 428
+328:
+  v327 <- !LevelOption[6]
+  goto 329 if v327 else 330
+329:
+  goto 428
+330:
+  goto 331
+331:
+  v328 <- 0
+  v329 <- v325 == 1
+  goto 332 if v329 else 333
+332:
+  v328 <- 1
+  goto 348
+333:
+  v330 <- v325 == 2
+  goto 334 if v330 else 335
+334:
+  v328 <- 6
+  goto 348
+335:
+  v331 <- v325 == 3
+  goto 336 if v331 else 340
+336:
+  v332 <- EntityData[2] > 0
+  goto 337 if v332 else 338
+337:
+  v328 <- 8
+  goto 339
+338:
+  v328 <- 10
+  goto 339
+339:
+  goto 348
+340:
+  v333 <- v325 == 4
+  goto 341 if v333 else 342
+341:
+  goto 346
+342:
+  v334 <- v325 == 5
+  goto 343 if v334 else 344
+343:
+  goto 346
+344:
+  v335 <- v325 == 7
+  goto 345 if v335 else 347
+345:
+  goto 346
+346:
+  v328 <- 3
+  goto 348
+347:
+  goto 348
+348:
+  goto 349
+349:
+  goto 350
+350:
+  goto 351
+351:
+  v336 <- EntityData[0] * LevelData[12]
+  goto 352
+352:
+  v337 <- LevelData[11] / 2
+  v338 <- v336 - v337
+  v339 <- v338
+  v340 <- 0
+  goto 353
+353:
+  goto 354
+354:
+  v341 <- v339
+  v342 <- LevelData[2] * v341
+  v343 <- v340
+  v344 <- LevelData[3] * v343
+  v345 <- v342 + v344
+  v346 <- v345 + LevelData[4]
+  v347 <- v339
+  v348 <- LevelData[5] * v347
+  v349 <- v340
+  v350 <- LevelData[6] * v349
+  v351 <- v348 + v350
+  v352 <- v351 + LevelData[7]
+  v353 <- v339
+  v354 <- LevelData[8] * v353
+  v355 <- v340
+  v356 <- LevelData[9] * v355
+  v357 <- v354 + v356
+  v358 <- v357 + LevelData[10]
+  v359 <- v346 / v358
+  v360 <- v352 / v358
+  v361 <- v359
+  v362 <- v360
+  goto 355
+355:
+  goto 356
+356:
+  v363 <- LevelData[11] / 2
+  v364 <- v336 + v363
+  v365 <- v364
+  v366 <- 0
+  goto 357
+357:
+  goto 358
+358:
+  v367 <- v365
+  v368 <- LevelData[2] * v367
+  v369 <- v366
+  v370 <- LevelData[3] * v369
+  v371 <- v368 + v370
+  v372 <- v371 + LevelData[4]
+  v373 <- v365
+  v374 <- LevelData[5] * v373
+  v375 <- v366
+  v376 <- LevelData[6] * v375
+  v377 <- v374 + v376
+  v378 <- v377 + LevelData[7]
+  v379 <- v365
+  v380 <- LevelData[8] * v379
+  v381 <- v366
+  v382 <- LevelData[9] * v381
+  v383 <- v380 + v382
+  v384 <- v383 + LevelData[10]
+  v385 <- v372 / v384
+  v386 <- v378 / v384
+  v387 <- v385
+  v388 <- v386
+  goto 359
+359:
+  goto 360
+360:
+  v389 <- v387
+  v390 <- v361
+  v391 <- v389 - v390
+  v392 <- v388
+  v393 <- v362
+  v394 <- v392 - v393
+  v395 <- v391
+  v396 <- Power(v395, 2)
+  v397 <- v394
+  v398 <- Power(v397, 2)
+  v399 <- v396 + v398
+  v400 <- Power(v399, 0.5)
+  v401 <- 0
+  v402 <- v400
+  v403 <- v361
+  v404 <- v401
+  v405 <- v403 + v404
+  v406 <- v362
+  v407 <- v402
+  v408 <- v406 + v407
+  v409 <- 0
+  v410 <- v400
+  v411 <- v387
+  v412 <- v409
+  v413 <- v411 + v412
+  v414 <- v388
+  v415 <- v410
+  v416 <- v414 + v415
+  goto 361
+361:
+  v417 <- v328
+  v418 <- v361
+  v419 <- v362
+  v420 <- v405
+  v421 <- v408
+  v422 <- v413
+  v423 <- v416
+  v424 <- v387
+  v425 <- v388
+  v426 <- SpawnParticleEffect(v417, v418, v419, v420, v421, v422, v423, v424, v425, 0.5, 0)
+  v427 <- v426
+  goto 362
+362:
+  v428 <- 0
+  v429 <- v325 == 1
+  goto 363 if v429 else 364
+363:
+  v428 <- 2
+  goto 379
+364:
+  v430 <- v325 == 2
+  goto 365 if v430 else 366
+365:
+  v428 <- 7
+  goto 379
+366:
+  v431 <- v325 == 3
+  goto 367 if v431 else 371
+367:
+  v432 <- EntityData[2] > 0
+  goto 368 if v432 else 369
+368:
+  v428 <- 9
+  goto 370
+369:
+  v428 <- 11
+  goto 370
+370:
+  goto 379
+371:
+  v433 <- v325 == 4
+  goto 372 if v433 else 373
+372:
+  goto 377
+373:
+  v434 <- v325 == 5
+  goto 374 if v434 else 375
+374:
+  goto 377
+375:
+  v435 <- v325 == 7
+  goto 376 if v435 else 378
+376:
+  goto 377
+377:
+  v428 <- 4
+  goto 379
+378:
+  goto 379
+379:
+  goto 380
+380:
+  goto 381
+381:
+  goto 382
+382:
+  v436 <- EntityData[0] * LevelData[12]
+  goto 383
+383:
+  v437 <- v436
+  v438 <- 0
+  v439 <- LevelData[11]
+  v440 <- LevelData[11]
+  v441 <- v439
+  v442 <- v441 * 1.8
+  v443 <- v440
+  v444 <- v443 * 1.8
+  goto 384
+384:
+  v445 <- v438
+  v446 <- v444
+  v447 <- v446 / 2
+  v448 <- v445 + v447
+  v449 <- v437
+  v450 <- v442
+  v451 <- v450 / 2
+  v452 <- v449 + v451
+  v453 <- v438
+  v454 <- v444
+  v455 <- v454 / 2
+  v456 <- v453 - v455
+  v457 <- v437
+  v458 <- v442
+  v459 <- v458 / 2
+  v460 <- v457 - v459
+  v461 <- v448
+  v462 <- v452
+  v463 <- v456
+  v464 <- v460
+  goto 385
+385:
+  goto 386
+386:
+  goto 387
+387:
+  goto 388
+388:
+  v465 <- v464
+  v466 <- v463
+  v467 <- v465
+  v468 <- v466
+  goto 389
+389:
+  goto 390
+390:
+  v469 <- v467
+  v470 <- LevelData[2] * v469
+  v471 <- v468
+  v472 <- LevelData[3] * v471
+  v473 <- v470 + v472
+  v474 <- v473 + LevelData[4]
+  v475 <- v467
+  v476 <- LevelData[5] * v475
+  v477 <- v468
+  v478 <- LevelData[6] * v477
+  v479 <- v476 + v478
+  v480 <- v479 + LevelData[7]
+  v481 <- v467
+  v482 <- LevelData[8] * v481
+  v483 <- v468
+  v484 <- LevelData[9] * v483
+  v485 <- v482 + v484
+  v486 <- v485 + LevelData[10]
+  v487 <- v474 / v486
+  v488 <- v480 / v486
+  v489 <- v487
+  v490 <- v488
+  goto 391
+391:
+  goto 392
+392:
+  v491 <- v462
+  v492 <- v463
+  v493 <- v491
+  v494 <- v492
+  goto 393
+393:
+  goto 394
+394:
+  v495 <- v493
+  v496 <- LevelData[2] * v495
+  v497 <- v494
+  v498 <- LevelData[3] * v497
+  v499 <- v496 + v498
+  v500 <- v499 + LevelData[4]
+  v501 <- v493
+  v502 <- LevelData[5] * v501
+  v503 <- v494
+  v504 <- LevelData[6] * v503
+  v505 <- v502 + v504
+  v506 <- v505 + LevelData[7]
+  v507 <- v493
+  v508 <- LevelData[8] * v507
+  v509 <- v494
+  v510 <- LevelData[9] * v509
+  v511 <- v508 + v510
+  v512 <- v511 + LevelData[10]
+  v513 <- v500 / v512
+  v514 <- v506 / v512
+  v515 <- v513
+  v516 <- v514
+  goto 395
+395:
+  goto 396
+396:
+  v517 <- v464
+  v518 <- v461
+  v519 <- v517
+  v520 <- v518
+  goto 397
+397:
+  goto 398
+398:
+  v521 <- v519
+  v522 <- LevelData[2] * v521
+  v523 <- v520
+  v524 <- LevelData[3] * v523
+  v525 <- v522 + v524
+  v526 <- v525 + LevelData[4]
+  v527 <- v519
+  v528 <- LevelData[5] * v527
+  v529 <- v520
+  v530 <- LevelData[6] * v529
+  v531 <- v528 + v530
+  v532 <- v531 + LevelData[7]
+  v533 <- v519
+  v534 <- LevelData[8] * v533
+  v535 <- v520
+  v536 <- LevelData[9] * v535
+  v537 <- v534 + v536
+  v538 <- v537 + LevelData[10]
+  v539 <- v526 / v538
+  v540 <- v532 / v538
+  v541 <- v539
+  v542 <- v540
+  goto 399
+399:
+  goto 400
+400:
+  v543 <- v462
+  v544 <- v461
+  v545 <- v543
+  v546 <- v544
+  goto 401
+401:
+  goto 402
+402:
+  v547 <- v545
+  v548 <- LevelData[2] * v547
+  v549 <- v546
+  v550 <- LevelData[3] * v549
+  v551 <- v548 + v550
+  v552 <- v551 + LevelData[4]
+  v553 <- v545
+  v554 <- LevelData[5] * v553
+  v555 <- v546
+  v556 <- LevelData[6] * v555
+  v557 <- v554 + v556
+  v558 <- v557 + LevelData[7]
+  v559 <- v545
+  v560 <- LevelData[8] * v559
+  v561 <- v546
+  v562 <- LevelData[9] * v561
+  v563 <- v560 + v562
+  v564 <- v563 + LevelData[10]
+  v565 <- v552 / v564
+  v566 <- v558 / v564
+  v567 <- v565
+  v568 <- v566
+  goto 403
+403:
+  goto 404
+404:
+  goto 405
+405:
+  v569 <- v567
+  v570 <- v541
+  v571 <- v569 - v570
+  v572 <- v515
+  v573 <- v571 + v572
+  v574 <- v489
+  v575 <- v573 - v574
+  v576 <- v575 / 2
+  v577 <- v541
+  v578 <- v567
+  v579 <- v577 + v578
+  v580 <- v579 / 2
+  v581 <- v489
+  v582 <- v515
+  v583 <- v581 + v582
+  v584 <- v583 / 2
+  v585 <- v576 / 2
+  v586 <- v584 - v585
+  v587 <- v490
+  v588 <- v586
+  v589 <- v587
+  v590 <- v576 / 2
+  v591 <- v584 + v590
+  v592 <- v516
+  v593 <- v591
+  v594 <- v592
+  v595 <- v576 / 2
+  v596 <- v580 - v595
+  v597 <- v542
+  v598 <- v596
+  v599 <- v597
+  v600 <- v576 / 2
+  v601 <- v580 + v600
+  v602 <- v568
+  v603 <- v601
+  v604 <- v602
+  goto 406
+406:
+  v605 <- v428
+  v606 <- v588
+  v607 <- v589
+  v608 <- v598
+  v609 <- v599
+  v610 <- v603
+  v611 <- v604
+  v612 <- v593
+  v613 <- v594
+  v614 <- SpawnParticleEffect(v605, v606, v607, v608, v609, v610, v611, v612, v613, 0.5, 0)
+  v615 <- v614
+  goto 407
+407:
+  v616 <- !LevelOption[7]
+  goto 408 if v616 else 409
+408:
+  goto 426
+409:
+  goto 410
+410:
+  goto 411
+411:
+  goto 412
+412:
+  v617 <- 0
+  goto 413
+413:
+  goto 414
+414:
+  goto 415
+415:
+  v618 <- v617
+  v619 <- v618 < LevelData[16]
+  goto 416 if v619 else 419
+416:
+  v620 <- v617
+  v621 <- v617
+  v622 <- v621 + 1
+  v617 <- v622
+  goto 417
+417:
+  goto 418
+418:
+  v623 <- 1
+  goto 420
+419:
+  v623 <- 0
+  goto 420
+420:
+  goto 421
+421:
+  goto 422 if v623 else 431
+422:
+  v624 <- v620 * 9
+  v625 <- 16 + v624
+  v626 <- v625
+  v627 <- LevelData[v626 + 1] == EntityData[0]
+  goto 423 if v627 else 430
+423:
+  goto 424
+424:
+  goto 425
+425:
+  v630 <- SpawnParticleEffect(0, LevelData[v626 + 2], LevelData[v626 + 3], LevelData[v626 + 4], LevelData[v626 + 5], LevelData[v626 + 6], LevelData[v626 + 7], LevelData[v626 + 8], LevelData[v626 + 9], 0.2, 0)
+  v631 <- v630
+  goto 426
+426:
+  goto 427
+427:
+  goto 428
+428:
+  goto 429
+429:
+  goto 433
+430:
+  goto 414
+431:
+  v628 <- DebugLog(5)
+  v629 <- DebugPause()
+  goto exit
+432:
+  goto 433
+433:
+  EntityDespawn[0] <- 1
+  EntitySharedMemory[2] <- 1
+  goto 434
+434:
+  goto 438
+435:
+  v316 <- DebugLog(4)
+  v317 <- DebugPause()
+  goto exit
+436:
+  v327 <- DebugLog(3)
+  v328 <- DebugPause()
+  goto exit
+437:
+  goto 438
+438:
+  goto 439
+439:
+  goto 440
+440:
+  goto 1886
+441:
+  v231 <- v228 == 5
+  goto 442 if v231 else 868
+442:
+  goto 443
+443:
+  goto 444
+444:
+  v232 <- EntityData[3] > 0
+  goto 445
+445:
+  goto 446 if v232 else 464
+446:
+  goto 447
+447:
+  goto 448
+448:
+  v233 <- EntityData[16] * 3
+  v234 <- v233
+  v235 <- SwitchWithDefault(EntityInfoArray[v234 + 1], 1, 1, 2, 1, 3, 1, 4, 1, 5, 1, 6, 1, 7, 1, 0)
+  goto 449 if v235 else 463
+449:
+  goto 450
+450:
+  goto 451
+451:
+  v233 <- EntityData[16] * 32
+  v234 <- 2 + v233
+  v235 <- v234
+  v236 <- EntitySharedMemoryArray[v235]
+  goto 452 if v236 else 453
+452:
+  v240 <- v236
+  goto 461
+453:
+  goto 454
+454:
+  goto 455
+455:
+  v237 <- EntityData[16] * 3
+  v238 <- v237
+  v239 <- SwitchWithDefault(EntityInfoArray[v238 + 1], 1, 1, 2, 1, 3, 1, 4, 1, 5, 1, 6, 1, 7, 1, 0)
+  goto 456 if v239 else 462
+456:
+  goto 457
+457:
+  goto 458
+458:
+  goto 459
+459:
+  v237 <- EntityData[16] * 3
+  v238 <- v237
+  v239 <- EntityInfoArray[v238 + 2] == 2
+  goto 460
+460:
+  v240 <- v239
+  goto 461
+461:
+  v241 <- !v240
+  v242 <- v241
+  goto 465
+462:
+  v240 <- DebugLog(6)
+  v241 <- DebugPause()
+  goto exit
+463:
+  v236 <- DebugLog(6)
+  v237 <- DebugPause()
+  goto exit
+464:
+  v242 <- 0
+  goto 465
+465:
+  goto 466 if v242 else 467
+466:
+  goto 864
+467:
+  goto 468
+468:
+  goto 469
+469:
+  goto 470
+470:
+  v243 <- EntityData[14] <= RuntimeUpdate[0]
+  goto 471 if v243 else 472
+471:
+  v244 <- RuntimeUpdate[0] <= EntityData[15]
+  v245 <- v244
+  goto 473
+472:
+  v245 <- 0
+  goto 473
+473:
+  goto 474
+474:
+  v246 <- !v245
+  goto 475 if v246 else 476
+475:
+  goto 864
+476:
+  goto 477
+477:
+  goto 478
+478:
+  goto 479
+479:
+  goto 480
+480:
+  goto 481
+481:
+  v247 <- EntityData[16] * 3
+  v248 <- v247
+  v249 <- SwitchWithDefault(EntityInfoArray[v248 + 1], 1, 1, 2, 1, 3, 1, 4, 1, 5, 1, 6, 1, 7, 1, 0)
+  goto 482 if v249 else 867
+482:
+  goto 483
+483:
+  goto 484
+484:
+  v247 <- EntityData[16] * 32
+  v248 <- v247
+  v249 <- EntitySharedMemoryArray[v248]
+  goto 485
+485:
+  v250 <- v249 > 0
+  goto 486
+486:
+  v251 <- !v250
+  goto 487 if v251 else 613
+487:
+  v272 <- 0
+  goto 488
+488:
+  goto 489
+489:
+  goto 490
+490:
+  v274 <- 0
+  goto 491
+491:
+  goto when v272
+    0 -> 493
+    1 -> 492
+    default -> 533
+492:
+  goto 532
+493:
+  goto 494
+494:
+  goto 495
+495:
+  goto 496
+496:
+  v252 <- 0
+  goto 497
+497:
+  goto 498
+498:
+  goto 499
+499:
+  v253 <- v252
+  goto 500
+500:
+  goto 501
+501:
+  goto 502
+502:
+  goto 503
+503:
+  v254 <- v253 < RuntimeUpdate[3]
+  goto 504 if v254 else 509
+504:
+  v255 <- v252
+  goto 505
+505:
+  v256 <- v255 * 15
+  v257 <- v256
+  goto 506
+506:
+  v258 <- v252
+  v259 <- v258 + 1
+  v252 <- v259
+  goto 507
+507:
+  goto 508
+508:
+  v260 <- 1
+  goto 510
+509:
+  v260 <- 0
+  goto 510
+510:
+  goto 511
+511:
+  goto 512 if v260 else 533
+512:
+  goto 513
+513:
+  goto 514
+514:
+  goto 515
+515:
+  v261 <- 0
+  goto 516
+516:
+  goto 517
+517:
+  v262 <- LevelMemory[17]
+  goto 518
+518:
+  v263 <- v261 < v262
+  goto 519 if v263 else 524
+519:
+  goto 520
+520:
+  v264 <- 17 + v261
+  v265 <- v264
+  v266 <- LevelMemory[v265 + 1]
+  goto 521
+521:
+  v267 <- v266 == RuntimeTouchArray[v257]
+  goto 522 if v267 else 523
+522:
+  v270 <- 1
+  goto 525
+523:
+  v268 <- v261 + 1
+  v269 <- v268
+  v261 <- v269
+  goto 516
+524:
+  v270 <- 0
+  goto 525
+525:
+  goto 526
+526:
+  goto 527
+527:
+  goto 528
+528:
+  v271 <- !v270
+  goto 529 if v271 else 531
+529:
+  goto 530
+530:
+  v272 <- 1
+  v273 <- 1
+  goto 534
+531:
+  goto 532
+532:
+  goto 498
+533:
+  v273 <- 0
+  goto 534
+534:
+  goto when v274
+    0 -> 535
+535:
+  goto 536 if v273 else 611
+536:
+  goto 537
+537:
+  goto 538
+538:
+  v275 <- v146
+  a1[0] <- v275
+  v276 <- v147
+  a1[1] <- v276
+  v277 <- v198
+  a1[2] <- v277
+  v278 <- v199
+  a1[3] <- v278
+  v279 <- v224
+  a1[4] <- v279
+  v280 <- v225
+  a1[5] <- v280
+  v281 <- v172
+  a1[6] <- v281
+  v282 <- v173
+  a1[7] <- v282
+  goto 539
+539:
+  goto 540
+540:
+  goto 541
+541:
+  goto 542
+542:
+  v283 <- 0
+  v284 <- 0
+  v285 <- 3
+  goto 543
+543:
+  goto 544
+544:
+  goto 545
+545:
+  v286 <- v284 < 4
+  goto 546 if v286 else 569
+546:
+  goto 547
+547:
+  v287 <- v284 * 2
+  v288 <- v287
+  goto 548
+548:
+  v289 <- a1[v288 + 1]
+  v290 <- v289 > RuntimeTouchArray[v257 + 6]
+  goto 549
+549:
+  v291 <- v285 * 2
+  v292 <- v291
+  goto 550
+550:
+  v293 <- a1[v292 + 1]
+  v294 <- v293 > RuntimeTouchArray[v257 + 6]
+  v295 <- v290 != v294
+  goto 551 if v295 else 564
+551:
+  goto 552
+552:
+  v296 <- v285 * 2
+  v297 <- v296
+  goto 553
+553:
+  v298 <- a1[v297]
+  goto 554
+554:
+  v299 <- v284 * 2
+  v300 <- v299
+  goto 555
+555:
+  v301 <- a1[v300]
+  v302 <- v298 - v301
+  goto 556
+556:
+  v303 <- v284 * 2
+  v304 <- v303
+  goto 557
+557:
+  v305 <- a1[v304 + 1]
+  v306 <- RuntimeTouchArray[v257 + 6] - v305
+  v307 <- v302 * v306
+  goto 558
+558:
+  v308 <- v285 * 2
+  v309 <- v308
+  goto 559
+559:
+  v310 <- a1[v309 + 1]
+  goto 560
+560:
+  v311 <- v284 * 2
+  v312 <- v311
+  goto 561
+561:
+  v313 <- a1[v312 + 1]
+  v314 <- v310 - v313
+  v315 <- v307 / v314
+  goto 562
+562:
+  v316 <- v284 * 2
+  v317 <- v316
+  goto 563
+563:
+  v318 <- a1[v317]
+  v319 <- v315 + v318
+  v320 <- RuntimeTouchArray[v257 + 5] < v319
+  v321 <- v320
+  goto 565
+564:
+  v321 <- 0
+  goto 565
+565:
+  goto 566 if v321 else 567
+566:
+  v322 <- !v283
+  v323 <- v322
+  goto 568
+567:
+  v323 <- v283
+  goto 568
+568:
+  v324 <- v284 + 1
+  v325 <- v323
+  v326 <- v324
+  v327 <- v284
+  v283 <- v325
+  v284 <- v326
+  v285 <- v327
+  goto 543
+569:
+  goto 570
+570:
+  goto 571
+571:
+  v328 <- !v283
+  goto 572 if v328 else 573
+572:
+  goto 490
+573:
+  goto 574 if RuntimeTouchArray[v257 + 2] else 575
+574:
+  goto 490
+575:
+  goto 576
+576:
+  goto 577
+577:
+  goto 578
+578:
+  v329 <- LevelMemory[17]
+  v330 <- v329 >= 16
+  goto 579 if v330 else 580
+579:
+  v341 <- 0
+  goto 598
+580:
+  goto 581
+581:
+  v331 <- 0
+  goto 582
+582:
+  goto 583
+583:
+  v332 <- LevelMemory[17]
+  goto 584
+584:
+  v333 <- v331 < v332
+  goto 585 if v333 else 590
+585:
+  goto 586
+586:
+  v334 <- 17 + v331
+  v335 <- v334
+  v336 <- LevelMemory[v335 + 1]
+  goto 587
+587:
+  v337 <- v336 == RuntimeTouchArray[v257]
+  goto 588 if v337 else 589
+588:
+  v340 <- 1
+  goto 591
+589:
+  v338 <- v331 + 1
+  v339 <- v338
+  v331 <- v339
+  goto 582
+590:
+  v340 <- 0
+  goto 591
+591:
+  goto 592
+592:
+  goto 593 if v340 else 594
+593:
+  v341 <- 0
+  goto 598
+594:
+  goto 595
+595:
+  v341 <- LevelMemory[17]
+  v342 <- v341 < 16
+  goto 596 if v342 else 610
+596:
+  v345 <- LevelMemory[17]
+  v346 <- 17 + v345
+  v347 <- v346
+  LevelMemory[v347 + 1] <- RuntimeTouchArray[v257]
+  v348 <- LevelMemory[17]
+  v349 <- v348 + 1
+  LevelMemory[17] <- v349
+  goto 597
+597:
+  v341 <- 1
+  goto 598
+598:
+  goto 599
+599:
+  goto 600
+600:
+  goto 601
+601:
+  goto 602
+602:
+  goto 603
+603:
+  goto 604
+604:
+  v329 <- EntityData[16] * 3
+  v330 <- v329
+  v331 <- SwitchWithDefault(EntityInfoArray[v330 + 1], 1, 1, 2, 1, 3, 1, 4, 1, 5, 1, 6, 1, 7, 1, 0)
+  goto 605 if v331 else 609
+605:
+  goto 606
+606:
+  goto 607
+607:
+  v329 <- EntityData[16] * 32
+  v330 <- v329
+  EntitySharedMemoryArray[v330] <- RuntimeTouchArray[v257]
+  goto 608
+608:
+  goto 612
+609:
+  v332 <- DebugLog(9)
+  v333 <- DebugPause()
+  goto exit
+610:
+  v343 <- DebugLog(8)
+  v344 <- DebugPause()
+  goto exit
+611:
+  goto 612
+612:
+  goto 614
+613:
+  goto 614
+614:
+  goto 615
+615:
+  goto 616
+616:
+  goto 617
+617:
+  goto 618
+618:
+  goto 619
+619:
+  v247 <- EntityData[16] * 3
+  v248 <- v247
+  v249 <- SwitchWithDefault(EntityInfoArray[v248 + 1], 1, 1, 2, 1, 3, 1, 4, 1, 5, 1, 6, 1, 7, 1, 0)
+  goto 620 if v249 else 866
+620:
+  goto 621
+621:
+  goto 622
+622:
+  v247 <- EntityData[16] * 32
+  v248 <- v247
+  v249 <- EntitySharedMemoryArray[v248]
+  goto 623
+623:
+  v250 <- v249 > 0
+  goto 624
+624:
+  goto 625 if v250 else 862
+625:
+  goto 626
+626:
+  goto 627
+627:
+  goto 628
+628:
+  v251 <- 0
+  goto 629
+629:
+  goto 630
+630:
+  goto 631
+631:
+  v252 <- v251
+  goto 632
+632:
+  goto 633
+633:
+  goto 634
+634:
+  goto 635
+635:
+  v253 <- v252 < RuntimeUpdate[3]
+  goto 636 if v253 else 641
+636:
+  v254 <- v251
+  goto 637
+637:
+  v255 <- v254 * 15
+  v256 <- v255
+  goto 638
+638:
+  v257 <- v251
+  v258 <- v257 + 1
+  v251 <- v258
+  goto 639
+639:
+  goto 640
+640:
+  v259 <- 1
+  goto 642
+641:
+  v259 <- 0
+  goto 642
+642:
+  goto 643
+643:
+  goto 644 if v259 else 860
+644:
+  goto 645
+645:
+  goto 646
+646:
+  goto 647
+647:
+  v260 <- EntityData[16] * 3
+  v261 <- v260
+  v262 <- SwitchWithDefault(EntityInfoArray[v261 + 1], 1, 1, 2, 1, 3, 1, 4, 1, 5, 1, 6, 1, 7, 1, 0)
+  goto 648 if v262 else 859
+648:
+  goto 649
+649:
+  goto 650
+650:
+  v260 <- EntityData[16] * 32
+  v261 <- v260
+  v262 <- EntitySharedMemoryArray[v261]
+  goto 651
+651:
+  v263 <- RuntimeTouchArray[v256] != v262
+  goto 652 if v263 else 653
+652:
+  goto 630
+653:
+  goto 654
+654:
+  goto 655
+655:
+  v264 <- v146
+  a1[0] <- v264
+  v265 <- v147
+  a1[1] <- v265
+  v266 <- v198
+  a1[2] <- v266
+  v267 <- v199
+  a1[3] <- v267
+  v268 <- v224
+  a1[4] <- v268
+  v269 <- v225
+  a1[5] <- v269
+  v270 <- v172
+  a1[6] <- v270
+  v271 <- v173
+  a1[7] <- v271
+  goto 656
+656:
+  goto 657
+657:
+  goto 658
+658:
+  goto 659
+659:
+  v272 <- 0
+  v273 <- 0
+  v274 <- 3
+  goto 660
+660:
+  goto 661
+661:
+  goto 662
+662:
+  v275 <- v273 < 4
+  goto 663 if v275 else 686
+663:
+  goto 664
+664:
+  v276 <- v273 * 2
+  v277 <- v276
+  goto 665
+665:
+  v278 <- a1[v277 + 1]
+  v279 <- v278 > RuntimeTouchArray[v256 + 6]
+  goto 666
+666:
+  v280 <- v274 * 2
+  v281 <- v280
+  goto 667
+667:
+  v282 <- a1[v281 + 1]
+  v283 <- v282 > RuntimeTouchArray[v256 + 6]
+  v284 <- v279 != v283
+  goto 668 if v284 else 681
+668:
+  goto 669
+669:
+  v285 <- v274 * 2
+  v286 <- v285
+  goto 670
+670:
+  v287 <- a1[v286]
+  goto 671
+671:
+  v288 <- v273 * 2
+  v289 <- v288
+  goto 672
+672:
+  v290 <- a1[v289]
+  v291 <- v287 - v290
+  goto 673
+673:
+  v292 <- v273 * 2
+  v293 <- v292
+  goto 674
+674:
+  v294 <- a1[v293 + 1]
+  v295 <- RuntimeTouchArray[v256 + 6] - v294
+  v296 <- v291 * v295
+  goto 675
+675:
+  v297 <- v274 * 2
+  v298 <- v297
+  goto 676
+676:
+  v299 <- a1[v298 + 1]
+  goto 677
+677:
+  v300 <- v273 * 2
+  v301 <- v300
+  goto 678
+678:
+  v302 <- a1[v301 + 1]
+  v303 <- v299 - v302
+  v304 <- v296 / v303
+  goto 679
+679:
+  v305 <- v273 * 2
+  v306 <- v305
+  goto 680
+680:
+  v307 <- a1[v306]
+  v308 <- v304 + v307
+  v309 <- RuntimeTouchArray[v256 + 5] < v308
+  v310 <- v309
+  goto 682
+681:
+  v310 <- 0
+  goto 682
+682:
+  goto 683 if v310 else 684
+683:
+  v311 <- !v272
+  v312 <- v311
+  goto 685
+684:
+  v312 <- v272
+  goto 685
+685:
+  v313 <- v273 + 1
+  v314 <- v312
+  v315 <- v313
+  v316 <- v273
+  v272 <- v314
+  v273 <- v315
+  v274 <- v316
+  goto 660
+686:
+  goto 687
+687:
+  goto 688
+688:
+  goto 689 if v272 else 695
+689:
+  goto 690
+690:
+  v317 <- EntityMemory[0]
+  v318 <- v317 - EntityData[11]
+  v319 <- Abs(v318)
+  v320 <- RuntimeUpdate[0] - RuntimeEnvironment[3]
+  v321 <- v320 - EntityData[11]
+  v322 <- Abs(v321)
+  v323 <- v322 < v319
+  goto 691 if v323 else 692
+691:
+  v324 <- RuntimeUpdate[0] - RuntimeEnvironment[3]
+  EntityMemory[0] <- v324
+  goto 693
+692:
+  goto 693
+693:
+  goto 694
+694:
+  goto 696
+695:
+  goto 696
+696:
+  v317 <- EntityMemory[0]
+  v318 <- v317 >= EntityData[11]
+  goto 697 if v318 else 857
+697:
+  v319 <- EntityMemory[0]
+  goto 698
+698:
+  goto 699
+699:
+  goto 700
+700:
+  goto 701
+701:
+  goto 702
+702:
+  goto 703
+703:
+  goto 704
+704:
+  goto 705
+705:
+  v320 <- Judge(v319, EntityData[11], EntityData[5], EntityData[6], EntityData[7], EntityData[8], EntityData[9], EntityData[10])
+  goto 706
+706:
+  EntityInput[0] <- v320
+  v321 <- v319 - EntityData[11]
+  v322 <- Clamp(v321, -1, 1)
+  EntityInput[1] <- v322
+  v323 <- EntityInput[1]
+  v324 <- v323 * 1000
+  EntityInput[3] <- v324
+  v325 <- v320 != 0
+  goto 707 if v325 else 854
+707:
+  v326 <- !LevelOption[11]
+  goto 708 if v326 else 742
+708:
+  goto 709
+709:
+  v327 <- 3 + EntityInfo[1]
+  v328 <- v327
+  v329 <- EngineRom[v328]
+  goto 710
+710:
+  goto 711
+711:
+  goto 712
+712:
+  goto 713
+713:
+  v330 <- !LevelOption[10]
+  goto 714 if v330 else 715
+714:
+  goto 740
+715:
+  v331 <- v329 == 6
+  goto 716 if v331 else 717
+716:
+  goto 740
+717:
+  goto 718
+718:
+  v332 <- 0
+  v333 <- v329 == 2
+  goto 719 if v333 else 720
+719:
+  goto 722
+720:
+  v334 <- v329 == 3
+  goto 721 if v334 else 730
+721:
+  goto 722
+722:
+  v335 <- v320 == 1
+  goto 723 if v335 else 724
+723:
+  v332 <- 4
+  goto 729
+724:
+  v336 <- v320 == 2
+  goto 725 if v336 else 726
+725:
+  v332 <- 5
+  goto 729
+726:
+  v337 <- v320 == 3
+  goto 727 if v337 else 728
+727:
+  v332 <- 6
+  goto 729
+728:
+  goto 729
+729:
+  goto 738
+730:
+  v338 <- v320 == 1
+  goto 731 if v338 else 732
+731:
+  v332 <- 1
+  goto 737
+732:
+  v339 <- v320 == 2
+  goto 733 if v339 else 734
+733:
+  v332 <- 2
+  goto 737
+734:
+  v340 <- v320 == 3
+  goto 735 if v340 else 736
+735:
+  v332 <- 3
+  goto 737
+736:
+  goto 737
+737:
+  goto 738
+738:
+  goto 739
+739:
+  v341 <- v332
+  v342 <- Play(v341, 0)
+  goto 740
+740:
+  goto 741
+741:
+  goto 743
+742:
+  goto 743
+743:
+  goto 744
+744:
+  v330 <- 3 + EntityInfo[1]
+  v331 <- v330
+  v332 <- EngineRom[v331]
+  goto 745
+745:
+  goto 746
+746:
+  goto 747
+747:
+  goto 748
+748:
+  v333 <- v332 == 6
+  goto 749 if v333 else 750
+749:
+  goto 850
+750:
+  v334 <- !LevelOption[6]
+  goto 751 if v334 else 752
+751:
+  goto 850
+752:
+  goto 753
+753:
+  v335 <- 0
+  v336 <- v332 == 1
+  goto 754 if v336 else 755
+754:
+  v335 <- 1
+  goto 770
+755:
+  v337 <- v332 == 2
+  goto 756 if v337 else 757
+756:
+  v335 <- 6
+  goto 770
+757:
+  v338 <- v332 == 3
+  goto 758 if v338 else 762
+758:
+  v339 <- EntityData[2] > 0
+  goto 759 if v339 else 760
+759:
+  v335 <- 8
+  goto 761
+760:
+  v335 <- 10
+  goto 761
+761:
+  goto 770
+762:
+  v340 <- v332 == 4
+  goto 763 if v340 else 764
+763:
+  goto 768
+764:
+  v341 <- v332 == 5
+  goto 765 if v341 else 766
+765:
+  goto 768
+766:
+  v342 <- v332 == 7
+  goto 767 if v342 else 769
+767:
+  goto 768
+768:
+  v335 <- 3
+  goto 770
+769:
+  goto 770
+770:
+  goto 771
+771:
+  goto 772
+772:
+  goto 773
+773:
+  v343 <- EntityData[0] * LevelData[12]
+  goto 774
+774:
+  v344 <- LevelData[11] / 2
+  v345 <- v343 - v344
+  v346 <- v345
+  v347 <- 0
+  goto 775
+775:
+  goto 776
+776:
+  v348 <- v346
+  v349 <- LevelData[2] * v348
+  v350 <- v347
+  v351 <- LevelData[3] * v350
+  v352 <- v349 + v351
+  v353 <- v352 + LevelData[4]
+  v354 <- v346
+  v355 <- LevelData[5] * v354
+  v356 <- v347
+  v357 <- LevelData[6] * v356
+  v358 <- v355 + v357
+  v359 <- v358 + LevelData[7]
+  v360 <- v346
+  v361 <- LevelData[8] * v360
+  v362 <- v347
+  v363 <- LevelData[9] * v362
+  v364 <- v361 + v363
+  v365 <- v364 + LevelData[10]
+  v366 <- v353 / v365
+  v367 <- v359 / v365
+  v368 <- v366
+  v369 <- v367
+  goto 777
+777:
+  goto 778
+778:
+  v370 <- LevelData[11] / 2
+  v371 <- v343 + v370
+  v372 <- v371
+  v373 <- 0
+  goto 779
+779:
+  goto 780
+780:
+  v374 <- v372
+  v375 <- LevelData[2] * v374
+  v376 <- v373
+  v377 <- LevelData[3] * v376
+  v378 <- v375 + v377
+  v379 <- v378 + LevelData[4]
+  v380 <- v372
+  v381 <- LevelData[5] * v380
+  v382 <- v373
+  v383 <- LevelData[6] * v382
+  v384 <- v381 + v383
+  v385 <- v384 + LevelData[7]
+  v386 <- v372
+  v387 <- LevelData[8] * v386
+  v388 <- v373
+  v389 <- LevelData[9] * v388
+  v390 <- v387 + v389
+  v391 <- v390 + LevelData[10]
+  v392 <- v379 / v391
+  v393 <- v385 / v391
+  v394 <- v392
+  v395 <- v393
+  goto 781
+781:
+  goto 782
+782:
+  v396 <- v394
+  v397 <- v368
+  v398 <- v396 - v397
+  v399 <- v395
+  v400 <- v369
+  v401 <- v399 - v400
+  v402 <- v398
+  v403 <- Power(v402, 2)
+  v404 <- v401
+  v405 <- Power(v404, 2)
+  v406 <- v403 + v405
+  v407 <- Power(v406, 0.5)
+  v408 <- 0
+  v409 <- v407
+  v410 <- v368
+  v411 <- v408
+  v412 <- v410 + v411
+  v413 <- v369
+  v414 <- v409
+  v415 <- v413 + v414
+  v416 <- 0
+  v417 <- v407
+  v418 <- v394
+  v419 <- v416
+  v420 <- v418 + v419
+  v421 <- v395
+  v422 <- v417
+  v423 <- v421 + v422
+  goto 783
+783:
+  v424 <- v335
+  v425 <- v368
+  v426 <- v369
+  v427 <- v412
+  v428 <- v415
+  v429 <- v420
+  v430 <- v423
+  v431 <- v394
+  v432 <- v395
+  v433 <- SpawnParticleEffect(v424, v425, v426, v427, v428, v429, v430, v431, v432, 0.5, 0)
+  v434 <- v433
+  goto 784
+784:
+  v435 <- 0
+  v436 <- v332 == 1
+  goto 785 if v436 else 786
+785:
+  v435 <- 2
+  goto 801
+786:
+  v437 <- v332 == 2
+  goto 787 if v437 else 788
+787:
+  v435 <- 7
+  goto 801
+788:
+  v438 <- v332 == 3
+  goto 789 if v438 else 793
+789:
+  v439 <- EntityData[2] > 0
+  goto 790 if v439 else 791
+790:
+  v435 <- 9
+  goto 792
+791:
+  v435 <- 11
+  goto 792
+792:
+  goto 801
+793:
+  v440 <- v332 == 4
+  goto 794 if v440 else 795
+794:
+  goto 799
+795:
+  v441 <- v332 == 5
+  goto 796 if v441 else 797
+796:
+  goto 799
+797:
+  v442 <- v332 == 7
+  goto 798 if v442 else 800
+798:
+  goto 799
+799:
+  v435 <- 4
+  goto 801
+800:
+  goto 801
+801:
+  goto 802
+802:
+  goto 803
+803:
+  goto 804
+804:
+  v443 <- EntityData[0] * LevelData[12]
+  goto 805
+805:
+  v444 <- v443
+  v445 <- 0
+  v446 <- LevelData[11]
+  v447 <- LevelData[11]
+  v448 <- v446
+  v449 <- v448 * 1.8
+  v450 <- v447
+  v451 <- v450 * 1.8
+  goto 806
+806:
+  v452 <- v445
+  v453 <- v451
+  v454 <- v453 / 2
+  v455 <- v452 + v454
+  v456 <- v444
+  v457 <- v449
+  v458 <- v457 / 2
+  v459 <- v456 + v458
+  v460 <- v445
+  v461 <- v451
+  v462 <- v461 / 2
+  v463 <- v460 - v462
+  v464 <- v444
+  v465 <- v449
+  v466 <- v465 / 2
+  v467 <- v464 - v466
+  v468 <- v455
+  v469 <- v459
+  v470 <- v463
+  v471 <- v467
+  goto 807
+807:
+  goto 808
+808:
+  goto 809
+809:
+  goto 810
+810:
+  v472 <- v471
+  v473 <- v470
+  v474 <- v472
+  v475 <- v473
+  goto 811
+811:
+  goto 812
+812:
+  v476 <- v474
+  v477 <- LevelData[2] * v476
+  v478 <- v475
+  v479 <- LevelData[3] * v478
+  v480 <- v477 + v479
+  v481 <- v480 + LevelData[4]
+  v482 <- v474
+  v483 <- LevelData[5] * v482
+  v484 <- v475
+  v485 <- LevelData[6] * v484
+  v486 <- v483 + v485
+  v487 <- v486 + LevelData[7]
+  v488 <- v474
+  v489 <- LevelData[8] * v488
+  v490 <- v475
+  v491 <- LevelData[9] * v490
+  v492 <- v489 + v491
+  v493 <- v492 + LevelData[10]
+  v494 <- v481 / v493
+  v495 <- v487 / v493
+  v496 <- v494
+  v497 <- v495
+  goto 813
+813:
+  goto 814
+814:
+  v498 <- v469
+  v499 <- v470
+  v500 <- v498
+  v501 <- v499
+  goto 815
+815:
+  goto 816
+816:
+  v502 <- v500
+  v503 <- LevelData[2] * v502
+  v504 <- v501
+  v505 <- LevelData[3] * v504
+  v506 <- v503 + v505
+  v507 <- v506 + LevelData[4]
+  v508 <- v500
+  v509 <- LevelData[5] * v508
+  v510 <- v501
+  v511 <- LevelData[6] * v510
+  v512 <- v509 + v511
+  v513 <- v512 + LevelData[7]
+  v514 <- v500
+  v515 <- LevelData[8] * v514
+  v516 <- v501
+  v517 <- LevelData[9] * v516
+  v518 <- v515 + v517
+  v519 <- v518 + LevelData[10]
+  v520 <- v507 / v519
+  v521 <- v513 / v519
+  v522 <- v520
+  v523 <- v521
+  goto 817
+817:
+  goto 818
+818:
+  v524 <- v471
+  v525 <- v468
+  v526 <- v524
+  v527 <- v525
+  goto 819
+819:
+  goto 820
+820:
+  v528 <- v526
+  v529 <- LevelData[2] * v528
+  v530 <- v527
+  v531 <- LevelData[3] * v530
+  v532 <- v529 + v531
+  v533 <- v532 + LevelData[4]
+  v534 <- v526
+  v535 <- LevelData[5] * v534
+  v536 <- v527
+  v537 <- LevelData[6] * v536
+  v538 <- v535 + v537
+  v539 <- v538 + LevelData[7]
+  v540 <- v526
+  v541 <- LevelData[8] * v540
+  v542 <- v527
+  v543 <- LevelData[9] * v542
+  v544 <- v541 + v543
+  v545 <- v544 + LevelData[10]
+  v546 <- v533 / v545
+  v547 <- v539 / v545
+  v548 <- v546
+  v549 <- v547
+  goto 821
+821:
+  goto 822
+822:
+  v550 <- v469
+  v551 <- v468
+  v552 <- v550
+  v553 <- v551
+  goto 823
+823:
+  goto 824
+824:
+  v554 <- v552
+  v555 <- LevelData[2] * v554
+  v556 <- v553
+  v557 <- LevelData[3] * v556
+  v558 <- v555 + v557
+  v559 <- v558 + LevelData[4]
+  v560 <- v552
+  v561 <- LevelData[5] * v560
+  v562 <- v553
+  v563 <- LevelData[6] * v562
+  v564 <- v561 + v563
+  v565 <- v564 + LevelData[7]
+  v566 <- v552
+  v567 <- LevelData[8] * v566
+  v568 <- v553
+  v569 <- LevelData[9] * v568
+  v570 <- v567 + v569
+  v571 <- v570 + LevelData[10]
+  v572 <- v559 / v571
+  v573 <- v565 / v571
+  v574 <- v572
+  v575 <- v573
+  goto 825
+825:
+  goto 826
+826:
+  goto 827
+827:
+  v576 <- v574
+  v577 <- v548
+  v578 <- v576 - v577
+  v579 <- v522
+  v580 <- v578 + v579
+  v581 <- v496
+  v582 <- v580 - v581
+  v583 <- v582 / 2
+  v584 <- v548
+  v585 <- v574
+  v586 <- v584 + v585
+  v587 <- v586 / 2
+  v588 <- v496
+  v589 <- v522
+  v590 <- v588 + v589
+  v591 <- v590 / 2
+  v592 <- v583 / 2
+  v593 <- v591 - v592
+  v594 <- v497
+  v595 <- v593
+  v596 <- v594
+  v597 <- v583 / 2
+  v598 <- v591 + v597
+  v599 <- v523
+  v600 <- v598
+  v601 <- v599
+  v602 <- v583 / 2
+  v603 <- v587 - v602
+  v604 <- v549
+  v605 <- v603
+  v606 <- v604
+  v607 <- v583 / 2
+  v608 <- v587 + v607
+  v609 <- v575
+  v610 <- v608
+  v611 <- v609
+  goto 828
+828:
+  v612 <- v435
+  v613 <- v595
+  v614 <- v596
+  v615 <- v605
+  v616 <- v606
+  v617 <- v610
+  v618 <- v611
+  v619 <- v600
+  v620 <- v601
+  v621 <- SpawnParticleEffect(v612, v613, v614, v615, v616, v617, v618, v619, v620, 0.5, 0)
+  v622 <- v621
+  goto 829
+829:
+  v623 <- !LevelOption[7]
+  goto 830 if v623 else 831
+830:
+  goto 848
+831:
+  goto 832
+832:
+  goto 833
+833:
+  goto 834
+834:
+  v624 <- 0
+  goto 835
+835:
+  goto 836
+836:
+  goto 837
+837:
+  v625 <- v624
+  v626 <- v625 < LevelData[16]
+  goto 838 if v626 else 841
+838:
+  v627 <- v624
+  v628 <- v624
+  v629 <- v628 + 1
+  v624 <- v629
+  goto 839
+839:
+  goto 840
+840:
+  v630 <- 1
+  goto 842
+841:
+  v630 <- 0
+  goto 842
+842:
+  goto 843
+843:
+  goto 844 if v630 else 853
+844:
+  v631 <- v627 * 9
+  v632 <- 16 + v631
+  v633 <- v632
+  v634 <- LevelData[v633 + 1] == EntityData[0]
+  goto 845 if v634 else 852
+845:
+  goto 846
+846:
+  goto 847
+847:
+  v637 <- SpawnParticleEffect(0, LevelData[v633 + 2], LevelData[v633 + 3], LevelData[v633 + 4], LevelData[v633 + 5], LevelData[v633 + 6], LevelData[v633 + 7], LevelData[v633 + 8], LevelData[v633 + 9], 0.2, 0)
+  v638 <- v637
+  goto 848
+848:
+  goto 849
+849:
+  goto 850
+850:
+  goto 851
+851:
+  goto 855
+852:
+  goto 836
+853:
+  v635 <- DebugLog(12)
+  v636 <- DebugPause()
+  goto exit
+854:
+  goto 855
+855:
+  EntityDespawn[0] <- 1
+  EntitySharedMemory[2] <- 1
+  goto 856
+856:
+  goto 858
+857:
+  goto 858
+858:
+  goto 861
+859:
+  v263 <- DebugLog(11)
+  v264 <- DebugPause()
+  goto exit
+860:
+  goto 861
+861:
+  goto 863
+862:
+  goto 863
+863:
+  goto 864
+864:
+  goto 865
+865:
+  goto 1886
+866:
+  v250 <- DebugLog(10)
+  v251 <- DebugPause()
+  goto exit
+867:
+  v250 <- DebugLog(7)
+  v251 <- DebugPause()
+  goto exit
+868:
+  v232 <- v228 == 7
+  goto 869 if v232 else 1292
+869:
+  goto 870
+870:
+  goto 871
+871:
+  v233 <- EntityData[3] > 0
+  goto 872
+872:
+  goto 873 if v233 else 891
+873:
+  goto 874
+874:
+  goto 875
+875:
+  v234 <- EntityData[16] * 3
+  v235 <- v234
+  v236 <- SwitchWithDefault(EntityInfoArray[v235 + 1], 1, 1, 2, 1, 3, 1, 4, 1, 5, 1, 6, 1, 7, 1, 0)
+  goto 876 if v236 else 890
+876:
+  goto 877
+877:
+  goto 878
+878:
+  v234 <- EntityData[16] * 32
+  v235 <- 2 + v234
+  v236 <- v235
+  v237 <- EntitySharedMemoryArray[v236]
+  goto 879 if v237 else 880
+879:
+  v241 <- v237
+  goto 888
+880:
+  goto 881
+881:
+  goto 882
+882:
+  v238 <- EntityData[16] * 3
+  v239 <- v238
+  v240 <- SwitchWithDefault(EntityInfoArray[v239 + 1], 1, 1, 2, 1, 3, 1, 4, 1, 5, 1, 6, 1, 7, 1, 0)
+  goto 883 if v240 else 889
+883:
+  goto 884
+884:
+  goto 885
+885:
+  goto 886
+886:
+  v238 <- EntityData[16] * 3
+  v239 <- v238
+  v240 <- EntityInfoArray[v239 + 2] == 2
+  goto 887
+887:
+  v241 <- v240
+  goto 888
+888:
+  v242 <- !v241
+  v243 <- v242
+  goto 892
+889:
+  v241 <- DebugLog(13)
+  v242 <- DebugPause()
+  goto exit
+890:
+  v237 <- DebugLog(13)
+  v238 <- DebugPause()
+  goto exit
+891:
+  v243 <- 0
+  goto 892
+892:
+  goto 893 if v243 else 894
+893:
+  goto 1288
+894:
+  goto 895
+895:
+  goto 896
+896:
+  goto 897
+897:
+  v244 <- EntityData[14] <= RuntimeUpdate[0]
+  goto 898 if v244 else 899
+898:
+  v245 <- RuntimeUpdate[0] <= EntityData[15]
+  v246 <- v245
+  goto 900
+899:
+  v246 <- 0
+  goto 900
+900:
+  goto 901
+901:
+  v247 <- !v246
+  goto 902 if v247 else 903
+902:
+  goto 1288
+903:
+  goto 904
+904:
+  goto 905
+905:
+  goto 906
+906:
+  goto 907
+907:
+  goto 908
+908:
+  v248 <- EntityData[16] * 3
+  v249 <- v248
+  v250 <- SwitchWithDefault(EntityInfoArray[v249 + 1], 1, 1, 2, 1, 3, 1, 4, 1, 5, 1, 6, 1, 7, 1, 0)
+  goto 909 if v250 else 1291
+909:
+  goto 910
+910:
+  goto 911
+911:
+  v248 <- EntityData[16] * 32
+  v249 <- v248
+  v250 <- EntitySharedMemoryArray[v249]
+  goto 912
+912:
+  v251 <- v250 > 0
+  goto 913
+913:
+  v252 <- !v251
+  goto 914 if v252 else 1040
+914:
+  v273 <- 0
+  goto 915
+915:
+  goto 916
+916:
+  goto 917
+917:
+  v275 <- 0
+  goto 918
+918:
+  goto when v273
+    0 -> 920
+    1 -> 919
+    default -> 960
+919:
+  goto 959
+920:
+  goto 921
+921:
+  goto 922
+922:
+  goto 923
+923:
+  v253 <- 0
+  goto 924
+924:
+  goto 925
+925:
+  goto 926
+926:
+  v254 <- v253
+  goto 927
+927:
+  goto 928
+928:
+  goto 929
+929:
+  goto 930
+930:
+  v255 <- v254 < RuntimeUpdate[3]
+  goto 931 if v255 else 936
+931:
+  v256 <- v253
+  goto 932
+932:
+  v257 <- v256 * 15
+  v258 <- v257
+  goto 933
+933:
+  v259 <- v253
+  v260 <- v259 + 1
+  v253 <- v260
+  goto 934
+934:
+  goto 935
+935:
+  v261 <- 1
+  goto 937
+936:
+  v261 <- 0
+  goto 937
+937:
+  goto 938
+938:
+  goto 939 if v261 else 960
+939:
+  goto 940
+940:
+  goto 941
+941:
+  goto 942
+942:
+  v262 <- 0
+  goto 943
+943:
+  goto 944
+944:
+  v263 <- LevelMemory[17]
+  goto 945
+945:
+  v264 <- v262 < v263
+  goto 946 if v264 else 951
+946:
+  goto 947
+947:
+  v265 <- 17 + v262
+  v266 <- v265
+  v267 <- LevelMemory[v266 + 1]
+  goto 948
+948:
+  v268 <- v267 == RuntimeTouchArray[v258]
+  goto 949 if v268 else 950
+949:
+  v271 <- 1
+  goto 952
+950:
+  v269 <- v262 + 1
+  v270 <- v269
+  v262 <- v270
+  goto 943
+951:
+  v271 <- 0
+  goto 952
+952:
+  goto 953
+953:
+  goto 954
+954:
+  goto 955
+955:
+  v272 <- !v271
+  goto 956 if v272 else 958
+956:
+  goto 957
+957:
+  v273 <- 1
+  v274 <- 1
+  goto 961
+958:
+  goto 959
+959:
+  goto 925
+960:
+  v274 <- 0
+  goto 961
+961:
+  goto when v275
+    0 -> 962
+962:
+  goto 963 if v274 else 1038
+963:
+  goto 964
+964:
+  goto 965
+965:
+  v276 <- v146
+  a1[0] <- v276
+  v277 <- v147
+  a1[1] <- v277
+  v278 <- v198
+  a1[2] <- v278
+  v279 <- v199
+  a1[3] <- v279
+  v280 <- v224
+  a1[4] <- v280
+  v281 <- v225
+  a1[5] <- v281
+  v282 <- v172
+  a1[6] <- v282
+  v283 <- v173
+  a1[7] <- v283
+  goto 966
+966:
+  goto 967
+967:
+  goto 968
+968:
+  goto 969
+969:
+  v284 <- 0
+  v285 <- 0
+  v286 <- 3
+  goto 970
+970:
+  goto 971
+971:
+  goto 972
+972:
+  v287 <- v285 < 4
+  goto 973 if v287 else 996
+973:
+  goto 974
+974:
+  v288 <- v285 * 2
+  v289 <- v288
+  goto 975
+975:
+  v290 <- a1[v289 + 1]
+  v291 <- v290 > RuntimeTouchArray[v258 + 6]
+  goto 976
+976:
+  v292 <- v286 * 2
+  v293 <- v292
+  goto 977
+977:
+  v294 <- a1[v293 + 1]
+  v295 <- v294 > RuntimeTouchArray[v258 + 6]
+  v296 <- v291 != v295
+  goto 978 if v296 else 991
+978:
+  goto 979
+979:
+  v297 <- v286 * 2
+  v298 <- v297
+  goto 980
+980:
+  v299 <- a1[v298]
+  goto 981
+981:
+  v300 <- v285 * 2
+  v301 <- v300
+  goto 982
+982:
+  v302 <- a1[v301]
+  v303 <- v299 - v302
+  goto 983
+983:
+  v304 <- v285 * 2
+  v305 <- v304
+  goto 984
+984:
+  v306 <- a1[v305 + 1]
+  v307 <- RuntimeTouchArray[v258 + 6] - v306
+  v308 <- v303 * v307
+  goto 985
+985:
+  v309 <- v286 * 2
+  v310 <- v309
+  goto 986
+986:
+  v311 <- a1[v310 + 1]
+  goto 987
+987:
+  v312 <- v285 * 2
+  v313 <- v312
+  goto 988
+988:
+  v314 <- a1[v313 + 1]
+  v315 <- v311 - v314
+  v316 <- v308 / v315
+  goto 989
+989:
+  v317 <- v285 * 2
+  v318 <- v317
+  goto 990
+990:
+  v319 <- a1[v318]
+  v320 <- v316 + v319
+  v321 <- RuntimeTouchArray[v258 + 5] < v320
+  v322 <- v321
+  goto 992
+991:
+  v322 <- 0
+  goto 992
+992:
+  goto 993 if v322 else 994
+993:
+  v323 <- !v284
+  v324 <- v323
+  goto 995
+994:
+  v324 <- v284
+  goto 995
+995:
+  v325 <- v285 + 1
+  v326 <- v324
+  v327 <- v325
+  v328 <- v285
+  v284 <- v326
+  v285 <- v327
+  v286 <- v328
+  goto 970
+996:
+  goto 997
+997:
+  goto 998
+998:
+  v329 <- !v284
+  goto 999 if v329 else 1000
+999:
+  goto 917
+1000:
+  goto 1001 if RuntimeTouchArray[v258 + 2] else 1002
+1001:
+  goto 917
+1002:
+  goto 1003
+1003:
+  goto 1004
+1004:
+  goto 1005
+1005:
+  v330 <- LevelMemory[17]
+  v331 <- v330 >= 16
+  goto 1006 if v331 else 1007
+1006:
+  v342 <- 0
+  goto 1025
+1007:
+  goto 1008
+1008:
+  v332 <- 0
+  goto 1009
+1009:
+  goto 1010
+1010:
+  v333 <- LevelMemory[17]
+  goto 1011
+1011:
+  v334 <- v332 < v333
+  goto 1012 if v334 else 1017
+1012:
+  goto 1013
+1013:
+  v335 <- 17 + v332
+  v336 <- v335
+  v337 <- LevelMemory[v336 + 1]
+  goto 1014
+1014:
+  v338 <- v337 == RuntimeTouchArray[v258]
+  goto 1015 if v338 else 1016
+1015:
+  v341 <- 1
+  goto 1018
+1016:
+  v339 <- v332 + 1
+  v340 <- v339
+  v332 <- v340
+  goto 1009
+1017:
+  v341 <- 0
+  goto 1018
+1018:
+  goto 1019
+1019:
+  goto 1020 if v341 else 1021
+1020:
+  v342 <- 0
+  goto 1025
+1021:
+  goto 1022
+1022:
+  v342 <- LevelMemory[17]
+  v343 <- v342 < 16
+  goto 1023 if v343 else 1037
+1023:
+  v346 <- LevelMemory[17]
+  v347 <- 17 + v346
+  v348 <- v347
+  LevelMemory[v348 + 1] <- RuntimeTouchArray[v258]
+  v349 <- LevelMemory[17]
+  v350 <- v349 + 1
+  LevelMemory[17] <- v350
+  goto 1024
+1024:
+  v342 <- 1
+  goto 1025
+1025:
+  goto 1026
+1026:
+  goto 1027
+1027:
+  goto 1028
+1028:
+  goto 1029
+1029:
+  goto 1030
+1030:
+  goto 1031
+1031:
+  v330 <- EntityData[16] * 3
+  v331 <- v330
+  v332 <- SwitchWithDefault(EntityInfoArray[v331 + 1], 1, 1, 2, 1, 3, 1, 4, 1, 5, 1, 6, 1, 7, 1, 0)
+  goto 1032 if v332 else 1036
+1032:
+  goto 1033
+1033:
+  goto 1034
+1034:
+  v330 <- EntityData[16] * 32
+  v331 <- v330
+  EntitySharedMemoryArray[v331] <- RuntimeTouchArray[v258]
+  goto 1035
+1035:
+  goto 1039
+1036:
+  v333 <- DebugLog(16)
+  v334 <- DebugPause()
+  goto exit
+1037:
+  v344 <- DebugLog(15)
+  v345 <- DebugPause()
+  goto exit
+1038:
+  goto 1039
+1039:
+  goto 1041
+1040:
+  goto 1041
+1041:
+  goto 1042
+1042:
+  goto 1043
+1043:
+  goto 1044
+1044:
+  goto 1045
+1045:
+  goto 1046
+1046:
+  v248 <- EntityData[16] * 3
+  v249 <- v248
+  v250 <- SwitchWithDefault(EntityInfoArray[v249 + 1], 1, 1, 2, 1, 3, 1, 4, 1, 5, 1, 6, 1, 7, 1, 0)
+  goto 1047 if v250 else 1290
+1047:
+  goto 1048
+1048:
+  goto 1049
+1049:
+  v248 <- EntityData[16] * 32
+  v249 <- v248
+  v250 <- EntitySharedMemoryArray[v249]
+  goto 1050
+1050:
+  v251 <- v250 > 0
+  goto 1051
+1051:
+  goto 1052 if v251 else 1286
+1052:
+  goto 1053
+1053:
+  goto 1054
+1054:
+  goto 1055
+1055:
+  v252 <- 0
+  goto 1056
+1056:
+  goto 1057
+1057:
+  goto 1058
+1058:
+  v253 <- v252
+  goto 1059
+1059:
+  goto 1060
+1060:
+  goto 1061
+1061:
+  goto 1062
+1062:
+  v254 <- v253 < RuntimeUpdate[3]
+  goto 1063 if v254 else 1068
+1063:
+  v255 <- v252
+  goto 1064
+1064:
+  v256 <- v255 * 15
+  v257 <- v256
+  goto 1065
+1065:
+  v258 <- v252
+  v259 <- v258 + 1
+  v252 <- v259
+  goto 1066
+1066:
+  goto 1067
+1067:
+  v260 <- 1
+  goto 1069
+1068:
+  v260 <- 0
+  goto 1069
+1069:
+  goto 1070
+1070:
+  goto 1071 if v260 else 1284
+1071:
+  goto 1072
+1072:
+  goto 1073
+1073:
+  goto 1074
+1074:
+  v261 <- EntityData[16] * 3
+  v262 <- v261
+  v263 <- SwitchWithDefault(EntityInfoArray[v262 + 1], 1, 1, 2, 1, 3, 1, 4, 1, 5, 1, 6, 1, 7, 1, 0)
+  goto 1075 if v263 else 1283
+1075:
+  goto 1076
+1076:
+  goto 1077
+1077:
+  v261 <- EntityData[16] * 32
+  v262 <- v261
+  v263 <- EntitySharedMemoryArray[v262]
+  goto 1078
+1078:
+  v264 <- RuntimeTouchArray[v257] != v263
+  goto 1079 if v264 else 1080
+1079:
+  goto 1057
+1080:
+  goto 1081 if RuntimeTouchArray[v257 + 2] else 1281
+1081:
+  goto 1082
+1082:
+  goto 1083
+1083:
+  v265 <- v146
+  a1[0] <- v265
+  v266 <- v147
+  a1[1] <- v266
+  v267 <- v198
+  a1[2] <- v267
+  v268 <- v199
+  a1[3] <- v268
+  v269 <- v224
+  a1[4] <- v269
+  v270 <- v225
+  a1[5] <- v270
+  v271 <- v172
+  a1[6] <- v271
+  v272 <- v173
+  a1[7] <- v272
+  goto 1084
+1084:
+  goto 1085
+1085:
+  goto 1086
+1086:
+  goto 1087
+1087:
+  v273 <- 0
+  v274 <- 0
+  v275 <- 3
+  goto 1088
+1088:
+  goto 1089
+1089:
+  goto 1090
+1090:
+  v276 <- v274 < 4
+  goto 1091 if v276 else 1114
+1091:
+  goto 1092
+1092:
+  v277 <- v274 * 2
+  v278 <- v277
+  goto 1093
+1093:
+  v279 <- a1[v278 + 1]
+  v280 <- v279 > RuntimeTouchArray[v257 + 6]
+  goto 1094
+1094:
+  v281 <- v275 * 2
+  v282 <- v281
+  goto 1095
+1095:
+  v283 <- a1[v282 + 1]
+  v284 <- v283 > RuntimeTouchArray[v257 + 6]
+  v285 <- v280 != v284
+  goto 1096 if v285 else 1109
+1096:
+  goto 1097
+1097:
+  v286 <- v275 * 2
+  v287 <- v286
+  goto 1098
+1098:
+  v288 <- a1[v287]
+  goto 1099
+1099:
+  v289 <- v274 * 2
+  v290 <- v289
+  goto 1100
+1100:
+  v291 <- a1[v290]
+  v292 <- v288 - v291
+  goto 1101
+1101:
+  v293 <- v274 * 2
+  v294 <- v293
+  goto 1102
+1102:
+  v295 <- a1[v294 + 1]
+  v296 <- RuntimeTouchArray[v257 + 6] - v295
+  v297 <- v292 * v296
+  goto 1103
+1103:
+  v298 <- v275 * 2
+  v299 <- v298
+  goto 1104
+1104:
+  v300 <- a1[v299 + 1]
+  goto 1105
+1105:
+  v301 <- v274 * 2
+  v302 <- v301
+  goto 1106
+1106:
+  v303 <- a1[v302 + 1]
+  v304 <- v300 - v303
+  v305 <- v297 / v304
+  goto 1107
+1107:
+  v306 <- v274 * 2
+  v307 <- v306
+  goto 1108
+1108:
+  v308 <- a1[v307]
+  v309 <- v305 + v308
+  v310 <- RuntimeTouchArray[v257 + 5] < v309
+  v311 <- v310
+  goto 1110
+1109:
+  v311 <- 0
+  goto 1110
+1110:
+  goto 1111 if v311 else 1112
+1111:
+  v312 <- !v273
+  v313 <- v312
+  goto 1113
+1112:
+  v313 <- v273
+  goto 1113
+1113:
+  v314 <- v274 + 1
+  v315 <- v313
+  v316 <- v314
+  v317 <- v274
+  v273 <- v315
+  v274 <- v316
+  v275 <- v317
+  goto 1088
+1114:
+  goto 1115
+1115:
+  goto 1116
+1116:
+  goto 1117 if v273 else 1277
+1117:
+  v318 <- RuntimeUpdate[0] - RuntimeEnvironment[3]
+  goto 1118
+1118:
+  goto 1119
+1119:
+  goto 1120
+1120:
+  goto 1121
+1121:
+  goto 1122
+1122:
+  goto 1123
+1123:
+  goto 1124
+1124:
+  goto 1125
+1125:
+  v319 <- Judge(v318, EntityData[11], EntityData[5], EntityData[6], EntityData[7], EntityData[8], EntityData[9], EntityData[10])
+  goto 1126
+1126:
+  EntityInput[0] <- v319
+  v320 <- v318 - EntityData[11]
+  v321 <- Clamp(v320, -1, 1)
+  EntityInput[1] <- v321
+  v322 <- EntityInput[1]
+  v323 <- v322 * 1000
+  EntityInput[3] <- v323
+  v324 <- v319 != 0
+  goto 1127 if v324 else 1274
+1127:
+  v325 <- !LevelOption[11]
+  goto 1128 if v325 else 1162
+1128:
+  goto 1129
+1129:
+  v326 <- 3 + EntityInfo[1]
+  v327 <- v326
+  v328 <- EngineRom[v327]
+  goto 1130
+1130:
+  goto 1131
+1131:
+  goto 1132
+1132:
+  goto 1133
+1133:
+  v329 <- !LevelOption[10]
+  goto 1134 if v329 else 1135
+1134:
+  goto 1160
+1135:
+  v330 <- v328 == 6
+  goto 1136 if v330 else 1137
+1136:
+  goto 1160
+1137:
+  goto 1138
+1138:
+  v331 <- 0
+  v332 <- v328 == 2
+  goto 1139 if v332 else 1140
+1139:
+  goto 1142
+1140:
+  v333 <- v328 == 3
+  goto 1141 if v333 else 1150
+1141:
+  goto 1142
+1142:
+  v334 <- v319 == 1
+  goto 1143 if v334 else 1144
+1143:
+  v331 <- 4
+  goto 1149
+1144:
+  v335 <- v319 == 2
+  goto 1145 if v335 else 1146
+1145:
+  v331 <- 5
+  goto 1149
+1146:
+  v336 <- v319 == 3
+  goto 1147 if v336 else 1148
+1147:
+  v331 <- 6
+  goto 1149
+1148:
+  goto 1149
+1149:
+  goto 1158
+1150:
+  v337 <- v319 == 1
+  goto 1151 if v337 else 1152
+1151:
+  v331 <- 1
+  goto 1157
+1152:
+  v338 <- v319 == 2
+  goto 1153 if v338 else 1154
+1153:
+  v331 <- 2
+  goto 1157
+1154:
+  v339 <- v319 == 3
+  goto 1155 if v339 else 1156
+1155:
+  v331 <- 3
+  goto 1157
+1156:
+  goto 1157
+1157:
+  goto 1158
+1158:
+  goto 1159
+1159:
+  v340 <- v331
+  v341 <- Play(v340, 0)
+  goto 1160
+1160:
+  goto 1161
+1161:
+  goto 1163
+1162:
+  goto 1163
+1163:
+  goto 1164
+1164:
+  v329 <- 3 + EntityInfo[1]
+  v330 <- v329
+  v331 <- EngineRom[v330]
+  goto 1165
+1165:
+  goto 1166
+1166:
+  goto 1167
+1167:
+  goto 1168
+1168:
+  v332 <- v331 == 6
+  goto 1169 if v332 else 1170
+1169:
+  goto 1270
+1170:
+  v333 <- !LevelOption[6]
+  goto 1171 if v333 else 1172
+1171:
+  goto 1270
+1172:
+  goto 1173
+1173:
+  v334 <- 0
+  v335 <- v331 == 1
+  goto 1174 if v335 else 1175
+1174:
+  v334 <- 1
+  goto 1190
+1175:
+  v336 <- v331 == 2
+  goto 1176 if v336 else 1177
+1176:
+  v334 <- 6
+  goto 1190
+1177:
+  v337 <- v331 == 3
+  goto 1178 if v337 else 1182
+1178:
+  v338 <- EntityData[2] > 0
+  goto 1179 if v338 else 1180
+1179:
+  v334 <- 8
+  goto 1181
+1180:
+  v334 <- 10
+  goto 1181
+1181:
+  goto 1190
+1182:
+  v339 <- v331 == 4
+  goto 1183 if v339 else 1184
+1183:
+  goto 1188
+1184:
+  v340 <- v331 == 5
+  goto 1185 if v340 else 1186
+1185:
+  goto 1188
+1186:
+  v341 <- v331 == 7
+  goto 1187 if v341 else 1189
+1187:
+  goto 1188
+1188:
+  v334 <- 3
+  goto 1190
+1189:
+  goto 1190
+1190:
+  goto 1191
+1191:
+  goto 1192
+1192:
+  goto 1193
+1193:
+  v342 <- EntityData[0] * LevelData[12]
+  goto 1194
+1194:
+  v343 <- LevelData[11] / 2
+  v344 <- v342 - v343
+  v345 <- v344
+  v346 <- 0
+  goto 1195
+1195:
+  goto 1196
+1196:
+  v347 <- v345
+  v348 <- LevelData[2] * v347
+  v349 <- v346
+  v350 <- LevelData[3] * v349
+  v351 <- v348 + v350
+  v352 <- v351 + LevelData[4]
+  v353 <- v345
+  v354 <- LevelData[5] * v353
+  v355 <- v346
+  v356 <- LevelData[6] * v355
+  v357 <- v354 + v356
+  v358 <- v357 + LevelData[7]
+  v359 <- v345
+  v360 <- LevelData[8] * v359
+  v361 <- v346
+  v362 <- LevelData[9] * v361
+  v363 <- v360 + v362
+  v364 <- v363 + LevelData[10]
+  v365 <- v352 / v364
+  v366 <- v358 / v364
+  v367 <- v365
+  v368 <- v366
+  goto 1197
+1197:
+  goto 1198
+1198:
+  v369 <- LevelData[11] / 2
+  v370 <- v342 + v369
+  v371 <- v370
+  v372 <- 0
+  goto 1199
+1199:
+  goto 1200
+1200:
+  v373 <- v371
+  v374 <- LevelData[2] * v373
+  v375 <- v372
+  v376 <- LevelData[3] * v375
+  v377 <- v374 + v376
+  v378 <- v377 + LevelData[4]
+  v379 <- v371
+  v380 <- LevelData[5] * v379
+  v381 <- v372
+  v382 <- LevelData[6] * v381
+  v383 <- v380 + v382
+  v384 <- v383 + LevelData[7]
+  v385 <- v371
+  v386 <- LevelData[8] * v385
+  v387 <- v372
+  v388 <- LevelData[9] * v387
+  v389 <- v386 + v388
+  v390 <- v389 + LevelData[10]
+  v391 <- v378 / v390
+  v392 <- v384 / v390
+  v393 <- v391
+  v394 <- v392
+  goto 1201
+1201:
+  goto 1202
+1202:
+  v395 <- v393
+  v396 <- v367
+  v397 <- v395 - v396
+  v398 <- v394
+  v399 <- v368
+  v400 <- v398 - v399
+  v401 <- v397
+  v402 <- Power(v401, 2)
+  v403 <- v400
+  v404 <- Power(v403, 2)
+  v405 <- v402 + v404
+  v406 <- Power(v405, 0.5)
+  v407 <- 0
+  v408 <- v406
+  v409 <- v367
+  v410 <- v407
+  v411 <- v409 + v410
+  v412 <- v368
+  v413 <- v408
+  v414 <- v412 + v413
+  v415 <- 0
+  v416 <- v406
+  v417 <- v393
+  v418 <- v415
+  v419 <- v417 + v418
+  v420 <- v394
+  v421 <- v416
+  v422 <- v420 + v421
+  goto 1203
+1203:
+  v423 <- v334
+  v424 <- v367
+  v425 <- v368
+  v426 <- v411
+  v427 <- v414
+  v428 <- v419
+  v429 <- v422
+  v430 <- v393
+  v431 <- v394
+  v432 <- SpawnParticleEffect(v423, v424, v425, v426, v427, v428, v429, v430, v431, 0.5, 0)
+  v433 <- v432
+  goto 1204
+1204:
+  v434 <- 0
+  v435 <- v331 == 1
+  goto 1205 if v435 else 1206
+1205:
+  v434 <- 2
+  goto 1221
+1206:
+  v436 <- v331 == 2
+  goto 1207 if v436 else 1208
+1207:
+  v434 <- 7
+  goto 1221
+1208:
+  v437 <- v331 == 3
+  goto 1209 if v437 else 1213
+1209:
+  v438 <- EntityData[2] > 0
+  goto 1210 if v438 else 1211
+1210:
+  v434 <- 9
+  goto 1212
+1211:
+  v434 <- 11
+  goto 1212
+1212:
+  goto 1221
+1213:
+  v439 <- v331 == 4
+  goto 1214 if v439 else 1215
+1214:
+  goto 1219
+1215:
+  v440 <- v331 == 5
+  goto 1216 if v440 else 1217
+1216:
+  goto 1219
+1217:
+  v441 <- v331 == 7
+  goto 1218 if v441 else 1220
+1218:
+  goto 1219
+1219:
+  v434 <- 4
+  goto 1221
+1220:
+  goto 1221
+1221:
+  goto 1222
+1222:
+  goto 1223
+1223:
+  goto 1224
+1224:
+  v442 <- EntityData[0] * LevelData[12]
+  goto 1225
+1225:
+  v443 <- v442
+  v444 <- 0
+  v445 <- LevelData[11]
+  v446 <- LevelData[11]
+  v447 <- v445
+  v448 <- v447 * 1.8
+  v449 <- v446
+  v450 <- v449 * 1.8
+  goto 1226
+1226:
+  v451 <- v444
+  v452 <- v450
+  v453 <- v452 / 2
+  v454 <- v451 + v453
+  v455 <- v443
+  v456 <- v448
+  v457 <- v456 / 2
+  v458 <- v455 + v457
+  v459 <- v444
+  v460 <- v450
+  v461 <- v460 / 2
+  v462 <- v459 - v461
+  v463 <- v443
+  v464 <- v448
+  v465 <- v464 / 2
+  v466 <- v463 - v465
+  v467 <- v454
+  v468 <- v458
+  v469 <- v462
+  v470 <- v466
+  goto 1227
+1227:
+  goto 1228
+1228:
+  goto 1229
+1229:
+  goto 1230
+1230:
+  v471 <- v470
+  v472 <- v469
+  v473 <- v471
+  v474 <- v472
+  goto 1231
+1231:
+  goto 1232
+1232:
+  v475 <- v473
+  v476 <- LevelData[2] * v475
+  v477 <- v474
+  v478 <- LevelData[3] * v477
+  v479 <- v476 + v478
+  v480 <- v479 + LevelData[4]
+  v481 <- v473
+  v482 <- LevelData[5] * v481
+  v483 <- v474
+  v484 <- LevelData[6] * v483
+  v485 <- v482 + v484
+  v486 <- v485 + LevelData[7]
+  v487 <- v473
+  v488 <- LevelData[8] * v487
+  v489 <- v474
+  v490 <- LevelData[9] * v489
+  v491 <- v488 + v490
+  v492 <- v491 + LevelData[10]
+  v493 <- v480 / v492
+  v494 <- v486 / v492
+  v495 <- v493
+  v496 <- v494
+  goto 1233
+1233:
+  goto 1234
+1234:
+  v497 <- v468
+  v498 <- v469
+  v499 <- v497
+  v500 <- v498
+  goto 1235
+1235:
+  goto 1236
+1236:
+  v501 <- v499
+  v502 <- LevelData[2] * v501
+  v503 <- v500
+  v504 <- LevelData[3] * v503
+  v505 <- v502 + v504
+  v506 <- v505 + LevelData[4]
+  v507 <- v499
+  v508 <- LevelData[5] * v507
+  v509 <- v500
+  v510 <- LevelData[6] * v509
+  v511 <- v508 + v510
+  v512 <- v511 + LevelData[7]
+  v513 <- v499
+  v514 <- LevelData[8] * v513
+  v515 <- v500
+  v516 <- LevelData[9] * v515
+  v517 <- v514 + v516
+  v518 <- v517 + LevelData[10]
+  v519 <- v506 / v518
+  v520 <- v512 / v518
+  v521 <- v519
+  v522 <- v520
+  goto 1237
+1237:
+  goto 1238
+1238:
+  v523 <- v470
+  v524 <- v467
+  v525 <- v523
+  v526 <- v524
+  goto 1239
+1239:
+  goto 1240
+1240:
+  v527 <- v525
+  v528 <- LevelData[2] * v527
+  v529 <- v526
+  v530 <- LevelData[3] * v529
+  v531 <- v528 + v530
+  v532 <- v531 + LevelData[4]
+  v533 <- v525
+  v534 <- LevelData[5] * v533
+  v535 <- v526
+  v536 <- LevelData[6] * v535
+  v537 <- v534 + v536
+  v538 <- v537 + LevelData[7]
+  v539 <- v525
+  v540 <- LevelData[8] * v539
+  v541 <- v526
+  v542 <- LevelData[9] * v541
+  v543 <- v540 + v542
+  v544 <- v543 + LevelData[10]
+  v545 <- v532 / v544
+  v546 <- v538 / v544
+  v547 <- v545
+  v548 <- v546
+  goto 1241
+1241:
+  goto 1242
+1242:
+  v549 <- v468
+  v550 <- v467
+  v551 <- v549
+  v552 <- v550
+  goto 1243
+1243:
+  goto 1244
+1244:
+  v553 <- v551
+  v554 <- LevelData[2] * v553
+  v555 <- v552
+  v556 <- LevelData[3] * v555
+  v557 <- v554 + v556
+  v558 <- v557 + LevelData[4]
+  v559 <- v551
+  v560 <- LevelData[5] * v559
+  v561 <- v552
+  v562 <- LevelData[6] * v561
+  v563 <- v560 + v562
+  v564 <- v563 + LevelData[7]
+  v565 <- v551
+  v566 <- LevelData[8] * v565
+  v567 <- v552
+  v568 <- LevelData[9] * v567
+  v569 <- v566 + v568
+  v570 <- v569 + LevelData[10]
+  v571 <- v558 / v570
+  v572 <- v564 / v570
+  v573 <- v571
+  v574 <- v572
+  goto 1245
+1245:
+  goto 1246
+1246:
+  goto 1247
+1247:
+  v575 <- v573
+  v576 <- v547
+  v577 <- v575 - v576
+  v578 <- v521
+  v579 <- v577 + v578
+  v580 <- v495
+  v581 <- v579 - v580
+  v582 <- v581 / 2
+  v583 <- v547
+  v584 <- v573
+  v585 <- v583 + v584
+  v586 <- v585 / 2
+  v587 <- v495
+  v588 <- v521
+  v589 <- v587 + v588
+  v590 <- v589 / 2
+  v591 <- v582 / 2
+  v592 <- v590 - v591
+  v593 <- v496
+  v594 <- v592
+  v595 <- v593
+  v596 <- v582 / 2
+  v597 <- v590 + v596
+  v598 <- v522
+  v599 <- v597
+  v600 <- v598
+  v601 <- v582 / 2
+  v602 <- v586 - v601
+  v603 <- v548
+  v604 <- v602
+  v605 <- v603
+  v606 <- v582 / 2
+  v607 <- v586 + v606
+  v608 <- v574
+  v609 <- v607
+  v610 <- v608
+  goto 1248
+1248:
+  v611 <- v434
+  v612 <- v594
+  v613 <- v595
+  v614 <- v604
+  v615 <- v605
+  v616 <- v609
+  v617 <- v610
+  v618 <- v599
+  v619 <- v600
+  v620 <- SpawnParticleEffect(v611, v612, v613, v614, v615, v616, v617, v618, v619, 0.5, 0)
+  v621 <- v620
+  goto 1249
+1249:
+  v622 <- !LevelOption[7]
+  goto 1250 if v622 else 1251
+1250:
+  goto 1268
+1251:
+  goto 1252
+1252:
+  goto 1253
+1253:
+  goto 1254
+1254:
+  v623 <- 0
+  goto 1255
+1255:
+  goto 1256
+1256:
+  goto 1257
+1257:
+  v624 <- v623
+  v625 <- v624 < LevelData[16]
+  goto 1258 if v625 else 1261
+1258:
+  v626 <- v623
+  v627 <- v623
+  v628 <- v627 + 1
+  v623 <- v628
+  goto 1259
+1259:
+  goto 1260
+1260:
+  v629 <- 1
+  goto 1262
+1261:
+  v629 <- 0
+  goto 1262
+1262:
+  goto 1263
+1263:
+  goto 1264 if v629 else 1273
+1264:
+  v630 <- v626 * 9
+  v631 <- 16 + v630
+  v632 <- v631
+  v633 <- LevelData[v632 + 1] == EntityData[0]
+  goto 1265 if v633 else 1272
+1265:
+  goto 1266
+1266:
+  goto 1267
+1267:
+  v636 <- SpawnParticleEffect(0, LevelData[v632 + 2], LevelData[v632 + 3], LevelData[v632 + 4], LevelData[v632 + 5], LevelData[v632 + 6], LevelData[v632 + 7], LevelData[v632 + 8], LevelData[v632 + 9], 0.2, 0)
+  v637 <- v636
+  goto 1268
+1268:
+  goto 1269
+1269:
+  goto 1270
+1270:
+  goto 1271
+1271:
+  goto 1275
+1272:
+  goto 1256
+1273:
+  v634 <- DebugLog(19)
+  v635 <- DebugPause()
+  goto exit
+1274:
+  goto 1275
+1275:
+  EntityDespawn[0] <- 1
+  EntitySharedMemory[2] <- 1
+  goto 1276
+1276:
+  goto 1280
+1277:
+  goto 1278
+1278:
+  EntityInput[0] <- 0
+  EntityInput[1] <- 1
+  v319 <- EntityInput[1]
+  v320 <- v319 * 1000
+  EntityInput[3] <- v320
+  EntityDespawn[0] <- 1
+  EntitySharedMemory[2] <- 1
+  goto 1279
+1279:
+  goto 1280
+1280:
+  goto 1282
+1281:
+  goto 1282
+1282:
+  goto 1285
+1283:
+  v264 <- DebugLog(18)
+  v265 <- DebugPause()
+  goto exit
+1284:
+  goto 1285
+1285:
+  goto 1287
+1286:
+  goto 1287
+1287:
+  goto 1288
+1288:
+  goto 1289
+1289:
+  goto 1886
+1290:
+  v251 <- DebugLog(17)
+  v252 <- DebugPause()
+  goto exit
+1291:
+  v251 <- DebugLog(14)
+  v252 <- DebugPause()
+  goto exit
+1292:
+  v233 <- v228 == 2
+  goto 1293 if v233 else 1294
+1293:
+  goto 1296
+1294:
+  v234 <- v228 == 3
+  goto 1295 if v234 else 1885
+1295:
+  goto 1296
+1296:
+  goto 1297
+1297:
+  goto 1298
+1298:
+  v235 <- EntityData[3] > 0
+  goto 1299
+1299:
+  goto 1300 if v235 else 1318
+1300:
+  goto 1301
+1301:
+  goto 1302
+1302:
+  v236 <- EntityData[16] * 3
+  v237 <- v236
+  v238 <- SwitchWithDefault(EntityInfoArray[v237 + 1], 1, 1, 2, 1, 3, 1, 4, 1, 5, 1, 6, 1, 7, 1, 0)
+  goto 1303 if v238 else 1317
+1303:
+  goto 1304
+1304:
+  goto 1305
+1305:
+  v236 <- EntityData[16] * 32
+  v237 <- 2 + v236
+  v238 <- v237
+  v239 <- EntitySharedMemoryArray[v238]
+  goto 1306 if v239 else 1307
+1306:
+  v243 <- v239
+  goto 1315
+1307:
+  goto 1308
+1308:
+  goto 1309
+1309:
+  v240 <- EntityData[16] * 3
+  v241 <- v240
+  v242 <- SwitchWithDefault(EntityInfoArray[v241 + 1], 1, 1, 2, 1, 3, 1, 4, 1, 5, 1, 6, 1, 7, 1, 0)
+  goto 1310 if v242 else 1316
+1310:
+  goto 1311
+1311:
+  goto 1312
+1312:
+  goto 1313
+1313:
+  v240 <- EntityData[16] * 3
+  v241 <- v240
+  v242 <- EntityInfoArray[v241 + 2] == 2
+  goto 1314
+1314:
+  v243 <- v242
+  goto 1315
+1315:
+  v244 <- !v243
+  v245 <- v244
+  goto 1319
+1316:
+  v243 <- DebugLog(20)
+  v244 <- DebugPause()
+  goto exit
+1317:
+  v239 <- DebugLog(20)
+  v240 <- DebugPause()
+  goto exit
+1318:
+  v245 <- 0
+  goto 1319
+1319:
+  goto 1320 if v245 else 1321
+1320:
+  goto 1881
+1321:
+  goto 1322
+1322:
+  goto 1323
+1323:
+  goto 1324
+1324:
+  v246 <- EntityData[14] <= RuntimeUpdate[0]
+  goto 1325 if v246 else 1326
+1325:
+  v247 <- RuntimeUpdate[0] <= EntityData[15]
+  v248 <- v247
+  goto 1327
+1326:
+  v248 <- 0
+  goto 1327
+1327:
+  goto 1328
+1328:
+  v249 <- !v248
+  goto 1329 if v249 else 1330
+1329:
+  goto 1881
+1330:
+  goto 1331
+1331:
+  v250 <- EntityData[3] > 0
+  goto 1332
+1332:
+  goto 1333 if v250 else 1474
+1333:
+  goto 1334
+1334:
+  goto 1335
+1335:
+  goto 1336
+1336:
+  goto 1337
+1337:
+  goto 1338
+1338:
+  v251 <- EntityData[16] * 3
+  v252 <- v251
+  v253 <- SwitchWithDefault(EntityInfoArray[v252 + 1], 1, 1, 2, 1, 3, 1, 4, 1, 5, 1, 6, 1, 7, 1, 0)
+  goto 1339 if v253 else 1473
+1339:
+  goto 1340
+1340:
+  goto 1341
+1341:
+  v251 <- EntityData[16] * 32
+  v252 <- v251
+  v253 <- EntitySharedMemoryArray[v252]
+  goto 1342
+1342:
+  v254 <- v253 > 0
+  goto 1343
+1343:
+  v255 <- !v254
+  goto 1344 if v255 else 1470
+1344:
+  v276 <- 0
+  goto 1345
+1345:
+  goto 1346
+1346:
+  goto 1347
+1347:
+  v278 <- 0
+  goto 1348
+1348:
+  goto when v276
+    0 -> 1350
+    1 -> 1349
+    default -> 1390
+1349:
+  goto 1389
+1350:
+  goto 1351
+1351:
+  goto 1352
+1352:
+  goto 1353
+1353:
+  v256 <- 0
+  goto 1354
+1354:
+  goto 1355
+1355:
+  goto 1356
+1356:
+  v257 <- v256
+  goto 1357
+1357:
+  goto 1358
+1358:
+  goto 1359
+1359:
+  goto 1360
+1360:
+  v258 <- v257 < RuntimeUpdate[3]
+  goto 1361 if v258 else 1366
+1361:
+  v259 <- v256
+  goto 1362
+1362:
+  v260 <- v259 * 15
+  v261 <- v260
+  goto 1363
+1363:
+  v262 <- v256
+  v263 <- v262 + 1
+  v256 <- v263
+  goto 1364
+1364:
+  goto 1365
+1365:
+  v264 <- 1
+  goto 1367
+1366:
+  v264 <- 0
+  goto 1367
+1367:
+  goto 1368
+1368:
+  goto 1369 if v264 else 1390
+1369:
+  goto 1370
+1370:
+  goto 1371
+1371:
+  goto 1372
+1372:
+  v265 <- 0
+  goto 1373
+1373:
+  goto 1374
+1374:
+  v266 <- LevelMemory[17]
+  goto 1375
+1375:
+  v267 <- v265 < v266
+  goto 1376 if v267 else 1381
+1376:
+  goto 1377
+1377:
+  v268 <- 17 + v265
+  v269 <- v268
+  v270 <- LevelMemory[v269 + 1]
+  goto 1378
+1378:
+  v271 <- v270 == RuntimeTouchArray[v261]
+  goto 1379 if v271 else 1380
+1379:
+  v274 <- 1
+  goto 1382
+1380:
+  v272 <- v265 + 1
+  v273 <- v272
+  v265 <- v273
+  goto 1373
+1381:
+  v274 <- 0
+  goto 1382
+1382:
+  goto 1383
+1383:
+  goto 1384
+1384:
+  goto 1385
+1385:
+  v275 <- !v274
+  goto 1386 if v275 else 1388
+1386:
+  goto 1387
+1387:
+  v276 <- 1
+  v277 <- 1
+  goto 1391
+1388:
+  goto 1389
+1389:
+  goto 1355
+1390:
+  v277 <- 0
+  goto 1391
+1391:
+  goto when v278
+    0 -> 1392
+1392:
+  goto 1393 if v277 else 1468
+1393:
+  goto 1394
+1394:
+  goto 1395
+1395:
+  v279 <- v146
+  a1[0] <- v279
+  v280 <- v147
+  a1[1] <- v280
+  v281 <- v198
+  a1[2] <- v281
+  v282 <- v199
+  a1[3] <- v282
+  v283 <- v224
+  a1[4] <- v283
+  v284 <- v225
+  a1[5] <- v284
+  v285 <- v172
+  a1[6] <- v285
+  v286 <- v173
+  a1[7] <- v286
+  goto 1396
+1396:
+  goto 1397
+1397:
+  goto 1398
+1398:
+  goto 1399
+1399:
+  v287 <- 0
+  v288 <- 0
+  v289 <- 3
+  goto 1400
+1400:
+  goto 1401
+1401:
+  goto 1402
+1402:
+  v290 <- v288 < 4
+  goto 1403 if v290 else 1426
+1403:
+  goto 1404
+1404:
+  v291 <- v288 * 2
+  v292 <- v291
+  goto 1405
+1405:
+  v293 <- a1[v292 + 1]
+  v294 <- v293 > RuntimeTouchArray[v261 + 6]
+  goto 1406
+1406:
+  v295 <- v289 * 2
+  v296 <- v295
+  goto 1407
+1407:
+  v297 <- a1[v296 + 1]
+  v298 <- v297 > RuntimeTouchArray[v261 + 6]
+  v299 <- v294 != v298
+  goto 1408 if v299 else 1421
+1408:
+  goto 1409
+1409:
+  v300 <- v289 * 2
+  v301 <- v300
+  goto 1410
+1410:
+  v302 <- a1[v301]
+  goto 1411
+1411:
+  v303 <- v288 * 2
+  v304 <- v303
+  goto 1412
+1412:
+  v305 <- a1[v304]
+  v306 <- v302 - v305
+  goto 1413
+1413:
+  v307 <- v288 * 2
+  v308 <- v307
+  goto 1414
+1414:
+  v309 <- a1[v308 + 1]
+  v310 <- RuntimeTouchArray[v261 + 6] - v309
+  v311 <- v306 * v310
+  goto 1415
+1415:
+  v312 <- v289 * 2
+  v313 <- v312
+  goto 1416
+1416:
+  v314 <- a1[v313 + 1]
+  goto 1417
+1417:
+  v315 <- v288 * 2
+  v316 <- v315
+  goto 1418
+1418:
+  v317 <- a1[v316 + 1]
+  v318 <- v314 - v317
+  v319 <- v311 / v318
+  goto 1419
+1419:
+  v320 <- v288 * 2
+  v321 <- v320
+  goto 1420
+1420:
+  v322 <- a1[v321]
+  v323 <- v319 + v322
+  v324 <- RuntimeTouchArray[v261 + 5] < v323
+  v325 <- v324
+  goto 1422
+1421:
+  v325 <- 0
+  goto 1422
+1422:
+  goto 1423 if v325 else 1424
+1423:
+  v326 <- !v287
+  v327 <- v326
+  goto 1425
+1424:
+  v327 <- v287
+  goto 1425
+1425:
+  v328 <- v288 + 1
+  v329 <- v327
+  v330 <- v328
+  v331 <- v288
+  v287 <- v329
+  v288 <- v330
+  v289 <- v331
+  goto 1400
+1426:
+  goto 1427
+1427:
+  goto 1428
+1428:
+  v332 <- !v287
+  goto 1429 if v332 else 1430
+1429:
+  goto 1347
+1430:
+  goto 1431 if RuntimeTouchArray[v261 + 2] else 1432
+1431:
+  goto 1347
+1432:
+  goto 1433
+1433:
+  goto 1434
+1434:
+  goto 1435
+1435:
+  v333 <- LevelMemory[17]
+  v334 <- v333 >= 16
+  goto 1436 if v334 else 1437
+1436:
+  v345 <- 0
+  goto 1455
+1437:
+  goto 1438
+1438:
+  v335 <- 0
+  goto 1439
+1439:
+  goto 1440
+1440:
+  v336 <- LevelMemory[17]
+  goto 1441
+1441:
+  v337 <- v335 < v336
+  goto 1442 if v337 else 1447
+1442:
+  goto 1443
+1443:
+  v338 <- 17 + v335
+  v339 <- v338
+  v340 <- LevelMemory[v339 + 1]
+  goto 1444
+1444:
+  v341 <- v340 == RuntimeTouchArray[v261]
+  goto 1445 if v341 else 1446
+1445:
+  v344 <- 1
+  goto 1448
+1446:
+  v342 <- v335 + 1
+  v343 <- v342
+  v335 <- v343
+  goto 1439
+1447:
+  v344 <- 0
+  goto 1448
+1448:
+  goto 1449
+1449:
+  goto 1450 if v344 else 1451
+1450:
+  v345 <- 0
+  goto 1455
+1451:
+  goto 1452
+1452:
+  v345 <- LevelMemory[17]
+  v346 <- v345 < 16
+  goto 1453 if v346 else 1467
+1453:
+  v349 <- LevelMemory[17]
+  v350 <- 17 + v349
+  v351 <- v350
+  LevelMemory[v351 + 1] <- RuntimeTouchArray[v261]
+  v352 <- LevelMemory[17]
+  v353 <- v352 + 1
+  LevelMemory[17] <- v353
+  goto 1454
+1454:
+  v345 <- 1
+  goto 1455
+1455:
+  goto 1456
+1456:
+  goto 1457
+1457:
+  goto 1458
+1458:
+  goto 1459
+1459:
+  goto 1460
+1460:
+  goto 1461
+1461:
+  v333 <- EntityData[16] * 3
+  v334 <- v333
+  v335 <- SwitchWithDefault(EntityInfoArray[v334 + 1], 1, 1, 2, 1, 3, 1, 4, 1, 5, 1, 6, 1, 7, 1, 0)
+  goto 1462 if v335 else 1466
+1462:
+  goto 1463
+1463:
+  goto 1464
+1464:
+  v333 <- EntityData[16] * 32
+  v334 <- v333
+  EntitySharedMemoryArray[v334] <- RuntimeTouchArray[v261]
+  goto 1465
+1465:
+  goto 1469
+1466:
+  v336 <- DebugLog(23)
+  v337 <- DebugPause()
+  goto exit
+1467:
+  v347 <- DebugLog(22)
+  v348 <- DebugPause()
+  goto exit
+1468:
+  goto 1469
+1469:
+  goto 1471
+1470:
+  goto 1471
+1471:
+  goto 1472
+1472:
+  goto 1615
+1473:
+  v254 <- DebugLog(21)
+  v255 <- DebugPause()
+  goto exit
+1474:
+  goto 1475
+1475:
+  goto 1476
+1476:
+  goto 1477
+1477:
+  goto 1478
+1478:
+  goto 1479
+1479:
+  v251 <- EntityData[16] * 3
+  v252 <- v251
+  v253 <- SwitchWithDefault(EntityInfoArray[v252 + 1], 1, 1, 2, 1, 3, 1, 4, 1, 5, 1, 6, 1, 7, 1, 0)
+  goto 1480 if v253 else 1884
+1480:
+  goto 1481
+1481:
+  goto 1482
+1482:
+  v251 <- EntityData[16] * 32
+  v252 <- v251
+  v253 <- EntitySharedMemoryArray[v252]
+  goto 1483
+1483:
+  v254 <- v253 > 0
+  goto 1484
+1484:
+  v255 <- !v254
+  goto 1485 if v255 else 1612
+1485:
+  v277 <- 0
+  goto 1486
+1486:
+  goto 1487
+1487:
+  goto 1488
+1488:
+  v279 <- 0
+  goto 1489
+1489:
+  goto when v277
+    0 -> 1491
+    1 -> 1490
+    default -> 1534
+1490:
+  goto 1533
+1491:
+  goto 1492
+1492:
+  goto 1493
+1493:
+  goto 1494
+1494:
+  v256 <- 0
+  goto 1495
+1495:
+  goto 1496
+1496:
+  goto 1497
+1497:
+  v257 <- v256
+  goto 1498
+1498:
+  goto 1499
+1499:
+  goto 1500
+1500:
+  goto 1501
+1501:
+  v258 <- v257 < RuntimeUpdate[3]
+  goto 1502 if v258 else 1507
+1502:
+  v259 <- v256
+  goto 1503
+1503:
+  v260 <- v259 * 15
+  v261 <- v260
+  goto 1504
+1504:
+  v262 <- v256
+  v263 <- v262 + 1
+  v256 <- v263
+  goto 1505
+1505:
+  goto 1506
+1506:
+  v264 <- 1
+  goto 1508
+1507:
+  v264 <- 0
+  goto 1508
+1508:
+  goto 1509
+1509:
+  goto 1510 if v264 else 1534
+1510:
+  goto 1511 if RuntimeTouchArray[v261 + 1] else 1528
+1511:
+  goto 1512
+1512:
+  goto 1513
+1513:
+  goto 1514
+1514:
+  v265 <- 0
+  goto 1515
+1515:
+  goto 1516
+1516:
+  v266 <- LevelMemory[17]
+  goto 1517
+1517:
+  v267 <- v265 < v266
+  goto 1518 if v267 else 1523
+1518:
+  goto 1519
+1519:
+  v268 <- 17 + v265
+  v269 <- v268
+  v270 <- LevelMemory[v269 + 1]
+  goto 1520
+1520:
+  v271 <- v270 == RuntimeTouchArray[v261]
+  goto 1521 if v271 else 1522
+1521:
+  v274 <- 1
+  goto 1524
+1522:
+  v272 <- v265 + 1
+  v273 <- v272
+  v265 <- v273
+  goto 1515
+1523:
+  v274 <- 0
+  goto 1524
+1524:
+  goto 1525
+1525:
+  goto 1526
+1526:
+  goto 1527
+1527:
+  v275 <- !v274
+  v276 <- v275
+  goto 1529
+1528:
+  v276 <- 0
+  goto 1529
+1529:
+  goto 1530 if v276 else 1532
+1530:
+  goto 1531
+1531:
+  v277 <- 1
+  v278 <- 1
+  goto 1535
+1532:
+  goto 1533
+1533:
+  goto 1496
+1534:
+  v278 <- 0
+  goto 1535
+1535:
+  goto when v279
+    0 -> 1536
+1536:
+  goto 1537 if v278 else 1610
+1537:
+  goto 1538
+1538:
+  goto 1539
+1539:
+  v280 <- v146
+  a1[0] <- v280
+  v281 <- v147
+  a1[1] <- v281
+  v282 <- v198
+  a1[2] <- v282
+  v283 <- v199
+  a1[3] <- v283
+  v284 <- v224
+  a1[4] <- v284
+  v285 <- v225
+  a1[5] <- v285
+  v286 <- v172
+  a1[6] <- v286
+  v287 <- v173
+  a1[7] <- v287
+  goto 1540
+1540:
+  goto 1541
+1541:
+  goto 1542
+1542:
+  goto 1543
+1543:
+  v288 <- 0
+  v289 <- 0
+  v290 <- 3
+  goto 1544
+1544:
+  goto 1545
+1545:
+  goto 1546
+1546:
+  v291 <- v289 < 4
+  goto 1547 if v291 else 1570
+1547:
+  goto 1548
+1548:
+  v292 <- v289 * 2
+  v293 <- v292
+  goto 1549
+1549:
+  v294 <- a1[v293 + 1]
+  v295 <- v294 > RuntimeTouchArray[v261 + 6]
+  goto 1550
+1550:
+  v296 <- v290 * 2
+  v297 <- v296
+  goto 1551
+1551:
+  v298 <- a1[v297 + 1]
+  v299 <- v298 > RuntimeTouchArray[v261 + 6]
+  v300 <- v295 != v299
+  goto 1552 if v300 else 1565
+1552:
+  goto 1553
+1553:
+  v301 <- v290 * 2
+  v302 <- v301
+  goto 1554
+1554:
+  v303 <- a1[v302]
+  goto 1555
+1555:
+  v304 <- v289 * 2
+  v305 <- v304
+  goto 1556
+1556:
+  v306 <- a1[v305]
+  v307 <- v303 - v306
+  goto 1557
+1557:
+  v308 <- v289 * 2
+  v309 <- v308
+  goto 1558
+1558:
+  v310 <- a1[v309 + 1]
+  v311 <- RuntimeTouchArray[v261 + 6] - v310
+  v312 <- v307 * v311
+  goto 1559
+1559:
+  v313 <- v290 * 2
+  v314 <- v313
+  goto 1560
+1560:
+  v315 <- a1[v314 + 1]
+  goto 1561
+1561:
+  v316 <- v289 * 2
+  v317 <- v316
+  goto 1562
+1562:
+  v318 <- a1[v317 + 1]
+  v319 <- v315 - v318
+  v320 <- v312 / v319
+  goto 1563
+1563:
+  v321 <- v289 * 2
+  v322 <- v321
+  goto 1564
+1564:
+  v323 <- a1[v322]
+  v324 <- v320 + v323
+  v325 <- RuntimeTouchArray[v261 + 5] < v324
+  v326 <- v325
+  goto 1566
+1565:
+  v326 <- 0
+  goto 1566
+1566:
+  goto 1567 if v326 else 1568
+1567:
+  v327 <- !v288
+  v328 <- v327
+  goto 1569
+1568:
+  v328 <- v288
+  goto 1569
+1569:
+  v329 <- v289 + 1
+  v330 <- v328
+  v331 <- v329
+  v332 <- v289
+  v288 <- v330
+  v289 <- v331
+  v290 <- v332
+  goto 1544
+1570:
+  goto 1571
+1571:
+  goto 1572
+1572:
+  v333 <- !v288
+  goto 1573 if v333 else 1574
+1573:
+  goto 1488
+1574:
+  goto 1575
+1575:
+  goto 1576
+1576:
+  goto 1577
+1577:
+  v334 <- LevelMemory[17]
+  v335 <- v334 >= 16
+  goto 1578 if v335 else 1579
+1578:
+  v346 <- 0
+  goto 1597
+1579:
+  goto 1580
+1580:
+  v336 <- 0
+  goto 1581
+1581:
+  goto 1582
+1582:
+  v337 <- LevelMemory[17]
+  goto 1583
+1583:
+  v338 <- v336 < v337
+  goto 1584 if v338 else 1589
+1584:
+  goto 1585
+1585:
+  v339 <- 17 + v336
+  v340 <- v339
+  v341 <- LevelMemory[v340 + 1]
+  goto 1586
+1586:
+  v342 <- v341 == RuntimeTouchArray[v261]
+  goto 1587 if v342 else 1588
+1587:
+  v345 <- 1
+  goto 1590
+1588:
+  v343 <- v336 + 1
+  v344 <- v343
+  v336 <- v344
+  goto 1581
+1589:
+  v345 <- 0
+  goto 1590
+1590:
+  goto 1591
+1591:
+  goto 1592 if v345 else 1593
+1592:
+  v346 <- 0
+  goto 1597
+1593:
+  goto 1594
+1594:
+  v346 <- LevelMemory[17]
+  v347 <- v346 < 16
+  goto 1595 if v347 else 1609
+1595:
+  v350 <- LevelMemory[17]
+  v351 <- 17 + v350
+  v352 <- v351
+  LevelMemory[v352 + 1] <- RuntimeTouchArray[v261]
+  v353 <- LevelMemory[17]
+  v354 <- v353 + 1
+  LevelMemory[17] <- v354
+  goto 1596
+1596:
+  v346 <- 1
+  goto 1597
+1597:
+  goto 1598
+1598:
+  goto 1599
+1599:
+  goto 1600
+1600:
+  goto 1601
+1601:
+  goto 1602
+1602:
+  goto 1603
+1603:
+  v334 <- EntityData[16] * 3
+  v335 <- v334
+  v336 <- SwitchWithDefault(EntityInfoArray[v335 + 1], 1, 1, 2, 1, 3, 1, 4, 1, 5, 1, 6, 1, 7, 1, 0)
+  goto 1604 if v336 else 1608
+1604:
+  goto 1605
+1605:
+  goto 1606
+1606:
+  v334 <- EntityData[16] * 32
+  v335 <- v334
+  EntitySharedMemoryArray[v335] <- RuntimeTouchArray[v261]
+  goto 1607
+1607:
+  goto 1611
+1608:
+  v337 <- DebugLog(26)
+  v338 <- DebugPause()
+  goto exit
+1609:
+  v348 <- DebugLog(25)
+  v349 <- DebugPause()
+  goto exit
+1610:
+  goto 1611
+1611:
+  goto 1613
+1612:
+  goto 1613
+1613:
+  goto 1614
+1614:
+  goto 1615
+1615:
+  goto 1616
+1616:
+  goto 1617
+1617:
+  goto 1618
+1618:
+  goto 1619
+1619:
+  v251 <- EntityData[16] * 3
+  v252 <- v251
+  v253 <- SwitchWithDefault(EntityInfoArray[v252 + 1], 1, 1, 2, 1, 3, 1, 4, 1, 5, 1, 6, 1, 7, 1, 0)
+  goto 1620 if v253 else 1883
+1620:
+  goto 1621
+1621:
+  goto 1622
+1622:
+  v251 <- EntityData[16] * 32
+  v252 <- v251
+  v253 <- EntitySharedMemoryArray[v252]
+  goto 1623
+1623:
+  v254 <- v253 > 0
+  goto 1624
+1624:
+  goto 1625 if v254 else 1879
+1625:
+  goto 1626
+1626:
+  goto 1627
+1627:
+  goto 1628
+1628:
+  v255 <- 0
+  goto 1629
+1629:
+  goto 1630
+1630:
+  goto 1631
+1631:
+  v256 <- v255
+  goto 1632
+1632:
+  goto 1633
+1633:
+  goto 1634
+1634:
+  goto 1635
+1635:
+  v257 <- v256 < RuntimeUpdate[3]
+  goto 1636 if v257 else 1641
+1636:
+  v258 <- v255
+  goto 1637
+1637:
+  v259 <- v258 * 15
+  v260 <- v259
+  goto 1638
+1638:
+  v261 <- v255
+  v262 <- v261 + 1
+  v255 <- v262
+  goto 1639
+1639:
+  goto 1640
+1640:
+  v263 <- 1
+  goto 1642
+1641:
+  v263 <- 0
+  goto 1642
+1642:
+  goto 1643
+1643:
+  goto 1644 if v263 else 1877
+1644:
+  goto 1645
+1645:
+  goto 1646
+1646:
+  goto 1647
+1647:
+  v264 <- EntityData[16] * 3
+  v265 <- v264
+  v266 <- SwitchWithDefault(EntityInfoArray[v265 + 1], 1, 1, 2, 1, 3, 1, 4, 1, 5, 1, 6, 1, 7, 1, 0)
+  goto 1648 if v266 else 1876
+1648:
+  goto 1649
+1649:
+  goto 1650
+1650:
+  v264 <- EntityData[16] * 32
+  v265 <- v264
+  v266 <- EntitySharedMemoryArray[v265]
+  goto 1651
+1651:
+  v267 <- RuntimeTouchArray[v260] != v266
+  goto 1652 if v267 else 1653
+1652:
+  goto 1630
+1653:
+  goto 1654
+1654:
+  v268 <- EntityData[2] == 0
+  goto 1655 if v268 else 1656
+1655:
+  v269 <- 6 * LevelData[12]
+  v274 <- v269
+  goto 1657
+1656:
+  v270 <- Abs(EntityData[2])
+  v271 <- 2 * v270
+  v272 <- 2 + v271
+  v273 <- v272 * LevelData[12]
+  v274 <- v273
+  goto 1657
+1657:
+  goto 1658
+1658:
+  v275 <- RuntimeTouchArray[v260 + 13] >= v274
+  v276 <- EntityData[2] == 0
+  goto 1659 if v276 else 1660
+1659:
+  v285 <- v276
+  goto 1661
+1660:
+  v277 <- EntityData[2]
+  v278 <- 0
+  v279 <- v277
+  v280 <- RuntimeTouchArray[v260 + 11] * v279
+  v281 <- v278
+  v282 <- RuntimeTouchArray[v260 + 12] * v281
+  v283 <- v280 + v282
+  v284 <- v283 > 0
+  v285 <- v284
+  goto 1661
+1661:
+  goto 1662
+1662:
+  goto 1663
+1663:
+  v286 <- v146
+  a1[0] <- v286
+  v287 <- v147
+  a1[1] <- v287
+  v288 <- v198
+  a1[2] <- v288
+  v289 <- v199
+  a1[3] <- v289
+  v290 <- v224
+  a1[4] <- v290
+  v291 <- v225
+  a1[5] <- v291
+  v292 <- v172
+  a1[6] <- v292
+  v293 <- v173
+  a1[7] <- v293
+  goto 1664
+1664:
+  goto 1665
+1665:
+  goto 1666
+1666:
+  goto 1667
+1667:
+  v294 <- 0
+  v295 <- 0
+  v296 <- 3
+  goto 1668
+1668:
+  goto 1669
+1669:
+  goto 1670
+1670:
+  v297 <- v295 < 4
+  goto 1671 if v297 else 1694
+1671:
+  goto 1672
+1672:
+  v298 <- v295 * 2
+  v299 <- v298
+  goto 1673
+1673:
+  v300 <- a1[v299 + 1]
+  v301 <- v300 > RuntimeTouchArray[v260 + 6]
+  goto 1674
+1674:
+  v302 <- v296 * 2
+  v303 <- v302
+  goto 1675
+1675:
+  v304 <- a1[v303 + 1]
+  v305 <- v304 > RuntimeTouchArray[v260 + 6]
+  v306 <- v301 != v305
+  goto 1676 if v306 else 1689
+1676:
+  goto 1677
+1677:
+  v307 <- v296 * 2
+  v308 <- v307
+  goto 1678
+1678:
+  v309 <- a1[v308]
+  goto 1679
+1679:
+  v310 <- v295 * 2
+  v311 <- v310
+  goto 1680
+1680:
+  v312 <- a1[v311]
+  v313 <- v309 - v312
+  goto 1681
+1681:
+  v314 <- v295 * 2
+  v315 <- v314
+  goto 1682
+1682:
+  v316 <- a1[v315 + 1]
+  v317 <- RuntimeTouchArray[v260 + 6] - v316
+  v318 <- v313 * v317
+  goto 1683
+1683:
+  v319 <- v296 * 2
+  v320 <- v319
+  goto 1684
+1684:
+  v321 <- a1[v320 + 1]
+  goto 1685
+1685:
+  v322 <- v295 * 2
+  v323 <- v322
+  goto 1686
+1686:
+  v324 <- a1[v323 + 1]
+  v325 <- v321 - v324
+  v326 <- v318 / v325
+  goto 1687
+1687:
+  v327 <- v295 * 2
+  v328 <- v327
+  goto 1688
+1688:
+  v329 <- a1[v328]
+  v330 <- v326 + v329
+  v331 <- RuntimeTouchArray[v260 + 5] < v330
+  v332 <- v331
+  goto 1690
+1689:
+  v332 <- 0
+  goto 1690
+1690:
+  goto 1691 if v332 else 1692
+1691:
+  v333 <- !v294
+  v334 <- v333
+  goto 1693
+1692:
+  v334 <- v294
+  goto 1693
+1693:
+  v335 <- v295 + 1
+  v336 <- v334
+  v337 <- v335
+  v338 <- v295
+  v294 <- v336
+  v295 <- v337
+  v296 <- v338
+  goto 1668
+1694:
+  goto 1695
+1695:
+  goto 1696
+1696:
+  goto 1697 if v294 else 1701
+1697:
+  goto 1698 if v275 else 1699
+1698:
+  v339 <- v285
+  goto 1700
+1699:
+  v339 <- 0
+  goto 1700
+1700:
+  v340 <- v339
+  goto 1702
+1701:
+  v340 <- 0
+  goto 1702
+1702:
+  goto 1703 if v340 else 1709
+1703:
+  goto 1704
+1704:
+  v341 <- EntityMemory[0]
+  v342 <- v341 - EntityData[11]
+  v343 <- Abs(v342)
+  v344 <- RuntimeUpdate[0] - RuntimeEnvironment[3]
+  v345 <- v344 - EntityData[11]
+  v346 <- Abs(v345)
+  v347 <- v346 < v343
+  goto 1705 if v347 else 1706
+1705:
+  v348 <- RuntimeUpdate[0] - RuntimeEnvironment[3]
+  EntityMemory[0] <- v348
+  goto 1707
+1706:
+  goto 1707
+1707:
+  goto 1708
+1708:
+  goto 1710
+1709:
+  goto 1710
+1710:
+  goto 1711 if RuntimeTouchArray[v260 + 2] else 1712
+1711:
+  v343 <- RuntimeTouchArray[v260 + 2]
+  goto 1713
+1712:
+  v341 <- EntityMemory[0]
+  v342 <- v341 >= EntityData[11]
+  v343 <- v342
+  goto 1713
+1713:
+  goto 1714 if v343 else 1874
+1714:
+  v344 <- EntityMemory[0]
+  goto 1715
+1715:
+  goto 1716
+1716:
+  goto 1717
+1717:
+  goto 1718
+1718:
+  goto 1719
+1719:
+  goto 1720
+1720:
+  goto 1721
+1721:
+  goto 1722
+1722:
+  v345 <- Judge(v344, EntityData[11], EntityData[5], EntityData[6], EntityData[7], EntityData[8], EntityData[9], EntityData[10])
+  goto 1723
+1723:
+  EntityInput[0] <- v345
+  v346 <- v344 - EntityData[11]
+  v347 <- Clamp(v346, -1, 1)
+  EntityInput[1] <- v347
+  v348 <- EntityInput[1]
+  v349 <- v348 * 1000
+  EntityInput[3] <- v349
+  v350 <- v345 != 0
+  goto 1724 if v350 else 1871
+1724:
+  v351 <- !LevelOption[11]
+  goto 1725 if v351 else 1759
+1725:
+  goto 1726
+1726:
+  v352 <- 3 + EntityInfo[1]
+  v353 <- v352
+  v354 <- EngineRom[v353]
+  goto 1727
+1727:
+  goto 1728
+1728:
+  goto 1729
+1729:
+  goto 1730
+1730:
+  v355 <- !LevelOption[10]
+  goto 1731 if v355 else 1732
+1731:
+  goto 1757
+1732:
+  v356 <- v354 == 6
+  goto 1733 if v356 else 1734
+1733:
+  goto 1757
+1734:
+  goto 1735
+1735:
+  v357 <- 0
+  v358 <- v354 == 2
+  goto 1736 if v358 else 1737
+1736:
+  goto 1739
+1737:
+  v359 <- v354 == 3
+  goto 1738 if v359 else 1747
+1738:
+  goto 1739
+1739:
+  v360 <- v345 == 1
+  goto 1740 if v360 else 1741
+1740:
+  v357 <- 4
+  goto 1746
+1741:
+  v361 <- v345 == 2
+  goto 1742 if v361 else 1743
+1742:
+  v357 <- 5
+  goto 1746
+1743:
+  v362 <- v345 == 3
+  goto 1744 if v362 else 1745
+1744:
+  v357 <- 6
+  goto 1746
+1745:
+  goto 1746
+1746:
+  goto 1755
+1747:
+  v363 <- v345 == 1
+  goto 1748 if v363 else 1749
+1748:
+  v357 <- 1
+  goto 1754
+1749:
+  v364 <- v345 == 2
+  goto 1750 if v364 else 1751
+1750:
+  v357 <- 2
+  goto 1754
+1751:
+  v365 <- v345 == 3
+  goto 1752 if v365 else 1753
+1752:
+  v357 <- 3
+  goto 1754
+1753:
+  goto 1754
+1754:
+  goto 1755
+1755:
+  goto 1756
+1756:
+  v366 <- v357
+  v367 <- Play(v366, 0)
+  goto 1757
+1757:
+  goto 1758
+1758:
+  goto 1760
+1759:
+  goto 1760
+1760:
+  goto 1761
+1761:
+  v355 <- 3 + EntityInfo[1]
+  v356 <- v355
+  v357 <- EngineRom[v356]
+  goto 1762
+1762:
+  goto 1763
+1763:
+  goto 1764
+1764:
+  goto 1765
+1765:
+  v358 <- v357 == 6
+  goto 1766 if v358 else 1767
+1766:
+  goto 1867
+1767:
+  v359 <- !LevelOption[6]
+  goto 1768 if v359 else 1769
+1768:
+  goto 1867
+1769:
+  goto 1770
+1770:
+  v360 <- 0
+  v361 <- v357 == 1
+  goto 1771 if v361 else 1772
+1771:
+  v360 <- 1
+  goto 1787
+1772:
+  v362 <- v357 == 2
+  goto 1773 if v362 else 1774
+1773:
+  v360 <- 6
+  goto 1787
+1774:
+  v363 <- v357 == 3
+  goto 1775 if v363 else 1779
+1775:
+  v364 <- EntityData[2] > 0
+  goto 1776 if v364 else 1777
+1776:
+  v360 <- 8
+  goto 1778
+1777:
+  v360 <- 10
+  goto 1778
+1778:
+  goto 1787
+1779:
+  v365 <- v357 == 4
+  goto 1780 if v365 else 1781
+1780:
+  goto 1785
+1781:
+  v366 <- v357 == 5
+  goto 1782 if v366 else 1783
+1782:
+  goto 1785
+1783:
+  v367 <- v357 == 7
+  goto 1784 if v367 else 1786
+1784:
+  goto 1785
+1785:
+  v360 <- 3
+  goto 1787
+1786:
+  goto 1787
+1787:
+  goto 1788
+1788:
+  goto 1789
+1789:
+  goto 1790
+1790:
+  v368 <- EntityData[0] * LevelData[12]
+  goto 1791
+1791:
+  v369 <- LevelData[11] / 2
+  v370 <- v368 - v369
+  v371 <- v370
+  v372 <- 0
+  goto 1792
+1792:
+  goto 1793
+1793:
+  v373 <- v371
+  v374 <- LevelData[2] * v373
+  v375 <- v372
+  v376 <- LevelData[3] * v375
+  v377 <- v374 + v376
+  v378 <- v377 + LevelData[4]
+  v379 <- v371
+  v380 <- LevelData[5] * v379
+  v381 <- v372
+  v382 <- LevelData[6] * v381
+  v383 <- v380 + v382
+  v384 <- v383 + LevelData[7]
+  v385 <- v371
+  v386 <- LevelData[8] * v385
+  v387 <- v372
+  v388 <- LevelData[9] * v387
+  v389 <- v386 + v388
+  v390 <- v389 + LevelData[10]
+  v391 <- v378 / v390
+  v392 <- v384 / v390
+  v393 <- v391
+  v394 <- v392
+  goto 1794
+1794:
+  goto 1795
+1795:
+  v395 <- LevelData[11] / 2
+  v396 <- v368 + v395
+  v397 <- v396
+  v398 <- 0
+  goto 1796
+1796:
+  goto 1797
+1797:
+  v399 <- v397
+  v400 <- LevelData[2] * v399
+  v401 <- v398
+  v402 <- LevelData[3] * v401
+  v403 <- v400 + v402
+  v404 <- v403 + LevelData[4]
+  v405 <- v397
+  v406 <- LevelData[5] * v405
+  v407 <- v398
+  v408 <- LevelData[6] * v407
+  v409 <- v406 + v408
+  v410 <- v409 + LevelData[7]
+  v411 <- v397
+  v412 <- LevelData[8] * v411
+  v413 <- v398
+  v414 <- LevelData[9] * v413
+  v415 <- v412 + v414
+  v416 <- v415 + LevelData[10]
+  v417 <- v404 / v416
+  v418 <- v410 / v416
+  v419 <- v417
+  v420 <- v418
+  goto 1798
+1798:
+  goto 1799
+1799:
+  v421 <- v419
+  v422 <- v393
+  v423 <- v421 - v422
+  v424 <- v420
+  v425 <- v394
+  v426 <- v424 - v425
+  v427 <- v423
+  v428 <- Power(v427, 2)
+  v429 <- v426
+  v430 <- Power(v429, 2)
+  v431 <- v428 + v430
+  v432 <- Power(v431, 0.5)
+  v433 <- 0
+  v434 <- v432
+  v435 <- v393
+  v436 <- v433
+  v437 <- v435 + v436
+  v438 <- v394
+  v439 <- v434
+  v440 <- v438 + v439
+  v441 <- 0
+  v442 <- v432
+  v443 <- v419
+  v444 <- v441
+  v445 <- v443 + v444
+  v446 <- v420
+  v447 <- v442
+  v448 <- v446 + v447
+  goto 1800
+1800:
+  v449 <- v360
+  v450 <- v393
+  v451 <- v394
+  v452 <- v437
+  v453 <- v440
+  v454 <- v445
+  v455 <- v448
+  v456 <- v419
+  v457 <- v420
+  v458 <- SpawnParticleEffect(v449, v450, v451, v452, v453, v454, v455, v456, v457, 0.5, 0)
+  v459 <- v458
+  goto 1801
+1801:
+  v460 <- 0
+  v461 <- v357 == 1
+  goto 1802 if v461 else 1803
+1802:
+  v460 <- 2
+  goto 1818
+1803:
+  v462 <- v357 == 2
+  goto 1804 if v462 else 1805
+1804:
+  v460 <- 7
+  goto 1818
+1805:
+  v463 <- v357 == 3
+  goto 1806 if v463 else 1810
+1806:
+  v464 <- EntityData[2] > 0
+  goto 1807 if v464 else 1808
+1807:
+  v460 <- 9
+  goto 1809
+1808:
+  v460 <- 11
+  goto 1809
+1809:
+  goto 1818
+1810:
+  v465 <- v357 == 4
+  goto 1811 if v465 else 1812
+1811:
+  goto 1816
+1812:
+  v466 <- v357 == 5
+  goto 1813 if v466 else 1814
+1813:
+  goto 1816
+1814:
+  v467 <- v357 == 7
+  goto 1815 if v467 else 1817
+1815:
+  goto 1816
+1816:
+  v460 <- 4
+  goto 1818
+1817:
+  goto 1818
+1818:
+  goto 1819
+1819:
+  goto 1820
+1820:
+  goto 1821
+1821:
+  v468 <- EntityData[0] * LevelData[12]
+  goto 1822
+1822:
+  v469 <- v468
+  v470 <- 0
+  v471 <- LevelData[11]
+  v472 <- LevelData[11]
+  v473 <- v471
+  v474 <- v473 * 1.8
+  v475 <- v472
+  v476 <- v475 * 1.8
+  goto 1823
+1823:
+  v477 <- v470
+  v478 <- v476
+  v479 <- v478 / 2
+  v480 <- v477 + v479
+  v481 <- v469
+  v482 <- v474
+  v483 <- v482 / 2
+  v484 <- v481 + v483
+  v485 <- v470
+  v486 <- v476
+  v487 <- v486 / 2
+  v488 <- v485 - v487
+  v489 <- v469
+  v490 <- v474
+  v491 <- v490 / 2
+  v492 <- v489 - v491
+  v493 <- v480
+  v494 <- v484
+  v495 <- v488
+  v496 <- v492
+  goto 1824
+1824:
+  goto 1825
+1825:
+  goto 1826
+1826:
+  goto 1827
+1827:
+  v497 <- v496
+  v498 <- v495
+  v499 <- v497
+  v500 <- v498
+  goto 1828
+1828:
+  goto 1829
+1829:
+  v501 <- v499
+  v502 <- LevelData[2] * v501
+  v503 <- v500
+  v504 <- LevelData[3] * v503
+  v505 <- v502 + v504
+  v506 <- v505 + LevelData[4]
+  v507 <- v499
+  v508 <- LevelData[5] * v507
+  v509 <- v500
+  v510 <- LevelData[6] * v509
+  v511 <- v508 + v510
+  v512 <- v511 + LevelData[7]
+  v513 <- v499
+  v514 <- LevelData[8] * v513
+  v515 <- v500
+  v516 <- LevelData[9] * v515
+  v517 <- v514 + v516
+  v518 <- v517 + LevelData[10]
+  v519 <- v506 / v518
+  v520 <- v512 / v518
+  v521 <- v519
+  v522 <- v520
+  goto 1830
+1830:
+  goto 1831
+1831:
+  v523 <- v494
+  v524 <- v495
+  v525 <- v523
+  v526 <- v524
+  goto 1832
+1832:
+  goto 1833
+1833:
+  v527 <- v525
+  v528 <- LevelData[2] * v527
+  v529 <- v526
+  v530 <- LevelData[3] * v529
+  v531 <- v528 + v530
+  v532 <- v531 + LevelData[4]
+  v533 <- v525
+  v534 <- LevelData[5] * v533
+  v535 <- v526
+  v536 <- LevelData[6] * v535
+  v537 <- v534 + v536
+  v538 <- v537 + LevelData[7]
+  v539 <- v525
+  v540 <- LevelData[8] * v539
+  v541 <- v526
+  v542 <- LevelData[9] * v541
+  v543 <- v540 + v542
+  v544 <- v543 + LevelData[10]
+  v545 <- v532 / v544
+  v546 <- v538 / v544
+  v547 <- v545
+  v548 <- v546
+  goto 1834
+1834:
+  goto 1835
+1835:
+  v549 <- v496
+  v550 <- v493
+  v551 <- v549
+  v552 <- v550
+  goto 1836
+1836:
+  goto 1837
+1837:
+  v553 <- v551
+  v554 <- LevelData[2] * v553
+  v555 <- v552
+  v556 <- LevelData[3] * v555
+  v557 <- v554 + v556
+  v558 <- v557 + LevelData[4]
+  v559 <- v551
+  v560 <- LevelData[5] * v559
+  v561 <- v552
+  v562 <- LevelData[6] * v561
+  v563 <- v560 + v562
+  v564 <- v563 + LevelData[7]
+  v565 <- v551
+  v566 <- LevelData[8] * v565
+  v567 <- v552
+  v568 <- LevelData[9] * v567
+  v569 <- v566 + v568
+  v570 <- v569 + LevelData[10]
+  v571 <- v558 / v570
+  v572 <- v564 / v570
+  v573 <- v571
+  v574 <- v572
+  goto 1838
+1838:
+  goto 1839
+1839:
+  v575 <- v494
+  v576 <- v493
+  v577 <- v575
+  v578 <- v576
+  goto 1840
+1840:
+  goto 1841
+1841:
+  v579 <- v577
+  v580 <- LevelData[2] * v579
+  v581 <- v578
+  v582 <- LevelData[3] * v581
+  v583 <- v580 + v582
+  v584 <- v583 + LevelData[4]
+  v585 <- v577
+  v586 <- LevelData[5] * v585
+  v587 <- v578
+  v588 <- LevelData[6] * v587
+  v589 <- v586 + v588
+  v590 <- v589 + LevelData[7]
+  v591 <- v577
+  v592 <- LevelData[8] * v591
+  v593 <- v578
+  v594 <- LevelData[9] * v593
+  v595 <- v592 + v594
+  v596 <- v595 + LevelData[10]
+  v597 <- v584 / v596
+  v598 <- v590 / v596
+  v599 <- v597
+  v600 <- v598
+  goto 1842
+1842:
+  goto 1843
+1843:
+  goto 1844
+1844:
+  v601 <- v599
+  v602 <- v573
+  v603 <- v601 - v602
+  v604 <- v547
+  v605 <- v603 + v604
+  v606 <- v521
+  v607 <- v605 - v606
+  v608 <- v607 / 2
+  v609 <- v573
+  v610 <- v599
+  v611 <- v609 + v610
+  v612 <- v611 / 2
+  v613 <- v521
+  v614 <- v547
+  v615 <- v613 + v614
+  v616 <- v615 / 2
+  v617 <- v608 / 2
+  v618 <- v616 - v617
+  v619 <- v522
+  v620 <- v618
+  v621 <- v619
+  v622 <- v608 / 2
+  v623 <- v616 + v622
+  v624 <- v548
+  v625 <- v623
+  v626 <- v624
+  v627 <- v608 / 2
+  v628 <- v612 - v627
+  v629 <- v574
+  v630 <- v628
+  v631 <- v629
+  v632 <- v608 / 2
+  v633 <- v612 + v632
+  v634 <- v600
+  v635 <- v633
+  v636 <- v634
+  goto 1845
+1845:
+  v637 <- v460
+  v638 <- v620
+  v639 <- v621
+  v640 <- v630
+  v641 <- v631
+  v642 <- v635
+  v643 <- v636
+  v644 <- v625
+  v645 <- v626
+  v646 <- SpawnParticleEffect(v637, v638, v639, v640, v641, v642, v643, v644, v645, 0.5, 0)
+  v647 <- v646
+  goto 1846
+1846:
+  v648 <- !LevelOption[7]
+  goto 1847 if v648 else 1848
+1847:
+  goto 1865
+1848:
+  goto 1849
+1849:
+  goto 1850
+1850:
+  goto 1851
+1851:
+  v649 <- 0
+  goto 1852
+1852:
+  goto 1853
+1853:
+  goto 1854
+1854:
+  v650 <- v649
+  v651 <- v650 < LevelData[16]
+  goto 1855 if v651 else 1858
+1855:
+  v652 <- v649
+  v653 <- v649
+  v654 <- v653 + 1
+  v649 <- v654
+  goto 1856
+1856:
+  goto 1857
+1857:
+  v655 <- 1
+  goto 1859
+1858:
+  v655 <- 0
+  goto 1859
+1859:
+  goto 1860
+1860:
+  goto 1861 if v655 else 1870
+1861:
+  v656 <- v652 * 9
+  v657 <- 16 + v656
+  v658 <- v657
+  v659 <- LevelData[v658 + 1] == EntityData[0]
+  goto 1862 if v659 else 1869
+1862:
+  goto 1863
+1863:
+  goto 1864
+1864:
+  v662 <- SpawnParticleEffect(0, LevelData[v658 + 2], LevelData[v658 + 3], LevelData[v658 + 4], LevelData[v658 + 5], LevelData[v658 + 6], LevelData[v658 + 7], LevelData[v658 + 8], LevelData[v658 + 9], 0.2, 0)
+  v663 <- v662
+  goto 1865
+1865:
+  goto 1866
+1866:
+  goto 1867
+1867:
+  goto 1868
+1868:
+  goto 1872
+1869:
+  goto 1853
+1870:
+  v660 <- DebugLog(29)
+  v661 <- DebugPause()
+  goto exit
+1871:
+  goto 1872
+1872:
+  EntityDespawn[0] <- 1
+  EntitySharedMemory[2] <- 1
+  goto 1873
+1873:
+  goto 1875
+1874:
+  goto 1875
+1875:
+  goto 1878
+1876:
+  v267 <- DebugLog(28)
+  v268 <- DebugPause()
+  goto exit
+1877:
+  goto 1878
+1878:
+  goto 1880
+1879:
+  goto 1880
+1880:
+  goto 1881
+1881:
+  goto 1882
+1882:
+  goto 1886
+1883:
+  v254 <- DebugLog(27)
+  v255 <- DebugPause()
+  goto exit
+1884:
+  v254 <- DebugLog(24)
+  v255 <- DebugPause()
+  goto exit
+1885:
+  goto 1886
+1886:
+  goto 1887
+1887:
+  goto 1888
+1888:
+  goto exit

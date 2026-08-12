@@ -11,6 +11,7 @@ from sonolus.backend.ops import Op
 from sonolus.backend.place import BlockPlace
 from sonolus.script.internal.context import ctx
 from sonolus.script.internal.error import InternalError
+from sonolus.script.internal.introspection import describe_value
 from sonolus.script.internal.simple_meta_fn import simple_meta_fn
 from sonolus.script.internal.value import BackingValue, DataValue, ExprBackingValue, Value
 
@@ -92,7 +93,7 @@ class _Num(Value, metaclass=_NumMeta):
             return value
         if isinstance(value, _FLOAT_INT_BOOL):
             return cls(value)
-        raise TypeError(f"Cannot accept {value}")
+        raise TypeError(f"Cannot accept value {describe_value(value)} as {cls.__name__}")
 
     def _is_rom_constant(self) -> bool:
         d = self.data
@@ -329,7 +330,12 @@ class _Num(Value, metaclass=_NumMeta):
             a_py = a._as_py_or_none()
             b_py = b._as_py_or_none()
             if a_py is not None and b_py is not None:
-                return Num(a_py + b_py)
+                try:
+                    return Num(a_py + b_py)
+                except OverflowError:
+                    # Integral operands fold as exact ints, so a result outside the float range raises here.
+                    # Defer to the runtime op instead, the same guard __pow__ carries.
+                    return None
             if a_py == 0:
                 return b
             if b_py == 0:
@@ -344,7 +350,10 @@ class _Num(Value, metaclass=_NumMeta):
             a_py = a._as_py_or_none()
             b_py = b._as_py_or_none()
             if a_py is not None and b_py is not None:
-                return Num(a_py - b_py)
+                try:
+                    return Num(a_py - b_py)
+                except OverflowError:
+                    return None
             if a_py == 0:
                 return -b
             if b_py == 0:
@@ -359,7 +368,10 @@ class _Num(Value, metaclass=_NumMeta):
             a_py = a._as_py_or_none()
             b_py = b._as_py_or_none()
             if a_py is not None and b_py is not None:
-                return Num(a_py * b_py)
+                try:
+                    return Num(a_py * b_py)
+                except OverflowError:
+                    return None
             if a_py == 0 or b_py == 0:
                 return Num(0)
             if a_py == 1:

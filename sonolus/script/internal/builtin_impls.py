@@ -1,3 +1,7 @@
+import builtins
+import inspect
+import math
+import random as pyrandom
 from enum import Enum
 from types import FunctionType
 from typing import Any, Never, assert_never
@@ -36,8 +40,8 @@ def _type_name(value) -> str:
     """A readable type name for a value, for use in error messages.
 
     `type(value).__name__` is not usable directly: a compile-time constant is wrapped in a per-value ConstantValue
-    subclass whose name embeds `object.__repr__` of the wrapped value, memory address included, and DictImpl and
-    SetImpl are generics whose type arguments spell out the same wrappers.
+    subclass named after the wrapped value rather than after its type, and DictImpl and SetImpl are generics whose
+    type arguments spell out the same wrappers.
     """
     from sonolus.script.internal.constant import ConstantValue
 
@@ -740,6 +744,18 @@ def _all(iterable):
     return True
 
 
+def contains_by_iteration(item, iterable):
+    """Membership by scanning `iterable`, for a right operand of `in` that defines no `__contains__`.
+
+    The item goes on the left of the comparison, and the scan stops at the first match, both as in Python.
+    An iterator handed to `in` is therefore consumed up to the match and no further.
+    """
+    for value in iterable:  # noqa: SIM110
+        if item == value:
+            return True
+    return False
+
+
 @meta_fn
 def _require_sum_num(value, what):
     value = validate_value(value)
@@ -826,7 +842,7 @@ def _hasattr(obj: Any, name: str) -> bool:
 def _getattr(obj: Any, name: str, default=_empty) -> Any:
     from sonolus.script.internal.constant import ConstantValue
     from sonolus.script.internal.descriptor import SonolusDescriptor
-    from sonolus.script.internal.visitor import compile_and_call
+    from sonolus.script.internal.visitor import compile_and_call, reject_instance_only_attribute
 
     name = validate_value(name)._as_py_()
     if isinstance(obj, ConstantValue):
@@ -841,7 +857,10 @@ def _getattr(obj: Any, name: str, default=_empty) -> Any:
         case property(fget=getter):
             return compile_and_call(getter, obj)
         case SonolusDescriptor() | FunctionType() | classmethod() | staticmethod() | None:
-            return validate_value(getattr(obj, name) if default is _empty else getattr(obj, name, default))
+            attribute = getattr(obj, name) if default is _empty else getattr(obj, name, default)
+            if isinstance(obj, type):
+                reject_instance_only_attribute(obj, name, attribute)
+            return validate_value(attribute)
         case non_descriptor if not hasattr(non_descriptor, "__get__"):
             return validate_value(getattr(obj, name) if default is _empty else getattr(obj, name, default))
         case _:
@@ -851,7 +870,7 @@ def _getattr(obj: Any, name: str, default=_empty) -> Any:
 @meta_fn
 def _setattr(obj: Any, name: str, value: Any):
     from sonolus.script.internal.descriptor import SonolusDescriptor
-    from sonolus.script.internal.visitor import compile_and_call
+    from sonolus.script.internal.visitor import _resolve_descriptor, compile_and_call, reject_instance_only_attribute
 
     name = validate_value(name)._as_py_()
     if obj._is_py_():
@@ -865,6 +884,11 @@ def _setattr(obj: Any, name: str, value: Any):
         case SonolusDescriptor():
             setattr(obj, name, value)
         case _:
+            if isinstance(obj, type):
+                # The lookup above ran against the metaclass, which is what answers the class-level writes that
+                # do work (archetype_score_multiplier). Everything else lands here, where the class's own
+                # descriptors are what the author meant, so resolve those instead.
+                reject_instance_only_attribute(obj, name, _resolve_descriptor(obj, name))
             raise TypeError(f"Unsupported field or descriptor {name}")
 
 
@@ -938,6 +962,88 @@ BUILTIN_IMPLS = {
     **MATH_BUILTIN_IMPLS,  # Includes round
     **RANDOM_BUILTIN_IMPLS,
 }
+
+
+def _build_impl_names() -> dict[int, str]:
+    """Map the id of each impl in BUILTIN_IMPLS to the name an author writes for it.
+
+    BUILTIN_IMPLS is keyed by the id of the public object and keeps no reference to it, so the name is
+    recovered from the namespaces those keys come from. Every key is a live member of one of them, so no id
+    can belong to an object that has since been collected.
+    """
+    names = {}
+    for namespace in (vars(builtins), vars(math), vars(pyrandom), {"assert_never": assert_never}):
+        for name, value in namespace.items():
+            target = BUILTIN_IMPLS.get(id(value))
+            if target is not None:
+                names.setdefault(id(target), name)
+    return names
+
+
+BUILTIN_IMPL_NAMES = _build_impl_names()
+
+
+def name_builtin_in_binding_error(fn: Any, exc: TypeError, args: tuple) -> None:
+    """Rewrite an argument-binding error raised by calling a builtin impl so it names the builtin.
+
+    The impl is what CPython was asked to call, so its private name is what the message carries. Only a message
+    that starts with the impl's own name is rewritten, which leaves an error raised from inside the impl body,
+    such as _abs's own "bad operand type for abs()", untouched.
+
+    An impl reached through a receiver, either an instance's __call__ or a bound classmethod, is called with
+    that receiver as an argument, so CPython counted it: those counts describe the private callable and would
+    be off by one under the public name. `args` is the positional part of the call as the author wrote it, and
+    the counted messages are rebuilt from it.
+    """
+    if isinstance(fn, Value):
+        if not fn._is_py_():
+            return
+        fn = fn._as_py_()
+    public_name = BUILTIN_IMPL_NAMES.get(id(fn))
+    if public_name is None:
+        return
+    message = exc.args[0] if exc.args else None
+    if not isinstance(message, str):
+        return
+    for impl_name in (getattr(fn, "__qualname__", None), getattr(type(fn).__call__, "__qualname__", None)):
+        if impl_name is not None and message.startswith(f"{impl_name}("):
+            remainder = message[len(impl_name) :]
+            # CPython's other counted shape, "N positional arguments (and M keyword-only arguments) were
+            # given", carries more than a rebuild from the signature could say, so it is left alone.
+            if remainder.startswith("() takes ") and "keyword" not in remainder:
+                arity = _describe_positional_arity(fn, len(args))
+                if arity is not None:
+                    remainder = arity
+            # Mutated in place rather than replaced by a new exception: the excepthook prints the whole
+            # chain, so a `raise ... from exc` would show the private name again above the rewritten one.
+            exc.args = (public_name + remainder, *exc.args[1:])
+            return
+
+
+def _describe_positional_arity(fn: Any, n_given: int) -> str | None:
+    """Word CPython's "takes ... but ... given" for `fn` called with `n_given` positional arguments, or None.
+
+    `inspect.signature` reports a receiver-bearing callable as its caller sees it, without the receiver, which
+    is what makes this a correction rather than a restatement. Only the counts are used: the impls carry
+    sentinel defaults whose repr is a heap address.
+    """
+    try:
+        parameters = list(inspect.signature(fn).parameters.values())
+    except (TypeError, ValueError):
+        return None
+    if any(p.kind is inspect.Parameter.VAR_POSITIONAL for p in parameters):
+        return None
+    positional = [
+        p for p in parameters if p.kind in {inspect.Parameter.POSITIONAL_ONLY, inspect.Parameter.POSITIONAL_OR_KEYWORD}
+    ]
+    maximum = len(positional)
+    minimum = sum(1 for p in positional if p.default is inspect.Parameter.empty)
+    if minimum == maximum:
+        accepted = f"{maximum} positional argument{'' if maximum == 1 else 's'}"
+    else:
+        accepted = f"from {minimum} to {maximum} positional arguments"
+    return f"() takes {accepted} but {n_given} {'was' if n_given == 1 else 'were'} given"
+
 
 # Hack to get around circular import issues
 impl.BUILTIN_IMPLS = BUILTIN_IMPLS

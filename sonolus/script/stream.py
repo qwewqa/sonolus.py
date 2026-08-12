@@ -105,6 +105,7 @@ def streams[T](cls: type[T]) -> T:
         if getattr(cls, "_init_done_", False):
             return
         entries = []
+        descriptors = []
         # Offset 0 is unused so we can tell when a stream object is uninitialized since it'll have offset 0.
         offset = 1
         specifiers = get_field_specifiers(cls, skip={"_init_done_"})
@@ -119,7 +120,7 @@ def streams[T](cls: type[T]) -> T:
                     annotation = cast(type[Stream | StreamGroup], annotation)
                     if annotation is Stream or annotation is StreamGroup:
                         raise TypeError(f"Invalid annotation for streams: {annotation}. Must have type arguments.")
-                    setattr(cls, name, _StreamField(offset, annotation))
+                    descriptors.append((name, _StreamField(offset, annotation)))
                     # Streams store their data across several backing streams
                     entries.append((name, offset, annotation))
                     offset += annotation.backing_size()
@@ -133,12 +134,16 @@ def streams[T](cls: type[T]) -> T:
                             f"{annotation} is not supported as a streams data field. Annotate it directly with "
                             f"Stream[...] or StreamGroup[...] instead."
                         )
-                    setattr(cls, name, _StreamDataField(offset, annotation))
+                    descriptors.append((name, _StreamDataField(offset, annotation)))
                     # Data fields store their data in a single backing stream at different offsets in the same stream
                     entries.append((name, offset, annotation))
                     offset += 1
             except Exception as e:
                 raise TypeError(f"Error processing streams field '{name}': {e}") from e
+        # Nothing is set on the class until every field checks out: a build retraces a failing callback and so
+        # calls _init_ twice, and a descriptor left behind by the first call makes the second fail elsewhere.
+        for name, descriptor in descriptors:
+            setattr(cls, name, descriptor)
         cls._streams_ = entries
         cls._is_comptime_value_ = True
         cls._init_done_ = True

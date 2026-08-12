@@ -23,7 +23,8 @@ full signatures.
 - `max(iterable, *, default=..., key=None)`, `max(arg1, arg2, *args, key=None)`
 - `min(iterable, *, default=..., key=None)`, `min(arg1, arg2, *args, key=None)`
 - `next(iterator)` (see [reusing iterators](constructs.md#reusing-iterators))
-- `range(stop)`, `range(start, stop[, step])`
+- `range(stop)`, `range(start, stop[, step])` (the result supports iteration, `in`/`not in`, `len()`, indexing,
+  `reversed()`, `.start`, `.stop`, `.step`, `.index(value)`, and `.count(value)`)
 - `reversed(seq)`
 - `round(number[, ndigits])`
 - `set()`, `set(iterable)` (members must be compile-time constants)

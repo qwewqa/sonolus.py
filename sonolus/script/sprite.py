@@ -6,7 +6,7 @@ from typing import Annotated, Any, NewType, dataclass_transform, get_origin
 from sonolus.backend.ops import Op
 from sonolus.script.array_like import ArrayLike, check_positive_index
 from sonolus.script.debug import static_error
-from sonolus.script.internal.introspection import get_field_specifiers
+from sonolus.script.internal.introspection import describe_value, get_field_specifiers
 from sonolus.script.internal.meta_fn import perf_meta_fn
 from sonolus.script.internal.native import native_function
 from sonolus.script.internal.tuple_impl import TupleImpl
@@ -381,6 +381,8 @@ def sprite(name: str) -> Any:
 
 def sprite_group(names: Iterable[str]) -> Any:
     """Define a sprite group with the given names."""
+    if isinstance(names, str | bytes | bytearray):
+        raise TypeError(f"Expected a sequence of names, got {names!r}; one name is written ({names!r},)")
     return SkinSpriteGroup(list(names))
 
 
@@ -422,23 +424,24 @@ def skin[T](cls: type[T]) -> T | Skin:
     names = []
     i = 0
     for name, annotation in get_field_specifiers(cls, skip={"render_mode"}).items():
+        described = describe_value(annotation)
         if get_origin(annotation) is not Annotated:
-            raise TypeError(f"Invalid annotation for skin: {annotation} on field {name}")
+            raise TypeError(f"Invalid annotation for skin: {described} on field {name}")
         annotation_type = annotation.__args__[0]
         annotation_values = annotation.__metadata__
         if len(annotation_values) != 1:
-            raise TypeError(f"Invalid annotation for skin: {annotation} on field {name}, too many annotation values")
+            raise TypeError(f"Invalid annotation for skin: {described} on field {name}, too many annotation values")
         sprite_info = annotation_values[0]
         match sprite_info:
             case SkinSprite(name=sprite_name):
                 if annotation_type is not Sprite:
-                    raise TypeError(f"Invalid annotation for skin: {annotation} on field {name}, expected Sprite")
+                    raise TypeError(f"Invalid annotation for skin: {described} on field {name}, expected Sprite")
                 names.append(sprite_name)
                 setattr(instance, name, Sprite(i))
                 i += 1
             case SkinSpriteGroup(names=sprite_names):
                 if annotation_type is not SpriteGroup:
-                    raise TypeError(f"Invalid annotation for skin: {annotation} on field {name}, expected SpriteGroup")
+                    raise TypeError(f"Invalid annotation for skin: {described} on field {name}, expected SpriteGroup")
                 start_id = i
                 count = len(sprite_names)
                 names.extend(sprite_names)
@@ -446,7 +449,7 @@ def skin[T](cls: type[T]) -> T | Skin:
                 i += count
             case _:
                 raise TypeError(
-                    f"Invalid annotation for skin: {annotation} on field {name}, unknown sprite info, "
+                    f"Invalid annotation for skin: {described} on field {name}, unknown sprite info, "
                     f"expected a skin() or sprite_group() specifier"
                 )
     instance._sprites_ = names

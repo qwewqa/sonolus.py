@@ -29,7 +29,8 @@ sonolus-py dev [module] [--build-dir DIR] [--port PORT]
 - `--port PORT`: defaults to `8000`.
 
 ## `sonolus-py check`
-Compiles and validates the project without writing engine or level output.
+Validates the project without writing engine or level output. Callbacks are compiled, but not optimized or turned
+into engine data, so an error reported by those later stages appears in `build` or `dev` rather than here.
 
 ```bash
 sonolus-py check [module]
@@ -55,9 +56,12 @@ sonolus-py schema [module]
 | `--runtime-checks {none,terminate,notify}` | `none` for `build`/`check`, `notify` for `dev` | `none` disables runtime checks; `terminate` stops the callback on error; `notify` additionally logs and pauses before terminating. |
 | `--gc` | off | Enable the Python garbage collector during compilation. |
 | `--play`, `--watch`, `--preview`, `--tutorial` | all enabled if none are given | Restrict which components are built (or, for `check`, validated). Passing any one of the four narrows the set to just those given. |
-| `-v`, `--verbose` | off | On a compilation error, print the full traceback instead of a simplified summary. |
+| `-v`, `--verbose` | off | On an error raised while compiling callback code, print the full traceback instead of the simplified summary. Errors from later build stages, such as the optimizer, print in full either way. |
 | `--profile` | off | Print a per-stage compile timing summary to stderr. Not available for `dev`. |
 | `--profile-json PATH` | | Write per-stage compile timings as JSON to `PATH`, confirming with a line on stderr. Also enables profiling, so the `--profile` summary is printed to stderr as well. Not available for `dev`. |
+
+`check` takes the `-O` options for compatibility with `build` and `dev`, but has no use for them: it does not
+optimize.
 
 ## Programmatic usage
 Most of the same functionality is available as methods on [`Project`][sonolus.script.project.Project]:

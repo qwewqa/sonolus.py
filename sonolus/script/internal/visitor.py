@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import ast
 import builtins
+import contextlib
 import functools
 import inspect
 import os
@@ -15,9 +16,20 @@ from typing import Any, Never
 from sonolus.backend.excepthook import install_excepthook
 from sonolus.backend.utils import get_function, get_signature, scan_writes
 from sonolus.script.debug import assert_true, require
-from sonolus.script.internal.builtin_impls import BUILTIN_IMPLS, _bool, _float, _int, _len, _super, _type_name
+from sonolus.script.internal.builtin_impls import (
+    BUILTIN_IMPLS,
+    _bool,
+    _float,
+    _int,
+    _len,
+    _super,
+    _type_name,
+    contains_by_iteration,
+    name_builtin_in_binding_error,
+)
 from sonolus.script.internal.constant import ConstantValue
 from sonolus.script.internal.context import (
+    Binding,
     ConflictBinding,
     Context,
     EmptyBinding,
@@ -31,7 +43,7 @@ from sonolus.script.internal.context import (
 )
 from sonolus.script.internal.descriptor import SonolusDescriptor
 from sonolus.script.internal.error import CompilationError
-from sonolus.script.internal.impl import validate_value
+from sonolus.script.internal.impl import bind_arguments, validate_value
 from sonolus.script.internal.meta_fn import meta_fn
 from sonolus.script.internal.transient import TransientValue
 from sonolus.script.internal.tuple_impl import TupleImpl, has_tuple_iter, tuple_iter
@@ -44,18 +56,52 @@ from sonolus.script.record import Record
 _compiler_internal_ = True
 
 
+class TerminatedCall(BaseException):
+    """Unwinds a call whose every traced path terminated.
+
+    Such a call has no value to hand back: `Visitor.run` seeds `$return` with a Const[None] placeholder, and
+    returning that would let the rest of the caller's statement unwrap it and abort the compile with a message
+    about NoneType, on a program whose temp-variable spelling compiles. Unwinding instead means no operand or
+    result position has to recognize a special value: the rest of the statement is simply never traced.
+
+    It derives from BaseException so that the `except Exception` handlers on the compile path cannot turn it
+    into a compilation error: `Visitor.visit` and the class-definition wrappers in impl.py, record.py,
+    stream.py and archetype.py all catch Exception.
+
+    Every catch site resumes in the dead context `run` leaves behind, and a site that has opened a branch must
+    catch: a block with a single outgoing edge is emitted as an unconditional jump and its test is ignored, so
+    unwinding past a half-built conditional silently takes the surviving edge rather than failing.
+    """
+
+
 def compile_and_call[**P, R](fn: Callable[P, R], /, *args: P.args, **kwargs: P.kwargs) -> R:
     if not ctx():
         return fn(*args, **kwargs)
     if type(fn) is FunctionType and not fn.__dict__.get("_meta_fn_", False):
         # Fast path equivalent to the FunctionType arm of generate_fn_impl.
         return validate_value(eval_fn(fn, *args, **kwargs))
-    if getattr(fn, "_meta_fn_", False):
-        return validate_value(fn(*args, **kwargs))
-    return validate_value(generate_fn_impl(fn)(*args, **kwargs))
+    try:
+        if getattr(fn, "_meta_fn_", False):
+            return validate_value(fn(*args, **kwargs))
+        return validate_value(generate_fn_impl(fn)(*args, **kwargs))
+    except TypeError as e:
+        name_builtin_in_binding_error(fn, e, args)
+        raise
 
 
 def compile_and_call_at_definition[**P, R](fn: Callable[P, R], /, *args: P.args, **kwargs: P.kwargs) -> R:
+    """Enter a callback body, reporting errors at the callback's definition rather than at the build's frames.
+
+    This is the outermost catch site for TerminatedCall: a callback whose every traced path terminates has no
+    result to hand back, and there is no enclosing construct left to resume in its dead context.
+    """
+    try:
+        return _call_at_definition(fn, *args, **kwargs)
+    except TerminatedCall:
+        return validate_value(None)
+
+
+def _call_at_definition[**P, R](fn: Callable[P, R], /, *args: P.args, **kwargs: P.kwargs) -> R:
     if not ctx():
         return fn(*args, **kwargs)
     if getattr(fn, "_meta_fn_", False):
@@ -175,7 +221,7 @@ def eval_fn(fn: Callable, /, *args, **kwargs):
             arguments[names[i]] = defaults[i]
         bound_args = inspect.BoundArguments(sig, arguments)
     else:
-        bound_args = sig.bind(*args, **kwargs)
+        bound_args = bind_arguments(sig, getattr(fn, "__qualname__", function_name), args, kwargs)
         bound_args.apply_defaults()
     if ismethod(fn):
         code = fn.__func__.__code__
@@ -334,6 +380,23 @@ def clear_frontend_caches() -> None:
     _descriptor_cache.clear()
 
 
+def reject_instance_only_attribute(cls: type, key: str, attribute: Any) -> None:
+    """Reject accessing `key` on the class object when `attribute` is the descriptor itself.
+
+    handle_getattr passes the value it read: a descriptor returns itself when it has nothing to give without an
+    instance, and the compiler cannot represent that object. Descriptors that do answer a class-level read,
+    `Archetype.life` among them, return something else and are left alone. handle_setattr has no such value, so it
+    passes the descriptor it resolved on the class.
+    """
+    if attribute is not _resolve_descriptor(cls, key):
+        return
+    match attribute:
+        case property():
+            raise TypeError(f"Property '{key}' must be accessed on an instance of {cls.__name__}")
+        case SonolusDescriptor():
+            raise TypeError(f"Field '{key}' must be accessed on an instance of {cls.__name__}")
+
+
 def _resolve_descriptor(target_type: type, key: str) -> Any:
     """Resolve `key` to the first descriptor found on target_type's MRO (or None), with caching."""
     descriptor = _descriptor_cache.get((target_type, key), _DESCRIPTOR_CACHE_MISS)
@@ -362,6 +425,54 @@ def record_visit_time(function_name: str, total_time: int, own_time: int) -> Non
     stats.own_time += own_time
     stats.call_count += 1
     ctx().callback_state.visitor_own_time += own_time
+
+
+_SCOPE_DECLARATION_MESSAGES = {
+    ast.Global: "Global statements are not supported",
+    ast.Nonlocal: "Nonlocal statements are not supported",
+}
+_NESTED_SCOPE_NODES = (ast.FunctionDef, ast.AsyncFunctionDef, ast.Lambda, ast.ClassDef)
+_UNSCANNED = object()
+
+
+def _find_scope_declaration(node: ast.FunctionDef) -> ast.Global | ast.Nonlocal | None:
+    """Return the first `global` or `nonlocal` statement in this function's own body, or None.
+
+    CPython resolves both over the whole body at compile time, so one in a region the tracer folds away still
+    decides where every assignment to that name writes. Finding it therefore cannot depend on reachability, the
+    way visiting the statement does. The result is cached on the node, since a function is traced once per call
+    site.
+    """
+    found = getattr(node, "scope_declaration", _UNSCANNED)
+    if found is _UNSCANNED:
+        found = _scan_scope_declaration(node)
+        node.scope_declaration = found
+    return found
+
+
+def _scan_scope_declaration(node: ast.AST) -> ast.Global | ast.Nonlocal | None:
+    for child in ast.iter_child_nodes(node):
+        if isinstance(child, _NESTED_SCOPE_NODES):
+            # A nested scope declares for itself, and is scanned when it is traced.
+            continue
+        if isinstance(child, ast.Global | ast.Nonlocal):
+            return child
+        found = _scan_scope_declaration(child)
+        if found is not None:
+            return found
+    return None
+
+
+def _exception_message(cause: Exception) -> str:
+    """The message of `cause`, without the quotes KeyError's str() puts around it.
+
+    KeyError is the one builtin whose __str__ is repr(args[0]) rather than the message, so wrapping one
+    unchanged would report `"Unknown archetype: 'X'"`, quotes included. Checked by exact type: a subclass may
+    define a __str__ that is already the message.
+    """
+    if type(cause) is KeyError and cause.args:
+        return str(cause.args[0])
+    return str(cause)
 
 
 def _noop_mark_end() -> None:
@@ -432,9 +543,7 @@ class Visitor(ast.NodeVisitor):
         else:
             self.qualified_name = qualified_name
 
-    def run(self, node):
-        from sonolus.script.internal.set_impl import SetImpl
-
+    def run(self, node, initial_iterator: Value | None = None):
         completion_timer = mark_start(self.qualified_name)
         before_ctx = ctx()
         before_alloc_state = ctx().save_alloc_state()
@@ -447,30 +556,28 @@ class Visitor(ast.NodeVisitor):
         ctx().callback_state.is_in_generator = ctx().callback_state.is_in_generator or is_generator_fn
         match node:
             case ast.FunctionDef(body=body):
+                declaration = _find_scope_declaration(node)
+                if declaration is not None:
+                    self.raise_exception_at_node(
+                        declaration, NotImplementedError(_SCOPE_DECLARATION_MESSAGES[type(declaration)])
+                    )
                 ctx().scope.set_value("$return", validate_value(None))
                 self.declared_locals = getattr(node, "declared_locals", frozenset())
-                for stmt in body:
-                    if not ctx().live:
-                        break
-                    self.visit(stmt)
+                self.visit_statements(body)
             case ast.Lambda(body=body):
-                result = self.visit(body)
-                ctx().scope.set_value("$return", result)
+                ctx().scope.set_value("$return", validate_value(None))
+                try:
+                    result = self.visit(body)
+                except TerminatedCall:
+                    # Caught rather than propagated: the shared tail below has to run for a lambda too, and
+                    # unwinding past it skips the restores it performs. The seed is what the tail then finds
+                    # for `$return`, which is otherwise unbound and reported as a conflict.
+                    pass
+                else:
+                    ctx().scope.set_value("$return", result)
             case ast.GeneratorExp(elt=elt, generators=generators):
                 ctx().callback_state.is_in_generator = True
-                first_generator = generators[0]
-                iterable = self.visit(first_generator.iter)
-                if isinstance(iterable, SetImpl):
-                    iterable = iterable._dict
-                if has_tuple_iter(iterable):
-                    initial_iterator = iterable
-                else:
-                    if not hasattr(iterable, "__iter__"):
-                        raise TypeError(f"Object of type '{_type_name(iterable)}' is not iterable")
-                    initial_iterator = self.handle_call(first_generator.iter, iterable.__iter__)
-                    if not isinstance(initial_iterator, SonolusIterator):
-                        raise ValueError("Unsupported iterator")
-                # The initial iterator is evaluated eagerly in Python
+                # The initial iterator is evaluated eagerly, in the enclosing scope, by visit_GeneratorExp.
                 before_ctx = ctx().branch_with_scope(None, before_ctx.scope.copy())
                 start_ctx = before_ctx.branch_with_scope(None, Scope())
                 set_ctx(start_ctx)
@@ -484,7 +591,7 @@ class Visitor(ast.NodeVisitor):
             result_binding = return_ctx.scope.get_binding("$return")
             if not isinstance(result_binding, ValueBinding):
                 raise ValueError("Function has conflicting return values")
-            if not (result_binding.value._is_py_() and result_binding.value._as_py_() is None):
+            if return_ctx.live and not (result_binding.value._is_py_() and result_binding.value._as_py_() is None):
                 raise ValueError("Generator function return statements must return None")
             with using_ctx(start_ctx):
                 state_var = Num._alloc_()
@@ -509,16 +616,25 @@ class Visitor(ast.NodeVisitor):
                 yield_merge_ctx = Context.meet(yield_between_ctxs)
             else:
                 yield_merge_ctx = before_ctx.new_empty_disconnected()
-            yield_binding = yield_merge_ctx.scope.get_binding("$yield")
-            match yield_binding:
-                case ValueBinding():
-                    with using_ctx(yield_merge_ctx):
-                        is_present_var._set_(1)
-                    yield_value = Maybe(present=is_present_var, value=yield_binding.value)
-                case EmptyBinding():
-                    yield_value = Nothing
-                case ConflictBinding():
-                    raise ValueError("Function has conflicting yield values")
+            if not yield_merge_ctx.live:
+                # An all-dead meet keeps the merged scope, so a dead yield_merge_ctx still carries a `$yield`
+                # binding. Every yield path terminated before reaching its yield, so no value can be observed:
+                # `is_present_var._set_(1)` would be discarded with the dead context, and the bound value can be
+                # the terminated-call sentinel, which must not escape into the live call site. The terminate
+                # itself stays reachable because a consumer's first `next()` wires the state machine into the
+                # caller before it looks at the result.
+                yield_value = Nothing
+            else:
+                yield_binding = yield_merge_ctx.scope.get_binding("$yield")
+                match yield_binding:
+                    case ValueBinding():
+                        with using_ctx(yield_merge_ctx):
+                            is_present_var._set_(1)
+                        yield_value = Maybe(present=is_present_var, value=yield_binding.value)
+                    case EmptyBinding():
+                        yield_value = Nothing
+                    case ConflictBinding():
+                        raise ValueError("Function has conflicting yield values")
             next_result_ctx = Context.meet([yield_merge_ctx, return_ctx])
             set_ctx(before_ctx)
             return_test = Num._alloc_()
@@ -539,13 +655,32 @@ class Visitor(ast.NodeVisitor):
         if not isinstance(result_binding, ValueBinding):
             raise ValueError("Function has conflicting return values")
         set_ctx(after_ctx.branch_with_scope(None, before_ctx.scope.copy()))
+        # A dead after_ctx means every traced path terminated, so `$return` still holds the seed: nothing
+        # escaped, which is also why the terminated case belongs in the alloc-reuse condition below.
+        terminated = not after_ctx.live
         # Noting could have escaped, so allow reuse, which can allow naive allocation to succeed in the optimizer for
         # better compile times.
-        if result_binding.value is validate_value(None) and not ctx().callback_state.is_in_generator:
+        if (terminated or result_binding.value is validate_value(None)) and not ctx().callback_state.is_in_generator:
             ctx().restore_alloc_state(before_alloc_state)
         ctx().callback_state.is_in_generator = was_in_generator
         completion_timer()
+        if terminated:
+            # Raised only after the alloc state, the generator flag and the timer are restored above: an
+            # unwind past any of those corrupts every later call in this callback.
+            raise TerminatedCall
         return result_binding.value
+
+    def visit_statements(self, body: Iterable[ast.stmt]) -> None:
+        """Trace `body`, stopping at the first statement control cannot fall out of."""
+        for stmt in body:
+            if not ctx().live:
+                break
+            try:
+                self.visit(stmt)
+            except TerminatedCall:
+                # Nothing after the terminating call in this statement runs. The dead context ends the body
+                # on the next iteration, which is also what truncates the statements after it.
+                continue
 
     def construct_genexpr(
         self, generators: Iterable[ast.comprehension], elt: ast.expr, initial_iterator: Value | None = None
@@ -555,7 +690,12 @@ class Visitor(ast.NodeVisitor):
         if not generators:
             # Note that there may effectively be multiple yields in an expression since
             # tuples are unrolled.
-            value = self.visit(elt)
+            try:
+                value = self.visit(elt)
+            except TerminatedCall:
+                # The yield point is still recorded, in its dead context: run resolves an all-dead yield
+                # merge to Nothing, and the consumer's first next() is what carries the emitted terminate.
+                value = None
             ctx().scope.set_value("$yield", validate_value(value))
             self.yield_ctxs.append(ctx())
             resume_ctx = ctx().new_disconnected()
@@ -566,19 +706,33 @@ class Visitor(ast.NodeVisitor):
         if initial_iterator is not None:
             iterable = initial_iterator
         else:
-            iterable = self.visit(generator.iter)
+            try:
+                iterable = self.visit(generator.iter)
+            except TerminatedCall:
+                # This clause has no loop structure yet, so returning leaves the enclosing clause (or run,
+                # for the outermost one) to close its own.
+                return
         if isinstance(iterable, SetImpl):
             iterable = iterable._dict
         if has_tuple_iter(iterable):
             for value in tuple_iter(iterable):
                 set_ctx(ctx().branch(None))
-                self.handle_assign(generator.target, validate_value(value))
+                # As in visit_For: a target whose own base terminates. The filters and the element are
+                # traced in the dead context it leaves behind, and the clause closes as usual.
+                with contextlib.suppress(TerminatedCall):
+                    self.handle_assign(generator.target, validate_value(value))
                 # Unlike the iterator arm below there's no loop header to branch back to, so a filtered out
                 # element falls forward into the next element's code instead, which is only emitted afterwards.
                 skip_ctxs = []
                 skipped = False
                 for if_expr in generator.ifs:
-                    test = self.convert_to_boolean_num(if_expr, self.visit(if_expr))
+                    try:
+                        test = self.convert_to_boolean_num(if_expr, self.visit(if_expr))
+                    except TerminatedCall:
+                        # Nothing past the filter runs, so this element is skipped like a statically false
+                        # filter's is.
+                        skipped = True
+                        break
                     if test._is_py_():
                         if test._as_py_():
                             continue
@@ -599,13 +753,21 @@ class Visitor(ast.NodeVisitor):
                 iterator = initial_iterator
             else:
                 if not hasattr(iterable, "__iter__"):
-                    raise TypeError(f"Object of type '{_type_name(iterable)}' is not iterable")
-                iterator = self.handle_call(generator.iter, iterable.__iter__)
+                    raise TypeError(f"'{_type_name(iterable)}' object is not iterable")
+                try:
+                    iterator = self.handle_call(generator.iter, iterable.__iter__)
+                except TerminatedCall:
+                    return
             if not isinstance(iterator, SonolusIterator):
                 raise ValueError("Unsupported iterator")
             header_ctx = ctx().branch(None)
             set_ctx(header_ctx)
-            next_value = self.handle_call(generator.iter, iterator.next)
+            try:
+                next_value = self.handle_call(generator.iter, iterator.next)
+            except TerminatedCall:
+                # The header's only edge is the unconditional one into the terminating call, so returning
+                # from here leaves nothing dangling.
+                return
             if not isinstance(next_value, Maybe):
                 raise ValueError("Iterator next must return a Maybe")
             if next_value._present._is_py_() and not next_value._present._as_py_():
@@ -615,23 +777,36 @@ class Visitor(ast.NodeVisitor):
             body_ctx = ctx().branch(None)
             else_ctx = ctx().branch(0)
             set_ctx(body_ctx)
-            self.handle_assign(generator.target, next_value._value)
+            with contextlib.suppress(TerminatedCall):
+                self.handle_assign(generator.target, next_value._value)
+            skipped = False
             for if_expr in generator.ifs:
-                test = self.convert_to_boolean_num(if_expr, self.visit(if_expr))
+                try:
+                    test = self.convert_to_boolean_num(if_expr, self.visit(if_expr))
+                except TerminatedCall:
+                    # As in the unrolled arm above, but this element's context is a loop body: close it the
+                    # way a statically false filter closes its own.
+                    ctx().outgoing[None] = header_ctx
+                    set_ctx(ctx().into_dead())
+                    skipped = True
+                    break
                 if test._is_py_():
                     if test._as_py_():
                         continue
                     else:
                         ctx().outgoing[None] = header_ctx
                         set_ctx(ctx().into_dead())
+                        skipped = True
+                        break
                 else:
                     if_then_ctx = ctx().branch(None)
                     if_else_ctx = ctx().branch(0)
                     ctx().test = test.ir()
                     if_else_ctx.outgoing[None] = header_ctx
                     set_ctx(if_then_ctx)
-            self.construct_genexpr(others, elt)
-            ctx().outgoing[None] = header_ctx
+            if not skipped:
+                self.construct_genexpr(others, elt)
+                ctx().outgoing[None] = header_ctx
             set_ctx(else_ctx)
 
     def visit(self, node):
@@ -651,10 +826,13 @@ class Visitor(ast.NodeVisitor):
 
     def visit_FunctionDef(self, node):
         name = node.name
+        # CPython evaluates decorator expressions top to bottom, then the defaults, and applies the decorators
+        # bottom to top, so the expressions are collected here and applied after the function exists.
+        decorators = [(decorator, self.visit(decorator)) for decorator in node.decorator_list]
         signature = self.arguments_to_signature(node.args)
 
         def fn(*args, **kwargs):
-            bound = signature.bind(*args, **kwargs)
+            bound = bind_arguments(signature, name, args, kwargs)
             bound.apply_defaults()
             return Visitor(
                 self.source_file,
@@ -668,8 +846,8 @@ class Visitor(ast.NodeVisitor):
         fn.__name__ = name
         fn.__qualname__ = name
 
-        for decorator in reversed(node.decorator_list):
-            fn = self.handle_call(decorator, self.visit(decorator), fn)
+        for decorator, decorator_value in reversed(decorators):
+            fn = self.handle_call(decorator, decorator_value, fn)
 
         ctx().scope.set_value(name, validate_value(fn))
 
@@ -748,8 +926,8 @@ class Visitor(ast.NodeVisitor):
         if hasattr(lhs_value, inplace_fn_name):
             result = self.handle_call(node, getattr(lhs_value, inplace_fn_name), rhs_value)
             if not self.is_not_implemented(result):
-                if result is not lhs_value:
-                    raise ValueError("Inplace operation must return the same object")
+                # An in-place operator may return a new object, which is stored exactly as the
+                # forward-operator arm below stores its result.
                 store(result)
                 return
         if hasattr(lhs_value, regular_fn_name):
@@ -797,24 +975,21 @@ class Visitor(ast.NodeVisitor):
                 set_ctx(ctx().branch(None))
                 self.loop_head_ctxs.append([])
                 self.break_ctxs.append([])
-                self.handle_assign(node.target, validate_value(value))
-                for stmt in node.body:
-                    if not ctx().live:
-                        break
-                    self.visit(stmt)
+                # A target whose own base terminates, such as `for f(-1).x in ...`. The dead context it
+                # leaves behind ends the body below, and the frame is closed as usual.
+                with contextlib.suppress(TerminatedCall):
+                    self.handle_assign(node.target, validate_value(value))
+                self.visit_statements(node.body)
                 continue_ctxs = [*self.loop_head_ctxs.pop(), ctx()]
                 break_ctxs.extend(self.break_ctxs.pop())
                 set_ctx(Context.meet(continue_ctxs))
             # Visited here, in the fall-through context, before the break contexts are merged in.
-            for stmt in node.orelse:
-                if not ctx().live:
-                    break
-                self.visit(stmt)
+            self.visit_statements(node.orelse)
             if break_ctxs:
                 set_ctx(Context.meet([*break_ctxs, ctx()]))
             return
         if not hasattr(iterable, "__iter__"):
-            raise TypeError(f"Object of type '{_type_name(iterable)}' is not iterable")
+            raise TypeError(f"'{_type_name(iterable)}' object is not iterable")
         iterator = self.handle_call(node, iterable.__iter__)
         if not isinstance(iterator, SonolusIterator):
             raise ValueError("Unsupported iterator")
@@ -823,28 +998,32 @@ class Visitor(ast.NodeVisitor):
         self.loop_head_ctxs.append(header_ctx)
         self.break_ctxs.append([])
         set_ctx(header_ctx)
-        next_value = self.handle_call(node, iterator.next)
+        try:
+            next_value = self.handle_call(node, iterator.next)
+        except TerminatedCall:
+            # The loop is abandoned in its header, so its frame has to be closed here: an enclosing loop
+            # pops next, and would otherwise close itself against this one.
+            self.loop_head_ctxs.pop().check_loop_conflicts()
+            self.break_ctxs.pop()
+            return
         if not isinstance(next_value, Maybe):
             raise ValueError("Iterator next must return a Maybe")
         if next_value._present._is_py_() and not next_value._present._as_py_():
             # The loop will never run, continue after evaluating the condition
             self.loop_head_ctxs.pop().check_loop_conflicts()
             self.break_ctxs.pop()
-            for stmt in node.orelse:
-                if not ctx().live:
-                    break
-                self.visit(stmt)
+            self.visit_statements(node.orelse)
             return
         ctx().test = next_value._present.ir()
         body_ctx = ctx().branch(None)
         else_ctx = ctx().branch(0)
 
         set_ctx(body_ctx)
-        self.handle_assign(node.target, next_value._value)
-        for stmt in node.body:
-            if not ctx().live:
-                break
-            self.visit(stmt)
+        # As in the unrolled arm above: the body dies here, but the loop's own exit is live and still needs
+        # the close below.
+        with contextlib.suppress(TerminatedCall):
+            self.handle_assign(node.target, next_value._value)
+        self.visit_statements(node.body)
         ctx().branch_to_loop_header(header_ctx)
 
         # Before set_ctx(else_ctx), so the else block traces against the checked exit.
@@ -852,10 +1031,7 @@ class Visitor(ast.NodeVisitor):
         self.loop_head_ctxs.pop().check_loop_conflicts(else_ctx, break_ctxs)
 
         set_ctx(else_ctx)
-        for stmt in node.orelse:
-            if not ctx().live:
-                break
-            self.visit(stmt)
+        self.visit_statements(node.orelse)
         else_end_ctx = ctx()
 
         after_ctx = Context.meet([else_end_ctx, *break_ctxs])
@@ -867,16 +1043,20 @@ class Visitor(ast.NodeVisitor):
         self.loop_head_ctxs.append(header_ctx)
         self.break_ctxs.append([])
         set_ctx(header_ctx)
-        test = self.convert_to_boolean_num(node.test, self.visit(node.test))
+        try:
+            test = self.convert_to_boolean_num(node.test, self.visit(node.test))
+        except TerminatedCall:
+            # As in visit_For: the loop is abandoned in its header, so its frame is closed here, the way
+            # the statically false test below closes it.
+            self.loop_head_ctxs.pop().check_loop_conflicts()
+            self.break_ctxs.pop()
+            return
         if test._is_py_():
             if test._as_py_():
                 # The loop will run until a break / return
                 body_ctx = ctx().branch(None)
                 set_ctx(body_ctx)
-                for stmt in node.body:
-                    if not ctx().live:
-                        break
-                    self.visit(stmt)
+                self.visit_statements(node.body)
                 ctx().branch_to_loop_header(header_ctx)
 
                 break_ctxs = self.break_ctxs.pop()
@@ -893,30 +1073,21 @@ class Visitor(ast.NodeVisitor):
                 # The loop will never run, continue after evaluating the condition
                 self.loop_head_ctxs.pop().check_loop_conflicts()
                 self.break_ctxs.pop()
-                for stmt in node.orelse:
-                    if not ctx().live:
-                        break
-                    self.visit(stmt)
+                self.visit_statements(node.orelse)
                 return
         ctx().test = test.ir()
         body_ctx = ctx().branch(None)
         else_ctx = ctx().branch(0)
 
         set_ctx(body_ctx)
-        for stmt in node.body:
-            if not ctx().live:
-                break
-            self.visit(stmt)
+        self.visit_statements(node.body)
         ctx().branch_to_loop_header(header_ctx)
 
         break_ctxs = self.break_ctxs.pop()
         self.loop_head_ctxs.pop().check_loop_conflicts(else_ctx, break_ctxs)
 
         set_ctx(else_ctx)
-        for stmt in node.orelse:
-            if not ctx().live:
-                break
-            self.visit(stmt)
+        self.visit_statements(node.orelse)
         else_end_ctx = ctx()
 
         after_ctx = Context.meet([else_end_ctx, *break_ctxs])
@@ -927,15 +1098,9 @@ class Visitor(ast.NodeVisitor):
 
         if test._is_py_():
             if test._as_py_():
-                for stmt in node.body:
-                    if not ctx().live:
-                        break
-                    self.visit(stmt)
+                self.visit_statements(node.body)
             else:
-                for stmt in node.orelse:
-                    if not ctx().live:
-                        break
-                    self.visit(stmt)
+                self.visit_statements(node.orelse)
             return
 
         ctx_init = ctx()
@@ -944,17 +1109,11 @@ class Visitor(ast.NodeVisitor):
         false_ctx = ctx_init.branch(0)
 
         set_ctx(true_ctx)
-        for stmt in node.body:
-            if not ctx().live:
-                break
-            self.visit(stmt)
+        self.visit_statements(node.body)
         true_end_ctx = ctx()
 
         set_ctx(false_ctx)
-        for stmt in node.orelse:
-            if not ctx().live:
-                break
-            self.visit(stmt)
+        self.visit_statements(node.orelse)
         false_end_ctx = ctx()
 
         set_ctx(Context.meet([true_end_ctx, false_end_ctx]))
@@ -977,20 +1136,39 @@ class Visitor(ast.NodeVisitor):
                 raise NotImplementedError(
                     "Star sub-patterns (e.g. `case [a, *rest]:`) in sequence match patterns are not supported"
                 )
-            true_ctx, false_ctx = self.handle_match_pattern(subject, case.pattern)
+            try:
+                true_ctx, false_ctx, captures = self.handle_match_pattern(subject, case.pattern)
+            except TerminatedCall:
+                # A read the pattern itself performs terminated, which only a user __len__ or property in a
+                # sequence or class sub-pattern can do. Contexts opened inside the pattern may still be live
+                # with no continuation left to give them, so this is rejected rather than traced on.
+                raise NotImplementedError(
+                    "A call that terminates on every path is not supported inside a match pattern"
+                ) from None
             if not true_ctx.live:
                 set_ctx(false_ctx)
                 continue
             set_ctx(true_ctx)
-            guard = (
-                self.convert_to_boolean_num(case.guard, self.visit(case.guard)) if case.guard else validate_value(True)
-            )
+            # Python applies a pattern's captures only once the whole pattern has matched, so they are
+            # collected while matching and written here, where no not-matching path can reach them.
+            # Before the guard on purpose: the guard reads them, and a guard that then fails keeps them
+            # bound, since guard_false_ctx below branches off this context.
+            for name, binding in captures:
+                ctx().scope.set_binding(name, binding)
+            try:
+                guard = (
+                    self.convert_to_boolean_num(case.guard, self.visit(case.guard))
+                    if case.guard
+                    else validate_value(True)
+                )
+            except TerminatedCall:
+                # The arm cannot be taken, and the not-matching context is still open: merge it in the way
+                # a statically false guard does, so that live path keeps its continuation.
+                set_ctx(Context.meet([ctx(), false_ctx]))
+                continue
             if guard._is_py_():
                 if guard._as_py_():
-                    for stmt in case.body:
-                        if not ctx().live:
-                            break
-                        self.visit(stmt)
+                    self.visit_statements(case.body)
                     end_ctxs.append(ctx())
                 else:
                     # Merge failing before the guard and failing now at the guard (which we know is guaranteed to fail)
@@ -1000,10 +1178,7 @@ class Visitor(ast.NodeVisitor):
                 guard_true_ctx = ctx().branch(None)
                 guard_false_ctx = ctx().branch(0)
                 set_ctx(guard_true_ctx)
-                for stmt in case.body:
-                    if not ctx().live:
-                        break
-                    self.visit(stmt)
+                self.visit_statements(case.body)
                 end_ctxs.append(ctx())
                 false_ctx = Context.meet([false_ctx, guard_false_ctx])
             set_ctx(false_ctx)
@@ -1011,30 +1186,44 @@ class Visitor(ast.NodeVisitor):
         if end_ctxs:
             set_ctx(Context.meet(end_ctxs))
 
-    def handle_match_pattern(self, subject: Value, pattern: ast.pattern) -> tuple[Context, Context]:
+    def handle_match_pattern(
+        self, subject: Value, pattern: ast.pattern
+    ) -> tuple[Context, Context, list[tuple[str, Binding]]]:
+        """Trace `pattern` against `subject`.
+
+        Returns the context where the pattern matched, the context where it did not, and the bindings the
+        pattern captures, in source order. The captures are returned rather than written into a scope so that
+        the caller can apply them only once the whole pattern has matched, as Python does. They are bindings
+        rather than values because an or-pattern's alternatives can conflict, which only a read may report.
+        """
         from sonolus.script.internal.generic import validate_type_spec
 
         if not ctx().live:
-            return ctx().into_dead(), ctx()
+            return ctx().into_dead(), ctx(), []
 
         match pattern:
             case ast.MatchValue(value=value):
                 value = self.visit(value)
                 with self.reporting_errors_at_node(pattern):
-                    comparison = self.handle_comparison(pattern, _EQ_OP, subject, value)
+                    try:
+                        comparison = self.handle_comparison(pattern, _EQ_OP, subject, value)
+                    except TerminatedCall:
+                        # A user __eq__ that terminates on every path: the arm cannot be taken, and neither
+                        # can anything after the match, which is the pair the liveness check below returns.
+                        return ctx().into_dead(), ctx(), []
                     if not ctx().live:
-                        return ctx().into_dead(), ctx()
+                        return ctx().into_dead(), ctx(), []
                     test = self.convert_to_boolean_num(pattern, comparison)
                 if test._is_py_():
                     if test._as_py_():
-                        return ctx(), ctx().into_dead()
+                        return ctx(), ctx().into_dead(), []
                     else:
-                        return ctx().into_dead(), ctx()
+                        return ctx().into_dead(), ctx(), []
                 ctx_init = ctx()
                 ctx_init.test = test.ir()
                 true_ctx = ctx_init.branch(None)
                 false_ctx = ctx_init.branch(0)
-                return true_ctx, false_ctx
+                return true_ctx, false_ctx, []
             case ast.MatchSingleton(value=value):
                 match value:
                     case True:
@@ -1047,19 +1236,19 @@ class Visitor(ast.NodeVisitor):
                         raise NotImplementedError("Unsupported match singleton")
                 if test._is_py_():
                     if test._as_py_():
-                        return ctx(), ctx().into_dead()
+                        return ctx(), ctx().into_dead(), []
                     else:
-                        return ctx().into_dead(), ctx()
+                        return ctx().into_dead(), ctx(), []
                 else:
                     ctx_init = ctx()
                     ctx_init.test = test.ir()
                     true_ctx = ctx_init.branch(None)
                     false_ctx = ctx_init.branch(0)
-                    return true_ctx, false_ctx
+                    return true_ctx, false_ctx, []
             case ast.MatchSequence(patterns=patterns):
                 target_len = len(patterns)
                 if not isinstance(subject, Sequence | TupleImpl):
-                    return ctx().into_dead(), ctx()
+                    return ctx().into_dead(), ctx(), []
                 length_test = self.convert_to_boolean_num(pattern, validate_value(_len(subject) == target_len))
                 ctx_init = ctx()
                 if not length_test._is_py_():
@@ -1070,19 +1259,21 @@ class Visitor(ast.NodeVisitor):
                     true_ctx = ctx_init
                     false_ctxs = []
                 else:
-                    return ctx().into_dead(), ctx()
+                    return ctx().into_dead(), ctx(), []
                 set_ctx(true_ctx)
+                captures = []
                 for i, subpattern in enumerate(patterns):
                     if not ctx().live:
                         break
                     value = self.handle_getitem(subpattern, subject, validate_value(i))
-                    true_ctx, false_ctx = self.handle_match_pattern(value, subpattern)
+                    true_ctx, false_ctx, sub_captures = self.handle_match_pattern(value, subpattern)
+                    captures.extend(sub_captures)
                     false_ctxs.append(false_ctx)
                     set_ctx(true_ctx)
                 if not false_ctxs:
                     # Empty sequence pattern with a statically-matching length: nothing can fail.
-                    return true_ctx, true_ctx.into_dead()
-                return true_ctx, Context.meet(false_ctxs)
+                    return true_ctx, true_ctx.into_dead(), captures
+                return true_ctx, Context.meet(false_ctxs), captures
             case ast.MatchMapping():
                 raise NotImplementedError("Match mappings are not supported")
             case ast.MatchClass(cls=cls, patterns=patterns, kwd_attrs=kwd_attrs, kwd_patterns=kwd_patterns):
@@ -1093,7 +1284,7 @@ class Visitor(ast.NodeVisitor):
                 if not isinstance(cls, type):
                     raise TypeError("Class is not a type")
                 if not isinstance(subject, cls):
-                    return ctx().into_dead(), ctx()
+                    return ctx().into_dead(), ctx(), []
                 if patterns:
                     if not hasattr(cls, "__match_args__"):
                         raise TypeError("Class does not support match patterns")
@@ -1116,15 +1307,19 @@ class Visitor(ast.NodeVisitor):
                 if kwd_attrs:
                     true_ctx = ctx()
                     false_ctxs = []
+                    captures = []
                     for attr, subpattern in zip(kwd_attrs, kwd_patterns, strict=False):
+                        if not ctx().live:
+                            break
                         if not hasattr(subject, attr):
                             raise AttributeError(f"Object has no attribute {attr}")
                         value = self.handle_getattr(subpattern, subject, attr)
-                        true_ctx, false_ctx = self.handle_match_pattern(value, subpattern)
+                        true_ctx, false_ctx, sub_captures = self.handle_match_pattern(value, subpattern)
+                        captures.extend(sub_captures)
                         false_ctxs.append(false_ctx)
                         set_ctx(true_ctx)
-                    return true_ctx, Context.meet(false_ctxs)
-                return ctx(), ctx().into_dead()
+                    return true_ctx, Context.meet(false_ctxs), captures
+                return ctx(), ctx().into_dead(), []
             case ast.MatchStar():
                 # Unreachable: visit_Match rejects patterns containing stars before recursing here.
                 raise NotImplementedError(
@@ -1132,24 +1327,48 @@ class Visitor(ast.NodeVisitor):
                 )
             case ast.MatchAs(pattern=pattern, name=name):
                 if pattern:
-                    true_ctx, false_ctx = self.handle_match_pattern(subject, pattern)
+                    true_ctx, false_ctx, captures = self.handle_match_pattern(subject, pattern)
                     if name:
-                        true_ctx.scope.set_value(name, subject)
-                    return true_ctx, false_ctx
+                        captures = [*captures, (name, ValueBinding(validate_value(subject)))]
+                    return true_ctx, false_ctx, captures
                 else:
-                    if name:
-                        ctx().scope.set_value(name, subject)
-                    return ctx(), ctx().into_dead()
+                    return ctx(), ctx().into_dead(), [(name, ValueBinding(validate_value(subject)))] if name else []
             case ast.MatchOr():
                 true_ctxs = []
+                # Every alternative binds the same names, to a different value each. Merging those values
+                # is what Context.meet does, and it works on scope bindings, so each alternative writes its
+                # captures under a temporary name and the merged value is read back out below.
+                temp_names: dict[str, str] = {}
                 assert pattern.patterns
                 for subpattern in pattern.patterns:
                     if not ctx().live:
                         break
-                    true_ctx, false_ctx = self.handle_match_pattern(subject, subpattern)
+                    true_ctx, false_ctx, captures = self.handle_match_pattern(subject, subpattern)
+                    for name, binding in captures:
+                        temp_name = temp_names.get(name)
+                        if temp_name is None:
+                            temp_name = self.new_name(f"match_{name}")
+                            temp_names[name] = temp_name
+                        true_ctx.scope.set_binding(temp_name, binding)
                     true_ctxs.append(true_ctx)
                     set_ctx(false_ctx)
-                return Context.meet(true_ctxs), ctx()
+                merged_ctx = Context.meet(true_ctxs)
+                if not merged_ctx.live:
+                    # No alternative can match, so nothing reads these captures. An alternative that died
+                    # before reaching its capture never wrote its temporary either, so reading one here
+                    # would be reading an unbound name.
+                    return merged_ctx, ctx(), []
+                merged_captures = []
+                for name, temp_name in temp_names.items():
+                    # The merged binding itself, not its value: alternatives that bind incompatible values
+                    # merge to a conflict, which has to reach the capture's own name so that a read of it
+                    # reports that name, and so that a case body never reading it still compiles.
+                    merged_captures.append((name, merged_ctx.scope.get_binding(temp_name)))
+                    # Deleted so that no context branched from this one carries it: scan_writes works on the
+                    # source, which never spells a temporary, so a loop header allocates no slot for one and
+                    # a match inside a loop would otherwise carry it to a back edge without one.
+                    merged_ctx.scope.delete_binding(temp_name)
+                return merged_ctx, ctx(), merged_captures
 
     def visit_Raise(self, node):
         raise NotImplementedError("Raise statements are not supported")
@@ -1175,8 +1394,12 @@ class Visitor(ast.NodeVisitor):
         if ctx().project_state.runtime_checks == RuntimeChecks.NONE:
             # Run the msg in a dead context to still get some errors out of it.
             active_ctx = self.active_ctx
-            with using_ctx(ctx().new_disconnected()):
-                self.visit(node.msg)
+            try:
+                with using_ctx(ctx().new_disconnected()):
+                    self.visit(node.msg)
+            except TerminatedCall:
+                # using_ctx has already restored the live context this statement continues in.
+                pass
             self.active_ctx = active_ctx
             return
         ctx().test = test.ir()
@@ -1184,7 +1407,13 @@ class Visitor(ast.NodeVisitor):
         false_ctx = ctx().branch(0)
         set_ctx(false_ctx)
         # The test is known to be false here, so this evaluates the message and terminates like assert_true would.
-        self.handle_call(node, require, validate_value(0), self.visit(node.msg))
+        try:
+            message = self.visit(node.msg)
+            self.handle_call(node, require, validate_value(0), message)
+        except TerminatedCall:
+            # The message terminated on its own, which is all this branch was going to do anyway. The
+            # assertion-passes context is still open, so it has to be resumed below.
+            pass
         set_ctx(true_ctx)
 
     def visit_Import(self, node):
@@ -1193,11 +1422,14 @@ class Visitor(ast.NodeVisitor):
     def visit_ImportFrom(self, node):
         raise NotImplementedError("Import statements are not supported")
 
+    # run rejects both before a body is traced, since a declaration the tracer never reaches still applies to
+    # the whole function.
+
     def visit_Global(self, node):
-        raise NotImplementedError("Global statements are not supported")
+        raise NotImplementedError(_SCOPE_DECLARATION_MESSAGES[ast.Global])
 
     def visit_Nonlocal(self, node):
-        raise NotImplementedError("Nonlocal statements are not supported")
+        raise NotImplementedError(_SCOPE_DECLARATION_MESSAGES[ast.Nonlocal])
 
     def visit_Expr(self, node):
         return self.visit(node.value)
@@ -1234,6 +1466,13 @@ class Visitor(ast.NodeVisitor):
         return handler(self.visit(initial), ast.copy_location(ast.BoolOp(op=node.op, values=rest), node))
 
     def visit_NamedExpr(self, node):
+        if self.function_name == "<genexp>":
+            # Keyed off the visitor rather than the syntax: a walrus inside a lambda inside a generator
+            # expression belongs to the lambda's scope and is fine, and that lambda has its own visitor.
+            raise NotImplementedError(
+                "Assignment expressions (`:=`) in a generator expression are not supported, since Python binds "
+                "the target in the containing scope as the generator is consumed. Use a for loop instead."
+            )
         value = self.visit(node.value)
         self.handle_assign(node.target, value)
         return value
@@ -1290,7 +1529,7 @@ class Visitor(ast.NodeVisitor):
         signature = self.arguments_to_signature(node.args)
 
         def fn(*args, **kwargs):
-            bound = signature.bind(*args, **kwargs)
+            bound = bind_arguments(signature, "<lambda>", args, kwargs)
             bound.apply_defaults()
             return Visitor(
                 self.source_file,
@@ -1318,17 +1557,28 @@ class Visitor(ast.NodeVisitor):
         ctx_init = ctx()
         ctx_init.test = test.ir()
 
+        # An arm that terminates binds nothing, and the merge drops it. Its context still has to be closed
+        # here, or the other arm, which is live, loses its edge.
         set_ctx(ctx_init.branch(None))
-        true_value = self.visit(node.body)
-        ctx().scope.set_value(res_name, true_value)
+        try:
+            true_value = self.visit(node.body)
+            ctx().scope.set_value(res_name, true_value)
+        except TerminatedCall:
+            pass
         ctx_true = ctx()
 
         set_ctx(ctx_init.branch(0))
-        false_value = self.visit(node.orelse)
-        ctx().scope.set_value(res_name, false_value)
+        try:
+            false_value = self.visit(node.orelse)
+            ctx().scope.set_value(res_name, false_value)
+        except TerminatedCall:
+            pass
         ctx_false = ctx()
 
         set_ctx(Context.meet([ctx_true, ctx_false]))
+        if not ctx().live:
+            # Both arms terminated, so there is no result to name: unwind the enclosing statement instead.
+            raise TerminatedCall
         return ctx().scope.get_value(res_name)
 
     def visit_Dict(self, node):
@@ -1360,16 +1610,40 @@ class Visitor(ast.NodeVisitor):
         raise NotImplementedError("Dict comprehensions are not supported")
 
     def visit_GeneratorExp(self, node):
+        from sonolus.script.internal.set_impl import SetImpl
+
+        # Only the outermost iterable is evaluated in the enclosing scope, and eagerly, as in Python. Doing it
+        # here rather than inside the generator's own visitor is what keeps a loop target that shadows a name
+        # read there from changing which binding that read resolves to.
+        first_generator = node.generators[0]
+        iterable = self.visit(first_generator.iter)
+        if isinstance(iterable, SetImpl):
+            iterable = iterable._dict
+        if has_tuple_iter(iterable):
+            initial_iterator = iterable
+        else:
+            if not hasattr(iterable, "__iter__"):
+                raise TypeError(f"'{_type_name(iterable)}' object is not iterable")
+            initial_iterator = self.handle_call(first_generator.iter, iterable.__iter__)
+            if not isinstance(initial_iterator, SonolusIterator):
+                raise ValueError("Unsupported iterator")
+        # Recorded after the iterable, so it is the context the generator is created in: that is what
+        # _validate_bindings compares a captured binding against.
         self.active_ctx = ctx()
         return Visitor(
             self.source_file, inspect.Signature([]).bind(), self.globals, parent=self, function_name="<genexp>"
-        ).run(node)
+        ).run(node, initial_iterator)
 
     def visit_Await(self, node):
         raise NotImplementedError("Await expressions are not supported")
 
     def visit_Yield(self, node):
-        value = self.visit(node.value) if node.value else validate_value(None)
+        try:
+            value = self.visit(node.value) if node.value else validate_value(None)
+        except TerminatedCall:
+            # As in construct_genexpr's element: the yield point stays, in its dead context, and run
+            # resolves an all-dead yield merge to Nothing.
+            value = validate_value(None)
         ctx().scope.set_value("$yield", value)
         self.yield_ctxs.append(ctx())
         resume_ctx = ctx().new_disconnected()
@@ -1378,7 +1652,11 @@ class Visitor(ast.NodeVisitor):
         return validate_value(None)  # send() is unsupported, so yield returns None
 
     def visit_YieldFrom(self, node):
-        value = self.visit(node.value)
+        try:
+            value = self.visit(node.value)
+        except TerminatedCall:
+            # Nothing is yielded, which is what every other path of this method returns too.
+            return validate_value(None)
         if has_tuple_iter(value):
             for entry in tuple_iter(value):
                 ctx().scope.set_value("$yield", validate_value(entry))
@@ -1388,13 +1666,25 @@ class Visitor(ast.NodeVisitor):
                 set_ctx(resume_ctx)
             return validate_value(None)
         if not hasattr(value, "__iter__"):
-            raise TypeError(f"Object of type '{_type_name(value)}' is not iterable")
-        iterator = self.handle_call(node, value.__iter__)
+            raise TypeError(f"'{_type_name(value)}' object is not iterable")
+        try:
+            iterator = self.handle_call(node, value.__iter__)
+        except TerminatedCall:
+            return validate_value(None)
         if not isinstance(iterator, SonolusIterator):
             raise ValueError("Expected a SonolusIterator")
         header = ctx().branch(None)
         set_ctx(header)
-        result = self.handle_call(node, iterator.next)
+        try:
+            result = self.handle_call(node, iterator.next)
+        except TerminatedCall:
+            # The header's only edge is the unconditional one into the terminating call, so the nothing /
+            # some split below is simply never built.
+            return validate_value(None)
+        if result._present._is_py_() and not result._present._as_py_():
+            # This will never yield. Unlike visit_For's, this header is a plain branch and not a loop frame,
+            # so there is nothing to pop: it stays live for whatever follows the abandoned delegation.
+            return validate_value(None)
         nothing_branch = ctx().branch(0)
         some_branch = ctx().branch(None)
         ctx().test = result._present.ir()
@@ -1439,12 +1729,24 @@ class Visitor(ast.NodeVisitor):
             and self._has_real_method(r_val, rcomp_ops[type(op)])
         ):
             result = self.handle_call(node, getattr(r_val, rcomp_ops[type(op)]), l_val)
+        if (
+            (result is None or self.is_not_implemented(result))
+            and type(op) in {ast.In, ast.NotIn}
+            and self._has_real_method(r_val, "__iter__")
+        ):
+            # Python's membership protocol falls back to iterating the container when it defines no
+            # __contains__, which is what makes `x in <generator expression>` work.
+            result = self.handle_call(node, contains_by_iteration, l_val, r_val)
         if result is None or self.is_not_implemented(result):
             # The default object.__eq__/__ne__ compares identity, which is not reliable for traced values.
             if type(op) is ast.Eq and type(l_val) is not type(r_val):
                 return Num._accept_(False)
             elif type(op) is ast.NotEq and type(l_val) is not type(r_val):
                 return Num._accept_(True)
+            elif type(op) in {ast.In, ast.NotIn}:
+                # Membership names only the container, as in Python, and reads the same for `not in`.
+                # Reached when the right operand has neither `__contains__` nor `__iter__`.
+                raise TypeError(f"argument of type '{_type_name(r_val)}' is not a container or iterable")
             else:
                 raise TypeError(
                     f"'{op_to_symbol[type(op)]}' not supported between instances of '{_type_name(l_val)}' and "
@@ -1458,9 +1760,14 @@ class Visitor(ast.NodeVisitor):
         l_val = self.visit(node.left)
         false_ctxs = []
         for i, (op, rhs) in enumerate(zip(node.ops, node.comparators, strict=True)):
-            r_val = self.visit(rhs)
-            inverted = isinstance(op, ast.NotIn)
-            result = self.ensure_boolean_num(self.handle_comparison(node, op, l_val, r_val))
+            try:
+                r_val = self.visit(rhs)
+                inverted = isinstance(op, ast.NotIn)
+                result = self.ensure_boolean_num(self.handle_comparison(node, op, l_val, r_val))
+            except TerminatedCall:
+                # Nothing later in the chain runs. The dead context is merged with the earlier comparisons'
+                # false paths below, the way a statically false comparison's is.
+                break
             if inverted:
                 result = result.not_()
             curr_ctx = ctx()
@@ -1492,27 +1799,38 @@ class Visitor(ast.NodeVisitor):
         kwargs = {}
         for arg in node.args:
             if not ctx().live:
-                return validate_value(None)
+                raise TerminatedCall
             if isinstance(arg, ast.Starred):
                 args.extend(self.handle_starred(self.visit(arg.value)))
             else:
                 args.append(self.visit(arg))
         for keyword in node.keywords:
             if not ctx().live:
-                return validate_value(None)
+                raise TerminatedCall
             if keyword.arg:
-                kwargs[keyword.arg] = self.visit(keyword.value)
+                # Evaluated before the duplicate is reported, as in Python, which builds the whole keyword
+                # mapping before merging it. A name repeated literally is a syntax error the source never
+                # gets past, so only an earlier `**` can have written this key.
+                value = self.visit(keyword.value)
+                if keyword.arg in kwargs:
+                    raise TypeError(f"got multiple values for keyword argument '{keyword.arg}'")
+                kwargs[keyword.arg] = value
             else:
                 value = self.visit(keyword.value)
                 if isinstance(value, DictImpl):
                     value_dict = value._as_dict_with_py_keys()
                     if not all(isinstance(k, str) for k in value_dict):
                         raise ValueError("Keyword arguments must be strings")
+                    for key in value_dict:
+                        if key in kwargs:
+                            raise TypeError(f"got multiple values for keyword argument '{key}'")
                     kwargs.update(value_dict)
                 else:
                     raise ValueError("Starred keyword arguments (**kwargs) must be dictionaries")
         if not ctx().live:
-            return validate_value(None)
+            # An argument terminated the context without unwinding, which a meta_fn such as a
+            # compile-time-false assert_true does. Nothing downstream of this call runs either.
+            raise TerminatedCall
         if fn._is_py_() and fn._as_py_() is _super and not args and not kwargs and "__class__" in self.globals:
             class_value = self.get_name("__class__")
             first_param_name = next(
@@ -1606,9 +1924,18 @@ class Visitor(ast.NodeVisitor):
                 slice_value = self.visit(slice_expr)
                 self.handle_setitem(target, sub_value, slice_value, value)
             case ast.Tuple(elts=elts) | ast.List(elts=elts):
+                # A starred target absorbs any number of values, so the counted messages below would claim an
+                # arity CPython does not require. This arm also serves `for` and comprehension targets.
+                if any(isinstance(elt, ast.Starred) for elt in elts):
+                    raise NotImplementedError("Starred assignment is not supported")
+                if not has_tuple_iter(value):
+                    # Not handle_starred's fallback: this statement has no starred expression for it to name.
+                    raise TypeError(f"Cannot unpack a value of type {_type_name(value)}")
                 values = self.handle_starred(value)
-                if len(elts) != len(values):
-                    raise ValueError("Unpacking assignment requires the same number of elements")
+                if len(values) > len(elts):
+                    raise ValueError(f"too many values to unpack (expected {len(elts)}, got {len(values)})")
+                if len(values) < len(elts):
+                    raise ValueError(f"not enough values to unpack (expected {len(elts)}, got {len(values)})")
                 for elt, v in zip(elts, values, strict=False):
                     self.handle_assign(elt, validate_value(v))
             case ast.Starred():
@@ -1631,7 +1958,12 @@ class Visitor(ast.NodeVisitor):
         res_name = self.new_name("and")
 
         set_ctx(ctx_init.branch(None))
-        r_val = self.ensure_boolean_num(self.visit(r_expr))
+        try:
+            r_val = self.ensure_boolean_num(self.visit(r_expr))
+        except TerminatedCall:
+            # Nothing after the right operand runs, but this branch still has to be closed: the left-false
+            # path is live and would otherwise lose its edge. The merge below drops this one.
+            r_val = Num._accept_(0)
         ctx().scope.set_value(res_name, r_val)
         ctx_true = ctx()
 
@@ -1663,7 +1995,11 @@ class Visitor(ast.NodeVisitor):
         ctx_true = ctx()
 
         set_ctx(ctx_init.branch(0))
-        r_val = self.ensure_boolean_num(self.visit(r_expr))
+        try:
+            r_val = self.ensure_boolean_num(self.visit(r_expr))
+        except TerminatedCall:
+            # As in handle_and, with the live path being the left-true one.
+            r_val = Num._accept_(0)
         ctx().scope.set_value(res_name, r_val)
         ctx_false = ctx()
 
@@ -1690,7 +2026,10 @@ class Visitor(ast.NodeVisitor):
                 case property(fget=getter):
                     return self.handle_call(node, getter, target)
                 case SonolusDescriptor() | FunctionType() | classmethod() | staticmethod() | None:
-                    return validate_value(getattr(target, key))
+                    attribute = getattr(target, key)
+                    if isinstance(target, type):
+                        reject_instance_only_attribute(target, key, attribute)
+                    return validate_value(attribute)
                 case non_descriptor if not hasattr(non_descriptor, "__get__"):
                     return validate_value(getattr(target, key))
                 case _:
@@ -1711,6 +2050,11 @@ class Visitor(ast.NodeVisitor):
                 case SonolusDescriptor():
                     setattr(target, key, value)
                 case _:
+                    if isinstance(target, type):
+                        # The lookup above ran against the metaclass, which is what answers the class-level
+                        # writes that do work (archetype_score_multiplier). Everything else lands here, where
+                        # the class's own descriptors are what the author meant, so resolve those instead.
+                        reject_instance_only_attribute(target, key, _resolve_descriptor(target, key))
                     raise TypeError(f"Unsupported field or descriptor {key}")
 
     def handle_call[**P, R](
@@ -1758,19 +2102,19 @@ class Visitor(ast.NodeVisitor):
             else:
                 if isinstance(target, Value) and hasattr(target, "__getitem__"):
                     return self.handle_call(node, target.__getitem__, key)
-                raise TypeError(f"Cannot get items on {_type_name(target)}")
+                raise TypeError(f"'{_type_name(target)}' object is not subscriptable")
 
     def handle_setitem(self, node: ast.stmt | ast.expr, target: Value, key: Value, value: Value):
         with self.reporting_errors_at_node(node):
             if isinstance(target, Value) and hasattr(target, "__setitem__"):
                 return self.handle_call(node, target.__setitem__, key, value)
-            raise TypeError(f"Cannot set items on {_type_name(target)}")
+            raise TypeError(f"'{_type_name(target)}' object does not support item assignment")
 
     def handle_delitem(self, node: ast.stmt | ast.expr, target: Value, key: Value):
         with self.reporting_errors_at_node(node):
             if isinstance(target, Value) and hasattr(target, "__delitem__"):
                 return self.handle_call(node, target.__delitem__, key)
-            raise TypeError(f"Cannot delete items on {_type_name(target)}")
+            raise TypeError(f"'{_type_name(target)}' object does not support item deletion")
 
     def handle_starred(self, value: Value) -> tuple[Value, ...]:
         if has_tuple_iter(value):
@@ -1865,9 +2209,10 @@ class Visitor(ast.NodeVisitor):
 
     def raise_exception_at_node(self, node: ast.stmt | ast.expr, cause: Exception) -> Never:
         """Throws a compilation error at the given node."""
+        message = _exception_message(cause)
 
         def thrower() -> Never:
-            raise CompilationError(str(cause)) from cause
+            raise CompilationError(message) from cause
 
         self.execute_at_node(node, thrower)
 
@@ -1931,6 +2276,10 @@ class ReportingErrorsAtNode:
         if exc_type is None:
             return
 
+        if issubclass(exc_type, TerminatedCall):
+            # Control flow rather than an error: it unwinds to whichever construct resumes the dead context.
+            return
+
         if issubclass(exc_type, CompilationError):
             raise exc_value from exc_value.__cause__
 
@@ -1971,10 +2320,13 @@ class Generator(TransientValue, SonolusIterator):
         for key, value in self.used_bindings.items():
             v = self.parent
             while v:
+                # Stop at the first scope that binds the name, matching how get_name resolved it at capture
+                # time. Walking on would compare a shadowed outer binding, which is never the captured one.
                 if not isinstance(v.active_ctx.scope.get_binding(key), EmptyBinding):
                     result = v.active_ctx.scope.get_value(key)
                     if result is not value:
                         raise ValueError(f"Binding '{key}' has been modified since the generator was created")
+                    break
                 v = v.parent
 
     def __iter__(self):

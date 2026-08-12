@@ -28,13 +28,14 @@ cdef enum:
 cdef void allocate_func(Func func, int32_t strategy) except *
 
 
-# Fused read-modify-write peephole (place-based).
+# Fused read-modify-write peephole (place-based), plus the self-copy drop.
 # Runs STRICTLY AFTER ``allocate_func`` (so liveness/interference/dead-store logic
 # never sees fused instrs): rewrites, in place, every statement-root
 # ``OPX_SET(p, BinOp(OPX_GET(p), w))`` into the fused runtime op ``Set<BinOp>``
 # (carrying the place in ``aux`` and ``w`` as its sole operand), collapsing
-# ``+1``/``-1`` to ``IncrementPost``/``DecrementPost``. The wire point is the
-# driver ``_pipeline`` for fast + standard; minimal stays un-fused.
+# ``+1``/``-1`` to ``IncrementPost``/``DecrementPost``, and drops every statement-root
+# ``OPX_SET(p, OPX_GET(p))``. The wire point is the driver ``_pipeline`` for
+# fast + standard; minimal stays un-fused and keeps its self-copies.
 cdef void fuse_rmw(Func func) except *
 
 

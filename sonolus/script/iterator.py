@@ -69,36 +69,41 @@ class _Zipper[T](Record, SonolusIterator):
     # Can be a, Pair[a, b], Pair[a, Pair[b, c]], etc.
     iterators: T
 
-    @meta_fn
-    def _get_iterators(self) -> tuple[SonolusIterator, ...]:
-        from sonolus.script.containers import Pair
-
-        iterators = []
-        v = self.iterators
-        while isinstance(v, Pair):
-            iterators.append(v.first)
-            v = v.second
-        iterators.append(v)
-        return tuple(iterators)
-
-    @meta_fn
-    def _get_next_values(self) -> tuple[Any, ...]:
-        from sonolus.script.internal.visitor import compile_and_call
-
-        return tuple(compile_and_call(iterator.next) for iterator in self._get_iterators())
-
-    @meta_fn
-    def _values_to_tuple(self, values: tuple[Any, ...]) -> tuple[Any, ...]:
-        from sonolus.script.internal.visitor import compile_and_call
-
-        return tuple(compile_and_call(value.get_unsafe) for value in values)
-
     def next(self) -> Maybe[tuple[Any, ...]]:
-        values = self._get_next_values()
-        for value in values:
-            if value.is_nothing:
-                return Nothing
-        return Some(self._values_to_tuple(values))
+        return _zip_next(self.iterators, ())
+
+
+@meta_fn
+def _zip_next(chain, values) -> Maybe[tuple[Any, ...]]:
+    """Advance one link of a zipped chain of iterators, splitting the chain at compile time.
+
+    The split must be resolved at compile time so that each arm's advance is emitted inside the branch that
+    found the arm to its left non-empty. That is what makes zip() stop pulling at the first exhausted arm, as
+    Python's does, instead of advancing every arm and only then looking for an empty one.
+
+    `values` carries the arms already advanced, so the last arm is the one that assembles the whole tuple. Handing
+    the result back up the chain instead would cost every arm a second test of what the arm below it just decided.
+    """
+    from sonolus.script.containers import Pair
+    from sonolus.script.internal.visitor import compile_and_call
+
+    if isinstance(chain, Pair):
+        return compile_and_call(_zip_next_pair, chain.first, chain.second, values)
+    return compile_and_call(_zip_next_last, chain, values)
+
+
+def _zip_next_pair(arm, rest, values) -> Maybe[tuple[Any, ...]]:
+    value = arm.next()
+    if value.is_nothing:
+        return Nothing
+    return _zip_next(rest, (*values, value.get_unsafe()))
+
+
+def _zip_next_last(arm, values) -> Maybe[tuple[Any, ...]]:
+    value = arm.next()
+    if value.is_nothing:
+        return Nothing
+    return Some((*values, value.get_unsafe()))
 
 
 class _EmptyIterator(Record, SonolusIterator):

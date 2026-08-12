@@ -184,10 +184,16 @@ class Value:
         raise NotImplementedError
 
     @abstractmethod
-    def _copy_from_(self, value: Any):
+    def _copy_from_(self, value: Any, *, initializing: bool = False):
         """Implements copy assignment (@=).
 
         This is only supported by mutable reference types.
+
+        initializing is set when the copy fills freshly allocated storage rather than overwriting storage the
+        program already holds, as Array(...) construction and an array copy do. Only Record acts on it, to
+        write a Final field while the record is being created; Record and Array relay it, and every other
+        implementation may keep the two-argument signature. Pass it through copy_from rather than calling this
+        directly, so it only reaches implementations that accept it.
         """
         raise NotImplementedError
 
@@ -240,3 +246,21 @@ class Value:
 
 
 Value.__imatmul__._meta_fn_ = True  # type: ignore
+
+
+def accepts_initializing_copy[T: Callable](fn: T) -> T:
+    """Mark a _copy_from_ implementation as accepting the keyword-only initializing flag.
+
+    The mark goes on the function rather than on the class so that a subclass overriding _copy_from_ with the
+    plain two-argument signature, as EntityRef does, does not inherit a claim its override cannot honor.
+    """
+    fn._accepts_initializing_ = True
+    return fn
+
+
+def copy_from(target: Value, value: Any, *, initializing: bool = False) -> None:
+    """Copy value into target, passing initializing on only to implementations that accept it."""
+    if initializing and getattr(type(target)._copy_from_, "_accepts_initializing_", False):
+        target._copy_from_(value, initializing=True)
+    else:
+        target._copy_from_(value)

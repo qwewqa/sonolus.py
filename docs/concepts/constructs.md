@@ -49,8 +49,10 @@ The following constructs are supported in Sonolus.py:
         - Indexing: `a[b]`
         - Call: `f(a, b, c)`
     - Variables: `a`, `b`, `c`
-    - Lambda: `lambda a, b: a + b` (if not on the same line as another lambda or function definition)
-    - Assignment Expression: `(a := b)`
+    - Lambda: `lambda a, b: a + b` (two lambdas may not share a source line when Python is run without column
+      information, as under `-X no_debug_ranges`)
+    - Assignment Expression: `(a := b)` (not inside a generator expression, where Python binds the target in the
+      containing scope as the generator is consumed)
     - Generator Expression: `(x for x in iterable if condition)`
 - Statements:
     - Simple Statements:
@@ -229,8 +231,9 @@ e = Vec2(0, 0) if e is None else e  # Ok, evaluated at compile time
 
 ### Assignment
 
-Most assignment types are supported. Destructuring assignment is supported only for tuples, and the `*`
-operator is not supported.
+Most assignment types are supported. A destructuring assignment accepts a tuple, a dict (which unpacks its
+keys, as in Python), or an enum class as the value. The targets may be written in tuple or list form and
+nested to any depth, but a starred target is not supported.
 
 ```python
 # Ok
@@ -239,9 +242,11 @@ b += 2
 c.x = 3
 d[0] = 4
 (e, f), g = (1, 2), 3
+[h, i] = 1, 2
+j, k = {1: 'a', 2: 'b'}  # Unpacks the keys, as in Python
 
 # Not ok
-h, *i = 1, 2, 3  # Not supported
+p, *q = 1, 2, 3  # Starred targets are not supported
 ```
 
 ### Conditional Statements

@@ -102,6 +102,23 @@ def test_shuffle(_r, values_list):
     assert run_compiled(fn)
 
 
+@given(st.random_module(), lists)
+def test_shuffle_method_on_the_array(_r, values_list):
+    # a.shuffle() delegates to random.shuffle(a), not the reverse, so the direct random.shuffle call above
+    # never reaches it. The shuffled order is random, so the pin is the multiset-preservation property.
+    values = Array(*values_list)
+
+    def fn():
+        a = copy(values)
+        a.shuffle()
+        a.sort()
+        b = copy(values)
+        b.sort()
+        return a == b
+
+    assert run_compiled(fn)
+
+
 @given(st.random_module())
 def test_random(_r):
     def fn():

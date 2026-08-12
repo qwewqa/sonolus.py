@@ -122,8 +122,11 @@ def test_schema_command_stdout_parses_as_json(tmp_path, monkeypatch, capsys):
     assert "Project imported in" in captured.err
 
 
-def _stub_project(*level_names: str) -> SimpleNamespace:
-    return SimpleNamespace(engine=None, levels=[SimpleNamespace(name=name) for name in level_names])
+def _stub_project(*level_names: str, engine_name: str = "engine") -> SimpleNamespace:
+    return SimpleNamespace(
+        engine=SimpleNamespace(name=engine_name),
+        levels=[SimpleNamespace(name=name) for name in level_names],
+    )
 
 
 def test_build_project_rejects_a_level_name_with_a_separator(tmp_path):
@@ -143,6 +146,33 @@ def test_build_project_rejects_a_bad_level_name_before_clearing_dist(tmp_path):
 
     with pytest.raises(ValueError, match=r"Level name '\.\.' is not a usable filename"):
         build_project(_stub_project("good", ".."), tmp_path, None)
+
+    assert previous.read_bytes() == b"previous build"
+
+
+# The engine name is a filename on the collection path that `dev` serves, so build rejecting it there too keeps
+# the two commands agreeing, ahead of the compile the collection path only fails after.
+@pytest.mark.parametrize(
+    ("engine_name", "message"),
+    [
+        ("info", "Engine name 'info' is reserved"),
+        ("list", "Engine name 'list' is reserved"),
+        ("sub/engine", "Engine name 'sub/engine' is not a usable filename"),
+        ("..", r"Engine name '\.\.' is not a usable filename"),
+    ],
+)
+def test_build_project_rejects_a_bad_engine_name(engine_name: str, message: str, tmp_path):
+    with pytest.raises(ValueError, match=message):
+        build_project(_stub_project(engine_name=engine_name), tmp_path, None)
+
+
+def test_build_project_rejects_a_bad_engine_name_before_clearing_dist(tmp_path):
+    previous = tmp_path / "dist" / "engine"
+    previous.parent.mkdir(parents=True)
+    previous.write_bytes(b"previous build")
+
+    with pytest.raises(ValueError, match="Engine name 'info' is reserved"):
+        build_project(_stub_project("good", engine_name="info"), tmp_path, None)
 
     assert previous.read_bytes() == b"previous build"
 

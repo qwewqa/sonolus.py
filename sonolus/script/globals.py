@@ -95,8 +95,11 @@ def _create_global(cls: type, blocks: dict[Mode, Block], offset: int | None):
     ) in enumerate(inspect.get_annotations(cls, eval_str=True).items()):
         # hasattr doesn't work here: it returns True for a field named e.g. mro via the metaclass.
         if name in cls.__dict__:
-            raise TypeError("Default values are not supported for global fields")
-        type_ = validate_concrete_type(annotation)
+            raise TypeError(f"Default values are not supported for global fields: {cls.__name__}.{name}")
+        try:
+            type_ = validate_concrete_type(annotation)
+        except TypeError as e:
+            raise TypeError(f"Invalid annotation for {cls.__name__}.{name}: {e}") from e
         setattr(cls, name, _GlobalField(name, type_, i, field_offset))
         field_offset += type_._size_()
     cls._global_info_ = _GlobalInfo(cls.__name__, field_offset, blocks, offset)  # type: ignore
@@ -238,10 +241,17 @@ def _tutorial_instruction[T](cls: type[T]) -> T:
 def level_memory[T](cls: type[T]) -> T:
     """Define level memory.
 
-    Level memory may be modified during gameplay in sequential callbacks
-    ([`preprocess`][sonolus.script.archetype.PlayArchetype.preprocess],
-    [`update_sequential`][sonolus.script.archetype.PlayArchetype.update_sequential],
-    [`touch`][sonolus.script.archetype.PlayArchetype.touch]).
+    Level memory exists in play, watch, and tutorial mode. Preview mode has no level memory; use
+    [`level_data`][sonolus.script.globals.level_data] there instead.
+
+    In those modes, level memory may be read in any callback and modified in play's
+    [`preprocess`][sonolus.script.archetype.PlayArchetype.preprocess],
+    [`update_sequential`][sonolus.script.archetype.PlayArchetype.update_sequential] and
+    [`touch`][sonolus.script.archetype.PlayArchetype.touch], in watch's
+    [`preprocess`][sonolus.script.archetype.WatchArchetype.preprocess] and
+    [`update_sequential`][sonolus.script.archetype.WatchArchetype.update_sequential], and in tutorial's
+    `preprocess`, `navigate` and `update`.
+
     Compared to level data, it allows modification during gameplay, but prevents some optimizations.
 
     All level memory in a given mode shares a combined limit of 4096 values; exceeding it raises a compilation

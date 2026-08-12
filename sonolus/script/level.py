@@ -34,7 +34,7 @@ class ExportedLevel:
         """Write the exported level to a directory."""
         path = Path(path)
         path.mkdir(parents=True, exist_ok=True)
-        (path / "item.json").write_text(json.dumps(self.item, ensure_ascii=False), encoding="utf-8")
+        (path / "item.json").write_text(json.dumps(self.item, ensure_ascii=False, allow_nan=False), encoding="utf-8")
         (path / "cover").write_bytes(self.cover)
         (path / "bgm").write_bytes(self.bgm)
         if self.preview is not None:

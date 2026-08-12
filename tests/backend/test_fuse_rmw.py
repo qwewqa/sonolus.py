@@ -248,6 +248,145 @@ def test_minimal_never_fuses():
     assert "IncrementPost(" not in text
 
 
+# ==========================================================================
+# Self-copy stores: ``Set(p, Get(p))`` writes back what it just read.
+# ==========================================================================
+
+
+def test_self_copy_store_is_dropped():
+    # The shape an in-place operator leaves behind: the frontend stores the result back through the
+    # target (CPython semantics, and load-bearing for a property target), which for a plain memory
+    # target is a write of the value already there.
+    def build():
+        b0 = BasicBlock(
+            statements=[
+                IRSet(BlockPlace(A, 0), IRConst(9)),
+                IRSet(BlockPlace(A, 0), IRGet(BlockPlace(A, 0))),
+            ]
+        )
+        b0.connect_to(BasicBlock(), None)
+        return b0
+
+    for level in OPT_LEVELS:
+        text = _text(run_passes(build(), level, OptimizerConfig()))
+        assert "20[0] <- 20[0]" not in text, (level, text)
+        assert "20[0] <- 9" in text, (level, text)
+
+
+def test_self_copy_store_through_a_temp_is_dropped():
+    # The write-back as it actually reaches lowering: read into a temp, then store the temp back.
+    # The two places are built independently by lower_from_ssa, so they are the same location under
+    # different place ids -- which is why the drop has to compare them structurally.
+    def build():
+        t = BlockPlace(TempBlock("t", 1), 0, 0)
+        b0 = BasicBlock(
+            statements=[
+                IRSet(BlockPlace(A, 0), IRConst(9)),
+                IRSet(t, IRGet(BlockPlace(A, 0))),
+                IRSet(BlockPlace(A, 0), IRGet(t)),
+            ]
+        )
+        b0.connect_to(BasicBlock(), None)
+        return b0
+
+    for level in OPT_LEVELS:
+        text = _text(run_passes(build(), level, OptimizerConfig()))
+        assert "20[0] <- 20[0]" not in text, (level, text)
+
+
+def test_self_copy_store_with_a_runtime_index_is_dropped():
+    # ``A[i] <- A[i]`` is a no-op whatever i is, and both index reads are pure, so the whole
+    # statement goes -- address included.
+    def build():
+        b0 = BasicBlock(
+            statements=[
+                IRSet(BlockPlace(A, IRGet(BlockPlace(B, 0))), IRGet(BlockPlace(A, IRGet(BlockPlace(B, 0))))),
+                IRInstr(Op.DebugLog, [IRGet(BlockPlace(A, 0))]),
+            ]
+        )
+        b0.connect_to(BasicBlock(), None)
+        return b0
+
+    for level in OPT_LEVELS:
+        text = _text(run_passes(build(), level, OptimizerConfig()))
+        assert "<-" not in text, (level, text)
+
+
+def test_self_copy_store_to_a_different_cell_is_kept():
+    # Guards the drop against matching on the block alone: A[0] <- A[1] moves a value.
+    def build():
+        b0 = BasicBlock(
+            statements=[
+                IRSet(BlockPlace(A, 1), IRConst(9)),
+                IRSet(BlockPlace(A, 0), IRGet(BlockPlace(A, 1))),
+            ]
+        )
+        b0.connect_to(BasicBlock(), None)
+        return b0
+
+    for level in OPT_LEVELS:
+        assert "20[0] <- 20[1]" in _text(run_passes(build(), level, OptimizerConfig()))
+
+
+def test_self_copy_store_with_random_indices_is_kept():
+    # Two Random draws are two observable events, so ``A[Random] <- A[Random]`` reads one cell and
+    # writes another: it is not a self-copy and dropping it would swallow a draw. As with the RMW
+    # case above, only run_fuse_rmw can present an inline draw in an index (production treeify
+    # materializes it first).
+    def build():
+        return BasicBlock(
+            statements=[
+                IRSet(
+                    BlockPlace(A, IRInstr(Op.Random, [IRConst(0), IRConst(4)])),
+                    IRGet(BlockPlace(A, IRInstr(Op.Random, [IRConst(0), IRConst(4)]))),
+                ),
+            ]
+        )
+
+    text = cfg_to_text(run_fuse_rmw(build()))
+    assert "<-" in text, text
+    assert text.count("Random(") >= 2, text
+
+
+def test_minimal_keeps_a_self_copy_store():
+    # Minimal runs no peephole at all (it is the un-fused reference the differentials compare
+    # against), so the statement survives there.
+    def build():
+        b0 = BasicBlock(
+            statements=[
+                IRSet(BlockPlace(A, 0), IRConst(9)),
+                IRSet(BlockPlace(A, 0), IRGet(BlockPlace(A, 0))),
+            ]
+        )
+        b0.connect_to(BasicBlock(), None)
+        return b0
+
+    assert "20[0] <- 20[0]" in _text(run_passes(build(), MINIMAL_PASSES, OptimizerConfig()))
+
+
+def test_differential_self_copy_stores():
+    # Dropping a store is only sound if nothing observable changes: the same program at fast and
+    # standard must still agree with the MINIMAL reference that keeps every self-copy.
+    def build():
+        b0 = BasicBlock(
+            statements=[
+                IRSet(BlockPlace(B, 0), IRConst(1)),
+                IRSet(BlockPlace(A, 0), IRConst(9)),
+                IRSet(BlockPlace(A, 1), IRConst(4)),
+                IRSet(BlockPlace(A, 0), IRGet(BlockPlace(A, 0))),
+                IRSet(BlockPlace(A, IRGet(BlockPlace(B, 0))), IRGet(BlockPlace(A, IRGet(BlockPlace(B, 0))))),
+                IRInstr(Op.DebugLog, [IRGet(BlockPlace(A, 0))]),
+                IRInstr(Op.DebugLog, [IRGet(BlockPlace(A, 1))]),
+            ]
+        )
+        b0.connect_to(BasicBlock(), None)
+        return b0
+
+    it = _assert_levels_match(build)
+    assert it.get(A, 0) == 9.0
+    assert it.get(A, 1) == 4.0
+
+
 def test_array_element_and_temp_scalar_fuse():
     # A temp array element and a temp scalar both RMW to block 10000 after allocation.
     def build():

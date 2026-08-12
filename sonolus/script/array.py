@@ -10,10 +10,10 @@ from sonolus.script.array_like import ArrayLike, get_positive_index
 from sonolus.script.debug import assert_unreachable
 from sonolus.script.internal.context import ctx
 from sonolus.script.internal.error import InternalError
-from sonolus.script.internal.generic import GenericValue, PartialGeneric, validate_concrete_type
+from sonolus.script.internal.generic import GenericValue, PartialGeneric, format_type_arg, validate_concrete_type
 from sonolus.script.internal.impl import validate_value
 from sonolus.script.internal.meta_fn import meta_fn, perf_meta_fn
-from sonolus.script.internal.value import BackingSource, DataValue, Value
+from sonolus.script.internal.value import BackingSource, DataValue, Value, accepts_initializing_copy, copy_from
 from sonolus.script.num import Num
 
 Dim = Literal
@@ -90,7 +90,11 @@ class Array[T, Size](GenericValue, ArrayLike[T], metaclass=ArrayMeta):
                     f"{cls.__name__} constructor should be used with at least one value if type is not specified"
                 )
             if len(types) > 1:
-                raise TypeError(f"{cls.__name__} constructor should be used with values of the same type, got {types}")
+                # Sorted: a set of types iterates in heap-address order, which varies between processes.
+                type_names = ", ".join(sorted(format_type_arg(t) for t in types))
+                raise TypeError(
+                    f"{cls.__name__} constructor should be used with values of the same type, got {type_names}"
+                )
             parameterized_cls = cls[types.pop(), len(args)]
         else:
             values = [cls.element_type()._accept_(arg) for arg in args]
@@ -100,7 +104,7 @@ class Array[T, Size](GenericValue, ArrayLike[T], metaclass=ArrayMeta):
         if ctx():
             place = ctx().alloc(size=parameterized_cls._size_())
             result: parameterized_cls = parameterized_cls._from_place_(place)
-            result._copy_from_(parameterized_cls._with_value(values))
+            result._copy_from_(parameterized_cls._with_value(values), initializing=True)
             return result
         else:
             return parameterized_cls._with_value([value._copy_() for value in values])
@@ -180,17 +184,18 @@ class Array[T, Size](GenericValue, ArrayLike[T], metaclass=ArrayMeta):
     def _set_(self, value: Any):
         raise TypeError("Array does not support _set_")
 
-    def _copy_from_(self, value: Any):
+    @accepts_initializing_copy
+    def _copy_from_(self, value: Any, *, initializing: bool = False):
         if not isinstance(value, type(self)):
             raise TypeError("Cannot copy from different type")
         for i in range(self.size()):
-            self[i] = value[i]
+            self._set_unchecked(i, value[i], initializing=initializing)
 
     def _copy_(self) -> Array[T, Size]:
         if ctx():
             place = ctx().alloc(size=self._size_())
             result: Self = self._from_place_(place)
-            result._copy_from_(self)
+            result._copy_from_(self, initializing=True)
             return result
         else:
             assert isinstance(self._value, list)
@@ -312,6 +317,9 @@ class Array[T, Size](GenericValue, ArrayLike[T], metaclass=ArrayMeta):
             index: The index to set.
             value: The value to set.
         """
+        self._set_unchecked(index, value)
+
+    def _set_unchecked(self, index: Num, value: T, *, initializing: bool = False):
         index = Num._accept_(index)
         value = self.element_type()._accept_(value)
         if ctx():
@@ -339,7 +347,7 @@ class Array[T, Size](GenericValue, ArrayLike[T], metaclass=ArrayMeta):
             if self.element_type()._is_value_type_():
                 dst._set_(value)
             else:
-                dst._copy_from_(value)
+                copy_from(dst, value, initializing=initializing)
         else:
             if not isinstance(self._value, list):
                 raise InternalError("Unexpected mutation of non compile time constant array")
@@ -353,7 +361,7 @@ class Array[T, Size](GenericValue, ArrayLike[T], metaclass=ArrayMeta):
             if self.element_type()._is_value_type_():
                 dst._set_(value)
             else:
-                dst._copy_from_(value)
+                copy_from(dst, value, initializing=initializing)
 
     def __eq__(self, other):
         """Return whether the other value is an array-like of the same length with equal elements."""

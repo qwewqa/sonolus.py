@@ -167,7 +167,9 @@ class GenericValue(Value):
 
     def __class_getitem__(cls, args: Any) -> type[Self]:
         if cls._type_args_ is not None:
-            raise TypeError(f"Type {cls.__name__} is already parameterized")
+            # A Record with no type parameters also lands here: it gets an empty _type_args_ at definition, so
+            # a single guard covers both a repeated subscript and a subscript on a class taking no parameters.
+            raise TypeError(f"Type {cls.__name__} is already parameterized or has no parameters")
         if not isinstance(args, tuple):
             args = (args,)
         validated_args = []

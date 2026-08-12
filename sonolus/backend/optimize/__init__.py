@@ -89,8 +89,9 @@ def optimize_and_finalize(
 ) -> EngineNode:
     """Optimize `entry` at `level` and emit its `EngineNode` in one fused pass.
 
-    Equivalent to `cfg_to_engine_node(run_passes(entry, level, config))` but
-    without the intermediate `BasicBlock` export/re-import.
+    Equivalent to `cfg_to_engine_node(run_passes(entry, level, config), config)`
+    but without the intermediate `BasicBlock` export/re-import. Both calls need
+    the config: emission reads it too, not just the passes.
     """
     from sonolus.backend._opt import driver
 
@@ -98,12 +99,16 @@ def optimize_and_finalize(
     return driver.optimize_and_finalize_cfg(entry, _level_name(level), config.mode, config.callback)
 
 
-def cfg_to_engine_node(entry: BasicBlock) -> EngineNode:
+def cfg_to_engine_node(entry: BasicBlock, config: OptimizerConfig | None = None) -> EngineNode:
     """Emit an `EngineNode` from an already-optimized CFG (no passes run).
 
     Non-destructive on `entry`. Used by conftest/goldens to emit a CFG that
-    `run_passes` already optimized.
+    `run_passes` already optimized. Emission re-marshals `entry`, and some
+    rewrites read the block writability that marshal-in resolves from the config,
+    so pass the same config `run_passes` was given or the emitted tree can differ
+    from the one the build ships.
     """
     from sonolus.backend._opt import emit
 
-    return emit.emit_cfg(entry)
+    config = config or OptimizerConfig()
+    return emit.emit_cfg(entry, config.mode, config.callback)

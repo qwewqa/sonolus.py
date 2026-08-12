@@ -3,8 +3,23 @@ from enum import Enum
 from typing import Any, Self
 
 from sonolus.script.internal.impl import validate_value
+from sonolus.script.internal.introspection import describe_value
 from sonolus.script.internal.simple_meta_fn import simple_meta_fn
 from sonolus.script.internal.transient import TransientValue
+
+
+@simple_meta_fn
+def _index_not_found():
+    # Local import, and hence a meta_fn: sonolus.script.debug imports sonolus.script.internal.impl, which
+    # imports this module, so a module-scope import from it is a cycle. A traced function cannot carry an
+    # import statement of its own.
+    from sonolus.script.debug import error, runtime_checks_enabled
+
+    # Gated on runtime_checks_enabled rather than written as assert_true(False, ...): a miss in a tuple of
+    # compile-time constants folds to a statically false condition, and assert_true deliberately still fires on
+    # those, which would terminate even with checks disabled and diverge from Range.index.
+    if runtime_checks_enabled():
+        error("tuple.index(x): x not in tuple")
 
 
 class TupleImpl(TransientValue):
@@ -12,6 +27,13 @@ class TupleImpl(TransientValue):
 
     def __init__(self, value: tuple):
         self.value = value
+
+    def __repr__(self):
+        # Without this, object.__repr__ puts a heap address into any error message interpolating a tuple,
+        # directly or through the repr of a value holding one.
+        if len(self.value) == 1:
+            return f"({describe_value(self.value[0])},)"
+        return f"({', '.join(describe_value(item) for item in self.value)})"
 
     @simple_meta_fn
     def __getitem__(self, item):
@@ -98,6 +120,33 @@ class TupleImpl(TransientValue):
             if element == item:
                 return True
         return False
+
+    def index(self, value, start: int = 0, stop: int | None = None):
+        """Return the index of the first element of the tuple equal to the given value.
+
+        With runtime checks enabled, a missing value terminates the callback rather than returning -1 as
+        array-like types do, which is as close as the subset gets to the `ValueError` Python raises. The
+        termination is gated on those checks, so with them disabled -1 surfaces instead, matching
+        `Range.index`. The elements are compared in order at compile time, so a tuple whose elements are all
+        compile-time constants resolves to a constant index.
+
+        Args:
+            value: The value to search for.
+            start: The index to start searching from.
+            stop: The index to stop searching at. If `None`, search to the end of the tuple.
+        """
+        length = len(self.value)
+        if stop is None:
+            stop = length
+        # Bounds are clipped rather than rejected, as in Python: a negative bound counts from the end, and one
+        # out of range is pulled back to the nearest end.
+        start = max(start + (start < 0) * length, 0)
+        stop = min(stop + (stop < 0) * length, length)
+        for i, element in enumerate(self.value):
+            if start <= i < stop and element == value:
+                return i
+        _index_not_found()
+        return -1
 
     @staticmethod
     @simple_meta_fn

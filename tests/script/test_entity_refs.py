@@ -21,6 +21,7 @@ from sonolus.backend.place import BlockPlace
 from sonolus.build.compile import callback_to_cfg
 from sonolus.script.archetype import EntityRef, PlayArchetype
 from sonolus.script.internal.context import ModeContextState, ProjectContextState, RuntimeChecks
+from sonolus.script.internal.error import CompilationError
 from sonolus.script.internal.meta_fn import meta_fn
 from sonolus.script.internal.visitor import clear_frontend_caches, compile_and_call
 from sonolus.script.num import Num
@@ -200,3 +201,19 @@ def test_entity_ref_record_field_converts_to_an_any_parameterization():
 def test_entity_ref_record_field_converts_to_a_base_parameterization():
     assert BaseRefHolder(EntityRef[RefSub](index=3)).ref.archetype() is RefBase
     assert run_and_validate(lambda: BaseRefHolder(EntityRef[RefSub](index=3)).ref.index) == 3
+
+
+def test_entity_ref_in_a_boolean_context_is_rejected():
+    def fn():
+        ref = EntityRef[RefBase](index=0)
+        if ref:
+            return 1.0
+        return 0.0
+
+    with pytest.raises(CompilationError, match="EntityRef cannot be used in a boolean context"):
+        _compile_and_run(fn, {})
+
+
+def test_entity_ref_bool_outside_compilation_is_true():
+    # Host-side, an EntityRef is an ordinary truthy object, so `if ref:` in build-time code keeps working.
+    assert bool(EntityRef[RefBase](index=0)) is True

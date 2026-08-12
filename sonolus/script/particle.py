@@ -4,14 +4,27 @@ from collections.abc import Iterable
 from dataclasses import dataclass
 from typing import Annotated, Any, NewType, dataclass_transform, get_origin
 
+from sonolus.backend.mode import Mode
 from sonolus.backend.ops import Op
 from sonolus.script.array_like import ArrayLike, check_positive_index
 from sonolus.script.debug import static_error
-from sonolus.script.internal.introspection import get_field_specifiers
-from sonolus.script.internal.meta_fn import perf_meta_fn
+from sonolus.script.internal.context import ctx
+from sonolus.script.internal.introspection import describe_value, get_field_specifiers
+from sonolus.script.internal.meta_fn import meta_fn, perf_meta_fn
 from sonolus.script.internal.native import native_function
 from sonolus.script.quad import QuadLike, flatten_quad
 from sonolus.script.record import Record
+
+
+@meta_fn
+def _check_particle_mode() -> None:
+    if ctx() and ctx().mode_state.mode is Mode.PREVIEW:
+        raise RuntimeError(
+            f"Particle effects are not available in '{ctx().mode_state.mode.name}' mode, only in PLAY, WATCH, "
+            "TUTORIAL. In code shared with preview, guard the call with a compile-time mode check such as "
+            "'if not is_preview():', which eliminates the branch in preview. A runtime check such as "
+            "Particle.is_available does not work, since both branches of a runtime check are compiled."
+        )
 
 
 class Particle(Record):
@@ -22,12 +35,20 @@ class Particle(Record):
     @property
     @perf_meta_fn
     def is_available(self) -> bool:
-        """Check if the particle effect is available."""
+        """Whether the particle effect is available.
+
+        This check is available in every mode, but it cannot make spawning legal in preview: a preview build
+        rejects a spawn call inside it, since both branches of a runtime check are compiled.
+        """
         return _has_particle_effect(self.id)
 
     @perf_meta_fn
     def spawn(self, quad: QuadLike, duration: float, loop: bool = False) -> ParticleHandle:
         """Spawn the particle effect.
+
+        Not available in preview mode. In code shared with preview, guard the call with a compile-time mode
+        check such as `if not is_preview():` (see [`is_preview`][sonolus.script.runtime.is_preview]): a branch
+        that is false at compile time is eliminated.
 
         Args:
             quad: The quad to spawn the particle effect on.
@@ -37,6 +58,7 @@ class Particle(Record):
         Returns:
             A handle to the spawned particle effect.
         """
+        _check_particle_mode()
         return ParticleHandle(_spawn_particle_effect(self.id, *flatten_quad(quad), duration, loop))
 
 
@@ -48,13 +70,24 @@ class ParticleHandle(Record):
     def move(self, quad: QuadLike) -> None:
         """Move the particle effect to a new location.
 
+        Not available in preview mode. In code shared with preview, guard the call with a compile-time mode
+        check such as `if not is_preview():` (see [`is_preview`][sonolus.script.runtime.is_preview]): a branch
+        that is false at compile time is eliminated.
+
         Args:
             quad: The new quad to move the particle effect to.
         """
+        _check_particle_mode()
         _move_particle_effect(self.id, *flatten_quad(quad))
 
     def destroy(self) -> None:
-        """Destroy the particle effect."""
+        """Destroy the particle effect.
+
+        Not available in preview mode. In code shared with preview, guard the call with a compile-time mode
+        check such as `if not is_preview():` (see [`is_preview`][sonolus.script.runtime.is_preview]): a branch
+        that is false at compile time is eliminated.
+        """
+        _check_particle_mode()
         _destroy_particle_effect(self.id)
 
 
@@ -145,6 +178,8 @@ def particle(name: str) -> Any:
 
 def particle_group(names: Iterable[str]) -> Any:
     """Define a particle group with the given names."""
+    if isinstance(names, str | bytes | bytearray):
+        raise TypeError(f"Expected a sequence of names, got {names!r}; one name is written ({names!r},)")
     return _ParticleGroupInfo(list(names))
 
 
@@ -171,28 +206,27 @@ def particles[T](cls: type[T]) -> T | Particles:
     names = []
     i = 0
     for name, annotation in get_field_specifiers(cls).items():
+        described = describe_value(annotation)
         if get_origin(annotation) is not Annotated:
-            raise TypeError(f"Invalid annotation for particles: {annotation} on field {name}")
+            raise TypeError(f"Invalid annotation for particles: {described} on field {name}")
         annotation_type = annotation.__args__[0]
         annotation_values = annotation.__metadata__
         if len(annotation_values) != 1:
             raise TypeError(
-                f"Invalid annotation for particles: {annotation} on field {name}, too many annotation values"
+                f"Invalid annotation for particles: {described} on field {name}, too many annotation values"
             )
         particle_info = annotation_values[0]
         match particle_info:
             case _ParticleInfo(name=particle_name):
                 if annotation_type is not Particle:
-                    raise TypeError(
-                        f"Invalid annotation for particles: {annotation} on field {name}, expected Particle"
-                    )
+                    raise TypeError(f"Invalid annotation for particles: {described} on field {name}, expected Particle")
                 names.append(particle_name)
                 setattr(instance, name, Particle(i))
                 i += 1
             case _ParticleGroupInfo(names=particle_names):
                 if annotation_type is not ParticleGroup:
                     raise TypeError(
-                        f"Invalid annotation for particles: {annotation} on field {name}, expected ParticleGroup"
+                        f"Invalid annotation for particles: {described} on field {name}, expected ParticleGroup"
                     )
                 start_id = i
                 count = len(particle_names)
@@ -201,7 +235,7 @@ def particles[T](cls: type[T]) -> T | Particles:
                 i += count
             case _:
                 raise TypeError(
-                    f"Invalid annotation for particles: {annotation} on field {name}, unknown particle info, "
+                    f"Invalid annotation for particles: {described} on field {name}, unknown particle info, "
                     f"expected a particle() or particle_group() specifier"
                 )
     instance._particles_ = names

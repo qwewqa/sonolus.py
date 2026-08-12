@@ -1,6 +1,7 @@
 from typing import Final, Self
 
 from sonolus.script.array_like import ArrayLike, get_positive_index
+from sonolus.script.debug import assert_true, static_error
 from sonolus.script.internal.context import ctx
 from sonolus.script.internal.impl import validate_value
 from sonolus.script.internal.meta_fn import meta_fn
@@ -23,8 +24,6 @@ class Range(Record, ArrayLike[int]):
     @classmethod
     @meta_fn
     def frozen(cls, start: int, stop: int | None = None, step: int = 1) -> Self:
-        from sonolus.script.debug import assert_true
-
         if stop is None:
             start, stop = 0, start
         step = Num._accept_(step)
@@ -63,7 +62,24 @@ class Range(Record, ArrayLike[int]):
         return self.start + index * self.step
 
     def __setitem__(self, index: int, value: int):
-        raise TypeError("Range does not support item assignment")
+        static_error("Range does not support item assignment")
+
+    def index(self, value: int, start: int = 0, stop: int | None = None) -> int:
+        """Return the index of the first element of the range equal to the given value.
+
+        With runtime checks enabled, a missing value terminates the callback rather than returning -1 as other
+        array-like types do, which is as close as the subset gets to the `ValueError` Python raises. The check
+        is an `assert_true`, so with checks disabled the inherited `ArrayLike.index` result of -1 surfaces
+        instead.
+
+        Args:
+            value: The value to search for.
+            start: The index to start searching from.
+            stop: The index to stop searching at. If `None`, search to the end of the range.
+        """
+        result = super().index(value, start, stop)
+        assert_true(result != -1, "range.index(x): x not in range")
+        return result
 
     @property
     def last(self) -> int:

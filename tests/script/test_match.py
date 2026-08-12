@@ -1114,3 +1114,362 @@ def test_match_value_pattern_with_terminating_eq_terminates():
 
     with pytest.raises(AssertionError, match="eq says no"):
         run_and_validate(fn)
+
+
+class Unrelated(Record):
+    n: Num
+
+
+class PropertyHolder(Record):
+    a: Num
+    b: Num
+
+    @property
+    def p(self) -> Num:
+        return self.b
+
+
+def test_match_class_pattern_reads_no_property_after_a_statically_failing_sub_pattern():
+    # `a=Unrelated()` cannot match a Num, so it leaves the arm's context dead. The keyword loop has to stop
+    # there, as the sequence and or-pattern loops do: `p` is a property, so reading it would trace its
+    # getter from that dead context and report a terminating call this program does not contain.
+    def fn():
+        h = PropertyHolder(1, 2)
+        match h:
+            case PropertyHolder(a=Unrelated(), p=1):
+                return 10
+            case _:
+                return -1
+
+    assert run_and_validate(fn) == -1
+
+
+def test_match_capture_does_not_leak_from_failed_sequence_pattern():
+    # CPython applies a pattern's captures only once the whole pattern has matched, so a case that
+    # binds and then fails leaves the name at its pre-match value.
+    def fn():
+        a = 99
+        match Array(1, 2):
+            case [a, 3]:
+                pass
+            case _:
+                pass
+        return a
+
+    assert run_and_validate(fn) == 99
+
+
+def test_match_capture_does_not_leak_from_failed_runtime_sub_pattern():
+    # The failing sub-pattern is a real runtime branch here, not a statically folded one.
+    def fn():
+        a = 99
+        arr = Array(7, black_box_value(4))
+        match arr:
+            case [a, 3]:
+                pass
+            case _:
+                pass
+        return a
+
+    assert run_and_validate(fn) == 99
+
+
+def test_match_capture_does_not_leak_from_failed_class_keyword_pattern():
+    def fn():
+        a = 99
+        match Point(1, 2):
+            case Point(x=a, y=3):
+                pass
+            case _:
+                pass
+        return a
+
+    assert run_and_validate(fn) == 99
+
+
+def test_match_capture_does_not_leak_from_failed_class_positional_pattern():
+    def fn():
+        a = 99
+        match Point(1, 2):
+            case Point(a, 3):
+                pass
+            case _:
+                pass
+        return a
+
+    assert run_and_validate(fn) == 99
+
+
+def test_match_as_capture_does_not_leak_from_failed_pattern():
+    def fn():
+        a = 99
+        match Array(1, 2):
+            case [1 as a, 3]:
+                pass
+            case _:
+                pass
+        return a
+
+    assert run_and_validate(fn) == 99
+
+
+def test_match_nested_sequence_capture_does_not_leak_from_failed_pattern():
+    def fn():
+        a = 99
+        arr = Array(Array(1, 2), Array(3, 4))
+        match arr:
+            case [[a, 5], _]:
+                pass
+            case _:
+                pass
+        return a
+
+    assert run_and_validate(fn) == 99
+
+
+def test_match_leaked_capture_does_not_select_a_later_arm():
+    # The consequence of a leak: the second case's guard reads `a`, so a stale binding runs a
+    # different arm body.
+    def fn():
+        a = 0
+        match Array(1, 2):
+            case [a, 3]:
+                debug_log(1)
+            case _ if a == 1:
+                debug_log(2)
+            case _:
+                debug_log(3)
+        return a
+
+    assert run_and_validate(fn) == 0
+
+
+def test_match_capture_under_or_does_not_leak_from_failed_pattern():
+    # The capture is on the MatchAs above the or-pattern.
+    def fn():
+        y = 99
+        match Array(1, 2):
+            case [(1 | 2) as y, 3]:
+                pass
+            case _:
+                pass
+        return y
+
+    assert run_and_validate(fn) == 99
+
+
+def test_match_capture_inside_or_alternative_does_not_leak_from_failed_pattern():
+    # The capture is inside each alternative, so it has to survive the or-pattern's merge and still
+    # not be visible on the path where the trailing literal fails.
+    def fn():
+        y = 99
+        match Array(1, 2):
+            case [(1 as y) | (2 as y), 3]:
+                pass
+            case _:
+                pass
+        return y
+
+    assert run_and_validate(fn) == 99
+
+
+def test_match_top_level_or_capture_does_not_leak_from_failed_pattern():
+    def fn():
+        y = 99
+        match Array(1, 2):
+            case [y, 5] | [y, 3]:
+                pass
+            case _:
+                pass
+        return y
+
+    assert run_and_validate(fn) == 99
+
+
+def test_match_capture_does_not_leak_from_failed_class_sub_pattern():
+    # The sub-pattern that fails is a static class check rather than a value test.
+    def fn():
+        y = 99
+        match Array(1, 2):
+            case [y, Array()]:
+                pass
+            case _:
+                pass
+        return y
+
+    assert run_and_validate(fn) == 99
+
+
+def test_match_or_capture_inside_loop_does_not_leak():
+    # An or-pattern's captures are merged through temporary bindings, which must not survive into a
+    # loop's back edge.
+    def fn():
+        total = 0
+        y = 0
+        i = 0
+        while i < 4:
+            total = total * 10 + y
+            match Array(i, 2):
+                case [(1 as y) | (2 as y), 9]:
+                    pass
+                case _:
+                    pass
+            i += 1
+        return total
+
+    assert run_and_validate(fn) == 0
+
+
+def test_match_or_capture_inside_loop_is_kept_when_the_pattern_matches():
+    def fn():
+        total = 0
+        y = 0
+        i = 0
+        while i < 4:
+            total = total * 10 + y
+            match Array(i, 2):
+                case [(1 as y) | (2 as y), 2]:
+                    pass
+                case _:
+                    pass
+            i += 1
+        return total
+
+    assert run_and_validate(fn) == 12
+
+
+def test_match_capture_is_kept_when_the_guard_fails():
+    # A failing guard is the one place CPython does keep the captures.
+    def fn():
+        a = 99
+        match Array(1, 2):
+            case [a, b] if b == 5:
+                pass
+            case _:
+                pass
+        return a
+
+    assert run_and_validate(fn) == 1
+
+
+def test_match_capture_at_the_end_of_a_failed_or_alternative_does_not_leak():
+    def fn():
+        a = 99
+        match Array(7, 2):
+            case [1, a] | [2, a]:
+                pass
+            case _:
+                pass
+        return a
+
+    assert run_and_validate(fn) == 99
+
+
+def test_match_capture_is_kept_when_the_pattern_matches():
+    def fn():
+        a = 99
+        match Array(1, 2):
+            case [a, 2]:
+                pass
+            case _:
+                pass
+        return a
+
+    assert run_and_validate(fn) == 1
+
+
+def test_match_capture_is_kept_when_a_runtime_pattern_matches():
+    def fn():
+        a = 99
+        arr = Array(7, black_box_value(3))
+        match arr:
+            case [a, 3]:
+                debug_log(1)
+            case _:
+                debug_log(2)
+        return a
+
+    assert run_and_validate(fn) == 7
+
+
+def test_match_capture_of_a_different_type_conflicts_with_the_pre_match_binding():
+    # The capture no longer reaches the not-matching path, but the matching path is still traced, so `a`
+    # holds a record on one and a Num on the other. That is the subset's single-live-definition rule
+    # rather than a leak, and the read after the match is where it surfaces.
+    def fn():
+        a = Point(1, 2)
+        match Array(1, 2):
+            case [a, 3]:
+                pass
+            case _:
+                pass
+        return a.x
+
+    with pytest.raises(CompilationError, match="Binding 'a' has multiple conflicting definitions"):
+        run_compiled(fn)
+
+
+def test_match_capture_that_is_the_only_binding_is_not_defined_after_a_failed_pattern():
+    # Python raises UnboundLocalError here. Deferring the capture leaves the name unbound on the
+    # not-matching path, which the compiler reports at the read.
+    def fn():
+        match Array(1, 2):
+            case [a, 5, 6]:
+                pass
+            case _:
+                pass
+        return a
+
+    with pytest.raises(CompilationError, match="Name a is not defined"):
+        run_compiled(fn)
+
+
+def test_match_capture_that_is_the_only_binding_is_not_guaranteed_after_a_runtime_pattern():
+    def fn():
+        match Array(1, 2):
+            case [a, 3]:
+                pass
+            case _:
+                pass
+        return a
+
+    with pytest.raises(CompilationError, match="Binding 'a' has multiple conflicting definitions"):
+        run_compiled(fn)
+
+
+def test_match_capture_of_a_record_does_not_leak_into_a_num_binding():
+    def fn():
+        a = 1
+        match Array(Point(4, 5), Point(6, 7)):
+            case [a, 3]:
+                pass
+            case _:
+                pass
+        return a + 1
+
+    assert run_and_validate(fn) == 2
+
+
+def test_match_or_capture_of_conflicting_records_reports_the_capture_name():
+    # The alternatives bind different objects of a reference type, which cannot merge. The error has to
+    # name the capture rather than the temporary the alternatives were merged through.
+    def fn():
+        match Array(Point(0, 1), Point(1, 2)):
+            case [Point(0, _) as p, _] | [_, Point(1, _) as p]:
+                return p.y
+            case _:
+                return -1
+
+    with pytest.raises(CompilationError, match="Binding 'p' has multiple conflicting definitions"):
+        run_compiled(fn)
+
+
+def test_match_or_capture_of_conflicting_records_still_compiles_when_unread():
+    def fn():
+        match Array(Point(0, 1), Point(1, 2)):
+            case [Point(0, _) as p, _] | [_, Point(1, _) as p]:  # noqa: F841
+                return 1
+            case _:
+                return -1
+
+    assert run_and_validate(fn) == 1

@@ -1,5 +1,6 @@
 from collections.abc import Callable
 from datetime import datetime
+from os import PathLike
 from pathlib import Path
 from typing import cast
 
@@ -171,7 +172,11 @@ def add_level_to_collection(collection: Collection, project: Project, level: Lev
 def load_resource(collection: Collection, asset: Asset | None, base_path: Path, default: bytes) -> Srl:
     if asset is None:
         return collection.add_asset(default)
-    if isinstance(asset, str) and not asset.startswith(("http://", "https://")):
+    if isinstance(asset, str) and asset.startswith(("http://", "https://")):
+        return collection.add_asset(asset)
+    if isinstance(asset, str | PathLike):
+        # Every path spelling resolves against the project's resources directory; an absolute path is unchanged
+        # by the join and so still loads from where it points.
         return collection.add_asset(base_path / asset)
     return collection.add_asset(asset)
 

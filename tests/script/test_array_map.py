@@ -6,7 +6,8 @@ from hypothesis import strategies as st
 from sonolus.script.array import Array
 from sonolus.script.containers import ArrayMap, Pair, VarArray
 from sonolus.script.debug import assert_false, assert_true
-from tests.script.conftest import run_and_validate
+from sonolus.script.internal.context import RuntimeChecks
+from tests.script.conftest import run_and_validate, run_compiled
 
 ints = st.integers(min_value=-999, max_value=999)
 maps = st.dictionaries(ints, ints, min_size=1, max_size=20)
@@ -333,3 +334,139 @@ def test_array_map_truthiness_non_empty():
         return 1 if x else 0
 
     assert run_and_validate(fn) == 1
+
+
+MISSING_KEY = 3
+
+
+def _filled_map():
+    am = ArrayMap[int, int, 4].new()
+    am[1] = 10
+    am[2] = 20
+    return am
+
+
+# The missing-key paths call debug.error(), which terminates the callback instead of raising, so there is no
+# plain-Python behaviour for run_and_validate to compare against: a dict-backed reference raising KeyError would
+# describe something the compiled code never does. run_compiled with an explicit RuntimeChecks is the tool that
+# observes termination, following tests/script/test_assert.py.
+def test_getitem_missing_key_terminates():
+    def fn():
+        am = _filled_map()
+        value = am[MISSING_KEY]
+        # Not reached: error() terminates the callback.
+        return value + 1000
+
+    log_calls = []
+    assert run_compiled(fn, runtime_checks=RuntimeChecks.TERMINATE, log_callback=log_calls.append) == 0
+    assert log_calls == []
+
+    log_calls = []
+    assert run_compiled(fn, runtime_checks=RuntimeChecks.NOTIFY_AND_TERMINATE, log_callback=log_calls.append) == 0
+    assert len(log_calls) == 1
+
+
+def test_delitem_missing_key_terminates():
+    def fn():
+        am = _filled_map()
+        del am[MISSING_KEY]
+        return 1
+
+    log_calls = []
+    assert run_compiled(fn, runtime_checks=RuntimeChecks.TERMINATE, log_callback=log_calls.append) == 0
+    assert log_calls == []
+
+    log_calls = []
+    assert run_compiled(fn, runtime_checks=RuntimeChecks.NOTIFY_AND_TERMINATE, log_callback=log_calls.append) == 0
+    assert len(log_calls) == 1
+
+
+def test_pop_missing_key_terminates():
+    def fn():
+        am = _filled_map()
+        return am.pop(MISSING_KEY) + 1000
+
+    log_calls = []
+    assert run_compiled(fn, runtime_checks=RuntimeChecks.TERMINATE, log_callback=log_calls.append) == 0
+    assert log_calls == []
+
+    log_calls = []
+    assert run_compiled(fn, runtime_checks=RuntimeChecks.NOTIFY_AND_TERMINATE, log_callback=log_calls.append) == 0
+    assert len(log_calls) == 1
+
+
+def test_present_key_lookups_do_not_false_fire():
+    # The counterpart the three terminating tests need: a mutation that always terminates would pass without it.
+    def fn():
+        am = _filled_map()
+        # Both reads finish before anything is removed: __getitem__ returns storage that stays part of the map.
+        total = am[2] + am[1]
+        am.pop(1)
+        del am[2]
+        return total + len(am)
+
+    log_calls = []
+    assert run_compiled(fn, runtime_checks=RuntimeChecks.NOTIFY_AND_TERMINATE, log_callback=log_calls.append) == 30
+    assert log_calls == []
+
+
+def test_setitem_new_key_when_full_terminates():
+    def fn():
+        am = ArrayMap[int, int, 2].new()
+        am[1] = 10
+        am[2] = 20
+        am[3] = 30
+        return 1
+
+    log_calls = []
+    assert run_compiled(fn, runtime_checks=RuntimeChecks.TERMINATE, log_callback=log_calls.append) == 0
+    assert log_calls == []
+
+    log_calls = []
+    assert run_compiled(fn, runtime_checks=RuntimeChecks.NOTIFY_AND_TERMINATE, log_callback=log_calls.append) == 0
+    assert len(log_calls) == 1
+
+
+def test_setitem_existing_key_when_full_succeeds():
+    def fn():
+        am = ArrayMap[int, int, 2].new()
+        am[1] = 10
+        am[2] = 20
+        assert_true(am.is_full())
+        am[1] = 99
+        assert_true(am.is_full())
+        assert_true(len(am) == 2)
+        return am[1]
+
+    assert run_and_validate(fn) == 99
+
+
+def test_array_map_clear():
+    def fn():
+        am = ArrayMap[int, int, 4].new()
+        am[1] = 10
+        am[2] = 20
+        am.clear()
+        assert_false(am.is_full())
+        assert_false(1 in am)
+        assert_true(len(am) == 0)
+        am[5] = 50
+        return am
+
+    assert sorted(run_and_validate(fn).items()) == [(5, 50)]
+
+
+def test_var_array_is_full():
+    def fn():
+        va = VarArray[int, 3].new()
+        empty = 1 if va.is_full() else 0
+        va.append(7)
+        va.append(8)
+        partial = 1 if va.is_full() else 0
+        va.append(9)
+        full = 1 if va.is_full() else 0
+        va.pop(0)
+        after_pop = 1 if va.is_full() else 0
+        return Array(empty, partial, full, after_pop)
+
+    assert list(run_and_validate(fn)) == [0, 0, 1, 0]

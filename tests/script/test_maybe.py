@@ -1,8 +1,11 @@
+import pytest
+
 from sonolus.script.array import Array
 from sonolus.script.containers import VarArray
 from sonolus.script.debug import debug_log
 from sonolus.script.iterator import maybe_next
 from sonolus.script.maybe import Nothing, Some
+from sonolus.script.values import copy
 from tests.script.conftest import run_and_validate
 
 
@@ -238,3 +241,19 @@ def test_maybe_next_with_non_empty_iterable():
             return 0
 
     assert run_and_validate(fn) == 1
+
+
+def test_maybe_rejects_copy():
+    with pytest.raises(TypeError, match=r"Maybe does not support copying\."):
+        copy(Some(1))
+
+
+def test_maybe_rejects_copy_assignment():
+    some = Some(1)
+    with pytest.raises(TypeError, match=r"Maybe does not support mutation\."):
+        some @= Some(2)
+
+
+def test_nothing_rejects_copy():
+    with pytest.raises(TypeError, match=r"Maybe does not support copying\."):
+        copy(Nothing)
