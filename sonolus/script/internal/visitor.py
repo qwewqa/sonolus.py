@@ -639,6 +639,8 @@ class Visitor(ast.NodeVisitor):
             # Note that there may effectively be multiple yields in an expression since
             # tuples are unrolled.
             value = self.visit(elt)
+            if not ctx().live:
+                return
             ctx().scope.set_value("$yield", validate_value(value))
             self.yield_ctxs.append(ctx())
             resume_ctx = ctx().new_disconnected()
@@ -656,14 +658,21 @@ class Visitor(ast.NodeVisitor):
             iterable = iterable._dict
         if has_tuple_iter(iterable):
             for value in tuple_iter(iterable):
+                if not ctx().live:
+                    break
                 set_ctx(ctx().branch(None))
                 self.handle_assign(generator.target, validate_value(value))
+                if not ctx().live:
+                    break
                 # Unlike the iterator arm below there's no loop header to branch back to, so a filtered out
                 # element falls forward into the next element's code instead, which is only emitted afterwards.
                 skip_ctxs = []
                 skipped = False
                 for if_expr in generator.ifs:
                     test = self.convert_to_boolean_num(if_expr, self.visit(if_expr))
+                    if not ctx().live:
+                        skipped = True
+                        break
                     if test._is_py_():
                         if test._as_py_():
                             continue
@@ -700,16 +709,21 @@ class Visitor(ast.NodeVisitor):
             if not isinstance(next_value, Maybe):
                 raise ValueError("Iterator next must return a Maybe")
             if next_value._present._is_py_() and not next_value._present._as_py_():
-                # This will never run
                 return
             ctx().test = next_value._present.ir()
             body_ctx = ctx().branch(None)
             else_ctx = ctx().branch(0)
             set_ctx(body_ctx)
             self.handle_assign(generator.target, next_value._value)
+            if not ctx().live:
+                set_ctx(else_ctx)
+                return
             skipped = False
             for if_expr in generator.ifs:
                 test = self.convert_to_boolean_num(if_expr, self.visit(if_expr))
+                if not ctx().live:
+                    skipped = True
+                    break
                 if test._is_py_():
                     if test._as_py_():
                         continue
@@ -748,9 +762,14 @@ class Visitor(ast.NodeVisitor):
         name = node.name
         # CPython evaluates decorator expressions top to bottom, then the defaults, and applies the decorators
         # bottom to top, so the expressions are collected here and applied after the function exists.
-        decorators = [(decorator, self.visit(decorator)) for decorator in node.decorator_list]
+        decorators = []
+        for decorator in node.decorator_list:
+            decorator_value = self.visit(decorator)
+            if not ctx().live:
+                return
+            decorators.append((decorator, decorator_value))
         signature = self.arguments_to_signature(node.args)
-        if not ctx().live:
+        if signature is None:
             return
 
         def fn(*args, **kwargs):
@@ -789,11 +808,19 @@ class Visitor(ast.NodeVisitor):
 
     def visit_Delete(self, node):
         for target in node.targets:
+            if not ctx().live:
+                return
             match target:
                 case ast.Name():
                     raise NotImplementedError("Deleting variables is not supported")
-                case ast.Subscript(value=value, slice=slice):
-                    self.handle_delitem(target, self.visit(value), self.visit(slice))
+                case ast.Subscript(value=value, slice=slice_expr):
+                    value = self.visit(value)
+                    if not ctx().live:
+                        return
+                    slice_value = self.visit(slice_expr)
+                    if not ctx().live:
+                        return
+                    self.handle_delitem(target, value, slice_value)
                 case ast.Attribute():
                     raise NotImplementedError("Deleting attributes is not supported")
                 case _:
@@ -801,8 +828,12 @@ class Visitor(ast.NodeVisitor):
 
     def visit_Assign(self, node):
         value = self.visit(node.value)
+        if not ctx().live:
+            return
         for target in node.targets:
             self.handle_assign(target, value)
+            if not ctx().live:
+                return
 
     def visit_TypeAlias(self, node):
         raise NotImplementedError("Type aliases are not supported")
@@ -815,20 +846,32 @@ class Visitor(ast.NodeVisitor):
         match target:
             case ast.Attribute(value=base_expr, attr=attr):
                 base = self.visit(base_expr)
+                if not ctx().live:
+                    return
                 lhs_value = self.handle_getattr(target, base, attr)
+                if not ctx().live:
+                    return
 
                 def store(result):
                     self.handle_setattr(target, base, attr, result)
             case ast.Subscript(value=base_expr, slice=slice_expr):
                 base = self.visit(base_expr)
+                if not ctx().live:
+                    return
                 key = self.visit(slice_expr)
+                if not ctx().live:
+                    return
                 lhs_value = self.handle_getitem(target, base, key)
+                if not ctx().live:
+                    return
 
                 def store(result):
                     self.handle_setitem(target, base, key, result)
             case _:
                 # Name (or any other target): plain read/write with no separate base to reuse.
                 lhs_value = self.visit(target)
+                if not ctx().live:
+                    return
 
                 def store(result):
                     self.handle_assign(target, result)
@@ -885,6 +928,8 @@ class Visitor(ast.NodeVisitor):
                     self.visit(primary)
                 case ast.Subscript(value=primary, slice=slice_expr):
                     self.visit(primary)
+                    if not ctx().live:
+                        return
                     self.visit(slice_expr)
             return
         value = self.visit(node.value)
@@ -899,7 +944,6 @@ class Visitor(ast.NodeVisitor):
         if isinstance(iterable, SetImpl):
             iterable = iterable._dict
         if has_tuple_iter(iterable):
-            # Unroll the loop
             break_ctxs = []
             for value in tuple_iter(iterable):
                 set_ctx(ctx().branch(None))
@@ -969,6 +1013,10 @@ class Visitor(ast.NodeVisitor):
         self.break_ctxs.append([])
         set_ctx(header_ctx)
         test = self.convert_to_boolean_num(node.test, self.visit(node.test))
+        if not ctx().live:
+            self.loop_head_ctxs.pop().check_loop_conflicts()
+            self.break_ctxs.pop()
+            return
         if test._is_py_():
             if test._as_py_():
                 # The loop will run until a break / return
@@ -981,8 +1029,6 @@ class Visitor(ast.NodeVisitor):
                 # A statically true test has no fallthrough exit, so the dead continuation stands in.
                 dead_ctx = ctx().into_dead()
                 self.loop_head_ctxs.pop().check_loop_conflicts(dead_ctx, break_ctxs)
-
-                # Skip the else block
 
                 after_ctx = Context.meet([dead_ctx, *break_ctxs])
                 set_ctx(after_ctx)
@@ -1013,6 +1059,8 @@ class Visitor(ast.NodeVisitor):
 
     def visit_If(self, node):
         test = self.convert_to_boolean_num(node.test, self.visit(node.test))
+        if not ctx().live:
+            return
 
         if test._is_py_():
             if test._as_py_():
@@ -1286,6 +1334,8 @@ class Visitor(ast.NodeVisitor):
 
     def visit_Assert(self, node):
         test = self.convert_to_boolean_num(node.test, self.visit(node.test))
+        if not ctx().live:
+            return
         if node.msg is None:
             self.handle_call(node, assert_true, test, validate_value(None))
             return
@@ -1357,7 +1407,10 @@ class Visitor(ast.NodeVisitor):
         if len(node.values) == 1:
             return self.visit(node.values[0])
         initial, *rest = node.values
-        return handler(self.visit(initial), ast.copy_location(ast.BoolOp(op=node.op, values=rest), node))
+        initial_value = self.visit(initial)
+        if not ctx().live:
+            return validate_value(None)
+        return handler(initial_value, ast.copy_location(ast.BoolOp(op=node.op, values=rest), node))
 
     def visit_NamedExpr(self, node):
         if self.function_name == "<genexp>":
@@ -1368,6 +1421,8 @@ class Visitor(ast.NodeVisitor):
 
     def visit_BinOp(self, node):
         lhs = self.visit(node.left)
+        if not ctx().live:
+            return validate_value(None)
         rhs = self.visit(node.right)
         if not ctx().live:
             return validate_value(None)
@@ -1426,6 +1481,8 @@ class Visitor(ast.NodeVisitor):
 
     def visit_Lambda(self, node):
         signature = self.arguments_to_signature(node.args)
+        if signature is None:
+            return validate_value(None)
 
         def fn(*args, **kwargs):
             bound = bind_arguments(signature, "<lambda>", args, kwargs)
@@ -1445,6 +1502,8 @@ class Visitor(ast.NodeVisitor):
 
     def visit_IfExp(self, node):
         test = self.convert_to_boolean_num(node.test, self.visit(node.test))
+        if not ctx().live:
+            return validate_value(None)
 
         if test._is_py_():
             if test._as_py_():
@@ -1474,11 +1533,17 @@ class Visitor(ast.NodeVisitor):
     def visit_Dict(self, node):
         results = {}
         for k, v in zip(node.keys, node.values, strict=True):
+            if not ctx().live:
+                return validate_value(None)
             if k is None:
                 # The AST uses a None key for a ** entry.
                 raise NotImplementedError("** unpacking in dict literals is not supported")
             k_visited = self.visit(k)
+            if not ctx().live:
+                return validate_value(None)
             v_visited = self.visit(v)
+            if not ctx().live:
+                return validate_value(None)
             if not k_visited._is_py_():
                 raise ValueError("Dict keys must be compile time constants")
             results[k_visited._as_py_()] = v_visited
@@ -1487,7 +1552,12 @@ class Visitor(ast.NodeVisitor):
     def visit_Set(self, node):
         from sonolus.script.internal.set_impl import SetImpl
 
-        values = [validate_value(self.visit(elt)) for elt in node.elts]
+        values = []
+        for elt in node.elts:
+            value = self.visit(elt)
+            if not ctx().live:
+                return validate_value(None)
+            values.append(validate_value(value))
         return SetImpl.from_set(values)
 
     def visit_ListComp(self, node):
@@ -1533,6 +1603,8 @@ class Visitor(ast.NodeVisitor):
 
     def visit_Yield(self, node):
         value = self.visit(node.value) if node.value else validate_value(None)
+        if not ctx().live:
+            return validate_value(None)
         ctx().scope.set_value("$yield", value)
         self.yield_ctxs.append(ctx())
         resume_ctx = ctx().new_disconnected()
@@ -1646,9 +1718,13 @@ class Visitor(ast.NodeVisitor):
         result_name = self.new_name("compare")
         ctx().scope.set_value(result_name, Num._accept_(0))
         l_val = self.visit(node.left)
+        if not ctx().live:
+            return validate_value(None)
         false_ctxs = []
         for i, (op, rhs) in enumerate(zip(node.ops, node.comparators, strict=True)):
             r_val = self.visit(rhs)
+            if not ctx().live:
+                break
             inverted = isinstance(op, ast.NotIn)
             result = self.ensure_boolean_num(self.handle_comparison(node, op, l_val, r_val))
             if inverted:
@@ -1678,16 +1754,26 @@ class Visitor(ast.NodeVisitor):
         from sonolus.script.internal.dict_impl import DictImpl
 
         fn = self.visit(node.func)
+        if not ctx().live:
+            return validate_value(None)
         args = []
         kwargs = {}
         for arg in node.args:
             if isinstance(arg, ast.Starred):
-                args.extend(self.handle_starred(self.visit(arg.value)))
+                value = self.visit(arg.value)
+                if not ctx().live:
+                    return validate_value(None)
+                args.extend(self.handle_starred(value))
             else:
-                args.append(self.visit(arg))
+                value = self.visit(arg)
+                if not ctx().live:
+                    return validate_value(None)
+                args.append(value)
         for keyword in node.keywords:
             if keyword.arg:
                 value = self.visit(keyword.value)
+                if not ctx().live:
+                    return validate_value(None)
                 if keyword.arg in kwargs:
                     raise TypeError(f"got multiple values for keyword argument '{keyword.arg}'")
                 kwargs[keyword.arg] = value
@@ -1736,7 +1822,11 @@ class Visitor(ast.NodeVisitor):
 
     def visit_Subscript(self, node):
         value = self.visit(node.value)
+        if not ctx().live:
+            return validate_value(None)
         slice_value = self.visit(node.slice)
+        if not ctx().live:
+            return validate_value(None)
         return self.handle_getitem(node, value, slice_value)
 
     def visit_Starred(self, node):
@@ -1787,9 +1877,15 @@ class Visitor(ast.NodeVisitor):
         values = []
         for elt in node.elts:
             if isinstance(elt, ast.Starred):
-                values.extend(self.handle_starred(self.visit(elt.value)))
+                value = self.visit(elt.value)
+                if not ctx().live:
+                    return validate_value(None)
+                values.extend(self.handle_starred(value))
             else:
-                values.append(self.visit(elt))
+                value = self.visit(elt)
+                if not ctx().live:
+                    return validate_value(None)
+                values.append(value)
         return validate_value(tuple(values))
 
     def visit_Slice(self, node):
@@ -1806,7 +1902,11 @@ class Visitor(ast.NodeVisitor):
                 self.handle_setattr(target, attr_value, attr, value)
             case ast.Subscript(value=sub_value, slice=slice_expr):
                 sub_value = self.visit(sub_value)
+                if not ctx().live:
+                    return
                 slice_value = self.visit(slice_expr)
+                if not ctx().live:
+                    return
                 self.handle_setitem(target, sub_value, slice_value, value)
             case ast.Tuple(elts=elts) | ast.List(elts=elts):
                 if any(isinstance(elt, ast.Starred) for elt in elts):
@@ -1820,6 +1920,8 @@ class Visitor(ast.NodeVisitor):
                     raise ValueError(f"not enough values to unpack (expected {len(elts)}, got {len(values)})")
                 for elt, v in zip(elts, values, strict=False):
                     self.handle_assign(elt, validate_value(v))
+                    if not ctx().live:
+                        return
             case ast.Starred():
                 raise NotImplementedError("Starred assignment is not supported")
             case _:
@@ -2025,7 +2127,6 @@ class Visitor(ast.NodeVisitor):
     def ensure_boolean_num(self, value) -> Num:
         if not ctx().live:
             return Num._accept_(0)
-        # This just checks the type for now, although we could support custom __bool__ implementations in the future
         if not _is_num(value):
             raise TypeError(f"Invalid type where a bool (Num) was expected: {_type_name(value)}")
         return value
@@ -2046,15 +2147,16 @@ class Visitor(ast.NodeVisitor):
             return length > Num._accept_(0)
         if isinstance(value, Record):
             return Num._accept_(1)
-        # Not allowing other types to default to truthy for now in case there's any edge cases.
         raise TypeError(f"Converting {_type_name(value)} to bool is not supported")
 
-    def arguments_to_signature(self, arguments: ast.arguments) -> inspect.Signature:
+    def arguments_to_signature(self, arguments: ast.arguments) -> inspect.Signature | None:
         parameters: list[inspect.Parameter] = []
         pos_only_count = len(arguments.posonlyargs)
         for i, arg in enumerate(arguments.posonlyargs):
             default_idx = i - pos_only_count - len(arguments.args) + len(arguments.defaults)
             default = self.visit(arguments.defaults[default_idx]) if default_idx >= 0 else None
+            if not ctx().live:
+                return None
             param = inspect.Parameter(
                 name=arg.arg,
                 kind=inspect.Parameter.POSITIONAL_ONLY,
@@ -2067,6 +2169,8 @@ class Visitor(ast.NodeVisitor):
         for i, arg in enumerate(arguments.args):
             default_idx = i - pos_kw_count + len(arguments.defaults)
             default = self.visit(arguments.defaults[default_idx]) if default_idx >= 0 else None
+            if not ctx().live:
+                return None
             param = inspect.Parameter(
                 name=arg.arg,
                 kind=inspect.Parameter.POSITIONAL_OR_KEYWORD,
@@ -2086,6 +2190,8 @@ class Visitor(ast.NodeVisitor):
 
         for i, arg in enumerate(arguments.kwonlyargs):
             default = self.visit(arguments.kw_defaults[i]) if arguments.kw_defaults[i] is not None else None
+            if not ctx().live:
+                return None
             param = inspect.Parameter(
                 name=arg.arg,
                 kind=inspect.Parameter.KEYWORD_ONLY,

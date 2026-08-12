@@ -21,7 +21,7 @@ class Project:
 
     Args:
         engine: The engine of the project.
-        levels: The levels of the project.
+        levels: The levels of the project. Their names must be unique.
         resources: The path to the resources of the project.
         converters: A dict mapping source engine names to functions converting the
             [`ExternalLevelData`][sonolus.script.level.ExternalLevelData] of levels included in the project's
@@ -48,6 +48,7 @@ class Project:
             case _:
                 raise TypeError(f"Invalid type for levels: {type(levels)}. Expected Iterable or Callable.")
         self._levels = None
+        self._level_loading_error: str | None = None
         self.resources = Path(resources or "resources")
         self.converters = converters or {}
 
@@ -112,8 +113,26 @@ class Project:
     def levels(self) -> list[Level]:
         """The project's levels, loaded and cached on first access."""
         if self._levels is None:
-            self._levels = list(self._level_source)
+            if self._level_loading_error is not None:
+                raise ValueError(self._level_loading_error)
+            levels = list(self._level_source)
+            try:
+                self._validate_level_names(levels)
+            except ValueError as e:
+                self._level_loading_error = str(e)
+                raise
+            self._levels = levels
+        else:
+            self._validate_level_names(self._levels)
         return self._levels
+
+    @staticmethod
+    def _validate_level_names(levels: Iterable[Level]) -> None:
+        names: set[str] = set()
+        for level in levels:
+            if level.name in names:
+                raise ValueError(f"Project levels must have unique names; duplicate level name: {level.name!r}")
+            names.add(level.name)
 
 
 def lazy_loader(fn):

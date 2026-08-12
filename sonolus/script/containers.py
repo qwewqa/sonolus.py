@@ -184,7 +184,7 @@ class VarArray[T, Capacity](Record, ArrayLike[T]):
     def append_unchecked(self, value: T):
         """Append the given value to the end of the array without checking the capacity.
 
-        Use with caution as this may cause hard to debug issues if the array is full.
+        The array must have available capacity.
 
         Args:
             value: The value to append.
@@ -360,7 +360,8 @@ class ArrayPointer[T](Record, ArrayLike[T]):
 
     Supports negative indexes.
 
-    This is intended to be created internally and improper use may result in hard to debug issues.
+    This type is intended for internal use. The `block` and `offset` must identify contiguous storage for `size`
+    values of the element type.
 
     Usage:
         ```python
@@ -697,8 +698,7 @@ class ArrayMap[K, V, Capacity](Record):
     def __delitem__(self, key: K):
         """Remove the key-value pair associated with the given key.
 
-        Must be called with a key that is present in the map. If the key is not present, the current callback is
-        terminated, even when runtime checks are disabled.
+        Must be called with a key that is present in the map.
 
         Args:
             key: The key to remove.
@@ -729,8 +729,7 @@ class ArrayMap[K, V, Capacity](Record):
     def pop(self, key: K) -> V:
         """Remove and return a copy of the value associated with the given key.
 
-        Must be called with a key that is present in the map. If the key is not present, the current callback is
-        terminated, even when runtime checks are disabled.
+        Must be called with a key that is present in the map.
 
         Args:
             key: The key to remove.

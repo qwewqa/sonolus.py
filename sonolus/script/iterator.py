@@ -40,7 +40,7 @@ class SonolusIterator[T]:
 
         This is not intended to be overridden, and just serves to allow iterators to work in regular Python code.
         """
-        result = self.next()
+        result = _validate_next_result(self.next())
         if result.is_some:
             return result.get_unsafe()
         else:
@@ -51,13 +51,20 @@ class SonolusIterator[T]:
         return self
 
 
+@meta_fn
+def _validate_next_result(value) -> Maybe[Any]:
+    if not isinstance(value, Maybe):
+        raise ValueError("Iterator next must return a Maybe")
+    return value
+
+
 class _Enumerator[V: SonolusIterator](Record, SonolusIterator):
     i: int
     offset: Final[int]
     iterator: V
 
     def next(self) -> Maybe[tuple[int, Any]]:
-        value = self.iterator.next()
+        value = _validate_next_result(self.iterator.next())
         if value.is_nothing:
             return Nothing
         result = (self.i + self.offset, value.get_unsafe())
@@ -84,14 +91,14 @@ def _zip_next(chain, values) -> Maybe[tuple[Any, ...]]:
 
 
 def _zip_next_pair(arm, rest, values) -> Maybe[tuple[Any, ...]]:
-    value = arm.next()
+    value = _validate_next_result(arm.next())
     if value.is_nothing:
         return Nothing
     return _zip_next(rest, (*values, value.get_unsafe()))
 
 
 def _zip_next_last(arm, values) -> Maybe[tuple[Any, ...]]:
-    value = arm.next()
+    value = _validate_next_result(arm.next())
     if value.is_nothing:
         return Nothing
     return Some((*values, value.get_unsafe()))
@@ -107,7 +114,7 @@ class _MappingIterator[T, Fn](Record, SonolusIterator):
     iterator: T
 
     def next(self) -> Maybe[Any]:
-        return self.iterator.next().map(self.fn)
+        return _validate_next_result(self.iterator.next()).map(self.fn)
 
 
 class _FilteringIterator[T, Fn](Record, SonolusIterator):
@@ -116,7 +123,7 @@ class _FilteringIterator[T, Fn](Record, SonolusIterator):
 
     def next(self) -> Maybe[T]:
         while True:
-            value = self.iterator.next()
+            value = _validate_next_result(self.iterator.next())
             if value.is_nothing:
                 return Nothing
             inside = value.get_unsafe()
@@ -135,6 +142,9 @@ def maybe_next[T](iterator: Iterator[T]) -> Maybe[T]:
     if not isinstance(iterator, SonolusIterator):
         raise TypeError("Iterator must be an instance of SonolusIterator.")
     if ctx():
-        return compile_and_call(iterator.next)
+        result = compile_and_call(iterator.next)
+        if not ctx().live:
+            return Nothing
+        return _validate_next_result(result)
     else:
-        return iterator.next()
+        return _validate_next_result(iterator.next())

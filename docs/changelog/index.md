@@ -1,5 +1,11 @@
 ### 0.18.2
 
+- Compiled expressions, decorators, and default arguments now stop evaluating later subexpressions after an
+  earlier subexpression terminates.
+- Builtin iterator consumers now consistently require a custom iterator's `next()` method to return `Maybe`.
+- Projects now reject duplicate level names instead of silently overwriting the earlier level's output.
+- Explicitly empty engine and level titles are now preserved; the name is used only when the title is omitted.
+- Tutorial instruction APIs now report a public-facing error when used outside tutorial mode.
 - Normal builds now abort when an existing output directory cannot be removed, rather than writing into
   partially cleared output and reporting success.
 - Building level data now rejects adding the same entity instance more than once. Distinct entities with equal

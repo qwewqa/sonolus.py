@@ -39,6 +39,7 @@ def build_project_to_existing_collection(
     project_state: ProjectContextState | None = None,
 ) -> None:
     config = config or BuildConfig()
+    levels = project.levels
     for src_engine, converter in project.converters.items():
         if src_engine is None:
             continue
@@ -49,8 +50,9 @@ def build_project_to_existing_collection(
     if config.override_resource_level_engines:
         for level in collection.categories.get("levels", {}).values():
             level["item"]["engine"] = project.engine.name
+    levels = project.levels
     add_engine_to_collection(collection, project, project.engine, config, project_state=project_state)
-    for level in project.levels:
+    for level in levels:
         add_level_to_collection(collection, project, level)
     collection.name = f"{project.engine.name}"
 

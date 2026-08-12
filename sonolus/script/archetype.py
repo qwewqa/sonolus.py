@@ -790,10 +790,7 @@ class _BaseArchetype(metaclass=_BaseArchetypeMeta):
         mode_state = ctx().mode_state
         if cls not in mode_state.archetypes:
             raise RuntimeError("Archetype is not registered")
-        # subclass_ids depends only on (mode_state.archetypes, compile_time_only_archetypes,
-        # cls); memoize per cls so repeated check sites skip the O(archetypes) ABCMeta
-        # issubclass sweep. Registering an archetype invalidates the cache, so entries
-        # never go stale.
+        # The archetype collection is fixed for a ModeContextState, so repeated checks can reuse this sweep.
         subclass_ids = mode_state.subclass_ids_cache.get(cls)
         if subclass_ids is None:
             subclass_ids = [

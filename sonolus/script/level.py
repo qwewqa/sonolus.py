@@ -90,7 +90,7 @@ class Level:
         meta: Any = None,
     ) -> None:
         self.name = name
-        self.title = as_localization_text(title or name)
+        self.title = as_localization_text(name if title is None else title)
         self.rating = rating
         self.artists = as_localization_text(artists)
         self.author = as_localization_text(author)

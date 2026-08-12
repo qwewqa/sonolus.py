@@ -4,10 +4,11 @@ PYTEST_DONT_REWRITE
 
 A callee that terminates on every traced path (a compile-time-false assert_true, debug.error, or the
 documented `assert False` unreachable pattern) has no value to return, so it leaves the context dead and
-hands back a placeholder instead. Every position that would read such a value checks `ctx().live` first and
-resumes the way its own statically-false path does. The temp-variable spelling `v = helper(-1); return v.x`
-already compiles to a terminate; these tests pin that inline spellings of the same program compile too, in
-every position a value can be read or a construct can be built from one.
+hands back a placeholder instead. Every position that would read such a value checks `ctx().live` first,
+skips later expressions in the same evaluation sequence, and resumes the way its own statically-false path
+does. The temp-variable spelling `v = helper(-1); return v.x` already compiles to a terminate; these tests
+pin that inline spellings of the same program compile too, in every position a value can be read or a
+construct can be built from one.
 
 Compiling is the weaker half of that claim, so each shape is pinned to a real terminate where it can be:
 `run_and_validate` asserts one whenever its plain-Python leg raises, and `run_gated` asserts that the
@@ -27,13 +28,14 @@ from sonolus.backend.interpret import Interpreter
 from sonolus.backend.optimize import STANDARD_PASSES, OptimizerConfig, cfg_to_engine_node, run_passes
 from sonolus.backend.place import BlockPlace
 from sonolus.script.array import Array
+from sonolus.script.array_like import ArrayLike
 from sonolus.script.debug import assert_true, error
 from sonolus.script.globals import level_memory
 from sonolus.script.internal.context import RuntimeChecks, ctx
 from sonolus.script.internal.error import CompilationError
 from sonolus.script.internal.meta_fn import meta_fn
 from sonolus.script.internal.visitor import compile_and_call
-from sonolus.script.iterator import SonolusIterator
+from sonolus.script.iterator import SonolusIterator, maybe_next
 from sonolus.script.maybe import Maybe
 from sonolus.script.num import Num
 from sonolus.script.record import Record
@@ -143,6 +145,21 @@ class BadPropValue(Record):
     @property
     def p(self) -> float:
         error("no prop")
+
+
+class BadLenArray(Record, ArrayLike[float]):
+    """An array-like value whose `__len__` terminates on every traced path."""
+
+    v: float
+
+    def __len__(self) -> int:  # noqa: PLE0303 - intentionally terminates instead
+        error("no len")
+
+    def __getitem__(self, index: int) -> float:
+        return self.v + index
+
+    def __setitem__(self, index: int, value: float):
+        self.v = value - index
 
 
 def yields_bad_x():
@@ -496,15 +513,75 @@ def test_statement_after_terminating_call_is_not_visited():
     assert run_compiled(fn, runtime_checks=RuntimeChecks.NONE) == 0
 
 
-def test_rest_of_the_statement_after_a_terminating_call_is_still_traced():
-    # The truncation is per statement, not per expression: what follows the terminating call inside the same
-    # statement is still traced, in the dead context, where it emits nothing but does still report an
-    # undefined name or an unsupported construct.
-    def fn():
+def test_ordered_children_after_a_terminating_call_are_not_visited():
+    def bin_op():
         return bad_vec(-1).x + no_such_name_anywhere  # noqa: F821
 
-    with pytest.raises(CompilationError, match="Name no_such_name_anywhere is not defined"):
-        run_compiled(fn, runtime_checks=RuntimeChecks.NONE)
+    def conditional_expression():
+        return no_such_name_anywhere if bad_vec(-1).x else 0  # noqa: F821
+
+    def boolean_or():
+        return bad_vec(-1).x or no_such_name_anywhere  # noqa: F821
+
+    def dict_display():
+        return {bad_vec(-1).x: no_such_name_anywhere}  # noqa: F821
+
+    def set_display():
+        return {bad_vec(-1).x, no_such_name_anywhere}  # noqa: F821
+
+    def tuple_display():
+        return (bad_vec(-1).x, no_such_name_anywhere)  # noqa: F821
+
+    def comparison():
+        return bad_vec(-1).x < no_such_name_anywhere  # noqa: F821
+
+    def call_function():
+        return bad_vec(-1).x(no_such_name_anywhere)  # noqa: F821
+
+    def call_argument():
+        return max(bad_vec(-1).x, no_such_name_anywhere)  # noqa: F821
+
+    def subscript():
+        return bad_arr(-1)[no_such_name_anywhere]  # noqa: F821
+
+    def assignment_target():
+        bad_arr(-1)[no_such_name_anywhere] = 0  # noqa: F821
+
+    def later_assignment_target():
+        bad_arr(-1)[0] = no_such_target.value = 0  # noqa: F821
+
+    def later_unpacking_target():
+        bad_arr(-1)[0], no_such_target.value = (0, 0)  # noqa: F821
+
+    def augmented_assignment_target():
+        bad_arr(-1)[no_such_name_anywhere] += 1  # noqa: F821
+
+    def annotated_assignment_target():
+        bad_arr(-1)[no_such_name_anywhere]: float  # noqa: F821
+
+    def deletion_target():
+        del bad_arr(-1)[no_such_name_anywhere]  # noqa: F821
+
+    forms = (
+        bin_op,
+        conditional_expression,
+        boolean_or,
+        dict_display,
+        set_display,
+        tuple_display,
+        comparison,
+        call_function,
+        call_argument,
+        subscript,
+        assignment_target,
+        later_assignment_target,
+        later_unpacking_target,
+        augmented_assignment_target,
+        annotated_assignment_target,
+        deletion_target,
+    )
+    for form in forms:
+        assert run_compiled(form, runtime_checks=RuntimeChecks.NONE) == 0
 
 
 def test_statement_after_live_call_is_visited():
@@ -617,6 +694,17 @@ def test_terminating_next_ships_a_terminate():
         assert run_gated(form, 0.0) == (1.0, 5.0)
         mark, _ = run_gated(form, 1.0)
         assert mark == 0.0
+
+
+def test_maybe_next_over_terminating_next_ships_a_terminate():
+    def inline_form(gate):
+        if gate > 0:
+            return maybe_next(BadNextIterator(1.0)).or_default(0.0)
+        return 5.0
+
+    assert run_gated(inline_form, 0.0) == (1.0, 5.0)
+    mark, _ = run_gated(inline_form, 1.0)
+    assert mark == 0.0
 
 
 def test_terminating_inplace_op_ships_a_terminate():
@@ -806,6 +894,48 @@ def test_while_condition_of_terminating_call_ships_a_terminate():
     assert mark == 0.0
 
 
+def test_nested_while_condition_of_terminating_call_closes_its_frame():
+    def inline_form(gate):
+        total = 0.0
+        for _ in range(gate):
+            if gate > 1:
+                while bad_vec(-1).x > 0:
+                    pass
+            else:
+                total += 1.0
+            continue
+        return total
+
+    assert run_gated(inline_form, 1.0) == (1.0, 1.0)
+    mark, _ = run_gated(inline_form, 2.0)
+    assert mark == 0.0
+
+
+def test_terminating_len_result_skips_each_consumer():
+    def direct_len(gate):
+        if gate > 0:
+            return len(BadLenArray(1.0))
+        return 5.0
+
+    def truth_value(gate):
+        if gate > 0:
+            return 1.0 if BadLenArray(1.0) else 2.0
+        return 5.0
+
+    def sequence_pattern(gate):
+        if gate > 0:
+            match BadLenArray(1.0):
+                case [value]:
+                    return value
+            return 2.0
+        return 5.0
+
+    for form in (direct_len, truth_value, sequence_pattern):
+        assert run_gated(form, 0.0) == (1.0, 5.0)
+        mark, _ = run_gated(form, 1.0)
+        assert mark == 0.0
+
+
 def test_match_pattern_reading_a_terminating_property_is_rejected():
     # A read the pattern itself performs can terminate only through a user property or __len__. Contexts
     # opened inside the pattern may be live with no continuation left for them, so this is rejected rather
@@ -945,8 +1075,7 @@ def test_yield_from_terminating_next_ships_a_terminate():
 
 
 def test_call_with_terminating_keyword_argument_ships_a_terminate():
-    # A constant out-of-range Array index terminates the context from inside a meta_fn. The remaining
-    # arguments are still traced, into the dead context, and the check before the call is what notices.
+    # A constant out-of-range Array index terminates the context from inside a meta_fn.
     def inline_form(gate):
         def f(a=0.0, b=0.0):
             return a + b

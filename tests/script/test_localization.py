@@ -116,3 +116,12 @@ def test_item_metadata_keeps_native_localization_dicts():
     assert level.title == LOCALIZED_GREETING
     assert Tag(title=LOCALIZED_GREETING).as_dict()["title"] == LOCALIZED_GREETING
     assert as_localization_text("Hello World") == {"en": "Hello World"}
+
+
+@pytest.mark.parametrize("title", ["", {}])
+def test_item_metadata_keeps_explicit_empty_titles(title):
+    engine = Engine(name="engine", title=title, data=None)
+    level = Level(name="level", title=title, data=LevelData(bgm_offset=0.0, entities=[]))
+
+    assert engine.title == as_localization_text(title)
+    assert level.title == as_localization_text(title)

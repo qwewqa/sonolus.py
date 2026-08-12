@@ -94,6 +94,8 @@ def dict(*args, **kwargs) -> builtins.dict:
     a compile-time constant is only supported when all values are compile-time constants of a
     single type, and that type is numeric, `Array`, or `Record`.
 
+    Dynamic access requires key comparisons to be consistent, including a total ordering when ordering is used.
+
     Accepts an optional dict to copy from or an iterable of `(key, value)` pairs, plus
     optional keyword arguments to include in the dict.
 
@@ -356,6 +358,8 @@ def round(number: builtins.int | builtins.float, ndigits: builtins.int = ...) ->
     """Round a number to a given precision in decimal digits.
 
     With `ndigits`, a value near the midpoint between two rounded values may round differently than in Python.
+
+    Extremely large finite values of `ndigits` are not supported.
 
     Args:
         number: The number to round.

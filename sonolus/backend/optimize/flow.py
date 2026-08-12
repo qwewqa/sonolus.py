@@ -29,17 +29,17 @@ class BasicBlock:
     def __init__(
         self,
         *,
-        phi: dict[SSAPlace, dict[BasicBlock, SSAPlace]] | None = None,
+        phi: dict[SSAPlace | TempBlock, dict[BasicBlock, SSAPlace]] | None = None,
         statements: list[IRStmt] | None = None,
         test: IRExpr | None = None,
         incoming: set[FlowEdge] | None = None,
         outgoing: set[FlowEdge] | None = None,
     ):
-        self.phis = phi or {}
-        self.statements = statements or []
+        self.phis = {} if phi is None else phi
+        self.statements = [] if statements is None else statements
         self.test = test or IRConst(0)
-        self.incoming = incoming or set()
-        self.outgoing = outgoing or set()
+        self.incoming = set() if incoming is None else incoming
+        self.outgoing = set() if outgoing is None else outgoing
 
     def connect_to(self, other: BasicBlock, cond: int | float | None = None):
         if any(edge.cond == cond for edge in self.outgoing):
@@ -54,9 +54,6 @@ def _edge_sort_key(edge: FlowEdge):
 
 
 def _ordered_edges(outgoing):
-    # Sorting a 0/1-element set is a no-op on order but still allocates a list and
-    # invokes the key; ~90% of pre-cleanup blocks have a single successor, so skip
-    # the sort for them.
     if len(outgoing) <= 1:
         return outgoing
     return sorted(outgoing, key=_edge_sort_key)

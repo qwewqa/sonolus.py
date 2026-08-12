@@ -13,10 +13,11 @@ import inspect
 import pytest
 
 from sonolus.script.array import Array
-from sonolus.script.debug import debug_log
+from sonolus.script.debug import assert_true, debug_log
+from sonolus.script.internal.context import RuntimeChecks
 from sonolus.script.internal.error import CompilationError
 from sonolus.script.internal.meta_fn import meta_fn
-from tests.script.conftest import compile_fn, run_and_validate
+from tests.script.conftest import compile_fn, run_and_validate, run_compiled
 
 
 def identity_decorator(f):
@@ -33,6 +34,16 @@ def logging_default(tag):
     """A default-value expression with a side effect: logs `tag` and yields 0."""
     debug_log(tag)
     return 0
+
+
+def terminating_default():
+    assert_true(False, "stop evaluating defaults")
+    return 0
+
+
+def terminating_decorator_expression():
+    assert_true(False, "stop evaluating decorators")
+    return identity_decorator
 
 
 def bump(counter):
@@ -122,6 +133,46 @@ def test_lambda_defaults_evaluate_left_to_right():
         return f()
 
     assert run_and_validate(fn) == 0
+
+
+def test_terminating_decorator_expression_skips_later_decorators_and_defaults():
+    def fn():
+        @terminating_decorator_expression()
+        @no_such_decorator  # noqa: F821
+        def inner(value=no_such_default):  # noqa: F821
+            return value
+
+        return inner()
+
+    assert run_compiled(fn, runtime_checks=RuntimeChecks.NONE) == 0
+
+
+def test_terminating_positional_default_skips_later_defaults():
+    def fn():
+        def inner(a=terminating_default(), b=no_such_default, *, c=no_such_kw_default):  # noqa: F821
+            return a + b + c
+
+        return inner()
+
+    assert run_compiled(fn, runtime_checks=RuntimeChecks.NONE) == 0
+
+
+def test_terminating_keyword_only_default_skips_later_defaults():
+    def fn():
+        def inner(*, a=terminating_default(), b=no_such_default):  # noqa: F821
+            return a + b
+
+        return inner()
+
+    assert run_compiled(fn, runtime_checks=RuntimeChecks.NONE) == 0
+
+
+def test_terminating_lambda_default_skips_later_defaults():
+    def fn():
+        inner = lambda a=terminating_default(), b=no_such_default: a + b  # noqa: E731, F821
+        return inner()
+
+    assert run_compiled(fn, runtime_checks=RuntimeChecks.NONE) == 0
 
 
 @meta_fn

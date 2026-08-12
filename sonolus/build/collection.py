@@ -268,7 +268,7 @@ class Collection:
 
             self._set_item(dir_name, item_name, item_details)
 
-    def write(self, path: Asset) -> None:
+    def write(self, path: str | PathLike) -> None:
         self.link()
         base_dir = self._create_base_directory(path)
         self._write_main_info(base_dir)
@@ -297,7 +297,7 @@ class Collection:
                     if name in self.categories.get(category, {}):
                         use_item["item"] = self.get_item(category, name)
 
-    def _create_base_directory(self, path: Asset) -> Path:
+    def _create_base_directory(self, path: str | PathLike) -> Path:
         base_dir = Path(path) / BASE_PATH.strip("/")
         base_dir.mkdir(parents=True, exist_ok=True)
         return base_dir

@@ -20,7 +20,7 @@ from sonolus.backend.optimize import STANDARD_PASSES, OptimizerConfig, cfg_to_en
 from sonolus.build.compile import callback_to_cfg
 from sonolus.script.debug import debug_log, simulation_context
 from sonolus.script.effect import Effect, LoopedEffectHandle, ScheduledLoopedEffectHandle
-from sonolus.script.instruction import InstructionIcon
+from sonolus.script.instruction import Instruction, InstructionIcon, clear_instruction, show_instruction
 from sonolus.script.internal.callbacks import PLAY_CALLBACKS, WATCH_ARCHETYPE_CALLBACKS, WATCH_GLOBAL_CALLBACKS
 from sonolus.script.internal.context import ModeContextState, ProjectContextState, RuntimeChecks
 from sonolus.script.internal.error import CompilationError
@@ -184,6 +184,41 @@ def test_paint_rejected_outside_tutorial(mode):
 
 def test_paint_compiles_in_tutorial():
     assert "Paint" in op_names(compile_in_mode(paint_an_icon, Mode.TUTORIAL))
+
+
+def show_an_instruction():
+    show_instruction(Instruction(0))
+
+
+def show_an_instruction_through_the_instance_method():
+    Instruction(0).show()
+
+
+def clear_an_instruction():
+    clear_instruction()
+
+
+@pytest.mark.parametrize(
+    "fn", [show_an_instruction, show_an_instruction_through_the_instance_method, clear_an_instruction]
+)
+@pytest.mark.parametrize("mode", [Mode.PLAY, Mode.WATCH, Mode.PREVIEW], ids=lambda mode: mode.name)
+def test_instruction_text_apis_are_rejected_outside_tutorial(fn, mode):
+    with pytest.raises(CompilationError, match="Instruction text is only available in tutorial mode"):
+        compile_in_mode(fn, mode)
+
+
+@pytest.mark.parametrize(
+    "fn", [show_an_instruction, show_an_instruction_through_the_instance_method, clear_an_instruction]
+)
+def test_instruction_text_apis_compile_in_tutorial(fn):
+    assert "Set" in op_names(compile_in_mode(fn, Mode.TUTORIAL))
+
+
+def test_instruction_text_apis_work_in_a_simulation_context():
+    with simulation_context():
+        show_instruction(Instruction(0))
+        Instruction(0).show()
+        clear_instruction()
 
 
 # Effects and particles: every mode except preview, whose payload declares neither resource.

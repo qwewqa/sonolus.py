@@ -26,7 +26,10 @@ class Instruction(Record):
     id: int
 
     def show(self):
-        """Show this instruction text."""
+        """Show this instruction text.
+
+        Only available in tutorial mode.
+        """
         show_instruction(self)
 
 
@@ -209,6 +212,12 @@ def _check_paint_mode() -> None:
         )
 
 
+@meta_fn
+def _check_instruction_text_mode() -> None:
+    if ctx() and ctx().mode_state.mode is not Mode.TUTORIAL:
+        raise RuntimeError("Instruction text is only available in tutorial mode")
+
+
 @native_function(Op.Paint)
 def _paint(
     icon_id: int,
@@ -223,10 +232,18 @@ def _paint(
 
 
 def show_instruction(inst: Instruction, /):
-    """Show the given instruction text."""
+    """Show the given instruction text.
+
+    Only available in tutorial mode.
+    """
+    _check_instruction_text_mode()
     _TutorialInstruction.text_id = inst.id
 
 
 def clear_instruction():
-    """Clear the current instruction text."""
+    """Clear the current instruction text.
+
+    Only available in tutorial mode.
+    """
+    _check_instruction_text_mode()
     _TutorialInstruction.text_id = -1

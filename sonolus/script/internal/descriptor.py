@@ -10,8 +10,10 @@ class SonolusDescriptor:
 
     @abstractmethod
     def __get__(self, instance, owner):
-        pass
+        """Return the descriptor value."""
+        raise NotImplementedError
 
     @abstractmethod
     def __set__(self, instance, value):
-        pass
+        """Set the descriptor value."""
+        raise NotImplementedError

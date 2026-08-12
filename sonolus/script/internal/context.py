@@ -504,13 +504,6 @@ class Context:
             context.outgoing[None] = target
         return target
 
-    def register_archetype(self, type_: type) -> int:
-        with self.mode_state.lock:
-            if type_ not in self.mode_state.archetypes:
-                self.mode_state.archetypes[type_] = len(self.mode_state.archetypes)
-                self.mode_state.subclass_ids_cache.clear()
-            return self.mode_state.archetypes[type_]
-
     def get_archetype_mro_id_array(self, archetype_id: int) -> Sequence[int]:
         from sonolus.script.containers import ArrayPointer
         from sonolus.script.num import Num

@@ -8,13 +8,19 @@ from sonolus.backend.place import BlockPlace
 
 
 class BackingValue:
+    """Abstract storage backing for a value."""
+
     __slots__ = ()
 
+    @abstractmethod
     def read(self) -> IRExpr:
-        raise NotImplementedError()
+        """Read the stored expression."""
+        raise NotImplementedError
 
+    @abstractmethod
     def write(self, value: IRExpr) -> None:
-        raise NotImplementedError()
+        """Write an expression to the backing."""
+        raise NotImplementedError
 
 
 class ExprBackingValue(BackingValue):

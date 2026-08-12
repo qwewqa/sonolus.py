@@ -288,7 +288,7 @@ def ease_out_quint(x: float) -> float:
 
 @native_function(Op.EaseInOutQuint)
 def ease_in_out_quint(x: float) -> float:
-    """Interpolate between 0 and 1, starting and ending extremely slow with quintic easing, extremely fast in the middle."""
+    """Interpolate from 0 to 1 with quintic easing, slow at both ends and fast in the middle."""
     x = clamp(x, 0, 1)
     if x < 0.5:
         return 16 * x**5
@@ -298,7 +298,7 @@ def ease_in_out_quint(x: float) -> float:
 
 @native_function(Op.EaseOutInQuint)
 def ease_out_in_quint(x: float) -> float:
-    """Interpolate between 0 and 1, extremely fast at the start and end, extremely slow in the middle with quintic easing."""
+    """Interpolate from 0 to 1 with quintic easing, fast at both ends and slow in the middle."""
     x = clamp(x, 0, 1)
     if x < 0.5:
         return (1 - (1 - 2 * x) ** 5) / 2

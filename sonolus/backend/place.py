@@ -19,7 +19,7 @@ class TempBlock:
     def __init__(self, name: str, size: int = 1):
         self.name = name
         self.size = size
-        self.__hash = hash(name)  # Precompute hash based on name alone
+        self.__hash = hash(name)  # Equal TempBlocks always share a name, so size need not affect the hash.
 
     def __repr__(self):
         return f"TempBlock(name={self.name!r}, size={self.size!r})"

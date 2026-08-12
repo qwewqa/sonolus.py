@@ -149,7 +149,7 @@ class Vec2(Record):
     def normalize(self) -> Vec2:
         """Normalize the vector (set the magnitude to 1) and return a new vector.
 
-        If the vector is a zero vector, an assertion error is raised if runtime checks are enabled.
+        The vector must not be zero.
 
         Returns:
             A new vector with magnitude 1.

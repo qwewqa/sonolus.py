@@ -61,11 +61,6 @@ def easing_body(op: Op):
     return getattr(easing, snake(op.name)).__wrapped__
 
 
-# --------------------------------------------------------------------------------------------- #
-# Op.SwitchInteger: index the branch list with the integer test result
-# --------------------------------------------------------------------------------------------- #
-
-
 def test_switch_integer_functionnode_test_selects_branch():
     # A FunctionNode test evaluates to a float; the branch list must be indexed
     # with int(test_result) for an integral in-range index...
@@ -101,11 +96,6 @@ def test_integer_inputs_and_results_are_normalized_to_float():
     assert Interpreter().run(2**53 + 1) == float(2**53 + 1)
     assert run_node(Op.Add, 2**53, 1) == float(2**53)
     assert type(run_node(Op.Floor, 1.5)) is float
-
-
-# --------------------------------------------------------------------------------------------- #
-# Op.Rem: truncated remainder with the sign of the dividend (JS `%`), n-ary left fold, empty = 0
-# --------------------------------------------------------------------------------------------- #
 
 
 def test_rem_basic_sign():
@@ -147,11 +137,6 @@ def test_rem_matches_math_impls(a, b):
     assert same_bits(run_node(Op.Rem, a, b), smath._remainder.__wrapped__(a, b))
 
 
-# --------------------------------------------------------------------------------------------- #
-# Op.Sign: JS Math.sign (0/-0/NaN map to themselves, otherwise +/-1)
-# --------------------------------------------------------------------------------------------- #
-
-
 def test_sign_nonzero():
     assert run_node(Op.Sign, 5.0) == 1.0
     assert run_node(Op.Sign, -5.0) == -1.0
@@ -187,10 +172,7 @@ def test_sign_matches_reference(x):
     assert same_bits(run_node(Op.Sign, x), reference(x))
 
 
-# --------------------------------------------------------------------------------------------- #
-# Op.Judge / Op.JudgeSimple: window inclusivity and first-match (elif) ordering
-# --------------------------------------------------------------------------------------------- #
-
+# Op.Judge uses the first matching window, so overlapping windows preserve their declared priority.
 # perfect [-1, 1], great [-2, 2], good [-3, 3]
 JUDGE_WINDOW = (-1.0, 1.0, -2.0, 2.0, -3.0, 3.0)
 
@@ -225,9 +207,7 @@ def test_judge_matches_bucket_reference():
 
 
 def test_judge_uses_source_minus_target():
-    # diff = 5 - 4.5 = 0.5 -> perfect
     assert run_node(Op.Judge, 5.0, 4.5, *JUDGE_WINDOW) == 1.0
-    # diff = 4.5 - 5 = -0.5 -> perfect
     assert run_node(Op.Judge, 4.5, 5.0, *JUDGE_WINDOW) == 1.0
 
 
@@ -239,7 +219,6 @@ def test_judge_overlapping_windows_first_match_wins():
 
 
 def test_judge_all_returns_map_to_judgment_enum():
-    # Sanity: the oracle's numeric returns line up with the bucket Judgment enum values.
     assert run_node(Op.Judge, 0.0, 0.0, *JUDGE_WINDOW) == Judgment.PERFECT
     assert run_node(Op.Judge, 1.5, 0.0, *JUDGE_WINDOW) == Judgment.GREAT
     assert run_node(Op.Judge, 2.5, 0.0, *JUDGE_WINDOW) == Judgment.GOOD
@@ -274,11 +253,6 @@ def test_judge_simple_equals_judge_expansion():
         assert simple == expanded
 
 
-# --------------------------------------------------------------------------------------------- #
-# Op.Ease*: literal transcription must match easing.py bodies bit-for-bit
-# --------------------------------------------------------------------------------------------- #
-
-
 def test_all_36_ease_ops_registered():
     assert len(EASE_OPS) == 36
 
@@ -303,18 +277,9 @@ def test_ease_clamps_input(op):
     assert same_bits(run_node(op, 5.0), run_node(op, 1.0))
 
 
-# --------------------------------------------------------------------------------------------- #
-# Fused read-modify-write ops: Set<BinOp>[|Pointed|Shifted], Increment*/Decrement*.
-#
-# Each fused op is checked against its definitional expansion executed on a fresh interpreter
-# (same seeded memory), asserting BOTH the final memory and the return value match (the
-# expansion's return being the wrapping ``Set``'s value). Constant addresses are used so the
-# expansion's double index-evaluation is harmless. Pre/Post return conventions (REVERSE of C:
-# Pre=old, Post=new), pointer-pair addressing, x+y*s striding, and Mod/Rem sign edges are
-# covered through the fused forms.
-# --------------------------------------------------------------------------------------------- #
-
-# (scalar, pointed, shifted) fused op per binary operator, plus the plain binop + Python impl.
+# Fused read-modify-write operations are compared with their definitional expansions. The tests
+# pin pointer-pair and x + y*s addressing, pre/post return conventions (the reverse of C), and
+# Mod/Rem sign behavior. Constant addresses keep repeated index evaluation side-effect free.
 _FUSED = {
     Op.Add: (Op.SetAdd, Op.SetAddPointed, Op.SetAddShifted, operator.add),
     Op.Subtract: (Op.SetSubtract, Op.SetSubtractPointed, Op.SetSubtractShifted, operator.sub),
@@ -347,9 +312,6 @@ def _c(x) -> float:
     return float(x)
 
 
-# ---- scalar Set<BinOp> vs Set(id, index, BinOp(Get(id, index), value)) --------------------- #
-
-
 @pytest.mark.parametrize("binop", BINOPS, ids=lambda op: op.name)
 @pytest.mark.parametrize("old", [8.0, -8.0, 6.0, -6.0, 2.5])
 @pytest.mark.parametrize("value", [3.0, -3.0, 2.0])
@@ -361,9 +323,6 @@ def test_scalar_fused_matches_expansion(binop, old, value):
     get = FunctionNode(Op.Get, (_c(block), _c(index)))
     expansion = FunctionNode(Op.Set, (_c(block), _c(index), FunctionNode(binop, (get, _c(value)))))
     assert _run_seeded(fused, seed) == _run_seeded(expansion, seed)
-
-
-# ---- Pointed: double-deref addressing (ptr block at index, ptr index at index+1) ----------- #
 
 
 @pytest.mark.parametrize("binop", BINOPS, ids=lambda op: op.name)
@@ -382,9 +341,6 @@ def test_pointed_fused_matches_expansion(binop, value):
     assert _run_seeded(fused, seed) == _run_seeded(expansion, seed)
 
 
-# ---- Shifted: addr = x + y * s ------------------------------------------------------------- #
-
-
 @pytest.mark.parametrize("binop", BINOPS, ids=lambda op: op.name)
 @pytest.mark.parametrize("value", [3.0, -2.0])
 def test_shifted_fused_matches_expansion(binop, value):
@@ -400,15 +356,11 @@ def test_shifted_fused_matches_expansion(binop, value):
 
 
 def test_shifted_addressing_x_plus_y_times_s():
-    # Directly assert the x + y*s address is where the store lands.
     it = Interpreter()
     it.set(7, 14, 100.0)  # 2 + 3*4 = 14
     ret = it.run(FunctionNode(Op.SetAddShifted, (7.0, 2.0, 3.0, 4.0, 5.0)))
     assert ret == 105.0
     assert it.get(7, 14) == 105.0
-
-
-# ---- Increment/Decrement Pre/Post return + memory (REVERSE of C: Pre=old, Post=new) -------- #
 
 
 @pytest.mark.parametrize(
@@ -466,9 +418,6 @@ def test_increment_decrement_shifted_return_and_addressing(op, ret_is_new, delta
     ret = it.run(FunctionNode(op, (100.0, 2.0, 3.0, 4.0)))
     assert it.get(100, 14) == seed_old + delta
     assert ret == (seed_old + delta if ret_is_new else seed_old)
-
-
-# ---- Mod / Rem sign edge cases through the fused forms ------------------------------------- #
 
 
 @pytest.mark.parametrize(

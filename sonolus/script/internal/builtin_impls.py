@@ -28,6 +28,7 @@ from sonolus.script.iterator import (
     _Enumerator,
     _FilteringIterator,
     _MappingIterator,
+    _validate_next_result,
     _Zipper,
 )
 from sonolus.script.num import Num, _is_num
@@ -200,6 +201,8 @@ def _len(value):
 
 
 def _validate_len_result(length):
+    if ctx() and not ctx().live:
+        return Num._accept_(0)
     length = validate_value(length)
     if not _is_num(length):
         raise TypeError(f"Invalid type for __len__: {_type_name(length)}")
@@ -389,7 +392,7 @@ def _max2_generic(a, b, key=_identity):
 
 def _max_num_iterator(iterable, default, key):
     iterator = iterable.__iter__()  # noqa: PLC2801
-    initial = iterator.next()
+    initial = _validate_next_result(iterator.next())
     if initial.is_nothing:
         require(default is not None, "default must be provided if the iterator is empty")
         return default
@@ -485,7 +488,7 @@ def _min2_generic(a, b, key=_identity):
 
 def _min_num_iterator(iterable, default, key):
     iterator = iterable.__iter__()  # noqa: PLC2801
-    initial = iterator.next()
+    initial = _validate_next_result(iterator.next())
     if initial.is_nothing:
         require(default is not None, "default must be provided if the iterator is empty")
         return default
@@ -829,7 +832,7 @@ def _detach_next_result(value):
 
 def _next(iterator):
     require(isinstance(iterator, SonolusIterator), "Only subclasses of SonolusIterator are supported as iterators")
-    value = iterator.next()
+    value = _validate_next_result(iterator.next())
     if value.is_some:
         return _detach_next_result(value.get_unsafe())
     error("Iterator has been exhausted")

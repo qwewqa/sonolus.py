@@ -5,6 +5,8 @@ from sonolus.script.array_like import ArrayLike
 from sonolus.script.debug import debug_log
 from sonolus.script.internal.descriptor import SonolusDescriptor
 from sonolus.script.internal.error import CompilationError
+from sonolus.script.internal.meta_fn import meta_fn
+from sonolus.script.internal.value import BackingValue
 from sonolus.script.num import Num
 from sonolus.script.record import Record
 from sonolus.script.vec import Vec2
@@ -62,6 +64,30 @@ MyBox.missing_property = property(missing_property)
 
 Record.masked_for_test = property(lambda self: 123)
 MyBox.masked_for_test = None
+
+
+def _direct_meta_function():
+    return 1
+
+
+def test_unimplemented_sonolus_descriptor_methods_raise():
+    descriptor = SonolusDescriptor()
+    with pytest.raises(NotImplementedError):
+        descriptor.__get__(None, object)
+    with pytest.raises(NotImplementedError):
+        descriptor.__set__(None, 0)
+
+
+def test_unimplemented_backing_value_methods_raise():
+    backing = BackingValue()
+    with pytest.raises(NotImplementedError):
+        backing.read()
+    with pytest.raises(NotImplementedError):
+        backing.write(0)
+
+
+def test_meta_fn_accepts_direct_function_configuration():
+    assert meta_fn(_direct_meta_function, show_in_stack=False)() == 1
 
 
 def test_hasattr_record_field():

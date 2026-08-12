@@ -11,10 +11,10 @@ from sonolus.script.array import Array
 from sonolus.script.array_like import ArrayLike
 from sonolus.script.containers import VarArray
 from sonolus.script.debug import debug_log
-from sonolus.script.internal.builtin_impls import _max, _min  # noqa: PLC2701
+from sonolus.script.internal.builtin_impls import _max, _min, _validate_len_result  # noqa: PLC2701
 from sonolus.script.internal.context import RuntimeChecks
 from sonolus.script.internal.error import CompilationError
-from sonolus.script.iterator import SonolusIterator
+from sonolus.script.iterator import SonolusIterator, maybe_next
 from sonolus.script.maybe import Nothing, Some
 from sonolus.script.num import Num
 from sonolus.script.record import Record
@@ -56,8 +56,29 @@ class _CountingIterator(Record, SonolusIterator):
         return Some(self.value)
 
 
+class _NonMaybeIterator(Record, SonolusIterator):
+    def next(self):
+        return 1
+
+
 def _plain_fn(x):
     return x + 1
+
+
+def _identity_iterator(iterator):
+    return iterator
+
+
+def _zip_iterator(iterator):
+    return zip(iterator)
+
+
+def _map_identity(iterator):
+    return map(lambda value: value, iterator)  # noqa: C417
+
+
+def _filter_truthy(iterator):
+    return filter(None, iterator)
 
 
 def test_callable_on_user_function():
@@ -238,6 +259,10 @@ class _InvalidLenArray(Record, ArrayLike[int]):
 class _NonnumericLenRecord(Record):
     def __len__(self):
         return None  # noqa: PLE0303 - intentionally violates the protocol
+
+
+def test_len_result_validation_runs_without_a_compilation_context():
+    assert _validate_len_result(2)._as_py_() == 2
 
 
 def test_bool_no_arg():
@@ -824,6 +849,42 @@ def test_reversed_rejects_set_like_python():
 
     with pytest.raises(CompilationError, match="'set' object is not reversible"):
         compile_fn(fn)
+
+
+@pytest.mark.parametrize(
+    "adapt",
+    [
+        _identity_iterator,
+        enumerate,
+        _zip_iterator,
+        _map_identity,
+        _filter_truthy,
+    ],
+    ids=["maybe_next", "enumerate", "zip", "map", "filter"],
+)
+def test_iterator_adapters_require_next_to_return_maybe(adapt):
+    def fn():
+        return maybe_next(adapt(_NonMaybeIterator()))
+
+    with pytest.raises(CompilationError, match="Iterator next must return a Maybe"):
+        run_compiled(fn)
+
+
+@pytest.mark.parametrize("extremum", [min, max])
+def test_numeric_extrema_require_next_to_return_maybe(extremum):
+    def fn():
+        return extremum(_NonMaybeIterator())
+
+    with pytest.raises(CompilationError, match="Iterator next must return a Maybe"):
+        run_compiled(fn)
+
+
+def test_next_requires_next_to_return_maybe():
+    def fn():
+        return next(_NonMaybeIterator())
+
+    with pytest.raises(CompilationError, match="Iterator next must return a Maybe"):
+        run_compiled(fn)
 
 
 def test_next_over_array_iterator_two_results_live():

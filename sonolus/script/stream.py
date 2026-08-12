@@ -215,7 +215,7 @@ class _SparseStreamBacking(BackingValue):
 
 
 class Stream[T](Record):
-    """Represents a stream.
+    """A stream.
 
     Most users should use [`@streams`][sonolus.script.stream.streams] to declare streams and stream groups, rather than
     creating instances of this class directly.
@@ -324,12 +324,12 @@ class Stream[T](Record):
         return previous_key < key
 
     def next_key_inclusive(self, key: int | float) -> int | float:
-        """Like [`next_key`][sonolus.script.stream.Stream.next_key], but returns the key itself if it is in the stream."""
+        """Like [`next_key`][sonolus.script.stream.Stream.next_key], including the key when present."""
         _check_can_read_stream()
         return key if key in self else self.next_key(key)
 
     def previous_key_inclusive(self, key: int | float) -> int | float:
-        """Like [`previous_key`][sonolus.script.stream.Stream.previous_key], but returns the key itself if it is in the stream."""
+        """Like [`previous_key`][sonolus.script.stream.Stream.previous_key], including the key when present."""
         _check_can_read_stream()
         return key if key in self else self.previous_key(key)
 
@@ -507,7 +507,7 @@ class Stream[T](Record):
 
 
 class StreamGroup[T, Size](Record):
-    """Represents a group of streams.
+    """A group of streams.
 
     Does not support negative indexes.
 

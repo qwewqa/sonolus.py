@@ -3,8 +3,13 @@
 from pathlib import Path
 from types import SimpleNamespace
 
+import pytest
+
 from sonolus.build.collection import Collection
 from sonolus.build.project import load_resource
+from sonolus.script.engine import Engine, EngineData
+from sonolus.script.level import Level, LevelData
+from sonolus.script.project import Project
 
 
 def test_build_project_accepts_none_config(monkeypatch):
@@ -14,6 +19,91 @@ def test_build_project_accepts_none_config(monkeypatch):
     stub_project = SimpleNamespace(converters={}, engine=SimpleNamespace(name="stub"), levels=[])
 
     project_mod.build_project_to_existing_collection(stub_project, Collection(), None)
+
+
+def make_level(name: str) -> Level:
+    return Level(name=name, data=LevelData(bgm_offset=0.0, entities=[]))
+
+
+def make_project(levels: list[Level]) -> Project:
+    return Project(engine=Engine(name="test", data=EngineData()), levels=levels)
+
+
+def test_project_retries_duplicate_level_name_validation():
+    project = make_project(iter([make_level("duplicate"), make_level("duplicate")]))
+
+    for _ in range(2):
+        with pytest.raises(
+            ValueError, match="Project levels must have unique names; duplicate level name: 'duplicate'"
+        ):
+            assert project.levels
+
+
+def test_project_rejects_duplicate_level_names_before_packaging(monkeypatch):
+    from sonolus.build import project as project_mod
+
+    levels = [make_level("first"), make_level("second")]
+    project = make_project(levels)
+    assert project.levels[1].name == "second"
+    levels[1].name = "first"
+    packaged = False
+
+    def add_engine(*args, **kwargs):
+        nonlocal packaged
+        packaged = True
+
+    monkeypatch.setattr(project_mod, "add_engine_to_collection", add_engine)
+
+    with pytest.raises(ValueError, match="Project levels must have unique names; duplicate level name: 'first'"):
+        project_mod.build_project_to_existing_collection(project, Collection(), None)
+
+    assert not packaged
+
+
+def test_project_to_collection_revalidates_cached_level_names_before_packaging(tmp_path, monkeypatch):
+    from sonolus.build import project as project_mod
+
+    levels = [make_level("first"), make_level("second")]
+    project = make_project(levels)
+    project.resources = tmp_path
+    assert project.levels[1].name == "second"
+    levels[1].name = "first"
+    packaged = False
+
+    def add_engine(*args, **kwargs):
+        nonlocal packaged
+        packaged = True
+
+    monkeypatch.setattr(project_mod, "add_engine_to_collection", add_engine)
+
+    with pytest.raises(ValueError, match="Project levels must have unique names; duplicate level name: 'first'"):
+        project_mod.build_project_to_collection(project, None)
+
+    assert not packaged
+
+
+def test_project_revalidates_level_names_after_converters(monkeypatch):
+    from sonolus.build import project as project_mod
+
+    levels = [make_level("first"), make_level("second")]
+    project = make_project(levels)
+    project.converters = {"source": lambda _: None}
+    packaged = False
+
+    def apply_converter(*args, **kwargs):
+        levels[1].name = "first"
+
+    def add_engine(*args, **kwargs):
+        nonlocal packaged
+        packaged = True
+
+    monkeypatch.setattr(project_mod, "apply_converter_to_collection", apply_converter)
+    monkeypatch.setattr(project_mod, "add_engine_to_collection", add_engine)
+
+    with pytest.raises(ValueError, match="Project levels must have unique names; duplicate level name: 'first'"):
+        project_mod.build_project_to_existing_collection(project, Collection(), None)
+
+    assert not packaged
 
 
 def _two_roots(tmp_path: Path, monkeypatch) -> Path:
