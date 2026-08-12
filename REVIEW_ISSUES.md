@@ -1,7 +1,8 @@
 # Remaining review issues
 
-This manifest records issues remaining after commit `c28af93`. Fixed items from the previous manifest are omitted.
-Items under "Decided not to fix" are retained so future reviews do not repeatedly rediscover settled policy.
+This manifest records issues remaining after commit `857b926`. It includes every remaining issue and every issue
+explicitly rejected or accepted during this review session, so later reviews can distinguish open work from
+settled policy.
 
 Confidence labels:
 
@@ -11,169 +12,234 @@ Confidence labels:
 
 ## Open correctness issues
 
-1. **High, validated: case-distinct item names collide in Windows collection output.**
-   A category can contain both `pixel` and `PIXEL`, but Windows writes them to one file. The category list
-   advertises two items while only the last payload remains. Reject Windows-casefold collisions within each
-   category, including items loaded from SCP archives.
+1. **Medium, validated: normal builds suppress output-cleanup failures.**
+   `build_project` and `write_collection(clear=True)` ignore `shutil.rmtree` errors, then write into the surviving
+   directory and report success. Removed levels or assets can remain in ordinary build output. Cleanup failures
+   should abort the build; this is separate from the accepted incremental behavior of the development server.
 
-2. **Medium, validated: cross-mode block enums can cause optimizer wrong-code in hand-built IR.**
-   [`sonolus/backend/_opt/ir.pyx`](sonolus/backend/_opt/ir.pyx) trusts permission metadata on a supplied
-   `BlockData` enum even when `OptimizerConfig.mode` names another mode. Numeric block IDs overlap, so a foreign
-   enum can mark a writable block readonly and let LICM or GVN move reads across writes. Normal script compilation
-   canonicalizes blocks correctly; the failure requires direct backend IR construction.
+2. **Medium, validated: repeated entity instances produce ambiguous level references.**
+   `build_level_data` maps entities by object identity. Reusing one instance at multiple positions gives both
+   serialized entries the later position's name, and every reference resolves to that later occurrence. Reject a
+   repeated identity while continuing to allow distinct instances with equal field values.
 
-3. **Medium, validated: `check` skips deterministic project-data validation.**
-   `sonolus-py check` validates callback tracing but never loads levels, validates output names, serializes level
-   data, or validates and serializes engine configuration. It can report success for projects that deterministically
-   fail to build because of reserved names, NaN data, or invalid option configuration. Optimization may remain
-   intentionally excluded, but cheap project-data validation should match the documented project-validation scope.
+3. **Medium, validated: same-stem source resources overwrite each other silently.**
+   `Collection.load_from_source` keys resources by filename stem. Files such as `data.bin` and `data.json` resolve
+   to the same field; the later file wins and the earlier repository object becomes unreachable. A resource stem
+   can also overwrite an `item.json` field. Reject duplicate resolved keys before adding assets.
 
-4. **Medium, validated: `select_option` accepts invalid default indices.**
-   [`sonolus/script/options.py`](sonolus/script/options.py) accepts negative, out-of-range, boolean, and empty-list
-   integer defaults and emits them into engine configuration. Require a non-boolean integer satisfying
-   `0 <= default < len(values)`.
+4. **Medium, validated: `make_comparable_float` does not enforce its input domain.**
+   The public contract requires integer pairs satisfying `0 <= value < max_value` and a product of maxima below
+   `2**31`. Negative, fractional, out-of-range, zero-maximum, and runtime-oversized inputs are accepted and can
+   produce sentinel-like values. Use runtime assertions so invalid calls in dead runtime branches still compile.
 
-5. **Medium, validated: integer-domain guards are missing from several builtins.**
-   Compiled `range`, `enumerate(start=...)`, and `round(ndigits=...)` accept fractional values despite their
-   published integer contracts. Use runtime assertions so invalid calls in dead runtime branches remain compilable.
+5. **Medium, validated: sequence `index` bounds are not consistently Python-compatible.**
+   `ArrayLike.index` and `TupleImpl.index` accept fractional `start` or `stop`; runtime-valued array bounds can
+   reach unchecked fractional memory indices. Tuple bounds also accept keywords. Require integer-valued bounds,
+   preserve dead-branch compilation, and make tuple bounds positional-only.
 
-6. **Medium, validated: `__len__` results are not validated consistently.**
-   Direct `len`, truth conversion, and array-like extrema accept fractional or negative numeric results from a
-   custom `__len__`. Validate a non-negative integer-valued number at their shared protocol boundary.
+6. **Medium, validated: compiled `range.index` accepts unsupported arguments.**
+   Python 3.14 accepts exactly one positional argument after `self`. The compiled replacement also accepts
+   `start`, `stop`, and keywords, so code can compile successfully but fail in Python or debug execution. Narrow
+   the signature to `index(self, value, /)`.
 
-7. **Medium, validated: dev-server reload can reuse stale timestamp bytecode.**
-   Purging `sys.modules` does not invalidate a `.pyc` when an edit preserves source size and falls in the same
-   timestamp second. A rebuild can therefore import the previous project or dependency source. Invalidating import
-   finder caches is insufficient; the relevant bytecode cache must be removed or bypassed.
+7. **Medium, validated: `yield from` does not validate the iterator result protocol.**
+   Ordinary loops and generator expressions require `iterator.next()` to return `Maybe`, but `yield from`
+   dereferences `_present` and `_value` directly. It therefore produces incidental attribute errors or accepts an
+   unrelated record with similarly named fields. Apply the same explicit `Maybe` validation as other iteration.
 
-8. **Medium, validated: item names over Windows' component limit fail only while writing.**
-   A name longer than 255 UTF-16 code units passes `validate_item_name` and then fails publication on Windows.
-   Validate the portable component-length limit when the item is admitted.
+8. **Low-medium, validated: membership still depends on the host Python version.**
+   When `__contains__` returns `NotImplemented`, the compiler calls host `bool(NotImplemented)`. Python 3.14
+   raises `TypeError`, while older hosts can treat it as true with a warning. The project policy is to follow 3.14
+   on every host, so this path should raise the 3.14 error explicitly for both `in` and `not in`.
 
-9. **Medium, validated: `StreamGroup.__contains__` accepts fractional indices.**
-    Compiled `0.5 in StreamGroup[...]` is true when in bounds, while `group[0.5]` rejects the same index and the
-    public contract calls it an integer. Membership should require an integral value and return false otherwise.
+9. **Medium, validated: `run_and_validate` checks only one compiled exception leg.**
+   When plain Python raises, the test helper re-raises inside its first execution iteration. It therefore checks
+   only the non-ROM minimal-optimization run instead of all six closure and optimization combinations, and it
+   skips exception-path log parity. Complete every compiled leg before re-raising the saved Python exception.
 
-10. **Medium, reproduced: dev-server restart may fail because address reuse is disabled.**
-    The server uses `socketserver.TCPServer`, whose `allow_reuse_address` is false. Restarting after a connection
-    can fail with `EADDRINUSE`; an HTTP-server-compatible reusable server should be used.
+10. **Low-medium, validated: optimizer marshal-in silently truncates numeric IR metadata.**
+    Fractional raw block IDs, offsets, and temporary sizes are cast to integers. Fractional temporary sizes can
+    additionally select an array kind before truncating to a scalar-sized allocation. Require exact non-boolean
+    integers with explicit ranges at the marshal boundary.
 
-11. **Low-medium, validated: strict-subclass reflected operator priority is missing.**
-    Binary operations, rich comparisons, augmented-assignment fallback, and dictionary/set equality always try
-    the left or stored operand first. CPython gives a strict-subclass right operand priority in defined cases.
-    The divergence is currently difficult to reach through supported public `Record` values because subclassing a
-    concrete record is rejected, but it affects custom/internal `Value` hierarchies.
+11. **Low, validated: duplicate CFG-label validation is bypassable.**
+    `BasicBlock.connect_to` rejects duplicate labels, but callers can supply `outgoing=` or mutate the edge set
+    directly. Marshal-in then keeps an arbitrary equal-label edge. Keep the early check and add authoritative
+    validation at the optimizer boundary.
 
-12. **Low-medium, reproduced: multi-valued `Literal` dimensions silently use the first value.**
-    `Array[int, Literal[2, 3]]` becomes a two-element array, and `Literal[True]` bypasses normal dimension
-    normalization. Reject multi-valued literals and recursively normalize a single literal value.
+12. **Low, validated: an explicit `None` attribute does not mask an inherited descriptor.**
+    Visitor and builtin `getattr` MRO searches use `dict.get(..., None)` as both the missing sentinel and a value.
+    A subclass attribute set to `None` is skipped and an inherited property may run instead. Test membership in
+    `cls.__dict__` or use a distinct sentinel.
 
-13. **Low-medium, reproduced: the supported `range` alias is not represented as a type.**
-    The builtin mapping exposes `range` as the bound method `Range.frozen`, so `type(range)` and
-    `isinstance(value, range)` do not behave like the other supported builtin type aliases. Decide whether range is
-    constructor-only or extend the type shim consistently.
+13. **Low, validated: mixed-case HTTP schemes are treated as filesystem paths.**
+    URI schemes are case-insensitive, but asset and resource loaders recognize only lowercase `http://` and
+    `https://`. Preserve the original URL while comparing its scheme case-insensitively.
 
-14. **Low, validated: duplicate backend CFG labels compile nondeterministically.**
-    Hand-built `BasicBlock` graphs may connect one source to different targets with the same label. Production
-    optimizer entry points do not call `verify`, and unordered edge marshaling decides which target survives.
-    Normal frontend CFGs enforce unique labels. Reject duplicates at `connect_to` or the marshal boundary.
+## Open documentation and API issues
 
-15. **Low, reproduced: dev-server help crashes on extremely narrow terminals.**
-    A terminal width of one or two produces a non-positive `textwrap.fill` width. Clamp the content width.
+14. **Medium, validated: scheduled-effect latency guidance is inconsistent.**
+    `Effect.schedule`, `Effect.schedule_loop`, and `ScheduledLoopedEffectHandle.stop` should all explain that
+    scheduling shortly before the target can cause unexpected latency. Do not prescribe a fixed lead time or
+    restore the removed 0.5-second recommendation.
 
-16. **Low, reproduced: repeated programmatic project imports duplicate the current directory in `sys.path`.**
-    [`sonolus/build/cli.py`](sonolus/build/cli.py) compares a `Path` with string entries, so the membership test
-    always misses and inserts another copy.
+15. **Medium, validated: public `BuildConfig` signatures expose an unpublished backend type.**
+    Generated reference pages render `optimize.OptimizationLevel` for optimization constants and `passes`.
+    `sonolus.backend.optimize` has no public reference page, leaving users with an unlinked internal-looking type.
+    Publish an appropriate type or hide the backend annotation from the public signature.
 
-17. **Low, reproduced: the dev server is IPv4-only.**
-    Address discovery filters IPv6 and the server uses `AF_INET`, leaving no reachable advertised address on an
-    IPv6-only host. Decide whether IPv6 is a supported dev environment.
+16. **Low, validated: public property summaries use function-style imperatives.**
+    Published properties in containers, effects, maybe values, runtime UI, sprites, and vectors begin with verbs
+    such as `Return` or `Check`. Property summaries should be noun phrases, and redundant `Returns:` blocks should
+    be removed.
 
-18. **Low, validated: optimizer toolchain helper `nogil_sum` overflows on Windows.**
-    Its C `long` accumulator overflows at `n=65537`, invoking signed-overflow undefined behavior. It is used only
-    by optimizer toolchain tests, not production compilation; use a 64-bit accumulator if the helper is retained.
+17. **Low, validated: published stubs repeat standard Python behavior.**
+    Several builtin and random stubs repeat their summaries in `Returns:` and give argument descriptions that add
+    no contract information. This is especially visible for `all`, `any`, `enumerate`, `filter`, `zip`, `random`,
+    and `uniform`. Retain Sonolus-specific restrictions and remove restatement.
 
-## Open documentation and published API issues
+18. **Low, validated: optimizer profiling prose overstates its behavior.**
+    Profiling is described as timing each pass with zero disabled cost, but it records coarse pipeline stages and
+    still tests the enabled flag. Its displayed snapshot shape is also misleading, and concurrency rationale is
+    scoped only to serial CLI builds. Rewrite the module and driver comments around observable stage timing.
 
-19. **Medium, reproduced: public `QuadLike` still exposes private `_QuadLike`.**
-    The generated Quad reference renders `_QuadLike` in the public alias. Promote or rename the protocol so every
-    public signature uses a documented public type.
+19. **Low, reproduced: `DictImpl.get` requires an explicit default without documenting the restriction.**
+    Ordinary `dict.get(key)` is valid, but the compiled implementation requires `get(key, default)`. Either add a
+    supported one-argument form or publish the restriction and rationale.
 
-20. **Low, reproduced: builtin truth-testing stubs are too narrow.**
-    `all` and `any` accept truth-testable objects, not only `bool`, and `filter` predicates may return any
-    truth-testable value. Their published signatures currently reject supported code in type checkers.
+20. **Low, reproduced: CLI `--verbose` help promises broader verbosity than it provides.**
+    The flag controls full tracebacks for compilation errors; it does not generally make output verbose. Use the
+    precise wording already present in the CLI concepts page.
 
-21. **Low, reproduced: `zip`'s published signature loses heterogeneous element types.**
-    The single type parameter says all input iterables share one element type, although the compiler supports
-    heterogeneous inputs. Add bounded heterogeneous overloads or another accurate public signature.
+21. **Low, validated: existing prose exceeds project clarity and line-length standards.**
+    Long lines remain in concepts pages, public docstrings, and comments. Additional comments mechanically narrate
+    container algorithms, archetype initialization, records, globals, and unchecked access without preserving a
+    durable rationale. Treat this as careful prose debt: retain load-bearing invariants, remove narration, and keep
+    changed prose within 120 columns.
 
-22. **Low, reproduced: `random.uniform` documents only ordered endpoints.**
-    The implementation follows Python and accepts reversed endpoints, but its docs say `a <= N <= b` and tests
-    cover only non-negative widths. Document the result as lying between the endpoints and add reversed-bound
-    coverage, or explicitly reject reversed bounds.
+## Decided not to fix or accepted policy
 
-23. **Low, reproduced: existing documentation exceeds the prose line-length standard.**
-    Pre-existing lines over 120 columns remain across several concepts pages. This is style debt rather than a
-    rendered-doc correctness issue.
+22. **Case-distinct collection names colliding on Windows.**
+    Windows can map `pixel` and `PIXEL` to one file. Cross-platform casefold uniqueness was explicitly declined;
+    this remains an accepted portability limitation of collection output.
 
-## Decided not to fix
+23. **Windows component-length validation.**
+    Names over 255 UTF-16 code units can fail during publication. Pre-validating the Windows component limit was
+    explicitly declined.
 
-24. **Floating-point format differences across Python, the interpreter, and Sonolus.**
-    Users must not rely on f32-versus-f64 precision, NaN ordering, or signed-zero operand identity. This includes
-    SCCP/folding precision differences, constant branch selection near f32 rounding boundaries, and NaN edge-label
-    ordering.
+24. **`sonolus-py check` validates frontend code rather than complete project data.**
+    The command intentionally remains a lightweight callback/frontend check. It does not promise that names,
+    level data, configuration JSON, optimization, or packaging will succeed.
 
-25. **Interpreter `Get` returns diagnostic sentinels for invalid reads.**
-    This intentionally makes uninitialized optimizer reads easier to diagnose even though the runtime returns zero.
+25. **Development-server reload and publication limitations.**
+    Stale timestamp bytecode, disabled address reuse, in-place partial publication, retained endpoints, resource
+    timestamp races, repository trust, and production-grade network hardening were all declined for the manual
+    development server. The normal-build cleanup failure is separate and remains open above.
 
-26. **Deep recursive engine-node formatting.**
-    The formatter is for debugging and output at such depth is not practically readable.
+26. **Development-server IPv6 support is deferred.**
+    Address discovery filters IPv6 and the server uses `AF_INET`. IPv6-only development environments remain
+    unsupported unless the development-network support policy changes.
 
-27. **Empty closure cells referenced only by dead code.**
-    Compiling functions created before a closure cell is initialized is outside the intended compiled-code style.
+27. **Floating-point format and edge-value differences.**
+    Users must not rely on f32-versus-f64 precision, NaN ordering, signed-zero operand identity, or non-finite
+    switch-label behavior. This covers SCCP folding and branch decisions near f32 boundaries, NaN edge ordering,
+    and `min`/`max` tie identity.
 
-28. **Dictionary lookup ignores hashes.**
-    Supporting compiled hashes is impractical; equal keys are expected to honor Python's equal-hash contract.
+28. **Interpreter diagnostics differing from target-runtime invalid access.**
+    Interpreter `Get` sentinels and faults intentionally expose uninitialized or invalid optimizer reads even when
+    the real runtime returns zero or does not trap. DCE and self-copy removal need not preserve those diagnostics.
 
-29. **Heterogeneous unsortable compile-time dictionary keys.**
-    These remain unsupported to avoid input-dependent lookup-performance changes.
+29. **Deep recursive engine-node formatting.**
+    The formatter is a debugging aid, and output at the depth that exhausts recursion is not considered useful.
 
-30. **`min`/`max` first-operand identity on unsupported signed-zero or NaN ties.**
-    The observable cases depend on numeric edge semantics the project does not guarantee.
+30. **Empty closure cells referenced only by dead code.**
+    Functions created before such a closure cell is initialized remain outside the intended compiled-code style.
 
-31. **`min`/`max` over arbitrary mutable-reference iterables.**
-    The compiler cannot preserve reference semantics for arbitrary iterables; supported array-like and numeric
-    iterator paths remain the contract.
+31. **Dictionary hashes and heterogeneous unsortable constant keys.**
+    Compiled lookup does not execute user hashes, and equal keys are expected to satisfy Python's equal-hash
+    contract. Heterogeneous unsortable constant keys remain unsupported to avoid input-dependent lookup costs.
 
-32. **Compile-time-only archetypes returned by `get_archetype_by_name`.**
-    Exposing these bases at compile time is accepted even though they are not shipped and have no runtime ID.
+32. **`min` and `max` over arbitrary mutable-reference iterables.**
+    The compiler cannot preserve arbitrary reference semantics; supported array-like and numeric iterator paths
+    remain the contract.
 
-33. **Dev-server in-place publication, stale files, and partial writes.**
-    The dev server may retain removed endpoints or expose a partial tree after a failed write. Atomic publication is
-    not considered worth its complexity for the development-only server.
+33. **Compile-time-only archetypes returned by name lookup.**
+    Exposing these bases during compilation is accepted even though they are not shipped and have no runtime ID.
 
-34. **Resource modification during a dev rebuild can miss the next reload.**
-    The narrow timestamp race is accepted for the development-only server.
+34. **`Project.resources` and `Project.converters` documentation mentions only `dev`.**
+    Programmatic builds also consume them, but correcting this published description was explicitly declined.
 
-35. **Existing repository blobs are trusted by filename.**
-    Content is not re-hashed before reuse in the development output repository.
-
-36. **`Project.resources` and `Project.converters` documentation mentions only `dev`.**
-    Programmatic builds also consume them, but this documentation correction was explicitly declined.
-
-37. **Source recovery assumes UTF-8.**
+35. **Source recovery assumes UTF-8.**
     PEP 263 encoded source can execute in Python but fail compiler source recovery. Non-UTF-8 engine source remains
-    outside the intended project convention.
+    outside the project convention.
 
-38. **Compilation installs a process-global exception hook.**
-    Preserving or chaining a host application's existing `sys.excepthook` remains an unresolved integration-policy
-    choice.
+36. **Compilation installs a process-global exception hook.**
+    Preserving or chaining an application's existing `sys.excepthook` remains an unresolved integration choice.
 
-39. **Dev-server repository and network hardening beyond local development needs.**
-    The server is not intended as a production HTTP service; security, atomicity, and broad network compatibility
-    should be evaluated against that scope before implementation.
+37. **Python 3.14 semantics on every supported host.**
+    The compiler deliberately follows 3.14 deferred-annotation behavior on Python 3.12 and 3.13 instead of adding
+    version-specific annotation evaluation. Other discovered host-version branches should likewise be normalized
+    to 3.14 semantics.
 
-40. **Nested annotation evaluation on older Python hosts.**
-    On Python 3.12 and 3.13 without `from __future__ import annotations`, the compiler defers nested function
-    annotations instead of evaluating them at definition time. Following Python 3.14's deferred semantics is the
-    project policy; this narrow divergence does not justify version-dependent compiler behavior.
+38. **Optimizer toolchain helper overflow.**
+    Private test helper `nogil_sum` overflows a Windows C `long` at large inputs. It is not production code and was
+    explicitly declined.
+
+39. **Export directory writers are additive.**
+    Rewriting an exported level or engine with an optional asset set to `None` does not remove a previous file.
+    The methods promise to overwrite files they write, not synchronize or destructively clear a directory.
+
+40. **Missing goldens are created by the regression helper.**
+    This is the documented delete-and-rerun regeneration workflow, not a test failure policy.
+
+41. **Mutable cached-hash backend place objects.**
+    Mutating equality fields after constructing internal IR places can corrupt sets or dictionaries. The compiler
+    performs no such mutation, so post-construction mutation remains unsupported internal misuse.
+
+42. **Traceback cause restoration if traceback printing itself fails.**
+    `print_simple_traceback` may not restore `__cause__` if the diagnostic stream fails while printing. Defensive
+    hardening is not considered worthwhile after traceback output itself has become unavailable.
+
+43. **Optimizer profiling across concurrent programmatic builds.**
+    Profiling state is process-global and concurrent reset, snapshot, toggling, or compilation can mix samples.
+    Profiling is internal and CLI builds are serial; concurrent callers must coordinate externally.
+
+44. **Impure value identity through optimizer place fusion.**
+    `_values_equal(v, v)` precedes an impurity guard, but marshal and lowering create distinct value IDs for each
+    evaluation. No reachable place-fusion counterexample was found.
+
+45. **Recursive optimizer subtree analysis.**
+    Exhausting the C stack would require an adversarially enormous lowered RMW value graph. No practical failure
+    threshold or compiler-generated reproducer was found.
+
+46. **`BuildConfig.verbose` and `check` optimization behavior.**
+    `BuildConfig.verbose` accurately describes compilation-error tracebacks, and `check` deliberately ignores
+    optimization flags. Neither is a build correctness issue.
+
+47. **Project module detection and port defaults.**
+    CLI project-module detection behaved as documented. The programmatic server default of 8080 and CLI default
+    of 8000 are intentional interfaces, not a mismatched shared default.
+
+48. **Callback lists, export requirements, and localization.**
+    Mode callback enumerations match their definitions, required engine export assets are enforced, and inspected
+    localization paths preserve the documented values. The suspected build inconsistencies were refuted.
+
+49. **Compiled range semantics outside `range.index`.**
+    Range length, containment, equality, negative steps, zero steps, and integer-domain validation were checked and
+    match the supported contract. Only the open `range.index` arity issue remains.
+
+50. **Compiled random and container behavior.**
+    Reversed-bound `uniform`, dict and set union ordering, duplicate-key behavior, generic cache isolation, and
+    runtime `zip(strict=...)` were checked and match their supported contracts.
+
+51. **Generated documentation and entity-data terminology.**
+    The generated site no longer leaks `_QuadLike`. Calling entity data private to the engine means it is excluded
+    from level input, not that the author API is hidden; the wording is not contradictory.
+
+52. **Changelog versioning and reference integrity.**
+    An unreleased changelog version newer than `pyproject.toml` is normal. Strict MkDocs found no broken links or
+    anchors, and the new 0.18.2 bullets are concise user-observable changes rather than redundant release prose.
+
+53. **Keyword-only defaults of `None` in nested functions.**
+    The visitor wraps source `None` as a compile-time constant rather than confusing it with a missing default, so
+    the suspected signature bug was refuted.
