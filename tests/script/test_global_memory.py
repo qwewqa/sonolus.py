@@ -1,3 +1,5 @@
+from typing import ClassVar
+
 import pytest
 
 from sonolus.backend.mode import Mode
@@ -98,6 +100,24 @@ def test_level_data_default_raises_at_decoration():
         @level_data
         class WithDefault:
             x: int = 5
+
+
+@pytest.mark.parametrize("decorator", [level_memory, level_data])
+def test_global_declaration_excludes_class_vars_from_storage(decorator):
+    @decorator
+    class Globals:
+        first: int
+        configured: ClassVar[int] = 7
+        unconfigured: ClassVar[int]
+        second: int
+
+    cls = type(Globals)
+
+    assert Globals.configured == 7
+    assert "unconfigured" not in cls.__dict__
+    assert cls._global_info_.size == 2
+    assert (cls.first.index, cls.first.offset) == (0, 0)
+    assert (cls.second.index, cls.second.offset) == (1, 1)
 
 
 def test_level_memory_bad_annotation_names_the_class_and_field():

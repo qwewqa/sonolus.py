@@ -4,7 +4,9 @@ from os import PathLike
 from pathlib import Path
 from typing import cast
 
+from sonolus.backend.mode import Mode
 from sonolus.build.collection import Asset, Collection, Srl
+from sonolus.build.compile import _validate_archetype_names
 from sonolus.build.engine import package_engine, unpackage_data
 from sonolus.build.level import package_level_data
 from sonolus.script.engine import Engine
@@ -190,6 +192,13 @@ def load_resources_files_to_collection(base_path: Path) -> Collection:
 
 
 def get_project_schema(project: Project) -> ProjectSchema:
+    for mode, archetypes in (
+        (Mode.PLAY, project.engine.data.play.archetypes),
+        (Mode.WATCH, project.engine.data.watch.archetypes),
+        (Mode.PREVIEW, project.engine.data.preview.archetypes),
+    ):
+        _validate_archetype_names(mode, archetypes)
+
     fields_by_archetype: dict[str, dict[str, None]] = {}
     exports_by_archetype: dict[str, list[str]] = {}
     for archetype in project.engine.data.play.archetypes:

@@ -178,7 +178,7 @@ class DictImpl[Keys, OrderedKeys, Values](Record):
         for i, k in enumerate(self._keys):
             eq = validate_value(compile_and_call(_keys_equal, k, item))
             if not eq._is_py_():
-                # A bit of a hack to allow resetting to the original state
+                # _try_constsearch added orig_ctx -> begin_ctx speculatively. Remove the edge before fallback.
                 del orig_ctx.outgoing[None]
                 set_ctx(orig_ctx)
                 return None
@@ -202,7 +202,7 @@ class DictImpl[Keys, OrderedKeys, Values](Record):
         end_ctxs = []
         for i, k in enumerate(self._keys):
             if not _is_num(k):
-                # A bit of a hack to allow resetting to the original state
+                # _try_numsearch added orig_ctx -> begin_ctx speculatively. Remove the edge before fallback.
                 del orig_ctx.outgoing[None]
                 set_ctx(orig_ctx)
                 return None

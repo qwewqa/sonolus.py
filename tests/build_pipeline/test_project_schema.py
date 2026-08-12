@@ -6,6 +6,8 @@ the play, watch, and preview archetypes sharing a name at once, so it reports th
 them out of the fields a level supplies.
 """
 
+import pytest
+
 from sonolus.build.engine import package_engine, unpackage_data
 from sonolus.script.archetype import (
     ArchetypeSchema,
@@ -148,3 +150,18 @@ def test_an_archetype_does_not_narrow_its_own_fields():
     # The narrowing needs every mode at once, so a watch archetype still reports what play mode produces.
     assert "judged" in WatchThing.schema()["fields"]
     assert "judged" not in schema_by_name(build_test_project())["Thing"]["fields"]
+
+
+def test_schema_rejects_two_archetypes_with_the_same_name_in_one_mode():
+    class Chart(PlayArchetype):
+        pass
+
+    class PlayChart(PlayArchetype):
+        pass
+
+    with pytest.warns(UserWarning, match="both have the name 'Chart'"):
+        play = PlayMode(archetypes=[Chart, PlayChart])
+    project = Project(Engine(name="test", data=EngineData(play=play)))
+
+    with pytest.raises(ValueError, match="PLAY mode archetypes Chart and PlayChart both have the name 'Chart'"):
+        project.schema()

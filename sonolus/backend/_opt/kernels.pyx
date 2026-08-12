@@ -30,8 +30,8 @@ CONTRACT (read before touching a kernel)
   not f32-roundtrip-exact (``_f32_exact``), so compile-time f64 selection matches
   the 32-bit runtime exactly.
 
-* **Arity is fixed/exact.** The mid-end IR is *binary* for the associative ops
-  (``Add``/``Subtract``/``Multiply``/``Divide``/``Power``/``Mod``/``Rem`` take
+* **Arity is fixed/exact.** The mid-end IR is *binary* for the arithmetic left-fold
+  ops (``Add``/``Subtract``/``Multiply``/``Divide``/``Power``/``Mod``/``Rem`` take
   exactly 2 operands here -- n-ary fusion happens only at emission, after SCCP),
   and most other ops have a fixed arity (unary; ``If``/``Clamp``/``Lerp``/... 3;
   ``Remap``/``JudgeSimple`` 5; ``Judge`` 8; the 36 ``Ease*`` 1). Variadic:

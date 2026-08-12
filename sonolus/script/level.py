@@ -30,7 +30,7 @@ class ExportedLevel:
         self.preview = preview
         self.data = data
 
-    def write_to_dir(self, path: PathLike):
+    def write_to_dir(self, path: str | PathLike[str]):
         """Write the exported level to a directory."""
         path = Path(path)
         path.mkdir(parents=True, exist_ok=True)

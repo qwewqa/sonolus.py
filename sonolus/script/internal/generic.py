@@ -227,7 +227,6 @@ class PartialGeneric[T: GenericValue]:
 
     def __call__(self, *args, **kwargs):
         instance = self.base(*args, **kwargs)
-        # Throw an error if it fails
         accept_and_infer_types(self, instance, {})
         return instance
 

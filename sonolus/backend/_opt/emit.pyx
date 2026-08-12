@@ -2,9 +2,9 @@
 """EngineNode emission from the arena IR.
 
 Builds the EngineNode tree directly from the flat ``Func`` arena (see ir.pxd),
-with one deliberate rewrite on the way out: associative left spines
-(``Add``/``Multiply``/``Mod``/``Rem``, ``args[0]`` only) are re-flattened as the
-tree is built. Because marshal-in *binarises* n-ary associative input (ir.pyx
+with one deliberate rewrite on the way out: left spines of the n-ary left-fold
+operations ``Add``/``Multiply``/``Mod``/``Rem`` (``args[0]`` only) are
+re-flattened as the tree is built. Because marshal-in *binarises* n-ary input for these operations (ir.pyx
 ``_emit_pure``), re-flattening keeps the two emit paths in agreement: the fused
 ``optimize_and_finalize`` path emits from n-ary trees, while the test/golden path
 (export -> ``cfg_to_engine_node``) round-trips through marshal-in; without it the
@@ -267,7 +267,7 @@ cdef class _Emitter:
         return result
 
     cdef object _flatten_left_spine(self, object op_member, bint flattenable, list children):
-        # Re-flatten the associative left spine.
+        # Re-flatten the selected left-fold operation's left spine.
         # ``children[0]`` was already emitted (hence already flattened), so a
         # single splice fully flattens; right-nested trees (``Add(a, Add(b,c))``)
         # are left intact, preserving left-to-right FP evaluation order.
@@ -411,9 +411,9 @@ cdef class _Emitter:
         elif offset == 0:
             index_node = self._emit_value(index_val)
         else:
-            # ``Add(index, offset)``: re-flatten its left spine too (an ``index``
-            # that is itself a sum makes this a genuine associative left spine),
-            # so address arithmetic is flattened uniformly with value expressions.
+            # ``Add(index, offset)``: re-flatten its left spine too when ``index``
+            # is itself a sum, so address arithmetic is flattened uniformly with
+            # value expressions.
             index_node = self._flatten_left_spine(
                 _OP_ADD, True, [self._emit_value(index_val), self._emit_numeric(<double>offset)]
             )

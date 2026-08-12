@@ -28,7 +28,13 @@ def _check_particle_mode() -> None:
 
 
 class Particle(Record):
-    """A particle effect."""
+    """A particle effect.
+
+    Usage:
+        ```python
+        Particle(id: int)
+        ```
+    """
 
     id: int
 

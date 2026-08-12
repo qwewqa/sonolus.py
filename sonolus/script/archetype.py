@@ -1670,7 +1670,13 @@ class PreviewEntityInfo(Record):
 
 
 class LifeInfo(Record):
-    """How an entity contributes to life."""
+    """How an entity contributes to life.
+
+    Usage:
+        ```python
+        LifeInfo(perfect_increment: int, great_increment: int, good_increment: int, miss_increment: int)
+        ```
+    """
 
     perfect_increment: int
     """Life increment for a perfect judgment."""

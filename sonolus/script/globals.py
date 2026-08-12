@@ -1,5 +1,5 @@
 import inspect
-from typing import dataclass_transform
+from typing import ClassVar, dataclass_transform, get_origin
 
 from sonolus.backend.blocks import Block, PlayBlock, PreviewBlock, TutorialBlock, WatchBlock
 from sonolus.backend.mode import Mode
@@ -89,10 +89,10 @@ def _create_global(cls: type, blocks: dict[Mode, Block], offset: int | None):
     if cls.__bases__ != (object,):
         raise TypeError("Expected a class with no bases or a Value subclass")
     field_offset = 0
-    for i, (
-        name,
-        annotation,
-    ) in enumerate(inspect.get_annotations(cls, eval_str=True).items()):
+    field_index = 0
+    for name, annotation in inspect.get_annotations(cls, eval_str=True).items():
+        if annotation is ClassVar or get_origin(annotation) is ClassVar:
+            continue
         # hasattr doesn't work here: it returns True for a field named e.g. mro via the metaclass.
         if name in cls.__dict__:
             raise TypeError(f"Default values are not supported for global fields: {cls.__name__}.{name}")
@@ -100,7 +100,8 @@ def _create_global(cls: type, blocks: dict[Mode, Block], offset: int | None):
             type_ = validate_concrete_type(annotation)
         except TypeError as e:
             raise TypeError(f"Invalid annotation for {cls.__name__}.{name}: {e}") from e
-        setattr(cls, name, _GlobalField(name, type_, i, field_offset))
+        setattr(cls, name, _GlobalField(name, type_, field_index, field_offset))
+        field_index += 1
         field_offset += type_._size_()
     cls._global_info_ = _GlobalInfo(cls.__name__, field_offset, blocks, offset)  # type: ignore
     cls._is_comptime_value_ = True  # type: ignore

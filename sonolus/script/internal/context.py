@@ -386,7 +386,6 @@ class Context:
         assert len(self.outgoing) == 0
         self.outgoing[None] = header
         values = {}
-        # First do a pass through and get every value
         for name, binding in header.loop_variables.items():
             target_value = binding.value
             with using_ctx(self):
@@ -396,7 +395,6 @@ class Context:
                     # point in time specifically, since _get_readonly_ will make a copy if the value is
                     # e.g. a Num backed by a TempBlock which could be mutated.
                     values[name] = value._get_readonly_()
-        # Then actually set them
         for name, binding in header.loop_variables.items():
             target_value = binding.value
             with using_ctx(self):
@@ -783,11 +781,7 @@ class Scope:
 
 
 def _new_cfg_block(statements, test) -> BasicBlock:
-    # Fast constructor for the transient blocks context_to_cfg feeds straight to the
-    # optimizer: bypass BasicBlock.__init__'s keyword handling and per-block
-    # ``x or default`` allocations. ``incoming`` is left as None: this path's
-    # consumers (marshal-in and the CFG traversals) only read
-    # outgoing/statements/test/phis, and these blocks never reach connect_to.
+    # These transient blocks never reach connect_to, so their consumers do not need an incoming set.
     block = BasicBlock.__new__(BasicBlock)
     block.phis = {}
     block.statements = statements

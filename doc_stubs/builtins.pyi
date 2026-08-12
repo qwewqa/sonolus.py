@@ -1,5 +1,6 @@
 # ruff: noqa
 import builtins
+from enum import Enum
 from typing import (
     Any,
     Callable,
@@ -84,11 +85,11 @@ def dict() -> builtins.dict: ...
 @overload
 def dict[K, V](mapping_or_iterable: builtins.dict[K, V], **kwargs: V) -> builtins.dict[K, V]: ...
 @overload
-def dict[K, V](mapping_or_iterable: Iterable[tuple[K, V]], **kwargs: V) -> builtins.dict[K, V]: ...
+def dict[K, V](mapping_or_iterable: tuple[tuple[K, V], ...], **kwargs: V) -> builtins.dict[K, V]: ...
 @overload
 def dict[V](**kwargs: V) -> builtins.dict[builtins.str, V]: ...
 def dict(*args, **kwargs) -> builtins.dict:
-    """Construct a dict from a mapping, an iterable of key-value pairs, or keyword arguments.
+    """Construct a dict from another dict, a tuple of key-value pairs, or keyword arguments.
 
     All dict keys must be compile-time constants. Dynamic access using a key that is not
     a compile-time constant is only supported when all values are compile-time constants of a
@@ -96,7 +97,7 @@ def dict(*args, **kwargs) -> builtins.dict:
 
     Dynamic access requires key comparisons to be consistent, including a total ordering when ordering is used.
 
-    Accepts an optional dict to copy from or an iterable of `(key, value)` pairs, plus
+    Accepts an optional dict to copy from or a tuple of `(key, value)` pairs, plus
     optional keyword arguments to include in the dict.
 
     Returns:
@@ -359,7 +360,8 @@ def round(number: builtins.int | builtins.float, ndigits: builtins.int = ...) ->
 
     With `ndigits`, a value near the midpoint between two rounded values may round differently than in Python.
 
-    Extremely large finite values of `ndigits` are not supported.
+    Extremely large finite values of `ndigits` are not supported. Precision is limited for extreme values of
+    either argument.
 
     Args:
         number: The number to round.
@@ -373,9 +375,11 @@ def round(number: builtins.int | builtins.float, ndigits: builtins.int = ...) ->
 @overload
 def set() -> builtins.set: ...
 @overload
-def set[T](iterable: Iterable[T]) -> builtins.set[T]: ...
+def set[T](iterable: tuple[T, ...] | builtins.dict[T, Any] | builtins.set[T]) -> builtins.set[T]: ...
+@overload
+def set[T: Enum](iterable: type[T]) -> builtins.set[T]: ...
 def set(*args) -> builtins.set:
-    """Construct a set from an iterable.
+    """Construct a set from a supported compile-time collection.
 
     All set members must be compile-time constants. Accepts an optional `tuple`, `dict`, enum class, or `set`.
     An `Array`, `VarArray`, or `range` is not accepted.

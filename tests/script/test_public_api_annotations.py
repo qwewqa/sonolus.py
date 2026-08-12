@@ -6,7 +6,9 @@ import pytest
 
 from sonolus.script.archetype import AnyArchetype, EntityRef
 from sonolus.script.bucket import BucketSprite, bucket, bucket_sprite
-from sonolus.script.engine import PlayMode, PreviewMode, WatchMode
+from sonolus.script.engine import ExportedEngine, PlayMode, PreviewMode, WatchMode
+from sonolus.script.level import ExportedLevel
+from sonolus.script.project import Project
 from sonolus.script.quad import QuadLike
 from sonolus.script.runtime import LevelLifeData, LevelScoreData, PreviewRuntimeCanvas, canvas, level_life, level_score
 
@@ -66,3 +68,17 @@ def test_public_annotation_names_are_types(public_type):
 def test_quad_like_is_a_public_protocol():
     assert QuadLike.__name__ == "QuadLike"
     assert QuadLike._is_protocol
+
+
+@pytest.mark.parametrize(
+    ("api", "parameter", "annotation"),
+    [
+        (Project, "resources", "str | PathLike[str] | None"),
+        (Project.dev, "build_dir", "str | PathLike[str]"),
+        (Project.build, "build_dir", "str | PathLike[str]"),
+        (ExportedEngine.write_to_dir, "path", "str | PathLike[str]"),
+        (ExportedLevel.write_to_dir, "path", "str | PathLike[str]"),
+    ],
+)
+def test_public_path_parameters_accept_strings(api, parameter, annotation):
+    assert str(signature(api).parameters[parameter].annotation) == annotation

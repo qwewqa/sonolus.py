@@ -613,8 +613,8 @@ def f2(**kwargs):
 
 ### set
 
-Sets can be created from a set literal or from a tuple. Members must be compile-time constants. Sets support
-membership testing and iteration:
+Sets can be created from a set literal, tuple, dict (using its keys), enum class, or another set. Members must be
+compile-time constants. Sets support membership testing and iteration:
 
 ```python
 s = {1, 2, 3}

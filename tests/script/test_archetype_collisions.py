@@ -3,7 +3,8 @@
 A field name, an import name, an export name, and an archetype name each address exactly one thing in the
 shipped engine data, so two declarations resolving to one of them lose data the level or the callbacks still
 refer to. The name a mode ships is the exception: the same name in two different modes is how one archetype is
-shared across them, so only a collision within a single mode is reported, and only as a warning.
+shared across them, so only a collision within a single mode is reported. Mode construction warns about the
+collision, and compilation rejects it before generating ambiguous engine data.
 
 The last test here is about a diagnostic rather than a collision: a callback reading another archetype's field
 off the class object is an error, and which error must not depend on where that archetype sits in the mode's
@@ -272,6 +273,23 @@ def test_two_archetypes_resolving_to_one_name_in_a_mode_warn():
 
     with pytest.warns(UserWarning, match="both have the name 'Chart'"):
         PlayMode(archetypes=[Chart, PlayChart])
+
+
+def test_two_archetypes_resolving_to_one_name_in_a_mode_fail_compilation():
+    class Chart(PlayArchetype):
+        pass
+
+    class PlayChart(PlayArchetype):
+        pass
+
+    with pytest.raises(ValueError, match="PLAY mode archetypes Chart and PlayChart both have the name 'Chart'"):
+        compile_mode(
+            mode=Mode.PLAY,
+            project_state=ProjectContextState(runtime_checks=RuntimeChecks.NONE),
+            archetypes=[Chart, PlayChart],
+            global_callbacks=None,
+            validate_only=True,
+        )
 
 
 def test_an_archetype_name_shared_between_modes_does_not_warn():

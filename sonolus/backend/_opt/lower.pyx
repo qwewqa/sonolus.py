@@ -1365,7 +1365,7 @@ cdef class _Lower:
         return self.dst._emit(OPX_CONST, FLAG_PURE | FLAG_CONST_IS_INT, block, cid, [])
 
     def _emit_op(self, int32_t op, int32_t flags, list args, int32_t block):
-        # Flatten associative left spines (Add/Multiply/Mod/Rem, args[0] only) and
+        # Flatten the selected left-fold spines (Add/Multiply/Mod/Rem, args[0] only) and
         # re-apply n-ary identity dropping (drop redundant identity operands).
         cdef Func dst = self.dst
         cdef int32_t a0, k, na

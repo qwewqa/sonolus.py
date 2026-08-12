@@ -1,5 +1,9 @@
 ### 0.18.2
 
+- Engine compilation now rejects distinct archetypes with the same runtime name in one mode.
+- Class-shaped global declarations now treat `ClassVar` members as class constants rather than stored fields.
+- Corrected project resource, build-directory, and exported output path annotations to include `str`.
+- Corrected the documented input restrictions for compiled `dict()` and `set()` construction.
 - Compiled expressions, decorators, and default arguments now stop evaluating later subexpressions after an
   earlier subexpression terminates.
 - Builtin iterator consumers now consistently require a custom iterator's `next()` method to return `Maybe`.
@@ -441,7 +445,7 @@
 - Added haptic feedback support via [`HapticType`][sonolus.script.archetype.HapticType] enum in entity input.
 - Added `progress_graph` UI layout support in watch mode.
 - Added support for `replay_fallback_option_names` in engine configuration.
-- Added [`add_life_scheduled`][sonolus.script.runtime.add_life_scheduled] for scheduling life additions at specific times.
+- Added [`add_life_scheduled`][sonolus.script.runtime.add_life_scheduled] for scheduling timed life additions.
 - Added `initial` and `maximum` properties to level life configuration.
 - Added the `archetype_score_multiplier` and `entity_score_multiplier` properties to archetypes.
 - Added the `archetype_life` (replacing the now deprecated `life` property) and `entity_life` property to archetypes.

@@ -868,7 +868,6 @@ class Visitor(ast.NodeVisitor):
                 def store(result):
                     self.handle_setitem(target, base, key, result)
             case _:
-                # Name (or any other target): plain read/write with no separate base to reuse.
                 lhs_value = self.visit(target)
                 if not ctx().live:
                     return
@@ -981,7 +980,6 @@ class Visitor(ast.NodeVisitor):
         if not isinstance(next_value, Maybe):
             raise ValueError("Iterator next must return a Maybe")
         if next_value._present._is_py_() and not next_value._present._as_py_():
-            # The loop will never run, continue after evaluating the condition
             self.loop_head_ctxs.pop().check_loop_conflicts()
             self.break_ctxs.pop()
             self.visit_statements(node.orelse)
@@ -1034,7 +1032,6 @@ class Visitor(ast.NodeVisitor):
                 set_ctx(after_ctx)
                 return
             else:
-                # The loop will never run, continue after evaluating the condition
                 self.loop_head_ctxs.pop().check_loop_conflicts()
                 self.break_ctxs.pop()
                 self.visit_statements(node.orelse)
@@ -1216,7 +1213,6 @@ class Visitor(ast.NodeVisitor):
                     false_ctxs.append(false_ctx)
                     set_ctx(true_ctx)
                 if not false_ctxs:
-                    # Empty sequence pattern with a statically-matching length: nothing can fail.
                     return true_ctx, true_ctx.into_dead(), captures
                 return true_ctx, Context.meet(false_ctxs), captures
             case ast.MatchMapping():
@@ -1933,7 +1929,6 @@ class Visitor(ast.NodeVisitor):
 
         if l_val._is_py_():
             if l_val._as_py_():
-                # The rhs is definitely evaluated, so we can return it directly
                 return self.ensure_boolean_num(self.visit(r_expr))
             else:
                 return l_val
@@ -1963,7 +1958,6 @@ class Visitor(ast.NodeVisitor):
             if l_val._as_py_():
                 return l_val
             else:
-                # The rhs is definitely evaluated, so we can return it directly
                 return self.ensure_boolean_num(self.visit(r_expr))
 
         ctx_init.test = l_val.ir()
@@ -1998,7 +1992,6 @@ class Visitor(ast.NodeVisitor):
         def get_attribute():
             attribute_target = target
             if isinstance(attribute_target, ConstantValue):
-                # Unwrap so we can access fields
                 attribute_target = attribute_target._as_py_()
             target_type = type(attribute_target)
             descriptor = _resolve_descriptor(target_type, key)

@@ -215,11 +215,11 @@ Sonolus.py has limited support for [other types](types.md#transient-types) of va
 functions. These have restrictions such as not being valid as Record field types or Array element types.
 
 `dict` and `set` are immutable after creation. All dict keys and set members must be compile-time constants. Dicts can
-be created from literals, the `dict()` constructor (from another dict, an iterable of key-value pairs, or keyword
-arguments), or by merging with `|`. Sets can be created from literals or the `set()` constructor (from another set or
-an iterable). Accessing a dict value with a compile-time constant key is always supported; dynamic access using a
-runtime key is only supported when all values are compile-time constants of a single type, and that type is
-numeric, `Array`, or `Record`.
+be created from literals, the `dict()` constructor (from another dict, a tuple of key-value pairs, or keyword
+arguments), or by merging with `|`. Sets can be created from literals or the `set()` constructor (from a tuple, dict
+using its keys, an enum class, or another set). Accessing a dict value with a compile-time constant key is always
+supported; dynamic access using a runtime key is only supported when all values are compile-time constants of a
+single type, and that type is numeric, `Array`, or `Record`.
 
 ## Modules
 

@@ -49,7 +49,7 @@ class ExportedEngine:
         self.rom = rom
         self.configuration = configuration
 
-    def write_to_dir(self, path: PathLike):
+    def write_to_dir(self, path: str | PathLike[str]):
         """Write the exported engine to a directory, creating it if it does not already exist.
 
         Writes `item.json`, `thumbnail`, `playData`, `watchData`, `previewData`, `tutorialData`, `configuration`,

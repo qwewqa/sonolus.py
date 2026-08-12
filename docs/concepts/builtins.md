@@ -8,8 +8,8 @@ full signatures.
 - `any(iterable)`
 - `bool(x=False)`
 - `callable(object)`
-- `dict()`, `dict(mapping, **kwargs)`, `dict(iterable, **kwargs)`, `dict(**kwargs)` (keys must be compile-time
-  constants)
+- `dict()`, `dict(source, **kwargs)`, `dict(**kwargs)` (source must be a dict or tuple of key-value pairs; keys must
+  be compile-time constants)
 - `enumerate(iterable, start=0)`
 - `filter(function, iterable)`
 - `float(x=0.0)` (for a num argument)
@@ -27,7 +27,7 @@ full signatures.
 - `range(stop)`, `range(start, stop[, step])`
 - `reversed(seq)`
 - `round(number[, ndigits])`
-- `set()`, `set(iterable)` (members must be compile-time constants)
+- `set()`, `set(source)` (source must be a tuple, dict, enum class, or set; members must be compile-time constants)
 - `setattr(object, name, value)`
 - `sum(iterable, start=0)` (numeric values only)
 - `super(type[, object-or-type])`

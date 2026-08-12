@@ -34,7 +34,7 @@ class Project:
         self,
         engine: Engine,
         levels: Iterable[Level] | Callable[[], Iterable[Level]] | None = None,
-        resources: PathLike | None = None,
+        resources: str | PathLike[str] | None = None,
         converters: dict[str | None, Callable[[ExternalLevelData], LevelData | None]] | None = None,
     ):
         self.engine = engine
@@ -63,7 +63,7 @@ class Project:
         """
         return Project(self.engine, levels, self.resources, self.converters)
 
-    def dev(self, build_dir: PathLike, port: int = 8080, config: BuildConfig | None = None):
+    def dev(self, build_dir: str | PathLike[str], port: int = 8080, config: BuildConfig | None = None):
         """Start a development server for the project.
 
         Args:
@@ -87,7 +87,7 @@ class Project:
             project=self,
         )
 
-    def build(self, build_dir: PathLike, config: BuildConfig | None = None):
+    def build(self, build_dir: str | PathLike[str], config: BuildConfig | None = None):
         """Build the project.
 
         Args:

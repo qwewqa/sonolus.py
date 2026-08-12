@@ -1,7 +1,7 @@
 """Tests for the arena EngineNode emitter (``sonolus.backend._opt.emit``).
 
 The emitter builds the EngineNode tree from the flat ``Func`` arena, re-flattening
-associative left spines (``Add``/``Multiply``/``Mod``/``Rem``) as it builds.
+the left spines of n-ary left-fold operations (``Add``/``Multiply``/``Mod``/``Rem``) as it builds.
 
 Two layers of coverage:
 

@@ -30,7 +30,7 @@ def _check_callback(label, callback_name, factory, mode):
     assert cfg_to_text(raw_rt) == cfg_to_text(raw_rt2), f"{label}: raw not idempotent"
 
     # Optimized form: the pipeline output (allocated, non-destructive on cfg) must
-    # be round-trip idempotent. STANDARD output contains n-ary associative ops,
+    # be round-trip idempotent. STANDARD output contains n-ary left-fold ops,
     # which marshal-in binarizes -- so ``opt`` itself is NOT text-faithful under
     # round-trip (see _roundtrip_helpers.assert_faithful's documented rule). The
     # meaningful faithfulness invariant is that emission agrees across the

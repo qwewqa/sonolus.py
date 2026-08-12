@@ -84,7 +84,7 @@ def assert_idempotent(cfg: BasicBlock, mode=None, callback=None) -> BasicBlock:
 def assert_faithful(cfg: BasicBlock, mode=None, callback=None) -> BasicBlock:
     """Round-trip preserves the CFG modulo deterministic temp renumbering.
 
-    Only valid for CFGs already in binary associative form (marshal-in binarizes
+    Only valid for CFGs already in binary left-fold form (marshal-in binarizes
     n-ary Add/Multiply/Mod/Rem, so an n-ary input is not text-faithful -- compare
     against an unflattened original instead).
     """

@@ -306,10 +306,8 @@ def _array_like_extremum(iterable, default, key, *, is_max: bool):
         return default
     if length._is_py_():
         if length._as_py_() == 0:
-            # Known to be empty, so the default is the result and there is nothing to compare it against.
             return default
-        # Known to be non-empty, so the default is unreachable, but still has to be a usable stand-in for an
-        # element so that the same call doesn't start failing once the length stops being a constant.
+        # Validate the unreachable default against an element so acceptance does not depend on whether length folds.
         result = compile_and_call(plain, key=key)
         _validate_extremum_default(result, default)
         return result
@@ -893,7 +891,6 @@ def _getattr(obj: Any, name: str, default=_empty) -> Any:
 
     name = validate_value(name)._as_py_()
     if isinstance(obj, ConstantValue):
-        # Unwrap so we can access fields
         obj = obj._as_py_()
     descriptor = None
     for cls in type.mro(type(obj)):
@@ -1075,5 +1072,5 @@ def _describe_positional_arity(fn: Any, n_given: int) -> str | None:
     return f"() takes {accepted} but {n_given} {'was' if n_given == 1 else 'were'} given"
 
 
-# Hack to get around circular import issues
+# builtin_impls imports validate_value from impl, so impl cannot import this registry without a cycle.
 impl.BUILTIN_IMPLS = BUILTIN_IMPLS
