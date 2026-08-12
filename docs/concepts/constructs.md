@@ -545,8 +545,6 @@ Classes are supported at the module level. User defined classes should subclass
 Sonolus.py decorator such as `@level_memory`.
 
 Methods may have the `@staticmethod`, `@classmethod`, or `@property` decorators.
-Custom `Record.__getattribute__` implementations are not supported.
-
 ```python
 class MyRecord(Record):
     x: int

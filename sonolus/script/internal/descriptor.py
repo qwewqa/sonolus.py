@@ -7,8 +7,8 @@ class SonolusDescriptor:
     The compiler checks if a descriptor is an instance of a subclass of this class,
     so it knows that it's a supported descriptor.
 
-    `__get__` must not raise `AttributeError`. The compiler cannot pass that error to a traced
-    `__getattr__` method because the descriptor has already run in host Python.
+    `__get__` must not raise `AttributeError`. It runs during compilation, so the error cannot participate in
+    compiled `__getattr__` fallback.
     """
 
     @abstractmethod

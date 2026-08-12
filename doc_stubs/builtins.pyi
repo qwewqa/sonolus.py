@@ -461,7 +461,7 @@ def zip(*iterables: Iterable[Any], strict: Literal[False] = False) -> Iterator[t
 
     Args:
         *iterables: Iterables to aggregate.
-        strict: Must be False; strict zipping is not currently supported.
+        strict: Must be False.
 
     Returns:
         An iterator of aggregated tuples.

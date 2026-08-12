@@ -410,8 +410,7 @@ assert MyPair(1, 2) == MyPair(1, 2)
 assert MyPair(1, 2) != MyPair(3, 4)
 ```
 
-Supported dunder methods can be implemented to define custom behavior for records. Custom `__getattribute__`
-implementations are not supported.
+Supported dunder methods can be implemented to define custom behavior for records.
 
 ```python
 class MyAddablePair(Record):
