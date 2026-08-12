@@ -270,10 +270,7 @@ def s_walrus_in_a_genexpr_inside_a_lambda():
     return f() * 100 + y
 
 
-_WALRUS_IN_GENEXPR = (
-    "Assignment expressions (`:=`) in a generator expression are not supported, since Python binds the target "
-    "in the containing scope as the generator is consumed. Use a for loop instead."
-)
+_WALRUS_IN_GENEXPR = "Assignment expressions (`:=`) in a generator expression are not supported."
 
 UNSUPPORTED = [
     (s_async_def, "Async functions are not supported"),

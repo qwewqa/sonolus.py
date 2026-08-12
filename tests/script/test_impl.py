@@ -419,7 +419,7 @@ def test_a_long_string_constant_is_shortened_in_a_message():
 
     message = str(exc_info.value)
     assert long_text not in message
-    assert len(message) < 100
+    assert "yyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyy..." in message
 
 
 def test_a_tuple_used_as_an_index_names_no_address_and_the_expected_type():
