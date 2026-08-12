@@ -21,6 +21,21 @@ class UnsupportedDescriptor:
         pass
 
 
+class FakeDescriptorProtocol:
+    _is_comptime_value_ = True
+
+    def __call__(self):
+        return 126
+
+    def __getattr__(self, name):
+        if name == "__get__":
+            return lambda instance, owner: -1
+        raise AttributeError(name)
+
+
+FAKE_DESCRIPTOR_PROTOCOL = FakeDescriptorProtocol()
+
+
 class MissingDescriptor(SonolusDescriptor):
     def __get__(self, instance, owner):
         raise AttributeError
@@ -64,6 +79,10 @@ MyBox.missing_property = property(missing_property)
 
 class GetterlessPropertyBox(Record):
     missing = property()
+
+
+class FakeDescriptorProtocolBox(Record):
+    fake = FAKE_DESCRIPTOR_PROTOCOL
 
 
 class PropertyFallbackBox(Record):
@@ -138,6 +157,21 @@ class StaticMethodGetattrBox(Record):
         return 32
 
 
+class AttributeErrorGetattrBox(Record):
+    @meta_fn
+    def __getattr__(self, name):
+        raise AttributeError("dynamic attribute unavailable")
+
+
+class CustomGetattributeBox(Record):
+    value: Num
+
+    def __getattribute__(self, name):
+        if name == "value":
+            return 99
+        return object.__getattribute__(self, name)
+
+
 class ConditionalAttributeErrorPropertyBox(Record):
     flag: Num
 
@@ -179,6 +213,19 @@ def test_unimplemented_backing_value_methods_raise():
         backing.read()
     with pytest.raises(NotImplementedError):
         backing.write(0)
+
+
+@pytest.mark.parametrize("kind", ["direct", "getattr"])
+def test_getattr_does_not_treat_synthesized_get_as_descriptor(kind):
+    def fn():
+        box = FakeDescriptorProtocolBox()
+        if kind == "direct":
+            value = box.fake
+        else:
+            value = getattr(box, "fake")  # noqa: B009
+        return value()
+
+    assert run_and_validate(fn) == 126
 
 
 def test_meta_fn_accepts_direct_function_configuration():
@@ -231,7 +278,10 @@ def test_hasattr_suppresses_attribute_error_from_property():
     def fn():
         return hasattr(MyBox(1), "missing_property")
 
-    with pytest.raises(CompilationError, match="AttributeError propagation from a traced property getter"):
+    with pytest.raises(
+        CompilationError,
+        match=r"The getter for property 'missing_property' on MyBox\[Num\] raised AttributeError during compilation",
+    ):
         run_compiled(fn)
 
 
@@ -246,7 +296,10 @@ def test_hasattr_record_unsupported():
     def fn():
         return hasattr(MyBox(1), "unsupported_descriptor")
 
-    with pytest.raises(CompilationError, match="Unsupported field"):
+    with pytest.raises(
+        CompilationError,
+        match="Accessing attribute 'unsupported_descriptor' on MyBox\\[Num\\] is not supported",
+    ):
         run_compiled(fn)
 
 
@@ -356,6 +409,43 @@ def test_ordinary_missing_attribute_binds_staticmethod_getattr():
 
 
 @pytest.mark.parametrize("kind", ["direct", "getattr", "hasattr"])
+def test_attribute_error_from_getattr_has_clear_diagnostic(kind):
+    def fn():
+        box = AttributeErrorGetattrBox()
+        if kind == "direct":
+            return box.missing
+        if kind == "getattr":
+            return getattr(box, "missing")  # noqa: B009
+        return hasattr(box, "missing")
+
+    with pytest.raises(
+        CompilationError,
+        match=(
+            r"AttributeErrorGetattrBox\.__getattr__ raised AttributeError while looking up 'missing' "
+            "during compilation: dynamic attribute unavailable"
+        ),
+    ):
+        run_compiled(fn)
+
+
+@pytest.mark.parametrize("kind", ["direct", "getattr", "hasattr"])
+def test_custom_record_getattribute_is_rejected_without_running_it(kind):
+    def fn():
+        box = CustomGetattributeBox(1)
+        if kind == "direct":
+            return box.value
+        if kind == "getattr":
+            return getattr(box, "value")  # noqa: B009
+        return hasattr(box, "value")
+
+    with pytest.raises(
+        CompilationError,
+        match="CustomGetattributeBox overrides __getattribute__, which is not supported for Record subclasses",
+    ):
+        run_compiled(fn)
+
+
+@pytest.mark.parametrize("kind", ["direct", "getattr", "hasattr"])
 def test_conditional_property_attribute_error_is_rejected(kind):
     def fn():
         box = ConditionalAttributeErrorPropertyBox(Array(0)[0])
@@ -365,7 +455,13 @@ def test_conditional_property_attribute_error_is_rejected(kind):
             return getattr(box, "property")  # noqa: B009
         return hasattr(box, "property")
 
-    with pytest.raises(CompilationError, match="AttributeError propagation from a traced property getter"):
+    with pytest.raises(
+        CompilationError,
+        match=(
+            "The getter for property 'property' on ConditionalAttributeErrorPropertyBox raised AttributeError "
+            "during compilation"
+        ),
+    ):
         run_compiled(fn)
 
 
@@ -393,7 +489,13 @@ def test_direct_attribute_binds_classmethod_getattr():
     def fn():
         return ClassMethodPropertyFallbackBox().fallback
 
-    with pytest.raises(CompilationError, match="AttributeError propagation from a traced property getter"):
+    with pytest.raises(
+        CompilationError,
+        match=(
+            "The getter for property 'fallback' on ClassMethodPropertyFallbackBox raised AttributeError "
+            "during compilation"
+        ),
+    ):
         run_compiled(fn)
 
 
@@ -401,7 +503,13 @@ def test_builtin_getattr_binds_classmethod_getattr():
     def fn():
         return getattr(ClassMethodPropertyFallbackBox(), "fallback")  # noqa: B009
 
-    with pytest.raises(CompilationError, match="AttributeError propagation from a traced property getter"):
+    with pytest.raises(
+        CompilationError,
+        match=(
+            "The getter for property 'fallback' on ClassMethodPropertyFallbackBox raised AttributeError "
+            "during compilation"
+        ),
+    ):
         run_compiled(fn)
 
 
@@ -409,7 +517,13 @@ def test_direct_attribute_binds_staticmethod_getattr():
     def fn():
         return StaticMethodPropertyFallbackBox().fallback
 
-    with pytest.raises(CompilationError, match="AttributeError propagation from a traced property getter"):
+    with pytest.raises(
+        CompilationError,
+        match=(
+            "The getter for property 'fallback' on StaticMethodPropertyFallbackBox raised AttributeError "
+            "during compilation"
+        ),
+    ):
         run_compiled(fn)
 
 
@@ -417,7 +531,13 @@ def test_builtin_getattr_binds_staticmethod_getattr():
     def fn():
         return getattr(StaticMethodPropertyFallbackBox(), "fallback")  # noqa: B009
 
-    with pytest.raises(CompilationError, match="AttributeError propagation from a traced property getter"):
+    with pytest.raises(
+        CompilationError,
+        match=(
+            "The getter for property 'fallback' on StaticMethodPropertyFallbackBox raised AttributeError "
+            "during compilation"
+        ),
+    ):
         run_compiled(fn)
 
 
@@ -430,7 +550,13 @@ def test_generator_property_fallback_does_not_capture_transient_getter_local():
         iterator = gen()
         return next(iterator) + next(iterator)
 
-    with pytest.raises(CompilationError, match="AttributeError propagation from a traced property getter"):
+    with pytest.raises(
+        CompilationError,
+        match=(
+            "The getter for property 'fallback' on TransientClosurePropertyFallbackBox raised AttributeError "
+            "during compilation"
+        ),
+    ):
         run_compiled(fn)
 
 
@@ -440,7 +566,10 @@ def test_builtin_getattr_default_handles_property_attribute_error():
         y = getattr(PropertyDefaultBox(), "missing", 654)
         return x + y
 
-    with pytest.raises(CompilationError, match="AttributeError propagation from a traced property getter"):
+    with pytest.raises(
+        CompilationError,
+        match="The getter for property 'missing' on PropertyDefaultBox raised AttributeError during compilation",
+    ):
         run_compiled(fn)
 
 
@@ -450,7 +579,10 @@ def test_hasattr_continues_with_caller_scope_after_property_attribute_error():
         found = hasattr(PropertyDefaultBox(), "missing")
         return x + found
 
-    with pytest.raises(CompilationError, match="AttributeError propagation from a traced property getter"):
+    with pytest.raises(
+        CompilationError,
+        match="The getter for property 'missing' on PropertyDefaultBox raised AttributeError during compilation",
+    ):
         run_compiled(fn)
 
 
@@ -489,7 +621,10 @@ def test_getattr_record_unsupported():
         box = MyBox(100)
         return box.unsupported_descriptor
 
-    with pytest.raises(CompilationError, match="Unsupported field"):
+    with pytest.raises(
+        CompilationError,
+        match="Accessing attribute 'unsupported_descriptor' on MyBox\\[Num\\] is not supported",
+    ):
         run_compiled(fn)
 
 
@@ -550,7 +685,10 @@ def test_setattr_record_unsupported():
         box.unsupported_descriptor = 100
         return 1
 
-    with pytest.raises(CompilationError, match="Unsupported field"):
+    with pytest.raises(
+        CompilationError,
+        match="Assigning to attribute 'unsupported_descriptor' on MyBox\\[Num\\] is not supported",
+    ):
         run_compiled(fn)
 
 
@@ -559,7 +697,10 @@ def test_setattr_type_not_supported():
         MyBox.my_classmethod = 100
         return 1
 
-    with pytest.raises(CompilationError, match="Unsupported field"):
+    with pytest.raises(
+        CompilationError,
+        match="Assigning to attribute 'my_classmethod' on MyBox is not supported",
+    ):
         run_compiled(fn)
 
 

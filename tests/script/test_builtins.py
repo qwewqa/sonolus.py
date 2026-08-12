@@ -61,6 +61,16 @@ class _NonMaybeIterator(Record, SonolusIterator):
         return 1
 
 
+class _CustomGetattributeIterator(Record, SonolusIterator):
+    def next(self):
+        return Some(1)
+
+    def __getattribute__(self, name):
+        if name == "next":
+            raise AssertionError("custom __getattribute__ ran")
+        return object.__getattribute__(self, name)
+
+
 def _plain_fn(x):
     return x + 1
 
@@ -256,9 +266,106 @@ class _InvalidLenArray(Record, ArrayLike[int]):
         pass
 
 
+class _CustomGetattributeArray(Record, ArrayLike[int]):
+    def __len__(self):
+        return 1
+
+    def __getitem__(self, index):
+        return 1
+
+    def __setitem__(self, index, value):
+        pass
+
+    def __getattribute__(self, name):
+        if name in {"_enumerate_", "__reversed__", "_max_", "_min_", "__len__"}:
+            raise AssertionError("custom __getattribute__ ran")
+        return object.__getattribute__(self, name)
+
+
 class _NonnumericLenRecord(Record):
     def __len__(self):
         return None  # noqa: PLE0303 - intentionally violates the protocol
+
+
+class _SynthesizedLenRecord(Record):
+    def __getattr__(self, name):
+        if name == "__len__":
+            return lambda: 5
+        raise AttributeError(name)
+
+
+class _FakeDescriptorMeta(type):
+    def __getattr__(cls, name):
+        if name == "__get__":
+            return lambda descriptor, instance, owner: lambda: 5
+        raise AttributeError(name)
+
+
+class _FakeLen(metaclass=_FakeDescriptorMeta):
+    pass
+
+
+class _SynthesizedDescriptorLenRecord(Record):
+    __len__ = _FakeLen()
+
+
+class _FakeSpecialMethodBase:
+    def __len__(self):
+        return 5
+
+
+class _FakeMroMeta(type):
+    def __getattribute__(cls, name):
+        if name == "__mro__":
+            return (_FakeSpecialMethodBase, object)
+        return super().__getattribute__(name)
+
+
+class _FakeMroValue(metaclass=_FakeMroMeta):
+    _is_comptime_value_ = True
+
+
+_FAKE_MRO_VALUE = _FakeMroValue()
+
+
+def test_getattr_does_not_supply_implicit_len_protocol():
+    def fn():
+        return len(_SynthesizedLenRecord())
+
+    with pytest.raises(TypeError, match="object of type '_SynthesizedLenRecord' has no len"):
+        run_and_validate(fn)
+
+
+def test_metaclass_getattr_does_not_supply_descriptor_binding_for_implicit_len_protocol():
+    def fn():
+        return len(_SynthesizedDescriptorLenRecord())
+
+    with pytest.raises(TypeError, match="'_FakeLen' object is not callable"):
+        run_and_validate(fn)
+
+
+def test_metaclass_getattribute_does_not_supply_fake_mro_for_implicit_len_protocol():
+    def fn():
+        return len(_FAKE_MRO_VALUE)
+
+    with pytest.raises(TypeError, match="object of type '_FakeMroValue' has no len"):
+        run_and_validate(fn)
+
+
+@pytest.mark.parametrize(
+    "operation",
+    [enumerate, reversed, max, min, lambda value: max(value, default=0), lambda value: min(value, default=0)],
+)
+def test_array_like_fast_paths_reject_custom_record_getattribute_without_invoking_it(operation):
+    def fn():
+        operation(_CustomGetattributeArray())
+        return 0
+
+    with pytest.raises(
+        CompilationError,
+        match="_CustomGetattributeArray overrides __getattribute__, which is not supported for Record subclasses",
+    ):
+        run_compiled(fn)
 
 
 def test_len_result_validation_runs_without_a_compilation_context():
@@ -459,6 +566,29 @@ def test_bool_on_none():
         return bool(None)
 
     assert run_and_validate(fn) is False
+
+
+def test_constant_truthiness_in_direct_conditions():
+    def fn():
+        result = 0
+        if "present":
+            result += 1
+        if None:
+            result += 100
+        if "":
+            result += 100
+        while "present":
+            result += 2
+            break
+        if not None:
+            result += 4
+        assert "present"  # noqa: PLW0129
+        match "present":
+            case _ if "present":
+                result += 8
+        return result + sum(1 for _ in (1,) if "present") + sum(filter(lambda _: "present", (1,)))
+
+    assert run_and_validate(fn) == 17
 
 
 def test_bool_on_dict():
@@ -719,10 +849,15 @@ def test_error_messages_use_readable_type_names(make_fn, expected_name):
     assert "0x" not in message
 
 
-def test_assert_on_unconvertible_value_names_the_type():
+class _NonnumericBoolRecord(Record):
+    def __bool__(self):
+        return "hello"  # noqa: PLE0304 - intentionally violates the protocol
+
+
+def test_assert_on_invalid_bool_result_names_the_type():
     # assert routes through the same truthiness conversion as if/while, which had its own set of leaking messages.
     def fn():
-        assert "hello"  # noqa: PLW0129
+        assert _NonnumericBoolRecord()
         return 1
 
     message = _error_message(fn)
@@ -866,7 +1001,7 @@ def test_iterator_adapters_require_next_to_return_maybe(adapt):
     def fn():
         return maybe_next(adapt(_NonMaybeIterator()))
 
-    with pytest.raises(CompilationError, match="Iterator next must return a Maybe"):
+    with pytest.raises(CompilationError, match=r"Iterator\.next\(\) returned 'Num', expected Maybe"):
         run_compiled(fn)
 
 
@@ -875,7 +1010,7 @@ def test_numeric_extrema_require_next_to_return_maybe(extremum):
     def fn():
         return extremum(_NonMaybeIterator())
 
-    with pytest.raises(CompilationError, match="Iterator next must return a Maybe"):
+    with pytest.raises(CompilationError, match=r"Iterator\.next\(\) returned 'Num', expected Maybe"):
         run_compiled(fn)
 
 
@@ -883,7 +1018,42 @@ def test_next_requires_next_to_return_maybe():
     def fn():
         return next(_NonMaybeIterator())
 
-    with pytest.raises(CompilationError, match="Iterator next must return a Maybe"):
+    with pytest.raises(CompilationError, match=r"Iterator\.next\(\) returned 'Num', expected Maybe"):
+        run_compiled(fn)
+
+
+def test_next_rejects_custom_record_getattribute_without_invoking_it():
+    def fn():
+        return next(_CustomGetattributeIterator())
+
+    with pytest.raises(
+        CompilationError,
+        match="_CustomGetattributeIterator overrides __getattribute__, which is not supported for Record subclasses",
+    ):
+        run_compiled(fn)
+
+
+@pytest.mark.parametrize("kind", ["for", "genexpr", "yield_from"])
+def test_iterator_consumers_reject_custom_record_getattribute_without_invoking_it(kind):
+    def fn():
+        iterator = _CustomGetattributeIterator()
+        if kind == "for":
+            for value in iterator:
+                return value
+        elif kind == "genexpr":
+            return next(value for value in iterator)
+        else:
+
+            def delegated():
+                yield from iterator
+
+            return next(delegated())
+        return 0
+
+    with pytest.raises(
+        CompilationError,
+        match="_CustomGetattributeIterator overrides __getattribute__, which is not supported for Record subclasses",
+    ):
         run_compiled(fn)
 
 

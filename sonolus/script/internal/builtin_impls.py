@@ -37,6 +37,13 @@ from sonolus.script.record import Record
 _empty = object()
 
 
+def _special_method(value: Any, name: str) -> Any | None:
+    from sonolus.script.internal.visitor import _SPECIAL_METHOD_MISSING, _bind_special_method
+
+    method = _bind_special_method(value, name)
+    return None if method is _SPECIAL_METHOD_MISSING or method is None else method
+
+
 def _type_name(value) -> str:
     """A readable type name for a value, for use in error messages.
 
@@ -195,9 +202,10 @@ def _len(value):
     value = validate_value(value)
     if has_tuple_iter(value):
         return len(tuple_iter(value))
-    if not hasattr(value, "__len__"):
+    len_method = _special_method(value, "__len__")
+    if len_method is None:
         raise TypeError(f"object of type '{_type_name(value)}' has no len()")
-    return _validate_len_result(compile_and_call(value.__len__))  # type: ignore
+    return _validate_len_result(compile_and_call(len_method))
 
 
 def _validate_len_result(length):
@@ -212,36 +220,46 @@ def _validate_len_result(length):
 
 @meta_fn
 def _enumerate(iterable, start=0):
-    from sonolus.script.internal.visitor import compile_and_call
+    from sonolus.script.internal.visitor import (
+        _bind_special_method,
+        compile_and_call,
+        reject_custom_record_getattribute,
+    )
 
     iterable = _unwrap_set(validate_value(iterable))
     start = Num._accept_(start)
     assert_true(start % 1 == 0, "enumerate() start must be an integer")
     if has_tuple_iter(iterable):
         return _comptime_iter_result((start + i, value) for i, value in enumerate(tuple_iter(iterable)))
-    elif not hasattr(iterable, "__iter__"):
+    iter_method = _special_method(iterable, "__iter__")
+    if iter_method is None:
         raise TypeError(f"'{_type_name(iterable)}' object is not iterable")
-    elif isinstance(iterable, ArrayLike):
-        return compile_and_call(iterable._enumerate_, start)
-    else:
-        iterator = compile_and_call(iterable.__iter__)  # type: ignore
-        if not ctx().live:
-            return validate_value(())
-        if not isinstance(iterator, SonolusIterator):
-            raise TypeError("Only subclasses of SonolusIterator are supported as iterators")
-        return _Enumerator(0, start, iterator)
+    if isinstance(iterable, ArrayLike):
+        reject_custom_record_getattribute(iterable)
+        return compile_and_call(_bind_special_method(iterable, "_enumerate_"), start)
+    iterator = compile_and_call(iter_method)
+    if not ctx().live:
+        return validate_value(())
+    if not isinstance(iterator, SonolusIterator):
+        raise TypeError("Only subclasses of SonolusIterator are supported as iterators")
+    return _Enumerator(0, start, iterator)
 
 
 @meta_fn
 def _reversed(iterable):
-    from sonolus.script.internal.visitor import compile_and_call
+    from sonolus.script.internal.visitor import (
+        _bind_special_method,
+        compile_and_call,
+        reject_custom_record_getattribute,
+    )
 
     iterable = validate_value(iterable)
     if has_tuple_iter(iterable):
         return _comptime_iter_result(reversed(tuple_iter(iterable)))
     if not isinstance(iterable, ArrayLike):
         raise TypeError(f"'{_type_name(iterable)}' object is not reversible")
-    return compile_and_call(iterable.__reversed__)
+    reject_custom_record_getattribute(iterable)
+    return compile_and_call(_bind_special_method(iterable, "__reversed__"))
 
 
 @meta_fn
@@ -263,9 +281,9 @@ def _zip(*iterables, strict: bool = False):
     for iterable in iterables:
         # Checked explicitly so a non-iterable argument gets the same message as it would from iter(), rather than
         # an internal AttributeError naming the wrapper class.
-        if not hasattr(iterable, "__iter__"):
+        if _special_method(iterable, "__iter__") is None:
             raise TypeError(f"'{_type_name(iterable)}' object is not iterable")
-    iterators = [compile_and_call(iterable.__iter__) for iterable in iterables]
+    iterators = [compile_and_call(_special_method(iterable, "__iter__")) for iterable in iterables]
     if not ctx().live:
         return validate_value(())
     if not all(isinstance(iterator, SonolusIterator) for iterator in iterators):
@@ -281,9 +299,10 @@ def _abs(value):
     from sonolus.script.internal.visitor import compile_and_call
 
     value = validate_value(value)
-    if not hasattr(value, "__abs__"):
+    abs_method = _special_method(value, "__abs__")
+    if abs_method is None:
         raise TypeError(f"bad operand type for abs(): '{_type_name(value)}'")
-    return compile_and_call(value.__abs__)  # type: ignore
+    return compile_and_call(abs_method)
 
 
 def _identity(value):
@@ -292,16 +311,21 @@ def _identity(value):
 
 def _array_like_extremum(iterable, default, key, *, is_max: bool):
     from sonolus.script.array_like import _validate_extremum_default
-    from sonolus.script.internal.visitor import compile_and_call
+    from sonolus.script.internal.visitor import (
+        _bind_special_method,
+        compile_and_call,
+        reject_custom_record_getattribute,
+    )
 
+    reject_custom_record_getattribute(iterable)
     name = "max" if is_max else "min"
-    plain = iterable._max_ if is_max else iterable._min_
+    plain = _bind_special_method(iterable, "_max_" if is_max else "_min_")
     if default is _empty:
         return compile_and_call(plain, key=key)
     default = validate_value(default)
     if not (_is_num(default) or isinstance(default, Record | Array)):
         raise TypeError(f"default argument to {name}() must be a number, record, or array, got '{_type_name(default)}'")
-    length = _validate_len_result(compile_and_call(iterable.__len__))
+    length = _validate_len_result(compile_and_call(_bind_special_method(iterable, "__len__")))
     if not ctx().live:
         return default
     if length._is_py_():
@@ -311,7 +335,7 @@ def _array_like_extremum(iterable, default, key, *, is_max: bool):
         result = compile_and_call(plain, key=key)
         _validate_extremum_default(result, default)
         return result
-    with_default = iterable._max_with_default_ if is_max else iterable._min_with_default_
+    with_default = _bind_special_method(iterable, "_max_with_default_" if is_max else "_min_with_default_")
     return compile_and_call(with_default, default, key=key)
 
 
@@ -543,11 +567,11 @@ def _map(fn, iterable, *iterables):
             raise TypeError("Cannot mix compile-time iterables (tuple, dict, set, enum class) with other types in map")
         return compile_and_call(_map_over_compile_time_iterables, fn, *all_iterables)
     for it in all_iterables:
-        if not hasattr(it, "__iter__"):
+        if _special_method(it, "__iter__") is None:
             raise TypeError(f"'{_type_name(it)}' object is not iterable")
     iterators = []
     for it in all_iterables:
-        iterator = compile_and_call(it.__iter__)
+        iterator = compile_and_call(_special_method(it, "__iter__"))
         if not ctx().live:
             return _EmptyIterator()
         iterators.append(_validate_iterator_result(iterator))
@@ -586,9 +610,10 @@ def _filter(fn, iterable):
     iterable = _unwrap_set(validate_value(iterable))
     if has_tuple_iter(iterable):
         return compile_and_call(_filter_over_compile_time_iterable, fn, iterable)
-    if not hasattr(iterable, "__iter__"):
+    iter_method = _special_method(iterable, "__iter__")
+    if iter_method is None:
         raise TypeError(f"'{_type_name(iterable)}' object is not iterable")
-    iterator = compile_and_call(iterable.__iter__)  # type: ignore
+    iterator = compile_and_call(iter_method)
     if not ctx().live:
         return _EmptyIterator()
     return compile_and_call(_filter_runtime, fn, _validate_iterator_result(iterator))
@@ -667,7 +692,7 @@ class _Bool:
             # Unlike a boolean context, which accepts any Num, bool() must normalize to 0/1. Compile-time
             # values still fold to a compile-time result.
             return Num._accept_(bool(value._as_py_())) if value._is_py_() else value != 0
-        if value._is_py_() and not (hasattr(type(value), "__bool__") or hasattr(type(value), "__len__")):
+        if value._is_py_() and _special_method(value, "__bool__") is None and _special_method(value, "__len__") is None:
             # Compile-time constants with no truthiness protocol of their own (strings, None, types, functions,
             # and Records defining neither __bool__ nor __len__) follow ordinary Python truthiness. Unwrapping
             # first matters: the wrapper itself is always truthy, so bool("") would return True otherwise.
@@ -840,9 +865,27 @@ def _detach_next_result(value):
     return validate_value(value)._get_readonly_()
 
 
+@meta_fn
+def _advance_iterator_once(iterator):
+    from sonolus.script.internal.visitor import (
+        Generator,
+        _bind_special_method,
+        compile_and_call,
+        reject_custom_record_getattribute,
+    )
+
+    if not ctx():
+        return iterator.next()
+    reject_custom_record_getattribute(iterator)
+    next_method = _bind_special_method(iterator, "next")
+    if isinstance(iterator, Generator):
+        return compile_and_call(next_method, _single_advance=True)
+    return compile_and_call(next_method)
+
+
 def _next(iterator):
-    require(isinstance(iterator, SonolusIterator), "Only subclasses of SonolusIterator are supported as iterators")
-    value = _validate_next_result(iterator.next())
+    require(isinstance(iterator, SonolusIterator), "next() requires an instance of SonolusIterator")
+    value = _validate_next_result(_advance_iterator_once(iterator))
     if value.is_some:
         return _detach_next_result(value.get_unsafe())
     error("Iterator has been exhausted")
@@ -860,9 +903,10 @@ def _iter(iterable):
             "iterate over it directly in a for loop (or via map/filter/zip/enumerate/reversed), "
             "or use an Array if you need a runtime iterator"
         )
-    if not hasattr(iterable, "__iter__"):
+    iter_method = _special_method(iterable, "__iter__")
+    if iter_method is None:
         raise TypeError(f"'{_type_name(iterable)}' object is not iterable")
-    iterator = compile_and_call(iterable.__iter__)  # type: ignore
+    iterator = compile_and_call(iter_method)
     if not ctx().live:
         return _EmptyIterator()
     return _validate_iterator_result(iterator)
@@ -902,8 +946,13 @@ def _getattr(obj: Any, name: str, default=_empty) -> Any:
     from sonolus.script.internal.error import caused_by_attribute_error
     from sonolus.script.internal.visitor import (
         _SPECIAL_METHOD_MISSING,
+        _attribute_owner_name,
         _bind_special_method,
+        _raise_getattr_attribute_error,
+        _raise_property_getter_attribute_error,
+        _raw_special_method,
         compile_and_call,
+        reject_custom_record_getattribute,
         reject_instance_only_attribute,
     )
 
@@ -911,6 +960,7 @@ def _getattr(obj: Any, name: str, default=_empty) -> Any:
     was_constant = isinstance(obj, ConstantValue)
     if was_constant:
         obj = obj._as_py_()
+    reject_custom_record_getattribute(obj)
     descriptor = None
     descriptor_found = False
     for cls in type.mro(type(obj)):
@@ -928,9 +978,7 @@ def _getattr(obj: Any, name: str, default=_empty) -> Any:
                 except Exception as e:
                     if not caused_by_attribute_error(e):
                         raise
-                    raise NotImplementedError(
-                        "AttributeError propagation from a traced property getter is not supported"
-                    ) from e
+                    _raise_property_getter_attribute_error(type(obj), name, e)
             fallback = _bind_special_method(obj, "__getattr__")
             if fallback is not _SPECIAL_METHOD_MISSING:
                 try:
@@ -938,9 +986,7 @@ def _getattr(obj: Any, name: str, default=_empty) -> Any:
                 except Exception as e:
                     if not caused_by_attribute_error(e):
                         raise
-                    raise NotImplementedError(
-                        "AttributeError propagation from a traced __getattr__ is not supported"
-                    ) from e
+                    _raise_getattr_attribute_error(type(obj), name, e)
             if default is not _empty:
                 return default
             raise error
@@ -952,9 +998,7 @@ def _getattr(obj: Any, name: str, default=_empty) -> Any:
                 except Exception as e:
                     if not caused_by_attribute_error(e):
                         raise
-                    raise NotImplementedError(
-                        "AttributeError propagation from a traced __getattr__ is not supported"
-                    ) from e
+                    _raise_getattr_attribute_error(type(obj), name, e)
             if default is not _empty:
                 return default
             raise AttributeError(f"'{type(obj).__name__}' object has no attribute '{name}'")
@@ -963,16 +1007,21 @@ def _getattr(obj: Any, name: str, default=_empty) -> Any:
             if isinstance(obj, type):
                 reject_instance_only_attribute(obj, name, attribute)
             return validate_value(attribute)
-        case non_descriptor if not hasattr(non_descriptor, "__get__"):
+        case non_descriptor if _raw_special_method(type(non_descriptor), "__get__") is _SPECIAL_METHOD_MISSING:
             return validate_value(getattr(obj, name) if default is _empty else getattr(obj, name, default))
         case _:
-            raise TypeError(f"Unsupported field or descriptor {name}")
+            raise TypeError(f"Accessing attribute {name!r} on {_attribute_owner_name(obj)} is not supported")
 
 
 @meta_fn
 def _setattr(obj: Any, name: str, value: Any):
     from sonolus.script.internal.descriptor import SonolusDescriptor
-    from sonolus.script.internal.visitor import _resolve_descriptor, compile_and_call, reject_instance_only_attribute
+    from sonolus.script.internal.visitor import (
+        _attribute_owner_name,
+        _resolve_descriptor,
+        compile_and_call,
+        reject_instance_only_attribute,
+    )
 
     name = validate_value(name)._as_py_()
     if obj._is_py_():
@@ -991,7 +1040,7 @@ def _setattr(obj: Any, name: str, value: Any):
                 # do work (archetype_score_multiplier). Everything else lands here, where the class's own
                 # descriptors are what the author meant, so resolve those instead.
                 reject_instance_only_attribute(obj, name, _resolve_descriptor(obj, name))
-            raise TypeError(f"Unsupported field or descriptor {name}")
+            raise TypeError(f"Assigning to attribute {name!r} on {_attribute_owner_name(obj)} is not supported")
 
 
 class _Type(Record):

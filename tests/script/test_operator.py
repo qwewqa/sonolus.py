@@ -19,6 +19,23 @@ class DefaultsOnly(Record):
     pass
 
 
+class SynthesizedSpecialMethods(Record):
+    def __getattr__(self, name):
+        if name == "__add__":
+            return lambda other: 12
+        if name == "__eq__":
+            return lambda other: True
+        if name == "__contains__":
+            return lambda value: True
+        if name == "__iter__":
+            return lambda: iter(Array(1))
+        raise AttributeError(name)
+
+
+class UnsupportedPlainClass:
+    pass
+
+
 class AddOnly(Record):
     def __add__(self, other):
         debug_log(1)
@@ -159,6 +176,25 @@ class HasCall(Record):
     def __call__(self):
         debug_log(27)
         return 123
+
+
+class HasCallWithCustomGetattribute(Record):
+    def __call__(self):
+        return 124
+
+    def __getattribute__(self, name):
+        if name == "__call__":
+            return lambda: 999
+        return object.__getattribute__(self, name)
+
+
+class DynamicallyMarkedCallable:
+    def __call__(self):
+        return 125
+
+
+DYNAMICALLY_MARKED_CALLABLE = DynamicallyMarkedCallable()
+DYNAMICALLY_MARKED_CALLABLE._is_comptime_value_ = True
 
 
 class BoolTrue(Record):
@@ -478,6 +514,20 @@ def test_call_op():
     run_and_validate(fn)
 
 
+def test_call_uses_type_protocol_instead_of_custom_getattribute():
+    def fn():
+        return HasCallWithCustomGetattribute()()
+
+    assert run_and_validate(fn) == 124
+
+
+def test_call_preserves_instance_level_compile_time_marker():
+    def fn():
+        return DYNAMICALLY_MARKED_CALLABLE()
+
+    assert run_and_validate(fn) == 125
+
+
 def test_unsupported_call():
     def fn():
         x = DefaultsOnly()
@@ -487,6 +537,14 @@ def test_unsupported_call():
         run_and_validate(fn)
     except TypeError as e:
         assert "not callable" in str(e)
+
+
+def test_unsupported_plain_class_call_names_class():
+    def fn():
+        return UnsupportedPlainClass()
+
+    with pytest.raises(CompilationError, match="Calling class 'UnsupportedPlainClass' is not supported"):
+        run_compiled(fn)
 
 
 def test_unsupported_unary():
@@ -882,6 +940,24 @@ class TruthyContains(Record):
 class ConstantContains(Record):
     def __contains__(self, value):
         return "present" if value else None
+
+
+@pytest.mark.parametrize(
+    ("operation", "message"),
+    [
+        (lambda value: value + 1, "unsupported operand type"),
+        (lambda value: value < 1, "not supported between instances"),
+        (lambda value: 1 in value, "is not a container or iterable"),
+    ],
+)
+def test_getattr_does_not_supply_implicit_operator_protocols(operation, message):
+    def fn():
+        return operation(SynthesizedSpecialMethods())
+
+    # Plain Python rejects each operation too. Use run_compiled because the compiler calls numeric values Num
+    # in the otherwise equivalent TypeError, while Python calls the literal operand int.
+    with pytest.raises(CompilationError, match=message):
+        run_compiled(fn)
 
 
 def _logged(v):

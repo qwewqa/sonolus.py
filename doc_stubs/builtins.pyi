@@ -357,8 +357,8 @@ def round(number: builtins.int | builtins.float, ndigits: builtins.int = ...) ->
 
     With `ndigits`, a value near the midpoint between two rounded values may round differently than in Python.
 
-    Extremely large finite values of `ndigits` are not supported. Precision is limited for extreme values of
-    either argument.
+    Extremely large `ndigits` values are not supported. Precision is limited when either argument has an extreme
+    magnitude.
 
     Args:
         number: The number to round.

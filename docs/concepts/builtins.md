@@ -11,7 +11,7 @@ full signatures.
 - `dict()`, `dict(source, **kwargs)`, `dict(**kwargs)` (source must be a dict or tuple of key-value pairs; keys must
   be compile-time constants)
 - `enumerate(iterable, start=0)`
-- `filter(function, iterable)`
+- `filter(function, iterable)` or `filter(None, iterable)`
 - `float(x=0.0)` (for a num argument)
 - `getattr(object, name[, default])`
 - `hasattr(object, name)`

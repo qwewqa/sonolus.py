@@ -9,21 +9,24 @@
 - Builtin iterator consumers now consistently require a custom iterator's `next()` method to return `Maybe`.
 - Lambdas and generator expressions now treat assignment and comprehension targets as local throughout their
   bodies.
-- Generator closures now track bindings read through nested callbacks across resumptions, and anonymous closures
-  yielded from a generator capture their current local bindings.
+- Generator closures now track bindings read through nested callbacks across resumptions.
 - `for`, generator expressions, and `yield from` no longer trace impossible exhaustion paths for iterators that
   always yield a value.
 - Generator expressions that cannot yield or advance now terminate when runtime checks are enabled.
 - Fixed loop merging rejecting bindings that source code did not read.
 - Membership now truth-tests custom `__contains__` results, including compile-time constants.
+- Boolean conditions now use Python truthiness for supported compile-time constants.
 - Boolean contexts now bind `classmethod` and `staticmethod` implementations of `__bool__` and `__len__`
   correctly.
+- Implicit operations now ignore special methods synthesized by `__getattr__`, matching Python's type-level lookup.
 - Compile-time binary operators and augmented assignment now follow reflected dispatch and grant priority only to
   real strict subclasses, including inherited classmethod operators; builtin type aliases support unions in either
   order.
 - Ordinary missing-attribute lookup now traces `__getattr__` across direct access, `getattr`, `hasattr`, and class
   patterns.
-- An `AttributeError` escaping a traced property getter or traced `__getattr__` is now rejected during compilation.
+- Compilation errors now identify the property getter or `__getattr__` that raised `AttributeError` during an
+  attribute lookup.
+- Unsupported attribute access and assignment errors now identify the attribute and owning type.
 - Unsupported matrix multiplication now reports the operator error.
 - Expanded keyword arguments now consistently reject invalid mappings and keys; duplicate keywords identify the
   callee.

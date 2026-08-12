@@ -128,10 +128,15 @@ def generate_fn_impl(fn: Callable):
                 return function
             return functools.partial(eval_fn, function)
         case _:
-            if callable(fn) and (isinstance(fn, Value) or getattr(fn, "_is_comptime_value_", False)):
-                return generate_fn_impl(fn.__call__)
+            comptime_marker = inspect.getattr_static(fn, "_is_comptime_value_", False)
+            if callable(fn) and (isinstance(fn, Value) or bool(comptime_marker)):
+                call_method = _bind_special_method(fn, "__call__")
+                if call_method is not _SPECIAL_METHOD_MISSING:
+                    return generate_fn_impl(call_method)
+            elif isinstance(fn, type):
+                raise TypeError(f"Calling class '{fn.__name__}' is not supported")
             elif callable(fn):
-                raise TypeError(f"Unsupported callable {fn!r}")
+                raise TypeError(f"Calling objects of type '{_type_name(fn)}' is not supported")
             else:
                 raise TypeError(f"'{_type_name(fn)}' object is not callable")
 
@@ -338,9 +343,10 @@ _SPECIAL_METHOD_MISSING = object()
 
 
 def _raw_special_method(cls: type, name: str) -> Any:
-    for base in cls.__mro__:
-        if name in base.__dict__:
-            return base.__dict__[name]
+    for base in type.__getattribute__(cls, "__mro__"):  # noqa: PLC2801 - bypass metaclass hooks
+        namespace = type.__getattribute__(base, "__dict__")  # noqa: PLC2801 - bypass metaclass hooks
+        if name in namespace:
+            return namespace[name]
     return _SPECIAL_METHOD_MISSING
 
 
@@ -348,8 +354,10 @@ def _bind_special_method(value: Any, name: str) -> Any:
     descriptor = _raw_special_method(type(value), name)
     if descriptor is _SPECIAL_METHOD_MISSING:
         return descriptor
-    descriptor_get = getattr(type(descriptor), "__get__", None)
-    return descriptor_get(descriptor, value, type(value)) if descriptor_get is not None else descriptor
+    descriptor_get = _raw_special_method(type(descriptor), "__get__")
+    return (
+        descriptor_get(descriptor, value, type(value)) if descriptor_get is not _SPECIAL_METHOD_MISSING else descriptor
+    )
 
 
 def _comptime_binop(lhs: Any, rhs: Any, op: str, reflected_op: str) -> Any:
@@ -503,6 +511,34 @@ def _exception_message(cause: Exception) -> str:
     return str(cause)
 
 
+def _raise_property_getter_attribute_error(target_type: type, key: str, error: Exception) -> Never:
+    message = f"The getter for property {key!r} on {target_type.__name__} raised AttributeError during compilation"
+    if detail := _exception_message(error):
+        message = f"{message}: {detail}"
+    raise NotImplementedError(message) from error
+
+
+def _raise_getattr_attribute_error(target_type: type, key: str, error: Exception) -> Never:
+    message = f"{target_type.__name__}.__getattr__ raised AttributeError while looking up {key!r} during compilation"
+    if detail := _exception_message(error):
+        message = f"{message}: {detail}"
+    raise NotImplementedError(message) from error
+
+
+def _attribute_owner_name(target: Any) -> str:
+    return target.__name__ if isinstance(target, type) else type(target).__name__
+
+
+def reject_custom_record_getattribute(target: Any) -> None:
+    if (
+        isinstance(target, Record)
+        and _raw_special_method(type(target), "__getattribute__") is not object.__getattribute__
+    ):
+        raise NotImplementedError(
+            f"{type(target).__name__} overrides __getattribute__, which is not supported for Record subclasses"
+        )
+
+
 def _noop_mark_end() -> None:
     pass
 
@@ -565,6 +601,7 @@ class Visitor(ast.NodeVisitor):
         self.parent = parent
         self.used_parent_binding_values = {}
         self.generator_dependencies = {}
+        self.yield_suspension_selections = {}
         self.declared_locals = frozenset()
         self.function_name = function_name
         if qualified_name is None:
@@ -652,16 +689,53 @@ class Visitor(ast.NodeVisitor):
             for i, tgt in enumerate([start_ctx, *self.resume_ctxs]):
                 entry.outgoing[i] = tgt
             entry.outgoing[None] = return_ctx
+            yield_indices = {yield_ctx: i for i, yield_ctx in enumerate(self.yield_ctxs)}
+
+            def reachable_yields(start: Context) -> list[int]:
+                result = []
+                seen = set()
+                stack = [start]
+                while stack:
+                    current = stack.pop()
+                    if current in seen:
+                        continue
+                    seen.add(current)
+                    if current in yield_indices:
+                        result.append(yield_indices[current])
+                        continue
+                    stack.extend(current.outgoing.values())
+                return result
+
+            suspension_yield_indices = [reachable_yields(start) for start in (start_ctx, *self.resume_ctxs)]
             yield_between_ctxs = []
             for i, out in enumerate(self.yield_ctxs, start=1):
                 between = out.branch(None)
                 with using_ctx(between):
                     state_var._set_(i)
                 yield_between_ctxs.append(between)
+            suspension_ctxs = []
+            suspension_selections = []
+            for indices in suspension_yield_indices:
+                reachable = [yield_between_ctxs[i] for i in indices]
+                if not reachable:
+                    suspension_ctxs.append(before_ctx.new_empty_disconnected())
+                elif len(reachable) == 1:
+                    suspension_ctxs.append(reachable[0])
+                else:
+                    suspension_ctx = reachable[0].copy_with_scope(Scope())
+                    Scope.apply_merge(suspension_ctx, reachable)
+                    suspension_ctxs.append(suspension_ctx)
+                selections = [(self, suspension_ctxs[-1])]
+                for index in indices:
+                    selections.extend(self.yield_suspension_selections.get(self.yield_ctxs[index], ()))
+                suspension_selections.append(selections)
             if yield_between_ctxs:
                 yield_merge_ctx = Context.meet(yield_between_ctxs)
             else:
                 yield_merge_ctx = before_ctx.new_empty_disconnected()
+            # Escaped callbacks resolve generator locals at the suspension point, not against whichever
+            # later context happened to be visited last while the generator's state machine was traced.
+            self.active_ctx = yield_merge_ctx
             if not yield_merge_ctx.live:
                 yield_value = Nothing
             else:
@@ -692,23 +766,38 @@ class Visitor(ast.NodeVisitor):
                 yield_value,
                 self.generator_dependencies,
                 self,
+                suspension_selections,
             )
         after_ctx = Context.meet([*self.return_ctxs, ctx()])
         self.active_ctx = after_ctx
         result_binding = after_ctx.scope.get_binding("$return")
         if not isinstance(result_binding, ValueBinding):
             raise ValueError("Function has conflicting return values")
+        result = result_binding.value
+        if (
+            type(result)._is_value_type_()
+            and self.used_parent_binding_values
+            and any(parent.is_generator for parent in self._parents())
+        ):
+            with using_ctx(after_ctx):
+                result = result._get_readonly_()
         set_ctx(after_ctx.branch_with_scope(None, before_ctx.scope.copy()))
         terminated = not after_ctx.live
         # Nothing could have escaped, so allow reuse, which can allow naive allocation to succeed in the optimizer for
         # better compile times.
-        if (terminated or result_binding.value is validate_value(None)) and not ctx().callback_state.is_in_generator:
+        if (terminated or result is validate_value(None)) and not ctx().callback_state.is_in_generator:
             ctx().restore_alloc_state(before_alloc_state)
         ctx().callback_state.is_in_generator = was_in_generator
         completion_timer()
         if terminated:
             return validate_value(None)
-        return result_binding.value
+        return result
+
+    def _parents(self) -> Iterable[Visitor]:
+        parent = self.parent
+        while parent is not None:
+            yield parent
+            parent = parent.parent
 
     def visit_statements(self, body: Iterable[ast.stmt]) -> None:
         for stmt in body:
@@ -778,22 +867,24 @@ class Visitor(ast.NodeVisitor):
             if initial_iterator is not None:
                 iterator = initial_iterator
             else:
-                if not hasattr(iterable, "__iter__"):
+                iter_method = _bind_special_method(iterable, "__iter__")
+                if iter_method is _SPECIAL_METHOD_MISSING:
                     raise TypeError(f"'{_type_name(iterable)}' object is not iterable")
-                iterator = self.handle_call(generator.iter, iterable.__iter__)
+                iterator = self.handle_call(generator.iter, iter_method)
                 if not ctx().live:
                     return
             if not isinstance(iterator, SonolusIterator):
-                raise ValueError("Unsupported iterator")
+                raise TypeError(f"iter() returned non-iterator of type '{_type_name(iterator)}'")
             header_ctx = ctx().branch(None)
             set_ctx(header_ctx)
-            next_value = self.handle_call(generator.iter, iterator.next)
+            reject_custom_record_getattribute(iterator)
+            next_value = self.handle_call(generator.iter, _bind_special_method(iterator, "next"))
             if not ctx().live:
                 # The header's only edge is the unconditional one into the terminating call, so returning
                 # from here leaves nothing dangling.
                 return
             if not isinstance(next_value, Maybe):
-                raise ValueError("Iterator next must return a Maybe")
+                raise TypeError(f"Iterator.next() returned '{_type_name(next_value)}', expected Maybe")
             if next_value._present._is_py_() and not next_value._present._as_py_():
                 return
             if next_value._present._is_py_():
@@ -994,24 +1085,31 @@ class Visitor(ast.NodeVisitor):
                 if result is not _NOT_IMPLEMENTED:
                     store(validate_value(result))
                     return
-        if hasattr(lhs_value, inplace_fn_name):
-            result = self.handle_call(node, getattr(lhs_value, inplace_fn_name), rhs_value)
+        inplace_method = _bind_special_method(lhs_value, inplace_fn_name)
+        if inplace_method is not _SPECIAL_METHOD_MISSING:
+            result = self.handle_call(node, inplace_method, rhs_value)
             if not self.is_not_implemented(result):
                 store(result)
                 return
         right_has_priority = _has_strict_subclass_reflected_priority(lhs_value, rhs_value, right_fn_name)
-        if right_has_priority and hasattr(rhs_value, right_fn_name):
-            result = self.handle_call(node, getattr(rhs_value, right_fn_name), lhs_value)
+        right_method = _bind_special_method(rhs_value, right_fn_name)
+        if right_has_priority and right_method is not _SPECIAL_METHOD_MISSING:
+            result = self.handle_call(node, right_method, lhs_value)
             if not self.is_not_implemented(result):
                 store(result)
                 return
-        if hasattr(lhs_value, regular_fn_name):
-            result = self.handle_call(node, getattr(lhs_value, regular_fn_name), rhs_value)
+        regular_method = _bind_special_method(lhs_value, regular_fn_name)
+        if regular_method is not _SPECIAL_METHOD_MISSING:
+            result = self.handle_call(node, regular_method, rhs_value)
             if not self.is_not_implemented(result):
                 store(result)
                 return
-        if not right_has_priority and hasattr(rhs_value, right_fn_name) and type(lhs_value) is not type(rhs_value):
-            result = self.handle_call(node, getattr(rhs_value, right_fn_name), lhs_value)
+        if (
+            not right_has_priority
+            and right_method is not _SPECIAL_METHOD_MISSING
+            and type(lhs_value) is not type(rhs_value)
+        ):
+            result = self.handle_call(node, right_method, lhs_value)
             if not self.is_not_implemented(result):
                 store(result)
                 return
@@ -1061,19 +1159,21 @@ class Visitor(ast.NodeVisitor):
             if break_ctxs:
                 set_ctx(Context.meet([*break_ctxs, ctx()]))
             return
-        if not hasattr(iterable, "__iter__"):
+        iter_method = _bind_special_method(iterable, "__iter__")
+        if iter_method is _SPECIAL_METHOD_MISSING:
             raise TypeError(f"'{_type_name(iterable)}' object is not iterable")
-        iterator = self.handle_call(node, iterable.__iter__)
+        iterator = self.handle_call(node, iter_method)
         if not ctx().live:
             return
         if not isinstance(iterator, SonolusIterator):
-            raise ValueError("Unsupported iterator")
+            raise TypeError(f"iter() returned non-iterator of type '{_type_name(iterator)}'")
         writes = scan_writes(node.target, *node.body)
         header_ctx = ctx().prepare_loop_header(writes)
         self.loop_head_ctxs.append(header_ctx)
         self.break_ctxs.append([])
         set_ctx(header_ctx)
-        next_value = self.handle_call(node, iterator.next)
+        reject_custom_record_getattribute(iterator)
+        next_value = self.handle_call(node, _bind_special_method(iterator, "next"))
         if not ctx().live:
             # The loop is abandoned in its header, so its frame has to be closed here: an enclosing loop
             # pops next, and would otherwise close itself against this one.
@@ -1081,7 +1181,7 @@ class Visitor(ast.NodeVisitor):
             self.break_ctxs.pop()
             return
         if not isinstance(next_value, Maybe):
-            raise ValueError("Iterator next must return a Maybe")
+            raise TypeError(f"Iterator.next() returned '{_type_name(next_value)}', expected Maybe")
         if next_value._present._is_py_() and not next_value._present._as_py_():
             self.loop_head_ctxs.pop().check_loop_conflicts()
             self.break_ctxs.pop()
@@ -1566,16 +1666,18 @@ class Visitor(ast.NodeVisitor):
                     return validate_value(result)
         right_op = rbin_ops[type(node.op)]
         right_has_priority = _has_strict_subclass_reflected_priority(lhs, rhs, right_op)
-        if right_has_priority and hasattr(rhs, right_op):
-            result = self.handle_call(node, getattr(rhs, right_op), lhs)
+        right_method = _bind_special_method(rhs, right_op)
+        if right_has_priority and right_method is not _SPECIAL_METHOD_MISSING:
+            result = self.handle_call(node, right_method, lhs)
             if not self.is_not_implemented(result):
                 return result
-        if hasattr(lhs, op):
-            result = self.handle_call(node, getattr(lhs, op), rhs)
+        left_method = _bind_special_method(lhs, op)
+        if left_method is not _SPECIAL_METHOD_MISSING:
+            result = self.handle_call(node, left_method, rhs)
             if not self.is_not_implemented(result):
                 return result
-        if not right_has_priority and hasattr(rhs, right_op) and type(lhs) is not type(rhs):
-            result = self.handle_call(node, getattr(rhs, right_op), lhs)
+        if not right_has_priority and right_method is not _SPECIAL_METHOD_MISSING and type(lhs) is not type(rhs):
+            result = self.handle_call(node, right_method, lhs)
             if not self.is_not_implemented(result):
                 return result
         raise TypeError(
@@ -1592,10 +1694,13 @@ class Visitor(ast.NodeVisitor):
         op = unary_ops[type(node.op)]
         if operand._is_py_():
             operand_py = operand._as_py_()
-            if isinstance(operand_py, type) and hasattr(type(operand_py), op):
-                return self.handle_call(node, getattr(type(operand_py), op), operand_py)
-        if hasattr(operand, op):
-            return self.handle_call(node, getattr(operand, op))
+            if isinstance(operand_py, type):
+                method = _bind_special_method(operand_py, op)
+                if method is not _SPECIAL_METHOD_MISSING:
+                    return self.handle_call(node, method)
+        method = _bind_special_method(operand, op)
+        if method is not _SPECIAL_METHOD_MISSING:
+            return self.handle_call(node, method)
         raise TypeError(f"bad operand type for unary {op_to_symbol[type(node.op)]}: '{_type_name(operand)}'")
 
     def visit_Lambda(self, node):
@@ -1705,13 +1810,14 @@ class Visitor(ast.NodeVisitor):
         if has_tuple_iter(iterable):
             initial_iterator = iterable
         else:
-            if not hasattr(iterable, "__iter__"):
+            iter_method = _bind_special_method(iterable, "__iter__")
+            if iter_method is _SPECIAL_METHOD_MISSING:
                 raise TypeError(f"'{_type_name(iterable)}' object is not iterable")
-            initial_iterator = self.handle_call(first_generator.iter, iterable.__iter__)
+            initial_iterator = self.handle_call(first_generator.iter, iter_method)
             if not ctx().live:
                 return validate_value(None)
             if not isinstance(initial_iterator, SonolusIterator):
-                raise ValueError("Unsupported iterator")
+                raise TypeError(f"iter() returned non-iterator of type '{_type_name(initial_iterator)}'")
         # Recorded after the iterable, so it is the context the generator is created in: that is what
         # _validate_bindings compares a captured binding against.
         self.active_ctx = ctx()
@@ -1745,20 +1851,25 @@ class Visitor(ast.NodeVisitor):
                 self.resume_ctxs.append(resume_ctx)
                 set_ctx(resume_ctx)
             return validate_value(None)
-        if not hasattr(value, "__iter__"):
+        iter_method = _bind_special_method(value, "__iter__")
+        if iter_method is _SPECIAL_METHOD_MISSING:
             raise TypeError(f"'{_type_name(value)}' object is not iterable")
-        iterator = self.handle_call(node, value.__iter__)
+        iterator = self.handle_call(node, iter_method)
         if not ctx().live:
             return validate_value(None)
         if not isinstance(iterator, SonolusIterator):
-            raise ValueError("Expected a SonolusIterator")
+            raise TypeError(f"iter() returned non-iterator of type '{_type_name(iterator)}'")
         header = ctx().branch(None)
         set_ctx(header)
-        result = self.handle_call(node, iterator.next)
+        delegated_selection = None
+        if isinstance(iterator, Generator) and iterator.i < len(iterator.suspension_selections):
+            delegated_selection = iterator.suspension_selections[iterator.i]
+        reject_custom_record_getattribute(iterator)
+        result = self.handle_call(node, _bind_special_method(iterator, "next"))
         if not ctx().live:
             return validate_value(None)
         if not isinstance(result, Maybe):
-            raise ValueError("Iterator next must return a Maybe")
+            raise TypeError(f"Iterator.next() returned '{_type_name(result)}', expected Maybe")
         if result._present._is_py_() and not result._present._as_py_():
             return validate_value(None)
         if result._present._is_py_():
@@ -1771,14 +1882,19 @@ class Visitor(ast.NodeVisitor):
         set_ctx(some_branch)
         ctx().scope.set_value("$yield", result._value)
         self.yield_ctxs.append(ctx())
+        if delegated_selection is not None:
+            self.yield_suspension_selections[ctx()] = delegated_selection
         resume_ctx = ctx().new_disconnected()
         self.resume_ctxs.append(resume_ctx)
         resume_ctx.outgoing[None] = header
         set_ctx(nothing_branch if nothing_branch is not None else ctx().into_dead())
         return validate_value(None)
 
-    def _has_real_method(self, obj: Value, method_name: str) -> bool:
-        return hasattr(obj, method_name) and not isinstance(getattr(obj, method_name), MethodWrapperType)
+    def _real_method(self, obj: Value, method_name: str) -> Any:
+        method = _bind_special_method(obj, method_name)
+        if method is _SPECIAL_METHOD_MISSING or isinstance(method, MethodWrapperType):
+            return _SPECIAL_METHOD_MISSING
+        return method
 
     def handle_comparison(self, node: ast.stmt | ast.expr | ast.pattern, op: ast.cmpop, l_val: Value, r_val: Value):
         """Evaluate `l_val op r_val` and return the raw result of the comparison.
@@ -1796,6 +1912,9 @@ class Visitor(ast.NodeVisitor):
         result = None
         reflected_name = rcomp_ops.get(type(op))
         right_has_priority = reflected_name is not None and _is_strict_subclass(l_val, r_val)
+        right_method = (
+            self._real_method(r_val, reflected_name) if reflected_name is not None else _SPECIAL_METHOD_MISSING
+        )
         if (
             type(l_val) is Num
             and type(r_val) is Num
@@ -1805,22 +1924,19 @@ class Visitor(ast.NodeVisitor):
             # Num comparison operators never return NotImplemented for Num operands.
             self.active_ctx = active_ctx
             result = getattr(l_val, comp_fn_name)(r_val)
-        elif right_has_priority and self._has_real_method(r_val, reflected_name):
-            result = self.handle_call(node, getattr(r_val, reflected_name), l_val)
-        if (
-            (result is None or self.is_not_implemented(result))
-            and type(op) in comp_ops
-            and self._has_real_method(l_val, comp_ops[type(op)])
-        ):
-            result = self.handle_call(node, getattr(l_val, comp_ops[type(op)]), r_val)
+        elif right_has_priority and right_method is not _SPECIAL_METHOD_MISSING:
+            result = self.handle_call(node, right_method, l_val)
+        left_method = self._real_method(l_val, comp_ops[type(op)]) if type(op) in comp_ops else _SPECIAL_METHOD_MISSING
+        if (result is None or self.is_not_implemented(result)) and left_method is not _SPECIAL_METHOD_MISSING:
+            result = self.handle_call(node, left_method, r_val)
         if (
             (result is None or self.is_not_implemented(result))
             and not right_has_priority
-            and type(op) in rcomp_ops
-            and self._has_real_method(r_val, rcomp_ops[type(op)])
+            and right_method is not _SPECIAL_METHOD_MISSING
         ):
-            result = self.handle_call(node, getattr(r_val, rcomp_ops[type(op)]), l_val)
-        if result is None and type(op) in {ast.In, ast.NotIn} and self._has_real_method(r_val, "__iter__"):
+            result = self.handle_call(node, right_method, l_val)
+        iter_method = self._real_method(r_val, "__iter__")
+        if result is None and type(op) in {ast.In, ast.NotIn} and iter_method is not _SPECIAL_METHOD_MISSING:
             result = self.handle_call(node, contains_by_iteration, l_val, r_val)
         if result is not None and type(op) in {ast.In, ast.NotIn} and self.is_not_implemented(result):
             raise TypeError("NotImplemented should not be used in a boolean context")
@@ -2156,6 +2272,7 @@ class Visitor(ast.NodeVisitor):
             was_constant = isinstance(attribute_target, ConstantValue)
             if isinstance(attribute_target, ConstantValue):
                 attribute_target = attribute_target._as_py_()
+            reject_custom_record_getattribute(attribute_target)
             target_type = type(attribute_target)
             descriptor = _resolve_descriptor(target_type, key)
             match descriptor:
@@ -2168,9 +2285,7 @@ class Visitor(ast.NodeVisitor):
                         except Exception as e:
                             if not caused_by_attribute_error(e):
                                 raise
-                            raise NotImplementedError(
-                                "AttributeError propagation from a traced property getter is not supported"
-                            ) from e
+                            _raise_property_getter_attribute_error(target_type, key, e)
                     fallback = _bind_special_method(attribute_target, "__getattr__")
                     if fallback is not _SPECIAL_METHOD_MISSING:
                         try:
@@ -2178,9 +2293,7 @@ class Visitor(ast.NodeVisitor):
                         except Exception as e:
                             if not caused_by_attribute_error(e):
                                 raise
-                            raise NotImplementedError(
-                                "AttributeError propagation from a traced __getattr__ is not supported"
-                            ) from e
+                            _raise_getattr_attribute_error(target_type, key, e)
                     raise error
                 case None if (
                     not was_constant
@@ -2194,19 +2307,19 @@ class Visitor(ast.NodeVisitor):
                         except Exception as e:
                             if not caused_by_attribute_error(e):
                                 raise
-                            raise NotImplementedError(
-                                "AttributeError propagation from a traced __getattr__ is not supported"
-                            ) from e
+                            _raise_getattr_attribute_error(target_type, key, e)
                     raise AttributeError(f"'{target_type.__name__}' object has no attribute '{key}'")
                 case SonolusDescriptor() | FunctionType() | classmethod() | staticmethod() | None:
                     attribute = getattr(attribute_target, key)
                     if isinstance(attribute_target, type):
                         reject_instance_only_attribute(attribute_target, key, attribute)
                     return validate_value(attribute)
-                case non_descriptor if not hasattr(non_descriptor, "__get__"):
+                case non_descriptor if _raw_special_method(type(non_descriptor), "__get__") is _SPECIAL_METHOD_MISSING:
                     return validate_value(getattr(attribute_target, key))
                 case _:
-                    raise TypeError(f"Unsupported field or descriptor {key}")
+                    raise TypeError(
+                        f"Accessing attribute {key!r} on {_attribute_owner_name(attribute_target)} is not supported"
+                    )
 
         # Keep descriptor handling aligned with builtin_impls._getattr.
         if report_errors:
@@ -2236,7 +2349,9 @@ class Visitor(ast.NodeVisitor):
                         # writes that do work (archetype_score_multiplier). Everything else lands here, where
                         # the class's own descriptors are what the author meant, so resolve those instead.
                         reject_instance_only_attribute(target, key, _resolve_descriptor(target, key))
-                    raise TypeError(f"Unsupported field or descriptor {key}")
+                    raise TypeError(
+                        f"Assigning to attribute {key!r} on {_attribute_owner_name(target)} is not supported"
+                    )
 
     def handle_call[**P, R](
         self, node: ast.stmt | ast.expr, fn: Callable[P, R], /, *args: P.args, **kwargs: P.kwargs
@@ -2276,31 +2391,34 @@ class Visitor(ast.NodeVisitor):
                 if not key._is_py_():
                     raise ValueError("Type parameters must be compile-time constants")
                 return validate_value(target._as_py_()[key._as_py_()])
-            elif (
-                target._is_py_()
-                and getattr(target._as_py_(), "_is_comptime_value_", False)
-                and hasattr(target._as_py_(), "__getitem__")
-            ):
-                return self.handle_call(node, target._as_py_().__getitem__, key)
-            else:
-                if isinstance(target, Value) and hasattr(target, "__getitem__"):
-                    return self.handle_call(node, target.__getitem__, key)
-                raise TypeError(f"'{_type_name(target)}' object is not subscriptable")
+            elif target._is_py_() and getattr(target._as_py_(), "_is_comptime_value_", False):
+                method = _bind_special_method(target._as_py_(), "__getitem__")
+                if method is not _SPECIAL_METHOD_MISSING:
+                    return self.handle_call(node, method, key)
+            elif isinstance(target, Value):
+                method = _bind_special_method(target, "__getitem__")
+                if method is not _SPECIAL_METHOD_MISSING:
+                    return self.handle_call(node, method, key)
+            raise TypeError(f"'{_type_name(target)}' object is not subscriptable")
 
     def handle_setitem(self, node: ast.stmt | ast.expr, target: Value, key: Value, value: Value):
         if not ctx().live:
             return None
         with self.reporting_errors_at_node(node):
-            if isinstance(target, Value) and hasattr(target, "__setitem__"):
-                return self.handle_call(node, target.__setitem__, key, value)
+            if isinstance(target, Value):
+                method = _bind_special_method(target, "__setitem__")
+                if method is not _SPECIAL_METHOD_MISSING:
+                    return self.handle_call(node, method, key, value)
             raise TypeError(f"'{_type_name(target)}' object does not support item assignment")
 
     def handle_delitem(self, node: ast.stmt | ast.expr, target: Value, key: Value):
         if not ctx().live:
             return None
         with self.reporting_errors_at_node(node):
-            if isinstance(target, Value) and hasattr(target, "__delitem__"):
-                return self.handle_call(node, target.__delitem__, key)
+            if isinstance(target, Value):
+                method = _bind_special_method(target, "__delitem__")
+                if method is not _SPECIAL_METHOD_MISSING:
+                    return self.handle_call(node, method, key)
             raise TypeError(f"'{_type_name(target)}' object does not support item deletion")
 
     def handle_starred(self, value: Value) -> tuple[Value, ...]:
@@ -2329,6 +2447,8 @@ class Visitor(ast.NodeVisitor):
             return Num._accept_(0)
         if _is_num(value):
             return value
+        if isinstance(value, ConstantValue):
+            return Num._accept_(bool(value._as_py_()))
         bool_method = _bind_special_method(value, "__bool__")
         if bool_method is not _SPECIAL_METHOD_MISSING:
             return self.ensure_boolean_num(self.handle_call(node, bool_method))
@@ -2491,6 +2611,7 @@ class Generator(TransientValue, SonolusIterator):
         value: Maybe,
         dependencies: dict[tuple[int, str], tuple[Visitor, str, Value]],
         parent: Visitor,
+        suspension_selections: list[list[tuple[Visitor, Context]]],
     ):
         self.i = 0
         self.return_test = return_test
@@ -2499,9 +2620,10 @@ class Generator(TransientValue, SonolusIterator):
         self.value = value
         self.dependencies = dependencies
         self.parent = parent
+        self.suspension_selections = suspension_selections
 
     @meta_fn
-    def next(self):
+    def next(self, *, _single_advance: bool = False):
         active_generator = next(
             (active_visitor for active_visitor in reversed(_ACTIVE_VISITORS) if active_visitor.is_generator), None
         )
@@ -2516,12 +2638,16 @@ class Generator(TransientValue, SonolusIterator):
                 }
             )
         self._validate_bindings()
-        self.return_test._set_(self.i)
+        suspension_index = self.i
+        self.return_test._set_(suspension_index)
         after_ctx = ctx().new_disconnected()
         ctx().outgoing[None] = self.entry
         self.exit.outgoing[self.i] = after_ctx
         self.i += 1
         set_ctx(after_ctx)
+        if _single_advance and suspension_index < len(self.suspension_selections):
+            for owner, suspension_ctx in self.suspension_selections[suspension_index]:
+                owner.active_ctx = suspension_ctx
         return self.value
 
     def _validate_bindings(self):

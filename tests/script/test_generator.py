@@ -1,3 +1,5 @@
+import random
+
 import pytest
 
 from sonolus.script.array import Array
@@ -9,6 +11,14 @@ from sonolus.script.iterator import SonolusIterator
 from sonolus.script.maybe import Maybe, Nothing, Some
 from sonolus.script.record import Record
 from tests.script.conftest import run_and_validate, run_compiled
+
+
+def runtime_false():
+    return random.randrange(0, 1) != 0
+
+
+def runtime_true():
+    return random.randrange(0, 1) == 0
 
 
 def test_simple_generator():
@@ -422,6 +432,23 @@ class NonMaybeIterable(Record):
         return NonMaybeIterator()
 
 
+class SynthesizedIterable(Record):
+    def __getattr__(self, name):
+        if name == "__iter__":
+            return lambda: iter(Array(1))
+        raise AttributeError(name)
+
+
+def test_getattr_does_not_supply_implicit_iteration_protocol():
+    def fn():
+        for _ in SynthesizedIterable():
+            return 1
+        return 0
+
+    with pytest.raises(TypeError, match="'SynthesizedIterable' object is not iterable"):
+        run_and_validate(fn)
+
+
 def test_yield_from_requires_next_to_return_maybe():
     def gen():
         yield from NonMaybeIterable()
@@ -430,7 +457,7 @@ def test_yield_from_requires_next_to_return_maybe():
         for _ in gen():
             pass
 
-    with pytest.raises(CompilationError, match="Iterator next must return a Maybe"):
+    with pytest.raises(CompilationError, match=r"Iterator\.next\(\) returned 'Num', expected Maybe"):
         run_compiled(fn)
 
 
@@ -1280,7 +1307,6 @@ def test_nested_loops_over_one_array_iterator_match_python():
 
 
 def test_generator_consumed_by_two_sequential_loops_matches_python():
-    # Reuse is only a problem while an earlier value is still live; back-to-back loops are fine.
     def fn():
         def gen():
             yield 1
@@ -1363,6 +1389,269 @@ def test_yield_from_lambda_captures_current_generator_local():
         return next(gen())()
 
     assert run_and_validate(fn) == 8
+
+
+def test_lambda_from_once_advanced_generator_captures_suspended_local():
+    def fn():
+        def gen():
+            value = 1
+            callback = lambda: value  # noqa: E731
+            yield callback
+            value = 2
+
+        return next(gen())()
+
+    assert run_and_validate(fn) == 1
+
+
+def test_nested_function_from_once_advanced_generator_captures_suspended_local():
+    def fn():
+        def gen():
+            value = 1
+
+            def callback():
+                return value
+
+            yield callback
+            value = 2
+
+        return next(gen())()
+
+    assert run_and_validate(fn) == 1
+
+
+def test_callback_yielded_from_once_advanced_generator_captures_suspended_local():
+    def fn():
+        def gen():
+            value = 1
+            yield from (lambda: value,)
+            value = 2
+
+        return next(gen())()
+
+    assert run_and_validate(fn) == 1
+
+
+def test_nested_generator_from_once_advanced_generator_captures_suspended_local():
+    def fn():
+        def outer():
+            value = 1
+
+            def inner():
+                yield value
+
+            yield inner()
+            value = 2
+
+        return next(next(outer()))
+
+    assert run_and_validate(fn) == 1
+
+
+def test_genexpr_from_once_advanced_generator_captures_suspended_local():
+    def fn():
+        def outer():
+            value = 1
+            yield (value for _ in Array(1))
+            value = 2
+
+        return next(next(outer()))
+
+    assert run_and_validate(fn) == 1
+
+
+def test_callback_from_once_advanced_generator_does_not_read_future_unbound_local():
+    def fn():
+        def gen():
+            callback = lambda: value  # noqa: E731
+            yield callback
+            value = 2
+
+        return next(gen())()
+
+    with pytest.raises(
+        CompilationError,
+        match="cannot access free variable 'value' where it is not associated with a value in enclosing scope",
+    ):
+        run_compiled(fn)
+
+
+def test_callback_from_once_advanced_generator_captures_reference_binding_at_first_suspension():
+    def fn():
+        def gen():
+            value = (1,)
+            callback = lambda: value[0]  # noqa: E731
+            yield callback
+            value = (2,)
+            yield callback
+
+        return next(gen())()
+
+    assert run_and_validate(fn) == 1
+
+
+@pytest.mark.parametrize(("condition", "expected"), [(runtime_false, 2), (runtime_true, 1)])
+def test_once_advanced_generator_selects_runtime_reachable_suspension(condition, expected):
+    def fn():
+        def gen():
+            value = 1
+            callback = lambda: value  # noqa: E731
+            if condition():
+                yield callback
+            value = 2
+            yield callback
+
+        return next(gen())()
+
+    assert run_and_validate(fn) == expected
+
+
+def test_runtime_ambiguous_reference_binding_reports_conflict():
+    def fn():
+        def gen():
+            value = (1,)
+            callback = lambda: value[0]  # noqa: E731
+            if runtime_false():
+                yield callback
+            value = (2,)
+            yield callback
+
+        return next(gen())()
+
+    with pytest.raises(
+        CompilationError,
+        match="Binding 'value' has multiple conflicting definitions or may not be guaranteed to be defined",
+    ):
+        run_compiled(fn)
+
+
+def test_runtime_ambiguous_future_unbound_binding_reports_conflict():
+    def fn():
+        def gen():
+            callback = lambda: value  # noqa: E731
+            if runtime_false():
+                yield callback
+            value = 2
+            yield callback
+
+        return next(gen())()
+
+    with pytest.raises(
+        CompilationError,
+        match="Binding 'value' has multiple conflicting definitions or may not be guaranteed to be defined",
+    ):
+        run_compiled(fn)
+
+
+def test_once_advanced_yield_from_propagates_reference_suspension():
+    def fn():
+        def inner():
+            value = (1,)
+            callback = lambda: value[0]  # noqa: E731
+            yield callback
+            value = (2,)
+            yield callback
+
+        def outer():
+            yield from inner()
+
+        return next(outer())()
+
+    assert run_and_validate(fn) == 1
+
+
+def test_once_advanced_multilevel_yield_from_propagates_reference_suspension():
+    def fn():
+        def inner():
+            value = (1,)
+            callback = lambda: value[0]  # noqa: E731
+            yield callback
+            value = (2,)
+            yield callback
+
+        def middle():
+            yield from inner()
+
+        def outer():
+            yield from middle()
+
+        return next(outer())()
+
+    assert run_and_validate(fn) == 1
+
+
+def test_once_advanced_yield_from_propagates_branch_skipped_suspension():
+    def fn():
+        def inner():
+            value = 1
+            callback = lambda: value  # noqa: E731
+            if runtime_false():
+                yield callback
+            value = 2
+            yield callback
+
+        def outer():
+            yield from inner()
+
+        return next(outer())()
+
+    assert run_and_validate(fn) == 2
+
+
+def test_yield_from_propagates_runtime_ambiguous_reference_conflict():
+    def fn():
+        def inner():
+            value = (1,)
+            callback = lambda: value[0]  # noqa: E731
+            if runtime_false():
+                yield callback
+            value = (2,)
+            yield callback
+
+        def outer():
+            yield from inner()
+
+        return next(outer())()
+
+    with pytest.raises(
+        CompilationError,
+        match="Binding 'value' has multiple conflicting definitions or may not be guaranteed to be defined",
+    ):
+        run_compiled(fn)
+
+
+def test_generator_loop_callback_uses_runtime_suspension_binding():
+    def fn():
+        def gen():
+            value = 1
+            callback = lambda: value  # noqa: E731
+            yield callback
+            value = 2
+            yield callback
+
+        result = 0
+        for callback in gen():
+            result = result * 10 + callback()
+        return result
+
+    assert run_and_validate(fn) == 12
+
+
+def test_callbacks_from_consecutive_generator_advances_snapshot_results():
+    def fn():
+        def gen():
+            value = 0
+            callback = lambda: value  # noqa: E731
+            for item in Array(1, 2):
+                value = item
+                yield callback
+
+        iterator = gen()
+        first = next(iterator)()
+        second = next(iterator)()
+        return first * 10 + second
+
+    assert run_and_validate(fn) == 12
 
 
 def test_yielded_lambda_reads_updated_generator_local():

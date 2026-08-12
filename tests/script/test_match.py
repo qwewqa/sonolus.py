@@ -1156,6 +1156,21 @@ class DynamicAttributeHolder(Record):
         raise AttributeError(name)
 
 
+class MatchAttributeErrorGetattrHolder(Record):
+    @meta_fn
+    def __getattr__(self, name):
+        raise AttributeError("dynamic pattern attribute unavailable")
+
+
+class MatchCustomGetattributeHolder(Record):
+    value: Num
+
+    def __getattribute__(self, name):
+        if name == "value":
+            return 99
+        return object.__getattribute__(self, name)
+
+
 @meta_fn
 def match_outer_exception_from_attribute_error(_self):
     raise ValueError("outer") from AttributeError("inner")
@@ -1221,7 +1236,10 @@ def test_match_class_property_raising_attribute_error_fails_the_pattern():
             case _:
                 return x
 
-    with pytest.raises(CompilationError, match="AttributeError propagation from a traced property getter"):
+    with pytest.raises(
+        CompilationError,
+        match="The getter for property 'missing' on MissingPropertyHolder raised AttributeError during compilation",
+    ):
         run_compiled(fn)
 
 
@@ -1236,6 +1254,39 @@ def test_match_class_keyword_attribute_uses_getattr():
     assert run_and_validate(fn) == 1
 
 
+def test_match_class_attribute_error_from_getattr_has_clear_diagnostic():
+    def fn():
+        match MatchAttributeErrorGetattrHolder():
+            case MatchAttributeErrorGetattrHolder(missing=1):
+                return 1
+        return 0
+
+    with pytest.raises(
+        CompilationError,
+        match=(
+            r"MatchAttributeErrorGetattrHolder\.__getattr__ raised AttributeError while looking up 'missing' "
+            "during compilation: dynamic pattern attribute unavailable"
+        ),
+    ):
+        run_compiled(fn)
+
+
+def test_match_class_custom_getattribute_is_rejected_without_running_it():
+    def fn():
+        match MatchCustomGetattributeHolder(1):
+            case MatchCustomGetattributeHolder(value=99):
+                return 1
+        return 0
+
+    with pytest.raises(
+        CompilationError,
+        match=(
+            "MatchCustomGetattributeHolder overrides __getattribute__, which is not supported for Record subclasses"
+        ),
+    ):
+        run_compiled(fn)
+
+
 def test_match_class_binds_classmethod_getattr_after_property_attribute_error():
     def fn():
         match MatchClassMethodFallbackHolder():
@@ -1244,7 +1295,13 @@ def test_match_class_binds_classmethod_getattr_after_property_attribute_error():
             case _:
                 return 0
 
-    with pytest.raises(CompilationError, match="AttributeError propagation from a traced property getter"):
+    with pytest.raises(
+        CompilationError,
+        match=(
+            "The getter for property 'missing' on MatchClassMethodFallbackHolder raised AttributeError "
+            "during compilation"
+        ),
+    ):
         run_compiled(fn)
 
 
@@ -1346,7 +1403,13 @@ def test_match_class_rejects_conditional_property_attribute_error():
                 return 1
         return 0
 
-    with pytest.raises(CompilationError, match="AttributeError propagation from a traced property getter"):
+    with pytest.raises(
+        CompilationError,
+        match=(
+            "The getter for property 'property' on MatchConditionalAttributeErrorProperty raised AttributeError "
+            "during compilation"
+        ),
+    ):
         run_compiled(fn)
 
 

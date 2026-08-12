@@ -4,6 +4,9 @@ Sonolus.py functions as a compiler from Python to Sonolus nodes. While most stan
 there are some limitations compared to standard Python. The following sections outline what Sonolus.py supports and 
 how it differs from standard Python.
 
+Behavior is not specified for unsupported constructs. They may be rejected, ignored, or behave differently from
+Python.
+
 ## Key Differences
 
 - Non-num variables must have a single live definition.
@@ -526,14 +529,14 @@ statements must not return a value.
 
 ##### Reusing iterators
 
-Treating an iterator as single use is recommended: consume it once, and build a fresh one if the values are needed
-again.
+Treat an iterator as single use. Use it through one consumption sequence, and build a fresh one if the values are
+needed again.
 
-Advancing an iterator that is already being consumed, by nesting two loops over it or mixing `next` with a `for`
-loop, is not supported. Neither is consuming one a second time after it has
-been exhausted. Use [`copy`][sonolus.script.values.copy] if a value taken from an iterator needs to outlive the
-next advance. This is an area which diverges from normal Python behavior. Otherwise, values obtained previously from
-an iterator may unexpectedly change when the iterator is advanced.
+Starting another loop, passing it to another iterator consumer, or mixing `next` with a `for` loop is not supported,
+even when the iterator is not exhausted. A run of consecutive `next` calls is one consumption sequence. Use
+[`copy`][sonolus.script.values.copy] if a value taken from an iterator needs to outlive the next
+advance. Because this differs from normal Python behavior, values obtained from an iterator may unexpectedly
+change after its next advance.
 
 ### Classes
 
@@ -542,6 +545,7 @@ Classes are supported at the module level. User defined classes should subclass
 Sonolus.py decorator such as `@level_memory`.
 
 Methods may have the `@staticmethod`, `@classmethod`, or `@property` decorators.
+Custom `Record.__getattribute__` implementations are not supported.
 
 ```python
 class MyRecord(Record):

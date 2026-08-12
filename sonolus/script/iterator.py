@@ -17,8 +17,10 @@ class SonolusIterator[T]:
     Inheritors must implement the [`next`][sonolus.script.iterator.SonolusIterator.next] method,
     which should return a [`Maybe[T]`][sonolus.script.maybe.Maybe].
 
-    An iterator should be treated as single use: do not advance one that is already being consumed, or consume
-    one again after it is exhausted. Doing so may lead to unexpected behavior.
+    An iterator must be used in one consumption sequence. Do not start another loop, pass it to another iterator
+    consumer, or mix `next` with a `for` loop, even if it is not exhausted. A run of consecutive `next` calls is
+    one sequence. Values obtained from an iterator may unexpectedly change after its next
+    advance.
 
     Usage:
         ```python
@@ -33,7 +35,7 @@ class SonolusIterator[T]:
     @meta_fn
     def next(self) -> Maybe[T]:
         """Return the next item from the iterator as a [`Maybe`][sonolus.script.maybe.Maybe]."""
-        raise NotImplementedError
+        raise NotImplementedError("SonolusIterator subclasses must implement next()")
 
     def __next__(self) -> T:
         """Return the next item, for use outside of compiled code only.
@@ -54,7 +56,9 @@ class SonolusIterator[T]:
 @meta_fn
 def _validate_next_result(value) -> Maybe[Any]:
     if not isinstance(value, Maybe):
-        raise ValueError("Iterator next must return a Maybe")
+        from sonolus.script.internal.builtin_impls import _type_name
+
+        raise TypeError(f"Iterator.next() returned '{_type_name(value)}', expected Maybe")
     return value
 
 
@@ -142,7 +146,9 @@ def maybe_next[T](iterator: Iterator[T]) -> Maybe[T]:
     if not isinstance(iterator, SonolusIterator):
         raise TypeError("Iterator must be an instance of SonolusIterator.")
     if ctx():
-        result = compile_and_call(iterator.next)
+        from sonolus.script.internal.builtin_impls import _advance_iterator_once
+
+        result = compile_and_call(_advance_iterator_once, iterator)
         if not ctx().live:
             return Nothing
         return _validate_next_result(result)
