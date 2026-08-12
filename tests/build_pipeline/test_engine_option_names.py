@@ -24,6 +24,12 @@ class _FallbackNamesAsAString:
     toggle: bool = toggle_option(name="Toggle", default=True)
 
 
+@options
+class _FallbackNamesAsAnEmptyString:
+    replay_fallback_option_names = ""
+    toggle: bool = toggle_option(name="Toggle", default=True)
+
+
 def test_a_sequence_of_fallback_names_is_carried_through():
     result = build_engine_configuration(_OneFallbackName, UiConfig())
 
@@ -33,3 +39,8 @@ def test_a_sequence_of_fallback_names_is_carried_through():
 def test_a_bare_string_of_fallback_names_is_rejected():
     with pytest.raises(TypeError, match="Expected a sequence of option names, got 'legacy_option'"):
         build_engine_configuration(_FallbackNamesAsAString, UiConfig())
+
+
+def test_an_empty_bare_string_of_fallback_names_is_rejected():
+    with pytest.raises(TypeError, match="Expected a sequence of option names, got ''"):
+        build_engine_configuration(_FallbackNamesAsAnEmptyString, UiConfig())

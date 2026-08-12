@@ -263,6 +263,53 @@ def test_rebuild_feeds_converters_pristine_resource_levels(tmp_path, monkeypatch
     assert server_state.collection.categories["levels"][FIXTURE_LEVEL_NAME]["item"]["data"]["hash"] != original_hash
 
 
+def test_rebuild_reloads_resources_when_the_project_resource_path_changes(tmp_path, monkeypatch):
+    old_resources = tmp_path / "old_resources"
+    new_resources = tmp_path / "new_resources"
+    old_resources.mkdir()
+    new_resources.mkdir()
+
+    def make_project(resources):
+        return Project(engine=Engine(name="dev_server_test_engine", data=EngineData()), resources=resources)
+
+    installed_project = make_project(old_resources)
+    project_module = types.ModuleType(FIXTURE_MODULE_NAME)
+    project_module.project = make_project(new_resources)
+    monkeypatch.setitem(sys.modules, FIXTURE_MODULE_NAME, project_module)
+
+    loaded_paths = []
+    reloaded_collection = Collection()
+
+    def load_resources(path):
+        loaded_paths.append(path)
+        return reloaded_collection
+
+    monkeypatch.setattr("sonolus.build.dev_server.load_resources_files_to_collection", load_resources)
+    monkeypatch.setattr("sonolus.build.dev_server.build_project_to_existing_collection", lambda *args, **kwargs: None)
+
+    import sonolus.build.cli
+
+    monkeypatch.setattr(sonolus.build.cli, "write_collection", lambda *args, **kwargs: None)
+
+    config = BuildConfig()
+    server_state = ServerState(
+        project=installed_project,
+        project_module_name=FIXTURE_MODULE_NAME,
+        core_module_names=set(sys.modules),
+        build_dir=tmp_path / "build",
+        config=config,
+        project_state=ProjectContextState.from_build_config(config),
+        base_collection=Collection(),
+        collection=Collection(),
+        last_build_time=time() + 3600,
+    )
+
+    RebuildCommand().execute(server_state)
+
+    assert loaded_paths == [new_resources]
+    assert server_state.base_collection is reloaded_collection
+
+
 INSTALLED_MAPPINGS = {"FIRST-ARCHETYPE-MESSAGE": 1, "SECOND-ARCHETYPE-MESSAGE": 2}
 
 

@@ -134,7 +134,9 @@ class RebuildCommand:
             project = project_module.project
 
             base_collection = server_state.base_collection
-            if path_was_modified_after(project.resources, server_state.last_build_time):
+            if project.resources != server_state.project.resources or path_was_modified_after(
+                project.resources, server_state.last_build_time
+            ):
                 base_collection = load_resources_files_to_collection(project.resources)
             # A converter rewrites level["data"] in the collection it is given, so building into base_collection
             # would feed the previous rebuild's output back into the converter.

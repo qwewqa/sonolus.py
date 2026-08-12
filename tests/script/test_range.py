@@ -400,3 +400,12 @@ def test_range_index_runtime_checks_disabled_unchanged():
         return range(0, 10, 2).index(3)
 
     assert run_compiled(fn, runtime_checks=RuntimeChecks.NONE) == -1
+
+
+def test_range_arguments_are_positional_only():
+    def fn():
+        return range(start=1, stop=4)
+
+    # run_compiled: CPython rejects this too, but its builtin-specific message differs from normal signature binding.
+    with pytest.raises(CompilationError, match="got some positional-only arguments passed as keyword arguments"):
+        run_compiled(fn)

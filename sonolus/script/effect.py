@@ -128,9 +128,11 @@ class ScheduledLoopedEffectHandle(Record):
         """Stop the scheduled looped effect.
 
         Not available in preview mode.
+
+        Args:
+            end_time: The time at which to stop the effect.
         """
         _check_effect_playback_mode()
-        # The runtime needs at least 0.5 seconds of lead time to stop the loop at the scheduled time.
         _stop_looped_scheduled(self.id, end_time)
 
 

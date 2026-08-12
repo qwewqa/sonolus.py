@@ -1,8 +1,7 @@
 # ruff: noqa
-from typing import (
-    Sequence,
-    overload,
-)
+from typing import overload
+
+from sonolus.script.array_like import ArrayLike
 
 @overload
 def randrange(stop: int, /) -> int:
@@ -55,7 +54,7 @@ def randint(a: int, b: int) -> int:
     """
     ...
 
-def choice[T](seq: Sequence[T]) -> T:
+def choice[T](seq: ArrayLike[T]) -> T:
     """Return a randomly selected element from a non-empty sequence.
 
     The sequence must be array-like, such as an `Array` or `VarArray`. Tuples are not supported.
@@ -68,7 +67,7 @@ def choice[T](seq: Sequence[T]) -> T:
     """
     ...
 
-def shuffle[T](seq: Sequence[T]) -> None:
+def shuffle[T](seq: ArrayLike[T]) -> None:
     """Shuffle the sequence in place.
 
     The sequence must be a mutable array-like, such as an `Array` or `VarArray`.

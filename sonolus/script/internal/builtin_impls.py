@@ -751,9 +751,9 @@ def _all(iterable):
 
 
 def contains_by_iteration(item, iterable):
-    """Membership by scanning `iterable`, for a right operand of `in` that defines no `__contains__`."""
+    """Membership by scanning `iterable` when `__contains__` does not provide a result."""
     for value in iterable:  # noqa: SIM110
-        if item == value:
+        if value == item:
             return True
     return False
 

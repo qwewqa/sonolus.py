@@ -53,7 +53,7 @@
 - `sonolus-py schema` now prints its progress messages to stderr.
 - Fixed dev server rebuilds running level converters on the previous rebuild's output rather than on the levels
   as loaded from resources.
-- Fixed a change to a project's `resources` path taking effect one rebuild late in the dev server.
+- Fixed the dev server continuing to use resources from a project's previous `resources` path.
 - Corrected the published signatures of `reversed`, `dict`, `max`, `min`, `range`, `random.randrange`, `super`,
   and the `math` module functions to match the calls they accept.
 - Reduced the compiled cost of [`Quad.contains_point`][sonolus.script.quad.Quad.contains_point],
@@ -151,7 +151,8 @@
   implementation name and a count one higher.
 - Calling a function or a [`Record`][sonolus.script.record.Record] method, or constructing a `Record`, with an
   unexpected keyword argument now reports the unexpected keyword and names the callee.
-  from [`spawn()`][sonolus.script.archetype.PlayArchetype.spawn] now names the archetype as well.
+- An unexpected keyword argument to [`spawn()`][sonolus.script.archetype.PlayArchetype.spawn] now names the
+  archetype as well.
 - Error messages interpolating a compile-time constant no longer print a memory address.
 - A build that gives up optimizing a callback now names the archetype it belongs to alongside the callback and
   the mode, and a callback no path can leave, such as one whose only loop has no exit, now reports that rather

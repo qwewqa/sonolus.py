@@ -193,12 +193,13 @@ def build_engine_configuration(
         "options": [option.to_dict() for option in options._options_],
         "ui": ui.to_dict(),
     }
-    if replay_fallback_option_names := getattr(options, "replay_fallback_option_names", None):
-        if isinstance(replay_fallback_option_names, str | bytes | bytearray):
-            raise TypeError(
-                f"Expected a sequence of option names, got {replay_fallback_option_names!r}; "
-                f"one name is written ({replay_fallback_option_names!r},)"
-            )
+    replay_fallback_option_names = getattr(options, "replay_fallback_option_names", None)
+    if isinstance(replay_fallback_option_names, str | bytes | bytearray):
+        raise TypeError(
+            f"Expected a sequence of option names, got {replay_fallback_option_names!r}; "
+            f"one name is written ({replay_fallback_option_names!r},)"
+        )
+    if replay_fallback_option_names:
         result["replayFallbackOptionNames"] = list(replay_fallback_option_names)
     return result
 

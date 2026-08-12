@@ -598,7 +598,7 @@ class Visitor(ast.NodeVisitor):
             raise ValueError("Function has conflicting return values")
         set_ctx(after_ctx.branch_with_scope(None, before_ctx.scope.copy()))
         terminated = not after_ctx.live
-        # Noting could have escaped, so allow reuse, which can allow naive allocation to succeed in the optimizer for
+        # Nothing could have escaped, so allow reuse, which can allow naive allocation to succeed in the optimizer for
         # better compile times.
         if (terminated or result_binding.value is validate_value(None)) and not ctx().callback_state.is_in_generator:
             ctx().restore_alloc_state(before_alloc_state)
@@ -754,6 +754,8 @@ class Visitor(ast.NodeVisitor):
 
         for decorator, decorator_value in reversed(decorators):
             fn = self.handle_call(decorator, decorator_value, fn)
+            if not ctx().live:
+                return
 
         ctx().scope.set_value(name, validate_value(fn))
 

@@ -129,3 +129,10 @@ def test_a_mode_given_an_undecorated_class_names_the_class():
         PlayMode(skin=NotASkin)
 
     assert "NotASkin" in str(exc_info.value)
+
+
+def test_a_mode_given_a_non_class_archetype_reports_the_invalid_value():
+    with pytest.raises(ValueError, match="is not a PlayArchetype") as exc_info:
+        PlayMode(archetypes=[None])
+
+    assert "None" in str(exc_info.value)

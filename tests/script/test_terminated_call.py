@@ -59,6 +59,11 @@ def bad_vec(i) -> Vec2:
     return Vec2(i, i)
 
 
+@meta_fn
+def fail_if_applied_as_decorator(decorated):
+    raise RuntimeError("outer decorator must not be applied")
+
+
 def unreachable_vec(i) -> Vec2:
     if i == 0:
         return Vec2(1, 1)
@@ -982,6 +987,27 @@ def test_terminating_decorator_expression_ships_a_terminate():
                 return 1.0
 
             return 2.0
+        return 5.0
+
+    assert run_gated(inline_form, 0.0) == (1.0, 5.0)
+    mark, _ = run_gated(inline_form, 1.0)
+    assert mark == 0.0
+
+
+def test_terminating_decorator_application_stops_applying_outer_decorators():
+    def inline_form(gate):
+        def terminating(decorated):
+            _ = bad_vec(-1).x
+            return decorated
+
+        if gate > 0:
+
+            @fail_if_applied_as_decorator
+            @terminating
+            def inner():
+                return 1.0
+
+            return inner()
         return 5.0
 
     assert run_gated(inline_form, 0.0) == (1.0, 5.0)

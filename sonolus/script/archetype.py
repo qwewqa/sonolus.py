@@ -513,7 +513,8 @@ def callback[T: Callable](*, order: int = 0) -> Callable[[T], T]:
     """Annotate a callback with its order.
 
     Callbacks are executed from lowest to highest order. By default, callbacks have an order of 0.
-    Parallel callbacks like `update_parallel` do not support order.
+    Order is supported by `preprocess`, `spawn_order`, `update_sequential`, `touch`, `spawn_time`, and
+    `despawn_time` callbacks. Setting a nonzero order on other callbacks is unsupported.
 
     Usage:
         ```python
@@ -825,8 +826,7 @@ class _BaseArchetype(metaclass=_BaseArchetypeMeta):
 
         Entity memory fields not passed as keyword arguments are initialized to zero.
 
-        An entity created this way has only entity memory: it has no entity info, entity input, entity data
-        (including imported fields), or shared memory.
+        The arguments initialize entity memory only. They do not initialize imported fields or shared memory.
 
         Usage:
             ```python
@@ -908,8 +908,6 @@ class _BaseArchetype(metaclass=_BaseArchetypeMeta):
                 if name in mro_entry.__dict__:
                     cb = mro_entry.__dict__[name]
                     if isinstance(cb, _ArchetypeFieldInfo | _ArchetypeField):
-                        # A field declared under a callback's name: field initialization reports it with a
-                        # message naming both, so can just break here.
                         break
                     if isinstance(cb, classmethod | staticmethod):
                         raise TypeError(

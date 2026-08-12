@@ -16,14 +16,14 @@ class Range(Record, ArrayLike[int]):
     stop: int
     step: int
 
-    def __new__(cls, start: int, stop: int | None = None, step: int = 1):
+    def __new__(cls, start: int, stop: int | None = None, step: int = 1, /):
         if stop is None:
             start, stop = 0, start
         return super().__new__(cls, start, stop, step)
 
     @classmethod
     @meta_fn
-    def frozen(cls, start: int, stop: int | None = None, step: int = 1) -> Self:
+    def frozen(cls, start: int, stop: int | None = None, step: int = 1, /) -> Self:
         if stop is None:
             start, stop = 0, start
         step = Num._accept_(step)

@@ -65,13 +65,12 @@ def test_non_string_name_is_rejected():
 
 
 def test_runtime_valued_name_is_rejected():
-    # A name only known at runtime cannot be looked up in the compile-time table. The message interpolates
-    # an internal temp name for the value, which is deliberately not pinned here.
+    # A name only known at runtime cannot be looked up in the compile-time table.
     def fn():
         get_archetype_by_name(random.randrange(0, 1) + 5)
         return 0.0
 
-    with pytest.raises(CompilationError, match="Invalid name"):
+    with pytest.raises(CompilationError, match=r"Invalid name: 'v\d+'"):
         run_compiled(fn)
 
 

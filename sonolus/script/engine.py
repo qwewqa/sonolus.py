@@ -2,7 +2,7 @@ from __future__ import annotations
 
 import json
 import warnings
-from collections.abc import Callable
+from collections.abc import Callable, Iterable
 from os import PathLike
 from pathlib import Path
 from typing import Any, Literal
@@ -189,7 +189,7 @@ def check_archetypes(archetypes: list[type[_BaseArchetype]], expected_type: type
     seen = set()
     by_name: dict[str, type[_BaseArchetype]] = {}
     for archetype in archetypes:
-        if not issubclass(archetype, expected_type):
+        if not isinstance(archetype, type) or not issubclass(archetype, expected_type):
             raise ValueError(f"archetype {describe_value(archetype)} is not a {expected_type.__name__}")
         if archetype in seen:
             raise ValueError(f"archetype {describe_value(archetype)} is listed more than once")
@@ -225,7 +225,7 @@ class PlayMode:
     """A play mode definition.
 
     Args:
-        archetypes: A list of play archetypes.
+        archetypes: The play archetypes.
         skin: The skin for the play mode.
         effects: The effects for the play mode.
         particles: The particles for the play mode.
@@ -235,7 +235,7 @@ class PlayMode:
     def __init__(
         self,
         *,
-        archetypes: list[type[_BaseArchetype]] | None = None,
+        archetypes: Iterable[type[_BaseArchetype]] | None = None,
         skin: Skin = EmptySkin,
         effects: Effects = EmptyEffects,
         particles: Particles = EmptyParticles,
@@ -259,7 +259,7 @@ class WatchMode:
     """A watch mode definition.
 
     Args:
-        archetypes: A list of watch archetypes.
+        archetypes: The watch archetypes.
         skin: The skin for the watch mode.
         effects: The effects for the watch mode.
         particles: The particles for the watch mode.
@@ -270,7 +270,7 @@ class WatchMode:
     def __init__(
         self,
         *,
-        archetypes: list[type[_BaseArchetype]] | None = None,
+        archetypes: Iterable[type[_BaseArchetype]] | None = None,
         skin: Skin = EmptySkin,
         effects: Effects = EmptyEffects,
         particles: Particles = EmptyParticles,
@@ -296,14 +296,14 @@ class PreviewMode:
     """A preview mode definition.
 
     Args:
-        archetypes: A list of preview archetypes.
+        archetypes: The preview archetypes.
         skin: The skin for the preview mode.
     """
 
     def __init__(
         self,
         *,
-        archetypes: list[type[_BaseArchetype]] | None = None,
+        archetypes: Iterable[type[_BaseArchetype]] | None = None,
         skin: Skin = EmptySkin,
     ) -> None:
         self.archetypes = list(archetypes) if archetypes is not None else []

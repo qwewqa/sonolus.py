@@ -1,8 +1,8 @@
 """Wording of the argument-binding errors the compiler and the level-data constructor raise.
 
-`run_compiled` rather than `run_and_validate` for the compiled cases: plain Python rejects these calls too, but
-with its own wording, so the oracle's exact-message comparison would fail on a message that is not what is
-pinned. The archetype constructor runs on the host only, so its cases call it directly.
+The compiled error cases use `run_compiled`: plain Python rejects these calls too, but with its own wording, so
+the oracle's exact-message comparison would fail on a message that is not what is pinned. Accepted calls use
+`run_and_validate`. The archetype constructor runs on the host only, so its cases call it directly.
 """
 
 import math
@@ -19,7 +19,7 @@ from sonolus.script.internal.context import ModeContextState, ProjectContextStat
 from sonolus.script.internal.error import CompilationError
 from sonolus.script.internal.native import native_function
 from sonolus.script.record import Record
-from tests.script.conftest import run_compiled
+from tests.script.conftest import run_and_validate, run_compiled
 
 
 class Point(Record):
@@ -134,7 +134,7 @@ def test_a_keyword_a_record_method_does_accept_still_binds():
     def fn():
         return Point(1.0, 2.0).scaled(factor=3.0)
 
-    assert run_compiled(fn) == 9.0
+    assert run_and_validate(fn) == 9.0
 
 
 def test_a_keyword_a_user_function_does_accept_still_binds():
@@ -144,7 +144,7 @@ def test_a_keyword_a_user_function_does_accept_still_binds():
     def fn():
         return user_fn(b=1.0, a=Array(5.0, 6.0)[0])
 
-    assert run_compiled(fn) == 4.0
+    assert run_and_validate(fn) == 4.0
 
 
 def test_unexpected_keyword_to_a_record_constructor_names_the_keyword_and_the_callee():
@@ -163,7 +163,7 @@ def test_a_keyword_a_record_constructor_does_accept_still_binds():
     def fn():
         return Point(y=1.0, x=Array(5.0, 6.0)[0]).x
 
-    assert run_compiled(fn) == 5.0
+    assert run_and_validate(fn) == 5.0
 
 
 def test_unexpected_keyword_to_a_compiled_lambda_names_the_keyword_and_the_callee():
@@ -424,4 +424,4 @@ def test_a_dict_splat_with_no_collision_is_still_accepted():
     def fn():
         return _helper(1, **{"b": 2}, c=3)  # noqa: PIE804
 
-    assert run_compiled(fn) == 123
+    assert run_and_validate(fn) == 123

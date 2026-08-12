@@ -55,7 +55,7 @@ sonolus-py schema [module]
 | `--runtime-checks {none,terminate,notify}` | `none` for `build`/`check`, `notify` for `dev` | `none` disables runtime checks; `terminate` stops the callback on error; `notify` additionally logs and pauses before terminating. |
 | `--gc` | off | Enable the Python garbage collector during compilation. |
 | `--play`, `--watch`, `--preview`, `--tutorial` | all enabled if none are given | Restrict which components are built (or, for `check`, validated). Passing any one of the four narrows the set to just those given. |
-| `-v`, `--verbose` | off | On an error raised while compiling callback code, print the full traceback instead of the simplified summary. |
+| `-v`, `--verbose` | off | Print the full traceback for a compilation error instead of a simplified summary when one is available. |
 | `--profile` | off | Print a per-stage compile timing summary to stderr. Not available for `dev`. |
 | `--profile-json PATH` | | Write per-stage compile timings as JSON to `PATH`, confirming with a line on stderr. Also enables profiling, so the `--profile` summary is printed to stderr as well. Not available for `dev`. |
 

@@ -623,3 +623,24 @@ def test_in_consumes_a_one_shot_iterator_up_to_the_match():
         return (1 if found else 0) * 1000 + total
 
     assert run_and_validate(fn) == 1034
+
+
+class MembershipElement(Record):
+    value: int
+
+    def __eq__(self, other):
+        return isinstance(other, MembershipNeedle) and self.value == other.value
+
+
+class MembershipNeedle(Record):
+    value: int
+
+    def __eq__(self, other):
+        return False
+
+
+def test_iterative_membership_calls_element_equality_first():
+    def fn():
+        return MembershipNeedle(2) in (value for value in Array(MembershipElement(1), MembershipElement(2)))
+
+    assert run_and_validate(fn)
