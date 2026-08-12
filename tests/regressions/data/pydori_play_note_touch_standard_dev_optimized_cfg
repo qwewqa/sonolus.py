@@ -1,5 +1,5 @@
 0:
-  goto 492 if EntityDespawn[0] else 1
+  goto 487 if EntityDespawn[0] else 1
 1:
   10000[8] <- EntityData[0] * LevelData[12]
   10000[0] <- 10000[8] - ((LevelData[12] * 2.5) / 2)
@@ -20,44 +20,47 @@
   10000[10] <- 10000[11]
   10000[7] <- 0
   10000[6] <- 10000[7]
-  10000[5] <- 10000[6]
-  10000[4] <- 10000[10]
-  10000[3] <- 10000[5]
+  10000[5] <- 10000[10]
+  10000[4] <- 10000[5]
+  10000[3] <- 10000[6]
   10000[2] <- 10000[3]
   goto 6
 6:
-  10000[3] <- If(10000[2], 10000[3], 10000[3])
-  goto 7
+  goto when 10000[2]
+    0 -> 7
+    1 -> 7
+    default -> 15
 7:
-  10000[14] <- LevelMemory[0]
-  goto 8 if ((10000[14] >= 0) && (0 == (10000[14] % 1))) else 493
+  10000[2] <- LevelMemory[0]
+  goto 8 if ((10000[2] >= 0) && (0 == (10000[2] % 1))) else 488
 8:
-  goto 9 if (10000[3] < 10000[14]) else 14
+  goto 9 if (10000[3] < 10000[2]) else 14
 9:
-  10000[14] <- 10000[3] + 1
+  10000[2] <- 10000[3] + 1
   goto 10 if (LevelMemory[10000[3] + 1] != EntityInfo[0]) else 13
 10:
-  10000[4] <- LevelMemory[10000[3] + 1]
-  goto 11 if SwitchWithDefault(EntityInfoArray[(10000[4] * 3) + 1], 1, 1, 2, 1, 3, 1, 4, 1, 5, 1, 6, 1, 7, 1, 0) else 12
+  10000[5] <- LevelMemory[10000[3] + 1]
+  goto 11 if SwitchWithDefault(EntityInfoArray[(10000[5] * 3) + 1], 1, 1, 2, 1, 3, 1, 4, 1, 5, 1, 6, 1, 7, 1, 0) else 12
 11:
-  10000[3] <- 10000[14]
+  10000[3] <- 10000[2]
   10000[2] <- 1
-  10000[14] <- 10000[2]
+  10000[4] <- 10000[2]
   goto 15
 12:
   DebugLog(3)
   DebugPause()
   goto exit
 13:
-  10000[3] <- 10000[14]
+  10000[3] <- 10000[2]
   goto 7
 14:
-  10000[14] <- 0
+  10000[2] <- 2
+  10000[4] <- 0
   goto 15
 15:
-  goto 16 if 10000[14] else 22
+  goto 16 if 10000[4] else 22
 16:
-  10000[14] <- 10000[4] * 32
+  10000[14] <- 10000[5] * 32
   goto 6 if EntitySharedMemoryArray[(2 + 10000[14])] else 17
 17:
   goto 18 if (Abs(EntityDataArray[(11 + 10000[14])] - EntityData[11]) <= 0.005) else 6
@@ -67,62 +70,52 @@
 19:
   goto 6 if (EntitySharedMemoryArray[(10000[14] * 32)] > 0) else 20
 20:
-  10000[7] <- 1
-  10000[14] <- 10000[7]
+  10000[15] <- 1
+  10000[14] <- 10000[15]
   goto 23
 21:
   DebugLog(4)
   DebugPause()
   goto exit
 22:
+  10000[15] <- 2
   10000[14] <- 0
   goto 23
 23:
   goto 24 if 10000[14] else 33
 24:
-  10000[14] <- 10000[4] * 32
-  10000[15] <- EntityDataArray[10000[14]]
-  10000[16] <- 10000[15] * LevelData[12]
-  10000[17] <- 10000[16] - ((LevelData[12] * 2.5) / 2)
-  SetAdd(10000, 16, (LevelData[12] * 2.5) / 2)
-  10000[14] <- EntityDataArray[(2 + 10000[14])]
-  goto 25 if (10000[14] > 0) else 26
+  10000[16] <- 10000[5] * 32
+  10000[17] <- EntityDataArray[10000[16]]
+  10000[18] <- 10000[17] * LevelData[12]
+  10000[19] <- 10000[18] - ((LevelData[12] * 2.5) / 2)
+  SetAdd(10000, 18, (LevelData[12] * 2.5) / 2)
+  10000[16] <- EntityDataArray[(2 + 10000[16])]
+  goto 25 if (10000[16] > 0) else 26
 25:
-  SetAdd(10000, 16, LevelData[12] * 10000[14])
-  goto 27 if (10000[14] < 0) else 28
+  SetAdd(10000, 18, LevelData[12] * 10000[16])
+  goto 27 if (10000[16] < 0) else 28
 26:
-  goto 27 if (10000[14] < 0) else 28
+  goto 27 if (10000[16] < 0) else 28
 27:
-  SetAdd(10000, 17, LevelData[12] * 10000[14])
+  SetAdd(10000, 19, LevelData[12] * 10000[16])
   goto 28
 28:
-  goto 29 if (10000[15] > EntityData[0]) else 30
+  goto 29 if (10000[17] > EntityData[0]) else 30
 29:
-  10000[5] <- Max(10000[5], 10000[1] - 10000[17])
+  10000[6] <- Max(10000[6], 10000[1] - 10000[19])
   goto 32
 30:
-  goto 31 if (10000[15] < EntityData[0]) else 32
+  goto 31 if (10000[17] < EntityData[0]) else 32
 31:
-  10000[6] <- Max(10000[6], 10000[16] - 10000[0])
+  10000[7] <- Max(10000[7], 10000[18] - 10000[0])
   goto 32
 32:
-  10000[2] <- If(10000[7], 10000[2], 10000[2])
-  10000[3] <- If(10000[7], 10000[3], 10000[3])
-  10000[4] <- If(10000[7], 10000[4], 10000[4])
-  10000[1] <- If(10000[7], 10000[1], 10000[1])
-  10000[5] <- If(10000[7], 10000[5], 10000[5])
-  10000[6] <- If(10000[7], 10000[6], 10000[6])
-  10000[0] <- If(10000[7], 10000[0], 10000[0])
-  10000[14] <- If(10000[7], 10000[7], 10000[7])
-  10000[10] <- If(10000[7], 10000[10], 10000[10])
-  10000[11] <- If(10000[7], 10000[11], 10000[11])
-  10000[12] <- If(10000[7], 10000[12], 10000[12])
-  10000[13] <- If(10000[7], 10000[13], 10000[13])
-  10000[7] <- 10000[14]
-  goto 6
+  goto when 10000[15]
+    1 -> 6
+    default -> 23
 33:
-  SetAdd(10000, 0, 10000[6] / 2)
-  SetSubtract(10000, 1, 10000[5] / 2)
+  SetAdd(10000, 0, 10000[7] / 2)
+  SetSubtract(10000, 1, 10000[6] / 2)
   10000[2] <- LevelData[2] * 10000[0]
   10000[3] <- LevelData[5] * 10000[0]
   10000[0] <- LevelData[8] * 10000[0]
@@ -143,25 +136,25 @@
   10000[21] <- (10000[5] + (LevelData[6] * LevelData[14]) + LevelData[7]) / 10000[0]
   10000[22] <- EngineRom[(3 + EntityInfo[1])]
   goto when 10000[22]
-    1 -> 413
+    1 -> 409
     default -> 34
 34:
   goto when 10000[22]
-    4 -> 413
+    4 -> 409
     default -> 35
 35:
   goto when 10000[22]
-    5 -> 305
+    5 -> 302
     default -> 36
 36:
   goto when 10000[22]
-    7 -> 198
+    7 -> 196
     default -> 37
 37:
   goto when (10000[22] - 2)
     0 -> 38
     1 -> 38
-    default -> 492
+    default -> 487
 38:
   10000[0] <- EntityData[3] > 0
   goto 39 if 10000[0] else 46
@@ -178,7 +171,7 @@
   10000[3] <- 2 == EntityInfoArray[10000[1] + 2]
   goto 43
 43:
-  goto 46 if 10000[3] else 492
+  goto 46 if 10000[3] else 487
 44:
   DebugLog(41)
   DebugPause()
@@ -188,57 +181,55 @@
   DebugPause()
   goto exit
 46:
-  goto 47 if (EntityData[14] <= RuntimeUpdate[0]) else 492
+  goto 47 if (EntityData[14] <= RuntimeUpdate[0]) else 487
 47:
-  goto 48 if (RuntimeUpdate[0] <= EntityData[15]) else 492
+  goto 48 if (RuntimeUpdate[0] <= EntityData[15]) else 487
 48:
-  goto 49 if 10000[0] else 88
+  goto 49 if 10000[0] else 87
 49:
   10000[10] <- SwitchWithDefault(EntityInfoArray[(EntityData[16] * 3) + 1], 1, 1, 2, 1, 3, 1, 4, 1, 5, 1, 6, 1, 7, 1, 0)
-  goto 50 if 10000[10] else 87
+  goto 50 if 10000[10] else 86
 50:
   10000[11] <- EntityData[16] * 32
-  goto 128 if (EntitySharedMemoryArray[10000[11]] > 0) else 51
+  goto 126 if (EntitySharedMemoryArray[10000[11]] > 0) else 51
 51:
   10000[12] <- (RuntimeUpdate[3] >= 0) && (0 == (RuntimeUpdate[3] % 1))
   10000[23] <- 0
   goto 52
 52:
-  10000[24] <- 0
-  goto 53
+  goto 53 if 10000[12] else 85
 53:
-  goto 54 if 10000[12] else 86
+  goto 54 if (10000[23] < RuntimeUpdate[3]) else 61
 54:
-  goto 55 if (10000[24] < RuntimeUpdate[3]) else 62
+  10000[13] <- 10000[23] * 15
+  IncrementPost(10000, 23)
+  10000[24] <- 0
+  goto 55
 55:
-  10000[13] <- 10000[24] * 15
-  IncrementPost(10000, 24)
-  10000[25] <- 0
-  goto 56
+  10000[25] <- LevelMemory[17]
+  goto 56 if ((10000[25] >= 0) && (0 == (10000[25] % 1))) else 60
 56:
-  10000[26] <- LevelMemory[17]
-  goto 57 if ((10000[26] >= 0) && (0 == (10000[26] % 1))) else 61
+  goto 57 if (10000[24] < 10000[25]) else 59
 57:
-  goto 58 if (10000[25] < 10000[26]) else 60
+  goto 52 if (LevelMemory[(17 + 10000[24]) + 1] == RuntimeTouchArray[10000[13]]) else 58
 58:
-  goto 53 if (LevelMemory[(17 + 10000[25]) + 1] == RuntimeTouchArray[10000[13]]) else 59
+  IncrementPost(10000, 24)
+  goto 55
 59:
-  IncrementPost(10000, 25)
-  goto 56
+  10000[25] <- 1
+  10000[24] <- 10000[25]
+  goto 62
 60:
-  10000[23] <- 1
-  10000[25] <- 10000[23]
-  goto 63
-61:
   DebugLog(45)
   DebugPause()
   goto exit
+61:
+  10000[25] <- 2
+  10000[24] <- 0
+  goto 62
 62:
-  10000[25] <- 0
-  goto 63
+  goto 63 if 10000[24] else 126
 63:
-  goto 64 if 10000[25] else 128
-64:
   10000[0] <- 10000[14]
   10000[1] <- 10000[15]
   10000[2] <- 10000[18]
@@ -247,135 +238,135 @@
   10000[5] <- 10000[21]
   10000[6] <- 10000[16]
   10000[7] <- 10000[17]
-  10000[25] <- RuntimeTouchArray[10000[13] + 6]
-  10000[28] <- 0
-  10000[27] <- 3
-  10000[26] <- 10000[28]
-  goto 65
+  10000[26] <- RuntimeTouchArray[10000[13] + 6]
+  10000[29] <- 0
+  10000[28] <- 3
+  10000[27] <- 10000[29]
+  goto 64
+64:
+  10000[30] <- 10000[27] * 2
+  SetMultiply(10000, 28, 2)
+  goto 65 if ((10000[10000[30] + 1] > 10000[26]) != (10000[10000[28] + 1] > 10000[26])) else 67
 65:
-  10000[29] <- 10000[26] * 2
-  SetMultiply(10000, 27, 2)
-  goto 66 if ((10000[10000[29] + 1] > 10000[25]) != (10000[10000[27] + 1] > 10000[25])) else 68
+  goto 66 if (RuntimeTouchArray[10000[13] + 5] < ((((10000[10000[28]] - 10000[10000[30]]) * (10000[26] - 10000[10000[30] + 1])) / (10000[10000[28] + 1] - 10000[10000[30] + 1])) + 10000[10000[30]])) else 67
 66:
-  goto 67 if (RuntimeTouchArray[10000[13] + 5] < ((((10000[10000[27]] - 10000[10000[29]]) * (10000[25] - 10000[10000[29] + 1])) / (10000[10000[27] + 1] - 10000[10000[29] + 1])) + 10000[10000[29]])) else 68
+  10000[29] <- !10000[29]
+  goto 67
 67:
-  10000[28] <- !10000[28]
-  goto 68
+  10000[30] <- 10000[27] + 1
+  goto 68 if (10000[30] < 4) else 69
 68:
-  10000[29] <- 10000[26] + 1
-  goto 69 if (10000[29] < 4) else 70
+  10000[28] <- 10000[27]
+  10000[27] <- 10000[30]
+  goto 64
 69:
-  10000[27] <- 10000[26]
-  10000[26] <- 10000[29]
-  goto 65
+  goto 70 if 10000[29] else 84
 70:
-  goto 71 if 10000[28] else 85
+  goto 84 if RuntimeTouchArray[10000[13] + 2] else 71
 71:
-  goto 85 if RuntimeTouchArray[10000[13] + 2] else 72
+  goto 79 if (LevelMemory[17] >= 16) else 72
 72:
-  goto 80 if (LevelMemory[17] >= 16) else 73
-73:
   10000[12] <- 0
-  goto 74
-74:
+  goto 73
+73:
   10000[23] <- LevelMemory[17]
-  goto 75 if ((10000[23] >= 0) && (0 == (10000[23] % 1))) else 84
+  goto 74 if ((10000[23] >= 0) && (0 == (10000[23] % 1))) else 83
+74:
+  goto 75 if (10000[12] < 10000[23]) else 77
 75:
-  goto 76 if (10000[12] < 10000[23]) else 78
+  goto 79 if (LevelMemory[(17 + 10000[12]) + 1] == RuntimeTouchArray[10000[13]]) else 76
 76:
-  goto 80 if (LevelMemory[(17 + 10000[12]) + 1] == RuntimeTouchArray[10000[13]]) else 77
-77:
   IncrementPost(10000, 12)
-  goto 74
+  goto 73
+77:
+  goto 78 if (LevelMemory[17] < 16) else 82
 78:
-  goto 79 if (LevelMemory[17] < 16) else 83
-79:
   LevelMemory[(17 + LevelMemory[17]) + 1] <- RuntimeTouchArray[10000[13]]
   IncrementPost(2000, 17)
-  goto 80
+  goto 79
+79:
+  goto 80 if 10000[10] else 81
 80:
-  goto 81 if 10000[10] else 82
-81:
   EntitySharedMemoryArray[10000[11]] <- RuntimeTouchArray[10000[13]]
-  goto 128
-82:
+  goto 126
+81:
   DebugLog(48)
   DebugPause()
   goto exit
-83:
+82:
   DebugLog(47)
   DebugPause()
   goto exit
-84:
+83:
   DebugLog(46)
   DebugPause()
   goto exit
+84:
+  goto when 10000[25]
+    1 -> 52
+    default -> 62
 85:
-  goto 53 if 10000[23] else 52
-86:
   DebugLog(43)
   DebugPause()
   goto exit
-87:
+86:
   DebugLog(42)
   DebugPause()
   goto exit
-88:
+87:
   10000[10] <- SwitchWithDefault(EntityInfoArray[(EntityData[16] * 3) + 1], 1, 1, 2, 1, 3, 1, 4, 1, 5, 1, 6, 1, 7, 1, 0)
-  goto 89 if 10000[10] else 197
-89:
+  goto 88 if 10000[10] else 195
+88:
   10000[11] <- EntityData[16] * 32
-  goto 128 if (EntitySharedMemoryArray[10000[11]] > 0) else 90
-90:
+  goto 126 if (EntitySharedMemoryArray[10000[11]] > 0) else 89
+89:
   10000[12] <- (RuntimeUpdate[3] >= 0) && (0 == (RuntimeUpdate[3] % 1))
   10000[23] <- 0
-  goto 91
+  goto 90
+90:
+  goto 91 if 10000[12] else 194
 91:
-  10000[24] <- 0
-  goto 92
+  goto 92 if (10000[23] < RuntimeUpdate[3]) else 103
 92:
-  goto 93 if 10000[12] else 196
+  10000[13] <- 10000[23] * 15
+  IncrementPost(10000, 23)
+  goto 93 if RuntimeTouchArray[10000[13] + 1] else 90
 93:
-  goto 94 if (10000[24] < RuntimeUpdate[3]) else 105
+  10000[24] <- 0
+  goto 94
 94:
-  10000[13] <- 10000[24] * 15
-  IncrementPost(10000, 24)
-  goto 95 if RuntimeTouchArray[10000[13] + 1] else 92
+  10000[25] <- LevelMemory[17]
+  goto 95 if ((10000[25] >= 0) && (0 == (10000[25] % 1))) else 102
 95:
-  10000[25] <- 0
-  goto 96
+  goto 96 if (10000[24] < 10000[25]) else 99
 96:
-  10000[26] <- LevelMemory[17]
-  goto 97 if ((10000[26] >= 0) && (0 == (10000[26] % 1))) else 104
+  goto 97 if (LevelMemory[(17 + 10000[24]) + 1] == RuntimeTouchArray[10000[13]]) else 98
 97:
-  goto 98 if (10000[25] < 10000[26]) else 101
+  10000[24] <- 1
+  goto 100
 98:
-  goto 99 if (LevelMemory[(17 + 10000[25]) + 1] == RuntimeTouchArray[10000[13]]) else 100
+  IncrementPost(10000, 24)
+  goto 94
 99:
-  10000[25] <- 1
-  goto 102
+  10000[24] <- 0
+  goto 100
 100:
-  IncrementPost(10000, 25)
-  goto 96
+  goto 90 if 10000[24] else 101
 101:
-  10000[25] <- 0
-  goto 102
+  10000[25] <- 1
+  10000[24] <- 10000[25]
+  goto 104
 102:
-  goto 92 if 10000[25] else 103
-103:
-  10000[23] <- 1
-  10000[25] <- 10000[23]
-  goto 106
-104:
   DebugLog(52)
   DebugPause()
   goto exit
+103:
+  10000[25] <- 2
+  10000[24] <- 0
+  goto 104
+104:
+  goto 105 if 10000[24] else 126
 105:
-  10000[25] <- 0
-  goto 106
-106:
-  goto 107 if 10000[25] else 128
-107:
   10000[0] <- 10000[14]
   10000[1] <- 10000[15]
   10000[2] <- 10000[18]
@@ -384,104 +375,106 @@
   10000[5] <- 10000[21]
   10000[6] <- 10000[16]
   10000[7] <- 10000[17]
-  10000[25] <- RuntimeTouchArray[10000[13] + 6]
-  10000[28] <- 0
-  10000[27] <- 3
-  10000[26] <- 10000[28]
-  goto 108
+  10000[26] <- RuntimeTouchArray[10000[13] + 6]
+  10000[29] <- 0
+  10000[28] <- 3
+  10000[27] <- 10000[29]
+  goto 106
+106:
+  10000[30] <- 10000[27] * 2
+  SetMultiply(10000, 28, 2)
+  goto 107 if ((10000[10000[30] + 1] > 10000[26]) != (10000[10000[28] + 1] > 10000[26])) else 109
+107:
+  goto 108 if (RuntimeTouchArray[10000[13] + 5] < ((((10000[10000[28]] - 10000[10000[30]]) * (10000[26] - 10000[10000[30] + 1])) / (10000[10000[28] + 1] - 10000[10000[30] + 1])) + 10000[10000[30]])) else 109
 108:
-  10000[29] <- 10000[26] * 2
-  SetMultiply(10000, 27, 2)
-  goto 109 if ((10000[10000[29] + 1] > 10000[25]) != (10000[10000[27] + 1] > 10000[25])) else 111
+  10000[29] <- !10000[29]
+  goto 109
 109:
-  goto 110 if (RuntimeTouchArray[10000[13] + 5] < ((((10000[10000[27]] - 10000[10000[29]]) * (10000[25] - 10000[10000[29] + 1])) / (10000[10000[27] + 1] - 10000[10000[29] + 1])) + 10000[10000[29]])) else 111
+  10000[30] <- 10000[27] + 1
+  goto 110 if (10000[30] < 4) else 111
 110:
-  10000[28] <- !10000[28]
-  goto 111
+  10000[28] <- 10000[27]
+  10000[27] <- 10000[30]
+  goto 106
 111:
-  10000[29] <- 10000[26] + 1
-  goto 112 if (10000[29] < 4) else 113
+  goto 112 if 10000[29] else 125
 112:
-  10000[27] <- 10000[26]
-  10000[26] <- 10000[29]
-  goto 108
+  goto 120 if (LevelMemory[17] >= 16) else 113
 113:
-  goto 114 if 10000[28] else 127
-114:
-  goto 122 if (LevelMemory[17] >= 16) else 115
-115:
   10000[12] <- 0
-  goto 116
-116:
+  goto 114
+114:
   10000[23] <- LevelMemory[17]
-  goto 117 if ((10000[23] >= 0) && (0 == (10000[23] % 1))) else 126
+  goto 115 if ((10000[23] >= 0) && (0 == (10000[23] % 1))) else 124
+115:
+  goto 116 if (10000[12] < 10000[23]) else 118
+116:
+  goto 120 if (LevelMemory[(17 + 10000[12]) + 1] == RuntimeTouchArray[10000[13]]) else 117
 117:
-  goto 118 if (10000[12] < 10000[23]) else 120
-118:
-  goto 122 if (LevelMemory[(17 + 10000[12]) + 1] == RuntimeTouchArray[10000[13]]) else 119
-119:
   IncrementPost(10000, 12)
-  goto 116
-120:
-  goto 121 if (LevelMemory[17] < 16) else 125
-121:
+  goto 114
+118:
+  goto 119 if (LevelMemory[17] < 16) else 123
+119:
   LevelMemory[(17 + LevelMemory[17]) + 1] <- RuntimeTouchArray[10000[13]]
   IncrementPost(2000, 17)
-  goto 122
-122:
-  goto 123 if 10000[10] else 124
-123:
+  goto 120
+120:
+  goto 121 if 10000[10] else 122
+121:
   EntitySharedMemoryArray[10000[11]] <- RuntimeTouchArray[10000[13]]
-  goto 128
-124:
+  goto 126
+122:
   DebugLog(55)
   DebugPause()
   goto exit
-125:
+123:
   DebugLog(54)
   DebugPause()
   goto exit
-126:
+124:
   DebugLog(53)
   DebugPause()
   goto exit
-127:
-  goto 92 if 10000[23] else 91
-128:
+125:
+  goto when 10000[25]
+    1 -> 90
+    default -> 104
+126:
   10000[10] <- SwitchWithDefault(EntityInfoArray[(EntityData[16] * 3) + 1], 1, 1, 2, 1, 3, 1, 4, 1, 5, 1, 6, 1, 7, 1, 0)
-  goto 129 if 10000[10] else 195
-129:
+  goto 127 if 10000[10] else 193
+127:
   10000[11] <- EntityData[16] * 32
-  goto 130 if (EntitySharedMemoryArray[10000[11]] > 0) else 492
-130:
+  goto 128 if (EntitySharedMemoryArray[10000[11]] > 0) else 487
+128:
   10000[12] <- (RuntimeUpdate[3] >= 0) && (0 == (RuntimeUpdate[3] % 1))
   10000[13] <- 0
-  goto 131
+  goto 129
+129:
+  goto 130 if 10000[12] else 192
+130:
+  goto 131 if (10000[13] < RuntimeUpdate[3]) else 487
 131:
-  goto 132 if 10000[12] else 194
-132:
-  goto 133 if (10000[13] < RuntimeUpdate[3]) else 492
-133:
   10000[23] <- 10000[13] * 15
   IncrementPost(10000, 13)
-  goto 134 if 10000[10] else 193
-134:
-  goto 131 if (EntitySharedMemoryArray[10000[11]] != RuntimeTouchArray[10000[23]]) else 135
-135:
+  goto 132 if 10000[10] else 191
+132:
+  goto 129 if (EntitySharedMemoryArray[10000[11]] != RuntimeTouchArray[10000[23]]) else 133
+133:
   10000[10] <- EntityData[2] == 0
-  goto 136 if EntityData[2] else 137
-136:
+  goto 134 if EntityData[2] else 135
+134:
   10000[11] <- (2 + (2 * Abs(EntityData[2]))) * LevelData[12]
-  goto 138
-137:
+  goto 136
+135:
   10000[11] <- 6 * LevelData[12]
+  goto 136
+136:
+  goto 137 if EntityData[2] else 138
+137:
+  10000[10] <- (RuntimeTouchArray[10000[23] + 11] * EntityData[2]) > 0
   goto 138
 138:
-  goto 139 if EntityData[2] else 140
-139:
-  10000[10] <- (RuntimeTouchArray[10000[23] + 11] * EntityData[2]) > 0
-  goto 140
-140:
   10000[0] <- 10000[14]
   10000[1] <- 10000[15]
   10000[2] <- 10000[18]
@@ -494,128 +487,128 @@
   10000[15] <- 0
   10000[14] <- 3
   10000[13] <- 10000[15]
-  goto 141
-141:
+  goto 139
+139:
   10000[16] <- 10000[13] * 2
   SetMultiply(10000, 14, 2)
-  goto 142 if ((10000[10000[16] + 1] > 10000[12]) != (10000[10000[14] + 1] > 10000[12])) else 144
-142:
-  goto 143 if (RuntimeTouchArray[10000[23] + 5] < ((((10000[10000[14]] - 10000[10000[16]]) * (10000[12] - 10000[10000[16] + 1])) / (10000[10000[14] + 1] - 10000[10000[16] + 1])) + 10000[10000[16]])) else 144
-143:
+  goto 140 if ((10000[10000[16] + 1] > 10000[12]) != (10000[10000[14] + 1] > 10000[12])) else 142
+140:
+  goto 141 if (RuntimeTouchArray[10000[23] + 5] < ((((10000[10000[14]] - 10000[10000[16]]) * (10000[12] - 10000[10000[16] + 1])) / (10000[10000[14] + 1] - 10000[10000[16] + 1])) + 10000[10000[16]])) else 142
+141:
   10000[15] <- !10000[15]
-  goto 144
-144:
+  goto 142
+142:
   10000[16] <- 10000[13] + 1
-  goto 145 if (10000[16] < 4) else 146
-145:
+  goto 143 if (10000[16] < 4) else 144
+143:
   10000[14] <- 10000[13]
   10000[13] <- 10000[16]
-  goto 141
+  goto 139
+144:
+  goto 145 if 10000[15] else 149
+145:
+  goto 146 if (RuntimeTouchArray[10000[23] + 13] >= 10000[11]) else 149
 146:
-  goto 147 if 10000[15] else 151
+  goto 147 if 10000[10] else 149
 147:
-  goto 148 if (RuntimeTouchArray[10000[23] + 13] >= 10000[11]) else 151
-148:
-  goto 149 if 10000[10] else 151
-149:
   10000[0] <- RuntimeUpdate[0] - RuntimeEnvironment[3]
-  goto 150 if (Abs(10000[0] - EntityData[11]) < Abs(EntityMemory[0] - EntityData[11])) else 151
-150:
+  goto 148 if (Abs(10000[0] - EntityData[11]) < Abs(EntityMemory[0] - EntityData[11])) else 149
+148:
   EntityMemory[0] <- 10000[0]
-  goto 152 if RuntimeTouchArray[10000[23] + 2] else 153
+  goto 150 if RuntimeTouchArray[10000[23] + 2] else 151
+149:
+  goto 150 if RuntimeTouchArray[10000[23] + 2] else 151
+150:
+  goto 152 if RuntimeTouchArray[10000[23] + 2] else 487
 151:
-  goto 152 if RuntimeTouchArray[10000[23] + 2] else 153
+  goto 152 if (EntityMemory[0] >= EntityData[11]) else 487
 152:
-  goto 154 if RuntimeTouchArray[10000[23] + 2] else 492
-153:
-  goto 154 if (EntityMemory[0] >= EntityData[11]) else 492
-154:
   10000[0] <- EntityMemory[0]
   10000[1] <- Judge(10000[0], EntityData[11], EntityData[5], EntityData[6], EntityData[7], EntityData[8], EntityData[9], EntityData[10])
   EntityInput[0] <- 10000[1]
   EntityInput[1] <- Clamp(10000[0] - EntityData[11], -1, 1)
   EntityInput[3] <- EntityInput[1] * 1000
-  goto 155 if (0 != 10000[1]) else 192
+  goto 153 if (0 != 10000[1]) else 190
+153:
+  goto 167 if LevelOption[11] else 154
+154:
+  goto 155 if LevelOption[10] else 167
 155:
-  goto 169 if LevelOption[11] else 156
-156:
-  goto 157 if LevelOption[10] else 169
-157:
   goto when (10000[22] - 2)
-    0 -> 163
-    1 -> 163
-    4 -> 169
-    default -> 158
-158:
-  goto when (10000[1] - 1)
-    0 -> 162
+    0 -> 161
     1 -> 161
-    2 -> 160
-    default -> 159
-159:
-  10000[0] <- 0
-  goto 168
-160:
-  10000[0] <- 3
-  goto 168
-161:
-  10000[0] <- 2
-  goto 168
-162:
-  10000[0] <- 1
-  goto 168
-163:
+    4 -> 167
+    default -> 156
+156:
   goto when (10000[1] - 1)
-    0 -> 167
-    1 -> 166
-    2 -> 165
-    default -> 164
-164:
+    0 -> 160
+    1 -> 159
+    2 -> 158
+    default -> 157
+157:
   10000[0] <- 0
-  goto 168
-165:
+  goto 166
+158:
+  10000[0] <- 3
+  goto 166
+159:
+  10000[0] <- 2
+  goto 166
+160:
+  10000[0] <- 1
+  goto 166
+161:
+  goto when (10000[1] - 1)
+    0 -> 165
+    1 -> 164
+    2 -> 163
+    default -> 162
+162:
+  10000[0] <- 0
+  goto 166
+163:
   10000[0] <- 6
-  goto 168
-166:
+  goto 166
+164:
   10000[0] <- 5
-  goto 168
-167:
+  goto 166
+165:
   10000[0] <- 4
-  goto 168
-168:
+  goto 166
+166:
   Play(10000[0], 0)
-  goto 169
-169:
+  goto 167
+167:
   goto when 10000[22]
-    6 -> 192
+    6 -> 190
+    default -> 168
+168:
+  goto 169 if LevelOption[6] else 190
+169:
+  goto when (10000[22] - 1)
+    0 -> 174
+    1 -> 173
+    2 -> 172
+    3 -> 171
+    4 -> 171
+    6 -> 171
     default -> 170
 170:
-  goto 171 if LevelOption[6] else 192
-171:
-  goto when (10000[22] - 1)
-    0 -> 176
-    1 -> 175
-    2 -> 174
-    3 -> 173
-    4 -> 173
-    6 -> 173
-    default -> 172
-172:
   10000[0] <- 0
-  goto 177
-173:
+  goto 175
+171:
   10000[0] <- 3
-  goto 177
-174:
+  goto 175
+172:
   10000[0] <- If(10000[9], 8, 10)
-  goto 177
-175:
+  goto 175
+173:
   10000[0] <- 6
-  goto 177
-176:
+  goto 175
+174:
   10000[0] <- 1
-  goto 177
-177:
+  goto 175
+175:
   10000[1] <- 10000[8] - (LevelData[11] / 2)
   10000[2] <- (LevelData[8] * 10000[1]) + LevelData[10]
   10000[3] <- ((LevelData[2] * 10000[1]) + LevelData[4]) / 10000[2]
@@ -627,29 +620,29 @@
   10000[4] <- Power(Power(10000[5] - 10000[3], 2) + Power(10000[2] - 10000[1], 2), 0.5)
   SpawnParticleEffect(10000[0], 10000[3], 10000[1], 10000[3], 10000[1] + 10000[4], 10000[5], 10000[2] + 10000[4], 10000[5], 10000[2], 0.5, 0)
   goto when (10000[22] - 1)
-    0 -> 182
-    1 -> 181
-    2 -> 180
-    3 -> 179
-    4 -> 179
-    6 -> 179
-    default -> 178
-178:
+    0 -> 180
+    1 -> 179
+    2 -> 178
+    3 -> 177
+    4 -> 177
+    6 -> 177
+    default -> 176
+176:
   10000[0] <- 0
-  goto 183
-179:
+  goto 181
+177:
   10000[0] <- 4
-  goto 183
-180:
+  goto 181
+178:
   10000[0] <- If(10000[9], 9, 11)
-  goto 183
-181:
+  goto 181
+179:
   10000[0] <- 7
-  goto 183
-182:
+  goto 181
+180:
   10000[0] <- 2
-  goto 183
-183:
+  goto 181
+181:
   10000[1] <- 10000[8] + ((LevelData[11] * 1.8) / 2)
   10000[2] <- 10000[8] - ((LevelData[11] * 1.8) / 2)
   10000[3] <- LevelData[2] * 10000[2]
@@ -670,130 +663,128 @@
   10000[12] <- (10000[6] + 10000[10]) / 2
   10000[3] <- ((((10000[7] - 10000[3]) + 10000[10]) - 10000[6]) / 2) / 2
   SpawnParticleEffect(10000[0], 10000[12] - 10000[3], (10000[4] + (LevelData[6] * -((LevelData[11] * 1.8) / 2)) + LevelData[7]) / 10000[5], 10000[11] - 10000[3], (10000[4] + (LevelData[6] * ((LevelData[11] * 1.8) / 2)) + LevelData[7]) / 10000[2], 10000[11] + 10000[3], (10000[8] + (LevelData[6] * ((LevelData[11] * 1.8) / 2)) + LevelData[7]) / 10000[1], 10000[12] + 10000[3], (10000[8] + (LevelData[6] * -((LevelData[11] * 1.8) / 2)) + LevelData[7]) / 10000[9], 0.5, 0)
-  goto 184 if LevelOption[7] else 192
-184:
-  goto 185 if (LevelData[16] % 1) else 186
-185:
+  goto 182 if LevelOption[7] else 190
+182:
+  goto 183 if (LevelData[16] % 1) else 184
+183:
   DebugLog(60)
   DebugPause()
   goto exit
-186:
+184:
   10000[0] <- 0
-  goto 187
-187:
-  goto 188 if (10000[0] < LevelData[16]) else 191
-188:
+  goto 185
+185:
+  goto 186 if (10000[0] < LevelData[16]) else 189
+186:
   10000[1] <- 10000[0] + 1
   10000[0] <- 16 + (10000[0] * 9)
-  goto 189 if (EntityData[0] == LevelData[10000[0] + 1]) else 190
-189:
+  goto 187 if (EntityData[0] == LevelData[10000[0] + 1]) else 188
+187:
   SpawnParticleEffect(0, LevelData[10000[0] + 2], LevelData[10000[0] + 3], LevelData[10000[0] + 4], LevelData[10000[0] + 5], LevelData[10000[0] + 6], LevelData[10000[0] + 7], LevelData[10000[0] + 8], LevelData[10000[0] + 9], 0.2, 0)
-  goto 192
-190:
+  goto 190
+188:
   10000[0] <- 10000[1]
-  goto 187
-191:
+  goto 185
+189:
   DebugLog(61)
   DebugPause()
   goto exit
-192:
+190:
   EntityDespawn[0] <- 1
   EntitySharedMemory[2] <- 1
   goto exit
-193:
+191:
   DebugLog(59)
   DebugPause()
   goto exit
-194:
+192:
   DebugLog(57)
   DebugPause()
   goto exit
-195:
+193:
   DebugLog(56)
   DebugPause()
   goto exit
-196:
+194:
   DebugLog(50)
   DebugPause()
   goto exit
-197:
+195:
   DebugLog(49)
   DebugPause()
   goto exit
-198:
-  goto 199 if (EntityData[3] > 0) else 206
-199:
+196:
+  goto 197 if (EntityData[3] > 0) else 204
+197:
   10000[0] <- EntityData[16] * 3
   10000[1] <- SwitchWithDefault(EntityInfoArray[10000[0] + 1], 1, 1, 2, 1, 3, 1, 4, 1, 5, 1, 6, 1, 7, 1, 0)
-  goto 200 if 10000[1] else 205
-200:
+  goto 198 if 10000[1] else 203
+198:
   10000[2] <- EntitySharedMemoryArray[(2 + (EntityData[16] * 32))]
-  goto 203 if 10000[2] else 201
-201:
-  goto 202 if 10000[1] else 204
-202:
+  goto 201 if 10000[2] else 199
+199:
+  goto 200 if 10000[1] else 202
+200:
   10000[2] <- 2 == EntityInfoArray[10000[0] + 2]
-  goto 203
+  goto 201
+201:
+  goto 204 if 10000[2] else 487
+202:
+  DebugLog(27)
+  DebugPause()
+  goto exit
 203:
-  goto 206 if 10000[2] else 492
+  DebugLog(27)
+  DebugPause()
+  goto exit
 204:
-  DebugLog(27)
-  DebugPause()
-  goto exit
+  goto 205 if (EntityData[14] <= RuntimeUpdate[0]) else 487
 205:
-  DebugLog(27)
-  DebugPause()
-  goto exit
+  goto 206 if (RuntimeUpdate[0] <= EntityData[15]) else 487
 206:
-  goto 207 if (EntityData[14] <= RuntimeUpdate[0]) else 492
-207:
-  goto 208 if (RuntimeUpdate[0] <= EntityData[15]) else 492
-208:
   10000[10] <- SwitchWithDefault(EntityInfoArray[(EntityData[16] * 3) + 1], 1, 1, 2, 1, 3, 1, 4, 1, 5, 1, 6, 1, 7, 1, 0)
-  goto 209 if 10000[10] else 304
-209:
+  goto 207 if 10000[10] else 301
+207:
   10000[11] <- EntityData[16] * 32
-  goto 245 if (EntitySharedMemoryArray[10000[11]] > 0) else 210
-210:
+  goto 242 if (EntitySharedMemoryArray[10000[11]] > 0) else 208
+208:
   10000[13] <- (RuntimeUpdate[3] >= 0) && (0 == (RuntimeUpdate[3] % 1))
   10000[23] <- 0
-  goto 211
+  goto 209
+209:
+  goto 210 if 10000[13] else 300
+210:
+  goto 211 if (10000[23] < RuntimeUpdate[3]) else 218
 211:
+  10000[12] <- 10000[23] * 15
+  IncrementPost(10000, 23)
   10000[24] <- 0
   goto 212
 212:
-  goto 213 if 10000[13] else 303
+  10000[25] <- LevelMemory[17]
+  goto 213 if ((10000[25] >= 0) && (0 == (10000[25] % 1))) else 217
 213:
-  goto 214 if (10000[24] < RuntimeUpdate[3]) else 221
+  goto 214 if (10000[24] < 10000[25]) else 216
 214:
-  10000[12] <- 10000[24] * 15
-  IncrementPost(10000, 24)
-  10000[25] <- 0
-  goto 215
+  goto 209 if (LevelMemory[(17 + 10000[24]) + 1] == RuntimeTouchArray[10000[12]]) else 215
 215:
-  10000[26] <- LevelMemory[17]
-  goto 216 if ((10000[26] >= 0) && (0 == (10000[26] % 1))) else 220
+  IncrementPost(10000, 24)
+  goto 212
 216:
-  goto 217 if (10000[25] < 10000[26]) else 219
+  10000[25] <- 1
+  10000[24] <- 10000[25]
+  goto 219
 217:
-  goto 212 if (LevelMemory[(17 + 10000[25]) + 1] == RuntimeTouchArray[10000[12]]) else 218
-218:
-  IncrementPost(10000, 25)
-  goto 215
-219:
-  10000[23] <- 1
-  10000[25] <- 10000[23]
-  goto 222
-220:
   DebugLog(31)
   DebugPause()
   goto exit
-221:
-  10000[25] <- 0
-  goto 222
-222:
-  goto 223 if 10000[25] else 245
-223:
+218:
+  10000[25] <- 2
+  10000[24] <- 0
+  goto 219
+219:
+  goto 220 if 10000[24] else 242
+220:
   10000[0] <- 10000[14]
   10000[1] <- 10000[15]
   10000[2] <- 10000[18]
@@ -802,92 +793,94 @@
   10000[5] <- 10000[21]
   10000[6] <- 10000[16]
   10000[7] <- 10000[17]
-  10000[25] <- RuntimeTouchArray[10000[12] + 6]
-  10000[28] <- 0
-  10000[27] <- 3
-  10000[26] <- 10000[28]
+  10000[26] <- RuntimeTouchArray[10000[12] + 6]
+  10000[29] <- 0
+  10000[28] <- 3
+  10000[27] <- 10000[29]
+  goto 221
+221:
+  10000[30] <- 10000[27] * 2
+  SetMultiply(10000, 28, 2)
+  goto 222 if ((10000[10000[30] + 1] > 10000[26]) != (10000[10000[28] + 1] > 10000[26])) else 224
+222:
+  goto 223 if (RuntimeTouchArray[10000[12] + 5] < ((((10000[10000[28]] - 10000[10000[30]]) * (10000[26] - 10000[10000[30] + 1])) / (10000[10000[28] + 1] - 10000[10000[30] + 1])) + 10000[10000[30]])) else 224
+223:
+  10000[29] <- !10000[29]
   goto 224
 224:
-  10000[29] <- 10000[26] * 2
-  SetMultiply(10000, 27, 2)
-  goto 225 if ((10000[10000[29] + 1] > 10000[25]) != (10000[10000[27] + 1] > 10000[25])) else 227
+  10000[30] <- 10000[27] + 1
+  goto 225 if (10000[30] < 4) else 226
 225:
-  goto 226 if (RuntimeTouchArray[10000[12] + 5] < ((((10000[10000[27]] - 10000[10000[29]]) * (10000[25] - 10000[10000[29] + 1])) / (10000[10000[27] + 1] - 10000[10000[29] + 1])) + 10000[10000[29]])) else 227
+  10000[28] <- 10000[27]
+  10000[27] <- 10000[30]
+  goto 221
 226:
-  10000[28] <- !10000[28]
-  goto 227
+  goto 227 if 10000[29] else 241
 227:
-  10000[29] <- 10000[26] + 1
-  goto 228 if (10000[29] < 4) else 229
+  goto 241 if RuntimeTouchArray[10000[12] + 2] else 228
 228:
-  10000[27] <- 10000[26]
-  10000[26] <- 10000[29]
-  goto 224
+  goto 236 if (LevelMemory[17] >= 16) else 229
 229:
-  goto 230 if 10000[28] else 244
-230:
-  goto 244 if RuntimeTouchArray[10000[12] + 2] else 231
-231:
-  goto 239 if (LevelMemory[17] >= 16) else 232
-232:
   10000[13] <- 0
-  goto 233
-233:
+  goto 230
+230:
   10000[23] <- LevelMemory[17]
-  goto 234 if ((10000[23] >= 0) && (0 == (10000[23] % 1))) else 243
-234:
-  goto 235 if (10000[13] < 10000[23]) else 237
-235:
-  goto 239 if (LevelMemory[(17 + 10000[13]) + 1] == RuntimeTouchArray[10000[12]]) else 236
-236:
+  goto 231 if ((10000[23] >= 0) && (0 == (10000[23] % 1))) else 240
+231:
+  goto 232 if (10000[13] < 10000[23]) else 234
+232:
+  goto 236 if (LevelMemory[(17 + 10000[13]) + 1] == RuntimeTouchArray[10000[12]]) else 233
+233:
   IncrementPost(10000, 13)
-  goto 233
-237:
-  goto 238 if (LevelMemory[17] < 16) else 242
-238:
+  goto 230
+234:
+  goto 235 if (LevelMemory[17] < 16) else 239
+235:
   LevelMemory[(17 + LevelMemory[17]) + 1] <- RuntimeTouchArray[10000[12]]
   IncrementPost(2000, 17)
-  goto 239
-239:
-  goto 240 if 10000[10] else 241
-240:
+  goto 236
+236:
+  goto 237 if 10000[10] else 238
+237:
   EntitySharedMemoryArray[10000[11]] <- RuntimeTouchArray[10000[12]]
-  goto 245
-241:
+  goto 242
+238:
   DebugLog(34)
   DebugPause()
   goto exit
-242:
+239:
   DebugLog(33)
   DebugPause()
   goto exit
-243:
+240:
   DebugLog(32)
   DebugPause()
   goto exit
+241:
+  goto when 10000[25]
+    1 -> 209
+    default -> 219
+242:
+  goto 243 if 10000[10] else 299
+243:
+  goto 244 if (EntitySharedMemoryArray[10000[11]] > 0) else 487
 244:
-  goto 212 if 10000[23] else 211
-245:
-  goto 246 if 10000[10] else 302
-246:
-  goto 247 if (EntitySharedMemoryArray[10000[11]] > 0) else 492
-247:
   10000[12] <- (RuntimeUpdate[3] >= 0) && (0 == (RuntimeUpdate[3] % 1))
   10000[13] <- 0
-  goto 248
-248:
-  goto 249 if 10000[12] else 301
-249:
-  goto 250 if (10000[13] < RuntimeUpdate[3]) else 492
-250:
+  goto 245
+245:
+  goto 246 if 10000[12] else 298
+246:
+  goto 247 if (10000[13] < RuntimeUpdate[3]) else 487
+247:
   10000[23] <- 10000[13] * 15
   IncrementPost(10000, 13)
-  goto 251 if 10000[10] else 300
-251:
-  goto 248 if (EntitySharedMemoryArray[10000[11]] != RuntimeTouchArray[10000[23]]) else 252
-252:
-  goto 253 if RuntimeTouchArray[10000[23] + 2] else 492
-253:
+  goto 248 if 10000[10] else 297
+248:
+  goto 245 if (EntitySharedMemoryArray[10000[11]] != RuntimeTouchArray[10000[23]]) else 249
+249:
+  goto 250 if RuntimeTouchArray[10000[23] + 2] else 487
+250:
   10000[0] <- 10000[14]
   10000[1] <- 10000[15]
   10000[2] <- 10000[18]
@@ -900,112 +893,112 @@
   10000[13] <- 0
   10000[12] <- 3
   10000[11] <- 10000[13]
-  goto 254
-254:
+  goto 251
+251:
   10000[14] <- 10000[11] * 2
   SetMultiply(10000, 12, 2)
-  goto 255 if ((10000[10000[14] + 1] > 10000[10]) != (10000[10000[12] + 1] > 10000[10])) else 257
-255:
-  goto 256 if (RuntimeTouchArray[10000[23] + 5] < ((((10000[10000[12]] - 10000[10000[14]]) * (10000[10] - 10000[10000[14] + 1])) / (10000[10000[12] + 1] - 10000[10000[14] + 1])) + 10000[10000[14]])) else 257
-256:
+  goto 252 if ((10000[10000[14] + 1] > 10000[10]) != (10000[10000[12] + 1] > 10000[10])) else 254
+252:
+  goto 253 if (RuntimeTouchArray[10000[23] + 5] < ((((10000[10000[12]] - 10000[10000[14]]) * (10000[10] - 10000[10000[14] + 1])) / (10000[10000[12] + 1] - 10000[10000[14] + 1])) + 10000[10000[14]])) else 254
+253:
   10000[13] <- !10000[13]
-  goto 257
-257:
+  goto 254
+254:
   10000[14] <- 10000[11] + 1
-  goto 258 if (10000[14] < 4) else 259
-258:
+  goto 255 if (10000[14] < 4) else 256
+255:
   10000[12] <- 10000[11]
   10000[11] <- 10000[14]
-  goto 254
-259:
-  goto 260 if 10000[13] else 299
-260:
+  goto 251
+256:
+  goto 257 if 10000[13] else 296
+257:
   10000[0] <- RuntimeUpdate[0] - RuntimeEnvironment[3]
   10000[1] <- Judge(10000[0], EntityData[11], EntityData[5], EntityData[6], EntityData[7], EntityData[8], EntityData[9], EntityData[10])
   EntityInput[0] <- 10000[1]
   EntityInput[1] <- Clamp(10000[0] - EntityData[11], -1, 1)
   EntityInput[3] <- EntityInput[1] * 1000
-  goto 261 if (0 != 10000[1]) else 298
-261:
-  goto 275 if LevelOption[11] else 262
-262:
-  goto 263 if LevelOption[10] else 275
-263:
+  goto 258 if (0 != 10000[1]) else 295
+258:
+  goto 272 if LevelOption[11] else 259
+259:
+  goto 260 if LevelOption[10] else 272
+260:
   goto when (10000[22] - 2)
-    0 -> 269
-    1 -> 269
-    4 -> 275
-    default -> 264
+    0 -> 266
+    1 -> 266
+    4 -> 272
+    default -> 261
+261:
+  goto when (10000[1] - 1)
+    0 -> 265
+    1 -> 264
+    2 -> 263
+    default -> 262
+262:
+  10000[0] <- 0
+  goto 271
+263:
+  10000[0] <- 3
+  goto 271
 264:
-  goto when (10000[1] - 1)
-    0 -> 268
-    1 -> 267
-    2 -> 266
-    default -> 265
-265:
-  10000[0] <- 0
-  goto 274
-266:
-  10000[0] <- 3
-  goto 274
-267:
   10000[0] <- 2
-  goto 274
-268:
+  goto 271
+265:
   10000[0] <- 1
-  goto 274
-269:
+  goto 271
+266:
   goto when (10000[1] - 1)
-    0 -> 273
-    1 -> 272
-    2 -> 271
-    default -> 270
-270:
+    0 -> 270
+    1 -> 269
+    2 -> 268
+    default -> 267
+267:
   10000[0] <- 0
-  goto 274
-271:
+  goto 271
+268:
   10000[0] <- 6
-  goto 274
-272:
+  goto 271
+269:
   10000[0] <- 5
-  goto 274
-273:
+  goto 271
+270:
   10000[0] <- 4
-  goto 274
-274:
+  goto 271
+271:
   Play(10000[0], 0)
-  goto 275
-275:
+  goto 272
+272:
   goto when 10000[22]
-    6 -> 298
-    default -> 276
-276:
-  goto 277 if LevelOption[6] else 298
-277:
+    6 -> 295
+    default -> 273
+273:
+  goto 274 if LevelOption[6] else 295
+274:
   goto when (10000[22] - 1)
-    0 -> 282
-    1 -> 281
-    2 -> 280
-    3 -> 279
-    4 -> 279
-    6 -> 279
-    default -> 278
-278:
+    0 -> 279
+    1 -> 278
+    2 -> 277
+    3 -> 276
+    4 -> 276
+    6 -> 276
+    default -> 275
+275:
   10000[0] <- 0
-  goto 283
-279:
+  goto 280
+276:
   10000[0] <- 3
-  goto 283
-280:
+  goto 280
+277:
   10000[0] <- If(10000[9], 8, 10)
-  goto 283
-281:
+  goto 280
+278:
   10000[0] <- 6
-  goto 283
-282:
+  goto 280
+279:
   10000[0] <- 1
-  goto 283
-283:
+  goto 280
+280:
   10000[1] <- 10000[8] - (LevelData[11] / 2)
   10000[2] <- (LevelData[8] * 10000[1]) + LevelData[10]
   10000[3] <- ((LevelData[2] * 10000[1]) + LevelData[4]) / 10000[2]
@@ -1017,29 +1010,29 @@
   10000[4] <- Power(Power(10000[5] - 10000[3], 2) + Power(10000[2] - 10000[1], 2), 0.5)
   SpawnParticleEffect(10000[0], 10000[3], 10000[1], 10000[3], 10000[1] + 10000[4], 10000[5], 10000[2] + 10000[4], 10000[5], 10000[2], 0.5, 0)
   goto when (10000[22] - 1)
-    0 -> 288
-    1 -> 287
-    2 -> 286
-    3 -> 285
-    4 -> 285
-    6 -> 285
-    default -> 284
-284:
+    0 -> 285
+    1 -> 284
+    2 -> 283
+    3 -> 282
+    4 -> 282
+    6 -> 282
+    default -> 281
+281:
   10000[0] <- 0
-  goto 289
-285:
+  goto 286
+282:
   10000[0] <- 4
-  goto 289
-286:
+  goto 286
+283:
   10000[0] <- If(10000[9], 9, 11)
-  goto 289
-287:
+  goto 286
+284:
   10000[0] <- 7
-  goto 289
-288:
+  goto 286
+285:
   10000[0] <- 2
-  goto 289
-289:
+  goto 286
+286:
   10000[1] <- 10000[8] + ((LevelData[11] * 1.8) / 2)
   10000[2] <- 10000[8] - ((LevelData[11] * 1.8) / 2)
   10000[3] <- LevelData[2] * 10000[2]
@@ -1060,137 +1053,135 @@
   10000[12] <- (10000[6] + 10000[10]) / 2
   10000[3] <- ((((10000[7] - 10000[3]) + 10000[10]) - 10000[6]) / 2) / 2
   SpawnParticleEffect(10000[0], 10000[12] - 10000[3], (10000[4] + (LevelData[6] * -((LevelData[11] * 1.8) / 2)) + LevelData[7]) / 10000[5], 10000[11] - 10000[3], (10000[4] + (LevelData[6] * ((LevelData[11] * 1.8) / 2)) + LevelData[7]) / 10000[2], 10000[11] + 10000[3], (10000[8] + (LevelData[6] * ((LevelData[11] * 1.8) / 2)) + LevelData[7]) / 10000[1], 10000[12] + 10000[3], (10000[8] + (LevelData[6] * -((LevelData[11] * 1.8) / 2)) + LevelData[7]) / 10000[9], 0.5, 0)
-  goto 290 if LevelOption[7] else 298
-290:
-  goto 291 if (LevelData[16] % 1) else 292
-291:
+  goto 287 if LevelOption[7] else 295
+287:
+  goto 288 if (LevelData[16] % 1) else 289
+288:
   DebugLog(39)
   DebugPause()
   goto exit
-292:
+289:
   10000[0] <- 0
-  goto 293
-293:
-  goto 294 if (10000[0] < LevelData[16]) else 297
-294:
+  goto 290
+290:
+  goto 291 if (10000[0] < LevelData[16]) else 294
+291:
   10000[1] <- 10000[0] + 1
   10000[0] <- 16 + (10000[0] * 9)
-  goto 295 if (EntityData[0] == LevelData[10000[0] + 1]) else 296
-295:
+  goto 292 if (EntityData[0] == LevelData[10000[0] + 1]) else 293
+292:
   SpawnParticleEffect(0, LevelData[10000[0] + 2], LevelData[10000[0] + 3], LevelData[10000[0] + 4], LevelData[10000[0] + 5], LevelData[10000[0] + 6], LevelData[10000[0] + 7], LevelData[10000[0] + 8], LevelData[10000[0] + 9], 0.2, 0)
-  goto 298
-296:
+  goto 295
+293:
   10000[0] <- 10000[1]
-  goto 293
-297:
+  goto 290
+294:
   DebugLog(40)
   DebugPause()
   goto exit
-298:
+295:
   EntityDespawn[0] <- 1
   EntitySharedMemory[2] <- 1
   goto exit
-299:
+296:
   EntityInput[0] <- 0
   EntityInput[1] <- 1
   EntityInput[3] <- EntityInput[1] * 1000
   EntityDespawn[0] <- 1
   EntitySharedMemory[2] <- 1
   goto exit
-300:
+297:
   DebugLog(38)
   DebugPause()
   goto exit
-301:
+298:
   DebugLog(36)
   DebugPause()
   goto exit
-302:
+299:
   DebugLog(35)
   DebugPause()
   goto exit
-303:
+300:
   DebugLog(29)
   DebugPause()
   goto exit
-304:
+301:
   DebugLog(28)
   DebugPause()
   goto exit
-305:
-  goto 306 if (EntityData[3] > 0) else 313
-306:
+302:
+  goto 303 if (EntityData[3] > 0) else 310
+303:
   10000[0] <- EntityData[16] * 3
   10000[1] <- SwitchWithDefault(EntityInfoArray[10000[0] + 1], 1, 1, 2, 1, 3, 1, 4, 1, 5, 1, 6, 1, 7, 1, 0)
-  goto 307 if 10000[1] else 312
-307:
+  goto 304 if 10000[1] else 309
+304:
   10000[2] <- EntitySharedMemoryArray[(2 + (EntityData[16] * 32))]
-  goto 310 if 10000[2] else 308
-308:
-  goto 309 if 10000[1] else 311
-309:
+  goto 307 if 10000[2] else 305
+305:
+  goto 306 if 10000[1] else 308
+306:
   10000[2] <- 2 == EntityInfoArray[10000[0] + 2]
-  goto 310
+  goto 307
+307:
+  goto 310 if 10000[2] else 487
+308:
+  DebugLog(13)
+  DebugPause()
+  goto exit
+309:
+  DebugLog(13)
+  DebugPause()
+  goto exit
 310:
-  goto 313 if 10000[2] else 492
+  goto 311 if (EntityData[14] <= RuntimeUpdate[0]) else 487
 311:
-  DebugLog(13)
-  DebugPause()
-  goto exit
+  goto 312 if (RuntimeUpdate[0] <= EntityData[15]) else 487
 312:
-  DebugLog(13)
-  DebugPause()
-  goto exit
-313:
-  goto 314 if (EntityData[14] <= RuntimeUpdate[0]) else 492
-314:
-  goto 315 if (RuntimeUpdate[0] <= EntityData[15]) else 492
-315:
   10000[10] <- SwitchWithDefault(EntityInfoArray[(EntityData[16] * 3) + 1], 1, 1, 2, 1, 3, 1, 4, 1, 5, 1, 6, 1, 7, 1, 0)
-  goto 316 if 10000[10] else 412
-316:
+  goto 313 if 10000[10] else 408
+313:
   10000[12] <- EntityData[16] * 32
-  goto 352 if (EntitySharedMemoryArray[10000[12]] > 0) else 317
-317:
+  goto 348 if (EntitySharedMemoryArray[10000[12]] > 0) else 314
+314:
   10000[13] <- (RuntimeUpdate[3] >= 0) && (0 == (RuntimeUpdate[3] % 1))
   10000[23] <- 0
+  goto 315
+315:
+  goto 316 if 10000[13] else 407
+316:
+  goto 317 if (10000[23] < RuntimeUpdate[3]) else 324
+317:
+  10000[11] <- 10000[23] * 15
+  IncrementPost(10000, 23)
+  10000[24] <- 0
   goto 318
 318:
-  10000[24] <- 0
-  goto 319
+  10000[25] <- LevelMemory[17]
+  goto 319 if ((10000[25] >= 0) && (0 == (10000[25] % 1))) else 323
 319:
-  goto 320 if 10000[13] else 411
+  goto 320 if (10000[24] < 10000[25]) else 322
 320:
-  goto 321 if (10000[24] < RuntimeUpdate[3]) else 328
+  goto 315 if (LevelMemory[(17 + 10000[24]) + 1] == RuntimeTouchArray[10000[11]]) else 321
 321:
-  10000[11] <- 10000[24] * 15
   IncrementPost(10000, 24)
-  10000[25] <- 0
-  goto 322
+  goto 318
 322:
-  10000[26] <- LevelMemory[17]
-  goto 323 if ((10000[26] >= 0) && (0 == (10000[26] % 1))) else 327
+  10000[25] <- 1
+  10000[24] <- 10000[25]
+  goto 325
 323:
-  goto 324 if (10000[25] < 10000[26]) else 326
-324:
-  goto 319 if (LevelMemory[(17 + 10000[25]) + 1] == RuntimeTouchArray[10000[11]]) else 325
-325:
-  IncrementPost(10000, 25)
-  goto 322
-326:
-  10000[23] <- 1
-  10000[25] <- 10000[23]
-  goto 329
-327:
   DebugLog(17)
   DebugPause()
   goto exit
-328:
-  10000[25] <- 0
-  goto 329
-329:
-  goto 330 if 10000[25] else 352
-330:
+324:
+  10000[25] <- 2
+  10000[24] <- 0
+  goto 325
+325:
+  goto 326 if 10000[24] else 348
+326:
   10000[0] <- 10000[14]
   10000[1] <- 10000[15]
   10000[2] <- 10000[18]
@@ -1199,90 +1190,92 @@
   10000[5] <- 10000[21]
   10000[6] <- 10000[16]
   10000[7] <- 10000[17]
-  10000[25] <- RuntimeTouchArray[10000[11] + 6]
-  10000[28] <- 0
-  10000[27] <- 3
-  10000[26] <- 10000[28]
-  goto 331
+  10000[26] <- RuntimeTouchArray[10000[11] + 6]
+  10000[29] <- 0
+  10000[28] <- 3
+  10000[27] <- 10000[29]
+  goto 327
+327:
+  10000[30] <- 10000[27] * 2
+  SetMultiply(10000, 28, 2)
+  goto 328 if ((10000[10000[30] + 1] > 10000[26]) != (10000[10000[28] + 1] > 10000[26])) else 330
+328:
+  goto 329 if (RuntimeTouchArray[10000[11] + 5] < ((((10000[10000[28]] - 10000[10000[30]]) * (10000[26] - 10000[10000[30] + 1])) / (10000[10000[28] + 1] - 10000[10000[30] + 1])) + 10000[10000[30]])) else 330
+329:
+  10000[29] <- !10000[29]
+  goto 330
+330:
+  10000[30] <- 10000[27] + 1
+  goto 331 if (10000[30] < 4) else 332
 331:
-  10000[29] <- 10000[26] * 2
-  SetMultiply(10000, 27, 2)
-  goto 332 if ((10000[10000[29] + 1] > 10000[25]) != (10000[10000[27] + 1] > 10000[25])) else 334
+  10000[28] <- 10000[27]
+  10000[27] <- 10000[30]
+  goto 327
 332:
-  goto 333 if (RuntimeTouchArray[10000[11] + 5] < ((((10000[10000[27]] - 10000[10000[29]]) * (10000[25] - 10000[10000[29] + 1])) / (10000[10000[27] + 1] - 10000[10000[29] + 1])) + 10000[10000[29]])) else 334
+  goto 333 if 10000[29] else 347
 333:
-  10000[28] <- !10000[28]
-  goto 334
+  goto 347 if RuntimeTouchArray[10000[11] + 2] else 334
 334:
-  10000[29] <- 10000[26] + 1
-  goto 335 if (10000[29] < 4) else 336
+  goto 342 if (LevelMemory[17] >= 16) else 335
 335:
-  10000[27] <- 10000[26]
-  10000[26] <- 10000[29]
-  goto 331
-336:
-  goto 337 if 10000[28] else 351
-337:
-  goto 351 if RuntimeTouchArray[10000[11] + 2] else 338
-338:
-  goto 346 if (LevelMemory[17] >= 16) else 339
-339:
   10000[13] <- 0
-  goto 340
-340:
+  goto 336
+336:
   10000[23] <- LevelMemory[17]
-  goto 341 if ((10000[23] >= 0) && (0 == (10000[23] % 1))) else 350
-341:
-  goto 342 if (10000[13] < 10000[23]) else 344
-342:
-  goto 346 if (LevelMemory[(17 + 10000[13]) + 1] == RuntimeTouchArray[10000[11]]) else 343
-343:
+  goto 337 if ((10000[23] >= 0) && (0 == (10000[23] % 1))) else 346
+337:
+  goto 338 if (10000[13] < 10000[23]) else 340
+338:
+  goto 342 if (LevelMemory[(17 + 10000[13]) + 1] == RuntimeTouchArray[10000[11]]) else 339
+339:
   IncrementPost(10000, 13)
-  goto 340
-344:
-  goto 345 if (LevelMemory[17] < 16) else 349
-345:
+  goto 336
+340:
+  goto 341 if (LevelMemory[17] < 16) else 345
+341:
   LevelMemory[(17 + LevelMemory[17]) + 1] <- RuntimeTouchArray[10000[11]]
   IncrementPost(2000, 17)
-  goto 346
-346:
-  goto 347 if 10000[10] else 348
-347:
+  goto 342
+342:
+  goto 343 if 10000[10] else 344
+343:
   EntitySharedMemoryArray[10000[12]] <- RuntimeTouchArray[10000[11]]
-  goto 352
-348:
+  goto 348
+344:
   DebugLog(20)
   DebugPause()
   goto exit
-349:
+345:
   DebugLog(19)
   DebugPause()
   goto exit
-350:
+346:
   DebugLog(18)
   DebugPause()
   goto exit
-351:
-  goto 319 if 10000[23] else 318
-352:
-  goto 353 if 10000[10] else 410
-353:
-  goto 354 if (EntitySharedMemoryArray[10000[12]] > 0) else 492
-354:
+347:
+  goto when 10000[25]
+    1 -> 315
+    default -> 325
+348:
+  goto 349 if 10000[10] else 406
+349:
+  goto 350 if (EntitySharedMemoryArray[10000[12]] > 0) else 487
+350:
   10000[11] <- (RuntimeUpdate[3] >= 0) && (0 == (RuntimeUpdate[3] % 1))
   10000[13] <- 0
-  goto 355
-355:
-  goto 356 if 10000[11] else 409
-356:
-  goto 357 if (10000[13] < RuntimeUpdate[3]) else 492
-357:
+  goto 351
+351:
+  goto 352 if 10000[11] else 405
+352:
+  goto 353 if (10000[13] < RuntimeUpdate[3]) else 487
+353:
   10000[23] <- 10000[13] * 15
   IncrementPost(10000, 13)
-  goto 358 if 10000[10] else 408
-358:
-  goto 355 if (EntitySharedMemoryArray[10000[12]] != RuntimeTouchArray[10000[23]]) else 359
-359:
+  goto 354 if 10000[10] else 404
+354:
+  goto 351 if (EntitySharedMemoryArray[10000[12]] != RuntimeTouchArray[10000[23]]) else 355
+355:
   10000[0] <- 10000[14]
   10000[1] <- 10000[15]
   10000[2] <- 10000[18]
@@ -1295,120 +1288,120 @@
   10000[13] <- 0
   10000[12] <- 3
   10000[11] <- 10000[13]
-  goto 360
-360:
+  goto 356
+356:
   10000[14] <- 10000[11] * 2
   SetMultiply(10000, 12, 2)
-  goto 361 if ((10000[10000[14] + 1] > 10000[10]) != (10000[10000[12] + 1] > 10000[10])) else 363
-361:
-  goto 362 if (RuntimeTouchArray[10000[23] + 5] < ((((10000[10000[12]] - 10000[10000[14]]) * (10000[10] - 10000[10000[14] + 1])) / (10000[10000[12] + 1] - 10000[10000[14] + 1])) + 10000[10000[14]])) else 363
-362:
+  goto 357 if ((10000[10000[14] + 1] > 10000[10]) != (10000[10000[12] + 1] > 10000[10])) else 359
+357:
+  goto 358 if (RuntimeTouchArray[10000[23] + 5] < ((((10000[10000[12]] - 10000[10000[14]]) * (10000[10] - 10000[10000[14] + 1])) / (10000[10000[12] + 1] - 10000[10000[14] + 1])) + 10000[10000[14]])) else 359
+358:
   10000[13] <- !10000[13]
-  goto 363
-363:
+  goto 359
+359:
   10000[14] <- 10000[11] + 1
-  goto 364 if (10000[14] < 4) else 365
-364:
+  goto 360 if (10000[14] < 4) else 361
+360:
   10000[12] <- 10000[11]
   10000[11] <- 10000[14]
-  goto 360
-365:
-  goto 366 if 10000[13] else 368
-366:
+  goto 356
+361:
+  goto 362 if 10000[13] else 364
+362:
   10000[0] <- RuntimeUpdate[0] - RuntimeEnvironment[3]
-  goto 367 if (Abs(10000[0] - EntityData[11]) < Abs(EntityMemory[0] - EntityData[11])) else 368
-367:
+  goto 363 if (Abs(10000[0] - EntityData[11]) < Abs(EntityMemory[0] - EntityData[11])) else 364
+363:
   EntityMemory[0] <- 10000[0]
-  goto 368
-368:
-  goto 369 if (EntityMemory[0] >= EntityData[11]) else 492
-369:
+  goto 364
+364:
+  goto 365 if (EntityMemory[0] >= EntityData[11]) else 487
+365:
   10000[0] <- EntityMemory[0]
   10000[1] <- Judge(10000[0], EntityData[11], EntityData[5], EntityData[6], EntityData[7], EntityData[8], EntityData[9], EntityData[10])
   EntityInput[0] <- 10000[1]
   EntityInput[1] <- Clamp(10000[0] - EntityData[11], -1, 1)
   EntityInput[3] <- EntityInput[1] * 1000
-  goto 370 if (0 != 10000[1]) else 407
-370:
-  goto 384 if LevelOption[11] else 371
-371:
-  goto 372 if LevelOption[10] else 384
-372:
+  goto 366 if (0 != 10000[1]) else 403
+366:
+  goto 380 if LevelOption[11] else 367
+367:
+  goto 368 if LevelOption[10] else 380
+368:
   goto when (10000[22] - 2)
-    0 -> 378
-    1 -> 378
-    4 -> 384
-    default -> 373
-373:
+    0 -> 374
+    1 -> 374
+    4 -> 380
+    default -> 369
+369:
   goto when (10000[1] - 1)
-    0 -> 377
-    1 -> 376
-    2 -> 375
-    default -> 374
-374:
+    0 -> 373
+    1 -> 372
+    2 -> 371
+    default -> 370
+370:
   10000[0] <- 0
-  goto 383
-375:
+  goto 379
+371:
   10000[0] <- 3
-  goto 383
-376:
+  goto 379
+372:
   10000[0] <- 2
-  goto 383
-377:
+  goto 379
+373:
   10000[0] <- 1
-  goto 383
-378:
+  goto 379
+374:
   goto when (10000[1] - 1)
-    0 -> 382
-    1 -> 381
-    2 -> 380
-    default -> 379
-379:
+    0 -> 378
+    1 -> 377
+    2 -> 376
+    default -> 375
+375:
   10000[0] <- 0
-  goto 383
-380:
+  goto 379
+376:
   10000[0] <- 6
-  goto 383
-381:
+  goto 379
+377:
   10000[0] <- 5
-  goto 383
-382:
+  goto 379
+378:
   10000[0] <- 4
-  goto 383
-383:
+  goto 379
+379:
   Play(10000[0], 0)
-  goto 384
-384:
+  goto 380
+380:
   goto when 10000[22]
-    6 -> 407
-    default -> 385
-385:
-  goto 386 if LevelOption[6] else 407
-386:
+    6 -> 403
+    default -> 381
+381:
+  goto 382 if LevelOption[6] else 403
+382:
   goto when (10000[22] - 1)
-    0 -> 391
-    1 -> 390
-    2 -> 389
-    3 -> 388
-    4 -> 388
-    6 -> 388
-    default -> 387
-387:
+    0 -> 387
+    1 -> 386
+    2 -> 385
+    3 -> 384
+    4 -> 384
+    6 -> 384
+    default -> 383
+383:
   10000[0] <- 0
-  goto 392
-388:
+  goto 388
+384:
   10000[0] <- 3
-  goto 392
-389:
+  goto 388
+385:
   10000[0] <- If(10000[9], 8, 10)
-  goto 392
-390:
+  goto 388
+386:
   10000[0] <- 6
-  goto 392
-391:
+  goto 388
+387:
   10000[0] <- 1
-  goto 392
-392:
+  goto 388
+388:
   10000[1] <- 10000[8] - (LevelData[11] / 2)
   10000[2] <- (LevelData[8] * 10000[1]) + LevelData[10]
   10000[3] <- ((LevelData[2] * 10000[1]) + LevelData[4]) / 10000[2]
@@ -1420,29 +1413,29 @@
   10000[4] <- Power(Power(10000[5] - 10000[3], 2) + Power(10000[2] - 10000[1], 2), 0.5)
   SpawnParticleEffect(10000[0], 10000[3], 10000[1], 10000[3], 10000[1] + 10000[4], 10000[5], 10000[2] + 10000[4], 10000[5], 10000[2], 0.5, 0)
   goto when (10000[22] - 1)
-    0 -> 397
-    1 -> 396
-    2 -> 395
-    3 -> 394
-    4 -> 394
-    6 -> 394
-    default -> 393
-393:
+    0 -> 393
+    1 -> 392
+    2 -> 391
+    3 -> 390
+    4 -> 390
+    6 -> 390
+    default -> 389
+389:
   10000[0] <- 0
-  goto 398
-394:
+  goto 394
+390:
   10000[0] <- 4
-  goto 398
-395:
+  goto 394
+391:
   10000[0] <- If(10000[9], 9, 11)
-  goto 398
-396:
+  goto 394
+392:
   10000[0] <- 7
-  goto 398
-397:
+  goto 394
+393:
   10000[0] <- 2
-  goto 398
-398:
+  goto 394
+394:
   10000[1] <- 10000[8] + ((LevelData[11] * 1.8) / 2)
   10000[2] <- 10000[8] - ((LevelData[11] * 1.8) / 2)
   10000[3] <- LevelData[2] * 10000[2]
@@ -1463,110 +1456,108 @@
   10000[12] <- (10000[6] + 10000[10]) / 2
   10000[3] <- ((((10000[7] - 10000[3]) + 10000[10]) - 10000[6]) / 2) / 2
   SpawnParticleEffect(10000[0], 10000[12] - 10000[3], (10000[4] + (LevelData[6] * -((LevelData[11] * 1.8) / 2)) + LevelData[7]) / 10000[5], 10000[11] - 10000[3], (10000[4] + (LevelData[6] * ((LevelData[11] * 1.8) / 2)) + LevelData[7]) / 10000[2], 10000[11] + 10000[3], (10000[8] + (LevelData[6] * ((LevelData[11] * 1.8) / 2)) + LevelData[7]) / 10000[1], 10000[12] + 10000[3], (10000[8] + (LevelData[6] * -((LevelData[11] * 1.8) / 2)) + LevelData[7]) / 10000[9], 0.5, 0)
-  goto 399 if LevelOption[7] else 407
-399:
-  goto 400 if (LevelData[16] % 1) else 401
-400:
+  goto 395 if LevelOption[7] else 403
+395:
+  goto 396 if (LevelData[16] % 1) else 397
+396:
   DebugLog(25)
   DebugPause()
   goto exit
-401:
+397:
   10000[0] <- 0
-  goto 402
-402:
-  goto 403 if (10000[0] < LevelData[16]) else 406
-403:
+  goto 398
+398:
+  goto 399 if (10000[0] < LevelData[16]) else 402
+399:
   10000[1] <- 10000[0] + 1
   10000[0] <- 16 + (10000[0] * 9)
-  goto 404 if (EntityData[0] == LevelData[10000[0] + 1]) else 405
-404:
+  goto 400 if (EntityData[0] == LevelData[10000[0] + 1]) else 401
+400:
   SpawnParticleEffect(0, LevelData[10000[0] + 2], LevelData[10000[0] + 3], LevelData[10000[0] + 4], LevelData[10000[0] + 5], LevelData[10000[0] + 6], LevelData[10000[0] + 7], LevelData[10000[0] + 8], LevelData[10000[0] + 9], 0.2, 0)
-  goto 407
-405:
+  goto 403
+401:
   10000[0] <- 10000[1]
-  goto 402
-406:
+  goto 398
+402:
   DebugLog(26)
   DebugPause()
   goto exit
-407:
+403:
   EntityDespawn[0] <- 1
   EntitySharedMemory[2] <- 1
   goto exit
-408:
+404:
   DebugLog(24)
   DebugPause()
   goto exit
-409:
+405:
   DebugLog(22)
   DebugPause()
   goto exit
-410:
+406:
   DebugLog(21)
   DebugPause()
   goto exit
-411:
+407:
   DebugLog(15)
   DebugPause()
   goto exit
-412:
+408:
   DebugLog(14)
   DebugPause()
   goto exit
-413:
-  goto 414 if (EntityData[14] <= RuntimeUpdate[0]) else 492
-414:
-  goto 415 if (RuntimeUpdate[0] <= EntityData[15]) else 492
-415:
+409:
+  goto 410 if (EntityData[14] <= RuntimeUpdate[0]) else 487
+410:
+  goto 411 if (RuntimeUpdate[0] <= EntityData[15]) else 487
+411:
   10000[11] <- (RuntimeUpdate[3] >= 0) && (0 == (RuntimeUpdate[3] % 1))
   10000[12] <- 0
+  goto 412
+412:
+  goto 413 if 10000[11] else 486
+413:
+  goto 414 if (10000[12] < RuntimeUpdate[3]) else 425
+414:
+  10000[10] <- 10000[12] * 15
+  IncrementPost(10000, 12)
+  goto 415 if RuntimeTouchArray[10000[10] + 1] else 412
+415:
+  10000[13] <- 0
   goto 416
 416:
-  10000[13] <- 0
-  goto 417
+  10000[23] <- LevelMemory[17]
+  goto 417 if ((10000[23] >= 0) && (0 == (10000[23] % 1))) else 424
 417:
-  goto 418 if 10000[11] else 491
+  goto 418 if (10000[13] < 10000[23]) else 421
 418:
-  goto 419 if (10000[13] < RuntimeUpdate[3]) else 430
+  goto 419 if (LevelMemory[(17 + 10000[13]) + 1] == RuntimeTouchArray[10000[10]]) else 420
 419:
-  10000[10] <- 10000[13] * 15
-  IncrementPost(10000, 13)
-  goto 420 if RuntimeTouchArray[10000[10] + 1] else 417
+  10000[13] <- 1
+  goto 422
 420:
-  10000[23] <- 0
-  goto 421
+  IncrementPost(10000, 13)
+  goto 416
 421:
-  10000[24] <- LevelMemory[17]
-  goto 422 if ((10000[24] >= 0) && (0 == (10000[24] % 1))) else 429
+  10000[13] <- 0
+  goto 422
 422:
-  goto 423 if (10000[23] < 10000[24]) else 426
+  goto 412 if 10000[13] else 423
 423:
-  goto 424 if (LevelMemory[(17 + 10000[23]) + 1] == RuntimeTouchArray[10000[10]]) else 425
-424:
   10000[23] <- 1
-  goto 427
-425:
-  IncrementPost(10000, 23)
-  goto 421
-426:
-  10000[23] <- 0
-  goto 427
-427:
-  goto 417 if 10000[23] else 428
-428:
-  10000[12] <- 1
-  10000[23] <- 10000[12]
-  goto 431
-429:
+  10000[13] <- 10000[23]
+  goto 426
+424:
   DebugLog(7)
   DebugPause()
   goto exit
-430:
-  10000[23] <- 0
-  goto 431
-431:
-  goto 432 if 10000[23] else 492
-432:
+425:
+  10000[23] <- 2
+  10000[13] <- 0
+  goto 426
+426:
+  goto 427 if 10000[13] else 487
+427:
   10000[0] <- 10000[14]
   10000[1] <- 10000[15]
   10000[2] <- 10000[18]
@@ -1575,70 +1566,88 @@
   10000[5] <- 10000[21]
   10000[6] <- 10000[16]
   10000[7] <- 10000[17]
-  10000[23] <- RuntimeTouchArray[10000[10] + 6]
-  10000[26] <- 0
-  10000[25] <- 3
-  10000[24] <- 10000[26]
-  goto 433
+  10000[24] <- RuntimeTouchArray[10000[10] + 6]
+  10000[27] <- 0
+  10000[26] <- 3
+  10000[25] <- 10000[27]
+  goto 428
+428:
+  10000[28] <- 10000[25] * 2
+  SetMultiply(10000, 26, 2)
+  goto 429 if ((10000[10000[28] + 1] > 10000[24]) != (10000[10000[26] + 1] > 10000[24])) else 431
+429:
+  goto 430 if (RuntimeTouchArray[10000[10] + 5] < ((((10000[10000[26]] - 10000[10000[28]]) * (10000[24] - 10000[10000[28] + 1])) / (10000[10000[26] + 1] - 10000[10000[28] + 1])) + 10000[10000[28]])) else 431
+430:
+  10000[27] <- !10000[27]
+  goto 431
+431:
+  10000[28] <- 10000[25] + 1
+  goto 432 if (10000[28] < 4) else 433
+432:
+  10000[26] <- 10000[25]
+  10000[25] <- 10000[28]
+  goto 428
 433:
-  10000[27] <- 10000[24] * 2
-  SetMultiply(10000, 25, 2)
-  goto 434 if ((10000[10000[27] + 1] > 10000[23]) != (10000[10000[25] + 1] > 10000[23])) else 436
+  goto 434 if 10000[27] else 485
 434:
-  goto 435 if (RuntimeTouchArray[10000[10] + 5] < ((((10000[10000[25]] - 10000[10000[27]]) * (10000[23] - 10000[10000[27] + 1])) / (10000[10000[25] + 1] - 10000[10000[27] + 1])) + 10000[10000[27]])) else 436
+  goto 442 if (LevelMemory[17] >= 16) else 435
 435:
-  10000[26] <- !10000[26]
+  10000[0] <- 0
   goto 436
 436:
-  10000[27] <- 10000[24] + 1
-  goto 437 if (10000[27] < 4) else 438
-437:
-  10000[25] <- 10000[24]
-  10000[24] <- 10000[27]
-  goto 433
-438:
-  goto 439 if 10000[26] else 490
-439:
-  goto 447 if (LevelMemory[17] >= 16) else 440
-440:
-  10000[0] <- 0
-  goto 441
-441:
   10000[1] <- LevelMemory[17]
-  goto 442 if ((10000[1] >= 0) && (0 == (10000[1] % 1))) else 489
-442:
-  goto 443 if (10000[0] < 10000[1]) else 445
-443:
-  goto 447 if (LevelMemory[(17 + 10000[0]) + 1] == RuntimeTouchArray[10000[10]]) else 444
-444:
+  goto 437 if ((10000[1] >= 0) && (0 == (10000[1] % 1))) else 484
+437:
+  goto 438 if (10000[0] < 10000[1]) else 440
+438:
+  goto 442 if (LevelMemory[(17 + 10000[0]) + 1] == RuntimeTouchArray[10000[10]]) else 439
+439:
   IncrementPost(10000, 0)
-  goto 441
-445:
-  goto 446 if (LevelMemory[17] < 16) else 488
-446:
+  goto 436
+440:
+  goto 441 if (LevelMemory[17] < 16) else 483
+441:
   LevelMemory[(17 + LevelMemory[17]) + 1] <- RuntimeTouchArray[10000[10]]
   IncrementPost(2000, 17)
-  goto 447
-447:
-  goto 448 if SwitchWithDefault(EntityInfoArray[(EntityData[16] * 3) + 1], 1, 1, 2, 1, 3, 1, 4, 1, 5, 1, 6, 1, 7, 1, 0) else 487
-448:
+  goto 442
+442:
+  goto 443 if SwitchWithDefault(EntityInfoArray[(EntityData[16] * 3) + 1], 1, 1, 2, 1, 3, 1, 4, 1, 5, 1, 6, 1, 7, 1, 0) else 482
+443:
   EntitySharedMemoryArray[(EntityData[16] * 32)] <- RuntimeTouchArray[10000[10]]
   10000[0] <- RuntimeTouchArray[10000[10] + 4]
   10000[1] <- Judge(10000[0], EntityData[11], EntityData[5], EntityData[6], EntityData[7], EntityData[8], EntityData[9], EntityData[10])
   EntityInput[0] <- 10000[1]
   EntityInput[1] <- Clamp(10000[0] - EntityData[11], -1, 1)
   EntityInput[3] <- EntityInput[1] * 1000
-  goto 449 if (0 != 10000[1]) else 486
-449:
-  goto 463 if LevelOption[11] else 450
-450:
-  goto 451 if LevelOption[10] else 463
-451:
+  goto 444 if (0 != 10000[1]) else 481
+444:
+  goto 458 if LevelOption[11] else 445
+445:
+  goto 446 if LevelOption[10] else 458
+446:
   goto when (10000[22] - 2)
-    0 -> 457
-    1 -> 457
-    4 -> 463
-    default -> 452
+    0 -> 452
+    1 -> 452
+    4 -> 458
+    default -> 447
+447:
+  goto when (10000[1] - 1)
+    0 -> 451
+    1 -> 450
+    2 -> 449
+    default -> 448
+448:
+  10000[0] <- 0
+  goto 457
+449:
+  10000[0] <- 3
+  goto 457
+450:
+  10000[0] <- 2
+  goto 457
+451:
+  10000[0] <- 1
+  goto 457
 452:
   goto when (10000[1] - 1)
     0 -> 456
@@ -1647,68 +1656,50 @@
     default -> 453
 453:
   10000[0] <- 0
-  goto 462
+  goto 457
 454:
-  10000[0] <- 3
-  goto 462
+  10000[0] <- 6
+  goto 457
 455:
-  10000[0] <- 2
-  goto 462
-456:
-  10000[0] <- 1
-  goto 462
-457:
-  goto when (10000[1] - 1)
-    0 -> 461
-    1 -> 460
-    2 -> 459
-    default -> 458
-458:
-  10000[0] <- 0
-  goto 462
-459:
-  10000[0] <- 6
-  goto 462
-460:
   10000[0] <- 5
-  goto 462
-461:
+  goto 457
+456:
   10000[0] <- 4
-  goto 462
-462:
+  goto 457
+457:
   Play(10000[0], 0)
-  goto 463
-463:
+  goto 458
+458:
   goto when 10000[22]
-    6 -> 486
-    default -> 464
-464:
-  goto 465 if LevelOption[6] else 486
-465:
+    6 -> 481
+    default -> 459
+459:
+  goto 460 if LevelOption[6] else 481
+460:
   goto when (10000[22] - 1)
-    0 -> 470
-    1 -> 469
-    2 -> 468
-    3 -> 467
-    4 -> 467
-    6 -> 467
-    default -> 466
-466:
+    0 -> 465
+    1 -> 464
+    2 -> 463
+    3 -> 462
+    4 -> 462
+    6 -> 462
+    default -> 461
+461:
   10000[0] <- 0
-  goto 471
-467:
+  goto 466
+462:
   10000[0] <- 3
-  goto 471
-468:
+  goto 466
+463:
   10000[0] <- If(10000[9], 8, 10)
-  goto 471
-469:
+  goto 466
+464:
   10000[0] <- 6
-  goto 471
-470:
+  goto 466
+465:
   10000[0] <- 1
-  goto 471
-471:
+  goto 466
+466:
   10000[1] <- 10000[8] - (LevelData[11] / 2)
   10000[2] <- (LevelData[8] * 10000[1]) + LevelData[10]
   10000[3] <- ((LevelData[2] * 10000[1]) + LevelData[4]) / 10000[2]
@@ -1720,29 +1711,29 @@
   10000[4] <- Power(Power(10000[5] - 10000[3], 2) + Power(10000[2] - 10000[1], 2), 0.5)
   SpawnParticleEffect(10000[0], 10000[3], 10000[1], 10000[3], 10000[1] + 10000[4], 10000[5], 10000[2] + 10000[4], 10000[5], 10000[2], 0.5, 0)
   goto when (10000[22] - 1)
-    0 -> 476
-    1 -> 475
-    2 -> 474
-    3 -> 473
-    4 -> 473
-    6 -> 473
-    default -> 472
-472:
+    0 -> 471
+    1 -> 470
+    2 -> 469
+    3 -> 468
+    4 -> 468
+    6 -> 468
+    default -> 467
+467:
   10000[0] <- 0
-  goto 477
-473:
+  goto 472
+468:
   10000[0] <- 4
-  goto 477
-474:
+  goto 472
+469:
   10000[0] <- If(10000[9], 9, 11)
-  goto 477
-475:
+  goto 472
+470:
   10000[0] <- 7
-  goto 477
-476:
+  goto 472
+471:
   10000[0] <- 2
-  goto 477
-477:
+  goto 472
+472:
   10000[1] <- 10000[8] + ((LevelData[11] * 1.8) / 2)
   10000[2] <- 10000[8] - ((LevelData[11] * 1.8) / 2)
   10000[3] <- LevelData[2] * 10000[2]
@@ -1763,57 +1754,59 @@
   10000[12] <- (10000[6] + 10000[10]) / 2
   10000[3] <- ((((10000[7] - 10000[3]) + 10000[10]) - 10000[6]) / 2) / 2
   SpawnParticleEffect(10000[0], 10000[12] - 10000[3], (10000[4] + (LevelData[6] * -((LevelData[11] * 1.8) / 2)) + LevelData[7]) / 10000[5], 10000[11] - 10000[3], (10000[4] + (LevelData[6] * ((LevelData[11] * 1.8) / 2)) + LevelData[7]) / 10000[2], 10000[11] + 10000[3], (10000[8] + (LevelData[6] * ((LevelData[11] * 1.8) / 2)) + LevelData[7]) / 10000[1], 10000[12] + 10000[3], (10000[8] + (LevelData[6] * -((LevelData[11] * 1.8) / 2)) + LevelData[7]) / 10000[9], 0.5, 0)
-  goto 478 if LevelOption[7] else 486
-478:
-  goto 479 if (LevelData[16] % 1) else 480
-479:
+  goto 473 if LevelOption[7] else 481
+473:
+  goto 474 if (LevelData[16] % 1) else 475
+474:
   DebugLog(11)
   DebugPause()
   goto exit
-480:
+475:
   10000[0] <- 0
-  goto 481
-481:
-  goto 482 if (10000[0] < LevelData[16]) else 485
-482:
+  goto 476
+476:
+  goto 477 if (10000[0] < LevelData[16]) else 480
+477:
   10000[1] <- 10000[0] + 1
   10000[0] <- 16 + (10000[0] * 9)
-  goto 483 if (EntityData[0] == LevelData[10000[0] + 1]) else 484
-483:
+  goto 478 if (EntityData[0] == LevelData[10000[0] + 1]) else 479
+478:
   SpawnParticleEffect(0, LevelData[10000[0] + 2], LevelData[10000[0] + 3], LevelData[10000[0] + 4], LevelData[10000[0] + 5], LevelData[10000[0] + 6], LevelData[10000[0] + 7], LevelData[10000[0] + 8], LevelData[10000[0] + 9], 0.2, 0)
-  goto 486
-484:
-  10000[0] <- 10000[1]
   goto 481
-485:
+479:
+  10000[0] <- 10000[1]
+  goto 476
+480:
   DebugLog(12)
   DebugPause()
   goto exit
-486:
+481:
   EntityDespawn[0] <- 1
   EntitySharedMemory[2] <- 1
   goto exit
-487:
+482:
   DebugLog(10)
   DebugPause()
   goto exit
-488:
+483:
   DebugLog(9)
   DebugPause()
   goto exit
-489:
+484:
   DebugLog(8)
   DebugPause()
   goto exit
-490:
-  goto 417 if 10000[12] else 416
-491:
+485:
+  goto when 10000[23]
+    1 -> 412
+    default -> 426
+486:
   DebugLog(5)
   DebugPause()
   goto exit
-492:
+487:
   goto exit
-493:
+488:
   DebugLog(1)
   DebugPause()
   goto exit

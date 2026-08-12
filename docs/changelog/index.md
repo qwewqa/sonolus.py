@@ -10,6 +10,8 @@
 - Lambdas and generator expressions now treat assignment and comprehension targets as local throughout their
   bodies.
 - Generator closures now track bindings read through nested callbacks across resumptions.
+- Generators now advance correctly when runtime control flow skips a yield or repeatedly executes the same `next`
+  expression, and remain exhausted after completion.
 - `for`, generator expressions, and `yield from` no longer trace impossible exhaustion paths for iterators that
   always yield a value.
 - Generator expressions that cannot yield or advance now terminate when runtime checks are enabled.

@@ -868,7 +868,6 @@ def _detach_next_result(value):
 @meta_fn
 def _advance_iterator_once(iterator):
     from sonolus.script.internal.visitor import (
-        Generator,
         _bind_special_method,
         compile_and_call,
         reject_custom_record_getattribute,
@@ -878,8 +877,6 @@ def _advance_iterator_once(iterator):
         return iterator.next()
     reject_custom_record_getattribute(iterator)
     next_method = _bind_special_method(iterator, "next")
-    if isinstance(iterator, Generator):
-        return compile_and_call(next_method, _single_advance=True)
     return compile_and_call(next_method)
 
 

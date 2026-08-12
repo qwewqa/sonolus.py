@@ -525,7 +525,8 @@ for x in gen():
 
 Generators are lazy: code before the first `yield` does not run until the first value is requested. Yielded
 values follow the same single-live-definition rule as function return values, and a generator function's `return`
-statements must not return a value.
+statements must not return a value. A nested generator or generator expression that captures local variables from
+an enclosing generator must be consumed before the enclosing generator suspends.
 
 ##### Reusing iterators
 

@@ -5,9 +5,12 @@ import pytest
 from sonolus.script.array import Array
 from sonolus.script.containers import Box
 from sonolus.script.debug import debug_log
-from sonolus.script.internal.context import RuntimeChecks
+from sonolus.script.internal.context import RuntimeChecks, ctx
 from sonolus.script.internal.error import CompilationError
+from sonolus.script.internal.meta_fn import meta_fn
+from sonolus.script.internal.visitor import compile_and_call
 from sonolus.script.iterator import SonolusIterator
+from sonolus.script.iterator import maybe_next as sonolus_maybe_next
 from sonolus.script.maybe import Maybe, Nothing, Some
 from sonolus.script.record import Record
 from tests.script.conftest import run_and_validate, run_compiled
@@ -19,6 +22,16 @@ def runtime_false():
 
 def runtime_true():
     return random.randrange(0, 1) == 0
+
+
+@meta_fn
+def maybe_next_generator(iterator):
+    if ctx():
+        return compile_and_call(sonolus_maybe_next, iterator)
+    try:
+        return Some(next(iterator))
+    except StopIteration:
+        return Nothing
 
 
 def test_simple_generator():
@@ -1432,7 +1445,7 @@ def test_callback_yielded_from_once_advanced_generator_captures_suspended_local(
     assert run_and_validate(fn) == 1
 
 
-def test_nested_generator_from_once_advanced_generator_captures_suspended_local():
+def test_nested_generator_capturing_suspended_generator_local_is_rejected():
     def fn():
         def outer():
             value = 1
@@ -1445,10 +1458,14 @@ def test_nested_generator_from_once_advanced_generator_captures_suspended_local(
 
         return next(next(outer()))
 
-    assert run_and_validate(fn) == 1
+    with pytest.raises(
+        CompilationError,
+        match="Nested generator captures changing local 'value' from a suspended generator, which is not supported",
+    ):
+        run_compiled(fn)
 
 
-def test_genexpr_from_once_advanced_generator_captures_suspended_local():
+def test_genexpr_capturing_suspended_generator_local_is_rejected():
     def fn():
         def outer():
             value = 1
@@ -1457,7 +1474,69 @@ def test_genexpr_from_once_advanced_generator_captures_suspended_local():
 
         return next(next(outer()))
 
+    with pytest.raises(
+        CompilationError,
+        match="Nested generator captures changing local 'value' from a suspended generator, which is not supported",
+    ):
+        run_compiled(fn)
+
+
+def test_nested_generator_capturing_active_generator_local():
+    def fn():
+        def outer():
+            value = 1
+
+            def inner():
+                yield value
+
+            yield next(inner())
+
+        return next(outer())
+
     assert run_and_validate(fn) == 1
+
+
+def test_nested_generator_capturing_invariant_suspended_generator_local():
+    def fn():
+        def outer():
+            value = (1,)
+
+            def inner():
+                yield value[0]
+
+            yield inner()
+
+        return next(next(outer()))
+
+    assert run_and_validate(fn) == 1
+
+
+def test_repeated_nested_generator_advance_capturing_changing_suspended_local_is_rejected():
+    def fn():
+        def outer():
+            value = 1
+
+            def inner():
+                yield value
+                yield value
+
+            iterator = inner()
+            yield iterator
+            value = 2
+            yield iterator
+
+        outer_iterator = outer()
+        inner_iterator = next(outer_iterator)
+        first = next(inner_iterator)
+        if runtime_true():
+            next(outer_iterator)
+        return first * 10 + next(inner_iterator)
+
+    with pytest.raises(
+        CompilationError,
+        match="Nested generator captures changing local 'value' from a suspended generator, which is not supported",
+    ):
+        run_compiled(fn)
 
 
 def test_callback_from_once_advanced_generator_does_not_read_future_unbound_local():
@@ -1667,6 +1746,246 @@ def test_yielded_lambda_reads_updated_generator_local():
         callback = next(iterator)
         next(iterator)
         return callback()
+
+    assert run_and_validate(fn) == 2
+
+
+@pytest.mark.parametrize(("condition", "expected"), [(runtime_false, 23), (runtime_true, 12)])
+def test_consecutive_next_uses_runtime_suspension_state(condition, expected):
+    def fn():
+        def gen():
+            if condition():
+                yield 1
+            yield 2
+            yield 3
+
+        iterator = gen()
+        return next(iterator) * 10 + next(iterator)
+
+    assert run_and_validate(fn) == expected
+
+
+@pytest.mark.parametrize(("condition", "expected"), [(runtime_false, 23), (runtime_true, 12)])
+def test_consecutive_next_callbacks_use_runtime_suspension_state(condition, expected):
+    def fn():
+        def gen():
+            value = 1
+            callback = lambda: value  # noqa: E731
+            if condition():
+                yield callback
+            value = 2
+            yield callback
+            value = 3
+            yield callback
+
+        iterator = gen()
+        first = next(iterator)()
+        second = next(iterator)()
+        return first * 10 + second
+
+    assert run_and_validate(fn) == expected
+
+
+@pytest.mark.parametrize(("condition", "expected"), [(runtime_false, 12), (runtime_true, 123)])
+def test_runtime_branch_can_skip_generator_next_call_site(condition, expected):
+    def fn():
+        def gen():
+            yield 1
+            yield 2
+            yield 3
+
+        iterator = gen()
+        result = 0
+        if condition():
+            result = next(iterator) * 100
+        return result + next(iterator) * 10 + next(iterator)
+
+    assert run_and_validate(fn) == expected
+
+
+def test_generator_next_call_site_can_repeat_in_runtime_loop():
+    def fn():
+        def gen():
+            yield 1
+            yield 2
+            yield 3
+
+        iterator = gen()
+        result = 0
+        for _ in Array(0, 0, 0):
+            result = result * 10 + next(iterator)
+        return result
+
+    assert run_and_validate(fn) == 123
+
+
+def test_repeated_generator_next_call_site_updates_callback_environment():
+    def fn():
+        def gen():
+            value = 1
+            callback = lambda: value  # noqa: E731
+            yield callback
+            value = 2
+            yield callback
+            value = 3
+            yield callback
+
+        iterator = gen()
+        result = 0
+        for _ in Array(0, 0, 0):
+            callback = next(iterator)
+            result = result * 10 + callback()
+        return result
+
+    assert run_and_validate(fn) == 123
+
+
+@pytest.mark.parametrize(("condition", "expected"), [(runtime_false, 1), (runtime_true, 2)])
+def test_runtime_branch_can_skip_generator_callback_advance(condition, expected):
+    def fn():
+        def gen():
+            value = 1
+            callback = lambda: value  # noqa: E731
+            yield callback
+            value = 2
+            yield callback
+
+        iterator = gen()
+        if condition():
+            next(iterator)
+        callback = next(iterator)
+        return callback()
+
+    assert run_and_validate(fn) == expected
+
+
+def test_generator_expression_forwards_updated_callback_environment():
+    def fn():
+        def inner():
+            value = 1
+            callback = lambda: value  # noqa: E731
+            yield callback
+            value = 2
+            yield callback
+
+        iterator = (callback for callback in inner())
+        first = next(iterator)()
+        second = next(iterator)()
+        return first * 10 + second
+
+    assert run_and_validate(fn) == 12
+
+
+def test_maybe_next_uses_runtime_suspension_state():
+    def fn():
+        def gen():
+            if runtime_false():
+                yield 1
+            yield 2
+            yield 3
+
+        iterator = gen()
+        debug_log(maybe_next_generator(iterator).get())
+        return maybe_next_generator(iterator).get()
+
+    assert run_and_validate(fn) == 3
+
+
+def test_yield_from_uses_inner_runtime_suspension_state():
+    def fn():
+        def inner():
+            if runtime_false():
+                yield 1
+            yield 2
+            yield 3
+
+        def outer():
+            yield from inner()
+
+        iterator = outer()
+        return next(iterator) * 10 + next(iterator)
+
+    assert run_and_validate(fn) == 23
+
+
+def test_multilevel_yield_from_uses_inner_runtime_suspension_state():
+    def fn():
+        def inner():
+            if runtime_false():
+                yield 1
+            yield 2
+            yield 3
+
+        def middle():
+            yield from inner()
+
+        def outer():
+            yield from middle()
+
+        iterator = outer()
+        return next(iterator) * 10 + next(iterator)
+
+    assert run_and_validate(fn) == 23
+
+
+def test_generator_loop_resumes_same_source_yield():
+    def fn():
+        def gen():
+            for value in Array(1, 2, 3):  # noqa: UP028
+                yield value
+
+        iterator = gen()
+        return next(iterator) * 100 + next(iterator) * 10 + next(iterator)
+
+    assert run_and_validate(fn) == 123
+
+
+def test_generator_completion_updates_yielded_callback_environment():
+    def fn():
+        def gen():
+            value = 1
+            callback = lambda: value  # noqa: E731
+            yield callback
+            value = 2
+
+        iterator = gen()
+        callback = next(iterator)
+        assert maybe_next_generator(iterator).is_nothing
+        return callback()
+
+    assert run_and_validate(fn) == 2
+
+
+def test_yield_from_completion_updates_yielded_callback_environment():
+    def fn():
+        def inner():
+            value = 1
+            callback = lambda: value  # noqa: E731
+            yield callback
+            value = 2
+
+        def outer():
+            yield from inner()
+
+        iterator = outer()
+        callback = next(iterator)
+        maybe_next_generator(iterator)
+        return callback()
+
+    assert run_and_validate(fn) == 2
+
+
+def test_exhausted_generator_does_not_replay_completion_tail():
+    def fn():
+        def gen():
+            yield 1
+            debug_log(2)
+
+        iterator = gen()
+        next(iterator)
+        first = maybe_next_generator(iterator)
+        second = maybe_next_generator(iterator)
+        return first.is_nothing + second.is_nothing
 
     assert run_and_validate(fn) == 2
 

@@ -269,7 +269,11 @@ def test_genexpr_of_gexpr():
             for x in sub_gen:
                 debug_log(x + 100)
 
-    run_and_validate(fn)
+    with pytest.raises(
+        CompilationError,
+        match="Nested generator captures changing local 'i' from a suspended generator, which is not supported",
+    ):
+        run_compiled(fn)
 
 
 def test_genexpr_with_next():

@@ -571,6 +571,7 @@ class Visitor(ast.NodeVisitor):
     yield_ctxs: list[Context]  # Contexts at yield statements, which will branch to the exit
     resume_ctxs: list[Context]  # Contexts after yield statements
     active_ctx: Context | None  # The active context for use in nested functions
+    generator_observation_ctx: Context | None
     parent: Visitor | None  # The parent visitor for use in nested functions
     used_parent_binding_values: dict[str, Value]  # Values of parent bindings used in this
     generator_dependencies: dict[tuple[int, str], tuple[Visitor, str, Value]]
@@ -596,8 +597,10 @@ class Visitor(ast.NodeVisitor):
         self.yield_ctxs = []
         self.resume_ctxs = []
         self.active_ctx = None
+        self.generator_observation_ctx = None
         self.is_running = False
         self.is_generator = False
+        self.is_in_repeated_advance = False
         self.parent = parent
         self.used_parent_binding_values = {}
         self.generator_dependencies = {}
@@ -682,13 +685,13 @@ class Visitor(ast.NodeVisitor):
             with using_ctx(before_ctx):
                 state_var._set_(0)
             with using_ctx(return_ctx):
+                state_var._set_(len(self.resume_ctxs) + 1)
                 is_present_var._set_(0)
             del before_ctx.outgoing[None]  # Unlink the state machine body from the call site
             entry = before_ctx.new_empty_disconnected()
             entry.test = state_var.ir()
             for i, tgt in enumerate([start_ctx, *self.resume_ctxs]):
                 entry.outgoing[i] = tgt
-            entry.outgoing[None] = return_ctx
             yield_indices = {yield_ctx: i for i, yield_ctx in enumerate(self.yield_ctxs)}
 
             def reachable_yields(start: Context) -> list[int]:
@@ -706,36 +709,17 @@ class Visitor(ast.NodeVisitor):
                     stack.extend(current.outgoing.values())
                 return result
 
-            suspension_yield_indices = [reachable_yields(start) for start in (start_ctx, *self.resume_ctxs)]
+            first_yield_indices = reachable_yields(start_ctx)
             yield_between_ctxs = []
             for i, out in enumerate(self.yield_ctxs, start=1):
                 between = out.branch(None)
                 with using_ctx(between):
                     state_var._set_(i)
                 yield_between_ctxs.append(between)
-            suspension_ctxs = []
-            suspension_selections = []
-            for indices in suspension_yield_indices:
-                reachable = [yield_between_ctxs[i] for i in indices]
-                if not reachable:
-                    suspension_ctxs.append(before_ctx.new_empty_disconnected())
-                elif len(reachable) == 1:
-                    suspension_ctxs.append(reachable[0])
-                else:
-                    suspension_ctx = reachable[0].copy_with_scope(Scope())
-                    Scope.apply_merge(suspension_ctx, reachable)
-                    suspension_ctxs.append(suspension_ctx)
-                selections = [(self, suspension_ctxs[-1])]
-                for index in indices:
-                    selections.extend(self.yield_suspension_selections.get(self.yield_ctxs[index], ()))
-                suspension_selections.append(selections)
             if yield_between_ctxs:
                 yield_merge_ctx = Context.meet(yield_between_ctxs)
             else:
                 yield_merge_ctx = before_ctx.new_empty_disconnected()
-            # Escaped callbacks resolve generator locals at the suspension point, not against whichever
-            # later context happened to be visited last while the generator's state machine was traced.
-            self.active_ctx = yield_merge_ctx
             if not yield_merge_ctx.live:
                 yield_value = Nothing
             else:
@@ -754,6 +738,43 @@ class Visitor(ast.NodeVisitor):
                     case ConflictBinding():
                         raise ValueError("Function has conflicting yield values")
             next_result_ctx = Context.meet([yield_merge_ctx, return_ctx])
+            self.generator_observation_ctx = next_result_ctx
+            entry.outgoing[None] = next_result_ctx
+            first_suspensions = [yield_between_ctxs[index] for index in first_yield_indices]
+            if not first_suspensions:
+                first_suspension_ctx = next_result_ctx
+            elif len(first_suspensions) == 1:
+                first_suspension_ctx = first_suspensions[0]
+            else:
+                first_suspension_ctx = first_suspensions[0].copy_with_scope(Scope())
+                Scope.apply_merge(first_suspension_ctx, first_suspensions)
+            first_selection = [(self, first_suspension_ctx)]
+            for index in first_yield_indices:
+                delegated = self.yield_suspension_selections.get(self.yield_ctxs[index])
+                if delegated is not None:
+                    first_selection.extend(delegated[0])
+            global_selection = [(self, next_result_ctx)]
+            for _, selection in self.yield_suspension_selections.values():
+                global_selection.extend(selection)
+
+            def merge_selections(selections: list[tuple[Visitor, Context]]) -> list[tuple[Visitor, Context]]:
+                by_owner = {}
+                for owner, active_ctx in selections:
+                    by_owner.setdefault(owner, []).append(active_ctx)
+                result = []
+                for owner, active_ctxs in by_owner.items():
+                    active_ctxs = list(dict.fromkeys(active_ctxs))
+                    if len(active_ctxs) == 1:
+                        merged_ctx = active_ctxs[0]
+                    else:
+                        merged_ctx = active_ctxs[0].copy_with_scope(Scope())
+                        Scope.apply_merge(merged_ctx, active_ctxs)
+                    result.append((owner, merged_ctx))
+                return result
+
+            first_selection = merge_selections(first_selection)
+            global_selection = merge_selections(global_selection)
+            self.active_ctx = next_result_ctx
             set_ctx(before_ctx)
             return_test = Num._alloc_()
             next_result_ctx.test = return_test.ir()
@@ -766,7 +787,8 @@ class Visitor(ast.NodeVisitor):
                 yield_value,
                 self.generator_dependencies,
                 self,
-                suspension_selections,
+                first_selection,
+                global_selection,
             )
         after_ctx = Context.meet([*self.return_ctxs, ctx()])
         self.active_ctx = after_ctx
@@ -878,7 +900,12 @@ class Visitor(ast.NodeVisitor):
             header_ctx = ctx().branch(None)
             set_ctx(header_ctx)
             reject_custom_record_getattribute(iterator)
-            next_value = self.handle_call(generator.iter, _bind_special_method(iterator, "next"))
+            previous_is_in_repeated_advance = self.is_in_repeated_advance
+            self.is_in_repeated_advance = True
+            try:
+                next_value = self.handle_call(generator.iter, _bind_special_method(iterator, "next"))
+            finally:
+                self.is_in_repeated_advance = previous_is_in_repeated_advance
             if not ctx().live:
                 # The header's only edge is the unconditional one into the terminating call, so returning
                 # from here leaves nothing dangling.
@@ -1861,9 +1888,9 @@ class Visitor(ast.NodeVisitor):
             raise TypeError(f"iter() returned non-iterator of type '{_type_name(iterator)}'")
         header = ctx().branch(None)
         set_ctx(header)
-        delegated_selection = None
-        if isinstance(iterator, Generator) and iterator.i < len(iterator.suspension_selections):
-            delegated_selection = iterator.suspension_selections[iterator.i]
+        delegated_selections = None
+        if isinstance(iterator, Generator):
+            delegated_selections = (iterator.first_selection, iterator.global_selection)
         reject_custom_record_getattribute(iterator)
         result = self.handle_call(node, _bind_special_method(iterator, "next"))
         if not ctx().live:
@@ -1882,8 +1909,8 @@ class Visitor(ast.NodeVisitor):
         set_ctx(some_branch)
         ctx().scope.set_value("$yield", result._value)
         self.yield_ctxs.append(ctx())
-        if delegated_selection is not None:
-            self.yield_suspension_selections[ctx()] = delegated_selection
+        if delegated_selections is not None:
+            self.yield_suspension_selections[ctx()] = delegated_selections
         resume_ctx = ctx().new_disconnected()
         self.resume_ctxs.append(resume_ctx)
         resume_ctx.outgoing[None] = header
@@ -2611,19 +2638,21 @@ class Generator(TransientValue, SonolusIterator):
         value: Maybe,
         dependencies: dict[tuple[int, str], tuple[Visitor, str, Value]],
         parent: Visitor,
-        suspension_selections: list[list[tuple[Visitor, Context]]],
+        first_selection: list[tuple[Visitor, Context]],
+        global_selection: list[tuple[Visitor, Context]],
     ):
-        self.i = 0
+        self.next_call_site = 0
         self.return_test = return_test
         self.entry = entry
         self.exit = exit_
         self.value = value
         self.dependencies = dependencies
         self.parent = parent
-        self.suspension_selections = suspension_selections
+        self.first_selection = first_selection
+        self.global_selection = global_selection
 
     @meta_fn
-    def next(self, *, _single_advance: bool = False):
+    def next(self):
         active_generator = next(
             (active_visitor for active_visitor in reversed(_ACTIVE_VISITORS) if active_visitor.is_generator), None
         )
@@ -2637,17 +2666,31 @@ class Generator(TransientValue, SonolusIterator):
                     or _ACTIVE_VISITORS.index(dependency[0]) < active_generator_index
                 }
             )
+        for owner, key, value in self.dependencies.values():
+            if not owner.is_generator or owner in _ACTIVE_VISITORS:
+                continue
+            observation_ctx = owner.generator_observation_ctx
+            binding = observation_ctx.scope.get_binding(key) if observation_ctx is not None else EmptyBinding()
+            if not isinstance(binding, ValueBinding) or binding.value is not value:
+                raise NotImplementedError(
+                    f"Nested generator captures changing local '{key}' from a suspended generator, "
+                    "which is not supported"
+                )
         self._validate_bindings()
-        suspension_index = self.i
-        self.return_test._set_(suspension_index)
+        self.return_test._set_(self.next_call_site)
         after_ctx = ctx().new_disconnected()
         ctx().outgoing[None] = self.entry
-        self.exit.outgoing[self.i] = after_ctx
-        self.i += 1
+        self.exit.outgoing[self.next_call_site] = after_ctx
+        self.next_call_site += 1
         set_ctx(after_ctx)
-        if _single_advance and suspension_index < len(self.suspension_selections):
-            for owner, suspension_ctx in self.suspension_selections[suspension_index]:
-                owner.active_ctx = suspension_ctx
+        repeating_call_site = any(
+            visitor.loop_head_ctxs or visitor.is_in_repeated_advance for visitor in _ACTIVE_VISITORS
+        )
+        selection = (
+            self.first_selection if self.next_call_site == 1 and not repeating_call_site else self.global_selection
+        )
+        for owner, active_ctx in selection:
+            owner.active_ctx = active_ctx
         return self.value
 
     def _validate_bindings(self):
