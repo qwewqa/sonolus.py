@@ -30,5 +30,8 @@ class SetImpl[Keys, OrderedKeys, Values](Record):
     @staticmethod
     def from_set(s):
         values = [validate_value(v) for v in s]
+        for value in values:
+            if not value._is_py_():
+                raise ValueError("Set members must be compile time constants")
         d = DictImpl.from_dict(dict.fromkeys(values))
         return SetImpl(d)

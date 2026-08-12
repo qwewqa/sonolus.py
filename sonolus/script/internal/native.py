@@ -5,7 +5,7 @@ from collections.abc import Callable, Iterable
 from sonolus.backend.ir import IRConst, IRInstr, IRPureInstr, IRSet
 from sonolus.backend.ops import Op
 from sonolus.script.internal.context import ctx
-from sonolus.script.internal.impl import validate_value
+from sonolus.script.internal.impl import bind_arguments, validate_value
 from sonolus.script.num import Num, _is_num
 
 
@@ -64,23 +64,31 @@ def native_function[**P, R](op: Op, const_eval: bool = False) -> Callable[[Calla
             p.kind in {inspect.Parameter.POSITIONAL_ONLY, inspect.Parameter.POSITIONAL_OR_KEYWORD} for p in params
         )
         param_defaults = tuple(p.default for p in params)
+        # Named after the impl rather than the builtin, so that a call written as `math.sin()` reaches
+        # name_builtin_in_binding_error with a prefix it recognizes and can swap for the public name.
+        too_few_message = f"{fn.__qualname__}() expected {n_required} argument{'' if n_required == 1 else 's'}, got "
 
         @functools.wraps(fn)
         def wrapper(*args: int | float | bool) -> Num:
             n = len(args)
             if n < n_required:
-                raise TypeError(f"Expected {n_params} arguments, got {n}")
+                raise TypeError(f"{too_few_message}{n}")
             if ctx():
                 if const_eval:
                     args = tuple(validate_value(arg) for arg in args)
                     if not all(_is_num(arg) for arg in args):
                         raise RuntimeError("All arguments must be of type Num")
                     if all(arg._is_py_() for arg in args):
-                        return Num._accept_(fn(*[arg._as_py_() for arg in args]))
+                        try:
+                            return Num._accept_(fn(*[arg._as_py_() for arg in args]))
+                        except (ValueError, OverflowError):
+                            # A domain error does not fold: emit the op and let the runtime decide, rather
+                            # than failing a compile over a call the program may never reach.
+                            pass
                 if simple_positional and n <= n_params:
                     full_args = args if n == n_params else args + param_defaults[n:]
                 else:
-                    bound_args = signature.bind(*args)
+                    bound_args = bind_arguments(signature, fn.__qualname__, args, {})
                     bound_args.apply_defaults()
                     full_args = bound_args.args
                 return native_call(op, *full_args)

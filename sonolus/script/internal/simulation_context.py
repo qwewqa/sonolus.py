@@ -19,9 +19,6 @@ class SimulationContext:
     _original_import: Callable[[str, Any, Any, Any, Any], Any] | None
 
     def __init__(self, *, additional_replacements: dict[Any, Any] | None = None):
-        if SimulationContext._active_context is not None:
-            raise RuntimeError("SimulationContext is already active")
-        SimulationContext._active_context = self
         self.additional_replacements = additional_replacements or {}
         self.values = {}
         self._original_values = {}
@@ -100,6 +97,10 @@ class SimulationContext:
         return hooked_import
 
     def __enter__(self) -> Self:
+        if SimulationContext._active_context is not None:
+            raise RuntimeError("SimulationContext is already active")
+        SimulationContext._active_context = self
+
         self._update_loaded_modules()
 
         self._original_import = builtins.__import__
@@ -123,7 +124,8 @@ class SimulationContext:
             self._original_values.clear()
 
         finally:
-            SimulationContext._active_context = None
+            if SimulationContext._active_context is self:
+                SimulationContext._active_context = None
 
 
 def sim_ctx() -> SimulationContext | Any:

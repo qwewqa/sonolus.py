@@ -5,6 +5,7 @@ from sonolus.backend.ops import Op
 from sonolus.script.array import Array
 from sonolus.script.array_like import ArrayLike
 from sonolus.script.containers import ArrayPointer
+from sonolus.script.debug import static_error
 from sonolus.script.globals import (
     _level_life,
     _level_score,
@@ -377,6 +378,12 @@ class UiConfig[T](Record):
         return self._underlying is not None
 
 
+def _runtime_ui_mode() -> Mode:
+    if not ctx():
+        raise RuntimeError("Runtime UI access outside of compilation")
+    return ctx().mode_state.mode
+
+
 class RuntimeUi(Record):
     """Holds the layouts for different UI elements across all modes."""
 
@@ -387,7 +394,7 @@ class RuntimeUi(Record):
 
         Available in play, watch, preview, and tutorial mode.
         """
-        match ctx().mode_state.mode:
+        match _runtime_ui_mode():
             case Mode.PLAY:
                 return UiLayout(_PlayRuntimeUi.menu)
             case Mode.WATCH:
@@ -406,7 +413,7 @@ class RuntimeUi(Record):
 
         Available in play, watch, preview, and tutorial mode.
         """
-        match ctx().mode_state.mode:
+        match _runtime_ui_mode():
             case Mode.PLAY:
                 return UiConfig(_PlayRuntimeUiConfigs.menu)
             case Mode.WATCH:
@@ -425,7 +432,7 @@ class RuntimeUi(Record):
 
         Available in play and watch mode.
         """
-        match ctx().mode_state.mode:
+        match _runtime_ui_mode():
             case Mode.PLAY:
                 return UiLayout(_PlayRuntimeUi.judgment)
             case Mode.WATCH:
@@ -440,7 +447,7 @@ class RuntimeUi(Record):
 
         Available in play and watch mode.
         """
-        match ctx().mode_state.mode:
+        match _runtime_ui_mode():
             case Mode.PLAY:
                 return UiConfig(_PlayRuntimeUiConfigs.judgment)
             case Mode.WATCH:
@@ -455,7 +462,7 @@ class RuntimeUi(Record):
 
         Available in play and watch mode.
         """
-        match ctx().mode_state.mode:
+        match _runtime_ui_mode():
             case Mode.PLAY:
                 return UiLayout(_PlayRuntimeUi.combo_value)
             case Mode.WATCH:
@@ -470,7 +477,7 @@ class RuntimeUi(Record):
 
         Available in play and watch mode.
         """
-        match ctx().mode_state.mode:
+        match _runtime_ui_mode():
             case Mode.PLAY:
                 return UiLayout(_PlayRuntimeUi.combo_text)
             case Mode.WATCH:
@@ -485,7 +492,7 @@ class RuntimeUi(Record):
 
         Available in play and watch mode.
         """
-        match ctx().mode_state.mode:
+        match _runtime_ui_mode():
             case Mode.PLAY:
                 return UiConfig(_PlayRuntimeUiConfigs.combo)
             case Mode.WATCH:
@@ -500,7 +507,7 @@ class RuntimeUi(Record):
 
         Available in play and watch mode.
         """
-        match ctx().mode_state.mode:
+        match _runtime_ui_mode():
             case Mode.PLAY:
                 return UiLayout(_PlayRuntimeUi.primary_metric_bar)
             case Mode.WATCH:
@@ -515,7 +522,7 @@ class RuntimeUi(Record):
 
         Available in play and watch mode.
         """
-        match ctx().mode_state.mode:
+        match _runtime_ui_mode():
             case Mode.PLAY:
                 return UiLayout(_PlayRuntimeUi.primary_metric_value)
             case Mode.WATCH:
@@ -530,7 +537,7 @@ class RuntimeUi(Record):
 
         Available in play and watch mode.
         """
-        match ctx().mode_state.mode:
+        match _runtime_ui_mode():
             case Mode.PLAY:
                 return UiConfig(_PlayRuntimeUiConfigs.primary_metric)
             case Mode.WATCH:
@@ -545,7 +552,7 @@ class RuntimeUi(Record):
 
         Available in play and watch mode.
         """
-        match ctx().mode_state.mode:
+        match _runtime_ui_mode():
             case Mode.PLAY:
                 return UiLayout(_PlayRuntimeUi.secondary_metric_bar)
             case Mode.WATCH:
@@ -560,7 +567,7 @@ class RuntimeUi(Record):
 
         Available in play and watch mode.
         """
-        match ctx().mode_state.mode:
+        match _runtime_ui_mode():
             case Mode.PLAY:
                 return UiLayout(_PlayRuntimeUi.secondary_metric_value)
             case Mode.WATCH:
@@ -575,7 +582,7 @@ class RuntimeUi(Record):
 
         Available in play and watch mode.
         """
-        match ctx().mode_state.mode:
+        match _runtime_ui_mode():
             case Mode.PLAY:
                 return UiConfig(_PlayRuntimeUiConfigs.secondary_metric)
             case Mode.WATCH:
@@ -590,7 +597,7 @@ class RuntimeUi(Record):
 
         Available in watch and preview mode.
         """
-        match ctx().mode_state.mode:
+        match _runtime_ui_mode():
             case Mode.WATCH:
                 return UiLayout(_WatchRuntimeUi.progress)
             case Mode.PREVIEW:
@@ -605,7 +612,7 @@ class RuntimeUi(Record):
 
         Available in watch mode.
         """
-        match ctx().mode_state.mode:
+        match _runtime_ui_mode():
             case Mode.WATCH:
                 return UiLayout(_WatchRuntimeUi.progress_graph)
             case _:
@@ -618,7 +625,7 @@ class RuntimeUi(Record):
 
         Available in watch and preview mode.
         """
-        match ctx().mode_state.mode:
+        match _runtime_ui_mode():
             case Mode.WATCH:
                 return UiConfig(_WatchRuntimeUiConfigs.progress)
             case Mode.PREVIEW:
@@ -633,7 +640,7 @@ class RuntimeUi(Record):
 
         Available in tutorial mode.
         """
-        match ctx().mode_state.mode:
+        match _runtime_ui_mode():
             case Mode.TUTORIAL:
                 return UiLayout(_TutorialRuntimeUi.previous)
             case _:
@@ -646,7 +653,7 @@ class RuntimeUi(Record):
 
         Available in tutorial mode.
         """
-        match ctx().mode_state.mode:
+        match _runtime_ui_mode():
             case Mode.TUTORIAL:
                 return UiLayout(_TutorialRuntimeUi.next)
             case _:
@@ -659,7 +666,7 @@ class RuntimeUi(Record):
 
         Available in tutorial mode.
         """
-        match ctx().mode_state.mode:
+        match _runtime_ui_mode():
             case Mode.TUTORIAL:
                 return UiConfig(_TutorialRuntimeUiConfigs.navigation)
             case _:
@@ -672,7 +679,7 @@ class RuntimeUi(Record):
 
         Available in tutorial mode.
         """
-        match ctx().mode_state.mode:
+        match _runtime_ui_mode():
             case Mode.TUTORIAL:
                 return UiLayout(_TutorialRuntimeUi.instruction)
             case _:
@@ -685,7 +692,7 @@ class RuntimeUi(Record):
 
         Available in tutorial mode.
         """
-        match ctx().mode_state.mode:
+        match _runtime_ui_mode():
             case Mode.TUTORIAL:
                 return UiConfig(_TutorialRuntimeUiConfigs.instruction)
             case _:
@@ -950,6 +957,11 @@ def is_preprocessing() -> bool:
     Returns True if the current callback is one of preprocess, spawn_order, spawn_time, or despawn_time.
     """
     return bool(ctx() and ctx().callback in {"preprocess", "spawnOrder", "spawnTime", "despawnTime"})
+
+
+@meta_fn
+def _is_preprocess_callback() -> bool:
+    return bool(ctx() and ctx().callback == "preprocess")
 
 
 @meta_fn
@@ -1306,13 +1318,16 @@ def level_life() -> _LevelLife:
 def add_life_scheduled(value: int, time: float):
     """Schedule adding life at a specific time.
 
-    Only valid in play and watch mode.
+    Only valid in the `preprocess` callback in play and watch mode.
 
     Args:
         value: The amount of life to add.
         time: The time to add the life at.
     """
-    assert is_play() or is_watch(), "add_life can only be called in play or watch mode"
+    if not (is_play() or is_watch()):
+        static_error("add_life_scheduled is only available in play and watch mode")
+    if not _is_preprocess_callback():
+        static_error("add_life_scheduled is only available in the preprocess callback")
     _add_life_scheduled(value, time)
 
 

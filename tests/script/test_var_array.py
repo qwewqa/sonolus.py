@@ -763,3 +763,89 @@ def test_var_array_truthiness_non_empty():
         return 1 if x else 0
 
     assert run_and_validate(fn) == 1
+
+
+def test_var_array_append_unchecked():
+    def fn():
+        va = VarArray[int, 4].new()
+        va.append_unchecked(5)
+        va.append_unchecked(6)
+        va.append_unchecked(7)
+        return va
+
+    assert list(run_and_validate(fn)) == [5, 6, 7]
+
+
+def test_var_array_append_unchecked_to_capacity():
+    def fn():
+        va = VarArray[int, 3].new()
+        va.append_unchecked(5)
+        va.append_unchecked(6)
+        va.append_unchecked(7)
+        assert_true(va.is_full())
+        return va
+
+    assert list(run_and_validate(fn)) == [5, 6, 7]
+
+
+def test_var_array_append_unchecked_matches_append():
+    def fn():
+        appended = VarArray[int, 4].new()
+        unchecked = VarArray[int, 4].new()
+        for value in Array(1, 2, 3):
+            appended.append(value)
+            unchecked.append_unchecked(value)
+        return 1 if appended == unchecked else 0
+
+    assert run_and_validate(fn) == 1
+
+
+def test_var_array_equality_of_equal_contents():
+    def fn():
+        a = VarArray[int, 4].new()
+        b = VarArray[int, 8].new()
+        a.extend(Array(1, 2))
+        b.extend(Array(1, 2))
+        return 10 * (1 if a == b else 0) + (1 if a != b else 0)
+
+    assert run_and_validate(fn) == 10
+
+
+def test_var_array_equality_of_different_lengths():
+    def fn():
+        a = VarArray[int, 4].new()
+        b = VarArray[int, 4].new()
+        a.extend(Array(1, 2))
+        b.append(1)
+        return 10 * (1 if a == b else 0) + (1 if a != b else 0)
+
+    assert run_and_validate(fn) == 1
+
+
+def test_var_array_equality_of_differing_element():
+    def fn():
+        a = VarArray[int, 4].new()
+        b = VarArray[int, 4].new()
+        a.extend(Array(1, 2))
+        b.extend(Array(1, 3))
+        return 10 * (1 if a == b else 0) + (1 if a != b else 0)
+
+    assert run_and_validate(fn) == 1
+
+
+def test_var_array_equality_against_non_array_like():
+    def fn():
+        a = VarArray[int, 4].new()
+        a.append(1)
+        return 10 * (1 if a == 5 else 0) + (1 if a != 5 else 0)
+
+    assert run_and_validate(fn) == 1
+
+
+def test_var_array_equality_against_plain_array():
+    def fn():
+        a = VarArray[int, 4].new()
+        a.extend(Array(1, 2))
+        return 10 * (1 if a == Array(1, 2) else 0) + (1 if a != Array(1, 2) else 0)
+
+    assert run_and_validate(fn) == 10

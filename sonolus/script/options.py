@@ -8,7 +8,7 @@ from sonolus.script.debug import assert_unreachable
 from sonolus.script.internal.context import ctx, debug_config
 from sonolus.script.internal.descriptor import SonolusDescriptor
 from sonolus.script.internal.generic import validate_concrete_type
-from sonolus.script.internal.introspection import get_field_specifiers
+from sonolus.script.internal.introspection import describe_value, get_field_specifiers
 from sonolus.script.internal.simulation_context import sim_ctx
 from sonolus.script.metadata import AnyText, encode_localization_text
 from sonolus.script.num import Num
@@ -330,17 +330,23 @@ def options[T](cls: type[T]) -> T | Options:
     entries = []
     for i, (name, annotation) in enumerate(get_field_specifiers(cls, skip={"replay_fallback_option_names"}).items()):
         if get_origin(annotation) is not Annotated:
-            raise TypeError(f"Invalid annotation for options: {annotation}")
+            raise TypeError(f"Invalid annotation for options: {describe_value(annotation)} on field {name}")
         annotation_type = annotation.__args__[0]
         annotation_values = annotation.__metadata__
         if len(annotation_values) != 1:
-            raise ValueError("Invalid annotation values for options")
-        annotation_type = validate_concrete_type(annotation_type)
+            raise ValueError(
+                f"Invalid annotation values for options: {describe_value(annotation)} on field {name}, "
+                f"expected a single annotation value"
+            )
+        try:
+            annotation_type = validate_concrete_type(annotation_type)
+        except TypeError as e:
+            raise TypeError(f"Invalid annotation for options: {describe_value(annotation)} on field {name}: {e}") from e
         if annotation_type is not Num:
-            raise TypeError(f"Invalid annotation type for options: {annotation_type}")
+            raise TypeError(f"Invalid annotation type for options: {describe_value(annotation_type)} on field {name}")
         annotation_value = annotation_values[0]
         if not isinstance(annotation_value, _SliderOption | _ToggleOption | _SelectOption):
-            raise TypeError(f"Invalid annotation value for options: {annotation_value}")
+            raise TypeError(f"Invalid annotation value for options: {describe_value(annotation_value)} on field {name}")
         if annotation_value.name is None:
             annotation_value.name = name
         entries.append(annotation_value)

@@ -28,13 +28,15 @@ from sonolus.script.vec import Vec2
 level_memory_value = level_memory(Vec2)
 ```
 
-Level memory may be modified in sequential callbacks (see [Modes](project.md#modes) for each mode's callbacks):
+Level memory exists in play, watch, and tutorial mode. Preview mode has no level memory; use
+[`@level_data`][sonolus.script.globals.level_data] there instead.
 
-- `preprocess`
-- `update_sequential`
-- `touch`
+In those modes, level memory may be read in any callback and modified in these callbacks (see
+[Modes](project.md#modes) for each mode's callbacks):
 
-and may be read in any callback.
+- Play: `preprocess`, `update_sequential`, `touch`
+- Watch: `preprocess`, `update_sequential`
+- Tutorial: `preprocess`, `navigate`, `update`
 
 All level memory in a mode shares a combined limit of 4096 values; exceeding it raises a compilation error.
 
@@ -123,6 +125,10 @@ class MyArchetype(PlayArchetype):
 ```
 
 Entity memory is private to the entity and is not accessible from other entities. It may be read or updated in any callback associated with the entity.
+
+Entity memory exists in play and watch mode. Preview mode has no entity memory; compute per-entity values in
+`preprocess` and store them in [`entity_data()`][sonolus.script.archetype.entity_data] or
+[`shared_memory()`][sonolus.script.archetype.shared_memory] fields, which are read-only in `render`.
 
 Entity memory fields may also be set when an entity is spawned using the [`spawn()`][sonolus.script.archetype.PlayArchetype.spawn] method.
 

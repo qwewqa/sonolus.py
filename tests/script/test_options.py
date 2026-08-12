@@ -1,6 +1,14 @@
+from typing import Annotated
+
 import pytest
 
+from sonolus.backend.blocks import PlayBlock, PreviewBlock, WatchBlock
+from sonolus.backend.interpret import Interpreter
+from sonolus.backend.mode import Mode
+from sonolus.backend.optimize import STANDARD_PASSES, OptimizerConfig, cfg_to_engine_node, run_passes
+from sonolus.build.compile import callback_to_cfg
 from sonolus.script.bucket import Bucket, bucket, buckets
+from sonolus.script.debug import debug_log
 from sonolus.script.effect import Effect, effect, effects
 from sonolus.script.globals import level_data, level_memory
 from sonolus.script.instruction import (
@@ -11,10 +19,13 @@ from sonolus.script.instruction import (
     instruction_icons,
     instructions,
 )
-from sonolus.script.internal.context import enable_debug
+from sonolus.script.internal.context import ModeContextState, ProjectContextState, RuntimeChecks, enable_debug
+from sonolus.script.internal.error import CompilationError
 from sonolus.script.internal.meta_fn import meta_fn
+from sonolus.script.internal.simulation_context import SimulationContext
+from sonolus.script.internal.visitor import clear_frontend_caches
 from sonolus.script.num import Num
-from sonolus.script.options import options, slider_option
+from sonolus.script.options import options, select_option, slider_option, toggle_option
 from sonolus.script.particle import Particle, particle, particles
 from sonolus.script.sprite import Sprite, skin, sprite
 from sonolus.script.stream import Stream, StreamGroup, streams
@@ -177,3 +188,179 @@ def test_streams_rejects_default_value():
 
     with pytest.raises(TypeError, match="Default values are not supported"):
         type(Strms)._init_()
+
+
+class _Plain:
+    """A host object with the default repr, which is `<Cls object at 0xADDRESS>`."""
+
+
+_PLAIN = _Plain()
+
+
+def _decorate_with_annotation(decorator, annotation):
+    return decorator(type("Bad", (), {"__annotations__": {"a": annotation}}))
+
+
+@pytest.mark.parametrize(
+    ("decorator", "message"),
+    [
+        (options, "Invalid annotation for options"),
+        (effects, "Invalid annotation for effects"),
+        (skin, "Invalid annotation for skin"),
+        (particles, "Invalid annotation for particles"),
+        (buckets, "Invalid annotation for buckets"),
+        (instructions, "Invalid annotation for instruction"),
+        (instruction_icons, "Invalid annotation for instruction icon"),
+    ],
+)
+def test_decorator_rejecting_an_annotation_names_its_type(decorator, message):
+    with pytest.raises(TypeError, match=message) as exc_info:
+        _decorate_with_annotation(decorator, _PLAIN)
+
+    text = str(exc_info.value)
+    assert "_Plain" in text
+    assert "0x" not in text
+    assert "on field a" in text
+
+
+@pytest.mark.parametrize(
+    ("decorator", "annotation", "message"),
+    [
+        (options, Annotated[float, _PLAIN], "Invalid annotation value for options"),
+        (effects, Annotated[Effect, _PLAIN], "unknown effect info"),
+        (skin, Annotated[Sprite, _PLAIN], "unknown sprite info"),
+        (particles, Annotated[Particle, _PLAIN], "unknown particle info"),
+        (buckets, Annotated[Bucket, _PLAIN], "expected a single BucketInfo annotation value"),
+        (
+            instructions,
+            Annotated[Instruction, _PLAIN],
+            "Invalid annotation for instruction: .*expected a single annotation value",
+        ),
+        (
+            instruction_icons,
+            Annotated[InstructionIcon, _PLAIN],
+            "Invalid annotation for instruction icon: .*expected a single annotation value",
+        ),
+    ],
+)
+def test_decorator_rejecting_an_annotation_value_names_its_type(decorator, annotation, message):
+    # typing's own repr of an Annotated embeds the repr of each metadata value, so naming the type of the
+    # annotation as a whole is not enough here: the address comes from inside it.
+    with pytest.raises(TypeError, match=message) as exc_info:
+        _decorate_with_annotation(decorator, annotation)
+
+    text = str(exc_info.value)
+    assert "_Plain" in text
+    assert "0x" not in text
+    assert "on field a" in text
+
+
+def test_options_rejects_two_annotation_values_naming_the_field():
+    annotation = Annotated[float, slider_option(default=0.5, min=0.0, max=1.0, step=0.1), toggle_option(default=True)]
+    with pytest.raises(ValueError, match=r"Invalid annotation values for options: .* on field a, expected a single"):
+        _decorate_with_annotation(options, annotation)
+
+
+def test_options_rejects_a_non_num_annotation_type_naming_the_field():
+    # Sprite is a supported concrete type, so this passes the annotation validation and has to be caught by
+    # the options-are-numbers arm, unlike the `str` case below, which the validation itself rejects.
+    with pytest.raises(TypeError, match=r"Invalid annotation type for options: Sprite on field a"):
+        _decorate_with_annotation(options, Annotated[Sprite, toggle_option(default=True)])
+
+
+def test_options_rejecting_a_non_value_annotation_names_its_field():
+    # `str` is the likeliest wrong annotation here, since select_option's values and default are strings while
+    # the option itself is a Num.
+    with pytest.raises(TypeError, match="Invalid annotation for options") as exc_info:
+        _decorate_with_annotation(options, Annotated[str, select_option(name="Bad", default="a", values=["a", "b"])])
+
+    text = str(exc_info.value)
+    assert "on field a" in text
+    assert "str" in text
+
+
+@options
+class _ModeOpts:
+    speed: float = slider_option(default=7.25, min=0.0, max=20.0, step=0.05)
+
+
+# The option block each mode reads, named from sonolus/backend/blocks.py rather than from options.py. PLAY and
+# WATCH resolve to the same block id, so a PLAY <-> WATCH swap is unobservable and these tests do not claim to
+# catch one. Tutorial has no option block at all and is tested separately.
+_MODE_OPTION_BLOCKS = [
+    pytest.param(Mode.PLAY, PlayBlock.LevelOption, id="play"),
+    pytest.param(Mode.WATCH, WatchBlock.LevelOption, id="watch"),
+    pytest.param(Mode.PREVIEW, PreviewBlock.PreviewOption, id="preview"),
+]
+
+# A distinct value per option block, so a read from the wrong block returns the wrong number rather than nothing.
+_SEEDED_OPTION_VALUES = {int(PlayBlock.LevelOption): 11.0, int(PreviewBlock.PreviewOption): 22.0}
+
+
+def _interpret_in_mode(fn, mode: Mode) -> Interpreter:
+    """Compile `fn` as a callback in `mode`, interpret it with both option blocks seeded, and return the oracle.
+
+    An option read resolves to a block place and needs a compile context, so plain Python has no reference for it
+    and `run_and_validate` cannot be the oracle. The returned interpreter carries the callback's log and the
+    blocks it wrote.
+    """
+    clear_frontend_caches()
+    project_state = ProjectContextState(runtime_checks=RuntimeChecks.NONE)
+    cfg = callback_to_cfg(project_state, ModeContextState(mode), fn, "")
+    entry = cfg_to_engine_node(run_passes(cfg, STANDARD_PASSES, OptimizerConfig(mode=mode)))
+    interpreter = Interpreter()
+    interpreter.blocks[int(mode.blocks.EngineRom)] = project_state.rom.values
+    for block, value in _SEEDED_OPTION_VALUES.items():
+        interpreter.set(block, 0, value)
+    interpreter.run(entry)
+    return interpreter
+
+
+def _log_speed():
+    debug_log(_ModeOpts.speed)
+
+
+def _set_speed():
+    _ModeOpts.speed = 3.0
+
+
+@pytest.mark.parametrize(("mode", "block"), _MODE_OPTION_BLOCKS)
+def test_option_read_comes_from_the_mode_option_block(mode, block):
+    assert _interpret_in_mode(_log_speed, mode).log == [_SEEDED_OPTION_VALUES[int(block)]]
+
+
+def test_option_read_in_tutorial_is_the_declared_default():
+    # Tutorial has no option block, so the read is the default the option was declared with.
+    assert _interpret_in_mode(_log_speed, Mode.TUTORIAL).log == [7.25]
+
+
+@pytest.mark.parametrize(("mode", "block"), _MODE_OPTION_BLOCKS)
+def test_option_unchecked_write_targets_the_mode_option_block(mode, block):
+    with enable_debug():
+        interpreter = _interpret_in_mode(_set_speed, mode)
+    assert interpreter.get(int(block), 0) == 3.0
+    for other, seeded in _SEEDED_OPTION_VALUES.items():
+        if other != int(block):
+            assert interpreter.get(other, 0) == seeded
+
+
+def test_option_unchecked_write_in_tutorial_raises():
+    with (
+        enable_debug(),
+        pytest.raises(CompilationError, match="Options in the current mode cannot be set and use the default value"),
+    ):
+        _interpret_in_mode(_set_speed, Mode.TUTORIAL)
+
+
+def test_option_read_outside_a_context_raises():
+    with pytest.raises(RuntimeError, match="Options can only be accessed in a context"):
+        _ = _ModeOpts.speed
+
+
+def test_option_in_a_simulation_context_holds_a_writable_value():
+    # A simulation context answers before the mode mapping and before the read-only guard, so the option starts
+    # at its declared default and takes a write without enable_debug().
+    with SimulationContext():
+        assert _ModeOpts.speed == 7.25
+        _ModeOpts.speed = 3.0
+        assert _ModeOpts.speed == 3.0

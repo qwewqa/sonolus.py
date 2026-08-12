@@ -10,7 +10,7 @@ from hypothesis import strategies as st
 from sonolus.script.array import Array
 from sonolus.script.containers import VarArray
 from sonolus.script.debug import debug_log
-from sonolus.script.internal.context import ctx
+from sonolus.script.internal.context import RuntimeChecks, ctx
 from sonolus.script.internal.error import CompilationError
 from sonolus.script.internal.impl import validate_value
 from sonolus.script.internal.math_impls import _floor
@@ -356,7 +356,7 @@ def test_map_tuple_not_subscriptable():
         m = map(lambda x: x - 1, t)
         return m[0]
 
-    with pytest.raises(CompilationError, match="Cannot get items"):
+    with pytest.raises(CompilationError, match="object is not subscriptable"):
         compile_fn(fn)
 
 
@@ -907,3 +907,159 @@ def test_filter_enum_class_dynamic_condition():
         return sum(filter(lambda c: c > n, _Color))
 
     assert run_compiled(fn) == 5
+
+
+def test_tuple_unpack_too_many_values_counts_both_sides():
+    def fn():
+        a, b = 1, 2, 3
+        return a + b
+
+    # run_compiled with an explicit match rather than run_and_validate: run_and_validate needs exact message
+    # parity with CPython, and CPython prints the got-count only for a sequence source, and only from 3.14 on.
+    with pytest.raises(CompilationError, match=re.escape("too many values to unpack (expected 2, got 3)")):
+        run_compiled(fn)
+
+
+def test_enum_class_unpack_too_many_values_counts_both_sides():
+    def fn():
+        a, b = _Color
+        return a + b
+
+    # run_compiled for a stronger reason than above: an enum class is not a sequence, so CPython takes its
+    # generic-iterable path and omits the got-count on every version, 3.14 included.
+    with pytest.raises(CompilationError, match=re.escape("too many values to unpack (expected 2, got 3)")):
+        run_compiled(fn)
+
+
+def test_tuple_unpack_not_enough_values_counts_both_sides():
+    def fn():
+        a, b, c = 1, 2
+        return a + b + c
+
+    with pytest.raises(ValueError, match=re.escape("not enough values to unpack (expected 3, got 2)")):
+        run_and_validate(fn)
+
+
+def test_tuple_index_present():
+    def fn():
+        t = (10, 20, 30)
+        return t.index(20)
+
+    assert run_and_validate(fn) == (10, 20, 30).index(20)
+
+
+def test_tuple_index_first_occurrence():
+    def fn():
+        t = (1, 2, 3, 2, 1)
+        return t.index(2)
+
+    assert run_and_validate(fn) == (1, 2, 3, 2, 1).index(2)
+
+
+# The match= patterns in the missing-value tests below document parity with CPython, which raises this exact
+# message. They do not pin the emitted message: run_and_validate runs the plain-Python leg first and re-raises
+# its exception, so the compiled string never reaches pytest.raises.
+@given(t_list=st.lists(ints, min_size=1, max_size=8), value=ints)
+def test_tuple_index_matches_python(t_list, value):
+    t = tuple(t_list)
+
+    def fn():
+        return t.index(value)
+
+    if value in t:
+        assert run_and_validate(fn) == t.index(value)
+    else:
+        with pytest.raises(ValueError, match=re.escape("tuple.index(x): x not in tuple")):
+            run_and_validate(fn)
+
+
+def test_tuple_index_runtime_elements():
+    # The comparisons are runtime, so each unrolled candidate index is returned out of a runtime branch.
+    def fn():
+        t = (bb(10), bb(20), bb(30))
+        return t.index(bb(20))
+
+    assert run_and_validate(fn) == 1
+
+
+def test_tuple_index_missing_terminates():
+    def fn():
+        t = (10, 20, 30)
+        return t.index(40)
+
+    with pytest.raises(ValueError, match=re.escape("tuple.index(x): x not in tuple")):
+        run_and_validate(fn)
+
+
+def test_tuple_index_missing_runtime_elements_terminates():
+    def fn():
+        t = (bb(10), bb(20), bb(30))
+        return t.index(bb(40))
+
+    with pytest.raises(ValueError, match=re.escape("tuple.index(x): x not in tuple")):
+        run_and_validate(fn)
+
+
+def test_tuple_index_empty_terminates():
+    def fn():
+        t = ()
+        return t.index(1)
+
+    with pytest.raises(ValueError, match=re.escape("tuple.index(x): x not in tuple")):
+        run_and_validate(fn)
+
+
+def test_tuple_index_of_nested_tuple():
+    def fn():
+        t = ((1, 2), (3, 4), (5, 6))
+        return t.index((3, 4))
+
+    assert run_and_validate(fn) == ((1, 2), (3, 4), (5, 6)).index((3, 4))
+
+
+@given(
+    t_list=st.lists(ints, min_size=1, max_size=8),
+    value=ints,
+    start=st.integers(-10, 10),
+    stop=st.integers(-10, 10),
+)
+def test_tuple_index_bounded_matches_python(t_list, value, start, stop):
+    t = tuple(t_list)
+
+    def fn():
+        return t.index(value, start, stop)
+
+    try:
+        expected = t.index(value, start, stop)
+    except ValueError:
+        with pytest.raises(ValueError, match=re.escape("tuple.index(x): x not in tuple")):
+            run_and_validate(fn)
+    else:
+        assert run_and_validate(fn) == expected
+
+
+def test_tuple_index_with_runtime_start():
+    def fn():
+        t = (1, 2, 1, 2)
+        return t.index(2, bb(2))
+
+    assert run_and_validate(fn) == (1, 2, 1, 2).index(2, 2)
+
+
+# These two pin an accepted divergence from Python, the same shape as test_range.py's
+# test_range_index_runtime_checks_disabled_unchanged: the miss is reported by a runtime check, so with runtime
+# checks disabled it is not reported at all and -1 surfaces instead.
+def test_tuple_index_runtime_checks_disabled_returns_minus_one():
+    def fn():
+        t = (10, 20, 30)
+        return t.index(40)
+
+    assert run_compiled(fn, runtime_checks=RuntimeChecks.NONE) == -1
+
+
+def test_tuple_index_runtime_elements_runtime_checks_disabled_returns_minus_one():
+    def fn():
+        t = (bb(10), bb(20), bb(30))
+        return t.index(bb(40))
+
+    assert run_compiled(fn, runtime_checks=RuntimeChecks.NONE) == -1

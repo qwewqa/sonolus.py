@@ -3,6 +3,7 @@ from math import pi
 from hypothesis import assume, given
 from hypothesis import strategies as st
 
+from sonolus.script.array import Array
 from sonolus.script.vec import Vec2, angle_diff, signed_angle_diff
 from tests.script.conftest import is_close, run_and_validate
 
@@ -44,6 +45,21 @@ def test_rotate():
     result = run_and_validate(fn)
     assert is_close(result.x, 0)
     assert is_close(result.y, 2**0.5)
+
+
+def test_orthogonal():
+    # Right maps to up. An asymmetric case is what pins which way the quarter turn goes.
+    def fn():
+        return Vec2(1, 0).orthogonal()
+
+    assert run_and_validate(fn) == Vec2(0, 1)
+
+
+def test_orthogonal_off_axis():
+    def fn():
+        return Vec2(3, 4).orthogonal()
+
+    assert run_and_validate(fn) == Vec2(-4, 3)
 
 
 def test_rotate_about():
@@ -131,6 +147,14 @@ def test_not_equal():
         return v != u
 
     assert run_and_validate(fn)
+
+
+def test_named_vectors():
+    def fn():
+        return Array(Vec2.zero(), Vec2.one(), Vec2.up(), Vec2.down(), Vec2.left(), Vec2.right())
+
+    result = run_and_validate(fn)
+    assert list(result) == [Vec2(0, 0), Vec2(1, 1), Vec2(0, 1), Vec2(0, -1), Vec2(-1, 0), Vec2(1, 0)]
 
 
 @given(angles)

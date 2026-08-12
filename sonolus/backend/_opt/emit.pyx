@@ -52,9 +52,11 @@ from libc.math cimport isfinite, isinf, isnan
 
 from sonolus.backend._opt.ir cimport (
     Func,
+    FLAG_PURE,
     FLAG_STMT_ROOT,
     PLACE_REAL_BLOCK,
     PLACE_DYNAMIC_BLOCK,
+    PLACE_RUNTIME_CONST,
     EDGE_COND_NONE,
 )
 from sonolus.backend._opt._ops_gen cimport (
@@ -109,6 +111,10 @@ _OP_SET_SHIFTED = _Op.SetShifted
 # EngineRom block id: NaN/+-Inf constants are lowered to reads from it.
 cdef int32_t _ENGINE_ROM = 3000
 
+# Recursion budget for the runtime-constant walk, bounding C-stack depth the same
+# way lower.pyx's _MAX_FOLD_DEPTH does.
+cdef int32_t _RTC_DEPTH_LIMIT = 1000
+
 
 cdef inline int32_t _shifted_fused_op(uint16_t op) noexcept nogil:
     """Map a place-based fused RMW op (fuse_rmw output) to its strided ``*Shifted``
@@ -157,6 +163,7 @@ cdef class _Emitter:
     cdef dict _int_leaves   # python int value -> that int object (interned)
     cdef dict _float_leaves # python float value -> that float object (interned)
     cdef dict _val_cache    # arena value id -> EngineNode (memo, tolerates shared vids)
+    cdef dict _rtc_memo     # arena value id -> runtime-constant classification
     cdef list _pin          # keeps interned objects alive so their id() is stable
     cdef list _block_map    # old block id -> emitted index (elided -> exit index)
     cdef int32_t _exit_index  # index of the trailing halt sentinel (# emitted blocks)
@@ -167,6 +174,7 @@ cdef class _Emitter:
         self._int_leaves = {}
         self._float_leaves = {}
         self._val_cache = {}
+        self._rtc_memo = {}
         self._pin = []
         self._block_map = None
         self._exit_index = func.n_blocks
@@ -224,9 +232,19 @@ cdef class _Emitter:
         return self._float_leaf(pv)
 
     cdef object _leaf_cond(self, object cond):
-        # Switch-case labels keep their int/float display form verbatim.
+        # Switch-case labels keep their int/float display form verbatim, except that
+        # non-finite labels lower to the same EngineRom reads _emit_numeric uses: a
+        # bare Infinity/-Infinity/NaN leaf would make the packaged JSON payload
+        # invalid. A computed label is legal (each case is evaluated as a node), and
+        # dispatch is unchanged: the ROM slot holds the value the leaf would have.
+        cdef double v
         if type(cond) is int:
             return self._int_leaf(cond)
+        v = <double>cond
+        if isnan(v):
+            return self._rom_read(0)
+        if isinf(v):
+            return self._rom_read(1 if v > 0 else 2)
         return self._float_leaf(cond)
 
     # -- value trees -------------------------------------------------------
@@ -283,7 +301,7 @@ cdef class _Emitter:
         # be emitted as {Get,Set}Shifted(block, offset, index, stride) ==
         # {get,set}(block, offset + index*stride), else None.
         #
-        # Two shapes, both gate-safe (never grow the node count):
+        # Two shapes, both raw-count-safe (never grow the per-reference count):
         #  * index is a binary ``Multiply(a, b)`` -> Shifted(block, offset, a, b):
         #    absorbs the ``Multiply`` (and the offset ``Add`` when offset != 0) into
         #    one node. The stride may be a runtime value, not just a constant --
@@ -293,6 +311,11 @@ cdef class _Emitter:
         #    when the index is itself an ``Add`` -- there the emitter folds the offset
         #    into the existing flattened ``Add`` spine for free, so shifting would ADD
         #    a node. A bare index with offset 0 stays a plain ``Get``.
+        #
+        # A runtime-constant index subtree declines both shapes: the runtime folds
+        # a pure Multiply/Add over runtime-constant reads to a single push, while a
+        # Shifted op is impure and evaluates its offset/index/stride slots
+        # separately, so the rewrite would grow the effective node count there.
         #
         # Address components are pure and evaluated block, offset, index, stride
         # left-to-right; only the compile-time-constant offset moves relative to the
@@ -304,25 +327,62 @@ cdef class _Emitter:
         cdef int32_t offset = self.func.places[pid].offset
         cdef int32_t iastart, a0, a1
         cdef uint16_t iop
+        cdef bint mul_shape, off_shape
         cdef object block_node, offset_node
         if index_val < 0:
             return None  # constant index folded into offset -> plain Get(block, offset)
         if kind != <int32_t>PLACE_REAL_BLOCK and kind != <int32_t>PLACE_DYNAMIC_BLOCK:
             return None
         iop = self.func.instrs[index_val].op
+        mul_shape = iop == <uint16_t>OP_Multiply and self.func.instrs[index_val].nargs == 2
+        off_shape = offset != 0 and iop != <uint16_t>OP_Add
+        if not mul_shape and not off_shape:
+            return None
+        if self._index_is_rtc(index_val, _RTC_DEPTH_LIMIT):
+            return None
         if kind == <int32_t>PLACE_REAL_BLOCK:
             block_node = self._emit_numeric(<double>block_ref)
         else:
             block_node = self._emit_value(block_ref)
         offset_node = self._emit_numeric(<double>offset)
-        if iop == <uint16_t>OP_Multiply and self.func.instrs[index_val].nargs == 2:
+        if mul_shape:
             iastart = self.func.instrs[index_val].arg_start
             a0 = <int32_t>self.func.args[iastart]
             a1 = <int32_t>self.func.args[iastart + 1]
             return (block_node, offset_node, self._emit_value(a0), self._emit_value(a1))
-        if offset != 0 and iop != <uint16_t>OP_Add:
-            return (block_node, offset_node, self._emit_value(index_val), self._int_leaf(1))
-        return None
+        return (block_node, offset_node, self._emit_value(index_val), self._int_leaf(1))
+
+    cdef bint _index_is_rtc(self, int32_t vid, int32_t depth_left):
+        # Runtime-constant tree: pure ops over OPX_CONST + PLACE_RUNTIME_CONST
+        # reads. The same walk appears as _Lower._rtc and _IfConv._is_rtc in
+        # lower.pyx and as _licm_is_rtc in midend.pyx; none of the three is
+        # exported in a .pxd, so the transcription cannot be shared. Memoized per
+        # value id; a deeper-than-budget subtree classifies as NOT runtime-constant,
+        # which keeps the rewrite.
+        cached = self._rtc_memo.get(vid)
+        if cached is not None:
+            return <bint>cached
+        if depth_left <= 0:
+            return False  # budget-dependent -> deliberately NOT memoized
+        cdef uint16_t op = self.func.instrs[vid].op
+        cdef int32_t astart, nargs, k
+        cdef bint r
+        if op == <uint16_t>OPX_CONST:
+            r = True
+        elif op == <uint16_t>OPX_GET:
+            r = (self.func.places[self.func.instrs[vid].aux].flags & <int32_t>PLACE_RUNTIME_CONST) != 0
+        elif op < <uint16_t>OP_RUNTIME_COUNT and (self.func.instrs[vid].flags & <int32_t>FLAG_PURE):
+            r = True
+            astart = self.func.instrs[vid].arg_start
+            nargs = self.func.instrs[vid].nargs
+            for k in range(nargs):
+                if not self._index_is_rtc(<int32_t>self.func.args[astart + k], depth_left - 1):
+                    r = False
+                    break
+        else:
+            r = False
+        self._rtc_memo[vid] = r
+        return r
 
     cdef tuple _place_components(self, int32_t pid):
         cdef int32_t kind = self.func.places[pid].kind

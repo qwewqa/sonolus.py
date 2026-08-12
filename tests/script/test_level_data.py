@@ -3,9 +3,17 @@ import json
 
 import pytest
 
+from sonolus.backend.mode import Mode
+from sonolus.build.compile import callback_to_cfg
 from sonolus.build.level import build_level_data
-from sonolus.script.archetype import EntityRef, PlayArchetype, imported
+from sonolus.script.archetype import EntityRef, ImportInfo, PlayArchetype, imported
+from sonolus.script.array import Array
+from sonolus.script.internal.context import ModeContextState, ProjectContextState, RuntimeChecks
+from sonolus.script.internal.error import CompilationError
+from sonolus.script.internal.visitor import clear_frontend_caches
 from sonolus.script.level import ExternalEntityData, ExternalLevelData, LevelData, parse_external_level_data
+from sonolus.script.record import Record
+from sonolus.script.vec import Vec2
 
 
 class Stage(PlayArchetype):
@@ -26,6 +34,31 @@ class RefHolder(PlayArchetype):
     name = "RefHolder"
 
     target: EntityRef[RefTarget] = imported()
+
+
+class Countdown(Record):
+    remaining: int
+    total: int
+
+    def __bool__(self) -> bool:
+        return self.remaining != 0
+
+
+class CountdownHolder(PlayArchetype):
+    name = "CountdownHolder"
+
+    countdown: Countdown = imported()
+
+
+class ReversedVec(Record):
+    y: float
+    x: float
+
+
+class Positioned(PlayArchetype):
+    name = "Positioned"
+
+    pos: Vec2 = imported()
 
 
 def test_level_data_flattens_a_tuple_of_entities():
@@ -164,3 +197,130 @@ def test_parse_external_level_data_entity_without_data_key_has_empty_data():
     parsed = parse_external_level_data(raw)
 
     assert parsed.entities == [ExternalEntityData(archetype="Stage", data={})]
+
+
+def test_level_data_ships_a_field_value_that_is_falsy_as_a_python_object():
+    # Countdown(0, 5) is falsy under its own __bool__, so a truthiness test on the argument loses total=5.
+    entity = CountdownHolder(countdown=Countdown(0, 5))
+
+    raw = build_level_data(LevelData(bgm_offset=0, entities=[entity]))
+
+    assert raw["entities"][0]["data"] == [
+        {"name": "countdown.remaining", "value": 0},
+        {"name": "countdown.total", "value": 5},
+    ]
+
+
+def test_level_data_rejects_a_wrong_typed_argument_that_is_falsy():
+    with pytest.raises(TypeError, match="Cannot accept value None as Num"):
+        RefTarget(value=None)
+
+
+def test_level_data_rejects_a_wrong_typed_argument_that_is_falsy_for_a_record_field():
+    with pytest.raises(TypeError, match=r"Cannot accept value \[\] as Countdown"):
+        CountdownHolder(countdown=[])
+
+
+def test_level_data_ships_zero_for_an_omitted_field():
+    entity = RefTarget()
+
+    raw = build_level_data(LevelData(bgm_offset=0, entities=[entity]))
+
+    assert raw["entities"][0]["data"] == [{"name": "value", "value": 0}]
+
+
+def test_level_data_ships_zero_for_a_field_explicitly_set_to_zero():
+    entity = RefTarget(value=0)
+
+    raw = build_level_data(LevelData(bgm_offset=0, entities=[entity]))
+
+    assert raw["entities"][0]["data"] == [{"name": "value", "value": 0}]
+
+
+def test_level_data_dangling_entity_ref_names_the_referring_field_and_referenced_entity():
+    target = RefTarget(value=1)
+    holder = RefHolder(target=target.ref())
+
+    # target is deliberately absent from the level, leaving holder's reference dangling.
+    with pytest.raises(
+        ValueError,
+        match=(
+            r"Error in level entity 0 \('RefHolder'\): field 'target': "
+            r"Reference to a 'RefTarget' entity that is not in the level's entities"
+        ),
+    ):
+        build_level_data(LevelData(bgm_offset=0, entities=[holder]))
+
+
+def test_level_data_rejects_a_wrong_typed_record_argument_of_the_same_size():
+    with pytest.raises(TypeError, match=r"Cannot accept value ReversedVec\(y=7, x=8\) as Vec2"):
+        Positioned(pos=ReversedVec(7.0, 8.0))
+
+
+def _init_through_build_path(archetype):
+    """Initialize `archetype` the way an engine author reaches it: by compiling a callback that spawns it.
+
+    `callback_to_cfg` traces a failing callback a second time with `no_eval=False` and reports the second trace's
+    error, so a build initializes an archetype twice whenever the first attempt fails.
+    """
+
+    def fn():
+        archetype.spawn()
+
+    clear_frontend_caches()
+    project_state = ProjectContextState(runtime_checks=RuntimeChecks.NONE)
+    callback_to_cfg(project_state, ModeContextState(Mode.PLAY), fn, "updateSequential")
+
+
+def _assert_fields_rejected(archetype, message):
+    """Assert that a repeated `_init_fields()` and a build both report `message`, not just the first call."""
+    for _ in range(2):
+        with pytest.raises(TypeError, match=message):
+            archetype._init_fields()
+    with pytest.raises(CompilationError, match=message):
+        _init_through_build_path(archetype)
+
+
+def test_an_import_default_of_a_wrong_typed_record_of_the_same_size_is_rejected():
+    # The other way into the same field, for the same value. The flat keys come from the field's type and the
+    # values from the default's declaration order, so accepting this would ship y=7.0 under 'pos.x'.
+    class ReversedDefault(PlayArchetype):
+        pos: Vec2 = imported(default=ReversedVec(7.0, 8.0))
+
+    _assert_fields_rejected(
+        ReversedDefault, "Field 'pos' of ReversedDefault has type Vec2, but its default has type ReversedVec"
+    )
+
+
+def test_an_import_default_of_an_array_for_a_record_field_is_rejected():
+    class ArrayDefault(PlayArchetype):
+        pos: Vec2 = imported(default=Array[float, 2](1.0, 2.0))
+
+    _assert_fields_rejected(
+        ArrayDefault, r"Field 'pos' of ArrayDefault has type Vec2, but its default has type Array\[Num, 2\]"
+    )
+
+
+def test_an_import_default_of_a_record_for_an_array_field_is_rejected():
+    class RecordDefault(PlayArchetype):
+        offsets: Array[float, 2] = imported(default=Vec2(1.0, 2.0))
+
+    _assert_fields_rejected(
+        RecordDefault,
+        r"Field 'offsets' of RecordDefault has type Array\[Num, 2\], but its default has type Vec2",
+    )
+
+
+def test_an_import_default_the_fields_type_accepts_is_kept():
+    # An int for a float field is the coercion the field type admits, so the check cannot be an isinstance test.
+    class AcceptedDefaults(PlayArchetype):
+        pos: Vec2 = imported(default=Vec2(1.0, 2.0))
+        value: float = imported(default=3)
+
+    AcceptedDefaults._init_fields()
+
+    assert AcceptedDefaults._imported_keys_ == {
+        "pos.x": ImportInfo(index=0, default=1.0),
+        "pos.y": ImportInfo(index=1, default=2.0),
+        "value": ImportInfo(index=2, default=3),
+    }

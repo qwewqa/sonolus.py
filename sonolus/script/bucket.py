@@ -7,7 +7,7 @@ from typing import Annotated, Any, NewType, dataclass_transform, get_origin
 from sonolus.backend.mode import Mode
 from sonolus.backend.ops import Op
 from sonolus.script.internal.context import ctx
-from sonolus.script.internal.introspection import get_field_specifiers
+from sonolus.script.internal.introspection import describe_value, get_field_specifiers
 from sonolus.script.internal.meta_fn import meta_fn, perf_meta_fn
 from sonolus.script.internal.native import native_function
 from sonolus.script.interval import Interval
@@ -269,15 +269,19 @@ def buckets[T](cls: type[T]) -> T | Buckets:
     instance = cls()
     bucket_info = []
     for i, (name, annotation) in enumerate(get_field_specifiers(cls).items()):
+        described = describe_value(annotation)
         if get_origin(annotation) is not Annotated:
-            raise TypeError(f"Invalid annotation for buckets: {annotation}")
+            raise TypeError(f"Invalid annotation for buckets: {described} on field {name}")
         annotation_type = annotation.__args__[0]
         annotation_values = annotation.__metadata__
         if annotation_type is not Bucket:
-            raise TypeError(f"Invalid annotation for buckets: {annotation}, expected annotation of type Bucket")
+            raise TypeError(
+                f"Invalid annotation for buckets: {described} on field {name}, expected annotation of type Bucket"
+            )
         if len(annotation_values) != 1 or not isinstance(annotation_values[0], _BucketInfo):
             raise TypeError(
-                f"Invalid annotation for buckets: {annotation}, expected a single BucketInfo annotation value"
+                f"Invalid annotation for buckets: {described} on field {name}, "
+                f"expected a single BucketInfo annotation value"
             )
         info = annotation_values[0]
         bucket_info.append(info)

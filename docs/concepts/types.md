@@ -48,14 +48,20 @@ Nums support most of the standard Python operations:
 
 As in regular Python, `0` is considered `False`, while any non-zero value is considered `True`.
 
-Objects with an explicit `__bool__` method may also be used in `if`, `while`, `case ... if` expressions as well as with
-the `not` operator. However, the operands of the `and` and `or` operators must be of type `Num`.
+Values of some other types may also be used as conditions. Truthiness comes from `__bool__` if the type defines
+one, otherwise from `__len__`, where a nonzero length is true, and otherwise any [`Record`](#record) is true. The
+`and` and `or` operators are the exception: their operands must be of type `Num`, so call [`bool`](#conversion) on
+a value of another type to use it as one.
+
+Conditions appear in these places:
 
 - Logical operators: `and`, `or`, `not`
 - Ternary expressions: `... if <condition> else ...`
 - If statements: `if <condition>:`, `elif <condition>:`
 - While loops: `while <condition>:`
 - Case guards: `case ... if <condition>:`
+- Assert statements: `assert <condition>`
+- Comprehension and generator expression filters: `... for <target> in <iterable> if <condition>`
 
 ### Instance Checks
 Since `Num` is interchangeable with `int`, `float`, and `bool`, only `Num` is supported for type checks.
@@ -286,14 +292,19 @@ class MyPair(Record):
     second: int
 ```
 
-Fields must be annotated by [`Num`](#num) (or equivalently `int`, `float`, or `bool`), 
+Fields must be annotated by [`Num`](#num) (or equivalently `int`, `float`, or `bool`),
 a concrete array type, a concrete record type, or, in a generic record, a type parameter (see [Generics](#generics)).
+Any of these may be wrapped in `Final[...]` from the `typing` module.
 
 ```python
 # Not ok:
 class MyRecord(Record):
     array: Array  # Array is not concrete since it has unspecified type parameters
 ```
+
+A `Final` field is set when the record is constructed and cannot be assigned afterward; doing so fails with
+`Cannot set a final field`. Only the binding is final: if the field holds a reference type such as another record or
+an array, its contents may still be modified.
 
 A [`Record`][sonolus.script.record.Record] subclass cannot be further subclassed.
 
@@ -575,6 +586,9 @@ t = (1, 2, 3)
 for x in t:
     debug_log(x)
 ```
+
+Tuples also support `len()`, concatenation with `+`, `in` and `not in`, the comparison operators, and
+`.index(value)`.
 
 ### dict
 

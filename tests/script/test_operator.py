@@ -1,11 +1,15 @@
 # ruff: noqa: PLW1641, PT017
+import re
+
 import pytest
 from hypothesis import assume, given
 from hypothesis import strategies as st
 
+from sonolus.script.array import Array
 from sonolus.script.debug import debug_log
 from sonolus.script.internal.error import CompilationError
 from sonolus.script.record import Record
+from sonolus.script.vec import Vec2
 from tests.script.conftest import run_and_validate, run_compiled
 
 
@@ -167,9 +171,42 @@ class BoolFalse(Record):
         return False
 
 
+class AddNotImplementedOnly(Record):
+    # No hand-written __iadd__, so Record synthesizes one from __add__. That synthesized operator is what
+    # has to decline when __add__ does, instead of trying to store the NotImplemented sentinel.
+    def __add__(self, other):
+        debug_log(30)
+        return NotImplemented
+
+
+class Acc(Record):
+    total: int
+
+    def __iadd__(self, other):
+        debug_log(31)
+        return Acc(self.total + other.total)
+
+
+class Scaler(Record):
+    factor: float
+
+    def __rmul__(self, other):
+        debug_log(32)
+        return other.x * self.factor
+
+    def __rtruediv__(self, other):
+        debug_log(33)
+        return other.x / self.factor
+
+
+class Plain(Record):
+    n: float
+
+
 bin_values = [
     AllAddOps(),
     AllAddNotImplemented(),
+    AddNotImplementedOnly(),
     AddOnly(),
     RAddOnly(),
     IAddOnly(),
@@ -452,3 +489,137 @@ def test_ne_falls_back_to_reflected_op():
         return x != y
 
     assert run_and_validate(fn)
+
+
+def test_inplace_op_may_return_a_new_object():
+    # A hand-written __iadd__ may return anything __add__ may, and augmented assignment rebinds the name
+    # to whatever comes back, exactly as the __add__ arm does.
+    def fn():
+        x = Acc(1)
+        x += Acc(2)
+        return x.total
+
+    assert run_and_validate(fn) == 3
+
+
+def test_inplace_op_returning_a_new_object_leaves_an_alias_alone():
+    def fn():
+        x = Acc(1)
+        alias = x
+        x += Acc(2)
+        return x.total * 10 + alias.total
+
+    assert run_and_validate(fn) == 31
+
+
+def test_inplace_op_returning_a_new_object_stores_into_a_subscript_target():
+    def fn():
+        arr = Array(Acc(1), Acc(2))
+        arr[0] += Acc(5)
+        return arr[0].total * 10 + arr[1].total
+
+    assert run_and_validate(fn) == 62
+
+
+def test_synthesized_inplace_op_declines_and_the_reflected_op_runs():
+    # Vec2.__mul__ returns NotImplemented for a Scaler, so `v *= s` has to reach Scaler.__rmul__ the way
+    # `v = v * s` already does.
+    def fn():
+        v = Vec2(1.0, 2.0)
+        v *= Scaler(3.0)
+        return v
+
+    assert run_and_validate(fn) == 3.0
+
+
+def test_synthesized_inplace_op_declines_for_truediv_too():
+    def fn():
+        v = Vec2(6.0, 2.0)
+        v /= Scaler(3.0)
+        return v
+
+    assert run_and_validate(fn) == 2.0
+
+
+def test_synthesized_inplace_op_reports_the_augmented_operator_for_a_bad_operand():
+    def fn():
+        v = Vec2(1.0, 2.0)
+        v *= Plain(3.0)
+        return v.x
+
+    with pytest.raises(TypeError, match=re.escape("unsupported operand type(s) for *=: 'Vec2' and 'Plain'")):
+        run_and_validate(fn)
+
+
+def test_synthesized_inplace_op_declines_for_a_user_record():
+    def fn():
+        x = AddNotImplementedOnly()
+        y = RAddOnly()
+        x += y
+        return x
+
+    run_and_validate(fn)
+
+
+class Holder(Record):
+    values: Array[int, 3]
+
+    def __iter__(self):
+        return iter(self.values)
+
+
+def _logged(v):
+    debug_log(v)
+    return v
+
+
+def test_in_falls_back_to_iteration_over_a_generator_expression():
+    def fn():
+        return 6 in (v * 2 for v in Array(1, 2, 3))
+
+    assert run_and_validate(fn)
+
+
+def test_not_in_falls_back_to_iteration_over_a_generator_expression():
+    def fn():
+        return 5 not in (v * 2 for v in Array(1, 2, 3))
+
+    assert run_and_validate(fn)
+
+
+def test_in_falls_back_to_iteration_over_map_and_filter():
+    def fn():
+        a = 3 in map(lambda v: v + 1, Array(1, 2, 3))  # noqa: C417
+        b = 4 in filter(lambda v: v > 2, Array(1, 2, 3))
+        return (1 if a else 0) * 10 + (1 if b else 0)
+
+    assert run_and_validate(fn) == 10
+
+
+def test_in_falls_back_to_iteration_over_a_record_defining_only_iter():
+    def fn():
+        h = Holder(Array(4, 5, 6))
+        return (1 if 5 in h else 0) * 10 + (1 if 7 in h else 0)
+
+    assert run_and_validate(fn) == 10
+
+
+def test_in_short_circuits_at_the_first_match():
+    # The log is what pins the short circuit: the third element is never produced.
+    def fn():
+        return 2 in (_logged(v) for v in Array(1, 2, 3))
+
+    assert run_and_validate(fn)
+
+
+def test_in_consumes_a_one_shot_iterator_up_to_the_match():
+    # Membership over an iterator consumes it, so the loop that follows resumes after the match.
+    def fn():
+        it = iter(Array(1, 2, 3, 4))
+        found = 2 in it
+        total = 0
+        for v in it:
+            total = total * 10 + v
+        return (1 if found else 0) * 1000 + total
+
+    assert run_and_validate(fn) == 1034

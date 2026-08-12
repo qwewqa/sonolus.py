@@ -184,10 +184,13 @@ class Value:
         raise NotImplementedError
 
     @abstractmethod
-    def _copy_from_(self, value: Any):
+    def _copy_from_(self, value: Any, *, initializing: bool = False):
         """Implements copy assignment (@=).
 
         This is only supported by mutable reference types.
+
+        initializing is set when the copy fills freshly allocated storage rather than overwriting storage the
+        program already holds, as Array(...) construction and an array copy do.
         """
         raise NotImplementedError
 

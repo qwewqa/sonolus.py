@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import json
+import warnings
 from collections.abc import Callable
 from os import PathLike
 from pathlib import Path
@@ -16,6 +17,7 @@ from sonolus.script.instruction import (
     TutorialInstructionIcons,
     TutorialInstructions,
 )
+from sonolus.script.internal.introspection import describe_value
 from sonolus.script.metadata import AnyText, Tag, as_localization_text
 from sonolus.script.options import EmptyOptions, Options
 from sonolus.script.particle import EmptyParticles, Particles
@@ -55,7 +57,7 @@ class ExportedEngine:
         """
         path = Path(path)
         path.mkdir(parents=True, exist_ok=True)
-        (path / "item.json").write_text(json.dumps(self.item, ensure_ascii=False), encoding="utf-8")
+        (path / "item.json").write_text(json.dumps(self.item, ensure_ascii=False, allow_nan=False), encoding="utf-8")
         (path / "thumbnail").write_bytes(self.thumbnail)
         (path / "playData").write_bytes(self.play_data)
         (path / "watchData").write_bytes(self.watch_data)
@@ -124,11 +126,17 @@ class Engine:
     def export(self) -> ExportedEngine:
         """Export the engine in a sonolus-pack compatible format.
 
+        `skin`, `background`, `effect`, and `particle` must all be set.
+
         Returns:
             An [`ExportedEngine`][sonolus.script.engine.ExportedEngine].
         """
         from sonolus.build.engine import package_engine
         from sonolus.build.project import BLANK_PNG
+
+        unset = [name for name in ("skin", "background", "effect", "particle") if getattr(self, name) is None]
+        if unset:
+            raise ValueError(f"Engine.export requires {', '.join(unset)} to be set on engine '{self.name}'")
 
         item = {
             "version": self.version,
@@ -164,32 +172,53 @@ def default_callback() -> Any:
 
 def check_skin(skin: Any):
     if not hasattr(skin, "_sprites_"):
-        raise ValueError(f"Invalid skin: {skin}. Missing an @skin decorator?")
+        raise ValueError(f"Invalid skin: {describe_value(skin)}. Missing an @skin decorator?")
 
 
 def check_effects(effects: Any):
     if not hasattr(effects, "_effects_"):
-        raise ValueError(f"Invalid effects: {effects}. Missing an @effects decorator?")
+        raise ValueError(f"Invalid effects: {describe_value(effects)}. Missing an @effects decorator?")
 
 
 def check_particles(particles: Any):
     if not hasattr(particles, "_particles_"):
-        raise ValueError(f"Invalid particles: {particles}. Missing an @particles decorator?")
+        raise ValueError(f"Invalid particles: {describe_value(particles)}. Missing an @particles decorator?")
+
+
+def check_archetypes(archetypes: list[type[_BaseArchetype]], expected_type: type[_BaseArchetype]):
+    seen = set()
+    by_name: dict[str, type[_BaseArchetype]] = {}
+    for archetype in archetypes:
+        if not issubclass(archetype, expected_type):
+            raise ValueError(f"archetype {describe_value(archetype)} is not a {expected_type.__name__}")
+        if archetype in seen:
+            raise ValueError(f"archetype {describe_value(archetype)} is listed more than once")
+        seen.add(archetype)
+        first = by_name.setdefault(archetype.name, archetype)
+        if first is not archetype:
+            # Checked per mode, not across the engine: the same name in two modes is how one archetype spans them.
+            warnings.warn(
+                f"archetypes {describe_value(first)} and {describe_value(archetype)} in the same mode both have "
+                f"the name '{archetype.name}'",
+                stacklevel=3,
+            )
 
 
 def check_buckets(buckets: Any):
     if not hasattr(buckets, "_buckets_"):
-        raise ValueError(f"Invalid buckets: {buckets}. Missing an @buckets decorator?")
+        raise ValueError(f"Invalid buckets: {describe_value(buckets)}. Missing an @buckets decorator?")
 
 
 def check_instructions(instructions: Any):
     if not hasattr(instructions, "_instructions_"):
-        raise ValueError(f"Invalid instructions: {instructions}. Missing an @instructions decorator?")
+        raise ValueError(f"Invalid instructions: {describe_value(instructions)}. Missing an @instructions decorator?")
 
 
 def check_instruction_icons(instruction_icons: Any):
     if not hasattr(instruction_icons, "_instruction_icons_"):
-        raise ValueError(f"Invalid instruction icons: {instruction_icons}. Missing an @instruction_icons decorator?")
+        raise ValueError(
+            f"Invalid instruction icons: {describe_value(instruction_icons)}. Missing an @instruction_icons decorator?"
+        )
 
 
 class PlayMode:
@@ -212,15 +241,13 @@ class PlayMode:
         particles: Particles = EmptyParticles,
         buckets: Buckets = EmptyBuckets,
     ) -> None:
-        self.archetypes = archetypes or []
+        self.archetypes = list(archetypes) if archetypes is not None else []
         self.skin = skin
         self.effects = effects
         self.particles = particles
         self.buckets = buckets
 
-        for archetype in self.archetypes:
-            if not issubclass(archetype, PlayArchetype):
-                raise ValueError(f"archetype {archetype} is not a PlayArchetype")
+        check_archetypes(self.archetypes, PlayArchetype)
 
         check_skin(skin)
         check_effects(effects)
@@ -250,16 +277,14 @@ class WatchMode:
         buckets: Buckets = EmptyBuckets,
         update_spawn: Callable[[], float],
     ) -> None:
-        self.archetypes = archetypes or []
+        self.archetypes = list(archetypes) if archetypes is not None else []
         self.skin = skin
         self.effects = effects
         self.particles = particles
         self.buckets = buckets
         self.update_spawn = update_spawn
 
-        for archetype in self.archetypes:
-            if not issubclass(archetype, WatchArchetype):
-                raise ValueError(f"archetype {archetype} is not a WatchArchetype")
+        check_archetypes(self.archetypes, WatchArchetype)
 
         check_skin(skin)
         check_effects(effects)
@@ -281,12 +306,10 @@ class PreviewMode:
         archetypes: list[type[_BaseArchetype]] | None = None,
         skin: Skin = EmptySkin,
     ) -> None:
-        self.archetypes = archetypes or []
+        self.archetypes = list(archetypes) if archetypes is not None else []
         self.skin = skin
 
-        for archetype in self.archetypes:
-            if not issubclass(archetype, PreviewArchetype):
-                raise ValueError(f"archetype {archetype} is not a PreviewArchetype")
+        check_archetypes(self.archetypes, PreviewArchetype)
 
         check_skin(skin)
 

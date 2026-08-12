@@ -24,7 +24,14 @@ from sonolus.backend.ir import IRConst, IRGet, IRInstr, IRPureInstr, IRSet
 from sonolus.backend.mode import Mode
 from sonolus.backend.node import FunctionNode
 from sonolus.backend.ops import Op
-from sonolus.backend.optimize import MINIMAL_PASSES, STANDARD_PASSES, OptimizerConfig, cfg_to_engine_node, run_passes
+from sonolus.backend.optimize import (
+    FAST_PASSES,
+    MINIMAL_PASSES,
+    STANDARD_PASSES,
+    OptimizerConfig,
+    cfg_to_engine_node,
+    run_passes,
+)
 from sonolus.backend.optimize.flow import BasicBlock, cfg_to_text, traverse_cfg_reverse_postorder
 from sonolus.backend.place import BlockPlace, TempBlock
 from tests.backend._corpus import MODE_SETUP, iter_callbacks
@@ -242,6 +249,133 @@ def test_phi_undef_v_collapses_to_v():
     text = cfg_to_text(ir.debug_run(b0, phases=["cfg_cleanup", "ssa", "sccp", "dce"]))
     assert "phi" not in text
     assert "7" in text
+
+
+# ---------------------------------------------------------------------------
+# The CFG entry block as a loop header (the entry path carries no edge).
+# ---------------------------------------------------------------------------
+
+
+def _entry_header_cycle():
+    """A loop header that is also the CFG entry block, carrying a value the entry path never writes.
+
+    cfg_cleanup elides the empty leading block, so ``head`` becomes the entry block and its only
+    incoming EDGE is the back edge: nothing in the CFG represents the path that fell in from
+    outside. The header merge for ``c`` is therefore phi(UNDEF, back-edge value), and the body's
+    write depends on the header's read, so dropping the UNDEF operand leaves a value-graph cycle.
+    """
+    entry, head, body, ex = BasicBlock(), BasicBlock(), BasicBlock(), BasicBlock()
+    entry.connect_to(head, None)
+    head.test = IRPureInstr(Op.Less, [IRGet(_sc("c")), IRConst(4)])
+    head.connect_to(body, None)
+    head.connect_to(ex, 0)
+    body.statements = [IRSet(_sc("c"), IRPureInstr(Op.Add, [IRGet(_sc("c")), IRConst(1)]))]
+    body.connect_to(head, None)
+    ex.statements = [IRInstr(Op.DebugLog, [IRGet(_sc("c"))]), IRInstr(Op.DebugPause, [IRGet(_sc("c"))])]
+    return entry
+
+
+def _entry_header_fold():
+    """The same shape with a body write that does NOT depend on the header read (``c := 5``).
+
+    No cycle, so nothing crashes: dropping the UNDEF operand instead makes the header test read
+    the body's constant on the first iteration too, silently deleting either the body or the
+    loop exit.
+    """
+    entry, head, body, ex = BasicBlock(), BasicBlock(), BasicBlock(), BasicBlock()
+    entry.connect_to(head, None)
+    head.test = IRPureInstr(Op.Less, [IRGet(_sc("c")), IRConst(4)])
+    head.connect_to(body, None)
+    head.connect_to(ex, 0)
+    body.statements = [IRInstr(Op.DebugLog, [IRGet(_sc("c"))]), IRSet(_sc("c"), IRConst(5))]
+    body.connect_to(head, None)
+    ex.statements = [IRInstr(Op.DebugPause, [IRConst(0)])]
+    return entry
+
+
+def _assert_entry_is_loop_header(build):
+    # Precondition of both shapes below: without it they are ordinary preheader loops and
+    # pin nothing. cfg_cleanup must leave the loop header as the entry block.
+    cleaned = ir.debug_run(build(), phases=["cfg_cleanup"])
+    assert cleaned.incoming, "expected cfg_cleanup to leave the loop header as the entry block"
+
+
+def _levels_agree(build):
+    # MINIMAL bypasses the mid-end, so it is the reference for what the shape means.
+    base = _interp(build(), MINIMAL_PASSES)
+    for level in (FAST_PASSES, STANDARD_PASSES):
+        assert _interp(build(), level).log == base.log
+    return base
+
+
+def test_entry_header_phi_keeps_undef_operand():
+    _assert_entry_is_loop_header(_entry_header_cycle)
+    text = _ssa_text(_entry_header_cycle())
+    # The header merge survives with its entry-path operand: collapsing it to the back-edge
+    # value alone drops the entry path and leaves a def-before-use arena.
+    assert text.count("phi(") == 1
+    line = next(line for line in text.splitlines() if "phi(" in line)
+    # Operands print labelled by predecessor block id, and 0 is the pre-header edge _compact
+    # prepends, so this pins the UNDEF as the entry path's operand AND as the first one.
+    assert "phi(0: undef" in line
+
+
+def test_entry_header_cycle_semantics():
+    _assert_entry_is_loop_header(_entry_header_cycle)
+    orig, _ = _assert_semantics_preserved(_entry_header_cycle)
+    # c starts at the never-written slot's value (below 4), so the loop runs until c == 4.
+    assert orig.log == [4]
+    assert _levels_agree(_entry_header_cycle).log == [4]
+
+
+def _entry_header_two_back_edges():
+    """An entry-block loop header reached by two back edges that add different amounts.
+
+    The header phi has one operand per back edge plus the entry path's, so a mis-ordered
+    operand <-> edge mapping picks up the wrong increment and changes the result.
+    """
+    entry, head, split, up3, up1, ex = (BasicBlock() for _ in range(6))
+    entry.connect_to(head, None)
+    head.test = IRPureInstr(Op.Less, [IRGet(_sc("c")), IRConst(4)])
+    head.connect_to(split, None)
+    head.connect_to(ex, 0)
+    split.test = IRPureInstr(Op.Less, [IRGet(_sc("c")), IRConst(0)])
+    split.connect_to(up3, None)
+    split.connect_to(up1, 0)
+    up3.statements = [IRSet(_sc("c"), IRPureInstr(Op.Add, [IRGet(_sc("c")), IRConst(3)]))]
+    up1.statements = [IRSet(_sc("c"), IRPureInstr(Op.Add, [IRGet(_sc("c")), IRConst(1)]))]
+    up3.connect_to(head, None)
+    up1.connect_to(head, None)
+    ex.statements = [IRInstr(Op.DebugLog, [IRGet(_sc("c"))]), IRInstr(Op.DebugPause, [IRGet(_sc("c"))])]
+    return entry
+
+
+def test_entry_header_two_back_edges_phi_operands():
+    _assert_entry_is_loop_header(_entry_header_two_back_edges)
+    text = _ssa_text(_entry_header_two_back_edges())
+    assert text.count("phi(") == 1
+    line = next(line for line in text.splitlines() if "phi(" in line)
+    # One operand per back edge plus the entry path's UNDEF, which _drain puts first so it
+    # pairs with the index-0 pre-header edge _compact prepends.
+    assert "phi(0: undef" in line
+    assert line.count(": v.") == 2
+
+
+def test_entry_header_two_back_edges_semantics():
+    _assert_entry_is_loop_header(_entry_header_two_back_edges)
+    orig, _ = _assert_semantics_preserved(_entry_header_two_back_edges)
+    assert orig.log == [4]
+    assert _levels_agree(_entry_header_two_back_edges).log == [4]
+
+
+def test_entry_header_fold_semantics():
+    _assert_entry_is_loop_header(_entry_header_fold)
+    orig, _ = _assert_semantics_preserved(_entry_header_fold)
+    assert len(orig.log) == 1  # the body runs once: it logs c, then c := 5 fails the test
+    # Repeated builds in one process: the malformed arena made the mid-end's choice of which
+    # block to delete depend on how many CFGs had been built before it.
+    for _ in range(4):
+        assert _levels_agree(_entry_header_fold).log == orig.log
 
 
 # ---------------------------------------------------------------------------

@@ -36,15 +36,13 @@
 - Fixed a lambda defined inside a `yield` or `yield from` expression failing to compile when it was later called
   from compiled code.
 - A default value on a [`@level_memory`][sonolus.script.globals.level_memory] or
-  [`@level_data`][sonolus.script.globals.level_data] field is now rejected when the class is defined. Previously
-  it was silently discarded.
+  [`@level_data`][sonolus.script.globals.level_data] field is now rejected when the class is defined.
 - Fixed [`Stream.iter_items_since_previous_frame`][sonolus.script.stream.Stream.iter_items_since_previous_frame]
   and its key and value variants yielding the stream's last item again on the next frame when the previous
   frame's time was exactly that item's key.
 - An item name that cannot be stored in a collection is now rejected when the item is added: `info` and `list`
-  in any letter case (previously such an item silently overwrote the category index), an empty name, a name
-  containing a path separator, and `.` or `..`.
-- A level name that cannot be stored in a collection is now rejected by `sonolus-py build` and
+  in any letter case, an empty name, a name containing a path separator, and `.` or `..`.
+- A level or engine name that cannot be stored in a collection is now rejected by `sonolus-py build` and
   [`Project.build`][sonolus.script.project.Project.build].
 - An item loaded from an `.scp` file now keeps its full filename as its name.
 - `.scp` files, resource directories, and archive entries are now loaded in sorted order, so category listing
@@ -62,6 +60,169 @@
   [`pnpoly`][sonolus.script.vec.pnpoly], and [`shuffle`][sonolus.script.array_like.ArrayLike.shuffle].
 - Fixed the optimizer moving a loop-invariant division, logarithm, or similar operation ahead of a loop that may
   run zero times.
+- Fixed `zip`, and `map` over multiple iterables, advancing the iterators to the right of the first exhausted one
+  an extra time, observable through `map` and `filter` callbacks, generator bodies, and custom iterators.
+- Fixed a math function applied to compile-time constants outside its domain, such as `math.log(-1.0)` on a
+  branch that is never taken, failing to compile.
+- Fixed constant `+`, `-`, or `*` on large values failing to compile with `int too large to convert to float`.
+- Fixed an `if`/`elif` chain or dict lookup comparing a value against a non-finite constant such as `math.inf`
+  producing packaged engine data that is not valid JSON.
+- A constant whose magnitude is too large for a 32-bit float now fails compilation with an error naming its
+  location when it would be stored in engine data, rather than crashing the build during packaging.
+- Fixed a decorated `def` inside compiled code evaluating default values before decorator expressions and
+  decorator expressions bottom to top.
+- Fixed constructing an [`Array`][sonolus.script.array.Array] from records with a `Final` field, or copying one
+  with `+`, failing with `Cannot set a final field`.
+- Assigning to a `range` element, directly or through `sort`, `reverse`, or `shuffle`, now reports that `range`
+  does not support item assignment rather than an unsupported `raise` statement.
+- An unpacking assignment with the wrong number of values now reports Python's counted messages, `too many values
+  to unpack` or `not enough values to unpack`, rather than a generic message.
+- Reading or writing a field or property of a [`Record`][sonolus.script.record.Record] or an archetype on the
+  class rather than on an instance now reports that it must be accessed on an instance.
+- Error messages now describe an unsupported value that has no `repr` of its own by its type name rather than
+  with a memory address.
+- A resource or option declaration rejecting a field's annotation, and a mode rejecting a resource of the wrong
+  kind, now name the type of the rejected value rather than printing a memory address.
+- Fixed compile time growing exponentially on chained operations over a value fixed after loading, such as
+  repeated squaring or a chain of composed transforms.
+- Reduced the compiled cost of reading an archetype score multiplier outside of `preprocess`, and of array
+  accesses whose index is computed entirely from values fixed after loading.
+- Fixed a failed dev server rebuild leaving the `decode` command answering with the failed build's debug message
+  numbering rather than the running build's.
+- Corrected the published signature of `random.shuffle`, which accepts a mutable array-like such as an
+  [`Array`][sonolus.script.array.Array] rather than any mutable sequence.
+- Two [`imported()`][sonolus.script.archetype.imported] fields of an archetype that resolve to the same name in
+  level data, whether through an `imported(name=...)` override, a repeated
+  [`StandardImport`][sonolus.script.archetype.StandardImport], or an inherited field, are now rejected.
+- Two [`exported()`][sonolus.script.archetype.exported] fields of an archetype that resolve to the same export
+  name are now rejected.
+- An archetype field named after a property the archetype inherits, such as `index` or `result`, is now rejected.
+- Listing the same archetype class more than once in a mode is now rejected.
+- Two different archetype classes that resolve to the same name within a single mode now produce a warning.
+- Fixed a falsy value given for an archetype's level data field, such as a
+  [`Record`][sonolus.script.record.Record] whose `__bool__` returns false, being shipped as zeros instead of the
+  value given. A falsy value of the wrong type, such as `None`, is now rejected rather than silently replaced with
+  zeros.
+- Fixed a generator expression over a runtime iterable such as an [`Array`][sonolus.script.array.Array] failing to
+  compile when an `if` filter is false at compile time and another clause follows it.
+- Fixed `visualize_cfg` in `sonolus.script.debug` rendering a graph optimized without the callback it was given,
+  so the result could differ from what a build compiles.
+- Fixed a generator expression failing to compile with `Binding ... has been modified since the generator was
+  created` when an unrelated variable in an enclosing function shares a name with one the generator uses.
+- Fixed a generator expression's outermost iterable being evaluated in the generator's own scope rather than the
+  enclosing one, so a loop target sharing a name with something that iterable reads, as in
+  `sum(x for x in Array(x, x + 1, x + 2))`, silently yielded the wrong values.
+- Fixed two functions or lambdas defined on the same source line all compiling the leftmost one's body.
+- Fixed a one-shot iterable of archetypes, such as a generator, given to
+  [`PlayMode`][sonolus.script.engine.PlayMode], [`WatchMode`][sonolus.script.engine.WatchMode], or
+  [`PreviewMode`][sonolus.script.engine.PreviewMode] silently building an engine with no archetypes.
+- Fixed an archetype class that also lists a mixin skipping the mixin's `__init_subclass__`. Unrecognized
+  keywords in an archetype's class statement are now rejected rather than silently ignored.
+- Subclassing an archetype created by [`derive()`][sonolus.script.archetype.PlayArchetype.derive] is now
+  rejected.
+- A method decorated with [`@callback`][sonolus.script.archetype.callback] that is not a callback of the
+  archetype's mode is now rejected, and the error lists the callbacks the archetype does have.
+- An archetype field named after a method the archetype inherits, such as `spawn` or `ref`, is now rejected the
+  same way as one named after a property.
+- A default given to [`imported()`][sonolus.script.archetype.imported] whose type or number of values does not
+  match the field it is for, such as a single number for a two-field `Record`, or a `Record` whose fields are
+  declared in a different order, is now rejected with an error naming the field.
+- A single string given where a sequence of names is expected, in `sprite_group`, `effect_group`,
+  `particle_group`, or `replay_fallback_option_names`, is now rejected.
+- A `global` or `nonlocal` statement is now rejected wherever it appears in a compiled function, including in
+  code skipped at compile time.
+- Calling [`add_life_scheduled`][sonolus.script.runtime.add_life_scheduled] anywhere but the `preprocess`
+  callback of play or watch mode now fails compilation with an error, `spawn_order`, `spawn_time`, and
+  `despawn_time` included.
+- [`print_number`][sonolus.script.printing.print_number] outside preview mode, and
+  [`InstructionIcon.paint`][sonolus.script.instruction.InstructionIcon.paint] outside tutorial mode, are now
+  rejected during compilation.
+- Playing an [`Effect`][sonolus.script.effect.Effect] or spawning a
+  [`Particle`][sonolus.script.particle.Particle] in preview mode is now rejected during compilation.
+- The packaged tutorial engine data no longer contains an extraneous empty `archetypes` list, which is not part
+  of the tutorial data format.
+- Errors for using archetype life or a score multiplier in an unsupported mode now name the mode rather than
+  printing an internal tuple.
+- An unpacking assignment from a value that cannot be unpacked, such as an
+  [`Array`][sonolus.script.array.Array] or a [`Record`][sonolus.script.record.Record], now reports
+  `Cannot unpack a value of type ...` rather than an unsupported starred expression.
+- Calling a supported builtin such as `abs` or `math.sin` with arguments that do not match its signature now
+  reports the builtin's own name and the number of arguments the call actually passes, rather than an internal
+  implementation name and a count one higher.
+- Calling a function or a [`Record`][sonolus.script.record.Record] method, or constructing a `Record`, with an
+  unexpected keyword argument now reports the unexpected keyword and names the callee.
+  from [`spawn()`][sonolus.script.archetype.PlayArchetype.spawn] now names the archetype as well.
+- Error messages interpolating a compile-time constant no longer print a memory address.
+- A build that gives up optimizing a callback now names the archetype it belongs to alongside the callback and
+  the mode, and a callback no path can leave, such as one whose only loop has no exit, now reports that rather
+  than an internal `Infinite loop detected`.
+- Accessing [`runtime_ui`][sonolus.script.runtime.runtime_ui] outside of compilation now raises a clear
+  `RuntimeError` like other runtime accessors, rather than an `AttributeError`.
+- Added the 31 [`StandardText`][sonolus.script.text.StandardText] constants missing from the targeted Sonolus
+  version, including prefixes, separators, and metadata labels, and corrected the documented text of 21 others.
+- Fixed an invalid field declaration in an archetype or a [`@streams`][sonolus.script.stream.streams] class
+  being reported during a build with an unrelated internal error, such as
+  `Missing annotation for ..._imported_fields_`, instead of the declaration's own error. Processing a class's
+  fields no longer leaves partial state behind when a declaration is rejected.
+- Fixed a call to a function that terminates on every path, such as one that always fails an assertion or calls
+  [`error()`][sonolus.script.debug.error], failing to compile with an internal message about `NoneType` when its
+  result was used directly, as in `helper(-1).x`. Such code now compiles to the same termination that assigning
+  the result to a variable first already produced.
+- Building a level in which an [`EntityRef`][sonolus.script.archetype.EntityRef] field references an entity that
+  was not added to the level now fails with an error naming the referring entity and the referenced archetype,
+  rather than a bare `KeyError`.
+- An archetype callback declared as a `@classmethod` or `@staticmethod` is now rejected when the class is
+  defined, with an error naming the archetype and the callback.
+- `range(...).index(value)` with a value not in the range now fails an assertion with
+  `range.index(x): x not in range`.
+- Added support for `.index()` on tuples, with optional `start` and `stop` bounds. A value not in the tuple
+  fails an assertion with `tuple.index(x): x not in tuple`.
+- An invalid annotation on an [`@options`][sonolus.script.options.options] field now reports the field name and
+  the annotation.
+- [`Engine.export()`][sonolus.script.engine.Engine.export] now requires `skin`, `background`, `effect`, and
+  `particle` to be set, and raises an error naming any that are not.
+- Added the `TIME` metric, introduced in Sonolus 1.1.3, to [`UiMetric`][sonolus.script.ui.UiMetric].
+- The hint to rerun with `-v` after a compilation error, whether from `sonolus-py build`, `sonolus-py check`,
+  or a failed dev server rebuild, now appears only when the full traceback has more to show; failures that
+  already print in full, such as optimizer-stage errors, no longer carry it. `BuildConfig.verbose` is now
+  documented as read by the dev server only.
+- Documented that entity memory exists only in play and watch mode; preview mode has no entity memory.
+- Fixed a `match` case's captures being visible on the paths where its pattern did not match. A capture is now
+  applied only once the whole pattern has matched, as in Python.
+- An assignment expression (`:=`) inside a generator expression is now rejected. Python binds such a target in
+  the containing scope as the generator is consumed.
+- Fixed an augmented assignment such as `v *= s` on a [`Record`][sonolus.script.record.Record] failing with
+  `Cannot accept value NotImplemented` when the type's binary operator declines the right operand. The
+  operand's reflected operator now runs, as it already did for `v = v * s`. This reaches `*=` and `/=` on
+  [`Vec2`][sonolus.script.vec.Vec2], and a genuinely unsupported operand now reports
+  `unsupported operand type(s) for *=` rather than the internal `NotImplemented` error.
+- A hand-written in-place operator such as `__iadd__` may now return a new object, which augmented assignment
+  stores the same way it stores the result of the corresponding binary operator.
+- `in` and `not in` now fall back to iterating the right operand when it defines no `__contains__`, as in
+  Python, so membership over a generator expression, `map`, `filter`, `zip`, `enumerate`, or a type defining
+  only `__iter__` compiles. The scan stops at the first match, and an iterator is consumed up to it.
+- A keyword argument supplied twice, as in `f(**kwargs, b=2)` where `kwargs` holds `b`, is now rejected with
+  `got multiple values for keyword argument 'b'`.
+- Item access and membership errors now mirror Python's wording: `'X' object is not subscriptable`,
+  `'X' object does not support item assignment`, `'X' object does not support item deletion`, and
+  `argument of type 'X' is not a container or iterable`. The not-iterable message now reads
+  `'X' object is not iterable` wherever it is raised, rather than in two different wordings.
+- A watch archetype's `spawn_time` and `despawn_time` now accept
+  [`@callback(order=...)`][sonolus.script.archetype.callback], as the Sonolus specification allows.
+- Calling [`spawn()`][sonolus.script.archetype.PlayArchetype.spawn] in preview or tutorial mode is now
+  rejected during compilation.
+- A [`bucket`][sonolus.script.bucket.bucket] whose sprite id or fallback sprite id does not name a sprite of
+  the same mode's [`@skin`][sonolus.script.sprite.skin] is now rejected when the engine is built.
+- A relative `Path` given for a level's `cover`, `bgm`, or `preview`, or for an engine's `thumbnail`, now
+  resolves against the project's `resources` directory, the way the equivalent `str` already did.
+- The optimizer now removes a store that writes a memory cell's own value back to it, which an `@=` copy could
+  leave behind after optimization.
+- A `class` or `async def` statement in code skipped at compile time no longer affects the function containing
+  it.
+- A non-finite value such as `Infinity` or `NaN` in an item's data, as a third-party resource pack can contain,
+  now fails writing the collection with an error naming the file.
+- Fixed a portion of compile-time state accumulating for the life of the process, which grew memory use across
+  dev server rebuilds.
 
 ### 0.18.1
 
@@ -84,15 +245,13 @@
   matching a sequence pattern against an enum class subject.
 - Fixed an internal error when using an empty sequence pattern (`case []`).
 - A star sub-pattern in a sequence pattern, such as `case [a, *rest]`, is now rejected when the `case` is visited.
-  Previously it was only rejected once the sub-pattern was reached, so an arm whose length test failed at compile
-  time silently did not match instead of reporting the unsupported pattern.
 - Fixed the message expression of an `assert` being evaluated even when the assertion passed. An `assert` also now
   converts its test the same way `if` does, so a value with `__bool__` or `__len__` behaves alike in both.
 - Fixed an internal error when using a bare variable annotation (`x: int`); it is now a no-op. As in Python, it
   also makes the name local, so reading it before it is assigned is an error rather than reading a global.
 - A [`Record`][sonolus.script.record.Record] field annotated with a generic type missing its type arguments, such as
   [`EntityRef`][sonolus.script.archetype.EntityRef] rather than `EntityRef[Any]`, is now rejected when the class is
-  defined. Previously it was accepted and the field silently overlapped the following field.
+  defined.
 - An [`Array`][sonolus.script.array.Array] element type that is not a concrete supported type, such as `Array`
   without its own type arguments, is now rejected when the array type is parameterized. Equivalent spellings of the
   element type, such as `int | float`, `Final[int]`, and `Annotated[int, ...]`, are now normalized so that they
@@ -102,8 +261,7 @@
 - [`@streams`][sonolus.script.stream.streams] now reports the offending field name in every declaration error, and
   correctly distinguishes a field annotated with `Annotated[...]` from one with a real default value.
 - The declaration decorators ([`@options`][sonolus.script.options.options], [`@skin`][sonolus.script.sprite.skin],
-  [`@buckets`][sonolus.script.bucket.buckets], `@streams`, ...) now reject a base class other than `object`;
-  previously, using one caused every inherited declaration to be silently dropped.
+  [`@buckets`][sonolus.script.bucket.buckets], `@streams`, ...) now reject a base class other than `object`.
 - `round`'s second parameter is now named `ndigits`, matching Python, so `round(x, ndigits=2)` works.
 - Fixed `callable` always returning `False`.
 - Fixed `bool` failing on runtime values, and on values whose `__bool__` returns a `Num`. `bool` of an empty string
@@ -111,7 +269,7 @@
 - Fixed `reversed()` failing to compile for values whose length is not a compile time constant.
 - `sum` now reports an error for non-numeric values instead of modifying the value passed as `start`.
 - `min` and `max` now honor the `default` argument for `Array`, [`VarArray`][sonolus.script.containers.VarArray],
-  and `range`, which previously ignored it.
+  and `range`.
 - `map` and `filter` now report a non-iterable argument the same way `iter` and `zip` do.
 - Fixed `isinstance` reporting a `set` or `dict` as a `Record`; `issubclass` rejects those pairings in the same way.
 - Fixed a numeric value returned by `next` on a generator changing when `next` was called again.
