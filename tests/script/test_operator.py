@@ -9,6 +9,7 @@ from hypothesis import strategies as st
 from sonolus.script.array import Array
 from sonolus.script.debug import debug_log, static_error
 from sonolus.script.internal.error import CompilationError
+from sonolus.script.num import Num
 from sonolus.script.record import Record
 from sonolus.script.vec import Vec2
 from tests.script.conftest import run_and_validate, run_compiled
@@ -202,6 +203,52 @@ class Scaler(Record):
 
 class Plain(Record):
     n: float
+
+
+class PriorityBase(Num):
+    __slots__ = ()
+
+    def __add__(self, other):
+        debug_log(34)
+        return 1
+
+    def __radd__(self, other):
+        debug_log(35)
+        return 2
+
+    def __eq__(self, other):
+        debug_log(36)
+        return False
+
+    __hash__ = Num.__hash__
+
+
+class PrioritySub(PriorityBase):
+    __slots__ = ()
+
+    def __radd__(self, other):
+        debug_log(37)
+        return 3
+
+    def __eq__(self, other):
+        debug_log(38)
+        return True
+
+    __hash__ = Num.__hash__
+
+
+class InheritedEqualityBase(Num):
+    __slots__ = ()
+
+    def __eq__(self, other):
+        debug_log(39)
+        return isinstance(self, InheritedEqualitySub)
+
+    __hash__ = Num.__hash__
+
+
+class InheritedEqualitySub(InheritedEqualityBase):
+    __slots__ = ()
 
 
 bin_values = [
@@ -490,6 +537,36 @@ def test_ne_falls_back_to_reflected_op():
         return x != y
 
     assert run_and_validate(fn)
+
+
+def test_strict_subclass_reflected_binop_has_priority():
+    def fn():
+        return PriorityBase(1) + PrioritySub(2)
+
+    assert run_and_validate(fn) == 3
+
+
+def test_strict_subclass_reflected_comparison_has_priority():
+    def fn():
+        return PriorityBase(1) == PrioritySub(2)
+
+    assert run_and_validate(fn)
+
+
+def test_strict_subclass_inherited_comparison_has_priority():
+    def fn():
+        return InheritedEqualityBase(1) == InheritedEqualitySub(1)
+
+    assert run_and_validate(fn)
+
+
+def test_strict_subclass_reflected_binop_has_priority_after_inplace_fallback():
+    def fn():
+        value = PriorityBase(1)
+        value += PrioritySub(2)
+        return value
+
+    assert run_and_validate(fn) == 3
 
 
 def test_inplace_op_may_return_a_new_object():

@@ -31,35 +31,39 @@
 13:
   goto 14
 14:
-  v3 <- v2 < TutorialData[0]
-  goto 15 if v3 else 18
+  v3 <- TutorialData[0] >= 0
+  v4 <- TutorialData[0] % 1
+  v5 <- v4 == 0
+  v6 <- v3 && v5
+  v7 <- v2 < TutorialData[0]
+  goto 15 if v7 else 18
 15:
-  v4 <- v1
-  v5 <- v4 * 9
-  v6 <- v5
-  v7 <- v1
-  v8 <- v7 + 1
-  v1 <- v8
+  v8 <- v1
+  v9 <- v8 * 9
+  v10 <- v9
+  v11 <- v1
+  v12 <- v11 + 1
+  v1 <- v12
   goto 16
 16:
   goto 17
 17:
-  v9 <- 1
+  v13 <- 1
   goto 19
 18:
-  v9 <- 0
+  v13 <- 0
   goto 19
 19:
   goto 20
 20:
-  goto 21 if v9 else 22
+  goto 21 if v13 else 22
 21:
-  v10 <- Draw(1, TutorialData[v6 + 2], TutorialData[v6 + 3], TutorialData[v6 + 4], TutorialData[v6 + 5], TutorialData[v6 + 6], TutorialData[v6 + 7], TutorialData[v6 + 8], TutorialData[v6 + 9], 1, 1, 0, 0, 0)
+  v14 <- Draw(1, TutorialData[v10 + 2], TutorialData[v10 + 3], TutorialData[v10 + 4], TutorialData[v10 + 5], TutorialData[v10 + 6], TutorialData[v10 + 7], TutorialData[v10 + 8], TutorialData[v10 + 9], 1, 1, 0, 0, 0)
   goto 11
 22:
-  v11 <- Draw(2, TutorialData[64], TutorialData[65], TutorialData[66], TutorialData[67], TutorialData[68], TutorialData[69], TutorialData[70], TutorialData[71], 1, 1, 0, 0, 0)
-  v12 <- Draw(3, TutorialData[72], TutorialData[73], TutorialData[74], TutorialData[75], TutorialData[76], TutorialData[77], TutorialData[78], TutorialData[79], 1, 1, 0, 0, 0)
-  v13 <- Draw(5, TutorialData[80], TutorialData[81], TutorialData[82], TutorialData[83], TutorialData[84], TutorialData[85], TutorialData[86], TutorialData[87], 2, 1, 0, 0, 0)
+  v15 <- Draw(2, TutorialData[64], TutorialData[65], TutorialData[66], TutorialData[67], TutorialData[68], TutorialData[69], TutorialData[70], TutorialData[71], 1, 1, 0, 0, 0)
+  v16 <- Draw(3, TutorialData[72], TutorialData[73], TutorialData[74], TutorialData[75], TutorialData[76], TutorialData[77], TutorialData[78], TutorialData[79], 1, 1, 0, 0, 0)
+  v17 <- Draw(5, TutorialData[80], TutorialData[81], TutorialData[82], TutorialData[83], TutorialData[84], TutorialData[85], TutorialData[86], TutorialData[87], 2, 1, 0, 0, 0)
   goto 23
 23:
   goto 24
@@ -1953,48 +1957,50 @@
 374:
   goto 375
 375:
+  v381 <- TutorialData[0] % 1
+  v382 <- v381 == 0
   goto 376
 376:
-  v381 <- 0
+  v383 <- 0
   goto 377
 377:
   goto 378
 378:
   goto 379
 379:
-  v382 <- v381
-  v383 <- v382 < TutorialData[0]
-  goto 380 if v383 else 383
+  v384 <- v383
+  v385 <- v384 < TutorialData[0]
+  goto 380 if v385 else 383
 380:
-  v384 <- v381
-  v385 <- v381
-  v386 <- v385 + 1
-  v381 <- v386
+  v386 <- v383
+  v387 <- v383
+  v388 <- v387 + 1
+  v383 <- v388
   goto 381
 381:
   goto 382
 382:
-  v387 <- 1
+  v389 <- 1
   goto 384
 383:
-  v387 <- 0
+  v389 <- 0
   goto 384
 384:
   goto 385
 385:
-  goto 386 if v387 else 397
+  goto 386 if v389 else 397
 386:
-  v388 <- v384 * 9
-  v389 <- v388
-  v390 <- TutorialData[v389 + 1] == 0
-  goto 387 if v390 else 396
+  v390 <- v386 * 9
+  v391 <- v390
+  v392 <- TutorialData[v391 + 1] == 0
+  goto 387 if v392 else 396
 387:
   goto 388
 388:
   goto 389
 389:
-  v391 <- SpawnParticleEffect(0, TutorialData[v389 + 2], TutorialData[v389 + 3], TutorialData[v389 + 4], TutorialData[v389 + 5], TutorialData[v389 + 6], TutorialData[v389 + 7], TutorialData[v389 + 8], TutorialData[v389 + 9], 0.2, 0)
-  v392 <- v391
+  v393 <- SpawnParticleEffect(0, TutorialData[v391 + 2], TutorialData[v391 + 3], TutorialData[v391 + 4], TutorialData[v391 + 5], TutorialData[v391 + 6], TutorialData[v391 + 7], TutorialData[v391 + 8], TutorialData[v391 + 9], 0.2, 0)
+  v394 <- v393
   goto 390
 390:
   goto 391
@@ -4928,48 +4934,50 @@
 946:
   goto 947
 947:
+  v503 <- TutorialData[0] % 1
+  v504 <- v503 == 0
   goto 948
 948:
-  v503 <- 0
+  v505 <- 0
   goto 949
 949:
   goto 950
 950:
   goto 951
 951:
-  v504 <- v503
-  v505 <- v504 < TutorialData[0]
-  goto 952 if v505 else 955
+  v506 <- v505
+  v507 <- v506 < TutorialData[0]
+  goto 952 if v507 else 955
 952:
-  v506 <- v503
-  v507 <- v503
-  v508 <- v507 + 1
-  v503 <- v508
+  v508 <- v505
+  v509 <- v505
+  v510 <- v509 + 1
+  v505 <- v510
   goto 953
 953:
   goto 954
 954:
-  v509 <- 1
+  v511 <- 1
   goto 956
 955:
-  v509 <- 0
+  v511 <- 0
   goto 956
 956:
   goto 957
 957:
-  goto 958 if v509 else 969
+  goto 958 if v511 else 969
 958:
-  v510 <- v506 * 9
-  v511 <- v510
-  v512 <- TutorialData[v511 + 1] == 0
-  goto 959 if v512 else 968
+  v512 <- v508 * 9
+  v513 <- v512
+  v514 <- TutorialData[v513 + 1] == 0
+  goto 959 if v514 else 968
 959:
   goto 960
 960:
   goto 961
 961:
-  v513 <- SpawnParticleEffect(0, TutorialData[v511 + 2], TutorialData[v511 + 3], TutorialData[v511 + 4], TutorialData[v511 + 5], TutorialData[v511 + 6], TutorialData[v511 + 7], TutorialData[v511 + 8], TutorialData[v511 + 9], 0.2, 0)
-  v514 <- v513
+  v515 <- SpawnParticleEffect(0, TutorialData[v513 + 2], TutorialData[v513 + 3], TutorialData[v513 + 4], TutorialData[v513 + 5], TutorialData[v513 + 6], TutorialData[v513 + 7], TutorialData[v513 + 8], TutorialData[v513 + 9], 0.2, 0)
+  v516 <- v515
   goto 962
 962:
   goto 963
@@ -11571,48 +11579,50 @@
 2141:
   goto 2142
 2142:
+  v682 <- TutorialData[0] % 1
+  v683 <- v682 == 0
   goto 2143
 2143:
-  v682 <- 0
+  v684 <- 0
   goto 2144
 2144:
   goto 2145
 2145:
   goto 2146
 2146:
-  v683 <- v682
-  v684 <- v683 < TutorialData[0]
-  goto 2147 if v684 else 2150
+  v685 <- v684
+  v686 <- v685 < TutorialData[0]
+  goto 2147 if v686 else 2150
 2147:
-  v685 <- v682
-  v686 <- v682
-  v687 <- v686 + 1
-  v682 <- v687
+  v687 <- v684
+  v688 <- v684
+  v689 <- v688 + 1
+  v684 <- v689
   goto 2148
 2148:
   goto 2149
 2149:
-  v688 <- 1
+  v690 <- 1
   goto 2151
 2150:
-  v688 <- 0
+  v690 <- 0
   goto 2151
 2151:
   goto 2152
 2152:
-  goto 2153 if v688 else 2228
+  goto 2153 if v690 else 2228
 2153:
-  v689 <- v685 * 9
-  v690 <- v689
-  v691 <- TutorialData[v690 + 1] == -1
-  goto 2154 if v691 else 2227
+  v691 <- v687 * 9
+  v692 <- v691
+  v693 <- TutorialData[v692 + 1] == -1
+  goto 2154 if v693 else 2227
 2154:
   goto 2155
 2155:
   goto 2156
 2156:
-  v692 <- SpawnParticleEffect(0, TutorialData[v690 + 2], TutorialData[v690 + 3], TutorialData[v690 + 4], TutorialData[v690 + 5], TutorialData[v690 + 6], TutorialData[v690 + 7], TutorialData[v690 + 8], TutorialData[v690 + 9], 0.2, 0)
-  v693 <- v692
+  v694 <- SpawnParticleEffect(0, TutorialData[v692 + 2], TutorialData[v692 + 3], TutorialData[v692 + 4], TutorialData[v692 + 5], TutorialData[v692 + 6], TutorialData[v692 + 7], TutorialData[v692 + 8], TutorialData[v692 + 9], 0.2, 0)
+  v695 <- v694
   goto 2157
 2157:
   goto 2158
@@ -11983,48 +11993,50 @@
 2203:
   goto 2204
 2204:
+  v680 <- TutorialData[0] % 1
+  v681 <- v680 == 0
   goto 2205
 2205:
-  v680 <- 0
+  v682 <- 0
   goto 2206
 2206:
   goto 2207
 2207:
   goto 2208
 2208:
-  v681 <- v680
-  v682 <- v681 < TutorialData[0]
-  goto 2209 if v682 else 2212
+  v683 <- v682
+  v684 <- v683 < TutorialData[0]
+  goto 2209 if v684 else 2212
 2209:
-  v683 <- v680
-  v684 <- v680
-  v685 <- v684 + 1
-  v680 <- v685
+  v685 <- v682
+  v686 <- v682
+  v687 <- v686 + 1
+  v682 <- v687
   goto 2210
 2210:
   goto 2211
 2211:
-  v686 <- 1
+  v688 <- 1
   goto 2213
 2212:
-  v686 <- 0
+  v688 <- 0
   goto 2213
 2213:
   goto 2214
 2214:
-  goto 2215 if v686 else 2226
+  goto 2215 if v688 else 2226
 2215:
-  v687 <- v683 * 9
-  v688 <- v687
-  v689 <- TutorialData[v688 + 1] == 1
-  goto 2216 if v689 else 2225
+  v689 <- v685 * 9
+  v690 <- v689
+  v691 <- TutorialData[v690 + 1] == 1
+  goto 2216 if v691 else 2225
 2216:
   goto 2217
 2217:
   goto 2218
 2218:
-  v690 <- SpawnParticleEffect(0, TutorialData[v688 + 2], TutorialData[v688 + 3], TutorialData[v688 + 4], TutorialData[v688 + 5], TutorialData[v688 + 6], TutorialData[v688 + 7], TutorialData[v688 + 8], TutorialData[v688 + 9], 0.2, 0)
-  v691 <- v690
+  v692 <- SpawnParticleEffect(0, TutorialData[v690 + 2], TutorialData[v690 + 3], TutorialData[v690 + 4], TutorialData[v690 + 5], TutorialData[v690 + 6], TutorialData[v690 + 7], TutorialData[v690 + 8], TutorialData[v690 + 9], 0.2, 0)
+  v693 <- v692
   goto 2219
 2219:
   goto 2220
@@ -14649,48 +14661,50 @@
 2678:
   goto 2679
 2679:
+  v812 <- TutorialData[0] % 1
+  v813 <- v812 == 0
   goto 2680
 2680:
-  v812 <- 0
+  v814 <- 0
   goto 2681
 2681:
   goto 2682
 2682:
   goto 2683
 2683:
-  v813 <- v812
-  v814 <- v813 < TutorialData[0]
-  goto 2684 if v814 else 2687
+  v815 <- v814
+  v816 <- v815 < TutorialData[0]
+  goto 2684 if v816 else 2687
 2684:
-  v815 <- v812
-  v816 <- v812
-  v817 <- v816 + 1
-  v812 <- v817
+  v817 <- v814
+  v818 <- v814
+  v819 <- v818 + 1
+  v814 <- v819
   goto 2685
 2685:
   goto 2686
 2686:
-  v818 <- 1
+  v820 <- 1
   goto 2688
 2687:
-  v818 <- 0
+  v820 <- 0
   goto 2688
 2688:
   goto 2689
 2689:
-  goto 2690 if v818 else 2701
+  goto 2690 if v820 else 2701
 2690:
-  v819 <- v815 * 9
-  v820 <- v819
-  v821 <- TutorialData[v820 + 1] == 0
-  goto 2691 if v821 else 2700
+  v821 <- v817 * 9
+  v822 <- v821
+  v823 <- TutorialData[v822 + 1] == 0
+  goto 2691 if v823 else 2700
 2691:
   goto 2692
 2692:
   goto 2693
 2693:
-  v822 <- SpawnParticleEffect(0, TutorialData[v820 + 2], TutorialData[v820 + 3], TutorialData[v820 + 4], TutorialData[v820 + 5], TutorialData[v820 + 6], TutorialData[v820 + 7], TutorialData[v820 + 8], TutorialData[v820 + 9], 0.2, 0)
-  v823 <- v822
+  v824 <- SpawnParticleEffect(0, TutorialData[v822 + 2], TutorialData[v822 + 3], TutorialData[v822 + 4], TutorialData[v822 + 5], TutorialData[v822 + 6], TutorialData[v822 + 7], TutorialData[v822 + 8], TutorialData[v822 + 9], 0.2, 0)
+  v825 <- v824
   goto 2694
 2694:
   goto 2695
@@ -18664,48 +18678,50 @@
 3379:
   goto 3380
 3380:
+  v1242 <- TutorialData[0] % 1
+  v1243 <- v1242 == 0
   goto 3381
 3381:
-  v1242 <- 0
+  v1244 <- 0
   goto 3382
 3382:
   goto 3383
 3383:
   goto 3384
 3384:
-  v1243 <- v1242
-  v1244 <- v1243 < TutorialData[0]
-  goto 3385 if v1244 else 3388
+  v1245 <- v1244
+  v1246 <- v1245 < TutorialData[0]
+  goto 3385 if v1246 else 3388
 3385:
-  v1245 <- v1242
-  v1246 <- v1242
-  v1247 <- v1246 + 1
-  v1242 <- v1247
+  v1247 <- v1244
+  v1248 <- v1244
+  v1249 <- v1248 + 1
+  v1244 <- v1249
   goto 3386
 3386:
   goto 3387
 3387:
-  v1248 <- 1
+  v1250 <- 1
   goto 3389
 3388:
-  v1248 <- 0
+  v1250 <- 0
   goto 3389
 3389:
   goto 3390
 3390:
-  goto 3391 if v1248 else 3402
+  goto 3391 if v1250 else 3402
 3391:
-  v1249 <- v1245 * 9
-  v1250 <- v1249
-  v1251 <- TutorialData[v1250 + 1] == v891
-  goto 3392 if v1251 else 3401
+  v1251 <- v1247 * 9
+  v1252 <- v1251
+  v1253 <- TutorialData[v1252 + 1] == v891
+  goto 3392 if v1253 else 3401
 3392:
   goto 3393
 3393:
   goto 3394
 3394:
-  v1252 <- SpawnParticleEffect(0, TutorialData[v1250 + 2], TutorialData[v1250 + 3], TutorialData[v1250 + 4], TutorialData[v1250 + 5], TutorialData[v1250 + 6], TutorialData[v1250 + 7], TutorialData[v1250 + 8], TutorialData[v1250 + 9], 0.2, 0)
-  v1253 <- v1252
+  v1254 <- SpawnParticleEffect(0, TutorialData[v1252 + 2], TutorialData[v1252 + 3], TutorialData[v1252 + 4], TutorialData[v1252 + 5], TutorialData[v1252 + 6], TutorialData[v1252 + 7], TutorialData[v1252 + 8], TutorialData[v1252 + 9], 0.2, 0)
+  v1255 <- v1254
   goto 3395
 3395:
   goto 3396
@@ -21981,48 +21997,50 @@
 3985:
   goto 3986
 3986:
+  v1422 <- TutorialData[0] % 1
+  v1423 <- v1422 == 0
   goto 3987
 3987:
-  v1422 <- 0
+  v1424 <- 0
   goto 3988
 3988:
   goto 3989
 3989:
   goto 3990
 3990:
-  v1423 <- v1422
-  v1424 <- v1423 < TutorialData[0]
-  goto 3991 if v1424 else 3994
+  v1425 <- v1424
+  v1426 <- v1425 < TutorialData[0]
+  goto 3991 if v1426 else 3994
 3991:
-  v1425 <- v1422
-  v1426 <- v1422
-  v1427 <- v1426 + 1
-  v1422 <- v1427
+  v1427 <- v1424
+  v1428 <- v1424
+  v1429 <- v1428 + 1
+  v1424 <- v1429
   goto 3992
 3992:
   goto 3993
 3993:
-  v1428 <- 1
+  v1430 <- 1
   goto 3995
 3994:
-  v1428 <- 0
+  v1430 <- 0
   goto 3995
 3995:
   goto 3996
 3996:
-  goto 3997 if v1428 else 4008
+  goto 3997 if v1430 else 4008
 3997:
-  v1429 <- v1425 * 9
-  v1430 <- v1429
-  v1431 <- TutorialData[v1430 + 1] == 0
-  goto 3998 if v1431 else 4007
+  v1431 <- v1427 * 9
+  v1432 <- v1431
+  v1433 <- TutorialData[v1432 + 1] == 0
+  goto 3998 if v1433 else 4007
 3998:
   goto 3999
 3999:
   goto 4000
 4000:
-  v1432 <- SpawnParticleEffect(0, TutorialData[v1430 + 2], TutorialData[v1430 + 3], TutorialData[v1430 + 4], TutorialData[v1430 + 5], TutorialData[v1430 + 6], TutorialData[v1430 + 7], TutorialData[v1430 + 8], TutorialData[v1430 + 9], 0.2, 0)
-  v1433 <- v1432
+  v1434 <- SpawnParticleEffect(0, TutorialData[v1432 + 2], TutorialData[v1432 + 3], TutorialData[v1432 + 4], TutorialData[v1432 + 5], TutorialData[v1432 + 6], TutorialData[v1432 + 7], TutorialData[v1432 + 8], TutorialData[v1432 + 9], 0.2, 0)
+  v1435 <- v1434
   goto 4001
 4001:
   goto 4002
@@ -26026,48 +26044,50 @@
 4702:
   goto 4703
 4703:
+  v1577 <- TutorialData[0] % 1
+  v1578 <- v1577 == 0
   goto 4704
 4704:
-  v1577 <- 0
+  v1579 <- 0
   goto 4705
 4705:
   goto 4706
 4706:
   goto 4707
 4707:
-  v1578 <- v1577
-  v1579 <- v1578 < TutorialData[0]
-  goto 4708 if v1579 else 4711
+  v1580 <- v1579
+  v1581 <- v1580 < TutorialData[0]
+  goto 4708 if v1581 else 4711
 4708:
-  v1580 <- v1577
-  v1581 <- v1577
-  v1582 <- v1581 + 1
-  v1577 <- v1582
+  v1582 <- v1579
+  v1583 <- v1579
+  v1584 <- v1583 + 1
+  v1579 <- v1584
   goto 4709
 4709:
   goto 4710
 4710:
-  v1583 <- 1
+  v1585 <- 1
   goto 4712
 4711:
-  v1583 <- 0
+  v1585 <- 0
   goto 4712
 4712:
   goto 4713
 4713:
-  goto 4714 if v1583 else 4725
+  goto 4714 if v1585 else 4725
 4714:
-  v1584 <- v1580 * 9
-  v1585 <- v1584
-  v1586 <- TutorialData[v1585 + 1] == 0
-  goto 4715 if v1586 else 4724
+  v1586 <- v1582 * 9
+  v1587 <- v1586
+  v1588 <- TutorialData[v1587 + 1] == 0
+  goto 4715 if v1588 else 4724
 4715:
   goto 4716
 4716:
   goto 4717
 4717:
-  v1587 <- SpawnParticleEffect(0, TutorialData[v1585 + 2], TutorialData[v1585 + 3], TutorialData[v1585 + 4], TutorialData[v1585 + 5], TutorialData[v1585 + 6], TutorialData[v1585 + 7], TutorialData[v1585 + 8], TutorialData[v1585 + 9], 0.2, 0)
-  v1588 <- v1587
+  v1589 <- SpawnParticleEffect(0, TutorialData[v1587 + 2], TutorialData[v1587 + 3], TutorialData[v1587 + 4], TutorialData[v1587 + 5], TutorialData[v1587 + 6], TutorialData[v1587 + 7], TutorialData[v1587 + 8], TutorialData[v1587 + 9], 0.2, 0)
+  v1590 <- v1589
   goto 4718
 4718:
   goto 4719

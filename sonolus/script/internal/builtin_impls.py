@@ -9,7 +9,7 @@ from typing import Any, Never, assert_never
 from sonolus.backend.ops import Op
 from sonolus.script.array import Array
 from sonolus.script.array_like import ArrayLike
-from sonolus.script.debug import error, require
+from sonolus.script.debug import assert_true, error, require
 from sonolus.script.internal import impl
 from sonolus.script.internal.context import ctx
 from sonolus.script.internal.dict_impl import DictImpl
@@ -112,19 +112,20 @@ def _resolve_class_arg(value, check: str):
         raise TypeError(f"{check} check against frozenset is not supported")
     if value is tuple:
         return TupleImpl
+    if value is range or value is _range:
+        return Range
     if value is _int or value is _float or value is _bool:
         raise TypeError(f"{check} check against int, float, or bool is not supported, use Num instead")
     return value
 
 
-# dict, set, and tuple resolve to internal types that subclass Record or TransientValue, so a plain issubclass
-# would report them as subclasses of those bases too, which Python does not. Since the builtin aliases are the
-# only spelling for these types, anything outside the aliases must fail rather than expose that hierarchy.
-_ALIAS_REPRS = (DictImpl, SetImpl, TupleImpl)
+# Builtin aliases resolve to internal types that subclass Record or TransientValue, so a plain issubclass would
+# expose an implementation-only hierarchy. Anything outside the aliases must fail instead.
+_ALIAS_REPRS = (DictImpl, SetImpl, TupleImpl, Range)
 
 
 def _alias_repr_isolated(cls) -> bool:
-    """Whether cls is one of the internal types dict, set, and tuple resolve to."""
+    """Whether cls is an internal representation of a builtin type alias."""
     return isinstance(cls, type) and issubclass(cls, _ALIAS_REPRS)
 
 
@@ -195,7 +196,15 @@ def _len(value):
         return len(tuple_iter(value))
     if not hasattr(value, "__len__"):
         raise TypeError(f"object of type '{_type_name(value)}' has no len()")
-    return compile_and_call(value.__len__)  # type: ignore
+    return _validate_len_result(compile_and_call(value.__len__))  # type: ignore
+
+
+def _validate_len_result(length):
+    length = validate_value(length)
+    if not _is_num(length):
+        raise TypeError(f"Invalid type for __len__: {_type_name(length)}")
+    assert_true(Num.and_(length >= 0, length % 1 == 0), "__len__() must return a non-negative integer")
+    return length
 
 
 @meta_fn
@@ -203,6 +212,8 @@ def _enumerate(iterable, start=0):
     from sonolus.script.internal.visitor import compile_and_call
 
     iterable = _unwrap_set(validate_value(iterable))
+    start = Num._accept_(start)
+    assert_true(start % 1 == 0, "enumerate() start must be an integer")
     if has_tuple_iter(iterable):
         return _comptime_iter_result((start + i, value) for i, value in enumerate(tuple_iter(iterable)))
     elif not hasattr(iterable, "__iter__"):
@@ -287,7 +298,7 @@ def _array_like_extremum(iterable, default, key, *, is_max: bool):
     default = validate_value(default)
     if not (_is_num(default) or isinstance(default, Record | Array)):
         raise TypeError(f"default argument to {name}() must be a number, record, or array, got '{_type_name(default)}'")
-    length = validate_value(compile_and_call(iterable.__len__))
+    length = _validate_len_result(compile_and_call(iterable.__len__))
     if not ctx().live:
         return default
     if length._is_py_():
@@ -748,6 +759,27 @@ class _Dict:
 _dict = _Dict()
 
 
+class _Range:
+    _is_comptime_value_ = True
+    _type_mapping_ = Range
+
+    @meta_fn
+    def __call__(self, start, stop=None, step=1, /):
+        from sonolus.script.internal.visitor import compile_and_call
+
+        return compile_and_call(Range.frozen, start, stop, step)
+
+    def __or__(self, other):
+        other = validate_value(other)
+        if other._is_py_():
+            other = other._as_py_()
+        other = getattr(other, "_type_mapping_", other)
+        return Range | other
+
+
+_range = _Range()
+
+
 def _any(iterable):
     for value in iterable:  # noqa: SIM110
         if value:
@@ -922,7 +954,7 @@ _type = _Type()
 
 # The singleton stand-ins for the builtin types, which _type_name reports as `type` rather than by their own
 # class names.
-_BUILTIN_TYPE_SHIMS = (_Int, _Float, _Bool, _Set, _Dict, _Type)
+_BUILTIN_TYPE_SHIMS = (_Int, _Float, _Bool, _Set, _Dict, _Range, _Type)
 
 # Keyed by id, matching _resolve_class_arg: these are singletons, and _Type is a Record whose __eq__ compares
 # fields rather than identity.
@@ -932,6 +964,7 @@ _BUILTIN_ALIAS_NAMES = {
     id(_bool): "bool",
     id(_set): "set",
     id(_dict): "dict",
+    id(_range): "range",
     id(_type): "type",
 }
 
@@ -964,7 +997,7 @@ BUILTIN_IMPLS = {
     id(max): _max,
     id(min): _min,
     id(next): _next,
-    id(range): Range.frozen,
+    id(range): _range,
     id(reversed): _reversed,
     id(set): _set,
     id(setattr): _setattr,

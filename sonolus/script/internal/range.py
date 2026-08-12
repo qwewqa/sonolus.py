@@ -26,12 +26,13 @@ class Range(Record, ArrayLike[int]):
     def frozen(cls, start: int, stop: int | None = None, step: int = 1, /) -> Self:
         if stop is None:
             start, stop = 0, start
+        start = Num._accept_(start)
+        stop = Num._accept_(stop)
         step = Num._accept_(step)
-        if not ctx():
-            if step._as_py_() == 0:
-                raise ValueError("range() arg 3 must not be zero")
-        else:
-            assert_true(step != 0, "range() arg 3 must not be zero")
+        assert_true(start % 1 == 0, "range() arguments must be integers")
+        assert_true(stop % 1 == 0, "range() arguments must be integers")
+        assert_true(step % 1 == 0, "range() arguments must be integers")
+        assert_true(step != 0, "range() arg 3 must not be zero")
         return super().frozen(start, stop, step)
 
     def __iter__(self) -> SonolusIterator:
@@ -121,14 +122,15 @@ def range_or_tuple(start: int, stop: int | None = None, step: int = 1) -> Range 
     start = Num._accept_(start)
     stop = Num._accept_(stop) if stop is not None else None
     step = Num._accept_(step)
+    assert_true(start % 1 == 0, "range() arguments must be integers")
+    assert_true(stop % 1 == 0, "range() arguments must be integers")
+    assert_true(step % 1 == 0, "range() arguments must be integers")
     if start._is_py_() and stop._is_py_() and step._is_py_():
         start_int = start._as_py_()
         stop_int = stop._as_py_() if stop is not None else None
         if stop_int is None:
             start_int, stop_int = 0, start_int
         step_int = step._as_py_()
-        if start_int % 1 != 0 or stop_int % 1 != 0 or step_int % 1 != 0:
-            raise TypeError("Range arguments must be integers")
         # Keep it as a runtime failure if step is 0
         if step_int != 0:
             return validate_value(tuple(range(int(start_int), int(stop_int), int(step_int))))  # type: ignore

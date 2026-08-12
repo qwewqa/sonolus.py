@@ -8,6 +8,29 @@ Block(JumpLoop(
     1
   )
   Execute(If(
+    And(
+      GreaterOr(
+        Get(
+          2001
+          0
+        )
+        0
+      )
+      Equal(
+        0
+        Mod(
+          Get(
+            2001
+            0
+          )
+          1
+        )
+      )
+    )
+    2
+    5
+  ))
+  Execute(If(
     Less(
       Get(
         10000
@@ -18,8 +41,8 @@ Block(JumpLoop(
         0
       )
     )
-    2
     3
+    4
   ))
   Execute(
     Set(
@@ -240,7 +263,12 @@ Block(JumpLoop(
       0
       0
     )
-    4
+    6
+  )
+  Execute(
+    DebugLog(1)
+    DebugPause()
+    6
   )
   0
 ))

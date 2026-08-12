@@ -197,7 +197,7 @@ class HelpCommand:
                 subsequent_indent = "  "
                 wrapped = textwrap.fill(
                     paragraph,
-                    width=max_width - len(initial_indent),
+                    width=max(1, max_width - len(initial_indent)),
                     initial_indent=initial_indent,
                     subsequent_indent=subsequent_indent,
                 )

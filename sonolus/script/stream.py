@@ -545,7 +545,7 @@ class StreamGroup[T, Size](Record):
     def __contains__(self, item: int) -> bool:
         """Check if the group contains the stream with the given index."""
         _check_can_read_or_write_stream()
-        return 0 <= item < self.size()
+        return item % 1 == 0 and 0 <= item < self.size()
 
     def __getitem__(self, index: int) -> Stream[T]:
         """Get the stream at the given index.

@@ -42,6 +42,8 @@ class BasicBlock:
         self.outgoing = outgoing or set()
 
     def connect_to(self, other: BasicBlock, cond: int | float | None = None):
+        if any(edge.cond == cond for edge in self.outgoing):
+            raise ValueError(f"duplicate outgoing edge label: {cond!r}")
         edge = FlowEdge(self, other, cond)
         self.outgoing.add(edge)
         other.incoming.add(edge)

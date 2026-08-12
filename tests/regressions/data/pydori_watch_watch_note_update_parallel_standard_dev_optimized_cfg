@@ -7,7 +7,7 @@
     2 -> 5
     3 -> 4
     4 -> 3
-    5 -> 74
+    5 -> 76
     6 -> 2
     default -> 1
 1:
@@ -52,21 +52,21 @@
   10000[5] <- 0
   goto 22
 14:
-  goto 15 if ((LevelData[15] + 0.5) > LevelData[15]) else 81
+  goto 15 if ((LevelData[15] + 0.5) > LevelData[15]) else 83
 15:
   goto 16 if (10000[1] <= (LevelData[15] + 0.5)) else 17
 16:
   10000[5] <- Remap(LevelData[15], LevelData[15] + 0.5, 0, 1, 10000[1])
   goto 22
 17:
-  goto 18 if ((LevelData[14] - 0.5) > (LevelData[15] + 0.5)) else 80
+  goto 18 if ((LevelData[14] - 0.5) > (LevelData[15] + 0.5)) else 82
 18:
   goto 19 if (10000[1] <= (LevelData[14] - 0.5)) else 20
 19:
   10000[5] <- Remap(LevelData[15] + 0.5, LevelData[14] - 0.5, 1, 1, 10000[1])
   goto 22
 20:
-  goto 21 if (LevelData[14] > (LevelData[14] - 0.5)) else 79
+  goto 21 if (LevelData[14] > (LevelData[14] - 0.5)) else 81
 21:
   10000[5] <- If(10000[1] <= LevelData[14], Remap(LevelData[14] - 0.5, LevelData[14], 1, 0, 10000[1]), 0)
   goto 22
@@ -75,7 +75,7 @@
   goto 23 if (10000[5] <= 0) else 24
 23:
   goto when 10000[0]
-    2 -> 56
+    2 -> 58
     default -> 25
 24:
   10000[6] <- EntityData[0] * LevelData[12]
@@ -101,12 +101,12 @@
   10000[7] <- 10000[8] + 10000[7] + LevelData[10]
   Draw(10000[2], (10000[10] + 10000[11] + LevelData[4]) / 10000[14], (10000[12] + 10000[13] + LevelData[7]) / 10000[14], (10000[10] + 10000[17] + LevelData[4]) / 10000[6], (10000[12] + 10000[18] + LevelData[7]) / 10000[6], (10000[15] + 10000[17] + LevelData[4]) / 10000[7], (10000[16] + 10000[18] + LevelData[7]) / 10000[7], (10000[15] + 10000[11] + LevelData[4]) / 10000[9], (10000[16] + 10000[13] + LevelData[7]) / 10000[9], 310000 + (EntityData[0] * 100) + 10000[1], 10000[5], 0, 0, 0)
   goto when 10000[0]
-    2 -> 56
+    2 -> 58
     default -> 25
 25:
   goto when 10000[0]
     3 -> 26
-    default -> 74
+    default -> 76
 26:
   10000[0] <- RuntimeUpdate[0] % 0.3
   10000[2] <- 10000[0] / 0.3
@@ -115,71 +115,77 @@
   10000[4] <- 0
   goto 36
 28:
-  goto 29 if ((LevelData[15] + 0.5) > LevelData[15]) else 55
+  goto 29 if ((LevelData[15] + 0.5) > LevelData[15]) else 57
 29:
   goto 30 if (10000[1] <= (LevelData[15] + 0.5)) else 31
 30:
   10000[4] <- Remap(LevelData[15], LevelData[15] + 0.5, 0, 1, 10000[1])
   goto 36
 31:
-  goto 32 if ((LevelData[14] - 0.5) > (LevelData[15] + 0.5)) else 54
+  goto 32 if ((LevelData[14] - 0.5) > (LevelData[15] + 0.5)) else 56
 32:
   goto 33 if (10000[1] <= (LevelData[14] - 0.5)) else 34
 33:
   10000[4] <- Remap(LevelData[15] + 0.5, LevelData[14] - 0.5, 1, 1, 10000[1])
   goto 36
 34:
-  goto 35 if (LevelData[14] > (LevelData[14] - 0.5)) else 53
+  goto 35 if (LevelData[14] > (LevelData[14] - 0.5)) else 55
 35:
   10000[4] <- If(10000[1] <= LevelData[14], Remap(LevelData[14] - 0.5, LevelData[14], 1, 0, 10000[1]), 0)
   goto 36
 36:
   10000[4] <- EaseOutQuad(10000[4])
   10000[5] <- Abs(EntityData[2])
+  goto 37 if (10000[5] % 1) else 38
+37:
+  DebugLog(4)
+  DebugPause()
+  goto exit
+38:
   10000[6] <- 10000[5] - 1
   10000[7] <- 0
-  goto 37
-37:
-  goto 38 if (10000[7] < 10000[5]) else 74
-38:
+  goto 39
+39:
+  goto 40 if (10000[7] < 10000[5]) else 76
+40:
   10000[8] <- 10000[7] + 1
   10000[9] <- If(10000[7], 1, 0)
-  goto 39 if (10000[6] == 10000[7]) else 41
-39:
-  goto 50 if (10000[0] <= 0) else 40
-40:
-  10000[10] <- 0
-  goto 43
+  goto 41 if (10000[6] == 10000[7]) else 43
 41:
-  goto 50 if (10000[0] <= 0) else 42
+  goto 52 if (10000[0] <= 0) else 42
 42:
-  10000[10] <- 1
-  goto 43
+  10000[10] <- 0
+  goto 45
 43:
-  goto 44 if (10000[0] <= 0.1) else 45
+  goto 52 if (10000[0] <= 0) else 44
 44:
-  10000[9] <- Remap(0, 0.1, 10000[9], 1, 10000[0])
-  goto 50
+  10000[10] <- 1
+  goto 45
 45:
-  goto 46 if (10000[0] <= 0.19999999999999998) else 47
+  goto 46 if (10000[0] <= 0.1) else 47
 46:
-  10000[9] <- Remap(0.1, 0.19999999999999998, 1, 1, 10000[0])
-  goto 50
+  10000[9] <- Remap(0, 0.1, 10000[9], 1, 10000[0])
+  goto 52
 47:
-  goto 48 if (10000[0] <= 0.3) else 49
+  goto 48 if (10000[0] <= 0.19999999999999998) else 49
 48:
-  10000[9] <- Remap(0.19999999999999998, 0.3, 1, 10000[10], 10000[0])
-  goto 50
+  10000[9] <- Remap(0.1, 0.19999999999999998, 1, 1, 10000[0])
+  goto 52
 49:
-  10000[9] <- 10000[10]
-  goto 50
+  goto 50 if (10000[0] <= 0.3) else 51
 50:
-  10000[9] <- 10000[4] * EaseOutQuad(10000[9])
-  goto 51 if (10000[9] <= 0) else 52
+  10000[9] <- Remap(0.19999999999999998, 0.3, 1, 10000[10], 10000[0])
+  goto 52
 51:
-  10000[7] <- 10000[8]
-  goto 37
+  10000[9] <- 10000[10]
+  goto 52
 52:
+  10000[9] <- 10000[4] * EaseOutQuad(10000[9])
+  goto 53 if (10000[9] <= 0) else 54
+53:
+  10000[7] <- 10000[8]
+  goto 39
+54:
   10000[10] <- If(EntityData[2] > 0, 1, -1)
   10000[7] <- (EntityData[0] + (10000[10] * (0.4 + 10000[7] + 10000[2]))) * LevelData[12]
   10000[11] <- 10000[1] + ((LevelData[11] * 1.5) / 2)
@@ -217,68 +223,68 @@
   10000[18] <- (LevelData[8] * 10000[12]) + (LevelData[9] * 10000[11]) + LevelData[10]
   Draw(10000[3], ((LevelData[2] * 10000[19]) + (LevelData[3] * 10000[20]) + LevelData[4]) / 10000[13], ((LevelData[5] * 10000[19]) + (LevelData[6] * 10000[20]) + LevelData[7]) / 10000[13], ((LevelData[2] * 10000[17]) + (LevelData[3] * 10000[7]) + LevelData[4]) / 10000[16], ((LevelData[5] * 10000[17]) + (LevelData[6] * 10000[7]) + LevelData[7]) / 10000[16], ((LevelData[2] * 10000[12]) + (LevelData[3] * 10000[11]) + LevelData[4]) / 10000[18], ((LevelData[5] * 10000[12]) + (LevelData[6] * 10000[11]) + LevelData[7]) / 10000[18], ((LevelData[2] * 10000[14]) + (LevelData[3] * 10000[10]) + LevelData[4]) / 10000[15], ((LevelData[5] * 10000[14]) + (LevelData[6] * 10000[10]) + LevelData[7]) / 10000[15], 320000 + (EntityData[0] * 100) + 10000[1], 10000[9], 0, 0, 0)
   10000[7] <- 10000[8]
-  goto 37
-53:
-  DebugLog(3)
-  DebugPause()
-  goto exit
-54:
-  DebugLog(3)
-  DebugPause()
-  goto exit
+  goto 39
 55:
   DebugLog(3)
   DebugPause()
   goto exit
 56:
-  10000[0] <- RuntimeUpdate[0] % 0.3
-  goto 57 if 10000[4] else 58
-57:
-  10000[2] <- 0
-  goto 66
-58:
-  goto 59 if ((LevelData[15] + 0.5) > LevelData[15]) else 78
-59:
-  goto 60 if (10000[1] <= (LevelData[15] + 0.5)) else 61
-60:
-  10000[2] <- Remap(LevelData[15], LevelData[15] + 0.5, 0, 1, 10000[1])
-  goto 66
-61:
-  goto 62 if ((LevelData[14] - 0.5) > (LevelData[15] + 0.5)) else 77
-62:
-  goto 63 if (10000[1] <= (LevelData[14] - 0.5)) else 64
-63:
-  10000[2] <- Remap(LevelData[15] + 0.5, LevelData[14] - 0.5, 1, 1, 10000[1])
-  goto 66
-64:
-  goto 65 if (LevelData[14] > (LevelData[14] - 0.5)) else 76
-65:
-  10000[2] <- If(10000[1] <= LevelData[14], Remap(LevelData[14] - 0.5, LevelData[14], 1, 0, 10000[1]), 0)
-  goto 66
-66:
-  goto 67 if (10000[0] <= 0) else 68
-67:
-  10000[4] <- 0
-  goto 73
-68:
-  goto 69 if (10000[0] <= 0.1) else 70
-69:
-  10000[4] <- Remap(0, 0.1, 0, 1, 10000[0])
-  goto 73
-70:
-  goto 71 if (10000[0] <= 0.19999999999999998) else 72
-71:
-  10000[4] <- Remap(0.1, 0.19999999999999998, 1, 1, 10000[0])
-  goto 73
-72:
-  10000[4] <- If(10000[0] <= 0.3, Remap(0.19999999999999998, 0.3, 1, 0, 10000[0]), 0)
-  goto 73
-73:
-  10000[2] <- EaseOutQuad(10000[2]) * EaseOutQuad(10000[4])
-  goto 74 if (10000[2] <= 0) else 75
-74:
+  DebugLog(3)
+  DebugPause()
   goto exit
+57:
+  DebugLog(3)
+  DebugPause()
+  goto exit
+58:
+  10000[0] <- RuntimeUpdate[0] % 0.3
+  goto 59 if 10000[4] else 60
+59:
+  10000[2] <- 0
+  goto 68
+60:
+  goto 61 if ((LevelData[15] + 0.5) > LevelData[15]) else 80
+61:
+  goto 62 if (10000[1] <= (LevelData[15] + 0.5)) else 63
+62:
+  10000[2] <- Remap(LevelData[15], LevelData[15] + 0.5, 0, 1, 10000[1])
+  goto 68
+63:
+  goto 64 if ((LevelData[14] - 0.5) > (LevelData[15] + 0.5)) else 79
+64:
+  goto 65 if (10000[1] <= (LevelData[14] - 0.5)) else 66
+65:
+  10000[2] <- Remap(LevelData[15] + 0.5, LevelData[14] - 0.5, 1, 1, 10000[1])
+  goto 68
+66:
+  goto 67 if (LevelData[14] > (LevelData[14] - 0.5)) else 78
+67:
+  10000[2] <- If(10000[1] <= LevelData[14], Remap(LevelData[14] - 0.5, LevelData[14], 1, 0, 10000[1]), 0)
+  goto 68
+68:
+  goto 69 if (10000[0] <= 0) else 70
+69:
+  10000[4] <- 0
+  goto 75
+70:
+  goto 71 if (10000[0] <= 0.1) else 72
+71:
+  10000[4] <- Remap(0, 0.1, 0, 1, 10000[0])
+  goto 75
+72:
+  goto 73 if (10000[0] <= 0.19999999999999998) else 74
+73:
+  10000[4] <- Remap(0.1, 0.19999999999999998, 1, 1, 10000[0])
+  goto 75
+74:
+  10000[4] <- If(10000[0] <= 0.3, Remap(0.19999999999999998, 0.3, 1, 0, 10000[0]), 0)
+  goto 75
 75:
+  10000[2] <- EaseOutQuad(10000[2]) * EaseOutQuad(10000[4])
+  goto 76 if (10000[2] <= 0) else 77
+76:
+  goto exit
+77:
   10000[4] <- EntityData[0] * LevelData[12]
   10000[5] <- 10000[4] - (LevelData[11] / 2)
   10000[6] <- LevelData[3] * 10000[1]
@@ -304,27 +310,27 @@
   10000[0] <- 10000[4] + 10000[0]
   Draw(10000[3], 10000[10], 10000[5], 10000[10] + 10000[9], 10000[5] + 10000[7], 10000[6] + 10000[9], 10000[0] + 10000[7], 10000[6], 10000[0], 320000 + (EntityData[0] * 100) + 10000[1], 10000[2], 0, 0, 0)
   goto exit
-76:
-  DebugLog(2)
-  DebugPause()
-  goto exit
-77:
-  DebugLog(2)
-  DebugPause()
-  goto exit
 78:
   DebugLog(2)
   DebugPause()
   goto exit
 79:
-  DebugLog(1)
+  DebugLog(2)
   DebugPause()
   goto exit
 80:
-  DebugLog(1)
+  DebugLog(2)
   DebugPause()
   goto exit
 81:
+  DebugLog(1)
+  DebugPause()
+  goto exit
+82:
+  DebugLog(1)
+  DebugPause()
+  goto exit
+83:
   DebugLog(1)
   DebugPause()
   goto exit

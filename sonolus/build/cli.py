@@ -40,9 +40,9 @@ def import_project(module_path: str) -> tuple[Project, ModuleType, set[str]] | t
     try:
         initial_modules = set(sys.modules)
 
-        current_dir = Path.cwd()
+        current_dir = str(Path.cwd())
         if current_dir not in sys.path:
-            sys.path.insert(0, str(current_dir))
+            sys.path.insert(0, current_dir)
 
         project = None
 

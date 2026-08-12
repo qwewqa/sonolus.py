@@ -8,7 +8,7 @@
   v1 <- EntityData[0] * 2
   v2 <- v1
   v3 <- SwitchWithDefault(EntityInfoArray[v2 + 1], 1, 1, 2, 1, 3, 1, 4, 1, 5, 1, 6, 1, 7, 1, 0)
-  goto 4 if v3 else 106
+  goto 4 if v3 else 110
 4:
   goto 5
 5:
@@ -30,7 +30,7 @@
   v6 <- EntityData[1] * 2
   v7 <- v6
   v8 <- SwitchWithDefault(EntityInfoArray[v7 + 1], 1, 1, 2, 1, 3, 1, 4, 1, 5, 1, 6, 1, 7, 1, 0)
-  goto 11 if v8 else 105
+  goto 11 if v8 else 109
 11:
   goto 12
 12:
@@ -46,331 +46,347 @@
   goto 15
 15:
   v11 <- v10 + 1
-  v12 <- v5
-  v13 <- v11
-  goto 16
+  v12 <- v5 % 1
+  v13 <- v12 == 0
+  goto 16 if v13 else 108
 16:
-  v14 <- v12
-  v15 <- v13
-  goto 17
+  v16 <- v11 % 1
+  v17 <- v16 == 0
+  goto 17 if v17 else 107
 17:
+  v20 <- v5
+  v21 <- v11
   goto 18
 18:
+  v22 <- v20
+  v23 <- v21
   goto 19
 19:
-  v16 <- v14
-  v17 <- v16 < v15
-  goto 20 if v17 else 23
+  goto 20
 20:
-  v18 <- v14
-  v19 <- v14
-  v20 <- v19 + 1
-  v14 <- v20
   goto 21
 21:
-  goto 22
+  v24 <- v22
+  v25 <- v24 < v23
+  goto 22 if v25 else 25
 22:
-  v21 <- 1
-  goto 24
+  v26 <- v22
+  v27 <- v22
+  v28 <- v27 + 1
+  v22 <- v28
+  goto 23
 23:
-  v21 <- 0
   goto 24
 24:
-  goto 25
+  v29 <- 1
+  goto 26
 25:
-  goto 26 if v21 else 103
+  v29 <- 0
+  goto 26
 26:
   goto 27
 27:
-  goto 28
+  goto 28 if v29 else 105
 28:
-  v22 <- EntityData[0] * 2
-  v23 <- v22
-  v24 <- SwitchWithDefault(EntityInfoArray[v23 + 1], 1, 1, 2, 1, 3, 1, 4, 1, 5, 1, 6, 1, 7, 1, 0)
-  goto 29 if v24 else 102
+  goto 29
 29:
   goto 30
 30:
-  goto 31
+  v30 <- EntityData[0] * 2
+  v31 <- v30
+  v32 <- SwitchWithDefault(EntityInfoArray[v31 + 1], 1, 1, 2, 1, 3, 1, 4, 1, 5, 1, 6, 1, 7, 1, 0)
+  goto 31 if v32 else 104
 31:
-  v22 <- EntityData[0] * 32
-  v23 <- v22
   goto 32
 32:
   goto 33
 33:
-  v24 <- EntityData[1] * 2
-  v25 <- v24
-  v26 <- SwitchWithDefault(EntityInfoArray[v25 + 1], 1, 1, 2, 1, 3, 1, 4, 1, 5, 1, 6, 1, 7, 1, 0)
-  goto 34 if v26 else 101
+  v30 <- EntityData[0] * 32
+  v31 <- v30
+  goto 34
 34:
   goto 35
 35:
-  goto 36
+  v32 <- EntityData[1] * 2
+  v33 <- v32
+  v34 <- SwitchWithDefault(EntityInfoArray[v33 + 1], 1, 1, 2, 1, 3, 1, 4, 1, 5, 1, 6, 1, 7, 1, 0)
+  goto 36 if v34 else 103
 36:
-  v24 <- EntityData[1] * 32
-  v25 <- v24
   goto 37
 37:
   goto 38
 38:
-  v26 <- EntityData[0] * 2
-  v27 <- v26
-  v28 <- SwitchWithDefault(EntityInfoArray[v27 + 1], 1, 1, 2, 1, 3, 1, 4, 1, 5, 1, 6, 1, 7, 1, 0)
-  goto 39 if v28 else 100
+  v32 <- EntityData[1] * 32
+  v33 <- v32
+  goto 39
 39:
   goto 40
 40:
-  goto 41
+  v34 <- EntityData[0] * 2
+  v35 <- v34
+  v36 <- SwitchWithDefault(EntityInfoArray[v35 + 1], 1, 1, 2, 1, 3, 1, 4, 1, 5, 1, 6, 1, 7, 1, 0)
+  goto 41 if v36 else 102
 41:
-  v26 <- EntityData[0] * 32
-  v27 <- 3 + v26
-  v28 <- v27
   goto 42
 42:
   goto 43
 43:
-  v29 <- EntityData[1] * 2
-  v30 <- v29
-  v31 <- SwitchWithDefault(EntityInfoArray[v30 + 1], 1, 1, 2, 1, 3, 1, 4, 1, 5, 1, 6, 1, 7, 1, 0)
-  goto 44 if v31 else 99
+  v34 <- EntityData[0] * 32
+  v35 <- 3 + v34
+  v36 <- v35
+  goto 44
 44:
   goto 45
 45:
-  goto 46
+  v37 <- EntityData[1] * 2
+  v38 <- v37
+  v39 <- SwitchWithDefault(EntityInfoArray[v38 + 1], 1, 1, 2, 1, 3, 1, 4, 1, 5, 1, 6, 1, 7, 1, 0)
+  goto 46 if v39 else 101
 46:
-  v29 <- EntityData[1] * 32
-  v30 <- 3 + v29
-  v31 <- v30
   goto 47
 47:
-  v32 <- v18 * 2
   goto 48
 48:
-  v33 <- EntityDataArray[v23] - 0.5
+  v37 <- EntityData[1] * 32
+  v38 <- 3 + v37
+  v39 <- v38
   goto 49
 49:
-  v34 <- v18 + 0.5
-  v35 <- v34 * PreviewData[1]
-  v36 <- v33 * 0.072
-  v37 <- v35 + v36
-  v38 <- -RuntimeEnvironment[1]
+  v40 <- v26 * 2
   goto 50
 50:
-  v39 <- v38
-  v40 <- RuntimeEnvironment[1] - v39
+  v41 <- EntityDataArray[v31] - 0.5
   goto 51
 51:
-  v41 <- v40 / 2
-  v42 <- v37 - v41
+  v42 <- v26 + 0.5
+  v43 <- v42 * PreviewData[1]
+  v44 <- v41 * 0.072
+  v45 <- v43 + v44
+  v46 <- -RuntimeEnvironment[1]
   goto 52
 52:
+  v47 <- v46
+  v48 <- RuntimeEnvironment[1] - v47
   goto 53
 53:
+  v49 <- v48 / 2
+  v50 <- v45 - v49
   goto 54
 54:
-  v43 <- EntityDataArray[v23] + 0.5
   goto 55
 55:
-  v44 <- v18 + 0.5
-  v45 <- v44 * PreviewData[1]
-  v46 <- v43 * 0.072
-  v47 <- v45 + v46
-  v48 <- -RuntimeEnvironment[1]
   goto 56
 56:
-  v49 <- v48
-  v50 <- RuntimeEnvironment[1] - v49
+  v51 <- EntityDataArray[v31] + 0.5
   goto 57
 57:
-  v51 <- v50 / 2
-  v52 <- v47 - v51
+  v52 <- v26 + 0.5
+  v53 <- v52 * PreviewData[1]
+  v54 <- v51 * 0.072
+  v55 <- v53 + v54
+  v56 <- -RuntimeEnvironment[1]
   goto 58
 58:
+  v57 <- v56
+  v58 <- RuntimeEnvironment[1] - v57
   goto 59
 59:
+  v59 <- v58 / 2
+  v60 <- v55 - v59
   goto 60
 60:
-  v53 <- EntityDataArray[v25] - 0.5
   goto 61
 61:
-  v54 <- v18 + 0.5
-  v55 <- v54 * PreviewData[1]
-  v56 <- v53 * 0.072
-  v57 <- v55 + v56
-  v58 <- -RuntimeEnvironment[1]
   goto 62
 62:
-  v59 <- v58
-  v60 <- RuntimeEnvironment[1] - v59
+  v61 <- EntityDataArray[v33] - 0.5
   goto 63
 63:
-  v61 <- v60 / 2
-  v62 <- v57 - v61
+  v62 <- v26 + 0.5
+  v63 <- v62 * PreviewData[1]
+  v64 <- v61 * 0.072
+  v65 <- v63 + v64
+  v66 <- -RuntimeEnvironment[1]
   goto 64
 64:
+  v67 <- v66
+  v68 <- RuntimeEnvironment[1] - v67
   goto 65
 65:
+  v69 <- v68 / 2
+  v70 <- v65 - v69
   goto 66
 66:
-  v63 <- EntityDataArray[v25] + 0.5
   goto 67
 67:
-  v64 <- v18 + 0.5
-  v65 <- v64 * PreviewData[1]
-  v66 <- v63 * 0.072
-  v67 <- v65 + v66
-  v68 <- -RuntimeEnvironment[1]
   goto 68
 68:
-  v69 <- v68
-  v70 <- RuntimeEnvironment[1] - v69
+  v71 <- EntityDataArray[v33] + 0.5
   goto 69
 69:
-  v71 <- v70 / 2
-  v72 <- v67 - v71
+  v72 <- v26 + 0.5
+  v73 <- v72 * PreviewData[1]
+  v74 <- v71 * 0.072
+  v75 <- v73 + v74
+  v76 <- -RuntimeEnvironment[1]
   goto 70
 70:
+  v77 <- v76
+  v78 <- RuntimeEnvironment[1] - v77
   goto 71
 71:
-  v73 <- EntityDataArray[v28] - v32
-  v74 <- v73 / 2
-  v75 <- Lerp(-0.9, 0.9, v74)
-  v76 <- EntityDataArray[v31] - v32
-  v77 <- v76 / 2
-  v78 <- Lerp(-0.9, 0.9, v77)
-  v79 <- v42
-  v80 <- v75
-  v81 <- v62
-  v82 <- v78
-  v83 <- v72
-  v84 <- v78
-  v85 <- v52
-  v86 <- v75
+  v79 <- v78 / 2
+  v80 <- v75 - v79
   goto 72
 72:
   goto 73
 73:
+  v81 <- EntityDataArray[v36] - v40
+  v82 <- v81 / 2
+  v83 <- Lerp(-0.9, 0.9, v82)
+  v84 <- EntityDataArray[v39] - v40
+  v85 <- v84 / 2
+  v86 <- Lerp(-0.9, 0.9, v85)
+  v87 <- v50
+  v88 <- v83
+  v89 <- v70
+  v90 <- v86
+  v91 <- v80
+  v92 <- v86
+  v93 <- v60
+  v94 <- v83
   goto 74
 74:
-  v87 <- EntityData[0] * 2
-  v88 <- v87
-  v89 <- SwitchWithDefault(EntityInfoArray[v88 + 1], 1, 1, 2, 1, 3, 1, 4, 1, 5, 1, 6, 1, 7, 1, 0)
-  goto 75 if v89 else 98
+  goto 75
 75:
   goto 76
 76:
-  goto 77
+  v95 <- EntityData[0] * 2
+  v96 <- v95
+  v97 <- SwitchWithDefault(EntityInfoArray[v96 + 1], 1, 1, 2, 1, 3, 1, 4, 1, 5, 1, 6, 1, 7, 1, 0)
+  goto 77 if v97 else 100
 77:
-  v87 <- EntityData[0] * 32
-  v88 <- v87
   goto 78
 78:
   goto 79
 79:
-  v89 <- EntityData[1] * 2
-  v90 <- v89
-  v91 <- SwitchWithDefault(EntityInfoArray[v90 + 1], 1, 1, 2, 1, 3, 1, 4, 1, 5, 1, 6, 1, 7, 1, 0)
-  goto 80 if v91 else 97
+  v95 <- EntityData[0] * 32
+  v96 <- v95
+  goto 80
 80:
   goto 81
 81:
-  goto 82
+  v97 <- EntityData[1] * 2
+  v98 <- v97
+  v99 <- SwitchWithDefault(EntityInfoArray[v98 + 1], 1, 1, 2, 1, 3, 1, 4, 1, 5, 1, 6, 1, 7, 1, 0)
+  goto 82 if v99 else 99
 82:
-  v89 <- EntityData[1] * 32
-  v90 <- v89
-  v91 <- Min(EntityDataArray[v88], EntityDataArray[v90])
   goto 83
 83:
   goto 84
 84:
-  v92 <- EntityData[0] * 2
-  v93 <- v92
-  v94 <- SwitchWithDefault(EntityInfoArray[v93 + 1], 1, 1, 2, 1, 3, 1, 4, 1, 5, 1, 6, 1, 7, 1, 0)
-  goto 85 if v94 else 96
+  v97 <- EntityData[1] * 32
+  v98 <- v97
+  v99 <- Min(EntityDataArray[v96], EntityDataArray[v98])
+  goto 85
 85:
   goto 86
 86:
-  goto 87
+  v100 <- EntityData[0] * 2
+  v101 <- v100
+  v102 <- SwitchWithDefault(EntityInfoArray[v101 + 1], 1, 1, 2, 1, 3, 1, 4, 1, 5, 1, 6, 1, 7, 1, 0)
+  goto 87 if v102 else 98
 87:
-  v92 <- EntityData[0] * 32
-  v93 <- 3 + v92
-  v94 <- v93
   goto 88
 88:
   goto 89
 89:
-  v95 <- EntityData[1] * 2
-  v96 <- v95
-  v97 <- SwitchWithDefault(EntityInfoArray[v96 + 1], 1, 1, 2, 1, 3, 1, 4, 1, 5, 1, 6, 1, 7, 1, 0)
-  goto 90 if v97 else 95
+  v100 <- EntityData[0] * 32
+  v101 <- 3 + v100
+  v102 <- v101
+  goto 90
 90:
   goto 91
 91:
-  goto 92
+  v103 <- EntityData[1] * 2
+  v104 <- v103
+  v105 <- SwitchWithDefault(EntityInfoArray[v104 + 1], 1, 1, 2, 1, 3, 1, 4, 1, 5, 1, 6, 1, 7, 1, 0)
+  goto 92 if v105 else 97
 92:
-  v95 <- EntityData[1] * 32
-  v96 <- 3 + v95
-  v97 <- v96
-  v98 <- Min(EntityDataArray[v94], EntityDataArray[v97])
   goto 93
 93:
-  v99 <- v91 * 100
-  v100 <- 100000 + v99
-  v101 <- v100 + v98
   goto 94
 94:
-  v102 <- v79
-  v103 <- v80
-  v104 <- v81
-  v105 <- v82
-  v106 <- v83
-  v107 <- v84
-  v108 <- v85
-  v109 <- v86
-  v110 <- Draw(17, v102, v103, v104, v105, v106, v107, v108, v109, v101, PreviewOption[5], 0, 0, 0)
-  goto 18
+  v103 <- EntityData[1] * 32
+  v104 <- 3 + v103
+  v105 <- v104
+  v106 <- Min(EntityDataArray[v102], EntityDataArray[v105])
+  goto 95
 95:
-  v98 <- DebugLog(8)
-  v99 <- DebugPause()
-  goto exit
+  v107 <- v99 * 100
+  v108 <- 100000 + v107
+  v109 <- v108 + v106
+  goto 96
 96:
-  v95 <- DebugLog(7)
-  v96 <- DebugPause()
-  goto exit
+  v110 <- v87
+  v111 <- v88
+  v112 <- v89
+  v113 <- v90
+  v114 <- v91
+  v115 <- v92
+  v116 <- v93
+  v117 <- v94
+  v118 <- Draw(17, v110, v111, v112, v113, v114, v115, v116, v117, v109, PreviewOption[5], 0, 0, 0)
+  goto 20
 97:
-  v92 <- DebugLog(6)
-  v93 <- DebugPause()
+  v106 <- DebugLog(9)
+  v107 <- DebugPause()
   goto exit
 98:
-  v90 <- DebugLog(5)
-  v91 <- DebugPause()
+  v103 <- DebugLog(8)
+  v104 <- DebugPause()
   goto exit
 99:
-  v32 <- DebugLog(4)
-  v33 <- DebugPause()
+  v100 <- DebugLog(7)
+  v101 <- DebugPause()
   goto exit
 100:
-  v29 <- DebugLog(3)
-  v30 <- DebugPause()
+  v98 <- DebugLog(6)
+  v99 <- DebugPause()
   goto exit
 101:
-  v27 <- DebugLog(4)
-  v28 <- DebugPause()
+  v40 <- DebugLog(5)
+  v41 <- DebugPause()
   goto exit
 102:
-  v25 <- DebugLog(3)
-  v26 <- DebugPause()
+  v37 <- DebugLog(4)
+  v38 <- DebugPause()
   goto exit
 103:
-  goto 104
+  v35 <- DebugLog(5)
+  v36 <- DebugPause()
+  goto exit
 104:
+  v33 <- DebugLog(4)
+  v34 <- DebugPause()
   goto exit
 105:
+  goto 106
+106:
+  goto exit
+107:
+  v18 <- DebugLog(3)
+  v19 <- DebugPause()
+  goto exit
+108:
+  v14 <- DebugLog(3)
+  v15 <- DebugPause()
+  goto exit
+109:
   v9 <- DebugLog(2)
   v10 <- DebugPause()
   goto exit
-106:
+110:
   v4 <- DebugLog(1)
   v5 <- DebugPause()
   goto exit

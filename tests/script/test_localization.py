@@ -1,3 +1,5 @@
+import pytest
+
 from sonolus.script.bucket import bucket
 from sonolus.script.engine import Engine
 from sonolus.script.instruction import Instruction, StandardInstruction, instruction, instructions
@@ -70,6 +72,22 @@ def test_select_option_localized_default_resolves_to_index():
 def test_select_option_int_default_is_used_as_index_directly():
     option = select_option(default=1, values=["a", "b"])
     assert option.to_dict()["def"] == 1
+
+
+@pytest.mark.parametrize("default", [-1, 2])
+def test_select_option_rejects_out_of_range_int_default(default):
+    with pytest.raises(ValueError, match="Select option default index must be between 0 and 1"):
+        select_option(default=default, values=["a", "b"])
+
+
+def test_select_option_rejects_int_default_for_empty_values():
+    with pytest.raises(ValueError, match="Select option default index cannot be used with no values"):
+        select_option(default=0, values=[])
+
+
+def test_select_option_rejects_bool_default_as_an_index():
+    with pytest.raises(TypeError, match="Select option default index must be an integer, not bool"):
+        select_option(default=True, values=["a", "b"])
 
 
 def test_bucket_localized_unit():

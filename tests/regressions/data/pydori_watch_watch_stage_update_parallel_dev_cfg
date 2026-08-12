@@ -21,37 +21,47 @@
 9:
   goto 10
 10:
-  v3 <- v2 < LevelData[0]
-  goto 11 if v3 else 14
+  v3 <- LevelData[0] >= 0
+  v4 <- LevelData[0] % 1
+  v5 <- v4 == 0
+  v6 <- v3 && v5
+  goto 11 if v6 else 22
 11:
-  v4 <- v1
-  v5 <- v4 * 9
-  v6 <- v5
-  v7 <- v1
-  v8 <- v7 + 1
-  v1 <- v8
-  goto 12
+  v9 <- v2 < LevelData[0]
+  goto 12 if v9 else 15
 12:
+  v10 <- v1
+  v11 <- v10 * 9
+  v12 <- v11
+  v13 <- v1
+  v14 <- v13 + 1
+  v1 <- v14
   goto 13
 13:
-  v9 <- 1
-  goto 15
+  goto 14
 14:
-  v9 <- 0
-  goto 15
+  v15 <- 1
+  goto 16
 15:
+  v15 <- 0
   goto 16
 16:
-  goto 17 if v9 else 18
+  goto 17
 17:
-  v10 <- Draw(1, LevelData[v6 + 2], LevelData[v6 + 3], LevelData[v6 + 4], LevelData[v6 + 5], LevelData[v6 + 6], LevelData[v6 + 7], LevelData[v6 + 8], LevelData[v6 + 9], 1, 1, 0, 0, 0)
-  goto 7
+  goto 18 if v15 else 19
 18:
-  v11 <- Draw(2, LevelData[64], LevelData[65], LevelData[66], LevelData[67], LevelData[68], LevelData[69], LevelData[70], LevelData[71], 1, 1, 0, 0, 0)
-  v12 <- Draw(3, LevelData[72], LevelData[73], LevelData[74], LevelData[75], LevelData[76], LevelData[77], LevelData[78], LevelData[79], 1, 1, 0, 0, 0)
-  v13 <- Draw(5, LevelData[80], LevelData[81], LevelData[82], LevelData[83], LevelData[84], LevelData[85], LevelData[86], LevelData[87], 2, 1, 0, 0, 0)
-  goto 19
+  v16 <- Draw(1, LevelData[v12 + 2], LevelData[v12 + 3], LevelData[v12 + 4], LevelData[v12 + 5], LevelData[v12 + 6], LevelData[v12 + 7], LevelData[v12 + 8], LevelData[v12 + 9], 1, 1, 0, 0, 0)
+  goto 7
 19:
+  v17 <- Draw(2, LevelData[64], LevelData[65], LevelData[66], LevelData[67], LevelData[68], LevelData[69], LevelData[70], LevelData[71], 1, 1, 0, 0, 0)
+  v18 <- Draw(3, LevelData[72], LevelData[73], LevelData[74], LevelData[75], LevelData[76], LevelData[77], LevelData[78], LevelData[79], 1, 1, 0, 0, 0)
+  v19 <- Draw(5, LevelData[80], LevelData[81], LevelData[82], LevelData[83], LevelData[84], LevelData[85], LevelData[86], LevelData[87], 2, 1, 0, 0, 0)
   goto 20
 20:
+  goto 21
+21:
+  goto exit
+22:
+  v7 <- DebugLog(1)
+  v8 <- DebugPause()
   goto exit

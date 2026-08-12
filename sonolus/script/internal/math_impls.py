@@ -1,6 +1,7 @@
 import math
 
 from sonolus.backend.ops import Op
+from sonolus.script.debug import assert_true
 from sonolus.script.internal.native import native_function
 
 
@@ -75,6 +76,7 @@ def __round(x: float) -> float:
 
 
 def _round(number: float, ndigits: int = 0) -> float:
+    assert_true(ndigits % 1 == 0, "round() ndigits must be an integer")
     if ndigits == 0:
         return __round(number)
     return __round(number * 10**ndigits) / 10**ndigits

@@ -349,6 +349,10 @@ cdef class Func:
             block_id_int = <int32_t>int(block)
             block_ref = block_id_int
             if isinstance(block, BlockData):
+                if self.blocks_type is not None and type(block) is not self.blocks_type:
+                    block_name = getattr(block, "name", None)
+                    block_label = f"{type(block).__name__}.{block_name}" if block_name is not None else repr(block)
+                    raise ValueError(f"Block {block_label} is not valid for {self.blocks_type.__name__}")
                 resolved_member = block
                 flags |= PLACE_BLOCK_IS_ENUM
                 self._block_enum_by_id[block_id_int] = block

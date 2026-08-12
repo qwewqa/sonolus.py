@@ -97,6 +97,23 @@ def test_round_accepts_the_ndigits_keyword():
     assert run_and_validate(fn) == round(2.567, ndigits=2)
 
 
+def test_round_rejects_fractional_ndigits():
+    def fn(ndigits):
+        return round(2.567, ndigits)
+
+    with pytest.raises(TypeError):
+        run_and_validate(fn, 1.5)
+
+
+def test_fractional_round_ndigits_in_dead_runtime_branch_compiles():
+    def fn(take_branch):
+        if bb(take_branch):
+            return round(2.567, 1.5)
+        return 42
+
+    assert run_and_validate(fn, False) == 42
+
+
 @given(x=angles)
 def test_degrees_radians_round_trip(x):
     def fn():

@@ -36,39 +36,43 @@
   goto 13
 13:
   v11 <- v10 + 1
-  v12 <- v5
-  v13 <- v11
+  v12 <- v5 % 1
+  v13 <- v12 == 0
+  v14 <- v11 % 1
+  v15 <- v14 == 0
+  v16 <- v5
+  v17 <- v11
   goto 14
 14:
-  v14 <- v12
-  v15 <- v13
+  v18 <- v16
+  v19 <- v17
   goto 15
 15:
   goto 16
 16:
   goto 17
 17:
-  v16 <- v14
-  v17 <- v16 < v15
-  goto 18 if v17 else 21
+  v20 <- v18
+  v21 <- v20 < v19
+  goto 18 if v21 else 21
 18:
-  v18 <- v14
-  v19 <- v14
-  v20 <- v19 + 1
-  v14 <- v20
+  v22 <- v18
+  v23 <- v18
+  v24 <- v23 + 1
+  v18 <- v24
   goto 19
 19:
   goto 20
 20:
-  v21 <- 1
+  v25 <- 1
   goto 22
 21:
-  v21 <- 0
+  v25 <- 0
   goto 22
 22:
   goto 23
 23:
-  goto 24 if v21 else 85
+  goto 24 if v25 else 85
 24:
   goto 25
 25:
@@ -78,8 +82,8 @@
 27:
   goto 28
 28:
-  v22 <- EntityData[0] * 32
-  v23 <- v22
+  v26 <- EntityData[0] * 32
+  v27 <- v26
   goto 29
 29:
   goto 30
@@ -88,8 +92,8 @@
 31:
   goto 32
 32:
-  v24 <- EntityData[1] * 32
-  v25 <- v24
+  v28 <- EntityData[1] * 32
+  v29 <- v28
   goto 33
 33:
   goto 34
@@ -98,9 +102,9 @@
 35:
   goto 36
 36:
-  v26 <- EntityData[0] * 32
-  v27 <- 3 + v26
-  v28 <- v27
+  v30 <- EntityData[0] * 32
+  v31 <- 3 + v30
+  v32 <- v31
   goto 37
 37:
   goto 38
@@ -109,114 +113,114 @@
 39:
   goto 40
 40:
-  v29 <- EntityData[1] * 32
-  v30 <- 3 + v29
-  v31 <- v30
+  v33 <- EntityData[1] * 32
+  v34 <- 3 + v33
+  v35 <- v34
   goto 41
 41:
-  v32 <- v18 * 2
+  v36 <- v22 * 2
   goto 42
 42:
-  v33 <- EntityDataArray[v23] - 0.5
+  v37 <- EntityDataArray[v27] - 0.5
   goto 43
 43:
-  v34 <- v18 + 0.5
-  v35 <- v34 * PreviewData[1]
-  v36 <- v33 * 0.072
-  v37 <- v35 + v36
-  v38 <- -RuntimeEnvironment[1]
+  v38 <- v22 + 0.5
+  v39 <- v38 * PreviewData[1]
+  v40 <- v37 * 0.072
+  v41 <- v39 + v40
+  v42 <- -RuntimeEnvironment[1]
   goto 44
 44:
-  v39 <- v38
-  v40 <- RuntimeEnvironment[1] - v39
+  v43 <- v42
+  v44 <- RuntimeEnvironment[1] - v43
   goto 45
 45:
-  v41 <- v40 / 2
-  v42 <- v37 - v41
+  v45 <- v44 / 2
+  v46 <- v41 - v45
   goto 46
 46:
   goto 47
 47:
   goto 48
 48:
-  v43 <- EntityDataArray[v23] + 0.5
+  v47 <- EntityDataArray[v27] + 0.5
   goto 49
 49:
-  v44 <- v18 + 0.5
-  v45 <- v44 * PreviewData[1]
-  v46 <- v43 * 0.072
-  v47 <- v45 + v46
-  v48 <- -RuntimeEnvironment[1]
+  v48 <- v22 + 0.5
+  v49 <- v48 * PreviewData[1]
+  v50 <- v47 * 0.072
+  v51 <- v49 + v50
+  v52 <- -RuntimeEnvironment[1]
   goto 50
 50:
-  v49 <- v48
-  v50 <- RuntimeEnvironment[1] - v49
+  v53 <- v52
+  v54 <- RuntimeEnvironment[1] - v53
   goto 51
 51:
-  v51 <- v50 / 2
-  v52 <- v47 - v51
+  v55 <- v54 / 2
+  v56 <- v51 - v55
   goto 52
 52:
   goto 53
 53:
   goto 54
 54:
-  v53 <- EntityDataArray[v25] - 0.5
+  v57 <- EntityDataArray[v29] - 0.5
   goto 55
 55:
-  v54 <- v18 + 0.5
-  v55 <- v54 * PreviewData[1]
-  v56 <- v53 * 0.072
-  v57 <- v55 + v56
-  v58 <- -RuntimeEnvironment[1]
+  v58 <- v22 + 0.5
+  v59 <- v58 * PreviewData[1]
+  v60 <- v57 * 0.072
+  v61 <- v59 + v60
+  v62 <- -RuntimeEnvironment[1]
   goto 56
 56:
-  v59 <- v58
-  v60 <- RuntimeEnvironment[1] - v59
+  v63 <- v62
+  v64 <- RuntimeEnvironment[1] - v63
   goto 57
 57:
-  v61 <- v60 / 2
-  v62 <- v57 - v61
+  v65 <- v64 / 2
+  v66 <- v61 - v65
   goto 58
 58:
   goto 59
 59:
   goto 60
 60:
-  v63 <- EntityDataArray[v25] + 0.5
+  v67 <- EntityDataArray[v29] + 0.5
   goto 61
 61:
-  v64 <- v18 + 0.5
-  v65 <- v64 * PreviewData[1]
-  v66 <- v63 * 0.072
-  v67 <- v65 + v66
-  v68 <- -RuntimeEnvironment[1]
+  v68 <- v22 + 0.5
+  v69 <- v68 * PreviewData[1]
+  v70 <- v67 * 0.072
+  v71 <- v69 + v70
+  v72 <- -RuntimeEnvironment[1]
   goto 62
 62:
-  v69 <- v68
-  v70 <- RuntimeEnvironment[1] - v69
+  v73 <- v72
+  v74 <- RuntimeEnvironment[1] - v73
   goto 63
 63:
-  v71 <- v70 / 2
-  v72 <- v67 - v71
+  v75 <- v74 / 2
+  v76 <- v71 - v75
   goto 64
 64:
   goto 65
 65:
-  v73 <- EntityDataArray[v28] - v32
-  v74 <- v73 / 2
-  v75 <- Lerp(-0.9, 0.9, v74)
-  v76 <- EntityDataArray[v31] - v32
-  v77 <- v76 / 2
-  v78 <- Lerp(-0.9, 0.9, v77)
-  v79 <- v42
-  v80 <- v75
-  v81 <- v62
-  v82 <- v78
-  v83 <- v72
-  v84 <- v78
-  v85 <- v52
-  v86 <- v75
+  v77 <- EntityDataArray[v32] - v36
+  v78 <- v77 / 2
+  v79 <- Lerp(-0.9, 0.9, v78)
+  v80 <- EntityDataArray[v35] - v36
+  v81 <- v80 / 2
+  v82 <- Lerp(-0.9, 0.9, v81)
+  v83 <- v46
+  v84 <- v79
+  v85 <- v66
+  v86 <- v82
+  v87 <- v76
+  v88 <- v82
+  v89 <- v56
+  v90 <- v79
   goto 66
 66:
   goto 67
@@ -227,8 +231,8 @@
 69:
   goto 70
 70:
-  v87 <- EntityData[0] * 32
-  v88 <- v87
+  v91 <- EntityData[0] * 32
+  v92 <- v91
   goto 71
 71:
   goto 72
@@ -237,9 +241,9 @@
 73:
   goto 74
 74:
-  v89 <- EntityData[1] * 32
-  v90 <- v89
-  v91 <- Min(EntityDataArray[v88], EntityDataArray[v90])
+  v93 <- EntityData[1] * 32
+  v94 <- v93
+  v95 <- Min(EntityDataArray[v92], EntityDataArray[v94])
   goto 75
 75:
   goto 76
@@ -248,9 +252,9 @@
 77:
   goto 78
 78:
-  v92 <- EntityData[0] * 32
-  v93 <- 3 + v92
-  v94 <- v93
+  v96 <- EntityData[0] * 32
+  v97 <- 3 + v96
+  v98 <- v97
   goto 79
 79:
   goto 80
@@ -259,26 +263,26 @@
 81:
   goto 82
 82:
-  v95 <- EntityData[1] * 32
-  v96 <- 3 + v95
-  v97 <- v96
-  v98 <- Min(EntityDataArray[v94], EntityDataArray[v97])
+  v99 <- EntityData[1] * 32
+  v100 <- 3 + v99
+  v101 <- v100
+  v102 <- Min(EntityDataArray[v98], EntityDataArray[v101])
   goto 83
 83:
-  v99 <- v91 * 100
-  v100 <- 100000 + v99
-  v101 <- v100 + v98
+  v103 <- v95 * 100
+  v104 <- 100000 + v103
+  v105 <- v104 + v102
   goto 84
 84:
-  v102 <- v79
-  v103 <- v80
-  v104 <- v81
-  v105 <- v82
   v106 <- v83
   v107 <- v84
   v108 <- v85
   v109 <- v86
-  v110 <- Draw(17, v102, v103, v104, v105, v106, v107, v108, v109, v101, PreviewOption[5], 0, 0, 0)
+  v110 <- v87
+  v111 <- v88
+  v112 <- v89
+  v113 <- v90
+  v114 <- Draw(17, v106, v107, v108, v109, v110, v111, v112, v113, v105, PreviewOption[5], 0, 0, 0)
   goto 16
 85:
   goto 86

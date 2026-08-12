@@ -3,10 +3,10 @@
 1:
   goto 2 if RuntimeUpdate[3] else 3
 2:
-  goto 117
+  goto 119
 3:
   v1 <- EntityData[12] != 0
-  goto 4 if v1 else 115
+  goto 4 if v1 else 117
 4:
   goto 5
 5:
@@ -24,12 +24,12 @@
   v5 <- v4 == 6
   goto 10 if v5 else 11
 10:
-  goto 111
+  goto 112
 11:
   v6 <- !LevelOption[6]
   goto 12 if v6 else 13
 12:
-  goto 111
+  goto 112
 13:
   goto 14
 14:
@@ -486,75 +486,83 @@
   v295 <- !LevelOption[7]
   goto 91 if v295 else 92
 91:
-  goto 109
+  goto 110
 92:
   goto 93
 93:
   goto 94
 94:
-  goto 95
+  v296 <- LevelData[16] % 1
+  v297 <- v296 == 0
+  goto 95 if v297 else 116
 95:
-  v296 <- 0
   goto 96
 96:
+  v300 <- 0
   goto 97
 97:
   goto 98
 98:
-  v297 <- v296
-  v298 <- v297 < LevelData[16]
-  goto 99 if v298 else 102
+  goto 99
 99:
-  v299 <- v296
-  v300 <- v296
-  v301 <- v300 + 1
-  v296 <- v301
-  goto 100
+  v301 <- v300
+  v302 <- v301 < LevelData[16]
+  goto 100 if v302 else 103
 100:
+  v303 <- v300
+  v304 <- v300
+  v305 <- v304 + 1
+  v300 <- v305
   goto 101
 101:
-  v302 <- 1
-  goto 103
+  goto 102
 102:
-  v302 <- 0
-  goto 103
+  v306 <- 1
+  goto 104
 103:
+  v306 <- 0
   goto 104
 104:
-  goto 105 if v302 else 114
+  goto 105
 105:
-  v303 <- v299 * 9
-  v304 <- 16 + v303
-  v305 <- v304
-  v306 <- LevelData[v305 + 1] == EntityData[0]
-  goto 106 if v306 else 113
+  goto 106 if v306 else 115
 106:
-  goto 107
+  v307 <- v303 * 9
+  v308 <- 16 + v307
+  v309 <- v308
+  v310 <- LevelData[v309 + 1] == EntityData[0]
+  goto 107 if v310 else 114
 107:
   goto 108
 108:
-  v309 <- SpawnParticleEffect(0, LevelData[v305 + 2], LevelData[v305 + 3], LevelData[v305 + 4], LevelData[v305 + 5], LevelData[v305 + 6], LevelData[v305 + 7], LevelData[v305 + 8], LevelData[v305 + 9], 0.2, 0)
-  v310 <- v309
   goto 109
 109:
+  v313 <- SpawnParticleEffect(0, LevelData[v309 + 2], LevelData[v309 + 3], LevelData[v309 + 4], LevelData[v309 + 5], LevelData[v309 + 6], LevelData[v309 + 7], LevelData[v309 + 8], LevelData[v309 + 9], 0.2, 0)
+  v314 <- v313
   goto 110
 110:
   goto 111
 111:
   goto 112
 112:
-  goto 116
+  goto 113
 113:
-  goto 97
+  goto 118
 114:
-  v307 <- DebugLog(1)
-  v308 <- DebugPause()
-  goto exit
+  goto 98
 115:
-  goto 116
+  v311 <- DebugLog(2)
+  v312 <- DebugPause()
+  goto exit
 116:
-  goto 117
+  v298 <- DebugLog(1)
+  v299 <- DebugPause()
+  goto exit
 117:
   goto 118
 118:
+  goto 119
+119:
+  goto 120
+120:
   goto exit

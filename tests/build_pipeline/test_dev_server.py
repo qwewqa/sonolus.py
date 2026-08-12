@@ -116,6 +116,15 @@ def test_parse_help_command_with_extra_args_invalid_alias():
     assert result is None
 
 
+@pytest.mark.parametrize("columns", [0, 1, 2])
+def test_help_command_handles_narrow_terminals(columns, monkeypatch, capsys):
+    monkeypatch.setattr("shutil.get_terminal_size", lambda: types.SimpleNamespace(columns=columns))
+
+    HelpCommand().execute(None)
+
+    assert "Available Commands:" in capsys.readouterr().out
+
+
 def test_parse_quit_command_full():
     result = parse_dev_command("quit")
     assert isinstance(result, ExitCommand)

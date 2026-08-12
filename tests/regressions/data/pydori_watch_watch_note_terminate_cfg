@@ -492,49 +492,51 @@
 93:
   goto 94
 94:
+  v296 <- LevelData[16] % 1
+  v297 <- v296 == 0
   goto 95
 95:
-  v296 <- 0
+  v298 <- 0
   goto 96
 96:
   goto 97
 97:
   goto 98
 98:
-  v297 <- v296
-  v298 <- v297 < LevelData[16]
-  goto 99 if v298 else 102
+  v299 <- v298
+  v300 <- v299 < LevelData[16]
+  goto 99 if v300 else 102
 99:
-  v299 <- v296
-  v300 <- v296
-  v301 <- v300 + 1
-  v296 <- v301
+  v301 <- v298
+  v302 <- v298
+  v303 <- v302 + 1
+  v298 <- v303
   goto 100
 100:
   goto 101
 101:
-  v302 <- 1
+  v304 <- 1
   goto 103
 102:
-  v302 <- 0
+  v304 <- 0
   goto 103
 103:
   goto 104
 104:
-  goto 105 if v302 else 114
+  goto 105 if v304 else 114
 105:
-  v303 <- v299 * 9
-  v304 <- 16 + v303
-  v305 <- v304
-  v306 <- LevelData[v305 + 1] == EntityData[0]
-  goto 106 if v306 else 113
+  v305 <- v301 * 9
+  v306 <- 16 + v305
+  v307 <- v306
+  v308 <- LevelData[v307 + 1] == EntityData[0]
+  goto 106 if v308 else 113
 106:
   goto 107
 107:
   goto 108
 108:
-  v307 <- SpawnParticleEffect(0, LevelData[v305 + 2], LevelData[v305 + 3], LevelData[v305 + 4], LevelData[v305 + 5], LevelData[v305 + 6], LevelData[v305 + 7], LevelData[v305 + 8], LevelData[v305 + 9], 0.2, 0)
-  v308 <- v307
+  v309 <- SpawnParticleEffect(0, LevelData[v307 + 2], LevelData[v307 + 3], LevelData[v307 + 4], LevelData[v307 + 5], LevelData[v307 + 6], LevelData[v307 + 7], LevelData[v307 + 8], LevelData[v307 + 9], 0.2, 0)
+  v310 <- v309
   goto 109
 109:
   goto 110

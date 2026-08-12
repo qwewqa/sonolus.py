@@ -16,13 +16,13 @@
   goto 6 if v4 else 7
 6:
   EntityDespawn[0] <- 1
-  goto 245
+  goto 249
 7:
   v5 <- RuntimeUpdate[0] > EntityData[15]
   goto 8 if v5 else 9
 8:
   EntityDespawn[0] <- 1
-  goto 245
+  goto 249
 9:
   goto 10
 10:
@@ -70,7 +70,7 @@
 23:
   v10 <- EntityMemory[0]
   v11 <- v10 > -100000000
-  goto 24 if v11 else 196
+  goto 24 if v11 else 198
 24:
   v12 <- EntityMemory[0]
   v13 <- v12 < EntityData[11]
@@ -88,7 +88,7 @@
   goto 27
 27:
   v20 <- !v19
-  goto 28 if v20 else 194
+  goto 28 if v20 else 196
 28:
   v21 <- EntityData[11] - 0.03333333333333333
   v22 <- EntityMemory[0]
@@ -137,7 +137,7 @@
   v31 <- v30 * 1000
   EntityInput[3] <- v31
   v32 <- v27 != 0
-  goto 44 if v32 else 191
+  goto 44 if v32 else 193
 44:
   v33 <- !LevelOption[11]
   goto 45 if v33 else 79
@@ -250,12 +250,12 @@
   v40 <- v39 == 6
   goto 86 if v40 else 87
 86:
-  goto 187
+  goto 188
 87:
   v41 <- !LevelOption[6]
   goto 88 if v41 else 89
 88:
-  goto 187
+  goto 188
 89:
   goto 90
 90:
@@ -712,86 +712,90 @@
   v330 <- !LevelOption[7]
   goto 167 if v330 else 168
 167:
-  goto 185
+  goto 186
 168:
   goto 169
 169:
   goto 170
 170:
-  goto 171
+  v331 <- LevelData[16] % 1
+  v332 <- v331 == 0
+  goto 171 if v332 else 192
 171:
-  v331 <- 0
   goto 172
 172:
+  v335 <- 0
   goto 173
 173:
   goto 174
 174:
-  v332 <- v331
-  v333 <- v332 < LevelData[16]
-  goto 175 if v333 else 178
+  goto 175
 175:
-  v334 <- v331
-  v335 <- v331
-  v336 <- v335 + 1
-  v331 <- v336
-  goto 176
+  v336 <- v335
+  v337 <- v336 < LevelData[16]
+  goto 176 if v337 else 179
 176:
+  v338 <- v335
+  v339 <- v335
+  v340 <- v339 + 1
+  v335 <- v340
   goto 177
 177:
-  v337 <- 1
-  goto 179
+  goto 178
 178:
-  v337 <- 0
-  goto 179
+  v341 <- 1
+  goto 180
 179:
+  v341 <- 0
   goto 180
 180:
-  goto 181 if v337 else 190
+  goto 181
 181:
-  v338 <- v334 * 9
-  v339 <- 16 + v338
-  v340 <- v339
-  v341 <- LevelData[v340 + 1] == EntityData[0]
-  goto 182 if v341 else 189
+  goto 182 if v341 else 191
 182:
-  goto 183
+  v342 <- v338 * 9
+  v343 <- 16 + v342
+  v344 <- v343
+  v345 <- LevelData[v344 + 1] == EntityData[0]
+  goto 183 if v345 else 190
 183:
   goto 184
 184:
-  v344 <- SpawnParticleEffect(0, LevelData[v340 + 2], LevelData[v340 + 3], LevelData[v340 + 4], LevelData[v340 + 5], LevelData[v340 + 6], LevelData[v340 + 7], LevelData[v340 + 8], LevelData[v340 + 9], 0.2, 0)
-  v345 <- v344
   goto 185
 185:
+  v348 <- SpawnParticleEffect(0, LevelData[v344 + 2], LevelData[v344 + 3], LevelData[v344 + 4], LevelData[v344 + 5], LevelData[v344 + 6], LevelData[v344 + 7], LevelData[v344 + 8], LevelData[v344 + 9], 0.2, 0)
+  v349 <- v348
   goto 186
 186:
   goto 187
 187:
   goto 188
 188:
-  goto 192
+  goto 189
 189:
-  goto 173
+  goto 194
 190:
-  v342 <- DebugLog(2)
-  v343 <- DebugPause()
-  goto exit
+  goto 174
 191:
-  goto 192
+  v346 <- DebugLog(3)
+  v347 <- DebugPause()
+  goto exit
 192:
+  v333 <- DebugLog(2)
+  v334 <- DebugPause()
+  goto exit
+193:
+  goto 194
+194:
   EntityDespawn[0] <- 1
   EntitySharedMemory[2] <- 1
-  goto 193
-193:
-  goto 195
-194:
   goto 195
 195:
   goto 197
 196:
   goto 197
 197:
-  goto 198
+  goto 199
 198:
   goto 199
 199:
@@ -799,141 +803,155 @@
 200:
   goto 201
 201:
-  v27 <- EntityData[16] * 3
-  v28 <- v27
-  v29 <- SwitchWithDefault(EntityInfoArray[v28 + 1], 1, 1, 2, 1, 3, 1, 4, 1, 5, 1, 6, 1, 7, 1, 0)
-  goto 202 if v29 else 247
+  goto 202
 202:
   goto 203
 203:
-  goto 204
+  v27 <- EntityData[16] * 3
+  v28 <- v27
+  v29 <- SwitchWithDefault(EntityInfoArray[v28 + 1], 1, 1, 2, 1, 3, 1, 4, 1, 5, 1, 6, 1, 7, 1, 0)
+  goto 204 if v29 else 251
 204:
+  goto 205
+205:
+  goto 206
+206:
   v27 <- EntityData[16] * 32
   v28 <- v27
   v29 <- EntitySharedMemoryArray[v28]
-  goto 205
-205:
-  v30 <- v29 > 0
-  goto 206
-206:
-  goto 207 if v30 else 243
+  goto 207
 207:
+  v30 <- v29 > 0
   goto 208
 208:
-  goto 209
+  goto 209 if v30 else 247
 209:
   goto 210
 210:
-  v31 <- EntityData[16] * 3
-  v32 <- v31
-  v33 <- SwitchWithDefault(EntityInfoArray[v32 + 1], 1, 1, 2, 1, 3, 1, 4, 1, 5, 1, 6, 1, 7, 1, 0)
-  goto 211 if v33 else 242
+  goto 211
 211:
   goto 212
 212:
-  goto 213
-213:
-  v31 <- EntityData[16] * 32
+  v31 <- EntityData[16] * 3
   v32 <- v31
-  v33 <- EntitySharedMemoryArray[v32]
+  v33 <- SwitchWithDefault(EntityInfoArray[v32 + 1], 1, 1, 2, 1, 3, 1, 4, 1, 5, 1, 6, 1, 7, 1, 0)
+  goto 213 if v33 else 246
+213:
   goto 214
 214:
   goto 215
 215:
+  v31 <- EntityData[16] * 32
+  v32 <- v31
+  v33 <- EntitySharedMemoryArray[v32]
   goto 216
 216:
   goto 217
 217:
+  goto 218
+218:
+  goto 219
+219:
   v34 <- LevelMemory[17]
   v35 <- v34 >= 16
-  goto 218 if v35 else 219
-218:
-  v46 <- 0
-  goto 237
-219:
-  goto 220
+  goto 220 if v35 else 221
 220:
-  v36 <- 0
-  goto 221
+  v52 <- 0
+  goto 240
 221:
   goto 222
 222:
-  v37 <- LevelMemory[17]
+  v36 <- 0
   goto 223
 223:
-  v38 <- v36 < v37
-  goto 224 if v38 else 229
+  goto 224
 224:
+  v37 <- LevelMemory[17]
   goto 225
 225:
-  v39 <- 17 + v36
-  v40 <- v39
-  v41 <- LevelMemory[v40 + 1]
-  goto 226
+  v38 <- v37 >= 0
+  v39 <- v37 % 1
+  v40 <- v39 == 0
+  v41 <- v38 && v40
+  goto 226 if v41 else 245
 226:
-  v42 <- v41 == v33
-  goto 227 if v42 else 228
+  v44 <- v36 < v37
+  goto 227 if v44 else 232
 227:
-  v45 <- 1
-  goto 230
+  goto 228
 228:
-  v43 <- v36 + 1
-  v44 <- v43
-  v36 <- v44
-  goto 221
+  v45 <- 17 + v36
+  v46 <- v45
+  v47 <- LevelMemory[v46 + 1]
+  goto 229
 229:
-  v45 <- 0
-  goto 230
+  v48 <- v47 == v33
+  goto 230 if v48 else 231
 230:
-  goto 231
+  v51 <- 1
+  goto 233
 231:
-  goto 232 if v45 else 233
+  v49 <- v36 + 1
+  v50 <- v49
+  v36 <- v50
+  goto 223
 232:
-  v46 <- 0
-  goto 237
+  v51 <- 0
+  goto 233
 233:
   goto 234
 234:
-  v46 <- LevelMemory[17]
-  v47 <- v46 < 16
-  goto 235 if v47 else 241
+  goto 235 if v51 else 236
 235:
-  v50 <- LevelMemory[17]
-  v51 <- 17 + v50
-  v52 <- v51
-  LevelMemory[v52 + 1] <- v33
-  v53 <- LevelMemory[17]
-  v54 <- v53 + 1
-  LevelMemory[17] <- v54
-  goto 236
+  v52 <- 0
+  goto 240
 236:
-  v46 <- 1
   goto 237
 237:
-  goto 238
+  v52 <- LevelMemory[17]
+  v53 <- v52 < 16
+  goto 238 if v53 else 244
 238:
+  v56 <- LevelMemory[17]
+  v57 <- 17 + v56
+  v58 <- v57
+  LevelMemory[v58 + 1] <- v33
+  v59 <- LevelMemory[17]
+  v60 <- v59 + 1
+  LevelMemory[17] <- v60
   goto 239
 239:
+  v52 <- 1
   goto 240
 240:
-  goto 244
+  goto 241
 241:
-  v48 <- DebugLog(5)
-  v49 <- DebugPause()
-  goto exit
+  goto 242
 242:
-  v34 <- DebugLog(4)
+  goto 243
+243:
+  goto 248
+244:
+  v54 <- DebugLog(7)
+  v55 <- DebugPause()
+  goto exit
+245:
+  v42 <- DebugLog(6)
+  v43 <- DebugPause()
+  goto exit
+246:
+  v34 <- DebugLog(5)
   v35 <- DebugPause()
   goto exit
-243:
-  goto 244
-244:
-  goto 245
-245:
-  goto 246
-246:
-  goto exit
 247:
-  v30 <- DebugLog(3)
+  goto 248
+248:
+  goto 249
+249:
+  goto 250
+250:
+  goto exit
+251:
+  v30 <- DebugLog(4)
   v31 <- DebugPause()
   goto exit

@@ -214,7 +214,14 @@ def select_option(
             [`AnyText`][sonolus.script.metadata.AnyText] localization dict.
         scope: The scope of the option.
     """
-    if not isinstance(default, int):
+    if isinstance(default, bool):
+        raise TypeError("Select option default index must be an integer, not bool")
+    if isinstance(default, int):
+        if not values:
+            raise ValueError("Select option default index cannot be used with no values")
+        if not 0 <= default < len(values):
+            raise ValueError(f"Select option default index must be between 0 and {len(values) - 1}")
+    else:
         default = values.index(default)
     return _SelectOption(
         name,

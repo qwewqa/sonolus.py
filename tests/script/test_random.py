@@ -295,6 +295,19 @@ def test_uniform(_r, a, width):
     assert a <= result <= b
 
 
+@given(st.random_module(), st.floats(min_value=-100.0, max_value=100.0), st.floats(min_value=0.0, max_value=100.0))
+def test_uniform_reversed_endpoints(_r, a, width):
+    b = a + width
+
+    def fn():
+        value = random.uniform(b, a)
+        assert_true(a <= value <= b)
+        return value
+
+    result = run_compiled(fn)
+    assert a <= result <= b
+
+
 MAX_ITERATIONS = 10000
 MAX_RANGE_SIZE = 10
 

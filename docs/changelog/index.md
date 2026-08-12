@@ -1,5 +1,23 @@
 ### 0.18.2
 
+- An integer default passed to [`select_option()`][sonolus.script.options.select_option] is now rejected when it
+  is a `bool`, outside the option list, or used with an empty option list.
+- Compiled `range()` arguments, `enumerate()` starting indices, and `round()` digit counts must now be
+  integer-valued.
+- Compiled `len()`, truth testing through `__len__`, and `min()` or `max()` over an array-like value now reject a
+  `__len__` result that is negative or not integer-valued.
+- [`StreamGroup`][sonolus.script.stream.StreamGroup] membership now treats fractional indices as absent.
+- Fixed strict-subclass right operands not receiving priority in binary operations, comparisons,
+  augmented-assignment fallback, and dict or set membership.
+- An [`Array`][sonolus.script.array.Array] dimension using `Literal` now rejects multiple values and normalizes a
+  single value like a direct dimension.
+- The compiled `range` builtin now behaves as a type in `type`, `isinstance`, `issubclass`, and union expressions.
+- Fixed the dev-server help command crashing when the terminal is extremely narrow.
+- [`QuadLike`][sonolus.script.quad.QuadLike] is now a public protocol rather than an alias that exposed a private
+  type in generated documentation.
+- Corrected the published signatures of `all`, `any`, and `filter` to accept any truth-testable value, and of
+  `zip` to preserve heterogeneous element types for up to five iterables.
+- Clarified that `random.uniform` accepts its endpoints in either order.
 - [`entity_data()`][sonolus.script.archetype.entity_data], previously identical to
   [`imported()`][sonolus.script.archetype.imported], is now private to the engine: entity data fields are no
   longer part of the archetype schema, may not be set when constructing level data, and are never loaded from a

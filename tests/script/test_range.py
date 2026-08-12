@@ -6,9 +6,11 @@ from hypothesis import strategies as st
 
 from sonolus.script.array import Array
 from sonolus.script.containers import VarArray
+from sonolus.script.internal.builtin_impls import _type  # noqa: PLC2701
 from sonolus.script.internal.context import RuntimeChecks
 from sonolus.script.internal.error import CompilationError
-from tests.script.conftest import run_and_validate, run_compiled
+from sonolus.script.record import Record
+from tests.script.conftest import compile_fn, run_and_validate, run_compiled
 from tests.script.test_flow import black_box_value
 from tests.script.test_record import Pair
 
@@ -24,6 +26,37 @@ def test_basic_range_iteration(n):
     expected = sum(range(n))
     result = run_and_validate(fn)
     assert result == expected
+
+
+def test_range_alias_behaves_as_a_type():
+    def fn():
+        value = range(3)
+        return isinstance(value, range) and issubclass(type(value), range) and not issubclass(range, Record)
+
+    assert run_and_validate(fn) is True
+
+
+def test_type_of_range_alias_is_the_builtin_type_shim():
+    # The internal shim has no plain-Python counterpart, so this assertion can only run in compiled code.
+    def fn():
+        return type(range) == _type  # noqa: E721
+
+    assert run_compiled(fn) == 1
+
+
+@pytest.mark.parametrize(
+    ("args", "message"),
+    [
+        ((), r"range\(\) missing 1 required positional argument: 'start'"),
+        ((1, 2, 3, 4), r"range\(\) takes from 1 to 3 positional arguments"),
+    ],
+)
+def test_range_alias_rejects_unsupported_arities(args, message):
+    def fn():
+        return range(*args)
+
+    with pytest.raises(CompilationError, match=message):
+        compile_fn(fn)
 
 
 @given(start=st.integers(-100, 100), stop=st.integers(-100, 100))
@@ -333,6 +366,27 @@ def test_range_nonzero_step_unaffected():
         return total
 
     assert run_and_validate(fn) == sum(range(0, 10, 2))
+
+
+@pytest.mark.parametrize("args", [(1.5,), (0, 3.5), (0, 3, 1.5)])
+def test_range_rejects_fractional_arguments(args):
+    def fn(*values):
+        total = 0
+        for value in range(*values):
+            total += value
+        return total
+
+    with pytest.raises(TypeError):
+        run_and_validate(fn, *args)
+
+
+def test_fractional_range_in_dead_runtime_branch_compiles():
+    def fn(take_branch):
+        if black_box_value(take_branch):
+            return len(range(1.5))
+        return 42
+
+    assert run_and_validate(fn, False) == 42
 
 
 def test_range_index_present():

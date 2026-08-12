@@ -23,9 +23,11 @@ def validate_type_arg(arg: Any) -> Any:
     if hasattr(result, "_type_mapping_"):
         return result._type_mapping_
     if get_origin(result) is Annotated:
-        return result.__args__[0]
+        return validate_type_arg(result.__args__[0])
     if get_origin(result) is Literal:
-        return result.__args__[0]
+        if len(result.__args__) != 1:
+            raise TypeError(f"Literal[] must contain exactly one value, got {len(result.__args__)}")
+        return validate_type_arg(result.__args__[0])
     return result
 
 

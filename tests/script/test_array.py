@@ -1,5 +1,5 @@
 import math
-from typing import Annotated, Any, Final
+from typing import Annotated, Any, Final, Literal
 
 import pytest
 from hypothesis import given
@@ -666,6 +666,17 @@ def test_array_non_integer_size_rejected():
 
     # An integral float is still accepted since it's normalized to an int.
     assert Array[int, 3.0].size() == 3
+
+
+def test_array_multi_value_literal_size_rejected():
+    with pytest.raises(TypeError, match=r"Literal\[\] must contain exactly one value, got 2"):
+        Array[int, Literal[2, 3]]
+
+
+def test_array_literal_size_is_normalized_recursively():
+    assert Array[int, Literal[3.0]] is Array[int, 3]
+    assert Array[int, Literal[True]] is Array[int, 1]
+    assert Array[int, Annotated[Literal[3.0], "dimension"]] is Array[int, 3]
 
 
 def test_array_zero_size_still_supported():

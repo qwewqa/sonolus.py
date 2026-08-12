@@ -1016,7 +1016,7 @@
 145:
   goto 146
 146:
-  goto 147 if v7 else 193
+  goto 147 if v7 else 195
 147:
   goto 148
 148:
@@ -1223,112 +1223,120 @@
   goto 172
 172:
   v162 <- LevelData[16]
-  v163 <- v162
-  goto 173
+  v163 <- v162 % 1
+  v164 <- v163 == 0
+  goto 173 if v164 else 194
 173:
-  v164 <- 0
-  v165 <- v163
+  v167 <- v162
   goto 174
 174:
+  v168 <- 0
+  v169 <- v167
   goto 175
 175:
   goto 176
 176:
-  v166 <- v164
-  v167 <- v166 < v165
-  goto 177 if v167 else 180
+  goto 177
 177:
-  v168 <- v164
-  v169 <- v164
-  v170 <- v169 + 1
-  v164 <- v170
-  goto 178
+  v170 <- v168
+  v171 <- v170 < v169
+  goto 178 if v171 else 181
 178:
+  v172 <- v168
+  v173 <- v168
+  v174 <- v173 + 1
+  v168 <- v174
   goto 179
 179:
-  v171 <- 1
-  goto 181
+  goto 180
 180:
-  v171 <- 0
-  goto 181
+  v175 <- 1
+  goto 182
 181:
+  v175 <- 0
   goto 182
 182:
-  goto 183 if v171 else 186
+  goto 183
 183:
-  v172 <- v168 * 9
-  v173 <- 16 + v172
-  v174 <- v173
-  v175 <- LevelData[v174 + 1]
-  v176 <- v175 == v4
-  goto 184 if v176 else 185
+  goto 184 if v175 else 187
 184:
-  v177 <- v55
-  LevelData[v174 + 2] <- v177
-  v178 <- v56
-  LevelData[v174 + 3] <- v178
-  v179 <- v125
-  LevelData[v174 + 4] <- v179
-  v180 <- v126
-  LevelData[v174 + 5] <- v180
-  v181 <- v160
-  LevelData[v174 + 6] <- v181
-  v182 <- v161
-  LevelData[v174 + 7] <- v182
-  v183 <- v90
-  LevelData[v174 + 8] <- v183
-  v184 <- v91
-  LevelData[v174 + 9] <- v184
-  goto 190
+  v176 <- v172 * 9
+  v177 <- 16 + v176
+  v178 <- v177
+  v179 <- LevelData[v178 + 1]
+  v180 <- v179 == v4
+  goto 185 if v180 else 186
 185:
-  goto 175
+  v181 <- v55
+  LevelData[v178 + 2] <- v181
+  v182 <- v56
+  LevelData[v178 + 3] <- v182
+  v183 <- v125
+  LevelData[v178 + 4] <- v183
+  v184 <- v126
+  LevelData[v178 + 5] <- v184
+  v185 <- v160
+  LevelData[v178 + 6] <- v185
+  v186 <- v161
+  LevelData[v178 + 7] <- v186
+  v187 <- v90
+  LevelData[v178 + 8] <- v187
+  v188 <- v91
+  LevelData[v178 + 9] <- v188
+  goto 191
 186:
-  v185 <- LevelData[16]
-  goto 187
+  goto 176
 187:
+  v189 <- LevelData[16]
   goto 188
 188:
-  v186 <- v185 < 7
-  goto 189 if v186 else 192
+  goto 189
 189:
-  v189 <- LevelData[16]
-  v190 <- v4
-  v191 <- v189 * 9
-  v192 <- 16 + v191
-  v193 <- v192
-  v194 <- v190
-  LevelData[v193 + 1] <- v194
-  v195 <- v55
-  LevelData[v193 + 2] <- v195
-  v196 <- v56
-  LevelData[v193 + 3] <- v196
-  v197 <- v125
-  LevelData[v193 + 4] <- v197
-  v198 <- v126
-  LevelData[v193 + 5] <- v198
-  v199 <- v160
-  LevelData[v193 + 6] <- v199
-  v200 <- v161
-  LevelData[v193 + 7] <- v200
-  v201 <- v90
-  LevelData[v193 + 8] <- v201
-  v202 <- v91
-  LevelData[v193 + 9] <- v202
-  v203 <- LevelData[16]
-  v204 <- v203 + 1
-  LevelData[16] <- v204
-  goto 190
+  v190 <- v189 < 7
+  goto 190 if v190 else 193
 190:
+  v193 <- LevelData[16]
+  v194 <- v4
+  v195 <- v193 * 9
+  v196 <- 16 + v195
+  v197 <- v196
+  v198 <- v194
+  LevelData[v197 + 1] <- v198
+  v199 <- v55
+  LevelData[v197 + 2] <- v199
+  v200 <- v56
+  LevelData[v197 + 3] <- v200
+  v201 <- v125
+  LevelData[v197 + 4] <- v201
+  v202 <- v126
+  LevelData[v197 + 5] <- v202
+  v203 <- v160
+  LevelData[v197 + 6] <- v203
+  v204 <- v161
+  LevelData[v197 + 7] <- v204
+  v205 <- v90
+  LevelData[v197 + 8] <- v205
+  v206 <- v91
+  LevelData[v197 + 9] <- v206
+  v207 <- LevelData[16]
+  v208 <- v207 + 1
+  LevelData[16] <- v208
   goto 191
 191:
-  goto 139
+  goto 192
 192:
-  v187 <- DebugLog(1)
-  v188 <- DebugPause()
-  goto exit
+  goto 139
 193:
-  goto 194
+  v191 <- DebugLog(2)
+  v192 <- DebugPause()
+  goto exit
 194:
+  v165 <- DebugLog(1)
+  v166 <- DebugPause()
+  goto exit
+195:
+  goto 196
+196:
   v162 <- LevelData[12]
   v163 <- -3.5 * v162
   v164 <- LevelData[13]
@@ -1339,20 +1347,20 @@
   v169 <- v163
   v170 <- v166
   v171 <- v165
-  goto 195
-195:
-  goto 196
-196:
   goto 197
 197:
-  v172 <- v171
-  v173 <- v170
-  v174 <- v172
-  v175 <- v173
   goto 198
 198:
   goto 199
 199:
+  v172 <- v171
+  v173 <- v170
+  v174 <- v172
+  v175 <- v173
+  goto 200
+200:
+  goto 201
+201:
   v176 <- LevelData[2]
   v177 <- v174
   v178 <- v176 * v177
@@ -1384,18 +1392,18 @@
   v204 <- v193 / v202
   v205 <- v203
   v206 <- v204
-  goto 200
-200:
-  goto 201
-201:
-  v207 <- v169
-  v208 <- v170
-  v209 <- v207
-  v210 <- v208
   goto 202
 202:
   goto 203
 203:
+  v207 <- v169
+  v208 <- v170
+  v209 <- v207
+  v210 <- v208
+  goto 204
+204:
+  goto 205
+205:
   v211 <- LevelData[2]
   v212 <- v209
   v213 <- v211 * v212
@@ -1427,18 +1435,18 @@
   v239 <- v228 / v237
   v240 <- v238
   v241 <- v239
-  goto 204
-204:
-  goto 205
-205:
-  v242 <- v171
-  v243 <- v168
-  v244 <- v242
-  v245 <- v243
   goto 206
 206:
   goto 207
 207:
+  v242 <- v171
+  v243 <- v168
+  v244 <- v242
+  v245 <- v243
+  goto 208
+208:
+  goto 209
+209:
   v246 <- LevelData[2]
   v247 <- v244
   v248 <- v246 * v247
@@ -1470,18 +1478,18 @@
   v274 <- v263 / v272
   v275 <- v273
   v276 <- v274
-  goto 208
-208:
-  goto 209
-209:
-  v277 <- v169
-  v278 <- v168
-  v279 <- v277
-  v280 <- v278
   goto 210
 210:
   goto 211
 211:
+  v277 <- v169
+  v278 <- v168
+  v279 <- v277
+  v280 <- v278
+  goto 212
+212:
+  goto 213
+213:
   v281 <- LevelData[2]
   v282 <- v279
   v283 <- v281 * v282
@@ -1513,14 +1521,14 @@
   v309 <- v298 / v307
   v310 <- v308
   v311 <- v309
-  goto 212
-212:
-  goto 213
-213:
   goto 214
 214:
   goto 215
 215:
+  goto 216
+216:
+  goto 217
+217:
   v312 <- v205
   LevelData[80] <- v312
   v313 <- v206
@@ -1537,8 +1545,8 @@
   LevelData[86] <- v318
   v319 <- v241
   LevelData[87] <- v319
-  goto 216
-216:
+  goto 218
+218:
   v320 <- LevelData[12]
   v321 <- 3.5 * v320
   v322 <- LevelData[13]
@@ -1549,20 +1557,20 @@
   v327 <- v323
   v328 <- v324
   v329 <- v321
-  goto 217
-217:
-  goto 218
-218:
   goto 219
 219:
-  v330 <- v329
-  v331 <- v328
-  v332 <- v330
-  v333 <- v331
   goto 220
 220:
   goto 221
 221:
+  v330 <- v329
+  v331 <- v328
+  v332 <- v330
+  v333 <- v331
+  goto 222
+222:
+  goto 223
+223:
   v334 <- LevelData[2]
   v335 <- v332
   v336 <- v334 * v335
@@ -1594,18 +1602,18 @@
   v362 <- v351 / v360
   v363 <- v361
   v364 <- v362
-  goto 222
-222:
-  goto 223
-223:
-  v365 <- v327
-  v366 <- v328
-  v367 <- v365
-  v368 <- v366
   goto 224
 224:
   goto 225
 225:
+  v365 <- v327
+  v366 <- v328
+  v367 <- v365
+  v368 <- v366
+  goto 226
+226:
+  goto 227
+227:
   v369 <- LevelData[2]
   v370 <- v367
   v371 <- v369 * v370
@@ -1637,18 +1645,18 @@
   v397 <- v386 / v395
   v398 <- v396
   v399 <- v397
-  goto 226
-226:
-  goto 227
-227:
-  v400 <- v329
-  v401 <- v326
-  v402 <- v400
-  v403 <- v401
   goto 228
 228:
   goto 229
 229:
+  v400 <- v329
+  v401 <- v326
+  v402 <- v400
+  v403 <- v401
+  goto 230
+230:
+  goto 231
+231:
   v404 <- LevelData[2]
   v405 <- v402
   v406 <- v404 * v405
@@ -1680,18 +1688,18 @@
   v432 <- v421 / v430
   v433 <- v431
   v434 <- v432
-  goto 230
-230:
-  goto 231
-231:
-  v435 <- v327
-  v436 <- v326
-  v437 <- v435
-  v438 <- v436
   goto 232
 232:
   goto 233
 233:
+  v435 <- v327
+  v436 <- v326
+  v437 <- v435
+  v438 <- v436
+  goto 234
+234:
+  goto 235
+235:
   v439 <- LevelData[2]
   v440 <- v437
   v441 <- v439 * v440
@@ -1723,14 +1731,14 @@
   v467 <- v456 / v465
   v468 <- v466
   v469 <- v467
-  goto 234
-234:
-  goto 235
-235:
   goto 236
 236:
   goto 237
 237:
+  goto 238
+238:
+  goto 239
+239:
   v470 <- v363
   LevelData[88] <- v470
   v471 <- v364
@@ -1747,8 +1755,8 @@
   LevelData[94] <- v476
   v477 <- v399
   LevelData[95] <- v477
-  goto 238
-238:
+  goto 240
+240:
   v478 <- LevelData[12]
   v479 <- -3.5 * v478
   v480 <- LevelData[12]
@@ -1762,20 +1770,20 @@
   v488 <- v481
   v489 <- v484
   v490 <- v479
-  goto 239
-239:
-  goto 240
-240:
   goto 241
 241:
-  v491 <- v490
-  v492 <- v489
-  v493 <- v491
-  v494 <- v492
   goto 242
 242:
   goto 243
 243:
+  v491 <- v490
+  v492 <- v489
+  v493 <- v491
+  v494 <- v492
+  goto 244
+244:
+  goto 245
+245:
   v495 <- LevelData[2]
   v496 <- v493
   v497 <- v495 * v496
@@ -1807,18 +1815,18 @@
   v523 <- v512 / v521
   v524 <- v522
   v525 <- v523
-  goto 244
-244:
-  goto 245
-245:
-  v526 <- v488
-  v527 <- v489
-  v528 <- v526
-  v529 <- v527
   goto 246
 246:
   goto 247
 247:
+  v526 <- v488
+  v527 <- v489
+  v528 <- v526
+  v529 <- v527
+  goto 248
+248:
+  goto 249
+249:
   v530 <- LevelData[2]
   v531 <- v528
   v532 <- v530 * v531
@@ -1850,18 +1858,18 @@
   v558 <- v547 / v556
   v559 <- v557
   v560 <- v558
-  goto 248
-248:
-  goto 249
-249:
-  v561 <- v490
-  v562 <- v487
-  v563 <- v561
-  v564 <- v562
   goto 250
 250:
   goto 251
 251:
+  v561 <- v490
+  v562 <- v487
+  v563 <- v561
+  v564 <- v562
+  goto 252
+252:
+  goto 253
+253:
   v565 <- LevelData[2]
   v566 <- v563
   v567 <- v565 * v566
@@ -1893,18 +1901,18 @@
   v593 <- v582 / v591
   v594 <- v592
   v595 <- v593
-  goto 252
-252:
-  goto 253
-253:
-  v596 <- v488
-  v597 <- v487
-  v598 <- v596
-  v599 <- v597
   goto 254
 254:
   goto 255
 255:
+  v596 <- v488
+  v597 <- v487
+  v598 <- v596
+  v599 <- v597
+  goto 256
+256:
+  goto 257
+257:
   v600 <- LevelData[2]
   v601 <- v598
   v602 <- v600 * v601
@@ -1936,14 +1944,14 @@
   v628 <- v617 / v626
   v629 <- v627
   v630 <- v628
-  goto 256
-256:
-  goto 257
-257:
   goto 258
 258:
   goto 259
 259:
+  goto 260
+260:
+  goto 261
+261:
   v631 <- v524
   LevelData[96] <- v631
   v632 <- v525
@@ -1960,22 +1968,18 @@
   LevelData[102] <- v637
   v638 <- v560
   LevelData[103] <- v638
-  goto 260
-260:
-  goto 261
-261:
   goto 262
 262:
   goto 263
 263:
   goto 264
 264:
-  ArchetypeLife[4] <- 1
-  ArchetypeLife[7] <- -100
   goto 265
 265:
   goto 266
 266:
+  ArchetypeLife[4] <- 1
+  ArchetypeLife[7] <- -100
   goto 267
 267:
   goto 268
@@ -1986,12 +1990,12 @@
 270:
   goto 271
 271:
-  ArchetypeLife[8] <- 1
-  ArchetypeLife[11] <- -100
   goto 272
 272:
   goto 273
 273:
+  ArchetypeLife[8] <- 1
+  ArchetypeLife[11] <- -100
   goto 274
 274:
   goto 275
@@ -2002,12 +2006,12 @@
 277:
   goto 278
 278:
-  ArchetypeLife[12] <- 1
-  ArchetypeLife[15] <- -100
   goto 279
 279:
   goto 280
 280:
+  ArchetypeLife[12] <- 1
+  ArchetypeLife[15] <- -100
   goto 281
 281:
   goto 282
@@ -2018,12 +2022,12 @@
 284:
   goto 285
 285:
-  ArchetypeLife[16] <- 1
-  ArchetypeLife[19] <- -100
   goto 286
 286:
   goto 287
 287:
+  ArchetypeLife[16] <- 1
+  ArchetypeLife[19] <- -100
   goto 288
 288:
   goto 289
@@ -2034,12 +2038,12 @@
 291:
   goto 292
 292:
-  ArchetypeLife[20] <- 1
-  ArchetypeLife[23] <- -20
   goto 293
 293:
   goto 294
 294:
+  ArchetypeLife[20] <- 1
+  ArchetypeLife[23] <- -20
   goto 295
 295:
   goto 296
@@ -2050,12 +2054,12 @@
 298:
   goto 299
 299:
-  ArchetypeLife[24] <- 1
-  ArchetypeLife[27] <- -100
   goto 300
 300:
   goto 301
 301:
+  ArchetypeLife[24] <- 1
+  ArchetypeLife[27] <- -100
   goto 302
 302:
   goto 303
@@ -2066,14 +2070,18 @@
 305:
   goto 306
 306:
-  ArchetypeLife[28] <- 1
-  ArchetypeLife[31] <- -100
   goto 307
 307:
   goto 308
 308:
+  ArchetypeLife[28] <- 1
+  ArchetypeLife[31] <- -100
   goto 309
 309:
   goto 310
 310:
+  goto 311
+311:
+  goto 312
+312:
   goto exit

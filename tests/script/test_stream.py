@@ -644,14 +644,30 @@ def test_stream_element_write_through_getitem_uses_the_backing_stream():
 def _log_group_contains():
     group = StreamGroup[Num, 3](1)
     debug_log(-1 in group)
+    debug_log(-0.5 in group)
     debug_log(0 in group)
+    debug_log(0.5 in group)
+    debug_log(1.0 in group)
+    debug_log(1.5 in group)
     debug_log(2 in group)
     debug_log(3 in group)
 
 
 def test_stream_group_contains_boundaries():
     log, _, _ = _run_frame(_log_group_contains, Mode.WATCH)
-    assert log == [0.0, 1.0, 1.0, 0.0]
+    assert log == [0.0, 0.0, 1.0, 0.0, 1.0, 0.0, 1.0, 0.0]
+
+
+def _log_group_contains_runtime_indices():
+    group = StreamGroup[Num, 3](1)
+    debug_log(time() + 0.5 in group)
+    debug_log(time() + 1.0 in group)
+
+
+def test_stream_group_contains_requires_runtime_index_to_be_integral():
+    # RuntimeUpdate supplies time(), so neither membership check can fold during compilation.
+    log, _, _ = _run_frame(_log_group_contains_runtime_indices, Mode.WATCH)
+    assert log == [0.0, 1.0]
 
 
 def _log_group_getitem_num():

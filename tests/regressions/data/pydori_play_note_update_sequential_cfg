@@ -712,49 +712,51 @@
 167:
   goto 168
 168:
+  v331 <- LevelData[16] % 1
+  v332 <- v331 == 0
   goto 169
 169:
-  v331 <- 0
+  v333 <- 0
   goto 170
 170:
   goto 171
 171:
   goto 172
 172:
-  v332 <- v331
-  v333 <- v332 < LevelData[16]
-  goto 173 if v333 else 176
+  v334 <- v333
+  v335 <- v334 < LevelData[16]
+  goto 173 if v335 else 176
 173:
-  v334 <- v331
-  v335 <- v331
-  v336 <- v335 + 1
-  v331 <- v336
+  v336 <- v333
+  v337 <- v333
+  v338 <- v337 + 1
+  v333 <- v338
   goto 174
 174:
   goto 175
 175:
-  v337 <- 1
+  v339 <- 1
   goto 177
 176:
-  v337 <- 0
+  v339 <- 0
   goto 177
 177:
   goto 178
 178:
-  goto 179 if v337 else 188
+  goto 179 if v339 else 188
 179:
-  v338 <- v334 * 9
-  v339 <- 16 + v338
-  v340 <- v339
-  v341 <- LevelData[v340 + 1] == EntityData[0]
-  goto 180 if v341 else 187
+  v340 <- v336 * 9
+  v341 <- 16 + v340
+  v342 <- v341
+  v343 <- LevelData[v342 + 1] == EntityData[0]
+  goto 180 if v343 else 187
 180:
   goto 181
 181:
   goto 182
 182:
-  v342 <- SpawnParticleEffect(0, LevelData[v340 + 2], LevelData[v340 + 3], LevelData[v340 + 4], LevelData[v340 + 5], LevelData[v340 + 6], LevelData[v340 + 7], LevelData[v340 + 8], LevelData[v340 + 9], 0.2, 0)
-  v343 <- v342
+  v344 <- SpawnParticleEffect(0, LevelData[v342 + 2], LevelData[v342 + 3], LevelData[v342 + 4], LevelData[v342 + 5], LevelData[v342 + 6], LevelData[v342 + 7], LevelData[v342 + 8], LevelData[v342 + 9], 0.2, 0)
+  v345 <- v344
   goto 183
 183:
   goto 184
@@ -830,7 +832,7 @@
   v35 <- v34 >= 16
   goto 214 if v35 else 215
 214:
-  v46 <- 0
+  v50 <- 0
   goto 232
 215:
   goto 216
@@ -843,51 +845,55 @@
   v37 <- LevelMemory[17]
   goto 219
 219:
-  v38 <- v36 < v37
-  goto 220 if v38 else 225
+  v38 <- v37 >= 0
+  v39 <- v37 % 1
+  v40 <- v39 == 0
+  v41 <- v38 && v40
+  v42 <- v36 < v37
+  goto 220 if v42 else 225
 220:
   goto 221
 221:
-  v39 <- 17 + v36
-  v40 <- v39
-  v41 <- LevelMemory[v40 + 1]
+  v43 <- 17 + v36
+  v44 <- v43
+  v45 <- LevelMemory[v44 + 1]
   goto 222
 222:
-  v42 <- v41 == v33
-  goto 223 if v42 else 224
+  v46 <- v45 == v33
+  goto 223 if v46 else 224
 223:
-  v45 <- 1
+  v49 <- 1
   goto 226
 224:
-  v43 <- v36 + 1
-  v44 <- v43
-  v36 <- v44
+  v47 <- v36 + 1
+  v48 <- v47
+  v36 <- v48
   goto 217
 225:
-  v45 <- 0
+  v49 <- 0
   goto 226
 226:
   goto 227
 227:
-  goto 228 if v45 else 229
+  goto 228 if v49 else 229
 228:
-  v46 <- 0
+  v50 <- 0
   goto 232
 229:
   goto 230
 230:
-  v46 <- LevelMemory[17]
-  v47 <- v46 < 16
-  v48 <- LevelMemory[17]
-  v49 <- 17 + v48
-  v50 <- v49
-  LevelMemory[v50 + 1] <- v33
-  v51 <- LevelMemory[17]
-  v52 <- v51 + 1
-  LevelMemory[17] <- v52
+  v50 <- LevelMemory[17]
+  v51 <- v50 < 16
+  v52 <- LevelMemory[17]
+  v53 <- 17 + v52
+  v54 <- v53
+  LevelMemory[v54 + 1] <- v33
+  v55 <- LevelMemory[17]
+  v56 <- v55 + 1
+  LevelMemory[17] <- v56
   goto 231
 231:
-  v46 <- 1
+  v50 <- 1
   goto 232
 232:
   goto 233

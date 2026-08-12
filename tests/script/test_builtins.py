@@ -8,9 +8,11 @@ from enum import IntEnum
 import pytest
 
 from sonolus.script.array import Array
+from sonolus.script.array_like import ArrayLike
 from sonolus.script.containers import VarArray
 from sonolus.script.debug import debug_log
 from sonolus.script.internal.builtin_impls import _max, _min  # noqa: PLC2701
+from sonolus.script.internal.context import RuntimeChecks
 from sonolus.script.internal.error import CompilationError
 from sonolus.script.iterator import SonolusIterator
 from sonolus.script.maybe import Nothing, Some
@@ -18,6 +20,7 @@ from sonolus.script.num import Num
 from sonolus.script.record import Record
 from sonolus.script.vec import Vec2
 from tests.script.conftest import compile_fn, run_and_validate, run_compiled
+from tests.script.test_flow import black_box_value
 
 
 def test_max_comptime_honors_key():
@@ -219,6 +222,24 @@ class _LenRecord(Record):
         return self.n
 
 
+class _InvalidLenArray(Record, ArrayLike[int]):
+    n: int
+
+    def __len__(self) -> int:
+        return self.n
+
+    def __getitem__(self, index: int) -> int:
+        return index
+
+    def __setitem__(self, index: int, value: int):
+        pass
+
+
+class _NonnumericLenRecord(Record):
+    def __len__(self):
+        return None  # noqa: PLE0303 - intentionally violates the protocol
+
+
 def test_bool_no_arg():
     def fn():
         return bool()  # noqa: UP018
@@ -317,6 +338,43 @@ def test_bool_record_with_runtime_len():
         return bool(_LenRecord(n))
 
     assert run_and_validate(fn) is False
+
+
+@pytest.mark.parametrize("operation", ["len", "bool"])
+@pytest.mark.parametrize(("invalid_length", "expected_error"), [(-1, ValueError), (0.5, TypeError)])
+def test_len_protocol_rejects_invalid_runtime_result(operation, invalid_length, expected_error):
+    def fn():
+        n = 0
+        for _ in range(1):
+            n += invalid_length
+        value = _LenRecord(n)
+        return len(value) if operation == "len" else bool(value)
+
+    with pytest.raises(expected_error):
+        run_and_validate(fn)
+
+
+@pytest.mark.parametrize("operation", ["len", "bool"])
+def test_len_protocol_rejects_nonnumeric_result(operation):
+    def fn():
+        value = _NonnumericLenRecord()
+        return len(value) if operation == "len" else bool(value)
+
+    # The subset rejects this statically, so there is no runtime leg to compare with Python's TypeError.
+    with pytest.raises(CompilationError, match="Invalid type for __len__: NoneType"):
+        compile_fn(fn)
+
+
+@pytest.mark.parametrize("invalid_length", [-1, 0.5])
+def test_array_extremum_rejects_invalid_runtime_len(invalid_length):
+    # This pins the compiled ArrayLike protocol: Python's sequence iterator does not consult __len__ for max().
+    def fn():
+        n = 0
+        for _ in range(1):
+            n += invalid_length
+        return max(_InvalidLenArray(n), default=10) + 100
+
+    assert run_compiled(fn, runtime_checks=RuntimeChecks.TERMINATE) == 0
 
 
 def test_bool_record_without_bool_or_len():
@@ -700,6 +758,27 @@ def test_enumerate_over_set_with_start():
         return total
 
     assert run_and_validate(fn) == 66
+
+
+def test_enumerate_rejects_fractional_start():
+    def fn(start):
+        total = 0
+        for i, value in enumerate(Array(10, 20), start):
+            total += i + value
+        return total
+
+    with pytest.raises(TypeError):
+        run_and_validate(fn, 1.5)
+
+
+def test_fractional_enumerate_start_in_dead_runtime_branch_compiles():
+    def fn(take_branch):
+        if black_box_value(take_branch):
+            for i, _value in enumerate(Array(10), 1.5):
+                return i
+        return 42
+
+    assert run_and_validate(fn, False) == 42
 
 
 def test_max_over_set():

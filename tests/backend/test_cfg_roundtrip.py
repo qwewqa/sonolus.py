@@ -13,7 +13,7 @@ import struct
 import pytest
 
 from sonolus.backend._opt import ir  # noqa: PLC2701
-from sonolus.backend.blocks import PlayBlock
+from sonolus.backend.blocks import BlockData, PlayBlock, PreviewBlock
 from sonolus.backend.ir import IRConst, IRGet, IRInstr, IRPureInstr, IRSet
 from sonolus.backend.mode import Mode
 from sonolus.backend.ops import Op
@@ -88,6 +88,15 @@ def test_parallel_edges():
     b0.connect_to(other, 1)
     assert_faithful(b0)
     assert_idempotent(b0)
+
+
+@pytest.mark.parametrize("cond", [None, 0])
+def test_duplicate_edge_labels_are_rejected(cond):
+    entry = BasicBlock()
+    entry.connect_to(BasicBlock(), cond)
+
+    with pytest.raises(ValueError, match=f"duplicate outgoing edge label: {cond!r}"):
+        entry.connect_to(BasicBlock(), cond)
 
 
 def test_bare_side_effecting_statement():
@@ -278,3 +287,21 @@ def test_marshal_in_rejects_unsupported_block_value():
     b0.statements = [IRSet(BlockPlace("bad-block", 0, 0), IRConst(1))]
     with pytest.raises(ValueError, match="Unsupported block value"):
         ir.marshal_in(b0, None, None)
+
+
+def test_marshal_in_rejects_block_enum_from_another_mode():
+    b0 = BasicBlock()
+    b0.statements = [IRSet(_scalar("x"), IRGet(BlockPlace(PreviewBlock.RuntimeEnvironment, 0, 0)))]
+    with pytest.raises(
+        ValueError,
+        match=r"Block PreviewBlock\.RuntimeEnvironment is not valid for PlayBlock",
+    ):
+        ir.marshal_in(b0, Mode.PLAY, None)
+
+
+def test_marshal_in_rejects_plain_block_data_for_mode():
+    b0 = BasicBlock()
+    block = BlockData(1000, set(), set())
+    b0.statements = [IRSet(_scalar("x"), IRGet(BlockPlace(block, 0, 0)))]
+    with pytest.raises(ValueError, match=r"Block 1000 is not valid for PlayBlock"):
+        ir.marshal_in(b0, Mode.PLAY, None)

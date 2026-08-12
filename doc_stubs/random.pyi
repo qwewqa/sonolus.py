@@ -86,13 +86,13 @@ def random() -> float:
     ...
 
 def uniform(a: float, b: float) -> float:
-    """Return a random floating point number N such that a <= N <= b.
+    """Return a random floating point number between a and b, inclusive.
 
     Args:
-        a: The lower bound.
-        b: The upper bound.
+        a: One endpoint of the range.
+        b: The other endpoint of the range.
 
     Returns:
-        A random float between a and b.
+        A random float between the endpoints, inclusive.
     """
     ...

@@ -23,6 +23,7 @@ from sonolus.script.internal.builtin_impls import (
     _len,
     _super,
     _type_name,
+    _validate_len_result,
     contains_by_iteration,
     name_builtin_in_binding_error,
 )
@@ -314,6 +315,21 @@ op_to_symbol = {
 }
 
 _EQ_OP = ast.Eq()
+
+
+def _is_strict_subclass(lhs: Value, rhs: Value) -> bool:
+    lhs_type = type(lhs)
+    rhs_type = type(rhs)
+    return lhs_type is not rhs_type and issubclass(rhs_type, lhs_type)
+
+
+def _has_strict_subclass_reflected_priority(lhs: Value, rhs: Value, reflected_name: str) -> bool:
+    lhs_type = type(lhs)
+    rhs_type = type(rhs)
+    return _is_strict_subclass(lhs, rhs) and getattr(rhs_type, reflected_name, None) is not getattr(
+        lhs_type, reflected_name, None
+    )
+
 
 # Binary operator method names implemented by Num. For two Num operands, these never return NotImplemented,
 # so the NotImplemented negotiation protocol can be skipped as a fast path.
@@ -838,12 +854,18 @@ class Visitor(ast.NodeVisitor):
             if not self.is_not_implemented(result):
                 store(result)
                 return
+        right_has_priority = _has_strict_subclass_reflected_priority(lhs_value, rhs_value, right_fn_name)
+        if right_has_priority and hasattr(rhs_value, right_fn_name):
+            result = self.handle_call(node, getattr(rhs_value, right_fn_name), lhs_value)
+            if not self.is_not_implemented(result):
+                store(result)
+                return
         if hasattr(lhs_value, regular_fn_name):
             result = self.handle_call(node, getattr(lhs_value, regular_fn_name), rhs_value)
             if not self.is_not_implemented(result):
                 store(result)
                 return
-        if hasattr(rhs_value, right_fn_name) and type(lhs_value) is not type(rhs_value):
+        if not right_has_priority and hasattr(rhs_value, right_fn_name) and type(lhs_value) is not type(rhs_value):
             result = self.handle_call(node, getattr(rhs_value, right_fn_name), lhs_value)
             if not self.is_not_implemented(result):
                 store(result)
@@ -1368,12 +1390,18 @@ class Visitor(ast.NodeVisitor):
                 and hasattr(type(lhs_py), op)
             ):
                 return validate_value(getattr(lhs_py, op)(rhs_py))
+        right_op = rbin_ops[type(node.op)]
+        right_has_priority = _has_strict_subclass_reflected_priority(lhs, rhs, right_op)
+        if right_has_priority and hasattr(rhs, right_op):
+            result = self.handle_call(node, getattr(rhs, right_op), lhs)
+            if not self.is_not_implemented(result):
+                return result
         if hasattr(lhs, op):
             result = self.handle_call(node, getattr(lhs, op), rhs)
             if not self.is_not_implemented(result):
                 return result
-        if hasattr(rhs, rbin_ops[type(node.op)]) and type(lhs) is not type(rhs):
-            result = self.handle_call(node, getattr(rhs, rbin_ops[type(node.op)]), lhs)
+        if not right_has_priority and hasattr(rhs, right_op) and type(lhs) is not type(rhs):
+            result = self.handle_call(node, getattr(rhs, right_op), lhs)
             if not self.is_not_implemented(result):
                 return result
         raise TypeError(
@@ -1567,6 +1595,8 @@ class Visitor(ast.NodeVisitor):
                 return Num._accept_(l_val._is_py_() and l_val._as_py_() is None)
             return Num._accept_(not (l_val._is_py_() and l_val._as_py_() is None))
         result = None
+        reflected_name = rcomp_ops.get(type(op))
+        right_has_priority = reflected_name is not None and _is_strict_subclass(l_val, r_val)
         if (
             type(l_val) is Num
             and type(r_val) is Num
@@ -1576,10 +1606,17 @@ class Visitor(ast.NodeVisitor):
             # Num comparison operators never return NotImplemented for Num operands.
             self.active_ctx = active_ctx
             result = getattr(l_val, comp_fn_name)(r_val)
-        elif type(op) in comp_ops and self._has_real_method(l_val, comp_ops[type(op)]):
+        elif right_has_priority and self._has_real_method(r_val, reflected_name):
+            result = self.handle_call(node, getattr(r_val, reflected_name), l_val)
+        if (
+            (result is None or self.is_not_implemented(result))
+            and type(op) in comp_ops
+            and self._has_real_method(l_val, comp_ops[type(op)])
+        ):
             result = self.handle_call(node, getattr(l_val, comp_ops[type(op)]), r_val)
         if (
             (result is None or self.is_not_implemented(result))
+            and not right_has_priority
             and type(op) in rcomp_ops
             and self._has_real_method(r_val, rcomp_ops[type(op)])
         ):
@@ -1999,11 +2036,9 @@ class Visitor(ast.NodeVisitor):
         if hasattr(type(value), "__bool__"):
             return self.ensure_boolean_num(self.handle_call(node, type(value).__bool__, validate_value(value)))
         if hasattr(type(value), "__len__"):
-            length = self.handle_call(node, type(value).__len__, validate_value(value))
+            length = _validate_len_result(self.handle_call(node, type(value).__len__, validate_value(value)))
             if not ctx().live:
                 return Num._accept_(0)
-            if not _is_num(length):
-                raise TypeError(f"Invalid type for __len__: {_type_name(length)}")
             if length._is_py_():
                 return Num._accept_(length._as_py_() > 0)
             return length > Num._accept_(0)

@@ -1,11 +1,25 @@
 Block(JumpLoop(
+  Execute(If(
+    Equal(
+      Mod(
+        Get(
+          2000
+          0
+        )
+        1
+      )
+      0
+    )
+    1
+    18
+  ))
   Execute(
     Set(
       10000
       0
       0
     )
-    1
+    2
   )
   Execute(If(
     Less(
@@ -18,8 +32,8 @@ Block(JumpLoop(
         0
       )
     )
-    2
     3
+    4
   ))
   Execute(
     Set(
@@ -196,15 +210,29 @@ Block(JumpLoop(
         1
       )
     )
-    1
+    2
   )
+  Execute(If(
+    Equal(
+      Mod(
+        Get(
+          2000
+          0
+        )
+        1
+      )
+      0
+    )
+    5
+    17
+  ))
   Execute(
     Set(
       10000
       9
       0
     )
-    4
+    6
   )
   Execute(If(
     Less(
@@ -217,8 +245,8 @@ Block(JumpLoop(
         0
       )
     )
-    5
-    9
+    7
+    11
   ))
   Execute(
     Set(
@@ -237,7 +265,7 @@ Block(JumpLoop(
       11
       -3
     )
-    6
+    8
   )
   Execute(If(
     Less(
@@ -247,8 +275,8 @@ Block(JumpLoop(
       )
       4
     )
-    7
-    8
+    9
+    10
   ))
   Execute(
     Set(
@@ -389,7 +417,7 @@ Block(JumpLoop(
         12
       )
     )
-    6
+    8
   )
   Execute(
     Set(
@@ -400,7 +428,7 @@ Block(JumpLoop(
         10
       )
     )
-    4
+    6
   )
   Execute(
     Set(
@@ -503,12 +531,31 @@ Block(JumpLoop(
         0
       )
     )
+    If(
+      Equal(
+        0
+        Mod(
+          Add(
+            Floor(Get(
+              2000
+              3
+            ))
+            1
+          )
+          1
+        )
+      )
+      12
+      16
+    )
+  )
+  Execute(
     Set(
       10000
       19
       0
     )
-    10
+    13
   )
   Execute(If(
     Less(
@@ -524,8 +571,8 @@ Block(JumpLoop(
         1
       )
     )
-    11
-    12
+    14
+    15
   ))
   Execute(
     Set(
@@ -712,8 +759,47 @@ Block(JumpLoop(
         20
       )
     )
-    10
+    13
   )
-  Execute(13)
+  Execute(19)
+  Execute(
+    Set(
+      10000
+      28
+      DebugLog(3)
+    )
+    Set(
+      10000
+      29
+      DebugPause()
+    )
+    19
+  )
+  Execute(
+    Set(
+      10000
+      30
+      DebugLog(2)
+    )
+    Set(
+      10000
+      31
+      DebugPause()
+    )
+    19
+  )
+  Execute(
+    Set(
+      10000
+      32
+      DebugLog(1)
+    )
+    Set(
+      10000
+      33
+      DebugPause()
+    )
+    19
+  )
   0
 ))

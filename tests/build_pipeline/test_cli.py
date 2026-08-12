@@ -53,6 +53,18 @@ def test_import_project_absent_top_module_reports_gracefully(capsys):
     assert "No Project instance found" in capsys.readouterr().out
 
 
+def test_import_project_does_not_duplicate_current_directory(tmp_path, monkeypatch):
+    monkeypatch.chdir(tmp_path)
+    monkeypatch.setattr(sys, "path", [entry for entry in sys.path if entry != str(tmp_path)])
+
+    from sonolus.build.cli import import_project
+
+    import_project("definitely_not_a_real_module_xyztest")
+    import_project("definitely_not_a_real_module_xyztest")
+
+    assert sys.path.count(str(tmp_path)) == 1
+
+
 def test_import_project_dotted_path_through_non_package_reports_gracefully(tmp_path, monkeypatch, capsys):
     (tmp_path / "gamemod_xyz.py").write_text("x = 1\n", encoding="utf-8")
     monkeypatch.syspath_prepend(str(tmp_path))

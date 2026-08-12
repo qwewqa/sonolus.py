@@ -12,13 +12,20 @@ from sonolus.script.record import Record
 
 @meta_fn
 def _keys_equal(stored, probe):
-    from sonolus.script.internal.visitor import compile_and_call
+    from sonolus.script.internal.visitor import _is_strict_subclass, compile_and_call
 
     stored = validate_value(stored)
     probe = validate_value(probe)
+    probe_has_priority = _is_strict_subclass(stored, probe)
+    if probe_has_priority:
+        result = validate_value(compile_and_call(probe.__eq__, stored))
+        if not (result._is_py_() and result._as_py_() is NotImplemented):
+            return result
     result = validate_value(compile_and_call(stored.__eq__, probe))
     if not (result._is_py_() and result._as_py_() is NotImplemented):
         return result
+    if probe_has_priority:
+        return False
     result = validate_value(compile_and_call(probe.__eq__, stored))
     if result._is_py_() and result._as_py_() is NotImplemented:
         return False

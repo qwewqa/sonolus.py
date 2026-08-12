@@ -975,6 +975,50 @@ def test_contains_uses_reflected_equality_after_not_implemented():
     assert run_and_validate(fn)
 
 
+def test_contains_gives_strict_subclass_equality_priority():
+    from tests.script.test_operator import PriorityBase, PrioritySub
+
+    d = {PriorityBase(1): 10}
+
+    def fn():
+        return PrioritySub(1) in d
+
+    assert run_and_validate(fn)
+
+
+def test_set_contains_gives_strict_subclass_equality_priority():
+    from tests.script.test_operator import PriorityBase, PrioritySub
+
+    values = {PriorityBase(1)}
+
+    def fn():
+        return PrioritySub(1) in values
+
+    assert run_and_validate(fn)
+
+
+def test_contains_gives_strict_subclass_inherited_equality_priority():
+    from tests.script.test_operator import InheritedEqualityBase, InheritedEqualitySub
+
+    d = {InheritedEqualityBase(1): 10}
+
+    def fn():
+        return InheritedEqualitySub(1) in d
+
+    assert run_and_validate(fn)
+
+
+def test_set_contains_gives_strict_subclass_inherited_equality_priority():
+    from tests.script.test_operator import InheritedEqualityBase, InheritedEqualitySub
+
+    values = {InheritedEqualityBase(1)}
+
+    def fn():
+        return InheritedEqualitySub(1) in values
+
+    assert run_and_validate(fn)
+
+
 def test_contains_treats_two_declined_equalities_as_unequal():
     d = {DecliningEqualityKey(1): 10}
 
