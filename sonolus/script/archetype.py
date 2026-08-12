@@ -307,8 +307,6 @@ class _EntityLifeDescriptor(SonolusDescriptor):
 
 class _ArchetypeScoreMultiplierMetaDescriptor(SonolusDescriptor):
     def __get__(self, instance, owner):
-        # instance is the class (e.g., MyArchetype)
-        # owner is the metaclass (_BaseArchetypeMeta)
         if instance is None:
             return self
         if not ctx():
@@ -318,7 +316,6 @@ class _ArchetypeScoreMultiplierMetaDescriptor(SonolusDescriptor):
         return _deref(ctx().blocks.ArchetypeScore, instance.id, Num)
 
     def __set__(self, instance, value):
-        # instance is the class
         if not ctx():
             raise RuntimeError("Archetype score multiplier is only available during compilation")
         if ctx().mode_state.mode not in {Mode.PLAY, Mode.WATCH}:
@@ -339,7 +336,6 @@ class _ArchetypeScoreMultiplierDescriptor(SonolusDescriptor):
             return _deref(ctx().blocks.ArchetypeScore, owner.id, Num)
 
     def __set__(self, instance, value):
-        # Handle instance writes
         if instance is None:
             raise RuntimeError("Cannot set archetype score multiplier on None instance")
         if not ctx():
@@ -352,14 +348,11 @@ class _ArchetypeScoreMultiplierDescriptor(SonolusDescriptor):
 
 class _EntityScoreMultiplierMetaDescriptor(SonolusDescriptor):
     def __get__(self, instance, owner):
-        # instance is the class (e.g., MyArchetype)
-        # owner is the metaclass (_BaseArchetypeMeta)
         if instance is None:
             return self
         raise RuntimeError("Entity score multiplier can only be accessed from an instance")
 
     def __set__(self, instance, value):
-        # instance is the class
         raise RuntimeError("Entity score multiplier can only be set on an instance, not on the class")
 
 
@@ -380,7 +373,6 @@ class _EntityScoreMultiplierDescriptor(SonolusDescriptor):
                 raise RuntimeError("Entity score multiplier is not available in level data")
 
     def __set__(self, instance, value):
-        # Handle instance writes
         if instance is None:
             raise RuntimeError("Entity score multiplier can only be set on an instance")
         if not ctx():
@@ -922,7 +914,7 @@ class _BaseArchetype(metaclass=_BaseArchetypeMeta):
                         continue
                     cls._callbacks_[name] = cb
                     break
-        # Only the class's own members are checked as to not affect mixins.
+        # Inspect only cls.__dict__ so callback markers on unrelated mixin methods are not rejected.
         registered = [getattr(cb, "__func__", cb) for cb in cls._callbacks_.values()]
         for name, member in cls.__dict__.items():
             if name in cls._supported_callbacks_:
@@ -958,8 +950,7 @@ class _BaseArchetype(metaclass=_BaseArchetypeMeta):
             raise TypeError("Multiple inheritance of Archetypes is not supported")
         archetype_parents = [base for base in cls.__bases__ if issubclass(base, _BaseArchetype)]
         mro_from_archetype_parents = {entry for base in archetype_parents for entry in base.mro()}
-        # Archetype parents would have already initialized relevant fields, so only consider the current class
-        # and mixins that were not already included via an archetype parent
+        # Archetype parents have initialized their fields; process only cls and mixins outside their MROs.
         mro_excluding_archetype_parents = [entry for entry in cls.mro() if entry not in mro_from_archetype_parents]
         try:
             field_specifiers = get_field_specifiers(

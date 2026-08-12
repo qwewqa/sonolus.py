@@ -46,7 +46,7 @@ class Maybe[T](TransientValue):
     @property
     @meta_fn
     def is_some(self) -> bool:
-        """Check if the value is present."""
+        """Whether the value is present."""
         if ctx():
             if self._present._is_py_():
                 # Makes this a compile time constant.
@@ -57,7 +57,7 @@ class Maybe[T](TransientValue):
 
     @property
     def is_nothing(self) -> bool:
-        """Check if the value is empty."""
+        """Whether the value is empty."""
         return not self.is_some
 
     def get(self, *, error_message: str = "Tried to get the value of an empty Maybe instance") -> T:
@@ -157,7 +157,7 @@ class Maybe[T](TransientValue):
 
     @property
     def tuple(self) -> tuple[bool, T]:
-        """Return whether the value is present and a copy of the contained value if present as a tuple.
+        """A tuple containing the presence flag and a copy of the value when present.
 
         If the value is not present, the first element is `False` and the second element has an indeterminate value.
         """

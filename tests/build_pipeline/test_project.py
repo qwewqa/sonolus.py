@@ -74,3 +74,14 @@ def test_a_url_asset_is_not_joined_to_the_resources_directory(tmp_path, monkeypa
     load_resource(collection, "https://example.invalid/cover.png", resources, b"DEFAULT")
 
     assert requested == ["https://example.invalid/cover.png"]
+
+
+def test_a_mixed_case_url_asset_is_not_joined_to_the_resources_directory(tmp_path, monkeypatch):
+    resources = _two_roots(tmp_path, monkeypatch)
+    collection = Collection()
+    requested = []
+    monkeypatch.setattr(collection, "add_asset", requested.append)
+
+    load_resource(collection, "HtTpS://example.invalid/cover.png", resources, b"DEFAULT")
+
+    assert requested == ["HtTpS://example.invalid/cover.png"]

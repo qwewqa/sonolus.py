@@ -1,6 +1,5 @@
 # ruff: noqa: PLW1641, PT017
 import re
-import sys
 
 import pytest
 from hypothesis import assume, given
@@ -693,15 +692,20 @@ def test_in_falls_back_to_iteration_over_a_record_defining_only_iter():
     assert run_and_validate(fn) == 10
 
 
-def test_in_does_not_fall_back_when_contains_returns_not_implemented():
-    def fn():
-        return 2 in DecliningContains(Array(1, 2, 3))
+def declining_contains_in():
+    return 2 in DecliningContains(Array(1, 2, 3))
 
-    if sys.version_info >= (3, 14):
-        with pytest.raises(TypeError, match="NotImplemented should not be used in a boolean context"):
-            run_and_validate(fn)
-    else:
-        assert run_and_validate(fn)
+
+def declining_contains_not_in():
+    return 2 not in DecliningContains(Array(1, 2, 3))
+
+
+@pytest.mark.parametrize("fn", [declining_contains_in, declining_contains_not_in])
+def test_membership_rejects_contains_returning_not_implemented(fn):
+    # Python before 3.14 treats NotImplemented as true here, so use the compiler directly to pin the project's
+    # version-independent 3.14 semantics.
+    with pytest.raises(CompilationError, match="NotImplemented should not be used in a boolean context"):
+        run_compiled(fn)
 
 
 def test_in_short_circuits_at_the_first_match():

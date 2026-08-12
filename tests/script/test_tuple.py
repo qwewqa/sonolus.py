@@ -1073,6 +1073,35 @@ def test_tuple_index_with_runtime_start():
     assert run_and_validate(fn) == (1, 2, 1, 2).index(2, 2)
 
 
+@pytest.mark.parametrize(("start", "stop"), [(1.5, None), (-1.5, None), (0, 1.5), (0, -1.5)])
+def test_tuple_index_rejects_fractional_bounds(start, stop):
+    def fn(start_value, stop_value):
+        if stop_value is None:
+            return (1, 2, 3).index(2, bb(start_value))
+        return (1, 2, 3).index(2, bb(start_value), bb(stop_value))
+
+    with pytest.raises(TypeError):
+        run_and_validate(fn, start, stop)
+
+
+def test_tuple_index_fractional_bound_in_dead_runtime_branch_compiles():
+    def fn(take_branch):
+        if bb(take_branch):
+            return (1, 2, 3).index(2, 1.5)
+        return 42
+
+    assert run_and_validate(fn, False) == 42
+
+
+def test_tuple_index_bounds_are_positional_only():
+    def fn():
+        return (1, 2, 3).index(2, start=1)
+
+    # run_compiled checks the compiler's binding diagnostic rather than CPython's builtin-specific message.
+    with pytest.raises(CompilationError, match="got some positional-only arguments passed as keyword arguments"):
+        run_compiled(fn)
+
+
 # These two pin an accepted divergence from Python, the same shape as test_range.py's
 # test_range_index_runtime_checks_disabled_unchanged: the miss is reported by a runtime check, so with runtime
 # checks disabled it is not reported at all and -1 surfaces instead.

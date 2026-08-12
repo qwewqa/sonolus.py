@@ -537,7 +537,8 @@ an iterator may unexpectedly change when the iterator is advanced.
 
 ### Classes
 
-Classes are supported at the module level. User defined classes should subclass [`Record`][sonolus.script.record.Record] or have a supported
+Classes are supported at the module level. User defined classes should subclass
+[`Record`][sonolus.script.record.Record] or have a supported
 Sonolus.py decorator such as `@level_memory`.
 
 Methods may have the `@staticmethod`, `@classmethod`, or `@property` decorators.

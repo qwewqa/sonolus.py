@@ -45,7 +45,6 @@ class _UInt32(Record):
     @classmethod
     @meta_fn
     def _(cls, hi: int, lo: int) -> _UInt32:
-        # This creates read-only instances, which helps with constant folding in the frontend and build times.
         return _UInt32._raw(hi=_validate_num(hi), lo=_validate_num(lo))
 
     @classmethod
@@ -87,7 +86,7 @@ class _UInt32(Record):
     @classmethod
     @perf_meta_fn
     def _carry_mul(cls, a: int, b: int) -> tuple[int, int]:
-        # Have to be careful since 32-bit floats only have 24 bits of precision
+        # Split b into 8-bit halves so every intermediate product is exact in a 32-bit float.
 
         if is_static_true(a == 0) or is_static_true(b == 0):
             return 0, 0
@@ -113,7 +112,7 @@ class _UInt32(Record):
     @classmethod
     @perf_meta_fn
     def _wrap_mul(cls, a: int, b: int) -> int:
-        # We have this for the same reason as _carry_mul
+        # Split b into 8-bit halves so every intermediate product is exact in a 32-bit float.
 
         if is_static_true(a == 0) or is_static_true(b == 0):
             return 0
@@ -160,7 +159,7 @@ class _UInt32(Record):
         lo_lo, carry_lo_lo = self._carry_mul(self.lo, other.lo)
         hi_lo = self._wrap_mul(self.hi, other.lo)
         lo_hi = self._wrap_mul(self.lo, other.hi)
-        # hi_hi is ignored since it would overflow entirely
+        # The high-half product is entirely above the low 32 bits.
 
         lo = lo_lo
         hi = (hi_lo + lo_hi + carry_lo_lo) % (2**16)
@@ -217,8 +216,7 @@ class _UInt32(Record):
     __hash__ = None
 
 
-# Technically we could do a bit more and still fit in the number of, distinct finite 32-bit floats,
-# but for simplicity, we limit ourselves to 31 bits.
+# Keep the step count within 31 bits so every intermediate value fits in the finite 32-bit float domain.
 _MAX_TOTAL_STEPS_UINT32 = _UInt32._(2**15, 0)
 _HALF_MAX_TOTAL_STEPS_UINT32 = _UInt32._(2**14, 0)
 _HALF_MAX_TOTAL_STEPS_UINT32_MINUS_ONE = _UInt32._(2**14 - 1, 2**16 - 1)

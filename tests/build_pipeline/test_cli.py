@@ -5,7 +5,8 @@ from types import SimpleNamespace
 
 import pytest
 
-from sonolus.build.cli import build_project, get_config, get_runtime_checks, main
+from sonolus.build.cli import build_project, get_config, get_runtime_checks, main, write_collection
+from sonolus.build.collection import Collection
 from sonolus.script.internal.context import RuntimeChecks
 
 
@@ -201,6 +202,30 @@ def test_build_project_rejects_a_bad_engine_name_before_clearing_dist(tmp_path):
     assert previous.read_bytes() == b"previous build"
 
 
+def test_build_project_propagates_output_cleanup_failure(tmp_path, monkeypatch):
+    (tmp_path / "dist").mkdir()
+
+    def fail_cleanup(path):
+        raise PermissionError(f"cannot remove {path}")
+
+    monkeypatch.setattr("sonolus.build.cli.shutil.rmtree", fail_cleanup)
+
+    with pytest.raises(PermissionError, match="cannot remove"):
+        build_project(_stub_project(), tmp_path, None)
+
+
+def test_write_collection_propagates_output_cleanup_failure(tmp_path, monkeypatch):
+    (tmp_path / "site").mkdir()
+
+    def fail_cleanup(path):
+        raise PermissionError(f"cannot remove {path}")
+
+    monkeypatch.setattr("sonolus.build.cli.shutil.rmtree", fail_cleanup)
+
+    with pytest.raises(PermissionError, match="cannot remove"):
+        write_collection(Collection(), tmp_path)
+
+
 def _args(command: str, **overrides) -> argparse.Namespace:
     """Build the namespace argparse produces for the given subcommand when no flag is passed."""
     defaults = {
@@ -232,6 +257,20 @@ def test_get_runtime_checks_default_per_command(command, expected):
 
 def test_get_runtime_checks_flag_overrides_the_dev_default():
     assert get_runtime_checks(_args("dev", runtime_checks="none")) == RuntimeChecks.NONE
+
+
+@pytest.mark.parametrize("command", ["build", "dev", "check"])
+def test_verbose_help_describes_compilation_error_tracebacks(command, monkeypatch, capsys):
+    monkeypatch.setattr(sys, "argv", ["sonolus-py", command, "--help"])
+
+    with pytest.raises(SystemExit, match="0"):
+        main()
+
+    output = " ".join(capsys.readouterr().out.split())
+    assert (
+        "Print the full traceback for a compilation error instead of a simplified summary when one is available"
+        in output
+    )
 
 
 def test_get_config_builds_every_component_when_none_is_requested():

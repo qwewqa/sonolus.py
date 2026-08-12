@@ -16,6 +16,13 @@ def _index_not_found():
         error("tuple.index(x): x not in tuple")
 
 
+@simple_meta_fn
+def _check_index_bound(value):
+    from sonolus.script.debug import assert_true
+
+    assert_true(value % 1 == 0, "index bounds must be integers")
+
+
 class TupleImpl(TransientValue):
     value: tuple
 
@@ -113,7 +120,7 @@ class TupleImpl(TransientValue):
                 return True
         return False
 
-    def index(self, value, start: int = 0, stop: int | None = None):
+    def index(self, value, start: int = 0, stop: int | None = None, /):
         """Return the index of the first element of the tuple equal to the given value.
 
         Args:
@@ -122,8 +129,11 @@ class TupleImpl(TransientValue):
             stop: The index to stop searching at. If `None`, search to the end of the tuple.
         """
         length = len(self.value)
+        _check_index_bound(start)
         if stop is None:
             stop = length
+        else:
+            _check_index_bound(stop)
         start = max(start + (start < 0) * length, 0)
         stop = min(stop + (stop < 0) * length, length)
         for i, element in enumerate(self.value):

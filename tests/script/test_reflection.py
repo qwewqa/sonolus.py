@@ -60,6 +60,10 @@ MyBox.missing_descriptor = MissingDescriptor()
 MyBox.missing_property = property(missing_property)
 
 
+Record.masked_for_test = property(lambda self: 123)
+MyBox.masked_for_test = None
+
+
 def test_hasattr_record_field():
     def fn():
         return hasattr(MyBox(1), "value")
@@ -190,6 +194,20 @@ def test_getattr_record_property():
         return box.my_property
 
     assert run_and_validate(fn) == 789
+
+
+def test_attribute_none_masks_inherited_property():
+    def fn():
+        return MyBox(1).masked_for_test is None
+
+    assert run_and_validate(fn)
+
+
+def test_builtin_getattr_none_masks_inherited_property():
+    def fn():
+        return getattr(MyBox(1), "masked_for_test") is None  # noqa: B009
+
+    assert run_and_validate(fn)
 
 
 def test_getattr_record_unsupported():

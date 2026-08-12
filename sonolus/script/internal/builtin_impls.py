@@ -894,8 +894,8 @@ def _getattr(obj: Any, name: str, default=_empty) -> Any:
         obj = obj._as_py_()
     descriptor = None
     for cls in type.mro(type(obj)):
-        descriptor = cls.__dict__.get(name, None)
-        if descriptor is not None:
+        if name in cls.__dict__:
+            descriptor = cls.__dict__[name]
             break
     match descriptor:
         case property(fget=getter):

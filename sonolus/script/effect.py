@@ -40,7 +40,7 @@ class Effect(Record):
     @property
     @perf_meta_fn
     def is_available(self) -> bool:
-        """Return whether the effect clip is available."""
+        """Whether the effect clip is available."""
         return _has_effect_clip(self.id)
 
     @perf_meta_fn
@@ -65,6 +65,9 @@ class Effect(Record):
         Use [`play`][sonolus.script.effect.Effect.play] instead.
 
         This may be called in preprocess to schedule effects upfront.
+
+        Schedule at least 0.5 seconds before the target time when possible. Scheduling closer to the target may
+        cause unexpected latency.
 
         If the clip would play within the specified distance of another play, it will be skipped.
 
@@ -95,6 +98,9 @@ class Effect(Record):
 
         This is not suitable for real-time effects such as responses to user input.
         Use [`loop`][sonolus.script.effect.Effect.loop] instead.
+
+        Schedule at least 0.5 seconds before the target time when possible. Scheduling closer to the target may
+        cause unexpected latency.
 
         Not available in preview mode.
 
@@ -129,6 +135,9 @@ class ScheduledLoopedEffectHandle(Record):
 
     def stop(self, end_time: float) -> None:
         """Stop the scheduled looped effect.
+
+        Schedule at least 0.5 seconds before the target time when possible. Scheduling closer to the target may
+        cause unexpected latency.
 
         Not available in preview mode.
 

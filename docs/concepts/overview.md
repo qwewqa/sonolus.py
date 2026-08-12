@@ -255,7 +255,8 @@ Sonolus.py provides a number of built-in modules that can be used in Sonolus eng
     - [typing](../reference/typing.md): Supported typing functions.
 - Utilities
     - [ArrayLike](../reference/sonolus.script.array_like.md): Mixin for array functionality.
-    - [Containers](../reference/sonolus.script.containers.md): Additional container types like [`VarArray`][sonolus.script.containers.VarArray] and [`ArrayMap`][sonolus.script.containers.ArrayMap].
+    - [Containers](../reference/sonolus.script.containers.md): Additional container types like
+      [`VarArray`][sonolus.script.containers.VarArray] and [`ArrayMap`][sonolus.script.containers.ArrayMap].
     - [Debug](../reference/sonolus.script.debug.md): Debugging utilities.
     - [Easing](../reference/sonolus.script.easing.md): Easing functions for animations.
     - [Interval](../reference/sonolus.script.interval.md): Mathematical intervals.

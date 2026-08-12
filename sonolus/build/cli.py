@@ -82,7 +82,8 @@ def build_project(project: Project, build_dir: Path, config: BuildConfig):
 
     dist_dir = build_dir / "dist"
     levels_dir = dist_dir / "levels"
-    shutil.rmtree(dist_dir, ignore_errors=True)
+    if dist_dir.exists():
+        shutil.rmtree(dist_dir)
     dist_dir.mkdir(parents=True, exist_ok=True)
     levels_dir.mkdir(parents=True, exist_ok=True)
 
@@ -112,8 +113,8 @@ def build_collection(
 
 def write_collection(collection: Collection, build_dir: Path, *, clear: bool = True):
     site_dir = build_dir / "site"
-    if clear:
-        shutil.rmtree(site_dir, ignore_errors=True)
+    if clear and site_dir.exists():
+        shutil.rmtree(site_dir)
     site_dir.mkdir(parents=True, exist_ok=True)
 
     collection.write(site_dir)
@@ -207,7 +208,14 @@ def main():
         build_components.add_argument("--preview", action="store_true", help="Build preview component")
         build_components.add_argument("--tutorial", action="store_true", help="Build tutorial component")
 
-        parser.add_argument("-v", "--verbose", action="store_true", help="Enable verbose output")
+        parser.add_argument(
+            "-v",
+            "--verbose",
+            action="store_true",
+            help=(
+                "Print the full traceback for a compilation error instead of a simplified summary when one is available"
+            ),
+        )
 
         profile_group = parser.add_argument_group("compile profiling")
         profile_group.add_argument(

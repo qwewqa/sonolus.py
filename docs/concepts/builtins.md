@@ -8,7 +8,8 @@ full signatures.
 - `any(iterable)`
 - `bool(x=False)`
 - `callable(object)`
-- `dict()`, `dict(mapping, **kwargs)`, `dict(iterable, **kwargs)`, `dict(**kwargs)` (keys must be compile-time constants)
+- `dict()`, `dict(mapping, **kwargs)`, `dict(iterable, **kwargs)`, `dict(**kwargs)` (keys must be compile-time
+  constants)
 - `enumerate(iterable, start=0)`
 - `filter(function, iterable)`
 - `float(x=0.0)` (for a num argument)

@@ -382,8 +382,8 @@ def _resolve_descriptor(target_type: type, key: str) -> Any:
     if descriptor is _DESCRIPTOR_CACHE_MISS:
         descriptor = None
         for cls in type.mro(target_type):
-            descriptor = cls.__dict__.get(key, None)
-            if descriptor is not None:
+            if key in cls.__dict__:
+                descriptor = cls.__dict__[key]
                 break
         _descriptor_cache[target_type, key] = descriptor
     return descriptor
@@ -1564,6 +1564,8 @@ class Visitor(ast.NodeVisitor):
         result = self.handle_call(node, iterator.next)
         if not ctx().live:
             return validate_value(None)
+        if not isinstance(result, Maybe):
+            raise ValueError("Iterator next must return a Maybe")
         if result._present._is_py_() and not result._present._as_py_():
             return validate_value(None)
         nothing_branch = ctx().branch(0)
@@ -1624,7 +1626,7 @@ class Visitor(ast.NodeVisitor):
         if result is None and type(op) in {ast.In, ast.NotIn} and self._has_real_method(r_val, "__iter__"):
             result = self.handle_call(node, contains_by_iteration, l_val, r_val)
         if result is not None and type(op) in {ast.In, ast.NotIn} and self.is_not_implemented(result):
-            return validate_value(bool(NotImplemented))
+            raise TypeError("NotImplemented should not be used in a boolean context")
         if result is None or self.is_not_implemented(result):
             # The default object.__eq__/__ne__ compares identity, which is not reliable for traced values.
             if type(op) is ast.Eq and type(l_val) is not type(r_val):

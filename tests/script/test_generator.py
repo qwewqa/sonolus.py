@@ -397,6 +397,28 @@ class StaticallyEmpty(Record):
         return StaticallyEmptyIterator(self.v)
 
 
+class NonMaybeIterator(Record, SonolusIterator):
+    def next(self):
+        return 1
+
+
+class NonMaybeIterable(Record):
+    def __iter__(self):
+        return NonMaybeIterator()
+
+
+def test_yield_from_requires_next_to_return_maybe():
+    def gen():
+        yield from NonMaybeIterable()
+
+    def fn():
+        for _ in gen():
+            pass
+
+    with pytest.raises(CompilationError, match="Iterator next must return a Maybe"):
+        run_compiled(fn)
+
+
 def test_yield_from_empty_zip_yields_nothing():
     # Each of these delegation tests sums the yielded values rather than counting them: a delegating
     # generator that binds its yield to a statically empty iterator's absent value still compiles when the

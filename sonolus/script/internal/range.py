@@ -65,15 +65,9 @@ class Range(Record, ArrayLike[int]):
     def __setitem__(self, index: int, value: int):
         static_error("Range does not support item assignment")
 
-    def index(self, value: int, start: int = 0, stop: int | None = None) -> int:
-        """Return the index of the first element of the range equal to the given value.
-
-        Args:
-            value: The value to search for.
-            start: The index to start searching from.
-            stop: The index to stop searching at. If `None`, search to the end of the range.
-        """
-        result = super().index(value, start, stop)
+    def index(self, value: int, /) -> int:
+        """Return the index of the first element of the range equal to the given value."""
+        result = super().index(value)
         assert_true(result != -1, "range.index(x): x not in range")
         return result
 

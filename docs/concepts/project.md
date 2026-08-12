@@ -57,7 +57,9 @@ resources/
 ```
 
 ## Modes
-Modes are defined using the [`PlayMode`][sonolus.script.engine.PlayMode], [`WatchMode`][sonolus.script.engine.WatchMode], [`PreviewMode`][sonolus.script.engine.PreviewMode], and [`TutorialMode`][sonolus.script.engine.TutorialMode] classes.
+Modes are defined using the [`PlayMode`][sonolus.script.engine.PlayMode],
+[`WatchMode`][sonolus.script.engine.WatchMode], [`PreviewMode`][sonolus.script.engine.PreviewMode], and
+[`TutorialMode`][sonolus.script.engine.TutorialMode] classes.
 
 The `skin`, `effects`, `particles`, `buckets`, and `instructions` classes passed to these constructors are declared as
 shown in [Resources & Declarations](resources.md).
@@ -86,7 +88,8 @@ play_mode = PlayMode(
 
 ```
 
-Play mode archetypes subclass [`PlayArchetype`][sonolus.script.archetype.PlayArchetype] and implement the following callbacks:
+Play mode archetypes subclass [`PlayArchetype`][sonolus.script.archetype.PlayArchetype] and implement the following
+callbacks:
 
 - [`should_spawn`][sonolus.script.archetype.PlayArchetype.should_spawn] (required)
 - [`preprocess`][sonolus.script.archetype.PlayArchetype.preprocess]
@@ -97,7 +100,8 @@ Play mode archetypes subclass [`PlayArchetype`][sonolus.script.archetype.PlayArc
 - [`touch`][sonolus.script.archetype.PlayArchetype.touch]
 - [`terminate`][sonolus.script.archetype.PlayArchetype.terminate]
 
-Archetypes for scored notes should have the [`is_scored`][sonolus.script.archetype.PlayArchetype.is_scored] class variable set to `True`.
+Archetypes for scored notes should set the
+[`is_scored`][sonolus.script.archetype.PlayArchetype.is_scored] class variable to `True`.
 
 ### Watch Mode
 
@@ -123,7 +127,8 @@ watch_mode = WatchMode(
 )
 ```
 
-Watch mode archetypes subclass [`WatchArchetype`][sonolus.script.archetype.WatchArchetype] and implement the following callbacks:
+Watch mode archetypes subclass [`WatchArchetype`][sonolus.script.archetype.WatchArchetype] and implement the following
+callbacks:
 
 - [`spawn_time`][sonolus.script.archetype.WatchArchetype.spawn_time] (required)
 - [`despawn_time`][sonolus.script.archetype.WatchArchetype.despawn_time] (required)
@@ -154,7 +159,8 @@ preview_mode = PreviewMode(
 )
 ```
 
-Preview mode archetypes subclass [`PreviewArchetype`][sonolus.script.archetype.PreviewArchetype] and implement the following callbacks:
+Preview mode archetypes subclass [`PreviewArchetype`][sonolus.script.archetype.PreviewArchetype] and implement the
+following callbacks:
 
 - [`preprocess`][sonolus.script.archetype.PreviewArchetype.preprocess]
 - [`render`][sonolus.script.archetype.PreviewArchetype.render]

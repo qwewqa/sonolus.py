@@ -252,6 +252,22 @@ def test_level_data_dangling_entity_ref_names_the_referring_field_and_referenced
         build_level_data(LevelData(bgm_offset=0, entities=[holder]))
 
 
+def test_level_data_rejects_the_same_entity_instance_twice():
+    entity = RefTarget(value=1)
+
+    with pytest.raises(ValueError, match=r"Level entity 1 \('RefTarget'\) is the same instance as entity 0"):
+        build_level_data(LevelData(bgm_offset=0, entities=[entity, entity]))
+
+
+def test_level_data_allows_distinct_entities_with_equal_field_values():
+    first = RefTarget(value=1)
+    second = RefTarget(value=1)
+
+    raw = build_level_data(LevelData(bgm_offset=0, entities=[first, second]))
+
+    assert [entity["name"] for entity in raw["entities"]] == ["0_RefTarget", "1_RefTarget"]
+
+
 def test_level_data_rejects_a_wrong_typed_record_argument_of_the_same_size():
     with pytest.raises(TypeError, match=r"Cannot accept value ReversedVec\(y=7, x=8\) as Vec2"):
         Positioned(pos=ReversedVec(7.0, 8.0))

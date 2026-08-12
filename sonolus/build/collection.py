@@ -154,10 +154,21 @@ class Collection:
                 item_data = self._localize_item(item_data)
                 item_data["name"] = item_dir.name
 
-                for resource_path in sorted(item_dir.iterdir(), key=lambda p: p.name):
-                    if resource_path.name == "item.json":
-                        continue
+                resource_paths = [
+                    resource_path
+                    for resource_path in sorted(item_dir.iterdir(), key=lambda p: p.name)
+                    if resource_path.name != "item.json" and resource_path.is_file()
+                ]
+                resource_keys: set[str] = set()
+                for resource_path in resource_paths:
+                    key = resource_path.stem
+                    if key in item_data:
+                        raise ValueError(f"Resource key '{key}' conflicts with item metadata in {item_json_path}")
+                    if key in resource_keys:
+                        raise ValueError(f"Duplicate resource key '{key}' in {item_dir}")
+                    resource_keys.add(key)
 
+                for resource_path in resource_paths:
                     try:
                         resource_data = resource_path.read_bytes()
 
@@ -368,7 +379,7 @@ class Srl(TypedDict):
 
 def load_asset(value: Asset) -> bytes:
     match value:
-        case str() if value.startswith(("http://", "https://")):
+        case str() if value.lower().startswith(("http://", "https://")):
             headers = {
                 "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) "
                 "AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36",

@@ -242,6 +242,26 @@ def test_source_files_override_scp_items(tmp_path):
     assert c.get_item("skins", "pixel")["title"] == "FROM SOURCE"
 
 
+def test_load_from_source_rejects_resources_with_the_same_resolved_key(tmp_path):
+    _write_source_item(tmp_path, "skins", "pixel", {"data.bin": b"binary", "data.json": b"{}"})
+    c = Collection()
+
+    with pytest.raises(ValueError, match="Duplicate resource key 'data'"):
+        c.load_from_source(tmp_path)
+
+    assert c.repository == {}
+
+
+def test_load_from_source_rejects_resource_key_that_overwrites_item_metadata(tmp_path):
+    _write_source_item(tmp_path, "skins", "pixel", {"title.png": b"image"})
+    c = Collection()
+
+    with pytest.raises(ValueError, match="Resource key 'title' conflicts with item metadata"):
+        c.load_from_source(tmp_path)
+
+    assert c.repository == {}
+
+
 def test_load_asset_reads_a_relative_path_string(tmp_path, monkeypatch):
     (tmp_path / "bgm.mp3").write_bytes(b"audio bytes")
     monkeypatch.chdir(tmp_path)
@@ -254,6 +274,29 @@ def test_load_asset_reads_an_absolute_path_string(tmp_path):
     asset.write_bytes(b"image bytes")
 
     assert load_asset(str(asset)) == load_asset(asset)
+
+
+def test_load_asset_recognizes_a_mixed_case_http_scheme(monkeypatch):
+    requested = []
+
+    class Response:
+        def __enter__(self):
+            return self
+
+        def __exit__(self, *args):
+            pass
+
+        def read(self):
+            return b"downloaded"
+
+    def urlopen(request):
+        requested.append(request.full_url)
+        return Response()
+
+    monkeypatch.setattr("urllib.request.urlopen", urlopen)
+
+    assert load_asset("HtTpS://example.invalid/cover.png") == b"downloaded"
+    assert requested == ["HtTpS://example.invalid/cover.png"]
 
 
 def test_add_asset_accepts_a_path_string(tmp_path, monkeypatch):

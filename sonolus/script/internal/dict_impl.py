@@ -72,8 +72,18 @@ class DictImpl[Keys, OrderedKeys, Values](Record):
         result = self._maybe_getitem(item)
         return result.get(error_message="KeyError")
 
-    def get(self, item, default, /):
-        return self._maybe_getitem(item).or_default(default)
+    @meta_fn
+    def get(self, item, default=None, /):
+        from sonolus.script.internal.visitor import compile_and_call
+
+        result = validate_value(compile_and_call(self._maybe_getitem, item))
+        default = validate_value(default)
+        if default._is_py_() and default._as_py_() is None:
+            present = validate_value(result.is_some)
+            if present._is_py_():
+                return compile_and_call(result.get_unsafe) if present._as_py_() else default
+            static_error("Dict.get with an omitted or None default requires a compile time constant key")
+        return compile_and_call(result.or_default, default)
 
     def _maybe_getitem(self, item):
         index = self._try_constsearch(item)

@@ -1,5 +1,23 @@
 ### 0.18.2
 
+- Normal builds now abort when an existing output directory cannot be removed, rather than writing into
+  partially cleared output and reporting success.
+- Building level data now rejects adding the same entity instance more than once. Distinct entities with equal
+  field values remain supported.
+- Loading a source collection now rejects resource files whose stems resolve to the same item key, or whose stem
+  conflicts with item metadata, instead of silently overwriting a value.
+- [`ArrayLike.index`][sonolus.script.array_like.ArrayLike.index] and tuple `index` now require integer-valued
+  `start` and `stop` bounds. Tuple bounds are positional-only, matching Python.
+- Compiled `range.index` now accepts exactly one positional argument, matching Python.
+- `yield from` now reports that an iterator's `next` method must return `Maybe`, rather than failing with an
+  incidental attribute error or accepting a lookalike value.
+- Compiled `in` and `not in` now raise `NotImplemented should not be used in a boolean context` when
+  `__contains__` returns `NotImplemented`, consistently following Python 3.14 on every supported host.
+- An attribute explicitly set to `None` on a subclass now masks an inherited descriptor during compiled
+  attribute lookup and `getattr`, matching Python.
+- Asset URLs with a mixed-case `http` or `https` scheme are now recognized as URLs rather than filesystem paths.
+- Compiled `dict.get(key)` now supports an omitted default for a compile-time constant key, returning `None` when
+  the key is absent. The same behavior applies to an explicit `None` default.
 - An integer default passed to [`select_option()`][sonolus.script.options.select_option] is now rejected when it
   is a `bool`, outside the option list, or used with an empty option list.
 - Compiled `range()` arguments, `enumerate()` starting indices, and `round()` digit counts must now be

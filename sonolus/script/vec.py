@@ -96,21 +96,13 @@ class Vec2(Record):
     @property
     @perf_meta_fn
     def magnitude(self) -> float:
-        """Calculate the magnitude (length) of the vector.
-
-        Returns:
-            The magnitude of the vector.
-        """
+        """The magnitude (length) of the vector."""
         return (self.x**2 + self.y**2) ** 0.5
 
     @property
     @perf_meta_fn
     def angle(self) -> float:
-        """Calculate the angle of the vector in radians from the positive x-axis.
-
-        Returns:
-            The angle of the vector in radians.
-        """
+        """The angle of the vector in radians from the positive x-axis."""
         return atan2(self.y, self.x)
 
     @perf_meta_fn
@@ -190,11 +182,7 @@ class Vec2(Record):
 
     @property
     def tuple(self) -> tuple[float, float]:
-        """Return the vector as a tuple (x, y).
-
-        Returns:
-            A tuple representation of the vector.
-        """
+        """The vector as an `(x, y)` tuple."""
         return self.x, self.y
 
     @perf_meta_fn

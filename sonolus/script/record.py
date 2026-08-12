@@ -49,7 +49,6 @@ def _bind_constructor_args(cls: type[Record], args: tuple[Any, ...], kwargs: dic
     return bound.arguments
 
 
-# Protocol metaclass is a subclass of ABCMeta, but let's make ABCMeta explicit for clarity
 class RecordMeta(type(Protocol), ABCMeta):
     @meta_fn
     def __pos__[T](cls: type[T]) -> T:
@@ -198,10 +197,6 @@ class Record(GenericValue, metaclass=RecordMeta):
             return
         is_inheriting_from_existing_record_class = cls._fields_ is not None
         if is_inheriting_from_existing_record_class and not is_parameterizing:
-            # The main reason this is disallowed is that subclasses wouldn't be substitutable for their parent classes
-            # Assignment of a subclass instance to a variable of the parent class would either be disallowed or would
-            # require object slicing. Either way, it could lead to confusion.
-            # Dealing with generic supertypes is also tricky, so it isn't really worth the effort to support this.
             raise TypeError("Subclassing of a Record is not supported")
 
         hints = inspect.get_annotations(cls, eval_str=True)
@@ -250,13 +245,11 @@ class Record(GenericValue, metaclass=RecordMeta):
         cls.__match_args__ = field_names
 
         if len(getattr(cls, "__type_params__", ())) == 0:
-            # Make the class behave as the parameterized version
             cls._type_args_ = ()
             cls._type_vars_to_args_ = {}
             cls._parameterized_[()] = cls
 
     def __new__(cls, *args, **kwargs):
-        # We override __new__ to allow changing to the parameterized version
         if cls._constructor_signature_ is None:
             raise TypeError(f"Cannot instantiate {cls.__name__}")
         arguments = _bind_constructor_args(cls, args, kwargs)
@@ -282,7 +275,6 @@ class Record(GenericValue, metaclass=RecordMeta):
         return result
 
     def __init__(self, *args, **kwargs):
-        # Initialization is done in __new__ and other methods
         pass
 
     @classmethod
@@ -293,7 +285,6 @@ class Record(GenericValue, metaclass=RecordMeta):
 
     @classmethod
     def _unchecked(cls, **kwargs) -> Self:
-        # Skips most validation, generally for internal use in frequently-called methods for performance reasons
         result = object.__new__(cls)
         for k, v in kwargs.items():
             if isinstance(v, int | float):
@@ -380,7 +371,7 @@ class Record(GenericValue, metaclass=RecordMeta):
 
     @classmethod
     def _alloc_(cls) -> Self:
-        # Compared to using the constructor, this avoids unnecessary _get_ calls
+        # Direct allocation avoids the constructor's _get_ read of every field value.
         result = object.__new__(cls)
         result._value_ = {field.name: field.type._alloc_() for field in cls._fields_}
         return result

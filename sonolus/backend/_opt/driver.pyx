@@ -135,8 +135,7 @@ cdef Func _pipeline(Func func, int level, bint allocate):
     cdef Func opt
     cdef Func conv
     cdef Func lowered
-    # Opt-in per-pass timing (SONOLUS_OPT_PROFILE / CLI --profile); read the flag
-    # once so an unprofiled build pays only a bint test per pass. Same idiom as _TRACE.
+    # Read the stage-timing flag once per pipeline run so later changes affect only the next run.
     cdef bint prof = _prof.enabled
     cdef long long t0 = 0
 

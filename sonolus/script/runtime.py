@@ -364,7 +364,7 @@ class UiLayout[T](Record):
 
     @property
     def is_available(self) -> bool:
-        """Check if the layout is available in the current mode."""
+        """Whether the layout is available in the current mode."""
         return self._underlying is not None
 
 
@@ -393,7 +393,7 @@ class UiConfig[T](Record):
 
     @property
     def is_available(self) -> bool:
-        """Check if the config is available in the current mode."""
+        """Whether the config is available in the current mode."""
         return self._underlying is not None
 
 
@@ -775,7 +775,6 @@ class Touch(Record):
 
 @_runtime_touch_array
 class _TouchArray:
-    # Handled specially, see touches()
     pass
 
 

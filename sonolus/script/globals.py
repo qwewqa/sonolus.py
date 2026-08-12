@@ -317,10 +317,6 @@ def level_data[T](cls: type[T]) -> T:
     )
 
 
-# level_option is handled by the options decorator
-# level_bucket is handled by the bucket decorator
-
-
 @dataclass_transform()
 def _level_score[T](cls: type[T]) -> T:
     return _create_global(cls, {Mode.PLAY: PlayBlock.LevelScore, Mode.WATCH: WatchBlock.LevelScore}, 0)
@@ -329,17 +325,3 @@ def _level_score[T](cls: type[T]) -> T:
 @dataclass_transform()
 def _level_life[T](cls: type[T]) -> T:
     return _create_global(cls, {Mode.PLAY: PlayBlock.LevelLife, Mode.WATCH: WatchBlock.LevelLife}, 0)
-
-
-# engine_rom is handled by the compiler
-# entity memory is handled by the archetype
-# entity data is handled by the archetype
-# entity shared memory is handled by the archetype
-# entity info is handled by the archetype
-# entity despawn is handled by the archetype
-# entity input is handled by the archetype
-# entity data array is handled by the archetype
-# entity shared memory array is handled by the archetype
-# entity info array is handled by the archetype
-# archetype life is handled by the archetype
-# temporary memory is handled by the compiler

@@ -463,3 +463,21 @@ def test_range_arguments_are_positional_only():
     # run_compiled: CPython rejects this too, but its builtin-specific message differs from normal signature binding.
     with pytest.raises(CompilationError, match="got some positional-only arguments passed as keyword arguments"):
         run_compiled(fn)
+
+
+def test_range_index_accepts_only_one_positional_argument():
+    def fn():
+        return range(5).index(2, 0)
+
+    # run_compiled checks the compiler's binding diagnostic rather than CPython's builtin-specific message.
+    with pytest.raises(CompilationError, match="too many positional arguments"):
+        run_compiled(fn)
+
+
+def test_range_index_value_is_positional_only():
+    def fn():
+        return range(5).index(value=2)
+
+    # run_compiled checks the compiler's binding diagnostic rather than CPython's builtin-specific message.
+    with pytest.raises(CompilationError, match="missing a required positional-only argument: 'value'"):
+        run_compiled(fn)

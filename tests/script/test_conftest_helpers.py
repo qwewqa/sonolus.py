@@ -16,6 +16,7 @@ import pytest
 
 from sonolus.backend.optimize import FAST_PASSES, MINIMAL_PASSES, STANDARD_PASSES
 from sonolus.script.array import Array
+from sonolus.script.debug import debug_log, error
 from sonolus.script.internal.error import CompilationError
 from tests.script import conftest as cf
 
@@ -113,3 +114,44 @@ def test_run_and_validate_accepts_a_closure_value_at_the_f32_maximum():
         return magnitude
 
     assert cf.run_and_validate(fn) == magnitude
+
+
+def test_run_and_validate_runs_every_leg_before_reraising_a_python_exception(monkeypatch):
+    marker = 7
+    pass_count = 0
+    real_run_passes = cf.run_passes
+
+    def counting_run_passes(*args, **kwargs):
+        nonlocal pass_count
+        pass_count += 1
+        return real_run_passes(*args, **kwargs)
+
+    def fn():
+        debug_log(marker)
+        error("boom")
+
+    monkeypatch.setattr(cf, "run_passes", counting_run_passes)
+    monkeypatch.setattr(cf, "optimization_levels", ALL_LEVELS)
+
+    with pytest.raises(RuntimeError, match="boom"):
+        cf.run_and_validate(fn)
+    assert pass_count == 2 * len(ALL_LEVELS)
+
+
+def test_run_and_validate_checks_log_parity_when_python_raises(monkeypatch):
+    real_run = cf.Interpreter.run
+
+    def run_with_extra_log(self, *args, **kwargs):
+        result = real_run(self, *args, **kwargs)
+        self.log.append(99)
+        return result
+
+    def fn():
+        debug_log(7)
+        error("boom")
+
+    monkeypatch.setattr(cf.Interpreter, "run", run_with_extra_log)
+    monkeypatch.setattr(cf, "optimization_levels", [STANDARD_PASSES])
+
+    with pytest.raises(AssertionError):
+        cf.run_and_validate(fn)

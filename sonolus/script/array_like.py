@@ -126,9 +126,11 @@ class ArrayLike[T](Sequence[T]):
         Returns:
             The index of the first matching occurrence, or -1 if the value is not found.
         """
+        assert_true(start % 1 == 0, "index bounds must be integers")
         if stop is None:
             stop = len(self)
         else:
+            assert_true(stop % 1 == 0, "index bounds must be integers")
             stop = get_positive_index(stop, len(self), check=False)
         stop = min(stop, len(self))
         start = get_positive_index(start, len(self), check=False)
@@ -464,7 +466,6 @@ def get_positive_index(
         else:
             is_in_bounds = Num.and_(index >= -length, index < length)
         assert_true(Num.and_(is_in_bounds, _trunc(index) == index), "Invalid index")
-        # Skipping length check since typically these are managed by the library and unlikely to be wrong
     return index + (index < 0) * length
 
 
@@ -500,7 +501,6 @@ def check_positive_index(index: int, length: int, include_end: bool = False) -> 
     else:
         is_in_bounds = Num.and_(index >= 0, index < length)
     assert_true(Num.and_(is_in_bounds, _trunc(index) == index), "Invalid index")
-    # Skipping length check since typically these are managed by the library and unlikely to be wrong
     return index
 
 

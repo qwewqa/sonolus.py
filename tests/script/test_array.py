@@ -18,6 +18,7 @@ from sonolus.script.num import Num
 from sonolus.script.record import Record
 from sonolus.script.vec import Vec2
 from tests.script.conftest import compile_fn, run_and_validate
+from tests.script.test_flow import black_box_value
 from tests.script.test_record import Simple
 
 # A permutation of 0..19, defined here since tuples can't be built inside a compiled function.
@@ -245,6 +246,26 @@ def test_array_index():
         return 1
 
     assert run_and_validate(fn) == 1
+
+
+@pytest.mark.parametrize(("start", "stop"), [(1.5, None), (-1.5, None), (0, 1.5), (0, -1.5)])
+def test_array_index_rejects_fractional_bounds(start, stop):
+    def fn(start_value, stop_value):
+        if stop_value is None:
+            return Array(1, 2, 3).index(2, black_box_value(start_value))
+        return Array(1, 2, 3).index(2, black_box_value(start_value), black_box_value(stop_value))
+
+    with pytest.raises(AssertionError, match="index bounds must be integers"):
+        run_and_validate(fn, start, stop)
+
+
+def test_array_index_fractional_bound_in_dead_runtime_branch_compiles():
+    def fn(take_branch):
+        if black_box_value(take_branch):
+            return Array(1, 2, 3).index(2, 1.5)
+        return 42
+
+    assert run_and_validate(fn, False) == 42
 
 
 def test_array_max():

@@ -137,7 +137,8 @@ If at least one element is provided, the element type and size can be inferred:
 a3 = Array(1, 2, 3)
 ```
 
-Since [`Array`][sonolus.script.array.Array] takes type parameters, it is considered a generic type. A version of [`Array`][sonolus.script.array.Array] with type parameters provided
+Since [`Array`][sonolus.script.array.Array] takes type parameters, it is considered a generic type. A version of
+[`Array`][sonolus.script.array.Array] with type parameters provided
 is considered a concrete type.
 
 ```python
@@ -252,7 +253,8 @@ for element in a:
 
 Other functionality:
 
-[`Array`][sonolus.script.array.Array] inherits from [`ArrayLike`][sonolus.script.array_like.ArrayLike] and supports all of its methods.
+[`Array`][sonolus.script.array.Array] inherits from [`ArrayLike`][sonolus.script.array_like.ArrayLike] and supports
+all of its methods.
 
 ### Instance Checks
 
@@ -263,7 +265,8 @@ a = Array(1, 2, 3)
 assert isinstance(a, Array)
 ```
 
-Only an array with the exact element type and size is considered an instance of a concrete [`Array[T, Size]`][sonolus.script.array.Array] type.
+Only an array with the exact element type and size is considered an instance of a concrete
+[`Array[T, Size]`][sonolus.script.array.Array] type.
 
 ```python
 a = Array(1, 2, 3)
@@ -274,7 +277,8 @@ assert not isinstance(a, Array[Vec2, 3])
 
 ## Record
 
-[`Record`][sonolus.script.record.Record] is the base class for user-defined types in Sonolus.py. It functions similarly to dataclasses.
+[`Record`][sonolus.script.record.Record] is the base class for user-defined types in Sonolus.py. It functions
+similarly to dataclasses.
 
 You can import [`Record`][sonolus.script.record.Record] from `sonolus.script.record`:
 
@@ -284,7 +288,8 @@ from sonolus.script.record import Record
 
 ### Declaration
 
-A record can be defined by inheriting from [`Record`][sonolus.script.record.Record] and defining zero or more fields as class attributes:
+A record can be defined by inheriting from [`Record`][sonolus.script.record.Record] and defining zero or more fields
+as class attributes:
 
 ```python
 class MyPair(Record):
@@ -344,7 +349,8 @@ independent of it.
 
 ### Generics
 
-[`Record`][sonolus.script.record.Record] supports generics. If at least one type parameter is provided in the class definition, a generic 
+[`Record`][sonolus.script.record.Record] supports generics. If at least one type parameter is provided in the class
+definition, a generic
 record type is created.
 
 ```python
@@ -363,7 +369,8 @@ pair_1 = MyGenericPair[int, int](1, 2)
 pair_2 = MyGenericPair(1, 2)
 ```
 
-The value of a type parameter can be accessed via the [`type_var_value()`][sonolus.script.record.Record.type_var_value] classmethod.
+The value of a type parameter can be accessed via the
+[`type_var_value()`][sonolus.script.record.Record.type_var_value] classmethod.
     
 ```python
 class MyGenericRecord[T](Record):
@@ -415,7 +422,8 @@ class MyAddablePair(Record):
 ```
 
 If a dunder method has an in-place variant and the in-place method is not explicitly implemented
-(e.g. `__iadd__` is the in-place variant of `__add__`), [`Record`][sonolus.script.record.Record] will automatically generate one that 
+(e.g. `__iadd__` is the in-place variant of `__add__`), [`Record`][sonolus.script.record.Record] will automatically
+generate one that
 modifies the instance in place:
 
 ```python
@@ -425,7 +433,8 @@ pair += MyAddablePair(3, 4)
 assert pair == reference == MyAddablePair(4, 6)  # The instance is modified in place
 ```
 
-Regular methods, properties, classmethods, and staticmethods can also be defined in a [`Record`][sonolus.script.record.Record] subclass.
+Regular methods, properties, classmethods, and staticmethods can also be defined in a
+[`Record`][sonolus.script.record.Record] subclass.
 
 ```python
 class MyRecord(Record):

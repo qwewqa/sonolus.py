@@ -15,7 +15,7 @@ from sonolus.script.internal.tuple_impl import TupleImpl
 from sonolus.script.num import _is_num
 from sonolus.script.record import Record
 from sonolus.script.vec import Vec2
-from tests.script.conftest import compile_fn, run_and_validate
+from tests.script.conftest import compile_fn, run_and_validate, run_compiled
 
 
 @meta_fn
@@ -544,6 +544,38 @@ def test_get_present_and_modify_large_size_tuple_key():
 
 
 # .get()
+
+
+@pytest.mark.parametrize("args", [("a",), ("a", None)])
+def test_get_method_accepts_none_default_for_present_key(args):
+    d = {"a": 10}
+
+    def fn():
+        return d.get(*args)
+
+    assert run_and_validate(fn) == 10
+
+
+@pytest.mark.parametrize("args", [("b",), ("b", None)])
+def test_get_method_accepts_none_default_for_absent_key(args):
+    d = {"a": 10}
+
+    def fn():
+        return d.get(*args) is None
+
+    assert run_and_validate(fn)
+
+
+def test_get_method_rejects_none_default_for_runtime_key():
+    d = {1: 10}
+
+    def fn():
+        return d.get(bb(1))
+
+    with pytest.raises(
+        CompilationError, match=r"Dict\.get with an omitted or None default requires a compile time constant key"
+    ):
+        run_compiled(fn)
 
 
 def test_get_method_present_small_size_string_key():

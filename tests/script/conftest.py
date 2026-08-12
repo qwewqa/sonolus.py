@@ -241,10 +241,14 @@ def run_and_validate[**P, R](
 
         if exception is not None:
             assert compiled_terminated, "Compiled function should terminate if regular function raises exception"
-            raise exception
+            assert interpreter.log == log_entries
+            continue
 
         assert compiled_result == regular_result
         assert interpreter.log == log_entries
+
+    if exception is not None:
+        raise exception
 
     return regular_result
 

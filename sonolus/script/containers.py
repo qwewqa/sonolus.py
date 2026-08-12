@@ -92,7 +92,7 @@ class Pair[T, U](Record):
 
     @property
     def tuple(self) -> tuple[T, U]:
-        """Return the pair as a tuple."""
+        """The pair as a tuple."""
         return self.first, self.second
 
 
@@ -386,7 +386,7 @@ class ArrayPointer[T](Record, ArrayLike[T]):
         if not ctx():
             raise TypeError("ArrayPointer values cannot be accessed outside of a context")
         return _deref(
-            # Allows a compile time constant block so we can warn based on callback read/write access
+            # A compile-time constant block lets callback validation track read and write access.
             (self._value_["block"]._is_py_() and self._value_["block"]._as_py_()) or self.block,
             self.offset + Num._accept_(item) * Num._accept_(self.element_type()._size_()),
             self.element_type(),
@@ -801,7 +801,6 @@ class _LinkedListNodeRef[TKey, TValue](Protocol):
     def set_next(self, next_node: Self): ...
 
     def set_prev(self, prev_node: Self):
-        # No-op for singly linked lists
         return
 
     def is_present(self) -> bool: ...
@@ -867,27 +866,22 @@ def _merge_linked_list_nodes[TNode: _LinkedListNodeRef](
 def _merge_sort_linked_list_nodes[TNode: _LinkedListNodeRef](
     head: TNode,
 ) -> TNode:
-    # Calculate length
     length = 0
     node = head.copy()
     while node.is_present():
         length += 1
         node.set(node.get_next())
 
-    # Trivial case
     if length <= 1:
         return head
 
-    # Bottom-up merge sort: start with sublists of size 1, then 2, 4, 8, etc.
     size = 1
     while size < length:
         current = head.copy()
         new_head = head.empty()
         new_tail = head.empty()
 
-        # Process all pairs of sublists of the current size
         while current.is_present():
-            # Extract the first sublist
             left = current.copy()
             prev = current.empty()
             i = 0
@@ -898,13 +892,10 @@ def _merge_sort_linked_list_nodes[TNode: _LinkedListNodeRef](
             if prev.is_present():
                 prev.set_next(prev.empty())
 
-            # We've made it to the end without a second sublist to merge, so just attach it to the end
             if not current.is_present():
-                # Since size < length, we know a full iteration must have happened already, so new_tail is valid
                 new_tail.set_next(left)
                 break
 
-            # Extract the second sublist
             right = current.copy()
             prev = current.empty()
             i = 0
@@ -917,18 +908,15 @@ def _merge_sort_linked_list_nodes[TNode: _LinkedListNodeRef](
 
             merged = _merge_linked_list_nodes(left, right)
 
-            # Append the merged result
             if not new_head.is_present():
                 new_head.set(merged)
                 new_tail.set(merged)
             else:
                 new_tail.set_next(merged)
 
-            # Move tail to the end of the merged section
             while new_tail.get_next().is_present():
                 new_tail.set(new_tail.get_next())
 
-        # Update head for the next iteration
         head.set(new_head)
         size *= 2
 

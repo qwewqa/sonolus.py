@@ -61,10 +61,8 @@ def _judge(
     return 0.0
 
 
-# Registry of easing ops -> literal transcriptions of the bodies in sonolus/script/easing.py.
-# Each begins with ``x = max(0, min(1, x))`` which is exactly ``clamp(x, 0, 1)``
-# (``clamp(x, a, b) = max(a, min(b, x))``). The transcription is verified bit-for-bit against
-# easing.py by tests/backend/test_interpret_oracle.py so the two cannot silently drift.
+# These literal transcriptions of sonolus/script/easing.py are checked against their source definitions by
+# tests/backend/test_interpret_oracle.py.
 _EASE_FUNCS: dict[Op, Callable[[float], float]] = {}
 
 
@@ -375,11 +373,9 @@ def _ease_out_in_sine(x: float) -> float:
 class Interpreter:
     blocks: dict[int, list[float]]
     log: list[float]
-    # (op, id) -> whether the host has that resource; a missing key means it does. Keyed by op as well as
-    # id because skin sprites, effect clips, and particle effects are separate id spaces.
+    # Skin sprites, effect clips, and particle effects have separate id spaces, so availability includes the op.
     availability: dict[tuple[Op, int], bool]
-    # Markers as (beat, bpm) and (time, timescale), ascending, the first at 0. Both default to the identity
-    # mapping (60 bpm is one beat per second).
+    # Markers are sorted (beat, bpm) and (time, timescale) pairs whose first entry is at 0.
     bpm_changes: list[tuple[float, float]]
     timescale_changes: list[tuple[float, float]]
 
@@ -526,7 +522,7 @@ class Interpreter:
                 return 0.0
             case Op.DebugPause:
                 return 0.0
-            # For all Increment*/Decrement* ops, Post returns the NEW value and Pre returns the OLD value (reverse of C).
+            # Sonolus Post returns the new value and Pre returns the old value, the reverse of C.
             case Op.DecrementPost:
                 block, index = (self.ensure_int(self.run(arg)) for arg in args)
                 old = self.get(block, index)
