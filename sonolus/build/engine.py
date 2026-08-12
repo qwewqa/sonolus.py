@@ -194,6 +194,11 @@ def build_engine_configuration(
         "ui": ui.to_dict(),
     }
     if replay_fallback_option_names := getattr(options, "replay_fallback_option_names", None):
+        if isinstance(replay_fallback_option_names, str | bytes | bytearray):
+            raise TypeError(
+                f"Expected a sequence of option names, got {replay_fallback_option_names!r}; "
+                f"one name is written ({replay_fallback_option_names!r},)"
+            )
         result["replayFallbackOptionNames"] = list(replay_fallback_option_names)
     return result
 
@@ -208,6 +213,7 @@ def build_play_mode(
     config: BuildConfig,
     validate_only: bool = False,
 ):
+    validate_bucket_sprites(skin, buckets)
     return {
         **compile_mode(
             mode=Mode.PLAY,
@@ -235,6 +241,7 @@ def build_watch_mode(
     config: BuildConfig,
     validate_only: bool = False,
 ):
+    validate_bucket_sprites(skin, buckets)
     return {
         **compile_mode(
             mode=Mode.WATCH,
@@ -288,7 +295,7 @@ def build_tutorial_mode(
         **compile_mode(
             mode=Mode.TUTORIAL,
             project_state=project_state,
-            archetypes=[],
+            archetypes=None,
             global_callbacks=[
                 (preprocess_callback, preprocess),
                 (navigate_callback, navigate),
@@ -323,6 +330,19 @@ def build_buckets(buckets: Buckets) -> JsonValue:
     return [bucket.to_dict() for bucket in buckets._buckets_]
 
 
+def validate_bucket_sprites(skin: Skin, buckets: Buckets) -> None:
+    """Reject a bucket sprite id that does not name a sprite of the skin the same mode declares."""
+    sprite_count = len(skin._sprites_)
+    for index, info in enumerate(buckets._buckets_):
+        for bucket_sprite in info.sprites:
+            for id_, subject in ((bucket_sprite.id, "sprite"), (bucket_sprite.fallback_id, "fallback sprite")):
+                if id_ is not None and not 0 <= id_ < sprite_count:
+                    raise ValueError(
+                        f"Bucket {index} references {subject} id {id_}, but the skin of this mode declares "
+                        f"{sprite_count} sprites"
+                    )
+
+
 def build_instructions(instructions: TutorialInstructions, instruction_icons: TutorialInstructionIcons) -> JsonValue:
     return {
         "texts": [{"name": name, "id": i} for i, name in enumerate(instructions._instructions_)],
@@ -341,7 +361,7 @@ def package_rom(rom: ReadOnlyMemory) -> bytes:
 
 
 def package_data(value: JsonValue) -> bytes:
-    json_data = json.dumps(value, separators=(",", ":")).encode("utf-8")
+    json_data = json.dumps(value, separators=(",", ":"), allow_nan=False).encode("utf-8")
     return gzip.compress(json_data, mtime=0)
 
 

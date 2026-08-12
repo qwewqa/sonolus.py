@@ -18,6 +18,7 @@ from sonolus.script.internal.generic import (
     validate_concrete_type,
     validate_type_spec_with_extras,
 )
+from sonolus.script.internal.impl import bind_arguments
 from sonolus.script.internal.meta_fn import meta_fn
 from sonolus.script.internal.value import BackingSource, DataValue, Value
 from sonolus.script.num import Num
@@ -27,7 +28,7 @@ def _bind_constructor_args(cls: type[Record], args: tuple[Any, ...], kwargs: dic
     """Bind Record constructor arguments to field names.
 
     Record fields cannot have default values, so binding reduces to a name mapping in the common case.
-    Falls back to Signature.bind on any mismatch so error messages are identical.
+    Falls back to bind_arguments on any mismatch, which reports the error with the record's own name.
     """
     names = cls._field_names_
     if names is not None:
@@ -43,7 +44,7 @@ def _bind_constructor_args(cls: type[Record], args: tuple[Any, ...], kwargs: dic
                 for name in rest:
                     arguments[name] = kwargs[name]
                 return arguments
-    bound = cls._constructor_signature_.bind(*args, **kwargs)
+    bound = bind_arguments(cls._constructor_signature_, cls.__name__, args, kwargs)
     bound.apply_defaults()
     return bound.arguments
 
@@ -78,6 +79,20 @@ class Record(GenericValue, metaclass=RecordMeta):
 
         outer.value = Box(3)  # copies the new value into the shared storage in place
         assert inner.value == 3  # inner is updated too, since outer.value still aliases it
+        ```
+
+        A field annotated with `typing.Final` is set when the record is created and cannot be assigned
+        afterward. Finality applies to the binding rather than to the data behind it, so the contents of a
+        `Final` field of a reference type can still be changed through it.
+
+        ```python
+        class Marker(Record):
+            time: Final[float]
+            hit: bool
+
+        marker = Marker(1.0, False)
+        marker.hit = True  # allowed
+        marker.time = 2.0  # rejected
         ```
 
     Usage:
@@ -355,10 +370,10 @@ class Record(GenericValue, metaclass=RecordMeta):
     def _set_(self, value: Any):
         raise TypeError("Record does not support _set_")
 
-    def _copy_from_(self, value: Any):
+    def _copy_from_(self, value: Any, *, initializing: bool = False):
         value = self._accept_(value)
         for field in self._fields_:
-            field.__set__(self, field.__get__(value))
+            field.set_value(self, field.__get__(value), initializing=initializing)
 
     def _copy_(self) -> Self:
         return type(self)._raw(**{field.name: self._value_[field.name]._copy_() for field in self._fields_})
@@ -458,15 +473,18 @@ class _RecordField(SonolusDescriptor):
         return result._as_py_()
 
     def __set__(self, instance: Record, value):
+        self.set_value(instance, value)
+
+    def set_value(self, instance: Record, value, *, initializing: bool = False):
         if instance._is_frozen_:
             raise TypeError("Cannot set fields of a frozen Record")
-        if self.final:
+        if self.final and not initializing:
             raise TypeError("Cannot set a final field")
         value = self.type._accept_(value)
         if self.type._is_value_type_():
             instance._value_[self.name]._set_(value)
         else:
-            instance._value_[self.name]._copy_from_(value)
+            instance._value_[self.name]._copy_from_(value, initializing=initializing)
 
 
 _ops_to_inplace_ops = {
@@ -498,8 +516,16 @@ def _make_inplace_op(op: str, orig_fn):
     @meta_fn
     @wraps(orig_fn)
     def inplace_op(self, other):
+        from sonolus.script.internal.impl import validate_value
+        from sonolus.script.internal.visitor import compile_and_call
+
         _compiler_internal_ = True  # noqa: F841
-        self._copy_from_(getattr(self, op)(other))
+        result = validate_value(compile_and_call(getattr(self, op), other))
+        if ctx() and not ctx().live:
+            return self
+        if result._is_py_() and result._as_py_() is NotImplemented:
+            return NotImplemented
+        self._copy_from_(result)
         return self
 
     return inplace_op

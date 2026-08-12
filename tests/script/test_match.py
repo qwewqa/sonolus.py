@@ -6,11 +6,13 @@ import pytest
 
 from sonolus.script.array import Array
 from sonolus.script.containers import VarArray
-from sonolus.script.debug import debug_log
+from sonolus.script.debug import assert_true, debug_log
 from sonolus.script.internal.error import CompilationError
+from sonolus.script.internal.range import Range
 from sonolus.script.num import Num
 from sonolus.script.record import Record
 from tests.script.conftest import run_and_validate, run_compiled
+from tests.script.test_flow import black_box_value
 from tests.script.test_record import Pair
 
 
@@ -874,3 +876,600 @@ def test_match_nested_sequence_pattern_without_star_still_matches():
                 return -1
 
     assert run_and_validate(fn) == 123
+
+
+class WeirdEq(Record):
+    value: Num
+
+    def __eq__(self, other):
+        # __eq__ returns a VarArray rather than a Num: empty when the values differ, one element when they
+        # match. A value pattern truth-tests the result of ==, per PEP 634, so an empty result is a non-match.
+        result = VarArray[Num, 1].new()
+        if self.value == other.value:
+            result.append(1)
+        return result
+
+    def __ne__(self, other):
+        return not self == other
+
+    def __hash__(self):
+        raise TypeError("unhashable type: 'WeirdEq'")
+
+
+class MatchValueConstants:
+    # Value patterns in a case must be dotted names, so this class holds the constants they name.
+    TUPLE_A = (1, 2)
+    TUPLE_B = (3, 4)
+    NESTED = ((1, 2), 3)
+    ARRAY = Array(1, 2)
+    RANGE = Range(0, 3)
+    WEIRD = WeirdEq(0)
+    WEIRD_OTHER = WeirdEq(7)
+
+
+def test_match_runtime_tuple_against_constant_tuple_pattern():
+    def fn():
+        t = (black_box_value(1), 2)
+        match t:
+            case MatchValueConstants.TUPLE_B:
+                return 20
+            case MatchValueConstants.TUPLE_A:
+                return 10
+            case _:
+                return -1
+
+    assert run_and_validate(fn) == 10
+
+
+def test_match_runtime_tuple_against_constant_tuple_pattern_no_match():
+    def fn():
+        t = (black_box_value(5), 2)
+        match t:
+            case MatchValueConstants.TUPLE_A:
+                return 10
+            case _:
+                return -1
+
+    assert run_and_validate(fn) == -1
+
+
+def test_match_runtime_array_against_constant_array_pattern():
+    def fn():
+        a = Array(black_box_value(1), 2)
+        match a:
+            case MatchValueConstants.ARRAY:
+                return 10
+            case _:
+                return -1
+
+    assert run_and_validate(fn) == 10
+
+
+def test_match_runtime_range_against_constant_range_pattern():
+    def fn():
+        r = Range(0, black_box_value(3))
+        match r:
+            case MatchValueConstants.RANGE:
+                return 10
+            case _:
+                return -1
+
+    assert run_and_validate(fn) == 10
+
+
+def test_match_var_array_against_constant_array_pattern():
+    def fn():
+        v = VarArray[Num, 4].new()
+        v.append(black_box_value(1))
+        v.append(2)
+        match v:
+            case MatchValueConstants.ARRAY:
+                return 10
+            case _:
+                return -1
+
+    assert run_and_validate(fn) == 10
+
+
+def test_match_runtime_tuple_against_or_pattern_of_constant_tuples():
+    def fn():
+        t = (black_box_value(3), 4)
+        match t:
+            case MatchValueConstants.TUPLE_A | MatchValueConstants.TUPLE_B:
+                return 10
+            case _:
+                return -1
+
+    assert run_and_validate(fn) == 10
+
+
+def test_match_runtime_tuple_with_guard_after_runtime_value_pattern():
+    def fn():
+        n = black_box_value(1)
+        t = (n, 2)
+        match t:
+            case MatchValueConstants.TUPLE_A if n > 5:
+                return 1
+            case MatchValueConstants.TUPLE_A:
+                return 2
+            case _:
+                return -1
+
+    assert run_and_validate(fn) == 2
+
+
+def test_match_runtime_tuple_with_as_capture():
+    def fn():
+        t = (black_box_value(1), 2)
+        match t:
+            case MatchValueConstants.TUPLE_A as m:
+                return m[0] + m[1]
+            case _:
+                return -1
+
+    assert run_and_validate(fn) == 3
+
+
+def test_match_runtime_value_pattern_nested_in_sequence_pattern():
+    def fn():
+        t = ((black_box_value(1), 2), 3)
+        match t:
+            case [MatchValueConstants.TUPLE_A, 3]:
+                return 10
+            case _:
+                return -1
+
+    assert run_and_validate(fn) == 10
+
+
+def test_match_runtime_nested_tuple_against_constant_nested_tuple_pattern():
+    def fn():
+        t = ((black_box_value(1), 2), 3)
+        match t:
+            case MatchValueConstants.NESTED:
+                return 10
+            case _:
+                return -1
+
+    assert run_and_validate(fn) == 10
+
+
+def test_match_runtime_tuple_pattern_in_loop():
+    def fn():
+        total = 0
+        i = 0
+        while i < 4:
+            t = (black_box_value(i), 2)
+            match t:
+                case MatchValueConstants.TUPLE_A:
+                    total += 10
+                case _:
+                    total += 1
+            i += 1
+        return total
+
+    assert run_and_validate(fn) == 13
+
+
+def test_match_num_subject_against_constant_tuple_pattern_falls_through():
+    def fn():
+        n = black_box_value(1)
+        match n:
+            case MatchValueConstants.TUPLE_A:
+                return 10
+            case _:
+                return -1
+
+    assert run_and_validate(fn) == -1
+
+
+def test_match_value_pattern_with_non_num_truthy_eq_matches():
+    def fn():
+        w = WeirdEq(black_box_value(0))
+        match w:
+            case MatchValueConstants.WEIRD:
+                return 10
+            case _:
+                return -1
+
+    assert run_and_validate(fn) == 10
+
+
+def test_match_value_pattern_with_non_num_falsy_eq_does_not_match():
+    def fn():
+        w = WeirdEq(black_box_value(0))
+        match w:
+            case MatchValueConstants.WEIRD_OTHER:
+                return 10
+            case _:
+                return -1
+
+    assert run_and_validate(fn) == -1
+
+
+class TerminatingEq(Record):
+    value: Num
+
+    def __eq__(self, other):
+        assert_true(False, "eq says no")
+        return 1
+
+    def __hash__(self):
+        raise TypeError("unhashable type: 'TerminatingEq'")
+
+
+class TerminatingEqConstants:
+    ONLY = TerminatingEq(0)
+
+
+def test_match_value_pattern_with_terminating_eq_terminates():
+    # The match must still compile when a traced __eq__ terminates the callback and leaves no result to test.
+    def fn():
+        w = TerminatingEq(0)
+        match w:
+            case TerminatingEqConstants.ONLY:
+                return 10
+            case _:
+                return -1
+
+    with pytest.raises(AssertionError, match="eq says no"):
+        run_and_validate(fn)
+
+
+class Unrelated(Record):
+    n: Num
+
+
+class PropertyHolder(Record):
+    a: Num
+    b: Num
+
+    @property
+    def p(self) -> Num:
+        return self.b
+
+
+def test_match_class_pattern_reads_no_property_after_a_statically_failing_sub_pattern():
+    # `a=Unrelated()` cannot match a Num, so it leaves the arm's context dead. The keyword loop has to stop
+    # there, as the sequence and or-pattern loops do: `p` is a property, so reading it would trace its
+    # getter from that dead context and report a terminating call this program does not contain.
+    def fn():
+        h = PropertyHolder(1, 2)
+        match h:
+            case PropertyHolder(a=Unrelated(), p=1):
+                return 10
+            case _:
+                return -1
+
+    assert run_and_validate(fn) == -1
+
+
+def test_match_capture_does_not_leak_from_failed_sequence_pattern():
+    # CPython applies a pattern's captures only once the whole pattern has matched, so a case that
+    # binds and then fails leaves the name at its pre-match value.
+    def fn():
+        a = 99
+        match Array(1, 2):
+            case [a, 3]:
+                pass
+            case _:
+                pass
+        return a
+
+    assert run_and_validate(fn) == 99
+
+
+def test_match_capture_does_not_leak_from_failed_runtime_sub_pattern():
+    # The failing sub-pattern is a real runtime branch here, not a statically folded one.
+    def fn():
+        a = 99
+        arr = Array(7, black_box_value(4))
+        match arr:
+            case [a, 3]:
+                pass
+            case _:
+                pass
+        return a
+
+    assert run_and_validate(fn) == 99
+
+
+def test_match_capture_does_not_leak_from_failed_class_keyword_pattern():
+    def fn():
+        a = 99
+        match Point(1, 2):
+            case Point(x=a, y=3):
+                pass
+            case _:
+                pass
+        return a
+
+    assert run_and_validate(fn) == 99
+
+
+def test_match_capture_does_not_leak_from_failed_class_positional_pattern():
+    def fn():
+        a = 99
+        match Point(1, 2):
+            case Point(a, 3):
+                pass
+            case _:
+                pass
+        return a
+
+    assert run_and_validate(fn) == 99
+
+
+def test_match_as_capture_does_not_leak_from_failed_pattern():
+    def fn():
+        a = 99
+        match Array(1, 2):
+            case [1 as a, 3]:
+                pass
+            case _:
+                pass
+        return a
+
+    assert run_and_validate(fn) == 99
+
+
+def test_match_nested_sequence_capture_does_not_leak_from_failed_pattern():
+    def fn():
+        a = 99
+        arr = Array(Array(1, 2), Array(3, 4))
+        match arr:
+            case [[a, 5], _]:
+                pass
+            case _:
+                pass
+        return a
+
+    assert run_and_validate(fn) == 99
+
+
+def test_match_leaked_capture_does_not_select_a_later_arm():
+    # The consequence of a leak: the second case's guard reads `a`, so a stale binding runs a
+    # different arm body.
+    def fn():
+        a = 0
+        match Array(1, 2):
+            case [a, 3]:
+                debug_log(1)
+            case _ if a == 1:
+                debug_log(2)
+            case _:
+                debug_log(3)
+        return a
+
+    assert run_and_validate(fn) == 0
+
+
+def test_match_capture_under_or_does_not_leak_from_failed_pattern():
+    # The capture is on the MatchAs above the or-pattern.
+    def fn():
+        y = 99
+        match Array(1, 2):
+            case [(1 | 2) as y, 3]:
+                pass
+            case _:
+                pass
+        return y
+
+    assert run_and_validate(fn) == 99
+
+
+def test_match_capture_inside_or_alternative_does_not_leak_from_failed_pattern():
+    # The capture is inside each alternative, so it has to survive the or-pattern's merge and still
+    # not be visible on the path where the trailing literal fails.
+    def fn():
+        y = 99
+        match Array(1, 2):
+            case [(1 as y) | (2 as y), 3]:
+                pass
+            case _:
+                pass
+        return y
+
+    assert run_and_validate(fn) == 99
+
+
+def test_match_top_level_or_capture_does_not_leak_from_failed_pattern():
+    def fn():
+        y = 99
+        match Array(1, 2):
+            case [y, 5] | [y, 3]:
+                pass
+            case _:
+                pass
+        return y
+
+    assert run_and_validate(fn) == 99
+
+
+def test_match_capture_does_not_leak_from_failed_class_sub_pattern():
+    # The sub-pattern that fails is a static class check rather than a value test.
+    def fn():
+        y = 99
+        match Array(1, 2):
+            case [y, Array()]:
+                pass
+            case _:
+                pass
+        return y
+
+    assert run_and_validate(fn) == 99
+
+
+def test_match_or_capture_inside_loop_does_not_leak():
+    # An or-pattern's captures are merged through temporary bindings, which must not survive into a
+    # loop's back edge.
+    def fn():
+        total = 0
+        y = 0
+        i = 0
+        while i < 4:
+            total = total * 10 + y
+            match Array(i, 2):
+                case [(1 as y) | (2 as y), 9]:
+                    pass
+                case _:
+                    pass
+            i += 1
+        return total
+
+    assert run_and_validate(fn) == 0
+
+
+def test_match_or_capture_inside_loop_is_kept_when_the_pattern_matches():
+    def fn():
+        total = 0
+        y = 0
+        i = 0
+        while i < 4:
+            total = total * 10 + y
+            match Array(i, 2):
+                case [(1 as y) | (2 as y), 2]:
+                    pass
+                case _:
+                    pass
+            i += 1
+        return total
+
+    assert run_and_validate(fn) == 12
+
+
+def test_match_capture_is_kept_when_the_guard_fails():
+    # A failing guard is the one place CPython does keep the captures.
+    def fn():
+        a = 99
+        match Array(1, 2):
+            case [a, b] if b == 5:
+                pass
+            case _:
+                pass
+        return a
+
+    assert run_and_validate(fn) == 1
+
+
+def test_match_capture_at_the_end_of_a_failed_or_alternative_does_not_leak():
+    def fn():
+        a = 99
+        match Array(7, 2):
+            case [1, a] | [2, a]:
+                pass
+            case _:
+                pass
+        return a
+
+    assert run_and_validate(fn) == 99
+
+
+def test_match_capture_is_kept_when_the_pattern_matches():
+    def fn():
+        a = 99
+        match Array(1, 2):
+            case [a, 2]:
+                pass
+            case _:
+                pass
+        return a
+
+    assert run_and_validate(fn) == 1
+
+
+def test_match_capture_is_kept_when_a_runtime_pattern_matches():
+    def fn():
+        a = 99
+        arr = Array(7, black_box_value(3))
+        match arr:
+            case [a, 3]:
+                debug_log(1)
+            case _:
+                debug_log(2)
+        return a
+
+    assert run_and_validate(fn) == 7
+
+
+def test_match_capture_of_a_different_type_conflicts_with_the_pre_match_binding():
+    # The capture no longer reaches the not-matching path, but the matching path is still traced, so `a`
+    # holds a record on one and a Num on the other. That is the subset's single-live-definition rule
+    # rather than a leak, and the read after the match is where it surfaces.
+    def fn():
+        a = Point(1, 2)
+        match Array(1, 2):
+            case [a, 3]:
+                pass
+            case _:
+                pass
+        return a.x
+
+    with pytest.raises(CompilationError, match="Binding 'a' has multiple conflicting definitions"):
+        run_compiled(fn)
+
+
+def test_match_capture_that_is_the_only_binding_is_not_defined_after_a_failed_pattern():
+    # Python raises UnboundLocalError here. Deferring the capture leaves the name unbound on the
+    # not-matching path, which the compiler reports at the read.
+    def fn():
+        match Array(1, 2):
+            case [a, 5, 6]:
+                pass
+            case _:
+                pass
+        return a
+
+    with pytest.raises(CompilationError, match="Name a is not defined"):
+        run_compiled(fn)
+
+
+def test_match_capture_that_is_the_only_binding_is_not_guaranteed_after_a_runtime_pattern():
+    def fn():
+        match Array(1, 2):
+            case [a, 3]:
+                pass
+            case _:
+                pass
+        return a
+
+    with pytest.raises(CompilationError, match="Binding 'a' has multiple conflicting definitions"):
+        run_compiled(fn)
+
+
+def test_match_capture_of_a_record_does_not_leak_into_a_num_binding():
+    def fn():
+        a = 1
+        match Array(Point(4, 5), Point(6, 7)):
+            case [a, 3]:
+                pass
+            case _:
+                pass
+        return a + 1
+
+    assert run_and_validate(fn) == 2
+
+
+def test_match_or_capture_of_conflicting_records_reports_the_capture_name():
+    # The alternatives bind different objects of a reference type, which cannot merge. The error has to
+    # name the capture rather than the temporary the alternatives were merged through.
+    def fn():
+        match Array(Point(0, 1), Point(1, 2)):
+            case [Point(0, _) as p, _] | [_, Point(1, _) as p]:
+                return p.y
+            case _:
+                return -1
+
+    with pytest.raises(CompilationError, match="Binding 'p' has multiple conflicting definitions"):
+        run_compiled(fn)
+
+
+def test_match_or_capture_of_conflicting_records_still_compiles_when_unread():
+    def fn():
+        match Array(Point(0, 1), Point(1, 2)):
+            case [Point(0, _) as p, _] | [_, Point(1, _) as p]:  # noqa: F841
+                return 1
+            case _:
+                return -1
+
+    assert run_and_validate(fn) == 1

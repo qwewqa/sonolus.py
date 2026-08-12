@@ -719,27 +719,72 @@ class WatchBlock(BlockEnum):
     )
     EntityMemory = (
         4000,
-        {"preprocess", "spawnTime", "despawnTime", "initialize", "updateSequential", "updateParallel", "terminate"},
+        {
+            "preprocess",
+            "spawnTime",
+            "despawnTime",
+            "initialize",
+            "updateSequential",
+            "updateParallel",
+            "terminate",
+            "updateSpawn",
+        },
         {"preprocess", "spawnTime", "despawnTime", "initialize", "updateSequential", "updateParallel", "terminate"},
     )
     EntityData = (
         4001,
-        {"preprocess", "spawnTime", "despawnTime", "initialize", "updateSequential", "updateParallel", "terminate"},
+        {
+            "preprocess",
+            "spawnTime",
+            "despawnTime",
+            "initialize",
+            "updateSequential",
+            "updateParallel",
+            "terminate",
+            "updateSpawn",
+        },
         {"preprocess"},
     )
     EntitySharedMemory = (
         4002,
-        {"preprocess", "spawnTime", "despawnTime", "initialize", "updateSequential", "updateParallel", "terminate"},
+        {
+            "preprocess",
+            "spawnTime",
+            "despawnTime",
+            "initialize",
+            "updateSequential",
+            "updateParallel",
+            "terminate",
+            "updateSpawn",
+        },
         {"preprocess", "updateSequential"},
     )
     EntityInfo = (
         4003,
-        {"preprocess", "spawnTime", "despawnTime", "initialize", "updateSequential", "updateParallel", "terminate"},
+        {
+            "preprocess",
+            "spawnTime",
+            "despawnTime",
+            "initialize",
+            "updateSequential",
+            "updateParallel",
+            "terminate",
+            "updateSpawn",
+        },
         {},
     )
     EntityInput = (
         4004,
-        {"preprocess", "spawnTime", "despawnTime", "initialize", "updateSequential", "updateParallel", "terminate"},
+        {
+            "preprocess",
+            "spawnTime",
+            "despawnTime",
+            "initialize",
+            "updateSequential",
+            "updateParallel",
+            "terminate",
+            "updateSpawn",
+        },
         {"preprocess", "spawnTime", "despawnTime", "initialize", "updateSequential", "updateParallel", "terminate"},
     )
     EntityScore = (

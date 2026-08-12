@@ -1,6 +1,7 @@
 from typing import Final, Self
 
 from sonolus.script.array_like import ArrayLike, get_positive_index
+from sonolus.script.debug import assert_true, static_error
 from sonolus.script.internal.context import ctx
 from sonolus.script.internal.impl import validate_value
 from sonolus.script.internal.meta_fn import meta_fn
@@ -25,6 +26,12 @@ class Range(Record, ArrayLike[int]):
     def frozen(cls, start: int, stop: int | None = None, step: int = 1) -> Self:
         if stop is None:
             start, stop = 0, start
+        step = Num._accept_(step)
+        if not ctx():
+            if step._as_py_() == 0:
+                raise ValueError("range() arg 3 must not be zero")
+        else:
+            assert_true(step != 0, "range() arg 3 must not be zero")
         return super().frozen(start, stop, step)
 
     def __iter__(self) -> SonolusIterator:
@@ -55,7 +62,19 @@ class Range(Record, ArrayLike[int]):
         return self.start + index * self.step
 
     def __setitem__(self, index: int, value: int):
-        raise TypeError("Range does not support item assignment")
+        static_error("Range does not support item assignment")
+
+    def index(self, value: int, start: int = 0, stop: int | None = None) -> int:
+        """Return the index of the first element of the range equal to the given value.
+
+        Args:
+            value: The value to search for.
+            start: The index to start searching from.
+            stop: The index to stop searching at. If `None`, search to the end of the range.
+        """
+        result = super().index(value, start, stop)
+        assert_true(result != -1, "range.index(x): x not in range")
+        return result
 
     @property
     def last(self) -> int:
@@ -110,5 +129,7 @@ def range_or_tuple(start: int, stop: int | None = None, step: int = 1) -> Range 
         step_int = step._as_py_()
         if start_int % 1 != 0 or stop_int % 1 != 0 or step_int % 1 != 0:
             raise TypeError("Range arguments must be integers")
-        return validate_value(tuple(range(int(start_int), int(stop_int), int(step_int))))  # type: ignore
+        # Keep it as a runtime failure if step is 0
+        if step_int != 0:
+            return validate_value(tuple(range(int(start_int), int(stop_int), int(step_int))))  # type: ignore
     return Range.frozen(start, stop, step)

@@ -1,13 +1,11 @@
 # ruff: noqa
 from typing import (
-    Any,
     Sequence,
     overload,
-    MutableSequence,
 )
 
 @overload
-def randrange(stop: int) -> int:
+def randrange(stop: int, /) -> int:
     """Return a randomly selected element from range(stop).
 
     Args:
@@ -70,11 +68,13 @@ def choice[T](seq: Sequence[T]) -> T:
     """
     ...
 
-def shuffle(seq: MutableSequence[Any]) -> None:
+def shuffle[T](seq: Sequence[T]) -> None:
     """Shuffle the sequence in place.
 
+    The sequence must be a mutable array-like, such as an `Array` or `VarArray`.
+
     Args:
-        seq: The mutable sequence to shuffle.
+        seq: The sequence to shuffle.
     """
     ...
 

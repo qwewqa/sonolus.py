@@ -1,20 +1,20 @@
 0:
-  10000[86] <- 0
-  10000[87] <- 0
-  10000[88] <- 0
-  10000[89] <- 0
-  10000[90] <- 0
-  10000[91] <- 0
-  10000[92] <- 0
-  10000[93] <- 0
-  10000[94] <- 0
-  10000[95] <- 0
-  10000[96] <- 0
-  10000[97] <- 0
-  10000[98] <- 0
-  10000[99] <- 0
-  10000[100] <- 0
-  10000[101] <- 0
+  10000[62] <- 0
+  10000[63] <- 0
+  10000[64] <- 0
+  10000[65] <- 0
+  10000[66] <- 0
+  10000[67] <- 0
+  10000[68] <- 0
+  10000[69] <- 0
+  10000[70] <- 0
+  10000[71] <- 0
+  10000[72] <- 0
+  10000[73] <- 0
+  10000[74] <- 0
+  10000[75] <- 0
+  10000[76] <- 0
+  10000[77] <- 0
   10000[2] <- 0
   10000[1] <- 10000[2]
   goto 1
@@ -35,7 +35,7 @@
 6:
   goto 7 if (LevelMemory[10000[9] + 1] == RuntimeTouchArray[10000[0]]) else 8
 7:
-  10000[11] <- 1.0
+  10000[11] <- 1
   goto 10
 8:
   IncrementPost(10000, 9)
@@ -46,198 +46,142 @@
 10:
   goto 2 if 10000[11] else 11
 11:
-  10000[2] <- 1.0
+  10000[2] <- 1
   10000[12] <- 10000[2]
   goto 13
 12:
   10000[12] <- 0
   goto 13
 13:
-  goto 14 if 10000[12] else 63
+  goto 14 if 10000[12] else 47
 14:
   10000[17] <- 0
   goto 15
 15:
-  goto 16 if (10000[17] < LevelData[0]) else 62
+  goto 16 if (10000[17] < LevelData[0]) else 46
 16:
   10000[19] <- 10000[17] * 9
-  10000[20] <- 10000[17] + 1.0
-  10000[103] <- LevelData[10000[19] + 2]
-  10000[104] <- LevelData[10000[19] + 3]
-  10000[105] <- LevelData[10000[19] + 4]
-  10000[106] <- LevelData[10000[19] + 5]
-  10000[107] <- LevelData[10000[19] + 6]
-  10000[108] <- LevelData[10000[19] + 7]
-  10000[109] <- LevelData[10000[19] + 8]
-  10000[110] <- LevelData[10000[19] + 9]
+  10000[20] <- 10000[17] + 1
+  10000[79] <- LevelData[10000[19] + 2]
+  10000[80] <- LevelData[10000[19] + 3]
+  10000[81] <- LevelData[10000[19] + 4]
+  10000[82] <- LevelData[10000[19] + 5]
+  10000[83] <- LevelData[10000[19] + 6]
+  10000[84] <- LevelData[10000[19] + 7]
+  10000[85] <- LevelData[10000[19] + 8]
+  10000[86] <- LevelData[10000[19] + 9]
   10000[23] <- 0
   10000[22] <- 3
   10000[21] <- 10000[23]
   goto 17
 17:
-  10000[24] <- ((10000[21] >= -4.0) && (10000[21] < 4)) && (10000[21] == Trunc(10000[21]))
-  goto 18 if 10000[24] else 61
+  10000[24] <- 10000[21] * 2
+  10000[25] <- RuntimeTouchArray[10000[0] + 6]
+  10000[26] <- 10000[22] * 2
+  goto 18 if ((10000[10000[24] + 80] > 10000[25]) != (10000[10000[26] + 80] > 10000[25])) else 20
 18:
-  10000[25] <- (10000[21] + ((10000[21] < 0) * 4)) * 2
-  10000[26] <- RuntimeTouchArray[10000[0] + 6]
-  10000[27] <- 10000[10000[25] + 104] > 10000[26]
-  10000[28] <- ((10000[22] >= -4.0) && (10000[22] < 4)) && (10000[22] == Trunc(10000[22]))
-  goto 19 if 10000[28] else 60
+  goto 19 if (RuntimeTouchArray[10000[0] + 5] < ((((10000[10000[26] + 79] - 10000[10000[24] + 79]) * (10000[25] - 10000[10000[24] + 80])) / (10000[10000[26] + 80] - 10000[10000[24] + 80])) + 10000[10000[24] + 79])) else 20
 19:
-  10000[29] <- (10000[22] + ((10000[22] < 0) * 4)) * 2
-  goto 20 if (10000[27] != (10000[10000[29] + 104] > 10000[26])) else 34
-20:
-  goto 21 if 10000[28] else 33
-21:
-  10000[30] <- 10000[10000[29] + 103]
-  goto 22 if 10000[24] else 32
-22:
-  10000[31] <- 10000[30] - 10000[10000[25] + 103]
-  goto 23 if 10000[24] else 31
-23:
-  10000[32] <- 10000[31] * (10000[26] - 10000[10000[25] + 104])
-  goto 24 if 10000[28] else 30
-24:
-  10000[33] <- 10000[10000[29] + 104]
-  goto 25 if 10000[24] else 29
-25:
-  10000[34] <- 10000[32] / (10000[33] - 10000[10000[25] + 104])
-  goto 26 if 10000[24] else 28
-26:
-  goto 27 if (RuntimeTouchArray[10000[0] + 5] < (10000[34] + 10000[10000[25] + 103])) else 34
-27:
   10000[23] <- !10000[23]
-  goto 34
-28:
-  10000[36] <- DebugLog(3)
-  10000[37] <- DebugPause()
-  goto exit
-29:
-  10000[38] <- DebugLog(3)
-  10000[39] <- DebugPause()
-  goto exit
-30:
-  10000[40] <- DebugLog(3)
-  10000[41] <- DebugPause()
-  goto exit
-31:
-  10000[42] <- DebugLog(2)
-  10000[43] <- DebugPause()
-  goto exit
-32:
-  10000[44] <- DebugLog(1.0)
-  10000[45] <- DebugPause()
-  goto exit
-33:
-  10000[46] <- DebugLog(1.0)
-  10000[47] <- DebugPause()
-  goto exit
-34:
-  10000[49] <- 10000[21] + 1.0
-  goto 35 if (10000[49] < 4) else 36
-35:
+  goto 20
+20:
+  10000[29] <- 10000[21] + 1
+  goto 21 if (10000[29] < 4) else 22
+21:
   10000[22] <- 10000[21]
-  10000[21] <- 10000[49]
+  10000[21] <- 10000[29]
   goto 17
+22:
+  goto 23 if 10000[23] else 45
+23:
+  goto 24 if (10000[1] >= 16) else 25
+24:
+  goto 32 if LevelOption[7] else 40
+25:
+  10000[30] <- 0
+  goto 26
+26:
+  goto 27 if (10000[30] < 10000[1]) else 30
+27:
+  goto 28 if (10000[10000[30] + 62] == LevelData[10000[19] + 1]) else 29
+28:
+  goto 32 if LevelOption[7] else 40
+29:
+  IncrementPost(10000, 30)
+  goto 26
+30:
+  goto 31 if (10000[1] < 16) else 44
+31:
+  10000[10000[1] + 62] <- LevelData[10000[19] + 1]
+  IncrementPost(10000, 1)
+  goto 32 if LevelOption[7] else 40
+32:
+  10000[35] <- 0
+  goto 33
+33:
+  goto 34 if (10000[35] < LevelData[0]) else 39
+34:
+  10000[36] <- 10000[35] + 1
+  10000[37] <- 10000[35] * 9
+  goto 35 if (LevelData[10000[37] + 1] == LevelData[10000[19] + 1]) else 38
+35:
+  10000[38] <- SpawnParticleEffect(0, LevelData[10000[37] + 2], LevelData[10000[37] + 3], LevelData[10000[37] + 4], LevelData[10000[37] + 5], LevelData[10000[37] + 6], LevelData[10000[37] + 7], LevelData[10000[37] + 8], LevelData[10000[37] + 9], 0.2, 0)
+  goto 36 if LevelOption[10] else 37
 36:
-  goto 37 if 10000[23] else 59
+  10000[39] <- 10000[1]
+  goto 42
 37:
-  goto 38 if (10000[1] >= 16) else 39
+  10000[17] <- 10000[20]
+  goto 15
 38:
-  goto 46 if LevelOption[7] else 54
+  10000[35] <- 10000[36]
+  goto 33
 39:
-  10000[50] <- 0
-  goto 40
+  10000[41] <- DebugLog(2)
+  10000[42] <- DebugPause()
+  goto exit
 40:
-  goto 41 if (10000[50] < 10000[1]) else 44
+  goto 41 if LevelOption[10] else 43
 41:
-  goto 42 if (10000[10000[50] + 86] == LevelData[10000[19] + 1]) else 43
+  10000[39] <- 10000[1]
+  goto 42
 42:
-  goto 46 if LevelOption[7] else 54
+  10000[40] <- Play(0, 0.02)
+  10000[1] <- 10000[39]
+  10000[17] <- 10000[20]
+  goto 15
 43:
-  IncrementPost(10000, 50)
-  goto 40
+  10000[17] <- 10000[20]
+  goto 15
 44:
-  goto 45 if (10000[1] < 16) else 58
+  10000[43] <- DebugLog(1)
+  10000[44] <- DebugPause()
+  goto exit
 45:
-  10000[10000[1] + 86] <- LevelData[10000[19] + 1]
-  IncrementPost(10000, 1.0)
-  goto 46 if LevelOption[7] else 54
+  10000[17] <- 10000[20]
+  goto 15
 46:
-  10000[55] <- 0
-  goto 47
-47:
-  goto 48 if (10000[55] < LevelData[0]) else 53
-48:
-  10000[56] <- 10000[55] + 1.0
-  10000[57] <- 10000[55] * 9
-  goto 49 if (LevelData[10000[57] + 1] == LevelData[10000[19] + 1]) else 52
-49:
-  10000[58] <- SpawnParticleEffect(0, LevelData[10000[57] + 2], LevelData[10000[57] + 3], LevelData[10000[57] + 4], LevelData[10000[57] + 5], LevelData[10000[57] + 6], LevelData[10000[57] + 7], LevelData[10000[57] + 8], LevelData[10000[57] + 9], 0.2, 0)
-  goto 50 if LevelOption[10] else 51
-50:
-  10000[59] <- 10000[1]
-  goto 56
-51:
-  10000[17] <- 10000[20]
-  goto 15
-52:
-  10000[55] <- 10000[56]
-  goto 47
-53:
-  10000[61] <- DebugLog(5)
-  10000[62] <- DebugPause()
-  goto exit
-54:
-  goto 55 if LevelOption[10] else 57
-55:
-  10000[59] <- 10000[1]
-  goto 56
-56:
-  10000[60] <- Play(0, 0.02)
-  10000[1] <- 10000[59]
-  10000[17] <- 10000[20]
-  goto 15
-57:
-  10000[17] <- 10000[20]
-  goto 15
-58:
-  10000[63] <- DebugLog(4)
-  10000[64] <- DebugPause()
-  goto exit
-59:
-  10000[17] <- 10000[20]
-  goto 15
-60:
-  10000[65] <- DebugLog(1.0)
-  10000[66] <- DebugPause()
-  goto exit
-61:
-  10000[67] <- DebugLog(1.0)
-  10000[68] <- DebugPause()
-  goto exit
-62:
   goto 2 if 10000[2] else 1
-63:
-  goto 64 if (10000[1] > 0) else 65
-64:
-  10000[69] <- StreamSet(1.0, RuntimeUpdate[0], 10000[1])
-  10000[70] <- StreamSet(2, RuntimeUpdate[0], 10000[86])
-  10000[71] <- StreamSet(3, RuntimeUpdate[0], 10000[87])
-  10000[72] <- StreamSet(4, RuntimeUpdate[0], 10000[88])
-  10000[73] <- StreamSet(5, RuntimeUpdate[0], 10000[89])
-  10000[74] <- StreamSet(6, RuntimeUpdate[0], 10000[90])
-  10000[75] <- StreamSet(7, RuntimeUpdate[0], 10000[91])
-  10000[76] <- StreamSet(8, RuntimeUpdate[0], 10000[92])
-  10000[77] <- StreamSet(9, RuntimeUpdate[0], 10000[93])
-  10000[78] <- StreamSet(10, RuntimeUpdate[0], 10000[94])
-  10000[79] <- StreamSet(11, RuntimeUpdate[0], 10000[95])
-  10000[80] <- StreamSet(12, RuntimeUpdate[0], 10000[96])
-  10000[81] <- StreamSet(13, RuntimeUpdate[0], 10000[97])
-  10000[82] <- StreamSet(14, RuntimeUpdate[0], 10000[98])
-  10000[83] <- StreamSet(15, RuntimeUpdate[0], 10000[99])
-  10000[84] <- StreamSet(16, RuntimeUpdate[0], 10000[100])
-  10000[85] <- StreamSet(17, RuntimeUpdate[0], 10000[101])
+47:
+  goto 48 if (10000[1] > 0) else 49
+48:
+  10000[45] <- StreamSet(1, RuntimeUpdate[0], 10000[1])
+  10000[46] <- StreamSet(2, RuntimeUpdate[0], 10000[62])
+  10000[47] <- StreamSet(3, RuntimeUpdate[0], 10000[63])
+  10000[48] <- StreamSet(4, RuntimeUpdate[0], 10000[64])
+  10000[49] <- StreamSet(5, RuntimeUpdate[0], 10000[65])
+  10000[50] <- StreamSet(6, RuntimeUpdate[0], 10000[66])
+  10000[51] <- StreamSet(7, RuntimeUpdate[0], 10000[67])
+  10000[52] <- StreamSet(8, RuntimeUpdate[0], 10000[68])
+  10000[53] <- StreamSet(9, RuntimeUpdate[0], 10000[69])
+  10000[54] <- StreamSet(10, RuntimeUpdate[0], 10000[70])
+  10000[55] <- StreamSet(11, RuntimeUpdate[0], 10000[71])
+  10000[56] <- StreamSet(12, RuntimeUpdate[0], 10000[72])
+  10000[57] <- StreamSet(13, RuntimeUpdate[0], 10000[73])
+  10000[58] <- StreamSet(14, RuntimeUpdate[0], 10000[74])
+  10000[59] <- StreamSet(15, RuntimeUpdate[0], 10000[75])
+  10000[60] <- StreamSet(16, RuntimeUpdate[0], 10000[76])
+  10000[61] <- StreamSet(17, RuntimeUpdate[0], 10000[77])
   goto exit
-65:
+49:
   goto exit

@@ -91,6 +91,9 @@ from sonolus.backend._opt._ops_gen cimport (
     OPX_UNDEF,
     OP_Add,
     OP_And,
+    OP_Arccos,
+    OP_Arcsin,
+    OP_Cosh,
     OP_DecrementPostPointed,
     OP_DecrementPostShifted,
     OP_Divide,
@@ -103,6 +106,7 @@ from sonolus.backend._opt._ops_gen cimport (
     OP_IncrementPostShifted,
     OP_Less,
     OP_LessOr,
+    OP_Log,
     OP_Max,
     OP_Min,
     OP_Mod,
@@ -113,6 +117,8 @@ from sonolus.backend._opt._ops_gen cimport (
     OP_Or,
     OP_Power,
     OP_Rem,
+    OP_Remap,
+    OP_RemapClamped,
     OP_RUNTIME_COUNT,
     OP_SetAddPointed,
     OP_SetAddShifted,
@@ -130,11 +136,21 @@ from sonolus.backend._opt._ops_gen cimport (
     OP_SetShifted,
     OP_SetSubtractPointed,
     OP_SetSubtractShifted,
+    OP_Sinh,
     OP_Subtract,
+    OP_Unlerp,
+    OP_UnlerpClamped,
     SONOLUS_OP_FOLDABLE,
 )
 from sonolus.backend._opt.analysis cimport Dominators, LoopForest, compute_dominators, compute_loops
 from sonolus.backend._opt.kernels cimport FOLD_OK, fold_op
+from sonolus.backend._opt._khash cimport (
+    kh_destroy_i64i32,
+    kh_get_i64i32,
+    kh_i64i32_t,
+    kh_init_i64i32,
+    kh_put_i64i32,
+)
 
 from sonolus.backend._opt.ir import marshal_in, register_phase, to_basic_blocks
 
@@ -146,6 +162,28 @@ cdef inline bint _int32_block_const(double d) noexcept nogil:
     # raw C double->int cast, UB for inf/NaN/out-of-range). Duplicated from lower.pyx
     # (a cimport would create a midend<->lower cycle).
     return isfinite(d) and -2147483648.0 <= d <= 2147483647.0 and d == <double>(<int64_t>d)
+
+
+cdef inline bint _bake_index_value(double folded_index, int32_t* off, int32_t* iv) noexcept nogil:
+    # Bake a known-constant index into a place's offset, the way marshal-in bakes a literal one
+    # (ir.pyx ``_intern_place``), and report whether it baked. Duplicated from lower.pyx, whose
+    # copy carries the reasoning behind the double-typed bounds and behind leaving an
+    # int32-overflowing sum unbaked where marshal-in refuses it outright.
+    cdef int64_t baked_off
+    if not _int32_block_const(folded_index):
+        return False
+    baked_off = <int64_t>off[0] + <int64_t>folded_index
+    if not (-2147483648.0 <= <double>baked_off <= 2147483647.0):
+        return False
+    off[0] = <int32_t>baked_off
+    iv[0] = -1
+    return True
+
+
+cdef inline bint _bake_const_index(Func src, int32_t* off, int32_t* iv) noexcept:
+    if iv[0] < 0 or src.instrs[iv[0]].op != OPX_CONST:
+        return False
+    return _bake_index_value(src.consts[src.instrs[iv[0]].aux], off, iv)
 
 
 cdef class _Cleaner:
@@ -197,7 +235,12 @@ cdef class _Cleaner:
     cdef int32_t* in_last           # [nb]
 
     cdef int32_t entry_head
-    cdef uint8_t* tailduped         # [nb*nb]  (head,target) pair already tail-duped
+    # (head,target) pairs already tail-duped, keyed h*nb + c as a uint64 (nb*nb
+    # overflows int32 at nb >= ~46341). A khash set rather than a dense nb*nb byte
+    # matrix: the fired pairs are bounded by tail-dups actually performed, so the
+    # dense form paid quadratic commit charge for a sparse membership set. Lookups
+    # only, never iterated.
+    cdef kh_i64i32_t* tailduped
 
     # Cached raw C pointers into the (read-only) source arena, so the nogil
     # transform passes never touch the ``self.src`` Python object attribute.
@@ -263,7 +306,7 @@ cdef class _Cleaner:
         free(self.out_last)
         free(self.in_first)
         free(self.in_last)
-        free(self.tailduped)
+        kh_destroy_i64i32(self.tailduped)  # NULL-safe
 
     cdef void _ensure_edge_cap(self, int32_t need) except * nogil:
         # the six edge arrays share cap_e; grow them all in lockstep.
@@ -403,11 +446,11 @@ cdef class _Cleaner:
         self.out_last = <int32_t*>malloc(<size_t>nb * sizeof(int32_t))
         self.in_first = <int32_t*>malloc(<size_t>nb * sizeof(int32_t))
         self.in_last = <int32_t*>malloc(<size_t>nb * sizeof(int32_t))
-        # The quadratic (nb*nb) tail-dup firing matrix is only read by _taildup,
-        # which is skipped entirely when phi_safe -- so allocate it lazily and
-        # never pay the nb^2 bytes on the phi_safe path (e.g. lower_from_ssa).
+        # The tail-dup firing set is only read by _taildup, which is skipped
+        # entirely when phi_safe -- so allocate it lazily and never pay for it on
+        # the phi_safe path (e.g. lower_from_ssa).
         if not self.phi_safe:
-            self.tailduped = <uint8_t*>calloc(<size_t>nb * <size_t>nb, sizeof(uint8_t))
+            self.tailduped = kh_init_i64i32()
             if self.tailduped == NULL:
                 raise MemoryError()
         if (self.alive == NULL or self.is_head == NULL or self.nstmt == NULL
@@ -670,6 +713,8 @@ cdef class _Cleaner:
     cdef bint _taildup(self) except -1 nogil:
         cdef bint changed = False
         cdef int32_t h, i, the_edge, c, node
+        cdef uint64_t pair_key
+        cdef int put_ret
         if self.phi_safe:
             return False
         for h in range(self.nb):
@@ -680,14 +725,18 @@ cdef class _Cleaner:
                 continue
             if self._chain_nstmt(c) > 1:
                 continue
-            if self.tailduped[<size_t>h * <size_t>self.nb + <size_t>c]:
+            pair_key = <uint64_t>h * <uint64_t>self.nb + <uint64_t>c
+            if kh_get_i64i32(self.tailduped, pair_key) != self.tailduped.n_buckets:
                 continue
             # duplicate the tiny block c into h (h unconditionally reaches c), then
             # branch like c -- exposing threading. Bounded once per (h, c) pair. The
             # copied edges are appended with e_src == h, so they land in out[h], not
             # out[c]; iterating out[c] therefore never revisits them (no n_e snapshot
             # needed).
-            self.tailduped[<size_t>h * <size_t>self.nb + <size_t>c] = 1
+            kh_put_i64i32(self.tailduped, pair_key, &put_ret)
+            if put_ret < 0:
+                with gil:
+                    raise MemoryError()
             self.e_alive[the_edge] = 0
             self._append_chain_copy(h, c)
             node = self.out_first[c]
@@ -1247,10 +1296,15 @@ cdef class _SSABuilder:
                 val = self._get_undef()
                 self._write_variable(temp, b, val)
                 break
-            if len(preds) == 1:
+            if len(preds) == 1 and b != self.entry:
                 chain.append(b)
                 b = self.src.edges[<int32_t>preds[0]].src
                 continue
+            # An entry block with incoming edges is a loop header, and its edges cover only the
+            # paths that loop back in, never the one that fell in from outside -- so it is a
+            # merge even at one edge. Walking that sole pred as a chain instead would take the
+            # back edge's value for the entry path too, and cycle forever if the pred chain
+            # leads back here.
             phi = self._new_phi(b, temp)
             self._write_variable(temp, b, phi)
             return (-1, [temp, phi, b, chain, preds, 0, []])
@@ -1317,6 +1371,12 @@ cdef class _SSABuilder:
                 break
             if suspended:
                 continue
+            if blk == self.entry and len(<list>self.incoming[blk]) > 0:
+                # No edge carries the path that fell into the entry block from outside, and on
+                # it the temp is unwritten: give that path its UNDEF operand FIRST, where the
+                # pre-header edge _compact prepends will look for it. A phi left holding only
+                # the back edge's operand collapses, taking the entry path's value with it.
+                ops.insert(0, self._get_undef())
             self.val_args[phi] = ops
             for o in ops:
                 ro = self._resolve(o)
@@ -1349,7 +1409,10 @@ cdef class _SSABuilder:
         # produce a value-graph cycle / def-before-use arena. Keeping the phi
         # is always sound; the provably-dead collapse lives in SCCP, which
         # drops the UNDEF operand's incoming edge via edge executability.
-        # Consequently ``undef_widened`` / ``_ssa_undef`` stay empty.
+        # A header phi in the entry block reaches here with its entry-path UNDEF
+        # already in place (_drain), so it is no more collapsible than any other:
+        # every uninitialized merge keeps its phi, and ``undef_widened`` /
+        # ``_ssa_undef`` are therefore empty on every path out of build_ssa.
         cdef list worklist = [phi]
         cdef int32_t p, o, r, same, u
         cdef bint trivial
@@ -1450,12 +1513,27 @@ cdef class _SSABuilder:
         cdef int32_t nb = self.nb
         cdef int32_t b, v, ni, k, o
 
+        # A surviving entry-block phi carries an operand for the implicit entry path (_drain),
+        # which no source edge represents. Materialize that path as a pre-header block so the
+        # arena keeps its one-operand-per-incoming-edge contract; every source block then shifts
+        # by ``off``, and the UNDEF moves into the pre-header to keep dominating the edge it
+        # feeds. Nothing the frontend produces today needs one: without such a phi off is 0 and
+        # the arena is built exactly as before.
+        cdef int32_t off = 0
+        for v in <list>self.block_phis[self.entry]:
+            if not <bint>self.val_dead[v]:
+                off = 1  # implies undef_val >= 0: the phi's first operand is the UNDEF
+                break
+        cdef int32_t nbd = nb + off
+
         # Per-block emission order: [undef in entry] + live phis + live values.
-        cdef list order = [[] for _ in range(nb)]
+        cdef list order = [[] for _ in range(nbd)]
         cdef list ob
+        if off:
+            (<list>order[0]).append(self.undef_val)
         for b in range(nb):
-            ob = order[b]
-            if b == self.entry and self.undef_val >= 0:
+            ob = order[b + off]
+            if off == 0 and b == self.entry and self.undef_val >= 0:
                 ob.append(self.undef_val)
             for v in <list>self.block_phis[b]:
                 if not <bint>self.val_dead[v]:
@@ -1466,10 +1544,10 @@ cdef class _SSABuilder:
 
         # Assign new instr indices + count args; record each block's start index.
         cdef dict newidx = {}
-        cdef list block_start = [0] * nb
+        cdef list block_start = [0] * nbd
         cdef int32_t next_idx = 0
         cdef int32_t total_args = 0
-        for b in range(nb):
+        for b in range(nbd):
             block_start[b] = next_idx
             for v in <list>order[b]:
                 newidx[v] = next_idx
@@ -1515,12 +1593,12 @@ cdef class _SSABuilder:
         dst._block_map = dict(src._block_map)
 
         # blocks + instrs + args.
-        dst.blocks = <BlockInfo*>malloc(<size_t>(nb if nb > 0 else 1) * sizeof(BlockInfo))
+        dst.blocks = <BlockInfo*>malloc(<size_t>(nbd if nbd > 0 else 1) * sizeof(BlockInfo))
         if dst.blocks == NULL:
             raise MemoryError()
-        dst.n_blocks = nb
-        dst.cap_blocks = nb
-        dst.entry_block = self.entry
+        dst.n_blocks = nbd
+        dst.cap_blocks = nbd
+        dst.entry_block = 0 if off else self.entry
         dst.is_ssa = True
 
         dst.instrs = <Instr*>malloc(<size_t>(total_instrs if total_instrs > 0 else 1) * sizeof(Instr))
@@ -1533,9 +1611,9 @@ cdef class _SSABuilder:
         dst.cap_args = total_args
 
         cdef int32_t arg_cursor = 0
-        cdef int32_t op, flags, aux, nargs, nphi, tv, phi_first
+        cdef int32_t op, flags, aux, nargs, nphi, tv, phi_first, sb
         cdef list raw_args
-        for b in range(nb):
+        for b in range(nbd):
             ob = order[b]
             dst.blocks[b].instr_start = <int32_t>block_start[b]
             dst.blocks[b].instr_count = len(ob)
@@ -1574,25 +1652,42 @@ cdef class _SSABuilder:
                 for o in raw_args:
                     dst.args[arg_cursor] = <uint32_t>(<int32_t>newidx[self._resolve(<int32_t>o)])
                     arg_cursor += 1
-            tv = <int32_t>self.block_test[b]
+            sb = b - off
+            tv = <int32_t>self.block_test[sb] if sb >= 0 else -1
             if tv >= 0:
                 dst.blocks[b].test_val = <int32_t>newidx[self._resolve(tv)]
             else:
                 dst.blocks[b].test_val = -1
 
-        # edges: identical CFG topology, copied verbatim.
-        dst.edges = <Edge*>malloc(<size_t>(src.n_edges if src.n_edges > 0 else 1) * sizeof(Edge))
+        # edges: the source topology, shifted by ``off`` blocks, plus the pre-header's
+        # unconditional edge. That edge takes index 0, so it is the first incoming edge of the
+        # old entry block and pairs with the UNDEF operand _drain put first.
+        cdef int32_t ne = src.n_edges + off
+        cdef int32_t e
+        dst.edges = <Edge*>malloc(<size_t>(ne if ne > 0 else 1) * sizeof(Edge))
         if dst.edges == NULL:
             raise MemoryError()
-        if src.n_edges > 0:
+        if off:
+            dst.edges[0].src = 0
+            dst.edges[0].dst = self.entry + 1
+            dst.edges[0].cond_kind = EDGE_COND_NONE
+            dst.edges[0].cond_is_int = 0
+            dst.edges[0].cond = 0.0
+            for e in range(src.n_edges):
+                dst.edges[e + 1] = src.edges[e]
+                dst.edges[e + 1].src = src.edges[e].src + 1
+                dst.edges[e + 1].dst = src.edges[e].dst + 1
+            dst.blocks[0].edge_start = 0
+            dst.blocks[0].edge_count = 1
+        elif src.n_edges > 0:
             # src.edges is NULL for a branch-free single-block callback; memcpy
             # with a NULL src is UB even for n == 0, so guard like the other copies.
             memcpy(dst.edges, src.edges, <size_t>src.n_edges * sizeof(Edge))
-        dst.n_edges = src.n_edges
-        dst.cap_edges = src.n_edges
+        dst.n_edges = ne
+        dst.cap_edges = ne
         for b in range(nb):
-            dst.blocks[b].edge_start = src.blocks[b].edge_start
-            dst.blocks[b].edge_count = src.blocks[b].edge_count
+            dst.blocks[b + off].edge_start = src.blocks[b].edge_start + off
+            dst.blocks[b + off].edge_count = src.blocks[b].edge_count
 
         dst.undef_val = (<int32_t>newidx[self.undef_val]) if self.undef_val >= 0 else -1
 
@@ -1906,8 +2001,11 @@ cdef class _UnSSA:
             # its block.
             if src.instrs[br].op == OPX_CONST and _int32_block_const(src.consts[src.instrs[br].aux]):
                 kind = PLACE_REAL_BLOCK
-                flags = 0
                 br = <int32_t>(<int64_t>src.consts[src.instrs[br].aux])
+                # Bake an index folded alongside the block id, as lower_from_ssa's fold does.
+                _bake_const_index(src, &off, &iv)
+                # Re-derive the now-known target's flags, as lower_from_ssa's fold does.
+                flags = self.dst._folded_block_flags(br, iv < 0)
             else:
                 br = self._emit_ref(br, block)
         if iv >= 0:
@@ -2799,12 +2897,33 @@ cdef class _SCCP:
 # operands to the surviving incoming edges in the new global-edge-index order.
 # --------------------------------------------------------------------------
 
-cdef int32_t _remap_place_c(Func dst, Func src, int32_t old_pid, dict newidx, dict place_map) except -1:
+cdef int32_t _remap_place_c(
+    Func dst, Func src, int32_t old_pid, dict newidx, dict place_map, dict const_override
+) except -1:
     cdef int32_t kind = src.places[old_pid].kind
     cdef int32_t flags = src.places[old_pid].flags
     cdef int32_t br = src.places[old_pid].block_ref
     cdef int32_t iv = src.places[old_pid].index_val
     cdef int32_t off = src.places[old_pid].offset
+    cdef bint baked
+    if iv >= 0:
+        # Normalize a constant index into the offset here, where the rebuild interns the place, so
+        # the passes that follow see the address marshal-in would have built from the same CFG:
+        # GVN keys a load on (block, index, offset) and LICM speculates only a constant-address
+        # read, and emission would otherwise ship ``Add(index, offset)`` where a re-marshal of the
+        # exported CFG ships the plain sum. Every place kind, because marshal-in bakes for every
+        # kind and the offset semantics are kind-independent (ir.pxd): a real block, a pointer
+        # target, and a temp all address ``value(index) + offset``. The index may be one this
+        # rebuild is itself folding, so the override wins over what the source arena still says.
+        override = const_override.get(iv)
+        if override is None:
+            baked = _bake_const_index(src, &off, &iv)
+        else:
+            baked = _bake_index_value(<double>override, &off, &iv)
+        if baked and kind == PLACE_REAL_BLOCK:
+            # Flag re-derivation stays real-block-only: only there is there a member to resolve, and
+            # PLACE_RUNTIME_CONST is the only bit a baked index can turn on.
+            flags = src._baked_index_flags(br, flags)
     if kind == PLACE_DYNAMIC_BLOCK:
         br = <int32_t>newidx[br]
     if iv >= 0:
@@ -2986,14 +3105,14 @@ def _build_compacted(Func src, list order, list keep_instr, dict const_override,
                 dst.instrs[ni].aux = -1
                 dst.instrs[ni].nargs = 0
             elif op == OPX_GET:
-                pid = _remap_place_c(dst, src, src.instrs[oldv].aux, newidx, place_map)
+                pid = _remap_place_c(dst, src, src.instrs[oldv].aux, newidx, place_map, const_override)
                 dst.instrs[ni].op = OPX_GET
                 dst.instrs[ni].flags = src.instrs[oldv].flags
                 dst.instrs[ni].aux = pid
                 dst.instrs[ni].nargs = 0
             elif op == OPX_SET:
                 val_new = <int32_t>newidx[<int32_t>src.args[src.instrs[oldv].arg_start]]
-                pid = _remap_place_c(dst, src, src.instrs[oldv].aux, newidx, place_map)
+                pid = _remap_place_c(dst, src, src.instrs[oldv].aux, newidx, place_map, const_override)
                 dst.args[arg_cursor] = <uint32_t>val_new
                 arg_cursor += 1
                 dst.instrs[ni].op = OPX_SET
@@ -3581,6 +3700,7 @@ def _emit_from_model(Func src, list pblocks, int entry_pb):
     dst.entry_block = <int32_t>new_bid[entry_pb]
 
     place_map = {}
+    no_override = {}  # this rebuilder folds nothing: every constant is already one in ``src``
     arg_cursor = 0
     cdef int32_t phi_first, phi_cnt
     for k in range(nb_new):
@@ -3631,14 +3751,14 @@ def _emit_from_model(Func src, list pblocks, int entry_pb):
                     dst.instrs[ni].aux = -1
                     dst.instrs[ni].nargs = 0
                 elif op == OPX_GET:
-                    pid = _remap_place_c(dst, src, src.instrs[ov].aux, oldmap, place_map)
+                    pid = _remap_place_c(dst, src, src.instrs[ov].aux, oldmap, place_map, no_override)
                     dst.instrs[ni].op = OPX_GET
                     dst.instrs[ni].flags = src.instrs[ov].flags
                     dst.instrs[ni].aux = pid
                     dst.instrs[ni].nargs = 0
                 elif op == OPX_SET:
                     val_new = <int32_t>oldmap[<int32_t>src.args[src.instrs[ov].arg_start]]
-                    pid = _remap_place_c(dst, src, src.instrs[ov].aux, oldmap, place_map)
+                    pid = _remap_place_c(dst, src, src.instrs[ov].aux, oldmap, place_map, no_override)
                     dst.args[arg_cursor] = <uint32_t>val_new
                     arg_cursor += 1
                     dst.instrs[ni].op = OPX_SET
@@ -3707,14 +3827,21 @@ def _emit_from_model(Func src, list pblocks, int entry_pb):
 
 # ---- LICM -----------------------------------------------------------------
 # Loop forest from dominators + back edges. For each loop (inner-first), hoist
-# pure / effectively-pure (non-writable static real-block reads), loop-invariant,
-# guaranteed-to-execute (def block dominates every latch) values whose EFFECTIVE
-# cost (runtime cost model) is >= 4 into a preheader. Effective cost: runtime-
-# constant subtrees (pure ops over OPX_CONST + PLACE_RUNTIME_CONST reads) cost 1,
-# so they NEVER hoist -- hoisting one to a preheader temp would defeat the
-# runtime's own constant folding of the tree. This effective-cost walk duplicates
-# the one in lower.pyx (a cimport would create a midend<->lower cycle); the two
-# stay aligned with the runtime cost model.
+# pure / effectively-pure (non-writable static real-block reads), loop-invariant
+# values whose EFFECTIVE cost (runtime cost model) is >= 4 into a preheader.
+#
+# Placement gate. A hoist root's def block must dominate every latch, so it is
+# reached on the way round the loop, though not that the loop runs at all (a
+# zero-trip loop can skip the body). An op that can fault (_licm_can_fault) must
+# also dominate every exiting block, proving the body runs whenever the preheader
+# does: a Divide lifted out of `for _ in range(n): ... / n` would otherwise divide
+# by n == 0 where the source never does.
+#
+# Effective cost: runtime-constant subtrees (pure ops over OPX_CONST +
+# PLACE_RUNTIME_CONST reads) cost 1, so they NEVER hoist -- hoisting one to a
+# preheader temp would defeat the runtime's own constant folding of the tree.
+# This effective-cost walk duplicates the one in lower.pyx (a cimport would create
+# a midend<->lower cycle); the two stay aligned with the runtime cost model.
 
 
 cdef bint _licm_is_rtc(Func f, int32_t v, dict memo) except -1:
@@ -3793,6 +3920,55 @@ cdef bint _licm_hoist_kind(Func f, int32_t v) noexcept nogil:
     return False
 
 
+cdef inline bint _licm_const_at(Func f, int32_t v, int32_t k, double* out) noexcept nogil:
+    # Caller must have checked nargs.
+    cdef int32_t a = <int32_t>f.args[f.instrs[v].arg_start + k]
+    if f.instrs[a].op != OPX_CONST:
+        return False
+    out[0] = f.consts[f.instrs[a].aux]
+    return True
+
+
+cdef bint _licm_can_fault(Func f, int32_t v) noexcept nogil:
+    # True where the oracle's interpret.py handler for v raises, so evaluating v on a
+    # path the source never takes turns a working program into an oracle error. One
+    # deliberate narrowing: Trunc / Floor / Ceil / Round and Sin / Cos / Tan raise only
+    # on an infinite or NaN operand. The oracle can still produce inf/NaN silently
+    # (f64 overflow, inf - inf), so hoisting such a tree over a zero-trip loop is an
+    # accepted residual; listing these ops would sink whole invariant trees back into
+    # the loop to close it.
+    #
+    # Memory reads: the oracle's get() asserts the block id and the address are
+    # integers and the address is in [0, 65535], so only a static-block read at a
+    # compile-time-constant address in range is free to speculate.
+    cdef uint16_t op = f.instrs[v].op
+    cdef int32_t n = f.instrs[v].nargs
+    cdef int32_t pid
+    cdef double lo, hi
+    if op == OPX_GET:
+        pid = f.instrs[v].aux
+        if f.places[pid].kind == PLACE_DYNAMIC_BLOCK or f.places[pid].index_val >= 0:
+            return True
+        return not (0 <= f.places[pid].offset <= 65535)
+    if op >= OP_RUNTIME_COUNT:
+        return False
+    if op == OP_Divide or op == OP_Mod or op == OP_Rem:
+        # A literal nonzero divisor cannot raise. Two-operand form only: reduce_args
+        # folds left to right, so a longer chain divides by its middle operands too.
+        return not (n == 2 and _licm_const_at(f, v, 1, &hi) and hi != 0.0)
+    if op == OP_Unlerp or op == OP_UnlerpClamped:
+        # Divides by hi - lo.
+        return not (n == 3 and _licm_const_at(f, v, 0, &lo) and _licm_const_at(f, v, 1, &hi) and hi != lo)
+    if op == OP_Remap or op == OP_RemapClamped:
+        # Divides by from_max - from_min.
+        return not (n == 5 and _licm_const_at(f, v, 0, &lo) and _licm_const_at(f, v, 1, &hi) and hi != lo)
+    return (
+        op == OP_Power                                             # 0 ** negative, negative ** fractional, overflow
+        or op == OP_Log or op == OP_Arcsin or op == OP_Arccos      # math_1 domain error
+        or op == OP_Sinh or op == OP_Cosh                          # math_1: overflow from a finite argument
+    )
+
+
 cdef list _licm_operands(Func f, int32_t v):
     # Value ids this value directly consumes (for the hoist-set closure).
     cdef int32_t pid, astart, n, k
@@ -3809,6 +3985,39 @@ cdef list _licm_operands(Func f, int32_t v):
     for k in range(n):
         res.append(<int32_t>f.args[astart + k])
     return res
+
+
+cdef bint _licm_speculatable(
+    Func f, Dominators D, LoopForest F, int32_t L, int32_t v, dict inv, list exits, dict memo
+) except -1:
+    # True iff v and every in-loop invariant value the hoist closure would take with
+    # it may run unconditionally in the preheader: each faulting op among them
+    # dominates every exiting block, so entering the loop reaches it. An operand
+    # defined outside the loop already ran before the preheader. A loop with no
+    # exiting block never terminates, so nothing in it is provably reached.
+    cached = memo.get(v)
+    if cached is not None:
+        return <bint>cached
+    cdef int32_t a, b, u
+    cdef bint r = True
+    if _licm_can_fault(f, v):
+        b = f.instrs[v].block
+        r = len(exits) > 0
+        for u in exits:
+            if not D.dominates(b, u):
+                r = False
+                break
+    if r:
+        for a in _licm_operands(f, v):
+            if not F.in_loop(L, f.instrs[a].block):
+                continue
+            if not <bint>inv.get(a, False):
+                continue
+            if not _licm_speculatable(f, D, F, L, a, inv, exits, memo):
+                r = False
+                break
+    memo[v] = r
+    return r
 
 
 cdef bint _licm_operand_inv(Func f, LoopForest F, int32_t L, int32_t a, dict inv) except -1:
@@ -3886,6 +4095,14 @@ def _licm_try_loop(Func f, Dominators D, LoopForest F, int32_t L):
     if not latches:
         return None
 
+    # exiting blocks: loop blocks with an edge leaving the loop; see
+    # _licm_speculatable and the placement-gate note above.
+    exit_set = set()
+    for e in range(f.n_edges):
+        if F.in_loop(L, f.edges[e].src) and not F.in_loop(L, f.edges[e].dst):
+            exit_set.add(f.edges[e].src)
+    exits = sorted(exit_set)
+
     # invariant set: single forward pass over loop-body values (operands of a
     # non-phi value have strictly smaller ids, so one pass suffices; phis are
     # never invariant and break any cycle). The bitset walk visits vids ascending
@@ -3908,9 +4125,10 @@ def _licm_try_loop(Func f, Dominators D, LoopForest F, int32_t L):
             for vid in range(istart, istart + icount):
                 inv[vid] = _licm_is_invariant(f, F, L, vid, inv)
 
-    # hoist roots: invariant, hoistable kind, guaranteed-to-execute, cost >= 4.
+    # hoist roots: invariant, hoistable kind, latch-dominating, speculatable, cost >= 4.
     memo_cost = {}
     memo_rtc = {}
+    memo_spec = {}
     roots = []
     for w in range(F.nwb):
         word = F.body[body_off + w]
@@ -3934,6 +4152,8 @@ def _licm_try_loop(Func f, Dominators D, LoopForest F, int32_t L):
                         guaranteed = False
                         break
                 if not guaranteed:
+                    continue
+                if not _licm_speculatable(f, D, F, L, vid, inv, exits, memo_spec):
                     continue
                 if _licm_eff_cost(f, vid, memo_cost, memo_rtc) < 4:
                     continue

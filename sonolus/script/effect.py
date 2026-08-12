@@ -4,13 +4,25 @@ from collections.abc import Iterable
 from dataclasses import dataclass
 from typing import Annotated, Any, NewType, dataclass_transform, get_origin
 
+from sonolus.backend.mode import Mode
 from sonolus.backend.ops import Op
 from sonolus.script.array_like import ArrayLike, check_positive_index
 from sonolus.script.debug import static_error
-from sonolus.script.internal.introspection import get_field_specifiers
-from sonolus.script.internal.meta_fn import perf_meta_fn
+from sonolus.script.internal.context import ctx
+from sonolus.script.internal.introspection import describe_value, get_field_specifiers
+from sonolus.script.internal.meta_fn import meta_fn, perf_meta_fn
 from sonolus.script.internal.native import native_function
 from sonolus.script.record import Record
+
+
+@meta_fn
+def _check_effect_playback_mode() -> None:
+    if ctx() and ctx().mode_state.mode is Mode.PREVIEW:
+        raise RuntimeError(
+            f"Effect playback is not available in '{ctx().mode_state.mode.name}' mode, only in PLAY, WATCH, "
+            "TUTORIAL. In code shared with preview, guard the call with a compile-time mode check such as "
+            "'if not is_preview():', which eliminates the branch in preview."
+        )
 
 
 class Effect(Record):
@@ -37,9 +49,12 @@ class Effect(Record):
 
         If the clip was already played within the specified distance, it will be skipped.
 
+        Not available in preview mode.
+
         Arguments:
             distance: Minimum time in seconds since the last play for the effect to play.
         """
+        _check_effect_playback_mode()
         _play(self.id, distance)
 
     @perf_meta_fn
@@ -53,19 +68,25 @@ class Effect(Record):
 
         If the clip would play within the specified distance of another play, it will be skipped.
 
+        Not available in preview mode.
+
         Arguments:
             time: Time in seconds when the effect should play.
             distance: Minimum time in seconds after a previous play for the effect to play.
         """
+        _check_effect_playback_mode()
         _play_scheduled(self.id, time, distance)
 
     @perf_meta_fn
     def loop(self) -> LoopedEffectHandle:
         """Play the effect clip in a loop until stopped.
 
+        Not available in preview mode.
+
         Returns:
             A handle to stop the loop.
         """
+        _check_effect_playback_mode()
         return LoopedEffectHandle(_play_looped(self.id))
 
     @perf_meta_fn
@@ -75,9 +96,12 @@ class Effect(Record):
         This is not suitable for real-time effects such as responses to user input.
         Use [`loop`][sonolus.script.effect.Effect.loop] instead.
 
+        Not available in preview mode.
+
         Returns:
             A handle to stop the loop.
         """
+        _check_effect_playback_mode()
         return ScheduledLoopedEffectHandle(_play_looped_scheduled(self.id, start_time))
 
 
@@ -87,7 +111,11 @@ class LoopedEffectHandle(Record):
     id: int
 
     def stop(self) -> None:
-        """Stop the looped effect."""
+        """Stop the looped effect.
+
+        Not available in preview mode.
+        """
+        _check_effect_playback_mode()
         _stop_looped(self.id)
 
 
@@ -97,7 +125,12 @@ class ScheduledLoopedEffectHandle(Record):
     id: int
 
     def stop(self, end_time: float) -> None:
-        """Stop the scheduled looped effect."""
+        """Stop the scheduled looped effect.
+
+        Not available in preview mode.
+        """
+        _check_effect_playback_mode()
+        # The runtime needs at least 0.5 seconds of lead time to stop the loop at the scheduled time.
         _stop_looped_scheduled(self.id, end_time)
 
 
@@ -189,6 +222,8 @@ def effect(name: str) -> Any:
 
 def effect_group(names: Iterable[str]) -> Any:
     """Define an effect group with the given names."""
+    if isinstance(names, str | bytes | bytearray):
+        raise TypeError(f"Expected a sequence of names, got {names!r}; one name is written ({names!r},)")
     return EffectGroupInfo(list(names))
 
 
@@ -215,24 +250,25 @@ def effects[T](cls: type[T]) -> T | Effects:
     names = []
     i = 0
     for name, annotation in get_field_specifiers(cls).items():
+        described = describe_value(annotation)
         if get_origin(annotation) is not Annotated:
-            raise TypeError(f"Invalid annotation for effects: {annotation} on field {name}")
+            raise TypeError(f"Invalid annotation for effects: {described} on field {name}")
         annotation_type = annotation.__args__[0]
         annotation_values = annotation.__metadata__
         if len(annotation_values) != 1:
-            raise TypeError(f"Invalid annotation for effects: {annotation} on field {name}, too many annotation values")
+            raise TypeError(f"Invalid annotation for effects: {described} on field {name}, too many annotation values")
         effect_info = annotation_values[0]
         match effect_info:
             case EffectInfo(name=effect_name):
                 if annotation_type is not Effect:
-                    raise TypeError(f"Invalid annotation for effects: {annotation} on field {name}, expected Effect")
+                    raise TypeError(f"Invalid annotation for effects: {described} on field {name}, expected Effect")
                 names.append(effect_name)
                 setattr(instance, name, Effect(i))
                 i += 1
             case EffectGroupInfo(names=effect_names):
                 if annotation_type is not EffectGroup:
                     raise TypeError(
-                        f"Invalid annotation for effects: {annotation} on field {name}, expected EffectGroup"
+                        f"Invalid annotation for effects: {described} on field {name}, expected EffectGroup"
                     )
                 start_id = i
                 count = len(effect_names)
@@ -241,7 +277,7 @@ def effects[T](cls: type[T]) -> T | Effects:
                 i += count
             case _:
                 raise TypeError(
-                    f"Invalid annotation for effects: {annotation} on field {name}, unknown effect info, "
+                    f"Invalid annotation for effects: {described} on field {name}, unknown effect info, "
                     f"expected an effect() or effect_group() specifier"
                 )
     instance._effects_ = names

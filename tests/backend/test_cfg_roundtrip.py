@@ -191,11 +191,11 @@ def test_block_test_expression():
     b0 = BasicBlock()
     t = BasicBlock()
     f = BasicBlock()
-    b0.test = IRPureInstr(Op.Equal, [IRGet(_scalar("v0")), IRConst(6.0)])
+    b0.test = IRPureInstr(Op.Equal, [IRGet(_scalar("v0")), IRConst(6.5)])
     b0.connect_to(f, 0)
     b0.connect_to(t, None)
     rt = assert_faithful(b0)
-    assert "== 6.0" in cfg_to_text(rt)
+    assert "== 6.5" in cfg_to_text(rt)
 
 
 def _first_value_bits(cfg):
@@ -216,9 +216,9 @@ def test_nan_inf_consts_bitlevel_roundtrip():
             assert struct.pack("<d", got) == struct.pack("<d", value)
 
 
-def test_int_vs_float_const_display_preserved():
-    # NB: IRConst(3) and IRConst(3.0) share a mutated singleton, so a single
-    # value can't carry two displays; use distinct values to check both forms.
+def test_const_display_is_one_form_per_value():
+    # An integral value has one display no matter which spelling built it: IRConst(3.0) round-trips as
+    # 3, not 3.0. Only a non-integral value keeps a decimal point.
     b0 = BasicBlock()
     b0.statements = [
         IRSet(_scalar("i"), IRConst(7)),
@@ -226,9 +226,9 @@ def test_int_vs_float_const_display_preserved():
         IRSet(_scalar("g"), IRPureInstr(Op.Add, [IRConst(3.0), IRConst(4)])),
     ]
     text = cfg_to_text(roundtrip(b0))
-    assert "<- 7\n" in text  # int display
+    assert "<- 7\n" in text
     assert "3.5" in text
-    assert "3.0 + 4" in text  # 3.0 float display, 4 int display
+    assert "3 + 4" in text
 
 
 def test_self_loop():

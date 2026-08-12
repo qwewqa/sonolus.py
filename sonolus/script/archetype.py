@@ -8,16 +8,17 @@ from enum import Enum, IntEnum, StrEnum
 from types import FunctionType
 from typing import Annotated, Any, ClassVar, NamedTuple, Self, TypedDict, get_origin
 
-from sonolus.backend.ir import IRConst, IRExpr, IRInstr, IRPureInstr, IRStmt
+from sonolus.backend.ir import IRConst, IRExpr, IRInstr, IRPureInstr
 from sonolus.backend.mode import Mode
 from sonolus.backend.ops import Op
 from sonolus.script.bucket import Bucket, Judgment
 from sonolus.script.debug import runtime_checks_enabled, static_error
+from sonolus.script.internal.builtin_impls import _type_name
 from sonolus.script.internal.callbacks import PLAY_CALLBACKS, PREVIEW_CALLBACKS, WATCH_ARCHETYPE_CALLBACKS, CallbackInfo
 from sonolus.script.internal.context import ctx
 from sonolus.script.internal.descriptor import SonolusDescriptor
 from sonolus.script.internal.generic import validate_concrete_type
-from sonolus.script.internal.impl import validate_value
+from sonolus.script.internal.impl import bind_arguments, validate_value
 from sonolus.script.internal.introspection import get_field_specifiers
 from sonolus.script.internal.meta_fn import meta_fn
 from sonolus.script.internal.native import native_call, native_switch_membership
@@ -36,16 +37,23 @@ _ENTITY_SHARED_MEMORY_SIZE = 32
 
 class _StorageType(Enum):
     IMPORTED = "imported"
+    DATA = "data"
     EXPORTED = "exported"
     MEMORY = "memory"
     SHARED = "shared_memory"
 
 
 @dataclass
-class _ArchetypeFieldInfo:
+class _ArchetypeFieldInfo(SonolusDescriptor):
     name: str | None
     storage: _StorageType
     default: Value | None = None
+
+    def __get__(self, instance, owner):
+        return self
+
+    def __set__(self, instance, value):
+        raise TypeError("Archetype fields cannot be set before the archetype's fields are initialized")
 
 
 class _ExportBackingValue(BackingValue):
@@ -55,8 +63,8 @@ class _ExportBackingValue(BackingValue):
     def read(self) -> IRExpr:
         raise NotImplementedError("Exported fields are write-only")
 
-    def write(self, value: IRExpr) -> IRStmt:
-        return IRInstr(Op.ExportValue, [self.index, value])
+    def write(self, value: IRExpr) -> None:
+        ctx().add_statement(IRInstr(Op.ExportValue, [self.index, value]))
 
 
 class _ArchetypeField(SonolusDescriptor):
@@ -81,7 +89,7 @@ class _ArchetypeField(SonolusDescriptor):
             return self
         result = None
         match self.storage:
-            case _StorageType.IMPORTED:
+            case _StorageType.IMPORTED | _StorageType.DATA:
                 match instance._data_:
                     case _ArchetypeSelfData():
                         result = _deref(ctx().blocks.EntityData, self.offset, self.type)
@@ -92,6 +100,8 @@ class _ArchetypeField(SonolusDescriptor):
                             self.type,
                         )
                     case _ArchetypeLevelData(values=values):
+                        if self.storage is _StorageType.DATA:
+                            raise RuntimeError("Entity data fields are not available in level data")
                         result = values[self.name]
             case _StorageType.EXPORTED:
                 match instance._data_:
@@ -142,7 +152,7 @@ class _ArchetypeField(SonolusDescriptor):
             raise TypeError(f"Expected {self.type}, got {type(value)}")
         target = None
         match self.storage:
-            case _StorageType.IMPORTED:
+            case _StorageType.IMPORTED | _StorageType.DATA:
                 match instance._data_:
                     case _ArchetypeSelfData():
                         target = _deref(ctx().blocks.EntityData, self.offset, self.type)
@@ -153,6 +163,8 @@ class _ArchetypeField(SonolusDescriptor):
                             self.type,
                         )
                     case _ArchetypeLevelData(values=values):
+                        if self.storage is _StorageType.DATA:
+                            raise RuntimeError("Entity data fields are not available in level data")
                         target = values[self.name]
             case _StorageType.EXPORTED:
                 match instance._data_:
@@ -263,7 +275,7 @@ class _ArchetypeLifeDescriptor(SonolusDescriptor):
         if not ctx():
             raise RuntimeError("Archetype life is only available during compilation")
         if ctx().mode_state.mode not in {Mode.PLAY, Mode.WATCH}:
-            raise RuntimeError(f"Archetype life is not available in mode '{ctx().mode_state.mode.value}'")
+            raise RuntimeError(f"Archetype life is not available in mode '{ctx().mode_state.mode.name}'")
         if instance is not None:
             return _deref(ctx().blocks.ArchetypeLife, instance.id * LifeInfo._size_(), LifeInfo)
         else:
@@ -278,7 +290,7 @@ class _EntityLifeDescriptor(SonolusDescriptor):
         if not ctx():
             raise RuntimeError("Entity life is only available during compilation")
         if ctx().mode_state.mode not in {Mode.PLAY, Mode.WATCH}:
-            raise RuntimeError(f"Entity life is not available in mode '{ctx().mode_state.mode.value}'")
+            raise RuntimeError(f"Entity life is not available in mode '{ctx().mode_state.mode.name}'")
         if instance is None:
             raise RuntimeError("Entity life can only be accessed from an instance")
         match instance._data_:
@@ -302,7 +314,7 @@ class _ArchetypeScoreMultiplierMetaDescriptor(SonolusDescriptor):
         if not ctx():
             raise RuntimeError("Archetype score multiplier is only available during compilation")
         if ctx().mode_state.mode not in {Mode.PLAY, Mode.WATCH}:
-            raise RuntimeError(f"Archetype score multiplier is not available in mode '{ctx().mode_state.mode.value}'")
+            raise RuntimeError(f"Archetype score multiplier is not available in mode '{ctx().mode_state.mode.name}'")
         return _deref(ctx().blocks.ArchetypeScore, instance.id, Num)
 
     def __set__(self, instance, value):
@@ -310,7 +322,7 @@ class _ArchetypeScoreMultiplierMetaDescriptor(SonolusDescriptor):
         if not ctx():
             raise RuntimeError("Archetype score multiplier is only available during compilation")
         if ctx().mode_state.mode not in {Mode.PLAY, Mode.WATCH}:
-            raise RuntimeError(f"Archetype score multiplier is not available in mode '{ctx().mode_state.mode.value}'")
+            raise RuntimeError(f"Archetype score multiplier is not available in mode '{ctx().mode_state.mode.name}'")
         target = _deref(ctx().blocks.ArchetypeScore, instance.id, Num)
         target._set_(Num._accept_(value))
 
@@ -320,7 +332,7 @@ class _ArchetypeScoreMultiplierDescriptor(SonolusDescriptor):
         if not ctx():
             raise RuntimeError("Archetype score multiplier is only available during compilation")
         if ctx().mode_state.mode not in {Mode.PLAY, Mode.WATCH}:
-            raise RuntimeError(f"Archetype score multiplier is not available in mode '{ctx().mode_state.mode.value}'")
+            raise RuntimeError(f"Archetype score multiplier is not available in mode '{ctx().mode_state.mode.name}'")
         if instance is not None:
             return _deref(ctx().blocks.ArchetypeScore, instance.id, Num)
         else:
@@ -333,7 +345,7 @@ class _ArchetypeScoreMultiplierDescriptor(SonolusDescriptor):
         if not ctx():
             raise RuntimeError("Archetype score multiplier is only available during compilation")
         if ctx().mode_state.mode not in {Mode.PLAY, Mode.WATCH}:
-            raise RuntimeError(f"Archetype score multiplier is not available in mode '{ctx().mode_state.mode.value}'")
+            raise RuntimeError(f"Archetype score multiplier is not available in mode '{ctx().mode_state.mode.name}'")
         target = _deref(ctx().blocks.ArchetypeScore, instance.id, Num)
         target._set_(Num._accept_(value))
 
@@ -356,7 +368,7 @@ class _EntityScoreMultiplierDescriptor(SonolusDescriptor):
         if not ctx():
             raise RuntimeError("Entity score multiplier is only available during compilation")
         if ctx().mode_state.mode not in {Mode.PLAY, Mode.WATCH}:
-            raise RuntimeError(f"Entity score multiplier is not available in mode '{ctx().mode_state.mode.value}'")
+            raise RuntimeError(f"Entity score multiplier is not available in mode '{ctx().mode_state.mode.name}'")
         if instance is None:
             raise RuntimeError("Entity score multiplier can only be accessed from an instance")
         match instance._data_:
@@ -374,7 +386,7 @@ class _EntityScoreMultiplierDescriptor(SonolusDescriptor):
         if not ctx():
             raise RuntimeError("Entity score multiplier is only available during compilation")
         if ctx().mode_state.mode not in {Mode.PLAY, Mode.WATCH}:
-            raise RuntimeError(f"Entity score multiplier is not available in mode '{ctx().mode_state.mode.value}'")
+            raise RuntimeError(f"Entity score multiplier is not available in mode '{ctx().mode_state.mode.name}'")
         target = None
         match instance._data_:
             case _ArchetypeSelfData():
@@ -386,7 +398,7 @@ class _EntityScoreMultiplierDescriptor(SonolusDescriptor):
         target._set_(Num._accept_(value))
 
 
-def imported(*, name: str | None = None, default: int | float | None = None) -> Any:
+def imported(*, name: str | None = None, default: Any = None) -> Any:
     """Declare a field as imported.
 
     Imported fields may be loaded from the level.
@@ -402,6 +414,7 @@ def imported(*, name: str | None = None, default: int | float | None = None) -> 
             field: int = imported()
             field_with_explicit_name: int = imported(name="field_name")
             field_with_default: int = imported(default=0)
+            compound_field_with_default: Vec2 = imported(default=Vec2(0.0, 0.0))
         ```
     """
     validated_default = None
@@ -417,8 +430,9 @@ def entity_data() -> Any:
     [`preprocess`][sonolus.script.archetype.PlayArchetype.preprocess] callback
     and is read-only in other callbacks.
 
-    It functions like [`imported`][sonolus.script.archetype.imported] and shares the same underlying storage,
-    except that it is not loaded from a level.
+    Entity data shares storage with [`imported`][sonolus.script.archetype.imported] fields but is private to the
+    engine: it is not part of the archetype schema, may not be set when constructing level data, and is never
+    loaded from a level.
 
     Usage:
         ```python
@@ -426,7 +440,7 @@ def entity_data() -> Any:
             field: int = entity_data()
         ```
     """
-    return _ArchetypeFieldInfo(None, _StorageType.IMPORTED)
+    return _ArchetypeFieldInfo(None, _StorageType.DATA)
 
 
 def exported(*, name: str | None = None) -> Any:
@@ -451,6 +465,8 @@ def entity_memory() -> Any:
 
     Entity memory is private to the entity and is not accessible from other entities. It may be read or updated in any
     callback associated with the entity.
+
+    Entity memory exists in play and watch mode.
 
     Entity memory fields may also be set when an entity is spawned using the
     [`spawn()`][sonolus.script.archetype.PlayArchetype.spawn] method.
@@ -486,6 +502,7 @@ def shared_memory() -> Any:
 
 _annotation_defaults: dict[Callable, _ArchetypeFieldInfo] = {
     imported: imported(),
+    entity_data: entity_data(),
     exported: exported(),
     entity_memory: entity_memory(),
     shared_memory: shared_memory(),
@@ -496,10 +513,7 @@ def callback[T: Callable](*, order: int = 0) -> Callable[[T], T]:
     """Annotate a callback with its order.
 
     Callbacks are executed from lowest to highest order. By default, callbacks have an order of 0.
-
-    Note:
-        Only `preprocess`, `spawn_order`, `update_sequential`, and `touch` support a non-zero order. Using a
-        non-zero order on any other archetype callback raises an error at compile time.
+    Parallel callbacks like `update_parallel` do not support order.
 
     Usage:
         ```python
@@ -544,6 +558,7 @@ type _ArchetypeData = _ArchetypeSelfData | _ArchetypeReferenceData | _ArchetypeL
 class ArchetypeSchema(TypedDict):
     name: str
     fields: list[str]
+    exports: list[str]
 
 
 class ImportInfo(NamedTuple):
@@ -579,6 +594,40 @@ ALLOWED_RESERVED_ARCHETYPE_FIELD_NAME_OVERRIDES = {
 }
 
 
+def _shadowed_member(cls: type, name: str) -> tuple[type, str] | None:
+    """The class and kind of member a field named `name` would replace, or None if it would replace nothing."""
+    for entry in cls.mro():
+        if name not in entry.__dict__:
+            continue
+        member = entry.__dict__[name]
+        if isinstance(member, _ArchetypeFieldInfo):
+            continue
+        match member:
+            case property():
+                return entry, "property"
+            case FunctionType() | classmethod() | staticmethod():
+                return entry, "method"
+            case _:
+                return None
+    return None
+
+
+def _declaring_class_name(cls: type, field: _ArchetypeField) -> str:
+    """The name of the class in cls's mro that declared the field."""
+    for entry in cls.mro():
+        if entry.__dict__.get(field.name) is field:
+            return entry.__name__
+    return cls.__name__
+
+
+def _duplicate_key_error(cls: type, kind: str, key: str, first: _ArchetypeField, second: _ArchetypeField) -> ValueError:
+    """The error for two fields of cls resolving to one import or export name."""
+    return ValueError(
+        f"Fields '{first.name}' of {_declaring_class_name(cls, first)} and "
+        f"'{second.name}' of {_declaring_class_name(cls, second)} both use the {kind} name '{key}'"
+    )
+
+
 class _BaseArchetypeMeta(ABCMeta):
     archetype_score_multiplier = _ArchetypeScoreMultiplierMetaDescriptor()
     entity_score_multiplier = _EntityScoreMultiplierMetaDescriptor()
@@ -606,6 +655,7 @@ class _BaseArchetype(metaclass=_BaseArchetypeMeta):
     _default_callbacks_: ClassVar[set[Callable]]
 
     _imported_fields_: ClassVar[dict[str, _ArchetypeField]]
+    _data_fields_: ClassVar[dict[str, _ArchetypeField]]
     _exported_fields_: ClassVar[dict[str, _ArchetypeField]]
     _memory_fields_: ClassVar[dict[str, _ArchetypeField]]
     _shared_memory_fields_: ClassVar[dict[str, _ArchetypeField]]
@@ -658,10 +708,12 @@ class _BaseArchetype(metaclass=_BaseArchetypeMeta):
         self._init_fields()
         if ctx():
             raise RuntimeError("The Archetype constructor is only for defining level data")
-        bound = self._data_constructor_signature_.bind_partial(*args, **kwargs)
+        bound = bind_arguments(self._data_constructor_signature_, type(self).__name__, args, kwargs, partial=True)
         bound.apply_defaults()
         values = {
-            field.name: field.type._accept_(bound.arguments.get(field.name) or zeros(field.type))._get_()
+            field.name: field.type._accept_(
+                bound.arguments[field.name] if field.name in bound.arguments else zeros(field.type)
+            )._get_()
             for field in self._imported_fields_.values()
         }
         self._data_ = _ArchetypeLevelData(values=values)
@@ -769,7 +821,12 @@ class _BaseArchetype(metaclass=_BaseArchetypeMeta):
     def spawn(cls, **kwargs: Any) -> None:
         """Spawn an entity of this archetype, injecting the given values into entity memory.
 
+        Available in play and watch mode.
+
         Entity memory fields not passed as keyword arguments are initialized to zero.
+
+        An entity created this way has only entity memory: it has no entity info, entity input, entity data
+        (including imported fields), or shared memory.
 
         Usage:
             ```python
@@ -786,8 +843,12 @@ class _BaseArchetype(metaclass=_BaseArchetypeMeta):
         cls._init_fields()
         if not ctx():
             raise RuntimeError("Spawn is only allowed within a callback")
+        if ctx().mode_state.mode not in {Mode.PLAY, Mode.WATCH}:
+            raise RuntimeError(
+                f"{cls.__name__}.spawn is not available in '{ctx().mode_state.mode.name}' mode, only in PLAY, WATCH"
+            )
         archetype_id = cls.id
-        bound = cls._spawn_signature_.bind_partial(**kwargs)
+        bound = bind_arguments(cls._spawn_signature_, f"{cls.__name__}.spawn", (), kwargs, partial=True)
         bound.apply_defaults()
         data = []
         for field in cls._memory_fields_.values():
@@ -801,7 +862,11 @@ class _BaseArchetype(metaclass=_BaseArchetypeMeta):
     @classmethod
     def schema(cls) -> ArchetypeSchema:
         cls._init_fields()
-        return {"name": cls.name or "unnamed", "fields": list(cls._imported_fields_)}
+        return {
+            "name": cls.name or "unnamed",
+            "fields": list(cls._imported_keys_),
+            "exports": list(cls._exported_keys_),
+        }
 
     def _level_data_entries(self, level_refs: dict[Any, str] | None = None):
         self._init_fields()
@@ -810,7 +875,11 @@ class _BaseArchetype(metaclass=_BaseArchetypeMeta):
         entries = []
         for name, value in self._data_.values.items():
             field_info = self._imported_fields_.get(name)
-            for k, v in value._to_flat_dict_(field_info.data_name, level_refs).items():
+            try:
+                flat = value._to_flat_dict_(field_info.data_name, level_refs)
+            except ValueError as e:
+                raise ValueError(f"field '{name}': {e}") from e
+            for k, v in flat.items():
                 if isinstance(v, str):
                     entries.append({"name": k, "ref": v})
                 else:
@@ -818,6 +887,14 @@ class _BaseArchetype(metaclass=_BaseArchetypeMeta):
         return entries
 
     def __init_subclass__(cls, **kwargs):
+        super().__init_subclass__(**kwargs)
+        for base in cls.__bases__:
+            if getattr(base, "_is_derived_", False):
+                origin = getattr(base, "_derived_base_", base)
+                raise TypeError(
+                    f"Archetype {cls.__name__} cannot subclass {base.__name__}, which was created by "
+                    f"{origin.__name__}.derive(). Subclass {origin.__name__} instead, or derive from it again."
+                )
         if cls.__module__ == _BaseArchetype.__module__ and not getattr(cls, "_is_derived_", False):
             if cls._supported_callbacks_ is None:
                 raise TypeError("Cannot directly subclass Archetype, use the Archetype subclass for your mode")
@@ -830,9 +907,31 @@ class _BaseArchetype(metaclass=_BaseArchetypeMeta):
             for mro_entry in cls.mro():
                 if name in mro_entry.__dict__:
                     cb = mro_entry.__dict__[name]
+                    if isinstance(cb, _ArchetypeFieldInfo | _ArchetypeField):
+                        # A field declared under a callback's name: field initialization reports it with a
+                        # message naming both, so can just break here.
+                        break
+                    if isinstance(cb, classmethod | staticmethod):
+                        raise TypeError(
+                            f"Callback '{name}' of {cls.__name__} is declared as a @{type(cb).__name__}. "
+                            "An archetype callback must be a plain method taking self."
+                        )
                     if cb not in cls._default_callbacks_:
                         cls._callbacks_[name] = cb
                         break
+        # Only the class's own members are checked as to not affect mixins.
+        registered = [getattr(cb, "__func__", cb) for cb in cls._callbacks_.values()]
+        for name, member in cls.__dict__.items():
+            if name in cls._supported_callbacks_:
+                continue
+            target = getattr(member, "__func__", member)
+            marked = hasattr(member, "_callback_order_") or hasattr(target, "_callback_order_")
+            if not marked or any(target is entry for entry in registered):
+                continue
+            raise TypeError(
+                f"Method '{name}' of {cls.__name__} is decorated with @callback, but it is not a callback of "
+                f"this archetype. The callbacks of {cls.__name__} are: {', '.join(cls._supported_callbacks_)}."
+            )
         cls._field_init_done = False
         cls._is_concrete_archetype_ = True
         cls.id = _IdDescriptor()
@@ -868,32 +967,33 @@ class _BaseArchetype(metaclass=_BaseArchetypeMeta):
             ).items()
         except Exception as e:
             raise TypeError(f"Error while processing fields of {cls.__name__}: {e}") from e
-        if not hasattr(cls, "_imported_fields_"):
-            cls._imported_fields_ = {}
-        else:
-            cls._imported_fields_ = {**cls._imported_fields_}
-        if not hasattr(cls, "_exported_fields_"):
-            cls._exported_fields_ = {}
-        else:
-            cls._exported_fields_ = {**cls._exported_fields_}
-        if not hasattr(cls, "_memory_fields_"):
-            cls._memory_fields_ = {}
-        else:
-            cls._memory_fields_ = {**cls._memory_fields_}
-        if not hasattr(cls, "_shared_memory_fields_"):
-            cls._shared_memory_fields_ = {}
-        else:
-            cls._shared_memory_fields_ = {**cls._shared_memory_fields_}
-        imported_offset = sum(field.type._size_() for field in cls._imported_fields_.values())
-        exported_offset = sum(field.type._size_() for field in cls._exported_fields_.values())
-        memory_offset = sum(field.type._size_() for field in cls._memory_fields_.values())
-        shared_memory_offset = sum(field.type._size_() for field in cls._shared_memory_fields_.values())
+        # Everything below accumulates locally and is set on cls only once every check has passed. A build
+        # retraces a failing callback, so it calls _init_fields a second time, and bookkeeping or a descriptor
+        # left behind by the first call makes that second call fail somewhere unrelated.
+        imported_fields = {**getattr(cls, "_imported_fields_", {})}
+        data_fields = {**getattr(cls, "_data_fields_", {})}
+        exported_fields = {**getattr(cls, "_exported_fields_", {})}
+        memory_fields = {**getattr(cls, "_memory_fields_", {})}
+        shared_memory_fields = {**getattr(cls, "_shared_memory_fields_", {})}
+        descriptors: list[tuple[str, _ArchetypeField]] = []
+        entity_data_offset = sum(field.type._size_() for field in (*imported_fields.values(), *data_fields.values()))
+        exported_offset = sum(field.type._size_() for field in exported_fields.values())
+        memory_offset = sum(field.type._size_() for field in memory_fields.values())
+        shared_memory_offset = sum(field.type._size_() for field in shared_memory_fields.values())
         for name, value in field_specifiers:
             if value is ClassVar or get_origin(value) is ClassVar:
                 continue
+            shadowed = _shadowed_member(cls, name)
+            if shadowed is not None:
+                shadowed_owner, shadowed_kind = shadowed
+                raise TypeError(
+                    f"Field '{name}' of {cls.__name__} shadows the "
+                    f"'{name}' {shadowed_kind} of {shadowed_owner.__name__}"
+                )
             if get_origin(value) is not Annotated:
                 raise TypeError(
-                    "Archetype fields must be annotated using imported, exported, entity_memory, or shared_memory"
+                    "Archetype fields must be annotated using imported, entity_data, exported, entity_memory, "
+                    "or shared_memory"
                 )
             field_info = None
             for metadata in value.__metadata__:
@@ -910,20 +1010,22 @@ class _BaseArchetype(metaclass=_BaseArchetypeMeta):
                         else:
                             raise TypeError(
                                 f"Unexpected multiple annotations for field '{name}' of {cls.__name__}, "
-                                f"expected exactly one of imported, exported, entity_memory, or shared_memory"
+                                f"expected exactly one of imported, entity_data, exported, entity_memory, "
+                                f"or shared_memory"
                             )
                     else:
                         field_info = metadata
             if field_info is None:
                 raise TypeError(
                     f"Missing annotation for '{name}' of {cls.__name__}, "
-                    f"expected exactly one of imported, exported, entity_memory, or shared_memory"
+                    f"expected exactly one of imported, entity_data, exported, entity_memory, or shared_memory"
                 )
             if (
-                name in cls._imported_fields_
-                or name in cls._exported_fields_
-                or name in cls._memory_fields_
-                or name in cls._shared_memory_fields_
+                name in imported_fields
+                or name in data_fields
+                or name in exported_fields
+                or name in memory_fields
+                or name in shared_memory_fields
             ):
                 raise ValueError(f"Field '{name}' is already defined in a superclass")
             try:
@@ -932,69 +1034,96 @@ class _BaseArchetype(metaclass=_BaseArchetypeMeta):
                 raise TypeError(f"Error in field '{name}' of {cls.__name__}: {e}") from e
             match field_info.storage:
                 case _StorageType.IMPORTED:
-                    cls._imported_fields_[name] = _ArchetypeField(
+                    imported_fields[name] = _ArchetypeField(
                         name,
                         field_info.name or name,
                         field_info.storage,
-                        imported_offset,
+                        entity_data_offset,
                         field_type,
                         field_info.default,
                     )
-                    imported_offset += field_type._size_()
-                    if imported_offset > _ENTITY_DATA_SIZE:
-                        raise ValueError("Imported fields exceed entity data size")
-                    setattr(cls, name, cls._imported_fields_[name])
+                    entity_data_offset += field_type._size_()
+                    if entity_data_offset > _ENTITY_DATA_SIZE:
+                        raise ValueError("Imported and entity data fields exceed entity data size")
+                    descriptors.append((name, imported_fields[name]))
+                case _StorageType.DATA:
+                    data_fields[name] = _ArchetypeField(
+                        name, field_info.name or name, field_info.storage, entity_data_offset, field_type
+                    )
+                    entity_data_offset += field_type._size_()
+                    if entity_data_offset > _ENTITY_DATA_SIZE:
+                        raise ValueError("Imported and entity data fields exceed entity data size")
+                    descriptors.append((name, data_fields[name]))
                 case _StorageType.EXPORTED:
-                    cls._exported_fields_[name] = _ArchetypeField(
+                    exported_fields[name] = _ArchetypeField(
                         name, field_info.name or name, field_info.storage, exported_offset, field_type
                     )
                     exported_offset += field_type._size_()
                     if exported_offset > _ENTITY_DATA_SIZE:
                         raise ValueError("Exported fields exceed entity data size")
-                    setattr(cls, name, cls._exported_fields_[name])
+                    descriptors.append((name, exported_fields[name]))
                 case _StorageType.MEMORY:
-                    cls._memory_fields_[name] = _ArchetypeField(
+                    memory_fields[name] = _ArchetypeField(
                         name, field_info.name or name, field_info.storage, memory_offset, field_type
                     )
                     memory_offset += field_type._size_()
                     if memory_offset > _ENTITY_MEMORY_SIZE:
                         raise ValueError("Memory fields exceed entity memory size")
-                    setattr(cls, name, cls._memory_fields_[name])
+                    descriptors.append((name, memory_fields[name]))
                 case _StorageType.SHARED:
-                    cls._shared_memory_fields_[name] = _ArchetypeField(
+                    shared_memory_fields[name] = _ArchetypeField(
                         name, field_info.name or name, field_info.storage, shared_memory_offset, field_type
                     )
                     shared_memory_offset += field_type._size_()
                     if shared_memory_offset > _ENTITY_SHARED_MEMORY_SIZE:
                         raise ValueError("Shared memory fields exceed entity shared memory size")
-                    setattr(cls, name, cls._shared_memory_fields_[name])
+                    descriptors.append((name, shared_memory_fields[name]))
         imported_keys = {}
-        index = 0
-        for field in cls._imported_fields_.values():
+        imported_key_fields: dict[str, _ArchetypeField] = {}
+        for field in imported_fields.values():
             keys = list(field.type._flat_keys_(field.data_name))
-            if field.default is not None:
-                defaults = field.default._to_list_()
-                for key, default_value in zip(keys, defaults, strict=True):
-                    imported_keys[key] = ImportInfo(index=index, default=default_value)
-                    index += 1
-            else:
-                for key in keys:
-                    imported_keys[key] = ImportInfo(index=index, default=None)
-                    index += 1
+            # An import's index is the entity data slot the runtime writes its level value to. Entity data
+            # fields occupy slots but contribute no keys, so these indexes need not be contiguous.
+            defaults = field.default._to_list_() if field.default is not None else [None] * len(keys)
+            if len(defaults) != len(keys):
+                raise TypeError(
+                    f"Field '{field.name}' of {_declaring_class_name(cls, field)} imports "
+                    f"{len(keys)} value{'' if len(keys) == 1 else 's'}, but its default has {len(defaults)}"
+                )
+            if field.default is not None and not field.type._accepts_(field.default):
+                raise TypeError(
+                    f"Field '{field.name}' of {_declaring_class_name(cls, field)} has type "
+                    f"{field.type.__name__}, but its default has type {_type_name(field.default)}"
+                )
+            for i, (key, default_value) in enumerate(zip(keys, defaults, strict=True)):
+                if key in imported_keys:
+                    raise _duplicate_key_error(cls, "import", key, imported_key_fields[key], field)
+                imported_keys[key] = ImportInfo(index=field.offset + i, default=default_value)
+                imported_key_fields[key] = field
+        exported_keys = {}
+        exported_key_fields: dict[str, _ArchetypeField] = {}
+        for field in exported_fields.values():
+            for key in field.type._flat_keys_(field.data_name):
+                if key in exported_keys:
+                    raise _duplicate_key_error(cls, "export", key, exported_key_fields[key], field)
+                exported_keys[key] = len(exported_keys)
+                exported_key_fields[key] = field
+        cls._post_init_fields(exported_fields)
+        cls._imported_fields_ = imported_fields
+        cls._data_fields_ = data_fields
+        cls._exported_fields_ = exported_fields
+        cls._memory_fields_ = memory_fields
+        cls._shared_memory_fields_ = shared_memory_fields
+        for name, field in descriptors:
+            setattr(cls, name, field)
         cls._imported_keys_ = imported_keys
-        cls._exported_keys_ = {
-            name: i
-            for i, name in enumerate(
-                key for field in cls._exported_fields_.values() for key in field.type._flat_keys_(field.data_name)
-            )
-        }
+        cls._exported_keys_ = exported_keys
         cls._data_constructor_signature_ = inspect.Signature(
-            [inspect.Parameter(name, inspect.Parameter.POSITIONAL_OR_KEYWORD) for name in cls._imported_fields_]
+            [inspect.Parameter(name, inspect.Parameter.POSITIONAL_OR_KEYWORD) for name in imported_fields]
         )
         cls._spawn_signature_ = inspect.Signature(
-            [inspect.Parameter(name, inspect.Parameter.POSITIONAL_OR_KEYWORD) for name in cls._memory_fields_]
+            [inspect.Parameter(name, inspect.Parameter.POSITIONAL_OR_KEYWORD) for name in memory_fields]
         )
-        cls._post_init_fields()
         cls._field_init_done = True
 
     @property
@@ -1022,8 +1151,8 @@ class _BaseArchetype(metaclass=_BaseArchetypeMeta):
                 raise RuntimeError("Invalid entity data")
 
     @classmethod
-    def _post_init_fields(cls):
-        pass
+    def _post_init_fields(cls, exported_fields: dict[str, _ArchetypeField]):
+        """Reject a field combination this mode does not support, once the fields are computed."""
 
     @classmethod
     def derive[T](cls: type[T], name: str, is_scored: bool, key: int | float | None = None) -> type[T]:
@@ -1041,7 +1170,8 @@ class _BaseArchetype(metaclass=_BaseArchetypeMeta):
         whether it is scored. Compared to manually subclassing, this method also enables faster compilation when
         the same base archetype has multiple derived archetypes by compiling callbacks only once for the base archetype.
 
-        This cannot be called on an archetype that was itself created by `derive`.
+        This cannot be called on an archetype that was itself created by `derive`, and a derived archetype
+        cannot be subclassed.
 
         Args:
             name: The name of the new archetype.
@@ -1416,8 +1546,8 @@ class WatchArchetype(_BaseArchetype):
                 raise RuntimeError("Result is only accessible from the entity itself")
 
     @classmethod
-    def _post_init_fields(cls):
-        if cls._exported_fields_:
+    def _post_init_fields(cls, exported_fields: dict[str, _ArchetypeField]):
+        if exported_fields:
             raise RuntimeError("Watch archetypes cannot have exported fields")
 
 
@@ -1473,8 +1603,8 @@ class PreviewArchetype(_BaseArchetype):
         return self._info.index
 
     @classmethod
-    def _post_init_fields(cls):
-        if cls._exported_fields_:
+    def _post_init_fields(cls, exported_fields: dict[str, _ArchetypeField]):
+        if exported_fields:
             raise RuntimeError("Preview archetypes cannot have exported fields")
 
 
@@ -1511,7 +1641,7 @@ def entity_info_at(index: int) -> PlayEntityInfo | WatchEntityInfo | PreviewEnti
         case Mode.PREVIEW:
             return _deref(ctx().blocks.EntityInfoArray, index * PreviewEntityInfo._size_(), PreviewEntityInfo)
         case _:
-            raise RuntimeError(f"Entity info is not available in mode '{ctx().mode_state.mode}'")
+            raise RuntimeError(f"Entity info is not available in mode '{ctx().mode_state.mode.name}'")
 
 
 class PlayEntityInfo(Record):
@@ -1734,11 +1864,14 @@ class EntityRef[A: _BaseArchetype](Record):
             if level_refs is None:
                 raise RuntimeError("Unexpected missing level_refs")
             if ref not in level_refs:
-                raise KeyError("Reference to entity not in level data")
+                raise ValueError(
+                    f"Reference to a '{ref.name}' entity that is not in the level's entities; "
+                    "add the referenced entity to the level"
+                )
             return [level_refs[ref]]
 
-    def _copy_from_(self, value: Any):
-        super()._copy_from_(value)
+    def _copy_from_(self, value: Any, *, initializing: bool = False):
+        super()._copy_from_(value, initializing=initializing)
         if hasattr(value, "_ref_"):
             self._ref_ = value._ref_
         else:
@@ -1762,6 +1895,8 @@ class EntityRef[A: _BaseArchetype](Record):
     def _accept_(cls, value: Any) -> Self:
         if not cls._accepts_(value):
             raise TypeError(f"Expected {cls}, got {type(value)}")
+        if type(value) is cls:
+            return value
         return value.with_archetype(cls.archetype())
 
     @classmethod

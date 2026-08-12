@@ -382,6 +382,7 @@ def interp(
         if x <= xp[i]:
             return remap(xp[i - 1], xp[i], fp[i - 1], fp[i], x)
     # x > xp[-2] so we can just use the last segment regardless of whether x is in it or to the right of it.
+    assert xp[-1] > xp[-2], "xp must be in increasing order"
     return remap(xp[-2], xp[-1], fp[-2], fp[-1], x)
 
 

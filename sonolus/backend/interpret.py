@@ -2,6 +2,7 @@ import math
 import operator
 import random
 from collections.abc import Callable
+from itertools import pairwise
 
 from sonolus.backend.node import EngineNode, FunctionNode
 from sonolus.backend.ops import Op
@@ -374,10 +375,20 @@ def _ease_out_in_sine(x: float) -> float:
 class Interpreter:
     blocks: dict[int, list[float]]
     log: list[float]
+    # (op, id) -> whether the host has that resource; a missing key means it does. Keyed by op as well as
+    # id because skin sprites, effect clips, and particle effects are separate id spaces.
+    availability: dict[tuple[Op, int], bool]
+    # Markers as (beat, bpm) and (time, timescale), ascending, the first at 0. Both default to the identity
+    # mapping (60 bpm is one beat per second).
+    bpm_changes: list[tuple[float, float]]
+    timescale_changes: list[tuple[float, float]]
 
     def __init__(self):
         self.blocks = {}
         self.log = []
+        self.availability = {}
+        self.bpm_changes = [(0.0, 60.0)]
+        self.timescale_changes = [(0.0, 1.0)]
 
     def run(self, node: EngineNode) -> float:
         if not isinstance(node, FunctionNode):
@@ -748,6 +759,28 @@ class Interpreter:
                     -max_good,
                     max_good,
                 )
+            case Op.BeatToBPM:
+                return self._bpm_section(self.run(args[0]))[1]
+            case Op.BeatToStartingBeat:
+                return self._bpm_section(self.run(args[0]))[0]
+            case Op.BeatToStartingTime:
+                return self._bpm_section(self.run(args[0]))[2]
+            case Op.BeatToTime:
+                beat = self.run(args[0])
+                start_beat, bpm, start_time = self._bpm_section(beat)
+                return start_time + (beat - start_beat) * 60.0 / bpm
+            case Op.TimeToScaledTime:
+                time = self.run(args[0])
+                start_time, scale, start_scaled = self._timescale_section(time)
+                return start_scaled + (time - start_time) * scale
+            case Op.TimeToStartingScaledTime:
+                return self._timescale_section(self.run(args[0]))[2]
+            case Op.TimeToStartingTime:
+                return self._timescale_section(self.run(args[0]))[0]
+            case Op.TimeToTimeScale:
+                return self._timescale_section(self.run(args[0]))[1]
+            case Op.HasEffectClip | Op.HasParticleEffect | Op.HasSkinSprite:
+                return 1.0 if self.availability.get((func, self.ensure_int(self.run(args[0]))), True) else 0.0
             case _ if func in _EASE_FUNCS:
                 return _EASE_FUNCS[func](self.run(args[0]))
             case _:
@@ -790,6 +823,44 @@ class Interpreter:
         )
         addr = offset + index * stride
         return self.set(block, addr, op(self.get(block, addr), value))
+
+    @staticmethod
+    def _check_changes(changes: list[tuple[float, float]], kind: str) -> None:
+        assert changes, f"There must be at least one {kind} change"
+        assert changes[0][0] == 0, f"The first {kind} change must be at 0"
+        assert all(a[0] < b[0] for a, b in pairwise(changes)), f"{kind} changes must be in ascending order"
+
+    def _bpm_section(self, beat: float) -> tuple[float, float, float]:
+        """The bpm section covering ``beat``, as (starting beat, bpm, starting time).
+
+        The section is the last marker at or before ``beat``. The first marker's section also covers
+        everything before it, which is what makes a negative beat well defined.
+        """
+        self._check_changes(self.bpm_changes, "bpm")
+        start_beat, bpm = self.bpm_changes[0]
+        start_time = 0.0
+        for next_beat, next_bpm in self.bpm_changes[1:]:
+            if next_beat > beat:
+                break
+            start_time += (next_beat - start_beat) * 60.0 / bpm
+            start_beat, bpm = next_beat, next_bpm
+        return start_beat, bpm, start_time
+
+    def _timescale_section(self, time: float) -> tuple[float, float, float]:
+        """The timescale section covering ``time``, as (starting time, timescale, starting scaled time).
+
+        Scaled time accumulates at the timescale of each section, so the first marker anchors scaled time
+        to 0 the same way the first bpm marker anchors time to 0.
+        """
+        self._check_changes(self.timescale_changes, "timescale")
+        start_time, scale = self.timescale_changes[0]
+        start_scaled = 0.0
+        for next_time, next_scale in self.timescale_changes[1:]:
+            if next_time > time:
+                break
+            start_scaled += (next_time - start_time) * scale
+            start_time, scale = next_time, next_scale
+        return start_time, scale, start_scaled
 
     def get(self, block: float, index: float) -> float:
         block = self.ensure_int(block)

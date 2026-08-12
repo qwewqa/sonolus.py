@@ -1,5 +1,5 @@
 # ruff: noqa
-def sin(x: float) -> float:
+def sin(x: float, /) -> float:
     """Compute the sine of x.
 
     Args:
@@ -10,7 +10,7 @@ def sin(x: float) -> float:
     """
     ...
 
-def cos(x: float) -> float:
+def cos(x: float, /) -> float:
     """Compute the cosine of x.
 
     Args:
@@ -21,7 +21,7 @@ def cos(x: float) -> float:
     """
     ...
 
-def tan(x: float) -> float:
+def tan(x: float, /) -> float:
     """Compute the tangent of x.
 
     Args:
@@ -32,7 +32,7 @@ def tan(x: float) -> float:
     """
     ...
 
-def asin(x: float) -> float:
+def asin(x: float, /) -> float:
     """Compute the arcsine of x.
 
     Args:
@@ -43,7 +43,7 @@ def asin(x: float) -> float:
     """
     ...
 
-def acos(x: float) -> float:
+def acos(x: float, /) -> float:
     """Compute the arccosine of x.
 
     Args:
@@ -54,7 +54,7 @@ def acos(x: float) -> float:
     """
     ...
 
-def atan(x: float) -> float:
+def atan(x: float, /) -> float:
     """Compute the arctangent of x.
 
     Args:
@@ -65,7 +65,7 @@ def atan(x: float) -> float:
     """
     ...
 
-def atan2(y: float, x: float) -> float:
+def atan2(y: float, x: float, /) -> float:
     """Compute the arctangent of y / x considering the quadrant.
 
     Args:
@@ -77,7 +77,7 @@ def atan2(y: float, x: float) -> float:
     """
     ...
 
-def sinh(x: float) -> float:
+def sinh(x: float, /) -> float:
     """Compute the hyperbolic sine of x.
 
     Args:
@@ -88,7 +88,7 @@ def sinh(x: float) -> float:
     """
     ...
 
-def cosh(x: float) -> float:
+def cosh(x: float, /) -> float:
     """Compute the hyperbolic cosine of x.
 
     Args:
@@ -99,7 +99,7 @@ def cosh(x: float) -> float:
     """
     ...
 
-def tanh(x: float) -> float:
+def tanh(x: float, /) -> float:
     """Compute the hyperbolic tangent of x.
 
     Args:
@@ -110,7 +110,7 @@ def tanh(x: float) -> float:
     """
     ...
 
-def floor(x: float) -> int:
+def floor(x: float, /) -> int:
     """Return the largest integer less than or equal to x.
 
     Args:
@@ -121,7 +121,7 @@ def floor(x: float) -> int:
     """
     ...
 
-def ceil(x: float) -> int:
+def ceil(x: float, /) -> int:
     """Return the smallest integer greater than or equal to x.
 
     Args:
@@ -132,7 +132,7 @@ def ceil(x: float) -> int:
     """
     ...
 
-def trunc(x: float) -> int:
+def trunc(x: float, /) -> int:
     """Truncate x to the nearest integer towards zero.
 
     Args:
@@ -143,7 +143,7 @@ def trunc(x: float) -> int:
     """
     ...
 
-def log(x: float, base: float = ...) -> float:
+def log(x: float, base: float = ..., /) -> float:
     """Compute the logarithm of x to the given base.
 
     Args:
@@ -155,7 +155,7 @@ def log(x: float, base: float = ...) -> float:
     """
     ...
 
-def sqrt(x: float) -> float:
+def sqrt(x: float, /) -> float:
     """Compute the square root of x.
 
     Args:
@@ -166,7 +166,7 @@ def sqrt(x: float) -> float:
     """
     ...
 
-def degrees(x: float) -> float:
+def degrees(x: float, /) -> float:
     """Convert radians to degrees.
 
     Args:
@@ -177,7 +177,7 @@ def degrees(x: float) -> float:
     """
     ...
 
-def radians(x: float) -> float:
+def radians(x: float, /) -> float:
     """Convert degrees to radians.
 
     Args:

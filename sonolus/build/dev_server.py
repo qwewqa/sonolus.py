@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import argparse
 import contextlib
+import copy
 import gc
 import http.server
 import importlib
@@ -19,7 +20,7 @@ from pathlib import Path
 from time import perf_counter, time
 from typing import TYPE_CHECKING, NamedTuple, Protocol
 
-from sonolus.backend.excepthook import print_simple_traceback
+from sonolus.backend.excepthook import print_simple_traceback, should_filter_traceback
 from sonolus.backend.utils import get_function, get_functions, get_tree_from_file
 from sonolus.build.collection import Collection
 from sonolus.build.project import (
@@ -97,6 +98,7 @@ class ServerState:
     build_dir: Path
     config: BuildConfig
     project_state: ProjectContextState
+    base_collection: Collection
     collection: Collection
     last_build_time: float
 
@@ -128,18 +130,29 @@ class RebuildCommand:
         try:
             start_time = perf_counter()
 
-            if path_was_modified_after(server_state.project.resources, server_state.last_build_time):
-                server_state.collection = load_resources_files_to_collection(server_state.project.resources)
+            project_state = ProjectContextState.from_build_config(server_state.config)
+            project = project_module.project
 
-            server_state.project_state = ProjectContextState.from_build_config(server_state.config)
-            server_state.project = project_module.project
+            base_collection = server_state.base_collection
+            if path_was_modified_after(project.resources, server_state.last_build_time):
+                base_collection = load_resources_files_to_collection(project.resources)
+            # A converter rewrites level["data"] in the collection it is given, so building into base_collection
+            # would feed the previous rebuild's output back into the converter.
+            collection = copy.deepcopy(base_collection)
+
             build_project_to_existing_collection(
-                server_state.project,
-                server_state.collection,
+                project,
+                collection,
                 server_state.config,
-                project_state=server_state.project_state,
+                project_state=project_state,
             )
-            write_collection(server_state.collection, server_state.build_dir, clear=False)
+            write_collection(collection, server_state.build_dir, clear=False)
+            # Only now is the new build the one being served. Committing earlier would leave a failed rebuild's
+            # partial debug_str_mappings installed, and decode reads those for the build the client is running.
+            server_state.project_state = project_state
+            server_state.project = project
+            server_state.base_collection = base_collection
+            server_state.collection = collection
             server_state.last_build_time = time()
             end_time = perf_counter()
             print(f"Rebuild completed in {end_time - start_time:.2f} seconds")
@@ -149,7 +162,8 @@ class RebuildCommand:
                 print(traceback.format_exc())
             else:
                 print_simple_traceback(*exc_info)
-                print("\nFor more details, run with the --verbose (-v) flag.")
+                if should_filter_traceback(exc_info[2]):
+                    print("\nFor more details, run with the --verbose (-v) flag.")
 
 
 @dataclass
@@ -292,12 +306,15 @@ def run_server(
     config: BuildConfig,
     project: Project,
 ):
-    from sonolus.build.cli import build_collection
+    from sonolus.build.cli import write_collection
 
     project_state = ProjectContextState.from_build_config(config)
 
     start_time = perf_counter()
-    collection = build_collection(project, build_dir, config, project_state=project_state)
+    base_collection = load_resources_files_to_collection(project.resources)
+    collection = copy.deepcopy(base_collection)
+    build_project_to_existing_collection(project, collection, config, project_state=project_state)
+    write_collection(collection, build_dir)
     end_time = perf_counter()
     print(f"Build finished in {end_time - start_time:.2f}s")
 
@@ -329,6 +346,7 @@ def run_server(
                 build_dir=build_dir,
                 config=config,
                 project_state=project_state,
+                base_collection=base_collection,
                 collection=collection,
                 last_build_time=time(),
             )

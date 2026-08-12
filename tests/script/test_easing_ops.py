@@ -1,6 +1,6 @@
-"""Dual-run differential tests for the ``Op.Ease*``, ``Op.Judge``, and ``Op.Rem`` ops.
+"""Dual-run differential tests for ``sonolus.script.easing``, ``Op.Judge``, and ``Op.Rem``.
 
-These tests drive the ops through the full compile + optimize + interpret pipeline via
+These tests drive each function through the full compile + optimize + interpret pipeline via
 ``run_and_validate``, which compares the Python reference against the interpreted compiled output
 at every optimization level.
 
@@ -109,10 +109,10 @@ def test_judgment_window_judge_dual_run(actual, target, expected):
 REMAINDER_CASES = [
     (5.0, 3.0),
     (-5.0, 3.0),  # negative dividend
-    (
-        -6.0,
-        3.0,
-    ),  # negative dividend, zero remainder (magnitude only; the pipeline may legitimately collapse -0.0 to +0.0 -- bit-exact sign coverage lives in test_fold_kernels.test_rem_sign_table and test_interpret_oracle)
+    # This case pairs a negative dividend with a zero remainder. The pipeline may collapse -0.0 to +0.0, and
+    # -0.0 == 0.0 in Python, so the assertion checks magnitude only. Bit-exact sign coverage lives in
+    # test_rem_sign_table in tests/backend/test_fold_kernels.py and in tests/backend/test_interpret_oracle.py.
+    (-6.0, 3.0),
     (5.0, -3.0),
     (-7.5, 2.0),
     (7.5, 2.0),
@@ -164,3 +164,77 @@ def test_ease_out_in_absolute_compiled(ease_func, x, expected):
         return _ease(x)
 
     assert math.isclose(run_and_validate(fn), expected, rel_tol=0, abs_tol=1e-9)
+
+
+_STEP_GRID = [-0.5, 0.0, 0.25, 0.5, 0.75, 1.0, 1.5]
+
+
+@pytest.mark.parametrize("x", _STEP_GRID)
+def test_linstep_matches_clamp(x):
+    def fn():
+        return easing.linstep(x)
+
+    result = run_and_validate(fn)
+    assert result == max(0.0, min(1.0, x))
+
+
+@pytest.mark.parametrize("x", _STEP_GRID)
+def test_smoothstep_matches_closed_form(x):
+    def fn():
+        return easing.smoothstep(x)
+
+    t = max(0.0, min(1.0, x))
+    assert math.isclose(run_and_validate(fn), 3 * t**2 - 2 * t**3, rel_tol=0, abs_tol=1e-9)
+
+
+def test_smoothstep_boundary_values():
+    def fn_0():
+        return easing.smoothstep(0.0)
+
+    def fn_1():
+        return easing.smoothstep(1.0)
+
+    assert run_and_validate(fn_0) == 0.0
+    assert run_and_validate(fn_1) == 1.0
+
+
+@pytest.mark.parametrize("x", _STEP_GRID)
+def test_smootherstep_matches_closed_form(x):
+    def fn():
+        return easing.smootherstep(x)
+
+    t = max(0.0, min(1.0, x))
+    assert math.isclose(run_and_validate(fn), 6 * t**5 - 15 * t**4 + 10 * t**3, rel_tol=0, abs_tol=1e-9)
+
+
+def test_smootherstep_boundary_values():
+    def fn_0():
+        return easing.smootherstep(0.0)
+
+    def fn_1():
+        return easing.smootherstep(1.0)
+
+    assert run_and_validate(fn_0) == 0.0
+    assert run_and_validate(fn_1) == 1.0
+
+
+STEP_START_CASES = [(-0.5, 0.0), (0.0, 1.0), (0.3, 1.0), (1.0, 1.0), (1.5, 1.0)]
+
+
+@pytest.mark.parametrize(("x", "expected"), STEP_START_CASES)
+def test_step_start(x, expected):
+    def fn():
+        return easing.step_start(x)
+
+    assert run_and_validate(fn) == expected
+
+
+STEP_END_CASES = [(-0.5, 0.0), (0.0, 0.0), (0.7, 0.0), (0.999, 0.0), (1.0, 1.0), (1.5, 1.0)]
+
+
+@pytest.mark.parametrize(("x", "expected"), STEP_END_CASES)
+def test_step_end(x, expected):
+    def fn():
+        return easing.step_end(x)
+
+    assert run_and_validate(fn) == expected

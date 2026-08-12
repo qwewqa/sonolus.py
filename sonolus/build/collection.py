@@ -51,6 +51,18 @@ CATEGORY_SORT_ORDER = {
 }
 
 
+def validate_item_name(name: str, subject: str, context: str = "") -> None:
+    qualifier = f" {context}" if context else ""
+    if not isinstance(name, str) or not name:
+        raise ValueError(f"{subject}{qualifier} must be a non-empty string, got {name!r}")
+    if name.casefold() in RESERVED_FILENAMES:
+        raise ValueError(f"{subject} '{name}'{qualifier} is reserved: 'info' and 'list' are the category index files")
+    if name in {".", ".."} or "/" in name or "\\" in name:
+        raise ValueError(
+            f"{subject} '{name}'{qualifier} is not a usable filename: path separators, '.' and '..' are not allowed"
+        )
+
+
 class Collection:
     def __init__(self) -> None:
         self.name = "Unnamed"
@@ -68,7 +80,14 @@ class Collection:
         return next(iter(self.categories[category].values()))["item"]
 
     def add_item(self, category: Category, name: str, item: Any) -> None:
-        self.categories.setdefault(category, {})[name] = self._make_item_details(item)
+        self._set_item(category, name, self._make_item_details(item))
+
+    def _set_item(self, category: Category, name: str, details: dict[str, Any]) -> None:
+        self._validate_item_name(category, name)
+        self.categories.setdefault(category, {})[name] = details
+
+    def _validate_item_name(self, category: Category, name: str) -> None:
+        validate_item_name(name, "Item name", f"in category '{category}'")
 
     @classmethod
     def _make_item_details(cls, item: dict[str, Any]) -> dict[str, Any]:
@@ -92,13 +111,13 @@ class Collection:
 
     def load_from_scp(self, zip_data: Asset) -> None:
         with zipfile.ZipFile(BytesIO(self._load_data(zip_data))) as zf:
-            files_by_dir = self._group_zip_entries_by_directory(zf.filelist)
+            files_by_dir = self._group_zip_entries_by_directory(sorted(zf.filelist, key=lambda info: info.filename))
             self._process_zip_directories(zf, files_by_dir)
 
     def load_from_source(self, path: PathLike | str) -> None:
         root_path = Path(path)
 
-        for category_dir in root_path.iterdir():
+        for category_dir in sorted(root_path.iterdir(), key=lambda p: p.name):
             if not category_dir.is_dir():
                 continue
 
@@ -106,7 +125,7 @@ class Collection:
             if not self._is_valid_category(category_name):
                 continue
 
-            for item_dir in category_dir.iterdir():
+            for item_dir in sorted(category_dir.iterdir(), key=lambda p: p.name):
                 if not item_dir.is_dir():
                     continue
 
@@ -123,7 +142,7 @@ class Collection:
                 item_data = self._localize_item(item_data)
                 item_data["name"] = item_dir.name
 
-                for resource_path in item_dir.iterdir():
+                for resource_path in sorted(item_dir.iterdir(), key=lambda p: p.name):
                     if resource_path.name == "item.json":
                         continue
 
@@ -220,10 +239,9 @@ class Collection:
             path = Path(zip_entry.filename)
             if path.parts[0] == "sonolus":
                 path = Path(*path.parts[1:])
-            item_name = path.stem
+            item_name = path.name
 
-            if self._is_valid_category(dir_name):
-                self.categories[dir_name][item_name] = item_details
+            self._set_item(dir_name, item_name, item_details)
 
     def write(self, path: Asset) -> None:
         self.link()
@@ -316,12 +334,18 @@ class Collection:
 
     @staticmethod
     def _write_json(path: Path, content: Any) -> None:
-        path.write_text(json.dumps(content), encoding="utf-8")
+        try:
+            text = json.dumps(content, allow_nan=False)
+        except ValueError as e:
+            raise ValueError(f"Cannot write {path}: {e}") from e
+        path.write_text(text, encoding="utf-8")
 
     def update(self, other: Collection) -> None:
         self.repository.update(other.repository)
         for category, items in other.categories.items():
-            self.categories.setdefault(category, {}).update(items)
+            self.categories.setdefault(category, {})
+            for name, details in items.items():
+                self._set_item(category, name, details)
 
 
 class Srl(TypedDict):
@@ -342,7 +366,7 @@ def load_asset(value: Asset) -> bytes:
             request = urllib.request.Request(value, headers=headers)
             with urllib.request.urlopen(request) as response:
                 return response.read()
-        case PathLike():
+        case PathLike() | str():
             return Path(value).read_bytes()
         case bytes():
             return value

@@ -8,9 +8,9 @@ from pathlib import Path
 from time import perf_counter
 from types import ModuleType
 
-from sonolus.backend.excepthook import print_simple_traceback
+from sonolus.backend.excepthook import print_simple_traceback, should_filter_traceback
 from sonolus.backend.optimize import FAST_PASSES, MINIMAL_PASSES, STANDARD_PASSES, profiling
-from sonolus.build.collection import Collection
+from sonolus.build.collection import Collection, validate_item_name
 from sonolus.build.dev_server import run_server
 from sonolus.build.engine import package_engine, validate_engine
 from sonolus.build.level import package_level_data
@@ -72,6 +72,10 @@ def import_project(module_path: str) -> tuple[Project, ModuleType, set[str]] | t
 
 
 def build_project(project: Project, build_dir: Path, config: BuildConfig):
+    validate_item_name(project.engine.name, "Engine name")
+    for level in project.levels:
+        validate_item_name(level.name, "Level name")
+
     dist_dir = build_dir / "dist"
     levels_dir = dist_dir / "levels"
     shutil.rmtree(dist_dir, ignore_errors=True)
@@ -166,8 +170,11 @@ def main():
     parser = argparse.ArgumentParser(description="Sonolus project build and development tools")
     subparsers = parser.add_subparsers(dest="command", required=True)
 
-    def add_common_arguments(parser):
-        optimization_group = parser.add_mutually_exclusive_group()
+    def add_common_arguments(parser, *, optimization_note: str | None = None):
+        optimization_owner = (
+            parser.add_argument_group("optimization", optimization_note) if optimization_note else parser
+        )
+        optimization_group = optimization_owner.add_mutually_exclusive_group()
         optimization_group.add_argument(
             "-O0", "--optimize-minimal", action="store_true", help="Use minimal optimization passes"
         )
@@ -251,7 +258,11 @@ def main():
         nargs="?",
         help="Module path (e.g., 'module.name'). If omitted, will auto-detect if only one module exists.",
     )
-    add_common_arguments(check_parser)
+    add_common_arguments(
+        check_parser,
+        optimization_note="Accepted for compatibility with build and dev: check does not optimize, "
+        "so these have no effect.",
+    )
 
     args = parser.parse_args()
 
@@ -273,15 +284,12 @@ def main():
         elif hasattr(args, "no_gc") and args.no_gc:
             gc.disable()
 
-    if hasattr(sys, "_jit") and sys._jit.is_enabled():
-        print("Python JIT is enabled")
-
     start_time = perf_counter()
     project, project_module, core_module_names = import_project(args.module)
     end_time = perf_counter()
     if project is None:
         sys.exit(1)
-    print(f"Project imported in {end_time - start_time:.2f}s")
+    print(f"Project imported in {end_time - start_time:.2f}s", file=sys.stderr)
 
     # Enable profiling (if requested) after the import so only the build is timed.
     if getattr(args, "profile", False) or getattr(args, "profile_json", None):
@@ -318,5 +326,8 @@ def main():
             raise
         exc_info = sys.exc_info()
         print_simple_traceback(*exc_info)
-        print("\nFor more details, run with the --verbose (-v) flag.")
+        # An error with no compiled-code frame, such as an optimizer failure, prints in full either way, so
+        # the hint would promise details -v does not have.
+        if should_filter_traceback(exc_info[2]):
+            print("\nFor more details, run with the --verbose (-v) flag.")
         sys.exit(1)

@@ -82,16 +82,17 @@ def callable(obj: object, /) -> builtins.bool:
 @overload
 def dict() -> builtins.dict: ...
 @overload
-def dict[K, V](mapping: builtins.dict[K, V], **kwargs: V) -> builtins.dict[K, V]: ...
+def dict[K, V](mapping_or_iterable: builtins.dict[K, V], **kwargs: V) -> builtins.dict[K, V]: ...
 @overload
-def dict[K, V](iterable: Iterable[tuple[K, V]], **kwargs: V) -> builtins.dict[K, V]: ...
+def dict[K, V](mapping_or_iterable: Iterable[tuple[K, V]], **kwargs: V) -> builtins.dict[K, V]: ...
 @overload
 def dict[V](**kwargs: V) -> builtins.dict[builtins.str, V]: ...
 def dict(*args, **kwargs) -> builtins.dict:
     """Construct a dict from a mapping, an iterable of key-value pairs, or keyword arguments.
 
     All dict keys must be compile-time constants. Dynamic access using a key that is not
-    a compile-time constant is only supported for numeric, Array, and Record values.
+    a compile-time constant is only supported when all values are compile-time constants of a
+    single type, and that type is numeric, `Array`, or `Record`.
 
     Accepts an optional dict to copy from or an iterable of `(key, value)` pairs, plus
     optional keyword arguments to include in the dict.
@@ -113,7 +114,7 @@ def enumerate[T](iterable: Iterable[T], start: builtins.int = 0) -> Iterator[tup
     """
     ...
 
-def filter[T](function: Callable[[T], builtins.bool] | None, iterable: Iterable[T]) -> Iterator[T]:
+def filter[T](function: Callable[[T], builtins.bool] | None, iterable: Iterable[T], /) -> Iterator[T]:
     """Construct an iterator from those elements of iterable for which function returns true.
 
     Args:
@@ -179,7 +180,7 @@ def int(x: builtins.int | builtins.float = 0, /) -> builtins.int:
     """
     ...
 
-def isinstance(obj: object, classinfo: type | tuple[type, ...]) -> builtins.bool:
+def isinstance(obj: object, classinfo: type | tuple[type, ...], /) -> builtins.bool:
     """Check if an object is an instance of a class or of a subclass thereof.
 
     `classinfo` may be a single type or a tuple of types. Checking against `int`, `float`, or `bool` directly is not
@@ -233,7 +234,7 @@ def len(s: object, /) -> builtins.int:
     """
     ...
 
-def map[T, S](function: Callable[..., S], iterable: Iterable[T], *iterables: Iterable[Any]) -> Iterator[S]:
+def map[T, S](function: Callable[..., S], iterable: Iterable[T], /, *iterables: Iterable[Any]) -> Iterator[S]:
     """Apply a function to every item of an iterable and return an iterator.
 
     A `tuple`, `dict`, `set`, or enum class may be used, but every argument must be one of those, or none may be;
@@ -250,10 +251,11 @@ def map[T, S](function: Callable[..., S], iterable: Iterable[T], *iterables: Ite
     ...
 
 @overload
-def max[T](iterable: Iterable[T], *, key: Callable[[T], Any] | None = ...) -> T: ...
+def max[T](iterable: Iterable[T], /, *, key: Callable[[T], Any] | None = ...) -> T: ...
 @overload
 def max[T](
     iterable: Iterable[T],
+    /,
     *,
     default: T = ...,
     key: Callable[[T], Any] | None = ...,
@@ -262,6 +264,7 @@ def max[T](
 def max(
     arg1: builtins.int | builtins.float,
     arg2: builtins.int | builtins.float,
+    /,
     *args: builtins.int | builtins.float,
     key: Callable[[builtins.int | builtins.float], Any] | None = ...,
 ) -> builtins.int | builtins.float: ...
@@ -284,10 +287,11 @@ def max(*args, **kwargs):
     ...
 
 @overload
-def min[T](iterable: Iterable[T], *, key: Callable[[T], Any] | None = ...) -> T: ...
+def min[T](iterable: Iterable[T], /, *, key: Callable[[T], Any] | None = ...) -> T: ...
 @overload
 def min[T](
     iterable: Iterable[T],
+    /,
     *,
     default: T = ...,
     key: Callable[[T], Any] | None = ...,
@@ -296,6 +300,7 @@ def min[T](
 def min(
     arg1: builtins.int | builtins.float,
     arg2: builtins.int | builtins.float,
+    /,
     *args: builtins.int | builtins.float,
     key: Callable[[builtins.int | builtins.float], Any] | None = ...,
 ) -> builtins.int | builtins.float: ...
@@ -331,7 +336,7 @@ def next[T](iterator: Iterator[T]) -> T:
     ...
 
 @overload
-def range(stop: builtins.int) -> builtins.range: ...
+def range(stop: builtins.int, /) -> builtins.range: ...
 @overload
 def range(start: builtins.int, stop: builtins.int, step: builtins.int = ...) -> builtins.range: ...
 def range(*args) -> builtins.range:
@@ -343,19 +348,21 @@ def range(*args) -> builtins.range:
     """
     ...
 
-def reversed[T](seq: Sequence[T], /) -> Iterator[T]:
-    """Return a reverse iterator.
+def reversed[T](seq: Sequence[T], /) -> Sequence[T]:
+    """Return a reversed view of the sequence.
 
     Args:
         seq: The sequence to reverse.
 
     Returns:
-        An iterator over the reversed sequence.
+        A reversed view of the sequence.
     """
     ...
 
 def round(number: builtins.int | builtins.float, ndigits: builtins.int = ...) -> builtins.float:
     """Round a number to a given precision in decimal digits.
+
+    With `ndigits`, a value near the midpoint between two rounded values may round differently than in Python.
 
     Args:
         number: The number to round.
@@ -394,7 +401,7 @@ def setattr(obj: object, name: builtins.str, value: Any) -> None:
     """
     ...
 
-def super(cls: type = ..., instance: Any = ...) -> Any:
+def super(cls: type = ..., instance: Any = ..., /) -> Any:
     """Return a proxy object that delegates method calls to a parent or sibling class.
 
     Args:

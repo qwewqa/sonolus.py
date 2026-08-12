@@ -10,8 +10,9 @@ Covers the two rewrite steps:
 
 Also covers the standard-mid-end integration (this pass + LICM run inside
 ``midend_standard``), the downstream ``normalize_switch`` interaction that turns an
-arithmetic-progression switch into ``SwitchIntegerWithDefault``, the full pydori
-corpus, and the random-CFG differential property vs the MINIMAL reference.
+arithmetic-progression switch into ``SwitchIntegerWithDefault`` (and the f32 guard that
+declines the case sets it would misdispatch), the full pydori corpus, and the random-CFG
+differential property vs the MINIMAL reference.
 
 Layers mirror test_licm.py: structural SSA-text checks, semantic interpretation,
 and corpus/random coverage of the shared ``midend_standard`` path.
@@ -300,6 +301,56 @@ def test_normalize_switch_downstream_emits_switch_integer_with_default():
     assert _find_node(node, Op.SwitchIntegerWithDefault) is not None, "expected contiguous integer switch"
     assert _find_node(node, Op.SwitchWithDefault) is None
     for c in (10.0, 20.0, 30.0, 5.0):
+        _assert_semantics(build, seed={SEL.value: [c]})
+
+
+# Case sets whose ``(test - off) / stride`` rewrite misdispatches under the runtime's
+# f32: some test matching no case rounds exactly onto a case index and takes its arm.
+# Ground truth is an f32 model of the emitted expression, not the optimizer, and each
+# entry has a brute-force-confirmed misdispatch.
+_F32_UNSAFE_CASE_SETS = [
+    (-1, 0, 1),  # off -1: a band of near-zero tests rounds to index 1
+    (0, 4, 8),  # stride 4: the smallest positive f32 divides down to index 0
+    (-3, -2, -1),  # off -3: the upper neighbor of -1 rounds to index 2
+    (-8, -6, -4, -2),  # off -8, stride 2: the upper neighbor of -4 rounds to index 2
+]
+
+# The same rewrite on sets the f32 arithmetic keeps exact, so the guard must not
+# decline them: over-declining costs the whole jump-table dispatch.
+_F32_SAFE_CASE_SETS = [
+    tuple(range(1, 9)),
+    (5, 10, 15, 20),
+    (100, 200, 300, 400),
+    (1000, 2000, 4000),  # gapped: reaches the table through the dense fallback
+    (3, 6, 12),  # gapped
+]
+
+
+@pytest.mark.parametrize("cases", _F32_UNSAFE_CASE_SETS, ids=str)
+def test_normalize_switch_declines_f32_unsafe_case_sets(cases):
+    # The equality-chain fallback compares the raw test against each case, so no
+    # rounding can move a dispatch: it is the always-safe form to land on.
+    node = cfg_to_engine_node(ir.debug_run(_eq_chain(list(cases)), Mode.PLAY, None, phases=_STD))
+    assert _find_node(node, Op.SwitchIntegerWithDefault) is None, "the arithmetic rewrite must be declined"
+    assert _find_node(node, Op.SwitchWithDefault) is not None, "expected the equality-chain fallback"
+
+
+@pytest.mark.parametrize("cases", _F32_SAFE_CASE_SETS, ids=str)
+def test_normalize_switch_still_normalizes_f32_safe_case_sets(cases):
+    node = cfg_to_engine_node(ir.debug_run(_eq_chain(list(cases)), Mode.PLAY, None, phases=_STD))
+    assert _find_node(node, Op.SwitchIntegerWithDefault) is not None, "expected contiguous integer switch"
+    assert _find_node(node, Op.SwitchWithDefault) is None
+
+
+def test_declined_switch_dispatches_like_minimal_at_a_case_neighbor():
+    # {-1, 0, 1} is the one unsafe set whose misdispatch the f64 interpreter can see: it
+    # subtracts an offset of -1, and the smallest positive f32 vanishes against 1.0 in
+    # both widths, so an unguarded standard build takes the ``x == 0`` arm where MINIMAL
+    # takes the default. The other three round away only in f32, where the oracle agrees
+    # with the optimizer, so the node-shape test above is all that pins them.
+    build = lambda: _eq_chain([-1, 0, 1])  # noqa: E731
+    _assert_semantics(build, seed={SEL.value: [2.0**-149]})  # the smallest positive f32
+    for c in (-1.0, 0.0, 1.0, 7.0):
         _assert_semantics(build, seed={SEL.value: [c]})
 
 

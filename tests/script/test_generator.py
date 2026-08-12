@@ -4,6 +4,9 @@ from sonolus.script.array import Array
 from sonolus.script.containers import Box
 from sonolus.script.debug import debug_log
 from sonolus.script.internal.error import CompilationError
+from sonolus.script.iterator import SonolusIterator
+from sonolus.script.maybe import Maybe, Nothing
+from sonolus.script.record import Record
 from tests.script.conftest import run_and_validate, run_compiled
 
 
@@ -362,6 +365,107 @@ def test_nested_generator():
             debug_log(i)
 
     run_and_validate(fn)
+
+
+class StaticallyEmptyIterator(Record, SonolusIterator):
+    """An iterator that is empty at compile time: `next` returns the literal Nothing."""
+
+    v: float
+
+    def next(self) -> Maybe[float]:
+        return Nothing
+
+
+class StaticallyEmpty(Record):
+    v: float
+
+    def __iter__(self):
+        return StaticallyEmptyIterator(self.v)
+
+
+def test_yield_from_empty_zip_yields_nothing():
+    # Each of these delegation tests sums the yielded values rather than counting them: a delegating
+    # generator that binds its yield to a statically empty iterator's absent value still compiles when the
+    # value is ignored, and only reading it shows the element type is wrong.
+    def fn():
+        def gen():
+            yield from zip()
+
+        total = 0.0
+        for v in gen():
+            total += v
+        return total
+
+    assert run_and_validate(fn) == 0.0
+
+
+def test_yield_from_statically_empty_iterator_yields_nothing():
+    def fn():
+        def gen():
+            yield from StaticallyEmpty(1.0)
+
+        total = 0.0
+        for v in gen():
+            total += v
+        return total
+
+    assert run_and_validate(fn) == 0.0
+
+
+def test_yield_from_generator_with_no_reachable_yield_yields_nothing():
+    def fn(enabled):
+        def maybe_yields():
+            if enabled:
+                yield 1.0
+                yield 2.0
+
+        def gen():
+            yield from maybe_yields()
+
+        total = 0.0
+        for v in gen():
+            total += v
+        return total
+
+    assert run_and_validate(fn, 0) == 0.0
+    assert run_and_validate(fn, 1) == 3.0
+
+
+def test_yield_from_statically_empty_iterator_then_yield():
+    # The delegation is abandoned mid-expression, so the following yield is the one that pins that what it
+    # is abandoned into stays usable.
+    def fn():
+        def gen():
+            yield from StaticallyEmpty(1.0)
+            yield 5.0
+
+        total = 0.0
+        for v in gen():
+            total += v
+        return total
+
+    assert run_and_validate(fn) == 5.0
+
+
+def test_yield_from_runtime_empty_generator_yields_nothing():
+    # The control for the four above: this delegation is empty only at runtime, so it must keep its state
+    # machine instead of being compiled away.
+    def fn(limit):
+        def inner():
+            for v in Array(1.0, 2.0, 3.0):
+                if v <= limit:
+                    yield v
+
+        def outer():
+            yield from inner()
+
+        total = 0.0
+        for v in outer():
+            total += v
+        return total
+
+    assert run_and_validate(fn, 0.0) == 0.0
+    assert run_and_validate(fn, 2.0) == 3.0
 
 
 def test_generator_changing_closure_loop():
@@ -919,3 +1023,31 @@ def test_exhausted_compile_time_zip_repeats_pinned():
     logs = []
     run_compiled(fn, log_callback=logs.append)
     assert logs == [11, 22, 11, 22]
+
+
+def test_lambda_yielded_by_host_generator_is_locatable():
+    # Regression: the source-finding visitor must traverse into a lambda that is itself a `yield`
+    # expression of a plain (non-compiled-subset) host generator, or the lambda's AST node is never
+    # collected and calling it from compiled code fails to locate its source.
+    def make_callback():
+        yield lambda: 42
+
+    callback = next(make_callback())
+
+    def fn():
+        return callback()
+
+    assert run_and_validate(fn) == 42
+
+
+def test_lambda_yielded_from_host_generator_is_locatable():
+    # Same regression via `yield from`.
+    def make_callback():
+        yield from [lambda: 43]
+
+    callback = next(make_callback())
+
+    def fn():
+        return callback()
+
+    assert run_and_validate(fn) == 43

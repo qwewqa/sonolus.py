@@ -5,6 +5,7 @@ PYTEST_DONT_REWRITE
 """
 
 import random
+import re
 
 import pytest
 from hypothesis import given
@@ -1490,6 +1491,27 @@ def test_walrus_operator():
     run_and_validate(fn)
 
 
+def test_walrus_inside_a_lambda_inside_a_generator_expression_is_still_local():
+    # The rejection of `:=` in a generator expression is keyed off the visitor that traces it, so a walrus
+    # belonging to a lambda's own scope keeps compiling.
+    def fn():
+        y = 0
+        total = sum((lambda: (y := v))() for v in (1, 2))  # noqa: B023
+        return total * 100 + y
+
+    assert run_and_validate(fn) == 300
+
+
+def test_walrus_inside_a_nested_generator_expression_is_rejected():
+    def fn():
+        y = 0
+        total = sum(sum((y := v) for v in (1, 2)) for _ in (0,))
+        return total * 100 + y
+
+    with pytest.raises(CompilationError, match=re.escape("Assignment expressions (`:=`) in a generator")):
+        run_compiled(fn)
+
+
 def test_match_singletons():
     def m(x):
         match x:
@@ -1516,7 +1538,7 @@ def test_match_true_not_supported():
         m(True)
         return 1
 
-    with pytest.raises(CompilationError, match="not supported"):
+    with pytest.raises(CompilationError, match="Matching against True is not supported"):
         run_compiled(fn)
 
 
@@ -1532,7 +1554,7 @@ def test_match_false_not_supported():
         m(False)
         return 1
 
-    with pytest.raises(CompilationError, match="not supported"):
+    with pytest.raises(CompilationError, match="Matching against False is not supported"):
         run_compiled(fn)
 
 
@@ -1546,7 +1568,7 @@ def test_match_int_not_supported():
         m(1)
         return 1
 
-    with pytest.raises(CompilationError, match="not supported"):
+    with pytest.raises(CompilationError, match="Instance check against int, float, or bool is not supported"):
         run_compiled(fn)
 
 
@@ -1628,6 +1650,17 @@ def test_chained_comparison(x, y, z):
         return Array(a, b, c, d, e, f, g, h)
 
     assert run_and_validate(fn) == Array(*(x < y < z for _ in range(8)))
+
+
+def test_chained_comparison_with_incomparable_types():
+    def fn():
+        a = black_box_value(1)
+        b = black_box_value(1)
+        c = black_box_value(2)
+        pair = (1, 2)
+        return Array(a == b == pair, a == c == pair, a == b, a != b != pair)
+
+    assert run_and_validate(fn) == Array(0, 0, 1, 0)
 
 
 def test_while_true():
@@ -1954,3 +1987,21 @@ def test_assert_message_bindings_do_not_escape_discarded_context():
 
     assert run_and_validate(fn) == 13
     assert run_compiled(fn, runtime_checks=RuntimeChecks.NONE) == 13
+
+
+def test_zero_trip_loop_does_not_speculate_invariant_division():
+    def fn():
+        n = black_box_value(0)
+        a = black_box_value(6.0)
+        b = black_box_value(0)
+        total = 0.0
+        i = 0
+        # The black_box_value call in the guard keeps the loop top-tested; with a bare
+        # header, cfg_cleanup rotates it into a do-while, where hoisting the division
+        # is legitimate and this test pins nothing.
+        while i < black_box_value(n):
+            total += a / b
+            i += 1
+        return total
+
+    assert run_and_validate(fn) == 0.0

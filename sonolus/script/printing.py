@@ -1,6 +1,9 @@
 from enum import IntEnum
 
+from sonolus.backend.mode import Mode
 from sonolus.backend.ops import Op
+from sonolus.script.internal.context import ctx
+from sonolus.script.internal.meta_fn import meta_fn
 from sonolus.script.internal.native import native_function
 from sonolus.script.runtime import HorizontalAlign
 from sonolus.script.vec import Vec2
@@ -31,6 +34,12 @@ class PrintColor(IntEnum):
     YELLOW = 4
     PURPLE = 5
     CYAN = 6
+
+
+@meta_fn
+def _check_print_mode() -> None:
+    if ctx() and ctx().mode_state.mode is not Mode.PREVIEW:
+        raise RuntimeError(f"print_number is not available in '{ctx().mode_state.mode.name}' mode, only in PREVIEW")
 
 
 @native_function(Op.Print)
@@ -84,6 +93,7 @@ def print_number(
         horizontal_align: The horizontal alignment.
         background: Whether to show a background.
     """
+    _check_print_mode()
     _print(
         value,
         fmt,

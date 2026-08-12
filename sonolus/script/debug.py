@@ -283,7 +283,7 @@ def visualize_cfg(
     cfg = callback_to_cfg(project_state, mode_state, fn, callback, archetype=archetype)  # type: ignore
     # allocate=False: visualizations show pre-allocation temps rather than packed
     # block-10000 offsets.
-    cfg = run_passes(cfg, level, OptimizerConfig(mode=mode), allocate=False)
+    cfg = run_passes(cfg, level, OptimizerConfig(mode=mode, callback=callback), allocate=False)
     return cfg_to_mermaid(cfg)
 
 

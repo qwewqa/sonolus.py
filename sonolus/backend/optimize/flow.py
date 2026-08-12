@@ -129,9 +129,9 @@ def cfg_to_mermaid(entry: BasicBlock):
                             *(
                                 f'{dst} := phi({
                                     ", ".join(
-                                        f"{block_indexes.get(src_block, '<dead>')}: {src_place}"
+                                        f"{block_indexes.get(src_block, '&lt;dead&gt;')}: {src_place}"
                                         for src_block, src_place in sorted(
-                                            phis.items(), key=lambda x: block_indexes.get(x[0])
+                                            phis.items(), key=lambda x: block_indexes.get(x[0], -1)
                                         )
                                     )
                                 })'

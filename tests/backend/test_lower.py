@@ -201,6 +201,71 @@ def test_runtime_constant_tree_duplicates_regardless_of_size():
     assert "<- " not in text, text
 
 
+def _squaring_chain(n: int) -> BasicBlock:
+    # x0 = EngineRom[0]; x_{k+1} = x_k * x_k; log(x_n): the written-out shape a
+    # traced `x = x * x` line produces. After build_ssa each level is one SSA
+    # value used twice, all runtime-constant, so unbounded rtc duplication
+    # re-emits every level's tree at both uses: 2^n copies of the base read.
+    statements = [IRSet(_sc("x0"), _rom(0))]
+    for k in range(1, n + 1):
+        prev = f"x{k - 1}"
+        statements.append(IRSet(_sc(f"x{k}"), IRPureInstr(Op.Multiply, [_rd(prev), _rd(prev)])))
+    statements.append(IRInstr(Op.DebugLog, [_rd(f"x{n}")]))
+    b0 = BasicBlock(statements=statements)
+    b0.connect_to(BasicBlock(), None)
+    return b0
+
+
+def test_runtime_constant_compounding_chain_is_size_bounded():
+    # Without a size budget the lowered arena grows 4x per two chain levels (2^15
+    # base-read copies here) and compile time goes exponential in source length.
+    # Past the budget the tree materializes once; the copies stop compounding.
+    text = _low_text(_squaring_chain(15), Mode.PLAY, "updateSequential")
+    assert text.count("EngineRom[0]") <= 8192, text.count("EngineRom[0]")
+    assert "<- " in text  # a temp was extracted
+
+
+def test_runtime_constant_compounding_chain_below_budget_still_duplicates():
+    # The budget is generous: moderate compounding keeps the deliberate
+    # duplicate-never-materialize behavior (a temp defeats the runtime's fold).
+    text = _low_text(_squaring_chain(6), Mode.PLAY, "updateSequential")
+    assert text.count("EngineRom[0]") == 64, text
+    assert "<- " not in text, text
+
+
+def test_runtime_constant_flat_leaf_duplicates_past_budget():
+    # A bare rtc read is a LEAF: duplicating it emits exactly what a temp read of it
+    # would (3 nodes), so materializing adds a store and saves nothing, while making
+    # every use non-runtime-constant. The cumulative size budget must not fire on it:
+    # 3 * 5462 = 16386 exceeds the budget, yet all 5462 uses still duplicate.
+    uses = 5462
+    b0 = BasicBlock(statements=[IRSet(_sc("x"), _rom(0)), *(IRInstr(Op.DebugLog, [_rd("x")]) for _ in range(uses))])
+    b0.connect_to(BasicBlock(), None)
+    text = _low_text(b0, Mode.PLAY, "updateSequential")
+    assert text.count("EngineRom[0]") == uses, text.count("EngineRom[0]")
+    assert "<- " not in text, "the leaf was materialized to a temp"
+
+
+def test_runtime_constant_one_op_over_leaf_still_materializes_past_budget():
+    # The leaf exemption is minimal, not a disabled budget: one pure op over an rtc
+    # leaf costs more per use in the lowered arena than a temp read of it does, so
+    # past the budget the temp is still taken. That saving is the arena's alone:
+    # the shipped list dedupes identical trees structurally, the effective count
+    # counts every reference, and neither follows the arena here.
+    # 4 * 4097 = 16388 exceeds it.
+    uses = 4097
+    b0 = BasicBlock(
+        statements=[
+            IRSet(_sc("x"), IRPureInstr(Op.Negate, [_rom(3)])),
+            *(IRInstr(Op.DebugLog, [_rd("x")]) for _ in range(uses)),
+        ]
+    )
+    b0.connect_to(BasicBlock(), None)
+    text = _low_text(b0, Mode.PLAY, "updateSequential")
+    assert text.count("EngineRom[3]") == 1, text.count("EngineRom[3]")
+    assert "<- -EngineRom[3]" in text, text[:120]
+
+
 def test_writable_block_const_index_read_not_duplicated():
     # Deliberate divergence: a constant-index read of a WRITABLE block used
     # multiple times is materialized, never duplicated (duplication across a write
@@ -566,7 +631,7 @@ def test_normalize_switch_already_contiguous_untouched():
 # in [-2^24, 2^24]); the synthesized ``(test - off) / stride`` is evaluated in f32,
 # so a case magnitude or case-set span beyond 2^24 makes that arithmetic inexact
 # and the int64 case rewrite disagrees with the f32 dispatch. The switch scrutinee
-# is an OPAQUE EngineRom[0] read (seed ``rom=[testval]``) so the switch survives
+# is an OPAQUE EngineRom[3] read (seed ``rom=[*_ROM, testval]``) so the switch survives
 # cfg_cleanup/SSA to _normalize_switch -- a written-then-read constant would be
 # folded away before lowering and pin nothing. The f64 oracle cannot see an f32
 # mis-dispatch, so for out-of-range sets we assert the guard LEFT THE SWITCH PLAIN
@@ -574,12 +639,14 @@ def test_normalize_switch_already_contiguous_untouched():
 
 
 def _switch_dispatch(conds, testval):
-    """Multiway block dispatching on an opaque ``EngineRom[0]`` read == ``testval``.
+    """Multiway block dispatching on an opaque ``EngineRom[3]`` read == ``testval``.
 
     Case ``i`` logs ``100+i``, the default logs 199. The scrutinee is opaque so the
-    switch reaches _normalize_switch; the reader seeds it with ``rom=[testval]``.
+    switch reaches _normalize_switch; the reader seeds it with ``rom=[*_ROM, testval]``,
+    keeping the real reserved slots (0=NaN, 1=+Inf, 2=-Inf) that a non-finite case
+    label's ROM lowering reads.
     """
-    b0 = BasicBlock(test=_rom(0))
+    b0 = BasicBlock(test=_rom(3))
     join = BasicBlock(statements=[IRInstr(Op.DebugLog, [IRConst(-2)])])
     for i, c in enumerate(conds):
         blk = BasicBlock(statements=[IRInstr(Op.DebugLog, [IRConst(100 + i)])])
@@ -599,8 +666,8 @@ def _assert_switch_dispatch_parity(conds, testval):
     # f64 differential parity: the un-normalizing MINIMAL reference and the
     # normalizing run_lower interpret to identical logs for an actual case value.
     build = lambda: _switch_dispatch(conds, testval)  # noqa: E731
-    ref = _run_ref(build, rom=[testval])
-    low = _interp(cfg_to_engine_node(lower.run_lower(build())), rom=[testval])
+    ref = _run_ref(build, rom=[*_ROM, testval])
+    low = _interp(cfg_to_engine_node(lower.run_lower(build())), rom=[*_ROM, testval])
     assert ref.log == low.log, f"conds={conds} test={testval!r}: ref={ref.log} low={low.log}"
 
 
@@ -720,6 +787,189 @@ def test_dynamic_block_const_id_int32_still_folds():
     # A normal in-range integer block id still folds to a static block (unchanged).
     text = cfg_to_text(lower.run_lower(_dynblock_get(IRPureInstr(Op.Add, [IRConst(1000), IRConst(0)]))(), midend=True))
     assert "1000[0]" in text, text
+
+
+# --- A compile-time-constant INDEX on a static real block is baked into the place's offset, the
+# way marshal-in bakes a literal one (ir.pyx ``_intern_place``). Two fold sites, exercised one at a
+# time so neither can cover for the other: SCCP's rebuild, which is what puts the normalized place
+# in front of GVN and LICM, and lowering's. ---
+
+
+def _static_index_get(index, offset, block=2001):
+    # DebugLog(block[offset + i]) with the index read out of a temp. A literal index is baked into
+    # the offset by marshal-in and never reaches a pass, so it has to arrive as a value.
+    def build():
+        b0 = BasicBlock(
+            statements=[
+                IRSet(_sc("i"), IRPureInstr(Op.Add, [IRConst(index), IRConst(0)])),
+                IRInstr(Op.DebugLog, [IRGet(BlockPlace(block, _rd("i"), offset))]),
+            ]
+        )
+        b0.connect_to(BasicBlock(), None)
+        return b0
+
+    return build
+
+
+def _raw_float_index_get(index, offset, block=2001):
+    # A raw float index is the one literal spelling marshal-in leaves as a value: its index arms
+    # take int and IRConst, and everything else falls through to a plain OPX_CONST operand.
+    def build():
+        b0 = BasicBlock(statements=[IRInstr(Op.DebugLog, [IRGet(BlockPlace(block, index, offset))])])
+        b0.connect_to(BasicBlock(), None)
+        return b0
+
+    return build
+
+
+def test_sccp_bakes_a_folded_index_into_the_offset():
+    text = cfg_to_text(ir.debug_run(_static_index_get(3, 8)(), phases=["cfg_cleanup", "ssa", "sccp"]))
+
+    assert "2001[11]" in text, text
+    assert "2001[3 + 8]" not in text, text
+
+
+def test_sccp_baked_index_keeps_the_block_enum_spelling():
+    # Only the runtime-constant bit turns on when the index is baked: writability and the enum
+    # spelling do not depend on the index. Deriving the flags from the block id the way the
+    # dynamic-block fold does would drop the spelling here, and with it every golden's block name.
+    entry = _static_index_get(3, 8, block=PlayBlock.LevelData)()
+
+    text = cfg_to_text(ir.debug_run(entry, Mode.PLAY, "updateParallel", ["cfg_cleanup", "ssa", "sccp"]))
+
+    assert "LevelData[11]" in text, text
+
+
+def test_lowering_bakes_a_const_index_into_the_offset():
+    # No pass folded anything here: the index is constant from marshal-in on, and the mid-end is
+    # off, so lowering's fold is the only thing that can bake it.
+    text = cfg_to_text(lower.run_lower(_raw_float_index_get(3.0, 8)(), midend=False))
+
+    assert "2001[11]" in text, text
+    assert "2001[3 + 8]" not in text, text
+
+
+def test_out_of_int32_index_sum_is_left_as_a_value():
+    # Adjudicated won't-fix: the fold declines once the sum leaves int32, so the optimized CFG keeps
+    # the exact address while a re-marshal of that same CFG still refuses it. No block holds more
+    # than 4096 cells, so such an address is out of range either way. Pinned on both halves so
+    # changing either is a deliberate act.
+    cfg = lower.run_lower(_static_index_get(2147483647, 1)(), midend=True)
+
+    assert "2001[2147483647 + 1]" in cfg_to_text(cfg), cfg_to_text(cfg)
+    with pytest.raises(ValueError, match="Constant memory offset 2147483648 is outside the int32 range"):
+        cfg_to_engine_node(cfg)
+
+
+# --- The same bake, for the two place kinds a static block cannot stand in for. Marshal-in bakes a
+# constant index whatever the place's kind, so every kind that can carry one has to be baked in the
+# passes too, or the fused tree stops matching the re-marshalled one. ---
+
+
+def _fold_to(index):
+    # ``i = index + 0``: a constant the passes fold, where a literal one would be baked at
+    # marshal-in and never reach them. A fresh statement per call, since a build is marshalled twice.
+    return IRSet(_sc("i"), IRPureInstr(Op.Add, [IRConst(index), IRConst(0)]))
+
+
+def _dyn_index_get(index, setup=list):
+    # DebugLog(b[8 + index]) where b, read out of a temp, keeps the block id a runtime value. The
+    # place stays PLACE_DYNAMIC_BLOCK, so neither dynamic->real fold site fires and the index is the
+    # only part of the address left to bake.
+    def build():
+        b0 = BasicBlock(
+            statements=[
+                IRSet(_sc("b"), IRGet(BlockPlace(2000, 0, 0))),
+                *setup(),
+                IRInstr(Op.DebugLog, [IRGet(BlockPlace(_rd("b"), index(), 8))]),
+            ]
+        )
+        b0.connect_to(BasicBlock(), None)
+        return b0
+
+    return build
+
+
+def _temp_array_index_get(index, setup=list):
+    # DebugLog(a[8 + index]) into a temp ARRAY. Allocation rewrites the place to block 10000 only
+    # after every pass has run, so this is the shape where the bake has to survive that rewrite.
+    def build():
+        arr = TempBlock("a", 16)
+        b0 = BasicBlock(
+            statements=[
+                IRSet(BlockPlace(arr, 0, 0), IRConst(1)),
+                *setup(),
+                IRInstr(Op.DebugLog, [IRGet(BlockPlace(arr, index(), 8))]),
+            ]
+        )
+        b0.connect_to(BasicBlock(), None)
+        return b0
+
+    return build
+
+
+def test_sccp_bakes_a_folded_index_on_a_dynamic_block():
+    build = _dyn_index_get(lambda: _rd("i"), lambda: [_fold_to(3)])
+
+    text = cfg_to_text(ir.debug_run(build(), phases=["cfg_cleanup", "ssa", "sccp"]))
+
+    assert "[11]" in text, text
+    assert "[3 + 8]" not in text, text
+
+
+def test_sccp_bakes_a_folded_index_on_a_temp_array():
+    build = _temp_array_index_get(lambda: _rd("i"), lambda: [_fold_to(3)])
+
+    text = cfg_to_text(ir.debug_run(build(), phases=["cfg_cleanup", "ssa", "sccp"]))
+
+    assert "a[11]" in text, text
+    assert "a[3 + 8]" not in text, text
+
+
+def test_lowering_bakes_a_const_index_on_a_dynamic_block():
+    # Mid-end off and the index constant from marshal-in on (a raw float is the one literal spelling
+    # marshal-in leaves as a value), so lowering's fold is the only thing that can bake it.
+    build = _dyn_index_get(lambda: 3.0)
+
+    text = cfg_to_text(lower.lower_debug(build(), midend=False))
+
+    assert "2000[0][11]" in text, text
+    assert "2000[0][3 + 8]" not in text, text
+
+
+def test_lowering_bakes_a_const_index_on_a_temp_array():
+    build = _temp_array_index_get(lambda: 3.0)
+
+    text = cfg_to_text(lower.lower_debug(build(), midend=False))
+
+    assert "[11]" in text, text
+    assert "[3 + 8]" not in text, text
+
+
+def test_allocation_bakes_a_const_index_into_the_temp_offset():
+    # run_allocate is marshal + allocate: no pass runs at all, so the allocator's own bake is the
+    # only thing that can normalize this address. It is the last site to see a temp place, which is
+    # what makes the temp-range check below address-final.
+    build = _temp_array_index_get(lambda: 3.0)
+
+    text = cfg_to_text(lower.run_allocate(build(), strategy="bump"))
+
+    assert "10000[11]" in text, text
+    assert "10000[3 + 8]" not in text, text
+
+
+def test_out_of_bounds_const_temp_index_is_rejected_whichever_way_it_is_spelled():
+    # Baking the index into the offset makes the temp-range check cover the whole address, so a
+    # constant index past the end of the temp block is now refused the same way whether marshal-in
+    # baked it or a pass folded it. The folded spelling used to ship an out-of-range address as
+    # ``Add(index, offset)``; converging on the literal spelling's refusal is the intended half of
+    # this, and only invalid code reaches it (get_unchecked past the end of a local array).
+    literal = _temp_array_index_get(lambda: 5000)
+    folded = _temp_array_index_get(lambda: _rd("i"), lambda: [_fold_to(5000)])
+
+    for build in (literal, folded):
+        with pytest.raises(ValueError, match="Temp place offset out of range"):
+            lower.run_lower(build(), midend=True)
 
 
 # ---------------------------------------------------------------------------

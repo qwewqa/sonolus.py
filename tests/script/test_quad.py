@@ -156,6 +156,41 @@ def test_quad_permute():
         assert is_close(result.br, expected.br)
 
 
+def test_quad_zero():
+    def fn():
+        return Quad.zero()
+
+    result = run_and_validate(fn)
+    assert result.bl == Vec2(0, 0)
+    assert result.tl == Vec2(0, 0)
+    assert result.tr == Vec2(0, 0)
+    assert result.br == Vec2(0, 0)
+
+
+def test_quad_from_quad():
+    def fn():
+        return Quad.from_quad(Rect(t=1, r=2, b=-3, l=-4))
+
+    result = run_and_validate(fn)
+    assert result.bl == Vec2(-4, -3)
+    assert result.tl == Vec2(-4, 1)
+    assert result.tr == Vec2(2, 1)
+    assert result.br == Vec2(2, -3)
+
+
+def test_quad_scale_centered():
+    # The center is (4, 3), so the corner at (2, 2) maps to (4 + (2 - 4) * 2, 3 + (2 - 3) * 3) = (0, 0).
+    # The factor is non-square and the quad is off-origin so that an x/y transposition also fails.
+    def fn():
+        return Quad.from_quad(Rect(t=4, r=6, b=2, l=2)).scale_centered(Vec2(2, 3))
+
+    result = run_and_validate(fn)
+    assert result.bl == Vec2(0, 0)
+    assert result.tl == Vec2(0, 6)
+    assert result.tr == Vec2(8, 6)
+    assert result.br == Vec2(8, 0)
+
+
 # Rect Tests
 @given(
     rect=rects(),
@@ -216,6 +251,31 @@ def test_rect_expand(rect, expansion):
     assert is_close(result.r, rect.r + expansion.x)
     assert is_close(result.b, rect.b - expansion.y)
     assert is_close(result.l, rect.l - expansion.x)
+
+
+def test_rect_scale_centered():
+    # The center is (4, 3), so t = 3 + (4 - 3) * 3 = 6 and r = 4 + (6 - 4) * 2 = 8.
+    def fn():
+        return Rect(t=4, r=6, b=2, l=2).scale_centered(Vec2(2, 3))
+
+    result = run_and_validate(fn)
+    assert result.t == 6
+    assert result.r == 8
+    assert result.b == 0
+    assert result.l == 0
+
+
+def test_rect_shrink():
+    # Checked against hand-computed edges rather than against expand(-shrinkage), which a matched sign
+    # flip in both methods would survive.
+    def fn():
+        return Rect(t=5, r=4, b=-3, l=-2).shrink(Vec2(1, 2))
+
+    result = run_and_validate(fn)
+    assert result.t == 3
+    assert result.r == 3
+    assert result.b == -1
+    assert result.l == -1
 
 
 @given(

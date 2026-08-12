@@ -1,9 +1,21 @@
 import inspect
 from abc import ABC
 from collections.abc import Sequence
-from typing import Annotated
+from typing import Annotated, get_origin
 
 _missing = object()
+
+
+def describe_value(value) -> str:
+    """Return a readable description of a value for an error message, with no heap address in it."""
+    if get_origin(value) is Annotated:
+        parts = ", ".join(describe_value(part) for part in (value.__args__[0], *value.__metadata__))
+        return f"Annotated[{parts}]"
+    if isinstance(value, type):
+        return value.__name__
+    if type(value).__repr__ is object.__repr__:
+        return f"{type(value).__name__} object"
+    return repr(value)
 
 
 def get_field_specifiers(

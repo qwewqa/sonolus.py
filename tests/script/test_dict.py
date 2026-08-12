@@ -5,6 +5,7 @@ import pytest
 from sonolus.script.array import Array
 from sonolus.script.containers import Box
 from sonolus.script.internal.context import ctx
+from sonolus.script.internal.dict_impl import DictImpl
 from sonolus.script.internal.error import CompilationError
 from sonolus.script.internal.impl import validate_value
 from sonolus.script.internal.math_impls import _floor
@@ -12,6 +13,7 @@ from sonolus.script.internal.meta_fn import meta_fn
 from sonolus.script.internal.random import _random
 from sonolus.script.internal.tuple_impl import TupleImpl
 from sonolus.script.num import _is_num
+from sonolus.script.vec import Vec2
 from tests.script.conftest import compile_fn, run_and_validate
 
 
@@ -868,6 +870,16 @@ def test_contains_absent_large_size_mixed_key():
     assert run_and_validate(fn) == Array(False, False, False)
 
 
+def test_contains_key_of_unrelated_type():
+    # Num.__eq__ answers NotImplemented against a Record, and the constant search calls it directly
+    # rather than through the visitor, so it has to apply the different-types rule itself.
+    def fn():
+        d = {1: 10, 2: 20}
+        return Vec2(1, 2) in d
+
+    assert not run_and_validate(fn)
+
+
 # __or__
 
 
@@ -1549,6 +1561,21 @@ def test_union_overlapping_iter_large_size_mixed_key():
     assert run_and_validate(fn) == Array(*(d1 | d2).values())
 
 
+# __eq__
+
+
+def test_eq_raises():
+    # Use DictImpl instances directly so Python mode also raises TypeError
+    d1 = DictImpl.from_dict({1: 10, 2: 20})
+    d2 = DictImpl.from_dict({1: 10, 2: 20})
+
+    def fn():
+        return d1 == d2
+
+    with pytest.raises(TypeError, match="Dict equality comparison is not supported"):
+        run_and_validate(fn)
+
+
 # __iter__
 
 
@@ -2134,4 +2161,14 @@ def test_getitem_runtime_key_non_array_values_errors_clearly():
         return d[bb(1)].value
 
     with pytest.raises(CompilationError, match="Dict must be accessed via a compile time constant"):
+        compile_fn(fn)
+
+
+def test_dict_literal_double_star_unpacking_rejected():
+    def fn():
+        base = {"a": 1}
+        d = {**base, "b": 2}
+        return Array(d["a"], d["b"])
+
+    with pytest.raises(CompilationError, match=r"\*\* unpacking"):
         compile_fn(fn)

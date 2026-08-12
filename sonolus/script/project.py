@@ -16,6 +16,9 @@ from sonolus.script.level import ExternalLevelData, Level, LevelData
 class Project:
     """A Sonolus.py project.
 
+    `resources` and `converters` are read only by [`dev`][sonolus.script.project.Project.dev], which serves the
+    resources alongside the project's own engine and levels.
+
     Args:
         engine: The engine of the project.
         levels: The levels of the project.
@@ -159,4 +162,4 @@ class BuildConfig:
     """Runtime error checking mode."""
 
     verbose: bool = False
-    """Whether to print full tracebacks for compilation errors instead of a simplified summary."""
+    """Whether the dev server prints full tracebacks for compilation errors instead of a simplified summary."""

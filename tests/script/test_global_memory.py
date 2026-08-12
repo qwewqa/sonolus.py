@@ -82,3 +82,53 @@ def test_level_data_overflow_raises_in_watch_mode():
 
     with pytest.raises(CompilationError, match=r"LevelData memory block exceeded its maximum size"):
         compile_in(Mode.WATCH, cb)
+
+
+def test_level_memory_default_raises_at_decoration():
+    with pytest.raises(TypeError, match=r"Default values are not supported for global fields: WithDefault\.x"):
+
+        @level_memory
+        class WithDefault:
+            x: int = 5
+
+
+def test_level_data_default_raises_at_decoration():
+    with pytest.raises(TypeError, match=r"Default values are not supported for global fields: WithDefault\.x"):
+
+        @level_data
+        class WithDefault:
+            x: int = 5
+
+
+def test_level_memory_bad_annotation_names_the_class_and_field():
+    with pytest.raises(TypeError, match=r"Invalid annotation for WithBad\.gamma") as exc_info:
+
+        @level_memory
+        class WithBad:
+            alpha: int
+            gamma: str
+            delta: int
+
+    assert "0x" not in str(exc_info.value)
+
+
+def test_level_data_bad_annotation_names_the_class_and_field():
+    with pytest.raises(TypeError, match=r"Invalid annotation for WithBad\.gamma"):
+
+        @level_data
+        class WithBad:
+            alpha: int
+            gamma: str
+
+
+def test_level_memory_field_named_mro_without_default_works():
+    # hasattr(cls, "mro") is True via the metaclass even though "mro" is never assigned in the class
+    # body, so the default-rejection guard must check cls.__dict__ rather than hasattr.
+    @level_memory
+    class WithMro:
+        mro: int
+
+    def cb():
+        WithMro.mro = 1
+
+    compile_in(Mode.PLAY, cb)  # should not raise

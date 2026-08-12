@@ -1,8 +1,9 @@
 from __future__ import annotations
 
+import inspect
 from enum import Enum
 from types import EllipsisType, FunctionType, MethodType, ModuleType, NoneType, NotImplementedType, UnionType
-from typing import TYPE_CHECKING, Annotated, Final, Literal, TypeVar, Union, get_origin
+from typing import TYPE_CHECKING, Annotated, Any, Final, Literal, TypeVar, Union, get_origin
 
 if TYPE_CHECKING:
     from sonolus.script.internal.value import Value
@@ -29,7 +30,7 @@ def validate_value[T](value: T) -> Value | T:
         try:
             value._init_()
         except Exception as e:
-            raise RuntimeError(f"Error initializing value {value}: {e}") from e
+            raise RuntimeError(f"Error initializing value {_describe_unsupported(value)}: {e}") from e
 
     value_type = type(value)
     if value_type in {
@@ -63,7 +64,44 @@ def validate_value[T](value: T) -> Value | T:
         return value.get()
     if getattr(value, "_is_comptime_value_", False):
         return constant.BasicConstantValue.of(value)
-    raise TypeError(f"Unsupported value: {value!r}")
+    raise TypeError(f"Unsupported value: {_describe_unsupported(value)}")
+
+
+def _describe_unsupported(value) -> str:
+    from sonolus.script.internal.builtin_impls import _type_name
+
+    if type(value).__repr__ is object.__repr__:
+        return f"{_type_name(value)} object"
+    return repr(value)
+
+
+def bind_arguments(
+    sig: inspect.Signature, callee_name: str, args: tuple, kwargs: dict[str, Any], *, partial: bool = False
+) -> inspect.BoundArguments:
+    """Bind `args` and `kwargs` to `sig`, raising a `TypeError` that names `callee_name` on failure."""
+    try:
+        return sig.bind_partial(*args, **kwargs) if partial else sig.bind(*args, **kwargs)
+    except TypeError as e:
+        message = e.args[0] if e.args else None
+        if isinstance(message, str):
+            unexpected = _first_unexpected_keyword(sig, kwargs)
+            if unexpected is not None:
+                message = f"got an unexpected keyword argument '{unexpected}'"
+            # Mutated in place rather than replaced by a new exception: the excepthook prints the whole chain,
+            # so raising from this one would show the unnamed message again above the named one.
+            e.args = (f"{callee_name}() {message}", *e.args[1:])
+        raise
+
+
+def _first_unexpected_keyword(sig: inspect.Signature, kwargs: dict[str, Any]) -> str | None:
+    """Return the first keyword `sig` has no parameter for, or None."""
+    parameters = sig.parameters
+    if any(p.kind is inspect.Parameter.VAR_KEYWORD for p in parameters.values()):
+        return None
+    for name in kwargs:
+        if name not in parameters:
+            return name
+    return None
 
 
 from sonolus.script import globals as sonolus_globals

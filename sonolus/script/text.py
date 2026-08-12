@@ -4,6 +4,72 @@ from enum import StrEnum
 class StandardText(StrEnum):
     """Standard text constants."""
 
+    PREFIX_LIST = "#PREFIX_LIST"
+    """`- ` (trailing space)"""
+
+    PREFIX_QUOTE = "#PREFIX_QUOTE"
+    """`> ` (trailing space)"""
+
+    SEPARATOR_SPACE = "#SEPARATOR_SPACE"
+    """` ` (a single space)"""
+
+    SEPARATOR_COMMA = "#SEPARATOR_COMMA"
+    """`, ` (trailing space)"""
+
+    SEPARATOR_COLON = "#SEPARATOR_COLON"
+    """`: ` (trailing space)"""
+
+    SEPARATOR_AND = "#SEPARATOR_AND"
+    """` & ` (surrounding spaces)"""
+
+    SEPARATOR_PLUS = "#SEPARATOR_PLUS"
+    """` + ` (surrounding spaces)"""
+
+    SEPARATOR_SLASH = "#SEPARATOR_SLASH"
+    """` / ` (surrounding spaces)"""
+
+    SEPARATOR_LESSER = "#SEPARATOR_LESSER"
+    """` < ` (surrounding spaces)"""
+
+    SEPARATOR_GREATER = "#SEPARATOR_GREATER"
+    """` > ` (surrounding spaces)"""
+
+    SEPARATOR_QUOTE_SINGLE_LEFT = "#SEPARATOR_QUOTE_SINGLE_LEFT"
+    """`'`"""
+
+    SEPARATOR_QUOTE_SINGLE_RIGHT = "#SEPARATOR_QUOTE_SINGLE_RIGHT"
+    """`'`"""
+
+    SEPARATOR_QUOTE_DOUBLE_LEFT = "#SEPARATOR_QUOTE_DOUBLE_LEFT"
+    """`"`"""
+
+    SEPARATOR_QUOTE_DOUBLE_RIGHT = "#SEPARATOR_QUOTE_DOUBLE_RIGHT"
+    """`"`"""
+
+    SEPARATOR_PARENTHESIS_LEFT = "#SEPARATOR_PARENTHESIS_LEFT"
+    """`(`"""
+
+    SEPARATOR_PARENTHESIS_RIGHT = "#SEPARATOR_PARENTHESIS_RIGHT"
+    """`)`"""
+
+    SEPARATOR_BRACKET_LEFT = "#SEPARATOR_BRACKET_LEFT"
+    """`[`"""
+
+    SEPARATOR_BRACKET_RIGHT = "#SEPARATOR_BRACKET_RIGHT"
+    """`]`"""
+
+    SURROUND_QUOTES_SINGLE = "#SURROUND_QUOTES_SINGLE"
+    """`'{0}'`"""
+
+    SURROUND_QUOTES_DOUBLE = "#SURROUND_QUOTES_DOUBLE"
+    """`"{0}"`"""
+
+    SURROUND_PARENTHESES = "#SURROUND_PARENTHESES"
+    """`({0})`"""
+
+    SURROUND_BRACKETS = "#SURROUND_BRACKETS"
+    """`[{0}]`"""
+
     CUSTOM_SERVER = "#CUSTOM_SERVER"
     """Custom Server"""
 
@@ -30,6 +96,9 @@ class StandardText(StrEnum):
 
     BANNER = "#BANNER"
     """Banner"""
+
+    ICON = "#ICON"
+    """Icon"""
 
     POST = "#POST"
     """Post"""
@@ -199,6 +268,9 @@ class StandardText(StrEnum):
     NAME = "#NAME"
     """Name"""
 
+    SOURCE = "#SOURCE"
+    """Source"""
+
     RATING = "#RATING"
     """Rating"""
 
@@ -225,6 +297,15 @@ class StandardText(StrEnum):
 
     COAUTHOR = "#COAUTHOR"
     """Coauthor"""
+
+    LYRICIST = "#LYRICIST"
+    """Lyricist"""
+
+    COMPOSER = "#COMPOSER"
+    """Composer"""
+
+    ARRANGER = "#ARRANGER"
+    """Arranger"""
 
     DESCRIPTION = "#DESCRIPTION"
     """Description"""
@@ -883,6 +964,12 @@ class StandardText(StrEnum):
     AUTHOR_PLACEHOLDER = "#AUTHOR_PLACEHOLDER"
     """Enter author..."""
 
+    COAUTHOR_PLACEHOLDER = "#COAUTHOR_PLACEHOLDER"
+    """Enter coauthor..."""
+
+    COLLABORATOR_PLACEHOLDER = "#COLLABORATOR_PLACEHOLDER"
+    """Enter collaborator..."""
+
     DESCRIPTION_PLACEHOLDER = "#DESCRIPTION_PLACEHOLDER"
     """Enter description..."""
 
@@ -944,67 +1031,67 @@ class StandardText(StrEnum):
     """{0}%"""
 
     YEAR_UNIT = "#YEAR_UNIT"
-    """{0} yr"""
+    """{0}yr"""
 
     MONTH_UNIT = "#MONTH_UNIT"
-    """{0} mo"""
+    """{0}mo"""
 
     DAY_UNIT = "#DAY_UNIT"
-    """{0} d"""
+    """{0}d"""
 
     HOUR_UNIT = "#HOUR_UNIT"
-    """{0} h"""
+    """{0}h"""
 
     MINUTE_UNIT = "#MINUTE_UNIT"
-    """{0} m"""
+    """{0}m"""
 
     SECOND_UNIT = "#SECOND_UNIT"
-    """{0} s"""
+    """{0}s"""
 
     MILLISECOND_UNIT = "#MILLISECOND_UNIT"
-    """{0} ms"""
+    """{0}ms"""
 
     YEAR_PAST = "#YEAR_PAST"
-    """{0} yr ago"""
+    """{0}yr ago"""
 
     MONTH_PAST = "#MONTH_PAST"
-    """{0} mo ago"""
+    """{0}mo ago"""
 
     DAY_PAST = "#DAY_PAST"
-    """{0} d ago"""
+    """{0}d ago"""
 
     HOUR_PAST = "#HOUR_PAST"
-    """{0} h ago"""
+    """{0}h ago"""
 
     MINUTE_PAST = "#MINUTE_PAST"
-    """{0} m ago"""
+    """{0}m ago"""
 
     SECOND_PAST = "#SECOND_PAST"
-    """{0} s ago"""
+    """{0}s ago"""
 
     MILLISECOND_PAST = "#MILLISECOND_PAST"
-    """{0} ms ago"""
+    """{0}ms ago"""
 
     YEAR_FUTURE = "#YEAR_FUTURE"
-    """In {0} yr"""
+    """In {0}yr"""
 
     MONTH_FUTURE = "#MONTH_FUTURE"
-    """In {0} mo"""
+    """In {0}mo"""
 
     DAY_FUTURE = "#DAY_FUTURE"
-    """In {0} d"""
+    """In {0}d"""
 
     HOUR_FUTURE = "#HOUR_FUTURE"
-    """In {0} h"""
+    """In {0}h"""
 
     MINUTE_FUTURE = "#MINUTE_FUTURE"
-    """In {0} m"""
+    """In {0}m"""
 
     SECOND_FUTURE = "#SECOND_FUTURE"
-    """In {0} s"""
+    """In {0}s"""
 
     MILLISECOND_FUTURE = "#MILLISECOND_FUTURE"
-    """In {0} ms"""
+    """In {0}ms"""
 
     TAP = "#TAP"
     """Tap"""
@@ -1210,6 +1297,9 @@ class StandardText(StrEnum):
     LIVE_VERSION = "#LIVE_VERSION"
     """Live Version"""
 
+    MEDLEY = "#MEDLEY"
+    """Medley"""
+
     EXPLICIT = "#EXPLICIT"
     """Explicit"""
 
@@ -1224,6 +1314,9 @@ class StandardText(StrEnum):
 
     GIMMICK = "#GIMMICK"
     """Gimmick"""
+
+    EPILEPSY = "#EPILEPSY"
+    """Epilepsy"""
 
     COLLABORATION = "#COLLABORATION"
     """Collaboration"""

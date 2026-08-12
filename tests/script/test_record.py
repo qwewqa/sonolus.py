@@ -14,6 +14,12 @@ from sonolus.script.record import Record
 from sonolus.script.values import copy, zeros
 from tests.script.conftest import run_and_validate
 
+# run_and_validate's closure-from-ROM leg interns closure values into engine ROM, which holds 32-bit floats
+# and rejects magnitudes above f32 max, so the strategies stay within the range engine data can hold.
+f32_range_floats = st.floats(
+    allow_nan=False, allow_infinity=False, min_value=-3.4028234663852886e38, max_value=3.4028234663852886e38
+)
+
 
 class Simple(Record):
     value: float
@@ -55,7 +61,7 @@ class ConcreteCompound(Record):
     b: Pair[Num, Num]
 
 
-@given(a=st.floats(allow_nan=False, allow_infinity=False))
+@given(a=f32_range_floats)
 def test_simple_record(a):
     def fn():
         r = Simple(a)
@@ -65,7 +71,7 @@ def test_simple_record(a):
     assert run_and_validate(fn) == 1
 
 
-@given(a=st.floats(allow_nan=False, allow_infinity=False))
+@given(a=f32_range_floats)
 def test_generic_record_inference(a):
     def fn():
         r = Generic(a)
@@ -75,7 +81,7 @@ def test_generic_record_inference(a):
     assert run_and_validate(fn) == 1
 
 
-@given(a=st.floats(allow_nan=False, allow_infinity=False))
+@given(a=f32_range_floats)
 def test_generic_record_explicit(a):
     def fn():
         r = Generic[Num](a)
