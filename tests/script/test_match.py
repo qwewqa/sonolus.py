@@ -1221,7 +1221,8 @@ def test_match_class_property_raising_attribute_error_fails_the_pattern():
             case _:
                 return x
 
-    assert run_and_validate(fn) == 5
+    with pytest.raises(CompilationError, match="AttributeError propagation from a traced property getter"):
+        run_compiled(fn)
 
 
 def test_match_class_keyword_attribute_uses_getattr():
@@ -1243,7 +1244,110 @@ def test_match_class_binds_classmethod_getattr_after_property_attribute_error():
             case _:
                 return 0
 
+    with pytest.raises(CompilationError, match="AttributeError propagation from a traced property getter"):
+        run_compiled(fn)
+
+
+def test_match_class_rejects_non_tuple_match_args():
+    class InvalidMatchArgs(Record):
+        value: Num
+
+    InvalidMatchArgs.__match_args__ = ["value"]
+
+    def fn():
+        match InvalidMatchArgs(1):
+            case InvalidMatchArgs(1):
+                return 1
+        return 0
+
+    with pytest.raises(CompilationError, match="__match_args__ must be a tuple"):
+        run_compiled(fn)
+
+
+def test_match_class_rejects_non_string_match_arg():
+    class InvalidMatchArgs(Record):
+        value: Num
+
+    InvalidMatchArgs.__match_args__ = (1,)
+
+    def fn():
+        match InvalidMatchArgs(1):
+            case InvalidMatchArgs(1):
+                return 1
+        return 0
+
+    with pytest.raises(CompilationError, match="__match_args__ elements must be strings"):
+        run_compiled(fn)
+
+
+class MatchTracedGetattr(Record):
+    value: Num
+
+    def __getattr__(self, name):
+        return 7 if self.value else 8
+
+
+class MatchClassMethodGetattr(Record):
+    @classmethod
+    def __getattr__(cls, name):
+        return 9
+
+
+class MatchStaticMethodGetattr(Record):
+    @staticmethod
+    def __getattr__(name):
+        return 10
+
+
+class MatchConditionalAttributeErrorProperty(Record):
+    flag: Num
+
+    @property
+    def property(self):
+        if self.flag:
+            return self.missing
+        return 5
+
+
+def test_match_class_traces_getattr_for_missing_attribute():
+    def fn():
+        match MatchTracedGetattr(1):
+            case MatchTracedGetattr(missing=7):
+                return 1
+        return 0
+
     assert run_and_validate(fn) == 1
+
+
+def test_match_class_binds_classmethod_getattr_for_missing_attribute():
+    def fn():
+        match MatchClassMethodGetattr():
+            case MatchClassMethodGetattr(missing=9):
+                return 1
+        return 0
+
+    assert run_and_validate(fn) == 1
+
+
+def test_match_class_binds_staticmethod_getattr_for_missing_attribute():
+    def fn():
+        match MatchStaticMethodGetattr():
+            case MatchStaticMethodGetattr(missing=10):
+                return 1
+        return 0
+
+    assert run_and_validate(fn) == 1
+
+
+def test_match_class_rejects_conditional_property_attribute_error():
+    def fn():
+        match MatchConditionalAttributeErrorProperty(Array(0)[0]):
+            case MatchConditionalAttributeErrorProperty(property=5):
+                return 1
+        return 0
+
+    with pytest.raises(CompilationError, match="AttributeError propagation from a traced property getter"):
+        run_compiled(fn)
 
 
 def test_match_class_propagates_outer_exception_caused_by_attribute_error():

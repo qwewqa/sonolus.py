@@ -349,9 +349,6 @@ def reversed[T](seq: Sequence[T], /) -> Sequence[T]:
 
     Args:
         seq: The sequence to reverse.
-
-    Returns:
-        A reversed view of the sequence.
     """
     ...
 

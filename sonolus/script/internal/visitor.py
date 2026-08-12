@@ -14,7 +14,7 @@ from typing import Any, Never
 
 from sonolus.backend.excepthook import install_excepthook
 from sonolus.backend.utils import get_function, get_signature, scan_writes
-from sonolus.script.debug import assert_true, require
+from sonolus.script.debug import assert_true, error, require
 from sonolus.script.internal.builtin_impls import (
     BUILTIN_IMPL_NAMES,
     BUILTIN_IMPLS,
@@ -322,7 +322,7 @@ _EQ_OP = ast.Eq()
 def _is_strict_subclass(lhs: Value, rhs: Value) -> bool:
     lhs_type = type(lhs)
     rhs_type = type(rhs)
-    return lhs_type is not rhs_type and issubclass(rhs_type, lhs_type)
+    return lhs_type is not rhs_type and lhs_type in rhs_type.__mro__[1:]
 
 
 def _has_strict_subclass_reflected_priority(lhs: Value, rhs: Value, reflected_name: str) -> bool:
@@ -357,10 +357,9 @@ def _comptime_binop(lhs: Any, rhs: Any, op: str, reflected_op: str) -> Any:
     rhs_type = type(rhs)
     lhs_descriptor = _raw_special_method(lhs_type, op)
     rhs_descriptor = _raw_special_method(rhs_type, reflected_op)
-    right_has_priority = (
-        lhs_type is not rhs_type
-        and issubclass(rhs_type, lhs_type)
-        and rhs_descriptor is not _raw_special_method(lhs_type, reflected_op)
+    lhs_reflected_descriptor = _raw_special_method(lhs_type, reflected_op)
+    right_has_priority = lhs_type in rhs_type.__mro__[1:] and (
+        rhs_descriptor is not lhs_reflected_descriptor or isinstance(rhs_descriptor, classmethod)
     )
     if right_has_priority and rhs_descriptor is not _SPECIAL_METHOD_MISSING:
         result = _bind_special_method(rhs, reflected_op)(lhs)
@@ -375,6 +374,15 @@ def _comptime_binop(lhs: Any, rhs: Any, op: str, reflected_op: str) -> Any:
         if result is not NotImplemented:
             return result
     return _NOT_IMPLEMENTED
+
+
+def _comptime_augassign(lhs: Any, rhs: Any, inplace_op: str, op: str, reflected_op: str) -> Any:
+    inplace_descriptor = _raw_special_method(type(lhs), inplace_op)
+    if inplace_descriptor is not _SPECIAL_METHOD_MISSING:
+        result = _bind_special_method(lhs, inplace_op)(rhs)
+        if result is not NotImplemented:
+            return result
+    return _comptime_binop(lhs, rhs, op, reflected_op)
 
 
 # Binary operator method names implemented by Num. For two Num operands, these never return NotImplemented,
@@ -810,8 +818,11 @@ class Visitor(ast.NodeVisitor):
                     if test._as_py_():
                         continue
                     else:
-                        ctx().outgoing[None] = header_ctx
-                        set_ctx(ctx().into_dead())
+                        if else_ctx is None:
+                            self.handle_call(if_expr, error, validate_value("Generator cannot make progress"))
+                        else:
+                            ctx().outgoing[None] = header_ctx
+                            set_ctx(ctx().into_dead())
                         skipped = True
                         break
                 else:
@@ -973,6 +984,16 @@ class Visitor(ast.NodeVisitor):
             return
         inplace_fn_name = inplace_ops[type(node.op)]
         right_fn_name = rbin_ops[type(node.op)]
+        if lhs_value._is_py_() and rhs_value._is_py_():
+            lhs_py = lhs_value._as_py_()
+            rhs_py = rhs_value._as_py_()
+            if (isinstance(lhs_py, type) or getattr(lhs_py, "_is_comptime_value_", False)) and (
+                isinstance(rhs_py, type) or getattr(rhs_py, "_is_comptime_value_", False)
+            ):
+                result = _comptime_augassign(lhs_py, rhs_py, inplace_fn_name, regular_fn_name, right_fn_name)
+                if result is not _NOT_IMPLEMENTED:
+                    store(validate_value(result))
+                    return
         if hasattr(lhs_value, inplace_fn_name):
             result = self.handle_call(node, getattr(lhs_value, inplace_fn_name), rhs_value)
             if not self.is_not_implemented(result):
@@ -1320,8 +1341,13 @@ class Visitor(ast.NodeVisitor):
                 if patterns:
                     if not hasattr(cls, "__match_args__"):
                         raise TypeError("Class does not support match patterns")
-                    if len(cls.__match_args__) < len(patterns):
-                        limit = len(cls.__match_args__)
+                    match_args = cls.__match_args__
+                    if not isinstance(match_args, tuple):
+                        raise TypeError(
+                            f"{cls.__name__}.__match_args__ must be a tuple (got {type(match_args).__name__})"
+                        )
+                    if len(match_args) < len(patterns):
+                        limit = len(match_args)
                         plural = "" if limit == 1 else "s"
                         raise TypeError(
                             f"{cls.__name__}() accepts {limit} positional sub-pattern{plural} ({len(patterns)} given)"
@@ -1330,7 +1356,11 @@ class Visitor(ast.NodeVisitor):
                     # Python allows mixing them with keyword sub-patterns (e.g. Point(0, y=1)), so
                     # prepend the positional attrs/patterns to the existing keyword ones rather than
                     # overwriting them.
-                    kwd_attrs = [*cls.__match_args__[: len(patterns)], *kwd_attrs]
+                    positional_attrs = match_args[: len(patterns)]
+                    for attr in positional_attrs:
+                        if not isinstance(attr, str):
+                            raise TypeError(f"__match_args__ elements must be strings (got {type(attr).__name__})")
+                    kwd_attrs = [*positional_attrs, *kwd_attrs]
                     kwd_patterns = [*patterns, *kwd_patterns]
                     # A positional and a keyword sub-pattern targeting the same attribute is a
                     # runtime TypeError in CPython; reject it rather than silently emitting an arm
@@ -1586,6 +1616,8 @@ class Visitor(ast.NodeVisitor):
 
         fn._meta_fn_ = True
         fn.__name__ = "<lambda>"
+        fn.__qualname__ = "<lambda>"
+        self.active_ctx = ctx()
 
         return validate_value(fn)
 
@@ -1820,6 +1852,8 @@ class Visitor(ast.NodeVisitor):
                 break
             inverted = isinstance(op, ast.NotIn)
             raw_result = self.handle_comparison(node, op, l_val, r_val)
+            if isinstance(op, ast.In | ast.NotIn) and raw_result._is_py_() and not _is_num(raw_result):
+                raw_result = Num._accept_(bool(raw_result._as_py_()))
             result = (
                 self.convert_to_boolean_num(node, raw_result)
                 if isinstance(op, ast.In | ast.NotIn)
@@ -2119,6 +2153,7 @@ class Visitor(ast.NodeVisitor):
 
         def get_attribute():
             attribute_target = target
+            was_constant = isinstance(attribute_target, ConstantValue)
             if isinstance(attribute_target, ConstantValue):
                 attribute_target = attribute_target._as_py_()
             target_type = type(attribute_target)
@@ -2133,11 +2168,36 @@ class Visitor(ast.NodeVisitor):
                         except Exception as e:
                             if not caused_by_attribute_error(e):
                                 raise
-                            error = e
+                            raise NotImplementedError(
+                                "AttributeError propagation from a traced property getter is not supported"
+                            ) from e
                     fallback = _bind_special_method(attribute_target, "__getattr__")
                     if fallback is not _SPECIAL_METHOD_MISSING:
-                        return self.handle_call(node, fallback, validate_value(key))
+                        try:
+                            return self.handle_call(node, fallback, validate_value(key))
+                        except Exception as e:
+                            if not caused_by_attribute_error(e):
+                                raise
+                            raise NotImplementedError(
+                                "AttributeError propagation from a traced __getattr__ is not supported"
+                            ) from e
                     raise error
+                case None if (
+                    not was_constant
+                    and key not in getattr(attribute_target, "__dict__", {})
+                    and not any(key in cls.__dict__ for cls in target_type.__mro__)
+                ):
+                    fallback = _bind_special_method(attribute_target, "__getattr__")
+                    if fallback is not _SPECIAL_METHOD_MISSING:
+                        try:
+                            return self.handle_call(node, fallback, validate_value(key))
+                        except Exception as e:
+                            if not caused_by_attribute_error(e):
+                                raise
+                            raise NotImplementedError(
+                                "AttributeError propagation from a traced __getattr__ is not supported"
+                            ) from e
+                    raise AttributeError(f"'{target_type.__name__}' object has no attribute '{key}'")
                 case SonolusDescriptor() | FunctionType() | classmethod() | staticmethod() | None:
                     attribute = getattr(attribute_target, key)
                     if isinstance(attribute_target, type):
@@ -2269,10 +2329,12 @@ class Visitor(ast.NodeVisitor):
             return Num._accept_(0)
         if _is_num(value):
             return value
-        if hasattr(type(value), "__bool__"):
-            return self.ensure_boolean_num(self.handle_call(node, type(value).__bool__, validate_value(value)))
-        if hasattr(type(value), "__len__"):
-            length = _validate_len_result(self.handle_call(node, type(value).__len__, validate_value(value)))
+        bool_method = _bind_special_method(value, "__bool__")
+        if bool_method is not _SPECIAL_METHOD_MISSING:
+            return self.ensure_boolean_num(self.handle_call(node, bool_method))
+        len_method = _bind_special_method(value, "__len__")
+        if len_method is not _SPECIAL_METHOD_MISSING:
+            length = _validate_len_result(self.handle_call(node, len_method))
             if not ctx().live:
                 return Num._accept_(0)
             if length._is_py_():

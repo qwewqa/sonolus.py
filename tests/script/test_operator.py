@@ -1,5 +1,6 @@
 # ruff: noqa: PLW1641, PT017
 import re
+from abc import ABCMeta
 
 import pytest
 from hypothesis import assume, given
@@ -295,6 +296,43 @@ class CompileTimeStaticMethod:
         return 45
 
 
+class CompileTimeInheritedClassMethodBase:
+    _is_comptime_value_ = True
+
+    @classmethod
+    def __or__(cls, other):
+        return 40
+
+    @classmethod
+    def __ior__(cls, other):
+        return NotImplemented
+
+    @classmethod
+    def __ror__(cls, other):
+        return 42 if cls is CompileTimeInheritedClassMethodSub else 41
+
+
+class CompileTimeInheritedClassMethodSub(CompileTimeInheritedClassMethodBase):
+    pass
+
+
+class CompileTimeVirtualBase(metaclass=ABCMeta):  # noqa: B024, FURB180
+    _is_comptime_value_ = True
+
+    def __or__(self, other):
+        return 50
+
+
+class CompileTimeVirtualSub:
+    _is_comptime_value_ = True
+
+    def __ror__(self, other):
+        return 51
+
+
+CompileTimeVirtualBase.register(CompileTimeVirtualSub)
+
+
 class CompileTimeNoneReflectedBase:
     _is_comptime_value_ = True
 
@@ -315,6 +353,10 @@ COMPTIME_DECLINES = CompileTimeOpDeclines()
 COMPTIME_REFLECTED = CompileTimeReflected()
 COMPTIME_CLASS_METHOD = CompileTimeClassMethod()
 COMPTIME_STATIC_METHOD = CompileTimeStaticMethod()
+COMPTIME_INHERITED_CLASS_METHOD_BASE = CompileTimeInheritedClassMethodBase()
+COMPTIME_INHERITED_CLASS_METHOD_SUB = CompileTimeInheritedClassMethodSub()
+COMPTIME_VIRTUAL_BASE = CompileTimeVirtualBase()
+COMPTIME_VIRTUAL_SUB = CompileTimeVirtualSub()
 COMPTIME_NONE_REFLECTED_BASE = CompileTimeNoneReflectedBase()
 COMPTIME_NONE_REFLECTED_SUB = CompileTimeNoneReflectedSub()
 
@@ -550,6 +592,32 @@ def test_bool_call_false():
     assert not run_and_validate(fn)
 
 
+class ClassMethodBool(Record):
+    @classmethod
+    def __bool__(cls):
+        return True
+
+
+class StaticMethodLen(Record):
+    @staticmethod
+    def __len__():
+        return 1
+
+
+def test_classmethod_bool_is_bound_before_tracing():
+    def fn():
+        return 1 if ClassMethodBool() else 0
+
+    assert run_and_validate(fn) == 1
+
+
+def test_staticmethod_len_is_bound_before_tracing():
+    def fn():
+        return 1 if StaticMethodLen() else 0
+
+    assert run_and_validate(fn) == 1
+
+
 def test_max_two_arg_key_tie_returns_first():
     # On a key tie, max() must return the FIRST maximal argument (Python semantics and the
     # library's own single-iterable path). The buggy _max2_generic returned the second.
@@ -640,6 +708,38 @@ def test_compile_time_staticmethod_binop_is_bound_like_python():
         return COMPTIME_STATIC_METHOD | COMPTIME_BASE
 
     assert run_and_validate(fn) == 45
+
+
+def test_compile_time_inherited_classmethod_reflected_binop_has_priority():
+    def fn():
+        return COMPTIME_INHERITED_CLASS_METHOD_BASE | COMPTIME_INHERITED_CLASS_METHOD_SUB
+
+    assert run_and_validate(fn) == 42
+
+
+def test_compile_time_augmented_assignment_uses_python_negotiation():
+    def fn():
+        value = int
+        value |= str
+        return value == int | str
+
+    assert run_and_validate(fn)
+
+
+def test_compile_time_virtual_subclass_does_not_get_reflected_priority():
+    def fn():
+        return COMPTIME_VIRTUAL_BASE | COMPTIME_VIRTUAL_SUB
+
+    assert run_and_validate(fn) == 50
+
+
+def test_compile_time_augmented_assignment_falls_back_to_prioritized_reflected_op():
+    def fn():
+        value = COMPTIME_INHERITED_CLASS_METHOD_BASE
+        value |= COMPTIME_INHERITED_CLASS_METHOD_SUB
+        return value
+
+    assert run_and_validate(fn) == 42
 
 
 def test_compile_time_none_reflected_binop_is_called_like_python():
@@ -779,6 +879,11 @@ class TruthyContains(Record):
         return TruthyContainsResult()
 
 
+class ConstantContains(Record):
+    def __contains__(self, value):
+        return "present" if value else None
+
+
 def _logged(v):
     debug_log(v)
     return v
@@ -794,6 +899,13 @@ def test_in_falls_back_to_iteration_over_a_generator_expression():
 def test_membership_truth_converts_contains_result():
     def fn():
         return 1 in TruthyContains()
+
+    assert run_and_validate(fn)
+
+
+def test_membership_truth_converts_constant_contains_result():
+    def fn():
+        return 1 in ConstantContains() and 0 not in ConstantContains()
 
     assert run_and_validate(fn)
 

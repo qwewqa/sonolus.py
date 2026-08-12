@@ -9,9 +9,6 @@ def randrange(stop: int, /) -> int:
 
     Args:
         stop: The end of the range.
-
-    Returns:
-        A randomly selected integer from the range.
     """
     ...
 
@@ -23,9 +20,6 @@ def randrange(start: int, stop: int, step: int = ...) -> int:
         start: The start of the range.
         stop: The end of the range.
         step: The step size.
-
-    Returns:
-        A randomly selected integer from the range.
     """
     ...
 
@@ -36,9 +30,6 @@ def randrange(start: int, stop: int = ..., step: int = ...) -> int:
         start: The start of the range.
         stop: The end of the range.
         step: The step size.
-
-    Returns:
-        A randomly selected integer from the range.
     """
     ...
 
@@ -48,9 +39,6 @@ def randint(a: int, b: int) -> int:
     Args:
         a: The lower bound.
         b: The upper bound.
-
-    Returns:
-        A randomly selected integer between a and b, inclusive.
     """
     ...
 
@@ -61,9 +49,6 @@ def choice[T](seq: ArrayLike[T]) -> T:
 
     Args:
         seq: The sequence to choose from.
-
-    Returns:
-        A randomly selected element from the sequence.
     """
     ...
 
@@ -78,11 +63,7 @@ def shuffle[T](seq: ArrayLike[T]) -> None:
     ...
 
 def random() -> float:
-    """Return a random floating point number in the range [0.0, 1.0).
-
-    Returns:
-        A random float between 0.0 (inclusive) and 1.0 (exclusive).
-    """
+    """Return a random floating point number in the range [0.0, 1.0)."""
     ...
 
 def uniform(a: float, b: float) -> float:
@@ -91,8 +72,5 @@ def uniform(a: float, b: float) -> float:
     Args:
         a: One endpoint of the range.
         b: The other endpoint of the range.
-
-    Returns:
-        A random float between the endpoints, inclusive.
     """
     ...

@@ -50,7 +50,15 @@ _OPS = list(_Op)
 _OP_TO_ID = {op: i for i, op in enumerate(_OPS)}
 _ID_TO_OP = _OPS
 _NARY_LEFT_FOLD_IDS = frozenset(
-    {_OP_TO_ID[_Op.Add], _OP_TO_ID[_Op.Multiply], _OP_TO_ID[_Op.Mod], _OP_TO_ID[_Op.Rem]}
+    {
+        _OP_TO_ID[_Op.Add],
+        _OP_TO_ID[_Op.Subtract],
+        _OP_TO_ID[_Op.Multiply],
+        _OP_TO_ID[_Op.Divide],
+        _OP_TO_ID[_Op.Power],
+        _OP_TO_ID[_Op.Mod],
+        _OP_TO_ID[_Op.Rem],
+    }
 )
 
 # Blocks the real runtime treats as runtime-constant: a constant-index read of

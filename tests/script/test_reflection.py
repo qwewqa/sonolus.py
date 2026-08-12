@@ -119,6 +119,35 @@ class PropertyDefaultBox(Record):
         return self.does_not_exist
 
 
+class TracedGetattrBox(Record):
+    value: Num
+
+    def __getattr__(self, name):
+        return 10 if self.value else 20
+
+
+class ClassMethodGetattrBox(Record):
+    @classmethod
+    def __getattr__(cls, name):
+        return 31
+
+
+class StaticMethodGetattrBox(Record):
+    @staticmethod
+    def __getattr__(name):
+        return 32
+
+
+class ConditionalAttributeErrorPropertyBox(Record):
+    flag: Num
+
+    @property
+    def property(self):
+        if self.flag:
+            return self.missing
+        return 5
+
+
 @meta_fn
 def outer_exception_from_attribute_error(_self):
     raise ValueError("outer") from AttributeError("inner")
@@ -202,7 +231,8 @@ def test_hasattr_suppresses_attribute_error_from_property():
     def fn():
         return hasattr(MyBox(1), "missing_property")
 
-    assert run_and_validate(fn) == 0
+    with pytest.raises(CompilationError, match="AttributeError propagation from a traced property getter"):
+        run_compiled(fn)
 
 
 def test_hasattr_record_not_present():
@@ -288,13 +318,65 @@ def test_getattr_record_property():
     assert run_and_validate(fn) == 789
 
 
+def test_direct_missing_attribute_traces_getattr():
+    def fn():
+        return TracedGetattrBox(1).missing
+
+    assert run_and_validate(fn) == 10
+
+
+def test_builtin_getattr_of_missing_attribute_traces_getattr():
+    def fn():
+        return getattr(TracedGetattrBox(0), "missing")  # noqa: B009
+
+    assert run_and_validate(fn) == 20
+
+
+def test_hasattr_of_missing_attribute_traces_getattr():
+    def fn():
+        return hasattr(TracedGetattrBox(1), "missing")
+
+    assert run_and_validate(fn)
+
+
+def test_ordinary_missing_attribute_binds_classmethod_getattr():
+    def fn():
+        box = ClassMethodGetattrBox()
+        return box.missing + getattr(box, "other") + hasattr(box, "third")  # noqa: B009
+
+    assert run_and_validate(fn) == 63
+
+
+def test_ordinary_missing_attribute_binds_staticmethod_getattr():
+    def fn():
+        box = StaticMethodGetattrBox()
+        return box.missing + getattr(box, "other") + hasattr(box, "third")  # noqa: B009
+
+    assert run_and_validate(fn) == 65
+
+
+@pytest.mark.parametrize("kind", ["direct", "getattr", "hasattr"])
+def test_conditional_property_attribute_error_is_rejected(kind):
+    def fn():
+        box = ConditionalAttributeErrorPropertyBox(Array(0)[0])
+        if kind == "direct":
+            return box.property
+        if kind == "getattr":
+            return getattr(box, "property")  # noqa: B009
+        return hasattr(box, "property")
+
+    with pytest.raises(CompilationError, match="AttributeError propagation from a traced property getter"):
+        run_compiled(fn)
+
+
 def test_direct_attribute_uses_getattr_after_property_attribute_error():
     def fn():
         x = 5
         y = PropertyFallbackBox().fallback
         return x + y
 
-    assert run_and_validate(fn) == 326
+    with pytest.raises(CompilationError, match="Raise statements are not supported"):
+        run_compiled(fn)
 
 
 def test_builtin_getattr_uses_getattr_after_property_attribute_error():
@@ -303,35 +385,40 @@ def test_builtin_getattr_uses_getattr_after_property_attribute_error():
         y = getattr(PropertyFallbackBox(), "fallback")  # noqa: B009
         return x + y
 
-    assert run_and_validate(fn) == 326
+    with pytest.raises(CompilationError, match="Raise statements are not supported"):
+        run_compiled(fn)
 
 
 def test_direct_attribute_binds_classmethod_getattr():
     def fn():
         return ClassMethodPropertyFallbackBox().fallback
 
-    assert run_and_validate(fn) == 432
+    with pytest.raises(CompilationError, match="AttributeError propagation from a traced property getter"):
+        run_compiled(fn)
 
 
 def test_builtin_getattr_binds_classmethod_getattr():
     def fn():
         return getattr(ClassMethodPropertyFallbackBox(), "fallback")  # noqa: B009
 
-    assert run_and_validate(fn) == 432
+    with pytest.raises(CompilationError, match="AttributeError propagation from a traced property getter"):
+        run_compiled(fn)
 
 
 def test_direct_attribute_binds_staticmethod_getattr():
     def fn():
         return StaticMethodPropertyFallbackBox().fallback
 
-    assert run_and_validate(fn) == 543
+    with pytest.raises(CompilationError, match="AttributeError propagation from a traced property getter"):
+        run_compiled(fn)
 
 
 def test_builtin_getattr_binds_staticmethod_getattr():
     def fn():
         return getattr(StaticMethodPropertyFallbackBox(), "fallback")  # noqa: B009
 
-    assert run_and_validate(fn) == 543
+    with pytest.raises(CompilationError, match="AttributeError propagation from a traced property getter"):
+        run_compiled(fn)
 
 
 def test_generator_property_fallback_does_not_capture_transient_getter_local():
@@ -343,7 +430,8 @@ def test_generator_property_fallback_does_not_capture_transient_getter_local():
         iterator = gen()
         return next(iterator) + next(iterator)
 
-    assert run_and_validate(fn) == 4
+    with pytest.raises(CompilationError, match="AttributeError propagation from a traced property getter"):
+        run_compiled(fn)
 
 
 def test_builtin_getattr_default_handles_property_attribute_error():
@@ -352,7 +440,8 @@ def test_builtin_getattr_default_handles_property_attribute_error():
         y = getattr(PropertyDefaultBox(), "missing", 654)
         return x + y
 
-    assert run_and_validate(fn) == 659
+    with pytest.raises(CompilationError, match="AttributeError propagation from a traced property getter"):
+        run_compiled(fn)
 
 
 def test_hasattr_continues_with_caller_scope_after_property_attribute_error():
@@ -361,7 +450,8 @@ def test_hasattr_continues_with_caller_scope_after_property_attribute_error():
         found = hasattr(PropertyDefaultBox(), "missing")
         return x + found
 
-    assert run_and_validate(fn) == 5
+    with pytest.raises(CompilationError, match="AttributeError propagation from a traced property getter"):
+        run_compiled(fn)
 
 
 def test_getterless_property_is_an_unreadable_attribute():

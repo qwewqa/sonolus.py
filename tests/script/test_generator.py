@@ -3,6 +3,7 @@ import pytest
 from sonolus.script.array import Array
 from sonolus.script.containers import Box
 from sonolus.script.debug import debug_log
+from sonolus.script.internal.context import RuntimeChecks
 from sonolus.script.internal.error import CompilationError
 from sonolus.script.iterator import SonolusIterator
 from sonolus.script.maybe import Maybe, Nothing, Some
@@ -1340,3 +1341,55 @@ def test_lambda_yielded_from_host_generator_is_locatable():
         return callback()
 
     assert run_and_validate(fn) == 43
+
+
+def test_lambda_yielded_from_compiled_generator_captures_current_local():
+    def fn():
+        def gen():
+            value = 7
+            yield lambda: value
+
+        return next(gen())()
+
+    assert run_and_validate(fn) == 7
+
+
+def test_yield_from_lambda_captures_current_generator_local():
+    def fn():
+        def gen():
+            value = 8
+            yield from (lambda: value,)
+
+        return next(gen())()
+
+    assert run_and_validate(fn) == 8
+
+
+def test_yielded_lambda_reads_updated_generator_local():
+    def fn():
+        def gen():
+            value = 1
+            callback = lambda: value  # noqa: E731
+            yield callback
+            value = 2
+            yield callback
+
+        iterator = gen()
+        callback = next(iterator)
+        next(iterator)
+        return callback()
+
+    assert run_and_validate(fn) == 2
+
+
+def test_statically_nonempty_false_filtered_generator_terminates_on_consumption():
+    # There is no Python oracle because advancing this deliberately invalid iterator never makes progress.
+    def fn():
+        def gen():
+            yield from (1 for _ in StaticallyNonempty(0) if False)
+
+        return next(gen())
+
+    assert run_compiled(fn, runtime_checks=RuntimeChecks.NONE) == 0
+    assert run_compiled(fn, runtime_checks=RuntimeChecks.TERMINATE) == 0
+    assert run_compiled(fn, runtime_checks=RuntimeChecks.NOTIFY_AND_TERMINATE) == 0

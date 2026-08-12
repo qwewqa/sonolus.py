@@ -389,6 +389,22 @@ def test_sccp_division_by_zero_does_not_fold():
     assert "6 / 0" in text  # left as a runtime division, not folded to a constant
 
 
+@pytest.mark.parametrize(
+    ("op", "args", "expected"),
+    [
+        (Op.Subtract, [20, 3, 2], 15),
+        (Op.Divide, [100, 5, 2], 10),
+        (Op.Power, [2, 3, 2], 64),
+    ],
+)
+def test_sccp_folds_nary_arithmetic_left_to_right(op, args, expected):
+    b0 = BasicBlock(statements=[IRSet(BlockPlace(W, 0), IRPureInstr(op, [IRConst(arg) for arg in args]))])
+    b0.connect_to(BasicBlock(), None)
+
+    text = _text(b0, ["cfg_cleanup", "ssa", "sccp", "dce"])
+    assert f"<- {expected}" in text
+
+
 def test_sccp_degenerate_constant_ops_never_raise():
     # Compile-time evaluation must NEVER raise on JS-like degenerate arithmetic: the
     # fold either produces the correct IEEE value or declines. Compile-only text

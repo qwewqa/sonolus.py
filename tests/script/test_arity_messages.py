@@ -179,6 +179,17 @@ def test_unexpected_keyword_to_a_compiled_lambda_names_the_keyword_and_the_calle
     assert "got an unexpected keyword argument 'c'" in message
 
 
+def test_duplicate_expanded_keyword_to_lambda_uses_public_lambda_name():
+    def fn():
+        callee = lambda **kwargs: 1  # noqa: E731
+        return callee(x=1, **{"x": 2})  # noqa: PIE804, PLE1132
+
+    with pytest.raises(CompilationError) as exc_info:
+        run_compiled(fn)
+
+    assert str(exc_info.value).startswith("<lambda>() got multiple values for keyword argument 'x'")
+
+
 def test_unexpected_keyword_to_a_nested_def_names_the_keyword_and_the_callee():
     def fn():
         def inner(a, b):

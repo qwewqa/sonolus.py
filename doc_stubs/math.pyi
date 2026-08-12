@@ -4,9 +4,6 @@ def sin(x: float, /) -> float:
 
     Args:
         x: The angle in radians.
-
-    Returns:
-        The sine of x.
     """
     ...
 
@@ -15,9 +12,6 @@ def cos(x: float, /) -> float:
 
     Args:
         x: The angle in radians.
-
-    Returns:
-        The cosine of x.
     """
     ...
 
@@ -26,54 +20,39 @@ def tan(x: float, /) -> float:
 
     Args:
         x: The angle in radians.
-
-    Returns:
-        The tangent of x.
     """
     ...
 
 def asin(x: float, /) -> float:
-    """Compute the arcsine of x.
+    """Compute the arcsine of x in radians.
 
     Args:
         x: A value between -1 and 1.
-
-    Returns:
-        The arcsine of x in radians.
     """
     ...
 
 def acos(x: float, /) -> float:
-    """Compute the arccosine of x.
+    """Compute the arccosine of x in radians.
 
     Args:
         x: A value between -1 and 1.
-
-    Returns:
-        The arccosine of x in radians.
     """
     ...
 
 def atan(x: float, /) -> float:
-    """Compute the arctangent of x.
+    """Compute the arctangent of x in radians.
 
     Args:
         x: A numeric value.
-
-    Returns:
-        The arctangent of x in radians.
     """
     ...
 
 def atan2(y: float, x: float, /) -> float:
-    """Compute the arctangent of y / x considering the quadrant.
+    """Compute the arctangent of y / x in radians, considering the quadrant.
 
     Args:
         y: The y-coordinate.
         x: The x-coordinate.
-
-    Returns:
-        The arctangent of y / x in radians.
     """
     ...
 
@@ -82,9 +61,6 @@ def sinh(x: float, /) -> float:
 
     Args:
         x: A numeric value.
-
-    Returns:
-        The hyperbolic sine of x.
     """
     ...
 
@@ -93,9 +69,6 @@ def cosh(x: float, /) -> float:
 
     Args:
         x: A numeric value.
-
-    Returns:
-        The hyperbolic cosine of x.
     """
     ...
 
@@ -104,9 +77,6 @@ def tanh(x: float, /) -> float:
 
     Args:
         x: A numeric value.
-
-    Returns:
-        The hyperbolic tangent of x.
     """
     ...
 
@@ -115,9 +85,6 @@ def floor(x: float, /) -> int:
 
     Args:
         x: A numeric value.
-
-    Returns:
-        The floor of x.
     """
     ...
 
@@ -126,9 +93,6 @@ def ceil(x: float, /) -> int:
 
     Args:
         x: A numeric value.
-
-    Returns:
-        The ceiling of x.
     """
     ...
 
@@ -137,9 +101,6 @@ def trunc(x: float, /) -> int:
 
     Args:
         x: A numeric value.
-
-    Returns:
-        The truncated integer value of x.
     """
     ...
 
@@ -149,9 +110,6 @@ def log(x: float, base: float = ..., /) -> float:
     Args:
         x: The number for which to compute the logarithm.
         base: The base of the logarithm. If omitted, returns the natural logarithm of x.
-
-    Returns:
-        The logarithm of x to the specified base.
     """
     ...
 
@@ -160,9 +118,6 @@ def sqrt(x: float, /) -> float:
 
     Args:
         x: A non-negative numeric value.
-
-    Returns:
-        The square root of x.
     """
     ...
 
@@ -171,9 +126,6 @@ def degrees(x: float, /) -> float:
 
     Args:
         x: An angle in radians.
-
-    Returns:
-        The angle in degrees.
     """
     ...
 
@@ -182,9 +134,6 @@ def radians(x: float, /) -> float:
 
     Args:
         x: An angle in degrees.
-
-    Returns:
-        The angle in radians.
     """
     ...
 

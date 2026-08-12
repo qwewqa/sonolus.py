@@ -1,5 +1,6 @@
 # ruff: noqa: B905, C417
 
+import pytest
 from hypothesis import given
 from hypothesis import strategies as st
 
@@ -210,6 +211,46 @@ def test_var_array_insert():
         return va
 
     assert list(run_and_validate(fn)) == [2, 4, 6, 8]
+
+
+def test_var_array_insert_clips_out_of_range_indices():
+    def fn():
+        positive = VarArray[int, 3].new()
+        positive.append(2)
+        positive.append(4)
+        positive.insert(100, 6)
+
+        negative = VarArray[int, 3].new()
+        negative.append(2)
+        negative.append(4)
+        negative.insert(-100, 0)
+
+        empty_positive = VarArray[int, 1].new()
+        empty_positive.insert(100, 1)
+
+        empty_negative = VarArray[int, 1].new()
+        empty_negative.insert(-100, 1)
+        return Array(
+            positive[0],
+            positive[1],
+            positive[2],
+            negative[0],
+            negative[1],
+            negative[2],
+            empty_positive[0],
+            empty_negative[0],
+        )
+
+    assert list(run_and_validate(fn)) == [2, 4, 6, 0, 2, 4, 1, 1]
+
+
+def test_var_array_insert_rejects_fractional_index():
+    def fn():
+        va = VarArray[int, 1].new()
+        va.insert(0.5, 1)
+
+    with pytest.raises(ValueError, match="Index must be an integer"):
+        run_and_validate(fn)
 
 
 def test_var_array_extend():

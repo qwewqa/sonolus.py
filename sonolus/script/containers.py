@@ -6,7 +6,7 @@ from typing import Any, Protocol, Self
 from sonolus.script.archetype import AnyArchetype, EntityRef
 from sonolus.script.array import Array
 from sonolus.script.array_like import ArrayLike, get_positive_index
-from sonolus.script.debug import error
+from sonolus.script.debug import assert_true, error
 from sonolus.script.internal.context import ctx
 from sonolus.script.internal.meta_fn import meta_fn
 from sonolus.script.internal.visitor import compile_and_call
@@ -17,6 +17,18 @@ from sonolus.script.num import Num
 from sonolus.script.pointer import _deref
 from sonolus.script.record import Record
 from sonolus.script.values import copy, zeros
+
+
+@meta_fn
+def _get_insert_index(index: int | float, length: int | float) -> int:
+    if not ctx():
+        if int(index) != index:
+            raise ValueError("Index must be an integer")
+        return int(index + (index < 0) * length)
+    index = Num._accept_(index)
+    length = Num._accept_(length)
+    assert_true(index % 1 == 0, "Invalid index")
+    return index + (index < 0) * length
 
 
 class Box[T](Record):
@@ -238,7 +250,7 @@ class VarArray[T, Capacity](Record, ArrayLike[T]):
             index: The index at which to insert the value. A negative index counts from the end of the array.
             value: The value to insert.
         """
-        index = clamp(get_positive_index(index, self._size, include_end=True), 0, self._size)
+        index = clamp(_get_insert_index(index, self._size), 0, self._size)
         assert self._size < len(self._array), "Array is full"
         self._size += 1
         for i in range(self._size - 1, index, -1):

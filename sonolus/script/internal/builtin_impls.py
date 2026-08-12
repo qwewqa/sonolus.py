@@ -908,12 +908,15 @@ def _getattr(obj: Any, name: str, default=_empty) -> Any:
     )
 
     name = validate_value(name)._as_py_()
-    if isinstance(obj, ConstantValue):
+    was_constant = isinstance(obj, ConstantValue)
+    if was_constant:
         obj = obj._as_py_()
     descriptor = None
+    descriptor_found = False
     for cls in type.mro(type(obj)):
         if name in cls.__dict__:
             descriptor = cls.__dict__[name]
+            descriptor_found = True
             break
     match descriptor:
         case property(fget=getter):
@@ -925,7 +928,9 @@ def _getattr(obj: Any, name: str, default=_empty) -> Any:
                 except Exception as e:
                     if not caused_by_attribute_error(e):
                         raise
-                    error = e
+                    raise NotImplementedError(
+                        "AttributeError propagation from a traced property getter is not supported"
+                    ) from e
             fallback = _bind_special_method(obj, "__getattr__")
             if fallback is not _SPECIAL_METHOD_MISSING:
                 try:
@@ -933,10 +938,26 @@ def _getattr(obj: Any, name: str, default=_empty) -> Any:
                 except Exception as e:
                     if not caused_by_attribute_error(e):
                         raise
-                    error = e
+                    raise NotImplementedError(
+                        "AttributeError propagation from a traced __getattr__ is not supported"
+                    ) from e
             if default is not _empty:
                 return default
             raise error
+        case None if not descriptor_found and not was_constant and name not in getattr(obj, "__dict__", {}):
+            fallback = _bind_special_method(obj, "__getattr__")
+            if fallback is not _SPECIAL_METHOD_MISSING:
+                try:
+                    return compile_and_call(fallback, name)
+                except Exception as e:
+                    if not caused_by_attribute_error(e):
+                        raise
+                    raise NotImplementedError(
+                        "AttributeError propagation from a traced __getattr__ is not supported"
+                    ) from e
+            if default is not _empty:
+                return default
+            raise AttributeError(f"'{type(obj).__name__}' object has no attribute '{name}'")
         case SonolusDescriptor() | FunctionType() | classmethod() | staticmethod() | None:
             attribute = getattr(obj, name) if default is _empty else getattr(obj, name, default)
             if isinstance(obj, type):
