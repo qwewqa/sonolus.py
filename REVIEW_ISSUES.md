@@ -1,7 +1,7 @@
 # Remaining review issues
 
 This manifest records the accepted limitations, policy decisions, resolved documentation leads, and refuted leads
-remaining after implementation commit `aec9c1a`. The implementation issues fixed by that commit are omitted.
+for the current implementation.
 
 Unsupported behavior is not an open issue merely because the implementation can accept it in some forms or fail
 differently in others. Best-effort diagnostics and runtime checks do not expand the supported contract.
@@ -22,8 +22,8 @@ No open issues remain from this review round.
    contract, so additional defensive classification was declined.
 
 3. **`SonolusDescriptor.__get__` must not raise `AttributeError`.**
-   Production descriptor getters were audited against this internal contract. Custom descriptor implementations
-   must observe it so that attribute fallback remains well-defined during compilation.
+   Production descriptor getters observe this internal contract. Custom descriptor implementations must observe
+   it so that attribute fallback remains well-defined during compilation.
 
 4. **Reference-valued generator closures may be rejected conservatively.**
    Scope merging can reject a capture even when all runtime paths would select one reference. The over-rejection
@@ -39,7 +39,7 @@ No open issues remain from this review round.
    An iterator may be used by exactly one reached `for` loop, one reached `next()` call, or one other iterator
    consumer. A loop may advance its iterator repeatedly, but reaching another consumer, including the same
    `next()` expression again, is unsupported. The stale numeric and wrong reference-binding closure probes both
-   require such a later advance; independent review found no divergence with one supported consumer.
+   require such a later advance; no divergence is known with one supported consumer.
 
    With runtime checks enabled, generated generators track a consumer owner and reject a later advance by another
    owner on a best-effort basis. This check does not make unsupported reuse valid when checks are disabled, and it
@@ -48,7 +48,7 @@ No open issues remain from this review round.
 7. **Iterator and nested-generator documentation now states the intended boundary.**
    Nested generators that capture changing variables from another generator are unsupported; invariant captures
    are no longer excluded. The iterator guide now states the one-use rule directly. The previous advice to copy
-   yielded values was removed because independent review found no supported one-consumer counterexample.
+   yielded values is unnecessary because no supported one-consumer counterexample is known.
 
 8. **Call diagnostics may eagerly inspect compile-time callable names.**
    Preparing keyword-error text can read `__qualname__` and `__name__` before arguments are visited. Compile-time
@@ -84,8 +84,7 @@ No open issues remain from this review round.
     and `RuntimeChecks` without public reference pages. Hiding or replacing these leaks was explicitly deferred.
 
 16. **The current changelog section is intentionally headed 0.19.0.**
-    The prior 0.18.2 working heading was changed as requested while its prose was condensed. This is the intended
-    next release heading, not a source-version mismatch.
+    This is the intended next release heading, not a source-version mismatch.
 
 17. **Constructor `Usage:` blocks on public constructible records are intentional.**
     Generated constructors do not render in the reference. Keep pseudo-signature `Usage:` blocks consistently on
@@ -154,9 +153,9 @@ No open issues remain from this review round.
 33. **Empty closure cells referenced only by dead code.**
     Functions created before such a closure cell is initialized remain outside the intended compiled-code style.
 
-34. **Dictionary hashes and heterogeneous unsortable constant keys.**
+34. **Dictionary hash contract and heterogeneous constant keys.**
     Compiled lookup does not execute user hashes, and equal keys must satisfy Python's equal-hash contract.
-    Heterogeneous unsortable constant keys remain unsupported.
+    Heterogeneous keys use linear lookup when the compiler cannot establish a shared ordering.
 
 35. **`min` and `max` over arbitrary mutable-reference iterables.**
     The compiler cannot preserve arbitrary reference semantics; supported array-like and numeric iterator paths
@@ -215,7 +214,7 @@ No open issues remain from this review round.
 
 51. **Fixed lead-time guidance for scheduled effects.**
     The current public contract recommends scheduling the three scheduled sound-effect operations at least 0.5
-    seconds ahead when possible. Removing that wording was rejected because the latest user decision restored it.
+    seconds ahead when possible. The guidance is intentional and remains part of the public contract.
 
 52. **Meta-function positional configuration.**
     Runtime `meta_fn(False)` remains invalid; the corrected overload exposes configuration only as a keyword and
@@ -234,20 +233,17 @@ No open issues remain from this review round.
     optimizer tests and the runtime-cost policy explicitly permit deleting such unused draws. Runtime numeric
     faults are governed by the broader accepted optimization policy above.
 
-56. **Normal build, verbose diagnostics, callback, export, and localization behavior was rechecked.**
+56. **Normal build, verbose diagnostics, callback, export, and localization behavior.**
     Module detection, `BuildConfig.verbose`, port defaults, callback lists, export requirements, and localization
-    values match their definitions and documented contracts. The build audit found no additional issue beyond
-    leads independently recorded above.
+    values match their definitions and documented contracts.
 
-57. **Compiled range, random, builtin, and container behavior was rechecked.**
+57. **Compiled range, random, builtin, and container behavior.**
     Range arithmetic outside the fixed `index` shape, reversed-bound uniform, duplicate keys, generic cache
-    isolation, and runtime `zip(strict=...)` match their supported contracts. The builtin and backend audits found
-    no additional issue beyond leads independently recorded above.
+    isolation, and runtime `zip(strict=...)` match their supported contracts.
 
-58. **Generated documentation and release integrity checks.**
-    Private-name leaks fixed in prior passes were not reintroduced; the remaining internal-type exposure is an
-    accepted policy above. Entity-data terminology is not contradictory, and strict MkDocs found no broken links
-    or anchors. The intentionally forward `0.19.0` changelog heading is retained.
+58. **Generated documentation and release integrity.**
+    The remaining internal-type exposure is an accepted policy above. Entity-data terminology is not contradictory,
+    and the intentionally forward `0.19.0` changelog heading is retained.
 
 59. **Keyword-only defaults of `None` in nested functions.**
     Source `None` is wrapped as a compile-time constant and is not confused with a missing default.
@@ -261,13 +257,45 @@ No open issues remain from this review round.
 62. **Regression prose and whitespace-only debt.**
     Non-semantic trailing spaces and already-covered mechanical prose are not separate correctness findings.
 
-63. **Visitor evaluation order and ordinary argument binding were rechecked.**
+63. **Visitor evaluation order and ordinary argument binding.**
     Mixed starred arguments and keywords, defaults for every parameter kind, mutable defaults, argument snapshots,
     decorator evaluation, assignment sequencing, match flow, and ordinary expression termination matched Python
-    or their documented subset contracts. No additional supported-behavior exception remains open from this pass.
+    or their documented subset contracts.
 
-64. **Scope scanners and established nested-function cases were rechecked.**
+64. **Scope scanners and established nested-function cases.**
     Function lexical locals, dead-path `global` or `nonlocal` rejection, late closure lookup, keyword-only `None`
     defaults, eager outermost generator-expression iterables, preceding-target lookup, same-line lambda
     disambiguation, and definition-time write scanning behaved as intended. Conservatively tracking a bare
     annotation at a loop header caused only unnecessary bookkeeping, with no semantic divergence found.
+
+65. **Keyword forms for positional-only Python builtins remain Sonolus-specific extensions.**
+    Compiled wrappers and published stubs accept keyword forms for several builtins that CPython marks
+    positional-only, including the source parameter of `dict`. In particular,
+    `dict(mapping_or_iterable=(("value", 1),))` treats the argument as the source rather than as a data key. The
+    published signature exposes that call shape. Exact CPython positional-only enforcement is not the
+    compiled-subset contract, so these outcomes are not correctness bugs. Signatures may be narrowed later as an
+    API decision.
+
+66. **Non-finite numeric prose describes an unsupported reliance, not universal input rejection.**
+    Tests and emission intentionally accept some non-finite constants, while the numeric guide says users must not
+    rely on values outside the runtime's supported numeric boundary. Accepted construction of an infinity does not
+    promise Python behavior for arithmetic, ordering, labels, or serialization involving it. Item 30 remains the
+    operative policy.
+
+67. **Dual `NotImplemented` equality does not fall back to traced object identity.**
+    When both same-type `__eq__` or `__ne__` methods return `NotImplemented`, compilation reports an error instead
+    of applying Python's identity fallback. Traced object identity is not considered reliable for this purpose,
+    and focused tests intentionally use `run_compiled` to pin the accepted divergence.
+
+68. **Record-valued chained comparisons remain constrained by branch merging.**
+    Chained non-membership comparisons can reject record-valued intermediate or final rich-comparison results.
+    Supporting the raw short-circuit and final results would still leave the common runtime paths unusable because
+    distinct reference values cannot merge. This niche extension was declined.
+
+69. **Mode archetype lists are validated at construction rather than after every mutation.**
+    Mutating a mode's public `archetypes` list after construction can insert the same class twice and bypass the
+    constructor's duplicate check. Revalidating every later schema and packaging boundary was declined.
+
+70. **Iterator tests may pin behavior beyond the public single-use contract.**
+    Focused tests assert exact reuse behavior for specific builtin iterator implementations. These tests do not
+    broaden the public contract, which continues to treat iterators as single use.

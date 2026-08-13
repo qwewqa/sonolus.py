@@ -7,9 +7,10 @@ from typing import (
     Iterable,
     Iterator,
     Literal,
-    Sequence,
     overload,
 )
+
+from sonolus.script.array_like import ArrayLike
 
 def all(iterable: Iterable[builtins.object]) -> builtins.bool:
     """Return True if all elements of the iterable are true.
@@ -344,8 +345,16 @@ def range(*args) -> builtins.range:
     """
     ...
 
-def reversed[T](seq: Sequence[T], /) -> Sequence[T]:
-    """Return a reversed view of the sequence.
+@overload
+def reversed[T](seq: ArrayLike[T], /) -> ArrayLike[T]: ...
+@overload
+def reversed[T](seq: tuple[T, ...] | builtins.dict[T, Any], /) -> tuple[T, ...]: ...
+@overload
+def reversed[T: Enum](seq: type[T], /) -> tuple[T, ...]: ...
+def reversed(seq: Any, /) -> Any:
+    """Return a reversed view of a supported sequence.
+
+    Accepts an `ArrayLike`, tuple, dict, or enum class.
 
     Args:
         seq: The sequence to reverse.

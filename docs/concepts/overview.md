@@ -22,7 +22,7 @@ supported.
 ### Syntax
 
 Most Python syntax is supported, but there are a few limitations. The primary restrictions are listed below; see
-[Key Differences](constructs.md#key-differences) for the complete list:
+[Key Differences](constructs.md#key-differences) for more details:
 
 - Destructuring assignment with the `*` operator is unsupported.
 - Sequence (list and array) `match` patterns with the `*` operator are unsupported.
@@ -30,6 +30,8 @@ Most Python syntax is supported, but there are a few limitations. The primary re
 - Within functions, `import` statements are unsupported.
 - The `global` and `nonlocal` keywords are unsupported.
 - Exception related statements (`try`, `except`, `finally`, `raise`) are unsupported.
+- Asynchronous functions and `await` expressions are unsupported.
+- Classes and type aliases may not be defined within functions.
 
 ### Compile Time Evaluation
 

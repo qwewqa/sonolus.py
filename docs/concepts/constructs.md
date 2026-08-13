@@ -24,6 +24,8 @@ Python.
 - List literals (`[1, 2, 3]`) are unsupported; use a tuple or [`Array`][sonolus.script.array.Array] instead.
 - List, set, and dict comprehensions are unsupported; only generator expressions are supported.
 - Exception statements (`try`, `except`, `finally`, `raise`) and `with` statements are unsupported.
+- Asynchronous functions and `await` expressions are unsupported.
+- Classes and type aliases may not be defined within functions.
 - F-strings and slices are unsupported.
 - The bitwise operators (`&`, `|`, `^`, `<<`, `>>`, `~`) are not supported for [`Num`](types.md#num), since the
   Sonolus runtime has no bitwise operations. They are available only for types that define them, such as

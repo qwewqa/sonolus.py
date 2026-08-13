@@ -453,6 +453,31 @@ def _resolve_descriptor(target_type: type, key: str) -> Any:
     return descriptor
 
 
+def _resolve_super_descriptor(target: super, key: str) -> Any:
+    """Resolve `key` from the part of the MRO searched by `target`."""
+    if key == "__class__":
+        return None
+    self_class = object.__getattribute__(target, "__self_class__")  # noqa: PLC2801 - bypass super lookup
+    if self_class is None:
+        return None
+    this_class = object.__getattribute__(target, "__thisclass__")  # noqa: PLC2801 - bypass super lookup
+    mro = type.__getattribute__(self_class, "__mro__")  # noqa: PLC2801 - bypass metaclass hooks
+    start = mro.index(this_class) + 1
+    for cls in mro[start:]:
+        namespace = type.__getattribute__(cls, "__dict__")  # noqa: PLC2801 - bypass metaclass hooks
+        if key in namespace:
+            return namespace[key]
+    return None
+
+
+def _super_proxy_parts(target: super) -> tuple[type, Any, type | None]:
+    """Return the intrinsic class, bound object, and optional bound-object class for `target`."""
+    this_class = object.__getattribute__(target, "__thisclass__")  # noqa: PLC2801 - bypass super lookup
+    self_ = object.__getattribute__(target, "__self__")  # noqa: PLC2801 - bypass super lookup
+    self_class = object.__getattribute__(target, "__self_class__")  # noqa: PLC2801 - bypass super lookup
+    return this_class, self_, self_class
+
+
 # Visit-time statistics are for diagnostics only (see print_visit_stats in sonolus/build/engine.py),
 # so they're gated behind an environment variable to avoid the bookkeeping overhead in normal builds.
 VISIT_STATS_ENABLED = os.environ.get("SONOLUS_VISIT_STATS") == "1"
@@ -2307,18 +2332,28 @@ class Visitor(ast.NodeVisitor):
                 attribute_target = attribute_target._as_py_()
             reject_custom_record_getattribute(attribute_target)
             target_type = type(attribute_target)
-            descriptor = _resolve_descriptor(target_type, key)
+            if isinstance(attribute_target, super):
+                descriptor = _resolve_super_descriptor(attribute_target, key)
+                _, descriptor_target, descriptor_target_type = _super_proxy_parts(attribute_target)
+                if descriptor_target is descriptor_target_type:
+                    descriptor = None
+            else:
+                descriptor = _resolve_descriptor(target_type, key)
+                descriptor_target = attribute_target
+                descriptor_target_type = target_type
             match descriptor:
                 case property(fget=getter):
                     if getter is None:
-                        error = AttributeError(f"property '{key}' of '{target_type.__name__}' object has no getter")
+                        error = AttributeError(
+                            f"property '{key}' of '{descriptor_target_type.__name__}' object has no getter"
+                        )
                     else:
                         try:
-                            return self.handle_call(node, getter, attribute_target)
+                            return self.handle_call(node, getter, descriptor_target)
                         except Exception as e:
                             if not caused_by_attribute_error(e):
                                 raise
-                            _raise_property_getter_attribute_error(target_type, key, e)
+                            _raise_property_getter_attribute_error(descriptor_target_type, key, e)
                     fallback = _bind_special_method(attribute_target, "__getattr__")
                     if fallback is not _SPECIAL_METHOD_MISSING:
                         try:

@@ -504,6 +504,7 @@ def test_array_truthiness_non_empty():
 
 
 def test_array_with_next():
+    # This pins _ArrayIterator specifically; the public iterator contract does not promise reuse behavior.
     def fn():
         array = Array(1, 2, 3)
         iterator = iter(array)

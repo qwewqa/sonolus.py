@@ -1057,6 +1057,7 @@ def test_iterator_consumers_reject_custom_record_getattribute_without_invoking_i
         run_compiled(fn)
 
 
+# These tests pin specific builtin iterator implementations beyond the public single-use iterator contract.
 def test_next_over_array_iterator_two_results_live():
     def fn():
         it = iter(Array(2, 4, 6))

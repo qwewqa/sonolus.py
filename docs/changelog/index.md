@@ -83,6 +83,7 @@
 - [`interp`][sonolus.script.interval.interp] now also checks that the final `xp` segment is in increasing order.
 - Fixed `max()` and `min()` failing to compile when given an explicit `key=None` together with two or more
   arguments.
+- Fixed inherited properties accessed through `super()` failing to compile when they read runtime values.
 - Fixed an augmented assignment such as `interval &= other` failing to compile when the type's corresponding
   binary operator branches on a runtime value.
 - Fixed lambdas defined inside `yield` or `yield from` expressions failing to compile.

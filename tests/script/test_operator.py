@@ -1069,7 +1069,7 @@ def test_in_short_circuits_at_the_first_match():
 
 
 def test_in_consumes_a_one_shot_iterator_up_to_the_match():
-    # Membership over an iterator consumes it, so the loop that follows resumes after the match.
+    # This pins _ArrayIterator specifically; the public iterator contract does not promise reuse behavior.
     def fn():
         it = iter(Array(1, 2, 3, 4))
         found = 2 in it

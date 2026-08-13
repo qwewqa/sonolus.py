@@ -952,6 +952,8 @@ def _getattr(obj: Any, name: str, default=_empty) -> Any:
         _raise_getattr_attribute_error,
         _raise_property_getter_attribute_error,
         _raw_special_method,
+        _resolve_super_descriptor,
+        _super_proxy_parts,
         compile_and_call,
         reject_custom_record_getattribute,
         reject_instance_only_attribute,
@@ -967,24 +969,33 @@ def _getattr(obj: Any, name: str, default=_empty) -> Any:
     if was_constant:
         obj = obj._as_py_()
     reject_custom_record_getattribute(obj)
-    descriptor = None
-    descriptor_found = False
-    for cls in type.mro(type(obj)):
-        if name in cls.__dict__:
-            descriptor = cls.__dict__[name]
-            descriptor_found = True
-            break
+    if isinstance(obj, super):
+        descriptor = _resolve_super_descriptor(obj, name)
+        _, descriptor_target, descriptor_target_type = _super_proxy_parts(obj)
+        if descriptor_target is descriptor_target_type:
+            descriptor = None
+        descriptor_found = descriptor is not None
+    else:
+        descriptor = None
+        descriptor_target = obj
+        descriptor_target_type = type(obj)
+        descriptor_found = False
+        for cls in type.mro(type(obj)):
+            if name in cls.__dict__:
+                descriptor = cls.__dict__[name]
+                descriptor_found = True
+                break
     match descriptor:
         case property(fget=getter):
             if getter is None:
-                error = AttributeError(f"property '{name}' of '{type(obj).__name__}' object has no getter")
+                error = AttributeError(f"property '{name}' of '{descriptor_target_type.__name__}' object has no getter")
             else:
                 try:
-                    return compile_and_call(getter, obj)
+                    return compile_and_call(getter, descriptor_target)
                 except Exception as e:
                     if not caused_by_attribute_error(e):
                         raise
-                    _raise_property_getter_attribute_error(type(obj), name, e)
+                    _raise_property_getter_attribute_error(descriptor_target_type, name, e)
             fallback = _bind_special_method(obj, "__getattr__")
             if fallback is not _SPECIAL_METHOD_MISSING:
                 try:
