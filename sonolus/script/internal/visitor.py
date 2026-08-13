@@ -682,8 +682,11 @@ class Visitor(ast.NodeVisitor):
             with using_ctx(start_ctx):
                 state_var = Num._alloc_()
                 is_present_var = Num._alloc_()
+                owner_var = Num._alloc_() if ctx().project_state.runtime_checks != RuntimeChecks.NONE else None
             with using_ctx(before_ctx):
                 state_var._set_(0)
+                if owner_var is not None:
+                    owner_var._set_(0)
             with using_ctx(return_ctx):
                 state_var._set_(len(self.resume_ctxs) + 1)
                 is_present_var._set_(0)
@@ -782,6 +785,7 @@ class Visitor(ast.NodeVisitor):
             completion_timer()
             return Generator(
                 return_test,
+                owner_var,
                 entry,
                 next_result_ctx,
                 yield_value,
@@ -1926,7 +1930,7 @@ class Visitor(ast.NodeVisitor):
     def handle_comparison(self, node: ast.stmt | ast.expr | ast.pattern, op: ast.cmpop, l_val: Value, r_val: Value):
         """Evaluate `l_val op r_val` and return the raw result of the comparison.
 
-        The caller applies `not in` inversion and converts the result to a truth value.
+        The caller applies `not in` inversion and truth-tests results where the surrounding syntax requires it.
         """
         if not ctx().live:
             return validate_value(None)
@@ -1997,6 +2001,8 @@ class Visitor(ast.NodeVisitor):
             raw_result = self.handle_comparison(node, op, l_val, r_val)
             if isinstance(op, ast.In | ast.NotIn) and raw_result._is_py_() and not _is_num(raw_result):
                 raw_result = Num._accept_(bool(raw_result._as_py_()))
+            if len(node.ops) == 1 and not isinstance(op, ast.In | ast.NotIn):
+                return raw_result
             result = (
                 self.convert_to_boolean_num(node, raw_result)
                 if isinstance(op, ast.In | ast.NotIn)
@@ -2387,8 +2393,8 @@ class Visitor(ast.NodeVisitor):
         self.active_ctx = active_ctx = ctx()
         callback_state = active_ctx.callback_state
         debug_stack = callback_state.debug_stack
+        debug_stack.append(f'File "{self.source_file}", line {node.lineno}, in {self.function_name}')
         try:
-            debug_stack.append(f'File "{self.source_file}", line {node.lineno}, in {self.function_name}')
             if (
                 isinstance(fn, Value)
                 and fn._is_py_()
@@ -2633,6 +2639,7 @@ class Generator(TransientValue, SonolusIterator):
     def __init__(
         self,
         return_test: Num,
+        owner: Num | None,
         entry: Context,
         exit_: Context,
         value: Maybe,
@@ -2643,6 +2650,7 @@ class Generator(TransientValue, SonolusIterator):
     ):
         self.next_call_site = 0
         self.return_test = return_test
+        self.owner = owner
         self.entry = entry
         self.exit = exit_
         self.value = value
@@ -2653,6 +2661,13 @@ class Generator(TransientValue, SonolusIterator):
 
     @meta_fn
     def next(self):
+        if self.owner is not None:
+            owner_id = ctx().callback_state.runtime_owner_id or ctx().allocate_runtime_owner_id()
+            assert_true(
+                Num.or_(self.owner == 0, self.owner == owner_id),
+                "Generator cannot be used by more than one iterator consumer",
+            )
+            self.owner._set_(owner_id)
         active_generator = next(
             (active_visitor for active_visitor in reversed(_ACTIVE_VISITORS) if active_visitor.is_generator), None
         )

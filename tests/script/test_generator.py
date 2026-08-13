@@ -153,46 +153,6 @@ def test_generator_over_nested_tuple():
     run_and_validate(fn)
 
 
-def test_generator_over_nested_array_breaks():
-    def fn():
-        arr = Array(Array(1, 2), Array(3, 4))
-
-        def gen():
-            for sub_arr in arr:
-                for i in sub_arr:
-                    yield i * 2
-                yield 123
-
-        iterator = gen()
-        for i in iterator:
-            debug_log(i)
-            break
-        for i in iterator:
-            debug_log(i * 2)
-
-    run_and_validate(fn)
-
-
-def test_generator_over_nested_tuple_breaks():
-    def fn():
-        tup = ((1, 2), (3, 4))
-
-        def gen():
-            for sub_tup in tup:
-                for i in sub_tup:
-                    yield i * 2
-                yield 123
-
-        iterator = gen()
-        for i in iterator:
-            debug_log(i)
-            break
-        for i in iterator:
-            debug_log(i * 2)
-
-    run_and_validate(fn)
-
-
 def test_generator_with_skipping_loop():
     def fn():
         def gen():
@@ -672,25 +632,6 @@ def test_generator_transitive_capture_rebound_between_next_calls_is_rejected():
         run_compiled(fn)
 
 
-def test_closure_called_after_it_is_yielded_does_not_become_a_generator_capture():
-    def fn():
-        x = 1
-
-        def gen():
-            get_x = lambda: x  # noqa: E731
-            yield get_x
-            yield get_x
-
-        iterator = gen()
-        get_x = next(iterator)
-        first = get_x()
-        x = 2
-        next(iterator)
-        return first
-
-    assert run_and_validate(fn) == 1
-
-
 def test_generator_capture_propagates_through_externally_defined_closure():
     def fn():
         x = 1
@@ -736,8 +677,10 @@ def test_generator_does_not_capture_shadowed_binding_from_unrelated_closure_owne
             yield get_y()
             yield get_y()
 
-        iterator = gen()
-        return next(iterator) + next(iterator) + y
+        result = y
+        for value in gen():
+            result += value
+        return result
 
     assert run_and_validate(fn) == 5
 
@@ -751,10 +694,8 @@ def test_outer_generator_does_not_capture_binding_used_only_by_nested_generator(
             yield inner
             yield inner
 
-        iterator = gen()
-        next(iterator)
-        x = 2
-        next(iterator)
+        for _ in gen():
+            x = 2
         return 1
 
     assert run_and_validate(fn) == 1
@@ -813,8 +754,10 @@ def test_generator_does_not_inherit_nested_generator_capture_from_transient_call
             yield helper()
             yield helper()
 
-        iterator = outer()
-        return next(iterator) + next(iterator)
+        result = 0
+        for value in outer():
+            result += value
+        return result
 
     assert run_and_validate(fn) == 2
 
@@ -1041,19 +984,108 @@ def test_nested_iteration_of_same_generator():
     run_and_validate(fn)
 
 
-def test_generator_with_next():
+def test_generator_single_next_succeeds_with_runtime_checks():
+    def fn():
+        def gen():
+            yield 1
+
+        return next(gen())
+
+    assert run_compiled(fn, runtime_checks=RuntimeChecks.TERMINATE) == 1
+
+
+def test_generator_single_for_loop_succeeds_with_runtime_checks():
     def fn():
         def gen():
             yield 1
             yield 2
             yield 3
 
-        iterator = gen()
-        debug_log(next(iterator))
-        debug_log(next(iterator))
-        debug_log(next(iterator))
+        result = 0
+        for value in gen():
+            result = result * 10 + value
+        return result
 
-    run_and_validate(fn)
+    assert run_compiled(fn, runtime_checks=RuntimeChecks.TERMINATE) == 123
+
+
+def test_generator_reached_next_call_twice_terminates_with_runtime_checks():
+    def fn():
+        def gen():
+            yield 1
+            yield 2
+
+        iterator = gen()
+
+        def advance():
+            return next(iterator)
+
+        first = advance()
+        return first * 10 + advance()
+
+    assert run_compiled(fn, runtime_checks=RuntimeChecks.TERMINATE) == 0
+    run_compiled(fn, runtime_checks=RuntimeChecks.NONE)
+
+
+def test_generator_two_next_calls_terminate_with_runtime_checks():
+    def fn():
+        def gen():
+            yield 1
+            yield 2
+
+        iterator = gen()
+        first = next(iterator)
+        return first * 10 + next(iterator)
+
+    assert run_compiled(fn, runtime_checks=RuntimeChecks.TERMINATE) == 0
+    run_compiled(fn, runtime_checks=RuntimeChecks.NONE)
+
+
+def test_generator_next_then_for_loop_terminates_with_runtime_checks():
+    def fn():
+        def gen():
+            yield 1
+            yield 2
+
+        iterator = gen()
+        result = next(iterator)
+        for value in iterator:
+            result += value
+        return result
+
+    assert run_compiled(fn, runtime_checks=RuntimeChecks.TERMINATE) == 0
+    run_compiled(fn, runtime_checks=RuntimeChecks.NONE)
+
+
+def test_generator_two_loops_terminate_with_runtime_checks():
+    def fn():
+        def gen():
+            yield 1
+            yield 2
+
+        iterator = gen()
+        result = 0
+        for value in iterator:
+            result += value
+            break
+        for value in iterator:
+            result += value
+        return result
+
+    assert run_compiled(fn, runtime_checks=RuntimeChecks.TERMINATE) == 0
+    run_compiled(fn, runtime_checks=RuntimeChecks.NONE)
+
+
+def test_distinct_generator_instances_can_use_different_next_calls():
+    def fn():
+        def gen(value):
+            yield value
+
+        first = gen(1)
+        second = gen(2)
+        return next(first) * 10 + next(second)
+
+    assert run_compiled(fn, runtime_checks=RuntimeChecks.TERMINATE) == 12
 
 
 def test_generator_with_iter():
@@ -1096,215 +1128,6 @@ def test_generator_return_nonnone_constant_rejected():
         run_compiled(fn)
 
 
-def test_generator_two_next_results_live_in_one_expression():
-    def fn():
-        def gen():
-            yield 1
-            yield 2
-            yield 3
-
-        g = gen()
-        return next(g) + next(g)
-
-    assert run_and_validate(fn) == 3
-
-
-def test_generator_three_next_results_live_in_one_expression():
-    def fn():
-        def gen():
-            yield 2
-            yield 4
-            yield 6
-
-        g = gen()
-        return next(g) + next(g) + next(g)
-
-    assert run_and_validate(fn) == 12
-
-
-def test_generator_next_results_held_in_locals():
-    def fn():
-        def gen():
-            yield 2
-            yield 4
-            yield 6
-
-        g = gen()
-        a = next(g)
-        b = next(g)
-        c = next(g)
-        debug_log(a)
-        debug_log(b)
-        debug_log(c)
-        return a * 100 + b * 10 + c
-
-    assert run_and_validate(fn) == 246
-
-
-def test_generator_next_results_live_across_branch():
-    def fn():
-        def gen():
-            yield 5
-            yield 1
-
-        g = gen()
-        first = next(g)
-        second = next(g)
-        if first > second:
-            return first - second
-        return second - first
-
-    assert run_and_validate(fn) == 4
-
-
-def test_generator_next_results_in_tuple():
-    def fn():
-        def gen():
-            yield 3
-            yield 7
-
-        g = gen()
-        pair = (next(g), next(g))
-        return pair[0] * 10 + pair[1]
-
-    assert run_and_validate(fn) == 37
-
-
-def test_genexpr_two_next_results_live_in_one_expression():
-    def fn():
-        g = (v * 10 for v in Array(1, 2, 3))
-        return next(g) + next(g)
-
-    assert run_and_validate(fn) == 30
-
-
-def test_genexpr_three_next_results_live_in_one_expression():
-    def fn():
-        g = (v * 10 for v in Array(1, 2, 3))
-        return next(g) + next(g) + next(g)
-
-    assert run_and_validate(fn) == 60
-
-
-def test_generator_next_interleaved_with_consumption_unchanged():
-    def fn():
-        def gen():
-            yield 1
-            yield 2
-            yield 3
-
-        g = gen()
-        debug_log(next(g))
-        debug_log(next(g))
-        debug_log(next(g))
-
-    run_and_validate(fn)
-
-
-def test_generator_next_then_for_loop_unchanged():
-    def fn():
-        def gen():
-            yield 1
-            yield 2
-            yield 3
-            yield 4
-
-        g = gen()
-        total = next(g)
-        for v in g:
-            total += v
-        return total
-
-    assert run_and_validate(fn) == 10
-
-
-def test_generator_next_exhausted_still_errors():
-    def fn():
-        def gen():
-            yield 1
-
-        g = gen()
-        debug_log(next(g))
-        debug_log(next(g))
-
-    with pytest.raises(StopIteration):
-        run_and_validate(fn)
-
-
-def test_generator_yielding_record_next_results_alias_pinned():
-    # Pinned limitation, not a bug report: the fix copies Num payloads only. For a reference-type payload
-    # `_get_` (and so `_get_readonly_`) returns self by contract, so two live next() results still view the
-    # generator's single yield storage. Compiled-only assertion: plain Python would give 24 here, so
-    # run_and_validate cannot be used.
-    def fn():
-        def gen():
-            for i in range(1, 3):
-                yield Box(i * 2)
-
-        g = gen()
-        a = next(g)
-        b = next(g)
-        return a.value * 10 + b.value
-
-    assert run_compiled(fn) == 44
-
-
-def test_generator_next_results_via_enumerate_alias_pinned():
-    # `enumerate`/`zip` wrap the payload in a TupleImpl, which is a TransientValue: its `_get_` (and so
-    # `_get_readonly_`) returns self, so the Num elements inside are never snapshotted and both live results
-    # still read the generator's latest yield.
-    def fn():
-        def gen():
-            yield 1
-            yield 2
-
-        it = enumerate(gen())
-        a = next(it)
-        b = next(it)
-        return a[1] * 10 + b[1]
-
-    assert run_compiled(fn) == 22
-
-
-def test_generator_next_results_via_zip_alias_pinned():
-    # Same pinned TupleImpl limitation, via zip.
-    def fn():
-        def gen():
-            yield 1
-            yield 2
-
-        it = zip(gen(), Array(7, 8), strict=False)
-        a = next(it)
-        b = next(it)
-        return a[0] * 10 + b[0]
-
-    assert run_compiled(fn) == 22
-
-
-def test_nested_loops_over_one_generator_alias_pinned():
-    # run_compiled, not run_and_validate: this is an accepted divergence. A generator reuses one location for the
-    # value it yields, so the inner loop's advance overwrites the outer loop's variable. Plain Python logs
-    # [2, 1, 4, 3]; this is the documented behaviour in concepts/constructs.md.
-    def fn():
-        def gen():
-            yield 1
-            yield 2
-            yield 3
-            yield 4
-
-        it = gen()
-        for a in it:
-            for b in it:
-                debug_log(b)
-                break
-            debug_log(a)
-        return 0
-
-    logs = []
-    run_compiled(fn, log_callback=logs.append)
-    assert logs == [2, 2, 4, 4]
-
-
 def test_nested_loops_over_one_array_iterator_match_python():
     # The array case is not affected: elements have distinct storage, so nothing is overwritten.
     def fn():
@@ -1317,24 +1140,6 @@ def test_nested_loops_over_one_array_iterator_match_python():
         return 0
 
     run_and_validate(fn)
-
-
-def test_generator_consumed_by_two_sequential_loops_matches_python():
-    def fn():
-        def gen():
-            yield 1
-            yield 2
-            yield 3
-
-        total = 0
-        it = gen()
-        for x in it:
-            total += x
-        for x in it:
-            total += x * 10
-        return total
-
-    assert run_and_validate(fn) == 6
 
 
 def test_exhausted_compile_time_zip_repeats_pinned():
@@ -1714,280 +1519,6 @@ def test_generator_loop_callback_uses_runtime_suspension_binding():
         return result
 
     assert run_and_validate(fn) == 12
-
-
-def test_callbacks_from_consecutive_generator_advances_snapshot_results():
-    def fn():
-        def gen():
-            value = 0
-            callback = lambda: value  # noqa: E731
-            for item in Array(1, 2):
-                value = item
-                yield callback
-
-        iterator = gen()
-        first = next(iterator)()
-        second = next(iterator)()
-        return first * 10 + second
-
-    assert run_and_validate(fn) == 12
-
-
-def test_yielded_lambda_reads_updated_generator_local():
-    def fn():
-        def gen():
-            value = 1
-            callback = lambda: value  # noqa: E731
-            yield callback
-            value = 2
-            yield callback
-
-        iterator = gen()
-        callback = next(iterator)
-        next(iterator)
-        return callback()
-
-    assert run_and_validate(fn) == 2
-
-
-@pytest.mark.parametrize(("condition", "expected"), [(runtime_false, 23), (runtime_true, 12)])
-def test_consecutive_next_uses_runtime_suspension_state(condition, expected):
-    def fn():
-        def gen():
-            if condition():
-                yield 1
-            yield 2
-            yield 3
-
-        iterator = gen()
-        return next(iterator) * 10 + next(iterator)
-
-    assert run_and_validate(fn) == expected
-
-
-@pytest.mark.parametrize(("condition", "expected"), [(runtime_false, 23), (runtime_true, 12)])
-def test_consecutive_next_callbacks_use_runtime_suspension_state(condition, expected):
-    def fn():
-        def gen():
-            value = 1
-            callback = lambda: value  # noqa: E731
-            if condition():
-                yield callback
-            value = 2
-            yield callback
-            value = 3
-            yield callback
-
-        iterator = gen()
-        first = next(iterator)()
-        second = next(iterator)()
-        return first * 10 + second
-
-    assert run_and_validate(fn) == expected
-
-
-@pytest.mark.parametrize(("condition", "expected"), [(runtime_false, 12), (runtime_true, 123)])
-def test_runtime_branch_can_skip_generator_next_call_site(condition, expected):
-    def fn():
-        def gen():
-            yield 1
-            yield 2
-            yield 3
-
-        iterator = gen()
-        result = 0
-        if condition():
-            result = next(iterator) * 100
-        return result + next(iterator) * 10 + next(iterator)
-
-    assert run_and_validate(fn) == expected
-
-
-def test_generator_next_call_site_can_repeat_in_runtime_loop():
-    def fn():
-        def gen():
-            yield 1
-            yield 2
-            yield 3
-
-        iterator = gen()
-        result = 0
-        for _ in Array(0, 0, 0):
-            result = result * 10 + next(iterator)
-        return result
-
-    assert run_and_validate(fn) == 123
-
-
-def test_repeated_generator_next_call_site_updates_callback_environment():
-    def fn():
-        def gen():
-            value = 1
-            callback = lambda: value  # noqa: E731
-            yield callback
-            value = 2
-            yield callback
-            value = 3
-            yield callback
-
-        iterator = gen()
-        result = 0
-        for _ in Array(0, 0, 0):
-            callback = next(iterator)
-            result = result * 10 + callback()
-        return result
-
-    assert run_and_validate(fn) == 123
-
-
-@pytest.mark.parametrize(("condition", "expected"), [(runtime_false, 1), (runtime_true, 2)])
-def test_runtime_branch_can_skip_generator_callback_advance(condition, expected):
-    def fn():
-        def gen():
-            value = 1
-            callback = lambda: value  # noqa: E731
-            yield callback
-            value = 2
-            yield callback
-
-        iterator = gen()
-        if condition():
-            next(iterator)
-        callback = next(iterator)
-        return callback()
-
-    assert run_and_validate(fn) == expected
-
-
-def test_generator_expression_forwards_updated_callback_environment():
-    def fn():
-        def inner():
-            value = 1
-            callback = lambda: value  # noqa: E731
-            yield callback
-            value = 2
-            yield callback
-
-        iterator = (callback for callback in inner())
-        first = next(iterator)()
-        second = next(iterator)()
-        return first * 10 + second
-
-    assert run_and_validate(fn) == 12
-
-
-def test_maybe_next_uses_runtime_suspension_state():
-    def fn():
-        def gen():
-            if runtime_false():
-                yield 1
-            yield 2
-            yield 3
-
-        iterator = gen()
-        debug_log(maybe_next_generator(iterator).get())
-        return maybe_next_generator(iterator).get()
-
-    assert run_and_validate(fn) == 3
-
-
-def test_yield_from_uses_inner_runtime_suspension_state():
-    def fn():
-        def inner():
-            if runtime_false():
-                yield 1
-            yield 2
-            yield 3
-
-        def outer():
-            yield from inner()
-
-        iterator = outer()
-        return next(iterator) * 10 + next(iterator)
-
-    assert run_and_validate(fn) == 23
-
-
-def test_multilevel_yield_from_uses_inner_runtime_suspension_state():
-    def fn():
-        def inner():
-            if runtime_false():
-                yield 1
-            yield 2
-            yield 3
-
-        def middle():
-            yield from inner()
-
-        def outer():
-            yield from middle()
-
-        iterator = outer()
-        return next(iterator) * 10 + next(iterator)
-
-    assert run_and_validate(fn) == 23
-
-
-def test_generator_loop_resumes_same_source_yield():
-    def fn():
-        def gen():
-            for value in Array(1, 2, 3):  # noqa: UP028
-                yield value
-
-        iterator = gen()
-        return next(iterator) * 100 + next(iterator) * 10 + next(iterator)
-
-    assert run_and_validate(fn) == 123
-
-
-def test_generator_completion_updates_yielded_callback_environment():
-    def fn():
-        def gen():
-            value = 1
-            callback = lambda: value  # noqa: E731
-            yield callback
-            value = 2
-
-        iterator = gen()
-        callback = next(iterator)
-        assert maybe_next_generator(iterator).is_nothing
-        return callback()
-
-    assert run_and_validate(fn) == 2
-
-
-def test_yield_from_completion_updates_yielded_callback_environment():
-    def fn():
-        def inner():
-            value = 1
-            callback = lambda: value  # noqa: E731
-            yield callback
-            value = 2
-
-        def outer():
-            yield from inner()
-
-        iterator = outer()
-        callback = next(iterator)
-        maybe_next_generator(iterator)
-        return callback()
-
-    assert run_and_validate(fn) == 2
-
-
-def test_exhausted_generator_does_not_replay_completion_tail():
-    def fn():
-        def gen():
-            yield 1
-            debug_log(2)
-
-        iterator = gen()
-        next(iterator)
-        first = maybe_next_generator(iterator)
-        second = maybe_next_generator(iterator)
-        return first.is_nothing + second.is_nothing
-
-    assert run_and_validate(fn) == 2
 
 
 def test_statically_nonempty_false_filtered_generator_terminates_on_consumption():

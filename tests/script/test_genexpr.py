@@ -189,23 +189,6 @@ def test_genexpr_early_break():
     run_and_validate(fn)
 
 
-def test_genexpr_iterator_resume_after_break():
-    def fn():
-        gen = (i for i in range(10))
-
-        for i, x in enumerate(gen):
-            debug_log(x)
-            if i >= 2:
-                break
-
-        for i, x in enumerate(gen):
-            debug_log(x + 100)
-            if i >= 1:
-                break
-
-    run_and_validate(fn)
-
-
 def test_genexpr_empty():
     def fn():
         gen = (i for i in range(0))
@@ -274,16 +257,6 @@ def test_genexpr_of_gexpr():
         match="Nested generator captures changing local 'i' from a suspended generator, which is not supported",
     ):
         run_compiled(fn)
-
-
-def test_genexpr_with_next():
-    def fn():
-        gen = (i * 2 for i in range(5))
-        debug_log(next(gen))
-        debug_log(next(gen))
-        debug_log(next(gen))
-
-    run_and_validate(fn)
 
 
 def test_genexpr_with_iter():

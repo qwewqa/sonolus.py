@@ -118,6 +118,17 @@ class EqOnly(Record):
         return True
 
 
+class ComparisonResult(Record):
+    value: float
+
+
+class RecordValuedEq(Record):
+    value: float
+
+    def __eq__(self, other):
+        return ComparisonResult(self.value + other.value)
+
+
 class EqNotImplemented(Record):
     def __eq__(self, other):
         debug_log(17)
@@ -468,6 +479,14 @@ def test_eq_op(left, right):
         return left == right
 
     run_and_validate(fn)
+
+
+def test_standalone_comparison_returns_record_result():
+    def fn():
+        result = RecordValuedEq(1) == RecordValuedEq(2)
+        return result.value
+
+    assert run_and_validate(fn) == 3
 
 
 def test_eq_not_implemented():

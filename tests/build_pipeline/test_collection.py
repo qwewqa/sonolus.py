@@ -85,6 +85,20 @@ def test_load_from_source_rejects_reserved_item_directory(tmp_path):
         load_resources_files_to_collection(tmp_path)
 
 
+@pytest.mark.parametrize("item", [None, [], 1, "item"])
+def test_load_from_source_skips_non_object_item_json(tmp_path, item):
+    item_dir = tmp_path / "skins" / "invalid"
+    item_dir.mkdir(parents=True)
+    item_json_path = item_dir / "item.json"
+    item_json_path.write_text(json.dumps(item), encoding="utf-8")
+    collection = Collection()
+
+    with pytest.warns(UserWarning, match="Expected a JSON object"):
+        collection.load_from_source(tmp_path)
+
+    assert collection.categories == {}
+
+
 @pytest.mark.parametrize("name", ["a/b", "a\\b", ".", ".."])
 def test_add_item_rejects_unusable_names(name):
     c = Collection()

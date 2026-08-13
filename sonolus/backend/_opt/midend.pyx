@@ -4378,24 +4378,32 @@ cdef bint _rsw_relocatable(Func f, int32_t nxt, set ext) except -1:
     return True
 
 
-def _rsw_splice_safe(Func f, list kept, list nxt_edges, int32_t nxt):
+def _rsw_splice_safe(Func f, list kept, list nxt_edges, list rank_by_edge):
     # Refuse a splice that would give the head parallel edges to one target
-    # carrying UNEQUAL phi operands. After splicing, the head (with edges ``kept``,
-    # its default to nxt removed) also gains nxt's edges. If nxt shares a successor
-    # T with the head, the head ends up with two edges to T -- its own (operand =
-    # the value at the head's exit) and nxt's spliced edge (operand = the value at
-    # nxt's exit). Those operands are EQUAL only when nxt passes the value through
-    # unchanged; they DIFFER when T's phi operand on the nxt->T edge is a value
-    # DEFINED in nxt (an escaping const, the shape _rsw_relocatable admits). That
-    # violates the parallel-same-pred equal-operand invariant (crashing SSA export
-    # and mis-lowering the naive out_of_ssa), so refuse those splices.
-    cdef int32_t istart = f.blocks[nxt].instr_start
-    cdef int32_t icount = f.blocks[nxt].instr_count
-    cdef int32_t t, ps, pc, p, astart, k, a
+    # carrying unequal phi operands. Phi operands correspond to incoming edges in
+    # ascending original edge-index order, and each mutable edge retains that index
+    # as ``key``. Compare those operands directly; where an operand was defined is
+    # not enough, because nxt can copy a different head-defined value into the phi.
+    cdef int32_t t, ps, pc, p, astart, head_key, nxt_key
+    cdef int32_t head_arg, nxt_arg
+    # Match the splice's duplicate-condition filtering so an unreachable edge that
+    # will be dropped cannot unnecessarily prevent an otherwise safe rewrite.
+    existing = set()
+    for ed in kept:
+        if <int32_t>(<dict>ed)["ck"] == EDGE_COND_VALUE:
+            existing.add((<dict>ed)["cond"])
+    surviving_nxt = []
+    for ed in nxt_edges:
+        if <int32_t>(<dict>ed)["ck"] == EDGE_COND_VALUE and (<dict>ed)["cond"] in existing:
+            continue
+        surviving_nxt.append(ed)
+        if <int32_t>(<dict>ed)["ck"] == EDGE_COND_VALUE:
+            existing.add((<dict>ed)["cond"])
+
     b_targets = set()
     for ed in kept:
         b_targets.add(<int32_t>(<dict>ed)["dst"])
-    for ed in nxt_edges:
+    for ed in surviving_nxt:
         t = <int32_t>(<dict>ed)["dst"]
         if t not in b_targets:
             continue
@@ -4405,9 +4413,14 @@ def _rsw_splice_safe(Func f, list kept, list nxt_edges, int32_t nxt):
         ps = f.blocks[t].phi_start
         for p in range(ps, ps + pc):
             astart = f.instrs[p].arg_start
-            for k in range(f.instrs[p].nargs):
-                a = <int32_t>f.args[astart + k]
-                if istart <= a < istart + icount:
+            nxt_key = <int32_t>(<dict>ed)["key"]
+            nxt_arg = <int32_t>f.args[astart + <int32_t>rank_by_edge[nxt_key]]
+            for head_ed in kept:
+                if <int32_t>(<dict>head_ed)["dst"] != t:
+                    continue
+                head_key = <int32_t>(<dict>head_ed)["key"]
+                head_arg = <int32_t>f.args[astart + <int32_t>rank_by_edge[head_key]]
+                if head_arg != nxt_arg:
                     return False
     return True
 
@@ -4437,9 +4450,10 @@ def _rsw_rpo(list out, int32_t entry, int32_t nb):
 
 def _run_rewrite_switch(Func f):
     cdef int32_t nb = f.n_blocks
-    cdef int32_t b, e, es, ec, tv, a0, a1, const_v, other_v
+    cdef int32_t b, e, es, ec, tv, a0, a1, const_v, other_v, _d
     cdef int32_t entry = f.entry_block
     cdef bint changed = False
+    cdef list ic = [0] * nb
 
     # mutable edge model.
     out = [[] for _ in range(nb)]
@@ -4452,6 +4466,14 @@ def _run_rewrite_switch(Func f):
                 "cond": f.edges[e].cond, "ci": f.edges[e].cond_is_int, "key": e,
             })
     test_val = [f.blocks[b].test_val for b in range(nb)]
+
+    # Original edge index -> operand position in a destination phi. Mutable edges
+    # retain their original index as ``key`` throughout splicing.
+    rank_by_edge = [0] * f.n_edges
+    for e in range(f.n_edges):
+        _d = f.edges[e].dst
+        rank_by_edge[e] = ic[_d]
+        ic[_d] = <int32_t>ic[_d] + 1
 
     # (1) ifs_to_switch.
     for b in range(nb):
@@ -4495,11 +4517,6 @@ def _run_rewrite_switch(Func f):
     # incrementally across splices so the single-predecessor test is O(1).
     # Seeding from the marshaled edges is valid because (1) rewrites edge
     # conds in place and never changes an edge's dst.
-    cdef list ic = [0] * nb
-    cdef int32_t _e, _d
-    for _e in range(f.n_edges):
-        _d = <int32_t>f.edges[_e].dst
-        ic[_d] = <int32_t>ic[_d] + 1
     processed = set()
     queue = [entry]
     while queue:
@@ -4532,7 +4549,7 @@ def _run_rewrite_switch(Func f):
         kept = [ed for ed in <list>out[b] if ed is not default]
         # splice-safety: refuse if it would create parallel edges from b to a
         # shared successor carrying unequal phi operands (see _rsw_splice_safe).
-        if not _rsw_splice_safe(f, kept, <list>out[nxt], nxt):
+        if not _rsw_splice_safe(f, kept, <list>out[nxt], rank_by_edge):
             continue
         # splice.
         existing = set()

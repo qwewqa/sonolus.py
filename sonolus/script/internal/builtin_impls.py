@@ -341,6 +341,7 @@ def _array_like_extremum(iterable, default, key, *, is_max: bool):
 
 @meta_fn
 def _max(*args, default=_empty, key=None):
+    from sonolus.script.internal.context import preserving_runtime_owner
     from sonolus.script.internal.visitor import compile_and_call
 
     if _is_none_arg(key):
@@ -363,12 +364,13 @@ def _max(*args, default=_empty, key=None):
         elif isinstance(iterable, SonolusIterator):
             if not (default is _empty or Num._accepts_(default)):
                 raise TypeError("default argument must be a number")
-            return compile_and_call(
-                _max_num_iterator,
-                iterable,
-                Num._accept_(default) if default is not _empty else None,
-                key=key if key is not _identity else None,
-            )
+            with preserving_runtime_owner():
+                return compile_and_call(
+                    _max_num_iterator,
+                    iterable,
+                    Num._accept_(default) if default is not _empty else None,
+                    key=key if key is not _identity else None,
+                )
         else:
             raise TypeError(f"Unsupported type: '{_type_name(iterable)}' for max")
     else:
@@ -437,6 +439,7 @@ def _max_num_iterator(iterable, default, key):
 
 @meta_fn
 def _min(*args, default=_empty, key=None):
+    from sonolus.script.internal.context import preserving_runtime_owner
     from sonolus.script.internal.visitor import compile_and_call
 
     if _is_none_arg(key):
@@ -459,12 +462,13 @@ def _min(*args, default=_empty, key=None):
         elif isinstance(iterable, SonolusIterator):
             if not (default is _empty or Num._accepts_(default)):
                 raise TypeError("default argument must be a number")
-            return compile_and_call(
-                _min_num_iterator,
-                iterable,
-                Num._accept_(default) if default is not _empty else None,
-                key=key if key is not _identity else None,
-            )
+            with preserving_runtime_owner():
+                return compile_and_call(
+                    _min_num_iterator,
+                    iterable,
+                    Num._accept_(default) if default is not _empty else None,
+                    key=key if key is not _identity else None,
+                )
         else:
             raise TypeError(f"Unsupported type: '{_type_name(iterable)}' for min")
     else:
@@ -953,7 +957,12 @@ def _getattr(obj: Any, name: str, default=_empty) -> Any:
         reject_instance_only_attribute,
     )
 
-    name = validate_value(name)._as_py_()
+    name_value = validate_value(name)
+    if not name_value._is_py_():
+        raise TypeError(f"attribute name must be a compile-time string, not '{_type_name(name_value)}'")
+    name = name_value._as_py_()
+    if not isinstance(name, str):
+        raise TypeError(f"attribute name must be string, not '{type(name).__name__}'")
     was_constant = isinstance(obj, ConstantValue)
     if was_constant:
         obj = obj._as_py_()

@@ -17,10 +17,8 @@ class SonolusIterator[T]:
     Inheritors must implement the [`next`][sonolus.script.iterator.SonolusIterator.next] method,
     which should return a [`Maybe[T]`][sonolus.script.maybe.Maybe].
 
-    An iterator must be used in one consumption sequence. Do not start another loop, pass it to another iterator
-    consumer, or mix `next` with a `for` loop, even if it is not exhausted. A run of consecutive `next` calls is
-    one sequence. Values obtained from an iterator may unexpectedly change after its next
-    advance.
+    Use an iterator only once: in one `for` loop, in one call to `next()`, or by passing it once to another iterator
+    consumer.
 
     Usage:
         ```python

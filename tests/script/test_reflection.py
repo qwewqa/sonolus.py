@@ -385,6 +385,39 @@ def test_builtin_getattr_of_missing_attribute_traces_getattr():
     assert run_and_validate(fn) == 20
 
 
+def test_getattr_rejects_non_string_name():
+    def fn():
+        return getattr(MyBox(1), 1)  # type: ignore
+
+    with pytest.raises(TypeError, match="attribute name must be string, not 'int'"):
+        run_and_validate(fn)
+
+
+def test_getattr_with_default_rejects_non_string_name():
+    def fn():
+        return getattr(MyBox(1), None, 42)  # type: ignore
+
+    with pytest.raises(TypeError, match="attribute name must be string, not 'NoneType'"):
+        run_and_validate(fn)
+
+
+def test_hasattr_rejects_non_string_name():
+    def fn():
+        return hasattr(MyBox(1), 1)  # type: ignore
+
+    with pytest.raises(TypeError, match="attribute name must be string, not 'int'"):
+        run_and_validate(fn)
+
+
+def test_getattr_rejects_runtime_attribute_name():
+    def fn():
+        name = Array(1)[0]
+        return getattr(MyBox(1), name)  # type: ignore
+
+    with pytest.raises(CompilationError, match="attribute name must be a compile-time string, not 'Num'"):
+        run_compiled(fn)
+
+
 def test_hasattr_of_missing_attribute_traces_getattr():
     def fn():
         return hasattr(TracedGetattrBox(1), "missing")

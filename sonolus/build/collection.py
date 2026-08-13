@@ -150,6 +150,9 @@ class Collection:
                 except json.JSONDecodeError:
                     warnings.warn(f"Invalid JSON in {item_json_path}, skipping item.", stacklevel=2)
                     continue
+                if not isinstance(item_data, dict):
+                    warnings.warn(f"Expected a JSON object in {item_json_path}, skipping item.", stacklevel=2)
+                    continue
 
                 item_data = self._localize_item(item_data)
                 item_data["name"] = item_dir.name

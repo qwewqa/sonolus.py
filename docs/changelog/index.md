@@ -10,13 +10,14 @@
 - Lambdas and generator expressions now treat assignment and comprehension targets as local throughout their
   bodies.
 - Generator closures now track bindings read through nested callbacks across resumptions.
-- Generators now advance correctly when runtime control flow skips a yield or repeatedly executes the same `next`
-  expression, and remain exhausted after completion.
+- Generators now advance correctly when runtime control flow skips a yield and remain exhausted after completion.
+- Added runtime checks for reusing a generator through multiple iterator consumers.
 - `for`, generator expressions, and `yield from` no longer trace impossible exhaustion paths for iterators that
   always yield a value.
 - Generator expressions that cannot yield or advance now terminate when runtime checks are enabled.
 - Fixed loop merging rejecting bindings that source code did not read.
 - Membership now truth-tests custom `__contains__` results, including compile-time constants.
+- Standalone comparisons now preserve record-valued results from custom comparison methods.
 - Boolean conditions now use Python truthiness for supported compile-time constants.
 - Boolean contexts now bind `classmethod` and `staticmethod` implementations of `__bool__` and `__len__`
   correctly.
@@ -26,6 +27,7 @@
   order.
 - Ordinary missing-attribute lookup now traces `__getattr__` across direct access, `getattr`, `hasattr`, and class
   patterns.
+- Compiled `getattr` and `hasattr` now reject non-string attribute names.
 - Compilation errors now identify the property getter or `__getattr__` that raised `AttributeError` during an
   attribute lookup.
 - Unsupported attribute access and assignment errors now identify the attribute and owning type.
@@ -42,6 +44,7 @@
 - Builds now abort when an existing output directory cannot be removed.
 - Building level data now rejects adding the same entity instance more than once.
 - Loading a source collection now rejects conflicting resource item names.
+- Loading a source collection now warns and skips items whose `item.json` value is not an object.
 - [`ArrayLike.index`][sonolus.script.array_like.ArrayLike.index] and tuple `index` now require integer-valued
   bounds; tuple bounds are positional-only.
 - Compiled `range.index` now accepts one positional argument.

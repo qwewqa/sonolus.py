@@ -525,19 +525,13 @@ for x in gen():
 
 Generators are lazy: code before the first `yield` does not run until the first value is requested. Yielded
 values follow the same single-live-definition rule as function return values, and a generator function's `return`
-statements must not return a value. A nested generator or generator expression that captures local variables from
-an enclosing generator must be consumed before the enclosing generator suspends.
+statements must not return a value. Nested generators that capture changing variables from another generator are
+not supported.
 
 ##### Reusing iterators
 
-Treat an iterator as single use. Use it through one consumption sequence, and build a fresh one if the values are
-needed again.
-
-Starting another loop, passing it to another iterator consumer, or mixing `next` with a `for` loop is not supported,
-even when the iterator is not exhausted. A run of consecutive `next` calls is one consumption sequence. Use
-[`copy`][sonolus.script.values.copy] if a value taken from an iterator needs to outlive the next
-advance. Because this differs from normal Python behavior, values obtained from an iterator may unexpectedly
-change after its next advance.
+Use an iterator only once: in one `for` loop, in one call to `next()`, or by passing it once to another iterator
+consumer. Build a fresh iterator to use it again.
 
 ### Classes
 

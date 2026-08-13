@@ -290,6 +290,36 @@ def test_combine_blocks_refuses_splice_with_escaping_const_phi():
     _assert_semantics(build, seed={SEL.value: [3.0]})
 
 
+def test_combine_blocks_refuses_splice_with_unequal_head_defined_phi_operands():
+    # Both operands of the shared-successor phi are defined in the head. The
+    # default block only copies z into r, but splicing it would still give the
+    # head parallel edges to A with unequal operands (7 and 12).
+    def build():
+        x = _sel(0)
+        b = BasicBlock(
+            statements=[IRSet(_sc("r"), IRConst(7)), IRSet(_sc("z"), IRConst(12))],
+            test=IRPureInstr(Op.Equal, [x, IRConst(1)]),
+        )
+        nxt = BasicBlock(statements=[IRSet(_sc("r"), _rd("z"))], test=IRPureInstr(Op.Equal, [x, IRConst(2)]))
+        a = BasicBlock(statements=[_log(_rd("r")), IRInstr(Op.DebugPause, [_rd("r")])])
+        d = BasicBlock(statements=[_log(199)])
+        end = BasicBlock()
+        b.connect_to(a, None)
+        b.connect_to(nxt, 0)
+        nxt.connect_to(a, None)
+        nxt.connect_to(d, 0)
+        a.connect_to(end, None)
+        d.connect_to(end, None)
+        return b
+
+    after = _text(build, _SSA_RSW)
+    assert after.count("goto when") == 2, "the unequal-operand default block must NOT be spliced"
+    assert "phi(" in after
+    _assert_semantics(build, seed={SEL.value: [1.0]})
+    _assert_semantics(build, seed={SEL.value: [2.0]})
+    _assert_semantics(build, seed={SEL.value: [3.0]})
+
+
 def test_normalize_switch_downstream_emits_switch_integer_with_default():
     # An arithmetic-progression Equal chain (x==10, 20, 30) collapses to a multiway
     # with cases {10, 20, 30}; downstream normalize_switch (in lower_from_ssa)

@@ -181,6 +181,8 @@ class CallbackContextState:
     no_eval: bool
     visitor_own_time: int
     is_in_generator: bool
+    next_runtime_owner_id: int
+    runtime_owner_id: int | None
 
     def __init__(self, callback: str, no_eval: bool = False):
         self.callback = callback
@@ -189,6 +191,8 @@ class CallbackContextState:
         self.no_eval = no_eval
         self.visitor_own_time = 0
         self.is_in_generator = False
+        self.next_runtime_owner_id = 1
+        self.runtime_owner_id = None
 
 
 def _describe_global(value: _GlobalInfo | _GlobalPlaceholder) -> str:
@@ -307,6 +311,13 @@ class Context:
         num = used_names.get(name, 0) + 1
         used_names[name] = num
         return num
+
+    def allocate_runtime_owner_id(self) -> int:
+        result = self.callback_state.next_runtime_owner_id
+        if result > 1 << 24:
+            raise RuntimeError("Too many runtime ownership sites in one callback")
+        self.callback_state.next_runtime_owner_id += 1
+        return result
 
     def save_alloc_state(self) -> dict[str, int]:
         return self.used_names.copy()
@@ -532,6 +543,21 @@ def using_ctx(value: Context | None):
         yield
     finally:
         _context = old_value
+
+
+@contextmanager
+def preserving_runtime_owner():
+    context = ctx()
+    if not context:
+        yield
+        return
+    previous = context.callback_state.runtime_owner_id
+    if previous is None:
+        context.callback_state.runtime_owner_id = context.allocate_runtime_owner_id()
+    try:
+        yield
+    finally:
+        context.callback_state.runtime_owner_id = previous
 
 
 # The largest finite value a 32-bit float can hold.
