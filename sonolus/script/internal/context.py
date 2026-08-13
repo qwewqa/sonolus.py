@@ -546,7 +546,7 @@ def using_ctx(value: Context | None):
 
 
 @contextmanager
-def preserving_runtime_owner():
+def force_shared_runtime_owner_id():
     context = ctx()
     if not context:
         yield

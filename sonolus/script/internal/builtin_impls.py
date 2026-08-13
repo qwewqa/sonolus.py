@@ -341,7 +341,7 @@ def _array_like_extremum(iterable, default, key, *, is_max: bool):
 
 @meta_fn
 def _max(*args, default=_empty, key=None):
-    from sonolus.script.internal.context import preserving_runtime_owner
+    from sonolus.script.internal.context import force_shared_runtime_owner_id
     from sonolus.script.internal.visitor import compile_and_call
 
     if _is_none_arg(key):
@@ -364,7 +364,7 @@ def _max(*args, default=_empty, key=None):
         elif isinstance(iterable, SonolusIterator):
             if not (default is _empty or Num._accepts_(default)):
                 raise TypeError("default argument must be a number")
-            with preserving_runtime_owner():
+            with force_shared_runtime_owner_id():
                 return compile_and_call(
                     _max_num_iterator,
                     iterable,
@@ -439,7 +439,7 @@ def _max_num_iterator(iterable, default, key):
 
 @meta_fn
 def _min(*args, default=_empty, key=None):
-    from sonolus.script.internal.context import preserving_runtime_owner
+    from sonolus.script.internal.context import force_shared_runtime_owner_id
     from sonolus.script.internal.visitor import compile_and_call
 
     if _is_none_arg(key):
@@ -462,7 +462,7 @@ def _min(*args, default=_empty, key=None):
         elif isinstance(iterable, SonolusIterator):
             if not (default is _empty or Num._accepts_(default)):
                 raise TypeError("default argument must be a number")
-            with preserving_runtime_owner():
+            with force_shared_runtime_owner_id():
                 return compile_and_call(
                     _min_num_iterator,
                     iterable,
