@@ -312,7 +312,11 @@ class Context:
         used_names[name] = num
         return num
 
-    def allocate_runtime_owner_id(self) -> int:
+    def get_runtime_owner_id(self) -> int:
+        owner_id = self.callback_state.runtime_owner_id
+        return owner_id if owner_id is not None else self._allocate_runtime_owner_id()
+
+    def _allocate_runtime_owner_id(self) -> int:
         result = self.callback_state.next_runtime_owner_id
         if result > 1 << 24:
             raise RuntimeError("Too many runtime ownership sites in one callback")
@@ -553,7 +557,7 @@ def force_shared_runtime_owner_id():
         return
     previous = context.callback_state.runtime_owner_id
     if previous is None:
-        context.callback_state.runtime_owner_id = context.allocate_runtime_owner_id()
+        context.callback_state.runtime_owner_id = context.get_runtime_owner_id()
     try:
         yield
     finally:
