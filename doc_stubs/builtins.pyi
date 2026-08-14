@@ -277,6 +277,8 @@ def max(*args, **kwargs):
 
     Use the `key` parameter to specify a function that transforms each element before comparison.
 
+    The `key` function must be side-effect free because it may be called more than once per element.
+
     A `tuple`, `dict`, `set`, or enum class argument is only supported when every element is numeric; use an
     `Array` or `VarArray` for a collection of other types.
 
@@ -310,6 +312,8 @@ def min(*args, **kwargs):
     more arguments, all arguments must be numbers, and the smallest one is returned.
 
     Use the `key` parameter to specify a function that transforms each element before comparison.
+
+    The `key` function must be side-effect free because it may be called more than once per element.
 
     A `tuple`, `dict`, `set`, or enum class argument is only supported when every element is numeric; use an
     `Array` or `VarArray` for a collection of other types.

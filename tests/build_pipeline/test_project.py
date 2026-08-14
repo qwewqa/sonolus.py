@@ -29,6 +29,18 @@ def make_project(levels: list[Level]) -> Project:
     return Project(engine=Engine(name="test", data=EngineData()), levels=levels)
 
 
+def test_project_preserves_an_explicit_empty_resource_path():
+    project = Project(engine=Engine(name="test", data=EngineData()), resources="")
+
+    assert project.resources == Path()
+
+
+def test_project_defaults_resources_only_when_unset():
+    project = Project(engine=Engine(name="test", data=EngineData()))
+
+    assert project.resources == Path("resources")
+
+
 def test_project_retries_duplicate_level_name_validation():
     project = make_project(iter([make_level("duplicate"), make_level("duplicate")]))
 

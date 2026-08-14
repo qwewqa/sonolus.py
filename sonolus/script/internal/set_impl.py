@@ -25,7 +25,7 @@ class SetImpl[Keys, OrderedKeys, Values](Record):
     def __or__(self, other):
         if not isinstance(other, SetImpl):
             raise TypeError("Unsupported type for '|' operator")
-        return SetImpl(self._dict | other._dict)
+        return SetImpl(DictImpl.from_items((*self._dict.items(), *other._dict.items())))
 
     @staticmethod
     def from_set(s):
@@ -33,5 +33,6 @@ class SetImpl[Keys, OrderedKeys, Values](Record):
         for value in values:
             if not value._is_py_():
                 raise ValueError("Set members must be compile time constants")
-        d = DictImpl.from_dict(dict.fromkeys(values))
+        items = tuple((value, None) for value in values)
+        d = DictImpl._from_unique_items(items) if isinstance(s, set | frozenset) else DictImpl.from_items(items)
         return SetImpl(d)

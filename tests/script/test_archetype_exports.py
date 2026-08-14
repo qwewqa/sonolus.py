@@ -73,7 +73,7 @@ class ScalarExport(PlayArchetype):
     value: float = exported()
 
     def preprocess(self):
-        self.value = 1.0
+        setattr(self, "value", 1.0)  # noqa: B010
 
 
 class WholeRecordExport(PlayArchetype):

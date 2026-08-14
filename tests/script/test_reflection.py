@@ -712,6 +712,23 @@ def test_setattr_record_property():
     assert run_and_validate(fn) == 1
 
 
+def test_setattr_rejects_non_string_name():
+    def fn():
+        setattr(MyBox(1), 1, 2)  # type: ignore
+
+    with pytest.raises(TypeError, match="attribute name must be string, not 'int'"):
+        run_and_validate(fn)
+
+
+def test_setattr_rejects_runtime_attribute_name():
+    def fn():
+        name = Array(1)[0]
+        setattr(MyBox(1), name, 2)  # type: ignore
+
+    with pytest.raises(CompilationError, match="attribute name must be a compile-time string, not 'Num'"):
+        run_compiled(fn)
+
+
 def test_setattr_record_unsupported():
     def fn():
         box = MyBox(0)

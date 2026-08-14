@@ -10,26 +10,115 @@ from sonolus.script.num import Num, _is_num
 from sonolus.script.record import Record
 
 
+def _truth_test_body(value):
+    return bool(value)
+
+
+@meta_fn
+def _truth_test(value):
+    from sonolus.script.internal.visitor import compile_and_call
+
+    value = validate_value(value)
+    if ctx():
+        return compile_and_call(_truth_test_body, value)
+    return bool(value._as_py_())
+
+
+def _keys_less(lhs, rhs):
+    return bool(lhs < rhs)
+
+
+def _same_key_identity_shape(stored, probe):
+    from sonolus.script.internal.tuple_impl import TupleImpl
+
+    if stored is probe:
+        return True
+    if isinstance(stored, TupleImpl) and isinstance(probe, TupleImpl) and len(stored.value) == len(probe.value):
+        return all(map(_same_key_identity_shape, stored.value, probe.value))
+    return False
+
+
+def _tuple_keys_equal(stored, probe):
+    for left, right in zip(stored, probe):  # noqa: B905, SIM110
+        if not _keys_equal(left, right):
+            return False
+    return True
+
+
+def _host_call(fn, *args, memo=None):
+    from sonolus.script.internal.tuple_impl import TupleImpl
+
+    def freeze(value):
+        value = validate_value(value)
+        token = id(value)
+        if issubclass(type(value), Num):
+            return token, type(value), value._as_py_()
+        if isinstance(value, TupleImpl):
+            return token, tuple, tuple(freeze(item) for item in value.value)
+        if isinstance(value, Record):
+            return token, type(value), tuple(freeze(value._value_[field.name]) for field in value._fields_)
+        return token, None, value._as_py_()
+
+    def thaw(frozen):
+        token, type_, value = frozen
+        if token in memo:
+            return memo[token]
+        if type_ is None:
+            result = value
+        elif type_ is tuple:
+            result = tuple(thaw(item) for item in value)
+        elif issubclass(type_, Num):
+            result = Num(value)
+            result.__class__ = type_
+        else:
+            result = type_._raw(**{field.name: thaw(item) for field, item in zip(type_._fields_, value, strict=True)})
+        memo[token] = result
+        return result
+
+    active_ctx = ctx()
+    memo = {} if memo is None else memo
+    frozen_args = tuple(freeze(arg) for arg in args)
+    set_ctx(None)
+    try:
+        return fn(*(thaw(arg) for arg in frozen_args))
+    finally:
+        set_ctx(active_ctx)
+
+
 @meta_fn
 def _keys_equal(stored, probe):
     from sonolus.script.internal.visitor import _is_strict_subclass, compile_and_call
 
     stored = validate_value(stored)
     probe = validate_value(probe)
+    if _same_key_identity_shape(stored, probe):
+        return True
+    from sonolus.script.internal.tuple_impl import TupleImpl
+
+    if isinstance(stored, TupleImpl) and isinstance(probe, TupleImpl):
+        if len(stored.value) != len(probe.value):
+            return False
+        return compile_and_call(_tuple_keys_equal, stored, probe)
     probe_has_priority = _is_strict_subclass(stored, probe)
     if probe_has_priority:
         result = validate_value(compile_and_call(probe.__eq__, stored))
+        if ctx() and not ctx().live:
+            return None
         if not (result._is_py_() and result._as_py_() is NotImplemented):
-            return result
+            return compile_and_call(_truth_test, result)
     result = validate_value(compile_and_call(stored.__eq__, probe))
+    if ctx() and not ctx().live:
+        return None
     if not (result._is_py_() and result._as_py_() is NotImplemented):
-        return result
+        return compile_and_call(_truth_test, result)
     if probe_has_priority:
         return False
     result = validate_value(compile_and_call(probe.__eq__, stored))
+    if ctx() and not ctx().live:
+        return None
     if result._is_py_() and result._as_py_() is NotImplemented:
         return False
-    return result
+    return compile_and_call(_truth_test, result)
 
 
 class DictImpl[Keys, OrderedKeys, Values](Record):
@@ -77,6 +166,8 @@ class DictImpl[Keys, OrderedKeys, Values](Record):
         from sonolus.script.internal.visitor import compile_and_call
 
         result = validate_value(compile_and_call(self._maybe_getitem, item))
+        if not ctx().live:
+            return None
         default = validate_value(default)
         if default._is_py_() and default._as_py_() is None:
             present = validate_value(result.is_some)
@@ -133,24 +224,66 @@ class DictImpl[Keys, OrderedKeys, Values](Record):
     def __or__(self, other):
         if not isinstance(other, DictImpl):
             raise TypeError("Unsupported type for '|' operator")
-        return self.from_dict({**self._as_dict_with_py_keys(), **other._as_dict_with_py_keys()})
+        return self.from_items((*self.items(), *other.items()))
 
     @staticmethod
     def from_dict(d):
-        keys = tuple(validate_value(k) for k in d)
-        values = tuple(validate_value(v) for v in d.values())
+        return DictImpl._from_unique_items(tuple(d.items()))
+
+    @staticmethod
+    def from_items(items):
+        merged = []
+        host_memo = {}
+        for key, value in items:
+            key = validate_value(key)
+            value = validate_value(value)
+            if not key._is_py_():
+                raise TypeError("Dict keys must be a compile-time constant")
+            for i, (existing, _) in enumerate(merged):
+                if existing is key or _host_call(_keys_equal, existing, key, memo=host_memo):
+                    merged[i] = (existing, value)
+                    break
+            else:
+                merged.append((key, value))
+        return DictImpl._from_unique_items(merged)
+
+    @staticmethod
+    def _from_unique_items(items):
+        from sonolus.script.internal.tuple_impl import TupleImpl
+
+        def ordered_signature(key):
+            if issubclass(type(key), Num):
+                return Num if type(key) is Num else None
+            if isinstance(key, TupleImpl):
+                members = tuple(ordered_signature(item) for item in key.value)
+                return (tuple, members) if all(member is not None for member in members) else None
+            py_key = key._as_py_()
+            return type(py_key) if isinstance(py_key, str) else None
+
+        items = tuple((validate_value(key), validate_value(value)) for key, value in items)
+        keys = tuple(key for key, _ in items)
+        values = tuple(value for _, value in items)
         if not all(k._is_py_() for k in keys):
             raise TypeError("Dict keys must be a compile-time constant")
         if len(keys) >= 2:
             py_keys = [k._as_py_() for k in keys]
             py_key_types = {type(k) for k in py_keys}
-            is_comparable = (
-                len(py_key_types) == 1
-                and py_keys[0].__lt__(py_keys[1]) is not NotImplemented  # noqa: PLC2801
-                and type(keys[0]).__lt__ is not object.__lt__
-            )
+            ordered_signatures = {ordered_signature(key) for key in keys}
+            try:
+                is_comparable = (
+                    len(py_key_types) == 1
+                    and len(ordered_signatures) == 1
+                    and None not in ordered_signatures
+                    and py_keys[0].__lt__(py_keys[1]) is not NotImplemented  # noqa: PLC2801
+                    and type(keys[0]).__lt__ is not object.__lt__
+                )
+            except TypeError:
+                is_comparable = False
             if is_comparable:
-                ordered_keys = tuple((k, i) for i, k in sorted(enumerate(py_keys), key=lambda x: x[1]))
+                try:
+                    ordered_keys = tuple((keys[i], i) for i, _ in sorted(enumerate(py_keys), key=lambda item: item[1]))
+                except TypeError:
+                    ordered_keys = None
             else:
                 ordered_keys = None
         else:
@@ -177,6 +310,8 @@ class DictImpl[Keys, OrderedKeys, Values](Record):
 
         for i, k in enumerate(self._keys):
             eq = validate_value(compile_and_call(_keys_equal, k, item))
+            if not ctx().live:
+                return None
             if not eq._is_py_():
                 # _try_constsearch added orig_ctx -> begin_ctx speculatively. Remove the edge before fallback.
                 del orig_ctx.outgoing[None]
@@ -230,7 +365,10 @@ class DictImpl[Keys, OrderedKeys, Values](Record):
         if hi - lo <= 3:
             # Linear search
             lo_value, orig_index = self._ordered_keys[lo]
-            eq_test = compile_and_call(_keys_equal, lo_value, item).ir()
+            equal = compile_and_call(_keys_equal, lo_value, item)
+            if not ctx().live:
+                return res
+            eq_test = equal.ir()
             ctx_init = ctx()
             ctx_init.test = eq_test
             eq_ctx = ctx_init.branch(None)
@@ -248,7 +386,10 @@ class DictImpl[Keys, OrderedKeys, Values](Record):
 
         mid = (lo + hi) // 2
         mid_value, orig_index = self._ordered_keys[mid]
-        eq_test = compile_and_call(_keys_equal, mid_value, item).ir()
+        equal = compile_and_call(_keys_equal, mid_value, item)
+        if not ctx().live:
+            return res
+        eq_test = equal.ir()
         ctx_init = ctx()
         ctx_init.test = eq_test
         eq_ctx = ctx_init.branch(None)
@@ -260,7 +401,10 @@ class DictImpl[Keys, OrderedKeys, Values](Record):
 
         set_ctx(neq_ctx)
 
-        neq_test = compile_and_call(item.__lt__, mid_value).ir()
+        less = compile_and_call(_keys_less, item, mid_value)
+        if not ctx().live:
+            return res
+        neq_test = less.ir()
         neq_ctx = ctx()
         neq_ctx.test = neq_test
         lt_ctx = neq_ctx.branch(None)

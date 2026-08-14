@@ -30,6 +30,7 @@ full signatures.
 - `set()`, `set(source)` (source must be a tuple, dict, enum class, or set; members must be compile-time constants)
 - `setattr(object, name, value)`
 - `sum(iterable, start=0)` (numeric values only)
+- `super()`
 - `super(type[, object-or-type])`
 - `type(object)`
 - `zip(*iterables, strict=False)` (`strict=True` is not supported)

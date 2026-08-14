@@ -36,6 +36,13 @@ def find_default_module() -> str | None:
     return potential_modules[0] if len(potential_modules) == 1 else None
 
 
+def _is_missing_module_prefix(error: ModuleNotFoundError, module_path: str) -> bool:
+    """Return whether an import failed because a requested module prefix is absent."""
+    if error.name is None:
+        return False
+    return module_path.split(".")[: len(error.name.split("."))] == error.name.split(".")
+
+
 def import_project(module_path: str) -> tuple[Project, ModuleType, set[str]] | tuple[None, None, None]:
     try:
         initial_modules = set(sys.modules)
@@ -50,7 +57,7 @@ def import_project(module_path: str) -> tuple[Project, ModuleType, set[str]] | t
             project_module = importlib.import_module(module_path)
             project = getattr(project_module, "project", None)
         except ModuleNotFoundError as e:
-            if e.name != module_path:
+            if not _is_missing_module_prefix(e, module_path):
                 raise
 
         if project is None:
@@ -58,7 +65,7 @@ def import_project(module_path: str) -> tuple[Project, ModuleType, set[str]] | t
                 project_module = importlib.import_module(f"{module_path}.project")
                 project = getattr(project_module, "project", None)
             except ModuleNotFoundError as e:
-                if e.name not in {module_path, f"{module_path}.project"}:
+                if not _is_missing_module_prefix(e, f"{module_path}.project"):
                     raise
 
         if project is None:

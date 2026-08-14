@@ -727,7 +727,7 @@ class _Set:
             return SetImpl.from_set(set())
         iterable = validate_value(iterable)
         if isinstance(iterable, SetImpl):
-            return SetImpl.from_set(tuple_iter(iterable._dict))
+            return iterable
         if has_tuple_iter(iterable):
             return SetImpl.from_set(tuple_iter(iterable))
         raise TypeError(f"'{_type_name(iterable)}' object is not iterable")
@@ -761,13 +761,12 @@ class _Dict:
             return DictImpl.from_dict(kwargs)
         arg = validate_value(mapping_or_iterable)
         if isinstance(arg, DictImpl):
-            d = arg._as_dict_with_py_keys()
-            if kwargs:
-                d.update(kwargs)
-            return DictImpl.from_dict(d)
+            if not kwargs:
+                return arg
+            return DictImpl.from_items((*arg.items(), *kwargs.items()))
         if has_tuple_iter(arg):
             items = tuple_iter(arg)
-            d = {}
+            result_items = []
             for item in items:
                 item = validate_value(item)
                 if not has_tuple_iter(item):
@@ -776,10 +775,10 @@ class _Dict:
                 if len(kv) != 2:
                     raise ValueError(f"dictionary update sequence element has length {len(kv)}; 2 is required")
                 k, v = kv
-                d[k] = v
+                result_items.append((k, v))
             if kwargs:
-                d.update(kwargs)
-            return DictImpl.from_dict(d)
+                result_items.extend(kwargs.items())
+            return DictImpl.from_items(result_items)
         raise TypeError(f"'{_type_name(arg)}' object is not a mapping")
 
     @meta_fn
@@ -1040,10 +1039,15 @@ def _setattr(obj: Any, name: str, value: Any):
         reject_instance_only_attribute,
     )
 
-    name = validate_value(name)._as_py_()
+    name_value = validate_value(name)
+    if not name_value._is_py_():
+        raise TypeError(f"attribute name must be a compile-time string, not '{_type_name(name_value)}'")
+    name = name_value._as_py_()
+    if not isinstance(name, str):
+        raise TypeError(f"attribute name must be string, not '{type(name).__name__}'")
     if obj._is_py_():
         obj = obj._as_py_()
-    descriptor = getattr(type(obj), name, None)
+    descriptor = _resolve_descriptor(type(obj), name)
     match descriptor:
         case property(fset=setter):
             if setter is None:

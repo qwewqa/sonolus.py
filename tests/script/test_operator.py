@@ -1,4 +1,5 @@
 # ruff: noqa: PLW1641, PT017
+import inspect
 import re
 from abc import ABCMeta
 
@@ -7,7 +8,7 @@ from hypothesis import assume, given
 from hypothesis import strategies as st
 
 from sonolus.script.array import Array
-from sonolus.script.debug import debug_log, static_error
+from sonolus.script.debug import debug_log, error, static_error
 from sonolus.script.internal.error import CompilationError
 from sonolus.script.num import Num
 from sonolus.script.record import Record
@@ -218,6 +219,65 @@ class BoolFalse(Record):
     def __bool__(self):
         debug_log(29)
         return False
+
+
+class PropertyBackedBool(Record):
+    value: float
+
+    @property
+    def __bool__(self):
+        return self.true if self.value else self.false
+
+    def true(self):
+        return True
+
+    def false(self):
+        return False
+
+
+class PropertyBackedEq(Record):
+    value: float
+
+    @property
+    def __eq__(self):  # noqa: PLE0302
+        return self.equal if self.value else self.not_equal
+
+    def equal(self, other):
+        return self.value == other.value
+
+    def not_equal(self, other):
+        return self.value != other.value
+
+
+class SimplePropertyBackedSpecials(Record):
+    @property
+    def __bool__(self):
+        return self.true
+
+    @property
+    def __eq__(self):  # noqa: PLE0302
+        return self.equal
+
+    def true(self):
+        return True
+
+    def equal(self, other):
+        return True
+
+
+class TerminatingPropertyGetter(Record):
+    @property
+    def __bool__(self):  # noqa: PLE0304
+        error("property getter stopped")
+
+
+class TerminatingPropertyMethod(Record):
+    @property
+    def __bool__(self):
+        return self.stop
+
+    def stop(self):
+        error("property method stopped")
 
 
 class AddNotImplementedOnly(Record):
@@ -695,6 +755,78 @@ def test_staticmethod_len_is_bound_before_tracing():
     assert run_and_validate(fn) == 1
 
 
+def property_backed_implicit_bool():
+    value = Array(1)[0]
+    return 1 if PropertyBackedBool(value) else 0
+
+
+def property_backed_implicit_eq():
+    value = Array(1)[0]
+    return PropertyBackedEq(value) == PropertyBackedEq(value)
+
+
+@pytest.mark.parametrize(
+    ("fn", "method_name"),
+    [
+        (property_backed_implicit_bool, "__bool__"),
+        (property_backed_implicit_eq, "__eq__"),
+    ],
+)
+def test_property_backed_implicit_special_method_is_rejected_at_the_operator(fn, method_name):
+    source_lines, first_line = inspect.getsourcelines(fn)
+    expected_line = first_line + next(i for i, line in enumerate(source_lines) if line.lstrip().startswith("return "))
+
+    with pytest.raises(
+        CompilationError,
+        match=rf"Using property '{method_name}' as an implicit protocol method .* is not supported",
+    ) as exc_info:
+        run_compiled(fn)
+
+    assert type(exc_info.value.__cause__) is TypeError
+    reported_lines = []
+    exception = exc_info.value
+    while exception is not None:
+        frame = exception.__traceback__
+        while frame is not None:
+            if frame.tb_frame.f_code.co_filename == __file__:
+                reported_lines.append(frame.tb_lineno)
+            frame = frame.tb_next
+        exception = exception.__cause__
+    assert expected_line in reported_lines
+
+
+def test_property_backed_special_methods_remain_available_explicitly():
+    def fn():
+        record = SimplePropertyBackedSpecials()
+        return record.__bool__() and record.__eq__(record)  # noqa: PLC2801
+
+    assert run_and_validate(fn)
+
+
+def test_fixed_property_backed_special_methods_compile_implicitly():
+    def fn():
+        record = SimplePropertyBackedSpecials()
+        other = SimplePropertyBackedSpecials()
+        return (1 if record else 0) * 10 + (record == other)
+
+    assert run_and_validate(fn) == 11
+
+
+@pytest.mark.parametrize(
+    ("record_type", "message"),
+    [
+        (TerminatingPropertyGetter, "property getter stopped"),
+        (TerminatingPropertyMethod, "property method stopped"),
+    ],
+)
+def test_property_backed_special_method_preserves_termination(record_type, message):
+    def fn():
+        return 1 if record_type() else 0
+
+    with pytest.raises(RuntimeError, match=message):
+        run_and_validate(fn)
+
+
 def test_max_two_arg_key_tie_returns_first():
     # On a key tie, max() must return the FIRST maximal argument (Python semantics and the
     # library's own single-iterable path). The buggy _max2_generic returned the second.
@@ -961,6 +1093,28 @@ class ConstantContains(Record):
         return "present" if value else None
 
 
+class NumericContains(Record):
+    result: float
+
+    def __contains__(self, value):
+        return self.result
+
+
+class ConstantNumericContains(Record):
+    def __contains__(self, value):
+        return 7
+
+
+class TerminatingContainsResult(Record):
+    def __bool__(self):  # noqa: PLE0304
+        error("membership truth failed")
+
+
+class TerminatingContains(Record):
+    def __contains__(self, value):
+        return TerminatingContainsResult()
+
+
 @pytest.mark.parametrize(
     ("operation", "message"),
     [
@@ -1010,6 +1164,45 @@ def test_not_in_truth_converts_contains_result_before_inverting():
         return 1 not in TruthyContains()
 
     assert not run_and_validate(fn)
+
+
+def test_membership_normalizes_runtime_numeric_contains_result():
+    def fn():
+        result = Array(7)[0]
+        return 123 in NumericContains(result)
+
+    assert run_and_validate(fn) is True
+
+
+def test_membership_normalizes_constant_numeric_contains_result():
+    def fn():
+        return 123 in ConstantNumericContains()
+
+    assert run_and_validate(fn) is True
+
+
+def test_not_in_normalizes_runtime_numeric_contains_result_before_inverting():
+    def fn():
+        result = Array(7)[0]
+        return 123 not in NumericContains(result)
+
+    assert run_and_validate(fn) is False
+
+
+def test_nested_membership_is_normalized_inside_an_outer_truth_test():
+    def fn():
+        result = Array(7)[0]
+        return 1 if (123 in NumericContains(result)) == 1 else 0
+
+    assert run_and_validate(fn) == 1
+
+
+def test_membership_traces_compile_time_record_result_truthiness():
+    def fn():
+        return 123 in TerminatingContains()
+
+    with pytest.raises(RuntimeError, match="membership truth failed"):
+        run_and_validate(fn)
 
 
 def test_unsupported_matrix_multiplication_reports_operator_error():

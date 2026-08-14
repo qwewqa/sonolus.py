@@ -51,6 +51,10 @@ def write_instance_archetype_score_multiplier():
     PROBE.archetype_score_multiplier = 1.0
 
 
+def write_archetype_life_with_builtin_setattr():
+    setattr(PROBE, "archetype_life", 1)  # noqa: B010
+
+
 def read_entity_score_multiplier():
     return PROBE.entity_score_multiplier
 
@@ -82,6 +86,11 @@ def compile_in_mode(fn, mode: Mode):
 def test_a_mode_guard_names_the_rejecting_mode(access, subject: str, mode: Mode):
     with pytest.raises(CompilationError, match=f"{subject} is not available in mode '{mode.name}'"):
         compile_in_mode(access, mode)
+
+
+def test_builtin_setattr_preserves_the_archetype_life_read_only_error():
+    with pytest.raises(CompilationError, match="Archetype life is read-only and cannot be set"):
+        compile_in_mode(write_archetype_life_with_builtin_setattr, Mode.PLAY)
 
 
 def read_entity_info():

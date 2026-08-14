@@ -100,6 +100,47 @@ class ShadowingChild(ShadowingBase):
         return getattr(super(), "__class__") == super  # noqa: B009, E721
 
 
+class LexicalSuperBase:
+    def value(self):
+        return 7
+
+
+class LexicalSuperChild(LexicalSuperBase):
+    def nested_value(self):
+        def read(value):
+            return super().value()
+
+        return read(self) + 1
+
+
+class ShadowedNestedClassCellChild(LexicalSuperBase):
+    def nested_value(self):
+        super().value()
+
+        def read(value):
+            __class__ = LexicalSuperChild  # noqa: F841
+            return super().value()
+
+        return read(self)
+
+
+def module_global_super_attribute(value):
+    return super().value()
+
+
+def module_global_super_getattr(value):
+    return getattr(super(), "value")()  # noqa: B009
+
+
+def make_lexical_super_reader():
+    __class__ = LexicalSuperChild  # noqa: F841
+
+    def read(value):
+        return super().value()
+
+    return read
+
+
 class ClassBoundPropertyBase:
     @property
     def property(self):
@@ -197,6 +238,44 @@ def test_super_proxy_metadata_is_not_shadowed():
         )
 
     run_and_validate(fn)
+
+
+def test_zero_argument_super_in_nested_method_uses_lexical_class_cell():
+    child = LexicalSuperChild()
+    child._is_comptime_value_ = True  # type: ignore
+
+    def fn():
+        return child.nested_value()
+
+    assert run_and_validate(fn) == 8
+
+
+def test_zero_argument_super_accepts_an_enclosing_function_class_cell():
+    child = LexicalSuperChild()
+    child._is_comptime_value_ = True  # type: ignore
+
+    assert run_and_validate(make_lexical_super_reader(), child) == 7
+
+
+def test_nested_local_class_does_not_inherit_the_method_class_cell():
+    child = ShadowedNestedClassCellChild()
+    child._is_comptime_value_ = True  # type: ignore
+
+    def fn():
+        return child.nested_value()
+
+    with pytest.raises(RuntimeError, match=r"super\(\): __class__ cell not found"):
+        run_and_validate(fn)
+
+
+@pytest.mark.parametrize("fn", [module_global_super_attribute, module_global_super_getattr])
+def test_module_global_class_does_not_enable_zero_argument_super(fn, monkeypatch):
+    child = LexicalSuperChild()
+    child._is_comptime_value_ = True  # type: ignore
+    monkeypatch.setitem(fn.__globals__, "__class__", LexicalSuperChild)
+
+    with pytest.raises(RuntimeError, match=r"super\(\): __class__ cell not found"):
+        run_and_validate(fn, child)
 
 
 @pytest.mark.parametrize(

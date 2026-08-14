@@ -49,7 +49,7 @@ class Project:
                 raise TypeError(f"Invalid type for levels: {type(levels)}. Expected Iterable or Callable.")
         self._levels = None
         self._level_loading_error: str | None = None
-        self.resources = Path(resources or "resources")
+        self.resources = Path("resources" if resources is None else resources)
         self.converters = converters or {}
 
     def with_levels(self, levels: Iterable[Level] | Callable[[], Iterable[Level]] | None) -> Project:

@@ -213,7 +213,13 @@ def eval_fn(fn: Callable, /, *args, **kwargs):
         }
         global_vars = ChainMap(nonlocal_vars, *global_base.maps)
     return Visitor(
-        source_file, bound_args, global_vars, parent=None, function_name=function_name, qualified_name=qualified_name
+        source_file,
+        bound_args,
+        global_vars,
+        parent=None,
+        function_name=function_name,
+        qualified_name=qualified_name,
+        has_class_cell="__class__" in code.co_freevars,
     ).run(node)
 
 
@@ -354,6 +360,23 @@ def _bind_special_method(value: Any, name: str) -> Any:
     descriptor = _raw_special_method(type(value), name)
     if descriptor is _SPECIAL_METHOD_MISSING:
         return descriptor
+    if isinstance(descriptor, property):
+        if descriptor.fget is None:
+            raise TypeError(f"Property {name!r} on '{_type_name(value)}' has no getter")
+
+        def property_method(*args, **kwargs):
+            try:
+                bound_method = compile_and_call(descriptor.fget, value)
+            except Exception as e:
+                raise TypeError(
+                    f"Using property {name!r} as an implicit protocol method on '{_type_name(value)}' is not supported"
+                ) from e
+            if ctx() and not ctx().live:
+                return validate_value(None)
+            return compile_and_call(bound_method, *args, **kwargs)
+
+        property_method._meta_fn_ = True
+        return property_method
     descriptor_get = _raw_special_method(type(descriptor), "__get__")
     return (
         descriptor_get(descriptor, value, type(value)) if descriptor_get is not _SPECIAL_METHOD_MISSING else descriptor
@@ -602,6 +625,9 @@ class Visitor(ast.NodeVisitor):
     generator_dependencies: dict[tuple[int, str], tuple[Visitor, str, Value]]
     function_name: str
     qualified_name: str
+    has_class_cell: bool
+    truth_test_compare: ast.Compare | None
+    normalized_boolean_nums: dict[int, Num]
 
     def __init__(
         self,
@@ -611,6 +637,7 @@ class Visitor(ast.NodeVisitor):
         parent: Visitor | None,
         function_name: str,
         qualified_name: str | None = None,
+        has_class_cell: bool = False,
     ):
         self.source_file = source_file
         self.globals = global_vars
@@ -632,6 +659,10 @@ class Visitor(ast.NodeVisitor):
         self.yield_suspension_selections = {}
         self.declared_locals = frozenset()
         self.function_name = function_name
+        self.has_class_cell = has_class_cell
+        self.truth_test_compare = None
+        provenance_owner = parent if parent is not None else (_ACTIVE_VISITORS[-1] if _ACTIVE_VISITORS else None)
+        self.normalized_boolean_nums = provenance_owner.normalized_boolean_nums if provenance_owner is not None else {}
         if qualified_name is None:
             if parent is None:
                 self.qualified_name = function_name
@@ -819,7 +850,15 @@ class Visitor(ast.NodeVisitor):
                 first_selection,
                 global_selection,
             )
-        after_ctx = Context.meet([*self.return_ctxs, ctx()])
+        return_contexts = [*self.return_ctxs, ctx()]
+        live_return_bindings = [
+            return_ctx.scope.get_binding("$return") for return_ctx in return_contexts if return_ctx.live
+        ]
+        result_is_normalized_boolean = bool(live_return_bindings) and all(
+            isinstance(binding, ValueBinding) and self.is_normalized_boolean_num(binding.value)
+            for binding in live_return_bindings
+        )
+        after_ctx = Context.meet(return_contexts)
         self.active_ctx = after_ctx
         result_binding = after_ctx.scope.get_binding("$return")
         if not isinstance(result_binding, ValueBinding):
@@ -832,6 +871,8 @@ class Visitor(ast.NodeVisitor):
         ):
             with using_ctx(after_ctx):
                 result = result._get_readonly_()
+        if result_is_normalized_boolean:
+            self.mark_normalized_boolean_num(result)
         set_ctx(after_ctx.branch_with_scope(None, before_ctx.scope.copy()))
         terminated = not after_ctx.live
         # Nothing could have escaped, so allow reuse, which can allow naive allocation to succeed in the optimizer for
@@ -895,7 +936,7 @@ class Visitor(ast.NodeVisitor):
                 skip_ctxs = []
                 skipped = False
                 for if_expr in generator.ifs:
-                    test = self.convert_to_boolean_num(if_expr, self.visit(if_expr))
+                    test = self.visit_boolean_test(if_expr)
                     if not ctx().live:
                         skipped = True
                         break
@@ -957,7 +998,7 @@ class Visitor(ast.NodeVisitor):
                 return
             skipped = False
             for if_expr in generator.ifs:
-                test = self.convert_to_boolean_num(if_expr, self.visit(if_expr))
+                test = self.visit_boolean_test(if_expr)
                 if not ctx().live:
                     skipped = True
                     break
@@ -1021,6 +1062,7 @@ class Visitor(ast.NodeVisitor):
                 self.globals,
                 parent=self,
                 function_name=name,
+                has_class_cell=self._child_has_class_cell(node),
             ).run(node)
 
         fn._meta_fn_ = True
@@ -1276,7 +1318,7 @@ class Visitor(ast.NodeVisitor):
         self.loop_head_ctxs.append(header_ctx)
         self.break_ctxs.append([])
         set_ctx(header_ctx)
-        test = self.convert_to_boolean_num(node.test, self.visit(node.test))
+        test = self.visit_boolean_test(node.test)
         if not ctx().live:
             self.loop_head_ctxs.pop().check_loop_conflicts()
             self.break_ctxs.pop()
@@ -1321,7 +1363,7 @@ class Visitor(ast.NodeVisitor):
         set_ctx(after_ctx)
 
     def visit_If(self, node):
-        test = self.convert_to_boolean_num(node.test, self.visit(node.test))
+        test = self.visit_boolean_test(node.test)
         if not ctx().live:
             return
 
@@ -1376,9 +1418,7 @@ class Visitor(ast.NodeVisitor):
             # bound, since guard_false_ctx below branches off this context.
             for name, binding in captures:
                 ctx().scope.set_binding(name, binding)
-            guard = (
-                self.convert_to_boolean_num(case.guard, self.visit(case.guard)) if case.guard else validate_value(True)
-            )
+            guard = self.visit_boolean_test(case.guard) if case.guard else validate_value(True)
             if guard._is_py_():
                 if guard._as_py_():
                     self.visit_statements(case.body)
@@ -1608,7 +1648,7 @@ class Visitor(ast.NodeVisitor):
         raise NotImplementedError("Try* statements are not supported")
 
     def visit_Assert(self, node):
-        test = self.convert_to_boolean_num(node.test, self.visit(node.test))
+        test = self.visit_boolean_test(node.test)
         if not ctx().live:
             return
         if node.msg is None:
@@ -1773,6 +1813,7 @@ class Visitor(ast.NodeVisitor):
                 self.globals,
                 parent=self,
                 function_name="<lambda>",
+                has_class_cell=self._child_has_class_cell(node),
             ).run(node)
 
         fn._meta_fn_ = True
@@ -1783,7 +1824,7 @@ class Visitor(ast.NodeVisitor):
         return validate_value(fn)
 
     def visit_IfExp(self, node):
-        test = self.convert_to_boolean_num(node.test, self.visit(node.test))
+        test = self.visit_boolean_test(node.test)
         if not ctx().live:
             return validate_value(None)
 
@@ -1813,7 +1854,9 @@ class Visitor(ast.NodeVisitor):
         return ctx().scope.get_value(res_name)
 
     def visit_Dict(self, node):
-        results = {}
+        from sonolus.script.internal.dict_impl import DictImpl
+
+        results = []
         for k, v in zip(node.keys, node.values, strict=True):
             if not ctx().live:
                 return validate_value(None)
@@ -1828,8 +1871,8 @@ class Visitor(ast.NodeVisitor):
                 return validate_value(None)
             if not k_visited._is_py_():
                 raise ValueError("Dict keys must be compile time constants")
-            results[k_visited._as_py_()] = v_visited
-        return validate_value(results)
+            results.append((k_visited, v_visited))
+        return DictImpl.from_items(results)
 
     def visit_Set(self, node):
         from sonolus.script.internal.set_impl import SetImpl
@@ -1878,7 +1921,12 @@ class Visitor(ast.NodeVisitor):
         # _validate_bindings compares a captured binding against.
         self.active_ctx = ctx()
         return Visitor(
-            self.source_file, inspect.Signature([]).bind(), self.globals, parent=self, function_name="<genexp>"
+            self.source_file,
+            inspect.Signature([]).bind(),
+            self.globals,
+            parent=self,
+            function_name="<genexp>",
+            has_class_cell=self._child_has_class_cell(node),
         ).run(node, initial_iterator)
 
     def visit_Await(self, node):
@@ -2024,17 +2072,19 @@ class Visitor(ast.NodeVisitor):
                 break
             inverted = isinstance(op, ast.NotIn)
             raw_result = self.handle_comparison(node, op, l_val, r_val)
-            if isinstance(op, ast.In | ast.NotIn) and raw_result._is_py_() and not _is_num(raw_result):
-                raw_result = Num._accept_(bool(raw_result._as_py_()))
             if len(node.ops) == 1 and not isinstance(op, ast.In | ast.NotIn):
                 return raw_result
-            result = (
-                self.convert_to_boolean_num(node, raw_result)
-                if isinstance(op, ast.In | ast.NotIn)
-                else self.ensure_boolean_num(raw_result)
-            )
+            if isinstance(op, ast.In | ast.NotIn):
+                result = (
+                    self.convert_to_boolean_num(node, raw_result)
+                    if node is self.truth_test_compare
+                    else self.normalize_boolean_num(node, raw_result)
+                )
+            else:
+                result = self.ensure_boolean_num(raw_result)
             if inverted:
                 result = result.not_()
+                self.mark_normalized_boolean_num(result)
             curr_ctx = ctx()
             if i == len(node.ops) - 1:
                 curr_ctx.scope.set_value(result_name, result)
@@ -2106,7 +2156,9 @@ class Visitor(ast.NodeVisitor):
                     raise TypeError(f"{callee_name}() argument after ** must be a mapping, not {_type_name(value)}")
         if not ctx().live:
             return validate_value(None)
-        if fn._is_py_() and fn._as_py_() is _super and not args and not kwargs and "__class__" in self.globals:
+        if fn._is_py_() and fn._as_py_() is _super and not args and not kwargs:
+            if not self.has_class_cell:
+                raise RuntimeError("super(): __class__ cell not found")
             class_value = self.get_name("__class__")
             first_param_name = next(
                 (
@@ -2128,7 +2180,10 @@ class Visitor(ast.NodeVisitor):
         raise NotImplementedError("F-strings are not supported")
 
     def visit_Constant(self, node):
-        return validate_value(node.value)
+        result = validate_value(node.value)
+        if type(node.value) is bool:
+            self.mark_normalized_boolean_num(result)
+        return result
 
     def visit_Attribute(self, node):
         return self.handle_getattr(node, self.visit(node.value), node.attr)
@@ -2531,6 +2586,35 @@ class Visitor(ast.NodeVisitor):
         if isinstance(value, Record):
             return Num._accept_(1)
         raise TypeError(f"Converting {_type_name(value)} to bool is not supported")
+
+    def normalize_boolean_num(self, node, value: Value) -> Num:
+        result = self.convert_to_boolean_num(node, value)
+        if self.is_normalized_boolean_num(result):
+            return result
+        result = result != 0
+        self.mark_normalized_boolean_num(result)
+        return result
+
+    def is_normalized_boolean_num(self, value: Value) -> bool:
+        return _is_num(value) and self.normalized_boolean_nums.get(id(value)) is value
+
+    def mark_normalized_boolean_num(self, value: Value) -> None:
+        if _is_num(value):
+            self.normalized_boolean_nums[id(value)] = value
+
+    def visit_boolean_test(self, node: ast.expr) -> Num:
+        if not isinstance(node, ast.Compare):
+            return self.convert_to_boolean_num(node, self.visit(node))
+        previous_truth_test = self.truth_test_compare
+        self.truth_test_compare = node
+        try:
+            return self.convert_to_boolean_num(node, self.visit(node))
+        finally:
+            self.truth_test_compare = previous_truth_test
+
+    def _child_has_class_cell(self, node: ast.FunctionDef | ast.Lambda | ast.GeneratorExp) -> bool:
+        child_locals = getattr(node, "declared_locals", frozenset())
+        return "__class__" not in child_locals and (self.has_class_cell or "__class__" in self.declared_locals)
 
     def arguments_to_signature(self, arguments: ast.arguments) -> inspect.Signature | None:
         parameters: list[inspect.Parameter] = []

@@ -54,6 +54,18 @@ def test_import_project_absent_top_module_reports_gracefully(capsys):
     assert "No Project instance found" in capsys.readouterr().out
 
 
+def test_schema_command_absent_dotted_module_reports_gracefully(tmp_path, monkeypatch, capsys):
+    monkeypatch.chdir(tmp_path)
+    monkeypatch.setattr(sys, "argv", ["sonolus-py", "schema", "definitely_missing_parent_xyz.child"])
+
+    with pytest.raises(SystemExit, match="1"):
+        main()
+
+    captured = capsys.readouterr()
+    assert "No Project instance found" in captured.out
+    assert "Traceback" not in captured.err
+
+
 def test_import_project_does_not_duplicate_current_directory(tmp_path, monkeypatch):
     monkeypatch.chdir(tmp_path)
     monkeypatch.setattr(sys, "path", [entry for entry in sys.path if entry != str(tmp_path)])
