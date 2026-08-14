@@ -2199,7 +2199,7 @@ package or module, e.g. <code class="highlight"><span class="n">sonolus</span><s
 <li><code class="highlight"><span class="o">--</span><span class="n">port</span> <span class="n">PORT</span></code>: defaults to <code class="highlight"><span class="mi">8000</span></code>.</li>
 </ul>
 <h2 id="sonolus-py-check"><code class="highlight"><span class="n">sonolus</span><span class="o">-</span><span class="n">py</span> <span class="n">check</span></code><a class="headerlink" href="#sonolus-py-check" title="Permanent link">&para;</a></h2>
-<p>Compiles and validates the project without writing engine or level output.</p>
+<p>Validates the project without writing engine or level output.</p>
 <div class="highlight"><pre><span></span><code>sonolus-py<span class="w"> </span>check<span class="w"> </span><span class="o">[</span>module<span class="o">]</span>
 </code></pre></div>
 <p><code class="highlight"><span class="n">check</span></code> accepts the <a href="#shared-options">shared options</a> below, except <code class="highlight"><span class="o">--</span><span class="n">build</span><span class="o">-</span><span class="nb">dir</span></code>.</p>
@@ -2234,9 +2234,9 @@ package or module, e.g. <code class="highlight"><span class="n">sonolus</span><s
 <td>Use the standard optimization passes.</td>
 </tr>
 <tr>
-<td><code class="highlight"><span class="o">--</span><span class="n">runtime</span><span class="o">-</span><span class="n">checks</span> <span class="p">{</span><span class="n">none</span><span class="p">,</span><span class="n">terminate</span><span class="p">,</span><span class="n">notify</span><span class="p">}</span></code></td>
-<td><code class="highlight"><span class="n">none</span></code> for <code class="highlight"><span class="n">build</span></code>/<code class="highlight"><span class="n">check</span></code>, <code class="highlight"><span class="n">notify</span></code> for <code class="highlight"><span class="n">dev</span></code></td>
-<td><code class="highlight"><span class="n">none</span></code> disables runtime checks; <code class="highlight"><span class="n">terminate</span></code> stops the callback on error; <code class="highlight"><span class="n">notify</span></code> additionally logs and pauses before terminating.</td>
+<td><code class="highlight"><span class="o">--</span><span class="n">runtime</span><span class="o">-</span><span class="n">checks</span> <span class="n">MODE</span></code></td>
+<td>build/check: none; dev: notify</td>
+<td>none: off; terminate: stop; notify: log/pause/stop.</td>
 </tr>
 <tr>
 <td><code class="highlight"><span class="o">--</span><span class="n">gc</span></code></td>
@@ -2244,14 +2244,19 @@ package or module, e.g. <code class="highlight"><span class="n">sonolus</span><s
 <td>Enable the Python garbage collector during compilation.</td>
 </tr>
 <tr>
-<td><code class="highlight"><span class="o">--</span><span class="n">play</span></code>, <code class="highlight"><span class="o">--</span><span class="n">watch</span></code>, <code class="highlight"><span class="o">--</span><span class="n">preview</span></code>, <code class="highlight"><span class="o">--</span><span class="n">tutorial</span></code></td>
-<td>all enabled if none are given</td>
-<td>Restrict which components are built (or, for <code class="highlight"><span class="n">check</span></code>, validated). Passing any one of the four narrows the set to just those given.</td>
+<td><code class="highlight"><span class="o">--</span><span class="n">no</span><span class="o">-</span><span class="n">gc</span></code></td>
+<td>on</td>
+<td>Disable the Python garbage collector during compilation.</td>
+</tr>
+<tr>
+<td><code class="highlight"><span class="o">--</span><span class="n">play</span></code>/<code class="highlight"><span class="o">--</span><span class="n">watch</span></code>/<code class="highlight"><span class="o">--</span><span class="n">preview</span></code>/<code class="highlight"><span class="o">--</span><span class="n">tutorial</span></code></td>
+<td>all by default</td>
+<td>Restrict built/checked components to those given.</td>
 </tr>
 <tr>
 <td><code class="highlight"><span class="o">-</span><span class="n">v</span></code>, <code class="highlight"><span class="o">--</span><span class="n">verbose</span></code></td>
 <td>off</td>
-<td>On a compilation error, print the full traceback instead of a simplified summary.</td>
+<td>Print full compilation tracebacks.</td>
 </tr>
 <tr>
 <td><code class="highlight"><span class="o">--</span><span class="n">profile</span></code></td>
@@ -2261,13 +2266,14 @@ package or module, e.g. <code class="highlight"><span class="n">sonolus</span><s
 <tr>
 <td><code class="highlight"><span class="o">--</span><span class="n">profile</span><span class="o">-</span><span class="n">json</span> <span class="n">PATH</span></code></td>
 <td></td>
-<td>Write per-stage compile timings as JSON to <code class="highlight"><span class="n">PATH</span></code>, confirming with a line on stderr. Also enables profiling, so the <code class="highlight"><span class="o">--</span><span class="n">profile</span></code> summary is printed to stderr as well. Not available for <code class="highlight"><span class="n">dev</span></code>.</td>
+<td>Write per-stage timings as JSON; also print the profile summary. Not available for <code class="highlight"><span class="n">dev</span></code>.</td>
 </tr>
 </tbody>
 </table>
+<p><code class="highlight"><span class="n">check</span></code> takes the <code class="highlight"><span class="o">-</span><span class="n">O</span></code> options for compatibility with <code class="highlight"><span class="n">build</span></code> and <code class="highlight"><span class="n">dev</span></code>, but ignores them.</p>
 <h2 id="programmatic-usage">Programmatic usage<a class="headerlink" href="#programmatic-usage" title="Permanent link">&para;</a></h2>
 <p>Most of the same functionality is available as methods on <a class="autorefs autorefs-internal" title="            Project" href="../../reference/sonolus.script.project/#sonolus.script.project.Project"><code class="highlight"><span class="n">Project</span></code></a>:
-<a class="autorefs autorefs-internal" title="            build(build_dir: PathLike, config: BuildConfig | None = None)" href="../../reference/sonolus.script.project/#sonolus.script.project.Project.build"><code class="highlight"><span class="n">Project</span><span class="o">.</span><span class="n">build</span></code></a>, <a class="autorefs autorefs-internal" title="            dev(build_dir: PathLike, port: int = 8080, config: BuildConfig | None = None)" href="../../reference/sonolus.script.project/#sonolus.script.project.Project.dev"><code class="highlight"><span class="n">Project</span><span class="o">.</span><span class="n">dev</span></code></a>, and
+<a class="autorefs autorefs-internal" title="            build(build_dir: str | PathLike[str], config: BuildConfig | None = None)" href="../../reference/sonolus.script.project/#sonolus.script.project.Project.build"><code class="highlight"><span class="n">Project</span><span class="o">.</span><span class="n">build</span></code></a>, <a class="autorefs autorefs-internal" title="            dev(build_dir: str | PathLike[str], port: int = 8080, config: BuildConfig | None = None)" href="../../reference/sonolus.script.project/#sonolus.script.project.Project.dev"><code class="highlight"><span class="n">Project</span><span class="o">.</span><span class="n">dev</span></code></a>, and
 <a class="autorefs autorefs-internal" title="            schema() -> ProjectSchema" href="../../reference/sonolus.script.project/#sonolus.script.project.Project.schema"><code class="highlight"><span class="n">Project</span><span class="o">.</span><span class="n">schema</span></code></a>.</p>
 
 

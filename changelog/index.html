@@ -76,7 +76,7 @@
     <div data-md-component="skip">
       
         
-        <a href="#0181" class="md-skip">
+        <a href="#0190" class="md-skip">
           Skip to content
         </a>
       
@@ -1912,6 +1912,17 @@
     <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
       
         <li class="md-nav__item">
+  <a href="#0190" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        0.19.0
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
   <a href="#0181" class="md-nav__link">
     <span class="md-ellipsis">
       
@@ -2560,6 +2571,17 @@
     <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
       
         <li class="md-nav__item">
+  <a href="#0190" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        0.19.0
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
   <a href="#0181" class="md-nav__link">
     <span class="md-ellipsis">
       
@@ -3205,6 +3227,225 @@
 
   <h1>Changelog</h1>
 
+<h3 id="0190">0.19.0<a class="headerlink" href="#0190" title="Permanent link">&para;</a></h3>
+<ul>
+<li><code class="highlight"><span class="n">Archetype</span><span class="o">.</span><span class="n">schema</span><span class="p">()</span></code> now reports flat level-data field names.</li>
+<li><code class="highlight"><span class="n">Archetype</span><span class="o">.</span><span class="n">schema</span><span class="p">()</span></code> now reports exported field names.</li>
+<li><a class="autorefs autorefs-internal" title="            schema() -> ProjectSchema" href="../reference/sonolus.script.project/#sonolus.script.project.Project.schema"><code class="highlight"><span class="n">Project</span><span class="o">.</span><span class="n">schema</span><span class="p">()</span></code></a> now reports exported field names separately from
+  level-data fields.</li>
+<li>Project schemas and engine compilation now reject distinct archetypes with the same runtime name in one mode.</li>
+<li>Union type expressions using <code class="highlight"><span class="o">|</span></code> now accept <code class="highlight"><span class="kc">None</span></code> and existing unions as operands, and <code class="highlight"><span class="kc">None</span></code> can be used as a
+  Record field type or generic type argument.</li>
+<li>Builtin constants, tuples, ranges, dictionaries, and sets now fall back to reflected operators when appropriate.</li>
+<li>Compile-time binary operators and augmented assignment now follow reflected dispatch and grant priority only to
+  real strict subclasses, including inherited classmethod operators; builtin type aliases support unions in either
+  order.</li>
+<li>Membership now supports iterable values that do not define <code class="highlight"><span class="fm">__contains__</span></code>.</li>
+<li>Ordinary missing-attribute lookup now traces <code class="highlight"><span class="fm">__getattr__</span></code> across direct access, <code class="highlight"><span class="nb">getattr</span></code>, <code class="highlight"><span class="nb">hasattr</span></code>, and class
+  patterns.</li>
+<li>Standalone comparisons now preserve record-valued results from custom comparison methods.</li>
+<li>Boolean conditions now use Python truthiness for supported compile-time constants.</li>
+<li>The compiled <code class="highlight"><span class="nb">range</span></code> builtin now supports <code class="highlight"><span class="nb">type</span></code>, <code class="highlight"><span class="nb">isinstance</span></code>, <code class="highlight"><span class="nb">issubclass</span></code>, and union expressions.</li>
+<li>Compiled <code class="highlight"><span class="nb">dict</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="n">key</span><span class="p">)</span></code> now supports an omitted default for a compile-time constant key.</li>
+<li>Compiled <code class="highlight"><span class="nb">range</span><span class="o">.</span><span class="n">index</span></code> now accepts one positional argument.</li>
+<li>Added tuple <code class="highlight"><span class="o">.</span><span class="n">index</span><span class="p">()</span></code> support with optional positional-only bounds.</li>
+<li><a class="autorefs autorefs-internal" title="            insert(index: int, value: T)" href="../reference/sonolus.script.containers/#sonolus.script.containers.VarArray.insert"><code class="highlight"><span class="n">VarArray</span><span class="o">.</span><span class="n">insert</span></code></a> now clips indices beyond either end.</li>
+<li>A watch archetype's <code class="highlight"><span class="n">spawn_time</span></code> and <code class="highlight"><span class="n">despawn_time</span></code> now accept
+  <a class="autorefs autorefs-internal" title="            callback(*, order: int = 0) -> Callable[[T], T]" href="../reference/sonolus.script.archetype/#sonolus.script.archetype.callback"><code class="highlight"><span class="nd">@callback</span><span class="p">(</span><span class="n">order</span><span class="o">=...</span><span class="p">)</span></code></a>.</li>
+<li><a class="autorefs autorefs-internal" title="            export(engine_name: str) -> ExportedLevel" href="../reference/sonolus.script.level/#sonolus.script.level.Level.export"><code class="highlight"><span class="n">Level</span><span class="o">.</span><span class="n">export</span><span class="p">()</span></code></a> and
+  <a class="autorefs autorefs-internal" title="            export() -> ExportedEngine" href="../reference/sonolus.script.engine/#sonolus.script.engine.Engine.export"><code class="highlight"><span class="n">Engine</span><span class="o">.</span><span class="n">export</span><span class="p">()</span></code></a> now accept a plain path string for <code class="highlight"><span class="n">cover</span></code>, <code class="highlight"><span class="n">bgm</span></code>,
+  <code class="highlight"><span class="n">preview</span></code>, and <code class="highlight"><span class="n">thumbnail</span></code>.</li>
+<li><a class="autorefs autorefs-internal" title="            QuadLike" href="../reference/sonolus.script.quad/#sonolus.script.quad.QuadLike"><code class="highlight"><span class="n">QuadLike</span></code></a> is now a public protocol.</li>
+<li>Added the <code class="highlight"><span class="n">TIME</span></code> metric to <a class="autorefs autorefs-internal" title="            UiMetric" href="../reference/sonolus.script.ui/#sonolus.script.ui.UiMetric"><code class="highlight"><span class="n">UiMetric</span></code></a>.</li>
+<li>Asset URLs with a mixed-case <code class="highlight"><span class="n">http</span></code> or <code class="highlight"><span class="n">https</span></code> scheme are now recognized as URLs.</li>
+<li>Fixed partial writes to an <a class="autorefs autorefs-internal" title="            exported(*, name: str | None = None) -> Any" href="../reference/sonolus.script.archetype/#sonolus.script.archetype.exported"><code class="highlight"><span class="n">exported</span><span class="p">()</span></code></a> field not being exported.</li>
+<li>Fixed <a class="autorefs autorefs-internal" title="            EntityRef" href="../reference/sonolus.script.archetype/#sonolus.script.archetype.EntityRef"><code class="highlight"><span class="n">EntityRef</span></code></a> record fields not preserving their referenced entity.</li>
+<li>Fixed chained comparisons with incomparable links ignoring earlier comparisons.</li>
+<li>Fixed numeric match cases accepting nearby unequal values.</li>
+<li>Fixed stream item iterators repeating an item at a frame boundary.</li>
+<li>Fixed dev server rebuilds running level converters on stale level data.</li>
+<li>Fixed the dev server continuing to use resources from a project's previous <code class="highlight"><span class="n">resources</span></code> path.</li>
+<li>Fixed the optimizer moving loop-invariant faulting operations before loops that may not run.</li>
+<li>Fixed <code class="highlight"><span class="nb">zip</span></code> and multi-iterable <code class="highlight"><span class="nb">map</span></code> advancing iterators after another one is exhausted.</li>
+<li>Fixed large constant arithmetic failing to compile.</li>
+<li>Fixed non-finite comparison constants producing invalid packaged engine data.</li>
+<li>Fixed evaluation order for decorators and default arguments of nested functions.</li>
+<li>Fixed <a class="autorefs autorefs-internal" title="            Array" href="../reference/sonolus.script.array/#sonolus.script.array.Array"><code class="highlight"><span class="n">Array</span></code></a> construction and copying with records containing <code class="highlight"><span class="n">Final</span></code> fields.</li>
+<li>Fixed falsy archetype level-data values being replaced with zeros.</li>
+<li>Fixed one-shot archetype iterables producing engines without archetypes.</li>
+<li>Fixed match captures being visible before their pattern completely matches.</li>
+<li>Fixed compile-time state accumulating across dev server rebuilds.</li>
+<li>Invalid class patterns and invalid generator returns now report their offending source locations.</li>
+<li>Compiled expressions, decorators, and default arguments now stop evaluating later subexpressions after an
+  earlier subexpression terminates.</li>
+<li>Lambdas and generator expressions now treat assignment and comprehension targets as local throughout their
+  bodies.</li>
+<li>Generator closures now track bindings read through nested callbacks across resumptions.</li>
+<li>Generators now advance correctly when runtime control flow skips a yield and remain exhausted after completion.</li>
+<li>Added runtime checks for reusing a generator through multiple iterator consumers.</li>
+<li><code class="highlight"><span class="k">for</span></code>, generator expressions, and <code class="highlight"><span class="k">yield from</span></code> no longer trace impossible exhaustion paths for iterators that
+  always yield a value.</li>
+<li>Generator expressions that cannot yield or advance now terminate when runtime checks are enabled.</li>
+<li>Fixed loop merging rejecting bindings that source code did not read.</li>
+<li>Duplicate expanded-keyword errors now identify a lambda as <code class="highlight"><span class="o">&lt;</span><span class="k">lambda</span><span class="o">&gt;</span></code>.</li>
+<li><code class="highlight"><span class="k">yield from</span></code> now requires an iterator's <code class="highlight"><span class="nb">next</span><span class="p">()</span></code> method to return <code class="highlight"><span class="n">Maybe</span></code>.</li>
+<li>Fixed lambdas defined inside <code class="highlight"><span class="k">yield</span></code> or <code class="highlight"><span class="k">yield from</span></code> expressions failing to compile.</li>
+<li>Fixed generator expressions over runtime iterables with compile-time false filters failing to compile.</li>
+<li>Fixed generator expressions failing when an unrelated enclosing binding shares a name with a generator binding.</li>
+<li>Fixed generator expression outermost iterables being evaluated in the wrong scope.</li>
+<li>Fixed multiple functions or lambdas on one source line compiling the same body.</li>
+<li>Compiled functions now reject <code class="highlight"><span class="k">global</span></code> and <code class="highlight"><span class="k">nonlocal</span></code> statements.</li>
+<li>Fixed direct use of a result from a function that terminates on every path.</li>
+<li>Assignment expressions inside generator expressions are now rejected.</li>
+<li>A <code class="highlight"><span class="k">class</span></code> or <code class="highlight"><span class="k">async</span> <span class="k">def</span></code> statement in code skipped at compile time no longer affects the function containing
+  it.</li>
+<li>Getter-only property assignments now report the property and target type consistently.</li>
+<li>Corrected the documented input restrictions for compiled <code class="highlight"><span class="nb">dict</span><span class="p">()</span></code> and <code class="highlight"><span class="nb">set</span><span class="p">()</span></code> construction.</li>
+<li>Membership now truth-tests custom <code class="highlight"><span class="fm">__contains__</span></code> results, including compile-time constants.</li>
+<li>Boolean contexts now bind <code class="highlight"><span class="nb">classmethod</span></code> and <code class="highlight"><span class="nb">staticmethod</span></code> implementations of <code class="highlight"><span class="fm">__bool__</span></code> and <code class="highlight"><span class="fm">__len__</span></code>
+  correctly.</li>
+<li>Implicit operations now ignore special methods synthesized by <code class="highlight"><span class="fm">__getattr__</span></code>.</li>
+<li>Compilation errors now identify the property getter or <code class="highlight"><span class="fm">__getattr__</span></code> that raised <code class="highlight"><span class="ne">AttributeError</span></code> during an
+  attribute lookup.</li>
+<li>Unsupported matrix multiplication now reports the operator error.</li>
+<li>Expanded keyword arguments now consistently reject invalid mappings and keys; duplicate keywords identify the
+  callee.</li>
+<li>Class patterns now report excess positional subpatterns with the class and supported limit.</li>
+<li>Class patterns now reject a non-tuple <code class="highlight"><span class="n">__match_args__</span></code> and non-string entries.</li>
+<li><a class="autorefs autorefs-internal" title="            index(value: T, start: int = 0, stop: int | None = None) -> int" href="../reference/sonolus.script.array_like/#sonolus.script.array_like.ArrayLike.index"><code class="highlight"><span class="n">ArrayLike</span><span class="o">.</span><span class="n">index</span></code></a> and tuple <code class="highlight"><span class="n">index</span></code> now require integer-valued
+  bounds; tuple bounds are positional-only.</li>
+<li>Compiled membership now rejects <code class="highlight"><span class="bp">NotImplemented</span></code> from <code class="highlight"><span class="fm">__contains__</span></code>.</li>
+<li>A subclass attribute explicitly set to <code class="highlight"><span class="kc">None</span></code> now masks an inherited descriptor during compiled lookup.</li>
+<li>Compiled <code class="highlight"><span class="nb">range</span><span class="p">()</span></code> arguments, <code class="highlight"><span class="nb">enumerate</span><span class="p">()</span></code> starting indices, and <code class="highlight"><span class="nb">round</span><span class="p">()</span></code> digit counts must now be
+  integer-valued.</li>
+<li>Compiled <code class="highlight"><span class="nb">len</span><span class="p">()</span></code>, truth testing through <code class="highlight"><span class="fm">__len__</span></code>, and <code class="highlight"><span class="nb">min</span><span class="p">()</span></code> or <code class="highlight"><span class="nb">max</span><span class="p">()</span></code> now reject invalid <code class="highlight"><span class="fm">__len__</span></code> results.</li>
+<li><a class="autorefs autorefs-internal" title="            StreamGroup" href="../reference/sonolus.script.stream/#sonolus.script.stream.StreamGroup"><code class="highlight"><span class="n">StreamGroup</span></code></a> membership now treats fractional indices as absent.</li>
+<li>Fixed strict-subclass right-operand dispatch in binary operations, comparisons, augmented assignment, and
+  dict or set membership.</li>
+<li>Dict unpacking now reports that it is unsupported.</li>
+<li>Dict equality comparison now reports that it is unsupported.</li>
+<li><code class="highlight"><span class="nb">range</span><span class="p">()</span></code> now rejects a zero step.</li>
+<li>Fixed <code class="highlight"><span class="nb">max</span><span class="p">()</span></code> and <code class="highlight"><span class="nb">min</span><span class="p">()</span></code> failing to compile when given an explicit <code class="highlight"><span class="n">key</span><span class="o">=</span><span class="kc">None</span></code> together with two or more
+  arguments.</li>
+<li>Fixed an augmented assignment such as <code class="highlight"><span class="n">interval</span> <span class="o">&amp;=</span> <span class="n">other</span></code> failing to compile when the type's corresponding
+  binary operator branches on a runtime value.</li>
+<li>Corrected the published signatures of <code class="highlight"><span class="nb">reversed</span></code>, <code class="highlight"><span class="nb">dict</span></code>, <code class="highlight"><span class="nb">max</span></code>, <code class="highlight"><span class="nb">min</span></code>, <code class="highlight"><span class="nb">range</span></code>, <code class="highlight"><span class="n">random</span><span class="o">.</span><span class="n">randrange</span></code>, <code class="highlight"><span class="nb">super</span></code>,
+  and the <code class="highlight"><span class="n">math</span></code> module functions to match the calls they accept.</li>
+<li><code class="highlight"><span class="nb">range</span></code> item assignment now reports that it is unsupported.</li>
+<li>Invalid unpacking assignments now report counted unpacking errors.</li>
+<li>Fixed archetype mixins skipping <code class="highlight"><span class="n">__init_subclass__</span></code>; unrecognized class keywords are now rejected.</li>
+<li>Invalid unpacking assignments now identify the value type.</li>
+<li>Builtin call errors now identify the builtin and supplied argument count.</li>
+<li>Unexpected-keyword errors now identify the keyword and callee.</li>
+<li>Unexpected-keyword errors for <a class="autorefs autorefs-internal" title="            spawn(**kwargs: Any) -> None
+
+  
+      classmethod
+  " href="../reference/sonolus.script.archetype/#sonolus.script.archetype.PlayArchetype.spawn"><code class="highlight"><span class="n">spawn</span><span class="p">()</span></code></a> now name the archetype.</li>
+<li><code class="highlight"><span class="nb">range</span><span class="o">.</span><span class="n">index</span><span class="p">()</span></code> now rejects values outside the range.</li>
+<li><code class="highlight"><span class="n">random</span><span class="o">.</span><span class="n">randrange</span></code>, <code class="highlight"><span class="n">random</span><span class="o">.</span><span class="n">randint</span></code>, and <code class="highlight"><span class="n">random</span><span class="o">.</span><span class="n">choice</span></code> now reject invalid ranges and inputs.</li>
+<li>Sprite z-index tuples now require one to four entries, and <a class="autorefs autorefs-internal" title="            pnpoly(vertices: ArrayLike[Vec2] | tuple[Vec2, ...], test: Vec2) -> bool" href="../reference/sonolus.script.vec/#sonolus.script.vec.pnpoly"><code class="highlight"><span class="n">pnpoly</span></code></a> now requires a
+  nonempty polygon.</li>
+<li>Fixed augmented assignment not using a reflected operator when applicable.</li>
+<li>Hand-written in-place operators may now return a new object.</li>
+<li>Calls now reject duplicate keyword arguments.</li>
+<li>Item access and membership errors now use consistent Python-style wording.</li>
+<li>Explicitly empty archetype names and imported or exported field names are now preserved.</li>
+<li>Class-shaped global declarations now treat <code class="highlight"><span class="n">ClassVar</span></code> members as class constants rather than stored fields.</li>
+<li>Explicitly empty engine and level titles are now preserved.</li>
+<li>Tutorial instruction APIs now reject use outside tutorial mode.</li>
+<li>Building level data now rejects adding the same entity instance more than once.</li>
+<li><a class="autorefs autorefs-internal" title="            entity_data() -> Any" href="../reference/sonolus.script.archetype/#sonolus.script.archetype.entity_data"><code class="highlight"><span class="n">entity_data</span><span class="p">()</span></code></a> is now private to the engine.</li>
+<li>A default value on a <a class="autorefs autorefs-internal" title="            level_memory(cls: type[T]) -> T" href="../reference/sonolus.script.globals/#sonolus.script.globals.level_memory"><code class="highlight"><span class="nd">@level_memory</span></code></a> or
+  <a class="autorefs autorefs-internal" title="            level_data(cls: type[T]) -> T" href="../reference/sonolus.script.globals/#sonolus.script.globals.level_data"><code class="highlight"><span class="nd">@level_data</span></code></a> field is now rejected when the class is defined.</li>
+<li><code class="highlight"><span class="n">sonolus</span><span class="o">-</span><span class="n">py</span> <span class="n">schema</span></code> now prints its progress messages to stderr.</li>
+<li>Class-level record and archetype field access now reports that an instance is required.</li>
+<li>Reduced the compiled cost of certain archetype score multiplier and array accesses.</li>
+<li>Public signatures for buckets, runtime canvas, level score and life, entity references, and engine modes now use
+  documented public types.</li>
+<li>Archetypes now reject imported fields with duplicate level-data names.</li>
+<li>Archetypes now reject exported fields with duplicate export names.</li>
+<li>Archetypes now reject fields that shadow inherited properties.</li>
+<li>Listing the same archetype class more than once in a mode is now rejected.</li>
+<li>Preview archetypes now reject entity-memory fields, and <code class="highlight"><span class="n">is_scored</span></code> must be boolean.</li>
+<li>Rebinding an inherited callback to the mode's default callback now suppresses the inherited callback.</li>
+<li>Fixed <code class="highlight"><span class="n">visualize_cfg</span></code> not rendering the callback it receives.</li>
+<li>Subclassing an archetype created by <a class="autorefs autorefs-internal" title="            derive(name: str, is_scored: bool, key: int | float | None = None) -> type[Self]
+
+  
+      classmethod
+  " href="../reference/sonolus.script.archetype/#sonolus.script.archetype.PlayArchetype.derive"><code class="highlight"><span class="n">derive</span><span class="p">()</span></code></a> is now
+  rejected.</li>
+<li>Archetypes now reject callbacks unavailable in their mode.</li>
+<li>Archetypes now reject fields that shadow inherited methods.</li>
+<li><a class="autorefs autorefs-internal" title="            imported(*, name: str | None = None, default: Any = None) -> Any" href="../reference/sonolus.script.archetype/#sonolus.script.archetype.imported"><code class="highlight"><span class="n">imported</span><span class="p">()</span></code></a> now rejects defaults incompatible with their fields.</li>
+<li><a class="autorefs autorefs-internal" title="            add_life_scheduled(value: int, time: float)" href="../reference/sonolus.script.runtime/#sonolus.script.runtime.add_life_scheduled"><code class="highlight"><span class="n">add_life_scheduled</span></code></a> is now restricted to supported callbacks.</li>
+<li><a class="autorefs autorefs-internal" title="            print_number(value: int | float, *, fmt: PrintFormat, decimal_places: int = 0, anchor: Vec2, pivot: Vec2, dimensions: Vec2, rotation: float = 0, color: PrintColor = PrintColor.THEME, alpha: float = 1, horizontal_align: HorizontalAlign = HorizontalAlign.LEFT, background: bool = False)" href="../reference/sonolus.script.printing/#sonolus.script.printing.print_number"><code class="highlight"><span class="n">print_number</span></code></a> outside preview mode, and
+  <a class="autorefs autorefs-internal" title="            paint(position: Vec2, size: float, rotation: float, z: float, a: float)" href="../reference/sonolus.script.instruction/#sonolus.script.instruction.InstructionIcon.paint"><code class="highlight"><span class="n">InstructionIcon</span><span class="o">.</span><span class="n">paint</span></code></a> outside tutorial mode, are now
+  rejected during compilation.</li>
+<li>Playing an <a class="autorefs autorefs-internal" title="            Effect" href="../reference/sonolus.script.effect/#sonolus.script.effect.Effect"><code class="highlight"><span class="n">Effect</span></code></a> or spawning a
+  <a class="autorefs autorefs-internal" title="            Particle" href="../reference/sonolus.script.particle/#sonolus.script.particle.Particle"><code class="highlight"><span class="n">Particle</span></code></a> in preview mode is now rejected during compilation.</li>
+<li>Removed an unsupported empty <code class="highlight"><span class="n">archetypes</span></code> entry from packaged tutorial engine data.</li>
+<li>Unsupported archetype life and score multiplier errors now name the mode.</li>
+<li>Optimizer failures now identify the affected archetype, callback, and mode.</li>
+<li>Callbacks with no exit path now report a clear compilation error.</li>
+<li>Added missing <a class="autorefs autorefs-internal" title="            StandardText" href="../reference/sonolus.script.text/#sonolus.script.text.StandardText"><code class="highlight"><span class="n">StandardText</span></code></a> constants and corrected existing text.</li>
+<li>Fixed invalid archetype and stream field declarations reporting unrelated errors.</li>
+<li>Invalid <a class="autorefs autorefs-internal" title="            EntityRef" href="../reference/sonolus.script.archetype/#sonolus.script.archetype.EntityRef"><code class="highlight"><span class="n">EntityRef</span></code></a> level references now identify the referring entity and
+  missing target archetype.</li>
+<li>Archetypes now reject callbacks declared as <code class="highlight"><span class="nd">@classmethod</span></code> or <code class="highlight"><span class="nd">@staticmethod</span></code>.</li>
+<li>Invalid <a class="autorefs autorefs-internal" title="            options(cls: type[T]) -> T | Options" href="../reference/sonolus.script.options/#sonolus.script.options.options"><code class="highlight"><span class="nd">@options</span></code></a> annotations now identify the field and annotation.</li>
+<li>Documented that entity memory exists only in play and watch mode; preview mode has no entity memory.</li>
+<li>Calling <a class="autorefs autorefs-internal" title="            spawn(**kwargs: Any) -> None
+
+  
+      classmethod
+  " href="../reference/sonolus.script.archetype/#sonolus.script.archetype.PlayArchetype.spawn"><code class="highlight"><span class="n">spawn</span><span class="p">()</span></code></a> in preview or tutorial mode is now
+  rejected during compilation.</li>
+<li><a class="autorefs autorefs-internal" title="            bucket(*, sprites: list[BucketSprite], unit: AnyText | None = None) -> Any" href="../reference/sonolus.script.bucket/#sonolus.script.bucket.bucket"><code class="highlight"><span class="n">bucket</span></code></a> sprite IDs now validate against the mode's
+  <a class="autorefs autorefs-internal" title="            skin(cls: type[T]) -> T | Skin" href="../reference/sonolus.script.sprite/#sonolus.script.sprite.skin"><code class="highlight"><span class="nd">@skin</span></code></a>.</li>
+<li>Corrected project resource, build-directory, and exported output path annotations to include <code class="highlight"><span class="nb">str</span></code>.</li>
+<li>Projects now reject duplicate level names.</li>
+<li>Builds now abort when an existing output directory cannot be removed.</li>
+<li>Loading a source collection now rejects conflicting resource item names.</li>
+<li>Loading a source collection now warns and skips items whose <code class="highlight"><span class="n">item</span><span class="o">.</span><span class="n">json</span></code> value is not an object.</li>
+<li>Fixed the dev-server help command crashing when the terminal is extremely narrow.</li>
+<li>Collection item names now reject reserved or unsupported filesystem names.</li>
+<li><code class="highlight"><span class="n">sonolus</span><span class="o">-</span><span class="n">py</span> <span class="n">build</span></code> and <a class="autorefs autorefs-internal" title="            build(build_dir: str | PathLike[str], config: BuildConfig | None = None)" href="../reference/sonolus.script.project/#sonolus.script.project.Project.build"><code class="highlight"><span class="n">Project</span><span class="o">.</span><span class="n">build</span></code></a> now reject unsupported engine
+  and level names.</li>
+<li>An item loaded from an <code class="highlight"><span class="o">.</span><span class="n">scp</span></code> file now keeps its full filename as its name.</li>
+<li>Resource collections now load files, directories, and archive entries in sorted order.</li>
+<li>Resource and option declaration errors now identify rejected value types.</li>
+<li>Fixed failed dev server rebuilds changing <code class="highlight"><span class="n">decode</span></code> message numbering.</li>
+<li><a class="autorefs autorefs-internal" title="            export() -> ExportedEngine" href="../reference/sonolus.script.engine/#sonolus.script.engine.Engine.export"><code class="highlight"><span class="n">Engine</span><span class="o">.</span><span class="n">export</span><span class="p">()</span></code></a> now requires all engine resource groups.</li>
+<li>Clarified that <code class="highlight"><span class="n">BuildConfig</span><span class="o">.</span><span class="n">verbose</span></code> is used by the dev server only.</li>
+<li>Starting the dev server with port <code class="highlight"><span class="mi">0</span></code> now prints the ephemeral port selected by the operating system.</li>
+<li>Relative paths for level and engine media now resolve against the project's <code class="highlight"><span class="n">resources</span></code> directory.</li>
+<li>Collection writing now rejects non-finite item data and identifies the file.</li>
+<li>Builtin iterator consumers now consistently require a custom iterator's <code class="highlight"><span class="nb">next</span><span class="p">()</span></code> method to return <code class="highlight"><span class="n">Maybe</span></code>.</li>
+<li><a class="autorefs autorefs-internal" title="            select_option(*, name: str | None = None, title: AnyText | None = None, description: AnyText | None = None, standard: bool = False, advanced: bool = False, default: AnyText | int, values: list[AnyText], scope: str | None = None) -> Any" href="../reference/sonolus.script.options/#sonolus.script.options.select_option"><code class="highlight"><span class="n">select_option</span><span class="p">()</span></code></a> now rejects invalid integer defaults.</li>
+<li>Clarified that <code class="highlight"><span class="n">random</span><span class="o">.</span><span class="n">uniform</span></code> accepts its endpoints in either order.</li>
+<li>Fixed value patterns failing to compile against runtime subjects.</li>
+<li>Fixed reflected equality dispatch for numbers and values of another type.</li>
+<li><a class="autorefs autorefs-internal" title="            interp(xp: ArrayLike[float] | tuple[float, ...], fp: ArrayLike[float] | tuple[float, ...], x: float) -> float" href="../reference/sonolus.script.interval/#sonolus.script.interval.interp"><code class="highlight"><span class="n">interp</span></code></a> now also checks that the final <code class="highlight"><span class="n">xp</span></code> segment is in increasing order.</li>
+<li>Fixed inherited properties accessed through <code class="highlight"><span class="nb">super</span><span class="p">()</span></code> failing to compile when they read runtime values.</li>
+<li>Reduced the compiled cost of <a class="autorefs autorefs-internal" title="            contains_point(point: Vec2) -> bool" href="../reference/sonolus.script.quad/#sonolus.script.quad.Quad.contains_point"><code class="highlight"><span class="n">Quad</span><span class="o">.</span><span class="n">contains_point</span></code></a>,
+  <a class="autorefs autorefs-internal" title="            pnpoly(vertices: ArrayLike[Vec2] | tuple[Vec2, ...], test: Vec2) -> bool" href="../reference/sonolus.script.vec/#sonolus.script.vec.pnpoly"><code class="highlight"><span class="n">pnpoly</span></code></a>, and <a class="autorefs autorefs-internal" title="            shuffle()" href="../reference/sonolus.script.array_like/#sonolus.script.array_like.ArrayLike.shuffle"><code class="highlight"><span class="n">shuffle</span></code></a>.</li>
+<li>Fixed unreachable out-of-domain constant math expressions failing to compile.</li>
+<li>Corrected the published signature of <code class="highlight"><span class="n">random</span><span class="o">.</span><span class="n">shuffle</span></code>.</li>
+<li>Errors interpolating compile-time constants no longer print memory addresses.</li>
+<li><a class="autorefs autorefs-internal" title="            runtime_ui() -> RuntimeUi" href="../reference/sonolus.script.runtime/#sonolus.script.runtime.runtime_ui"><code class="highlight"><span class="n">runtime_ui</span></code></a> now reports unsupported use outside compilation clearly.</li>
+<li>Fixed exponential compilation time for chained operations over values fixed after loading.</li>
+<li>The optimizer now removes redundant self-stores.</li>
+<li>Compiled <code class="highlight"><span class="nb">getattr</span></code> and <code class="highlight"><span class="nb">hasattr</span></code> now reject non-string attribute names.</li>
+<li>Unsupported attribute access and assignment errors now identify the attribute and owning type.</li>
+<li>An <a class="autorefs autorefs-internal" title="            Array" href="../reference/sonolus.script.array/#sonolus.script.array.Array"><code class="highlight"><span class="n">Array</span></code></a> dimension using <code class="highlight"><span class="n">Literal</span></code> now requires one value.</li>
+<li>Constants too large for engine data now report their source location during compilation.</li>
+<li>Errors for unsupported values without a <code class="highlight"><span class="nb">repr</span></code> now use their type name.</li>
+<li>Declarations that require a sequence of names now reject a single string.</li>
+<li>The <code class="highlight"><span class="o">-</span><span class="n">v</span></code> hint now appears only when a compilation error has more traceback to show.</li>
+<li>Corrected published signatures for <code class="highlight"><span class="nb">all</span></code>, <code class="highlight"><span class="nb">any</span></code>, <code class="highlight"><span class="nb">filter</span></code>, and <code class="highlight"><span class="nb">zip</span></code>.</li>
+</ul>
 <h3 id="0181">0.18.1<a class="headerlink" href="#0181" title="Permanent link">&para;</a></h3>
 <ul>
 <li>Fixed a reference type rebound inside a loop being silently read as its pre-loop value, whether read on a later
@@ -3225,16 +3466,14 @@
 <li>Fixed a <code class="highlight"><span class="nb">dict</span></code> subject incorrectly matching a sequence pattern such as <code class="highlight"><span class="k">case</span> <span class="p">[</span><span class="n">a</span><span class="p">,</span> <span class="n">b</span><span class="p">]</span></code>, and an internal error when
   matching a sequence pattern against an enum class subject.</li>
 <li>Fixed an internal error when using an empty sequence pattern (<code class="highlight"><span class="k">case</span> <span class="p">[]</span></code>).</li>
-<li>A star sub-pattern in a sequence pattern, such as <code class="highlight"><span class="k">case</span> <span class="p">[</span><span class="n">a</span><span class="p">,</span> <span class="o">*</span><span class="n">rest</span><span class="p">]</span></code>, is now rejected when the <code class="highlight"><span class="k">case</span></code> is visited.
-  Previously it was only rejected once the sub-pattern was reached, so an arm whose length test failed at compile
-  time silently did not match instead of reporting the unsupported pattern.</li>
+<li>A star sub-pattern in a sequence pattern, such as <code class="highlight"><span class="k">case</span> <span class="p">[</span><span class="n">a</span><span class="p">,</span> <span class="o">*</span><span class="n">rest</span><span class="p">]</span></code>, is now rejected when the <code class="highlight"><span class="k">case</span></code> is visited.</li>
 <li>Fixed the message expression of an <code class="highlight"><span class="k">assert</span></code> being evaluated even when the assertion passed. An <code class="highlight"><span class="k">assert</span></code> also now
   converts its test the same way <code class="highlight"><span class="k">if</span></code> does, so a value with <code class="highlight"><span class="fm">__bool__</span></code> or <code class="highlight"><span class="fm">__len__</span></code> behaves alike in both.</li>
 <li>Fixed an internal error when using a bare variable annotation (<code class="highlight"><span class="n">x</span><span class="p">:</span> <span class="nb">int</span></code>); it is now a no-op. As in Python, it
   also makes the name local, so reading it before it is assigned is an error rather than reading a global.</li>
 <li>A <a class="autorefs autorefs-internal" title="            Record" href="../reference/sonolus.script.record/#sonolus.script.record.Record"><code class="highlight"><span class="n">Record</span></code></a> field annotated with a generic type missing its type arguments, such as
   <a class="autorefs autorefs-internal" title="            EntityRef" href="../reference/sonolus.script.archetype/#sonolus.script.archetype.EntityRef"><code class="highlight"><span class="n">EntityRef</span></code></a> rather than <code class="highlight"><span class="n">EntityRef</span><span class="p">[</span><span class="n">Any</span><span class="p">]</span></code>, is now rejected when the class is
-  defined. Previously it was accepted and the field silently overlapped the following field.</li>
+  defined.</li>
 <li>An <a class="autorefs autorefs-internal" title="            Array" href="../reference/sonolus.script.array/#sonolus.script.array.Array"><code class="highlight"><span class="n">Array</span></code></a> element type that is not a concrete supported type, such as <code class="highlight"><span class="n">Array</span></code>
   without its own type arguments, is now rejected when the array type is parameterized. Equivalent spellings of the
   element type, such as <code class="highlight"><span class="nb">int</span> <span class="o">|</span> <span class="nb">float</span></code>, <code class="highlight"><span class="n">Final</span><span class="p">[</span><span class="nb">int</span><span class="p">]</span></code>, and <code class="highlight"><span class="n">Annotated</span><span class="p">[</span><span class="nb">int</span><span class="p">,</span> <span class="o">...</span><span class="p">]</span></code>, are now normalized so that they
@@ -3244,8 +3483,7 @@
 <li><a class="autorefs autorefs-internal" title="            streams(cls: type[T]) -> T" href="../reference/sonolus.script.stream/#sonolus.script.stream.streams"><code class="highlight"><span class="nd">@streams</span></code></a> now reports the offending field name in every declaration error, and
   correctly distinguishes a field annotated with <code class="highlight"><span class="n">Annotated</span><span class="p">[</span><span class="o">...</span><span class="p">]</span></code> from one with a real default value.</li>
 <li>The declaration decorators (<a class="autorefs autorefs-internal" title="            options(cls: type[T]) -> T | Options" href="../reference/sonolus.script.options/#sonolus.script.options.options"><code class="highlight"><span class="nd">@options</span></code></a>, <a class="autorefs autorefs-internal" title="            skin(cls: type[T]) -> T | Skin" href="../reference/sonolus.script.sprite/#sonolus.script.sprite.skin"><code class="highlight"><span class="nd">@skin</span></code></a>,
-  <a class="autorefs autorefs-internal" title="            buckets(cls: type[T]) -> T | Buckets" href="../reference/sonolus.script.bucket/#sonolus.script.bucket.buckets"><code class="highlight"><span class="nd">@buckets</span></code></a>, <code class="highlight"><span class="nd">@streams</span></code>, ...) now reject a base class other than <code class="highlight"><span class="nb">object</span></code>;
-  previously, using one caused every inherited declaration to be silently dropped.</li>
+  <a class="autorefs autorefs-internal" title="            buckets(cls: type[T]) -> T | Buckets" href="../reference/sonolus.script.bucket/#sonolus.script.bucket.buckets"><code class="highlight"><span class="nd">@buckets</span></code></a>, <code class="highlight"><span class="nd">@streams</span></code>, ...) now reject a base class other than <code class="highlight"><span class="nb">object</span></code>.</li>
 <li><code class="highlight"><span class="nb">round</span></code>'s second parameter is now named <code class="highlight"><span class="n">ndigits</span></code>, matching Python, so <code class="highlight"><span class="nb">round</span><span class="p">(</span><span class="n">x</span><span class="p">,</span> <span class="n">ndigits</span><span class="o">=</span><span class="mi">2</span><span class="p">)</span></code> works.</li>
 <li>Fixed <code class="highlight"><span class="nb">callable</span></code> always returning <code class="highlight"><span class="kc">False</span></code>.</li>
 <li>Fixed <code class="highlight"><span class="nb">bool</span></code> failing on runtime values, and on values whose <code class="highlight"><span class="fm">__bool__</span></code> returns a <code class="highlight"><span class="n">Num</span></code>. <code class="highlight"><span class="nb">bool</span></code> of an empty string
@@ -3253,7 +3491,7 @@
 <li>Fixed <code class="highlight"><span class="nb">reversed</span><span class="p">()</span></code> failing to compile for values whose length is not a compile time constant.</li>
 <li><code class="highlight"><span class="nb">sum</span></code> now reports an error for non-numeric values instead of modifying the value passed as <code class="highlight"><span class="n">start</span></code>.</li>
 <li><code class="highlight"><span class="nb">min</span></code> and <code class="highlight"><span class="nb">max</span></code> now honor the <code class="highlight"><span class="n">default</span></code> argument for <code class="highlight"><span class="n">Array</span></code>, <a class="autorefs autorefs-internal" title="            VarArray" href="../reference/sonolus.script.containers/#sonolus.script.containers.VarArray"><code class="highlight"><span class="n">VarArray</span></code></a>,
-  and <code class="highlight"><span class="nb">range</span></code>, which previously ignored it.</li>
+  and <code class="highlight"><span class="nb">range</span></code>.</li>
 <li><code class="highlight"><span class="nb">map</span></code> and <code class="highlight"><span class="nb">filter</span></code> now report a non-iterable argument the same way <code class="highlight"><span class="nb">iter</span></code> and <code class="highlight"><span class="nb">zip</span></code> do.</li>
 <li>Fixed <code class="highlight"><span class="nb">isinstance</span></code> reporting a <code class="highlight"><span class="nb">set</span></code> or <code class="highlight"><span class="nb">dict</span></code> as a <code class="highlight"><span class="n">Record</span></code>; <code class="highlight"><span class="nb">issubclass</span></code> rejects those pairings in the same way.</li>
 <li>Fixed a numeric value returned by <code class="highlight"><span class="nb">next</span></code> on a generator changing when <code class="highlight"><span class="nb">next</span></code> was called again.</li>
@@ -3275,7 +3513,7 @@
 </ul>
 <h3 id="0171">0.17.1<a class="headerlink" href="#0171" title="Permanent link">&para;</a></h3>
 <ul>
-<li>Reduced the runtime check overhead from archetype is at checks.</li>
+<li>Reduced the runtime check overhead of archetype checks.</li>
 </ul>
 <h3 id="0170">0.17.0<a class="headerlink" href="#0170" title="Permanent link">&para;</a></h3>
 <ul>
@@ -3370,11 +3608,11 @@
 <li>Added haptic feedback support via <a class="autorefs autorefs-internal" title="            HapticType" href="../reference/sonolus.script.archetype/#sonolus.script.archetype.HapticType"><code class="highlight"><span class="n">HapticType</span></code></a> enum in entity input.</li>
 <li>Added <code class="highlight"><span class="n">progress_graph</span></code> UI layout support in watch mode.</li>
 <li>Added support for <code class="highlight"><span class="n">replay_fallback_option_names</span></code> in engine configuration.</li>
-<li>Added <a class="autorefs autorefs-internal" title="            add_life_scheduled(value: int, time: float)" href="../reference/sonolus.script.runtime/#sonolus.script.runtime.add_life_scheduled"><code class="highlight"><span class="n">add_life_scheduled</span></code></a> for scheduling life additions at specific times.</li>
+<li>Added <a class="autorefs autorefs-internal" title="            add_life_scheduled(value: int, time: float)" href="../reference/sonolus.script.runtime/#sonolus.script.runtime.add_life_scheduled"><code class="highlight"><span class="n">add_life_scheduled</span></code></a> for scheduling timed life additions.</li>
 <li>Added <code class="highlight"><span class="n">initial</span></code> and <code class="highlight"><span class="n">maximum</span></code> properties to level life configuration.</li>
 <li>Added the <code class="highlight"><span class="n">archetype_score_multiplier</span></code> and <code class="highlight"><span class="n">entity_score_multiplier</span></code> properties to archetypes.</li>
 <li>Added the <code class="highlight"><span class="n">archetype_life</span></code> (replacing the now deprecated <code class="highlight"><span class="n">life</span></code> property) and <code class="highlight"><span class="n">entity_life</span></code> property to archetypes.</li>
-<li>Added import defaults via optional <code class="highlight"><span class="n">default</span></code> parameter in <a class="autorefs autorefs-internal" title="            imported(*, name: str | None = None, default: int | float | None = None) -> Any" href="../reference/sonolus.script.archetype/#sonolus.script.archetype.imported"><code class="highlight"><span class="n">imported</span><span class="p">()</span></code></a>.</li>
+<li>Added import defaults via optional <code class="highlight"><span class="n">default</span></code> parameter in <a class="autorefs autorefs-internal" title="            imported(*, name: str | None = None, default: Any = None) -> Any" href="../reference/sonolus.script.archetype/#sonolus.script.archetype.imported"><code class="highlight"><span class="n">imported</span><span class="p">()</span></code></a>.</li>
 <li>Expanded <a class="autorefs autorefs-internal" title="            StandardText" href="../reference/sonolus.script.text/#sonolus.script.text.StandardText"><code class="highlight"><span class="n">StandardText</span></code></a> constants.</li>
 <li>Added validation for overriding reserved archetype field names.</li>
 <li>Improved support for <code class="highlight"><span class="n">Literal</span></code> type specifications and <code class="highlight"><span class="n">Enum</span></code> subclass handling in some edge cases.</li>

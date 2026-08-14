@@ -2328,7 +2328,7 @@ functions that are designed for use in Sonolus engines. See <a href="../construc
 supported.</p>
 <h3 id="syntax">Syntax<a class="headerlink" href="#syntax" title="Permanent link">&para;</a></h3>
 <p>Most Python syntax is supported, but there are a few limitations. The primary restrictions are listed below; see
-<a href="../constructs/#key-differences">Key Differences</a> for the complete list:</p>
+<a href="../constructs/#key-differences">Key Differences</a> for more details:</p>
 <ul>
 <li>Destructuring assignment with the <code class="highlight"><span class="o">*</span></code> operator is unsupported.</li>
 <li>Sequence (list and array) <code class="highlight"><span class="k">match</span></code> patterns with the <code class="highlight"><span class="o">*</span></code> operator are unsupported.</li>
@@ -2336,6 +2336,8 @@ supported.</p>
 <li>Within functions, <code class="highlight"><span class="kn">import</span></code> statements are unsupported.</li>
 <li>The <code class="highlight"><span class="k">global</span></code> and <code class="highlight"><span class="k">nonlocal</span></code> keywords are unsupported.</li>
 <li>Exception related statements (<code class="highlight"><span class="k">try</span></code>, <code class="highlight"><span class="k">except</span></code>, <code class="highlight"><span class="k">finally</span></code>, <code class="highlight"><span class="k">raise</span></code>) are unsupported.</li>
+<li>Asynchronous functions and <code class="highlight"><span class="k">await</span></code> expressions are unsupported.</li>
+<li>Classes and type aliases may not be defined within functions.</li>
 </ul>
 <h3 id="compile-time-evaluation">Compile Time Evaluation<a class="headerlink" href="#compile-time-evaluation" title="Permanent link">&para;</a></h3>
 <p>Sonolus.py will evaluate some expressions at compile time such as basic arithmetic operations on constants,
@@ -2460,10 +2462,11 @@ specific type:</p>
 <p>Sonolus.py has limited support for <a href="../types/#transient-types">other types</a> of values such as strings, tuples, and
 functions. These have restrictions such as not being valid as Record field types or Array element types.</p>
 <p><code class="highlight"><span class="nb">dict</span></code> and <code class="highlight"><span class="nb">set</span></code> are immutable after creation. All dict keys and set members must be compile-time constants. Dicts can
-be created from literals, the <code class="highlight"><span class="nb">dict</span><span class="p">()</span></code> constructor (from another dict, an iterable of key-value pairs, or keyword
-arguments), or by merging with <code class="highlight"><span class="o">|</span></code>. Sets can be created from literals or the <code class="highlight"><span class="nb">set</span><span class="p">()</span></code> constructor (from another set or
-an iterable). Accessing a dict value with a compile-time constant key is always supported; dynamic access using a
-runtime key is only supported when the values are numeric, <code class="highlight"><span class="n">Array</span></code>, or <code class="highlight"><span class="n">Record</span></code> types.</p>
+be created from literals, the <code class="highlight"><span class="nb">dict</span><span class="p">()</span></code> constructor (from another dict, a tuple of key-value pairs, or keyword
+arguments), or by merging with <code class="highlight"><span class="o">|</span></code>. Sets can be created from literals or the <code class="highlight"><span class="nb">set</span><span class="p">()</span></code> constructor (from a tuple, dict
+using its keys, an enum class, or another set). Accessing a dict value with a compile-time constant key is always
+supported; dynamic access using a runtime key is only supported when all values are compile-time constants of a
+single type, and that type is numeric, <code class="highlight"><span class="n">Array</span></code>, or <code class="highlight"><span class="n">Record</span></code>.</p>
 <h2 id="modules">Modules<a class="headerlink" href="#modules" title="Permanent link">&para;</a></h2>
 <p>Sonolus.py provides a number of built-in modules that can be used in Sonolus engines. These include:</p>
 <ul>
@@ -2507,7 +2510,8 @@ runtime key is only supported when the values are numeric, <code class="highligh
 </li>
 <li>Utilities<ul>
 <li><a href="../../reference/sonolus.script.array_like/">ArrayLike</a>: Mixin for array functionality.</li>
-<li><a href="../../reference/sonolus.script.containers/">Containers</a>: Additional container types like <a class="autorefs autorefs-internal" title="            VarArray" href="../../reference/sonolus.script.containers/#sonolus.script.containers.VarArray"><code class="highlight"><span class="n">VarArray</span></code></a> and <a class="autorefs autorefs-internal" title="            ArrayMap" href="../../reference/sonolus.script.containers/#sonolus.script.containers.ArrayMap"><code class="highlight"><span class="n">ArrayMap</span></code></a>.</li>
+<li><a href="../../reference/sonolus.script.containers/">Containers</a>: Additional container types like
+  <a class="autorefs autorefs-internal" title="            VarArray" href="../../reference/sonolus.script.containers/#sonolus.script.containers.VarArray"><code class="highlight"><span class="n">VarArray</span></code></a> and <a class="autorefs autorefs-internal" title="            ArrayMap" href="../../reference/sonolus.script.containers/#sonolus.script.containers.ArrayMap"><code class="highlight"><span class="n">ArrayMap</span></code></a>.</li>
 <li><a href="../../reference/sonolus.script.debug/">Debug</a>: Debugging utilities.</li>
 <li><a href="../../reference/sonolus.script.easing/">Easing</a>: Easing functions for animations.</li>
 <li><a href="../../reference/sonolus.script.interval/">Interval</a>: Mathematical intervals.</li>

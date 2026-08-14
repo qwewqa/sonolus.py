@@ -2664,7 +2664,7 @@
 
     <div class="doc doc-contents ">
 
-        <p>Return whether the effect clip is available.</p>
+        <p>Whether the effect clip is available.</p>
 
     </div>
 
@@ -2685,6 +2685,7 @@
     <div class="doc doc-contents ">
 
         <p>Play the effect clip in a loop until stopped.</p>
+<p>Not available in preview mode.</p>
 
 
     <p><span class="doc-section-title">Returns:</span></p>
@@ -2727,6 +2728,7 @@
 
         <p>Play the effect clip.</p>
 <p>If the clip was already played within the specified distance, it will be skipped.</p>
+<p>Not available in preview mode.</p>
 
 
 <p><span class="doc-section-title">Parameters:</span></p>
@@ -2779,7 +2781,10 @@
 <p>This is not suitable for real-time effects such as responses to user input.
 Use <a class="autorefs autorefs-internal" title="            play(distance: float = 0) -> None" href="#sonolus.script.effect.Effect.play"><code class="highlight"><span class="n">play</span></code></a> instead.</p>
 <p>This may be called in preprocess to schedule effects upfront.</p>
+<p>Schedule at least 0.5 seconds before the target time when possible. Scheduling closer to the target may
+cause unexpected latency.</p>
 <p>If the clip would play within the specified distance of another play, it will be skipped.</p>
+<p>Not available in preview mode.</p>
 
 
 <p><span class="doc-section-title">Parameters:</span></p>
@@ -2847,6 +2852,40 @@ Use <a class="autorefs autorefs-internal" title="            play(distance: floa
         <p>Schedule the effect clip to play in a loop until stopped.</p>
 <p>This is not suitable for real-time effects such as responses to user input.
 Use <a class="autorefs autorefs-internal" title="            loop() -> LoopedEffectHandle" href="#sonolus.script.effect.Effect.loop"><code class="highlight"><span class="n">loop</span></code></a> instead.</p>
+<p>Schedule at least 0.5 seconds before the target time when possible. Scheduling closer to the target may
+cause unexpected latency.</p>
+<p>Not available in preview mode.</p>
+
+
+<p><span class="doc-section-title">Parameters:</span></p>
+    <table>
+      <thead>
+        <tr>
+          <th>Name</th>
+          <th>Type</th>
+          <th>Description</th>
+          <th>Default</th>
+        </tr>
+      </thead>
+      <tbody>
+          <tr class="doc-section-item">
+            <td>
+                <code>start_time</code>
+            </td>
+            <td>
+                  <code><span title="float">float</span></code>
+            </td>
+            <td>
+              <div class="doc-md-description">
+                <p>The time in seconds at which to start the effect.</p>
+              </div>
+            </td>
+            <td>
+                <em>required</em>
+            </td>
+          </tr>
+      </tbody>
+    </table>
 
 
     <p><span class="doc-section-title">Returns:</span></p>
@@ -3123,6 +3162,7 @@ Use <a class="autorefs autorefs-internal" title="            loop() -> LoopedEff
     <div class="doc doc-contents ">
 
         <p>Stop the looped effect.</p>
+<p>Not available in preview mode.</p>
 
 
     </div>
@@ -3189,6 +3229,40 @@ Use <a class="autorefs autorefs-internal" title="            loop() -> LoopedEff
     <div class="doc doc-contents ">
 
         <p>Stop the scheduled looped effect.</p>
+<p>Schedule at least 0.5 seconds before the target time when possible. Scheduling closer to the target may
+cause unexpected latency.</p>
+<p>Not available in preview mode.</p>
+
+
+<p><span class="doc-section-title">Parameters:</span></p>
+    <table>
+      <thead>
+        <tr>
+          <th>Name</th>
+          <th>Type</th>
+          <th>Description</th>
+          <th>Default</th>
+        </tr>
+      </thead>
+      <tbody>
+          <tr class="doc-section-item">
+            <td>
+                <code>end_time</code>
+            </td>
+            <td>
+                  <code><span title="float">float</span></code>
+            </td>
+            <td>
+              <div class="doc-md-description">
+                <p>The time at which to stop the effect.</p>
+              </div>
+            </td>
+            <td>
+                <em>required</em>
+            </td>
+          </tr>
+      </tbody>
+    </table>
 
 
     </div>

@@ -2498,13 +2498,15 @@ For where the underlying asset files are placed on disk, see <a href="../project
 
 <span class="n">level_memory_value</span> <span class="o">=</span> <span class="n">level_memory</span><span class="p">(</span><span class="n">Vec2</span><span class="p">)</span>
 </code></pre></div>
-<p>Level memory may be modified in sequential callbacks (see <a href="../project/#modes">Modes</a> for each mode's callbacks):</p>
+<p>Level memory exists in play, watch, and tutorial mode. Preview mode has no level memory; use
+<a class="autorefs autorefs-internal" title="            level_data(cls: type[T]) -> T" href="../../reference/sonolus.script.globals/#sonolus.script.globals.level_data"><code class="highlight"><span class="nd">@level_data</span></code></a> there instead.</p>
+<p>In those modes, level memory may be read in any callback and modified in these callbacks (see
+<a href="../project/#modes">Modes</a> for each mode's callbacks):</p>
 <ul>
-<li><code class="highlight"><span class="n">preprocess</span></code></li>
-<li><code class="highlight"><span class="n">update_sequential</span></code></li>
-<li><code class="highlight"><span class="n">touch</span></code></li>
+<li>Play: <code class="highlight"><span class="n">preprocess</span></code>, <code class="highlight"><span class="n">update_sequential</span></code>, <code class="highlight"><span class="n">touch</span></code></li>
+<li>Watch: <code class="highlight"><span class="n">preprocess</span></code>, <code class="highlight"><span class="n">update_sequential</span></code></li>
+<li>Tutorial: <code class="highlight"><span class="n">preprocess</span></code>, <code class="highlight"><span class="n">navigate</span></code>, <code class="highlight"><span class="n">update</span></code></li>
 </ul>
-<p>and may be read in any callback.</p>
 <p>All level memory in a mode shares a combined limit of 4096 values; exceeding it raises a compilation error.</p>
 <h3 id="level-data">Level Data<a class="headerlink" href="#level-data" title="Permanent link">&para;</a></h3>
 <p>Level data is defined with the <a class="autorefs autorefs-internal" title="            level_data(cls: type[T]) -> T" href="../../reference/sonolus.script.globals/#sonolus.script.globals.level_data"><code class="highlight"><span class="nd">@level_data</span></code></a> class decorator:</p>
@@ -2526,7 +2528,7 @@ For where the underlying asset files are placed on disk, see <a href="../project
 <p>All level data in a mode shares a combined limit of 4096 values; exceeding it raises a compilation error.</p>
 <h2 id="archetype-variables">Archetype Variables<a class="headerlink" href="#archetype-variables" title="Permanent link">&para;</a></h2>
 <h3 id="imported">Imported<a class="headerlink" href="#imported" title="Permanent link">&para;</a></h3>
-<p>Imported fields are declared with <a class="autorefs autorefs-internal" title="            imported(*, name: str | None = None, default: int | float | None = None) -> Any" href="../../reference/sonolus.script.archetype/#sonolus.script.archetype.imported"><code class="highlight"><span class="n">imported</span><span class="p">()</span></code></a>:</p>
+<p>Imported fields are declared with <a class="autorefs autorefs-internal" title="            imported(*, name: str | None = None, default: Any = None) -> Any" href="../../reference/sonolus.script.archetype/#sonolus.script.archetype.imported"><code class="highlight"><span class="n">imported</span><span class="p">()</span></code></a>:</p>
 <div class="highlight"><pre><span></span><code><span class="kn">from</span><span class="w"> </span><span class="nn">sonolus.script.archetype</span><span class="w"> </span><span class="kn">import</span> <span class="n">PlayArchetype</span><span class="p">,</span> <span class="n">imported</span>
 
 <span class="k">class</span><span class="w"> </span><span class="nc">MyArchetype</span><span class="p">(</span><span class="n">PlayArchetype</span><span class="p">):</span>
@@ -2553,8 +2555,11 @@ exported field in play mode.</p>
 <span class="k">class</span><span class="w"> </span><span class="nc">MyArchetype</span><span class="p">(</span><span class="n">PlayArchetype</span><span class="p">):</span>
     <span class="n">field</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="n">entity_data</span><span class="p">()</span>
 </code></pre></div>
-<p>Entity data is accessible from other entities, but may only be updated in the <code class="highlight"><span class="n">preprocess</span></code> callback and is read-only in other callbacks.</p>
-<p>It functions like <a class="autorefs autorefs-internal" title="            imported(*, name: str | None = None, default: int | float | None = None) -> Any" href="../../reference/sonolus.script.archetype/#sonolus.script.archetype.imported"><code class="highlight"><span class="n">imported</span><span class="p">()</span></code></a> and shares the same underlying storage, except that it is not loaded from a level.</p>
+<p>Entity data is accessible from other entities, but may only be updated in the <code class="highlight"><span class="n">preprocess</span></code> callback. It is read-only
+in other callbacks.</p>
+<p>Entity data shares storage with <a class="autorefs autorefs-internal" title="            imported(*, name: str | None = None, default: Any = None) -> Any" href="../../reference/sonolus.script.archetype/#sonolus.script.archetype.imported"><code class="highlight"><span class="n">imported</span><span class="p">()</span></code></a> fields but is private to the
+engine: it is not part of the archetype schema, may not be set when constructing level data, and is never loaded
+from a level.</p>
 <h3 id="entity-memory">Entity Memory<a class="headerlink" href="#entity-memory" title="Permanent link">&para;</a></h3>
 <p>Entity memory fields are declared with <a class="autorefs autorefs-internal" title="            entity_memory() -> Any" href="../../reference/sonolus.script.archetype/#sonolus.script.archetype.entity_memory"><code class="highlight"><span class="n">entity_memory</span><span class="p">()</span></code></a>:</p>
 <div class="highlight"><pre><span></span><code><span class="kn">from</span><span class="w"> </span><span class="nn">sonolus.script.archetype</span><span class="w"> </span><span class="kn">import</span> <span class="n">PlayArchetype</span><span class="p">,</span> <span class="n">entity_memory</span>
@@ -2562,8 +2567,13 @@ exported field in play mode.</p>
 <span class="k">class</span><span class="w"> </span><span class="nc">MyArchetype</span><span class="p">(</span><span class="n">PlayArchetype</span><span class="p">):</span>
     <span class="n">field</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="n">entity_memory</span><span class="p">()</span>
 </code></pre></div>
-<p>Entity memory is private to the entity and is not accessible from other entities. It may be read or updated in any callback associated with the entity.</p>
-<p>Entity memory fields may also be set when an entity is spawned using the <a class="autorefs autorefs-internal" title="            spawn(**kwargs: Any) -> None
+<p>Entity memory is private to the entity and is not accessible from other entities. It may be read or updated in any
+callback associated with the entity.</p>
+<p>Entity memory exists in play and watch mode. Preview mode has no entity memory; compute per-entity values in
+<code class="highlight"><span class="n">preprocess</span></code> and store them in <a class="autorefs autorefs-internal" title="            entity_data() -> Any" href="../../reference/sonolus.script.archetype/#sonolus.script.archetype.entity_data"><code class="highlight"><span class="n">entity_data</span><span class="p">()</span></code></a> or
+<a class="autorefs autorefs-internal" title="            shared_memory() -> Any" href="../../reference/sonolus.script.archetype/#sonolus.script.archetype.shared_memory"><code class="highlight"><span class="n">shared_memory</span><span class="p">()</span></code></a> fields, which are read-only in <code class="highlight"><span class="n">render</span></code>.</p>
+<p>Entity memory fields may also be set when an entity is spawned using the
+<a class="autorefs autorefs-internal" title="            spawn(**kwargs: Any) -> None
 
   
       classmethod
@@ -2576,7 +2586,8 @@ exported field in play mode.</p>
     <span class="n">field</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="n">shared_memory</span><span class="p">()</span>
 </code></pre></div>
 <p>Shared memory is accessible from other entities.</p>
-<p>Shared memory may be read in any callback, but may only be updated by sequential callbacks (<code class="highlight"><span class="n">preprocess</span></code>, <code class="highlight"><span class="n">update_sequential</span></code>, and <code class="highlight"><span class="n">touch</span></code>).</p>
+<p>Shared memory may be read in any callback, but may only be updated by sequential callbacks (<code class="highlight"><span class="n">preprocess</span></code>,
+<code class="highlight"><span class="n">update_sequential</span></code>, and <code class="highlight"><span class="n">touch</span></code>).</p>
 <h2 id="streams">Streams<a class="headerlink" href="#streams" title="Permanent link">&para;</a></h2>
 <p>Streams are defined with the <a class="autorefs autorefs-internal" title="            streams(cls: type[T]) -> T" href="../../reference/sonolus.script.stream/#sonolus.script.stream.streams"><code class="highlight"><span class="nd">@streams</span></code></a> decorator:</p>
 <div class="highlight"><pre><span></span><code><span class="kn">from</span><span class="w"> </span><span class="nn">sonolus.script.stream</span><span class="w"> </span><span class="kn">import</span> <span class="n">streams</span><span class="p">,</span> <span class="n">Stream</span><span class="p">,</span> <span class="n">StreamGroup</span>
@@ -2593,7 +2604,8 @@ exported field in play mode.</p>
     <span class="n">data_field_1</span><span class="p">:</span> <span class="n">Num</span>  <span class="c1"># A data field of type Num</span>
     <span class="n">data_field_2</span><span class="p">:</span> <span class="n">Vec2</span>  <span class="c1"># A data field of type Vec2</span>
 </code></pre></div>
-<p>Streams and stream groups are declared by annotating class attributes with <a class="autorefs autorefs-internal" title="            Stream" href="../../reference/sonolus.script.stream/#sonolus.script.stream.Stream"><code class="highlight"><span class="n">Stream</span></code></a> or <a class="autorefs autorefs-internal" title="            StreamGroup" href="../../reference/sonolus.script.stream/#sonolus.script.stream.StreamGroup"><code class="highlight"><span class="n">StreamGroup</span></code></a>.</p>
+<p>Streams and stream groups are declared by annotating class attributes with <a class="autorefs autorefs-internal" title="            Stream" href="../../reference/sonolus.script.stream/#sonolus.script.stream.Stream"><code class="highlight"><span class="n">Stream</span></code></a>
+or <a class="autorefs autorefs-internal" title="            StreamGroup" href="../../reference/sonolus.script.stream/#sonolus.script.stream.StreamGroup"><code class="highlight"><span class="n">StreamGroup</span></code></a>.</p>
 <p>Other types are also supported in the form of data fields. They may be used to store additional data to export from
 play mode to watch mode.</p>
 <p>In either case, data is write-only in play mode and read-only in watch mode.</p>
@@ -2615,12 +2627,15 @@ not work on new versions of the engine.</p>
     <span class="n">other</span><span class="p">:</span> <span class="n">Sprite</span> <span class="o">=</span> <span class="n">sprite</span><span class="p">(</span><span class="s2">&quot;other&quot;</span><span class="p">)</span>
     <span class="n">group</span><span class="p">:</span> <span class="n">SpriteGroup</span> <span class="o">=</span> <span class="n">sprite_group</span><span class="p">([</span><span class="s2">&quot;one&quot;</span><span class="p">,</span> <span class="s2">&quot;two&quot;</span><span class="p">,</span> <span class="s2">&quot;three&quot;</span><span class="p">])</span>
 </code></pre></div>
-<p>Standard sprites are defined by annotating the field with the corresponding value from <a class="autorefs autorefs-internal" title="            StandardSprite" href="../../reference/sonolus.script.sprite/#sonolus.script.sprite.StandardSprite"><code class="highlight"><span class="n">StandardSprite</span></code></a>.</p>
-<p>Custom sprites are defined by annotating the field with <a class="autorefs autorefs-internal" title="            Sprite" href="../../reference/sonolus.script.sprite/#sonolus.script.sprite.Sprite"><code class="highlight"><span class="n">Sprite</span></code></a> and calling <a class="autorefs autorefs-internal" title="            sprite(name: str) -> Any" href="../../reference/sonolus.script.sprite/#sonolus.script.sprite.sprite"><code class="highlight"><span class="n">sprite</span></code></a> with the sprite name.</p>
+<p>Standard sprites are defined by annotating the field with the corresponding value from
+<a class="autorefs autorefs-internal" title="            StandardSprite" href="../../reference/sonolus.script.sprite/#sonolus.script.sprite.StandardSprite"><code class="highlight"><span class="n">StandardSprite</span></code></a>.</p>
+<p>Custom sprites are defined by annotating the field with <a class="autorefs autorefs-internal" title="            Sprite" href="../../reference/sonolus.script.sprite/#sonolus.script.sprite.Sprite"><code class="highlight"><span class="n">Sprite</span></code></a> and calling
+<a class="autorefs autorefs-internal" title="            sprite(name: str) -> Any" href="../../reference/sonolus.script.sprite/#sonolus.script.sprite.sprite"><code class="highlight"><span class="n">sprite</span></code></a> with the sprite name.</p>
 <p>A group of sprites sharing consecutive IDs can be defined by annotating the field with
 <a class="autorefs autorefs-internal" title="            SpriteGroup" href="../../reference/sonolus.script.sprite/#sonolus.script.sprite.SpriteGroup"><code class="highlight"><span class="n">SpriteGroup</span></code></a> and calling <a class="autorefs autorefs-internal" title="            sprite_group(names: Iterable[str]) -> Any" href="../../reference/sonolus.script.sprite/#sonolus.script.sprite.sprite_group"><code class="highlight"><span class="n">sprite_group</span></code></a>
 with the sprite names; indexing the group returns the <a class="autorefs autorefs-internal" title="            Sprite" href="../../reference/sonolus.script.sprite/#sonolus.script.sprite.Sprite"><code class="highlight"><span class="n">Sprite</span></code></a> at that index.</p>
-<p>To set the render mode for the skin, set the <code class="highlight"><span class="n">render_mode</span></code> field to the desired value from <a class="autorefs autorefs-internal" title="            RenderMode" href="../../reference/sonolus.script.sprite/#sonolus.script.sprite.RenderMode"><code class="highlight"><span class="n">RenderMode</span></code></a>.</p>
+<p>To set the render mode for the skin, set the <code class="highlight"><span class="n">render_mode</span></code> field to the desired value from
+<a class="autorefs autorefs-internal" title="            RenderMode" href="../../reference/sonolus.script.sprite/#sonolus.script.sprite.RenderMode"><code class="highlight"><span class="n">RenderMode</span></code></a>.</p>
 <p>The <a class="autorefs autorefs-internal" title="            draw(quad: QuadLike, z: ZIndex = 0.0, a: float = 1.0)" href="../../reference/sonolus.script.sprite/#sonolus.script.sprite.Sprite.draw"><code class="highlight"><span class="n">draw</span></code></a> methods take a <code class="highlight"><span class="n">z</span></code> argument, which may be a single value or a tuple
 of up to four values, where later values break ties on earlier ones. Values that are not supplied are treated
 as <code class="highlight"><span class="mi">0</span></code>.</p>
@@ -2635,8 +2650,10 @@ as <code class="highlight"><span class="mi">0</span></code>.</p>
     <span class="n">other</span><span class="p">:</span> <span class="n">Effect</span> <span class="o">=</span> <span class="n">effect</span><span class="p">(</span><span class="s2">&quot;other&quot;</span><span class="p">)</span>
     <span class="n">group</span><span class="p">:</span> <span class="n">EffectGroup</span> <span class="o">=</span> <span class="n">effect_group</span><span class="p">([</span><span class="s2">&quot;one&quot;</span><span class="p">,</span> <span class="s2">&quot;two&quot;</span><span class="p">,</span> <span class="s2">&quot;three&quot;</span><span class="p">])</span>
 </code></pre></div>
-<p>Standard sound effects are defined by annotating the field with the corresponding value from <a class="autorefs autorefs-internal" title="            StandardEffect" href="../../reference/sonolus.script.effect/#sonolus.script.effect.StandardEffect"><code class="highlight"><span class="n">StandardEffect</span></code></a>.</p>
-<p>Custom sound effects are defined by annotating the field with <a class="autorefs autorefs-internal" title="            Effect" href="../../reference/sonolus.script.effect/#sonolus.script.effect.Effect"><code class="highlight"><span class="n">Effect</span></code></a> and calling <a class="autorefs autorefs-internal" title="            effect(name: str) -> Any" href="../../reference/sonolus.script.effect/#sonolus.script.effect.effect"><code class="highlight"><span class="n">effect</span></code></a> with the effect name.</p>
+<p>Standard sound effects are defined by annotating the field with the corresponding value from
+<a class="autorefs autorefs-internal" title="            StandardEffect" href="../../reference/sonolus.script.effect/#sonolus.script.effect.StandardEffect"><code class="highlight"><span class="n">StandardEffect</span></code></a>.</p>
+<p>Custom sound effects are defined by annotating the field with <a class="autorefs autorefs-internal" title="            Effect" href="../../reference/sonolus.script.effect/#sonolus.script.effect.Effect"><code class="highlight"><span class="n">Effect</span></code></a> and calling
+<a class="autorefs autorefs-internal" title="            effect(name: str) -> Any" href="../../reference/sonolus.script.effect/#sonolus.script.effect.effect"><code class="highlight"><span class="n">effect</span></code></a> with the effect name.</p>
 <p>A group of sound effects sharing consecutive IDs can be defined by annotating the field with
 <a class="autorefs autorefs-internal" title="            EffectGroup" href="../../reference/sonolus.script.effect/#sonolus.script.effect.EffectGroup"><code class="highlight"><span class="n">EffectGroup</span></code></a> and calling <a class="autorefs autorefs-internal" title="            effect_group(names: Iterable[str]) -> Any" href="../../reference/sonolus.script.effect/#sonolus.script.effect.effect_group"><code class="highlight"><span class="n">effect_group</span></code></a>
 with the effect names; indexing the group returns the <a class="autorefs autorefs-internal" title="            Effect" href="../../reference/sonolus.script.effect/#sonolus.script.effect.Effect"><code class="highlight"><span class="n">Effect</span></code></a> at that index.</p>
@@ -2651,8 +2668,10 @@ with the effect names; indexing the group returns the <a class="autorefs autoref
     <span class="n">other</span><span class="p">:</span> <span class="n">Particle</span> <span class="o">=</span> <span class="n">particle</span><span class="p">(</span><span class="s2">&quot;other&quot;</span><span class="p">)</span>
     <span class="n">group</span><span class="p">:</span> <span class="n">ParticleGroup</span> <span class="o">=</span> <span class="n">particle_group</span><span class="p">([</span><span class="s2">&quot;one&quot;</span><span class="p">,</span> <span class="s2">&quot;two&quot;</span><span class="p">,</span> <span class="s2">&quot;three&quot;</span><span class="p">])</span>
 </code></pre></div>
-<p>Standard particles are defined by annotating the field with the corresponding value from <a class="autorefs autorefs-internal" title="            StandardParticle" href="../../reference/sonolus.script.particle/#sonolus.script.particle.StandardParticle"><code class="highlight"><span class="n">StandardParticle</span></code></a>.</p>
-<p>Custom particles are defined by annotating the field with <a class="autorefs autorefs-internal" title="            Particle" href="../../reference/sonolus.script.particle/#sonolus.script.particle.Particle"><code class="highlight"><span class="n">Particle</span></code></a> and calling <a class="autorefs autorefs-internal" title="            particle(name: str) -> Any" href="../../reference/sonolus.script.particle/#sonolus.script.particle.particle"><code class="highlight"><span class="n">particle</span></code></a> with the particle name.</p>
+<p>Standard particles are defined by annotating the field with the corresponding value from
+<a class="autorefs autorefs-internal" title="            StandardParticle" href="../../reference/sonolus.script.particle/#sonolus.script.particle.StandardParticle"><code class="highlight"><span class="n">StandardParticle</span></code></a>.</p>
+<p>Custom particles are defined by annotating the field with <a class="autorefs autorefs-internal" title="            Particle" href="../../reference/sonolus.script.particle/#sonolus.script.particle.Particle"><code class="highlight"><span class="n">Particle</span></code></a> and calling
+<a class="autorefs autorefs-internal" title="            particle(name: str) -> Any" href="../../reference/sonolus.script.particle/#sonolus.script.particle.particle"><code class="highlight"><span class="n">particle</span></code></a> with the particle name.</p>
 <p>A group of particles sharing consecutive IDs can be defined by annotating the field with
 <a class="autorefs autorefs-internal" title="            ParticleGroup" href="../../reference/sonolus.script.particle/#sonolus.script.particle.ParticleGroup"><code class="highlight"><span class="n">ParticleGroup</span></code></a> and calling
 <a class="autorefs autorefs-internal" title="            particle_group(names: Iterable[str]) -> Any" href="../../reference/sonolus.script.particle/#sonolus.script.particle.particle_group"><code class="highlight"><span class="n">particle_group</span></code></a> with the particle names; indexing the group returns the
@@ -2679,7 +2698,7 @@ with the effect names; indexing the group returns the <a class="autorefs autoref
     <span class="p">)</span>
 </code></pre></div>
 <p>Buckets are defined by annotating the field with <a class="autorefs autorefs-internal" title="            Bucket" href="../../reference/sonolus.script.bucket/#sonolus.script.bucket.Bucket"><code class="highlight"><span class="n">Bucket</span></code></a> and calling
-<a class="autorefs autorefs-internal" title="            bucket(*, sprites: list[_BucketSprite], unit: AnyText | None = None) -> Any" href="../../reference/sonolus.script.bucket/#sonolus.script.bucket.bucket"><code class="highlight"><span class="n">bucket</span></code></a> with the sprites that make up the bucket's icon.</p>
+<a class="autorefs autorefs-internal" title="            bucket(*, sprites: list[BucketSprite], unit: AnyText | None = None) -> Any" href="../../reference/sonolus.script.bucket/#sonolus.script.bucket.bucket"><code class="highlight"><span class="n">bucket</span></code></a> with the sprites that make up the bucket's icon.</p>
 <p>The <code class="highlight"><span class="n">unit</span></code> label may be a plain string or an <a class="autorefs autorefs-internal" title="            AnyText = str | LocalizationText" href="../../reference/sonolus.script.metadata/#sonolus.script.metadata.AnyText"><code class="highlight"><span class="n">AnyText</span></code></a> localization dict mapping
 locale codes to text.</p>
 <h3 id="judging">Judging<a class="headerlink" href="#judging" title="Permanent link">&para;</a></h3>
@@ -2718,12 +2737,16 @@ combo and score.</p>
     <span class="n">tap</span><span class="p">:</span> <span class="n">StandardInstruction</span><span class="o">.</span><span class="n">TAP</span>
     <span class="n">other</span><span class="p">:</span> <span class="n">Instruction</span> <span class="o">=</span> <span class="n">instruction</span><span class="p">(</span><span class="s2">&quot;other&quot;</span><span class="p">)</span>
 </code></pre></div>
-<p>Standard instructions are defined by annotating the field with the corresponding value from <a class="autorefs autorefs-internal" title="            StandardInstruction" href="../../reference/sonolus.script.instruction/#sonolus.script.instruction.StandardInstruction"><code class="highlight"><span class="n">StandardInstruction</span></code></a>.</p>
-<p>Custom instructions are defined by annotating the field with <a class="autorefs autorefs-internal" title="            Instruction" href="../../reference/sonolus.script.instruction/#sonolus.script.instruction.Instruction"><code class="highlight"><span class="n">Instruction</span></code></a> and calling <a class="autorefs autorefs-internal" title="            instruction(name: AnyText) -> Any" href="../../reference/sonolus.script.instruction/#sonolus.script.instruction.instruction"><code class="highlight"><span class="n">instruction</span></code></a> with the instruction name.</p>
+<p>Standard instructions are defined by annotating the field with the corresponding value from
+<a class="autorefs autorefs-internal" title="            StandardInstruction" href="../../reference/sonolus.script.instruction/#sonolus.script.instruction.StandardInstruction"><code class="highlight"><span class="n">StandardInstruction</span></code></a>.</p>
+<p>Custom instructions are defined by annotating the field with
+<a class="autorefs autorefs-internal" title="            Instruction" href="../../reference/sonolus.script.instruction/#sonolus.script.instruction.Instruction"><code class="highlight"><span class="n">Instruction</span></code></a> and calling
+<a class="autorefs autorefs-internal" title="            instruction(name: AnyText) -> Any" href="../../reference/sonolus.script.instruction/#sonolus.script.instruction.instruction"><code class="highlight"><span class="n">instruction</span></code></a> with the instruction name.</p>
 <p>The instruction name given to <a class="autorefs autorefs-internal" title="            instruction(name: AnyText) -> Any" href="../../reference/sonolus.script.instruction/#sonolus.script.instruction.instruction"><code class="highlight"><span class="n">instruction</span></code></a> may be a plain string or an
 <a class="autorefs autorefs-internal" title="            AnyText = str | LocalizationText" href="../../reference/sonolus.script.metadata/#sonolus.script.metadata.AnyText"><code class="highlight"><span class="n">AnyText</span></code></a> localization dict.</p>
 <h2 id="tutorial-instruction-icons">Tutorial Instruction Icons<a class="headerlink" href="#tutorial-instruction-icons" title="Permanent link">&para;</a></h2>
-<p>Tutorial instruction icons are defined with the <a class="autorefs autorefs-internal" title="            instruction_icons(cls: type[T]) -> T | TutorialInstructionIcons" href="../../reference/sonolus.script.instruction/#sonolus.script.instruction.instruction_icons"><code class="highlight"><span class="nd">@instruction_icons</span></code></a> decorator:</p>
+<p>Tutorial instruction icons are defined with the
+<a class="autorefs autorefs-internal" title="            instruction_icons(cls: type[T]) -> T | TutorialInstructionIcons" href="../../reference/sonolus.script.instruction/#sonolus.script.instruction.instruction_icons"><code class="highlight"><span class="nd">@instruction_icons</span></code></a> decorator:</p>
 <div class="highlight"><pre><span></span><code><span class="kn">from</span><span class="w"> </span><span class="nn">sonolus.script.instruction</span><span class="w"> </span><span class="kn">import</span> <span class="n">instruction_icons</span><span class="p">,</span> <span class="n">StandardInstructionIcon</span><span class="p">,</span> <span class="n">InstructionIcon</span><span class="p">,</span> <span class="n">instruction_icon</span>
 
 
@@ -2732,8 +2755,11 @@ combo and score.</p>
     <span class="n">hand</span><span class="p">:</span> <span class="n">StandardInstructionIcon</span><span class="o">.</span><span class="n">HAND</span>
     <span class="n">other</span><span class="p">:</span> <span class="n">InstructionIcon</span> <span class="o">=</span> <span class="n">instruction_icon</span><span class="p">(</span><span class="s2">&quot;other&quot;</span><span class="p">)</span>
 </code></pre></div>
-<p>Standard instruction icons are defined by annotating the field with the corresponding value from <a class="autorefs autorefs-internal" title="            StandardInstructionIcon" href="../../reference/sonolus.script.instruction/#sonolus.script.instruction.StandardInstructionIcon"><code class="highlight"><span class="n">StandardInstructionIcon</span></code></a>.</p>
-<p>Custom instruction icons are defined by annotating the field with <a class="autorefs autorefs-internal" title="            InstructionIcon" href="../../reference/sonolus.script.instruction/#sonolus.script.instruction.InstructionIcon"><code class="highlight"><span class="n">InstructionIcon</span></code></a> and calling <a class="autorefs autorefs-internal" title="            instruction_icon(name: str) -> Any" href="../../reference/sonolus.script.instruction/#sonolus.script.instruction.instruction_icon"><code class="highlight"><span class="n">instruction_icon</span></code></a> with the icon name.</p>
+<p>Standard instruction icons are defined by annotating the field with the corresponding value from
+<a class="autorefs autorefs-internal" title="            StandardInstructionIcon" href="../../reference/sonolus.script.instruction/#sonolus.script.instruction.StandardInstructionIcon"><code class="highlight"><span class="n">StandardInstructionIcon</span></code></a>.</p>
+<p>Custom instruction icons are defined by annotating the field with
+<a class="autorefs autorefs-internal" title="            InstructionIcon" href="../../reference/sonolus.script.instruction/#sonolus.script.instruction.InstructionIcon"><code class="highlight"><span class="n">InstructionIcon</span></code></a> and calling
+<a class="autorefs autorefs-internal" title="            instruction_icon(name: str) -> Any" href="../../reference/sonolus.script.instruction/#sonolus.script.instruction.instruction_icon"><code class="highlight"><span class="n">instruction_icon</span></code></a> with the icon name.</p>
 <h2 id="options">Options<a class="headerlink" href="#options" title="Permanent link">&para;</a></h2>
 <p>Engine options are defined with the <a class="autorefs autorefs-internal" title="            options(cls: type[T]) -> T | Options" href="../../reference/sonolus.script.options/#sonolus.script.options.options"><code class="highlight"><span class="nd">@options</span></code></a> decorator:</p>
 <div class="highlight"><pre><span></span><code><span class="kn">from</span><span class="w"> </span><span class="nn">sonolus.script.options</span><span class="w"> </span><span class="kn">import</span> <span class="n">options</span><span class="p">,</span> <span class="n">select_option</span><span class="p">,</span> <span class="n">slider_option</span><span class="p">,</span> <span class="n">toggle_option</span>

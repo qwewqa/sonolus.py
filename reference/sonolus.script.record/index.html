@@ -2177,6 +2177,17 @@ type such as <code class="highlight"><span class="n">Num</span></code> are alway
 <span class="n">outer</span><span class="o">.</span><span class="n">value</span> <span class="o">=</span> <span class="n">Box</span><span class="p">(</span><span class="mi">3</span><span class="p">)</span>  <span class="c1"># copies the new value into the shared storage in place</span>
 <span class="k">assert</span> <span class="n">inner</span><span class="o">.</span><span class="n">value</span> <span class="o">==</span> <span class="mi">3</span>  <span class="c1"># inner is updated too, since outer.value still aliases it</span>
 </code></pre></div>
+<p>A field annotated with <code class="highlight"><span class="n">typing</span><span class="o">.</span><span class="n">Final</span></code> is set when the record is created and cannot be assigned
+afterward. Finality applies to the binding rather than to the data behind it, so the contents of a
+<code class="highlight"><span class="n">Final</span></code> field of a reference type can still be changed through it.</p>
+<div class="highlight"><pre><span></span><code><span class="k">class</span><span class="w"> </span><span class="nc">Marker</span><span class="p">(</span><span class="n">Record</span><span class="p">):</span>
+    <span class="n">time</span><span class="p">:</span> <span class="n">Final</span><span class="p">[</span><span class="nb">float</span><span class="p">]</span>
+    <span class="n">hit</span><span class="p">:</span> <span class="nb">bool</span>
+
+<span class="n">marker</span> <span class="o">=</span> <span class="n">Marker</span><span class="p">(</span><span class="mf">1.0</span><span class="p">,</span> <span class="kc">False</span><span class="p">)</span>
+<span class="n">marker</span><span class="o">.</span><span class="n">hit</span> <span class="o">=</span> <span class="kc">True</span>  <span class="c1"># allowed</span>
+<span class="n">marker</span><span class="o">.</span><span class="n">time</span> <span class="o">=</span> <span class="mf">2.0</span>  <span class="c1"># rejected</span>
+</code></pre></div>
 </details>
 
 <details class="usage" open>

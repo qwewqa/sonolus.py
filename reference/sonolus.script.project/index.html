@@ -1807,6 +1807,23 @@
     </span>
   </a>
   
+    <nav class="md-nav" aria-label=" ProjectSchema">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#sonolus.script.project.ProjectSchema.archetypes" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        <code class="doc-symbol doc-symbol-toc doc-symbol-attribute"></code>&nbsp;archetypes
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
 </li>
       
         <li class="md-nav__item">
@@ -2427,6 +2444,23 @@
     </span>
   </a>
   
+    <nav class="md-nav" aria-label=" ProjectSchema">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#sonolus.script.project.ProjectSchema.archetypes" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        <code class="doc-symbol doc-symbol-toc doc-symbol-attribute"></code>&nbsp;archetypes
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
 </li>
       
         <li class="md-nav__item">
@@ -2820,7 +2854,7 @@
 
     <div class="doc doc-contents ">
 
-        <p>Whether to print full tracebacks for compilation errors instead of a simplified summary.</p>
+        <p>Whether the dev server prints full tracebacks for compilation errors instead of a simplified summary.</p>
 
     </div>
 
@@ -2853,6 +2887,8 @@
 
 
         <p>A Sonolus.py project.</p>
+<p><code class="highlight"><span class="n">resources</span></code> and <code class="highlight"><span class="n">converters</span></code> are read only by <a class="autorefs autorefs-internal" title="            dev(build_dir: str | PathLike[str], port: int = 8080, config: BuildConfig | None = None)" href="#sonolus.script.project.Project.dev"><code class="highlight"><span class="n">dev</span></code></a>, which serves the
+resources alongside the project's own engine and levels.</p>
 
 
 <p><span class="doc-section-title">Parameters:</span></p>
@@ -2891,7 +2927,7 @@
             </td>
             <td>
               <div class="doc-md-description">
-                <p>The levels of the project.</p>
+                <p>The levels of the project. Their names must be unique.</p>
               </div>
             </td>
             <td>
@@ -2903,7 +2939,7 @@
                 <code>resources</code>
             </td>
             <td>
-                  <code><span title="os.PathLike">PathLike</span> | None</code>
+                  <code><a class="autorefs autorefs-internal" href="../../concepts/types/#str">str</a> | <span title="os.PathLike">PathLike</span>[<a class="autorefs autorefs-internal" href="../../concepts/types/#str">str</a>] | None</code>
             </td>
             <td>
               <div class="doc-md-description">
@@ -2984,7 +3020,7 @@ the engine-specific ones.</p>
 
 
 <h3 id="sonolus.script.project.Project.build" class="doc doc-heading">
-<code class="doc-symbol doc-symbol-heading doc-symbol-method"></code>            <code class="highlight language-python"><span class="n">build</span><span class="p">(</span><span class="n">build_dir</span><span class="p">:</span> <span class="n">PathLike</span><span class="p">,</span> <span class="n">config</span><span class="p">:</span> <span class="n">BuildConfig</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">)</span></code>
+<code class="doc-symbol doc-symbol-heading doc-symbol-method"></code>            <code class="highlight language-python"><span class="n">build</span><span class="p">(</span><span class="n">build_dir</span><span class="p">:</span> <span class="nb">str</span> <span class="o">|</span> <span class="n">PathLike</span><span class="p">[</span><span class="nb">str</span><span class="p">],</span> <span class="n">config</span><span class="p">:</span> <span class="n">BuildConfig</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">)</span></code>
 
 <a href="#sonolus.script.project.Project.build" class="headerlink" title="Permanent link">&para;</a></h3>
 
@@ -3010,7 +3046,7 @@ the engine-specific ones.</p>
                 <code>build_dir</code>
             </td>
             <td>
-                  <code><span title="os.PathLike">PathLike</span></code>
+                  <code><a class="autorefs autorefs-internal" href="../../concepts/types/#str">str</a> | <span title="os.PathLike">PathLike</span>[<a class="autorefs autorefs-internal" href="../../concepts/types/#str">str</a>]</code>
             </td>
             <td>
               <div class="doc-md-description">
@@ -3054,7 +3090,7 @@ the engine-specific ones.</p>
 
 
 <h3 id="sonolus.script.project.Project.dev" class="doc doc-heading">
-<code class="doc-symbol doc-symbol-heading doc-symbol-method"></code>            <code class="highlight language-python"><span class="n">dev</span><span class="p">(</span><span class="n">build_dir</span><span class="p">:</span> <span class="n">PathLike</span><span class="p">,</span> <span class="n">port</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">8080</span><span class="p">,</span> <span class="n">config</span><span class="p">:</span> <span class="n">BuildConfig</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">)</span></code>
+<code class="doc-symbol doc-symbol-heading doc-symbol-method"></code>            <code class="highlight language-python"><span class="n">dev</span><span class="p">(</span><span class="n">build_dir</span><span class="p">:</span> <span class="nb">str</span> <span class="o">|</span> <span class="n">PathLike</span><span class="p">[</span><span class="nb">str</span><span class="p">],</span> <span class="n">port</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">8080</span><span class="p">,</span> <span class="n">config</span><span class="p">:</span> <span class="n">BuildConfig</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">)</span></code>
 
 <a href="#sonolus.script.project.Project.dev" class="headerlink" title="Permanent link">&para;</a></h3>
 
@@ -3080,7 +3116,7 @@ the engine-specific ones.</p>
                 <code>build_dir</code>
             </td>
             <td>
-                  <code><span title="os.PathLike">PathLike</span></code>
+                  <code><a class="autorefs autorefs-internal" href="../../concepts/types/#str">str</a> | <span title="os.PathLike">PathLike</span>[<a class="autorefs autorefs-internal" href="../../concepts/types/#str">str</a>]</code>
             </td>
             <td>
               <div class="doc-md-description">
@@ -3122,7 +3158,7 @@ the engine-specific ones.</p>
             <td>
               <div class="doc-md-description">
                 <p>The build configuration. If unset, defaults to runtime checks that log, pause, and terminate
-on errors, unlike <a class="autorefs autorefs-internal" title="            build(build_dir: PathLike, config: BuildConfig | None = None)" href="#sonolus.script.project.Project.build"><code class="highlight"><span class="n">build</span></code></a>'s default of no checks.</p>
+on errors, unlike <a class="autorefs autorefs-internal" title="            build(build_dir: str | PathLike[str], config: BuildConfig | None = None)" href="#sonolus.script.project.Project.build"><code class="highlight"><span class="n">build</span></code></a>'s default of no checks.</p>
               </div>
             </td>
             <td>
@@ -3294,6 +3330,28 @@ on errors, unlike <a class="autorefs autorefs-internal" title="            build
 
 
 
+
+<div class="doc doc-object doc-attribute">
+
+
+
+<h3 id="sonolus.script.project.ProjectSchema.archetypes" class="doc doc-heading">
+<code class="doc-symbol doc-symbol-heading doc-symbol-attribute"></code>            <code class="highlight language-python"><span class="n">archetypes</span><span class="p">:</span> <span class="nb">list</span><span class="p">[</span><span class="n">ArchetypeSchema</span><span class="p">]</span></code>
+
+  <span class="doc doc-labels">
+      <small class="doc doc-label doc-label-instance-attribute"><code>instance-attribute</code></small>
+  </span>
+
+<a href="#sonolus.script.project.ProjectSchema.archetypes" class="headerlink" title="Permanent link">&para;</a></h3>
+
+
+    <div class="doc doc-contents ">
+
+        <p>The schemas of the project's archetypes.</p>
+
+    </div>
+
+</div>
 
 
 

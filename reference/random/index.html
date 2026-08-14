@@ -2211,7 +2211,7 @@
 
 
 <h2 id="doc_stubs.random.choice" class="doc doc-heading">
-<code class="doc-symbol doc-symbol-heading doc-symbol-function"></code>            <code class="highlight language-python"><span class="n">choice</span><span class="p">(</span><span class="n">seq</span><span class="p">:</span> <span class="n">Sequence</span><span class="p">[</span><span class="n">T</span><span class="p">])</span> <span class="o">-&gt;</span> <span class="n">T</span></code>
+<code class="doc-symbol doc-symbol-heading doc-symbol-function"></code>            <code class="highlight language-python"><span class="n">choice</span><span class="p">(</span><span class="n">seq</span><span class="p">:</span> <span class="n">ArrayLike</span><span class="p">[</span><span class="n">T</span><span class="p">])</span> <span class="o">-&gt;</span> <span class="n">T</span></code>
 
 <a href="#doc_stubs.random.choice" class="headerlink" title="Permanent link">&para;</a></h2>
 
@@ -2238,7 +2238,7 @@
                 <code>seq</code>
             </td>
             <td>
-                  <code><span title="typing.Sequence">Sequence</span>[<span title="doc_stubs.random.choice[T]">T</span>]</code>
+                  <code><a class="autorefs autorefs-internal" title="            ArrayLike (sonolus.script.array_like.ArrayLike)" href="../sonolus.script.array_like/#sonolus.script.array_like.ArrayLike">ArrayLike</a>[<span title="doc_stubs.random.choice[T]">T</span>]</code>
             </td>
             <td>
               <div class="doc-md-description">
@@ -2247,29 +2247,6 @@
             </td>
             <td>
                 <em>required</em>
-            </td>
-          </tr>
-      </tbody>
-    </table>
-
-
-    <p><span class="doc-section-title">Returns:</span></p>
-    <table>
-      <thead>
-        <tr>
-          <th>Type</th>
-          <th>Description</th>
-        </tr>
-      </thead>
-      <tbody>
-          <tr class="doc-section-item">
-            <td>
-                  <code><span title="doc_stubs.random.choice[T]">T</span></code>
-            </td>
-            <td>
-              <div class="doc-md-description">
-                <p>A randomly selected element from the sequence.</p>
-              </div>
             </td>
           </tr>
       </tbody>
@@ -2341,29 +2318,6 @@
     </table>
 
 
-    <p><span class="doc-section-title">Returns:</span></p>
-    <table>
-      <thead>
-        <tr>
-          <th>Type</th>
-          <th>Description</th>
-        </tr>
-      </thead>
-      <tbody>
-          <tr class="doc-section-item">
-            <td>
-                  <code><span title="int">int</span></code>
-            </td>
-            <td>
-              <div class="doc-md-description">
-                <p>A randomly selected integer between a and b, inclusive.</p>
-              </div>
-            </td>
-          </tr>
-      </tbody>
-    </table>
-
-
     </div>
 
 </div>
@@ -2380,29 +2334,6 @@
     <div class="doc doc-contents ">
 
         <p>Return a random floating point number in the range [0.0, 1.0).</p>
-
-
-    <p><span class="doc-section-title">Returns:</span></p>
-    <table>
-      <thead>
-        <tr>
-          <th>Type</th>
-          <th>Description</th>
-        </tr>
-      </thead>
-      <tbody>
-          <tr class="doc-section-item">
-            <td>
-                  <code><span title="float">float</span></code>
-            </td>
-            <td>
-              <div class="doc-md-description">
-                <p>A random float between 0.0 (inclusive) and 1.0 (exclusive).</p>
-              </div>
-            </td>
-          </tr>
-      </tbody>
-    </table>
 
 
     </div>
@@ -2490,29 +2421,6 @@
     </table>
 
 
-    <p><span class="doc-section-title">Returns:</span></p>
-    <table>
-      <thead>
-        <tr>
-          <th>Type</th>
-          <th>Description</th>
-        </tr>
-      </thead>
-      <tbody>
-          <tr class="doc-section-item">
-            <td>
-                  <code><span title="int">int</span></code>
-            </td>
-            <td>
-              <div class="doc-md-description">
-                <p>A randomly selected integer from the range.</p>
-              </div>
-            </td>
-          </tr>
-      </tbody>
-    </table>
-
-
     </div>
 
 </div>
@@ -2521,7 +2429,7 @@
 
 
 <h2 id="doc_stubs.random.shuffle" class="doc doc-heading">
-<code class="doc-symbol doc-symbol-heading doc-symbol-function"></code>            <code class="highlight language-python"><span class="n">shuffle</span><span class="p">(</span><span class="n">seq</span><span class="p">:</span> <span class="n">MutableSequence</span><span class="p">[</span><span class="n">Any</span><span class="p">])</span> <span class="o">-&gt;</span> <span class="kc">None</span></code>
+<code class="doc-symbol doc-symbol-heading doc-symbol-function"></code>            <code class="highlight language-python"><span class="n">shuffle</span><span class="p">(</span><span class="n">seq</span><span class="p">:</span> <span class="n">ArrayLike</span><span class="p">[</span><span class="n">T</span><span class="p">])</span> <span class="o">-&gt;</span> <span class="kc">None</span></code>
 
 <a href="#doc_stubs.random.shuffle" class="headerlink" title="Permanent link">&para;</a></h2>
 
@@ -2529,6 +2437,7 @@
     <div class="doc doc-contents ">
 
         <p>Shuffle the sequence in place.</p>
+<p>The sequence must be a mutable array-like, such as an <code class="highlight"><span class="n">Array</span></code> or <code class="highlight"><span class="n">VarArray</span></code>.</p>
 
 
 <p><span class="doc-section-title">Parameters:</span></p>
@@ -2547,11 +2456,11 @@
                 <code>seq</code>
             </td>
             <td>
-                  <code><span title="typing.MutableSequence">MutableSequence</span>[<span title="typing.Any">Any</span>]</code>
+                  <code><a class="autorefs autorefs-internal" title="            ArrayLike (sonolus.script.array_like.ArrayLike)" href="../sonolus.script.array_like/#sonolus.script.array_like.ArrayLike">ArrayLike</a>[<span title="doc_stubs.random.shuffle[T]">T</span>]</code>
             </td>
             <td>
               <div class="doc-md-description">
-                <p>The mutable sequence to shuffle.</p>
+                <p>The sequence to shuffle.</p>
               </div>
             </td>
             <td>
@@ -2577,7 +2486,7 @@
 
     <div class="doc doc-contents ">
 
-        <p>Return a random floating point number N such that a &lt;= N &lt;= b.</p>
+        <p>Return a random floating point number between a and b, inclusive.</p>
 
 
 <p><span class="doc-section-title">Parameters:</span></p>
@@ -2600,7 +2509,7 @@
             </td>
             <td>
               <div class="doc-md-description">
-                <p>The lower bound.</p>
+                <p>One endpoint of the range.</p>
               </div>
             </td>
             <td>
@@ -2616,34 +2525,11 @@
             </td>
             <td>
               <div class="doc-md-description">
-                <p>The upper bound.</p>
+                <p>The other endpoint of the range.</p>
               </div>
             </td>
             <td>
                 <em>required</em>
-            </td>
-          </tr>
-      </tbody>
-    </table>
-
-
-    <p><span class="doc-section-title">Returns:</span></p>
-    <table>
-      <thead>
-        <tr>
-          <th>Type</th>
-          <th>Description</th>
-        </tr>
-      </thead>
-      <tbody>
-          <tr class="doc-section-item">
-            <td>
-                  <code><span title="float">float</span></code>
-            </td>
-            <td>
-              <div class="doc-md-description">
-                <p>A random float between a and b.</p>
-              </div>
             </td>
           </tr>
       </tbody>

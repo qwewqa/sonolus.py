@@ -2263,7 +2263,9 @@ resources/
     ...
 </code></pre></div>
 <h2 id="modes">Modes<a class="headerlink" href="#modes" title="Permanent link">&para;</a></h2>
-<p>Modes are defined using the <a class="autorefs autorefs-internal" title="            PlayMode" href="../../reference/sonolus.script.engine/#sonolus.script.engine.PlayMode"><code class="highlight"><span class="n">PlayMode</span></code></a>, <a class="autorefs autorefs-internal" title="            WatchMode" href="../../reference/sonolus.script.engine/#sonolus.script.engine.WatchMode"><code class="highlight"><span class="n">WatchMode</span></code></a>, <a class="autorefs autorefs-internal" title="            PreviewMode" href="../../reference/sonolus.script.engine/#sonolus.script.engine.PreviewMode"><code class="highlight"><span class="n">PreviewMode</span></code></a>, and <a class="autorefs autorefs-internal" title="            TutorialMode" href="../../reference/sonolus.script.engine/#sonolus.script.engine.TutorialMode"><code class="highlight"><span class="n">TutorialMode</span></code></a> classes.</p>
+<p>Modes are defined using the <a class="autorefs autorefs-internal" title="            PlayMode" href="../../reference/sonolus.script.engine/#sonolus.script.engine.PlayMode"><code class="highlight"><span class="n">PlayMode</span></code></a>,
+<a class="autorefs autorefs-internal" title="            WatchMode" href="../../reference/sonolus.script.engine/#sonolus.script.engine.WatchMode"><code class="highlight"><span class="n">WatchMode</span></code></a>, <a class="autorefs autorefs-internal" title="            PreviewMode" href="../../reference/sonolus.script.engine/#sonolus.script.engine.PreviewMode"><code class="highlight"><span class="n">PreviewMode</span></code></a>, and
+<a class="autorefs autorefs-internal" title="            TutorialMode" href="../../reference/sonolus.script.engine/#sonolus.script.engine.TutorialMode"><code class="highlight"><span class="n">TutorialMode</span></code></a> classes.</p>
 <p>The <code class="highlight"><span class="n">skin</span></code>, <code class="highlight"><span class="n">effects</span></code>, <code class="highlight"><span class="n">particles</span></code>, <code class="highlight"><span class="n">buckets</span></code>, and <code class="highlight"><span class="n">instructions</span></code> classes passed to these constructors are declared as
 shown in <a href="../resources/">Resources &amp; Declarations</a>.</p>
 <h3 id="play-mode">Play Mode<a class="headerlink" href="#play-mode" title="Permanent link">&para;</a></h3>
@@ -2286,9 +2288,10 @@ shown in <a href="../resources/">Resources &amp; Declarations</a>.</p>
     <span class="n">buckets</span><span class="o">=</span><span class="n">Buckets</span><span class="p">,</span>
 <span class="p">)</span>
 </code></pre></div>
-<p>Play mode archetypes subclass <a class="autorefs autorefs-internal" title="            PlayArchetype" href="../../reference/sonolus.script.archetype/#sonolus.script.archetype.PlayArchetype"><code class="highlight"><span class="n">PlayArchetype</span></code></a> and implement the following callbacks:</p>
+<p>Play mode archetypes subclass <a class="autorefs autorefs-internal" title="            PlayArchetype" href="../../reference/sonolus.script.archetype/#sonolus.script.archetype.PlayArchetype"><code class="highlight"><span class="n">PlayArchetype</span></code></a> and may override the following
+callbacks:</p>
 <ul>
-<li><a class="autorefs autorefs-internal" title="            should_spawn() -> bool" href="../../reference/sonolus.script.archetype/#sonolus.script.archetype.PlayArchetype.should_spawn"><code class="highlight"><span class="n">should_spawn</span></code></a> (required)</li>
+<li><a class="autorefs autorefs-internal" title="            should_spawn() -> bool" href="../../reference/sonolus.script.archetype/#sonolus.script.archetype.PlayArchetype.should_spawn"><code class="highlight"><span class="n">should_spawn</span></code></a></li>
 <li><a class="autorefs autorefs-internal" title="            preprocess()" href="../../reference/sonolus.script.archetype/#sonolus.script.archetype.PlayArchetype.preprocess"><code class="highlight"><span class="n">preprocess</span></code></a></li>
 <li><a class="autorefs autorefs-internal" title="            spawn_order() -> float" href="../../reference/sonolus.script.archetype/#sonolus.script.archetype.PlayArchetype.spawn_order"><code class="highlight"><span class="n">spawn_order</span></code></a></li>
 <li><a class="autorefs autorefs-internal" title="            initialize()" href="../../reference/sonolus.script.archetype/#sonolus.script.archetype.PlayArchetype.initialize"><code class="highlight"><span class="n">initialize</span></code></a></li>
@@ -2297,11 +2300,12 @@ shown in <a href="../resources/">Resources &amp; Declarations</a>.</p>
 <li><a class="autorefs autorefs-internal" title="            touch()" href="../../reference/sonolus.script.archetype/#sonolus.script.archetype.PlayArchetype.touch"><code class="highlight"><span class="n">touch</span></code></a></li>
 <li><a class="autorefs autorefs-internal" title="            terminate()" href="../../reference/sonolus.script.archetype/#sonolus.script.archetype.PlayArchetype.terminate"><code class="highlight"><span class="n">terminate</span></code></a></li>
 </ul>
-<p>Archetypes for scored notes should have the <a class="autorefs autorefs-internal" title="            is_scored: bool = False
+<p>Archetypes for scored notes should set the
+<a class="autorefs autorefs-internal" title="            is_scored: bool = False
 
   
       class-attribute
-  " href="../../reference/sonolus.script.archetype/#sonolus.script.archetype.PlayArchetype.is_scored"><code class="highlight"><span class="n">is_scored</span></code></a> class variable set to <code class="highlight"><span class="kc">True</span></code>.</p>
+  " href="../../reference/sonolus.script.archetype/#sonolus.script.archetype.PlayArchetype.is_scored"><code class="highlight"><span class="n">is_scored</span></code></a> class variable to <code class="highlight"><span class="kc">True</span></code>.</p>
 <h3 id="watch-mode">Watch Mode<a class="headerlink" href="#watch-mode" title="Permanent link">&para;</a></h3>
 <div class="highlight"><pre><span></span><code><span class="kn">from</span><span class="w"> </span><span class="nn">sonolus.script.engine</span><span class="w"> </span><span class="kn">import</span> <span class="n">WatchMode</span>
 
@@ -2323,7 +2327,8 @@ shown in <a href="../resources/">Resources &amp; Declarations</a>.</p>
     <span class="n">update_spawn</span><span class="o">=</span><span class="n">update_spawn</span><span class="p">,</span>
 <span class="p">)</span>
 </code></pre></div>
-<p>Watch mode archetypes subclass <a class="autorefs autorefs-internal" title="            WatchArchetype" href="../../reference/sonolus.script.archetype/#sonolus.script.archetype.WatchArchetype"><code class="highlight"><span class="n">WatchArchetype</span></code></a> and implement the following callbacks:</p>
+<p>Watch mode archetypes subclass <a class="autorefs autorefs-internal" title="            WatchArchetype" href="../../reference/sonolus.script.archetype/#sonolus.script.archetype.WatchArchetype"><code class="highlight"><span class="n">WatchArchetype</span></code></a> and implement the following
+callbacks:</p>
 <ul>
 <li><a class="autorefs autorefs-internal" title="            spawn_time() -> float" href="../../reference/sonolus.script.archetype/#sonolus.script.archetype.WatchArchetype.spawn_time"><code class="highlight"><span class="n">spawn_time</span></code></a> (required)</li>
 <li><a class="autorefs autorefs-internal" title="            despawn_time() -> float" href="../../reference/sonolus.script.archetype/#sonolus.script.archetype.WatchArchetype.despawn_time"><code class="highlight"><span class="n">despawn_time</span></code></a> (required)</li>
@@ -2350,7 +2355,8 @@ current scaled time.</p>
     <span class="n">skin</span><span class="o">=</span><span class="n">Skin</span><span class="p">,</span>
 <span class="p">)</span>
 </code></pre></div>
-<p>Preview mode archetypes subclass <a class="autorefs autorefs-internal" title="            PreviewArchetype" href="../../reference/sonolus.script.archetype/#sonolus.script.archetype.PreviewArchetype"><code class="highlight"><span class="n">PreviewArchetype</span></code></a> and implement the following callbacks:</p>
+<p>Preview mode archetypes subclass <a class="autorefs autorefs-internal" title="            PreviewArchetype" href="../../reference/sonolus.script.archetype/#sonolus.script.archetype.PreviewArchetype"><code class="highlight"><span class="n">PreviewArchetype</span></code></a> and implement the
+following callbacks:</p>
 <ul>
 <li><a class="autorefs autorefs-internal" title="            preprocess()" href="../../reference/sonolus.script.archetype/#sonolus.script.archetype.PreviewArchetype.preprocess"><code class="highlight"><span class="n">preprocess</span></code></a></li>
 <li><a class="autorefs autorefs-internal" title="            render()" href="../../reference/sonolus.script.archetype/#sonolus.script.archetype.PreviewArchetype.render"><code class="highlight"><span class="n">render</span></code></a></li>

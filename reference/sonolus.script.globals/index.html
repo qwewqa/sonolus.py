@@ -2167,11 +2167,16 @@ error.</p>
     <div class="doc doc-contents ">
 
         <p>Define level memory.</p>
-<p>Level memory may be modified during gameplay in sequential callbacks
-(<a class="autorefs autorefs-internal" title="            preprocess()" href="../sonolus.script.archetype/#sonolus.script.archetype.PlayArchetype.preprocess"><code class="highlight"><span class="n">preprocess</span></code></a>,
-<a class="autorefs autorefs-internal" title="            update_sequential()" href="../sonolus.script.archetype/#sonolus.script.archetype.PlayArchetype.update_sequential"><code class="highlight"><span class="n">update_sequential</span></code></a>,
-<a class="autorefs autorefs-internal" title="            touch()" href="../sonolus.script.archetype/#sonolus.script.archetype.PlayArchetype.touch"><code class="highlight"><span class="n">touch</span></code></a>).
-Compared to level data, it allows modification during gameplay, but prevents some optimizations.</p>
+<p>Level memory exists in play, watch, and tutorial mode. Preview mode has no level memory; use
+<a class="autorefs autorefs-internal" title="            level_data(cls: type[T]) -> T" href="#sonolus.script.globals.level_data"><code class="highlight"><span class="n">level_data</span></code></a> there instead.</p>
+<p>In those modes, level memory may be read in any callback and modified in play's
+<a class="autorefs autorefs-internal" title="            preprocess()" href="../sonolus.script.archetype/#sonolus.script.archetype.PlayArchetype.preprocess"><code class="highlight"><span class="n">preprocess</span></code></a>,
+<a class="autorefs autorefs-internal" title="            update_sequential()" href="../sonolus.script.archetype/#sonolus.script.archetype.PlayArchetype.update_sequential"><code class="highlight"><span class="n">update_sequential</span></code></a> and
+<a class="autorefs autorefs-internal" title="            touch()" href="../sonolus.script.archetype/#sonolus.script.archetype.PlayArchetype.touch"><code class="highlight"><span class="n">touch</span></code></a>, in watch's
+<a class="autorefs autorefs-internal" title="            preprocess()" href="../sonolus.script.archetype/#sonolus.script.archetype.WatchArchetype.preprocess"><code class="highlight"><span class="n">preprocess</span></code></a> and
+<a class="autorefs autorefs-internal" title="            update_sequential()" href="../sonolus.script.archetype/#sonolus.script.archetype.WatchArchetype.update_sequential"><code class="highlight"><span class="n">update_sequential</span></code></a>, and in tutorial's
+<code class="highlight"><span class="n">preprocess</span></code>, <code class="highlight"><span class="n">navigate</span></code> and <code class="highlight"><span class="n">update</span></code>.</p>
+<p>Compared to level data, it allows modification during gameplay, but prevents some optimizations.</p>
 <p>All level memory in a given mode shares a combined limit of 4096 values; exceeding it raises a compilation
 error.</p>
 

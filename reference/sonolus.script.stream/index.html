@@ -2862,7 +2862,7 @@
 
 
 
-        <p>Represents a stream.</p>
+        <p>A stream.</p>
 <p>Most users should use <a class="autorefs autorefs-internal" title="            streams(cls: type[T]) -> T" href="#sonolus.script.stream.streams"><code class="highlight"><span class="nd">@streams</span></code></a> to declare streams and stream groups, rather than
 creating instances of this class directly.</p>
 <p>Values can only be written in play mode and read in watch mode.</p>
@@ -3129,12 +3129,15 @@ If the stream is empty, returns the zero value of the element type.</p>
 
         <p>Iterate over the items in the stream in ascending order starting from the given key.</p>
 <p>If the key is in the stream, it will be included in the iteration.</p>
-<p>Usage:
-<div class="highlight"><pre><span></span><code><span class="n">stream</span> <span class="o">=</span> <span class="o">...</span>
+
+
+<details class="usage" open>
+  <summary>Usage</summary>
+  <div class="highlight"><pre><span></span><code><span class="n">stream</span> <span class="o">=</span> <span class="o">...</span>
 <span class="k">for</span> <span class="n">key</span><span class="p">,</span> <span class="n">value</span> <span class="ow">in</span> <span class="n">stream</span><span class="o">.</span><span class="n">iter_items_from</span><span class="p">(</span><span class="mi">0</span><span class="p">):</span>
     <span class="n">do_something</span><span class="p">(</span><span class="n">key</span><span class="p">,</span> <span class="n">value</span><span class="p">)</span>
-</code></pre></div></p>
-
+</code></pre></div>
+</details>
 
     </div>
 
@@ -3153,12 +3156,15 @@ If the stream is empty, returns the zero value of the element type.</p>
 
         <p>Iterate over the items in the stream in descending order starting from the given key.</p>
 <p>If the key is in the stream, it will be included in the iteration.</p>
-<p>Usage:
-<div class="highlight"><pre><span></span><code><span class="n">stream</span> <span class="o">=</span> <span class="o">...</span>
+
+
+<details class="usage" open>
+  <summary>Usage</summary>
+  <div class="highlight"><pre><span></span><code><span class="n">stream</span> <span class="o">=</span> <span class="o">...</span>
 <span class="k">for</span> <span class="n">key</span><span class="p">,</span> <span class="n">value</span> <span class="ow">in</span> <span class="n">stream</span><span class="o">.</span><span class="n">iter_items_from_desc</span><span class="p">(</span><span class="mi">0</span><span class="p">):</span>
     <span class="n">do_something</span><span class="p">(</span><span class="n">key</span><span class="p">,</span> <span class="n">value</span><span class="p">)</span>
-</code></pre></div></p>
-
+</code></pre></div>
+</details>
 
     </div>
 
@@ -3178,12 +3184,15 @@ If the stream is empty, returns the zero value of the element type.</p>
         <p>Iterate over the items in the stream since the last frame.</p>
 <p>This is a convenience method that iterates over the items in the stream occurring after the time of the
 previous frame and up to and including the current time.</p>
-<p>Usage:
-<div class="highlight"><pre><span></span><code><span class="n">stream</span> <span class="o">=</span> <span class="o">...</span>
+
+
+<details class="usage" open>
+  <summary>Usage</summary>
+  <div class="highlight"><pre><span></span><code><span class="n">stream</span> <span class="o">=</span> <span class="o">...</span>
 <span class="k">for</span> <span class="n">key</span><span class="p">,</span> <span class="n">value</span> <span class="ow">in</span> <span class="n">stream</span><span class="o">.</span><span class="n">iter_items_since_previous_frame</span><span class="p">():</span>
     <span class="n">do_something</span><span class="p">(</span><span class="n">key</span><span class="p">,</span> <span class="n">value</span><span class="p">)</span>
-</code></pre></div></p>
-
+</code></pre></div>
+</details>
 
     </div>
 
@@ -3202,12 +3211,15 @@ previous frame and up to and including the current time.</p>
 
         <p>Iterate over the keys in the stream in ascending order starting from the given key.</p>
 <p>If the key is in the stream, it will be included in the iteration.</p>
-<p>Usage:
-<div class="highlight"><pre><span></span><code><span class="n">stream</span> <span class="o">=</span> <span class="o">...</span>
+
+
+<details class="usage" open>
+  <summary>Usage</summary>
+  <div class="highlight"><pre><span></span><code><span class="n">stream</span> <span class="o">=</span> <span class="o">...</span>
 <span class="k">for</span> <span class="n">key</span> <span class="ow">in</span> <span class="n">stream</span><span class="o">.</span><span class="n">iter_keys_from</span><span class="p">(</span><span class="mi">0</span><span class="p">):</span>
     <span class="n">do_something</span><span class="p">(</span><span class="n">key</span><span class="p">)</span>
-</code></pre></div></p>
-
+</code></pre></div>
+</details>
 
     </div>
 
@@ -3226,12 +3238,15 @@ previous frame and up to and including the current time.</p>
 
         <p>Iterate over the keys in the stream in descending order starting from the given key.</p>
 <p>If the key is in the stream, it will be included in the iteration.</p>
-<p>Usage:
-<div class="highlight"><pre><span></span><code><span class="n">stream</span> <span class="o">=</span> <span class="o">...</span>
+
+
+<details class="usage" open>
+  <summary>Usage</summary>
+  <div class="highlight"><pre><span></span><code><span class="n">stream</span> <span class="o">=</span> <span class="o">...</span>
 <span class="k">for</span> <span class="n">key</span> <span class="ow">in</span> <span class="n">stream</span><span class="o">.</span><span class="n">iter_keys_from_desc</span><span class="p">(</span><span class="mi">0</span><span class="p">):</span>
     <span class="n">do_something</span><span class="p">(</span><span class="n">key</span><span class="p">)</span>
-</code></pre></div></p>
-
+</code></pre></div>
+</details>
 
     </div>
 
@@ -3251,12 +3266,15 @@ previous frame and up to and including the current time.</p>
         <p>Iterate over the keys in the stream since the last frame.</p>
 <p>This is a convenience method that iterates over the keys in the stream occurring after the time of the
 previous frame and up to and including the current time.</p>
-<p>Usage:
-<div class="highlight"><pre><span></span><code><span class="n">stream</span> <span class="o">=</span> <span class="o">...</span>
+
+
+<details class="usage" open>
+  <summary>Usage</summary>
+  <div class="highlight"><pre><span></span><code><span class="n">stream</span> <span class="o">=</span> <span class="o">...</span>
 <span class="k">for</span> <span class="n">key</span> <span class="ow">in</span> <span class="n">stream</span><span class="o">.</span><span class="n">iter_keys_since_previous_frame</span><span class="p">():</span>
     <span class="n">do_something</span><span class="p">(</span><span class="n">key</span><span class="p">)</span>
-</code></pre></div></p>
-
+</code></pre></div>
+</details>
 
     </div>
 
@@ -3275,12 +3293,15 @@ previous frame and up to and including the current time.</p>
 
         <p>Iterate over the values in the stream in ascending order starting from the given key.</p>
 <p>If the key is in the stream, it will be included in the iteration.</p>
-<p>Usage:
-<div class="highlight"><pre><span></span><code><span class="n">stream</span> <span class="o">=</span> <span class="o">...</span>
+
+
+<details class="usage" open>
+  <summary>Usage</summary>
+  <div class="highlight"><pre><span></span><code><span class="n">stream</span> <span class="o">=</span> <span class="o">...</span>
 <span class="k">for</span> <span class="n">value</span> <span class="ow">in</span> <span class="n">stream</span><span class="o">.</span><span class="n">iter_values_from</span><span class="p">(</span><span class="mi">0</span><span class="p">):</span>
     <span class="n">do_something</span><span class="p">(</span><span class="n">value</span><span class="p">)</span>
-</code></pre></div></p>
-
+</code></pre></div>
+</details>
 
     </div>
 
@@ -3299,12 +3320,15 @@ previous frame and up to and including the current time.</p>
 
         <p>Iterate over the values in the stream in descending order starting from the given key.</p>
 <p>If the key is in the stream, it will be included in the iteration.</p>
-<p>Usage:
-<div class="highlight"><pre><span></span><code><span class="n">stream</span> <span class="o">=</span> <span class="o">...</span>
+
+
+<details class="usage" open>
+  <summary>Usage</summary>
+  <div class="highlight"><pre><span></span><code><span class="n">stream</span> <span class="o">=</span> <span class="o">...</span>
 <span class="k">for</span> <span class="n">value</span> <span class="ow">in</span> <span class="n">stream</span><span class="o">.</span><span class="n">iter_values_from_desc</span><span class="p">(</span><span class="mi">0</span><span class="p">):</span>
     <span class="n">do_something</span><span class="p">(</span><span class="n">value</span><span class="p">)</span>
-</code></pre></div></p>
-
+</code></pre></div>
+</details>
 
     </div>
 
@@ -3324,12 +3348,15 @@ previous frame and up to and including the current time.</p>
         <p>Iterate over the values in the stream since the last frame.</p>
 <p>This is a convenience method that iterates over the values in the stream occurring after the time of the
 previous frame and up to and including the current time.</p>
-<p>Usage:
-<div class="highlight"><pre><span></span><code><span class="n">stream</span> <span class="o">=</span> <span class="o">...</span>
+
+
+<details class="usage" open>
+  <summary>Usage</summary>
+  <div class="highlight"><pre><span></span><code><span class="n">stream</span> <span class="o">=</span> <span class="o">...</span>
 <span class="k">for</span> <span class="n">value</span> <span class="ow">in</span> <span class="n">stream</span><span class="o">.</span><span class="n">iter_values_since_previous_frame</span><span class="p">():</span>
     <span class="n">do_something</span><span class="p">(</span><span class="n">value</span><span class="p">)</span>
-</code></pre></div></p>
-
+</code></pre></div>
+</details>
 
     </div>
 
@@ -3365,7 +3392,7 @@ previous frame and up to and including the current time.</p>
 
     <div class="doc doc-contents ">
 
-        <p>Like <a class="autorefs autorefs-internal" title="            next_key(key: int | float) -> int | float" href="#sonolus.script.stream.Stream.next_key"><code class="highlight"><span class="n">next_key</span></code></a>, but returns the key itself if it is in the stream.</p>
+        <p>Like <a class="autorefs autorefs-internal" title="            next_key(key: int | float) -> int | float" href="#sonolus.script.stream.Stream.next_key"><code class="highlight"><span class="n">next_key</span></code></a>, including the key when present.</p>
 
 
     </div>
@@ -3420,7 +3447,7 @@ previous frame and up to and including the current time.</p>
 
     <div class="doc doc-contents ">
 
-        <p>Like <a class="autorefs autorefs-internal" title="            previous_key(key: int | float) -> int | float" href="#sonolus.script.stream.Stream.previous_key"><code class="highlight"><span class="n">previous_key</span></code></a>, but returns the key itself if it is in the stream.</p>
+        <p>Like <a class="autorefs autorefs-internal" title="            previous_key(key: int | float) -> int | float" href="#sonolus.script.stream.Stream.previous_key"><code class="highlight"><span class="n">previous_key</span></code></a>, including the key when present.</p>
 
 
     </div>
@@ -3470,7 +3497,7 @@ previous frame and up to and including the current time.</p>
 
 
 
-        <p>Represents a group of streams.</p>
+        <p>A group of streams.</p>
 <p>Does not support negative indexes.</p>
 <p>Most users should use <a class="autorefs autorefs-internal" title="            streams(cls: type[T]) -> T" href="#sonolus.script.stream.streams"><code class="highlight"><span class="nd">@streams</span></code></a> to declare stream groups rather than using this
 class directly.</p>

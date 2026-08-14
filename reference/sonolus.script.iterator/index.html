@@ -2214,8 +2214,8 @@
 <p>This class is used to define custom iterators that can be used in Sonolus.py.</p>
 <p>Inheritors must implement the <a class="autorefs autorefs-internal" title="            next() -> Maybe[T]" href="#sonolus.script.iterator.SonolusIterator.next"><code class="highlight"><span class="nb">next</span></code></a> method,
 which should return a <a class="autorefs autorefs-internal" title="            Maybe" href="../sonolus.script.maybe/#sonolus.script.maybe.Maybe"><code class="highlight"><span class="n">Maybe</span><span class="p">[</span><span class="n">T</span><span class="p">]</span></code></a>.</p>
-<p>An iterator should be treated as single use: do not advance one that is already being consumed, or consume
-one again after it is exhausted. Doing so may lead to unexpected behavior.</p>
+<p>Use an iterator only once: in one <code class="highlight"><span class="k">for</span></code> loop, in one call to <code class="highlight"><span class="nb">next</span><span class="p">()</span></code>, or by passing it once to another iterator
+consumer.</p>
 
 
 <details class="usage" open>

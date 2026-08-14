@@ -3103,8 +3103,7 @@ negative index counts from the end of the array.</p>
     <div class="doc doc-contents ">
 
         <p>Get the element at the given index possibly without bounds checking or conversion of negative indexes.</p>
-<p>The compiler may still determine that the index is out of bounds and throw an error, but it may skip these
-checks at runtime.</p>
+<p>The index must be between 0 and <code class="highlight"><span class="nb">len</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-</span> <span class="mi">1</span></code>.</p>
 
 
 <p><span class="doc-section-title">Parameters:</span></p>
@@ -3515,8 +3514,7 @@ checks at runtime.</p>
     <div class="doc doc-contents ">
 
         <p>Set the element at the given index possibly without bounds checking or conversion of negative indexes.</p>
-<p>The compiler may still determine that the index is out of bounds and throw an error, but it may skip these
-checks at runtime.</p>
+<p>The index must be between 0 and <code class="highlight"><span class="nb">len</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-</span> <span class="mi">1</span></code>.</p>
 
 
 <p><span class="doc-section-title">Parameters:</span></p>
@@ -3758,6 +3756,7 @@ checks at runtime.</p>
     <div class="doc doc-contents ">
 
         <p>Swap the values at the given indices possibly without bounds checking.</p>
+<p>Both indices must be between 0 and <code class="highlight"><span class="nb">len</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-</span> <span class="mi">1</span></code>.</p>
 
 
 <p><span class="doc-section-title">Parameters:</span></p>

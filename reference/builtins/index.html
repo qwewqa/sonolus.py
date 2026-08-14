@@ -2789,7 +2789,7 @@
 
 
 <h2 id="doc_stubs.builtins.all" class="doc doc-heading">
-<code class="doc-symbol doc-symbol-heading doc-symbol-function"></code>            <code class="highlight language-python"><span class="nb">all</span><span class="p">(</span><span class="n">iterable</span><span class="p">:</span> <span class="n">Iterable</span><span class="p">[</span><span class="n">builtins</span><span class="o">.</span><span class="n">bool</span><span class="p">])</span> <span class="o">-&gt;</span> <span class="n">builtins</span><span class="o">.</span><span class="n">bool</span></code>
+<code class="doc-symbol doc-symbol-heading doc-symbol-function"></code>            <code class="highlight language-python"><span class="nb">all</span><span class="p">(</span><span class="n">iterable</span><span class="p">:</span> <span class="n">Iterable</span><span class="p">[</span><span class="n">builtins</span><span class="o">.</span><span class="n">object</span><span class="p">])</span> <span class="o">-&gt;</span> <span class="n">builtins</span><span class="o">.</span><span class="n">bool</span></code>
 
 <a href="#doc_stubs.builtins.all" class="headerlink" title="Permanent link">&para;</a></h2>
 
@@ -2815,7 +2815,7 @@
                 <code>iterable</code>
             </td>
             <td>
-                  <code><span title="typing.Iterable">Iterable</span>[<span title="builtins.bool">bool</span>]</code>
+                  <code><span title="typing.Iterable">Iterable</span>[<span title="builtins.object">object</span>]</code>
             </td>
             <td>
               <div class="doc-md-description">
@@ -2861,7 +2861,7 @@
 
 
 <h2 id="doc_stubs.builtins.any" class="doc doc-heading">
-<code class="doc-symbol doc-symbol-heading doc-symbol-function"></code>            <code class="highlight language-python"><span class="nb">any</span><span class="p">(</span><span class="n">iterable</span><span class="p">:</span> <span class="n">Iterable</span><span class="p">[</span><span class="n">builtins</span><span class="o">.</span><span class="n">bool</span><span class="p">])</span> <span class="o">-&gt;</span> <span class="n">builtins</span><span class="o">.</span><span class="n">bool</span></code>
+<code class="doc-symbol doc-symbol-heading doc-symbol-function"></code>            <code class="highlight language-python"><span class="nb">any</span><span class="p">(</span><span class="n">iterable</span><span class="p">:</span> <span class="n">Iterable</span><span class="p">[</span><span class="n">builtins</span><span class="o">.</span><span class="n">object</span><span class="p">])</span> <span class="o">-&gt;</span> <span class="n">builtins</span><span class="o">.</span><span class="n">bool</span></code>
 
 <a href="#doc_stubs.builtins.any" class="headerlink" title="Permanent link">&para;</a></h2>
 
@@ -2887,7 +2887,7 @@
                 <code>iterable</code>
             </td>
             <td>
-                  <code><span title="typing.Iterable">Iterable</span>[<span title="builtins.bool">bool</span>]</code>
+                  <code><span title="typing.Iterable">Iterable</span>[<span title="builtins.object">object</span>]</code>
             </td>
             <td>
               <div class="doc-md-description">
@@ -3083,10 +3083,11 @@
           <div class="doc-overloads">
 <div class="doc-signature highlight"><pre><span></span><code><span class="nf">dict</span><span class="p">()</span> <span class="o">-&gt;</span> <span class="n">builtins</span><span class="o">.</span><span class="n">dict</span>
 </code></pre></div><div class="doc-signature highlight"><pre><span></span><code><span class="nf">dict</span><span class="p">(</span>
-    <span class="n">mapping</span><span class="p">:</span> <span class="n">builtins</span><span class="o">.</span><span class="n">dict</span><span class="p">[</span><span class="n">K</span><span class="p">,</span> <span class="n">V</span><span class="p">],</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">:</span> <span class="n">V</span>
+    <span class="n">mapping_or_iterable</span><span class="p">:</span> <span class="n">builtins</span><span class="o">.</span><span class="n">dict</span><span class="p">[</span><span class="n">K</span><span class="p">,</span> <span class="n">V</span><span class="p">],</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">:</span> <span class="n">V</span>
 <span class="p">)</span> <span class="o">-&gt;</span> <span class="n">builtins</span><span class="o">.</span><span class="n">dict</span><span class="p">[</span><span class="n">K</span><span class="p">,</span> <span class="n">V</span><span class="p">]</span>
 </code></pre></div><div class="doc-signature highlight"><pre><span></span><code><span class="nf">dict</span><span class="p">(</span>
-    <span class="n">iterable</span><span class="p">:</span> <span class="n">Iterable</span><span class="p">[</span><span class="nb">tuple</span><span class="p">[</span><span class="n">K</span><span class="p">,</span> <span class="n">V</span><span class="p">]],</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">:</span> <span class="n">V</span>
+    <span class="n">mapping_or_iterable</span><span class="p">:</span> <span class="nb">tuple</span><span class="p">[</span><span class="nb">tuple</span><span class="p">[</span><span class="n">K</span><span class="p">,</span> <span class="n">V</span><span class="p">],</span> <span class="o">...</span><span class="p">],</span>
+    <span class="o">**</span><span class="n">kwargs</span><span class="p">:</span> <span class="n">V</span><span class="p">,</span>
 <span class="p">)</span> <span class="o">-&gt;</span> <span class="n">builtins</span><span class="o">.</span><span class="n">dict</span><span class="p">[</span><span class="n">K</span><span class="p">,</span> <span class="n">V</span><span class="p">]</span>
 </code></pre></div><div class="doc-signature highlight"><pre><span></span><code><span class="nf">dict</span><span class="p">(</span><span class="o">**</span><span class="n">kwargs</span><span class="p">:</span> <span class="n">V</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">builtins</span><span class="o">.</span><span class="n">dict</span><span class="p">[</span><span class="n">builtins</span><span class="o">.</span><span class="n">str</span><span class="p">,</span> <span class="n">V</span><span class="p">]</span>
 </code></pre></div>          </div>
@@ -3094,10 +3095,12 @@
 
     <div class="doc doc-contents ">
 
-        <p>Construct a dict from a mapping, an iterable of key-value pairs, or keyword arguments.</p>
+        <p>Construct a dict from another dict, a tuple of key-value pairs, or keyword arguments.</p>
 <p>All dict keys must be compile-time constants. Dynamic access using a key that is not
-a compile-time constant is only supported for numeric, Array, and Record values.</p>
-<p>Accepts an optional dict to copy from or an iterable of <code class="highlight"><span class="p">(</span><span class="n">key</span><span class="p">,</span> <span class="n">value</span><span class="p">)</span></code> pairs, plus
+a compile-time constant is only supported when all values are compile-time constants of a
+single type, and that type is numeric, <code class="highlight"><span class="n">Array</span></code>, or <code class="highlight"><span class="n">Record</span></code>.</p>
+<p>Dynamic access requires key comparisons to be consistent, including a total ordering when ordering is used.</p>
+<p>Accepts an optional dict to copy from or a tuple of <code class="highlight"><span class="p">(</span><span class="n">key</span><span class="p">,</span> <span class="n">value</span><span class="p">)</span></code> pairs, plus
 optional keyword arguments to include in the dict.</p>
 
 
@@ -3220,7 +3223,7 @@ optional keyword arguments to include in the dict.</p>
 
 
 <h2 id="doc_stubs.builtins.filter" class="doc doc-heading">
-<code class="doc-symbol doc-symbol-heading doc-symbol-function"></code>            <code class="highlight language-python"><span class="nb">filter</span><span class="p">(</span><span class="n">function</span><span class="p">:</span> <span class="n">Callable</span><span class="p">[[</span><span class="n">T</span><span class="p">],</span> <span class="n">builtins</span><span class="o">.</span><span class="n">bool</span><span class="p">]</span> <span class="o">|</span> <span class="kc">None</span><span class="p">,</span> <span class="n">iterable</span><span class="p">:</span> <span class="n">Iterable</span><span class="p">[</span><span class="n">T</span><span class="p">])</span> <span class="o">-&gt;</span> <span class="n">Iterator</span><span class="p">[</span><span class="n">T</span><span class="p">]</span></code>
+<code class="doc-symbol doc-symbol-heading doc-symbol-function"></code>            <code class="highlight language-python"><span class="nb">filter</span><span class="p">(</span><span class="n">function</span><span class="p">:</span> <span class="n">Callable</span><span class="p">[[</span><span class="n">T</span><span class="p">],</span> <span class="n">builtins</span><span class="o">.</span><span class="n">object</span><span class="p">]</span> <span class="o">|</span> <span class="kc">None</span><span class="p">,</span> <span class="n">iterable</span><span class="p">:</span> <span class="n">Iterable</span><span class="p">[</span><span class="n">T</span><span class="p">])</span> <span class="o">-&gt;</span> <span class="n">Iterator</span><span class="p">[</span><span class="n">T</span><span class="p">]</span></code>
 
 <a href="#doc_stubs.builtins.filter" class="headerlink" title="Permanent link">&para;</a></h2>
 
@@ -3246,7 +3249,7 @@ optional keyword arguments to include in the dict.</p>
                 <code>function</code>
             </td>
             <td>
-                  <code><span title="typing.Callable">Callable</span>[[<span title="doc_stubs.builtins.filter[T]">T</span>], <span title="builtins.bool">bool</span>] | None</code>
+                  <code><span title="typing.Callable">Callable</span>[[<span title="doc_stubs.builtins.filter[T]">T</span>], <span title="builtins.object">object</span>] | None</code>
             </td>
             <td>
               <div class="doc-md-description">
@@ -3498,8 +3501,6 @@ optional keyword arguments to include in the dict.</p>
     <div class="doc doc-contents ">
 
         <p>Check if an object has a named attribute.</p>
-<p>Can result in a compile-time error if an unsupported property is checked,
-since later trying to access it would also fail.</p>
 
 
 <p><span class="doc-section-title">Parameters:</span></p>
@@ -3977,7 +3978,7 @@ Checking against <code class="highlight"><span class="nb">int</span></code>, <co
 
 
 <h2 id="doc_stubs.builtins.map" class="doc doc-heading">
-<code class="doc-symbol doc-symbol-heading doc-symbol-function"></code>            <code class="highlight language-python"><span class="nb">map</span><span class="p">(</span><span class="n">function</span><span class="p">:</span> <span class="n">Callable</span><span class="p">[</span><span class="o">...</span><span class="p">,</span> <span class="n">S</span><span class="p">],</span> <span class="n">iterable</span><span class="p">:</span> <span class="n">Iterable</span><span class="p">[</span><span class="n">T</span><span class="p">],</span> <span class="o">*</span><span class="n">iterables</span><span class="p">:</span> <span class="n">Iterable</span><span class="p">[</span><span class="n">Any</span><span class="p">])</span> <span class="o">-&gt;</span> <span class="n">Iterator</span><span class="p">[</span><span class="n">S</span><span class="p">]</span></code>
+<code class="doc-symbol doc-symbol-heading doc-symbol-function"></code>            <code class="highlight language-python"><span class="nb">map</span><span class="p">(</span><span class="n">function</span><span class="p">:</span> <span class="n">Callable</span><span class="p">[</span><span class="o">...</span><span class="p">,</span> <span class="n">S</span><span class="p">],</span> <span class="n">iterable</span><span class="p">:</span> <span class="n">Iterable</span><span class="p">[</span><span class="n">T</span><span class="p">],</span> <span class="o">/</span><span class="p">,</span> <span class="o">*</span><span class="n">iterables</span><span class="p">:</span> <span class="n">Iterable</span><span class="p">[</span><span class="n">Any</span><span class="p">])</span> <span class="o">-&gt;</span> <span class="n">Iterator</span><span class="p">[</span><span class="n">S</span><span class="p">]</span></code>
 
 <a href="#doc_stubs.builtins.map" class="headerlink" title="Permanent link">&para;</a></h2>
 
@@ -3985,8 +3986,8 @@ Checking against <code class="highlight"><span class="nb">int</span></code>, <co
     <div class="doc doc-contents ">
 
         <p>Apply a function to every item of an iterable and return an iterator.</p>
-<p>A <code class="highlight"><span class="nb">tuple</span></code>, <code class="highlight"><span class="nb">dict</span></code>, <code class="highlight"><span class="nb">set</span></code>, or enum class may be used, but every argument must be one of those, or none may be;
-mixing them with other iterables raises an error.</p>
+<p>A <code class="highlight"><span class="nb">tuple</span></code>, <code class="highlight"><span class="nb">dict</span></code>, <code class="highlight"><span class="nb">set</span></code>, or enum class may be used when every iterable argument is one of those. Other
+supported iterable types may be mixed with each other, but not with those compile-time collections.</p>
 
 
 <p><span class="doc-section-title">Parameters:</span></p>
@@ -4089,11 +4090,13 @@ mixing them with other iterables raises an error.</p>
           <div class="doc-overloads">
 <div class="doc-signature highlight"><pre><span></span><code><span class="nf">max</span><span class="p">(</span>
     <span class="n">iterable</span><span class="p">:</span> <span class="n">Iterable</span><span class="p">[</span><span class="n">T</span><span class="p">],</span>
+    <span class="o">/</span><span class="p">,</span>
     <span class="o">*</span><span class="p">,</span>
     <span class="n">key</span><span class="p">:</span> <span class="n">Callable</span><span class="p">[[</span><span class="n">T</span><span class="p">],</span> <span class="n">Any</span><span class="p">]</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="o">...</span><span class="p">,</span>
 <span class="p">)</span> <span class="o">-&gt;</span> <span class="n">T</span>
 </code></pre></div><div class="doc-signature highlight"><pre><span></span><code><span class="nf">max</span><span class="p">(</span>
     <span class="n">iterable</span><span class="p">:</span> <span class="n">Iterable</span><span class="p">[</span><span class="n">T</span><span class="p">],</span>
+    <span class="o">/</span><span class="p">,</span>
     <span class="o">*</span><span class="p">,</span>
     <span class="n">default</span><span class="p">:</span> <span class="n">T</span> <span class="o">=</span> <span class="o">...</span><span class="p">,</span>
     <span class="n">key</span><span class="p">:</span> <span class="n">Callable</span><span class="p">[[</span><span class="n">T</span><span class="p">],</span> <span class="n">Any</span><span class="p">]</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="o">...</span><span class="p">,</span>
@@ -4101,6 +4104,7 @@ mixing them with other iterables raises an error.</p>
 </code></pre></div><div class="doc-signature highlight"><pre><span></span><code><span class="nf">max</span><span class="p">(</span>
     <span class="n">arg1</span><span class="p">:</span> <span class="n">builtins</span><span class="o">.</span><span class="n">int</span> <span class="o">|</span> <span class="n">builtins</span><span class="o">.</span><span class="n">float</span><span class="p">,</span>
     <span class="n">arg2</span><span class="p">:</span> <span class="n">builtins</span><span class="o">.</span><span class="n">int</span> <span class="o">|</span> <span class="n">builtins</span><span class="o">.</span><span class="n">float</span><span class="p">,</span>
+    <span class="o">/</span><span class="p">,</span>
     <span class="o">*</span><span class="n">args</span><span class="p">:</span> <span class="n">builtins</span><span class="o">.</span><span class="n">int</span> <span class="o">|</span> <span class="n">builtins</span><span class="o">.</span><span class="n">float</span><span class="p">,</span>
     <span class="n">key</span><span class="p">:</span> <span class="n">Callable</span><span class="p">[[</span><span class="n">builtins</span><span class="o">.</span><span class="n">int</span> <span class="o">|</span> <span class="n">builtins</span><span class="o">.</span><span class="n">float</span><span class="p">],</span> <span class="n">Any</span><span class="p">]</span>
     <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="o">...</span><span class="p">,</span>
@@ -4114,12 +4118,11 @@ mixing them with other iterables raises an error.</p>
 <p>When called with a single iterable, returns the largest item from that iterable. When called with two or
 more arguments, all arguments must be numbers, and the largest one is returned.</p>
 <p>Use the <code class="highlight"><span class="n">key</span></code> parameter to specify a function that transforms each element before comparison.</p>
+<p>The <code class="highlight"><span class="n">key</span></code> function must be side-effect free because it may be called more than once per element.</p>
 <p>A <code class="highlight"><span class="nb">tuple</span></code>, <code class="highlight"><span class="nb">dict</span></code>, <code class="highlight"><span class="nb">set</span></code>, or enum class argument is only supported when every element is numeric; use an
 <code class="highlight"><span class="n">Array</span></code> or <code class="highlight"><span class="n">VarArray</span></code> for a collection of other types.</p>
-<p>The <code class="highlight"><span class="n">default</span></code> parameter specifies a value to return if the iterable is empty. It is not supported when called
-with multiple arguments, and it must be usable in place of an element. When the iterable's length is not known
-at compile time, the choice between an element and <code class="highlight"><span class="n">default</span></code> is made at runtime, which only numbers support,
-so a <code class="highlight"><span class="n">Record</span></code> or <code class="highlight"><span class="n">Array</span></code> element type fails to compile there.</p>
+<p>The <code class="highlight"><span class="n">default</span></code> parameter is supported only with a single iterable and must be usable in place of an element.
+When it is known only at runtime whether the iterable is empty, only numeric elements support <code class="highlight"><span class="n">default</span></code>.</p>
 
 
     </div>
@@ -4136,11 +4139,13 @@ so a <code class="highlight"><span class="n">Record</span></code> or <code class
           <div class="doc-overloads">
 <div class="doc-signature highlight"><pre><span></span><code><span class="nf">min</span><span class="p">(</span>
     <span class="n">iterable</span><span class="p">:</span> <span class="n">Iterable</span><span class="p">[</span><span class="n">T</span><span class="p">],</span>
+    <span class="o">/</span><span class="p">,</span>
     <span class="o">*</span><span class="p">,</span>
     <span class="n">key</span><span class="p">:</span> <span class="n">Callable</span><span class="p">[[</span><span class="n">T</span><span class="p">],</span> <span class="n">Any</span><span class="p">]</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="o">...</span><span class="p">,</span>
 <span class="p">)</span> <span class="o">-&gt;</span> <span class="n">T</span>
 </code></pre></div><div class="doc-signature highlight"><pre><span></span><code><span class="nf">min</span><span class="p">(</span>
     <span class="n">iterable</span><span class="p">:</span> <span class="n">Iterable</span><span class="p">[</span><span class="n">T</span><span class="p">],</span>
+    <span class="o">/</span><span class="p">,</span>
     <span class="o">*</span><span class="p">,</span>
     <span class="n">default</span><span class="p">:</span> <span class="n">T</span> <span class="o">=</span> <span class="o">...</span><span class="p">,</span>
     <span class="n">key</span><span class="p">:</span> <span class="n">Callable</span><span class="p">[[</span><span class="n">T</span><span class="p">],</span> <span class="n">Any</span><span class="p">]</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="o">...</span><span class="p">,</span>
@@ -4148,6 +4153,7 @@ so a <code class="highlight"><span class="n">Record</span></code> or <code class
 </code></pre></div><div class="doc-signature highlight"><pre><span></span><code><span class="nf">min</span><span class="p">(</span>
     <span class="n">arg1</span><span class="p">:</span> <span class="n">builtins</span><span class="o">.</span><span class="n">int</span> <span class="o">|</span> <span class="n">builtins</span><span class="o">.</span><span class="n">float</span><span class="p">,</span>
     <span class="n">arg2</span><span class="p">:</span> <span class="n">builtins</span><span class="o">.</span><span class="n">int</span> <span class="o">|</span> <span class="n">builtins</span><span class="o">.</span><span class="n">float</span><span class="p">,</span>
+    <span class="o">/</span><span class="p">,</span>
     <span class="o">*</span><span class="n">args</span><span class="p">:</span> <span class="n">builtins</span><span class="o">.</span><span class="n">int</span> <span class="o">|</span> <span class="n">builtins</span><span class="o">.</span><span class="n">float</span><span class="p">,</span>
     <span class="n">key</span><span class="p">:</span> <span class="n">Callable</span><span class="p">[[</span><span class="n">builtins</span><span class="o">.</span><span class="n">int</span> <span class="o">|</span> <span class="n">builtins</span><span class="o">.</span><span class="n">float</span><span class="p">],</span> <span class="n">Any</span><span class="p">]</span>
     <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="o">...</span><span class="p">,</span>
@@ -4161,12 +4167,11 @@ so a <code class="highlight"><span class="n">Record</span></code> or <code class
 <p>When called with a single iterable, returns the smallest item from that iterable. When called with two or
 more arguments, all arguments must be numbers, and the smallest one is returned.</p>
 <p>Use the <code class="highlight"><span class="n">key</span></code> parameter to specify a function that transforms each element before comparison.</p>
+<p>The <code class="highlight"><span class="n">key</span></code> function must be side-effect free because it may be called more than once per element.</p>
 <p>A <code class="highlight"><span class="nb">tuple</span></code>, <code class="highlight"><span class="nb">dict</span></code>, <code class="highlight"><span class="nb">set</span></code>, or enum class argument is only supported when every element is numeric; use an
 <code class="highlight"><span class="n">Array</span></code> or <code class="highlight"><span class="n">VarArray</span></code> for a collection of other types.</p>
-<p>The <code class="highlight"><span class="n">default</span></code> parameter specifies a value to return if the iterable is empty. It is not supported when called
-with multiple arguments, and it must be usable in place of an element. When the iterable's length is not known
-at compile time, the choice between an element and <code class="highlight"><span class="n">default</span></code> is made at runtime, which only numbers support,
-so a <code class="highlight"><span class="n">Record</span></code> or <code class="highlight"><span class="n">Array</span></code> element type fails to compile there.</p>
+<p>The <code class="highlight"><span class="n">default</span></code> parameter is supported only with a single iterable and must be usable in place of an element.
+When it is known only at runtime whether the iterable is empty, only numeric elements support <code class="highlight"><span class="n">default</span></code>.</p>
 
 
     </div>
@@ -4279,14 +4284,22 @@ When called with three arguments, the third argument specifies the step size.</p
 
 
 <h2 id="doc_stubs.builtins.reversed" class="doc doc-heading">
-<code class="doc-symbol doc-symbol-heading doc-symbol-function"></code>            <code class="highlight language-python"><span class="nb">reversed</span><span class="p">(</span><span class="n">seq</span><span class="p">:</span> <span class="n">Sequence</span><span class="p">[</span><span class="n">T</span><span class="p">])</span> <span class="o">-&gt;</span> <span class="n">Iterator</span><span class="p">[</span><span class="n">T</span><span class="p">]</span></code>
+<code class="doc-symbol doc-symbol-heading doc-symbol-function"></code>            <code class="highlight language-python"><span class="nb">reversed</span><span class="p">(</span><span class="n">seq</span><span class="p">:</span> <span class="n">Any</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Any</span></code>
 
 <a href="#doc_stubs.builtins.reversed" class="headerlink" title="Permanent link">&para;</a></h2>
+          <div class="doc-overloads">
+<div class="doc-signature highlight"><pre><span></span><code><span class="nf">reversed</span><span class="p">(</span><span class="n">seq</span><span class="p">:</span> <span class="n">ArrayLike</span><span class="p">[</span><span class="n">T</span><span class="p">])</span> <span class="o">-&gt;</span> <span class="n">ArrayLike</span><span class="p">[</span><span class="n">T</span><span class="p">]</span>
+</code></pre></div><div class="doc-signature highlight"><pre><span></span><code><span class="nf">reversed</span><span class="p">(</span>
+    <span class="n">seq</span><span class="p">:</span> <span class="nb">tuple</span><span class="p">[</span><span class="n">T</span><span class="p">,</span> <span class="o">...</span><span class="p">]</span> <span class="o">|</span> <span class="n">builtins</span><span class="o">.</span><span class="n">dict</span><span class="p">[</span><span class="n">T</span><span class="p">,</span> <span class="n">Any</span><span class="p">],</span>
+<span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">tuple</span><span class="p">[</span><span class="n">T</span><span class="p">,</span> <span class="o">...</span><span class="p">]</span>
+</code></pre></div><div class="doc-signature highlight"><pre><span></span><code><span class="nf">reversed</span><span class="p">(</span><span class="n">seq</span><span class="p">:</span> <span class="nb">type</span><span class="p">[</span><span class="n">T</span><span class="p">])</span> <span class="o">-&gt;</span> <span class="nb">tuple</span><span class="p">[</span><span class="n">T</span><span class="p">,</span> <span class="o">...</span><span class="p">]</span>
+</code></pre></div>          </div>
 
 
     <div class="doc doc-contents ">
 
-        <p>Return a reverse iterator.</p>
+        <p>Return a reversed view of a supported sequence.</p>
+<p>Accepts an <code class="highlight"><span class="n">ArrayLike</span></code>, tuple, dict, or enum class.</p>
 
 
 <p><span class="doc-section-title">Parameters:</span></p>
@@ -4305,7 +4318,7 @@ When called with three arguments, the third argument specifies the step size.</p
                 <code>seq</code>
             </td>
             <td>
-                  <code><span title="typing.Sequence">Sequence</span>[<span title="doc_stubs.builtins.reversed[T]">T</span>]</code>
+                  <code><span title="typing.Any">Any</span></code>
             </td>
             <td>
               <div class="doc-md-description">
@@ -4314,29 +4327,6 @@ When called with three arguments, the third argument specifies the step size.</p
             </td>
             <td>
                 <em>required</em>
-            </td>
-          </tr>
-      </tbody>
-    </table>
-
-
-    <p><span class="doc-section-title">Returns:</span></p>
-    <table>
-      <thead>
-        <tr>
-          <th>Type</th>
-          <th>Description</th>
-        </tr>
-      </thead>
-      <tbody>
-          <tr class="doc-section-item">
-            <td>
-                  <code><span title="typing.Iterator">Iterator</span>[<span title="doc_stubs.builtins.reversed[T]">T</span>]</code>
-            </td>
-            <td>
-              <div class="doc-md-description">
-                <p>An iterator over the reversed sequence.</p>
-              </div>
             </td>
           </tr>
       </tbody>
@@ -4359,6 +4349,9 @@ When called with three arguments, the third argument specifies the step size.</p
     <div class="doc doc-contents ">
 
         <p>Round a number to a given precision in decimal digits.</p>
+<p>With <code class="highlight"><span class="n">ndigits</span></code>, a value near the midpoint between two rounded values may round differently than in Python.</p>
+<p>Extremely large <code class="highlight"><span class="n">ndigits</span></code> values are not supported. Precision is limited when either argument has an extreme
+magnitude.</p>
 
 
 <p><span class="doc-section-title">Parameters:</span></p>
@@ -4444,13 +4437,18 @@ When called with three arguments, the third argument specifies the step size.</p
 <a href="#doc_stubs.builtins.set" class="headerlink" title="Permanent link">&para;</a></h2>
           <div class="doc-overloads">
 <div class="doc-signature highlight"><pre><span></span><code><span class="nf">set</span><span class="p">()</span> <span class="o">-&gt;</span> <span class="n">builtins</span><span class="o">.</span><span class="n">set</span>
-</code></pre></div><div class="doc-signature highlight"><pre><span></span><code><span class="nf">set</span><span class="p">(</span><span class="n">iterable</span><span class="p">:</span> <span class="n">Iterable</span><span class="p">[</span><span class="n">T</span><span class="p">])</span> <span class="o">-&gt;</span> <span class="n">builtins</span><span class="o">.</span><span class="n">set</span><span class="p">[</span><span class="n">T</span><span class="p">]</span>
+</code></pre></div><div class="doc-signature highlight"><pre><span></span><code><span class="nf">set</span><span class="p">(</span>
+    <span class="n">iterable</span><span class="p">:</span> <span class="nb">tuple</span><span class="p">[</span><span class="n">T</span><span class="p">,</span> <span class="o">...</span><span class="p">]</span>
+    <span class="o">|</span> <span class="n">builtins</span><span class="o">.</span><span class="n">dict</span><span class="p">[</span><span class="n">T</span><span class="p">,</span> <span class="n">Any</span><span class="p">]</span>
+    <span class="o">|</span> <span class="n">builtins</span><span class="o">.</span><span class="n">set</span><span class="p">[</span><span class="n">T</span><span class="p">],</span>
+<span class="p">)</span> <span class="o">-&gt;</span> <span class="n">builtins</span><span class="o">.</span><span class="n">set</span><span class="p">[</span><span class="n">T</span><span class="p">]</span>
+</code></pre></div><div class="doc-signature highlight"><pre><span></span><code><span class="nf">set</span><span class="p">(</span><span class="n">iterable</span><span class="p">:</span> <span class="nb">type</span><span class="p">[</span><span class="n">T</span><span class="p">])</span> <span class="o">-&gt;</span> <span class="n">builtins</span><span class="o">.</span><span class="n">set</span><span class="p">[</span><span class="n">T</span><span class="p">]</span>
 </code></pre></div>          </div>
 
 
     <div class="doc doc-contents ">
 
-        <p>Construct a set from an iterable.</p>
+        <p>Construct a set from a supported compile-time collection.</p>
 <p>All set members must be compile-time constants. Accepts an optional <code class="highlight"><span class="nb">tuple</span></code>, <code class="highlight"><span class="nb">dict</span></code>, enum class, or <code class="highlight"><span class="nb">set</span></code>.
 An <code class="highlight"><span class="n">Array</span></code>, <code class="highlight"><span class="n">VarArray</span></code>, or <code class="highlight"><span class="nb">range</span></code> is not accepted.</p>
 
@@ -4494,8 +4492,7 @@ An <code class="highlight"><span class="n">Array</span></code>, <code class="hig
     <div class="doc doc-contents ">
 
         <p>Set a named attribute on an object.</p>
-<p>The attribute must already exist as a supported field or property; setting an unsupported name is a
-compile-time error.</p>
+<p>The attribute must already exist as a supported field or property.</p>
 
 
 <p><span class="doc-section-title">Parameters:</span></p>
@@ -4817,9 +4814,56 @@ compile-time error.</p>
 
 
 <h2 id="doc_stubs.builtins.zip" class="doc doc-heading">
-<code class="doc-symbol doc-symbol-heading doc-symbol-function"></code>            <code class="highlight language-python"><span class="nb">zip</span><span class="p">(</span><span class="o">*</span><span class="n">iterables</span><span class="p">:</span> <span class="n">Iterable</span><span class="p">[</span><span class="n">T</span><span class="p">],</span> <span class="n">strict</span><span class="p">:</span> <span class="n">Literal</span><span class="p">[</span><span class="kc">False</span><span class="p">]</span> <span class="o">=</span> <span class="kc">False</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Iterator</span><span class="p">[</span><span class="nb">tuple</span><span class="p">[</span><span class="n">T</span><span class="p">,</span> <span class="o">...</span><span class="p">]]</span></code>
+<code class="doc-symbol doc-symbol-heading doc-symbol-function"></code>            <code class="highlight language-python"><span class="nb">zip</span><span class="p">(</span><span class="o">*</span><span class="n">iterables</span><span class="p">:</span> <span class="n">Iterable</span><span class="p">[</span><span class="n">Any</span><span class="p">],</span> <span class="n">strict</span><span class="p">:</span> <span class="n">Literal</span><span class="p">[</span><span class="kc">False</span><span class="p">]</span> <span class="o">=</span> <span class="kc">False</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Iterator</span><span class="p">[</span><span class="nb">tuple</span><span class="p">[</span><span class="n">Any</span><span class="p">,</span> <span class="o">...</span><span class="p">]]</span></code>
 
 <a href="#doc_stubs.builtins.zip" class="headerlink" title="Permanent link">&para;</a></h2>
+          <div class="doc-overloads">
+<div class="doc-signature highlight"><pre><span></span><code><span class="nf">zip</span><span class="p">(</span><span class="o">*</span><span class="p">,</span> <span class="n">strict</span><span class="p">:</span> <span class="n">Literal</span><span class="p">[</span><span class="kc">False</span><span class="p">]</span> <span class="o">=</span> <span class="kc">False</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Iterator</span><span class="p">[</span><span class="nb">tuple</span><span class="p">[]]</span>
+</code></pre></div><div class="doc-signature highlight"><pre><span></span><code><span class="nf">zip</span><span class="p">(</span>
+    <span class="n">iterable1</span><span class="p">:</span> <span class="n">Iterable</span><span class="p">[</span><span class="n">T1</span><span class="p">],</span>
+    <span class="o">/</span><span class="p">,</span>
+    <span class="o">*</span><span class="p">,</span>
+    <span class="n">strict</span><span class="p">:</span> <span class="n">Literal</span><span class="p">[</span><span class="kc">False</span><span class="p">]</span> <span class="o">=</span> <span class="kc">False</span><span class="p">,</span>
+<span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Iterator</span><span class="p">[</span><span class="nb">tuple</span><span class="p">[</span><span class="n">T1</span><span class="p">]]</span>
+</code></pre></div><div class="doc-signature highlight"><pre><span></span><code><span class="nf">zip</span><span class="p">(</span>
+    <span class="n">iterable1</span><span class="p">:</span> <span class="n">Iterable</span><span class="p">[</span><span class="n">T1</span><span class="p">],</span>
+    <span class="n">iterable2</span><span class="p">:</span> <span class="n">Iterable</span><span class="p">[</span><span class="n">T2</span><span class="p">],</span>
+    <span class="o">/</span><span class="p">,</span>
+    <span class="o">*</span><span class="p">,</span>
+    <span class="n">strict</span><span class="p">:</span> <span class="n">Literal</span><span class="p">[</span><span class="kc">False</span><span class="p">]</span> <span class="o">=</span> <span class="kc">False</span><span class="p">,</span>
+<span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Iterator</span><span class="p">[</span><span class="nb">tuple</span><span class="p">[</span><span class="n">T1</span><span class="p">,</span> <span class="n">T2</span><span class="p">]]</span>
+</code></pre></div><div class="doc-signature highlight"><pre><span></span><code><span class="nf">zip</span><span class="p">(</span>
+    <span class="n">iterable1</span><span class="p">:</span> <span class="n">Iterable</span><span class="p">[</span><span class="n">T1</span><span class="p">],</span>
+    <span class="n">iterable2</span><span class="p">:</span> <span class="n">Iterable</span><span class="p">[</span><span class="n">T2</span><span class="p">],</span>
+    <span class="n">iterable3</span><span class="p">:</span> <span class="n">Iterable</span><span class="p">[</span><span class="n">T3</span><span class="p">],</span>
+    <span class="o">/</span><span class="p">,</span>
+    <span class="o">*</span><span class="p">,</span>
+    <span class="n">strict</span><span class="p">:</span> <span class="n">Literal</span><span class="p">[</span><span class="kc">False</span><span class="p">]</span> <span class="o">=</span> <span class="kc">False</span><span class="p">,</span>
+<span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Iterator</span><span class="p">[</span><span class="nb">tuple</span><span class="p">[</span><span class="n">T1</span><span class="p">,</span> <span class="n">T2</span><span class="p">,</span> <span class="n">T3</span><span class="p">]]</span>
+</code></pre></div><div class="doc-signature highlight"><pre><span></span><code><span class="nf">zip</span><span class="p">(</span>
+    <span class="n">iterable1</span><span class="p">:</span> <span class="n">Iterable</span><span class="p">[</span><span class="n">T1</span><span class="p">],</span>
+    <span class="n">iterable2</span><span class="p">:</span> <span class="n">Iterable</span><span class="p">[</span><span class="n">T2</span><span class="p">],</span>
+    <span class="n">iterable3</span><span class="p">:</span> <span class="n">Iterable</span><span class="p">[</span><span class="n">T3</span><span class="p">],</span>
+    <span class="n">iterable4</span><span class="p">:</span> <span class="n">Iterable</span><span class="p">[</span><span class="n">T4</span><span class="p">],</span>
+    <span class="o">/</span><span class="p">,</span>
+    <span class="o">*</span><span class="p">,</span>
+    <span class="n">strict</span><span class="p">:</span> <span class="n">Literal</span><span class="p">[</span><span class="kc">False</span><span class="p">]</span> <span class="o">=</span> <span class="kc">False</span><span class="p">,</span>
+<span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Iterator</span><span class="p">[</span><span class="nb">tuple</span><span class="p">[</span><span class="n">T1</span><span class="p">,</span> <span class="n">T2</span><span class="p">,</span> <span class="n">T3</span><span class="p">,</span> <span class="n">T4</span><span class="p">]]</span>
+</code></pre></div><div class="doc-signature highlight"><pre><span></span><code><span class="nf">zip</span><span class="p">(</span>
+    <span class="n">iterable1</span><span class="p">:</span> <span class="n">Iterable</span><span class="p">[</span><span class="n">T1</span><span class="p">],</span>
+    <span class="n">iterable2</span><span class="p">:</span> <span class="n">Iterable</span><span class="p">[</span><span class="n">T2</span><span class="p">],</span>
+    <span class="n">iterable3</span><span class="p">:</span> <span class="n">Iterable</span><span class="p">[</span><span class="n">T3</span><span class="p">],</span>
+    <span class="n">iterable4</span><span class="p">:</span> <span class="n">Iterable</span><span class="p">[</span><span class="n">T4</span><span class="p">],</span>
+    <span class="n">iterable5</span><span class="p">:</span> <span class="n">Iterable</span><span class="p">[</span><span class="n">T5</span><span class="p">],</span>
+    <span class="o">/</span><span class="p">,</span>
+    <span class="o">*</span><span class="p">,</span>
+    <span class="n">strict</span><span class="p">:</span> <span class="n">Literal</span><span class="p">[</span><span class="kc">False</span><span class="p">]</span> <span class="o">=</span> <span class="kc">False</span><span class="p">,</span>
+<span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Iterator</span><span class="p">[</span><span class="nb">tuple</span><span class="p">[</span><span class="n">T1</span><span class="p">,</span> <span class="n">T2</span><span class="p">,</span> <span class="n">T3</span><span class="p">,</span> <span class="n">T4</span><span class="p">,</span> <span class="n">T5</span><span class="p">]]</span>
+</code></pre></div><div class="doc-signature highlight"><pre><span></span><code><span class="nf">zip</span><span class="p">(</span>
+    <span class="o">*</span><span class="n">iterables</span><span class="p">:</span> <span class="n">Iterable</span><span class="p">[</span><span class="n">Any</span><span class="p">],</span>
+    <span class="n">strict</span><span class="p">:</span> <span class="n">Literal</span><span class="p">[</span><span class="kc">False</span><span class="p">]</span> <span class="o">=</span> <span class="kc">False</span><span class="p">,</span>
+<span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Iterator</span><span class="p">[</span><span class="nb">tuple</span><span class="p">[</span><span class="n">Any</span><span class="p">,</span> <span class="o">...</span><span class="p">]]</span>
+</code></pre></div>          </div>
 
 
     <div class="doc doc-contents ">
@@ -4843,7 +4887,7 @@ compile-time error.</p>
                 <code>*iterables</code>
             </td>
             <td>
-                  <code><span title="typing.Iterable">Iterable</span>[<span title="doc_stubs.builtins.zip[T]">T</span>]</code>
+                  <code><span title="typing.Iterable">Iterable</span>[<span title="typing.Any">Any</span>]</code>
             </td>
             <td>
               <div class="doc-md-description">
@@ -4863,7 +4907,7 @@ compile-time error.</p>
             </td>
             <td>
               <div class="doc-md-description">
-                <p>Must be False; strict zipping is not currently supported.</p>
+                <p>Must be False.</p>
               </div>
             </td>
             <td>
@@ -4885,7 +4929,7 @@ compile-time error.</p>
       <tbody>
           <tr class="doc-section-item">
             <td>
-                  <code><span title="typing.Iterator">Iterator</span>[<a class="autorefs autorefs-internal" href="../../concepts/types/#tuple">tuple</a>[<span title="doc_stubs.builtins.zip[T]">T</span>, ...]]</code>
+                  <code><span title="typing.Iterator">Iterator</span>[<a class="autorefs autorefs-internal" href="../../concepts/types/#tuple">tuple</a>[<span title="typing.Any">Any</span>, ...]]</code>
             </td>
             <td>
               <div class="doc-md-description">

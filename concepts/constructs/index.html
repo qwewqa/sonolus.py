@@ -2648,6 +2648,8 @@
 <p>Sonolus.py functions as a compiler from Python to Sonolus nodes. While most standard Python constructs are supported,
 there are some limitations compared to standard Python. The following sections outline what Sonolus.py supports and 
 how it differs from standard Python.</p>
+<p>Behavior is not specified for unsupported constructs. They may be rejected, ignored, or behave differently from
+Python.</p>
 <h2 id="key-differences">Key Differences<a class="headerlink" href="#key-differences" title="Permanent link">&para;</a></h2>
 <ul>
 <li>Non-num variables must have a single live definition.<ul>
@@ -2669,6 +2671,8 @@ how it differs from standard Python.</p>
 <li>List literals (<code class="highlight"><span class="p">[</span><span class="mi">1</span><span class="p">,</span> <span class="mi">2</span><span class="p">,</span> <span class="mi">3</span><span class="p">]</span></code>) are unsupported; use a tuple or <a class="autorefs autorefs-internal" title="            Array" href="../../reference/sonolus.script.array/#sonolus.script.array.Array"><code class="highlight"><span class="n">Array</span></code></a> instead.</li>
 <li>List, set, and dict comprehensions are unsupported; only generator expressions are supported.</li>
 <li>Exception statements (<code class="highlight"><span class="k">try</span></code>, <code class="highlight"><span class="k">except</span></code>, <code class="highlight"><span class="k">finally</span></code>, <code class="highlight"><span class="k">raise</span></code>) and <code class="highlight"><span class="k">with</span></code> statements are unsupported.</li>
+<li>Asynchronous functions and <code class="highlight"><span class="k">await</span></code> expressions are unsupported.</li>
+<li>Classes and type aliases may not be defined within functions.</li>
 <li>F-strings and slices are unsupported.</li>
 <li>The bitwise operators (<code class="highlight"><span class="o">&amp;</span></code>, <code class="highlight"><span class="o">|</span></code>, <code class="highlight"><span class="o">^</span></code>, <code class="highlight"><span class="o">&lt;&lt;</span></code>, <code class="highlight"><span class="o">&gt;&gt;</span></code>, <code class="highlight"><span class="o">~</span></code>) are not supported for <a href="../types/#num"><code class="highlight"><span class="n">Num</span></code></a>, since the
   Sonolus runtime has no bitwise operations. They are available only for types that define them, such as
@@ -2700,8 +2704,8 @@ how it differs from standard Python.</p>
 </ul>
 </li>
 <li>Variables: <code class="highlight"><span class="n">a</span></code>, <code class="highlight"><span class="n">b</span></code>, <code class="highlight"><span class="n">c</span></code></li>
-<li>Lambda: <code class="highlight"><span class="k">lambda</span> <span class="n">a</span><span class="p">,</span> <span class="n">b</span><span class="p">:</span> <span class="n">a</span> <span class="o">+</span> <span class="n">b</span></code> (if not on the same line as another lambda or function definition)</li>
-<li>Assignment Expression: <code class="highlight"><span class="p">(</span><span class="n">a</span> <span class="o">:=</span> <span class="n">b</span><span class="p">)</span></code></li>
+<li>Lambda: <code class="highlight"><span class="k">lambda</span> <span class="n">a</span><span class="p">,</span> <span class="n">b</span><span class="p">:</span> <span class="n">a</span> <span class="o">+</span> <span class="n">b</span></code></li>
+<li>Assignment Expression: <code class="highlight"><span class="p">(</span><span class="n">a</span> <span class="o">:=</span> <span class="n">b</span><span class="p">)</span></code> (not supported inside a generator expression)</li>
 <li>Generator Expression: <code class="highlight"><span class="p">(</span><span class="n">x</span> <span class="k">for</span> <span class="n">x</span> <span class="ow">in</span> <span class="n">iterable</span> <span class="k">if</span> <span class="n">condition</span><span class="p">)</span></code></li>
 </ul>
 </li>
@@ -2752,12 +2756,12 @@ how it differs from standard Python.</p>
 <li>Negation: <code class="highlight"><span class="ow">not</span> <span class="n">a</span></code></li>
 <li>And<ul>
 <li>Both operands are compile-time constants: <code class="highlight"><span class="n">a</span> <span class="ow">and</span> <span class="n">b</span></code></li>
-<li>One operand is known to be False: <code class="highlight"><span class="kc">False</span> <span class="ow">and</span> <span class="n">a</span></code>, <code class="highlight"><span class="n">a</span> <span class="ow">and</span> <span class="kc">False</span></code></li>
+<li>The left operand is known to be False: <code class="highlight"><span class="kc">False</span> <span class="ow">and</span> <span class="n">a</span></code></li>
 </ul>
 </li>
 <li>Or<ul>
 <li>Both operands are compile-time constants: <code class="highlight"><span class="n">a</span> <span class="ow">or</span> <span class="n">b</span></code></li>
-<li>One operand is known to be True: <code class="highlight"><span class="kc">True</span> <span class="ow">or</span> <span class="n">a</span></code>, <code class="highlight"><span class="n">a</span> <span class="ow">or</span> <span class="kc">True</span></code></li>
+<li>The left operand is known to be True: <code class="highlight"><span class="kc">True</span> <span class="ow">or</span> <span class="n">a</span></code></li>
 </ul>
 </li>
 </ul>
@@ -2855,17 +2859,20 @@ considered an error:</p>
 </code></pre></div>
 <h2 id="statements">Statements<a class="headerlink" href="#statements" title="Permanent link">&para;</a></h2>
 <h3 id="assignment">Assignment<a class="headerlink" href="#assignment" title="Permanent link">&para;</a></h3>
-<p>Most assignment types are supported. Destructuring assignment is supported only for tuples, and the <code class="highlight"><span class="o">*</span></code>
-operator is not supported.</p>
+<p>Most assignment types are supported. A destructuring assignment accepts a tuple, a dict (which unpacks its
+keys, as in Python), or an enum class as the value. The targets may be written in tuple or list form and
+nested to any depth, but a starred target is not supported.</p>
 <div class="highlight"><pre><span></span><code><span class="c1"># Ok</span>
 <span class="n">a</span> <span class="o">=</span> <span class="mi">1</span>
 <span class="n">b</span> <span class="o">+=</span> <span class="mi">2</span>
 <span class="n">c</span><span class="o">.</span><span class="n">x</span> <span class="o">=</span> <span class="mi">3</span>
 <span class="n">d</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span> <span class="o">=</span> <span class="mi">4</span>
 <span class="p">(</span><span class="n">e</span><span class="p">,</span> <span class="n">f</span><span class="p">),</span> <span class="n">g</span> <span class="o">=</span> <span class="p">(</span><span class="mi">1</span><span class="p">,</span> <span class="mi">2</span><span class="p">),</span> <span class="mi">3</span>
+<span class="p">[</span><span class="n">h</span><span class="p">,</span> <span class="n">i</span><span class="p">]</span> <span class="o">=</span> <span class="mi">1</span><span class="p">,</span> <span class="mi">2</span>
+<span class="n">j</span><span class="p">,</span> <span class="n">k</span> <span class="o">=</span> <span class="p">{</span><span class="mi">1</span><span class="p">:</span> <span class="s1">&#39;a&#39;</span><span class="p">,</span> <span class="mi">2</span><span class="p">:</span> <span class="s1">&#39;b&#39;</span><span class="p">}</span>  <span class="c1"># Unpacks the keys, as in Python</span>
 
 <span class="c1"># Not ok</span>
-<span class="n">h</span><span class="p">,</span> <span class="o">*</span><span class="n">i</span> <span class="o">=</span> <span class="mi">1</span><span class="p">,</span> <span class="mi">2</span><span class="p">,</span> <span class="mi">3</span>  <span class="c1"># Not supported</span>
+<span class="n">p</span><span class="p">,</span> <span class="o">*</span><span class="n">q</span> <span class="o">=</span> <span class="mi">1</span><span class="p">,</span> <span class="mi">2</span><span class="p">,</span> <span class="mi">3</span>  <span class="c1"># Starred targets are not supported</span>
 </code></pre></div>
 <h3 id="conditional-statements">Conditional Statements<a class="headerlink" href="#conditional-statements" title="Permanent link">&para;</a></h3>
 <p>The standard conditional statements are supported.</p>
@@ -2969,7 +2976,7 @@ Custom iterators must subclass <a class="autorefs autorefs-internal" title="    
 <span class="k">else</span><span class="p">:</span>
     <span class="o">...</span>
 </code></pre></div>
-<p>Tuples can be iterated over and result in an unrolled loop. This can be useful for iterating of objects of different,
+<p>Tuples can be iterated over and result in an unrolled loop. This is useful for iterating over objects of different
 types, but care should be taken since it results in more code being generated compared to a normal loop:</p>
 <div class="grid" markdown>
 
@@ -3077,19 +3084,16 @@ or other functions that accept an iterator:</p>
 </code></pre></div>
 <p>Generators are lazy: code before the first <code class="highlight"><span class="k">yield</span></code> does not run until the first value is requested. Yielded
 values follow the same single-live-definition rule as function return values, and a generator function's <code class="highlight"><span class="k">return</span></code>
-statements must not return a value.</p>
+statements must not return a value. Nested generators that capture changing variables from another generator are
+not supported.</p>
 <h5 id="reusing-iterators">Reusing iterators<a class="headerlink" href="#reusing-iterators" title="Permanent link">&para;</a></h5>
-<p>Treating an iterator as single use is recommended: consume it once, and build a fresh one if the values are needed
-again.</p>
-<p>Advancing an iterator that is already being consumed, by nesting two loops over it or mixing <code class="highlight"><span class="nb">next</span></code> with a <code class="highlight"><span class="k">for</span></code>
-loop, is not supported. Neither is consuming one a second time after it has
-been exhausted. Use <a class="autorefs autorefs-internal" title="            copy(value: T) -> T" href="../../reference/sonolus.script.values/#sonolus.script.values.copy"><code class="highlight"><span class="n">copy</span></code></a> if a value taken from an iterator needs to outlive the
-next advance. This is an area which diverges from normal Python behavior. Otherwise, values obtained previously from
-an iterator may unexpectedly change when the iterator is advanced.</p>
+<p>Use an iterator only once: in one <code class="highlight"><span class="k">for</span></code> loop, in one call to <code class="highlight"><span class="nb">next</span><span class="p">()</span></code>, or by passing it once to another iterator
+consumer. Build a fresh iterator to use it again.</p>
 <h3 id="classes">Classes<a class="headerlink" href="#classes" title="Permanent link">&para;</a></h3>
-<p>Classes are supported at the module level. User defined classes should subclass <a class="autorefs autorefs-internal" title="            Record" href="../../reference/sonolus.script.record/#sonolus.script.record.Record"><code class="highlight"><span class="n">Record</span></code></a> or have a supported
+<p>Classes are supported at the module level. User defined classes should subclass
+<a class="autorefs autorefs-internal" title="            Record" href="../../reference/sonolus.script.record/#sonolus.script.record.Record"><code class="highlight"><span class="n">Record</span></code></a> or have a supported
 Sonolus.py decorator such as <code class="highlight"><span class="nd">@level_memory</span></code>.</p>
-<p>Methods may have the <code class="highlight"><span class="nd">@staticmethod</span></code>, <code class="highlight"><span class="nd">@classmethod</span></code>, or <code class="highlight"><span class="nd">@property</span></code> decorators.</p>
+<p>Methods may have the <code class="highlight"><span class="nd">@staticmethod</span></code>, <code class="highlight"><span class="nd">@classmethod</span></code>, or <code class="highlight"><span class="nd">@property</span></code> decorators.
 <div class="highlight"><pre><span></span><code><span class="k">class</span><span class="w"> </span><span class="nc">MyRecord</span><span class="p">(</span><span class="n">Record</span><span class="p">):</span>
     <span class="n">x</span><span class="p">:</span> <span class="nb">int</span>
     <span class="n">y</span><span class="p">:</span> <span class="nb">int</span>
@@ -3108,7 +3112,7 @@ Sonolus.py decorator such as <code class="highlight"><span class="nd">@level_mem
     <span class="nd">@property</span>
     <span class="k">def</span><span class="w"> </span><span class="nf">property</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
         <span class="o">...</span>
-</code></pre></div>
+</code></pre></div></p>
 <h3 id="imports">Imports<a class="headerlink" href="#imports" title="Permanent link">&para;</a></h3>
 <p>Imports are supported at the module level, but not within functions.</p>
 <h3 id="assert">assert<a class="headerlink" href="#assert" title="Permanent link">&para;</a></h3>
