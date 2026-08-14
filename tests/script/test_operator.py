@@ -1293,3 +1293,24 @@ def test_iterative_membership_calls_element_equality_first():
         return MembershipNeedle(2) in (value for value in Array(MembershipElement(1), MembershipElement(2)))
 
     assert run_and_validate(fn)
+
+
+@pytest.mark.parametrize(
+    "fn",
+    [
+        lambda: callable(range | None),
+        lambda: callable(None | range),  # noqa: RUF036 - Reflected-union regression.
+        lambda: callable(int | str | range),
+    ],
+)
+def test_compile_time_union_expressions_accept_none_and_existing_unions(fn):
+    assert run_and_validate(fn) is False
+
+
+def test_compile_time_augmented_union_accepts_an_existing_union():
+    def fn():
+        value = int | str
+        value |= range
+        return callable(value)
+
+    assert run_and_validate(fn) is False

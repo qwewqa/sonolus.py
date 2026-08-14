@@ -799,11 +799,16 @@ def test_array_unsupported_element_type_rejected():
         Array[str, 3]
     with pytest.raises(TypeError, match="Invalid element type for"):
         Array[Any, 3]
-    with pytest.raises(TypeError, match="Invalid element type for"):
-        Array[None, 3]
     # A union only normalizes when all members agree, so a mixed union is still rejected.
     with pytest.raises(TypeError, match="Invalid element type for"):
         Array[int | str, 3]
+
+
+def test_none_array_element_type_is_normalized():
+    array_type = Array[None, 3]
+
+    assert array_type.element_type().value() is None
+    assert len(array_type(None, None, None)) == 3
 
 
 def test_array_generic_element_type_rejected_inside_function_body():

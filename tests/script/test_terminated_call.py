@@ -937,9 +937,8 @@ def test_terminating_len_result_skips_each_consumer():
 
 
 def test_match_pattern_reading_a_terminating_property_is_rejected():
-    # A read the pattern itself performs can terminate only through a user property or __len__. Contexts
-    # opened inside the pattern may be live with no continuation left for them, so this is rejected rather
-    # than traced on.
+    # A user property, __len__, or __getitem__ read by the pattern can terminate. Contexts opened inside the pattern
+    # may be live with no continuation left for them, so this is rejected rather than traced on.
     def fn():
         match BadPropValue(Mem.gate):
             case BadPropValue(p=1.0):

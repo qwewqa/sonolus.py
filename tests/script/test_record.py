@@ -61,11 +61,36 @@ class ConcreteCompound(Record):
     b: Pair[Num, Num]
 
 
+class NoneField(Record):
+    value: None
+
+
 def test_record_field_type_spec_is_normalized():
     class Tagged(Record):
         value: Annotated[int, "tag"]
 
     assert Tagged._fields_[0].type is Num
+
+
+def test_none_record_field_type_spec_is_normalized():
+    assert NoneField._fields_[0].type.value() is None
+
+
+def test_none_record_type_argument_is_normalized():
+    parameterized = Pair[None, Num]
+    value = parameterized(None, 1)
+
+    assert parameterized._type_args_[0].value() is None
+    assert parameterized._fields_[0].type.value() is None
+    assert value.first is None
+
+
+def test_none_record_field_compiles():
+    def fn():
+        value = Pair[None, Num](None, Array(1)[0])
+        return value.second
+
+    assert run_and_validate(fn) == 1
 
 
 @given(a=f32_range_floats)

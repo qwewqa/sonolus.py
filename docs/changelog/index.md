@@ -1,5 +1,10 @@
 ### 0.19.0
 
+- PEP 604 union expressions now accept `None` and existing unions as operands, and `None` can be used as a Record
+  field type or generic type argument.
+- Explicitly empty archetype names and imported or exported field names are now preserved.
+- Getter-only property assignments now report the property and target type consistently.
+- Invalid class patterns and invalid generator returns now report their offending source locations.
 - Project schemas and engine compilation now reject distinct archetypes with the same runtime name in one mode.
 - Class-shaped global declarations now treat `ClassVar` members as class constants rather than stored fields.
 - Corrected project resource, build-directory, and exported output path annotations to include `str`.

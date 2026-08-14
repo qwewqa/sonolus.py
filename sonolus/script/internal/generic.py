@@ -17,6 +17,8 @@ def validate_type_arg(arg: Any) -> Any:
     if not arg._is_py_():
         raise TypeError(f"Expected a compile-time constant type argument, got {arg}")
     result = arg._as_py_()
+    if result is None:
+        return type(arg)
     if isinstance(result, type) and issubclass(result, Enum):
         # E.g. if this is an IntEnum subclass, we call it on IntEnum, and then int, which gets us the result we want
         result = validate_type_arg(result.__mro__[1])
@@ -36,6 +38,8 @@ def preprocess_type_spec(arg: Any) -> Any:
     if not arg._is_py_():
         raise TypeError(f"Expected a compile-time constant type, got {arg}")
     result = arg._as_py_()
+    if result is None:
+        return type(arg)
     if isinstance(result, type) and issubclass(result, Enum):
         # E.g. if this is an IntEnum subclass, we call it on IntEnum, and then int, which gets us the result we want
         result = validate_type_arg(result.__mro__[1])

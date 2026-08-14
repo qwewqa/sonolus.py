@@ -1,5 +1,6 @@
 """Test cases intended to cover more complex control flow."""
 
+import inspect
 from enum import IntEnum
 
 import pytest
@@ -1433,8 +1434,22 @@ def test_match_class_excess_positional_patterns_match_python_diagnostic():
             case _:
                 return 0
 
-    with pytest.raises(TypeError, match=r"Point\(\) accepts 2 positional sub-patterns \(3 given\)"):
-        run_and_validate(fn)
+    source_lines, first_line = inspect.getsourcelines(fn)
+    expected_line = first_line + next(i for i, line in enumerate(source_lines) if "case Point(1, 2, 3)" in line)
+
+    with pytest.raises(CompilationError, match=r"Point\(\) accepts 2 positional sub-patterns \(3 given\)") as exc_info:
+        run_compiled(fn)
+
+    reported_lines = []
+    exception = exc_info.value
+    while exception is not None:
+        frame = exception.__traceback__
+        while frame is not None:
+            if frame.tb_frame.f_code.co_filename == __file__:
+                reported_lines.append(frame.tb_lineno)
+            frame = frame.tb_next
+        exception = exception.__cause__
+    assert expected_line in reported_lines
 
 
 def test_terminating_class_pattern_expression_compiles():

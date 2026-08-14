@@ -69,6 +69,10 @@ def _type_name(value) -> str:
     return type(value).__name__
 
 
+def _property_has_no_setter(target, name):
+    return AttributeError(f"property '{name}' of '{_type_name(target)}' object has no setter")
+
+
 def _unwrap_set(value):
     """Return the value that carries a set's elements, leaving anything else alone."""
     return value._dict if isinstance(value, SetImpl) else value
@@ -1051,7 +1055,7 @@ def _setattr(obj: Any, name: str, value: Any):
     match descriptor:
         case property(fset=setter):
             if setter is None:
-                raise AttributeError(f"Cannot set attribute {name} because property has no setter")
+                raise _property_has_no_setter(obj, name)
             compile_and_call(setter, obj, value)
         case SonolusDescriptor():
             setattr(obj, name, value)

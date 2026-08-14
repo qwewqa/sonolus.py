@@ -861,7 +861,7 @@ class _BaseArchetype(metaclass=_BaseArchetypeMeta):
     def schema(cls) -> ArchetypeSchema:
         cls._init_fields()
         return {
-            "name": cls.name or "unnamed",
+            "name": cls.name if cls.name is not None else "unnamed",
             "fields": list(cls._imported_keys_),
             "exports": list(cls._exported_keys_),
         }
@@ -1033,7 +1033,7 @@ class _BaseArchetype(metaclass=_BaseArchetypeMeta):
                 case _StorageType.IMPORTED:
                     imported_fields[name] = _ArchetypeField(
                         name,
-                        field_info.name or name,
+                        field_info.name if field_info.name is not None else name,
                         field_info.storage,
                         entity_data_offset,
                         field_type,
@@ -1045,7 +1045,11 @@ class _BaseArchetype(metaclass=_BaseArchetypeMeta):
                     descriptors.append((name, imported_fields[name]))
                 case _StorageType.DATA:
                     data_fields[name] = _ArchetypeField(
-                        name, field_info.name or name, field_info.storage, entity_data_offset, field_type
+                        name,
+                        field_info.name if field_info.name is not None else name,
+                        field_info.storage,
+                        entity_data_offset,
+                        field_type,
                     )
                     entity_data_offset += field_type._size_()
                     if entity_data_offset > _ENTITY_DATA_SIZE:
@@ -1053,7 +1057,11 @@ class _BaseArchetype(metaclass=_BaseArchetypeMeta):
                     descriptors.append((name, data_fields[name]))
                 case _StorageType.EXPORTED:
                     exported_fields[name] = _ArchetypeField(
-                        name, field_info.name or name, field_info.storage, exported_offset, field_type
+                        name,
+                        field_info.name if field_info.name is not None else name,
+                        field_info.storage,
+                        exported_offset,
+                        field_type,
                     )
                     exported_offset += field_type._size_()
                     if exported_offset > _ENTITY_DATA_SIZE:
@@ -1061,7 +1069,11 @@ class _BaseArchetype(metaclass=_BaseArchetypeMeta):
                     descriptors.append((name, exported_fields[name]))
                 case _StorageType.MEMORY:
                     memory_fields[name] = _ArchetypeField(
-                        name, field_info.name or name, field_info.storage, memory_offset, field_type
+                        name,
+                        field_info.name if field_info.name is not None else name,
+                        field_info.storage,
+                        memory_offset,
+                        field_type,
                     )
                     memory_offset += field_type._size_()
                     if memory_offset > _ENTITY_MEMORY_SIZE:
@@ -1069,7 +1081,11 @@ class _BaseArchetype(metaclass=_BaseArchetypeMeta):
                     descriptors.append((name, memory_fields[name]))
                 case _StorageType.SHARED:
                     shared_memory_fields[name] = _ArchetypeField(
-                        name, field_info.name or name, field_info.storage, shared_memory_offset, field_type
+                        name,
+                        field_info.name if field_info.name is not None else name,
+                        field_info.storage,
+                        shared_memory_offset,
+                        field_type,
                     )
                     shared_memory_offset += field_type._size_()
                     if shared_memory_offset > _ENTITY_SHARED_MEMORY_SIZE:

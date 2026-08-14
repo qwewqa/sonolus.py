@@ -1,3 +1,4 @@
+import inspect
 import random
 
 import pytest
@@ -1124,8 +1125,22 @@ def test_generator_return_nonnone_constant_rejected():
         for i in gen():
             debug_log(i)
 
-    with pytest.raises(CompilationError, match="Generator function return statements must return None"):
+    source_lines, first_line = inspect.getsourcelines(fn)
+    expected_line = first_line + next(i for i, line in enumerate(source_lines) if "return 5" in line)
+
+    with pytest.raises(CompilationError, match="Generator function return statements must return None") as exc_info:
         run_compiled(fn)
+
+    reported_lines = []
+    exception = exc_info.value
+    while exception is not None:
+        frame = exception.__traceback__
+        while frame is not None:
+            if frame.tb_frame.f_code.co_filename == __file__:
+                reported_lines.append(frame.tb_lineno)
+            frame = frame.tb_next
+        exception = exception.__cause__
+    assert expected_line in reported_lines
 
 
 def test_nested_loops_over_one_array_iterator_match_python():

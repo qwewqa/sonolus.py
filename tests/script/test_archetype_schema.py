@@ -5,7 +5,7 @@ the names those entries actually carry. A compound field contributes one name pe
 explicit `name=` contributes that name rather than its Python attribute name.
 """
 
-from sonolus.script.archetype import PlayArchetype, imported
+from sonolus.script.archetype import PlayArchetype, exported, imported
 from sonolus.script.array import Array
 from sonolus.script.vec import Vec2
 
@@ -25,6 +25,13 @@ class Renamed(PlayArchetype):
     pos: Vec2 = imported(name="position")
 
 
+class EmptyNames(PlayArchetype):
+    name = ""
+
+    level_value: float = imported(name="")
+    runtime_value: float = exported(name="")
+
+
 def level_data_entry_names(entity: PlayArchetype) -> list[str]:
     """The names the entity's data entries carry in level data."""
     return [entry["name"] for entry in entity._level_data_entries()]
@@ -32,6 +39,10 @@ def level_data_entry_names(entity: PlayArchetype) -> list[str]:
 
 def test_schema_reports_the_archetype_name():
     assert Simple.schema()["name"] == "Simple"
+
+
+def test_schema_preserves_an_explicit_empty_archetype_name():
+    assert EmptyNames.schema()["name"] == ""  # noqa: PLC1901
 
 
 def test_schema_names_a_scalar_field():
@@ -54,3 +65,11 @@ def test_schema_fields_match_level_data_entry_names():
 def test_renamed_schema_fields_match_level_data_entry_names():
     entity = Renamed(beat=1.0, pos=Vec2(2.0, 3.0))
     assert Renamed.schema()["fields"] == level_data_entry_names(entity)
+
+
+def test_schema_and_level_data_preserve_explicit_empty_field_names():
+    entity = EmptyNames(level_value=1)
+
+    assert EmptyNames.schema()["fields"] == [""]
+    assert EmptyNames.schema()["exports"] == [""]
+    assert level_data_entry_names(entity) == [""]

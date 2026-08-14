@@ -88,10 +88,10 @@ play_mode = PlayMode(
 
 ```
 
-Play mode archetypes subclass [`PlayArchetype`][sonolus.script.archetype.PlayArchetype] and implement the following
+Play mode archetypes subclass [`PlayArchetype`][sonolus.script.archetype.PlayArchetype] and may override the following
 callbacks:
 
-- [`should_spawn`][sonolus.script.archetype.PlayArchetype.should_spawn] (required)
+- [`should_spawn`][sonolus.script.archetype.PlayArchetype.should_spawn]
 - [`preprocess`][sonolus.script.archetype.PlayArchetype.preprocess]
 - [`spawn_order`][sonolus.script.archetype.PlayArchetype.spawn_order]
 - [`initialize`][sonolus.script.archetype.PlayArchetype.initialize]

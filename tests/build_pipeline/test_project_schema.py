@@ -48,6 +48,18 @@ class PreviewThing(PreviewArchetype):
     beat: StandardImport.BEAT = imported()
 
 
+class EmptyNamePlay(PlayArchetype):
+    name = ""
+
+    play_value: float = exported(name="")
+
+
+class EmptyNameWatch(WatchArchetype):
+    name = ""
+
+    watch_value: float = imported(name="")
+
+
 def watch_update_spawn() -> float:
     return 0.0
 
@@ -165,3 +177,25 @@ def test_schema_rejects_two_archetypes_with_the_same_name_in_one_mode():
 
     with pytest.raises(ValueError, match="PLAY mode archetypes Chart and PlayChart both have the name 'Chart'"):
         project.schema()
+
+
+def test_empty_archetype_and_field_names_link_across_modes():
+    project = Project(
+        Engine(
+            name="test",
+            data=EngineData(
+                play=PlayMode(archetypes=[EmptyNamePlay]),
+                watch=WatchMode(archetypes=[EmptyNameWatch], update_spawn=watch_update_spawn),
+            ),
+        )
+    )
+
+    entry = schema_by_name(project)[""]
+    assert entry == {"name": "", "fields": [], "exports": [""]}
+
+    packaged = package_engine(project.engine.data, BuildConfig(build_preview=False, build_tutorial=False))
+    play_archetype = unpackage_data(packaged.play_data)["archetypes"][0]
+    watch_archetype = unpackage_data(packaged.watch_data)["archetypes"][0]
+    assert play_archetype["name"] == watch_archetype["name"] == ""  # noqa: PLC1901
+    assert play_archetype["exports"] == [""]
+    assert watch_archetype["imports"] == [{"name": "", "index": 0}]

@@ -712,6 +712,25 @@ def test_setattr_record_property():
     assert run_and_validate(fn) == 1
 
 
+class ReadOnlyProperty(Record):
+    @property
+    def value(self):
+        return 1
+
+
+@pytest.mark.parametrize("use_builtin", [False, True])
+def test_setattr_readonly_property_matches_python_diagnostic(use_builtin):
+    def fn():
+        value = ReadOnlyProperty()
+        if use_builtin:
+            setattr(value, "value", 2)  # noqa: B010 - Exercise the builtin compiler path.
+        else:
+            value.value = 2
+
+    with pytest.raises(AttributeError, match="property 'value' of 'ReadOnlyProperty' object has no setter"):
+        run_and_validate(fn)
+
+
 def test_setattr_rejects_non_string_name():
     def fn():
         setattr(MyBox(1), 1, 2)  # type: ignore

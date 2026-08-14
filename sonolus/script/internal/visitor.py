@@ -9,7 +9,7 @@ from collections import ChainMap
 from collections.abc import Callable, Iterable, Sequence
 from inspect import ismethod
 from time import perf_counter_ns
-from types import FunctionType, MethodType, MethodWrapperType
+from types import FunctionType, MethodType, MethodWrapperType, UnionType
 from typing import Any, Never
 
 from sonolus.backend.excepthook import install_excepthook
@@ -22,6 +22,7 @@ from sonolus.script.internal.builtin_impls import (
     _float,
     _int,
     _len,
+    _property_has_no_setter,
     _super,
     _type_name,
     _validate_len_result,
@@ -416,6 +417,10 @@ def _comptime_augassign(lhs: Any, rhs: Any, inplace_op: str, op: str, reflected_
     return _comptime_binop(lhs, rhs, op, reflected_op)
 
 
+def _is_compile_time_operator_operand(value: Any) -> bool:
+    return isinstance(value, type | UnionType) or value is None or getattr(value, "_is_comptime_value_", False)
+
+
 # Binary operator method names implemented by Num. For two Num operands, these never return NotImplemented,
 # so the NotImplemented negotiation protocol can be skipped as a fast path.
 _NUM_BIN_OP_NAMES = frozenset(
@@ -524,9 +529,9 @@ _SCOPE_DECLARATION_MESSAGES = {
 }
 _NESTED_SCOPE_NODES = (ast.FunctionDef, ast.AsyncFunctionDef, ast.Lambda, ast.ClassDef)
 _UNSCANNED = object()
-# Only a user property or __len__ read by a sequence or class sub-pattern can terminate mid-pattern. Contexts
-# the pattern has already opened may still be live with no continuation left to give them, so the pattern is
-# rejected rather than traced on.
+# A user property, __len__, or __getitem__ read by a sequence or class sub-pattern can terminate mid-pattern.
+# Contexts the pattern has already opened may still be live with no continuation left to give them, so the pattern
+# is rejected rather than traced on.
 _TERMINATING_MATCH_READ_MESSAGE = "A call that terminates on every path is not supported inside a match pattern"
 
 
@@ -1084,6 +1089,8 @@ class Visitor(ast.NodeVisitor):
 
     def visit_Return(self, node):
         value = self.visit(node.value) if node.value else validate_value(None)
+        if self.is_generator and ctx().live and not (value._is_py_() and value._as_py_() is None):
+            raise ValueError("Generator function return statements must return None")
         ctx().scope.set_value("$return", value)
         self.return_ctxs.append(ctx())
         set_ctx(ctx().into_dead())
@@ -1176,9 +1183,7 @@ class Visitor(ast.NodeVisitor):
         if lhs_value._is_py_() and rhs_value._is_py_():
             lhs_py = lhs_value._as_py_()
             rhs_py = rhs_value._as_py_()
-            if (isinstance(lhs_py, type) or getattr(lhs_py, "_is_comptime_value_", False)) and (
-                isinstance(rhs_py, type) or getattr(rhs_py, "_is_comptime_value_", False)
-            ):
+            if _is_compile_time_operator_operand(lhs_py) and _is_compile_time_operator_operand(rhs_py):
                 result = _comptime_augassign(lhs_py, rhs_py, inplace_fn_name, regular_fn_name, right_fn_name)
                 if result is not _NOT_IMPLEMENTED:
                     store(validate_value(result))
@@ -1407,7 +1412,8 @@ class Visitor(ast.NodeVisitor):
                 raise NotImplementedError(
                     "Star sub-patterns (e.g. `case [a, *rest]:`) in sequence match patterns are not supported"
                 )
-            true_ctx, false_ctx, captures = self.handle_match_pattern(subject, case.pattern)
+            with self.reporting_errors_at_node(case.pattern):
+                true_ctx, false_ctx, captures = self.handle_match_pattern(subject, case.pattern)
             if not true_ctx.live:
                 set_ctx(false_ctx)
                 continue
@@ -1754,9 +1760,7 @@ class Visitor(ast.NodeVisitor):
         if lhs._is_py_() and rhs._is_py_():
             lhs_py = lhs._as_py_()
             rhs_py = rhs._as_py_()
-            if (isinstance(lhs_py, type) or getattr(lhs_py, "_is_comptime_value_", False)) and (
-                isinstance(rhs_py, type) or getattr(rhs_py, "_is_comptime_value_", False)
-            ):
+            if _is_compile_time_operator_operand(lhs_py) and _is_compile_time_operator_operand(rhs_py):
                 result = _comptime_binop(lhs_py, rhs_py, op, rbin_ops[type(node.op)])
                 if result is not _NOT_IMPLEMENTED:
                     return validate_value(result)
@@ -2462,7 +2466,7 @@ class Visitor(ast.NodeVisitor):
             match descriptor:
                 case property(fset=setter):
                     if setter is None:
-                        raise AttributeError(f"Cannot set attribute {key} because property has no setter")
+                        raise _property_has_no_setter(target, key)
                     self.handle_call(node, setter, target, value)
                 case SonolusDescriptor():
                     setattr(target, key, value)
@@ -2678,7 +2682,7 @@ class Visitor(ast.NodeVisitor):
 
         return inspect.Signature(parameters)
 
-    def raise_exception_at_node(self, node: ast.stmt | ast.expr, cause: Exception) -> Never:
+    def raise_exception_at_node(self, node: ast.stmt | ast.expr | ast.pattern, cause: Exception) -> Never:
         """Throws a compilation error at the given node."""
         message = _exception_message(cause)
 
@@ -2688,7 +2692,7 @@ class Visitor(ast.NodeVisitor):
         self.execute_at_node(node, thrower)
 
     def execute_at_node[**P, R](
-        self, node: ast.stmt | ast.expr, fn: Callable[P, R], /, *args: P.args, **kwargs: P.kwargs
+        self, node: ast.stmt | ast.expr | ast.pattern, fn: Callable[P, R], /, *args: P.args, **kwargs: P.kwargs
     ) -> R:
         """Executes the given function at the given node for a better traceback."""
         if ctx().no_eval:
@@ -2726,7 +2730,7 @@ class Visitor(ast.NodeVisitor):
             {"fn": fn, "args": args, "kwargs": kwargs, "_filter_traceback_": True},
         )
 
-    def reporting_errors_at_node(self, node: ast.stmt | ast.expr):
+    def reporting_errors_at_node(self, node: ast.stmt | ast.expr | ast.pattern):
         return ReportingErrorsAtNode(self, node)
 
     def new_name(self, name: str):
@@ -2736,7 +2740,7 @@ class Visitor(ast.NodeVisitor):
 
 # Not using @contextmanager so it doesn't end up in tracebacks
 class ReportingErrorsAtNode:
-    def __init__(self, compiler, node: ast.stmt | ast.expr):
+    def __init__(self, compiler, node: ast.stmt | ast.expr | ast.pattern):
         self.compiler = compiler
         self.node = node
 
