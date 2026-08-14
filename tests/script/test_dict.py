@@ -1,4 +1,4 @@
-# ruff: noqa: SIM113, PLC2701, C408
+# ruff: file-ignore[enumerate-for-loop, import-private-name, unnecessary-collection-call]
 
 import pytest
 
@@ -323,7 +323,7 @@ def test_tuple_container_constructors_truth_test_colliding_keys():
     def fn():
         probe = AlwaysEqualTruthKey(bb(3))
         d = dict(COLLIDING_TRUTH_ITEMS)
-        s = set((COLLIDING_TRUTH_ITEMS[0][0], COLLIDING_TRUTH_ITEMS[1][0]))  # noqa: C405
+        s = set((COLLIDING_TRUTH_ITEMS[0][0], COLLIDING_TRUTH_ITEMS[1][0]))  # ruff: ignore[unnecessary-literal-set]
         return Array(len(d), d[probe], len(s), probe in s)
 
     assert run_and_validate(fn) == Array(1, 20, 1, True)

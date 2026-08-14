@@ -37,13 +37,13 @@ target-version = "py312"
 [tool.ruff.lint]
 preview = true
 select = ["F", "E", "W", "I", "N", "D", "UP", "YTT", "B", "A", "COM", "C4", "DTZ", "PIE", "PT", "Q", "SLOT", "SIM", "PTH", "PL", "PERF", "FURB", "LOG", "RUF"]
-ignore = ["E402", "D1", "COM812", "PLW2901", "PLW3201", "PLR6301", "PLC0415", "PLR2004", "PLR09", "SIM108", "FURB113", "A005", "B903", "FURB118", "E501", "E741"]
+ignore = ["module-import-not-at-top-of-file", "D1", "missing-trailing-comma", "redefined-loop-name", "bad-dunder-method-name", "no-self-use", "import-outside-top-level", "import-private-name", "magic-value-comparison", "PLR09", "if-else-block-instead-of-if-exp", "incorrect-dict-iterator", "too-many-statements-in-try-clause", "repeated-append", "stdlib-module-shadowing", "class-as-data-structure", "reimplemented-operator", "line-too-long", "ambiguous-variable-name", "unnecessary-if", "property-without-return", "non-empty-init-module", "float-equality-comparison", "unnecessary-assign-before-yield", "unused-noqa", "noqa-comments"]
 
 [tool.ruff.lint.pydocstyle]
 convention = "google"
 
 [build-system]
-requires = ["setuptools>=77", "Cython>=3.1"]
+requires = ["setuptools>=84.0.0", "Cython>=3.2.9"]
 build-backend = "setuptools.build_meta"
 
 [tool.setuptools.packages.find]
@@ -61,23 +61,22 @@ include = ["sonolus*"]
 
 [dependency-groups]
 dev = [
-    "uv>=0.9.6",
-    "hypothesis>=6.147.0",
-    "pre-commit>=4.4.0",
+    "uv>=0.12.4",
+    "hypothesis>=6.165.7",
+    "pre-commit>=4.6.2",
     "pytest-xdist>=3.8.0",
-    "pytest>=9.0.0",
-    "ruff>=0.14.4",
-    "pytest-cov>=7.0.0",
-    "tox>=4.32.0",
-    "tox-uv>=1.29.0",
-    "ty",
-    "numpy>=2.3.5",
-    "pip"
+    "pytest>=9.1.1",
+    "ruff>=0.16.3",
+    "pytest-cov>=7.1.0",
+    "tox>=4.60.0",
+    "tox-uv>=1.36.0",
+    "ty>=0.0.71",
+    "numpy>=2.5.2",
+    "pip>=26.2.1"
 ]
 docs = [
-    "mkdocs-material>=9.6.23",
-    "mkdocs>=1.6.1",
-    "mkdocstrings[python]>=0.30.1",
+    "zensical>=0.0.54",
+    "mkdocstrings-python>=2.0.5",
 ]
 
 [tool.cibuildwheel]
@@ -104,10 +103,10 @@ env_list = ["py312", "py313", "py314"]
 description = "Run tests"
 passenv = ["CI"]
 deps = [
-    "hypothesis>=6.137.1",
+    "hypothesis>=6.165.7",
     "pytest-xdist>=3.8.0",
-    "pytest>=8.3.3",
-    "numpy>=2.3.5"
+    "pytest>=9.1.1",
+    "numpy>=2.5.2"
 ]
 uv_python_preference = "managed"
 # Editable (in-place) install so the compiled extension is built into the source

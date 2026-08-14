@@ -10,8 +10,8 @@ import importlib.util
 from pathlib import Path
 
 from sonolus.backend._opt import (
-    ir,  # noqa: PLC2701
-    kernels,  # noqa: PLC2701
+    ir,
+    kernels,
 )
 from sonolus.backend.ops import Op
 

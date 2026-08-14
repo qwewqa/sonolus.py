@@ -1,4 +1,4 @@
-# ruff: noqa: PLW0108
+# ruff: file-ignore[unnecessary-lambda]
 """Tests for assert statements.
 
 PYTEST_DONT_REWRITE
@@ -28,7 +28,7 @@ def test_assertion_fails():
     log_calls = []
 
     def fn():
-        assert False, "Message"  # noqa: B011, PT015
+        assert False, "Message"  # ruff: ignore[assert-false, pytest-assert-always-false]
         # noinspection PyUnreachableCode
         return 1
 
@@ -93,7 +93,7 @@ def test_assertion_fails_terminate_mode():
     log_calls = []
 
     def fn():
-        assert False, "Message"  # noqa: B011, PT015
+        assert False, "Message"  # ruff: ignore[assert-false, pytest-assert-always-false]
         # noinspection PyUnreachableCode
         return 1
 
@@ -142,7 +142,7 @@ def test_assertion_static_fails_none_mode():
     log_calls = []
 
     def fn():
-        assert False, "Message"  # noqa: B011, PT015
+        assert False, "Message"  # ruff: ignore[assert-false, pytest-assert-always-false]
         # noinspection PyUnreachableCode
         return 1
 
@@ -312,7 +312,7 @@ def test_assert_message_evaluated_when_static_assertion_fails():
             debug_log(77)
             return "Message"
 
-        assert False, make_message()  # noqa: B011, PT015
+        assert False, make_message()  # ruff: ignore[assert-false, pytest-assert-always-false]
         # noinspection PyUnreachableCode
         return 1
 

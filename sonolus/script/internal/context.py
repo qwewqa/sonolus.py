@@ -532,7 +532,7 @@ def ctx() -> Context | Any:  # Using Any to silence type checker warnings if it'
 
 
 def set_ctx(value: Context | None):
-    global _context  # noqa: PLW0603
+    global _context  # ruff: ignore[global-statement]
     old_value = _context
     _context = value
     return old_value
@@ -540,7 +540,7 @@ def set_ctx(value: Context | None):
 
 @contextmanager
 def using_ctx(value: Context | None):
-    global _context  # noqa: PLW0603
+    global _context  # ruff: ignore[global-statement]
     old_value = _context
     _context = value
     try:
@@ -623,7 +623,7 @@ class ReadOnlyMemory:
 
 @contextmanager
 def enable_debug(config: DebugConfig | None = None):
-    global _debug_config  # noqa: PLW0603
+    global _debug_config  # ruff: ignore[global-statement]
     if config is None:
         config = _full_debug_config
     old_config = _debug_config
@@ -731,7 +731,7 @@ class Scope:
                 raise RuntimeError(f"Binding '{name}' is not defined")
 
     def set_value(self, name: str, value: Value):
-        global _validate_value  # noqa: PLW0603
+        global _validate_value  # ruff: ignore[global-statement]
         if _validate_value is None:
             from sonolus.script.internal.impl import validate_value
 

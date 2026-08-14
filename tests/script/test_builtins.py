@@ -11,7 +11,7 @@ from sonolus.script.array import Array
 from sonolus.script.array_like import ArrayLike
 from sonolus.script.containers import VarArray
 from sonolus.script.debug import debug_log
-from sonolus.script.internal.builtin_impls import _max, _min, _validate_len_result  # noqa: PLC2701
+from sonolus.script.internal.builtin_impls import _max, _min, _validate_len_result  # ruff: ignore[import-private-name]
 from sonolus.script.internal.context import RuntimeChecks
 from sonolus.script.internal.error import CompilationError
 from sonolus.script.iterator import SonolusIterator, maybe_next
@@ -84,7 +84,7 @@ def _zip_iterator(iterator):
 
 
 def _map_identity(iterator):
-    return map(lambda value: value, iterator)  # noqa: C417
+    return map(lambda value: value, iterator)  # ruff: ignore[unnecessary-map]
 
 
 def _filter_truthy(iterator):
@@ -218,7 +218,7 @@ def test_iter_on_array_still_works():
     "make_fn",
     [
         lambda: iter(_InvalidIterable()),
-        lambda: map(lambda x: x, _InvalidIterable()),  # noqa: C417
+        lambda: map(lambda x: x, _InvalidIterable()),  # ruff: ignore[unnecessary-map]
         lambda: filter(None, _InvalidIterable()),
     ],
     ids=["iter", "map", "filter"],
@@ -284,7 +284,7 @@ class _CustomGetattributeArray(Record, ArrayLike[int]):
 
 class _NonnumericLenRecord(Record):
     def __len__(self):
-        return None  # noqa: PLE0303 - intentionally violates the protocol
+        return None  # ruff: ignore[invalid-length-return-type] - intentionally violates the protocol
 
 
 class _SynthesizedLenRecord(Record):
@@ -374,7 +374,7 @@ def test_len_result_validation_runs_without_a_compilation_context():
 
 def test_bool_no_arg():
     def fn():
-        return bool()  # noqa: UP018
+        return bool()  # ruff: ignore[native-literals]
 
     assert run_and_validate(fn) is False
 
@@ -582,7 +582,7 @@ def test_constant_truthiness_in_direct_conditions():
             break
         if not None:
             result += 4
-        assert "present"  # noqa: PLW0129
+        assert "present"  # ruff: ignore[assert-on-string-literal]
         match "present":
             case _ if "present":
                 result += 8
@@ -814,7 +814,7 @@ def _error_message(fn) -> str:
         # Operator diagnostics come from the visitor rather than a builtin, and leaked the same wrapper.
         (lambda: "abc" + 1, "str"),
         (lambda: -"abc", "str"),
-        (lambda: "abc" < 1, "str"),  # noqa: PLR0133
+        (lambda: "abc" < 1, "str"),  # ruff: ignore[comparison-of-constant]
         # A builtin alias in a classinfo tuple must be named as written, not by its internal shim.
         (lambda: isinstance(1, (dict, None)), "dict"),
         (lambda: isinstance(1, (set, None)), "set"),
@@ -851,7 +851,7 @@ def test_error_messages_use_readable_type_names(make_fn, expected_name):
 
 class _NonnumericBoolRecord(Record):
     def __bool__(self):
-        return "hello"  # noqa: PLE0304 - intentionally violates the protocol
+        return "hello"  # ruff: ignore[invalid-bool-return-type] - intentionally violates the protocol
 
 
 def test_assert_on_invalid_bool_result_names_the_type():
@@ -873,7 +873,7 @@ def test_assert_on_invalid_bool_result_names_the_type():
 def test_zip_over_sets():
     def fn():
         total = 0
-        for a, b in zip({1, 2, 3}, {10, 20, 30}):  # noqa: B905
+        for a, b in zip({1, 2, 3}, {10, 20, 30}):  # ruff: ignore[zip-without-explicit-strict]
             total += a + b
         return total
 
@@ -883,7 +883,7 @@ def test_zip_over_sets():
 def test_zip_over_set_and_tuple():
     def fn():
         total = 0
-        for a, b in zip({1, 2}, (10, 20)):  # noqa: B905
+        for a, b in zip({1, 2}, (10, 20)):  # ruff: ignore[zip-without-explicit-strict]
             total += a + b
         return total
 
@@ -893,7 +893,7 @@ def test_zip_over_set_and_tuple():
 def test_zip_over_sets_pair_count():
     def fn():
         count = 0
-        for _ in zip({1, 2, 3}, {10, 20, 30, 40}):  # noqa: B905
+        for _ in zip({1, 2, 3}, {10, 20, 30, 40}):  # ruff: ignore[zip-without-explicit-strict]
             count += 1
         return count
 
@@ -965,7 +965,7 @@ def test_max_over_set_with_key():
 @pytest.mark.parametrize(
     "make_fn",
     [
-        lambda: sum(map(lambda x: x, None)),  # noqa: C417
+        lambda: sum(map(lambda x: x, None)),  # ruff: ignore[unnecessary-map]
         lambda: sum(filter(None, None)),
         lambda: sum(x for x in zip(None)),
     ],
@@ -1076,7 +1076,7 @@ def test_next_over_array_iterator_three_results_live():
 
 def test_next_over_map_iterator_two_results_live():
     def fn():
-        it = map(lambda v: v * 10, Array(1, 2, 3))  # noqa: C417
+        it = map(lambda v: v * 10, Array(1, 2, 3))  # ruff: ignore[unnecessary-map]
         return next(it) + next(it)
 
     assert run_and_validate(fn) == 30
@@ -1084,7 +1084,7 @@ def test_next_over_map_iterator_two_results_live():
 
 def test_next_over_map_iterator_three_results_live():
     def fn():
-        it = map(lambda v: v * 10, Array(1, 2, 3))  # noqa: C417
+        it = map(lambda v: v * 10, Array(1, 2, 3))  # ruff: ignore[unnecessary-map]
         return next(it) + next(it) + next(it)
 
     assert run_and_validate(fn) == 60

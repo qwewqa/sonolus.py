@@ -4,7 +4,7 @@ These prove the Cython toolchain is wired up: the extension builds, imports,
 and can run a ``with nogil:`` region.
 """
 
-from sonolus.backend._opt import driver  # noqa: PLC2701  (first-party private optimizer core)
+from sonolus.backend._opt import driver  # ruff: ignore[import-private-name]  (first-party private optimizer core)
 
 
 def test_extension_is_compiled():

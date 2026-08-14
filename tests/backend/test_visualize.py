@@ -6,7 +6,7 @@ documented equivalence between `optimize_and_finalize` and `cfg_to_engine_node(r
 
 import pytest
 
-from sonolus.backend._opt import ir  # noqa: PLC2701
+from sonolus.backend._opt import ir  # ruff: ignore[import-private-name]
 from sonolus.backend.blocks import PlayBlock
 from sonolus.backend.ir import IRConst, IRGet, IRInstr, IRPureInstr, IRSet
 from sonolus.backend.mode import Mode

@@ -1,4 +1,4 @@
-# ruff: noqa: B905, C417
+# ruff: file-ignore[zip-without-explicit-strict, unnecessary-map]
 
 import pytest
 from hypothesis import given

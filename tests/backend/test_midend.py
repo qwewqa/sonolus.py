@@ -22,7 +22,7 @@ import struct
 import pytest
 from hypothesis import HealthCheck, given, settings
 
-from sonolus.backend._opt import ir, midend  # noqa: PLC2701
+from sonolus.backend._opt import ir, midend  # ruff: ignore[import-private-name]
 from sonolus.backend.blocks import PlayBlock
 from sonolus.backend.interpret import Interpreter
 from sonolus.backend.ir import IRConst, IRGet, IRInstr, IRPureInstr, IRSet
@@ -274,7 +274,7 @@ def test_sccp_defaultless_nonexhaustive_switch_missed_element_exits():
     # exit ([-2] only). SCCP's max-cond->default promotion is guarded to fire only
     # when every set element matches a case; neutralizing that guard would promote
     # case 1 to the default and route the missed element 2 to case 1 ([-2, 101, -1]).
-    build = lambda: _set_switch_defaultless([0, 1])  # noqa: E731
+    build = lambda: _set_switch_defaultless([0, 1])  # ruff: ignore[lambda-assignment]
     for wsel, expect in [(0, [-2, 100, -1]), (1, [-2, 101, -1]), (7, [-2])]:
         ref = _run_seeded(cfg_to_engine_node(run_passes(build(), MINIMAL_PASSES, OptimizerConfig())), wsel)
         mid = _run_seeded(
@@ -586,7 +586,7 @@ def test_shared_guarded_divide_strictness_flip_documented_illegal():
     # raises ZeroDivisionError. This is exactly why arm subtrees must be oracle-total.
     def build():
         t = _sc("t")
-        div = lambda: IRPureInstr(Op.Divide, [IRConst(1), _rd("t")])  # noqa: E731
+        div = lambda: IRPureInstr(Op.Divide, [IRConst(1), _rd("t")])  # ruff: ignore[lambda-assignment]
         b0 = BasicBlock(
             statements=[
                 IRSet(t, IRGet(BlockPlace(W, 0))),  # t := W[0]; seeded to 0 at runtime, BOTTOM to the optimizer

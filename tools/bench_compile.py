@@ -99,7 +99,7 @@ def _phase_split(engine, passes) -> dict:
     acc = {"frontend": 0.0, "optimize": 0.0}
     orig_cb = _compile_mod.callback_to_cfg
     orig_of = _opt_mod.optimize_and_finalize
-    import sonolus.backend._opt.driver as _drv  # noqa: PLC2701 - reset the driver's cached finalize
+    import sonolus.backend._opt.driver as _drv  # ruff: ignore[import-private-name] - reset the driver's cached finalize
 
     def timed_cb(*a, **k):
         t = perf_counter()

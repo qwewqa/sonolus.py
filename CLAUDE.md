@@ -65,10 +65,10 @@ The full gate:
 pytest -n 32
 ruff check
 ruff format --check
-mkdocs build --strict
+zensical build --strict
 ```
 
-`mkdocs build --strict` catches broken cross-references and, because `validation.anchors: warn` is set, broken
+`zensical build --strict` catches broken cross-references and, because `validation.anchors: warn` is set, broken
 heading anchors too. Heading text is load-bearing: reference pages deep-link into `concepts/types.md`.
 
 CI runs `uv run tox`, which is the suite against Python 3.12, 3.13, and 3.14. `ty` is configured in

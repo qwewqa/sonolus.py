@@ -80,7 +80,7 @@ class SimulationContext:
     def _create_import_hook(self):
         original_import = builtins.__import__
 
-        def hooked_import(name, globals=None, locals=None, fromlist=(), level=0):  # noqa: A002
+        def hooked_import(name, globals=None, locals=None, fromlist=(), level=0):  # ruff: ignore[builtin-argument-shadowing]
             module = original_import(name, globals, locals, fromlist, level)
             if isinstance(module, ModuleType):
                 self._substitute_module_variables(module)

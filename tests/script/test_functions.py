@@ -22,8 +22,8 @@ def test_simple_function_call():
 
 
 def test_lambda_function_call():
-    a = lambda: 1  # noqa: E731
-    fn = lambda: a()  # noqa: PLW0108, E731
+    a = lambda: 1  # ruff: ignore[lambda-assignment]
+    fn = lambda: a()  # ruff: ignore[unnecessary-lambda, lambda-assignment]
 
     assert run_and_validate(fn) == 1
 
@@ -85,7 +85,7 @@ def test_call_closure_with_default_args():
 def test_nested_lambda_closure():
     def fn():
         x = 1
-        f = lambda y: x + y  # noqa: E731
+        f = lambda y: x + y  # ruff: ignore[lambda-assignment]
         return f(2)
 
     assert run_and_validate(fn) == 3
@@ -554,7 +554,7 @@ def test_nested_default_args_with_side_effects():
             counter.first += 1
             return counter.first
 
-        def make_func(default_val=increment_and_return()):  # noqa: B008
+        def make_func(default_val=increment_and_return()):  # ruff: ignore[function-call-in-default-argument]
             def inner(x=default_val):
                 return x + increment_and_return()
 
@@ -651,7 +651,7 @@ def test_closure_with_conditional_modification():
 
 def test_mutable_default_args():
     def fn():
-        def make_adder(pair=Pair(1, 2)):  # noqa: B008
+        def make_adder(pair=Pair(1, 2)):  # ruff: ignore[function-call-in-default-argument]
             pair.first += 1
             pair.second += 2
 
@@ -676,7 +676,7 @@ def test_mutable_default_args():
 
 def test_nested_mutable_defaults():
     def fn():
-        def outer(p1=Pair(1, 2)):  # noqa: B008
+        def outer(p1=Pair(1, 2)):  # ruff: ignore[function-call-in-default-argument]
             p1.first += 1  # p1 becomes (2, 2)
 
             def inner(p2=p1):  # p2 references the same pair as p1
@@ -702,7 +702,7 @@ def test_nested_mutable_defaults():
 
 def test_mixed_mutable_immutable_defaults():
     def fn():
-        def make_processor(immutable=1, mutable=Pair(1, 2)):  # noqa: B008
+        def make_processor(immutable=1, mutable=Pair(1, 2)):  # ruff: ignore[function-call-in-default-argument]
             def process(x=immutable, pair=mutable):
                 pair.first += x
                 pair.second += x
@@ -856,7 +856,7 @@ def test_decorator_with_mutable_state():
 
 def test_decorator_factory_with_defaults():
     def fn():
-        def create_multiplier(factor=2, offset=Pair(0, 0)):  # noqa: B008
+        def create_multiplier(factor=2, offset=Pair(0, 0)):  # ruff: ignore[function-call-in-default-argument]
             def decorator(f):
                 def wrapper():
                     offset.first += 1
@@ -964,7 +964,7 @@ def test_decorator_preserving_default_args():
             return wrapper
 
         @preserve_defaults
-        def compute(x=1, pair=Pair(1, 2)):  # noqa: B008
+        def compute(x=1, pair=Pair(1, 2)):  # ruff: ignore[function-call-in-default-argument]
             return pair.first + x
 
         first = compute()  # Uses defaults, pair becomes (2, 2), returns 3

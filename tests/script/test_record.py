@@ -396,7 +396,7 @@ def test_entity_ref_with_archetype_preserves_level_data_identity():
     assert target.ref().with_archetype(RefTarget) != other.ref().with_archetype(RefTarget)
     # Every reference still holds a placeholder index while building level data, so `!=` has to follow `__eq__`
     # rather than comparing fields, or both comparisons report false at once.
-    assert not (target.ref().with_archetype(RefTarget) != target.ref())  # noqa: SIM202
+    assert not (target.ref().with_archetype(RefTarget) != target.ref())  # ruff: ignore[negate-not-equal-op]
     assert hash(target.ref().with_archetype(RefTarget)) == hash(target.ref())
     assert hash(target.ref().with_archetype(RefTarget)) != hash(other.ref().with_archetype(RefTarget))
 

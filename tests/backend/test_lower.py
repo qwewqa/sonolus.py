@@ -20,7 +20,7 @@ import struct
 import pytest
 from hypothesis import HealthCheck, given, settings
 
-from sonolus.backend._opt import ir, lower  # noqa: PLC2701
+from sonolus.backend._opt import ir, lower  # ruff: ignore[import-private-name]
 from sonolus.backend.blocks import PlayBlock
 from sonolus.backend.interpret import Interpreter
 from sonolus.backend.ir import IRConst, IRGet, IRInstr, IRPureInstr, IRSet
@@ -665,7 +665,7 @@ def _lowered_switch_conds(conds, testval) -> set:
 def _assert_switch_dispatch_parity(conds, testval):
     # f64 differential parity: the un-normalizing MINIMAL reference and the
     # normalizing run_lower interpret to identical logs for an actual case value.
-    build = lambda: _switch_dispatch(conds, testval)  # noqa: E731
+    build = lambda: _switch_dispatch(conds, testval)  # ruff: ignore[lambda-assignment]
     ref = _run_ref(build, rom=[*_ROM, testval])
     low = _interp(cfg_to_engine_node(lower.run_lower(build())), rom=[*_ROM, testval])
     assert ref.log == low.log, f"conds={conds} test={testval!r}: ref={ref.log} low={low.log}"

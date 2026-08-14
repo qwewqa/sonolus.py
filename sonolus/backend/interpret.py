@@ -8,7 +8,7 @@ from sonolus.backend.node import EngineNode, FunctionNode
 from sonolus.backend.ops import Op
 
 
-class BreakException(Exception):  # noqa: N818
+class BreakException(Exception):  # ruff: ignore[error-suffix-on-exception-name]
     n: int
     value: float
 

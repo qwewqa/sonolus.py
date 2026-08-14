@@ -69,7 +69,7 @@ def fail_if_applied_as_decorator(decorated):
 def unreachable_vec(i) -> Vec2:
     if i == 0:
         return Vec2(1, 1)
-    assert False, "unreachable"  # noqa: B011, PT015
+    assert False, "unreachable"  # ruff: ignore[assert-false, pytest-assert-always-false]
 
 
 def bad_pair(i):
@@ -152,7 +152,7 @@ class BadLenArray(Record, ArrayLike[float]):
 
     v: float
 
-    def __len__(self) -> int:  # noqa: PLE0303 - intentionally terminates instead
+    def __len__(self) -> int:  # ruff: ignore[invalid-length-return-type] - intentionally terminates instead
         error("no len")
 
     def __getitem__(self, index: int) -> float:
@@ -177,7 +177,7 @@ def yields_from_yields_bad_x():
 def yields_then_returns_bad_x():
     yield 1.0
     # A terminating value in a generator's return is what this helper exists to exercise.
-    return bad_vec(-1).x  # noqa: B901
+    return bad_vec(-1).x  # ruff: ignore[return-in-generator]
 
 
 GATE, MARK, RES = -3, -1, -2
@@ -329,7 +329,7 @@ def test_boolop_over_terminating_call_compiles():
     # The left operand short-circuits at gate 1, so 2 is the gate that reaches the terminating right operand.
     def fn(gate):
         if gate > 0:
-            b = (gate > 1) and bad_vec(-1)  # noqa: F841
+            b = (gate > 1) and bad_vec(-1)  # ruff: ignore[unused-variable]
             return 1.0
         return 5.0
 
@@ -344,7 +344,7 @@ def test_boolop_over_terminating_call_compiles():
 def test_comparison_of_terminating_call_compiles():
     def fn(gate):
         if gate > 0:
-            b = bad_vec(-1) == Vec2(1, 1)  # noqa: F841
+            b = bad_vec(-1) == Vec2(1, 1)  # ruff: ignore[unused-variable]
             return 1.0
         return 5.0
 
@@ -386,12 +386,12 @@ def test_lambda_body_of_terminating_call_ships_a_terminate():
     # form is the one that leaves the caller reading `$return` off the lambda's own dead scope; the gated
     # form drops that context at the merge.
     def whole_callback():
-        f = lambda: bad_vec(-1).x  # noqa: E731
+        f = lambda: bad_vec(-1).x  # ruff: ignore[lambda-assignment]
 
         return f()
 
     def inline_form(gate):
-        f = lambda: bad_vec(-1).x  # noqa: E731
+        f = lambda: bad_vec(-1).x  # ruff: ignore[lambda-assignment]
 
         if gate > 0:
             return f()
@@ -485,17 +485,17 @@ def test_previously_compiling_dead_shapes_still_compile():
     # statement it lands in is dead, so they keep compiling.
     def dict_key():
         if Mem.gate > 0:
-            d = {bad_vec(-1): 1}  # noqa: F841
+            d = {bad_vec(-1): 1}  # ruff: ignore[unused-variable]
         return 5.0
 
     def set_element():
         if Mem.gate > 0:
-            s = {bad_vec(-1)}  # noqa: F841
+            s = {bad_vec(-1)}  # ruff: ignore[unused-variable]
         return 5.0
 
     def is_comparison():
         if Mem.gate > 0:
-            b = Mem.gate is bad_vec(-1)  # noqa: F841
+            b = Mem.gate is bad_vec(-1)  # ruff: ignore[unused-variable]
         return 5.0
 
     assert run_compiled(dict_key, runtime_checks=RuntimeChecks.NONE) == 5
@@ -508,59 +508,59 @@ def test_statement_after_terminating_call_is_not_visited():
     # undefined name there is accepted. This is pinned so a later change cannot silently narrow it.
     def fn():
         v = bad_vec(-1)
-        return no_such_name_anywhere + v  # noqa: F821
+        return no_such_name_anywhere + v  # ruff: ignore[undefined-name]
 
     assert run_compiled(fn, runtime_checks=RuntimeChecks.NONE) == 0
 
 
 def test_ordered_children_after_a_terminating_call_are_not_visited():
     def bin_op():
-        return bad_vec(-1).x + no_such_name_anywhere  # noqa: F821
+        return bad_vec(-1).x + no_such_name_anywhere  # ruff: ignore[undefined-name]
 
     def conditional_expression():
-        return no_such_name_anywhere if bad_vec(-1).x else 0  # noqa: F821
+        return no_such_name_anywhere if bad_vec(-1).x else 0  # ruff: ignore[undefined-name]
 
     def boolean_or():
-        return bad_vec(-1).x or no_such_name_anywhere  # noqa: F821
+        return bad_vec(-1).x or no_such_name_anywhere  # ruff: ignore[undefined-name]
 
     def dict_display():
-        return {bad_vec(-1).x: no_such_name_anywhere}  # noqa: F821
+        return {bad_vec(-1).x: no_such_name_anywhere}  # ruff: ignore[undefined-name]
 
     def set_display():
-        return {bad_vec(-1).x, no_such_name_anywhere}  # noqa: F821
+        return {bad_vec(-1).x, no_such_name_anywhere}  # ruff: ignore[undefined-name]
 
     def tuple_display():
-        return (bad_vec(-1).x, no_such_name_anywhere)  # noqa: F821
+        return (bad_vec(-1).x, no_such_name_anywhere)  # ruff: ignore[undefined-name]
 
     def comparison():
-        return bad_vec(-1).x < no_such_name_anywhere  # noqa: F821
+        return bad_vec(-1).x < no_such_name_anywhere  # ruff: ignore[undefined-name]
 
     def call_function():
-        return bad_vec(-1).x(no_such_name_anywhere)  # noqa: F821
+        return bad_vec(-1).x(no_such_name_anywhere)  # ruff: ignore[undefined-name]
 
     def call_argument():
-        return max(bad_vec(-1).x, no_such_name_anywhere)  # noqa: F821
+        return max(bad_vec(-1).x, no_such_name_anywhere)  # ruff: ignore[undefined-name]
 
     def subscript():
-        return bad_arr(-1)[no_such_name_anywhere]  # noqa: F821
+        return bad_arr(-1)[no_such_name_anywhere]  # ruff: ignore[undefined-name]
 
     def assignment_target():
-        bad_arr(-1)[no_such_name_anywhere] = 0  # noqa: F821
+        bad_arr(-1)[no_such_name_anywhere] = 0  # ruff: ignore[undefined-name]
 
     def later_assignment_target():
-        bad_arr(-1)[0] = no_such_target.value = 0  # noqa: F821
+        bad_arr(-1)[0] = no_such_target.value = 0  # ruff: ignore[undefined-name]
 
     def later_unpacking_target():
-        bad_arr(-1)[0], no_such_target.value = (0, 0)  # noqa: F821
+        bad_arr(-1)[0], no_such_target.value = (0, 0)  # ruff: ignore[undefined-name]
 
     def augmented_assignment_target():
-        bad_arr(-1)[no_such_name_anywhere] += 1  # noqa: F821
+        bad_arr(-1)[no_such_name_anywhere] += 1  # ruff: ignore[undefined-name]
 
     def annotated_assignment_target():
-        bad_arr(-1)[no_such_name_anywhere]: float  # noqa: F821
+        bad_arr(-1)[no_such_name_anywhere]: float  # ruff: ignore[undefined-name]
 
     def deletion_target():
-        del bad_arr(-1)[no_such_name_anywhere]  # noqa: F821
+        del bad_arr(-1)[no_such_name_anywhere]  # ruff: ignore[undefined-name]
 
     forms = (
         bin_op,
@@ -587,7 +587,7 @@ def test_ordered_children_after_a_terminating_call_are_not_visited():
 def test_statement_after_live_call_is_visited():
     def fn():
         v = bad_vec(1)
-        return no_such_name_anywhere + v  # noqa: F821
+        return no_such_name_anywhere + v  # ruff: ignore[undefined-name]
 
     with pytest.raises(CompilationError, match="Name no_such_name_anywhere is not defined"):
         run_compiled(fn, runtime_checks=RuntimeChecks.NONE)

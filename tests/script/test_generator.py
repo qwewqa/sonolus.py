@@ -618,7 +618,7 @@ def test_generator_transitive_capture_rebound_between_next_calls_is_rejected():
         x = 1
 
         def gen():
-            get_x = lambda: x  # noqa: E731
+            get_x = lambda: x  # ruff: ignore[lambda-assignment]
             yield get_x()
             yield get_x()
 
@@ -636,7 +636,7 @@ def test_generator_transitive_capture_rebound_between_next_calls_is_rejected():
 def test_generator_capture_propagates_through_externally_defined_closure():
     def fn():
         x = 1
-        get_x = lambda: x  # noqa: E731
+        get_x = lambda: x  # ruff: ignore[lambda-assignment]
 
         def gen():
             yield get_x()
@@ -656,7 +656,7 @@ def test_generator_capture_propagates_through_externally_defined_closure():
 def test_external_closure_read_does_not_freeze_its_owner_binding():
     def fn():
         x = 1
-        get_x = lambda: x  # noqa: E731
+        get_x = lambda: x  # ruff: ignore[lambda-assignment]
         first = get_x()
         x = 2
         return first + x
@@ -724,7 +724,7 @@ def test_generator_does_not_capture_local_from_transient_callback_frame():
     def fn():
         def helper():
             z = 1
-            get_z = lambda: z  # noqa: E731
+            get_z = lambda: z  # ruff: ignore[lambda-assignment]
             get_z()
             z = 2
             return 5
@@ -771,7 +771,7 @@ def _generator_reading_callback(reader):
 def test_module_level_generator_tracks_callback_closure_owner():
     def fn():
         x = 1
-        reader = lambda: x  # noqa: E731
+        reader = lambda: x  # ruff: ignore[lambda-assignment]
         iterator = _generator_reading_callback(reader)
         first = next(iterator)
         x = 2
@@ -1120,7 +1120,7 @@ def test_generator_return_nonnone_constant_rejected():
     def fn():
         def gen():
             yield 1
-            return 5  # noqa: B901
+            return 5  # ruff: ignore[return-in-generator]
 
         for i in gen():
             debug_log(i)
@@ -1228,7 +1228,7 @@ def test_lambda_from_once_advanced_generator_captures_suspended_local():
     def fn():
         def gen():
             value = 1
-            callback = lambda: value  # noqa: E731
+            callback = lambda: value  # ruff: ignore[lambda-assignment]
             yield callback
             value = 2
 
@@ -1362,7 +1362,7 @@ def test_repeated_nested_generator_advance_capturing_changing_suspended_local_is
 def test_callback_from_once_advanced_generator_does_not_read_future_unbound_local():
     def fn():
         def gen():
-            callback = lambda: value  # noqa: E731
+            callback = lambda: value  # ruff: ignore[lambda-assignment]
             yield callback
             value = 2
 
@@ -1379,7 +1379,7 @@ def test_callback_from_once_advanced_generator_captures_reference_binding_at_fir
     def fn():
         def gen():
             value = (1,)
-            callback = lambda: value[0]  # noqa: E731
+            callback = lambda: value[0]  # ruff: ignore[lambda-assignment]
             yield callback
             value = (2,)
             yield callback
@@ -1394,7 +1394,7 @@ def test_once_advanced_generator_selects_runtime_reachable_suspension(condition,
     def fn():
         def gen():
             value = 1
-            callback = lambda: value  # noqa: E731
+            callback = lambda: value  # ruff: ignore[lambda-assignment]
             if condition():
                 yield callback
             value = 2
@@ -1409,7 +1409,7 @@ def test_runtime_ambiguous_reference_binding_reports_conflict():
     def fn():
         def gen():
             value = (1,)
-            callback = lambda: value[0]  # noqa: E731
+            callback = lambda: value[0]  # ruff: ignore[lambda-assignment]
             if runtime_false():
                 yield callback
             value = (2,)
@@ -1427,7 +1427,7 @@ def test_runtime_ambiguous_reference_binding_reports_conflict():
 def test_runtime_ambiguous_future_unbound_binding_reports_conflict():
     def fn():
         def gen():
-            callback = lambda: value  # noqa: E731
+            callback = lambda: value  # ruff: ignore[lambda-assignment]
             if runtime_false():
                 yield callback
             value = 2
@@ -1446,7 +1446,7 @@ def test_once_advanced_yield_from_propagates_reference_suspension():
     def fn():
         def inner():
             value = (1,)
-            callback = lambda: value[0]  # noqa: E731
+            callback = lambda: value[0]  # ruff: ignore[lambda-assignment]
             yield callback
             value = (2,)
             yield callback
@@ -1463,7 +1463,7 @@ def test_once_advanced_multilevel_yield_from_propagates_reference_suspension():
     def fn():
         def inner():
             value = (1,)
-            callback = lambda: value[0]  # noqa: E731
+            callback = lambda: value[0]  # ruff: ignore[lambda-assignment]
             yield callback
             value = (2,)
             yield callback
@@ -1483,7 +1483,7 @@ def test_once_advanced_yield_from_propagates_branch_skipped_suspension():
     def fn():
         def inner():
             value = 1
-            callback = lambda: value  # noqa: E731
+            callback = lambda: value  # ruff: ignore[lambda-assignment]
             if runtime_false():
                 yield callback
             value = 2
@@ -1501,7 +1501,7 @@ def test_yield_from_propagates_runtime_ambiguous_reference_conflict():
     def fn():
         def inner():
             value = (1,)
-            callback = lambda: value[0]  # noqa: E731
+            callback = lambda: value[0]  # ruff: ignore[lambda-assignment]
             if runtime_false():
                 yield callback
             value = (2,)
@@ -1523,7 +1523,7 @@ def test_generator_loop_callback_uses_runtime_suspension_binding():
     def fn():
         def gen():
             value = 1
-            callback = lambda: value  # noqa: E731
+            callback = lambda: value  # ruff: ignore[lambda-assignment]
             yield callback
             value = 2
             yield callback

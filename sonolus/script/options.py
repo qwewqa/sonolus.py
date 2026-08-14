@@ -1,4 +1,4 @@
-# ruff: noqa: A002
+# ruff: file-ignore[builtin-argument-shadowing]
 from dataclasses import dataclass
 from typing import Annotated, Any, NewType, dataclass_transform, get_origin
 

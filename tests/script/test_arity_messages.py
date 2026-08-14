@@ -168,7 +168,7 @@ def test_a_keyword_a_record_constructor_does_accept_still_binds():
 
 def test_unexpected_keyword_to_a_compiled_lambda_names_the_keyword_and_the_callee():
     def fn():
-        f = lambda a, b: a + b  # noqa: E731
+        f = lambda a, b: a + b  # ruff: ignore[lambda-assignment]
         return f(a=1.0, c=2.0)
 
     with pytest.raises(CompilationError) as exc_info:
@@ -181,8 +181,8 @@ def test_unexpected_keyword_to_a_compiled_lambda_names_the_keyword_and_the_calle
 
 def test_duplicate_expanded_keyword_to_lambda_uses_public_lambda_name():
     def fn():
-        callee = lambda **kwargs: 1  # noqa: E731
-        return callee(x=1, **{"x": 2})  # noqa: PIE804, PLE1132
+        callee = lambda **kwargs: 1  # ruff: ignore[lambda-assignment]
+        return callee(x=1, **{"x": 2})  # ruff: ignore[unnecessary-dict-kwargs, repeated-keyword-argument]
 
     with pytest.raises(CompilationError) as exc_info:
         run_compiled(fn)
@@ -391,7 +391,7 @@ def _helper(a, b=0, c=0):
 
 def test_a_keyword_supplied_after_a_dict_splat_is_rejected():
     def fn():
-        return _helper(1, **{"b": 1}, b=2)  # noqa: PIE804, PLE1132
+        return _helper(1, **{"b": 1}, b=2)  # ruff: ignore[unnecessary-dict-kwargs, repeated-keyword-argument]
 
     with pytest.raises(CompilationError, match=re.escape("_helper() got multiple values for keyword argument 'b'")):
         run_compiled(fn)
@@ -399,7 +399,7 @@ def test_a_keyword_supplied_after_a_dict_splat_is_rejected():
 
 def test_a_dict_splat_over_an_earlier_keyword_is_rejected():
     def fn():
-        return _helper(1, b=2, **{"b": 1})  # noqa: PIE804, PLE1132
+        return _helper(1, b=2, **{"b": 1})  # ruff: ignore[unnecessary-dict-kwargs, repeated-keyword-argument]
 
     with pytest.raises(CompilationError, match=re.escape("_helper() got multiple values for keyword argument 'b'")):
         run_compiled(fn)
@@ -417,7 +417,7 @@ def test_two_dict_splats_sharing_a_key_are_rejected():
 
 def test_a_duplicate_keyword_to_a_record_constructor_is_rejected():
     def fn():
-        return Point(**{"x": 1.0}, x=2.0, y=0.0).x  # noqa: PIE804, PLE1132
+        return Point(**{"x": 1.0}, x=2.0, y=0.0).x  # ruff: ignore[unnecessary-dict-kwargs, repeated-keyword-argument]
 
     with pytest.raises(CompilationError, match=re.escape("got multiple values for keyword argument 'x'")):
         run_compiled(fn)
@@ -425,7 +425,7 @@ def test_a_duplicate_keyword_to_a_record_constructor_is_rejected():
 
 def test_a_duplicate_keyword_to_a_builtin_is_rejected():
     def fn():
-        return max(3.0, 1.0, **{"key": abs}, key=abs)  # noqa: PIE804, PLE1132
+        return max(3.0, 1.0, **{"key": abs}, key=abs)  # ruff: ignore[unnecessary-dict-kwargs, repeated-keyword-argument]
 
     with pytest.raises(CompilationError, match=re.escape("max() got multiple values for keyword argument 'key'")):
         run_compiled(fn)
@@ -433,7 +433,7 @@ def test_a_duplicate_keyword_to_a_builtin_is_rejected():
 
 def test_a_duplicate_keyword_to_a_builtin_shim_names_the_builtin():
     def fn():
-        return dict(**{"a": 1}, **{"a": 2})  # noqa: PIE804, PLE1132
+        return dict(**{"a": 1}, **{"a": 2})  # ruff: ignore[unnecessary-dict-kwargs, repeated-keyword-argument]
 
     with pytest.raises(CompilationError, match=re.escape("dict() got multiple values for keyword argument 'a'")):
         run_compiled(fn)
@@ -441,7 +441,7 @@ def test_a_duplicate_keyword_to_a_builtin_shim_names_the_builtin():
 
 def test_a_dict_splat_with_no_collision_is_still_accepted():
     def fn():
-        return _helper(1, **{"b": 2}, c=3)  # noqa: PIE804
+        return _helper(1, **{"b": 2}, c=3)  # ruff: ignore[unnecessary-dict-kwargs]
 
     assert run_and_validate(fn) == 123
 
@@ -465,7 +465,7 @@ def test_a_non_string_dict_splat_key_raises_type_error():
 
 def test_a_duplicate_expanded_keyword_names_the_callee():
     def fn():
-        return _helper(1, **{"b": 2}, **{"b": 3})  # noqa: PIE804, PLE1132
+        return _helper(1, **{"b": 2}, **{"b": 3})  # ruff: ignore[unnecessary-dict-kwargs, repeated-keyword-argument]
 
     with pytest.raises(CompilationError, match=re.escape("_helper() got multiple values for keyword argument 'b'")):
         run_compiled(fn)

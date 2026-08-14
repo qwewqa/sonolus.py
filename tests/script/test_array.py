@@ -8,7 +8,7 @@ from hypothesis import strategies as st
 from sonolus.backend.optimize import STANDARD_PASSES, optimize_and_finalize
 from sonolus.backend.place import BlockPlace
 from sonolus.script.array import Array
-from sonolus.script.array_like import _ArrayReverser, _identity, _insertion_sort  # noqa: PLC2701
+from sonolus.script.array_like import _ArrayReverser, _identity, _insertion_sort  # ruff: ignore[import-private-name]
 from sonolus.script.containers import VarArray
 from sonolus.script.debug import assert_false, assert_true
 from sonolus.script.internal.error import CompilationError
@@ -188,7 +188,7 @@ def test_array_enumerate():
         array = Array(1, 3, 5)
 
         for i, v in enumerate(array):
-            assert_true(v == array[i])  # noqa: PLR1736
+            assert_true(v == array[i])  # ruff: ignore[unnecessary-list-index-lookup]
 
         return 1
 

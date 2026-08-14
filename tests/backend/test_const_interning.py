@@ -12,7 +12,7 @@ import struct
 from hypothesis import given
 from hypothesis import strategies as st
 
-from sonolus.backend._opt import ir  # noqa: PLC2701
+from sonolus.backend._opt import ir  # ruff: ignore[import-private-name]
 from sonolus.backend.optimize.flow import BasicBlock
 
 _CANON_NAN_BITS = struct.pack("<d", math.nan)

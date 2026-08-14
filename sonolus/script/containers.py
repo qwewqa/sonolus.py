@@ -733,7 +733,7 @@ class ArrayMap[K, V, Capacity](Record):
         Returns:
             True if the key is present, False otherwise.
         """
-        for i in range(self._size):  # noqa: SIM110
+        for i in range(self._size):  # ruff: ignore[reimplemented-builtin]
             if self._array.get_unchecked(i).key == key:
                 return True
         return False

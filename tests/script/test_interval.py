@@ -173,7 +173,7 @@ class ClampedSum(Record):
 
     def __add__(self, other):
         total = self.value + other.value
-        if total > 10.0:  # noqa: PLR1730
+        if total > 10.0:  # ruff: ignore[if-stmt-min-max]
             total = 10.0
         return ClampedSum(total)
 

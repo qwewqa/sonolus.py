@@ -26,7 +26,7 @@ def _log_of_negative():
 
 def _log_of_zero_with_base():
     if not black_box():
-        return math.log(0.0, 2.0)  # noqa: FURB163
+        return math.log(0.0, 2.0)  # ruff: ignore[redundant-log-base]
     return 1.0
 
 

@@ -205,7 +205,7 @@ class GenericValue(Value):
     def _get_parameterized(cls, args: tuple[Any, ...]) -> type[Self]:
         class Parameterized(cls):
             _type_args_ = args
-            _type_vars_to_args_ = dict(zip(cls.__type_params__, args, strict=True))  # noqa: RUF012
+            _type_vars_to_args_ = dict(zip(cls.__type_params__, args, strict=True))  # ruff: ignore[mutable-class-default]
 
         if args:
             Parameterized.__name__ = f"{cls.__name__}[{', '.join(format_type_arg(arg) for arg in args)}]"
@@ -254,7 +254,7 @@ def infer_and_validate_types(dst: Any, src: Any, results: dict[TypeVar, Any] | N
                 infer_and_validate_types(d, s, results)
         case _:
             if (
-                src != dst  # noqa: PLR1714
+                src != dst  # ruff: ignore[repeated-equality-comparison]
                 and dst != Any
                 and not (isinstance(dst, type) and isinstance(src, type) and issubclass(src, dst))
             ):

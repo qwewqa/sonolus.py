@@ -146,7 +146,7 @@ def test_quad_permute():
         )
 
         def fn():
-            return quad.permute(rotation)  # noqa: B023
+            return quad.permute(rotation)  # ruff: ignore[function-uses-loop-variable]
 
         result = run_and_validate(fn)
         expected = quad.rotate(rotation * pi / 2)

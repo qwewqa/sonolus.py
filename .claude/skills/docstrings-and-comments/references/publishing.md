@@ -33,6 +33,6 @@ render the `doc_stubs/*.pyi` files rather than a `sonolus` module.
 
 ## Verifying
 
-`mkdocs build --strict` fails on a broken cross-reference and, because `validation.anchors: warn` is set, on a
+`zensical build --strict` fails on a broken cross-reference and, because `validation.anchors: warn` is set, on a
 broken heading anchor. It does not tell you whether a member rendered. To check that, build and look at
 `site/reference/<page>/index.html`, or grep the built page for the member name.

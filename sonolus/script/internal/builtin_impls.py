@@ -419,7 +419,7 @@ def _max2_generic(a, b, key=_identity):
 
 
 def _max_num_iterator(iterable, default, key):
-    iterator = iterable.__iter__()  # noqa: PLC2801
+    iterator = iterable.__iter__()  # ruff: ignore[unnecessary-dunder-call]
     initial = _validate_next_result(iterator.next())
     if initial.is_nothing:
         require(default is not None, "default must be provided if the iterator is empty")
@@ -436,7 +436,7 @@ def _max_num_iterator(iterable, default, key):
     else:
         result = initial.get_unsafe()
         for value in iterator:
-            if value > result:  # noqa: PLR1730
+            if value > result:  # ruff: ignore[if-stmt-min-max]
                 result = value
         return result
 
@@ -517,7 +517,7 @@ def _min2_generic(a, b, key=_identity):
 
 
 def _min_num_iterator(iterable, default, key):
-    iterator = iterable.__iter__()  # noqa: PLC2801
+    iterator = iterable.__iter__()  # ruff: ignore[unnecessary-dunder-call]
     initial = _validate_next_result(iterator.next())
     if initial.is_nothing:
         require(default is not None, "default must be provided if the iterator is empty")
@@ -534,7 +534,7 @@ def _min_num_iterator(iterable, default, key):
     else:
         result = initial.get_unsafe()
         for value in iterator:
-            if value < result:  # noqa: PLR1730
+            if value < result:  # ruff: ignore[if-stmt-min-max]
                 result = value
         return result
 
@@ -552,7 +552,7 @@ def _map_over_compile_time_iterables(fn, *iterables):
 
     zip() stops at the shortest iterable, matching Python's map() and the runtime path.
     """
-    for args in zip(*iterables):  # noqa: B905
+    for args in zip(*iterables):  # ruff: ignore[zip-without-explicit-strict]
         yield fn(*args)
 
 
@@ -681,7 +681,7 @@ _float = _Float()
 
 def _bool_by_compiling(value):
     """Convert a value to a boolean by putting it in a boolean context."""
-    if value:  # noqa: SIM103
+    if value:  # ruff: ignore[needless-bool]
         return True
     else:
         return False
@@ -826,14 +826,14 @@ _range = _Range()
 
 
 def _any(iterable):
-    for value in iterable:  # noqa: SIM110
+    for value in iterable:  # ruff: ignore[reimplemented-builtin]
         if value:
             return True
     return False
 
 
 def _all(iterable):
-    for value in iterable:  # noqa: SIM110
+    for value in iterable:  # ruff: ignore[reimplemented-builtin]
         if not value:
             return False
     return True
@@ -841,7 +841,7 @@ def _all(iterable):
 
 def contains_by_iteration(item, iterable):
     """Scan `iterable` for `item` when the iterable has no `__contains__` method."""
-    for value in iterable:  # noqa: SIM110
+    for value in iterable:  # ruff: ignore[reimplemented-builtin]
         if value == item:
             return True
     return False
@@ -861,7 +861,7 @@ def _require_sum_num(value, what):
 def _sum(iterable, /, start=0):
     total = _require_sum_num(start, "start value")
     for value in iterable:
-        total = total + _require_sum_num(value, "iterable element")  # noqa: PLR6104
+        total = total + _require_sum_num(value, "iterable element")  # ruff: ignore[non-augmented-assignment]
     return total
 
 

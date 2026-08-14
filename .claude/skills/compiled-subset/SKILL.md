@@ -22,10 +22,10 @@ A `@meta_fn` body runs in both worlds, so it must handle both:
 ```python
 @meta_fn
 def f(x):
-    x = validate_value(x)          # accept a plain int/float or an existing Value
+    x = validate_value(x)  # accept a plain int/float or an existing Value
     if ctx():
-        ...                        # emit IR, return a Value
-    return ...                     # plain-Python result
+        ...  # emit IR, return a Value
+    return ...  # plain-Python result
 ```
 
 That is the canonical shape: validate arguments, then branch on `if ctx():`.

@@ -331,7 +331,7 @@ def test_genexpr_filter_over_tuple_with_logs():
 
 def test_genexpr_filter_over_set():
     def fn():
-        return sum(i for i in {1, 2, 3, 4} if i % 2 == 0)  # noqa: PLC0208
+        return sum(i for i in {1, 2, 3, 4} if i % 2 == 0)  # ruff: ignore[iteration-over-set]
 
     assert run_and_validate(fn) == 6
 
@@ -401,7 +401,7 @@ def test_genexpr_in_lambda_with_shadowed_parameter():
     # the parameter. An unrelated enclosing binding must not invalidate it.
     def fn():
         n = 7
-        f = lambda n: sum(v * n for v in Array(1, 2, 3))  # noqa: E731
+        f = lambda n: sum(v * n for v in Array(1, 2, 3))  # ruff: ignore[lambda-assignment]
         return f(2) + n
 
     assert run_and_validate(fn) == 19
@@ -515,7 +515,7 @@ def test_genexpr_capture_rebound_inside_a_loop_is_rejected():
         total = 0
         for _ in range(2):
             total += next(gen)
-            x = x + 1  # noqa: PLR6104  -- a plain rebind is what the guard is meant to catch
+            x = x + 1  # ruff: ignore[non-augmented-assignment]  -- a plain rebind is what the guard is meant to catch
         return total
 
     with pytest.raises(CompilationError, match="Binding 'x' has been modified since the generator was created"):

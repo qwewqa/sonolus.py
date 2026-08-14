@@ -20,8 +20,8 @@ from __future__ import annotations
 import struct
 
 import pytest
-from sonolus.backend._opt.ir import marshal_in, to_basic_blocks  # noqa: PLC2701
-from sonolus.backend._opt.lower import run_fuse_rmw  # noqa: PLC2701
+from sonolus.backend._opt.ir import marshal_in, to_basic_blocks  # ruff: ignore[import-private-name]
+from sonolus.backend._opt.lower import run_fuse_rmw  # ruff: ignore[import-private-name]
 
 from sonolus.backend.interpret import Interpreter
 from sonolus.backend.ir import IRConst, IRGet, IRInstr, IRPureInstr, IRSet

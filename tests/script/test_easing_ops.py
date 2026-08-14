@@ -19,7 +19,7 @@ from hypothesis import strategies as st
 
 from sonolus.script import easing
 from sonolus.script.bucket import Judgment, JudgmentWindow
-from sonolus.script.internal.math_impls import _remainder  # noqa: PLC2701
+from sonolus.script.internal.math_impls import _remainder  # ruff: ignore[import-private-name]
 from sonolus.script.interval import Interval
 from tests.script.conftest import run_and_validate
 

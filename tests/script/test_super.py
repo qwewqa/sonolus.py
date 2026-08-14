@@ -74,7 +74,7 @@ class PropertyRecord(PropertyMixin, Record):
 
     @property
     def super_choice_with_getattr(self):
-        return getattr(super(), "choice")  # noqa: B009
+        return getattr(super(), "choice")  # ruff: ignore[get-attr-with-constant]
 
 
 class ShadowingBase:
@@ -91,13 +91,13 @@ class ShadowingChild(ShadowingBase):
         return super().value() + 1
 
     def value_with_getattr(self):
-        return getattr(super(), "value")() + 1  # noqa: B009
+        return getattr(super(), "value")() + 1  # ruff: ignore[get-attr-with-constant]
 
     def proxy_class(self):
-        return super().__class__ == super  # noqa: E721
+        return super().__class__ == super  # ruff: ignore[type-comparison]
 
     def proxy_class_with_getattr(self):
-        return getattr(super(), "__class__") == super  # noqa: B009, E721
+        return getattr(super(), "__class__") == super  # ruff: ignore[get-attr-with-constant, type-comparison]
 
 
 class LexicalSuperBase:
@@ -118,7 +118,7 @@ class ShadowedNestedClassCellChild(LexicalSuperBase):
         super().value()
 
         def read(value):
-            __class__ = LexicalSuperChild  # noqa: F841
+            __class__ = LexicalSuperChild  # ruff: ignore[unused-variable]
             return super().value()
 
         return read(self)
@@ -129,11 +129,11 @@ def module_global_super_attribute(value):
 
 
 def module_global_super_getattr(value):
-    return getattr(super(), "value")()  # noqa: B009
+    return getattr(super(), "value")()  # ruff: ignore[get-attr-with-constant]
 
 
 def make_lexical_super_reader():
-    __class__ = LexicalSuperChild  # noqa: F841
+    __class__ = LexicalSuperChild  # ruff: ignore[unused-variable]
 
     def read(value):
         return super().value()
@@ -156,7 +156,7 @@ class ClassBoundPropertyChild(ClassBoundPropertyBase):
 
     @classmethod
     def read_property_with_getattr(cls):
-        _ = getattr(super(), "property")  # noqa: B009
+        _ = getattr(super(), "property")  # ruff: ignore[get-attr-with-constant]
         return 1
 
 

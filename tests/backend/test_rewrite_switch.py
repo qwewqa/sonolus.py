@@ -25,7 +25,7 @@ import re
 import pytest
 from hypothesis import HealthCheck, given, settings
 
-from sonolus.backend._opt import ir  # noqa: PLC2701
+from sonolus.backend._opt import ir  # ruff: ignore[import-private-name]
 from sonolus.backend.blocks import PlayBlock
 from sonolus.backend.interpret import Interpreter
 from sonolus.backend.ir import IRConst, IRGet, IRInstr, IRPureInstr, IRSet
@@ -161,7 +161,7 @@ def _eq_chain(consts, tails=None, mid_stmt=None, mid_effect=None):
 
 
 def test_equal_chain_of_three_becomes_one_multiway():
-    build = lambda: _eq_chain([1, 2, 3])  # noqa: E731
+    build = lambda: _eq_chain([1, 2, 3])  # ruff: ignore[lambda-assignment]
     before = _text(build, _SSA_PRE)
     assert before.count("goto when") == 0  # all two-way ifs before
     after = _text(build, _SSA_RSW)
@@ -178,7 +178,7 @@ def test_single_equal_two_way_rewrites_edge_conds():
     # Just ifs_to_switch on one block: Equal(x, 5) -> test x, true edge cond 5,
     # false edge becomes default (still a two-way, printed as an if by cfg_to_text
     # since it is {5, default}). Semantics preserved.
-    build = lambda: _eq_chain([5])  # noqa: E731
+    build = lambda: _eq_chain([5])  # ruff: ignore[lambda-assignment]
     after = _text(build, _SSA_RSW)
     # the Equal is gone from the terminator (test is the bare selector value now).
     head = _parse_sections(after)[0]
@@ -190,7 +190,7 @@ def test_single_equal_two_way_rewrites_edge_conds():
 def test_non_empty_chain_block_stops_splicing():
     # The middle chain block carries a statement -> not empty -> splicing halts:
     # the head becomes a partial switch whose default still leads to a two-way.
-    build = lambda: _eq_chain([1, 2, 3], mid_stmt=1)  # noqa: E731
+    build = lambda: _eq_chain([1, 2, 3], mid_stmt=1)  # ruff: ignore[lambda-assignment]
     after = _text(build, _SSA_RSW)
     secs = _parse_sections(after)
     switches = [s for s in secs.values() if "goto when" in s]
@@ -206,7 +206,7 @@ def test_non_empty_chain_block_stops_splicing():
 
 def test_side_effecting_chain_block_not_spliced():
     # The block is still not empty: splicing it away would delete the effect.
-    build = lambda: _eq_chain([1, 2, 3], mid_effect=1)  # noqa: E731
+    build = lambda: _eq_chain([1, 2, 3], mid_effect=1)  # ruff: ignore[lambda-assignment]
     for c in (1.0, 2.0, 3.0, 8.0):
         _assert_semantics(build, seed={SEL.value: [c]})
     after = _text(build, _SSA_RSW)
@@ -216,7 +216,7 @@ def test_side_effecting_chain_block_not_spliced():
 def test_duplicate_cond_edge_dropped():
     # x==1 -> A elif x==1 -> B else C: the second (duplicate) case is unreachable
     # and dropped; only one case-1 edge survives.
-    build = lambda: _eq_chain([1, 1])  # noqa: E731
+    build = lambda: _eq_chain([1, 1])  # ruff: ignore[lambda-assignment]
     after = _text(build, _SSA_RSW)
     # exactly one edge with cond 1 across the head block.
     head = _parse_sections(after)[0]
@@ -325,7 +325,7 @@ def test_normalize_switch_downstream_emits_switch_integer_with_default():
     # with cases {10, 20, 30}; downstream normalize_switch (in lower_from_ssa)
     # rewrites those to 0..2 with test (x-10)/10, so emission produces a
     # SwitchIntegerWithDefault node (the runtime's fast dispatch form).
-    build = lambda: _eq_chain([10, 20, 30])  # noqa: E731
+    build = lambda: _eq_chain([10, 20, 30])  # ruff: ignore[lambda-assignment]
     cfg = ir.debug_run(build(), Mode.PLAY, None, phases=_STD)
     node = cfg_to_engine_node(cfg)
     assert _find_node(node, Op.SwitchIntegerWithDefault) is not None, "expected contiguous integer switch"
@@ -378,7 +378,7 @@ def test_declined_switch_dispatches_like_minimal_at_a_case_neighbor():
     # both widths, so an unguarded standard build takes the ``x == 0`` arm where MINIMAL
     # takes the default. The other three round away only in f32, where the oracle agrees
     # with the optimizer, so the node-shape test above is all that pins them.
-    build = lambda: _eq_chain([-1, 0, 1])  # noqa: E731
+    build = lambda: _eq_chain([-1, 0, 1])  # ruff: ignore[lambda-assignment]
     _assert_semantics(build, seed={SEL.value: [2.0**-149]})  # the smallest positive f32
     for c in (-1.0, 0.0, 1.0, 7.0):
         _assert_semantics(build, seed={SEL.value: [c]})
@@ -470,7 +470,7 @@ def _min_observe(build, config, blocks=OBS_BLOCKS, length=OBS_CAPTURE_LEN):
 @settings(max_examples=250, deadline=None, suppress_health_check=[HealthCheck.too_slow])
 @given(program=programs())
 def test_random_cfg_standard_matches_minimal(program):
-    build = lambda: build_cfg(program)  # noqa: E731
+    build = lambda: build_cfg(program)  # ruff: ignore[lambda-assignment]
     config = OptimizerConfig()
     ref = _min_observe(build, config)
     got = _std_observe(build, config)
@@ -480,6 +480,6 @@ def test_random_cfg_standard_matches_minimal(program):
 @settings(max_examples=120, deadline=None, suppress_health_check=[HealthCheck.too_slow])
 @given(program=programs(max_depth=4))
 def test_random_cfg_standard_matches_minimal_deep(program):
-    build = lambda: build_cfg(program)  # noqa: E731
+    build = lambda: build_cfg(program)  # ruff: ignore[lambda-assignment]
     config = OptimizerConfig()
     assert _std_observe(build, config) == _min_observe(build, config)

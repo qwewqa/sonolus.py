@@ -6,7 +6,7 @@ CPython's own, so the expected order never has to be written down here.
 """
 
 # A default expression with a side effect is what these tests observe, so B008 is suppressed for the module.
-# ruff: noqa: B008
+# ruff: file-ignore[function-call-in-default-argument]
 
 import inspect
 
@@ -129,7 +129,7 @@ def test_default_expressions_evaluate_left_to_right():
 
 def test_lambda_defaults_evaluate_left_to_right():
     def fn():
-        f = lambda a=logging_default(1), b=logging_default(2): a + b  # noqa: E731
+        f = lambda a=logging_default(1), b=logging_default(2): a + b  # ruff: ignore[lambda-assignment]
         return f()
 
     assert run_and_validate(fn) == 0
@@ -138,8 +138,8 @@ def test_lambda_defaults_evaluate_left_to_right():
 def test_terminating_decorator_expression_skips_later_decorators_and_defaults():
     def fn():
         @terminating_decorator_expression()
-        @no_such_decorator  # noqa: F821
-        def inner(value=no_such_default):  # noqa: F821
+        @no_such_decorator  # ruff: ignore[undefined-name]
+        def inner(value=no_such_default):  # ruff: ignore[undefined-name]
             return value
 
         return inner()
@@ -149,7 +149,7 @@ def test_terminating_decorator_expression_skips_later_decorators_and_defaults():
 
 def test_terminating_positional_default_skips_later_defaults():
     def fn():
-        def inner(a=terminating_default(), b=no_such_default, *, c=no_such_kw_default):  # noqa: F821
+        def inner(a=terminating_default(), b=no_such_default, *, c=no_such_kw_default):  # ruff: ignore[undefined-name]
             return a + b + c
 
         return inner()
@@ -159,7 +159,7 @@ def test_terminating_positional_default_skips_later_defaults():
 
 def test_terminating_keyword_only_default_skips_later_defaults():
     def fn():
-        def inner(*, a=terminating_default(), b=no_such_default):  # noqa: F821
+        def inner(*, a=terminating_default(), b=no_such_default):  # ruff: ignore[undefined-name]
             return a + b
 
         return inner()
@@ -169,7 +169,7 @@ def test_terminating_keyword_only_default_skips_later_defaults():
 
 def test_terminating_lambda_default_skips_later_defaults():
     def fn():
-        inner = lambda a=terminating_default(), b=no_such_default: a + b  # noqa: E731, F821
+        inner = lambda a=terminating_default(), b=no_such_default: a + b  # ruff: ignore[lambda-assignment, undefined-name]
         return inner()
 
     assert run_compiled(fn, runtime_checks=RuntimeChecks.NONE) == 0

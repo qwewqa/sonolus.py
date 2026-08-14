@@ -9,10 +9,10 @@ from hypothesis import strategies as st
 from sonolus.script.array import Array
 from sonolus.script.internal.context import ctx
 from sonolus.script.internal.impl import validate_value
-from sonolus.script.internal.math_impls import _floor  # noqa: PLC2701
+from sonolus.script.internal.math_impls import _floor  # ruff: ignore[import-private-name]
 from sonolus.script.internal.meta_fn import meta_fn
-from sonolus.script.internal.random import _random  # noqa: PLC2701
-from sonolus.script.num import _is_num  # noqa: PLC2701
+from sonolus.script.internal.random import _random  # ruff: ignore[import-private-name]
+from sonolus.script.num import _is_num  # ruff: ignore[import-private-name]
 from tests.script.conftest import run_and_validate
 
 angles = st.floats(min_value=-99999, max_value=99999, allow_nan=False, allow_infinity=False)

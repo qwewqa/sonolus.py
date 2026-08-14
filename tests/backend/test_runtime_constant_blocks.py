@@ -10,7 +10,7 @@ write-never block, so the runtime's treatment of 5001 is no better attested than
 of any other member.
 """
 
-from sonolus.backend._opt import emit, ir  # noqa: PLC2701
+from sonolus.backend._opt import emit, ir  # ruff: ignore[import-private-name]
 from sonolus.backend.ir import IRConst, IRGet, IRPureInstr, IRSet
 from sonolus.backend.mode import Mode
 from sonolus.backend.ops import Op

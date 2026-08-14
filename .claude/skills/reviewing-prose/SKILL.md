@@ -144,6 +144,6 @@ check something:
 - `ruff format` then `ruff check --fix`, then hand-fix anything left and rerun until both are clean. This is also
   what catches a `# noqa` you removed by mistake, and removing a comment can leave a line that reflows or an
   import that is now unused.
-- `mkdocs build --strict` if you touched a docstring or a `docs/` page: deleting a cross-reference target or
+- `zensical build --strict` if you touched a docstring or a `docs/` page: deleting a cross-reference target or
   renaming a heading breaks the build, and a docstring edit can silently change what renders.
 - Re-read your own diff for deletions you cannot justify in one sentence, and restore those.

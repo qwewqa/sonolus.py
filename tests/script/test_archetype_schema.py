@@ -42,7 +42,7 @@ def test_schema_reports_the_archetype_name():
 
 
 def test_schema_preserves_an_explicit_empty_archetype_name():
-    assert EmptyNames.schema()["name"] == ""  # noqa: PLC1901
+    assert EmptyNames.schema()["name"] == ""  # ruff: ignore[compare-to-empty-string]
 
 
 def test_schema_names_a_scalar_field():

@@ -1,4 +1,4 @@
-# ruff: noqa: PLW1641, PT017
+# ruff: file-ignore[eq-without-hash, pytest-assert-in-except]
 import inspect
 import re
 from abc import ABCMeta
@@ -258,7 +258,7 @@ class PropertyBackedEq(Record):
     value: float
 
     @property
-    def __eq__(self):  # noqa: PLE0302
+    def __eq__(self):  # ruff: ignore[unexpected-special-method-signature]
         return self.equal if self.value else self.not_equal
 
     def equal(self, other):
@@ -274,7 +274,7 @@ class SimplePropertyBackedSpecials(Record):
         return self.true
 
     @property
-    def __eq__(self):  # noqa: PLE0302
+    def __eq__(self):  # ruff: ignore[unexpected-special-method-signature]
         return self.equal
 
     def true(self):
@@ -286,7 +286,7 @@ class SimplePropertyBackedSpecials(Record):
 
 class TerminatingPropertyGetter(Record):
     @property
-    def __bool__(self):  # noqa: PLE0304
+    def __bool__(self):  # ruff: ignore[invalid-bool-return-type]
         error("property getter stopped")
 
 
@@ -442,7 +442,7 @@ class CompileTimeInheritedClassMethodSub(CompileTimeInheritedClassMethodBase):
     pass
 
 
-class CompileTimeVirtualBase(metaclass=ABCMeta):  # noqa: B024, FURB180
+class CompileTimeVirtualBase(metaclass=ABCMeta):  # ruff: ignore[abstract-base-class-without-abstract-method, meta-class-abc-meta]
     _is_comptime_value_ = True
 
     def __or__(self, other):
@@ -817,7 +817,7 @@ def test_property_backed_implicit_special_method_is_rejected_at_the_operator(fn,
 def test_property_backed_special_methods_remain_available_explicitly():
     def fn():
         record = SimplePropertyBackedSpecials()
-        return record.__bool__() and record.__eq__(record)  # noqa: PLC2801
+        return record.__bool__() and record.__eq__(record)  # ruff: ignore[unnecessary-dunder-call]
 
     assert run_and_validate(fn)
 
@@ -1125,7 +1125,7 @@ class ConstantNumericContains(Record):
 
 
 class TerminatingContainsResult(Record):
-    def __bool__(self):  # noqa: PLE0304
+    def __bool__(self):  # ruff: ignore[invalid-bool-return-type]
         error("membership truth failed")
 
 
@@ -1241,7 +1241,7 @@ def test_not_in_falls_back_to_iteration_over_a_generator_expression():
 
 def test_in_falls_back_to_iteration_over_map_and_filter():
     def fn():
-        a = 3 in map(lambda v: v + 1, Array(1, 2, 3))  # noqa: C417
+        a = 3 in map(lambda v: v + 1, Array(1, 2, 3))  # ruff: ignore[unnecessary-map]
         b = 4 in filter(lambda v: v > 2, Array(1, 2, 3))
         return (1 if a else 0) * 10 + (1 if b else 0)
 
@@ -1318,7 +1318,7 @@ def test_iterative_membership_calls_element_equality_first():
     "fn",
     [
         lambda: callable(range | None),
-        lambda: callable(None | range),  # noqa: RUF036 - Reflected-union regression.
+        lambda: callable(None | range),
         lambda: callable(int | str | range),
     ],
 )
@@ -1338,10 +1338,10 @@ def test_compile_time_augmented_union_accepts_an_existing_union():
 def test_builtin_wrappers_fall_back_to_reflected_operations():
     def fn():
         value = BuiltinReflectedOps(Array(7)[0])
-        debug_log(None == value)  # noqa: E711, SIM300
-        debug_log((1,) != value)  # noqa: SIM300
+        debug_log(None == value)  # ruff: ignore[none-comparison, yoda-conditions]
+        debug_log((1,) != value)  # ruff: ignore[yoda-conditions]
         debug_log(range(Array(1)[0]) == value)
-        debug_log((1,) + value)  # noqa: RUF005
+        debug_log((1,) + value)  # ruff: ignore[collection-literal-concatenation]
         debug_log({1: 2} | value)
         debug_log({1} | value)
 
@@ -1353,8 +1353,8 @@ def test_builtin_wrappers_fall_back_to_reflected_operations():
         set_value |= value
         debug_log(set_value)
 
-        debug_log(value in (None,))  # noqa: FURB171, PLR6201
-        debug_log(value in {None})  # noqa: FURB171
+        debug_log(value in (None,))  # ruff: ignore[single-item-membership-test, literal-membership]
+        debug_log(value in {None})  # ruff: ignore[single-item-membership-test]
         debug_log(value in {None: 7})
 
     run_and_validate(fn)

@@ -23,7 +23,7 @@ import struct
 import pytest
 from hypothesis import HealthCheck, given, settings
 
-from sonolus.backend._opt import lower  # noqa: PLC2701
+from sonolus.backend._opt import lower  # ruff: ignore[import-private-name]
 from sonolus.backend.blocks import PlayBlock
 from sonolus.backend.interpret import Interpreter
 from sonolus.backend.ir import IRConst, IRGet, IRInstr, IRPureInstr, IRSet

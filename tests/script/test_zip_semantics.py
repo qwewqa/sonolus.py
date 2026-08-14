@@ -1,4 +1,4 @@
-# ruff: noqa: B905
+# ruff: file-ignore[zip-without-explicit-strict]
 
 from sonolus.script.array import Array
 from sonolus.script.containers import VarArray

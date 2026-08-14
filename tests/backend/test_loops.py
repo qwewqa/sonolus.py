@@ -8,7 +8,7 @@ test_ssa.py. Block ids are arena reverse-postorder ids; ``loops`` entries are
 
 from __future__ import annotations
 
-from sonolus.backend._opt import analysis  # noqa: PLC2701
+from sonolus.backend._opt import analysis  # ruff: ignore[import-private-name]
 from sonolus.backend.ir import IRGet
 from sonolus.backend.optimize.flow import BasicBlock
 from sonolus.backend.place import BlockPlace, TempBlock

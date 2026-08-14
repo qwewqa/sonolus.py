@@ -27,7 +27,7 @@ from __future__ import annotations
 import math
 import re
 
-from sonolus.backend._opt import ir  # noqa: PLC2701
+from sonolus.backend._opt import ir  # ruff: ignore[import-private-name]
 from sonolus.backend.blocks import PlayBlock
 from sonolus.backend.interpret import Interpreter
 from sonolus.backend.ir import IRConst, IRGet, IRInstr, IRPureInstr, IRSet
@@ -162,7 +162,7 @@ def test_invariant_expensive_expr_hoisted_once():
     # RuntimeUpdate[0] * RuntimeUpdate[1] -- invariant, non-runtime-const,
     # effective cost 1+3+3 = 7 >= 4 -> hoisted into a preheader exactly once.
     expr = IRPureInstr(Op.Multiply, [_ru(0), _ru(1)])
-    build = lambda: _self_loop(expr)  # noqa: E731
+    build = lambda: _self_loop(expr)  # ruff: ignore[lambda-assignment]
     before = _text(build, _SSA_PRE)
     after = _text(build, _SSA_LICM)
     assert "RuntimeUpdate[0]" in before
@@ -181,7 +181,7 @@ def test_invariant_expensive_expr_hoisted_once():
 def test_cheap_expr_not_hoisted():
     # A single read has effective cost 1 (block push) + 1 (const index) + 1 = 3 < 4:
     # not worth a temp -> stays in the loop.
-    build = lambda: _self_loop(_ru(0))  # noqa: E731
+    build = lambda: _self_loop(_ru(0))  # ruff: ignore[lambda-assignment]
     after = _text(build, _SSA_LICM)
     phi_secs = _phi_sections(after)
     assert any("RuntimeUpdate[0]" in s for s in phi_secs), "cheap read must stay in the loop"
@@ -193,7 +193,7 @@ def test_runtime_constant_tree_not_hoisted():
     # runtime-constant subtree (effective cost 1), so LICM must NOT hoist it --
     # a temp would defeat the runtime's own constant folding.
     expr = IRPureInstr(Op.Multiply, [_rc(0), _rc(1)])
-    build = lambda: _self_loop(expr)  # noqa: E731
+    build = lambda: _self_loop(expr)  # ruff: ignore[lambda-assignment]
     after = _text(build, _SSA_LICM)
     phi_secs = _phi_sections(after)
     assert any(" * " in s for s in phi_secs), "runtime-constant tree must stay in the loop"
@@ -204,7 +204,7 @@ def test_writable_read_never_hoisted():
     # A read of a writable (raw-int) block is never loop-invariant, even inside an
     # expensive tree -> never hoisted.
     expr = IRPureInstr(Op.Multiply, [_w(0), _w(1)])
-    build = lambda: _self_loop(expr)  # noqa: E731
+    build = lambda: _self_loop(expr)  # ruff: ignore[lambda-assignment]
     after = _text(build, _SSA_LICM)
     phi_secs = _phi_sections(after)
     assert any(f"{WBLOCK}[0]" in s for s in phi_secs), "writable read must stay in the loop"
@@ -216,7 +216,7 @@ def test_non_writable_read_hoisted_across_writes_to_other_blocks():
     # RuntimeUpdate tree (a DIFFERENT, non-writable block) still hoists past those
     # writes.
     expr = IRPureInstr(Op.Multiply, [_ru(0), _ru(1)])
-    build = lambda: _self_loop(expr, mode_write=5)  # noqa: E731
+    build = lambda: _self_loop(expr, mode_write=5)  # ruff: ignore[lambda-assignment]
     after = _text(build, _SSA_LICM)
     for phi_sec in _phi_sections(after):
         assert "RuntimeUpdate[" not in phi_sec, "non-writable read should hoist past writes to other blocks"
@@ -262,7 +262,7 @@ def test_unguarded_invariant_divide_hoists():
     # UNGUARDED loop-invariant Divide (guaranteed to execute every iteration) IS
     # hoisted -- so it is the guard, not the op, that blocks speculation below.
     expr = IRPureInstr(Op.Divide, [_ru(0), _ru(1)])
-    build = lambda: _self_loop(expr)  # noqa: E731
+    build = lambda: _self_loop(expr)  # ruff: ignore[lambda-assignment]
     after = _text(build, _SSA_LICM)
     # the divide left the phi-carrying loop block for a no-phi preheader.
     for phi_sec in _phi_sections(after):
@@ -342,7 +342,7 @@ def test_zero_trip_loop_does_not_speculate_faulting_op():
     # hoisting the divide into the preheader would divide by zero where the source
     # never divides.
     expr = IRPureInstr(Op.Divide, [_ru(0), _ru(2)])
-    build = lambda: _top_tested_loop(expr)  # noqa: E731
+    build = lambda: _top_tested_loop(expr)  # ruff: ignore[lambda-assignment]
     assert _text(build, _SSA_PRE) == _text(build, _SSA_LICM)
     _assert_semantics(build, seed={RU.value: [3.0, 0.0, 0.0]})
 
@@ -352,7 +352,7 @@ def test_zero_trip_loop_does_not_speculate_faulting_operand():
     # what passes the latch test, and hoisting it would take the divide along. The
     # rule has to look at the whole subtree a root drags into the preheader.
     expr = IRPureInstr(Op.Multiply, [IRPureInstr(Op.Divide, [_ru(0), _ru(2)]), _ru(3)])
-    build = lambda: _top_tested_loop(expr)  # noqa: E731
+    build = lambda: _top_tested_loop(expr)  # ruff: ignore[lambda-assignment]
     assert _text(build, _SSA_PRE) == _text(build, _SSA_LICM)
     _assert_semantics(build, seed={RU.value: [3.0, 0.0, 0.0, 5.0]})
 
@@ -362,7 +362,7 @@ def test_zero_trip_loop_still_hoists_non_faulting_op():
     # hoists, because no operand value makes Multiply raise. Speculation stays the
     # rule; guaranteed execution is required only of the ops that can fault.
     expr = IRPureInstr(Op.Multiply, [_ru(3), _ru(4)])
-    build = lambda: _top_tested_loop(expr)  # noqa: E731
+    build = lambda: _top_tested_loop(expr)  # ruff: ignore[lambda-assignment]
     after = _text(build, _SSA_LICM)
     assert after.count(" * ") == 1
     for phi_sec in _phi_sections(after):
@@ -374,7 +374,7 @@ def test_zero_trip_loop_hoists_division_by_a_literal():
     # RU[0] / 2.0 in the same zero-trip-capable body. A literal nonzero divisor
     # cannot raise, so the divide is not a faulting op here and speculation stands.
     expr = IRPureInstr(Op.Divide, [_ru(0), IRConst(2.0)])
-    build = lambda: _top_tested_loop(expr)  # noqa: E731
+    build = lambda: _top_tested_loop(expr)  # ruff: ignore[lambda-assignment]
     after = _text(build, _SSA_LICM)
     assert after.count(" / ") == 1
     for phi_sec in _phi_sections(after):
@@ -388,7 +388,7 @@ def test_zero_trip_loop_does_not_speculate_runtime_index_read():
     # can. With RU[1] == 0 the loop never runs and RU[2] == -1, so hoisting the read
     # into the preheader would read a negative address the source never reads.
     expr = IRGet(BlockPlace(RU, _ru(2)))
-    build = lambda: _top_tested_loop(expr)  # noqa: E731
+    build = lambda: _top_tested_loop(expr)  # ruff: ignore[lambda-assignment]
     assert _text(build, _SSA_PRE) == _text(build, _SSA_LICM)
     _assert_semantics(build, seed={RU.value: [3.0, 0.0, -1.0]})
 
@@ -399,7 +399,7 @@ def test_guaranteed_execution_loop_hoists_runtime_index_read():
     # this, the test above could not tell a blocked speculation from a read that never
     # hoists at all.
     read = IRGet(BlockPlace(RU, _ru(2)))
-    build = lambda: _top_tested_loop(_rd("q"), head_stmts=[IRSet(_sc("q"), read)])  # noqa: E731
+    build = lambda: _top_tested_loop(_rd("q"), head_stmts=[IRSet(_sc("q"), read)])  # ruff: ignore[lambda-assignment]
     after = _text(build, _SSA_LICM)
     # a runtime-address read prints its index as a value id; the header's own
     # RuntimeUpdate[1] loop bound is a constant-index read and does not match.
@@ -414,7 +414,7 @@ def test_guaranteed_execution_loop_hoists_faulting_op():
     # is the loop's only exiting block and dominates itself, so entering the loop
     # always reaches the divide and it hoists.
     div = IRPureInstr(Op.Divide, [_ru(0), _ru(2)])
-    build = lambda: _top_tested_loop(_rd("q"), head_stmts=[IRSet(_sc("q"), div)])  # noqa: E731
+    build = lambda: _top_tested_loop(_rd("q"), head_stmts=[IRSet(_sc("q"), div)])  # ruff: ignore[lambda-assignment]
     after = _text(build, _SSA_LICM)
     assert after.count(" / ") == 1
     for phi_sec in _phi_sections(after):
@@ -516,5 +516,5 @@ def test_hoisted_value_semantics_deep():
 def test_licm_only_runs_once_no_hoist_is_stable():
     # A loop with nothing to hoist: LICM is a no-op and the SSA text is unchanged
     # by adding the licm phase.
-    build = lambda: _self_loop(_rd("acc"))  # noqa: E731  (uses the loop-carried value: not invariant)
+    build = lambda: _self_loop(_rd("acc"))  # ruff: ignore[lambda-assignment]  (uses the loop-carried value: not invariant)
     assert _text(build, _SSA_PRE) == _text(build, _SSA_LICM)

@@ -1,4 +1,4 @@
-# ruff: noqa: PLC2701, C417
+# ruff: file-ignore[import-private-name, unnecessary-map]
 
 import re
 from enum import Enum
@@ -114,7 +114,7 @@ def test_tuple_addition_heterogeneous():
 
 def test_tuple_addition_chained():
     def fn():
-        t = (1,) + (2, 3) + (4,) + (5, 6, 7)  # noqa: RUF005
+        t = (1,) + (2, 3) + (4,) + (5, 6, 7)  # ruff: ignore[collection-literal-concatenation]
         a, b, c, d, e, f, g = t
         return Array(a, b, c, d, e, f, g)
 
@@ -136,7 +136,7 @@ def test_tuple_addition_with_runtime_values():
 def test_tuple_addition_iteration():
     def fn():
         results = VarArray[int, 5].new()
-        for v in (1, 2) + (3, 4, 5):  # noqa: RUF005
+        for v in (1, 2) + (3, 4, 5):  # ruff: ignore[collection-literal-concatenation]
             results.append(v)
         return results
 
@@ -717,7 +717,7 @@ def test_map_tuple_is_lazy_like_python():
 
 def _map_two_tuples_via_genexpr():
     total = 0
-    for v in (_logged_mul(x, y) for x, y in zip((1, 2, 3), (10, 20, 30))):  # noqa: B905, FURB140
+    for v in (_logged_mul(x, y) for x, y in zip((1, 2, 3), (10, 20, 30))):  # ruff: ignore[zip-without-explicit-strict, reimplemented-starmap]
         debug_log(300 + v)
         total += v
     return total

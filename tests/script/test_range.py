@@ -6,7 +6,7 @@ from hypothesis import strategies as st
 
 from sonolus.script.array import Array
 from sonolus.script.containers import VarArray
-from sonolus.script.internal.builtin_impls import _type  # noqa: PLC2701
+from sonolus.script.internal.builtin_impls import _type  # ruff: ignore[import-private-name]
 from sonolus.script.internal.context import RuntimeChecks
 from sonolus.script.internal.error import CompilationError
 from sonolus.script.record import Record
@@ -39,7 +39,7 @@ def test_range_alias_behaves_as_a_type():
 def test_type_of_range_alias_is_the_builtin_type_shim():
     # The internal shim has no plain-Python counterpart, so this assertion can only run in compiled code.
     def fn():
-        return type(range) == _type  # noqa: E721
+        return type(range) == _type  # ruff: ignore[type-comparison]
 
     assert run_compiled(fn) == 1
 

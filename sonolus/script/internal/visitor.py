@@ -350,8 +350,8 @@ _SPECIAL_METHOD_MISSING = object()
 
 
 def _raw_special_method(cls: type, name: str) -> Any:
-    for base in type.__getattribute__(cls, "__mro__"):  # noqa: PLC2801 - bypass metaclass hooks
-        namespace = type.__getattribute__(base, "__dict__")  # noqa: PLC2801 - bypass metaclass hooks
+    for base in type.__getattribute__(cls, "__mro__"):  # ruff: ignore[unnecessary-dunder-call] - bypass metaclass hooks
+        namespace = type.__getattribute__(base, "__dict__")  # ruff: ignore[unnecessary-dunder-call] - bypass metaclass hooks
         if name in namespace:
             return namespace[name]
     return _SPECIAL_METHOD_MISSING
@@ -485,14 +485,14 @@ def _resolve_super_descriptor(target: super, key: str) -> Any:
     """Resolve `key` from the part of the MRO searched by `target`."""
     if key == "__class__":
         return None
-    self_class = object.__getattribute__(target, "__self_class__")  # noqa: PLC2801 - bypass super lookup
+    self_class = object.__getattribute__(target, "__self_class__")  # ruff: ignore[unnecessary-dunder-call] - bypass super lookup
     if self_class is None:
         return None
-    this_class = object.__getattribute__(target, "__thisclass__")  # noqa: PLC2801 - bypass super lookup
-    mro = type.__getattribute__(self_class, "__mro__")  # noqa: PLC2801 - bypass metaclass hooks
+    this_class = object.__getattribute__(target, "__thisclass__")  # ruff: ignore[unnecessary-dunder-call] - bypass super lookup
+    mro = type.__getattribute__(self_class, "__mro__")  # ruff: ignore[unnecessary-dunder-call] - bypass metaclass hooks
     start = mro.index(this_class) + 1
     for cls in mro[start:]:
-        namespace = type.__getattribute__(cls, "__dict__")  # noqa: PLC2801 - bypass metaclass hooks
+        namespace = type.__getattribute__(cls, "__dict__")  # ruff: ignore[unnecessary-dunder-call] - bypass metaclass hooks
         if key in namespace:
             return namespace[key]
     return None
@@ -500,9 +500,9 @@ def _resolve_super_descriptor(target: super, key: str) -> Any:
 
 def _super_proxy_parts(target: super) -> tuple[type, Any, type | None]:
     """Return the intrinsic class, bound object, and optional bound-object class for `target`."""
-    this_class = object.__getattribute__(target, "__thisclass__")  # noqa: PLC2801 - bypass super lookup
-    self_ = object.__getattribute__(target, "__self__")  # noqa: PLC2801 - bypass super lookup
-    self_class = object.__getattribute__(target, "__self_class__")  # noqa: PLC2801 - bypass super lookup
+    this_class = object.__getattribute__(target, "__thisclass__")  # ruff: ignore[unnecessary-dunder-call] - bypass super lookup
+    self_ = object.__getattribute__(target, "__self__")  # ruff: ignore[unnecessary-dunder-call] - bypass super lookup
+    self_class = object.__getattribute__(target, "__self_class__")  # ruff: ignore[unnecessary-dunder-call] - bypass super lookup
     return this_class, self_, self_class
 
 

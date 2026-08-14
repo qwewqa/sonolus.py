@@ -1,4 +1,4 @@
-# ruff: noqa: SIM113, PLC2701, C405
+# ruff: file-ignore[enumerate-for-loop, import-private-name, unnecessary-literal-set]
 
 import pytest
 

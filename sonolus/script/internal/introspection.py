@@ -22,8 +22,8 @@ def get_field_specifiers(
     cls,
     *,
     skip: frozenset[str] | set[str] = frozenset(),
-    globals=None,  # noqa: A002
-    locals=None,  # noqa: A002
+    globals=None,  # ruff: ignore[builtin-argument-shadowing]
+    locals=None,  # ruff: ignore[builtin-argument-shadowing]
     eval_str=True,
     included_classes: Sequence[type] | None = None,
 ):

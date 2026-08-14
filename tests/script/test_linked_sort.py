@@ -4,7 +4,7 @@ from hypothesis import given
 from hypothesis import strategies as st
 
 from sonolus.script.array import Array
-from sonolus.script.containers import _merge_sort_linked_list_nodes  # noqa: PLC2701
+from sonolus.script.containers import _merge_sort_linked_list_nodes  # ruff: ignore[import-private-name]
 from sonolus.script.record import Record
 from tests.script.conftest import run_and_validate
 

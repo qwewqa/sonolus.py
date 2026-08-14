@@ -196,6 +196,6 @@ def test_empty_archetype_and_field_names_link_across_modes():
     packaged = package_engine(project.engine.data, BuildConfig(build_preview=False, build_tutorial=False))
     play_archetype = unpackage_data(packaged.play_data)["archetypes"][0]
     watch_archetype = unpackage_data(packaged.watch_data)["archetypes"][0]
-    assert play_archetype["name"] == watch_archetype["name"] == ""  # noqa: PLC1901
+    assert play_archetype["name"] == watch_archetype["name"] == ""  # ruff: ignore[compare-to-empty-string]
     assert play_archetype["exports"] == [""]
     assert watch_archetype["imports"] == [{"name": "", "index": 0}]

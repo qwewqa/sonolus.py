@@ -103,7 +103,7 @@ def missing_attribute(_self):
 
 def property_with_transient_closure_then_attribute_error(self):
     z = 1
-    get_z = lambda: z  # noqa: E731
+    get_z = lambda: z  # ruff: ignore[lambda-assignment]
     get_z()
     z = 2
     return missing_attribute(self)
@@ -222,7 +222,7 @@ def test_getattr_does_not_treat_synthesized_get_as_descriptor(kind):
         if kind == "direct":
             value = box.fake
         else:
-            value = getattr(box, "fake")  # noqa: B009
+            value = getattr(box, "fake")  # ruff: ignore[get-attr-with-constant]
         return value()
 
     assert run_and_validate(fn) == 126
@@ -380,7 +380,7 @@ def test_direct_missing_attribute_traces_getattr():
 
 def test_builtin_getattr_of_missing_attribute_traces_getattr():
     def fn():
-        return getattr(TracedGetattrBox(0), "missing")  # noqa: B009
+        return getattr(TracedGetattrBox(0), "missing")  # ruff: ignore[get-attr-with-constant]
 
     assert run_and_validate(fn) == 20
 
@@ -428,7 +428,7 @@ def test_hasattr_of_missing_attribute_traces_getattr():
 def test_ordinary_missing_attribute_binds_classmethod_getattr():
     def fn():
         box = ClassMethodGetattrBox()
-        return box.missing + getattr(box, "other") + hasattr(box, "third")  # noqa: B009
+        return box.missing + getattr(box, "other") + hasattr(box, "third")  # ruff: ignore[get-attr-with-constant]
 
     assert run_and_validate(fn) == 63
 
@@ -436,7 +436,7 @@ def test_ordinary_missing_attribute_binds_classmethod_getattr():
 def test_ordinary_missing_attribute_binds_staticmethod_getattr():
     def fn():
         box = StaticMethodGetattrBox()
-        return box.missing + getattr(box, "other") + hasattr(box, "third")  # noqa: B009
+        return box.missing + getattr(box, "other") + hasattr(box, "third")  # ruff: ignore[get-attr-with-constant]
 
     assert run_and_validate(fn) == 65
 
@@ -448,7 +448,7 @@ def test_attribute_error_from_getattr_has_clear_diagnostic(kind):
         if kind == "direct":
             return box.missing
         if kind == "getattr":
-            return getattr(box, "missing")  # noqa: B009
+            return getattr(box, "missing")  # ruff: ignore[get-attr-with-constant]
         return hasattr(box, "missing")
 
     with pytest.raises(
@@ -468,7 +468,7 @@ def test_custom_record_getattribute_is_rejected_without_running_it(kind):
         if kind == "direct":
             return box.value
         if kind == "getattr":
-            return getattr(box, "value")  # noqa: B009
+            return getattr(box, "value")  # ruff: ignore[get-attr-with-constant]
         return hasattr(box, "value")
 
     with pytest.raises(
@@ -485,7 +485,7 @@ def test_conditional_property_attribute_error_is_rejected(kind):
         if kind == "direct":
             return box.property
         if kind == "getattr":
-            return getattr(box, "property")  # noqa: B009
+            return getattr(box, "property")  # ruff: ignore[get-attr-with-constant]
         return hasattr(box, "property")
 
     with pytest.raises(
@@ -511,7 +511,7 @@ def test_direct_attribute_uses_getattr_after_property_attribute_error():
 def test_builtin_getattr_uses_getattr_after_property_attribute_error():
     def fn():
         x = 5
-        y = getattr(PropertyFallbackBox(), "fallback")  # noqa: B009
+        y = getattr(PropertyFallbackBox(), "fallback")  # ruff: ignore[get-attr-with-constant]
         return x + y
 
     with pytest.raises(CompilationError, match="Raise statements are not supported"):
@@ -534,7 +534,7 @@ def test_direct_attribute_binds_classmethod_getattr():
 
 def test_builtin_getattr_binds_classmethod_getattr():
     def fn():
-        return getattr(ClassMethodPropertyFallbackBox(), "fallback")  # noqa: B009
+        return getattr(ClassMethodPropertyFallbackBox(), "fallback")  # ruff: ignore[get-attr-with-constant]
 
     with pytest.raises(
         CompilationError,
@@ -562,7 +562,7 @@ def test_direct_attribute_binds_staticmethod_getattr():
 
 def test_builtin_getattr_binds_staticmethod_getattr():
     def fn():
-        return getattr(StaticMethodPropertyFallbackBox(), "fallback")  # noqa: B009
+        return getattr(StaticMethodPropertyFallbackBox(), "fallback")  # ruff: ignore[get-attr-with-constant]
 
     with pytest.raises(
         CompilationError,
@@ -644,7 +644,7 @@ def test_attribute_none_masks_inherited_property():
 
 def test_builtin_getattr_none_masks_inherited_property():
     def fn():
-        return getattr(MyBox(1), "masked_for_test") is None  # noqa: B009
+        return getattr(MyBox(1), "masked_for_test") is None  # ruff: ignore[get-attr-with-constant]
 
     assert run_and_validate(fn)
 
@@ -723,7 +723,7 @@ def test_setattr_readonly_property_matches_python_diagnostic(use_builtin):
     def fn():
         value = ReadOnlyProperty()
         if use_builtin:
-            setattr(value, "value", 2)  # noqa: B010 - Exercise the builtin compiler path.
+            setattr(value, "value", 2)  # ruff: ignore[set-attr-with-constant] - Exercise the builtin compiler path.
         else:
             value.value = 2
 
@@ -811,7 +811,7 @@ def test_issubclass_of_type_result():
 @pytest.mark.parametrize("builtin", [int, float, bool, set, dict, type])
 def test_type_of_builtin_alias_is_type(builtin):
     def fn():
-        return type(builtin) == type  # noqa: E721
+        return type(builtin) == type  # ruff: ignore[type-comparison]
 
     assert run_and_validate(fn)
 

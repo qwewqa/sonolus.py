@@ -57,7 +57,7 @@ def are_valid_pow_operands(a, b):
     if abs(a) < 1e-6 and b <= 0:
         # Avoid division by zero or by very small numbers
         return False
-    if a < 1 and b < -10:  # noqa: SIM103
+    if a < 1 and b < -10:  # ruff: ignore[needless-bool]
         # Avoid division by very small numbers
         return False
     return True

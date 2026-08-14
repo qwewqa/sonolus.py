@@ -1,4 +1,4 @@
-# ruff: noqa: B905
+# ruff: file-ignore[zip-without-explicit-strict]
 from enum import Enum
 from typing import Any, Self
 
@@ -59,7 +59,7 @@ class TupleImpl(TransientValue):
             return NotImplemented
         if len(self) != len(other):
             return False
-        for a, b in zip(self, other):  # noqa: SIM110
+        for a, b in zip(self, other):  # ruff: ignore[reimplemented-builtin]
             if not (a == b):
                 return False
         return True
@@ -69,7 +69,7 @@ class TupleImpl(TransientValue):
             return NotImplemented
         if len(self) != len(other):
             return True
-        for a, b in zip(self, other):  # noqa: SIM110
+        for a, b in zip(self, other):  # ruff: ignore[reimplemented-builtin]
             if not (a == b):
                 return True
         return False
@@ -117,7 +117,7 @@ class TupleImpl(TransientValue):
         return TupleImpl._accept_(self.value + other.value)
 
     def __contains__(self, item):
-        for element in self.value:  # noqa: SIM110
+        for element in self.value:  # ruff: ignore[reimplemented-builtin]
             if element == item:
                 return True
         return False

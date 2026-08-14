@@ -147,7 +147,7 @@ def test_global_in_a_dead_branch_is_rejected():
     def fn():
         def inner():
             if False:
-                global _module_global  # noqa: PLW0603
+                global _module_global  # ruff: ignore[global-statement]
             _module_global = 5
             return 0
 
@@ -160,7 +160,7 @@ def test_global_in_a_dead_branch_is_rejected():
 
 def test_global_on_a_live_path_is_still_rejected():
     def fn():
-        global _module_global  # noqa: PLW0603
+        global _module_global  # ruff: ignore[global-statement]
         _module_global = 5
         return 0
 
@@ -186,7 +186,7 @@ def test_a_dead_branch_without_a_declaration_still_compiles():
 
         def bump():
             if False:
-                total = 100  # noqa: F841
+                total = 100  # ruff: ignore[unused-variable]
             return 2
 
         return bump() + total

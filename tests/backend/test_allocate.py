@@ -11,7 +11,7 @@ from __future__ import annotations
 
 import pytest
 
-from sonolus.backend._opt import ir, lower  # noqa: PLC2701
+from sonolus.backend._opt import ir, lower  # ruff: ignore[import-private-name]
 from sonolus.backend.interpret import Interpreter
 from sonolus.backend.ir import IRConst, IRGet, IRInstr, IRPureInstr, IRSet
 from sonolus.backend.mode import Mode

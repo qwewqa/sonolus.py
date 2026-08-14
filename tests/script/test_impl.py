@@ -115,7 +115,7 @@ def test_reading_a_property_off_the_record_class_names_the_property():
 def test_getattr_on_the_record_class_names_the_field():
     # The getattr builtin has its own copy of the attribute lookup, so it needs its own case.
     def fn():
-        return getattr(Point, "x")  # noqa: B009
+        return getattr(Point, "x")  # ruff: ignore[get-attr-with-constant]
 
     with pytest.raises(CompilationError, match="Field 'x' must be accessed on an instance of Point"):
         run_compiled(fn)
@@ -152,7 +152,7 @@ def test_writing_a_settable_property_on_the_record_class_names_the_property():
 def test_setattr_on_the_record_class_names_the_field():
     # The setattr builtin has its own copy of the attribute lookup, so it needs its own case.
     def fn():
-        setattr(Point, "x", 5)  # noqa: B010
+        setattr(Point, "x", 5)  # ruff: ignore[set-attr-with-constant]
 
     with pytest.raises(CompilationError, match="Field 'x' must be accessed on an instance of Point"):
         run_compiled(fn)
@@ -293,7 +293,7 @@ def test_starred_unpack_target_with_extra_values_names_the_unsupported_construct
     # exception for the oracle to compare against. A starred target absorbs any number of values, so the
     # arity messages would claim a count CPython does not require.
     def fn():
-        a, *b = 1, 2, 3  # noqa: F841
+        a, *b = 1, 2, 3  # ruff: ignore[unused-variable]
         return a
 
     with pytest.raises(CompilationError, match="Starred assignment is not supported"):
@@ -302,7 +302,7 @@ def test_starred_unpack_target_with_extra_values_names_the_unsupported_construct
 
 def test_starred_unpack_target_with_too_few_values_names_the_unsupported_construct():
     def fn():
-        a, b, *c = (1,)  # noqa: F841
+        a, b, *c = (1,)  # ruff: ignore[unused-variable]
         return a
 
     with pytest.raises(CompilationError, match="Starred assignment is not supported"):
@@ -313,7 +313,7 @@ def test_starred_for_target_names_the_unsupported_construct():
     # `for` targets go through the same assignment handling, so the same message must reach them.
     def fn():
         total = 0
-        for a, *rest in ((1, 2, 3), (4, 5, 6)):  # noqa: B007
+        for a, *rest in ((1, 2, 3), (4, 5, 6)):  # ruff: ignore[unused-loop-control-variable]
             total += a
         return total
 

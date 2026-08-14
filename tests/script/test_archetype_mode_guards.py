@@ -52,7 +52,7 @@ def write_instance_archetype_score_multiplier():
 
 
 def write_archetype_life_with_builtin_setattr():
-    setattr(PROBE, "archetype_life", 1)  # noqa: B010
+    setattr(PROBE, "archetype_life", 1)  # ruff: ignore[set-attr-with-constant]
 
 
 def read_entity_score_multiplier():

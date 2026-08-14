@@ -35,7 +35,7 @@ _context = None
 
 
 def s_async_def():
-    async def g():  # noqa: RUF029
+    async def g():  # ruff: ignore[unused-async]
         return 1
 
     return 1
@@ -68,7 +68,7 @@ def s_del_tuple():
 
 
 def s_type_alias():
-    type Alias = int  # noqa: F841
+    type Alias = int  # ruff: ignore[unused-variable]
     return 1
 
 
@@ -111,7 +111,7 @@ def s_import_from():
 
 
 def s_global():
-    global _module_global  # noqa: PLW0603
+    global _module_global  # ruff: ignore[global-statement]
     _module_global = 1
     return 1
 
@@ -128,7 +128,7 @@ def s_nonlocal():
 
 
 def s_set_comprehension():
-    return len({x for x in range(3)})  # noqa: C416
+    return len({x for x in range(3)})  # ruff: ignore[unnecessary-comprehension]
 
 
 def s_dict_comprehension():
@@ -155,7 +155,7 @@ def s_slice():
 
 
 def s_starred_assignment():
-    a, *b = (1, 2)  # noqa: F841
+    a, *b = (1, 2)  # ruff: ignore[unused-variable]
     return a
 
 
@@ -189,7 +189,7 @@ def s_match_class_int():
 def s_match_mapping():
     x = 1
     match x:
-        case {"a": v}:  # noqa: F841
+        case {"a": v}:  # ruff: ignore[unused-variable]
             return 0
         case _:
             return 1
@@ -244,11 +244,11 @@ def s_item_deletion_unsupported():
 
 
 def s_in_non_container():
-    return 1.0 in 2.0  # noqa: PLR0133
+    return 1.0 in 2.0  # ruff: ignore[comparison-of-constant]
 
 
 def s_not_in_non_container():
-    return 1.0 not in 2.0  # noqa: PLR0133
+    return 1.0 not in 2.0  # ruff: ignore[comparison-of-constant]
 
 
 def s_walrus_in_genexpr():
@@ -266,7 +266,7 @@ def s_walrus_in_a_genexpr_inside_a_lambda():
     # lambda is rejected too: the genexpr's own visitor is still the one that reaches it. The mirror shape,
     # a lambda inside a generator expression, keeps compiling and is pinned in test_flow.py.
     y = 0
-    f = lambda: sum((y := v) for v in (1, 2))  # noqa: E731, F841
+    f = lambda: sum((y := v) for v in (1, 2))  # ruff: ignore[lambda-assignment, unused-variable]
     return f() * 100 + y
 
 

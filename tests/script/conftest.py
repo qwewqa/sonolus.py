@@ -1,4 +1,4 @@
-"""PYTEST_DONT_REWRITE"""  # noqa: D415
+"""PYTEST_DONT_REWRITE"""  # ruff: ignore[missing-terminal-punctuation]
 
 import itertools
 import os
@@ -190,8 +190,8 @@ def run_and_validate[**P, R](
                 raise
             while isinstance(e, CompilationError) and e.__cause__ is not None:
                 e = e.__cause__
-            assert str(e) == str(exception)  # noqa: PT017
-            assert type(e) is type(exception)  # noqa: PT017
+            assert str(e) == str(exception)  # ruff: ignore[pytest-assert-in-except]
+            assert type(e) is type(exception)  # ruff: ignore[pytest-assert-in-except]
             raise exception from None
 
     # The traced CFG depends on the callback and runtime_checks but not on the optimization level, so trace
@@ -209,8 +209,8 @@ def run_and_validate[**P, R](
                 raise
             while isinstance(e, CompilationError) and e.__cause__ is not None:
                 e = e.__cause__
-            assert str(e) == str(exception)  # noqa: PT017
-            assert type(e) is type(exception)  # noqa: PT017
+            assert str(e) == str(exception)  # ruff: ignore[pytest-assert-in-except]
+            assert type(e) is type(exception)  # ruff: ignore[pytest-assert-in-except]
             raise exception from None
         traced[read_closure_from_rom] = (cfg, rom_values, result_type)
 
@@ -262,7 +262,7 @@ def run_compiled[**P](
 ) -> Num:
     """Runs a function as a compiled function and returns the result."""
     if log_callback is None:
-        log_callback = lambda x: None  # noqa: E731
+        log_callback = lambda x: None  # ruff: ignore[lambda-assignment]
 
     @meta_fn
     def wrapper():

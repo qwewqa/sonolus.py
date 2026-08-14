@@ -18,7 +18,12 @@ from sonolus.backend.mode import Mode
 from sonolus.backend.optimize import OptimizerConfig, cfg_to_engine_node, run_passes
 from sonolus.backend.place import BlockPlace
 from sonolus.build.compile import callback_to_cfg
-from sonolus.script.archetype import _ENTITY_DATA_SIZE, EntityRef, PlayArchetype, imported  # noqa: PLC2701
+from sonolus.script.archetype import (
+    _ENTITY_DATA_SIZE,
+    EntityRef,
+    PlayArchetype,
+    imported,
+)
 from sonolus.script.containers import sort_linked_entities
 from sonolus.script.internal.context import ModeContextState, ProjectContextState, RuntimeChecks
 from sonolus.script.internal.meta_fn import meta_fn

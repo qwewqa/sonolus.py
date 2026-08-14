@@ -18,8 +18,8 @@ from sonolus.script.runtime import time
 from sonolus.script.stream import (
     Stream,
     StreamGroup,
-    _StreamDataField,  # noqa: PLC2701
-    _StreamField,  # noqa: PLC2701
+    _StreamDataField,  # ruff: ignore[import-private-name]
+    _StreamField,  # ruff: ignore[import-private-name]
     streams,
 )
 from sonolus.script.vec import Vec2

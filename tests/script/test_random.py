@@ -1,4 +1,4 @@
-# ruff: noqa: PT019
+# ruff: file-ignore[pytest-fixture-param-without-value]
 import random
 from collections import defaultdict
 from collections.abc import Callable

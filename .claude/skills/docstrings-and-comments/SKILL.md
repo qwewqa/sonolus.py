@@ -59,9 +59,11 @@ def index(self, value, start=0, stop=None):
 class Vec2(Record):
     """A 2D vector."""
 
+
 @property
 def length(self) -> float:
     """The length of the interval."""
+
 
 value: T
 """The value contained in the box."""

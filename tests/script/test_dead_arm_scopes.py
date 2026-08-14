@@ -23,7 +23,7 @@ def dead_class_annotation():
 def dead_async_generator():
     if False:
 
-        async def _agen():  # noqa: RUF029
+        async def _agen():  # ruff: ignore[unused-async]
             yield 1
 
     return 5.0

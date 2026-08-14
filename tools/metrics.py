@@ -56,7 +56,7 @@ sys.setrecursionlimit(10_000)
 
 # Blocks whose constant-index read the real runtime constant-folds. Imported from
 # the optimizer core so there is a single source of truth, not a drifting duplicate.
-from sonolus.backend._opt.ir import RUNTIME_CONSTANT_BLOCKS  # noqa: PLC2701
+from sonolus.backend._opt.ir import RUNTIME_CONSTANT_BLOCKS  # ruff: ignore[import-private-name]
 
 from sonolus.backend.mode import Mode
 from sonolus.backend.node import FunctionNode

@@ -8,11 +8,11 @@ from hypothesis import strategies as st
 
 from sonolus.script import numtools
 from sonolus.script.containers import Pair
-from sonolus.script.num import _is_num  # noqa: PLC2701
+from sonolus.script.num import _is_num  # ruff: ignore[import-private-name]
 from sonolus.script.numtools import (
-    _ints_to_uint32,  # noqa: PLC2701
-    _UInt32,  # noqa: PLC2701
-    _uint32_to_comparable_float,  # noqa: PLC2701
+    _ints_to_uint32,  # ruff: ignore[import-private-name]
+    _UInt32,  # ruff: ignore[import-private-name]
+    _uint32_to_comparable_float,  # ruff: ignore[import-private-name]
     make_comparable_float,
     product,
     quantize_to_step,
@@ -48,7 +48,7 @@ def patch_float32_records(*classes):
         for field in new_fields:
             setattr(cls, field.name, field)
 
-        def __new__(cls, *args, **kwargs):  # noqa: N807
+        def __new__(cls, *args, **kwargs):  # ruff: ignore[dunder-function-name]
             bound = cls._constructor_signature_.bind(*args, **kwargs)
             result = object.__new__(cls)
             result._value_ = {name: np.float32(value) for name, value in bound.arguments.items()}

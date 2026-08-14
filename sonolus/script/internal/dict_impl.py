@@ -39,7 +39,7 @@ def _same_key_identity_shape(stored, probe):
 
 
 def _tuple_keys_equal(stored, probe):
-    for left, right in zip(stored, probe):  # noqa: B905, SIM110
+    for left, right in zip(stored, probe):  # ruff: ignore[zip-without-explicit-strict, reimplemented-builtin]
         if not _keys_equal(left, right):
             return False
     return True
@@ -274,7 +274,7 @@ class DictImpl[Keys, OrderedKeys, Values](Record):
                     len(py_key_types) == 1
                     and len(ordered_signatures) == 1
                     and None not in ordered_signatures
-                    and py_keys[0].__lt__(py_keys[1]) is not NotImplemented  # noqa: PLC2801
+                    and py_keys[0].__lt__(py_keys[1]) is not NotImplemented  # ruff: ignore[unnecessary-dunder-call]
                     and type(keys[0]).__lt__ is not object.__lt__
                 )
             except TypeError:

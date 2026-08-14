@@ -19,12 +19,12 @@ from hypothesis import given
 from hypothesis import strategies as st
 
 import sonolus.script.internal.math_impls as smath
-from sonolus.backend.interpret import _EASE_FUNCS, Interpreter, _rem  # noqa: PLC2701
+from sonolus.backend.interpret import _EASE_FUNCS, Interpreter, _rem  # ruff: ignore[import-private-name]
 from sonolus.backend.node import FunctionNode
 from sonolus.backend.ops import Op
 from sonolus.script import easing
 from sonolus.script.bucket import Judgment
-from sonolus.script.bucket import _judge as bucket_judge  # noqa: PLC2701
+from sonolus.script.bucket import _judge as bucket_judge  # ruff: ignore[import-private-name]
 
 EASE_OPS = sorted(_EASE_FUNCS, key=lambda op: op.name)
 

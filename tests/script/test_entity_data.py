@@ -87,7 +87,7 @@ class Mixed(PlayArchetype):
     computed: float = entity_data()
 
     def preprocess(self):
-        setattr(self, "computed", self.beat * 2)  # noqa: B010
+        setattr(self, "computed", self.beat * 2)  # ruff: ignore[set-attr-with-constant]
 
 
 class Interleaved(PlayArchetype):

@@ -115,8 +115,8 @@ def test_lambda_on_a_single_line_decorator_resolves_separately():
     assert ast.unparse(lambda_node.body) == "q + 1"
 
 
-_nesting_lambda = lambda: (lambda: 111.0)  # noqa: E731
-_enclosing_lambda = lambda: sorted([2.0, 1.0], key=lambda v: -v)  # noqa: E731
+_nesting_lambda = lambda: lambda: 111.0  # ruff: ignore[lambda-assignment]
+_enclosing_lambda = lambda: sorted([2.0, 1.0], key=lambda v: -v)  # ruff: ignore[lambda-assignment]
 
 
 def test_lambda_whose_body_is_another_lambda_resolves_separately():
@@ -128,7 +128,7 @@ def test_lambda_whose_body_is_another_lambda_resolves_separately():
     assert ast.unparse(inner_node.body) == "111.0"
 
 
-_closure_lambda = lambda v: (lambda: v)  # noqa: E731
+_closure_lambda = lambda v: lambda: v  # ruff: ignore[lambda-assignment]
 
 
 def test_lambda_holding_a_closure_cell_resolves_separately():
@@ -169,7 +169,7 @@ def _outer_with_nested_class():
 def _outer_with_nested_async_generator():
     if False:
 
-        async def _agen():  # noqa: RUF029
+        async def _agen():  # ruff: ignore[unused-async]
             yield 1
 
     return 1

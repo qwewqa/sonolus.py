@@ -4,7 +4,7 @@ from __future__ import annotations
 
 import re
 
-from sonolus.backend._opt import ir  # noqa: PLC2701
+from sonolus.backend._opt import ir  # ruff: ignore[import-private-name]
 from sonolus.backend.ir import IRGet, IRInstr, IRPureInstr, IRSet
 from sonolus.backend.optimize.flow import BasicBlock, cfg_to_text, traverse_cfg_reverse_postorder
 from sonolus.backend.place import BlockPlace, TempBlock

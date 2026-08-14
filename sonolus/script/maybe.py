@@ -227,7 +227,7 @@ class Maybe[T](TransientValue):
                 return NotImplemented
 
 
-def Some[T](value: T) -> Maybe[T]:  # noqa: N802
+def Some[T](value: T) -> Maybe[T]:  # ruff: ignore[invalid-function-name]
     """Create a [`Maybe`][sonolus.script.maybe.Maybe] instance with a value.
 
     Args:

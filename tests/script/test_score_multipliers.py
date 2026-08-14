@@ -45,10 +45,10 @@ class ScoreProbe(PlayArchetype):
         debug_log(ScoreProbe.at(OTHER_ENTITY_INDEX).entity_score_multiplier)
 
     def builtin_setattr_preprocess(self):
-        setattr(ScoreProbe, "archetype_score_multiplier", 2.0)  # noqa: B010
-        setattr(ScoreOther, "archetype_score_multiplier", 3.0)  # noqa: B010
-        setattr(self, "entity_score_multiplier", 4.0)  # noqa: B010
-        setattr(ScoreProbe.at(OTHER_ENTITY_INDEX), "entity_score_multiplier", 5.0)  # noqa: B010
+        setattr(ScoreProbe, "archetype_score_multiplier", 2.0)  # ruff: ignore[set-attr-with-constant]
+        setattr(ScoreOther, "archetype_score_multiplier", 3.0)  # ruff: ignore[set-attr-with-constant]
+        setattr(self, "entity_score_multiplier", 4.0)  # ruff: ignore[set-attr-with-constant]
+        setattr(ScoreProbe.at(OTHER_ENTITY_INDEX), "entity_score_multiplier", 5.0)  # ruff: ignore[set-attr-with-constant]
 
 
 class ScoreOther(PlayArchetype):

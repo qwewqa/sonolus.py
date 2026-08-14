@@ -26,7 +26,7 @@ import pytest
 from hypothesis import given, settings
 from hypothesis import strategies as st
 
-from sonolus.backend._opt import kernels  # noqa: PLC2701
+from sonolus.backend._opt import kernels  # ruff: ignore[import-private-name]
 from sonolus.backend.interpret import Interpreter
 from sonolus.backend.node import FunctionNode
 from sonolus.backend.ops import Op
@@ -586,7 +586,7 @@ def test_switch_integer_boundaries(test, expected):
 
 def test_switch_integer_with_default_boundaries():
     # Same, but out-of-range/non-integral selects the trailing default (777).
-    args = lambda t: [t, 10.0, 20.0, 30.0, 777.0]  # noqa: E731
+    args = lambda t: [t, 10.0, 20.0, 30.0, 777.0]  # ruff: ignore[lambda-assignment]
     assert kernels.fold(Op.SwitchIntegerWithDefault, args(1.0)) == 20.0
     assert kernels.fold(Op.SwitchIntegerWithDefault, args(-0.0)) == 10.0
     assert kernels.fold(Op.SwitchIntegerWithDefault, args(3.0)) == 777.0  # t == nbranches

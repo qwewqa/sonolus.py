@@ -45,7 +45,7 @@ def _check_print_mode() -> None:
 @native_function(Op.Print)
 def _print(
     value: int | float,
-    format: PrintFormat,  # noqa: A002
+    format: PrintFormat,  # ruff: ignore[builtin-argument-shadowing]
     decimal_places: int,
     anchor_x: float,
     anchor_y: float,

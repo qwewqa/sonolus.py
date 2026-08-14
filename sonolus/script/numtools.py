@@ -338,7 +338,7 @@ def _uint32_to_comparable_float(value: _UInt32) -> float:
         lo = value.lo
     else:
         sign = 1
-        value = value - _HALF_MAX_TOTAL_STEPS_UINT32  # noqa: PLR6104
+        value = value - _HALF_MAX_TOTAL_STEPS_UINT32  # ruff: ignore[non-augmented-assignment]
         hi = value.hi
         lo = value.lo
     exponent = hi // (2**7)

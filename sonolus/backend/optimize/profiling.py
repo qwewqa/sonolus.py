@@ -27,7 +27,7 @@ _stages: dict[str, list[int]] = {}
 
 def enable() -> None:
     """Turn profiling on (e.g. from the CLI `--profile` flag)."""
-    global enabled  # noqa: PLW0603
+    global enabled  # ruff: ignore[global-statement]
     enabled = True
 
 

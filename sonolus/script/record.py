@@ -510,7 +510,7 @@ def _make_inplace_op(op: str, orig_fn):
         from sonolus.script.internal.impl import validate_value
         from sonolus.script.internal.visitor import compile_and_call
 
-        _compiler_internal_ = True  # noqa: F841
+        _compiler_internal_ = True  # ruff: ignore[unused-variable]
         result = validate_value(compile_and_call(getattr(self, op), other))
         if ctx() and not ctx().live:
             return self

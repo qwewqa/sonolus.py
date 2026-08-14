@@ -8,7 +8,7 @@ from __future__ import annotations
 
 import pytest
 
-from sonolus.backend._opt import analysis  # noqa: PLC2701
+from sonolus.backend._opt import analysis  # ruff: ignore[import-private-name]
 from sonolus.backend.ir import IRConst, IRGet, IRInstr, IRPureInstr, IRSet
 from sonolus.backend.ops import Op
 from sonolus.backend.optimize.flow import BasicBlock

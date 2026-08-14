@@ -9,7 +9,7 @@ import pytest
 
 from sonolus.script.array import Array
 from sonolus.script.debug import simulation_context
-from sonolus.script.globals import _GlobalPlaceholder, level_memory  # noqa: PLC2701
+from sonolus.script.globals import _GlobalPlaceholder, level_memory  # ruff: ignore[import-private-name]
 from sonolus.script.internal.simulation_context import SimulationContext, sim_ctx
 from tests.script.conftest import run_and_validate
 

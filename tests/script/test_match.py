@@ -634,7 +634,7 @@ def test_match_capture_nested_under_as_is_loop_carried():
             total = total * 10 + b
             debug_log(b)
             match (i, i + 1):
-                case (_, b) as whole:  # noqa: F841
+                case (_, b) as whole:  # ruff: ignore[unused-variable]
                     pass
             i += 1
         return total
@@ -768,7 +768,7 @@ def test_match_sequence_pattern_with_trailing_star_rejected():
     def fn():
         t = (1, 2, 3)
         match t:
-            case [a, *rest]:  # noqa: F841
+            case [a, *rest]:  # ruff: ignore[unused-variable]
                 return a
             case _:
                 return -1
@@ -781,7 +781,7 @@ def test_match_sequence_pattern_with_star_in_middle_rejected():
     def fn():
         t = (1, 2, 3)
         match t:
-            case [a, *mid, b]:  # noqa: F841
+            case [a, *mid, b]:  # ruff: ignore[unused-variable]
                 return a + b
             case _:
                 return -1
@@ -820,7 +820,7 @@ def test_match_nested_sequence_pattern_with_star_rejected():
     def fn():
         t = (1, 2)
         match t:
-            case [[x, *rest]]:  # noqa: F841
+            case [[x, *rest]]:  # ruff: ignore[unused-variable]
                 return x
             case _:
                 return -1
@@ -833,7 +833,7 @@ def test_match_sequence_pattern_with_star_on_non_sequence_subject_rejected():
     def fn():
         d = {0: 10, 1: 20}
         match d:
-            case [a, *rest]:  # noqa: F841
+            case [a, *rest]:  # ruff: ignore[unused-variable]
                 return a
             case _:
                 return -1
@@ -1808,7 +1808,7 @@ def test_match_or_capture_of_conflicting_records_reports_the_capture_name():
 def test_match_or_capture_of_conflicting_records_still_compiles_when_unread():
     def fn():
         match Array(Point(0, 1), Point(1, 2)):
-            case [Point(0, _) as p, _] | [_, Point(1, _) as p]:  # noqa: F841
+            case [Point(0, _) as p, _] | [_, Point(1, _) as p]:  # ruff: ignore[unused-variable]
                 return 1
             case _:
                 return -1
