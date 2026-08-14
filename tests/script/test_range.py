@@ -1,5 +1,3 @@
-import re
-
 import pytest
 from hypothesis import given
 from hypothesis import strategies as st
@@ -411,14 +409,12 @@ def test_range_index_of_every_element(start, step, offset):
     assert run_and_validate(fn) == range(start, stop, step).index(value)
 
 
-# The match= patterns in the missing-value tests below document parity with CPython, which raises this exact
-# message. They do not pin the emitted message: run_and_validate runs the plain-Python leg first and re-raises
-# its exception, so the compiled string never reaches pytest.raises.
+# CPython's prefix differs by version, so match the stable part of its error message.
 def test_range_index_missing_terminates():
     def fn():
         return range(0, 10, 2).index(3)
 
-    with pytest.raises(ValueError, match=re.escape("range.index(x): x not in range")):
+    with pytest.raises(ValueError, match="not in range"):
         run_and_validate(fn)
 
 
@@ -426,7 +422,7 @@ def test_range_index_missing_out_of_bounds_terminates():
     def fn():
         return range(0, 10, 2).index(100)
 
-    with pytest.raises(ValueError, match=re.escape("range.index(x): x not in range")):
+    with pytest.raises(ValueError, match="not in range"):
         run_and_validate(fn)
 
 
@@ -434,7 +430,7 @@ def test_range_index_missing_runtime_value_terminates():
     def fn():
         return range(0, 10, 2).index(black_box_value(3))
 
-    with pytest.raises(ValueError, match=re.escape("range.index(x): x not in range")):
+    with pytest.raises(ValueError, match="not in range"):
         run_and_validate(fn)
 
 
@@ -442,7 +438,7 @@ def test_range_index_missing_runtime_receiver_terminates():
     def fn():
         return range(black_box_value(0), 10, 2).index(3)
 
-    with pytest.raises(ValueError, match=re.escape("range.index(x): x not in range")):
+    with pytest.raises(ValueError, match="not in range"):
         run_and_validate(fn)
 
 
