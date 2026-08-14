@@ -75,7 +75,9 @@ def __round(x: float) -> float:
     return round(x)
 
 
-def _round(number: float, ndigits: int = 0) -> float:
+def _round(number: float, ndigits: int | None = 0) -> float:
+    if ndigits is None:
+        ndigits = 0
     assert_true(ndigits % 1 == 0, "round() ndigits must be an integer")
     if ndigits == 0:
         return __round(number)

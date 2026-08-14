@@ -138,11 +138,13 @@ def run_and_validate[**P, R](
                     return TupleImpl(tuple(value_to_rom(entry) for entry in value.value))
                 elif isinstance(value, SetImpl):
                     return SetImpl(
-                        DictImpl.from_dict({value_to_rom(k): None for k in value._dict._as_dict_with_py_keys()})
+                        DictImpl.from_items(
+                            tuple((value_to_rom(key), None) for key, _ in value._dict._items_with_py_keys())
+                        )
                     )
                 elif isinstance(value, DictImpl):
-                    return DictImpl.from_dict(
-                        {value_to_rom(k): value_to_rom(v) for k, v in value._as_dict_with_py_keys().items()}
+                    return DictImpl.from_items(
+                        tuple((value_to_rom(key), value_to_rom(item)) for key, item in value._items_with_py_keys())
                     )
                 else:
                     return type(value)._from_place_(ctx().rom[tuple(value._to_list_())])

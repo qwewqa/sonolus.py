@@ -20,7 +20,7 @@ full signatures.
 - `issubclass(cls, classinfo)`
 - `iter(iterable)` (not supported for a `tuple`, `dict`, `set`, or enum class)
 - `len(s)`
-- `map(function, iterable, *iterables)`
+- `map(function, iterable, *iterables, strict=False)`
 - `max(iterable, *, default=..., key=None)`, `max(arg1, arg2, *args, key=None)`
 - `min(iterable, *, default=..., key=None)`, `min(arg1, arg2, *args, key=None)`
 - `next(iterator)` (see [reusing iterators](constructs.md#reusing-iterators))
@@ -33,7 +33,7 @@ full signatures.
 - `super()`
 - `super(type[, object-or-type])`
 - `type(object)`
-- `zip(*iterables, strict=False)` (`strict=True` is not supported)
+- `zip(*iterables, strict=False)`
 
 ## Standard library modules
 Sonolus.py also comes with support for some standard library modules. Each has a corresponding reference page with

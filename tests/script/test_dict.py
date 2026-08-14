@@ -43,6 +43,17 @@ class ReflectedEqualityKey(Record):
         return hash(self.value)
 
 
+class UnhashableCompiledKey(Record):  # noqa: PLW1641
+    value: int
+
+    def __eq__(self, other):
+        return isinstance(other, UnhashableCompiledKey) and self.value == other.value
+
+
+UNHASHABLE_COMPILED_KEY = UnhashableCompiledKey(1)
+EQUAL_UNHASHABLE_COMPILED_KEY = UnhashableCompiledKey(1)
+
+
 class OrderedStoredKey(Record):
     value: int
 
@@ -162,6 +173,26 @@ class NormalizingInitKey(Record):
 
     def __hash__(self):
         return hash(self.value)
+
+
+def test_dict_accepts_unhashable_compile_time_record_key():
+    # run_compiled is intentional: compiled dictionaries use equality-based lookup and do not require Python
+    # hashability.
+    def fn():
+        return {UNHASHABLE_COMPILED_KEY: 3, EQUAL_UNHASHABLE_COMPILED_KEY: 7}[UNHASHABLE_COMPILED_KEY]
+
+    assert run_compiled(fn) == 7
+
+
+def test_unhashable_compile_time_record_expanded_keyword_reports_string_rule():
+    def target(**kwargs):
+        return len(kwargs)
+
+    def fn():
+        return target(**{UNHASHABLE_COMPILED_KEY: 7})
+
+    with pytest.raises(CompilationError, match="keywords must be strings"):
+        run_compiled(fn)
 
 
 class ReflectedOrderingStoredKey(Record):

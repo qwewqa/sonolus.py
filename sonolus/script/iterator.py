@@ -3,6 +3,7 @@ from __future__ import annotations
 from collections.abc import Iterator
 from typing import Any, Final
 
+from sonolus.script.debug import require
 from sonolus.script.internal.context import ctx
 from sonolus.script.internal.meta_fn import meta_fn
 from sonolus.script.maybe import Maybe, Nothing, Some
@@ -77,33 +78,100 @@ class _Enumerator[V: SonolusIterator](Record, SonolusIterator):
 class _Zipper[T](Record, SonolusIterator):
     # Can be a, Pair[a, b], Pair[a, Pair[b, c]], etc.
     iterators: T
+    strict: bool
 
     def next(self) -> Maybe[tuple[Any, ...]]:
-        return _zip_next(self.iterators, ())
+        return _zip_next(self.iterators, (), self.strict, "zip")
+
+
+class _MapZipper[T](Record, SonolusIterator):
+    iterators: T
+    strict: bool
+
+    def next(self) -> Maybe[tuple[Any, ...]]:
+        return _zip_next(self.iterators, (), self.strict, "map")
 
 
 @meta_fn
-def _zip_next(chain, values) -> Maybe[tuple[Any, ...]]:
+def _zip_next(chain, values, strict, name) -> Maybe[tuple[Any, ...]]:
     from sonolus.script.containers import Pair
     from sonolus.script.internal.visitor import compile_and_call
 
+    argument = len(values) + 1
     if isinstance(chain, Pair):
-        return compile_and_call(_zip_next_pair, chain.first, chain.second, values)
-    return compile_and_call(_zip_next_last, chain, values)
+        if values:
+            message = _zip_length_error_message(name, argument, "shorter")
+            return compile_and_call(_zip_next_pair, chain.first, chain.second, values, strict, name, message)
+        return compile_and_call(_zip_next_first_pair, chain.first, chain.second, strict, name)
+    if values:
+        message = _zip_length_error_message(name, argument, "shorter")
+        return compile_and_call(_zip_next_last, chain, values, strict, message)
+    return compile_and_call(_zip_next_single, chain)
 
 
-def _zip_next_pair(arm, rest, values) -> Maybe[tuple[Any, ...]]:
+def _zip_next_first_pair(arm, rest, strict, name) -> Maybe[tuple[Any, ...]]:
     value = _validate_next_result(arm.next())
     if value.is_nothing:
+        if strict:
+            _zip_check_exhausted(rest, 2, name)
         return Nothing
-    return _zip_next(rest, (*values, value.get_unsafe()))
+    return _zip_next(rest, (value.get_unsafe(),), strict, name)
 
 
-def _zip_next_last(arm, values) -> Maybe[tuple[Any, ...]]:
+def _zip_next_pair(arm, rest, values, strict, name, message) -> Maybe[tuple[Any, ...]]:
     value = _validate_next_result(arm.next())
     if value.is_nothing:
+        if strict:
+            require(False, message)
+        return Nothing
+    return _zip_next(rest, (*values, value.get_unsafe()), strict, name)
+
+
+def _zip_next_last(arm, values, strict, message) -> Maybe[tuple[Any, ...]]:
+    value = _validate_next_result(arm.next())
+    if value.is_nothing:
+        if strict:
+            require(False, message)
         return Nothing
     return Some((*values, value.get_unsafe()))
+
+
+def _zip_next_single(arm) -> Maybe[tuple[Any, ...]]:
+    value = _validate_next_result(arm.next())
+    if value.is_nothing:
+        return Nothing
+    return Some((value.get_unsafe(),))
+
+
+def _zip_length_error_message(name: str, argument: int, relation: str) -> str:
+    previous = "argument 1" if argument == 2 else f"arguments 1-{argument - 1}"
+    return f"{name}() argument {argument} is {relation} than {previous}"
+
+
+@meta_fn
+def _zip_check_exhausted(chain, argument, name) -> Maybe[tuple[Any, ...]]:
+    from sonolus.script.containers import Pair
+    from sonolus.script.internal.visitor import compile_and_call
+
+    message = _zip_length_error_message(name, argument, "longer")
+    if isinstance(chain, Pair):
+        return compile_and_call(_zip_check_exhausted_pair, chain.first, chain.second, argument, name, message)
+    return compile_and_call(_zip_check_exhausted_last, chain, message)
+
+
+def _zip_check_exhausted_pair(arm, rest, argument, name, message) -> Maybe[tuple[Any, ...]]:
+    value = _validate_next_result(arm.next())
+    if value.is_some:
+        require(False, message)
+        return Nothing
+    return _zip_check_exhausted(rest, argument + 1, name)
+
+
+def _zip_check_exhausted_last(arm, message) -> Maybe[tuple[Any, ...]]:
+    value = _validate_next_result(arm.next())
+    if value.is_some:
+        require(False, message)
+    return Nothing
 
 
 class _EmptyIterator(Record, SonolusIterator):

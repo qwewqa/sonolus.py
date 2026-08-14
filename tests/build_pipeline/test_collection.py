@@ -138,6 +138,62 @@ def test_scp_skips_an_empty_entry_name():
     assert Collection()._should_skip_zip_entry(zipfile.ZipInfo(""))
 
 
+@pytest.mark.parametrize("item", [None, [], 1, "item"])
+def test_load_from_scp_skips_non_object_item_json(item):
+    scp = _make_scp(
+        {
+            "sonolus/skins/invalid": json.dumps(item).encode(),
+            "sonolus/skins/valid": json.dumps(_item_details("valid")).encode(),
+        }
+    )
+    collection = Collection()
+
+    with pytest.warns(UserWarning, match="Expected a JSON object"):
+        collection.load_from_scp(scp)
+
+    assert list(collection.categories["skins"]) == ["valid"]
+
+
+def test_load_from_scp_skips_item_json_that_is_not_utf8():
+    scp = _make_scp(
+        {
+            "sonolus/skins/invalid": b"\xff",
+            "sonolus/skins/valid": json.dumps(_item_details("valid")).encode(),
+        }
+    )
+    collection = Collection()
+
+    with pytest.warns(UserWarning, match="Invalid UTF-8"):
+        collection.load_from_scp(scp)
+
+    assert list(collection.categories["skins"]) == ["valid"]
+
+
+def test_load_from_scp_skips_malformed_item_json():
+    scp = _make_scp(
+        {
+            "sonolus/skins/invalid": b"{",
+            "sonolus/skins/valid": json.dumps(_item_details("valid")).encode(),
+        }
+    )
+    collection = Collection()
+
+    with pytest.warns(UserWarning, match="Invalid JSON"):
+        collection.load_from_scp(scp)
+
+    assert list(collection.categories["skins"]) == ["valid"]
+
+
+def test_load_from_scp_warning_points_to_caller():
+    scp = _make_scp({"sonolus/skins/invalid": b"\xff"})
+    collection = Collection()
+
+    with pytest.warns(UserWarning, match="Invalid UTF-8") as warning_info:
+        collection.load_from_scp(scp)
+
+    assert warning_info[0].filename == __file__
+
+
 def test_scp_keeps_dotted_item_names():
     c = Collection()
     c.load_from_scp(_scp_items("skins", ["pixel.hd", "pixel.sd", "plain"]))

@@ -6,7 +6,6 @@ from typing import (
     Callable,
     Iterable,
     Iterator,
-    Literal,
     overload,
 )
 
@@ -235,7 +234,13 @@ def len(s: object, /) -> builtins.int:
     """
     ...
 
-def map[T, S](function: Callable[..., S], iterable: Iterable[T], /, *iterables: Iterable[Any]) -> Iterator[S]:
+def map[T, S](
+    function: Callable[..., S],
+    iterable: Iterable[T],
+    /,
+    *iterables: Iterable[Any],
+    strict: builtins.bool = False,
+) -> Iterator[S]:
     """Apply a function to every item of an iterable and return an iterator.
 
     A `tuple`, `dict`, `set`, or enum class may be used when every iterable argument is one of those. Other
@@ -245,6 +250,7 @@ def map[T, S](function: Callable[..., S], iterable: Iterable[T], /, *iterables: 
         function: The function to apply.
         iterable: The iterable to process.
         *iterables: Additional iterables to process in parallel with iterable.
+        strict: Require all iterables to have equal lengths.
 
     Returns:
         An iterator with the results.
@@ -365,7 +371,7 @@ def reversed(seq: Any, /) -> Any:
     """
     ...
 
-def round(number: builtins.int | builtins.float, ndigits: builtins.int = ...) -> builtins.float:
+def round(number: builtins.int | builtins.float, ndigits: builtins.int | None = ...) -> builtins.float:
     """Round a number to a given precision in decimal digits.
 
     With `ndigits`, a value near the midpoint between two rounded values may round differently than in Python.
@@ -435,16 +441,16 @@ def type(obj: object, /) -> builtins.type:
     ...
 
 @overload
-def zip(*, strict: Literal[False] = False) -> Iterator[tuple[()]]: ...
+def zip(*, strict: builtins.bool = False) -> Iterator[tuple[()]]: ...
 @overload
-def zip[T1](iterable1: Iterable[T1], /, *, strict: Literal[False] = False) -> Iterator[tuple[T1]]: ...
+def zip[T1](iterable1: Iterable[T1], /, *, strict: builtins.bool = False) -> Iterator[tuple[T1]]: ...
 @overload
 def zip[T1, T2](
-    iterable1: Iterable[T1], iterable2: Iterable[T2], /, *, strict: Literal[False] = False
+    iterable1: Iterable[T1], iterable2: Iterable[T2], /, *, strict: builtins.bool = False
 ) -> Iterator[tuple[T1, T2]]: ...
 @overload
 def zip[T1, T2, T3](
-    iterable1: Iterable[T1], iterable2: Iterable[T2], iterable3: Iterable[T3], /, *, strict: Literal[False] = False
+    iterable1: Iterable[T1], iterable2: Iterable[T2], iterable3: Iterable[T3], /, *, strict: builtins.bool = False
 ) -> Iterator[tuple[T1, T2, T3]]: ...
 @overload
 def zip[T1, T2, T3, T4](
@@ -454,7 +460,7 @@ def zip[T1, T2, T3, T4](
     iterable4: Iterable[T4],
     /,
     *,
-    strict: Literal[False] = False,
+    strict: builtins.bool = False,
 ) -> Iterator[tuple[T1, T2, T3, T4]]: ...
 @overload
 def zip[T1, T2, T3, T4, T5](
@@ -465,16 +471,16 @@ def zip[T1, T2, T3, T4, T5](
     iterable5: Iterable[T5],
     /,
     *,
-    strict: Literal[False] = False,
+    strict: builtins.bool = False,
 ) -> Iterator[tuple[T1, T2, T3, T4, T5]]: ...
 @overload
-def zip(*iterables: Iterable[Any], strict: Literal[False] = False) -> Iterator[tuple[Any, ...]]: ...
-def zip(*iterables: Iterable[Any], strict: Literal[False] = False) -> Iterator[tuple[Any, ...]]:
+def zip(*iterables: Iterable[Any], strict: builtins.bool = False) -> Iterator[tuple[Any, ...]]: ...
+def zip(*iterables: Iterable[Any], strict: builtins.bool = False) -> Iterator[tuple[Any, ...]]:
     """Return an iterator of tuples, where the i-th tuple contains the i-th element from each of the argument sequences.
 
     Args:
         *iterables: Iterables to aggregate.
-        strict: Must be False.
+        strict: Require all iterables to have equal lengths.
 
     Returns:
         An iterator of aggregated tuples.

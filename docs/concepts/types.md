@@ -597,7 +597,7 @@ for x in t:
 ```
 
 Tuples also support `len()`, concatenation with `+`, `in` and `not in`, the comparison operators, and
-`.index(value)`.
+`.count(value)` and `.index(value)`.
 
 ### dict
 

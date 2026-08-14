@@ -28,7 +28,9 @@ from sonolus.script.iterator import (
     _Enumerator,
     _FilteringIterator,
     _MappingIterator,
+    _MapZipper,
     _validate_next_result,
+    _zip_length_error_message,
     _Zipper,
 )
 from sonolus.script.num import Num, _is_num
@@ -95,6 +97,36 @@ def _class_arg_name(value) -> str:
 def _comptime_iter_result(items) -> TupleImpl:
     """Wrap the result of a compile-time `zip`, `enumerate`, or `reversed` as a tuple."""
     return TupleImpl._accept_(tuple(items))
+
+
+class _StrictZipTupleResult(TupleImpl):
+    def __init__(self, value: tuple, strict: Num, error_message: str):
+        super().__init__(value)
+        self.strict = strict
+        self.error_message = error_message
+
+    def __iter__(self):
+        yield from self.value
+        if not ctx() and bool(self.strict):
+            raise ValueError(self.error_message)
+        if ctx() and ctx().live:
+            require(self.strict == 0, self.error_message)
+
+    def _tuple_iter_(self):
+        return self
+
+
+def _strict_zip_tuple_error(iterables: list[tuple], name: str = "zip") -> str | None:
+    shortest = min(map(len, iterables))
+    if len(iterables[0]) == shortest:
+        for argument, iterable in enumerate(iterables[1:], 2):
+            if len(iterable) > shortest:
+                return _zip_length_error_message(name, argument, "longer")
+        return None
+    for argument, iterable in enumerate(iterables[1:], 2):
+        if len(iterable) == shortest:
+            return _zip_length_error_message(name, argument, "shorter")
+    return None
 
 
 def _compile_time_iterable_kind(value) -> str | None:
@@ -271,8 +303,7 @@ def _zip(*iterables, strict: bool = False):
     from sonolus.script.containers import Pair
     from sonolus.script.internal.visitor import compile_and_call
 
-    if validate_value(strict)._as_py_():  # type: ignore
-        raise NotImplementedError("Strict zipping is not supported")
+    strict = _coerce_bool(strict)
 
     if not iterables:
         return _EmptyIterator()
@@ -281,7 +312,13 @@ def _zip(*iterables, strict: bool = False):
     if any(has_tuple_iter(iterable) for iterable in iterables):
         if not all(has_tuple_iter(iterable) for iterable in iterables):
             raise TypeError("Cannot mix tuples with other types in zip")
-        return _comptime_iter_result(zip(*(tuple_iter(iterable) for iterable in iterables), strict=False))
+        tuple_iterables = [tuple_iter(iterable) for iterable in iterables]
+        result = _comptime_iter_result(zip(*tuple_iterables, strict=False))
+        if (message := _strict_zip_tuple_error(tuple_iterables)) is not None and not (
+            strict._is_py_() and not strict._as_py_()
+        ):
+            return _StrictZipTupleResult(result.value, strict, message)
+        return result
     for iterable in iterables:
         # Checked explicitly so a non-iterable argument gets the same message as it would from iter(), rather than
         # an internal AttributeError naming the wrapper class.
@@ -295,7 +332,7 @@ def _zip(*iterables, strict: bool = False):
     v = iterators.pop()
     while iterators:
         v = Pair(iterators.pop(), v)
-    return _Zipper(v)
+    return _Zipper(v, strict)
 
 
 @meta_fn
@@ -547,17 +584,26 @@ def _callable(value):
     return validate_value(callable(value))
 
 
-def _map_over_compile_time_iterables(fn, *iterables):
+def _map_over_compile_time_iterables(fn, iterables, strict, error_message):
     """map() over compile-time iterables, written as an ordinary generator function.
 
     zip() stops at the shortest iterable, matching Python's map() and the runtime path.
     """
     for args in zip(*iterables):  # ruff: ignore[zip-without-explicit-strict]
         yield fn(*args)
+    if error_message is not None:
+        require(strict == 0, error_message)
+
+
+def _coerce_bool(value) -> Num:
+    value = validate_value(value)
+    if value._is_py_():
+        return Num._accept_(bool(value._as_py_()))
+    return Num._accept_(value)
 
 
 @meta_fn
-def _map(fn, iterable, *iterables):
+def _map(fn, iterable, *iterables, strict=False):
     """map(), dispatching between the compile-time iterable path and the runtime iterator path.
 
     Tuples, dicts, sets, and enum classes are unrolled at compile time and have no runtime iterator, so they get a
@@ -567,13 +613,16 @@ def _map(fn, iterable, *iterables):
     from sonolus.script.containers import Pair
     from sonolus.script.internal.visitor import compile_and_call
 
+    strict = _coerce_bool(strict)
     all_iterables = [_unwrap_set(validate_value(it)) for it in (iterable, *iterables)]
     if any(has_tuple_iter(it) for it in all_iterables):
         # Checked here rather than being left to the zip() inside the helper so that the message names map(),
         # which is what the user wrote.
         if not all(has_tuple_iter(it) for it in all_iterables):
             raise TypeError("Cannot mix compile-time iterables (tuple, dict, set, enum class) with other types in map")
-        return compile_and_call(_map_over_compile_time_iterables, fn, *all_iterables)
+        tuple_iterables = [tuple_iter(it) for it in all_iterables]
+        error_message = _strict_zip_tuple_error(tuple_iterables, "map")
+        return compile_and_call(_map_over_compile_time_iterables, fn, tuple(all_iterables), strict, error_message)
     for it in all_iterables:
         if _special_method(it, "__iter__") is None:
             raise TypeError(f"'{_type_name(it)}' object is not iterable")
@@ -588,7 +637,7 @@ def _map(fn, iterable, *iterables):
     chain = iterators.pop()
     while iterators:
         chain = Pair(iterators.pop(), chain)
-    return compile_and_call(_map_zipped_runtime, fn, _Zipper(chain))
+    return compile_and_call(_map_zipped_runtime, fn, _MapZipper(chain, strict))
 
 
 def _map_zipped_runtime(fn, iterator):

@@ -97,6 +97,20 @@ def test_round_accepts_the_ndigits_keyword():
     assert run_and_validate(fn) == round(2.567, ndigits=2)
 
 
+def test_round_accepts_none_ndigits():
+    def fn():
+        return round(2.567, None)
+
+    assert run_and_validate(fn) == round(2.567, None)
+
+
+def test_round_accepts_none_ndigits_for_a_runtime_number():
+    def fn():
+        return round(bb(2.567), None)
+
+    assert run_and_validate(fn) == round(2.567, None)
+
+
 def test_round_rejects_fractional_ndigits():
     def fn(ndigits):
         return round(2.567, ndigits)

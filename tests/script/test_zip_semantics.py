@@ -1,10 +1,222 @@
 # ruff: file-ignore[zip-without-explicit-strict]
 
+import sys
+
+import pytest
+
 from sonolus.script.array import Array
 from sonolus.script.containers import VarArray
 from sonolus.script.debug import debug_log
+from sonolus.script.internal.context import RuntimeChecks
 from sonolus.script.vec import Vec2
-from tests.script.conftest import run_and_validate
+from tests.script.conftest import run_and_validate, run_compiled
+
+
+def test_strict_zip_equal_lengths_matches_python():
+    def fn():
+        total = 0
+        for a, b in zip(Array(1, 2), Array(10, 20), strict=True):
+            total += a + b
+        return total
+
+    assert run_and_validate(fn) == 33
+
+
+def test_strict_zip_single_iterable_matches_python():
+    def fn():
+        total = 0
+        for (value,) in zip(Array(1, 2, 3), strict=True):
+            total += value
+        return total
+
+    assert run_and_validate(fn) == 6
+
+
+def test_strict_zip_compile_time_iterables_match_python():
+    def fn():
+        total = 0
+        for a, b in zip((1, 2), (10, 20), strict=True):
+            total += a + b
+        return total
+
+    assert run_and_validate(fn) == 33
+
+
+@pytest.mark.parametrize(
+    ("left", "right", "message"),
+    [
+        ((1,), (10, 20), r"zip\(\) argument 2 is longer than argument 1"),
+        ((1, 2), (10,), r"zip\(\) argument 2 is shorter than argument 1"),
+    ],
+)
+def test_strict_zip_compile_time_mismatch_terminates_when_consumed(left, right, message):
+    def fn():
+        for _ in zip(left, right, strict=True):
+            pass
+        return 0
+
+    with pytest.raises(ValueError, match=message):
+        run_and_validate(fn)
+
+
+@pytest.mark.parametrize(
+    ("iterables", "message"),
+    [
+        (((1, 2), (10, 20), (100,)), r"zip\(\) argument 3 is shorter than arguments 1-2"),
+        (((1,), (10,), (100, 200)), r"zip\(\) argument 3 is longer than arguments 1-2"),
+    ],
+)
+def test_strict_zip_three_compile_time_iterables_report_mismatch_when_consumed(iterables, message):
+    def fn():
+        for _ in zip(*iterables, strict=True):
+            pass
+        return 0
+
+    with pytest.raises(ValueError, match=message):
+        run_and_validate(fn)
+
+
+@pytest.mark.parametrize(("left", "right"), [((1,), (10, 20)), ((1, 2), (10,))])
+def test_strict_zip_compile_time_mismatch_after_break_is_not_reached(left, right):
+    def fn():
+        for a, b in zip(left, right, strict=True):
+            return a + b
+        return 0
+
+    assert run_and_validate(fn) == 11
+
+
+def test_strict_zip_compile_time_mismatch_in_runtime_unreached_branch():
+    def fn():
+        condition = 0
+        for value in Array(0):
+            condition += value
+        if condition:
+            for _ in zip((1,), (10, 20), strict=True):
+                pass
+        return 42
+
+    assert run_and_validate(fn) == 42
+
+
+@pytest.mark.parametrize("strict", [False, True])
+def test_nested_non_strict_compile_time_zip_remains_sized(strict):
+    def fn():
+        runtime_false = Array(False)[0]
+        inner_strict = runtime_false if strict else False
+        total = 0
+        for (a, b), c in zip(zip((1,), (2, 3), strict=inner_strict), (10,), strict=True):
+            total += a + b + c
+        return total
+
+    assert run_and_validate(fn) == 13
+
+
+def test_zip_with_no_iterables_is_empty_when_strict():
+    def fn():
+        total = 0
+        for _ in zip(strict=True):
+            total += 1
+        return total
+
+    assert run_and_validate(fn) == 0
+
+
+def test_zip_explicit_non_strict_stops_at_shorter_iterable():
+    def fn():
+        total = 0
+        for a, b in zip(Array(1), Array(10, 20), strict=False):
+            total += a + b
+        return total
+
+    assert run_and_validate(fn) == 11
+
+
+def test_zip_accepts_runtime_false_strict():
+    def fn():
+        strict = Array(False)[0]
+        total = 0
+        for a, b in zip(Array(1), Array(10, 20), strict=strict):
+            total += a + b
+        return total
+
+    assert run_and_validate(fn) == 11
+
+
+def test_zip_accepts_runtime_true_strict():
+    def fn():
+        strict = Array(True)[0]
+        for _ in zip(Array(1), Array(10, 20), strict=strict):
+            pass
+        return 0
+
+    with pytest.raises(ValueError, match=r"zip\(\) argument 2 is longer than argument 1"):
+        run_and_validate(fn)
+
+
+@pytest.mark.parametrize("strict", [False, True])
+def test_compile_time_zip_accepts_runtime_strict(strict):
+    def fn():
+        runtime_strict = Array(strict)[0]
+        total = 0
+        for a, b in zip((1,), (10, 20), strict=runtime_strict):
+            total += a + b
+        return total
+
+    if strict:
+        with pytest.raises(ValueError, match=r"zip\(\) argument 2 is longer than argument 1"):
+            run_and_validate(fn)
+    else:
+        assert run_and_validate(fn) == 11
+
+
+def test_strict_zip_later_shorter_terminates_before_pulling_following_arm():
+    def fn():
+        def logged(value):
+            debug_log(value)
+            return value
+
+        for _ in zip(
+            map(logged, Array(1, 2)),
+            map(logged, Array(10)),
+            map(logged, Array(100, 200)),
+            strict=True,
+        ):
+            pass
+        return 0
+
+    with pytest.raises(ValueError, match=r"zip\(\) argument 2 is shorter than argument 1"):
+        run_and_validate(fn)
+
+
+def test_strict_zip_last_shorter_after_complete_rows():
+    def fn():
+        for _ in zip(Array(1, 2), Array(10, 20), Array(100), strict=True):
+            pass
+        return 0
+
+    with pytest.raises(ValueError, match=r"zip\(\) argument 3 is shorter than arguments 1-2"):
+        run_and_validate(fn)
+
+
+def test_strict_zip_first_shorter_probes_later_arms_in_order():
+    def fn():
+        def logged(value):
+            debug_log(value)
+            return value
+
+        for _ in zip(
+            Array[int, 0](),
+            Array[int, 0](),
+            map(logged, Array(30)),
+            map(logged, Array(40)),
+            strict=True,
+        ):
+            pass
+        return 0
+
+    with pytest.raises(ValueError, match=r"zip\(\) argument 3 is longer than arguments 1-2"):
+        run_and_validate(fn)
 
 
 def test_zip_does_not_advance_the_later_arm_after_a_short_arm():
@@ -78,6 +290,65 @@ def test_map_over_two_iterables_stops_at_the_shorter_one():
         return total * 100 + len(seen)
 
     assert run_and_validate(fn) == 3304
+
+
+@pytest.mark.skipif(sys.version_info < (3, 14), reason="map() strict requires Python 3.14")
+@pytest.mark.parametrize("strict", [False, True])
+def test_map_accepts_runtime_strict_for_equal_iterables(strict):
+    def fn():
+        runtime_strict = Array(strict)[0]
+        return sum(map(lambda a, b: a + b, Array(1, 2), Array(10, 20), strict=runtime_strict))
+
+    assert run_and_validate(fn) == 33
+
+
+@pytest.mark.skipif(sys.version_info < (3, 14), reason="map() strict requires Python 3.14")
+def test_map_accepts_runtime_false_strict_for_unequal_iterables():
+    def fn():
+        strict = Array(False)[0]
+        return sum(map(lambda a, b: a + b, Array(1), Array(10, 20), strict=strict))
+
+    assert run_and_validate(fn) == 11
+
+
+@pytest.mark.skipif(sys.version_info < (3, 14), reason="map() strict requires Python 3.14")
+def test_map_accepts_runtime_true_strict_for_unequal_iterables():
+    def fn():
+        strict = Array(True)[0]
+        return sum(map(lambda a, b: a + b, Array(1), Array(10, 20), strict=strict))
+
+    with pytest.raises(ValueError, match=r"map\(\) argument 2 is longer than argument 1"):
+        run_and_validate(fn)
+
+
+@pytest.mark.skipif(sys.version_info < (3, 14), reason="map() strict requires Python 3.14")
+def test_map_compile_time_iterables_accept_runtime_strict():
+    def fn():
+        strict = Array(True)[0]
+        return sum(map(lambda a, b: a + b, (1,), (10, 20), strict=strict))
+
+    with pytest.raises(ValueError, match=r"map\(\) argument 2 is longer than argument 1"):
+        run_and_validate(fn)
+
+
+@pytest.mark.parametrize("use_map", [False, True])
+def test_runtime_strict_terminates_with_runtime_checks_disabled(use_map):
+    # run_compiled is intentional: this pins RuntimeChecks.NONE after every optimization level, which plain Python
+    # cannot distinguish from the other compiled runtime-check modes.
+    def fn():
+        strict = Array(True)[0]
+        if use_map:
+            for _ in map(lambda a, b: a + b, Array(1), Array(10, 20), strict=strict):
+                pass
+        else:
+            for _ in zip(Array(1), Array(10, 20), strict=strict):
+                pass
+        debug_log(99)
+        return 0
+
+    logs = []
+    run_compiled(fn, runtime_checks=RuntimeChecks.NONE, log_callback=logs.append)
+    assert logs == []
 
 
 def test_zip_does_not_let_a_filter_arm_scan_past_a_short_arm():

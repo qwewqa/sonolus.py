@@ -261,7 +261,14 @@ class Collection:
         for zip_entry in zip_entries:
             try:
                 item_details = json.loads(zf.read(zip_entry).decode("utf-8"))
+            except UnicodeDecodeError:
+                warnings.warn(f"Invalid UTF-8 in {zip_entry.filename}, skipping item.", stacklevel=4)
+                continue
             except json.JSONDecodeError:
+                warnings.warn(f"Invalid JSON in {zip_entry.filename}, skipping item.", stacklevel=4)
+                continue
+            if not isinstance(item_details, dict):
+                warnings.warn(f"Expected a JSON object in {zip_entry.filename}, skipping item.", stacklevel=4)
                 continue
 
             path = Path(zip_entry.filename)

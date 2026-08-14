@@ -1,3 +1,11 @@
+### 0.19.1
+
+- Compiled `zip` and `map` now support the `strict` parameter.
+- Compiled `round` now accepts `None` for `ndigits`.
+- Added tuple `.count()` support.
+- Set displays now support starred unpacking.
+- SCP collection loading now skips malformed or non-object item entries with a warning.
+
 ### 0.19.0
 
 - `Archetype.schema()` now reports flat level-data field names.

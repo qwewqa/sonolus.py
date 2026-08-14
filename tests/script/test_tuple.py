@@ -60,6 +60,14 @@ class NonComplementaryEquality(Record):
         return True
 
 
+class NeverEqual(Record):
+    value: int
+    __hash__ = None
+
+    def __eq__(self, other):
+        return False
+
+
 def test_tuple_destructure():
     def fn():
         t = (1, 2), (3, 4), 5
@@ -1025,6 +1033,35 @@ def test_tuple_index_missing_runtime_elements_terminates():
 
     with pytest.raises(ValueError, match=re.escape("tuple.index(x): x not in tuple")):
         run_and_validate(fn)
+
+
+def test_tuple_count_runtime_values():
+    def fn():
+        return (bb(1), bb(2), bb(1), bb(3)).count(bb(1))
+
+    assert run_and_validate(fn) == 2
+
+
+def test_tuple_count_missing_value():
+    def fn():
+        return (bb(1), bb(2), bb(3)).count(bb(4))
+
+    assert run_and_validate(fn) == 0
+
+
+def test_tuple_count_nested_tuple():
+    def fn():
+        return ((bb(1), bb(2)), (bb(3), bb(4)), (bb(1), bb(2))).count((bb(1), bb(2)))
+
+    assert run_and_validate(fn) == 2
+
+
+def test_tuple_count_does_not_assume_object_identity():
+    def fn():
+        value = NeverEqual(1)
+        return (value,).count(value)
+
+    assert run_compiled(fn) == 0
 
 
 def test_tuple_index_empty_terminates():

@@ -3,6 +3,7 @@
 import pytest
 
 from sonolus.script.array import Array
+from sonolus.script.debug import debug_log
 from sonolus.script.internal.context import ctx
 from sonolus.script.internal.error import CompilationError
 from sonolus.script.internal.impl import validate_value
@@ -12,6 +13,7 @@ from sonolus.script.internal.random import _random
 from sonolus.script.internal.set_impl import SetImpl
 from sonolus.script.internal.tuple_impl import TupleImpl
 from sonolus.script.num import _is_num
+from sonolus.script.record import Record
 from tests.script.conftest import run_and_validate, run_compiled
 
 
@@ -30,7 +32,66 @@ def bb(*x):
         return x
 
 
+def logged_set_member(value):
+    debug_log(value)
+    return value
+
+
+def logged_set_members(value):
+    debug_log(value)
+    return (value, value + 1)
+
+
+class UnhashableCompiledMember(Record):  # noqa: PLW1641
+    value: int
+
+    def __eq__(self, other):
+        return isinstance(other, UnhashableCompiledMember) and self.value == other.value
+
+
+UNHASHABLE_COMPILED_MEMBER = UnhashableCompiledMember(1)
+EQUAL_UNHASHABLE_COMPILED_MEMBER = UnhashableCompiledMember(1)
+
+
+def test_set_literal_starred_tuple_unpacking():
+    def fn():
+        s = {0, *(1, 2), 2, *(3,)}
+        return Array(len(s), 0 in s, 1 in s, 2 in s, 3 in s, 4 in s)
+
+    assert run_and_validate(fn) == Array(4, True, True, True, True, False)
+
+
+def test_set_literal_starred_mapping_unpacks_keys():
+    def fn():
+        s = {*{"a": 1, "b": 2}}
+        return Array(len(s), "a" in s, "b" in s, 1 in s)
+
+    assert run_and_validate(fn) == Array(2, True, True, False)
+
+
+def test_set_literal_starred_entries_preserve_evaluation_order():
+    def fn():
+        s = {
+            logged_set_member(10),
+            *logged_set_members(20),
+            logged_set_member(30),
+            *logged_set_members(40),
+        }
+        return len(s)
+
+    assert run_and_validate(fn) == 6
+
+
 # __contains__
+
+
+def test_set_accepts_unhashable_compile_time_record_member():
+    # run_compiled is intentional: compiled sets use equality-based lookup and do not require Python hashability.
+    def fn():
+        values = {UNHASHABLE_COMPILED_MEMBER, EQUAL_UNHASHABLE_COMPILED_MEMBER}
+        return len(values) * 10 + (EQUAL_UNHASHABLE_COMPILED_MEMBER in values)
+
+    assert run_compiled(fn) == 11
 
 
 def test_contains_present_small_size_string_key():

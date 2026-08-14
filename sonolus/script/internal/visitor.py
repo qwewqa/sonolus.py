@@ -1887,10 +1887,16 @@ class Visitor(ast.NodeVisitor):
 
         values = []
         for elt in node.elts:
-            value = self.visit(elt)
-            if not ctx().live:
-                return validate_value(None)
-            values.append(validate_value(value))
+            if isinstance(elt, ast.Starred):
+                value = self.visit(elt.value)
+                if not ctx().live:
+                    return validate_value(None)
+                values.extend(self.handle_starred(value))
+            else:
+                value = self.visit(elt)
+                if not ctx().live:
+                    return validate_value(None)
+                values.append(validate_value(value))
         return SetImpl.from_set(values)
 
     def visit_ListComp(self, node):
@@ -2153,13 +2159,13 @@ class Visitor(ast.NodeVisitor):
                 if not ctx().live:
                     return validate_value(None)
                 if isinstance(value, DictImpl):
-                    value_dict = value._as_dict_with_py_keys()
-                    if not all(isinstance(k, str) for k in value_dict):
+                    value_items = value._items_with_py_keys()
+                    if not all(isinstance(key, str) for key, _ in value_items):
                         raise TypeError("keywords must be strings")
-                    for key in value_dict:
+                    for key, _ in value_items:
                         if key in kwargs:
                             raise TypeError(f"{callee_name}() got multiple values for keyword argument '{key}'")
-                    kwargs.update(value_dict)
+                    kwargs.update(value_items)
                 else:
                     raise TypeError(f"{callee_name}() argument after ** must be a mapping, not {_type_name(value)}")
         if not ctx().live:

@@ -140,10 +140,6 @@ def s_fstring():
     return len(f"{x}")
 
 
-def s_starred_expression():
-    return len({*(1, 2)})
-
-
 def s_list_literal():
     a = [1, 2, 3]
     return len(a)
@@ -290,7 +286,6 @@ UNSUPPORTED = [
     (s_set_comprehension, "Set comprehensions are not supported"),
     (s_dict_comprehension, "Dict comprehensions are not supported"),
     (s_fstring, "F-strings are not supported"),
-    (s_starred_expression, "Starred expressions are not supported"),
     (s_list_literal, "List literals are not supported"),
     (s_slice, "Slices are not supported"),
     (s_starred_assignment, "Starred assignment is not supported"),

@@ -122,6 +122,13 @@ class TupleImpl(TransientValue):
                 return True
         return False
 
+    def count(self, value, /):
+        result = 0
+        for element in self.value:
+            if element == value:
+                result += 1
+        return result
+
     def index(self, value, start: int = 0, stop: int | None = None, /):
         """Return the index of the first element of the tuple equal to the given value.
 

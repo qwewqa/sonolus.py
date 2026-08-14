@@ -292,13 +292,16 @@ class DictImpl[Keys, OrderedKeys, Values](Record):
             values = Array[type(values[0]), len(values)]._with_value([*values])
         return DictImpl(keys, ordered_keys, values)
 
-    def _as_dict_with_py_keys(self):
-        return {
-            self._keys[i]._as_py_(): self._values._value[i]
-            if isinstance(self._values, Array) and isinstance(self._values._value, list)
-            else self._values[i]
+    def _items_with_py_keys(self):
+        return tuple(
+            (
+                self._keys[i]._as_py_(),
+                self._values._value[i]
+                if isinstance(self._values, Array) and isinstance(self._values._value, list)
+                else self._values[i],
+            )
             for i in range(self._size)
-        }
+        )
 
     @meta_fn
     def _try_constsearch(self, item):
