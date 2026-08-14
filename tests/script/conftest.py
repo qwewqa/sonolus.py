@@ -79,7 +79,11 @@ def compile_fn(
 def run_and_validate[**P, R](
     fn: Callable[P, R], *args: P.args, use_simulation_context: bool = False, **kwargs: P.kwargs
 ) -> R:
-    """Runs a function as a regular function and as a compiled function, and checks that the results are the same."""
+    """Runs a function as a regular function and as a compiled function, and checks that the results are the same.
+
+    One compiled leg rewrites every closure cell into engine ROM, which holds 32-bit floats, so closure values
+    must stay within that range.
+    """
     exception = None
     regular_result = None
     log_entries = []
@@ -144,8 +148,18 @@ def run_and_validate[**P, R](
                     return type(value)._from_place_(ctx().rom[tuple(value._to_list_())])
 
             try:
-                for cell, original_value in zip(closure, original_values, strict=True):
-                    cell.cell_contents = value_to_rom(original_value)
+                for name, cell, original_value in zip(fn.__code__.co_freevars, closure, original_values, strict=True):
+                    try:
+                        cell.cell_contents = value_to_rom(original_value)
+                    except ValueError as e:
+                        # Attribute this to the harness: the ROM error is raised from host code with no source
+                        # location, so it reads as if the code under test produced it. Re-raising it as a
+                        # CompilationError instead would reach the legs below, which would compare it against
+                        # the exception the test itself expects.
+                        raise RuntimeError(
+                            f"run_and_validate cannot intern closure variable {name!r} "
+                            f"(value {original_value!r}) into engine ROM: {e}"
+                        ) from e
                 result = compile_and_call(fn, *args, **kwargs)
             finally:
                 for cell, original_value in zip(closure, original_values, strict=True):
@@ -180,7 +194,11 @@ def run_and_validate[**P, R](
             assert type(e) is type(exception)  # noqa: PT017
             raise exception from None
 
-    for read_closure_from_rom, passes in itertools.product((False, True), optimization_levels):
+    # The traced CFG depends on the callback and runtime_checks but not on the optimization level, so trace
+    # once per closure variant and share the CFG across the level loop: run_passes is non-destructive on its
+    # input. result_type is set as a tracing side effect, so it is recorded per trace and restored per run.
+    traced = {}
+    for read_closure_from_rom in (False, True):
         try:
             cfg, rom_values = compile_fn(
                 run_compiled_with_closure_from_rom if read_closure_from_rom else run_compiled,
@@ -194,11 +212,15 @@ def run_and_validate[**P, R](
             assert str(e) == str(exception)  # noqa: PT017
             assert type(e) is type(exception)  # noqa: PT017
             raise exception from None
+        traced[read_closure_from_rom] = (cfg, rom_values, result_type)
 
+    for read_closure_from_rom, passes in itertools.product((False, True), optimization_levels):
+        cfg, rom_values, result_type = traced[read_closure_from_rom]
         cfg = run_passes(cfg, passes, OptimizerConfig())
         entry = cfg_to_engine_node(cfg)
         interpreter = Interpreter()
-        interpreter.blocks[PlayBlock.EngineRom] = rom_values
+        # A fresh copy per run: the interpreter writes into the block lists it is handed.
+        interpreter.blocks[PlayBlock.EngineRom] = list(rom_values)
 
         num_result = interpreter.run(entry)
         if exception is None:
@@ -206,17 +228,27 @@ def run_and_validate[**P, R](
                 assert num_result == regular_result
             else:
                 assert num_result == 0
-        compiled_result = result_type._from_list_(
-            [interpreter.get(-2, i) for i in range(result_type._size_())]
-        )._as_py_()
+        if result_type is None:
+            # Every traced path of the call terminated, so the tracing side effect that records the result
+            # type never ran and nothing was stored in the result slot. The termination flag below is what
+            # these runs check.
+            compiled_result = None
+        else:
+            compiled_result = result_type._from_list_(
+                [interpreter.get(-2, i) for i in range(result_type._size_())]
+            )._as_py_()
         compiled_terminated = interpreter.get(-1, 0) != 1
 
         if exception is not None:
             assert compiled_terminated, "Compiled function should terminate if regular function raises exception"
-            raise exception
+            assert interpreter.log == log_entries
+            continue
 
         assert compiled_result == regular_result
         assert interpreter.log == log_entries
+
+    if exception is not None:
+        raise exception
 
     return regular_result
 
@@ -246,14 +278,25 @@ def run_compiled[**P](
     results = []
     logs = []
     initial_random_state = random.getstate()
+
+    # One trace per runtime_checks value rather than one per (level, runtime_checks): the traced CFG does not
+    # depend on the optimization level, and run_passes is non-destructive on its input.
+    traced = {}
+    for runtime_checks_value in runtime_checks_values:
+        random.setstate(initial_random_state)
+        traced[runtime_checks_value] = compile_fn(wrapper, runtime_checks=runtime_checks_value)
+
     for passes in optimization_levels:
         for runtime_checks_value in runtime_checks_values:
-            random.setstate(initial_random_state)
-            cfg, rom_values = compile_fn(wrapper, runtime_checks=runtime_checks_value)
+            cfg, rom_values = traced[runtime_checks_value]
             cfg = run_passes(cfg, passes, OptimizerConfig())
             entry = cfg_to_engine_node(cfg)
+            # The state reset is what makes every interpreter run draw the same stream from the Random and
+            # RandomInteger ops, so it belongs before each run now that the traces are hoisted.
+            random.setstate(initial_random_state)
             interpreter = Interpreter()
-            interpreter.blocks[PlayBlock.EngineRom] = rom_values
+            # A fresh copy per run: the interpreter writes into the block lists it is handed.
+            interpreter.blocks[PlayBlock.EngineRom] = list(rom_values)
             result = interpreter.run(entry)
             results.append(result)
             logs.append(interpreter.log.copy())

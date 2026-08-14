@@ -10,8 +10,8 @@ from Cython.Build import cythonize
 from setuptools import Extension, setup
 
 # A debug build (env ``SONOLUS_OPT_DEBUG_BUILD=1``) keeps Cython bounds/wraparound
-# checks and C-level asserts (NDEBUG left undefined) so the optimizer's internal
-# ``verify()`` fires; release builds strip them for speed.
+# checks and C-level asserts (NDEBUG left undefined); release builds strip them for speed.
+# ``Func.verify()`` is Python-level and available in both builds; debug/test entry points call it explicitly.
 DEBUG_BUILD = os.environ.get("SONOLUS_OPT_DEBUG_BUILD") == "1"
 
 compiler_directives = {

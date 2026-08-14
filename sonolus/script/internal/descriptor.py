@@ -6,12 +6,17 @@ class SonolusDescriptor:
 
     The compiler checks if a descriptor is an instance of a subclass of this class,
     so it knows that it's a supported descriptor.
+
+    `__get__` must not raise `AttributeError`. It runs during compilation, so the error cannot participate in
+    compiled `__getattr__` fallback.
     """
 
     @abstractmethod
     def __get__(self, instance, owner):
-        pass
+        """Return the descriptor value."""
+        raise NotImplementedError
 
     @abstractmethod
     def __set__(self, instance, value):
-        pass
+        """Set the descriptor value."""
+        raise NotImplementedError

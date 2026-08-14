@@ -1,4 +1,4 @@
-from typing import Any
+from typing import Annotated, Any
 
 import pytest
 from hypothesis import given
@@ -13,6 +13,12 @@ from sonolus.script.num import Num
 from sonolus.script.record import Record
 from sonolus.script.values import copy, zeros
 from tests.script.conftest import run_and_validate
+
+# run_and_validate's closure-from-ROM leg interns closure values into engine ROM, which holds 32-bit floats
+# and rejects magnitudes above f32 max, so the strategies stay within the range engine data can hold.
+f32_range_floats = st.floats(
+    allow_nan=False, allow_infinity=False, min_value=-3.4028234663852886e38, max_value=3.4028234663852886e38
+)
 
 
 class Simple(Record):
@@ -55,7 +61,39 @@ class ConcreteCompound(Record):
     b: Pair[Num, Num]
 
 
-@given(a=st.floats(allow_nan=False, allow_infinity=False))
+class NoneField(Record):
+    value: None
+
+
+def test_record_field_type_spec_is_normalized():
+    class Tagged(Record):
+        value: Annotated[int, "tag"]
+
+    assert Tagged._fields_[0].type is Num
+
+
+def test_none_record_field_type_spec_is_normalized():
+    assert NoneField._fields_[0].type.value() is None
+
+
+def test_none_record_type_argument_is_normalized():
+    parameterized = Pair[None, Num]
+    value = parameterized(None, 1)
+
+    assert parameterized._type_args_[0].value() is None
+    assert parameterized._fields_[0].type.value() is None
+    assert value.first is None
+
+
+def test_none_record_field_compiles():
+    def fn():
+        value = Pair[None, Num](None, Array(1)[0])
+        return value.second
+
+    assert run_and_validate(fn) == 1
+
+
+@given(a=f32_range_floats)
 def test_simple_record(a):
     def fn():
         r = Simple(a)
@@ -65,7 +103,7 @@ def test_simple_record(a):
     assert run_and_validate(fn) == 1
 
 
-@given(a=st.floats(allow_nan=False, allow_infinity=False))
+@given(a=f32_range_floats)
 def test_generic_record_inference(a):
     def fn():
         r = Generic(a)
@@ -75,7 +113,7 @@ def test_generic_record_inference(a):
     assert run_and_validate(fn) == 1
 
 
-@given(a=st.floats(allow_nan=False, allow_infinity=False))
+@given(a=f32_range_floats)
 def test_generic_record_explicit(a):
     def fn():
         r = Generic[Num](a)

@@ -6,6 +6,8 @@ Unit tests pin the subtle array/scalar/size-0/block-test rules directly against
 
 from __future__ import annotations
 
+import pytest
+
 from sonolus.backend._opt import analysis  # noqa: PLC2701
 from sonolus.backend.ir import IRConst, IRGet, IRInstr, IRPureInstr, IRSet
 from sonolus.backend.ops import Op
@@ -114,6 +116,19 @@ def test_conditional_infinite_loop_keeps_use_live():
     assert "x" in d["live_out"][0]
     # and live entering the spin block that reads it.
     assert any("x" in s for s in d["live_in"].values())
+
+
+def test_a_cfg_with_no_exit_block_at_all_is_rejected():
+    # The neighbouring shape to the test above, and the one liveness rejects: nothing branches out, so every
+    # path spins forever. The message is pinned, not just the rejection, because it is what the author reads.
+    def make():
+        spin = BasicBlock()
+        spin.statements = [IRSet(BlockPlace(500, 0, 0), IRConst(1))]
+        spin.connect_to(spin, None)
+        return spin
+
+    with pytest.raises(ValueError, match="Never terminates, since no path reaches an exit"):
+        _liveness(make)
 
 
 # --------------------------------------------------------------------------

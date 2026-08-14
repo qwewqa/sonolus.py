@@ -13,7 +13,7 @@ import struct
 import pytest
 
 from sonolus.backend._opt import ir  # noqa: PLC2701
-from sonolus.backend.blocks import PlayBlock
+from sonolus.backend.blocks import BlockData, PlayBlock, PreviewBlock
 from sonolus.backend.ir import IRConst, IRGet, IRInstr, IRPureInstr, IRSet
 from sonolus.backend.mode import Mode
 from sonolus.backend.ops import Op
@@ -88,6 +88,15 @@ def test_parallel_edges():
     b0.connect_to(other, 1)
     assert_faithful(b0)
     assert_idempotent(b0)
+
+
+@pytest.mark.parametrize("cond", [None, 0])
+def test_duplicate_edge_labels_are_rejected(cond):
+    entry = BasicBlock()
+    entry.connect_to(BasicBlock(), cond)
+
+    with pytest.raises(ValueError, match=f"duplicate outgoing edge label: {cond!r}"):
+        entry.connect_to(BasicBlock(), cond)
 
 
 def test_bare_side_effecting_statement():
@@ -191,11 +200,11 @@ def test_block_test_expression():
     b0 = BasicBlock()
     t = BasicBlock()
     f = BasicBlock()
-    b0.test = IRPureInstr(Op.Equal, [IRGet(_scalar("v0")), IRConst(6.0)])
+    b0.test = IRPureInstr(Op.Equal, [IRGet(_scalar("v0")), IRConst(6.5)])
     b0.connect_to(f, 0)
     b0.connect_to(t, None)
     rt = assert_faithful(b0)
-    assert "== 6.0" in cfg_to_text(rt)
+    assert "== 6.5" in cfg_to_text(rt)
 
 
 def _first_value_bits(cfg):
@@ -216,9 +225,9 @@ def test_nan_inf_consts_bitlevel_roundtrip():
             assert struct.pack("<d", got) == struct.pack("<d", value)
 
 
-def test_int_vs_float_const_display_preserved():
-    # NB: IRConst(3) and IRConst(3.0) share a mutated singleton, so a single
-    # value can't carry two displays; use distinct values to check both forms.
+def test_const_display_is_one_form_per_value():
+    # An integral value has one display no matter which spelling built it: IRConst(3.0) round-trips as
+    # 3, not 3.0. Only a non-integral value keeps a decimal point.
     b0 = BasicBlock()
     b0.statements = [
         IRSet(_scalar("i"), IRConst(7)),
@@ -226,9 +235,9 @@ def test_int_vs_float_const_display_preserved():
         IRSet(_scalar("g"), IRPureInstr(Op.Add, [IRConst(3.0), IRConst(4)])),
     ]
     text = cfg_to_text(roundtrip(b0))
-    assert "<- 7\n" in text  # int display
+    assert "<- 7\n" in text
     assert "3.5" in text
-    assert "3.0 + 4" in text  # 3.0 float display, 4 int display
+    assert "3 + 4" in text
 
 
 def test_self_loop():
@@ -278,3 +287,21 @@ def test_marshal_in_rejects_unsupported_block_value():
     b0.statements = [IRSet(BlockPlace("bad-block", 0, 0), IRConst(1))]
     with pytest.raises(ValueError, match="Unsupported block value"):
         ir.marshal_in(b0, None, None)
+
+
+def test_marshal_in_rejects_block_enum_from_another_mode():
+    b0 = BasicBlock()
+    b0.statements = [IRSet(_scalar("x"), IRGet(BlockPlace(PreviewBlock.RuntimeEnvironment, 0, 0)))]
+    with pytest.raises(
+        ValueError,
+        match=r"Block PreviewBlock\.RuntimeEnvironment is not valid for PlayBlock",
+    ):
+        ir.marshal_in(b0, Mode.PLAY, None)
+
+
+def test_marshal_in_rejects_plain_block_data_for_mode():
+    b0 = BasicBlock()
+    block = BlockData(1000, set(), set())
+    b0.statements = [IRSet(_scalar("x"), IRGet(BlockPlace(block, 0, 0)))]
+    with pytest.raises(ValueError, match=r"Block 1000 is not valid for PlayBlock"):
+        ir.marshal_in(b0, Mode.PLAY, None)

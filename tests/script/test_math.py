@@ -2,6 +2,7 @@
 
 import math
 
+import pytest
 from hypothesis import given
 from hypothesis import strategies as st
 
@@ -64,11 +65,53 @@ def test_radians_runtime(x):
     assert run_and_validate(fn) == math.radians(x)
 
 
+# tan, atan, cosh, and tanh have no caller anywhere else in the suite, so these four are what pins their
+# table entries and ops. run_and_validate is a genuine oracle here: the plain-Python leg calls CPython's math
+# function directly, while the compiled leg goes through the registered implementation, folding the constant
+# case and emitting the op for the runtime case, so a wrong table entry, op, or reference body fails.
+_HYPERBOLIC_AND_TAN = [math.tan, math.atan, math.cosh, math.tanh]
+
+
+@pytest.mark.parametrize("math_fn", _HYPERBOLIC_AND_TAN, ids=lambda fn: fn.__name__)
+@pytest.mark.parametrize("x", [0.7, -1.3])
+def test_tan_atan_cosh_tanh_constant(math_fn, x):
+    def fn():
+        return math_fn(x)
+
+    assert run_and_validate(fn) == math_fn(x)
+
+
+@pytest.mark.parametrize("math_fn", _HYPERBOLIC_AND_TAN, ids=lambda fn: fn.__name__)
+@pytest.mark.parametrize("x", [0.7, -1.3])
+def test_tan_atan_cosh_tanh_runtime(math_fn, x):
+    def fn():
+        return math_fn(bb(x))
+
+    assert run_and_validate(fn) == math_fn(x)
+
+
 def test_round_accepts_the_ndigits_keyword():
     def fn():
         return round(2.567, ndigits=2)
 
     assert run_and_validate(fn) == round(2.567, ndigits=2)
+
+
+def test_round_rejects_fractional_ndigits():
+    def fn(ndigits):
+        return round(2.567, ndigits)
+
+    with pytest.raises(TypeError):
+        run_and_validate(fn, 1.5)
+
+
+def test_fractional_round_ndigits_in_dead_runtime_branch_compiles():
+    def fn(take_branch):
+        if bb(take_branch):
+            return round(2.567, 1.5)
+        return 42
+
+    assert run_and_validate(fn, False) == 42
 
 
 @given(x=angles)

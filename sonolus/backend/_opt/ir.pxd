@@ -77,6 +77,11 @@ operand, but the value at a predecessor's exit is unique, so parallel same-pred
 operands are EQUAL (verified; the per-pred ``BasicBlock.phis`` export normalizes
 them, checking equality).
 
+That mapping needs an edge per path, and the path that falls into the entry block
+from outside has none. So where the source entry block is itself a loop header and
+needs a phi, ``build_ssa`` emits a pre-header for that path (the OPX_UNDEF moves
+there) and shifts every source block by one, giving the phi its entry-path operand.
+
 ------------------------------------------------------------------------------
 BlockInfo
 ------------------------------------------------------------------------------
@@ -126,10 +131,17 @@ PlaceInfo                   interned
 * offset        constant offset (address == (index_val>=0 ? value(index_val):0)
                 + offset).
 
-Writability, resolved once at marshal-in: a resolved
+Writability, resolved at marshal-in: a resolved
 BlockData is writable iff ``callback in block.writable`` (callback==None -> all
 resolved blocks read-only); an unresolved raw-int block (mode==None) is
 conservatively writable; a dynamic pointer target is conservatively writable.
+The one later point at which writability is re-resolved is a pass folding a
+dynamic block whose id turned out to be constant (lower.pyx, midend.pyx): the
+target first becomes known there, so it re-derives the same bits via
+``Func._folded_block_flags``. Baking a constant index into the offset of an
+existing place (which passes do for every kind, as marshal-in does) re-resolves
+only PLACE_RUNTIME_CONST and only for a real block
+(``Func._baked_index_flags``), never writability.
 
 ------------------------------------------------------------------------------
 consts                      f64 pool, interned by bit-pattern
@@ -232,11 +244,12 @@ cdef enum:
     PLACE_WRITABLE = 1
     PLACE_BLOCK_IS_ENUM = 2
     # A constant-index read of a non-writable block whose resolved name is in
-    # ``RUNTIME_CONSTANT_BLOCKS`` (set once at marshal-in, ir.pyx). The real
-    # runtime constant-folds such reads to a single push, so the treeify cost
-    # model (lower.pyx) treats a pure tree over these + OPX_CONSTs as effective
-    # cost 1 and duplicates it regardless of size rather than materializing a
-    # temp (which would defeat the fold).
+    # ``RUNTIME_CONSTANT_BLOCKS``. ir.pyx sets it at marshal-in, at a block-id fold,
+    # and when a pass bakes a constant index into an existing real-block place.
+    # The real runtime constant-folds such reads to a single push,
+    # so the treeify cost model (lower.pyx) treats a pure tree over these +
+    # OPX_CONSTs as effective cost 1 and duplicates it regardless of size rather
+    # than materializing a temp (which would defeat the fold).
     PLACE_RUNTIME_CONST = 4
 
 
@@ -310,6 +323,8 @@ cdef class Func:
     cdef int _rebuild_const_intern(self) except -1
     cdef int32_t _intern_temp(self, object temp) except -1
     cdef bint _writable_for_block(self, object member) except -1
+    cdef int32_t _folded_block_flags(self, int32_t block_id_int, bint const_index) except -1
+    cdef int32_t _baked_index_flags(self, int32_t block_ref, int32_t flags) except -1
     cdef int32_t _intern_place(self, object place, int32_t block_id) except -1
     cdef int32_t _value_of(self, object node, int32_t block_id) except -1
     cdef int32_t _emit_const(self, object value, int32_t block_id) except -1

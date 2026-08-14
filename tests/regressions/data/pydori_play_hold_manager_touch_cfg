@@ -16,8 +16,8 @@
 7:
   goto 8
 8:
-  v2 <- v1 * 32.0
-  v3 <- 16.0 + v2
+  v2 <- v1 * 32
+  v3 <- 16 + v2
   v4 <- v3
   goto 9
 9:
@@ -25,7 +25,7 @@
 10:
   goto 11
 11:
-  v5 <- EntityDataArray[v4] * 32.0
+  v5 <- EntityDataArray[v4] * 32
   v6 <- v5
   v7 <- EntitySharedMemoryArray[v6]
   goto 12
@@ -51,8 +51,8 @@
 20:
   goto 21
 21:
-  v11 <- v10 * 32.0
-  v12 <- 16.0 + v11
+  v11 <- v10 * 32
+  v12 <- 16 + v11
   v13 <- v12
   goto 22
 22:
@@ -60,7 +60,7 @@
 23:
   goto 24
 24:
-  v14 <- EntityDataArray[v13] * 32.0
+  v14 <- EntityDataArray[v13] * 32
   v15 <- v14
   v16 <- EntitySharedMemoryArray[v15]
   goto 25
@@ -85,45 +85,53 @@
 33:
   goto 34
 34:
+  v19 <- RuntimeUpdate[3] >= 0
+  v20 <- RuntimeUpdate[3] % 1
+  v21 <- v20 == 0
+  v22 <- v19 && v21
   goto 35
 35:
-  v19 <- v18 < RuntimeUpdate[3]
-  goto 36 if v19 else 41
+  v23 <- RuntimeUpdate[3] >= 0
+  v24 <- RuntimeUpdate[3] % 1
+  v25 <- v24 == 0
+  v26 <- v23 && v25
+  v27 <- v18 < RuntimeUpdate[3]
+  goto 36 if v27 else 41
 36:
-  v20 <- v17
+  v28 <- v17
   goto 37
 37:
-  v21 <- v20 * 15.0
-  v22 <- v21
+  v29 <- v28 * 15
+  v30 <- v29
   goto 38
 38:
-  v23 <- v17
-  v24 <- v23 + 1.0
-  v17 <- v24
+  v31 <- v17
+  v32 <- v31 + 1
+  v17 <- v32
   goto 39
 39:
   goto 40
 40:
-  v25 <- 1.0
+  v33 <- 1
   goto 42
 41:
-  v25 <- 0
+  v33 <- 0
   goto 42
 42:
   goto 43
 43:
-  goto 44 if v25 else 60
+  goto 44 if v33 else 60
 44:
-  v26 <- RuntimeTouchArray[v22] != v16
-  goto 45 if v26 else 46
+  v34 <- RuntimeTouchArray[v30] != v16
+  goto 45 if v34 else 46
 45:
   goto 30
 46:
-  goto 47 if RuntimeTouchArray[v22 + 2] else 58
+  goto 47 if RuntimeTouchArray[v30 + 2] else 58
 47:
   goto 48
 48:
-  v27 <- EntityMemory[0]
+  v35 <- EntityMemory[0]
   goto 49
 49:
   goto 50
@@ -134,18 +142,18 @@
 52:
   goto 53
 53:
-  v28 <- v27 * 32.0
-  v29 <- 16.0 + v28
-  v30 <- v29
+  v36 <- v35 * 32
+  v37 <- 16 + v36
+  v38 <- v37
   goto 54
 54:
   goto 55
 55:
   goto 56
 56:
-  v31 <- EntityDataArray[v30] * 32.0
-  v32 <- v31
-  EntitySharedMemoryArray[v32] <- 0
+  v39 <- EntityDataArray[v38] * 32
+  v40 <- v39
+  EntitySharedMemoryArray[v40] <- 0
   goto 57
 57:
   goto 59

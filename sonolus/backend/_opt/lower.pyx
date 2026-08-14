@@ -27,7 +27,7 @@ involved.
 The 4096-slot cap raises ``ValueError("Temporary memory limit exceeded")``.
 """
 
-from libc.math cimport fabs, isfinite
+from libc.math cimport INFINITY, fabs, isfinite, nextafterf
 from libc.stdint cimport int16_t, int32_t, int64_t, uint8_t, uint16_t, uint32_t, uint64_t
 from libc.stdlib cimport calloc, free, malloc, realloc
 from libc.string cimport memcpy
@@ -139,12 +139,55 @@ cdef int64_t _CASE_SPAN_LIMIT = <int64_t>16777216  # 2**24
 # pathological input (e.g. a compile-time-unrolled accumulation loop).
 cdef int32_t _MAX_FOLD_DEPTH = 1000
 
+# Cap on the emitted size a runtime-constant value may contribute by duplication
+# (its real tree size times its use count). Depth alone cannot bound rtc folding:
+# multi-use at every level of a chain (repeated squaring of a runtime constant)
+# doubles the emitted arena per level -- 2^N instructions for an N-line source --
+# at depth ~N. Past the budget the value is force-materialized like a depth-capped
+# one, accepting that the temp defeats the runtime's own fold of that tree
+# (effective cost 1, runtime cost model), which keeps lowering linear in source
+# size. Trees of dup size <= 3 are exempt whatever their use count (see the leaf
+# note in _analyze) and stay linear anyway: one emits at most 3 per use, use counts
+# are bounded by the consuming instructions, and compounding cannot restart from an
+# exempt tree (a parent of two of them has size 7 and is gated again). Sizes of
+# folded rtc values therefore stay <= the budget (an exempt one is <= 3; any other
+# has size * use count <= the budget at a use count >= 1), which bounds the
+# _rtc_dup_size walk and keeps every memoized size in int32 range.
+cdef int32_t _RTC_DUP_BUDGET = 16384
+
 
 cdef inline bint _int32_block_const(double d) noexcept nogil:
     # A constant dynamic-block id may be folded to a static REAL_BLOCK int32 place
     # only when it is a finite integer in int32 range; the range check precedes the
     # ``<int64_t>d`` cast so that cast is always in-range (never UB).
     return isfinite(d) and -2147483648.0 <= d <= 2147483647.0 and d == <double>(<int64_t>d)
+
+
+cdef inline bint _bake_const_index(Func src, int32_t* off, int32_t* iv) noexcept:
+    # Bake a constant index into a place's offset, the way marshal-in bakes a literal one
+    # (ir.pyx ``_intern_place``), so the fused pipeline and a re-marshal of the exported CFG
+    # address the same cell the same way. Returns whether it baked. Range checks precede the
+    # int64 cast (never UB); a non-integral or out-of-range index stays a value reference, and so
+    # does a sum leaving int32, which marshal-in refuses outright instead. That accept-vs-refuse
+    # split is deliberate: no block holds more than 4096 cells, so such an address is out of range
+    # either way. The sum's range check compares in doubles (exact
+    # up to 2^53, and |off + index| < 2^33 here) because an integer ``-2147483648`` bound is a
+    # trap: C parses it as ``-(2147483648)``, whose inner constant is unsigned on an LLP64 target,
+    # so the comparison silently becomes ``2147483648 <= x``, and Cython folds a spelled-out
+    # ``-2147483647 - 1`` back into that same literal.
+    cdef double folded_index
+    cdef int64_t baked_off
+    if iv[0] < 0 or src.instrs[iv[0]].op != OPX_CONST:
+        return False
+    folded_index = src.consts[src.instrs[iv[0]].aux]
+    if not _int32_block_const(folded_index):
+        return False
+    baked_off = <int64_t>off[0] + <int64_t>folded_index
+    if not (-2147483648.0 <= <double>baked_off <= 2147483647.0):
+        return False
+    off[0] = <int32_t>baked_off
+    iv[0] = -1
+    return True
 
 
 # --------------------------------------------------------------------------
@@ -332,9 +375,10 @@ cdef void _dead_store_elim(Func func, Liveness L):
             t = places[pid].block_ref
             if not bs_get(rl, t):
                 disj1 = True
-        # Self-copy SET(p) = GET(p): detected by place id (post-coalesce these
-        # share one interned place id; a structurally-equal copy under distinct ids
-        # is a rare missed drop, output-quality only, never wrong behavior).
+        # Self-copy SET(p) = GET(p): detected by place id, which catches it only on
+        # an arena whose places are interned (marshal-in's). The pipeline's own
+        # self-copies reach here under distinct ids -- lower_from_ssa re-emits a
+        # place per access -- and are dropped structurally by fuse_rmw instead.
         disj2 = (instrs[vid].op == OPX_GET and instrs[vid].aux == pid)
         is_live = not (disj1 or disj2)
         if is_live:
@@ -352,7 +396,7 @@ cdef void _dead_store_elim(Func func, Liveness L):
 
 cdef void _rewrite_places(Func func, int32_t* temp_offset) except *:
     cdef PlaceInfo* places = func.places
-    cdef int32_t pid, t
+    cdef int32_t pid, t, iv, off
     cdef uint8_t kind
     cdef int64_t new_off
     for pid in range(func.n_places):
@@ -364,6 +408,15 @@ cdef void _rewrite_places(Func func, int32_t* temp_offset) except *:
             places[pid].offset = -1
         elif kind == PLACE_TEMP_SCALAR or kind == PLACE_TEMP_ARRAY:
             t = places[pid].block_ref
+            # Bake a constant index into the offset before the temp base is folded in. This is the
+            # last site that sees a temp place, so it is what makes the range check below cover the
+            # whole address rather than its base alone: an out-of-bounds constant index is refused
+            # whichever spelling produced it, where a pass-folded one used to ship.
+            iv = places[pid].index_val
+            off = places[pid].offset
+            if _bake_const_index(func, &off, &iv):
+                places[pid].index_val = iv
+                places[pid].offset = off
             # Sum in int64: a constant index folded into offset (up to INT32_MAX,
             # e.g. set_unchecked with an out-of-bounds constant index) must not
             # overflow the int32 add (UB) into a negative real-block offset. The
@@ -548,6 +601,20 @@ cdef void _fuse_scalar(Func func, int32_t i) except *:
     instrs[i].flags = <uint8_t>(FLAG_SIDE_EFFECT | FLAG_PINNED | FLAG_STMT_ROOT)
 
 
+cdef bint _drop_self_copy(Func func, int32_t i) except -1:
+    # A statement-root OPX_SET(p, OPX_GET(p)) writes back the value already at p, so the whole
+    # statement goes, address expressions included: _places_equal gates a non-GET index or pointer
+    # subtree on FLAG_PURE, so an impure one compares unequal and the store stays. Returns whether
+    # it dropped, which is also the caller's signal to skip the fusion attempt.
+    cdef int32_t vid = <int32_t>func.args[func.instrs[i].arg_start]
+    if func.instrs[vid].op != <uint16_t>OPX_GET:
+        return False
+    if not _places_equal(func, func.instrs[vid].aux, func.instrs[i].aux):
+        return False
+    func.instrs[i].flags &= <uint8_t>(~FLAG_STMT_ROOT)
+    return True
+
+
 cdef void fuse_rmw(Func func) except *:
     """Fuse place-based read-modify-write statement roots in place (see lower.pxd).
 
@@ -560,6 +627,14 @@ cdef void fuse_rmw(Func func) except *:
     order). The dying GET/BinOp instrs are left orphaned (no stmt root,
     unreferenced) -- emit/export skip them.
 
+    The degenerate sibling of that shape, ``OPX_SET(p, OPX_GET(p))``, is dropped
+    outright. In-place operators write their result back through the target, which
+    for a plain memory target stores the value already there; the copy is also what
+    allocation leaves behind when two distinct temps land in one slot. Both reach
+    here as structurally-equal places under distinct ids, which is why this is the
+    site: ``_dead_store_elim``'s own self-copy arm compares place ids, and it does
+    not run at fast when bump allocation fits.
+
     (The op-level ``GetPointed``/``GetShifted`` RMW forms are fused earlier, on SSA,
     in ``midend._fuse_ptr_rmw`` -- treeify materializes those pinned reads to temps
     so they are never inline here.)
@@ -571,6 +646,8 @@ cdef void fuse_rmw(Func func) except *:
         if instrs[i].op != <uint16_t>OPX_SET:
             continue
         if not (instrs[i].flags & FLAG_STMT_ROOT):
+            continue
+        if _drop_self_copy(func, i):
             continue
         _fuse_scalar(func, i)
 
@@ -651,17 +728,22 @@ def run_fuse_rmw(entry, mode=None, callback=None, strategy="packing"):
 #   inlinable. Writable/dynamic/array reads, Random, and side-effecting values
 #   are NOT inlinable. (Decision-aware: computed bottom-up in value-id order, so
 #   a materialized operand counts as a stable leaf.)
-# * ``runtime-constant tree`` (``_rtc``): pure ops over OPX_CONST + PLACE_
-#   RUNTIME_CONST reads (the marshal-in flag). ALWAYS folded/duplicated, never
-#   materialized and never gated by loop-crossing -- a temp defeats the runtime's
-#   own constant folding (effective cost 1, runtime cost model), so it duplicates
-#   regardless of size, including into phi copies (safe: no phi/temp reads).
+# * ``runtime-constant tree`` (``_rtc``): pure ops over OPX_CONST +
+#   PLACE_RUNTIME_CONST reads. Folded/duplicated, never gated by
+#   loop-crossing or the multi-use cost rule -- a temp defeats the runtime's own
+#   constant folding (effective cost 1, runtime cost model) -- including into phi
+#   copies (safe: no phi/temp reads). Two compile-side caps force a temp anyway:
+#   the depth cap (_MAX_FOLD_DEPTH) and the duplication size budget
+#   (_RTC_DUP_BUDGET, real tree size times use count), which stops multi-use
+#   chains from compounding the emitted arena exponentially.
 # * Decision (skipping consts/undef/phis/roots):
 #     - use_count==0 & not side-effecting        -> DROP.
 #     - side-effecting non-root                  -> MATERIALISE (never fold an
 #                                                    effect; matches the naive
 #                                                    lowering exactly).
-#     - runtime-constant tree                    -> FOLD/DUP (never materialize).
+#     - runtime-constant tree                    -> FOLD/DUP (materialized only
+#                                                    past the depth cap or the
+#                                                    dup-size budget).
 #     - used by a phi (and not runtime-const)    -> MATERIALISE (phi operands are
 #                                                    a temp or a runtime-const
 #                                                    tree, so coalescing owns the
@@ -759,6 +841,7 @@ cdef class _Lower:
     cdef list value_temp
     cdef list rtc_memo
     cdef list tc_memo
+    cdef list rtc_size_memo
     # prefix[i] = count of FLAG_SIDE_EFFECT instrs in indices [0, i); lets
     # _no_effect_between answer in O(1) instead of rescanning per candidate.
     cdef int32_t* se_prefix
@@ -799,6 +882,7 @@ cdef class _Lower:
         self.value_temp = [-1] * ni
         self.rtc_memo = [None] * ni
         self.tc_memo = [None] * ni
+        self.rtc_size_memo = [None] * ni
         cdef int32_t e
         self.incoming = [[] for _ in range(self.nb)]
         self.edge_pos = [0] * src.n_edges
@@ -822,11 +906,14 @@ cdef class _Lower:
 
     def _rtc(self, int32_t v):
         # Runtime-constant tree: pure ops over OPX_CONST + PLACE_RUNTIME_CONST
-        # reads. A materialized / phi / undef operand emits as a temp read (never
-        # runtime-constant), which also STOPS recursion at materialized values --
-        # essential because an uninitialized self-referential loop variable makes
-        # the SSA value graph cyclic (phi(UNDEF,v)=v collapse), and the cycle's
-        # back edge is always a materialized undef-widened value. Memoized.
+        # reads. A materialized / phi / undef operand emits as a temp read, which is
+        # never runtime-constant and also stops the recursion there. Termination:
+        # every OTHER operand is a non-phi SSA operand, whose def dominates the use
+        # and therefore has a strictly smaller (RPO) value id, so the walk descends a
+        # DAG. A loop-carried value reaches it only through a phi, which it never
+        # enters, and a collapsed phi cannot smuggle one back in: verify() asserts
+        # arg < instr id for every non-phi instruction (ir.pyx), so which loop-header
+        # phis build_ssa happens to keep does not matter. Memoized.
         cached = self.rtc_memo[v]
         if cached is not None:
             return <bint>cached
@@ -938,6 +1025,37 @@ cdef class _Lower:
         self.tc_memo[v] = r
         return r
 
+    def _rtc_dup_size(self, int32_t v):
+        # Real emitted size of the tree rooted at v as duplication would emit it
+        # (materialized operands are temp-read leaves). NOT _tree_cost: that
+        # returns the runtime-effective cost 1 for an rtc tree, while the dup
+        # budget must bound what lowering actually emits. Only called on rtc
+        # values and their operands, so every non-leaf case here is a const, an
+        # rtc read, or a pure op. Memoized; valid because operands' materialize
+        # flags are final before their first consumer is decided.
+        cached = self.rtc_size_memo[v]
+        if cached is not None:
+            return <int32_t>cached
+        cdef Instr* ins = &self.src.instrs[v]
+        cdef int32_t op = ins.op
+        cdef int32_t r, astart, nargs, k
+        if op == OPX_CONST:
+            r = 1
+        elif <bint>self.materialize[v]:
+            r = 3  # scalar-temp get
+        elif op == OPX_GET:
+            r = 3  # Get func + block push + constant index (rtc reads fold their index)
+        elif op < OP_RUNTIME_COUNT and (ins.flags & FLAG_PURE):
+            r = 1
+            astart = ins.arg_start
+            nargs = ins.nargs
+            for k in range(nargs):
+                r += self._rtc_dup_size(<int32_t>self.src.args[astart + k])
+        else:
+            r = 3
+        self.rtc_size_memo[v] = r
+        return r
+
     def _no_effect_between(self, int32_t v, int32_t upos):
         # No FLAG_SIDE_EFFECT instruction strictly between v and its use (same
         # block). For a test use, the use position is the block end. O(1) via the
@@ -967,7 +1085,7 @@ cdef class _Lower:
     def _analyze(self):
         cdef Func src = self.src
         cdef int32_t i, b, op, k, astart, nargs, e, pid, tv, uc
-        cdef int32_t iv, depth, best, od
+        cdef int32_t iv, depth, best, od, rsz
         cdef list fold_depth
         cdef bint side, ih, single, opk
         # Side-effect prefix sums for _no_effect_between (se_prefix[i] = count of
@@ -1007,31 +1125,15 @@ cdef class _Lower:
             if src.blocks[b].test_val >= 0:
                 self._record_use(src.blocks[b].test_val, b, _TEST_USE, False)
 
-        # Values used outside their strict dominance region (from phi(UNDEF,v)=v
-        # collapses in build_ssa) MUST be materialized: on the undef path the def
-        # has not executed, so the reference reads an uninitialized temp; folding
-        # or duplicating would evaluate the value there instead. Force a temp.
-        # These are also the ONLY non-phi operands that may reference a LATER value
-        # (a loop back edge), and an uninitialized self-referential loop variable
-        # makes the value graph cyclic through exactly such an edge -- so
-        # pre-marking them materialized (before any _rtc / _tree_cost recursion)
-        # both keeps semantics and breaks the cycle at a materialized leaf.
-        undef_set = src._ssa_undef if src._ssa_undef is not None else set()
-        for i in undef_set:
-            op = src.instrs[i].op
-            if (op != OPX_PHI and op != OPX_CONST and op != OPX_UNDEF
-                    and not (src.instrs[i].flags & FLAG_STMT_ROOT)):
-                self.materialize[i] = True
-
         # Phase 2: scheduling decision, in ascending value-id order so that an
         # operand's decision is known when its consumer is decided.
         # fold_depth[v] = v's consumer-seen tree depth: 1 for a leaf (materialized/
         # dropped/phi/const/undef), else 1 + max over emitted operands (incl. a
         # GET's dynamic block_ref/index), mirroring _emit_ref/_emit_tree. Reads
-        # here are final: operands precede users in id order (sole exception, the
-        # undef-widened back edge, is pre-materialized in phase 1). The cap fires
-        # before this iteration's _rtc/_tree_cost calls, so every recursive walk
-        # only descends depth-bounded operands (see _MAX_FOLD_DEPTH).
+        # here are final: a non-phi operand's def dominates its use, so operands precede
+        # users in id order without exception. The cap fires before this iteration's
+        # _rtc/_tree_cost calls, so every recursive walk only descends depth-bounded
+        # operands (see _MAX_FOLD_DEPTH).
         fold_depth = [1] * ni
         for i in range(src.n_instrs):
             op = src.instrs[i].op
@@ -1039,8 +1141,6 @@ cdef class _Lower:
                 continue
             if src.instrs[i].flags & FLAG_STMT_ROOT:
                 # emitted as its own tree, never as an operand -> depth feeds no parent
-                continue
-            if <bint>self.materialize[i]:  # pre-marked undef-widened value
                 continue
             # Seen-depth of i if it folds: 1 + its deepest emitted operand.
             best = 0
@@ -1095,6 +1195,23 @@ cdef class _Lower:
                 self.materialize[i] = True
                 continue
             if self._rtc(i):
+                # Materializing past the budget (see _RTC_DUP_BUDGET) makes later
+                # consumers non-rtc, so the compounding stops at this level instead
+                # of continuing up the chain. The operand loop in _rtc is what does
+                # that: it rejects a materialized operand BEFORE consulting the memo,
+                # which still answers True for i (the call just above set it). That
+                # test is load-bearing, not redundant with the memo. MUST-FOLD values
+                # never reach here: they are handled unconditionally before the cost
+                # rules.
+                # A tree of dup size <= 3 is exempt whatever its use count: 3 is
+                # what a scalar-temp read itself emits (see _rtc_dup_size), so a
+                # temp emits no less per use than the tree it replaces and adds the
+                # store on top, while costing every use its runtime-constant status.
+                # Duplicating is at least as cheap on every axis there.
+                rsz = self._rtc_dup_size(i)
+                if rsz > 3 and <int64_t>rsz * <int64_t>uc > <int64_t>_RTC_DUP_BUDGET:
+                    self.materialize[i] = True
+                    continue
                 self.materialize[i] = False
                 fold_depth[i] = depth
                 continue
@@ -1173,6 +1290,11 @@ cdef class _Lower:
         cdef int32_t off = src.places[src_pid].offset
         if kind == PLACE_TEMP_ARRAY or kind == PLACE_TEMP_SIZE0:
             br = self._map_array_temp(br)
+            # A temp place's index bakes like any other, so the lowered arena carries the same
+            # address marshal-in would have built. Allocation bakes again for whatever reaches it
+            # unbaked; this is the site the pre-allocation inspection form (lower_debug,
+            # visualize_cfg) shows.
+            _bake_const_index(src, &off, &iv)
         elif kind == PLACE_DYNAMIC_BLOCK:
             # Fold a constant block id to a static REAL_BLOCK only when it is a
             # finite integer in int32 range. A non-integral / non-finite / out-of-
@@ -1182,10 +1304,25 @@ cdef class _Lower:
             # ``int()`` on inf/NaN would raise.
             if src.instrs[br].op == OPX_CONST and _int32_block_const(src.consts[src.instrs[br].aux]):
                 kind = PLACE_REAL_BLOCK
-                flags = 0
                 br = <int32_t>(<int64_t>src.consts[src.instrs[br].aux])
+                # An index SCCP folded alongside the block id: baking it here is what lets the flag
+                # re-derivation below see the same constant-index answer a re-marshal would.
+                _bake_const_index(src, &off, &iv)
+                # A pointer's flags are the conservative answer for an unknown target; the fold is
+                # where the target becomes known, so re-derive them rather than dropping them --
+                # emission's address rewrite reads PLACE_RUNTIME_CONST. ``iv < 0`` == constant index.
+                flags = self.dst._folded_block_flags(br, iv < 0)
             else:
+                # The block id stays a runtime value, but the index still bakes: the pointer
+                # target's flags are the conservative answer either way, so nothing re-derives.
+                _bake_const_index(src, &off, &iv)
                 br = self._emit_ref(br, block)
+        elif _bake_const_index(src, &off, &iv) and kind == PLACE_REAL_BLOCK:
+            # A block id that was static all along, with an index that reached lowering constant
+            # (folded by a pass, or a spelling marshal-in leaves as a value). Flags come from the
+            # place rather than from the block id: nothing about the block changed. The scalar-temp
+            # kind bakes through the same arm and re-derives nothing (there is no block to resolve).
+            flags = src._baked_index_flags(br, flags)
         if iv >= 0:
             iv = self._emit_ref(iv, block)
         return _add_place_l(self.dst, <uint8_t>kind, <uint8_t>flags, br, iv, off)
@@ -1228,7 +1365,7 @@ cdef class _Lower:
         return self.dst._emit(OPX_CONST, FLAG_PURE | FLAG_CONST_IS_INT, block, cid, [])
 
     def _emit_op(self, int32_t op, int32_t flags, list args, int32_t block):
-        # Flatten associative left spines (Add/Multiply/Mod/Rem, args[0] only) and
+        # Flatten the selected left-fold spines (Add/Multiply/Mod/Rem, args[0] only) and
         # re-apply n-ary identity dropping (drop redundant identity operands).
         cdef Func dst = self.dst
         cdef int32_t a0, k, na
@@ -1799,6 +1936,40 @@ cdef int64_t _gcd(int64_t a, int64_t b) noexcept nogil:
     return a
 
 
+cdef inline float _switch_test_f32(float test, int64_t off_i, int64_t str_i) noexcept nogil:
+    # Must stay in lockstep with the expression _normalize_switch emits below: if that
+    # shape changes, this guard silently stops matching what the runtime evaluates.
+    cdef float t = test
+    if off_i != 0:
+        t = t - <float>off_i
+    if str_i != 1:
+        t = t / <float>str_i
+    return t
+
+
+cdef bint _f32_dispatch_exact(list cases, int64_t off_i, int64_t str_i):
+    # Whether the rewritten switch still selects a case arm for that case value alone.
+    # _CASE_MAG_LIMIT/_CASE_SPAN_LIMIT bound the cases, not the test, and the runtime
+    # rounds (test - off)/stride to f32: a value matching no case can land exactly on a
+    # case index and steal its arm, since every switch form compares the index for exact
+    # equality.
+    #
+    # Probing each case's two immediate f32 neighbors decides this exactly rather than
+    # approximately: stride > 0 makes the composed map monotonic, so an index's preimage
+    # is one contiguous f32 run, which collapses to the case alone iff both neighbors
+    # land elsewhere.
+    cdef double c
+    cdef float cf, idx
+    for c in cases:
+        cf = <float>c
+        idx = <float>((<int64_t>c - off_i) // str_i)
+        if _switch_test_f32(nextafterf(cf, -INFINITY), off_i, str_i) == idx:
+            return False
+        if _switch_test_f32(nextafterf(cf, INFINITY), off_i, str_i) == idx:
+            return False
+    return True
+
+
 def _dense_offset_stride(list cases):
     # cases: sorted distinct f64. Dense (gap-tolerant) normalization: return
     # (offset, stride, span) with offset = min (int), stride = gcd of all
@@ -1806,9 +1977,10 @@ def _dense_offset_stride(list cases):
     # and span = (max - offset)/stride + 1 == the number of SwitchIntegerWithDefault
     # slots. Returns None (leaving the switch un-normalized) if any case is
     # non-integral, non-finite, or out of range (see _CASE_MAG_LIMIT/
-    # _CASE_SPAN_LIMIT). All (case - offset)/stride are then distinct
-    # integers in [0, span); the emit switch gate fills the span - k holes with the
-    # default target.
+    # _CASE_SPAN_LIMIT), or if the rewrite would misdispatch a near-case test under
+    # the runtime's f32 (see _f32_dispatch_exact). All (case - offset)/stride are
+    # then distinct integers in [0, span); the emit switch gate fills the span - k
+    # holes with the default target.
     cdef int32_t n = len(cases)
     if n < 2:
         return None
@@ -1827,6 +1999,10 @@ def _dense_offset_stride(list cases):
     for i in range(1, n):
         g = _gcd(g, <int64_t>(<double>cases[i]) - off)
     if g == 0:
+        return None
+    # Runtime-dispatch guard: see _f32_dispatch_exact. Last, so every cast above is
+    # already known safe.
+    if not _f32_dispatch_exact(cases, off, g):
         return None
     cdef int64_t span = (<int64_t>(<double>cases[n - 1]) - off) // g + 1
     return (off, g, span)
@@ -1915,7 +2091,8 @@ def _offset_stride(list cases):
     # cases: sorted distinct case values (as f64). Return (offset, stride) ints
     # for an exact arithmetic progression, or None (leaving the switch
     # un-normalized) if any case is non-integral, non-finite, or out of range
-    # (see _CASE_MAG_LIMIT/_CASE_SPAN_LIMIT).
+    # (see _CASE_MAG_LIMIT/_CASE_SPAN_LIMIT), or if the rewrite would misdispatch a
+    # near-case test under the runtime's f32 (see _f32_dispatch_exact).
     cdef int32_t n = len(cases)
     if n < 2:
         return None
@@ -1936,6 +2113,10 @@ def _offset_stride(list cases):
         case = <double>cases[i]
         if case != offset + i * stride:
             return None
+    # Runtime-dispatch guard: see _f32_dispatch_exact. Last, so every cast above is
+    # already known safe.
+    if not _f32_dispatch_exact(cases, <int64_t>offset, <int64_t>stride):
+        return None
     return (int(offset), int(stride))
 
 

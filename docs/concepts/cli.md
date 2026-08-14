@@ -29,7 +29,7 @@ sonolus-py dev [module] [--build-dir DIR] [--port PORT]
 - `--port PORT`: defaults to `8000`.
 
 ## `sonolus-py check`
-Compiles and validates the project without writing engine or level output.
+Validates the project without writing engine or level output.
 
 ```bash
 sonolus-py check [module]
@@ -52,12 +52,15 @@ sonolus-py schema [module]
 | `-O0`, `--optimize-minimal` | | Use the minimal optimization passes. |
 | `-O1`, `--optimize-fast` | | Use the fast optimization passes. |
 | `-O2`, `--optimize-standard` | used if none of `-O0`/`-O1`/`-O2` is given | Use the standard optimization passes. |
-| `--runtime-checks {none,terminate,notify}` | `none` for `build`/`check`, `notify` for `dev` | `none` disables runtime checks; `terminate` stops the callback on error; `notify` additionally logs and pauses before terminating. |
+| `--runtime-checks MODE` | build/check: none; dev: notify | none: off; terminate: stop; notify: log/pause/stop. |
 | `--gc` | off | Enable the Python garbage collector during compilation. |
-| `--play`, `--watch`, `--preview`, `--tutorial` | all enabled if none are given | Restrict which components are built (or, for `check`, validated). Passing any one of the four narrows the set to just those given. |
-| `-v`, `--verbose` | off | On a compilation error, print the full traceback instead of a simplified summary. |
+| `--no-gc` | on | Disable the Python garbage collector during compilation. |
+| `--play`/`--watch`/`--preview`/`--tutorial` | all by default | Restrict built/checked components to those given. |
+| `-v`, `--verbose` | off | Print full compilation tracebacks. |
 | `--profile` | off | Print a per-stage compile timing summary to stderr. Not available for `dev`. |
-| `--profile-json PATH` | | Write per-stage compile timings as JSON to `PATH`, confirming with a line on stderr. Also enables profiling, so the `--profile` summary is printed to stderr as well. Not available for `dev`. |
+| `--profile-json PATH` | | Write per-stage timings as JSON; also print the profile summary. Not available for `dev`. |
+
+`check` takes the `-O` options for compatibility with `build` and `dev`, but ignores them.
 
 ## Programmatic usage
 Most of the same functionality is available as methods on [`Project`][sonolus.script.project.Project]:

@@ -685,8 +685,8 @@ def perspective_approach(
 ) -> float:
     """Calculate the perspective-correct approach curve given the distance ratio and progress.
 
-    For typical engines with stage tilt, distance_ratio is the displayed width of a lane at the judge line divided
-    by the displayed width of a lane at note spawn. For flat stages, this will be 1.0, and this function would simply
+    For typical engines with stage tilt, distance_ratio is the displayed width of a lane at note spawn divided by
+    the displayed width of a lane at the judge line. For flat stages, this will be 1.0, and this function would simply
     return progress unchanged.
 
     Args:

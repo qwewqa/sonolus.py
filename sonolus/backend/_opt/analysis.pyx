@@ -276,7 +276,10 @@ cdef Liveness compute_liveness(Func func):
             has_exit = True
             break
     if nb > 0 and not has_exit:
-        raise ValueError("Infinite loop detected")
+        # This is the whole diagnostic an engine author gets: the compile driver prefixes it with the
+        # callback, archetype, and mode, and visualize_cfg surfaces it unwrapped. It names no subject of its
+        # own, so the driver's prefix supplies one and the unwrapped form stays true.
+        raise ValueError("Never terminates, since no path reaches an exit; make sure every loop can be exited")
 
     # All raw scratch buffers are allocated up front and checked for NULL in a
     # single combined guard that frees every partial allocation before raising,

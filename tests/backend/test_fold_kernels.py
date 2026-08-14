@@ -423,7 +423,7 @@ def test_power_special_cases(op, args, expected):
 
 
 def test_wrong_arity_is_not_constant():
-    # The associative ops are binary in the mid-end; other arities do not fold here.
+    # Marshal-in binarizes arithmetic left-fold ops; other arities do not fold here.
     assert kernels.fold(Op.Add, [1.0]) is None
     assert kernels.fold(Op.Add, [1.0, 2.0, 3.0]) is None
     assert kernels.fold(Op.Clamp, [1.0, 2.0]) is None

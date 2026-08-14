@@ -16,9 +16,12 @@ from sonolus.script.level import ExternalLevelData, Level, LevelData
 class Project:
     """A Sonolus.py project.
 
+    `resources` and `converters` are read only by [`dev`][sonolus.script.project.Project.dev], which serves the
+    resources alongside the project's own engine and levels.
+
     Args:
         engine: The engine of the project.
-        levels: The levels of the project.
+        levels: The levels of the project. Their names must be unique.
         resources: The path to the resources of the project.
         converters: A dict mapping source engine names to functions converting the
             [`ExternalLevelData`][sonolus.script.level.ExternalLevelData] of levels included in the project's
@@ -31,7 +34,7 @@ class Project:
         self,
         engine: Engine,
         levels: Iterable[Level] | Callable[[], Iterable[Level]] | None = None,
-        resources: PathLike | None = None,
+        resources: str | PathLike[str] | None = None,
         converters: dict[str | None, Callable[[ExternalLevelData], LevelData | None]] | None = None,
     ):
         self.engine = engine
@@ -45,7 +48,8 @@ class Project:
             case _:
                 raise TypeError(f"Invalid type for levels: {type(levels)}. Expected Iterable or Callable.")
         self._levels = None
-        self.resources = Path(resources or "resources")
+        self._level_loading_error: str | None = None
+        self.resources = Path("resources" if resources is None else resources)
         self.converters = converters or {}
 
     def with_levels(self, levels: Iterable[Level] | Callable[[], Iterable[Level]] | None) -> Project:
@@ -59,7 +63,7 @@ class Project:
         """
         return Project(self.engine, levels, self.resources, self.converters)
 
-    def dev(self, build_dir: PathLike, port: int = 8080, config: BuildConfig | None = None):
+    def dev(self, build_dir: str | PathLike[str], port: int = 8080, config: BuildConfig | None = None):
         """Start a development server for the project.
 
         Args:
@@ -83,7 +87,7 @@ class Project:
             project=self,
         )
 
-    def build(self, build_dir: PathLike, config: BuildConfig | None = None):
+    def build(self, build_dir: str | PathLike[str], config: BuildConfig | None = None):
         """Build the project.
 
         Args:
@@ -109,8 +113,26 @@ class Project:
     def levels(self) -> list[Level]:
         """The project's levels, loaded and cached on first access."""
         if self._levels is None:
-            self._levels = list(self._level_source)
+            if self._level_loading_error is not None:
+                raise ValueError(self._level_loading_error)
+            levels = list(self._level_source)
+            try:
+                self._validate_level_names(levels)
+            except ValueError as e:
+                self._level_loading_error = str(e)
+                raise
+            self._levels = levels
+        else:
+            self._validate_level_names(self._levels)
         return self._levels
+
+    @staticmethod
+    def _validate_level_names(levels: Iterable[Level]) -> None:
+        names: set[str] = set()
+        for level in levels:
+            if level.name in names:
+                raise ValueError(f"Project levels must have unique names; duplicate level name: {level.name!r}")
+            names.add(level.name)
 
 
 def lazy_loader(fn):
@@ -122,6 +144,7 @@ class ProjectSchema(TypedDict):
     """The schema of a project, as returned by [`Project.schema`][sonolus.script.project.Project.schema]."""
 
     archetypes: list[ArchetypeSchema]
+    """The schemas of the project's archetypes."""
 
 
 @dataclass
@@ -159,4 +182,4 @@ class BuildConfig:
     """Runtime error checking mode."""
 
     verbose: bool = False
-    """Whether to print full tracebacks for compilation errors instead of a simplified summary."""
+    """Whether the dev server prints full tracebacks for compilation errors instead of a simplified summary."""

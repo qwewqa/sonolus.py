@@ -3,7 +3,10 @@ import pytest
 from sonolus.script.array import Array
 from sonolus.script.array_like import ArrayLike
 from sonolus.script.debug import debug_log
+from sonolus.script.internal.descriptor import SonolusDescriptor
 from sonolus.script.internal.error import CompilationError
+from sonolus.script.internal.meta_fn import meta_fn
+from sonolus.script.internal.value import BackingValue
 from sonolus.script.num import Num
 from sonolus.script.record import Record
 from sonolus.script.vec import Vec2
@@ -16,6 +19,33 @@ class UnsupportedDescriptor:
 
     def __set__(self, instance, value):
         pass
+
+
+class FakeDescriptorProtocol:
+    _is_comptime_value_ = True
+
+    def __call__(self):
+        return 126
+
+    def __getattr__(self, name):
+        if name == "__get__":
+            return lambda instance, owner: -1
+        raise AttributeError(name)
+
+
+FAKE_DESCRIPTOR_PROTOCOL = FakeDescriptorProtocol()
+
+
+class MissingDescriptor(SonolusDescriptor):
+    def __get__(self, instance, owner):
+        raise AttributeError
+
+    def __set__(self, instance, value):
+        pass
+
+
+def missing_property(self):
+    return self.does_not_exist
 
 
 class MyBox[T](Record):
@@ -36,8 +66,170 @@ class MyBox[T](Record):
     def my_property(self, value):
         debug_log(value)
 
+    @property
+    def logging_property(self):
+        debug_log(123)
+        return 789
+
 
 MyBox.unsupported_descriptor = UnsupportedDescriptor()
+MyBox.missing_descriptor = MissingDescriptor()
+MyBox.missing_property = property(missing_property)
+
+
+class GetterlessPropertyBox(Record):
+    missing = property()
+
+
+class FakeDescriptorProtocolBox(Record):
+    fake = FAKE_DESCRIPTOR_PROTOCOL
+
+
+class PropertyFallbackBox(Record):
+    @property
+    def fallback(self):
+        return self.does_not_exist
+
+    def __getattr__(self, name):
+        if name == "fallback":
+            return 321
+        raise AttributeError(name)
+
+
+@meta_fn
+def missing_attribute(_self):
+    raise AttributeError("missing")
+
+
+def property_with_transient_closure_then_attribute_error(self):
+    z = 1
+    get_z = lambda: z  # noqa: E731
+    get_z()
+    z = 2
+    return missing_attribute(self)
+
+
+class ClassMethodPropertyFallbackBox(Record):
+    fallback = property(missing_attribute)
+
+    @classmethod
+    def __getattr__(cls, name):
+        return 432
+
+
+class StaticMethodPropertyFallbackBox(Record):
+    fallback = property(missing_attribute)
+
+    @staticmethod
+    def __getattr__(name):
+        return 543
+
+
+class TransientClosurePropertyFallbackBox(Record):
+    fallback = property(property_with_transient_closure_then_attribute_error)
+
+    def __getattr__(self, name):
+        return 2
+
+
+class PropertyDefaultBox(Record):
+    @property
+    def missing(self):
+        return self.does_not_exist
+
+
+class TracedGetattrBox(Record):
+    value: Num
+
+    def __getattr__(self, name):
+        return 10 if self.value else 20
+
+
+class ClassMethodGetattrBox(Record):
+    @classmethod
+    def __getattr__(cls, name):
+        return 31
+
+
+class StaticMethodGetattrBox(Record):
+    @staticmethod
+    def __getattr__(name):
+        return 32
+
+
+class AttributeErrorGetattrBox(Record):
+    @meta_fn
+    def __getattr__(self, name):
+        raise AttributeError("dynamic attribute unavailable")
+
+
+class CustomGetattributeBox(Record):
+    value: Num
+
+    def __getattribute__(self, name):
+        if name == "value":
+            return 99
+        return object.__getattribute__(self, name)
+
+
+class ConditionalAttributeErrorPropertyBox(Record):
+    flag: Num
+
+    @property
+    def property(self):
+        if self.flag:
+            return self.missing
+        return 5
+
+
+@meta_fn
+def outer_exception_from_attribute_error(_self):
+    raise ValueError("outer") from AttributeError("inner")
+
+
+class OuterExceptionFromAttributeErrorBox(Record):
+    failing = property(outer_exception_from_attribute_error)
+
+
+Record.masked_for_test = property(lambda self: 123)
+MyBox.masked_for_test = None
+
+
+def _direct_meta_function():
+    return 1
+
+
+def test_unimplemented_sonolus_descriptor_methods_raise():
+    descriptor = SonolusDescriptor()
+    with pytest.raises(NotImplementedError):
+        descriptor.__get__(None, object)
+    with pytest.raises(NotImplementedError):
+        descriptor.__set__(None, 0)
+
+
+def test_unimplemented_backing_value_methods_raise():
+    backing = BackingValue()
+    with pytest.raises(NotImplementedError):
+        backing.read()
+    with pytest.raises(NotImplementedError):
+        backing.write(0)
+
+
+@pytest.mark.parametrize("kind", ["direct", "getattr"])
+def test_getattr_does_not_treat_synthesized_get_as_descriptor(kind):
+    def fn():
+        box = FakeDescriptorProtocolBox()
+        if kind == "direct":
+            value = box.fake
+        else:
+            value = getattr(box, "fake")  # noqa: B009
+        return value()
+
+    assert run_and_validate(fn) == 126
+
+
+def test_meta_fn_accepts_direct_function_configuration():
+    assert meta_fn(_direct_meta_function, show_in_stack=False)() == 1
 
 
 def test_hasattr_record_field():
@@ -68,6 +260,31 @@ def test_hasattr_record_property():
     assert run_and_validate(fn) == 1
 
 
+def test_hasattr_invokes_property_getter():
+    def fn():
+        return hasattr(MyBox(1), "logging_property")
+
+    assert run_and_validate(fn) == 1
+
+
+def test_hasattr_suppresses_attribute_error_from_descriptor():
+    def fn():
+        return hasattr(MyBox(1), "missing_descriptor")
+
+    assert run_and_validate(fn) == 0
+
+
+def test_hasattr_suppresses_attribute_error_from_property():
+    def fn():
+        return hasattr(MyBox(1), "missing_property")
+
+    with pytest.raises(
+        CompilationError,
+        match=r"The getter for property 'missing_property' on MyBox\[Num\] raised AttributeError during compilation",
+    ):
+        run_compiled(fn)
+
+
 def test_hasattr_record_not_present():
     def fn():
         return hasattr(MyBox(1), "does_not_exist")
@@ -79,7 +296,10 @@ def test_hasattr_record_unsupported():
     def fn():
         return hasattr(MyBox(1), "unsupported_descriptor")
 
-    with pytest.raises(CompilationError, match="Unsupported field"):
+    with pytest.raises(
+        CompilationError,
+        match="Accessing attribute 'unsupported_descriptor' on MyBox\\[Num\\] is not supported",
+    ):
         run_compiled(fn)
 
 
@@ -151,12 +371,293 @@ def test_getattr_record_property():
     assert run_and_validate(fn) == 789
 
 
+def test_direct_missing_attribute_traces_getattr():
+    def fn():
+        return TracedGetattrBox(1).missing
+
+    assert run_and_validate(fn) == 10
+
+
+def test_builtin_getattr_of_missing_attribute_traces_getattr():
+    def fn():
+        return getattr(TracedGetattrBox(0), "missing")  # noqa: B009
+
+    assert run_and_validate(fn) == 20
+
+
+def test_getattr_rejects_non_string_name():
+    def fn():
+        return getattr(MyBox(1), 1)  # type: ignore
+
+    with pytest.raises(TypeError, match="attribute name must be string, not 'int'"):
+        run_and_validate(fn)
+
+
+def test_getattr_with_default_rejects_non_string_name():
+    def fn():
+        return getattr(MyBox(1), None, 42)  # type: ignore
+
+    with pytest.raises(TypeError, match="attribute name must be string, not 'NoneType'"):
+        run_and_validate(fn)
+
+
+def test_hasattr_rejects_non_string_name():
+    def fn():
+        return hasattr(MyBox(1), 1)  # type: ignore
+
+    with pytest.raises(TypeError, match="attribute name must be string, not 'int'"):
+        run_and_validate(fn)
+
+
+def test_getattr_rejects_runtime_attribute_name():
+    def fn():
+        name = Array(1)[0]
+        return getattr(MyBox(1), name)  # type: ignore
+
+    with pytest.raises(CompilationError, match="attribute name must be a compile-time string, not 'Num'"):
+        run_compiled(fn)
+
+
+def test_hasattr_of_missing_attribute_traces_getattr():
+    def fn():
+        return hasattr(TracedGetattrBox(1), "missing")
+
+    assert run_and_validate(fn)
+
+
+def test_ordinary_missing_attribute_binds_classmethod_getattr():
+    def fn():
+        box = ClassMethodGetattrBox()
+        return box.missing + getattr(box, "other") + hasattr(box, "third")  # noqa: B009
+
+    assert run_and_validate(fn) == 63
+
+
+def test_ordinary_missing_attribute_binds_staticmethod_getattr():
+    def fn():
+        box = StaticMethodGetattrBox()
+        return box.missing + getattr(box, "other") + hasattr(box, "third")  # noqa: B009
+
+    assert run_and_validate(fn) == 65
+
+
+@pytest.mark.parametrize("kind", ["direct", "getattr", "hasattr"])
+def test_attribute_error_from_getattr_has_clear_diagnostic(kind):
+    def fn():
+        box = AttributeErrorGetattrBox()
+        if kind == "direct":
+            return box.missing
+        if kind == "getattr":
+            return getattr(box, "missing")  # noqa: B009
+        return hasattr(box, "missing")
+
+    with pytest.raises(
+        CompilationError,
+        match=(
+            r"AttributeErrorGetattrBox\.__getattr__ raised AttributeError while looking up 'missing' "
+            "during compilation: dynamic attribute unavailable"
+        ),
+    ):
+        run_compiled(fn)
+
+
+@pytest.mark.parametrize("kind", ["direct", "getattr", "hasattr"])
+def test_custom_record_getattribute_is_rejected_without_running_it(kind):
+    def fn():
+        box = CustomGetattributeBox(1)
+        if kind == "direct":
+            return box.value
+        if kind == "getattr":
+            return getattr(box, "value")  # noqa: B009
+        return hasattr(box, "value")
+
+    with pytest.raises(
+        CompilationError,
+        match="CustomGetattributeBox overrides __getattribute__, which is not supported for Record subclasses",
+    ):
+        run_compiled(fn)
+
+
+@pytest.mark.parametrize("kind", ["direct", "getattr", "hasattr"])
+def test_conditional_property_attribute_error_is_rejected(kind):
+    def fn():
+        box = ConditionalAttributeErrorPropertyBox(Array(0)[0])
+        if kind == "direct":
+            return box.property
+        if kind == "getattr":
+            return getattr(box, "property")  # noqa: B009
+        return hasattr(box, "property")
+
+    with pytest.raises(
+        CompilationError,
+        match=(
+            "The getter for property 'property' on ConditionalAttributeErrorPropertyBox raised AttributeError "
+            "during compilation"
+        ),
+    ):
+        run_compiled(fn)
+
+
+def test_direct_attribute_uses_getattr_after_property_attribute_error():
+    def fn():
+        x = 5
+        y = PropertyFallbackBox().fallback
+        return x + y
+
+    with pytest.raises(CompilationError, match="Raise statements are not supported"):
+        run_compiled(fn)
+
+
+def test_builtin_getattr_uses_getattr_after_property_attribute_error():
+    def fn():
+        x = 5
+        y = getattr(PropertyFallbackBox(), "fallback")  # noqa: B009
+        return x + y
+
+    with pytest.raises(CompilationError, match="Raise statements are not supported"):
+        run_compiled(fn)
+
+
+def test_direct_attribute_binds_classmethod_getattr():
+    def fn():
+        return ClassMethodPropertyFallbackBox().fallback
+
+    with pytest.raises(
+        CompilationError,
+        match=(
+            "The getter for property 'fallback' on ClassMethodPropertyFallbackBox raised AttributeError "
+            "during compilation"
+        ),
+    ):
+        run_compiled(fn)
+
+
+def test_builtin_getattr_binds_classmethod_getattr():
+    def fn():
+        return getattr(ClassMethodPropertyFallbackBox(), "fallback")  # noqa: B009
+
+    with pytest.raises(
+        CompilationError,
+        match=(
+            "The getter for property 'fallback' on ClassMethodPropertyFallbackBox raised AttributeError "
+            "during compilation"
+        ),
+    ):
+        run_compiled(fn)
+
+
+def test_direct_attribute_binds_staticmethod_getattr():
+    def fn():
+        return StaticMethodPropertyFallbackBox().fallback
+
+    with pytest.raises(
+        CompilationError,
+        match=(
+            "The getter for property 'fallback' on StaticMethodPropertyFallbackBox raised AttributeError "
+            "during compilation"
+        ),
+    ):
+        run_compiled(fn)
+
+
+def test_builtin_getattr_binds_staticmethod_getattr():
+    def fn():
+        return getattr(StaticMethodPropertyFallbackBox(), "fallback")  # noqa: B009
+
+    with pytest.raises(
+        CompilationError,
+        match=(
+            "The getter for property 'fallback' on StaticMethodPropertyFallbackBox raised AttributeError "
+            "during compilation"
+        ),
+    ):
+        run_compiled(fn)
+
+
+def test_generator_property_fallback_does_not_capture_transient_getter_local():
+    def fn():
+        def gen():
+            yield TransientClosurePropertyFallbackBox().fallback
+            yield TransientClosurePropertyFallbackBox().fallback
+
+        iterator = gen()
+        return next(iterator) + next(iterator)
+
+    with pytest.raises(
+        CompilationError,
+        match=(
+            "The getter for property 'fallback' on TransientClosurePropertyFallbackBox raised AttributeError "
+            "during compilation"
+        ),
+    ):
+        run_compiled(fn)
+
+
+def test_builtin_getattr_default_handles_property_attribute_error():
+    def fn():
+        x = 5
+        y = getattr(PropertyDefaultBox(), "missing", 654)
+        return x + y
+
+    with pytest.raises(
+        CompilationError,
+        match="The getter for property 'missing' on PropertyDefaultBox raised AttributeError during compilation",
+    ):
+        run_compiled(fn)
+
+
+def test_hasattr_continues_with_caller_scope_after_property_attribute_error():
+    def fn():
+        x = 5
+        found = hasattr(PropertyDefaultBox(), "missing")
+        return x + found
+
+    with pytest.raises(
+        CompilationError,
+        match="The getter for property 'missing' on PropertyDefaultBox raised AttributeError during compilation",
+    ):
+        run_compiled(fn)
+
+
+def test_getterless_property_is_an_unreadable_attribute():
+    def fn():
+        return GetterlessPropertyBox().missing
+
+    with pytest.raises(AttributeError, match=r"property 'missing'.*has no getter"):
+        run_and_validate(fn)
+
+
+def test_hasattr_propagates_outer_exception_caused_by_attribute_error():
+    def fn():
+        return hasattr(OuterExceptionFromAttributeErrorBox(), "failing")
+
+    with pytest.raises(ValueError, match="outer"):
+        run_and_validate(fn)
+
+
+def test_attribute_none_masks_inherited_property():
+    def fn():
+        return MyBox(1).masked_for_test is None
+
+    assert run_and_validate(fn)
+
+
+def test_builtin_getattr_none_masks_inherited_property():
+    def fn():
+        return getattr(MyBox(1), "masked_for_test") is None  # noqa: B009
+
+    assert run_and_validate(fn)
+
+
 def test_getattr_record_unsupported():
     def fn():
         box = MyBox(100)
         return box.unsupported_descriptor
 
-    with pytest.raises(CompilationError, match="Unsupported field"):
+    with pytest.raises(
+        CompilationError,
+        match="Accessing attribute 'unsupported_descriptor' on MyBox\\[Num\\] is not supported",
+    ):
         run_compiled(fn)
 
 
@@ -211,13 +712,52 @@ def test_setattr_record_property():
     assert run_and_validate(fn) == 1
 
 
+class ReadOnlyProperty(Record):
+    @property
+    def value(self):
+        return 1
+
+
+@pytest.mark.parametrize("use_builtin", [False, True])
+def test_setattr_readonly_property_matches_python_diagnostic(use_builtin):
+    def fn():
+        value = ReadOnlyProperty()
+        if use_builtin:
+            setattr(value, "value", 2)  # noqa: B010 - Exercise the builtin compiler path.
+        else:
+            value.value = 2
+
+    with pytest.raises(AttributeError, match="property 'value' of 'ReadOnlyProperty' object has no setter"):
+        run_and_validate(fn)
+
+
+def test_setattr_rejects_non_string_name():
+    def fn():
+        setattr(MyBox(1), 1, 2)  # type: ignore
+
+    with pytest.raises(TypeError, match="attribute name must be string, not 'int'"):
+        run_and_validate(fn)
+
+
+def test_setattr_rejects_runtime_attribute_name():
+    def fn():
+        name = Array(1)[0]
+        setattr(MyBox(1), name, 2)  # type: ignore
+
+    with pytest.raises(CompilationError, match="attribute name must be a compile-time string, not 'Num'"):
+        run_compiled(fn)
+
+
 def test_setattr_record_unsupported():
     def fn():
         box = MyBox(0)
         box.unsupported_descriptor = 100
         return 1
 
-    with pytest.raises(CompilationError, match="Unsupported field"):
+    with pytest.raises(
+        CompilationError,
+        match="Assigning to attribute 'unsupported_descriptor' on MyBox\\[Num\\] is not supported",
+    ):
         run_compiled(fn)
 
 
@@ -226,7 +766,10 @@ def test_setattr_type_not_supported():
         MyBox.my_classmethod = 100
         return 1
 
-    with pytest.raises(CompilationError, match="Unsupported field"):
+    with pytest.raises(
+        CompilationError,
+        match="Assigning to attribute 'my_classmethod' on MyBox is not supported",
+    ):
         run_compiled(fn)
 
 
@@ -261,6 +804,14 @@ def test_issubclass_array_like():
 def test_issubclass_of_type_result():
     def fn():
         return issubclass(type(MyBox(1)), Record)
+
+    assert run_and_validate(fn)
+
+
+@pytest.mark.parametrize("builtin", [int, float, bool, set, dict, type])
+def test_type_of_builtin_alias_is_type(builtin):
+    def fn():
+        return type(builtin) == type  # noqa: E721
 
     assert run_and_validate(fn)
 
@@ -479,13 +1030,11 @@ def test_isinstance_tuple_tuple_alias():
     assert run_and_validate(fn)
 
 
-def test_isinstance_tuple_int_member_not_supported():
-    # Every member is validated, even one after an earlier match, so the diagnostic doesn't depend on tuple order.
+def test_isinstance_tuple_short_circuits_before_unsupported_member():
     def fn():
         return isinstance(Vec2(1, 2), (Vec2, int))
 
-    with pytest.raises(CompilationError, match="use Num instead"):
-        run_compiled(fn)
+    assert run_and_validate(fn)
 
 
 def test_isinstance_tuple_float_member_not_supported():
@@ -512,20 +1061,18 @@ def test_isinstance_tuple_frozenset_member_not_supported():
         run_compiled(fn)
 
 
-def test_isinstance_tuple_non_type_member_not_supported():
+def test_isinstance_tuple_short_circuits_before_non_type_member():
     def fn():
         return isinstance(Vec2(1, 2), (Vec2, None))
 
-    with pytest.raises(CompilationError, match="Unsupported type"):
-        run_compiled(fn)
+    assert run_and_validate(fn)
 
 
-def test_isinstance_nested_tuple_non_type_member_not_supported():
+def test_isinstance_tuple_short_circuits_before_invalid_nested_tuple():
     def fn():
         return isinstance(Vec2(1, 2), (Vec2, (Num, None)))
 
-    with pytest.raises(CompilationError, match="Unsupported type"):
-        run_compiled(fn)
+    assert run_and_validate(fn)
 
 
 def test_issubclass_tuple_matches_first_member():
@@ -605,28 +1152,25 @@ def test_issubclass_tuple_tuple_alias():
     assert run_and_validate(fn)
 
 
-def test_issubclass_tuple_int_member_not_supported():
+def test_issubclass_tuple_short_circuits_before_unsupported_member():
     def fn():
         return issubclass(MyBox, (Record, int))
 
-    with pytest.raises(CompilationError, match="use Num instead"):
-        run_compiled(fn)
+    assert run_and_validate(fn)
 
 
-def test_issubclass_tuple_frozenset_member_not_supported():
+def test_issubclass_tuple_short_circuits_before_frozenset_member():
     def fn():
         return issubclass(MyBox, (Record, frozenset))
 
-    with pytest.raises(CompilationError, match="against frozenset is not supported"):
-        run_compiled(fn)
+    assert run_and_validate(fn)
 
 
-def test_issubclass_tuple_non_type_member_not_supported():
+def test_issubclass_tuple_short_circuits_before_non_type_member():
     def fn():
         return issubclass(MyBox, (Record, None))
 
-    with pytest.raises(CompilationError, match="Unsupported type"):
-        run_compiled(fn)
+    assert run_and_validate(fn)
 
 
 def test_issubclass_tuple_as_arg_1_not_supported():

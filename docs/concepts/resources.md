@@ -28,13 +28,15 @@ from sonolus.script.vec import Vec2
 level_memory_value = level_memory(Vec2)
 ```
 
-Level memory may be modified in sequential callbacks (see [Modes](project.md#modes) for each mode's callbacks):
+Level memory exists in play, watch, and tutorial mode. Preview mode has no level memory; use
+[`@level_data`][sonolus.script.globals.level_data] there instead.
 
-- `preprocess`
-- `update_sequential`
-- `touch`
+In those modes, level memory may be read in any callback and modified in these callbacks (see
+[Modes](project.md#modes) for each mode's callbacks):
 
-and may be read in any callback.
+- Play: `preprocess`, `update_sequential`, `touch`
+- Watch: `preprocess`, `update_sequential`
+- Tutorial: `preprocess`, `navigate`, `update`
 
 All level memory in a mode shares a combined limit of 4096 values; exceeding it raises a compilation error.
 
@@ -106,9 +108,12 @@ class MyArchetype(PlayArchetype):
     field: int = entity_data()
 ```
 
-Entity data is accessible from other entities, but may only be updated in the `preprocess` callback and is read-only in other callbacks.
+Entity data is accessible from other entities, but may only be updated in the `preprocess` callback. It is read-only
+in other callbacks.
 
-It functions like [`imported()`][sonolus.script.archetype.imported] and shares the same underlying storage, except that it is not loaded from a level.
+Entity data shares storage with [`imported()`][sonolus.script.archetype.imported] fields but is private to the
+engine: it is not part of the archetype schema, may not be set when constructing level data, and is never loaded
+from a level.
 
 ### Entity Memory
 Entity memory fields are declared with [`entity_memory()`][sonolus.script.archetype.entity_memory]:
@@ -120,9 +125,15 @@ class MyArchetype(PlayArchetype):
     field: int = entity_memory()
 ```
 
-Entity memory is private to the entity and is not accessible from other entities. It may be read or updated in any callback associated with the entity.
+Entity memory is private to the entity and is not accessible from other entities. It may be read or updated in any
+callback associated with the entity.
 
-Entity memory fields may also be set when an entity is spawned using the [`spawn()`][sonolus.script.archetype.PlayArchetype.spawn] method.
+Entity memory exists in play and watch mode. Preview mode has no entity memory; compute per-entity values in
+`preprocess` and store them in [`entity_data()`][sonolus.script.archetype.entity_data] or
+[`shared_memory()`][sonolus.script.archetype.shared_memory] fields, which are read-only in `render`.
+
+Entity memory fields may also be set when an entity is spawned using the
+[`spawn()`][sonolus.script.archetype.PlayArchetype.spawn] method.
 
 ### Shared Memory
 Shared memory fields are declared with [`shared_memory()`][sonolus.script.archetype.shared_memory]:
@@ -136,7 +147,8 @@ class MyArchetype(PlayArchetype):
 
 Shared memory is accessible from other entities.
 
-Shared memory may be read in any callback, but may only be updated by sequential callbacks (`preprocess`, `update_sequential`, and `touch`).
+Shared memory may be read in any callback, but may only be updated by sequential callbacks (`preprocess`,
+`update_sequential`, and `touch`).
 
 ## Streams
 Streams are defined with the [`@streams`][sonolus.script.stream.streams] decorator:
@@ -157,7 +169,8 @@ class Streams:
     data_field_2: Vec2  # A data field of type Vec2
 ```
     
-Streams and stream groups are declared by annotating class attributes with [`Stream`][sonolus.script.stream.Stream] or [`StreamGroup`][sonolus.script.stream.StreamGroup].
+Streams and stream groups are declared by annotating class attributes with [`Stream`][sonolus.script.stream.Stream]
+or [`StreamGroup`][sonolus.script.stream.StreamGroup].
 
 Other types are also supported in the form of data fields. They may be used to store additional data to export from
 play mode to watch mode.
@@ -187,15 +200,18 @@ class Skin:
     group: SpriteGroup = sprite_group(["one", "two", "three"])
 ```
 
-Standard sprites are defined by annotating the field with the corresponding value from [`StandardSprite`][sonolus.script.sprite.StandardSprite].
+Standard sprites are defined by annotating the field with the corresponding value from
+[`StandardSprite`][sonolus.script.sprite.StandardSprite].
 
-Custom sprites are defined by annotating the field with [`Sprite`][sonolus.script.sprite.Sprite] and calling [`sprite`][sonolus.script.sprite.sprite] with the sprite name.
+Custom sprites are defined by annotating the field with [`Sprite`][sonolus.script.sprite.Sprite] and calling
+[`sprite`][sonolus.script.sprite.sprite] with the sprite name.
 
 A group of sprites sharing consecutive IDs can be defined by annotating the field with
 [`SpriteGroup`][sonolus.script.sprite.SpriteGroup] and calling [`sprite_group`][sonolus.script.sprite.sprite_group]
 with the sprite names; indexing the group returns the [`Sprite`][sonolus.script.sprite.Sprite] at that index.
 
-To set the render mode for the skin, set the `render_mode` field to the desired value from [`RenderMode`][sonolus.script.sprite.RenderMode].
+To set the render mode for the skin, set the `render_mode` field to the desired value from
+[`RenderMode`][sonolus.script.sprite.RenderMode].
 
 The [`draw`][sonolus.script.sprite.Sprite.draw] methods take a `z` argument, which may be a single value or a tuple
 of up to four values, where later values break ties on earlier ones. Values that are not supplied are treated
@@ -215,9 +231,11 @@ class Effects:
     group: EffectGroup = effect_group(["one", "two", "three"])
 ```
 
-Standard sound effects are defined by annotating the field with the corresponding value from [`StandardEffect`][sonolus.script.effect.StandardEffect].
+Standard sound effects are defined by annotating the field with the corresponding value from
+[`StandardEffect`][sonolus.script.effect.StandardEffect].
 
-Custom sound effects are defined by annotating the field with [`Effect`][sonolus.script.effect.Effect] and calling [`effect`][sonolus.script.effect.effect] with the effect name.
+Custom sound effects are defined by annotating the field with [`Effect`][sonolus.script.effect.Effect] and calling
+[`effect`][sonolus.script.effect.effect] with the effect name.
 
 A group of sound effects sharing consecutive IDs can be defined by annotating the field with
 [`EffectGroup`][sonolus.script.effect.EffectGroup] and calling [`effect_group`][sonolus.script.effect.effect_group]
@@ -237,9 +255,11 @@ class Particles:
     group: ParticleGroup = particle_group(["one", "two", "three"])
 ```
 
-Standard particles are defined by annotating the field with the corresponding value from [`StandardParticle`][sonolus.script.particle.StandardParticle].
+Standard particles are defined by annotating the field with the corresponding value from
+[`StandardParticle`][sonolus.script.particle.StandardParticle].
 
-Custom particles are defined by annotating the field with [`Particle`][sonolus.script.particle.Particle] and calling [`particle`][sonolus.script.particle.particle] with the particle name.
+Custom particles are defined by annotating the field with [`Particle`][sonolus.script.particle.Particle] and calling
+[`particle`][sonolus.script.particle.particle] with the particle name.
 
 A group of particles sharing consecutive IDs can be defined by annotating the field with
 [`ParticleGroup`][sonolus.script.particle.ParticleGroup] and calling
@@ -306,15 +326,19 @@ class Instructions:
     other: Instruction = instruction("other")
 ```
 
-Standard instructions are defined by annotating the field with the corresponding value from [`StandardInstruction`][sonolus.script.instruction.StandardInstruction].
+Standard instructions are defined by annotating the field with the corresponding value from
+[`StandardInstruction`][sonolus.script.instruction.StandardInstruction].
 
-Custom instructions are defined by annotating the field with [`Instruction`][sonolus.script.instruction.Instruction] and calling [`instruction`][sonolus.script.instruction.instruction] with the instruction name.
+Custom instructions are defined by annotating the field with
+[`Instruction`][sonolus.script.instruction.Instruction] and calling
+[`instruction`][sonolus.script.instruction.instruction] with the instruction name.
 
 The instruction name given to [`instruction`][sonolus.script.instruction.instruction] may be a plain string or an
 [`AnyText`][sonolus.script.metadata.AnyText] localization dict.
 
 ## Tutorial Instruction Icons
-Tutorial instruction icons are defined with the [`@instruction_icons`][sonolus.script.instruction.instruction_icons] decorator:
+Tutorial instruction icons are defined with the
+[`@instruction_icons`][sonolus.script.instruction.instruction_icons] decorator:
 
 ```python
 from sonolus.script.instruction import instruction_icons, StandardInstructionIcon, InstructionIcon, instruction_icon
@@ -326,9 +350,12 @@ class InstructionIcons:
     other: InstructionIcon = instruction_icon("other")
 ```
 
-Standard instruction icons are defined by annotating the field with the corresponding value from [`StandardInstructionIcon`][sonolus.script.instruction.StandardInstructionIcon].
+Standard instruction icons are defined by annotating the field with the corresponding value from
+[`StandardInstructionIcon`][sonolus.script.instruction.StandardInstructionIcon].
 
-Custom instruction icons are defined by annotating the field with [`InstructionIcon`][sonolus.script.instruction.InstructionIcon] and calling [`instruction_icon`][sonolus.script.instruction.instruction_icon] with the icon name.
+Custom instruction icons are defined by annotating the field with
+[`InstructionIcon`][sonolus.script.instruction.InstructionIcon] and calling
+[`instruction_icon`][sonolus.script.instruction.instruction_icon] with the icon name.
 
 ## Options
 Engine options are defined with the [`@options`][sonolus.script.options.options] decorator:

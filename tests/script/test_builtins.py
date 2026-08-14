@@ -8,13 +8,19 @@ from enum import IntEnum
 import pytest
 
 from sonolus.script.array import Array
+from sonolus.script.array_like import ArrayLike
 from sonolus.script.containers import VarArray
-from sonolus.script.internal.builtin_impls import _max, _min  # noqa: PLC2701
+from sonolus.script.debug import debug_log
+from sonolus.script.internal.builtin_impls import _max, _min, _validate_len_result  # noqa: PLC2701
+from sonolus.script.internal.context import RuntimeChecks
 from sonolus.script.internal.error import CompilationError
+from sonolus.script.iterator import SonolusIterator, maybe_next
+from sonolus.script.maybe import Nothing, Some
 from sonolus.script.num import Num
 from sonolus.script.record import Record
 from sonolus.script.vec import Vec2
 from tests.script.conftest import compile_fn, run_and_validate, run_compiled
+from tests.script.test_flow import black_box_value
 
 
 def test_max_comptime_honors_key():
@@ -30,8 +36,59 @@ class _Pt(Record):
     y: int
 
 
+class _InvalidIterable(Record):
+    def __iter__(self):
+        return None
+
+
+class _CountingIterator(Record, SonolusIterator):
+    value: int
+    done: int
+
+    def __iter__(self):
+        debug_log(self.value)
+        return self
+
+    def next(self):
+        if self.done:
+            return Nothing
+        self.done = 1
+        return Some(self.value)
+
+
+class _NonMaybeIterator(Record, SonolusIterator):
+    def next(self):
+        return 1
+
+
+class _CustomGetattributeIterator(Record, SonolusIterator):
+    def next(self):
+        return Some(1)
+
+    def __getattribute__(self, name):
+        if name == "next":
+            raise AssertionError("custom __getattribute__ ran")
+        return object.__getattribute__(self, name)
+
+
 def _plain_fn(x):
     return x + 1
+
+
+def _identity_iterator(iterator):
+    return iterator
+
+
+def _zip_iterator(iterator):
+    return zip(iterator)
+
+
+def _map_identity(iterator):
+    return map(lambda value: value, iterator)  # noqa: C417
+
+
+def _filter_truthy(iterator):
+    return filter(None, iterator)
 
 
 def test_callable_on_user_function():
@@ -157,6 +214,31 @@ def test_iter_on_array_still_works():
     assert run_and_validate(fn) == 4
 
 
+@pytest.mark.parametrize(
+    "make_fn",
+    [
+        lambda: iter(_InvalidIterable()),
+        lambda: map(lambda x: x, _InvalidIterable()),  # noqa: C417
+        lambda: filter(None, _InvalidIterable()),
+    ],
+    ids=["iter", "map", "filter"],
+)
+def test_iterator_builtins_reject_invalid_iter_result(make_fn):
+    def fn():
+        make_fn()
+        return 0
+
+    with pytest.raises(TypeError, match=r"iter\(\) returned non-iterator of type 'NoneType'"):
+        run_and_validate(fn)
+
+
+def test_map_calls_iter_once_per_input():
+    def fn():
+        return sum(map(lambda a, b: a + b, _CountingIterator(1, 0), _CountingIterator(2, 0)))
+
+    assert run_and_validate(fn) == 3
+
+
 class _BoolByField(Record):
     v: int
 
@@ -169,6 +251,125 @@ class _LenRecord(Record):
 
     def __len__(self) -> int:
         return self.n
+
+
+class _InvalidLenArray(Record, ArrayLike[int]):
+    n: int
+
+    def __len__(self) -> int:
+        return self.n
+
+    def __getitem__(self, index: int) -> int:
+        return index
+
+    def __setitem__(self, index: int, value: int):
+        pass
+
+
+class _CustomGetattributeArray(Record, ArrayLike[int]):
+    def __len__(self):
+        return 1
+
+    def __getitem__(self, index):
+        return 1
+
+    def __setitem__(self, index, value):
+        pass
+
+    def __getattribute__(self, name):
+        if name in {"_enumerate_", "__reversed__", "_max_", "_min_", "__len__"}:
+            raise AssertionError("custom __getattribute__ ran")
+        return object.__getattribute__(self, name)
+
+
+class _NonnumericLenRecord(Record):
+    def __len__(self):
+        return None  # noqa: PLE0303 - intentionally violates the protocol
+
+
+class _SynthesizedLenRecord(Record):
+    def __getattr__(self, name):
+        if name == "__len__":
+            return lambda: 5
+        raise AttributeError(name)
+
+
+class _FakeDescriptorMeta(type):
+    def __getattr__(cls, name):
+        if name == "__get__":
+            return lambda descriptor, instance, owner: lambda: 5
+        raise AttributeError(name)
+
+
+class _FakeLen(metaclass=_FakeDescriptorMeta):
+    pass
+
+
+class _SynthesizedDescriptorLenRecord(Record):
+    __len__ = _FakeLen()
+
+
+class _FakeSpecialMethodBase:
+    def __len__(self):
+        return 5
+
+
+class _FakeMroMeta(type):
+    def __getattribute__(cls, name):
+        if name == "__mro__":
+            return (_FakeSpecialMethodBase, object)
+        return super().__getattribute__(name)
+
+
+class _FakeMroValue(metaclass=_FakeMroMeta):
+    _is_comptime_value_ = True
+
+
+_FAKE_MRO_VALUE = _FakeMroValue()
+
+
+def test_getattr_does_not_supply_implicit_len_protocol():
+    def fn():
+        return len(_SynthesizedLenRecord())
+
+    with pytest.raises(TypeError, match="object of type '_SynthesizedLenRecord' has no len"):
+        run_and_validate(fn)
+
+
+def test_metaclass_getattr_does_not_supply_descriptor_binding_for_implicit_len_protocol():
+    def fn():
+        return len(_SynthesizedDescriptorLenRecord())
+
+    with pytest.raises(TypeError, match="'_FakeLen' object is not callable"):
+        run_and_validate(fn)
+
+
+def test_metaclass_getattribute_does_not_supply_fake_mro_for_implicit_len_protocol():
+    def fn():
+        return len(_FAKE_MRO_VALUE)
+
+    with pytest.raises(TypeError, match="object of type '_FakeMroValue' has no len"):
+        run_and_validate(fn)
+
+
+@pytest.mark.parametrize(
+    "operation",
+    [enumerate, reversed, max, min, lambda value: max(value, default=0), lambda value: min(value, default=0)],
+)
+def test_array_like_fast_paths_reject_custom_record_getattribute_without_invoking_it(operation):
+    def fn():
+        operation(_CustomGetattributeArray())
+        return 0
+
+    with pytest.raises(
+        CompilationError,
+        match="_CustomGetattributeArray overrides __getattribute__, which is not supported for Record subclasses",
+    ):
+        run_compiled(fn)
+
+
+def test_len_result_validation_runs_without_a_compilation_context():
+    assert _validate_len_result(2)._as_py_() == 2
 
 
 def test_bool_no_arg():
@@ -271,6 +472,43 @@ def test_bool_record_with_runtime_len():
     assert run_and_validate(fn) is False
 
 
+@pytest.mark.parametrize("operation", ["len", "bool"])
+@pytest.mark.parametrize(("invalid_length", "expected_error"), [(-1, ValueError), (0.5, TypeError)])
+def test_len_protocol_rejects_invalid_runtime_result(operation, invalid_length, expected_error):
+    def fn():
+        n = 0
+        for _ in range(1):
+            n += invalid_length
+        value = _LenRecord(n)
+        return len(value) if operation == "len" else bool(value)
+
+    with pytest.raises(expected_error):
+        run_and_validate(fn)
+
+
+@pytest.mark.parametrize("operation", ["len", "bool"])
+def test_len_protocol_rejects_nonnumeric_result(operation):
+    def fn():
+        value = _NonnumericLenRecord()
+        return len(value) if operation == "len" else bool(value)
+
+    # The subset rejects this statically, so there is no runtime leg to compare with Python's TypeError.
+    with pytest.raises(CompilationError, match="Invalid type for __len__: NoneType"):
+        compile_fn(fn)
+
+
+@pytest.mark.parametrize("invalid_length", [-1, 0.5])
+def test_array_extremum_rejects_invalid_runtime_len(invalid_length):
+    # This pins the compiled ArrayLike protocol: Python's sequence iterator does not consult __len__ for max().
+    def fn():
+        n = 0
+        for _ in range(1):
+            n += invalid_length
+        return max(_InvalidLenArray(n), default=10) + 100
+
+    assert run_compiled(fn, runtime_checks=RuntimeChecks.TERMINATE) == 0
+
+
 def test_bool_record_without_bool_or_len():
     def fn():
         return bool(_Pt(0, 0))
@@ -328,6 +566,29 @@ def test_bool_on_none():
         return bool(None)
 
     assert run_and_validate(fn) is False
+
+
+def test_constant_truthiness_in_direct_conditions():
+    def fn():
+        result = 0
+        if "present":
+            result += 1
+        if None:
+            result += 100
+        if "":
+            result += 100
+        while "present":
+            result += 2
+            break
+        if not None:
+            result += 4
+        assert "present"  # noqa: PLW0129
+        match "present":
+            case _ if "present":
+                result += 8
+        return result + sum(1 for _ in (1,) if "present") + sum(filter(lambda _: "present", (1,)))
+
+    assert run_and_validate(fn) == 17
 
 
 def test_bool_on_dict():
@@ -588,10 +849,15 @@ def test_error_messages_use_readable_type_names(make_fn, expected_name):
     assert "0x" not in message
 
 
-def test_assert_on_unconvertible_value_names_the_type():
+class _NonnumericBoolRecord(Record):
+    def __bool__(self):
+        return "hello"  # noqa: PLE0304 - intentionally violates the protocol
+
+
+def test_assert_on_invalid_bool_result_names_the_type():
     # assert routes through the same truthiness conversion as if/while, which had its own set of leaking messages.
     def fn():
-        assert "hello"  # noqa: PLW0129
+        assert _NonnumericBoolRecord()
         return 1
 
     message = _error_message(fn)
@@ -654,6 +920,27 @@ def test_enumerate_over_set_with_start():
     assert run_and_validate(fn) == 66
 
 
+def test_enumerate_rejects_fractional_start():
+    def fn(start):
+        total = 0
+        for i, value in enumerate(Array(10, 20), start):
+            total += i + value
+        return total
+
+    with pytest.raises(TypeError):
+        run_and_validate(fn, 1.5)
+
+
+def test_fractional_enumerate_start_in_dead_runtime_branch_compiles():
+    def fn(take_branch):
+        if black_box_value(take_branch):
+            for i, _value in enumerate(Array(10), 1.5):
+                return i
+        return 42
+
+    assert run_and_validate(fn, False) == 42
+
+
 def test_max_over_set():
     def fn():
         return max({3, 1, 2})
@@ -699,6 +986,78 @@ def test_reversed_rejects_set_like_python():
         compile_fn(fn)
 
 
+@pytest.mark.parametrize(
+    "adapt",
+    [
+        _identity_iterator,
+        enumerate,
+        _zip_iterator,
+        _map_identity,
+        _filter_truthy,
+    ],
+    ids=["maybe_next", "enumerate", "zip", "map", "filter"],
+)
+def test_iterator_adapters_require_next_to_return_maybe(adapt):
+    def fn():
+        return maybe_next(adapt(_NonMaybeIterator()))
+
+    with pytest.raises(CompilationError, match=r"Iterator\.next\(\) returned 'Num', expected Maybe"):
+        run_compiled(fn)
+
+
+@pytest.mark.parametrize("extremum", [min, max])
+def test_numeric_extrema_require_next_to_return_maybe(extremum):
+    def fn():
+        return extremum(_NonMaybeIterator())
+
+    with pytest.raises(CompilationError, match=r"Iterator\.next\(\) returned 'Num', expected Maybe"):
+        run_compiled(fn)
+
+
+def test_next_requires_next_to_return_maybe():
+    def fn():
+        return next(_NonMaybeIterator())
+
+    with pytest.raises(CompilationError, match=r"Iterator\.next\(\) returned 'Num', expected Maybe"):
+        run_compiled(fn)
+
+
+def test_next_rejects_custom_record_getattribute_without_invoking_it():
+    def fn():
+        return next(_CustomGetattributeIterator())
+
+    with pytest.raises(
+        CompilationError,
+        match="_CustomGetattributeIterator overrides __getattribute__, which is not supported for Record subclasses",
+    ):
+        run_compiled(fn)
+
+
+@pytest.mark.parametrize("kind", ["for", "genexpr", "yield_from"])
+def test_iterator_consumers_reject_custom_record_getattribute_without_invoking_it(kind):
+    def fn():
+        iterator = _CustomGetattributeIterator()
+        if kind == "for":
+            for value in iterator:
+                return value
+        elif kind == "genexpr":
+            return next(value for value in iterator)
+        else:
+
+            def delegated():
+                yield from iterator
+
+            return next(delegated())
+        return 0
+
+    with pytest.raises(
+        CompilationError,
+        match="_CustomGetattributeIterator overrides __getattribute__, which is not supported for Record subclasses",
+    ):
+        run_compiled(fn)
+
+
+# These tests pin specific builtin iterator implementations beyond the public single-use iterator contract.
 def test_next_over_array_iterator_two_results_live():
     def fn():
         it = iter(Array(2, 4, 6))
@@ -755,3 +1114,75 @@ def test_next_over_enumerate_iterator_two_results_live():
         return first[0] * 1000 + first[1] * 100 + second[0] * 10 + second[1]
 
     assert run_and_validate(fn) == 1030
+
+
+def test_max_two_args():
+    a, b = 3, 7
+
+    def fn():
+        return max(a, b)
+
+    assert run_and_validate(fn) == 7
+
+
+def test_max_two_args_reversed():
+    a, b = 7, 3
+
+    def fn():
+        return max(a, b)
+
+    assert run_and_validate(fn) == 7
+
+
+def test_min_two_args():
+    a, b = 3, 7
+
+    def fn():
+        return min(a, b)
+
+    assert run_and_validate(fn) == 3
+
+
+def test_min_two_args_reversed():
+    a, b = 7, 3
+
+    def fn():
+        return min(a, b)
+
+    assert run_and_validate(fn) == 3
+
+
+def test_max_two_args_explicit_key_none():
+    a, b = 3, 7
+
+    def fn():
+        return max(a, b, key=None)
+
+    assert run_and_validate(fn) == 7
+
+
+def test_max_two_args_explicit_key_none_reversed():
+    a, b = 7, 3
+
+    def fn():
+        return max(a, b, key=None)
+
+    assert run_and_validate(fn) == 7
+
+
+def test_min_two_args_explicit_key_none():
+    a, b = 3, 7
+
+    def fn():
+        return min(a, b, key=None)
+
+    assert run_and_validate(fn) == 3
+
+
+def test_min_two_args_explicit_key_none_reversed():
+    a, b = 7, 3
+
+    def fn():
+        return min(a, b, key=None)
+
+    assert run_and_validate(fn) == 3

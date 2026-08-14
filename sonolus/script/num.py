@@ -11,6 +11,7 @@ from sonolus.backend.ops import Op
 from sonolus.backend.place import BlockPlace
 from sonolus.script.internal.context import ctx
 from sonolus.script.internal.error import InternalError
+from sonolus.script.internal.introspection import describe_value
 from sonolus.script.internal.simple_meta_fn import simple_meta_fn
 from sonolus.script.internal.value import BackingValue, DataValue, ExprBackingValue, Value
 
@@ -92,7 +93,7 @@ class _Num(Value, metaclass=_NumMeta):
             return value
         if isinstance(value, _FLOAT_INT_BOOL):
             return cls(value)
-        raise TypeError(f"Cannot accept {value}")
+        raise TypeError(f"Cannot accept value {describe_value(value)} as {cls.__name__}")
 
     def _is_rom_constant(self) -> bool:
         d = self.data
@@ -181,7 +182,7 @@ class _Num(Value, metaclass=_NumMeta):
         else:
             self.data = value.data
 
-    def _copy_from_(self, value: Any):
+    def _copy_from_(self, value: Any, *, initializing: bool = False):
         raise ValueError("Cannot assign to a number")
 
     def _copy_(self) -> Self:
@@ -261,7 +262,7 @@ class _Num(Value, metaclass=_NumMeta):
                 return Num(True)
             return None
 
-        return self._bin_op(other, const_fn, Op.Equal, fallback=0)
+        return self._bin_op(other, const_fn, Op.Equal)
 
     def __hash__(self):
         if self._is_py_():
@@ -277,7 +278,7 @@ class _Num(Value, metaclass=_NumMeta):
                 return Num(False)
             return None
 
-        return self._bin_op(other, const_fn, Op.NotEqual, fallback=1)
+        return self._bin_op(other, const_fn, Op.NotEqual)
 
     @simple_meta_fn
     def __lt__(self, other) -> Self:
@@ -329,7 +330,10 @@ class _Num(Value, metaclass=_NumMeta):
             a_py = a._as_py_or_none()
             b_py = b._as_py_or_none()
             if a_py is not None and b_py is not None:
-                return Num(a_py + b_py)
+                try:
+                    return Num(a_py + b_py)
+                except OverflowError:
+                    return None
             if a_py == 0:
                 return b
             if b_py == 0:
@@ -344,7 +348,10 @@ class _Num(Value, metaclass=_NumMeta):
             a_py = a._as_py_or_none()
             b_py = b._as_py_or_none()
             if a_py is not None and b_py is not None:
-                return Num(a_py - b_py)
+                try:
+                    return Num(a_py - b_py)
+                except OverflowError:
+                    return None
             if a_py == 0:
                 return -b
             if b_py == 0:
@@ -359,7 +366,10 @@ class _Num(Value, metaclass=_NumMeta):
             a_py = a._as_py_or_none()
             b_py = b._as_py_or_none()
             if a_py is not None and b_py is not None:
-                return Num(a_py * b_py)
+                try:
+                    return Num(a_py * b_py)
+                except OverflowError:
+                    return None
             if a_py == 0 or b_py == 0:
                 return Num(0)
             if a_py == 1:

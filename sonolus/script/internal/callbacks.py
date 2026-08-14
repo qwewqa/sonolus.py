@@ -60,13 +60,13 @@ terminate_callback = CallbackInfo(
 spawn_time_callback = CallbackInfo(
     name="spawnTime",
     py_name="spawn_time",
-    supports_order=False,
+    supports_order=True,
     returns_value=True,
 )
 despawn_time_callback = CallbackInfo(
     name="despawnTime",
     py_name="despawn_time",
-    supports_order=False,
+    supports_order=True,
     returns_value=True,
 )
 update_spawn_callback = CallbackInfo(

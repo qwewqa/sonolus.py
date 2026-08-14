@@ -7,7 +7,7 @@ from typing import Annotated, Any, NewType, dataclass_transform, get_origin
 from sonolus.backend.mode import Mode
 from sonolus.backend.ops import Op
 from sonolus.script.internal.context import ctx
-from sonolus.script.internal.introspection import get_field_specifiers
+from sonolus.script.internal.introspection import describe_value, get_field_specifiers
 from sonolus.script.internal.meta_fn import meta_fn, perf_meta_fn
 from sonolus.script.internal.native import native_function
 from sonolus.script.interval import Interval
@@ -177,7 +177,19 @@ class Bucket(Record):
 
 
 @dataclass
-class _BucketSprite:
+class BucketSprite:
+    """A positioned sprite in a bucket icon, created with [`bucket_sprite`][sonolus.script.bucket.bucket_sprite].
+
+    Args:
+        id: The skin sprite ID.
+        fallback_id: The fallback skin sprite ID, if one is defined.
+        x: The x-coordinate of the sprite's center.
+        y: The y-coordinate of the sprite's center.
+        w: The width of the sprite.
+        h: The height of the sprite.
+        rotation: The clockwise rotation of the sprite in degrees.
+    """
+
     id: int
     fallback_id: int | None
     x: float
@@ -202,7 +214,7 @@ class _BucketSprite:
 
 @dataclass
 class _BucketInfo:
-    sprites: list[_BucketSprite]
+    sprites: list[BucketSprite]
     unit: str | None = None
 
     def to_dict(self):
@@ -223,12 +235,12 @@ def bucket_sprite(
     w: float,
     h: float,
     rotation: float = 0,
-) -> _BucketSprite:
+) -> BucketSprite:
     """Define a sprite for a bucket."""
-    return _BucketSprite(sprite.id, fallback_sprite.id if fallback_sprite else None, x, y, w, h, rotation)
+    return BucketSprite(sprite.id, fallback_sprite.id if fallback_sprite else None, x, y, w, h, rotation)
 
 
-def bucket(*, sprites: list[_BucketSprite], unit: AnyText | None = None) -> Any:
+def bucket(*, sprites: list[BucketSprite], unit: AnyText | None = None) -> Any:
     """Define a bucket with the given sprites and unit.
 
     Args:
@@ -269,15 +281,19 @@ def buckets[T](cls: type[T]) -> T | Buckets:
     instance = cls()
     bucket_info = []
     for i, (name, annotation) in enumerate(get_field_specifiers(cls).items()):
+        described = describe_value(annotation)
         if get_origin(annotation) is not Annotated:
-            raise TypeError(f"Invalid annotation for buckets: {annotation}")
+            raise TypeError(f"Invalid annotation for buckets: {described} on field {name}")
         annotation_type = annotation.__args__[0]
         annotation_values = annotation.__metadata__
         if annotation_type is not Bucket:
-            raise TypeError(f"Invalid annotation for buckets: {annotation}, expected annotation of type Bucket")
+            raise TypeError(
+                f"Invalid annotation for buckets: {described} on field {name}, expected annotation of type Bucket"
+            )
         if len(annotation_values) != 1 or not isinstance(annotation_values[0], _BucketInfo):
             raise TypeError(
-                f"Invalid annotation for buckets: {annotation}, expected a single BucketInfo annotation value"
+                f"Invalid annotation for buckets: {described} on field {name}, "
+                f"expected a single BucketInfo annotation value"
             )
         info = annotation_values[0]
         bucket_info.append(info)

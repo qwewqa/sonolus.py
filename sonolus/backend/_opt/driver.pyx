@@ -135,8 +135,7 @@ cdef Func _pipeline(Func func, int level, bint allocate):
     cdef Func opt
     cdef Func conv
     cdef Func lowered
-    # Opt-in per-pass timing (SONOLUS_OPT_PROFILE / CLI --profile); read the flag
-    # once so an unprofiled build pays only a bint test per pass. Same idiom as _TRACE.
+    # Read the stage-timing flag once per pipeline run so later changes affect only the next run.
     cdef bint prof = _prof.enabled
     cdef long long t0 = 0
 
@@ -310,18 +309,23 @@ def compile_mode(
     nodes = _OUTPUT_GEN()
     results = {}
 
-    def optimize_cfg(cfg, cb_name):
+    def optimize_cfg(cfg, cb_name, arch_name=None):
         """optimize + emit for one already-traced CFG -> its EngineNode.
 
-        Failures are wrapped with the callback name and mode as a
-        CompilationError so the cli/dev-server pretty handlers catch them."""
+        Failures are wrapped as a CompilationError so the cli/dev-server pretty handlers catch them. No user
+        frame reaches that traceback and nothing here carries a source location, so its message is the only
+        locator the author gets: it names the archetype as well, since one callback name is shared by every
+        archetype of the mode. ``arch_name`` is None for a global callback, which belongs to no archetype."""
         try:
             return _OPT_FINALIZE(cfg, level, _OPT_CONFIG(mode=mode, callback=cb_name))
         except _COMPILATION_ERROR:
             raise
         except Exception as e:
+            location = f"callback {cb_name!r}"
+            if arch_name is not None:
+                location = f"{location} of archetype {arch_name!r}"
             raise _COMPILATION_ERROR(
-                f"Optimization failed for callback {cb_name!r} in {getattr(mode, 'name', mode)} mode: {e}"
+                f"Optimization failed for {location} in {getattr(mode, 'name', mode)} mode: {e}"
             ) from e
 
     # DETERMINISM: ``callback_to_cfg`` populates shared, first-touch-ordered maps
@@ -373,7 +377,7 @@ def compile_mode(
                 # Trace, then optimize+emit -- always traced (validation traces too).
                 cfg = callback_to_cfg(project_state, mode_state, cb, cb_info.name, archetype)
                 archetype_data[cb_info.name] = {
-                    "index": 0 if validate_only else nodes.add(optimize_cfg(cfg, cb_info.name)),
+                    "index": 0 if validate_only else nodes.add(optimize_cfg(cfg, cb_info.name, archetype.name)),
                     "order": cb_order,
                 }
 

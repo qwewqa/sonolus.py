@@ -1,10 +1,12 @@
 from enum import IntEnum
+from typing import Protocol
 
 from sonolus.backend.mode import Mode
 from sonolus.backend.ops import Op
 from sonolus.script.array import Array
 from sonolus.script.array_like import ArrayLike
 from sonolus.script.containers import ArrayPointer
+from sonolus.script.debug import static_error
 from sonolus.script.globals import (
     _level_life,
     _level_score,
@@ -117,6 +119,24 @@ class ScrollDirection(IntEnum):
     TOP_TO_BOTTOM = 1
     RIGHT_TO_LEFT = 2
     BOTTOM_TO_TOP = 3
+
+
+class PreviewRuntimeCanvas(Protocol):
+    """The preview canvas configuration returned by [`canvas`][sonolus.script.runtime.canvas]."""
+
+    scroll_direction: ScrollDirection
+    """The direction in which the canvas scrolls."""
+
+    size: float
+    """The length of the canvas along its scrolling axis."""
+
+    def update(self, scroll_direction: ScrollDirection | None = None, size: float | None = None):
+        """Update the preview canvas configuration.
+
+        Args:
+            scroll_direction: The direction in which the canvas scrolls.
+            size: The length of the canvas along its scrolling axis.
+        """
 
 
 @_preview_runtime_canvas
@@ -344,7 +364,7 @@ class UiLayout[T](Record):
 
     @property
     def is_available(self) -> bool:
-        """Check if the layout is available in the current mode."""
+        """Whether the layout is available in the current mode."""
         return self._underlying is not None
 
 
@@ -373,8 +393,14 @@ class UiConfig[T](Record):
 
     @property
     def is_available(self) -> bool:
-        """Check if the config is available in the current mode."""
+        """Whether the config is available in the current mode."""
         return self._underlying is not None
+
+
+def _runtime_ui_mode() -> Mode:
+    if not ctx():
+        raise RuntimeError("Runtime UI access outside of compilation")
+    return ctx().mode_state.mode
 
 
 class RuntimeUi(Record):
@@ -387,7 +413,7 @@ class RuntimeUi(Record):
 
         Available in play, watch, preview, and tutorial mode.
         """
-        match ctx().mode_state.mode:
+        match _runtime_ui_mode():
             case Mode.PLAY:
                 return UiLayout(_PlayRuntimeUi.menu)
             case Mode.WATCH:
@@ -406,7 +432,7 @@ class RuntimeUi(Record):
 
         Available in play, watch, preview, and tutorial mode.
         """
-        match ctx().mode_state.mode:
+        match _runtime_ui_mode():
             case Mode.PLAY:
                 return UiConfig(_PlayRuntimeUiConfigs.menu)
             case Mode.WATCH:
@@ -425,7 +451,7 @@ class RuntimeUi(Record):
 
         Available in play and watch mode.
         """
-        match ctx().mode_state.mode:
+        match _runtime_ui_mode():
             case Mode.PLAY:
                 return UiLayout(_PlayRuntimeUi.judgment)
             case Mode.WATCH:
@@ -440,7 +466,7 @@ class RuntimeUi(Record):
 
         Available in play and watch mode.
         """
-        match ctx().mode_state.mode:
+        match _runtime_ui_mode():
             case Mode.PLAY:
                 return UiConfig(_PlayRuntimeUiConfigs.judgment)
             case Mode.WATCH:
@@ -455,7 +481,7 @@ class RuntimeUi(Record):
 
         Available in play and watch mode.
         """
-        match ctx().mode_state.mode:
+        match _runtime_ui_mode():
             case Mode.PLAY:
                 return UiLayout(_PlayRuntimeUi.combo_value)
             case Mode.WATCH:
@@ -470,7 +496,7 @@ class RuntimeUi(Record):
 
         Available in play and watch mode.
         """
-        match ctx().mode_state.mode:
+        match _runtime_ui_mode():
             case Mode.PLAY:
                 return UiLayout(_PlayRuntimeUi.combo_text)
             case Mode.WATCH:
@@ -485,7 +511,7 @@ class RuntimeUi(Record):
 
         Available in play and watch mode.
         """
-        match ctx().mode_state.mode:
+        match _runtime_ui_mode():
             case Mode.PLAY:
                 return UiConfig(_PlayRuntimeUiConfigs.combo)
             case Mode.WATCH:
@@ -500,7 +526,7 @@ class RuntimeUi(Record):
 
         Available in play and watch mode.
         """
-        match ctx().mode_state.mode:
+        match _runtime_ui_mode():
             case Mode.PLAY:
                 return UiLayout(_PlayRuntimeUi.primary_metric_bar)
             case Mode.WATCH:
@@ -515,7 +541,7 @@ class RuntimeUi(Record):
 
         Available in play and watch mode.
         """
-        match ctx().mode_state.mode:
+        match _runtime_ui_mode():
             case Mode.PLAY:
                 return UiLayout(_PlayRuntimeUi.primary_metric_value)
             case Mode.WATCH:
@@ -530,7 +556,7 @@ class RuntimeUi(Record):
 
         Available in play and watch mode.
         """
-        match ctx().mode_state.mode:
+        match _runtime_ui_mode():
             case Mode.PLAY:
                 return UiConfig(_PlayRuntimeUiConfigs.primary_metric)
             case Mode.WATCH:
@@ -545,7 +571,7 @@ class RuntimeUi(Record):
 
         Available in play and watch mode.
         """
-        match ctx().mode_state.mode:
+        match _runtime_ui_mode():
             case Mode.PLAY:
                 return UiLayout(_PlayRuntimeUi.secondary_metric_bar)
             case Mode.WATCH:
@@ -560,7 +586,7 @@ class RuntimeUi(Record):
 
         Available in play and watch mode.
         """
-        match ctx().mode_state.mode:
+        match _runtime_ui_mode():
             case Mode.PLAY:
                 return UiLayout(_PlayRuntimeUi.secondary_metric_value)
             case Mode.WATCH:
@@ -575,7 +601,7 @@ class RuntimeUi(Record):
 
         Available in play and watch mode.
         """
-        match ctx().mode_state.mode:
+        match _runtime_ui_mode():
             case Mode.PLAY:
                 return UiConfig(_PlayRuntimeUiConfigs.secondary_metric)
             case Mode.WATCH:
@@ -590,7 +616,7 @@ class RuntimeUi(Record):
 
         Available in watch and preview mode.
         """
-        match ctx().mode_state.mode:
+        match _runtime_ui_mode():
             case Mode.WATCH:
                 return UiLayout(_WatchRuntimeUi.progress)
             case Mode.PREVIEW:
@@ -605,7 +631,7 @@ class RuntimeUi(Record):
 
         Available in watch mode.
         """
-        match ctx().mode_state.mode:
+        match _runtime_ui_mode():
             case Mode.WATCH:
                 return UiLayout(_WatchRuntimeUi.progress_graph)
             case _:
@@ -618,7 +644,7 @@ class RuntimeUi(Record):
 
         Available in watch and preview mode.
         """
-        match ctx().mode_state.mode:
+        match _runtime_ui_mode():
             case Mode.WATCH:
                 return UiConfig(_WatchRuntimeUiConfigs.progress)
             case Mode.PREVIEW:
@@ -633,7 +659,7 @@ class RuntimeUi(Record):
 
         Available in tutorial mode.
         """
-        match ctx().mode_state.mode:
+        match _runtime_ui_mode():
             case Mode.TUTORIAL:
                 return UiLayout(_TutorialRuntimeUi.previous)
             case _:
@@ -646,7 +672,7 @@ class RuntimeUi(Record):
 
         Available in tutorial mode.
         """
-        match ctx().mode_state.mode:
+        match _runtime_ui_mode():
             case Mode.TUTORIAL:
                 return UiLayout(_TutorialRuntimeUi.next)
             case _:
@@ -659,7 +685,7 @@ class RuntimeUi(Record):
 
         Available in tutorial mode.
         """
-        match ctx().mode_state.mode:
+        match _runtime_ui_mode():
             case Mode.TUTORIAL:
                 return UiConfig(_TutorialRuntimeUiConfigs.navigation)
             case _:
@@ -672,7 +698,7 @@ class RuntimeUi(Record):
 
         Available in tutorial mode.
         """
-        match ctx().mode_state.mode:
+        match _runtime_ui_mode():
             case Mode.TUTORIAL:
                 return UiLayout(_TutorialRuntimeUi.instruction)
             case _:
@@ -685,7 +711,7 @@ class RuntimeUi(Record):
 
         Available in tutorial mode.
         """
-        match ctx().mode_state.mode:
+        match _runtime_ui_mode():
             case Mode.TUTORIAL:
                 return UiConfig(_TutorialRuntimeUiConfigs.instruction)
             case _:
@@ -749,7 +775,6 @@ class Touch(Record):
 
 @_runtime_touch_array
 class _TouchArray:
-    # Handled specially, see touches()
     pass
 
 
@@ -798,6 +823,78 @@ class _ParticleTransform:
 @_runtime_background
 class _Background:
     value: Quad
+
+
+class LevelScoreData(Protocol):
+    """The level score configuration returned by [`level_score`][sonolus.script.runtime.level_score]."""
+
+    perfect_multiplier: float
+    """The score multiplier for a perfect judgment."""
+
+    great_multiplier: float
+    """The score multiplier for a great judgment."""
+
+    good_multiplier: float
+    """The score multiplier for a good judgment."""
+
+    consecutive_perfect_multiplier: float
+    """The score multiplier gained at each consecutive-perfect step."""
+
+    consecutive_perfect_step: float
+    """The number of consecutive perfect judgments required for each multiplier increase."""
+
+    consecutive_perfect_cap: float
+    """The maximum consecutive-perfect count used to calculate the multiplier."""
+
+    consecutive_great_multiplier: float
+    """The score multiplier gained at each consecutive-great step."""
+
+    consecutive_great_step: float
+    """The number of consecutive great judgments required for each multiplier increase."""
+
+    consecutive_great_cap: float
+    """The maximum consecutive-great count used to calculate the multiplier."""
+
+    consecutive_good_multiplier: float
+    """The score multiplier gained at each consecutive-good step."""
+
+    consecutive_good_step: float
+    """The number of consecutive good judgments required for each multiplier increase."""
+
+    consecutive_good_cap: float
+    """The maximum consecutive-good count used to calculate the multiplier."""
+
+    def update(
+        self,
+        perfect_multiplier: float | None = None,
+        great_multiplier: float | None = None,
+        good_multiplier: float | None = None,
+        consecutive_perfect_multiplier: float | None = None,
+        consecutive_perfect_step: float | None = None,
+        consecutive_perfect_cap: float | None = None,
+        consecutive_great_multiplier: float | None = None,
+        consecutive_great_step: float | None = None,
+        consecutive_great_cap: float | None = None,
+        consecutive_good_multiplier: float | None = None,
+        consecutive_good_step: float | None = None,
+        consecutive_good_cap: float | None = None,
+    ):
+        """Update the level score configuration.
+
+        Args:
+            perfect_multiplier: The score multiplier for a perfect judgment.
+            great_multiplier: The score multiplier for a great judgment.
+            good_multiplier: The score multiplier for a good judgment.
+            consecutive_perfect_multiplier: The score multiplier gained at each consecutive-perfect step.
+            consecutive_perfect_step: The number of consecutive perfect judgments required for each increase.
+            consecutive_perfect_cap: The maximum consecutive-perfect count used to calculate the multiplier.
+            consecutive_great_multiplier: The score multiplier gained at each consecutive-great step.
+            consecutive_great_step: The number of consecutive great judgments required for each increase.
+            consecutive_great_cap: The maximum consecutive-great count used to calculate the multiplier.
+            consecutive_good_multiplier: The score multiplier gained at each consecutive-good step.
+            consecutive_good_step: The number of consecutive good judgments required for each increase.
+            consecutive_good_cap: The maximum consecutive-good count used to calculate the multiplier.
+        """
 
 
 @_level_score
@@ -854,6 +951,58 @@ class _LevelScore:
             self.consecutive_good_step = consecutive_good_step
         if consecutive_good_cap is not None:
             self.consecutive_good_cap = consecutive_good_cap
+
+
+class LevelLifeData(Protocol):
+    """The level life configuration returned by [`level_life`][sonolus.script.runtime.level_life]."""
+
+    consecutive_perfect_increment: float
+    """The life gained at each consecutive-perfect step."""
+
+    consecutive_perfect_step: float
+    """The number of consecutive perfect judgments required for each life increment."""
+
+    consecutive_great_increment: float
+    """The life gained at each consecutive-great step."""
+
+    consecutive_great_step: float
+    """The number of consecutive great judgments required for each life increment."""
+
+    consecutive_good_increment: float
+    """The life gained at each consecutive-good step."""
+
+    consecutive_good_step: float
+    """The number of consecutive good judgments required for each life increment."""
+
+    initial: int
+    """The life at the start of the level."""
+
+    maximum: int
+    """The upper limit for life."""
+
+    def update(
+        self,
+        consecutive_perfect_increment: float | None = None,
+        consecutive_perfect_step: float | None = None,
+        consecutive_great_increment: float | None = None,
+        consecutive_great_step: float | None = None,
+        consecutive_good_increment: float | None = None,
+        consecutive_good_step: float | None = None,
+        initial: int | None = None,
+        maximum: int | None = None,
+    ):
+        """Update the level life configuration.
+
+        Args:
+            consecutive_perfect_increment: The life gained at each consecutive-perfect step.
+            consecutive_perfect_step: The number of consecutive perfect judgments required for each life increment.
+            consecutive_great_increment: The life gained at each consecutive-great step.
+            consecutive_great_step: The number of consecutive great judgments required for each life increment.
+            consecutive_good_increment: The life gained at each consecutive-good step.
+            consecutive_good_step: The number of consecutive good judgments required for each life increment.
+            initial: The life at the start of the level.
+            maximum: The upper limit for life.
+        """
 
 
 @_level_life
@@ -950,6 +1099,11 @@ def is_preprocessing() -> bool:
     Returns True if the current callback is one of preprocess, spawn_order, spawn_time, or despawn_time.
     """
     return bool(ctx() and ctx().callback in {"preprocess", "spawnOrder", "spawnTime", "despawnTime"})
+
+
+@meta_fn
+def _is_preprocess_callback() -> bool:
+    return bool(ctx() and ctx().callback == "preprocess")
 
 
 @meta_fn
@@ -1233,8 +1387,8 @@ def runtime_ui() -> RuntimeUi:
     return _runtime_ui  # type: ignore
 
 
-def canvas() -> _PreviewRuntimeCanvas:
-    """Get the preview canvas.
+def canvas() -> PreviewRuntimeCanvas:
+    """Get the [`PreviewRuntimeCanvas`][sonolus.script.runtime.PreviewRuntimeCanvas] configuration.
 
     Only available in preview mode.
     """
@@ -1287,16 +1441,16 @@ def safe_area() -> Rect:
             )
 
 
-def level_score() -> _LevelScore:
-    """Get the level score configuration.
+def level_score() -> LevelScoreData:
+    """Get the [`LevelScoreData`][sonolus.script.runtime.LevelScoreData] for the level.
 
     Only available in play and watch mode.
     """
     return _LevelScore  # type: ignore
 
 
-def level_life() -> _LevelLife:
-    """Get the level life configuration.
+def level_life() -> LevelLifeData:
+    """Get the [`LevelLifeData`][sonolus.script.runtime.LevelLifeData] for the level.
 
     Only available in play and watch mode.
     """
@@ -1306,13 +1460,16 @@ def level_life() -> _LevelLife:
 def add_life_scheduled(value: int, time: float):
     """Schedule adding life at a specific time.
 
-    Only valid in play and watch mode.
+    Only valid in the `preprocess` callback in play and watch mode.
 
     Args:
         value: The amount of life to add.
         time: The time to add the life at.
     """
-    assert is_play() or is_watch(), "add_life can only be called in play or watch mode"
+    if not (is_play() or is_watch()):
+        static_error("add_life_scheduled is only available in play and watch mode")
+    if not _is_preprocess_callback():
+        static_error("add_life_scheduled is only available in the preprocess callback")
     _add_life_scheduled(value, time)
 
 

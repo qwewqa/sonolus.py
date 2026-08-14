@@ -1,5 +1,5 @@
 import inspect
-from typing import dataclass_transform
+from typing import ClassVar, dataclass_transform, get_origin
 
 from sonolus.backend.blocks import Block, PlayBlock, PreviewBlock, TutorialBlock, WatchBlock
 from sonolus.backend.mode import Mode
@@ -89,12 +89,19 @@ def _create_global(cls: type, blocks: dict[Mode, Block], offset: int | None):
     if cls.__bases__ != (object,):
         raise TypeError("Expected a class with no bases or a Value subclass")
     field_offset = 0
-    for i, (
-        name,
-        annotation,
-    ) in enumerate(inspect.get_annotations(cls, eval_str=True).items()):
-        type_ = validate_concrete_type(annotation)
-        setattr(cls, name, _GlobalField(name, type_, i, field_offset))
+    field_index = 0
+    for name, annotation in inspect.get_annotations(cls, eval_str=True).items():
+        if annotation is ClassVar or get_origin(annotation) is ClassVar:
+            continue
+        # hasattr doesn't work here: it returns True for a field named e.g. mro via the metaclass.
+        if name in cls.__dict__:
+            raise TypeError(f"Default values are not supported for global fields: {cls.__name__}.{name}")
+        try:
+            type_ = validate_concrete_type(annotation)
+        except TypeError as e:
+            raise TypeError(f"Invalid annotation for {cls.__name__}.{name}: {e}") from e
+        setattr(cls, name, _GlobalField(name, type_, field_index, field_offset))
+        field_index += 1
         field_offset += type_._size_()
     cls._global_info_ = _GlobalInfo(cls.__name__, field_offset, blocks, offset)  # type: ignore
     cls._is_comptime_value_ = True  # type: ignore
@@ -235,10 +242,17 @@ def _tutorial_instruction[T](cls: type[T]) -> T:
 def level_memory[T](cls: type[T]) -> T:
     """Define level memory.
 
-    Level memory may be modified during gameplay in sequential callbacks
-    ([`preprocess`][sonolus.script.archetype.PlayArchetype.preprocess],
-    [`update_sequential`][sonolus.script.archetype.PlayArchetype.update_sequential],
-    [`touch`][sonolus.script.archetype.PlayArchetype.touch]).
+    Level memory exists in play, watch, and tutorial mode. Preview mode has no level memory; use
+    [`level_data`][sonolus.script.globals.level_data] there instead.
+
+    In those modes, level memory may be read in any callback and modified in play's
+    [`preprocess`][sonolus.script.archetype.PlayArchetype.preprocess],
+    [`update_sequential`][sonolus.script.archetype.PlayArchetype.update_sequential] and
+    [`touch`][sonolus.script.archetype.PlayArchetype.touch], in watch's
+    [`preprocess`][sonolus.script.archetype.WatchArchetype.preprocess] and
+    [`update_sequential`][sonolus.script.archetype.WatchArchetype.update_sequential], and in tutorial's
+    `preprocess`, `navigate` and `update`.
+
     Compared to level data, it allows modification during gameplay, but prevents some optimizations.
 
     All level memory in a given mode shares a combined limit of 4096 values; exceeding it raises a compilation
@@ -304,10 +318,6 @@ def level_data[T](cls: type[T]) -> T:
     )
 
 
-# level_option is handled by the options decorator
-# level_bucket is handled by the bucket decorator
-
-
 @dataclass_transform()
 def _level_score[T](cls: type[T]) -> T:
     return _create_global(cls, {Mode.PLAY: PlayBlock.LevelScore, Mode.WATCH: WatchBlock.LevelScore}, 0)
@@ -316,17 +326,3 @@ def _level_score[T](cls: type[T]) -> T:
 @dataclass_transform()
 def _level_life[T](cls: type[T]) -> T:
     return _create_global(cls, {Mode.PLAY: PlayBlock.LevelLife, Mode.WATCH: WatchBlock.LevelLife}, 0)
-
-
-# engine_rom is handled by the compiler
-# entity memory is handled by the archetype
-# entity data is handled by the archetype
-# entity shared memory is handled by the archetype
-# entity info is handled by the archetype
-# entity despawn is handled by the archetype
-# entity input is handled by the archetype
-# entity data array is handled by the archetype
-# entity shared memory array is handled by the archetype
-# entity info array is handled by the archetype
-# archetype life is handled by the archetype
-# temporary memory is handled by the compiler

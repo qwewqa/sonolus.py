@@ -159,6 +159,23 @@ Yes: Treat an iterator as single use. Advancing one that is already being consum
      after it is exhausted, is not supported.
 ```
 
+## Changelog entries
+
+An entry in `docs/changelog/index.md` is the user-observable half of a change, stated once and briefly.
+
+- Say what changed for an engine author, never how the fix works inside. "Fixed a `match` value pattern failing
+  to compile against a subject holding runtime values" is complete; adding "the comparison now goes through the
+  subject's `__eq__`" is mechanism, and restates standard Python semantics besides.
+- Do not restate standard behaviour. That an assertion fires only when runtime checks are enabled is how every
+  assertion works; behaviour that simply matches Python needs no confirmation.
+- Identify an error, do not transcribe it. Naming the message a user will see is enough; reproducing the
+  suggestion text inside it duplicates what the error already tells them.
+- Never justify a design choice. "Deliberately not rejected at compile time, since the call may be unreachable"
+  is the author reasoning with the reader; users do not care, and it reads as defensive, low-quality writing.
+  Describing the previous behaviour is fine ("Previously a tuple was treated as a single entity"); explaining why
+  the new behaviour is the right choice is not. If a behaviour needs its reasons stated, that belongs on a
+  Concepts page.
+
 ## Comments
 
 **The default is no comment.** Half the files under `sonolus/script/` have no prose comments at all, and that is
@@ -167,9 +184,12 @@ how clever the code is. The public API layer is deliberately bare and lets docst
 `internal/visitor.py` (where Python semantics are reimplemented) is the most heavily commented file under
 `sonolus/script/`.
 
-**The bar is durability.** A comment earns its place only if it is *useful long term* and *likely to stay true*. A
-comment describing something a refactor would invalidate is a liability, because a stale comment is worse than no
-comment. Before writing one, ask whether it will still be accurate and still worth reading a year from now.
+**The bar is necessity, then durability.** True and relevant is not sufficient: a comment stays only if the code
+cannot be correctly understood without it. If the name, the surrounding code, a docstring, or the test that pins
+the behaviour already carries the reader, the comment goes, even when it records a real fact. A comment
+describing something a refactor would invalidate is a liability besides, because a stale comment is worse than no
+comment. Calibration from review rounds here: about half of the comments a careful author keeps still fail this
+bar on a second pass, so when in doubt, cut.
 
 **Use the words the codebase already uses.** Grep for a term before naming a concept with it, and grep for the
 concept as well: the test is whether the tree already says this word about this thing. `mint` is house vocabulary

@@ -17,8 +17,8 @@ class SonolusIterator[T]:
     Inheritors must implement the [`next`][sonolus.script.iterator.SonolusIterator.next] method,
     which should return a [`Maybe[T]`][sonolus.script.maybe.Maybe].
 
-    An iterator should be treated as single use: do not advance one that is already being consumed, or consume
-    one again after it is exhausted. Doing so may lead to unexpected behavior.
+    Use an iterator only once: in one `for` loop, in one call to `next()`, or by passing it once to another iterator
+    consumer.
 
     Usage:
         ```python
@@ -33,14 +33,14 @@ class SonolusIterator[T]:
     @meta_fn
     def next(self) -> Maybe[T]:
         """Return the next item from the iterator as a [`Maybe`][sonolus.script.maybe.Maybe]."""
-        raise NotImplementedError
+        raise NotImplementedError("SonolusIterator subclasses must implement next()")
 
     def __next__(self) -> T:
         """Return the next item, for use outside of compiled code only.
 
         This is not intended to be overridden, and just serves to allow iterators to work in regular Python code.
         """
-        result = self.next()
+        result = _validate_next_result(self.next())
         if result.is_some:
             return result.get_unsafe()
         else:
@@ -51,13 +51,22 @@ class SonolusIterator[T]:
         return self
 
 
+@meta_fn
+def _validate_next_result(value) -> Maybe[Any]:
+    if not isinstance(value, Maybe):
+        from sonolus.script.internal.builtin_impls import _type_name
+
+        raise TypeError(f"Iterator.next() returned '{_type_name(value)}', expected Maybe")
+    return value
+
+
 class _Enumerator[V: SonolusIterator](Record, SonolusIterator):
     i: int
     offset: Final[int]
     iterator: V
 
     def next(self) -> Maybe[tuple[int, Any]]:
-        value = self.iterator.next()
+        value = _validate_next_result(self.iterator.next())
         if value.is_nothing:
             return Nothing
         result = (self.i + self.offset, value.get_unsafe())
@@ -69,36 +78,32 @@ class _Zipper[T](Record, SonolusIterator):
     # Can be a, Pair[a, b], Pair[a, Pair[b, c]], etc.
     iterators: T
 
-    @meta_fn
-    def _get_iterators(self) -> tuple[SonolusIterator, ...]:
-        from sonolus.script.containers import Pair
-
-        iterators = []
-        v = self.iterators
-        while isinstance(v, Pair):
-            iterators.append(v.first)
-            v = v.second
-        iterators.append(v)
-        return tuple(iterators)
-
-    @meta_fn
-    def _get_next_values(self) -> tuple[Any, ...]:
-        from sonolus.script.internal.visitor import compile_and_call
-
-        return tuple(compile_and_call(iterator.next) for iterator in self._get_iterators())
-
-    @meta_fn
-    def _values_to_tuple(self, values: tuple[Any, ...]) -> tuple[Any, ...]:
-        from sonolus.script.internal.visitor import compile_and_call
-
-        return tuple(compile_and_call(value.get_unsafe) for value in values)
-
     def next(self) -> Maybe[tuple[Any, ...]]:
-        values = self._get_next_values()
-        for value in values:
-            if value.is_nothing:
-                return Nothing
-        return Some(self._values_to_tuple(values))
+        return _zip_next(self.iterators, ())
+
+
+@meta_fn
+def _zip_next(chain, values) -> Maybe[tuple[Any, ...]]:
+    from sonolus.script.containers import Pair
+    from sonolus.script.internal.visitor import compile_and_call
+
+    if isinstance(chain, Pair):
+        return compile_and_call(_zip_next_pair, chain.first, chain.second, values)
+    return compile_and_call(_zip_next_last, chain, values)
+
+
+def _zip_next_pair(arm, rest, values) -> Maybe[tuple[Any, ...]]:
+    value = _validate_next_result(arm.next())
+    if value.is_nothing:
+        return Nothing
+    return _zip_next(rest, (*values, value.get_unsafe()))
+
+
+def _zip_next_last(arm, values) -> Maybe[tuple[Any, ...]]:
+    value = _validate_next_result(arm.next())
+    if value.is_nothing:
+        return Nothing
+    return Some((*values, value.get_unsafe()))
 
 
 class _EmptyIterator(Record, SonolusIterator):
@@ -111,7 +116,7 @@ class _MappingIterator[T, Fn](Record, SonolusIterator):
     iterator: T
 
     def next(self) -> Maybe[Any]:
-        return self.iterator.next().map(self.fn)
+        return _validate_next_result(self.iterator.next()).map(self.fn)
 
 
 class _FilteringIterator[T, Fn](Record, SonolusIterator):
@@ -120,7 +125,7 @@ class _FilteringIterator[T, Fn](Record, SonolusIterator):
 
     def next(self) -> Maybe[T]:
         while True:
-            value = self.iterator.next()
+            value = _validate_next_result(self.iterator.next())
             if value.is_nothing:
                 return Nothing
             inside = value.get_unsafe()
@@ -139,6 +144,11 @@ def maybe_next[T](iterator: Iterator[T]) -> Maybe[T]:
     if not isinstance(iterator, SonolusIterator):
         raise TypeError("Iterator must be an instance of SonolusIterator.")
     if ctx():
-        return compile_and_call(iterator.next)
+        from sonolus.script.internal.builtin_impls import _advance_iterator_once
+
+        result = compile_and_call(_advance_iterator_once, iterator)
+        if not ctx().live:
+            return Nothing
+        return _validate_next_result(result)
     else:
-        return iterator.next()
+        return _validate_next_result(iterator.next())

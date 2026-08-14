@@ -1,11 +1,14 @@
+import pytest
 from hypothesis import given
 from hypothesis import strategies as st
 
 from sonolus.script.array import Array
+from sonolus.script.internal.error import CompilationError
 from sonolus.script.num import Num
-from sonolus.script.values import alloc, copy, sizeof, swap, zeros
+from sonolus.script.record import Record
+from sonolus.script.values import alloc, copy, freeze, sizeof, swap, zeros
 from sonolus.script.vec import Vec2
-from tests.script.conftest import run_and_validate
+from tests.script.conftest import run_and_validate, run_compiled
 
 floats = st.floats(min_value=-1000, max_value=1000, allow_nan=False, allow_infinity=False)
 
@@ -167,3 +170,67 @@ def test_sizeof_array():
 
     result = run_and_validate(fn)
     assert result == 5
+
+
+class _FreezePair(Record):
+    first: int
+    second: int
+
+
+def test_freeze_record_read_still_works():
+    def fn():
+        p = _FreezePair(first=3, second=4)
+        frozen = freeze(p)
+        return frozen.first + frozen.second
+
+    assert run_and_validate(fn) == 7
+
+
+def test_freeze_record_write_raises():
+    def fn():
+        p = _FreezePair(first=1, second=2)
+        frozen = freeze(p)
+        frozen.first = 5
+        return frozen.first
+
+    # freeze()'s write guard exists only at compile time. Outside a compile context, freeze() just deep-copies,
+    # so plain Python raises nothing here, and there is no differential for run_and_validate to check.
+    with pytest.raises(CompilationError, match="Value is read-only, cannot write to it"):
+        run_compiled(fn)
+
+
+def test_freeze_of_already_frozen_record_stays_read_only():
+    def fn():
+        p = _FreezePair(first=1, second=2)
+        frozen = freeze(freeze(p))
+        frozen.first = 5
+        return frozen.first
+
+    with pytest.raises(CompilationError, match="Value is read-only, cannot write to it"):
+        run_compiled(fn)
+
+
+def test_freeze_of_already_frozen_record_reads_correctly():
+    def fn():
+        p = _FreezePair(first=3, second=4)
+        frozen = freeze(freeze(p))
+        return frozen.first + frozen.second
+
+    assert run_and_validate(fn) == 7
+
+
+def test_freeze_array_read_still_works():
+    def fn():
+        arr = Array(1, 2, 3)
+        frozen = freeze(arr)
+        return Array(frozen[0], frozen[1], frozen[2])
+
+    result = run_and_validate(fn)
+    assert result[0] == 1
+    assert result[1] == 2
+    assert result[2] == 3
+
+
+# There is no test_freeze_array_write_raises here: freeze() does not protect an Array, because
+# Array._from_list_ rebuilds through the ordinary constructor and drops the read-only wrapper. Add the test
+# once that changes; pinning today's behavior would break the moment the gap is closed.

@@ -2,7 +2,7 @@
 """EngineNode emission from the arena IR.
 
 Emits the EngineNode tree directly from the flat ``Func`` arena (see emit.pyx
-for the full contract), including idempotent re-flattening of associative left
+for the full contract), including idempotent re-flattening of n-ary left-fold
 spines during emission.
 
 ``emit_func`` is the ``cdef`` entry the fused ``optimize_and_finalize`` path

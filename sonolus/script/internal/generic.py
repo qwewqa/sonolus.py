@@ -17,15 +17,19 @@ def validate_type_arg(arg: Any) -> Any:
     if not arg._is_py_():
         raise TypeError(f"Expected a compile-time constant type argument, got {arg}")
     result = arg._as_py_()
+    if result is None:
+        return type(arg)
     if isinstance(result, type) and issubclass(result, Enum):
         # E.g. if this is an IntEnum subclass, we call it on IntEnum, and then int, which gets us the result we want
         result = validate_type_arg(result.__mro__[1])
     if hasattr(result, "_type_mapping_"):
         return result._type_mapping_
     if get_origin(result) is Annotated:
-        return result.__args__[0]
+        return validate_type_arg(result.__args__[0])
     if get_origin(result) is Literal:
-        return result.__args__[0]
+        if len(result.__args__) != 1:
+            raise TypeError(f"Literal[] must contain exactly one value, got {len(result.__args__)}")
+        return validate_type_arg(result.__args__[0])
     return result
 
 
@@ -34,13 +38,15 @@ def preprocess_type_spec(arg: Any) -> Any:
     if not arg._is_py_():
         raise TypeError(f"Expected a compile-time constant type, got {arg}")
     result = arg._as_py_()
+    if result is None:
+        return type(arg)
     if isinstance(result, type) and issubclass(result, Enum):
         # E.g. if this is an IntEnum subclass, we call it on IntEnum, and then int, which gets us the result we want
         result = validate_type_arg(result.__mro__[1])
     if hasattr(result, "_type_mapping_"):
         return result._type_mapping_
     if get_origin(result) is Annotated:
-        return result.__args__[0]
+        return preprocess_type_spec(result.__args__[0])
     if get_origin(result) is Literal:
         if len({type(v) for v in result.__args__}) != 1:
             raise TypeError(f"Literal[] type arguments must all be of the same type, got {result.__args__}")
@@ -77,7 +83,7 @@ class TypeInfo(typing.NamedTuple):
 
 
 def validate_type_spec_with_extras(spec: Any) -> TypeInfo:
-    spec = validate_type_arg(spec)
+    spec = preprocess_type_spec(spec)
     if isinstance(spec, PartialGeneric | TypeVar) or (isinstance(spec, type) and issubclass(spec, Value)):
         return TypeInfo(spec, final=False)
     origin = typing.get_origin(spec)
@@ -167,7 +173,7 @@ class GenericValue(Value):
 
     def __class_getitem__(cls, args: Any) -> type[Self]:
         if cls._type_args_ is not None:
-            raise TypeError(f"Type {cls.__name__} is already parameterized")
+            raise TypeError(f"Type {cls.__name__} is already parameterized or has no parameters")
         if not isinstance(args, tuple):
             args = (args,)
         validated_args = []
@@ -225,7 +231,6 @@ class PartialGeneric[T: GenericValue]:
 
     def __call__(self, *args, **kwargs):
         instance = self.base(*args, **kwargs)
-        # Throw an error if it fails
         accept_and_infer_types(self, instance, {})
         return instance
 

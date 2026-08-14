@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import struct
 from collections.abc import Sequence
 from contextlib import contextmanager
 from dataclasses import dataclass
@@ -180,6 +181,8 @@ class CallbackContextState:
     no_eval: bool
     visitor_own_time: int
     is_in_generator: bool
+    next_runtime_owner_id: int
+    runtime_owner_id: int | None
 
     def __init__(self, callback: str, no_eval: bool = False):
         self.callback = callback
@@ -188,6 +191,14 @@ class CallbackContextState:
         self.no_eval = no_eval
         self.visitor_own_time = 0
         self.is_in_generator = False
+        self.next_runtime_owner_id = 1
+        self.runtime_owner_id = None
+
+
+def _describe_global(value: _GlobalInfo | _GlobalPlaceholder) -> str:
+    """Name a global for an error message."""
+    name = getattr(value, "name", None)
+    return name if name is not None else value.type.__name__
 
 
 class Context:
@@ -301,6 +312,17 @@ class Context:
         used_names[name] = num
         return num
 
+    def get_runtime_owner_id(self) -> int:
+        owner_id = self.callback_state.runtime_owner_id
+        return owner_id if owner_id is not None else self._allocate_runtime_owner_id()
+
+    def _allocate_runtime_owner_id(self) -> int:
+        result = self.callback_state.next_runtime_owner_id
+        if result > 1 << 24:
+            raise RuntimeError("Too many runtime ownership sites in one callback")
+        self.callback_state.next_runtime_owner_id += 1
+        return result
+
     def save_alloc_state(self) -> dict[str, int]:
         return self.used_names.copy()
 
@@ -379,7 +401,6 @@ class Context:
         assert len(self.outgoing) == 0
         self.outgoing[None] = header
         values = {}
-        # First do a pass through and get every value
         for name, binding in header.loop_variables.items():
             target_value = binding.value
             with using_ctx(self):
@@ -389,7 +410,6 @@ class Context:
                     # point in time specifically, since _get_readonly_ will make a copy if the value is
                     # e.g. a Num backed by a TempBlock which could be mutated.
                     values[name] = value._get_readonly_()
-        # Then actually set them
         for name, binding in header.loop_variables.items():
             target_value = binding.value
             with using_ctx(self):
@@ -456,7 +476,11 @@ class Context:
         with self.mode_state.lock:
             block = value.blocks.get(self.mode_state.mode)
             if block is None:
-                raise RuntimeError(f"Global {value} is not available in '{self.mode_state.mode.name}' mode")
+                message = f"Global {_describe_global(value)} is not available in '{self.mode_state.mode.name}' mode"
+                available = ", ".join(mode.name for mode in value.blocks)
+                if available:
+                    message = f"{message}, only in {available}"
+                raise RuntimeError(message)
             if value not in self.mode_state.environment_mappings:
                 if value.offset is None:
                     offset = self.mode_state.environment_offsets.get(block, 0)
@@ -493,13 +517,6 @@ class Context:
             context.outgoing[None] = target
         return target
 
-    def register_archetype(self, type_: type) -> int:
-        with self.mode_state.lock:
-            if type_ not in self.mode_state.archetypes:
-                self.mode_state.archetypes[type_] = len(self.mode_state.archetypes)
-                self.mode_state.subclass_ids_cache.clear()
-            return self.mode_state.archetypes[type_]
-
     def get_archetype_mro_id_array(self, archetype_id: int) -> Sequence[int]:
         from sonolus.script.containers import ArrayPointer
         from sonolus.script.num import Num
@@ -532,6 +549,25 @@ def using_ctx(value: Context | None):
         _context = old_value
 
 
+@contextmanager
+def force_shared_runtime_owner_id():
+    context = ctx()
+    if not context:
+        yield
+        return
+    previous = context.callback_state.runtime_owner_id
+    if previous is None:
+        context.callback_state.runtime_owner_id = context.get_runtime_owner_id()
+    try:
+        yield
+    finally:
+        context.callback_state.runtime_owner_id = previous
+
+
+# The largest finite value a 32-bit float can hold.
+_F32_MAX = 3.4028234663852886e38
+
+
 class ReadOnlyMemory:
     values: list[float]
     indexes: dict[tuple[float, ...], int]
@@ -549,6 +585,20 @@ class ReadOnlyMemory:
     def __getitem__(self, item: tuple[float, ...]) -> BlockPlace:
         with self._lock:
             if item not in self.indexes:
+                # struct.pack is what packages the rom, so probing with it rejects exactly the values
+                # packaging would abort on, at a point where the visitor can attach a source location. A slot
+                # holding anything but a number is left for packaging to reject as it does today.
+                for value in item:
+                    if isinstance(value, float | int) and abs(value) > _F32_MAX:
+                        try:
+                            struct.pack("<f", value)
+                        except (OverflowError, struct.error):
+                            # float(): anything out of f32 range is integral in f64, so Num._as_py_ has already
+                            # widened it to an int, and a 1e39 literal would otherwise report as 39 digits.
+                            raise ValueError(
+                                f"Value {float(value)} is out of range for engine data, "
+                                f"which is stored as 32-bit floats"
+                            ) from None
                 index = len(self.values)
                 self.indexes[item] = index
                 self.values.extend(item)
@@ -750,9 +800,9 @@ class Scope:
             with using_ctx(target):
                 target_value = common_type._get_merge_target_(values)
             if target_value is not NotImplemented:
-                for inc in incoming:
+                for inc, value in zip(incoming, values, strict=True):
                     with using_ctx(inc):
-                        target_value._set_(inc.scope.get_value(key))
+                        target_value._set_(value)
                 target.scope.set_value(key, target_value)
                 continue
             else:
@@ -761,11 +811,7 @@ class Scope:
 
 
 def _new_cfg_block(statements, test) -> BasicBlock:
-    # Fast constructor for the transient blocks context_to_cfg feeds straight to the
-    # optimizer: bypass BasicBlock.__init__'s keyword handling and per-block
-    # ``x or default`` allocations. ``incoming`` is left as None: this path's
-    # consumers (marshal-in and the CFG traversals) only read
-    # outgoing/statements/test/phis, and these blocks never reach connect_to.
+    # These transient blocks never reach connect_to, so their consumers do not need an incoming set.
     block = BasicBlock.__new__(BasicBlock)
     block.phis = {}
     block.statements = statements

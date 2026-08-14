@@ -6,11 +6,11 @@ from typing import overload
 
 
 @overload
-def meta_fn[T: Callable](fn: T) -> T: ...
+def meta_fn[T: Callable](fn: T, *, show_in_stack: bool = True) -> T: ...
 
 
 @overload
-def meta_fn[T: Callable](show_in_stack: bool) -> Callable[[T], T]: ...
+def meta_fn[T: Callable](*, show_in_stack: bool = True) -> Callable[[T], T]: ...
 
 
 def meta_fn(fn=None, *, show_in_stack: bool = True):

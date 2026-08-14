@@ -65,8 +65,7 @@ class ArrayLike[T](Sequence[T]):
     def get_unchecked(self, index: Num) -> T:
         """Get the element at the given index possibly without bounds checking or conversion of negative indexes.
 
-        The compiler may still determine that the index is out of bounds and throw an error, but it may skip these
-        checks at runtime.
+        The index must be between 0 and `len(self) - 1`.
 
         Args:
             index: The index to get.
@@ -82,8 +81,7 @@ class ArrayLike[T](Sequence[T]):
     def set_unchecked(self, index: Num, value: T):
         """Set the element at the given index possibly without bounds checking or conversion of negative indexes.
 
-        The compiler may still determine that the index is out of bounds and throw an error, but it may skip these
-        checks at runtime.
+        The index must be between 0 and `len(self) - 1`.
 
         Args:
             index: The index to set.
@@ -128,9 +126,11 @@ class ArrayLike[T](Sequence[T]):
         Returns:
             The index of the first matching occurrence, or -1 if the value is not found.
         """
+        assert_true(start % 1 == 0, "index bounds must be integers")
         if stop is None:
             stop = len(self)
         else:
+            assert_true(stop % 1 == 0, "index bounds must be integers")
             stop = get_positive_index(stop, len(self), check=False)
         stop = min(stop, len(self))
         start = get_positive_index(start, len(self), check=False)
@@ -243,6 +243,8 @@ class ArrayLike[T](Sequence[T]):
     def swap_unchecked(self, i: Num, j: Num):
         """Swap the values at the given indices possibly without bounds checking.
 
+        Both indices must be between 0 and `len(self) - 1`.
+
         Args:
             i: The first index.
             j: The second index.
@@ -264,7 +266,6 @@ class ArrayLike[T](Sequence[T]):
         if key is not None or len(self) < 15:
             if key is None:
                 key = _identity  # type: ignore
-            # May be worth adding a block sort variant for better performance on large arrays in the future
             _insertion_sort(self.unchecked(), 0, len(self), key, reverse)  # type: ignore
         else:
             # Heap sort is unstable, so if there's a key, we can't rely on it
@@ -272,7 +273,7 @@ class ArrayLike[T](Sequence[T]):
 
     def shuffle(self):
         """Shuffle the values in the array in place."""
-        random.shuffle(self)  # type: ignore
+        random.shuffle(self.unchecked())  # type: ignore
 
     def reverse(self):
         """Reverse the values in the array in place."""
@@ -409,7 +410,7 @@ class _ArrayReverser[V: ArrayLike](Record, ArrayLike):
     def set_unchecked(self, index: Num, value: V):
         self.array.set_unchecked(len(self) - 1 - index, value)
 
-    def reversed(self) -> ArrayLike[V]:
+    def __reversed__(self) -> ArrayLike[V]:
         return self.array
 
 
@@ -465,7 +466,6 @@ def get_positive_index(
         else:
             is_in_bounds = Num.and_(index >= -length, index < length)
         assert_true(Num.and_(is_in_bounds, _trunc(index) == index), "Invalid index")
-        # Skipping length check since typically these are managed by the library and unlikely to be wrong
     return index + (index < 0) * length
 
 
@@ -501,7 +501,6 @@ def check_positive_index(index: int, length: int, include_end: bool = False) -> 
     else:
         is_in_bounds = Num.and_(index >= 0, index < length)
     assert_true(Num.and_(is_in_bounds, _trunc(index) == index), "Invalid index")
-    # Skipping length check since typically these are managed by the library and unlikely to be wrong
     return index
 
 

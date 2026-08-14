@@ -117,6 +117,14 @@ reference type do not.
   AST node to attach to.
 - Messages name the offending value and, where there is a known fix, suggest it: `use Num instead`,
   `use set instead`. Mirror CPython's wording where an equivalent error exists.
+- A value Python rejects only when the call executes (`range(a, b, 0)` and the like) must not fail the compile
+  when it is traced as a constant: tracing visits both sides of every runtime branch, so the call may be
+  unreachable at runtime, and a host raise or `static_error` there rejects a working program. Those are for
+  errors in the program itself (an unsupported construct, a malformed type parameterization), which no runtime
+  condition can excuse. Check the value with `assert_true`. It is a runtime check even when the condition folds
+  to a constant False: that compiles to an unconditional terminate, after which the path is unreachable and the
+  visitor stops emitting IR for it (`ctx().live` goes false). `visit_For` returns early when the iterable
+  expression ends the path this way, so a loop over such a value compiles as unreachable rather than erroring.
 - To print the type of a compile-time value use `_type_name(value)` from `internal/builtin_impls.py`, not
   `type(x).__name__`: the latter leaks a per-value wrapper class name with a memory address in it.
 
@@ -147,6 +155,8 @@ The same rules read backwards, as things to check in a diff:
 - A `_set_` implementation that branches, or otherwise changes the active context.
 - A runtime branch expected to merge a reference type into a new value. Rebinding the *same* object on both paths
   is fine for any type; producing two different ones only works for `Num`, and for `Maybe` through its override.
+- A compile-time raise on a constant argument that Python would only reject when the call executes. The call may
+  be unreachable at runtime; it needs the runtime-check treatment described under Errors.
 
 ## Where things live
 

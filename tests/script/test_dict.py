@@ -5,14 +5,17 @@ import pytest
 from sonolus.script.array import Array
 from sonolus.script.containers import Box
 from sonolus.script.internal.context import ctx
+from sonolus.script.internal.dict_impl import DictImpl
 from sonolus.script.internal.error import CompilationError
 from sonolus.script.internal.impl import validate_value
 from sonolus.script.internal.math_impls import _floor
 from sonolus.script.internal.meta_fn import meta_fn
 from sonolus.script.internal.random import _random
 from sonolus.script.internal.tuple_impl import TupleImpl
-from sonolus.script.num import _is_num
-from tests.script.conftest import compile_fn, run_and_validate
+from sonolus.script.num import Num, _is_num
+from sonolus.script.record import Record
+from sonolus.script.vec import Vec2
+from tests.script.conftest import compile_fn, run_and_validate, run_compiled
 
 
 @meta_fn
@@ -30,7 +33,352 @@ def bb(*x):
         return x
 
 
+class ReflectedEqualityKey(Record):
+    value: int
+
+    def __eq__(self, other):
+        return self.value == other
+
+    def __hash__(self):
+        return hash(self.value)
+
+
+class OrderedStoredKey(Record):
+    value: int
+
+    def __eq__(self, other):
+        if isinstance(other, OrderedStoredKey):
+            return self.value == other.value
+        return self.value == other.value + 1000
+
+    def __lt__(self, other):
+        return self.value < other.value
+
+    def __hash__(self):
+        return hash(self.value)
+
+
+class OrderedProbeKey(Record):
+    value: int
+
+    def __eq__(self, other):
+        return self.value == other.value
+
+    def __lt__(self, other):
+        return self.value < other.value
+
+    def __hash__(self):
+        return hash(self.value)
+
+
+class OrderedDecliningKey(Record):
+    value: int
+
+    def __eq__(self, other):
+        if isinstance(other, OrderedDecliningKey):
+            return self.value == other.value
+        return NotImplemented
+
+    def __lt__(self, other):
+        return self.value < other.value
+
+    def __hash__(self):
+        return hash(self.value)
+
+
+class DecliningEqualityKey(Record):
+    value: int
+
+    def __eq__(self, other):
+        return NotImplemented
+
+    def __hash__(self):
+        return hash(self.value)
+
+
+class SameTypeReflectedEqualityKey(Record):
+    side: int
+
+    def __eq__(self, other):
+        if self.side == 0:
+            return NotImplemented
+        return other.side == 0
+
+    def __hash__(self):
+        return 1
+
+
+class TruthResult(Record):
+    value: int
+
+    def __bool__(self):
+        return self.value != 0
+
+
+class TruthResultKey(Record):
+    value: int
+
+    def __eq__(self, other):
+        return TruthResult(self.value == other.value)
+
+    def __lt__(self, other):
+        return self.value < other.value
+
+    def __hash__(self):
+        return hash(self.value)
+
+
+class TruthOrderingKey(Record):
+    value: int
+
+    def __eq__(self, other):
+        return self.value == other.value
+
+    def __lt__(self, other):
+        return TruthResult(self.value < other.value)
+
+    def __hash__(self):
+        return hash(self.value)
+
+
+class AlwaysEqualTruthKey(Record):
+    value: int
+
+    def __eq__(self, other):
+        return TruthResult(1)
+
+    def __hash__(self):
+        return 1
+
+
+class NormalizingInitKey(Record):
+    value: int
+
+    def __init__(self, value):
+        self.value = value // 2
+
+    def __eq__(self, other):
+        return self.value == other.value
+
+    def __hash__(self):
+        return hash(self.value)
+
+
+class ReflectedOrderingStoredKey(Record):
+    value: int
+
+    def __eq__(self, other):
+        return self.value == other.value
+
+    def __lt__(self, other):
+        return self.value < other.value
+
+    def __gt__(self, other):
+        return self.value > other.value
+
+    def __hash__(self):
+        return hash(self.value)
+
+
+class DecliningOrderingProbeKey(Record):
+    value: int
+
+    def __eq__(self, other):
+        return self.value == other.value
+
+    def __lt__(self, other):
+        return NotImplemented
+
+    def __hash__(self):
+        return hash(self.value)
+
+
 # __getitem__
+
+
+def test_constant_search_tries_probe_equality_for_same_type_after_not_implemented():
+    stored = SameTypeReflectedEqualityKey(0)
+    probe = SameTypeReflectedEqualityKey(1)
+    values = {stored: 10}
+
+    def fn():
+        return probe in values
+
+    assert run_and_validate(fn) == 1
+
+
+def test_lookup_truth_tests_rich_comparison_results():
+    key = TruthResultKey(1)
+    d = {key: 10}
+    s = {key}
+
+    def fn():
+        match = TruthResultKey(bb(1))
+        miss = TruthResultKey(bb(2))
+        return Array(d.get(match, -1), d.get(miss, -1), match in s, miss in s)
+
+    assert run_and_validate(fn) == Array(10, -1, True, False)
+
+
+def test_record_lookup_uses_reflected_comparison():
+    keys = [ReflectedOrderingStoredKey(i) for i in range(5)]
+    d = {key: key.value for key in keys}
+    s = set(keys)
+
+    def fn():
+        low = DecliningOrderingProbeKey(bb(-0.5))
+        high = DecliningOrderingProbeKey(bb(2.5))
+        return Array(d.get(low, -1), d.get(high, -1), low in s, high in s)
+
+    assert run_and_validate(fn) == Array(-1, -1, False, False)
+
+
+def test_container_copy_and_union_truth_test_key_equality():
+    left_key = AlwaysEqualTruthKey(1)
+    right_key = AlwaysEqualTruthKey(2)
+    d1 = {left_key: 10}
+    d2 = {right_key: 20}
+    s1 = {left_key}
+    s2 = {right_key}
+
+    def fn():
+        probe = AlwaysEqualTruthKey(bb(3))
+        copied_dict = dict(d1)
+        copied_set = set(s1)
+        union_dict = d1 | d2
+        union_set = s1 | s2
+        return Array(copied_dict[probe], probe in copied_set, union_dict[probe], len(union_set), probe in union_set)
+
+    assert run_and_validate(fn) == Array(10, True, 20, 1, True)
+
+
+def test_dict_construction_truth_tests_ordering_results():
+    keys = [TruthOrderingKey(i) for i in range(5)]
+    d = {key: key.value for key in reversed(keys)}
+    s = set(keys)
+
+    def fn():
+        match = TruthOrderingKey(bb(2))
+        miss = TruthOrderingKey(bb(2.5))
+        return Array(d.get(match, -1), d.get(miss, -1), match in s, miss in s)
+
+    assert run_and_validate(fn) == Array(2, -1, True, False)
+
+
+def test_tuple_record_keys_do_not_use_host_ordering():
+    keys = [TruthOrderingKey(i) for i in range(5)]
+    d = {(key,): key.value for key in reversed(keys)}
+
+    def fn():
+        match = (TruthOrderingKey(bb(2)),)
+        miss = (TruthOrderingKey(bb(2.5)),)
+        return Array(d.get(match, -1), d.get(miss, -1))
+
+    assert run_and_validate(fn) == Array(2, -1)
+
+
+def test_heterogeneous_tuple_keys_do_not_use_host_ordering():
+    d = {(1,): 10, ("a",): 20}
+    s = {(1,), ("a",)}
+
+    def fn():
+        probe = (bb(1),)
+        return Array(d.get(probe, -1), probe in s)
+
+    assert run_and_validate(fn) == Array(10, True)
+
+
+class ConstantKeyA:
+    pass
+
+
+class ConstantKeyB:
+    pass
+
+
+def test_unorderable_class_constant_keys_use_linear_lookup():
+    d = {ConstantKeyA: 10, ConstantKeyB: 20}
+    tuple_d = {(ConstantKeyA,): 10, (ConstantKeyB,): 20}
+    s = {(ConstantKeyA,), (ConstantKeyB,)}
+
+    def fn():
+        return Array(d[ConstantKeyA], tuple_d[ConstantKeyB,], (ConstantKeyA,) in s)
+
+    assert run_and_validate(fn) == Array(10, 20, True)
+
+
+def test_runtime_tuple_key_lookup():
+    d = {(0,): 10}
+
+    def fn():
+        return d.get((bb(0),), -1)
+
+    assert run_and_validate(fn) == 10
+
+
+COLLIDING_TRUTH_ITEMS = ((AlwaysEqualTruthKey(1), 10), (AlwaysEqualTruthKey(2), 20))
+
+
+def test_tuple_container_constructors_truth_test_colliding_keys():
+    def fn():
+        probe = AlwaysEqualTruthKey(bb(3))
+        d = dict(COLLIDING_TRUTH_ITEMS)
+        s = set((COLLIDING_TRUTH_ITEMS[0][0], COLLIDING_TRUTH_ITEMS[1][0]))  # noqa: C405
+        return Array(len(d), d[probe], len(s), probe in s)
+
+    assert run_and_validate(fn) == Array(1, 20, 1, True)
+
+
+NORMALIZING_INIT_ITEMS = ((NormalizingInitKey(0), 10), (NormalizingInitKey(2), 20))
+
+
+def test_tuple_dict_constructor_does_not_rerun_record_init():
+    def fn():
+        return len(dict(NORMALIZING_INIT_ITEMS))
+
+    assert run_and_validate(fn) == 2
+
+
+class NeverEqualNum(Num):
+    __slots__ = ()
+
+    def __eq__(self, other):
+        return False
+
+    __hash__ = Num.__hash__
+
+
+NEVER_EQUAL_NUM_ITEMS = ((NeverEqualNum(1), 10), (NeverEqualNum(1), 20))
+SAME_NEVER_EQUAL_NUM = NeverEqualNum(1)
+SAME_NEVER_EQUAL_NUM_ITEMS = ((SAME_NEVER_EQUAL_NUM, 10), (SAME_NEVER_EQUAL_NUM, 20))
+NESTED_SAME_NEVER_EQUAL_NUM_ITEMS = (
+    ((SAME_NEVER_EQUAL_NUM, (SAME_NEVER_EQUAL_NUM,)), 10),
+    ((SAME_NEVER_EQUAL_NUM, (SAME_NEVER_EQUAL_NUM,)), 20),
+)
+
+
+def test_tuple_dict_constructor_preserves_num_subclass_equality():
+    def fn():
+        return len(dict(NEVER_EQUAL_NUM_ITEMS))
+
+    assert run_and_validate(fn) == 2
+
+
+def test_tuple_dict_constructor_preserves_identical_key_fast_path():
+    def fn():
+        d = dict(SAME_NEVER_EQUAL_NUM_ITEMS)
+        return Array(len(d), d[SAME_NEVER_EQUAL_NUM])
+
+    assert run_and_validate(fn) == Array(1, 20)
+
+
+def test_tuple_dict_constructor_preserves_nested_identical_key_fast_path():
+    def fn():
+        d = dict(NESTED_SAME_NEVER_EQUAL_NUM_ITEMS)
+        key = (SAME_NEVER_EQUAL_NUM, (SAME_NEVER_EQUAL_NUM,))
+        return Array(len(d), d[key])
+
+    assert run_and_validate(fn) == Array(1, 20)
 
 
 def test_get_present_small_size_string_key():
@@ -457,6 +805,38 @@ def test_get_present_and_modify_large_size_tuple_key():
 # .get()
 
 
+@pytest.mark.parametrize("args", [("a",), ("a", None)])
+def test_get_method_accepts_none_default_for_present_key(args):
+    d = {"a": 10}
+
+    def fn():
+        return d.get(*args)
+
+    assert run_and_validate(fn) == 10
+
+
+@pytest.mark.parametrize("args", [("b",), ("b", None)])
+def test_get_method_accepts_none_default_for_absent_key(args):
+    d = {"a": 10}
+
+    def fn():
+        return d.get(*args) is None
+
+    assert run_and_validate(fn)
+
+
+def test_get_method_rejects_none_default_for_runtime_key():
+    d = {1: 10}
+
+    def fn():
+        return d.get(bb(1))
+
+    with pytest.raises(
+        CompilationError, match=r"Dict\.get with an omitted or None default requires a compile time constant key"
+    ):
+        run_compiled(fn)
+
+
 def test_get_method_present_small_size_string_key():
     d = {"a": 10, "b": 20}
 
@@ -866,6 +1246,95 @@ def test_contains_absent_large_size_mixed_key():
         return Array("h" in d, 8 in d, (8, 8) in d)
 
     assert run_and_validate(fn) == Array(False, False, False)
+
+
+def test_contains_key_of_unrelated_type():
+    # Num.__eq__ answers NotImplemented against a Record, and the constant search calls it directly
+    # rather than through the visitor, so it has to apply the different-types rule itself.
+    def fn():
+        d = {1: 10, 2: 20}
+        return Vec2(1, 2) in d
+
+    assert not run_and_validate(fn)
+
+
+def test_contains_uses_reflected_equality_after_not_implemented():
+    def fn():
+        d = {1: 10}
+        return ReflectedEqualityKey(1) in d
+
+    assert run_and_validate(fn)
+
+
+def test_contains_gives_strict_subclass_equality_priority():
+    from tests.script.test_operator import PriorityBase, PrioritySub
+
+    d = {PriorityBase(1): 10}
+
+    def fn():
+        return PrioritySub(1) in d
+
+    assert run_and_validate(fn)
+
+
+def test_set_contains_gives_strict_subclass_equality_priority():
+    from tests.script.test_operator import PriorityBase, PrioritySub
+
+    values = {PriorityBase(1)}
+
+    def fn():
+        return PrioritySub(1) in values
+
+    assert run_and_validate(fn)
+
+
+def test_contains_gives_strict_subclass_inherited_equality_priority():
+    from tests.script.test_operator import InheritedEqualityBase, InheritedEqualitySub
+
+    d = {InheritedEqualityBase(1): 10}
+
+    def fn():
+        return InheritedEqualitySub(1) in d
+
+    assert run_and_validate(fn)
+
+
+def test_set_contains_gives_strict_subclass_inherited_equality_priority():
+    from tests.script.test_operator import InheritedEqualityBase, InheritedEqualitySub
+
+    values = {InheritedEqualityBase(1)}
+
+    def fn():
+        return InheritedEqualitySub(1) in values
+
+    assert run_and_validate(fn)
+
+
+def test_contains_treats_two_declined_equalities_as_unequal():
+    d = {DecliningEqualityKey(1): 10}
+
+    def fn():
+        return DecliningEqualityKey(1) in d
+
+    assert not run_and_validate(fn)
+
+
+def test_ordered_search_uses_stored_key_equality_first():
+    d = {OrderedStoredKey(i): i * 10 for i in range(5)}
+
+    def fn():
+        return OrderedProbeKey(bb(2)) in d
+
+    assert not run_and_validate(fn)
+
+
+def test_ordered_search_uses_reflected_equality_after_not_implemented():
+    d = {OrderedDecliningKey(i): i * 10 for i in range(5)}
+
+    def fn():
+        return OrderedProbeKey(bb(2)) in d
+
+    assert run_and_validate(fn)
 
 
 # __or__
@@ -1549,6 +2018,21 @@ def test_union_overlapping_iter_large_size_mixed_key():
     assert run_and_validate(fn) == Array(*(d1 | d2).values())
 
 
+# __eq__
+
+
+def test_eq_raises():
+    # Use DictImpl instances directly so Python mode also raises TypeError
+    d1 = DictImpl.from_dict({1: 10, 2: 20})
+    d2 = DictImpl.from_dict({1: 10, 2: 20})
+
+    def fn():
+        return d1 == d2
+
+    with pytest.raises(TypeError, match="Dict equality comparison is not supported"):
+        run_and_validate(fn)
+
+
 # __iter__
 
 
@@ -2134,4 +2618,14 @@ def test_getitem_runtime_key_non_array_values_errors_clearly():
         return d[bb(1)].value
 
     with pytest.raises(CompilationError, match="Dict must be accessed via a compile time constant"):
+        compile_fn(fn)
+
+
+def test_dict_literal_double_star_unpacking_rejected():
+    def fn():
+        base = {"a": 1}
+        d = {**base, "b": 2}
+        return Array(d["a"], d["b"])
+
+    with pytest.raises(CompilationError, match=r"\*\* unpacking"):
         compile_fn(fn)

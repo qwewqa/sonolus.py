@@ -1,3 +1,5 @@
+import pytest
+
 from sonolus.script.bucket import bucket
 from sonolus.script.engine import Engine
 from sonolus.script.instruction import Instruction, StandardInstruction, instruction, instructions
@@ -72,6 +74,22 @@ def test_select_option_int_default_is_used_as_index_directly():
     assert option.to_dict()["def"] == 1
 
 
+@pytest.mark.parametrize("default", [-1, 2])
+def test_select_option_rejects_out_of_range_int_default(default):
+    with pytest.raises(ValueError, match="Select option default index must be between 0 and 1"):
+        select_option(default=default, values=["a", "b"])
+
+
+def test_select_option_rejects_int_default_for_empty_values():
+    with pytest.raises(ValueError, match="Select option default index cannot be used with no values"):
+        select_option(default=0, values=[])
+
+
+def test_select_option_rejects_bool_default_as_an_index():
+    with pytest.raises(TypeError, match="Select option default index must be an integer, not bool"):
+        select_option(default=True, values=["a", "b"])
+
+
 def test_bucket_localized_unit():
     info = bucket(sprites=[], unit={"en": "ms", "zhs": "毫秒"})
     assert info.to_dict()["unit"] == '##LOCALIZE:{"en":"ms","zhs":"毫秒"}'
@@ -98,3 +116,12 @@ def test_item_metadata_keeps_native_localization_dicts():
     assert level.title == LOCALIZED_GREETING
     assert Tag(title=LOCALIZED_GREETING).as_dict()["title"] == LOCALIZED_GREETING
     assert as_localization_text("Hello World") == {"en": "Hello World"}
+
+
+@pytest.mark.parametrize("title", ["", {}])
+def test_item_metadata_keeps_explicit_empty_titles(title):
+    engine = Engine(name="engine", title=title, data=None)
+    level = Level(name="level", title=title, data=LevelData(bgm_offset=0.0, entities=[]))
+
+    assert engine.title == as_localization_text(title)
+    assert level.title == as_localization_text(title)

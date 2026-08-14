@@ -1,6 +1,7 @@
 from typing import Final, Self
 
 from sonolus.script.array_like import ArrayLike, get_positive_index
+from sonolus.script.debug import assert_true, static_error
 from sonolus.script.internal.context import ctx
 from sonolus.script.internal.impl import validate_value
 from sonolus.script.internal.meta_fn import meta_fn
@@ -15,16 +16,23 @@ class Range(Record, ArrayLike[int]):
     stop: int
     step: int
 
-    def __new__(cls, start: int, stop: int | None = None, step: int = 1):
+    def __new__(cls, start: int, stop: int | None = None, step: int = 1, /):
         if stop is None:
             start, stop = 0, start
         return super().__new__(cls, start, stop, step)
 
     @classmethod
     @meta_fn
-    def frozen(cls, start: int, stop: int | None = None, step: int = 1) -> Self:
+    def frozen(cls, start: int, stop: int | None = None, step: int = 1, /) -> Self:
         if stop is None:
             start, stop = 0, start
+        start = Num._accept_(start)
+        stop = Num._accept_(stop)
+        step = Num._accept_(step)
+        assert_true(start % 1 == 0, "range() arguments must be integers")
+        assert_true(stop % 1 == 0, "range() arguments must be integers")
+        assert_true(step % 1 == 0, "range() arguments must be integers")
+        assert_true(step != 0, "range() arg 3 must not be zero")
         return super().frozen(start, stop, step)
 
     def __iter__(self) -> SonolusIterator:
@@ -55,7 +63,13 @@ class Range(Record, ArrayLike[int]):
         return self.start + index * self.step
 
     def __setitem__(self, index: int, value: int):
-        raise TypeError("Range does not support item assignment")
+        static_error("Range does not support item assignment")
+
+    def index(self, value: int, /) -> int:
+        """Return the index of the first element of the range equal to the given value."""
+        result = super().index(value)
+        assert_true(result != -1, "range.index(x): x not in range")
+        return result
 
     @property
     def last(self) -> int:
@@ -63,7 +77,7 @@ class Range(Record, ArrayLike[int]):
 
     def __eq__(self, other):
         if not isinstance(other, Range):
-            return False
+            return NotImplemented
         len_self = len(self)
         len_other = len(other)
         if len_self != len_other:
@@ -73,6 +87,8 @@ class Range(Record, ArrayLike[int]):
         return self.start == other.start and self.last == other.last
 
     def __ne__(self, other):
+        if not isinstance(other, Range):
+            return NotImplemented
         return not self == other
 
     def __hash__(self):
@@ -102,13 +118,16 @@ def range_or_tuple(start: int, stop: int | None = None, step: int = 1) -> Range 
     start = Num._accept_(start)
     stop = Num._accept_(stop) if stop is not None else None
     step = Num._accept_(step)
+    assert_true(start % 1 == 0, "range() arguments must be integers")
+    assert_true(stop % 1 == 0, "range() arguments must be integers")
+    assert_true(step % 1 == 0, "range() arguments must be integers")
     if start._is_py_() and stop._is_py_() and step._is_py_():
         start_int = start._as_py_()
         stop_int = stop._as_py_() if stop is not None else None
         if stop_int is None:
             start_int, stop_int = 0, start_int
         step_int = step._as_py_()
-        if start_int % 1 != 0 or stop_int % 1 != 0 or step_int % 1 != 0:
-            raise TypeError("Range arguments must be integers")
-        return validate_value(tuple(range(int(start_int), int(stop_int), int(step_int))))  # type: ignore
+        # Keep it as a runtime failure if step is 0
+        if step_int != 0:
+            return validate_value(tuple(range(int(start_int), int(stop_int), int(step_int))))  # type: ignore
     return Range.frozen(start, stop, step)

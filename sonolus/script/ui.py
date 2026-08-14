@@ -10,6 +10,7 @@ class UiMetric(StrEnum):
     ACCURACY = "accuracy"
     ACCURACY_PERCENTAGE = "accuracyPercentage"
     LIFE = "life"
+    TIME = "time"
     PERFECT = "perfect"
     PERFECT_PERCENTAGE = "perfectPercentage"
     GREAT_GOOD_MISS = "greatGoodMiss"

@@ -2,6 +2,7 @@ import random as pyrand
 from collections.abc import MutableSequence, Sequence
 
 from sonolus.backend.ops import Op
+from sonolus.script.debug import assert_true
 from sonolus.script.internal.native import native_function
 from sonolus.script.values import copy
 
@@ -22,15 +23,24 @@ def _randrange(start: int, stop: int | None = None, step: int = 1) -> int:
     if stop is None:
         stop = start
         start = 0
-    range_len = max(0, (stop - start + (step - (1 if step > 0 else -1))) // step)
+    assert_true(start % 1 == 0, "randrange() arguments must be integers")
+    assert_true(stop % 1 == 0, "randrange() arguments must be integers")
+    assert_true(step % 1 == 0, "randrange() arguments must be integers")
+    assert_true(step != 0, "zero step for randrange()")
+    range_len = (stop - start + (step - (1 if step > 0 else -1))) // step
+    assert_true(range_len > 0, "empty range for randrange()")
     return start + step * _random_integer(0, range_len)
 
 
 def _randint(a: int, b: int) -> int:
+    assert_true(a % 1 == 0, "randint() arguments must be integers")
+    assert_true(b % 1 == 0, "randint() arguments must be integers")
+    assert_true(a <= b, "empty range for randint()")
     return _random_integer(a, b + 1)
 
 
 def _choice[T](seq: Sequence[T]) -> T:
+    assert_true(len(seq) > 0, "Cannot choose from an empty sequence")
     return seq[_randrange(len(seq))]
 
 

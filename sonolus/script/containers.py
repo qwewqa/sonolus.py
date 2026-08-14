@@ -6,7 +6,7 @@ from typing import Any, Protocol, Self
 from sonolus.script.archetype import AnyArchetype, EntityRef
 from sonolus.script.array import Array
 from sonolus.script.array_like import ArrayLike, get_positive_index
-from sonolus.script.debug import error
+from sonolus.script.debug import assert_true, error
 from sonolus.script.internal.context import ctx
 from sonolus.script.internal.meta_fn import meta_fn
 from sonolus.script.internal.visitor import compile_and_call
@@ -17,6 +17,18 @@ from sonolus.script.num import Num
 from sonolus.script.pointer import _deref
 from sonolus.script.record import Record
 from sonolus.script.values import copy, zeros
+
+
+@meta_fn
+def _get_insert_index(index: int | float, length: int | float) -> int:
+    if not ctx():
+        if int(index) != index:
+            raise ValueError("Index must be an integer")
+        return int(index + (index < 0) * length)
+    index = Num._accept_(index)
+    length = Num._accept_(length)
+    assert_true(index % 1 == 0, "Invalid index")
+    return index + (index < 0) * length
 
 
 class Box[T](Record):
@@ -92,7 +104,7 @@ class Pair[T, U](Record):
 
     @property
     def tuple(self) -> tuple[T, U]:
-        """Return the pair as a tuple."""
+        """The pair as a tuple."""
         return self.first, self.second
 
 
@@ -184,7 +196,7 @@ class VarArray[T, Capacity](Record, ArrayLike[T]):
     def append_unchecked(self, value: T):
         """Append the given value to the end of the array without checking the capacity.
 
-        Use with caution as this may cause hard to debug issues if the array is full.
+        The array must have available capacity.
 
         Args:
             value: The value to append.
@@ -212,6 +224,8 @@ class VarArray[T, Capacity](Record, ArrayLike[T]):
 
         Preserves the relative order of the elements.
 
+        Must not be called if the array is empty.
+
         Args:
             index: The index of the value to remove. If None, the last element is removed.
         """
@@ -233,10 +247,10 @@ class VarArray[T, Capacity](Record, ArrayLike[T]):
         Must not be called if the array is full.
 
         Args:
-            index: The index at which to insert the value. Must be in the range [0, size].
+            index: The index at which to insert the value. A negative index counts from the end of the array.
             value: The value to insert.
         """
-        index = clamp(get_positive_index(index, self._size, include_end=True), 0, self._size)
+        index = clamp(_get_insert_index(index, self._size), 0, self._size)
         assert self._size < len(self._array), "Array is full"
         self._size += 1
         for i in range(self._size - 1, index, -1):
@@ -331,8 +345,7 @@ class VarArray[T, Capacity](Record, ArrayLike[T]):
     def get_unchecked(self, index: Num) -> T:
         """Get the element at the given index possibly without bounds checking or conversion of negative indexes.
 
-        The compiler may still determine that the index is out of bounds and throw an error, but it may skip these
-        checks at runtime.
+        The index must be between 0 and `len(self) - 1`.
 
         Args:
             index: The index to get.
@@ -345,8 +358,7 @@ class VarArray[T, Capacity](Record, ArrayLike[T]):
     def set_unchecked(self, index: Num, value: T):
         """Set the element at the given index possibly without bounds checking or conversion of negative indexes.
 
-        The compiler may still determine that the index is out of bounds and throw an error, but it may skip these
-        checks at runtime.
+        The index must be between 0 and `len(self) - 1`.
 
         Args:
             index: The index to set.
@@ -360,7 +372,8 @@ class ArrayPointer[T](Record, ArrayLike[T]):
 
     Supports negative indexes.
 
-    This is intended to be created internally and improper use may result in hard to debug issues.
+    This type is intended for internal use. The `block` and `offset` must identify contiguous storage for `size`
+    values of the element type.
 
     Usage:
         ```python
@@ -386,7 +399,7 @@ class ArrayPointer[T](Record, ArrayLike[T]):
         if not ctx():
             raise TypeError("ArrayPointer values cannot be accessed outside of a context")
         return _deref(
-            # Allows a compile time constant block so we can warn based on callback read/write access
+            # A compile-time constant block lets callback validation track read and write access.
             (self._value_["block"]._is_py_() and self._value_["block"]._as_py_()) or self.block,
             self.offset + Num._accept_(item) * Num._accept_(self.element_type()._size_()),
             self.element_type(),
@@ -409,8 +422,7 @@ class ArrayPointer[T](Record, ArrayLike[T]):
     def get_unchecked(self, item: int) -> T:
         """Get the element at the given index possibly without bounds checking or conversion of negative indexes.
 
-        The compiler may still determine that the index is out of bounds and throw an error, but it may skip these
-        checks at runtime.
+        The index must be between 0 and `len(self) - 1`.
 
         Args:
             item: The index to get.
@@ -424,8 +436,7 @@ class ArrayPointer[T](Record, ArrayLike[T]):
     def set_unchecked(self, key: int, value: T):
         """Set the element at the given index possibly without bounds checking or conversion of negative indexes.
 
-        The compiler may still determine that the index is out of bounds and throw an error, but it may skip these
-        checks at runtime.
+        The index must be between 0 and `len(self) - 1`.
 
         Args:
             key: The index to set.
@@ -699,8 +710,7 @@ class ArrayMap[K, V, Capacity](Record):
     def __delitem__(self, key: K):
         """Remove the key-value pair associated with the given key.
 
-        Must be called with a key that is present in the map. If the key is not present, the current callback is
-        terminated, even when runtime checks are disabled.
+        Must be called with a key that is present in the map.
 
         Args:
             key: The key to remove.
@@ -731,8 +741,7 @@ class ArrayMap[K, V, Capacity](Record):
     def pop(self, key: K) -> V:
         """Remove and return a copy of the value associated with the given key.
 
-        Must be called with a key that is present in the map. If the key is not present, the current callback is
-        terminated, even when runtime checks are disabled.
+        Must be called with a key that is present in the map.
 
         Args:
             key: The key to remove.
@@ -803,7 +812,6 @@ class _LinkedListNodeRef[TKey, TValue](Protocol):
     def set_next(self, next_node: Self): ...
 
     def set_prev(self, prev_node: Self):
-        # No-op for singly linked lists
         return
 
     def is_present(self) -> bool: ...
@@ -869,27 +877,22 @@ def _merge_linked_list_nodes[TNode: _LinkedListNodeRef](
 def _merge_sort_linked_list_nodes[TNode: _LinkedListNodeRef](
     head: TNode,
 ) -> TNode:
-    # Calculate length
     length = 0
     node = head.copy()
     while node.is_present():
         length += 1
         node.set(node.get_next())
 
-    # Trivial case
     if length <= 1:
         return head
 
-    # Bottom-up merge sort: start with sublists of size 1, then 2, 4, 8, etc.
     size = 1
     while size < length:
         current = head.copy()
         new_head = head.empty()
         new_tail = head.empty()
 
-        # Process all pairs of sublists of the current size
         while current.is_present():
-            # Extract the first sublist
             left = current.copy()
             prev = current.empty()
             i = 0
@@ -900,13 +903,10 @@ def _merge_sort_linked_list_nodes[TNode: _LinkedListNodeRef](
             if prev.is_present():
                 prev.set_next(prev.empty())
 
-            # We've made it to the end without a second sublist to merge, so just attach it to the end
             if not current.is_present():
-                # Since size < length, we know a full iteration must have happened already, so new_tail is valid
                 new_tail.set_next(left)
                 break
 
-            # Extract the second sublist
             right = current.copy()
             prev = current.empty()
             i = 0
@@ -919,18 +919,15 @@ def _merge_sort_linked_list_nodes[TNode: _LinkedListNodeRef](
 
             merged = _merge_linked_list_nodes(left, right)
 
-            # Append the merged result
             if not new_head.is_present():
                 new_head.set(merged)
                 new_tail.set(merged)
             else:
                 new_tail.set_next(merged)
 
-            # Move tail to the end of the merged section
             while new_tail.get_next().is_present():
                 new_tail.set(new_tail.get_next())
 
-        # Update head for the next iteration
         head.set(new_head)
         size *= 2
 
@@ -1010,8 +1007,8 @@ def sort_linked_entities[T: AnyArchetype](
     Usage:
         ```python
         class MyArchetype(PlayArchetype):
-            sort_key: int
-            next: EntityRef[MyArchetype]
+            sort_key: int = imported()
+            next: EntityRef[MyArchetype] = imported()
 
         def sort_my_archetype(head: EntityRef[MyArchetype]) -> EntityRef[MyArchetype]:
             return sort_linked_entities(

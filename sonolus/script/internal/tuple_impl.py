@@ -3,8 +3,24 @@ from enum import Enum
 from typing import Any, Self
 
 from sonolus.script.internal.impl import validate_value
+from sonolus.script.internal.introspection import describe_value
 from sonolus.script.internal.simple_meta_fn import simple_meta_fn
 from sonolus.script.internal.transient import TransientValue
+
+
+@simple_meta_fn
+def _index_not_found():
+    from sonolus.script.debug import error, runtime_checks_enabled
+
+    if runtime_checks_enabled():
+        error("tuple.index(x): x not in tuple")
+
+
+@simple_meta_fn
+def _check_index_bound(value):
+    from sonolus.script.debug import assert_true
+
+    assert_true(value % 1 == 0, "index bounds must be integers")
 
 
 class TupleImpl(TransientValue):
@@ -12,6 +28,11 @@ class TupleImpl(TransientValue):
 
     def __init__(self, value: tuple):
         self.value = value
+
+    def __repr__(self):
+        if len(self.value) == 1:
+            return f"({describe_value(self.value[0])},)"
+        return f"({', '.join(describe_value(item) for item in self.value)})"
 
     @simple_meta_fn
     def __getitem__(self, item):
@@ -35,21 +56,21 @@ class TupleImpl(TransientValue):
 
     def __eq__(self, other):
         if not self._is_tuple_impl(other):
-            return False
+            return NotImplemented
         if len(self) != len(other):
             return False
         for a, b in zip(self, other):  # noqa: SIM110
-            if a != b:
+            if not (a == b):
                 return False
         return True
 
     def __ne__(self, other):
         if not self._is_tuple_impl(other):
-            return True
+            return NotImplemented
         if len(self) != len(other):
             return True
         for a, b in zip(self, other):  # noqa: SIM110
-            if a != b:
+            if not (a == b):
                 return True
         return False
 
@@ -57,7 +78,7 @@ class TupleImpl(TransientValue):
         if not self._is_tuple_impl(other):
             return NotImplemented
         for a, b in zip(self, other):
-            if a != b:
+            if not (a == b):
                 return a < b
         return len(self.value) < len(other.value)
 
@@ -65,7 +86,7 @@ class TupleImpl(TransientValue):
         if not self._is_tuple_impl(other):
             return NotImplemented
         for a, b in zip(self, other):
-            if a != b:
+            if not (a == b):
                 return a < b
         return len(self.value) <= len(other.value)
 
@@ -73,7 +94,7 @@ class TupleImpl(TransientValue):
         if not self._is_tuple_impl(other):
             return NotImplemented
         for a, b in zip(self, other):
-            if a != b:
+            if not (a == b):
                 return a > b
         return len(self.value) > len(other.value)
 
@@ -81,7 +102,7 @@ class TupleImpl(TransientValue):
         if not self._is_tuple_impl(other):
             return NotImplemented
         for a, b in zip(self, other):
-            if a != b:
+            if not (a == b):
                 return a > b
         return len(self.value) >= len(other.value)
 
@@ -90,6 +111,8 @@ class TupleImpl(TransientValue):
 
     @simple_meta_fn
     def __add__(self, other) -> Self:
+        if not self._is_tuple_impl(other):
+            return NotImplemented
         other = TupleImpl._accept_(other)
         return TupleImpl._accept_(self.value + other.value)
 
@@ -98,6 +121,28 @@ class TupleImpl(TransientValue):
             if element == item:
                 return True
         return False
+
+    def index(self, value, start: int = 0, stop: int | None = None, /):
+        """Return the index of the first element of the tuple equal to the given value.
+
+        Args:
+            value: The value to search for.
+            start: The index to start searching from.
+            stop: The index to stop searching at. If `None`, search to the end of the tuple.
+        """
+        length = len(self.value)
+        _check_index_bound(start)
+        if stop is None:
+            stop = length
+        else:
+            _check_index_bound(stop)
+        start = max(start + (start < 0) * length, 0)
+        stop = min(stop + (stop < 0) * length, length)
+        for i, element in enumerate(self.value):
+            if start <= i < stop and element == value:
+                return i
+        _index_not_found()
+        return -1
 
     @staticmethod
     @simple_meta_fn

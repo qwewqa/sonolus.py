@@ -8,9 +8,9 @@ from pathlib import Path
 from time import perf_counter
 from types import ModuleType
 
-from sonolus.backend.excepthook import print_simple_traceback
+from sonolus.backend.excepthook import print_simple_traceback, should_filter_traceback
 from sonolus.backend.optimize import FAST_PASSES, MINIMAL_PASSES, STANDARD_PASSES, profiling
-from sonolus.build.collection import Collection
+from sonolus.build.collection import Collection, validate_item_name
 from sonolus.build.dev_server import run_server
 from sonolus.build.engine import package_engine, validate_engine
 from sonolus.build.level import package_level_data
@@ -36,13 +36,20 @@ def find_default_module() -> str | None:
     return potential_modules[0] if len(potential_modules) == 1 else None
 
 
+def _is_missing_module_prefix(error: ModuleNotFoundError, module_path: str) -> bool:
+    """Return whether an import failed because a requested module prefix is absent."""
+    if error.name is None:
+        return False
+    return module_path.split(".")[: len(error.name.split("."))] == error.name.split(".")
+
+
 def import_project(module_path: str) -> tuple[Project, ModuleType, set[str]] | tuple[None, None, None]:
     try:
         initial_modules = set(sys.modules)
 
-        current_dir = Path.cwd()
+        current_dir = str(Path.cwd())
         if current_dir not in sys.path:
-            sys.path.insert(0, str(current_dir))
+            sys.path.insert(0, current_dir)
 
         project = None
 
@@ -50,7 +57,7 @@ def import_project(module_path: str) -> tuple[Project, ModuleType, set[str]] | t
             project_module = importlib.import_module(module_path)
             project = getattr(project_module, "project", None)
         except ModuleNotFoundError as e:
-            if e.name != module_path:
+            if not _is_missing_module_prefix(e, module_path):
                 raise
 
         if project is None:
@@ -58,12 +65,17 @@ def import_project(module_path: str) -> tuple[Project, ModuleType, set[str]] | t
                 project_module = importlib.import_module(f"{module_path}.project")
                 project = getattr(project_module, "project", None)
             except ModuleNotFoundError as e:
-                if e.name not in {module_path, f"{module_path}.project"}:
+                if not _is_missing_module_prefix(e, f"{module_path}.project"):
                     raise
 
         if project is None:
             print(f"Error: No Project instance found in module {module_path} or {module_path}.project")
             return None, None, None
+        if not isinstance(project, Project):
+            raise TypeError(
+                f"Expected project in module {project_module.__name__} to be a Project instance, "
+                f"got {type(project).__name__}"
+            )
 
         return project, project_module, initial_modules
     except Exception as e:
@@ -72,9 +84,14 @@ def import_project(module_path: str) -> tuple[Project, ModuleType, set[str]] | t
 
 
 def build_project(project: Project, build_dir: Path, config: BuildConfig):
+    validate_item_name(project.engine.name, "Engine name")
+    for level in project.levels:
+        validate_item_name(level.name, "Level name")
+
     dist_dir = build_dir / "dist"
     levels_dir = dist_dir / "levels"
-    shutil.rmtree(dist_dir, ignore_errors=True)
+    if dist_dir.exists():
+        shutil.rmtree(dist_dir)
     dist_dir.mkdir(parents=True, exist_ok=True)
     levels_dir.mkdir(parents=True, exist_ok=True)
 
@@ -104,8 +121,8 @@ def build_collection(
 
 def write_collection(collection: Collection, build_dir: Path, *, clear: bool = True):
     site_dir = build_dir / "site"
-    if clear:
-        shutil.rmtree(site_dir, ignore_errors=True)
+    if clear and site_dir.exists():
+        shutil.rmtree(site_dir)
     site_dir.mkdir(parents=True, exist_ok=True)
 
     collection.write(site_dir)
@@ -166,8 +183,11 @@ def main():
     parser = argparse.ArgumentParser(description="Sonolus project build and development tools")
     subparsers = parser.add_subparsers(dest="command", required=True)
 
-    def add_common_arguments(parser):
-        optimization_group = parser.add_mutually_exclusive_group()
+    def add_common_arguments(parser, *, optimization_note: str | None = None):
+        optimization_owner = (
+            parser.add_argument_group("optimization", optimization_note) if optimization_note else parser
+        )
+        optimization_group = optimization_owner.add_mutually_exclusive_group()
         optimization_group.add_argument(
             "-O0", "--optimize-minimal", action="store_true", help="Use minimal optimization passes"
         )
@@ -196,7 +216,14 @@ def main():
         build_components.add_argument("--preview", action="store_true", help="Build preview component")
         build_components.add_argument("--tutorial", action="store_true", help="Build tutorial component")
 
-        parser.add_argument("-v", "--verbose", action="store_true", help="Enable verbose output")
+        parser.add_argument(
+            "-v",
+            "--verbose",
+            action="store_true",
+            help=(
+                "Print the full traceback for a compilation error instead of a simplified summary when one is available"
+            ),
+        )
 
         profile_group = parser.add_argument_group("compile profiling")
         profile_group.add_argument(
@@ -251,7 +278,11 @@ def main():
         nargs="?",
         help="Module path (e.g., 'module.name'). If omitted, will auto-detect if only one module exists.",
     )
-    add_common_arguments(check_parser)
+    add_common_arguments(
+        check_parser,
+        optimization_note="Accepted for compatibility with build and dev: check does not optimize, "
+        "so these have no effect.",
+    )
 
     args = parser.parse_args()
 
@@ -273,15 +304,12 @@ def main():
         elif hasattr(args, "no_gc") and args.no_gc:
             gc.disable()
 
-    if hasattr(sys, "_jit") and sys._jit.is_enabled():
-        print("Python JIT is enabled")
-
     start_time = perf_counter()
     project, project_module, core_module_names = import_project(args.module)
     end_time = perf_counter()
     if project is None:
         sys.exit(1)
-    print(f"Project imported in {end_time - start_time:.2f}s")
+    print(f"Project imported in {end_time - start_time:.2f}s", file=sys.stderr)
 
     # Enable profiling (if requested) after the import so only the build is timed.
     if getattr(args, "profile", False) or getattr(args, "profile_json", None):
@@ -318,5 +346,8 @@ def main():
             raise
         exc_info = sys.exc_info()
         print_simple_traceback(*exc_info)
-        print("\nFor more details, run with the --verbose (-v) flag.")
+        # An error with no compiled-code frame, such as an optimizer failure, prints in full either way, so
+        # the hint would promise details -v does not have.
+        if should_filter_traceback(exc_info[2]):
+            print("\nFor more details, run with the --verbose (-v) flag.")
         sys.exit(1)

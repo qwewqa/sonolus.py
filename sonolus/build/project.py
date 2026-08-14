@@ -1,9 +1,12 @@
 from collections.abc import Callable
 from datetime import datetime
+from os import PathLike
 from pathlib import Path
 from typing import cast
 
+from sonolus.backend.mode import Mode
 from sonolus.build.collection import Asset, Collection, Srl
+from sonolus.build.compile import _validate_archetype_names
 from sonolus.build.engine import package_engine, unpackage_data
 from sonolus.build.level import package_level_data
 from sonolus.script.engine import Engine
@@ -38,6 +41,7 @@ def build_project_to_existing_collection(
     project_state: ProjectContextState | None = None,
 ) -> None:
     config = config or BuildConfig()
+    levels = project.levels
     for src_engine, converter in project.converters.items():
         if src_engine is None:
             continue
@@ -48,8 +52,9 @@ def build_project_to_existing_collection(
     if config.override_resource_level_engines:
         for level in collection.categories.get("levels", {}).values():
             level["item"]["engine"] = project.engine.name
+    levels = project.levels
     add_engine_to_collection(collection, project, project.engine, config, project_state=project_state)
-    for level in project.levels:
+    for level in levels:
         add_level_to_collection(collection, project, level)
     collection.name = f"{project.engine.name}"
 
@@ -171,47 +176,57 @@ def add_level_to_collection(collection: Collection, project: Project, level: Lev
 def load_resource(collection: Collection, asset: Asset | None, base_path: Path, default: bytes) -> Srl:
     if asset is None:
         return collection.add_asset(default)
-    if isinstance(asset, str) and not asset.startswith(("http://", "https://")):
+    if isinstance(asset, str) and asset.lower().startswith(("http://", "https://")):
+        return collection.add_asset(asset)
+    if isinstance(asset, str | PathLike):
         return collection.add_asset(base_path / asset)
     return collection.add_asset(asset)
 
 
 def load_resources_files_to_collection(base_path: Path) -> Collection:
     collection = Collection()
-    for path in base_path.rglob("*.scp"):
+    for path in sorted(base_path.rglob("*.scp"), key=lambda p: p.parts):
         collection.load_from_scp(path)
     collection.load_from_source(base_path)
     return collection
 
 
 def get_project_schema(project: Project) -> ProjectSchema:
-    by_archetype: dict[str, dict[str, bool]] = {}
+    for mode, archetypes in (
+        (Mode.PLAY, project.engine.data.play.archetypes),
+        (Mode.WATCH, project.engine.data.watch.archetypes),
+        (Mode.PREVIEW, project.engine.data.preview.archetypes),
+    ):
+        _validate_archetype_names(mode, archetypes)
+
+    fields_by_archetype: dict[str, dict[str, None]] = {}
+    exports_by_archetype: dict[str, list[str]] = {}
     for archetype in project.engine.data.play.archetypes:
         archetype._init_fields()
-        fields = by_archetype.setdefault(archetype.name, {})
-        for field in archetype._exported_keys_:
-            fields[field] = False
+        fields = fields_by_archetype.setdefault(archetype.name, {})
+        exports_by_archetype[archetype.name] = [*archetype._exported_keys_]
         for field in archetype._imported_keys_:
-            fields[field] = True
+            fields[field] = None
     for archetype in project.engine.data.watch.archetypes:
         archetype._init_fields()
-        fields = by_archetype.setdefault(archetype.name, {})
+        fields = fields_by_archetype.setdefault(archetype.name, {})
+        runtime_supplied = {*exports_by_archetype.get(archetype.name, ()), "#ACCURACY", "#JUDGMENT"}
         for field in archetype._imported_keys_:
-            if field in {"#ACCURACY", "#JUDGMENT"}:
+            if field in runtime_supplied:
                 continue
-            if field not in fields:
-                fields[field] = True
+            fields[field] = None
     for archetype in project.engine.data.preview.archetypes:
         archetype._init_fields()
-        fields = by_archetype.setdefault(archetype.name, {})
+        fields = fields_by_archetype.setdefault(archetype.name, {})
         for field in archetype._imported_keys_:
-            fields[field] = True
+            fields[field] = None
     return {
         "archetypes": [
             {
                 "name": name,
                 "fields": [*fields],
+                "exports": exports_by_archetype.get(name, []),
             }
-            for name, fields in by_archetype.items()
+            for name, fields in fields_by_archetype.items()
         ]
     }

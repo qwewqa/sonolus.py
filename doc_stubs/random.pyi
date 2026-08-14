@@ -1,20 +1,14 @@
 # ruff: noqa
-from typing import (
-    Any,
-    Sequence,
-    overload,
-    MutableSequence,
-)
+from typing import overload
+
+from sonolus.script.array_like import ArrayLike
 
 @overload
-def randrange(stop: int) -> int:
+def randrange(stop: int, /) -> int:
     """Return a randomly selected element from range(stop).
 
     Args:
         stop: The end of the range.
-
-    Returns:
-        A randomly selected integer from the range.
     """
     ...
 
@@ -26,9 +20,6 @@ def randrange(start: int, stop: int, step: int = ...) -> int:
         start: The start of the range.
         stop: The end of the range.
         step: The step size.
-
-    Returns:
-        A randomly selected integer from the range.
     """
     ...
 
@@ -39,9 +30,6 @@ def randrange(start: int, stop: int = ..., step: int = ...) -> int:
         start: The start of the range.
         stop: The end of the range.
         step: The step size.
-
-    Returns:
-        A randomly selected integer from the range.
     """
     ...
 
@@ -51,49 +39,38 @@ def randint(a: int, b: int) -> int:
     Args:
         a: The lower bound.
         b: The upper bound.
-
-    Returns:
-        A randomly selected integer between a and b, inclusive.
     """
     ...
 
-def choice[T](seq: Sequence[T]) -> T:
+def choice[T](seq: ArrayLike[T]) -> T:
     """Return a randomly selected element from a non-empty sequence.
 
     The sequence must be array-like, such as an `Array` or `VarArray`. Tuples are not supported.
 
     Args:
         seq: The sequence to choose from.
-
-    Returns:
-        A randomly selected element from the sequence.
     """
     ...
 
-def shuffle(seq: MutableSequence[Any]) -> None:
+def shuffle[T](seq: ArrayLike[T]) -> None:
     """Shuffle the sequence in place.
 
+    The sequence must be a mutable array-like, such as an `Array` or `VarArray`.
+
     Args:
-        seq: The mutable sequence to shuffle.
+        seq: The sequence to shuffle.
     """
     ...
 
 def random() -> float:
-    """Return a random floating point number in the range [0.0, 1.0).
-
-    Returns:
-        A random float between 0.0 (inclusive) and 1.0 (exclusive).
-    """
+    """Return a random floating point number in the range [0.0, 1.0)."""
     ...
 
 def uniform(a: float, b: float) -> float:
-    """Return a random floating point number N such that a <= N <= b.
+    """Return a random floating point number between a and b, inclusive.
 
     Args:
-        a: The lower bound.
-        b: The upper bound.
-
-    Returns:
-        A random float between a and b.
+        a: One endpoint of the range.
+        b: The other endpoint of the range.
     """
     ...

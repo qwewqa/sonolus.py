@@ -4,6 +4,9 @@ Sonolus.py functions as a compiler from Python to Sonolus nodes. While most stan
 there are some limitations compared to standard Python. The following sections outline what Sonolus.py supports and 
 how it differs from standard Python.
 
+Behavior is not specified for unsupported constructs. They may be rejected, ignored, or behave differently from
+Python.
+
 ## Key Differences
 
 - Non-num variables must have a single live definition.
@@ -21,6 +24,8 @@ how it differs from standard Python.
 - List literals (`[1, 2, 3]`) are unsupported; use a tuple or [`Array`][sonolus.script.array.Array] instead.
 - List, set, and dict comprehensions are unsupported; only generator expressions are supported.
 - Exception statements (`try`, `except`, `finally`, `raise`) and `with` statements are unsupported.
+- Asynchronous functions and `await` expressions are unsupported.
+- Classes and type aliases may not be defined within functions.
 - F-strings and slices are unsupported.
 - The bitwise operators (`&`, `|`, `^`, `<<`, `>>`, `~`) are not supported for [`Num`](types.md#num), since the
   Sonolus runtime has no bitwise operations. They are available only for types that define them, such as
@@ -49,8 +54,8 @@ The following constructs are supported in Sonolus.py:
         - Indexing: `a[b]`
         - Call: `f(a, b, c)`
     - Variables: `a`, `b`, `c`
-    - Lambda: `lambda a, b: a + b` (if not on the same line as another lambda or function definition)
-    - Assignment Expression: `(a := b)`
+    - Lambda: `lambda a, b: a + b`
+    - Assignment Expression: `(a := b)` (not supported inside a generator expression)
     - Generator Expression: `(x for x in iterable if condition)`
 - Statements:
     - Simple Statements:
@@ -92,10 +97,10 @@ Some expressions can be evaluated at compile time:
     - Negation: `not a`
     - And
         - Both operands are compile-time constants: `a and b`
-        - One operand is known to be False: `False and a`, `a and False`
+        - The left operand is known to be False: `False and a`
     - Or
         - Both operands are compile-time constants: `a or b`
-        - One operand is known to be True: `True or a`, `a or True`
+        - The left operand is known to be True: `True or a`
 - Comparison: for compile-time constant operands: `a == b`, `a != b`, `a > b`, `a < b`, `a >= b`, `a <= b`, ...
 - Variables assigned to compile-time constants: `a = 1`, `b = a + 1`, ...
 
@@ -229,8 +234,9 @@ e = Vec2(0, 0) if e is None else e  # Ok, evaluated at compile time
 
 ### Assignment
 
-Most assignment types are supported. Destructuring assignment is supported only for tuples, and the `*`
-operator is not supported.
+Most assignment types are supported. A destructuring assignment accepts a tuple, a dict (which unpacks its
+keys, as in Python), or an enum class as the value. The targets may be written in tuple or list form and
+nested to any depth, but a starred target is not supported.
 
 ```python
 # Ok
@@ -239,9 +245,11 @@ b += 2
 c.x = 3
 d[0] = 4
 (e, f), g = (1, 2), 3
+[h, i] = 1, 2
+j, k = {1: 'a', 2: 'b'}  # Unpacks the keys, as in Python
 
 # Not ok
-h, *i = 1, 2, 3  # Not supported
+p, *q = 1, 2, 3  # Starred targets are not supported
 ```
 
 ### Conditional Statements
@@ -375,7 +383,7 @@ else:
     ...
 ```
 
-Tuples can be iterated over and result in an unrolled loop. This can be useful for iterating of objects of different,
+Tuples can be iterated over and result in an unrolled loop. This is useful for iterating over objects of different
 types, but care should be taken since it results in more code being generated compared to a normal loop:
 
 <div class="grid" markdown>
@@ -519,26 +527,21 @@ for x in gen():
 
 Generators are lazy: code before the first `yield` does not run until the first value is requested. Yielded
 values follow the same single-live-definition rule as function return values, and a generator function's `return`
-statements must not return a value.
+statements must not return a value. Nested generators that capture changing variables from another generator are
+not supported.
 
 ##### Reusing iterators
 
-Treating an iterator as single use is recommended: consume it once, and build a fresh one if the values are needed
-again.
-
-Advancing an iterator that is already being consumed, by nesting two loops over it or mixing `next` with a `for`
-loop, is not supported. Neither is consuming one a second time after it has
-been exhausted. Use [`copy`][sonolus.script.values.copy] if a value taken from an iterator needs to outlive the
-next advance. This is an area which diverges from normal Python behavior. Otherwise, values obtained previously from
-an iterator may unexpectedly change when the iterator is advanced.
+Use an iterator only once: in one `for` loop, in one call to `next()`, or by passing it once to another iterator
+consumer. Build a fresh iterator to use it again.
 
 ### Classes
 
-Classes are supported at the module level. User defined classes should subclass [`Record`][sonolus.script.record.Record] or have a supported
+Classes are supported at the module level. User defined classes should subclass
+[`Record`][sonolus.script.record.Record] or have a supported
 Sonolus.py decorator such as `@level_memory`.
 
 Methods may have the `@staticmethod`, `@classmethod`, or `@property` decorators.
-
 ```python
 class MyRecord(Record):
     x: int

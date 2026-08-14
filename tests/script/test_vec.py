@@ -1,14 +1,47 @@
+import random
 from math import pi
 
+import pytest
 from hypothesis import assume, given
 from hypothesis import strategies as st
 
-from sonolus.script.vec import Vec2, angle_diff, signed_angle_diff
-from tests.script.conftest import is_close, run_and_validate
+from sonolus.script.array import Array
+from sonolus.script.containers import VarArray
+from sonolus.script.internal.context import RuntimeChecks
+from sonolus.script.vec import Vec2, angle_diff, pnpoly, signed_angle_diff
+from tests.script.conftest import is_close, run_and_validate, run_compiled
 
 floats = st.floats(min_value=-999, max_value=999, allow_nan=False, allow_infinity=False)
 nonzero_floats = floats.filter(lambda x: abs(x) > 1e-2)
 angles = st.floats(min_value=-pi, max_value=pi, allow_nan=False, allow_infinity=False)
+
+
+def test_pnpoly_rejects_empty_polygon():
+    def fn():
+        return pnpoly((), Vec2.zero())
+
+    with pytest.raises(AssertionError, match="Polygon must contain at least one vertex"):
+        run_and_validate(fn)
+
+
+def test_empty_polygon_in_runtime_dead_branch_compiles():
+    def fn():
+        if random.randrange(0, 1):
+            pnpoly((), Vec2.zero())
+        return 23
+
+    # Unlike run_and_validate, the default run_compiled matrix covers every runtime-check setting.
+    assert run_compiled(fn) == 23
+
+
+@pytest.mark.parametrize("runtime_checks", [RuntimeChecks.TERMINATE, RuntimeChecks.NOTIFY_AND_TERMINATE])
+def test_pnpoly_rejects_runtime_empty_polygon(runtime_checks):
+    def fn():
+        vertices = VarArray[Vec2, 1].new()
+        pnpoly(vertices, Vec2.zero())
+        return 23
+
+    assert run_compiled(fn, runtime_checks=runtime_checks) == 0
 
 
 def test_magnitude():
@@ -44,6 +77,21 @@ def test_rotate():
     result = run_and_validate(fn)
     assert is_close(result.x, 0)
     assert is_close(result.y, 2**0.5)
+
+
+def test_orthogonal():
+    # Right maps to up. An asymmetric case is what pins which way the quarter turn goes.
+    def fn():
+        return Vec2(1, 0).orthogonal()
+
+    assert run_and_validate(fn) == Vec2(0, 1)
+
+
+def test_orthogonal_off_axis():
+    def fn():
+        return Vec2(3, 4).orthogonal()
+
+    assert run_and_validate(fn) == Vec2(-4, 3)
 
 
 def test_rotate_about():
@@ -131,6 +179,14 @@ def test_not_equal():
         return v != u
 
     assert run_and_validate(fn)
+
+
+def test_named_vectors():
+    def fn():
+        return Array(Vec2.zero(), Vec2.one(), Vec2.up(), Vec2.down(), Vec2.left(), Vec2.right())
+
+    result = run_and_validate(fn)
+    assert list(result) == [Vec2(0, 0), Vec2(1, 1), Vec2(0, 1), Vec2(0, -1), Vec2(-1, 0), Vec2(1, 0)]
 
 
 @given(angles)

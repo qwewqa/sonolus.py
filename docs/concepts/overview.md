@@ -22,7 +22,7 @@ supported.
 ### Syntax
 
 Most Python syntax is supported, but there are a few limitations. The primary restrictions are listed below; see
-[Key Differences](constructs.md#key-differences) for the complete list:
+[Key Differences](constructs.md#key-differences) for more details:
 
 - Destructuring assignment with the `*` operator is unsupported.
 - Sequence (list and array) `match` patterns with the `*` operator are unsupported.
@@ -30,6 +30,8 @@ Most Python syntax is supported, but there are a few limitations. The primary re
 - Within functions, `import` statements are unsupported.
 - The `global` and `nonlocal` keywords are unsupported.
 - Exception related statements (`try`, `except`, `finally`, `raise`) are unsupported.
+- Asynchronous functions and `await` expressions are unsupported.
+- Classes and type aliases may not be defined within functions.
 
 ### Compile Time Evaluation
 
@@ -215,10 +217,11 @@ Sonolus.py has limited support for [other types](types.md#transient-types) of va
 functions. These have restrictions such as not being valid as Record field types or Array element types.
 
 `dict` and `set` are immutable after creation. All dict keys and set members must be compile-time constants. Dicts can
-be created from literals, the `dict()` constructor (from another dict, an iterable of key-value pairs, or keyword
-arguments), or by merging with `|`. Sets can be created from literals or the `set()` constructor (from another set or
-an iterable). Accessing a dict value with a compile-time constant key is always supported; dynamic access using a
-runtime key is only supported when the values are numeric, `Array`, or `Record` types.
+be created from literals, the `dict()` constructor (from another dict, a tuple of key-value pairs, or keyword
+arguments), or by merging with `|`. Sets can be created from literals or the `set()` constructor (from a tuple, dict
+using its keys, an enum class, or another set). Accessing a dict value with a compile-time constant key is always
+supported; dynamic access using a runtime key is only supported when all values are compile-time constants of a
+single type, and that type is numeric, `Array`, or `Record`.
 
 ## Modules
 
@@ -254,7 +257,8 @@ Sonolus.py provides a number of built-in modules that can be used in Sonolus eng
     - [typing](../reference/typing.md): Supported typing functions.
 - Utilities
     - [ArrayLike](../reference/sonolus.script.array_like.md): Mixin for array functionality.
-    - [Containers](../reference/sonolus.script.containers.md): Additional container types like [`VarArray`][sonolus.script.containers.VarArray] and [`ArrayMap`][sonolus.script.containers.ArrayMap].
+    - [Containers](../reference/sonolus.script.containers.md): Additional container types like
+      [`VarArray`][sonolus.script.containers.VarArray] and [`ArrayMap`][sonolus.script.containers.ArrayMap].
     - [Debug](../reference/sonolus.script.debug.md): Debugging utilities.
     - [Easing](../reference/sonolus.script.easing.md): Easing functions for animations.
     - [Interval](../reference/sonolus.script.interval.md): Mathematical intervals.

@@ -37,6 +37,14 @@ SINGULAR_CATEGORY_NAMES: dict[Category, str] = {
 }
 BASE_PATH = "/sonolus/"
 RESERVED_FILENAMES = {"info", "list"}
+WINDOWS_RESERVED_FILENAMES = {
+    "con",
+    "prn",
+    "aux",
+    "nul",
+    *(f"com{i}" for i in range(1, 10)),
+    *(f"lpt{i}" for i in range(1, 10)),
+}
 LOCALIZED_KEYS = {"title", "subtitle", "author", "description", "artists"}
 CATEGORY_SORT_ORDER = {
     "levels": 0,
@@ -49,6 +57,22 @@ CATEGORY_SORT_ORDER = {
     "playlists": 7,
     "replays": 8,
 }
+
+
+def validate_item_name(name: str, subject: str, context: str = "") -> None:
+    qualifier = f" {context}" if context else ""
+    if not isinstance(name, str) or not name:
+        raise ValueError(f"{subject}{qualifier} must be a non-empty string, got {name!r}")
+    if name.casefold() in RESERVED_FILENAMES:
+        raise ValueError(f"{subject} '{name}'{qualifier} is reserved: 'info' and 'list' are the category index files")
+    stem = name.split(".", maxsplit=1)[0].casefold()
+    if (
+        name in {".", ".."}
+        or name.endswith((".", " "))
+        or any(ord(char) < 32 or char in '<>:"/\\|?*' for char in name)
+        or stem in WINDOWS_RESERVED_FILENAMES
+    ):
+        raise ValueError(f"{subject} '{name}'{qualifier} is not a usable filename on all supported platforms")
 
 
 class Collection:
@@ -68,7 +92,14 @@ class Collection:
         return next(iter(self.categories[category].values()))["item"]
 
     def add_item(self, category: Category, name: str, item: Any) -> None:
-        self.categories.setdefault(category, {})[name] = self._make_item_details(item)
+        self._set_item(category, name, self._make_item_details(item))
+
+    def _set_item(self, category: Category, name: str, details: dict[str, Any]) -> None:
+        self._validate_item_name(category, name)
+        self.categories.setdefault(category, {})[name] = details
+
+    def _validate_item_name(self, category: Category, name: str) -> None:
+        validate_item_name(name, "Item name", f"in category '{category}'")
 
     @classmethod
     def _make_item_details(cls, item: dict[str, Any]) -> dict[str, Any]:
@@ -92,13 +123,13 @@ class Collection:
 
     def load_from_scp(self, zip_data: Asset) -> None:
         with zipfile.ZipFile(BytesIO(self._load_data(zip_data))) as zf:
-            files_by_dir = self._group_zip_entries_by_directory(zf.filelist)
+            files_by_dir = self._group_zip_entries_by_directory(sorted(zf.filelist, key=lambda info: info.filename))
             self._process_zip_directories(zf, files_by_dir)
 
     def load_from_source(self, path: PathLike | str) -> None:
         root_path = Path(path)
 
-        for category_dir in root_path.iterdir():
+        for category_dir in sorted(root_path.iterdir(), key=lambda p: p.name):
             if not category_dir.is_dir():
                 continue
 
@@ -106,7 +137,7 @@ class Collection:
             if not self._is_valid_category(category_name):
                 continue
 
-            for item_dir in category_dir.iterdir():
+            for item_dir in sorted(category_dir.iterdir(), key=lambda p: p.name):
                 if not item_dir.is_dir():
                     continue
 
@@ -119,14 +150,28 @@ class Collection:
                 except json.JSONDecodeError:
                     warnings.warn(f"Invalid JSON in {item_json_path}, skipping item.", stacklevel=2)
                     continue
+                if not isinstance(item_data, dict):
+                    warnings.warn(f"Expected a JSON object in {item_json_path}, skipping item.", stacklevel=2)
+                    continue
 
                 item_data = self._localize_item(item_data)
                 item_data["name"] = item_dir.name
 
-                for resource_path in item_dir.iterdir():
-                    if resource_path.name == "item.json":
-                        continue
+                resource_paths = [
+                    resource_path
+                    for resource_path in sorted(item_dir.iterdir(), key=lambda p: p.name)
+                    if resource_path.name != "item.json" and resource_path.is_file()
+                ]
+                resource_keys: set[str] = set()
+                for resource_path in resource_paths:
+                    key = resource_path.stem
+                    if key in item_data:
+                        raise ValueError(f"Resource key '{key}' conflicts with item metadata in {item_json_path}")
+                    if key in resource_keys:
+                        raise ValueError(f"Duplicate resource key '{key}' in {item_dir}")
+                    resource_keys.add(key)
 
+                for resource_path in resource_paths:
                     try:
                         resource_data = resource_path.read_bytes()
 
@@ -189,6 +234,8 @@ class Collection:
 
     def _should_skip_zip_entry(self, zip_entry: zipfile.ZipInfo) -> bool:
         path = Path(zip_entry.filename)
+        if not path.parts:
+            return True
         if path.parts[0] == "sonolus":
             path = Path(*path.parts[1:])
         return zip_entry.filename.endswith("/") or len(path.parts) < 2 or path.name.lower() in RESERVED_FILENAMES
@@ -220,12 +267,11 @@ class Collection:
             path = Path(zip_entry.filename)
             if path.parts[0] == "sonolus":
                 path = Path(*path.parts[1:])
-            item_name = path.stem
+            item_name = path.name
 
-            if self._is_valid_category(dir_name):
-                self.categories[dir_name][item_name] = item_details
+            self._set_item(dir_name, item_name, item_details)
 
-    def write(self, path: Asset) -> None:
+    def write(self, path: str | PathLike) -> None:
         self.link()
         base_dir = self._create_base_directory(path)
         self._write_main_info(base_dir)
@@ -254,7 +300,7 @@ class Collection:
                     if name in self.categories.get(category, {}):
                         use_item["item"] = self.get_item(category, name)
 
-    def _create_base_directory(self, path: Asset) -> Path:
+    def _create_base_directory(self, path: str | PathLike) -> Path:
         base_dir = Path(path) / BASE_PATH.strip("/")
         base_dir.mkdir(parents=True, exist_ok=True)
         return base_dir
@@ -310,18 +356,23 @@ class Collection:
         for key, data in self.repository.items():
             target_path = repo_dir / key
             if target_path.exists():
-                # Since the content is identified by its hash, a matching file can be skipped
                 continue
             target_path.write_bytes(data)
 
     @staticmethod
     def _write_json(path: Path, content: Any) -> None:
-        path.write_text(json.dumps(content), encoding="utf-8")
+        try:
+            text = json.dumps(content, allow_nan=False)
+        except ValueError as e:
+            raise ValueError(f"Cannot write {path}: {e}") from e
+        path.write_text(text, encoding="utf-8")
 
     def update(self, other: Collection) -> None:
         self.repository.update(other.repository)
         for category, items in other.categories.items():
-            self.categories.setdefault(category, {}).update(items)
+            self.categories.setdefault(category, {})
+            for name, details in items.items():
+                self._set_item(category, name, details)
 
 
 class Srl(TypedDict):
@@ -331,7 +382,7 @@ class Srl(TypedDict):
 
 def load_asset(value: Asset) -> bytes:
     match value:
-        case str() if value.startswith(("http://", "https://")):
+        case str() if value.lower().startswith(("http://", "https://")):
             headers = {
                 "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) "
                 "AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36",
@@ -342,7 +393,7 @@ def load_asset(value: Asset) -> bytes:
             request = urllib.request.Request(value, headers=headers)
             with urllib.request.urlopen(request) as response:
                 return response.read()
-        case PathLike():
+        case PathLike() | str():
             return Path(value).read_bytes()
         case bytes():
             return value

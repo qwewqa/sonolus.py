@@ -22,6 +22,17 @@ from sonolus.script.internal.visitor import compile_and_call_at_definition
 from sonolus.script.num import _is_num
 
 
+def _validate_archetype_names(mode: Mode, archetypes: list[type[_BaseArchetype]]) -> None:
+    archetypes_by_name: dict[str, type[_BaseArchetype]] = {}
+    for archetype in archetypes:
+        first = archetypes_by_name.setdefault(archetype.name, archetype)
+        if first is not archetype:
+            raise ValueError(
+                f"{mode.name} mode archetypes {first.__name__} and {archetype.__name__} both have the name "
+                f"'{archetype.name}'"
+            )
+
+
 def compile_mode(
     mode: Mode,
     project_state: ProjectContextState,
@@ -30,7 +41,8 @@ def compile_mode(
     level: OptimizationLevel | None = None,
     validate_only: bool = False,
 ) -> dict:
-    """Delegates to `sonolus.backend._opt.driver.compile_mode`; this wrapper keeps `compile_mode` importable from here (engine.py imports it)."""
+    if archetypes is not None:
+        _validate_archetype_names(mode, archetypes)
     return driver.compile_mode(
         mode,
         project_state,

@@ -1,18 +1,16 @@
-"""Opt-in per-stage compile-time profiling.
+"""Opt-in compile-stage timing.
 
-Accumulates wall time per named compile stage -- frontend tracing, marshal-in,
-each optimizer pass, and emit -- so a build can be broken down and the container
-work measured against real numbers.
+Accumulates wall time for named stages of compilation, including frontend tracing,
+optimizer pipeline stages, and emission. The recorded stages are intentionally
+coarse and do not correspond one-to-one with individual optimizer passes.
 
 Enabled by the `SONOLUS_OPT_PROFILE=1` environment variable (read at import,
 mirroring `SONOLUS_OPT_TRACE`) or by `enable()` (the CLI `--profile` flag).
-Zero cost when disabled: the instrumented hot paths check `enabled` and skip
-the timing calls entirely.
+When profiling is disabled, instrumented paths still test `enabled` but skip the
+clock reads and recording.
 
-The accumulator is process-global; it is never touched from a nogil region (all
-recording happens at the GIL-held Python/marshal boundaries), and builds are
-serial, so no locking is needed. Call `reset()` before a build to measure just
-that build.
+The accumulator is process-global and is not isolated between concurrent callers.
+Call `reset()` before a build to measure just that build.
 """
 
 from __future__ import annotations
@@ -54,7 +52,7 @@ def record(name: str, ns: int) -> None:
 
 
 def snapshot() -> dict[str, dict[str, int]]:
-    """Return `{stage: {"total_ns", "count"}}` for every recorded stage."""
+    """Return each stage's total nanoseconds and sample count."""
     return {name: {"total_ns": total, "count": count} for name, (total, count) in _stages.items()}
 
 

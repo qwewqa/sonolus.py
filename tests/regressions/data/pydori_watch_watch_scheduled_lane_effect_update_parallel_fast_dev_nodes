@@ -26,7 +26,7 @@ Block(JumpLoop(
         )
       )
       1
-      9
+      11
     )
   )
   Execute(If(
@@ -41,7 +41,7 @@ Block(JumpLoop(
       )
     )
     2
-    9
+    11
   ))
   Execute(
     Set(
@@ -58,16 +58,30 @@ Block(JumpLoop(
         7
       )
       3
-      9
+      11
     )
   )
+  Execute(If(
+    Equal(
+      Mod(
+        Get(
+          2001
+          0
+        )
+        1
+      )
+      0
+    )
+    4
+    10
+  ))
   Execute(
     Set(
       10000
       2
       0
     )
-    4
+    5
   )
   Execute(If(
     Less(
@@ -80,8 +94,8 @@ Block(JumpLoop(
         0
       )
     )
-    5
-    8
+    6
+    9
   ))
   Execute(
     Set(
@@ -122,8 +136,8 @@ Block(JumpLoop(
           1
         )
       )
-      6
       7
+      8
     )
   )
   Execute(
@@ -208,7 +222,7 @@ Block(JumpLoop(
         0
       )
     )
-    9
+    11
   )
   Execute(
     Set(
@@ -219,20 +233,33 @@ Block(JumpLoop(
         3
       )
     )
-    4
+    5
   )
   Execute(
     Set(
       10000
       6
-      DebugLog(1)
+      DebugLog(2)
     )
     Set(
       10000
       7
       DebugPause()
     )
-    9
+    11
+  )
+  Execute(
+    Set(
+      10000
+      8
+      DebugLog(1)
+    )
+    Set(
+      10000
+      9
+      DebugPause()
+    )
+    11
   )
   0
 ))

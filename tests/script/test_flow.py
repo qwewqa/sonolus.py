@@ -5,6 +5,7 @@ PYTEST_DONT_REWRITE
 """
 
 import random
+import re
 
 import pytest
 from hypothesis import given
@@ -15,6 +16,7 @@ from sonolus.script.containers import Box
 from sonolus.script.debug import debug_log
 from sonolus.script.internal.context import RuntimeChecks
 from sonolus.script.internal.error import CompilationError
+from sonolus.script.maybe import Nothing, Some
 from sonolus.script.vec import Vec2
 from tests.script.conftest import run_compiled
 from tests.script.conftest import run_and_validate
@@ -1079,6 +1081,39 @@ def test_no_error_when_loop_variable_is_rebound_before_a_continue_and_never_read
     assert run_and_validate(fn) == 1
 
 
+def test_no_error_when_maybe_merge_rebinds_an_unread_loop_variable():
+    # The merge internally copies the header's Maybe binding, but that bookkeeping must not
+    # count as a source read. A real read of m would still make the later rebind conflicting.
+    def fn():
+        m = Nothing
+        i = 0
+        while i < 3:
+            i += 1
+            if black_box():
+                m = Some(i)
+        return i
+
+    assert run_and_validate(fn) == 3
+
+
+def test_error_when_maybe_merge_rebinds_a_read_loop_variable():
+    # This is the corresponding genuine read: bypassing the merge's bookkeeping lookup
+    # must not make source reads safe to rebind on a later loop iteration.
+    def fn():
+        m = Nothing
+        i = 0
+        while i < 3:
+            i += 1
+            if m.is_some:
+                debug_log(i)
+            if black_box():
+                m = Some(i)
+        return i
+
+    with pytest.raises(CompilationError, match="'m' may have conflicting definitions between loop iterations"):
+        run_compiled(fn)
+
+
 def test_no_error_when_merged_loop_variable_is_rebound_but_never_read():
     # The same shape as the two above with a merge in front of it, so the check's own lookup
     # lands on a binding the header can reach through the merge rather than on the header's
@@ -1490,6 +1525,27 @@ def test_walrus_operator():
     run_and_validate(fn)
 
 
+def test_walrus_inside_a_lambda_inside_a_generator_expression_is_still_local():
+    # The rejection of `:=` in a generator expression is keyed off the visitor that traces it, so a walrus
+    # belonging to a lambda's own scope keeps compiling.
+    def fn():
+        y = 0
+        total = sum((lambda: (y := v))() for v in (1, 2))  # noqa: B023
+        return total * 100 + y
+
+    assert run_and_validate(fn) == 300
+
+
+def test_walrus_inside_a_nested_generator_expression_is_rejected():
+    def fn():
+        y = 0
+        total = sum(sum((y := v) for v in (1, 2)) for _ in (0,))
+        return total * 100 + y
+
+    with pytest.raises(CompilationError, match=re.escape("Assignment expressions (`:=`) in a generator")):
+        run_compiled(fn)
+
+
 def test_match_singletons():
     def m(x):
         match x:
@@ -1516,7 +1572,7 @@ def test_match_true_not_supported():
         m(True)
         return 1
 
-    with pytest.raises(CompilationError, match="not supported"):
+    with pytest.raises(CompilationError, match="Matching against True is not supported"):
         run_compiled(fn)
 
 
@@ -1532,7 +1588,7 @@ def test_match_false_not_supported():
         m(False)
         return 1
 
-    with pytest.raises(CompilationError, match="not supported"):
+    with pytest.raises(CompilationError, match="Matching against False is not supported"):
         run_compiled(fn)
 
 
@@ -1546,7 +1602,7 @@ def test_match_int_not_supported():
         m(1)
         return 1
 
-    with pytest.raises(CompilationError, match="not supported"):
+    with pytest.raises(CompilationError, match="Instance check against int, float, or bool is not supported"):
         run_compiled(fn)
 
 
@@ -1628,6 +1684,17 @@ def test_chained_comparison(x, y, z):
         return Array(a, b, c, d, e, f, g, h)
 
     assert run_and_validate(fn) == Array(*(x < y < z for _ in range(8)))
+
+
+def test_chained_comparison_with_incomparable_types():
+    def fn():
+        a = black_box_value(1)
+        b = black_box_value(1)
+        c = black_box_value(2)
+        pair = (1, 2)
+        return Array(a == b == pair, a == c == pair, a == b, a != b != pair)
+
+    assert run_and_validate(fn) == Array(0, 0, 1, 0)
 
 
 def test_while_true():
@@ -1737,6 +1804,16 @@ def test_bare_annotation_does_not_rebind_existing_value():
     assert run_and_validate(fn) == 3
 
 
+def test_lambda_assignment_target_is_local_before_the_assignment():
+    def fn():
+        x = 10
+        f = lambda: x + (x := 1)
+        return f()
+
+    with pytest.raises(UnboundLocalError, match="cannot access local variable 'x'"):
+        run_and_validate(fn)
+
+
 def test_bare_annotation_for_name_never_assigned():
     def fn():
         x: int
@@ -1752,8 +1829,8 @@ def test_bare_annotation_does_not_bind_name():
         x: int
         return x
 
-    with pytest.raises(CompilationError, match="Name x is not defined"):
-        run_compiled(fn)
+    with pytest.raises(UnboundLocalError, match="cannot access local variable 'x'"):
+        run_and_validate(fn)
 
 
 _SHADOWED_GLOBAL = 5
@@ -1765,8 +1842,8 @@ def test_bare_annotation_shadows_a_global():
         _SHADOWED_GLOBAL: int
         return _SHADOWED_GLOBAL
 
-    with pytest.raises(CompilationError, match="Name _SHADOWED_GLOBAL is not defined"):
-        run_compiled(fn)
+    with pytest.raises(UnboundLocalError, match="cannot access local variable '_SHADOWED_GLOBAL'"):
+        run_and_validate(fn)
 
 
 def test_bare_annotation_shadows_a_builtin():
@@ -1774,8 +1851,8 @@ def test_bare_annotation_shadows_a_builtin():
         len: int  # noqa: A001
         return len((1, 2, 3))
 
-    with pytest.raises(CompilationError, match="Name len is not defined"):
-        run_compiled(fn)
+    with pytest.raises(UnboundLocalError, match="cannot access local variable 'len'"):
+        run_and_validate(fn)
 
 
 def test_bare_annotation_shadows_for_the_whole_function():
@@ -1784,8 +1861,18 @@ def test_bare_annotation_shadows_for_the_whole_function():
         _SHADOWED_GLOBAL: int
         return value
 
-    with pytest.raises(CompilationError, match="Name _SHADOWED_GLOBAL is not defined"):
-        run_compiled(fn)
+    with pytest.raises(UnboundLocalError, match="cannot access local variable '_SHADOWED_GLOBAL'"):
+        run_and_validate(fn)
+
+
+def test_assignment_shadows_a_global_for_the_whole_function():
+    def fn():
+        value = _SHADOWED_GLOBAL
+        _SHADOWED_GLOBAL = 7  # noqa: F841
+        return value
+
+    with pytest.raises(UnboundLocalError, match="cannot access local variable '_SHADOWED_GLOBAL'"):
+        run_and_validate(fn)
 
 
 def test_parenthesized_bare_annotation_does_not_shadow():
@@ -1954,3 +2041,21 @@ def test_assert_message_bindings_do_not_escape_discarded_context():
 
     assert run_and_validate(fn) == 13
     assert run_compiled(fn, runtime_checks=RuntimeChecks.NONE) == 13
+
+
+def test_zero_trip_loop_does_not_speculate_invariant_division():
+    def fn():
+        n = black_box_value(0)
+        a = black_box_value(6.0)
+        b = black_box_value(0)
+        total = 0.0
+        i = 0
+        # The black_box_value call in the guard keeps the loop top-tested; with a bare
+        # header, cfg_cleanup rotates it into a do-while, where hoisting the division
+        # is legitimate and this test pins nothing.
+        while i < black_box_value(n):
+            total += a / b
+            i += 1
+        return total
+
+    assert run_and_validate(fn) == 0.0

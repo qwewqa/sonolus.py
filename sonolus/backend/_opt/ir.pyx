@@ -50,15 +50,23 @@ _OPS = list(_Op)
 _OP_TO_ID = {op: i for i, op in enumerate(_OPS)}
 _ID_TO_OP = _OPS
 _NARY_LEFT_FOLD_IDS = frozenset(
-    {_OP_TO_ID[_Op.Add], _OP_TO_ID[_Op.Multiply], _OP_TO_ID[_Op.Mod], _OP_TO_ID[_Op.Rem]}
+    {
+        _OP_TO_ID[_Op.Add],
+        _OP_TO_ID[_Op.Subtract],
+        _OP_TO_ID[_Op.Multiply],
+        _OP_TO_ID[_Op.Divide],
+        _OP_TO_ID[_Op.Power],
+        _OP_TO_ID[_Op.Mod],
+        _OP_TO_ID[_Op.Rem],
+    }
 )
 
 # Blocks the real runtime treats as runtime-constant: a constant-index read of
 # one (when not writable in this callback) is constant-folded to a single push
 # during bytecode compilation. Exposed as a module-level constant so downstream
 # code (e.g. tools/metrics.py, tests) can use it as the single source of truth.
-# The per-place marshal-in flag ``PLACE_RUNTIME_CONST`` records membership so
-# nogil passes never touch names.
+# The per-place flag ``PLACE_RUNTIME_CONST`` records membership so nogil passes
+# never touch names.
 RUNTIME_CONSTANT_BLOCKS = frozenset({
     "RuntimeEnvironment",
     "RuntimeUI",
@@ -70,6 +78,7 @@ RUNTIME_CONSTANT_BLOCKS = frozenset({
     "LevelLife",
     "EngineRom",
     "ArchetypeLife",
+    "ArchetypeScore",
     "RuntimeCanvas",
     "PreviewData",
     "PreviewOption",
@@ -269,6 +278,47 @@ cdef class Func:
             return False
         return self.callback in member.writable
 
+    cdef int32_t _folded_block_flags(self, int32_t block_id_int, bint const_index) except -1:
+        # Flags for a PLACE_REAL_BLOCK a pass folds out of a PLACE_DYNAMIC_BLOCK. Mirrors the raw-int
+        # arm of _intern_place below, so a folded id gets the bits the frontend writing that id
+        # directly would have produced: without them the fused pipeline ships a tree that exporting
+        # the same CFG and re-marshalling it does not reproduce. Display stays a raw int there, so
+        # no PLACE_BLOCK_IS_ENUM here either.
+        cdef int32_t flags = 0
+        resolved_member = None
+        if self.blocks_type is not None:
+            resolved_member = self._block_map.get(block_id_int)
+        if self._writable_for_block(resolved_member):
+            flags |= PLACE_WRITABLE
+        if (
+            const_index
+            and not (flags & PLACE_WRITABLE)
+            and resolved_member is not None
+            and getattr(resolved_member, "name", None) in RUNTIME_CONSTANT_BLOCKS
+        ):
+            flags |= PLACE_RUNTIME_CONST
+        return flags
+
+    cdef int32_t _baked_index_flags(self, int32_t block_ref, int32_t flags) except -1:
+        # Flags for a PLACE_REAL_BLOCK place a pass has just baked a constant index into. Only
+        # PLACE_RUNTIME_CONST can turn on: neither writability nor the enum-display bit depends on
+        # the index. Deriving all three from the block id the way _folded_block_flags does would be
+        # wrong here, because this place came from _intern_place below rather than from a fold: it
+        # keeps its enum spelling, and with no mode to resolve against it reads an enum member's
+        # writability where _folded_block_flags can only assume the worst. Resolving the member the
+        # way _intern_place did is also what makes a re-marshal of the exported CFG, which folds the
+        # same index at marshal-in, agree.
+        if flags & PLACE_WRITABLE:
+            return flags
+        resolved_member = None
+        if flags & PLACE_BLOCK_IS_ENUM:
+            resolved_member = self._block_enum_by_id.get(block_ref)
+        elif self.blocks_type is not None:
+            resolved_member = self._block_map.get(block_ref)
+        if getattr(resolved_member, "name", None) in RUNTIME_CONSTANT_BLOCKS:
+            flags |= PLACE_RUNTIME_CONST
+        return flags
+
     cdef int32_t _intern_place(self, object place, int32_t block_id) except -1:
         if isinstance(place, SSAPlace):
             raise ValueError("SSA places are not valid marshal-in input (input must not be SSA)")
@@ -307,6 +357,10 @@ cdef class Func:
             block_id_int = <int32_t>int(block)
             block_ref = block_id_int
             if isinstance(block, BlockData):
+                if self.blocks_type is not None and type(block) is not self.blocks_type:
+                    block_name = getattr(block, "name", None)
+                    block_label = f"{type(block).__name__}.{block_name}" if block_name is not None else repr(block)
+                    raise ValueError(f"Block {block_label} is not valid for {self.blocks_type.__name__}")
                 resolved_member = block
                 flags |= PLACE_BLOCK_IS_ENUM
                 self._block_enum_by_id[block_id_int] = block

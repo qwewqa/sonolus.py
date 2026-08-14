@@ -1,7 +1,7 @@
 """Tests for the arena EngineNode emitter (``sonolus.backend._opt.emit``).
 
 The emitter builds the EngineNode tree from the flat ``Func`` arena, re-flattening
-associative left spines (``Add``/``Multiply``/``Mod``/``Rem``) as it builds.
+the left spines of n-ary left-fold operations (``Add``/``Multiply``/``Mod``/``Rem``) as it builds.
 
 Two layers of coverage:
 
@@ -18,13 +18,17 @@ from __future__ import annotations
 
 import math
 
+import pytest
+
 from sonolus.backend._opt import emit  # noqa: PLC2701
 from sonolus.backend.interpret import Interpreter
 from sonolus.backend.ir import IRConst, IRGet, IRInstr, IRPureInstr, IRSet
+from sonolus.backend.mode import Mode
 from sonolus.backend.node import FunctionNode, format_engine_node
 from sonolus.backend.ops import Op
+from sonolus.backend.optimize import FAST_PASSES, STANDARD_PASSES, OptimizerConfig, optimize_and_finalize
 from sonolus.backend.optimize.flow import BasicBlock, traverse_cfg_reverse_postorder
-from sonolus.backend.place import BlockPlace
+from sonolus.backend.place import BlockPlace, TempBlock
 
 # ---------------------------------------------------------------------------
 # Unit-test scaffolding.
@@ -198,7 +202,9 @@ def test_terminator_switch_with_default_default_less():
 
 # --- The dense-switch gate must guard integrality/finiteness/range BEFORE any
 # int32 narrowing: conds >= 2^31 / +-inf / NaN / huge integral floats fall back to
-# SwitchWithDefault instead of crashing (OverflowError / ValueError). ---
+# SwitchWithDefault instead of crashing (OverflowError / ValueError). Non-finite
+# labels must also lower to EngineRom reads like value-position constants do: a
+# bare Infinity/-Infinity/NaN leaf would make the packaged JSON payload invalid. ---
 
 
 def test_terminator_switch_case_at_2p31_falls_back():
@@ -215,7 +221,30 @@ def test_terminator_switch_case_at_2p31_falls_back():
     assert t.args[5] == idx[bd]
 
 
-def test_terminator_switch_inf_case_falls_back():
+def _assert_rom_read(node, slot):
+    """Assert the EngineRom read a non-finite constant lowers to (slot 0=NaN, 1=+Inf, 2=-Inf)."""
+    assert isinstance(node, FunctionNode)
+    assert node.func == Op.Get
+    assert tuple(node.args) == (3000, slot)
+
+
+def _switch_case_pairs(t):
+    """The (label, target) pairs of a SwitchWithDefault terminator."""
+    return [(t.args[i], t.args[i + 1]) for i in range(1, len(t.args) - 1, 2)]
+
+
+def _rom_case_target(t, slot):
+    """The target paired with the single ROM-read case label reading the given slot."""
+    matches = [target for label, target in _switch_case_pairs(t) if isinstance(label, FunctionNode)]
+    assert len(matches) == 1
+    for label, target in _switch_case_pairs(t):
+        if isinstance(label, FunctionNode):
+            _assert_rom_read(label, slot)
+            return target
+    raise AssertionError
+
+
+def test_terminator_switch_inf_case_falls_back_and_lowers_to_rom():
     b0 = BasicBlock(test=IRGet(BlockPlace(500, 0, 0)))
     b_a, b_b, bd = BasicBlock(), BasicBlock(), BasicBlock()
     b0.connect_to(b_a, 0)
@@ -224,11 +253,25 @@ def test_terminator_switch_inf_case_falls_back():
     _node, executes, idx = _emit_program(b0)
     t = _term(executes[idx[b0]])
     assert t.func == Op.SwitchWithDefault
-    assert list(t.args[1:5]) == [0, idx[b_a], math.inf, idx[b_b]]
-    assert t.args[5] == idx[bd]
+    assert (0, idx[b_a]) in _switch_case_pairs(t)
+    assert _rom_case_target(t, 1) == idx[b_b]
+    assert t.args[-1] == idx[bd]
 
 
-def test_terminator_switch_nan_case_falls_back():
+def test_terminator_switch_negative_inf_case_falls_back_and_lowers_to_rom():
+    b0 = BasicBlock(test=IRGet(BlockPlace(500, 0, 0)))
+    b_a, b_b, bd = BasicBlock(), BasicBlock(), BasicBlock()
+    b0.connect_to(b_a, 0)
+    b0.connect_to(b_b, -math.inf)
+    b0.connect_to(bd, None)
+    _node, executes, idx = _emit_program(b0)
+    t = _term(executes[idx[b0]])
+    assert t.func == Op.SwitchWithDefault
+    assert (0, idx[b_a]) in _switch_case_pairs(t)
+    assert _rom_case_target(t, 2) == idx[b_b]
+
+
+def test_terminator_switch_nan_case_falls_back_and_lowers_to_rom():
     b0 = BasicBlock(test=IRGet(BlockPlace(500, 0, 0)))
     b_a, b_b, bd = BasicBlock(), BasicBlock(), BasicBlock()
     b0.connect_to(b_a, 0)
@@ -238,6 +281,8 @@ def test_terminator_switch_nan_case_falls_back():
     t = _term(executes[idx[b0]])
     assert t.func == Op.SwitchWithDefault  # NaN is never a dense case -> no crash
     assert len(t.args) == 6  # test + (cond,target) x2 + default
+    assert (0, idx[b_a]) in _switch_case_pairs(t)
+    assert _rom_case_target(t, 0) == idx[b_b]
 
 
 def test_terminator_switch_large_integral_float_falls_back():
@@ -424,6 +469,212 @@ def test_place_nonstrided_no_offset_stays_plain_get():
     b0 = BasicBlock(statements=[IRSet(BlockPlace(500, 0, 0), IRGet(BlockPlace(500, IRGet(BlockPlace(501, 0, 0)), 0)))])
     _node, executes, _idx = _emit_program(b0)
     assert executes[0].args[0].args[2].func == Op.Get
+
+
+# --- A runtime-constant address subtree declines the Shifted rewrite: the pure
+# Multiply/Add form folds to one node on the runtime, while a Shifted op's
+# offset/index/stride operand slots are evaluated separately, so rewriting a
+# runtime-constant address grows the effective node count. LevelData (2001) is
+# runtime-constant in play's updateParallel; LevelMemory (2000) never is. ---
+
+
+def _rtc_strided_index(stride=4):
+    # Get(LevelData, 3) * stride: a fully runtime-constant index subtree.
+    return IRPureInstr(Op.Multiply, [IRGet(BlockPlace(2001, 3, 0)), IRConst(stride)])
+
+
+def test_place_strided_runtime_constant_index_stays_plain_get():
+    b0 = BasicBlock(statements=[IRSet(BlockPlace(2000, 0, 0), IRGet(BlockPlace(2000, _rtc_strided_index(), 8)))])
+    _node, executes, _idx = _emit_program(b0, mode=Mode.PLAY, cb="updateParallel")
+    value = executes[0].args[0].args[2]
+    assert value.func == Op.Get
+
+
+def test_place_strided_runtime_constant_index_stays_plain_set():
+    b0 = BasicBlock(statements=[IRSet(BlockPlace(2000, _rtc_strided_index(), 8), IRConst(9))])
+    _node, executes, _idx = _emit_program(b0, mode=Mode.PLAY, cb="updateParallel")
+    set_node = executes[0].args[0]
+    assert set_node.func == Op.Set
+
+
+def test_place_offset_runtime_constant_index_stays_plain():
+    # The stride-1 offset branch declines on a runtime-constant index too.
+    b0 = BasicBlock(statements=[IRSet(BlockPlace(2000, IRGet(BlockPlace(2001, 3, 0)), 7), IRConst(9))])
+    _node, executes, _idx = _emit_program(b0, mode=Mode.PLAY, cb="updateParallel")
+    set_node = executes[0].args[0]
+    assert set_node.func == Op.Set
+
+
+def test_place_strided_mixed_index_keeps_shifted():
+    # One Multiply arm reads LevelMemory, so the subtree is not runtime-constant
+    # and the rewrite must stay: on a non-runtime-constant address it is a win.
+    index = IRPureInstr(Op.Multiply, [IRGet(BlockPlace(2000, 5, 0)), IRConst(4)])
+    b0 = BasicBlock(statements=[IRSet(BlockPlace(2000, 0, 0), IRGet(BlockPlace(2000, index, 8)))])
+    _node, executes, _idx = _emit_program(b0, mode=Mode.PLAY, cb="updateParallel")
+    value = executes[0].args[0].args[2]
+    assert value.func == Op.GetShifted
+
+
+# --- The same decline, for a block id the PASSES resolve rather than marshal-in. A pointer
+# whose target folds to a constant becomes a real block inside lowering, which is the only
+# place its writability and runtime-constant membership can be derived; the decline above
+# reads exactly those two facts, so it has to reach the same answer either way. These run the
+# real pipeline because the fold is what they are about. ---
+
+_PIPELINE_LEVELS = {"fast": FAST_PASSES, "standard": STANDARD_PASSES}
+
+
+def _folded_block_cfg(block_id, inner_index=3, stride=4):
+    # b = (block_id - 1) + 1; DebugLog(LevelMemory[Get(b, inner_index) * stride + 8]).
+    # Reading through `b` makes the inner address a pointer deref at marshal-in, so the block
+    # is unresolved there and only the passes' constant folding turns it into `block_id`.
+    pointer = BlockPlace(TempBlock("b", 1), 0, 0)
+    index = IRPureInstr(Op.Multiply, [IRGet(BlockPlace(IRGet(pointer), inner_index, 0)), IRConst(stride)])
+    b0 = BasicBlock(
+        statements=[
+            IRSet(pointer, IRPureInstr(Op.Add, [IRConst(block_id - 1), IRConst(1)])),
+            IRInstr(Op.DebugLog, [IRGet(BlockPlace(2000, index, 8))]),
+        ]
+    )
+    b0.connect_to(BasicBlock(), None)
+    return b0
+
+
+def _emit_optimized_log_arg(entry, level, config):
+    """Optimize and emit `entry`, then return the argument of its single DebugLog."""
+    node = optimize_and_finalize(entry, level, config)
+    assert node.func == Op.Block
+    jump_loop = node.args[0]
+    assert jump_loop.func == Op.JumpLoop
+    logs = [arg for arg in jump_loop.args[0].args if getattr(arg, "func", None) == Op.DebugLog]
+    assert len(logs) == 1
+    return logs[0].args[0]
+
+
+@pytest.mark.parametrize("level_name", ["fast", "standard"])
+def test_folded_block_runtime_constant_index_stays_plain_get(level_name):
+    # Folds to LevelData (2001), runtime-constant in updateParallel, so the rewrite must decline
+    # exactly as it does when the block id is written as a constant. Minimal is excluded because it
+    # never lowers out of SSA: nothing folds there, and the address stays a pointer deref.
+    config = OptimizerConfig(mode=Mode.PLAY, callback="updateParallel")
+
+    value = _emit_optimized_log_arg(_folded_block_cfg(2001), _PIPELINE_LEVELS[level_name], config)
+
+    assert value.func == Op.Get
+
+
+@pytest.mark.parametrize("level_name", ["fast", "standard"])
+def test_folded_block_non_runtime_constant_index_keeps_shifted(level_name):
+    # Guards the test above against passing for the wrong reason: folding to LevelMemory (2000),
+    # which is never runtime-constant, must still take the rewrite. If the decline ever became
+    # unconditional, this is what would fail instead of both tests staying green.
+    config = OptimizerConfig(mode=Mode.PLAY, callback="updateParallel")
+
+    value = _emit_optimized_log_arg(_folded_block_cfg(2000), _PIPELINE_LEVELS[level_name], config)
+
+    assert value.func == Op.GetShifted
+
+
+@pytest.mark.parametrize("level_name", ["fast", "standard"])
+def test_folded_block_read_at_a_runtime_index_keeps_shifted(level_name):
+    # Folds to LevelData again, but read at a runtime index: not a constant-index read, so the
+    # runtime does not fold it and the rewrite is still a win. Pins that the fold carries the index
+    # half of what makes a read runtime-constant, not just the block's identity.
+    config = OptimizerConfig(mode=Mode.PLAY, callback="updateParallel")
+    runtime_index = IRGet(BlockPlace(2000, 0, 0))
+
+    value = _emit_optimized_log_arg(_folded_block_cfg(2001, runtime_index), _PIPELINE_LEVELS[level_name], config)
+
+    assert value.func == Op.GetShifted
+
+
+@pytest.mark.parametrize("level_name", ["fast", "standard"])
+def test_folded_block_without_a_config_keeps_shifted(level_name):
+    # With no mode to resolve 2001 against, the fold cannot know it is LevelData, so it must fall
+    # back to what marshal-in gives an unresolved block: writable, not runtime-constant, rewrite kept.
+    value = _emit_optimized_log_arg(_folded_block_cfg(2001), _PIPELINE_LEVELS[level_name], None)
+
+    assert value.func == Op.GetShifted
+
+
+@pytest.mark.parametrize("level_name", ["fast", "standard"])
+def test_folded_block_with_a_folded_index_stays_plain_get(level_name):
+    # Same as the plain-Get case above, but the inner index is an expression the PASSES fold to a
+    # constant rather than a literal marshal-in bakes into the offset, so the place reaches the
+    # block-id fold with its index as a const instruction reference. The fold must bake it the way
+    # marshal-in would have, or the read misses its runtime-constant classification and the shipped
+    # tree keeps a rewrite the goldens/metrics path declines.
+    config = OptimizerConfig(mode=Mode.PLAY, callback="updateParallel")
+    folded_index = IRPureInstr(Op.Add, [IRConst(2), IRConst(1)])
+
+    value = _emit_optimized_log_arg(_folded_block_cfg(2001, folded_index), _PIPELINE_LEVELS[level_name], config)
+
+    assert value.func == Op.Get
+
+
+# --- The index half of the same story, for a block id that was static all along. Marshal-in bakes
+# a literal index into the place's offset, so an index the PASSES fold has to be baked by a pass to
+# reach the address the same source spelled as a literal would. ---
+
+
+def _static_index_cfg(index, offset, block=2001):
+    # DebugLog(block[offset + i]) with i read from a temp, so the index reaches the passes as a
+    # value: written as a literal it would be folded into the offset at marshal-in.
+    i = BlockPlace(TempBlock("i", 1), 0, 0)
+    b0 = BasicBlock(
+        statements=[
+            IRSet(i, IRPureInstr(Op.Add, [IRConst(index), IRConst(0)])),
+            IRInstr(Op.DebugLog, [IRGet(BlockPlace(block, IRGet(i), offset))]),
+        ]
+    )
+    b0.connect_to(BasicBlock(), None)
+    return b0
+
+
+@pytest.mark.parametrize("level_name", ["fast", "standard"])
+def test_folded_index_on_a_static_block_emits_the_plain_address(level_name):
+    # Cell 8 + 3 of block 2001 is cell 11, and that is the whole address: emitting the sum as a
+    # runtime Add costs two nodes per reference for an address known at compile time.
+    config = OptimizerConfig(mode=Mode.PLAY, callback="updateParallel")
+
+    value = _emit_optimized_log_arg(_static_index_cfg(3, 8), _PIPELINE_LEVELS[level_name], config)
+
+    assert value == FunctionNode(Op.Get, (2001, 11))
+
+
+def _rtc_index_cfg(statements, inner_place):
+    # DebugLog(LevelMemory[LevelData[...] * 4 + 8]): the read whose index is in question is itself
+    # the index of the outer address, which is where its runtime-constant bit gets read.
+    index = IRPureInstr(Op.Multiply, [IRGet(inner_place), IRConst(4)])
+    b0 = BasicBlock(statements=[*statements, IRInstr(Op.DebugLog, [IRGet(BlockPlace(2000, index, 8))])])
+    b0.connect_to(BasicBlock(), None)
+    return b0
+
+
+@pytest.mark.parametrize("level_name", ["fast", "standard"])
+def test_folded_index_read_is_classified_runtime_constant(level_name):
+    # Baking the index is also what makes the read's runtime-constant bit derivable, since only a
+    # constant-index read of LevelData is one the runtime folds. Without the bit the address keeps
+    # a Get/SetShifted rewrite that the same read at a literal index declines.
+    config = OptimizerConfig(mode=Mode.PLAY, callback="updateParallel")
+    i = BlockPlace(TempBlock("i", 1), 0, 0)
+    cfg = _rtc_index_cfg([IRSet(i, IRPureInstr(Op.Add, [IRConst(3), IRConst(0)]))], BlockPlace(2001, IRGet(i), 8))
+
+    value = _emit_optimized_log_arg(cfg, _PIPELINE_LEVELS[level_name], config)
+
+    assert value.func == Op.Get
+
+
+@pytest.mark.parametrize("level_name", ["fast", "standard"])
+def test_literal_index_read_is_classified_runtime_constant(level_name):
+    # The control for the test above: cell 11 of LevelData again, written as the literal index
+    # marshal-in bakes. If this ever stopped declining the rewrite, the test above would be
+    # asserting the wrong answer rather than a fixed one.
+    config = OptimizerConfig(mode=Mode.PLAY, callback="updateParallel")
+
+    value = _emit_optimized_log_arg(_rtc_index_cfg([], BlockPlace(2001, 11, 0)), _PIPELINE_LEVELS[level_name], config)
+
+    assert value.func == Op.Get
 
 
 def test_semantic_strided_get_set_match_manual_address():

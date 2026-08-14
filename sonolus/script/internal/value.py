@@ -3,18 +3,24 @@ from collections.abc import Callable, Iterable
 from types import NotImplementedType
 from typing import Any, Self
 
-from sonolus.backend.ir import IRConst, IRExpr, IRStmt
+from sonolus.backend.ir import IRConst, IRExpr
 from sonolus.backend.place import BlockPlace
 
 
 class BackingValue:
+    """Abstract storage backing for a value."""
+
     __slots__ = ()
 
+    @abstractmethod
     def read(self) -> IRExpr:
-        raise NotImplementedError()
+        """Read the stored expression."""
+        raise NotImplementedError
 
-    def write(self, value: IRExpr) -> IRStmt:
-        raise NotImplementedError()
+    @abstractmethod
+    def write(self, value: IRExpr) -> None:
+        """Write an expression to the backing."""
+        raise NotImplementedError
 
 
 class ExprBackingValue(BackingValue):
@@ -28,7 +34,7 @@ class ExprBackingValue(BackingValue):
     def read(self) -> IRExpr:
         return self._expr
 
-    def write(self, value: IRExpr) -> IRStmt:
+    def write(self, value: IRExpr) -> None:
         raise RuntimeError("Value is read-only, cannot write to it")
 
 
@@ -43,7 +49,7 @@ class ReadOnlyBackingValueWrapper(BackingValue):
     def read(self) -> IRExpr:
         return self._value.read()
 
-    def write(self, value: IRExpr) -> IRStmt:
+    def write(self, value: IRExpr) -> None:
         raise RuntimeError("Value is read-only, cannot write to it")
 
 
@@ -184,10 +190,13 @@ class Value:
         raise NotImplementedError
 
     @abstractmethod
-    def _copy_from_(self, value: Any):
+    def _copy_from_(self, value: Any, *, initializing: bool = False):
         """Implements copy assignment (@=).
 
         This is only supported by mutable reference types.
+
+        initializing is set when the copy fills freshly allocated storage rather than overwriting storage the
+        program already holds, as Array(...) construction and an array copy do.
         """
         raise NotImplementedError
 

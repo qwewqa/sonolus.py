@@ -105,6 +105,7 @@ def streams[T](cls: type[T]) -> T:
         if getattr(cls, "_init_done_", False):
             return
         entries = []
+        descriptors = []
         # Offset 0 is unused so we can tell when a stream object is uninitialized since it'll have offset 0.
         offset = 1
         specifiers = get_field_specifiers(cls, skip={"_init_done_"})
@@ -119,7 +120,7 @@ def streams[T](cls: type[T]) -> T:
                     annotation = cast(type[Stream | StreamGroup], annotation)
                     if annotation is Stream or annotation is StreamGroup:
                         raise TypeError(f"Invalid annotation for streams: {annotation}. Must have type arguments.")
-                    setattr(cls, name, _StreamField(offset, annotation))
+                    descriptors.append((name, _StreamField(offset, annotation)))
                     # Streams store their data across several backing streams
                     entries.append((name, offset, annotation))
                     offset += annotation.backing_size()
@@ -133,12 +134,16 @@ def streams[T](cls: type[T]) -> T:
                             f"{annotation} is not supported as a streams data field. Annotate it directly with "
                             f"Stream[...] or StreamGroup[...] instead."
                         )
-                    setattr(cls, name, _StreamDataField(offset, annotation))
+                    descriptors.append((name, _StreamDataField(offset, annotation)))
                     # Data fields store their data in a single backing stream at different offsets in the same stream
                     entries.append((name, offset, annotation))
                     offset += 1
             except Exception as e:
                 raise TypeError(f"Error processing streams field '{name}': {e}") from e
+        # Nothing is set on the class until every field checks out: a build retraces a failing callback and so
+        # calls _init_ twice, and a descriptor left behind by the first call makes the second fail elsewhere.
+        for name, descriptor in descriptors:
+            setattr(cls, name, descriptor)
         cls._streams_ = entries
         cls._is_comptime_value_ = True
         cls._init_done_ = True
@@ -210,7 +215,7 @@ class _SparseStreamBacking(BackingValue):
 
 
 class Stream[T](Record):
-    """Represents a stream.
+    """A stream.
 
     Most users should use [`@streams`][sonolus.script.stream.streams] to declare streams and stream groups, rather than
     creating instances of this class directly.
@@ -319,12 +324,12 @@ class Stream[T](Record):
         return previous_key < key
 
     def next_key_inclusive(self, key: int | float) -> int | float:
-        """Like [`next_key`][sonolus.script.stream.Stream.next_key], but returns the key itself if it is in the stream."""
+        """Like [`next_key`][sonolus.script.stream.Stream.next_key], including the key when present."""
         _check_can_read_stream()
         return key if key in self else self.next_key(key)
 
     def previous_key_inclusive(self, key: int | float) -> int | float:
-        """Like [`previous_key`][sonolus.script.stream.Stream.previous_key], but returns the key itself if it is in the stream."""
+        """Like [`previous_key`][sonolus.script.stream.Stream.previous_key], including the key when present."""
         _check_can_read_stream()
         return key if key in self else self.previous_key(key)
 
@@ -366,11 +371,11 @@ class Stream[T](Record):
         If the key is in the stream, it will be included in the iteration.
 
         Usage:
-        ```python
-        stream = ...
-        for key, value in stream.iter_items_from(0):
-            do_something(key, value)
-        ```
+            ```python
+            stream = ...
+            for key, value in stream.iter_items_from(0):
+                do_something(key, value)
+            ```
         """
         _check_can_read_stream()
         return _StreamAscIterator(self, self.next_key_inclusive(start))
@@ -382,14 +387,16 @@ class Stream[T](Record):
         previous frame and up to and including the current time.
 
         Usage:
-        ```python
-        stream = ...
-        for key, value in stream.iter_items_since_previous_frame():
-            do_something(key, value)
-        ```
+            ```python
+            stream = ...
+            for key, value in stream.iter_items_since_previous_frame():
+                do_something(key, value)
+            ```
         """
         _check_can_read_stream()
-        return _StreamBoundedAscIterator(self, self.next_key(prev_time()), time())
+        # next_key returns prev_time() unchanged when prev_time() is the stream's last key, re-yielding the item
+        # the previous frame already consumed; next_key_or_default returns inf instead, yielding nothing.
+        return _StreamBoundedAscIterator(self, self.next_key_or_default(prev_time(), inf), time())
 
     def iter_items_from_desc(self, start: int | float, /) -> SonolusIterator[tuple[int | float, T]]:
         """Iterate over the items in the stream in descending order starting from the given key.
@@ -397,11 +404,11 @@ class Stream[T](Record):
         If the key is in the stream, it will be included in the iteration.
 
         Usage:
-        ```python
-        stream = ...
-        for key, value in stream.iter_items_from_desc(0):
-            do_something(key, value)
-        ```
+            ```python
+            stream = ...
+            for key, value in stream.iter_items_from_desc(0):
+                do_something(key, value)
+            ```
         """
         _check_can_read_stream()
         return _StreamDescIterator(self, self.previous_key_inclusive(start))
@@ -412,11 +419,11 @@ class Stream[T](Record):
         If the key is in the stream, it will be included in the iteration.
 
         Usage:
-        ```python
-        stream = ...
-        for key in stream.iter_keys_from(0):
-            do_something(key)
-        ```
+            ```python
+            stream = ...
+            for key in stream.iter_keys_from(0):
+                do_something(key)
+            ```
         """
         _check_can_read_stream()
         return _StreamAscKeyIterator(self, self.next_key_inclusive(start))
@@ -428,14 +435,14 @@ class Stream[T](Record):
         previous frame and up to and including the current time.
 
         Usage:
-        ```python
-        stream = ...
-        for key in stream.iter_keys_since_previous_frame():
-            do_something(key)
-        ```
+            ```python
+            stream = ...
+            for key in stream.iter_keys_since_previous_frame():
+                do_something(key)
+            ```
         """
         _check_can_read_stream()
-        return _StreamBoundedAscKeyIterator(self, self.next_key(prev_time()), time())
+        return _StreamBoundedAscKeyIterator(self, self.next_key_or_default(prev_time(), inf), time())
 
     def iter_keys_from_desc(self, start: int | float, /) -> SonolusIterator[int | float]:
         """Iterate over the keys in the stream in descending order starting from the given key.
@@ -443,11 +450,11 @@ class Stream[T](Record):
         If the key is in the stream, it will be included in the iteration.
 
         Usage:
-        ```python
-        stream = ...
-        for key in stream.iter_keys_from_desc(0):
-            do_something(key)
-        ```
+            ```python
+            stream = ...
+            for key in stream.iter_keys_from_desc(0):
+                do_something(key)
+            ```
         """
         _check_can_read_stream()
         return _StreamDescKeyIterator(self, self.previous_key_inclusive(start))
@@ -458,11 +465,11 @@ class Stream[T](Record):
         If the key is in the stream, it will be included in the iteration.
 
         Usage:
-        ```python
-        stream = ...
-        for value in stream.iter_values_from(0):
-            do_something(value)
-        ```
+            ```python
+            stream = ...
+            for value in stream.iter_values_from(0):
+                do_something(value)
+            ```
         """
         _check_can_read_stream()
         return _StreamAscValueIterator(self, self.next_key_inclusive(start))
@@ -474,14 +481,14 @@ class Stream[T](Record):
         previous frame and up to and including the current time.
 
         Usage:
-        ```python
-        stream = ...
-        for value in stream.iter_values_since_previous_frame():
-            do_something(value)
-        ```
+            ```python
+            stream = ...
+            for value in stream.iter_values_since_previous_frame():
+                do_something(value)
+            ```
         """
         _check_can_read_stream()
-        return _StreamBoundedAscValueIterator(self, self.next_key(prev_time()), time())
+        return _StreamBoundedAscValueIterator(self, self.next_key_or_default(prev_time(), inf), time())
 
     def iter_values_from_desc(self, start: int | float, /) -> SonolusIterator[T]:
         """Iterate over the values in the stream in descending order starting from the given key.
@@ -489,18 +496,18 @@ class Stream[T](Record):
         If the key is in the stream, it will be included in the iteration.
 
         Usage:
-        ```python
-        stream = ...
-        for value in stream.iter_values_from_desc(0):
-            do_something(value)
-        ```
+            ```python
+            stream = ...
+            for value in stream.iter_values_from_desc(0):
+                do_something(value)
+            ```
         """
         _check_can_read_stream()
         return _StreamDescValueIterator(self, self.previous_key_inclusive(start))
 
 
 class StreamGroup[T, Size](Record):
-    """Represents a group of streams.
+    """A group of streams.
 
     Does not support negative indexes.
 
@@ -538,7 +545,7 @@ class StreamGroup[T, Size](Record):
     def __contains__(self, item: int) -> bool:
         """Check if the group contains the stream with the given index."""
         _check_can_read_or_write_stream()
-        return 0 <= item < self.size()
+        return item % 1 == 0 and 0 <= item < self.size()
 
     def __getitem__(self, index: int) -> Stream[T]:
         """Get the stream at the given index.

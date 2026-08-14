@@ -3,8 +3,7 @@ from typing import TypedDict
 from sonolus.backend.node import EngineNode, FunctionNode
 from sonolus.backend.ops import Op
 
-# Precomputed Op -> emitted name: Op.value routes through enum's DynamicClassAttribute
-# descriptor on every access, which is measurable at the ~165k accesses of a large build.
+# Cache emitted names because Op.value routes every access through the enum descriptor.
 _OP_VALUE = {op: op.value for op in Op}
 
 

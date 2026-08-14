@@ -1,3 +1,5 @@
+from typing import ClassVar
+
 import pytest
 
 from sonolus.backend.mode import Mode
@@ -82,3 +84,71 @@ def test_level_data_overflow_raises_in_watch_mode():
 
     with pytest.raises(CompilationError, match=r"LevelData memory block exceeded its maximum size"):
         compile_in(Mode.WATCH, cb)
+
+
+def test_level_memory_default_raises_at_decoration():
+    with pytest.raises(TypeError, match=r"Default values are not supported for global fields: WithDefault\.x"):
+
+        @level_memory
+        class WithDefault:
+            x: int = 5
+
+
+def test_level_data_default_raises_at_decoration():
+    with pytest.raises(TypeError, match=r"Default values are not supported for global fields: WithDefault\.x"):
+
+        @level_data
+        class WithDefault:
+            x: int = 5
+
+
+@pytest.mark.parametrize("decorator", [level_memory, level_data])
+def test_global_declaration_excludes_class_vars_from_storage(decorator):
+    @decorator
+    class Globals:
+        first: int
+        configured: ClassVar[int] = 7
+        unconfigured: ClassVar[int]
+        second: int
+
+    cls = type(Globals)
+
+    assert Globals.configured == 7
+    assert "unconfigured" not in cls.__dict__
+    assert cls._global_info_.size == 2
+    assert (cls.first.index, cls.first.offset) == (0, 0)
+    assert (cls.second.index, cls.second.offset) == (1, 1)
+
+
+def test_level_memory_bad_annotation_names_the_class_and_field():
+    with pytest.raises(TypeError, match=r"Invalid annotation for WithBad\.gamma") as exc_info:
+
+        @level_memory
+        class WithBad:
+            alpha: int
+            gamma: str
+            delta: int
+
+    assert "0x" not in str(exc_info.value)
+
+
+def test_level_data_bad_annotation_names_the_class_and_field():
+    with pytest.raises(TypeError, match=r"Invalid annotation for WithBad\.gamma"):
+
+        @level_data
+        class WithBad:
+            alpha: int
+            gamma: str
+
+
+def test_level_memory_field_named_mro_without_default_works():
+    # hasattr(cls, "mro") is True via the metaclass even though "mro" is never assigned in the class
+    # body, so the default-rejection guard must check cls.__dict__ rather than hasattr.
+    @level_memory
+    class WithMro:
+        mro: int
+
+    def cb():
+        WithMro.mro = 1
+
+    compile_in(Mode.PLAY, cb)  # should not raise

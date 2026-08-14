@@ -4,7 +4,7 @@ from math import pi
 
 from sonolus.script.array import Array
 from sonolus.script.array_like import ArrayLike
-from sonolus.script.debug import assert_false
+from sonolus.script.debug import assert_false, assert_true
 from sonolus.script.internal.math_impls import _atan2, _cos, _sin
 from sonolus.script.internal.meta_fn import perf_meta_fn
 from sonolus.script.num import Num
@@ -96,21 +96,13 @@ class Vec2(Record):
     @property
     @perf_meta_fn
     def magnitude(self) -> float:
-        """Calculate the magnitude (length) of the vector.
-
-        Returns:
-            The magnitude of the vector.
-        """
+        """The magnitude (length) of the vector."""
         return (self.x**2 + self.y**2) ** 0.5
 
     @property
     @perf_meta_fn
     def angle(self) -> float:
-        """Calculate the angle of the vector in radians from the positive x-axis.
-
-        Returns:
-            The angle of the vector in radians.
-        """
+        """The angle of the vector in radians from the positive x-axis."""
         return atan2(self.y, self.x)
 
     @perf_meta_fn
@@ -157,7 +149,7 @@ class Vec2(Record):
     def normalize(self) -> Vec2:
         """Normalize the vector (set the magnitude to 1) and return a new vector.
 
-        If the vector is a zero vector, an assertion error is raised if runtime checks are enabled.
+        The vector must not be zero.
 
         Returns:
             A new vector with magnitude 1.
@@ -190,11 +182,7 @@ class Vec2(Record):
 
     @property
     def tuple(self) -> tuple[float, float]:
-        """Return the vector as a tuple (x, y).
-
-        Returns:
-            A tuple representation of the vector.
-        """
+        """The vector as an `(x, y)` tuple."""
         return self.x, self.y
 
     @perf_meta_fn
@@ -282,14 +270,16 @@ def pnpoly(vertices: ArrayLike[Vec2] | tuple[Vec2, ...], test: Vec2) -> bool:
     No guaranteed behavior for points on the edges or very close to the edges.
 
     Args:
-        vertices: The vertices of the polygon.
+        vertices: The vertices of the polygon. Must contain at least one vertex.
         test: The point to test.
 
     Returns:
         Whether the point is inside the polygon.
     """
+    assert_true(len(vertices) > 0, "Polygon must contain at least one vertex")
     if isinstance(vertices, tuple):
         vertices = Array(*vertices)
+    vertices = vertices.unchecked()
     i = 0
     j = len(vertices) - 1
     c = False
