@@ -27,10 +27,10 @@ No open issues remain.
    descriptors may still execute `__get__` on the host, and runtime-dependent property getters may be rejected with
    a meaningful compilation error.
 
-4. **Dictionary-key and set-member comparisons must be side-effect free.**
-   Construction and lookup may repeat or reorder equality and ordering comparisons. This restriction is now
-   documented. Pure rich-comparison results, reflected dispatch, heterogeneous keys, and supported copy and union
-   paths use normal truth and comparison protocols.
+4. **Dictionary-key and set-member comparison side effects are not preserved.**
+   Construction and lookup may repeat or reorder equality and ordering comparisons. Exact comparison side effects
+   are not part of the supported contract and remain undocumented. Pure rich-comparison results, reflected
+   dispatch, heterogeneous keys, and supported copy and union paths use normal truth and comparison protocols.
 
 5. **Zero-argument `super()` inside a generator expression has a diagnostic difference.**
    In Python, the generator expression supplies its implicit iterator as the first argument, so the invalid call

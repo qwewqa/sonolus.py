@@ -611,8 +611,6 @@ def f2(**kwargs):
     return f1(**kwargs)
 ```
 
-Dictionary key and set-member comparisons must be side-effect free.
-
 ### set
 
 Sets can be created from a set literal, tuple, dict (using its keys), enum class, or another set. Members must be
