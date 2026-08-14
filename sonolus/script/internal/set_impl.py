@@ -24,7 +24,7 @@ class SetImpl[Keys, OrderedKeys, Values](Record):
     @meta_fn
     def __or__(self, other):
         if not isinstance(other, SetImpl):
-            raise TypeError("Unsupported type for '|' operator")
+            return NotImplemented
         return SetImpl(DictImpl.from_items((*self._dict.items(), *other._dict.items())))
 
     @staticmethod

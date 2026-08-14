@@ -140,6 +140,25 @@ class EqNotImplemented(Record):
         return NotImplemented
 
 
+class BuiltinReflectedOps(Record):
+    value: int
+
+    def __eq__(self, other):
+        return self.value == 7
+
+    def __ne__(self, other):
+        return self.value < 0
+
+    def __radd__(self, other):
+        return self.value
+
+    def __ror__(self, other):
+        return self.value
+
+    def __hash__(self):
+        return hash(None)
+
+
 class LtOnly(Record):
     def __lt__(self, other):
         debug_log(19)
@@ -1314,3 +1333,28 @@ def test_compile_time_augmented_union_accepts_an_existing_union():
         return callable(value)
 
     assert run_and_validate(fn) is False
+
+
+def test_builtin_wrappers_fall_back_to_reflected_operations():
+    def fn():
+        value = BuiltinReflectedOps(Array(7)[0])
+        debug_log(None == value)  # noqa: E711, SIM300
+        debug_log((1,) != value)  # noqa: SIM300
+        debug_log(range(Array(1)[0]) == value)
+        debug_log((1,) + value)  # noqa: RUF005
+        debug_log({1: 2} | value)
+        debug_log({1} | value)
+
+        tuple_value = (1,)
+        tuple_value += value
+        debug_log(tuple_value)
+
+        set_value = {1}
+        set_value |= value
+        debug_log(set_value)
+
+        debug_log(value in (None,))  # noqa: FURB171, PLR6201
+        debug_log(value in {None})  # noqa: FURB171
+        debug_log(value in {None: 7})
+
+    run_and_validate(fn)

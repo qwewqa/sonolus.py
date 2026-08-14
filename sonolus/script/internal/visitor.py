@@ -1520,7 +1520,8 @@ class Visitor(ast.NodeVisitor):
                     value = self.handle_getitem(subpattern, subject, validate_value(i))
                     if not ctx().live:
                         raise NotImplementedError(_TERMINATING_MATCH_READ_MESSAGE)
-                    true_ctx, false_ctx, sub_captures = self.handle_match_pattern(value, subpattern)
+                    with self.reporting_errors_at_node(subpattern):
+                        true_ctx, false_ctx, sub_captures = self.handle_match_pattern(value, subpattern)
                     captures.extend(sub_captures)
                     false_ctxs.append(false_ctx)
                     set_ctx(true_ctx)
@@ -1588,7 +1589,8 @@ class Visitor(ast.NodeVisitor):
                             return ctx().into_dead(), Context.meet(false_ctxs), captures
                         if not ctx().live:
                             raise NotImplementedError(_TERMINATING_MATCH_READ_MESSAGE)
-                        true_ctx, false_ctx, sub_captures = self.handle_match_pattern(value, subpattern)
+                        with self.reporting_errors_at_node(subpattern):
+                            true_ctx, false_ctx, sub_captures = self.handle_match_pattern(value, subpattern)
                         captures.extend(sub_captures)
                         false_ctxs.append(false_ctx)
                         set_ctx(true_ctx)
@@ -1601,7 +1603,8 @@ class Visitor(ast.NodeVisitor):
                 )
             case ast.MatchAs(pattern=pattern, name=name):
                 if pattern:
-                    true_ctx, false_ctx, captures = self.handle_match_pattern(subject, pattern)
+                    with self.reporting_errors_at_node(pattern):
+                        true_ctx, false_ctx, captures = self.handle_match_pattern(subject, pattern)
                     if name:
                         captures = [*captures, (name, ValueBinding(validate_value(subject)))]
                     return true_ctx, false_ctx, captures
@@ -1617,7 +1620,8 @@ class Visitor(ast.NodeVisitor):
                 for subpattern in pattern.patterns:
                     if not ctx().live:
                         break
-                    true_ctx, false_ctx, captures = self.handle_match_pattern(subject, subpattern)
+                    with self.reporting_errors_at_node(subpattern):
+                        true_ctx, false_ctx, captures = self.handle_match_pattern(subject, subpattern)
                     for name, binding in captures:
                         temp_name = temp_names.get(name)
                         if temp_name is None:
@@ -2106,7 +2110,7 @@ class Visitor(ast.NodeVisitor):
                 false_ctxs.append(false_ctx)
                 set_ctx(true_ctx)
                 l_val = r_val
-        last_ctx = ctx()  # This is the result of the last comparison returning true
+        last_ctx = ctx()
         set_ctx(Context.meet([last_ctx, *false_ctxs]))
         return ctx().scope.get_value(result_name)
 

@@ -1,5 +1,7 @@
 # Remaining review issues
 
+Audited commit: `0711ecab033c6ccefe5cd82ecb3c1bd3fbeed57f`.
+
 This manifest records the accepted limitations, policy decisions, resolved documentation leads, and refuted leads
 for the current implementation.
 
@@ -107,9 +109,10 @@ No open issues remain.
     A nested PEP 695 definition that reads its own type parameter can report the name as undefined during
     compilation. This is distinct from static generic bounds, but the runtime use is niche and was declined.
 
-20. **Published signatures may expose internal value and runtime-check types.**
+20. **Published signatures may expose internal types.**
     Public inheritance and annotations currently render names such as `Value`, `GenericValue`, `TransientValue`,
-    and `RuntimeChecks` without public reference pages. Hiding or replacing these leaks was explicitly deferred.
+    `RuntimeChecks`, and the media alias `Asset` without public reference pages. Hiding or replacing these leaks was
+    explicitly deferred.
 
 21. **The current changelog section is intentionally headed 0.19.0.**
     This is the intended next release heading, not a source-version mismatch.
@@ -364,3 +367,15 @@ No open issues remain.
     The engine schema technically permits omitting `spawn_time` and `despawn_time`, and inherited implementations
     return zero. Project policy nevertheless expects Watch archetypes to implement both callbacks, so the guide
     continues to mark them required.
+
+83. **Negative `math.sqrt` inputs are outside the published contract.**
+    The public stub requires a nonnegative argument. Python raises `ValueError` for a negative runtime value, while
+    compiled interpretation preserves a `Power(value, 0.5)` operation and can produce a host complex value at every
+    optimization level and runtime-check mode. Emission contains only the scalar runtime operation; no complex
+    constant enters backend IR. The difference follows a violated caller restriction and is not a correctness bug.
+
+84. **A missing resources directory is not treated as an empty collection.**
+    Collection loading raises `FileNotFoundError` when the configured resources path does not exist. The project
+    guide directs users to place collection resources in that directory, and an empty collection cannot serve the
+    default engine because its external skin, background, effect, and particle items are absent. Treating a missing
+    directory as empty would only defer the failure, so no empty-directory behavior is promised.

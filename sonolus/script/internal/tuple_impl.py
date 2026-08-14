@@ -56,7 +56,7 @@ class TupleImpl(TransientValue):
 
     def __eq__(self, other):
         if not self._is_tuple_impl(other):
-            return False
+            return NotImplemented
         if len(self) != len(other):
             return False
         for a, b in zip(self, other):  # noqa: SIM110
@@ -66,7 +66,7 @@ class TupleImpl(TransientValue):
 
     def __ne__(self, other):
         if not self._is_tuple_impl(other):
-            return True
+            return NotImplemented
         if len(self) != len(other):
             return True
         for a, b in zip(self, other):  # noqa: SIM110
@@ -111,6 +111,8 @@ class TupleImpl(TransientValue):
 
     @simple_meta_fn
     def __add__(self, other) -> Self:
+        if not self._is_tuple_impl(other):
+            return NotImplemented
         other = TupleImpl._accept_(other)
         return TupleImpl._accept_(self.value + other.value)
 

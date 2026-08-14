@@ -223,7 +223,7 @@ class DictImpl[Keys, OrderedKeys, Values](Record):
     @meta_fn
     def __or__(self, other):
         if not isinstance(other, DictImpl):
-            raise TypeError("Unsupported type for '|' operator")
+            return NotImplemented
         return self.from_items((*self.items(), *other.items()))
 
     @staticmethod

@@ -1,5 +1,6 @@
 ### 0.19.0
 
+- Builtin constants, tuples, ranges, dictionaries, and sets now fall back to reflected operators when appropriate.
 - PEP 604 union expressions now accept `None` and existing unions as operands, and `None` can be used as a Record
   field type or generic type argument.
 - Explicitly empty archetype names and imported or exported field names are now preserved.

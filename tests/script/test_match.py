@@ -1428,14 +1428,20 @@ def test_match_class_propagates_outer_exception_caused_by_attribute_error():
 
 def test_match_class_excess_positional_patterns_match_python_diagnostic():
     def fn():
-        match Point(1, 2):
-            case Point(1, 2, 3):
+        match (Point(1, 2),):
+            case (
+                Point(
+                    1,
+                    2,
+                    3,
+                ),
+            ):
                 return 1
             case _:
                 return 0
 
     source_lines, first_line = inspect.getsourcelines(fn)
-    expected_line = first_line + next(i for i, line in enumerate(source_lines) if "case Point(1, 2, 3)" in line)
+    expected_line = first_line + next(i for i, line in enumerate(source_lines) if line.strip() == "Point(")
 
     with pytest.raises(CompilationError, match=r"Point\(\) accepts 2 positional sub-patterns \(3 given\)") as exc_info:
         run_compiled(fn)

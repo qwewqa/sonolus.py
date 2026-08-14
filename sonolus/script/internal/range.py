@@ -77,7 +77,7 @@ class Range(Record, ArrayLike[int]):
 
     def __eq__(self, other):
         if not isinstance(other, Range):
-            return False
+            return NotImplemented
         len_self = len(self)
         len_other = len(other)
         if len_self != len_other:
@@ -87,6 +87,8 @@ class Range(Record, ArrayLike[int]):
         return self.start == other.start and self.last == other.last
 
     def __ne__(self, other):
+        if not isinstance(other, Range):
+            return NotImplemented
         return not self == other
 
     def __hash__(self):

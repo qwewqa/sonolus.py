@@ -149,10 +149,14 @@ class ConstantValue(Value):
 
     @simple_meta_fn
     def __eq__(self, other):
+        if not isinstance(other, ConstantValue):
+            return NotImplemented
         return self is other
 
     @simple_meta_fn
     def __ne__(self, other):
+        if not isinstance(other, ConstantValue):
+            return NotImplemented
         return self is not other
 
     @simple_meta_fn
