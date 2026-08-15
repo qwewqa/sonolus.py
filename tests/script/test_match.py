@@ -1338,6 +1338,44 @@ def test_match_class_rejects_non_string_match_arg():
         run_compiled(fn)
 
 
+def test_match_class_rejects_tuple_subclass_match_args():
+    class MatchArgs(tuple):
+        __slots__ = ()
+
+    class InvalidMatchArgs(Record):
+        value: Num
+
+    InvalidMatchArgs.__match_args__ = MatchArgs(("value",))
+
+    def fn():
+        match InvalidMatchArgs(Array(1)[0]):
+            case InvalidMatchArgs(1):
+                return 1
+        return 0
+
+    with pytest.raises(CompilationError, match="__match_args__ must be a tuple"):
+        run_compiled(fn)
+
+
+def test_match_class_rejects_string_subclass_match_arg():
+    class MatchArg(str):  # noqa: FURB189
+        __slots__ = ()
+
+    class InvalidMatchArgs(Record):
+        value: Num
+
+    InvalidMatchArgs.__match_args__ = (MatchArg("value"),)
+
+    def fn():
+        match InvalidMatchArgs(Array(1)[0]):
+            case InvalidMatchArgs(1):
+                return 1
+        return 0
+
+    with pytest.raises(CompilationError, match="__match_args__ elements must be strings"):
+        run_compiled(fn)
+
+
 class MatchTracedGetattr(Record):
     value: Num
 

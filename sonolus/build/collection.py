@@ -7,7 +7,7 @@ import urllib.request
 import warnings
 import zipfile
 from io import BytesIO
-from os import PathLike
+from os import PathLike, fspath
 from pathlib import Path
 from typing import Any, Literal, TypedDict, TypeGuard
 
@@ -45,6 +45,12 @@ WINDOWS_RESERVED_FILENAMES = {
     *(f"com{i}" for i in range(1, 10)),
     *(f"lpt{i}" for i in range(1, 10)),
 }
+
+
+def _warn(message: str) -> None:
+    warnings.warn(message, stacklevel=2, skip_file_prefixes=(str(Path(__file__).parent),))
+
+
 LOCALIZED_KEYS = {"title", "subtitle", "author", "description", "artists"}
 CATEGORY_SORT_ORDER = {
     "levels": 0,
@@ -122,9 +128,12 @@ class Collection:
         return Srl(hash=key, url=f"{BASE_PATH}repository/{key}")
 
     def load_from_scp(self, zip_data: Asset) -> None:
+        source = (
+            zip_data if isinstance(zip_data, str) else str(fspath(zip_data)) if isinstance(zip_data, PathLike) else None
+        )
         with zipfile.ZipFile(BytesIO(self._load_data(zip_data))) as zf:
             files_by_dir = self._group_zip_entries_by_directory(sorted(zf.filelist, key=lambda info: info.filename))
-            self._process_zip_directories(zf, files_by_dir)
+            self._process_zip_directories(zf, files_by_dir, source)
 
     def load_from_source(self, path: PathLike | str) -> None:
         root_path = Path(path)
@@ -148,10 +157,10 @@ class Collection:
                 try:
                     item_data = json.loads(item_json_path.read_text(encoding="utf-8"))
                 except json.JSONDecodeError:
-                    warnings.warn(f"Invalid JSON in {item_json_path}, skipping item.", stacklevel=2)
+                    _warn(f"Invalid JSON in {item_json_path}, skipping item.")
                     continue
                 if not isinstance(item_data, dict):
-                    warnings.warn(f"Expected a JSON object in {item_json_path}, skipping item.", stacklevel=2)
+                    _warn(f"Expected a JSON object in {item_json_path}, skipping item.")
                     continue
 
                 item_data = self._localize_item(item_data)
@@ -240,13 +249,15 @@ class Collection:
             path = Path(*path.parts[1:])
         return zip_entry.filename.endswith("/") or len(path.parts) < 2 or path.name.lower() in RESERVED_FILENAMES
 
-    def _process_zip_directories(self, zf: zipfile.ZipFile, files_by_dir: dict[str, list[zipfile.ZipInfo]]) -> None:
+    def _process_zip_directories(
+        self, zf: zipfile.ZipFile, files_by_dir: dict[str, list[zipfile.ZipInfo]], source: str | None
+    ) -> None:
         for dir_name, zip_entries in files_by_dir.items():
             if dir_name == "repository":
                 self._add_repository_items(zf, zip_entries)
             elif self._is_valid_category(dir_name):
                 self.categories.setdefault(dir_name, {})
-                self._extract_category_items(zf, dir_name, zip_entries)
+                self._extract_category_items(zf, dir_name, zip_entries, source)
 
     def _add_repository_items(self, zf: zipfile.ZipFile, zip_entries: list[zipfile.ZipInfo]) -> None:
         for zip_entry in zip_entries:
@@ -256,19 +267,20 @@ class Collection:
         return category in CATEGORY_NAMES
 
     def _extract_category_items(
-        self, zf: zipfile.ZipFile, dir_name: Category, zip_entries: list[zipfile.ZipInfo]
+        self, zf: zipfile.ZipFile, dir_name: Category, zip_entries: list[zipfile.ZipInfo], source: str | None
     ) -> None:
         for zip_entry in zip_entries:
+            location = zip_entry.filename if source is None else f"{zip_entry.filename} from {source}"
             try:
                 item_details = json.loads(zf.read(zip_entry).decode("utf-8"))
             except UnicodeDecodeError:
-                warnings.warn(f"Invalid UTF-8 in {zip_entry.filename}, skipping item.", stacklevel=4)
+                _warn(f"Invalid UTF-8 in {location}, skipping item.")
                 continue
             except json.JSONDecodeError:
-                warnings.warn(f"Invalid JSON in {zip_entry.filename}, skipping item.", stacklevel=4)
+                _warn(f"Invalid JSON in {location}, skipping item.")
                 continue
             if not isinstance(item_details, dict):
-                warnings.warn(f"Expected a JSON object in {zip_entry.filename}, skipping item.", stacklevel=4)
+                _warn(f"Expected a JSON object in {location}, skipping item.")
                 continue
 
             path = Path(zip_entry.filename)

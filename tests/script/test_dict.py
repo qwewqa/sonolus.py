@@ -185,6 +185,8 @@ def test_dict_accepts_unhashable_compile_time_record_key():
 
 
 def test_unhashable_compile_time_record_expanded_keyword_reports_string_rule():
+    # run_compiled is intentional: Python rejects the unhashable key before reaching the compiled keyword-name
+    # validation this test exercises.
     def target(**kwargs):
         return len(kwargs)
 

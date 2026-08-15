@@ -1545,7 +1545,7 @@ class Visitor(ast.NodeVisitor):
                     if not hasattr(cls, "__match_args__"):
                         raise TypeError("Class does not support match patterns")
                     match_args = cls.__match_args__
-                    if not isinstance(match_args, tuple):
+                    if type(match_args) is not tuple:
                         raise TypeError(
                             f"{cls.__name__}.__match_args__ must be a tuple (got {type(match_args).__name__})"
                         )
@@ -1561,7 +1561,7 @@ class Visitor(ast.NodeVisitor):
                     # overwriting them.
                     positional_attrs = match_args[: len(patterns)]
                     for attr in positional_attrs:
-                        if not isinstance(attr, str):
+                        if type(attr) is not str:
                             raise TypeError(f"__match_args__ elements must be strings (got {type(attr).__name__})")
                     kwd_attrs = [*positional_attrs, *kwd_attrs]
                     kwd_patterns = [*patterns, *kwd_patterns]

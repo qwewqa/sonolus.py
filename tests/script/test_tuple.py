@@ -1057,6 +1057,8 @@ def test_tuple_count_nested_tuple():
 
 
 def test_tuple_count_does_not_assume_object_identity():
+    # run_compiled is intentional: traced object identity is unsupported, so tuple.count may call equality where
+    # Python would take its identity shortcut.
     def fn():
         value = NeverEqual(1)
         return (value,).count(value)

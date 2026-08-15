@@ -1,6 +1,7 @@
 """Tests for sonolus.build.collection.Collection: item names, .scp and source loading, and output writing."""
 
 import json
+import re
 import zipfile
 from io import BytesIO
 from pathlib import Path
@@ -190,6 +191,52 @@ def test_load_from_scp_warning_points_to_caller():
 
     with pytest.warns(UserWarning, match="Invalid UTF-8") as warning_info:
         collection.load_from_scp(scp)
+
+    assert warning_info[0].filename == __file__
+
+
+def test_project_scp_warning_points_to_caller_and_names_archive(tmp_path):
+    archive = tmp_path / "bad.scp"
+    archive.write_bytes(_make_scp({"sonolus/skins/invalid": b"\xff"}))
+
+    with pytest.warns(UserWarning, match=re.escape(f"sonolus/skins/invalid from {archive}")) as warning_info:
+        load_resources_files_to_collection(tmp_path)
+
+    assert warning_info[0].filename == __file__
+
+
+def test_scp_warning_uses_pathlike_archive_name(tmp_path):
+    class CustomPath:
+        def __init__(self, path):
+            self.path = path
+
+        def __fspath__(self):
+            return str(self.path)
+
+    archive = tmp_path / "bad.scp"
+    archive.write_bytes(_make_scp({"sonolus/skins/invalid": b"\xff"}))
+
+    with pytest.warns(UserWarning, match=re.escape(f"sonolus/skins/invalid from {archive}")):
+        Collection().load_from_scp(CustomPath(archive))
+
+
+def test_scp_warning_preserves_url_archive_name():
+    class OfflineCollection(Collection):
+        def _load_data(self, _):
+            return _make_scp({"sonolus/skins/invalid": b"\xff"})
+
+    url = "https://example.com/resources.scp"
+    with pytest.warns(UserWarning, match=re.escape(f"sonolus/skins/invalid from {url}")):
+        OfflineCollection().load_from_scp(url)
+
+
+def test_project_source_warning_points_to_caller(tmp_path):
+    item_dir = tmp_path / "skins" / "invalid"
+    item_dir.mkdir(parents=True)
+    (item_dir / "item.json").write_text("null", encoding="utf-8")
+
+    with pytest.warns(UserWarning, match="Expected a JSON object") as warning_info:
+        load_resources_files_to_collection(tmp_path)
 
     assert warning_info[0].filename == __file__
 
