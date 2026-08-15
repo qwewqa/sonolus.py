@@ -1058,6 +1058,37 @@ def test_generator_next_then_for_loop_terminates_with_runtime_checks():
     run_compiled(fn, runtime_checks=RuntimeChecks.NONE)
 
 
+@pytest.mark.parametrize("operation", [max, min])
+def test_generator_next_then_extremum_terminates_with_runtime_checks(operation):
+    def fn():
+        def gen():
+            yield 1
+            yield 2
+            yield 3
+
+        iterator = gen()
+        next(iterator)
+        return operation(iterator, default=0)
+
+    assert run_compiled(fn, runtime_checks=RuntimeChecks.TERMINATE) == 0
+    run_compiled(fn, runtime_checks=RuntimeChecks.NONE)
+
+
+@pytest.mark.parametrize("operation", [max, min])
+def test_generator_extremum_key_reuse_terminates_with_runtime_checks(operation):
+    def fn():
+        def gen():
+            yield 1
+            yield 2
+            yield 3
+
+        iterator = gen()
+        return operation(iterator, key=lambda value: value + next(iterator))
+
+    assert run_compiled(fn, runtime_checks=RuntimeChecks.TERMINATE) == 0
+    run_compiled(fn, runtime_checks=RuntimeChecks.NONE)
+
+
 def test_generator_two_loops_terminate_with_runtime_checks():
     def fn():
         def gen():

@@ -159,8 +159,19 @@ def _zip_check_exhausted(chain, argument, name) -> Maybe[tuple[Any, ...]]:
     return compile_and_call(_zip_check_exhausted_last, chain, message)
 
 
+@meta_fn
+def _advance_without_owner_check(iterator):
+    from sonolus.script.internal.context import disable_iterator_owner_checks
+    from sonolus.script.internal.visitor import compile_and_call
+
+    if not ctx():
+        return iterator.next()
+    with disable_iterator_owner_checks():
+        return compile_and_call(iterator.next)
+
+
 def _zip_check_exhausted_pair(arm, rest, argument, name, message) -> Maybe[tuple[Any, ...]]:
-    value = _validate_next_result(arm.next())
+    value = _validate_next_result(_advance_without_owner_check(arm))
     if value.is_some:
         require(False, message)
         return Nothing
@@ -168,7 +179,7 @@ def _zip_check_exhausted_pair(arm, rest, argument, name, message) -> Maybe[tuple
 
 
 def _zip_check_exhausted_last(arm, message) -> Maybe[tuple[Any, ...]]:
-    value = _validate_next_result(arm.next())
+    value = _validate_next_result(_advance_without_owner_check(arm))
     if value.is_some:
         require(False, message)
     return Nothing
@@ -177,6 +188,13 @@ def _zip_check_exhausted_last(arm, message) -> Maybe[tuple[Any, ...]]:
 class _EmptyIterator(Record, SonolusIterator):
     def next(self) -> Maybe[Any]:
         return Nothing
+
+
+class _IteratorWithoutOwnerChecks[T](Record, SonolusIterator):
+    iterator: T
+
+    def next(self) -> Maybe[Any]:
+        return _validate_next_result(_advance_without_owner_check(self.iterator))
 
 
 class _MappingIterator[T, Fn](Record, SonolusIterator):

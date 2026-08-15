@@ -246,6 +246,9 @@ def map[T, S](
     A `tuple`, `dict`, `set`, or enum class may be used when every iterable argument is one of those. Other
     supported iterable types may be mixed with each other, but not with those compile-time collections.
 
+    With `strict=True`, compile-time collections may be checked when the iterator is created rather than when it is
+    consumed.
+
     Args:
         function: The function to apply.
         iterable: The iterable to process.
@@ -477,6 +480,12 @@ def zip[T1, T2, T3, T4, T5](
 def zip(*iterables: Iterable[Any], strict: builtins.bool = False) -> Iterator[tuple[Any, ...]]: ...
 def zip(*iterables: Iterable[Any], strict: builtins.bool = False) -> Iterator[tuple[Any, ...]]:
     """Return an iterator of tuples, where the i-th tuple contains the i-th element from each of the argument sequences.
+
+    A `tuple`, `dict`, `set`, or enum class may be used when every iterable argument is one of those. Other
+    supported iterable types may be mixed with each other, but not with those compile-time collections.
+
+    With `strict=True`, compile-time collections may be checked when the iterator is created rather than when it is
+    consumed.
 
     Args:
         *iterables: Iterables to aggregate.

@@ -9,7 +9,7 @@ from typing import Any, Never, assert_never
 from sonolus.backend.ops import Op
 from sonolus.script.array import Array
 from sonolus.script.array_like import ArrayLike
-from sonolus.script.debug import assert_true, error, require
+from sonolus.script.debug import assert_true, error, require, runtime_checks_enabled
 from sonolus.script.internal import impl
 from sonolus.script.internal.context import ctx
 from sonolus.script.internal.dict_impl import DictImpl
@@ -27,6 +27,7 @@ from sonolus.script.iterator import (
     _EmptyIterator,
     _Enumerator,
     _FilteringIterator,
+    _IteratorWithoutOwnerChecks,
     _MappingIterator,
     _MapZipper,
     _validate_next_result,
@@ -97,23 +98,6 @@ def _class_arg_name(value) -> str:
 def _comptime_iter_result(items) -> TupleImpl:
     """Wrap the result of a compile-time `zip`, `enumerate`, or `reversed` as a tuple."""
     return TupleImpl._accept_(tuple(items))
-
-
-class _StrictZipTupleResult(TupleImpl):
-    def __init__(self, value: tuple, strict: Num, error_message: str):
-        super().__init__(value)
-        self.strict = strict
-        self.error_message = error_message
-
-    def __iter__(self):
-        yield from self.value
-        if not ctx() and bool(self.strict):
-            raise ValueError(self.error_message)
-        if ctx() and ctx().live:
-            require(self.strict == 0, self.error_message)
-
-    def _tuple_iter_(self):
-        return self
 
 
 def _strict_zip_tuple_error(iterables: list[tuple], name: str = "zip") -> str | None:
@@ -313,12 +297,14 @@ def _zip(*iterables, strict: bool = False):
         if not all(has_tuple_iter(iterable) for iterable in iterables):
             raise TypeError("Cannot mix tuples with other types in zip")
         tuple_iterables = [tuple_iter(iterable) for iterable in iterables]
-        result = _comptime_iter_result(zip(*tuple_iterables, strict=False))
-        if (message := _strict_zip_tuple_error(tuple_iterables)) is not None and not (
-            strict._is_py_() and not strict._as_py_()
-        ):
-            return _StrictZipTupleResult(result.value, strict, message)
-        return result
+        message = _strict_zip_tuple_error(tuple_iterables)
+        if message is not None:
+            if strict._is_py_():
+                if strict._as_py_():
+                    raise ValueError(message)
+            else:
+                require(strict == 0, message)
+        return _comptime_iter_result(zip(*tuple_iterables, strict=False))
     for iterable in iterables:
         # Checked explicitly so a non-iterable argument gets the same message as it would from iter(), rather than
         # an internal AttributeError naming the wrapper class.
@@ -382,7 +368,6 @@ def _array_like_extremum(iterable, default, key, *, is_max: bool):
 
 @meta_fn
 def _max(*args, default=_empty, key=None):
-    from sonolus.script.internal.context import force_shared_runtime_owner_id
     from sonolus.script.internal.visitor import compile_and_call
 
     if _is_none_arg(key):
@@ -405,13 +390,12 @@ def _max(*args, default=_empty, key=None):
         elif isinstance(iterable, SonolusIterator):
             if not (default is _empty or Num._accepts_(default)):
                 raise TypeError("default argument must be a number")
-            with force_shared_runtime_owner_id():
-                return compile_and_call(
-                    _max_num_iterator,
-                    iterable,
-                    Num._accept_(default) if default is not _empty else None,
-                    key=key if key is not _identity else None,
-                )
+            return compile_and_call(
+                _max_num_iterator,
+                iterable,
+                Num._accept_(default) if default is not _empty else None,
+                key=key if key is not _identity else None,
+            )
         else:
             raise TypeError(f"Unsupported type: '{_type_name(iterable)}' for max")
     else:
@@ -419,13 +403,10 @@ def _max(*args, default=_empty, key=None):
             raise TypeError("default argument is not supported for max with multiple arguments")
         if not all(_is_num(arg) for arg in args):
             raise TypeError("Arguments to max must be numbers")
-        if ctx():
-            result = _max2(args[0], args[1], key=key)
-            for arg in args[2:]:
-                result = _max2(result, arg, key=key)
-            return result
-        else:
-            return max((arg._as_py_() for arg in args), key=key)
+        result = _max2(args[0], args[1], key=key)
+        for arg in args[2:]:
+            result = _max2(result, arg, key=key)
+        return result
 
 
 def _max2(a, b, key=_identity):
@@ -461,6 +442,8 @@ def _max_num_iterator(iterable, default, key):
     if initial.is_nothing:
         require(default is not None, "default must be provided if the iterator is empty")
         return default
+    if runtime_checks_enabled():
+        iterator = _IteratorWithoutOwnerChecks(iterator)
     if key is not None:
         result = initial.get_unsafe()
         best_key = key(result)
@@ -480,7 +463,6 @@ def _max_num_iterator(iterable, default, key):
 
 @meta_fn
 def _min(*args, default=_empty, key=None):
-    from sonolus.script.internal.context import force_shared_runtime_owner_id
     from sonolus.script.internal.visitor import compile_and_call
 
     if _is_none_arg(key):
@@ -503,13 +485,12 @@ def _min(*args, default=_empty, key=None):
         elif isinstance(iterable, SonolusIterator):
             if not (default is _empty or Num._accepts_(default)):
                 raise TypeError("default argument must be a number")
-            with force_shared_runtime_owner_id():
-                return compile_and_call(
-                    _min_num_iterator,
-                    iterable,
-                    Num._accept_(default) if default is not _empty else None,
-                    key=key if key is not _identity else None,
-                )
+            return compile_and_call(
+                _min_num_iterator,
+                iterable,
+                Num._accept_(default) if default is not _empty else None,
+                key=key if key is not _identity else None,
+            )
         else:
             raise TypeError(f"Unsupported type: '{_type_name(iterable)}' for min")
     else:
@@ -517,13 +498,10 @@ def _min(*args, default=_empty, key=None):
             raise TypeError("default argument is not supported for min with multiple arguments")
         if not all(_is_num(arg) for arg in args):
             raise TypeError("Arguments to min must be numbers")
-        if ctx():
-            result = _min2(args[0], args[1], key=key)
-            for arg in args[2:]:
-                result = _min2(result, arg, key=key)
-            return result
-        else:
-            return min((arg._as_py_() for arg in args), key=key)
+        result = _min2(args[0], args[1], key=key)
+        for arg in args[2:]:
+            result = _min2(result, arg, key=key)
+        return result
 
 
 def _min2(a, b, key=_identity):
@@ -559,6 +537,8 @@ def _min_num_iterator(iterable, default, key):
     if initial.is_nothing:
         require(default is not None, "default must be provided if the iterator is empty")
         return default
+    if runtime_checks_enabled():
+        iterator = _IteratorWithoutOwnerChecks(iterator)
     if key is not None:
         result = initial.get_unsafe()
         best_key = key(result)
@@ -584,31 +564,28 @@ def _callable(value):
     return validate_value(callable(value))
 
 
-def _map_over_compile_time_iterables(fn, iterables, strict, error_message):
+def _map_over_compile_time_iterables(fn, iterables):
     """map() over compile-time iterables, written as an ordinary generator function.
 
     zip() stops at the shortest iterable, matching Python's map() and the runtime path.
     """
     for args in zip(*iterables):  # ruff: ignore[zip-without-explicit-strict]
         yield fn(*args)
-    if error_message is not None:
-        require(strict == 0, error_message)
 
 
 def _coerce_bool(value) -> Num:
-    value = validate_value(value)
-    if value._is_py_():
-        return Num._accept_(bool(value._as_py_()))
-    return Num._accept_(value)
+    from sonolus.script.internal.visitor import compile_and_call
+
+    return compile_and_call(_bool, value)
 
 
 @meta_fn
-def _map(fn, iterable, *iterables, strict=False):
+def _map(fn, iterable, /, *iterables, strict=False):
     """map(), dispatching between the compile-time iterable path and the runtime iterator path.
 
     Tuples, dicts, sets, and enum classes are unrolled at compile time and have no runtime iterator, so they get a
-    compiled generator function instead of going through _MappingIterator. Either way the result is a lazy
-    iterator, as in Python.
+    compiled generator function instead of going through _MappingIterator. A statically known mismatch is handled
+    before that generator is constructed.
     """
     from sonolus.script.containers import Pair
     from sonolus.script.internal.visitor import compile_and_call
@@ -622,7 +599,13 @@ def _map(fn, iterable, *iterables, strict=False):
             raise TypeError("Cannot mix compile-time iterables (tuple, dict, set, enum class) with other types in map")
         tuple_iterables = [tuple_iter(it) for it in all_iterables]
         error_message = _strict_zip_tuple_error(tuple_iterables, "map")
-        return compile_and_call(_map_over_compile_time_iterables, fn, tuple(all_iterables), strict, error_message)
+        if error_message is not None:
+            if strict._is_py_():
+                if strict._as_py_():
+                    raise ValueError(error_message)
+            else:
+                require(strict == 0, error_message)
+        return compile_and_call(_map_over_compile_time_iterables, fn, tuple(all_iterables))
     for it in all_iterables:
         if _special_method(it, "__iter__") is None:
             raise TypeError(f"'{_type_name(it)}' object is not iterable")

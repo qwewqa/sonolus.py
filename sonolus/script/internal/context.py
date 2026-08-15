@@ -182,7 +182,7 @@ class CallbackContextState:
     visitor_own_time: int
     is_in_generator: bool
     next_runtime_owner_id: int
-    runtime_owner_id: int | None
+    iterator_owner_checks_disabled: bool
 
     def __init__(self, callback: str, no_eval: bool = False):
         self.callback = callback
@@ -192,7 +192,7 @@ class CallbackContextState:
         self.visitor_own_time = 0
         self.is_in_generator = False
         self.next_runtime_owner_id = 1
-        self.runtime_owner_id = None
+        self.iterator_owner_checks_disabled = False
 
 
 def _describe_global(value: _GlobalInfo | _GlobalPlaceholder) -> str:
@@ -312,11 +312,7 @@ class Context:
         used_names[name] = num
         return num
 
-    def get_runtime_owner_id(self) -> int:
-        owner_id = self.callback_state.runtime_owner_id
-        return owner_id if owner_id is not None else self._allocate_runtime_owner_id()
-
-    def _allocate_runtime_owner_id(self) -> int:
+    def allocate_runtime_owner_id(self) -> int:
         result = self.callback_state.next_runtime_owner_id
         if result > 1 << 24:
             raise RuntimeError("Too many runtime ownership sites in one callback")
@@ -550,18 +546,18 @@ def using_ctx(value: Context | None):
 
 
 @contextmanager
-def force_shared_runtime_owner_id():
+def disable_iterator_owner_checks():
     context = ctx()
     if not context:
         yield
         return
-    previous = context.callback_state.runtime_owner_id
-    if previous is None:
-        context.callback_state.runtime_owner_id = context.get_runtime_owner_id()
+    state = context.callback_state
+    previous = state.iterator_owner_checks_disabled
+    state.iterator_owner_checks_disabled = True
     try:
         yield
     finally:
-        context.callback_state.runtime_owner_id = previous
+        state.iterator_owner_checks_disabled = previous
 
 
 # The largest finite value a 32-bit float can hold.

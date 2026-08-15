@@ -1,6 +1,7 @@
 # ruff: file-ignore[zip-without-explicit-strict]
 
 import sys
+from enum import Enum
 
 import pytest
 
@@ -8,8 +9,18 @@ from sonolus.script.array import Array
 from sonolus.script.containers import VarArray
 from sonolus.script.debug import debug_log
 from sonolus.script.internal.context import RuntimeChecks
+from sonolus.script.internal.error import CompilationError
 from sonolus.script.vec import Vec2
-from tests.script.conftest import run_and_validate, run_compiled
+from tests.script.conftest import compile_fn, run_and_validate, run_compiled
+
+
+class _OneValue(Enum):
+    A = 1
+
+
+class _TwoValues(Enum):
+    A = 1
+    B = 2
 
 
 def test_strict_zip_equal_lengths_matches_python():
@@ -49,14 +60,14 @@ def test_strict_zip_compile_time_iterables_match_python():
         ((1, 2), (10,), r"zip\(\) argument 2 is shorter than argument 1"),
     ],
 )
-def test_strict_zip_compile_time_mismatch_terminates_when_consumed(left, right, message):
+def test_strict_zip_compile_time_mismatch_fails_compilation(left, right, message):
     def fn():
         for _ in zip(left, right, strict=True):
             pass
         return 0
 
-    with pytest.raises(ValueError, match=message):
-        run_and_validate(fn)
+    with pytest.raises(CompilationError, match=message):
+        compile_fn(fn)
 
 
 @pytest.mark.parametrize(
@@ -66,27 +77,28 @@ def test_strict_zip_compile_time_mismatch_terminates_when_consumed(left, right, 
         (((1,), (10,), (100, 200)), r"zip\(\) argument 3 is longer than arguments 1-2"),
     ],
 )
-def test_strict_zip_three_compile_time_iterables_report_mismatch_when_consumed(iterables, message):
+def test_strict_zip_three_compile_time_iterables_fail_compilation(iterables, message):
     def fn():
         for _ in zip(*iterables, strict=True):
             pass
         return 0
 
-    with pytest.raises(ValueError, match=message):
-        run_and_validate(fn)
+    with pytest.raises(CompilationError, match=message):
+        compile_fn(fn)
 
 
 @pytest.mark.parametrize(("left", "right"), [((1,), (10, 20)), ((1, 2), (10,))])
-def test_strict_zip_compile_time_mismatch_after_break_is_not_reached(left, right):
+def test_strict_zip_compile_time_mismatch_fails_before_early_return(left, right):
     def fn():
         for a, b in zip(left, right, strict=True):
             return a + b
         return 0
 
-    assert run_and_validate(fn) == 11
+    with pytest.raises(CompilationError, match=r"zip\(\) argument 2 is (?:longer|shorter) than argument 1"):
+        compile_fn(fn)
 
 
-def test_strict_zip_compile_time_mismatch_in_runtime_unreached_branch():
+def test_strict_zip_compile_time_mismatch_fails_in_runtime_unreached_branch():
     def fn():
         condition = 0
         for value in Array(0):
@@ -96,7 +108,31 @@ def test_strict_zip_compile_time_mismatch_in_runtime_unreached_branch():
                 pass
         return 42
 
-    assert run_and_validate(fn) == 42
+    with pytest.raises(CompilationError, match=r"zip\(\) argument 2 is longer than argument 1"):
+        compile_fn(fn)
+
+
+def test_strict_zip_compile_time_mismatch_fails_when_unused():
+    def fn():
+        zip((1,), (10, 20), strict=True)
+        return 42
+
+    with pytest.raises(CompilationError, match=r"zip\(\) argument 2 is longer than argument 1"):
+        compile_fn(fn)
+
+
+@pytest.mark.parametrize(
+    ("left", "right"),
+    [({1: 10}, {2: 20, 3: 30}), ({1}, {2, 3}), (_OneValue, _TwoValues)],
+    ids=["dict", "set", "enum"],
+)
+def test_strict_zip_tuple_like_mismatch_fails_compilation(left, right):
+    def fn():
+        zip(left, right, strict=True)
+        return 0
+
+    with pytest.raises(CompilationError, match=r"zip\(\) argument 2 is longer than argument 1"):
+        compile_fn(fn)
 
 
 @pytest.mark.parametrize("strict", [False, True])
@@ -130,6 +166,21 @@ def test_zip_explicit_non_strict_stops_at_shorter_iterable():
         return total
 
     assert run_and_validate(fn) == 11
+
+
+@pytest.mark.parametrize("strict", ["", "truthy"])
+def test_zip_truth_tests_non_boolean_strict(strict):
+    def fn():
+        total = 0
+        for a, b in zip(Array(1), Array(10, 20), strict=strict):
+            total += a + b
+        return total
+
+    if strict:
+        with pytest.raises(ValueError, match=r"zip\(\) argument 2 is longer than argument 1"):
+            run_and_validate(fn)
+    else:
+        assert run_and_validate(fn) == 11
 
 
 def test_zip_accepts_runtime_false_strict():
@@ -168,6 +219,114 @@ def test_compile_time_zip_accepts_runtime_strict(strict):
             run_and_validate(fn)
     else:
         assert run_and_validate(fn) == 11
+
+
+@pytest.mark.parametrize(("strict", "expected_logs"), [(False, [99]), (True, [])])
+def test_compile_time_zip_checks_runtime_strict_when_called(strict, expected_logs):
+    # run_compiled is intentional: eager checking for tuple-like inputs differs from Python when the result is unused.
+    def fn():
+        runtime_strict = Array(strict)[0]
+        zip((1,), (10, 20), strict=runtime_strict)
+        debug_log(99)
+        return 0
+
+    logs = []
+    run_compiled(fn, runtime_checks=RuntimeChecks.NONE, log_callback=logs.append)
+    assert logs == expected_logs
+
+
+def test_strict_zip_equal_generator_lengths_match_python():
+    def fn():
+        def gen(offset):
+            yield offset + 1
+            yield offset + 2
+
+        total = 0
+        for a, b in zip(gen(0), gen(10), strict=True):
+            total += a + b
+        return total
+
+    assert run_and_validate(fn) == 26
+
+
+def test_strict_zip_duplicate_generator_arms_still_terminate():
+    # run_compiled is intentional: Python allows the same generator in multiple zip arms.
+    def fn():
+        def gen():
+            yield 1
+            yield 2
+
+        iterator = gen()
+        for _ in zip(iterator, iterator, strict=True):
+            pass
+        debug_log(99)
+        return 0
+
+    logs = []
+    run_compiled(fn, runtime_checks=RuntimeChecks.TERMINATE, log_callback=logs.append)
+    assert logs == []
+
+
+def test_strict_zip_auxiliary_probe_skips_generator_ownership_check():
+    def fn():
+        def gen():
+            yield 1
+
+        iterator = gen()
+        for _ in iterator:
+            pass
+        for _ in zip(Array[int, 0](), iterator, strict=True):
+            pass
+        debug_log(99)
+        return 0
+
+    assert run_and_validate(fn) == 0
+
+
+def test_strict_map_auxiliary_probe_skips_generator_ownership_check():
+    # run_compiled is intentional: map(strict=...) requires Python 3.14 for plain-Python execution.
+    def fn():
+        def gen():
+            yield 1
+
+        iterator = gen()
+        for _ in iterator:
+            pass
+        for _ in map(lambda *_: 0, Array[int, 0](), iterator, strict=True):
+            pass
+        debug_log(99)
+        return 0
+
+    logs = []
+    run_compiled(fn, runtime_checks=RuntimeChecks.TERMINATE, log_callback=logs.append)
+    assert logs == [99]
+
+
+def test_strict_zip_auxiliary_probe_restores_generator_ownership_checks():
+    # run_compiled is intentional: separate next() calls are distinct consumers only in compiled code.
+    def fn():
+        def exhausted_gen():
+            yield 1
+
+        exhausted = exhausted_gen()
+        for _ in exhausted:
+            pass
+        for _ in zip(Array[int, 0](), exhausted, strict=True):
+            pass
+
+        def gen():
+            yield 1
+            yield 2
+
+        iterator = gen()
+        next(iterator)
+        next(iterator)
+        debug_log(99)
+        return 0
+
+    logs = []
+    run_compiled(fn, runtime_checks=RuntimeChecks.TERMINATE, log_callback=logs.append)
+    assert logs == []
 
 
 def test_strict_zip_later_shorter_terminates_before_pulling_following_arm():
@@ -302,6 +461,17 @@ def test_map_accepts_runtime_strict_for_equal_iterables(strict):
     assert run_and_validate(fn) == 33
 
 
+def test_strict_map_equal_generator_lengths_compile():
+    def fn():
+        def gen(offset):
+            yield offset + 1
+            yield offset + 2
+
+        return sum(map(lambda a, b: a + b, gen(0), gen(10), strict=True))
+
+    assert run_compiled(fn) == 26
+
+
 @pytest.mark.skipif(sys.version_info < (3, 14), reason="map() strict requires Python 3.14")
 def test_map_accepts_runtime_false_strict_for_unequal_iterables():
     def fn():
@@ -329,6 +499,32 @@ def test_map_compile_time_iterables_accept_runtime_strict():
 
     with pytest.raises(ValueError, match=r"map\(\) argument 2 is longer than argument 1"):
         run_and_validate(fn)
+
+
+@pytest.mark.parametrize(
+    ("iterables", "message"),
+    [
+        (((1,), (10, 20)), r"map\(\) argument 2 is longer than argument 1"),
+        (((1, 2), (10,)), r"map\(\) argument 2 is shorter than argument 1"),
+        (((1, 2), (10, 20), (100,)), r"map\(\) argument 3 is shorter than arguments 1-2"),
+        (((1,), (10,), (100, 200)), r"map\(\) argument 3 is longer than arguments 1-2"),
+    ],
+)
+def test_strict_map_compile_time_mismatch_fails_compilation(iterables, message):
+    def fn():
+        map(lambda *args: sum(args), *iterables, strict=True)
+        return 0
+
+    with pytest.raises(CompilationError, match=message):
+        compile_fn(fn)
+
+
+def test_map_rejects_positional_only_arguments_passed_by_keyword():
+    def fn():
+        return sum(map(fn=lambda value: value, iterable=(1, 2), strict=True))
+
+    with pytest.raises(CompilationError, match="positional-only arguments passed as keyword arguments"):
+        compile_fn(fn)
 
 
 @pytest.mark.parametrize("use_map", [False, True])

@@ -2794,8 +2794,8 @@ class Generator(TransientValue, SonolusIterator):
 
     @meta_fn
     def next(self):
-        if self.owner is not None:
-            owner_id = ctx().get_runtime_owner_id()
+        if self.owner is not None and not ctx().callback_state.iterator_owner_checks_disabled:
+            owner_id = ctx().allocate_runtime_owner_id()
             assert_true(
                 Num.or_(self.owner == 0, self.owner == owner_id),
                 "Generator cannot be used by more than one iterator consumer",
