@@ -264,7 +264,7 @@ def level_memory[T](cls: type[T]) -> T:
         class LevelMemory:
             variable: int
 
-        variable = level_memory(Array[int, 10])
+        variable = level_memory(Array[int, Dim[10]])
 
         def f():
             LevelMemory.variable = 1
@@ -299,7 +299,7 @@ def level_data[T](cls: type[T]) -> T:
         class LevelData:
             variable: int
 
-        variable = level_data(Array[int, 10])
+        variable = level_data(Array[int, Dim[10]])
 
         def f():
             LevelData.variable = 1

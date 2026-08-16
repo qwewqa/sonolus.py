@@ -90,8 +90,8 @@ def streams[T](cls: type[T]) -> T:
         class Streams:
             stream_1: Stream[int]  # A stream of int values
             stream_2: Stream[Vec2]  # A stream of Vec2 values
-            group_1: StreamGroup[int, 10]  # A group of 10 int streams
-            group_2: StreamGroup[Vec2, 5]  # A group of 5 Vec2 streams
+            group_1: StreamGroup[int, Dim[10]]  # A group of 10 int streams
+            group_2: StreamGroup[Vec2, Dim[5]]  # A group of 5 Vec2 streams
 
             data_field_1: int  # A data field of type int
             data_field_2: Vec2  # A data field of type Vec2
@@ -519,8 +519,8 @@ class StreamGroup[T, Size](Record):
         ```python
         @streams
         class Streams:
-            my_group_1: StreamGroup[Num, 10]  # A group of 10 Num streams
-            my_group_2: StreamGroup[Vec2, 5]  # A group of 5 Vec2 streams
+            my_group_1: StreamGroup[Num, Dim[10]]  # A group of 10 Num streams
+            my_group_2: StreamGroup[Vec2, Dim[5]]  # A group of 5 Vec2 streams
         ```
     """
 

@@ -120,7 +120,7 @@ class VarArray[T, Capacity](Record, ArrayLike[T]):
 
     Examples:
         ```python
-        array = VarArray[int, 10].new()
+        array = VarArray[int, Dim[10]].new()
         array.append(1)
         ```
     """
@@ -162,7 +162,7 @@ class VarArray[T, Capacity](Record, ArrayLike[T]):
 
             For example:
             ```python
-            a = VarArray[Pair[int, int], 10].new()
+            a = VarArray[Pair[int, int], Dim[10]].new()
             a.append(Pair(1, 2))
             a.append(Pair(3, 4))
             a.append(Pair(5, 6))
@@ -459,7 +459,7 @@ class ArraySet[T, Capacity](Record):
 
     Examples:
         ```python
-        s = ArraySet[int, 10].new()
+        s = ArraySet[int, Dim[10]].new()
         s.add(1)
         s.add(2)
         assert 1 in s
@@ -609,7 +609,7 @@ class ArrayMap[K, V, Capacity](Record):
 
     Examples:
         ```python
-        map = ArrayMap[int, int, 10].new()
+        map = ArrayMap[int, int, Dim[10]].new()
         map[1] = 2
         map[3] = 4
         assert 1 in map
@@ -672,7 +672,7 @@ class ArrayMap[K, V, Capacity](Record):
 
             For example:
             ```python
-            map = ArrayMap[int, Pair[int, int], 10].new()
+            map = ArrayMap[int, Pair[int, int], Dim[10]].new()
             map[1] = Pair(2, 3)
             map[3] = Pair(4, 5)
             map[5] = Pair(6, 7)

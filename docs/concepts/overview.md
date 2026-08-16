@@ -138,7 +138,7 @@ assert record_1.a == record_2.value.a == 789
 specific type:
 
 ```python
-array_1 = Array[int, 3](1, 2, 3)
+array_1 = Array[int, Dim[3]](1, 2, 3)
 array_2 = Array(4, 5, 6)  # Type arguments are inferred
 ```
 
@@ -175,7 +175,7 @@ Similarly, a new zero initialized value can be created using the unary `+` opera
 
 ```python
 record_1 = +MyRecord
-record_2 = +Array[int, 3]
+record_2 = +Array[int, Dim[3]]
 ```
 
 Records and arrays can be mutated in-place using the `@=` operator:

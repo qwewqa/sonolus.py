@@ -38,10 +38,9 @@ class Array[T, Size](GenericValue, ArrayLike[T], metaclass=ArrayMeta):
     Usage:
         ```python
         array_1 = Array(1, 2, 3)
-        array_2 = Array[int, 0]()
-        array_3 = +Array[int, 3]  # Create a zero-initialized array
-        array_4 = +Array[int, Dim[3]]  # Alternative syntax for compliance with type checkers
-        array_5 = +array_1  # Create a copy of array_1
+        array_2 = Array[int, Dim[0]]()
+        array_3 = +Array[int, Dim[3]]  # Create a zero-initialized array
+        array_4 = +array_1  # Create a copy of array_1
         ```
     """
 

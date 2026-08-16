@@ -111,7 +111,7 @@ It has two type parameters:
 You can import [`Array`][sonolus.script.array.Array] from `sonolus.script.array`:
 
 ```python
-from sonolus.script.array import Array
+from sonolus.script.array import Array, Dim
 ```
 
 ### Declaration
@@ -119,16 +119,16 @@ from sonolus.script.array import Array
 Arrays can be created using its constructor or the unary `+` operator.
 
 ```python
-a1 = Array[int, 3](1, 2, 3)
-a2 = Array[int, 0]()
-a3 = +Array[int, 3]  # Create a zero-initialized array
+a1 = Array[int, Dim[3]](1, 2, 3)
+a2 = Array[int, Dim[0]]()
+a3 = +Array[int, Dim[3]]  # Create a zero-initialized array
 ```
 
-For type checker compatibility, the Python builtin `typing.Literal` or [`Dim`][sonolus.script.array.Dim] may be used
-for an array's size:
+Array sizes may be written as bare integer literals. Wrapping them in [`Dim`][sonolus.script.array.Dim] is
+recommended for type checker compatibility. `typing.Literal` is equivalent to `Dim`:
 ```python
-a1 = Array[int, Dim[3]](1, 2, 3)
-a2 = Array[int, Literal[3]](1, 2, 3)
+a1 = Array[int, 3](1, 2, 3)
+a2 = Array[int, Dim[3]](1, 2, 3)
 ```
 
 If at least one element is provided, the element type and size can be inferred:
@@ -143,7 +143,7 @@ is considered a concrete type.
 
 ```python
 Array  # The Generic Array type
-Array[int, 3]  # A concrete Array type
+Array[int, Dim[3]]  # A concrete Array type
 ```
 
 The element type of an array must be concrete (not generic) and the size must be a non-negative compile-time 
@@ -151,18 +151,18 @@ constant integer:
 
 ```python
 # Ok
-a4 = Array[Array[int, 3], 2](Array(1, 2, 3), Array(4, 5, 6))
+a4 = Array[Array[int, Dim[3]], Dim[2]](Array(1, 2, 3), Array(4, 5, 6))
 
 # Not ok:
-a5 = Array[int, 0.5]()  # The size must be a non-negative integer
-a6 = Array[Array, 2](Array(1, 2, 3), Array(4, 5, 6))  # The element type must be concrete (not generic)
+a5 = Array[int, Dim[0.5]]()  # The size must be a non-negative integer
+a6 = Array[Array, Dim[2]](Array(1, 2, 3), Array(4, 5, 6))  # The element type must be concrete (not generic)
 ```
 
 Copies are made of any values provided to the constructor:
 
 ```python
 vec = Vec2(1, 2)
-a = Array[Vec2, 1](vec)
+a = Array[Vec2, Dim[1]](vec)
 assert a[0] == Vec2(1, 2)
 
 vec.x = 3
@@ -270,9 +270,9 @@ Only an array with the exact element type and size is considered an instance of 
 
 ```python
 a = Array(1, 2, 3)
-assert isinstance(a, Array[int, 3])
-assert not isinstance(a, Array[int, 2])
-assert not isinstance(a, Array[Vec2, 3])
+assert isinstance(a, Array[int, Dim[3]])
+assert not isinstance(a, Array[int, Dim[2]])
+assert not isinstance(a, Array[Vec2, Dim[3]])
 ```
 
 ## Record
@@ -513,7 +513,7 @@ Only an instance of a generic record with the exact type arguments is considered
 ```python
 pair = MyGenericPair[int, int](1, 2)
 assert isinstance(pair, MyGenericPair[int, int])
-assert not isinstance(pair, MyGenericPair[int, Array[int, 2]])
+assert not isinstance(pair, MyGenericPair[int, Array[int, Dim[2]]])
 ```
 
 ## Enums
@@ -528,8 +528,8 @@ class MyEnum(IntEnum):
     A = 1
     B = 2
 
-a = Array[MyEnum, 2](MyEnum.A, MyEnum.B)
-b = Array[MyEnum, 2](1, 2)
+a = Array[MyEnum, Dim[2]](MyEnum.A, MyEnum.B)
+b = Array[MyEnum, Dim[2]](1, 2)
 ```
 
 ## Transient Types
@@ -539,7 +539,7 @@ There are some restrictions on how they can be used:
 - They cannot be used as type arguments:
     ```python
     # Not ok:
-    Array[str, 3]
+    Array[str, Dim[3]]
     ```
 - They cannot be used as field types:
     ```python

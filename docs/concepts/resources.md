@@ -154,6 +154,7 @@ Shared memory may be read in any callback, but may only be updated by sequential
 Streams are defined with the [`@streams`][sonolus.script.stream.streams] decorator:
 
 ```python
+from sonolus.script.array import Dim
 from sonolus.script.stream import streams, Stream, StreamGroup
 from sonolus.script.num import Num
 from sonolus.script.vec import Vec2
@@ -162,8 +163,8 @@ from sonolus.script.vec import Vec2
 class Streams:
     stream_1: Stream[Num]  # A stream of Num values
     stream_2: Stream[Vec2]  # A stream of Vec2 values
-    group_1: StreamGroup[Num, 10]  # A group of 10 Num streams
-    group_2: StreamGroup[Vec2, 5]  # A group of 5 Vec2 streams
+    group_1: StreamGroup[Num, Dim[10]]  # A group of 10 Num streams
+    group_2: StreamGroup[Vec2, Dim[5]]  # A group of 5 Vec2 streams
     
     data_field_1: Num  # A data field of type Num
     data_field_2: Vec2  # A data field of type Vec2
