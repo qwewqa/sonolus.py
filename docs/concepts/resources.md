@@ -6,16 +6,22 @@ For where the underlying asset files are placed on disk, see [Resource Files](pr
 
 ## Global Variables
 
+Global storage fields must be annotated and cannot be assigned values in the class body. Class-level values may be
+declared with `ClassVar` and are not stored as globals.
+
 ### Level Memory
 Level memory is defined with the [`@level_memory`][sonolus.script.globals.level_memory] class decorator:
 
 ```python
+from typing import ClassVar
+
 from sonolus.script.globals import level_memory
 
 
 @level_memory
 class LevelMemory:
     value: int
+    scale: ClassVar[int] = 2
 ```
 
 Alternatively, it may be called as a function as well by passing the type as an argument:

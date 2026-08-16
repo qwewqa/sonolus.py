@@ -1,3 +1,8 @@
+### 0.19.2
+
+- Class-shaped [`@level_memory`][sonolus.script.globals.level_memory] and
+  [`@level_data`][sonolus.script.globals.level_data] declarations now reject unannotated data fields.
+
 ### 0.19.1
 
 - Compiled `zip` and `map` now support the `strict` parameter.

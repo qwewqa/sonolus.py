@@ -88,9 +88,18 @@ def _create_global(cls: type, blocks: dict[Mode, Block], offset: int | None):
         return _GlobalPlaceholder(cls, blocks, offset)
     if cls.__bases__ != (object,):
         raise TypeError("Expected a class with no bases or a Value subclass")
+    annotations = inspect.get_annotations(cls, eval_str=True)
+    for name, value in cls.__dict__.items():
+        if name.startswith("__") or name in annotations:
+            continue
+        if inspect.isfunction(value) or isinstance(value, (classmethod, staticmethod, property)):
+            continue
+        raise TypeError(
+            f"Global field {cls.__name__}.{name} must have a type annotation; use ClassVar[...] for class-level values"
+        )
     field_offset = 0
     field_index = 0
-    for name, annotation in inspect.get_annotations(cls, eval_str=True).items():
+    for name, annotation in annotations.items():
         if annotation is ClassVar or get_origin(annotation) is ClassVar:
             continue
         # hasattr doesn't work here: it returns True for a field named e.g. mro via the metaclass.

@@ -5,6 +5,7 @@ import pytest
 from sonolus.backend.mode import Mode
 from sonolus.build.compile import callback_to_cfg
 from sonolus.script.array import Array
+from sonolus.script.containers import Pair
 from sonolus.script.globals import level_data, level_memory
 from sonolus.script.internal.context import ModeContextState, ProjectContextState
 from sonolus.script.internal.error import CompilationError
@@ -103,21 +104,67 @@ def test_level_data_default_raises_at_decoration():
 
 
 @pytest.mark.parametrize("decorator", [level_memory, level_data])
+def test_global_unannotated_value_raises_at_decoration(decorator):
+    with pytest.raises(
+        TypeError,
+        match=r"Global field Unannotated\.field must have a type annotation; use ClassVar\[\.\.\.\]",
+    ):
+
+        @decorator
+        class Unannotated:
+            field = Pair(1, 2)
+
+
+@pytest.mark.parametrize("decorator", [level_memory, level_data])
+def test_global_declaration_allows_helper_members(decorator):
+    @decorator
+    class Globals:
+        def method(self):
+            return 1
+
+        @classmethod
+        def class_method(cls):
+            return 2
+
+        @staticmethod
+        def static_method():
+            return 3
+
+        @property
+        def property_(self):
+            return 4
+
+    assert Globals.method() == 1
+    assert Globals.class_method() == 2
+    assert Globals.static_method() == 3
+    assert Globals.property_ == 4
+    assert type(Globals)._global_info_.size == 0
+
+
+@pytest.mark.parametrize("decorator", [level_memory, level_data])
 def test_global_declaration_excludes_class_vars_from_storage(decorator):
     @decorator
     class Globals:
         first: int
         configured: ClassVar[int] = 7
+        bare_configured: ClassVar = 8
         unconfigured: ClassVar[int]
         second: int
 
     cls = type(Globals)
 
     assert Globals.configured == 7
+    assert Globals.bare_configured == 8
     assert "unconfigured" not in cls.__dict__
     assert cls._global_info_.size == 2
     assert (cls.first.index, cls.first.offset) == (0, 0)
     assert (cls.second.index, cls.second.offset) == (1, 1)
+
+    def cb():
+        _ = Globals.configured
+        _ = Globals.bare_configured
+
+    compile_in(Mode.PLAY, cb)
 
 
 def test_level_memory_bad_annotation_names_the_class_and_field():
