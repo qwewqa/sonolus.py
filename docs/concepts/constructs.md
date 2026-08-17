@@ -7,6 +7,9 @@ how it differs from standard Python.
 Behavior is not specified for unsupported constructs. They may be rejected, ignored, or behave differently from
 Python.
 
+Identifiers that use Python's class-private name mangling (names that start with two underscores and do not end
+with two underscores) are unsupported in compiled code.
+
 ## Key Differences
 
 - Non-num variables must have a single live definition.

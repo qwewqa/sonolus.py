@@ -1,3 +1,6 @@
+import functools
+import inspect
+
 import pytest
 
 from sonolus.script.array import Array
@@ -11,6 +14,39 @@ def call_function(f, *args, **kwargs):
     return f(*args, **kwargs)
 
 
+def transparent_wrapper(fn):
+    @functools.wraps(fn)
+    def wrapper(*args, **kwargs):
+        return fn(*args, **kwargs) + 1
+
+    return wrapper
+
+
+@transparent_wrapper
+def wrapped_function(value, *, offset=0):
+    return value + offset
+
+
+def signature_spoofed_function():
+    return 42
+
+
+signature_spoofed_function.__signature__ = inspect.Signature(
+    [inspect.Parameter("required", inspect.Parameter.POSITIONAL_ONLY)]
+)
+
+
+class RemovedAnnotation:
+    pass
+
+
+def function_with_removed_annotation(value: RemovedAnnotation = 41):
+    return value + 1
+
+
+del RemovedAnnotation
+
+
 def test_simple_function_call():
     def a():
         return 1
@@ -19,6 +55,18 @@ def test_simple_function_call():
         return a()
 
     assert run_and_validate(fn) == 1
+
+
+def test_function_wrapped_with_functools_wraps_uses_wrapper_source():
+    assert run_and_validate(wrapped_function, 40, offset=1) == 42
+
+
+def test_function_signature_uses_physical_callable():
+    assert run_and_validate(signature_spoofed_function) == 42
+
+
+def test_function_signature_does_not_evaluate_annotations():
+    assert run_and_validate(function_with_removed_annotation) == 42
 
 
 def test_lambda_function_call():

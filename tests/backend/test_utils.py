@@ -7,7 +7,7 @@ from sonolus.backend.utils import find_function, get_function, get_functions, sc
 
 def _identity_deco(*args, **kwargs):
     def wrap(f):
-        # Return the original function unchanged so getsourcelines resolves to it.
+        # Return the original function unchanged so its physical code still points to the decorated definition.
         return f
 
     return wrap
@@ -28,9 +28,9 @@ def _fn_singleline_first_decorator():
 
 def test_get_function_multiline_first_decorator():
     # Regression: a function whose FIRST decorator spans multiple source lines must still
-    # be locatable. get_function uses inspect.getsourcelines (== the decorator's START
-    # line); find_function previously compared against decorator_list[0].end_lineno, so a
-    # multi-line first decorator failed to match and raised ValueError, aborting compilation.
+    # be locatable. The code object's first line is the decorator's start line; find_function
+    # previously compared it against decorator_list[0].end_lineno, so a multi-line first
+    # decorator failed to match and raised ValueError, aborting compilation.
     _source_file, node = get_function(_fn_multiline_first_decorator)
     assert node.name == "_fn_multiline_first_decorator"
 

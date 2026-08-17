@@ -1,3 +1,7 @@
+### 1.0.0
+
+- Fixed compiled tuple `<=` and `>=` results for elements with custom comparison methods.
+
 ### 0.19.2
 
 - Class-shaped [`@level_memory`][sonolus.script.globals.level_memory] and

@@ -87,7 +87,7 @@ class TupleImpl(TransientValue):
             return NotImplemented
         for a, b in zip(self, other):
             if not (a == b):
-                return a < b
+                return a <= b
         return len(self.value) <= len(other.value)
 
     def __gt__(self, other):
@@ -103,7 +103,7 @@ class TupleImpl(TransientValue):
             return NotImplemented
         for a, b in zip(self, other):
             if not (a == b):
-                return a > b
+                return a >= b
         return len(self.value) >= len(other.value)
 
     def __hash__(self):

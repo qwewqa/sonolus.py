@@ -3,7 +3,7 @@ import inspect
 from collections.abc import Callable
 from functools import cache
 from pathlib import Path
-from types import CodeType
+from types import CodeType, FunctionType, MethodType
 
 
 class FunctionNotFoundError(ValueError):
@@ -14,18 +14,27 @@ class FunctionNotFoundError(ValueError):
 def get_function(fn: Callable) -> tuple[str, ast.FunctionDef]:
     # Parsing the whole file rather than the function's own source keeps line and column offsets
     # absolute, which the same-line tiebreak in find_function relies on.
-    source_file = inspect.getsourcefile(fn)
-    _, start_line = inspect.getsourcelines(fn)
+    code = fn.__func__.__code__ if inspect.ismethod(fn) else fn.__code__
+    source_file = inspect.getsourcefile(code)
+    start_line = code.co_firstlineno
     base_tree = get_tree_from_file(source_file)
     try:
-        return source_file, find_function(base_tree, start_line, getattr(fn, "__code__", None))
+        return source_file, find_function(base_tree, start_line, code)
     except FunctionNotFoundError:
         raise ValueError(f"Function {fn} not found in source file {source_file}") from None
 
 
 @cache
 def get_signature(fn: Callable) -> inspect.Signature:
-    return inspect.signature(fn)
+    function = fn.__func__ if inspect.ismethod(fn) else fn
+    if not isinstance(function, FunctionType):
+        return inspect.signature(fn, follow_wrapped=False)
+    physical_function = FunctionType(
+        function.__code__, function.__globals__, function.__name__, function.__defaults__, function.__closure__
+    )
+    physical_function.__kwdefaults__ = function.__kwdefaults__
+    target = MethodType(physical_function, fn.__self__) if inspect.ismethod(fn) else physical_function
+    return inspect.signature(target, follow_wrapped=False)
 
 
 @cache

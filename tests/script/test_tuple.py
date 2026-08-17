@@ -68,6 +68,31 @@ class NeverEqual(Record):
         return False
 
 
+class DistinctNonStrictOrdering(Record):
+    value: int
+    __hash__ = None
+
+    def __eq__(self, other):
+        debug_log(1)
+        return False
+
+    def __lt__(self, other):
+        debug_log(2)
+        return False
+
+    def __le__(self, other):
+        debug_log(3)
+        return True
+
+    def __gt__(self, other):
+        debug_log(4)
+        return False
+
+    def __ge__(self, other):
+        debug_log(5)
+        return True
+
+
 def test_tuple_destructure():
     def fn():
         t = (1, 2), (3, 4), 5
@@ -172,6 +197,15 @@ def test_tuple_comparison_uses_element_equality_not_inequality():
         return Array(left == right, left != right, left < right, left <= right, left > right, left >= right)
 
     assert run_and_validate(fn) == Array(True, False, False, True, False, True)
+
+
+def test_tuple_non_strict_comparison_uses_non_strict_element_method():
+    def fn():
+        left = (DistinctNonStrictOrdering(bb(0)),)
+        right = (DistinctNonStrictOrdering(bb(1)),)
+        return Array(left <= right, right >= left)
+
+    assert run_and_validate(fn) == Array(True, True)
 
 
 @given(

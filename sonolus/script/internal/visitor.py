@@ -187,7 +187,7 @@ def eval_fn(fn: Callable, /, *args, **kwargs):
         function_name, qualified_name, global_base = _get_fn_info(fn)
         binder = _get_fast_binder(fn)
     else:
-        sig = inspect.signature(fn)
+        sig = get_signature(fn)
         function_name, qualified_name, global_base = _compute_fn_info(fn)
         binder = None
     if binder is not None and not kwargs and binder[3] <= len(args) <= binder[2]:
