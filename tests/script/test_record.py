@@ -7,7 +7,7 @@ from hypothesis import strategies as st
 from sonolus.build.level import build_level_data
 from sonolus.script.archetype import EntityRef, PlayArchetype, imported
 from sonolus.script.array import Array
-from sonolus.script.debug import assert_true, debug_log
+from sonolus.script.debug import assert_true, debug_log, error
 from sonolus.script.level import LevelData
 from sonolus.script.num import Num
 from sonolus.script.record import Record
@@ -63,6 +63,66 @@ class ConcreteCompound(Record):
 
 class NoneField(Record):
     value: None
+
+
+class BranchingEquality(Record):
+    value: int
+    __hash__ = None
+
+    def __eq__(self, other):
+        if self.value > 0:
+            return self.value == other.value
+        return False
+
+    def __ne__(self, other):
+        if self.value > 0:
+            return self.value != other.value
+        return True
+
+
+class EqualityContainer(Record):
+    item: BranchingEquality
+
+
+class TerminatingEquality(Record):
+    value: int
+    __hash__ = None
+
+    def __eq__(self, other):
+        if self.value > 0:
+            error("nested comparison stopped")
+        return self.value == other.value
+
+    def __ne__(self, other):
+        if self.value > 0:
+            error("nested comparison stopped")
+        return self.value != other.value
+
+
+class TerminatingEqualityContainer(Record):
+    item: TerminatingEquality
+
+
+class TruthResult(Record):
+    value: int
+
+    def __bool__(self):
+        return self.value > 0
+
+
+class RecordResultEquality(Record):
+    value: int
+    __hash__ = None
+
+    def __eq__(self, other):
+        return TruthResult(self.value == other.value)
+
+    def __ne__(self, other):
+        return TruthResult(self.value != other.value)
+
+
+class RecordResultEqualityContainer(Record):
+    item: RecordResultEquality
 
 
 def test_record_field_type_spec_is_normalized():
@@ -245,6 +305,46 @@ def test_record_equality():
         return 1
 
     assert run_and_validate(fn) == 1
+
+
+def test_record_equality_traces_nested_custom_comparisons():
+    def fn():
+        value = Array(1)[0]
+        equal = EqualityContainer(BranchingEquality(value))
+        same = EqualityContainer(BranchingEquality(value))
+        different = EqualityContainer(BranchingEquality(value + 1))
+        return (equal == same) and (equal != different)
+
+    assert run_and_validate(fn)
+
+
+def test_record_equality_preserves_nested_comparison_termination():
+    def fn():
+        value = TerminatingEqualityContainer(TerminatingEquality(Array(1)[0]))
+        same = TerminatingEqualityContainer(TerminatingEquality(Array(1)[0]))
+        return value == same
+
+    with pytest.raises(RuntimeError, match="nested comparison stopped"):
+        run_and_validate(fn)
+
+    def ne_fn():
+        value = TerminatingEqualityContainer(TerminatingEquality(Array(1)[0]))
+        same = TerminatingEqualityContainer(TerminatingEquality(Array(1)[0]))
+        return value != same
+
+    with pytest.raises(RuntimeError, match="nested comparison stopped"):
+        run_and_validate(ne_fn)
+
+
+def test_record_equality_truth_tests_nested_comparison_results():
+    def fn():
+        value = Array(1)[0]
+        equal = RecordResultEqualityContainer(RecordResultEquality(value))
+        same = RecordResultEqualityContainer(RecordResultEquality(value))
+        different = RecordResultEqualityContainer(RecordResultEquality(value + 1))
+        return (equal == same) and (equal != different)
+
+    assert run_and_validate(fn)
 
 
 @given(

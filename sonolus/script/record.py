@@ -24,6 +24,14 @@ from sonolus.script.internal.value import BackingSource, DataValue, Value
 from sonolus.script.num import Num
 
 
+def _record_field_equal(lhs, rhs):
+    return bool(lhs == rhs)
+
+
+def _record_field_not_equal(lhs, rhs):
+    return bool(lhs != rhs)
+
+
 def _bind_constructor_args(cls: type[Record], args: tuple[Any, ...], kwargs: dict[str, Any]) -> dict[str, Any]:
     """Bind Record constructor arguments to field names.
 
@@ -394,20 +402,30 @@ class Record(GenericValue, metaclass=RecordMeta):
 
     @meta_fn
     def __eq__(self, other: Any) -> bool:
+        from sonolus.script.internal.visitor import compile_and_call
+
         if not isinstance(other, type(self)):
             return False
         result: Num = Num._accept_(True)
         for field in self._fields_:
-            result = result.and_(field.__get__(self) == field.__get__(other))
+            field_result = compile_and_call(_record_field_equal, field.__get__(self), field.__get__(other))
+            if ctx() and not ctx().live:
+                return result
+            result = result.and_(field_result)
         return result
 
     @meta_fn
     def __ne__(self, other: Any) -> bool:
+        from sonolus.script.internal.visitor import compile_and_call
+
         if not isinstance(other, type(self)):
             return True
         result: Num = Num._accept_(False)
         for field in self._fields_:
-            result = result.or_(field.__get__(self) != field.__get__(other))
+            field_result = compile_and_call(_record_field_not_equal, field.__get__(self), field.__get__(other))
+            if ctx() and not ctx().live:
+                return result
+            result = result.or_(field_result)
         return result
 
     def __hash__(self):

@@ -1,5 +1,6 @@
 ### 1.0.0
 
+- Fixed equality comparisons of records whose fields implement custom runtime comparisons.
 - Fixed compiled tuple `<=` and `>=` results for elements with custom comparison methods.
 
 ### 0.19.2
