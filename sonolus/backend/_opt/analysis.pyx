@@ -677,6 +677,13 @@ cdef Dominators compute_dominators(Func func):
     return D
 
 
+def _populate_dominators_for_verify(Func func):
+    """Populate the ``BlockInfo.idom`` cache used only by ``Func.verify``."""
+    if func.n_blocks == 0:
+        return
+    compute_dominators(func)
+
+
 def dominators_debug(entry, mode=None, callback=None):
     """Marshal ``entry``, compute dominators, return idom / children / a few queries.
 

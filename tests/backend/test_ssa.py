@@ -166,6 +166,24 @@ def test_diamond_semantics():
     _assert_semantics_preserved(lambda: _diamond(sel=0))  # false branch
 
 
+@pytest.mark.parametrize(("selector", "expected"), [(1, [10, 11]), (0, [20, 21])])
+def test_current_definition_map_distinguishes_temps_and_blocks(selector, expected):
+    entry = BasicBlock(test=IRGet(_sc("selector")))
+    true_block, false_block, join = BasicBlock(), BasicBlock(), BasicBlock()
+    entry.statements = [IRSet(_sc("selector"), IRConst(selector))]
+    true_block.statements = [IRSet(_sc("x"), IRConst(10)), IRSet(_sc("y"), IRConst(11))]
+    false_block.statements = [IRSet(_sc("x"), IRConst(20)), IRSet(_sc("y"), IRConst(21))]
+    join.statements = [IRInstr(Op.DebugLog, [IRGet(_sc("x"))]), IRInstr(Op.DebugLog, [IRGet(_sc("y"))])]
+    entry.connect_to(false_block, 0)
+    entry.connect_to(true_block, None)
+    true_block.connect_to(join, None)
+    false_block.connect_to(join, None)
+
+    original, _ = _assert_semantics_preserved(lambda: entry)
+    assert original.log == expected
+    assert _ssa_text(entry).count("phi(") == 2
+
+
 def _loop():
     b0, head, ex = BasicBlock(), BasicBlock(), BasicBlock()
     b0.statements = [IRSet(_sc("i"), IRConst(0))]

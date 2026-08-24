@@ -94,8 +94,11 @@ BlockInfo
                             of the first phi (== instr_start, except the entry
                             block whose OPX_UNDEF precedes its phis).
 * rpo, idom                 rpo == block id (blocks are numbered in reverse-
-                            postorder at marshal-in / cfg_cleanup). idom is filled
-                            by ``compute_dominators`` (analysis.pyx); -1 == unset.
+                            postorder at marshal-in / cfg_cleanup). idom is an
+                            on-demand verifier cache filled by
+                            ``compute_dominators`` (analysis.pyx); -1 == unset.
+                            A topology-changing in-place pass must invalidate the
+                            entry block's idom; current such passes build a new Func.
 
 ------------------------------------------------------------------------------
 Edge                        per-edge; parallel edges between a block pair legal

@@ -10,6 +10,9 @@ if TYPE_CHECKING:
 
 # Hoisted tuple: building `int | float` inline allocates a new types.UnionType per call.
 _INT_FLOAT = (int, float)
+_BASIC_NUMERIC_TYPES = frozenset((int, float, bool))
+_SET_TYPES = frozenset((set, frozenset))
+_CONSTANT_TYPING_ORIGINS = frozenset((Literal, Annotated, UnionType, Final, tuple, type))
 
 
 def validate_value[T](value: T) -> Value | T:
@@ -22,7 +25,7 @@ def validate_value[T](value: T) -> Value | T:
     if id(value) in BUILTIN_IMPLS:
         return validate_value(BUILTIN_IMPLS[id(value)])
     if isinstance(value, type):
-        if value in {int, float, bool}:
+        if value in _BASIC_NUMERIC_TYPES:
             return constant.BasicConstantValue.of(Num)
         return constant.BasicConstantValue.of(value)
 
@@ -33,18 +36,7 @@ def validate_value[T](value: T) -> Value | T:
             raise RuntimeError(f"Error initializing value {_describe_unsupported(value)}: {e}") from e
 
     value_type = type(value)
-    if value_type in {
-        generic.PartialGeneric,
-        TypeVar,
-        FunctionType,
-        MethodType,
-        str,
-        ModuleType,
-        NoneType,
-        NotImplementedType,
-        EllipsisType,
-        super,
-    }:
+    if value_type in _CONSTANT_VALUE_TYPES:
         return constant.BasicConstantValue.of(value)
     if value_type is tuple:
         return tuple_impl.TupleImpl._accept_(value)
@@ -52,11 +44,11 @@ def validate_value[T](value: T) -> Value | T:
         from sonolus.script.internal import dict_impl
 
         return dict_impl.DictImpl.from_dict(value)
-    if value_type in {set, frozenset}:
+    if value_type in _SET_TYPES:
         from sonolus.script.internal import set_impl
 
         return set_impl.SetImpl.from_set(value)
-    if get_origin(value) in {Literal, Annotated, UnionType, Final, tuple, type}:
+    if get_origin(value) in _CONSTANT_TYPING_ORIGINS:
         return constant.BasicConstantValue.of(value)
     if value is Literal or value is Annotated or value is Union:
         return constant.TypingSpecialFormConstant.of(value)
@@ -108,5 +100,20 @@ from sonolus.script import globals as sonolus_globals
 from sonolus.script.internal import constant, generic, tuple_impl
 from sonolus.script.internal.value import Value
 from sonolus.script.num import Num
+
+_CONSTANT_VALUE_TYPES = frozenset(
+    (
+        generic.PartialGeneric,
+        TypeVar,
+        FunctionType,
+        MethodType,
+        str,
+        ModuleType,
+        NoneType,
+        NotImplementedType,
+        EllipsisType,
+        super,
+    )
+)
 
 BUILTIN_IMPLS = {}

@@ -191,16 +191,23 @@ cdef class Func:
         return i
 
     cdef int32_t _emit(self, uint16_t op, uint8_t flags, int32_t block, int32_t aux, list arg_vids) except -1:
-        cdef int32_t nargs = len(arg_vids)
+        cdef Py_ssize_t arg_count = len(arg_vids)
+        cdef int32_t nargs
         cdef int32_t astart = self.n_args
         cdef int32_t k
-        if nargs > 32767:
+        if arg_count > 32767:
             raise ValueError(
-                f"instruction operand count {nargs} exceeds the int16 limit (32767); "
+                f"instruction operand count {arg_count} exceeds the int16 limit (32767); "
                 f"the arena stores nargs as int16"
             )
+        nargs = <int32_t>arg_count
+        if self.n_args > 2147483647 - nargs:
+            raise OverflowError("instruction operand arena exceeds the int32 index limit")
+        if nargs:
+            self.args = <uint32_t*>_grow(
+                <void*>self.args, &self.cap_args, self.n_args + nargs, sizeof(uint32_t)
+            )
         for k in range(nargs):
-            self.args = <uint32_t*>_grow(<void*>self.args, &self.cap_args, self.n_args + 1, sizeof(uint32_t))
             self.args[self.n_args] = <uint32_t>(<int32_t>arg_vids[k])
             self.n_args += 1
         cdef int32_t iid = self._alloc_instr()
@@ -460,9 +467,20 @@ cdef class Func:
     cdef int32_t _emit_pure(self, object node, int32_t block_id) except -1:
         cdef int32_t op_id = _OP_TO_ID[node.op]
         args = node.args
-        cdef int32_t n = len(args)
-        cdef int32_t fold, a, k
-        if op_id in _NARY_LEFT_FOLD_IDS and n > 2:
+        cdef Py_ssize_t n = len(args)
+        cdef Py_ssize_t k
+        cdef int32_t fold, a
+        cdef bint left_fold = op_id in _NARY_LEFT_FOLD_IDS
+        if not left_fold and n > 32767:
+            # Check before recursively expanding the operands. In particular,
+            # never narrow a Py_ssize_t length to int32 before rejecting it.
+            raise ValueError(
+                f"instruction operand count {n} exceeds the int16 limit (32767); "
+                f"the arena stores nargs as int16"
+            )
+        if n > 2147483647:
+            raise OverflowError("n-ary instruction operand sequence exceeds the int32 traversal limit")
+        if left_fold and n > 2:
             # Defensively binarize n-ary input left-to-right; correctness relies
             # on left-fold evaluation order, not on the op being associative.
             fold = self._value_of(args[0], block_id)
@@ -886,8 +904,8 @@ cdef class Func:
         return result
 
     def _dom(self, int32_t a, int32_t b):
-        # a dominates b (reflexive), via the idom chain (filled by
-        # compute_dominators; entry's idom is entry). Debug-only (verify).
+        # a dominates b (reflexive), via the idom chain populated on demand by
+        # verify(); entry's idom is entry. Debug-only.
         cdef int32_t r = b
         cdef int32_t nr
         while True:
@@ -915,6 +933,25 @@ cdef class Func:
         cdef uint8_t kind
         cdef double cval
         cdef set uw = self._ssa_undef if self._ssa_undef is not None else set()
+        if ssa and self.n_blocks > 0:
+            # Dominator construction indexes the entry, every edge endpoint, and
+            # later every instruction's block. Validate those raw indices before
+            # invoking it so malformed debug inputs fail with an assertion rather
+            # than indexing outside an arena in a release-built extension.
+            assert 0 <= self.entry_block < self.n_blocks, "entry block out of range"
+            for i in range(self.n_instrs):
+                b = self.instrs[i].block
+                assert 0 <= b < self.n_blocks, f"instr {i}: block {b} out of range"
+            for i in range(self.n_edges):
+                assert 0 <= self.edges[i].src < self.n_blocks, f"edge {i}: src out of range"
+                assert 0 <= self.edges[i].dst < self.n_blocks, f"edge {i}: dst out of range"
+        if ssa and self.n_blocks > 0 and self.blocks[self.entry_block].idom < 0:
+            # ``analysis`` cimports this module, so keep the reverse dependency a
+            # local Python import. Production passes own fresh Dominators objects;
+            # the cached BlockInfo field exists solely for these debug checks.
+            from sonolus.backend._opt.analysis import _populate_dominators_for_verify
+
+            _populate_dominators_for_verify(self)
         for i in range(self.n_instrs):
             b = self.instrs[i].block
             assert 0 <= b < self.n_blocks, f"instr {i}: block {b} out of range"

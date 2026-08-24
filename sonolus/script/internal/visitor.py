@@ -57,6 +57,24 @@ from sonolus.script.record import Record
 
 _compiler_internal_ = True
 
+_CALLEE_NAME_MISSING = object()
+
+
+def _callee_name(fn: Value):
+    if not fn._is_py_():
+        return _type_name(fn)
+    py_fn = fn._as_py_()
+    name = BUILTIN_IMPL_NAMES.get(id(py_fn), _CALLEE_NAME_MISSING)
+    if name is not _CALLEE_NAME_MISSING:
+        return name
+    name = getattr(py_fn, "__qualname__", _CALLEE_NAME_MISSING)
+    if name is not _CALLEE_NAME_MISSING:
+        return name
+    name = getattr(py_fn, "__name__", _CALLEE_NAME_MISSING)
+    if name is not _CALLEE_NAME_MISSING:
+        return name
+    return _type_name(fn)
+
 
 def compile_and_call[**P, R](fn: Callable[P, R], /, *args: P.args, **kwargs: P.kwargs) -> R:
     if not ctx():
@@ -700,7 +718,7 @@ class Visitor(ast.NodeVisitor):
         start_ctx = before_ctx.branch_with_scope(None, Scope())
         set_ctx(start_ctx)
         for name, value in self.bound_args.arguments.items():
-            ctx().scope.set_value(name, validate_value(value))
+            ctx().scope.set_value(name, value)
         was_in_generator = ctx().callback_state.is_in_generator
         is_generator_fn = getattr(node, "has_yield", False)
         self.is_generator = is_generator_fn or isinstance(node, ast.GeneratorExp)
@@ -2128,13 +2146,6 @@ class Visitor(ast.NodeVisitor):
             return validate_value(None)
         args = []
         kwargs = {}
-        if fn._is_py_():
-            py_fn = fn._as_py_()
-            callee_name = BUILTIN_IMPL_NAMES.get(
-                id(py_fn), getattr(py_fn, "__qualname__", getattr(py_fn, "__name__", _type_name(fn)))
-            )
-        else:
-            callee_name = _type_name(fn)
         for arg in node.args:
             if isinstance(arg, ast.Starred):
                 value = self.visit(arg.value)
@@ -2152,7 +2163,7 @@ class Visitor(ast.NodeVisitor):
                 if not ctx().live:
                     return validate_value(None)
                 if keyword.arg in kwargs:
-                    raise TypeError(f"{callee_name}() got multiple values for keyword argument '{keyword.arg}'")
+                    raise TypeError(f"{_callee_name(fn)}() got multiple values for keyword argument '{keyword.arg}'")
                 kwargs[keyword.arg] = value
             else:
                 value = self.visit(keyword.value)
@@ -2164,13 +2175,15 @@ class Visitor(ast.NodeVisitor):
                         raise TypeError("keywords must be strings")
                     for key, _ in value_items:
                         if key in kwargs:
-                            raise TypeError(f"{callee_name}() got multiple values for keyword argument '{key}'")
+                            raise TypeError(f"{_callee_name(fn)}() got multiple values for keyword argument '{key}'")
                     kwargs.update(value_items)
                 else:
-                    raise TypeError(f"{callee_name}() argument after ** must be a mapping, not {_type_name(value)}")
+                    raise TypeError(
+                        f"{_callee_name(fn)}() argument after ** must be a mapping, not {_type_name(value)}"
+                    )
         if not ctx().live:
             return validate_value(None)
-        if fn._is_py_() and fn._as_py_() is _super and not args and not kwargs:
+        if not args and not kwargs and fn._is_py_() and fn._as_py_() is _super:
             if not self.has_class_cell:
                 raise RuntimeError("super(): __class__ cell not found")
             class_value = self.get_name("__class__")

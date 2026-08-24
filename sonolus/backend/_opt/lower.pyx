@@ -2808,7 +2808,6 @@ cdef class _IfConv:
                     widened.add(<int32_t>newidx[wv])
         dst._ssa_undef = widened
 
-        compute_dominators(dst)
         return dst
 
 

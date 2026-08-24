@@ -167,6 +167,46 @@ def test_nary_multiply_and_mod_binarized():
     assert_idempotent(b0)
 
 
+def test_zero_and_wide_operand_lists_round_trip_in_order():
+    args = [IRConst(i + 0.5) for i in range(65)]
+    b0 = BasicBlock(
+        statements=[IRInstr(Op.DebugPause, []), IRSet(_scalar("wide"), IRPureInstr(Op.SwitchInteger, args))]
+    )
+
+    rt = assert_faithful(b0)
+    assert_idempotent(b0)
+    assert rt.statements[0].args == []
+    assert [arg.value for arg in rt.statements[1].value.args] == [i + 0.5 for i in range(65)]
+
+
+def test_operand_count_beyond_arena_limit_is_rejected():
+    b0 = BasicBlock(statements=[IRSet(_scalar("too_wide"), IRPureInstr(Op.SwitchInteger, [IRConst(0)] * 32768))])
+
+    with pytest.raises(ValueError, match=r"operand count 32768 exceeds the int16 limit"):
+        ir.marshal_in(b0, None, None)
+
+
+def test_exact_arena_operand_limit_is_accepted():
+    b0 = BasicBlock(statements=[IRSet(_scalar("max_width"), IRPureInstr(Op.SwitchInteger, [IRConst(0)] * 32767))])
+
+    func = ir.marshal_in(b0, None, None)
+    assert func.verify()
+    assert func.stats()["args"] == 32768  # 32767 for SwitchInteger, then one for the enclosing set
+
+
+def test_operand_count_beyond_int32_is_rejected_before_narrowing():
+    # A real list subtype is intentional: IRPureInstr's public annotation accepts
+    # list[IRExpr], and this reproduces narrowing without allocating 16+ GiB.
+    class HugeArgs(list):  # noqa: FURB189
+        def __len__(self):
+            return 1 << 31
+
+    b0 = BasicBlock(statements=[IRSet(_scalar("impossible_width"), IRPureInstr(Op.SwitchInteger, HugeArgs()))])
+
+    with pytest.raises(ValueError, match=r"operand count 2147483648 exceeds the int16 limit"):
+        ir.marshal_in(b0, None, None)
+
+
 def test_raw_int_block_without_mode():
     b0 = BasicBlock()
     # Post-optimization temp memory place (raw int 10000) and result markers.

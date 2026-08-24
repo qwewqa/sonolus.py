@@ -145,6 +145,7 @@ from sonolus.backend._opt._ops_gen cimport (
 from sonolus.backend._opt.analysis cimport Dominators, LoopForest, compute_dominators, compute_loops
 from sonolus.backend._opt.kernels cimport FOLD_OK, fold_op
 from sonolus.backend._opt._khash cimport (
+    khint_t,
     kh_destroy_i64i32,
     kh_get_i64i32,
     kh_i64i32_t,
@@ -1110,6 +1111,22 @@ def run_cfg_cleanup(entry, mode=None, callback=None, phi_safe=False):
 # ==========================================================================
 
 
+cdef inline int32_t _mapped_ssa_index(list mapping, int32_t old) except -1:
+    """Look up a compacted loose SSA value id, retaining dict-like failure checks."""
+    cdef int32_t new
+    if old < 0 or old >= len(mapping):
+        raise KeyError(old)
+    new = <int32_t>mapping[old]
+    if new < 0:
+        raise KeyError(old)
+    return new
+
+
+cdef inline uint64_t _ssa_def_key(int32_t temp, int32_t block) noexcept nogil:
+    """Pack a temp/block pair injectively for the SSA current-definition map."""
+    return (<uint64_t><uint32_t>temp << 32) | <uint64_t><uint32_t>block
+
+
 cdef class _SSABuilder:
     cdef Func src
     cdef int32_t nb
@@ -1124,7 +1141,7 @@ cdef class _SSABuilder:
     cdef dict subst         # eliminated phi -> replacement value
     cdef set undef_widened  # values used out of dominance region via phi(UNDEF,v)=v
     cdef dict phi_users     # value -> set of phi values referencing it
-    cdef dict cur_def       # (temp, block) -> value
+    cdef kh_i64i32_t* cur_def  # packed (temp, block) -> value; never iterated
     cdef list sealed
     cdef list incomplete    # per block: dict temp -> phi value
     cdef list block_phis    # per block: list of phi values (creation order)
@@ -1143,6 +1160,7 @@ cdef class _SSABuilder:
     cdef dict sp_intern
 
     def __cinit__(self, Func src):
+        self.cur_def = NULL
         self.src = src
         self.nb = src.n_blocks
         self.entry = src.entry_block
@@ -1155,7 +1173,9 @@ cdef class _SSABuilder:
         self.subst = {}
         self.undef_widened = set()
         self.phi_users = {}
-        self.cur_def = {}
+        self.cur_def = kh_init_i64i32()
+        if self.cur_def == NULL:
+            raise MemoryError()
         self.sealed = [False] * self.nb
         self.incomplete = [dict() for _ in range(self.nb)]
         self.block_phis = [[] for _ in range(self.nb)]
@@ -1180,6 +1200,9 @@ cdef class _SSABuilder:
             pred_sets[src.edges[e].dst].add(src.edges[e].src)
         self.succs_distinct = [sorted(s) for s in succ_sets]
         self.unfilled_preds = [len(pred_sets[b]) for b in range(self.nb)]
+
+    def __dealloc__(self):
+        kh_destroy_i64i32(self.cur_def)  # NULL-safe
 
     # -- loose value / place construction ---------------------------------
 
@@ -1261,8 +1284,18 @@ cdef class _SSABuilder:
             v = <int32_t>self.subst[v]
         return v
 
-    cdef void _write_variable(self, int32_t temp, int32_t block, int32_t v):
-        self.cur_def[(temp, block)] = v
+    cdef int32_t _lookup_variable(self, int32_t temp, int32_t block) noexcept nogil:
+        cdef khint_t it = kh_get_i64i32(self.cur_def, _ssa_def_key(temp, block))
+        if it == self.cur_def.n_buckets:
+            return -1
+        return self.cur_def.vals[it]
+
+    cdef void _write_variable(self, int32_t temp, int32_t block, int32_t v) except *:
+        cdef int put_ret
+        cdef khint_t it = kh_put_i64i32(self.cur_def, _ssa_def_key(temp, block), &put_ret)
+        if put_ret < 0:
+            raise MemoryError()
+        self.cur_def.vals[it] = v
 
     cdef int32_t _new_phi(self, int32_t block, int32_t temp):
         return self._new_val(OPX_PHI, 0, block, temp, [])
@@ -1278,12 +1311,11 @@ cdef class _SSABuilder:
         cdef int32_t b = block
         cdef int32_t val, phi
         cdef list preds
-        cdef object cd
         cdef int32_t cb
         while True:
-            cd = self.cur_def.get((temp, b))
-            if cd is not None:
-                val = self._resolve(<int32_t>cd)
+            val = self._lookup_variable(temp, b)
+            if val >= 0:
+                val = self._resolve(val)
                 break
             if not <bint>self.sealed[b]:
                 phi = self._new_phi(b, temp)
@@ -1543,7 +1575,10 @@ cdef class _SSABuilder:
                     ob.append(v)
 
         # Assign new instr indices + count args; record each block's start index.
-        cdef dict newidx = {}
+        # Loose value ids are dense list indices. A list avoids boxing/hashing
+        # every id again while remapping the compacted arena; guarded lookups
+        # retain the old dict's fail-fast behavior in unchecked release builds.
+        cdef list newidx = [-1] * len(self.val_op)
         cdef list block_start = [0] * nbd
         cdef int32_t next_idx = 0
         cdef int32_t total_args = 0
@@ -1564,9 +1599,9 @@ cdef class _SSABuilder:
             br = <int32_t>self.sp_block_ref[spid]
             iv = <int32_t>self.sp_index_val[spid]
             if kind == PLACE_DYNAMIC_BLOCK:
-                br = <int32_t>newidx[self._resolve(br)]
+                br = _mapped_ssa_index(newidx, self._resolve(br))
             if iv >= 0:
-                iv = <int32_t>newidx[self._resolve(iv)]
+                iv = _mapped_ssa_index(newidx, self._resolve(iv))
             _add_place(dst, <uint8_t>kind, <uint8_t>self.sp_flags[spid], br, iv, <int32_t>self.sp_offset[spid])
 
         # consts + temps carry over 1:1 (const/temp ids stay valid).
@@ -1650,12 +1685,14 @@ cdef class _SSABuilder:
                 dst.instrs[ni].nargs = <int16_t>nargs
                 dst.instrs[ni].aux = aux
                 for o in raw_args:
-                    dst.args[arg_cursor] = <uint32_t>(<int32_t>newidx[self._resolve(<int32_t>o)])
+                    dst.args[arg_cursor] = <uint32_t>_mapped_ssa_index(
+                        newidx, self._resolve(<int32_t>o)
+                    )
                     arg_cursor += 1
             sb = b - off
             tv = <int32_t>self.block_test[sb] if sb >= 0 else -1
             if tv >= 0:
-                dst.blocks[b].test_val = <int32_t>newidx[self._resolve(tv)]
+                dst.blocks[b].test_val = _mapped_ssa_index(newidx, self._resolve(tv))
             else:
                 dst.blocks[b].test_val = -1
 
@@ -1689,18 +1726,16 @@ cdef class _SSABuilder:
             dst.blocks[b + off].edge_start = src.blocks[b].edge_start + off
             dst.blocks[b + off].edge_count = src.blocks[b].edge_count
 
-        dst.undef_val = (<int32_t>newidx[self.undef_val]) if self.undef_val >= 0 else -1
+        dst.undef_val = _mapped_ssa_index(newidx, self.undef_val) if self.undef_val >= 0 else -1
 
         # UNDEF-widened values (mapped to final indices) so verify() tolerates
         # their dead-path-relaxed uses; carried for downstream passes too.
         cdef set widened = set()
         cdef int32_t wv
         for wv in self.undef_widened:
-            widened.add(<int32_t>newidx[self._resolve(wv)])
+            widened.add(_mapped_ssa_index(newidx, self._resolve(wv)))
         dst._ssa_undef = widened
 
-        # Dominators (fills BlockInfo.idom) -- needed by verify() in SSA form.
-        compute_dominators(dst)
         return dst
 
 
@@ -3174,7 +3209,6 @@ def _build_compacted(Func src, list order, list keep_instr, dict const_override,
                 widened.add(<int32_t>newidx[wv])
     dst._ssa_undef = widened
 
-    compute_dominators(dst)
     return dst
 
 
@@ -3821,7 +3855,6 @@ def _emit_from_model(Func src, list pblocks, int entry_pb):
                 widened.add(<int32_t>oldmap[wv])
     dst._ssa_undef = widened
 
-    compute_dominators(dst)
     return dst
 
 

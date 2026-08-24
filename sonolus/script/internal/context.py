@@ -726,7 +726,10 @@ class Scope:
             case EmptyBinding():
                 raise RuntimeError(f"Binding '{name}' is not defined")
 
-    def set_value(self, name: str, value: Value):
+    def set_value(self, name: str, value: Any):
+        if isinstance(value, Value):
+            self.bindings[name] = ValueBinding(value)
+            return
         global _validate_value  # ruff: ignore[global-statement]
         if _validate_value is None:
             from sonolus.script.internal.impl import validate_value
@@ -820,15 +823,9 @@ def _new_cfg_block(statements, test) -> BasicBlock:
 def context_to_cfg(context: Context) -> BasicBlock:
     result = _new_cfg_block(context.statements, context.test)
     blocks = {context: result}
-    seen = set()
-    visited = []
     queue = [context]
     while queue:
         current = queue.pop()
-        if current in seen:
-            continue
-        seen.add(current)
-        visited.append(current)
         current_block = blocks[current]
         current_outgoing = current_block.outgoing
         for condition, target in current.outgoing.items():
@@ -836,9 +833,9 @@ def context_to_cfg(context: Context) -> BasicBlock:
             if target_block is None:
                 target_block = _new_cfg_block(target.statements, target.test)
                 blocks[target] = target_block
-            current_outgoing.add(FlowEdge(src=current_block, dst=target_block, cond=condition))
-            queue.append(target)
-    for current in visited:
+                queue.append(target)
+            current_outgoing.add(FlowEdge(current_block, target_block, condition))
+    for current in blocks:
         # Break cycles so memory can be cleaned without gc
         del current.outgoing
     return result
