@@ -1,3 +1,10 @@
+### 1.1.0
+
+- Added [`VarArray.of(...)`][sonolus.script.containers.VarArray.of],
+  [`ArraySet.of(...)`][sonolus.script.containers.ArraySet.of], and
+  [`ArrayMap.of(...)`][sonolus.script.containers.ArrayMap.of] constructors with inferred types and capacities.
+- Reduced project build times.
+
 ### 1.0.0
 
 - Fixed equality comparisons of records whose fields implement custom runtime comparisons.

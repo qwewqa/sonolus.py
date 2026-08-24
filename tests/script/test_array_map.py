@@ -1,5 +1,6 @@
 from itertools import starmap
 
+import pytest
 from hypothesis import given
 from hypothesis import strategies as st
 
@@ -11,6 +12,100 @@ from tests.script.conftest import run_and_validate, run_compiled
 
 ints = st.integers(min_value=-999, max_value=999)
 maps = st.dictionaries(ints, ints, min_size=1, max_size=20)
+
+
+def test_array_map_of_infers_types_and_capacity():
+    def fn():
+        return ArrayMap.of((2, 3), (4, 5))
+
+    result = run_and_validate(fn)
+    assert dict(result.items()) == {2: 3, 4: 5}
+    assert type(result) is ArrayMap[int, int, 2]
+
+
+def test_array_map_of_with_parameterized_types_and_spare_capacity():
+    def fn():
+        return ArrayMap[int, int, 4].of((2, 3), (4, 5))
+
+    result = run_and_validate(fn)
+    assert dict(result.items()) == {2: 3, 4: 5}
+    assert type(result) is ArrayMap[int, int, 4]
+
+
+def test_array_map_of_with_no_items_when_parameterized():
+    def fn():
+        return ArrayMap[int, int, 2].of()
+
+    assert dict(run_and_validate(fn).items()) == {}
+
+
+def test_array_map_of_rejects_too_many_items():
+    def fn():
+        return ArrayMap[int, int, 1].of((2, 3), (4, 5))
+
+    with pytest.raises(ValueError, match="capacity 1, got 2 items"):
+        run_and_validate(fn)
+
+
+def test_array_map_of_rejects_wrong_key_or_value_type():
+    def fn():
+        return ArrayMap[int, int, 2].of((2, 3), (4, None))
+
+    with pytest.raises(TypeError, match=r"Cannot accept value Const\[None\] as Num"):
+        run_and_validate(fn)
+
+
+def test_array_map_of_rejects_non_pair():
+    def fn():
+        return ArrayMap[int, int, 1].of((2, 3, 4))
+
+    with pytest.raises(TypeError, match="two-item tuple"):
+        run_and_validate(fn)
+
+
+def test_array_map_of_requires_an_item_to_infer_types():
+    def fn():
+        return ArrayMap.of()
+
+    with pytest.raises(ValueError, match="at least one item if types are not specified"):
+        run_and_validate(fn)
+
+
+def test_array_map_of_rejects_heterogeneous_inferred_key_types():
+    def fn():
+        return ArrayMap.of((2, 3), (None, 4))
+
+    with pytest.raises(TypeError, match=r"keys of the same type, got Const\[None\], Num"):
+        run_and_validate(fn)
+
+
+def test_array_map_of_rejects_heterogeneous_inferred_value_types():
+    def fn():
+        return ArrayMap.of((2, 3), (4, None))
+
+    with pytest.raises(TypeError, match=r"values of the same type, got Const\[None\], Num"):
+        run_and_validate(fn)
+
+
+def test_array_map_of_updates_duplicate_keys():
+    def fn():
+        return ArrayMap.of((2, 3), (2, 4))
+
+    result = run_and_validate(fn)
+    assert dict(result.items()) == {2: 4}
+    assert type(result) is ArrayMap[int, int, 2]
+
+
+def test_array_map_of_copies_keys_and_values():
+    def fn():
+        key = Pair(2, 3)
+        value = Pair(4, 5)
+        result = ArrayMap.of((key, value))
+        key.first = 6
+        value.first = 7
+        return result[Pair(2, 3)].first
+
+    assert run_and_validate(fn) == 4
 
 
 @st.composite

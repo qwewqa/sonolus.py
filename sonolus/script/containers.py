@@ -8,7 +8,10 @@ from sonolus.script.array import Array
 from sonolus.script.array_like import ArrayLike, get_positive_index
 from sonolus.script.debug import assert_true, error
 from sonolus.script.internal.context import ctx
+from sonolus.script.internal.generic import format_type_arg
+from sonolus.script.internal.impl import validate_value
 from sonolus.script.internal.meta_fn import meta_fn
+from sonolus.script.internal.tuple_impl import TupleImpl
 from sonolus.script.internal.visitor import compile_and_call
 from sonolus.script.interval import clamp
 from sonolus.script.iterator import SonolusIterator
@@ -17,6 +20,27 @@ from sonolus.script.num import Num
 from sonolus.script.pointer import _deref
 from sonolus.script.record import Record
 from sonolus.script.values import copy, zeros
+
+
+def _infer_homogeneous_type(container_name: str, values: tuple[Any, ...], value_name: str):
+    validated_values = tuple(validate_value(value) for value in values)
+    types = {type(value) for value in validated_values}
+    if not types:
+        raise ValueError(f"{container_name}.of should be used with at least one {value_name} if type is not specified")
+    if len(types) > 1:
+        type_names = ", ".join(sorted(format_type_arg(type_) for type_ in types))
+        raise TypeError(f"{container_name}.of should be used with {value_name}s of the same type, got {type_names}")
+    return validated_values, types.pop()
+
+
+def _validate_map_items(items: tuple[Any, ...]) -> tuple[tuple[Any, Any], ...]:
+    result = []
+    for item in items:
+        item = validate_value(item)
+        if not isinstance(item, TupleImpl) or len(item.value) != 2:
+            raise TypeError("ArrayMap.of items must be two-item tuples")
+        result.append(item.value)
+    return tuple(result)
 
 
 @meta_fn
@@ -116,6 +140,8 @@ class VarArray[T, Capacity](Record, ArrayLike[T]):
     Usage:
         ```python
         VarArray[T, Capacity].new()  # Create a new empty array
+        VarArray.of(value_1, value_2, ...)  # Infer the element type and capacity
+        VarArray[T, Capacity].of(value_1, value_2, ...)
         ```
 
     Examples:
@@ -134,6 +160,30 @@ class VarArray[T, Capacity](Record, ArrayLike[T]):
         element_type = cls.type_var_value(T)
         capacity = cls.type_var_value(Capacity)
         return cls(0, zeros(Array[element_type, capacity]))
+
+    @classmethod
+    @meta_fn
+    def of(cls, *values: T) -> Self:
+        """Create an array containing copies of the given values.
+
+        Without type arguments, the element type is inferred and the capacity is the number of values. At least
+        one value is required. With type arguments, the number of values may range from zero to the specified
+        capacity.
+        """
+        if cls._type_args_ is None:
+            values, element_type = _infer_homogeneous_type(cls.__name__, values, "value")
+            parameterized_cls = cls[element_type, len(values)]
+        else:
+            element_type = cls.type_var_value(T)
+            values = tuple(element_type._accept_(validate_value(value)) for value in values)
+            capacity = cls.type_var_value(Capacity)
+            if len(values) > capacity:
+                raise ValueError(f"{cls.__name__}.of capacity {capacity}, got {len(values)} values")
+            parameterized_cls = cls
+        result = compile_and_call(parameterized_cls.new)
+        for value in values:
+            compile_and_call(result.append_unchecked, value)
+        return result
 
     def __len__(self) -> int:
         """Return the number of elements in the array."""
@@ -455,6 +505,8 @@ class ArraySet[T, Capacity](Record):
     Usage:
         ```python
         ArraySet[T, Capacity].new()  # Create a new empty set
+        ArraySet.of(value_1, value_2, ...)  # Infer the element type and capacity
+        ArraySet[T, Capacity].of(value_1, value_2, ...)
         ```
 
     Examples:
@@ -477,6 +529,30 @@ class ArraySet[T, Capacity](Record):
         element_type = cls.type_var_value(T)
         capacity = cls.type_var_value(Capacity)
         return cls(VarArray[element_type, capacity].new())
+
+    @classmethod
+    @meta_fn
+    def of(cls, *values: T) -> Self:
+        """Create a set containing copies of the given values.
+
+        Without type arguments, the element type is inferred and the capacity is the number of values. At least
+        one value is required. With type arguments, the number of values may range from zero to the specified
+        capacity.
+        """
+        if cls._type_args_ is None:
+            values, element_type = _infer_homogeneous_type(cls.__name__, values, "value")
+            parameterized_cls = cls[element_type, len(values)]
+        else:
+            element_type = cls.type_var_value(T)
+            values = tuple(element_type._accept_(validate_value(value)) for value in values)
+            capacity = cls.type_var_value(Capacity)
+            if len(values) > capacity:
+                raise ValueError(f"{cls.__name__}.of capacity {capacity}, got {len(values)} values")
+            parameterized_cls = cls
+        result = compile_and_call(parameterized_cls.new)
+        for value in values:
+            compile_and_call(result.add, value)
+        return result
 
     def __len__(self):
         """Return the number of elements in the set."""
@@ -605,6 +681,8 @@ class ArrayMap[K, V, Capacity](Record):
     Usage:
         ```python
         ArrayMap[K, V, Capacity].new()  # Create a new empty map
+        ArrayMap.of((key_1, value_1), (key_2, value_2), ...)  # Infer the key type, value type, and capacity
+        ArrayMap[K, V, Capacity].of((key_1, value_1), (key_2, value_2), ...)
         ```
 
     Examples:
@@ -628,6 +706,36 @@ class ArrayMap[K, V, Capacity](Record):
         value_type = cls.type_var_value(V)
         capacity = cls.type_var_value(Capacity)
         return cls(0, zeros(Array[_ArrayMapEntry[key_type, value_type], capacity]))
+
+    @classmethod
+    @meta_fn
+    def of(cls, *items: tuple[K, V]) -> Self:
+        """Create a map containing copies of the given key-value pairs.
+
+        Each item must be a two-item tuple. Without type arguments, the key and value types are inferred and the
+        capacity is the number of items. At least one item is required. With type arguments, the number of items
+        may range from zero to the specified capacity.
+        """
+        items = _validate_map_items(items)
+        if cls._type_args_ is None:
+            if not items:
+                raise ValueError(f"{cls.__name__}.of should be used with at least one item if types are not specified")
+            keys, key_type = _infer_homogeneous_type(cls.__name__, tuple(key for key, _ in items), "key")
+            values, value_type = _infer_homogeneous_type(cls.__name__, tuple(value for _, value in items), "value")
+            items = tuple(zip(keys, values, strict=True))
+            parameterized_cls = cls[key_type, value_type, len(items)]
+        else:
+            key_type = cls.type_var_value(K)
+            value_type = cls.type_var_value(V)
+            items = tuple((key_type._accept_(key), value_type._accept_(value)) for key, value in items)
+            capacity = cls.type_var_value(Capacity)
+            if len(items) > capacity:
+                raise ValueError(f"{cls.__name__}.of capacity {capacity}, got {len(items)} items")
+            parameterized_cls = cls
+        result = compile_and_call(parameterized_cls.new)
+        for key, value in items:
+            compile_and_call(result.__setitem__, key, value)
+        return result
 
     def __len__(self) -> int:
         """Return the number of key-value pairs in the map."""

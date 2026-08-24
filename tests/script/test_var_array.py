@@ -5,13 +5,80 @@ from hypothesis import given
 from hypothesis import strategies as st
 
 from sonolus.script.array import Array
-from sonolus.script.containers import VarArray
+from sonolus.script.containers import Pair, VarArray
 from sonolus.script.debug import assert_true, debug_log
 from tests.script.conftest import run_and_validate
 
 ints = st.integers(min_value=-999, max_value=999)
 lists = st.lists(ints, min_size=1, max_size=20)
 sets = st.sets(ints, min_size=1, max_size=20)
+
+
+def test_var_array_of_infers_type_and_capacity():
+    def fn():
+        return VarArray.of(2, 4, 6)
+
+    result = run_and_validate(fn)
+    assert list(result) == [2, 4, 6]
+    assert type(result) is VarArray[int, 3]
+
+
+def test_var_array_of_with_parameterized_type_and_spare_capacity():
+    def fn():
+        return VarArray[int, 5].of(2, 4, 6)
+
+    result = run_and_validate(fn)
+    assert list(result) == [2, 4, 6]
+    assert type(result) is VarArray[int, 5]
+
+
+def test_var_array_of_with_no_values_when_parameterized():
+    def fn():
+        return VarArray[int, 2].of()
+
+    assert list(run_and_validate(fn)) == []
+
+
+def test_var_array_of_rejects_too_many_values():
+    def fn():
+        return VarArray[int, 2].of(2, 4, 6)
+
+    with pytest.raises(ValueError, match="capacity 2, got 3 values"):
+        run_and_validate(fn)
+
+
+def test_var_array_of_rejects_wrong_value_type():
+    def fn():
+        return VarArray[int, 2].of(2, None)
+
+    with pytest.raises(TypeError, match=r"Cannot accept value Const\[None\] as Num"):
+        run_and_validate(fn)
+
+
+def test_var_array_of_requires_a_value_to_infer_type():
+    def fn():
+        return VarArray.of()
+
+    with pytest.raises(ValueError, match="at least one value if type is not specified"):
+        run_and_validate(fn)
+
+
+def test_var_array_of_rejects_heterogeneous_inferred_types():
+    def fn():
+        return VarArray.of(2, None)
+
+    with pytest.raises(TypeError, match=r"values of the same type, got Const\[None\], Num"):
+        run_and_validate(fn)
+
+
+def test_var_array_of_copies_values():
+    def fn():
+        value = Pair(2, 3)
+        result = VarArray.of(value)
+        value.first = 4
+        return result[0].first
+
+    assert run_and_validate(fn) == 2
 
 
 @st.composite
