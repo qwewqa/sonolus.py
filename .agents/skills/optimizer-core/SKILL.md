@@ -49,7 +49,7 @@ than in one place.
 
 ## Rebuilding and the debug build
 
-A plain `uv sync` recompiles after a `.pyx`, `.pxd`, or `.h` edit: see the Checks section of `CLAUDE.md`.
+A plain `uv sync` recompiles after a `.pyx`, `.pxd`, or `.h` edit: see the Checks section of `AGENTS.md`.
 
 ```
 SONOLUS_OPT_DEBUG_BUILD=1 uv sync                     # bash: set for this command only

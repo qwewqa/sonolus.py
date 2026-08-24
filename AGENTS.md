@@ -27,7 +27,7 @@ silently.
 
 ## Prose
 
-Keep prose ASCII-only in docstrings, comments, `docs/`, `.claude/skills/`, and the markdown at the repo root.
+Keep prose ASCII-only in docstrings, comments, `docs/`, `.agents/skills/`, and the markdown at the repo root.
 Write `...` for an ellipsis, `->` and `<->` for arrows, and `section 2` rather than a section sign. Non-ASCII
 punctuation is awkward to type and to search for, which makes later edits harder. Genuinely non-ASCII content
 stays: `Bezier`'s accent, the `pi` in `vec.py`'s angle ranges, the localized strings in `metadata.py`'s examples.

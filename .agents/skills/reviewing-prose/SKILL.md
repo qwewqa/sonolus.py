@@ -1,6 +1,6 @@
 ---
 name: reviewing-prose
-description: Read when judging docstrings, comments, or docs/ pages that already exist rather than writing new ones: reviewing a diff or a PR, doing a self-review pass before declaring work done, following up on /code-review or /simplify, deciding whether a comment is worth keeping, or trimming comments that do not meet this repo's bar. Gives the observable signature of each violation as it appears in a diff, the list of comments that read as redundant but are load-bearing and must not be deleted, and the report-then-trim order that keeps a review pass from silently under-reporting.
+description: "Read when judging docstrings, comments, or docs/ pages that already exist rather than writing new ones: reviewing a diff or a PR, doing a self-review pass before declaring work done, following up on /code-review or /simplify, deciding whether a comment is worth keeping, or trimming comments that do not meet this repo's bar. Gives the observable signature of each violation as it appears in a diff, the list of comments that read as redundant but are load-bearing and must not be deleted, and the report-then-trim order that keeps a review pass from silently under-reporting."
 ---
 
 # Reviewing prose
@@ -77,8 +77,8 @@ What to look for, one line each. The reasoning behind each is in the authoring s
 
 ## Checking a factual claim
 
-`CLAUDE.md` and the files under `.claude/skills/` are prose about the codebase and go out of date exactly as a
-comment does. `CLAUDE.md` says so itself: where a rule and the code disagree, the code is probably right and the
+`AGENTS.md` and the files under `.agents/skills/` are prose about the codebase and go out of date exactly as a
+comment does. `AGENTS.md` says so itself: where a rule and the code disagree, the code is probably right and the
 file is stale. Nothing in the gate checks either, so a review is the only thing that will. Order the work by what
 one command can answer:
 

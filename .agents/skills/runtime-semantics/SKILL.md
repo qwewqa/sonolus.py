@@ -1,6 +1,6 @@
 ---
 name: runtime-semantics
-description: Read when a change depends on what the real Sonolus runtime does rather than on what this repo does: adding or changing an Op's semantics, writing or auditing a fold kernel, reasoning about a numeric divergence between the compiled and interpreted paths, judging whether an optimization is safe, or estimating the runtime cost of emitted nodes. Covers the runtime's 32-bit floats and why the f64 oracle cannot catch an f32 miscompile, the exact semantics pinned for Rem, Mod, Round, Sign, Judge, Power, and the easings, and the node cost model behind effective_node_count.
+description: "Read when a change depends on what the real Sonolus runtime does rather than on what this repo does: adding or changing an Op's semantics, writing or auditing a fold kernel, reasoning about a numeric divergence between the compiled and interpreted paths, judging whether an optimization is safe, or estimating the runtime cost of emitted nodes. Covers the runtime's 32-bit floats and why the f64 oracle cannot catch an f32 miscompile, the exact semantics pinned for Rem, Mod, Round, Sign, Judge, Power, and the easings, and the node cost model behind effective_node_count."
 ---
 
 # What the real runtime does

@@ -1,6 +1,6 @@
 ---
 name: compiled-subset
-description: Read before adding or changing anything the compiler traces or evaluates: code under sonolus/script/ or sonolus/script/internal/, a @meta_fn, a Value subclass, a builtin or math implementation, an operator or iterator protocol method, or any error raised out of one. Covers the compile-time versus runtime split that new contributors get wrong, when @meta_fn is warranted and when plain Python is better, why a meta_fn must reach subset code through compile_and_call, the _name_ value protocol and which members a value type versus a reference type supports, what merges out of a runtime branch, and how errors must be raised so the visitor can attach a source location.
+description: "Read before adding or changing anything the compiler traces or evaluates: code under sonolus/script/ or sonolus/script/internal/, a @meta_fn, a Value subclass, a builtin or math implementation, an operator or iterator protocol method, or any error raised out of one. Covers the compile-time versus runtime split that new contributors get wrong, when @meta_fn is warranted and when plain Python is better, why a meta_fn must reach subset code through compile_and_call, the _name_ value protocol and which members a value type versus a reference type supports, what merges out of a runtime branch, and how errors must be raised so the visitor can attach a source location."
 ---
 
 # The compiled subset

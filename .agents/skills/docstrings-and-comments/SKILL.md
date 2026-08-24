@@ -1,6 +1,6 @@
 ---
 name: docstrings-and-comments
-description: Read before writing a docstring, a prose comment, or a docs/ page in this repo. Docstrings in sonolus/script/*.py and doc_stubs/*.pyi are published API text read by engine authors, and the house rules diverge from Google style: the section order is inverted, Note and Usage come before Args, dunder members render, Raises is never used, __init__ never carries a docstring, and there are three things a published docstring must never do. Also covers the durability bar a # comment must clear and which half of a fact belongs in a comment rather than the docstring. This is the authoring skill: to judge prose that already exists, in a diff or a review, use reviewing-prose.
+description: "Read before writing a docstring, a prose comment, or a docs/ page in this repo. Docstrings in sonolus/script/*.py and doc_stubs/*.pyi are published API text read by engine authors, and the house rules diverge from Google style: the section order is inverted, Note and Usage come before Args, dunder members render, Raises is never used, __init__ never carries a docstring, and there are three things a published docstring must never do. Also covers the durability bar a # comment must clear and which half of a fact belongs in a comment rather than the docstring. This is the authoring skill: to judge prose that already exists, in a diff or a review, use reviewing-prose."
 ---
 
 # Docstrings and comments
@@ -13,7 +13,7 @@ Docstrings are the highest-consistency surface in the repo. Most top-level `sono
 Consistency matters more here than anywhere else, because the output is a generated API listing where
 inconsistency is visible side by side.
 
-Keep prose ASCII-only and within 120 columns by hand: see the Prose section of `CLAUDE.md`.
+Keep prose ASCII-only and within 120 columns by hand: see the Prose section of `AGENTS.md`.
 
 ## Where each fact goes
 
@@ -196,7 +196,7 @@ bar on a second pass, so when in doubt, cut.
 **Use the words the codebase already uses.** Grep for a term before naming a concept with it, and grep for the
 concept as well: the test is whether the tree already says this word about this thing. `mint` is house vocabulary
 because `Context.meet` already mints a pass-through block, while `settle`, `anchor`, and `poison` appear nowhere
-and read as a private vocabulary the next person has to learn. `stale` is the subtler case, since `CLAUDE.md` uses
+and read as a private vocabulary the next person has to learn. `stale` is the subtler case, since `AGENTS.md` uses
 it of a document that has gone out of date, which does not license it for a binding. Prefer the name of the type
 or function that already means the thing: a binding is re-bound to a `ConflictBinding`, it is not "settled".
 
