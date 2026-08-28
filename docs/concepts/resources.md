@@ -369,11 +369,12 @@ Engine options are defined with the [`@options`][sonolus.script.options.options]
 
 ```python
 from sonolus.script.options import OptionCategory, options, select_option, slider_option, toggle_option
+from sonolus.script.text import StandardText
 
 
 @options
 class Options:
-    gameplay = OptionCategory(title="Gameplay")
+    gameplay = OptionCategory(title=StandardText.GAMEPLAY)
 
     slider_option: float = slider_option(
         name="Slider Option",
@@ -390,6 +391,7 @@ class Options:
     )
     toggle_option: bool = toggle_option(
         name="Toggle Option",
+        category=gameplay,
         title="Toggle Option Title",
         standard=True,
         advanced=False,
@@ -398,6 +400,7 @@ class Options:
     )
     select_option: int = select_option(
         name="Select Option",
+        category=gameplay,
         title="Select Option Title",
         standard=True,
         advanced=False,
@@ -420,8 +423,8 @@ may each be a plain string or an [`AnyText`][sonolus.script.metadata.AnyText] lo
 Options can be grouped by assigning [`OptionCategory`][sonolus.script.options.OptionCategory] objects to attributes
 on the options class. Pass the category object to an option's `category` parameter. A string matching a declared
 category's name is also accepted. If a category's `name` is unset, its attribute name is used. If its `title` is
-unset, its resolved name is shown. Options without a `category` remain uncategorized. Category titles may also be
-a plain string or an [`AnyText`][sonolus.script.metadata.AnyText] localization dict.
+unset, its resolved name is shown. If the class declares any categories, every option must specify one. Category
+titles may also be a plain string or an [`AnyText`][sonolus.script.metadata.AnyText] localization dict.
 
 ## UI
 UI configuration is defined with the [`UiConfig`][sonolus.script.ui.UiConfig] class:

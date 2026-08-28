@@ -262,6 +262,12 @@ class StandardText(StrEnum):
     SORT = "#SORT"
     """Sort"""
 
+    SORT_BY = "#SORT_BY"
+    """Sort By"""
+
+    SORT_ORDER = "#SORT_ORDER"
+    """Sort Order"""
+
     KEYWORDS = "#KEYWORDS"
     """Keywords"""
 
@@ -376,6 +382,18 @@ class StandardText(StrEnum):
     PERMISSION = "#PERMISSION"
     """Permission"""
 
+    GRAPHICS = "#GRAPHICS"
+    """Graphics"""
+
+    AUDIO = "#AUDIO"
+    """Audio"""
+
+    GAMEPLAY = "#GAMEPLAY"
+    """Gameplay"""
+
+    MISCELLANEOUS = "#MISCELLANEOUS"
+    """Miscellaneous"""
+
     SPEED = "#SPEED"
     """Level Speed"""
 
@@ -423,6 +441,9 @@ class StandardText(StrEnum):
 
     STAGE_TILT = "#STAGE_TILT"
     """Stage Tilt"""
+
+    STAGE_COVER = "#STAGE_COVER"
+    """Stage Cover"""
 
     STAGE_COVER_VERTICAL = "#STAGE_COVER_VERTICAL"
     """Vertical Stage Cover"""
@@ -847,6 +868,12 @@ class StandardText(StrEnum):
     BACKWARD = "#BACKWARD"
     """Backward"""
 
+    ASCENDING = "#ASCENDING"
+    """Ascending"""
+
+    DESCENDING = "#DESCENDING"
+    """Descending"""
+
     DEFAULT = "#DEFAULT"
     """Default"""
 
@@ -900,6 +927,9 @@ class StandardText(StrEnum):
 
     APPEND = "#APPEND"
     """Append"""
+
+    ICON_PLACEHOLDER = "#ICON_PLACEHOLDER"
+    """Enter icon..."""
 
     POST_PLACEHOLDER = "#POST_PLACEHOLDER"
     """Enter post..."""
@@ -1239,6 +1269,9 @@ class StandardText(StrEnum):
 
     PRIVATE = "#PRIVATE"
     """Private"""
+
+    FAVORITE = "#FAVORITE"
+    """Favorite"""
 
     POP = "#POP"
     """Pop"""

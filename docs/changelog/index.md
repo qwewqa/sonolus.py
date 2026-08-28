@@ -1,6 +1,9 @@
 ### 1.2.0
 
+- Now targeting Sonolus 1.1.4.
 - Added support for grouping engine options with [`OptionCategory`][sonolus.script.options.OptionCategory].
+- [`is_skip()`][sonolus.script.runtime.is_skip] now supports play mode.
+- Added new [`StandardText`][sonolus.script.text.StandardText] constants.
 
 ### 1.1.0
 

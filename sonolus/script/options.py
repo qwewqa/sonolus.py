@@ -347,6 +347,9 @@ def options[T](cls: type[T]) -> T | Options:
         A `replay_fallback_option_names` class attribute is excluded from the options list and is instead
         forwarded as `replayFallbackOptionNames` in the built engine configuration.
 
+        If the class declares any [`OptionCategory`][sonolus.script.options.OptionCategory] attributes, every
+        option must specify a category.
+
     Usage:
         ```python
         @options
@@ -367,6 +370,7 @@ def options[T](cls: type[T]) -> T | Options:
             )
             toggle_option: bool = toggle_option(
                 name='Toggle Option',
+                category=gameplay,
                 standard=True,
                 advanced=False,
                 default=True,
@@ -374,6 +378,7 @@ def options[T](cls: type[T]) -> T | Options:
             )
             select_option: int = select_option(
                 name='Select Option',
+                category=gameplay,
                 standard=True,
                 advanced=False,
                 default='value',
@@ -452,6 +457,10 @@ def options[T](cls: type[T]) -> T | Options:
             )
         if category_name is not None and category_name not in category_members_by_name:
             raise ValueError(f"Unknown option category {category_name!r} on field {name}")
+        if categories and category_name is None:
+            raise ValueError(
+                f"Option on field {name} must specify a category when the options class declares categories"
+            )
         annotation_value.category = category_name
         if annotation_value.name is None:
             annotation_value.name = name

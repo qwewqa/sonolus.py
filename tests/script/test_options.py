@@ -143,6 +143,18 @@ def test_unset_option_category_is_omitted(option):
     assert "category" not in option.to_dict()
 
 
+def test_options_rejects_uncategorized_option_when_categories_are_declared():
+    with pytest.raises(
+        ValueError,
+        match="Option on field toggle must specify a category when the options class declares categories",
+    ):
+
+        @options
+        class Opts:
+            gameplay = OptionCategory()
+            toggle: bool = toggle_option(default=True)
+
+
 def test_options_rejects_unknown_category_name():
     with pytest.raises(ValueError, match="Unknown option category 'missing' on field toggle"):
 

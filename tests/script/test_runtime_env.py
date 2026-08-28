@@ -4,10 +4,8 @@ These members read or write a mode's runtime blocks, which only exist inside a c
 Python gives no reference and neither conftest oracle fits: each test compiles a callback in the mode under
 test, seeds the block, and interprets the result, following tests/script/test_runtime_predicates.py.
 
-The expectations are derived from the field order each accessor's mode arm declares in
-sonolus/script/runtime.py, so they pin the transcription from those declarations to the returned value (the
-part a copy-paste across mode arms gets wrong), not the block layout itself, which nothing in this repo can
-cross-check against the real runtime.
+Where field order matters, block slots receive distinct values, so an accessor reading the wrong slot returns a
+different result. The expectations follow the published block layouts.
 """
 
 import pytest
@@ -26,6 +24,7 @@ from sonolus.script.runtime import (
     background,
     is_debug,
     is_multiplayer,
+    is_skip,
     level_life,
     particle_transform,
     runtime_ui,
@@ -118,6 +117,25 @@ def test_env_queries_dispatch_on_the_mode(mode):
         seed.get("audio_offset", 0.0),
         seed["is_multiplayer"] if mode is Mode.PLAY else 0.0,
     ]
+
+
+def _log_is_skip():
+    debug_log(is_skip())
+
+
+@pytest.mark.parametrize(
+    ("mode", "runtime_update", "expected"),
+    [
+        pytest.param(Mode.PLAY, [100.0, 101.0, 102.0, 103.0, 104.0], 104.0, id="play"),
+        pytest.param(Mode.WATCH, [200.0, 201.0, 202.0, 203.0], 203.0, id="watch"),
+        pytest.param(Mode.PREVIEW, None, 0.0, id="preview"),
+        pytest.param(Mode.TUTORIAL, None, 0.0, id="tutorial"),
+    ],
+)
+def test_is_skip_reads_the_modes_runtime_update_field(mode, runtime_update, expected):
+    blocks = {} if runtime_update is None else {_BLOCKS[mode].RuntimeUpdate: runtime_update}
+    log, _ = _run(_log_is_skip, mode, blocks=blocks)
+    assert log == [expected]
 
 
 # The transforms project the runtime 4x4 onto a 3x3 using rows and columns 0, 1, and 3, so with cells seeded

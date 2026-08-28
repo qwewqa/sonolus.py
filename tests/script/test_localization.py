@@ -12,6 +12,26 @@ LOCALIZED_GREETING = {"en": "Hello World", "zhs": "你好世界"}
 ENCODED_GREETING = '##LOCALIZE:{"en":"Hello World","zhs":"你好世界"}'
 
 
+@pytest.mark.parametrize(
+    ("text", "value"),
+    [
+        pytest.param(StandardText.SORT_BY, "#SORT_BY", id="sort-by"),
+        pytest.param(StandardText.SORT_ORDER, "#SORT_ORDER", id="sort-order"),
+        pytest.param(StandardText.ASCENDING, "#ASCENDING", id="ascending"),
+        pytest.param(StandardText.DESCENDING, "#DESCENDING", id="descending"),
+        pytest.param(StandardText.ICON_PLACEHOLDER, "#ICON_PLACEHOLDER", id="icon-placeholder"),
+        pytest.param(StandardText.GRAPHICS, "#GRAPHICS", id="graphics"),
+        pytest.param(StandardText.AUDIO, "#AUDIO", id="audio"),
+        pytest.param(StandardText.GAMEPLAY, "#GAMEPLAY", id="gameplay"),
+        pytest.param(StandardText.MISCELLANEOUS, "#MISCELLANEOUS", id="miscellaneous"),
+        pytest.param(StandardText.STAGE_COVER, "#STAGE_COVER", id="stage-cover"),
+        pytest.param(StandardText.FAVORITE, "#FAVORITE", id="favorite"),
+    ],
+)
+def test_standard_text_1_1_3_and_1_1_4_additions(text, value):
+    assert text.value == value
+
+
 def test_encode_localization_text_passes_plain_text_through():
     assert encode_localization_text("Hello World") == "Hello World"
     assert encode_localization_text(StandardText.MILLISECOND_UNIT) == StandardText.MILLISECOND_UNIT

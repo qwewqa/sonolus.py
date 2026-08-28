@@ -95,6 +95,7 @@ class _PlayRuntimeUpdate:
     delta_time: float
     scaled_time: float
     touch_count: int
+    is_skip: bool
 
 
 @_watch_runtime_update
@@ -1300,11 +1301,13 @@ def touches() -> ArrayLike[Touch]:
 def is_skip() -> bool:
     """Check if there was a time skip this frame.
 
-    Returns False if not in watch mode.
+    Returns False in preview and tutorial modes.
     """
     if not ctx():
         return False
     match ctx().mode_state.mode:
+        case Mode.PLAY:
+            return _PlayRuntimeUpdate.is_skip
         case Mode.WATCH:
             return _WatchRuntimeUpdate.is_skip
         case _:
