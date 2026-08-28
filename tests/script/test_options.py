@@ -1,3 +1,4 @@
+from dataclasses import FrozenInstanceError
 from typing import Annotated
 
 import pytest
@@ -25,7 +26,7 @@ from sonolus.script.internal.meta_fn import meta_fn
 from sonolus.script.internal.simulation_context import SimulationContext
 from sonolus.script.internal.visitor import clear_frontend_caches
 from sonolus.script.num import Num
-from sonolus.script.options import options, select_option, slider_option, toggle_option
+from sonolus.script.options import OptionCategory, options, select_option, slider_option, toggle_option
 from sonolus.script.particle import Particle, particle, particles
 from sonolus.script.sprite import Sprite, skin, sprite
 from sonolus.script.stream import Stream, StreamGroup, streams
@@ -116,6 +117,110 @@ def test_options_accepts_plain_class():
         bar: bool = slider_option(default=1.0, min=0.0, max=1.0, step=1.0)
 
     assert [entry.name for entry in Opts._options_] == ["foo", "bar"]
+
+
+@pytest.mark.parametrize(
+    "option",
+    [
+        slider_option(category=OptionCategory(name="gameplay"), default=0.5, min=0.0, max=1.0, step=0.1),
+        toggle_option(category=OptionCategory(name="gameplay"), default=True),
+        select_option(category=OptionCategory(name="gameplay"), default="a", values=["a", "b"]),
+    ],
+)
+def test_option_category_object_is_serialized_by_name(option):
+    assert option.to_dict()["category"] == "gameplay"
+
+
+@pytest.mark.parametrize(
+    "option",
+    [
+        slider_option(default=0.5, min=0.0, max=1.0, step=0.1),
+        toggle_option(default=True),
+        select_option(default="a", values=["a", "b"]),
+    ],
+)
+def test_unset_option_category_is_omitted(option):
+    assert "category" not in option.to_dict()
+
+
+def test_options_rejects_unknown_category_name():
+    with pytest.raises(ValueError, match="Unknown option category 'missing' on field toggle"):
+
+        @options
+        class Opts:
+            gameplay = OptionCategory()
+            toggle: bool = toggle_option(category="missing", default=True)
+
+
+def test_options_accepts_inferred_category_name_string():
+    @options
+    class Opts:
+        gameplay = OptionCategory()
+        toggle: bool = toggle_option(category="gameplay", default=True)
+
+    assert Opts.gameplay == OptionCategory(name="gameplay", title="gameplay")
+    assert Opts._options_[0].to_dict()["category"] == "gameplay"
+
+
+def test_options_rejects_undeclared_category_object():
+    undeclared = OptionCategory(name="gameplay")
+
+    with pytest.raises(ValueError, match="Option category on field toggle is not declared on the options class"):
+
+        @options
+        class Opts:
+            toggle: bool = toggle_option(category=undeclared, default=True)
+
+
+def test_options_rejects_duplicate_category_names():
+    with pytest.raises(ValueError, match="fields 'first' and 'second' have the same name 'gameplay'"):
+
+        @options
+        class Opts:
+            first = OptionCategory(name="gameplay")
+            second = OptionCategory(name="gameplay")
+
+
+def test_options_rejects_category_aliases():
+    category = OptionCategory()
+
+    with pytest.raises(ValueError, match="fields 'first' and 'second' reference the same object"):
+
+        @options
+        class Opts:
+            first = category
+            second = category
+
+
+def test_options_resolves_reused_category_declaration_independently():
+    category = OptionCategory()
+
+    @options
+    class FirstOpts:
+        first = category
+        toggle: bool = toggle_option(category=first, default=True)
+
+    @options
+    class SecondOpts:
+        second = category
+        toggle: bool = toggle_option(category=second, default=True)
+
+    assert category == OptionCategory()
+    assert FirstOpts.first == OptionCategory(name="first", title="first")
+    assert SecondOpts.second == OptionCategory(name="second", title="second")
+    assert FirstOpts._options_[0].to_dict()["category"] == "first"
+    assert SecondOpts._options_[0].to_dict()["category"] == "second"
+
+    with pytest.raises(FrozenInstanceError):
+        FirstOpts.first.name = "renamed"
+
+
+def test_options_rejects_invalid_category_type():
+    with pytest.raises(TypeError, match=r"Invalid option category .* on field toggle, expected OptionCategory or str"):
+
+        @options
+        class Opts:
+            toggle: bool = toggle_option(category=object(), default=True)
 
 
 def test_other_decorators_accept_plain_classes():

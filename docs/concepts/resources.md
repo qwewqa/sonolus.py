@@ -368,13 +368,16 @@ Custom instruction icons are defined by annotating the field with
 Engine options are defined with the [`@options`][sonolus.script.options.options] decorator:
 
 ```python
-from sonolus.script.options import options, select_option, slider_option, toggle_option
+from sonolus.script.options import OptionCategory, options, select_option, slider_option, toggle_option
 
 
 @options
 class Options:
+    gameplay = OptionCategory(title="Gameplay")
+
     slider_option: float = slider_option(
         name="Slider Option",
+        category=gameplay,
         title="Slider Option Title",
         standard=True,
         advanced=False,
@@ -413,6 +416,12 @@ There are three types of options available:
 If `title` is unset, the option's `name` is shown instead. `title`, `description`, and (for `slider_option`) `unit`
 may each be a plain string or an [`AnyText`][sonolus.script.metadata.AnyText] localization dict, as can each entry of
 `select_option`'s `values`.
+
+Options can be grouped by assigning [`OptionCategory`][sonolus.script.options.OptionCategory] objects to attributes
+on the options class. Pass the category object to an option's `category` parameter. A string matching a declared
+category's name is also accepted. If a category's `name` is unset, its attribute name is used. If its `title` is
+unset, its resolved name is shown. Options without a `category` remain uncategorized. Category titles may also be
+a plain string or an [`AnyText`][sonolus.script.metadata.AnyText] localization dict.
 
 ## UI
 UI configuration is defined with the [`UiConfig`][sonolus.script.ui.UiConfig] class:

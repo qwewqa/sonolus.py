@@ -5,7 +5,7 @@ from sonolus.script.engine import Engine
 from sonolus.script.instruction import Instruction, StandardInstruction, instruction, instructions
 from sonolus.script.level import Level, LevelData
 from sonolus.script.metadata import Tag, as_localization_text, encode_localization_text
-from sonolus.script.options import select_option, slider_option, toggle_option
+from sonolus.script.options import OptionCategory, select_option, slider_option, toggle_option
 from sonolus.script.text import StandardText
 
 LOCALIZED_GREETING = {"en": "Hello World", "zhs": "你好世界"}
@@ -20,6 +20,11 @@ def test_encode_localization_text_passes_plain_text_through():
 
 def test_encode_localization_text_encodes_dict_compactly():
     assert encode_localization_text(LOCALIZED_GREETING) == ENCODED_GREETING
+
+
+def test_option_category_localized_title():
+    category = OptionCategory(name="greeting", title=LOCALIZED_GREETING)
+    assert category.to_dict() == {"name": "greeting", "title": ENCODED_GREETING}
 
 
 def test_option_str_title_and_description_pass_through():

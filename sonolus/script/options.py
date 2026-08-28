@@ -15,9 +15,40 @@ from sonolus.script.num import Num
 from sonolus.script.values import copy
 
 
+@dataclass(frozen=True)
+class OptionCategory:
+    """A category of engine options.
+
+    Args:
+        name: The name of the category. If unset, the attribute name in the decorated options class is used.
+        title: The display title of the category, as a plain string or an
+            [`AnyText`][sonolus.script.metadata.AnyText] localization dict. If unset, the name is shown.
+    """
+
+    name: str | None = None
+    title: AnyText | None = None
+
+    def to_dict(self):
+        if self.name is None:
+            raise ValueError("Option category must be declared on an @options class or given an explicit name")
+        return {
+            "name": self.name,
+            "title": encode_localization_text(self.name if self.title is None else self.title),
+        }
+
+
+def _option_category_name(category: str | OptionCategory | None) -> str | None:
+    if isinstance(category, OptionCategory):
+        if category.name is None:
+            raise ValueError("Option category must be declared on an @options class or given an explicit name")
+        return category.name
+    return category
+
+
 @dataclass
 class _SliderOption:
     name: str | None
+    category: str | OptionCategory | None
     title: str | None
     description: str | None
     standard: bool
@@ -42,6 +73,8 @@ class _SliderOption:
         }
         if self.title is not None:
             result["title"] = self.title
+        if (category := _option_category_name(self.category)) is not None:
+            result["category"] = category
         if self.description is not None:
             result["description"] = self.description
         if self.scope is not None:
@@ -54,6 +87,7 @@ class _SliderOption:
 @dataclass
 class _ToggleOption:
     name: str | None
+    category: str | OptionCategory | None
     title: str | None
     description: str | None
     standard: bool
@@ -71,6 +105,8 @@ class _ToggleOption:
         }
         if self.title is not None:
             result["title"] = self.title
+        if (category := _option_category_name(self.category)) is not None:
+            result["category"] = category
         if self.description is not None:
             result["description"] = self.description
         if self.scope is not None:
@@ -81,6 +117,7 @@ class _ToggleOption:
 @dataclass
 class _SelectOption:
     name: str | None
+    category: str | OptionCategory | None
     title: str | None
     description: str | None
     standard: bool
@@ -100,6 +137,8 @@ class _SelectOption:
         }
         if self.title is not None:
             result["title"] = self.title
+        if (category := _option_category_name(self.category)) is not None:
+            result["category"] = category
         if self.description is not None:
             result["description"] = self.description
         if self.scope is not None:
@@ -110,6 +149,7 @@ class _SelectOption:
 def slider_option(
     *,
     name: str | None = None,
+    category: str | OptionCategory | None = None,
     title: AnyText | None = None,
     description: AnyText | None = None,
     standard: bool = False,
@@ -125,6 +165,7 @@ def slider_option(
 
     Args:
         name: The name of the option.
+        category: The category containing the option.
         title: The display title of the option, as a plain string or an
             [`AnyText`][sonolus.script.metadata.AnyText] localization dict. If unset, the name is shown.
         description: The description of the option, as a plain string or an
@@ -141,6 +182,7 @@ def slider_option(
     """
     return _SliderOption(
         name,
+        category,
         encode_localization_text(title),
         encode_localization_text(description),
         standard,
@@ -157,6 +199,7 @@ def slider_option(
 def toggle_option(
     *,
     name: str | None = None,
+    category: str | OptionCategory | None = None,
     title: AnyText | None = None,
     description: AnyText | None = None,
     standard: bool = False,
@@ -168,6 +211,7 @@ def toggle_option(
 
     Args:
         name: The name of the option.
+        category: The category containing the option.
         title: The display title of the option, as a plain string or an
             [`AnyText`][sonolus.script.metadata.AnyText] localization dict. If unset, the name is shown.
         description: The description of the option, as a plain string or an
@@ -179,6 +223,7 @@ def toggle_option(
     """
     return _ToggleOption(
         name,
+        category,
         encode_localization_text(title),
         encode_localization_text(description),
         standard,
@@ -191,6 +236,7 @@ def toggle_option(
 def select_option(
     *,
     name: str | None = None,
+    category: str | OptionCategory | None = None,
     title: AnyText | None = None,
     description: AnyText | None = None,
     standard: bool = False,
@@ -203,6 +249,7 @@ def select_option(
 
     Args:
         name: The name of the option.
+        category: The category containing the option.
         title: The display title of the option, as a plain string or an
             [`AnyText`][sonolus.script.metadata.AnyText] localization dict. If unset, the name is shown.
         description: The description of the option, as a plain string or an
@@ -225,6 +272,7 @@ def select_option(
         default = values.index(default)
     return _SelectOption(
         name,
+        category,
         encode_localization_text(title),
         encode_localization_text(description),
         standard,
@@ -303,8 +351,11 @@ def options[T](cls: type[T]) -> T | Options:
         ```python
         @options
         class Options:
+            gameplay = OptionCategory(title='Gameplay')
+
             slider_option: float = slider_option(
                 name='Slider Option',
+                category=gameplay,
                 standard=True,
                 advanced=False,
                 default=0.5,
@@ -333,9 +384,42 @@ def options[T](cls: type[T]) -> T | Options:
     """
     if cls.__bases__ != (object,):
         raise ValueError("Options class must not inherit from any class (except object)")
+
+    category_fields = set()
+    categories = []
+    category_members_by_id = {}
+    category_values_by_id = {}
+    category_members_by_name = {}
+    category_members = []
+    for member_name, category in vars(cls).items():
+        if not isinstance(category, OptionCategory):
+            continue
+        category_fields.add(member_name)
+        if previous_member := category_members_by_id.get(id(category)):
+            raise ValueError(
+                f"Option category fields {previous_member!r} and {member_name!r} reference the same object"
+            )
+        category_name = member_name if category.name is None else category.name
+        category_title = category_name if category.title is None else category.title
+        if previous_member := category_members_by_name.get(category_name):
+            raise ValueError(
+                f"Option category fields {previous_member!r} and {member_name!r} have the same name {category_name!r}"
+            )
+        resolved_category = OptionCategory(name=category_name, title=category_title)
+        categories.append(resolved_category)
+        category_members.append((member_name, resolved_category))
+        category_members_by_id[id(category)] = member_name
+        category_values_by_id[id(category)] = resolved_category
+        category_members_by_name[category_name] = member_name
+
+    for member_name, category in category_members:
+        setattr(cls, member_name, category)
+
     instance = cls()
     entries = []
-    for i, (name, annotation) in enumerate(get_field_specifiers(cls, skip={"replay_fallback_option_names"}).items()):
+    for i, (name, annotation) in enumerate(
+        get_field_specifiers(cls, skip=category_fields | {"replay_fallback_option_names"}).items()
+    ):
         if get_origin(annotation) is not Annotated:
             raise TypeError(f"Invalid annotation for options: {describe_value(annotation)} on field {name}")
         annotation_type = annotation.__args__[0]
@@ -354,10 +438,26 @@ def options[T](cls: type[T]) -> T | Options:
         annotation_value = annotation_values[0]
         if not isinstance(annotation_value, _SliderOption | _ToggleOption | _SelectOption):
             raise TypeError(f"Invalid annotation value for options: {describe_value(annotation_value)} on field {name}")
+        category = annotation_value.category
+        if isinstance(category, OptionCategory):
+            resolved_category = category_values_by_id.get(id(category))
+            if resolved_category is None:
+                raise ValueError(f"Option category on field {name} is not declared on the options class")
+            category_name = resolved_category.name
+        elif isinstance(category, str) or category is None:
+            category_name = category
+        else:
+            raise TypeError(
+                f"Invalid option category {describe_value(category)} on field {name}, expected OptionCategory or str"
+            )
+        if category_name is not None and category_name not in category_members_by_name:
+            raise ValueError(f"Unknown option category {category_name!r} on field {name}")
+        annotation_value.category = category_name
         if annotation_value.name is None:
             annotation_value.name = name
         entries.append(annotation_value)
         setattr(cls, name, _OptionField(annotation_value, i))
+    instance._option_categories = categories
     instance._options_ = entries
     instance._is_comptime_value_ = True
     return instance

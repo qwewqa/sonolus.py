@@ -38,7 +38,7 @@ from sonolus.script.instruction import (
     instructions,
 )
 from sonolus.script.internal.context import ReadOnlyMemory
-from sonolus.script.options import EmptyOptions, options, toggle_option
+from sonolus.script.options import EmptyOptions, OptionCategory, options, toggle_option
 from sonolus.script.particle import EmptyParticles, Particle, particle, particles
 from sonolus.script.project import BuildConfig
 from sonolus.script.sprite import EmptySkin, RenderMode, Sprite, skin, sprite
@@ -86,6 +86,15 @@ class _OneInstructionIcon:
 class _OptionsWithFallback:
     replay_fallback_option_names = ("legacy_option",)
     toggle: bool = toggle_option(name="Toggle", default=True)
+
+
+@options
+class _OptionsWithCategories:
+    gameplay = OptionCategory(title="Gameplay")
+    visual = OptionCategory(name="appearance", title="Visual")
+    misc = OptionCategory()
+    toggle: bool = toggle_option(name="Toggle", category=gameplay, default=True)
+    visual_toggle: bool = toggle_option(name="Visual Toggle", category="appearance", default=False)
 
 
 class _OneArchetype(PlayArchetype):
@@ -191,6 +200,36 @@ def test_build_engine_configuration_wrapper_with_fallback():
         {"type": "toggle", "name": "Toggle", "standard": False, "advanced": False, "def": 1},
     ]
     assert result["replayFallbackOptionNames"] == ["legacy_option"]
+
+
+def test_build_engine_configuration_wrapper_with_option_categories():
+    result = build_engine_configuration(_OptionsWithCategories, UiConfig())
+
+    assert result.keys() == {"options", "optionCategories", "ui"}
+    assert result["optionCategories"] == [
+        {"name": "gameplay", "title": "Gameplay"},
+        {"name": "appearance", "title": "Visual"},
+        {"name": "misc", "title": "misc"},
+    ]
+    assert result["options"] == [
+        {
+            "type": "toggle",
+            "name": "Toggle",
+            "category": "gameplay",
+            "standard": False,
+            "advanced": False,
+            "def": 1,
+        },
+        {
+            "type": "toggle",
+            "name": "Visual Toggle",
+            "category": "appearance",
+            "standard": False,
+            "advanced": False,
+            "def": 0,
+        },
+    ]
+    assert _OptionsWithCategories.gameplay.name == "gameplay"
 
 
 def _stub_compile_mode(monkeypatch):

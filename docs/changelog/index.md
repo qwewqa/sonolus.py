@@ -1,3 +1,7 @@
+### 1.2.0
+
+- Added support for grouping engine options with [`OptionCategory`][sonolus.script.options.OptionCategory].
+
 ### 1.1.0
 
 - Added [`VarArray.of(...)`][sonolus.script.containers.VarArray.of],

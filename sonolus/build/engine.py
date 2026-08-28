@@ -193,6 +193,8 @@ def build_engine_configuration(
         "options": [option.to_dict() for option in options._options_],
         "ui": ui.to_dict(),
     }
+    if option_categories := getattr(options, "_option_categories", None):
+        result["optionCategories"] = [category.to_dict() for category in option_categories]
     replay_fallback_option_names = getattr(options, "replay_fallback_option_names", None)
     if replay_fallback_option_names is not None and (
         isinstance(replay_fallback_option_names, str | bytes | bytearray)
