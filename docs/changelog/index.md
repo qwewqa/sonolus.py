@@ -4,6 +4,8 @@
 - Added support for grouping engine options with [`OptionCategory`][sonolus.script.options.OptionCategory].
 - [`is_skip()`][sonolus.script.runtime.is_skip] now supports play mode.
 - Added new [`StandardText`][sonolus.script.text.StandardText] constants.
+- Documented support for `typing.cast` and `typing.assert_type`.
+- Fixed compiled dictionary and set `!=` comparisons being accepted.
 
 ### 1.1.0
 

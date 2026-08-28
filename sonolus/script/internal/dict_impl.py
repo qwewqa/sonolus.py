@@ -218,6 +218,10 @@ class DictImpl[Keys, OrderedKeys, Values](Record):
     def __eq__(self, other: Any):
         raise TypeError("Dict equality comparison is not supported")
 
+    @meta_fn
+    def __ne__(self, other: Any):
+        raise TypeError("Dict equality comparison is not supported")
+
     __hash__ = None
 
     @meta_fn

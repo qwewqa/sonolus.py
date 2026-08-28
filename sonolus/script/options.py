@@ -1,6 +1,7 @@
 # ruff: file-ignore[builtin-argument-shadowing]
+import inspect
 from dataclasses import dataclass
-from typing import Annotated, Any, NewType, dataclass_transform, get_origin
+from typing import Annotated, Any, ClassVar, Final, NewType, TypeAliasType, dataclass_transform, get_args, get_origin
 
 from sonolus.backend.mode import Mode
 from sonolus.backend.place import BlockPlace
@@ -28,6 +29,16 @@ class OptionCategory:
     name: str | None = None
     title: AnyText | None = None
 
+    def __post_init__(self):
+        if self.name is not None and not isinstance(self.name, str):
+            raise TypeError("Option category name must be a string or None")
+        if self.title is not None and not isinstance(self.title, str | dict):
+            raise TypeError("Option category title must be a string, a localization dict, or None")
+        if isinstance(self.title, dict) and not all(
+            isinstance(locale, str) and isinstance(text, str) for locale, text in self.title.items()
+        ):
+            raise TypeError("Option category localization keys and values must be strings")
+
     def to_dict(self):
         if self.name is None:
             raise ValueError("Option category must be declared on an @options class or given an explicit name")
@@ -37,11 +48,29 @@ class OptionCategory:
         }
 
 
+def _is_option_category_annotation(annotation, seen: set[int] | None = None) -> bool:
+    if seen is None:
+        seen = set()
+    if id(annotation) in seen:
+        return False
+    seen.add(id(annotation))
+    if annotation is OptionCategory:
+        return True
+    if isinstance(annotation, TypeAliasType):
+        return _is_option_category_annotation(annotation.__value__, seen)
+    if get_origin(annotation) in {Annotated, ClassVar, Final}:
+        args = get_args(annotation)
+        return bool(args) and _is_option_category_annotation(args[0], seen)
+    return False
+
+
 def _option_category_name(category: str | OptionCategory | None) -> str | None:
     if isinstance(category, OptionCategory):
         if category.name is None:
             raise ValueError("Option category must be declared on an @options class or given an explicit name")
         return category.name
+    if category is not None and not isinstance(category, str):
+        raise TypeError(f"Invalid option category {describe_value(category)}, expected OptionCategory or str")
     return category
 
 
@@ -165,7 +194,7 @@ def slider_option(
 
     Args:
         name: The name of the option.
-        category: The category containing the option.
+        category: A category declared on the options class, specified by its object or name.
         title: The display title of the option, as a plain string or an
             [`AnyText`][sonolus.script.metadata.AnyText] localization dict. If unset, the name is shown.
         description: The description of the option, as a plain string or an
@@ -211,7 +240,7 @@ def toggle_option(
 
     Args:
         name: The name of the option.
-        category: The category containing the option.
+        category: A category declared on the options class, specified by its object or name.
         title: The display title of the option, as a plain string or an
             [`AnyText`][sonolus.script.metadata.AnyText] localization dict. If unset, the name is shown.
         description: The description of the option, as a plain string or an
@@ -249,7 +278,7 @@ def select_option(
 
     Args:
         name: The name of the option.
-        category: The category containing the option.
+        category: A category declared on the options class, specified by its object or name.
         title: The display title of the option, as a plain string or an
             [`AnyText`][sonolus.script.metadata.AnyText] localization dict. If unset, the name is shown.
         description: The description of the option, as a plain string or an
@@ -396,8 +425,11 @@ def options[T](cls: type[T]) -> T | Options:
     category_values_by_id = {}
     category_members_by_name = {}
     category_members = []
+    annotations = inspect.get_annotations(cls, eval_str=True)
     for member_name, category in vars(cls).items():
         if not isinstance(category, OptionCategory):
+            continue
+        if member_name in annotations and not _is_option_category_annotation(annotations[member_name]):
             continue
         category_fields.add(member_name)
         if previous_member := category_members_by_id.get(id(category)):
@@ -423,7 +455,11 @@ def options[T](cls: type[T]) -> T | Options:
     instance = cls()
     entries = []
     for i, (name, annotation) in enumerate(
-        get_field_specifiers(cls, skip=category_fields | {"replay_fallback_option_names"}).items()
+        get_field_specifiers(
+            cls,
+            skip=category_fields | {"replay_fallback_option_names"},
+            evaluated_annotations=annotations,
+        ).items()
     ):
         if get_origin(annotation) is not Annotated:
             raise TypeError(f"Invalid annotation for options: {describe_value(annotation)} on field {name}")

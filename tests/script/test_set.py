@@ -434,7 +434,29 @@ def test_eq_raises():
     def fn():
         return s1 == s2
 
-    with pytest.raises(TypeError):
+    with pytest.raises(TypeError, match="Set equality comparison is not supported"):
+        run_and_validate(fn)
+
+
+def test_ne_raises():
+    s1 = SetImpl.from_set((1, 2))
+    s2 = SetImpl.from_set((2, 1))
+
+    def fn():
+        return s1 != s2
+
+    with pytest.raises(TypeError, match="Set equality comparison is not supported"):
+        run_and_validate(fn)
+
+
+def test_ne_raises_for_different_specializations():
+    s1 = SetImpl.from_set(())
+    s2 = SetImpl.from_set((1, 2))
+
+    def fn():
+        return s1 != s2
+
+    with pytest.raises(TypeError, match="Set equality comparison is not supported"):
         run_and_validate(fn)
 
 

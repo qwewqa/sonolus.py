@@ -1,5 +1,5 @@
 from dataclasses import FrozenInstanceError
-from typing import Annotated
+from typing import Annotated, ClassVar, Final
 
 import pytest
 
@@ -32,6 +32,15 @@ from sonolus.script.sprite import Sprite, skin, sprite
 from sonolus.script.stream import Stream, StreamGroup, streams
 from sonolus.script.vec import Vec2
 from tests.script.conftest import compile_fn
+
+type _CategoryAlias = OptionCategory
+
+_ANNOTATION_EVALUATIONS = []
+
+
+def _counted_option_annotation():
+    _ANNOTATION_EVALUATIONS.append("evaluated")
+    return bool
 
 
 @options
@@ -131,6 +140,29 @@ def test_option_category_object_is_serialized_by_name(option):
     assert option.to_dict()["category"] == "gameplay"
 
 
+def test_option_category_rejects_non_string_name():
+    with pytest.raises(TypeError, match="Option category name must be a string or None"):
+        OptionCategory(name=1)
+
+
+@pytest.mark.parametrize("title", [1, {"en": 1}, {1: "Gameplay"}])
+def test_option_category_rejects_invalid_title(title):
+    with pytest.raises(TypeError, match=r"Option category (title|localization)"):
+        OptionCategory(title=title)
+
+
+def test_unnamed_option_category_cannot_be_serialized_directly():
+    with pytest.raises(ValueError, match="must be declared on an @options class or given an explicit name"):
+        OptionCategory().to_dict()
+
+
+def test_option_with_unnamed_category_cannot_be_serialized_directly():
+    option = toggle_option(category=OptionCategory(), default=True)
+
+    with pytest.raises(ValueError, match="must be declared on an @options class or given an explicit name"):
+        option.to_dict()
+
+
 @pytest.mark.parametrize(
     "option",
     [
@@ -172,6 +204,73 @@ def test_options_accepts_inferred_category_name_string():
 
     assert Opts.gameplay == OptionCategory(name="gameplay", title="gameplay")
     assert Opts._options_[0].to_dict()["category"] == "gameplay"
+
+
+def test_options_accepts_annotated_category():
+    @options
+    class Opts:
+        gameplay: OptionCategory = OptionCategory()
+        toggle: bool = toggle_option(category=gameplay, default=True)
+
+    assert Opts.gameplay == OptionCategory(name="gameplay", title="gameplay")
+    assert Opts._options_[0].to_dict()["category"] == "gameplay"
+
+
+def test_options_accepts_wrapped_and_aliased_category_annotations():
+    @options
+    class ClassVarOpts:
+        gameplay: ClassVar[OptionCategory] = OptionCategory()
+        toggle: bool = toggle_option(category=gameplay, default=True)
+
+    @options
+    class AnnotatedOpts:
+        gameplay: Annotated[OptionCategory, "category"] = OptionCategory()
+        toggle: bool = toggle_option(category=gameplay, default=True)
+
+    @options
+    class AliasOpts:
+        gameplay: _CategoryAlias = OptionCategory()
+        toggle: bool = toggle_option(category=gameplay, default=True)
+
+    @options
+    class FinalOpts:
+        gameplay: Final[OptionCategory] = OptionCategory()
+        toggle: bool = toggle_option(category=gameplay, default=True)
+
+    for opts in (ClassVarOpts, AnnotatedOpts, AliasOpts, FinalOpts):
+        assert opts.gameplay == OptionCategory(name="gameplay", title="gameplay")
+        assert opts._options_[0].to_dict()["category"] == "gameplay"
+
+
+def test_options_evaluates_postponed_annotations_once():
+    _ANNOTATION_EVALUATIONS.clear()
+
+    class Opts:
+        __annotations__ = {"toggle": "_counted_option_annotation()"}
+        toggle = toggle_option(default=True)
+
+    result = options(Opts)
+
+    assert [entry.name for entry in result._options_] == ["toggle"]
+    assert _ANNOTATION_EVALUATIONS == ["evaluated"]
+
+
+def test_options_rejects_category_value_with_different_annotation():
+    with pytest.raises(TypeError, match=r"Invalid annotation value for options: .* on field gameplay"):
+
+        @options
+        class Opts:
+            gameplay: bool = OptionCategory()
+
+
+def test_options_accepts_explicit_category_name_by_object():
+    @options
+    class Opts:
+        visual = OptionCategory(name="appearance")
+        toggle: bool = toggle_option(category=visual, default=True)
+
+    assert Opts.visual == OptionCategory(name="appearance", title="appearance")
+    assert Opts._options_[0].to_dict()["category"] == "appearance"
 
 
 def test_options_rejects_undeclared_category_object():
@@ -233,6 +332,13 @@ def test_options_rejects_invalid_category_type():
         @options
         class Opts:
             toggle: bool = toggle_option(category=object(), default=True)
+
+
+def test_option_rejects_invalid_category_type_when_serialized_directly():
+    option = toggle_option(category=object(), default=True)
+
+    with pytest.raises(TypeError, match=r"Invalid option category .* expected OptionCategory or str"):
+        option.to_dict()
 
 
 def test_other_decorators_accept_plain_classes():
@@ -398,7 +504,8 @@ def test_options_rejecting_a_non_value_annotation_names_its_field():
 
 @options
 class _ModeOpts:
-    speed: float = slider_option(default=7.25, min=0.0, max=20.0, step=0.05)
+    gameplay = OptionCategory()
+    speed: float = slider_option(category=gameplay, default=7.25, min=0.0, max=20.0, step=0.05)
 
 
 # The option block each mode reads, named from sonolus/backend/blocks.py rather than from options.py. PLAY and

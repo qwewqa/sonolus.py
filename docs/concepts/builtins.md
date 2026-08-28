@@ -74,4 +74,6 @@ full signatures: [math](../reference/math.md), [random](../reference/random.md),
 Creating `Random` instances is not supported.
 
 ### typing
+- `cast(typ, val)`
+- `assert_type(val, typ, /)`
 - `assert_never(arg, /)`

@@ -2066,6 +2066,28 @@ def test_eq_raises():
         run_and_validate(fn)
 
 
+def test_ne_raises():
+    d1 = DictImpl.from_dict({1: 10, 2: 20})
+    d2 = DictImpl.from_dict({2: 20, 1: 10})
+
+    def fn():
+        return d1 != d2
+
+    with pytest.raises(TypeError, match="Dict equality comparison is not supported"):
+        run_and_validate(fn)
+
+
+def test_ne_raises_for_different_specializations():
+    d1 = DictImpl.from_dict({})
+    d2 = DictImpl.from_dict({1: 10})
+
+    def fn():
+        return d1 != d2
+
+    with pytest.raises(TypeError, match="Dict equality comparison is not supported"):
+        run_and_validate(fn)
+
+
 # __iter__
 
 

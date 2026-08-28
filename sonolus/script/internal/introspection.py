@@ -26,9 +26,12 @@ def get_field_specifiers(
     locals=None,  # ruff: ignore[builtin-argument-shadowing]
     eval_str=True,
     included_classes: Sequence[type] | None = None,
+    evaluated_annotations: dict | None = None,
 ):
     """Like inspect.get_annotations, but also turns class attributes into Annotated."""
-    if included_classes is not None:
+    if evaluated_annotations is not None:
+        results = dict(evaluated_annotations)
+    elif included_classes is not None:
         results = {}
         for entry in reversed(included_classes):
             results.update(inspect.get_annotations(entry, eval_str=eval_str))
