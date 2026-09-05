@@ -18,16 +18,16 @@ description: Read before adding or changing a test in tests/, or when a golden f
 asserts they agree. Specifically it:
 
 - runs `fn` as plain Python, capturing its result and every `debug_log` entry in order;
-- compiles it twice at `RuntimeChecks.NONE`, once per closure variant, to prove it compiles there;
-- then compiles and interprets it at all three optimization levels (`MINIMAL_PASSES`, `FAST_PASSES`,
-  `STANDARD_PASSES`) with `RuntimeChecks.TERMINATE`, in each case both with the closure read normally and with
-  every closure cell rewritten into ROM;
+- traces each closure variant at `RuntimeChecks.NONE` to prove it compiles there, then at
+  `RuntimeChecks.TERMINATE`; the variants read the closure normally or rewrite its cells into ROM;
+- reuses each enabled-checks CFG across optimization levels (`MINIMAL_PASSES`, `FAST_PASSES`, `STANDARD_PASSES`),
+  optimizing, emitting, and interpreting it at each level;
 - asserts the compiled result equals the Python result **and** that the interpreter's log matches the Python log
   entry for entry;
 - if the Python run raised, asserts the compiled run raises the same exception type and message, or terminates.
 
-That is six compile-and-run passes per call, which is why the expected value comes from Python's behaviour rather
-than from the implementation. Use it whenever plain Python is a valid reference.
+The expected result and log come from the independent Python execution. Use this helper whenever plain Python is
+a valid reference. The CI reduction in optimization levels is described under Hypothesis below.
 
 Use `run_compiled` only when the two deliberately disagree (pinning an accepted divergence) or when the snippet
 cannot run as plain Python. Say which in the test. `run_compiled` still cross-checks the three optimization levels
@@ -38,10 +38,10 @@ test.** If you cannot express the expectation independently, that is a signal ab
 
 ## Forcing a runtime value
 
-A literal will be constant-folded and will not exercise the runtime path. Two established ways to get a value the
-optimizer cannot see through:
+A literal may be constant-folded instead of exercising the runtime path. Make the input opaque to the optimizer:
 
-- Accumulate it in a loop.
+- Accumulating in a loop can keep a value runtime-dependent, but a loop alone does not guarantee opacity. Check
+  that the optimized CFG retains the operation being tested when relying on this approach.
 - Route it through a black-box helper. `tests/script/test_flow.py` defines `black_box()` as
   `random.randrange(0, 1) == 0`, which always holds but is opaque to the optimizer, plus `black_box_value` and
   `black_box_log` built on it. `tests/script/test_dict.py` defines `bb(*x)`, a `meta_fn` that adds

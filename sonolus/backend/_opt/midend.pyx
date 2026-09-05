@@ -11,7 +11,8 @@ This module implements the mid-end of the optimizer, all operating on the
 * ``build_ssa`` -- value-based SSA construction (Braun et al., on-the-fly with
   trivial-phi removal).
 * the SSA passes ``sccp`` (sparse conditional constant propagation), ``gvn``
-  (dominator-scoped value numbering), ``dce``, ``licm``, and ``rewrite_switch``,
+  (dominator-scoped value numbering), ``dce`` (data/control dependencies with
+  conservative cycle termination), ``licm``, and ``rewrite_switch``,
   plus the ``midend_round`` (fast) / ``midend_standard`` (-O2) orchestrators that
   sequence them and repeat the core round on change.
 * ``out_of_ssa`` -- naive correctness-first de-SSA (materialize values to temps,
@@ -3507,38 +3508,292 @@ def _canon_branch_not(Func f):
 
 
 # --------------------------------------------------------------------------
-# DCE -- worklist mark from roots (block tests + FLAG_STMT_ROOT stores/effects),
-# then compact away everything unmarked.
+# DCE: mark observable values and their data and control dependencies. Potentially
+# nonterminating cycles are observable too; only proven finite cycles may vanish.
 # --------------------------------------------------------------------------
+
+
+def _dce_rpo(list succ, int32_t entry):
+    visited = [False] * len(succ)
+    post = []
+    stack = [(entry, 0)]
+    visited[entry] = True
+    cdef int32_t b, k, ch
+    while stack:
+        b, k = stack[len(stack) - 1]
+        if k < len(<list>succ[b]):
+            stack[len(stack) - 1] = (b, k + 1)
+            ch = <int32_t>succ[b][k]
+            if not <bint>visited[ch]:
+                visited[ch] = True
+                stack.append((ch, 0))
+        else:
+            post.append(b)
+            stack.pop()
+    post.reverse()
+    return post
+
+
+def _dce_finite_component(Func f, list component, list incoming, list succ):
+    """Prove termination of a single-entry, unit-step counted cycle in f32."""
+    cdef int32_t b, e, header, tv, op, phi, bound_v, a, k, v, update_op, operand, const_v, compared
+    cdef int32_t body_dst = -1
+    cdef int32_t exit_dst = -1
+    cdef double bound, initial, step, delta
+    members = set(component)
+    headers = set()
+    for b in component:
+        for e in <list>incoming[b]:
+            if f.edges[e].src not in members:
+                headers.add(b)
+    if len(headers) != 1:
+        return False
+    header = <int32_t>next(iter(headers))
+    tv = f.blocks[header].test_val
+    if tv < 0 or f.blocks[header].edge_count != 2:
+        return False
+    op = f.instrs[tv].op
+    if op not in (OP_Less, OP_LessOr, OP_Greater, OP_GreaterOr) or f.instrs[tv].nargs != 2:
+        return False
+    phi = <int32_t>f.args[f.instrs[tv].arg_start]
+    bound_v = <int32_t>f.args[f.instrs[tv].arg_start + 1]
+    if f.instrs[phi].op == OPX_CONST:
+        phi, bound_v = bound_v, phi
+        if op == OP_Less:
+            op = OP_Greater
+        elif op == OP_LessOr:
+            op = OP_GreaterOr
+        elif op == OP_Greater:
+            op = OP_Less
+        else:
+            op = OP_LessOr
+    step = 1.0 if op == OP_Less or op == OP_LessOr else -1.0
+    compared = phi
+    # cfg_cleanup can rotate the header into its latch, comparing the updated
+    # counter. The comparison and the backedge update must use the same unit step;
+    # comparing i - 1 while incrementing i can remain true after f32 rounding stops i from increasing.
+    update_op = f.instrs[compared].op
+    if update_op in (OP_Add, OP_Subtract) and f.instrs[compared].nargs == 2:
+        phi = <int32_t>f.args[f.instrs[compared].arg_start]
+        const_v = <int32_t>f.args[f.instrs[compared].arg_start + 1]
+        if update_op == OP_Add and f.instrs[phi].op == OPX_CONST:
+            phi, const_v = const_v, phi
+        if f.instrs[const_v].op != OPX_CONST:
+            return False
+        delta = f.consts[f.instrs[const_v].aux]
+        if update_op == OP_Subtract:
+            delta = -delta
+        if delta != step:
+            return False
+    if (f.instrs[phi].op != OPX_PHI or f.instrs[phi].block != header
+            or f.instrs[bound_v].op != OPX_CONST):
+        return False
+    for e in range(f.blocks[header].edge_start, f.blocks[header].edge_start + 2):
+        if f.edges[e].cond_kind == EDGE_COND_VALUE and f.edges[e].cond == 0.0:
+            exit_dst = f.edges[e].dst
+        elif f.edges[e].cond_kind == EDGE_COND_NONE:
+            body_dst = f.edges[e].dst
+    if exit_dst < 0 or exit_dst in members or body_dst not in members:
+        return False
+    bound = f.consts[f.instrs[bound_v].aux]
+    # Both the comparison and every unit update must stay in the f32 exact-integer
+    # range. Leave room for the last update of an inclusive comparison.
+    if not isfinite(bound) or not (-16777215.0 <= bound <= 16777215.0) or bound != floor(bound):
+        return False
+    for k in range(f.instrs[phi].nargs):
+        e = <int32_t>incoming[header][k]
+        v = <int32_t>f.args[f.instrs[phi].arg_start + k]
+        if f.edges[e].src not in members:
+            if f.instrs[v].op != OPX_CONST:
+                return False
+            initial = f.consts[f.instrs[v].aux]
+            if (not isfinite(initial) or not (-16777215.0 <= initial <= 16777215.0)
+                    or initial != floor(initial)):
+                return False
+        else:
+            update_op = f.instrs[v].op
+            if update_op not in (OP_Add, OP_Subtract) or f.instrs[v].nargs != 2:
+                return False
+            operand = <int32_t>f.args[f.instrs[v].arg_start]
+            const_v = <int32_t>f.args[f.instrs[v].arg_start + 1]
+            if update_op == OP_Add and const_v == phi:
+                operand, const_v = const_v, operand
+            if operand != phi or f.instrs[const_v].op != OPX_CONST:
+                return False
+            delta = f.consts[f.instrs[const_v].aux]
+            if update_op == OP_Subtract:
+                delta = -delta
+            if delta != step:
+                return False
+    # Every cycle must return through the induction header. An inner cycle could
+    # run forever without advancing this counter, even when its outer bound is finite.
+    indegree = {b: 0 for b in component if b != header}
+    for b in component:
+        if b == header:
+            continue
+        for a in <list>succ[b]:
+            if a in indegree:
+                indegree[a] += 1
+    queue = [b for b in component if b != header and indegree[b] == 0]
+    k = 0
+    while k < len(queue):
+        b = <int32_t>queue[k]
+        k += 1
+        for a in <list>succ[b]:
+            if a in indegree:
+                indegree[a] -= 1
+                if indegree[a] == 0:
+                    queue.append(a)
+    return len(queue) == len(indegree)
+
+
+def _dce_control_info(Func f):
+    cdef int32_t nb = f.n_blocks
+    cdef int32_t b, e, a, cur, p, q, runner, stop
+    succ = [[] for _ in range(nb + 1)]
+    incoming = [[] for _ in range(nb)]
+    pred = [[] for _ in range(nb + 1)]
+    implicit_exit = [True] * nb
+    for e in range(f.n_edges):
+        b = f.edges[e].src
+        a = f.edges[e].dst
+        succ[b].append(a)
+        pred[a].append(b)
+        incoming[a].append(e)
+        if f.edges[e].cond_kind == EDGE_COND_NONE:
+            implicit_exit[b] = False
+
+    # Arena blocks are already in forward RPO, the order needed for Kosaraju's reverse-graph traversal.
+    seen = [False] * nb
+    cycle_roots = []
+    for b in range(nb):
+        if <bint>seen[b]:
+            continue
+        component = []
+        stack = [b]
+        seen[b] = True
+        while stack:
+            cur = <int32_t>stack.pop()
+            component.append(cur)
+            for a in <list>pred[cur]:
+                if not <bint>seen[a]:
+                    seen[a] = True
+                    stack.append(a)
+        if len(component) > 1 or b in succ[b]:
+            if not _dce_finite_component(f, component, incoming, succ):
+                cycle_roots.extend(component)
+
+    # For cycles whose termination is unknown, a virtual exit at every block accounts
+    # for infinite paths when computing postdominance. Keeping these blocks live also
+    # preserves entry into a cycle, including an irreducible one or one with no real exit.
+    for b in cycle_roots:
+        implicit_exit[b] = True
+    for b in range(nb):
+        if <bint>implicit_exit[b]:
+            succ[b].append(nb)
+            pred[nb].append(b)
+    reverse_rpo = _dce_rpo(pred, nb)
+    rank = [-1] * (nb + 1)
+    for b in range(len(reverse_rpo)):
+        rank[<int32_t>reverse_rpo[b]] = b
+    postdom = [-1] * (nb + 1)
+    postdom[nb] = nb
+    changed = True
+    while changed:
+        changed = False
+        for b in reverse_rpo:
+            if b == nb:
+                continue
+            p = -1
+            for a in <list>succ[b]:
+                if <int32_t>postdom[a] < 0:
+                    continue
+                if p < 0:
+                    p = a
+                    continue
+                q = a
+                while p != q:
+                    while <int32_t>rank[p] > <int32_t>rank[q]:
+                        p = <int32_t>postdom[p]
+                    while <int32_t>rank[q] > <int32_t>rank[p]:
+                        q = <int32_t>postdom[q]
+            if p >= 0 and p != <int32_t>postdom[b]:
+                postdom[b] = p
+                changed = True
+    control = [[] for _ in range(nb)]
+    for b in range(nb):
+        stop = <int32_t>postdom[b]
+        for a in <list>succ[b]:
+            runner = a
+            while runner != stop and runner != nb:
+                control[runner].append(b)
+                runner = <int32_t>postdom[runner]
+    return control, cycle_roots, rank, incoming
+
 
 def _run_dce(Func f):
     cdef int32_t n = f.n_instrs
+    cdef int32_t nb = f.n_blocks
     live = [False] * n
+    live_block = [False] * nb
+    live_branch = [False] * nb
     wl = []
-    cdef int32_t i, b, tv, op, astart, nargs, k, a, pid, br, ivv, v, e, es, ec
-    for b in range(f.n_blocks):
+    block_wl = []
+    cdef int32_t i, b, tv, op, astart, nargs, k, a, pid, br, ivv, v, e, es, ec, selected, best
+    control, cycle_roots, rank, incoming = _dce_control_info(f)
+    for b in cycle_roots:
+        live_block[b] = True
+        block_wl.append(b)
+        live_branch[b] = True
         tv = f.blocks[b].test_val
         if tv >= 0 and not <bint>live[tv]:
             live[tv] = True
             wl.append(tv)
     for i in range(n):
-        # Roots: bare statement roots AND every side-effecting instruction
-        # (side effects are never deletable). A side-effecting value can lack
-        # FLAG_STMT_ROOT when its size-1 scalar store dissolved during SSA promotion
-        # (e.g. ``x <- DebugLog(...)`` where ``x`` is unread): the effect must still
-        # persist. FLAG_SIDE_EFFECT excludes ``Random`` (side_effects=False), which
-        # stays deletable-when-unused, matching lower.pyx's materialize logic.
+        # A side-effecting value can lack FLAG_STMT_ROOT after its scalar store was
+        # promoted to SSA. Random has no side-effect flag and remains removable when unused.
         if f.instrs[i].flags & (FLAG_STMT_ROOT | FLAG_SIDE_EFFECT):
             if not <bint>live[i]:
                 live[i] = True
                 wl.append(i)
-    while wl:
+    while wl or block_wl:
+        while block_wl:
+            b = <int32_t>block_wl.pop()
+            for a in <list>control[b]:
+                if not <bint>live_branch[a]:
+                    live_branch[a] = True
+                    if not <bint>live_block[a]:
+                        live_block[a] = True
+                        block_wl.append(a)
+                    tv = f.blocks[a].test_val
+                    if tv >= 0 and not <bint>live[tv]:
+                        live[tv] = True
+                        wl.append(tv)
+        if not wl:
+            continue
         v = <int32_t>wl.pop()
+        b = f.instrs[v].block
+        if not <bint>live_block[b]:
+            live_block[b] = True
+            block_wl.append(b)
         op = f.instrs[v].op
         if op == OPX_CONST or op == OPX_UNDEF:
             continue
         astart = f.instrs[v].arg_start
         nargs = f.instrs[v].nargs
+        if op == OPX_PHI:
+            # A live phi observes which incoming edge ran, even if its operands
+            # were all defined before the branch and have no control dependencies.
+            for e in <list>incoming[b]:
+                a = f.edges[e].src
+                if not <bint>live_block[a]:
+                    live_block[a] = True
+                    block_wl.append(a)
+                live_branch[a] = True
+                tv = f.blocks[a].test_val
+                if tv >= 0 and not <bint>live[tv]:
+                    live[tv] = True
+                    wl.append(tv)
         for k in range(nargs):
             a = <int32_t>f.args[astart + k]
             if not <bint>live[a]:
@@ -3556,21 +3811,42 @@ def _run_dce(Func f):
                 live[ivv] = True
                 wl.append(ivv)
     changed = False
-    for i in range(n):
-        if not <bint>live[i]:
-            changed = True
-            break
-    if not changed:
-        return (f, False)
-    order = list(range(f.n_blocks))
     out_spec = {}
-    for b in range(f.n_blocks):
+    succ = [[] for _ in range(nb)]
+    for b in range(nb):
         es = f.blocks[b].edge_start
         ec = f.blocks[b].edge_count
         spec = []
-        for e in range(es, es + ec):
-            spec.append((f.edges[e].dst, f.edges[e].cond_kind, f.edges[e].cond, f.edges[e].cond_is_int, e))
+        if not <bint>live_branch[b] and f.blocks[b].test_val >= 0:
+            # Choose an existing edge toward the virtual exit. Decreasing the rank
+            # in the reversed graph's RPO prevents a dead finite cycle from becoming infinite.
+            selected = -1
+            best = nb + 1
+            has_default = False
+            for e in range(es, es + ec):
+                if f.edges[e].cond_kind == EDGE_COND_NONE:
+                    has_default = True
+                a = f.edges[e].dst
+                if <int32_t>rank[a] < best:
+                    best = <int32_t>rank[a]
+                    selected = e
+            if has_default and selected >= 0:
+                spec.append((f.edges[selected].dst, EDGE_COND_NONE, 0.0, 0, selected))
+            changed = True
+        else:
+            for e in range(es, es + ec):
+                spec.append((f.edges[e].dst, f.edges[e].cond_kind, f.edges[e].cond, f.edges[e].cond_is_int, e))
         out_spec[b] = spec
+        succ[b] = [item[0] for item in spec]
+    order = _dce_rpo(succ, f.entry_block)
+    reachable = set(order)
+    for i in range(n):
+        if f.instrs[i].block not in reachable:
+            live[i] = False
+        if not <bint>live[i]:
+            changed = True
+    if not changed:
+        return (f, False)
     newf = _build_compacted(f, order, live, {}, out_spec)
     return (newf, True)
 

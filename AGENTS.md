@@ -56,10 +56,18 @@ judgement calls it cannot make:
 
 ## Checks
 
-After changing Python, run `ruff format` then `ruff check --fix`. Hand-fix whatever they leave, then rerun both
-until they are clean.
+After changing Python, run `ruff format` then `ruff check --fix` on the touched files. Hand-fix whatever they
+leave, then rerun both until they are clean. Keep automatic fixes out of unrelated files and preserve existing
+uncommitted work.
 
-The full gate:
+For development changes, run tests covering the affected behavior. Changes on a compiled hot path also need the
+metrics gate described in writing-tests; docstring or `docs/` changes need the strict docs build. Instruction-only
+edits need factual, link, and skill validation, without rebuilding the extension or running the application suite.
+Broaden checks when failures, remaining uncertainty, or the change's reach warrant it. Once the relevant checks
+pass, repeat them only after further changes or new evidence.
+
+For release validation, an explicitly requested full validation, or changes broad enough to require it, use the
+full gate:
 
 ```
 pytest -n 32
@@ -88,9 +96,10 @@ finder, which resolves ahead of `PYTHONPATH` and would keep importing the main c
 
 ## Running agents in parallel
 
-- A review subagent will run `git checkout -- <file>` to test a counterfactual and silently discard uncommitted
-  work with it. Record `git diff HEAD --numstat` before fanning agents out over a dirty tree, re-check it after,
-  and treat a "this code is missing" finding on a dirty tree as suspect until you have re-read the file yourself.
+- Preserve existing work in the shared tree. Do not use checkout, restore, or reset to discard changes for a
+  counterfactual test; use an isolated worktree or copy containing the intended test state. Give agents explicit
+  file ownership when they edit. Record `git status --short` and `git diff HEAD --numstat` before parallel work,
+  re-check afterward, and inspect unexpected changes rather than relying on counts alone.
 - Do not edit a `.pyx`, `.pxd`, or `.h` while agents are running tests. Those are `cache-keys` inputs, so the edit
   triggers a rebuild underneath them and their results stop meaning anything.
 

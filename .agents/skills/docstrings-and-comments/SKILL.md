@@ -190,8 +190,8 @@ how clever the code is. The public API layer is deliberately bare and lets docst
 cannot be correctly understood without it. If the name, the surrounding code, a docstring, or the test that pins
 the behaviour already carries the reader, the comment goes, even when it records a real fact. A comment
 describing something a refactor would invalidate is a liability besides, because a stale comment is worse than no
-comment. Calibration from review rounds here: about half of the comments a careful author keeps still fail this
-bar on a second pass, so when in doubt, cut.
+comment. Remove demonstrably redundant prose, but preserve existing rationale whose purpose remains uncertain.
+Consult reviewing-prose's protected classes before deleting a comment.
 
 **Use the words the codebase already uses.** Grep for a term before naming a concept with it, and grep for the
 concept as well: the test is whether the tree already says this word about this thing. `mint` is house vocabulary

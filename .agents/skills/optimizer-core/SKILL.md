@@ -18,7 +18,7 @@ you must read before touching a fold kernel.
 | `ir.pyx` / `ir.pxd` | The arena `Func`, marshal in and out, `verify()`, `debug_run` |
 | `analysis.pyx` | Dominators, liveness, and the analyses the passes share |
 | `midend.pyx` | `cfg_cleanup`, `build_ssa`, SCCP, GVN, DCE, LICM, `rewrite_switch`, `out_of_ssa` |
-| `lower.pyx` | `lower_from_ssa`, if-conversion, the three allocators, `fuse_rmw` |
+| `lower.pyx` | `lower_from_ssa`, if-conversion, the three allocators, `fuse_rmw`, `fuse_copy` |
 | `kernels.pyx` | Constant-fold kernels: C-double evaluation of every foldable op |
 | `emit.pyx` | `EngineNode` emission |
 | `driver.pyx` | Level dispatch, the pipeline, the debug phase registry |
@@ -39,10 +39,17 @@ From `driver.pyx`'s `_pipeline`, which is the authoritative description:
 
 - **minimal (-O0)**: `cfg_cleanup` -> bump allocation. The mid-end is bypassed entirely.
 - **fast (-O1)**: `cfg_cleanup` -> `build_ssa` -> `midend_round(allow_repeat=False)` -> `lower_from_ssa` ->
-  try-bump allocation -> `fuse_rmw`. No LICM, `rewrite_switch`, or if-conversion: iteration speed over codegen
-  quality.
+  try-bump allocation -> `fuse_rmw` -> `fuse_copy`. No LICM, `rewrite_switch`, or if-conversion: iteration speed
+  over codegen quality.
 - **standard (-O2)**: `cfg_cleanup` -> `build_ssa` -> `midend_standard` -> `if_convert` -> `lower_from_ssa` ->
-  packing allocation -> `fuse_rmw`.
+  packing allocation -> `fuse_rmw` -> `fuse_copy`.
+
+The allocation and fusion stages run only when allocation is requested. `fuse_copy` requires an allocated,
+non-SSA arena: it combines contiguous static-address copies and zero stores using physical addresses. Zero stores
+copy from the reserved ROM region defined by `ROM_ZERO_START` and `ROM_ZERO_COUNT` in `sonolus/backend/rom.py`.
+Keep that region consistent with `ReadOnlyMemory` initialization in `script/internal/context.py`. Used store results,
+source dependencies between stores, and possible aliasing between entity blocks and their array views constrain
+which stores may fuse. `tests/backend/test_copy.py` pins these cases.
 
 The test oracle runs all three, so a pass that is only correct at one level fails `tests/script/` broadly rather
 than in one place.
@@ -83,10 +90,11 @@ the arena surfaces as a wrong engine rather than as a failed assert.
   marshal-in, each pass, emit. Call `profiling.reset()` before a build to measure just that build.
 - `SONOLUS_VISIT_STATS=1` enables the frontend's per-function visit statistics.
 - `ir.debug_run(cfg, phases=[...])` marshals in, runs the named phases in order with a `verify()` between each,
-  and exports back. `driver.pyx` registers `cfg_cleanup`, `ssa`, `unssa`, `ifconv`, `lower`, `dominators`, and the
-  allocators `bump`, `packing`, `try_bump`; `midend.pyx` adds `sccp`, `gvn`, `dce`, `licm`, `rewrite_switch`,
-  `midend`, and `midend_standard`. All sixteen are always reachable, whichever module is imported first. This is
-  how to isolate a single pass in a test.
+  and exports back. `driver.pyx` registers `copy`, `cfg_cleanup`, `ssa`, `unssa`, `ifconv`, `lower`, `dominators`,
+  and the allocators `bump`, `packing`, `try_bump`; `midend.pyx` adds `sccp`, `gvn`, `dce`, `licm`, `rewrite_switch`,
+  `midend`, and `midend_standard`. The registry is initialized regardless of import order. Check the
+  `register_phase` calls in those files for the current names. To isolate copy fusion, use `phases=["bump", "copy"]`
+  on a non-SSA CFG so allocation precedes fusion.
 
 ## The op tables are generated
 
@@ -115,9 +123,11 @@ both in the writing-tests skill.
 
 `kernels.pyx` owns the numeric semantics SCCP folds with, and its rule is strict: each kernel is a **literal
 transcription** of the oracle in `sonolus/backend/interpret.py` (and of `math_impls` for `Rem`/`Frac`, `easing.py`
-for the 36 `Ease*`, `bucket.py` for `Judge`). `fold_op` must return `FOLD_NOT_CONSTANT` exactly when the oracle
-would raise or produce a complex result, and otherwise reproduce the oracle's double bit for bit.
-`tests/backend/test_fold_kernels.py` asserts that differentially over Hypothesis-generated operands. Read the
+for the 36 `Ease*`, `bucket.py` for `Judge`). For valid arities, `fold_op` returns `FOLD_NOT_CONSTANT` when the
+oracle would raise or produce a complex result. `If` and `Switch*` also decline folding when the test or an examined
+key fails `_f32_exact`, even if the oracle returns a real value. Otherwise the kernel reproduces the oracle's
+double, including signed zero; the differential tests treat NaN bit patterns as equivalent.
+`tests/backend/test_fold_kernels.py` checks this over Hypothesis-generated operands. Read the
 contract block at the top of the file before touching a kernel, and see the runtime-semantics skill for the f32
 guards.
 

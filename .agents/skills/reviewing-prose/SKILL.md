@@ -8,10 +8,11 @@ description: "Read when judging docstrings, comments, or docs/ pages that alread
 The rules themselves are in the `docstrings-and-comments` skill. This skill is only about applying them to prose
 that already exists: how a violation looks in a diff, what must survive the pass, and in what order to work.
 
-Trimming is in scope. A comment that does not clear the bar should be deleted, not annotated, and that is an
-expected outcome of a review here rather than an overstep.
+For a review or audit, report findings and proposed corrections. Apply corrections when the user requested fixes,
+cleanup, or implementation; self-review includes correcting prose introduced by your own changes. Keep edits
+within that scope. A prose review does not itself authorize API implementation changes.
 
-## Report first, trim second
+## Collect candidates, then assess them
 
 Do not filter while reading. Scan the whole diff and collect every candidate, then make the delete or keep call in
 a second pass against the protected list below.
@@ -20,10 +21,9 @@ Working in one pass looks more efficient and reliably under-reports: judging eac
 biases toward leaving it, because the local context always makes a comment look motivated. Separating the passes is
 what makes the protected list actually get consulted.
 
-The bar is necessity, not truth: a comment that is accurate, relevant, and durable is still removed unless the
-code cannot be correctly understood without it. Review rounds here have cut about half of the comments a careful
-first pass kept, so expect the trim list to be long, and treat the protected classes below as the only reliable
-exceptions.
+The bar is necessity, not truth: accuracy alone does not make a comment useful. Identify what the comment adds
+beyond the surrounding code and check the protected classes below before recommending removal. There is no target
+number or fraction of comments to trim.
 
 ## Observable signatures
 
@@ -124,15 +124,14 @@ unnecessary.** Work out what it is protecting first. If you still cannot, leave 
 
 ## Delete or rewrite
 
-- The fact documents a name the library does not support -> check before deleting. Documented-but-unsupported
-  usually means the implementation exists and is merely unwired, so grep the internal impl modules for a matching
-  private function and the dispatch table for its absence. If it is there, register it and keep the doc; deleting
-  silently shrinks the public API. A name with no implementation anywhere is still fair to remove.
-- The fact is wrong or has gone stale -> delete.
+- The fact documents a name the library does not support -> check the internal impl modules and dispatch table.
+  Report whether an implementation exists but is unregistered, or is absent. Recommend the appropriate API or
+  documentation correction based on the intended contract; do not register an implementation as a prose cleanup.
+- The fact is wrong or has gone stale -> correct it if the contract or rationale is still needed; otherwise delete.
 - The fact is true but belongs elsewhere (a contract sitting in a comment, a mechanism sitting in a docstring) ->
   move it, do not duplicate it. The authoring skill's fact-routing table decides which way.
 - The fact is true and in the right place but under-specified ("for correctness") -> rewrite to name the
-  consequence, or delete it if you cannot determine the consequence.
+  consequence. If its purpose remains uncertain, preserve it and report the uncertainty.
 - The comment is correct and durable -> leave it alone, including when it is long, provided every sentence earns
   its place. Long and load-bearing is fine; long because the same point is made three ways is a rewrite.
 
@@ -141,9 +140,9 @@ unnecessary.** Work out what it is protecting first. If you still cannot, leave 
 Deleting a prose comment cannot break a test, so the suite will not tell you whether the pass was sound. What does
 check something:
 
-- `ruff format` then `ruff check --fix`, then hand-fix anything left and rerun until both are clean. This is also
-  what catches a `# noqa` you removed by mistake, and removing a comment can leave a line that reflows or an
-  import that is now unused.
+- For touched Python files, `ruff format` then `ruff check --fix`, then hand-fix anything left and rerun until
+  both are clean. This catches a `# noqa` you removed by mistake, and removing a comment can leave a line that
+  reflows or an import that is now unused.
 - `zensical build --strict` if you touched a docstring or a `docs/` page: deleting a cross-reference target or
   renaming a heading breaks the build, and a docstring edit can silently change what renders.
 - Re-read your own diff for deletions you cannot justify in one sentence, and restore those.
