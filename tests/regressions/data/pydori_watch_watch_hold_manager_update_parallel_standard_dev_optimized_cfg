@@ -7,7 +7,7 @@
   EntityMemory[2] <- 0
   goto 3
 3:
-  10000[0] <- EntityMemory[0]
+  Copy(4000, 0, 10000, 0, 1)
   goto 4 if SwitchWithDefault(EntityInfoArray[(10000[0] * 3) + 1], 2, 1, 3, 1, 4, 1, 5, 1, 6, 1, 7, 1, 8, 1, 0) else 24
 4:
   goto 5 if RuntimeEnvironment[4] else 13
@@ -37,7 +37,7 @@
   DebugPause()
   goto exit
 13:
-  10000[0] <- EntityMemory[0]
+  Copy(4000, 0, 10000, 0, 1)
   goto 14 if SwitchWithDefault(EntityInfoArray[(10000[0] * 3) + 1], 2, 1, 3, 1, 4, 1, 5, 1, 6, 1, 7, 1, 8, 1, 0) else 23
 14:
   10000[0] <- EntityDataArray[(9 + (10000[0] * 32))]
@@ -58,7 +58,7 @@
   10000[1] <- 10000[1] + (LevelData[9] * (LevelData[11] / 2)) + LevelData[10]
   10000[2] <- 10000[2] + (LevelData[9] * (LevelData[11] / 2)) + LevelData[10]
   Draw(14, (10000[3] + (LevelData[3] * -(LevelData[11] / 2)) + LevelData[4]) / 10000[5], (10000[4] + (LevelData[6] * -(LevelData[11] / 2)) + LevelData[7]) / 10000[5], (10000[3] + (LevelData[3] * (LevelData[11] / 2)) + LevelData[4]) / 10000[1], (10000[4] + (LevelData[6] * (LevelData[11] / 2)) + LevelData[7]) / 10000[1], (10000[6] + (LevelData[3] * (LevelData[11] / 2)) + LevelData[4]) / 10000[2], (10000[7] + (LevelData[6] * (LevelData[11] / 2)) + LevelData[7]) / 10000[2], (10000[6] + (LevelData[3] * -(LevelData[11] / 2)) + LevelData[4]) / 10000[8], (10000[7] + (LevelData[6] * -(LevelData[11] / 2)) + LevelData[7]) / 10000[8], 300000 + (10000[0] * 100), 1, 0, 0, 0)
-  10000[0] <- EntityMemory[0]
+  Copy(4000, 0, 10000, 0, 1)
   goto 16 if SwitchWithDefault(EntityInfoArray[(10000[0] * 3) + 1], 2, 1, 3, 1, 4, 1, 5, 1, 6, 1, 7, 1, 8, 1, 0) else 21
 16:
   10000[0] <- EntityDataArray[(9 + (10000[0] * 32))]
@@ -98,7 +98,7 @@
   goto exit
 19:
   10000[0] <- SpawnParticleEffect(5, 10000[3], 10000[4], 10000[7], 10000[0], 10000[2], 10000[1], 10000[5], 10000[8], 1.5, 1)
-  EntityMemory[2] <- 10000[0]
+  Copy(10000, 0, 4000, 2, 1)
   goto exit
 20:
   DebugLog(7)

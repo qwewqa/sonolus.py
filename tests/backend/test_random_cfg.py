@@ -49,16 +49,13 @@ from sonolus.backend.optimize import (
 )
 from sonolus.backend.optimize.flow import BasicBlock, cfg_to_text
 from sonolus.backend.place import BlockPlace, TempBlock
+from sonolus.script.internal.context import ReadOnlyMemory
 from tests.backend._cfg_gen import OBS_BLOCKS, OBS_CAPTURE_LEN, build_cfg, count_blocks, programs
 
 LEVELS = (MINIMAL_PASSES, FAST_PASSES, STANDARD_PASSES)
 OPT_LEVELS = (FAST_PASSES, STANDARD_PASSES)  # compared against the MINIMAL reference
 
-# Interpreter ROM seed (block 3000): NaN, +Inf, -Inf. The emitter lowers non-finite
-# constants to ROM reads, so a program that ever emits one reads a real special
-# value instead of the lazy -1.0 padding. The random corpus stays finite, but
-# seeding is harmless and keeps directed tests robust.
-_ROM = [float("nan"), float("inf"), float("-inf")]
+_ROM = ReadOnlyMemory().values
 
 
 def _f(x: float) -> bytes:

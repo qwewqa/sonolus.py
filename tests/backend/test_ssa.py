@@ -34,6 +34,7 @@ from sonolus.backend.optimize import (
 )
 from sonolus.backend.optimize.flow import BasicBlock, cfg_to_text, traverse_cfg_reverse_postorder
 from sonolus.backend.place import BlockPlace, TempBlock
+from sonolus.script.internal.context import ReadOnlyMemory
 from tests.backend._corpus import MODE_SETUP, iter_callbacks
 
 # ---------------------------------------------------------------------------
@@ -58,7 +59,7 @@ def _interp(cfg: BasicBlock, level=MINIMAL_PASSES, mode=None, cb=None, rom=None)
     opt = run_passes(cfg, level, OptimizerConfig(mode=mode, callback=cb))
     node = cfg_to_engine_node(opt)
     it = Interpreter()
-    it.blocks[3000] = list(rom) if rom is not None else [float("nan"), float("inf"), -float("inf")]
+    it.blocks[3000] = list(rom) if rom is not None else list(ReadOnlyMemory().values)
     it.run(node)
     return it
 

@@ -36,12 +36,13 @@ from sonolus.backend.ops import Op
 from sonolus.backend.optimize import MINIMAL_PASSES, OptimizerConfig, cfg_to_engine_node, run_passes
 from sonolus.backend.optimize.flow import BasicBlock, cfg_to_text
 from sonolus.backend.place import BlockPlace, TempBlock
+from sonolus.script.internal.context import ReadOnlyMemory
 
 RU = PlayBlock.RuntimeUpdate  # read-only under any callback, NOT runtime-constant
 ROM_CONST = PlayBlock.LevelData  # read-only + runtime-constant (RUNTIME_CONSTANT_BLOCKS)
 WBLOCK = 20  # raw int -> conservatively writable
 
-_ROM = [float("nan"), float("inf"), float("-inf")]
+_ROM = ReadOnlyMemory().values
 
 _SSA_PRE = ["cfg_cleanup", "ssa", "gvn", "dce"]
 _SSA_LICM = ["cfg_cleanup", "ssa", "gvn", "dce", "licm"]

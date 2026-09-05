@@ -9,7 +9,7 @@
   EntityData[6] <- TimeToScaledTime(EntityData[5])
   EntityData[7] <- EntityData[6] - (6 / LevelOption[1])
   EntityData[8] <- TimeToScaledTime(EntityData[11])
-  10000[0] <- EngineRom[(3 + EntityInfo[1])]
+  10000[0] <- EngineRom[(4099 + EntityInfo[1])]
   goto when (10000[0] - 1)
     0 -> 10
     1 -> 9
@@ -44,9 +44,9 @@
   10000[1] <- 0
   goto 11
 11:
-  EntityInput[1] <- 10000[1]
-  EntityInput[0] <- EntityData[5]
-  EntityData[9] <- EntityInfo[0]
+  Copy(10000, 1, 4004, 1, 1)
+  Copy(4001, 5, 4004, 0, 1)
+  Copy(4003, 0, 4001, 9, 1)
   goto 12
 12:
   goto 13 if (EntityDataArray[(3 + (EntityData[9] * 32))] > 0) else 14
@@ -54,7 +54,7 @@
   EntityData[9] <- EntityDataArray[(3 + (EntityData[9] * 32))]
   goto 12
 14:
-  EntityData[10] <- EntityInfo[0]
+  Copy(4003, 0, 4001, 10, 1)
   goto 15
 15:
   goto 16 if (EntityDataArray[(4 + (EntityData[10] * 32))] > 0) else 17
@@ -66,8 +66,8 @@
 18:
   goto 19 if (0 != EntityData[12]) else 32
 19:
-  10000[1] <- EntityData[12]
-  10000[2] <- EntityData[11]
+  Copy(4001, 12, 10000, 1, 1)
+  Copy(4001, 11, 10000, 2, 1)
   goto 20 if LevelOption[10] else 32
 20:
   goto when (10000[0] - 2)
@@ -119,7 +119,7 @@
   goto 38
 33:
   EntityData[12] <- 1
-  10000[1] <- EntityData[5]
+  Copy(4001, 5, 10000, 1, 1)
   goto 34 if LevelOption[10] else 38
 34:
   goto when (10000[0] - 2)
@@ -147,7 +147,7 @@
   10000[0] <- EntityInfoArray[(EntityData[9] * 3)] + 18
   10000[1] <- If(StreamHas(10000[0], -10), -10, StreamGetNextKey(10000[0], -10))
   10000[3] <- 0
-  10000[2] <- 10000[3]
+  Copy(10000, 3, 10000, 2, 1)
   goto 42
 42:
   goto 43 if StreamHas(10000[0], 10000[1]) else 60
@@ -156,7 +156,7 @@
   10000[4] <- If(10000[4] > 10000[1], 10000[4], inf)
   goto 44 if (10000[1] < EntityDataArray[(5 + (EntityData[9] * 32))]) else 45
 44:
-  10000[1] <- 10000[4]
+  Copy(10000, 4, 10000, 1, 1)
   goto 42
 45:
   goto 60 if (10000[1] > EntityDataArray[(5 + (EntityData[10] * 32))]) else 46
@@ -171,16 +171,16 @@
   10000[3] <- 1
   goto 53
 50:
-  10000[2] <- 10000[1]
+  Copy(10000, 1, 10000, 2, 1)
   10000[3] <- 1
   goto 54
 51:
   goto 52 if 10000[5] else 54
 52:
-  10000[1] <- 10000[2]
+  Copy(10000, 2, 10000, 1, 1)
   goto 53
 53:
-  10000[2] <- 10000[1]
+  Copy(10000, 1, 10000, 2, 1)
   goto 58
 54:
   goto 55 if 10000[3] else 58
@@ -190,18 +190,18 @@
   10000[3] <- PlayLoopedScheduled(7, 10000[2])
   StopLoopedScheduled(10000[3], 10000[1])
   10000[3] <- 0
-  10000[1] <- 10000[2]
+  Copy(10000, 2, 10000, 1, 1)
   goto 59
 57:
   10000[3] <- 0
-  10000[1] <- 10000[2]
+  Copy(10000, 2, 10000, 1, 1)
   goto 59
 58:
-  10000[1] <- 10000[2]
+  Copy(10000, 2, 10000, 1, 1)
   goto 59
 59:
-  10000[2] <- 10000[1]
-  10000[1] <- 10000[4]
+  Copy(10000, 1, 10000, 2, 1)
+  Copy(10000, 4, 10000, 1, 1)
   goto 42
 60:
   goto 61 if 10000[3] else 65

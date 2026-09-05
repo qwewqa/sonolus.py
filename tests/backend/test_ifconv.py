@@ -33,10 +33,11 @@ from sonolus.backend.ops import Op
 from sonolus.backend.optimize import MINIMAL_PASSES, OptimizerConfig, cfg_to_engine_node, run_passes
 from sonolus.backend.optimize.flow import BasicBlock, cfg_to_text
 from sonolus.backend.place import BlockPlace, TempBlock
+from sonolus.script.internal.context import ReadOnlyMemory
 from tests.backend._cfg_gen import OBS_BLOCKS, OBS_CAPTURE_LEN, build_cfg, programs
 from tests.backend._corpus import MODE_SETUP, iter_callbacks
 
-_ROM = [float("nan"), float("inf"), -float("inf")]
+_ROM = ReadOnlyMemory().values
 
 # Input/output memory blocks for the hand-built diamonds (plain ints -> writable
 # under mode=None, so genuine runtime values that never fold to constants).

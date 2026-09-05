@@ -1,15 +1,38 @@
-"""Tests for lowering the frontend Context graph into optimizer CFG blocks."""
+"""Tests for frontend context state and lowering it into optimizer CFG blocks."""
+
+import math
 
 from sonolus.backend.ir import IRConst
 from sonolus.backend.mode import Mode
 from sonolus.backend.optimize.flow import traverse_cfg_preorder
+from sonolus.backend.rom import ROM_ZERO_COUNT, ROM_ZERO_START
 from sonolus.script.internal.context import (
     CallbackContextState,
     Context,
     ModeContextState,
     ProjectContextState,
+    ReadOnlyMemory,
     context_to_cfg,
 )
+
+
+def test_read_only_memory_reserves_contiguous_positive_zeros_after_special_values():
+    rom = ReadOnlyMemory()
+
+    assert math.isnan(rom.values[0])
+    assert rom.values[1:ROM_ZERO_START] == [float("inf"), float("-inf")]
+    assert len(rom.values) == ROM_ZERO_START + ROM_ZERO_COUNT
+    assert rom.values[ROM_ZERO_START:] == [0.0] * ROM_ZERO_COUNT
+    assert all(math.copysign(1.0, value) == 1.0 for value in rom.values[ROM_ZERO_START:])
+
+
+def test_read_only_memory_allocates_interned_values_after_reserved_zeros():
+    rom = ReadOnlyMemory()
+
+    place = rom[12.5, 13.5]
+
+    assert place.index == ROM_ZERO_START + ROM_ZERO_COUNT
+    assert rom.values[-2:] == [12.5, 13.5]
 
 
 def test_context_to_cfg_visits_each_context_once_with_pending_cross_edges_and_cycles():

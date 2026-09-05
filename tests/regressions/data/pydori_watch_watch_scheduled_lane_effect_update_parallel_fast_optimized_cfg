@@ -1,10 +1,10 @@
 0:
-  10000[0] <- EntityMemory[0]
+  Copy(4000, 0, 10000, 0, 1)
   goto 1 if ((RuntimeUpdate[0] - RuntimeUpdate[1]) < 10000[0]) else 8
 1:
   goto 2 if (10000[0] <= RuntimeUpdate[0]) else 8
 2:
-  10000[1] <- EntityMemory[1]
+  Copy(4000, 1, 10000, 1, 1)
   goto 3 if LevelOption[7] else 8
 3:
   10000[2] <- 0
@@ -19,7 +19,7 @@
   10000[5] <- SpawnParticleEffect(0, LevelData[10000[4] + 2], LevelData[10000[4] + 3], LevelData[10000[4] + 4], LevelData[10000[4] + 5], LevelData[10000[4] + 6], LevelData[10000[4] + 7], LevelData[10000[4] + 8], LevelData[10000[4] + 9], 0.2, 0)
   goto exit
 7:
-  10000[2] <- 10000[3]
+  Copy(10000, 3, 10000, 2, 1)
   goto 4
 8:
   goto exit

@@ -1,7 +1,7 @@
 0:
   goto 91 if EntityDespawn[0] else 1
 1:
-  10000[0] <- EngineRom[(3 + EntityInfo[1])]
+  10000[0] <- EngineRom[(4099 + EntityInfo[1])]
   10000[1] <- Remap(EntityData[12] - (6 / LevelOption[1]), EntityData[12], LevelData[14], 0, RuntimeUpdate[2])
   10000[2] <- 10000[0] == 6
   goto 91 if 10000[2] else 2
@@ -16,7 +16,7 @@
   10000[3] <- 8
   goto 19
 6:
-  goto 7 if (3 == 10000[0]) else 10
+  goto 7 if (10000[0] == 3) else 10
 7:
   goto 8 if (EntityData[2] > 0) else 9
 8:
@@ -55,7 +55,7 @@
   10000[5] <- 9
   goto 26
 21:
-  goto 22 if (3 == 10000[0]) else 25
+  goto 22 if (10000[0] == 3) else 25
 22:
   goto 23 if (EntityData[2] > 0) else 24
 23:
@@ -197,7 +197,7 @@
   10000[67] <- Draw(10000[5], 10000[63], 10000[64], 10000[63] + 10000[58], 10000[64] + 10000[59], 10000[65] + 10000[58], 10000[66] + 10000[59], 10000[65], 10000[66], 320000 + (EntityData[0] * 100) + 10000[1], 10000[43], 0, 0, 0)
   goto exit
 58:
-  goto 59 if (3 == 10000[0]) else 91
+  goto 59 if (10000[0] == 3) else 91
 59:
   10000[68] <- RuntimeUpdate[0] % 0.3
   10000[69] <- 10000[68] / 0.3
@@ -267,13 +267,13 @@
   10000[78] <- Remap(0.19999999999999998, 0.3, 1, 10000[79], 10000[68])
   goto 85
 84:
-  10000[78] <- 10000[79]
+  Copy(10000, 79, 10000, 78, 1)
   goto 85
 85:
   10000[84] <- 10000[74] * EaseOutQuad(10000[78])
   goto 86 if (10000[84] <= 0) else 87
 86:
-  10000[76] <- 10000[77]
+  Copy(10000, 77, 10000, 76, 1)
   goto 69
 87:
   goto 88 if (EntityData[2] > 0) else 89
@@ -319,7 +319,7 @@
   10000[118] <- (LevelData[8] * 10000[107]) + (LevelData[9] * 10000[108]) + LevelData[10]
   10000[119] <- (LevelData[8] * 10000[112]) + (LevelData[9] * 10000[113]) + LevelData[10]
   10000[120] <- Draw(10000[5], ((LevelData[2] * 10000[102]) + (LevelData[3] * 10000[103]) + LevelData[4]) / 10000[116], ((LevelData[5] * 10000[102]) + (LevelData[6] * 10000[103]) + LevelData[7]) / 10000[116], ((LevelData[2] * 10000[107]) + (LevelData[3] * 10000[108]) + LevelData[4]) / 10000[118], ((LevelData[5] * 10000[107]) + (LevelData[6] * 10000[108]) + LevelData[7]) / 10000[118], ((LevelData[2] * 10000[112]) + (LevelData[3] * 10000[113]) + LevelData[4]) / 10000[119], ((LevelData[5] * 10000[112]) + (LevelData[6] * 10000[113]) + LevelData[7]) / 10000[119], ((LevelData[2] * 10000[114]) + (LevelData[3] * 10000[115]) + LevelData[4]) / 10000[117], ((LevelData[5] * 10000[114]) + (LevelData[6] * 10000[115]) + LevelData[7]) / 10000[117], 320000 + (EntityData[0] * 100) + 10000[1], 10000[84], 0, 0, 0)
-  10000[76] <- 10000[77]
+  Copy(10000, 77, 10000, 76, 1)
   goto 69
 91:
   goto exit

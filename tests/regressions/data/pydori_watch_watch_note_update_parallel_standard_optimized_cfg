@@ -1,5 +1,5 @@
 0:
-  10000[0] <- EngineRom[(3 + EntityInfo[1])]
+  10000[0] <- EngineRom[(4099 + EntityInfo[1])]
   10000[1] <- Remap(EntityData[6] - (6 / LevelOption[1]), EntityData[6], LevelData[14], 0, RuntimeUpdate[2])
   goto when (10000[0] - 1)
     0 -> 7
@@ -159,13 +159,13 @@
   10000[9] <- Remap(0.19999999999999998, 0.3, 1, 10000[10], 10000[0])
   goto 44
 43:
-  10000[9] <- 10000[10]
+  Copy(10000, 10, 10000, 9, 1)
   goto 44
 44:
   10000[9] <- 10000[4] * EaseOutQuad(10000[9])
   goto 45 if (10000[9] <= 0) else 46
 45:
-  10000[7] <- 10000[8]
+  Copy(10000, 8, 10000, 7, 1)
   goto 31
 46:
   10000[10] <- If(EntityData[2] > 0, 1, -1)
@@ -204,7 +204,7 @@
   10000[16] <- (LevelData[8] * 10000[17]) + (LevelData[9] * 10000[7]) + LevelData[10]
   10000[18] <- (LevelData[8] * 10000[12]) + (LevelData[9] * 10000[11]) + LevelData[10]
   Draw(10000[3], ((LevelData[2] * 10000[19]) + (LevelData[3] * 10000[20]) + LevelData[4]) / 10000[13], ((LevelData[5] * 10000[19]) + (LevelData[6] * 10000[20]) + LevelData[7]) / 10000[13], ((LevelData[2] * 10000[17]) + (LevelData[3] * 10000[7]) + LevelData[4]) / 10000[16], ((LevelData[5] * 10000[17]) + (LevelData[6] * 10000[7]) + LevelData[7]) / 10000[16], ((LevelData[2] * 10000[12]) + (LevelData[3] * 10000[11]) + LevelData[4]) / 10000[18], ((LevelData[5] * 10000[12]) + (LevelData[6] * 10000[11]) + LevelData[7]) / 10000[18], ((LevelData[2] * 10000[14]) + (LevelData[3] * 10000[10]) + LevelData[4]) / 10000[15], ((LevelData[5] * 10000[14]) + (LevelData[6] * 10000[10]) + LevelData[7]) / 10000[15], 320000 + (EntityData[0] * 100) + 10000[1], 10000[9], 0, 0, 0)
-  10000[7] <- 10000[8]
+  Copy(10000, 8, 10000, 7, 1)
   goto 31
 47:
   10000[0] <- RuntimeUpdate[0] % 0.3

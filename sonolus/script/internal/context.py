@@ -19,6 +19,7 @@ from sonolus.backend.place import (
     TempBlock,
     preallocated_temp_block_places,
 )
+from sonolus.backend.rom import ROM_ZERO_COUNT, ROM_ZERO_START
 from sonolus.script.internal.error import CompilationError
 from sonolus.script.internal.value import Value
 
@@ -574,7 +575,9 @@ class ReadOnlyMemory:
             float("nan"),
             float("inf"),
             float("-inf"),
+            *([0.0] * ROM_ZERO_COUNT),
         ]
+        assert len(self.values) == ROM_ZERO_START + ROM_ZERO_COUNT
         self.indexes = {}
         self._lock = Lock()
 

@@ -39,6 +39,7 @@ from sonolus.backend.optimize import (
 )
 from sonolus.backend.optimize.flow import BasicBlock, cfg_to_text, traverse_cfg_reverse_postorder
 from sonolus.backend.place import BlockPlace, TempBlock
+from sonolus.script.internal.context import ReadOnlyMemory
 from tests.backend._cfg_gen import OBS_BLOCKS, OBS_CAPTURE_LEN, build_cfg, programs
 from tests.backend._corpus import MODE_SETUP, iter_callbacks
 
@@ -80,7 +81,7 @@ def _count_stmts(cfg: BasicBlock) -> int:
 # Interpretation helpers (semantic parity).
 # --------------------------------------------------------------------------
 
-_ROM = [float("nan"), float("inf"), float("-inf")]
+_ROM = ReadOnlyMemory().values
 
 
 def _run(node) -> Interpreter:

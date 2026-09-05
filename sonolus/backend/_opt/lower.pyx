@@ -27,10 +27,11 @@ involved.
 The 4096-slot cap raises ``ValueError("Temporary memory limit exceeded")``.
 """
 
-from libc.math cimport INFINITY, fabs, isfinite, nextafterf
+from libc.math cimport INFINITY, fabs, isfinite, nextafterf, signbit
 from libc.stdint cimport int16_t, int32_t, int64_t, uint8_t, uint16_t, uint32_t, uint64_t
 from libc.stdlib cimport calloc, free, malloc, realloc
 from libc.string cimport memcpy
+from libcpp.vector cimport vector
 
 from sonolus.backend._opt.ir cimport (
     BlockInfo,
@@ -57,6 +58,7 @@ from sonolus.backend._opt.ir cimport (
 )
 from sonolus.backend._opt._ops_gen cimport (
     OP_Add,
+    OP_Copy,
     OP_DecrementPost,
     OP_Divide,
     OP_Equal,
@@ -98,6 +100,10 @@ from sonolus.backend._opt.midend cimport build_ssa, cfg_cleanup, midend_round
 
 from sonolus.backend._opt.ir import marshal_in, to_basic_blocks
 from sonolus.backend._opt.midend import _seq_parallel_copies
+from sonolus.backend.rom import ROM_ZERO_COUNT, ROM_ZERO_START
+
+cdef int32_t _ROM_ZERO_COUNT = ROM_ZERO_COUNT
+cdef int32_t _ROM_ZERO_START = ROM_ZERO_START
 
 cdef extern from *:
     """
@@ -650,6 +656,159 @@ cdef void fuse_rmw(Func func) except *:
         if _drop_self_copy(func, i):
             continue
         _fuse_scalar(func, i)
+
+
+cdef bint _copy_static_place(PlaceInfo p) noexcept nogil:
+    # Beyond 2**24, adjacent integer offsets can denote the same f32 address.
+    return (p.kind == PLACE_REAL_BLOCK and p.index_val < 0
+            and 0 <= p.offset < 16777216)
+
+
+cdef int32_t _copy_source(Func func, int32_t i) noexcept nogil:
+    cdef int32_t v
+    cdef double value
+    if func.instrs[i].op != OPX_SET or not _copy_static_place(func.places[func.instrs[i].aux]):
+        return -2
+    v = <int32_t>func.args[func.instrs[i].arg_start]
+    if func.instrs[v].op == OPX_GET:
+        if _copy_static_place(func.places[func.instrs[v].aux]):
+            return func.instrs[v].aux
+    elif func.instrs[v].op == OPX_CONST:
+        value = func.consts[func.instrs[v].aux]
+        if value == 0.0 and not signbit(value):
+            return -1
+    return -2
+
+
+cdef void fuse_copy(Func func) except *:
+    """Combine adjacent static-address stores after allocation.
+
+    Copy snapshots its source and returns zero. Only unused statement results
+    qualify, and a run stops before an earlier destination feeds a later source.
+    Unknown offsets between entity blocks and their array views prevent merging.
+    """
+    if func.is_ssa:
+        raise ValueError("Copy fusion requires a non-SSA arena")
+    cdef int32_t ni = func.n_instrs
+    cdef vector[uint8_t] used = vector[uint8_t](ni, 0)
+    cdef vector[int32_t] counts = vector[int32_t](ni, 0)
+    cdef vector[int32_t] roots
+    cdef int32_t i, j, b, k, v, start, end, pos, next_pos, first, last, source, other, count
+    cdef PlaceInfo dst, src, next_dst, next_src
+    cdef bint changed = False
+    for i in range(ni):
+        for j in range(func.instrs[i].nargs):
+            used[func.args[func.instrs[i].arg_start + j]] = 1
+    for i in range(func.n_places):
+        if func.places[i].index_val >= 0:
+            used[func.places[i].index_val] = 1
+        if func.places[i].kind == PLACE_DYNAMIC_BLOCK:
+            used[func.places[i].block_ref] = 1
+    for b in range(func.n_blocks):
+        if func.blocks[b].test_val >= 0:
+            used[func.blocks[b].test_val] = 1
+        roots.clear()
+        start = func.blocks[b].instr_start
+        end = start + func.blocks[b].instr_count
+        for i in range(start, end):
+            if func.instrs[i].flags & FLAG_STMT_ROOT:
+                roots.push_back(i)
+        pos = 0
+        while pos < <int32_t>roots.size():
+            first = roots[pos]
+            source = _copy_source(func, first)
+            if source == -2 or used[first]:
+                pos += 1
+                continue
+            dst = func.places[func.instrs[first].aux]
+            if source >= 0:
+                src = func.places[source]
+            count = 1
+            next_pos = pos + 1
+            while next_pos < <int32_t>roots.size():
+                last = roots[next_pos]
+                other = _copy_source(func, last)
+                if used[last] or other == -2 or (source == -1) != (other == -1):
+                    break
+                next_dst = func.places[func.instrs[last].aux]
+                if next_dst.block_ref != dst.block_ref or next_dst.offset != dst.offset + count:
+                    break
+                if source == -1:
+                    if count >= _ROM_ZERO_COUNT:
+                        break
+                else:
+                    next_src = func.places[other]
+                    if next_src.block_ref != src.block_ref or next_src.offset != src.offset + count:
+                        break
+                    if src.block_ref == dst.block_ref:
+                        if dst.offset <= next_src.offset < dst.offset + count:
+                            break
+                    elif 4000 <= src.block_ref < 5000 and 4000 <= dst.block_ref < 5000:
+                        # Entity blocks and their array views can share physical memory.
+                        break
+                count += 1
+                next_pos += 1
+            if count > 1 or (source >= 0 and not (src.flags & PLACE_RUNTIME_CONST)):
+                counts[first] = count
+                for j in range(pos + 1, next_pos):
+                    counts[roots[j]] = -1
+                changed = True
+            pos = next_pos
+    if not changed:
+        return
+
+    cdef vector[Instr] old_instrs
+    cdef vector[uint32_t] old_args
+    cdef vector[int32_t] remap = vector[int32_t](ni, -1)
+    old_instrs.assign(func.instrs, func.instrs + ni)
+    old_args.assign(func.args, func.args + func.n_args)
+    cdef Instr ins
+    cdef list operands
+    cdef int32_t src_block, src_offset, cid
+    func.n_instrs = 0
+    func.n_args = 0
+    for b in range(func.n_blocks):
+        start = func.blocks[b].instr_start
+        end = start + func.blocks[b].instr_count
+        func.blocks[b].instr_start = func.n_instrs
+        for i in range(start, end):
+            ins = old_instrs[i]
+            if counts[i] > 0:
+                dst = func.places[ins.aux]
+                v = <int32_t>old_args[ins.arg_start]
+                if old_instrs[v].op == OPX_CONST:
+                    src_block = 3000
+                    src_offset = _ROM_ZERO_START
+                else:
+                    src = func.places[old_instrs[v].aux]
+                    src_block = src.block_ref
+                    src_offset = src.offset
+                operands = []
+                for k in (src_block, src_offset, dst.block_ref, dst.offset, counts[i]):
+                    cid = func._intern_const(k)
+                    operands.append(func._emit(OPX_CONST, FLAG_PURE | FLAG_CONST_IS_INT, b, cid, []))
+                remap[i] = func._emit(OP_Copy, FLAG_SIDE_EFFECT | FLAG_PINNED | FLAG_STMT_ROOT, b, -1, operands)
+            else:
+                operands = [remap[old_args[ins.arg_start + j]] for j in range(ins.nargs)]
+                if counts[i] < 0:
+                    ins.flags &= <uint8_t>(~FLAG_STMT_ROOT)
+                remap[i] = func._emit(ins.op, ins.flags, b, ins.aux, operands)
+        func.blocks[b].instr_count = func.n_instrs - func.blocks[b].instr_start
+    # Switch normalization appends test expressions outside the block slices.
+    for i in range(ni):
+        if remap[i] < 0:
+            ins = old_instrs[i]
+            operands = [remap[old_args[ins.arg_start + j]] for j in range(ins.nargs)]
+            remap[i] = func._emit(ins.op, ins.flags, ins.block, ins.aux, operands)
+    for b in range(func.n_blocks):
+        if func.blocks[b].test_val >= 0:
+            func.blocks[b].test_val = remap[func.blocks[b].test_val]
+    for i in range(func.n_places):
+        if func.places[i].index_val >= 0:
+            func.places[i].index_val = remap[func.places[i].index_val]
+        if func.places[i].kind == PLACE_DYNAMIC_BLOCK:
+            func.places[i].block_ref = remap[func.places[i].block_ref]
+    func._place_intern.clear()
 
 
 cdef int32_t _strategy_code(object strategy) except -1:

@@ -3,7 +3,7 @@
 1:
   goto 2 if (EntityData[12] != 0) else 36
 2:
-  10000[0] <- EngineRom[(3 + EntityInfo[1])]
+  10000[0] <- EngineRom[(4099 + EntityInfo[1])]
   goto 36 if (10000[0] == 6) else 3
 3:
   goto 4 if LevelOption[6] else 36
@@ -19,7 +19,7 @@
   10000[2] <- 6
   goto 17
 8:
-  goto 9 if (3 == 10000[0]) else 12
+  goto 9 if (10000[0] == 3) else 12
 9:
   goto 10 if (EntityData[2] > 0) else 11
 10:
@@ -62,7 +62,7 @@
   10000[14] <- 7
   goto 30
 21:
-  goto 22 if (3 == 10000[0]) else 25
+  goto 22 if (10000[0] == 3) else 25
 22:
   goto 23 if (EntityData[2] > 0) else 24
 23:
@@ -118,7 +118,7 @@
   10000[38] <- SpawnParticleEffect(0, LevelData[10000[37] + 2], LevelData[10000[37] + 3], LevelData[10000[37] + 4], LevelData[10000[37] + 5], LevelData[10000[37] + 6], LevelData[10000[37] + 7], LevelData[10000[37] + 8], LevelData[10000[37] + 9], 0.2, 0)
   goto exit
 35:
-  10000[35] <- 10000[36]
+  Copy(10000, 36, 10000, 35, 1)
   goto 32
 36:
   goto exit

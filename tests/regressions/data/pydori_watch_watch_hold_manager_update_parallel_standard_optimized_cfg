@@ -5,10 +5,10 @@
 2:
   DestroyParticleEffect(EntityMemory[2])
   EntityMemory[2] <- 0
-  10000[0] <- EntityMemory[0]
+  Copy(4000, 0, 10000, 0, 1)
   goto 4 if RuntimeEnvironment[4] else 8
 3:
-  10000[0] <- EntityMemory[0]
+  Copy(4000, 0, 10000, 0, 1)
   goto 4 if RuntimeEnvironment[4] else 8
 4:
   10000[0] <- EntityInfoArray[(EntityDataArray[(9 + (10000[0] * 32))] * 3)] + 18
@@ -71,5 +71,5 @@
   goto exit
 10:
   10000[0] <- SpawnParticleEffect(5, 10000[3], 10000[4], 10000[7], 10000[0], 10000[2], 10000[1], 10000[5], 10000[8], 1.5, 1)
-  EntityMemory[2] <- 10000[0]
+  Copy(10000, 0, 4000, 2, 1)
   goto exit

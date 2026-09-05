@@ -25,6 +25,7 @@ from sonolus.backend._opt.lower cimport (
     ALLOC_PACKING,
     ALLOC_TRY_BUMP,
     allocate_func,
+    fuse_copy,
     fuse_rmw,
     if_convert,
     lower_from_ssa,
@@ -106,11 +107,11 @@ cdef Func _pipeline(Func func, int level, bint allocate):
         minimal  (-O0): cfg_cleanup -> bump allocation (mid-end bypassed).
         fast     (-O1): cfg_cleanup -> build_ssa
                         -> midend_round(allow_repeat=False) -> lower_from_ssa
-                        -> try-bump allocation -> fuse_rmw. No LICM /
+                        -> try-bump allocation -> fuse_rmw -> fuse_copy. No LICM /
                         rewrite_switch / if-conversion (iteration speed over
                         codegen quality).
         standard (-O2): cfg_cleanup -> build_ssa -> midend_standard -> if_convert
-                        -> lower_from_ssa -> packing allocation -> fuse_rmw.
+                        -> lower_from_ssa -> packing allocation -> fuse_rmw -> fuse_copy.
 
     ``midend_round`` runs SCCP -> simplify/GVN -> DCE over the SSA arena
     (repeating once when ``allow_repeat`` and something changed).
@@ -122,7 +123,8 @@ cdef Func _pipeline(Func func, int level, bint allocate):
     phi-free cleanup + normalize_switch that supersedes the naive ``out_of_ssa``,
     producing a legal non-SSA arena ready for ``allocate_func`` + emission.
     ``fuse_rmw`` (fast/standard, post-allocation) fuses place-based
-    read-modify-write over the allocated arena.
+    read-modify-write over the allocated arena. ``fuse_copy`` then combines
+    contiguous copies and zero stores using the allocated addresses.
 
     Each stage returns a fresh ``Func``; the allocator (when requested) rewrites
     the final arena in place.
@@ -179,9 +181,10 @@ cdef Func _pipeline(Func func, int level, bint allocate):
             if prof: t0 = _prof.now_ns()
             allocate_func(lowered, ALLOC_TRY_BUMP)
             fuse_rmw(lowered)
+            fuse_copy(lowered)
             if prof: _prof.record("allocate", _prof.now_ns() - t0)
             if _TRACE:
-                _trace_dump(lowered, "allocate(try_bump)+fuse_rmw")
+                _trace_dump(lowered, "allocate(try_bump)+fuse_rmw+fuse_copy")
         return lowered
 
     if prof: t0 = _prof.now_ns()
@@ -203,9 +206,10 @@ cdef Func _pipeline(Func func, int level, bint allocate):
         if prof: t0 = _prof.now_ns()
         allocate_func(lowered, ALLOC_PACKING)
         fuse_rmw(lowered)
+        fuse_copy(lowered)
         if prof: _prof.record("allocate", _prof.now_ns() - t0)
         if _TRACE:
-            _trace_dump(lowered, "allocate(packing)+fuse_rmw")
+            _trace_dump(lowered, "allocate(packing)+fuse_rmw+fuse_copy")
     return lowered
 
 
@@ -442,6 +446,12 @@ def _phase_try_bump(func):
     return func
 
 
+def _phase_copy(func):
+    fuse_copy(<Func>func)
+    return func
+
+
+register_phase("copy", _phase_copy)
 register_phase("cfg_cleanup", _phase_cfg_cleanup)
 register_phase("ssa", _phase_ssa)
 register_phase("unssa", _phase_unssa)

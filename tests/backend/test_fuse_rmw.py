@@ -37,6 +37,7 @@ from sonolus.backend.optimize import (
 )
 from sonolus.backend.optimize.flow import BasicBlock, cfg_to_text
 from sonolus.backend.place import BlockPlace, TempBlock
+from sonolus.script.internal.context import ReadOnlyMemory
 
 OPT_LEVELS = (FAST_PASSES, STANDARD_PASSES)
 
@@ -325,7 +326,7 @@ def test_self_copy_store_to_a_different_cell_is_kept():
         return b0
 
     for level in OPT_LEVELS:
-        assert "20[0] <- 20[1]" in _text(run_passes(build(), level, OptimizerConfig()))
+        assert "Copy(20, 1, 20, 0, 1)" in _text(run_passes(build(), level, OptimizerConfig()))
 
 
 def test_self_copy_store_with_random_indices_is_kept():
@@ -507,7 +508,7 @@ def test_intervening_side_effect_blocks_pointed_fusion():
 # Semantic differential: full pipeline vs un-fused MINIMAL reference.
 # ==========================================================================
 
-_ROM = [float("nan"), float("inf"), float("-inf")]
+_ROM = ReadOnlyMemory().values
 
 
 def _fb(x: float) -> bytes:

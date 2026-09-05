@@ -1,5 +1,5 @@
 0:
-  10000[0] <- EngineRom[(3 + EntityInfo[1])]
+  10000[0] <- EngineRom[(4099 + EntityInfo[1])]
   goto when 10000[0]
     6 -> 69
     default -> 1
@@ -29,17 +29,17 @@
 10:
   goto 53 if (((RuntimeUpdate[0] - RuntimeEnvironment[3]) - EntityData[11]) < (EntityData[11] - EntityMemory[0])) else 11
 11:
-  10000[1] <- EntityMemory[0]
+  Copy(4000, 0, 10000, 1, 1)
   goto 12 if ((EntityData[11] - 0.03333333333333333) <= 10000[1]) else 14
 12:
   goto 13 if (10000[1] <= EntityData[11]) else 14
 13:
-  EntityMemory[0] <- EntityData[11]
+  Copy(4001, 11, 4000, 0, 1)
   goto 14
 14:
-  10000[1] <- EntityMemory[0]
+  Copy(4000, 0, 10000, 1, 1)
   10000[2] <- Judge(10000[1], EntityData[11], EntityData[5], EntityData[6], EntityData[7], EntityData[8], EntityData[9], EntityData[10])
-  EntityInput[0] <- 10000[2]
+  Copy(10000, 2, 4005, 0, 1)
   EntityInput[1] <- Clamp(10000[1] - EntityData[11], -1, 1)
   EntityInput[3] <- EntityInput[1] * 1000
   goto 15 if (10000[2] != 0) else 52
@@ -198,7 +198,7 @@
   SpawnParticleEffect(0, LevelData[10000[0] + 2], LevelData[10000[0] + 3], LevelData[10000[0] + 4], LevelData[10000[0] + 5], LevelData[10000[0] + 6], LevelData[10000[0] + 7], LevelData[10000[0] + 8], LevelData[10000[0] + 9], 0.2, 0)
   goto 52
 50:
-  10000[0] <- 10000[1]
+  Copy(10000, 1, 10000, 0, 1)
   goto 47
 51:
   DebugLog(3)
@@ -223,7 +223,7 @@
   10000[1] <- 0
   goto 58
 58:
-  10000[2] <- LevelMemory[17]
+  Copy(2000, 17, 10000, 2, 1)
   goto 59 if ((10000[2] >= 0) && (0 == (10000[2] % 1))) else 65
 59:
   goto 60 if (10000[1] < 10000[2]) else 62

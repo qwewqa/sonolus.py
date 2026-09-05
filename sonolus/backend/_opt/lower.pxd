@@ -39,6 +39,10 @@ cdef void allocate_func(Func func, int32_t strategy) except *
 cdef void fuse_rmw(Func func) except *
 
 
+# Requires allocated, non-SSA places. Copy results must not feed other values.
+cdef void fuse_copy(Func func) except *
+
+
 # Out-of-SSA + treeify: consume a value-based SSA ``Func`` (from
 # ``midend.build_ssa``) and return a fresh, legal non-SSA arena ready for
 # ``allocate_func`` + emission. This is the production de-SSA path;
