@@ -1,3 +1,7 @@
+### 1.2.1
+
+- Optimizer improvements
+
 ### 1.2.0
 
 - Now targeting Sonolus 1.1.4.
