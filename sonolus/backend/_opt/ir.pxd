@@ -335,7 +335,9 @@ cdef class Func:
     cdef int32_t _emit_impure(self, object node, int32_t block_id) except -1
     cdef int _emit_stmt(self, object stmt, int32_t block_id) except -1
     cdef int _push_edge(self, int32_t src, int32_t dst, object cond) except -1
+    cdef void _init_marshal(self, object mode, object callback) except *
     cdef int _marshal(self, object entry, object mode, object callback) except -1
+    cdef int _marshal_context(self, object entry, object mode, object callback) except -1
     cdef object _make_const(self, double d, bint is_int)
     cdef object _export_place(self, int32_t pid, dict names)
     cdef tuple _export_place_components(self, int32_t pid, dict names)

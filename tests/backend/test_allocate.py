@@ -103,6 +103,29 @@ def test_interference_honored_distinct_slots():
     assert offs[0] != offs[1], f"co-live a,b share a slot: {offs}"
 
 
+@pytest.mark.parametrize("count", [63, 64, 65, 127, 128, 129])
+def test_packing_interference_across_word_boundaries(count):
+    temps = [TempBlock(f"t{i}", 1) for i in range(count)]
+    values = list(range(1, count + 1))
+    b0 = BasicBlock(
+        statements=[
+            *(IRSet(BlockPlace(temp, 0, 0), IRConst(value)) for temp, value in zip(temps, values, strict=True)),
+            *(IRSet(BlockPlace(500, i, 0), IRGet(BlockPlace(temp, 0, 0))) for i, temp in enumerate(temps)),
+        ]
+    )
+
+    cfg = lower.run_allocate(b0, strategy="packing")
+    offsets = store_offsets(cfg)
+
+    # Every temp remains live through the final definition because all reads follow all writes.
+    assert len(offsets) == count
+    assert len(set(offsets)) == count
+    assert slot_count(cfg) == count
+    _, log, memory = _interpret(cfg)
+    assert log == []
+    assert memory[500] == values
+
+
 def test_conditional_infinite_loop_store_survives():
     # `if c: while True: use(x)`: x is written before the branch and read only
     # inside the exit-unreachable spin loop. Liveness must keep x live at its store,

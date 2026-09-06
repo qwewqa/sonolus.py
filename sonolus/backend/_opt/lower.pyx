@@ -285,10 +285,15 @@ cdef void _pack(Func func, Liveness L, int32_t* temp_offset) except *:
             rl = &L.root_live[<int64_t>rs * nw]
             for w in range(nw):
                 work[w] = rl[w] & nonzero[w]
-            for t in range(n_temps):
-                if bs_get(work, t):
-                    for w in range(nw):
-                        adj[t * nw + w] |= work[w]
+            # Statement live sets are often sparse, so visit only their set bits.
+            for w in range(nw):
+                word = work[w]
+                while word != 0:
+                    t = (w << 6) + _sonolus_ctz64(word)
+                    word &= word - 1
+                    rowp = &adj[t * nw]
+                    for k in range(nw):
+                        rowp[k] |= work[k]
 
         order = sorted(
             (t for t in range(n_temps) if func.temps[t].size > 0),
@@ -453,14 +458,14 @@ cdef void allocate_func(Func func, int32_t strategy) except *:
         if strategy == ALLOC_BUMP:
             _bump(func, temp_offset)
         elif strategy == ALLOC_PACKING:
-            L = compute_liveness(func)
+            L = compute_liveness(func, False)
             _pack(func, L, temp_offset)
             _dead_store_elim(func, L)
         elif strategy == ALLOC_TRY_BUMP:
             if _bump_fits(func):
                 _bump(func, temp_offset)
             else:
-                L = compute_liveness(func)
+                L = compute_liveness(func, False)
                 _pack(func, L, temp_offset)
                 _dead_store_elim(func, L)
         else:
@@ -1769,7 +1774,7 @@ cdef inline int32_t _uf_find(int32_t* parent, int32_t x) noexcept nogil:
 
 
 cdef void _coalesce(Func func) except *:
-    cdef Liveness L = compute_liveness(func)
+    cdef Liveness L = compute_liveness(func, False)
     cdef int32_t nw = L.n_words
     cdef int32_t n_temps = func.n_temps
     cdef int32_t ni = func.n_instrs
@@ -1800,6 +1805,7 @@ cdef void _coalesce(Func func) except *:
 
     # Coalescer union-find + dense-bitset interference (see the merge section).
     cdef int32_t ne = 0, ew = 0, d, du, td, sd, rt0, rs0, wroot, wother, pd, rp, kk
+    cdef int32_t ak, active_count
     cdef int64_t Ggen = 0
     cdef bint et_valid, es_valid
     cdef int32_t* eidx = NULL
@@ -1817,6 +1823,7 @@ cdef void _coalesce(Func func) except *:
     cdef uint64_t* xrow
     cdef uint64_t* mrow
     cdef uint64_t* erow
+    cdef vector[int32_t] active_mwords
     try:
         for t in range(n_temps):
             if func.temps[t].size == 1:
@@ -1864,10 +1871,15 @@ cdef void _coalesce(Func func) except *:
                     for w in range(nw):
                         work[w] |= blo[w] & scalar_mask[w]
                 bs_set(work, dsc)
-            for t in range(n_temps):
-                if bs_get(work, t):
-                    for w in range(nw):
-                        adj[t * nw + w] |= work[w]
+            # Statement live sets are often sparse, so visit only their set bits.
+            for w in range(nw):
+                word = work[w]
+                while word != 0:
+                    t = (w << 6) + _sonolus_ctz64(word)
+                    word &= word - 1
+                    rowp = &adj[t * nw]
+                    for kk in range(nw):
+                        rowp[kk] |= work[kk]
 
         # Copy pairs: SET(scalar t) = GET(scalar s), with t live-out.
         copy_pairs = set()
@@ -1924,6 +1936,7 @@ cdef void _coalesce(Func func) except *:
         ep_sorted = sorted(endpoints)
         ne = <int32_t>len(ep_sorted)
         ew = (ne + 63) >> 6
+        active_mwords.reserve(ew)
 
         eidx = <int32_t*>malloc(<size_t>n_temps * sizeof(int32_t))
         elist = <int32_t*>malloc(<size_t>ne * sizeof(int32_t))
@@ -2018,6 +2031,11 @@ cdef void _coalesce(Func func) except *:
             wgen[wroot] = Ggen
             # Add the merged web's membership to every neighbour's extras.
             mrow = &pmemb[<int64_t>wroot * ew]
+            active_mwords.clear()
+            for kk in range(ew):
+                if mrow[kk] != 0:
+                    active_mwords.push_back(kk)
+            active_count = <int32_t>active_mwords.size()
             for w in range(ew):
                 word = brow[w]
                 while word != 0:
@@ -2029,7 +2047,8 @@ cdef void _coalesce(Func func) except *:
                         for kk in range(ew):
                             erow[kk] = 0
                         xgen[pd] = wgen[rp]
-                    for kk in range(ew):
+                    for ak in range(active_count):
+                        kk = active_mwords[ak]
                         erow[kk] |= mrow[kk]
 
         # canonical: temp id -> canonical (min) temp id, for multi-member webs only.
@@ -2178,6 +2197,8 @@ cdef void _normalize_switch(Func func) except *:
     for b in range(nb):
         estart = func.blocks[b].edge_start
         ecount = func.blocks[b].edge_count
+        if ecount < 3:
+            continue
         cases = []
         has_default = False
         for e in range(estart, estart + ecount):

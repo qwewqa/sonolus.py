@@ -2,9 +2,12 @@
 
 import math
 
+import pytest
+
 from sonolus.backend.ir import IRConst
 from sonolus.backend.mode import Mode
 from sonolus.backend.optimize.flow import traverse_cfg_preorder
+from sonolus.backend.place import BlockPlace, TempBlock
 from sonolus.backend.rom import ROM_ZERO_COUNT, ROM_ZERO_START
 from sonolus.script.internal.context import (
     CallbackContextState,
@@ -13,7 +16,9 @@ from sonolus.script.internal.context import (
     ProjectContextState,
     ReadOnlyMemory,
     context_to_cfg,
+    using_ctx,
 )
+from sonolus.script.num import Num
 
 
 def test_read_only_memory_reserves_contiguous_positive_zeros_after_special_values():
@@ -33,6 +38,21 @@ def test_read_only_memory_allocates_interned_values_after_reserved_zeros():
 
     assert place.index == ROM_ZERO_START + ROM_ZERO_COUNT
     assert rom.values[-2:] == [12.5, 13.5]
+
+
+@pytest.mark.parametrize("mode", list(Mode))
+def test_rom_constants_accept_enum_and_integer_ids_but_not_dynamic_blocks(mode):
+    context = Context(ProjectContextState(), ModeContextState(mode), CallbackContextState("preprocess"))
+    with using_ctx(context):
+        place = context.rom[12.5,]
+        for block in (mode.blocks.EngineRom, int(mode.blocks.EngineRom)):
+            value = Num._from_place_(BlockPlace(block, place.index))
+            assert value._is_py_()
+            assert value._as_py_() == 12.5
+        for block in (TempBlock("temp"), BlockPlace(TempBlock("block_id"), 0), IRConst(int(mode.blocks.EngineRom))):
+            assert not Num._from_place_(BlockPlace(block, place.index))._is_py_()
+    with using_ctx(None):
+        assert not Num._from_place_(place)._is_py_()
 
 
 def test_context_to_cfg_visits_each_context_once_with_pending_cross_edges_and_cycles():

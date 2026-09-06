@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 import struct
-from collections.abc import Sequence
+from collections.abc import Sequence, Set
 from contextlib import contextmanager
 from dataclasses import dataclass
 from enum import Enum
@@ -20,6 +20,7 @@ from sonolus.backend.place import (
     preallocated_temp_block_places,
 )
 from sonolus.backend.rom import ROM_ZERO_COUNT, ROM_ZERO_START
+from sonolus.script.internal._context_state import ctx, set_ctx
 from sonolus.script.internal.error import CompilationError
 from sonolus.script.internal.value import Value
 
@@ -29,9 +30,10 @@ if TYPE_CHECKING:
 
 _compiler_internal_ = True
 
-_context: Context | None = None
+set_ctx(None)
 
 _validate_value = None  # Lazily initialized to avoid a circular import
+_IR_ZERO = IRConst(0)
 
 
 @dataclass(frozen=True)
@@ -203,6 +205,20 @@ def _describe_global(value: _GlobalInfo | _GlobalPlaceholder) -> str:
 
 
 class Context:
+    __slots__ = (
+        "__weakref__",
+        "callback_state",
+        "live",
+        "loop_conflict_candidates",
+        "loop_variables",
+        "mode_state",
+        "outgoing",
+        "project_state",
+        "scope",
+        "statements",
+        "test",
+    )
+
     project_state: ProjectContextState
     mode_state: ModeContextState
     callback_state: CallbackContextState
@@ -210,9 +226,9 @@ class Context:
     test: IRExpr
     outgoing: dict[float | None, Context]
     scope: Scope
-    loop_variables: dict[str, ValueBinding]
+    loop_variables: dict[str, ValueBinding]  # Initialized only on prepared loop headers.
     live: bool
-    loop_conflict_candidates: list[str] | None = None
+    loop_conflict_candidates: list[str] | None
 
     def __init__(
         self,
@@ -226,10 +242,10 @@ class Context:
         self.mode_state = mode_state
         self.callback_state = callback_state
         self.statements = []
-        self.test = IRConst(0)
+        self.test = _IR_ZERO
         self.outgoing = {}
         self.scope = scope if scope is not None else Scope()
-        self.loop_variables = {}
+        self.loop_conflict_candidates = None
         self.live = live
 
     @property
@@ -295,8 +311,8 @@ class Context:
         self.statements.append(statement)
 
     def add_statements(self, *statements: IRStmt):
-        for statement in statements:
-            self.add_statement(statement)
+        if self.live:
+            self.statements.extend(statements)
 
     def alloc(self, name: str | None = None, size: int = 1) -> BlockPlace:
         if size == 0:
@@ -327,13 +343,7 @@ class Context:
         self.callback_state.used_names = state.copy()
 
     def copy_with_scope(self, scope: Scope) -> Context:
-        return Context(
-            project_state=self.project_state,
-            mode_state=self.mode_state,
-            callback_state=self.callback_state,
-            scope=scope,
-            live=self.live,
-        )
+        return Context(self.project_state, self.mode_state, self.callback_state, scope, self.live)
 
     def branch(self, condition: float | None):
         assert condition not in self.outgoing
@@ -359,14 +369,15 @@ class Context:
         result.live = False
         return result
 
-    def prepare_loop_header(self, to_merge: set[str]) -> Context:
-        # to_merge is the set of bindings set anywhere in the loop.
+    def prepare_loop_header(self, to_merge: Set[str]) -> Context:
+        # to_merge contains names written in the loop's repeated region, excluding the iterable and else block.
         # In the header we merge value types (allocating a fresh slot and copying the value in)
         # and re-bind reference types as loop variables (rebind conflicts are checked once the loop
         # is closed, in check_loop_conflicts).
         # structure is self -> header -> body (continue -> header) | exit
         assert len(self.outgoing) == 0
         header = self.branch(None)
+        header.loop_variables = {}
         for name in sorted(to_merge):
             binding = self.scope.get_binding(name)
             if not isinstance(binding, ValueBinding):
@@ -524,26 +535,13 @@ class Context:
         return ArrayPointer[int](_deref(self.blocks.EngineRom, rom_index, Num), self.blocks.EngineRom, rom_index + 1)
 
 
-def ctx() -> Context | Any:  # Using Any to silence type checker warnings if it's None
-    return _context
-
-
-def set_ctx(value: Context | None):
-    global _context  # ruff: ignore[global-statement]
-    old_value = _context
-    _context = value
-    return old_value
-
-
 @contextmanager
 def using_ctx(value: Context | None):
-    global _context  # ruff: ignore[global-statement]
-    old_value = _context
-    _context = value
+    old_value = set_ctx(value)
     try:
         yield
     finally:
-        _context = old_value
+        set_ctx(old_value)
 
 
 @contextmanager
@@ -607,7 +605,7 @@ class ReadOnlyMemory:
 
     @property
     def block(self) -> Block:
-        context = _context
+        context = ctx()
         if context:
             return context.blocks.EngineRom
         else:
@@ -704,6 +702,8 @@ _EMPTY_BINDING = EmptyBinding()
 
 
 class Scope:
+    __slots__ = ("__weakref__", "bindings")
+
     bindings: dict[str, Binding]
 
     def __init__(self, bindings: dict[str, Binding] | None = None):
@@ -750,12 +750,60 @@ class Scope:
     def apply_merge(cls, target: Context, incoming: list[Context]):
         if not incoming:
             return
+        if len(incoming) == 2:  # noqa: PLR1702
+            first_bindings = incoming[0].scope.bindings
+            second_bindings = incoming[1].scope.bindings
+            target_bindings = target.scope.bindings
+            # Snapshot keys in first-seen order before value-protocol hooks can add or remove source bindings.
+            keys = dict(first_bindings)
+            keys.update(second_bindings)
+            for key in keys:
+                first = first_bindings.get(key, _EMPTY_BINDING)
+                second = second_bindings.get(key, _EMPTY_BINDING)
+                if second is first:
+                    if isinstance(first, ValueBinding):
+                        target_bindings[key] = first
+                    else:
+                        target_bindings[key] = ConflictBinding()
+                    continue
+                if not isinstance(first, ValueBinding) or not isinstance(second, ValueBinding):
+                    target_bindings[key] = ConflictBinding()
+                    continue
+                first_value = first.value
+                second_value = second.value
+                if first_value is second_value:
+                    # Link source bindings to merged so loop checks see reads through the new binding.
+                    # Keep links one-way so earlier source reads do not count as reads of merged.
+                    merged = ValueBinding(first_value)
+                    if not type(first_value)._is_value_type_():
+                        for binding in (first, second):
+                            if binding.merged_into is None:
+                                binding.merged_into = [merged]
+                            else:
+                                binding.merged_into.append(merged)
+                    target_bindings[key] = merged
+                    continue
+                types = {type(first_value), type(second_value)}
+                if len(types) > 1:
+                    target_bindings[key] = ConflictBinding()
+                    continue
+                values = [first_value, second_value]
+                common_type: type[Value] = types.pop()
+                with using_ctx(target):
+                    target_value = common_type._get_merge_target_(values)
+                if target_value is not NotImplemented:
+                    for inc, value in zip(incoming, values, strict=True):
+                        with using_ctx(inc):
+                            target_value._set_(value)
+                    target.scope.set_value(key, target_value)
+                else:
+                    target_bindings[key] = ConflictBinding()
+            return
         bindings_by_source = [context.scope.bindings for context in incoming]
         first_bindings = bindings_by_source[0]
         rest_bindings = bindings_by_source[1:]
         target_bindings = target.scope.bindings
-        # Keys in first-seen order across sources, matching
-        # unique(key for source in sources for key in source.bindings).
+        # Snapshot keys in first-seen order before value-protocol hooks can add or remove source bindings.
         keys: dict[str, Binding] = {}
         for bindings in bindings_by_source:
             keys.update(bindings)
@@ -765,11 +813,7 @@ class Scope:
                 if bindings.get(key, _EMPTY_BINDING) is not first:
                     break
             else:
-                # Fast path: every source holds the same binding object, so the merge
-                # result is that binding itself. Keeping the object (not a copy) is
-                # load-bearing: the loop-header read-before-rebind check relies on
-                # identity with header.loop_variables and on read counts accrued
-                # through merges.
+                # Preserve identity with header.loop_variables so loop conflict checks see reads through this merge.
                 if isinstance(first, ValueBinding):
                     target_bindings[key] = first
                 else:
@@ -781,9 +825,8 @@ class Scope:
                 continue
             values = [binding.value for binding in bindings]
             if len({id(value) for value in values}) == 1:
-                # The sources are distinct objects, so the merge mints a new binding and a later read
-                # would increment one no loop header holds. Link each source forward. Directed on
-                # purpose: reads a source accrued before the merge must not reach the header.
+                # Link source bindings to merged so loop checks see reads through the new binding.
+                # Keep links one-way so earlier source reads do not count as reads of merged.
                 first_value = values[0]
                 merged = ValueBinding(first_value)
                 if not type(first_value)._is_value_type_():

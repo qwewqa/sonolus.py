@@ -216,7 +216,7 @@ cdef class Liveness:
 # The analysis.
 # --------------------------------------------------------------------------
 
-cdef Liveness compute_liveness(Func func):
+cdef Liveness compute_liveness(Func func, bint materialize_live_in=True):
     cdef Liveness L = Liveness()
     L.func = func
 
@@ -251,7 +251,8 @@ cdef Liveness compute_liveness(Func func):
             L.root_slot[i] = -1
     L.n_roots = n_roots
 
-    L.live_in = _c64(<int64_t>nb * nw)
+    if materialize_live_in:
+        L.live_in = _c64(<int64_t>nb * nw)
     L.live_out = _c64(<int64_t>nb * nw)
     L.array_defs_out = _c64(<int64_t>nb * nw)
     L.array_mask = _c64(nw)
@@ -265,27 +266,18 @@ cdef Liveness compute_liveness(Func func):
         if func.temps[t].size > 1:
             bs_set(L.array_mask, t)
 
-    # A CFG with no exit block at all (whole-callback `while True` with no break,
-    # or an exit that cfg_cleanup proved unreachable) is a non-terminating callback
-    # and is rejected. The seed-all backward pass below would compute sound liveness
-    # for it regardless; this is a policy rejection, done before any raw allocation
-    # so the raise cannot leak.
+    # Reject callbacks with no exit block, even though backward liveness can analyze them.
+    # Check before allocating scratch buffers; the allocations above belong to L.
     cdef bint has_exit = False
     for b in range(nb):
         if blocks[b].edge_count == 0:
             has_exit = True
             break
     if nb > 0 and not has_exit:
-        # This is the whole diagnostic an engine author gets: the compile driver prefixes it with the
-        # callback, archetype, and mode, and visualize_cfg surfaces it unwrapped. It names no subject of its
-        # own, so the driver's prefix supplies one and the unwrapped form stays true.
         raise ValueError("Never terminates, since no path reaches an exit; make sure every loop can be exited")
 
-    # All raw scratch buffers are allocated up front and checked for NULL in a
-    # single combined guard that frees every partial allocation before raising,
-    # so no buffer leaks on any OOM path. The L.* fields above are owned by ``L``
-    # and freed by __dealloc__; these raw locals are freed at the end (``cursor``
-    # is freed early once the CSR is built).
+    # L owns its result buffers. These scratch buffers need explicit cleanup on allocation
+    # failure and completion; cursor can be freed once the predecessor CSR is built.
     cdef uint64_t* array_written = <uint64_t*>calloc(<size_t>(nw if nw > 0 else 1), sizeof(uint64_t))
     cdef int32_t* pred_head = <int32_t*>calloc(<size_t>(nb + 1), sizeof(int32_t))
     cdef int32_t* pred_src = <int32_t*>malloc(<size_t>(ne if ne > 0 else 1) * sizeof(int32_t))
@@ -311,10 +303,12 @@ cdef Liveness compute_liveness(Func func):
     # interferes with live temps and gets its own slot (reads then observe the
     # never-written -1.0 padding, matching the bump allocators).
     cdef int32_t aw_pid
+    cdef bint has_array_writes = False
     for i in range(ni):
         if instrs[i].op == OPX_SET and (instrs[i].flags & FLAG_STMT_ROOT):
             aw_pid = instrs[i].aux
             if places[aw_pid].kind == PLACE_TEMP_ARRAY:
+                has_array_writes = True
                 bs_set(array_written, places[aw_pid].block_ref)
 
     # Predecessor CSR (pred_head[b]..pred_head[b+1] index into pred_src).
@@ -338,9 +332,10 @@ cdef Liveness compute_liveness(Func func):
     with nogil:
         # ---- forward array-init pass (from entry) ------------------------
         sp = 0
-        stack[sp] = func.entry_block
-        sp += 1
-        inq[func.entry_block] = 1
+        if has_array_writes:
+            stack[sp] = func.entry_block
+            sp += 1
+            inq[func.entry_block] = 1
         while sp > 0:
             sp -= 1
             b = stack[sp]
@@ -398,10 +393,13 @@ cdef Liveness compute_liveness(Func func):
 
             # live := live_out[b] with written arrays not yet defined on any path
             # dropped (never-written arrays keep ordinary read-liveness).
-            for w in range(nw):
-                live[w] = L.live_out[<int64_t>b * nw + w] & ~(
-                    (L.array_mask[w] & array_written[w]) & ~L.array_defs_out[<int64_t>b * nw + w]
-                )
+            if has_array_writes:
+                for w in range(nw):
+                    live[w] = L.live_out[<int64_t>b * nw + w] & ~(
+                        (L.array_mask[w] & array_written[w]) & ~L.array_defs_out[<int64_t>b * nw + w]
+                    )
+            else:
+                memcpy(live, &L.live_out[<int64_t>b * nw], <size_t>nw * sizeof(uint64_t))
 
             # Block test counts as a use at block end.
             tv = blocks[b].test_val
@@ -450,7 +448,8 @@ cdef Liveness compute_liveness(Func func):
             # live is now live_in[b]; always propagate to predecessors so a
             # first-touch reaches them even when live_in is empty. Re-enqueue a
             # predecessor when it is first touched or its live_out grew.
-            memcpy(&L.live_in[<int64_t>b * nw], live, <size_t>nw * sizeof(uint64_t))
+            if materialize_live_in:
+                memcpy(&L.live_in[<int64_t>b * nw], live, <size_t>nw * sizeof(uint64_t))
             for e in range(pred_head[b], pred_head[b + 1]):
                 s = pred_src[e]
                 changed = _or_into(&L.live_out[<int64_t>s * nw], live, nw)

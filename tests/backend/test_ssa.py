@@ -247,6 +247,24 @@ def test_undef_read_of_never_written_scalar():
     assert "undef" in text
 
 
+@pytest.mark.parametrize("padding", [31, 63, 127, 257, 1023])
+def test_late_undef_after_value_growth_preserves_semantics(padding):
+    def build():
+        entry = BasicBlock(test=IRGet(BlockPlace(9000, 0)))
+        exit_block = BasicBlock()
+        entry.statements = [IRInstr(Op.DebugLog, [IRConst(i)]) for i in range(padding)]
+        entry.statements.append(IRInstr(Op.DebugLog, [IRGet(_sc("unwritten"))]))
+        # The test interpreter initializes unwritten memory to -1.
+        entry.connect_to(exit_block, -1)
+        entry.connect_to(entry, None)
+        return entry
+
+    _assert_entry_is_loop_header(build)
+    original, roundtrip = _assert_semantics_preserved(build)
+    assert original.log == [*range(padding), -1]
+    assert roundtrip.log == original.log
+
+
 def test_phi_undef_v_collapses_to_v():
     # u written on one path only; the merge phi(UNDEF, 7) collapses to 7 once the
     # dead undef path is pruned. build_ssa deliberately KEEPS phi(UNDEF, v) (the
@@ -608,3 +626,81 @@ def test_corpus_ssa_unssa_roundtrip(mode: Mode):
         assert isinstance(node, FunctionNode)  # Block(JumpLoop(...))
         count += 1
     assert count > 0
+
+
+def _late_alias_nested_loops() -> BasicBlock:
+    """Build nested loops whose inner invariant phi aliases an outer phi before that outer phi is removed."""
+    entry, outer, inner, outer_latch, exit_ = (BasicBlock() for _ in range(5))
+    entry.statements = [
+        IRSet(_sc("k"), IRConst(42)),
+        IRSet(_sc("i"), IRConst(0)),
+        IRSet(_sc("acc"), IRConst(0)),
+    ]
+    entry.connect_to(outer)
+
+    # Two roots keep cfg_cleanup from tail-duplicating this header into the latch,
+    # preserving the distinct-header sealing order this test requires.
+    outer.statements = [
+        IRSet(_sc("j"), IRConst(0)),
+        IRInstr(Op.DebugPause, [IRConst(77)]),
+    ]
+    outer.test = IRPureInstr(Op.Less, [IRGet(_sc("i")), IRConst(3)])
+    outer.connect_to(exit_, 0)
+    outer.connect_to(inner)
+
+    inner.statements = [
+        IRInstr(Op.DebugLog, [IRGet(_sc("k"))]),
+        IRSet(_sc("acc"), IRPureInstr(Op.Add, [IRGet(_sc("acc")), IRConst(1)])),
+        IRSet(_sc("j"), IRPureInstr(Op.Add, [IRGet(_sc("j")), IRConst(1)])),
+    ]
+    inner.test = IRPureInstr(Op.Less, [IRGet(_sc("j")), IRConst(3)])
+    inner.connect_to(outer_latch, 0)
+    inner.connect_to(inner)
+
+    # Two roots keep cfg_cleanup from tail-duplicating the latch into the inner
+    # exit edge. The distinct late predecessor is what delays sealing `outer`.
+    outer_latch.statements = [
+        IRSet(_sc("i"), IRPureInstr(Op.Add, [IRGet(_sc("i")), IRConst(1)])),
+        IRInstr(Op.DebugPause, [IRConst(88)]),
+    ]
+    outer_latch.connect_to(outer)
+
+    exit_.statements = [
+        IRInstr(Op.DebugLog, [IRGet(_sc("acc"))]),
+        IRInstr(Op.DebugPause, [IRConst(99)]),
+    ]
+    return entry
+
+
+def _assert_cleaned_shape_for_late_alias() -> None:
+    """Pin the sealing order that creates inner_phi -> outer_phi -> 42."""
+    cleaned = ir.debug_run(_late_alias_nested_loops(), phases=["cfg_cleanup"])
+    blocks = list(traverse_cfg_reverse_postorder(cleaned))
+    order = {block: index for index, block in enumerate(blocks)}
+
+    inner_headers = [block for block in blocks if any(edge.dst is block for edge in block.outgoing)]
+    assert len(inner_headers) == 1
+    inner = inner_headers[0]
+    (outer_latch,) = {edge.dst for edge in inner.outgoing if edge.dst is not inner}
+    (outer,) = {edge.dst for edge in outer_latch.outgoing}
+
+    assert outer is not inner
+    assert {edge.src for edge in inner.incoming} == {outer, inner}
+    assert cleaned is not outer
+    assert {edge.src for edge in outer.incoming} == {cleaned, outer_latch}
+    assert any(edge.dst is inner for edge in outer.outgoing)
+    assert order[outer] < order[inner] < order[outer_latch]
+
+
+def test_trivial_phi_resolves_through_target_eliminated_later():
+    _assert_cleaned_shape_for_late_alias()
+
+    ssa = ir.debug_run(_late_alias_nested_loops(), phases=["cfg_cleanup", "ssa"])
+    phi_lines = [line for line in cfg_to_text(ssa).splitlines() if "phi(" in line]
+    assert phi_lines  # i, j, and acc are genuinely loop-carried.
+    assert all(": 42" not in line for line in phi_lines)  # Both invariant k phis were removed.
+
+    original, roundtrip = _assert_semantics_preserved(_late_alias_nested_loops)
+    expected_log = [42] * 9 + [9]
+    assert original.log == expected_log
+    assert roundtrip.log == expected_log

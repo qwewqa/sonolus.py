@@ -37,7 +37,7 @@ cdef class Liveness:
     cdef int32_t n_roots     # count of FLAG_STMT_ROOT instructions
 
     # Per-block bitsets over temp ids (n_blocks * n_words each).
-    cdef uint64_t* live_in
+    cdef uint64_t* live_in    # NULL when materialize_live_in is False
     cdef uint64_t* live_out
     cdef uint64_t* array_defs_out   # arrays written on at least one path reaching block end (may; union over preds)
     cdef uint64_t* array_mask       # bitset (n_words) of size>1 temp ids
@@ -53,7 +53,7 @@ cdef class Liveness:
     cdef object _bitset_names(self, const uint64_t* bs)
 
 
-cdef Liveness compute_liveness(Func func)
+cdef Liveness compute_liveness(Func func, bint materialize_live_in=*)
 
 
 # --------------------------------------------------------------------------

@@ -97,7 +97,7 @@ class _Num(Value, metaclass=_NumMeta):
 
     def _is_rom_constant(self) -> bool:
         d = self.data
-        if type(d) is not BlockPlace:
+        if type(d) is not BlockPlace or not isinstance(d.block, int):
             return False
         c = ctx()
         return c is not None and d.block == c.blocks.EngineRom and isinstance(d.index, int)

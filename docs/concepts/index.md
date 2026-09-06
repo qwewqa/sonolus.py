@@ -1,8 +1,6 @@
 # Concepts
-This section provides a reference for the concepts and features of Sonolus.py.
-
-The [Overview](overview.md) page is a good place to start if you're new to Sonolus.py. The rest of this section
-assumes familiarity with Python and the concepts introduced there, and is not intended to serve as a tutorial.
+This section provides a reference for the concepts and features of Sonolus.py. Background knowledge of Python
+fundamentals is assumed.
 
 - [Overview](overview.md): A summary of the whole library.
 - [Types](types.md): `Num`, `Array`, `Record`, generics, and copy versus alias semantics.

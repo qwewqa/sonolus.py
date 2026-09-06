@@ -34,7 +34,6 @@ for _p in (str(_REPO_ROOT / "test_projects"), str(_REPO_ROOT)):
 
 sys.setrecursionlimit(10_000)
 
-import sonolus.backend.optimize as _opt_mod
 import sonolus.build.compile as _compile_mod
 from sonolus.build.engine import package_engine
 from sonolus.script.project import BuildConfig
@@ -59,11 +58,9 @@ def load_project(name: str):
 
 
 def _bench_full(engine, passes, repeat: int, warmup: int = 1) -> list[float]:
-    """Full-build wall times, after discarding `warmup` builds.
+    """Measure full-build wall times after discarding `warmup` builds.
 
-    The first build of a process pays for imports, the compiled extension loading, and cold
-    caches, which on this benchmark runs 50 to 90ms over the steady state. Timing it drags the
-    median far enough to swamp the change under test, so it is run and thrown away.
+    Warmup builds populate import and compiler caches before timing samples.
     """
     samples: list[float] = []
     for i in range(warmup + repeat):
@@ -77,12 +74,7 @@ def _bench_full(engine, passes, repeat: int, warmup: int = 1) -> list[float]:
 
 
 def _spread(samples: list[float]) -> float:
-    """Sample range, ignoring the slowest one.
-
-    Interference only ever adds time, so a single scheduling or GC pause otherwise sets the range
-    on its own and reports a noise floor several times the real one. Dropping the slowest sample
-    leaves a figure a change can sensibly be compared against.
-    """
+    """Return the sample range, excluding the slowest sample when at least three exist."""
     ordered = sorted(samples)
     if len(ordered) >= 3:
         ordered = ordered[:-1]
@@ -90,16 +82,17 @@ def _spread(samples: list[float]) -> float:
 
 
 def _phase_split(engine, passes) -> dict:
-    """One instrumented build: frontend vs optimize+emit wall time.
+    """Measure frontend and optimizer wall time during one full build.
 
-    Wraps ``callback_to_cfg`` (frontend tracing) and ``optimize_and_finalize``
-    (optimize+emit) to accumulate the time spent in each; the remainder of the
-    total is packaging overhead.
+    Time callback_to_context and optimize_and_finalize_context separately. The
+    remaining wall time includes node registration, graph cleanup and packaging.
+    Garbage collection is included in whichever operation triggers it.
     """
     acc = {"frontend": 0.0, "optimize": 0.0}
-    orig_cb = _compile_mod.callback_to_cfg
-    orig_of = _opt_mod.optimize_and_finalize
-    import sonolus.backend._opt.driver as _drv  # ruff: ignore[import-private-name] - reset the driver's cached finalize
+    orig_cb = _compile_mod.callback_to_context
+    from sonolus.backend._opt import driver as _drv
+
+    orig_of = _drv.optimize_and_finalize_context
 
     def timed_cb(*a, **k):
         t = perf_counter()
@@ -115,17 +108,15 @@ def _phase_split(engine, passes) -> dict:
         finally:
             acc["optimize"] += perf_counter() - t
 
-    _compile_mod.callback_to_cfg = timed_cb
-    _opt_mod.optimize_and_finalize = timed_of
-    _drv._OPT_FINALIZE = timed_of  # driver caches the finalize callable
+    _compile_mod.callback_to_context = timed_cb
+    _drv.optimize_and_finalize_context = timed_of
     try:
         start = perf_counter()
         package_engine(engine, BuildConfig(passes=passes))
         total = perf_counter() - start
     finally:
-        _compile_mod.callback_to_cfg = orig_cb
-        _opt_mod.optimize_and_finalize = orig_of
-        _drv._OPT_FINALIZE = orig_of
+        _compile_mod.callback_to_context = orig_cb
+        _drv.optimize_and_finalize_context = orig_of
 
     work = acc["frontend"] + acc["optimize"]
     return {

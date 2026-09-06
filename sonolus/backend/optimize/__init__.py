@@ -1,8 +1,7 @@
-"""Public optimizer API -- a thin Python shim over the compiled `_opt` core.
+"""Optimization levels and CFG APIs for the Cython optimizer.
 
-Exposes opaque optimization-level sentinels and three entry points. The heavy
-lifting lives in the Cython `sonolus.backend._opt` package
-(marshal in -> passes (nogil) -> export back | emit).
+The entry points marshal CFGs into native arenas for optimization or emission,
+then export CFGs or emit engine nodes.
 """
 
 from __future__ import annotations
@@ -13,11 +12,8 @@ from sonolus.backend.mode import Mode
 from sonolus.backend.node import EngineNode
 from sonolus.backend.optimize.flow import BasicBlock
 
-# NOTE: the compiled `_opt` modules (`driver`/`emit`) are imported lazily
-# inside the functions below, not at module top. `_opt.ir` imports
-# `sonolus.backend.optimize.flow`, which requires *this* package to initialize
-# first -- importing `_opt.driver` here would form an import cycle
-# (optimize -> _opt.driver -> _opt.ir -> optimize.flow -> optimize).
+# Import the native modules inside the entry points to avoid an import cycle:
+# _opt.ir imports optimize.flow, which initializes this package before its submodule.
 
 
 class OptimizationLevel:

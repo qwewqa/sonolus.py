@@ -25,7 +25,7 @@ a complete simple rhythm game engine in Sonolus.py.
 The official reference engine implementation is [pydori](https://github.com/qwewqa/pydori). It features Bandori-style
 (vertical scrolling rhythm game) gameplay.
 
-Check out [Next SEKAI](https://github.com/Next-SEKAI/sonolus-next-sekai-engine) for a well-known fully-featured
+See [Next SEKAI](https://github.com/Next-SEKAI/sonolus-next-sekai-engine) for a well-known fully-featured
 engine written with Sonolus.py.
 
 When creating a new project, you may want to use the

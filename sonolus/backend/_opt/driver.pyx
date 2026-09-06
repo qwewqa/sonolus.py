@@ -7,7 +7,8 @@ pipelines. The authoritative per-level pipeline description lives on ``_pipeline
 
 The thin Python shim ``sonolus/backend/optimize/__init__.py`` (``run_passes`` /
 ``optimize_and_finalize`` / ``cfg_to_engine_node``) calls the ``*_cfg`` entry
-points below with a level *name*; ``compile_mode`` uses ``optimize_and_finalize``.
+points below with a level *name*; ``compile_mode`` traces callbacks into Context
+graphs and marshals those directly into the native arena.
 ``allocate=False`` (visualize_cfg) stops after ``lower_from_ssa`` (or after
 ``cfg_cleanup`` at minimal), leaving temp places unallocated.
 
@@ -34,7 +35,7 @@ from sonolus.backend._opt.emit cimport emit_func
 
 import os
 
-from sonolus.backend._opt.ir import marshal_in, register_phase, to_basic_blocks
+from sonolus.backend._opt.ir import marshal_context, marshal_in, register_phase, release_context, to_basic_blocks
 from sonolus.backend.optimize.flow import cfg_to_text
 from sonolus.backend.optimize import profiling as _prof
 
@@ -238,7 +239,7 @@ def run_pipeline_cfg(entry, level, mode=None, callback=None, allocate=True):
 
 
 def optimize_and_finalize_cfg(entry, level, mode=None, callback=None):
-    """marshal_in -> level pipeline -> allocate -> emit (fused; no export)."""
+    """Optimize a BasicBlock CFG and emit an EngineNode without modifying the CFG."""
     cdef int lvl = _level_code(level)
     cdef bint prof = _prof.enabled
     cdef long long t0 = 0
@@ -252,36 +253,44 @@ def optimize_and_finalize_cfg(entry, level, mode=None, callback=None):
     return node
 
 
+def optimize_and_finalize_context(entry, level, mode=None, callback=None):
+    """Optimize a Context graph and emit an EngineNode without modifying the graph."""
+    cdef int lvl = _level_code(level)
+    cdef bint prof = _prof.enabled
+    cdef long long t0 = 0
+    if prof: t0 = _prof.now_ns()
+    cdef Func func = <Func>marshal_context(entry, mode, callback)
+    if prof: _prof.record("marshal_in", _prof.now_ns() - t0)
+    cdef Func result = _pipeline(func, lvl, True)
+    if prof: t0 = _prof.now_ns()
+    node = emit_func(result)
+    if prof: _prof.record("emit", _prof.now_ns() - t0)
+    return node
+
+
 # --------------------------------------------------------------------------
-# compile_mode: per-mode callback compilation driver. Lives here (rather than
-# sonolus/build/compile.py, which keeps the public ``compile_mode`` name as a
-# thin delegator that engine.py / tests import) so the compile driver lives in
-# the compiled package. ``callback_to_cfg`` and the rest of the frontend stay in
-# Python and are passed in, keeping the frontend/optimizer boundary explicit and
-# avoiding an import cycle (compile.py imports this module).
-#
-# Result-dict shapes: archetype callbacks -> {"index", "order"}; global
-# callbacks -> bare node index.
+# Per-mode callback compilation. The frontend factory is passed in because
+# importing build.compile here would create an import cycle.
+# Archetype callback results contain {"index", "order"}; global callbacks store
+# only the node index.
 # --------------------------------------------------------------------------
 
-# Lazily-populated Python deps (avoid import-time cycles / heavy top-level imports).
+# Resolve dependencies on first compilation to avoid import cycles.
 _MODE_STATE = None
 _OUTPUT_GEN = None
-_OPT_CONFIG = None
-_OPT_FINALIZE = None
+_LEVEL_NAME = None
 _STANDARD_LEVEL = None
 _PLAY_MODE = None
 _COMPILATION_ERROR = None
 
 
 cdef _ensure_compile_deps():
-    global _MODE_STATE, _OUTPUT_GEN, _OPT_CONFIG, _OPT_FINALIZE, _STANDARD_LEVEL, _PLAY_MODE
+    global _MODE_STATE, _OUTPUT_GEN, _LEVEL_NAME, _STANDARD_LEVEL, _PLAY_MODE
     global _COMPILATION_ERROR
     if _MODE_STATE is None:
         from sonolus.backend.optimize import (
             STANDARD_PASSES as _sp,
-            OptimizerConfig as _oc,
-            optimize_and_finalize as _of,
+            _level_name as _ln,
         )
         from sonolus.backend.mode import Mode as _mode
         from sonolus.build.node import OutputNodeGenerator as _og
@@ -289,8 +298,7 @@ cdef _ensure_compile_deps():
         from sonolus.script.internal.error import CompilationError as _ce
         _MODE_STATE = _ms
         _OUTPUT_GEN = _og
-        _OPT_CONFIG = _oc
-        _OPT_FINALIZE = _of
+        _LEVEL_NAME = _ln
         _STANDARD_LEVEL = _sp
         _PLAY_MODE = _mode.PLAY
         _COMPILATION_ERROR = _ce
@@ -301,10 +309,14 @@ def compile_mode(
     project_state,
     archetypes,
     global_callbacks,
-    callback_to_cfg,
+    callback_to_context,
     level=None,
     validate_only=False,
 ):
+    """Compile callbacks and release their Context graphs after success.
+
+    Validation traces callbacks without running the optimizer or emitting nodes.
+    """
     _ensure_compile_deps()
     if level is None:
         level = _STANDARD_LEVEL
@@ -313,15 +325,15 @@ def compile_mode(
     nodes = _OUTPUT_GEN()
     results = {}
 
-    def optimize_cfg(cfg, cb_name, arch_name=None):
-        """optimize + emit for one already-traced CFG -> its EngineNode.
+    def optimize_traced(traced, cb_name, arch_name=None):
+        """Optimize and emit one traced callback.
 
-        Failures are wrapped as a CompilationError so the cli/dev-server pretty handlers catch them. No user
-        frame reaches that traceback and nothing here carries a source location, so its message is the only
-        locator the author gets: it names the archetype as well, since one callback name is shared by every
-        archetype of the mode. ``arch_name`` is None for a global callback, which belongs to no archetype."""
+        Wrap optimizer failures in CompilationError for CLI and dev-server diagnostics.
+        Optimizer errors have no source location, so include the callback and archetype
+        names in the message. Global callbacks have no archetype name.
+        """
         try:
-            return _OPT_FINALIZE(cfg, level, _OPT_CONFIG(mode=mode, callback=cb_name))
+            node = optimize_and_finalize_context(traced, _LEVEL_NAME(level), mode, cb_name)
         except _COMPILATION_ERROR:
             raise
         except Exception as e:
@@ -331,13 +343,13 @@ def compile_mode(
             raise _COMPILATION_ERROR(
                 f"Optimization failed for {location} in {getattr(mode, 'name', mode)} mode: {e}"
             ) from e
+        # Keep the traced graph intact on failure for exception tracebacks and debugging.
+        release_context(traced)
+        return node
 
-    # DETERMINISM: ``callback_to_cfg`` populates shared, first-touch-ordered maps
-    # -- ``project_state`` ROM / const / debug-string indices and ``mode_state``
-    # global-memory offsets. Tracing callbacks in one fixed serial order makes
-    # those first-touch assignments deterministic, and registering nodes into the
-    # shared ``OutputNodeGenerator`` in that same order makes node indices
-    # deterministic too.
+    # Tracing order determines project_state ROM, constant and debug-string indices
+    # and mode_state global-memory offsets. Node registration order determines output
+    # node indices. Keep callback processing serial and ordered for reproducible output.
     base_archetype_entries = {}
 
     if archetypes is not None:
@@ -378,10 +390,11 @@ def compile_mode(
                 cb_order = getattr(cb, "_callback_order_", 0)
                 if not cb_info.supports_order and cb_order != 0:
                     raise ValueError(f"Callback '{cb_name}' does not support a non-zero order")
-                # Trace, then optimize+emit -- always traced (validation traces too).
-                cfg = callback_to_cfg(project_state, mode_state, cb, cb_info.name, archetype)
+                traced = callback_to_context(project_state, mode_state, cb, cb_info.name, archetype)
+                if validate_only:
+                    release_context(traced)
                 archetype_data[cb_info.name] = {
-                    "index": 0 if validate_only else nodes.add(optimize_cfg(cfg, cb_info.name, archetype.name)),
+                    "index": 0 if validate_only else nodes.add(optimize_traced(traced, cb_info.name, archetype.name)),
                     "order": cb_order,
                 }
 
@@ -389,8 +402,10 @@ def compile_mode(
 
     if global_callbacks is not None:
         for cb_info, cb in global_callbacks:
-            cfg = callback_to_cfg(project_state, mode_state, cb, cb_info.name, None)
-            results[cb_info.name] = 0 if validate_only else nodes.add(optimize_cfg(cfg, cb_info.name))
+            traced = callback_to_context(project_state, mode_state, cb, cb_info.name, None)
+            if validate_only:
+                release_context(traced)
+            results[cb_info.name] = 0 if validate_only else nodes.add(optimize_traced(traced, cb_info.name))
 
     if archetypes is not None:
         results["archetypes"] = [

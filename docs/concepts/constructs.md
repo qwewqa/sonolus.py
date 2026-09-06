@@ -45,7 +45,7 @@ The following constructs are supported in Sonolus.py:
         - Booleans: `True`, `False`
         - Strings: `'Hello, World!'`, `"Hello, World!"`
         - Tuples: `(1, 2, 3)`
-        - Dicts (keys must be compile-time constants): `{1: 'a', 2: 'b'}`
+        - Dicts (keys must be compile-time constants): `{1: 100, 2: 200}`
         - Sets (members must be compile-time constants): `{1, 2, 3}`
     - Operators (if supported by the operands):
         - Unary: `+`, `-`, `not`, and `~` for types implementing it
@@ -249,7 +249,7 @@ c.x = 3
 d[0] = 4
 (e, f), g = (1, 2), 3
 [h, i] = 1, 2
-j, k = {1: 'a', 2: 'b'}  # Unpacks the keys, as in Python
+j, k = {1: 100, 2: 200}  # Unpacks the keys, as in Python
 
 # Not ok
 p, *q = 1, 2, 3  # Starred targets are not supported
@@ -536,7 +536,7 @@ not supported.
 ##### Reusing iterators
 
 Use an iterator only once: in one `for` loop, in one call to `next()`, or by passing it once to another iterator
-consumer. Build a fresh iterator to use it again.
+consumer. Otherwise, some iterators may behave incorrectly or raise an error at runtime.
 
 ### Classes
 

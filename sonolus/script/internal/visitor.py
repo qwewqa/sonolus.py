@@ -458,6 +458,33 @@ _VISITOR_DISPATCH: dict[type, Callable] = {}
 
 _ACTIVE_VISITORS = []
 
+_AST_METADATA_MISSING = object()
+
+# Source ASTs are shared through get_tree_from_file and are not structurally rewritten after parsing.
+# Node-local metadata therefore remains valid until the source tree is replaced.
+
+
+def _loop_writes(node: ast.For | ast.While) -> frozenset[str]:
+    """Return the names written by a loop's repeatedly visited region."""
+    writes = getattr(node, "_sonolus_loop_writes", _AST_METADATA_MISSING)
+    if writes is _AST_METADATA_MISSING:
+        if isinstance(node, ast.For):
+            writes = frozenset(scan_writes(node.target, *node.body))
+        else:
+            writes = frozenset(scan_writes(node.test, *node.body))
+        node._sonolus_loop_writes = writes
+    return writes
+
+
+def _pattern_contains_star(pattern: ast.pattern) -> bool:
+    """Return whether a pattern contains an unsupported star sub-pattern."""
+    contains_star = getattr(pattern, "_sonolus_contains_star", _AST_METADATA_MISSING)
+    if contains_star is _AST_METADATA_MISSING:
+        contains_star = any(isinstance(sub, ast.MatchStar) for sub in ast.walk(pattern))
+        pattern._sonolus_contains_star = contains_star
+    return contains_star
+
+
 # Cache of resolved descriptors (or None) keyed by (type, attribute name) for handle_getattr/handle_setattr.
 # Within a single build session, classes and their signatures are assumed immutable, so a resolved
 # descriptor stays valid for the whole build. Across build sessions a class may be redefined or a
@@ -1288,7 +1315,7 @@ class Visitor(ast.NodeVisitor):
             return
         if not isinstance(iterator, SonolusIterator):
             raise TypeError(f"iter() returned non-iterator of type '{_type_name(iterator)}'")
-        writes = scan_writes(node.target, *node.body)
+        writes = _loop_writes(node)
         header_ctx = ctx().prepare_loop_header(writes)
         self.loop_head_ctxs.append(header_ctx)
         self.break_ctxs.append([])
@@ -1296,8 +1323,7 @@ class Visitor(ast.NodeVisitor):
         reject_custom_record_getattribute(iterator)
         next_value = self.handle_call(node, _bind_special_method(iterator, "next"))
         if not ctx().live:
-            # The loop is abandoned in its header, so its frame has to be closed here: an enclosing loop
-            # pops next, and would otherwise close itself against this one.
+            # Remove this loop's stack entries before returning, or an enclosing loop would pop this header.
             self.loop_head_ctxs.pop().check_loop_conflicts()
             self.break_ctxs.pop()
             return
@@ -1336,7 +1362,7 @@ class Visitor(ast.NodeVisitor):
         set_ctx(after_ctx)
 
     def visit_While(self, node):
-        writes = scan_writes(node.test, *node.body)
+        writes = _loop_writes(node)
         header_ctx = ctx().prepare_loop_header(writes)
         self.loop_head_ctxs.append(header_ctx)
         self.break_ctxs.append([])
@@ -1348,7 +1374,6 @@ class Visitor(ast.NodeVisitor):
             return
         if test._is_py_():
             if test._as_py_():
-                # The loop will run until a break / return
                 body_ctx = ctx().branch(None)
                 set_ctx(body_ctx)
                 self.visit_statements(node.body)
@@ -1426,7 +1451,7 @@ class Visitor(ast.NodeVisitor):
                 break
             # Reject stars up front rather than in handle_match_pattern: a star nested inside a sequence pattern
             # whose length test fails statically is never visited, which would make the arm silently not match.
-            if any(isinstance(sub, ast.MatchStar) for sub in ast.walk(case.pattern)):
+            if _pattern_contains_star(case.pattern):
                 raise NotImplementedError(
                     "Star sub-patterns (e.g. `case [a, *rest]:`) in sequence match patterns are not supported"
                 )

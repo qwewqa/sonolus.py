@@ -61,6 +61,7 @@ from libc.stdint cimport int16_t, int32_t, int64_t, uint8_t, uint16_t, uint32_t,
 from libc.stdlib cimport calloc, free, malloc, realloc
 from libc.string cimport memcpy
 from libc.math cimport floor, isfinite, isinf, isnan, signbit
+from libcpp.vector cimport vector
 
 from sonolus.backend._opt.ir cimport (
     BlockInfo,
@@ -310,10 +311,10 @@ cdef class _Cleaner:
         free(self.in_last)
         kh_destroy_i64i32(self.tailduped)  # NULL-safe
 
-    cdef void _ensure_edge_cap(self, int32_t need) except * nogil:
-        # the six edge arrays share cap_e; grow them all in lockstep.
+    cdef int32_t _ensure_edge_cap(self, int32_t need) except -1 nogil:
+        # The edge arrays share cap_e and must grow together.
         if need <= self.cap_e:
-            return
+            return 0
         cdef int32_t nc = self.cap_e if self.cap_e > 0 else 8
         cdef int32_t* p_i32
         cdef uint8_t* p_u8
@@ -354,8 +355,9 @@ cdef class _Cleaner:
                 raise MemoryError()
         self.e_alive = p_u8
         self.cap_e = nc
+        return 0
 
-    cdef void _add_edge(self, int32_t s, int32_t d, uint8_t ck, uint8_t ci, double cond) except * nogil:
+    cdef int32_t _add_edge(self, int32_t s, int32_t d, uint8_t ck, uint8_t ci, double cond) except -1 nogil:
         cdef int32_t k = self.n_e
         self._ensure_edge_cap(k + 1)
         self.e_src[k] = s
@@ -367,6 +369,7 @@ cdef class _Cleaner:
         self.n_e = k + 1
         self._push_out(s, k)
         self._push_in(d, k)
+        return 0
 
     # ---- adjacency-list pool (append-only; see the field comment) --------------
 
@@ -394,21 +397,23 @@ cdef class _Cleaner:
         self.n_adj = k + 1
         return k
 
-    cdef void _push_out(self, int32_t h, int32_t edge) except * nogil:
+    cdef int32_t _push_out(self, int32_t h, int32_t edge) except -1 nogil:
         cdef int32_t node = self._adj_alloc(edge)
         if self.out_first[h] == -1:
             self.out_first[h] = node
         else:
             self.adj_next[self.out_last[h]] = node
         self.out_last[h] = node
+        return 0
 
-    cdef void _push_in(self, int32_t d, int32_t edge) except * nogil:
+    cdef int32_t _push_in(self, int32_t d, int32_t edge) except -1 nogil:
         cdef int32_t node = self._adj_alloc(edge)
         if self.in_first[d] == -1:
             self.in_first[d] = node
         else:
             self.adj_next[self.in_last[d]] = node
         self.in_last[d] = node
+        return 0
 
     cdef int32_t _new_cn(self, int32_t src_block) except -1 nogil:
         cdef int32_t k = self.n_cn
@@ -520,7 +525,7 @@ cdef class _Cleaner:
         self.cn_next[self.chain_tail[a]] = self.chain_head[b]
         self.chain_tail[a] = self.chain_tail[b]
 
-    cdef void _append_chain_copy(self, int32_t a, int32_t b) except * nogil:
+    cdef int32_t _append_chain_copy(self, int32_t a, int32_t b) except -1 nogil:
         # Append a fresh copy of b's chain onto a (b stays live -- tail-dup).
         cdef int32_t node = self.chain_head[b]
         cdef int32_t nn
@@ -529,6 +534,7 @@ cdef class _Cleaner:
             self.cn_next[self.chain_tail[a]] = nn
             self.chain_tail[a] = nn
             node = self.cn_next[node]
+        return 0
 
     # ---- edge helpers ------------------------------------------------------
 
@@ -1128,17 +1134,23 @@ cdef inline uint64_t _ssa_def_key(int32_t temp, int32_t block) noexcept nogil:
     return (<uint64_t><uint32_t>temp << 32) | <uint64_t><uint32_t>block
 
 
+cdef struct _LooseSSAValue:
+    uint16_t op
+    uint8_t flags
+    uint8_t dead
+    int32_t block
+    int32_t aux
+    int32_t arg_start
+    int32_t nargs
+
+
 cdef class _SSABuilder:
     cdef Func src
     cdef int32_t nb
     cdef int32_t entry
     # loose value store (index == loose value-id)
-    cdef list val_op
-    cdef list val_flags
-    cdef list val_block
-    cdef list val_aux
-    cdef list val_args      # list[list[int]] (per-edge operands for phis)
-    cdef list val_dead
+    cdef vector[_LooseSSAValue] vals
+    cdef vector[int32_t] operands
     cdef dict subst         # eliminated phi -> replacement value
     cdef set undef_widened  # values used out of dominance region via phi(UNDEF,v)=v
     cdef dict phi_users     # value -> set of phi values referencing it
@@ -1165,12 +1177,6 @@ cdef class _SSABuilder:
         self.src = src
         self.nb = src.n_blocks
         self.entry = src.entry_block
-        self.val_op = []
-        self.val_flags = []
-        self.val_block = []
-        self.val_aux = []
-        self.val_args = []
-        self.val_dead = []
         self.subst = {}
         self.undef_widened = set()
         self.phi_users = {}
@@ -1207,29 +1213,106 @@ cdef class _SSABuilder:
 
     # -- loose value / place construction ---------------------------------
 
-    cdef int32_t _new_val(self, int32_t op, int32_t flags, int32_t block, int32_t aux, list args):
-        cdef int32_t vid = len(self.val_op)
-        self.val_op.append(op)
-        self.val_flags.append(flags)
-        self.val_block.append(block)
-        self.val_aux.append(aux)
-        self.val_args.append(args)
-        self.val_dead.append(False)
-        if op == OPX_PHI:
-            (<list>self.block_phis[block]).append(vid)
-        else:
-            (<list>self.block_values[block]).append(vid)
+    cdef int32_t _append_descriptor(
+        self,
+        int32_t op,
+        int32_t flags,
+        int32_t block,
+        int32_t aux,
+        int32_t arg_start,
+        int32_t nargs,
+        bint register_in_block,
+    ):
+        cdef _LooseSSAValue value
+        cdef int32_t vid
+        cdef list block_order
+        if self.vals.size() >= 2147483647:
+            raise OverflowError("loose SSA value count exceeds the int32 arena limit")
+        vid = <int32_t>self.vals.size()
+        value.op = <uint16_t>op
+        value.flags = <uint8_t>flags
+        value.dead = 0
+        value.block = block
+        value.aux = aux
+        value.arg_start = arg_start
+        value.nargs = nargs
+        if register_in_block:
+            block_order = <list>(self.block_phis[block] if op == OPX_PHI else self.block_values[block])
+        self.vals.push_back(value)
+        if register_in_block:
+            try:
+                block_order.append(vid)
+            except:
+                self.vals.pop_back()
+                raise
         return vid
+
+    cdef int32_t _new_val0(self, int32_t op, int32_t flags, int32_t block, int32_t aux):
+        if self.operands.size() > 2147483647:
+            raise OverflowError("loose SSA operand count exceeds the int32 arena limit")
+        return self._append_descriptor(op, flags, block, aux, <int32_t>self.operands.size(), 0, True)
+
+    cdef int32_t _new_val1(self, int32_t op, int32_t flags, int32_t block, int32_t aux, int32_t arg):
+        cdef size_t old_size = self.operands.size()
+        cdef int32_t vid
+        if old_size >= 2147483647:
+            raise OverflowError("loose SSA operand count exceeds the int32 arena limit")
+        self.operands.push_back(arg)
+        try:
+            vid = self._append_descriptor(op, flags, block, aux, <int32_t>old_size, 1, True)
+        except:
+            self.operands.resize(old_size)
+            raise
+        return vid
+
+    cdef int32_t _new_valv(
+        self, int32_t op, int32_t flags, int32_t block, int32_t aux, vector[int32_t]& args
+    ):
+        cdef size_t old_size = self.operands.size()
+        cdef size_t count = args.size()
+        cdef size_t k
+        cdef int32_t vid
+        if old_size > 2147483647 or count > 2147483647 - old_size:
+            raise OverflowError("loose SSA operand count exceeds the int32 arena limit")
+        try:
+            for k in range(count):
+                self.operands.push_back(args[k])
+        except:
+            self.operands.resize(old_size)
+            raise
+        try:
+            vid = self._append_descriptor(op, flags, block, aux, <int32_t>old_size, <int32_t>count, True)
+        except:
+            self.operands.resize(old_size)
+            raise
+        return vid
+
+    cdef void _set_phi_args(self, int32_t phi, list args) except *:
+        cdef size_t old_size = self.operands.size()
+        cdef size_t count = len(args)
+        cdef object arg
+        if self.vals[phi].arg_start != -1:
+            raise AssertionError("phi operands already filled")
+        if old_size > 2147483647 or count > 2147483647 - old_size:
+            raise OverflowError("loose SSA operand count exceeds the int32 arena limit")
+        try:
+            for arg in args:
+                self.operands.push_back(<int32_t>arg)
+        except:
+            self.operands.resize(old_size)
+            raise
+        self.vals[phi].arg_start = <int32_t>old_size
+        self.vals[phi].nargs = <int32_t>count
 
     cdef int32_t _get_undef(self):
         if self.undef_val < 0:
-            self.undef_val = len(self.val_op)
-            self.val_op.append(OPX_UNDEF)
-            self.val_flags.append(0)
-            self.val_block.append(self.entry)
-            self.val_aux.append(-1)
-            self.val_args.append([])
-            self.val_dead.append(False)
+            # UNDEF participates in the dense value-id space but is deliberately
+            # absent from block_values; _compact places it explicitly.
+            if self.operands.size() > 2147483647:
+                raise OverflowError("loose SSA operand count exceeds the int32 arena limit")
+            self.undef_val = self._append_descriptor(
+                OPX_UNDEF, 0, self.entry, -1, <int32_t>self.operands.size(), 0, False
+            )
         return self.undef_val
 
     cdef int32_t _translate_place(self, int32_t pid, int32_t block):
@@ -1260,9 +1343,9 @@ cdef class _SSABuilder:
         cdef Instr* ins = &self.src.instrs[src_vid]
         cdef int32_t op = ins.op
         cdef int32_t pid, kind, temp, spid, astart, nargs, k
-        cdef list args
+        cdef vector[int32_t] args
         if op == OPX_CONST:
-            return self._new_val(OPX_CONST, ins.flags, block, ins.aux, [])
+            return self._new_val0(OPX_CONST, ins.flags, block, ins.aux)
         if op == OPX_GET:
             pid = ins.aux
             kind = self.src.places[pid].kind
@@ -1270,18 +1353,22 @@ cdef class _SSABuilder:
                 temp = self.src.places[pid].block_ref
                 return self._read_variable(temp, block)
             spid = self._translate_place(pid, block)
-            return self._new_val(OPX_GET, ins.flags, block, spid, [])
+            return self._new_val0(OPX_GET, ins.flags, block, spid)
         if op == OPX_SET:
             raise AssertionError("OPX_SET in value position")
         astart = ins.arg_start
         nargs = ins.nargs
-        args = [self._translate(<int32_t>self.src.args[astart + k], block) for k in range(nargs)]
-        return self._new_val(op, ins.flags, block, -1, args)
+        if nargs > 0:
+            args.reserve(nargs)
+        for k in range(nargs):
+            args.push_back(self._translate(<int32_t>self.src.args[astart + k], block))
+        return self._new_valv(op, ins.flags, block, -1, args)
 
     # -- Braun value numbering --------------------------------------------
 
     cdef int32_t _resolve(self, int32_t v):
-        while v in self.subst:
+        # _try_remove_trivial sets subst[p] before vals[p].dead, so every dead value has a replacement.
+        while v >= 0 and <size_t>v < self.vals.size() and self.vals[v].dead:
             v = <int32_t>self.subst[v]
         return v
 
@@ -1299,7 +1386,7 @@ cdef class _SSABuilder:
         self.cur_def.vals[it] = v
 
     cdef int32_t _new_phi(self, int32_t block, int32_t temp):
-        return self._new_val(OPX_PHI, 0, block, temp, [])
+        return self._append_descriptor(OPX_PHI, 0, block, temp, -1, 0, True)
 
     cdef object _begin_read(self, int32_t temp, int32_t block):
         # Walk the single-pred chain + leaf cases of a variable read. Returns a
@@ -1357,17 +1444,15 @@ cdef class _SSABuilder:
     cdef void _fill_phi(self, int32_t temp, int32_t phi):
         # Fill an already-created (incomplete, sealed-block) phi's operands. Used by
         # _seal; a seal frame (chain is None) does not resolve-write the phi's block.
-        cdef int32_t block = <int32_t>self.val_block[phi]
+        cdef int32_t block = self.vals[phi].block
         cdef list preds = <list>self.incoming[block]
         self._drain([temp, phi, block, None, preds, 0, []])
 
     cdef int32_t _drain(self, list root):
-        # Depth-first-process phi-fill frames until the root completes, returning its
-        # resolved value. Mirrors the recursion exactly: a frame's phi already
-        # exists; read its preds in order (each a nested _begin_read yielding either
-        # an immediate value or a child frame), then -- once every operand is in --
-        # set val_args, register phi_users, run trivial-phi removal, and (read frames
-        # only, chain is not None) resolve-write the phi's block and single-pred chain.
+        # Each frame owns an existing phi. Read predecessors in order, completing child frames
+        # before their parents. Once all operands are available, register phi_users before trivial-phi
+        # removal. Read frames (chain is not None) also write the resolved value to the phi's block
+        # and single-predecessor chain; seal frames leave those definitions unchanged.
         cdef list stack = [root]
         cdef int32_t have_val = 0
         cdef int32_t child = 0
@@ -1410,7 +1495,7 @@ cdef class _SSABuilder:
                 # pre-header edge _compact prepends will look for it. A phi left holding only
                 # the back edge's operand collapses, taking the entry path's value with it.
                 ops.insert(0, self._get_undef())
-            self.val_args[phi] = ops
+            self._set_phi_args(phi, ops)
             for o in ops:
                 ro = self._resolve(o)
                 s = self.phi_users.get(ro)
@@ -1447,17 +1532,20 @@ cdef class _SSABuilder:
         # every uninitialized merge keeps its phi, and ``undef_widened`` /
         # ``_ssa_undef`` are therefore empty on every path out of build_ssa.
         cdef list worklist = [phi]
-        cdef int32_t p, o, r, same, u
+        cdef int32_t p, o, r, same, u, start, nargs, k
         cdef bint trivial
         while worklist:
             p = <int32_t>worklist.pop()
-            if <bint>self.val_dead[p]:
+            if self.vals[p].dead:
                 continue
-            if <int32_t>self.val_op[p] != OPX_PHI:
+            if self.vals[p].op != OPX_PHI:
                 continue
             same = -1
             trivial = True
-            for o in <list>self.val_args[p]:
+            start = self.vals[p].arg_start
+            nargs = self.vals[p].nargs
+            for k in range(nargs):
+                o = self.operands[start + k]
                 r = self._resolve(<int32_t>o)
                 if r == p or r == same:
                     continue
@@ -1471,7 +1559,7 @@ cdef class _SSABuilder:
                 # phi refers only to itself (unreachable) -> UNDEF.
                 same = self._get_undef()
             self.subst[p] = same
-            self.val_dead[p] = True
+            self.vals[p].dead = 1
             users = self.phi_users.get(p)
             if users:
                 su = self.phi_users.get(same)
@@ -1482,7 +1570,7 @@ cdef class _SSABuilder:
                     if u == p:
                         continue
                     su.add(u)
-                    if (not <bint>self.val_dead[u]) and <int32_t>self.val_op[u] == OPX_PHI:
+                    if (not self.vals[u].dead) and self.vals[u].op == OPX_PHI:
                         worklist.append(u)
 
     cdef void _seal(self, int32_t block):
@@ -1514,10 +1602,10 @@ cdef class _SSABuilder:
                     self._write_variable(temp, block, v)
                 else:
                     spid = self._translate_place(pid, block)
-                    self._new_val(OPX_SET, FLAG_SIDE_EFFECT | FLAG_PINNED | FLAG_STMT_ROOT, block, spid, [v])
+                    self._new_val1(OPX_SET, FLAG_SIDE_EFFECT | FLAG_PINNED | FLAG_STMT_ROOT, block, spid, v)
             else:
                 v = self._translate(i, block)
-                self.val_flags[v] = <int32_t>self.val_flags[v] | FLAG_STMT_ROOT
+                self.vals[v].flags = <uint8_t>(self.vals[v].flags | FLAG_STMT_ROOT)
         tv = self.src.blocks[block].test_val
         if tv >= 0:
             self.block_test[block] = self._translate(tv, block)
@@ -1554,7 +1642,7 @@ cdef class _SSABuilder:
         # the arena is built exactly as before.
         cdef int32_t off = 0
         for v in <list>self.block_phis[self.entry]:
-            if not <bint>self.val_dead[v]:
+            if not self.vals[v].dead:
                 off = 1  # implies undef_val >= 0: the phi's first operand is the UNDEF
                 break
         cdef int32_t nbd = nb + off
@@ -1569,17 +1657,15 @@ cdef class _SSABuilder:
             if off == 0 and b == self.entry and self.undef_val >= 0:
                 ob.append(self.undef_val)
             for v in <list>self.block_phis[b]:
-                if not <bint>self.val_dead[v]:
+                if not self.vals[v].dead:
                     ob.append(v)
             for v in <list>self.block_values[b]:
-                if not <bint>self.val_dead[v]:
+                if not self.vals[v].dead:
                     ob.append(v)
 
-        # Assign new instr indices + count args; record each block's start index.
-        # Loose value ids are dense list indices. A list avoids boxing/hashing
-        # every id again while remapping the compacted arena; guarded lookups
-        # retain the old dict's fail-fast behavior in unchecked release builds.
-        cdef list newidx = [-1] * len(self.val_op)
+        # Dense loose value IDs index this remapping directly. Guarded lookups reject missing
+        # mappings even when Cython bounds checks are disabled.
+        cdef list newidx = [-1] * self.vals.size()
         cdef list block_start = [0] * nbd
         cdef int32_t next_idx = 0
         cdef int32_t total_args = 0
@@ -1588,7 +1674,7 @@ cdef class _SSABuilder:
             for v in <list>order[b]:
                 newidx[v] = next_idx
                 next_idx += 1
-                total_args += len(<list>self.val_args[v])
+                total_args += self.vals[v].nargs
         cdef int32_t total_instrs = next_idx
 
         # Places (remap dynamic block_ref / index_val loose vids to new indices).
@@ -1647,8 +1733,7 @@ cdef class _SSABuilder:
         dst.cap_args = total_args
 
         cdef int32_t arg_cursor = 0
-        cdef int32_t op, flags, aux, nargs, nphi, tv, phi_first, sb
-        cdef list raw_args
+        cdef int32_t op, flags, aux, nargs, nphi, tv, phi_first, sb, raw_arg_start
         for b in range(nbd):
             ob = order[b]
             dst.blocks[b].instr_start = <int32_t>block_start[b]
@@ -1659,7 +1744,7 @@ cdef class _SSABuilder:
             nphi = 0
             phi_first = -1
             for v in ob:
-                if <int32_t>self.val_op[v] == OPX_PHI:
+                if self.vals[v].op == OPX_PHI:
                     if phi_first == -1:
                         phi_first = <int32_t>newidx[v]
                     nphi += 1
@@ -1667,11 +1752,11 @@ cdef class _SSABuilder:
             dst.blocks[b].phi_start = phi_first if phi_first != -1 else dst.blocks[b].instr_start
             for v in ob:
                 ni = <int32_t>newidx[v]
-                op = <int32_t>self.val_op[v]
-                flags = <int32_t>self.val_flags[v]
-                aux = <int32_t>self.val_aux[v]
-                raw_args = <list>self.val_args[v]
-                nargs = len(raw_args)
+                op = self.vals[v].op
+                flags = self.vals[v].flags
+                aux = self.vals[v].aux
+                raw_arg_start = self.vals[v].arg_start
+                nargs = self.vals[v].nargs
                 # Phi operand counts (one per predecessor) are built here, not via
                 # the marshal-guarded _emit, so guard the same int16 nargs field.
                 if nargs > 32767:
@@ -1685,9 +1770,10 @@ cdef class _SSABuilder:
                 dst.instrs[ni].arg_start = arg_cursor
                 dst.instrs[ni].nargs = <int16_t>nargs
                 dst.instrs[ni].aux = aux
-                for o in raw_args:
+                for k in range(nargs):
+                    o = self.operands[raw_arg_start + k]
                     dst.args[arg_cursor] = <uint32_t>_mapped_ssa_index(
-                        newidx, self._resolve(<int32_t>o)
+                        newidx, self._resolve(o)
                     )
                     arg_cursor += 1
             sb = b - off
@@ -3875,10 +3961,56 @@ def _run_dce(Func f):
 # vref = ("o", old_vid) | ("n", token). ``edge_key`` is any hashable, matched
 # between an incoming edge spec and a phi's opmap. Produces a fresh SSA ``Func``.
 
-cdef int32_t _resolve_vref(object ref, dict oldmap, dict tokenmap) except -1:
+cdef inline int32_t _model_dense_get(list mapping, int32_t old) except -1:
+    cdef int32_t new
+    if old < 0 or old >= len(mapping):
+        raise KeyError(old)
+    new = <int32_t>mapping[old]
+    if new < 0:
+        raise KeyError(old)
+    return new
+
+
+cdef inline int32_t _model_dense_index(list mapping, int32_t index) except -1:
+    if index < 0 or index >= len(mapping):
+        raise KeyError(index)
+    return index
+
+
+cdef inline void _model_dense_set(list mapping, int32_t old, int32_t new) except *:
+    mapping[_model_dense_index(mapping, old)] = new
+
+
+cdef int32_t _resolve_vref(object ref, list oldmap, dict tokenmap) except -1:
     if <str>ref[0] == "o":
-        return <int32_t>oldmap[<int32_t>ref[1]]
+        return _model_dense_get(oldmap, <int32_t>ref[1])
     return <int32_t>tokenmap[ref[1]]
+
+
+cdef int32_t _remap_place_model(
+    Func dst, Func src, int32_t old_pid, list oldmap, dict place_map
+) except -1:
+    cdef int32_t kind = src.places[old_pid].kind
+    cdef int32_t flags = src.places[old_pid].flags
+    cdef int32_t br = src.places[old_pid].block_ref
+    cdef int32_t iv = src.places[old_pid].index_val
+    cdef int32_t off = src.places[old_pid].offset
+    cdef bint baked
+    if iv >= 0:
+        baked = _bake_const_index(src, &off, &iv)
+        if baked and kind == PLACE_REAL_BLOCK:
+            flags = src._baked_index_flags(br, flags)
+    if kind == PLACE_DYNAMIC_BLOCK:
+        br = _model_dense_get(oldmap, br)
+    if iv >= 0:
+        iv = _model_dense_get(oldmap, iv)
+    key = (kind, flags, br, iv, off)
+    cached = place_map.get(key)
+    if cached is not None:
+        return <int32_t>cached
+    cdef int32_t pid = _add_place(dst, <uint8_t>kind, <uint8_t>flags, br, iv, off)
+    place_map[key] = pid
+    return pid
 
 
 def _emit_from_model(Func src, list pblocks, int entry_pb):
@@ -3888,22 +4020,20 @@ def _emit_from_model(Func src, list pblocks, int entry_pb):
     cdef int32_t total_instrs, total_args, nb_new, ninc
 
     # --- reachability + RPO from entry over model edges ---
-    succ = [[] for _ in range(npb)]
-    for pb in range(npb):
-        for espec in <list>(<dict>pblocks[pb])["edges"]:
-            (<list>succ[pb]).append(<int32_t>espec[0])
     visited = [False] * npb
     post = []
+    _model_dense_index(visited, entry_pb)
     stack = [(entry_pb, 0)]
     visited[entry_pb] = True
     while stack:
         top = stack[len(stack) - 1]
         node = <int32_t>top[0]
         idx = <int32_t>top[1]
-        slist = <list>succ[node]
+        slist = <list>(<dict>pblocks[node])["edges"]
         if idx < len(slist):
             stack[len(stack) - 1] = (node, idx + 1)
-            ch = <int32_t>slist[idx]
+            ch = <int32_t>(<list>slist[idx])[0]
+            _model_dense_index(visited, ch)
             if not <bint>visited[ch]:
                 visited[ch] = True
                 stack.append((ch, 0))
@@ -3912,7 +4042,7 @@ def _emit_from_model(Func src, list pblocks, int entry_pb):
             stack.pop()
     rpo = list(reversed(post))
     nb_new = len(rpo)
-    new_bid = {}
+    new_bid = [-1] * npb
     for k in range(nb_new):
         new_bid[<int32_t>rpo[k]] = k
 
@@ -3950,14 +4080,14 @@ def _emit_from_model(Func src, list pblocks, int entry_pb):
         block_edge_start[k] = len(new_edges)
         for espec in <list>(<dict>pblocks[pb])["edges"]:
             dst_pb = <int32_t>espec[0]
-            nb_dst = <int32_t>new_bid[dst_pb]
+            nb_dst = _model_dense_get(new_bid, dst_pb)
             nei = len(new_edges)
             new_edges.append((k, nb_dst, <int32_t>espec[1], <double>espec[2], <int32_t>espec[3]))
             (<list>incoming_new[nb_dst]).append((nei, espec[4]))
         block_edge_count[k] = len(new_edges) - block_edge_start[k]
 
     # --- assign new value ids (phis first per block already, by item order) ---
-    oldmap = {}
+    oldmap = [-1] * src.n_instrs
     tokenmap = {}
     block_items = [None] * nb_new
     block_start = [0] * nb_new
@@ -3969,7 +4099,7 @@ def _emit_from_model(Func src, list pblocks, int entry_pb):
         block_start[k] = ni
         for it in items:
             if <str>it[0] == "i":
-                oldmap[<int32_t>it[1]] = ni
+                _model_dense_set(oldmap, <int32_t>it[1], ni)
             else:
                 tokenmap[it[1]] = ni
             ni += 1
@@ -4007,10 +4137,9 @@ def _emit_from_model(Func src, list pblocks, int entry_pb):
         raise MemoryError()
     dst.n_blocks = nb_new
     dst.cap_blocks = nb_new
-    dst.entry_block = <int32_t>new_bid[entry_pb]
+    dst.entry_block = _model_dense_get(new_bid, entry_pb)
 
     place_map = {}
-    no_override = {}  # this rebuilder folds nothing: every constant is already one in ``src``
     arg_cursor = 0
     cdef int32_t phi_first, phi_cnt
     for k in range(nb_new):
@@ -4061,14 +4190,14 @@ def _emit_from_model(Func src, list pblocks, int entry_pb):
                     dst.instrs[ni].aux = -1
                     dst.instrs[ni].nargs = 0
                 elif op == OPX_GET:
-                    pid = _remap_place_c(dst, src, src.instrs[ov].aux, oldmap, place_map, no_override)
+                    pid = _remap_place_model(dst, src, src.instrs[ov].aux, oldmap, place_map)
                     dst.instrs[ni].op = OPX_GET
                     dst.instrs[ni].flags = src.instrs[ov].flags
                     dst.instrs[ni].aux = pid
                     dst.instrs[ni].nargs = 0
                 elif op == OPX_SET:
-                    val_new = <int32_t>oldmap[<int32_t>src.args[src.instrs[ov].arg_start]]
-                    pid = _remap_place_c(dst, src, src.instrs[ov].aux, oldmap, place_map, no_override)
+                    val_new = _model_dense_get(oldmap, <int32_t>src.args[src.instrs[ov].arg_start])
+                    pid = _remap_place_model(dst, src, src.instrs[ov].aux, oldmap, place_map)
                     dst.args[arg_cursor] = <uint32_t>val_new
                     arg_cursor += 1
                     dst.instrs[ni].op = OPX_SET
@@ -4079,7 +4208,9 @@ def _emit_from_model(Func src, list pblocks, int entry_pb):
                     astart = src.instrs[ov].arg_start
                     nn = src.instrs[ov].nargs
                     for kk in range(nn):
-                        dst.args[arg_cursor] = <uint32_t><int32_t>oldmap[<int32_t>src.args[astart + kk]]
+                        dst.args[arg_cursor] = <uint32_t>_model_dense_get(
+                            oldmap, <int32_t>src.args[astart + kk]
+                        )
                         arg_cursor += 1
                     dst.instrs[ni].op = <uint16_t>op
                     dst.instrs[ni].flags = src.instrs[ov].flags
@@ -4120,14 +4251,14 @@ def _emit_from_model(Func src, list pblocks, int entry_pb):
     dst.n_edges = nen
     dst.cap_edges = nen
 
-    if src.undef_val >= 0 and src.undef_val in oldmap:
+    if src.undef_val >= 0 and src.undef_val < len(oldmap) and <int32_t>oldmap[src.undef_val] >= 0:
         dst.undef_val = <int32_t>oldmap[src.undef_val]
     else:
         dst.undef_val = -1
     widened = set()
     if src._ssa_undef:
         for wv in src._ssa_undef:
-            if wv in oldmap:
+            if 0 <= wv < len(oldmap) and <int32_t>oldmap[wv] >= 0:
                 widened.add(<int32_t>oldmap[wv])
     dst._ssa_undef = widened
 
@@ -4385,7 +4516,7 @@ def _phi_opmap_src(Func f, int32_t vid, list incoming):
     return opmap
 
 
-def _licm_try_loop(Func f, Dominators D, LoopForest F, int32_t L):
+def _licm_plan_loop(Func f, Dominators D, LoopForest F, int32_t L):
     cdef int32_t header = F.header[L]
     cdef int32_t entry = f.entry_block
     cdef int32_t nb = f.n_blocks
@@ -4487,23 +4618,89 @@ def _licm_try_loop(Func f, Dominators D, LoopForest F, int32_t L):
     if not H:
         return None
 
-    return _licm_apply(f, D, F, L, header, H)
+    return (L, header, H)
 
 
-def _licm_apply(Func f, Dominators D, LoopForest F, int32_t L, int32_t header, set H):
+def _licm_plan_topology(Func f, LoopForest F, tuple plan):
+    cdef int32_t L = <int32_t>plan[0]
+    cdef int32_t header = <int32_t>plan[1]
+    cdef int32_t e, pred, reuse_pre = -1
+    entry_edges = []
+    back_edges = []
+    for e in range(f.n_edges):
+        if f.edges[e].dst != header:
+            continue
+        if F.in_loop(L, f.edges[e].src):
+            back_edges.append(e)
+        else:
+            entry_edges.append(e)
+    if len(entry_edges) == 1:
+        pred = f.edges[<int32_t>entry_edges[0]].src
+        if f.blocks[pred].edge_count == 1 and f.blocks[pred].phi_count == 0:
+            reuse_pre = pred
+    return (entry_edges, back_edges, reuse_pre)
+
+
+def _licm_plans_compatible(Func f, LoopForest F, tuple a, tuple b):
+    cdef int32_t La = <int32_t>a[0]
+    cdef int32_t Lb = <int32_t>b[0]
+    cdef int32_t ba, bb, v, operand
+    Ha = <set>a[2]
+    Hb = <set>b[2]
+    # Hoisting from a nested loop can make an enclosing loop profitable, moving it ahead of
+    # another plan on the next iteration. Restrict batches to top-level loops to preserve
+    # that selection order.
+    if F.parent[La] >= 0 or F.parent[Lb] >= 0:
+        return False
+    # Reject nesting and overlapping natural loops.
+    for ba in range(f.n_blocks):
+        if F.in_loop(La, ba) and F.in_loop(Lb, ba):
+            return False
+    ta = _licm_plan_topology(f, F, a)
+    tb = _licm_plan_topology(f, F, b)
+    apre = <int32_t>ta[2]
+    bpre = <int32_t>tb[2]
+    if apre >= 0 and bpre >= 0 and apre == bpre:
+        return False
+    if (apre >= 0 and F.in_loop(Lb, apre)) or (bpre >= 0 and F.in_loop(La, bpre)):
+        return False
+    # A moved value must not feed the other plan's moved closure.
+    for v in Ha:
+        for operand in _licm_operands(f, <int32_t>v):
+            if operand in Hb:
+                return False
+    for v in Hb:
+        for operand in _licm_operands(f, <int32_t>v):
+            if operand in Ha:
+                return False
+    # Entry sources touched by one rewrite must stay outside the other loop.
+    for e_obj in <list>ta[0]:
+        ba = f.edges[<int32_t>e_obj].src
+        if F.in_loop(Lb, ba) or ba == <int32_t>b[1]:
+            return False
+    for e_obj in <list>tb[0]:
+        bb = f.edges[<int32_t>e_obj].src
+        if F.in_loop(La, bb) or bb == <int32_t>a[1]:
+            return False
+    return True
+
+
+def _licm_apply_batch(Func f, LoopForest F, list plans):
     cdef int32_t nb = f.n_blocks
-    cdef int32_t b, vid, istart, icount, es, ec, e, pred
+    cdef int32_t b, vid, istart, icount, es, ec, e, header
     cdef list incoming = _incoming_by_block(f)
+    all_hoists = set()
+    for plan in plans:
+        all_hoists.update(<set>plan[2])
 
-    # base model: one plan-block per src block (index == src block id).
     pblocks = []
     for b in range(nb):
         items = []
         istart = f.blocks[b].instr_start
         icount = f.blocks[b].instr_count
         for vid in range(istart, istart + icount):
-            if vid in H:
-                continue  # hoisted values are relocated to the preheader
+            if vid in all_hoists:
+                continue
             if f.instrs[vid].op == OPX_PHI:
                 items.append(("i", vid, _phi_opmap_src(f, vid, incoming)))
             else:
@@ -4516,79 +4713,61 @@ def _licm_apply(Func f, Dominators D, LoopForest F, int32_t L, int32_t header, s
             edges.append([f.edges[e].dst, f.edges[e].cond_kind, f.edges[e].cond, f.edges[e].cond_is_int, e])
         pblocks.append({"items": items, "test": test, "edges": edges})
 
-    entry_pb = f.entry_block
-
-    # header incoming edges: entry (from outside the loop) vs back (from inside).
-    entry_edges = []
-    back_edges = []
-    for e in range(f.n_edges):
-        if f.edges[e].dst != header:
+    # Apply independent edits in the same descending-header order used for
+    # sequential selection. Original edge keys remain valid throughout.
+    for plan in plans:
+        header = <int32_t>plan[1]
+        H = <set>plan[2]
+        topology = _licm_plan_topology(f, F, plan)
+        entry_edges = <list>topology[0]
+        back_edges = <list>topology[1]
+        reuse_pre = <int32_t>topology[2]
+        if not entry_edges:
             continue
-        if F.in_loop(L, f.edges[e].src):
-            back_edges.append(e)
-        else:
-            entry_edges.append(e)
-    if not entry_edges:
-        return None
+        hoist_items = [("i", v, None) for v in sorted(H)]
+        if reuse_pre >= 0:
+            (<dict>pblocks[reuse_pre])["items"].extend(hoist_items)
+            continue
 
-    # hoisted values in dependency order (ascending id == def-before-use).
-    hoist_items = [("i", v, None) for v in sorted(H)]
-
-    # reuse an existing clean preheader (single entry edge whose src has exactly
-    # one outgoing edge and no phis), else create one.
-    reuse_pre = -1
-    if len(entry_edges) == 1:
-        pred = f.edges[entry_edges[0]].src
-        if f.blocks[pred].edge_count == 1 and f.blocks[pred].phi_count == 0:
-            reuse_pre = pred
-
-    if reuse_pre >= 0:
-        (<dict>pblocks[reuse_pre])["items"].extend(hoist_items)
-        return _emit_from_model(f, pblocks, entry_pb)
-
-    # create a new preheader.
-    pre_pb = len(pblocks)
-    p_key = ("licm_pre", header)
-    pre_phis = []
-    tok_ctr = 0
-    header_pb = <dict>pblocks[header]
-    new_header_items = []
-    for it in <list>header_pb["items"]:
-        if <str>it[0] == "i" and f.instrs[<int32_t>it[1]].op == OPX_PHI:
-            old_opmap = <dict>it[2]
-            if len(entry_edges) == 1:
-                pre_operand = old_opmap[entry_edges[0]]
+        pre_pb = len(pblocks)
+        p_key = ("licm_pre", header)
+        pre_phis = []
+        tok_ctr = 0
+        header_pb = <dict>pblocks[header]
+        new_header_items = []
+        for it in <list>header_pb["items"]:
+            if <str>it[0] == "i" and f.instrs[<int32_t>it[1]].op == OPX_PHI:
+                old_opmap = <dict>it[2]
+                if len(entry_edges) == 1:
+                    pre_operand = old_opmap[entry_edges[0]]
+                else:
+                    tok = ("licm_np", header, tok_ctr)
+                    tok_ctr += 1
+                    np_opmap = {edge: old_opmap[edge] for edge in entry_edges}
+                    pre_phis.append(("np", tok, f.instrs[<int32_t>it[1]].aux, np_opmap))
+                    pre_operand = ("n", tok)
+                new_opmap = {p_key: pre_operand}
+                for e in back_edges:
+                    new_opmap[e] = old_opmap[e]
+                new_header_items.append(("i", <int32_t>it[1], new_opmap))
             else:
-                tok = ("licm_np", header, tok_ctr)
-                tok_ctr += 1
-                np_opmap = {}
-                for e in entry_edges:
-                    np_opmap[e] = old_opmap[e]
-                pre_phis.append(("np", tok, f.instrs[<int32_t>it[1]].aux, np_opmap))
-                pre_operand = ("n", tok)
-            new_opmap = {p_key: pre_operand}
-            for e in back_edges:
-                new_opmap[e] = old_opmap[e]
-            new_header_items.append(("i", <int32_t>it[1], new_opmap))
-        else:
-            new_header_items.append(it)
-    header_pb["items"] = new_header_items
-
-    # retarget entry edges to the preheader (keep their edge keys).
-    for e in entry_edges:
-        src_b = f.edges[e].src
-        for espec in <list>(<dict>pblocks[src_b])["edges"]:
-            if espec[4] == e:
-                espec[0] = pre_pb
-                break
-
-    pre_items = list(pre_phis) + hoist_items
-    pre_edges = [[header, EDGE_COND_NONE, 0.0, 0, p_key]]
-    pblocks.append({"items": pre_items, "test": None, "edges": pre_edges})
-    return _emit_from_model(f, pblocks, entry_pb)
+                new_header_items.append(it)
+        header_pb["items"] = new_header_items
+        for e in entry_edges:
+            src_b = f.edges[e].src
+            for espec in <list>(<dict>pblocks[src_b])["edges"]:
+                if espec[4] == e:
+                    espec[0] = pre_pb
+                    break
+        pblocks.append({
+            "items": list(pre_phis) + hoist_items,
+            "test": None,
+            "edges": [[header, EDGE_COND_NONE, 0.0, 0, p_key]],
+        })
+    return _emit_from_model(f, pblocks, f.entry_block)
 
 
-def _licm_pass_once(Func f):
+def _licm_pass_once(Func f, int32_t max_plans=2147483647, batch_count=None):
     cdef Dominators D = compute_dominators(f)
     cdef LoopForest F = compute_loops(f, D)
     cdef int32_t nl = F.n_loops
@@ -4598,11 +4777,34 @@ def _licm_pass_once(Func f):
     # inner-first: process loops by header block id descending (an inner header's
     # RPO id is always greater than its enclosing header's).
     order = sorted(range(nl), key=lambda li: F.header[li], reverse=True)
+    plans = []
     for L in order:
-        nf = _licm_try_loop(f, D, F, <int32_t>L)
-        if nf is not None:
-            return nf
-    return None
+        plan = _licm_plan_loop(f, D, F, <int32_t>L)
+        if plan is None:
+            continue
+        topology = _licm_plan_topology(f, F, <tuple>plan)
+        if not <list>topology[0]:
+            continue
+        compatible = True
+        for accepted in plans:
+            if not _licm_plans_compatible(f, F, <tuple>accepted, <tuple>plan):
+                compatible = False
+                break
+        if not compatible:
+            # Preserve sequential selection: an incompatible profitable plan
+            # would be selected immediately after the accepted prefix rebuilds.
+            # Never batch a later plan across it.
+            break
+        plans.append(plan)
+        if len(plans) >= max_plans:
+            break
+    if not plans:
+        if batch_count is not None:
+            batch_count[0] = 0
+        return None
+    if batch_count is not None:
+        batch_count[0] = len(plans)
+    return _licm_apply_batch(f, F, plans)
 
 
 def _run_licm(Func f):
@@ -4611,10 +4813,11 @@ def _run_licm(Func f):
     cdef int32_t cap = f.n_instrs + f.n_blocks + 16
     cdef int32_t iters = 0
     while iters < cap:
-        iters += 1
-        nf = _licm_pass_once(<Func>cur)
+        batch_count = [0]
+        nf = _licm_pass_once(<Func>cur, cap - iters, batch_count)
         if nf is None:
             break
+        iters += <int32_t>batch_count[0]
         cur = nf
         any_changed = True
     return (cur, any_changed)

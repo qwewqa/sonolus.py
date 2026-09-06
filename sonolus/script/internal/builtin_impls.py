@@ -4,7 +4,7 @@ import math
 import random as pyrandom
 from enum import Enum
 from types import FunctionType
-from typing import Any, Never, assert_never
+from typing import Any, Never, assert_never, cast
 
 from sonolus.backend.ops import Op
 from sonolus.script.array import Array
@@ -20,6 +20,7 @@ from sonolus.script.internal.native import native_function
 from sonolus.script.internal.random import RANDOM_BUILTIN_IMPLS
 from sonolus.script.internal.range import Range
 from sonolus.script.internal.set_impl import SetImpl
+from sonolus.script.internal.simple_meta_fn import simple_meta_fn
 from sonolus.script.internal.tuple_impl import TupleImpl, has_tuple_iter, tuple_iter
 from sonolus.script.internal.value import Value
 from sonolus.script.iterator import (
@@ -1138,6 +1139,11 @@ def _assert_never(arg: Never, /):
     error("Expected code to be unreachable")
 
 
+@simple_meta_fn
+def _cast(typ, val):
+    return val
+
+
 # classmethod, property, staticmethod are supported as decorators, but not within functions
 
 BUILTIN_IMPLS = {
@@ -1170,6 +1176,7 @@ BUILTIN_IMPLS = {
     id(type): _type,
     id(zip): _zip,
     id(assert_never): _assert_never,
+    id(cast): _cast,
     **MATH_BUILTIN_IMPLS,  # Includes round
     **RANDOM_BUILTIN_IMPLS,
 }
@@ -1178,7 +1185,7 @@ BUILTIN_IMPLS = {
 def _build_impl_names() -> dict[int, str]:
     """Map the id of each impl in BUILTIN_IMPLS to the name an author writes for it."""
     names = {}
-    for namespace in (vars(builtins), vars(math), vars(pyrandom), {"assert_never": assert_never}):
+    for namespace in (vars(builtins), vars(math), vars(pyrandom), {"assert_never": assert_never, "cast": cast}):
         for name, value in namespace.items():
             target = BUILTIN_IMPLS.get(id(value))
             if target is not None:

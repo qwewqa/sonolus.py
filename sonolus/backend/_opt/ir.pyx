@@ -132,6 +132,68 @@ def _edge_sort_key(edge):
     return (0, float(edge.cond))
 
 
+# CFG traversal compares Python conditions directly; edge marshalling compares floats.
+# Float conversion can map distinct integer conditions to the same sort key.
+def _context_traversal_sort_key(item):
+    cond = item[0]
+    return (cond is None, cond)
+
+
+def _context_emit_sort_key(item):
+    cond = item[0]
+    if cond is None:
+        return (1, 0.0)
+    return (0, float(cond))
+
+
+cdef object _ordered_context_edges(object context, object sort_key):
+    outgoing = context.outgoing
+    if len(outgoing) <= 1:
+        return outgoing.items()
+    return sorted(outgoing.items(), key=sort_key)
+
+
+cdef list _context_reverse_postorder(object entry):
+    """Return Contexts in the order produced by traverse_cfg_reverse_postorder on their CFG."""
+    cdef list postorder = []
+    cdef set visited = {entry}
+    cdef list stack = [(entry, iter(_ordered_context_edges(entry, _context_traversal_sort_key)))]
+    cdef object node, edges, target
+    cdef bint descended
+    while stack:
+        node, edges = stack[len(stack) - 1]
+        descended = False
+        for _, target in edges:
+            if target in visited:
+                continue
+            visited.add(target)
+            if target.outgoing:
+                stack.append((target, iter(_ordered_context_edges(target, _context_traversal_sort_key))))
+                descended = True
+                break
+            postorder.append(target)
+        if not descended:
+            postorder.append(node)
+            stack.pop()
+    postorder.reverse()
+    return postorder
+
+
+cdef list _reachable_contexts(object entry):
+    cdef list result = []
+    cdef list pending = [entry]
+    cdef set visited = set()
+    cdef object context
+    while pending:
+        context = pending.pop()
+        if context in visited:
+            continue
+        visited.add(context)
+        result.append(context)
+        pending.extend(context.outgoing.values())
+    return result
+
+
 cdef class Func:
     """One per-callback arena. See ir.pxd for the field contract."""
 
@@ -532,7 +594,7 @@ cdef class Func:
         self.n_edges += 1
         return 0
 
-    cdef int _marshal(self, object entry, object mode, object callback) except -1:
+    cdef void _init_marshal(self, object mode, object callback) except *:
         self.callback = callback
         if mode is not None:
             self.blocks_type = mode.blocks
@@ -540,6 +602,9 @@ cdef class Func:
         else:
             self.blocks_type = None
             self._block_map = {}
+
+    cdef int _marshal(self, object entry, object mode, object callback) except -1:
+        self._init_marshal(mode, callback)
 
         rpo_blocks = list(traverse_cfg_reverse_postorder(entry))
         cdef int32_t nb = len(rpo_blocks)
@@ -571,6 +636,40 @@ cdef class Func:
             self.blocks[bid].edge_start = self.n_edges
             for e in sorted(pyb.outgoing, key=_edge_sort_key):
                 self._push_edge(bid, <int32_t>block_id[e.dst], e.cond)
+            self.blocks[bid].edge_count = self.n_edges - self.blocks[bid].edge_start
+        return 0
+
+    cdef int _marshal_context(self, object entry, object mode, object callback) except -1:
+        self._init_marshal(mode, callback)
+
+        rpo_contexts = _context_reverse_postorder(entry)
+        cdef int32_t nb = len(rpo_contexts)
+        cdef int32_t i
+        if nb == 0:
+            raise ValueError("Empty CFG")
+        self.blocks = <BlockInfo*>_grow(<void*>self.blocks, &self.cap_blocks, nb, sizeof(BlockInfo))
+        self.n_blocks = nb
+        self.entry_block = 0
+
+        context_id = {context: i for i, context in enumerate(rpo_contexts)}
+
+        cdef int32_t bid, tv, istart
+        for bid in range(nb):
+            context = rpo_contexts[bid]
+            istart = self.n_instrs
+            self.blocks[bid].instr_start = istart
+            self.blocks[bid].phi_start = 0
+            self.blocks[bid].phi_count = 0
+            self.blocks[bid].rpo = bid
+            self.blocks[bid].idom = -1
+            for stmt in context.statements:
+                self._emit_stmt(stmt, bid)
+            tv = self._value_of(context.test, bid)
+            self.blocks[bid].test_val = tv
+            self.blocks[bid].instr_count = self.n_instrs - istart
+            self.blocks[bid].edge_start = self.n_edges
+            for condition, target in _ordered_context_edges(context, _context_emit_sort_key):
+                self._push_edge(bid, <int32_t>context_id[target], condition)
             self.blocks[bid].edge_count = self.n_edges - self.blocks[bid].edge_start
         return 0
 
@@ -1139,6 +1238,20 @@ def marshal_in(entry, mode=None, callback=None):
     cdef Func func = Func()
     func._marshal(entry, mode, callback)
     return func
+
+
+def marshal_context(entry, mode=None, callback=None):
+    """Marshal a Context graph into a new arena without modifying the graph."""
+    cdef Func func = Func()
+    func._marshal_context(entry, mode, callback)
+    return func
+
+
+def release_context(entry):
+    """Release a callback-owned Context graph by deleting its outgoing links."""
+    contexts = _reachable_contexts(entry)
+    for context in contexts:
+        del context.outgoing
 
 
 def to_basic_blocks(func):

@@ -461,17 +461,14 @@ def test_directed_noncontiguous_switch_with_default():
 
 # ==========================================================================
 # Never-written (but read) arrays must not alias live temps.
-# Found by this suite: the not-live-before-any-write rule dropped never-written
-# arrays from liveness entirely, so STANDARD's first-fit packing overlapped their
-# slots onto live scalars. Fixed in analysis.pyx by restricting that rule to
-# arrays with at least one write.
+# Excluding never-written arrays from liveness would let packing overlap their
+# storage with live scalars, replacing undefined reads with unrelated values.
 # ==========================================================================
 
 
 def test_never_written_array_read_aliases_live_temp():
-    # arr0 is never written but arr0[0] is read; k0 is a live loop counter. Under
-    # STANDARD packing, arr0 base collides with k0, so DebugLog(arr0[0]) logs k0's
-    # value (0) instead of -1.0.
+    # arr0 and k0 must occupy distinct storage: reading the unwritten arr0[0]
+    # must produce -1.0, not the live loop counter's value.
     def build():
         arr = TempBlock("arr0", 2)
         b0 = BasicBlock(statements=[IRSet(_sc("k0"), IRConst(0))])
@@ -488,3 +485,25 @@ def test_never_written_array_read_aliases_live_temp():
 
     it, _ = _assert_levels_agree(build)
     assert it.log == [-1.0]
+
+
+def test_never_written_array_dynamic_index_does_not_alias_counter():
+    # arr is read through the runtime loop counter but is never written. The
+    # array and counter are simultaneously live, so packing must keep their
+    # storage distinct and each undefined array element must still read -1.
+    def build():
+        arr = TempBlock("arr_dynamic", 2)
+        b0 = BasicBlock(statements=[IRSet(_sc("k_dynamic"), IRConst(0))])
+        header = BasicBlock(test=IRPureInstr(Op.Less, [_rd("k_dynamic"), IRConst(2)]))
+        body = BasicBlock(statements=[IRInstr(Op.DebugLog, [IRGet(BlockPlace(arr, _rd("k_dynamic")))])])
+        step = BasicBlock(statements=[IRSet(_sc("k_dynamic"), IRPureInstr(Op.Add, [_rd("k_dynamic"), IRConst(1)]))])
+        after = BasicBlock()
+        b0.connect_to(header, None)
+        header.connect_to(body, None)
+        header.connect_to(after, 0)
+        body.connect_to(step, None)
+        step.connect_to(header, None)
+        return b0
+
+    it, _ = _assert_levels_agree(build)
+    assert it.log == [-1.0, -1.0]

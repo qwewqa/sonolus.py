@@ -48,7 +48,7 @@ def compile_mode(
         project_state,
         archetypes,
         global_callbacks,
-        callback_to_cfg,
+        callback_to_context,
         level,
         validate_only,
     )
@@ -63,10 +63,28 @@ def callback_to_cfg(
 ) -> BasicBlock:
     t0 = profiling.now_ns() if profiling.enabled else 0
     try:
-        # Default to no_eval=True for performance unless there's an error.
+        # Retry tracing or conversion failures with evaluation enabled for source diagnostics.
         return _callback_to_cfg(project_state, mode_state, callback, name, archetype, no_eval=True)
     except CompilationError:
         return _callback_to_cfg(project_state, mode_state, callback, name, archetype, no_eval=False)
+    finally:
+        if profiling.enabled:
+            profiling.record("frontend", profiling.now_ns() - t0)
+
+
+def callback_to_context(
+    project_state: ProjectContextState,
+    mode_state: ModeContextState,
+    callback: Callable,
+    name: str,
+    archetype: type[_BaseArchetype] | None = None,
+) -> Context:
+    t0 = profiling.now_ns() if profiling.enabled else 0
+    try:
+        try:
+            return _callback_to_context(project_state, mode_state, callback, name, archetype, no_eval=True)
+        except CompilationError:
+            return _callback_to_context(project_state, mode_state, callback, name, archetype, no_eval=False)
     finally:
         if profiling.enabled:
             profiling.record("frontend", profiling.now_ns() - t0)
@@ -80,6 +98,17 @@ def _callback_to_cfg(
     archetype: type[_BaseArchetype] | None,
     no_eval: bool,
 ) -> BasicBlock:
+    return context_to_cfg(_callback_to_context(project_state, mode_state, callback, name, archetype, no_eval))
+
+
+def _callback_to_context(
+    project_state: ProjectContextState,
+    mode_state: ModeContextState,
+    callback: Callable,
+    name: str,
+    archetype: type[_BaseArchetype] | None,
+    no_eval: bool,
+) -> Context:
     callback_state = CallbackContextState(name, no_eval=no_eval)
     context = Context(project_state, mode_state, callback_state)
     with using_ctx(context):
@@ -89,4 +118,4 @@ def _callback_to_cfg(
             result = compile_and_call_at_definition(callback)
         if _is_num(result):
             ctx().add_statements(IRInstr(Op.Break, [IRConst(1), result.ir()]))
-    return context_to_cfg(context)
+    return context
