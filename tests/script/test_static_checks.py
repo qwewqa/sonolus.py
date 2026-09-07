@@ -2,12 +2,12 @@
 
 The checks are runtime_checks_enabled, static_assert, try_static_assert, assert_unreachable, is_static_true,
 and is_static_false. These deliberately disagree between plain Python and a compiled build, so
-run_and_validate cannot be the oracle: runtime_checks_enabled returns True unconditionally outside a compile
+run_and_validate cannot be the oracle for runtime-dependent cases: runtime_checks_enabled returns True outside a compile
 context but compiles to 0 under RuntimeChecks.NONE, and the is_static_* pair answers a question about the
 trace that has no plain-Python meaning. The compiled behaviour therefore goes through run_compiled, and every
 case whose result depends on the build pins one RuntimeChecks value, since run_compiled otherwise compares all
-three against each other and rejects a disagreement. The three tests that call a predicate directly are
-pinning the other side of that divergence: what it answers with no compile context to consult.
+three against each other and rejects a disagreement. Tests that call a predicate directly pin what it answers
+with no compile context to consult. Constant numeric truthiness agrees with Python and uses run_and_validate.
 
 Each call site passes its own message so that the pytest.raises pattern names which check fired: the default
 "Static assertion failed" belongs to both static_assert and try_static_assert, and is pinned once each.
@@ -27,7 +27,7 @@ from sonolus.script.debug import (
 )
 from sonolus.script.internal.context import RuntimeChecks
 from sonolus.script.internal.error import CompilationError
-from tests.script.conftest import run_compiled
+from tests.script.conftest import run_and_validate, run_compiled
 
 
 def runtime_sum() -> int:
@@ -203,6 +203,14 @@ def test_is_static_true_holds_for_a_compile_time_constant():
         return 1 if is_static_true(1 + 1 == 2) else 0
 
     assert run_compiled(fn) == 1
+
+
+@pytest.mark.parametrize("value", [0, 1, 2, -2, 0.25, -0.25, False, True])
+def test_is_static_true_normalizes_compile_time_numbers(value):
+    def fn(value):
+        return is_static_true(value)
+
+    assert run_and_validate(fn, value) is bool(value)
 
 
 def test_is_static_true_fails_for_a_runtime_value_that_is_true():

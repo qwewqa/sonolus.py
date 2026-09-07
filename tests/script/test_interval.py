@@ -3,6 +3,7 @@ from hypothesis import assume, given
 from hypothesis import strategies as st
 
 from sonolus.script.array import Array
+from sonolus.script.debug import debug_log
 from sonolus.script.internal.context import RuntimeChecks
 from sonolus.script.internal.error import CompilationError
 from sonolus.script.interval import (
@@ -25,6 +26,45 @@ positive_deltas = st.floats(min_value=1e-4, max_value=999, allow_infinity=False,
 floats_0_1 = st.floats(min_value=0, max_value=1, allow_infinity=False, allow_nan=False)
 divisor_floats = floats.filter(lambda x: abs(x) > 1e-6)
 lerp_floats = st.floats(min_value=-999, max_value=999, allow_infinity=False, allow_nan=False)
+
+
+class BranchingScalar(Record):
+    value: float
+
+    def __add__(self, other):
+        debug_log(1)
+        value = other.value if self.value == 0 else self.value + other.value
+        return BranchingScalar(value)
+
+    def __sub__(self, other):
+        debug_log(2)
+        value = self.value if other.value == 0 else self.value - other.value
+        return BranchingScalar(value)
+
+    def __mul__(self, other):
+        debug_log(3)
+        value = 0 if other == 0 else self.value * other
+        return BranchingScalar(value)
+
+
+@pytest.mark.parametrize("interpolate", [lerp, lerp_clamped])
+@pytest.mark.parametrize("start", [0, 1])
+@pytest.mark.parametrize("factor", [-1, 0, 0.5, 2])
+def test_lerp_custom_runtime_operators(interpolate, start, factor):
+    def fn():
+        return interpolate(BranchingScalar(start), BranchingScalar(3), factor).value
+
+    effective_factor = max(0, min(1, factor)) if interpolate is lerp_clamped else factor
+    assert run_and_validate(fn) == start + (3 - start) * effective_factor
+
+
+def test_lerp_custom_runtime_operators_direct_control():
+    def fn():
+        a = BranchingScalar(1)
+        b = BranchingScalar(3)
+        return (a + (b - a) * 0.5).value
+
+    assert run_and_validate(fn) == 2
 
 
 @st.composite

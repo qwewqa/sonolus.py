@@ -19,12 +19,11 @@ from sonolus.script.debug import assert_true, error, require
 from sonolus.script.internal.builtin_impls import (
     BUILTIN_IMPL_NAMES,
     BUILTIN_IMPLS,
-    _bool,
-    _float,
-    _int,
     _iterator_result_error_message,
     _len,
+    _matches_outside_alias_repr,
     _property_has_no_setter,
+    _resolve_class_arg,
     _super,
     _type_name,
     _validate_len_result,
@@ -1581,20 +1580,33 @@ class Visitor(ast.NodeVisitor):
             case ast.MatchMapping():
                 raise NotImplementedError("Match mappings are not supported")
             case ast.MatchClass(cls=cls, patterns=patterns, kwd_attrs=kwd_attrs, kwd_patterns=kwd_patterns):
+                from sonolus.script.internal.dict_impl import DictImpl
+                from sonolus.script.internal.range import Range
+                from sonolus.script.internal.set_impl import SetImpl
+
                 cls = self.visit(cls)
                 if not ctx().live:
                     return ctx().into_dead(), ctx(), []
-                if cls._is_py_() and cls._as_py_() in {_int, _float, _bool}:
-                    raise TypeError("Instance check against int, float, or bool is not supported, use Num instead")
-                cls = validate_type_spec(cls)
+                if cls._is_py_():
+                    cls = _resolve_class_arg(cls._as_py_(), "Instance")
+                if not (isinstance(cls, type) and getattr(cls, "_allow_instance_check_", False)):
+                    cls = validate_type_spec(cls)
                 if not isinstance(cls, type):
                     raise TypeError("Class is not a type")
-                if not isinstance(subject, cls):
+                if not isinstance(subject, cls) or not _matches_outside_alias_repr(type(subject), cls):
                     return ctx().into_dead(), ctx(), []
+                builtin_cls = {DictImpl: dict, SetImpl: set, TupleImpl: tuple, Range: range}.get(cls)
+                class_name = builtin_cls.__name__ if builtin_cls is not None else cls.__name__
                 if patterns:
-                    if not hasattr(cls, "__match_args__"):
+                    if builtin_cls in {dict, set, tuple}:
+                        # Builtin self-match captures the subject; its compiler representation's fields are unrelated.
+                        match_args = (None,)
+                    elif builtin_cls is range:
+                        match_args = ()
+                    elif not hasattr(cls, "__match_args__"):
                         raise TypeError("Class does not support match patterns")
-                    match_args = cls.__match_args__
+                    else:
+                        match_args = cls.__match_args__
                     if type(match_args) is not tuple:
                         raise TypeError(
                             f"{cls.__name__}.__match_args__ must be a tuple (got {type(match_args).__name__})"
@@ -1603,7 +1615,7 @@ class Visitor(ast.NodeVisitor):
                         limit = len(match_args)
                         plural = "" if limit == 1 else "s"
                         raise TypeError(
-                            f"{cls.__name__}() accepts {limit} positional sub-pattern{plural} ({len(patterns)} given)"
+                            f"{class_name}() accepts {limit} positional sub-pattern{plural} ({len(patterns)} given)"
                         )
                     # Positional sub-patterns bind to the first len(patterns) __match_args__.
                     # Python allows mixing them with keyword sub-patterns (e.g. Point(0, y=1)), so
@@ -1611,7 +1623,7 @@ class Visitor(ast.NodeVisitor):
                     # overwriting them.
                     positional_attrs = match_args[: len(patterns)]
                     for attr in positional_attrs:
-                        if type(attr) is not str:
+                        if type(attr) is not str and not (builtin_cls is not None and attr is None):
                             raise TypeError(f"__match_args__ elements must be strings (got {type(attr).__name__})")
                     kwd_attrs = [*positional_attrs, *kwd_attrs]
                     kwd_patterns = [*patterns, *kwd_patterns]
@@ -1621,7 +1633,7 @@ class Visitor(ast.NodeVisitor):
                     seen_attrs = set()
                     for attr in kwd_attrs:
                         if attr in seen_attrs:
-                            raise TypeError(f"{cls.__name__}() got multiple sub-patterns for attribute {attr!r}")
+                            raise TypeError(f"{class_name}() got multiple sub-patterns for attribute {attr!r}")
                         seen_attrs.add(attr)
                 if kwd_attrs:
                     true_ctx = ctx()
@@ -1631,7 +1643,12 @@ class Visitor(ast.NodeVisitor):
                         if not ctx().live:
                             break
                         try:
-                            value = self.handle_getattr(subpattern, subject, attr, report_errors=False)
+                            if attr is None:
+                                value = subject
+                            elif builtin_cls is not None and not hasattr(builtin_cls, attr):
+                                raise AttributeError(attr)
+                            else:
+                                value = self.handle_getattr(subpattern, subject, attr, report_errors=False)
                         except Exception as e:
                             if not caused_by_attribute_error(e):
                                 raise

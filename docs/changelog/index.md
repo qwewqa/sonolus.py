@@ -1,3 +1,13 @@
+### 1.2.3
+
+- Fixed class patterns for built-in collections and public array and iterator interfaces.
+- Fixed [`lerp`][sonolus.script.interval.lerp] and [`lerp_clamped`][sonolus.script.interval.lerp_clamped]
+  failing to compile custom arithmetic operators.
+- Fixed custom quad-like values failing to compile in drawing and particle helpers.
+- Fixed [`is_static_true`][sonolus.script.debug.is_static_true] returning incorrect results for numeric constants.
+- Fixed `min` and `max` initializing custom iterators twice when runtime checks are disabled.
+- Fixed `type()` returning inconsistent types for tuples, dictionaries, sets, and ranges.
+
 ### 1.2.2
 
 - Build performance improvements

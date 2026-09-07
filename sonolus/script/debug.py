@@ -298,7 +298,7 @@ def is_static_true(value: int | float | bool) -> bool:
         return bool(value)
     else:
         value = validate_value(value)
-        return value._is_py_() and value._as_py_()
+        return value._is_py_() and bool(value._as_py_())
 
 
 @meta_fn

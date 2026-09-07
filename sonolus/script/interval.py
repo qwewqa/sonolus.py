@@ -229,12 +229,10 @@ def _num_lerp_clamped(a, b, x, /):
     return a + (b - a) * max(0, min(1, x))
 
 
-@perf_meta_fn
 def _generic_lerp[T](a: T, b: T, x: float, /) -> T:
     return a + (b - a) * x  # type: ignore
 
 
-@perf_meta_fn
 def _generic_lerp_clamped[T](a: T, b: T, x: float, /) -> T:
     return a + (b - a) * _max(0, _min(1, x))  # type: ignore
 
@@ -251,11 +249,13 @@ def lerp[T](a: T, b: T, x: float, /) -> T:
     Returns:
         The interpolated value.
     """
+    from sonolus.script.internal.visitor import compile_and_call
+
     match a, b:
         case (Num(a), Num(b)):
             return _num_lerp(a, b, x)
         case _:
-            return _generic_lerp(a, b, x)
+            return compile_and_call(_generic_lerp, a, b, x)
 
 
 @perf_meta_fn
@@ -270,11 +270,13 @@ def lerp_clamped[T](a: T, b: T, x: float, /) -> T:
     Returns:
         The interpolated value.
     """
+    from sonolus.script.internal.visitor import compile_and_call
+
     match a, b:
         case (Num(a), Num(b)):
             return _num_lerp_clamped(a, b, x)
         case _:
-            return _generic_lerp_clamped(a, b, x)
+            return compile_and_call(_generic_lerp_clamped, a, b, x)
 
 
 @native_function(Op.Unlerp)

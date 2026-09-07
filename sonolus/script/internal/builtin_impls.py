@@ -10,7 +10,7 @@ from typing import Any, Never, assert_never, cast
 from sonolus.backend.ops import Op
 from sonolus.script.array import Array
 from sonolus.script.array_like import ArrayLike
-from sonolus.script.debug import assert_true, error, require, runtime_checks_enabled
+from sonolus.script.debug import assert_true, error, require
 from sonolus.script.internal import impl
 from sonolus.script.internal.context import ctx
 from sonolus.script.internal.dict_impl import DictImpl
@@ -439,13 +439,12 @@ def _max2_generic(a, b, key=_identity):
 
 
 def _max_num_iterator(iterable, default, key):
-    iterator = iterable.__iter__()  # ruff: ignore[unnecessary-dunder-call]
+    iterator = iter(iterable)
     initial = _validate_next_result(iterator.next())
     if initial.is_nothing:
         require(default is not None, "default must be provided if the iterator is empty")
         return default
-    if runtime_checks_enabled():
-        iterator = _IteratorWithoutOwnerChecks(iterator)
+    iterator = _IteratorWithoutOwnerChecks(iterator)
     if key is not None:
         result = initial.get_unsafe()
         best_key = key(result)
@@ -534,13 +533,12 @@ def _min2_generic(a, b, key=_identity):
 
 
 def _min_num_iterator(iterable, default, key):
-    iterator = iterable.__iter__()  # ruff: ignore[unnecessary-dunder-call]
+    iterator = iter(iterable)
     initial = _validate_next_result(iterator.next())
     if initial.is_nothing:
         require(default is not None, "default must be provided if the iterator is empty")
         return default
-    if runtime_checks_enabled():
-        iterator = _IteratorWithoutOwnerChecks(iterator)
+    iterator = _IteratorWithoutOwnerChecks(iterator)
     if key is not None:
         result = initial.get_unsafe()
         best_key = key(result)
@@ -1121,6 +1119,9 @@ class _Type(Record):
     @meta_fn
     def __call__(self, value, /):
         value = validate_value(value)
+        for implementation, public_type in ((TupleImpl, tuple), (DictImpl, dict), (SetImpl, set), (Range, range)):
+            if isinstance(value, implementation):
+                return validate_value(public_type)
         if value._is_py_():
             value = value._as_py_()
         if isinstance(value, _BUILTIN_TYPE_SHIMS):

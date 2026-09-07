@@ -58,6 +58,136 @@ class _CountingIterator(Record, SonolusIterator):
         return Some(self.value)
 
 
+class _PreparingIterator(Record, SonolusIterator):
+    remaining: int
+    scale: int
+
+    def __iter__(self):
+        self.scale *= 10
+        return self
+
+    def next(self):
+        if self.remaining:
+            self.remaining -= 1
+            return Some(self.scale + self.remaining)
+        return Nothing
+
+
+class _DelegatingArray[T](Record, ArrayLike):
+    values: T
+
+    def __len__(self):
+        return len(self.values)
+
+    def __getitem__(self, index):
+        return self.values[index]
+
+    def __setitem__(self, index, value):
+        self.values[index] = value
+
+    def __iter__(self):
+        return super().__iter__()
+
+
+@pytest.mark.parametrize("operation", [min, max])
+@pytest.mark.parametrize("with_default", [False, True])
+def test_extrema_preserve_array_like_references(operation, with_default):
+    def fn():
+        values = Array(Vec2(1, 4), Vec2(1, 8))
+        if with_default:
+            result = operation(_DelegatingArray(values), default=Vec2(0, 0), key=lambda value: value.x)
+        else:
+            result = operation(_DelegatingArray(values), key=lambda value: value.x)
+        selected_y = result.y
+        result.y = 99
+        return selected_y * 10000 + values[0].y * 100 + values[1].y
+
+    expected = run_and_validate(fn)
+    assert run_compiled(fn) == expected
+
+
+@pytest.mark.parametrize("operation", [min, max])
+@pytest.mark.parametrize("empty", [False, True])
+def test_extrema_preserve_array_like_array_defaults(operation, empty):
+    def fn():
+        if empty:
+            values = Array[Array[int, 2], 0]()
+        else:
+            values = Array(Array(1, 4), Array(1, 8))
+        default = Array(0, 2)
+        result = operation(_DelegatingArray(values), default=default, key=lambda value: value[0])
+        result[1] = 99
+        if empty:
+            return default[1]
+        return default[1] * 10000 + values[0][1] * 100 + values[1][1]
+
+    expected = run_and_validate(fn)
+    assert run_compiled(fn) == expected
+
+
+@pytest.mark.parametrize("operation", [min, max])
+def test_extrema_array_like_reference_default_must_match_element_type(operation):
+    def fn():
+        return operation(
+            _DelegatingArray(Array(Vec2(1, 2), Vec2(3, 4))), default=Array(1, 2), key=lambda value: value.x
+        )
+
+    with pytest.raises(
+        CompilationError,
+        match=r"default argument of type 'Array\[Num, 2\]' is incompatible with the element type 'Vec2'",
+    ):
+        compile_fn(fn)
+
+
+@pytest.mark.parametrize("operation", [min, max])
+def test_extrema_numeric_array_like_rejects_reference_default(operation):
+    def fn():
+        return operation(_DelegatingArray(Array(1, 2)), default=Vec2(1, 2))
+
+    with pytest.raises(
+        CompilationError,
+        match="default argument of type 'Vec2' is incompatible with the element type 'Num'",
+    ):
+        compile_fn(fn)
+
+
+@pytest.mark.parametrize("operation", [min, max])
+@pytest.mark.parametrize("with_key", [False, True])
+def test_extrema_initialize_custom_iterator_once(operation, with_key):
+    def fn():
+        values = _PreparingIterator(3, 1)
+        if with_key:
+            return operation(values, key=lambda value: -value)
+        return operation(values)
+
+    expected = run_and_validate(fn)
+    assert run_compiled(fn) == expected
+
+
+@pytest.mark.parametrize("operation", [min, max])
+def test_extrema_reject_non_iterator_returned_by_iter(operation):
+    class InvalidResult(Record):
+        count: int
+
+        def next(self):
+            self.count += 1
+            if self.count == 1:
+                return Some(4)
+            return Nothing
+
+    class InvalidIterator(Record, SonolusIterator):
+        def __iter__(self):
+            return InvalidResult(0)
+
+    def fn():
+        return operation(InvalidIterator())
+
+    with pytest.raises(TypeError) as expected:
+        fn()
+    with pytest.raises(CompilationError, match=re.escape(str(expected.value))):
+        compile_fn(fn)
+
+
 class _NonMaybeIterator(Record, SonolusIterator):
     def next(self):
         return 1

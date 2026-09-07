@@ -6,11 +6,13 @@ from enum import IntEnum
 import pytest
 
 from sonolus.script.array import Array
+from sonolus.script.array_like import ArrayLike
 from sonolus.script.containers import VarArray
 from sonolus.script.debug import assert_true, debug_log
 from sonolus.script.internal.error import CompilationError
 from sonolus.script.internal.meta_fn import meta_fn
 from sonolus.script.internal.range import Range
+from sonolus.script.iterator import SonolusIterator
 from sonolus.script.num import Num
 from sonolus.script.record import Record
 from tests.script.conftest import run_and_validate, run_compiled
@@ -1852,3 +1854,184 @@ def test_match_or_capture_of_conflicting_records_still_compiles_when_unread():
                 return -1
 
     assert run_and_validate(fn) == 1
+
+
+def test_match_builtin_dict_self_capture_supports_indexing():
+    def fn():
+        match {0: black_box_value(7)}:
+            case dict(value):
+                return value[0]
+        return -1
+
+    assert run_and_validate(fn) == 7
+
+
+def test_match_builtin_set_self_capture_supports_union():
+    def fn():
+        match {1, 2}:
+            case set(value):
+                return len(value | {3})
+        return -1
+
+    assert run_and_validate(fn) == 3
+
+
+@pytest.mark.parametrize(("pattern_type", "value"), [(dict, {0: 7}), (set, {1, 2}), (tuple, (3, 4))])
+def test_match_builtin_empty_class_pattern(pattern_type, value):
+    def fn():
+        match value:
+            case pattern_type():
+                return 1
+        return 0
+
+    assert run_and_validate(fn) == 1
+
+
+@pytest.mark.parametrize(("pattern_type", "value"), [(dict, {0: 7}), (set, {1, 2}), (tuple, (3, 4))])
+def test_match_builtin_nested_self_pattern(pattern_type, value):
+    def fn():
+        match (value,):
+            case (pattern_type(pattern_type()),):
+                return 1
+        return 0
+
+    assert run_and_validate(fn) == 1
+
+
+@pytest.mark.parametrize(("pattern_type", "value"), [(dict, {0: 7}), (set, {1, 2}), (tuple, (3, 4))])
+def test_match_builtin_self_pattern_rejects_excess_positional_patterns(pattern_type, value):
+    def fn():
+        match value:
+            case pattern_type(_, _):
+                return 1
+        return 0
+
+    message = rf"{pattern_type.__name__}\(\) accepts 1 positional sub-pattern \(2 given\)"
+    with pytest.raises(TypeError, match=message):
+        run_and_validate(fn)
+
+    with pytest.raises(CompilationError, match=message) as exc_info:
+        run_compiled(fn)
+    source_lines, first_line = inspect.getsourcelines(fn)
+    expected_line = first_line + next(i for i, line in enumerate(source_lines) if "case pattern_type" in line)
+    reported_lines = []
+    exception = exc_info.value
+    while exception is not None:
+        frame = exception.__traceback__
+        while frame is not None:
+            if frame.tb_frame.f_code.co_filename == __file__:
+                reported_lines.append(frame.tb_lineno)
+            frame = frame.tb_next
+        exception = exception.__cause__
+    assert expected_line in reported_lines
+
+
+def test_match_builtin_tuple_self_capture_supports_runtime_items():
+    def fn():
+        match (black_box_value(7), 3):
+            case tuple(value):
+                return value[0] + value[1]
+        return -1
+
+    assert run_and_validate(fn) == 10
+
+
+def test_match_builtin_self_capture_and_public_keyword():
+    def fn():
+        match {0: 7}:
+            case dict(value, keys=keys):
+                return value[0] + len(keys())
+        return -1
+
+    assert run_and_validate(fn) == 8
+
+
+@pytest.mark.parametrize("factory", [lambda: {0: 7}, lambda: {1, 2}, lambda: (3, 4), lambda: range(2)])
+def test_match_builtin_value_does_not_match_record_base(factory):
+    def fn():
+        match factory():
+            case Record():
+                return 1
+        return 0
+
+    assert run_and_validate(fn) == 0
+
+
+def test_match_builtin_dict_hides_internal_keyword_attributes():
+    def fn():
+        match {0: 7}:
+            case dict(_keys=_):
+                return 1
+            case dict(_ordered_keys=_):
+                return 2
+            case dict(_values=_):
+                return 3
+        return 0
+
+    assert run_and_validate(fn) == 0
+
+
+def test_match_builtin_set_hides_internal_keyword_attributes():
+    def fn():
+        match {1, 2}:
+            case set(_dict=_):
+                return 1
+        return 0
+
+    assert run_and_validate(fn) == 0
+
+
+def test_match_array_like_interface():
+    def fn():
+        match Array(3, 4):
+            case ArrayLike() as value:
+                return value[0] + value[1]
+        return -1
+
+    assert run_and_validate(fn) == 7
+
+
+def test_match_sonolus_iterator_interface():
+    def fn():
+        match iter(Array(3, 4)):
+            case SonolusIterator() as value:
+                return next(value)
+        return -1
+
+    assert run_and_validate(fn) == 3
+
+
+def test_match_builtin_range_public_keyword_attributes():
+    def fn():
+        match range(2, 9, 3):
+            case range(start=2, stop=9, step=3):
+                return 1
+        return 0
+
+    assert run_and_validate(fn) == 1
+
+
+def test_match_builtin_range_rejects_positional_patterns():
+    def fn():
+        match range(2, 9, 3):
+            case range(_):
+                return 1
+        return 0
+
+    with pytest.raises(TypeError, match=r"range\(\) accepts 0 positional sub-patterns \(1 given\)"):
+        run_and_validate(fn)
+
+
+@pytest.mark.parametrize("pattern_type", [int, float, bool])
+def test_match_builtin_numeric_class_restriction(pattern_type):
+    # Numeric class distinctions are unavailable in the compiled subset, which uses Num for all three types.
+    def fn():
+        match 1:
+            case pattern_type():
+                return 1
+        return 0
+
+    with pytest.raises(
+        CompilationError, match="Instance check against int, float, or bool is not supported, use Num instead"
+    ):
+        run_compiled(fn)

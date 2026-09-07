@@ -1,15 +1,117 @@
 import itertools
 from math import pi
 
+import pytest
 from hypothesis import assume, given
 from hypothesis import strategies as st
 
-from sonolus.script.quad import Quad, Rect
+from sonolus.script.array import Array
+from sonolus.script.debug import debug_log, error
+from sonolus.script.particle import Particle, ParticleHandle
+from sonolus.script.quad import Quad, Rect, flatten_quad
+from sonolus.script.record import Record
+from sonolus.script.sprite import Sprite
 from sonolus.script.vec import Vec2
 from tests.script.conftest import is_close, run_and_validate
 
 floats = st.floats(min_value=-9, max_value=9, allow_nan=False, allow_infinity=False)
 nonzero_floats = floats.filter(lambda x: abs(x) > 1e-2)
+
+
+class BranchingQuad(Record):
+    x: float
+
+    @property
+    def bl(self):
+        debug_log(1)
+        return Vec2(self.x if self.x > 0 else -self.x, 0)
+
+    @property
+    def tl(self):
+        debug_log(2)
+        return Vec2(0, 1 if self.x > 0 else 2)
+
+    @property
+    def tr(self):
+        debug_log(3)
+        return Vec2(1, 1 if self.x > 0 else 3)
+
+    @property
+    def br(self):
+        debug_log(4)
+        return Vec2(1, 0 if self.x > 0 else 4)
+
+
+@pytest.mark.parametrize(("x", "expected"), [(2, [2, 0, 0, 1, 1, 1, 1, 0]), (-2, [2, 0, 0, 2, 1, 3, 1, 4])])
+def test_flatten_quad_custom_runtime_properties(x, expected):
+    def fn():
+        return Array(*flatten_quad(BranchingQuad(x)))
+
+    assert list(run_and_validate(fn)) == expected
+
+
+def test_flatten_quad_custom_properties_conversion_control():
+    def fn():
+        return Array(*flatten_quad(Quad.from_quad(BranchingQuad(-2))))
+
+    assert list(run_and_validate(fn)) == [2, 0, 0, 2, 1, 3, 1, 4]
+
+
+@pytest.mark.parametrize("as_quad", [False, True])
+def test_flatten_quad_builtin_geometry(as_quad):
+    def fn():
+        rect = Rect(t=3, r=4, b=1, l=2)
+        if as_quad:
+            return Array(*flatten_quad(rect.as_quad()))
+        return Array(*flatten_quad(rect))
+
+    assert list(run_and_validate(fn)) == [2, 1, 2, 3, 4, 3, 4, 1]
+
+
+class StoppingQuad[Corner](Record):
+    def _corner(self, index):
+        debug_log(index)
+        if index == self.type_var_value(Corner):
+            error("quad stopped")
+        return Vec2(index, index)
+
+    @property
+    def bl(self):
+        return self._corner(1)
+
+    @property
+    def tl(self):
+        return self._corner(2)
+
+    @property
+    def tr(self):
+        return self._corner(3)
+
+    @property
+    def br(self):
+        return self._corner(4)
+
+
+def _draw_stopping_quad(quad):
+    Sprite(1).draw(quad)
+
+
+def _spawn_stopping_quad(quad):
+    Particle(1).spawn(quad, 1)
+
+
+def _move_stopping_quad(quad):
+    ParticleHandle(1).move(quad)
+
+
+@pytest.mark.parametrize("consume", [_draw_stopping_quad, _spawn_stopping_quad, _move_stopping_quad])
+@pytest.mark.parametrize("corner", [1, 4])
+def test_flatten_quad_terminating_corner_in_resource_call(consume, corner):
+    def fn():
+        consume(StoppingQuad[corner]())
+
+    with pytest.raises(RuntimeError, match=r"^quad stopped$"):
+        run_and_validate(fn)
 
 
 @st.composite

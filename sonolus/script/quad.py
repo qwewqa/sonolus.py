@@ -2,6 +2,7 @@ from __future__ import annotations
 
 from typing import Protocol, Self, assert_never, overload
 
+from sonolus.script.internal.context import ctx
 from sonolus.script.internal.meta_fn import perf_meta_fn
 from sonolus.script.record import Record
 from sonolus.script.values import zeros
@@ -497,6 +498,17 @@ def flatten_quad(quad: QuadLike) -> tuple[float, float, float, float, float, flo
     Returns:
         The x and y coordinates of the bottom-left, top-left, top-right, and bottom-right corners, in that order.
     """
+    from sonolus.script.internal.visitor import compile_and_call
+
+    if type(quad) in {Quad, Rect}:
+        return _flatten_quad(quad)
+    result = compile_and_call(_flatten_quad, quad)
+    if ctx() and not ctx().live:
+        return (0,) * 8
+    return result
+
+
+def _flatten_quad(quad):
     bl = quad.bl
     tl = quad.tl
     tr = quad.tr

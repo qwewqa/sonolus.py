@@ -11,6 +11,7 @@ from sonolus.script.num import Num
 from sonolus.script.record import Record
 from sonolus.script.vec import Vec2
 from tests.script.conftest import run_and_validate, run_compiled
+from tests.script.test_flow import black_box_value
 
 
 class UnsupportedDescriptor:
@@ -808,12 +809,37 @@ def test_issubclass_of_type_result():
     assert run_and_validate(fn)
 
 
-@pytest.mark.parametrize("builtin", [int, float, bool, set, dict, type])
+@pytest.mark.parametrize("builtin", [int, float, bool, tuple, set, dict, range, type])
 def test_type_of_builtin_alias_is_type(builtin):
     def fn():
         return type(builtin) == type  # ruff: ignore[type-comparison]
 
     assert run_and_validate(fn)
+
+
+@pytest.mark.parametrize(
+    ("factory", "expected_type"),
+    [
+        (lambda: (), tuple),
+        (lambda: (1, 2), tuple),
+        (lambda: (black_box_value(1), 2), tuple),
+        (dict, dict),
+        (lambda: {1: 2}, dict),
+        (lambda: {1: black_box_value(2)}, dict),
+        (set, set),
+        (lambda: {1, 2}, set),
+        (lambda: range(3), range),
+        (lambda: range(black_box_value(3)), range),
+    ],
+)
+def test_type_of_collection_uses_public_type(factory, expected_type):
+    def fn():
+        value = factory()
+        return type(value) == expected_type and isinstance(value, type(value))  # ruff: ignore[type-comparison]
+
+    expected = run_and_validate(fn)
+    # Include production execution, which the Python oracle only compiles.
+    assert run_compiled(fn) == expected == 1
 
 
 def test_issubclass_dict():
