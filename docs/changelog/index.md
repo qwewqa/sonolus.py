@@ -1,5 +1,6 @@
 ### 1.2.3
 
+- Added Python 3.15 support.
 - Fixed class patterns for built-in collections and public array and iterator interfaces.
 - Fixed [`lerp`][sonolus.script.interval.lerp] and [`lerp_clamped`][sonolus.script.interval.lerp_clamped]
   failing to compile custom arithmetic operators.
