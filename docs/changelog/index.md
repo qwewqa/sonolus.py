@@ -1,3 +1,7 @@
+### 1.2.2
+
+- Build performance improvements
+
 ### 1.2.1
 
 - Optimizer improvements
