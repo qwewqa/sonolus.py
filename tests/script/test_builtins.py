@@ -3,6 +3,8 @@
 PYTEST_DONT_REWRITE
 """
 
+import re
+import sys
 from enum import IntEnum
 
 import pytest
@@ -214,21 +216,50 @@ def test_iter_on_array_still_works():
     assert run_and_validate(fn) == 4
 
 
+def _for_over_invalid_iter_result():
+    for _ in _InvalidIterable():
+        pass
+
+
+def _genexpr_over_invalid_iter_result():
+    return sum(value for value in _InvalidIterable())
+
+
+def _nested_genexpr_over_invalid_iter_result():
+    return sum(value for _ in range(1) for value in _InvalidIterable())
+
+
+def _yield_from_invalid_iter_result():
+    def values():
+        yield from _InvalidIterable()
+
+    return sum(values())
+
+
 @pytest.mark.parametrize(
     "make_fn",
     [
         lambda: iter(_InvalidIterable()),
         lambda: map(lambda x: x, _InvalidIterable()),  # ruff: ignore[unnecessary-map]
         lambda: filter(None, _InvalidIterable()),
+        _for_over_invalid_iter_result,
+        _genexpr_over_invalid_iter_result,
+        _nested_genexpr_over_invalid_iter_result,
+        _yield_from_invalid_iter_result,
     ],
-    ids=["iter", "map", "filter"],
+    ids=["iter", "map", "filter", "for", "genexpr", "nested_genexpr", "yield_from"],
 )
-def test_iterator_builtins_reject_invalid_iter_result(make_fn):
+def test_iteration_rejects_invalid_iter_result(make_fn):
     def fn():
         make_fn()
         return 0
 
-    with pytest.raises(TypeError, match=r"iter\(\) returned non-iterator of type 'NoneType'"):
+    message = (
+        f"{__name__}._InvalidIterable.__iter__() must return an iterator, not NoneType"
+        if sys.version_info >= (3, 15)
+        else "iter() returned non-iterator of type 'NoneType'"
+    )
+    with pytest.raises(TypeError, match=re.escape(message)):
         run_and_validate(fn)
 
 
@@ -1186,3 +1217,20 @@ def test_min_two_args_explicit_key_none_reversed():
         return min(a, b, key=None)
 
     assert run_and_validate(fn) == 3
+
+
+def test_invalid_iterator_error_names_nested_record_types():
+    class Result(Record):
+        pass
+
+    class Iterable(Record):
+        def __iter__(self):
+            return Result()
+
+    def fn():
+        return iter(Iterable())
+
+    with pytest.raises(TypeError) as expected:
+        fn()
+    with pytest.raises(TypeError, match=re.escape(str(expected.value))):
+        run_and_validate(fn)

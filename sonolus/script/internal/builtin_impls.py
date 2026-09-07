@@ -2,6 +2,7 @@ import builtins
 import inspect
 import math
 import random as pyrandom
+import sys
 from enum import Enum
 from types import FunctionType
 from typing import Any, Never, assert_never, cast
@@ -615,7 +616,7 @@ def _map(fn, iterable, /, *iterables, strict=False):
         iterator = compile_and_call(_special_method(it, "__iter__"))
         if not ctx().live:
             return _EmptyIterator()
-        iterators.append(_validate_iterator_result(iterator))
+        iterators.append(_validate_iterator_result(iterator, it))
     if len(iterators) == 1:
         return _MappingIterator(fn, iterators[0])
     chain = iterators.pop()
@@ -657,7 +658,7 @@ def _filter(fn, iterable):
     iterator = compile_and_call(iter_method)
     if not ctx().live:
         return _EmptyIterator()
-    return compile_and_call(_filter_runtime, fn, _validate_iterator_result(iterator))
+    return compile_and_call(_filter_runtime, fn, _validate_iterator_result(iterator, iterable))
 
 
 def _filter_runtime(fn, iterator):
@@ -946,12 +947,27 @@ def _iter(iterable):
     iterator = compile_and_call(iter_method)
     if not ctx().live:
         return _EmptyIterator()
-    return _validate_iterator_result(iterator)
+    return _validate_iterator_result(iterator, iterable)
 
 
-def _validate_iterator_result(iterator):
+def _iterator_result_error_message(iterable, iterator):
+    if sys.version_info >= (3, 15):
+
+        def type_name(value):
+            if isinstance(value, Record):
+                type_ = type(value)
+                if type_.__module__ not in {"builtins", "__main__"}:
+                    return f"{type_.__module__}.{type_.__qualname__}"
+                return type_.__qualname__
+            return _type_name(value)
+
+        return f"{type_name(iterable)}.__iter__() must return an iterator, not {type_name(iterator)}"
+    return f"iter() returned non-iterator of type '{_type_name(iterator)}'"
+
+
+def _validate_iterator_result(iterator, iterable):
     if not isinstance(iterator, SonolusIterator):
-        raise TypeError(f"iter() returned non-iterator of type '{_type_name(iterator)}'")
+        raise TypeError(_iterator_result_error_message(iterable, iterator))
     return iterator
 
 

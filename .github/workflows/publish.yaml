@@ -14,7 +14,7 @@ jobs:
         uses: astral-sh/setup-uv@v6
       - name: Install Python
         run: |
-          uv python install 3.12 3.13 3.14
+          uv python install 3.12 3.13 3.14 3.15
       - name: Install project
         # Compiles the Cython extension implicitly via PEP 517.
         run: |
@@ -40,7 +40,7 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v5
       - name: Build wheels
-        uses: pypa/cibuildwheel@v4.1.0
+        uses: pypa/cibuildwheel@v4.2.0
       - name: Store wheels
         uses: actions/upload-artifact@v4
         with:

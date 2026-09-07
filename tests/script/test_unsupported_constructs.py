@@ -19,6 +19,7 @@ messages are each raised once for a `for` loop and once for a generator expressi
 """
 
 import re
+import sys
 
 import pytest
 
@@ -267,6 +268,11 @@ def s_walrus_in_a_genexpr_inside_a_lambda():
 
 
 _WALRUS_IN_GENEXPR = "Assignment expressions (`:=`) in a generator expression are not supported."
+_INVALID_ITERATOR = (
+    f"{__name__}._NotAnIterator.__iter__() must return an iterator, not Num"
+    if sys.version_info >= (3, 15)
+    else "iter() returned non-iterator of type 'Num'"
+)
 
 UNSUPPORTED = [
     (s_async_def, "Async functions are not supported"),
@@ -298,8 +304,8 @@ UNSUPPORTED = [
     (s_walrus_in_a_genexpr_inside_a_lambda, _WALRUS_IN_GENEXPR),
     (s_for_over_non_iterable, "'Num' object is not iterable"),
     (s_genexpr_over_non_iterable, "'Num' object is not iterable"),
-    (s_for_over_bad_iterator, "iter() returned non-iterator of type 'Num'"),
-    (s_genexpr_over_bad_iterator, "iter() returned non-iterator of type 'Num'"),
+    (s_for_over_bad_iterator, _INVALID_ITERATOR),
+    (s_genexpr_over_bad_iterator, _INVALID_ITERATOR),
     (s_subscript_non_subscriptable, "'Num' object is not subscriptable"),
     (s_item_assignment_unsupported, "'Num' object does not support item assignment"),
     (s_item_deletion_unsupported, "'Num' object does not support item deletion"),

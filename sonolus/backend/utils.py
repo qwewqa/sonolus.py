@@ -42,6 +42,37 @@ def get_tree_from_file(file: str | Path) -> ast.Module:
     return ast.parse(Path(file).read_text(encoding="utf-8"))
 
 
+def is_async_generator_expression(node: ast.GeneratorExp) -> bool:
+    result = getattr(node, "is_async_generator", None)
+    if result is None:
+        result = _has_async_expression(node.elt) or any(
+            generator.is_async
+            or _has_async_expression(generator.target)
+            or any(_has_async_expression(condition) for condition in generator.ifs)
+            or (index > 0 and _has_async_expression(generator.iter))
+            for index, generator in enumerate(node.generators)
+        )
+        node.is_async_generator = result
+    return result
+
+
+def _has_async_expression(node: ast.AST) -> bool:
+    if isinstance(node, ast.Await):
+        return True
+    if isinstance(node, ast.GeneratorExp):
+        # A nested generator evaluates only its outermost iterable in this scope.
+        return _has_async_expression(node.generators[0].iter)
+    if isinstance(node, ast.Lambda):
+        return any(
+            _has_async_expression(default)
+            for default in [*node.args.defaults, *node.args.kw_defaults]
+            if default is not None
+        )
+    if isinstance(node, ast.comprehension) and node.is_async:
+        return True
+    return any(_has_async_expression(child) for child in ast.iter_child_nodes(node))
+
+
 class FindFunction(ast.NodeVisitor):
     def __init__(self, line):
         self.line = line
@@ -180,7 +211,8 @@ class FindFunction(ast.NodeVisitor):
                 self.visit(condition)
         if isinstance(node, ast.DictComp):
             self.visit(node.key)
-            self.visit(node.value)
+            if node.value is not None:
+                self.visit(node.value)
         else:
             self.visit(node.elt)
 
@@ -340,7 +372,8 @@ class ScanWrites(ast.NodeVisitor):
                 self.visit(condition)
         if isinstance(node, ast.DictComp):
             self.visit(node.key)
-            self.visit(node.value)
+            if node.value is not None:
+                self.visit(node.value)
         else:
             self.visit(node.elt)
 

@@ -5,6 +5,7 @@ import builtins
 import functools
 import inspect
 import os
+import types
 from collections import ChainMap
 from collections.abc import Callable, Iterable, Sequence
 from inspect import ismethod
@@ -13,7 +14,7 @@ from types import FunctionType, MethodType, MethodWrapperType, UnionType
 from typing import Any, Never
 
 from sonolus.backend.excepthook import install_excepthook
-from sonolus.backend.utils import get_function, get_signature, scan_writes
+from sonolus.backend.utils import get_function, get_signature, is_async_generator_expression, scan_writes
 from sonolus.script.debug import assert_true, error, require
 from sonolus.script.internal.builtin_impls import (
     BUILTIN_IMPL_NAMES,
@@ -21,6 +22,7 @@ from sonolus.script.internal.builtin_impls import (
     _bool,
     _float,
     _int,
+    _iterator_result_error_message,
     _len,
     _property_has_no_setter,
     _super,
@@ -58,6 +60,7 @@ from sonolus.script.record import Record
 _compiler_internal_ = True
 
 _CALLEE_NAME_MISSING = object()
+_LAZY_IMPORT_TYPE = getattr(types, "LazyImportType", None)
 
 
 def _callee_name(fn: Value):
@@ -953,6 +956,10 @@ class Visitor(ast.NodeVisitor):
         from sonolus.script.internal.set_impl import SetImpl
 
         if not generators:
+            if isinstance(elt, ast.Starred):
+                # Unpacking does not forward send/throw/close, which the subset's yield-from also does not support.
+                self.visit(ast.copy_location(ast.YieldFrom(value=elt.value), elt))
+                return
             # Note that there may effectively be multiple yields in an expression since
             # tuples are unrolled.
             value = self.visit(elt)
@@ -1016,7 +1023,7 @@ class Visitor(ast.NodeVisitor):
                 if not ctx().live:
                     return
             if not isinstance(iterator, SonolusIterator):
-                raise TypeError(f"iter() returned non-iterator of type '{_type_name(iterator)}'")
+                raise TypeError(_iterator_result_error_message(iterable, iterator))
             header_ctx = ctx().branch(None)
             set_ctx(header_ctx)
             reject_custom_record_getattribute(iterator)
@@ -1314,7 +1321,7 @@ class Visitor(ast.NodeVisitor):
         if not ctx().live:
             return
         if not isinstance(iterator, SonolusIterator):
-            raise TypeError(f"iter() returned non-iterator of type '{_type_name(iterator)}'")
+            raise TypeError(_iterator_result_error_message(iterable, iterator))
         writes = _loop_writes(node)
         header_ctx = ctx().prepare_loop_header(writes)
         self.loop_head_ctxs.append(header_ctx)
@@ -1954,6 +1961,8 @@ class Visitor(ast.NodeVisitor):
     def visit_GeneratorExp(self, node):
         from sonolus.script.internal.set_impl import SetImpl
 
+        if is_async_generator_expression(node):
+            raise NotImplementedError("Async generator expressions are not supported")
         # Only the outermost iterable is evaluated in the enclosing scope, and eagerly, as in Python. Doing it
         # here rather than inside the generator's own visitor is what keeps a loop target that shadows a name
         # read there from changing which binding that read resolves to.
@@ -1973,7 +1982,7 @@ class Visitor(ast.NodeVisitor):
             if not ctx().live:
                 return validate_value(None)
             if not isinstance(initial_iterator, SonolusIterator):
-                raise TypeError(f"iter() returned non-iterator of type '{_type_name(initial_iterator)}'")
+                raise TypeError(_iterator_result_error_message(iterable, initial_iterator))
         # Recorded after the iterable, so it is the context the generator is created in: that is what
         # _validate_bindings compares a captured binding against.
         self.active_ctx = ctx()
@@ -2001,9 +2010,13 @@ class Visitor(ast.NodeVisitor):
         return validate_value(None)  # send() is unsupported, so yield returns None
 
     def visit_YieldFrom(self, node):
+        from sonolus.script.internal.set_impl import SetImpl
+
         value = self.visit(node.value)
         if not ctx().live:
             return validate_value(None)
+        if isinstance(value, SetImpl):
+            value = value._dict
         if has_tuple_iter(value):
             for entry in tuple_iter(value):
                 ctx().scope.set_value("$yield", validate_value(entry))
@@ -2019,7 +2032,7 @@ class Visitor(ast.NodeVisitor):
         if not ctx().live:
             return validate_value(None)
         if not isinstance(iterator, SonolusIterator):
-            raise TypeError(f"iter() returned non-iterator of type '{_type_name(iterator)}'")
+            raise TypeError(_iterator_result_error_message(value, iterator))
         header = ctx().branch(None)
         set_ctx(header)
         delegated_selections = None
@@ -2304,6 +2317,12 @@ class Visitor(ast.NodeVisitor):
             v = v.parent
         if name in self.globals:
             value = self.globals[name]
+            if type(value) is _LAZY_IMPORT_TYPE:
+                namespace = self.globals
+                if isinstance(namespace, ChainMap):
+                    namespace = next(mapping for mapping in namespace.maps if name in mapping)
+                value = value.resolve()
+                namespace[name] = value
             if value is ctx:
                 raise ValueError("Unexpected use of ctx in non meta-function")
             return validate_value(BUILTIN_IMPLS.get(id(value), value))

@@ -79,7 +79,7 @@ zensical build --strict
 `zensical build --strict` catches broken cross-references and, because `validation.anchors: warn` is set, broken
 heading anchors too. Heading text is load-bearing: reference pages deep-link into `concepts/types.md`.
 
-CI runs `uv run tox`, which is the suite against Python 3.12, 3.13, and 3.14. `ty` is configured in
+CI runs `uv run tox`, which is the suite against Python 3.12, 3.13, 3.14, and 3.15. `ty` is configured in
 `pyproject.toml` but nothing runs it, and there is no pre-commit config despite the dev dependency.
 
 Editing a `.pyx`, `.pxd`, or `.h` needs no special rebuild flag: `[tool.uv] cache-keys` covers those inputs along

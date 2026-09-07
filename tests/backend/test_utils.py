@@ -1,8 +1,11 @@
 import ast
+import inspect
+import sys
+from types import CodeType
 
 import pytest
 
-from sonolus.backend.utils import find_function, get_function, get_functions, scan_writes
+from sonolus.backend.utils import find_function, get_function, get_functions, is_async_generator_expression, scan_writes
 
 
 def _identity_deco(*args, **kwargs):
@@ -309,3 +312,187 @@ else:
     ).body[0]
 
     assert scan_writes(loop.target, *loop.body) == {"target", "body_value"}
+
+
+@pytest.mark.skipif(sys.version_info < (3, 15), reason="Comprehension unpacking requires Python 3.15")
+def test_function_discovery_in_unpacking_dictionary_comprehension():
+    tree = ast.parse("values = {**(lambda: {1: 2})() for item in items}\ndef callback():\n    return 3\n")
+
+    lambda_node = find_function(tree, 1)
+    assert isinstance(lambda_node, ast.Lambda)
+    assert ast.unparse(lambda_node.body) == "{1: 2}"
+    assert find_function(tree, 2).name == "callback"
+
+
+@pytest.mark.skipif(sys.version_info < (3, 15), reason="Comprehension unpacking requires Python 3.15")
+def test_unpacking_dictionary_comprehension_tracks_outer_writes():
+    tree = ast.parse(
+        "def callback():\n"
+        "    result = {**(mapping := item) for item in items if (included := item)}\n"
+        "    return result\n"
+    )
+    function = get_functions(tree)[0]
+
+    assert function.declared_locals == {"result", "mapping", "included"}
+    assert scan_writes(*function.body) == {"result", "mapping", "included"}
+
+
+@pytest.mark.skipif(sys.version_info < (3, 15), reason="Comprehension unpacking requires Python 3.15")
+@pytest.mark.parametrize(("opening", "closing"), [("[", "]"), ("{", "}"), ("{*", "}"), ("(", ")")])
+def test_unpacking_comprehension_lambda_defaults_and_bodies_have_separate_scopes(opening, closing):
+    source = (
+        "def callback():\n"
+        f"    result = {opening}*(lambda argument=(default := item): (inside := argument))() "
+        f"for item in items if (included := item){closing}\n"
+        "    return result\n"
+    )
+    compile(source, "<test>", "exec")
+    function, lambda_node = get_functions(ast.parse(source))
+
+    assert function.declared_locals == {"result", "default", "included"}
+    assert scan_writes(*function.body) == {"result", "default", "included"}
+    assert lambda_node.declared_locals == {"argument", "inside"}
+    assert not getattr(function, "has_yield", False)
+
+
+@pytest.mark.skipif(sys.version_info < (3, 15), reason="Comprehension unpacking requires Python 3.15")
+def test_nested_unpacking_dictionary_comprehensions_track_writes_without_binding_iteration_targets():
+    source = (
+        "def callback():\n"
+        "    result = {**(mapping := {**(nested_mapping := inner) "
+        "for inner in item if (nested_included := inner)}) "
+        "for item in items if (included := item)}\n"
+        "    return result\n"
+    )
+    compile(source, "<test>", "exec")
+    function = get_functions(ast.parse(source))[0]
+    expected = {"result", "mapping", "nested_mapping", "nested_included", "included"}
+
+    assert function.declared_locals == expected
+    assert scan_writes(*function.body) == expected
+
+
+@pytest.mark.skipif(sys.version_info < (3, 15), reason="Comprehension unpacking requires Python 3.15")
+@pytest.mark.parametrize(("opening", "closing"), [("[", "]"), ("{", "}"), ("{*", "}"), ("(", ")")])
+@pytest.mark.parametrize("nested_yield", [False, True])
+def test_unpacking_comprehension_yield_is_assigned_to_its_own_scope(opening, closing, nested_yield):
+    expression = "(lambda: (yield 1))() for item in items" if nested_yield else "item for item in (yield items)"
+    source = f"def callback():\n    return {opening}*{expression}{closing}\n"
+    namespace = {}
+    exec(compile(source, "<test>", "exec"), namespace)
+    nodes = get_functions(ast.parse(source))
+
+    assert getattr(nodes[0], "has_yield", False) == inspect.isgeneratorfunction(namespace["callback"])
+    assert getattr(nodes[0], "has_yield", False) is not nested_yield
+    if nested_yield:
+        assert isinstance(nodes[1], ast.Lambda)
+        assert nodes[1].has_yield
+
+
+@pytest.mark.skipif(sys.version_info < (3, 15), reason="Comprehension unpacking requires Python 3.15")
+def test_unpacking_dictionary_comprehension_discovers_lambdas_in_each_expression():
+    source = (
+        "values = {\n"
+        "    **(lambda: mapping)()\n"
+        "    for item in (lambda: items)()\n"
+        "    if (lambda: include_item)()\n"
+        "    for other in (lambda: more_items)()\n"
+        "    if (lambda: include_other)()\n"
+        "}\n"
+    )
+    compile(source, "<test>", "exec")
+    tree = ast.parse(source)
+
+    assert len(get_functions(tree)) == 5
+    for line, body in enumerate(["mapping", "items", "include_item", "more_items", "include_other"], start=2):
+        node = find_function(tree, line)
+        assert isinstance(node, ast.Lambda)
+        assert ast.unparse(node.body) == body
+
+
+@pytest.mark.skipif(sys.version_info < (3, 15), reason="New syntax requires Python 3.15")
+def test_get_function_scans_source_file_containing_all_new_constructs(tmp_path):
+    source = (
+        "lazy import math\n"
+        "lazy from collections import deque as imported_deque\n"
+        "def host_only(items):\n"
+        "    list_values = [*item for item in items]\n"
+        "    set_values = {*item for item in items}\n"
+        "    dict_values = {**item for item in items}\n"
+        "    generator = (*item for item in items)\n"
+        "    return list_values, set_values, dict_values, generator\n"
+        "def callback():\n"
+        "    return 123\n"
+    )
+    path = tmp_path / "python315_constructs.py"
+    path.write_text(source, encoding="utf-8")
+    namespace = {}
+    exec(compile(source, str(path), "exec"), namespace)
+
+    source_file, function = get_function(namespace["callback"])
+
+    assert source_file == str(path)
+    assert function.name == "callback"
+    assert function.lineno == namespace["callback"].__code__.co_firstlineno
+    assert function.declared_locals == set()
+    assert not getattr(function, "has_yield", False)
+
+
+@pytest.mark.parametrize(
+    "expression",
+    [
+        "(value for value in ())",
+        "(value async for value in source)",
+        "(value for value in () async for other in source)",
+        "(await operation() for _ in ())",
+        "(value for value in () if await operation())",
+        "(value for value in () for other in await operation())",
+        "(value for (await operation()).value in ())",
+        "(value for target[await operation()] in ())",
+        "(value for value in await operation())",
+        "((value async for value in source) for _ in ())",
+        "((await operation() for _ in ()) for _ in ())",
+        "((value for value in await operation()) for _ in ())",
+        "((lambda: (await operation() for _ in ())) for _ in ())",
+        "((lambda argument=await operation(): argument) for _ in ())",
+        "((lambda *, argument=await operation(): argument) for _ in ())",
+        "((lambda *, argument: argument) for _ in ())",
+        "([value async for value in source] for _ in ())",
+        "({value async for value in source} for _ in ())",
+        "({value: value async for value in source} for _ in ())",
+        "([await operation() for _ in ()] for _ in ())",
+        "([value for value in () if await operation()] for _ in ())",
+        "([(await operation() for _ in ()) for _ in ()] for _ in ())",
+    ],
+)
+def test_async_generator_classification_matches_python(expression):
+    source = f"async def outer():\n    return {expression}\n"
+    module_code = compile(source, "<test>", "exec")
+    outer_code = next(constant for constant in module_code.co_consts if isinstance(constant, CodeType))
+    generator_code = next(
+        constant
+        for constant in outer_code.co_consts
+        if isinstance(constant, CodeType) and constant.co_name == "<genexpr>"
+    )
+    node = ast.parse(source).body[0].body[0].value
+
+    assert is_async_generator_expression(node) == bool(generator_code.co_flags & inspect.CO_ASYNC_GENERATOR)
+
+
+@pytest.mark.skipif(sys.version_info < (3, 15), reason="Comprehension unpacking requires Python 3.15")
+@pytest.mark.parametrize(
+    "expression",
+    [
+        "(*values for values in ())",
+        "(*values async for values in source)",
+        "(*(await operation()) for _ in ())",
+        "(*values for values in () if await operation())",
+        "(*values for values in await operation())",
+        "([*values async for values in source] for _ in ())",
+        "({*values async for values in source} for _ in ())",
+        "({**mapping async for mapping in source} for _ in ())",
+        "({**(await operation()) for _ in ()} for _ in ())",
+    ],
+)
+def test_unpacking_async_generator_classification_matches_python(expression):
+    test_async_generator_classification_matches_python(expression)

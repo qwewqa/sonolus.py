@@ -350,6 +350,42 @@ def test_parallel_generator():
     run_and_validate(fn)
 
 
+def test_yield_from_set_literal():
+    def fn():
+        def gen():
+            yield from {1, 2, 3}
+            yield 10
+
+        total = 0
+        for value in gen():
+            debug_log(value)
+            total += value
+        return total
+
+    run_and_validate(fn)
+
+
+@pytest.mark.parametrize(
+    "values",
+    [{1, 2, 3}, set(), frozenset({1, 2, 3}), frozenset()],
+    ids=["set", "empty_set", "frozenset", "empty_frozenset"],
+)
+def test_yield_from_host_set(values):
+    def fn():
+        def gen():
+            yield 10
+            yield from values
+            yield 20
+
+        total = 0
+        for value in gen():
+            debug_log(value)
+            total += value
+        return total
+
+    run_and_validate(fn)
+
+
 def test_nested_generator():
     def fn():
         def outer_gen():
