@@ -1,3 +1,7 @@
+### 1.2.4
+
+- Optimizer improvements.
+
 ### 1.2.3
 
 - Added Python 3.15 support.
@@ -11,11 +15,11 @@
 
 ### 1.2.2
 
-- Build performance improvements
+- Build performance improvements.
 
 ### 1.2.1
 
-- Optimizer improvements
+- Optimizer improvements.
 
 ### 1.2.0
 
