@@ -104,6 +104,7 @@ from sonolus.backend._opt._ops_gen cimport (
     OP_GetShifted,
     OP_Greater,
     OP_GreaterOr,
+    OP_If,
     OP_IncrementPostPointed,
     OP_IncrementPostShifted,
     OP_Less,
@@ -2429,7 +2430,7 @@ cdef enum:
 # --------------------------------------------------------------------------
 # Structural boolean-ness (value is provably 0/1) -- shared by the SCCP And/Or
 # short-circuit exception and the GVN Not(Not(b)) identity. Fixpoint over:
-# const 0/1, comparisons, Not, And/Or/phi of boolean values.
+# const +0/1, comparisons, Not, If with boolean arms, And/Or/phi of boolean values.
 # --------------------------------------------------------------------------
 
 cdef list _compute_bool(Func f):
@@ -2448,11 +2449,14 @@ cdef list _compute_bool(Func f):
             bval = False
             if op == OPX_CONST:
                 cv = f.consts[f.instrs[i].aux]
-                if cv == 0.0 or cv == 1.0:
+                if (cv == 0.0 and not signbit(cv)) or cv == 1.0:
                     bval = True
             elif (op == OP_Equal or op == OP_NotEqual or op == OP_Greater
                   or op == OP_GreaterOr or op == OP_Less or op == OP_LessOr or op == OP_Not):
                 bval = True
+            elif op == OP_If and f.instrs[i].nargs == 3:
+                astart = f.instrs[i].arg_start
+                bval = <bint>isb[<int32_t>f.args[astart + 1]] and <bint>isb[<int32_t>f.args[astart + 2]]
             elif op == OP_And or op == OP_Or or op == OPX_PHI:
                 bval = True
                 astart = f.instrs[i].arg_start
@@ -3329,6 +3333,30 @@ cdef bint _is_c(Func f, int32_t v, double c):
     return f.instrs[v].op == OPX_CONST and f.consts[f.instrs[v].aux] == c
 
 
+cdef bint _is_positive_zero(Func f, int32_t v):
+    return _is_c(f, v, 0.0) and not signbit(f.consts[f.instrs[v].aux])
+
+
+cdef int32_t _gvn_pair_args(Func f, int32_t left, int32_t right) except -1:
+    cdef int32_t start = f.n_args
+    cdef int64_t capacity
+    cdef uint32_t* grown
+    if start > 2147483645:
+        raise OverflowError("instruction operand arena exceeds the int32 index limit")
+    if start + 2 > f.cap_args:
+        capacity = max(<int64_t>f.cap_args * 2, start + 2)
+        capacity = min(capacity, <int64_t>2147483647)
+        grown = <uint32_t*>realloc(f.args, <size_t>capacity * sizeof(uint32_t))
+        if grown == NULL:
+            raise MemoryError()
+        f.args = grown
+        f.cap_args = <int32_t>capacity
+    f.args[start] = <uint32_t>left
+    f.args[start + 1] = <uint32_t>right
+    f.n_args += 2
+    return start
+
+
 def _gvn_instr(Func f, int32_t i, dict avail, list undo, dict subst, list is_bool, object widened, list changed):
     cdef int32_t op = f.instrs[i].op
     cdef int32_t astart = f.instrs[i].arg_start
@@ -3376,6 +3404,23 @@ def _gvn_instr(Func f, int32_t i, dict avail, list undo, dict subst, list is_boo
         if av in widened:
             return
         a.append(av)
+    if op == OP_If and n == 3:
+        if _is_positive_zero(f, <int32_t>a[1]) and _is_c(f, <int32_t>a[2], 1.0):
+            op = OP_Not
+            n = 1
+            a = [a[0]]
+        elif _is_c(f, <int32_t>a[1], 1.0) and _is_positive_zero(f, <int32_t>a[2]):
+            if <bint>is_bool[<int32_t>a[0]]:
+                subst[i] = <int32_t>a[0]
+                changed[0] = True
+                return
+            op = OP_NotEqual
+            n = 2
+            a = [a[0], a[2]]
+        if op != OP_If:
+            f.instrs[i].op = <uint16_t>op
+            f.instrs[i].nargs = <int16_t>n
+            changed[0] = True
     # algebraic identities (binary/unary forms).
     if op == OP_Add and n == 2:
         if _is_c(f, <int32_t>a[1], 0.0):
@@ -3510,6 +3555,37 @@ def _collapse_trivial_phis(Func f):
     return (f, False)
 
 
+cdef bint _complement_comparisons(Func f, object widened):
+    cdef list uses = None
+    cdef int32_t i, inner, op, left, right
+    cdef bint changed = False
+    for i in range(f.n_instrs):
+        if f.instrs[i].op != OP_Not or f.instrs[i].nargs != 1 or i in widened:
+            continue
+        inner = <int32_t>f.args[f.instrs[i].arg_start]
+        op = f.instrs[inner].op
+        if (op != OP_Equal and op != OP_NotEqual) or f.instrs[inner].nargs != 2 or inner in widened:
+            continue
+        if f.instrs[inner].block != f.instrs[i].block or not _no_effect_between(f, inner, i):
+            continue
+        left = <int32_t>f.args[f.instrs[inner].arg_start]
+        right = <int32_t>f.args[f.instrs[inner].arg_start + 1]
+        if left in widened or right in widened:
+            continue
+        if uses is None:
+            uses = _value_uses(f)
+        if <int32_t>uses[inner] > 1:
+            continue
+        f.instrs[i].arg_start = _gvn_pair_args(f, left, right)
+        f.instrs[i].op = OP_NotEqual if op == OP_Equal else OP_Equal
+        f.instrs[i].nargs = 2
+        uses[inner] = <int32_t>uses[inner] - 1
+        uses[left] = <int32_t>uses[left] + 1
+        uses[right] = <int32_t>uses[right] + 1
+        changed = True
+    return changed
+
+
 def _run_gvn_inplace(Func f):
     cdef Dominators D = compute_dominators(f)
     is_bool = _compute_bool(f)
@@ -3543,35 +3619,60 @@ def _run_gvn_inplace(Func f):
             work.append(("enter", D.child_list[ci]))
     if subst or <bint>changed[0]:
         _apply_subst(f, subst)
-        return (f, True)
-    return (f, False)
+    # Later CSE can add users to an earlier comparison, so decide whether to
+    # replace Not after all aliases are resolved.
+    complemented = _complement_comparisons(f, widened)
+    return (f, bool(subst) or <bint>changed[0] or complemented)
 
 
 # --------------------------------------------------------------------------
-# Two-way branch canonicalization: If(Not(x)) -> swap edges, drop the Not.
+# Two-way branch canonicalization: peel Not and comparisons against zero.
 # Runs in the shared mid-end pass (fast + standard), after
 # GVN's _apply_subst (so tests/operands are resolved) and before DCE (so a freed
-# Not is reaped). Pure edge relabel on the arena; no instrs move.
+# test expression is reaped). Pure edge relabel on the arena; no instrs move.
 # --------------------------------------------------------------------------
 
-def _canon_branch_not(Func f):
-    """Rewrite a two-way ``{VALUE 0, NONE}`` block whose test is ``Not(x)``.
+cdef list _value_uses(Func f):
+    cdef list uses = [0] * f.n_instrs
+    cdef int32_t i, k, v, op, pid, b
+    for i in range(f.n_instrs):
+        if f.instrs[i].flags & FLAG_STMT_ROOT:
+            uses[i] = <int32_t>uses[i] + 1
+        for k in range(f.instrs[i].nargs):
+            v = <int32_t>f.args[f.instrs[i].arg_start + k]
+            uses[v] = <int32_t>uses[v] + 1
+        op = f.instrs[i].op
+        if op == OPX_GET or op == OPX_SET:
+            pid = f.instrs[i].aux
+            if f.places[pid].kind == PLACE_DYNAMIC_BLOCK:
+                v = f.places[pid].block_ref
+                uses[v] = <int32_t>uses[v] + 1
+            v = f.places[pid].index_val
+            if v >= 0:
+                uses[v] = <int32_t>uses[v] + 1
+    for b in range(f.n_blocks):
+        v = f.blocks[b].test_val
+        if v >= 0:
+            uses[v] = <int32_t>uses[v] + 1
+    return uses
 
-    Emit lowers such a block to ``If(test, none_target, zero_target)``. Since
-    ``Not(x)`` is nonzero iff ``x == 0``, ``If(Not(x), a, b) == If(x, b, a)`` --
-    so peeling one ``Not`` swaps the ``cond=0`` and ``NONE`` edge labels while
-    setting the test to the inner value; ``Not(Not(x))`` reduces to ``x`` with no
-    swap (a block test only distinguishes zero/nonzero, so double-Not is a no-op
-    regardless of boolean-ness). Behaviour-preserving including NaN: ``Not(NaN)=0``
-    took the false branch; after the swap ``NaN != 0`` takes the true edge, which
-    now targets the original false block. Only two-way ``{VALUE 0, NONE}`` blocks
-    (multiway case conds compare against the test value, so swapping does not
-    apply). The dead ``Not`` instrs are left orphaned for DCE.
+
+def _canon_branch_not(Func f):
+    """Normalize zero/nonzero tests on two-way ``{VALUE 0, NONE}`` blocks.
+
+    Not and Equal against zero reverse edge polarity; NotEqual against zero
+    preserves it. These identities include NaN, whose truthiness is nonzero.
+    Relabel edges in place so incoming-edge indices keep their phi operands.
+    Multiway tests compare exact values and cannot use this normalization.
+    Keep shared comparisons: exposing their operand to another use can force
+    materialization that costs more than the removed comparison.
     """
     cdef int32_t nb = f.n_blocks
     cdef Edge* edges = f.edges
-    cdef int32_t b, e, estart, ecount, tv, val_e, none_e, count
+    cdef int32_t b, e, estart, ecount, tv, original_tv, val_e, none_e, count, op, a0, a1, next_tv
     cdef bint changed = False
+    cdef list uses = None
+    cdef list peeled_not
     for b in range(nb):
         ecount = f.blocks[b].edge_count
         if ecount != 2:
@@ -3590,10 +3691,33 @@ def _canon_branch_not(Func f):
         if val_e < 0 or none_e < 0:
             continue
         count = 0
-        while f.instrs[tv].op == OP_Not and f.instrs[tv].nargs == 1:
-            tv = <int32_t>f.args[f.instrs[tv].arg_start]
-            count += 1
-        if count == 0:
+        original_tv = tv
+        peeled_not = []
+        while True:
+            op = f.instrs[tv].op
+            if op == OP_Not and f.instrs[tv].nargs == 1:
+                peeled_not.append(tv)
+                tv = <int32_t>f.args[f.instrs[tv].arg_start]
+                count += 1
+            elif (op == OP_Equal or op == OP_NotEqual) and f.instrs[tv].nargs == 2:
+                a0 = <int32_t>f.args[f.instrs[tv].arg_start]
+                a1 = <int32_t>f.args[f.instrs[tv].arg_start + 1]
+                if _is_c(f, a0, 0.0):
+                    next_tv = a1
+                elif _is_c(f, a1, 0.0):
+                    next_tv = a0
+                else:
+                    break
+                if uses is None:
+                    uses = _value_uses(f)
+                if <int32_t>uses[tv] > 1 or any(<int32_t>uses[v] > 1 for v in peeled_not):
+                    break
+                tv = next_tv
+                if op == OP_Equal:
+                    count += 1
+            else:
+                break
+        if tv == original_tv:
             continue
         f.blocks[b].test_val = tv
         if count % 2 == 1:

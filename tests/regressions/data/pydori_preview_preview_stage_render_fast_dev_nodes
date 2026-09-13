@@ -512,22 +512,32 @@ Block(JumpLoop(
       )
     )
     If(
-      Equal(
-        0
-        Mod(
-          Add(
-            Floor(Get(
-              2000
-              3
-            ))
-            1
-          )
+      Mod(
+        Add(
+          Floor(Get(
+            2000
+            3
+          ))
           1
         )
+        1
       )
       12
-      16
+      13
     )
+  )
+  Execute(
+    Set(
+      10000
+      28
+      DebugLog(3)
+    )
+    Set(
+      10000
+      29
+      DebugPause()
+    )
+    19
   )
   Execute(
     Set(
@@ -535,7 +545,7 @@ Block(JumpLoop(
       19
       0
     )
-    13
+    14
   )
   Execute(If(
     Less(
@@ -551,8 +561,8 @@ Block(JumpLoop(
         1
       )
     )
-    14
     15
+    16
   ))
   Execute(
     Set(
@@ -731,22 +741,9 @@ Block(JumpLoop(
         20
       )
     )
-    13
+    14
   )
   Execute(19)
-  Execute(
-    Set(
-      10000
-      28
-      DebugLog(3)
-    )
-    Set(
-      10000
-      29
-      DebugPause()
-    )
-    19
-  )
   Execute(
     Set(
       10000

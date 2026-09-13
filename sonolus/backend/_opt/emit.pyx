@@ -3,8 +3,10 @@
 
 Builds the EngineNode tree directly from the flat ``Func`` arena (see ir.pxd),
 with one deliberate rewrite on the way out: left spines of the n-ary left-fold
-operations ``Add``/``Multiply``/``Mod``/``Rem`` (``args[0]`` only) are
-re-flattened as the tree is built. Because marshal-in *binarises* n-ary input for these operations (ir.pyx
+arithmetic operations (``args[0]`` only) are re-flattened as the tree is built.
+Runtime-constant groups stay intact beneath variable expressions. Divide and
+Power only absorb literal tails, preserving error and side-effect ordering.
+Because marshal-in *binarises* n-ary input for these operations (ir.pyx
 ``_emit_pure``), re-flattening keeps the two emit paths in agreement: the fused
 ``optimize_and_finalize`` path emits from n-ary trees, while the test/golden path
 (export -> ``cfg_to_engine_node``) round-trips through marshal-in; without it the
@@ -52,6 +54,7 @@ from libc.math cimport isfinite, isinf, isnan
 
 from sonolus.backend._opt.ir cimport (
     Func,
+    left_fold_op,
     shifted_store_op,
     FLAG_STMT_ROOT,
     PLACE_REAL_BLOCK,
@@ -62,10 +65,6 @@ from sonolus.backend._opt._ops_gen cimport (
     OPX_CONST,
     OPX_GET,
     OPX_SET,
-    OP_Add,
-    OP_Multiply,
-    OP_Mod,
-    OP_Rem,
     OP_RUNTIME_COUNT,
 )
 
@@ -92,10 +91,6 @@ _OP_SET_SHIFTED = _Op.SetShifted
 # EngineRom block id: NaN/+-Inf constants are lowered to reads from it.
 cdef int32_t _ENGINE_ROM = 3000
 
-cdef inline bint _is_flattenable(uint16_t op) noexcept nogil:
-    return op == <uint16_t>OP_Add or op == <uint16_t>OP_Multiply or op == <uint16_t>OP_Mod or op == <uint16_t>OP_Rem
-
-
 cdef bint _cond_is_integral(object cond):
     # Integrality gate for the dense-switch shortcut. A Python int is always
     # integral; a float must be finite before int() (which raises OverflowError on
@@ -116,6 +111,7 @@ cdef class _Emitter:
     cdef dict _float_leaves # python float value -> that float object (interned)
     cdef dict _val_cache    # arena value id -> EngineNode (memo, tolerates shared vids)
     cdef dict _rtc_memo     # arena value id -> runtime-constant classification
+    cdef dict _flatten_rtc_memo
     cdef list _pin          # keeps interned objects alive so their id() is stable
     cdef list _block_map    # old block id -> emitted index (elided -> exit index)
     cdef int32_t _exit_index  # index of the trailing halt sentinel (# emitted blocks)
@@ -127,6 +123,7 @@ cdef class _Emitter:
         self._float_leaves = {}
         self._val_cache = {}
         self._rtc_memo = {}
+        self._flatten_rtc_memo = {}
         self._pin = []
         self._block_map = None
         self._exit_index = func.n_blocks
@@ -228,7 +225,7 @@ cdef class _Emitter:
         cdef object first
         if flattenable and len(children) > 0:
             first = children[0]
-            if type(first) is FunctionNode and first.func == op_member:
+            if type(first) is FunctionNode and first.func == op_member and first.args:
                 children = list(first.args) + children[1:]
         return self._intern_fn(op_member, children)
 
@@ -236,10 +233,19 @@ cdef class _Emitter:
         cdef int32_t astart = self.func.instrs[vid].arg_start
         cdef int32_t nargs = self.func.instrs[vid].nargs
         cdef int32_t k
+        cdef bint flatten = False
         cdef list children = []
         for k in range(nargs):
             children.append(self._emit_value(<int32_t>self.func.args[astart + k]))
-        return self._flatten_left_spine(_ID_TO_OP[op], _is_flattenable(op), children)
+        if (
+            nargs > 0
+            and left_fold_op(op)
+            and self.func.instrs[<int32_t>self.func.args[astart]].op == op
+        ):
+            flatten = self.func._can_flatten_left(
+                op, [<int32_t>self.func.args[astart + k] for k in range(nargs)], self._flatten_rtc_memo
+            )
+        return self._flatten_left_spine(_ID_TO_OP[op], flatten, children)
 
     # -- places ------------------------------------------------------------
 

@@ -334,6 +334,8 @@ cdef class Func:
     cdef int32_t _emit_store_value(self, int32_t pid, int32_t vid, int32_t block_id) except -1
     cdef int32_t _shifted_place_kind(self, int32_t pid, dict memo) except -1
     cdef bint _address_index_is_rtc(self, int32_t vid, dict memo, int32_t depth_left) except -1
+    cdef bint _flatten_is_rtc(self, int32_t vid, dict memo) except -1
+    cdef bint _can_flatten_left(self, uint16_t op, list operands, dict memo) except -1
     cdef int32_t _emit_const(self, object value, int32_t block_id) except -1
     cdef int32_t _emit_pure(self, object node, int32_t block_id) except -1
     cdef int32_t _emit_impure(self, object node, int32_t block_id) except -1
@@ -353,3 +355,4 @@ cdef class Func:
     # ``def`` methods in ir.pyx -- they run under the GIL at the export boundary.
 
 cdef int32_t shifted_store_op(uint16_t op) noexcept nogil
+cdef bint left_fold_op(uint16_t op) noexcept nogil

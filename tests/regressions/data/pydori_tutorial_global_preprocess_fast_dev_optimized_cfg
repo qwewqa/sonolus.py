@@ -75,16 +75,20 @@
   10000[26] <- ((TutorialData[5] * 10000[14]) + (TutorialData[6] * 10000[17]) + TutorialData[7]) / 10000[24]
   10000[28] <- ((TutorialData[2] * 10000[15]) + (TutorialData[3] * 10000[17]) + TutorialData[4]) / Set(10000, 27, (TutorialData[8] * 10000[15]) + (TutorialData[9] * 10000[17]) + TutorialData[10])
   10000[29] <- ((TutorialData[5] * 10000[15]) + (TutorialData[6] * 10000[17]) + TutorialData[7]) / 10000[27]
-  goto 3 if (0 == (Set(10000, 30, TutorialData[16]) % 1)) else 11
+  goto 3 if (Set(10000, 30, TutorialData[16]) % 1) else 4
 3:
-  10000[31] <- 0
-  goto 4
+  10000[37] <- DebugLog(1)
+  10000[38] <- DebugPause()
+  goto exit
 4:
-  goto 5 if (10000[31] < 10000[30]) else 8
+  10000[31] <- 0
+  goto 5
 5:
-  10000[32] <- 10000[31] + 1
-  goto 6 if (10000[11] == TutorialData[Set(10000, 33, 16 + (10000[31] * 9)) + 1]) else 7
+  goto 6 if (10000[31] < 10000[30]) else 9
 6:
+  10000[32] <- 10000[31] + 1
+  goto 7 if (10000[11] == TutorialData[Set(10000, 33, 16 + (10000[31] * 9)) + 1]) else 8
+7:
   TutorialData[10000[33] + 2] <- 10000[19]
   TutorialData[10000[33] + 3] <- 10000[20]
   TutorialData[10000[33] + 4] <- 10000[25]
@@ -95,12 +99,12 @@
   TutorialData[10000[33] + 9] <- 10000[23]
   10000[11] <- 10000[12]
   goto 1
-7:
-  10000[31] <- 10000[32]
-  goto 4
 8:
-  goto 9 if (TutorialData[16] < 7) else 10
+  10000[31] <- 10000[32]
+  goto 5
 9:
+  goto 10 if (TutorialData[16] < 7) else 11
+10:
   TutorialData[Set(10000, 34, 16 + (TutorialData[16] * 9)) + 1] <- 10000[11]
   TutorialData[10000[34] + 2] <- 10000[19]
   TutorialData[10000[34] + 3] <- 10000[20]
@@ -113,13 +117,9 @@
   IncrementPost(2001, 16)
   10000[11] <- 10000[12]
   goto 1
-10:
+11:
   10000[35] <- DebugLog(2)
   10000[36] <- DebugPause()
-  goto exit
-11:
-  10000[37] <- DebugLog(1)
-  10000[38] <- DebugPause()
   goto exit
 12:
   10000[40] <- Set(10000, 39, -3.5 * TutorialData[12]) - TutorialData[13]

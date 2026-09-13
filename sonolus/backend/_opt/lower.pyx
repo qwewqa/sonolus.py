@@ -50,6 +50,7 @@ from sonolus.backend._opt.ir cimport (
     FLAG_SIDE_EFFECT,
     FLAG_STMT_ROOT,
     Func,
+    left_fold_op,
     Instr,
     PLACE_DYNAMIC_BLOCK,
     PLACE_REAL_BLOCK,
@@ -942,8 +943,12 @@ cdef void _fuse_scalar(Func func, int32_t i) except *:
         return
     cdef int32_t a0 = <int32_t>args[instrs[vid].arg_start]
     cdef int32_t a1 = <int32_t>args[instrs[vid].arg_start + 1]
-    # args[0] must read a place structurally identical to the store target
-    # (lower_from_ssa re-emits places per use, so compare by structure not id).
+    # Reordering a constant around a static read has no evaluation effects.
+    if (vop in (OP_Add, OP_Multiply) and instrs[a0].op == OPX_CONST
+            and instrs[a1].op == OPX_GET and _copy_static_place(func.places[pid])
+            and _places_equal(func, instrs[a1].aux, pid)):
+        a0, a1 = a1, a0
+    # lower_from_ssa re-emits places per use, so compare by structure, not id.
     if instrs[a0].op != <uint16_t>OPX_GET or not _places_equal(func, instrs[a0].aux, pid):
         return
     # Evaluation-order guard: the GET must not appear in args[1].
@@ -982,6 +987,8 @@ cdef void fuse_rmw(Func func) except *:
     A statement-root ``OPX_SET(place p, BinOp(OPX_GET(p), w))`` where BinOp is a
     BINARY (nargs==2) Add/Subtract/Multiply/Divide/Mod/Rem/Power and the read place
     is structurally identical to the store target -> ``Set<BinOp>(place p, w)``.
+    Add/Multiply also accept the GET on the right when the other operand is a
+    constant and the target address is static.
     ``Add``/``Subtract`` by const 1.0 collapse to ``IncrementPost``/``DecrementPost``
     (statement position, unread return). n-ary (nargs>2) values are never fused (FP
     left-fold order forbids it); the GET must not appear in ``w`` (evaluation
@@ -1319,7 +1326,7 @@ cdef bint _store_result_disjoint(Func func, int32_t read, int32_t write) noexcep
 cdef class _StoreResults:
     cdef Func func
     cdef vector[int32_t] refs, depths
-    cdef vector[int64_t] costs, unfolded_costs
+    cdef vector[int64_t] costs
     cdef vector[uint8_t] rtc
     cdef int32_t budget
 
@@ -1328,7 +1335,6 @@ cdef class _StoreResults:
         self.refs.assign(func.n_instrs, 0)
         self.depths.assign(func.n_instrs, 1)
         self.costs.assign(func.n_instrs, 1)
-        self.unfolded_costs.assign(func.n_instrs, 1)
         self.rtc.assign(func.n_instrs, 0)
 
     cdef void _references(self, int32_t v, int32_t delta):
@@ -1365,9 +1371,9 @@ cdef class _StoreResults:
 
     cdef void _analyze(self):
         cdef Func func = self.func
-        cdef int32_t i, k, child, p, depth, op
+        cdef int32_t i, k, child, p, depth, op, j
         cdef int64_t cost
-        cdef bint constant
+        cdef bint constant, flatten
         for i in range(func.n_instrs):
             self._references(i, 1)
             if func.instrs[i].flags & FLAG_STMT_ROOT:
@@ -1380,10 +1386,16 @@ cdef class _StoreResults:
             for k in range(func.instrs[i].nargs):
                 child = func.args[func.instrs[i].arg_start + k]
                 depth = max(depth, self.depths[child])
-                # Emission flattens the first child's equal-op spine before
-                # runtime folding, including an otherwise constant child.
-                if k == 0 and op in (OP_Add, OP_Multiply, OP_Mod, OP_Rem) and func.instrs[child].op == op:
-                    cost = min(<int64_t>2147483647, cost + self.unfolded_costs[child] - 1)
+                flatten = (k == 0 and left_fold_op(op) and func.instrs[child].op == op
+                           and func.instrs[child].nargs > 0
+                           and not self.rtc[child])
+                if flatten and op in (OP_Divide, OP_Power):
+                    for j in range(1, func.instrs[i].nargs):
+                        if func.instrs[func.args[func.instrs[i].arg_start + j]].op != OPX_CONST:
+                            flatten = False
+                            break
+                if flatten:
+                    cost = min(<int64_t>2147483647, cost + self.costs[child] - 1)
                 else:
                     cost = min(<int64_t>2147483647, cost + self.costs[child])
                 constant = constant and self.rtc[child]
@@ -1396,7 +1408,6 @@ cdef class _StoreResults:
                     constant = True
             self.depths[i] = min(_MAX_FOLD_DEPTH + 1, depth + 1)
             self.rtc[i] = constant
-            self.unfolded_costs[i] = cost
             self.costs[i] = 1 if constant else cost
         for i in range(func.n_blocks):
             if func.blocks[i].test_val >= 0:
@@ -1707,6 +1718,14 @@ def run_fuse_rmw(entry, mode=None, callback=None, strategy="packing"):
     return to_basic_blocks(func)
 
 
+def run_coalesce(entry, mode=None, callback=None):
+    """Coalesce a non-SSA CFG without allocating its temporary places."""
+    cdef Func func = <Func>marshal_in(entry, mode, callback)
+    _coalesce(func)
+    func.verify()
+    return to_basic_blocks(func)
+
+
 # ==========================================================================
 # Out-of-SSA + treeify (``midend.out_of_ssa`` is a naive debug-only variant).
 # Consumes a value-based SSA Func (build_ssa), produces a legal non-SSA arena
@@ -1846,6 +1865,7 @@ cdef class _Lower:
     cdef list rtc_memo
     cdef list tc_memo
     cdef list rtc_size_memo
+    cdef dict emit_rtc_memo
     # prefix[i] = count of FLAG_SIDE_EFFECT instrs in indices [0, i); lets
     # _no_effect_between answer in O(1) instead of rescanning per candidate.
     cdef int32_t* se_prefix
@@ -1887,6 +1907,7 @@ cdef class _Lower:
         self.rtc_memo = [None] * ni
         self.tc_memo = [None] * ni
         self.rtc_size_memo = [None] * ni
+        self.emit_rtc_memo = {}
         cdef int32_t e
         self.incoming = [[] for _ in range(self.nb)]
         self.edge_pos = [0] * src.n_edges
@@ -2369,16 +2390,13 @@ cdef class _Lower:
         return self.dst._emit(OPX_CONST, FLAG_PURE | FLAG_CONST_IS_INT, block, cid, [])
 
     def _emit_op(self, int32_t op, int32_t flags, list args, int32_t block):
-        # Flatten the selected left-fold spines (Add/Multiply/Mod/Rem, args[0] only) and
-        # re-apply n-ary identity dropping (drop redundant identity operands).
         cdef Func dst = self.dst
         cdef int32_t a0, k, na
         cdef list rest
-        if op == OP_Add or op == OP_Multiply or op == OP_Mod or op == OP_Rem:
-            if len(args) > 0 and dst.instrs[<int32_t>args[0]].op == op:
-                a0 = <int32_t>args[0]
-                na = dst.instrs[a0].nargs
-                args = [<int32_t>dst.args[dst.instrs[a0].arg_start + k] for k in range(na)] + args[1:]
+        if dst._can_flatten_left(<uint16_t>op, args, self.emit_rtc_memo):
+            a0 = <int32_t>args[0]
+            na = dst.instrs[a0].nargs
+            args = [<int32_t>dst.args[dst.instrs[a0].arg_start + k] for k in range(na)] + args[1:]
         if op == OP_Add:
             args = [a for a in args if not self._is_dst_const(<int32_t>a, 0.0)]
             if len(args) == 1:
@@ -2642,7 +2660,7 @@ cdef void _coalesce(Func func) except *:
         free(scalar_mask); free(adj); free(work)
         raise MemoryError()
 
-    cdef int32_t i, t, u, w, rs, pid, vid, spid, s, dsc
+    cdef int32_t i, t, u, w, rs, pid, vid, spid, s, dsc, dead_target
     cdef uint64_t* rl
     cdef uint64_t* blo
     cdef uint64_t* rowp
@@ -2709,12 +2727,11 @@ cdef void _coalesce(Func func) except *:
             for w in range(nw):
                 work[w] = rl[w] & scalar_mask[w]
             pid = instrs[i].aux
+            dead_target = -1
             if places[pid].kind == PLACE_TEMP_SCALAR:
                 dsc = places[pid].block_ref
                 if not bs_get(work, dsc):
-                    blo = &L.live_out[<int64_t>instrs[i].block * nw]
-                    for w in range(nw):
-                        work[w] |= blo[w] & scalar_mask[w]
+                    dead_target = dsc
                 bs_set(work, dsc)
             # Statement live sets are often sparse, so visit only their set bits.
             for w in range(nw):
@@ -2725,6 +2742,19 @@ cdef void _coalesce(Func func) except *:
                     rowp = &adj[t * nw]
                     for kk in range(nw):
                         rowp[kk] |= work[kk]
+
+            if dead_target >= 0:
+                # Block-live-out includes later definitions. Only the dead target
+                # needs additional interference with those future values.
+                blo = &L.live_out[<int64_t>instrs[i].block * nw]
+                rowp = &adj[dead_target * nw]
+                for w in range(nw):
+                    word = blo[w] & scalar_mask[w]
+                    rowp[w] |= word
+                    while word != 0:
+                        t = (w << 6) + _sonolus_ctz64(word)
+                        word &= word - 1
+                        bs_set(&adj[t * nw], dead_target)
 
         # Copy pairs: SET(scalar t) = GET(scalar s), with t live-out.
         copy_pairs = set()

@@ -1,7 +1,7 @@
 0:
   goto 1 if RuntimeUpdate[3] else 3
 1:
-  goto 2 if (EntityMemory[2] != 0) else 3
+  goto 2 if EntityMemory[2] else 3
 2:
   10000[0] <- DestroyParticleEffect(EntityMemory[2])
   EntityMemory[2] <- 0
@@ -23,7 +23,7 @@
 9:
   goto 15 if StreamGetValue(10000[4], 10000[5]) else 10
 10:
-  goto 11 if (0 != EntityMemory[2]) else 12
+  goto 11 if EntityMemory[2] else 12
 11:
   10000[8] <- DestroyParticleEffect(EntityMemory[2])
   EntityMemory[2] <- 0
@@ -71,16 +71,16 @@
   10000[52] <- (10000[42] + (LevelData[6] * ((LevelData[11] * 1.8) / 2)) + LevelData[7]) / 10000[50]
   10000[53] <- (10000[48] + 10000[51]) / 2
   10000[54] <- (10000[39] + 10000[45]) / 2
-  10000[56] <- 10000[54] - Set(10000, 55, ((((10000[51] - 10000[48]) + 10000[45]) - 10000[39]) / 2) / 2)
+  10000[56] <- 10000[54] - Set(10000, 55, (((10000[51] - 10000[48]) + 10000[45]) - 10000[39]) / 2 / 2)
   10000[57] <- 10000[54] + 10000[55]
   10000[58] <- 10000[53] - 10000[55]
   10000[59] <- 10000[53] + 10000[55]
-  goto 20 if (0 == EntityMemory[2]) else 21
+  goto 20 if EntityMemory[2] else 21
 20:
-  EntityMemory[2] <- Set(10000, 60, SpawnParticleEffect(5, 10000[56], 10000[40], 10000[58], 10000[49], 10000[59], 10000[52], 10000[57], 10000[46], 1.5, 1))
+  10000[61] <- MoveParticleEffect(EntityMemory[2], 10000[56], 10000[40], 10000[58], 10000[49], 10000[59], 10000[52], 10000[57], 10000[46])
   goto exit
 21:
-  10000[61] <- MoveParticleEffect(EntityMemory[2], 10000[56], 10000[40], 10000[58], 10000[49], 10000[59], 10000[52], 10000[57], 10000[46])
+  EntityMemory[2] <- Set(10000, 60, SpawnParticleEffect(5, 10000[56], 10000[40], 10000[58], 10000[49], 10000[59], 10000[52], 10000[57], 10000[46], 1.5, 1))
   goto exit
 22:
   10000[62] <- DebugLog(7)

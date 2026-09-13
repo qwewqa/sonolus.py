@@ -1,7 +1,7 @@
 0:
   goto 1 if RuntimeUpdate[3] else 3
 1:
-  goto 2 if (EntityMemory[2] != 0) else 3
+  goto 2 if EntityMemory[2] else 3
 2:
   DestroyParticleEffect(EntityMemory[2])
   EntityMemory[2] <- 0
@@ -17,7 +17,7 @@
 7:
   goto 13 if StreamGetValue(SetAdd(10000, 0, 18), If(StreamHas(10000[0], RuntimeUpdate[0]), RuntimeUpdate[0], StreamGetPreviousKey(10000[0], RuntimeUpdate[0]))) else 8
 8:
-  goto 9 if (0 != EntityMemory[2]) else 10
+  goto 9 if EntityMemory[2] else 10
 9:
   DestroyParticleEffect(EntityMemory[2])
   EntityMemory[2] <- 0
@@ -66,7 +66,7 @@
   10000[1] <- (10000[7] + (LevelData[6] * ((LevelData[11] * 1.8) / 2)) + LevelData[7]) / 10000[1]
   10000[6] <- (10000[2] + 10000[3]) / 2
   10000[7] <- (10000[5] + 10000[9]) / 2
-  10000[3] <- 10000[7] - Set(10000, 2, ((((10000[3] - 10000[2]) + 10000[9]) - 10000[5]) / 2) / 2)
+  10000[3] <- 10000[7] - Set(10000, 2, (((10000[3] - 10000[2]) + 10000[9]) - 10000[5]) / 2 / 2)
   10000[5] <- 10000[7] + 10000[2]
   10000[7] <- 10000[6] - 10000[2]
   10000[2] <- 10000[6] + 10000[2]

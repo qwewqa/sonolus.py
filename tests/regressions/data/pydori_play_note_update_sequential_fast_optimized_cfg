@@ -21,7 +21,7 @@
 8:
   goto 9 if (EntityMemory[0] < EntityData[11]) else 10
 9:
-  goto 69 if (((RuntimeUpdate[0] - RuntimeEnvironment[3]) - EntityData[11]) < (EntityData[11] - EntityMemory[0])) else 10
+  goto 69 if ((RuntimeUpdate[0] - RuntimeEnvironment[3] - EntityData[11]) < (EntityData[11] - EntityMemory[0])) else 10
 10:
   goto 11 if ((EntityData[11] - 0.03333333333333333) <= Set(10000, 2, EntityMemory[0])) else 13
 11:
@@ -32,7 +32,7 @@
 13:
   EntityInput[0] <- Set(10000, 4, Judge(Set(10000, 3, EntityMemory[0]), EntityData[11], EntityData[5], EntityData[6], EntityData[7], EntityData[8], EntityData[9], EntityData[10]))
   EntityInput[3] <- Set(4005, 1, Clamp(10000[3] - EntityData[11], -1, 1)) * 1000
-  goto 14 if (10000[4] != 0) else 68
+  goto 14 if 10000[4] else 68
 14:
   goto 34 if LevelOption[11] else 15
 15:
@@ -167,7 +167,7 @@
   10000[34] <- (10000[23] + (LevelData[3] * ((LevelData[11] * 1.8) / 2)) + LevelData[4]) / Set(10000, 33, 10000[25] + (LevelData[9] * ((LevelData[11] * 1.8) / 2)) + LevelData[10])
   10000[37] <- (10000[34] + Set(10000, 36, (10000[28] + (LevelData[3] * ((LevelData[11] * 1.8) / 2)) + LevelData[4]) / Set(10000, 35, 10000[30] + (LevelData[9] * ((LevelData[11] * 1.8) / 2)) + LevelData[10]))) / 2
   10000[38] <- (10000[27] + 10000[32]) / 2
-  10000[40] <- SpawnParticleEffect(10000[20], 10000[38] - Set(10000, 39, ((((10000[36] - 10000[34]) + 10000[32]) - 10000[27]) / 2) / 2), (10000[24] + (LevelData[6] * -((LevelData[11] * 1.8) / 2)) + LevelData[7]) / 10000[26], 10000[37] - 10000[39], (10000[24] + (LevelData[6] * ((LevelData[11] * 1.8) / 2)) + LevelData[7]) / 10000[33], 10000[37] + 10000[39], (10000[29] + (LevelData[6] * ((LevelData[11] * 1.8) / 2)) + LevelData[7]) / 10000[35], 10000[38] + 10000[39], (10000[29] + (LevelData[6] * -((LevelData[11] * 1.8) / 2)) + LevelData[7]) / 10000[31], 0.5, 0)
+  10000[40] <- SpawnParticleEffect(10000[20], 10000[38] - Set(10000, 39, (((10000[36] - 10000[34]) + 10000[32]) - 10000[27]) / 2 / 2), (10000[24] + (LevelData[6] * -((LevelData[11] * 1.8) / 2)) + LevelData[7]) / 10000[26], 10000[37] - 10000[39], (10000[24] + (LevelData[6] * ((LevelData[11] * 1.8) / 2)) + LevelData[7]) / 10000[33], 10000[37] + 10000[39], (10000[29] + (LevelData[6] * ((LevelData[11] * 1.8) / 2)) + LevelData[7]) / 10000[35], 10000[38] + 10000[39], (10000[29] + (LevelData[6] * -((LevelData[11] * 1.8) / 2)) + LevelData[7]) / 10000[31], 0.5, 0)
   goto 63 if LevelOption[7] else 68
 63:
   10000[41] <- 0

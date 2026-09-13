@@ -18,7 +18,12 @@ from sonolus.backend._opt._ops_gen cimport (
     OPX_SET,
     OPX_UNDEF,
     OP_Add,
+    OP_Subtract,
     OP_Multiply,
+    OP_Divide,
+    OP_Power,
+    OP_Mod,
+    OP_Rem,
     OP_Set,
     OP_SetShifted,
     OP_SetAdd,
@@ -113,6 +118,10 @@ cdef double _CANON_NAN = 0.0
 
 # Bound C-stack use when selecting an address form at the Python boundary.
 cdef int32_t _ADDRESS_RTC_DEPTH_LIMIT = 1000
+
+
+cdef bint left_fold_op(uint16_t op) noexcept nogil:
+    return op in (OP_Add, OP_Subtract, OP_Multiply, OP_Divide, OP_Power, OP_Mod, OP_Rem)
 
 
 cdef int32_t shifted_store_op(uint16_t op) noexcept nogil:
@@ -649,6 +658,62 @@ cdef class Func:
             result = False
         memo[vid] = result
         return result
+
+    cdef bint _flatten_is_rtc(self, int32_t vid, dict memo) except -1:
+        # A failed depth-bounded RTC proof cannot justify flattening: it would
+        # split a folded group and disagree with allocation's bottom-up costs.
+        cached = memo.get(vid)
+        if cached is not None:
+            return <bint>cached
+        cdef list pending = [(vid, False)]
+        cdef int32_t current, child, k
+        cdef uint16_t op
+        cdef bint expanded, result
+        while pending:
+            current, expanded = pending.pop()
+            if current in memo:
+                continue
+            op = self.instrs[current].op
+            if op == OPX_CONST:
+                memo[current] = True
+            elif op == OPX_GET:
+                memo[current] = (self.places[self.instrs[current].aux].flags & PLACE_RUNTIME_CONST) != 0
+            elif op < OP_RUNTIME_COUNT and self.instrs[current].flags & FLAG_PURE:
+                if expanded:
+                    result = True
+                    for k in range(self.instrs[current].nargs):
+                        result = result and <bint>memo[<int32_t>self.args[self.instrs[current].arg_start + k]]
+                    memo[current] = result
+                else:
+                    pending.append((current, True))
+                    for k in range(self.instrs[current].nargs):
+                        child = <int32_t>self.args[self.instrs[current].arg_start + k]
+                        if child not in memo:
+                            pending.append((child, False))
+            else:
+                memo[current] = False
+        return <bint>memo[vid]
+
+    cdef bint _can_flatten_left(self, uint16_t op, list operands, dict memo) except -1:
+        cdef int32_t first, k, child
+        if not left_fold_op(op) or not operands:
+            return False
+        first = <int32_t>operands[0]
+        if self.instrs[first].op != op or self.instrs[first].nargs == 0:
+            return False
+        if op in (OP_Divide, OP_Power):
+            # Flattening evaluates the tail before the inner arithmetic. Literals
+            # preserve observable ordering even when the inner operation raises.
+            for k in range(1, len(operands)):
+                if self.instrs[<int32_t>operands[k]].op != OPX_CONST:
+                    return False
+        if not self._flatten_is_rtc(first, memo):
+            return True
+        for k in range(1, len(operands)):
+            child = <int32_t>operands[k]
+            if not self._flatten_is_rtc(child, memo):
+                return False
+        return True
 
     cdef int32_t _emit_const(self, object value, int32_t block_id) except -1:
         cdef uint8_t flags = FLAG_PURE

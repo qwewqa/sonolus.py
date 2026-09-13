@@ -1,7 +1,7 @@
 0:
   goto 25 if RuntimeUpdate[3] else 1
 1:
-  goto 2 if (EntityData[12] != 0) else 25
+  goto 2 if EntityData[12] else 25
 2:
   goto when Set(10000, 0, EngineRom[(4099 + EntityInfo[1])])
     6 -> 25
@@ -74,7 +74,7 @@
   10000[3] <- (10000[3] + (LevelData[3] * ((LevelData[11] * 1.8) / 2)) + LevelData[4]) / Set(10000, 2, 10000[2] + (LevelData[9] * ((LevelData[11] * 1.8) / 2)) + LevelData[10])
   10000[11] <- (10000[3] + Set(10000, 7, (10000[7] + (LevelData[3] * ((LevelData[11] * 1.8) / 2)) + LevelData[4]) / Set(10000, 1, 10000[1] + (LevelData[9] * ((LevelData[11] * 1.8) / 2)) + LevelData[10]))) / 2
   10000[12] <- (10000[6] + 10000[10]) / 2
-  10000[3] <- ((((10000[7] - 10000[3]) + 10000[10]) - 10000[6]) / 2) / 2
+  10000[3] <- (((10000[7] - 10000[3]) + 10000[10]) - 10000[6]) / 2 / 2
   SpawnParticleEffect(10000[0], 10000[12] - 10000[3], (10000[4] + (LevelData[6] * -((LevelData[11] * 1.8) / 2)) + LevelData[7]) / 10000[5], 10000[11] - 10000[3], (10000[4] + (LevelData[6] * ((LevelData[11] * 1.8) / 2)) + LevelData[7]) / 10000[2], 10000[11] + 10000[3], (10000[8] + (LevelData[6] * ((LevelData[11] * 1.8) / 2)) + LevelData[7]) / 10000[1], 10000[12] + 10000[3], (10000[8] + (LevelData[6] * -((LevelData[11] * 1.8) / 2)) + LevelData[7]) / 10000[9], 0.5, 0)
   goto 17 if LevelOption[7] else 25
 17:

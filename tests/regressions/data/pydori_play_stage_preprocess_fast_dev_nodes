@@ -695,16 +695,12 @@ Block(JumpLoop(
       1006
       60
       Subtract(
-        Subtract(
-          Subtract(
-            Get(
-              1000
-              1
-            )
-            0.05
-          )
-          0.05
+        Get(
+          1000
+          1
         )
+        0.05
+        0.05
         Multiply(
           0.15
           Get(
@@ -808,23 +804,17 @@ Block(JumpLoop(
       1006
       70
       Subtract(
-        Subtract(
-          Subtract(
-            Subtract(
-              Get(
-                1000
-                1
-              )
-              0.05
-            )
-            0.05
-          )
-          Multiply(
-            0.15
-            Get(
-              1007
-              0
-            )
+        Get(
+          1000
+          1
+        )
+        0.05
+        0.05
+        Multiply(
+          0.15
+          Get(
+            1007
+            0
           )
         )
         Get(
@@ -1517,23 +1507,33 @@ Block(JumpLoop(
       )
     )
     If(
-      Equal(
-        0
-        Mod(
-          Set(
-            10000
-            40
-            Get(
-              2001
-              16
-            )
+      Mod(
+        Set(
+          10000
+          40
+          Get(
+            2001
+            16
           )
-          1
         )
+        1
       )
       3
-      11
+      4
     )
+  )
+  Execute(
+    Set(
+      10000
+      47
+      DebugLog(1)
+    )
+    Set(
+      10000
+      48
+      DebugPause()
+    )
+    13
   )
   Execute(
     Set(
@@ -1541,7 +1541,7 @@ Block(JumpLoop(
       41
       0
     )
-    4
+    5
   )
   Execute(If(
     Less(
@@ -1554,8 +1554,8 @@ Block(JumpLoop(
         40
       )
     )
-    5
-    8
+    6
+    9
   ))
   Execute(
     Set(
@@ -1595,8 +1595,8 @@ Block(JumpLoop(
           1
         )
       )
-      6
       7
+      8
     )
   )
   Execute(
@@ -1723,7 +1723,7 @@ Block(JumpLoop(
         42
       )
     )
-    4
+    5
   )
   Execute(If(
     Less(
@@ -1733,8 +1733,8 @@ Block(JumpLoop(
       )
       7
     )
-    9
     10
+    11
   ))
   Execute(
     SetShifted(
@@ -1887,19 +1887,6 @@ Block(JumpLoop(
     Set(
       10000
       46
-      DebugPause()
-    )
-    13
-  )
-  Execute(
-    Set(
-      10000
-      47
-      DebugLog(1)
-    )
-    Set(
-      10000
-      48
       DebugPause()
     )
     13

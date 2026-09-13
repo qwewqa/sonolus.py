@@ -8,12 +8,9 @@ Block(JumpLoop(
     3
   ))
   Execute(If(
-    NotEqual(
-      Get(
-        4000
-        2
-      )
-      0
+    Get(
+      4000
+      2
     )
     2
     3
@@ -224,12 +221,9 @@ Block(JumpLoop(
     10
   ))
   Execute(If(
-    NotEqual(
-      0
-      Get(
-        4000
-        2
-      )
+    Get(
+      4000
+      2
     )
     11
     12
@@ -1481,31 +1475,29 @@ Block(JumpLoop(
           10000
           55
           Divide(
-            Divide(
-              Subtract(
-                Add(
-                  Subtract(
-                    Get(
-                      10000
-                      51
-                    )
-                    Get(
-                      10000
-                      48
-                    )
+            Subtract(
+              Add(
+                Subtract(
+                  Get(
+                    10000
+                    51
                   )
                   Get(
                     10000
-                    45
+                    48
                   )
                 )
                 Get(
                   10000
-                  39
+                  45
                 )
               )
-              2
+              Get(
+                10000
+                39
+              )
             )
+            2
             2
           )
         )
@@ -1554,16 +1546,58 @@ Block(JumpLoop(
       )
     )
     If(
-      Equal(
-        0
-        Get(
-          4000
-          2
-        )
+      Get(
+        4000
+        2
       )
       20
       21
     )
+  )
+  Execute(
+    Set(
+      10000
+      61
+      MoveParticleEffect(
+        Get(
+          4000
+          2
+        )
+        Get(
+          10000
+          56
+        )
+        Get(
+          10000
+          40
+        )
+        Get(
+          10000
+          58
+        )
+        Get(
+          10000
+          49
+        )
+        Get(
+          10000
+          59
+        )
+        Get(
+          10000
+          52
+        )
+        Get(
+          10000
+          57
+        )
+        Get(
+          10000
+          46
+        )
+      )
+    )
+    27
   )
   Execute(
     Set(
@@ -1608,51 +1642,6 @@ Block(JumpLoop(
           )
           1.5
           1
-        )
-      )
-    )
-    27
-  )
-  Execute(
-    Set(
-      10000
-      61
-      MoveParticleEffect(
-        Get(
-          4000
-          2
-        )
-        Get(
-          10000
-          56
-        )
-        Get(
-          10000
-          40
-        )
-        Get(
-          10000
-          58
-        )
-        Get(
-          10000
-          49
-        )
-        Get(
-          10000
-          59
-        )
-        Get(
-          10000
-          52
-        )
-        Get(
-          10000
-          57
-        )
-        Get(
-          10000
-          46
         )
       )
     )

@@ -27,22 +27,22 @@
 9:
   goto 1 if 10000[27] else 10
 10:
-  10000[28] <- Set(10000, 29, 1)
+  10000[27] <- Set(10000, 28, 1)
   goto 12
 11:
-  10000[29] <- 2
-  10000[28] <- 0
+  10000[28] <- 2
+  10000[27] <- 0
   goto 12
 12:
-  goto 13 if 10000[28] else 43
+  goto 13 if 10000[27] else 38
 13:
-  10000[27] <- 0
+  10000[29] <- 0
   goto 14
 14:
-  goto 15 if (10000[27] < LevelData[0]) else 42
+  goto 15 if (10000[29] < LevelData[0]) else 37
 15:
-  10000[30] <- 10000[27] * 9
-  IncrementPost(10000, 27)
+  10000[30] <- 10000[29] * 9
+  IncrementPost(10000, 29)
   10000[16] <- LevelData[10000[30] + 2]
   10000[17] <- LevelData[10000[30] + 3]
   10000[18] <- LevelData[10000[30] + 4]
@@ -71,11 +71,11 @@
   Copy(10000, 33, 10000, 32, 2)
   goto 16
 21:
-  goto 22 if 10000[35] else 41
+  goto 22 if 10000[35] else 14
 22:
   goto 23 if (10000[26] >= 16) else 24
 23:
-  goto 30 if LevelOption[7] else 37
+  goto 30 if LevelOption[7] else 35
 24:
   10000[31] <- 0
   goto 25
@@ -84,50 +84,40 @@
 26:
   goto 27 if (10000[10000[31]] == LevelData[10000[30] + 1]) else 28
 27:
-  goto 30 if LevelOption[7] else 37
+  goto 30 if LevelOption[7] else 35
 28:
   IncrementPost(10000, 31)
   goto 25
 29:
   10000[10000[26]] <- LevelData[10000[30] + 1]
   IncrementPost(10000, 26)
-  goto 30 if LevelOption[7] else 37
+  goto 30 if LevelOption[7] else 35
 30:
   10000[31] <- 0
   goto 31
 31:
-  goto 32 if (10000[31] < LevelData[0]) else 45
+  goto 32 if (10000[31] < LevelData[0]) else 40
 32:
   10000[32] <- 10000[31] + 1
-  goto 33 if (LevelData[SetMultiply(10000, 31, 9) + 1] == LevelData[10000[30] + 1]) else 36
+  goto 33 if (LevelData[SetMultiply(10000, 31, 9) + 1] == LevelData[10000[30] + 1]) else 34
 33:
   SpawnParticleEffect(0, LevelData[10000[31] + 2], LevelData[10000[31] + 3], LevelData[10000[31] + 4], LevelData[10000[31] + 5], LevelData[10000[31] + 6], LevelData[10000[31] + 7], LevelData[10000[31] + 8], LevelData[10000[31] + 9], 0.2, 0)
-  goto 34 if LevelOption[10] else 35
+  goto 36 if LevelOption[10] else 14
 34:
-  goto 39
-35:
-  goto 14
-36:
   10000[31] <- 10000[32]
   goto 31
-37:
-  goto 38 if LevelOption[10] else 40
-38:
-  goto 39
-39:
+35:
+  goto 36 if LevelOption[10] else 14
+36:
   Play(0, 0.02)
   goto 14
-40:
-  goto 14
-41:
-  goto 14
-42:
-  goto when 10000[29]
+37:
+  goto when 10000[28]
     1 -> 1
     default -> 12
-43:
-  goto 44 if (10000[26] > 0) else 45
-44:
+38:
+  goto 39 if (10000[26] > 0) else 40
+39:
   StreamSet(1, RuntimeUpdate[0], 10000[26])
   StreamSet(2, RuntimeUpdate[0], 10000[0])
   StreamSet(3, RuntimeUpdate[0], 10000[1])
@@ -146,5 +136,5 @@
   StreamSet(16, RuntimeUpdate[0], 10000[14])
   StreamSet(17, RuntimeUpdate[0], 10000[15])
   goto exit
-45:
+40:
   goto exit

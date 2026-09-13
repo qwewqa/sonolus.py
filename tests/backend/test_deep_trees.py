@@ -20,6 +20,8 @@ Three sibling shapes cover the walkers the straight single-use chain misses:
 The cap keeps the deepest emitted tree ~_MAX_FOLD_DEPTH deep -- still past
 CPython's default recursion limit and the ~1 MB Windows main-thread C stack, so
 interpretation runs in a large-stack worker thread with a raised recursion limit.
+Right-nested chains keep those emitted walks deep when left-spine flattening
+makes an ordinary accumulation shallow.
 """
 
 from __future__ import annotations
@@ -65,17 +67,20 @@ _ROM_BLOCK = 3000
 _PLAY_CFG = OptimizerConfig(Mode.PLAY, "updateSequential")
 
 
-def _build_chain(n: int) -> BasicBlock:
-    """A single block: seed a scalar temp from memory, then ``t = t - 1`` n times.
+def _build_chain(n: int, *, right_nested: bool = False) -> BasicBlock:
+    """Build a runtime-seeded binary subtraction chain.
 
-    Subtract is neither associative nor n-ary-flattened, so the mem2reg-promoted
-    SSA chain reaches treeify as a genuinely n-deep single-use nest (no
-    reassociation collapses it, and the non-constant seed blocks constant folding).
-    The trailing DebugLog keeps the final value live and makes it observable.
+    The binary SSA chain reaches scheduling as an n-deep single-use nest, with
+    the non-constant seed blocking constant folding. Later left-spine flattening
+    preserves every subtraction step; the right-nested variant stays recursive.
+    The trailing DebugLog keeps the final value live and observable.
     """
     acc = BlockPlace(TempBlock("acc", 1), 0, 0)
     statements = [IRSet(acc, IRGet(BlockPlace(_SEED_BLOCK, 0, 0)))]
-    statements += [IRSet(acc, IRPureInstr(Op.Subtract, [IRGet(acc), IRConst(1)])) for _ in range(n)]
+    statements += [
+        IRSet(acc, IRPureInstr(Op.Subtract, [IRConst(1), IRGet(acc)] if right_nested else [IRGet(acc), IRConst(1)]))
+        for _ in range(n)
+    ]
     statements.append(IRInstr(Op.DebugLog, [IRGet(acc)]))
     return BasicBlock(statements=statements)
 
@@ -129,27 +134,30 @@ def _build_rtc_arm_diamond(n: int) -> BasicBlock:
     return head
 
 
-def _count_ops(node) -> tuple[int, int, bool]:
-    """(total FunctionNodes, Subtract nodes, has DebugLog) via an EXPLICIT stack.
+def _count_ops(node) -> tuple[int, int, bool, int]:
+    """Return the function count, subtraction steps, logging presence, and maximum depth.
 
     Iterative on purpose: the emitted tree is ~1000 deep, so a recursive walk here
     would itself risk the very C-stack overflow under test.
     """
     total = 0
-    subtracts = 0
+    subtraction_steps = 0
     has_debug_log = False
-    stack = [node]
+    max_depth = 0
+    stack = [(node, 1)]
     while stack:
-        cur = stack.pop()
+        cur, depth = stack.pop()
         if not isinstance(cur, FunctionNode):
             continue
         total += 1
+        max_depth = max(max_depth, depth)
         if cur.func == Op.Subtract:
-            subtracts += 1
+            assert len(cur.args) >= 2
+            subtraction_steps += len(cur.args) - 1
         elif cur.func == Op.DebugLog:
             has_debug_log = True
-        stack.extend(cur.args)
-    return total, subtracts, has_debug_log
+        stack.extend((arg, depth + 1) for arg in cur.args)
+    return total, subtraction_steps, has_debug_log, max_depth
 
 
 def _interpret_deep(node, mem: dict[int, list[float]] | None = None):
@@ -193,14 +201,13 @@ def _interpret_deep(node, mem: dict[int, list[float]] | None = None):
 
 
 def _assert_structurally_sane(node) -> None:
-    node_count, subtract_count, has_debug_log = _count_ops(node)
+    node_count, subtraction_steps, has_debug_log, max_depth = _count_ops(node)
     assert isinstance(node, FunctionNode), node
-    # Every Subtract survives lowering/emission (none dropped, merged, or
-    # reassociated away): the chain arrived intact, just split across the temps the
-    # depth cap materializes.
-    assert subtract_count == _N, subtract_count
+    assert subtraction_steps == _N, subtraction_steps
     assert has_debug_log
-    assert node_count > _N
+    assert 0 < node_count < 2 * _N
+    # The expression cap permits 1000 levels, with a small allowance for CFG wrappers.
+    assert max_depth <= 1024, max_depth
 
 
 def test_deep_chain_standard_lowers_emits_and_interprets():
@@ -231,14 +238,25 @@ def test_deep_chain_fast_lowers_emits_and_interprets():
 
 
 @pytest.mark.parametrize("level", [FAST_PASSES, STANDARD_PASSES], ids=["fast", "standard"])
+def test_deep_right_nested_chain_stays_recursive_and_depth_bounded(level):
+    entry = _build_chain(_N, right_nested=True)
+    node = cfg_to_engine_node(run_passes(entry, level))
+    _assert_structurally_sane(node)
+    assert _count_ops(node)[3] > 256
+    mem = {_SEED_BLOCK: [7]}
+    ref_log = _interpret_deep(cfg_to_engine_node(run_passes(entry, MINIMAL_PASSES)), mem)
+    expected = 7
+    for _ in range(_N):
+        expected = 1 - expected
+    assert _interpret_deep(node, mem) == ref_log == [expected]
+
+
+@pytest.mark.parametrize("level", [FAST_PASSES, STANDARD_PASSES], ids=["fast", "standard"])
 def test_deep_chain_multi_use_top_lowers_emits_and_interprets(level):
     entry = _build_multiuse_top_chain(_N)
     lowered = run_passes(entry, level, _PLAY_CFG)  # (pre-fix: process crash here)
     node = cfg_to_engine_node(lowered)
-    node_count, subtract_count, has_debug_log = _count_ops(node)
-    assert subtract_count == _N, subtract_count
-    assert has_debug_log
-    assert node_count > _N
+    _assert_structurally_sane(node)
 
     ref_log = _interpret_deep(cfg_to_engine_node(run_passes(entry, MINIMAL_PASSES, _PLAY_CFG)))
     opt_log = _interpret_deep(node)
@@ -259,10 +277,7 @@ def test_deep_runtime_constant_arm_rejected_and_pipeline_bounded():
     entry = _build_rtc_arm_diamond(_N)
     lowered = run_passes(entry, STANDARD_PASSES, _PLAY_CFG)  # (pre-fix: process crash here)
     node = cfg_to_engine_node(lowered)
-    node_count, subtract_count, has_debug_log = _count_ops(node)
-    assert subtract_count == _N, subtract_count
-    assert has_debug_log
-    assert node_count > _N
+    _assert_structurally_sane(node)
 
     # Semantic parity on BOTH branch directions vs the MINIMAL reference.
     for test_value in (0.0, 1.0):

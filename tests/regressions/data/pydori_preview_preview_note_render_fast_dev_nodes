@@ -639,30 +639,40 @@ Block(JumpLoop(
     40
   ))
   Execute(If(
-    Equal(
-      0
-      Mod(
-        Set(
-          10000
-          19
-          Abs(Get(
-            4000
-            2
-          ))
-        )
-        1
+    Mod(
+      Set(
+        10000
+        19
+        Abs(Get(
+          4000
+          2
+        ))
       )
+      1
     )
     30
-    39
+    31
   ))
+  Execute(
+    Set(
+      10000
+      49
+      DebugLog(1)
+    )
+    Set(
+      10000
+      50
+      DebugPause()
+    )
+    40
+  )
   Execute(
     Set(
       10000
       20
       0
     )
-    31
+    32
   )
   Execute(If(
     Less(
@@ -675,20 +685,13 @@ Block(JumpLoop(
         19
       )
     )
-    32
+    33
     40
   ))
   Execute(
-    Set(
+    IncrementPost(
       10000
-      21
-      Add(
-        Get(
-          10000
-          20
-        )
-        1
-      )
+      20
     )
     If(
       Set(
@@ -702,8 +705,8 @@ Block(JumpLoop(
           0
         )
       )
-      33
       34
+      35
     )
   )
   Execute(
@@ -712,7 +715,7 @@ Block(JumpLoop(
       23
       1
     )
-    35
+    36
   )
   Execute(
     Set(
@@ -720,7 +723,7 @@ Block(JumpLoop(
       23
       -1
     )
-    35
+    36
   )
   Execute(
     Set(
@@ -734,7 +737,7 @@ Block(JumpLoop(
         Multiply(
           Get(
             10000
-            21
+            20
           )
           Get(
             10000
@@ -870,8 +873,8 @@ Block(JumpLoop(
         10000
         22
       )
-      36
       37
+      38
     )
   )
   Execute(
@@ -880,7 +883,7 @@ Block(JumpLoop(
       31
       -1.5707963267948966
     )
-    38
+    39
   )
   Execute(
     Set(
@@ -888,7 +891,7 @@ Block(JumpLoop(
       31
       1.5707963267948966
     )
-    38
+    39
   )
   Execute(
     Set(
@@ -1253,28 +1256,7 @@ Block(JumpLoop(
         0
       )
     )
-    Set(
-      10000
-      20
-      Get(
-        10000
-        21
-      )
-    )
-    31
-  )
-  Execute(
-    Set(
-      10000
-      49
-      DebugLog(1)
-    )
-    Set(
-      10000
-      50
-      DebugPause()
-    )
-    40
+    32
   )
   0
 ))

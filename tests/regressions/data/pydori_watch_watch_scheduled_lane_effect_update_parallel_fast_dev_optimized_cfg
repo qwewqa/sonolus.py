@@ -6,28 +6,28 @@
   10000[1] <- EntityMemory[1]
   goto 3 if LevelOption[7] else 11
 3:
-  goto 4 if ((LevelData[0] % 1) == 0) else 10
+  goto 4 if (LevelData[0] % 1) else 5
 4:
-  10000[2] <- 0
-  goto 5
-5:
-  goto 6 if (10000[2] < LevelData[0]) else 9
-6:
-  10000[3] <- 10000[2] + 1
-  goto 7 if (10000[1] == LevelData[Set(10000, 4, 10000[2] * 9) + 1]) else 8
-7:
-  10000[5] <- SpawnParticleEffect(0, LevelData[10000[4] + 2], LevelData[10000[4] + 3], LevelData[10000[4] + 4], LevelData[10000[4] + 5], LevelData[10000[4] + 6], LevelData[10000[4] + 7], LevelData[10000[4] + 8], LevelData[10000[4] + 9], 0.2, 0)
-  goto exit
-8:
-  10000[2] <- 10000[3]
-  goto 5
-9:
-  10000[6] <- DebugLog(2)
-  10000[7] <- DebugPause()
-  goto exit
-10:
   10000[8] <- DebugLog(1)
   10000[9] <- DebugPause()
+  goto exit
+5:
+  10000[2] <- 0
+  goto 6
+6:
+  goto 7 if (10000[2] < LevelData[0]) else 10
+7:
+  10000[3] <- 10000[2] + 1
+  goto 8 if (10000[1] == LevelData[Set(10000, 4, 10000[2] * 9) + 1]) else 9
+8:
+  10000[5] <- SpawnParticleEffect(0, LevelData[10000[4] + 2], LevelData[10000[4] + 3], LevelData[10000[4] + 4], LevelData[10000[4] + 5], LevelData[10000[4] + 6], LevelData[10000[4] + 7], LevelData[10000[4] + 8], LevelData[10000[4] + 9], 0.2, 0)
+  goto exit
+9:
+  10000[2] <- 10000[3]
+  goto 6
+10:
+  10000[6] <- DebugLog(2)
+  10000[7] <- DebugPause()
   goto exit
 11:
   goto exit
