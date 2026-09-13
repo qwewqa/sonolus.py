@@ -1,28 +1,28 @@
 0:
   10000[0] <- 0.15 * RuntimeUIConfiguration[0]
-  Copy(1004, 1, 10000, 1, 1)
+  10000[1] <- RuntimeUIConfiguration[1]
   RuntimeUI[0] <- RuntimeEnvironment[1] + -0.05
   RuntimeUI[1] <- 0.95
   RuntimeUI[2] <- 1
   RuntimeUI[3] <- 1
-  Copy(10000, 0, 1003, 4, 1)
-  Copy(10000, 0, 1003, 5, 1)
+  RuntimeUI[4] <- 10000[0]
+  RuntimeUI[5] <- 10000[0]
   RuntimeUI[6] <- 0
-  Copy(10000, 1, 1003, 7, 1)
+  RuntimeUI[7] <- 10000[1]
   RuntimeUI[8] <- 1
   10000[2] <- (RuntimeEnvironment[1] + RuntimeEnvironment[1]) - 0.1
   10000[3] <- 0.15 * RuntimeUIConfiguration[2]
-  Copy(1004, 3, 10000, 4, 1)
+  10000[4] <- RuntimeUIConfiguration[3]
   RuntimeUI[9] <- -RuntimeEnvironment[1] + 0.05
   RuntimeUI[10] <- -0.95
   Copy(3000, 3, 1003, 11, 2)
   Copy(10000, 2, 1003, 13, 2)
   RuntimeUI[15] <- 0
-  Copy(10000, 4, 1003, 16, 1)
+  RuntimeUI[16] <- 10000[4]
   RuntimeUI[17] <- 1
   PreviewData[3] <- Floor(PreviewData[1] / 2) + 1
   PreviewData[4] <- 1.004
   10000[5] <- PreviewData[4] * PreviewData[3]
   RuntimeCanvas[0] <- 0
-  Copy(10000, 5, 1001, 1, 1)
+  RuntimeCanvas[1] <- 10000[5]
   goto exit

@@ -14,11 +14,11 @@
   EntityData[11] <- BeatToTime(EntityData[1])
   EntityData[12] <- TimeToScaledTime(EntityData[11])
   EntityData[13] <- EntityData[12] - (6 / LevelOption[1])
-  Copy(4001, 11, 10000, 0, 1)
-  Copy(1000, 3, 10000, 1, 1)
+  10000[0] <- EntityData[11]
+  10000[1] <- RuntimeEnvironment[3]
   10000[2] <- EntityData[10] + 10000[0] + 10000[1]
   EntityData[14] <- EntityData[9] + 10000[0] + 10000[1]
-  Copy(10000, 2, 4001, 15, 1)
+  EntityData[15] <- 10000[2]
   10000[0] <- EngineRom[(4099 + EntityInfo[1])]
   goto when (10000[0] - 1)
     0 -> 10
@@ -54,10 +54,10 @@
   10000[1] <- 0
   goto 11
 11:
-  Copy(10000, 1, 4005, 2, 1)
+  EntityInput[2] <- 10000[1]
   EntityInput[1] <- 1
   EntityMemory[0] <- -100000000
-  Copy(4003, 0, 4001, 16, 1)
+  EntityData[16] <- EntityInfo[0]
   goto 12
 12:
   goto 13 if (EntityDataArray[(3 + (EntityData[16] * 32))] > 0) else 14
@@ -65,7 +65,7 @@
   EntityData[16] <- EntityDataArray[(3 + (EntityData[16] * 32))]
   goto 12
 14:
-  Copy(4003, 0, 4001, 17, 1)
+  EntityData[17] <- EntityInfo[0]
   goto 15
 15:
   goto 16 if (EntityDataArray[(4 + (EntityData[17] * 32))] > 0) else 17
@@ -75,7 +75,7 @@
 17:
   goto 18 if LevelOption[11] else 23
 18:
-  Copy(4001, 11, 10000, 1, 1)
+  10000[1] <- EntityData[11]
   goto 19 if LevelOption[10] else 23
 19:
   goto when (10000[0] - 2)

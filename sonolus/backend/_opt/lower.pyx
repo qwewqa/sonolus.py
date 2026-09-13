@@ -12,11 +12,13 @@ Two layers live here:
   with three strategies:
 
   * ``bump``     -- no liveness; sequential assignment in temp-id order.
-  * ``packing``  -- interference from statement-granularity live sets, then TRUE
-                    first-fit gap packing over slot intervals sorted by
-                    ``(-size, temp id)``; arrays occupy a contiguous ``[base,
-                    base+size)`` range. Plus dead-store elimination.
-  * ``try_bump`` -- bump if it fits the 4096-slot cap, else ``packing``.
+  * ``packing``  -- first-fit packing in ``(-size, temp id)`` order using
+                    statement-granularity interference. A second layout groups
+                    scalar copy partners when the combined RMW/Copy savings
+                    improve. Arrays keep their contiguous first-fit ranges.
+                    Includes dead-store elimination.
+  * ``try_bump`` -- bump if it fits the 4096-slot cap, else first-fit packing
+                    and dead-store elimination, without copy preferences.
 
 Dead-store elimination: a store is dead iff its temp target is not live-out, or
 it is a self-copy; a dead store with a side-effecting value is replaced by the
@@ -31,6 +33,9 @@ from libc.math cimport INFINITY, fabs, isfinite, nextafterf, signbit
 from libc.stdint cimport int16_t, int32_t, int64_t, uint8_t, uint16_t, uint32_t, uint64_t
 from libc.stdlib cimport calloc, free, malloc, realloc
 from libc.string cimport memcpy
+from libcpp.algorithm cimport sort
+from libcpp.utility cimport pair
+from libcpp.unordered_set cimport unordered_set
 from libcpp.vector cimport vector
 
 from sonolus.backend._opt.ir cimport (
@@ -236,7 +241,7 @@ cdef bint _bump_fits(Func func):
 # Interference-based first-fit packing.
 # --------------------------------------------------------------------------
 
-cdef void _pack(Func func, Liveness L, int32_t* temp_offset) except *:
+cdef void _pack(Func func, Liveness L, int32_t* temp_offset, bint prefer_copy=False) except *:
     cdef int32_t n_temps = func.n_temps
     cdef int32_t nw = L.n_words
     cdef int32_t ni = func.n_instrs
@@ -347,6 +352,8 @@ cdef void _pack(Func func, Liveness L, int32_t* temp_offset) except *:
             if offset < 0 or offset + size > TEMP_SIZE:
                 raise ValueError("Temporary memory limit exceeded")
             temp_offset[t] = offset
+        if prefer_copy:
+            _prefer_copy_allocation(func, L, adj, temp_offset)
     finally:
         free(nonzero)
         free(adj)
@@ -354,6 +361,309 @@ cdef void _pack(Func func, Liveness L, int32_t* temp_offset) except *:
         free(cover)
         free(nb_us)
         free(nb_ue)
+
+
+# --------------------------------------------------------------------------
+# Copy preferences for standard allocation.
+# --------------------------------------------------------------------------
+
+cdef bint _allocation_static_place(Func func, int32_t pid) noexcept:
+    cdef PlaceInfo p = func.places[pid]
+    if p.kind == PLACE_REAL_BLOCK:
+        return _copy_static_place(p)
+    return (p.kind in (PLACE_TEMP_SCALAR, PLACE_TEMP_ARRAY) and p.index_val < 0
+            and 0 <= p.offset < func.temps[p.block_ref].size)
+
+
+cdef int32_t _allocation_copy_source(Func func, int32_t i) noexcept:
+    cdef int32_t v
+    cdef double value
+    if func.instrs[i].op != OPX_SET or not _allocation_static_place(func, func.instrs[i].aux):
+        return -2
+    v = <int32_t>func.args[func.instrs[i].arg_start]
+    if func.instrs[v].op == OPX_GET:
+        if _allocation_static_place(func, func.instrs[v].aux):
+            return func.instrs[v].aux
+    elif func.instrs[v].op == OPX_CONST:
+        value = func.consts[func.instrs[v].aux]
+        if value == 0.0 and not signbit(value):
+            return -1
+    return -2
+
+
+cdef uint64_t _allocation_place_key(PlaceInfo p) noexcept:
+    # Reserve separate identities for real blocks and temp arrays. Offsets occupy
+    # 24 bits, matching Copy's exact-address range.
+    cdef uint64_t identity = <uint32_t>p.block_ref
+    if p.kind == PLACE_TEMP_ARRAY:
+        identity |= (<uint64_t>1 << 32)
+    return (identity << 24) | <uint32_t>p.offset
+
+
+cdef void _sorted_copy_edges(vector[pair[uint64_t, int32_t]]& entries,
+                            vector[uint64_t]& edges) except *:
+    cdef size_t j
+    cdef int32_t a, b
+    sort(entries.begin(), entries.end())
+    for j in range(1, entries.size()):
+        if (entries[j - 1].first >> 24) != (entries[j].first >> 24):
+            continue
+        if entries[j].first != entries[j - 1].first + 1:
+            continue
+        a = entries[j - 1].second
+        b = entries[j].second
+        if a != b:
+            edges.push_back((<uint64_t>a << 32) | <uint32_t>b)
+    entries.clear()
+
+
+cdef void _allocation_copy_edges(Func func, vector[uint64_t]& edges) except *:
+    cdef vector[pair[uint64_t, int32_t]] sources, destinations
+    cdef int32_t b, i, end, source, target, prev_source, prev_target
+    cdef PlaceInfo src, dst
+    for b in range(func.n_blocks):
+        prev_source = -2
+        prev_target = -1
+        end = func.blocks[b].instr_start + func.blocks[b].instr_count
+        for i in range(func.blocks[b].instr_start, end):
+            if not (func.instrs[i].flags & FLAG_STMT_ROOT):
+                continue
+            source = _allocation_copy_source(func, i)
+            if source == -2:
+                _sorted_copy_edges(sources, edges)
+                _sorted_copy_edges(destinations, edges)
+                prev_source = -2
+                prev_target = -1
+                continue
+            dst = func.places[func.instrs[i].aux]
+            target = dst.block_ref if dst.kind == PLACE_TEMP_SCALAR else -1
+            if source >= 0:
+                src = func.places[source]
+                if src.kind == PLACE_TEMP_SCALAR:
+                    source = src.block_ref
+                    if target < 0:
+                        destinations.push_back(pair[uint64_t, int32_t](_allocation_place_key(dst), source))
+                else:
+                    if target >= 0:
+                        sources.push_back(pair[uint64_t, int32_t](_allocation_place_key(src), target))
+                    source = -2
+            if target >= 0 and prev_target >= 0 and target != prev_target:
+                if source == prev_source == -1:
+                    edges.push_back((<uint64_t>prev_target << 32) | <uint32_t>target)
+                elif source >= 0 and prev_source >= 0 and source != prev_source:
+                    edges.push_back((<uint64_t>prev_target << 32) | <uint32_t>target)
+                    edges.push_back((<uint64_t>prev_source << 32) | <uint32_t>source)
+            prev_source = source
+            prev_target = target
+        _sorted_copy_edges(sources, edges)
+        _sorted_copy_edges(destinations, edges)
+
+
+cdef int32_t _allocation_group(vector[int32_t]& parent, int32_t t) noexcept:
+    cdef int32_t root = t
+    cdef int32_t next_t
+    while parent[root] != root:
+        root = parent[root]
+    while parent[t] != t:
+        next_t = parent[t]
+        parent[t] = root
+        t = next_t
+    return root
+
+
+cdef bint _copy_allocation_candidate(Func func, int32_t nw, uint64_t* adj,
+                                     int32_t* baseline, vector[uint64_t]& edges,
+                                     vector[int32_t]& offsets) except -1:
+    cdef int32_t nt = func.n_temps
+    cdef vector[int32_t] parent = vector[int32_t](nt)
+    cdef vector[int32_t] head = vector[int32_t](nt)
+    cdef vector[int32_t] tail = vector[int32_t](nt)
+    cdef vector[int32_t] minimum = vector[int32_t](nt)
+    cdef vector[int32_t] length = vector[int32_t](nt, 1)
+    cdef vector[int32_t] next_temp = vector[int32_t](nt, -1)
+    cdef vector[pair[int64_t, uint64_t]] weighted
+    cdef vector[uint8_t] forbidden = vector[uint8_t](TEMP_SIZE, 0)
+    cdef vector[int32_t] touched
+    cdef size_t j, stop
+    cdef int32_t t, a, b, ga, gb, root, span, relative, u, w, lo, hi, p, base
+    cdef uint64_t word, key
+    cdef bint changed = False
+    offsets.assign(nt, -2)
+    for t in range(nt):
+        parent[t] = head[t] = tail[t] = minimum[t] = t
+        if func.temps[t].size > 1:
+            offsets[t] = baseline[t]
+    sort(edges.begin(), edges.end())
+    j = 0
+    while j < edges.size():
+        stop = j + 1
+        while stop < edges.size() and edges[stop] == edges[j]:
+            stop += 1
+        weighted.push_back(pair[int64_t, uint64_t](-<int64_t>(stop - j), edges[j]))
+        j = stop
+    sort(weighted.begin(), weighted.end())
+    for j in range(weighted.size()):
+        key = weighted[j].second
+        a = <int32_t>(key >> 32)
+        b = <int32_t><uint32_t>key
+        ga = _allocation_group(parent, a)
+        gb = _allocation_group(parent, b)
+        if ga == gb or tail[ga] != a or head[gb] != b:
+            continue
+        if length[ga] > TEMP_SIZE - length[gb]:
+            continue
+        next_temp[a] = b
+        if length[ga] >= length[gb]:
+            parent[gb] = ga
+            tail[ga] = tail[gb]
+            length[ga] += length[gb]
+            minimum[ga] = min(minimum[ga], minimum[gb])
+        else:
+            parent[ga] = gb
+            head[gb] = head[ga]
+            length[gb] += length[ga]
+            minimum[gb] = min(minimum[ga], minimum[gb])
+        changed = True
+    if not changed:
+        return False
+    # Arrays retain their first-fit bases. Scalar groups retain the priority of
+    # their earliest member, so a group cannot move a dynamic array address.
+    for t in range(nt):
+        if func.temps[t].size != 1:
+            continue
+        root = _allocation_group(parent, t)
+        if minimum[root] != t:
+            continue
+        span = length[root]
+        a = head[root]
+        relative = 0
+        touched.clear()
+        while a >= 0:
+            for w in range(nw):
+                word = adj[a * nw + w]
+                while word:
+                    u = (w << 6) + _sonolus_ctz64(word)
+                    word &= word - 1
+                    if offsets[u] < 0:
+                        continue
+                    lo = max(0, offsets[u] - relative)
+                    hi = min(TEMP_SIZE - span + 1, offsets[u] + func.temps[u].size - relative)
+                    for p in range(lo, hi):
+                        if not forbidden[p]:
+                            forbidden[p] = 1
+                            touched.push_back(p)
+            relative += 1
+            a = next_temp[a]
+        base = 0
+        while base <= TEMP_SIZE - span and forbidden[base]:
+            base += 1
+        for j in range(touched.size()):
+            forbidden[touched[j]] = 0
+        if base > TEMP_SIZE - span:
+            return False
+        a = head[root]
+        while a >= 0:
+            offsets[a] = base
+            base += 1
+            a = next_temp[a]
+    return True
+
+
+cdef int64_t _allocation_fusion_score(Func func, vector[Instr]& original,
+                                     vector[int32_t]& dynamic_fusions, bint baseline) except? -1:
+    cdef int32_t i, v, source, state, b, end
+    cdef int64_t score = 0
+    cdef vector[int32_t] counts, starts
+    cdef vector[int32_t] incoming = vector[int32_t](func.n_blocks, 0)
+    fuse_rmw(func)
+    for i in range(func.n_instrs):
+        if original[i].op != OPX_SET or not (original[i].flags & FLAG_STMT_ROOT):
+            continue
+        state = func.instrs[i].op if func.instrs[i].flags & FLAG_STMT_ROOT else -1
+        if not _copy_static_place(func.places[original[i].aux]):
+            # Coalescing scalar index temps can change equality of dynamic places.
+            # Their address costs are not constant, so keep their fusion decisions.
+            if baseline:
+                dynamic_fusions[i] = state
+            elif dynamic_fusions[i] != state:
+                return -1
+            continue
+        if state == -1:
+            v = <int32_t>func.args[original[i].arg_start]
+            source = func.instrs[v].aux
+            score += 4 if func.places[source].flags & PLACE_RUNTIME_CONST else 6
+        elif state != OPX_SET:
+            # Moving static temp addresses only changes the eliminated Get and
+            # binary op (plus the literal one for increment/decrement).
+            score += 5 if state in (OP_IncrementPost, OP_DecrementPost) else 4
+    _plan_copy(func, counts, starts)
+    for i in range(func.n_instrs):
+        if counts[i] <= 0:
+            continue
+        source = _copy_source(func, i)
+        if source == -1 or func.places[source].flags & PLACE_RUNTIME_CONST:
+            score += <int64_t>counts[i] * 4 - 6
+        else:
+            score += <int64_t>counts[i] * 6 - 6
+    # The emitter omits Execute(exit) for an empty shared exit. Removing its
+    # last self-copy therefore saves two structural nodes as well.
+    for i in range(func.n_edges):
+        incoming[func.edges[i].dst] += 1
+    for b in range(func.n_blocks):
+        if b == func.entry_block or func.blocks[b].edge_count != 0 or incoming[b] < 2:
+            continue
+        end = func.blocks[b].instr_start + func.blocks[b].instr_count
+        for i in range(func.blocks[b].instr_start, end):
+            if func.instrs[i].flags & FLAG_STMT_ROOT:
+                break
+        else:
+            score += 2
+    return score
+
+
+cdef void _prefer_copy_allocation(Func func, Liveness L, uint64_t* adj, int32_t* offsets) except *:
+    cdef int32_t p, t
+    cdef vector[uint64_t] edges
+    cdef vector[int32_t] candidate
+    cdef vector[int32_t] dynamic_fusions
+    cdef vector[Instr] saved_instrs, live_instrs
+    cdef vector[uint32_t] saved_args
+    cdef vector[PlaceInfo] saved_places
+    cdef int64_t baseline_score, candidate_score
+    cdef PlaceInfo place
+    cdef bint scoring = False
+    # Only static scalar addresses may move. Their literal addresses have equal
+    # cost at every offset; array bases and their shifted-address choices stay fixed.
+    for p in range(func.n_places):
+        place = func.places[p]
+        if place.kind == PLACE_TEMP_SCALAR and (place.index_val >= 0 or place.offset != 0):
+            return
+    saved_instrs.assign(func.instrs, func.instrs + func.n_instrs)
+    try:
+        _dead_store_elim(func, L)
+        _allocation_copy_edges(func, edges)
+        if edges.empty() or not _copy_allocation_candidate(func, L.n_words, adj, offsets, edges, candidate):
+            return
+        saved_args.assign(func.args, func.args + func.n_args)
+        saved_places.assign(func.places, func.places + func.n_places)
+        dynamic_fusions.assign(func.n_instrs, -2)
+        live_instrs.assign(func.instrs, func.instrs + func.n_instrs)
+        scoring = True
+        _rewrite_places(func, offsets)
+        baseline_score = _allocation_fusion_score(func, live_instrs, dynamic_fusions, True)
+        memcpy(func.instrs, live_instrs.data(), <size_t>func.n_instrs * sizeof(Instr))
+        memcpy(func.args, saved_args.data(), <size_t>func.n_args * sizeof(uint32_t))
+        memcpy(func.places, saved_places.data(), <size_t>func.n_places * sizeof(PlaceInfo))
+        _rewrite_places(func, candidate.data())
+        candidate_score = _allocation_fusion_score(func, live_instrs, dynamic_fusions, False)
+        if candidate_score > baseline_score:
+            for t in range(func.n_temps):
+                offsets[t] = candidate[t]
+    finally:
+        memcpy(func.instrs, saved_instrs.data(), <size_t>func.n_instrs * sizeof(Instr))
+        if scoring:
+            memcpy(func.args, saved_args.data(), <size_t>func.n_args * sizeof(uint32_t))
+            memcpy(func.places, saved_places.data(), <size_t>func.n_places * sizeof(PlaceInfo))
 
 
 # --------------------------------------------------------------------------
@@ -459,7 +769,7 @@ cdef void allocate_func(Func func, int32_t strategy) except *:
             _bump(func, temp_offset)
         elif strategy == ALLOC_PACKING:
             L = compute_liveness(func, False)
-            _pack(func, L, temp_offset)
+            _pack(func, L, temp_offset, True)
             _dead_store_elim(func, L)
         elif strategy == ALLOC_TRY_BUMP:
             if _bump_fits(func):
@@ -685,22 +995,26 @@ cdef int32_t _copy_source(Func func, int32_t i) noexcept nogil:
     return -2
 
 
-cdef void fuse_copy(Func func) except *:
-    """Combine adjacent static-address stores after allocation.
+cdef bint _plan_copy(Func func, vector[int32_t]& counts, vector[int32_t]& starts) except -1:
+    """Plan contiguous Copy ranges without changing the allocated arena.
 
-    Copy snapshots its source and returns zero. Only unused statement results
-    qualify, and a run stops before an earlier destination feeds a later source.
-    Unknown offsets between entity blocks and their array views prevent merging.
+    The first statement in each range retains its positive count and minimum
+    destination offset; the remaining statements receive count -1. Unchanged
+    statements receive count zero.
     """
     if func.is_ssa:
         raise ValueError("Copy fusion requires a non-SSA arena")
     cdef int32_t ni = func.n_instrs
     cdef vector[uint8_t] used = vector[uint8_t](ni, 0)
-    cdef vector[int32_t] counts = vector[int32_t](ni, 0)
     cdef vector[int32_t] roots
-    cdef int32_t i, j, b, k, v, start, end, pos, next_pos, first, last, source, other, count
+    cdef unordered_set[int32_t] seen
+    cdef int32_t i, j, b, start, end, pos, next_pos, first, last, source, other, count
+    cdef int32_t minimum, maximum, best_count, best_end, best_start
+    cdef int64_t budget, source_delta
     cdef PlaceInfo dst, src, next_dst, next_src
-    cdef bint changed = False
+    cdef bint unordered_scan, changed = False
+    counts.assign(ni, 0)
+    starts.assign(ni, 0)
     for i in range(ni):
         for j in range(func.instrs[i].nargs):
             used[func.args[func.instrs[i].arg_start + j]] = 1
@@ -712,6 +1026,7 @@ cdef void fuse_copy(Func func) except *:
     for b in range(func.n_blocks):
         if func.blocks[b].test_val >= 0:
             used[func.blocks[b].test_val] = 1
+    for b in range(func.n_blocks):
         roots.clear()
         start = func.blocks[b].instr_start
         end = start + func.blocks[b].instr_count
@@ -719,6 +1034,9 @@ cdef void fuse_copy(Func func) except *:
             if func.instrs[i].flags & FLAG_STMT_ROOT:
                 roots.push_back(i)
         pos = 0
+        # Sparse suffixes can otherwise be revisited quadratically. Once this
+        # budget is spent, ascending runs still fuse without speculative work.
+        budget = <int64_t>roots.size() * 4
         while pos < <int32_t>roots.size():
             first = roots[pos]
             source = _copy_source(func, first)
@@ -728,40 +1046,96 @@ cdef void fuse_copy(Func func) except *:
             dst = func.places[func.instrs[first].aux]
             if source >= 0:
                 src = func.places[source]
+                source_delta = <int64_t>src.offset - dst.offset
+            unordered_scan = budget > 0
+            if unordered_scan:
+                seen.clear()
+                seen.insert(dst.offset)
             count = 1
+            minimum = dst.offset
+            maximum = dst.offset
+            best_count = 1
+            best_end = pos + 1
+            best_start = dst.offset
             next_pos = pos + 1
             while next_pos < <int32_t>roots.size():
+                if unordered_scan:
+                    if budget <= 0:
+                        if <int64_t>maximum - minimum + 1 != count:
+                            break
+                        unordered_scan = False
+                    else:
+                        budget -= 1
                 last = roots[next_pos]
                 other = _copy_source(func, last)
                 if used[last] or other == -2 or (source == -1) != (other == -1):
                     break
                 next_dst = func.places[func.instrs[last].aux]
-                if next_dst.block_ref != dst.block_ref or next_dst.offset != dst.offset + count:
+                if next_dst.block_ref != dst.block_ref:
+                    break
+                if unordered_scan:
+                    if seen.find(next_dst.offset) != seen.end():
+                        break
+                elif next_dst.offset != minimum + count:
                     break
                 if source == -1:
                     if count >= _ROM_ZERO_COUNT:
                         break
                 else:
                     next_src = func.places[other]
-                    if next_src.block_ref != src.block_ref or next_src.offset != src.offset + count:
+                    if (next_src.block_ref != src.block_ref
+                            or <int64_t>next_src.offset - next_dst.offset != source_delta):
                         break
                     if src.block_ref == dst.block_ref:
-                        if dst.offset <= next_src.offset < dst.offset + count:
+                        # Copy snapshots all sources before writing any destination.
+                        if unordered_scan:
+                            if seen.find(next_src.offset) != seen.end():
+                                break
+                        elif minimum <= next_src.offset < minimum + count:
                             break
                     elif 4000 <= src.block_ref < 5000 and 4000 <= dst.block_ref < 5000:
                         # Entity blocks and their array views can share physical memory.
                         break
+                if unordered_scan:
+                    seen.insert(next_dst.offset)
+                    if next_dst.offset < minimum:
+                        minimum = next_dst.offset
+                    if next_dst.offset > maximum:
+                        maximum = next_dst.offset
+                else:
+                    maximum = next_dst.offset
                 count += 1
                 next_pos += 1
-            if count > 1 or (source >= 0 and not (src.flags & PLACE_RUNTIME_CONST)):
-                counts[first] = count
-                for j in range(pos + 1, next_pos):
+                if <int64_t>maximum - minimum + 1 == count:
+                    best_count = count
+                    best_end = next_pos
+                    best_start = minimum
+            if best_count > 1:
+                counts[first] = best_count
+                starts[first] = best_start
+                for j in range(pos + 1, best_end):
                     counts[roots[j]] = -1
                 changed = True
-            pos = next_pos
-    if not changed:
-        return
+            pos = best_end
+    return changed
 
+
+cdef void fuse_copy(Func func) except *:
+    """Combine consecutive static-address stores covering contiguous ranges.
+
+    Runs must contain at least two stores, and their source and destination
+    offsets may appear in any order. Copy snapshots its
+    source and returns zero, so only unused statement results qualify and an
+    earlier destination must not feed a later source. Unknown offsets between
+    entity blocks and their array views prevent merging.
+    """
+    cdef vector[int32_t] counts
+    cdef vector[int32_t] starts
+    if not _plan_copy(func, counts, starts):
+        return
+    cdef int32_t ni = func.n_instrs
+    cdef int32_t i, j, b, k, v, start, end
+    cdef PlaceInfo dst, src
     cdef vector[Instr] old_instrs
     cdef vector[uint32_t] old_args
     cdef vector[int32_t] remap = vector[int32_t](ni, -1)
@@ -787,9 +1161,9 @@ cdef void fuse_copy(Func func) except *:
                 else:
                     src = func.places[old_instrs[v].aux]
                     src_block = src.block_ref
-                    src_offset = src.offset
+                    src_offset = src.offset + starts[i] - dst.offset
                 operands = []
-                for k in (src_block, src_offset, dst.block_ref, dst.offset, counts[i]):
+                for k in (src_block, src_offset, dst.block_ref, starts[i], counts[i]):
                     cid = func._intern_const(k)
                     operands.append(func._emit(OPX_CONST, FLAG_PURE | FLAG_CONST_IS_INT, b, cid, []))
                 remap[i] = func._emit(OP_Copy, FLAG_SIDE_EFFECT | FLAG_PINNED | FLAG_STMT_ROOT, b, -1, operands)

@@ -48,9 +48,9 @@
   10000[1] <- 0
   goto 17
 17:
-  Copy(10000, 1, 4004, 1, 1)
-  Copy(4001, 5, 4004, 0, 1)
-  Copy(4003, 0, 4001, 9, 1)
+  EntityInput[1] <- 10000[1]
+  EntityInput[0] <- EntityData[5]
+  EntityData[9] <- EntityInfo[0]
   goto 18
 18:
   goto 19 if (EntityDataArray[(3 + (EntityData[9] * 32))] > 0) else 20
@@ -58,7 +58,7 @@
   EntityData[9] <- EntityDataArray[(3 + (EntityData[9] * 32))]
   goto 18
 20:
-  Copy(4003, 0, 4001, 10, 1)
+  EntityData[10] <- EntityInfo[0]
   goto 21
 21:
   goto 22 if (EntityDataArray[(4 + (EntityData[10] * 32))] > 0) else 23
@@ -70,8 +70,8 @@
 24:
   goto 25 if (0 != EntityData[12]) else 44
 25:
-  Copy(4001, 12, 10000, 2, 1)
-  Copy(4001, 11, 10000, 3, 1)
+  10000[2] <- EntityData[12]
+  10000[3] <- EntityData[11]
   goto 26 if LevelOption[10] else 44
 26:
   goto 44 if (6 == 10000[0]) else 27
@@ -123,7 +123,7 @@
   goto 52
 45:
   EntityData[12] <- 1
-  Copy(4001, 5, 10000, 6, 1)
+  10000[6] <- EntityData[5]
   goto 46 if LevelOption[10] else 52
 46:
   goto 52 if (6 == 10000[0]) else 47
@@ -158,7 +158,7 @@
   goto 58
 58:
   10000[15] <- 0
-  Copy(10000, 15, 10000, 14, 1)
+  10000[14] <- 10000[15]
   goto 59
 59:
   goto 60 if StreamHas(10000[10], 10000[11]) else 79
@@ -171,7 +171,7 @@
 62:
   goto 63 if (10000[11] < EntityDataArray[(5 + (EntityData[9] * 32))]) else 64
 63:
-  Copy(10000, 16, 10000, 11, 1)
+  10000[11] <- 10000[16]
   goto 59
 64:
   goto 79 if (10000[11] > EntityDataArray[(5 + (EntityData[10] * 32))]) else 65
@@ -186,16 +186,16 @@
   10000[15] <- 1
   goto 72
 69:
-  Copy(10000, 11, 10000, 14, 1)
+  10000[14] <- 10000[11]
   10000[15] <- 1
   goto 73
 70:
   goto 71 if 10000[18] else 73
 71:
-  Copy(10000, 14, 10000, 11, 1)
+  10000[11] <- 10000[14]
   goto 72
 72:
-  Copy(10000, 11, 10000, 14, 1)
+  10000[14] <- 10000[11]
   goto 77
 73:
   goto 74 if 10000[15] else 77
@@ -205,18 +205,18 @@
   10000[21] <- PlayLoopedScheduled(7, 10000[14])
   10000[22] <- StopLoopedScheduled(10000[21], 10000[11])
   10000[15] <- 0
-  Copy(10000, 14, 10000, 27, 1)
+  10000[27] <- 10000[14]
   goto 78
 76:
   10000[15] <- 0
-  Copy(10000, 14, 10000, 27, 1)
+  10000[27] <- 10000[14]
   goto 78
 77:
-  Copy(10000, 14, 10000, 27, 1)
+  10000[27] <- 10000[14]
   goto 78
 78:
-  Copy(10000, 27, 10000, 14, 1)
-  Copy(10000, 16, 10000, 11, 1)
+  10000[14] <- 10000[27]
+  10000[11] <- 10000[16]
   goto 59
 79:
   goto 80 if 10000[15] else 84

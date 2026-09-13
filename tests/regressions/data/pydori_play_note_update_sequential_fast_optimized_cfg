@@ -25,17 +25,17 @@
 9:
   goto 69 if (((RuntimeUpdate[0] - RuntimeEnvironment[3]) - EntityData[11]) < (EntityData[11] - EntityMemory[0])) else 10
 10:
-  Copy(4000, 0, 10000, 2, 1)
+  10000[2] <- EntityMemory[0]
   goto 11 if ((EntityData[11] - 0.03333333333333333) <= 10000[2]) else 13
 11:
   goto 12 if (10000[2] <= EntityData[11]) else 13
 12:
-  Copy(4001, 11, 4000, 0, 1)
+  EntityMemory[0] <- EntityData[11]
   goto 13
 13:
-  Copy(4000, 0, 10000, 3, 1)
+  10000[3] <- EntityMemory[0]
   10000[4] <- Judge(10000[3], EntityData[11], EntityData[5], EntityData[6], EntityData[7], EntityData[8], EntityData[9], EntityData[10])
-  Copy(10000, 4, 4005, 0, 1)
+  EntityInput[0] <- 10000[4]
   EntityInput[1] <- Clamp(10000[3] - EntityData[11], -1, 1)
   EntityInput[3] <- EntityInput[1] * 1000
   goto 14 if (10000[4] != 0) else 68
@@ -203,7 +203,7 @@
   10000[44] <- SpawnParticleEffect(0, LevelData[10000[43] + 2], LevelData[10000[43] + 3], LevelData[10000[43] + 4], LevelData[10000[43] + 5], LevelData[10000[43] + 6], LevelData[10000[43] + 7], LevelData[10000[43] + 8], LevelData[10000[43] + 9], 0.2, 0)
   goto 68
 67:
-  Copy(10000, 42, 10000, 41, 1)
+  10000[41] <- 10000[42]
   goto 64
 68:
   EntityDespawn[0] <- 1

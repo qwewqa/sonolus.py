@@ -326,7 +326,7 @@ def test_self_copy_store_to_a_different_cell_is_kept():
         return b0
 
     for level in OPT_LEVELS:
-        assert "Copy(20, 1, 20, 0, 1)" in _text(run_passes(build(), level, OptimizerConfig()))
+        assert "20[0] <- 20[1]" in _text(run_passes(build(), level, OptimizerConfig()))
 
 
 def test_self_copy_store_with_random_indices_is_kept():

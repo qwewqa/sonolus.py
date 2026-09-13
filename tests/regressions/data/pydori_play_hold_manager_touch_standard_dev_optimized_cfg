@@ -1,5 +1,5 @@
 0:
-  Copy(4000, 0, 10000, 0, 1)
+  10000[0] <- EntityMemory[0]
   goto 1 if SwitchWithDefault(EntityInfoArray[(10000[0] * 3) + 1], 1, 1, 2, 1, 3, 1, 4, 1, 5, 1, 6, 1, 7, 1, 0) else 20
 1:
   10000[0] <- EntityDataArray[(16 + (10000[0] * 32))]
@@ -7,7 +7,7 @@
 2:
   goto 3 if (EntitySharedMemoryArray[(10000[0] * 32)] > 0) else 18
 3:
-  Copy(4000, 0, 10000, 0, 1)
+  10000[0] <- EntityMemory[0]
   goto 4 if SwitchWithDefault(EntityInfoArray[(10000[0] * 3) + 1], 1, 1, 2, 1, 3, 1, 4, 1, 5, 1, 6, 1, 7, 1, 0) else 17
 4:
   10000[0] <- EntityDataArray[(16 + (10000[0] * 32))]
@@ -28,7 +28,7 @@
 9:
   goto 10 if RuntimeTouchArray[10000[3] + 2] else 18
 10:
-  Copy(4000, 0, 10000, 0, 1)
+  10000[0] <- EntityMemory[0]
   goto 11 if SwitchWithDefault(EntityInfoArray[(10000[0] * 3) + 1], 1, 1, 2, 1, 3, 1, 4, 1, 5, 1, 6, 1, 7, 1, 0) else 14
 11:
   10000[0] <- EntityDataArray[(16 + (10000[0] * 32))]

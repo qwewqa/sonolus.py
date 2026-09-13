@@ -51,6 +51,14 @@ Keep that region consistent with `ReadOnlyMemory` initialization in `script/inte
 source dependencies between stores, and possible aliasing between entity blocks and their array views constrain
 which stores may fuse. `tests/backend/test_copy.py` pins these cases.
 
+Standard packing also tries one layout that groups scalar copy partners, keeping array bases unchanged. It accepts
+the candidate only when the combined self-copy, RMW, and Copy savings improve; an overflowing or tied candidate
+falls back to first-fit. Fast's packing fallback does not try copy preferences. The scorer shares `fuse_copy`'s run
+planner so its legality and cost decisions follow the same rules. Runs require at least two stores, which may
+appear in any address order;
+unordered lookahead has a per-block work budget, after which ascending runs still fuse. Allocation tradeoffs and
+interference cases are pinned in `tests/backend/test_copy_allocation.py`.
+
 The test oracle runs all three, so a pass that is only correct at one level fails `tests/script/` broadly rather
 than in one place.
 

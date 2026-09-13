@@ -1,5 +1,7 @@
 """Post-allocation memory-copy fusion and its observable memory semantics."""
 
+from itertools import permutations
+
 import pytest
 from sonolus.backend._opt.ir import debug_run  # ruff: ignore[import-private-name]
 
@@ -46,11 +48,30 @@ def _run(cfg, initial=None):
 @pytest.mark.parametrize("count", [1, 2, 9])
 def test_contiguous_memory_copies(count):
     cfg = _opt([IRSet(BlockPlace(B, 10 + i), IRGet(BlockPlace(A, 3 + i))) for i in range(count)])
-    assert _counts(cfg) == [count]
-    args = _copies(cfg)[0].args
-    assert [arg.value for arg in args] == [A, 3, B, 10, count]
+    assert _counts(cfg) == ([count] if count > 1 else [])
+    for copy in _copies(cfg):
+        assert [arg.value for arg in copy.args] == [A, 3, B, 10, count]
     result = _run(cfg, {A: list(range(30)), B: [-1] * 30})
     assert [result.get(B, i) for i in range(9, 11 + count)] == [-1, *range(3, 3 + count), -1]
+
+
+def test_single_runtime_memory_copy_stays_a_set():
+    cfg = _opt([IRSet(BlockPlace(B, 0), IRGet(BlockPlace(A, 1)))])
+    assert _counts(cfg) == []
+    assert len(cfg.statements) == 1
+    assert isinstance(cfg.statements[0], IRSet)
+    assert isinstance(cfg.statements[0].value, IRGet)
+    result = _run(cfg, {A: [7, 13], B: [-1, -1]})
+    assert [result.get(B, i) for i in range(2)] == [13, -1]
+
+
+@pytest.mark.parametrize("order", [(0, 1, 2, 3), (3, 2, 1, 0), (2, 0, 3, 1), (0, 3, 2, 1)])
+def test_contiguous_memory_copies_in_any_order(order):
+    cfg = _opt([IRSet(BlockPlace(B, 10 + i), IRGet(BlockPlace(A, 3 + i))) for i in order])
+    assert _counts(cfg) == [4]
+    assert [arg.value for arg in _copies(cfg)[0].args] == [A, 3, B, 10, 4]
+    result = _run(cfg, {A: list(range(20)), B: [-1] * 20})
+    assert [result.get(B, i) for i in range(9, 15)] == [-1, 3, 4, 5, 6, -1]
 
 
 def test_allocation_makes_array_copies_contiguous():
@@ -65,6 +86,8 @@ def test_allocation_makes_array_copies_contiguous():
 def test_zero_runs_use_reserved_rom(count, expected):
     cfg = _opt([IRSet(BlockPlace(B, 10 + i), IRConst(0)) for i in range(count)])
     assert _counts(cfg) == expected
+    if count == 1:
+        assert isinstance(cfg.statements[0], IRSet)
     for copy in _copies(cfg):
         assert copy.args[0].value == 3000
         assert copy.args[2].value == B
@@ -72,10 +95,27 @@ def test_zero_runs_use_reserved_rom(count, expected):
     assert [result.get(B, i) for i in range(9, count + 11)] == [-1, *([0] * count), -1]
 
 
+@pytest.mark.parametrize("order", [(3, 2, 1, 0), (2, 0, 3, 1)])
+def test_zero_runs_in_any_order(order):
+    cfg = _opt([IRSet(BlockPlace(B, 10 + i), IRConst(0)) for i in order])
+    assert _counts(cfg) == [4]
+    assert [arg.value for arg in _copies(cfg)[0].args][2:] == [B, 10, 4]
+    result = _run(cfg, {B: [-1] * 16})
+    assert [result.get(B, i) for i in range(9, 15)] == [-1, 0, 0, 0, 0, -1]
+
+
+def test_reverse_zero_run_respects_reserved_rom_limit():
+    cfg = _opt([IRSet(BlockPlace(B, 10 + i), IRConst(0)) for i in reversed(range(4097))])
+    assert _counts(cfg) == [4096]
+    assert [arg.value for arg in _copies(cfg)[0].args][2:] == [B, 11, 4096]
+    result = _run(cfg, {B: [-1] * 4108})
+    assert [result.get(B, i) for i in range(9, 4108)] == [-1, *([0] * 4097), -1]
+
+
 @pytest.mark.parametrize(
     ("source", "destination", "counts", "expected"),
     [
-        (0, 1, [1, 1, 1], [1, 1, 1, 1, 5]),
+        (0, 1, [], [1, 1, 1, 1, 5]),
         (1, 0, [3], [2, 3, 4, 4, 5]),
         (0, 3, [3], [1, 2, 3, 1, 2, 3]),
     ],
@@ -87,6 +127,34 @@ def test_overlap_preserves_sequential_store_semantics(source, destination, count
     assert [result.get(A, i) for i in range(len(expected))] == expected
 
 
+@pytest.mark.parametrize(
+    ("source", "destination", "order", "counts", "expected"),
+    [
+        (0, 1, (3, 2, 1, 0), [4], [1, 1, 2, 3, 4, 6, 7]),
+        (1, 0, (3, 2, 1, 0), [], [5, 5, 5, 5, 5, 6, 7]),
+        (0, 2, (2, 0, 3, 1), [4], [1, 2, 1, 2, 3, 4, 7]),
+        (0, 2, (0, 2, 1, 3), [2], [1, 2, 1, 2, 1, 2, 7]),
+    ],
+)
+def test_unordered_overlap_preserves_sequential_store_semantics(source, destination, order, counts, expected):
+    cfg = _opt([IRSet(BlockPlace(A, destination + i), IRGet(BlockPlace(A, source + i))) for i in order])
+    assert _counts(cfg) == counts
+    result = _run(cfg, {A: list(range(1, 8))})
+    assert [result.get(A, i) for i in range(7)] == expected
+
+
+@pytest.mark.parametrize("shift", [-3, -2, -1, 0, 1, 2, 3])
+def test_copy_permutations_match_sequential_memory_updates(shift):
+    for order in permutations(range(4)):
+        initial = list(range(1, 13))
+        expected = initial.copy()
+        for i in order:
+            expected[4 + shift + i] = expected[4 + i]
+        cfg = _opt([IRSet(BlockPlace(A, 4 + shift + i), IRGet(BlockPlace(A, 4 + i))) for i in order])
+        result = _run(cfg, {A: initial})
+        assert [result.get(A, i) for i in range(12)] == expected, (shift, order)
+
+
 @pytest.mark.parametrize(("source_offsets", "destination_offsets"), [([0, 2], [0, 1]), ([0, 1], [0, 2])])
 def test_gaps_break_copy_runs(source_offsets, destination_offsets):
     cfg = _opt(
@@ -95,7 +163,53 @@ def test_gaps_break_copy_runs(source_offsets, destination_offsets):
             for src, dst in zip(source_offsets, destination_offsets, strict=True)
         ]
     )
-    assert _counts(cfg) == [1, 1]
+    assert _counts(cfg) == []
+    assert all(isinstance(stmt, IRSet) for stmt in cfg.statements)
+
+
+@pytest.mark.parametrize(
+    ("order", "counts"),
+    [((2, 0, 1, 6, 4, 5), [3, 3]), ((1, 0, 4, 6, 5), [2, 3]), ((0, 1, 4, 5), [2, 2])],
+)
+def test_gaps_preserve_contiguous_prefix_and_suffix(order, counts):
+    cfg = _opt([IRSet(BlockPlace(B, 10 + i), IRGet(BlockPlace(A, i))) for i in order])
+    assert _counts(cfg) == counts
+    result = _run(cfg, {A: list(range(8)), B: [-1] * 18})
+    assert [result.get(B, 10 + i) for i in range(8)] == [i if i in order else -1 for i in range(8)]
+
+
+def test_copy_source_and_destination_must_have_same_order():
+    cfg = _opt([IRSet(BlockPlace(B, dst), IRGet(BlockPlace(A, src))) for src, dst in [(0, 1), (1, 0)]])
+    assert _counts(cfg) == []
+    assert all(isinstance(stmt, IRSet) for stmt in cfg.statements)
+    result = _run(cfg, {A: [7, 8], B: [-1, -1]})
+    assert [result.get(B, i) for i in range(2)] == [8, 7]
+
+
+@pytest.mark.parametrize("zero", [False, True])
+def test_duplicate_destination_splits_unordered_run(zero):
+    cfg = _opt([IRSet(BlockPlace(B, i), IRConst(0) if zero else IRGet(BlockPlace(A, i))) for i in (1, 0, 1, 2)])
+    assert _counts(cfg) == [2, 2]
+    result = _run(cfg, {A: [7, 8, 9], B: [-1] * 4})
+    assert [result.get(B, i) for i in range(4)] == ([0, 0, 0, -1] if zero else [7, 8, 9, -1])
+
+
+@pytest.mark.parametrize(
+    ("offsets", "counts"),
+    [
+        ([*range(0, 300, 3), 1000, 1001, 1002], [3]),
+        ([0, 3, 6, 9, *range(100, 120)], [20]),
+    ],
+)
+def test_sparse_copy_lookahead_preserves_ascending_tail_and_determinism(offsets, counts):
+    def make():
+        return _opt([IRSet(BlockPlace(B, i), IRGet(BlockPlace(A, i))) for i in offsets])
+
+    cfg = make()
+    assert _counts(cfg) == counts
+    assert cfg_to_engine_node(cfg) == cfg_to_engine_node(make())
+    result = _run(cfg, {A: list(range(1004)), B: [-1] * 1004})
+    assert [result.get(B, i) for i in range(1004)] == [i if i in offsets else -1 for i in range(1004)]
 
 
 def test_side_effect_between_copies_breaks_run():
@@ -106,10 +220,26 @@ def test_side_effect_between_copies_breaks_run():
             IRSet(BlockPlace(B, 1), IRGet(BlockPlace(A, 1))),
         ]
     )
-    assert _counts(cfg) == [1, 1]
+    assert _counts(cfg) == []
     result = _run(cfg, {A: [7, 8]})
     assert result.log == [7]
     assert [result.get(B, i) for i in range(2)] == [7, 8]
+
+
+def test_side_effect_between_unordered_copies_breaks_run():
+    cfg = _opt(
+        [
+            IRSet(BlockPlace(B, 1), IRGet(BlockPlace(A, 1))),
+            IRSet(BlockPlace(B, 0), IRGet(BlockPlace(A, 0))),
+            IRInstr(Op.DebugLog, [IRGet(BlockPlace(B, 2))]),
+            IRSet(BlockPlace(B, 3), IRGet(BlockPlace(A, 3))),
+            IRSet(BlockPlace(B, 2), IRGet(BlockPlace(A, 2))),
+        ]
+    )
+    assert _counts(cfg) == [2, 2]
+    result = _run(cfg, {A: [7, 8, 9, 10], B: [-1] * 4})
+    assert result.log == [-1]
+    assert [result.get(B, i) for i in range(4)] == [7, 8, 9, 10]
 
 
 def test_zero_run_stops_at_nonzero_assignment():
@@ -144,8 +274,11 @@ def test_copy_runs_do_not_cross_basic_blocks():
     second = BasicBlock(statements=[IRSet(BlockPlace(B, 1), IRGet(BlockPlace(A, 1)))])
     first.connect_to(second, None)
     cfg = debug_run(first, phases=["bump", "copy"])
-    assert _counts(cfg) == [1]
-    assert _counts(next(iter(cfg.outgoing)).dst) == [1]
+    assert _counts(cfg) == []
+    assert isinstance(cfg.statements[0], IRSet)
+    successor = next(iter(cfg.outgoing)).dst
+    assert _counts(successor) == []
+    assert isinstance(successor.statements[0], IRSet)
 
 
 def test_runtime_constant_scalar_read_stays_a_set():
@@ -170,7 +303,8 @@ def test_entity_array_view_alias_does_not_merge(block_type):
             for i in range(2)
         ]
     )
-    assert _counts(cfg) == [1, 1]
+    assert _counts(cfg) == []
+    assert all(isinstance(stmt, IRSet) for stmt in cfg.statements)
 
 
 def test_indices_beyond_f32_integer_precision_are_not_merged():

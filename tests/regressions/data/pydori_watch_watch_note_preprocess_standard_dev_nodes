@@ -165,36 +165,40 @@ Block(JumpLoop(
     11
   )
   Execute(
-    Copy(
-      10000
-      1
+    Set(
       4004
       1
-      1
+      Get(
+        10000
+        1
+      )
     )
-    Copy(
-      4001
-      5
+    Set(
       4004
       0
-      1
+      Get(
+        4001
+        5
+      )
     )
-    Copy(
-      4003
-      0
+    Set(
       4001
       9
-      1
+      Get(
+        4003
+        0
+      )
     )
     12
   )
   Execute(
-    Copy(
-      4001
-      9
+    Set(
       10000
       1
-      1
+      Get(
+        4001
+        9
+      )
     )
     If(
       SwitchWithDefault(
@@ -248,12 +252,13 @@ Block(JumpLoop(
     17
   ))
   Execute(
-    Copy(
-      4001
-      9
+    Set(
       10000
       1
-      1
+      Get(
+        4001
+        9
+      )
     )
     If(
       SwitchWithDefault(
@@ -312,22 +317,24 @@ Block(JumpLoop(
     87
   )
   Execute(
-    Copy(
-      4003
-      0
+    Set(
       4001
       10
-      1
+      Get(
+        4003
+        0
+      )
     )
     18
   )
   Execute(
-    Copy(
-      4001
-      10
+    Set(
       10000
       1
-      1
+      Get(
+        4001
+        10
+      )
     )
     If(
       SwitchWithDefault(
@@ -381,12 +388,13 @@ Block(JumpLoop(
     23
   ))
   Execute(
-    Copy(
-      4001
-      10
+    Set(
       10000
       1
-      1
+      Get(
+        4001
+        10
+      )
     )
     If(
       SwitchWithDefault(
@@ -466,17 +474,10 @@ Block(JumpLoop(
   Execute(
     Copy(
       4001
-      12
-      10000
-      1
-      1
-    )
-    Copy(
-      4001
       11
       10000
-      2
       1
+      2
     )
     If(
       Get(
@@ -506,7 +507,7 @@ Block(JumpLoop(
     Subtract(
       Get(
         10000
-        1
+        2
       )
       1
     )
@@ -551,7 +552,7 @@ Block(JumpLoop(
     Subtract(
       Get(
         10000
-        1
+        2
       )
       1
     )
@@ -600,7 +601,7 @@ Block(JumpLoop(
       )
       Get(
         10000
-        2
+        1
       )
       0
     )
@@ -626,12 +627,13 @@ Block(JumpLoop(
       12
       1
     )
-    Copy(
-      4001
-      5
+    Set(
       10000
       1
-      1
+      Get(
+        4001
+        5
+      )
     )
     If(
       Get(
@@ -827,7 +829,7 @@ Block(JumpLoop(
     )
     Set(
       10000
-      1
+      2
       If(
         StreamHas(
           Get(
@@ -851,12 +853,13 @@ Block(JumpLoop(
       3
       0
     )
-    Copy(
+    Set(
       10000
-      3
-      10000
-      2
       1
+      Get(
+        10000
+        3
+      )
     )
     50
   )
@@ -868,7 +871,7 @@ Block(JumpLoop(
       )
       Get(
         10000
-        1
+        2
       )
     )
     51
@@ -885,13 +888,13 @@ Block(JumpLoop(
         )
         Get(
           10000
-          1
+          2
         )
       )
     )
     Set(
       10000
-      4
+      5
       If(
         Greater(
           Get(
@@ -900,7 +903,7 @@ Block(JumpLoop(
           )
           Get(
             10000
-            1
+            2
           )
         )
         Get(
@@ -913,12 +916,13 @@ Block(JumpLoop(
         )
       )
     )
-    Copy(
-      4001
-      9
+    Set(
       10000
-      5
-      1
+      4
+      Get(
+        4001
+        9
+      )
     )
     If(
       SwitchWithDefault(
@@ -927,7 +931,7 @@ Block(JumpLoop(
           1
           Get(
             10000
-            5
+            4
           )
           3
         )
@@ -955,7 +959,7 @@ Block(JumpLoop(
     Less(
       Get(
         10000
-        1
+        2
       )
       Get(
         4101
@@ -964,7 +968,7 @@ Block(JumpLoop(
           Multiply(
             Get(
               10000
-              5
+              4
             )
             32
           )
@@ -975,22 +979,24 @@ Block(JumpLoop(
     54
   ))
   Execute(
-    Copy(
+    Set(
       10000
-      4
-      10000
-      1
-      1
+      2
+      Get(
+        10000
+        5
+      )
     )
     50
   )
   Execute(
-    Copy(
-      4001
-      10
+    Set(
       10000
-      5
-      1
+      4
+      Get(
+        4001
+        10
+      )
     )
     If(
       SwitchWithDefault(
@@ -999,7 +1005,7 @@ Block(JumpLoop(
           1
           Get(
             10000
-            5
+            4
           )
           3
         )
@@ -1027,7 +1033,7 @@ Block(JumpLoop(
     Greater(
       Get(
         10000
-        1
+        2
       )
       Get(
         4101
@@ -1036,7 +1042,7 @@ Block(JumpLoop(
           Multiply(
             Get(
               10000
-              5
+              4
             )
             32
           )
@@ -1049,7 +1055,7 @@ Block(JumpLoop(
   Execute(
     Set(
       10000
-      5
+      4
       StreamGetValue(
         Get(
           10000
@@ -1057,14 +1063,14 @@ Block(JumpLoop(
         )
         Get(
           10000
-          1
+          2
         )
       )
     )
     If(
       Get(
         10000
-        5
+        4
       )
       57
       61
@@ -1081,7 +1087,7 @@ Block(JumpLoop(
   Execute(If(
     Get(
       10000
-      5
+      4
     )
     59
     60
@@ -1095,12 +1101,13 @@ Block(JumpLoop(
     63
   )
   Execute(
-    Copy(
+    Set(
       10000
       1
-      10000
-      2
-      1
+      Get(
+        10000
+        2
+      )
     )
     Set(
       10000
@@ -1112,28 +1119,30 @@ Block(JumpLoop(
   Execute(If(
     Get(
       10000
-      5
+      4
     )
     62
     64
   ))
   Execute(
-    Copy(
+    Set(
       10000
       2
-      10000
-      1
-      1
+      Get(
+        10000
+        1
+      )
     )
     63
   )
   Execute(
-    Copy(
+    Set(
       10000
       1
-      10000
-      2
-      1
+      Get(
+        10000
+        2
+      )
     )
     68
   )
@@ -1161,7 +1170,7 @@ Block(JumpLoop(
         7
         Get(
           10000
-          2
+          1
         )
       )
     )
@@ -1172,7 +1181,7 @@ Block(JumpLoop(
       )
       Get(
         10000
-        1
+        2
       )
     )
     Set(
@@ -1180,12 +1189,13 @@ Block(JumpLoop(
       3
       0
     )
-    Copy(
+    Set(
       10000
-      2
-      10000
-      1
-      1
+      4
+      Get(
+        10000
+        1
+      )
     )
     69
   )
@@ -1195,39 +1205,34 @@ Block(JumpLoop(
       3
       0
     )
-    Copy(
+    Set(
       10000
-      2
-      10000
-      1
-      1
+      4
+      Get(
+        10000
+        1
+      )
     )
     69
   )
   Execute(
-    Copy(
+    Set(
       10000
-      2
-      10000
-      1
-      1
+      4
+      Get(
+        10000
+        1
+      )
     )
     69
   )
   Execute(
-    Copy(
-      10000
-      1
-      10000
-      2
-      1
-    )
     Copy(
       10000
       4
       10000
       1
-      1
+      2
     )
     50
   )
@@ -1250,12 +1255,13 @@ Block(JumpLoop(
     87
   ))
   Execute(
-    Copy(
-      4001
-      10
+    Set(
       10000
       0
-      1
+      Get(
+        4001
+        10
+      )
     )
     If(
       SwitchWithDefault(
@@ -1323,7 +1329,7 @@ Block(JumpLoop(
         7
         Get(
           10000
-          2
+          1
         )
       )
     )
@@ -1355,12 +1361,13 @@ Block(JumpLoop(
     87
   )
   Execute(
-    Copy(
-      4001
-      9
+    Set(
       10000
       0
-      1
+      Get(
+        4001
+        9
+      )
     )
     If(
       SwitchWithDefault(
@@ -1411,12 +1418,13 @@ Block(JumpLoop(
         )
       )
     )
-    Copy(
-      4001
-      10
+    Set(
       10000
       1
-      1
+      Get(
+        4001
+        10
+      )
     )
     If(
       SwitchWithDefault(

@@ -29,8 +29,7 @@ cdef void allocate_func(Func func, int32_t strategy) except *
 
 
 # Fused read-modify-write peephole (place-based), plus the self-copy drop.
-# Runs STRICTLY AFTER ``allocate_func`` (so liveness/interference/dead-store logic
-# never sees fused instrs): rewrites, in place, every statement-root
+# Requires allocated places. Rewrites, in place, every statement-root
 # ``OPX_SET(p, BinOp(OPX_GET(p), w))`` into the fused runtime op ``Set<BinOp>``
 # (carrying the place in ``aux`` and ``w`` as its sole operand), collapsing
 # ``+1``/``-1`` to ``IncrementPost``/``DecrementPost``, and drops every statement-root

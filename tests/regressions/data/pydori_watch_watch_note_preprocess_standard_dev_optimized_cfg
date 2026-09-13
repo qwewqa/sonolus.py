@@ -44,17 +44,17 @@
   10000[1] <- 0
   goto 11
 11:
-  Copy(10000, 1, 4004, 1, 1)
-  Copy(4001, 5, 4004, 0, 1)
-  Copy(4003, 0, 4001, 9, 1)
+  EntityInput[1] <- 10000[1]
+  EntityInput[0] <- EntityData[5]
+  EntityData[9] <- EntityInfo[0]
   goto 12
 12:
-  Copy(4001, 9, 10000, 1, 1)
+  10000[1] <- EntityData[9]
   goto 13 if SwitchWithDefault(EntityInfoArray[(10000[1] * 3) + 1], 2, 1, 3, 1, 4, 1, 5, 1, 6, 1, 7, 1, 8, 1, 0) else 87
 13:
   goto 14 if (EntityDataArray[(3 + (10000[1] * 32))] > 0) else 17
 14:
-  Copy(4001, 9, 10000, 1, 1)
+  10000[1] <- EntityData[9]
   goto 15 if SwitchWithDefault(EntityInfoArray[(10000[1] * 3) + 1], 2, 1, 3, 1, 4, 1, 5, 1, 6, 1, 7, 1, 8, 1, 0) else 16
 15:
   EntityData[9] <- EntityDataArray[(3 + (10000[1] * 32))]
@@ -64,15 +64,15 @@
   DebugPause()
   goto exit
 17:
-  Copy(4003, 0, 4001, 10, 1)
+  EntityData[10] <- EntityInfo[0]
   goto 18
 18:
-  Copy(4001, 10, 10000, 1, 1)
+  10000[1] <- EntityData[10]
   goto 19 if SwitchWithDefault(EntityInfoArray[(10000[1] * 3) + 1], 2, 1, 3, 1, 4, 1, 5, 1, 6, 1, 7, 1, 8, 1, 0) else 86
 19:
   goto 20 if (EntityDataArray[(4 + (10000[1] * 32))] > 0) else 23
 20:
-  Copy(4001, 10, 10000, 1, 1)
+  10000[1] <- EntityData[10]
   goto 21 if SwitchWithDefault(EntityInfoArray[(10000[1] * 3) + 1], 2, 1, 3, 1, 4, 1, 5, 1, 6, 1, 7, 1, 8, 1, 0) else 22
 21:
   EntityData[10] <- EntityDataArray[(4 + (10000[1] * 32))]
@@ -86,8 +86,7 @@
 24:
   goto 25 if (0 != EntityData[12]) else 38
 25:
-  Copy(4001, 12, 10000, 1, 1)
-  Copy(4001, 11, 10000, 2, 1)
+  Copy(4001, 11, 10000, 1, 2)
   goto 26 if LevelOption[10] else 38
 26:
   goto when (10000[0] - 2)
@@ -96,7 +95,7 @@
     4 -> 38
     default -> 27
 27:
-  goto when (10000[1] - 1)
+  goto when (10000[2] - 1)
     0 -> 31
     1 -> 30
     2 -> 29
@@ -114,7 +113,7 @@
   10000[0] <- 1
   goto 37
 32:
-  goto when (10000[1] - 1)
+  goto when (10000[2] - 1)
     0 -> 36
     1 -> 35
     2 -> 34
@@ -132,14 +131,14 @@
   10000[0] <- 4
   goto 37
 37:
-  PlayScheduled(10000[0], 10000[2], 0)
+  PlayScheduled(10000[0], 10000[1], 0)
   goto 38
 38:
   EntityInput[2] <- EntityData[13] * 1000
   goto 44
 39:
   EntityData[12] <- 1
-  Copy(4001, 5, 10000, 1, 1)
+  10000[1] <- EntityData[5]
   goto 40 if LevelOption[10] else 44
 40:
   goto when (10000[0] - 2)
@@ -171,69 +170,68 @@
   goto 49 if (((10000[0] >= 0) && (10000[0] < 99999)) && (10000[0] == Trunc(10000[0]))) else 77
 49:
   SetAdd(10000, 0, 18)
-  10000[1] <- If(StreamHas(10000[0], -10), -10, StreamGetNextKey(10000[0], -10))
+  10000[2] <- If(StreamHas(10000[0], -10), -10, StreamGetNextKey(10000[0], -10))
   10000[3] <- 0
-  Copy(10000, 3, 10000, 2, 1)
+  10000[1] <- 10000[3]
   goto 50
 50:
-  goto 51 if StreamHas(10000[0], 10000[1]) else 72
+  goto 51 if StreamHas(10000[0], 10000[2]) else 72
 51:
-  10000[4] <- StreamGetNextKey(10000[0], 10000[1])
-  10000[4] <- If(10000[4] > 10000[1], 10000[4], inf)
-  Copy(4001, 9, 10000, 5, 1)
-  goto 52 if SwitchWithDefault(EntityInfoArray[(10000[5] * 3) + 1], 2, 1, 3, 1, 4, 1, 5, 1, 6, 1, 7, 1, 8, 1, 0) else 71
+  10000[4] <- StreamGetNextKey(10000[0], 10000[2])
+  10000[5] <- If(10000[4] > 10000[2], 10000[4], inf)
+  10000[4] <- EntityData[9]
+  goto 52 if SwitchWithDefault(EntityInfoArray[(10000[4] * 3) + 1], 2, 1, 3, 1, 4, 1, 5, 1, 6, 1, 7, 1, 8, 1, 0) else 71
 52:
-  goto 53 if (10000[1] < EntityDataArray[(5 + (10000[5] * 32))]) else 54
+  goto 53 if (10000[2] < EntityDataArray[(5 + (10000[4] * 32))]) else 54
 53:
-  Copy(10000, 4, 10000, 1, 1)
+  10000[2] <- 10000[5]
   goto 50
 54:
-  Copy(4001, 10, 10000, 5, 1)
-  goto 55 if SwitchWithDefault(EntityInfoArray[(10000[5] * 3) + 1], 2, 1, 3, 1, 4, 1, 5, 1, 6, 1, 7, 1, 8, 1, 0) else 70
+  10000[4] <- EntityData[10]
+  goto 55 if SwitchWithDefault(EntityInfoArray[(10000[4] * 3) + 1], 2, 1, 3, 1, 4, 1, 5, 1, 6, 1, 7, 1, 8, 1, 0) else 70
 55:
-  goto 72 if (10000[1] > EntityDataArray[(5 + (10000[5] * 32))]) else 56
+  goto 72 if (10000[2] > EntityDataArray[(5 + (10000[4] * 32))]) else 56
 56:
-  10000[5] <- StreamGetValue(10000[0], 10000[1])
-  goto 57 if 10000[5] else 61
+  10000[4] <- StreamGetValue(10000[0], 10000[2])
+  goto 57 if 10000[4] else 61
 57:
   goto 61 if 10000[3] else 58
 58:
-  goto 59 if 10000[5] else 60
+  goto 59 if 10000[4] else 60
 59:
   10000[3] <- 1
   goto 63
 60:
-  Copy(10000, 1, 10000, 2, 1)
+  10000[1] <- 10000[2]
   10000[3] <- 1
   goto 64
 61:
-  goto 62 if 10000[5] else 64
+  goto 62 if 10000[4] else 64
 62:
-  Copy(10000, 2, 10000, 1, 1)
+  10000[2] <- 10000[1]
   goto 63
 63:
-  Copy(10000, 1, 10000, 2, 1)
+  10000[1] <- 10000[2]
   goto 68
 64:
   goto 65 if 10000[3] else 68
 65:
   goto 66 if LevelOption[10] else 67
 66:
-  10000[3] <- PlayLoopedScheduled(7, 10000[2])
-  StopLoopedScheduled(10000[3], 10000[1])
+  10000[3] <- PlayLoopedScheduled(7, 10000[1])
+  StopLoopedScheduled(10000[3], 10000[2])
   10000[3] <- 0
-  Copy(10000, 2, 10000, 1, 1)
+  10000[4] <- 10000[1]
   goto 69
 67:
   10000[3] <- 0
-  Copy(10000, 2, 10000, 1, 1)
+  10000[4] <- 10000[1]
   goto 69
 68:
-  Copy(10000, 2, 10000, 1, 1)
+  10000[4] <- 10000[1]
   goto 69
 69:
-  Copy(10000, 1, 10000, 2, 1)
-  Copy(10000, 4, 10000, 1, 1)
+  Copy(10000, 4, 10000, 1, 2)
   goto 50
 70:
   DebugLog(8)
@@ -246,13 +244,13 @@
 72:
   goto 73 if 10000[3] else 85
 73:
-  Copy(4001, 10, 10000, 0, 1)
+  10000[0] <- EntityData[10]
   goto 74 if SwitchWithDefault(EntityInfoArray[(10000[0] * 3) + 1], 2, 1, 3, 1, 4, 1, 5, 1, 6, 1, 7, 1, 8, 1, 0) else 76
 74:
   10000[0] <- EntityDataArray[(5 + (10000[0] * 32))]
   goto 75 if LevelOption[10] else 85
 75:
-  10000[1] <- PlayLoopedScheduled(7, 10000[2])
+  10000[1] <- PlayLoopedScheduled(7, 10000[1])
   StopLoopedScheduled(10000[1], 10000[0])
   goto exit
 76:
@@ -268,11 +266,11 @@
   DebugPause()
   goto exit
 79:
-  Copy(4001, 9, 10000, 0, 1)
+  10000[0] <- EntityData[9]
   goto 80 if SwitchWithDefault(EntityInfoArray[(10000[0] * 3) + 1], 2, 1, 3, 1, 4, 1, 5, 1, 6, 1, 7, 1, 8, 1, 0) else 84
 80:
   10000[0] <- EntityDataArray[(5 + (10000[0] * 32))]
-  Copy(4001, 10, 10000, 1, 1)
+  10000[1] <- EntityData[10]
   goto 81 if SwitchWithDefault(EntityInfoArray[(10000[1] * 3) + 1], 2, 1, 3, 1, 4, 1, 5, 1, 6, 1, 7, 1, 8, 1, 0) else 83
 81:
   10000[1] <- EntityDataArray[(5 + (10000[1] * 32))]
