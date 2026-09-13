@@ -1,3 +1,7 @@
+### 1.2.5
+
+- Optimizer improvements.
+
 ### 1.2.4
 
 - Optimizer improvements.
