@@ -1,45 +1,35 @@
 Block(JumpLoop(
-  Execute(
-    Set(
-      10000
-      0
-      Multiply(
-        Get(
-          4001
-          1
-        )
-        32
-      )
-    )
-    Set(
-      10000
-      1
+  Execute(If(
+    GreaterOr(
       Get(
-        4101
-        Add(
-          11
-          Get(
-            10000
-            0
+        1001
+        0
+      )
+      Set(
+        10000
+        1
+        Get(
+          4101
+          Add(
+            11
+            Set(
+              10000
+              0
+              Multiply(
+                Get(
+                  4001
+                  1
+                )
+                32
+              )
+            )
           )
         )
       )
     )
-    If(
-      GreaterOr(
-        Get(
-          1001
-          0
-        )
-        Get(
-          10000
-          1
-        )
-      )
-      1
-      2
-    )
-  )
+    1
+    2
+  ))
   Execute(
     Set(
       4004
@@ -48,39 +38,33 @@ Block(JumpLoop(
     )
     5
   )
-  Execute(
-    Set(
-      10000
-      2
-      Multiply(
-        Get(
-          4001
-          0
-        )
-        32
-      )
-    )
-    If(
-      LessOr(
-        Get(
-          4101
-          Add(
-            11
-            Get(
-              10000
-              2
+  Execute(If(
+    LessOr(
+      Get(
+        4101
+        Add(
+          11
+          Set(
+            10000
+            2
+            Multiply(
+              Get(
+                4001
+                0
+              )
+              32
             )
           )
         )
-        Get(
-          1001
-          0
-        )
       )
-      3
-      5
+      Get(
+        1001
+        0
+      )
     )
-  )
+    3
+    5
+  ))
   Execute(If(
     Less(
       Get(
@@ -106,20 +90,6 @@ Block(JumpLoop(
           Get(
             10000
             2
-          )
-        )
-      )
-    )
-    Set(
-      10000
-      4
-      Get(
-        4101
-        Add(
-          12
-          Get(
-            10000
-            0
           )
         )
       )
@@ -182,9 +152,19 @@ Block(JumpLoop(
         )
         Remap(
           Subtract(
-            Get(
+            Set(
               10000
               4
+              Get(
+                4101
+                Add(
+                  12
+                  Get(
+                    10000
+                    0
+                  )
+                )
+              )
             )
             Divide(
               6

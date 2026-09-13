@@ -17,6 +17,28 @@ from sonolus.backend._opt._ops_gen cimport (
     OPX_PHI,
     OPX_SET,
     OPX_UNDEF,
+    OP_Add,
+    OP_Multiply,
+    OP_Set,
+    OP_SetShifted,
+    OP_SetAdd,
+    OP_SetAddShifted,
+    OP_SetSubtract,
+    OP_SetSubtractShifted,
+    OP_SetMultiply,
+    OP_SetMultiplyShifted,
+    OP_SetDivide,
+    OP_SetDivideShifted,
+    OP_SetMod,
+    OP_SetModShifted,
+    OP_SetRem,
+    OP_SetRemShifted,
+    OP_SetPower,
+    OP_SetPowerShifted,
+    OP_IncrementPost,
+    OP_IncrementPostShifted,
+    OP_DecrementPost,
+    OP_DecrementPostShifted,
     OP_RUNTIME_COUNT,
     OP_TABLE_SIZE,
     SONOLUS_OP_CONTROL_FLOW,
@@ -88,6 +110,33 @@ RUNTIME_CONSTANT_BLOCKS = frozenset({
 # Canonical quiet-NaN used so all NaN constants intern to one id.
 cdef uint64_t _CANON_NAN_BITS = <uint64_t>0x7FF8000000000000
 cdef double _CANON_NAN = 0.0
+
+# Bound C-stack use when selecting an address form at the Python boundary.
+cdef int32_t _ADDRESS_RTC_DEPTH_LIMIT = 1000
+
+
+cdef int32_t shifted_store_op(uint16_t op) noexcept nogil:
+    if op == <uint16_t>OP_Set:
+        return OP_SetShifted
+    if op == <uint16_t>OP_SetAdd:
+        return OP_SetAddShifted
+    if op == <uint16_t>OP_SetSubtract:
+        return OP_SetSubtractShifted
+    if op == <uint16_t>OP_SetMultiply:
+        return OP_SetMultiplyShifted
+    if op == <uint16_t>OP_SetDivide:
+        return OP_SetDivideShifted
+    if op == <uint16_t>OP_SetMod:
+        return OP_SetModShifted
+    if op == <uint16_t>OP_SetRem:
+        return OP_SetRemShifted
+    if op == <uint16_t>OP_SetPower:
+        return OP_SetPowerShifted
+    if op == <uint16_t>OP_IncrementPost:
+        return OP_IncrementPostShifted
+    if op == <uint16_t>OP_DecrementPost:
+        return OP_DecrementPostShifted
+    return -1
 
 
 cdef double _bits_to_double(uint64_t b) noexcept nogil:
@@ -233,6 +282,7 @@ cdef class Func:
         self.callback = None
         self._block_enum_by_id = {}
         self._block_map = {}
+        self._export_rtc_memo = {}
 
     def __dealloc__(self):
         free(self.instrs)
@@ -416,7 +466,7 @@ cdef class Func:
             else:
                 kind = PLACE_TEMP_ARRAY
             flags |= PLACE_WRITABLE
-        elif isinstance(block, (BlockPlace, IRPureInstr, IRInstr, IRGet)):
+        elif isinstance(block, (BlockPlace, IRPureInstr, IRInstr, IRGet, IRSet)):
             # Pointer dereference: the block id is computed at runtime.
             block_ref = self._value_of(block, block_id)
             kind = PLACE_DYNAMIC_BLOCK
@@ -502,6 +552,7 @@ cdef class Func:
     # -- statement / value expansion (marshal in) --------------------------
 
     cdef int32_t _value_of(self, object node, int32_t block_id) except -1:
+        cdef int32_t pid, vid
         if isinstance(node, IRConst):
             return self._emit_const(node.value, block_id)
         if isinstance(node, IRPureInstr):
@@ -511,6 +562,10 @@ cdef class Func:
         if isinstance(node, IRGet):
             pid = self._intern_place(node.place, block_id)
             return self._emit(OPX_GET, FLAG_PINNED, block_id, pid, [])
+        if isinstance(node, IRSet):
+            pid = self._intern_place(node.place, block_id)
+            vid = self._value_of(node.value, block_id)
+            return self._emit_store_value(pid, vid, block_id)
         if isinstance(node, BlockPlace):
             # Bare place used as a value (an index/block-position read).
             pid = self._intern_place(node, block_id)
@@ -518,6 +573,82 @@ cdef class Func:
         if isinstance(node, (int, float)) and not isinstance(node, bool):
             return self._emit_const(node, block_id)
         raise ValueError(f"Unsupported IR value: {type(node).__name__}: {node!r}")
+
+    cdef int32_t _emit_store_value(self, int32_t pid, int32_t vid, int32_t block_id) except -1:
+        cdef int32_t kind = self.places[pid].kind
+        cdef int32_t block_ref = self.places[pid].block_ref
+        cdef int32_t index_val = self.places[pid].index_val
+        cdef int32_t offset = self.places[pid].offset
+        cdef int32_t shape, index, astart
+        cdef uint16_t op = OP_Set
+        cdef list operands
+        if kind == PLACE_REAL_BLOCK:
+            operands = [self._emit_const(block_ref, block_id)]
+        elif kind == PLACE_DYNAMIC_BLOCK:
+            operands = [block_ref]
+        else:
+            raise ValueError("A store used as a value requires an allocated memory block")
+        shape = self._shifted_place_kind(pid, {})
+        if shape:
+            op = OP_SetShifted
+            operands.append(self._emit_const(offset, block_id))
+            if shape == 1:
+                astart = self.instrs[index_val].arg_start
+                operands.extend([<int32_t>self.args[astart], <int32_t>self.args[astart + 1]])
+            else:
+                operands.extend([index_val, self._emit_const(1, block_id)])
+        else:
+            if index_val < 0:
+                index = self._emit_const(offset, block_id)
+            elif offset == 0:
+                index = index_val
+            else:
+                index = self._emit(OP_Add, FLAG_PURE, block_id, -1,
+                                   [index_val, self._emit_const(offset, block_id)])
+            operands.append(index)
+        operands.append(vid)
+        return self._emit(op, FLAG_SIDE_EFFECT | FLAG_PINNED, block_id, -1, operands)
+
+    cdef int32_t _shifted_place_kind(self, int32_t pid, dict memo) except -1:
+        cdef int32_t kind = self.places[pid].kind
+        cdef int32_t index_val = self.places[pid].index_val
+        cdef uint16_t op
+        cdef bint multiply, offset
+        if index_val < 0 or (kind != PLACE_REAL_BLOCK and kind != PLACE_DYNAMIC_BLOCK):
+            return 0
+        op = self.instrs[index_val].op
+        multiply = op == <uint16_t>OP_Multiply and self.instrs[index_val].nargs == 2
+        offset = self.places[pid].offset != 0 and op != <uint16_t>OP_Add
+        if not multiply and not offset:
+            return 0
+        if self._address_index_is_rtc(index_val, memo, _ADDRESS_RTC_DEPTH_LIMIT):
+            return 0
+        return 1 if multiply else 2
+
+    cdef bint _address_index_is_rtc(self, int32_t vid, dict memo, int32_t depth_left) except -1:
+        cached = memo.get(vid)
+        if cached is not None:
+            return <bint>cached
+        if depth_left <= 0:
+            return False
+        cdef uint16_t op = self.instrs[vid].op
+        cdef int32_t astart, k
+        cdef bint result
+        if op == <uint16_t>OPX_CONST:
+            result = True
+        elif op == <uint16_t>OPX_GET:
+            result = (self.places[self.instrs[vid].aux].flags & PLACE_RUNTIME_CONST) != 0
+        elif op < <uint16_t>OP_RUNTIME_COUNT and self.instrs[vid].flags & FLAG_PURE:
+            result = True
+            astart = self.instrs[vid].arg_start
+            for k in range(self.instrs[vid].nargs):
+                if not self._address_index_is_rtc(<int32_t>self.args[astart + k], memo, depth_left - 1):
+                    result = False
+                    break
+        else:
+            result = False
+        memo[vid] = result
+        return result
 
     cdef int32_t _emit_const(self, object value, int32_t block_id) except -1:
         cdef uint8_t flags = FLAG_PURE
@@ -564,8 +695,16 @@ cdef class Func:
     cdef int _emit_stmt(self, object stmt, int32_t block_id) except -1:
         cdef int32_t vid, pid
         if isinstance(stmt, IRSet):
-            vid = self._value_of(stmt.value, block_id)
-            pid = self._intern_place(stmt.place, block_id)
+            # Static addresses have no evaluation effects. Keep their first-touch
+            # order because temp numbering feeds the allocator.
+            if (isinstance(stmt.place, BlockPlace)
+                    and isinstance(stmt.place.block, (int, float, TempBlock))
+                    and isinstance(stmt.place.index, (int, float, IRConst))):
+                vid = self._value_of(stmt.value, block_id)
+                pid = self._intern_place(stmt.place, block_id)
+            else:
+                pid = self._intern_place(stmt.place, block_id)
+                vid = self._value_of(stmt.value, block_id)
             self._emit(OPX_SET, FLAG_SIDE_EFFECT | FLAG_PINNED | FLAG_STMT_ROOT, block_id, pid, [vid])
         elif isinstance(stmt, IRInstr):
             # Bare side-effecting statement.
@@ -706,7 +845,7 @@ cdef class Func:
     cdef tuple _export_place_components(self, int32_t pid, dict names):
         # Split an interned place into (block_expr, index_expr) IR VALUES, mirroring
         # emit._place_components, for exporting place-based
-        # fused RMW ops as IRInstr(Set<BinOp>, [block, index, value]). A real block
+        # stores used as values and fused RMW ops as runtime IRInstrs. A real block
         # is exported as an int const (not its enum member) so export is round-trip
         # idempotent -- re-marshalling collapses the enum to its int id anyway, and
         # emission uses the int block id regardless. Fused ops only ever carry
@@ -745,7 +884,9 @@ cdef class Func:
                 return place_obj
             return IRGet(place_obj)
         if op == OPX_SET:
-            raise AssertionError("OPX_SET encountered in value position")
+            return self._export_fused_rmw(vid, OP_Set, names)
+        if op < OP_RUNTIME_COUNT and self.instrs[vid].aux >= 0:
+            return self._export_fused_rmw(vid, op, names)
         op_member = _ID_TO_OP[op]
         astart = self.instrs[vid].arg_start
         nargs = self.instrs[vid].nargs
@@ -769,9 +910,28 @@ cdef class Func:
         cdef int32_t pid = self.instrs[i].aux
         cdef int32_t astart = self.instrs[i].arg_start
         cdef int32_t nargs = self.instrs[i].nargs
-        cdef int32_t k
-        block_obj, index_obj = self._export_place_components(pid, names)
-        arg_objs = [block_obj, index_obj]
+        cdef int32_t k, index_val, index_start
+        cdef int32_t sop = shifted_store_op(op)
+        cdef int32_t shape = self._shifted_place_kind(pid, self._export_rtc_memo) if sop >= 0 else 0
+        if shape:
+            if self.places[pid].kind == PLACE_REAL_BLOCK:
+                block_obj = self._make_const(<double>self.places[pid].block_ref, True)
+            else:
+                block_obj = self._export_value(self.places[pid].block_ref, names, False)
+            arg_objs = [block_obj, self._make_const(<double>self.places[pid].offset, True)]
+            index_val = self.places[pid].index_val
+            if shape == 1:
+                index_start = self.instrs[index_val].arg_start
+                arg_objs.extend([
+                    self._export_value(<int32_t>self.args[index_start], names, False),
+                    self._export_value(<int32_t>self.args[index_start + 1], names, False),
+                ])
+            else:
+                arg_objs.extend([self._export_value(index_val, names, False), self._make_const(1, True)])
+            op = <uint16_t>sop
+        else:
+            block_obj, index_obj = self._export_place_components(pid, names)
+            arg_objs = [block_obj, index_obj]
         for k in range(nargs):
             arg_objs.append(self._export_value(<int32_t>self.args[astart + k], names, False))
         return IRInstr(_ID_TO_OP[op], arg_objs)
@@ -792,6 +952,7 @@ cdef class Func:
                         counter += 1
 
     def _export(self):
+        self._export_rtc_memo.clear()
         if self.is_ssa:
             return self._export_ssa()
         cdef int32_t nb = self.n_blocks
@@ -1077,18 +1238,36 @@ cdef class Func:
                         )
                     else:
                         assert self.instrs[a].block == b, f"instr {i}: arg {a} from another block"
+            pid = -1
             if op == OPX_CONST:
                 assert 0 <= self.instrs[i].aux < self.n_consts, f"instr {i}: const id out of range"
             elif op == OPX_GET or op == OPX_SET:
-                assert 0 <= self.instrs[i].aux < self.n_places, f"instr {i}: place id out of range"
+                pid = self.instrs[i].aux
+                assert 0 <= pid < self.n_places, f"instr {i}: place id out of range"
             elif op == OPX_PHI:
                 assert 0 <= self.instrs[i].aux < self.n_temps, f"instr {i}: phi temp out of range"
             elif op == OPX_UNDEF:
                 assert ssa, f"instr {i}: OPX_UNDEF outside SSA form"
             else:
                 assert op < OP_RUNTIME_COUNT, f"instr {i}: unexpected synthetic op {op}"
+                if self.instrs[i].aux >= 0:
+                    pid = self.instrs[i].aux
+                    assert pid < self.n_places, f"instr {i}: fused place id out of range"
                 # The FLAG_PURE bit must agree with the static op-metadata table.
                 assert bool(self.instrs[i].flags & FLAG_PURE) == _op_pure_c(op), f"instr {i}: purity flag mismatch"
+            if pid >= 0:
+                for a in (self.places[pid].index_val,
+                          self.places[pid].block_ref if self.places[pid].kind == PLACE_DYNAMIC_BLOCK else -1):
+                    if a < 0:
+                        continue
+                    assert a < self.n_instrs, f"instr {i}: address value {a} out of range"
+                    assert a < i, f"instr {i}: uses later address value {a} (def-before-use)"
+                    if ssa:
+                        assert self._dom(self.instrs[a].block, b) or a in uw, (
+                            f"instr {i}: address value {a} def does not dominate use"
+                        )
+                    else:
+                        assert self.instrs[a].block == b, f"instr {i}: address value {a} from another block"
         for b in range(self.n_blocks):
             istart = self.blocks[b].instr_start
             icount = self.blocks[b].instr_count

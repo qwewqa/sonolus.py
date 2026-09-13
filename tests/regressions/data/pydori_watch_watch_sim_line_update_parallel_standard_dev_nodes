@@ -1,5 +1,5 @@
 Block(JumpLoop(
-  Execute(
+  Execute(If(
     Set(
       10000
       0
@@ -30,15 +30,9 @@ Block(JumpLoop(
         0
       )
     )
-    If(
-      Get(
-        10000
-        0
-      )
-      1
-      21
-    )
-  )
+    1
+    21
+  ))
   Execute(
     Set(
       10000
@@ -94,25 +88,21 @@ Block(JumpLoop(
     Set(
       10000
       0
-      Get(
-        4101
-        Add(
-          6
-          Get(
-            10000
-            1
-          )
-        )
-      )
-    )
-    Set(
-      10000
-      0
       Remap(
         Subtract(
-          Get(
+          Set(
             10000
             0
+            Get(
+              4101
+              Add(
+                6
+                Get(
+                  10000
+                  1
+                )
+              )
+            )
           )
           Divide(
             6
@@ -350,52 +340,42 @@ Block(JumpLoop(
     )
     14
   )
+  Execute(If(
+    LessOr(
+      Set(
+        10000
+        2
+        Multiply(
+          Get(
+            2002
+            9
+          )
+          EaseOutQuad(Get(
+            10000
+            2
+          ))
+        )
+      )
+      0
+    )
+    22
+    15
+  ))
   Execute(
-    Set(
-      10000
-      2
-      Multiply(
-        Get(
-          2002
-          9
-        )
-        EaseOutQuad(Get(
-          10000
-          2
-        ))
-      )
-    )
-    If(
-      LessOr(
-        Get(
-          10000
-          2
-        )
-        0
-      )
-      22
-      15
-    )
-  )
-  Execute(
-    Set(
-      10000
-      1
-      Get(
-        4101
-        Get(
-          10000
-          1
-        )
-      )
-    )
     Set(
       10000
       3
       Multiply(
-        Get(
+        Set(
           10000
           1
+          Get(
+            4101
+            Get(
+              10000
+              1
+            )
+          )
         )
         Get(
           2001
@@ -405,24 +385,20 @@ Block(JumpLoop(
     )
     Set(
       10000
-      4
-      GetShifted(
-        4101
-        0
-        Get(
-          4001
-          1
-        )
-        32
-      )
-    )
-    Set(
-      10000
       5
       Multiply(
-        Get(
+        Set(
           10000
           4
+          GetShifted(
+            4101
+            0
+            Get(
+              4001
+              1
+            )
+            32
+          )
         )
         Get(
           2001
@@ -536,29 +512,25 @@ Block(JumpLoop(
     )
     Set(
       10000
-      6
-      Multiply(
-        Get(
-          2001
-          9
-        )
-        Get(
-          10000
-          6
-        )
-      )
-    )
-    Set(
-      10000
       12
       Add(
         Get(
           10000
           3
         )
-        Get(
+        Set(
           10000
           6
+          Multiply(
+            Get(
+              2001
+              9
+            )
+            Get(
+              10000
+              6
+            )
+          )
         )
         Get(
           2001
@@ -596,25 +568,21 @@ Block(JumpLoop(
     )
     Set(
       10000
-      5
-      Multiply(
-        Get(
-          2001
-          8
-        )
-        Get(
-          10000
-          5
-        )
-      )
-    )
-    Set(
-      10000
       6
       Add(
-        Get(
+        Set(
           10000
           5
+          Multiply(
+            Get(
+              2001
+              8
+            )
+            Get(
+              10000
+              5
+            )
+          )
         )
         Get(
           10000
@@ -656,29 +624,25 @@ Block(JumpLoop(
     )
     Set(
       10000
-      7
-      Multiply(
-        Get(
-          2001
-          9
-        )
-        Get(
-          10000
-          7
-        )
-      )
-    )
-    Set(
-      10000
       3
       Add(
         Get(
           10000
           3
         )
-        Get(
+        Set(
           10000
           7
+          Multiply(
+            Get(
+              2001
+              9
+            )
+            Get(
+              10000
+              7
+            )
+          )
         )
         Get(
           2001

@@ -1,9 +1,7 @@
 0:
   TutorialData[0] <- -0.5
   TutorialData[1] <- 1.35
-  10000[0] <- TutorialData[0]
-  10000[1] <- TutorialData[1] - 10000[0]
-  10000[2] <- 1 / 10000[1]
+  10000[2] <- 1 / Set(10000, 1, TutorialData[1] - Set(10000, 0, TutorialData[0]))
   TutorialData[2] <- 1
   TutorialData[3] <- 0 / 10000[1]
   Copy(3000, 3, 2001, 4, 2)
@@ -65,22 +63,17 @@
   goto 2 if (10000[11] < 4) else 8
 2:
   10000[12] <- 10000[11] + 1
-  10000[13] <- 10000[11] * TutorialData[12]
-  10000[14] <- 10000[13] - (TutorialData[12] / 2)
+  10000[14] <- Set(10000, 13, 10000[11] * TutorialData[12]) - (TutorialData[12] / 2)
   10000[15] <- 10000[13] + (TutorialData[12] / 2)
   10000[16] <- TutorialData[15]
   10000[17] <- TutorialData[14]
-  10000[18] <- (TutorialData[8] * 10000[14]) + (TutorialData[9] * 10000[16]) + TutorialData[10]
-  10000[19] <- ((TutorialData[2] * 10000[14]) + (TutorialData[3] * 10000[16]) + TutorialData[4]) / 10000[18]
+  10000[19] <- ((TutorialData[2] * 10000[14]) + (TutorialData[3] * 10000[16]) + TutorialData[4]) / Set(10000, 18, (TutorialData[8] * 10000[14]) + (TutorialData[9] * 10000[16]) + TutorialData[10])
   10000[20] <- ((TutorialData[5] * 10000[14]) + (TutorialData[6] * 10000[16]) + TutorialData[7]) / 10000[18]
-  10000[21] <- (TutorialData[8] * 10000[15]) + (TutorialData[9] * 10000[16]) + TutorialData[10]
-  10000[22] <- ((TutorialData[2] * 10000[15]) + (TutorialData[3] * 10000[16]) + TutorialData[4]) / 10000[21]
+  10000[22] <- ((TutorialData[2] * 10000[15]) + (TutorialData[3] * 10000[16]) + TutorialData[4]) / Set(10000, 21, (TutorialData[8] * 10000[15]) + (TutorialData[9] * 10000[16]) + TutorialData[10])
   10000[23] <- ((TutorialData[5] * 10000[15]) + (TutorialData[6] * 10000[16]) + TutorialData[7]) / 10000[21]
-  10000[24] <- (TutorialData[8] * 10000[14]) + (TutorialData[9] * 10000[17]) + TutorialData[10]
-  10000[25] <- ((TutorialData[2] * 10000[14]) + (TutorialData[3] * 10000[17]) + TutorialData[4]) / 10000[24]
+  10000[25] <- ((TutorialData[2] * 10000[14]) + (TutorialData[3] * 10000[17]) + TutorialData[4]) / Set(10000, 24, (TutorialData[8] * 10000[14]) + (TutorialData[9] * 10000[17]) + TutorialData[10])
   10000[26] <- ((TutorialData[5] * 10000[14]) + (TutorialData[6] * 10000[17]) + TutorialData[7]) / 10000[24]
-  10000[27] <- (TutorialData[8] * 10000[15]) + (TutorialData[9] * 10000[17]) + TutorialData[10]
-  10000[28] <- ((TutorialData[2] * 10000[15]) + (TutorialData[3] * 10000[17]) + TutorialData[4]) / 10000[27]
+  10000[28] <- ((TutorialData[2] * 10000[15]) + (TutorialData[3] * 10000[17]) + TutorialData[4]) / Set(10000, 27, (TutorialData[8] * 10000[15]) + (TutorialData[9] * 10000[17]) + TutorialData[10])
   10000[29] <- ((TutorialData[5] * 10000[15]) + (TutorialData[6] * 10000[17]) + TutorialData[7]) / 10000[27]
   10000[30] <- TutorialData[16]
   10000[31] <- 0
@@ -89,8 +82,7 @@
   goto 4 if (10000[31] < 10000[30]) else 7
 4:
   10000[32] <- 10000[31] + 1
-  10000[33] <- 16 + (10000[31] * 9)
-  goto 5 if (10000[11] == TutorialData[10000[33] + 1]) else 6
+  goto 5 if (10000[11] == TutorialData[Set(10000, 33, 16 + (10000[31] * 9)) + 1]) else 6
 5:
   TutorialData[10000[33] + 2] <- 10000[19]
   TutorialData[10000[33] + 3] <- 10000[20]
@@ -106,8 +98,7 @@
   10000[31] <- 10000[32]
   goto 3
 7:
-  10000[34] <- 16 + (TutorialData[16] * 9)
-  TutorialData[10000[34] + 1] <- 10000[11]
+  TutorialData[Set(10000, 34, 16 + (TutorialData[16] * 9)) + 1] <- 10000[11]
   TutorialData[10000[34] + 2] <- 10000[19]
   TutorialData[10000[34] + 3] <- 10000[20]
   TutorialData[10000[34] + 4] <- 10000[25]
@@ -120,40 +111,30 @@
   10000[11] <- 10000[12]
   goto 1
 8:
-  10000[35] <- -3.5 * TutorialData[12]
-  10000[36] <- 10000[35] - TutorialData[13]
+  10000[36] <- Set(10000, 35, -3.5 * TutorialData[12]) - TutorialData[13]
   10000[37] <- TutorialData[15]
   10000[38] <- TutorialData[14]
-  10000[39] <- (TutorialData[8] * 10000[36]) + (TutorialData[9] * 10000[37]) + TutorialData[10]
-  10000[40] <- ((TutorialData[5] * 10000[36]) + (TutorialData[6] * 10000[37]) + TutorialData[7]) / 10000[39]
-  10000[41] <- (TutorialData[8] * 10000[35]) + (TutorialData[9] * 10000[37]) + TutorialData[10]
-  10000[42] <- ((TutorialData[2] * 10000[35]) + (TutorialData[3] * 10000[37]) + TutorialData[4]) / 10000[41]
+  10000[40] <- ((TutorialData[5] * 10000[36]) + (TutorialData[6] * 10000[37]) + TutorialData[7]) / Set(10000, 39, (TutorialData[8] * 10000[36]) + (TutorialData[9] * 10000[37]) + TutorialData[10])
+  10000[42] <- ((TutorialData[2] * 10000[35]) + (TutorialData[3] * 10000[37]) + TutorialData[4]) / Set(10000, 41, (TutorialData[8] * 10000[35]) + (TutorialData[9] * 10000[37]) + TutorialData[10])
   10000[43] <- ((TutorialData[5] * 10000[35]) + (TutorialData[6] * 10000[37]) + TutorialData[7]) / 10000[41]
-  10000[44] <- (TutorialData[8] * 10000[36]) + (TutorialData[9] * 10000[38]) + TutorialData[10]
-  10000[45] <- ((TutorialData[2] * 10000[36]) + (TutorialData[3] * 10000[38]) + TutorialData[4]) / 10000[44]
+  10000[45] <- ((TutorialData[2] * 10000[36]) + (TutorialData[3] * 10000[38]) + TutorialData[4]) / Set(10000, 44, (TutorialData[8] * 10000[36]) + (TutorialData[9] * 10000[38]) + TutorialData[10])
   10000[46] <- ((TutorialData[5] * 10000[36]) + (TutorialData[6] * 10000[38]) + TutorialData[7]) / 10000[44]
-  10000[47] <- (TutorialData[8] * 10000[35]) + (TutorialData[9] * 10000[38]) + TutorialData[10]
-  10000[48] <- ((TutorialData[2] * 10000[35]) + (TutorialData[3] * 10000[38]) + TutorialData[4]) / 10000[47]
+  10000[48] <- ((TutorialData[2] * 10000[35]) + (TutorialData[3] * 10000[38]) + TutorialData[4]) / Set(10000, 47, (TutorialData[8] * 10000[35]) + (TutorialData[9] * 10000[38]) + TutorialData[10])
   10000[49] <- ((TutorialData[5] * 10000[35]) + (TutorialData[6] * 10000[38]) + TutorialData[7]) / 10000[47]
   TutorialData[80] <- ((TutorialData[2] * 10000[36]) + (TutorialData[3] * 10000[37]) + TutorialData[4]) / 10000[39]
   TutorialData[81] <- 10000[40]
   Copy(10000, 45, 2001, 82, 2)
   Copy(10000, 48, 2001, 84, 2)
   Copy(10000, 42, 2001, 86, 2)
-  10000[50] <- 3.5 * TutorialData[12]
-  10000[51] <- 10000[50] + TutorialData[13]
+  10000[51] <- Set(10000, 50, 3.5 * TutorialData[12]) + TutorialData[13]
   10000[52] <- TutorialData[15]
   10000[53] <- TutorialData[14]
-  10000[54] <- (TutorialData[8] * 10000[50]) + (TutorialData[9] * 10000[52]) + TutorialData[10]
-  10000[55] <- ((TutorialData[5] * 10000[50]) + (TutorialData[6] * 10000[52]) + TutorialData[7]) / 10000[54]
-  10000[56] <- (TutorialData[8] * 10000[51]) + (TutorialData[9] * 10000[52]) + TutorialData[10]
-  10000[57] <- ((TutorialData[2] * 10000[51]) + (TutorialData[3] * 10000[52]) + TutorialData[4]) / 10000[56]
+  10000[55] <- ((TutorialData[5] * 10000[50]) + (TutorialData[6] * 10000[52]) + TutorialData[7]) / Set(10000, 54, (TutorialData[8] * 10000[50]) + (TutorialData[9] * 10000[52]) + TutorialData[10])
+  10000[57] <- ((TutorialData[2] * 10000[51]) + (TutorialData[3] * 10000[52]) + TutorialData[4]) / Set(10000, 56, (TutorialData[8] * 10000[51]) + (TutorialData[9] * 10000[52]) + TutorialData[10])
   10000[58] <- ((TutorialData[5] * 10000[51]) + (TutorialData[6] * 10000[52]) + TutorialData[7]) / 10000[56]
-  10000[59] <- (TutorialData[8] * 10000[50]) + (TutorialData[9] * 10000[53]) + TutorialData[10]
-  10000[60] <- ((TutorialData[2] * 10000[50]) + (TutorialData[3] * 10000[53]) + TutorialData[4]) / 10000[59]
+  10000[60] <- ((TutorialData[2] * 10000[50]) + (TutorialData[3] * 10000[53]) + TutorialData[4]) / Set(10000, 59, (TutorialData[8] * 10000[50]) + (TutorialData[9] * 10000[53]) + TutorialData[10])
   10000[61] <- ((TutorialData[5] * 10000[50]) + (TutorialData[6] * 10000[53]) + TutorialData[7]) / 10000[59]
-  10000[62] <- (TutorialData[8] * 10000[51]) + (TutorialData[9] * 10000[53]) + TutorialData[10]
-  10000[63] <- ((TutorialData[2] * 10000[51]) + (TutorialData[3] * 10000[53]) + TutorialData[4]) / 10000[62]
+  10000[63] <- ((TutorialData[2] * 10000[51]) + (TutorialData[3] * 10000[53]) + TutorialData[4]) / Set(10000, 62, (TutorialData[8] * 10000[51]) + (TutorialData[9] * 10000[53]) + TutorialData[10])
   10000[64] <- ((TutorialData[5] * 10000[51]) + (TutorialData[6] * 10000[53]) + TutorialData[7]) / 10000[62]
   TutorialData[88] <- ((TutorialData[2] * 10000[50]) + (TutorialData[3] * 10000[52]) + TutorialData[4]) / 10000[54]
   TutorialData[89] <- 10000[55]
@@ -164,16 +145,12 @@
   10000[66] <- 3.5 * TutorialData[12]
   10000[67] <- -TutorialData[11] / 2
   10000[68] <- TutorialData[11] / 2
-  10000[69] <- (TutorialData[8] * 10000[65]) + (TutorialData[9] * 10000[67]) + TutorialData[10]
-  10000[70] <- ((TutorialData[5] * 10000[65]) + (TutorialData[6] * 10000[67]) + TutorialData[7]) / 10000[69]
-  10000[71] <- (TutorialData[8] * 10000[66]) + (TutorialData[9] * 10000[67]) + TutorialData[10]
-  10000[72] <- ((TutorialData[2] * 10000[66]) + (TutorialData[3] * 10000[67]) + TutorialData[4]) / 10000[71]
+  10000[70] <- ((TutorialData[5] * 10000[65]) + (TutorialData[6] * 10000[67]) + TutorialData[7]) / Set(10000, 69, (TutorialData[8] * 10000[65]) + (TutorialData[9] * 10000[67]) + TutorialData[10])
+  10000[72] <- ((TutorialData[2] * 10000[66]) + (TutorialData[3] * 10000[67]) + TutorialData[4]) / Set(10000, 71, (TutorialData[8] * 10000[66]) + (TutorialData[9] * 10000[67]) + TutorialData[10])
   10000[73] <- ((TutorialData[5] * 10000[66]) + (TutorialData[6] * 10000[67]) + TutorialData[7]) / 10000[71]
-  10000[74] <- (TutorialData[8] * 10000[65]) + (TutorialData[9] * 10000[68]) + TutorialData[10]
-  10000[75] <- ((TutorialData[2] * 10000[65]) + (TutorialData[3] * 10000[68]) + TutorialData[4]) / 10000[74]
+  10000[75] <- ((TutorialData[2] * 10000[65]) + (TutorialData[3] * 10000[68]) + TutorialData[4]) / Set(10000, 74, (TutorialData[8] * 10000[65]) + (TutorialData[9] * 10000[68]) + TutorialData[10])
   10000[76] <- ((TutorialData[5] * 10000[65]) + (TutorialData[6] * 10000[68]) + TutorialData[7]) / 10000[74]
-  10000[77] <- (TutorialData[8] * 10000[66]) + (TutorialData[9] * 10000[68]) + TutorialData[10]
-  10000[78] <- ((TutorialData[2] * 10000[66]) + (TutorialData[3] * 10000[68]) + TutorialData[4]) / 10000[77]
+  10000[78] <- ((TutorialData[2] * 10000[66]) + (TutorialData[3] * 10000[68]) + TutorialData[4]) / Set(10000, 77, (TutorialData[8] * 10000[66]) + (TutorialData[9] * 10000[68]) + TutorialData[10])
   10000[79] <- ((TutorialData[5] * 10000[66]) + (TutorialData[6] * 10000[68]) + TutorialData[7]) / 10000[77]
   TutorialData[96] <- ((TutorialData[2] * 10000[65]) + (TutorialData[3] * 10000[67]) + TutorialData[4]) / 10000[69]
   TutorialData[97] <- 10000[70]

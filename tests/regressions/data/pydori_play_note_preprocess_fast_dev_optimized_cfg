@@ -11,16 +11,12 @@
   EntityData[8] <- 0.1
   EntityData[9] <- -0.15
   EntityData[10] <- 0.15
-  EntityData[11] <- BeatToTime(EntityData[1])
-  EntityData[12] <- TimeToScaledTime(EntityData[11])
-  EntityData[13] <- EntityData[12] - (6 / LevelOption[1])
+  EntityData[13] <- Set(4001, 12, TimeToScaledTime(Set(4001, 11, BeatToTime(EntityData[1])))) - (6 / LevelOption[1])
   10000[0] <- EntityData[11]
-  10000[1] <- RuntimeEnvironment[3]
-  10000[2] <- EntityData[10] + 10000[0] + 10000[1]
+  10000[2] <- EntityData[10] + 10000[0] + Set(10000, 1, RuntimeEnvironment[3])
   EntityData[14] <- EntityData[9] + 10000[0] + 10000[1]
   EntityData[15] <- 10000[2]
-  10000[3] <- EngineRom[(4099 + EntityInfo[1])]
-  goto 3 if (10000[3] == 1) else 4
+  goto 3 if (Set(10000, 3, EngineRom[(4099 + EntityInfo[1])]) == 1) else 4
 3:
   10000[4] <- 0
   goto 17
@@ -64,13 +60,11 @@
   EntityData[16] <- EntityInfo[0]
   goto 18
 18:
-  10000[5] <- EntityData[16]
-  goto 19 if SwitchWithDefault(EntityInfoArray[(10000[5] * 3) + 1], 1, 1, 2, 1, 3, 1, 4, 1, 5, 1, 6, 1, 7, 1, 0) else 39
+  goto 19 if SwitchWithDefault(EntityInfoArray[(Set(10000, 5, EntityData[16]) * 3) + 1], 1, 1, 2, 1, 3, 1, 4, 1, 5, 1, 6, 1, 7, 1, 0) else 39
 19:
   goto 20 if (EntityDataArray[(3 + (10000[5] * 32))] > 0) else 23
 20:
-  10000[6] <- EntityData[16]
-  goto 21 if SwitchWithDefault(EntityInfoArray[(10000[6] * 3) + 1], 1, 1, 2, 1, 3, 1, 4, 1, 5, 1, 6, 1, 7, 1, 0) else 22
+  goto 21 if SwitchWithDefault(EntityInfoArray[(Set(10000, 6, EntityData[16]) * 3) + 1], 1, 1, 2, 1, 3, 1, 4, 1, 5, 1, 6, 1, 7, 1, 0) else 22
 21:
   EntityData[16] <- EntityDataArray[(3 + (10000[6] * 32))]
   goto 18
@@ -82,13 +76,11 @@
   EntityData[17] <- EntityInfo[0]
   goto 24
 24:
-  10000[9] <- EntityData[17]
-  goto 25 if SwitchWithDefault(EntityInfoArray[(10000[9] * 3) + 1], 1, 1, 2, 1, 3, 1, 4, 1, 5, 1, 6, 1, 7, 1, 0) else 38
+  goto 25 if SwitchWithDefault(EntityInfoArray[(Set(10000, 9, EntityData[17]) * 3) + 1], 1, 1, 2, 1, 3, 1, 4, 1, 5, 1, 6, 1, 7, 1, 0) else 38
 25:
   goto 26 if (EntityDataArray[(4 + (10000[9] * 32))] > 0) else 29
 26:
-  10000[10] <- EntityData[17]
-  goto 27 if SwitchWithDefault(EntityInfoArray[(10000[10] * 3) + 1], 1, 1, 2, 1, 3, 1, 4, 1, 5, 1, 6, 1, 7, 1, 0) else 28
+  goto 27 if SwitchWithDefault(EntityInfoArray[(Set(10000, 10, EntityData[17]) * 3) + 1], 1, 1, 2, 1, 3, 1, 4, 1, 5, 1, 6, 1, 7, 1, 0) else 28
 27:
   EntityData[17] <- EntityDataArray[(4 + (10000[10] * 32))]
   goto 24

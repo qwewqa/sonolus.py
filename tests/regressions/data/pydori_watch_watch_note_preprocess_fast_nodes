@@ -29,27 +29,19 @@ Block(JumpLoop(
   Execute(
     Set(
       4001
-      5
-      BeatToTime(Get(
-        4001
-        1
-      ))
-    )
-    Set(
-      4001
-      6
-      TimeToScaledTime(Get(
-        4001
-        5
-      ))
-    )
-    Set(
-      4001
       7
       Subtract(
-        Get(
+        Set(
           4001
           6
+          TimeToScaledTime(Set(
+            4001
+            5
+            BeatToTime(Get(
+              4001
+              1
+            ))
+          ))
         )
         Divide(
           6
@@ -68,25 +60,21 @@ Block(JumpLoop(
         11
       ))
     )
-    Set(
-      10000
-      0
-      Get(
-        3000
-        Add(
-          4099
-          Get(
-            4003
-            1
-          )
-        )
-      )
-    )
     If(
       Equal(
-        Get(
+        Set(
           10000
           0
+          Get(
+            3000
+            Add(
+              4099
+              Get(
+                4003
+                1
+              )
+            )
+          )
         )
         1
       )
@@ -720,35 +708,29 @@ Block(JumpLoop(
       82
     )
   )
-  Execute(
-    Set(
-      10000
-      10
-      Add(
-        GetShifted(
-          4103
-          0
-          Get(
-            4001
-            9
+  Execute(If(
+    StreamHas(
+      Set(
+        10000
+        10
+        Add(
+          GetShifted(
+            4103
+            0
+            Get(
+              4001
+              9
+            )
+            3
           )
-          3
+          18
         )
-        18
       )
+      -10
     )
-    If(
-      StreamHas(
-        Get(
-          10000
-          10
-        )
-        -10
-      )
-      56
-      57
-    )
-  )
+    56
+    57
+  ))
   Execute(
     Set(
       10000
@@ -774,15 +756,11 @@ Block(JumpLoop(
   Execute(
     Set(
       10000
-      15
-      0
-    )
-    Set(
-      10000
       14
-      Get(
+      Set(
         10000
         15
+        0
       )
     )
     59
@@ -801,36 +779,30 @@ Block(JumpLoop(
     60
     79
   ))
-  Execute(
-    Set(
-      10000
-      16
-      StreamGetNextKey(
-        Get(
-          10000
-          10
-        )
-        Get(
-          10000
-          11
-        )
-      )
-    )
-    If(
-      Greater(
-        Get(
-          10000
-          16
-        )
-        Get(
-          10000
-          11
+  Execute(If(
+    Greater(
+      Set(
+        10000
+        16
+        StreamGetNextKey(
+          Get(
+            10000
+            10
+          )
+          Get(
+            10000
+            11
+          )
         )
       )
-      62
-      61
+      Get(
+        10000
+        11
+      )
     )
-  )
+    62
+    61
+  ))
   Execute(
     Set(
       10000
@@ -899,7 +871,7 @@ Block(JumpLoop(
     79
     65
   ))
-  Execute(
+  Execute(If(
     Set(
       10000
       18
@@ -914,15 +886,9 @@ Block(JumpLoop(
         )
       )
     )
-    If(
-      Get(
-        10000
-        18
-      )
-      66
-      70
-    )
-  )
+    66
+    70
+  ))
   Execute(If(
     Get(
       10000
@@ -1012,22 +978,18 @@ Block(JumpLoop(
   Execute(
     Set(
       10000
-      21
-      PlayLoopedScheduled(
-        7
-        Get(
-          10000
-          14
-        )
-      )
-    )
-    Set(
-      10000
       22
       StopLoopedScheduled(
-        Get(
+        Set(
           10000
           21
+          PlayLoopedScheduled(
+            7
+            Get(
+              10000
+              14
+            )
+          )
         )
         Get(
           10000
@@ -1134,22 +1096,18 @@ Block(JumpLoop(
   Execute(
     Set(
       10000
-      30
-      PlayLoopedScheduled(
-        7
-        Get(
-          10000
-          14
-        )
-      )
-    )
-    Set(
-      10000
       31
       StopLoopedScheduled(
-        Get(
+        Set(
           10000
           30
+          PlayLoopedScheduled(
+            7
+            Get(
+              10000
+              14
+            )
+          )
         )
         Get(
           10000
@@ -1206,22 +1164,18 @@ Block(JumpLoop(
   Execute(
     Set(
       10000
-      34
-      PlayLoopedScheduled(
-        7
-        Get(
-          10000
-          32
-        )
-      )
-    )
-    Set(
-      10000
       35
       StopLoopedScheduled(
-        Get(
+        Set(
           10000
           34
+          PlayLoopedScheduled(
+            7
+            Get(
+              10000
+              32
+            )
+          )
         )
         Get(
           10000

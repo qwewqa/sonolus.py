@@ -28,6 +28,7 @@ from sonolus.backend._opt.lower cimport (
     allocate_func,
     fuse_copy,
     fuse_rmw,
+    fuse_store_results,
     if_convert,
     lower_from_ssa,
 )
@@ -108,11 +109,11 @@ cdef Func _pipeline(Func func, int level, bint allocate):
         minimal  (-O0): cfg_cleanup -> bump allocation (mid-end bypassed).
         fast     (-O1): cfg_cleanup -> build_ssa
                         -> midend_round(allow_repeat=False) -> lower_from_ssa
-                        -> try-bump allocation -> fuse_rmw -> fuse_copy. No LICM /
+                        -> try-bump allocation -> fuse_rmw -> fuse_copy -> fuse_store_results. No LICM /
                         rewrite_switch / if-conversion (iteration speed over
                         codegen quality).
         standard (-O2): cfg_cleanup -> build_ssa -> midend_standard -> if_convert
-                        -> lower_from_ssa -> packing allocation -> fuse_rmw -> fuse_copy.
+                        -> lower_from_ssa -> packing allocation -> fuse_rmw -> fuse_copy -> fuse_store_results.
 
     ``midend_round`` runs SCCP -> simplify/GVN -> DCE over the SSA arena
     (repeating once when ``allow_repeat`` and something changed).
@@ -126,9 +127,11 @@ cdef Func _pipeline(Func func, int level, bint allocate):
     ``fuse_rmw`` (fast/standard, post-allocation) fuses place-based
     read-modify-write over the allocated arena. ``fuse_copy`` then combines
     contiguous copies and zero stores using the allocated addresses.
+    ``fuse_store_results`` embeds stores in subsequent reads that can use their
+    returned values without changing evaluation order.
 
-    Each stage returns a fresh ``Func``; the allocator (when requested) rewrites
-    the final arena in place.
+    Midend and lowering stages return fresh arenas. Allocation and fusion
+    rewrite the final arena in place.
 
     ``allocate=False`` returns the pre-allocation form: post-cfg_cleanup for
     minimal, post-lower_from_ssa (temps unallocated) for fast/standard.
@@ -183,9 +186,10 @@ cdef Func _pipeline(Func func, int level, bint allocate):
             allocate_func(lowered, ALLOC_TRY_BUMP)
             fuse_rmw(lowered)
             fuse_copy(lowered)
+            fuse_store_results(lowered)
             if prof: _prof.record("allocate", _prof.now_ns() - t0)
             if _TRACE:
-                _trace_dump(lowered, "allocate(try_bump)+fuse_rmw+fuse_copy")
+                _trace_dump(lowered, "allocate(try_bump)+fuse_rmw+fuse_copy+fuse_store_results")
         return lowered
 
     if prof: t0 = _prof.now_ns()
@@ -208,9 +212,10 @@ cdef Func _pipeline(Func func, int level, bint allocate):
         allocate_func(lowered, ALLOC_PACKING)
         fuse_rmw(lowered)
         fuse_copy(lowered)
+        fuse_store_results(lowered)
         if prof: _prof.record("allocate", _prof.now_ns() - t0)
         if _TRACE:
-            _trace_dump(lowered, "allocate(packing)+fuse_rmw+fuse_copy")
+            _trace_dump(lowered, "allocate(packing)+fuse_rmw+fuse_copy+fuse_store_results")
     return lowered
 
 
@@ -466,6 +471,12 @@ def _phase_copy(func):
     return func
 
 
+def _phase_store_results(func):
+    fuse_store_results(<Func>func)
+    return func
+
+
+register_phase("store_results", _phase_store_results)
 register_phase("copy", _phase_copy)
 register_phase("cfg_cleanup", _phase_cfg_cleanup)
 register_phase("ssa", _phase_ssa)

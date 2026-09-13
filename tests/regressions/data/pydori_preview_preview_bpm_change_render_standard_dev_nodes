@@ -2,32 +2,28 @@ Block(JumpLoop(
   Execute(
     Set(
       10000
-      0
-      Multiply(
-        Add(
-          Trunc(Divide(
-            Get(
-              4000
-              2
-            )
-            2
-          ))
-          0.5
-        )
-        Get(
-          2000
-          1
-        )
-      )
-    )
-    Set(
-      10000
       1
       Subtract(
         Add(
-          Get(
+          Set(
             10000
             0
+            Multiply(
+              Add(
+                Trunc(Divide(
+                  Get(
+                    4000
+                    2
+                  )
+                  2
+                ))
+                0.5
+              )
+              Get(
+                2000
+                1
+              )
+            )
           )
           -0.252
         )
@@ -48,66 +44,58 @@ Block(JumpLoop(
     )
     Set(
       10000
-      0
-      Subtract(
-        Add(
-          Get(
-            10000
-            0
-          )
-          0.252
-        )
-        Divide(
-          Add(
-            Get(
-              1000
-              1
-            )
-            Get(
-              1000
-              1
-            )
-          )
-          2
-        )
-      )
-    )
-    Set(
-      10000
       2
       Add(
-        Get(
+        Set(
           10000
           0
+          Subtract(
+            Add(
+              Get(
+                10000
+                0
+              )
+              0.252
+            )
+            Divide(
+              Add(
+                Get(
+                  1000
+                  1
+                )
+                Get(
+                  1000
+                  1
+                )
+              )
+              2
+            )
+          )
         )
         0.21599999999999997
       )
     )
     Set(
       10000
-      3
-      Lerp(
-        -0.9
-        0.9
-        Divide(
-          Mod(
-            Get(
-              4000
-              2
-            )
-            2
-          )
-          2
-        )
-      )
-    )
-    Set(
-      10000
       4
       Subtract(
-        Get(
+        Set(
           10000
           3
+          Lerp(
+            -0.9
+            0.9
+            Divide(
+              Mod(
+                Get(
+                  4000
+                  2
+                )
+                2
+              )
+              2
+            )
+          )
         )
         0.0018
       )
@@ -235,40 +223,32 @@ Block(JumpLoop(
   Execute(
     Set(
       10000
-      1
-      BeatToTime(Get(
-        10000
-        0
-      ))
-    )
-    Set(
-      10000
-      2
-      Multiply(
-        Add(
-          Trunc(Divide(
-            Get(
-              10000
-              1
-            )
-            2
-          ))
-          0.5
-        )
-        Get(
-          2000
-          1
-        )
-      )
-    )
-    Set(
-      10000
       3
       Subtract(
         Add(
-          Get(
+          Set(
             10000
             2
+            Multiply(
+              Add(
+                Trunc(Divide(
+                  Set(
+                    10000
+                    1
+                    BeatToTime(Get(
+                      10000
+                      0
+                    ))
+                  )
+                  2
+                ))
+                0.5
+              )
+              Get(
+                2000
+                1
+              )
+            )
           )
           -0.252
         )
@@ -315,29 +295,25 @@ Block(JumpLoop(
     )
     Set(
       10000
-      4
-      Lerp(
-        -0.9
-        0.9
-        Divide(
-          Mod(
-            Get(
-              10000
-              1
-            )
-            2
-          )
-          2
-        )
-      )
-    )
-    Set(
-      10000
       5
       Subtract(
-        Get(
+        Set(
           10000
           4
+          Lerp(
+            -0.9
+            0.9
+            Divide(
+              Mod(
+                Get(
+                  10000
+                  1
+                )
+                2
+              )
+              2
+            )
+          )
         )
         0.0018
       )

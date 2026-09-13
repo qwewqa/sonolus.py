@@ -1,34 +1,28 @@
 Block(JumpLoop(
-  Execute(
-    Set(
-      10000
-      0
-      Get(
-        4000
-        0
-      )
-    )
-    If(
-      Less(
-        Subtract(
-          Get(
-            1001
-            0
-          )
-          Get(
-            1001
-            1
-          )
+  Execute(If(
+    Less(
+      Subtract(
+        Get(
+          1001
+          0
         )
         Get(
-          10000
+          1001
+          1
+        )
+      )
+      Set(
+        10000
+        0
+        Get(
+          4000
           0
         )
       )
-      1
-      8
     )
-  )
+    1
+    8
+  ))
   Execute(If(
     LessOr(
       Get(
@@ -95,17 +89,6 @@ Block(JumpLoop(
         1
       )
     )
-    Set(
-      10000
-      4
-      Multiply(
-        Get(
-          10000
-          2
-        )
-        9
-      )
-    )
     If(
       Equal(
         Get(
@@ -115,9 +98,16 @@ Block(JumpLoop(
         GetShifted(
           2001
           1
-          Get(
+          Set(
             10000
             4
+            Multiply(
+              Get(
+                10000
+                2
+              )
+              9
+            )
           )
           1
         )

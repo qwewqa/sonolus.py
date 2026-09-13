@@ -6,7 +6,7 @@ Three allocation strategies rewrite size-1/size>1/size-0 temp places to
 the liveness-based strategies. See ``lower.pyx`` for the contract.
 """
 
-from libc.stdint cimport int32_t
+from libc.stdint cimport int32_t, int64_t
 
 from sonolus.backend._opt.ir cimport Func
 
@@ -40,6 +40,10 @@ cdef void fuse_rmw(Func func) except *
 
 # Requires allocated, non-SSA places. Copy results must not feed other values.
 cdef void fuse_copy(Func func) except *
+
+
+# Requires allocated non-SSA places, after Copy fusion. Return eliminated read cost.
+cdef int64_t fuse_store_results(Func func) except -1
 
 
 # Out-of-SSA + treeify: consume a value-based SSA ``Func`` (from

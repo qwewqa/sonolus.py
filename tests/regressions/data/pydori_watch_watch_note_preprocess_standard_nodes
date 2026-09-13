@@ -29,27 +29,19 @@ Block(JumpLoop(
   Execute(
     Set(
       4001
-      5
-      BeatToTime(Get(
-        4001
-        1
-      ))
-    )
-    Set(
-      4001
-      6
-      TimeToScaledTime(Get(
-        4001
-        5
-      ))
-    )
-    Set(
-      4001
       7
       Subtract(
-        Get(
+        Set(
           4001
           6
+          TimeToScaledTime(Set(
+            4001
+            5
+            BeatToTime(Get(
+              4001
+              1
+            ))
+          ))
         )
         Divide(
           6
@@ -68,25 +60,21 @@ Block(JumpLoop(
         11
       ))
     )
-    Set(
-      10000
-      0
-      Get(
-        3000
-        Add(
-          4099
-          Get(
-            4003
-            1
-          )
-        )
-      )
-    )
     SwitchIntegerWithDefault(
       Subtract(
-        Get(
+        Set(
           10000
           0
+          Get(
+            3000
+            Add(
+              4099
+              Get(
+                4003
+                1
+              )
+            )
+          )
         )
         1
       )
@@ -566,28 +554,24 @@ Block(JumpLoop(
   Execute(
     Set(
       10000
-      0
-      Add(
-        GetShifted(
-          4103
-          0
-          Get(
-            4001
-            9
-          )
-          3
-        )
-        18
-      )
-    )
-    Set(
-      10000
       2
       If(
         StreamHas(
-          Get(
+          Set(
             10000
             0
+            Add(
+              GetShifted(
+                4103
+                0
+                Get(
+                  4001
+                  9
+                )
+                3
+              )
+              18
+            )
           )
           -10
         )
@@ -603,15 +587,11 @@ Block(JumpLoop(
     )
     Set(
       10000
-      3
-      0
-    )
-    Set(
-      10000
       1
-      Get(
+      Set(
         10000
         3
+        0
       )
     )
     42
@@ -633,26 +613,22 @@ Block(JumpLoop(
   Execute(
     Set(
       10000
-      4
-      StreamGetNextKey(
-        Get(
-          10000
-          0
-        )
-        Get(
-          10000
-          2
-        )
-      )
-    )
-    Set(
-      10000
       5
       If(
         Greater(
-          Get(
+          Set(
             10000
             4
+            StreamGetNextKey(
+              Get(
+                10000
+                0
+              )
+              Get(
+                10000
+                2
+              )
+            )
           )
           Get(
             10000
@@ -727,7 +703,7 @@ Block(JumpLoop(
     60
     46
   ))
-  Execute(
+  Execute(If(
     Set(
       10000
       4
@@ -742,15 +718,9 @@ Block(JumpLoop(
         )
       )
     )
-    If(
-      Get(
-        10000
-        4
-      )
-      47
-      51
-    )
-  )
+    47
+    51
+  ))
   Execute(If(
     Get(
       10000

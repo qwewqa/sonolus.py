@@ -63,33 +63,64 @@ from sonolus.backend._opt.ir cimport (
 )
 from sonolus.backend._opt._ops_gen cimport (
     OP_Add,
+    OP_And,
     OP_Copy,
     OP_DecrementPost,
+    OP_DecrementPostPointed,
+    OP_DecrementPostShifted,
     OP_Divide,
     OP_Equal,
+    OP_Get,
+    OP_GetPointed,
+    OP_GetShifted,
     OP_If,
     OP_IncrementPost,
+    OP_IncrementPostPointed,
+    OP_IncrementPostShifted,
     OP_Mod,
     OP_Multiply,
     OP_Negate,
+    OP_Or,
     OP_Power,
     OP_Random,
     OP_RandomInteger,
     OP_Rem,
     OP_RUNTIME_COUNT,
+    OP_Set,
     OP_SetAdd,
+    OP_SetAddPointed,
+    OP_SetAddShifted,
     OP_SetDivide,
+    OP_SetDividePointed,
+    OP_SetDivideShifted,
     OP_SetMod,
+    OP_SetModPointed,
+    OP_SetModShifted,
     OP_SetMultiply,
+    OP_SetMultiplyPointed,
+    OP_SetMultiplyShifted,
+    OP_SetPointed,
     OP_SetPower,
+    OP_SetPowerPointed,
+    OP_SetPowerShifted,
     OP_SetRem,
+    OP_SetRemPointed,
+    OP_SetRemShifted,
+    OP_SetShifted,
     OP_SetSubtract,
+    OP_SetSubtractPointed,
+    OP_SetSubtractShifted,
     OP_Subtract,
+    OP_Switch,
+    OP_SwitchInteger,
+    OP_SwitchIntegerWithDefault,
+    OP_SwitchWithDefault,
     OPX_CONST,
     OPX_GET,
     OPX_PHI,
     OPX_SET,
     OPX_UNDEF,
+    SONOLUS_OP_CONTROL_FLOW,
 )
 from sonolus.backend._opt.analysis cimport (
     Dominators,
@@ -598,13 +629,22 @@ cdef int64_t _allocation_fusion_score(Func func, vector[Instr]& original,
             score += 5 if state in (OP_IncrementPost, OP_DecrementPost) else 4
     _plan_copy(func, counts, starts)
     for i in range(func.n_instrs):
-        if counts[i] <= 0:
+        if counts[i] < 0:
+            func.instrs[i].flags &= <uint8_t>(~FLAG_STMT_ROOT)
+            continue
+        if counts[i] == 0:
             continue
         source = _copy_source(func, i)
         if source == -1 or func.places[source].flags & PLACE_RUNTIME_CONST:
             score += <int64_t>counts[i] * 4 - 6
         else:
             score += <int64_t>counts[i] * 6 - 6
+        # Planned Copies are barriers to store-result reuse. Their original
+        # children remain orphaned, matching the final Copy pass's arena.
+        func.instrs[i].op = OP_Copy
+        func.instrs[i].aux = -1
+        func.instrs[i].nargs = 0
+    score += fuse_store_results(func)
     # The emitter omits Execute(exit) for an empty shared exit. Removing its
     # last self-copy therefore saves two structural nodes as well.
     for i in range(func.n_edges):
@@ -1190,6 +1230,422 @@ cdef void fuse_copy(Func func) except *:
     func._place_intern.clear()
 
 
+cdef int32_t _store_result_get_op(uint16_t op) noexcept nogil:
+    if op in (OPX_SET, OP_Set, OP_SetAdd, OP_SetSubtract, OP_SetMultiply,
+              OP_SetDivide, OP_SetMod, OP_SetRem, OP_SetPower,
+              OP_IncrementPost, OP_DecrementPost):
+        return OP_Get
+    if op in (OP_SetShifted, OP_SetAddShifted, OP_SetSubtractShifted,
+              OP_SetMultiplyShifted, OP_SetDivideShifted, OP_SetModShifted,
+              OP_SetRemShifted, OP_SetPowerShifted,
+              OP_IncrementPostShifted, OP_DecrementPostShifted):
+        return OP_GetShifted
+    if op in (OP_SetPointed, OP_SetAddPointed, OP_SetSubtractPointed,
+              OP_SetMultiplyPointed, OP_SetDividePointed, OP_SetModPointed,
+              OP_SetRemPointed, OP_SetPowerPointed,
+              OP_IncrementPostPointed, OP_DecrementPostPointed):
+        return OP_GetPointed
+    return -1
+
+
+cdef int32_t _store_result_place(Func func, int32_t v) noexcept nogil:
+    if func.instrs[v].op in (OPX_GET, OPX_SET):
+        return func.instrs[v].aux
+    if func.instrs[v].op < OP_RUNTIME_COUNT and func.instrs[v].aux >= 0:
+        return func.instrs[v].aux
+    return -1
+
+
+cdef bint _store_result_integer(Func func, int32_t v, int32_t* value) noexcept nogil:
+    cdef double number
+    if func.instrs[v].op != OPX_CONST:
+        return False
+    number = func.consts[func.instrs[v].aux]
+    if not isfinite(number) or fabs(number) > 16777216 or number != <double><int32_t>number:
+        return False
+    value[0] = <int32_t>number
+    return True
+
+
+cdef void _store_result_location(Func func, int32_t v, int32_t* block,
+                                 int32_t* offset) noexcept nogil:
+    cdef int32_t p = _store_result_place(func, v)
+    cdef int32_t op = func.instrs[v].op
+    cdef int32_t start, base, index, stride
+    cdef int64_t product, address
+    block[0] = -1
+    offset[0] = -1
+    if p >= 0:
+        if func.places[p].kind == PLACE_REAL_BLOCK:
+            block[0] = func.places[p].block_ref
+        elif func.places[p].kind == PLACE_DYNAMIC_BLOCK:
+            _store_result_integer(func, func.places[p].block_ref, block)
+        if _copy_static_place(func.places[p]):
+            offset[0] = func.places[p].offset
+        return
+    if op not in (OP_Get, OP_GetShifted, OP_GetPointed):
+        op = _store_result_get_op(op)
+    # Pointed operations read a block/index pair from memory. Their explicit
+    # block argument identifies the pointer cells, not the written location.
+    if op not in (OP_Get, OP_GetShifted):
+        return
+    start = func.instrs[v].arg_start
+    if func.instrs[v].nargs < (2 if op == OP_Get else 4):
+        return
+    _store_result_integer(func, func.args[start], block)
+    if op == OP_Get:
+        if _store_result_integer(func, func.args[start + 1], &index) and 0 <= index < 16777216:
+            offset[0] = index
+    elif (_store_result_integer(func, func.args[start + 1], &base)
+          and _store_result_integer(func, func.args[start + 2], &index)
+          and _store_result_integer(func, func.args[start + 3], &stride)):
+        product = <int64_t>index * stride
+        address = base + product
+        if -16777216 <= product <= 16777216 and 0 <= address < 16777216:
+            offset[0] = <int32_t>address
+
+
+cdef bint _store_result_disjoint(Func func, int32_t read, int32_t write) noexcept nogil:
+    cdef int32_t rb, ri, wb, wi
+    _store_result_location(func, read, &rb, &ri)
+    _store_result_location(func, write, &wb, &wi)
+    if rb < 0 or wb < 0:
+        return False
+    if rb != wb:
+        return not (4000 <= rb < 5000 and 4000 <= wb < 5000)
+    return ri >= 0 and wi >= 0 and ri != wi
+
+
+cdef class _StoreResults:
+    cdef Func func
+    cdef vector[int32_t] refs, depths
+    cdef vector[int64_t] costs, unfolded_costs
+    cdef vector[uint8_t] rtc
+    cdef int32_t budget
+
+    def __cinit__(self, Func func):
+        self.func = func
+        self.refs.assign(func.n_instrs, 0)
+        self.depths.assign(func.n_instrs, 1)
+        self.costs.assign(func.n_instrs, 1)
+        self.unfolded_costs.assign(func.n_instrs, 1)
+        self.rtc.assign(func.n_instrs, 0)
+
+    cdef void _references(self, int32_t v, int32_t delta):
+        cdef Func func = self.func
+        cdef int32_t p = _store_result_place(func, v)
+        cdef int32_t k, child
+        for k in range(func.instrs[v].nargs):
+            child = func.args[func.instrs[v].arg_start + k]
+            self.refs[child] += delta
+        if p >= 0:
+            if func.places[p].kind == PLACE_DYNAMIC_BLOCK:
+                self.refs[func.places[p].block_ref] += delta
+            if func.places[p].index_val >= 0:
+                self.refs[func.places[p].index_val] += delta
+
+    cdef int64_t _place_cost(self, int32_t p):
+        cdef Func func = self.func
+        cdef int32_t iv = func.places[p].index_val
+        cdef int32_t start
+        cdef int64_t cost = 2
+        if func.places[p].kind == PLACE_DYNAMIC_BLOCK:
+            cost = 1 + self.costs[func.places[p].block_ref]
+        if iv < 0:
+            return cost + 1
+        if not self.rtc[iv]:
+            if func.instrs[iv].op == OP_Multiply and func.instrs[iv].nargs == 2:
+                start = func.instrs[iv].arg_start
+                return cost + 1 + self.costs[func.args[start]] + self.costs[func.args[start + 1]]
+            if func.places[p].offset != 0 and func.instrs[iv].op != OP_Add:
+                return cost + 2 + self.costs[iv]
+        if func.places[p].offset != 0 and not self.rtc[iv]:
+            cost += 1 if func.instrs[iv].op == OP_Add else 2
+        return cost + self.costs[iv]
+
+    cdef void _analyze(self):
+        cdef Func func = self.func
+        cdef int32_t i, k, child, p, depth, op
+        cdef int64_t cost
+        cdef bint constant
+        for i in range(func.n_instrs):
+            self._references(i, 1)
+            if func.instrs[i].flags & FLAG_STMT_ROOT:
+                self.refs[i] += 1
+            op = func.instrs[i].op
+            p = _store_result_place(func, i)
+            depth = 0
+            cost = self._place_cost(p) if p >= 0 else 1
+            constant = op == OPX_CONST or (op < OP_RUNTIME_COUNT and func.instrs[i].flags & FLAG_PURE)
+            for k in range(func.instrs[i].nargs):
+                child = func.args[func.instrs[i].arg_start + k]
+                depth = max(depth, self.depths[child])
+                # Emission flattens the first child's equal-op spine before
+                # runtime folding, including an otherwise constant child.
+                if k == 0 and op in (OP_Add, OP_Multiply, OP_Mod, OP_Rem) and func.instrs[child].op == op:
+                    cost = min(<int64_t>2147483647, cost + self.unfolded_costs[child] - 1)
+                else:
+                    cost = min(<int64_t>2147483647, cost + self.costs[child])
+                constant = constant and self.rtc[child]
+            if p >= 0:
+                if func.places[p].kind == PLACE_DYNAMIC_BLOCK:
+                    depth = max(depth, self.depths[func.places[p].block_ref])
+                if func.places[p].index_val >= 0:
+                    depth = max(depth, self.depths[func.places[p].index_val])
+                if op == OPX_GET and func.places[p].flags & PLACE_RUNTIME_CONST:
+                    constant = True
+            self.depths[i] = min(_MAX_FOLD_DEPTH + 1, depth + 1)
+            self.rtc[i] = constant
+            self.unfolded_costs[i] = cost
+            self.costs[i] = 1 if constant else cost
+        for i in range(func.n_blocks):
+            if func.blocks[i].test_val >= 0:
+                self.refs[func.blocks[i].test_val] += 1
+
+    cdef bint _unchanged(self, int32_t read, int32_t tree) except -1:
+        cdef Func func = self.func
+        cdef int32_t op = func.instrs[tree].op
+        cdef int32_t p = _store_result_place(func, tree)
+        cdef int32_t k
+        self.budget -= 1
+        if self.budget < 0:
+            return False
+        if _store_result_get_op(op) >= 0:
+            if not _store_result_disjoint(func, read, tree):
+                return False
+        elif func.instrs[tree].flags & FLAG_SIDE_EFFECT:
+            return False
+        if p >= 0:
+            if func.places[p].kind == PLACE_DYNAMIC_BLOCK:
+                if not self._unchanged(read, func.places[p].block_ref):
+                    return False
+            if func.places[p].index_val >= 0:
+                if not self._unchanged(read, func.places[p].index_val):
+                    return False
+        for k in range(func.instrs[tree].nargs):
+            if not self._unchanged(read, func.args[func.instrs[tree].arg_start + k]):
+                return False
+        return True
+
+    cdef bint _address_stable(self, int32_t v, int32_t store) except -1:
+        cdef Func func = self.func
+        cdef int32_t p = _store_result_place(func, v)
+        cdef int32_t op = func.instrs[v].op
+        cdef int32_t k, count
+        if p >= 0:
+            if func.places[p].kind == PLACE_DYNAMIC_BLOCK:
+                if not self._stable(func.places[p].block_ref, store):
+                    return False
+            if func.places[p].index_val >= 0:
+                if not self._stable(func.places[p].index_val, store):
+                    return False
+            return True
+        if op not in (OP_Get, OP_GetShifted, OP_GetPointed):
+            op = _store_result_get_op(op)
+        # A Pointed write may overwrite either implicit pointer cell even when
+        # every explicit argument is constant. Without a referent proof it stays.
+        if op == OP_GetPointed:
+            return False
+        count = 2 if op == OP_Get else 4
+        if func.instrs[v].nargs < count:
+            return False
+        for k in range(count):
+            if not self._stable(func.args[func.instrs[v].arg_start + k], store):
+                return False
+        return True
+
+    cdef bint _stable(self, int32_t v, int32_t store) except -1:
+        cdef Func func = self.func
+        cdef int32_t op = func.instrs[v].op
+        cdef int32_t k
+        self.budget -= 1
+        if self.budget < 0:
+            return False
+        if op == OPX_CONST:
+            return True
+        if op in (OPX_GET, OP_Get, OP_GetShifted, OP_GetPointed):
+            return self._address_stable(v, store) and self._unchanged(v, store)
+        if not (func.instrs[v].flags & FLAG_PURE):
+            return False
+        if op < OP_RUNTIME_COUNT and SONOLUS_OP_CONTROL_FLOW[op]:
+            return False
+        for k in range(func.instrs[v].nargs):
+            if not self._stable(func.args[func.instrs[v].arg_start + k], store):
+                return False
+        return True
+
+    cdef bint _same_place(self, int32_t a, int32_t b) except -1:
+        cdef Func func = self.func
+        cdef PlaceInfo pa = func.places[a]
+        cdef PlaceInfo pb = func.places[b]
+        if pa.kind != pb.kind or pa.offset != pb.offset:
+            return False
+        if pa.kind == PLACE_DYNAMIC_BLOCK:
+            if not self._same_value(pa.block_ref, pb.block_ref):
+                return False
+        elif pa.block_ref != pb.block_ref:
+            return False
+        if pa.index_val < 0 or pb.index_val < 0:
+            return pa.index_val == pb.index_val
+        return self._same_value(pa.index_val, pb.index_val)
+
+    cdef bint _same_value(self, int32_t a, int32_t b) except -1:
+        cdef Func func = self.func
+        cdef int32_t op = func.instrs[a].op
+        cdef int32_t k
+        self.budget -= 1
+        if self.budget < 0:
+            return False
+        if a == b:
+            return True
+        if op != func.instrs[b].op:
+            return False
+        if op == OPX_CONST:
+            return func.consts[func.instrs[a].aux] == func.consts[func.instrs[b].aux]
+        if op == OPX_GET:
+            return self._same_place(func.instrs[a].aux, func.instrs[b].aux)
+        if not (func.instrs[a].flags & FLAG_PURE) or func.instrs[a].nargs != func.instrs[b].nargs:
+            return False
+        for k in range(func.instrs[a].nargs):
+            if not self._same_value(func.args[func.instrs[a].arg_start + k],
+                                    func.args[func.instrs[b].arg_start + k]):
+                return False
+        return True
+
+    cdef bint _matches(self, int32_t read, int32_t store) except -1:
+        cdef Func func = self.func
+        cdef int32_t op = func.instrs[read].op
+        cdef int32_t expected = _store_result_get_op(func.instrs[store].op)
+        cdef int32_t rp, sp, rb, ri, sb, si, k, count
+        if op not in (OPX_GET, OP_Get, OP_GetShifted, OP_GetPointed):
+            return False
+        rp = _store_result_place(func, read)
+        sp = _store_result_place(func, store)
+        if rp >= 0 and sp >= 0:
+            if not self._same_place(rp, sp):
+                return False
+        elif rp < 0 and sp < 0 and op == expected:
+            count = 2 if op == OP_Get else (4 if op == OP_GetShifted else 3)
+            if func.instrs[read].nargs != count or func.instrs[store].nargs < count:
+                return False
+            for k in range(count):
+                if not self._same_value(func.args[func.instrs[read].arg_start + k],
+                                       func.args[func.instrs[store].arg_start + k]):
+                    return False
+        else:
+            _store_result_location(func, read, &rb, &ri)
+            _store_result_location(func, store, &sb, &si)
+            if rb < 0 or ri < 0 or rb != sb or ri != si:
+                return False
+        return self._address_stable(read, store) and self._address_stable(store, store)
+
+    cdef int32_t _find(self, int32_t v, int32_t store) except -3:
+        cdef Func func = self.func
+        cdef int32_t op = func.instrs[v].op
+        cdef int32_t p = _store_result_place(func, v)
+        cdef int32_t k, found, count
+        cdef bint lazy = op in (OP_If, OP_And, OP_Or, OP_Switch, OP_SwitchInteger,
+                                OP_SwitchIntegerWithDefault, OP_SwitchWithDefault)
+        self.budget -= 1
+        if self.budget < 0:
+            return -2
+        if op == OPX_CONST:
+            return -1
+        # Mutating a shared ancestor would execute the embedded store once per
+        # reference. Orphan references count too, conservatively declining reuse.
+        if self.refs[v] != 1:
+            return -1 if self._stable(v, store) else -2
+        if v > store and self._matches(v, store):
+            return v
+        if op < OP_RUNTIME_COUNT and SONOLUS_OP_CONTROL_FLOW[op] and not lazy:
+            return -2
+        if p >= 0:
+            if func.places[p].kind == PLACE_DYNAMIC_BLOCK:
+                found = self._find(func.places[p].block_ref, store)
+                if found != -1:
+                    return found
+            if func.places[p].index_val >= 0:
+                found = self._find(func.places[p].index_val, store)
+                if found != -1:
+                    return found
+        count = min(1, func.instrs[v].nargs) if lazy else func.instrs[v].nargs
+        for k in range(count):
+            found = self._find(func.args[func.instrs[v].arg_start + k], store)
+            if found != -1:
+                return found
+        if lazy:
+            return -2
+        if op in (OPX_GET, OP_Get, OP_GetShifted, OP_GetPointed):
+            return -1 if self._unchanged(v, store) else -2
+        return -1 if func.instrs[v].flags & FLAG_PURE else -2
+
+    cdef int64_t _fuse(self, int32_t store, int32_t consumer) except -1:
+        cdef Func func = self.func
+        cdef int32_t read, block, depth
+        cdef int64_t saving
+        cdef uint8_t root_flag
+        if self.refs[store] != 1 or _store_result_get_op(func.instrs[store].op) in (-1, OP_GetPointed):
+            return 0
+        depth = self.depths[store] + self.depths[consumer]
+        if depth > _MAX_FOLD_DEPTH:
+            return 0
+        self.budget = 512
+        read = self._find(consumer, store)
+        if read < 0:
+            return 0
+        saving = self.costs[read]
+        block = func.instrs[read].block
+        root_flag = func.instrs[read].flags & FLAG_STMT_ROOT
+        self._references(read, -1)
+        func.instrs[read] = func.instrs[store]
+        func.instrs[read].block = block
+        func.instrs[read].flags &= <uint8_t>(~FLAG_STMT_ROOT)
+        func.instrs[read].flags |= root_flag
+        self._references(read, 1)
+        func.instrs[store].flags &= <uint8_t>(~FLAG_STMT_ROOT)
+        self.refs[store] -= 1
+        self.depths[read] = self.depths[store]
+        self.depths[consumer] = depth
+        self.costs[read] = self.costs[store]
+        self.rtc[read] = 0
+        return saving
+
+    cdef int64_t run(self) except -1:
+        cdef Func func = self.func
+        cdef int32_t b, i, end, previous, test
+        cdef int64_t saving = 0
+        self._analyze()
+        for b in range(func.n_blocks):
+            previous = -1
+            end = func.blocks[b].instr_start + func.blocks[b].instr_count
+            for i in range(func.blocks[b].instr_start, end):
+                if not (func.instrs[i].flags & FLAG_STMT_ROOT):
+                    continue
+                if previous >= 0:
+                    saving += self._fuse(previous, i)
+                previous = i
+            test = func.blocks[b].test_val
+            if previous >= 0 and test >= 0 and (func.blocks[b].edge_count > 1 or (
+                    func.blocks[b].edge_count == 1
+                    and func.edges[func.blocks[b].edge_start].cond_kind != EDGE_COND_NONE)):
+                saving += self._fuse(previous, test)
+        return saving
+
+
+cdef int64_t fuse_store_results(Func func) except -1:
+    """Reuse a store's returned value in the following expression.
+
+    Require allocated non-SSA places. Move each store into one read in the next
+    statement or branch test, preserving unconditional evaluation, memory-read
+    order, stable addressing, and single execution. Bound both search work and
+    the resulting expression depth. Return the eliminated reads' effective cost.
+    """
+    if func.is_ssa:
+        raise ValueError("Store-result fusion requires a non-SSA arena")
+    cdef _StoreResults fusion = _StoreResults(func)
+    return fusion.run()
+
+
 cdef int32_t _strategy_code(object strategy) except -1:
     if strategy == "bump":
         return ALLOC_BUMP
@@ -1203,6 +1659,16 @@ cdef int32_t _strategy_code(object strategy) except -1:
 # --------------------------------------------------------------------------
 # Python-visible API.
 # --------------------------------------------------------------------------
+
+def run_store_results(entry, mode=None, callback=None, *, counted=False):
+    """Allocate a CFG and fuse store results without other optimizations."""
+    cdef Func func = <Func>marshal_in(entry, mode, callback)
+    allocate_func(func, ALLOC_BUMP)
+    cdef int64_t saving = fuse_store_results(func)
+    func.verify()
+    result = to_basic_blocks(func)
+    return (result, saving) if counted else result
+
 
 def allocate_arena(entry, mode=None, callback=None, strategy="packing"):
     """Marshal ``entry`` and allocate temps, returning the mutated arena ``Func``.
@@ -2079,8 +2545,13 @@ cdef class _Lower:
                     continue
                 if src.instrs[i].flags & FLAG_STMT_ROOT:
                     if op == OPX_SET:
-                        val = self._emit_ref(<int32_t>src.args[src.instrs[i].arg_start], b)
-                        pid = self._new_place(src.instrs[i].aux, b)
+                        pid = src.instrs[i].aux
+                        if src.places[pid].kind == PLACE_DYNAMIC_BLOCK or src.places[pid].index_val >= 0:
+                            pid = self._new_place(pid, b)
+                            val = self._emit_ref(<int32_t>src.args[src.instrs[i].arg_start], b)
+                        else:
+                            val = self._emit_ref(<int32_t>src.args[src.instrs[i].arg_start], b)
+                            pid = self._new_place(pid, b)
                         dst._emit(OPX_SET, src.instrs[i].flags, b, pid, [val])
                     else:
                         self._emit_tree_root(i, b)

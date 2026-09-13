@@ -960,8 +960,12 @@ cdef class _Cleaner:
         cdef Instr* ins = &self.src.instrs[i]
         cdef int32_t val, pid
         if ins.op == OPX_SET:
-            val = self._copy_value(dst, <int32_t>self.src.args[ins.arg_start], k)
-            pid = self._copy_place(dst, ins.aux, k)
+            if self.src.places[ins.aux].kind == PLACE_DYNAMIC_BLOCK or self.src.places[ins.aux].index_val >= 0:
+                pid = self._copy_place(dst, ins.aux, k)
+                val = self._copy_value(dst, <int32_t>self.src.args[ins.arg_start], k)
+            else:
+                val = self._copy_value(dst, <int32_t>self.src.args[ins.arg_start], k)
+                pid = self._copy_place(dst, ins.aux, k)
             dst._emit(OPX_SET, ins.flags, k, pid, [val])
         else:
             self._copy_value(dst, i, k)
@@ -1596,12 +1600,17 @@ cdef class _SSABuilder:
                 pid = self.src.instrs[i].aux
                 kind = self.src.places[pid].kind
                 rhs = <int32_t>self.src.args[self.src.instrs[i].arg_start]
-                v = self._translate(rhs, block)
                 if kind == PLACE_TEMP_SCALAR:
+                    v = self._translate(rhs, block)
                     temp = self.src.places[pid].block_ref
                     self._write_variable(temp, block, v)
                 else:
-                    spid = self._translate_place(pid, block)
+                    if kind == PLACE_DYNAMIC_BLOCK or self.src.places[pid].index_val >= 0:
+                        spid = self._translate_place(pid, block)
+                        v = self._translate(rhs, block)
+                    else:
+                        v = self._translate(rhs, block)
+                        spid = self._translate_place(pid, block)
                     self._new_val1(OPX_SET, FLAG_SIDE_EFFECT | FLAG_PINNED | FLAG_STMT_ROOT, block, spid, v)
             else:
                 v = self._translate(i, block)
@@ -2275,8 +2284,13 @@ cdef class _UnSSA:
                     continue
                 if src.instrs[i].flags & FLAG_STMT_ROOT:
                     if op == OPX_SET:
-                        val = self._emit_ref(<int32_t>src.args[src.instrs[i].arg_start], b)
-                        pid = self._new_place(src.instrs[i].aux, b)
+                        pid = src.instrs[i].aux
+                        if src.places[pid].kind == PLACE_DYNAMIC_BLOCK or src.places[pid].index_val >= 0:
+                            pid = self._new_place(pid, b)
+                            val = self._emit_ref(<int32_t>src.args[src.instrs[i].arg_start], b)
+                        else:
+                            val = self._emit_ref(<int32_t>src.args[src.instrs[i].arg_start], b)
+                            pid = self._new_place(pid, b)
                         dst._emit(OPX_SET, src.instrs[i].flags, b, pid, [val])
                     else:
                         # bare side-effecting root (operands emitted then the op).

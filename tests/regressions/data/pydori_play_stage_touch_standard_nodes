@@ -9,15 +9,11 @@ Block(JumpLoop(
     )
     Set(
       10000
-      26
-      0
-    )
-    Set(
-      10000
       24
-      Get(
+      Set(
         10000
         26
+        0
       )
     )
     1
@@ -144,15 +140,11 @@ Block(JumpLoop(
   Execute(
     Set(
       10000
-      29
-      1
-    )
-    Set(
-      10000
       28
-      Get(
+      Set(
         10000
         29
+        1
       )
     )
     12
@@ -503,30 +495,24 @@ Block(JumpLoop(
     )
     19
   )
-  Execute(
-    Set(
-      10000
-      34
-      Add(
-        Get(
-          10000
-          33
+  Execute(If(
+    Less(
+      Set(
+        10000
+        34
+        Add(
+          Get(
+            10000
+            33
+          )
+          1
         )
-        1
       )
+      4
     )
-    If(
-      Less(
-        Get(
-          10000
-          34
-        )
-        4
-      )
-      20
-      21
-    )
-  )
+    20
+    21
+  ))
   Execute(
     Copy(
       10000
@@ -687,19 +673,15 @@ Block(JumpLoop(
         1
       )
     )
-    SetMultiply(
-      10000
-      31
-      9
-    )
     If(
       Equal(
         GetShifted(
           2001
           1
-          Get(
+          SetMultiply(
             10000
             31
+            9
           )
           1
         )

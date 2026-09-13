@@ -5,12 +5,9 @@
   EntityData[2] <- -EntityData[2]
   goto 2
 2:
-  EntityData[5] <- BeatToTime(EntityData[1])
-  EntityData[6] <- TimeToScaledTime(EntityData[5])
-  EntityData[7] <- EntityData[6] - (6 / LevelOption[1])
+  EntityData[7] <- Set(4001, 6, TimeToScaledTime(Set(4001, 5, BeatToTime(EntityData[1])))) - (6 / LevelOption[1])
   EntityData[8] <- TimeToScaledTime(EntityData[11])
-  10000[0] <- EngineRom[(4099 + EntityInfo[1])]
-  goto 3 if (10000[0] == 1) else 4
+  goto 3 if (Set(10000, 0, EngineRom[(4099 + EntityInfo[1])]) == 1) else 4
 3:
   10000[1] <- 0
   goto 17
@@ -148,8 +145,7 @@
   10000[9] <- Spawn(9, EntityData[9], EntityData[10], 0)
   goto 55 if RuntimeEnvironment[4] else 82
 55:
-  10000[10] <- EntityInfoArray[(EntityData[9] * 3)] + 18
-  goto 56 if StreamHas(10000[10], -10) else 57
+  goto 56 if StreamHas(Set(10000, 10, EntityInfoArray[(EntityData[9] * 3)] + 18), -10) else 57
 56:
   10000[11] <- -10
   goto 58
@@ -157,14 +153,12 @@
   10000[11] <- StreamGetNextKey(10000[10], -10)
   goto 58
 58:
-  10000[15] <- 0
-  10000[14] <- 10000[15]
+  10000[14] <- Set(10000, 15, 0)
   goto 59
 59:
   goto 60 if StreamHas(10000[10], 10000[11]) else 79
 60:
-  10000[16] <- StreamGetNextKey(10000[10], 10000[11])
-  goto 62 if (10000[16] > 10000[11]) else 61
+  goto 62 if (Set(10000, 16, StreamGetNextKey(10000[10], 10000[11])) > 10000[11]) else 61
 61:
   10000[16] <- inf
   goto 62
@@ -176,8 +170,7 @@
 64:
   goto 79 if (10000[11] > EntityDataArray[(5 + (EntityData[10] * 32))]) else 65
 65:
-  10000[18] <- StreamGetValue(10000[10], 10000[11])
-  goto 66 if 10000[18] else 70
+  goto 66 if Set(10000, 18, StreamGetValue(10000[10], 10000[11])) else 70
 66:
   goto 70 if 10000[15] else 67
 67:
@@ -202,8 +195,7 @@
 74:
   goto 75 if LevelOption[10] else 76
 75:
-  10000[21] <- PlayLoopedScheduled(7, 10000[14])
-  10000[22] <- StopLoopedScheduled(10000[21], 10000[11])
+  10000[22] <- StopLoopedScheduled(Set(10000, 21, PlayLoopedScheduled(7, 10000[14])), 10000[11])
   10000[15] <- 0
   10000[27] <- 10000[14]
   goto 78
@@ -224,16 +216,14 @@
   10000[29] <- EntityDataArray[(5 + (EntityData[10] * 32))]
   goto 81 if LevelOption[10] else 84
 81:
-  10000[30] <- PlayLoopedScheduled(7, 10000[14])
-  10000[31] <- StopLoopedScheduled(10000[30], 10000[29])
+  10000[31] <- StopLoopedScheduled(Set(10000, 30, PlayLoopedScheduled(7, 10000[14])), 10000[29])
   goto exit
 82:
   10000[32] <- EntityDataArray[(5 + (EntityData[9] * 32))]
   10000[33] <- EntityDataArray[(5 + (EntityData[10] * 32))]
   goto 83 if LevelOption[10] else 84
 83:
-  10000[34] <- PlayLoopedScheduled(7, 10000[32])
-  10000[35] <- StopLoopedScheduled(10000[34], 10000[33])
+  10000[35] <- StopLoopedScheduled(Set(10000, 34, PlayLoopedScheduled(7, 10000[32])), 10000[33])
   goto exit
 84:
   goto exit

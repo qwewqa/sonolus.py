@@ -1,16 +1,13 @@
 0:
   10000[0] <- EntityData[0] * 32
-  10000[1] <- RuntimeUpdate[0]
-  goto 1 if (EntityDataArray[(5 + 10000[0])] <= 10000[1]) else 7
+  goto 1 if (EntityDataArray[(5 + 10000[0])] <= Set(10000, 1, RuntimeUpdate[0])) else 7
 1:
-  10000[2] <- EntityData[1] * 32
-  goto 2 if (10000[1] < EntityDataArray[(5 + 10000[2])]) else 7
+  goto 2 if (10000[1] < EntityDataArray[(5 + Set(10000, 2, EntityData[1] * 32))]) else 7
 2:
   10000[3] <- 9 + 10000[0]
   goto 3 if RuntimeEnvironment[4] else 6
 3:
-  10000[4] <- EntityInfoArray[(EntityDataArray[(9 + (EntityDataArray[10000[3]] * 32))] * 3)] + 18
-  goto 5 if StreamHas(10000[4], 10000[1]) else 4
+  goto 5 if StreamHas(Set(10000, 4, EntityInfoArray[(EntityDataArray[(9 + (EntityDataArray[10000[3]] * 32))] * 3)] + 18), 10000[1]) else 4
 4:
   10000[1] <- StreamGetPreviousKey(10000[4], 10000[1])
   goto 5
@@ -18,8 +15,7 @@
   goto 6 if StreamGetValue(10000[4], 10000[1]) else 7
 6:
   10000[7] <- EntityDataArray[(6 + 10000[0])]
-  10000[8] <- EntityDataArray[(6 + 10000[2])]
-  EntitySharedMemoryArray[(EntityDataArray[(9 + (EntityDataArray[10000[3]] * 32))] * 32)] <- Remap(Remap(10000[7] - (6 / LevelOption[1]), 10000[7], LevelData[14], 0, RuntimeUpdate[2]), Remap(10000[8] - (6 / LevelOption[1]), 10000[8], LevelData[14], 0, RuntimeUpdate[2]), EntityDataArray[10000[0]], EntityDataArray[10000[2]], 0)
+  EntitySharedMemoryArray[(EntityDataArray[(9 + (EntityDataArray[10000[3]] * 32))] * 32)] <- Remap(Remap(10000[7] - (6 / LevelOption[1]), 10000[7], LevelData[14], 0, RuntimeUpdate[2]), Remap(Set(10000, 8, EntityDataArray[(6 + 10000[2])]) - (6 / LevelOption[1]), 10000[8], LevelData[14], 0, RuntimeUpdate[2]), EntityDataArray[10000[0]], EntityDataArray[10000[2]], 0)
   goto exit
 7:
   goto exit

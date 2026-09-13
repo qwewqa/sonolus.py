@@ -59,27 +59,19 @@ Block(JumpLoop(
     )
     Set(
       4001
-      11
-      BeatToTime(Get(
-        4001
-        1
-      ))
-    )
-    Set(
-      4001
-      12
-      TimeToScaledTime(Get(
-        4001
-        11
-      ))
-    )
-    Set(
-      4001
       13
       Subtract(
-        Get(
+        Set(
           4001
           12
+          TimeToScaledTime(Set(
+            4001
+            11
+            BeatToTime(Get(
+              4001
+              1
+            ))
+          ))
         )
         Divide(
           6
@@ -100,14 +92,6 @@ Block(JumpLoop(
     )
     Set(
       10000
-      1
-      Get(
-        1000
-        3
-      )
-    )
-    Set(
-      10000
       2
       Add(
         Get(
@@ -118,9 +102,13 @@ Block(JumpLoop(
           10000
           0
         )
-        Get(
+        Set(
           10000
           1
+          Get(
+            1000
+            3
+          )
         )
       )
     )
@@ -150,25 +138,21 @@ Block(JumpLoop(
         2
       )
     )
-    Set(
-      10000
-      3
-      Get(
-        3000
-        Add(
-          4099
-          Get(
-            4003
-            1
-          )
-        )
-      )
-    )
     If(
       Equal(
-        Get(
+        Set(
           10000
           3
+          Get(
+            3000
+            Add(
+              4099
+              Get(
+                4003
+                1
+              )
+            )
+          )
         )
         1
       )

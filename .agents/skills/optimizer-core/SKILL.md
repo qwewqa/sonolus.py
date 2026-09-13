@@ -18,7 +18,7 @@ you must read before touching a fold kernel.
 | `ir.pyx` / `ir.pxd` | The arena `Func`, marshal in and out, `verify()`, `debug_run` |
 | `analysis.pyx` | Dominators, liveness, and the analyses the passes share |
 | `midend.pyx` | `cfg_cleanup`, `build_ssa`, SCCP, GVN, DCE, LICM, `rewrite_switch`, `out_of_ssa` |
-| `lower.pyx` | `lower_from_ssa`, if-conversion, the three allocators, `fuse_rmw`, `fuse_copy` |
+| `lower.pyx` | `lower_from_ssa`, if-conversion, the three allocators, RMW/Copy/store-result fusion |
 | `kernels.pyx` | Constant-fold kernels: C-double evaluation of every foldable op |
 | `emit.pyx` | `EngineNode` emission |
 | `driver.pyx` | Level dispatch, the pipeline, the debug phase registry |
@@ -39,10 +39,10 @@ From `driver.pyx`'s `_pipeline`, which is the authoritative description:
 
 - **minimal (-O0)**: `cfg_cleanup` -> bump allocation. The mid-end is bypassed entirely.
 - **fast (-O1)**: `cfg_cleanup` -> `build_ssa` -> `midend_round(allow_repeat=False)` -> `lower_from_ssa` ->
-  try-bump allocation -> `fuse_rmw` -> `fuse_copy`. No LICM, `rewrite_switch`, or if-conversion: iteration speed
-  over codegen quality.
+  try-bump allocation -> `fuse_rmw` -> `fuse_copy` -> `fuse_store_results`. No LICM, `rewrite_switch`, or
+  if-conversion: iteration speed over codegen quality.
 - **standard (-O2)**: `cfg_cleanup` -> `build_ssa` -> `midend_standard` -> `if_convert` -> `lower_from_ssa` ->
-  packing allocation -> `fuse_rmw` -> `fuse_copy`.
+  packing allocation -> `fuse_rmw` -> `fuse_copy` -> `fuse_store_results`.
 
 The allocation and fusion stages run only when allocation is requested. `fuse_copy` requires an allocated,
 non-SSA arena: it combines contiguous static-address copies and zero stores using physical addresses. Zero stores
@@ -52,12 +52,17 @@ source dependencies between stores, and possible aliasing between entity blocks 
 which stores may fuse. `tests/backend/test_copy.py` pins these cases.
 
 Standard packing also tries one layout that groups scalar copy partners, keeping array bases unchanged. It accepts
-the candidate only when the combined self-copy, RMW, and Copy savings improve; an overflowing or tied candidate
-falls back to first-fit. Fast's packing fallback does not try copy preferences. The scorer shares `fuse_copy`'s run
-planner so its legality and cost decisions follow the same rules. Runs require at least two stores, which may
-appear in any address order;
-unordered lookahead has a per-block work budget, after which ascending runs still fuse. Allocation tradeoffs and
-interference cases are pinned in `tests/backend/test_copy_allocation.py`.
+the candidate only when the combined self-copy, RMW, Copy, and store-result savings improve. An overflowing or tied
+candidate falls back to first-fit. Fast's packing fallback does not try copy preferences. The scorer shares
+`fuse_copy`'s run planner so its legality and cost decisions follow the same rules. Runs require at least two stores,
+which may appear in any address order. Unordered lookahead has a per-block work budget, after which ascending runs
+still fuse. Allocation tradeoffs and interference cases are pinned in `tests/backend/test_copy_allocation.py`.
+
+Store-result fusion embeds a store in one read in the next statement or emitted branch test. Set variants and
+Sonolus's `IncrementPost`/`DecrementPost` return the new value; `Pre` variants return the old value. Shared values,
+conditional evaluation, intervening effects, and mutable address dependencies constrain reuse. Pointed addresses
+also depend on implicit pointer-cell reads, so structural address equality alone does not justify forwarding.
+`tests/backend/test_store_results.py` checks these cases, nested emission, and bounded chains.
 
 The test oracle runs all three, so a pass that is only correct at one level fails `tests/script/` broadly rather
 than in one place.
@@ -102,7 +107,7 @@ the arena surfaces as a wrong engine rather than as a failed assert.
   and the allocators `bump`, `packing`, `try_bump`; `midend.pyx` adds `sccp`, `gvn`, `dce`, `licm`, `rewrite_switch`,
   `midend`, and `midend_standard`. The registry is initialized regardless of import order. Check the
   `register_phase` calls in those files for the current names. To isolate copy fusion, use `phases=["bump", "copy"]`
-  on a non-SSA CFG so allocation precedes fusion.
+  on a non-SSA CFG so allocation precedes fusion. `phases=["bump", "store_results"]` isolates store-result fusion.
 
 ## The op tables are generated
 

@@ -42,9 +42,9 @@ output) is NOT SSA: size-1 temp reads/writes are explicit OPX_GET / OPX_SET
 instructions over interned places. "An instruction is its value": a runtime
 pure/impure op instruction's value-id is used directly as an operand elsewhere.
 
-Statement structure is recovered on export from FLAG_STMT_ROOT: exactly the
-OPX_SET stores and the bare side-effecting op instructions are roots; every
-other instruction is a sub-value reached as an operand. In non-SSA form operands
+Statement structure is recovered on export from FLAG_STMT_ROOT: top-level
+OPX_SET stores and bare side-effecting op instructions are roots. Stores whose
+results are consumed can instead be sub-values reached as operands. In non-SSA form operands
 always reference strictly-earlier instructions in the same block (def-before-use
 in the linear stream), which is what makes the tree rebuild a single forward pass.
 
@@ -318,6 +318,7 @@ cdef class Func:
         object callback
         dict _block_enum_by_id
         dict _block_map
+        dict _export_rtc_memo
 
     # Growable-buffer + interning + marshal helpers (implemented in ir.pyx).
     cdef int32_t _alloc_instr(self) except -1
@@ -330,6 +331,9 @@ cdef class Func:
     cdef int32_t _baked_index_flags(self, int32_t block_ref, int32_t flags) except -1
     cdef int32_t _intern_place(self, object place, int32_t block_id) except -1
     cdef int32_t _value_of(self, object node, int32_t block_id) except -1
+    cdef int32_t _emit_store_value(self, int32_t pid, int32_t vid, int32_t block_id) except -1
+    cdef int32_t _shifted_place_kind(self, int32_t pid, dict memo) except -1
+    cdef bint _address_index_is_rtc(self, int32_t vid, dict memo, int32_t depth_left) except -1
     cdef int32_t _emit_const(self, object value, int32_t block_id) except -1
     cdef int32_t _emit_pure(self, object node, int32_t block_id) except -1
     cdef int32_t _emit_impure(self, object node, int32_t block_id) except -1
@@ -347,3 +351,5 @@ cdef class Func:
     cdef _assign_temp_names(self, dict names)
     # SSA export helpers (_export_ssa / _export_phis / _ssa_* / _dom) are plain
     # ``def`` methods in ir.pyx -- they run under the GIL at the export boundary.
+
+cdef int32_t shifted_store_op(uint16_t op) noexcept nogil

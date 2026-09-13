@@ -14,34 +14,26 @@ Block(JumpLoop(
     )
     Set(
       10000
-      25
-      Get(
-        10000
-        24
-      )
-    )
-    Set(
-      10000
       26
-      Get(
+      Set(
         10000
         25
-      )
-    )
-    Set(
-      10000
-      27
-      Get(
-        10000
-        29
+        Get(
+          10000
+          24
+        )
       )
     )
     Set(
       10000
       28
-      Get(
+      Set(
         10000
         27
+        Get(
+          10000
+          29
+        )
       )
     )
     1
@@ -169,39 +161,33 @@ Block(JumpLoop(
     )
     9
   )
-  Execute(
-    Set(
-      10000
-      28
-      Get(
-        2000
+  Execute(If(
+    And(
+      GreaterOr(
+        Set(
+          10000
+          28
+          Get(
+            2000
+            0
+          )
+        )
         0
       )
-    )
-    If(
-      And(
-        GreaterOr(
+      Equal(
+        0
+        Mod(
           Get(
             10000
             28
           )
-          0
-        )
-        Equal(
-          0
-          Mod(
-            Get(
-              10000
-              28
-            )
-            1
-          )
+          1
         )
       )
-      10
-      17
     )
-  )
+    10
+    17
+  ))
   Execute(If(
     Less(
       Get(
@@ -272,15 +258,11 @@ Block(JumpLoop(
   Execute(
     Set(
       10000
-      27
-      1
-    )
-    Set(
-      10000
       24
-      Get(
+      Set(
         10000
         27
+        1
       )
     )
     19
@@ -659,30 +641,24 @@ Block(JumpLoop(
     )
     27
   )
-  Execute(
-    Set(
-      10000
-      34
-      Add(
-        Get(
-          10000
-          33
+  Execute(If(
+    Less(
+      Set(
+        10000
+        34
+        Add(
+          Get(
+            10000
+            33
+          )
+          1
         )
-        1
       )
+      4
     )
-    If(
-      Less(
-        Get(
-          10000
-          34
-        )
-        4
-      )
-      28
-      29
-    )
-  )
+    28
+    29
+  ))
   Execute(
     Copy(
       10000
@@ -901,19 +877,15 @@ Block(JumpLoop(
         1
       )
     )
-    SetMultiply(
-      10000
-      31
-      9
-    )
     If(
       Equal(
         GetShifted(
           2001
           1
-          Get(
+          SetMultiply(
             10000
             31
+            9
           )
           1
         )

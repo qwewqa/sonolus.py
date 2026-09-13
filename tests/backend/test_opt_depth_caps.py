@@ -1,8 +1,8 @@
 """The two expression-depth caps in the optimizer core stay in the order that keeps emit's budget out of the way.
 
 `lower.pyx`'s `_MAX_FOLD_DEPTH` force-materializes any deeper expression tree into a temp, so a place index that
-survives lowering is bounded near that cap. `emit.pyx` then walks that index looking for a runtime-constant
-subtree and gives up after `_RTC_DEPTH_LIMIT` levels, classifying what it did not finish walking as not
+survives lowering is bounded near that cap. The shared address classifier in `ir.pyx` walks that index looking
+for a runtime-constant subtree and gives up after `_ADDRESS_RTC_DEPTH_LIMIT` levels, classifying unfinished trees as not
 runtime-constant, which keeps the `*Shifted` rewrite the runtime-constant decline exists to avoid. Invert the two
 caps and that give-up path starts firing on indices lowering deliberately left intact.
 
@@ -33,6 +33,6 @@ def _read_cdef_int(file_name: str, name: str) -> int:
 
 
 def test_rtc_depth_limit_is_not_below_the_fold_depth_cap():
-    rtc_depth_limit = _read_cdef_int("emit.pyx", "_RTC_DEPTH_LIMIT")
+    rtc_depth_limit = _read_cdef_int("ir.pyx", "_ADDRESS_RTC_DEPTH_LIMIT")
     max_fold_depth = _read_cdef_int("lower.pyx", "_MAX_FOLD_DEPTH")
     assert rtc_depth_limit >= max_fold_depth

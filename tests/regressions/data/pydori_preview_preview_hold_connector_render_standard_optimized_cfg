@@ -1,10 +1,6 @@
 0:
-  10000[0] <- EntityData[0] * 32
-  10000[1] <- EntityDataArray[(3 + 10000[0])]
-  10000[2] <- Trunc(10000[1] / 2)
-  10000[3] <- EntityData[1] * 32
-  10000[4] <- EntityDataArray[(3 + 10000[3])]
-  10000[5] <- Trunc(10000[4] / 2) + 1
+  10000[2] <- Trunc(Set(10000, 1, EntityDataArray[(3 + Set(10000, 0, EntityData[0] * 32))]) / 2)
+  10000[5] <- Trunc(Set(10000, 4, EntityDataArray[(3 + Set(10000, 3, EntityData[1] * 32))]) / 2) + 1
   10000[6] <- Min(10000[1], 10000[4])
   goto 1
 1:

@@ -52,11 +52,10 @@ from libc.math cimport isfinite, isinf, isnan
 
 from sonolus.backend._opt.ir cimport (
     Func,
-    FLAG_PURE,
+    shifted_store_op,
     FLAG_STMT_ROOT,
     PLACE_REAL_BLOCK,
     PLACE_DYNAMIC_BLOCK,
-    PLACE_RUNTIME_CONST,
     EDGE_COND_NONE,
 )
 from sonolus.backend._opt._ops_gen cimport (
@@ -64,28 +63,10 @@ from sonolus.backend._opt._ops_gen cimport (
     OPX_GET,
     OPX_SET,
     OP_Add,
-    OP_DecrementPost,
-    OP_DecrementPostShifted,
-    OP_IncrementPost,
-    OP_IncrementPostShifted,
     OP_Multiply,
     OP_Mod,
     OP_Rem,
     OP_RUNTIME_COUNT,
-    OP_SetAdd,
-    OP_SetAddShifted,
-    OP_SetDivide,
-    OP_SetDivideShifted,
-    OP_SetMod,
-    OP_SetModShifted,
-    OP_SetMultiply,
-    OP_SetMultiplyShifted,
-    OP_SetPower,
-    OP_SetPowerShifted,
-    OP_SetRem,
-    OP_SetRemShifted,
-    OP_SetSubtract,
-    OP_SetSubtractShifted,
 )
 
 from sonolus.backend.node import FunctionNode
@@ -110,35 +91,6 @@ _OP_SET_SHIFTED = _Op.SetShifted
 
 # EngineRom block id: NaN/+-Inf constants are lowered to reads from it.
 cdef int32_t _ENGINE_ROM = 3000
-
-# Recursion budget for the runtime-constant walk, bounding C-stack depth the same
-# way lower.pyx's _MAX_FOLD_DEPTH does.
-cdef int32_t _RTC_DEPTH_LIMIT = 1000
-
-
-cdef inline int32_t _shifted_fused_op(uint16_t op) noexcept nogil:
-    """Map a place-based fused RMW op (fuse_rmw output) to its strided ``*Shifted``
-    form, or -1 if the op is not a fused RMW."""
-    if op == <uint16_t>OP_SetAdd:
-        return OP_SetAddShifted
-    if op == <uint16_t>OP_SetSubtract:
-        return OP_SetSubtractShifted
-    if op == <uint16_t>OP_SetMultiply:
-        return OP_SetMultiplyShifted
-    if op == <uint16_t>OP_SetDivide:
-        return OP_SetDivideShifted
-    if op == <uint16_t>OP_SetMod:
-        return OP_SetModShifted
-    if op == <uint16_t>OP_SetRem:
-        return OP_SetRemShifted
-    if op == <uint16_t>OP_SetPower:
-        return OP_SetPowerShifted
-    if op == <uint16_t>OP_IncrementPost:
-        return OP_IncrementPostShifted
-    if op == <uint16_t>OP_DecrementPost:
-        return OP_DecrementPostShifted
-    return -1
-
 
 cdef inline bint _is_flattenable(uint16_t op) noexcept nogil:
     return op == <uint16_t>OP_Add or op == <uint16_t>OP_Multiply or op == <uint16_t>OP_Mod or op == <uint16_t>OP_Rem
@@ -260,7 +212,9 @@ cdef class _Emitter:
         elif op == <uint16_t>OPX_GET:
             result = self._emit_get(self.func.instrs[vid].aux)
         elif op == <uint16_t>OPX_SET:
-            raise AssertionError("OPX_SET encountered in value position")
+            result = self._emit_set(vid)
+        elif op < <uint16_t>OP_RUNTIME_COUNT and self.func.instrs[vid].aux >= 0:
+            result = self._emit_fused_rmw(vid, op)
         else:
             result = self._emit_op(vid, op)
         self._val_cache[vid] = result
@@ -317,72 +271,28 @@ cdef class _Emitter:
         # Shifted op is impure and evaluates its offset/index/stride slots
         # separately, so the rewrite would grow the effective node count there.
         #
-        # Address components are pure and evaluated block, offset, index, stride
-        # left-to-right; only the compile-time-constant offset moves relative to the
-        # index subtree, so no impure op is reordered (the runtime never has a Set
-        # inside an address expression).
+        # Only the constant offset moves relative to the index subtree. Block,
+        # index, and stride retain their evaluation order even when they contain stores.
         cdef int32_t kind = self.func.places[pid].kind
         cdef int32_t block_ref = self.func.places[pid].block_ref
         cdef int32_t index_val = self.func.places[pid].index_val
         cdef int32_t offset = self.func.places[pid].offset
         cdef int32_t iastart, a0, a1
-        cdef uint16_t iop
-        cdef bint mul_shape, off_shape
+        cdef int32_t shape = self.func._shifted_place_kind(pid, self._rtc_memo)
         cdef object block_node, offset_node
-        if index_val < 0:
-            return None  # constant index folded into offset -> plain Get(block, offset)
-        if kind != <int32_t>PLACE_REAL_BLOCK and kind != <int32_t>PLACE_DYNAMIC_BLOCK:
-            return None
-        iop = self.func.instrs[index_val].op
-        mul_shape = iop == <uint16_t>OP_Multiply and self.func.instrs[index_val].nargs == 2
-        off_shape = offset != 0 and iop != <uint16_t>OP_Add
-        if not mul_shape and not off_shape:
-            return None
-        if self._index_is_rtc(index_val, _RTC_DEPTH_LIMIT):
+        if not shape:
             return None
         if kind == <int32_t>PLACE_REAL_BLOCK:
             block_node = self._emit_numeric(<double>block_ref)
         else:
             block_node = self._emit_value(block_ref)
         offset_node = self._emit_numeric(<double>offset)
-        if mul_shape:
+        if shape == 1:
             iastart = self.func.instrs[index_val].arg_start
             a0 = <int32_t>self.func.args[iastart]
             a1 = <int32_t>self.func.args[iastart + 1]
             return (block_node, offset_node, self._emit_value(a0), self._emit_value(a1))
         return (block_node, offset_node, self._emit_value(index_val), self._int_leaf(1))
-
-    cdef bint _index_is_rtc(self, int32_t vid, int32_t depth_left):
-        # Runtime-constant tree: pure ops over OPX_CONST + PLACE_RUNTIME_CONST
-        # reads. The same walk appears as _Lower._rtc and _IfConv._is_rtc in
-        # lower.pyx and as _licm_is_rtc in midend.pyx; none of the three is
-        # exported in a .pxd, so the transcription cannot be shared. Memoized per
-        # value id; a deeper-than-budget subtree classifies as NOT runtime-constant,
-        # which keeps the rewrite.
-        cached = self._rtc_memo.get(vid)
-        if cached is not None:
-            return <bint>cached
-        if depth_left <= 0:
-            return False  # budget-dependent -> deliberately NOT memoized
-        cdef uint16_t op = self.func.instrs[vid].op
-        cdef int32_t astart, nargs, k
-        cdef bint r
-        if op == <uint16_t>OPX_CONST:
-            r = True
-        elif op == <uint16_t>OPX_GET:
-            r = (self.func.places[self.func.instrs[vid].aux].flags & <int32_t>PLACE_RUNTIME_CONST) != 0
-        elif op < <uint16_t>OP_RUNTIME_COUNT and (self.func.instrs[vid].flags & <int32_t>FLAG_PURE):
-            r = True
-            astart = self.func.instrs[vid].arg_start
-            nargs = self.func.instrs[vid].nargs
-            for k in range(nargs):
-                if not self._index_is_rtc(<int32_t>self.func.args[astart + k], depth_left - 1):
-                    r = False
-                    break
-        else:
-            r = False
-        self._rtc_memo[vid] = r
-        return r
 
     cdef tuple _place_components(self, int32_t pid):
         cdef int32_t kind = self.func.places[pid].kind
@@ -445,7 +355,7 @@ cdef class _Emitter:
         cdef int32_t astart = self.func.instrs[i].arg_start
         cdef int32_t nargs = self.func.instrs[i].nargs
         cdef int32_t k
-        cdef int32_t sop = _shifted_fused_op(op)
+        cdef int32_t sop = shifted_store_op(op)
         cdef tuple shifted = self._shifted_components(pid) if sop >= 0 else None
         cdef list children
         if shifted is not None:
@@ -460,13 +370,6 @@ cdef class _Emitter:
         return self._intern_fn(_ID_TO_OP[op], children)
 
     cdef object _emit_stmt(self, int32_t i):
-        cdef uint16_t op = self.func.instrs[i].op
-        if op == <uint16_t>OPX_SET:
-            return self._emit_set(i)
-        # A runtime op carrying a place id (aux >= 0) is a place-based fused RMW op.
-        if op < <uint16_t>OP_RUNTIME_COUNT and self.func.instrs[i].aux >= 0:
-            return self._emit_fused_rmw(i, op)
-        # A bare side-effecting op used as a statement root.
         return self._emit_value(i)
 
     cdef object _emit_test(self, int32_t bid):
