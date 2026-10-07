@@ -7,6 +7,7 @@ import types
 
 import pytest
 
+from sonolus.script.internal.context import RuntimeChecks
 from sonolus.script.internal.error import CompilationError
 from tests.script.conftest import run_compiled
 
@@ -229,7 +230,10 @@ def test_lazy_import_replaces_global_binding_on_first_use(lazy_modules):
 
 
 @pytest.mark.parametrize("mutation", ["state.namespace['constant'] = 9", "del state.namespace['constant']"])
-def test_lazy_import_replaces_binding_changed_by_module_initialization(lazy_modules, monkeypatch, mutation):
+@pytest.mark.parametrize("runtime_checks", list(RuntimeChecks))
+def test_lazy_import_matches_binding_changed_by_module_initialization(
+    lazy_modules, monkeypatch, mutation, runtime_checks
+):
     state = types.ModuleType("_lazy_import_fixture.state")
     monkeypatch.setitem(sys.modules, state.__name__, state)
     source = """
@@ -241,11 +245,25 @@ def test_lazy_import_replaces_binding_changed_by_module_initialization(lazy_modu
     initializer = f"from . import state\nconstant = 3\n{mutation}\n"
     namespace = lazy_modules(source, modules={"initializing": initializer})
     state.namespace = namespace
-    compiled_result = run_compiled(namespace["callback"])
+    compiled_error = None
+    try:
+        # Each trace needs fresh globals because the initializer changes them on first use.
+        compiled_result = run_compiled(namespace["callback"], runtime_checks=runtime_checks)
+    except CompilationError as exc:
+        compiled_error = exc
     del sys.modules["_lazy_import_fixture.initializing"]
     namespace = lazy_modules(source)
     state.namespace = namespace
-    assert compiled_result == namespace["callback"]()
+    if compiled_error is not None:
+        cause = compiled_error
+        while isinstance(cause, CompilationError):
+            cause = cause.__cause__
+        assert type(cause) is NameError
+        assert "constant" in str(cause)
+        with pytest.raises(NameError, match="name 'constant' is not defined"):
+            namespace["callback"]()
+    else:
+        assert compiled_result == namespace["callback"]()
 
 
 def test_lazy_module_initialization_follows_first_use_order(lazy_modules, monkeypatch):

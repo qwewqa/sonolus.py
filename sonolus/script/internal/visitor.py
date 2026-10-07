@@ -2338,8 +2338,9 @@ class Visitor(ast.NodeVisitor):
                 namespace = self.globals
                 if isinstance(namespace, ChainMap):
                     namespace = next(mapping for mapping in namespace.maps if name in mapping)
-                value = value.resolve()
-                namespace[name] = value
+                # LOAD_GLOBAL preserves bindings changed by the module initializer. LazyImportType.resolve()
+                # does not update the namespace, and LOAD_NAME does not resolve lazy imports on all versions.
+                value = eval(f"lambda: {name}", namespace)()
             if value is ctx:
                 raise ValueError("Unexpected use of ctx in non meta-function")
             return validate_value(BUILTIN_IMPLS.get(id(value), value))
