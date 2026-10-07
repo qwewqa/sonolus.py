@@ -224,12 +224,17 @@ def check_instruction_icons(instruction_icons: Any):
 class PlayMode:
     """A play mode definition.
 
+    Explicit lengths must be non-negative integers large enough for every archetype in the mode.
+
     Args:
         archetypes: The play archetypes.
         skin: The skin for the play mode.
         effects: The effects for the play mode.
         particles: The particles for the play mode.
         buckets: The buckets for the play mode.
+        entity_memory_length: Slots per entity in entity memory. None selects the minimum required by the archetypes.
+        entity_data_length: Slots per entity shared by imported and entity data fields. None selects the minimum required.
+        entity_shared_memory_length: Slots per entity in shared memory. None selects the minimum required.
     """
 
     def __init__(
@@ -240,9 +245,15 @@ class PlayMode:
         effects: Effects = EmptyEffects,
         particles: Particles = EmptyParticles,
         buckets: Buckets = EmptyBuckets,
+        entity_memory_length: int | None = None,
+        entity_data_length: int | None = None,
+        entity_shared_memory_length: int | None = None,
     ) -> None:
         self.archetypes = list(archetypes) if archetypes is not None else []
         self.skin = skin
+        self.entity_memory_length = entity_memory_length
+        self.entity_data_length = entity_data_length
+        self.entity_shared_memory_length = entity_shared_memory_length
         self.effects = effects
         self.particles = particles
         self.buckets = buckets
@@ -258,6 +269,8 @@ class PlayMode:
 class WatchMode:
     """A watch mode definition.
 
+    Explicit lengths must be non-negative integers large enough for every archetype in the mode.
+
     Args:
         archetypes: The watch archetypes.
         skin: The skin for the watch mode.
@@ -265,6 +278,9 @@ class WatchMode:
         particles: The particles for the watch mode.
         buckets: The buckets for the watch mode.
         update_spawn: A callback returning the spawn time used by archetypes.
+        entity_memory_length: Slots per entity in entity memory. None selects the minimum required by the archetypes.
+        entity_data_length: Slots per entity shared by imported and entity data fields. None selects the minimum required.
+        entity_shared_memory_length: Slots per entity in shared memory. None selects the minimum required.
     """
 
     def __init__(
@@ -276,9 +292,15 @@ class WatchMode:
         particles: Particles = EmptyParticles,
         buckets: Buckets = EmptyBuckets,
         update_spawn: Callable[[], float],
+        entity_memory_length: int | None = None,
+        entity_data_length: int | None = None,
+        entity_shared_memory_length: int | None = None,
     ) -> None:
         self.archetypes = list(archetypes) if archetypes is not None else []
         self.skin = skin
+        self.entity_memory_length = entity_memory_length
+        self.entity_data_length = entity_data_length
+        self.entity_shared_memory_length = entity_shared_memory_length
         self.effects = effects
         self.particles = particles
         self.buckets = buckets
@@ -295,9 +317,13 @@ class WatchMode:
 class PreviewMode:
     """A preview mode definition.
 
+    Explicit lengths must be non-negative integers large enough for every archetype in the mode.
+
     Args:
         archetypes: The preview archetypes.
         skin: The skin for the preview mode.
+        entity_data_length: Slots per entity shared by imported and entity data fields. None selects the minimum required.
+        entity_shared_memory_length: Slots per entity in shared memory. None selects the minimum required.
     """
 
     def __init__(
@@ -305,9 +331,13 @@ class PreviewMode:
         *,
         archetypes: Iterable[type[PreviewArchetype]] | None = None,
         skin: Skin = EmptySkin,
+        entity_data_length: int | None = None,
+        entity_shared_memory_length: int | None = None,
     ) -> None:
         self.archetypes = list(archetypes) if archetypes is not None else []
         self.skin = skin
+        self.entity_data_length = entity_data_length
+        self.entity_shared_memory_length = entity_shared_memory_length
 
         check_archetypes(self.archetypes, PreviewArchetype)
 

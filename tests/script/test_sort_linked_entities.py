@@ -19,7 +19,6 @@ from sonolus.backend.optimize import OptimizerConfig, cfg_to_engine_node, run_pa
 from sonolus.backend.place import BlockPlace
 from sonolus.build.compile import callback_to_cfg
 from sonolus.script.archetype import (
-    _ENTITY_DATA_SIZE,
     EntityRef,
     PlayArchetype,
     imported,
@@ -44,6 +43,7 @@ class LinkNote(PlayArchetype):
 
 
 ARCHETYPES = [LinkNote]
+ENTITY_DATA_LENGTH = 3
 NOTE_ID = ModeContextState(Mode.PLAY, ARCHETYPES).archetypes[LinkNote]
 
 
@@ -91,7 +91,7 @@ class Run(NamedTuple):
 
 
 def _read(interpreter, index, offset):
-    return interpreter.get(PlayBlock.EntityDataArray, index * _ENTITY_DATA_SIZE + offset)
+    return interpreter.get(PlayBlock.EntityDataArray, index * ENTITY_DATA_LENGTH + offset)
 
 
 def _walk(interpreter, start_index, link_offset, limit):
@@ -118,7 +118,7 @@ def _compile_and_run(fn, head_index, entities) -> Run:
     for passes in optimization_levels:
         clear_frontend_caches()
         project_state = ProjectContextState(runtime_checks=RuntimeChecks.NONE)
-        mode_state = ModeContextState(Mode.PLAY, ARCHETYPES)
+        mode_state = ModeContextState(Mode.PLAY, ARCHETYPES, entity_block_lengths=(0, ENTITY_DATA_LENGTH, 0))
 
         @meta_fn
         def wrapper(_fn=fn, _head=head_index):
@@ -136,9 +136,9 @@ def _compile_and_run(fn, head_index, entities) -> Run:
             interpreter.set(PlayBlock.EntityInfoArray, index * 3, index)
             interpreter.set(PlayBlock.EntityInfoArray, index * 3 + 1, NOTE_ID)
             interpreter.set(PlayBlock.EntityInfoArray, index * 3 + 2, 0)
-            interpreter.set(PlayBlock.EntityDataArray, index * _ENTITY_DATA_SIZE + KEY_OFFSET, key)
-            interpreter.set(PlayBlock.EntityDataArray, index * _ENTITY_DATA_SIZE + NEXT_OFFSET, next_index)
-            interpreter.set(PlayBlock.EntityDataArray, index * _ENTITY_DATA_SIZE + PREV_OFFSET, prev_index)
+            interpreter.set(PlayBlock.EntityDataArray, index * ENTITY_DATA_LENGTH + KEY_OFFSET, key)
+            interpreter.set(PlayBlock.EntityDataArray, index * ENTITY_DATA_LENGTH + NEXT_OFFSET, next_index)
+            interpreter.set(PlayBlock.EntityDataArray, index * ENTITY_DATA_LENGTH + PREV_OFFSET, prev_index)
         interpreter.run(entry)
 
         head = int(interpreter.get(-2, 0))

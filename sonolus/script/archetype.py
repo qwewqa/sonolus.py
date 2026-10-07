@@ -30,10 +30,6 @@ from sonolus.script.record import Record
 from sonolus.script.timing import TimescaleEase
 from sonolus.script.values import zeros
 
-_ENTITY_MEMORY_SIZE = 64
-_ENTITY_DATA_SIZE = 32
-_ENTITY_SHARED_MEMORY_SIZE = 32
-
 
 class _StorageType(Enum):
     IMPORTED = "imported"
@@ -96,7 +92,7 @@ class _ArchetypeField(SonolusDescriptor):
                     case _ArchetypeReferenceData(index=index):
                         result = _deref(
                             ctx().blocks.EntityDataArray,
-                            Num._accept_(self.offset) + index * _ENTITY_DATA_SIZE,
+                            Num._accept_(self.offset) + index * ctx().mode_state.entity_data_length,
                             self.type,
                         )
                     case _ArchetypeLevelData(values=values):
@@ -133,7 +129,7 @@ class _ArchetypeField(SonolusDescriptor):
                     case _ArchetypeReferenceData(index=index):
                         result = _deref(
                             ctx().blocks.EntitySharedMemoryArray,
-                            Num._accept_(self.offset) + index * _ENTITY_SHARED_MEMORY_SIZE,
+                            Num._accept_(self.offset) + index * ctx().mode_state.entity_shared_memory_length,
                             self.type,
                         )
                     case _ArchetypeLevelData():
@@ -159,7 +155,7 @@ class _ArchetypeField(SonolusDescriptor):
                     case _ArchetypeReferenceData(index=index):
                         target = _deref(
                             ctx().blocks.EntityDataArray,
-                            Num._accept_(self.offset) + index * _ENTITY_DATA_SIZE,
+                            Num._accept_(self.offset) + index * ctx().mode_state.entity_data_length,
                             self.type,
                         )
                     case _ArchetypeLevelData(values=values):
@@ -194,7 +190,7 @@ class _ArchetypeField(SonolusDescriptor):
                     case _ArchetypeReferenceData(index=index):
                         target = _deref(
                             ctx().blocks.EntitySharedMemoryArray,
-                            Num._accept_(self.offset) + index * _ENTITY_SHARED_MEMORY_SIZE,
+                            Num._accept_(self.offset) + index * ctx().mode_state.entity_shared_memory_length,
                             self.type,
                         )
                     case _ArchetypeLevelData():
@@ -1040,8 +1036,6 @@ class _BaseArchetype(metaclass=_BaseArchetypeMeta):
                         field_info.default,
                     )
                     entity_data_offset += field_type._size_()
-                    if entity_data_offset > _ENTITY_DATA_SIZE:
-                        raise ValueError("Imported and entity data fields exceed entity data size")
                     descriptors.append((name, imported_fields[name]))
                 case _StorageType.DATA:
                     data_fields[name] = _ArchetypeField(
@@ -1052,8 +1046,6 @@ class _BaseArchetype(metaclass=_BaseArchetypeMeta):
                         field_type,
                     )
                     entity_data_offset += field_type._size_()
-                    if entity_data_offset > _ENTITY_DATA_SIZE:
-                        raise ValueError("Imported and entity data fields exceed entity data size")
                     descriptors.append((name, data_fields[name]))
                 case _StorageType.EXPORTED:
                     exported_fields[name] = _ArchetypeField(
@@ -1064,8 +1056,6 @@ class _BaseArchetype(metaclass=_BaseArchetypeMeta):
                         field_type,
                     )
                     exported_offset += field_type._size_()
-                    if exported_offset > _ENTITY_DATA_SIZE:
-                        raise ValueError("Exported fields exceed entity data size")
                     descriptors.append((name, exported_fields[name]))
                 case _StorageType.MEMORY:
                     memory_fields[name] = _ArchetypeField(
@@ -1076,8 +1066,6 @@ class _BaseArchetype(metaclass=_BaseArchetypeMeta):
                         field_type,
                     )
                     memory_offset += field_type._size_()
-                    if memory_offset > _ENTITY_MEMORY_SIZE:
-                        raise ValueError("Memory fields exceed entity memory size")
                     descriptors.append((name, memory_fields[name]))
                 case _StorageType.SHARED:
                     shared_memory_fields[name] = _ArchetypeField(
@@ -1088,8 +1076,6 @@ class _BaseArchetype(metaclass=_BaseArchetypeMeta):
                         field_type,
                     )
                     shared_memory_offset += field_type._size_()
-                    if shared_memory_offset > _ENTITY_SHARED_MEMORY_SIZE:
-                        raise ValueError("Shared memory fields exceed entity shared memory size")
                     descriptors.append((name, shared_memory_fields[name]))
         imported_keys = {}
         imported_key_fields: dict[str, _ArchetypeField] = {}

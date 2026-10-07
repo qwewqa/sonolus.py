@@ -12,8 +12,10 @@ from sonolus.backend.ops import Op
 from sonolus.backend.optimize import STANDARD_PASSES, OptimizerConfig, cfg_to_engine_node, run_passes
 from sonolus.backend.optimize.flow import BasicBlock, traverse_cfg_preorder
 from sonolus.build.compile import callback_to_cfg
+from sonolus.build.engine import package_engine, unpackage_data
 from sonolus.script.archetype import PlayArchetype, exported
 from sonolus.script.array import Array
+from sonolus.script.engine import EngineData, PlayMode
 from sonolus.script.internal.context import ModeContextState, ProjectContextState, RuntimeChecks
 from sonolus.script.vec import Vec2
 
@@ -137,3 +139,40 @@ def test_whole_field_and_element_wise_exports_share_one_index_space():
         "values[1]": 4,
     }
     assert exported_writes(MixedExports) == {0: 10.0, 1: 11.0, 2: 12.0, 3: 13.0}
+
+
+def test_a_single_exported_field_can_exceed_32_slots():
+    class LargeExports(PlayArchetype):
+        values: Array[float, 40] = exported()
+
+        def preprocess(self):
+            self.values[0] = 10.0
+            self.values[32] = 20.0
+            self.values[39] = 30.0
+
+    expected_indexes = {f"values[{i}]": i for i in range(40)}
+    assert export_indexes(LargeExports) == expected_indexes
+    assert exported_writes(LargeExports) == {0: 10.0, 32: 20.0, 39: 30.0}
+    packaged = package_engine(EngineData(play=PlayMode(archetypes=[LargeExports], entity_data_length=0)))
+    play_data = unpackage_data(packaged.play_data)
+    assert play_data["archetypes"][0]["exports"] == list(expected_indexes)
+    assert play_data["entityDataLength"] == 0
+
+
+def test_inherited_exports_can_cross_the_old_size_limit():
+    class BaseExports(PlayArchetype):
+        values: Array[float, 32] = exported()
+
+    class ExtendedExports(BaseExports):
+        pos: Vec2 = exported()
+
+        def preprocess(self):
+            self.values[31] = 11.0
+            self.pos = Vec2(12.0, 13.0)
+
+    assert export_indexes(ExtendedExports) == {
+        **{f"values[{i}]": i for i in range(32)},
+        "pos.x": 32,
+        "pos.y": 33,
+    }
+    assert exported_writes(ExtendedExports) == {31: 11.0, 32: 12.0, 33: 13.0}

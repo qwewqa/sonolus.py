@@ -33,6 +33,39 @@ def _validate_archetype_names(mode: Mode, archetypes: list[type[_BaseArchetype]]
             )
 
 
+def _resolve_entity_block_lengths(
+    archetypes: list[type[_BaseArchetype]],
+    entity_memory_length: int | None,
+    entity_data_length: int | None,
+    entity_shared_memory_length: int | None,
+) -> tuple[int, int, int]:
+    required = [0, 0, 0]
+    for archetype in archetypes:
+        archetype._init_fields()
+        field_groups = (
+            archetype._memory_fields_.values(),
+            (*archetype._imported_fields_.values(), *archetype._data_fields_.values()),
+            archetype._shared_memory_fields_.values(),
+        )
+        for i, fields in enumerate(field_groups):
+            required[i] = max(required[i], max((field.offset + field.type._size_() for field in fields), default=0))
+    resolved = []
+    for name, length, minimum in zip(
+        ("entity_memory_length", "entity_data_length", "entity_shared_memory_length"),
+        (entity_memory_length, entity_data_length, entity_shared_memory_length),
+        required,
+        strict=True,
+    ):
+        if length is None:
+            length = minimum
+        if not isinstance(length, int) or isinstance(length, bool):
+            raise TypeError(f"{name} must be a non-negative integer or None, got {length!r}")
+        if length < minimum or length < 0:
+            raise ValueError(f"{name} must be at least {minimum}, got {length}")
+        resolved.append(length)
+    return resolved[0], resolved[1], resolved[2]
+
+
 def compile_mode(
     mode: Mode,
     project_state: ProjectContextState,
@@ -40,10 +73,20 @@ def compile_mode(
     global_callbacks: list[tuple[CallbackInfo, Callable]] | None,
     level: OptimizationLevel | None = None,
     validate_only: bool = False,
+    entity_memory_length: int | None = None,
+    entity_data_length: int | None = None,
+    entity_shared_memory_length: int | None = None,
 ) -> dict:
     if archetypes is not None:
         _validate_archetype_names(mode, archetypes)
-    return driver.compile_mode(
+    entity_block_lengths = (
+        _resolve_entity_block_lengths(
+            archetypes or [], entity_memory_length, entity_data_length, entity_shared_memory_length
+        )
+        if mode != Mode.TUTORIAL
+        else (64, 32, 32)
+    )
+    result = driver.compile_mode(
         mode,
         project_state,
         archetypes,
@@ -51,7 +94,14 @@ def compile_mode(
         callback_to_context,
         level,
         validate_only,
+        entity_block_lengths,
     )
+    if mode != Mode.TUTORIAL:
+        result["entityDataLength"] = entity_block_lengths[1]
+        result["entitySharedMemoryLength"] = entity_block_lengths[2]
+        if mode != Mode.PREVIEW:
+            result["entityMemoryLength"] = entity_block_lengths[0]
+    return result
 
 
 def callback_to_cfg(

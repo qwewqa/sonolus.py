@@ -124,9 +124,17 @@ class ModeContextState:
     environment_mappings: dict[_GlobalInfo, int]
     environment_offsets: dict[Block, int]
     mode: Mode
+    entity_memory_length: int
+    entity_data_length: int
+    entity_shared_memory_length: int
     lock: Lock
 
-    def __init__(self, mode: Mode, archetypes: list[type] | None = None):
+    def __init__(
+        self,
+        mode: Mode,
+        archetypes: list[type] | None = None,
+        entity_block_lengths: tuple[int, int, int] = (64, 32, 32),
+    ):
         from sonolus.script.array import Array
 
         archetypes = [*archetypes] if archetypes is not None else []
@@ -153,6 +161,7 @@ class ModeContextState:
         self.environment_mappings = {}
         self.environment_offsets = {}
         self.mode = mode
+        self.entity_memory_length, self.entity_data_length, self.entity_shared_memory_length = entity_block_lengths
         self.lock = Lock()
 
     def _init_archetype_mro_info(self, rom: ReadOnlyMemory):
