@@ -1,5 +1,6 @@
 """Compile before Python to exercise unresolved lazy imports on their first use."""
 
+import builtins
 import re
 import sys
 import textwrap
@@ -40,7 +41,7 @@ def lazy_modules(tmp_path, monkeypatch):
 
     callback_index = 0
 
-    def load(source, *, modules=None):
+    def load(source, *, modules=None, builtins_namespace=None):
         for name, module_source in (modules or {}).items():
             (package_path / f"{name}.py").write_text(textwrap.dedent(module_source), encoding="utf-8")
         nonlocal callback_index
@@ -50,6 +51,8 @@ def lazy_modules(tmp_path, monkeypatch):
         source = textwrap.dedent(source)
         source_path.write_text(source, encoding="utf-8")
         namespace = {"__name__": module_name, "__package__": "_lazy_import_fixture", "__file__": str(source_path)}
+        if builtins_namespace is not None:
+            namespace["__builtins__"] = builtins_namespace
         exec(compile(source, str(source_path), "exec"), namespace)
         return namespace
 
@@ -121,6 +124,107 @@ def test_lazy_global_used_by_nested_callback_with_closure(lazy_modules, nested):
     compiled_result = run_compiled(callback)
     assert type(namespace["operation"]) is not types.LazyImportType
     assert compiled_result == callback()
+
+
+@pytest.mark.parametrize("nested", [False, True])
+def test_raw_lazy_import_in_closure_stays_unresolved(lazy_modules, nested):
+    namespace = lazy_modules("""
+        lazy from .values import constant
+        def factory(value):
+            def direct_callback():
+                return value
+            def nested_callback():
+                def inner():
+                    return value
+                return inner()
+            return direct_callback, nested_callback
+    """)
+    placeholder = namespace["constant"]
+    callback = namespace["factory"](placeholder)[nested]
+    # LOAD_DEREF returns a raw placeholder, which is not a supported compiled value.
+    with pytest.raises(
+        CompilationError, match=re.escape("Unsupported value: <lazy_import '_lazy_import_fixture.values.constant'>")
+    ):
+        run_compiled(callback)
+    assert callback() is placeholder
+    assert type(namespace["constant"]) is types.LazyImportType
+    assert "_lazy_import_fixture.values" not in sys.modules
+
+
+@pytest.mark.parametrize("builtins_change", ["unchanged", "replaced", "removed"])
+def test_lazy_builtin_uses_original_builtins_and_function_globals(lazy_modules, builtins_change):
+    hook_globals = []
+    imported_module = types.ModuleType("_lazy_import_fixture.hooked")
+    imported_module.constant = 17
+
+    def hooked_import(*args):
+        hook_globals.append(args[1])
+        return imported_module
+
+    builtin_namespace = dict(vars(builtins), __import__=hooked_import)
+    namespace = lazy_modules(
+        "lazy from _lazy_import_fixture.hooked import constant\ndef callback():\n    return constant\n",
+        builtins_namespace=builtin_namespace,
+    )
+    placeholder = namespace.pop("constant")
+    builtin_namespace["constant"] = placeholder
+    if builtins_change == "replaced":
+        namespace["__builtins__"] = {}
+    elif builtins_change == "removed":
+        del namespace["__builtins__"]
+    original_keys = set(namespace)
+    callback = namespace["callback"]
+    compiled_result = run_compiled(callback)
+    assert len(hook_globals) == 1
+    assert hook_globals[0] is namespace
+    assert set(namespace) == original_keys
+    assert builtin_namespace["constant"] == imported_module.constant
+    hook_globals.clear()
+    builtin_namespace["constant"] = placeholder
+    assert compiled_result == callback()
+    assert len(hook_globals) == 1
+    assert hook_globals[0] is namespace
+    assert set(namespace) == original_keys
+
+
+@pytest.mark.parametrize("runtime_checks", list(RuntimeChecks))
+def test_deleted_lazy_global_falls_back_to_builtin(lazy_modules, monkeypatch, runtime_checks):
+    state = types.ModuleType("_lazy_import_fixture.state")
+    monkeypatch.setitem(sys.modules, state.__name__, state)
+    source = """
+        lazy from .initializing import constant as abs
+        def callback():
+            before = abs
+            return before * 100 + abs(-9)
+    """
+    namespace = lazy_modules(
+        source, modules={"initializing": "from . import state\nconstant = 3\ndel state.namespace['abs']\n"}
+    )
+    state.namespace = namespace
+    compiled_result = run_compiled(namespace["callback"], runtime_checks=runtime_checks)
+    del sys.modules["_lazy_import_fixture.initializing"]
+    namespace = lazy_modules(source)
+    state.namespace = namespace
+    assert compiled_result == namespace["callback"]()
+
+
+def test_lazy_import_in_effectful_builtin_mapping_is_rejected(lazy_modules):
+    class MutatingBuiltins(dict):  # noqa: FURB189
+        def __getitem__(self, key):
+            value = super().__getitem__(key)
+            if key == "constant":
+                self[key] = 9
+            return value
+
+    builtin_namespace = MutatingBuiltins(vars(builtins))
+    namespace = lazy_modules(
+        "lazy from .values import constant\ndef callback():\n    return constant\n",
+        builtins_namespace=builtin_namespace,
+    )
+    builtin_namespace["constant"] = namespace.pop("constant")
+    with pytest.raises(CompilationError, match="Custom global or builtin namespace mappings are not supported"):
+        run_compiled(namespace["callback"])
+    assert "_lazy_import_fixture.values" not in sys.modules
 
 
 @pytest.mark.parametrize("use_declaration", [False, True])

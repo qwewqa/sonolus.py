@@ -1,7 +1,6 @@
 from __future__ import annotations
 
 import ast
-import builtins
 import functools
 import inspect
 import os
@@ -60,6 +59,15 @@ _compiler_internal_ = True
 
 _CALLEE_NAME_MISSING = object()
 _LAZY_IMPORT_TYPE = getattr(types, "LazyImportType", None)
+
+
+@functools.cache
+def _lazy_lookup_code() -> types.CodeType:
+    # Annotation scopes look up a name in a supplied namespace using the function's real globals.
+    # FunctionType also avoids eval inserting __builtins__ into globals where the key was removed.
+    code = compile("class _Lookup:\n    type Value = _placeholder\n", __file__, "exec")
+    class_code = next(value for value in code.co_consts if isinstance(value, types.CodeType))
+    return next(value for value in class_code.co_consts if isinstance(value, types.CodeType))
 
 
 def _callee_name(fn: Value):
@@ -169,7 +177,7 @@ def _compute_fn_info(fn: Callable) -> tuple[str, str, ChainMap]:
         qualified_name = f"{module}.{getattr(fn, '__qualname__', function_name)}"
     else:
         qualified_name = f"<unknown>.{getattr(fn, '__qualname__', function_name)}"
-    return function_name, qualified_name, ChainMap(fn.__globals__, builtins.__dict__)
+    return function_name, qualified_name, ChainMap(fn.__globals__, fn.__builtins__)
 
 
 # Only cache plain functions; bound methods are ephemeral and would leak cache entries.
@@ -241,6 +249,7 @@ def eval_fn(fn: Callable, /, *args, **kwargs):
         function_name=function_name,
         qualified_name=qualified_name,
         has_class_cell="__class__" in code.co_freevars,
+        nonlocal_names=code.co_freevars,
     ).run(node)
 
 
@@ -678,6 +687,8 @@ class Visitor(ast.NodeVisitor):
     function_name: str
     qualified_name: str
     has_class_cell: bool
+    nonlocal_names: tuple[str, ...]
+    has_custom_namespaces: bool
     truth_test_compare: ast.Compare | None
     normalized_boolean_nums: dict[int, Num]
 
@@ -690,9 +701,14 @@ class Visitor(ast.NodeVisitor):
         function_name: str,
         qualified_name: str | None = None,
         has_class_cell: bool = False,
+        nonlocal_names: tuple[str, ...] = (),
     ):
         self.source_file = source_file
         self.globals = global_vars
+        self.nonlocal_names = parent.nonlocal_names if parent is not None else nonlocal_names
+        self.has_custom_namespaces = isinstance(global_vars, ChainMap) and any(
+            type(mapping) is not dict for mapping in global_vars.maps[-2:]
+        )
         self.bound_args = bound_args
         self.used_names = {}
         self.return_ctxs = []
@@ -2332,15 +2348,24 @@ class Visitor(ast.NodeVisitor):
                     f"cannot access local variable '{name}' where it is not associated with a value"
                 )
             v = v.parent
+        # A custom getter can mutate a binding, making the diagnostic retry conceal the first lookup's error.
+        if self.has_custom_namespaces:
+            raise NotImplementedError("Custom global or builtin namespace mappings are not supported")
         if name in self.globals:
             value = self.globals[name]
-            if type(value) is _LAZY_IMPORT_TYPE:
+            if type(value) is _LAZY_IMPORT_TYPE and name not in self.nonlocal_names:
                 namespace = self.globals
+                function_globals = namespace
                 if isinstance(namespace, ChainMap):
                     namespace = next(mapping for mapping in namespace.maps if name in mapping)
-                # LOAD_GLOBAL preserves bindings changed by the module initializer. LazyImportType.resolve()
-                # does not update the namespace, and LOAD_NAME does not resolve lazy imports on all versions.
-                value = eval(f"lambda: {name}", namespace)()
+                    function_globals = self.globals.maps[-2]
+                code = _lazy_lookup_code().replace(co_names=(name,))
+                lookup = FunctionType(code, function_globals, closure=(types.CellType(namespace),))
+                value = lookup(*(0,) * code.co_argcount)
+                if type(value) is _LAZY_IMPORT_TYPE:
+                    # Some 3.15 prereleases return placeholders from annotation scope lookups.
+                    code = compile(f"lambda: {name}", __file__, "eval").co_consts[0]
+                    value = FunctionType(code, function_globals)()
             if value is ctx:
                 raise ValueError("Unexpected use of ctx in non meta-function")
             return validate_value(BUILTIN_IMPLS.get(id(value), value))
