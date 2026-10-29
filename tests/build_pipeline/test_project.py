@@ -41,6 +41,139 @@ def test_project_defaults_resources_only_when_unset():
     assert project.resources == Path("resources")
 
 
+@pytest.mark.parametrize("resource_path", ["downloaded", Path("downloaded"), ""])
+def test_project_loads_resources_on_first_access(resource_path):
+    calls = []
+
+    def load_resources():
+        calls.append(True)
+        return resource_path
+
+    project = Project(engine=Engine(name="test", data=EngineData()), resources=load_resources)
+
+    assert calls == []
+    assert project.schema() == {"archetypes": []}
+    assert calls == []
+    assert project.resources == Path(resource_path)
+    assert project.resources == Path(resource_path)
+    assert calls == [True]
+
+
+def test_project_build_does_not_load_resources(tmp_path):
+    def load_resources():
+        pytest.fail("An engine build must not load project resources")
+
+    project = Project(engine=Engine(name="test", data=EngineData()), resources=load_resources)
+
+    project.build(tmp_path)
+
+    assert (tmp_path / "dist" / "engine" / "EngineConfiguration").is_file()
+
+
+def test_project_retries_a_failed_resource_loader(tmp_path):
+    calls = []
+
+    def load_resources():
+        calls.append(True)
+        if len(calls) == 1:
+            raise OSError("Download failed")
+        return tmp_path
+
+    project = Project(engine=Engine(name="test", data=EngineData()), resources=load_resources)
+
+    with pytest.raises(OSError, match="Download failed"):
+        _ = project.resources
+
+    assert project.resources == tmp_path
+    assert project.resources == tmp_path
+    assert calls == [True, True]
+
+
+def test_project_rejects_an_invalid_resource_loader_result():
+    calls = []
+
+    def load_resources():
+        calls.append(True)
+
+    project = Project(engine=Engine(name="test", data=EngineData()), resources=load_resources)
+
+    for _ in range(2):
+        with pytest.raises(TypeError, match=r"str|PathLike"):
+            _ = project.resources
+    assert calls == [True, True]
+
+
+def test_project_resource_assignment_replaces_the_cached_path(tmp_path):
+    project = make_project([])
+    assert project.resources == Path("resources")
+    calls = []
+
+    def load_resources():
+        calls.append(True)
+        return tmp_path
+
+    project.resources = load_resources
+    assert calls == []
+    assert project.resources == tmp_path
+    assert calls == [True]
+    project.resources = "replacement"
+    assert project.resources == Path("replacement")
+    project.resources = None
+    assert project.resources == Path("resources")
+
+
+@pytest.mark.parametrize("load_before_copy", [False, True])
+def test_project_with_levels_preserves_lazy_resources(tmp_path, load_before_copy):
+    calls = []
+
+    def load_resources():
+        calls.append(True)
+        return tmp_path
+
+    project = Project(engine=Engine(name="test", data=EngineData()), resources=load_resources)
+    if load_before_copy:
+        assert project.resources == tmp_path
+    calls_before_copy = list(calls)
+
+    copied = project.with_levels([make_level("new")])
+
+    assert calls == calls_before_copy
+    assert [level.name for level in copied.levels] == ["new"]
+    assert copied.resources == tmp_path
+    assert copied.resources == tmp_path
+    assert calls == [True]
+
+
+def test_collection_loads_resources_after_the_loader_creates_them(tmp_path, monkeypatch):
+    from sonolus.build import project as project_mod
+
+    resources = tmp_path / "downloaded"
+    calls = []
+
+    def load_resources():
+        calls.append(True)
+        item_dir = resources / "skins" / "downloaded-skin"
+        item_dir.mkdir(parents=True)
+        (item_dir / "item.json").write_text('{"title": "Downloaded skin"}', encoding="utf-8")
+        (resources / "cover.png").write_bytes(b"DOWNLOADED")
+        return str(resources)
+
+    engine = Engine(name="test", data=EngineData(), thumbnail="cover.png")
+    project = Project(engine=engine, resources=load_resources)
+    thumbnails = []
+
+    def add_engine(collection, project, engine, *args, **kwargs):
+        thumbnails.append(load_resource(collection, engine.thumbnail, project.resources, b"DEFAULT"))
+
+    monkeypatch.setattr(project_mod, "add_engine_to_collection", add_engine)
+
+    for _ in range(2):
+        collection = project_mod.build_project_to_collection(project, None)
+        assert collection.get_item("skins", "downloaded-skin")["title"] == "Downloaded skin"
+        assert collection.repository[thumbnails[-1]["hash"]] == b"DOWNLOADED"
+    assert calls == [True]
+
+
 def test_project_retries_duplicate_level_name_validation():
     project = make_project(iter([make_level("duplicate"), make_level("duplicate")]))
 

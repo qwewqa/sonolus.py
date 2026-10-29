@@ -22,7 +22,8 @@ class Project:
     Args:
         engine: The engine of the project.
         levels: The levels of the project. Their names must be unique.
-        resources: The path to the resources of the project.
+        resources: The path to the resources of the project, or a callable returning that path. The callable
+            runs on first access to `resources`, and its result is cached after a successful call.
         converters: A dict mapping source engine names to functions converting the
             [`ExternalLevelData`][sonolus.script.level.ExternalLevelData] of levels included in the project's
             resources into [`LevelData`][sonolus.script.level.LevelData]. A converter may return `None` to leave
@@ -34,7 +35,7 @@ class Project:
         self,
         engine: Engine,
         levels: Iterable[Level] | Callable[[], Iterable[Level]] | None = None,
-        resources: str | PathLike[str] | None = None,
+        resources: str | PathLike[str] | Callable[[], str | PathLike[str]] | None = None,
         converters: dict[str | None, Callable[[ExternalLevelData], LevelData | None]] | None = None,
     ):
         self.engine = engine
@@ -49,7 +50,7 @@ class Project:
                 raise TypeError(f"Invalid type for levels: {type(levels)}. Expected Iterable or Callable.")
         self._levels = None
         self._level_loading_error: str | None = None
-        self.resources = Path("resources" if resources is None else resources)
+        self.resources = resources
         self.converters = converters or {}
 
     def with_levels(self, levels: Iterable[Level] | Callable[[], Iterable[Level]] | None) -> Project:
@@ -61,7 +62,7 @@ class Project:
         Returns:
             The new project.
         """
-        return Project(self.engine, levels, self.resources, self.converters)
+        return Project(self.engine, levels, self._resources, self.converters)
 
     def dev(self, build_dir: str | PathLike[str], port: int = 8080, config: BuildConfig | None = None):
         """Start a development server for the project.
@@ -108,6 +109,21 @@ class Project:
         from sonolus.build.project import get_project_schema
 
         return get_project_schema(self)
+
+    @property
+    def resources(self) -> Path:
+        """The project's resource path, loaded and cached on first access.
+
+        Assigning a new path or callable replaces the cached path. If a callable raises an exception,
+        the next access retries it.
+        """
+        if callable(self._resources):
+            self._resources = Path(self._resources())
+        return self._resources
+
+    @resources.setter
+    def resources(self, resources: str | PathLike[str] | Callable[[], str | PathLike[str]] | None) -> None:
+        self._resources = resources if callable(resources) else Path("resources" if resources is None else resources)
 
     @property
     def levels(self) -> list[Level]:

@@ -73,7 +73,7 @@ def test_quad_like_is_a_public_protocol():
 @pytest.mark.parametrize(
     ("api", "parameter", "annotation"),
     [
-        (Project, "resources", "str | PathLike[str] | None"),
+        (Project, "resources", "str | PathLike[str] | Callable[[], str | PathLike[str]] | None"),
         (Project.dev, "build_dir", "str | PathLike[str]"),
         (Project.build, "build_dir", "str | PathLike[str]"),
         (ExportedEngine.write_to_dir, "path", "str | PathLike[str]"),
