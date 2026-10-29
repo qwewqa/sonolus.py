@@ -62,7 +62,7 @@ from sonolus.backend.mode import Mode
 from sonolus.backend.node import FunctionNode
 from sonolus.backend.ops import Op
 from sonolus.backend.optimize import OptimizerConfig, cfg_to_engine_node, run_passes
-from sonolus.build.compile import callback_to_cfg
+from sonolus.build.compile import _resolve_entity_block_lengths, callback_to_cfg
 from sonolus.script.internal.callbacks import (
     navigate_callback,
     preprocess_callback,
@@ -108,15 +108,16 @@ def load_project(name: str):
 class CallbackTask:
     """A single (mode, callback) unit of work with a stable metrics key."""
 
-    __slots__ = ("archetype", "archetypes_map", "callback_name", "cb", "cb_name", "key", "mode")
+    __slots__ = ("archetype", "archetypes_map", "callback_name", "cb", "cb_name", "entity_block_lengths", "key", "mode")
 
-    def __init__(self, mode, archetype, cb, cb_name, callback_name, archetypes_map, key):
+    def __init__(self, mode, archetype, cb, cb_name, callback_name, archetypes_map, entity_block_lengths, key):
         self.mode = mode
         self.archetype = archetype
         self.cb = cb
         self.cb_name = cb_name
         self.callback_name = callback_name
         self.archetypes_map = archetypes_map
+        self.entity_block_lengths = entity_block_lengths
         self.key = key
 
 
@@ -137,8 +138,19 @@ def base_archetypes(archetypes):
     return result
 
 
-def _mode_tasks(project_name, mode, archetypes, global_callbacks):
+def _mode_tasks(project_name, mode, definition, global_callbacks):
     """Enumerate callbacks for one mode, mirroring _build_mode_callbacks (non-dev)."""
+    archetypes = getattr(definition, "archetypes", None)
+    entity_block_lengths = (
+        _resolve_entity_block_lengths(
+            archetypes or [],
+            getattr(definition, "entity_memory_length", None),
+            getattr(definition, "entity_data_length", None),
+            getattr(definition, "entity_shared_memory_length", None),
+        )
+        if mode != Mode.TUTORIAL
+        else (64, 32, 32)
+    )
     archetypes_map = {a: i for i, a in enumerate(archetypes)} if archetypes is not None else None
     mode_label = mode.name.lower()
 
@@ -151,27 +163,27 @@ def _mode_tasks(project_name, mode, archetypes, global_callbacks):
         ]
         for cb_name, cb_info, cb in callback_items:
             key = f"{project_name}_{mode_label}_{camel_to_snake(archetype.__name__)}_{cb_name}"
-            yield CallbackTask(mode, archetype, cb, cb_name, cb_info.name, archetypes_map, key)
+            yield CallbackTask(mode, archetype, cb, cb_name, cb_info.name, archetypes_map, entity_block_lengths, key)
 
     for cb_info, cb in global_callbacks or []:
         key = f"{project_name}_{mode_label}_global_{camel_to_snake(cb_info.name)}"
-        yield CallbackTask(mode, None, cb, cb_info.name, cb_info.name, archetypes_map, key)
+        yield CallbackTask(mode, None, cb, cb_info.name, cb_info.name, archetypes_map, entity_block_lengths, key)
 
 
 def iter_callback_tasks(project_name, project):
     engine = project.engine.data
-    yield from _mode_tasks(project_name, Mode.PLAY, engine.play.archetypes, None)
+    yield from _mode_tasks(project_name, Mode.PLAY, engine.play, None)
     yield from _mode_tasks(
         project_name,
         Mode.WATCH,
-        engine.watch.archetypes,
+        engine.watch,
         [(update_spawn_callback, engine.watch.update_spawn)],
     )
-    yield from _mode_tasks(project_name, Mode.PREVIEW, engine.preview.archetypes, None)
+    yield from _mode_tasks(project_name, Mode.PREVIEW, engine.preview, None)
     yield from _mode_tasks(
         project_name,
         Mode.TUTORIAL,
-        None,
+        engine.tutorial,
         [
             (preprocess_callback, engine.tutorial.preprocess),
             (navigate_callback, engine.tutorial.navigate),
@@ -358,7 +370,7 @@ def measure_callback(project_name, task: CallbackTask, level_name, passes, repea
 
     for _ in range(repeat):
         project_state = ProjectContextState(runtime_checks=RuntimeChecks.NONE)
-        mode_state = ModeContextState(task.mode, task.archetypes_map)
+        mode_state = ModeContextState(task.mode, task.archetypes_map, task.entity_block_lengths)
 
         t0 = perf_counter()
         cfg = callback_to_cfg(project_state, mode_state, task.cb, task.callback_name, task.archetype)

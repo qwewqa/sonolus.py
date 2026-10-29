@@ -81,6 +81,9 @@ def package_engine(
     # const/debug-string maps are shared across modes).
     play_data = build_play_mode(
         archetypes=play_mode.archetypes,
+        entity_memory_length=play_mode.entity_memory_length,
+        entity_data_length=play_mode.entity_data_length,
+        entity_shared_memory_length=play_mode.entity_shared_memory_length,
         skin=play_mode.skin,
         effects=play_mode.effects,
         particles=play_mode.particles,
@@ -90,6 +93,9 @@ def package_engine(
     )
     watch_data = build_watch_mode(
         archetypes=watch_mode.archetypes,
+        entity_memory_length=watch_mode.entity_memory_length,
+        entity_data_length=watch_mode.entity_data_length,
+        entity_shared_memory_length=watch_mode.entity_shared_memory_length,
         skin=watch_mode.skin,
         effects=watch_mode.effects,
         particles=watch_mode.particles,
@@ -100,6 +106,8 @@ def package_engine(
     )
     preview_data = build_preview_mode(
         archetypes=preview_mode.archetypes,
+        entity_data_length=preview_mode.entity_data_length,
+        entity_shared_memory_length=preview_mode.entity_shared_memory_length,
         skin=preview_mode.skin,
         project_state=project_state,
         config=config,
@@ -144,6 +152,9 @@ def validate_engine(
 
     build_play_mode(
         archetypes=play_mode.archetypes,
+        entity_memory_length=play_mode.entity_memory_length,
+        entity_data_length=play_mode.entity_data_length,
+        entity_shared_memory_length=play_mode.entity_shared_memory_length,
         skin=play_mode.skin,
         effects=play_mode.effects,
         particles=play_mode.particles,
@@ -154,6 +165,9 @@ def validate_engine(
     )
     build_watch_mode(
         archetypes=watch_mode.archetypes,
+        entity_memory_length=watch_mode.entity_memory_length,
+        entity_data_length=watch_mode.entity_data_length,
+        entity_shared_memory_length=watch_mode.entity_shared_memory_length,
         skin=watch_mode.skin,
         effects=watch_mode.effects,
         particles=watch_mode.particles,
@@ -165,6 +179,8 @@ def validate_engine(
     )
     build_preview_mode(
         archetypes=preview_mode.archetypes,
+        entity_data_length=preview_mode.entity_data_length,
+        entity_shared_memory_length=preview_mode.entity_shared_memory_length,
         skin=preview_mode.skin,
         project_state=project_state,
         config=config,
@@ -222,6 +238,9 @@ def build_play_mode(
     project_state: ProjectContextState,
     config: BuildConfig,
     validate_only: bool = False,
+    entity_memory_length: int | None = None,
+    entity_data_length: int | None = None,
+    entity_shared_memory_length: int | None = None,
 ):
     validate_bucket_sprites(skin, buckets)
     return {
@@ -232,6 +251,9 @@ def build_play_mode(
             global_callbacks=None,
             level=config.passes,
             validate_only=validate_only,
+            entity_memory_length=entity_memory_length,
+            entity_data_length=entity_data_length,
+            entity_shared_memory_length=entity_shared_memory_length,
         ),
         "skin": build_skin(skin),
         "effect": build_effects(effects),
@@ -250,6 +272,9 @@ def build_watch_mode(
     update_spawn: Callable[[], float],
     config: BuildConfig,
     validate_only: bool = False,
+    entity_memory_length: int | None = None,
+    entity_data_length: int | None = None,
+    entity_shared_memory_length: int | None = None,
 ):
     validate_bucket_sprites(skin, buckets)
     return {
@@ -260,6 +285,9 @@ def build_watch_mode(
             global_callbacks=[(update_spawn_callback, update_spawn)],
             level=config.passes,
             validate_only=validate_only,
+            entity_memory_length=entity_memory_length,
+            entity_data_length=entity_data_length,
+            entity_shared_memory_length=entity_shared_memory_length,
         ),
         "skin": build_skin(skin),
         "effect": build_effects(effects),
@@ -274,6 +302,8 @@ def build_preview_mode(
     project_state: ProjectContextState,
     config: BuildConfig,
     validate_only: bool = False,
+    entity_data_length: int | None = None,
+    entity_shared_memory_length: int | None = None,
 ):
     return {
         **compile_mode(
@@ -283,6 +313,8 @@ def build_preview_mode(
             global_callbacks=None,
             level=config.passes,
             validate_only=validate_only,
+            entity_data_length=entity_data_length,
+            entity_shared_memory_length=entity_shared_memory_length,
         ),
         "skin": build_skin(skin),
     }

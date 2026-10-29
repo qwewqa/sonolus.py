@@ -7,9 +7,10 @@ from sonolus.backend.mode import Mode
 from sonolus.backend.node import format_engine_node
 from sonolus.backend.optimize import OptimizerConfig, cfg_to_engine_node, run_passes
 from sonolus.backend.optimize.flow import cfg_to_text
-from sonolus.build.compile import callback_to_cfg
+from sonolus.build.compile import _resolve_entity_block_lengths, callback_to_cfg
 from sonolus.build.engine import package_engine
 from sonolus.script.archetype import _BaseArchetype
+from sonolus.script.engine import PlayMode, PreviewMode, TutorialMode, WatchMode
 from sonolus.script.internal.callbacks import (
     CallbackInfo,
     navigate_callback,
@@ -95,28 +96,28 @@ def test_project_method_build_regressions(
     _build_mode_callbacks(
         project_name=project,
         mode=Mode.PLAY,
-        archetypes=engine.play.archetypes,
+        definition=engine.play,
         global_callbacks=None,
         passes=passes,
     )
     _build_mode_callbacks(
         project_name=project,
         mode=Mode.WATCH,
-        archetypes=engine.watch.archetypes,
+        definition=engine.watch,
         global_callbacks=[(update_spawn_callback, engine.watch.update_spawn)],
         passes=passes,
     )
     _build_mode_callbacks(
         project_name=project,
         mode=Mode.PREVIEW,
-        archetypes=engine.preview.archetypes,
+        definition=engine.preview,
         global_callbacks=None,
         passes=passes,
     )
     _build_mode_callbacks(
         project_name=project,
         mode=Mode.TUTORIAL,
-        archetypes=None,
+        definition=engine.tutorial,
         global_callbacks=[
             (preprocess_callback, engine.tutorial.preprocess),
             (navigate_callback, engine.tutorial.navigate),
@@ -129,10 +130,21 @@ def test_project_method_build_regressions(
 def _build_mode_callbacks(
     project_name: str,
     mode: Mode,
-    archetypes: list[type[_BaseArchetype]] | None,
+    definition: PlayMode | WatchMode | PreviewMode | TutorialMode,
     global_callbacks: list[tuple[CallbackInfo, Callable]] | None,
     passes: str,
 ):
+    archetypes = getattr(definition, "archetypes", None)
+    entity_block_lengths = (
+        _resolve_entity_block_lengths(
+            archetypes or [],
+            getattr(definition, "entity_memory_length", None),
+            getattr(definition, "entity_data_length", None),
+            getattr(definition, "entity_shared_memory_length", None),
+        )
+        if mode != Mode.TUTORIAL
+        else (64, 32, 32)
+    )
     for dev in (True, False):
         suffixes = [""]
         if dev:
@@ -154,6 +166,7 @@ def _build_mode_callbacks(
                 mode_state = ModeContextState(
                     mode,
                     {a: i for i, a in enumerate(archetypes)} if archetypes is not None else None,
+                    entity_block_lengths,
                 )
                 cfg = callback_to_cfg(project_state, mode_state, cb, cb_info.name, archetype)
                 compare_with_reference(
@@ -179,6 +192,7 @@ def _build_mode_callbacks(
             mode_state = ModeContextState(
                 mode,
                 {a: i for i, a in enumerate(archetypes)} if archetypes is not None else None,
+                entity_block_lengths,
             )
             cfg = callback_to_cfg(project_state, mode_state, cb, cb_info.name, None)
             compare_with_reference(
@@ -223,9 +237,10 @@ def _emit_node_text(
     archetype: type[_BaseArchetype],
     cb_name: str,
     cb_info: CallbackInfo,
+    entity_block_lengths: tuple[int, int, int],
 ) -> str:
     project_state = ProjectContextState(runtime_checks=RuntimeChecks.NONE)
-    mode_state = ModeContextState(mode, {a: i for i, a in enumerate(archetypes)})
+    mode_state = ModeContextState(mode, archetypes, entity_block_lengths)
     cfg = callback_to_cfg(project_state, mode_state, getattr(archetype, cb_name), cb_info.name, archetype)
     config = OptimizerConfig(mode=mode, callback=cb_info.name)
     return format_engine_node(cfg_to_engine_node(run_passes(cfg, PASSES["standard"], config), config))
@@ -237,11 +252,18 @@ def test_derived_archetype_callbacks_match_their_base():
     # wrong tree. Nothing else compiles a derived binding: the goldens and the metrics gate measure the base.
     engine = PROJECTS["pydori"].engine.data
     compared = 0
-    for mode, archetypes in (
-        (Mode.PLAY, engine.play.archetypes),
-        (Mode.WATCH, engine.watch.archetypes),
-        (Mode.PREVIEW, engine.preview.archetypes),
+    for mode, definition in (
+        (Mode.PLAY, engine.play),
+        (Mode.WATCH, engine.watch),
+        (Mode.PREVIEW, engine.preview),
     ):
+        archetypes = definition.archetypes
+        entity_block_lengths = _resolve_entity_block_lengths(
+            archetypes,
+            getattr(definition, "entity_memory_length", None),
+            definition.entity_data_length,
+            definition.entity_shared_memory_length,
+        )
         base_texts: dict[tuple[type[_BaseArchetype], str], str] = {}
         for archetype in archetypes:
             base = getattr(archetype, "_derived_base_", archetype)
@@ -254,10 +276,11 @@ def test_derived_archetype_callbacks_match_their_base():
                     continue
                 key = (base, cb_name)
                 if key not in base_texts:
-                    base_texts[key] = _emit_node_text(mode, archetypes, base, cb_name, cb_info)
-                assert _emit_node_text(mode, archetypes, archetype, cb_name, cb_info) == base_texts[key], (
-                    f"{mode.name} {archetype.__name__}.{cb_name} emits different nodes than {base.__name__}"
-                )
+                    base_texts[key] = _emit_node_text(mode, archetypes, base, cb_name, cb_info, entity_block_lengths)
+                assert (
+                    _emit_node_text(mode, archetypes, archetype, cb_name, cb_info, entity_block_lengths)
+                    == base_texts[key]
+                ), f"{mode.name} {archetype.__name__}.{cb_name} emits different nodes than {base.__name__}"
                 compared += 1
     assert compared, "no derived archetype was compared, so this test pins nothing"
 

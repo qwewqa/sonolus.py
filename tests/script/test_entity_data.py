@@ -16,6 +16,7 @@ from sonolus.backend.mode import Mode
 from sonolus.backend.optimize.flow import BasicBlock, traverse_cfg_preorder
 from sonolus.backend.place import BlockPlace
 from sonolus.build.compile import callback_to_cfg
+from sonolus.build.engine import validate_engine
 from sonolus.script.archetype import EntityRef, PlayArchetype, entity_data, imported
 from sonolus.script.array import Array
 from sonolus.script.engine import Engine, EngineData, PlayMode
@@ -179,17 +180,15 @@ def test_an_entity_data_field_owns_the_slots_its_hole_covers():
     assert entity_data_slots_written(preprocess_cfg(Interleaved)) == {1, 2, 3}
 
 
-def test_an_entity_data_field_consumes_the_entity_data_budget():
-    # Full fills the entity data block exactly, so one more field of either kind overflows.
-    Full._init_fields()
-
-    # Declared inside the test so _init_fields runs on it exactly once: the overflow check fires partway through
-    # mutating the class, and a second call fails on the half-built state rather than on the budget.
+def test_an_entity_data_field_consumes_the_configured_entity_data_budget():
     class Overflowing(Full):
         overflow: float = imported()
 
-    with pytest.raises(ValueError, match="entity data size"):
-        Overflowing._init_fields()
+    engine = EngineData(play=PlayMode(archetypes=[Overflowing], entity_data_length=32))
+    with pytest.raises(ValueError, match="entity_data_length must be at least 33, got 32"):
+        validate_engine(engine)
+
+    validate_engine(EngineData(play=PlayMode(archetypes=[Overflowing])))
 
 
 def test_imported_defaults_are_unaffected():

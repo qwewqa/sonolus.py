@@ -1629,16 +1629,23 @@ Block(JumpLoop(
   Execute(If(
     Set(
       10000
-      0
+      1
       SwitchWithDefault(
         GetShifted(
           4103
           1
-          Get(
-            4001
-            16
+          Set(
+            10000
+            0
+            Multiply(
+              Get(
+                4001
+                16
+              )
+              3
+            )
           )
-          3
+          1
         )
         1
         1
@@ -1664,16 +1671,9 @@ Block(JumpLoop(
     Greater(
       Get(
         4102
-        Set(
+        Get(
           10000
-          1
-          Multiply(
-            Get(
-              4001
-              16
-            )
-            32
-          )
+          0
         )
       )
       0
@@ -1684,7 +1684,7 @@ Block(JumpLoop(
   Execute(If(
     Get(
       10000
-      0
+      1
     )
     56
     66
@@ -1697,7 +1697,7 @@ Block(JumpLoop(
         4102
         Get(
           10000
-          1
+          0
         )
       )
     )

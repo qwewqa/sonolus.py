@@ -5,10 +5,10 @@
 2:
   goto 3 if Set(10000, 0, SwitchWithDefault(EntityInfoArray[(EntityData[0] * 3) + 1], 1, 1, 2, 1, 3, 1, 4, 1, 5, 1, 6, 1, 7, 1, 0)) else 10
 3:
-  10000[1] <- EntityData[0] * 32
+  10000[1] <- EntityData[0] * 18
   goto 4 if Set(10000, 2, SwitchWithDefault(EntityInfoArray[(EntityData[1] * 3) + 1], 1, 1, 2, 1, 3, 1, 4, 1, 5, 1, 6, 1, 7, 1, 0)) else 9
 4:
-  10000[3] <- EntityData[1] * 32
+  10000[3] <- EntityData[1] * 18
   goto 5 if 10000[0] else 8
 5:
   10000[0] <- Remap(Set(10000, 0, EntityDataArray[(12 + 10000[1])]) - (6 / LevelOption[1]), 10000[0], LevelData[14], 0, RuntimeUpdate[2])

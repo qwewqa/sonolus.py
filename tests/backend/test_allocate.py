@@ -14,7 +14,6 @@ import pytest
 from sonolus.backend._opt import ir, lower  # ruff: ignore[import-private-name]
 from sonolus.backend.interpret import Interpreter
 from sonolus.backend.ir import IRConst, IRGet, IRInstr, IRPureInstr, IRSet
-from sonolus.backend.mode import Mode
 from sonolus.backend.ops import Op
 from sonolus.backend.optimize import cfg_to_engine_node
 from sonolus.backend.optimize.flow import BasicBlock, cfg_to_text, traverse_cfg_reverse_postorder
@@ -573,51 +572,11 @@ def test_semantic_branch_and_memory():
 
 
 def _enumerate_pydori_callbacks():
-    from sonolus.build.compile import callback_to_cfg
-    from sonolus.script.internal.callbacks import (
-        navigate_callback,
-        preprocess_callback,
-        update_callback,
-        update_spawn_callback,
-    )
-    from sonolus.script.internal.context import ModeContextState, ProjectContextState, RuntimeChecks
-    from tests.regressions import pydori_project
+    from tests.backend._corpus import MODE_SETUP, iter_callbacks
 
-    engine = pydori_project.engine.data
-
-    def build(mode, archetypes, global_callbacks):
-        for archetype in archetypes or []:
-            archetype._init_fields()
-            items = [
-                (n, i, getattr(archetype, n))
-                for n, i in archetype._supported_callbacks_.items()
-                if getattr(archetype, n) not in archetype._default_callbacks_
-            ]
-            for cb_name, cb_info, cb in items:
-                ps = ProjectContextState(runtime_checks=RuntimeChecks.NONE)
-                ms = ModeContextState(
-                    mode, {a: i for i, a in enumerate(archetypes)} if archetypes is not None else None
-                )
-                cfg = callback_to_cfg(ps, ms, cb, cb_info.name, archetype)
-                yield (f"{mode.name}:{archetype.__name__}:{cb_name}", cfg, mode, cb_info.name)
-        for cb_info, cb in global_callbacks or []:
-            ps = ProjectContextState(runtime_checks=RuntimeChecks.NONE)
-            ms = ModeContextState(mode, {a: i for i, a in enumerate(archetypes)} if archetypes is not None else None)
-            cfg = callback_to_cfg(ps, ms, cb, cb_info.name, None)
-            yield (f"{mode.name}:global:{cb_info.name}", cfg, mode, cb_info.name)
-
-    yield from build(Mode.PLAY, engine.play.archetypes, None)
-    yield from build(Mode.WATCH, engine.watch.archetypes, [(update_spawn_callback, engine.watch.update_spawn)])
-    yield from build(Mode.PREVIEW, engine.preview.archetypes, None)
-    yield from build(
-        Mode.TUTORIAL,
-        None,
-        [
-            (preprocess_callback, engine.tutorial.preprocess),
-            (navigate_callback, engine.tutorial.navigate),
-            (update_callback, engine.tutorial.update),
-        ],
-    )
+    for mode in MODE_SETUP:
+        for label, callback_name, factory in iter_callbacks(mode, dev_modes=(False,)):
+            yield label, factory(), mode, callback_name
 
 
 def test_pydori_corpus_packing():

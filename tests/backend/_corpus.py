@@ -8,7 +8,7 @@ CFG on each call.
 from __future__ import annotations
 
 from sonolus.backend.mode import Mode
-from sonolus.build.compile import callback_to_cfg
+from sonolus.build.compile import _resolve_entity_block_lengths, callback_to_cfg
 from sonolus.script.internal.callbacks import (
     navigate_callback,
     preprocess_callback,
@@ -21,11 +21,11 @@ from tests.regressions import pydori_project
 _ENGINE = pydori_project.engine.data
 
 MODE_SETUP = {
-    Mode.PLAY: (lambda: _ENGINE.play.archetypes, None),
-    Mode.WATCH: (lambda: _ENGINE.watch.archetypes, lambda: [(update_spawn_callback, _ENGINE.watch.update_spawn)]),
-    Mode.PREVIEW: (lambda: _ENGINE.preview.archetypes, None),
+    Mode.PLAY: (lambda: _ENGINE.play, None),
+    Mode.WATCH: (lambda: _ENGINE.watch, lambda: [(update_spawn_callback, _ENGINE.watch.update_spawn)]),
+    Mode.PREVIEW: (lambda: _ENGINE.preview, None),
     Mode.TUTORIAL: (
-        lambda: None,
+        lambda: _ENGINE.tutorial,
         lambda: [
             (preprocess_callback, _ENGINE.tutorial.preprocess),
             (navigate_callback, _ENGINE.tutorial.navigate),
@@ -35,13 +35,24 @@ MODE_SETUP = {
 }
 
 
-def iter_callbacks(mode: Mode):
-    """Yield (label, factory) where factory() builds a fresh CFG for the callback."""
-    archetypes_fn, globals_fn = MODE_SETUP[mode]
-    archetypes = archetypes_fn()
+def iter_callbacks(mode: Mode, *, dev_modes=(False, True)):
+    """Yield (label, callback_name, factory) with a fresh CFG per factory call."""
+    definition_fn, globals_fn = MODE_SETUP[mode]
+    definition = definition_fn()
+    archetypes = getattr(definition, "archetypes", None)
     global_callbacks = globals_fn() if globals_fn is not None else None
+    entity_block_lengths = (
+        _resolve_entity_block_lengths(
+            archetypes or [],
+            getattr(definition, "entity_memory_length", None),
+            getattr(definition, "entity_data_length", None),
+            getattr(definition, "entity_shared_memory_length", None),
+        )
+        if mode != Mode.TUTORIAL
+        else (64, 32, 32)
+    )
 
-    for dev in (False, True):
+    for dev in dev_modes:
         checks = RuntimeChecks.NOTIFY_AND_TERMINATE if dev else RuntimeChecks.NONE
         suffix = "_dev" if dev else ""
         arch_index = {a: i for i, a in enumerate(archetypes)} if archetypes is not None else None
@@ -57,7 +68,7 @@ def iter_callbacks(mode: Mode):
 
                 def factory(cb=cb, ci=ci, archetype=archetype, checks=checks, arch_index=arch_index):
                     ps = ProjectContextState(runtime_checks=checks)
-                    ms = ModeContextState(mode, arch_index)
+                    ms = ModeContextState(mode, arch_index, entity_block_lengths)
                     return callback_to_cfg(ps, ms, cb, ci.name, archetype)
 
                 yield f"{mode.name}:{archetype.__name__}.{cn}{suffix}", ci.name, factory
@@ -66,7 +77,7 @@ def iter_callbacks(mode: Mode):
 
             def factory(cb=cb, ci=ci, checks=checks, arch_index=arch_index):
                 ps = ProjectContextState(runtime_checks=checks)
-                ms = ModeContextState(mode, arch_index)
+                ms = ModeContextState(mode, arch_index, entity_block_lengths)
                 return callback_to_cfg(ps, ms, cb, ci.name, None)
 
             yield f"{mode.name}:global.{ci.name}{suffix}", ci.name, factory

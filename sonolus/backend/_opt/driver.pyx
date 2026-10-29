@@ -317,6 +317,7 @@ def compile_mode(
     callback_to_context,
     level=None,
     validate_only=False,
+    entity_block_lengths=(64, 32, 32),
 ):
     """Compile callbacks and release their Context graphs after success.
 
@@ -326,7 +327,7 @@ def compile_mode(
     if level is None:
         level = _STANDARD_LEVEL
 
-    mode_state = _MODE_STATE(mode, archetypes)
+    mode_state = _MODE_STATE(mode, archetypes, entity_block_lengths)
     nodes = _OUTPUT_GEN()
     results = {}
 

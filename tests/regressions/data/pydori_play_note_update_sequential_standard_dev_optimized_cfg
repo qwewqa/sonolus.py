@@ -191,13 +191,13 @@
   EntitySharedMemory[2] <- 1
   goto 53
 53:
-  goto 54 if Set(10000, 0, SwitchWithDefault(EntityInfoArray[(EntityData[16] * 3) + 1], 1, 1, 2, 1, 3, 1, 4, 1, 5, 1, 6, 1, 7, 1, 0)) else 68
+  goto 54 if Set(10000, 1, SwitchWithDefault(EntityInfoArray[Set(10000, 0, EntityData[16] * 3) + 1], 1, 1, 2, 1, 3, 1, 4, 1, 5, 1, 6, 1, 7, 1, 0)) else 68
 54:
-  goto 55 if (EntitySharedMemoryArray[Set(10000, 1, EntityData[16] * 32)] > 0) else 67
+  goto 55 if (EntitySharedMemoryArray[10000[0]] > 0) else 67
 55:
-  goto 56 if 10000[0] else 66
+  goto 56 if 10000[1] else 66
 56:
-  10000[0] <- EntitySharedMemoryArray[10000[1]]
+  10000[0] <- EntitySharedMemoryArray[10000[0]]
   goto 67 if (LevelMemory[17] >= 16) else 57
 57:
   10000[1] <- 0

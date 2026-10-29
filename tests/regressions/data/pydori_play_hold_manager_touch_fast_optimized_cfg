@@ -1,7 +1,7 @@
 0:
-  goto 1 if (EntitySharedMemoryArray[(EntityDataArray[(16 + (EntityMemory[0] * 32))] * 32)] > 0) else 6
+  goto 1 if (EntitySharedMemoryArray[(EntityDataArray[(16 + (EntityMemory[0] * 18))] * 3)] > 0) else 6
 1:
-  10000[0] <- EntitySharedMemoryArray[(EntityDataArray[(16 + (EntityMemory[0] * 32))] * 32)]
+  10000[0] <- EntitySharedMemoryArray[(EntityDataArray[(16 + (EntityMemory[0] * 18))] * 3)]
   10000[1] <- 0
   goto 2
 2:
@@ -13,7 +13,7 @@
 4:
   goto 5 if RuntimeTouchArray[10000[2] + 2] else 6
 5:
-  EntitySharedMemoryArray[(EntityDataArray[(16 + (EntityMemory[0] * 32))] * 32)] <- 0
+  EntitySharedMemoryArray[(EntityDataArray[(16 + (EntityMemory[0] * 18))] * 3)] <- 0
   goto exit
 6:
   goto exit

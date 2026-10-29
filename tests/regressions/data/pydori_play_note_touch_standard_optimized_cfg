@@ -44,11 +44,11 @@
 12:
   goto 13 if 10000[4] else 17
 13:
-  goto 6 if EntitySharedMemoryArray[(2 + Set(10000, 7, 10000[3] * 32))] else 14
+  goto 6 if EntitySharedMemoryArray[(2 + (10000[3] * 3))] else 14
 14:
-  goto 15 if (Abs(EntityDataArray[(11 + 10000[7])] - EntityData[11]) <= 0.005) else 6
+  goto 15 if (Abs(EntityDataArray[(11 + Set(10000, 7, 10000[3] * 18))] - EntityData[11]) <= 0.005) else 6
 15:
-  goto 6 if (EntitySharedMemoryArray[(EntityDataArray[(16 + 10000[7])] * 32)] > 0) else 16
+  goto 6 if (EntitySharedMemoryArray[(EntityDataArray[(16 + 10000[7])] * 3)] > 0) else 16
 16:
   10000[7] <- Set(10000, 15, 1)
   goto 18
@@ -59,7 +59,7 @@
 18:
   goto 19 if 10000[7] else 28
 19:
-  10000[19] <- Set(10000, 18, Set(10000, 17, EntityDataArray[Set(10000, 16, 10000[3] * 32)]) * LevelData[12]) - ((LevelData[12] * 2.5) / 2)
+  10000[19] <- Set(10000, 18, Set(10000, 17, EntityDataArray[Set(10000, 16, 10000[3] * 18)]) * LevelData[12]) - ((LevelData[12] * 2.5) / 2)
   SetAdd(10000, 18, (LevelData[12] * 2.5) / 2)
   goto 20 if (Set(10000, 16, EntityDataArray[(2 + 10000[16])]) > 0) else 21
 20:
@@ -122,12 +122,12 @@
 33:
   goto 34 if Set(10000, 0, EntityData[3] > 0) else 37
 34:
-  goto 36 if Set(10000, 1, EntitySharedMemoryArray[(2 + (EntityData[16] * 32))]) else 35
+  goto 36 if Set(10000, 2, EntitySharedMemoryArray[(2 + Set(10000, 1, EntityData[16] * 3))]) else 35
 35:
-  10000[1] <- 2 == EntityInfoArray[(EntityData[16] * 3) + 2]
+  10000[2] <- 2 == EntityInfoArray[10000[1] + 2]
   goto 36
 36:
-  goto 37 if 10000[1] else 382
+  goto 37 if 10000[2] else 382
 37:
   goto 38 if (EntityData[14] <= RuntimeUpdate[0]) else 382
 38:
@@ -135,7 +135,7 @@
 39:
   goto 40 if 10000[0] else 66
 40:
-  goto 95 if (EntitySharedMemoryArray[Set(10000, 11, EntityData[16] * 32)] > 0) else 41
+  goto 95 if (EntitySharedMemoryArray[Set(10000, 11, EntityData[16] * 3)] > 0) else 41
 41:
   10000[12] <- 0
   goto 42
@@ -211,7 +211,7 @@
     1 -> 42
     default -> 49
 66:
-  goto 95 if (EntitySharedMemoryArray[Set(10000, 11, EntityData[16] * 32)] > 0) else 67
+  goto 95 if (EntitySharedMemoryArray[Set(10000, 11, EntityData[16] * 3)] > 0) else 67
 67:
   10000[12] <- 0
   goto 68
@@ -295,7 +295,7 @@
     1 -> 68
     default -> 79
 95:
-  goto 96 if (EntitySharedMemoryArray[Set(10000, 11, EntityData[16] * 32)] > 0) else 382
+  goto 96 if (EntitySharedMemoryArray[Set(10000, 11, EntityData[16] * 3)] > 0) else 382
 96:
   10000[12] <- 0
   goto 97
@@ -506,18 +506,18 @@
 154:
   goto 155 if (EntityData[3] > 0) else 158
 155:
-  goto 157 if Set(10000, 0, EntitySharedMemoryArray[(2 + (EntityData[16] * 32))]) else 156
+  goto 157 if Set(10000, 1, EntitySharedMemoryArray[(2 + Set(10000, 0, EntityData[16] * 3))]) else 156
 156:
-  10000[0] <- 2 == EntityInfoArray[(EntityData[16] * 3) + 2]
+  10000[1] <- 2 == EntityInfoArray[10000[0] + 2]
   goto 157
 157:
-  goto 158 if 10000[0] else 382
+  goto 158 if 10000[1] else 382
 158:
   goto 159 if (EntityData[14] <= RuntimeUpdate[0]) else 382
 159:
   goto 160 if (RuntimeUpdate[0] <= EntityData[15]) else 382
 160:
-  goto 186 if (EntitySharedMemoryArray[Set(10000, 11, EntityData[16] * 32)] > 0) else 161
+  goto 186 if (EntitySharedMemoryArray[Set(10000, 11, EntityData[16] * 3)] > 0) else 161
 161:
   10000[13] <- 0
   goto 162
@@ -783,18 +783,18 @@
 235:
   goto 236 if (EntityData[3] > 0) else 239
 236:
-  goto 238 if Set(10000, 0, EntitySharedMemoryArray[(2 + (EntityData[16] * 32))]) else 237
+  goto 238 if Set(10000, 1, EntitySharedMemoryArray[(2 + Set(10000, 0, EntityData[16] * 3))]) else 237
 237:
-  10000[0] <- 2 == EntityInfoArray[(EntityData[16] * 3) + 2]
+  10000[1] <- 2 == EntityInfoArray[10000[0] + 2]
   goto 238
 238:
-  goto 239 if 10000[0] else 382
+  goto 239 if 10000[1] else 382
 239:
   goto 240 if (EntityData[14] <= RuntimeUpdate[0]) else 382
 240:
   goto 241 if (RuntimeUpdate[0] <= EntityData[15]) else 382
 241:
-  goto 267 if (EntitySharedMemoryArray[Set(10000, 11, EntityData[16] * 32)] > 0) else 242
+  goto 267 if (EntitySharedMemoryArray[Set(10000, 11, EntityData[16] * 3)] > 0) else 242
 242:
   10000[12] <- 0
   goto 243
@@ -1136,7 +1136,7 @@
   IncrementPost(2000, 17)
   goto 345
 345:
-  EntitySharedMemoryArray[(EntityData[16] * 32)] <- RuntimeTouchArray[10000[11]]
+  EntitySharedMemoryArray[(EntityData[16] * 3)] <- RuntimeTouchArray[10000[11]]
   EntityInput[0] <- Set(10000, 1, Judge(Set(10000, 0, RuntimeTouchArray[10000[11] + 4]), EntityData[11], EntityData[5], EntityData[6], EntityData[7], EntityData[8], EntityData[9], EntityData[10]))
   EntityInput[3] <- Set(4005, 1, Clamp(10000[0] - EntityData[11], -1, 1)) * 1000
   goto 346 if 10000[1] else 380

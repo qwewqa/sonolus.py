@@ -46,17 +46,17 @@
   EntityData[9] <- EntityInfo[0]
   goto 12
 12:
-  goto 13 if (EntityDataArray[(3 + (EntityData[9] * 32))] > 0) else 14
+  goto 13 if (EntityDataArray[(3 + (EntityData[9] * 14))] > 0) else 14
 13:
-  EntityData[9] <- EntityDataArray[(3 + (EntityData[9] * 32))]
+  EntityData[9] <- EntityDataArray[(3 + (EntityData[9] * 14))]
   goto 12
 14:
   EntityData[10] <- EntityInfo[0]
   goto 15
 15:
-  goto 16 if (EntityDataArray[(4 + (EntityData[10] * 32))] > 0) else 17
+  goto 16 if (EntityDataArray[(4 + (EntityData[10] * 14))] > 0) else 17
 16:
-  EntityData[10] <- EntityDataArray[(4 + (EntityData[10] * 32))]
+  EntityData[10] <- EntityDataArray[(4 + (EntityData[10] * 14))]
   goto 15
 17:
   goto 18 if RuntimeEnvironment[4] else 33
@@ -147,12 +147,12 @@
   goto 43 if StreamHas(10000[0], 10000[1]) else 59
 43:
   10000[4] <- If(Set(10000, 4, StreamGetNextKey(10000[0], 10000[1])) > 10000[1], 10000[4], inf)
-  goto 44 if (10000[1] < EntityDataArray[(5 + (EntityData[9] * 32))]) else 45
+  goto 44 if (10000[1] < EntityDataArray[(5 + (EntityData[9] * 14))]) else 45
 44:
   10000[1] <- 10000[4]
   goto 42
 45:
-  goto 59 if (10000[1] > EntityDataArray[(5 + (EntityData[10] * 32))]) else 46
+  goto 59 if (10000[1] > EntityDataArray[(5 + (EntityData[10] * 14))]) else 46
 46:
   goto 47 if Set(10000, 5, StreamGetValue(10000[0], 10000[1])) else 51
 47:
@@ -192,15 +192,15 @@
 59:
   goto 60 if 10000[3] else 64
 60:
-  10000[0] <- EntityDataArray[(5 + (EntityData[10] * 32))]
+  10000[0] <- EntityDataArray[(5 + (EntityData[10] * 14))]
   goto 61 if LevelOption[10] else 64
 61:
   10000[1] <- PlayLoopedScheduled(7, 10000[2])
   StopLoopedScheduled(10000[1], 10000[0])
   goto exit
 62:
-  10000[0] <- EntityDataArray[(5 + (EntityData[9] * 32))]
-  10000[1] <- EntityDataArray[(5 + (EntityData[10] * 32))]
+  10000[0] <- EntityDataArray[(5 + (EntityData[9] * 14))]
+  10000[1] <- EntityDataArray[(5 + (EntityData[10] * 14))]
   goto 63 if LevelOption[10] else 64
 63:
   10000[0] <- PlayLoopedScheduled(7, 10000[0])

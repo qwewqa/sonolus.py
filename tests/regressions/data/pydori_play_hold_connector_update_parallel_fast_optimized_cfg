@@ -3,8 +3,8 @@
 1:
   goto exit
 2:
-  10000[0] <- EntityData[0] * 32
-  10000[1] <- EntityData[1] * 32
+  10000[0] <- EntityData[0] * 18
+  10000[1] <- EntityData[1] * 18
   10000[3] <- Remap(Set(10000, 2, EntityDataArray[(12 + 10000[0])]) - (6 / LevelOption[1]), 10000[2], LevelData[14], 0, RuntimeUpdate[2])
   10000[5] <- Remap(Set(10000, 4, EntityDataArray[(12 + 10000[1])]) - (6 / LevelOption[1]), 10000[4], LevelData[14], 0, RuntimeUpdate[2])
   10000[6] <- Clamp(10000[3], 0, LevelData[14])
