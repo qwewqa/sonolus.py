@@ -1,3 +1,9 @@
+### 1.3.0
+
+- Added configurable entity storage lengths for play, watch, and preview modes.
+- [`Project`][sonolus.script.project.Project] now accepts a callable for `resources` to load resources lazily.
+- Fixed namespace and closure handling for Python 3.15 lazy imports.
+
 ### 1.2.5
 
 - Optimizer improvements.
